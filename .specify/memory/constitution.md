@@ -56,15 +56,31 @@ The architecture MUST support easy addition of new LLM providers through a plugi
 
 ## Development Workflow
 
+### Branch Management (NON-NEGOTIABLE)
+All development work MUST be done directly on the main branch. No feature branches, pull requests, or merge workflows are permitted. All changes are committed directly to main.
+
+### Change Management Approach (NON-NEGOTIABLE)
+No patches approach to changes is permitted. Since all work is done on main branch, changes must be committed directly as complete implementations. No patch files, diff files, or intermediate change storage methods are allowed.
+
+### Commit and Push Cadence (NON-NEGOTIABLE)
+After completion of each task or set of related changes, changes MUST be committed to the repository and pushed to upstream regularly. This ensures easier change tracking and progress visibility. No accumulation of uncommitted or unpushed changes is permitted.
+
 ### SpecKit Integration (NON-NEGOTIABLE)
 All development MUST follow the SpecKit cycle: Constitution → Specify → Clarify → Plan → Tasks → Analyze → Implement. The system MUST check for SpecKit availability and install/configure locally if not present.
 
+### CI/CD Management
+- GitHub Actions MUST NOT run automatically under any circumstances
+- All CI/CD pipelines MUST be executed manually only
+- No automated triggers, schedules, or webhook-based executions are permitted
+- All hooks (pre-commit, pre-push, post-commit, etc.) MUST be disabled
+- No automated testing, security scans, or deployments through CI/CD
+
 ### Quality Gates
-- Code MUST pass all linting and formatting checks
-- All tests MUST pass (100% success)
-- Security scans MUST show zero vulnerabilities
+- Code MUST pass all linting and formatting checks (executed manually)
+- All tests MUST pass (100% success) (executed manually)
+- Security scans MUST show zero vulnerabilities (executed manually)
 - Documentation MUST be complete for all changes
-- Challenge tests MUST validate production readiness
+- Challenge tests MUST validate production readiness (executed manually)
 
 ### Documentation Requirements
 - Complete technical documentation for every component
