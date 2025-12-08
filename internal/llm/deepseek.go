@@ -5,17 +5,7 @@ import (
 	"time"
 )
 
-// Local ProviderCapabilities type for this file (avoids cross-package visibility issues)
-type ProviderCapabilities struct {
-	SupportedModels         []string
-	SupportedFeatures       []string
-	SupportedRequestTypes   []string
-	SupportsStreaming       bool
-	SupportsFunctionCalling bool
-	SupportsVision          bool
-	Metadata                map[string]string
-}
-
+// DeepSeekProvider implemented in the llm package for MVP ensemble
 type DeepSeekProvider struct{}
 
 func (d *DeepSeekProvider) Complete(req *models.LLMRequest) (*models.LLMResponse, error) {
@@ -28,6 +18,7 @@ func (d *DeepSeekProvider) Complete(req *models.LLMRequest) (*models.LLMResponse
 		TokensUsed:   10,
 		ResponseTime: 10,
 		FinishReason: "stop",
+		Metadata:     map[string]interface{}{},
 		CreatedAt:    time.Now(),
 	}
 	return resp, nil
