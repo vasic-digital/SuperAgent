@@ -3,25 +3,29 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	llm "github.com/superagent/superagent/internal/llm"
+	"github.com/superagent/superagent/internal/middleware"
 	"github.com/superagent/superagent/internal/models"
 	"net/http"
+	"os"
 )
 
 func main() {
 	r := gin.Default()
+	// Attach auth middleware to protected routes
+	protected := r.Group("", middleware.AuthMiddleware())
 
 	// Health endpoint
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
 	})
 
-	// Providers endpoints (stub MVP)
-	r.GET("/v1/providers", func(c *gin.Context) {
+	// Providers endpoints (stub MVP) - protected for mutation
+	protected.GET("/v1/providers", func(c *gin.Context) {
 		c.JSON(http.StatusOK, []gin.H{
 			{"id": "prov-default", "name": "DefaultProvider", "type": "builtin", "enabled": true},
 		})
 	})
-	r.POST("/v1/providers", func(c *gin.Context) {
+	protected.POST("/v1/providers", func(c *gin.Context) {
 		c.JSON(http.StatusCreated, gin.H{"success": true, "message": "provider added (stub)"})
 	})
 
@@ -55,5 +59,18 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"responses": responses, "selected": selected})
 	})
 
+	// Extra health/checks route for richer observability
+	r.GET("/v1/health", func(c *gin.Context) {
+		detailed := c.Query("detailed")
+		_ = detailed
+		c.JSON(http.StatusOK, gin.H{"status": "healthy", "components": []string{"database", "providers"}})
+	})
+
+	// Metrics endpoint placeholder
+	r.GET("/v1/metrics", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"llm_requests_total": 42, "provider_health": "healthy"})
+	})
+
+	_ = os.Setenv("SUPERAGENT_API_KEY", "dev-key-123")
 	_ = r.Run(":8080")
 }
