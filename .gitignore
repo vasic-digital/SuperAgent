@@ -1,0 +1,16 @@
+# Go basics
+bin/
+vendor/
+*.exe
+*.test
+*.out
+*.prof*
+coverage/
+*.log
+.env*
+*.swp
+*.tmp
+*.bak
+.env/
+.idea/
+.vscode/

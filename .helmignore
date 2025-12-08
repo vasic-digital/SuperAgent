@@ -1,0 +1,3 @@
+# Helm ignore patterns
+*.lock
+helm/**

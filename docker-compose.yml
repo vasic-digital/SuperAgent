@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: superagent
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: superagent_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+  superagent:
+    build: .
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres
+      DB_USER: superagent
+      DB_PASSWORD: secret
+      DB_NAME: superagent_db
+volumes:
+  db-data:
