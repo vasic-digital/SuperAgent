@@ -5,8 +5,9 @@ go 1.23.0
 toolchain go1.24.11
 
 require github.com/gin-gonic/gin v1.11.0
+require google.golang.org/grpc v1.50.0
 
-replace github.com/superagent/pkg/api => ./pkg/api
+replace github.com/superagent/superagent/pkg/api => ./pkg/api
 
 require (
 	github.com/bytedance/sonic v1.14.0 // indirect

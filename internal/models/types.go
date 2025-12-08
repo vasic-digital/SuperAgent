@@ -19,19 +19,20 @@ type LLMProvider struct {
 }
 
 type LLMRequest struct {
-	ID             string          `json:"id" db:"id"`
-	SessionID      string          `json:"session_id" db:"session_id"`
-	UserID         string          `json:"user_id" db:"user_id"`
-	Prompt         string          `json:"prompt" db:"prompt"`
-	Messages       []Message       `json:"messages" db:"messages"`
-	ModelParams    ModelParameters `json:"model_params" db:"model_params"`
-	EnsembleConfig *EnsembleConfig `json:"ensemble_config" db:"ensemble_config"`
-	MemoryEnhanced bool            `json:"memory_enhanced" db:"memory_enhanced"`
-	Status         string          `json:"status" db:"status"`
-	CreatedAt      time.Time       `json:"created_at" db:"created_at"`
-	StartedAt      *time.Time      `json:"started_at" db:"started_at"`
-	CompletedAt    *time.Time      `json:"completed_at" db:"completed_at"`
-	RequestType    string          `json:"request_type" db:"request_type"`
+	ID             string            `json:"id" db:"id"`
+	SessionID      string            `json:"session_id" db:"session_id"`
+	UserID         string            `json:"user_id" db:"user_id"`
+	Prompt         string            `json:"prompt" db:"prompt"`
+	Messages       []Message         `json:"messages" db:"messages"`
+	ModelParams    ModelParameters   `json:"model_params" db:"model_params"`
+	EnsembleConfig *EnsembleConfig   `json:"ensemble_config" db:"ensemble_config"`
+	MemoryEnhanced bool              `json:"memory_enhanced" db:"memory_enhanced"`
+	Memory         map[string]string `json:"memory" db:"memory"`
+	Status         string            `json:"status" db:"status"`
+	CreatedAt      time.Time         `json:"created_at" db:"created_at"`
+	StartedAt      *time.Time        `json:"started_at" db:"started_at"`
+	CompletedAt    *time.Time        `json:"completed_at" db:"completed_at"`
+	RequestType    string            `json:"request_type" db:"request_type"`
 }
 
 type LLMResponse struct {
@@ -107,6 +108,7 @@ type MemorySource struct {
 	SourceType     string  `json:"source_type"`
 }
 
+// ProviderCapabilities describes capabilities exposed by an LLM provider.
 type ProviderCapabilities struct {
 	SupportedModels         []string          `json:"supported_models"`
 	SupportedFeatures       []string          `json:"supported_features"`

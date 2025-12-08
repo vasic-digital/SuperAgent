@@ -1,1 +1,1 @@
-module github.com/superagent/pkg/api
+module github.com/superagent/superagent/pkg/api
