@@ -1,0 +1,288 @@
+syntax = "proto3";
+
+package llm;
+
+option go_package = "github.com/superagent/pkg/api";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Main LLM Facade Service
+service LLMFacade {
+  // Standard completion request
+  rpc Complete(CompletionRequest) returns (CompletionResponse);
+  
+  // Streaming completion for real-time generation
+  rpc CompleteStream(CompletionRequest) returns (stream CompletionResponse);
+  
+  // Chat-style interaction with message history
+  rpc Chat(ChatRequest) returns (stream ChatResponse);
+  
+  // Provider management
+  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
+  rpc AddProvider(AddProviderRequest) returns (ProviderResponse);
+  rpc UpdateProvider(UpdateProviderRequest) returns (ProviderResponse);
+  rpc RemoveProvider(RemoveProviderRequest) returns (ProviderResponse);
+  
+  // Health and monitoring
+  rpc HealthCheck(HealthRequest) returns (HealthResponse);
+  rpc GetMetrics(MetricsRequest) returns (MetricsResponse);
+  
+  // Session management
+  rpc CreateSession(CreateSessionRequest) returns (SessionResponse);
+  rpc GetSession(GetSessionRequest) returns (SessionResponse);
+  rpc TerminateSession(TerminateSessionRequest) returns (SessionResponse);
+}
+
+// Provider Plugin Service (for external plugins)
+service LLMProvider {
+  // Standard completion request
+  rpc Complete(CompletionRequest) returns (CompletionResponse);
+  
+  // Streaming completion
+  rpc CompleteStream(CompletionRequest) returns (stream CompletionResponse);
+  
+  // Health check for load balancing
+  rpc HealthCheck(HealthRequest) returns (HealthResponse);
+  
+  // Provider-specific capabilities
+  rpc GetCapabilities(CapabilitiesRequest) returns (CapabilitiesResponse);
+  
+  // Configuration validation
+  rpc ValidateConfig(ValidateConfigRequest) returns (ValidateConfigResponse);
+}
+
+// Messages
+
+message CompletionRequest {
+  string request_id = 1;
+  string session_id = 2;
+  string prompt = 3;
+  repeated Message messages = 4;
+  ModelParameters model_params = 5;
+  EnsembleConfig ensemble_config = 6;
+  bool memory_enhanced = 7;
+  map<string, string> metadata = 8;
+  string request_type = 9; // code_generation, reasoning, tool_use
+  int32 priority = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message CompletionResponse {
+  string response_id = 1;
+  string request_id = 2;
+  string content = 3;
+  double confidence = 4;
+  int32 tokens_used = 5;
+  int64 response_time_ms = 6;
+  string provider_name = 7;
+  string finish_reason = 8;
+  bool selected = 9;
+  double selection_score = 10;
+  repeated MemorySource memory_sources = 11;
+  google.protobuf.Value provider_metadata = 12;
+  google.protobuf.Timestamp created_at = 13;
+}
+
+message ChatRequest {
+  string session_id = 1;
+  repeated Message messages = 2;
+  ModelParameters model_params = 3;
+  bool memory_enhanced = 4;
+  map<string, string> metadata = 5;
+}
+
+message ChatResponse {
+  string response_id = 1;
+  string content = 2;
+  double confidence = 3;
+  int32 tokens_used = 4;
+  string provider_name = 5;
+  bool is_streaming = 6;
+  bool is_complete = 7;
+  repeated MemorySource memory_sources = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+message Message {
+  string role = 1; // system, user, assistant, tool
+  string content = 2;
+  string name = 3; // optional for tool messages
+  google.protobuf.Value tool_calls = 4; // for tool/function calls
+}
+
+message ModelParameters {
+  string model = 1;
+  double temperature = 2;
+  int32 max_tokens = 3;
+  double top_p = 4;
+  repeated string stop_sequences = 5;
+  google.protobuf.Struct provider_specific = 6;
+}
+
+message EnsembleConfig {
+  string strategy = 1; // confidence_weighted, majority_vote
+  int32 min_providers = 2;
+  double confidence_threshold = 3;
+  bool fallback_to_best = 4;
+  int32 timeout_seconds = 5;
+  repeated string preferred_providers = 6;
+}
+
+message MemorySource {
+  string dataset_name = 1;
+  string content = 2;
+  double relevance_score = 3;
+  string source_type = 4; // vector, graph, summary
+}
+
+// Provider Management Messages
+
+message ListProvidersRequest {
+  bool enabled_only = 1;
+  string provider_type = 2; // optional filter
+}
+
+message ListProvidersResponse {
+  repeated ProviderInfo providers = 1;
+}
+
+message ProviderInfo {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  string model = 4;
+  double weight = 5;
+  bool enabled = 6;
+  string health_status = 7;
+  int64 response_time_ms = 8;
+  double success_rate = 9;
+  CapabilitiesResponse capabilities = 10;
+  google.protobuf.Timestamp last_updated = 11;
+}
+
+message AddProviderRequest {
+  string name = 1;
+  string type = 2;
+  string api_key = 3;
+  string base_url = 4;
+  string model = 5;
+  double weight = 6;
+  google.protobuf.Struct config = 7;
+}
+
+message UpdateProviderRequest {
+  string id = 1;
+  string name = 2;
+  string api_key = 3;
+  string base_url = 4;
+  string model = 5;
+  double weight = 6;
+  bool enabled = 7;
+  google.protobuf.Struct config = 8;
+}
+
+message RemoveProviderRequest {
+  string id = 1;
+  bool force = 2; // remove even if in use
+}
+
+message ProviderResponse {
+  bool success = 1;
+  string message = 2;
+  ProviderInfo provider = 3;
+}
+
+// Health and Monitoring Messages
+
+message HealthRequest {
+  bool detailed = 1;
+  repeated string check_components = 2; // optional: database, cognee, providers
+}
+
+message HealthResponse {
+  string status = 1; // healthy, degraded, unhealthy
+  repeated ComponentHealth components = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  string version = 4;
+}
+
+message ComponentHealth {
+  string name = 1;
+  string status = 2;
+  string message = 3;
+  int64 response_time_ms = 4;
+  map<string, string> details = 5;
+}
+
+message MetricsRequest {
+  string time_range = 1; // 1h, 24h, 7d
+  repeated string metrics = 2; // optional: request_count, response_time, error_rate
+}
+
+message MetricsResponse {
+  google.protobuf.Struct metrics = 1;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
+}
+
+// Session Management Messages
+
+message CreateSessionRequest {
+  string user_id = 1;
+  google.protobuf.Struct initial_context = 2;
+  int32 ttl_hours = 3;
+  bool memory_enabled = 4;
+}
+
+message GetSessionRequest {
+  string session_id = 1;
+  bool include_context = 2;
+}
+
+message TerminateSessionRequest {
+  string session_id = 1;
+  bool graceful = 2;
+}
+
+message SessionResponse {
+  bool success = 1;
+  string session_id = 2;
+  string user_id = 3;
+  string status = 4; // active, expired, terminated
+  int32 request_count = 5;
+  google.protobuf.Timestamp last_activity = 6;
+  google.protobuf.Timestamp expires_at = 7;
+  google.protobuf.Struct context = 8;
+}
+
+// Provider Capabilities Messages
+
+message CapabilitiesRequest {}
+
+message CapabilitiesResponse {
+  repeated string supported_models = 1;
+  repeated string supported_features = 2; // streaming, function_calling, vision, etc.
+  ModelLimits limits = 3;
+  repeated string supported_request_types = 4;
+  bool supports_streaming = 5;
+  bool supports_function_calling = 6;
+  bool supports_vision = 7;
+}
+
+message ModelLimits {
+  int32 max_tokens = 1;
+  int32 max_input_length = 2;
+  int32 max_output_length = 3;
+  int32 max_concurrent_requests = 4;
+}
+
+message ValidateConfigRequest {
+  google.protobuf.Struct config = 1;
+}
+
+message ValidateConfigResponse {
+  bool valid = 1;
+  repeated string errors = 2;
+  repeated string warnings = 3;
+}
