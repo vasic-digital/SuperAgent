@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/superagent/superagent/internal/config"
 	llm "github.com/superagent/superagent/internal/llm"
 	"github.com/superagent/superagent/internal/middleware"
 	"github.com/superagent/superagent/internal/models"
@@ -10,9 +11,10 @@ import (
 )
 
 func main() {
+	cfg := config.Load()
 	r := gin.Default()
 	// Attach auth middleware to protected routes
-	protected := r.Group("", middleware.AuthMiddleware())
+	protected := r.Group("", middleware.JWTMiddleware(cfg))
 
 	// Health endpoint
 	r.GET("/health", func(c *gin.Context) {
