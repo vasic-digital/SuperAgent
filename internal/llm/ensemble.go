@@ -14,7 +14,7 @@ func RunEnsemble(req *models.LLMRequest) ([]*models.LLMResponse, *models.LLMResp
 		NewClaudeProvider("", "", ""),
 		NewGeminiProvider("", "", ""),
 		NewQwenProvider("", "", ""),
-		&ZaiProvider{},
+		NewZaiProvider("", "", ""),
 	}
 
 	var wg sync.WaitGroup
