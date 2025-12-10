@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"net/http"
@@ -8,32 +9,48 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/superagent/superagent/internal/config"
+	"github.com/superagent/superagent/internal/database"
 	llm "github.com/superagent/superagent/internal/llm"
 	"github.com/superagent/superagent/internal/middleware"
 	"github.com/superagent/superagent/internal/models"
+	"github.com/superagent/superagent/internal/services"
 )
 
 func main() {
 	cfg := config.Load()
-	r := gin.Default()
+
+	// Initialize database
+	db, err := database.NewPostgresDB(cfg)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	// Initialize user service
+	userService := services.NewUserService(db, cfg.Server.JWTSecret, 24*time.Hour)
 
 	// Create auth middleware
 	authConfig := middleware.AuthConfig{
 		SecretKey:   cfg.Server.JWTSecret,
 		TokenExpiry: 24 * time.Hour,
 		Issuer:      "superagent",
-		SkipPaths:   []string{"/health", "/v1/health"},
+		SkipPaths:   []string{"/health", "/v1/health", "/v1/auth/login"},
 		Required:    true,
 	}
-	auth := middleware.NewAuthMiddleware(authConfig)
+	auth := middleware.NewAuthMiddleware(authConfig, userService)
 
-	// Attach auth middleware to protected routes
-	protected := r.Group("", auth.Middleware([]string{"/health", "/v1/health"}))
+	r := gin.Default()
 
 	// Health endpoint
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
 	})
+
+	// Authentication endpoints
+	r.POST("/v1/auth/login", auth.Login)
+
+	// Attach auth middleware to protected routes
+	protected := r.Group("", auth.Middleware([]string{"/health", "/v1/health", "/v1/auth/login"}))
 
 	// Providers endpoints (stub MVP) - protected for mutation
 	protected.GET("/v1/providers", func(c *gin.Context) {

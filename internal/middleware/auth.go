@@ -1,12 +1,15 @@
 package middleware
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/superagent/superagent/internal/services"
 )
 
 // AuthMiddleware handles JWT authentication
@@ -14,6 +17,7 @@ type AuthMiddleware struct {
 	secretKey   string
 	tokenExpiry time.Duration
 	issuer      string
+	userService *services.UserService
 }
 
 // Claims represents the JWT claims structure
@@ -34,7 +38,7 @@ type AuthConfig struct {
 }
 
 // NewAuthMiddleware creates a new authentication middleware
-func NewAuthMiddleware(config AuthConfig) *AuthMiddleware {
+func NewAuthMiddleware(config AuthConfig, userService *services.UserService) *AuthMiddleware {
 	if config.SecretKey == "" {
 		config.SecretKey = "default-secret-key-change-in-production"
 	}
@@ -49,6 +53,7 @@ func NewAuthMiddleware(config AuthConfig) *AuthMiddleware {
 		secretKey:   config.SecretKey,
 		tokenExpiry: config.TokenExpiry,
 		issuer:      config.Issuer,
+		userService: userService,
 	}
 }
 
@@ -350,8 +355,9 @@ func (a *AuthMiddleware) Login(c *gin.Context) {
 	// For now, accept any username/password and create a token
 	// In production, you would validate against a user database
 
-	// Mock user validation - replace with real authentication
-	if !a.authenticateUser(req.Username, req.Password) {
+	// Authenticate user against database
+	user, err := a.authenticateUser(req.Username, req.Password)
+	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "invalid_credentials",
 			"message": "Invalid username or password",
@@ -360,7 +366,7 @@ func (a *AuthMiddleware) Login(c *gin.Context) {
 	}
 
 	// Generate token
-	token, err := a.GenerateToken("user123", req.Username, "user")
+	token, err := a.GenerateToken(fmt.Sprintf("%d", user.ID), user.Username, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "token_generation_failed",
@@ -446,9 +452,16 @@ func (a *AuthMiddleware) GetAuthInfo(c *gin.Context) gin.H {
 	}
 }
 
-// authenticateUser validates user credentials (mock implementation)
-func (a *AuthMiddleware) authenticateUser(username, password string) bool {
-	// TODO: Implement real authentication against user database
-	// For demo purposes, accept any non-empty credentials
-	return username != "" && password != ""
+// authenticateUser validates user credentials against database
+func (a *AuthMiddleware) authenticateUser(username, password string) (*services.User, error) {
+	if a.userService == nil {
+		return nil, fmt.Errorf("user service not configured")
+	}
+
+	user, err := a.userService.Authenticate(context.Background(), username, password)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
