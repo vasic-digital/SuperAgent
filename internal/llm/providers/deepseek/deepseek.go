@@ -365,3 +365,30 @@ func (p *DeepSeekProvider) makeAPICall(ctx context.Context, req DeepSeekRequest)
 
 	return resp, nil
 }
+
+// HealthCheck implements health checking for the DeepSeek provider
+func (p *DeepSeekProvider) HealthCheck() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Simple health check - try to get models list
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://api.deepseek.com/models", nil)
+	if err != nil {
+		return fmt.Errorf("failed to create health check request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+p.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("health check request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)
+	}
+
+	return nil
+}

@@ -375,3 +375,32 @@ func (p *ClaudeProvider) makeAPICall(ctx context.Context, req ClaudeRequest) (*h
 
 	return resp, nil
 }
+
+// HealthCheck implements health checking for the Claude provider
+func (p *ClaudeProvider) HealthCheck() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Simple health check - try to get models list or basic endpoint
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://api.anthropic.com/v1/messages", nil)
+	if err != nil {
+		return fmt.Errorf("failed to create health check request: %w", err)
+	}
+
+	req.Header.Set("x-api-key", p.apiKey)
+	req.Header.Set("anthropic-version", "2023-06-01")
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("health check request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Claude API returns 400 for GET requests to messages endpoint (expected)
+	// We just check that the API is reachable and returns a response
+	if resp.StatusCode >= 500 {
+		return fmt.Errorf("health check failed with server error: %d", resp.StatusCode)
+	}
+
+	return nil
+}
