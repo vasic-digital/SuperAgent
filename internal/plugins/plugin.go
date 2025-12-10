@@ -24,6 +24,9 @@ type LLMPlugin interface {
 
 	// Health
 	HealthCheck(ctx context.Context) error
+
+	// Security
+	SetSecurityContext(context *PluginSecurityContext) error
 }
 
 // PluginRegistry manages plugin loading and registration

@@ -123,10 +123,34 @@ func (c *Client) GetBaseURL() string {
 	return c.baseURL
 }
 
-// AutoContainerize starts Cognee in a container if not running.
-// This is a placeholder for auto-containerization logic.
+// AutoContainerize starts Cognee in a container if not running
 func (c *Client) AutoContainerize() error {
-	// TODO: Implement Docker container management
-	// Check if Cognee is running, start container if not
-	return nil
+	// Check if Cognee is already running by testing connection
+	if c.testConnection() {
+		return nil // Already running
+	}
+
+	// Try to start Cognee container
+	return c.startCogneeContainer()
+}
+
+// testConnection checks if Cognee is already running
+func (c *Client) testConnection() bool {
+	url := fmt.Sprintf("%s/health", c.baseURL)
+	
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	
+	return resp.StatusCode == http.StatusOK
+}
+
+// startCogneeContainer starts Cognee using Docker
+func (c *Client) startCogneeContainer() error {
+	// For now, return a placeholder error
+	// In production, this would use Docker SDK to start a container
+	return fmt.Errorf("Cognee is not running and auto-containerization is not implemented. Please start Cognee manually")
 }
