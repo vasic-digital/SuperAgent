@@ -41,13 +41,13 @@ type Usage struct {
 	TotalTokens      int `json:"total_tokens"`
 }
 
-func testChatCompletion(model, prompt string) {
+func testStandaloneChatCompletion(model, prompt string) {
 	baseURL := "http://localhost:8080/v1"
 	apiKey := "test-key"
 	
-	request := OpenAIRequest{
+	request := TestOpenAIRequest{
 		Model: model,
-		Messages: []Message{
+		Messages: []TestMessage{
 			{Role: "user", Content: prompt},
 		},
 		MaxTokens: 50,
@@ -83,7 +83,7 @@ func testChatCompletion(model, prompt string) {
 	}
 }
 
-func main() {
+func mainTest() {
 	baseURL := "http://localhost:8080/v1"
 	
 	// Test models endpoint
@@ -123,7 +123,7 @@ func main() {
 	prompt := "Explain what an API is in one sentence"
 	
 	for _, model := range testModels {
-		testChatCompletion(model, prompt)
+		testStandaloneChatCompletion(model, prompt)
 	}
 	
 	fmt.Println("\n🎉 OpenAI API compatibility test complete!")

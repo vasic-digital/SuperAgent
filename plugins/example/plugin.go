@@ -64,6 +64,12 @@ func (p *ExamplePlugin) HealthCheck(ctx context.Context) error {
 	return nil
 }
 
+func (p *ExamplePlugin) SetSecurityContext(ctx *plugins.PluginSecurityContext) error {
+	// Store security context for plugin usage
+	fmt.Printf("Security context set for example plugin: %+v\n", ctx)
+	return nil
+}
+
 func (p *ExamplePlugin) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	// Simulate LLM processing
 	time.Sleep(500 * time.Millisecond)

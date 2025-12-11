@@ -115,7 +115,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	protected := r.Group("/v1", auth.Middleware([]string{"/health", "/v1/health", "/metrics"}))
 	{
 		// Register OpenAI-compatible routes for seamless integration
-		unifiedHandler.RegisterOpenAIRoutes(protected, auth.Middleware)
+		unifiedHandler.RegisterOpenAIRoutes(protected, func(c *gin.Context) {
+			c.Next() // Already authenticated by the group middleware
+		})
 		
 		// Legacy endpoints (keep for backward compatibility)
 		protected.POST("/completions", completionHandler.Complete)
