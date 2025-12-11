@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/superagent/superagent/internal/cache"
+	"github.com/superagent/superagent/internal/config"
 )
 
 func TestDefaultKeyFunc(t *testing.T) {
@@ -68,24 +70,164 @@ func TestByAPIKey(t *testing.T) {
 }
 
 func TestMaxFunction(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		name string
 		a    int
 		b    int
 		want int
 	}{
-		{"a greater", 10, 5, 10},
-		{"b greater", 5, 10, 10},
-		{"equal", 7, 7, 7},
+		{"a_greater", 10, 5, 10},
+		{"b_greater", 5, 10, 10},
+		{"equal", 10, 10, 10},
 		{"negative", -5, -10, -5},
-		{"mixed", -5, 5, 5},
+		{"mixed", -5, 10, 10},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := max(tt.a, tt.b)
-			if got != tt.want {
-				t.Errorf("max(%d, %d) = %d, want %d", tt.a, tt.b, got, tt.want)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := max(tc.a, tc.b)
+			if got != tc.want {
+				t.Errorf("max(%d, %d) = %d, want %d", tc.a, tc.b, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestNewRateLimiter(t *testing.T) {
+	// Create a mock config
+	cfg := &config.Config{
+		Redis: config.RedisConfig{
+			Host:     "localhost",
+			Port:     "6379",
+			Password: "",
+			DB:       0,
+		},
+	}
+
+	// Create cache service (will be disabled since Redis is not running)
+	cacheService, err := cache.NewCacheService(cfg)
+	if err == nil {
+		t.Fatal("Expected error when creating cache service without Redis")
+	}
+
+	// The cache service should still be created but disabled
+	if cacheService == nil {
+		t.Fatal("Expected cache service instance even with Redis error")
+	}
+
+	// Create rate limiter with disabled cache
+	limiter := NewRateLimiter(cacheService)
+	if limiter == nil {
+		t.Fatal("Expected rate limiter instance, got nil")
+	}
+
+	// Check default configuration
+	if limiter.defaultCfg == nil {
+		t.Fatal("Expected default configuration")
+	}
+
+	if limiter.defaultCfg.Requests != 100 {
+		t.Errorf("Expected default 100 requests, got %d", limiter.defaultCfg.Requests)
+	}
+
+	if limiter.defaultCfg.Window != time.Minute {
+		t.Errorf("Expected default 1 minute window, got %v", limiter.defaultCfg.Window)
+	}
+}
+
+func TestAddLimit(t *testing.T) {
+	cfg := &config.Config{
+		Redis: config.RedisConfig{
+			Host:     "localhost",
+			Port:     "6379",
+			Password: "",
+			DB:       0,
+		},
+	}
+
+	cacheService, _ := cache.NewCacheService(cfg)
+	limiter := NewRateLimiter(cacheService)
+
+	// Add a limit for a specific path
+	limiter.AddLimit("/api/test", &RateLimitConfig{
+		Requests: 10,
+		Window:   30 * time.Second,
+		KeyFunc:  defaultKeyFunc,
+	})
+
+	// Verify the limit was added
+	config := limiter.getConfig("/api/test")
+	if config == nil {
+		t.Fatal("Expected configuration for /api/test")
+	}
+
+	if config.Requests != 10 {
+		t.Errorf("Expected 10 requests, got %d", config.Requests)
+	}
+
+	if config.Window != 30*time.Second {
+		t.Errorf("Expected 30 second window, got %v", config.Window)
+	}
+
+	// Test getting default config for unknown path
+	defaultConfig := limiter.getConfig("/unknown/path")
+	if defaultConfig == nil {
+		t.Fatal("Expected default configuration for unknown path")
+	}
+
+	if defaultConfig.Requests != 100 {
+		t.Errorf("Expected default 100 requests for unknown path, got %d", defaultConfig.Requests)
+	}
+}
+
+func TestGetConfig(t *testing.T) {
+	cfg := &config.Config{
+		Redis: config.RedisConfig{
+			Host:     "localhost",
+			Port:     "6379",
+			Password: "",
+			DB:       0,
+		},
+	}
+
+	cacheService, _ := cache.NewCacheService(cfg)
+	limiter := NewRateLimiter(cacheService)
+
+	// Test cases
+	testCases := []struct {
+		name     string
+		path     string
+		addLimit bool
+		expected int
+	}{
+		{"DefaultPath", "/default", false, 100},
+		{"CustomPath", "/custom", true, 50},
+		{"NestedPath", "/api/v1/users", true, 20},
+		{"WildcardMatch", "/api/v1/users/123", false, 100}, // Should use default
+	}
+
+	// Add custom limits
+	limiter.AddLimit("/custom", &RateLimitConfig{
+		Requests: 50,
+		Window:   time.Minute,
+		KeyFunc:  defaultKeyFunc,
+	})
+
+	limiter.AddLimit("/api/v1/users", &RateLimitConfig{
+		Requests: 20,
+		Window:   2 * time.Minute,
+		KeyFunc:  ByUserID,
+	})
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			config := limiter.getConfig(tc.path)
+			if config == nil {
+				t.Fatal("Expected configuration")
+			}
+
+			if config.Requests != tc.expected {
+				t.Errorf("Expected %d requests for %s, got %d", tc.expected, tc.path, config.Requests)
 			}
 		})
 	}

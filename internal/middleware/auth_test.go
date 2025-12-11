@@ -446,3 +446,165 @@ func TestHelperFunctions(t *testing.T) {
 		}
 	})
 }
+
+func TestGenerateToken(t *testing.T) {
+	config := AuthConfig{
+		SecretKey:   "test-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware := NewAuthMiddleware(config, nil)
+
+	t.Run("ValidTokenGeneration", func(t *testing.T) {
+		token, err := middleware.GenerateToken("user123", "testuser", "user")
+		if err != nil {
+			t.Fatalf("Failed to generate token: %v", err)
+		}
+
+		if token == "" {
+			t.Fatal("Expected non-empty token, got empty string")
+		}
+
+		// Validate the token
+		claims, err := middleware.validateToken(token)
+		if err != nil {
+			t.Fatalf("Failed to validate generated token: %v", err)
+		}
+
+		if claims.UserID != "user123" {
+			t.Errorf("Expected user ID 'user123', got %s", claims.UserID)
+		}
+
+		if claims.Username != "testuser" {
+			t.Errorf("Expected username 'testuser', got %s", claims.Username)
+		}
+
+		if claims.Role != "user" {
+			t.Errorf("Expected role 'user', got %s", claims.Role)
+		}
+
+		if claims.Issuer != "superagent" {
+			t.Errorf("Expected issuer 'superagent', got %s", claims.Issuer)
+		}
+	})
+
+	t.Run("DifferentRoles", func(t *testing.T) {
+		testCases := []struct {
+			userID   string
+			username string
+			role     string
+		}{
+			{"admin1", "adminuser", "admin"},
+			{"mod1", "moduser", "moderator"},
+			{"user1", "regularuser", "user"},
+		}
+
+		for _, tc := range testCases {
+			token, err := middleware.GenerateToken(tc.userID, tc.username, tc.role)
+			if err != nil {
+				t.Fatalf("Failed to generate token for %s: %v", tc.role, err)
+			}
+
+			claims, err := middleware.validateToken(token)
+			if err != nil {
+				t.Fatalf("Failed to validate token for %s: %v", tc.role, err)
+			}
+
+			if claims.Role != tc.role {
+				t.Errorf("Expected role %s, got %s", tc.role, claims.Role)
+			}
+		}
+	})
+}
+
+func TestValidateToken(t *testing.T) {
+	config := AuthConfig{
+		SecretKey:   "test-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware := NewAuthMiddleware(config, nil)
+
+	t.Run("ValidToken", func(t *testing.T) {
+		token, err := middleware.GenerateToken("user123", "testuser", "user")
+		if err != nil {
+			t.Fatalf("Failed to generate token: %v", err)
+		}
+
+		claims, err := middleware.validateToken(token)
+		if err != nil {
+			t.Fatalf("Failed to validate valid token: %v", err)
+		}
+
+		if claims.UserID != "user123" {
+			t.Errorf("Expected user ID 'user123', got %s", claims.UserID)
+		}
+	})
+
+	t.Run("InvalidTokenFormat", func(t *testing.T) {
+		_, err := middleware.validateToken("invalid.token.format")
+		if err == nil {
+			t.Error("Expected error for invalid token format, got nil")
+		}
+	})
+
+	t.Run("EmptyToken", func(t *testing.T) {
+		_, err := middleware.validateToken("")
+		if err == nil {
+			t.Error("Expected error for empty token, got nil")
+		}
+	})
+
+	t.Run("TamperedToken", func(t *testing.T) {
+		token, err := middleware.GenerateToken("user123", "testuser", "user")
+		if err != nil {
+			t.Fatalf("Failed to generate token: %v", err)
+		}
+
+		// Tamper with the token
+		tamperedToken := token[:len(token)-5] + "xxxxx"
+		_, err = middleware.validateToken(tamperedToken)
+		if err == nil {
+			t.Error("Expected error for tampered token, got nil")
+		}
+	})
+
+	t.Run("WrongSecretKey", func(t *testing.T) {
+		token, err := middleware.GenerateToken("user123", "testuser", "user")
+		if err != nil {
+			t.Fatalf("Failed to generate token: %v", err)
+		}
+
+		// Create middleware with different secret key
+		wrongConfig := AuthConfig{
+			SecretKey:   "different-secret-key",
+			TokenExpiry: time.Hour,
+		}
+		wrongMiddleware := NewAuthMiddleware(wrongConfig, nil)
+
+		_, err = wrongMiddleware.validateToken(token)
+		if err == nil {
+			t.Error("Expected error for token with wrong secret key, got nil")
+		}
+	})
+
+	t.Run("ExpiredToken", func(t *testing.T) {
+		// Create middleware with very short expiry
+		shortConfig := AuthConfig{
+			SecretKey:   "test-secret-key",
+			TokenExpiry: time.Millisecond,
+		}
+		shortMiddleware := NewAuthMiddleware(shortConfig, nil)
+
+		token, err := shortMiddleware.GenerateToken("user123", "testuser", "user")
+		if err != nil {
+			t.Fatalf("Failed to generate token: %v", err)
+		}
+
+		// Wait for token to expire
+		time.Sleep(2 * time.Millisecond)
+
+		_, err = shortMiddleware.validateToken(token)
+		if err == nil {
+			t.Error("Expected error for expired token, got nil")
+		}
+	})
+}

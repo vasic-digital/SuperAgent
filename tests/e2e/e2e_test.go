@@ -212,6 +212,17 @@ func TestE2EErrorHandling(t *testing.T) {
 	baseURL := "http://localhost:8080"
 	client := &http.Client{Timeout: 30 * time.Second}
 
+	// Check if server is running
+	resp, err := client.Get(baseURL + "/health")
+	if err != nil {
+		t.Skipf("Skipping E2E test: SuperAgent server not running at %s. Start server with 'make run-dev'", baseURL)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Skipf("Skipping E2E test: Server at %s returned status %d", baseURL, resp.StatusCode)
+	}
+
 	t.Run("InvalidEndpoint", func(t *testing.T) {
 		resp, err := client.Get(baseURL + "/invalid/endpoint")
 		require.NoError(t, err)
@@ -454,7 +465,7 @@ func TestE2ENewServicesWorkflow(t *testing.T) {
 
 	t.Run("CompleteMCP_LSP_IntegrationWorkflow", func(t *testing.T) {
 		// Test MCP server registration and tool discovery
-		mcpManager := services.NewMCPManager()
+		mcpManager := services.NewMCPManagerWithConfig(false, 3, 30*time.Second)
 
 		serverConfig := map[string]interface{}{
 			"name":    "filesystem-mcp",
