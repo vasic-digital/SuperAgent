@@ -117,18 +117,18 @@ func TestRouterIntegration(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("public endpoints return expected responses", func(t *testing.T) {
+	t.Run("test public endpoints return expected responses", func(t *testing.T) {
 		r := gin.New()
 		r.Use(gin.Logger())
 		r.Use(gin.Recovery())
 
-		// Set up public endpoints
+		// Set up public endpoints - use unique paths to avoid conflicts with other tests
 		public := r.Group("/v1")
 		{
-			public.GET("/models", func(c *gin.Context) {
+			public.GET("/test-models", func(c *gin.Context) {
 				c.JSON(200, gin.H{"models": []string{"model-1", "model-2"}})
 			})
-			public.GET("/providers", func(c *gin.Context) {
+			public.GET("/test-providers", func(c *gin.Context) {
 				c.JSON(200, gin.H{
 					"providers": []string{"test-provider-1", "test-provider-2"},
 					"count":     2,
@@ -136,16 +136,16 @@ func TestRouterIntegration(t *testing.T) {
 			})
 		}
 
-		// Test /v1/models endpoint
+		// Test /v1/test-models endpoint
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/v1/models", nil)
+		req, _ := http.NewRequest("GET", "/v1/test-models", nil)
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		// Test /v1/providers endpoint
+		// Test /v1/test-providers endpoint
 		w = httptest.NewRecorder()
-		req, _ = http.NewRequest("GET", "/v1/providers", nil)
+		req, _ = http.NewRequest("GET", "/v1/test-providers", nil)
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)

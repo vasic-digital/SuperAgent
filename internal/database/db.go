@@ -28,14 +28,39 @@ type PostgresDB struct {
 }
 
 func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
-	dbHost := getEnv("DB_HOST", "localhost")
-	dbPort := getEnv("DB_PORT", "5432")
-	dbUser := getEnv("DB_USER", "superagent")
-	dbPassword := getEnv("DB_PASSWORD", "secret")
-	dbName := getEnv("DB_NAME", "superagent_db")
+	// Use config values if provided, otherwise fall back to environment variables with defaults
+	dbHost := cfg.Database.Host
+	if dbHost == "" {
+		dbHost = getEnv("DB_HOST", "localhost")
+	}
 
-	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		dbUser, dbPassword, dbHost, dbPort, dbName)
+	dbPort := cfg.Database.Port
+	if dbPort == "" {
+		dbPort = getEnv("DB_PORT", "5432")
+	}
+
+	dbUser := cfg.Database.User
+	if dbUser == "" {
+		dbUser = getEnv("DB_USER", "superagent")
+	}
+
+	dbPassword := cfg.Database.Password
+	if dbPassword == "" {
+		dbPassword = getEnv("DB_PASSWORD", "secret")
+	}
+
+	dbName := cfg.Database.Name
+	if dbName == "" {
+		dbName = getEnv("DB_NAME", "superagent_db")
+	}
+
+	sslMode := cfg.Database.SSLMode
+	if sslMode == "" {
+		sslMode = "disable"
+	}
+
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		dbUser, dbPassword, dbHost, dbPort, dbName, sslMode)
 
 	pool, err := pgxpool.New(context.Background(), connString)
 	if err != nil {

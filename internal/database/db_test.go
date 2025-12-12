@@ -40,8 +40,8 @@ func TestNewPostgresDB(t *testing.T) {
 	t.Run("InvalidConnectionString", func(t *testing.T) {
 		cfg := &config.Config{
 			Database: config.DatabaseConfig{
-				Host:           "", // Invalid host
-				Port:           "5432",
+				Host:           "invalid-host-!@#$%", // Invalid host with special characters
+				Port:           "99999",              // Invalid port
 				User:           "testuser",
 				Password:       "testpass",
 				Name:           "testdb",
