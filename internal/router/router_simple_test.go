@@ -39,7 +39,7 @@ func TestRouterPackage(t *testing.T) {
 			jwtSecret string
 			expectErr bool
 		}{
-			{"valid secret", "valid-secret-key-1234567890", false},
+			{"valid secret", "valid-secret-key-12345678901234567890", false},
 			{"empty secret", "", true},
 			{"short secret", "short", true},
 		}
