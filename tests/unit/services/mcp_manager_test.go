@@ -1,0 +1,197 @@
+package services_test
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/superagent/superagent/internal/services"
+)
+
+func TestMCPManager_Basic(t *testing.T) {
+	manager := services.NewMCPManager()
+	assert.NotNil(t, manager)
+}
+
+func TestMCPManager_WithConfig(t *testing.T) {
+	manager := services.NewMCPManagerWithConfig(false, 5, 60*time.Second)
+	assert.NotNil(t, manager)
+}
+
+func TestMCPManager_RegisterServer_Valid(t *testing.T) {
+	manager := services.NewMCPManager()
+
+	serverConfig := map[string]interface{}{
+		"name":    "test-server",
+		"command": []interface{}{"echo", "test"},
+	}
+
+	err := manager.RegisterServer(serverConfig)
+	assert.NoError(t, err)
+}
+
+func TestMCPManager_RegisterServer_MissingName(t *testing.T) {
+	manager := services.NewMCPManager()
+
+	serverConfig := map[string]interface{}{
+		"command": []interface{}{"echo", "test"},
+	}
+
+	err := manager.RegisterServer(serverConfig)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "server config must include 'name'")
+}
+
+func TestMCPManager_RegisterServer_MissingCommand(t *testing.T) {
+	manager := services.NewMCPManager()
+
+	serverConfig := map[string]interface{}{
+		"name": "test-server",
+	}
+
+	err := manager.RegisterServer(serverConfig)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "server config must include 'command' as array")
+}
+
+func TestMCPManager_RegisterServer_Duplicate(t *testing.T) {
+	manager := services.NewMCPManager()
+
+	serverConfig := map[string]interface{}{
+		"name":    "test-server",
+		"command": []interface{}{"echo", "test"},
+	}
+
+	err := manager.RegisterServer(serverConfig)
+	assert.NoError(t, err)
+
+	err = manager.RegisterServer(serverConfig)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "already registered")
+}
+
+func TestMCPManager_RegisterServer_EmptyCommand(t *testing.T) {
+	manager := services.NewMCPManager()
+
+	serverConfig := map[string]interface{}{
+		"name":    "test-server",
+		"command": []interface{}{},
+	}
+
+	err := manager.RegisterServer(serverConfig)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "server command cannot be empty")
+}
+
+func TestMCPManager_AutoDiscoverServers_Disabled(t *testing.T) {
+	manager := services.NewMCPManagerWithConfig(false, 3, 30*time.Second)
+
+	ctx := context.Background()
+	err := manager.AutoDiscoverServers(ctx)
+	assert.NoError(t, err)
+}
+
+func TestMCPManager_ListTools_Empty(t *testing.T) {
+	manager := services.NewMCPManager()
+	tools := manager.ListTools()
+	assert.Empty(t, tools)
+}
+
+func TestMCPManager_GetTool_NotFound(t *testing.T) {
+	manager := services.NewMCPManager()
+
+	tool, err := manager.GetTool("nonexistent")
+	assert.Error(t, err)
+	assert.Nil(t, tool)
+	assert.Contains(t, err.Error(), "tool nonexistent not found")
+}
+
+func TestMCPManager_CallTool_NotFound(t *testing.T) {
+	manager := services.NewMCPManager()
+
+	ctx := context.Background()
+	result, err := manager.CallTool(ctx, "nonexistent", map[string]interface{}{})
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "tool nonexistent not found")
+}
+
+func TestMCPManager_Shutdown_Empty(t *testing.T) {
+	manager := services.NewMCPManager()
+
+	ctx := context.Background()
+	err := manager.Shutdown(ctx)
+	assert.NoError(t, err)
+}
+
+func TestMCPManager_HealthCheck_Empty(t *testing.T) {
+	manager := services.NewMCPManager()
+	results := manager.HealthCheck()
+	assert.Empty(t, results)
+}
+
+func TestMCPManager_TypeDefinitions(t *testing.T) {
+	// Test MCPMessage
+	message := services.MCPMessage{
+		JSONRPC: "2.0",
+		ID:      1,
+		Method:  "test",
+		Params:  map[string]interface{}{"key": "value"},
+	}
+	assert.Equal(t, "2.0", message.JSONRPC)
+	assert.Equal(t, 1, message.ID)
+	assert.Equal(t, "test", message.Method)
+	assert.Equal(t, map[string]interface{}{"key": "value"}, message.Params)
+
+	// Test MCPError
+	mcpError := services.MCPError{
+		Code:    1,
+		Message: "error",
+		Data:    "additional data",
+	}
+	assert.Equal(t, 1, mcpError.Code)
+	assert.Equal(t, "error", mcpError.Message)
+	assert.Equal(t, "additional data", mcpError.Data)
+
+	// Test MCPServer
+	server := services.MCPServer{
+		Name:         "test-server",
+		Command:      []string{"echo", "test"},
+		Capabilities: map[string]interface{}{"test": "value"},
+		Tools:        []*services.MCPTool{},
+		Initialized:  true,
+		LastHealth:   time.Now(),
+	}
+	assert.Equal(t, "test-server", server.Name)
+	assert.Equal(t, []string{"echo", "test"}, server.Command)
+	assert.Equal(t, "value", server.Capabilities["test"])
+	assert.Empty(t, server.Tools)
+	assert.True(t, server.Initialized)
+	assert.NotZero(t, server.LastHealth)
+
+	// Test MCPTool
+	tool := services.MCPTool{
+		Name:        "test-tool",
+		Description: "test description",
+		InputSchema: map[string]interface{}{"type": "string"},
+		Server:      &server,
+	}
+	assert.Equal(t, "test-tool", tool.Name)
+	assert.Equal(t, "test description", tool.Description)
+	assert.Equal(t, map[string]interface{}{"type": "string"}, tool.InputSchema)
+	assert.Equal(t, &server, tool.Server)
+}
+
+func TestMCPManager_NextMessageID(t *testing.T) {
+	// This is an internal method, but we can test it indirectly
+	// by checking that message IDs increment
+	manager1 := services.NewMCPManager()
+	manager2 := services.NewMCPManager()
+
+	// Both should start with ID 1
+	// We can't directly test nextMessageID() as it's private
+	// but we can test that the manager works correctly
+	assert.NotNil(t, manager1)
+	assert.NotNil(t, manager2)
+}

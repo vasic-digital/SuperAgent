@@ -276,3 +276,178 @@ func TestCompletionHandler_Models(t *testing.T) {
 	assert.Len(t, data, 1)
 	assert.Equal(t, "deepseek-coder", data[0]["id"])
 }
+
+// TestNewCompletionHandler tests handler creation
+func TestNewCompletionHandler(t *testing.T) {
+	// Create a mock request service
+	handler := NewCompletionHandler(nil)
+
+	assert.NotNil(t, handler)
+	assert.Nil(t, handler.requestService)
+}
+
+// TestConvertToStreamingResponse tests conversion to streaming response format
+func TestConvertToStreamingResponse(t *testing.T) {
+	handler := &CompletionHandler{}
+
+	createdAt := time.Now()
+	resp := &models.LLMResponse{
+		ID:           "test-stream-response-id",
+		RequestID:    "test-stream-request-id",
+		ProviderName: "test-provider",
+		Content:      "Stream response content",
+		Confidence:   0.88,
+		TokensUsed:   60,
+		CreatedAt:    createdAt,
+		FinishReason: "stop",
+	}
+
+	streamResp := handler.convertToStreamingResponse(resp)
+
+	assert.Equal(t, "test-stream-response-id", streamResp["id"])
+	assert.Equal(t, "text_completion", streamResp["object"])
+	assert.Equal(t, "test-provider", streamResp["model"])
+	assert.Equal(t, createdAt.Unix(), streamResp["created"])
+
+	choices, ok := streamResp["choices"].([]map[string]any)
+	if !ok {
+		choicesInterface, ok := streamResp["choices"].([]interface{})
+		if ok && len(choicesInterface) > 0 {
+			choice, ok := choicesInterface[0].(map[string]any)
+			if ok {
+				delta, ok := choice["delta"].(map[string]any)
+				if ok {
+					assert.Equal(t, "Stream response content", delta["content"])
+					return
+				}
+			}
+		}
+		t.Fatal("Failed to parse streaming choices")
+	}
+
+	assert.Len(t, choices, 1)
+	assert.Equal(t, "Stream response content", choices[0]["delta"].(map[string]any)["content"])
+}
+
+// TestConvertToChatStreamingResponse tests conversion to chat streaming response format
+func TestConvertToChatStreamingResponse(t *testing.T) {
+	handler := &CompletionHandler{}
+
+	createdAt := time.Now()
+	resp := &models.LLMResponse{
+		ID:           "test-chat-stream-response-id",
+		RequestID:    "test-chat-stream-request-id",
+		ProviderName: "test-provider",
+		Content:      "Chat stream response content",
+		Confidence:   0.85,
+		TokensUsed:   70,
+		CreatedAt:    createdAt,
+		FinishReason: "stop",
+	}
+
+	chatStreamResp := handler.convertToChatStreamingResponse(resp)
+
+	assert.Equal(t, "test-chat-stream-response-id", chatStreamResp["id"])
+	assert.Equal(t, "chat.completion.chunk", chatStreamResp["object"])
+	assert.Equal(t, "test-provider", chatStreamResp["model"])
+	assert.Equal(t, createdAt.Unix(), chatStreamResp["created"])
+
+	choices, ok := chatStreamResp["choices"].([]map[string]any)
+	if !ok {
+		choicesInterface, ok := chatStreamResp["choices"].([]interface{})
+		if ok && len(choicesInterface) > 0 {
+			choice, ok := choicesInterface[0].(map[string]any)
+			if ok {
+				delta, ok := choice["delta"].(map[string]any)
+				if ok {
+					assert.Equal(t, "assistant", delta["role"])
+					assert.Equal(t, "Chat stream response content", delta["content"])
+					return
+				}
+			}
+		}
+		t.Fatal("Failed to parse chat streaming choices")
+	}
+
+	assert.Len(t, choices, 1)
+	delta := choices[0]["delta"].(map[string]any)
+	assert.Equal(t, "assistant", delta["role"])
+	assert.Equal(t, "Chat stream response content", delta["content"])
+}
+
+// TestConvertToInternalRequest_WithContextValues tests conversion with context values
+func TestConvertToInternalRequest_WithContextValues(t *testing.T) {
+	handler := &CompletionHandler{}
+
+	req := &CompletionRequest{
+		Prompt: "Test prompt with context",
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// Set context values
+	c.Set("user_id", "test-user-123")
+	c.Set("session_id", "test-session-456")
+
+	internalReq := handler.convertToInternalRequest(req, c)
+
+	assert.Equal(t, "test-user-123", internalReq.UserID)
+	assert.Equal(t, "test-session-456", internalReq.SessionID)
+	assert.Equal(t, "Test prompt with context", internalReq.Prompt)
+}
+
+// TestConvertToInternalRequest_WithMessages tests conversion with messages
+func TestConvertToInternalRequest_WithMessages(t *testing.T) {
+	handler := &CompletionHandler{}
+
+	req := &CompletionRequest{
+		Prompt: "Test prompt",
+		Messages: []models.Message{
+			{Role: "system", Content: "You are a helpful assistant"},
+			{Role: "user", Content: "Hello, how are you?"},
+		},
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	internalReq := handler.convertToInternalRequest(req, c)
+
+	assert.Len(t, internalReq.Messages, 2)
+	assert.Equal(t, "system", internalReq.Messages[0].Role)
+	assert.Equal(t, "You are a helpful assistant", internalReq.Messages[0].Content)
+	assert.Equal(t, "user", internalReq.Messages[1].Role)
+	assert.Equal(t, "Hello, how are you?", internalReq.Messages[1].Content)
+}
+
+// TestConvertToInternalRequest_WithToolCalls tests conversion with tool calls
+func TestConvertToInternalRequest_WithToolCalls(t *testing.T) {
+	handler := &CompletionHandler{}
+
+	req := &CompletionRequest{
+		Prompt: "Test prompt with tool calls",
+		Messages: []models.Message{
+			{
+				Role:    "assistant",
+				Content: "I'll help you with that",
+				ToolCalls: map[string]interface{}{
+					"name": "search_web",
+					"arguments": map[string]interface{}{
+						"query": "weather in New York",
+					},
+				},
+			},
+		},
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	internalReq := handler.convertToInternalRequest(req, c)
+
+	assert.Len(t, internalReq.Messages, 1)
+	assert.Equal(t, "assistant", internalReq.Messages[0].Role)
+	assert.Equal(t, "I'll help you with that", internalReq.Messages[0].Content)
+	assert.NotNil(t, internalReq.Messages[0].ToolCalls)
+}
