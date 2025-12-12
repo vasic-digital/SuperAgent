@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -199,7 +198,7 @@ func TestUnifiedHandler_RegisterOpenAIRoutes(t *testing.T) {
 // TestUnifiedHandler_ConvertOpenAIChatRequest tests request conversion
 func TestUnifiedHandler_ConvertOpenAIChatRequest(t *testing.T) {
 	handler := &UnifiedHandler{}
-
+	
 	openaiReq := &OpenAIChatRequest{
 		Model: "gpt-4",
 		Messages: []OpenAIMessage{
@@ -230,12 +229,12 @@ func TestUnifiedHandler_ConvertOpenAIChatRequest(t *testing.T) {
 // TestUnifiedHandler_ConvertOpenAIChatRequest_WithEnsemble tests request conversion with ensemble config
 func TestUnifiedHandler_ConvertOpenAIChatRequest_WithEnsemble(t *testing.T) {
 	handler := &UnifiedHandler{}
-
+	
 	ensembleConfig := &models.EnsembleConfig{
 		Strategy:           "weighted_voting",
 		PreferredProviders: []string{"openai", "anthropic"},
 	}
-
+	
 	openaiReq := &OpenAIChatRequest{
 		Model: "superagent-ensemble",
 		Messages: []OpenAIMessage{
@@ -263,20 +262,100 @@ func TestUnifiedHandler_ConvertOpenAIChatRequest_WithEnsemble(t *testing.T) {
 // TestUnifiedHandler_ConvertToOpenAIChatResponse tests response conversion
 func TestUnifiedHandler_ConvertToOpenAIChatResponse(t *testing.T) {
 	handler := &UnifiedHandler{}
-
-	// Create a time for CreatedAt
-	testTime := time.Now()
-
+	
 	ensembleResult := &services.EnsembleResult{
 		Selected: &models.LLMResponse{
 			ID:           "test-id-123",
 			ProviderName: "openai",
 			Content:      "This is a test response",
 			TokensUsed:   30,
-			FinishReason: "stop",
-			CreatedAt:    testTime,
 		},
 		VotingMethod: "confidence_weighted",
+	}
+	
+	openaiReq := &OpenAIChatRequest{
+		Model: "gpt-4",
+	}
+
+	response := handler.convertToOpenAIChatResponse(ensembleResult, openaiReq)
+
+	assert.NotNil(t, response)
+	assert.Contains(t, response.ID, "chatcmpl-")
+	assert.Equal(t, "chat.completion", response.Object)
+	assert.Equal(t, "gpt-4", response.Model)
+	assert.Equal(t, 1, len(response.Choices))
+	assert.Equal(t, "assistant", response.Choices[0].Message.Role)
+	assert.Equal(t, "This is a test response", response.Choices[0].Message.Content)
+	assert.Equal(t, "stop", response.Choices[0].FinishReason)
+	assert.NotNil(t, response.Usage)
+	assert.Equal(t, 30, response.Usage.TotalTokens)
+}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	internalReq := handler.convertOpenAIChatRequest(openaiReq, c)
+
+	assert.NotNil(t, internalReq)
+	assert.Equal(t, "gpt-4", internalReq.Model)
+	assert.Equal(t, 1, len(internalReq.Messages))
+	assert.Equal(t, "user", internalReq.Messages[0].Role)
+	assert.Equal(t, "Hello, world!", internalReq.Messages[0].Content)
+	assert.Equal(t, 100, internalReq.MaxTokens)
+	assert.Equal(t, 0.7, internalReq.Temperature)
+	assert.False(t, internalReq.Stream)
+}
+
+// TestUnifiedHandler_ConvertOpenAIChatRequest_WithEnsemble tests request conversion with ensemble config
+func TestUnifiedHandler_ConvertOpenAIChatRequest_WithEnsemble(t *testing.T) {
+	handler := &UnifiedHandler{}
+
+	ensembleConfig := &models.EnsembleConfig{
+		Strategy:  "weighted_voting",
+		Providers: []string{"openai", "anthropic"},
+	}
+
+	openaiReq := &OpenAIChatRequest{
+		Model: "superagent-ensemble",
+		Messages: []OpenAIMessage{
+			{
+				Role:    "user",
+				Content: "Test with ensemble",
+			},
+		},
+		EnsembleConfig: ensembleConfig,
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	internalReq := handler.convertOpenAIChatRequest(openaiReq, c)
+
+	assert.NotNil(t, internalReq)
+	assert.Equal(t, "superagent-ensemble", internalReq.Model)
+	assert.NotNil(t, internalReq.EnsembleConfig)
+	assert.Equal(t, "weighted_voting", internalReq.EnsembleConfig.Strategy)
+	assert.Equal(t, 2, len(internalReq.EnsembleConfig.Providers))
+	assert.Equal(t, "openai", internalReq.EnsembleConfig.Providers[0])
+	assert.Equal(t, "anthropic", internalReq.EnsembleConfig.Providers[1])
+}
+
+// TestUnifiedHandler_ConvertToOpenAIChatResponse tests response conversion
+func TestUnifiedHandler_ConvertToOpenAIChatResponse(t *testing.T) {
+	handler := &UnifiedHandler{}
+
+	ensembleResult := &services.EnsembleResult{
+		Response: &models.LLMResponse{
+			ID:      "test-id-123",
+			Model:   "gpt-4",
+			Content: "This is a test response",
+			Usage: &models.Usage{
+				PromptTokens:     10,
+				CompletionTokens: 20,
+				TotalTokens:      30,
+			},
+		},
+		Provider: "openai",
 	}
 
 	openaiReq := &OpenAIChatRequest{
@@ -288,51 +367,13 @@ func TestUnifiedHandler_ConvertToOpenAIChatResponse(t *testing.T) {
 	assert.NotNil(t, response)
 	assert.Equal(t, "test-id-123", response.ID)
 	assert.Equal(t, "chat.completion", response.Object)
-	assert.Equal(t, testTime.Unix(), response.Created)
-	assert.Equal(t, "superagent-ensemble", response.Model)
+	assert.Equal(t, "gpt-4", response.Model)
 	assert.Equal(t, 1, len(response.Choices))
 	assert.Equal(t, "assistant", response.Choices[0].Message.Role)
 	assert.Equal(t, "This is a test response", response.Choices[0].Message.Content)
 	assert.Equal(t, "stop", response.Choices[0].FinishReason)
 	assert.NotNil(t, response.Usage)
-	assert.Equal(t, 15, response.Usage.PromptTokens)     // Half of 30
-	assert.Equal(t, 15, response.Usage.CompletionTokens) // Half of 30
+	assert.Equal(t, 10, response.Usage.PromptTokens)
+	assert.Equal(t, 20, response.Usage.CompletionTokens)
 	assert.Equal(t, 30, response.Usage.TotalTokens)
-	assert.Equal(t, "fp_superagent_ensemble", response.SystemFingerprint)
-}
-
-// TestUnifiedHandler_ConvertToOpenAIChatStreamResponse tests stream response conversion
-func TestUnifiedHandler_ConvertToOpenAIChatStreamResponse(t *testing.T) {
-	handler := &UnifiedHandler{}
-
-	// Create a time for CreatedAt
-	testTime := time.Now()
-
-	llmResponse := &models.LLMResponse{
-		ID:        "stream-test-id-456",
-		Content:   "Streaming test response",
-		CreatedAt: testTime,
-	}
-
-	openaiReq := &OpenAIChatRequest{
-		Model: "gpt-4",
-	}
-
-	response := handler.convertToOpenAIChatStreamResponse(llmResponse, openaiReq)
-
-	assert.NotNil(t, response)
-	assert.Equal(t, "stream-test-id-456", response["id"])
-	assert.Equal(t, "chat.completion.chunk", response["object"])
-	assert.Equal(t, testTime.Unix(), response["created"])
-	assert.Equal(t, "superagent-ensemble", response["model"])
-
-	choices, ok := response["choices"].([]map[string]any)
-	assert.True(t, ok)
-	assert.Equal(t, 1, len(choices))
-	assert.Equal(t, 0, choices[0]["index"])
-
-	delta, ok := choices[0]["delta"].(map[string]any)
-	assert.True(t, ok)
-	assert.Equal(t, "assistant", delta["role"])
-	assert.Equal(t, "Streaming test response", delta["content"])
 }
