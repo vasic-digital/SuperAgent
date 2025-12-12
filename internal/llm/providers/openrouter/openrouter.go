@@ -12,19 +12,32 @@ import (
 )
 
 const (
-	BaseURL = "https://openrouter.ai/api/v1"
+	defaultBaseURL = "https://openrouter.ai/api/v1"
 )
 
 // SimpleOpenRouterProvider implements LLM provider interface for OpenRouter
 type SimpleOpenRouterProvider struct {
-	apiKey string
-	client *http.Client
+	apiKey  string
+	baseURL string
+	client  *http.Client
 }
 
 // NewSimpleOpenRouterProvider creates a new OpenRouter provider
 func NewSimpleOpenRouterProvider(apiKey string) *SimpleOpenRouterProvider {
 	return &SimpleOpenRouterProvider{
-		apiKey: apiKey,
+		apiKey:  apiKey,
+		baseURL: defaultBaseURL,
+		client: &http.Client{
+			Timeout: 60 * time.Second,
+		},
+	}
+}
+
+// NewSimpleOpenRouterProviderWithBaseURL creates a new OpenRouter provider with custom base URL
+func NewSimpleOpenRouterProviderWithBaseURL(apiKey, baseURL string) *SimpleOpenRouterProvider {
+	return &SimpleOpenRouterProvider{
+		apiKey:  apiKey,
+		baseURL: baseURL,
 		client: &http.Client{
 			Timeout: 60 * time.Second,
 		},
@@ -63,7 +76,7 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 		return nil, fmt.Errorf("failed to marshal OpenRouter request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", BaseURL+"/chat/completions", bytes.NewBuffer(jsonData))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+"/chat/completions", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OpenRouter request: %w", err)
 	}
