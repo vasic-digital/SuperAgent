@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>transport: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/superagent/superagent/internal/transport/http3.go (78.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package transport
+
+import (
+        "context"
+        "crypto/rand"
+        "crypto/rsa"
+        "crypto/tls"
+        "crypto/x509"
+        "crypto/x509/pkix"
+        "encoding/pem"
+        "fmt"
+        "math/big"
+        "net"
+        "net/http"
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "github.com/quic-go/quic-go"
+        "github.com/quic-go/quic-go/http3"
+)
+
+// HTTP3Server represents an HTTP3/HTTP2 server with fallback to HTTP1.1.
+type HTTP3Server struct {
+        http3Server *http3.Server
+        httpServer  *http.Server
+        enableHTTP3 bool
+        enableHTTP2 bool
+        addr        string
+        tlsConfig   *tls.Config
+}
+
+// HTTP3Config holds configuration for HTTP3 server
+type HTTP3Config struct {
+        Address        string
+        EnableHTTP3    bool
+        EnableHTTP2    bool
+        TLSCertFile    string
+        TLSKeyFile     string
+        MaxConnections int
+        IdleTimeout    time.Duration
+        ReadTimeout    time.Duration
+        WriteTimeout   time.Duration
+}
+
+// NewHTTP3Server creates a new HTTP3 server with HTTP2 fallback.
+func NewHTTP3Server(handler *gin.Engine, config *HTTP3Config) *HTTP3Server <span class="cov8" title="1">{
+        if config == nil </span><span class="cov8" title="1">{
+                config = &amp;HTTP3Config{
+                        Address:        ":8080",
+                        EnableHTTP3:    true,
+                        EnableHTTP2:    true,
+                        MaxConnections: 1000,
+                        IdleTimeout:    30 * time.Second,
+                        ReadTimeout:    30 * time.Second,
+                        WriteTimeout:   30 * time.Second,
+                }
+        }</span>
+
+        // Create TLS configuration
+        <span class="cov8" title="1">tlsConfig := createTLSConfig(config)
+
+        server := &amp;HTTP3Server{
+                enableHTTP3: config.EnableHTTP3,
+                enableHTTP2: config.EnableHTTP2,
+                addr:        config.Address,
+                tlsConfig:   tlsConfig,
+        }
+
+        // Setup HTTP3 server if enabled
+        if config.EnableHTTP3 </span><span class="cov8" title="1">{
+                server.http3Server = &amp;http3.Server{
+                        Handler:   handler,
+                        Addr:      config.Address,
+                        TLSConfig: tlsConfig,
+                        QUICConfig: &amp;quic.Config{
+                                MaxIdleTimeout:  config.IdleTimeout,
+                                KeepAlivePeriod: 10 * time.Second,
+                        },
+                }
+        }</span>
+
+        // Setup HTTP server for HTTP2/HTTP1.1 fallback
+        <span class="cov8" title="1">server.httpServer = &amp;http.Server{
+                Addr:         config.Address,
+                Handler:      handler,
+                ReadTimeout:  config.ReadTimeout,
+                WriteTimeout: config.WriteTimeout,
+                IdleTimeout:  config.IdleTimeout,
+                TLSConfig:    tlsConfig,
+        }
+
+        return server</span>
+}
+
+// Start starts the HTTP3 server with HTTP2 fallback.
+func (s *HTTP3Server) Start() error <span class="cov8" title="1">{
+        if s.enableHTTP3 &amp;&amp; s.http3Server != nil </span><span class="cov0" title="0">{
+                // Start HTTP3 server
+                go func() </span><span class="cov0" title="0">{
+                        fmt.Printf("Starting HTTP/3 server on %s\n", s.addr)
+                        if err := s.http3Server.ListenAndServe(); err != nil </span><span class="cov0" title="0">{
+                                fmt.Printf("HTTP/3 server error: %v\n", err)
+                        }</span>
+                }()
+        }
+
+        <span class="cov8" title="1">if s.enableHTTP2 </span><span class="cov0" title="0">{
+                // Start HTTP2/HTTP1.1 server
+                go func() </span><span class="cov0" title="0">{
+                        fmt.Printf("Starting HTTP/2 + HTTP/1.1 server on %s\n", s.addr)
+                        if err := s.httpServer.ListenAndServeTLS("", ""); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
+                                fmt.Printf("HTTP server error: %v\n", err)
+                        }</span>
+                }()
+        } else<span class="cov8" title="1"> {
+                // Start HTTP1.1 only
+                go func() </span><span class="cov8" title="1">{
+                        fmt.Printf("Starting HTTP/1.1 server on %s\n", s.addr)
+                        if err := s.httpServer.ListenAndServe(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov8" title="1">{
+                                fmt.Printf("HTTP server error: %v\n", err)
+                        }</span>
+                }()
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// Stop stops the server gracefully.
+func (s *HTTP3Server) Stop() error <span class="cov8" title="1">{
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+
+        var errs []error
+
+        // Close HTTP3 server
+        if s.http3Server != nil </span><span class="cov0" title="0">{
+                if err := s.http3Server.Close(); err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, fmt.Errorf("HTTP/3 server close error: %w", err))
+                }</span>
+        }
+
+        // Close HTTP server
+        <span class="cov8" title="1">if err := s.httpServer.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, fmt.Errorf("HTTP server shutdown error: %w", err))
+        }</span>
+
+        <span class="cov8" title="1">if len(errs) &gt; 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("errors during shutdown: %v", errs)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// GetServerInfo returns information about the server configuration
+func (s *HTTP3Server) GetServerInfo() map[string]interface{} <span class="cov8" title="1">{
+        protocols := []string{}
+        if s.enableHTTP3 </span><span class="cov8" title="1">{
+                protocols = append(protocols, "HTTP/3")
+        }</span>
+        <span class="cov8" title="1">if s.enableHTTP2 </span><span class="cov8" title="1">{
+                protocols = append(protocols, "HTTP/2")
+        }</span>
+        <span class="cov8" title="1">protocols = append(protocols, "HTTP/1.1")
+
+        features := []string{"TLS encryption"}
+        if s.enableHTTP3 </span><span class="cov8" title="1">{
+                features = append(features, "HTTP/3 with QUIC")
+        }</span>
+        <span class="cov8" title="1">if s.enableHTTP2 </span><span class="cov8" title="1">{
+                features = append(features, "HTTP/2 with server push")
+        }</span>
+        <span class="cov8" title="1">features = append(features, "HTTP/1.1 fallback")
+
+        return map[string]interface{}{
+                "http3_enabled": s.enableHTTP3,
+                "http2_enabled": s.enableHTTP2,
+                "address":       s.addr,
+                "protocols":     protocols,
+                "features":      features,
+        }</span>
+}
+
+// createTLSConfig creates a TLS configuration for the server
+func createTLSConfig(config *HTTP3Config) *tls.Config <span class="cov8" title="1">{
+        tlsConfig := &amp;tls.Config{
+                MinVersion: tls.VersionTLS12,
+                CurvePreferences: []tls.CurveID{
+                        tls.X25519,
+                        tls.CurveP256,
+                },
+                PreferServerCipherSuites: true,
+                CipherSuites: []uint16{
+                        tls.TLS_AES_128_GCM_SHA256,
+                        tls.TLS_AES_256_GCM_SHA384,
+                        tls.TLS_CHACHA20_POLY1305_SHA256,
+                },
+                NextProtos: []string{"h3", "h2", "http/1.1"},
+        }
+
+        // Load certificates if provided
+        if config.TLSCertFile != "" &amp;&amp; config.TLSKeyFile != "" </span><span class="cov8" title="1">{
+                cert, err := tls.LoadX509KeyPair(config.TLSCertFile, config.TLSKeyFile)
+                if err != nil </span><span class="cov8" title="1">{
+                        fmt.Printf("Warning: Failed to load TLS certificates: %v\n", err)
+                        // Generate self-signed certificate for development
+                        cert = generateSelfSignedCert()
+                }</span>
+                <span class="cov8" title="1">tlsConfig.Certificates = []tls.Certificate{cert}</span>
+        } else<span class="cov8" title="1"> {
+                // Generate self-signed certificate for development
+                tlsConfig.Certificates = []tls.Certificate{generateSelfSignedCert()}
+        }</span>
+
+        <span class="cov8" title="1">return tlsConfig</span>
+}
+
+// generateSelfSignedCert generates a self-signed certificate for development
+func generateSelfSignedCert() tls.Certificate <span class="cov8" title="1">{
+        priv, err := rsa.GenerateKey(rand.Reader, 2048)
+        if err != nil </span><span class="cov0" title="0">{
+                panic(err)</span>
+        }
+
+        <span class="cov8" title="1">template := x509.Certificate{
+                SerialNumber: big.NewInt(1),
+                Subject: pkix.Name{
+                        Organization: []string{"SuperAgent Dev"},
+                },
+                NotBefore:             time.Now(),
+                NotAfter:              time.Now().Add(365 * 24 * time.Hour),
+                KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+                ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+                BasicConstraintsValid: true,
+                IPAddresses:           []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")},
+                DNSNames:              []string{"localhost"},
+        }
+
+        derBytes, err := x509.CreateCertificate(rand.Reader, &amp;template, &amp;template, &amp;priv.PublicKey, priv)
+        if err != nil </span><span class="cov0" title="0">{
+                panic(err)</span>
+        }
+
+        <span class="cov8" title="1">certPEM := pem.EncodeToMemory(&amp;pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+        keyPEM := pem.EncodeToMemory(&amp;pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
+
+        cert, err := tls.X509KeyPair(certPEM, keyPEM)
+        if err != nil </span><span class="cov0" title="0">{
+                panic(err)</span>
+        }
+
+        <span class="cov8" title="1">return cert</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
