@@ -54,6 +54,14 @@ test-coverage: ## Run tests with coverage report
 	@go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 
+test-fuzz: ## Run fuzz tests
+	@echo "Running fuzz tests..."
+	@go test -fuzz=. -fuzztime=10s ./...
+
+test-fuzz-verbose: ## Run fuzz tests with verbose output
+	@echo "Running fuzz tests with verbose output..."
+	@go test -fuzz=. -fuzztime=30s -v ./...
+
 test-single: ## Run tests for a specific package (usage: make test-single PKG=./Providers/Chutes)
 	@echo "Running tests for $(PKG)..."
 	@go test -v $(PKG)
@@ -187,5 +195,7 @@ help-test: ## Show test-related targets
 	@echo "  test-security     - Run security tests"
 	@echo "  test-chaos        - Run chaos tests"
 	@echo "  test-coverage     - Run tests with coverage"
+	@echo "  test-fuzz         - Run fuzz tests"
+	@echo "  test-fuzz-verbose - Run fuzz tests with verbose output"
 	@echo "  test-single       - Run tests for specific package"
 	@echo "  test-function     - Run specific test function"

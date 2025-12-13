@@ -386,3 +386,50 @@ func TestClient_Do_ContextCancellation(t *testing.T) {
 		t.Errorf("Expected context error, got %v", err)
 	}
 }
+
+// BenchmarkClient_Do benchmarks the HTTP client Do method
+func BenchmarkClient_Do(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("success"))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		resp, err := client.Do(context.Background(), "GET", "/", nil, nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+		resp.Body.Close()
+	}
+}
+
+// BenchmarkClient_Do_WithRetry benchmarks with retries
+func BenchmarkClient_Do_WithRetry(b *testing.B) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts%3 == 0 { // Succeed every 3rd attempt
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("success"))
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "")
+	client.SetRetryCount(2)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		resp, err := client.Do(context.Background(), "GET", "/", nil, nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+		resp.Body.Close()
+	}
+}

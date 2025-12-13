@@ -369,3 +369,31 @@ func (m *mockModelFormatter) FormatModelName(modelID string) string {
 func (m *mockModelFormatter) GetModelDescription(modelID string) string {
 	return "Test model"
 }
+
+// Fuzz test for DefaultCategoryInferrer.InferCategory
+func FuzzDefaultCategoryInferrer_InferCategory(f *testing.F) {
+	inferrer := &DefaultCategoryInferrer{}
+
+	// Add seed corpus
+	f.Add("gpt-4", "chat")
+	f.Add("text-embedding-ada-002", "embedding")
+	f.Add("rerank-model", "rerank")
+	f.Add("tts-1", "audio")
+	f.Add("unknown", "unknown")
+
+	f.Fuzz(func(t *testing.T, modelID, modelType string) {
+		result := inferrer.InferCategory(modelID, modelType)
+		// Result should be one of the expected categories
+		validCategories := []string{"chat", "embedding", "rerank", "audio", "video", "vision"}
+		found := false
+		for _, cat := range validCategories {
+			if result == cat {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Invalid category returned: %s", result)
+		}
+	})
+}

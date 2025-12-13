@@ -376,3 +376,61 @@ func TestSlidingWindowConcurrentAccess(t *testing.T) {
 		t.Errorf("Expected 5 successful requests, got %d", successCount)
 	}
 }
+
+// Fuzz test for TokenBucket with various configurations
+func FuzzTokenBucket(f *testing.F) {
+	// Add seed corpus with valid configurations
+	f.Add(10.0, 1.0) // capacity, refillRate
+	f.Add(1.0, 0.1)
+	f.Add(100.0, 10.0)
+
+	f.Fuzz(func(t *testing.T, capacity, refillRate float64) {
+		// Skip invalid configurations
+		if capacity <= 0 || refillRate <= 0 || capacity > 10000 || refillRate > 1000 {
+			t.Skip("Invalid configuration")
+		}
+
+		config := TokenBucketConfig{
+			Capacity:   capacity,
+			RefillRate: refillRate,
+		}
+
+		tb := NewTokenBucket(config)
+
+		// Test that Allow doesn't panic and returns boolean
+		for i := 0; i < 10; i++ {
+			result := tb.Allow()
+			_ = result // Just ensure it doesn't panic
+		}
+
+		// Test Wait doesn't panic
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+		err := tb.Wait(ctx)
+		_ = err // Just ensure it doesn't panic
+	})
+}
+
+// BenchmarkTokenBucket_Allow benchmarks token bucket Allow method
+func BenchmarkTokenBucket_Allow(b *testing.B) {
+	config := TokenBucketConfig{
+		Capacity:   1000.0,
+		RefillRate: 100.0,
+	}
+	tb := NewTokenBucket(config)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tb.Allow()
+	}
+}
+
+// BenchmarkSlidingWindowLimiter_Allow benchmarks sliding window Allow method
+func BenchmarkSlidingWindowLimiter_Allow(b *testing.B) {
+	sw := NewSlidingWindowLimiter(1*time.Minute, 1000)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		sw.Allow()
+	}
+}

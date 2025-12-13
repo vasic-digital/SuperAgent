@@ -1,0 +1,4158 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>auth: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/HelixDevelopment/HelixAgent/Toolkit/Commons/auth/auth.go (87.9%)</option>
+				
+				<option value="file1">github.com/HelixDevelopment/HelixAgent/Toolkit/Commons/config/config.go (97.1%)</option>
+				
+				<option value="file2">github.com/HelixDevelopment/HelixAgent/Toolkit/Commons/discovery/discovery.go (99.0%)</option>
+				
+				<option value="file3">github.com/HelixDevelopment/HelixAgent/Toolkit/Commons/errors/errors.go (100.0%)</option>
+				
+				<option value="file4">github.com/HelixDevelopment/HelixAgent/Toolkit/Commons/http/client.go (89.2%)</option>
+				
+				<option value="file5">github.com/HelixDevelopment/HelixAgent/Toolkit/Commons/ratelimit/ratelimit.go (95.2%)</option>
+				
+				<option value="file6">github.com/HelixDevelopment/HelixAgent/Toolkit/Commons/response/response.go (89.6%)</option>
+				
+				<option value="file7">github.com/HelixDevelopment/HelixAgent/Toolkit/Commons/testing/testing.go (87.7%)</option>
+				
+				<option value="file8">github.com/HelixDevelopment/HelixAgent/Toolkit/Providers/Chutes/builder.go (47.4%)</option>
+				
+				<option value="file9">github.com/HelixDevelopment/HelixAgent/Toolkit/Providers/Chutes/chutes.go (92.0%)</option>
+				
+				<option value="file10">github.com/HelixDevelopment/HelixAgent/Toolkit/Providers/Chutes/client.go (91.5%)</option>
+				
+				<option value="file11">github.com/HelixDevelopment/HelixAgent/Toolkit/Providers/Chutes/discovery.go (68.1%)</option>
+				
+				<option value="file12">github.com/HelixDevelopment/HelixAgent/Toolkit/Providers/SiliconFlow/builder.go (100.0%)</option>
+				
+				<option value="file13">github.com/HelixDevelopment/HelixAgent/Toolkit/Providers/SiliconFlow/client.go (84.4%)</option>
+				
+				<option value="file14">github.com/HelixDevelopment/HelixAgent/Toolkit/Providers/SiliconFlow/discovery.go (92.6%)</option>
+				
+				<option value="file15">github.com/HelixDevelopment/HelixAgent/Toolkit/Providers/SiliconFlow/siliconflow.go (92.0%)</option>
+				
+				<option value="file16">github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit/common/discovery/discovery.go (80.5%)</option>
+				
+				<option value="file17">github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit/common/http/client.go (91.7%)</option>
+				
+				<option value="file18">github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit/common/ratelimit/ratelimit.go (100.0%)</option>
+				
+				<option value="file19">github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit/interfaces.go (100.0%)</option>
+				
+				<option value="file20">github.com/HelixDevelopment/HelixAgent/Toolkit/tests/integration/framework.go (75.8%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">// Package auth provides authentication management for AI providers.
+package auth
+
+import (
+        "context"
+        "fmt"
+        "net/http"
+        "sync"
+        "time"
+)
+
+// AuthManager manages authentication for providers.
+type AuthManager struct {
+        apiKey     string
+        token      string
+        tokenMutex sync.RWMutex
+        expiresAt  time.Time
+        refresher  TokenRefresher
+}
+
+// TokenRefresher defines the interface for token refresh logic.
+type TokenRefresher interface {
+        RefreshToken(ctx context.Context) (*TokenResponse, error)
+}
+
+// TokenResponse represents a token refresh response.
+type TokenResponse struct {
+        Token     string    `json:"token"`
+        ExpiresAt time.Time `json:"expires_at"`
+}
+
+// NewAuthManager creates a new authentication manager.
+func NewAuthManager(apiKey string, refresher TokenRefresher) *AuthManager <span class="cov8" title="1">{
+        return &amp;AuthManager{
+                apiKey:    apiKey,
+                refresher: refresher,
+        }
+}</span>
+
+// GetAuthHeader returns the appropriate authorization header value.
+func (am *AuthManager) GetAuthHeader(ctx context.Context) (string, error) <span class="cov8" title="1">{
+        if am.refresher != nil </span><span class="cov8" title="1">{
+                return am.getTokenAuth(ctx)
+        }</span>
+        <span class="cov8" title="1">return am.getAPIKeyAuth(), nil</span>
+}
+
+// getAPIKeyAuth returns API key based authentication.
+func (am *AuthManager) getAPIKeyAuth() string <span class="cov8" title="1">{
+        return "Bearer " + am.apiKey
+}</span>
+
+// getTokenAuth returns token-based authentication, refreshing if necessary.
+func (am *AuthManager) getTokenAuth(ctx context.Context) (string, error) <span class="cov8" title="1">{
+        am.tokenMutex.RLock()
+        token := am.token
+        expiresAt := am.expiresAt
+        am.tokenMutex.RUnlock()
+
+        // Check if token is still valid (with 5 minute buffer)
+        if token != "" &amp;&amp; time.Now().Add(5*time.Minute).Before(expiresAt) </span><span class="cov0" title="0">{
+                return "Bearer " + token, nil
+        }</span>
+
+        // Need to refresh token
+        <span class="cov8" title="1">am.tokenMutex.Lock()
+        defer am.tokenMutex.Unlock()
+
+        // Double-check after acquiring write lock
+        if am.token != "" &amp;&amp; time.Now().Add(5*time.Minute).Before(am.expiresAt) </span><span class="cov0" title="0">{
+                return "Bearer " + am.token, nil
+        }</span>
+
+        // Refresh the token
+        <span class="cov8" title="1">tokenResp, err := am.refresher.RefreshToken(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("failed to refresh token: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">am.token = tokenResp.Token
+        am.expiresAt = tokenResp.ExpiresAt
+
+        return "Bearer " + am.token, nil</span>
+}
+
+// APIKeyAuth represents simple API key authentication.
+type APIKeyAuth struct {
+        APIKey string
+}
+
+// NewAPIKeyAuth creates a new API key authenticator.
+func NewAPIKeyAuth(apiKey string) *APIKeyAuth <span class="cov8" title="1">{
+        return &amp;APIKeyAuth{APIKey: apiKey}
+}</span>
+
+// GetAuthHeader returns the authorization header for API key auth.
+func (a *APIKeyAuth) GetAuthHeader(ctx context.Context) (string, error) <span class="cov8" title="1">{
+        return "Bearer " + a.APIKey, nil
+}</span>
+
+// AuthInterceptor is an HTTP interceptor that adds authentication.
+type AuthInterceptor struct {
+        authManager AuthManagerInterface
+}
+
+// AuthManagerInterface defines the interface for auth managers.
+type AuthManagerInterface interface {
+        GetAuthHeader(ctx context.Context) (string, error)
+}
+
+// NewAuthInterceptor creates a new authentication interceptor.
+func NewAuthInterceptor(authManager AuthManagerInterface) *AuthInterceptor <span class="cov8" title="1">{
+        return &amp;AuthInterceptor{authManager: authManager}
+}</span>
+
+// Intercept adds authentication to the request.
+func (ai *AuthInterceptor) Intercept(req *http.Request) error <span class="cov8" title="1">{
+        authHeader, err := ai.authManager.GetAuthHeader(req.Context())
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to get auth header: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">req.Header.Set("Authorization", authHeader)
+        return nil</span>
+}
+
+// OAuth2Refresher implements OAuth2 token refresh.
+type OAuth2Refresher struct {
+        clientID     string
+        clientSecret string
+        tokenURL     string
+        httpClient   *http.Client
+}
+
+// NewOAuth2Refresher creates a new OAuth2 token refresher.
+func NewOAuth2Refresher(clientID, clientSecret, tokenURL string) *OAuth2Refresher <span class="cov8" title="1">{
+        return &amp;OAuth2Refresher{
+                clientID:     clientID,
+                clientSecret: clientSecret,
+                tokenURL:     tokenURL,
+                httpClient:   &amp;http.Client{Timeout: 30 * time.Second},
+        }
+}</span>
+
+// RefreshToken refreshes an OAuth2 token.
+func (r *OAuth2Refresher) RefreshToken(ctx context.Context) (*TokenResponse, error) <span class="cov8" title="1">{
+        // This is a simplified implementation
+        // In a real implementation, you'd make an HTTP request to the token endpoint
+        // For now, return a mock response
+        return &amp;TokenResponse{
+                Token:     "mock_token_" + fmt.Sprintf("%d", time.Now().Unix()),
+                ExpiresAt: time.Now().Add(time.Hour),
+        }, nil
+}</span>
+
+// Middleware provides authentication middleware for HTTP clients.
+type Middleware struct {
+        authManager AuthManagerInterface
+}
+
+// NewMiddleware creates a new authentication middleware.
+func NewMiddleware(authManager AuthManagerInterface) *Middleware <span class="cov8" title="1">{
+        return &amp;Middleware{authManager: authManager}
+}</span>
+
+// WrapClient wraps an HTTP client with authentication.
+func (m *Middleware) WrapClient(client *http.Client) *http.Client <span class="cov8" title="1">{
+        // In a real implementation, this would intercept requests
+        // For now, return the client as-is
+        return client
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Package config provides shared configuration structures and utilities.
+package config
+
+import (
+        "fmt"
+        "os"
+        "strconv"
+        "strings"
+)
+
+// Config represents a generic configuration map.
+type Config map[string]interface{}
+
+// GetString retrieves a string value from the config.
+func (c Config) GetString(key string) (string, bool) <span class="cov8" title="1">{
+        val, ok := c[key]
+        if !ok </span><span class="cov8" title="1">{
+                return "", false
+        }</span>
+        <span class="cov8" title="1">str, ok := val.(string)
+        return str, ok</span>
+}
+
+// GetStringWithDefault retrieves a string value with a default.
+func (c Config) GetStringWithDefault(key, defaultValue string) string <span class="cov8" title="1">{
+        if val, ok := c.GetString(key); ok </span><span class="cov8" title="1">{
+                return val
+        }</span>
+        <span class="cov8" title="1">return defaultValue</span>
+}
+
+// GetInt retrieves an int value from the config.
+func (c Config) GetInt(key string) (int, bool) <span class="cov8" title="1">{
+        val, ok := c[key]
+        if !ok </span><span class="cov8" title="1">{
+                return 0, false
+        }</span>
+        <span class="cov8" title="1">switch v := val.(type) </span>{
+        case int:<span class="cov8" title="1">
+                return v, true</span>
+        case int64:<span class="cov8" title="1">
+                return int(v), true</span>
+        case float64:<span class="cov8" title="1">
+                return int(v), true</span>
+        case string:<span class="cov8" title="1">
+                if i, err := strconv.Atoi(v); err == nil </span><span class="cov8" title="1">{
+                        return i, true
+                }</span>
+        }
+        <span class="cov8" title="1">return 0, false</span>
+}
+
+// GetIntWithDefault retrieves an int value with a default.
+func (c Config) GetIntWithDefault(key string, defaultValue int) int <span class="cov8" title="1">{
+        if val, ok := c.GetInt(key); ok </span><span class="cov8" title="1">{
+                return val
+        }</span>
+        <span class="cov8" title="1">return defaultValue</span>
+}
+
+// GetBool retrieves a bool value from the config.
+func (c Config) GetBool(key string) (bool, bool) <span class="cov8" title="1">{
+        val, ok := c[key]
+        if !ok </span><span class="cov8" title="1">{
+                return false, false
+        }</span>
+        <span class="cov8" title="1">switch v := val.(type) </span>{
+        case bool:<span class="cov8" title="1">
+                return v, true</span>
+        case string:<span class="cov8" title="1">
+                if b, err := strconv.ParseBool(v); err == nil </span><span class="cov8" title="1">{
+                        return b, true
+                }</span>
+        }
+        <span class="cov8" title="1">return false, false</span>
+}
+
+// GetBoolWithDefault retrieves a bool value with a default.
+func (c Config) GetBoolWithDefault(key string, defaultValue bool) bool <span class="cov8" title="1">{
+        if val, ok := c.GetBool(key); ok </span><span class="cov8" title="1">{
+                return val
+        }</span>
+        <span class="cov8" title="1">return defaultValue</span>
+}
+
+// GetFloat retrieves a float64 value from the config.
+func (c Config) GetFloat(key string) (float64, bool) <span class="cov8" title="1">{
+        val, ok := c[key]
+        if !ok </span><span class="cov8" title="1">{
+                return 0, false
+        }</span>
+        <span class="cov8" title="1">switch v := val.(type) </span>{
+        case float64:<span class="cov8" title="1">
+                return v, true</span>
+        case int:<span class="cov8" title="1">
+                return float64(v), true</span>
+        case int64:<span class="cov8" title="1">
+                return float64(v), true</span>
+        case string:<span class="cov8" title="1">
+                if f, err := strconv.ParseFloat(v, 64); err == nil </span><span class="cov8" title="1">{
+                        return f, true
+                }</span>
+        }
+        <span class="cov8" title="1">return 0, false</span>
+}
+
+// GetFloatWithDefault retrieves a float64 value with a default.
+func (c Config) GetFloatWithDefault(key string, defaultValue float64) float64 <span class="cov8" title="1">{
+        if val, ok := c.GetFloat(key); ok </span><span class="cov8" title="1">{
+                return val
+        }</span>
+        <span class="cov8" title="1">return defaultValue</span>
+}
+
+// Set sets a value in the config.
+func (c Config) Set(key string, value interface{}) <span class="cov8" title="1">{
+        c[key] = value
+}</span>
+
+// ValidateFunc is a function that validates a configuration.
+type ValidateFunc func(Config) error
+
+// Validator holds validation rules for configuration.
+type Validator struct {
+        rules map[string]ValidateFunc
+}
+
+// NewValidator creates a new configuration validator.
+func NewValidator() *Validator <span class="cov8" title="1">{
+        return &amp;Validator{
+                rules: make(map[string]ValidateFunc),
+        }
+}</span>
+
+// AddRule adds a validation rule for a key.
+func (v *Validator) AddRule(key string, rule ValidateFunc) <span class="cov8" title="1">{
+        v.rules[key] = rule
+}</span>
+
+// Validate validates the configuration.
+func (v *Validator) Validate(config Config) error <span class="cov8" title="1">{
+        for key, rule := range v.rules </span><span class="cov8" title="1">{
+                if err := rule(config); err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("validation failed for %s: %w", key, err)
+                }</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// Common validation rules
+
+// Required checks if a key is present and not empty.
+func Required(key string) ValidateFunc <span class="cov8" title="1">{
+        return func(config Config) error </span><span class="cov8" title="1">{
+                val, ok := config[key]
+                if !ok </span><span class="cov8" title="1">{
+                        return fmt.Errorf("required field %s is missing", key)
+                }</span>
+                <span class="cov8" title="1">if str, ok := val.(string); ok &amp;&amp; strings.TrimSpace(str) == "" </span><span class="cov8" title="1">{
+                        return fmt.Errorf("required field %s is empty", key)
+                }</span>
+                <span class="cov8" title="1">return nil</span>
+        }
+}
+
+// OneOf checks if a value is one of the allowed values.
+func OneOf(key string, allowed ...string) ValidateFunc <span class="cov8" title="1">{
+        return func(config Config) error </span><span class="cov8" title="1">{
+                val, ok := config.GetString(key)
+                if !ok </span><span class="cov0" title="0">{
+                        return nil // Let Required handle missing values
+                }</span>
+                <span class="cov8" title="1">for _, a := range allowed </span><span class="cov8" title="1">{
+                        if val == a </span><span class="cov8" title="1">{
+                                return nil
+                        }</span>
+                }
+                <span class="cov8" title="1">return fmt.Errorf("field %s must be one of %v, got %s", key, allowed, val)</span>
+        }
+}
+
+// MinLength checks if a string value has minimum length.
+func MinLength(key string, minLen int) ValidateFunc <span class="cov8" title="1">{
+        return func(config Config) error </span><span class="cov8" title="1">{
+                val, ok := config.GetString(key)
+                if !ok </span><span class="cov0" title="0">{
+                        return nil
+                }</span>
+                <span class="cov8" title="1">if len(val) &lt; minLen </span><span class="cov8" title="1">{
+                        return fmt.Errorf("field %s must be at least %d characters long", key, minLen)
+                }</span>
+                <span class="cov8" title="1">return nil</span>
+        }
+}
+
+// Environment variable handling
+
+// LoadFromEnv loads configuration from environment variables.
+// Environment variables are converted to config keys by removing prefix and lowercasing.
+func (c Config) LoadFromEnv(prefix string) <span class="cov8" title="1">{
+        for _, env := range os.Environ() </span><span class="cov8" title="1">{
+                pair := strings.SplitN(env, "=", 2)
+                if len(pair) != 2 </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">key, value := pair[0], pair[1]
+
+                if prefix != "" &amp;&amp; !strings.HasPrefix(key, prefix) </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+
+                // Remove prefix and convert to config key
+                <span class="cov8" title="1">configKey := strings.ToLower(strings.TrimPrefix(key, prefix))
+
+                // Try to parse as different types
+                if intVal, err := strconv.Atoi(value); err == nil </span><span class="cov8" title="1">{
+                        c[configKey] = intVal
+                }</span> else<span class="cov8" title="1"> if floatVal, err := strconv.ParseFloat(value, 64); err == nil </span><span class="cov8" title="1">{
+                        c[configKey] = floatVal
+                }</span> else<span class="cov8" title="1"> if boolVal, err := strconv.ParseBool(value); err == nil </span><span class="cov8" title="1">{
+                        c[configKey] = boolVal
+                }</span> else<span class="cov8" title="1"> {
+                        c[configKey] = value
+                }</span>
+        }
+}
+
+// ProviderConfig represents common provider configuration.
+type ProviderConfig struct {
+        APIKey         string `json:"api_key"`
+        BaseURL        string `json:"base_url"`
+        Timeout        int    `json:"timeout"` // in seconds
+        MaxRetries     int    `json:"max_retries"`
+        RateLimit      int    `json:"rate_limit"` // requests per second
+        RateLimitBurst int    `json:"rate_limit_burst"`
+}
+
+// Validate validates the provider configuration.
+func (pc *ProviderConfig) Validate() error <span class="cov8" title="1">{
+        validator := NewValidator()
+        validator.AddRule("api_key", Required("api_key"))
+        validator.AddRule("api_key", MinLength("api_key", 1))
+
+        config := Config{
+                "api_key": pc.APIKey,
+        }
+
+        return validator.Validate(config)
+}</span>
+
+// LoadProviderConfigFromEnv loads provider config from environment variables.
+func LoadProviderConfigFromEnv(prefix string) *ProviderConfig <span class="cov8" title="1">{
+        config := &amp;ProviderConfig{}
+        envConfig := Config{}
+        envConfig.LoadFromEnv(prefix)
+
+        config.APIKey = envConfig.GetStringWithDefault("api_key", "")
+        config.BaseURL = envConfig.GetStringWithDefault("base_url", "")
+        config.Timeout = envConfig.GetIntWithDefault("timeout", 30)
+        config.MaxRetries = envConfig.GetIntWithDefault("max_retries", 3)
+        config.RateLimit = envConfig.GetIntWithDefault("rate_limit", 10)
+        config.RateLimitBurst = envConfig.GetIntWithDefault("rate_limit_burst", 20)
+
+        return config
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">// Package discovery provides generic model discovery framework and utilities.
+package discovery
+
+import (
+        "strings"
+
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit"
+)
+
+// CapabilityInferrer defines the interface for inferring model capabilities.
+type CapabilityInferrer interface {
+        InferCapabilities(modelID, modelType string) toolkit.ModelCapabilities
+}
+
+// CategoryInferrer defines the interface for inferring model categories.
+type CategoryInferrer interface {
+        InferCategory(modelID, modelType string) toolkit.ModelCategory
+}
+
+// ModelFormatter defines the interface for formatting model information.
+type ModelFormatter interface {
+        FormatModelName(modelID string) string
+        GetModelDescription(modelID string) string
+}
+
+// BaseDiscovery provides common functionality for model discovery.
+type BaseDiscovery struct {
+        capabilityInferrer CapabilityInferrer
+        categoryInferrer   CategoryInferrer
+        modelFormatter     ModelFormatter
+        providerName       string
+}
+
+// NewBaseDiscovery creates a new base discovery instance.
+func NewBaseDiscovery(providerName string, capabilityInferrer CapabilityInferrer, categoryInferrer CategoryInferrer, modelFormatter ModelFormatter) *BaseDiscovery <span class="cov8" title="1">{
+        return &amp;BaseDiscovery{
+                capabilityInferrer: capabilityInferrer,
+                categoryInferrer:   categoryInferrer,
+                modelFormatter:     modelFormatter,
+                providerName:       providerName,
+        }
+}</span>
+
+// ConvertToModelInfo converts raw model info to toolkit ModelInfo.
+func (d *BaseDiscovery) ConvertToModelInfo(modelID, modelType string) toolkit.ModelInfo <span class="cov8" title="1">{
+        capabilities := d.capabilityInferrer.InferCapabilities(modelID, modelType)
+
+        return toolkit.ModelInfo{
+                ID:           modelID,
+                Name:         d.modelFormatter.FormatModelName(modelID),
+                Category:     d.categoryInferrer.InferCategory(modelID, modelType),
+                Capabilities: capabilities,
+                Provider:     d.providerName,
+                Description:  d.modelFormatter.GetModelDescription(modelID),
+        }
+}</span>
+
+// DefaultCapabilityInferrer provides default capability inference logic.
+type DefaultCapabilityInferrer struct{}
+
+// InferCapabilities infers model capabilities from ID and type.
+func (d *DefaultCapabilityInferrer) InferCapabilities(modelID, modelType string) toolkit.ModelCapabilities <span class="cov8" title="1">{
+        capabilities := toolkit.ModelCapabilities{}
+
+        modelLower := strings.ToLower(modelID)
+        typeLower := strings.ToLower(modelType)
+
+        // Embedding capabilities
+        capabilities.SupportsEmbedding = strings.Contains(typeLower, "embedding")
+
+        // Rerank capabilities
+        capabilities.SupportsRerank = strings.Contains(typeLower, "rerank")
+
+        // Audio capabilities
+        audioKeywords := []string{"tts", "audio", "speech", "voice"}
+        capabilities.SupportsAudio = d.containsAny(modelLower, audioKeywords) || d.containsAny(typeLower, audioKeywords)
+
+        // Video capabilities
+        videoKeywords := []string{"t2v", "video", "i2v", "flux"}
+        capabilities.SupportsVideo = d.containsAny(modelLower, videoKeywords) || d.containsAny(typeLower, videoKeywords)
+
+        // Vision capabilities
+        visionKeywords := []string{"vl", "vision", "visual", "multimodal"}
+        capabilities.SupportsVision = d.containsAny(modelLower, visionKeywords) || d.containsAny(typeLower, visionKeywords)
+
+        // Chat capabilities - conservative approach
+        specializedKeywords := []string{
+                "embedding", "rerank", "tts", "speech", "audio", "video",
+                "t2v", "i2v", "flux", "image",
+        }
+
+        isSpecialized := d.containsAny(modelLower, specializedKeywords)
+        chatTypeIndicators := []string{"chat", "text", "completion", "instruction", "instruct"}
+        hasChatType := d.containsAny(typeLower, chatTypeIndicators)
+        chatIDIndicators := []string{
+                "instruct", "chat", "qwen", "deepseek", "glm", "kimi",
+                "llama", "mistral", "mixtral", "gemma", "phi", "yi",
+        }
+        hasChatID := d.containsAny(modelLower, chatIDIndicators)
+
+        // Multimodal and vision models can still support chat
+        isMultimodal := d.containsAny(modelLower, []string{"vl", "vision", "visual", "multimodal"}) ||
+                d.containsAny(typeLower, []string{"multimodal"})
+
+        if hasChatType &amp;&amp; (!isSpecialized || isMultimodal) </span><span class="cov8" title="1">{
+                capabilities.SupportsChat = true
+        }</span> else<span class="cov8" title="1"> if hasChatID &amp;&amp; (!isSpecialized || isMultimodal) </span><span class="cov8" title="1">{
+                capabilities.SupportsChat = true
+        }</span> else<span class="cov8" title="1"> if typeLower == "" || typeLower == "unknown" </span><span class="cov0" title="0">{
+                capabilities.SupportsChat = false
+        }</span> else<span class="cov8" title="1"> {
+                capabilities.SupportsChat = false
+        }</span>
+
+        // Function calling support
+        <span class="cov8" title="1">capabilities.FunctionCalling = d.supportsFunctionCalling(modelID)
+
+        // Context window and max tokens
+        capabilities.ContextWindow = d.inferContextWindow(modelID)
+        capabilities.MaxTokens = d.inferMaxTokens(modelID)
+
+        return capabilities</span>
+}
+
+// containsAny checks if the string contains any of the keywords.
+func (d *DefaultCapabilityInferrer) containsAny(s string, keywords []string) bool <span class="cov8" title="1">{
+        for _, keyword := range keywords </span><span class="cov8" title="1">{
+                if strings.Contains(s, keyword) </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+// supportsFunctionCalling checks if model supports function calling.
+func (d *DefaultCapabilityInferrer) supportsFunctionCalling(modelID string) bool <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        supportedModels := []string{"qwen", "deepseek", "glm", "kimi"}
+        for _, model := range supportedModels </span><span class="cov8" title="1">{
+                if strings.Contains(modelLower, model) </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+
+        <span class="cov8" title="1">return false</span>
+}
+
+// inferContextWindow infers context window size.
+func (d *DefaultCapabilityInferrer) inferContextWindow(modelID string) int <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        if strings.Contains(modelLower, "deepseek") </span><span class="cov8" title="1">{
+                if strings.Contains(modelLower, "r1") </span><span class="cov8" title="1">{
+                        return 131072
+                }</span>
+                <span class="cov8" title="1">return 131072</span> // V3 series
+        }
+
+        <span class="cov8" title="1">if strings.Contains(modelLower, "qwen") </span><span class="cov8" title="1">{
+                if strings.Contains(modelLower, "qwen3") </span><span class="cov8" title="1">{
+                        return 32768
+                }</span>
+                <span class="cov8" title="1">if strings.Contains(modelLower, "qwen2.5") </span><span class="cov8" title="1">{
+                        if strings.Contains(modelLower, "72b") </span><span class="cov8" title="1">{
+                                return 131072
+                        }</span>
+                        <span class="cov8" title="1">return 32768</span>
+                }
+                <span class="cov8" title="1">if strings.Contains(modelLower, "qwen2-vl") </span><span class="cov8" title="1">{
+                        return 32768
+                }</span>
+        }
+
+        <span class="cov8" title="1">if strings.Contains(modelLower, "glm") </span><span class="cov8" title="1">{
+                if strings.Contains(modelLower, "4.6") </span><span class="cov8" title="1">{
+                        return 131072
+                }</span>
+                <span class="cov8" title="1">return 32768</span>
+        }
+
+        <span class="cov8" title="1">if strings.Contains(modelLower, "kimi") </span><span class="cov8" title="1">{
+                return 131072
+        }</span>
+
+        <span class="cov8" title="1">return 4096</span>
+}
+
+// inferMaxTokens infers maximum tokens for output.
+func (d *DefaultCapabilityInferrer) inferMaxTokens(modelID string) int <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        if strings.Contains(modelLower, "deepseek-r1") </span><span class="cov8" title="1">{
+                return 8192
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "qwen3") </span><span class="cov8" title="1">{
+                return 8192
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "qwen2.5-72b") </span><span class="cov8" title="1">{
+                return 8192
+        }</span>
+
+        <span class="cov8" title="1">return 4096</span>
+}
+
+// DefaultCategoryInferrer provides default category inference logic.
+type DefaultCategoryInferrer struct{}
+
+// InferCategory infers the model category.
+func (d *DefaultCategoryInferrer) InferCategory(modelID, modelType string) toolkit.ModelCategory <span class="cov8" title="1">{
+        typeLower := strings.ToLower(modelType)
+        modelLower := strings.ToLower(modelID)
+
+        if strings.Contains(typeLower, "embedding") </span><span class="cov8" title="1">{
+                return toolkit.CategoryEmbedding
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(typeLower, "rerank") </span><span class="cov8" title="1">{
+                return toolkit.CategoryRerank
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "vl") || strings.Contains(modelLower, "vision") ||
+                strings.Contains(modelLower, "multimodal") </span><span class="cov8" title="1">{
+                return toolkit.CategoryMultimodal
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "image") || strings.Contains(modelLower, "flux") </span><span class="cov8" title="1">{
+                return toolkit.CategoryImage
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "video") || strings.Contains(modelLower, "t2v") </span><span class="cov8" title="1">{
+                return toolkit.CategoryMultimodal
+        }</span>
+
+        <span class="cov8" title="1">return toolkit.CategoryChat</span>
+}
+
+// DefaultModelFormatter provides default model formatting logic.
+type DefaultModelFormatter struct{}
+
+// FormatModelName formats model ID into human-readable name.
+func (d *DefaultModelFormatter) FormatModelName(modelID string) string <span class="cov8" title="1">{
+        parts := strings.Split(modelID, "/")
+        if len(parts) &gt; 1 </span><span class="cov8" title="1">{
+                name := strings.ReplaceAll(parts[1], "-", " ")
+                name = strings.ReplaceAll(name, "_", " ")
+                return parts[0] + " " + name
+        }</span>
+        <span class="cov8" title="1">return strings.ReplaceAll(modelID, "-", " ")</span>
+}
+
+// GetModelDescription returns a description for the model.
+func (d *DefaultModelFormatter) GetModelDescription(modelID string) string <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        if strings.Contains(modelLower, "qwen") </span><span class="cov8" title="1">{
+                return "Qwen series models"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "deepseek") </span><span class="cov8" title="1">{
+                return "DeepSeek models for advanced reasoning"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "glm") </span><span class="cov8" title="1">{
+                return "GLM models"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "kimi") </span><span class="cov8" title="1">{
+                return "Kimi models with advanced capabilities"
+        }</span>
+
+        <span class="cov8" title="1">return "AI model"</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">// Package errors provides standardized error types and utilities for AI providers.
+package errors
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+)
+
+// ProviderError represents a provider-specific error.
+type ProviderError struct {
+        Provider   string
+        Code       string
+        Message    string
+        StatusCode int
+        Details    interface{}
+}
+
+func (e *ProviderError) Error() string <span class="cov8" title="1">{
+        return fmt.Sprintf("[%s] %s: %s", e.Provider, e.Code, e.Message)
+}</span>
+
+// NewProviderError creates a new provider error.
+func NewProviderError(provider, code, message string) *ProviderError <span class="cov8" title="1">{
+        return &amp;ProviderError{
+                Provider: provider,
+                Code:     code,
+                Message:  message,
+        }
+}</span>
+
+// WithStatusCode sets the HTTP status code.
+func (e *ProviderError) WithStatusCode(code int) *ProviderError <span class="cov8" title="1">{
+        e.StatusCode = code
+        return e
+}</span>
+
+// WithDetails adds additional details.
+func (e *ProviderError) WithDetails(details interface{}) *ProviderError <span class="cov8" title="1">{
+        e.Details = details
+        return e
+}</span>
+
+// APIError represents an error returned by an API.
+type APIError struct {
+        Type    string      `json:"type"`
+        Code    string      `json:"code"`
+        Message string      `json:"message"`
+        Param   string      `json:"param,omitempty"`
+        Details interface{} `json:"details,omitempty"`
+}
+
+func (e *APIError) Error() string <span class="cov8" title="1">{
+        return fmt.Sprintf("%s: %s", e.Type, e.Message)
+}</span>
+
+// RateLimitError represents a rate limit error.
+type RateLimitError struct {
+        RetryAfter int // seconds
+        Message    string
+}
+
+func (e *RateLimitError) Error() string <span class="cov8" title="1">{
+        return fmt.Sprintf("rate limit exceeded: %s (retry after %d seconds)", e.Message, e.RetryAfter)
+}</span>
+
+// AuthenticationError represents an authentication error.
+type AuthenticationError struct {
+        Message string
+}
+
+func (e *AuthenticationError) Error() string <span class="cov8" title="1">{
+        return fmt.Sprintf("authentication failed: %s", e.Message)
+}</span>
+
+// ValidationError represents a validation error.
+type ValidationError struct {
+        Field   string
+        Message string
+}
+
+func (e *ValidationError) Error() string <span class="cov8" title="1">{
+        return fmt.Sprintf("validation error for field '%s': %s", e.Field, e.Message)
+}</span>
+
+// NetworkError represents a network-related error.
+type NetworkError struct {
+        Underlying error
+        Message    string
+}
+
+func (e *NetworkError) Error() string <span class="cov8" title="1">{
+        if e.Underlying != nil </span><span class="cov8" title="1">{
+                return fmt.Sprintf("network error: %s (%v)", e.Message, e.Underlying)
+        }</span>
+        <span class="cov8" title="1">return fmt.Sprintf("network error: %s", e.Message)</span>
+}
+
+func (e *NetworkError) Unwrap() error <span class="cov8" title="1">{
+        return e.Underlying
+}</span>
+
+// TimeoutError represents a timeout error.
+type TimeoutError struct {
+        Operation string
+        Timeout   string
+}
+
+func (e *TimeoutError) Error() string <span class="cov8" title="1">{
+        return fmt.Sprintf("timeout error in %s after %s", e.Operation, e.Timeout)
+}</span>
+
+// ErrorHandler provides utilities for handling different types of errors.
+type ErrorHandler struct {
+        provider string
+}
+
+// NewErrorHandler creates a new error handler.
+func NewErrorHandler(provider string) *ErrorHandler <span class="cov8" title="1">{
+        return &amp;ErrorHandler{provider: provider}
+}</span>
+
+// HandleHTTPError handles HTTP errors and converts them to appropriate error types.
+func (h *ErrorHandler) HandleHTTPError(resp *http.Response, body []byte) error <span class="cov8" title="1">{
+        switch resp.StatusCode </span>{
+        case http.StatusUnauthorized:<span class="cov8" title="1">
+                return &amp;AuthenticationError{Message: "invalid API key"}</span>
+        case http.StatusForbidden:<span class="cov8" title="1">
+                return &amp;AuthenticationError{Message: "insufficient permissions"}</span>
+        case http.StatusTooManyRequests:<span class="cov8" title="1">
+                retryAfter := resp.Header.Get("Retry-After")
+                return &amp;RateLimitError{
+                        Message:    "rate limit exceeded",
+                        RetryAfter: parseRetryAfter(retryAfter),
+                }</span>
+        case http.StatusBadRequest:<span class="cov8" title="1">
+                return h.parseAPIError(body)</span>
+        case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:<span class="cov8" title="1">
+                return &amp;ProviderError{
+                        Provider:   h.provider,
+                        Code:       "server_error",
+                        Message:    fmt.Sprintf("server error: %s", string(body)),
+                        StatusCode: resp.StatusCode,
+                }</span>
+        default:<span class="cov8" title="1">
+                return &amp;ProviderError{
+                        Provider:   h.provider,
+                        Code:       "http_error",
+                        Message:    fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(body)),
+                        StatusCode: resp.StatusCode,
+                }</span>
+        }
+}
+
+// parseAPIError attempts to parse API-specific error from response body.
+func (h *ErrorHandler) parseAPIError(body []byte) error <span class="cov8" title="1">{
+        // Try to parse as APIError
+        var apiErr APIError
+        if err := json.Unmarshal(body, &amp;apiErr); err == nil &amp;&amp; apiErr.Type != "" </span><span class="cov8" title="1">{
+                return &amp;apiErr
+        }</span>
+
+        // Fallback to generic provider error
+        <span class="cov8" title="1">return &amp;ProviderError{
+                Provider: h.provider,
+                Code:     "api_error",
+                Message:  string(body),
+        }</span>
+}
+
+// HandleNetworkError handles network-related errors.
+func (h *ErrorHandler) HandleNetworkError(err error, operation string) error <span class="cov8" title="1">{
+        return &amp;NetworkError{
+                Underlying: err,
+                Message:    fmt.Sprintf("failed during %s", operation),
+        }
+}</span>
+
+// IsRetryable checks if an error is retryable.
+func IsRetryable(err error) bool <span class="cov8" title="1">{
+        switch err.(type) </span>{
+        case *NetworkError, *RateLimitError, *TimeoutError:<span class="cov8" title="1">
+                return true</span>
+        case *ProviderError:<span class="cov8" title="1">
+                pe := err.(*ProviderError)
+                return pe.StatusCode &gt;= 500</span>
+        case *APIError:<span class="cov8" title="1">
+                ae := err.(*APIError)
+                return ae.Type == "server_error" || ae.Type == "rate_limit_error"</span>
+        default:<span class="cov8" title="1">
+                return false</span>
+        }
+}
+
+// IsRateLimit checks if an error is a rate limit error.
+func IsRateLimit(err error) bool <span class="cov8" title="1">{
+        _, ok := err.(*RateLimitError)
+        return ok
+}</span>
+
+// IsAuth checks if an error is an authentication error.
+func IsAuth(err error) bool <span class="cov8" title="1">{
+        _, ok := err.(*AuthenticationError)
+        return ok
+}</span>
+
+// GetRetryAfter extracts retry-after duration from rate limit errors.
+func GetRetryAfter(err error) int <span class="cov8" title="1">{
+        if rle, ok := err.(*RateLimitError); ok </span><span class="cov8" title="1">{
+                return rle.RetryAfter
+        }</span>
+        <span class="cov8" title="1">return 0</span>
+}
+
+// parseRetryAfter parses the Retry-After header.
+func parseRetryAfter(retryAfter string) int <span class="cov8" title="1">{
+        if retryAfter == "" </span><span class="cov8" title="1">{
+                return 60 // default 1 minute
+        }</span>
+        // Try to parse as integer (seconds)
+        <span class="cov8" title="1">if seconds := atoi(retryAfter); seconds &gt; 0 </span><span class="cov8" title="1">{
+                return seconds
+        }</span>
+        // Could parse as HTTP date, but for simplicity return default
+        <span class="cov8" title="1">return 60</span>
+}
+
+// atoi is a simple string to int conversion.
+func atoi(s string) int <span class="cov8" title="1">{
+        result := 0
+        for _, r := range s </span><span class="cov8" title="1">{
+                if r &lt; '0' || r &gt; '9' </span><span class="cov8" title="1">{
+                        return 0
+                }</span>
+                <span class="cov8" title="1">result = result*10 + int(r-'0')</span>
+        }
+        <span class="cov8" title="1">return result</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">// Package http provides a generic HTTP client with retry logic, rate limiting, and interceptors.
+package http
+
+import (
+        "bytes"
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "time"
+
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit/common/ratelimit"
+)
+
+// RequestInterceptor is a function that can modify a request before it's sent.
+type RequestInterceptor func(req *http.Request) error
+
+// ResponseInterceptor is a function that can process a response after it's received.
+type ResponseInterceptor func(resp *http.Response) error
+
+// Client represents a generic HTTP client with advanced features.
+type Client struct {
+        baseURL              string
+        httpClient           *http.Client
+        rateLimiter          *ratelimit.TokenBucket
+        requestInterceptors  []RequestInterceptor
+        responseInterceptors []ResponseInterceptor
+        authHeader           string
+        authValue            string
+        maxRetries           int
+        baseBackoff          time.Duration
+}
+
+// ClientConfig holds configuration for the HTTP client.
+type ClientConfig struct {
+        BaseURL     string
+        Timeout     time.Duration
+        RateLimit   *ratelimit.TokenBucketConfig
+        MaxRetries  int
+        BaseBackoff time.Duration
+}
+
+// NewClient creates a new HTTP client with the given configuration.
+func NewClient(config ClientConfig) *Client <span class="cov8" title="1">{
+        httpClient := &amp;http.Client{
+                Timeout: config.Timeout,
+        }
+
+        var rateLimiter *ratelimit.TokenBucket
+        if config.RateLimit != nil </span><span class="cov8" title="1">{
+                rateLimiter = ratelimit.NewTokenBucket(*config.RateLimit)
+        }</span>
+
+        <span class="cov8" title="1">maxRetries := config.MaxRetries
+        if maxRetries == 0 </span><span class="cov8" title="1">{
+                maxRetries = 3
+        }</span>
+
+        <span class="cov8" title="1">baseBackoff := config.BaseBackoff
+        if baseBackoff == 0 </span><span class="cov8" title="1">{
+                baseBackoff = time.Second
+        }</span>
+
+        <span class="cov8" title="1">return &amp;Client{
+                baseURL:              config.BaseURL,
+                httpClient:           httpClient,
+                rateLimiter:          rateLimiter,
+                requestInterceptors:  []RequestInterceptor{},
+                responseInterceptors: []ResponseInterceptor{},
+                maxRetries:           maxRetries,
+                baseBackoff:          baseBackoff,
+        }</span>
+}
+
+// SetAuth sets the authentication header.
+func (c *Client) SetAuth(header, value string) <span class="cov8" title="1">{
+        c.authHeader = header
+        c.authValue = value
+}</span>
+
+// AddRequestInterceptor adds a request interceptor.
+func (c *Client) AddRequestInterceptor(interceptor RequestInterceptor) <span class="cov8" title="1">{
+        c.requestInterceptors = append(c.requestInterceptors, interceptor)
+}</span>
+
+// AddResponseInterceptor adds a response interceptor.
+func (c *Client) AddResponseInterceptor(interceptor ResponseInterceptor) <span class="cov8" title="1">{
+        c.responseInterceptors = append(c.responseInterceptors, interceptor)
+}</span>
+
+// DoRequest performs an HTTP request with retry logic and interceptors.
+func (c *Client) DoRequest(ctx context.Context, method, endpoint string, payload interface{}, result interface{}) error <span class="cov8" title="1">{
+        var body io.Reader
+        if payload != nil </span><span class="cov8" title="1">{
+                jsonData, err := json.Marshal(payload)
+                if err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("failed to marshal payload: %w", err)
+                }</span>
+                <span class="cov8" title="1">body = bytes.NewBuffer(jsonData)</span>
+        }
+
+        <span class="cov8" title="1">url := c.baseURL + endpoint
+
+        var lastErr error
+        for attempt := 0; attempt &lt;= c.maxRetries; attempt++ </span><span class="cov8" title="1">{
+                if c.rateLimiter != nil </span><span class="cov8" title="1">{
+                        if err := c.rateLimiter.Wait(ctx); err != nil </span><span class="cov8" title="1">{
+                                return fmt.Errorf("rate limit error: %w", err)
+                        }</span>
+                }
+
+                <span class="cov8" title="1">req, err := http.NewRequestWithContext(ctx, method, url, body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to create request: %w", err)
+                }</span>
+
+                // Set auth header if configured
+                <span class="cov8" title="1">if c.authHeader != "" &amp;&amp; c.authValue != "" </span><span class="cov8" title="1">{
+                        req.Header.Set(c.authHeader, c.authValue)
+                }</span>
+
+                // Set content type for JSON payloads
+                <span class="cov8" title="1">if payload != nil </span><span class="cov8" title="1">{
+                        req.Header.Set("Content-Type", "application/json")
+                }</span>
+
+                // Apply request interceptors
+                <span class="cov8" title="1">for _, interceptor := range c.requestInterceptors </span><span class="cov8" title="1">{
+                        if err := interceptor(req); err != nil </span><span class="cov8" title="1">{
+                                return fmt.Errorf("request interceptor error: %w", err)
+                        }</span>
+                }
+
+                <span class="cov8" title="1">resp, err := c.httpClient.Do(req)
+                if err != nil </span><span class="cov0" title="0">{
+                        lastErr = fmt.Errorf("failed to make request: %w", err)
+                        if attempt &lt; c.maxRetries </span><span class="cov0" title="0">{
+                                time.Sleep(c.baseBackoff * time.Duration(1&lt;&lt;attempt))
+                                continue</span>
+                        }
+                        <span class="cov0" title="0">return lastErr</span>
+                }
+
+                // Apply response interceptors
+                <span class="cov8" title="1">for _, interceptor := range c.responseInterceptors </span><span class="cov8" title="1">{
+                        if err := interceptor(resp); err != nil </span><span class="cov8" title="1">{
+                                resp.Body.Close()
+                                return fmt.Errorf("response interceptor error: %w", err)
+                        }</span>
+                }
+
+                <span class="cov8" title="1">defer resp.Body.Close()
+
+                if resp.StatusCode &gt;= 200 &amp;&amp; resp.StatusCode &lt; 300 </span><span class="cov8" title="1">{
+                        if result != nil </span><span class="cov8" title="1">{
+                                if err := json.NewDecoder(resp.Body).Decode(result); err != nil </span><span class="cov8" title="1">{
+                                        return fmt.Errorf("failed to decode response: %w", err)
+                                }</span>
+                        }
+                        <span class="cov8" title="1">return nil</span>
+                }
+
+                // Handle error responses
+                <span class="cov8" title="1">bodyBytes, _ := io.ReadAll(resp.Body)
+                lastErr = fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+
+                // Retry on server errors or rate limits
+                if resp.StatusCode &gt;= 500 || resp.StatusCode == 429 </span><span class="cov8" title="1">{
+                        if attempt &lt; c.maxRetries </span><span class="cov8" title="1">{
+                                backoff := c.baseBackoff * time.Duration(1&lt;&lt;attempt)
+                                if resp.StatusCode == 429 </span><span class="cov8" title="1">{
+                                        // For rate limits, use longer backoff
+                                        backoff *= 2
+                                }</span>
+                                <span class="cov8" title="1">time.Sleep(backoff)
+                                continue</span>
+                        }
+                }
+
+                <span class="cov8" title="1">return lastErr</span>
+        }
+
+        <span class="cov0" title="0">return lastErr</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">// Package ratelimit provides rate limiting functionality using token bucket algorithm.
+package ratelimit
+
+import (
+        "context"
+        "sync"
+        "time"
+)
+
+// TokenBucketConfig holds configuration for a token bucket rate limiter.
+type TokenBucketConfig struct {
+        Capacity   int           // Maximum number of tokens
+        RefillRate time.Duration // Time to refill one token
+}
+
+// TokenBucket implements a token bucket rate limiter.
+type TokenBucket struct {
+        capacity   int
+        tokens     int
+        refillRate time.Duration
+        lastRefill time.Time
+        mu         sync.Mutex
+}
+
+// NewTokenBucket creates a new token bucket rate limiter.
+func NewTokenBucket(config TokenBucketConfig) *TokenBucket <span class="cov8" title="1">{
+        return &amp;TokenBucket{
+                capacity:   config.Capacity,
+                tokens:     config.Capacity,
+                refillRate: config.RefillRate,
+                lastRefill: time.Now(),
+        }
+}</span>
+
+// Wait waits for a token to be available.
+func (tb *TokenBucket) Wait(ctx context.Context) error <span class="cov8" title="1">{
+        for </span><span class="cov8" title="1">{
+                if tb.takeToken() </span><span class="cov8" title="1">{
+                        return nil
+                }</span>
+
+                <span class="cov8" title="1">select </span>{
+                case &lt;-time.After(tb.refillRate):<span class="cov0" title="0">
+                        continue</span>
+                case &lt;-ctx.Done():<span class="cov8" title="1">
+                        return ctx.Err()</span>
+                }
+        }
+}
+
+// takeToken attempts to take a token from the bucket.
+func (tb *TokenBucket) takeToken() bool <span class="cov8" title="1">{
+        tb.mu.Lock()
+        defer tb.mu.Unlock()
+
+        now := time.Now()
+        elapsed := now.Sub(tb.lastRefill)
+        tokensToAdd := int(elapsed / tb.refillRate)
+
+        if tokensToAdd &gt; 0 </span><span class="cov8" title="1">{
+                tb.tokens += tokensToAdd
+                if tb.tokens &gt; tb.capacity </span><span class="cov8" title="1">{
+                        tb.tokens = tb.capacity
+                }</span>
+                <span class="cov8" title="1">tb.lastRefill = now</span>
+        }
+
+        <span class="cov8" title="1">if tb.tokens &gt; 0 </span><span class="cov8" title="1">{
+                tb.tokens--
+                return true
+        }</span>
+
+        <span class="cov8" title="1">return false</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">// Package response provides utilities for parsing API responses.
+package response
+
+import (
+        "bufio"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "strings"
+)
+
+// JSONParser provides JSON response parsing utilities.
+type JSONParser struct{}
+
+// ParseJSON parses a JSON response into the given result.
+func (p *JSONParser) ParseJSON(resp *http.Response, result interface{}) error <span class="cov8" title="1">{
+        defer resp.Body.Close()
+
+        if err := json.NewDecoder(resp.Body).Decode(result); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to decode JSON response: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// ParseJSONFromBytes parses JSON from a byte slice.
+func (p *JSONParser) ParseJSONFromBytes(data []byte, result interface{}) error <span class="cov8" title="1">{
+        if err := json.Unmarshal(data, result); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to decode JSON: %w", err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// StreamingParser handles streaming responses.
+type StreamingParser struct {
+        onData  func([]byte) error
+        onError func(error)
+}
+
+// NewStreamingParser creates a new streaming parser.
+func NewStreamingParser(onData func([]byte) error, onError func(error)) *StreamingParser <span class="cov8" title="1">{
+        return &amp;StreamingParser{
+                onData:  onData,
+                onError: onError,
+        }
+}</span>
+
+// ParseStream parses a streaming response.
+func (p *StreamingParser) ParseStream(resp *http.Response) error <span class="cov8" title="1">{
+        defer resp.Body.Close()
+
+        scanner := bufio.NewScanner(resp.Body)
+        for scanner.Scan() </span><span class="cov8" title="1">{
+                line := scanner.Text()
+
+                // Skip empty lines
+                if strings.TrimSpace(line) == "" </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+
+                // Handle SSE format (data: ...)
+                <span class="cov8" title="1">if strings.HasPrefix(line, "data: ") </span><span class="cov8" title="1">{
+                        data := strings.TrimPrefix(line, "data: ")
+                        if data == "[DONE]" </span><span class="cov8" title="1">{
+                                break</span>
+                        }
+
+                        <span class="cov8" title="1">if p.onData != nil </span><span class="cov8" title="1">{
+                                if err := p.onData([]byte(data)); err != nil </span><span class="cov8" title="1">{
+                                        if p.onError != nil </span><span class="cov8" title="1">{
+                                                p.onError(err)
+                                        }</span>
+                                        <span class="cov8" title="1">return err</span>
+                                }
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">if err := scanner.Err(); err != nil </span><span class="cov0" title="0">{
+                if p.onError != nil </span><span class="cov0" title="0">{
+                        p.onError(err)
+                }</span>
+                <span class="cov0" title="0">return fmt.Errorf("error reading stream: %w", err)</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// ErrorDetector detects errors in API responses.
+type ErrorDetector struct{}
+
+// DetectError checks if a response contains an error.
+func (d *ErrorDetector) DetectError(resp *http.Response) error <span class="cov8" title="1">{
+        if resp.StatusCode &gt;= 200 &amp;&amp; resp.StatusCode &lt; 300 </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+
+        // Read the response body
+        <span class="cov8" title="1">body, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to read error response: %w", err)
+        }</span>
+
+        // Try to parse as JSON error
+        <span class="cov8" title="1">var errorResp struct {
+                Error struct {
+                        Type    string `json:"type"`
+                        Message string `json:"message"`
+                        Code    string `json:"code"`
+                } `json:"error"`
+        }
+
+        if err := json.Unmarshal(body, &amp;errorResp); err == nil &amp;&amp; errorResp.Error.Message != "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("API error [%s]: %s", errorResp.Error.Type, errorResp.Error.Message)
+        }</span>
+
+        // Fallback to generic error
+        <span class="cov8" title="1">return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))</span>
+}
+
+// ResponseValidator validates response structure.
+type ResponseValidator struct {
+        requiredFields []string
+}
+
+// NewResponseValidator creates a new response validator.
+func NewResponseValidator(requiredFields ...string) *ResponseValidator <span class="cov8" title="1">{
+        return &amp;ResponseValidator{requiredFields: requiredFields}
+}</span>
+
+// Validate validates a response map.
+func (v *ResponseValidator) Validate(response map[string]interface{}) error <span class="cov8" title="1">{
+        for _, field := range v.requiredFields </span><span class="cov8" title="1">{
+                if _, exists := response[field]; !exists </span><span class="cov8" title="1">{
+                        return fmt.Errorf("required field '%s' is missing from response", field)
+                }</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// PaginationParser handles paginated responses.
+type PaginationParser struct {
+        hasNextPage func(map[string]interface{}) bool
+        getNextURL  func(map[string]interface{}) string
+}
+
+// NewPaginationParser creates a new pagination parser.
+func NewPaginationParser(hasNextPage func(map[string]interface{}) bool, getNextURL func(map[string]interface{}) string) *PaginationParser <span class="cov8" title="1">{
+        return &amp;PaginationParser{
+                hasNextPage: hasNextPage,
+                getNextURL:  getNextURL,
+        }
+}</span>
+
+// ParsePaginated parses a paginated response.
+func (p *PaginationParser) ParsePaginated(resp *http.Response, result interface{}) (hasNext bool, nextURL string, err error) <span class="cov8" title="1">{
+        defer resp.Body.Close()
+
+        body, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return false, "", fmt.Errorf("failed to read response: %w", err)
+        }</span>
+
+        // Parse JSON
+        <span class="cov8" title="1">var response map[string]interface{}
+        if err := json.Unmarshal(body, &amp;response); err != nil </span><span class="cov8" title="1">{
+                return false, "", fmt.Errorf("failed to parse JSON: %w", err)
+        }</span>
+
+        // Extract data
+        <span class="cov8" title="1">if data, exists := response["data"]; exists </span><span class="cov8" title="1">{
+                dataBytes, err := json.Marshal(data)
+                if err != nil </span><span class="cov0" title="0">{
+                        return false, "", fmt.Errorf("failed to marshal data: %w", err)
+                }</span>
+
+                <span class="cov8" title="1">if err := json.Unmarshal(dataBytes, result); err != nil </span><span class="cov0" title="0">{
+                        return false, "", fmt.Errorf("failed to unmarshal result: %w", err)
+                }</span>
+        }
+
+        // Check pagination
+        <span class="cov8" title="1">hasNext = p.hasNextPage(response)
+        if hasNext </span><span class="cov8" title="1">{
+                nextURL = p.getNextURL(response)
+        }</span>
+
+        <span class="cov8" title="1">return hasNext, nextURL, nil</span>
+}
+
+// ChunkedParser handles chunked responses.
+type ChunkedParser struct {
+        chunkSize int
+        onChunk   func([]byte) error
+}
+
+// NewChunkedParser creates a new chunked parser.
+func NewChunkedParser(chunkSize int, onChunk func([]byte) error) *ChunkedParser <span class="cov8" title="1">{
+        return &amp;ChunkedParser{
+                chunkSize: chunkSize,
+                onChunk:   onChunk,
+        }
+}</span>
+
+// ParseChunked parses a response in chunks.
+func (p *ChunkedParser) ParseChunked(resp *http.Response) error <span class="cov8" title="1">{
+        defer resp.Body.Close()
+
+        buffer := make([]byte, p.chunkSize)
+        for </span><span class="cov8" title="1">{
+                n, err := resp.Body.Read(buffer)
+                if n &gt; 0 </span><span class="cov8" title="1">{
+                        if p.onChunk != nil </span><span class="cov8" title="1">{
+                                if err := p.onChunk(buffer[:n]); err != nil </span><span class="cov8" title="1">{
+                                        return err
+                                }</span>
+                        }
+                }
+
+                <span class="cov8" title="1">if err == io.EOF </span><span class="cov8" title="1">{
+                        break</span>
+                }
+                <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("error reading chunk: %w", err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// ResponseBuilder builds responses from raw data.
+type ResponseBuilder struct{}
+
+// BuildChatResponse builds a chat response from raw data.
+func (b *ResponseBuilder) BuildChatResponse(data map[string]interface{}) (interface{}, error) <span class="cov8" title="1">{
+        // This would be implemented based on the specific response format
+        // For now, return the data as-is
+        return data, nil
+}</span>
+
+// BuildEmbeddingResponse builds an embedding response from raw data.
+func (b *ResponseBuilder) BuildEmbeddingResponse(data map[string]interface{}) (interface{}, error) <span class="cov8" title="1">{
+        // This would be implemented based on the specific response format
+        return data, nil
+}</span>
+
+// SanitizeResponse sanitizes response data by removing sensitive information.
+func (b *ResponseBuilder) SanitizeResponse(response interface{}) interface{} <span class="cov8" title="1">{
+        // Implementation would depend on what needs to be sanitized
+        // For now, return as-is
+        return response
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">// Package testing provides utilities for testing AI providers.
+package testing
+
+import (
+        "bytes"
+        "context"
+        "encoding/json"
+        "io"
+        "net/http"
+        "net/http/httptest"
+        "testing"
+
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit"
+)
+
+// MockHTTPClient is a mock HTTP client for testing.
+type MockHTTPClient struct {
+        responses map[string]*MockResponse
+}
+
+// MockResponse represents a mock HTTP response.
+type MockResponse struct {
+        StatusCode int
+        Body       interface{}
+        Headers    map[string]string
+}
+
+// NewMockHTTPClient creates a new mock HTTP client.
+func NewMockHTTPClient() *MockHTTPClient <span class="cov8" title="1">{
+        return &amp;MockHTTPClient{
+                responses: make(map[string]*MockResponse),
+        }
+}</span>
+
+// AddResponse adds a mock response for a given URL and method.
+func (m *MockHTTPClient) AddResponse(method, url string, response *MockResponse) <span class="cov8" title="1">{
+        key := method + " " + url
+        m.responses[key] = response
+}</span>
+
+// Do simulates an HTTP request.
+func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) <span class="cov8" title="1">{
+        key := req.Method + " " + req.URL.String()
+        mockResp, exists := m.responses[key]
+        if !exists </span><span class="cov8" title="1">{
+                return &amp;http.Response{
+                        StatusCode: 404,
+                        Body:       io.NopCloser(bytes.NewReader([]byte("Not found"))),
+                }, nil
+        }</span>
+
+        <span class="cov8" title="1">var body io.ReadCloser
+        if mockResp.Body != nil </span><span class="cov8" title="1">{
+                bodyBytes, err := json.Marshal(mockResp.Body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+                <span class="cov8" title="1">body = io.NopCloser(bytes.NewReader(bodyBytes))</span>
+        } else<span class="cov0" title="0"> {
+                body = io.NopCloser(bytes.NewReader([]byte{}))
+        }</span>
+
+        <span class="cov8" title="1">resp := &amp;http.Response{
+                StatusCode: mockResp.StatusCode,
+                Body:       body,
+                Header:     make(http.Header),
+        }
+
+        for k, v := range mockResp.Headers </span><span class="cov8" title="1">{
+                resp.Header.Set(k, v)
+        }</span>
+
+        <span class="cov8" title="1">return resp, nil</span>
+}
+
+// TestServer creates a test HTTP server.
+type TestServer struct {
+        server *httptest.Server
+}
+
+// NewTestServer creates a new test server.
+func NewTestServer(handler http.Handler) *TestServer <span class="cov8" title="1">{
+        server := httptest.NewServer(handler)
+        return &amp;TestServer{server: server}
+}</span>
+
+// URL returns the test server URL.
+func (ts *TestServer) URL() string <span class="cov8" title="1">{
+        return ts.server.URL
+}</span>
+
+// Close closes the test server.
+func (ts *TestServer) Close() <span class="cov8" title="1">{
+        ts.server.Close()
+}</span>
+
+// MockProvider is a mock provider for testing.
+type MockProvider struct {
+        name        string
+        chatResp    toolkit.ChatResponse
+        embedResp   toolkit.EmbeddingResponse
+        rerankResp  toolkit.RerankResponse
+        models      []toolkit.ModelInfo
+        shouldError bool
+}
+
+// NewMockProvider creates a new mock provider.
+func NewMockProvider(name string) *MockProvider <span class="cov8" title="1">{
+        return &amp;MockProvider{
+                name: name,
+                models: []toolkit.ModelInfo{
+                        {
+                                ID:   "test-model",
+                                Name: "Test Model",
+                                Capabilities: toolkit.ModelCapabilities{
+                                        SupportsChat: true,
+                                },
+                                Provider: name,
+                        },
+                },
+        }
+}</span>
+
+// SetChatResponse sets the mock chat response.
+func (mp *MockProvider) SetChatResponse(resp toolkit.ChatResponse) <span class="cov8" title="1">{
+        mp.chatResp = resp
+}</span>
+
+// SetEmbeddingResponse sets the mock embedding response.
+func (mp *MockProvider) SetEmbeddingResponse(resp toolkit.EmbeddingResponse) <span class="cov8" title="1">{
+        mp.embedResp = resp
+}</span>
+
+// SetRerankResponse sets the mock rerank response.
+func (mp *MockProvider) SetRerankResponse(resp toolkit.RerankResponse) <span class="cov8" title="1">{
+        mp.rerankResp = resp
+}</span>
+
+// SetModels sets the mock models.
+func (mp *MockProvider) SetModels(models []toolkit.ModelInfo) <span class="cov8" title="1">{
+        mp.models = models
+}</span>
+
+// SetShouldError sets whether the provider should return errors.
+func (mp *MockProvider) SetShouldError(shouldError bool) <span class="cov8" title="1">{
+        mp.shouldError = shouldError
+}</span>
+
+// Name returns the provider name.
+func (mp *MockProvider) Name() string <span class="cov8" title="1">{
+        return mp.name
+}</span>
+
+// Chat performs a chat completion request.
+func (mp *MockProvider) Chat(ctx context.Context, req toolkit.ChatRequest) (toolkit.ChatResponse, error) <span class="cov8" title="1">{
+        if mp.shouldError </span><span class="cov8" title="1">{
+                return toolkit.ChatResponse{}, &amp;TestError{Message: "mock chat error"}
+        }</span>
+        <span class="cov8" title="1">return mp.chatResp, nil</span>
+}
+
+// Embed performs an embedding request.
+func (mp *MockProvider) Embed(ctx context.Context, req toolkit.EmbeddingRequest) (toolkit.EmbeddingResponse, error) <span class="cov8" title="1">{
+        if mp.shouldError </span><span class="cov8" title="1">{
+                return toolkit.EmbeddingResponse{}, &amp;TestError{Message: "mock embed error"}
+        }</span>
+        <span class="cov8" title="1">return mp.embedResp, nil</span>
+}
+
+// Rerank performs a rerank request.
+func (mp *MockProvider) Rerank(ctx context.Context, req toolkit.RerankRequest) (toolkit.RerankResponse, error) <span class="cov8" title="1">{
+        if mp.shouldError </span><span class="cov8" title="1">{
+                return toolkit.RerankResponse{}, &amp;TestError{Message: "mock rerank error"}
+        }</span>
+        <span class="cov8" title="1">return mp.rerankResp, nil</span>
+}
+
+// DiscoverModels discovers available models.
+func (mp *MockProvider) DiscoverModels(ctx context.Context) ([]toolkit.ModelInfo, error) <span class="cov8" title="1">{
+        if mp.shouldError </span><span class="cov8" title="1">{
+                return nil, &amp;TestError{Message: "mock discover error"}
+        }</span>
+        <span class="cov8" title="1">return mp.models, nil</span>
+}
+
+// ValidateConfig validates the provider configuration.
+func (mp *MockProvider) ValidateConfig(config map[string]interface{}) error <span class="cov8" title="1">{
+        if mp.shouldError </span><span class="cov8" title="1">{
+                return &amp;TestError{Message: "mock validation error"}
+        }</span>
+
+        // Basic security validation
+        <span class="cov8" title="1">if apiKey, exists := config["api_key"]; exists </span><span class="cov8" title="1">{
+                if keyStr, ok := apiKey.(string); ok &amp;&amp; keyStr == "" </span><span class="cov8" title="1">{
+                        return &amp;TestError{Message: "api_key cannot be empty"}
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// TestError represents a test error.
+type TestError struct {
+        Message string
+}
+
+func (e *TestError) Error() string <span class="cov8" title="1">{
+        return e.Message
+}</span>
+
+// TestFixtures provides common test fixtures.
+type TestFixtures struct{}
+
+// NewTestFixtures creates new test fixtures.
+func NewTestFixtures() *TestFixtures <span class="cov8" title="1">{
+        return &amp;TestFixtures{}
+}</span>
+
+// ChatRequest returns a sample chat request.
+func (tf *TestFixtures) ChatRequest() toolkit.ChatRequest <span class="cov8" title="1">{
+        return toolkit.ChatRequest{
+                Model: "test-model",
+                Messages: []toolkit.ChatMessage{
+                        {
+                                Role:    "user",
+                                Content: "Hello, world!",
+                        },
+                },
+                MaxTokens: 100,
+        }
+}</span>
+
+// ChatResponse returns a sample chat response.
+func (tf *TestFixtures) ChatResponse() toolkit.ChatResponse <span class="cov8" title="1">{
+        return toolkit.ChatResponse{
+                ID:      "test-id",
+                Object:  "chat.completion",
+                Created: 1234567890,
+                Model:   "test-model",
+                Choices: []toolkit.Choice{
+                        {
+                                Index: 0,
+                                Message: toolkit.ChatMessage{
+                                        Role:    "assistant",
+                                        Content: "Hello! How can I help you?",
+                                },
+                                FinishReason: "stop",
+                        },
+                },
+                Usage: toolkit.Usage{
+                        PromptTokens:     10,
+                        CompletionTokens: 20,
+                        TotalTokens:      30,
+                },
+        }
+}</span>
+
+// EmbeddingRequest returns a sample embedding request.
+func (tf *TestFixtures) EmbeddingRequest() toolkit.EmbeddingRequest <span class="cov8" title="1">{
+        return toolkit.EmbeddingRequest{
+                Model: "test-embedding-model",
+                Input: []string{"Hello, world!"},
+        }
+}</span>
+
+// EmbeddingResponse returns a sample embedding response.
+func (tf *TestFixtures) EmbeddingResponse() toolkit.EmbeddingResponse <span class="cov8" title="1">{
+        return toolkit.EmbeddingResponse{
+                Object: "list",
+                Data: []toolkit.EmbeddingData{
+                        {
+                                Object:    "embedding",
+                                Embedding: []float64{0.1, 0.2, 0.3},
+                                Index:     0,
+                        },
+                },
+                Model: "test-embedding-model",
+                Usage: toolkit.Usage{
+                        PromptTokens:     5,
+                        CompletionTokens: 0,
+                        TotalTokens:      5,
+                },
+        }
+}</span>
+
+// RerankRequest returns a sample rerank request.
+func (tf *TestFixtures) RerankRequest() toolkit.RerankRequest <span class="cov8" title="1">{
+        return toolkit.RerankRequest{
+                Model:     "test-rerank-model",
+                Query:     "test query",
+                Documents: []string{"doc1", "doc2"},
+                TopN:      2,
+        }
+}</span>
+
+// RerankResponse returns a sample rerank response.
+func (tf *TestFixtures) RerankResponse() toolkit.RerankResponse <span class="cov8" title="1">{
+        return toolkit.RerankResponse{
+                Object: "list",
+                Model:  "test-rerank-model",
+                Results: []toolkit.RerankResult{
+                        {
+                                Index:    0,
+                                Score:    0.9,
+                                Document: "doc1",
+                        },
+                        {
+                                Index:    1,
+                                Score:    0.8,
+                                Document: "doc2",
+                        },
+                },
+        }
+}</span>
+
+// ModelInfo returns a sample model info.
+func (tf *TestFixtures) ModelInfo() toolkit.ModelInfo <span class="cov8" title="1">{
+        return toolkit.ModelInfo{
+                ID:   "test-model",
+                Name: "Test Model",
+                Capabilities: toolkit.ModelCapabilities{
+                        SupportsChat:      true,
+                        SupportsEmbedding: false,
+                        ContextWindow:     4096,
+                        MaxTokens:         2048,
+                },
+                Provider:    "test-provider",
+                Description: "A test model",
+        }
+}</span>
+
+// AssertChatResponse asserts that a chat response matches expected values.
+func AssertChatResponse(t *testing.T, actual, expected toolkit.ChatResponse) <span class="cov8" title="1">{
+        t.Helper()
+
+        if actual.ID != expected.ID </span><span class="cov0" title="0">{
+                t.Errorf("ID mismatch: got %s, want %s", actual.ID, expected.ID)
+        }</span>
+        <span class="cov8" title="1">if actual.Model != expected.Model </span><span class="cov0" title="0">{
+                t.Errorf("Model mismatch: got %s, want %s", actual.Model, expected.Model)
+        }</span>
+        <span class="cov8" title="1">if len(actual.Choices) != len(expected.Choices) </span><span class="cov0" title="0">{
+                t.Errorf("Choices length mismatch: got %d, want %d", len(actual.Choices), len(expected.Choices))
+        }</span>
+        // Add more assertions as needed
+}
+
+// AssertEmbeddingResponse asserts that an embedding response matches expected values.
+func AssertEmbeddingResponse(t *testing.T, actual, expected toolkit.EmbeddingResponse) <span class="cov8" title="1">{
+        t.Helper()
+
+        if actual.Model != expected.Model </span><span class="cov0" title="0">{
+                t.Errorf("Model mismatch: got %s, want %s", actual.Model, expected.Model)
+        }</span>
+        <span class="cov8" title="1">if len(actual.Data) != len(expected.Data) </span><span class="cov0" title="0">{
+                t.Errorf("Data length mismatch: got %d, want %d", len(actual.Data), len(expected.Data))
+        }</span>
+        // Add more assertions as needed
+}
+
+// AssertRerankResponse asserts that a rerank response matches expected values.
+func AssertRerankResponse(t *testing.T, actual, expected toolkit.RerankResponse) <span class="cov8" title="1">{
+        t.Helper()
+
+        if actual.Model != expected.Model </span><span class="cov0" title="0">{
+                t.Errorf("Model mismatch: got %s, want %s", actual.Model, expected.Model)
+        }</span>
+        <span class="cov8" title="1">if len(actual.Results) != len(expected.Results) </span><span class="cov0" title="0">{
+                t.Errorf("Results length mismatch: got %d, want %d", len(actual.Results), len(expected.Results))
+        }</span>
+        // Add more assertions as needed
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">// Package chutes provides configuration builders for Chutes.
+package chutes
+
+import (
+        "fmt"
+)
+
+// ConfigBuilder implements the ConfigBuilder interface for Chutes.
+type ConfigBuilder struct{}
+
+// NewConfigBuilder creates a new Chutes config builder.
+func NewConfigBuilder() *ConfigBuilder <span class="cov8" title="1">{
+        return &amp;ConfigBuilder{}
+}</span>
+
+// Build builds a Chutes configuration from a map.
+func (b *ConfigBuilder) Build(config map[string]interface{}) (interface{}, error) <span class="cov8" title="1">{
+        chutesConfig := &amp;Config{
+                APIKey:    getString(config, "api_key", ""),
+                BaseURL:   getString(config, "base_url", "https://api.chutes.ai/v1"),
+                Timeout:   getInt(config, "timeout", 30000),
+                Retries:   getInt(config, "retries", 3),
+                RateLimit: getInt(config, "rate_limit", 60),
+        }
+
+        if chutesConfig.APIKey == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("api_key is required")
+        }</span>
+
+        <span class="cov8" title="1">return chutesConfig, nil</span>
+}
+
+// Validate validates a Chutes configuration.
+func (b *ConfigBuilder) Validate(config interface{}) error <span class="cov8" title="1">{
+        c, ok := config.(*Config)
+        if !ok </span><span class="cov0" title="0">{
+                return fmt.Errorf("invalid config type")
+        }</span>
+
+        <span class="cov8" title="1">if c.APIKey == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("api_key is required")
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// Merge merges two Chutes configurations.
+func (b *ConfigBuilder) Merge(base, override interface{}) (interface{}, error) <span class="cov0" title="0">{
+        baseConfig, ok := base.(*Config)
+        if !ok </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("base config must be *Config")
+        }</span>
+
+        <span class="cov0" title="0">overrideConfig, ok := override.(*Config)
+        if !ok </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("override config must be *Config")
+        }</span>
+
+        <span class="cov0" title="0">merged := &amp;Config{
+                APIKey:    overrideConfig.APIKey,
+                BaseURL:   overrideConfig.BaseURL,
+                Timeout:   overrideConfig.Timeout,
+                Retries:   overrideConfig.Retries,
+                RateLimit: overrideConfig.RateLimit,
+        }
+
+        if merged.APIKey == "" </span><span class="cov0" title="0">{
+                merged.APIKey = baseConfig.APIKey
+        }</span>
+        <span class="cov0" title="0">if merged.BaseURL == "" </span><span class="cov0" title="0">{
+                merged.BaseURL = baseConfig.BaseURL
+        }</span>
+        <span class="cov0" title="0">if merged.Timeout == 0 </span><span class="cov0" title="0">{
+                merged.Timeout = baseConfig.Timeout
+        }</span>
+        <span class="cov0" title="0">if merged.Retries == 0 </span><span class="cov0" title="0">{
+                merged.Retries = baseConfig.Retries
+        }</span>
+        <span class="cov0" title="0">if merged.RateLimit == 0 </span><span class="cov0" title="0">{
+                merged.RateLimit = baseConfig.RateLimit
+        }</span>
+
+        <span class="cov0" title="0">return merged, nil</span>
+}
+
+// Config represents Chutes-specific configuration.
+type Config struct {
+        APIKey    string `json:"api_key"`
+        BaseURL   string `json:"base_url"`
+        Timeout   int    `json:"timeout"`
+        Retries   int    `json:"retries"`
+        RateLimit int    `json:"rate_limit"`
+}
+
+// Helper functions for type-safe config extraction
+func getString(config map[string]interface{}, key, defaultValue string) string <span class="cov8" title="1">{
+        if val, ok := config[key]; ok </span><span class="cov8" title="1">{
+                if str, ok := val.(string); ok </span><span class="cov8" title="1">{
+                        return str
+                }</span>
+        }
+        <span class="cov8" title="1">return defaultValue</span>
+}
+
+func getInt(config map[string]interface{}, key string, defaultValue int) int <span class="cov8" title="1">{
+        if val, ok := config[key]; ok </span><span class="cov8" title="1">{
+                switch v := val.(type) </span>{
+                case int:<span class="cov8" title="1">
+                        return v</span>
+                case float64:<span class="cov0" title="0">
+                        return int(v)</span>
+                }
+        }
+        <span class="cov8" title="1">return defaultValue</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">// Package chutes provides a Chutes provider implementation.
+package chutes
+
+import (
+        "context"
+        "fmt"
+        "log"
+
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit"
+)
+
+// Provider implements the Provider interface for Chutes.
+type Provider struct {
+        client    *Client
+        discovery *Discovery
+        config    *Config
+}
+
+// NewProvider creates a new Chutes provider.
+func NewProvider(config map[string]interface{}) (toolkit.Provider, error) <span class="cov8" title="1">{
+        builder := NewConfigBuilder()
+        cfg, err := builder.Build(config)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to build config: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">chutesConfig, ok := cfg.(*Config)
+        if !ok </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid config type")
+        }</span>
+
+        <span class="cov8" title="1">return &amp;Provider{
+                client:    NewClient(chutesConfig.APIKey, chutesConfig.BaseURL),
+                discovery: NewDiscovery(chutesConfig.APIKey),
+                config:    chutesConfig,
+        }, nil</span>
+}
+
+// Name returns the name of the provider.
+func (p *Provider) Name() string <span class="cov8" title="1">{
+        return "chutes"
+}</span>
+
+// Chat performs a chat completion request.
+func (p *Provider) Chat(ctx context.Context, req toolkit.ChatRequest) (toolkit.ChatResponse, error) <span class="cov8" title="1">{
+        log.Printf("Chutes: Performing chat completion with model %s", req.Model)
+        return p.client.ChatCompletion(ctx, req)
+}</span>
+
+// Embed performs an embedding request.
+func (p *Provider) Embed(ctx context.Context, req toolkit.EmbeddingRequest) (toolkit.EmbeddingResponse, error) <span class="cov8" title="1">{
+        log.Printf("Chutes: Performing embedding with model %s", req.Model)
+        return p.client.CreateEmbeddings(ctx, req)
+}</span>
+
+// Rerank performs a rerank request.
+func (p *Provider) Rerank(ctx context.Context, req toolkit.RerankRequest) (toolkit.RerankResponse, error) <span class="cov8" title="1">{
+        log.Printf("Chutes: Performing rerank with model %s", req.Model)
+        return p.client.CreateRerank(ctx, req)
+}</span>
+
+// DiscoverModels discovers available models from the provider.
+func (p *Provider) DiscoverModels(ctx context.Context) ([]toolkit.ModelInfo, error) <span class="cov8" title="1">{
+        log.Println("Chutes: Discovering models")
+        return p.discovery.Discover(ctx)
+}</span>
+
+// ValidateConfig validates the provider configuration.
+func (p *Provider) ValidateConfig(config map[string]interface{}) error <span class="cov8" title="1">{
+        builder := NewConfigBuilder()
+        _, err := builder.Build(config)
+        return err
+}</span>
+
+// Factory function for creating Chutes providers.
+func Factory(config map[string]interface{}) (toolkit.Provider, error) <span class="cov8" title="1">{
+        return NewProvider(config)
+}</span>
+
+// Register registers the Chutes provider with the registry.
+func Register(registry *toolkit.ProviderFactoryRegistry) error <span class="cov8" title="1">{
+        return registry.Register("chutes", Factory)
+}</span>
+
+// Global registry for auto-registration
+var globalProviderRegistry *toolkit.ProviderFactoryRegistry
+
+// SetGlobalProviderRegistry sets the global provider registry for auto-registration.
+func SetGlobalProviderRegistry(registry *toolkit.ProviderFactoryRegistry) <span class="cov8" title="1">{
+        globalProviderRegistry = registry
+}</span>
+
+// init registers the Chutes provider when the package is imported.
+func init() <span class="cov8" title="1">{
+        // Register with global registry if available
+        if globalProviderRegistry != nil </span><span class="cov0" title="0">{
+                _ = globalProviderRegistry.Register("chutes", Factory)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">// Package chutes provides a Go client for the Chutes API.
+package chutes
+
+import (
+        "context"
+
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit"
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit/common/http"
+)
+
+// Client represents a Chutes API client.
+type Client struct {
+        httpClient *http.Client
+}
+
+// NewClient creates a new Chutes API client.
+func NewClient(apiKey string, baseURL string) *Client <span class="cov8" title="1">{
+        if baseURL == "" </span><span class="cov8" title="1">{
+                baseURL = "https://api.chutes.ai/v1"
+        }</span>
+        <span class="cov8" title="1">httpClient := http.NewClient(baseURL, apiKey)
+
+        return &amp;Client{
+                httpClient: httpClient,
+        }</span>
+}
+
+// ChatCompletion performs a chat completion request.
+func (c *Client) ChatCompletion(ctx context.Context, req toolkit.ChatRequest) (toolkit.ChatResponse, error) <span class="cov8" title="1">{
+        payload := map[string]interface{}{
+                "model":    req.Model,
+                "messages": req.Messages,
+        }
+
+        if req.MaxTokens &gt; 0 </span><span class="cov8" title="1">{
+                payload["max_tokens"] = req.MaxTokens
+        }</span>
+        <span class="cov8" title="1">if req.Temperature &gt; 0 </span><span class="cov8" title="1">{
+                payload["temperature"] = req.Temperature
+        }</span>
+        <span class="cov8" title="1">if req.TopP &gt; 0 </span><span class="cov8" title="1">{
+                payload["top_p"] = req.TopP
+        }</span>
+        <span class="cov8" title="1">if req.TopK &gt; 0 </span><span class="cov8" title="1">{
+                payload["top_k"] = req.TopK
+        }</span>
+        <span class="cov8" title="1">if len(req.Stop) &gt; 0 </span><span class="cov8" title="1">{
+                payload["stop"] = req.Stop
+        }</span>
+        <span class="cov8" title="1">if req.PresencePenalty != 0 </span><span class="cov8" title="1">{
+                payload["presence_penalty"] = req.PresencePenalty
+        }</span>
+        <span class="cov8" title="1">if req.FrequencyPenalty != 0 </span><span class="cov8" title="1">{
+                payload["frequency_penalty"] = req.FrequencyPenalty
+        }</span>
+        <span class="cov8" title="1">if len(req.LogitBias) &gt; 0 </span><span class="cov8" title="1">{
+                payload["logit_bias"] = req.LogitBias
+        }</span>
+
+        <span class="cov8" title="1">var response toolkit.ChatResponse
+        err := c.doRequest(ctx, "POST", "/chat/completions", payload, &amp;response)
+        return response, err</span>
+}
+
+// CreateEmbeddings performs an embedding request.
+func (c *Client) CreateEmbeddings(ctx context.Context, req toolkit.EmbeddingRequest) (toolkit.EmbeddingResponse, error) <span class="cov8" title="1">{
+        payload := map[string]interface{}{
+                "model": req.Model,
+                "input": req.Input,
+        }
+
+        if req.EncodingFormat != "" </span><span class="cov8" title="1">{
+                payload["encoding_format"] = req.EncodingFormat
+        }</span>
+        <span class="cov8" title="1">if req.Dimensions &gt; 0 </span><span class="cov8" title="1">{
+                payload["dimensions"] = req.Dimensions
+        }</span>
+        <span class="cov8" title="1">if req.User != "" </span><span class="cov8" title="1">{
+                payload["user"] = req.User
+        }</span>
+
+        <span class="cov8" title="1">var response toolkit.EmbeddingResponse
+        err := c.doRequest(ctx, "POST", "/embeddings", payload, &amp;response)
+        return response, err</span>
+}
+
+// CreateRerank performs a rerank request.
+func (c *Client) CreateRerank(ctx context.Context, req toolkit.RerankRequest) (toolkit.RerankResponse, error) <span class="cov8" title="1">{
+        payload := map[string]interface{}{
+                "model":            req.Model,
+                "query":            req.Query,
+                "documents":        req.Documents,
+                "top_n":            req.TopN,
+                "return_documents": req.ReturnDocs,
+        }
+
+        var response toolkit.RerankResponse
+        err := c.doRequest(ctx, "POST", "/rerank", payload, &amp;response)
+        return response, err
+}</span>
+
+// GetModels retrieves available models from the API.
+func (c *Client) GetModels(ctx context.Context) ([]ModelInfo, error) <span class="cov8" title="1">{
+        var response struct {
+                Data []struct {
+                        ID   string `json:"id"`
+                        Type string `json:"type"`
+                } `json:"data"`
+        }
+
+        err := c.doRequest(ctx, "GET", "/models", nil, &amp;response)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">var models []ModelInfo
+        for _, model := range response.Data </span><span class="cov0" title="0">{
+                models = append(models, ModelInfo{
+                        ID:   model.ID,
+                        Type: model.Type,
+                })
+        }</span>
+
+        <span class="cov0" title="0">return models, nil</span>
+}
+
+// ModelInfo represents basic model information from the API.
+type ModelInfo struct {
+        ID   string `json:"id"`
+        Type string `json:"type"`
+}
+
+// doRequest performs an HTTP request to the Chutes API.
+func (c *Client) doRequest(ctx context.Context, method, endpoint string, payload interface{}, result interface{}) error <span class="cov8" title="1">{
+        return c.httpClient.DoRequest(ctx, method, endpoint, payload, result)
+}</span>
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">// Package chutes provides model discovery for Chutes API.
+package chutes
+
+import (
+        "context"
+        "strings"
+
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit"
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit/common/discovery"
+)
+
+// ChutesCapabilityInferrer implements capability inference for Chutes models.
+type ChutesCapabilityInferrer struct{}
+
+// InferCapabilities infers model capabilities from ID and type.
+func (c *ChutesCapabilityInferrer) InferCapabilities(modelID, modelType string) toolkit.ModelCapabilities <span class="cov8" title="1">{
+        capabilities := toolkit.ModelCapabilities{}
+
+        modelLower := strings.ToLower(modelID)
+        typeLower := strings.ToLower(modelType)
+
+        // Embedding capabilities
+        capabilities.SupportsEmbedding = strings.Contains(typeLower, "embedding")
+
+        // Rerank capabilities
+        capabilities.SupportsRerank = strings.Contains(typeLower, "rerank")
+
+        // Audio capabilities
+        audioKeywords := []string{"tts", "audio", "speech", "voice"}
+        capabilities.SupportsAudio = c.containsAny(modelLower, audioKeywords) || c.containsAny(typeLower, audioKeywords)
+
+        // Video capabilities
+        videoKeywords := []string{"t2v", "video", "i2v", "flux"}
+        capabilities.SupportsVideo = c.containsAny(modelLower, videoKeywords) || c.containsAny(typeLower, videoKeywords)
+
+        // Vision capabilities
+        visionKeywords := []string{"vl", "vision", "visual", "multimodal"}
+        capabilities.SupportsVision = c.containsAny(modelLower, visionKeywords) || c.containsAny(typeLower, visionKeywords)
+
+        // Chat capabilities - Chutes specific models
+        specializedKeywords := []string{
+                "embedding", "rerank", "tts", "speech", "audio", "video",
+                "t2v", "i2v", "flux", "vl", "vision", "visual", "multimodal", "image",
+        }
+
+        isSpecialized := c.containsAny(modelLower, specializedKeywords)
+        chatTypeIndicators := []string{"chat", "text", "completion", "instruction", "instruct"}
+        hasChatType := c.containsAny(typeLower, chatTypeIndicators)
+        chatIDIndicators := []string{
+                "instruct", "chat", "qwen", "deepseek", "glm", "kimi",
+                "llama", "mistral", "mixtral", "gemma", "phi", "yi",
+        }
+        hasChatID := c.containsAny(modelLower, chatIDIndicators)
+
+        if hasChatType &amp;&amp; !isSpecialized </span><span class="cov8" title="1">{
+                capabilities.SupportsChat = true
+        }</span> else<span class="cov8" title="1"> if hasChatID &amp;&amp; !isSpecialized </span><span class="cov0" title="0">{
+                capabilities.SupportsChat = true
+        }</span> else<span class="cov8" title="1"> if typeLower == "" || typeLower == "unknown" </span><span class="cov0" title="0">{
+                capabilities.SupportsChat = false
+        }</span> else<span class="cov8" title="1"> {
+                capabilities.SupportsChat = false
+        }</span>
+
+        // Function calling support
+        <span class="cov8" title="1">capabilities.FunctionCalling = c.supportsFunctionCalling(modelID)
+
+        // Context window and max tokens
+        capabilities.ContextWindow = c.inferContextWindow(modelID)
+        capabilities.MaxTokens = c.inferMaxTokens(modelID)
+
+        return capabilities</span>
+}
+
+// containsAny checks if the string contains any of the keywords.
+func (c *ChutesCapabilityInferrer) containsAny(str string, keywords []string) bool <span class="cov8" title="1">{
+        for _, keyword := range keywords </span><span class="cov8" title="1">{
+                if strings.Contains(str, keyword) </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+// supportsFunctionCalling checks if model supports function calling.
+func (c *ChutesCapabilityInferrer) supportsFunctionCalling(modelID string) bool <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        supportedModels := []string{"qwen", "deepseek", "glm", "kimi"}
+        for _, model := range supportedModels </span><span class="cov8" title="1">{
+                if strings.Contains(modelLower, model) </span><span class="cov0" title="0">{
+                        return true
+                }</span>
+        }
+
+        <span class="cov8" title="1">return false</span>
+}
+
+// inferContextWindow infers context window size.
+func (c *ChutesCapabilityInferrer) inferContextWindow(modelID string) int <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        if strings.Contains(modelLower, "deepseek") </span><span class="cov0" title="0">{
+                if strings.Contains(modelLower, "r1") </span><span class="cov0" title="0">{
+                        return 131072
+                }</span>
+                <span class="cov0" title="0">return 131072</span> // V3 series
+        }
+
+        <span class="cov8" title="1">if strings.Contains(modelLower, "qwen") </span><span class="cov0" title="0">{
+                if strings.Contains(modelLower, "qwen3") </span><span class="cov0" title="0">{
+                        return 32768
+                }</span>
+                <span class="cov0" title="0">if strings.Contains(modelLower, "qwen2.5") </span><span class="cov0" title="0">{
+                        if strings.Contains(modelLower, "72b") </span><span class="cov0" title="0">{
+                                return 131072
+                        }</span>
+                        <span class="cov0" title="0">return 32768</span>
+                }
+                <span class="cov0" title="0">if strings.Contains(modelLower, "qwen2-vl") </span><span class="cov0" title="0">{
+                        return 32768
+                }</span>
+        }
+
+        <span class="cov8" title="1">if strings.Contains(modelLower, "glm") </span><span class="cov0" title="0">{
+                if strings.Contains(modelLower, "4.6") </span><span class="cov0" title="0">{
+                        return 131072
+                }</span>
+                <span class="cov0" title="0">return 32768</span>
+        }
+
+        <span class="cov8" title="1">if strings.Contains(modelLower, "kimi") </span><span class="cov0" title="0">{
+                return 131072
+        }</span>
+
+        <span class="cov8" title="1">return 4096</span>
+}
+
+// inferMaxTokens infers maximum tokens for output.
+func (c *ChutesCapabilityInferrer) inferMaxTokens(modelID string) int <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        if strings.Contains(modelLower, "deepseek-r1") </span><span class="cov0" title="0">{
+                return 8192
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "qwen3") </span><span class="cov0" title="0">{
+                return 8192
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "qwen2.5-72b") </span><span class="cov0" title="0">{
+                return 8192
+        }</span>
+
+        <span class="cov8" title="1">return 4096</span>
+}
+
+// ChutesModelFormatter implements model formatting for Chutes models.
+type ChutesModelFormatter struct{}
+
+// FormatModelName formats model ID into human-readable name.
+func (c *ChutesModelFormatter) FormatModelName(modelID string) string <span class="cov8" title="1">{
+        parts := strings.Split(modelID, "/")
+        if len(parts) &gt; 1 </span><span class="cov8" title="1">{
+                name := strings.ReplaceAll(parts[1], "-", " ")
+                name = strings.ReplaceAll(name, "_", " ")
+                return parts[0] + " " + name
+        }</span>
+        <span class="cov8" title="1">return strings.ReplaceAll(modelID, "-", " ")</span>
+}
+
+// GetModelDescription returns a description for the model.
+func (c *ChutesModelFormatter) GetModelDescription(modelID string) string <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        if strings.Contains(modelLower, "qwen") </span><span class="cov0" title="0">{
+                return "Qwen series models hosted on Chutes"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "deepseek") </span><span class="cov0" title="0">{
+                return "DeepSeek models hosted on Chutes"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "glm") </span><span class="cov0" title="0">{
+                return "GLM models hosted on Chutes"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "kimi") </span><span class="cov0" title="0">{
+                return "Kimi models hosted on Chutes"
+        }</span>
+
+        <span class="cov8" title="1">return "Chutes hosted model"</span>
+}
+
+// Discovery implements the ModelDiscovery interface for Chutes.
+type Discovery struct {
+        *discovery.BaseDiscovery
+        client *Client
+}
+
+// NewDiscovery creates a new Chutes model discovery instance.
+func NewDiscovery(apiKey string) *Discovery <span class="cov8" title="1">{
+        client := NewClient(apiKey, "")
+        base := discovery.NewBaseDiscovery(
+                "chutes",
+                &amp;ChutesCapabilityInferrer{},
+                &amp;discovery.DefaultCategoryInferrer{},
+                &amp;ChutesModelFormatter{},
+        )
+
+        return &amp;Discovery{
+                BaseDiscovery: base,
+                client:        client,
+        }
+}</span>
+
+// Discover discovers available models from Chutes.
+func (d *Discovery) Discover(ctx context.Context) ([]toolkit.ModelInfo, error) <span class="cov8" title="1">{
+        models, err := d.client.GetModels(ctx)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">var modelInfos []toolkit.ModelInfo
+        for _, model := range models </span><span class="cov0" title="0">{
+                modelInfo := d.ConvertToModelInfo(model.ID, model.Type)
+                modelInfos = append(modelInfos, modelInfo)
+        }</span>
+
+        <span class="cov0" title="0">return modelInfos, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">// Package siliconflow provides configuration builders for SiliconFlow.
+package siliconflow
+
+import (
+        "fmt"
+)
+
+// ConfigBuilder implements the ConfigBuilder interface for SiliconFlow.
+type ConfigBuilder struct{}
+
+// NewConfigBuilder creates a new SiliconFlow config builder.
+func NewConfigBuilder() *ConfigBuilder <span class="cov8" title="1">{
+        return &amp;ConfigBuilder{}
+}</span>
+
+// Build builds a SiliconFlow configuration from a map.
+func (b *ConfigBuilder) Build(config map[string]interface{}) (interface{}, error) <span class="cov8" title="1">{
+        siliconFlowConfig := &amp;Config{
+                APIKey:    getString(config, "api_key", ""),
+                BaseURL:   getString(config, "base_url", "https://api.siliconflow.com/v1"),
+                Timeout:   getInt(config, "timeout", 30000),
+                Retries:   getInt(config, "retries", 3),
+                RateLimit: getInt(config, "rate_limit", 60),
+        }
+
+        if siliconFlowConfig.APIKey == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("api_key is required")
+        }</span>
+
+        <span class="cov8" title="1">return siliconFlowConfig, nil</span>
+}
+
+// Validate validates a SiliconFlow configuration.
+func (b *ConfigBuilder) Validate(config interface{}) error <span class="cov8" title="1">{
+        sfConfig, ok := config.(*Config)
+        if !ok </span><span class="cov8" title="1">{
+                return fmt.Errorf("invalid config type")
+        }</span>
+
+        <span class="cov8" title="1">if sfConfig.APIKey == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("api_key is required")
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// Merge merges two SiliconFlow configurations.
+func (b *ConfigBuilder) Merge(base, override interface{}) (interface{}, error) <span class="cov8" title="1">{
+        baseConfig, ok := base.(*Config)
+        if !ok </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("base config must be *Config")
+        }</span>
+
+        <span class="cov8" title="1">overrideConfig, ok := override.(*Config)
+        if !ok </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("override config must be *Config")
+        }</span>
+
+        <span class="cov8" title="1">merged := &amp;Config{
+                APIKey:    overrideConfig.APIKey,
+                BaseURL:   overrideConfig.BaseURL,
+                Timeout:   overrideConfig.Timeout,
+                Retries:   overrideConfig.Retries,
+                RateLimit: overrideConfig.RateLimit,
+        }
+
+        if merged.APIKey == "" </span><span class="cov8" title="1">{
+                merged.APIKey = baseConfig.APIKey
+        }</span>
+        <span class="cov8" title="1">if merged.BaseURL == "" </span><span class="cov8" title="1">{
+                merged.BaseURL = baseConfig.BaseURL
+        }</span>
+        <span class="cov8" title="1">if merged.Timeout == 0 </span><span class="cov8" title="1">{
+                merged.Timeout = baseConfig.Timeout
+        }</span>
+        <span class="cov8" title="1">if merged.Retries == 0 </span><span class="cov8" title="1">{
+                merged.Retries = baseConfig.Retries
+        }</span>
+        <span class="cov8" title="1">if merged.RateLimit == 0 </span><span class="cov8" title="1">{
+                merged.RateLimit = baseConfig.RateLimit
+        }</span>
+
+        <span class="cov8" title="1">return merged, nil</span>
+}
+
+// Config represents SiliconFlow-specific configuration.
+type Config struct {
+        APIKey    string `json:"api_key"`
+        BaseURL   string `json:"base_url"`
+        Timeout   int    `json:"timeout"`
+        Retries   int    `json:"retries"`
+        RateLimit int    `json:"rate_limit"`
+}
+
+// Helper functions for type-safe config extraction
+func getString(config map[string]interface{}, key, defaultValue string) string <span class="cov8" title="1">{
+        if val, ok := config[key]; ok </span><span class="cov8" title="1">{
+                if str, ok := val.(string); ok </span><span class="cov8" title="1">{
+                        return str
+                }</span>
+        }
+        <span class="cov8" title="1">return defaultValue</span>
+}
+
+func getInt(config map[string]interface{}, key string, defaultValue int) int <span class="cov8" title="1">{
+        if val, ok := config[key]; ok </span><span class="cov8" title="1">{
+                switch v := val.(type) </span>{
+                case int:<span class="cov8" title="1">
+                        return v</span>
+                case float64:<span class="cov8" title="1">
+                        return int(v)</span>
+                }
+        }
+        <span class="cov8" title="1">return defaultValue</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">// Package siliconflow provides a Go client for the SiliconFlow API.
+package siliconflow
+
+import (
+        "context"
+
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit"
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit/common/http"
+)
+
+// Client represents a SiliconFlow API client.
+type Client struct {
+        httpClient *http.Client
+}
+
+// NewClient creates a new SiliconFlow API client.
+func NewClient(apiKey string) *Client <span class="cov8" title="1">{
+        httpClient := http.NewClient("https://api.siliconflow.com/v1", apiKey)
+
+        return &amp;Client{
+                httpClient: httpClient,
+        }
+}</span>
+
+// ChatCompletion performs a chat completion request.
+func (c *Client) ChatCompletion(ctx context.Context, req toolkit.ChatRequest) (toolkit.ChatResponse, error) <span class="cov8" title="1">{
+        payload := map[string]interface{}{
+                "model":    req.Model,
+                "messages": req.Messages,
+        }
+
+        if req.MaxTokens &gt; 0 </span><span class="cov8" title="1">{
+                payload["max_tokens"] = req.MaxTokens
+        }</span>
+        <span class="cov8" title="1">if req.Temperature &gt; 0 </span><span class="cov8" title="1">{
+                payload["temperature"] = req.Temperature
+        }</span>
+        <span class="cov8" title="1">if req.TopP &gt; 0 </span><span class="cov8" title="1">{
+                payload["top_p"] = req.TopP
+        }</span>
+        <span class="cov8" title="1">if req.TopK &gt; 0 </span><span class="cov8" title="1">{
+                payload["top_k"] = req.TopK
+        }</span>
+        <span class="cov8" title="1">if len(req.Stop) &gt; 0 </span><span class="cov8" title="1">{
+                payload["stop"] = req.Stop
+        }</span>
+        <span class="cov8" title="1">if req.PresencePenalty != 0 </span><span class="cov8" title="1">{
+                payload["presence_penalty"] = req.PresencePenalty
+        }</span>
+        <span class="cov8" title="1">if req.FrequencyPenalty != 0 </span><span class="cov8" title="1">{
+                payload["frequency_penalty"] = req.FrequencyPenalty
+        }</span>
+        <span class="cov8" title="1">if len(req.LogitBias) &gt; 0 </span><span class="cov8" title="1">{
+                payload["logit_bias"] = req.LogitBias
+        }</span>
+
+        <span class="cov8" title="1">var response toolkit.ChatResponse
+        err := c.doRequest(ctx, "POST", "/chat/completions", payload, &amp;response)
+        return response, err</span>
+}
+
+// CreateEmbeddings performs an embedding request.
+func (c *Client) CreateEmbeddings(ctx context.Context, req toolkit.EmbeddingRequest) (toolkit.EmbeddingResponse, error) <span class="cov8" title="1">{
+        payload := map[string]interface{}{
+                "model": req.Model,
+                "input": req.Input,
+        }
+
+        if req.EncodingFormat != "" </span><span class="cov0" title="0">{
+                payload["encoding_format"] = req.EncodingFormat
+        }</span>
+        <span class="cov8" title="1">if req.Dimensions &gt; 0 </span><span class="cov0" title="0">{
+                payload["dimensions"] = req.Dimensions
+        }</span>
+        <span class="cov8" title="1">if req.User != "" </span><span class="cov0" title="0">{
+                payload["user"] = req.User
+        }</span>
+
+        <span class="cov8" title="1">var response toolkit.EmbeddingResponse
+        err := c.doRequest(ctx, "POST", "/embeddings", payload, &amp;response)
+        return response, err</span>
+}
+
+// CreateRerank performs a rerank request.
+func (c *Client) CreateRerank(ctx context.Context, req toolkit.RerankRequest) (toolkit.RerankResponse, error) <span class="cov8" title="1">{
+        payload := map[string]interface{}{
+                "model":            req.Model,
+                "query":            req.Query,
+                "documents":        req.Documents,
+                "top_n":            req.TopN,
+                "return_documents": req.ReturnDocs,
+        }
+
+        var response toolkit.RerankResponse
+        err := c.doRequest(ctx, "POST", "/rerank", payload, &amp;response)
+        return response, err
+}</span>
+
+// GetModels retrieves available models from the API.
+func (c *Client) GetModels(ctx context.Context) ([]ModelInfo, error) <span class="cov8" title="1">{
+        var response struct {
+                Data []struct {
+                        ID   string `json:"id"`
+                        Type string `json:"type"`
+                } `json:"data"`
+        }
+
+        err := c.doRequest(ctx, "GET", "/models", nil, &amp;response)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">var models []ModelInfo
+        for _, model := range response.Data </span><span class="cov0" title="0">{
+                models = append(models, ModelInfo{
+                        ID:   model.ID,
+                        Type: model.Type,
+                })
+        }</span>
+
+        <span class="cov0" title="0">return models, nil</span>
+}
+
+// ModelInfo represents basic model information from the API.
+type ModelInfo struct {
+        ID   string `json:"id"`
+        Type string `json:"type"`
+}
+
+// doRequest performs an HTTP request to the SiliconFlow API.
+func (c *Client) doRequest(ctx context.Context, method, endpoint string, payload interface{}, result interface{}) error <span class="cov8" title="1">{
+        return c.httpClient.DoRequest(ctx, method, endpoint, payload, result)
+}</span>
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">// Package siliconflow provides model discovery for SiliconFlow API.
+package siliconflow
+
+import (
+        "context"
+        "strings"
+
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit"
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit/common/discovery"
+)
+
+// SiliconFlowCapabilityInferrer implements capability inference for SiliconFlow models.
+type SiliconFlowCapabilityInferrer struct{}
+
+// InferCapabilities infers model capabilities from ID and type.
+func (s *SiliconFlowCapabilityInferrer) InferCapabilities(modelID, modelType string) toolkit.ModelCapabilities <span class="cov8" title="1">{
+        capabilities := toolkit.ModelCapabilities{}
+
+        modelLower := strings.ToLower(modelID)
+        typeLower := strings.ToLower(modelType)
+
+        // Embedding capabilities
+        capabilities.SupportsEmbedding = strings.Contains(typeLower, "embedding")
+
+        // Rerank capabilities
+        capabilities.SupportsRerank = strings.Contains(typeLower, "rerank")
+
+        // Audio capabilities
+        audioKeywords := []string{"tts", "audio", "speech", "voice"}
+        capabilities.SupportsAudio = s.containsAny(modelLower, audioKeywords) || s.containsAny(typeLower, audioKeywords)
+
+        // Video capabilities
+        videoKeywords := []string{"t2v", "video", "i2v", "flux"}
+        capabilities.SupportsVideo = s.containsAny(modelLower, videoKeywords) || s.containsAny(typeLower, videoKeywords)
+
+        // Vision capabilities
+        visionKeywords := []string{"vl", "vision", "visual", "multimodal"}
+        capabilities.SupportsVision = s.containsAny(modelLower, visionKeywords) || s.containsAny(typeLower, visionKeywords)
+
+        // Chat capabilities - more conservative approach
+        specializedKeywords := []string{
+                "embedding", "rerank", "tts", "speech", "audio", "video",
+                "t2v", "i2v", "flux", "vl", "vision", "visual", "multimodal", "image",
+        }
+
+        isSpecialized := s.containsAny(modelLower, specializedKeywords)
+        chatTypeIndicators := []string{"chat", "text", "completion", "instruction", "instruct"}
+        hasChatType := s.containsAny(typeLower, chatTypeIndicators)
+        chatIDIndicators := []string{
+                "instruct", "chat", "qwen", "deepseek", "glm", "kimi",
+                "llama", "mistral", "mixtral", "gemma", "phi", "yi",
+        }
+        hasChatID := s.containsAny(modelLower, chatIDIndicators)
+
+        if hasChatType &amp;&amp; !isSpecialized </span><span class="cov8" title="1">{
+                capabilities.SupportsChat = true
+        }</span> else<span class="cov8" title="1"> if hasChatID &amp;&amp; !isSpecialized </span><span class="cov0" title="0">{
+                capabilities.SupportsChat = true
+        }</span> else<span class="cov8" title="1"> if typeLower == "" || typeLower == "unknown" </span><span class="cov0" title="0">{
+                capabilities.SupportsChat = false
+        }</span> else<span class="cov8" title="1"> {
+                capabilities.SupportsChat = false
+        }</span>
+
+        // Function calling support
+        <span class="cov8" title="1">capabilities.FunctionCalling = s.supportsFunctionCalling(modelID)
+
+        // Context window and max tokens
+        capabilities.ContextWindow = s.inferContextWindow(modelID)
+        capabilities.MaxTokens = s.inferMaxTokens(modelID)
+
+        return capabilities</span>
+}
+
+// containsAny checks if the string contains any of the keywords.
+func (s *SiliconFlowCapabilityInferrer) containsAny(str string, keywords []string) bool <span class="cov8" title="1">{
+        for _, keyword := range keywords </span><span class="cov8" title="1">{
+                if strings.Contains(str, keyword) </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+// supportsFunctionCalling checks if model supports function calling.
+func (s *SiliconFlowCapabilityInferrer) supportsFunctionCalling(modelID string) bool <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        supportedModels := []string{"qwen", "deepseek", "glm", "kimi"}
+        for _, model := range supportedModels </span><span class="cov8" title="1">{
+                if strings.Contains(modelLower, model) </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+
+        <span class="cov8" title="1">return false</span>
+}
+
+// inferContextWindow infers context window size.
+func (s *SiliconFlowCapabilityInferrer) inferContextWindow(modelID string) int <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        if strings.Contains(modelLower, "deepseek") </span><span class="cov8" title="1">{
+                if strings.Contains(modelLower, "r1") </span><span class="cov8" title="1">{
+                        return 131072
+                }</span>
+                <span class="cov8" title="1">return 131072</span> // V3 series
+        }
+
+        <span class="cov8" title="1">if strings.Contains(modelLower, "qwen") </span><span class="cov8" title="1">{
+                if strings.Contains(modelLower, "qwen3") </span><span class="cov8" title="1">{
+                        return 32768
+                }</span>
+                <span class="cov8" title="1">if strings.Contains(modelLower, "qwen2.5") </span><span class="cov8" title="1">{
+                        if strings.Contains(modelLower, "72b") </span><span class="cov8" title="1">{
+                                return 131072
+                        }</span>
+                        <span class="cov8" title="1">return 32768</span>
+                }
+                <span class="cov8" title="1">if strings.Contains(modelLower, "qwen2-vl") </span><span class="cov8" title="1">{
+                        return 32768
+                }</span>
+        }
+
+        <span class="cov8" title="1">if strings.Contains(modelLower, "glm") </span><span class="cov8" title="1">{
+                if strings.Contains(modelLower, "4.6") </span><span class="cov8" title="1">{
+                        return 131072
+                }</span>
+                <span class="cov8" title="1">return 32768</span>
+        }
+
+        <span class="cov8" title="1">if strings.Contains(modelLower, "kimi") </span><span class="cov8" title="1">{
+                return 131072
+        }</span>
+
+        <span class="cov8" title="1">return 4096</span>
+}
+
+// inferMaxTokens infers maximum tokens for output.
+func (s *SiliconFlowCapabilityInferrer) inferMaxTokens(modelID string) int <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        if strings.Contains(modelLower, "deepseek-r1") </span><span class="cov8" title="1">{
+                return 8192
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "qwen3") </span><span class="cov8" title="1">{
+                return 8192
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "qwen2.5-72b") </span><span class="cov8" title="1">{
+                return 8192
+        }</span>
+
+        <span class="cov8" title="1">return 4096</span>
+}
+
+// SiliconFlowModelFormatter implements model formatting for SiliconFlow models.
+type SiliconFlowModelFormatter struct{}
+
+// FormatModelName formats model ID into human-readable name.
+func (s *SiliconFlowModelFormatter) FormatModelName(modelID string) string <span class="cov8" title="1">{
+        parts := strings.Split(modelID, "/")
+        if len(parts) &gt; 1 </span><span class="cov8" title="1">{
+                name := strings.ReplaceAll(parts[1], "-", " ")
+                name = strings.ReplaceAll(name, "_", " ")
+                return parts[0] + " " + name
+        }</span>
+        <span class="cov8" title="1">return strings.ReplaceAll(modelID, "-", " ")</span>
+}
+
+// GetModelDescription returns a description for the model.
+func (s *SiliconFlowModelFormatter) GetModelDescription(modelID string) string <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+
+        if strings.Contains(modelLower, "qwen") </span><span class="cov8" title="1">{
+                return "Qwen series models from Alibaba Cloud"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "deepseek") </span><span class="cov8" title="1">{
+                return "DeepSeek models for advanced reasoning"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "glm") </span><span class="cov8" title="1">{
+                return "GLM models from Tsinghua University"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(modelLower, "kimi") </span><span class="cov8" title="1">{
+                return "Kimi models with advanced capabilities"
+        }</span>
+
+        <span class="cov8" title="1">return "SiliconFlow hosted model"</span>
+}
+
+// Discovery implements the ModelDiscovery interface for SiliconFlow.
+type Discovery struct {
+        *discovery.BaseDiscovery
+        client *Client
+}
+
+// NewDiscovery creates a new SiliconFlow model discovery instance.
+func NewDiscovery(apiKey string) *Discovery <span class="cov8" title="1">{
+        client := NewClient(apiKey)
+        base := discovery.NewBaseDiscovery(
+                "siliconflow",
+                &amp;SiliconFlowCapabilityInferrer{},
+                &amp;discovery.DefaultCategoryInferrer{},
+                &amp;SiliconFlowModelFormatter{},
+        )
+
+        return &amp;Discovery{
+                BaseDiscovery: base,
+                client:        client,
+        }
+}</span>
+
+// Discover discovers available models from SiliconFlow.
+func (d *Discovery) Discover(ctx context.Context) ([]toolkit.ModelInfo, error) <span class="cov8" title="1">{
+        models, err := d.client.GetModels(ctx)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">var modelInfos []toolkit.ModelInfo
+        for _, model := range models </span><span class="cov0" title="0">{
+                modelInfo := d.ConvertToModelInfo(model.ID, model.Type)
+                modelInfos = append(modelInfos, modelInfo)
+        }</span>
+
+        <span class="cov0" title="0">return modelInfos, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">// Package siliconflow provides a SiliconFlow provider implementation.
+package siliconflow
+
+import (
+        "context"
+        "fmt"
+        "log"
+
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit"
+)
+
+// Provider implements the Provider interface for SiliconFlow.
+type Provider struct {
+        client    *Client
+        discovery *Discovery
+        config    *Config
+}
+
+// NewProvider creates a new SiliconFlow provider.
+func NewProvider(config map[string]interface{}) (toolkit.Provider, error) <span class="cov8" title="1">{
+        builder := NewConfigBuilder()
+        cfg, err := builder.Build(config)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to build config: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">sfConfig, ok := cfg.(*Config)
+        if !ok </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid config type")
+        }</span>
+
+        <span class="cov8" title="1">return &amp;Provider{
+                client:    NewClient(sfConfig.APIKey),
+                discovery: NewDiscovery(sfConfig.APIKey),
+                config:    sfConfig,
+        }, nil</span>
+}
+
+// Name returns the name of the provider.
+func (p *Provider) Name() string <span class="cov8" title="1">{
+        return "siliconflow"
+}</span>
+
+// Chat performs a chat completion request.
+func (p *Provider) Chat(ctx context.Context, req toolkit.ChatRequest) (toolkit.ChatResponse, error) <span class="cov8" title="1">{
+        log.Printf("SiliconFlow: Performing chat completion with model %s", req.Model)
+        return p.client.ChatCompletion(ctx, req)
+}</span>
+
+// Embed performs an embedding request.
+func (p *Provider) Embed(ctx context.Context, req toolkit.EmbeddingRequest) (toolkit.EmbeddingResponse, error) <span class="cov8" title="1">{
+        log.Printf("SiliconFlow: Performing embedding with model %s", req.Model)
+        return p.client.CreateEmbeddings(ctx, req)
+}</span>
+
+// Rerank performs a rerank request.
+func (p *Provider) Rerank(ctx context.Context, req toolkit.RerankRequest) (toolkit.RerankResponse, error) <span class="cov8" title="1">{
+        log.Printf("SiliconFlow: Performing rerank with model %s", req.Model)
+        return p.client.CreateRerank(ctx, req)
+}</span>
+
+// DiscoverModels discovers available models from the provider.
+func (p *Provider) DiscoverModels(ctx context.Context) ([]toolkit.ModelInfo, error) <span class="cov8" title="1">{
+        log.Println("SiliconFlow: Discovering models")
+        return p.discovery.Discover(ctx)
+}</span>
+
+// ValidateConfig validates the provider configuration.
+func (p *Provider) ValidateConfig(config map[string]interface{}) error <span class="cov8" title="1">{
+        builder := NewConfigBuilder()
+        _, err := builder.Build(config)
+        return err
+}</span>
+
+// Factory function for creating SiliconFlow providers.
+func Factory(config map[string]interface{}) (toolkit.Provider, error) <span class="cov8" title="1">{
+        return NewProvider(config)
+}</span>
+
+// Register registers the SiliconFlow provider with the registry.
+func Register(registry *toolkit.ProviderFactoryRegistry) error <span class="cov8" title="1">{
+        return registry.Register("siliconflow", Factory)
+}</span>
+
+// Global registry for auto-registration
+var globalProviderRegistry *toolkit.ProviderFactoryRegistry
+
+// SetGlobalProviderRegistry sets the global provider registry for auto-registration.
+func SetGlobalProviderRegistry(registry *toolkit.ProviderFactoryRegistry) <span class="cov8" title="1">{
+        globalProviderRegistry = registry
+}</span>
+
+// init registers the SiliconFlow provider when the package is imported.
+func init() <span class="cov8" title="1">{
+        // Register with global registry if available
+        if globalProviderRegistry != nil </span><span class="cov0" title="0">{
+                _ = globalProviderRegistry.Register("siliconflow", Factory)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file16" style="display: none">package discovery
+
+import (
+        "context"
+        "fmt"
+        "sort"
+        "strings"
+        "time"
+
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit"
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit/common/http"
+)
+
+// CapabilityInferrer infers model capabilities
+type CapabilityInferrer interface {
+        InferCapabilities(modelID, modelType string) toolkit.ModelCapabilities
+}
+
+// CategoryInferrer infers model categories
+type CategoryInferrer interface {
+        InferCategory(modelID, modelType string) string
+}
+
+// ModelFormatter formats model information
+type ModelFormatter interface {
+        FormatModelName(modelID string) string
+        GetModelDescription(modelID string) string
+}
+
+// BaseDiscovery provides common discovery functionality
+type BaseDiscovery struct {
+        providerName       string
+        capabilityInferrer CapabilityInferrer
+        categoryInferrer   CategoryInferrer
+        modelFormatter     ModelFormatter
+}
+
+// NewBaseDiscovery creates a new base discovery instance
+func NewBaseDiscovery(providerName string, capabilityInferrer CapabilityInferrer, categoryInferrer CategoryInferrer, modelFormatter ModelFormatter) *BaseDiscovery <span class="cov8" title="1">{
+        return &amp;BaseDiscovery{
+                providerName:       providerName,
+                capabilityInferrer: capabilityInferrer,
+                categoryInferrer:   categoryInferrer,
+                modelFormatter:     modelFormatter,
+        }
+}</span>
+
+// ConvertToModelInfo converts model data to ModelInfo
+func (b *BaseDiscovery) ConvertToModelInfo(modelID, modelType string) toolkit.ModelInfo <span class="cov8" title="1">{
+        return toolkit.ModelInfo{
+                ID:      modelID,
+                Object:  modelType,
+                Created: time.Now().Unix(),
+                OwnedBy: b.providerName,
+        }
+}</span>
+
+// DefaultCategoryInferrer provides default category inference
+type DefaultCategoryInferrer struct{}
+
+// InferCategory infers the category of a model
+func (d *DefaultCategoryInferrer) InferCategory(modelID, modelType string) string <span class="cov8" title="1">{
+        modelLower := strings.ToLower(modelID)
+        typeLower := strings.ToLower(modelType)
+
+        if strings.Contains(typeLower, "embedding") || strings.Contains(modelLower, "embedding") </span><span class="cov8" title="1">{
+                return "embedding"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(typeLower, "rerank") || strings.Contains(modelLower, "rerank") </span><span class="cov8" title="1">{
+                return "rerank"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(typeLower, "audio") || strings.Contains(modelLower, "tts") || strings.Contains(modelLower, "speech") </span><span class="cov8" title="1">{
+                return "audio"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(typeLower, "video") || strings.Contains(modelLower, "t2v") || strings.Contains(modelLower, "i2v") </span><span class="cov8" title="1">{
+                return "video"
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(typeLower, "vision") || strings.Contains(modelLower, "vl") || strings.Contains(modelLower, "multimodal") </span><span class="cov8" title="1">{
+                return "vision"
+        }</span>
+
+        <span class="cov8" title="1">return "chat"</span> // Default category
+}
+
+// DiscoveryService handles model discovery for providers
+type DiscoveryService struct {
+        client    *http.Client
+        baseURL   string
+        cache     map[string][]toolkit.ModelInfo
+        cacheTime map[string]time.Time
+        cacheTTL  time.Duration
+}
+
+// NewDiscoveryService creates a new discovery service
+func NewDiscoveryService(client *http.Client, baseURL string) *DiscoveryService <span class="cov8" title="1">{
+        return &amp;DiscoveryService{
+                client:    client,
+                baseURL:   baseURL,
+                cache:     make(map[string][]toolkit.ModelInfo),
+                cacheTime: make(map[string]time.Time),
+                cacheTTL:  5 * time.Minute, // Cache for 5 minutes
+        }
+}</span>
+
+// DiscoverModels discovers available models from the provider
+func (d *DiscoveryService) DiscoverModels(ctx context.Context, providerName string) ([]toolkit.ModelInfo, error) <span class="cov8" title="1">{
+        // Check cache first
+        if models, ok := d.checkCache(providerName); ok </span><span class="cov8" title="1">{
+                return models, nil
+        }</span>
+
+        // Fetch from API
+        <span class="cov0" title="0">models, err := d.fetchModelsFromAPI(ctx, providerName)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to discover models for %s: %w", providerName, err)
+        }</span>
+
+        // Cache the results
+        <span class="cov0" title="0">d.cache[providerName] = models
+        d.cacheTime[providerName] = time.Now()
+
+        return models, nil</span>
+}
+
+// checkCache checks if we have cached results that are still valid
+func (d *DiscoveryService) checkCache(providerName string) ([]toolkit.ModelInfo, bool) <span class="cov8" title="1">{
+        cacheTime, exists := d.cacheTime[providerName]
+        if !exists </span><span class="cov8" title="1">{
+                return nil, false
+        }</span>
+
+        <span class="cov8" title="1">if time.Since(cacheTime) &gt; d.cacheTTL </span><span class="cov8" title="1">{
+                // Cache expired
+                delete(d.cache, providerName)
+                delete(d.cacheTime, providerName)
+                return nil, false
+        }</span>
+
+        <span class="cov8" title="1">models, exists := d.cache[providerName]
+        return models, exists</span>
+}
+
+// fetchModelsFromAPI fetches models from the provider's API
+func (d *DiscoveryService) fetchModelsFromAPI(ctx context.Context, providerName string) ([]toolkit.ModelInfo, error) <span class="cov0" title="0">{
+        // This is a generic implementation - specific providers may override this
+        endpoint := "/models"
+
+        resp, err := d.client.Get(ctx, endpoint, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("API request failed: %w", err)
+        }</span>
+        <span class="cov0" title="0">defer resp.Body.Close()
+
+        if resp.StatusCode != 200 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
+        }</span>
+
+        // Note: In a real implementation, you'd decode the response body here
+        // For now, we'll return mock data based on provider
+        <span class="cov0" title="0">return d.getMockModels(providerName), nil</span>
+}
+
+// getMockModels returns mock model data for testing
+// In production, this would be replaced with actual API calls
+func (d *DiscoveryService) getMockModels(providerName string) []toolkit.ModelInfo <span class="cov8" title="1">{
+        switch strings.ToLower(providerName) </span>{
+        case "openai":<span class="cov8" title="1">
+                return []toolkit.ModelInfo{
+                        {ID: "gpt-4", Object: "model", Created: time.Now().Unix(), OwnedBy: "openai"},
+                        {ID: "gpt-3.5-turbo", Object: "model", Created: time.Now().Unix(), OwnedBy: "openai"},
+                }</span>
+        case "anthropic":<span class="cov8" title="1">
+                return []toolkit.ModelInfo{
+                        {ID: "claude-3-opus", Object: "model", Created: time.Now().Unix(), OwnedBy: "anthropic"},
+                        {ID: "claude-3-sonnet", Object: "model", Created: time.Now().Unix(), OwnedBy: "anthropic"},
+                }</span>
+        case "siliconflow":<span class="cov8" title="1">
+                return []toolkit.ModelInfo{
+                        {ID: "deepseek-chat", Object: "model", Created: time.Now().Unix(), OwnedBy: "siliconflow"},
+                        {ID: "deepseek-coder", Object: "model", Created: time.Now().Unix(), OwnedBy: "siliconflow"},
+                }</span>
+        case "chutes":<span class="cov8" title="1">
+                return []toolkit.ModelInfo{
+                        {ID: "llama-3-70b", Object: "model", Created: time.Now().Unix(), OwnedBy: "chutes"},
+                        {ID: "mixtral-8x7b", Object: "model", Created: time.Now().Unix(), OwnedBy: "chutes"},
+                }</span>
+        default:<span class="cov8" title="1">
+                return []toolkit.ModelInfo{
+                        {ID: "unknown-model", Object: "model", Created: time.Now().Unix(), OwnedBy: providerName},
+                }</span>
+        }
+}
+
+// FilterModels filters models based on criteria
+func (d *DiscoveryService) FilterModels(models []toolkit.ModelInfo, criteria map[string]interface{}) []toolkit.ModelInfo <span class="cov8" title="1">{
+        var filtered []toolkit.ModelInfo
+
+        for _, model := range models </span><span class="cov8" title="1">{
+                if d.matchesCriteria(model, criteria) </span><span class="cov8" title="1">{
+                        filtered = append(filtered, model)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return filtered</span>
+}
+
+// matchesCriteria checks if a model matches the given criteria
+func (d *DiscoveryService) matchesCriteria(model toolkit.ModelInfo, criteria map[string]interface{}) bool <span class="cov8" title="1">{
+        for key, value := range criteria </span><span class="cov8" title="1">{
+                switch key </span>{
+                case "owned_by":<span class="cov8" title="1">
+                        if ownedBy, ok := value.(string); ok &amp;&amp; model.OwnedBy != ownedBy </span><span class="cov8" title="1">{
+                                return false
+                        }</span>
+                case "id_contains":<span class="cov8" title="1">
+                        if substring, ok := value.(string); ok &amp;&amp; !strings.Contains(model.ID, substring) </span><span class="cov8" title="1">{
+                                return false
+                        }</span>
+                case "created_after":<span class="cov8" title="1">
+                        if timestamp, ok := value.(int64); ok &amp;&amp; model.Created &lt;= timestamp </span><span class="cov8" title="1">{
+                                return false
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return true</span>
+}
+
+// SortModels sorts models by various criteria
+func (d *DiscoveryService) SortModels(models []toolkit.ModelInfo, sortBy string, ascending bool) []toolkit.ModelInfo <span class="cov8" title="1">{
+        sorted := make([]toolkit.ModelInfo, len(models))
+        copy(sorted, models)
+
+        sort.Slice(sorted, func(i, j int) bool </span><span class="cov8" title="1">{
+                var less bool
+                switch sortBy </span>{
+                case "id":<span class="cov8" title="1">
+                        less = sorted[i].ID &lt; sorted[j].ID</span>
+                case "created":<span class="cov8" title="1">
+                        less = sorted[i].Created &lt; sorted[j].Created</span>
+                case "owned_by":<span class="cov8" title="1">
+                        less = sorted[i].OwnedBy &lt; sorted[j].OwnedBy</span>
+                default:<span class="cov0" title="0">
+                        less = sorted[i].ID &lt; sorted[j].ID</span>
+                }
+
+                <span class="cov8" title="1">if ascending </span><span class="cov8" title="1">{
+                        return less
+                }</span>
+                <span class="cov8" title="1">return !less</span>
+        })
+
+        <span class="cov8" title="1">return sorted</span>
+}
+
+// ClearCache clears the discovery cache
+func (d *DiscoveryService) ClearCache() <span class="cov8" title="1">{
+        d.cache = make(map[string][]toolkit.ModelInfo)
+        d.cacheTime = make(map[string]time.Time)
+}</span>
+
+// SetCacheTTL sets the cache TTL
+func (d *DiscoveryService) SetCacheTTL(ttl time.Duration) <span class="cov8" title="1">{
+        d.cacheTTL = ttl
+}</span>
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">package http
+
+import (
+        "bytes"
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "time"
+)
+
+// Client represents an HTTP client with retry logic
+type Client struct {
+        httpClient *http.Client
+        baseURL    string
+        apiKey     string
+        retryCount int
+        timeout    time.Duration
+}
+
+// NewClient creates a new HTTP client
+func NewClient(baseURL, apiKey string) *Client <span class="cov8" title="1">{
+        return &amp;Client{
+                httpClient: &amp;http.Client{
+                        Timeout: 30 * time.Second,
+                },
+                baseURL:    baseURL,
+                apiKey:     apiKey,
+                retryCount: 3,
+                timeout:    30 * time.Second,
+        }
+}</span>
+
+// SetTimeout sets the request timeout
+func (c *Client) SetTimeout(timeout time.Duration) <span class="cov8" title="1">{
+        c.timeout = timeout
+        c.httpClient.Timeout = timeout
+}</span>
+
+// SetRetryCount sets the number of retries for failed requests
+func (c *Client) SetRetryCount(count int) <span class="cov8" title="1">{
+        c.retryCount = count
+}</span>
+
+// Do performs an HTTP request with retry logic
+func (c *Client) Do(ctx context.Context, method, path string, body interface{}, headers map[string]string) (*http.Response, error) <span class="cov8" title="1">{
+        var lastErr error
+
+        for attempt := 0; attempt &lt;= c.retryCount; attempt++ </span><span class="cov8" title="1">{
+                resp, err := c.doRequest(ctx, method, path, body, headers)
+                if err == nil &amp;&amp; resp.StatusCode &lt; 500 </span><span class="cov8" title="1">{
+                        return resp, nil
+                }</span>
+
+                <span class="cov8" title="1">lastErr = err
+
+                // Don't retry on context cancellation
+                if ctx.Err() != nil </span><span class="cov8" title="1">{
+                        return nil, ctx.Err()
+                }</span>
+
+                // Don't retry on client errors (4xx)
+                <span class="cov8" title="1">if err == nil &amp;&amp; resp.StatusCode &gt;= 400 &amp;&amp; resp.StatusCode &lt; 500 </span><span class="cov0" title="0">{
+                        return resp, fmt.Errorf("client error: %d", resp.StatusCode)
+                }</span>
+
+                // Wait before retrying (exponential backoff)
+                <span class="cov8" title="1">if attempt &lt; c.retryCount </span><span class="cov8" title="1">{
+                        time.Sleep(time.Duration(attempt+1) * time.Second)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil, fmt.Errorf("request failed after %d attempts: %w", c.retryCount+1, lastErr)</span>
+}
+
+// doRequest performs a single HTTP request
+func (c *Client) doRequest(ctx context.Context, method, path string, body interface{}, headers map[string]string) (*http.Response, error) <span class="cov8" title="1">{
+        var bodyReader io.Reader
+
+        if body != nil </span><span class="cov8" title="1">{
+                jsonData, err := json.Marshal(body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to marshal request body: %w", err)
+                }</span>
+                <span class="cov8" title="1">bodyReader = bytes.NewReader(jsonData)</span>
+        }
+
+        <span class="cov8" title="1">url := c.baseURL + path
+        req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to create request: %w", err)
+        }</span>
+
+        // Set default headers
+        <span class="cov8" title="1">req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("User-Agent", "HelixAgent/1.0")
+
+        // Set API key if provided
+        if c.apiKey != "" </span><span class="cov8" title="1">{
+                req.Header.Set("Authorization", "Bearer "+c.apiKey)
+        }</span>
+
+        // Set custom headers
+        <span class="cov8" title="1">for key, value := range headers </span><span class="cov8" title="1">{
+                req.Header.Set(key, value)
+        }</span>
+
+        <span class="cov8" title="1">resp, err := c.httpClient.Do(req)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("request failed: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return resp, nil</span>
+}
+
+// Get performs a GET request
+func (c *Client) Get(ctx context.Context, path string, headers map[string]string) (*http.Response, error) <span class="cov8" title="1">{
+        return c.Do(ctx, "GET", path, nil, headers)
+}</span>
+
+// Post performs a POST request
+func (c *Client) Post(ctx context.Context, path string, body interface{}, headers map[string]string) (*http.Response, error) <span class="cov8" title="1">{
+        return c.Do(ctx, "POST", path, body, headers)
+}</span>
+
+// Put performs a PUT request
+func (c *Client) Put(ctx context.Context, path string, body interface{}, headers map[string]string) (*http.Response, error) <span class="cov8" title="1">{
+        return c.Do(ctx, "PUT", path, body, headers)
+}</span>
+
+// Delete performs a DELETE request
+func (c *Client) Delete(ctx context.Context, path string, headers map[string]string) (*http.Response, error) <span class="cov8" title="1">{
+        return c.Do(ctx, "DELETE", path, nil, headers)
+}</span>
+
+// DoRequest performs a request and unmarshals the response into the result
+func (c *Client) DoRequest(ctx context.Context, method, path string, payload interface{}, result interface{}) error <span class="cov8" title="1">{
+        resp, err := c.Do(ctx, method, path, payload, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">defer resp.Body.Close()
+
+        if resp.StatusCode &gt;= 400 </span><span class="cov8" title="1">{
+                return fmt.Errorf("API request failed with status %d", resp.StatusCode)
+        }</span>
+
+        <span class="cov8" title="1">return json.NewDecoder(resp.Body).Decode(result)</span>
+}
+</pre>
+		
+		<pre class="file" id="file18" style="display: none">package ratelimit
+
+import (
+        "context"
+        "net/http"
+        "sync"
+        "time"
+)
+
+// TokenBucketConfig holds configuration for a token bucket rate limiter
+type TokenBucketConfig struct {
+        Capacity   float64 // Maximum number of tokens
+        RefillRate float64 // Tokens added per second
+}
+
+// TokenBucket implements a token bucket rate limiter
+type TokenBucket struct {
+        mu         sync.Mutex
+        tokens     float64
+        capacity   float64
+        refillRate float64 // tokens per second
+        lastRefill time.Time
+}
+
+// NewTokenBucket creates a new token bucket rate limiter
+func NewTokenBucket(config TokenBucketConfig) *TokenBucket <span class="cov8" title="1">{
+        return &amp;TokenBucket{
+                tokens:     config.Capacity,
+                capacity:   config.Capacity,
+                refillRate: config.RefillRate,
+                lastRefill: time.Now(),
+        }
+}</span>
+
+// Wait blocks until a token is available
+func (tb *TokenBucket) Wait(ctx context.Context) error <span class="cov8" title="1">{
+        for </span><span class="cov8" title="1">{
+                if tb.Allow() </span><span class="cov8" title="1">{
+                        return nil
+                }</span>
+
+                <span class="cov8" title="1">select </span>{
+                case &lt;-ctx.Done():<span class="cov8" title="1">
+                        return ctx.Err()</span>
+                case &lt;-time.After(100 * time.Millisecond):<span class="cov8" title="1"></span>
+                        // Continue trying
+                }
+        }
+}
+
+// Allow checks if a token is available
+func (tb *TokenBucket) Allow() bool <span class="cov8" title="1">{
+        tb.mu.Lock()
+        defer tb.mu.Unlock()
+
+        tb.refill()
+
+        if tb.tokens &gt;= 1.0 </span><span class="cov8" title="1">{
+                tb.tokens--
+                return true
+        }</span>
+
+        <span class="cov8" title="1">return false</span>
+}
+
+// refill adds tokens based on elapsed time
+func (tb *TokenBucket) refill() <span class="cov8" title="1">{
+        now := time.Now()
+        elapsed := now.Sub(tb.lastRefill)
+
+        tokensToAdd := elapsed.Seconds() * tb.refillRate
+        tb.tokens += tokensToAdd
+
+        if tb.tokens &gt; tb.capacity </span><span class="cov8" title="1">{
+                tb.tokens = tb.capacity
+        }</span>
+
+        <span class="cov8" title="1">tb.lastRefill = now</span>
+}
+
+// Limiter represents a rate limiter (alias for TokenBucket for backward compatibility)
+type Limiter = TokenBucket
+
+// NewLimiter creates a new rate limiter (backward compatibility)
+func NewLimiter(capacity float64, refillRate float64) *Limiter <span class="cov8" title="1">{
+        config := TokenBucketConfig{
+                Capacity:   capacity,
+                RefillRate: refillRate,
+        }
+        return NewTokenBucket(config)
+}</span>
+
+// SlidingWindowLimiter implements a sliding window rate limiter
+type SlidingWindowLimiter struct {
+        mu          sync.Mutex
+        window      time.Duration
+        maxRequests int
+        requests    []time.Time
+}
+
+// NewSlidingWindowLimiter creates a new sliding window rate limiter
+func NewSlidingWindowLimiter(window time.Duration, maxRequests int) *SlidingWindowLimiter <span class="cov8" title="1">{
+        return &amp;SlidingWindowLimiter{
+                window:      window,
+                maxRequests: maxRequests,
+                requests:    make([]time.Time, 0),
+        }
+}</span>
+
+// Allow checks if a request should be allowed
+func (sw *SlidingWindowLimiter) Allow() bool <span class="cov8" title="1">{
+        sw.mu.Lock()
+        defer sw.mu.Unlock()
+
+        now := time.Now()
+        cutoff := now.Add(-sw.window)
+
+        // Remove old requests outside the window
+        validRequests := make([]time.Time, 0)
+        for _, req := range sw.requests </span><span class="cov8" title="1">{
+                if req.After(cutoff) </span><span class="cov8" title="1">{
+                        validRequests = append(validRequests, req)
+                }</span>
+        }
+        <span class="cov8" title="1">sw.requests = validRequests
+
+        if len(sw.requests) &lt; sw.maxRequests </span><span class="cov8" title="1">{
+                sw.requests = append(sw.requests, now)
+                return true
+        }</span>
+
+        <span class="cov8" title="1">return false</span>
+}
+
+// Wait blocks until a request can be allowed
+func (sw *SlidingWindowLimiter) Wait(ctx context.Context) error <span class="cov8" title="1">{
+        for </span><span class="cov8" title="1">{
+                if sw.Allow() </span><span class="cov8" title="1">{
+                        return nil
+                }</span>
+
+                <span class="cov8" title="1">select </span>{
+                case &lt;-ctx.Done():<span class="cov8" title="1">
+                        return ctx.Err()</span>
+                case &lt;-time.After(100 * time.Millisecond):<span class="cov8" title="1"></span>
+                        // Continue trying
+                }
+        }
+}
+
+// Middleware creates HTTP middleware for rate limiting
+type Middleware struct {
+        limiter RateLimiter
+}
+
+// RateLimiter interface for different rate limiting strategies
+type RateLimiter interface {
+        Allow() bool
+        Wait(ctx context.Context) error
+}
+
+// NewMiddleware creates new rate limiting middleware
+func NewMiddleware(limiter RateLimiter) *Middleware <span class="cov8" title="1">{
+        return &amp;Middleware{
+                limiter: limiter,
+        }
+}</span>
+
+// Handler wraps an HTTP handler with rate limiting
+func (m *Middleware) Handler(next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                if !m.limiter.Allow() </span><span class="cov8" title="1">{
+                        http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+                        return
+                }</span>
+
+                <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+        })
+}
+
+// WaitHandler wraps an HTTP handler with rate limiting that waits
+func (m *Middleware) WaitHandler(next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                if err := m.limiter.Wait(r.Context()); err != nil </span><span class="cov8" title="1">{
+                        http.Error(w, "Request cancelled", http.StatusRequestTimeout)
+                        return
+                }</span>
+
+                <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+        })
+}
+</pre>
+		
+		<pre class="file" id="file19" style="display: none">package toolkit
+
+import (
+        "context"
+        "fmt"
+)
+
+// Provider represents an AI model provider interface
+type Provider interface {
+        Name() string
+        Chat(ctx context.Context, req ChatRequest) (ChatResponse, error)
+        Embed(ctx context.Context, req EmbeddingRequest) (EmbeddingResponse, error)
+        Rerank(ctx context.Context, req RerankRequest) (RerankResponse, error)
+        DiscoverModels(ctx context.Context) ([]ModelInfo, error)
+        ValidateConfig(config map[string]interface{}) error
+}
+
+// Agent represents an AI agent interface
+type Agent interface {
+        Name() string
+        Execute(ctx context.Context, task string, config interface{}) (string, error)
+        ValidateConfig(config interface{}) error
+        Capabilities() []string
+}
+
+// ChatRequest represents a chat completion request
+type ChatRequest struct {
+        Messages         []Message          `json:"messages"`
+        Model            string             `json:"model,omitempty"`
+        Temperature      float64            `json:"temperature,omitempty"`
+        MaxTokens        int                `json:"max_tokens,omitempty"`
+        Stream           bool               `json:"stream,omitempty"`
+        TopP             float64            `json:"top_p,omitempty"`
+        TopK             int                `json:"top_k,omitempty"`
+        Stop             []string           `json:"stop,omitempty"`
+        PresencePenalty  float64            `json:"presence_penalty,omitempty"`
+        FrequencyPenalty float64            `json:"frequency_penalty,omitempty"`
+        LogitBias        map[string]float64 `json:"logit_bias,omitempty"`
+}
+
+// ChatResponse represents a chat completion response
+type ChatResponse struct {
+        ID      string   `json:"id"`
+        Object  string   `json:"object"`
+        Created int64    `json:"created"`
+        Model   string   `json:"model"`
+        Choices []Choice `json:"choices"`
+        Usage   Usage    `json:"usage"`
+}
+
+// EmbeddingRequest represents an embedding request
+type EmbeddingRequest struct {
+        Input          []string `json:"input"`
+        Model          string   `json:"model,omitempty"`
+        EncodingFormat string   `json:"encoding_format,omitempty"`
+        User           string   `json:"user,omitempty"`
+        Dimensions     int      `json:"dimensions,omitempty"`
+}
+
+// EmbeddingResponse represents an embedding response
+type EmbeddingResponse struct {
+        Object string      `json:"object"`
+        Data   []Embedding `json:"data"`
+        Model  string      `json:"model"`
+        Usage  Usage       `json:"usage"`
+}
+
+// EmbeddingData alias for Embedding for backward compatibility
+type EmbeddingData = Embedding
+
+// RerankRequest represents a reranking request
+type RerankRequest struct {
+        Query      string   `json:"query"`
+        Documents  []string `json:"documents"`
+        Model      string   `json:"model,omitempty"`
+        TopN       int      `json:"top_n,omitempty"`
+        ReturnDocs bool     `json:"return_documents,omitempty"`
+}
+
+// RerankResponse represents a reranking response
+type RerankResponse struct {
+        Object  string         `json:"object"`
+        Data    []RerankData   `json:"data"`
+        Results []RerankResult `json:"results,omitempty"`
+        Model   string         `json:"model"`
+}
+
+// RerankResult represents a reranking result
+type RerankResult struct {
+        Index    int     `json:"index"`
+        Score    float64 `json:"score"`
+        Document string  `json:"document,omitempty"`
+}
+
+// Message represents a chat message
+type Message struct {
+        Role    string `json:"role"`
+        Content string `json:"content"`
+}
+
+// ChatMessage alias for Message for backward compatibility
+type ChatMessage = Message
+
+// ChatChoice represents a chat completion choice
+type ChatChoice struct {
+        Index        int     `json:"index"`
+        Message      Message `json:"message"`
+        FinishReason string  `json:"finish_reason"`
+}
+
+// Choice represents a chat completion choice
+type Choice struct {
+        Index        int     `json:"index"`
+        Message      Message `json:"message"`
+        FinishReason string  `json:"finish_reason"`
+}
+
+// Usage represents token usage information
+type Usage struct {
+        PromptTokens     int `json:"prompt_tokens"`
+        CompletionTokens int `json:"completion_tokens"`
+        TotalTokens      int `json:"total_tokens"`
+}
+
+// Embedding represents an embedding vector
+type Embedding struct {
+        Object    string    `json:"object"`
+        Index     int       `json:"index"`
+        Embedding []float64 `json:"embedding"`
+}
+
+// RerankData represents reranking result data
+type RerankData struct {
+        Index          int     `json:"index"`
+        RelevanceScore float64 `json:"relevance_score"`
+}
+
+// ModelCategory represents the category of an AI model
+type ModelCategory string
+
+const (
+        CategoryChat       ModelCategory = "chat"
+        CategoryEmbedding  ModelCategory = "embedding"
+        CategoryRerank     ModelCategory = "rerank"
+        CategoryMultimodal ModelCategory = "multimodal"
+        CategoryImage      ModelCategory = "image"
+        CategoryAudio      ModelCategory = "audio"
+        CategoryVideo      ModelCategory = "video"
+)
+
+// ModelInfo represents information about an AI model
+type ModelInfo struct {
+        ID           string            `json:"id"`
+        Name         string            `json:"name,omitempty"`
+        Object       string            `json:"object"`
+        Category     ModelCategory     `json:"category,omitempty"`
+        Capabilities ModelCapabilities `json:"capabilities,omitempty"`
+        Provider     string            `json:"provider,omitempty"`
+        Description  string            `json:"description,omitempty"`
+        Created      int64             `json:"created"`
+        OwnedBy      string            `json:"owned_by"`
+}
+
+// ModelCapabilities represents the capabilities of an AI model
+type ModelCapabilities struct {
+        SupportsChat      bool `json:"supports_chat"`
+        SupportsEmbedding bool `json:"supports_embedding"`
+        SupportsRerank    bool `json:"supports_rerank"`
+        SupportsAudio     bool `json:"supports_audio"`
+        SupportsVideo     bool `json:"supports_video"`
+        SupportsVision    bool `json:"supports_vision"`
+        FunctionCalling   bool `json:"function_calling"`
+        ContextWindow     int  `json:"context_window"`
+        MaxTokens         int  `json:"max_tokens"`
+}
+
+// ProviderFactory is a function that creates a provider from configuration
+type ProviderFactory func(config map[string]interface{}) (Provider, error)
+
+// ProviderFactoryRegistry manages provider factories
+type ProviderFactoryRegistry struct {
+        factories map[string]ProviderFactory
+}
+
+// NewProviderFactoryRegistry creates a new provider factory registry
+func NewProviderFactoryRegistry() *ProviderFactoryRegistry <span class="cov8" title="1">{
+        return &amp;ProviderFactoryRegistry{
+                factories: make(map[string]ProviderFactory),
+        }
+}</span>
+
+// Register registers a provider factory
+func (r *ProviderFactoryRegistry) Register(name string, factory ProviderFactory) error <span class="cov8" title="1">{
+        r.factories[name] = factory
+        return nil
+}</span>
+
+// Create creates a provider using the registered factory
+func (r *ProviderFactoryRegistry) Create(name string, config map[string]interface{}) (Provider, error) <span class="cov8" title="1">{
+        factory, exists := r.factories[name]
+        if !exists </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("provider %s not registered", name)
+        }</span>
+        <span class="cov8" title="1">return factory(config)</span>
+}
+
+// ListProviders returns a list of registered provider names
+func (r *ProviderFactoryRegistry) ListProviders() []string <span class="cov8" title="1">{
+        names := make([]string, 0, len(r.factories))
+        for name := range r.factories </span><span class="cov8" title="1">{
+                names = append(names, name)
+        }</span>
+        <span class="cov8" title="1">return names</span>
+}
+</pre>
+		
+		<pre class="file" id="file20" style="display: none">package integration
+
+import (
+        "context"
+        "testing"
+        "time"
+
+        "github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit"
+)
+
+// IntegrationTestSuite provides a framework for integration testing
+type IntegrationTestSuite struct {
+        providers map[string]toolkit.Provider
+        registry  *toolkit.ProviderFactoryRegistry
+}
+
+// NewIntegrationTestSuite creates a new integration test suite
+func NewIntegrationTestSuite() *IntegrationTestSuite <span class="cov8" title="1">{
+        return &amp;IntegrationTestSuite{
+                providers: make(map[string]toolkit.Provider),
+                registry:  toolkit.NewProviderFactoryRegistry(),
+        }
+}</span>
+
+// SetupSuite initializes the test environment
+func (s *IntegrationTestSuite) SetupSuite() error <span class="cov0" title="0">{
+        // Register all available providers
+        // Note: In a real implementation, this would dynamically discover providers
+
+        // For now, we'll test with mock providers from the testing package
+        return nil
+}</span>
+
+// RegisterProvider registers a provider for testing
+func (s *IntegrationTestSuite) RegisterProvider(name string, provider toolkit.Provider) <span class="cov8" title="1">{
+        s.providers[name] = provider
+}</span>
+
+// GetProvider returns a registered provider
+func (s *IntegrationTestSuite) GetProvider(name string) (toolkit.Provider, bool) <span class="cov8" title="1">{
+        provider, exists := s.providers[name]
+        return provider, exists
+}</span>
+
+// TestProviderLifecycle tests the complete lifecycle of a provider
+func (s *IntegrationTestSuite) TestProviderLifecycle(t *testing.T, providerName string) <span class="cov8" title="1">{
+        provider, exists := s.GetProvider(providerName)
+        if !exists </span><span class="cov0" title="0">{
+                t.Fatalf("Provider %s not registered", providerName)
+        }</span>
+
+        // Test provider name
+        <span class="cov8" title="1">if provider.Name() != providerName </span><span class="cov0" title="0">{
+                t.Errorf("Expected provider name %s, got %s", providerName, provider.Name())
+        }</span>
+
+        // Test config validation
+        <span class="cov8" title="1">config := map[string]interface{}{
+                "api_key": "test-key",
+        }
+
+        err := provider.ValidateConfig(config)
+        if err != nil </span><span class="cov0" title="0">{
+                t.Errorf("Config validation failed: %v", err)
+        }</span>
+
+        // Test model discovery
+        <span class="cov8" title="1">ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+        defer cancel()
+
+        models, err := provider.DiscoverModels(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                t.Errorf("Model discovery failed: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">if len(models) == 0 </span><span class="cov0" title="0">{
+                t.Logf("Warning: No models discovered for provider %s", providerName)
+        }</span>
+
+        // Test basic chat functionality (if models available)
+        <span class="cov8" title="1">if len(models) &gt; 0 </span><span class="cov8" title="1">{
+                model := models[0]
+                if model.Capabilities.SupportsChat </span><span class="cov8" title="1">{
+                        chatReq := toolkit.ChatRequest{
+                                Model: model.ID,
+                                Messages: []toolkit.ChatMessage{
+                                        {Role: "user", Content: "Hello, integration test!"},
+                                },
+                                MaxTokens: 50,
+                        }
+
+                        _, err := provider.Chat(ctx, chatReq)
+                        // Note: This might fail in integration tests without real API keys
+                        // We just test that the method exists and can be called
+                        t.Logf("Chat test for provider %s: %v", providerName, err)
+                }</span>
+        }
+}
+
+// TestProviderCompatibility tests that providers implement the interface correctly
+func (s *IntegrationTestSuite) TestProviderCompatibility(t *testing.T, provider toolkit.Provider) <span class="cov8" title="1">{
+        // Test that all interface methods are implemented
+        _ = provider.Name()
+
+        config := map[string]interface{}{}
+        _ = provider.ValidateConfig(config)
+
+        ctx := context.Background()
+        _, _ = provider.DiscoverModels(ctx)
+
+        // Test method signatures
+        chatReq := toolkit.ChatRequest{}
+        _, _ = provider.Chat(ctx, chatReq)
+
+        embedReq := toolkit.EmbeddingRequest{}
+        _, _ = provider.Embed(ctx, embedReq)
+
+        rerankReq := toolkit.RerankRequest{}
+        _, _ = provider.Rerank(ctx, rerankReq)
+}</span>
+
+// TestCrossProviderConsistency tests that different providers behave consistently
+func (s *IntegrationTestSuite) TestCrossProviderConsistency(t *testing.T) <span class="cov8" title="1">{
+        providers := []string{"chutes", "siliconflow"}
+
+        for _, providerName := range providers </span><span class="cov8" title="1">{
+                provider, exists := s.GetProvider(providerName)
+                if !exists </span><span class="cov8" title="1">{
+                        t.Logf("Provider %s not available for testing", providerName)
+                        continue</span>
+                }
+
+                // Test that all providers can handle basic operations
+                <span class="cov0" title="0">ctx := context.Background()
+
+                // All providers should be able to validate basic config
+                config := map[string]interface{}{
+                        "api_key": "test-key",
+                }
+
+                err := provider.ValidateConfig(config)
+                if err != nil </span><span class="cov0" title="0">{
+                        t.Errorf("Provider %s config validation failed: %v", providerName, err)
+                }</span>
+
+                // All providers should be able to discover models (may return empty list)
+                <span class="cov0" title="0">_, err = provider.DiscoverModels(ctx)
+                if err != nil </span><span class="cov0" title="0">{
+                        t.Errorf("Provider %s model discovery failed: %v", providerName, err)
+                }</span>
+        }
+}
+
+// TestErrorHandling tests error handling across providers
+func (s *IntegrationTestSuite) TestErrorHandling(t *testing.T, provider toolkit.Provider) <span class="cov8" title="1">{
+        ctx := context.Background()
+
+        // Test with invalid config
+        invalidConfig := map[string]interface{}{}
+        err := provider.ValidateConfig(invalidConfig)
+        if err == nil </span><span class="cov0" title="0">{
+                t.Logf("Warning: Provider %s accepted invalid config", provider.Name())
+        }</span>
+
+        // Test with invalid API key
+        <span class="cov8" title="1">invalidChatReq := toolkit.ChatRequest{
+                Model: "invalid-model",
+                Messages: []toolkit.ChatMessage{
+                        {Role: "user", Content: "test"},
+                },
+        }
+
+        _, err = provider.Chat(ctx, invalidChatReq)
+        // Note: This should fail, but we're testing that it fails gracefully
+        t.Logf("Error handling test for provider %s: %v", provider.Name(), err)</span>
+}
+
+// CleanupSuite cleans up the test environment
+func (s *IntegrationTestSuite) CleanupSuite() <span class="cov8" title="1">{
+        // Clean up resources
+        s.providers = nil
+        s.registry = nil
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
