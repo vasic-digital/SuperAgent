@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/HelixDevelopment/HelixAgent-SiliconFlow/providers/siliconflow"
-	"github.com/HelixDevelopment/HelixAgent-Chutes/providers/chutes"
+	"github.com/HelixDevelopment/HelixAgent-Chutes/providers"
 	"github.com/superagent/toolkit/agents/crush"
 	"github.com/superagent/toolkit/agents/generic"
 	"github.com/superagent/toolkit/agents/opencode"

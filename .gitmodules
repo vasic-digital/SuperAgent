@@ -4,3 +4,6 @@
 [submodule "Toolkit/Chutes"]
 	path = Toolkit/Chutes
 	url = git@github.com:vasic-digital/Chutes-Toolkit.git
+[submodule "Toolkit/Toolkit/Chutes"]
+	path = Toolkit/Toolkit/Chutes
+	url = git@github.com:vasic-digital/Chutes-Toolkit.git
