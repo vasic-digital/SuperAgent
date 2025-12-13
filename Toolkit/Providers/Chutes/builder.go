@@ -3,7 +3,6 @@ package chutes
 
 import (
 	"fmt"
-
 )
 
 // ConfigBuilder implements the ConfigBuilder interface for Chutes.

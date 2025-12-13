@@ -188,6 +188,14 @@ func (mp *MockProvider) ValidateConfig(config map[string]interface{}) error {
 	if mp.shouldError {
 		return &TestError{Message: "mock validation error"}
 	}
+
+	// Basic security validation
+	if apiKey, exists := config["api_key"]; exists {
+		if keyStr, ok := apiKey.(string); ok && keyStr == "" {
+			return &TestError{Message: "api_key cannot be empty"}
+		}
+	}
+
 	return nil
 }
 

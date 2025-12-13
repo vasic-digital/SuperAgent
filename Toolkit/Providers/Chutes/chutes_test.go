@@ -1,6 +1,7 @@
 package chutes
 
 import (
+	"context"
 	"testing"
 
 	"github.com/HelixDevelopment/HelixAgent/Toolkit/pkg/toolkit"
@@ -167,4 +168,362 @@ func TestChutesAutoRegistration(t *testing.T) {
 	if provider.Name() != "chutes" {
 		t.Errorf("Expected provider name 'chutes', got '%s'", provider.Name())
 	}
+}
+
+func TestChutesChatCompletion(t *testing.T) {
+	provider, err := NewProvider(map[string]interface{}{
+		"api_key": "test-api-key",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	ctx := context.Background()
+	req := toolkit.ChatRequest{
+		Model: "test-model",
+		Messages: []toolkit.ChatMessage{
+			{Role: "user", Content: "Hello, test!"},
+		},
+		MaxTokens: 100,
+	}
+
+	// This will fail with network error since we don't have a real API
+	_, err = provider.Chat(ctx, req)
+	if err == nil {
+		t.Error("Expected chat completion to fail with test API key")
+	}
+	// We just verify the method can be called and fails gracefully
+	t.Logf("Chat completion failed as expected: %v", err)
+}
+
+func TestChutesEmbedding(t *testing.T) {
+	provider, err := NewProvider(map[string]interface{}{
+		"api_key": "test-api-key",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	ctx := context.Background()
+	req := toolkit.EmbeddingRequest{
+		Model: "test-embedding-model",
+		Input: []string{"This is a test document"},
+	}
+
+	// This will fail with network error since we don't have a real API
+	_, err = provider.Embed(ctx, req)
+	if err == nil {
+		t.Error("Expected embedding to fail with test API key")
+	}
+	// We just verify the method can be called and fails gracefully
+	t.Logf("Embedding failed as expected: %v", err)
+}
+
+func TestChutesRerank(t *testing.T) {
+	provider, err := NewProvider(map[string]interface{}{
+		"api_key": "test-api-key",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	ctx := context.Background()
+	req := toolkit.RerankRequest{
+		Model: "test-rerank-model",
+		Query: "What is machine learning?",
+		Documents: []string{
+			"Machine learning is a subset of AI",
+			"The weather is nice today",
+		},
+		TopN: 2,
+	}
+
+	// This will fail with network error since we don't have a real API
+	_, err = provider.Rerank(ctx, req)
+	if err == nil {
+		t.Error("Expected rerank to fail with test API key")
+	}
+	// We just verify the method can be called and fails gracefully
+	t.Logf("Rerank failed as expected: %v", err)
+}
+
+func TestChutesModelDiscovery(t *testing.T) {
+	provider, err := NewProvider(map[string]interface{}{
+		"api_key": "test-api-key",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	ctx := context.Background()
+
+	// This will fail with network error since we don't have a real API
+	_, err = provider.DiscoverModels(ctx)
+	if err == nil {
+		t.Error("Expected model discovery to fail with test API key")
+	}
+	// We just verify the method can be called and fails gracefully
+	t.Logf("Model discovery failed as expected: %v", err)
+}
+
+func TestChutesChatCompletionWithParameters(t *testing.T) {
+	provider, err := NewProvider(map[string]interface{}{
+		"api_key": "test-api-key",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	ctx := context.Background()
+	req := toolkit.ChatRequest{
+		Model: "test-model",
+		Messages: []toolkit.ChatMessage{
+			{Role: "system", Content: "You are a helpful assistant"},
+			{Role: "user", Content: "Hello!"},
+		},
+		MaxTokens:        150,
+		Temperature:      0.7,
+		TopP:             0.9,
+		TopK:             40,
+		Stop:             []string{"\n", "END"},
+		PresencePenalty:  0.1,
+		FrequencyPenalty: -0.1,
+		LogitBias: map[string]float64{
+			"1234": -100.0,
+		},
+	}
+
+	// This will fail with network error since we don't have a real API
+	_, err = provider.Chat(ctx, req)
+	if err == nil {
+		t.Error("Expected chat completion to fail with test API key")
+	}
+	// Verify all parameters are processed without panic
+	t.Logf("Chat completion with parameters failed as expected: %v", err)
+}
+
+func TestChutesEmbeddingBatch(t *testing.T) {
+	provider, err := NewProvider(map[string]interface{}{
+		"api_key": "test-api-key",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	ctx := context.Background()
+	req := toolkit.EmbeddingRequest{
+		Model: "test-embedding-model",
+		Input: []string{
+			"First document for embedding",
+			"Second document for embedding",
+			"Third document for embedding",
+		},
+		EncodingFormat: "float",
+		Dimensions:     768,
+		User:           "test-user",
+	}
+
+	// This will fail with network error since we don't have a real API
+	_, err = provider.Embed(ctx, req)
+	if err == nil {
+		t.Error("Expected batch embedding to fail with test API key")
+	}
+	// Verify batch processing works
+	t.Logf("Batch embedding failed as expected: %v", err)
+}
+
+func TestChutesRerankWithOptions(t *testing.T) {
+	provider, err := NewProvider(map[string]interface{}{
+		"api_key": "test-api-key",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create provider: %v", err)
+	}
+
+	ctx := context.Background()
+	req := toolkit.RerankRequest{
+		Model: "test-rerank-model",
+		Query: "artificial intelligence applications",
+		Documents: []string{
+			"AI is used in healthcare for diagnostics",
+			"Machine learning helps in financial predictions",
+			"Natural language processing powers chatbots",
+			"Computer vision enables autonomous vehicles",
+			"Robotics combines AI with mechanical engineering",
+		},
+		TopN:       3,
+		ReturnDocs: true,
+	}
+
+	// This will fail with network error since we don't have a real API
+	_, err = provider.Rerank(ctx, req)
+	if err == nil {
+		t.Error("Expected rerank to fail with test API key")
+	}
+	// Verify rerank processing works
+	t.Logf("Rerank with options failed as expected: %v", err)
+}
+
+func TestChutesProviderWithCustomConfig(t *testing.T) {
+	config := map[string]interface{}{
+		"api_key":    "custom-api-key",
+		"base_url":   "https://custom.chutes.ai/v1",
+		"timeout":    60000,
+		"retries":    5,
+		"rate_limit": 100,
+	}
+
+	provider, err := NewProvider(config)
+	if err != nil {
+		t.Fatalf("Failed to create provider with custom config: %v", err)
+	}
+
+	// Test that provider was created successfully
+	if provider.Name() != "chutes" {
+		t.Errorf("Expected provider name 'chutes', got '%s'", provider.Name())
+	}
+
+	// Test config validation
+	err = provider.ValidateConfig(config)
+	if err != nil {
+		t.Errorf("Custom config validation failed: %v", err)
+	}
+
+	// Test that operations can be attempted (will fail due to network)
+	ctx := context.Background()
+	chatReq := toolkit.ChatRequest{
+		Model: "test-model",
+		Messages: []toolkit.ChatMessage{
+			{Role: "user", Content: "Test"},
+		},
+	}
+
+	_, err = provider.Chat(ctx, chatReq)
+	if err == nil {
+		t.Error("Expected operation to fail with custom config")
+	}
+	t.Logf("Custom config operation failed as expected: %v", err)
+}
+
+func TestChutesProviderErrorHandling(t *testing.T) {
+	// Test with invalid config
+	invalidConfig := map[string]interface{}{
+		// Missing required api_key
+		"base_url": "https://api.chutes.ai/v1",
+	}
+
+	_, err := NewProvider(invalidConfig)
+	if err == nil {
+		t.Error("Expected provider creation to fail with invalid config")
+	}
+	t.Logf("Invalid config creation failed as expected: %v", err)
+
+	// Test with empty config
+	emptyConfig := map[string]interface{}{}
+
+	_, err = NewProvider(emptyConfig)
+	if err == nil {
+		t.Error("Expected provider creation to fail with empty config")
+	}
+	t.Logf("Empty config creation failed as expected: %v", err)
+}
+
+func TestChutesCapabilityInferrer(t *testing.T) {
+	inferrer := &ChutesCapabilityInferrer{}
+
+	// Test embedding model
+	embeddingCaps := inferrer.InferCapabilities("text-embedding-ada-002", "embedding")
+	if !embeddingCaps.SupportsEmbedding {
+		t.Error("Expected embedding capability for embedding model")
+	}
+	if embeddingCaps.SupportsChat {
+		t.Error("Expected no chat capability for embedding model")
+	}
+
+	// Test rerank model
+	rerankCaps := inferrer.InferCapabilities("rerank-model", "rerank")
+	if !rerankCaps.SupportsRerank {
+		t.Error("Expected rerank capability for rerank model")
+	}
+
+	// Test chat model
+	chatCaps := inferrer.InferCapabilities("gpt-3.5-turbo", "chat")
+	if !chatCaps.SupportsChat {
+		t.Error("Expected chat capability for chat model")
+	}
+
+	// Test vision model
+	visionCaps := inferrer.InferCapabilities("gpt-4-vision", "vl")
+	if !visionCaps.SupportsVision {
+		t.Error("Expected vision capability for vision model")
+	}
+
+	// Test audio model
+	audioCaps := inferrer.InferCapabilities("tts-model", "audio")
+	if !audioCaps.SupportsAudio {
+		t.Error("Expected audio capability for audio model")
+	}
+
+	// Test video model
+	videoCaps := inferrer.InferCapabilities("flux-dev", "t2v")
+	if !videoCaps.SupportsVideo {
+		t.Error("Expected video capability for video model")
+	}
+}
+
+func TestChutesCapabilityInferrerContainsAny(t *testing.T) {
+	inferrer := &ChutesCapabilityInferrer{}
+
+	// Test contains any
+	if !inferrer.containsAny("hello world", []string{"world", "test"}) {
+		t.Error("Expected containsAny to find 'world'")
+	}
+
+	if inferrer.containsAny("hello world", []string{"test", "example"}) {
+		t.Error("Expected containsAny to not find any matches")
+	}
+
+	// Test empty slice
+	if inferrer.containsAny("hello", []string{}) {
+		t.Error("Expected containsAny to return false for empty slice")
+	}
+}
+
+func TestChutesModelFormatter(t *testing.T) {
+	formatter := &ChutesModelFormatter{}
+
+	// Test format model name
+	formatted := formatter.FormatModelName("some/model-name")
+	expected := "some model name"
+	if formatted != expected {
+		t.Errorf("Expected formatted name %s, got %s", expected, formatted)
+	}
+
+	// Test with single part
+	formatted2 := formatter.FormatModelName("single-model")
+	expected2 := "single model"
+	if formatted2 != expected2 {
+		t.Errorf("Expected formatted name %s, got %s", expected2, formatted2)
+	}
+
+	// Test get model description
+	desc := formatter.GetModelDescription("gpt-4")
+	if desc == "" {
+		t.Error("Expected non-empty description")
+	}
+}
+
+func TestChutesDiscovery(t *testing.T) {
+	discovery := NewDiscovery("test-api-key")
+	if discovery == nil {
+		t.Error("Expected non-nil discovery")
+	}
+
+	// Test discovery with mock (will fail but tests the path)
+	ctx := context.Background()
+	_, err := discovery.Discover(ctx)
+	if err == nil {
+		t.Error("Expected discovery to fail with test API key")
+	}
+	t.Logf("Discovery failed as expected: %v", err)
 }

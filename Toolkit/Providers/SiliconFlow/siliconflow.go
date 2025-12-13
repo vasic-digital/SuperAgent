@@ -94,6 +94,6 @@ func SetGlobalProviderRegistry(registry *toolkit.ProviderFactoryRegistry) {
 func init() {
 	// Register with global registry if available
 	if globalProviderRegistry != nil {
-		globalProviderRegistry.Register("siliconflow", Factory)
+		_ = globalProviderRegistry.Register("siliconflow", Factory)
 	}
 }

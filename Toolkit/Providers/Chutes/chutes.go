@@ -94,6 +94,6 @@ func SetGlobalProviderRegistry(registry *toolkit.ProviderFactoryRegistry) {
 func init() {
 	// Register with global registry if available
 	if globalProviderRegistry != nil {
-		globalProviderRegistry.Register("chutes", Factory)
+		_ = globalProviderRegistry.Register("chutes", Factory)
 	}
 }
