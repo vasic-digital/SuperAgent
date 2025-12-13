@@ -1,0 +1,278 @@
+# AI Debate Configuration Example
+# This configuration demonstrates a comprehensive AI debate system with multiple participants
+# Each participant has multiple LLMs with fallback chains for maximum reliability
+
+# Global configuration
+enabled: true
+maximal_repeat_rounds: 3
+debate_timeout: 300000  # 5 minutes in milliseconds
+consensus_threshold: 0.75
+enable_cognee: true
+
+# Cognee AI configuration for enhanced debate capabilities
+cognee_config:
+  enabled: true
+  enhance_responses: true
+  analyze_consensus: true
+  generate_insights: true
+  dataset_name: "ai_debate_enhancement"
+  max_enhancement_time: 10000  # 10 seconds in milliseconds
+  enhancement_strategy: "hybrid"
+  memory_integration: true
+  contextual_analysis: true
+
+# Debate participants configuration
+participants:
+  # Primary analytical participant - Strongest
+  - name: "Strongest"
+    role: "Primary Analyst"
+    description: "Main analytical participant with comprehensive reasoning capabilities"
+    enabled: true
+    maximal_repeat_rounds: 3  # Override global setting for this participant
+    response_timeout: 30000  # 30 seconds in milliseconds
+    weight: 1.5
+    priority: 1
+    debate_style: "analytical"
+    argumentation_style: "logical"
+    persuasion_level: 0.8
+    openness_to_change: 0.3
+    quality_threshold: 0.8
+    min_response_length: 100
+    max_response_length: 2000
+    enable_cognee: true
+    cognee_settings:
+      enhance_responses: true
+      analyze_sentiment: true
+      extract_entities: true
+      generate_summary: true
+      dataset_name: "strongest_participant_enhancement"
+    
+    # LLM fallback chain - first is primary, others are fallbacks
+    llms:
+      - name: "Claude Primary"
+        provider: "claude"
+        model: "claude-3-5-sonnet-20241022"
+        enabled: true
+        api_key: "${CLAUDE_API_KEY}"
+        timeout: 30000  # 30 seconds in milliseconds
+        max_retries: 3
+        temperature: 0.1
+        max_tokens: 2000
+        top_p: 0.9
+        frequency_penalty: 0.0
+        presence_penalty: 0.0
+        weight: 1.0
+        rate_limit_rps: 10
+        request_timeout: 35000  # 35 seconds in milliseconds
+        capabilities:
+          - "reasoning"
+          - "analysis"
+          - "code_generation"
+          - "mathematics"
+        custom_params:
+          thinking: true
+          advanced_reasoning: true
+      
+      - name: "DeepSeek Fallback"
+        provider: "deepseek"
+        model: "deepseek-coder"
+        enabled: true
+        api_key: "${DEEPSEEK_API_KEY}"
+        base_url: "https://api.deepseek.com/v1"
+        timeout: 25000  # 25 seconds in milliseconds
+        max_retries: 3
+        temperature: 0.1
+        max_tokens: 2000
+        weight: 0.9
+        rate_limit_rps: 15
+        request_timeout: 30000  # 30 seconds in milliseconds
+        capabilities:
+          - "code_generation"
+          - "debugging"
+          - "analysis"
+        custom_params:
+          code_focus: true
+          technical_accuracy: high
+      
+      - name: "Gemini Fallback"
+        provider: "gemini"
+        model: "gemini-2.0-flash-exp"
+        enabled: true
+        api_key: "${GEMINI_API_KEY}"
+        timeout: 35000  # 35 seconds in milliseconds
+        max_retries: 3
+        temperature: 0.1
+        max_tokens: 2000
+        weight: 0.8
+        rate_limit_rps: 8
+        request_timeout: 40000  # 40 seconds in milliseconds
+        capabilities:
+          - "multimodal"
+          - "reasoning"
+          - "mathematics"
+        custom_params:
+          multimodal: true
+          flash_reasoning: true
+
+  # Balanced analytical participant - Middle One
+  - name: "Middle One"
+    role: "Balanced Analyst"
+    description: "Balanced participant with moderate reasoning capabilities"
+    enabled: true
+    maximal_repeat_rounds: 2  # This participant has fewer retry rounds
+    response_timeout: 25000  # 25 seconds in milliseconds
+    weight: 1.0
+    priority: 2
+    debate_style: "balanced"
+    argumentation_style: "evidence_based"
+    persuasion_level: 0.5
+    openness_to_change: 0.6
+    quality_threshold: 0.7
+    min_response_length: 80
+    max_response_length: 1500
+    enable_cognee: true
+    cognee_settings:
+      enhance_responses: true
+      analyze_sentiment: false
+      extract_entities: true
+      generate_summary: true
+      dataset_name: "middle_participant_enhancement"
+    
+    llms:
+      - name: "Qwen Primary"
+        provider: "qwen"
+        model: "qwen-turbo"
+        enabled: true
+        api_key: "${QWEN_API_KEY}"
+        base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        timeout: 25000  # 25 seconds in milliseconds
+        max_retries: 3
+        temperature: 0.3
+        max_tokens: 1500
+        top_p: 0.95
+        weight: 1.0
+        rate_limit_rps: 12
+        request_timeout: 30000  # 30 seconds in milliseconds
+        capabilities:
+          - "general"
+          - "reasoning"
+          - "multilingual"
+        custom_params:
+          turbo_mode: true
+          multilingual: true
+      
+      - name: "Ollama Fallback"
+        provider: "ollama"
+        model: "llama2"
+        enabled: true
+        base_url: "http://localhost:11434"
+        timeout: 20000  # 20 seconds in milliseconds
+        max_retries: 2
+        temperature: 0.3
+        max_tokens: 1500
+        weight: 0.7
+        rate_limit_rps: 5
+        request_timeout: 25000  # 25 seconds in milliseconds
+        capabilities:
+          - "general"
+          - "conversation"
+        custom_params:
+          local_processing: true
+          privacy_focused: true
+
+  # Creative thinking participant
+  - name: "Creative Thinker"
+    role: "Creative Analyst"
+    description: "Creative participant with innovative thinking capabilities"
+    enabled: true
+    response_timeout: 35000  # 35 seconds in milliseconds
+    weight: 1.2
+    priority: 3
+    debate_style: "creative"
+    argumentation_style: "hypothetical"
+    persuasion_level: 0.7
+    openness_to_change: 0.8
+    quality_threshold: 0.6
+    min_response_length: 120
+    max_response_length: 1800
+    enable_cognee: true
+    cognee_settings:
+      enhance_responses: true
+      analyze_sentiment: true
+      extract_entities: false
+      generate_summary: false
+      dataset_name: "creative_participant_enhancement"
+    
+    llms:
+      - name: "Grok Primary"
+        provider: "openrouter"
+        model: "x-ai/grok-4"
+        enabled: true
+        api_key: "${OPENROUTER_API_KEY}"
+        base_url: "https://openrouter.ai/api/v1"
+        timeout: 35000  # 35 seconds in milliseconds
+        max_retries: 3
+        temperature: 0.7
+        max_tokens: 1800
+        top_p: 0.9
+        frequency_penalty: 0.1
+        presence_penalty: 0.1
+        weight: 1.0
+        rate_limit_rps: 6
+        request_timeout: 40000  # 40 seconds in milliseconds
+        capabilities:
+          - "reasoning"
+          - "analysis"
+          - "problem_solving"
+          - "real_time_data"
+        custom_params:
+          grok_reasoning: true
+          real_time_access: true
+          creative_mode: enhanced
+      
+      - name: "ZAI Fallback"
+        provider: "zai"
+        model: "zai-large"
+        enabled: true
+        api_key: "${ZAI_API_KEY}"
+        timeout: 30000  # 30 seconds in milliseconds
+        max_retries: 3
+        temperature: 0.7
+        max_tokens: 1800
+        weight: 0.8
+        rate_limit_rps: 10
+        request_timeout: 35000  # 35 seconds in milliseconds
+        capabilities:
+          - "creative"
+          - "analysis"
+        custom_params:
+          creative_focus: true
+          innovation_mode: enabled
+
+# Debate strategy configuration
+debate_strategy: "structured"  # Options: round_robin, free_form, structured, adversarial, collaborative
+voting_strategy: "confidence_weighted"  # Options: majority, weighted, consensus, confidence_weighted, quality_weighted
+response_format: "detailed"  # Options: brief, detailed, structured, bullet_points
+
+# Memory and context management
+enable_memory: true
+memory_retention: 2592000000  # 30 days in milliseconds
+max_context_length: 32000
+
+# Quality and performance settings
+quality_threshold: 0.7
+max_response_time: 30000  # 30 seconds in milliseconds
+enable_streaming: false
+
+# Logging and monitoring
+enable_debate_logging: true
+log_debate_details: true
+metrics_enabled: true
+
+# Environment variables required:
+# CLAUDE_API_KEY - API key for Claude
+# DEEPSEEK_API_KEY - API key for DeepSeek
+# GEMINI_API_KEY - API key for Gemini
+# QWEN_API_KEY - API key for Qwen
+# OPENROUTER_API_KEY - API key for OpenRouter
+# ZAI_API_KEY - API key for ZAI
