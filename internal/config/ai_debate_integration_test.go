@@ -180,7 +180,7 @@ voting_strategy: "confidence_weighted"
 					MinResponseLength:  50,
 					MaxResponseLength:  1000,
 				},
-t			{
+				{
 					Name:               "SaveTestParticipant2",
 					Role:               "Test Critic",
 					Enabled:            true,
