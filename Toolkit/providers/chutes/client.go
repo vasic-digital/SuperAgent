@@ -2,32 +2,29 @@
 package chutes
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
 	"time"
 
 	"github.com/superagent/toolkit/pkg/toolkit"
+	"github.com/superagent/toolkit/pkg/toolkit/common/http"
 )
 
 // Client represents a Chutes API client.
 type Client struct {
-	apiKey     string
-	baseURL    string
 	httpClient *http.Client
 }
 
 // NewClient creates a new Chutes API client.
 func NewClient(apiKey string) *Client {
+	httpClient := http.NewClient(http.ClientConfig{
+		BaseURL:    "https://api.chutes.ai/v1",
+		Timeout:    30 * time.Second,
+		MaxRetries: 3,
+	})
+	httpClient.SetAuth("Authorization", "Bearer "+apiKey)
+
 	return &Client{
-		apiKey:  apiKey,
-		baseURL: "https://api.chutes.ai/v1",
-		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		httpClient: httpClient,
 	}
 }
 
@@ -138,37 +135,5 @@ type ModelInfo struct {
 
 // doRequest performs an HTTP request to the Chutes API.
 func (c *Client) doRequest(ctx context.Context, method, endpoint string, payload interface{}, result interface{}) error {
-	var body io.Reader
-	if payload != nil {
-		jsonData, err := json.Marshal(payload)
-		if err != nil {
-			return fmt.Errorf("failed to marshal payload: %w", err)
-		}
-		body = bytes.NewBuffer(jsonData)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+endpoint, body)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to make request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
-		return fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return nil
+	return c.httpClient.DoRequest(ctx, method, endpoint, payload, result)
 }

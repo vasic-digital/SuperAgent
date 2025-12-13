@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/superagent/toolkit/SiliconFlow/providers/siliconflow"
 	"github.com/superagent/toolkit/agents/crush"
 	"github.com/superagent/toolkit/agents/generic"
 	"github.com/superagent/toolkit/agents/opencode"
@@ -17,7 +18,6 @@ import (
 	"github.com/superagent/toolkit/providers/claude"
 	"github.com/superagent/toolkit/providers/nvidia"
 	"github.com/superagent/toolkit/providers/openrouter"
-	"github.com/superagent/toolkit/providers/siliconflow"
 )
 
 var (

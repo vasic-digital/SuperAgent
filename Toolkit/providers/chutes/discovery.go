@@ -6,52 +6,14 @@ import (
 	"strings"
 
 	"github.com/superagent/toolkit/pkg/toolkit"
+	"github.com/superagent/toolkit/pkg/toolkit/common/discovery"
 )
 
-// Discovery implements the ModelDiscovery interface for Chutes.
-type Discovery struct {
-	client *Client
-}
+// ChutesCapabilityInferrer implements capability inference for Chutes models.
+type ChutesCapabilityInferrer struct{}
 
-// NewDiscovery creates a new Chutes model discovery instance.
-func NewDiscovery(apiKey string) *Discovery {
-	return &Discovery{
-		client: NewClient(apiKey),
-	}
-}
-
-// Discover discovers available models from Chutes.
-func (d *Discovery) Discover(ctx context.Context) ([]toolkit.ModelInfo, error) {
-	models, err := d.client.GetModels(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var modelInfos []toolkit.ModelInfo
-	for _, model := range models {
-		modelInfo := d.convertToModelInfo(model)
-		modelInfos = append(modelInfos, modelInfo)
-	}
-
-	return modelInfos, nil
-}
-
-// convertToModelInfo converts Chutes model info to toolkit ModelInfo.
-func (d *Discovery) convertToModelInfo(model ModelInfo) toolkit.ModelInfo {
-	capabilities := d.inferCapabilities(model.ID, model.Type)
-
-	return toolkit.ModelInfo{
-		ID:           model.ID,
-		Name:         d.formatModelName(model.ID),
-		Category:     d.inferCategory(model.ID, model.Type),
-		Capabilities: capabilities,
-		Provider:     "chutes",
-		Description:  d.getModelDescription(model.ID),
-	}
-}
-
-// inferCapabilities infers model capabilities from ID and type.
-func (d *Discovery) inferCapabilities(modelID, modelType string) toolkit.ModelCapabilities {
+// InferCapabilities infers model capabilities from ID and type.
+func (c *ChutesCapabilityInferrer) InferCapabilities(modelID, modelType string) toolkit.ModelCapabilities {
 	capabilities := toolkit.ModelCapabilities{}
 
 	modelLower := strings.ToLower(modelID)
@@ -65,15 +27,15 @@ func (d *Discovery) inferCapabilities(modelID, modelType string) toolkit.ModelCa
 
 	// Audio capabilities
 	audioKeywords := []string{"tts", "audio", "speech", "voice"}
-	capabilities.SupportsAudio = d.containsAny(modelLower, audioKeywords) || d.containsAny(typeLower, audioKeywords)
+	capabilities.SupportsAudio = c.containsAny(modelLower, audioKeywords) || c.containsAny(typeLower, audioKeywords)
 
 	// Video capabilities
 	videoKeywords := []string{"t2v", "video", "i2v", "flux"}
-	capabilities.SupportsVideo = d.containsAny(modelLower, videoKeywords) || d.containsAny(typeLower, videoKeywords)
+	capabilities.SupportsVideo = c.containsAny(modelLower, videoKeywords) || c.containsAny(typeLower, videoKeywords)
 
 	// Vision capabilities
 	visionKeywords := []string{"vl", "vision", "visual", "multimodal"}
-	capabilities.SupportsVision = d.containsAny(modelLower, visionKeywords) || d.containsAny(typeLower, visionKeywords)
+	capabilities.SupportsVision = c.containsAny(modelLower, visionKeywords) || c.containsAny(typeLower, visionKeywords)
 
 	// Chat capabilities - Chutes specific models
 	specializedKeywords := []string{
@@ -81,14 +43,14 @@ func (d *Discovery) inferCapabilities(modelID, modelType string) toolkit.ModelCa
 		"t2v", "i2v", "flux", "vl", "vision", "visual", "multimodal", "image",
 	}
 
-	isSpecialized := d.containsAny(modelLower, specializedKeywords)
+	isSpecialized := c.containsAny(modelLower, specializedKeywords)
 	chatTypeIndicators := []string{"chat", "text", "completion", "instruction", "instruct"}
-	hasChatType := d.containsAny(typeLower, chatTypeIndicators)
+	hasChatType := c.containsAny(typeLower, chatTypeIndicators)
 	chatIDIndicators := []string{
 		"instruct", "chat", "qwen", "deepseek", "glm", "kimi",
 		"llama", "mistral", "mixtral", "gemma", "phi", "yi",
 	}
-	hasChatID := d.containsAny(modelLower, chatIDIndicators)
+	hasChatID := c.containsAny(modelLower, chatIDIndicators)
 
 	if hasChatType && !isSpecialized {
 		capabilities.SupportsChat = true
@@ -101,83 +63,27 @@ func (d *Discovery) inferCapabilities(modelID, modelType string) toolkit.ModelCa
 	}
 
 	// Function calling support
-	capabilities.FunctionCalling = d.supportsFunctionCalling(modelID)
+	capabilities.FunctionCalling = c.supportsFunctionCalling(modelID)
 
 	// Context window and max tokens
-	capabilities.ContextWindow = d.inferContextWindow(modelID)
-	capabilities.MaxTokens = d.inferMaxTokens(modelID)
+	capabilities.ContextWindow = c.inferContextWindow(modelID)
+	capabilities.MaxTokens = c.inferMaxTokens(modelID)
 
 	return capabilities
 }
 
 // containsAny checks if the string contains any of the keywords.
-func (d *Discovery) containsAny(s string, keywords []string) bool {
+func (c *ChutesCapabilityInferrer) containsAny(str string, keywords []string) bool {
 	for _, keyword := range keywords {
-		if strings.Contains(s, keyword) {
+		if strings.Contains(str, keyword) {
 			return true
 		}
 	}
 	return false
 }
 
-// formatModelName formats model ID into human-readable name.
-func (d *Discovery) formatModelName(modelID string) string {
-	parts := strings.Split(modelID, "/")
-	if len(parts) > 1 {
-		name := strings.ReplaceAll(parts[1], "-", " ")
-		name = strings.ReplaceAll(name, "_", " ")
-		return parts[0] + " " + name
-	}
-	return strings.ReplaceAll(modelID, "-", " ")
-}
-
-// inferCategory infers the model category.
-func (d *Discovery) inferCategory(modelID, modelType string) toolkit.ModelCategory {
-	typeLower := strings.ToLower(modelType)
-	modelLower := strings.ToLower(modelID)
-
-	if strings.Contains(typeLower, "embedding") {
-		return toolkit.CategoryEmbedding
-	}
-	if strings.Contains(typeLower, "rerank") {
-		return toolkit.CategoryRerank
-	}
-	if strings.Contains(modelLower, "vl") || strings.Contains(modelLower, "vision") ||
-		strings.Contains(modelLower, "multimodal") {
-		return toolkit.CategoryMultimodal
-	}
-	if strings.Contains(modelLower, "image") || strings.Contains(modelLower, "flux") {
-		return toolkit.CategoryImage
-	}
-	if strings.Contains(modelLower, "video") || strings.Contains(modelLower, "t2v") {
-		return toolkit.CategoryMultimodal
-	}
-
-	return toolkit.CategoryChat
-}
-
-// getModelDescription returns a description for the model.
-func (d *Discovery) getModelDescription(modelID string) string {
-	modelLower := strings.ToLower(modelID)
-
-	if strings.Contains(modelLower, "qwen") {
-		return "Qwen series models hosted on Chutes"
-	}
-	if strings.Contains(modelLower, "deepseek") {
-		return "DeepSeek models hosted on Chutes"
-	}
-	if strings.Contains(modelLower, "glm") {
-		return "GLM models hosted on Chutes"
-	}
-	if strings.Contains(modelLower, "kimi") {
-		return "Kimi models hosted on Chutes"
-	}
-
-	return "Chutes hosted model"
-}
-
 // supportsFunctionCalling checks if model supports function calling.
-func (d *Discovery) supportsFunctionCalling(modelID string) bool {
+func (c *ChutesCapabilityInferrer) supportsFunctionCalling(modelID string) bool {
 	modelLower := strings.ToLower(modelID)
 
 	supportedModels := []string{"qwen", "deepseek", "glm", "kimi"}
@@ -191,7 +97,7 @@ func (d *Discovery) supportsFunctionCalling(modelID string) bool {
 }
 
 // inferContextWindow infers context window size.
-func (d *Discovery) inferContextWindow(modelID string) int {
+func (c *ChutesCapabilityInferrer) inferContextWindow(modelID string) int {
 	modelLower := strings.ToLower(modelID)
 
 	if strings.Contains(modelLower, "deepseek") {
@@ -231,7 +137,7 @@ func (d *Discovery) inferContextWindow(modelID string) int {
 }
 
 // inferMaxTokens infers maximum tokens for output.
-func (d *Discovery) inferMaxTokens(modelID string) int {
+func (c *ChutesCapabilityInferrer) inferMaxTokens(modelID string) int {
 	modelLower := strings.ToLower(modelID)
 
 	if strings.Contains(modelLower, "deepseek-r1") {
@@ -245,4 +151,76 @@ func (d *Discovery) inferMaxTokens(modelID string) int {
 	}
 
 	return 4096
+}
+
+// ChutesModelFormatter implements model formatting for Chutes models.
+type ChutesModelFormatter struct{}
+
+// FormatModelName formats model ID into human-readable name.
+func (c *ChutesModelFormatter) FormatModelName(modelID string) string {
+	parts := strings.Split(modelID, "/")
+	if len(parts) > 1 {
+		name := strings.ReplaceAll(parts[1], "-", " ")
+		name = strings.ReplaceAll(name, "_", " ")
+		return parts[0] + " " + name
+	}
+	return strings.ReplaceAll(modelID, "-", " ")
+}
+
+// GetModelDescription returns a description for the model.
+func (c *ChutesModelFormatter) GetModelDescription(modelID string) string {
+	modelLower := strings.ToLower(modelID)
+
+	if strings.Contains(modelLower, "qwen") {
+		return "Qwen series models hosted on Chutes"
+	}
+	if strings.Contains(modelLower, "deepseek") {
+		return "DeepSeek models hosted on Chutes"
+	}
+	if strings.Contains(modelLower, "glm") {
+		return "GLM models hosted on Chutes"
+	}
+	if strings.Contains(modelLower, "kimi") {
+		return "Kimi models hosted on Chutes"
+	}
+
+	return "Chutes hosted model"
+}
+
+// Discovery implements the ModelDiscovery interface for Chutes.
+type Discovery struct {
+	*discovery.BaseDiscovery
+	client *Client
+}
+
+// NewDiscovery creates a new Chutes model discovery instance.
+func NewDiscovery(apiKey string) *Discovery {
+	client := NewClient(apiKey)
+	base := discovery.NewBaseDiscovery(
+		"chutes",
+		&ChutesCapabilityInferrer{},
+		&discovery.DefaultCategoryInferrer{},
+		&ChutesModelFormatter{},
+	)
+
+	return &Discovery{
+		BaseDiscovery: base,
+		client:        client,
+	}
+}
+
+// Discover discovers available models from Chutes.
+func (d *Discovery) Discover(ctx context.Context) ([]toolkit.ModelInfo, error) {
+	models, err := d.client.GetModels(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var modelInfos []toolkit.ModelInfo
+	for _, model := range models {
+		modelInfo := d.ConvertToModelInfo(model.ID, model.Type)
+		modelInfos = append(modelInfos, modelInfo)
+	}
+
+	return modelInfos, nil
 }
