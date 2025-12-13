@@ -2,8 +2,10 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -404,5 +406,149 @@ func TestClient_DoRequest_InvalidResponse(t *testing.T) {
 
 	if err == nil {
 		t.Error("Expected error for invalid JSON response")
+	}
+}
+
+func TestClient_DoRequest_WithRateLimit(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"success": true}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(ClientConfig{
+		BaseURL: server.URL,
+		Timeout: 5 * time.Second,
+		RateLimit: &ratelimit.TokenBucketConfig{
+			Capacity:   10,
+			RefillRate: 10,
+		},
+	})
+
+	var result map[string]bool
+	err := client.DoRequest(context.Background(), "GET", "/test", nil, &result)
+
+	if err != nil {
+		t.Fatalf("Expected no error with rate limiting, got %v", err)
+	}
+
+	if !result["success"] {
+		t.Error("Expected success to be true")
+	}
+}
+
+func TestClient_DoRequest_RequestInterceptorError(t *testing.T) {
+	client := NewClient(ClientConfig{
+		BaseURL: "https://api.example.com",
+		Timeout: 5 * time.Second,
+	})
+
+	client.AddRequestInterceptor(func(req *http.Request) error {
+		return fmt.Errorf("interceptor error")
+	})
+
+	err := client.DoRequest(context.Background(), "GET", "/test", nil, nil)
+
+	if err == nil {
+		t.Error("Expected error from request interceptor")
+	}
+
+	if !strings.Contains(err.Error(), "interceptor error") {
+		t.Errorf("Expected error to contain 'interceptor error', got %v", err)
+	}
+}
+
+func TestClient_DoRequest_ResponseInterceptorError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok": true}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(ClientConfig{
+		BaseURL: server.URL,
+		Timeout: 5 * time.Second,
+	})
+
+	client.AddResponseInterceptor(func(resp *http.Response) error {
+		return fmt.Errorf("response interceptor error")
+	})
+
+	err := client.DoRequest(context.Background(), "GET", "/test", nil, nil)
+
+	if err == nil {
+		t.Error("Expected error from response interceptor")
+	}
+
+	if !strings.Contains(err.Error(), "response interceptor error") {
+		t.Errorf("Expected error to contain 'response interceptor error', got %v", err)
+	}
+}
+
+func TestClient_DoRequest_RateLimitTimeout(t *testing.T) {
+	client := NewClient(ClientConfig{
+		BaseURL: "https://api.example.com",
+		Timeout: 5 * time.Second,
+		RateLimit: &ratelimit.TokenBucketConfig{
+			Capacity:   0, // No capacity
+			RefillRate: 0, // No refill
+		},
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	err := client.DoRequest(ctx, "GET", "/test", nil, nil)
+
+	if err == nil {
+		t.Error("Expected timeout error from rate limiting")
+	}
+}
+
+func TestClient_DoRequest_MultipleInterceptors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check that both interceptors were applied
+		if r.Header.Get("X-Interceptor-1") != "value1" {
+			t.Errorf("Expected X-Interceptor-1 header")
+		}
+		if r.Header.Get("X-Interceptor-2") != "value2" {
+			t.Errorf("Expected X-Interceptor-2 header")
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok": true}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(ClientConfig{
+		BaseURL: server.URL,
+		Timeout: 5 * time.Second,
+	})
+
+	client.AddRequestInterceptor(func(req *http.Request) error {
+		req.Header.Set("X-Interceptor-1", "value1")
+		return nil
+	})
+
+	client.AddRequestInterceptor(func(req *http.Request) error {
+		req.Header.Set("X-Interceptor-2", "value2")
+		return nil
+	})
+
+	client.AddResponseInterceptor(func(resp *http.Response) error {
+		if resp.StatusCode != 200 {
+			return fmt.Errorf("unexpected status: %d", resp.StatusCode)
+		}
+		return nil
+	})
+
+	var result map[string]bool
+	err := client.DoRequest(context.Background(), "GET", "/test", nil, &result)
+
+	if err != nil {
+		t.Fatalf("Expected no error with multiple interceptors, got %v", err)
+	}
+
+	if !result["ok"] {
+		t.Error("Expected ok to be true")
 	}
 }

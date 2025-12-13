@@ -61,12 +61,27 @@ func TestJSONParser_ParseJSONFromBytes_Invalid(t *testing.T) {
 	parser := &JSONParser{}
 
 	invalidJSON := []byte(`{"invalid": json}`)
-
 	var result map[string]string
 	err := parser.ParseJSONFromBytes(invalidJSON, &result)
 
 	if err == nil {
 		t.Error("Expected error for invalid JSON")
+	}
+}
+
+func TestJSONParser_ParseJSON_Invalid(t *testing.T) {
+	parser := &JSONParser{}
+
+	// Create response with invalid JSON
+	resp := &http.Response{
+		Body: io.NopCloser(bytes.NewReader([]byte(`{"invalid": json}`))),
+	}
+
+	var result map[string]string
+	err := parser.ParseJSON(resp, &result)
+
+	if err == nil {
+		t.Error("Expected error for invalid JSON in ParseJSON")
 	}
 }
 
@@ -381,5 +396,230 @@ func TestResponseBuilder_SanitizeResponse(t *testing.T) {
 	// For now, it returns as-is
 	if result == nil {
 		t.Error("Expected non-nil result")
+	}
+}
+
+func TestStreamingParser_ParseStream_EmptyStream(t *testing.T) {
+	dataReceived := []string{}
+	var parseError error
+
+	parser := NewStreamingParser(
+		func(data []byte) error {
+			dataReceived = append(dataReceived, string(data))
+			return nil
+		},
+		func(err error) {
+			parseError = err
+		},
+	)
+
+	// Empty stream
+	resp := &http.Response{
+		Body: io.NopCloser(bytes.NewReader([]byte(""))),
+	}
+
+	err := parser.ParseStream(resp)
+
+	if err != nil {
+		t.Fatalf("Expected no error for empty stream, got %v", err)
+	}
+
+	if len(dataReceived) != 0 {
+		t.Errorf("Expected no data for empty stream, got %d items", len(dataReceived))
+	}
+
+	if parseError != nil {
+		t.Errorf("Expected no parse error for empty stream, got %v", parseError)
+	}
+}
+
+func TestStreamingParser_ParseStream_MalformedData(t *testing.T) {
+	var parseError error
+
+	parser := NewStreamingParser(
+		func(data []byte) error {
+			return nil
+		},
+		func(err error) {
+			parseError = err
+		},
+	)
+
+	// Malformed stream data (no proper data: prefix)
+	streamData := "invalid data line\n\nanother line\n"
+	resp := &http.Response{
+		Body: io.NopCloser(bytes.NewReader([]byte(streamData))),
+	}
+
+	err := parser.ParseStream(resp)
+
+	if err != nil {
+		t.Fatalf("Expected no error for malformed data, got %v", err)
+	}
+
+	// Should not have called error callback for malformed data
+	if parseError != nil {
+		t.Errorf("Expected no parse error for malformed data, got %v", parseError)
+	}
+}
+
+func TestErrorDetector_DetectError_InvalidJSON(t *testing.T) {
+	detector := &ErrorDetector{}
+
+	resp := &http.Response{
+		StatusCode: 400,
+		Body:       io.NopCloser(bytes.NewReader([]byte(`invalid json`))),
+	}
+
+	err := detector.DetectError(resp)
+
+	if err == nil {
+		t.Error("Expected error for invalid JSON in error response")
+	}
+}
+
+func TestErrorDetector_DetectError_NoErrorField(t *testing.T) {
+	detector := &ErrorDetector{}
+
+	// Response with error status but no error field in JSON
+	resp := &http.Response{
+		StatusCode: 400,
+		Body:       io.NopCloser(bytes.NewReader([]byte(`{"status": "error", "message": "something went wrong"}`))),
+	}
+
+	err := detector.DetectError(resp)
+
+	if err == nil {
+		t.Error("Expected error for error status code")
+	}
+
+	// Should fall back to generic error message
+	expectedMsg := "HTTP 400: {\"status\": \"error\", \"message\": \"something went wrong\"}"
+	if err.Error() != expectedMsg {
+		t.Errorf("Expected error message '%s', got '%s'", expectedMsg, err.Error())
+	}
+}
+
+func TestPaginationParser_ParsePaginated_NoNextPage(t *testing.T) {
+	hasNextPage := func(resp map[string]interface{}) bool {
+		if next, ok := resp["next"].(string); ok && next != "" {
+			return true
+		}
+		return false
+	}
+
+	getNextURL := func(resp map[string]interface{}) string {
+		if next, ok := resp["next"].(string); ok {
+			return next
+		}
+		return ""
+	}
+
+	parser := NewPaginationParser(hasNextPage, getNextURL)
+
+	responseData := map[string]interface{}{
+		"data": []map[string]string{
+			{"id": "1", "name": "item1"},
+		},
+		// No "next" field
+	}
+
+	jsonData, _ := json.Marshal(responseData)
+
+	resp := &http.Response{
+		Body: io.NopCloser(bytes.NewReader(jsonData)),
+	}
+
+	var result []map[string]string
+	hasNext, nextURL, err := parser.ParsePaginated(resp, &result)
+
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	if hasNext {
+		t.Error("Expected hasNext to be false")
+	}
+
+	if nextURL != "" {
+		t.Errorf("Expected empty nextURL, got %s", nextURL)
+	}
+
+	if len(result) != 1 {
+		t.Errorf("Expected 1 item, got %d", len(result))
+	}
+}
+
+func TestPaginationParser_ParsePaginated_InvalidJSON(t *testing.T) {
+	hasNextPage := func(resp map[string]interface{}) bool { return false }
+	getNextURL := func(resp map[string]interface{}) string { return "" }
+
+	parser := NewPaginationParser(hasNextPage, getNextURL)
+
+	resp := &http.Response{
+		Body: io.NopCloser(bytes.NewReader([]byte(`invalid json`))),
+	}
+
+	var result []map[string]string
+	_, _, err := parser.ParsePaginated(resp, &result)
+
+	if err == nil {
+		t.Error("Expected error for invalid JSON")
+	}
+}
+
+func TestChunkedParser_ParseChunked_SmallChunkSize(t *testing.T) {
+	chunks := [][]byte{}
+
+	parser := NewChunkedParser(5, func(chunk []byte) error {
+		chunks = append(chunks, append([]byte(nil), chunk...))
+		return nil
+	})
+
+	data := []byte("HelloWorld")
+	resp := &http.Response{
+		Body: io.NopCloser(bytes.NewReader(data)),
+	}
+
+	err := parser.ParseChunked(resp)
+
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	// Should have multiple chunks due to small chunk size
+	if len(chunks) <= 1 {
+		t.Errorf("Expected multiple chunks for small chunk size, got %d", len(chunks))
+	}
+
+	// Verify total data
+	var received []byte
+	for _, chunk := range chunks {
+		received = append(received, chunk...)
+	}
+
+	if string(received) != string(data) {
+		t.Errorf("Expected received data '%s', got '%s'", string(data), string(received))
+	}
+}
+
+func TestChunkedParser_ParseChunked_ProcessingError(t *testing.T) {
+	parser := NewChunkedParser(10, func(chunk []byte) error {
+		return io.ErrUnexpectedEOF // Simulate processing error
+	})
+
+	data := []byte("Hello, World!")
+	resp := &http.Response{
+		Body: io.NopCloser(bytes.NewReader(data)),
+	}
+
+	err := parser.ParseChunked(resp)
+
+	if err == nil {
+		t.Error("Expected error from chunk processing")
+	}
+
+	if err != io.ErrUnexpectedEOF {
+		t.Errorf("Expected io.ErrUnexpectedEOF, got %v", err)
 	}
 }

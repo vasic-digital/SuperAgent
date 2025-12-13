@@ -442,3 +442,104 @@ func TestAssertRerankResponse(t *testing.T) {
 	// This should not panic or fail
 	AssertRerankResponse(t, actual, expected)
 }
+
+func TestMockProvider_SetModels(t *testing.T) {
+	provider := NewMockProvider("test-provider")
+
+	customModels := []toolkit.ModelInfo{
+		{
+			ID:   "custom-model-1",
+			Name: "Custom Model 1",
+		},
+		{
+			ID:   "custom-model-2",
+			Name: "Custom Model 2",
+		},
+	}
+
+	provider.SetModels(customModels)
+
+	models, err := provider.DiscoverModels(context.Background())
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	if len(models) != 2 {
+		t.Errorf("Expected 2 models, got %d", len(models))
+	}
+
+	if models[0].ID != "custom-model-1" {
+		t.Errorf("Expected first model ID 'custom-model-1', got %s", models[0].ID)
+	}
+
+	if models[1].Name != "Custom Model 2" {
+		t.Errorf("Expected second model name 'Custom Model 2', got %s", models[1].Name)
+	}
+}
+
+func TestMockProvider_ValidateConfig_EmptyAPIKey(t *testing.T) {
+	provider := NewMockProvider("test-provider")
+
+	// Test the specific case where API key is empty string
+	err := provider.ValidateConfig(map[string]interface{}{
+		"api_key": "",
+	})
+
+	if err == nil {
+		t.Error("Expected error for empty API key")
+	}
+
+	if err.Error() != "api_key cannot be empty" {
+		t.Errorf("Expected 'api_key cannot be empty', got %s", err.Error())
+	}
+}
+
+func TestAssertChatResponse_Mismatch(t *testing.T) {
+	fixtures := NewTestFixtures()
+
+	actual := fixtures.ChatResponse()
+	expected := fixtures.ChatResponse()
+	expected.ID = "different-id" // Make them different
+
+	// This should cause test failures, but we're just testing that the function runs
+	// In a real scenario, this would be caught by the test framework
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("AssertChatResponse panicked: %v", r)
+		}
+	}()
+
+	AssertChatResponse(t, actual, expected)
+}
+
+func TestAssertEmbeddingResponse_Mismatch(t *testing.T) {
+	fixtures := NewTestFixtures()
+
+	actual := fixtures.EmbeddingResponse()
+	expected := fixtures.EmbeddingResponse()
+	expected.Model = "different-model" // Make them different
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("AssertEmbeddingResponse panicked: %v", r)
+		}
+	}()
+
+	AssertEmbeddingResponse(t, actual, expected)
+}
+
+func TestAssertRerankResponse_Mismatch(t *testing.T) {
+	fixtures := NewTestFixtures()
+
+	actual := fixtures.RerankResponse()
+	expected := fixtures.RerankResponse()
+	expected.Model = "different-model" // Make them different
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("AssertRerankResponse panicked: %v", r)
+		}
+	}()
+
+	AssertRerankResponse(t, actual, expected)
+}
