@@ -436,6 +436,68 @@ func (p *GeminiProvider) makeAPICall(ctx context.Context, req GeminiRequest) (*h
 	return resp, nil
 }
 
+// GetCapabilities returns the capabilities of the Gemini provider
+func (p *GeminiProvider) GetCapabilities() *models.ProviderCapabilities {
+	return &models.ProviderCapabilities{
+		SupportedModels: []string{
+			"gemini-pro",
+			"gemini-pro-vision",
+			"gemini-1.5-pro",
+			"gemini-1.5-flash",
+		},
+		SupportedFeatures: []string{
+			"text_completion",
+			"chat",
+			"function_calling",
+			"streaming",
+			"vision",
+		},
+		SupportedRequestTypes: []string{
+			"text_completion",
+			"chat",
+		},
+		SupportsStreaming:       true,
+		SupportsFunctionCalling: true,
+		SupportsVision:          true,
+		SupportsTools:           true,
+		SupportsSearch:          false,
+		SupportsReasoning:       true,
+		SupportsCodeCompletion:  true,
+		SupportsCodeAnalysis:    true,
+		SupportsRefactoring:     false,
+		Limits: models.ModelLimits{
+			MaxTokens:             32768,
+			MaxInputLength:        32768,
+			MaxOutputLength:       8192,
+			MaxConcurrentRequests: 10,
+		},
+		Metadata: map[string]string{
+			"provider":     "Google",
+			"model_family": "Gemini",
+			"api_version":  "v1beta",
+		},
+	}
+}
+
+// ValidateConfig validates the provider configuration
+func (p *GeminiProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
+	var errors []string
+
+	if p.apiKey == "" {
+		errors = append(errors, "API key is required")
+	}
+
+	if p.baseURL == "" {
+		errors = append(errors, "base URL is required")
+	}
+
+	if p.model == "" {
+		errors = append(errors, "model is required")
+	}
+
+	return len(errors) == 0, errors
+}
+
 // HealthCheck implements health checking for the Gemini provider
 func (p *GeminiProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

@@ -8,6 +8,11 @@ import (
 
 	"github.com/superagent/superagent/internal/config"
 	"github.com/superagent/superagent/internal/llm"
+	"github.com/superagent/superagent/internal/llm/providers/claude"
+	"github.com/superagent/superagent/internal/llm/providers/deepseek"
+	"github.com/superagent/superagent/internal/llm/providers/gemini"
+	"github.com/superagent/superagent/internal/llm/providers/openrouter"
+	"github.com/superagent/superagent/internal/llm/providers/qwen"
 	"github.com/superagent/superagent/internal/models"
 )
 
@@ -118,7 +123,7 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 		}
 	}
 	if deepseekConfig.Enabled {
-		r.RegisterProvider(deepseekConfig.Name, llm.NewDeepSeekProvider(
+		r.RegisterProvider(deepseekConfig.Name, deepseek.NewDeepSeekProvider(
 			deepseekConfig.APIKey,
 			deepseekConfig.BaseURL,
 			deepseekConfig.Models[0].ID,
@@ -141,7 +146,7 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 		}
 	}
 	if claudeConfig.Enabled {
-		r.RegisterProvider(claudeConfig.Name, llm.NewClaudeProvider(
+		r.RegisterProvider(claudeConfig.Name, claude.NewClaudeProvider(
 			claudeConfig.APIKey,
 			claudeConfig.BaseURL,
 			claudeConfig.Models[0].ID,
@@ -164,7 +169,7 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 		}
 	}
 	if geminiConfig.Enabled {
-		r.RegisterProvider(geminiConfig.Name, llm.NewGeminiProvider(
+		r.RegisterProvider(geminiConfig.Name, gemini.NewGeminiProvider(
 			geminiConfig.APIKey,
 			geminiConfig.BaseURL,
 			geminiConfig.Models[0].ID,
@@ -187,7 +192,7 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 		}
 	}
 	if qwenConfig.Enabled {
-		r.RegisterProvider(qwenConfig.Name, llm.NewQwenProvider(
+		r.RegisterProvider(qwenConfig.Name, qwen.NewQwenProvider(
 			qwenConfig.APIKey,
 			qwenConfig.BaseURL,
 			qwenConfig.Models[0].ID,
@@ -210,7 +215,7 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 		}
 	}
 	if openrouterConfig.Enabled {
-		r.RegisterProvider(openrouterConfig.Name, llm.NewOpenRouterProvider(
+		r.RegisterProvider(openrouterConfig.Name, openrouter.NewSimpleOpenRouterProvider(
 			openrouterConfig.APIKey,
 		))
 	}
@@ -351,9 +356,7 @@ type providerAdapter struct {
 }
 
 func (a *providerAdapter) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-	// Note: llm.LLMProvider interface doesn't have context parameter
-	// This is a limitation of current interface design
-	return a.provider.Complete(req)
+	return a.provider.Complete(ctx, req)
 }
 
 func (a *providerAdapter) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {

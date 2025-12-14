@@ -1,9 +1,16 @@
 package llm
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
+	"github.com/superagent/superagent/internal/llm/providers/claude"
+	"github.com/superagent/superagent/internal/llm/providers/deepseek"
+	"github.com/superagent/superagent/internal/llm/providers/gemini"
+	"github.com/superagent/superagent/internal/llm/providers/ollama"
+	"github.com/superagent/superagent/internal/llm/providers/qwen"
+	"github.com/superagent/superagent/internal/llm/providers/zai"
 	"github.com/superagent/superagent/internal/models"
 )
 
@@ -15,12 +22,12 @@ func RunEnsemble(req *models.LLMRequest) ([]*models.LLMResponse, *models.LLMResp
 
 	// Initialize providers with default configurations
 	provs := []LLMProvider{
-		NewOllamaProvider("", ""),
-		NewDeepSeekProvider("", "", ""),
-		NewClaudeProvider("", "", ""),
-		NewGeminiProvider("", "", ""),
-		NewQwenProvider("", "", ""),
-		NewZaiProvider("", "", ""),
+		ollama.NewOllamaProvider("", ""),
+		deepseek.NewDeepSeekProvider("", "", ""),
+		claude.NewClaudeProvider("", "", ""),
+		gemini.NewGeminiProvider("", "", ""),
+		qwen.NewQwenProvider("", "", ""),
+		zai.NewZAIProvider("", "", ""),
 	}
 
 	var wg sync.WaitGroup
@@ -31,7 +38,7 @@ func RunEnsemble(req *models.LLMRequest) ([]*models.LLMResponse, *models.LLMResp
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			r, err := pp.Complete(req)
+			r, err := pp.Complete(context.Background(), req)
 			if err == nil && r != nil {
 				respCh <- r
 			}

@@ -495,7 +495,7 @@ func (h *UnifiedHandler) processWithEnsemble(ctx context.Context, req *models.LL
 		provider, err := h.providerRegistry.GetProvider(openaiReq.ForceProvider)
 		if err == nil {
 			// Use single provider
-			response, err := provider.Complete(req)
+			response, err := provider.Complete(ctx, req)
 			if err != nil {
 				return nil, err
 			}

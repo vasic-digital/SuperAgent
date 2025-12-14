@@ -1,11 +1,15 @@
 package llm
 
-import "github.com/superagent/superagent/internal/models"
+import (
+	"context"
+	"github.com/superagent/superagent/internal/models"
+)
 
 // LLMProvider defines an interface for LLM providers to integrate with the facade.
 type LLMProvider interface {
-	Complete(req *models.LLMRequest) (*models.LLMResponse, error)
+	Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error)
+	CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error)
 	HealthCheck() error
-	GetCapabilities() *ProviderCapabilities
+	GetCapabilities() *models.ProviderCapabilities
 	ValidateConfig(config map[string]interface{}) (bool, []string)
 }

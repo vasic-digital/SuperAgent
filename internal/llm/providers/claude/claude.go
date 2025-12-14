@@ -376,6 +376,68 @@ func (p *ClaudeProvider) makeAPICall(ctx context.Context, req ClaudeRequest) (*h
 	return resp, nil
 }
 
+// GetCapabilities returns the capabilities of the Claude provider
+func (p *ClaudeProvider) GetCapabilities() *models.ProviderCapabilities {
+	return &models.ProviderCapabilities{
+		SupportedModels: []string{
+			"claude-3-sonnet-20240229",
+			"claude-3-opus-20240229",
+			"claude-3-haiku-20240307",
+			"claude-2.1",
+			"claude-2.0",
+		},
+		SupportedFeatures: []string{
+			"text_completion",
+			"chat",
+			"function_calling",
+			"streaming",
+		},
+		SupportedRequestTypes: []string{
+			"text_completion",
+			"chat",
+		},
+		SupportsStreaming:       true,
+		SupportsFunctionCalling: true,
+		SupportsVision:          true,
+		SupportsTools:           true,
+		SupportsSearch:          false,
+		SupportsReasoning:       true,
+		SupportsCodeCompletion:  true,
+		SupportsCodeAnalysis:    true,
+		SupportsRefactoring:     true,
+		Limits: models.ModelLimits{
+			MaxTokens:             200000,
+			MaxInputLength:        100000,
+			MaxOutputLength:       4096,
+			MaxConcurrentRequests: 10,
+		},
+		Metadata: map[string]string{
+			"provider":     "Anthropic",
+			"model_family": "Claude",
+			"api_version":  "2023-06-01",
+		},
+	}
+}
+
+// ValidateConfig validates the provider configuration
+func (p *ClaudeProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
+	var errors []string
+
+	if p.apiKey == "" {
+		errors = append(errors, "API key is required")
+	}
+
+	if p.baseURL == "" {
+		errors = append(errors, "base URL is required")
+	}
+
+	if p.model == "" {
+		errors = append(errors, "model is required")
+	}
+
+	return len(errors) == 0, errors
+}
+
 // HealthCheck implements health checking for the Claude provider
 func (p *ClaudeProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
