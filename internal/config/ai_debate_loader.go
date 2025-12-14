@@ -106,7 +106,7 @@ func (l *AIDebateConfigLoader) substituteEnvVars(config *AIDebateConfig) error {
 	// Substitute participant configurations
 	for i := range config.Participants {
 		participant := &config.Participants[i]
-		
+
 		// Substitute LLM configurations
 		for j := range participant.LLMs {
 			llm := &participant.LLMs[j]
@@ -189,7 +189,7 @@ func (l *AIDebateConfigLoader) applyDefaults(config *AIDebateConfig) {
 	// Apply participant defaults
 	for i := range config.Participants {
 		participant := &config.Participants[i]
-		
+
 		if participant.ResponseTimeout == 0 {
 			participant.ResponseTimeout = 30000 // 30 seconds in milliseconds
 		}
@@ -316,10 +316,10 @@ func GetDefaultConfig() *AIDebateConfig {
 		},
 		Participants: []DebateParticipant{
 			{
-				Name:               "Strongest",
-				Role:               "Primary Analyst",
-				Description:        "Main analytical participant with comprehensive reasoning capabilities",
-				Enabled:            true,
+				Name:        "Strongest",
+				Role:        "Primary Analyst",
+				Description: "Main analytical participant with comprehensive reasoning capabilities",
+				Enabled:     true,
 				LLMs: []LLMConfiguration{
 					{
 						Name:        "Primary LLM",
@@ -371,10 +371,10 @@ func GetDefaultConfig() *AIDebateConfig {
 				EnableCognee:       true,
 			},
 			{
-				Name:               "Middle One",
-				Role:               "Balanced Analyst",
-				Description:        "Balanced participant with moderate reasoning capabilities",
-				Enabled:            true,
+				Name:                "Middle One",
+				Role:                "Balanced Analyst",
+				Description:         "Balanced participant with moderate reasoning capabilities",
+				Enabled:             true,
 				MaximalRepeatRounds: intPtr(2),
 				LLMs: []LLMConfiguration{
 					{
@@ -415,10 +415,10 @@ func GetDefaultConfig() *AIDebateConfig {
 				EnableCognee:       true,
 			},
 			{
-				Name:               "Creative Thinker",
-				Role:               "Creative Analyst",
-				Description:        "Creative participant with innovative thinking capabilities",
-				Enabled:            true,
+				Name:        "Creative Thinker",
+				Role:        "Creative Analyst",
+				Description: "Creative participant with innovative thinking capabilities",
+				Enabled:     true,
 				LLMs: []LLMConfiguration{
 					{
 						Name:        "Primary LLM",

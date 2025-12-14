@@ -2,8 +2,8 @@ package config
 
 import (
 	"os"
-	"testing"
 	"strings"
+	"testing"
 )
 
 func TestAIDebateConfig_Validate(t *testing.T) {
@@ -25,56 +25,56 @@ func TestAIDebateConfig_Validate(t *testing.T) {
 				MaxContextLength:    32000,
 				Participants: []DebateParticipant{
 					{
-						Name:               "Participant1",
-						Role:               "Analyst",
-						Enabled:            true,
+						Name:    "Participant1",
+						Role:    "Analyst",
+						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "Primary LLM",
-								Provider: "claude",
-								Model:    "claude-3-sonnet",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "Primary LLM",
+								Provider:    "claude",
+								Model:       "claude-3-sonnet",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
-						ResponseTimeout: 30000,
-						Weight:          1.0,
-						Priority:        1,
-						DebateStyle:     "analytical",
+						ResponseTimeout:    30000,
+						Weight:             1.0,
+						Priority:           1,
+						DebateStyle:        "analytical",
 						ArgumentationStyle: "logical",
-						PersuasionLevel: 0.5,
-						OpennessToChange: 0.5,
-						QualityThreshold: 0.7,
-						MinResponseLength: 50,
-						MaxResponseLength: 1000,
+						PersuasionLevel:    0.5,
+						OpennessToChange:   0.5,
+						QualityThreshold:   0.7,
+						MinResponseLength:  50,
+						MaxResponseLength:  1000,
 					},
 					{
-						Name:               "Participant2",
-						Role:               "Critic",
-						Enabled:            true,
+						Name:    "Participant2",
+						Role:    "Critic",
+						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "Primary LLM",
-								Provider: "deepseek",
-								Model:    "deepseek-coder",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "Primary LLM",
+								Provider:    "deepseek",
+								Model:       "deepseek-coder",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
-						ResponseTimeout: 30000,
-						Weight:          1.0,
-						Priority:        2,
-						DebateStyle:     "critical",
+						ResponseTimeout:    30000,
+						Weight:             1.0,
+						Priority:           2,
+						DebateStyle:        "critical",
 						ArgumentationStyle: "logical",
-						PersuasionLevel: 0.5,
-						OpennessToChange: 0.5,
-						QualityThreshold: 0.7,
-						MinResponseLength: 50,
-						MaxResponseLength: 1000,
+						PersuasionLevel:    0.5,
+						OpennessToChange:   0.5,
+						QualityThreshold:   0.7,
+						MinResponseLength:  50,
+						MaxResponseLength:  1000,
 					},
 				},
 				DebateStrategy: "structured",
@@ -102,61 +102,61 @@ func TestAIDebateConfig_Validate(t *testing.T) {
 				QualityThreshold:    0.7,
 				Participants: []DebateParticipant{
 					{
-						Name: "Participant1",
-						Role: "Analyst",
+						Name:    "Participant1",
+						Role:    "Analyst",
 						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "LLM1",
-								Provider: "claude",
-								Model:    "claude-3",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "LLM1",
+								Provider:    "claude",
+								Model:       "claude-3",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
-						ResponseTimeout: 30000,
-						Weight: 1.0,
-						Priority: 1,
-						DebateStyle: "analytical",
+						ResponseTimeout:    30000,
+						Weight:             1.0,
+						Priority:           1,
+						DebateStyle:        "analytical",
 						ArgumentationStyle: "logical",
-						PersuasionLevel: 0.5,
-						OpennessToChange: 0.5,
-						QualityThreshold: 0.7,
-						MinResponseLength: 50,
-						MaxResponseLength: 1000,
+						PersuasionLevel:    0.5,
+						OpennessToChange:   0.5,
+						QualityThreshold:   0.7,
+						MinResponseLength:  50,
+						MaxResponseLength:  1000,
 					},
 					{
-						Name: "Participant2",
-						Role: "Critic",
+						Name:    "Participant2",
+						Role:    "Critic",
 						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "LLM2",
-								Provider: "deepseek",
-								Model:    "deepseek-coder",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "LLM2",
+								Provider:    "deepseek",
+								Model:       "deepseek-coder",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
-						ResponseTimeout: 30000,
-						Weight: 1.0,
-						Priority: 2,
-						DebateStyle: "critical",
+						ResponseTimeout:    30000,
+						Weight:             1.0,
+						Priority:           2,
+						DebateStyle:        "critical",
 						ArgumentationStyle: "logical",
-						PersuasionLevel: 0.5,
-						OpennessToChange: 0.5,
-						QualityThreshold: 0.7,
-						MinResponseLength: 50,
-						MaxResponseLength: 1000,
+						PersuasionLevel:    0.5,
+						OpennessToChange:   0.5,
+						QualityThreshold:   0.7,
+						MinResponseLength:  50,
+						MaxResponseLength:  1000,
 					},
 				},
 			},
 			wantErr: true,
-		errMsg:  "maximal_repeat_rounds must be at least 1",
+			errMsg:  "maximal_repeat_rounds must be at least 1",
 		},
 		{
 			name: "Invalid consensus threshold",
@@ -170,61 +170,61 @@ func TestAIDebateConfig_Validate(t *testing.T) {
 				QualityThreshold:    0.7,
 				Participants: []DebateParticipant{
 					{
-						Name: "Participant1",
-						Role: "Analyst",
+						Name:    "Participant1",
+						Role:    "Analyst",
 						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "LLM1",
-								Provider: "claude",
-								Model:    "claude-3",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "LLM1",
+								Provider:    "claude",
+								Model:       "claude-3",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
-						ResponseTimeout: 30000,
-						Weight: 1.0,
-						Priority: 1,
-						DebateStyle: "analytical",
+						ResponseTimeout:    30000,
+						Weight:             1.0,
+						Priority:           1,
+						DebateStyle:        "analytical",
 						ArgumentationStyle: "logical",
-						PersuasionLevel: 0.5,
-						OpennessToChange: 0.5,
-						QualityThreshold: 0.7,
-						MinResponseLength: 50,
-						MaxResponseLength: 1000,
+						PersuasionLevel:    0.5,
+						OpennessToChange:   0.5,
+						QualityThreshold:   0.7,
+						MinResponseLength:  50,
+						MaxResponseLength:  1000,
 					},
 					{
-						Name: "Participant2",
-						Role: "Critic",
+						Name:    "Participant2",
+						Role:    "Critic",
 						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "LLM2",
-								Provider: "deepseek",
-								Model:    "deepseek-coder",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "LLM2",
+								Provider:    "deepseek",
+								Model:       "deepseek-coder",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
-						ResponseTimeout: 30000,
-						Weight: 1.0,
-						Priority: 2,
-						DebateStyle: "critical",
+						ResponseTimeout:    30000,
+						Weight:             1.0,
+						Priority:           2,
+						DebateStyle:        "critical",
 						ArgumentationStyle: "logical",
-						PersuasionLevel: 0.5,
-						OpennessToChange: 0.5,
-						QualityThreshold: 0.7,
-						MinResponseLength: 50,
-						MaxResponseLength: 1000,
+						PersuasionLevel:    0.5,
+						OpennessToChange:   0.5,
+						QualityThreshold:   0.7,
+						MinResponseLength:  50,
+						MaxResponseLength:  1000,
 					},
 				},
 			},
 			wantErr: true,
-		errMsg:  "consensus_threshold must be between 0.0 and 1.0",
+			errMsg:  "consensus_threshold must be between 0.0 and 1.0",
 		},
 		{
 			name: "Too few participants",
@@ -238,35 +238,35 @@ func TestAIDebateConfig_Validate(t *testing.T) {
 				QualityThreshold:    0.7,
 				Participants: []DebateParticipant{
 					{
-						Name: "Participant1",
-						Role: "Analyst",
+						Name:    "Participant1",
+						Role:    "Analyst",
 						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "LLM1",
-								Provider: "claude",
-								Model:    "claude-3",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "LLM1",
+								Provider:    "claude",
+								Model:       "claude-3",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
-						ResponseTimeout: 30000,
-						Weight: 1.0,
-						Priority: 1,
-						DebateStyle: "analytical",
+						ResponseTimeout:    30000,
+						Weight:             1.0,
+						Priority:           1,
+						DebateStyle:        "analytical",
 						ArgumentationStyle: "logical",
-						PersuasionLevel: 0.5,
-						OpennessToChange: 0.5,
-						QualityThreshold: 0.7,
-						MinResponseLength: 50,
-						MaxResponseLength: 1000,
+						PersuasionLevel:    0.5,
+						OpennessToChange:   0.5,
+						QualityThreshold:   0.7,
+						MinResponseLength:  50,
+						MaxResponseLength:  1000,
 					},
 				},
 			},
 			wantErr: true,
-		errMsg:  "at least 2 participants are required",
+			errMsg:  "at least 2 participants are required",
 		},
 		{
 			name: "Duplicate participant names",
@@ -280,61 +280,61 @@ func TestAIDebateConfig_Validate(t *testing.T) {
 				QualityThreshold:    0.7,
 				Participants: []DebateParticipant{
 					{
-						Name: "Participant1",
-						Role: "Analyst",
+						Name:    "Participant1",
+						Role:    "Analyst",
 						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "LLM1",
-								Provider: "claude",
-								Model:    "claude-3",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "LLM1",
+								Provider:    "claude",
+								Model:       "claude-3",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
-						ResponseTimeout: 30000,
-						Weight: 1.0,
-						Priority: 1,
-						DebateStyle: "analytical",
+						ResponseTimeout:    30000,
+						Weight:             1.0,
+						Priority:           1,
+						DebateStyle:        "analytical",
 						ArgumentationStyle: "logical",
-						PersuasionLevel: 0.5,
-						OpennessToChange: 0.5,
-						QualityThreshold: 0.7,
-						MinResponseLength: 50,
-						MaxResponseLength: 1000,
+						PersuasionLevel:    0.5,
+						OpennessToChange:   0.5,
+						QualityThreshold:   0.7,
+						MinResponseLength:  50,
+						MaxResponseLength:  1000,
 					},
 					{
-						Name: "Participant1", // Duplicate name
-						Role: "Critic",
+						Name:    "Participant1", // Duplicate name
+						Role:    "Critic",
 						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "LLM2",
-								Provider: "deepseek",
-								Model:    "deepseek-coder",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "LLM2",
+								Provider:    "deepseek",
+								Model:       "deepseek-coder",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
-						ResponseTimeout: 30000,
-						Weight: 1.0,
-						Priority: 2,
-						DebateStyle: "critical",
+						ResponseTimeout:    30000,
+						Weight:             1.0,
+						Priority:           2,
+						DebateStyle:        "critical",
 						ArgumentationStyle: "logical",
-						PersuasionLevel: 0.5,
-						OpennessToChange: 0.5,
-						QualityThreshold: 0.7,
-						MinResponseLength: 50,
-						MaxResponseLength: 1000,
+						PersuasionLevel:    0.5,
+						OpennessToChange:   0.5,
+						QualityThreshold:   0.7,
+						MinResponseLength:  50,
+						MaxResponseLength:  1000,
 					},
 				},
 			},
 			wantErr: true,
-		errMsg:  "duplicate participant name",
+			errMsg:  "duplicate participant name",
 		},
 	}
 
@@ -354,26 +354,26 @@ func TestAIDebateConfig_Validate(t *testing.T) {
 
 func TestDebateParticipant_Validate(t *testing.T) {
 	tests := []struct {
-		name          string
-		participant   DebateParticipant
+		name            string
+		participant     DebateParticipant
 		globalMaxRounds int
-		wantErr       bool
-		errMsg        string
+		wantErr         bool
+		errMsg          string
 	}{
 		{
 			name: "Valid participant",
 			participant: DebateParticipant{
-				Name:               "TestParticipant",
-				Role:               "Analyst",
-				Enabled:            true,
+				Name:    "TestParticipant",
+				Role:    "Analyst",
+				Enabled: true,
 				LLMs: []LLMConfiguration{
 					{
-						Name:     "Primary LLM",
-						Provider: "claude",
-						Model:    "claude-3",
-						Enabled:  true,
-						Timeout:  30000,
-						MaxTokens: 1000,
+						Name:        "Primary LLM",
+						Provider:    "claude",
+						Model:       "claude-3",
+						Enabled:     true,
+						Timeout:     30000,
+						MaxTokens:   1000,
 						Temperature: 0.7,
 					},
 				},
@@ -451,12 +451,12 @@ func TestDebateParticipant_Validate(t *testing.T) {
 				Enabled: true,
 				LLMs: []LLMConfiguration{
 					{
-						Name:     "Disabled LLM",
-						Provider: "claude",
-						Model:    "claude-3",
-						Enabled:  false,
-						Timeout:  30000,
-						MaxTokens: 1000,
+						Name:        "Disabled LLM",
+						Provider:    "claude",
+						Model:       "claude-3",
+						Enabled:     false,
+						Timeout:     30000,
+						MaxTokens:   1000,
 						Temperature: 0.7,
 					},
 				},
@@ -478,18 +478,18 @@ func TestDebateParticipant_Validate(t *testing.T) {
 		{
 			name: "Invalid maximal repeat rounds",
 			participant: DebateParticipant{
-				Name:               "TestParticipant",
-				Role:               "Analyst",
-				Enabled:            true,
+				Name:                "TestParticipant",
+				Role:                "Analyst",
+				Enabled:             true,
 				MaximalRepeatRounds: intPtr(0),
 				LLMs: []LLMConfiguration{
 					{
-						Name:     "Primary LLM",
-						Provider: "claude",
-						Model:    "claude-3",
-						Enabled:  true,
-						Timeout:  30000,
-						MaxTokens: 1000,
+						Name:        "Primary LLM",
+						Provider:    "claude",
+						Model:       "claude-3",
+						Enabled:     true,
+						Timeout:     30000,
+						MaxTokens:   1000,
 						Temperature: 0.7,
 					},
 				},
@@ -511,17 +511,17 @@ func TestDebateParticipant_Validate(t *testing.T) {
 		{
 			name: "Invalid debate style",
 			participant: DebateParticipant{
-				Name:               "TestParticipant",
-				Role:               "Analyst",
-				Enabled:            true,
+				Name:    "TestParticipant",
+				Role:    "Analyst",
+				Enabled: true,
 				LLMs: []LLMConfiguration{
 					{
-						Name:     "Primary LLM",
-						Provider: "claude",
-						Model:    "claude-3",
-						Enabled:  true,
-						Timeout:  30000,
-						MaxTokens: 1000,
+						Name:        "Primary LLM",
+						Provider:    "claude",
+						Model:       "claude-3",
+						Enabled:     true,
+						Timeout:     30000,
+						MaxTokens:   1000,
 						Temperature: 0.7,
 					},
 				},
@@ -543,17 +543,17 @@ func TestDebateParticipant_Validate(t *testing.T) {
 		{
 			name: "Invalid persuasion level",
 			participant: DebateParticipant{
-				Name:               "TestParticipant",
-				Role:               "Analyst",
-				Enabled:            true,
+				Name:    "TestParticipant",
+				Role:    "Analyst",
+				Enabled: true,
 				LLMs: []LLMConfiguration{
 					{
-						Name:     "Primary LLM",
-						Provider: "claude",
-						Model:    "claude-3",
-						Enabled:  true,
-						Timeout:  30000,
-						MaxTokens: 1000,
+						Name:        "Primary LLM",
+						Provider:    "claude",
+						Model:       "claude-3",
+						Enabled:     true,
+						Timeout:     30000,
+						MaxTokens:   1000,
 						Temperature: 0.7,
 					},
 				},
@@ -575,17 +575,17 @@ func TestDebateParticipant_Validate(t *testing.T) {
 		{
 			name: "Min response length > max response length",
 			participant: DebateParticipant{
-				Name:               "TestParticipant",
-				Role:               "Analyst",
-				Enabled:            true,
+				Name:    "TestParticipant",
+				Role:    "Analyst",
+				Enabled: true,
 				LLMs: []LLMConfiguration{
 					{
-						Name:     "Primary LLM",
-						Provider: "claude",
-						Model:    "claude-3",
-						Enabled:  true,
-						Timeout:  30000,
-						MaxTokens: 1000,
+						Name:        "Primary LLM",
+						Provider:    "claude",
+						Model:       "claude-3",
+						Enabled:     true,
+						Timeout:     30000,
+						MaxTokens:   1000,
 						Temperature: 0.7,
 					},
 				},
@@ -622,23 +622,23 @@ func TestDebateParticipant_Validate(t *testing.T) {
 
 func TestLLMConfiguration_Validate(t *testing.T) {
 	tests := []struct {
-		name string
-		llm  LLMConfiguration
+		name    string
+		llm     LLMConfiguration
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "Valid LLM configuration",
 			llm: LLMConfiguration{
-				Name:     "Test LLM",
-				Provider: "claude",
-				Model:    "claude-3-sonnet",
-				Enabled:  true,
-				Timeout:  30000,
-				MaxRetries: 3,
+				Name:        "Test LLM",
+				Provider:    "claude",
+				Model:       "claude-3-sonnet",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxRetries:  3,
 				Temperature: 0.7,
-				MaxTokens: 1000,
-				Weight: 1.0,
+				MaxTokens:   1000,
+				Weight:      1.0,
 			},
 			wantErr: false,
 		},
@@ -655,11 +655,11 @@ func TestLLMConfiguration_Validate(t *testing.T) {
 		{
 			name: "Missing name",
 			llm: LLMConfiguration{
-				Provider: "claude",
-				Model:    "claude-3-sonnet",
-				Enabled:  true,
-				Timeout:  30000,
-				MaxTokens: 1000,
+				Provider:    "claude",
+				Model:       "claude-3-sonnet",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxTokens:   1000,
 				Temperature: 0.7,
 			},
 			wantErr: true,
@@ -668,11 +668,11 @@ func TestLLMConfiguration_Validate(t *testing.T) {
 		{
 			name: "Missing provider",
 			llm: LLMConfiguration{
-				Name:     "Test LLM",
-				Model:    "claude-3-sonnet",
-				Enabled:  true,
-				Timeout:  30000,
-				MaxTokens: 1000,
+				Name:        "Test LLM",
+				Model:       "claude-3-sonnet",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxTokens:   1000,
 				Temperature: 0.7,
 			},
 			wantErr: true,
@@ -681,11 +681,11 @@ func TestLLMConfiguration_Validate(t *testing.T) {
 		{
 			name: "Missing model",
 			llm: LLMConfiguration{
-				Name:     "Test LLM",
-				Provider: "claude",
-				Enabled:  true,
-				Timeout:  30000,
-				MaxTokens: 1000,
+				Name:        "Test LLM",
+				Provider:    "claude",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxTokens:   1000,
 				Temperature: 0.7,
 			},
 			wantErr: true,
@@ -694,12 +694,12 @@ func TestLLMConfiguration_Validate(t *testing.T) {
 		{
 			name: "Invalid provider",
 			llm: LLMConfiguration{
-				Name:     "Test LLM",
-				Provider: "invalid_provider",
-				Model:    "claude-3-sonnet",
-				Enabled:  true,
-				Timeout:  30000,
-				MaxTokens: 1000,
+				Name:        "Test LLM",
+				Provider:    "invalid_provider",
+				Model:       "claude-3-sonnet",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxTokens:   1000,
 				Temperature: 0.7,
 			},
 			wantErr: true,
@@ -708,12 +708,12 @@ func TestLLMConfiguration_Validate(t *testing.T) {
 		{
 			name: "Invalid temperature - too high",
 			llm: LLMConfiguration{
-				Name:     "Test LLM",
-				Provider: "claude",
-				Model:    "claude-3-sonnet",
-				Enabled:  true,
-				Timeout:  30000,
-				MaxTokens: 1000,
+				Name:        "Test LLM",
+				Provider:    "claude",
+				Model:       "claude-3-sonnet",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxTokens:   1000,
 				Temperature: 2.5, // > 2.0
 			},
 			wantErr: true,
@@ -722,12 +722,12 @@ func TestLLMConfiguration_Validate(t *testing.T) {
 		{
 			name: "Invalid max tokens",
 			llm: LLMConfiguration{
-				Name:     "Test LLM",
-				Provider: "claude",
-				Model:    "claude-3-sonnet",
-				Enabled:  true,
-				Timeout:  30000,
-				MaxTokens: 0, // <= 0
+				Name:        "Test LLM",
+				Provider:    "claude",
+				Model:       "claude-3-sonnet",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxTokens:   0, // <= 0
 				Temperature: 0.7,
 			},
 			wantErr: true,
@@ -736,14 +736,14 @@ func TestLLMConfiguration_Validate(t *testing.T) {
 		{
 			name: "Invalid top_p",
 			llm: LLMConfiguration{
-				Name:     "Test LLM",
-				Provider: "claude",
-				Model:    "claude-3-sonnet",
-				Enabled:  true,
-				Timeout:  30000,
-				MaxTokens: 1000,
+				Name:        "Test LLM",
+				Provider:    "claude",
+				Model:       "claude-3-sonnet",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxTokens:   1000,
 				Temperature: 0.7,
-				TopP: 1.5, // > 1.0
+				TopP:        1.5, // > 1.0
 			},
 			wantErr: true,
 			errMsg:  "top_p must be between 0.0 and 1.0",
@@ -751,13 +751,13 @@ func TestLLMConfiguration_Validate(t *testing.T) {
 		{
 			name: "Invalid frequency penalty",
 			llm: LLMConfiguration{
-				Name:     "Test LLM",
-				Provider: "claude",
-				Model:    "claude-3-sonnet",
-				Enabled:  true,
-				Timeout:  30000,
-				MaxTokens: 1000,
-				Temperature: 0.7,
+				Name:             "Test LLM",
+				Provider:         "claude",
+				Model:            "claude-3-sonnet",
+				Enabled:          true,
+				Timeout:          30000,
+				MaxTokens:        1000,
+				Temperature:      0.7,
 				FrequencyPenalty: 2.5, // > 2.0
 			},
 			wantErr: true,
@@ -766,14 +766,14 @@ func TestLLMConfiguration_Validate(t *testing.T) {
 		{
 			name: "Invalid weight - negative",
 			llm: LLMConfiguration{
-				Name:     "Test LLM",
-				Provider: "claude",
-				Model:    "claude-3-sonnet",
-				Enabled:  true,
-				Timeout:  30000,
-				MaxTokens: 1000,
+				Name:        "Test LLM",
+				Provider:    "claude",
+				Model:       "claude-3-sonnet",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxTokens:   1000,
 				Temperature: 0.7,
-				Weight: -1.0, // < 0
+				Weight:      -1.0, // < 0
 			},
 			wantErr: true,
 			errMsg:  "weight must be non-negative",
@@ -907,16 +907,16 @@ participants:
 		t.Run(tt.name, func(t *testing.T) {
 			loader := NewAIDebateConfigLoader("")
 			config, err := loader.LoadFromString(tt.yamlContent)
-			
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("LoadFromString() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if err != nil && tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
 				t.Errorf("LoadFromString() error = %v, want error containing %v", err, tt.errMsg)
 			}
-			
+
 			if !tt.wantErr && config == nil {
 				t.Error("LoadFromString() returned nil config without error")
 			}
@@ -1011,7 +1011,7 @@ voting_strategy: "confidence_weighted"
 
 	loader := NewAIDebateConfigLoader("")
 	config, err := loader.LoadFromString(yamlContent)
-	
+
 	if err != nil {
 		t.Fatalf("LoadFromString() error = %v", err)
 	}
@@ -1047,7 +1047,7 @@ func TestDebateParticipant_GetEffectiveMaxRounds(t *testing.T) {
 				MaximalRepeatRounds: intPtr(5),
 			},
 			globalMaxRounds: 3,
-			want:           5,
+			want:            5,
 		},
 		{
 			name: "Use global rounds when participant-specific not set",
@@ -1055,7 +1055,7 @@ func TestDebateParticipant_GetEffectiveMaxRounds(t *testing.T) {
 				MaximalRepeatRounds: nil,
 			},
 			globalMaxRounds: 3,
-			want:           3,
+			want:            3,
 		},
 	}
 
@@ -1143,11 +1143,11 @@ func TestDebateParticipant_LLMManagement(t *testing.T) {
 
 func TestGetDefaultConfig(t *testing.T) {
 	config := GetDefaultConfig()
-	
+
 	if config == nil {
 		t.Fatal("GetDefaultConfig() returned nil")
 	}
-	
+
 	// Test basic configuration
 	if !config.Enabled {
 		t.Error("Expected default config to be enabled")
@@ -1158,7 +1158,7 @@ func TestGetDefaultConfig(t *testing.T) {
 	if len(config.Participants) != 3 {
 		t.Errorf("Expected 3 default participants, got %d", len(config.Participants))
 	}
-	
+
 	// Test Cognee configuration
 	if !config.EnableCognee {
 		t.Error("Expected default config to have Cognee enabled")
@@ -1169,7 +1169,7 @@ func TestGetDefaultConfig(t *testing.T) {
 	if !config.CogneeConfig.Enabled {
 		t.Error("Expected CogneeConfig to be enabled")
 	}
-	
+
 	// Test participant configurations
 	for i, participant := range config.Participants {
 		if !participant.Enabled {
@@ -1182,7 +1182,7 @@ func TestGetDefaultConfig(t *testing.T) {
 			t.Errorf("Expected participant %d to have a primary LLM", i)
 		}
 	}
-	
+
 	// Validate the default configuration
 	if err := config.Validate(); err != nil {
 		t.Errorf("Default configuration validation failed: %v", err)

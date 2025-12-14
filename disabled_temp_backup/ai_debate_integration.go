@@ -14,11 +14,11 @@ import (
 
 // AIDebateIntegration provides integration between AI debate system and existing ensemble infrastructure
 type AIDebateIntegration struct {
-	config       *config.AIDebateConfig
-	ensemble     *llm.EnsembleService
-	providers    map[string]llm.LLMProvider
-	logger       *logrus.Logger
-	mu           sync.RWMutex
+	config    *config.AIDebateConfig
+	ensemble  *llm.EnsembleService
+	providers map[string]llm.LLMProvider
+	logger    *logrus.Logger
+	mu        sync.RWMutex
 }
 
 // EnsembleService represents the existing ensemble service (placeholder for actual implementation)
@@ -74,7 +74,7 @@ func (i *AIDebateIntegration) initializeProviders() error {
 			i.providers[providerKey] = provider
 			i.mu.Unlock()
 
-			i.logger.Infof("Initialized provider %s for participant %s (LLM %d in chain)", 
+			i.logger.Infof("Initialized provider %s for participant %s (LLM %d in chain)",
 				providerKey, participant.Name, j+1)
 		}
 	}
@@ -88,65 +88,65 @@ func (i *AIDebateIntegration) createProvider(llmConfig *config.LLMConfiguration)
 	switch llmConfig.Provider {
 	case "claude":
 		return &ClaudeProvider{
-			apiKey:   llmConfig.APIKey,
-			model:    llmConfig.Model,
-			baseURL:  llmConfig.BaseURL,
-			timeout:  time.Duration(llmConfig.Timeout) * time.Millisecond,
+			apiKey:     llmConfig.APIKey,
+			model:      llmConfig.Model,
+			baseURL:    llmConfig.BaseURL,
+			timeout:    time.Duration(llmConfig.Timeout) * time.Millisecond,
 			maxRetries: llmConfig.MaxRetries,
 		}, nil
-	
+
 	case "deepseek":
 		return &DeepSeekProvider{
-			apiKey:   llmConfig.APIKey,
-			model:    llmConfig.Model,
-			baseURL:  llmConfig.BaseURL,
-			timeout:  time.Duration(llmConfig.Timeout) * time.Millisecond,
+			apiKey:     llmConfig.APIKey,
+			model:      llmConfig.Model,
+			baseURL:    llmConfig.BaseURL,
+			timeout:    time.Duration(llmConfig.Timeout) * time.Millisecond,
 			maxRetries: llmConfig.MaxRetries,
 		}, nil
-	
+
 	case "gemini":
 		return &GeminiProvider{
-			apiKey:   llmConfig.APIKey,
-			model:    llmConfig.Model,
-			baseURL:  llmConfig.BaseURL,
-			timeout:  time.Duration(llmConfig.Timeout) * time.Millisecond,
+			apiKey:     llmConfig.APIKey,
+			model:      llmConfig.Model,
+			baseURL:    llmConfig.BaseURL,
+			timeout:    time.Duration(llmConfig.Timeout) * time.Millisecond,
 			maxRetries: llmConfig.MaxRetries,
 		}, nil
-	
+
 	case "qwen":
 		return &QwenProvider{
-			apiKey:   llmConfig.APIKey,
-			model:    llmConfig.Model,
-			baseURL:  llmConfig.BaseURL,
-			timeout:  time.Duration(llmConfig.Timeout) * time.Millisecond,
+			apiKey:     llmConfig.APIKey,
+			model:      llmConfig.Model,
+			baseURL:    llmConfig.BaseURL,
+			timeout:    time.Duration(llmConfig.Timeout) * time.Millisecond,
 			maxRetries: llmConfig.MaxRetries,
 		}, nil
-	
+
 	case "zai":
 		return &ZaiProvider{
-			apiKey:   llmConfig.APIKey,
-			model:    llmConfig.Model,
-			baseURL:  llmConfig.BaseURL,
-			timeout:  time.Duration(llmConfig.Timeout) * time.Millisecond,
+			apiKey:     llmConfig.APIKey,
+			model:      llmConfig.Model,
+			baseURL:    llmConfig.BaseURL,
+			timeout:    time.Duration(llmConfig.Timeout) * time.Millisecond,
 			maxRetries: llmConfig.MaxRetries,
 		}, nil
-	
+
 	case "ollama":
 		return &OllamaProvider{
 			baseURL: llmConfig.BaseURL,
 			model:   llmConfig.Model,
 			timeout: time.Duration(llmConfig.Timeout) * time.Millisecond,
 		}, nil
-	
+
 	case "openrouter":
 		return &OpenRouterProvider{
-			apiKey:   llmConfig.APIKey,
-			model:    llmConfig.Model,
-			baseURL:  llmConfig.BaseURL,
-			timeout:  time.Duration(llmConfig.Timeout) * time.Millisecond,
+			apiKey:     llmConfig.APIKey,
+			model:      llmConfig.Model,
+			baseURL:    llmConfig.BaseURL,
+			timeout:    time.Duration(llmConfig.Timeout) * time.Millisecond,
 			maxRetries: llmConfig.MaxRetries,
 		}, nil
-	
+
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", llmConfig.Provider)
 	}
@@ -165,11 +165,11 @@ func (i *AIDebateIntegration) ConductEnsembleDebate(ctx context.Context, topic s
 
 	// Create debate request
 	debateRequest := &DebateRequest{
-		Topic:          topic,
-		Context:        initialContext,
-		MaxRounds:      i.config.MaximalRepeatRounds,
+		Topic:              topic,
+		Context:            initialContext,
+		MaxRounds:          i.config.MaximalRepeatRounds,
 		ConsensusThreshold: i.config.ConsensusThreshold,
-		Timeout:        time.Duration(i.config.MaxResponseTime) * time.Millisecond,
+		Timeout:            time.Duration(i.config.MaxResponseTime) * time.Millisecond,
 	}
 
 	// Execute debate using ensemble
@@ -179,7 +179,7 @@ func (i *AIDebateIntegration) ConductEnsembleDebate(ctx context.Context, topic s
 		return nil, fmt.Errorf("ensemble debate failed: %w", err)
 	}
 
-	i.logger.Infof("Completed ensemble debate session %s in %v with consensus: %v", 
+	i.logger.Infof("Completed ensemble debate session %s in %v with consensus: %v",
 		sessionID, result.Duration, result.Consensus != nil && result.Consensus.Reached)
 
 	return result, nil
@@ -249,18 +249,18 @@ func (i *AIDebateIntegration) getParticipantEnsembleResponse(ctx context.Context
 	}
 
 	providerKey := fmt.Sprintf("%s_%s", participant.Name, primaryLLM.Name)
-	
+
 	i.mu.RLock()
 	provider, exists := i.providers[providerKey]
 	i.mu.RUnlock()
-	
+
 	if !exists {
 		return ParticipantResponse{}, fmt.Errorf("provider %s not found", providerKey)
 	}
 
 	// Create LLM request using existing models
 	llmRequest := &models.LLMRequest{
-		Prompt: fmt.Sprintf("Debate Topic: %s\n\nContext: %s\n\nAs %s (%s), provide your analysis and perspective.", 
+		Prompt: fmt.Sprintf("Debate Topic: %s\n\nContext: %s\n\nAs %s (%s), provide your analysis and perspective.",
 			request.Topic, request.Context, participant.Name, participant.Role),
 		ModelParams: models.ModelParameters{
 			Temperature: primaryLLM.Temperature,
@@ -274,13 +274,13 @@ func (i *AIDebateIntegration) getParticipantEnsembleResponse(ctx context.Context
 	response, err := provider.Complete(llmRequest)
 	if err != nil {
 		i.logger.Warnf("Primary provider %s failed for participant %s: %v", providerKey, participant.Name, err)
-		
+
 		// Try fallback providers
 		fallbackResponses, fallbackErr := i.tryFallbackProviders(ctx, participant, request)
 		if fallbackErr != nil {
 			return ParticipantResponse{}, fmt.Errorf("all providers failed for participant %s: %w", participant.Name, fallbackErr)
 		}
-		
+
 		// Use best fallback response
 		if len(fallbackResponses) > 0 {
 			response = fallbackResponses[0]
@@ -321,11 +321,11 @@ func (i *AIDebateIntegration) tryFallbackProviders(ctx context.Context, particip
 			defer wg.Done()
 
 			providerKey := fmt.Sprintf("%s_%s", participant.Name, llmConfig.Name)
-			
+
 			i.mu.RLock()
 			provider, exists := i.providers[providerKey]
 			i.mu.RUnlock()
-			
+
 			if !exists {
 				i.logger.Warnf("Fallback provider %s not found", providerKey)
 				return
@@ -333,7 +333,7 @@ func (i *AIDebateIntegration) tryFallbackProviders(ctx context.Context, particip
 
 			// Create LLM request
 			llmRequest := &models.LLMRequest{
-				Prompt: fmt.Sprintf("Debate Topic: %s\n\nContext: %s\n\nAs %s (%s), provide your analysis and perspective.", 
+				Prompt: fmt.Sprintf("Debate Topic: %s\n\nContext: %s\n\nAs %s (%s), provide your analysis and perspective.",
 					request.Topic, request.Context, participant.Name, participant.Role),
 				ModelParams: models.ModelParameters{
 					Temperature: llmConfig.Temperature,
@@ -402,7 +402,7 @@ func (i *AIDebateIntegration) analyzeEnsembleConsensus(responses []ParticipantRe
 	consensusLevel := (avgConfidence + avgQuality) / 2.0
 	consensusReached := consensusLevel >= i.config.ConsensusThreshold
 
-	summary := fmt.Sprintf("Ensemble analysis of %d responses: avg confidence %.2f, avg quality %.2f", 
+	summary := fmt.Sprintf("Ensemble analysis of %d responses: avg confidence %.2f, avg quality %.2f",
 		len(responses), avgConfidence, avgQuality)
 
 	return &ConsensusResult{
@@ -443,7 +443,7 @@ func (i *AIDebateIntegration) createEnsembleResult(request *DebateRequest, respo
 	// Find best response
 	bestResponse := responses[0]
 	bestScore := bestResponse.Confidence + bestResponse.QualityScore
-	
+
 	for _, response := range responses[1:] {
 		score := response.Confidence + response.QualityScore
 		if score > bestScore {
@@ -509,7 +509,7 @@ func (i *AIDebateIntegration) GetProviderCapabilities() map[string]*models.Provi
 	defer i.mu.RUnlock()
 
 	capabilities := make(map[string]*models.ProviderCapabilities)
-	
+
 	for key, provider := range i.providers {
 		caps := provider.GetCapabilities()
 		capabilities[key] = caps
@@ -524,7 +524,7 @@ func (i *AIDebateIntegration) GetProviderHealth() map[string]string {
 	defer i.mu.RUnlock()
 
 	health := make(map[string]string)
-	
+
 	for key, provider := range i.providers {
 		err := provider.HealthCheck()
 		if err != nil {
@@ -552,10 +552,10 @@ func (i *AIDebateIntegration) UpdateConfiguration(newConfig *config.AIDebateConf
 
 	// Clear existing providers
 	i.providers = make(map[string]llm.LLMProvider)
-	
+
 	// Update configuration
 	i.config = newConfig
-	
+
 	// Reinitialize providers
 	if err := i.initializeProviders(); err != nil {
 		return fmt.Errorf("failed to reinitialize providers: %w", err)
@@ -593,9 +593,9 @@ func (p *ClaudeProvider) HealthCheck() error {
 
 func (p *ClaudeProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels:       []string{p.model},
-		SupportedFeatures:     []string{"text_generation", "reasoning", "analysis"},
-		SupportsStreaming:     true,
+		SupportedModels:         []string{p.model},
+		SupportedFeatures:       []string{"text_generation", "reasoning", "analysis"},
+		SupportsStreaming:       true,
 		SupportsFunctionCalling: false,
 		Limits: models.ModelLimits{
 			MaxTokens:       4096,
@@ -635,9 +635,9 @@ func (p *DeepSeekProvider) HealthCheck() error {
 
 func (p *DeepSeekProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels:       []string{p.model},
-		SupportedFeatures:     []string{"text_generation", "code_generation", "analysis"},
-		SupportsStreaming:     true,
+		SupportedModels:         []string{p.model},
+		SupportedFeatures:       []string{"text_generation", "code_generation", "analysis"},
+		SupportsStreaming:       true,
 		SupportsFunctionCalling: false,
 		Limits: models.ModelLimits{
 			MaxTokens:       4096,
@@ -652,11 +652,30 @@ func (p *DeepSeekProvider) ValidateConfig(config map[string]interface{}) (bool, 
 }
 
 // Placeholder implementations for other providers
-type GeminiProvider struct{ apiKey, model, baseURL string; timeout time.Duration; maxRetries int }
-type QwenProvider struct{ apiKey, model, baseURL string; timeout time.Duration; maxRetries int }
-type ZaiProvider struct{ apiKey, model, baseURL string; timeout time.Duration; maxRetries int }
-type OllamaProvider struct{ baseURL, model string; timeout time.Duration }
-type OpenRouterProvider struct{ apiKey, model, baseURL string; timeout time.Duration; maxRetries int }
+type GeminiProvider struct {
+	apiKey, model, baseURL string
+	timeout                time.Duration
+	maxRetries             int
+}
+type QwenProvider struct {
+	apiKey, model, baseURL string
+	timeout                time.Duration
+	maxRetries             int
+}
+type ZaiProvider struct {
+	apiKey, model, baseURL string
+	timeout                time.Duration
+	maxRetries             int
+}
+type OllamaProvider struct {
+	baseURL, model string
+	timeout        time.Duration
+}
+type OpenRouterProvider struct {
+	apiKey, model, baseURL string
+	timeout                time.Duration
+	maxRetries             int
+}
 
 // Implement similar methods for all provider types...
 
@@ -703,15 +722,15 @@ type ParticipantResponse struct {
 
 // ConsensusResult represents consensus analysis
 type ConsensusResult struct {
-	Reached           bool
-	ConsensusLevel    float64
-	AgreementScore    float64
-	QualityScore      float64
-	Summary           string
-	KeyPoints         []string
-	Disagreements     []string
-	Recommendations   []string
-	CogneeInsights    *CogneeInsights
+	Reached         bool
+	ConsensusLevel  float64
+	AgreementScore  float64
+	QualityScore    float64
+	Summary         string
+	KeyPoints       []string
+	Disagreements   []string
+	Recommendations []string
+	CogneeInsights  *CogneeInsights
 }
 
 // CogneeInsights represents insights from Cognee AI

@@ -188,7 +188,7 @@ func TestAdvancedDebateWorkflow(t *testing.T) {
 	t.Run("DebateTopicAndContextValidation", func(t *testing.T) {
 		topic := "AI Ethics in Autonomous Systems"
 		context := "Discuss the ethical implications of AI in autonomous vehicles"
-		
+
 		assert.NotEmpty(t, topic, "Topic should not be empty")
 		assert.NotEmpty(t, context, "Context should not be empty")
 		assert.Greater(t, len(topic), 10, "Topic should be descriptive")
@@ -200,7 +200,7 @@ func TestAdvancedDebateWorkflow(t *testing.T) {
 	// Test strategy validation
 	t.Run("StrategyValidation", func(t *testing.T) {
 		strategies := []string{"socratic_method", "devils_advocate", "consensus_building", "evidence_based", "creative_synthesis", "adversarial_testing"}
-		
+
 		for _, strategy := range strategies {
 			assert.NotEmpty(t, strategy, "Strategy should not be empty")
 			assert.Contains(t, strategy, "_", "Strategy name should be snake_case")
@@ -321,9 +321,9 @@ func createBasicDebateService(cfg *config.AIDebateConfig, logger *utils.Logger) 
 func createBasicMonitoringService(cfg *config.AIDebateConfig, logger *utils.Logger) interface{} {
 	// Return a basic monitoring service structure
 	return map[string]interface{}{
-		"config":    cfg,
-		"logger":    logger,
-		"enabled":   cfg.MonitoringEnabled,
+		"config":     cfg,
+		"logger":     logger,
+		"enabled":    cfg.MonitoringEnabled,
 		"dashboards": make(map[string]interface{}),
 	}
 }
@@ -450,59 +450,59 @@ func TestAdvancedFeaturesSummary(t *testing.T) {
 
 	t.Run("AdvancedFeaturesSummary", func(t *testing.T) {
 		logger.Info("=== ADVANCED FEATURES IMPLEMENTATION SUMMARY ===")
-		
+
 		// Feature 1: Advanced Debate Strategies
 		logger.Info("✅ 1. Advanced Debate Strategies and Consensus Algorithms")
 		logger.Info("   - Multiple sophisticated strategies implemented")
 		logger.Info("   - Advanced consensus algorithms with multiple approaches")
 		logger.Info("   - Strategy engine with performance-based selection")
-		
+
 		// Feature 2: Real-Time Monitoring
 		logger.Info("✅ 2. Real-Time Debate Monitoring and Analytics")
 		logger.Info("   - Live metrics collection and analysis")
 		logger.Info("   - Advanced dashboard system with real-time widgets")
 		logger.Info("   - Intelligent alerting with escalation procedures")
-		
+
 		// Feature 3: Cognee AI Integration
 		logger.Info("✅ 3. Advanced Cognee AI Features and Custom Strategies")
 		logger.Info("   - Response enhancement with quality scoring")
 		logger.Info("   - Consensus analysis with multiple algorithms")
 		logger.Info("   - Automated insight generation from debate data")
-		
+
 		// Feature 4: Performance Optimization
 		logger.Info("✅ 4. Debate Performance Metrics and Optimization")
 		logger.Info("   - Multi-tier performance tracking")
 		logger.Info("   - Automated optimization with auto-tuning")
 		logger.Info("   - Comprehensive benchmarking and analysis")
-		
+
 		// Feature 5: History Management
 		logger.Info("✅ 5. Debate History and Session Management")
 		logger.Info("   - Complete session lifecycle management")
 		logger.Info("   - Advanced search with full-text indexing")
 		logger.Info("   - Historical analytics with pattern recognition")
-		
+
 		// Feature 6: Error Recovery
 		logger.Info("✅ 6. Advanced Error Recovery and Resilience Mechanisms")
 		logger.Info("   - Circuit breaker pattern with automatic recovery")
 		logger.Info("   - Advanced retry mechanisms with exponential backoff")
 		logger.Info("   - Comprehensive fault tolerance and disaster recovery")
-		
+
 		// Feature 7: Reporting
 		logger.Info("✅ 7. Debate Result Export and Reporting Features")
 		logger.Info("   - Multi-format report generation with templates")
 		logger.Info("   - Advanced visualization with interactive charts")
 		logger.Info("   - Automated scheduling and distribution")
-		
+
 		// Feature 8: Security
 		logger.Info("✅ 8. Advanced Security Features and Audit Logging")
 		logger.Info("   - Multi-factor authentication with session management")
 		logger.Info("   - Role-based access control with fine-grained permissions")
 		logger.Info("   - Comprehensive audit logging with compliance reporting")
-		
+
 		logger.Info("=== IMPLEMENTATION STATUS: COMPLETE ===")
 		logger.Info("All 8 advanced features have been successfully implemented!")
 		logger.Info("The system is production-ready with enterprise-grade capabilities.")
-		
+
 		// Validate all features are enabled
 		assert.True(t, cfg.MonitoringEnabled, "Monitoring should be enabled")
 		assert.True(t, cfg.PerformanceOptimizationEnabled, "Performance optimization should be enabled")
@@ -511,7 +511,7 @@ func TestAdvancedFeaturesSummary(t *testing.T) {
 		assert.True(t, cfg.ReportingEnabled, "Reporting should be enabled")
 		assert.True(t, cfg.SecurityEnabled, "Security should be enabled")
 		assert.True(t, cfg.EnableCognee, "Cognee should be enabled")
-		
+
 		logger.Info("=== VALIDATION COMPLETE ===")
 		logger.Info("All advanced features are properly configured and ready for production use!")
 	})

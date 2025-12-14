@@ -68,12 +68,12 @@ type StrategyResult struct {
 
 // StrategyPerformance tracks performance of debate strategies
 type StrategyPerformance struct {
-	StrategyName    string
-	Timestamp       time.Time
-	SuccessRate     float64
-	AvgConsensus    float64
-	ExecutionTime   time.Duration
-	QualityScore    float64
+	StrategyName  string
+	Timestamp     time.Time
+	SuccessRate   float64
+	AvgConsensus  float64
+	ExecutionTime time.Duration
+	QualityScore  float64
 }
 
 // AdvancedDebateSession extends the basic debate session with advanced features
@@ -139,7 +139,7 @@ func (s *AdvancedDebateService) ConductAdvancedDebate(ctx context.Context, topic
 	// Generate advanced result
 	result := s.generateAdvancedResult(session, strategyResult, advancedConsensus)
 
-	s.logger.Infof("Completed advanced debate with strategy %s, consensus level: %.2f", 
+	s.logger.Infof("Completed advanced debate with strategy %s, consensus level: %.2f",
 		strategy, advancedConsensus.ConsensusLevel)
 
 	return result, nil
@@ -234,24 +234,24 @@ func (ca *ConsensusAlgorithm) CalculateAdvancedConsensus(session *AdvancedDebate
 
 	// Calculate weighted consensus score
 	weightedScore := ca.calculateWeightedScore(session.AllResponses)
-	
+
 	// Apply algorithm-specific adjustments
 	adjustedScore := ca.applyAlgorithmAdjustments(weightedScore, session)
-	
+
 	// Determine consensus level and recommendations
 	consensusLevel := adjustedScore
 	reached := consensusLevel >= ca.thresholds["minimum_consensus"]
-	
+
 	recommendations := ca.generateConsensusRecommendations(reached, consensusLevel)
-	
+
 	return &ConsensusResult{
-		Reached:           reached,
-		ConsensusLevel:    consensusLevel,
-		AgreementScore:    weightedScore,
-		QualityScore:      ca.calculateQualityScore(session.AllResponses),
-		Summary:           fmt.Sprintf("Advanced consensus achieved with level %.2f using %s algorithm", consensusLevel, ca.algorithmType),
-		KeyPoints:         ca.extractConsensusPoints(session.AllResponses),
-		Recommendations:   recommendations,
+		Reached:         reached,
+		ConsensusLevel:  consensusLevel,
+		AgreementScore:  weightedScore,
+		QualityScore:    ca.calculateQualityScore(session.AllResponses),
+		Summary:         fmt.Sprintf("Advanced consensus achieved with level %.2f using %s algorithm", consensusLevel, ca.algorithmType),
+		KeyPoints:       ca.extractConsensusPoints(session.AllResponses),
+		Recommendations: recommendations,
 	}
 }
 
@@ -267,10 +267,10 @@ func (ca *ConsensusAlgorithm) calculateWeightedScore(responses []ParticipantResp
 	for _, response := range responses {
 		// Calculate individual response score
 		responseScore := ca.calculateIndividualScore(response)
-		
+
 		// Apply weights
 		weightedScore := responseScore * response.QualityScore * response.Confidence
-		
+
 		totalScore += weightedScore
 		totalWeight += response.Confidence
 	}
@@ -286,13 +286,13 @@ func (ca *ConsensusAlgorithm) calculateWeightedScore(responses []ParticipantResp
 func (ca *ConsensusAlgorithm) calculateIndividualScore(response ParticipantResponse) float64 {
 	// Base score from confidence and quality
 	baseScore := response.Confidence * response.QualityScore
-	
+
 	// Bonus for well-structured responses
 	structureBonus := ca.calculateStructureBonus(response.Content)
-	
+
 	// Bonus for unique insights
 	originalityBonus := ca.calculateOriginalityBonus(response.Content, response.Metadata)
-	
+
 	return baseScore + structureBonus + originalityBonus
 }
 
@@ -301,7 +301,7 @@ func (ca *ConsensusAlgorithm) calculateStructureBonus(content string) float64 {
 	// Simple heuristics for structure analysis
 	wordCount := len(strings.Fields(content))
 	paragraphCount := strings.Count(content, "\n\n") + 1
-	
+
 	if wordCount > 100 && paragraphCount > 2 {
 		return 0.1
 	}
@@ -312,13 +312,13 @@ func (ca *ConsensusAlgorithm) calculateStructureBonus(content string) float64 {
 func (ca *ConsensusAlgorithm) calculateOriginalityBonus(content string, metadata map[string]interface{}) float64 {
 	// Check for unique keywords, concepts, or metadata indicators
 	uniqueKeywords := []string{"innovative", "novel", "breakthrough", "paradigm shift"}
-	
+
 	for _, keyword := range uniqueKeywords {
 		if strings.Contains(strings.ToLower(content), keyword) {
 			return 0.05
 		}
 	}
-	
+
 	return 0.0
 }
 
@@ -344,18 +344,18 @@ func (ca *ConsensusAlgorithm) applyMedianAdjustment(baseScore float64, session *
 	for _, response := range session.AllResponses {
 		scores = append(scores, response.Confidence)
 	}
-	
+
 	if len(scores) == 0 {
 		return baseScore
 	}
-	
+
 	sort.Float64s(scores)
 	median := scores[len(scores)/2]
-	
+
 	// Adjust based on median deviation
 	deviation := math.Abs(baseScore - median)
 	adjustment := -deviation * 0.1
-	
+
 	return math.Max(0.0, math.Min(1.0, baseScore+adjustment))
 }
 
@@ -379,12 +379,12 @@ func (ca *ConsensusAlgorithm) applyBayesianAdjustment(baseScore float64, session
 			historicalAvg += consensus.ConsensusLevel
 		}
 		historicalAvg /= float64(len(session.ConsensusHistory))
-		
+
 		// Bayesian update: combine current score with historical average
 		priorWeight := 0.3
 		return (baseScore * (1 - priorWeight)) + (historicalAvg * priorWeight)
 	}
-	
+
 	return baseScore
 }
 
@@ -406,7 +406,7 @@ func (ca *ConsensusAlgorithm) calculateQualityScore(responses []ParticipantRespo
 func (ca *ConsensusAlgorithm) extractConsensusPoints(responses []ParticipantResponse) []string {
 	// Simple keyword extraction for consensus points
 	keywordFrequency := make(map[string]int)
-	
+
 	for _, response := range responses {
 		words := strings.Fields(strings.ToLower(response.Content))
 		for _, word := range words {
@@ -431,7 +431,7 @@ func (ca *ConsensusAlgorithm) extractConsensusPoints(responses []ParticipantResp
 // isCommonWord checks if a word is common/stop word
 func (ca *ConsensusAlgorithm) isCommonWord(word string) bool {
 	commonWords := []string{"the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "from", "up", "about", "into", "through", "during", "before", "after", "above", "below", "between", "among", "through", "during", "before", "after", "above", "below", "between", "among"}
-	
+
 	for _, common := range commonWords {
 		if word == common {
 			return true
@@ -492,7 +492,7 @@ func (s *AdvancedDebateService) calculateParticipantEngagement(session *Advanced
 		// Calculate engagement based on response quality, length, and timing
 		qualityScore := response.QualityScore
 		lengthScore := float64(len(response.Content)) / 1000.0 // Normalize by length
-		timingScore := 1.0 // Could be enhanced with actual timing data
+		timingScore := 1.0                                     // Could be enhanced with actual timing data
 
 		engagement[response.ParticipantName] = (qualityScore + lengthScore + timingScore) / 3.0
 	}
@@ -587,7 +587,7 @@ func (s *AdvancedDebateService) generateNextSteps(session *AdvancedDebateSession
 	// Based on consensus level
 	if len(session.ConsensusHistory) > 0 {
 		latestConsensus := session.ConsensusHistory[len(session.ConsensusHistory)-1]
-		
+
 		if latestConsensus.ConsensusLevel >= 0.8 {
 			nextSteps = append(nextSteps, "Strong consensus achieved - proceed to implementation phase")
 		} else if latestConsensus.ConsensusLevel >= 0.6 {
@@ -613,7 +613,7 @@ func (s *AdvancedDebateService) generateNextSteps(session *AdvancedDebateSession
 			lowEngagementCount++
 		}
 	}
-	
+
 	if lowEngagementCount > 0 {
 		nextSteps = append(nextSteps, "Address low participant engagement - consider different interaction strategies")
 	}
@@ -641,14 +641,16 @@ type AdvancedDebateResult struct {
 type SocraticMethodStrategy struct{}
 
 func (s *SocraticMethodStrategy) Name() string { return "socratic_method" }
-func (s *SocraticMethodStrategy) Description() string { return "Uses probing questions to explore assumptions and deepen understanding" }
+func (s *SocraticMethodStrategy) Description() string {
+	return "Uses probing questions to explore assumptions and deepen understanding"
+}
 
 func (s *SocraticMethodStrategy) Execute(ctx context.Context, session *AdvancedDebateSession) (*StrategyResult, error) {
 	// Implement Socratic method logic
 	result := &StrategyResult{
-		StrategyName:   s.Name(),
-		Success:        true,
-		ConsensusLevel: 0.75,
+		StrategyName:      s.Name(),
+		Success:           true,
+		ConsensusLevel:    0.75,
 		ParticipantScores: map[string]float64{},
 		QualityMetrics: map[string]float64{
 			"effectiveness": 0.8,
@@ -657,12 +659,12 @@ func (s *SocraticMethodStrategy) Execute(ctx context.Context, session *AdvancedD
 		Recommendations: []string{"Continue with probing questions", "Focus on underlying assumptions"},
 		ExecutionTime:   time.Second * 2,
 	}
-	
+
 	return result, nil
 }
 
 func (s *SocraticMethodStrategy) EvaluatePerformance(result *StrategyResult) float64 {
-	return result.QualityMetrics["effectiveness"] * 0.6 + result.QualityMetrics["efficiency"] * 0.4
+	return result.QualityMetrics["effectiveness"]*0.6 + result.QualityMetrics["efficiency"]*0.4
 }
 
 func (s *SocraticMethodStrategy) ShouldSwitch(currentPerformance float64) bool {
@@ -673,14 +675,16 @@ func (s *SocraticMethodStrategy) ShouldSwitch(currentPerformance float64) bool {
 type DevilsAdvocateStrategy struct{}
 
 func (s *DevilsAdvocateStrategy) Name() string { return "devils_advocate" }
-func (s *DevilsAdvocateStrategy) Description() string { return "Challenges assumptions and presents counterarguments to test ideas" }
+func (s *DevilsAdvocateStrategy) Description() string {
+	return "Challenges assumptions and presents counterarguments to test ideas"
+}
 
 func (s *DevilsAdvocateStrategy) Execute(ctx context.Context, session *AdvancedDebateSession) (*StrategyResult, error) {
 	// Implement devil's advocate logic
 	result := &StrategyResult{
-		StrategyName:   s.Name(),
-		Success:        true,
-		ConsensusLevel: 0.65,
+		StrategyName:      s.Name(),
+		Success:           true,
+		ConsensusLevel:    0.65,
 		ParticipantScores: map[string]float64{},
 		QualityMetrics: map[string]float64{
 			"effectiveness": 0.85,
@@ -689,12 +693,12 @@ func (s *DevilsAdvocateStrategy) Execute(ctx context.Context, session *AdvancedD
 		Recommendations: []string{"Present strong counterarguments", "Test assumptions thoroughly"},
 		ExecutionTime:   time.Second * 3,
 	}
-	
+
 	return result, nil
 }
 
 func (s *DevilsAdvocateStrategy) EvaluatePerformance(result *StrategyResult) float64 {
-	return result.QualityMetrics["effectiveness"] * 0.7 + result.QualityMetrics["efficiency"] * 0.3
+	return result.QualityMetrics["effectiveness"]*0.7 + result.QualityMetrics["efficiency"]*0.3
 }
 
 func (s *DevilsAdvocateStrategy) ShouldSwitch(currentPerformance float64) bool {
@@ -705,14 +709,16 @@ func (s *DevilsAdvocateStrategy) ShouldSwitch(currentPerformance float64) bool {
 type ConsensusBuildingStrategy struct{}
 
 func (s *ConsensusBuildingStrategy) Name() string { return "consensus_building" }
-func (s *ConsensusBuildingStrategy) Description() string { return "Focuses on finding common ground and building agreement" }
+func (s *ConsensusBuildingStrategy) Description() string {
+	return "Focuses on finding common ground and building agreement"
+}
 
 func (s *ConsensusBuildingStrategy) Execute(ctx context.Context, session *AdvancedDebateSession) (*StrategyResult, error) {
 	// Implement consensus building logic
 	result := &StrategyResult{
-		StrategyName:   s.Name(),
-		Success:        true,
-		ConsensusLevel: 0.85,
+		StrategyName:      s.Name(),
+		Success:           true,
+		ConsensusLevel:    0.85,
 		ParticipantScores: map[string]float64{},
 		QualityMetrics: map[string]float64{
 			"effectiveness": 0.9,
@@ -721,12 +727,12 @@ func (s *ConsensusBuildingStrategy) Execute(ctx context.Context, session *Advanc
 		Recommendations: []string{"Focus on shared values", "Build bridges between viewpoints"},
 		ExecutionTime:   time.Second * 2,
 	}
-	
+
 	return result, nil
 }
 
 func (s *ConsensusBuildingStrategy) EvaluatePerformance(result *StrategyResult) float64 {
-	return result.QualityMetrics["effectiveness"] * 0.8 + result.QualityMetrics["efficiency"] * 0.2
+	return result.QualityMetrics["effectiveness"]*0.8 + result.QualityMetrics["efficiency"]*0.2
 }
 
 func (s *ConsensusBuildingStrategy) ShouldSwitch(currentPerformance float64) bool {

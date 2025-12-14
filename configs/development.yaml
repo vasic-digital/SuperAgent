@@ -1,0 +1,222 @@
+# SuperAgent Development Configuration
+# This configuration is optimized for development environments
+
+server:
+  port: 8080
+  host: "0.0.0.0"
+  environment: "development"
+  log_level: "debug"
+  
+  # Development-specific settings
+  debug:
+    enabled: true
+    pprof_enabled: true
+    pprof_port: 6060
+    verbose_logging: true
+
+database:
+  # PostgreSQL configuration
+  url: "postgres://superagent:dev_password@localhost:5432/superagent_dev?sslmode=disable"
+  host: "localhost"
+  port: 5432
+  user: "superagent"
+  password: "dev_password"
+  name: "superagent_dev"
+  sslmode: "disable"
+  
+  # Connection pool settings (relaxed for development)
+  max_open_connections: 10
+  max_idle_connections: 2
+  connection_max_lifetime: "5m"
+
+redis:
+  # Redis configuration
+  url: "redis://localhost:6379/0"
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+  
+  # Connection pool settings
+  pool_size: 5
+  min_idle_connections: 1
+
+llm_providers:
+  # OpenAI (primary for development)
+  openai:
+    enabled: true
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4"
+    base_url: "https://api.openai.com/v1"
+    temperature: 0.7
+    max_tokens: 2048
+    timeout: "30s"
+    weight: 1.0
+    
+  # Anthropic Claude (fallback)
+  anthropic:
+    enabled: true
+    api_key: "${ANTHROPIC_API_KEY}"
+    model: "claude-3-sonnet-20240229"
+    base_url: "https://api.anthropic.com"
+    temperature: 0.7
+    max_tokens: 2048
+    timeout: "30s"
+    weight: 0.8
+    
+  # Ollama (local models)
+  ollama:
+    enabled: true
+    base_url: "http://localhost:11434"
+    model: "llama2"
+    temperature: 0.7
+    max_tokens: 2048
+    timeout: "60s"
+    weight: 0.5
+
+security:
+  # JWT configuration (development - less secure)
+  jwt:
+    secret: "dev_jwt_secret_change_in_production"
+    expiration: "24h"
+    
+  # API Key configuration
+  api_key:
+    header: "X-API-Key"
+    length: 16  # Shorter for development
+    
+  # Rate limiting (relaxed for development)
+  rate_limit:
+    requests_per_minute: 120
+    burst: 20
+    
+  # CORS (permissive for development)
+  cors:
+    allowed_origins:
+      - "http://localhost:3000"
+      - "http://localhost:8080"
+      - "http://127.0.0.1:3000"
+      - "http://127.0.0.1:8080"
+    allowed_methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+      - "OPTIONS"
+      - "PATCH"
+    allowed_headers:
+      - "Content-Type"
+      - "Authorization"
+      - "X-API-Key"
+      - "X-Requested-With"
+
+monitoring:
+  # Prometheus metrics (enabled for development)
+  metrics:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+    
+  # Health checks
+  health_check:
+    enabled: true
+    path: "/health"
+    interval: "30s"
+
+cache:
+  # Cache TTL settings (shorter for development)
+  default_ttl: 1800  # 30 minutes
+  user_session_ttl: 900   # 15 minutes
+  api_key_ttl: 3600      # 1 hour
+  provider_health_ttl: 120 # 2 minutes
+  
+  # Cache size limits (smaller for development)
+  max_memory_size: "50MB"
+  max_entries: 5000
+
+ai_debate:
+  # AI Debate configuration
+  enabled: true
+  max_participants: 5
+  max_rounds: 3
+  consensus_threshold: 0.6
+  
+  # Cognee integration (disabled for development)
+  cognee:
+    enabled: false
+    api_url: "http://localhost:8000"
+    dataset_name: "superagent_dev_debates"
+
+plugins:
+  # Plugin system (enabled for development)
+  enabled: true
+  directory: "./plugins"
+  auto_load: true
+  
+  # Plugin security (relaxed for development)
+  sandbox:
+    enabled: false  # Disabled for easier debugging
+    max_memory: "256MB"
+    max_cpu_time: "60s"
+
+feature_flags:
+  # Feature toggles (all enabled for development)
+  ai_debate: true
+  cognee_integration: false
+  plugin_system: true
+  real_time_monitoring: true
+  advanced_analytics: true
+
+logging:
+  # Logging configuration (verbose for development)
+  format: "text"  # More readable than JSON for development
+  output: "stdout"
+  level: "debug"
+  
+  # File logging (optional for development)
+  file:
+    enabled: false
+    path: "./logs/superagent_dev.log"
+    max_size: "100MB"
+    max_backups: 3
+    max_age: "7d"
+
+performance:
+  # Performance settings (optimized for development)
+  profiling_enabled: true
+  graceful_shutdown_timeout: "15s"
+  max_request_size: 5242880  # 5MB
+  request_timeout: "60s"
+  idle_timeout: "120s"
+  read_timeout: "60s"
+  write_timeout: "60s"
+
+external_services:
+  # External integrations (mostly disabled for development)
+  webhook:
+    enabled: false
+    url: ""
+    secret: ""
+    
+  smtp:
+    enabled: false
+    host: ""
+    port: 587
+    username: ""
+    password: ""
+    from: ""
+    
+  sentry:
+    dsn: ""
+    environment: "development"
+    
+  datadog:
+    api_key: ""
+    app_key: ""
+
+backup:
+  # Backup settings (disabled for development)
+  enabled: false
+  schedule: "0 3 * * *"  # 3 AM daily
+  retention_days: 7
+  storage_path: "./backups/dev"

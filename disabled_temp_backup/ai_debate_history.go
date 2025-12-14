@@ -14,106 +14,106 @@ import (
 
 // DebateHistoryService provides comprehensive debate history and session management
 type DebateHistoryService struct {
-	config              *config.AIDebateConfig
-	logger              *logrus.Logger
-	
+	config *config.AIDebateConfig
+	logger *logrus.Logger
+
 	// Session management
-	sessionManager      *SessionManager
-	sessionStore        *SessionStore
-	sessionArchiver     *SessionArchiver
-	sessionRestorer     *SessionRestorer
-	
+	sessionManager  *SessionManager
+	sessionStore    *SessionStore
+	sessionArchiver *SessionArchiver
+	sessionRestorer *SessionRestorer
+
 	// History management
-	historyManager      *HistoryManager
-	historyStore        *HistoryStore
-	historyAnalyzer     *HistoryAnalyzer
-	historyIndexer      *HistoryIndexer
-	
+	historyManager  *HistoryManager
+	historyStore    *HistoryStore
+	historyAnalyzer *HistoryAnalyzer
+	historyIndexer  *HistoryIndexer
+
 	// Data persistence
-	persistenceManager  *PersistenceManager
-	backupManager       *BackupManager
-	recoveryManager     *RecoveryManager
-	
+	persistenceManager *PersistenceManager
+	backupManager      *BackupManager
+	recoveryManager    *RecoveryManager
+
 	// Search and retrieval
-	searchEngine        *SearchEngine
-	retrievalEngine     *RetrievalEngine
-	queryProcessor      *QueryProcessor
-	
+	searchEngine    *SearchEngine
+	retrievalEngine *RetrievalEngine
+	queryProcessor  *QueryProcessor
+
 	// Analytics and insights
 	historicalAnalytics *HistoricalAnalytics
 	trendAnalyzer       *HistoricalTrendAnalyzer
 	patternRecognizer   *HistoricalPatternRecognizer
-	
+
 	// Export and sharing
-	exportManager       *ExportManager
-	sharingService      *SharingService
-	accessControl       *AccessControlManager
-	
+	exportManager  *ExportManager
+	sharingService *SharingService
+	accessControl  *AccessControlManager
+
 	// Integration and APIs
-	apiService          *HistoryAPIService
-	integrationManager  *IntegrationManager
-	
-	mu                  sync.RWMutex
-	enabled             bool
-	retentionPolicy     string
-	archivalStrategy    string
-	maxHistorySize      int64
-	
-	activeSessions      map[string]*ManagedSession
-	historyCache        map[string]*DebateHistory
-	searchCache         map[string]*SearchResults
+	apiService         *HistoryAPIService
+	integrationManager *IntegrationManager
+
+	mu               sync.RWMutex
+	enabled          bool
+	retentionPolicy  string
+	archivalStrategy string
+	maxHistorySize   int64
+
+	activeSessions map[string]*ManagedSession
+	historyCache   map[string]*DebateHistory
+	searchCache    map[string]*SearchResults
 }
 
 // SessionManager manages debate sessions
 type SessionManager struct {
-	sessionRegistry     map[string]*SessionInfo
-	sessionStates       map[string]*SessionState
-	sessionTransitions  map[string][]SessionTransition
-	sessionConstraints  map[string][]SessionConstraint
-	
-	sessionHandlers     map[string]SessionHandler
-	sessionValidators   map[string]SessionValidator
-	sessionOptimizers   map[string]SessionOptimizer
+	sessionRegistry    map[string]*SessionInfo
+	sessionStates      map[string]*SessionState
+	sessionTransitions map[string][]SessionTransition
+	sessionConstraints map[string][]SessionConstraint
+
+	sessionHandlers   map[string]SessionHandler
+	sessionValidators map[string]SessionValidator
+	sessionOptimizers map[string]SessionOptimizer
 }
 
 // SessionStore stores session data
 type SessionStore struct {
-	storageEngines      map[string]StorageEngine
-	dataModels          map[string]SessionDataModel
-	indexingStrategies  map[string]SessionIndexingStrategy
-	
-	storagePolicies     []StoragePolicy
-	retentionPolicies   []RetentionPolicy
-	compressionMethods  []CompressionMethod
+	storageEngines     map[string]StorageEngine
+	dataModels         map[string]SessionDataModel
+	indexingStrategies map[string]SessionIndexingStrategy
+
+	storagePolicies    []StoragePolicy
+	retentionPolicies  []RetentionPolicy
+	compressionMethods []CompressionMethod
 }
 
 // SessionArchiver archives completed sessions
 type SessionArchiver struct {
-	archivalStrategies  map[string]ArchivalStrategy
-	compressionEngines  map[string]CompressionEngine
-	encryptionMethods   map[string]EncryptionMethod
-	
-	archivalRules       []ArchivalRule
-	cleanupPolicies     []CleanupPolicy
+	archivalStrategies map[string]ArchivalStrategy
+	compressionEngines map[string]CompressionEngine
+	encryptionMethods  map[string]EncryptionMethod
+
+	archivalRules   []ArchivalRule
+	cleanupPolicies []CleanupPolicy
 }
 
 // SessionRestorer restores archived sessions
 type SessionRestorer struct {
-	restorationMethods  map[string]RestorationMethod
+	restorationMethods   map[string]RestorationMethod
 	decompressionEngines map[string]DecompressionEngine
-	decryptionMethods   map[string]DecryptionMethod
-	
-	validationRules     []RestorationValidationRule
-	integrityChecks     []IntegrityCheck
+	decryptionMethods    map[string]DecryptionMethod
+
+	validationRules []RestorationValidationRule
+	integrityChecks []IntegrityCheck
 }
 
 // HistoryManager manages debate history
 type HistoryManager struct {
-	historyEntries      map[string]*HistoryEntry
-	historyChains       map[string][]HistoryEntry
-	historyMetadata     map[string]*HistoryMetadata
-	historyAnnotations  map[string]*HistoryAnnotations
-	
+	historyEntries     map[string]*HistoryEntry
+	historyChains      map[string][]HistoryEntry
+	historyMetadata    map[string]*HistoryMetadata
+	historyAnnotations map[string]*HistoryAnnotations
+
 	historyProcessors   map[string]HistoryProcessor
 	historyValidators   map[string]HistoryValidator
 	historyTransformers map[string]HistoryTransformer
@@ -121,31 +121,31 @@ type HistoryManager struct {
 
 // HistoryStore stores historical data
 type HistoryStore struct {
-	storageBackends     map[string]HistoryStorageBackend
-	dataSchemas         map[string]HistoryDataSchema
-	queryEngines        map[string]HistoryQueryEngine
-	
+	storageBackends map[string]HistoryStorageBackend
+	dataSchemas     map[string]HistoryDataSchema
+	queryEngines    map[string]HistoryQueryEngine
+
 	partitioningStrategies []PartitioningStrategy
-	indexingMethods       []IndexingMethod
-	cachingStrategies     []CachingStrategy
+	indexingMethods        []IndexingMethod
+	cachingStrategies      []CachingStrategy
 }
 
 // HistoryAnalyzer analyzes historical data
 type HistoryAnalyzer struct {
-	analysisMethods     map[string]HistoryAnalysisMethod
-	statisticalModels   map[string]HistoryStatisticalModel
-	patternDetectors    map[string]HistoryPatternDetector
-	
-	analysisFrameworks  []HistoryAnalysisFramework
-	validationMethods   []HistoryValidationMethod
+	analysisMethods   map[string]HistoryAnalysisMethod
+	statisticalModels map[string]HistoryStatisticalModel
+	patternDetectors  map[string]HistoryPatternDetector
+
+	analysisFrameworks []HistoryAnalysisFramework
+	validationMethods  []HistoryValidationMethod
 }
 
 // HistoryIndexer indexes historical data
 type HistoryIndexer struct {
-	indexingAlgorithms  map[string]HistoryIndexingAlgorithm
-	searchIndexes       map[string]SearchIndex
-	textAnalyzers       map[string]TextAnalyzer
-	
+	indexingAlgorithms map[string]HistoryIndexingAlgorithm
+	searchIndexes      map[string]SearchIndex
+	textAnalyzers      map[string]TextAnalyzer
+
 	indexingStrategies  []HistoryIndexingStrategy
 	optimizationMethods []IndexOptimizationMethod
 }
@@ -155,59 +155,59 @@ type PersistenceManager struct {
 	persistenceLayers   map[string]PersistenceLayer
 	transactionManagers map[string]TransactionManager
 	consistencyManagers map[string]ConsistencyManager
-	
+
 	persistencePolicies []PersistencePolicy
 	recoveryMechanisms  []RecoveryMechanism
 }
 
 // BackupManager manages backups
 type BackupManager struct {
-	backupStrategies    map[string]BackupStrategy
-	backupStorage       map[string]BackupStorage
-	backupSchedulers    map[string]BackupScheduler
-	
-	backupPolicies      []BackupPolicy
-	retentionRules      []RetentionRule
+	backupStrategies map[string]BackupStrategy
+	backupStorage    map[string]BackupStorage
+	backupSchedulers map[string]BackupScheduler
+
+	backupPolicies []BackupPolicy
+	retentionRules []RetentionRule
 }
 
 // RecoveryManager manages recovery operations
 type RecoveryManager struct {
-	recoveryStrategies  map[string]RecoveryStrategy
-	recoveryProcedures  map[string]RecoveryProcedure
-	recoveryValidators  map[string]RecoveryValidator
-	
-	recoveryPoints      []RecoveryPoint
-	rollbackMechanisms  []RollbackMechanism
+	recoveryStrategies map[string]RecoveryStrategy
+	recoveryProcedures map[string]RecoveryProcedure
+	recoveryValidators map[string]RecoveryValidator
+
+	recoveryPoints     []RecoveryPoint
+	rollbackMechanisms []RollbackMechanism
 }
 
 // SearchEngine provides search capabilities
 type SearchEngine struct {
-	searchAlgorithms    map[string]SearchAlgorithm
-	queryParsers        map[string]QueryParser
-	resultRankers       map[string]ResultRanker
-	
-	searchIndexes       map[string]SearchIndex
-	filteringEngines    map[string]FilteringEngine
+	searchAlgorithms map[string]SearchAlgorithm
+	queryParsers     map[string]QueryParser
+	resultRankers    map[string]ResultRanker
+
+	searchIndexes    map[string]SearchIndex
+	filteringEngines map[string]FilteringEngine
 }
 
 // RetrievalEngine retrieves historical data
 type RetrievalEngine struct {
-	retrievalMethods    map[string]RetrievalMethod
-	dataExtractors      map[string]DataExtractor
-	resultFormatters    map[string]ResultFormatter
-	
+	retrievalMethods map[string]RetrievalMethod
+	dataExtractors   map[string]DataExtractor
+	resultFormatters map[string]ResultFormatter
+
 	retrievalOptimizers []RetrievalOptimizer
 	cachingMechanisms   []CachingMechanism
 }
 
 // QueryProcessor processes queries
 type QueryProcessor struct {
-	queryTypes          map[string]QueryType
-	queryOptimizers     map[string]QueryOptimizer
-	queryExecutors      map[string]QueryExecutor
-	
-	queryValidators     []QueryValidator
-	queryTransformers   []QueryTransformer
+	queryTypes      map[string]QueryType
+	queryOptimizers map[string]QueryOptimizer
+	queryExecutors  map[string]QueryExecutor
+
+	queryValidators   []QueryValidator
+	queryTransformers []QueryTransformer
 }
 
 // HistoricalAnalytics provides historical analytics
@@ -215,7 +215,7 @@ type HistoricalAnalytics struct {
 	analyticsEngines    map[string]HistoricalAnalyticsEngine
 	statisticalAnalyses map[string]StatisticalAnalysis
 	predictiveModels    map[string]PredictiveModel
-	
+
 	analyticsFrameworks []HistoricalAnalyticsFramework
 	reportingTools      []HistoricalReportingTool
 }
@@ -225,57 +225,57 @@ type HistoricalTrendAnalyzer struct {
 	trendDetectionMethods map[string]TrendDetectionMethod
 	trendAnalysisModels   map[string]TrendAnalysisModel
 	seasonalityAnalyzers  map[string]SeasonalityAnalyzer
-	
-	trendPredictions      map[string]TrendPrediction
-	changePointDetectors  []ChangePointDetector
+
+	trendPredictions     map[string]TrendPrediction
+	changePointDetectors []ChangePointDetector
 }
 
 // HistoricalPatternRecognizer recognizes historical patterns
 type HistoricalPatternRecognizer struct {
-	patternDetectionAlgorithms map[string]PatternDetectionAlgorithm
-	patternAnalysisMethods     map[string]PatternAnalysisMethod
+	patternDetectionAlgorithms  map[string]PatternDetectionAlgorithm
+	patternAnalysisMethods      map[string]PatternAnalysisMethod
 	patternClassificationModels map[string]PatternClassificationModel
-	
-	patternLibraries        map[string]PatternLibrary
-	patternMatchingEngines  []PatternMatchingEngine
+
+	patternLibraries       map[string]PatternLibrary
+	patternMatchingEngines []PatternMatchingEngine
 }
 
 // ExportManager manages data export
 type ExportManager struct {
-	exportFormats       map[string]ExportFormat
-	exportConverters    map[string]ExportConverter
-	exportFilters       map[string]ExportFilter
-	
-	exportTemplates     []ExportTemplate
-	exportSchedulers    []ExportScheduler
+	exportFormats    map[string]ExportFormat
+	exportConverters map[string]ExportConverter
+	exportFilters    map[string]ExportFilter
+
+	exportTemplates  []ExportTemplate
+	exportSchedulers []ExportScheduler
 }
 
 // SharingService manages data sharing
 type SharingService struct {
-	sharingMethods      map[string]SharingMethod
-	accessControllers   map[string]AccessController
-	permissionManagers  map[string]PermissionManager
-	
-	sharingPolicies     []SharingPolicy
-	securityProtocols   []SecurityProtocol
+	sharingMethods     map[string]SharingMethod
+	accessControllers  map[string]AccessController
+	permissionManagers map[string]PermissionManager
+
+	sharingPolicies   []SharingPolicy
+	securityProtocols []SecurityProtocol
 }
 
 // AccessControlManager manages access control
 type AccessControlManager struct {
-	accessControlModels map[string]AccessControlModel
+	accessControlModels   map[string]AccessControlModel
 	authenticationSystems map[string]AuthenticationSystem
-	authorizationEngines map[string]AuthorizationEngine
-	
-	accessPolicies      []AccessPolicy
-	securityRules       []SecurityRule
+	authorizationEngines  map[string]AuthorizationEngine
+
+	accessPolicies []AccessPolicy
+	securityRules  []SecurityRule
 }
 
 // HistoryAPIService provides API services
 type HistoryAPIService struct {
-	apiEndpoints        map[string]HistoryAPIEndpoint
-	apiHandlers         map[string]HistoryAPIHandler
-	apiValidators       map[string]HistoryAPIValidator
-	
+	apiEndpoints  map[string]HistoryAPIEndpoint
+	apiHandlers   map[string]HistoryAPIHandler
+	apiValidators map[string]HistoryAPIValidator
+
 	authenticationMethods []HistoryAuthenticationMethod
 	rateLimiters          []HistoryRateLimiter
 }
@@ -285,7 +285,7 @@ type ReportingIntegrationManager struct {
 	integrationAdapters map[string]HistoryIntegrationAdapter
 	dataSynchronizers   map[string]HistoryDataSynchronizer
 	protocolHandlers    map[string]HistoryProtocolHandler
-	
+
 	integrationPolicies []HistoryIntegrationPolicy
 	compatibilityLayers []HistoryCompatibilityLayer
 }
@@ -295,51 +295,51 @@ func NewDebateHistoryService(cfg *config.AIDebateConfig, logger *logrus.Logger) 
 	return &DebateHistoryService{
 		config: cfg,
 		logger: logger,
-		
+
 		// Initialize session management components
-		sessionManager:      NewSessionManager(),
-		sessionStore:        NewSessionStore(),
-		sessionArchiver:     NewSessionArchiver(),
-		sessionRestorer:     NewSessionRestorer(),
-		
+		sessionManager:  NewSessionManager(),
+		sessionStore:    NewSessionStore(),
+		sessionArchiver: NewSessionArchiver(),
+		sessionRestorer: NewSessionRestorer(),
+
 		// Initialize history management components
-		historyManager:      NewHistoryManager(),
-		historyStore:        NewHistoryStore(),
-		historyAnalyzer:     NewHistoryAnalyzer(),
-		historyIndexer:      NewHistoryIndexer(),
-		
+		historyManager:  NewHistoryManager(),
+		historyStore:    NewHistoryStore(),
+		historyAnalyzer: NewHistoryAnalyzer(),
+		historyIndexer:  NewHistoryIndexer(),
+
 		// Initialize data persistence components
-		persistenceManager:  NewPersistenceManager(),
-		backupManager:       NewBackupManager(),
-		recoveryManager:     NewRecoveryManager(),
-		
+		persistenceManager: NewPersistenceManager(),
+		backupManager:      NewBackupManager(),
+		recoveryManager:    NewRecoveryManager(),
+
 		// Initialize search and retrieval components
-		searchEngine:        NewSearchEngine(),
-		retrievalEngine:     NewRetrievalEngine(),
-		queryProcessor:      NewQueryProcessor(),
-		
+		searchEngine:    NewSearchEngine(),
+		retrievalEngine: NewRetrievalEngine(),
+		queryProcessor:  NewQueryProcessor(),
+
 		// Initialize analytics components
 		historicalAnalytics: NewHistoricalAnalytics(),
 		trendAnalyzer:       NewHistoricalTrendAnalyzer(),
 		patternRecognizer:   NewHistoricalPatternRecognizer(),
-		
+
 		// Initialize export and sharing components
-		exportManager:       NewExportManager(),
-		sharingService:      NewSharingService(),
-		accessControl:       NewAccessControlManager(),
-		
+		exportManager:  NewExportManager(),
+		sharingService: NewSharingService(),
+		accessControl:  NewAccessControlManager(),
+
 		// Initialize integration components
-		apiService:          NewHistoryAPIService(),
-		integrationManager:  NewReportingIntegrationManager(),
-		
+		apiService:         NewHistoryAPIService(),
+		integrationManager: NewReportingIntegrationManager(),
+
 		enabled:          cfg.HistoryEnabled,
 		retentionPolicy:  cfg.HistoryRetentionPolicy,
 		archivalStrategy: cfg.HistoryArchivalStrategy,
 		maxHistorySize:   cfg.MaxHistorySize,
-		
-		activeSessions:   make(map[string]*ManagedSession),
-		historyCache:     make(map[string]*DebateHistory),
-		searchCache:      make(map[string]*SearchResults),
+
+		activeSessions: make(map[string]*ManagedSession),
+		historyCache:   make(map[string]*DebateHistory),
+		searchCache:    make(map[string]*SearchResults),
 	}
 }
 
@@ -389,15 +389,15 @@ func (s *DebateHistoryService) Stop(ctx context.Context) error {
 // CreateSession creates a new debate session
 func (s *DebateHistoryService) CreateSession(sessionConfig *SessionConfig) (*ManagedSession, error) {
 	sessionID := s.generateSessionID()
-	
+
 	managedSession := &ManagedSession{
-		SessionID:       sessionID,
-		Config:          sessionConfig,
-		Status:          "active",
-		StartTime:       time.Now(),
-		HistoryEntries:  []HistoryEntry{},
-		Metadata:        make(map[string]interface{}),
-		AccessControl:   &SessionAccessControl{},
+		SessionID:      sessionID,
+		Config:         sessionConfig,
+		Status:         "active",
+		StartTime:      time.Now(),
+		HistoryEntries: []HistoryEntry{},
+		Metadata:       make(map[string]interface{}),
+		AccessControl:  &SessionAccessControl{},
 	}
 
 	// Register session with session manager
@@ -678,16 +678,16 @@ func (s *DebateHistoryService) isCacheValid(results *SearchResults) bool {
 
 func (s *DebateHistoryService) createHistoryEntry(session *ManagedSession) *HistoryEntry {
 	return &HistoryEntry{
-		ID:        fmt.Sprintf("history_%s", session.SessionID),
-		SessionID: session.SessionID,
-		Timestamp: time.Now(),
-		EventType: "session_completed",
+		ID:          fmt.Sprintf("history_%s", session.SessionID),
+		SessionID:   session.SessionID,
+		Timestamp:   time.Now(),
+		EventType:   "session_completed",
 		Description: fmt.Sprintf("Debate session completed with %d history entries", len(session.HistoryEntries)),
 		Data: map[string]interface{}{
-			"duration":      session.EndTime.Sub(session.StartTime).Seconds(),
-			"status":        session.Status,
-			"close_reason":  session.CloseReason,
-			"entry_count":   len(session.HistoryEntries),
+			"duration":     session.EndTime.Sub(session.StartTime).Seconds(),
+			"status":       session.Status,
+			"close_reason": session.CloseReason,
+			"entry_count":  len(session.HistoryEntries),
 		},
 		Tags: []string{"debate", "session", "completed"},
 	}
@@ -696,13 +696,13 @@ func (s *DebateHistoryService) createHistoryEntry(session *ManagedSession) *Hist
 // New functions for creating components (simplified implementations)
 func NewSessionManager() *SessionManager {
 	return &SessionManager{
-		sessionRegistry:     make(map[string]*SessionInfo),
-		sessionStates:       make(map[string]*SessionState),
-		sessionTransitions:  make(map[string][]SessionTransition),
-		sessionConstraints:  make(map[string][]SessionConstraint),
-		sessionHandlers:     make(map[string]SessionHandler),
-		sessionValidators:   make(map[string]SessionValidator),
-		sessionOptimizers:   make(map[string]SessionOptimizer),
+		sessionRegistry:    make(map[string]*SessionInfo),
+		sessionStates:      make(map[string]*SessionState),
+		sessionTransitions: make(map[string][]SessionTransition),
+		sessionConstraints: make(map[string][]SessionConstraint),
+		sessionHandlers:    make(map[string]SessionHandler),
+		sessionValidators:  make(map[string]SessionValidator),
+		sessionOptimizers:  make(map[string]SessionOptimizer),
 	}
 }
 
@@ -835,10 +835,10 @@ func NewHistoricalTrendAnalyzer() *HistoricalTrendAnalyzer {
 
 func NewHistoricalPatternRecognizer() *HistoricalPatternRecognizer {
 	return &HistoricalPatternRecognizer{
-		patternDetectionAlgorithms: make(map[string]PatternDetectionAlgorithm),
-		patternAnalysisMethods:     make(map[string]PatternAnalysisMethod),
+		patternDetectionAlgorithms:  make(map[string]PatternDetectionAlgorithm),
+		patternAnalysisMethods:      make(map[string]PatternAnalysisMethod),
 		patternClassificationModels: make(map[string]PatternClassificationModel),
-		patternLibraries:           make(map[string]PatternLibrary),
+		patternLibraries:            make(map[string]PatternLibrary),
 	}
 }
 
@@ -860,9 +860,9 @@ func NewSharingService() *SharingService {
 
 func NewAccessControlManager() *AccessControlManager {
 	return &AccessControlManager{
-		accessControlModels:  make(map[string]AccessControlModel),
+		accessControlModels:   make(map[string]AccessControlModel),
 		authenticationSystems: make(map[string]AuthenticationSystem),
-		authorizationEngines: make(map[string]AuthorizationEngine),
+		authorizationEngines:  make(map[string]AuthorizationEngine),
 	}
 }
 
@@ -939,13 +939,13 @@ type SessionAccessControl struct {
 }
 
 type HistoryQuery struct {
-	Query      string
-	Filters    map[string]interface{}
-	SortBy     string
-	SortOrder  string
-	Limit      int
-	Offset     int
-	DateRange  *DateRange
+	Query     string
+	Filters   map[string]interface{}
+	SortBy    string
+	SortOrder string
+	Limit     int
+	Offset    int
+	DateRange *DateRange
 }
 
 type SearchResults struct {
@@ -1011,8 +1011,8 @@ type TrendRequest struct {
 }
 
 type TrendResult struct {
-	Trends    []Trend
-	Analysis  map[string]interface{}
+	Trends      []Trend
+	Analysis    map[string]interface{}
 	Predictions []TrendPrediction
 }
 
@@ -1041,16 +1041,16 @@ type HistoricalInsight struct {
 }
 
 type HistoricalTrend struct {
-	Name       string
-	Direction  string
-	Strength   float64
-	Timeframe  time.Duration
+	Name      string
+	Direction string
+	Strength  float64
+	Timeframe time.Duration
 }
 
 type TrendPrediction struct {
-	Name       string
-	Prediction string
-	Confidence float64
+	Name        string
+	Prediction  string
+	Confidence  float64
 	TimeHorizon time.Duration
 }
 

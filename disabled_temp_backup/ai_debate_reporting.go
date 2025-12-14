@@ -17,114 +17,114 @@ import (
 
 // DebateReportingService provides comprehensive debate result export and reporting features
 type DebateReportingService struct {
-	config               *config.AIDebateConfig
-	logger               *logrus.Logger
-	
+	config *config.AIDebateConfig
+	logger *logrus.Logger
+
 	// Report generation
-	reportGenerator      *ReportGenerator
-	reportTemplates      *ReportTemplates
-	reportFormats        *ReportFormats
-	reportScheduler      *ReportScheduler
-	
+	reportGenerator *ReportGenerator
+	reportTemplates *ReportTemplates
+	reportFormats   *ReportFormats
+	reportScheduler *ReportScheduler
+
 	// Export management
-	exportManager        *ExportManager
-	exportConverters     *ExportConverters
-	exportValidators     *ExportValidators
-	exportTemplates      *ExportTemplates
-	
+	exportManager    *ExportManager
+	exportConverters *ExportConverters
+	exportValidators *ExportValidators
+	exportTemplates  *ExportTemplates
+
 	// Data processing
-	dataProcessor        *ReportDataProcessor
-	dataAggregator       *ReportDataAggregator
-	dataAnalyzer         *ReportDataAnalyzer
-	dataValidator        *ReportDataValidator
-	
+	dataProcessor  *ReportDataProcessor
+	dataAggregator *ReportDataAggregator
+	dataAnalyzer   *ReportDataAnalyzer
+	dataValidator  *ReportDataValidator
+
 	// Visualization
-	visualizationEngine  *VisualizationEngine
-	chartGenerator       *ChartGenerator
-	graphRenderer        *GraphRenderer
-	dashboardManager     *ReportingDashboardManager
-	
+	visualizationEngine *VisualizationEngine
+	chartGenerator      *ChartGenerator
+	graphRenderer       *GraphRenderer
+	dashboardManager    *ReportingDashboardManager
+
 	// Distribution and sharing
-	distributionManager  *DistributionManager
-	sharingService       *ReportSharingService
-	accessControl        *ReportAccessControl
-	notificationService  *ReportNotificationService
-	
+	distributionManager *DistributionManager
+	sharingService      *ReportSharingService
+	accessControl       *ReportAccessControl
+	notificationService *ReportNotificationService
+
 	// Quality and compliance
-	qualityAssessor      *ReportQualityAssessor
-	complianceChecker    *ComplianceChecker
-	auditTrail           *AuditTrail
-	versionControl       *VersionControl
-	
+	qualityAssessor   *ReportQualityAssessor
+	complianceChecker *ComplianceChecker
+	auditTrail        *AuditTrail
+	versionControl    *VersionControl
+
 	// Integration and APIs
-	apiService           *ReportingAPIService
-	integrationManager   *ReportingIntegrationManager
-	
-	mu                   sync.RWMutex
-	enabled              bool
-	reportingLevel       string
-	maxReportSize        int64
-	retentionPolicy      string
-	
-	activeReports        map[string]*ActiveReport
-	reportHistory        map[string]*ReportHistory
-	exportQueue          chan *ExportRequest
-	reportCache          map[string]*CachedReport
+	apiService         *ReportingAPIService
+	integrationManager *ReportingIntegrationManager
+
+	mu              sync.RWMutex
+	enabled         bool
+	reportingLevel  string
+	maxReportSize   int64
+	retentionPolicy string
+
+	activeReports map[string]*ActiveReport
+	reportHistory map[string]*ReportHistory
+	exportQueue   chan *ExportRequest
+	reportCache   map[string]*CachedReport
 }
 
 // ReportGenerator generates various types of reports
 type ReportGenerator struct {
-	generators          map[string]ReportGeneratorFunc
-	templates           map[string]*ReportTemplate
-	validationRules     []ReportValidationRule
-	qualityChecks       []ReportQualityCheck
-	
+	generators      map[string]ReportGeneratorFunc
+	templates       map[string]*ReportTemplate
+	validationRules []ReportValidationRule
+	qualityChecks   []ReportQualityCheck
+
 	generationStrategies []ReportGenerationStrategy
 	optimizationMethods  []ReportOptimizationMethod
 }
 
 // ReportTemplates manages report templates
 type ReportTemplates struct {
-	templateLibrary     map[string]*TemplateLibrary
-	templateEngines     map[string]TemplateEngine
-	templateValidators  map[string]TemplateValidator
-	templateOptimizers  map[string]TemplateOptimizer
-	
-	templateCategories   []TemplateCategory
-	templateVersions     []TemplateVersion
+	templateLibrary    map[string]*TemplateLibrary
+	templateEngines    map[string]TemplateEngine
+	templateValidators map[string]TemplateValidator
+	templateOptimizers map[string]TemplateOptimizer
+
+	templateCategories []TemplateCategory
+	templateVersions   []TemplateVersion
 }
 
 // ReportFormats manages report formats
 type ReportFormats struct {
-	formatDefinitions   map[string]*FormatDefinition
-	formatConverters    map[string]FormatConverter
-	formatValidators    map[string]FormatValidator
-	formatOptimizers    map[string]FormatOptimizer
-	
-	supportedFormats     []string
-	formatCapabilities   []FormatCapability
+	formatDefinitions map[string]*FormatDefinition
+	formatConverters  map[string]FormatConverter
+	formatValidators  map[string]FormatValidator
+	formatOptimizers  map[string]FormatOptimizer
+
+	supportedFormats   []string
+	formatCapabilities []FormatCapability
 }
 
 // ReportScheduler schedules report generation
 type ReportScheduler struct {
-	schedulingEngines   map[string]SchedulingEngine
-	scheduleValidators  map[string]ScheduleValidator
-	scheduleExecutors   map[string]ScheduleExecutor
-	scheduleMonitors    map[string]ScheduleMonitor
-	
-	schedulingRules      []SchedulingRule
-	executionPolicies    []ExecutionPolicy
+	schedulingEngines  map[string]SchedulingEngine
+	scheduleValidators map[string]ScheduleValidator
+	scheduleExecutors  map[string]ScheduleExecutor
+	scheduleMonitors   map[string]ScheduleMonitor
+
+	schedulingRules   []SchedulingRule
+	executionPolicies []ExecutionPolicy
 }
 
 // DebateExportManager manages export operations
 type DebateExportManager struct {
-	exportHandlers      map[string]DebateExportHandler
-	exportProcessors    map[string]DebateExportProcessor
-	exportValidators    map[string]DebateExportValidator
-	exportOptimizers    map[string]DebateExportOptimizer
-	
-	exportWorkflows      []DebateExportWorkflow
-	qualityControls      []DebateExportQualityControl
+	exportHandlers   map[string]DebateExportHandler
+	exportProcessors map[string]DebateExportProcessor
+	exportValidators map[string]DebateExportValidator
+	exportOptimizers map[string]DebateExportOptimizer
+
+	exportWorkflows []DebateExportWorkflow
+	qualityControls []DebateExportQualityControl
 }
 
 // ExportConverters converts data for export
@@ -132,17 +132,17 @@ type ExportConverters struct {
 	converterEngines    map[string]ConverterEngine
 	converterValidators map[string]ConverterValidator
 	converterOptimizers map[string]ConverterOptimizer
-	
-	conversionRules      []ConversionRule
+
+	conversionRules       []ConversionRule
 	transformationMethods []TransformationMethod
 }
 
 // ExportValidators validates export data
 type ExportValidators struct {
-	validationEngines   map[string]ValidationEngine
-	validationRules     map[string]ExportValidationRule
+	validationEngines    map[string]ValidationEngine
+	validationRules      map[string]ExportValidationRule
 	validationProcedures map[string]ExportValidationProcedure
-	
+
 	validationFrameworks []ExportValidationFramework
 	qualityAssessments   []ExportQualityAssessment
 }
@@ -152,90 +152,90 @@ type ExportTemplates struct {
 	templateEngines     map[string]ExportTemplateEngine
 	templateValidators  map[string]ExportTemplateValidator
 	templateCustomizers map[string]ExportTemplateCustomizer
-	
+
 	templateLibraries    []ExportTemplateLibrary
 	customizationOptions []CustomizationOption
 }
 
 // ReportDataProcessor processes report data
 type ReportDataProcessor struct {
-	processors          map[string]DataProcessor
-	transformers        map[string]DataTransformer
-	validators          map[string]DataValidator
-	enrichers           map[string]DataEnricher
-	
-	processingPipelines  []DataProcessingPipeline
-	qualityControls      []DataQualityControl
+	processors   map[string]DataProcessor
+	transformers map[string]DataTransformer
+	validators   map[string]DataValidator
+	enrichers    map[string]DataEnricher
+
+	processingPipelines []DataProcessingPipeline
+	qualityControls     []DataQualityControl
 }
 
 // ReportDataAggregator aggregates report data
 type ReportDataAggregator struct {
-	aggregationMethods  map[string]AggregationMethod
-	aggregationEngines  map[string]AggregationEngine
-	aggregationRules    map[string]AggregationRule
-	
+	aggregationMethods map[string]AggregationMethod
+	aggregationEngines map[string]AggregationEngine
+	aggregationRules   map[string]AggregationRule
+
 	aggregationStrategies []AggregationStrategy
 	optimizationMethods   []AggregationOptimizationMethod
 }
 
 // ReportDataAnalyzer analyzes report data
 type ReportDataAnalyzer struct {
-	analysisMethods     map[string]DataAnalysisMethod
-	analysisModels      map[string]DataAnalysisModel
-	statisticalEngines  map[string]StatisticalEngine
-	
-	analysisFrameworks  []DataAnalysisFramework
-	insightGenerators   []InsightGenerator
+	analysisMethods    map[string]DataAnalysisMethod
+	analysisModels     map[string]DataAnalysisModel
+	statisticalEngines map[string]StatisticalEngine
+
+	analysisFrameworks []DataAnalysisFramework
+	insightGenerators  []InsightGenerator
 }
 
 // ReportDataValidator validates report data
 type ReportDataValidator struct {
-	validationRules     map[string]DataValidationRule
-	validationMethods   map[string]DataValidationMethod
-	validationChecks    map[string]DataValidationCheck
-	
+	validationRules   map[string]DataValidationRule
+	validationMethods map[string]DataValidationMethod
+	validationChecks  map[string]DataValidationCheck
+
 	validationFrameworks []DataValidationFramework
 	qualityMetrics       []DataQualityMetric
 }
 
 // VisualizationEngine generates visualizations
 type VisualizationEngine struct {
-	visualizationTypes  map[string]VisualizationType
-	renderingEngines    map[string]RenderingEngine
-	styleGenerators     map[string]StyleGenerator
-	
+	visualizationTypes map[string]VisualizationType
+	renderingEngines   map[string]RenderingEngine
+	styleGenerators    map[string]StyleGenerator
+
 	visualizationMethods []VisualizationMethod
 	renderingStrategies  []RenderingStrategy
 }
 
 // ChartGenerator generates charts
 type ChartGenerator struct {
-	chartTypes          map[string]ChartType
-	chartEngines        map[string]ChartEngine
-	chartTemplates      map[string]ChartTemplate
-	
+	chartTypes     map[string]ChartType
+	chartEngines   map[string]ChartEngine
+	chartTemplates map[string]ChartTemplate
+
 	chartConfigurations []ChartConfiguration
 	stylingOptions      []ChartStylingOption
 }
 
 // GraphRenderer renders graphs
 type GraphRenderer struct {
-	graphTypes          map[string]GraphType
-	renderingEngines    map[string]GraphRenderingEngine
-	layoutAlgorithms    map[string]LayoutAlgorithm
-	
+	graphTypes       map[string]GraphType
+	renderingEngines map[string]GraphRenderingEngine
+	layoutAlgorithms map[string]LayoutAlgorithm
+
 	graphConfigurations []GraphConfiguration
 	renderingOptions    []GraphRenderingOption
 }
 
 // ReportingDashboardManager manages reporting dashboards
 type ReportingDashboardManager struct {
-	dashboardTemplates  map[string]DashboardTemplate
-	dashboardWidgets    map[string]DashboardWidget
-	dashboardLayouts    map[string]DashboardLayout
-	
+	dashboardTemplates map[string]DashboardTemplate
+	dashboardWidgets   map[string]DashboardWidget
+	dashboardLayouts   map[string]DashboardLayout
+
 	dashboardConfigurations []DashboardConfiguration
-	realTimeUpdates        []RealTimeUpdate
+	realTimeUpdates         []RealTimeUpdate
 }
 
 // DistributionManager manages report distribution
@@ -243,29 +243,29 @@ type DistributionManager struct {
 	distributionChannels map[string]DistributionChannel
 	distributionMethods  map[string]DistributionMethod
 	distributionPolicies map[string]DistributionPolicy
-	
+
 	distributionSchedules []DistributionSchedule
 	deliveryMechanisms    []DeliveryMechanism
 }
 
 // ReportSharingService manages report sharing
 type ReportSharingService struct {
-	sharingMethods      map[string]ReportSharingMethod
-	accessControllers   map[string]ReportAccessController
-	permissionManagers  map[string]ReportPermissionManager
-	
-	sharingPolicies       []ReportSharingPolicy
-	securityProtocols     []ReportSecurityProtocol
+	sharingMethods     map[string]ReportSharingMethod
+	accessControllers  map[string]ReportAccessController
+	permissionManagers map[string]ReportPermissionManager
+
+	sharingPolicies   []ReportSharingPolicy
+	securityProtocols []ReportSecurityProtocol
 }
 
 // ReportAccessControl manages access control for reports
 type ReportAccessControl struct {
-	accessControlModels map[string]ReportAccessControlModel
+	accessControlModels   map[string]ReportAccessControlModel
 	authenticationSystems map[string]ReportAuthenticationSystem
-	authorizationEngines map[string]ReportAuthorizationEngine
-	
-	accessPolicies        []ReportAccessPolicy
-	securityRules         []ReportSecurityRule
+	authorizationEngines  map[string]ReportAuthorizationEngine
+
+	accessPolicies []ReportAccessPolicy
+	securityRules  []ReportSecurityRule
 }
 
 // ReportNotificationService provides report notifications
@@ -273,39 +273,39 @@ type ReportNotificationService struct {
 	notificationChannels map[string]ReportNotificationChannel
 	notificationTypes    map[string]ReportNotificationType
 	notificationHandlers map[string]ReportNotificationHandler
-	
-	notificationPolicies  []ReportNotificationPolicy
-	deliveryMethods       []ReportDeliveryMethod
+
+	notificationPolicies []ReportNotificationPolicy
+	deliveryMethods      []ReportDeliveryMethod
 }
 
 // ReportQualityAssessor assesses report quality
 type ReportQualityAssessor struct {
-	qualityMetrics      map[string]ReportQualityMetric
-	qualityAssessments  map[string]ReportQualityAssessment
-	qualityValidators   map[string]ReportQualityValidator
-	
-	qualityStandards      []ReportQualityStandard
-	assessmentMethods     []ReportQualityAssessmentMethod
+	qualityMetrics     map[string]ReportQualityMetric
+	qualityAssessments map[string]ReportQualityAssessment
+	qualityValidators  map[string]ReportQualityValidator
+
+	qualityStandards  []ReportQualityStandard
+	assessmentMethods []ReportQualityAssessmentMethod
 }
 
 // ComplianceChecker checks compliance
 type ComplianceChecker struct {
-	complianceRules     map[string]ComplianceRule
-	complianceChecks    map[string]ComplianceCheck
-	complianceReports   map[string]ComplianceReport
-	
+	complianceRules   map[string]ComplianceRule
+	complianceChecks  map[string]ComplianceCheck
+	complianceReports map[string]ComplianceReport
+
 	complianceFrameworks []ComplianceFramework
 	validationMethods    []ComplianceValidationMethod
 }
 
 // AuditTrail maintains audit trail
 type AuditTrail struct {
-	auditLogs           map[string]*AuditLog
-	auditEvents         map[string]*AuditEvent
-	auditValidators     map[string]*AuditValidator
-	
-	auditPolicies        []AuditPolicy
-	retentionRules       []AuditRetentionRule
+	auditLogs       map[string]*AuditLog
+	auditEvents     map[string]*AuditEvent
+	auditValidators map[string]*AuditValidator
+
+	auditPolicies  []AuditPolicy
+	retentionRules []AuditRetentionRule
 }
 
 // VersionControl manages report versions
@@ -313,17 +313,17 @@ type VersionControl struct {
 	versionRepositories map[string]*VersionRepository
 	versionComparators  map[string]*VersionComparator
 	versionMergers      map[string]*VersionMerger
-	
-	versioningPolicies   []VersioningPolicy
-	conflictResolvers    []ConflictResolver
+
+	versioningPolicies []VersioningPolicy
+	conflictResolvers  []ConflictResolver
 }
 
 // ReportingAPIService provides API services
 type ReportingAPIService struct {
-	apiEndpoints        map[string]ReportingAPIEndpoint
-	apiHandlers         map[string]ReportingAPIHandler
-	apiValidators       map[string]ReportingAPIValidator
-	
+	apiEndpoints  map[string]ReportingAPIEndpoint
+	apiHandlers   map[string]ReportingAPIHandler
+	apiValidators map[string]ReportingAPIValidator
+
 	authenticationMethods []ReportingAuthenticationMethod
 	rateLimiters          []ReportingRateLimiter
 }
@@ -333,7 +333,7 @@ type DebateReportingIntegrationManager struct {
 	integrationAdapters map[string]ReportingIntegrationAdapter
 	dataSynchronizers   map[string]ReportingDataSynchronizer
 	protocolHandlers    map[string]ReportingProtocolHandler
-	
+
 	integrationPolicies []ReportingIntegrationPolicy
 	compatibilityLayers []ReportingCompatibilityLayer
 }
@@ -343,56 +343,56 @@ func NewDebateReportingService(cfg *config.AIDebateConfig, logger *logrus.Logger
 	return &DebateReportingService{
 		config: cfg,
 		logger: logger,
-		
+
 		// Initialize report generation components
-		reportGenerator:     NewReportGenerator(),
-		reportTemplates:     NewReportTemplates(),
-		reportFormats:       NewReportFormats(),
-		reportScheduler:     NewReportScheduler(),
-		
+		reportGenerator: NewReportGenerator(),
+		reportTemplates: NewReportTemplates(),
+		reportFormats:   NewReportFormats(),
+		reportScheduler: NewReportScheduler(),
+
 		// Initialize export management components
-		exportManager:       NewExportManager(),
-		exportConverters:    NewExportConverters(),
-		exportValidators:    NewExportValidators(),
-		exportTemplates:     NewExportTemplates(),
-		
+		exportManager:    NewExportManager(),
+		exportConverters: NewExportConverters(),
+		exportValidators: NewExportValidators(),
+		exportTemplates:  NewExportTemplates(),
+
 		// Initialize data processing components
-		dataProcessor:       NewReportDataProcessor(),
-		dataAggregator:      NewReportDataAggregator(),
-		dataAnalyzer:        NewReportDataAnalyzer(),
-		dataValidator:       NewReportDataValidator(),
-		
+		dataProcessor:  NewReportDataProcessor(),
+		dataAggregator: NewReportDataAggregator(),
+		dataAnalyzer:   NewReportDataAnalyzer(),
+		dataValidator:  NewReportDataValidator(),
+
 		// Initialize visualization components
 		visualizationEngine: NewVisualizationEngine(),
 		chartGenerator:      NewChartGenerator(),
 		graphRenderer:       NewGraphRenderer(),
 		dashboardManager:    NewReportingDashboardManager(),
-		
+
 		// Initialize distribution components
 		distributionManager: NewDistributionManager(),
 		sharingService:      NewReportSharingService(),
 		accessControl:       NewReportAccessControl(),
 		notificationService: NewReportNotificationService(),
-		
+
 		// Initialize quality and compliance components
-		qualityAssessor:     NewReportQualityAssessor(),
-		complianceChecker:   NewComplianceChecker(),
-		auditTrail:          NewAuditTrail(),
-		versionControl:      NewVersionControl(),
-		
+		qualityAssessor:   NewReportQualityAssessor(),
+		complianceChecker: NewComplianceChecker(),
+		auditTrail:        NewAuditTrail(),
+		versionControl:    NewVersionControl(),
+
 		// Initialize integration components
-		apiService:          NewReportingAPIService(),
-		integrationManager:  NewReportingIntegrationManager(),
-		
-		enabled:             cfg.ReportingEnabled,
-		reportingLevel:      cfg.ReportingLevel,
-		maxReportSize:       cfg.MaxReportSize,
-		retentionPolicy:     cfg.ReportRetentionPolicy,
-		
-		activeReports:       make(map[string]*ActiveReport),
-		reportHistory:       make(map[string]*ReportHistory),
-		exportQueue:         make(chan *ExportRequest, 1000),
-		reportCache:         make(map[string]*CachedReport),
+		apiService:         NewReportingAPIService(),
+		integrationManager: NewReportingIntegrationManager(),
+
+		enabled:         cfg.ReportingEnabled,
+		reportingLevel:  cfg.ReportingLevel,
+		maxReportSize:   cfg.MaxReportSize,
+		retentionPolicy: cfg.ReportRetentionPolicy,
+
+		activeReports: make(map[string]*ActiveReport),
+		reportHistory: make(map[string]*ReportHistory),
+		exportQueue:   make(chan *ExportRequest, 1000),
+		reportCache:   make(map[string]*CachedReport),
 	}
 }
 
@@ -448,11 +448,11 @@ func (s *DebateReportingService) GenerateReport(reportRequest *ReportRequest) (*
 
 	// Create active report
 	activeReport := &ActiveReport{
-		ReportID:    reportID,
-		Request:     reportRequest,
-		Status:      "generating",
-		StartTime:   time.Now(),
-		Progress:    0.0,
+		ReportID:  reportID,
+		Request:   reportRequest,
+		Status:    "generating",
+		StartTime: time.Now(),
+		Progress:  0.0,
 	}
 
 	s.mu.Lock()
@@ -463,9 +463,9 @@ func (s *DebateReportingService) GenerateReport(reportRequest *ReportRequest) (*
 	go s.generateReportAsync(reportID, reportRequest)
 
 	return &GeneratedReport{
-		ReportID:   reportID,
-		Status:     "generating",
-		Message:    "Report generation started",
+		ReportID:            reportID,
+		Status:              "generating",
+		Message:             "Report generation started",
 		EstimatedCompletion: time.Now().Add(5 * time.Minute),
 	}, nil
 }
@@ -486,9 +486,9 @@ func (s *DebateReportingService) ExportReport(exportRequest *ExportRequest) (*Ex
 	}
 
 	return &ExportResult{
-		ExportID:   exportRequest.ExportID,
-		Status:     "queued",
-		Message:    "Export request queued for processing",
+		ExportID:      exportRequest.ExportID,
+		Status:        "queued",
+		Message:       "Export request queued for processing",
 		QueuePosition: len(s.exportQueue),
 	}, nil
 }
@@ -580,7 +580,7 @@ func (s *DebateReportingService) GetQualityMetrics() (*QualityMetrics, error) {
 // reportGenerationWorker is the background worker for report generation
 func (s *DebateReportingService) reportGenerationWorker(ctx context.Context) {
 	s.logger.Info("Started report generation worker")
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -612,59 +612,59 @@ func (s *DebateReportingService) processActiveReports() {
 // generateReport generates a report
 func (s *DebateReportingService) generateReport(activeReport *ActiveReport) {
 	reportRequest := activeReport.Request
-	
+
 	// Update progress
 	s.updateReportProgress(activeReport.ReportID, 0.1)
-	
+
 	// Collect and process data
 	reportData, err := s.collectReportData(reportRequest)
 	if err != nil {
 		s.handleReportGenerationError(activeReport.ReportID, err)
 		return
 	}
-	
+
 	s.updateReportProgress(activeReport.ReportID, 0.3)
-	
+
 	// Analyze data
 	analysisResults, err := s.analyzeReportData(reportData)
 	if err != nil {
 		s.handleReportGenerationError(activeReport.ReportID, err)
 		return
 	}
-	
+
 	s.updateReportProgress(activeReport.ReportID, 0.5)
-	
+
 	// Generate visualizations
 	visualizations, err := s.generateVisualizations(analysisResults)
 	if err != nil {
 		s.handleReportGenerationError(activeReport.ReportID, err)
 		return
 	}
-	
+
 	s.updateReportProgress(activeReport.ReportID, 0.7)
-	
+
 	// Create final report
 	finalReport, err := s.createFinalReport(reportRequest, reportData, analysisResults, visualizations)
 	if err != nil {
 		s.handleReportGenerationError(activeReport.ReportID, err)
 		return
 	}
-	
+
 	s.updateReportProgress(activeReport.ReportID, 0.9)
-	
+
 	// Validate and finalize
 	if err := s.validateAndFinalizeReport(activeReport.ReportID, finalReport); err != nil {
 		s.handleReportGenerationError(activeReport.ReportID, err)
 		return
 	}
-	
+
 	s.updateReportProgress(activeReport.ReportID, 1.0)
 }
 
 // exportProcessingWorker is the background worker for export processing
 func (s *DebateReportingService) exportProcessingWorker(ctx context.Context) {
 	s.logger.Info("Started export processing worker")
-	
+
 	for {
 		select {
 		case exportRequest := <-s.exportQueue:
@@ -682,34 +682,34 @@ func (s *DebateReportingService) exportProcessingWorker(ctx context.Context) {
 // processExportRequest processes an export request
 func (s *DebateReportingService) processExportRequest(exportRequest *ExportRequest) {
 	s.logger.Debugf("Processing export request: %s", exportRequest.ExportID)
-	
+
 	// Retrieve report data
 	reportData, err := s.GetReport(exportRequest.ReportID)
 	if err != nil {
 		s.logger.Errorf("Failed to retrieve report for export %s: %v", exportRequest.ExportID, err)
 		return
 	}
-	
+
 	// Convert to requested format
 	exportedData, err := s.convertToFormat(reportData, exportRequest.Format)
 	if err != nil {
 		s.logger.Errorf("Failed to convert report to format %s for export %s: %v", exportRequest.Format, exportRequest.ExportID, err)
 		return
 	}
-	
+
 	// Validate export
 	if err := s.validateExport(exportedData, exportRequest); err != nil {
 		s.logger.Errorf("Export validation failed for %s: %v", exportRequest.ExportID, err)
 		return
 	}
-	
+
 	// Save export
 	exportPath, err := s.saveExport(exportRequest.ExportID, exportedData)
 	if err != nil {
 		s.logger.Errorf("Failed to save export %s: %v", exportRequest.ExportID, err)
 		return
 	}
-	
+
 	s.logger.Infof("Export completed successfully: %s -> %s", exportRequest.ExportID, exportPath)
 }
 
@@ -722,25 +722,25 @@ func (s *DebateReportingService) collectReportData(request *ReportRequest) (*Rep
 		Timestamp:  time.Now(),
 		Data:       make(map[string]interface{}),
 	}
-	
+
 	// Collect debate session data
 	if request.IncludeSessions {
 		sessionData := s.collectSessionData(request.SessionFilter)
 		data.Data["sessions"] = sessionData
 	}
-	
+
 	// Collect performance data
 	if request.IncludePerformance {
 		performanceData := s.collectPerformanceData(request.PerformanceFilter)
 		data.Data["performance"] = performanceData
 	}
-	
+
 	// Collect analytics data
 	if request.IncludeAnalytics {
 		analyticsData := s.collectAnalyticsData(request.AnalyticsFilter)
 		data.Data["analytics"] = analyticsData
 	}
-	
+
 	return data, nil
 }
 
@@ -751,20 +751,20 @@ func (s *DebateReportingService) analyzeReportData(data *ReportData) (*AnalysisR
 		Trends:   []Trend{},
 		Metrics:  make(map[string]float64),
 	}
-	
+
 	// Perform various analyses
 	if sessionData, exists := data.Data["sessions"]; exists {
 		sessionInsights := s.analyzeSessionData(sessionData)
 		results.Insights = append(results.Insights, sessionInsights...)
 	}
-	
+
 	if performanceData, exists := data.Data["performance"]; exists {
 		performanceMetrics := s.analyzePerformanceData(performanceData)
 		for k, v := range performanceMetrics {
 			results.Metrics[k] = v
 		}
 	}
-	
+
 	return results, nil
 }
 
@@ -774,19 +774,19 @@ func (s *DebateReportingService) generateVisualizations(analysis *AnalysisResult
 		Graphs: []Graph{},
 		Tables: []Table{},
 	}
-	
+
 	// Generate charts
 	for _, insight := range analysis.Insights {
 		chart := s.generateChart(insight)
 		visualizations.Charts = append(visualizations.Charts, chart)
 	}
-	
+
 	// Generate graphs
 	for _, trend := range analysis.Trends {
 		graph := s.generateGraph(trend)
 		visualizations.Graphs = append(visualizations.Graphs, graph)
 	}
-	
+
 	return visualizations, nil
 }
 
@@ -802,10 +802,10 @@ func (s *DebateReportingService) createFinalReport(request *ReportRequest, data 
 		Visualizations: visualizations,
 		Sections:       []ReportSection{},
 	}
-	
+
 	// Create report sections
 	report.Sections = s.createReportSections(request, data, analysis, visualizations)
-	
+
 	return report, nil
 }
 
@@ -814,18 +814,18 @@ func (s *DebateReportingService) validateAndFinalizeReport(reportID string, repo
 	if err := s.qualityAssessor.ValidateReport(report); err != nil {
 		return fmt.Errorf("report validation failed: %w", err)
 	}
-	
+
 	// Check compliance
 	if err := s.complianceChecker.CheckCompliance(report); err != nil {
 		return fmt.Errorf("compliance check failed: %w", err)
 	}
-	
+
 	// Cache the report
 	s.cacheReport(reportID, report)
-	
+
 	// Update active report status
 	s.finalizeActiveReport(reportID, report)
-	
+
 	return nil
 }
 
@@ -833,10 +833,10 @@ func (s *DebateReportingService) validateAndFinalizeReport(reportID string, repo
 func (s *DebateReportingService) collectSessionData(filter *SessionFilter) interface{} {
 	// Collect session data based on filter
 	return map[string]interface{}{
-		"total_sessions": 150,
-		"active_sessions": 12,
+		"total_sessions":     150,
+		"active_sessions":    12,
 		"completed_sessions": 138,
-		"average_duration": "15.5 minutes",
+		"average_duration":   "15.5 minutes",
 	}
 }
 
@@ -853,10 +853,10 @@ func (s *DebateReportingService) collectPerformanceData(filter *PerformanceFilte
 func (s *DebateReportingService) collectAnalyticsData(filter *AnalyticsFilter) interface{} {
 	// Collect analytics data based on filter
 	return map[string]interface{}{
-		"consensus_rate": 0.78,
+		"consensus_rate":   0.78,
 		"engagement_score": 0.82,
-		"quality_score":  0.89,
-		"trend_analysis": "improving",
+		"quality_score":    0.89,
+		"trend_analysis":   "improving",
 	}
 }
 
@@ -875,9 +875,9 @@ func (s *DebateReportingService) analyzeSessionData(data interface{}) []Insight 
 func (s *DebateReportingService) analyzePerformanceData(data interface{}) map[string]float64 {
 	// Analyze performance data and generate metrics
 	return map[string]float64{
-		"efficiency_score": 0.87,
+		"efficiency_score":  0.87,
 		"reliability_score": 0.92,
-		"quality_score":    0.89,
+		"quality_score":     0.89,
 	}
 }
 
@@ -903,48 +903,48 @@ func (s *DebateReportingService) generateGraph(trend Trend) Graph {
 
 func (s *DebateReportingService) createReportSections(request *ReportRequest, data *ReportData, analysis *AnalysisResults, visualizations *Visualizations) []ReportSection {
 	sections := []ReportSection{}
-	
+
 	// Executive summary
 	sections = append(sections, ReportSection{
-		Title:       "Executive Summary",
-		Type:        "summary",
-		Content:     s.generateExecutiveSummary(data, analysis),
-		Priority:    1,
+		Title:    "Executive Summary",
+		Type:     "summary",
+		Content:  s.generateExecutiveSummary(data, analysis),
+		Priority: 1,
 	})
-	
+
 	// Performance analysis
 	sections = append(sections, ReportSection{
-		Title:       "Performance Analysis",
-		Type:        "analysis",
-		Content:     s.generatePerformanceAnalysis(data, analysis),
+		Title:          "Performance Analysis",
+		Type:           "analysis",
+		Content:        s.generatePerformanceAnalysis(data, analysis),
 		Visualizations: visualizations.Charts,
-		Priority:    2,
+		Priority:       2,
 	})
-	
+
 	// Trends and insights
 	sections = append(sections, ReportSection{
-		Title:       "Trends and Insights",
-		Type:        "insights",
-		Content:     s.generateTrendsAnalysis(analysis),
+		Title:          "Trends and Insights",
+		Type:           "insights",
+		Content:        s.generateTrendsAnalysis(analysis),
 		Visualizations: visualizations.Graphs,
-		Priority:    3,
+		Priority:       3,
 	})
-	
+
 	return sections
 }
 
 func (s *DebateReportingService) generateExecutiveSummary(data *ReportData, analysis *AnalysisResults) string {
-	return fmt.Sprintf("This report provides comprehensive analysis of debate performance with %d insights and %d trends identified.", 
+	return fmt.Sprintf("This report provides comprehensive analysis of debate performance with %d insights and %d trends identified.",
 		len(analysis.Insights), len(analysis.Trends))
 }
 
 func (s *DebateReportingService) generatePerformanceAnalysis(data *ReportData, analysis *AnalysisResults) string {
-	return fmt.Sprintf("Performance analysis shows an overall efficiency score of %.2f with high reliability metrics.", 
+	return fmt.Sprintf("Performance analysis shows an overall efficiency score of %.2f with high reliability metrics.",
 		analysis.Metrics["efficiency_score"])
 }
 
 func (s *DebateReportingService) generateTrendsAnalysis(analysis *AnalysisResults) string {
-	return fmt.Sprintf("Analysis revealed %d significant trends indicating overall system improvement.", 
+	return fmt.Sprintf("Analysis revealed %d significant trends indicating overall system improvement.",
 		len(analysis.Trends))
 }
 
@@ -988,7 +988,7 @@ func (s *DebateReportingService) handleReportGenerationError(reportID string, er
 		activeReport.Error = err.Error()
 	}
 	s.mu.Unlock()
-	
+
 	s.logger.Errorf("Report generation failed for %s: %v", reportID, err)
 }
 
@@ -1007,7 +1007,7 @@ func (s *DebateReportingService) finalizeActiveReport(reportID string, report *F
 	if activeReport, exists := s.activeReports[reportID]; exists {
 		activeReport.Status = "completed"
 		activeReport.EndTime = time.Now()
-		
+
 		// Move to history
 		s.reportHistory[reportID] = &ReportHistory{
 			ReportID:  reportID,
@@ -1015,7 +1015,7 @@ func (s *DebateReportingService) finalizeActiveReport(reportID string, report *F
 			Data:      report,
 			Status:    "completed",
 		}
-		
+
 		// Remove from active
 		delete(s.activeReports, reportID)
 	}
@@ -1041,14 +1041,14 @@ func (s *DebateReportingService) convertToCSV(data *ReportData) ([]byte, error) 
 	// Simple CSV conversion for demonstration
 	var result strings.Builder
 	writer := csv.NewWriter(&result)
-	
+
 	// Write headers
 	writer.Write([]string{"Report ID", "Type", "Timestamp", "Data"})
-	
+
 	// Write data row
 	dataStr, _ := json.Marshal(data.Data)
 	writer.Write([]string{data.ReportID, data.ReportType, data.Timestamp.Format(time.RFC3339), string(dataStr)})
-	
+
 	writer.Flush()
 	return []byte(result.String()), nil
 }
@@ -1068,18 +1068,18 @@ func (s *DebateReportingService) convertToHTML(data *ReportData) ([]byte, error)
 	</body>
 	</html>
 	`
-	
+
 	tmpl, err := template.New("report").Parse(htmlTemplate)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var result strings.Builder
 	err = tmpl.Execute(&result, data)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return []byte(result.String()), nil
 }
 
@@ -1122,7 +1122,7 @@ func (s *DebateReportingService) matchesFilter(history *ReportHistory, filter *R
 func (s *DebateReportingService) generateFinalReports() map[string]interface{} {
 	// Generate final reports before shutdown
 	return map[string]interface{}{
-		"total_reports": len(s.reportHistory),
+		"total_reports":  len(s.reportHistory),
 		"active_reports": len(s.activeReports),
 		"cached_reports": len(s.reportCache),
 	}
@@ -1133,22 +1133,22 @@ func (s *DebateReportingService) initializeComponents() error {
 	if err := s.reportGenerator.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize report generator: %w", err)
 	}
-	
+
 	// Initialize export management
 	if err := s.exportManager.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize export manager: %w", err)
 	}
-	
+
 	// Initialize data processing
 	if err := s.dataProcessor.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize data processor: %w", err)
 	}
-	
+
 	// Initialize visualization
 	if err := s.visualizationEngine.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize visualization engine: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -1208,8 +1208,8 @@ func NewExportConverters() *ExportConverters {
 
 func NewExportValidators() *ExportValidators {
 	return &ExportValidators{
-		validationEngines:   make(map[string]ValidationEngine),
-		validationRules:     make(map[string]ExportValidationRule),
+		validationEngines:    make(map[string]ValidationEngine),
+		validationRules:      make(map[string]ExportValidationRule),
 		validationProcedures: make(map[string]ExportValidationProcedure),
 	}
 }
@@ -1241,17 +1241,17 @@ func NewReportDataAggregator() *ReportDataAggregator {
 
 func NewReportDataAnalyzer() *ReportDataAnalyzer {
 	return &ReportDataAnalyzer{
-		analysisMethods: make(map[string]DataAnalysisMethod),
-		analysisModels:  make(map[string]DataAnalysisModel),
+		analysisMethods:    make(map[string]DataAnalysisMethod),
+		analysisModels:     make(map[string]DataAnalysisModel),
 		statisticalEngines: make(map[string]StatisticalEngine),
 	}
 }
 
 func NewReportDataValidator() *ReportDataValidator {
 	return &ReportDataValidator{
-		validationRules:  make(map[string]DataValidationRule),
+		validationRules:   make(map[string]DataValidationRule),
 		validationMethods: make(map[string]DataValidationMethod),
-		validationChecks: make(map[string]DataValidationCheck),
+		validationChecks:  make(map[string]DataValidationCheck),
 	}
 }
 
@@ -1305,9 +1305,9 @@ func NewReportSharingService() *ReportSharingService {
 
 func NewReportAccessControl() *ReportAccessControl {
 	return &ReportAccessControl{
-		accessControlModels:  make(map[string]ReportAccessControlModel),
+		accessControlModels:   make(map[string]ReportAccessControlModel),
 		authenticationSystems: make(map[string]ReportAuthenticationSystem),
-		authorizationEngines: make(map[string]ReportAuthorizationEngine),
+		authorizationEngines:  make(map[string]ReportAuthorizationEngine),
 	}
 }
 
@@ -1508,16 +1508,16 @@ type DebateReportingCompatibilityLayer interface{}
 
 // Additional request/response types
 type ReportRequest struct {
-	ReportType     string
-	Title          string
-	Description    string
-	SessionFilter  *SessionFilter
-	PerformanceFilter *PerformanceFilter
-	AnalyticsFilter   *AnalyticsFilter
-	IncludeSessions bool
+	ReportType         string
+	Title              string
+	Description        string
+	SessionFilter      *SessionFilter
+	PerformanceFilter  *PerformanceFilter
+	AnalyticsFilter    *AnalyticsFilter
+	IncludeSessions    bool
 	IncludePerformance bool
-	IncludeAnalytics bool
-	Format         string
+	IncludeAnalytics   bool
+	Format             string
 }
 
 type GeneratedReport struct {
@@ -1528,10 +1528,10 @@ type GeneratedReport struct {
 }
 
 type DebateExportRequest struct {
-	ExportID   string
-	ReportID   string
-	Format     string
-	Options    map[string]interface{}
+	ExportID string
+	ReportID string
+	Format   string
+	Options  map[string]interface{}
 }
 
 type DebateExportResult struct {
@@ -1598,17 +1598,17 @@ type ComplianceRequest struct {
 }
 
 type ComplianceReport struct {
-	ReportID    string
-	Compliance  map[string]bool
-	Violations  []string
+	ReportID        string
+	Compliance      map[string]bool
+	Violations      []string
 	Recommendations []string
 }
 
 type QualityMetrics struct {
-	QualityScore   float64
-	Accuracy       float64
-	Completeness   float64
-	Timeliness     float64
+	QualityScore float64
+	Accuracy     float64
+	Completeness float64
+	Timeliness   float64
 }
 
 type ReportHistoryFilter struct {
@@ -1624,15 +1624,15 @@ type SessionFilter struct {
 }
 
 type PerformanceFilter struct {
-	DateRange   *DateRange
-	Metrics     []string
-	Thresholds  map[string]float64
+	DateRange  *DateRange
+	Metrics    []string
+	Thresholds map[string]float64
 }
 
 type AnalyticsFilter struct {
-	DateRange  *DateRange
+	DateRange     *DateRange
 	AnalysisTypes []string
-	Confidence float64
+	Confidence    float64
 }
 
 type AnalysisResults struct {

@@ -1,0 +1,218 @@
+# SuperAgent Production Configuration
+# This configuration is optimized for production environments
+
+server:
+  port: 8080
+  host: "0.0.0.0"
+  environment: "production"
+  log_level: "info"
+  
+  # Production-specific settings
+  debug:
+    enabled: false
+    pprof_enabled: false
+    pprof_port: 6060
+    verbose_logging: false
+
+database:
+  # PostgreSQL configuration
+  url: "${DATABASE_URL}"
+  host: "${DB_HOST}"
+  port: ${DB_PORT}
+  user: "${DB_USER}"
+  password: "${DB_PASSWORD}"
+  name: "${DB_NAME}"
+  sslmode: "require"
+  
+  # Connection pool settings (optimized for production)
+  max_open_connections: 50
+  max_idle_connections: 10
+  connection_max_lifetime: "1h"
+
+redis:
+  # Redis configuration
+  url: "${REDIS_URL}"
+  host: "${REDIS_HOST}"
+  port: ${REDIS_PORT}
+  password: "${REDIS_PASSWORD}"
+  db: ${REDIS_DB}
+  
+  # Connection pool settings
+  pool_size: 20
+  min_idle_connections: 5
+
+llm_providers:
+  # OpenAI (primary for production)
+  openai:
+    enabled: true
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4"
+    base_url: "https://api.openai.com/v1"
+    temperature: 0.7
+    max_tokens: 4096
+    timeout: "60s"
+    weight: 1.0
+    
+  # Anthropic Claude (fallback)
+  anthropic:
+    enabled: true
+    api_key: "${ANTHROPIC_API_KEY}"
+    model: "claude-3-sonnet-20240229"
+    base_url: "https://api.anthropic.com"
+    temperature: 0.7
+    max_tokens: 4096
+    timeout: "60s"
+    weight: 0.9
+    
+  # OpenRouter (multi-provider support)
+  openrouter:
+    enabled: true
+    api_key: "${OPENROUTER_API_KEY}"
+    model: "anthropic/claude-3-sonnet"
+    base_url: "https://openrouter.ai/api/v1"
+    temperature: 0.7
+    max_tokens: 4096
+    timeout: "60s"
+    weight: 0.8
+
+security:
+  # JWT configuration (production - secure)
+  jwt:
+    secret: "${JWT_SECRET}"
+    expiration: "24h"
+    
+  # API Key configuration
+  api_key:
+    header: "X-API-Key"
+    length: 32
+    
+  # Rate limiting (strict for production)
+  rate_limit:
+    requests_per_minute: 60
+    burst: 10
+    
+  # CORS (restrictive for production)
+  cors:
+    allowed_origins:
+      - "${FRONTEND_URL}"
+    allowed_methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+      - "OPTIONS"
+    allowed_headers:
+      - "Content-Type"
+      - "Authorization"
+      - "X-API-Key"
+
+monitoring:
+  # Prometheus metrics (enabled for production)
+  metrics:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+    
+  # Health checks
+  health_check:
+    enabled: true
+    path: "/health"
+    interval: "30s"
+
+cache:
+  # Cache TTL settings (optimized for production)
+  default_ttl: 3600  # 1 hour
+  user_session_ttl: 1800   # 30 minutes
+  api_key_ttl: 86400      # 24 hours
+  provider_health_ttl: 300 # 5 minutes
+  
+  # Cache size limits (larger for production)
+  max_memory_size: "500MB"
+  max_entries: 50000
+
+ai_debate:
+  # AI Debate configuration
+  enabled: true
+  max_participants: 10
+  max_rounds: 5
+  consensus_threshold: 0.7
+  
+  # Cognee integration (enabled for production)
+  cognee:
+    enabled: true
+    api_url: "${COGNEE_API_URL}"
+    dataset_name: "superagent_debates"
+
+plugins:
+  # Plugin system (enabled for production)
+  enabled: true
+  directory: "./plugins"
+  auto_load: true
+  
+  # Plugin security (strict for production)
+  sandbox:
+    enabled: true
+    max_memory: "128MB"
+    max_cpu_time: "30s"
+
+feature_flags:
+  # Feature toggles (production settings)
+  ai_debate: true
+  cognee_integration: true
+  plugin_system: true
+  real_time_monitoring: true
+  advanced_analytics: false
+
+logging:
+  # Logging configuration (structured for production)
+  format: "json"
+  output: "stdout"
+  level: "info"
+  
+  # File logging (enabled for production)
+  file:
+    enabled: true
+    path: "./logs/superagent.log"
+    max_size: "100MB"
+    max_backups: 10
+    max_age: "30d"
+
+performance:
+  # Performance settings (optimized for production)
+  profiling_enabled: false
+  graceful_shutdown_timeout: "30s"
+  max_request_size: 10485760  # 10MB
+  request_timeout: "30s"
+  idle_timeout: "60s"
+  read_timeout: "30s"
+  write_timeout: "30s"
+
+external_services:
+  # External integrations (enabled for production)
+  webhook:
+    enabled: true
+    url: "${WEBHOOK_URL}"
+    secret: "${WEBHOOK_SECRET}"
+    
+  smtp:
+    enabled: true
+    host: "${SMTP_HOST}"
+    port: ${SMTP_PORT}
+    username: "${SMTP_USERNAME}"
+    password: "${SMTP_PASSWORD}"
+    from: "${SMTP_FROM}"
+    
+  sentry:
+    dsn: "${SENTRY_DSN}"
+    environment: "production"
+    
+  datadog:
+    api_key: "${DATADOG_API_KEY}"
+    app_key: "${DATADOG_APP_KEY}"
+
+backup:
+  # Backup settings (enabled for production)
+  enabled: true
+  schedule: "0 2 * * *"  # 2 AM daily
+  retention_days: 30
+  storage_path: "./backups/production"

@@ -14,39 +14,39 @@ import (
 
 // DebatePerformanceService provides comprehensive performance optimization and analysis
 type DebatePerformanceService struct {
-	config              *config.AIDebateConfig
-	logger              *logrus.Logger
-	
+	config *config.AIDebateConfig
+	logger *logrus.Logger
+
 	// Performance tracking
-	performanceTracker  *DebatePerformanceTracker
-	metricsCollector    *DebatePerformanceMetricsCollector
-	benchmarkManager    *DebatePerformanceBenchmarkManager
-	optimizationEngine  *DebatePerformanceOptimizationEngine
-	
+	performanceTracker *DebatePerformanceTracker
+	metricsCollector   *DebatePerformanceMetricsCollector
+	benchmarkManager   *DebatePerformanceBenchmarkManager
+	optimizationEngine *DebatePerformanceOptimizationEngine
+
 	// Analytics and insights
-	analyticsEngine     *DebatePerformanceAnalyticsEngine
-	insightGenerator    *DebatePerformanceInsightGenerator
-	predictionEngine    *DebatePerformancePredictionEngine
-	
+	analyticsEngine  *DebatePerformanceAnalyticsEngine
+	insightGenerator *DebatePerformanceInsightGenerator
+	predictionEngine *DebatePerformancePredictionEngine
+
 	// Real-time monitoring
-	realTimeMonitor     *DebatePerformanceRealTimeMonitor
-	trendAnalyzer       *DebatePerformanceTrendAnalyzer
-	anomalyDetector     *DebatePerformanceAnomalyDetector
-	
+	realTimeMonitor *DebatePerformanceRealTimeMonitor
+	trendAnalyzer   *DebatePerformanceTrendAnalyzer
+	anomalyDetector *DebatePerformanceAnomalyDetector
+
 	// Optimization and tuning
-	autoTuner           *DebatePerformanceAutoTuner
-	parameterOptimizer  *DebateParameterOptimizer
-	resourceManager     *DebateResourceManager
-	
+	autoTuner          *DebatePerformanceAutoTuner
+	parameterOptimizer *DebateParameterOptimizer
+	resourceManager    *DebateResourceManager
+
 	// Reporting and visualization
-	reportGenerator     *DebatePerformanceReportGenerator
-	dashboardManager    *DebatePerformanceDashboardManager
-	
+	reportGenerator  *DebatePerformanceReportGenerator
+	dashboardManager *DebatePerformanceDashboardManager
+
 	// Data management
-	dataStore          *DebatePerformanceDataStore
-	historicalAnalyzer *DebateHistoricalPerformanceAnalyzer
+	dataStore           *DebatePerformanceDataStore
+	historicalAnalyzer  *DebateHistoricalPerformanceAnalyzer
 	comparativeAnalyzer *DebateComparativePerformanceAnalyzer
-	
+
 	mu                 sync.RWMutex
 	enabled            bool
 	optimizationLevel  string
@@ -55,25 +55,25 @@ type DebatePerformanceService struct {
 
 // DebatePerformanceTracker tracks debate performance metrics
 type DebatePerformanceTracker struct {
-	activeSessions      map[string]*DebateSessionPerformance
-	sessionMutex        sync.RWMutex
-	
-	performanceMetrics  map[string]*DebatePerformanceMetric
-	metricDefinitions   map[string]*DebateMetricDefinition
-	benchmarks          map[string]*DebatePerformanceBenchmark
-	targets             map[string]*DebatePerformanceTarget
-	
-	aggregationRules    []DebateAggregationRule
-	calculationEngines  map[string]DebateCalculationEngine
+	activeSessions map[string]*DebateSessionPerformance
+	sessionMutex   sync.RWMutex
+
+	performanceMetrics map[string]*DebatePerformanceMetric
+	metricDefinitions  map[string]*DebateMetricDefinition
+	benchmarks         map[string]*DebatePerformanceBenchmark
+	targets            map[string]*DebatePerformanceTarget
+
+	aggregationRules   []DebateAggregationRule
+	calculationEngines map[string]DebateCalculationEngine
 }
 
 // DebatePerformanceMetricsCollector collects and processes performance metrics
 type DebatePerformanceMetricsCollector struct {
-	collectors          map[string]DebateMetricCollector
-	processors          map[string]DebateMetricProcessor
-	validators          map[string]DebateMetricValidator
-	transformers        map[string]DebateMetricTransformer
-	
+	collectors   map[string]DebateMetricCollector
+	processors   map[string]DebateMetricProcessor
+	validators   map[string]DebateMetricValidator
+	transformers map[string]DebateMetricTransformer
+
 	collectionRules     []DebateCollectionRule
 	processingPipelines []DebateProcessingPipeline
 	qualityFilters      []DebateQualityFilter
@@ -85,7 +85,7 @@ type DebatePerformanceBenchmarkManager struct {
 	benchmarkResults    map[string]*DebateBenchmarkResult
 	comparativeAnalysis map[string]*DebateComparativeAnalysis
 	baselineMetrics     map[string]*DebateBaselineMetric
-	
+
 	benchmarkingStrategies []DebateBenchmarkingStrategy
 	comparisonAlgorithms   []DebateComparisonAlgorithm
 }
@@ -94,12 +94,12 @@ type DebatePerformanceBenchmarkManager struct {
 type DebatePerformanceOptimizationEngine struct {
 	optimizationStrategies map[string]DebateOptimizationStrategy
 	optimizationAlgorithms map[string]DebateOptimizationAlgorithm
-	parameterTuners       map[string]DebateParameterTuner
-	adaptiveOptimizers    []DebateAdaptiveOptimizer
-	
-	optimizationRules     []DebateOptimizationRule
+	parameterTuners        map[string]DebateParameterTuner
+	adaptiveOptimizers     []DebateAdaptiveOptimizer
+
+	optimizationRules      []DebateOptimizationRule
 	performanceConstraints []DebatePerformanceConstraint
-	optimizationTriggers  []DebateOptimizationTrigger
+	optimizationTriggers   []DebateOptimizationTrigger
 }
 
 // DebatePerformanceAnalyticsEngine provides advanced performance analytics
@@ -108,20 +108,20 @@ type DebatePerformanceAnalyticsEngine struct {
 	statisticalModels     map[string]DebateStatisticalModel
 	machineLearningModels map[string]DebateMLModel
 	patternRecognizers    map[string]DebatePatternRecognizer
-	
-	analysisFrameworks    []DebateAnalysisFramework
-	validationMethods     []DebateValidationMethod
+
+	analysisFrameworks []DebateAnalysisFramework
+	validationMethods  []DebateValidationMethod
 }
 
 // DebatePerformanceInsightGenerator generates performance insights
 type DebatePerformanceInsightGenerator struct {
-	insightTypes          map[string]DebatePerformanceInsightType
-	generationStrategies  map[string]DebateInsightGenerationStrategy
-	qualityFilters        []DebateInsightQualityFilter
-	validationFramework   *DebateInsightValidationFramework
-	
-	insightTemplates      map[string]DebateInsightTemplate
-	recommendationEngine  *DebateRecommendationEngine
+	insightTypes         map[string]DebatePerformanceInsightType
+	generationStrategies map[string]DebateInsightGenerationStrategy
+	qualityFilters       []DebateInsightQualityFilter
+	validationFramework  *DebateInsightValidationFramework
+
+	insightTemplates     map[string]DebateInsightTemplate
+	recommendationEngine *DebateRecommendationEngine
 }
 
 // DebatePerformancePredictionEngine provides performance predictions
@@ -130,20 +130,20 @@ type DebatePerformancePredictionEngine struct {
 	forecastingAlgorithms map[string]DebateForecastingAlgorithm
 	trendAnalyzers        map[string]DebateTrendAnalyzer
 	anomalyDetectors      map[string]DebateAnomalyDetector
-	
+
 	predictionFrameworks  []DebatePredictionFramework
 	confidenceCalculators []DebateConfidenceCalculator
 }
 
 // DebatePerformanceRealTimeMonitor provides real-time performance monitoring
 type DebatePerformanceRealTimeMonitor struct {
-	monitoringRules       []DebateMonitoringRule
-	alertConditions       []DebateAlertCondition
-	notificationChannels  []DebateNotificationChannel
-	
-	realTimeMetrics       map[string]*DebateRealTimeMetric
-	streamProcessors      map[string]DebateStreamProcessor
-	eventHandlers         map[string]DebateEventHandler
+	monitoringRules      []DebateMonitoringRule
+	alertConditions      []DebateAlertCondition
+	notificationChannels []DebateNotificationChannel
+
+	realTimeMetrics  map[string]*DebateRealTimeMetric
+	streamProcessors map[string]DebateStreamProcessor
+	eventHandlers    map[string]DebateEventHandler
 }
 
 // DebatePerformanceTrendAnalyzer analyzes performance trends
@@ -152,176 +152,176 @@ type DebatePerformanceTrendAnalyzer struct {
 	trendAnalysisMethods     []DebateTrendAnalysisMethod
 	seasonalityAnalyzers     []DebateSeasonalityAnalyzer
 	changePointDetectors     []DebateChangePointDetector
-	
-	trendModels           map[string]DebateTrendModel
-	trendPredictions      map[string]DebateTrendPrediction
+
+	trendModels      map[string]DebateTrendModel
+	trendPredictions map[string]DebateTrendPrediction
 }
 
 // DebatePerformanceAnomalyDetector detects performance anomalies
 type DebatePerformanceAnomalyDetector struct {
 	anomalyDetectionAlgorithms []DebateAnomalyDetectionAlgorithm
-	statisticalTests          []DebateStatisticalTest
-	machineLearningModels     []DebateAnomalyMLModel
-	
-	anomalyThresholds       map[string]DebateAnomalyThreshold
-	anomalyHistory          map[string][]DebateAnomalyEvent
-	anomalyPatterns         map[string]DebateAnomalyPattern
+	statisticalTests           []DebateStatisticalTest
+	machineLearningModels      []DebateAnomalyMLModel
+
+	anomalyThresholds map[string]DebateAnomalyThreshold
+	anomalyHistory    map[string][]DebateAnomalyEvent
+	anomalyPatterns   map[string]DebateAnomalyPattern
 }
 
 // DebatePerformanceAutoTuner provides automatic performance tuning
 type DebatePerformanceAutoTuner struct {
-	tuningStrategies      map[string]DebateTuningStrategy
-	adaptiveAlgorithms    map[string]DebateAdaptiveAlgorithm
-	learningMechanisms    map[string]DebateLearningMechanism
-	
-	tuningParameters      map[string]*DebateTuningParameter
-	tuningHistory         map[string][]DebateTuningEvent
-	optimizationHistory   map[string][]DebateOptimizationEvent
+	tuningStrategies   map[string]DebateTuningStrategy
+	adaptiveAlgorithms map[string]DebateAdaptiveAlgorithm
+	learningMechanisms map[string]DebateLearningMechanism
+
+	tuningParameters    map[string]*DebateTuningParameter
+	tuningHistory       map[string][]DebateTuningEvent
+	optimizationHistory map[string][]DebateOptimizationEvent
 }
 
 // DebateParameterOptimizer optimizes system parameters
 type DebateParameterOptimizer struct {
-	parameterSpaces       map[string]*DebateParameterSpace
-	optimizationMethods   map[string]DebateOptimizationMethod
-	searchAlgorithms      map[string]DebateSearchAlgorithm
-	
-	parameterConstraints  []DebateParameterConstraint
+	parameterSpaces     map[string]*DebateParameterSpace
+	optimizationMethods map[string]DebateOptimizationMethod
+	searchAlgorithms    map[string]DebateSearchAlgorithm
+
+	parameterConstraints   []DebateParameterConstraint
 	optimizationObjectives []DebateOptimizationObjective
 }
 
 // DebateResourceManager manages system resources
 type DebateResourceManager struct {
-	resourcePools         map[string]DebateResourcePool
-	allocationStrategies  map[string]DebateAllocationStrategy
-	schedulingAlgorithms  map[string]DebateSchedulingAlgorithm
-	
-	resourceMetrics       map[string]*DebateResourceMetric
-	utilizationTrackers   map[string]*DebateUtilizationTracker
+	resourcePools        map[string]DebateResourcePool
+	allocationStrategies map[string]DebateAllocationStrategy
+	schedulingAlgorithms map[string]DebateSchedulingAlgorithm
+
+	resourceMetrics     map[string]*DebateResourceMetric
+	utilizationTrackers map[string]*DebateUtilizationTracker
 }
 
 // DebatePerformanceReportGenerator generates performance reports
 type DebatePerformanceReportGenerator struct {
-	reportTemplates       map[string]*DebateReportTemplate
-	reportFormats         map[string]DebateReportFormat
-	visualizationEngines  map[string]DebateVisualizationEngine
-	
-	reportingRules        []DebateReportingRule
-	exportCapabilities    []DebateExportCapability
+	reportTemplates      map[string]*DebateReportTemplate
+	reportFormats        map[string]DebateReportFormat
+	visualizationEngines map[string]DebateVisualizationEngine
+
+	reportingRules     []DebateReportingRule
+	exportCapabilities []DebateExportCapability
 }
 
 // DebatePerformanceDashboardManager manages performance dashboards
 type DebatePerformanceDashboardManager struct {
-	dashboardTemplates    map[string]*DebateDashboardTemplate
-	widgetLibraries       map[string]*DebateWidgetLibrary
-	layoutEngines         map[string]DebateLayoutEngine
-	
+	dashboardTemplates map[string]*DebateDashboardTemplate
+	widgetLibraries    map[string]*DebateWidgetLibrary
+	layoutEngines      map[string]DebateLayoutEngine
+
 	dashboardConfigurations []DebateDashboardConfiguration
-	realTimeUpdates        []DebateRealTimeUpdate
+	realTimeUpdates         []DebateRealTimeUpdate
 }
 
 // DebatePerformanceDataStore stores performance data
 type DebatePerformanceDataStore struct {
-	storageEngines        map[string]DebateStorageEngine
-	dataModels            map[string]DebateDataModel
-	indexingStrategies    map[string]DebateIndexingStrategy
-	
+	storageEngines     map[string]DebateStorageEngine
+	dataModels         map[string]DebateDataModel
+	indexingStrategies map[string]DebateIndexingStrategy
+
 	dataRetentionPolicies []DebateRetentionPolicy
 	archivalStrategies    []DebateArchivalStrategy
 }
 
 // DebateHistoricalPerformanceAnalyzer analyzes historical performance
 type DebateHistoricalPerformanceAnalyzer struct {
-	historicalData       map[string]*DebateHistoricalData
-	trendAnalysis        map[string]*DebateHistoricalTrend
-	patternRecognition   map[string]*DebateHistoricalPattern
-	
+	historicalData     map[string]*DebateHistoricalData
+	trendAnalysis      map[string]*DebateHistoricalTrend
+	patternRecognition map[string]*DebateHistoricalPattern
+
 	analysisMethods      []DebateHistoricalAnalysisMethod
 	comparisonTechniques []DebateHistoricalComparisonTechnique
 }
 
 // DebateComparativePerformanceAnalyzer performs comparative analysis
 type DebateComparativePerformanceAnalyzer struct {
-	comparisonMethods     map[string]DebateComparisonMethod
-	benchmarkingTools     map[string]DebateBenchmarkingTool
-	evaluationFrameworks  map[string]DebateEvaluationFramework
-	
-	comparisonMatrices    map[string]*DebateComparisonMatrix
-	performanceRatios     map[string]*DebatePerformanceRatio
+	comparisonMethods    map[string]DebateComparisonMethod
+	benchmarkingTools    map[string]DebateBenchmarkingTool
+	evaluationFrameworks map[string]DebateEvaluationFramework
+
+	comparisonMatrices map[string]*DebateComparisonMatrix
+	performanceRatios  map[string]*DebatePerformanceRatio
 }
 
 // DebatePerformance metrics and data structures
 type DebatePerformanceSnapshot struct {
-	Timestamp      time.Time
-	SessionID      string
-	Metrics        map[string]float64
-	QualityScore   float64
-	Efficiency     float64
-	Reliability    float64
-	
-	SystemMetrics  *DebateSystemPerformanceMetrics
-	DebateMetrics  *DebateDebatePerformanceMetrics
-	ResourceUsage  *DebateResourceUsageMetrics
+	Timestamp    time.Time
+	SessionID    string
+	Metrics      map[string]float64
+	QualityScore float64
+	Efficiency   float64
+	Reliability  float64
+
+	SystemMetrics *DebateSystemPerformanceMetrics
+	DebateMetrics *DebateDebatePerformanceMetrics
+	ResourceUsage *DebateResourceUsageMetrics
 }
 
 type DebateSessionPerformance struct {
-	SessionID         string
-	StartTime         time.Time
-	EndTime           *time.Time
-	Duration          time.Duration
-	
+	SessionID string
+	StartTime time.Time
+	EndTime   *time.Time
+	Duration  time.Duration
+
 	Metrics           map[string]*DebatePerformanceMetric
 	QualityIndicators map[string]*DebateQualityIndicator
 	EfficiencyScores  map[string]*DebateEfficiencyScore
-	
-	CurrentState      *DebatePerformanceState
-	TrendAnalysis     *DebatePerformanceTrend
-	AnomalyDetection  *DebateAnomalyDetection
-	
+
+	CurrentState     *DebatePerformanceState
+	TrendAnalysis    *DebatePerformanceTrend
+	AnomalyDetection *DebateAnomalyDetection
+
 	OptimizationLevel string
 	TuningHistory     []DebateTuningEvent
 	ResourceUsage     *DebateResourceUsage
 }
 
 type DebatePerformanceMetric struct {
-	Name          string
-	Value         float64
-	Unit          string
-	Timestamp     time.Time
-	
-	Threshold     *DebateMetricThreshold
-	Benchmark     *DebateMetricBenchmark
-	Target        *DebateMetricTarget
-	
-	QualityScore  float64
-	Reliability   float64
-	Trend         string
-	Status        string
+	Name      string
+	Value     float64
+	Unit      string
+	Timestamp time.Time
+
+	Threshold *DebateMetricThreshold
+	Benchmark *DebateMetricBenchmark
+	Target    *DebateMetricTarget
+
+	QualityScore float64
+	Reliability  float64
+	Trend        string
+	Status       string
 }
 
 type DebateSystemPerformanceMetrics struct {
-	CPUUsage        float64
-	MemoryUsage     float64
-	DiskUsage       float64
-	NetworkLatency  time.Duration
-	Throughput      float64
-	ErrorRate       float64
-	Availability    float64
+	CPUUsage       float64
+	MemoryUsage    float64
+	DiskUsage      float64
+	NetworkLatency time.Duration
+	Throughput     float64
+	ErrorRate      float64
+	Availability   float64
 }
 
 type DebateDebatePerformanceMetrics struct {
-	ResponseTime        time.Duration
-	ConsensusLevel      float64
-	QualityScore        float64
+	ResponseTime          time.Duration
+	ConsensusLevel        float64
+	QualityScore          float64
 	ParticipantEngagement float64
 	StrategyEffectiveness float64
 	DebateEfficiency      float64
 }
 
 type DebateResourceUsageMetrics struct {
-	CPUUtilization    float64
-	MemoryUtilization float64
-	DiskUtilization   float64
-	NetworkBandwidth  float64
+	CPUUtilization     float64
+	MemoryUtilization  float64
+	DiskUtilization    float64
+	NetworkBandwidth   float64
 	ResourceEfficiency float64
 }
 
@@ -330,37 +330,37 @@ func NewDebatePerformanceService(cfg *config.AIDebateConfig, logger *logrus.Logg
 	return &DebatePerformanceService{
 		config: cfg,
 		logger: logger,
-		
+
 		// Initialize core components
-		performanceTracker:  NewDebatePerformanceTracker(),
-		metricsCollector:    NewDebatePerformanceMetricsCollector(),
-		benchmarkManager:    NewDebatePerformanceBenchmarkManager(),
-		optimizationEngine:  NewDebatePerformanceOptimizationEngine(),
-		
+		performanceTracker: NewDebatePerformanceTracker(),
+		metricsCollector:   NewDebatePerformanceMetricsCollector(),
+		benchmarkManager:   NewDebatePerformanceBenchmarkManager(),
+		optimizationEngine: NewDebatePerformanceOptimizationEngine(),
+
 		// Initialize analytics components
-		analyticsEngine:     NewDebatePerformanceAnalyticsEngine(),
-		insightGenerator:    NewDebatePerformanceInsightGenerator(),
-		predictionEngine:    NewDebatePerformancePredictionEngine(),
-		
+		analyticsEngine:  NewDebatePerformanceAnalyticsEngine(),
+		insightGenerator: NewDebatePerformanceInsightGenerator(),
+		predictionEngine: NewDebatePerformancePredictionEngine(),
+
 		// Initialize monitoring components
-		realTimeMonitor:     NewDebatePerformanceRealTimeMonitor(),
-		trendAnalyzer:       NewDebatePerformanceTrendAnalyzer(),
-		anomalyDetector:     NewDebatePerformanceAnomalyDetector(),
-		
+		realTimeMonitor: NewDebatePerformanceRealTimeMonitor(),
+		trendAnalyzer:   NewDebatePerformanceTrendAnalyzer(),
+		anomalyDetector: NewDebatePerformanceAnomalyDetector(),
+
 		// Initialize optimization components
-		autoTuner:           NewDebatePerformanceAutoTuner(),
-		parameterOptimizer:  NewDebateParameterOptimizer(),
-		resourceManager:     NewDebateResourceManager(),
-		
+		autoTuner:          NewDebatePerformanceAutoTuner(),
+		parameterOptimizer: NewDebateParameterOptimizer(),
+		resourceManager:    NewDebateResourceManager(),
+
 		// Initialize reporting components
-		reportGenerator:     NewDebatePerformanceReportGenerator(),
-		dashboardManager:    NewDebatePerformanceDashboardManager(),
-		
+		reportGenerator:  NewDebatePerformanceReportGenerator(),
+		dashboardManager: NewDebatePerformanceDashboardManager(),
+
 		// Initialize data management components
-		dataStore:          NewDebatePerformanceDataStore(),
-		historicalAnalyzer: NewDebateHistoricalPerformanceAnalyzer(),
+		dataStore:           NewDebatePerformanceDataStore(),
+		historicalAnalyzer:  NewDebateHistoricalPerformanceAnalyzer(),
 		comparativeAnalyzer: NewDebateComparativePerformanceAnalyzer(),
-		
+
 		enabled:            cfg.PerformanceOptimizationEnabled,
 		optimizationLevel:  cfg.PerformanceOptimizationLevel,
 		performanceHistory: []DebatePerformanceSnapshot{},
@@ -480,26 +480,26 @@ func (s *DebatePerformanceService) performanceTrackingWorker(ctx context.Context
 // performPerformanceTracking performs performance tracking operations
 func (s *DebatePerformanceService) performPerformanceTracking() {
 	sessions := s.performanceTracker.GetActiveSessions()
-	
+
 	for sessionID, sessionPerformance := range sessions {
 		// Collect current metrics
 		metrics := s.collectPerformanceMetrics(sessionID, sessionPerformance)
-		
+
 		// Update performance data
 		if err := s.performanceTracker.UpdatePerformanceData(sessionID, metrics); err != nil {
 			s.logger.Errorf("Failed to update performance data for session %s: %v", sessionID, err)
 			continue
 		}
-		
+
 		// Check for optimization opportunities
 		if optimizationOpportunity := s.identifyOptimizationOpportunity(sessionID, metrics); optimizationOpportunity != nil {
 			s.logger.Infof("Identified optimization opportunity for session %s: %+v", sessionID, optimizationOpportunity)
 		}
-		
+
 		// Generate performance snapshot
 		snapshot := s.generatePerformanceSnapshot(sessionID, metrics)
 		s.performanceHistory = append(s.performanceHistory, snapshot)
-		
+
 		// Keep only recent history (last 1000 snapshots)
 		if len(s.performanceHistory) > 1000 {
 			s.performanceHistory = s.performanceHistory[len(s.performanceHistory)-1000:]
@@ -510,31 +510,31 @@ func (s *DebatePerformanceService) performPerformanceTracking() {
 // collectPerformanceMetrics collects comprehensive performance metrics
 func (s *DebatePerformanceService) collectPerformanceMetrics(sessionID string, sessionPerformance *DebateSessionPerformance) *DebatePerformanceSnapshot {
 	currentTime := time.Now()
-	
+
 	// System performance metrics
 	systemMetrics := s.collectSystemMetrics()
-	
+
 	// Debate-specific metrics
 	debateMetrics := s.collectDebateMetrics(sessionID, sessionPerformance)
-	
+
 	// Resource usage metrics
 	resourceMetrics := s.collectResourceMetrics(sessionID)
-	
+
 	// Calculate quality scores
 	qualityScore := s.calculateQualityScore(systemMetrics, debateMetrics, resourceMetrics)
 	efficiency := s.calculateEfficiency(systemMetrics, debateMetrics)
 	reliability := s.calculateReliability(sessionPerformance)
-	
+
 	return &DebatePerformanceSnapshot{
-		Timestamp:      currentTime,
-		SessionID:      sessionID,
-		Metrics:        s.combineMetrics(systemMetrics, debateMetrics, resourceMetrics),
-		QualityScore:   qualityScore,
-		Efficiency:     efficiency,
-		Reliability:    reliability,
-		SystemMetrics:  systemMetrics,
-		DebateMetrics:  debateMetrics,
-		ResourceUsage:  resourceMetrics,
+		Timestamp:     currentTime,
+		SessionID:     sessionID,
+		Metrics:       s.combineMetrics(systemMetrics, debateMetrics, resourceMetrics),
+		QualityScore:  qualityScore,
+		Efficiency:    efficiency,
+		Reliability:   reliability,
+		SystemMetrics: systemMetrics,
+		DebateMetrics: debateMetrics,
+		ResourceUsage: resourceMetrics,
 	}
 }
 
@@ -561,7 +561,7 @@ func (s *DebatePerformanceService) collectDebateMetrics(sessionID string, sessio
 	participantEngagement := s.calculateParticipantEngagement(sessionPerformance)
 	strategyEffectiveness := s.calculateStrategyEffectiveness(sessionPerformance)
 	debateEfficiency := s.calculateDebateEfficiency(sessionPerformance)
-	
+
 	return &DebateDebatePerformanceMetrics{
 		ResponseTime:          avgResponseTime,
 		ConsensusLevel:        consensusLevel,
@@ -580,7 +580,7 @@ func (s *DebatePerformanceService) collectResourceMetrics(sessionID string) *Deb
 	diskUtilization := s.calculateDiskUtilization(sessionID)
 	networkBandwidth := s.calculateNetworkBandwidth(sessionID)
 	resourceEfficiency := s.calculateResourceEfficiency(cpuUtilization, memoryUtilization, diskUtilization)
-	
+
 	return &DebateResourceUsageMetrics{
 		CPUUtilization:     cpuUtilization,
 		MemoryUtilization:  memoryUtilization,
@@ -594,24 +594,24 @@ func (s *DebatePerformanceService) collectResourceMetrics(sessionID string) *Deb
 func (s *DebatePerformanceService) calculateQualityScore(systemMetrics *DebateSystemPerformanceMetrics, debateMetrics *DebateDebatePerformanceMetrics, resourceMetrics *DebateResourceUsageMetrics) float64 {
 	// Weighted scoring based on multiple factors
 	weights := map[string]float64{
-		"system_performance": 0.2,
-		"debate_quality":     0.4,
+		"system_performance":  0.2,
+		"debate_quality":      0.4,
 		"resource_efficiency": 0.2,
-		"reliability":        0.2,
+		"reliability":         0.2,
 	}
-	
+
 	// Normalize and score each component
 	systemScore := s.scoreSystemPerformance(systemMetrics)
 	debateScore := s.scoreDebatePerformance(debateMetrics)
 	resourceScore := s.scoreResourceUsage(resourceMetrics)
 	reliabilityScore := s.calculateReliabilityScore(systemMetrics)
-	
+
 	// Calculate weighted total score
 	totalScore := (systemScore * weights["system_performance"]) +
 		(debateScore * weights["debate_quality"]) +
 		(resourceScore * weights["resource_efficiency"]) +
 		(reliabilityScore * weights["reliability"])
-	
+
 	return math.Min(1.0, math.Max(0.0, totalScore))
 }
 
@@ -621,7 +621,7 @@ func (s *DebatePerformanceService) scoreSystemPerformance(metrics *DebateSystemP
 	cpuScore := math.Max(0.0, 1.0-metrics.CPUUsage)
 	memoryScore := math.Max(0.0, 1.0-metrics.MemoryUsage)
 	availabilityScore := metrics.Availability
-	
+
 	return (cpuScore*0.3 + memoryScore*0.3 + availabilityScore*0.4)
 }
 
@@ -631,7 +631,7 @@ func (s *DebatePerformanceService) scoreDebatePerformance(metrics *DebateDebateP
 	consensusScore := metrics.ConsensusLevel
 	qualityScore := metrics.QualityScore
 	efficiencyScore := metrics.DebateEfficiency
-	
+
 	return (consensusScore*0.4 + qualityScore*0.4 + efficiencyScore*0.2)
 }
 
@@ -645,32 +645,32 @@ func (s *DebatePerformanceService) scoreResourceUsage(metrics *DebateResourceUsa
 func (s *DebatePerformanceService) identifyOptimizationOpportunity(sessionID string, metrics *DebatePerformanceSnapshot) *DebateOptimizationOpportunity {
 	var opportunities []string
 	var impact float64
-	
+
 	// Check for specific optimization opportunities
 	if metrics.QualityScore < 0.7 {
 		opportunities = append(opportunities, "Improve debate quality")
 		impact += 0.3
 	}
-	
+
 	if metrics.Efficiency < 0.6 {
 		opportunities = append(opportunities, "Increase debate efficiency")
 		impact += 0.3
 	}
-	
+
 	if metrics.SystemMetrics.CPUUsage > 0.8 {
 		opportunities = append(opportunities, "Optimize CPU usage")
 		impact += 0.2
 	}
-	
+
 	if metrics.SystemMetrics.ErrorRate > 0.05 {
 		opportunities = append(opportunities, "Reduce error rate")
 		impact += 0.4
 	}
-	
+
 	if len(opportunities) == 0 {
 		return nil
 	}
-	
+
 	return &DebateOptimizationOpportunity{
 		SessionID:     sessionID,
 		Opportunities: opportunities,
@@ -741,7 +741,7 @@ func (s *DebatePerformanceService) calculateReliabilityScore(systemMetrics *Deba
 	// Calculate reliability based on availability and error rate
 	availabilityScore := systemMetrics.Availability
 	errorScore := math.Max(0.0, 1.0-systemMetrics.ErrorRate)
-	
+
 	return (availabilityScore*0.7 + errorScore*0.3)
 }
 
@@ -752,21 +752,21 @@ func (s *DebatePerformanceService) calculateReliability(sessionPerformance *Deba
 
 func (s *DebatePerformanceService) combineMetrics(systemMetrics *DebateSystemPerformanceMetrics, debateMetrics *DebateDebatePerformanceMetrics, resourceMetrics *DebateResourceUsageMetrics) map[string]float64 {
 	combined := make(map[string]float64)
-	
+
 	// System metrics
 	combined["cpu_usage"] = systemMetrics.CPUUsage
 	combined["memory_usage"] = systemMetrics.MemoryUsage
 	combined["error_rate"] = systemMetrics.ErrorRate
 	combined["availability"] = systemMetrics.Availability
-	
+
 	// Debate metrics
 	combined["consensus_level"] = debateMetrics.ConsensusLevel
 	combined["quality_score"] = debateMetrics.QualityScore
 	combined["participant_engagement"] = debateMetrics.ParticipantEngagement
-	
+
 	// Resource metrics
 	combined["resource_efficiency"] = resourceMetrics.ResourceEfficiency
-	
+
 	return combined
 }
 
@@ -774,7 +774,7 @@ func (s *DebatePerformanceService) calculateEfficiency(systemMetrics *DebateSyst
 	// Calculate overall efficiency
 	systemEfficiency := (1.0 - systemMetrics.CPUUsage) * (1.0 - systemMetrics.MemoryUsage)
 	debateEfficiency := debateMetrics.DebateEfficiency
-	
+
 	return (systemEfficiency*0.3 + debateEfficiency*0.7)
 }
 
@@ -892,19 +892,19 @@ func NewDebatePerformanceAutoTuner() *DebatePerformanceAutoTuner {
 
 func NewDebateParameterOptimizer() *DebateParameterOptimizer {
 	return &DebateParameterOptimizer{
-		parameterSpaces:      make(map[string]*DebateParameterSpace),
-		optimizationMethods:  make(map[string]DebateOptimizationMethod),
-		searchAlgorithms:     make(map[string]DebateSearchAlgorithm),
+		parameterSpaces:     make(map[string]*DebateParameterSpace),
+		optimizationMethods: make(map[string]DebateOptimizationMethod),
+		searchAlgorithms:    make(map[string]DebateSearchAlgorithm),
 	}
 }
 
 func NewDebateResourceManager() *DebateResourceManager {
 	return &DebateResourceManager{
-		resourcePools:       make(map[string]DebateResourcePool),
+		resourcePools:        make(map[string]DebateResourcePool),
 		allocationStrategies: make(map[string]DebateAllocationStrategy),
 		schedulingAlgorithms: make(map[string]DebateSchedulingAlgorithm),
-		resourceMetrics:     make(map[string]*DebateResourceMetric),
-		utilizationTrackers: make(map[string]*DebateUtilizationTracker),
+		resourceMetrics:      make(map[string]*DebateResourceMetric),
+		utilizationTrackers:  make(map[string]*DebateUtilizationTracker),
 	}
 }
 
@@ -942,11 +942,11 @@ func NewDebateHistoricalPerformanceAnalyzer() *DebateHistoricalPerformanceAnalyz
 
 func NewDebateComparativePerformanceAnalyzer() *DebateComparativePerformanceAnalyzer {
 	return &DebateComparativePerformanceAnalyzer{
-		comparisonMethods:     make(map[string]DebateComparisonMethod),
-		benchmarkingTools:     make(map[string]DebateBenchmarkingTool),
-		evaluationFrameworks:  make(map[string]DebateEvaluationFramework),
-		comparisonMatrices:    make(map[string]*DebateComparisonMatrix),
-		performanceRatios:     make(map[string]*DebatePerformanceRatio),
+		comparisonMethods:    make(map[string]DebateComparisonMethod),
+		benchmarkingTools:    make(map[string]DebateBenchmarkingTool),
+		evaluationFrameworks: make(map[string]DebateEvaluationFramework),
+		comparisonMatrices:   make(map[string]*DebateComparisonMatrix),
+		performanceRatios:    make(map[string]*DebatePerformanceRatio),
 	}
 }
 
@@ -1038,50 +1038,50 @@ type DebatePerformanceRatio interface{}
 
 // Additional result types
 type DebatePerformanceInsights struct {
-	Insights       []DebatePerformanceInsight
+	Insights        []DebatePerformanceInsight
 	Recommendations []DebatePerformanceRecommendation
-	QualityScore   float64
-	Confidence     float64
+	QualityScore    float64
+	Confidence      float64
 }
 
 type DebatePerformancePredictions struct {
-	Predictions    []DebatePerformancePrediction
-	Confidence     float64
-	TimeHorizon    time.Duration
+	Predictions []DebatePerformancePrediction
+	Confidence  float64
+	TimeHorizon time.Duration
 }
 
 type DebateOptimizationResult struct {
-	Optimizations  []DebateOptimization
-	Impact         float64
-	Confidence     float64
-	ExecutionTime  time.Duration
+	Optimizations []DebateOptimization
+	Impact        float64
+	Confidence    float64
+	ExecutionTime time.Duration
 }
 
 type DebateAutoTuningResult struct {
-	Parameters     []DebateTunedParameter
-	Improvement    float64
-	Confidence     float64
+	Parameters  []DebateTunedParameter
+	Improvement float64
+	Confidence  float64
 }
 
 type DebatePerformanceReport struct {
-	SessionID      string
-	ReportType     string
-	Metrics        map[string]float64
-	Insights       []DebatePerformanceInsight
-	Predictions    []DebatePerformancePrediction
+	SessionID       string
+	ReportType      string
+	Metrics         map[string]float64
+	Insights        []DebatePerformanceInsight
+	Predictions     []DebatePerformancePrediction
 	Recommendations []DebatePerformanceRecommendation
 }
 
 type DebatePerformanceDashboard struct {
-	DashboardID    string
-	Widgets        []DebatePerformanceWidget
-	Metrics        map[string]float64
-	RealTimeData   map[string]interface{}
+	DashboardID  string
+	Widgets      []DebatePerformanceWidget
+	Metrics      map[string]float64
+	RealTimeData map[string]interface{}
 }
 
 type DebateOptimizationOpportunity struct {
-	SessionID      string
-	Opportunities  []string
-	Impact         float64
-	Priority       string
+	SessionID     string
+	Opportunities []string
+	Impact        float64
+	Priority      string
 }

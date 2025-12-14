@@ -3,8 +3,8 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"testing"
 	"strings"
+	"testing"
 )
 
 func TestAIDebateConfigLoader_Integration(t *testing.T) {
@@ -88,15 +88,15 @@ voting_strategy: "confidence_weighted"
 
 		loader := NewAIDebateConfigLoader(configPath)
 		config, err := loader.Load()
-		
+
 		if err != nil {
 			t.Fatalf("Load() error = %v", err)
 		}
-		
+
 		if config == nil {
 			t.Fatal("Load() returned nil config")
 		}
-		
+
 		// Verify configuration
 		if !config.Enabled {
 			t.Error("Expected config to be enabled")
@@ -116,7 +116,7 @@ voting_strategy: "confidence_weighted"
 		configPath := filepath.Join(tempDir, "non-existent.yaml")
 		loader := NewAIDebateConfigLoader(configPath)
 		_, err := loader.Load()
-		
+
 		if err == nil {
 			t.Error("Expected error for non-existent file")
 		}
@@ -134,7 +134,7 @@ voting_strategy: "confidence_weighted"
 
 		loader := NewAIDebateConfigLoader(configPath)
 		_, err := loader.Load()
-		
+
 		if err == nil {
 			t.Error("Expected error for invalid YAML")
 		}
@@ -155,17 +155,17 @@ voting_strategy: "confidence_weighted"
 			QualityThreshold:    0.7,
 			Participants: []DebateParticipant{
 				{
-					Name:               "SaveTestParticipant",
-					Role:               "Test Analyst",
-					Enabled:            true,
+					Name:    "SaveTestParticipant",
+					Role:    "Test Analyst",
+					Enabled: true,
 					LLMs: []LLMConfiguration{
 						{
-							Name:     "SaveTest LLM",
-							Provider: "claude",
-							Model:    "claude-3-sonnet",
-							Enabled:  true,
-							Timeout:  30000,
-							MaxTokens: 1000,
+							Name:        "SaveTest LLM",
+							Provider:    "claude",
+							Model:       "claude-3-sonnet",
+							Enabled:     true,
+							Timeout:     30000,
+							MaxTokens:   1000,
 							Temperature: 0.7,
 						},
 					},
@@ -181,60 +181,60 @@ voting_strategy: "confidence_weighted"
 					MaxResponseLength:  1000,
 				},
 				{
-					Name:               "SaveTestParticipant2",
-					Role:               "Test Critic",
-					Enabled:            true,
+					Name:    "SaveTestParticipant2",
+					Role:    "Test Critic",
+					Enabled: true,
 					LLMs: []LLMConfiguration{
 						{
-							Name:     "SaveTest LLM2",
-							Provider: "deepseek",
-							Model:    "deepseek-coder",
-							Enabled:  true,
-							Timeout:  30000,
-							MaxTokens: 1000,
+							Name:        "SaveTest LLM2",
+							Provider:    "deepseek",
+							Model:       "deepseek-coder",
+							Enabled:     true,
+							Timeout:     30000,
+							MaxTokens:   1000,
 							Temperature: 0.7,
+						},
 					},
+					ResponseTimeout:    30000,
+					Weight:             1.0,
+					Priority:           2,
+					DebateStyle:        "critical",
+					ArgumentationStyle: "logical",
+					PersuasionLevel:    0.5,
+					OpennessToChange:   0.5,
+					QualityThreshold:   0.7,
+					MinResponseLength:  50,
+					MaxResponseLength:  1000,
 				},
-				ResponseTimeout:    30000,
-				Weight:             1.0,
-				Priority:           2,
-				DebateStyle:        "critical",
-				ArgumentationStyle: "logical",
-				PersuasionLevel:    0.5,
-				OpennessToChange:   0.5,
-				QualityThreshold:   0.7,
-				MinResponseLength:  50,
-				MaxResponseLength:  1000,
-			},
 			},
 			DebateStrategy: "structured",
 			VotingStrategy: "confidence_weighted",
 		}
 
 		loader := NewAIDebateConfigLoader(configPath)
-		
+
 		// Save configuration
 		if err := loader.Save(originalConfig); err != nil {
 			t.Fatalf("Save() error = %v", err)
 		}
-		
+
 		// Reload configuration
 		loadedConfig, err := loader.Load()
 		if err != nil {
 			t.Fatalf("Load() after Save() error = %v", err)
 		}
-		
+
 		// Verify loaded configuration matches original
 		if loadedConfig.MaximalRepeatRounds != originalConfig.MaximalRepeatRounds {
-			t.Errorf("Expected MaximalRepeatRounds %d, got %d", 
+			t.Errorf("Expected MaximalRepeatRounds %d, got %d",
 				originalConfig.MaximalRepeatRounds, loadedConfig.MaximalRepeatRounds)
 		}
 		if loadedConfig.ConsensusThreshold != originalConfig.ConsensusThreshold {
-			t.Errorf("Expected ConsensusThreshold %f, got %f", 
+			t.Errorf("Expected ConsensusThreshold %f, got %f",
 				originalConfig.ConsensusThreshold, loadedConfig.ConsensusThreshold)
 		}
 		if len(loadedConfig.Participants) != len(originalConfig.Participants) {
-			t.Errorf("Expected %d participants, got %d", 
+			t.Errorf("Expected %d participants, got %d",
 				len(originalConfig.Participants), len(loadedConfig.Participants))
 		}
 	})
@@ -320,7 +320,7 @@ voting_strategy: "confidence_weighted"
 
 		loader := NewAIDebateConfigLoader(configPath)
 		config, err := loader.Load()
-		
+
 		if err != nil {
 			t.Fatalf("Load() error = %v", err)
 		}
@@ -379,7 +379,7 @@ participants:
 
 	loader := NewAIDebateConfigLoader("")
 	config, err := loader.LoadFromString(minimalYAML)
-	
+
 	if err != nil {
 		t.Fatalf("LoadFromString() error = %v", err)
 	}
@@ -509,7 +509,7 @@ func TestAIDebateConfigLoader_ChaosTesting(t *testing.T) {
 		description string
 	}{
 		{
-			name: "Empty configuration",
+			name:        "Empty configuration",
 			yamlContent: "",
 			description: "Should handle completely empty configuration",
 		},
@@ -617,7 +617,7 @@ participants:
 		t.Run(tt.name, func(t *testing.T) {
 			loader := NewAIDebateConfigLoader("")
 			_, err := loader.LoadFromString(tt.yamlContent)
-			
+
 			// For chaos testing, we just want to ensure the system doesn't crash
 			// and provides meaningful error messages when appropriate
 			t.Logf("Chaos test '%s' (%s): err = %v", tt.name, tt.description, err)
@@ -660,7 +660,7 @@ participants:
 `
 
 	loader := NewAIDebateConfigLoader("")
-	
+
 	// Test concurrent loading
 	done := make(chan bool, 10)
 	for i := 0; i < 10; i++ {
@@ -709,17 +709,17 @@ func TestAIDebateConfigLoader_SaveValidation(t *testing.T) {
 				VotingStrategy:      "confidence_weighted",
 				Participants: []DebateParticipant{
 					{
-						Name:               "ValidParticipant",
-						Role:               "Analyst",
-						Enabled:            true,
+						Name:    "ValidParticipant",
+						Role:    "Analyst",
+						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "ValidLLM",
-								Provider: "claude",
-								Model:    "claude-3",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "ValidLLM",
+								Provider:    "claude",
+								Model:       "claude-3",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
@@ -735,17 +735,17 @@ func TestAIDebateConfigLoader_SaveValidation(t *testing.T) {
 						MaxResponseLength:  1000,
 					},
 					{
-						Name:               "ValidParticipant2",
-						Role:               "Critic",
-						Enabled:            true,
+						Name:    "ValidParticipant2",
+						Role:    "Critic",
+						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "ValidLLM2",
-								Provider: "deepseek",
-								Model:    "deepseek-coder",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "ValidLLM2",
+								Provider:    "deepseek",
+								Model:       "deepseek-coder",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
@@ -761,17 +761,17 @@ func TestAIDebateConfigLoader_SaveValidation(t *testing.T) {
 						MaxResponseLength:  1000,
 					},
 					{
-						Name:               "SaveTestParticipant2",
-						Role:               "Test Critic",
-						Enabled:            true,
+						Name:    "SaveTestParticipant2",
+						Role:    "Test Critic",
+						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "SaveTest LLM2",
-								Provider: "deepseek",
-								Model:    "deepseek-coder",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "SaveTest LLM2",
+								Provider:    "deepseek",
+								Model:       "deepseek-coder",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
@@ -787,17 +787,17 @@ func TestAIDebateConfigLoader_SaveValidation(t *testing.T) {
 						MaxResponseLength:  1000,
 					},
 					{
-						Name:               "SaveTestParticipant2",
-						Role:               "Test Critic",
-						Enabled:            true,
+						Name:    "SaveTestParticipant2",
+						Role:    "Test Critic",
+						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "SaveTest LLM2",
-								Provider: "deepseek",
-								Model:    "deepseek-coder",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "SaveTest LLM2",
+								Provider:    "deepseek",
+								Model:       "deepseek-coder",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
@@ -813,17 +813,17 @@ func TestAIDebateConfigLoader_SaveValidation(t *testing.T) {
 						MaxResponseLength:  1000,
 					},
 					{
-						Name:               "SaveTestParticipant2",
-						Role:               "Test Critic", 
-						Enabled:            true,
+						Name:    "SaveTestParticipant2",
+						Role:    "Test Critic",
+						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "SaveTest LLM2",
-								Provider: "deepseek",
-								Model:    "deepseek-coder",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "SaveTest LLM2",
+								Provider:    "deepseek",
+								Model:       "deepseek-coder",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
@@ -839,17 +839,17 @@ func TestAIDebateConfigLoader_SaveValidation(t *testing.T) {
 						MaxResponseLength:  1000,
 					},
 					{
-						Name:               "SaveTestParticipant2",
-						Role:               "Test Critic",
-						Enabled:            true,
+						Name:    "SaveTestParticipant2",
+						Role:    "Test Critic",
+						Enabled: true,
 						LLMs: []LLMConfiguration{
 							{
-								Name:     "SaveTest LLM2",
-								Provider: "deepseek",
-								Model:    "deepseek-coder",
-								Enabled:  true,
-								Timeout:  30000,
-								MaxTokens: 1000,
+								Name:        "SaveTest LLM2",
+								Provider:    "deepseek",
+								Model:       "deepseek-coder",
+								Enabled:     true,
+								Timeout:     30000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
@@ -891,9 +891,9 @@ func TestAIDebateConfigLoader_SaveValidation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			configPath := filepath.Join(tempDir, tt.name+".yaml")
 			loader := NewAIDebateConfigLoader(configPath)
-			
+
 			err := loader.Save(tt.config)
-			
+
 			if tt.expectError {
 				if err == nil {
 					t.Error("Expected error but got none")

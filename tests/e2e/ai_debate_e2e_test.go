@@ -29,10 +29,10 @@ func TestAIDebateSystem_E2E(t *testing.T) {
 		// Step 1: Create and load configuration
 		cfg := createTestDebateConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "test-config.yaml"))
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err, "Failed to save configuration")
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err, "Failed to load configuration")
 		require.NotNil(t, loadedConfig, "Loaded configuration is nil")
@@ -64,15 +64,15 @@ func TestAIDebateSystem_E2E(t *testing.T) {
 		// Test the fallback mechanism when primary LLM fails
 		cfg := createFallbackTestConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "fallback-config.yaml"))
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
 		debateService := createFallbackTestDebateService(t, loadedConfig)
-		
+
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 
@@ -88,15 +88,15 @@ func TestAIDebateSystem_E2E(t *testing.T) {
 		// Test Cognee AI integration
 		cfg := createCogneeTestConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "cognee-config.yaml"))
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
 		debateService := createCogneeTestDebateService(t, loadedConfig)
-		
+
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 
@@ -113,15 +113,15 @@ func TestAIDebateSystem_E2E(t *testing.T) {
 		// Test timeout handling
 		cfg := createTimeoutTestConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "timeout-config.yaml"))
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
 		debateService := createTimeoutTestDebateService(t, loadedConfig)
-		
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -134,15 +134,15 @@ func TestAIDebateSystem_E2E(t *testing.T) {
 		// Test memory management and context retention
 		cfg := createMemoryTestConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "memory-config.yaml"))
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
 		debateService := createMemoryTestDebateService(t, loadedConfig)
-		
+
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 
@@ -164,15 +164,15 @@ func TestAIDebateSystem_E2E(t *testing.T) {
 		cfg := createReloadTestConfig(t, tempDir)
 		configPath := filepath.Join(tempDir, "reload-config.yaml")
 		loader := config.NewAIDebateConfigLoader(configPath)
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
 		debateService := createReloadTestDebateService(t, loadedConfig)
-		
+
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 
@@ -191,7 +191,7 @@ func TestAIDebateSystem_E2E(t *testing.T) {
 
 		// Reload configuration while debate is running
 		time.Sleep(100 * time.Millisecond)
-		
+
 		modifiedConfig := createModifiedReloadTestConfig(t, tempDir)
 		err = loader.Save(modifiedConfig)
 		require.NoError(t, err)
@@ -212,15 +212,15 @@ func TestAIDebateSystem_E2E(t *testing.T) {
 		// Test system under load with multiple concurrent debates
 		cfg := createStressTestConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "stress-config.yaml"))
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
 		debateService := createStressTestDebateService(t, loadedConfig)
-		
+
 		// Launch multiple concurrent debates
 		numDebates := 5
 		results := make(chan *services.DebateResult, numDebates)
@@ -262,7 +262,7 @@ func TestAIDebateSystem_E2E(t *testing.T) {
 
 		// Verify stress test results
 		assert.Greater(t, successfulDebates, 0, "No successful debates in stress test")
-		t.Logf("Stress test results: %d successful, %d failed out of %d total", 
+		t.Logf("Stress test results: %d successful, %d failed out of %d total",
 			successfulDebates, failedDebates, numDebates)
 	})
 }
@@ -306,16 +306,16 @@ func createTestDebateConfig(t *testing.T, tempDir string) *config.AIDebateConfig
 				EnableCognee:       true,
 				LLMs: []config.LLMConfiguration{
 					{
-						Name:        "TestLLM",
-						Provider:    "claude",
-						Model:       "claude-3-sonnet",
-						Enabled:     true,
-						APIKey:      "test-api-key",
-						Timeout:     30 * 1000,
-						MaxRetries:  3,
-						Temperature: 0.7,
-						MaxTokens:   1000,
-						Weight:      1.0,
+						Name:         "TestLLM",
+						Provider:     "claude",
+						Model:        "claude-3-sonnet",
+						Enabled:      true,
+						APIKey:       "test-api-key",
+						Timeout:      30 * 1000,
+						MaxRetries:   3,
+						Temperature:  0.7,
+						MaxTokens:    1000,
+						Weight:       1.0,
 						RateLimitRPS: 10,
 					},
 				},
@@ -338,39 +338,39 @@ func createTestDebateConfig(t *testing.T, tempDir string) *config.AIDebateConfig
 				EnableCognee:       true,
 				LLMs: []config.LLMConfiguration{
 					{
-						Name:        "TestLLM2",
-						Provider:    "deepseek",
-						Model:       "deepseek-coder",
-						Enabled:     true,
-						APIKey:      "test-api-key-2",
-						Timeout:     30 * 1000,
-						MaxRetries:  3,
-						Temperature: 0.7,
-						MaxTokens:   1000,
-						Weight:      1.0,
+						Name:         "TestLLM2",
+						Provider:     "deepseek",
+						Model:        "deepseek-coder",
+						Enabled:      true,
+						APIKey:       "test-api-key-2",
+						Timeout:      30 * 1000,
+						MaxRetries:   3,
+						Temperature:  0.7,
+						MaxTokens:    1000,
+						Weight:       1.0,
 						RateLimitRPS: 10,
 					},
 				},
 			},
 		},
-		DebateStrategy: "structured",
-		VotingStrategy: "confidence_weighted",
-		ResponseFormat: "detailed",
-		EnableMemory:   true,
-		MemoryRetention: 7 * 24 * 60 * 60 * 1000, // 7 days
-		MaxContextLength: 16000,
-		QualityThreshold: 0.7,
-		MaxResponseTime: 30 * 1000,
-		EnableStreaming: false,
+		DebateStrategy:      "structured",
+		VotingStrategy:      "confidence_weighted",
+		ResponseFormat:      "detailed",
+		EnableMemory:        true,
+		MemoryRetention:     7 * 24 * 60 * 60 * 1000, // 7 days
+		MaxContextLength:    16000,
+		QualityThreshold:    0.7,
+		MaxResponseTime:     30 * 1000,
+		EnableStreaming:     false,
 		EnableDebateLogging: true,
-		LogDebateDetails: true,
-		MetricsEnabled: true,
+		LogDebateDetails:    true,
+		MetricsEnabled:      true,
 	}
 }
 
 func createFallbackTestConfig(t *testing.T, tempDir string) *config.AIDebateConfig {
 	cfg := createTestDebateConfig(t, tempDir)
-	
+
 	// Modify to test fallback scenarios
 	cfg.Participants[0].LLMs = []config.LLMConfiguration{
 		{
@@ -398,7 +398,7 @@ func createFallbackTestConfig(t *testing.T, tempDir string) *config.AIDebateConf
 			Weight:      0.9,
 		},
 	}
-	
+
 	return cfg
 }
 
@@ -416,12 +416,12 @@ func createCogneeTestConfig(t *testing.T, tempDir string) *config.AIDebateConfig
 		MemoryIntegration:   true,
 		ContextualAnalysis:  true,
 	}
-	
+
 	// Enable Cognee for all participants
 	for i := range cfg.Participants {
 		cfg.Participants[i].EnableCognee = true
 	}
-	
+
 	return cfg
 }
 
@@ -429,7 +429,7 @@ func createTimeoutTestConfig(t *testing.T, tempDir string) *config.AIDebateConfi
 	cfg := createTestDebateConfig(t, tempDir)
 	cfg.MaxResponseTime = 1000 // 1 second - very short to trigger timeout
 	cfg.DebateTimeout = 5000   // 5 seconds - very short
-	
+
 	// Set very short timeouts for participants
 	for i := range cfg.Participants {
 		cfg.Participants[i].ResponseTimeout = 500 // 0.5 seconds
@@ -437,7 +437,7 @@ func createTimeoutTestConfig(t *testing.T, tempDir string) *config.AIDebateConfi
 			cfg.Participants[i].LLMs[j].Timeout = 500
 		}
 	}
-	
+
 	return cfg
 }
 
@@ -446,7 +446,7 @@ func createMemoryTestConfig(t *testing.T, tempDir string) *config.AIDebateConfig
 	cfg.EnableMemory = true
 	cfg.MemoryRetention = 24 * 60 * 60 * 1000 // 1 day
 	cfg.MaxContextLength = 8000
-	
+
 	return cfg
 }
 
@@ -456,9 +456,9 @@ func createReloadTestConfig(t *testing.T, tempDir string) *config.AIDebateConfig
 
 func createModifiedReloadTestConfig(t *testing.T, tempDir string) *config.AIDebateConfig {
 	cfg := createTestDebateConfig(t, tempDir)
-	cfg.MaximalRepeatRounds = 5 // Modified from original
+	cfg.MaximalRepeatRounds = 5  // Modified from original
 	cfg.ConsensusThreshold = 0.8 // Modified from original
-	
+
 	return cfg
 }
 
@@ -466,7 +466,7 @@ func createStressTestConfig(t *testing.T, tempDir string) *config.AIDebateConfig
 	cfg := createTestDebateConfig(t, tempDir)
 	cfg.MaximalRepeatRounds = 2 // Reduce rounds for faster stress testing
 	cfg.MaxResponseTime = 15000 // 15 seconds
-	
+
 	return cfg
 }
 
@@ -481,24 +481,24 @@ func createMockDebateService(t *testing.T, cfg *config.AIDebateConfig) *MockDeba
 
 func createFallbackTestDebateService(t *testing.T, cfg *config.AIDebateConfig) *MockDebateService {
 	return &MockDebateService{
-		config:       cfg,
-		logger:       t.Logf,
+		config:          cfg,
+		logger:          t.Logf,
 		triggerFallback: true,
 	}
 }
 
 func createCogneeTestDebateService(t *testing.T, cfg *config.AIDebateConfig) *MockDebateService {
 	return &MockDebateService{
-		config:        cfg,
-		logger:        t.Logf,
-		enableCognee:  true,
+		config:       cfg,
+		logger:       t.Logf,
+		enableCognee: true,
 	}
 }
 
 func createTimeoutTestDebateService(t *testing.T, cfg *config.AIDebateConfig) *MockDebateService {
 	return &MockDebateService{
-		config:      cfg,
-		logger:      t.Logf,
+		config:         cfg,
+		logger:         t.Logf,
 		triggerTimeout: true,
 	}
 }
@@ -513,30 +513,30 @@ func createMemoryTestDebateService(t *testing.T, cfg *config.AIDebateConfig) *Mo
 
 func createReloadTestDebateService(t *testing.T, cfg *config.AIDebateConfig) *MockDebateService {
 	return &MockDebateService{
-		config:       cfg,
-		logger:       t.Logf,
+		config:        cfg,
+		logger:        t.Logf,
 		supportReload: true,
 	}
 }
 
 func createStressTestDebateService(t *testing.T, cfg *config.AIDebateConfig) *MockDebateService {
 	return &MockDebateService{
-		config:      cfg,
-		logger:      t.Logf,
-		stressMode:  true,
+		config:     cfg,
+		logger:     t.Logf,
+		stressMode: true,
 	}
 }
 
 // MockDebateService implements a mock version of the debate service for E2E testing
 type MockDebateService struct {
-	config        *config.AIDebateConfig
-	logger        func(string, ...interface{})
+	config          *config.AIDebateConfig
+	logger          func(string, ...interface{})
 	triggerFallback bool
-	triggerTimeout    bool
-	enableCognee   bool
-	enableMemory   bool
-	supportReload  bool
-	stressMode     bool
+	triggerTimeout  bool
+	enableCognee    bool
+	enableMemory    bool
+	supportReload   bool
+	stressMode      bool
 }
 
 func (m *MockDebateService) ConductDebate(ctx context.Context, topic string, initialContext string) (*services.DebateResult, error) {
@@ -668,18 +668,18 @@ func validateDebateResults(t *testing.T, result *services.DebateResult, expected
 	assert.Greater(t, result.Duration, time.Duration(0), "Duration should be positive")
 	assert.Greater(t, result.RoundsConducted, 0, "Should have conducted at least one round")
 	assert.Greater(t, result.FinalScore, 0.0, "Final score should be positive")
-	
+
 	assert.NotNil(t, result.Consensus, "Consensus should not be nil")
 	if result.Consensus != nil {
 		assert.GreaterOrEqual(t, result.Consensus.ConsensusLevel, 0.0, "Consensus level should be non-negative")
 		assert.LessOrEqual(t, result.Consensus.ConsensusLevel, 1.0, "Consensus level should not exceed 1.0")
 		assert.NotEmpty(t, result.Consensus.Summary, "Consensus summary should not be empty")
 	}
-	
+
 	assert.NotEmpty(t, result.BestResponse.Content, "Best response content should not be empty")
 	assert.Greater(t, len(result.AllResponses), 1, "Should have multiple responses")
 	assert.NotEmpty(t, result.Recommendations, "Should have recommendations")
-	
+
 	// Validate quality metrics
 	assert.NotNil(t, result.QualityMetrics, "Quality metrics should not be nil")
 	if result.QualityMetrics != nil {

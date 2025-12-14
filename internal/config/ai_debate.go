@@ -7,126 +7,126 @@ import (
 // AIDebateConfig represents the complete AI debate configuration
 type AIDebateConfig struct {
 	// Global configuration
-	Enabled               bool                    `yaml:"enabled" json:"enabled"`
-	MaximalRepeatRounds   int                     `yaml:"maximal_repeat_rounds" json:"maximal_repeat_rounds"`
-	DebateTimeout         int                     `yaml:"debate_timeout" json:"debate_timeout"`         // milliseconds
-	ConsensusThreshold    float64                 `yaml:"consensus_threshold" json:"consensus_threshold"`
-	EnableCognee          bool                    `yaml:"enable_cognee" json:"enable_cognee"`
-	CogneeConfig          *CogneeDebateConfig     `yaml:"cognee_config,omitempty" json:"cognee_config,omitempty"`
-	
+	Enabled             bool                `yaml:"enabled" json:"enabled"`
+	MaximalRepeatRounds int                 `yaml:"maximal_repeat_rounds" json:"maximal_repeat_rounds"`
+	DebateTimeout       int                 `yaml:"debate_timeout" json:"debate_timeout"` // milliseconds
+	ConsensusThreshold  float64             `yaml:"consensus_threshold" json:"consensus_threshold"`
+	EnableCognee        bool                `yaml:"enable_cognee" json:"enable_cognee"`
+	CogneeConfig        *CogneeDebateConfig `yaml:"cognee_config,omitempty" json:"cognee_config,omitempty"`
+
 	// Participant configuration
-	Participants          []DebateParticipant     `yaml:"participants" json:"participants"`
-	
+	Participants []DebateParticipant `yaml:"participants" json:"participants"`
+
 	// Debate strategies and rules
-	DebateStrategy        string                  `yaml:"debate_strategy" json:"debate_strategy"`
-	VotingStrategy        string                  `yaml:"voting_strategy" json:"voting_strategy"`
-	ResponseFormat        string                  `yaml:"response_format" json:"response_format"`
-	
+	DebateStrategy string `yaml:"debate_strategy" json:"debate_strategy"`
+	VotingStrategy string `yaml:"voting_strategy" json:"voting_strategy"`
+	ResponseFormat string `yaml:"response_format" json:"response_format"`
+
 	// Memory and context management
-	EnableMemory          bool                    `yaml:"enable_memory" json:"enable_memory"`
-	MemoryRetention       int                     `yaml:"memory_retention" json:"memory_retention"`         // milliseconds
-	MaxContextLength      int                     `yaml:"max_context_length" json:"max_context_length"`
-	
+	EnableMemory     bool `yaml:"enable_memory" json:"enable_memory"`
+	MemoryRetention  int  `yaml:"memory_retention" json:"memory_retention"` // milliseconds
+	MaxContextLength int  `yaml:"max_context_length" json:"max_context_length"`
+
 	// Quality and performance settings
-	QualityThreshold      float64                 `yaml:"quality_threshold" json:"quality_threshold"`
-	MaxResponseTime       int                     `yaml:"max_response_time" json:"max_response_time"`         // milliseconds
-	EnableStreaming       bool                    `yaml:"enable_streaming" json:"enable_streaming"`
-	
+	QualityThreshold float64 `yaml:"quality_threshold" json:"quality_threshold"`
+	MaxResponseTime  int     `yaml:"max_response_time" json:"max_response_time"` // milliseconds
+	EnableStreaming  bool    `yaml:"enable_streaming" json:"enable_streaming"`
+
 	// Logging and monitoring
-	EnableDebateLogging   bool                    `yaml:"enable_debate_logging" json:"enable_debate_logging"`
-	LogDebateDetails      bool                    `yaml:"log_debate_details" json:"log_debate_details"`
-	MetricsEnabled        bool                    `yaml:"metrics_enabled" json:"metrics_enabled"`
+	EnableDebateLogging bool `yaml:"enable_debate_logging" json:"enable_debate_logging"`
+	LogDebateDetails    bool `yaml:"log_debate_details" json:"log_debate_details"`
+	MetricsEnabled      bool `yaml:"metrics_enabled" json:"metrics_enabled"`
 }
 
 // CogneeDebateConfig holds Cognee AI specific configuration for debate enhancement
 type CogneeDebateConfig struct {
-	Enabled              bool     `yaml:"enabled" json:"enabled"`
-	EnhanceResponses     bool     `yaml:"enhance_responses" json:"enhance_responses"`
-	AnalyzeConsensus     bool     `yaml:"analyze_consensus" json:"analyze_consensus"`
-	GenerateInsights     bool     `yaml:"generate_insights" json:"generate_insights"`
-	DatasetName          string   `yaml:"dataset_name" json:"dataset_name"`
-	MaxEnhancementTime   int           `yaml:"max_enhancement_time" json:"max_enhancement_time"` // milliseconds
-	EnhancementStrategy  string   `yaml:"enhancement_strategy" json:"enhancement_strategy"`
-	MemoryIntegration    bool     `yaml:"memory_integration" json:"memory_integration"`
-	ContextualAnalysis   bool     `yaml:"contextual_analysis" json:"contextual_analysis"`
+	Enabled             bool   `yaml:"enabled" json:"enabled"`
+	EnhanceResponses    bool   `yaml:"enhance_responses" json:"enhance_responses"`
+	AnalyzeConsensus    bool   `yaml:"analyze_consensus" json:"analyze_consensus"`
+	GenerateInsights    bool   `yaml:"generate_insights" json:"generate_insights"`
+	DatasetName         string `yaml:"dataset_name" json:"dataset_name"`
+	MaxEnhancementTime  int    `yaml:"max_enhancement_time" json:"max_enhancement_time"` // milliseconds
+	EnhancementStrategy string `yaml:"enhancement_strategy" json:"enhancement_strategy"`
+	MemoryIntegration   bool   `yaml:"memory_integration" json:"memory_integration"`
+	ContextualAnalysis  bool   `yaml:"contextual_analysis" json:"contextual_analysis"`
 }
 
 // DebateParticipant represents a participant in the AI debate
 type DebateParticipant struct {
 	// Basic participant information
-	Name                string              `yaml:"name" json:"name"`
-	Role                string              `yaml:"role" json:"role"`
-	Description         string              `yaml:"description,omitempty" json:"description,omitempty"`
-	Enabled             bool                `yaml:"enabled" json:"enabled"`
-	
+	Name        string `yaml:"name" json:"name"`
+	Role        string `yaml:"role" json:"role"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
+	Enabled     bool   `yaml:"enabled" json:"enabled"`
+
 	// LLM configuration chain (first is main, others are fallbacks)
-	LLMs                []LLMConfiguration  `yaml:"llms" json:"llms"`
-	
+	LLMs []LLMConfiguration `yaml:"llms" json:"llms"`
+
 	// Participant-specific settings
-	MaximalRepeatRounds *int                `yaml:"maximal_repeat_rounds,omitempty" json:"maximal_repeat_rounds,omitempty"`
-	ResponseTimeout     int                 `yaml:"response_timeout" json:"response_timeout"` // milliseconds
-	Weight              float64             `yaml:"weight" json:"weight"`
-	Priority            int                 `yaml:"priority" json:"priority"`
-	
+	MaximalRepeatRounds *int    `yaml:"maximal_repeat_rounds,omitempty" json:"maximal_repeat_rounds,omitempty"`
+	ResponseTimeout     int     `yaml:"response_timeout" json:"response_timeout"` // milliseconds
+	Weight              float64 `yaml:"weight" json:"weight"`
+	Priority            int     `yaml:"priority" json:"priority"`
+
 	// Debate behavior configuration
-	DebateStyle         string              `yaml:"debate_style" json:"debate_style"`
-	ArgumentationStyle  string              `yaml:"argumentation_style" json:"argumentation_style"`
-	PersuasionLevel     float64             `yaml:"persuasion_level" json:"persuasion_level"`
-	OpennessToChange    float64             `yaml:"openness_to_change" json:"openness_to_change"`
-	
+	DebateStyle        string  `yaml:"debate_style" json:"debate_style"`
+	ArgumentationStyle string  `yaml:"argumentation_style" json:"argumentation_style"`
+	PersuasionLevel    float64 `yaml:"persuasion_level" json:"persuasion_level"`
+	OpennessToChange   float64 `yaml:"openness_to_change" json:"openness_to_change"`
+
 	// Quality and validation settings
-	QualityThreshold    float64             `yaml:"quality_threshold" json:"quality_threshold"`
-	MinResponseLength   int                 `yaml:"min_response_length" json:"min_response_length"`
-	MaxResponseLength   int                 `yaml:"max_response_length" json:"max_response_length"`
-	
+	QualityThreshold  float64 `yaml:"quality_threshold" json:"quality_threshold"`
+	MinResponseLength int     `yaml:"min_response_length" json:"min_response_length"`
+	MaxResponseLength int     `yaml:"max_response_length" json:"max_response_length"`
+
 	// Cognee AI enhancement
-	EnableCognee        bool                `yaml:"enable_cognee" json:"enable_cognee"`
-	CogneeSettings      *CogneeParticipantConfig `yaml:"cognee_settings,omitempty" json:"cognee_settings,omitempty"`
+	EnableCognee   bool                     `yaml:"enable_cognee" json:"enable_cognee"`
+	CogneeSettings *CogneeParticipantConfig `yaml:"cognee_settings,omitempty" json:"cognee_settings,omitempty"`
 }
 
 // CogneeParticipantConfig holds Cognee AI settings for individual participants
 type CogneeParticipantConfig struct {
-	EnhanceResponses   bool   `yaml:"enhance_responses" json:"enhance_responses"`
-	AnalyzeSentiment   bool   `yaml:"analyze_sentiment" json:"analyze_sentiment"`
-	ExtractEntities    bool   `yaml:"extract_entities" json:"extract_entities"`
-	GenerateSummary    bool   `yaml:"generate_summary" json:"generate_summary"`
-	DatasetName        string `yaml:"dataset_name" json:"dataset_name"`
+	EnhanceResponses bool   `yaml:"enhance_responses" json:"enhance_responses"`
+	AnalyzeSentiment bool   `yaml:"analyze_sentiment" json:"analyze_sentiment"`
+	ExtractEntities  bool   `yaml:"extract_entities" json:"extract_entities"`
+	GenerateSummary  bool   `yaml:"generate_summary" json:"generate_summary"`
+	DatasetName      string `yaml:"dataset_name" json:"dataset_name"`
 }
 
 // LLMConfiguration represents a single LLM configuration in the fallback chain
 type LLMConfiguration struct {
 	// Basic LLM identification
-	Name             string                 `yaml:"name" json:"name"`
-	Provider         string                 `yaml:"provider" json:"provider"`
-	Model            string                 `yaml:"model" json:"model"`
-	Enabled          bool                   `yaml:"enabled" json:"enabled"`
-	
+	Name     string `yaml:"name" json:"name"`
+	Provider string `yaml:"provider" json:"provider"`
+	Model    string `yaml:"model" json:"model"`
+	Enabled  bool   `yaml:"enabled" json:"enabled"`
+
 	// Connection and authentication
-	APIKey           string                 `yaml:"api_key,omitempty" json:"api_key,omitempty"`
-	BaseURL          string                 `yaml:"base_url,omitempty" json:"base_url,omitempty"`
-	Timeout          int                    `yaml:"timeout" json:"timeout"` // milliseconds
-	MaxRetries       int                    `yaml:"max_retries" json:"max_retries"`
-	
+	APIKey     string `yaml:"api_key,omitempty" json:"api_key,omitempty"`
+	BaseURL    string `yaml:"base_url,omitempty" json:"base_url,omitempty"`
+	Timeout    int    `yaml:"timeout" json:"timeout"` // milliseconds
+	MaxRetries int    `yaml:"max_retries" json:"max_retries"`
+
 	// Model parameters and behavior
-	Temperature      float64                `yaml:"temperature" json:"temperature"`
-	MaxTokens        int                    `yaml:"max_tokens" json:"max_tokens"`
-	TopP             float64                `yaml:"top_p,omitempty" json:"top_p,omitempty"`
-	FrequencyPenalty float64                `yaml:"frequency_penalty,omitempty" json:"frequency_penalty,omitempty"`
-	PresencePenalty  float64                `yaml:"presence_penalty,omitempty" json:"presence_penalty,omitempty"`
-	StopSequences    []string               `yaml:"stop_sequences,omitempty" json:"stop_sequences,omitempty"`
-	
+	Temperature      float64  `yaml:"temperature" json:"temperature"`
+	MaxTokens        int      `yaml:"max_tokens" json:"max_tokens"`
+	TopP             float64  `yaml:"top_p,omitempty" json:"top_p,omitempty"`
+	FrequencyPenalty float64  `yaml:"frequency_penalty,omitempty" json:"frequency_penalty,omitempty"`
+	PresencePenalty  float64  `yaml:"presence_penalty,omitempty" json:"presence_penalty,omitempty"`
+	StopSequences    []string `yaml:"stop_sequences,omitempty" json:"stop_sequences,omitempty"`
+
 	// Provider-specific settings
-	CustomParams     map[string]interface{} `yaml:"custom_params,omitempty" json:"custom_params,omitempty"`
-	Capabilities     []string               `yaml:"capabilities,omitempty" json:"capabilities,omitempty"`
-	
+	CustomParams map[string]interface{} `yaml:"custom_params,omitempty" json:"custom_params,omitempty"`
+	Capabilities []string               `yaml:"capabilities,omitempty" json:"capabilities,omitempty"`
+
 	// Performance and quality settings
-	Weight           float64                `yaml:"weight" json:"weight"`
-	RateLimitRPS     int                    `yaml:"rate_limit_rps,omitempty" json:"rate_limit_rps,omitempty"`
-	RequestTimeout   int                    `yaml:"request_timeout,omitempty" json:"request_timeout,omitempty"` // milliseconds
-	
+	Weight         float64 `yaml:"weight" json:"weight"`
+	RateLimitRPS   int     `yaml:"rate_limit_rps,omitempty" json:"rate_limit_rps,omitempty"`
+	RequestTimeout int     `yaml:"request_timeout,omitempty" json:"request_timeout,omitempty"` // milliseconds
+
 	// Health and monitoring
-	HealthCheckURL   string                 `yaml:"health_check_url,omitempty" json:"health_check_url,omitempty"`
-	HealthCheckInterval int                  `yaml:"health_check_interval,omitempty" json:"health_check_interval,omitempty"` // milliseconds
+	HealthCheckURL      string `yaml:"health_check_url,omitempty" json:"health_check_url,omitempty"`
+	HealthCheckInterval int    `yaml:"health_check_interval,omitempty" json:"health_check_interval,omitempty"` // milliseconds
 }
 
 // Validate performs comprehensive validation of the AI debate configuration
@@ -269,7 +269,7 @@ func (p *DebateParticipant) Validate(globalMaxRounds int) error {
 		return fmt.Errorf("participant %s max_response_length must be positive, got %d", p.Name, p.MaxResponseLength)
 	}
 	if p.MinResponseLength > p.MaxResponseLength {
-		return fmt.Errorf("participant %s min_response_length (%d) cannot be greater than max_response_length (%d)", 
+		return fmt.Errorf("participant %s min_response_length (%d) cannot be greater than max_response_length (%d)",
 			p.Name, p.MinResponseLength, p.MaxResponseLength)
 	}
 

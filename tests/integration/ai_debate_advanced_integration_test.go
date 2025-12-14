@@ -131,7 +131,7 @@ func testCompleteAdvancedWorkflow(t *testing.T, ctx context.Context, cfg *config
 	assert.NotNil(t, session)
 
 	// Step 2: Conduct advanced debate with multiple strategies
-	debateResult, err := debateService.ConductAdvancedDebate(ctx, 
+	debateResult, err := debateService.ConductAdvancedDebate(ctx,
 		"AI Ethics in Autonomous Systems",
 		"Discuss the ethical implications of AI in autonomous vehicles",
 		"consensus_building")
@@ -141,9 +141,9 @@ func testCompleteAdvancedWorkflow(t *testing.T, ctx context.Context, cfg *config
 	assert.Greater(t, debateResult.Consensus.ConsensusLevel, 0.6)
 
 	// Step 3: Apply Cognee AI enhancement
-	enhancedResponse, err := cogneeService.EnhanceResponse(ctx, session.SessionID, 
+	enhancedResponse, err := cogneeService.EnhanceResponse(ctx, session.SessionID,
 		&services.DebateResponse{
-			Content:     debateResult.Consensus.Summary,
+			Content:      debateResult.Consensus.Summary,
 			QualityScore: float64(debateResult.Consensus.ConsensusLevel),
 		},
 		&services.ProcessingOptions{
@@ -170,13 +170,13 @@ func testCompleteAdvancedWorkflow(t *testing.T, ctx context.Context, cfg *config
 
 	// Step 6: Generate comprehensive report
 	reportRequest := &services.ReportRequest{
-		ReportType:     "comprehensive_analysis",
-		Title:          "Advanced Integration Test Report",
-		Description:    "Complete analysis of advanced debate workflow",
-		IncludeSessions: true,
+		ReportType:         "comprehensive_analysis",
+		Title:              "Advanced Integration Test Report",
+		Description:        "Complete analysis of advanced debate workflow",
+		IncludeSessions:    true,
 		IncludePerformance: true,
-		IncludeAnalytics: true,
-		Format:         "json",
+		IncludeAnalytics:   true,
+		Format:             "json",
 	}
 
 	generatedReport, err := reportingService.GenerateReport(reportRequest)
@@ -220,10 +220,10 @@ func testCompleteAdvancedWorkflow(t *testing.T, ctx context.Context, cfg *config
 
 	// Step 9: Export final report
 	exportRequest := &services.ExportRequest{
-		ExportID:  "test_export_" + session.SessionID,
-		ReportID:  generatedReport.ReportID,
-		Format:    "json",
-		Options:   map[string]interface{}{"include_metadata": true},
+		ExportID: "test_export_" + session.SessionID,
+		ReportID: generatedReport.ReportID,
+		Format:   "json",
+		Options:  map[string]interface{}{"include_metadata": true},
 	}
 
 	exportResult, err := reportingService.ExportReport(exportRequest)
@@ -344,7 +344,7 @@ func testHistoryAndSessionManagement(t *testing.T, ctx context.Context,
 
 	// Test trends analysis
 	trends, err := historyService.GetTrends(&services.TrendRequest{
-		Type:      "performance",
+		Type: "performance",
 		TimeRange: &services.DateRange{
 			Start: time.Now().Add(-24 * time.Hour),
 			End:   time.Now(),
@@ -451,14 +451,14 @@ func testSecurityAndAuditLogging(t *testing.T, ctx context.Context,
 
 func setupAdvancedTestConfig(t *testing.T) *config.AIDebateConfig {
 	return &config.AIDebateConfig{
-		Enabled:                     true,
-		MaximalRepeatRounds:         5,
-		DebateTimeout:               300000,
-		ConsensusThreshold:          0.75,
-		MaxResponseTime:             30000,
-		MaxContextLength:            32000,
-		QualityThreshold:            0.7,
-		EnableCognee:                true,
+		Enabled:             true,
+		MaximalRepeatRounds: 5,
+		DebateTimeout:       300000,
+		ConsensusThreshold:  0.75,
+		MaxResponseTime:     30000,
+		MaxContextLength:    32000,
+		QualityThreshold:    0.7,
+		EnableCognee:        true,
 		CogneeConfig: &config.CogneeDebateConfig{
 			Enabled:             true,
 			EnhanceResponses:    true,
@@ -477,11 +477,11 @@ func setupAdvancedTestConfig(t *testing.T) *config.AIDebateConfig {
 				Enabled: true,
 				LLMs: []config.LLMConfig{
 					{
-						Name:      "Test LLM",
-						Provider:  "test",
-						Model:     "test-model",
-						Enabled:   true,
-						APIKey:    "test_key",
+						Name:        "Test LLM",
+						Provider:    "test",
+						Model:       "test-model",
+						Enabled:     true,
+						APIKey:      "test_key",
 						Temperature: 0.1,
 						MaxTokens:   2000,
 						Weight:      1.0,
@@ -492,28 +492,28 @@ func setupAdvancedTestConfig(t *testing.T) *config.AIDebateConfig {
 		},
 		DebateStrategy: "adaptive",
 		VotingStrategy: "weighted_consensus",
-		
+
 		// Advanced features configuration
-		MonitoringEnabled:           true,
+		MonitoringEnabled:              true,
 		PerformanceOptimizationEnabled: true,
-		PerformanceOptimizationLevel: "advanced",
-		HistoryEnabled:              true,
-		HistoryRetentionPolicy:      "30_days",
-		HistoryArchivalStrategy:     "compress_and_encrypt",
-		MaxHistorySize:              1073741824, // 1GB
-		ResilienceEnabled:           true,
-		ResilienceLevel:             "advanced",
-		RecoveryTimeout:             300000,
-		MaxRetryAttempts:            5,
-		ThreatPreventionEnabled:     true,
-		ReportingEnabled:            true,
-		ReportingLevel:              "comprehensive",
-		MaxReportSize:               10485760, // 10MB
-		ReportRetentionPolicy:       "90_days",
-		SecurityEnabled:             true,
-		SecurityLevel:               "advanced",
-		EncryptionEnabled:           true,
-		AuditEnabled:                true,
+		PerformanceOptimizationLevel:   "advanced",
+		HistoryEnabled:                 true,
+		HistoryRetentionPolicy:         "30_days",
+		HistoryArchivalStrategy:        "compress_and_encrypt",
+		MaxHistorySize:                 1073741824, // 1GB
+		ResilienceEnabled:              true,
+		ResilienceLevel:                "advanced",
+		RecoveryTimeout:                300000,
+		MaxRetryAttempts:               5,
+		ThreatPreventionEnabled:        true,
+		ReportingEnabled:               true,
+		ReportingLevel:                 "comprehensive",
+		MaxReportSize:                  10485760, // 10MB
+		ReportRetentionPolicy:          "90_days",
+		SecurityEnabled:                true,
+		SecurityLevel:                  "advanced",
+		EncryptionEnabled:              true,
+		AuditEnabled:                   true,
 	}
 }
 
@@ -621,9 +621,9 @@ func TestAdvancedSystemPerformance(t *testing.T) {
 	// Test monitoring performance
 	t.Run("MonitoringPerformance", func(t *testing.T) {
 		monitoringService := services.NewDebateMonitoringService(cfg, logger)
-		
+
 		startTime := time.Now()
-		
+
 		// Test dashboard creation performance
 		dashboard, err := monitoringService.CreateCustomDashboard(services.DashboardConfig{
 			Name:        "Performance Test Dashboard",
@@ -632,35 +632,35 @@ func TestAdvancedSystemPerformance(t *testing.T) {
 		})
 		require.NoError(t, err)
 		assert.NotNil(t, dashboard)
-		
+
 		duration := time.Since(startTime)
 		assert.Less(t, duration, 2*time.Second, "Dashboard creation should be fast")
-		
+
 		logger.Infof("Dashboard created in %v", duration)
 	})
 
 	// Test Cognee AI performance
 	t.Run("CogneeAIPerformance", func(t *testing.T) {
 		cogneeService := services.NewAdvancedCogneeService(&cfg.CogneeConfig, logger)
-		
+
 		responses := []services.DebateResponse{
 			{Content: "Performance test response 1", QualityScore: 0.8},
 			{Content: "Performance test response 2", QualityScore: 0.9},
 			{Content: "Performance test response 3", QualityScore: 0.85},
 		}
-		
+
 		startTime := time.Now()
-		
+
 		consensusAnalysis, err := cogneeService.AnalyzeConsensus(ctx, "perf_test", responses,
 			&services.ProcessingOptions{
 				AnalysisDepth: "comprehensive",
 			})
 		require.NoError(t, err)
 		assert.NotNil(t, consensusAnalysis)
-		
+
 		duration := time.Since(startTime)
 		assert.Less(t, duration, 5*time.Second, "Consensus analysis should complete quickly")
-		
+
 		logger.Infof("Consensus analysis completed in %v", duration)
 	})
 }
@@ -676,7 +676,7 @@ func TestAdvancedErrorHandling(t *testing.T) {
 	ctx := context.Background()
 
 	resilienceService := services.NewDebateResilienceService(cfg, logger)
-	
+
 	// Test error handling with circuit breaker
 	t.Run("CircuitBreakerErrorHandling", func(t *testing.T) {
 		failingOperation := func() (*services.OperationResult, error) {
@@ -717,7 +717,7 @@ func TestAdvancedErrorHandling(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, healthStatus)
 		assert.NotEmpty(t, healthStatus.Components)
-		
+
 		// Verify health status includes failure information
 		for _, component := range healthStatus.Components {
 			assert.NotEmpty(t, component.ComponentID)

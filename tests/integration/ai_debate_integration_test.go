@@ -28,10 +28,10 @@ func TestAIDebateIntegration_CompleteWorkflow(t *testing.T) {
 		// Create configuration
 		cfg := createIntegrationTestConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "integration-config.yaml"))
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
@@ -43,7 +43,7 @@ func TestAIDebateIntegration_CompleteWorkflow(t *testing.T) {
 		// Test provider initialization
 		capabilities := debateIntegration.GetProviderCapabilities()
 		assert.NotEmpty(t, capabilities, "Provider capabilities should not be empty")
-		
+
 		health := debateIntegration.GetProviderHealth()
 		assert.NotEmpty(t, health, "Provider health should not be empty")
 
@@ -66,10 +66,10 @@ func TestAIDebateIntegration_CompleteWorkflow(t *testing.T) {
 		// Test fallback mechanism in integration context
 		cfg := createFallbackIntegrationTestConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "fallback-integration-config.yaml"))
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
@@ -97,10 +97,10 @@ func TestAIDebateIntegration_CompleteWorkflow(t *testing.T) {
 		// Test dynamic configuration updates
 		initialConfig := createIntegrationTestConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "dynamic-config.yaml"))
-		
+
 		err := loader.Save(initialConfig)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
@@ -136,10 +136,10 @@ func TestAIDebateIntegration_CompleteWorkflow(t *testing.T) {
 		// Test health monitoring capabilities
 		cfg := createHealthTestConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "health-config.yaml"))
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
@@ -149,7 +149,7 @@ func TestAIDebateIntegration_CompleteWorkflow(t *testing.T) {
 		// Test health checks
 		health := debateIntegration.GetProviderHealth()
 		assert.NotEmpty(t, health, "Health status should not be empty")
-		
+
 		for provider, status := range health {
 			t.Logf("Provider %s health: %s", provider, status)
 			assert.NotEmpty(t, status, "Health status should not be empty for provider %s", provider)
@@ -158,7 +158,7 @@ func TestAIDebateIntegration_CompleteWorkflow(t *testing.T) {
 		// Test capabilities
 		capabilities := debateIntegration.GetProviderCapabilities()
 		assert.NotEmpty(t, capabilities, "Capabilities should not be empty")
-		
+
 		for provider, caps := range capabilities {
 			assert.NotNil(t, caps, "Capabilities should not be nil for provider %s", provider)
 			assert.NotEmpty(t, caps.SupportedModels, "Should have supported models for provider %s", provider)
@@ -169,10 +169,10 @@ func TestAIDebateIntegration_CompleteWorkflow(t *testing.T) {
 		// Test concurrent debate execution
 		cfg := createConcurrentTestConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "concurrent-config.yaml"))
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
@@ -223,10 +223,10 @@ func TestAIDebateIntegration_CompleteWorkflow(t *testing.T) {
 		// Test error recovery and system resilience
 		cfg := createErrorRecoveryTestConfig(t, tempDir)
 		loader := config.NewAIDebateConfigLoader(filepath.Join(tempDir, "error-recovery-config.yaml"))
-		
+
 		err := loader.Save(cfg)
 		require.NoError(t, err)
-		
+
 		loadedConfig, err := loader.Load()
 		require.NoError(t, err)
 
@@ -287,17 +287,17 @@ func TestAIDebateIntegration_ConfigurationValidation(t *testing.T) {
 				ConsensusThreshold:  0.75,
 				Participants: []config.DebateParticipant{
 					{
-						Name:               "TestParticipant",
-						Role:               "Analyst",
-						Enabled:            true,
+						Name:    "TestParticipant",
+						Role:    "Analyst",
+						Enabled: true,
 						LLMs: []config.LLMConfiguration{
 							{
-								Name:     "TestLLM",
-								Provider: "claude",
-								Model:    "claude-3-sonnet",
-								Enabled:  true,
-								Timeout:  30 * 1000,
-								MaxTokens: 1000,
+								Name:        "TestLLM",
+								Provider:    "claude",
+								Model:       "claude-3-sonnet",
+								Enabled:     true,
+								Timeout:     30 * 1000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
@@ -325,17 +325,17 @@ func TestAIDebateIntegration_ConfigurationValidation(t *testing.T) {
 				ConsensusThreshold:  0.75,
 				Participants: []config.DebateParticipant{
 					{
-						Name:               "TestParticipant",
-						Role:               "Analyst",
-						Enabled:            true,
+						Name:    "TestParticipant",
+						Role:    "Analyst",
+						Enabled: true,
 						LLMs: []config.LLMConfiguration{
 							{
-								Name:     "TestLLM",
-								Provider: "invalid_provider", // Invalid provider
-								Model:    "test-model",
-								Enabled:  true,
-								Timeout:  30 * 1000,
-								MaxTokens: 1000,
+								Name:        "TestLLM",
+								Provider:    "invalid_provider", // Invalid provider
+								Model:       "test-model",
+								Enabled:     true,
+								Timeout:     30 * 1000,
+								MaxTokens:   1000,
 								Temperature: 0.7,
 							},
 						},
@@ -368,7 +368,7 @@ func TestAIDebateIntegration_ConfigurationValidation(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err, "Validation should pass")
-				
+
 				// Test integration creation
 				integration, err := services.NewAIDebateIntegration(tt.config, nil)
 				if tt.expectError {
@@ -451,24 +451,24 @@ func createIntegrationTestConfig(t *testing.T, tempDir string) *config.AIDebateC
 				},
 			},
 		},
-		DebateStrategy: "structured",
-		VotingStrategy: "confidence_weighted",
-		ResponseFormat: "detailed",
-		EnableMemory:   true,
-		MemoryRetention: 7 * 24 * 60 * 60 * 1000,
-		MaxContextLength: 16000,
-		QualityThreshold: 0.7,
-		MaxResponseTime: 30 * 1000,
-		EnableStreaming: false,
+		DebateStrategy:      "structured",
+		VotingStrategy:      "confidence_weighted",
+		ResponseFormat:      "detailed",
+		EnableMemory:        true,
+		MemoryRetention:     7 * 24 * 60 * 60 * 1000,
+		MaxContextLength:    16000,
+		QualityThreshold:    0.7,
+		MaxResponseTime:     30 * 1000,
+		EnableStreaming:     false,
 		EnableDebateLogging: true,
-		LogDebateDetails: true,
-		MetricsEnabled: true,
+		LogDebateDetails:    true,
+		MetricsEnabled:      true,
 	}
 }
 
 func createFallbackIntegrationTestConfig(t *testing.T, tempDir string) *config.AIDebateConfig {
 	cfg := createIntegrationTestConfig(t, tempDir)
-	
+
 	// Add fallback LLMs for each participant
 	cfg.Participants[0].LLMs = append(cfg.Participants[0].LLMs, config.LLMConfiguration{
 		Name:        "FallbackLLM1",
@@ -482,7 +482,7 @@ func createFallbackIntegrationTestConfig(t *testing.T, tempDir string) *config.A
 		MaxTokens:   800,
 		Weight:      0.8,
 	})
-	
+
 	cfg.Participants[0].LLMs = append(cfg.Participants[0].LLMs, config.LLMConfiguration{
 		Name:        "FallbackLLM2",
 		Provider:    "qwen",
@@ -495,13 +495,13 @@ func createFallbackIntegrationTestConfig(t *testing.T, tempDir string) *config.A
 		MaxTokens:   600,
 		Weight:      0.6,
 	})
-	
+
 	return cfg
 }
 
 func createUpdatedIntegrationTestConfig(t *testing.T, tempDir string) *config.AIDebateConfig {
 	cfg := createIntegrationTestConfig(t, tempDir)
-	
+
 	// Add more participants and providers
 	cfg.Participants = append(cfg.Participants, config.DebateParticipant{
 		Name:               "UpdatedAnalyst",
@@ -532,7 +532,7 @@ func createUpdatedIntegrationTestConfig(t *testing.T, tempDir string) *config.AI
 			},
 		},
 	})
-	
+
 	return cfg
 }
 
@@ -636,7 +636,7 @@ func createHealthTestConfig(t *testing.T, tempDir string) *config.AIDebateConfig
 
 func createConcurrentTestConfig(t *testing.T, tempDir string) *config.AIDebateConfig {
 	cfg := createIntegrationTestConfig(t, tempDir)
-	cfg.MaxResponseTime = 20000 // 20 seconds for concurrent testing
+	cfg.MaxResponseTime = 20000    // 20 seconds for concurrent testing
 	cfg.DebateTimeout = 120 * 1000 // 2 minutes
 	return cfg
 }
@@ -652,18 +652,18 @@ func validateIntegrationResults(t *testing.T, result *services.DebateResult, exp
 	assert.Equal(t, expectedTopic, result.Topic, "Topic mismatch")
 	assert.Greater(t, result.Duration, time.Duration(0), "Duration should be positive")
 	assert.Greater(t, result.FinalScore, 0.0, "Final score should be positive")
-	
+
 	assert.NotNil(t, result.Consensus, "Consensus should not be nil")
 	if result.Consensus != nil {
 		assert.NotEmpty(t, result.Consensus.Summary, "Consensus summary should not be empty")
 		assert.GreaterOrEqual(t, result.Consensus.ConsensusLevel, 0.0, "Consensus level should be non-negative")
 		assert.LessOrEqual(t, result.Consensus.ConsensusLevel, 1.0, "Consensus level should not exceed 1.0")
 	}
-	
+
 	assert.NotEmpty(t, result.BestResponse.Content, "Best response content should not be empty")
 	assert.Greater(t, len(result.AllResponses), 1, "Should have multiple responses")
 	assert.NotEmpty(t, result.Recommendations, "Should have recommendations")
-	
+
 	// Validate quality metrics
 	assert.NotNil(t, result.QualityMetrics, "Quality metrics should not be nil")
 	if result.QualityMetrics != nil {

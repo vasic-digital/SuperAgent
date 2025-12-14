@@ -49,7 +49,13 @@ func (m *MemoryService) AddMemory(ctx context.Context, req *MemoryRequest) error
 	}
 
 	// Check cache first
-	cacheKey := fmt.Sprintf("%s:%s", req.ContentType, strings.ToLower(req.Content[:func() int { if len(req.Content) < 50 { return len(req.Content) } else { return 50 } }()]))
+	cacheKey := fmt.Sprintf("%s:%s", req.ContentType, strings.ToLower(req.Content[:func() int {
+		if len(req.Content) < 50 {
+			return len(req.Content)
+		} else {
+			return 50
+		}
+	}()]))
 	if sources, exists := m.cache[cacheKey]; exists && len(sources) > 0 {
 		// Return cached results
 		return nil
