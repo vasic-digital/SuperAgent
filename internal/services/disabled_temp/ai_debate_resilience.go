@@ -3,84 +3,84 @@ package services
 import (
 	"context"
 	"fmt"
-	"math"
 	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/superagent/superagent/internal/config"
+	"github.com/superagent/superagent/internal/services/common"
 )
 
 // DebateResilienceService provides comprehensive error recovery and resilience mechanisms
 type DebateResilienceService struct {
-	config               *config.AIDebateConfig
-	logger               *logrus.Logger
-	
+	config *config.AIDebateConfig
+	logger *logrus.Logger
+
 	// Error handling
-	errorHandler         *ErrorHandler
-	errorClassifier      *ErrorClassifier
-	errorRecovery        *ErrorRecovery
-	errorPrevention      *ErrorPrevention
-	
+	errorHandler    *ErrorHandler
+	errorClassifier *ErrorClassifier
+	errorRecovery   *ErrorRecovery
+	errorPrevention *ErrorPrevention
+
 	// Resilience patterns
-	circuitBreaker       *CircuitBreaker
-	retryManager         *RetryManager
-	timeoutManager       *TimeoutManager
-	fallbackManager      *FallbackManager
-	
+	circuitBreaker  *CircuitBreaker
+	retryManager    *RetryManager
+	timeoutManager  *TimeoutManager
+	fallbackManager *FallbackManager
+
 	// Fault tolerance
-	faultDetector        *FaultDetector
-	faultIsolation       *FaultIsolation
-	faultRecovery        *FaultRecovery
-	faultTolerance       *FaultTolerance
-	
+	faultDetector  *FaultDetector
+	faultIsolation *FaultIsolation
+	faultRecovery  *FaultRecovery
+	faultTolerance *FaultTolerance
+
 	// Health monitoring
-	healthMonitor        *HealthMonitor
-	healthChecker        *HealthChecker
-	healthReporter       *HealthReporter
-	healthAnalyzer       *HealthAnalyzer
-	
+	healthMonitor  *HealthMonitor
+	healthChecker  *HealthChecker
+	healthReporter *HealthReporter
+	healthAnalyzer *HealthAnalyzer
+
 	// Recovery mechanisms
 	recoveryOrchestrator *RecoveryOrchestrator
 	recoveryStrategies   *RecoveryStrategies
 	recoveryProcedures   *RecoveryProcedures
 	recoveryValidation   *RecoveryValidation
-	
+
 	// Backup and restore
-	backupManager        *ResilienceBackupManager
-	restoreManager       *RestoreManager
-	consistencyChecker   *ConsistencyChecker
-	integrityValidator   *IntegrityValidator
-	
+	backupManager      *ResilienceBackupManager
+	restoreManager     *RestoreManager
+	consistencyChecker *ConsistencyChecker
+	integrityValidator *IntegrityValidator
+
 	// Monitoring and alerting
-	resilienceMonitor    *ResilienceMonitor
-	alertManager         *ResilienceAlertManager
-	notificationService  *ResilienceNotificationService
-	
+	resilienceMonitor   *ResilienceMonitor
+	alertManager        *ResilienceAlertManager
+	notificationService *ResilienceNotificationService
+
 	// Performance and optimization
 	performanceOptimizer *PerformanceOptimizer
 	resourceManager      *ResilienceResourceManager
 	loadBalancer         *LoadBalancer
-	
-	mu                   sync.RWMutex
-	enabled              bool
-	resilienceLevel      string
-	recoveryTimeout      time.Duration
-	maxRetryAttempts     int
-	
-	activeRecoveries     map[string]*RecoveryOperation
-	faultHistory         []FaultEvent
-	recoveryHistory      []RecoveryEvent
-	healthStatus         map[string]*ComponentHealth
+
+	mu               sync.RWMutex
+	enabled          bool
+	resilienceLevel  string
+	recoveryTimeout  time.Duration
+	maxRetryAttempts int
+
+	activeRecoveries map[string]*RecoveryOperation
+	faultHistory     []FaultEvent
+	recoveryHistory  []RecoveryEvent
+	healthStatus     map[string]*ComponentHealth
 }
 
 // ErrorHandler handles errors systematically
 type ErrorHandler struct {
-	errorTypes          map[string]ErrorType
-	errorHandlers       map[string]ErrorHandlerFunc
-	errorLoggers        map[string]ErrorLogger
-	errorMetrics        map[string]ErrorMetric
-	
+	errorTypes    map[string]ErrorType
+	errorHandlers map[string]ErrorHandlerFunc
+	errorLoggers  map[string]ErrorLogger
+	errorMetrics  map[string]ErrorMetric
+
 	errorProcessingRules []ErrorProcessingRule
 	errorRecoveryRules   []ErrorRecoveryRule
 	errorPreventionRules []ErrorPreventionRule
@@ -92,18 +92,18 @@ type ErrorClassifier struct {
 	severityLevels       map[string]SeverityLevel
 	errorCategories      map[string]ErrorCategory
 	classificationModels []ClassificationModel
-	
-	typeClassifiers      map[string]TypeClassifier
-	impactAssessors      map[string]ImpactAssessor
+
+	typeClassifiers map[string]TypeClassifier
+	impactAssessors map[string]ImpactAssessor
 }
 
 // ErrorRecovery manages error recovery processes
 type ErrorRecovery struct {
-	recoveryStrategies   map[string]RecoveryStrategy
-	recoveryProcedures   map[string]RecoveryProcedure
-	recoveryValidators   map[string]RecoveryValidator
-	recoveryMetrics      map[string]RecoveryMetric
-	
+	recoveryStrategies map[string]RecoveryStrategy
+	recoveryProcedures map[string]RecoveryProcedure
+	recoveryValidators map[string]RecoveryValidator
+	recoveryMetrics    map[string]RecoveryMetric
+
 	recoveryOrchestrators []RecoveryOrchestrator
 	rollbackMechanisms    []RollbackMechanism
 }
@@ -114,141 +114,141 @@ type ErrorPrevention struct {
 	validationRules      []ValidationRule
 	sanityChecks         []SanityCheck
 	preconditionChecks   []PreconditionCheck
-	
-	preventiveMeasures   []PreventiveMeasure
-	qualityGates         []QualityGate
+
+	preventiveMeasures []PreventiveMeasure
+	qualityGates       []QualityGate
 }
 
 // CircuitBreaker implements circuit breaker pattern
 type CircuitBreaker struct {
-	circuits             map[string]*Circuit
-	stateManagers        map[string]*CircuitStateManager
-	failureTrackers      map[string]*FailureTracker
-	successTrackers      map[string]*SuccessTracker
-	
-	circuitConfigs       map[string]*CircuitConfig
-	stateTransitions     []StateTransition
+	circuits        map[string]*Circuit
+	stateManagers   map[string]*CircuitStateManager
+	failureTrackers map[string]*FailureTracker
+	successTrackers map[string]*SuccessTracker
+
+	circuitConfigs   map[string]*CircuitConfig
+	stateTransitions []StateTransition
 }
 
 // RetryManager manages retry operations
 type RetryManager struct {
-	retryPolicies        map[string]RetryPolicy
-	retryStrategies      map[string]RetryStrategy
-	backoffAlgorithms    map[string]BackoffAlgorithm
-	retryMetrics         map[string]RetryMetric
-	
-	retryQueues          map[string]*RetryQueue
-	retryLimiters        map[string]*RetryLimiter
+	retryPolicies     map[string]RetryPolicy
+	retryStrategies   map[string]RetryStrategy
+	backoffAlgorithms map[string]BackoffAlgorithm
+	retryMetrics      map[string]RetryMetric
+
+	retryQueues   map[string]*RetryQueue
+	retryLimiters map[string]*RetryLimiter
 }
 
 // TimeoutManager manages timeout operations
 type TimeoutManager struct {
-	timeoutPolicies      map[string]TimeoutPolicy
-	timeoutStrategies    map[string]TimeoutStrategy
-	timeoutHandlers      map[string]TimeoutHandler
-	timeoutMetrics       map[string]TimeoutMetric
-	
-	timeoutTrackers      map[string]*TimeoutTracker
-	timeoutSchedulers    map[string]*TimeoutScheduler
+	timeoutPolicies   map[string]TimeoutPolicy
+	timeoutStrategies map[string]TimeoutStrategy
+	timeoutHandlers   map[string]TimeoutHandler
+	timeoutMetrics    map[string]TimeoutMetric
+
+	timeoutTrackers   map[string]*TimeoutTracker
+	timeoutSchedulers map[string]*TimeoutScheduler
 }
 
 // FallbackManager manages fallback mechanisms
 type FallbackManager struct {
-	fallbackStrategies   map[string]FallbackStrategy
-	fallbackProviders    map[string]FallbackProvider
-	fallbackValidators   map[string]FallbackValidator
-	fallbackMetrics      map[string]FallbackMetric
-	
-	fallbackChains       map[string]*FallbackChain
-	fallbackSelectors    map[string]*FallbackSelector
+	fallbackStrategies map[string]FallbackStrategy
+	fallbackProviders  map[string]FallbackProvider
+	fallbackValidators map[string]FallbackValidator
+	fallbackMetrics    map[string]FallbackMetric
+
+	fallbackChains    map[string]*FallbackChain
+	fallbackSelectors map[string]*FallbackSelector
 }
 
 // FaultDetector detects system faults
 type FaultDetector struct {
-	detectionAlgorithms  []FaultDetectionAlgorithm
-	healthIndicators     map[string]HealthIndicator
-	faultSignatures      map[string]FaultSignature
-	detectionMetrics     map[string]DetectionMetric
-	
-	detectionRules       []DetectionRule
-	anomalyDetectors     []AnomalyDetector
+	detectionAlgorithms []FaultDetectionAlgorithm
+	healthIndicators    map[string]HealthIndicator
+	faultSignatures     map[string]FaultSignature
+	detectionMetrics    map[string]DetectionMetric
+
+	detectionRules   []DetectionRule
+	anomalyDetectors []AnomalyDetector
 }
 
 // FaultIsolation isolates faults to prevent cascading failures
 type FaultIsolation struct {
-	isolationStrategies  map[string]IsolationStrategy
-	isolationBarriers    map[string]IsolationBarrier
-	isolationProcedures  map[string]IsolationProcedure
-	isolationMetrics     map[string]IsolationMetric
-	
-	compartmentalizers   []Compartmentalizer
-	boundaryControllers  []BoundaryController
+	isolationStrategies map[string]IsolationStrategy
+	isolationBarriers   map[string]IsolationBarrier
+	isolationProcedures map[string]IsolationProcedure
+	isolationMetrics    map[string]IsolationMetric
+
+	compartmentalizers  []Compartmentalizer
+	boundaryControllers []BoundaryController
 }
 
 // FaultRecovery recovers from faults
 type FaultRecovery struct {
-	recoveryStrategies   map[string]FaultRecoveryStrategy
-	recoveryProcedures   map[string]FaultRecoveryProcedure
-	recoveryValidators   map[string]FaultRecoveryValidator
-	recoveryMetrics      map[string]FaultRecoveryMetric
-	
-	recoveryEngines      []RecoveryEngine
-	healingMechanisms    []HealingMechanism
+	recoveryStrategies map[string]FaultRecoveryStrategy
+	recoveryProcedures map[string]FaultRecoveryProcedure
+	recoveryValidators map[string]FaultRecoveryValidator
+	recoveryMetrics    map[string]FaultRecoveryMetric
+
+	recoveryEngines   []RecoveryEngine
+	healingMechanisms []HealingMechanism
 }
 
 // FaultTolerance provides fault tolerance capabilities
 type FaultTolerance struct {
-	toleranceStrategies  map[string]ToleranceStrategy
-	redundancyManagers   map[string]RedundancyManager
-	replicationServices  map[string]ReplicationService
-	toleranceMetrics     map[string]ToleranceMetric
-	
+	toleranceStrategies map[string]ToleranceStrategy
+	redundancyManagers  map[string]RedundancyManager
+	replicationServices map[string]ReplicationService
+	toleranceMetrics    map[string]ToleranceMetric
+
 	faultMaskingTechniques []FaultMaskingTechnique
 	errorCorrectionMethods []ErrorCorrectionMethod
 }
 
 // HealthMonitor monitors system health
 type HealthMonitor struct {
-	healthChecks         map[string]HealthCheck
-	healthIndicators     map[string]HealthIndicator
-	healthMetrics        map[string]HealthMetric
-	healthThresholds     map[string]HealthThreshold
-	
+	healthChecks     map[string]HealthCheck
+	healthIndicators map[string]HealthIndicator
+	healthMetrics    map[string]HealthMetric
+	healthThresholds map[string]HealthThreshold
+
 	monitoringStrategies []HealthMonitoringStrategy
 	assessmentMethods    []HealthAssessmentMethod
 }
 
 // HealthChecker performs health checks
 type HealthChecker struct {
-	checkProcedures      map[string]CheckProcedure
-	checkValidators      map[string]CheckValidator
-	checkSchedulers      map[string]CheckScheduler
-	checkMetrics         map[string]CheckMetric
-	
-	checkAlgorithms      []CheckAlgorithm
-	validationRules      []CheckValidationRule
+	checkProcedures map[string]CheckProcedure
+	checkValidators map[string]CheckValidator
+	checkSchedulers map[string]CheckScheduler
+	checkMetrics    map[string]CheckMetric
+
+	checkAlgorithms []CheckAlgorithm
+	validationRules []CheckValidationRule
 }
 
 // HealthReporter reports health status
 type HealthReporter struct {
-	reportFormats        map[string]HealthReportFormat
-	reportGenerators     map[string]HealthReportGenerator
-	reportDistributors   map[string]HealthReportDistributor
-	reportMetrics        map[string]HealthReportMetric
-	
+	reportFormats      map[string]HealthReportFormat
+	reportGenerators   map[string]HealthReportGenerator
+	reportDistributors map[string]HealthReportDistributor
+	reportMetrics      map[string]HealthReportMetric
+
 	reportingSchedules   []ReportingSchedule
 	distributionChannels []DistributionChannel
 }
 
 // HealthAnalyzer analyzes health data
 type HealthAnalyzer struct {
-	analysisMethods      map[string]HealthAnalysisMethod
-	trendAnalyzers       map[string]HealthTrendAnalyzer
-	anomalyDetectors     map[string]HealthAnomalyDetector
-	predictionModels     map[string]HealthPredictionModel
-	
-	analysisFrameworks   []HealthAnalysisFramework
-	correlationEngines   []CorrelationEngine
+	analysisMethods  map[string]HealthAnalysisMethod
+	trendAnalyzers   map[string]HealthTrendAnalyzer
+	anomalyDetectors map[string]HealthAnomalyDetector
+	predictionModels map[string]HealthPredictionModel
+
+	analysisFrameworks []HealthAnalysisFramework
+	correlationEngines []CorrelationEngine
 }
 
 // RecoveryOrchestrator orchestrates recovery operations
@@ -257,31 +257,31 @@ type RecoveryOrchestrator struct {
 	workflowManagers     map[string]WorkflowManager
 	coordinationServices map[string]CoordinationService
 	orchestrationMetrics map[string]OrchestrationMetric
-	
-	recoveryWorkflows    []RecoveryWorkflow
+
+	recoveryWorkflows     []RecoveryWorkflow
 	coordinationProtocols []CoordinationProtocol
 }
 
 // RecoveryStrategies manages recovery strategies
 type RecoveryStrategies struct {
-	strategies           map[string]*RecoveryStrategy
-	strategySelectors    map[string]*StrategySelector
-	strategyEvaluators   map[string]*StrategyEvaluator
-	strategyOptimizers   map[string]*StrategyOptimizer
-	
+	strategies         map[string]*RecoveryStrategy
+	strategySelectors  map[string]*StrategySelector
+	strategyEvaluators map[string]*StrategyEvaluator
+	strategyOptimizers map[string]*StrategyOptimizer
+
 	strategyLibraries    []StrategyLibrary
 	strategyRepositories []StrategyRepository
 }
 
 // RecoveryProcedures manages recovery procedures
 type RecoveryProcedures struct {
-	procedures           map[string]*RecoveryProcedure
-	procedureExecutors   map[string]*ProcedureExecutor
-	procedureValidators  map[string]*ProcedureValidator
-	procedureMonitors    map[string]*ProcedureMonitor
-	
-	procedureTemplates   []ProcedureTemplate
-	executionFrameworks  []ExecutionFramework
+	procedures          map[string]*RecoveryProcedure
+	procedureExecutors  map[string]*ProcedureExecutor
+	procedureValidators map[string]*ProcedureValidator
+	procedureMonitors   map[string]*ProcedureMonitor
+
+	procedureTemplates  []ProcedureTemplate
+	executionFrameworks []ExecutionFramework
 }
 
 // RecoveryValidation validates recovery operations
@@ -290,73 +290,73 @@ type RecoveryValidation struct {
 	validationProcedures map[string]ValidationProcedure
 	validationMetrics    map[string]ValidationMetric
 	validationReports    map[string]ValidationReport
-	
+
 	validationFrameworks []ValidationFramework
 	qualityAssessors     []QualityAssessor
 }
 
 // ResilienceBackupManager manages resilience backups
 type ResilienceBackupManager struct {
-	backupStrategies     map[string]ResilienceBackupStrategy
-	backupStorage        map[string]ResilienceBackupStorage
-	backupSchedulers     map[string]ResilienceBackupScheduler
-	backupValidators     map[string]ResilienceBackupValidator
-	
-	backupPolicies       []ResilienceBackupPolicy
-	retentionRules       []ResilienceRetentionRule
+	backupStrategies map[string]ResilienceBackupStrategy
+	backupStorage    map[string]ResilienceBackupStorage
+	backupSchedulers map[string]ResilienceBackupScheduler
+	backupValidators map[string]ResilienceBackupValidator
+
+	backupPolicies []ResilienceBackupPolicy
+	retentionRules []ResilienceRetentionRule
 }
 
 // RestoreManager manages restore operations
 type RestoreManager struct {
-	restoreStrategies    map[string]RestoreStrategy
-	restoreProcedures    map[string]RestoreProcedure
-	restoreValidators    map[string]RestoreValidator
-	restoreMetrics       map[string]RestoreMetric
-	
-	restorePoints        []RestorePoint
-	rollbackProcedures   []RollbackProcedure
+	restoreStrategies map[string]RestoreStrategy
+	restoreProcedures map[string]RestoreProcedure
+	restoreValidators map[string]RestoreValidator
+	restoreMetrics    map[string]RestoreMetric
+
+	restorePoints      []RestorePoint
+	rollbackProcedures []RollbackProcedure
 }
 
 // ConsistencyChecker checks data consistency
 type ConsistencyChecker struct {
-	consistencyRules     map[string]ConsistencyRule
-	consistencyChecks    map[string]ConsistencyCheck
-	consistencyMetrics   map[string]ConsistencyMetric
-	consistencyReports   map[string]ConsistencyReport
-	
+	consistencyRules   map[string]ConsistencyRule
+	consistencyChecks  map[string]ConsistencyCheck
+	consistencyMetrics map[string]ConsistencyMetric
+	consistencyReports map[string]ConsistencyReport
+
 	consistencyAlgorithms []ConsistencyAlgorithm
 	validationMethods     []ConsistencyValidationMethod
 }
 
 // IntegrityValidator validates data integrity
 type IntegrityValidator struct {
-	integrityRules       map[string]IntegrityRule
-	integrityChecks      map[string]IntegrityCheck
-	integrityMetrics     map[string]IntegrityMetric
-	integrityReports     map[string]IntegrityReport
-	
+	integrityRules   map[string]IntegrityRule
+	integrityChecks  map[string]IntegrityCheck
+	integrityMetrics map[string]IntegrityMetric
+	integrityReports map[string]IntegrityReport
+
 	integrityAlgorithms []IntegrityAlgorithm
 	checksumMethods     []ChecksumMethod
 }
 
 // ResilienceMonitor monitors resilience operations
 type ResilienceMonitor struct {
-	monitoringSystems    map[string]ResilienceMonitoringSystem
-	metricCollectors     map[string]ResilienceMetricCollector
-	alertGenerators      map[string]ResilienceAlertGenerator
-	reportGenerators     map[string]ResilienceReportGenerator
-	
+	monitoringSystems map[string]ResilienceMonitoringSystem
+	metricCollectors  map[string]ResilienceMetricCollector
+	alertGenerators   map[string]ResilienceAlertGenerator
+	reportGenerators  map[string]ResilienceReportGenerator
+
 	monitoringStrategies []ResilienceMonitoringStrategy
 	observationPoints    []ObservationPoint
 }
 
 // ResilienceAlertManager manages resilience alerts
 type ResilienceAlertManager struct {
-	alertRules           map[string]ResilienceAlertRule
-	alertHandlers        map[string]ResilienceAlertHandler
-	alertDistributors    map[string]ResilienceAlertDistributor
-	alertMetrics         map[string]ResilienceAlertMetric
-	
+	alertRules        map[string]ResilienceAlertRule
+	alertHandlers     map[string]ResilienceAlertHandler
+	alertDistributors map[string]ResilienceAlertDistributor
+	alertMetrics      map[string]ResilienceAlertMetric
+
 	alertPolicies        []ResilienceAlertPolicy
 	escalationProcedures []EscalationProcedure
 }
@@ -367,7 +367,7 @@ type ResilienceNotificationService struct {
 	notificationTypes    map[string]ResilienceNotificationType
 	notificationHandlers map[string]ResilienceNotificationHandler
 	notificationMetrics  map[string]ResilienceNotificationMetric
-	
+
 	notificationPolicies []ResilienceNotificationPolicy
 	deliveryMechanisms   []DeliveryMechanism
 }
@@ -378,31 +378,31 @@ type PerformanceOptimizer struct {
 	performanceTuners      map[string]PerformanceTuner
 	resourceOptimizers     map[string]ResourceOptimizer
 	optimizationMetrics    map[string]OptimizationMetric
-	
+
 	optimizationAlgorithms []OptimizationAlgorithm
 	performanceModels      []PerformanceModel
 }
 
 // ResilienceResourceManager manages resources for resilience
 type ResilienceResourceManager struct {
-	resourcePools          map[string]ResilienceResourcePool
-	resourceAllocators     map[string]ResourceAllocator
-	resourceMonitors       map[string]ResourceMonitor
-	resourceMetrics        map[string]ResourceMetric
-	
-	resourcePolicies       []ResourcePolicy
-	allocationStrategies   []AllocationStrategy
+	resourcePools      map[string]ResilienceResourcePool
+	resourceAllocators map[string]ResourceAllocator
+	resourceMonitors   map[string]ResourceMonitor
+	resourceMetrics    map[string]ResourceMetric
+
+	resourcePolicies     []ResourcePolicy
+	allocationStrategies []AllocationStrategy
 }
 
 // LoadBalancer provides load balancing for resilience
 type LoadBalancer struct {
-	balancingAlgorithms    map[string]LoadBalancingAlgorithm
-	loadDistributors       map[string]LoadDistributor
-	loadMonitors           map[string]LoadMonitor
-	loadMetrics            map[string]LoadMetric
-	
-	balancingStrategies    []LoadBalancingStrategy
-	distributionPolicies   []DistributionPolicy
+	balancingAlgorithms map[string]LoadBalancingAlgorithm
+	loadDistributors    map[string]LoadDistributor
+	loadMonitors        map[string]LoadMonitor
+	loadMetrics         map[string]LoadMetric
+
+	balancingStrategies  []LoadBalancingStrategy
+	distributionPolicies []DistributionPolicy
 }
 
 // NewDebateResilienceService creates a new debate resilience service
@@ -410,58 +410,58 @@ func NewDebateResilienceService(cfg *config.AIDebateConfig, logger *logrus.Logge
 	return &DebateResilienceService{
 		config: cfg,
 		logger: logger,
-		
+
 		// Initialize error handling components
 		errorHandler:    NewErrorHandler(),
 		errorClassifier: NewErrorClassifier(),
 		errorRecovery:   NewErrorRecovery(),
 		errorPrevention: NewErrorPrevention(),
-		
+
 		// Initialize resilience patterns
 		circuitBreaker:  NewCircuitBreaker(),
 		retryManager:    NewRetryManager(),
 		timeoutManager:  NewTimeoutManager(),
 		fallbackManager: NewFallbackManager(),
-		
+
 		// Initialize fault tolerance components
 		faultDetector:  NewFaultDetector(),
 		faultIsolation: NewFaultIsolation(),
 		faultRecovery:  NewFaultRecovery(),
 		faultTolerance: NewFaultTolerance(),
-		
+
 		// Initialize health monitoring
 		healthMonitor:  NewHealthMonitor(),
 		healthChecker:  NewHealthChecker(),
 		healthReporter: NewHealthReporter(),
 		healthAnalyzer: NewHealthAnalyzer(),
-		
+
 		// Initialize recovery mechanisms
 		recoveryOrchestrator: NewRecoveryOrchestrator(),
 		recoveryStrategies:   NewRecoveryStrategies(),
 		recoveryProcedures:   NewRecoveryProcedures(),
 		recoveryValidation:   NewRecoveryValidation(),
-		
+
 		// Initialize backup and restore
 		backupManager:      NewResilienceBackupManager(),
 		restoreManager:     NewRestoreManager(),
 		consistencyChecker: NewConsistencyChecker(),
 		integrityValidator: NewIntegrityValidator(),
-		
+
 		// Initialize monitoring and alerting
 		resilienceMonitor:   NewResilienceMonitor(),
 		alertManager:        NewResilienceAlertManager(),
 		notificationService: NewResilienceNotificationService(),
-		
+
 		// Initialize performance and optimization
 		performanceOptimizer: NewPerformanceOptimizer(),
 		resourceManager:      NewResilienceResourceManager(),
 		loadBalancer:         NewLoadBalancer(),
-		
+
 		enabled:          cfg.ResilienceEnabled,
 		resilienceLevel:  cfg.ResilienceLevel,
 		recoveryTimeout:  cfg.RecoveryTimeout,
 		maxRetryAttempts: cfg.MaxRetryAttempts,
-		
+
 		activeRecoveries: make(map[string]*RecoveryOperation),
 		faultHistory:     []FaultEvent{},
 		recoveryHistory:  []RecoveryEvent{},
@@ -515,39 +515,39 @@ func (s *DebateResilienceService) Stop(ctx context.Context) error {
 func (s *DebateResilienceService) HandleError(ctx context.Context, error *Error) (*ErrorHandlingResult, error) {
 	// Classify the error
 	errorClassification := s.errorClassifier.Classify(error)
-	
+
 	// Determine appropriate handling strategy
 	handlingStrategy := s.determineHandlingStrategy(errorClassification)
-	
+
 	// Execute error handling
 	result, err := s.executeErrorHandling(ctx, error, handlingStrategy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to handle error: %w", err)
 	}
-	
+
 	return result, nil
 }
 
 // ExecuteWithResilience executes an operation with resilience mechanisms
 func (s *DebateResilienceService) ExecuteWithResilience(ctx context.Context, operation Operation, resilienceConfig *ResilienceConfig) (*OperationResult, error) {
 	operationID := s.generateOperationID()
-	
+
 	// Wrap operation with resilience mechanisms
 	resilientOperation := s.wrapWithResilience(operation, resilienceConfig)
-	
+
 	// Execute with circuit breaker
 	result, err := s.circuitBreaker.Execute(operationID, resilientOperation)
 	if err != nil {
 		return nil, fmt.Errorf("resilient operation failed: %w", err)
 	}
-	
+
 	return result, nil
 }
 
 // RecoverFromFailure recovers from a system failure
 func (s *DebateResilienceService) RecoverFromFailure(ctx context.Context, failure *Failure) (*RecoveryResult, error) {
 	recoveryID := s.generateRecoveryID()
-	
+
 	// Create recovery operation
 	recoveryOperation := &RecoveryOperation{
 		ID:        recoveryID,
@@ -555,18 +555,18 @@ func (s *DebateResilienceService) RecoverFromFailure(ctx context.Context, failur
 		StartTime: time.Now(),
 		Status:    "initiated",
 	}
-	
+
 	// Store recovery operation
 	s.mu.Lock()
 	s.activeRecoveries[recoveryID] = recoveryOperation
 	s.mu.Unlock()
-	
+
 	// Execute recovery
 	result, err := s.executeRecovery(ctx, recoveryOperation)
 	if err != nil {
 		return nil, fmt.Errorf("recovery failed: %w", err)
 	}
-	
+
 	return result, nil
 }
 
@@ -580,11 +580,11 @@ func (s *DebateResilienceService) GetComponentHealth(componentID string) (*Compo
 	s.mu.RLock()
 	health, exists := s.healthStatus[componentID]
 	s.mu.RUnlock()
-	
+
 	if !exists {
 		return nil, fmt.Errorf("component not found: %s", componentID)
 	}
-	
+
 	return health, nil
 }
 
@@ -595,7 +595,7 @@ func (s *DebateResilienceService) CreateBackup(backupType string) (*BackupResult
 		Timestamp:  time.Now(),
 		Scope:      "full",
 	}
-	
+
 	return s.backupManager.CreateBackup(backupRequest)
 }
 
@@ -606,7 +606,7 @@ func (s *DebateResilienceService) RestoreFromBackup(backupID string) (*RestoreRe
 		Timestamp: time.Now(),
 		Options:   map[string]interface{}{"verify": true},
 	}
-	
+
 	return s.restoreManager.Restore(restoreRequest)
 }
 
@@ -614,11 +614,11 @@ func (s *DebateResilienceService) RestoreFromBackup(backupID string) (*RestoreRe
 func (s *DebateResilienceService) GetResilienceMetrics() (*ResilienceMetrics, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	return &ResilienceMetrics{
-		FaultHistory:    s.faultHistory,
-		RecoveryHistory: s.recoveryHistory,
-		HealthStatus:    s.healthStatus,
+		FaultHistory:     s.faultHistory,
+		RecoveryHistory:  s.recoveryHistory,
+		HealthStatus:     s.healthStatus,
 		ActiveRecoveries: len(s.activeRecoveries),
 	}, nil
 }
@@ -627,14 +627,14 @@ func (s *DebateResilienceService) GetResilienceMetrics() (*ResilienceMetrics, er
 func (s *DebateResilienceService) SetResilienceLevel(level string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	if !s.isValidResilienceLevel(level) {
 		return fmt.Errorf("invalid resilience level: %s", level)
 	}
-	
+
 	s.resilienceLevel = level
 	s.logger.Infof("Resilience level set to: %s", level)
-	
+
 	return nil
 }
 
@@ -659,10 +659,10 @@ func (s *DebateResilienceService) healthMonitoringWorker(ctx context.Context) {
 func (s *DebateResilienceService) performHealthChecks() {
 	// Check component health
 	components := s.getAllComponents()
-	
+
 	for _, componentID := range components {
 		healthCheck := s.healthChecker.PerformHealthCheck(componentID)
-		
+
 		// Update health status
 		s.mu.Lock()
 		s.healthStatus[componentID] = &ComponentHealth{
@@ -673,13 +673,13 @@ func (s *DebateResilienceService) performHealthChecks() {
 			Issues:      healthCheck.Issues,
 		}
 		s.mu.Unlock()
-		
+
 		// Check for health issues
 		if healthCheck.Status != "healthy" {
 			s.handleHealthIssue(componentID, healthCheck)
 		}
 	}
-	
+
 	// Generate health report
 	healthReport := s.generateHealthReport()
 	s.logger.Debugf("Health report: %+v", healthReport)
@@ -706,27 +706,27 @@ func (s *DebateResilienceService) faultDetectionWorker(ctx context.Context) {
 func (s *DebateResilienceService) performFaultDetection() {
 	// Get current system state
 	systemState := s.getSystemState()
-	
+
 	// Run fault detection algorithms
 	faults := s.faultDetector.DetectFaults(systemState)
-	
+
 	for _, fault := range faults {
 		// Classify fault
 		faultClassification := s.classifyFault(fault)
-		
+
 		// Handle fault based on classification
 		s.handleFault(fault, faultClassification)
-		
+
 		// Record fault in history
 		faultEvent := FaultEvent{
-			Timestamp:    time.Now(),
-			FaultType:    fault.Type,
-			Severity:     fault.Severity,
-			Component:    fault.Component,
-			Description:  fault.Description,
+			Timestamp:      time.Now(),
+			FaultType:      fault.Type,
+			Severity:       fault.Severity,
+			Component:      fault.Component,
+			Description:    fault.Description,
 			Classification: faultClassification,
 		}
-		
+
 		s.mu.Lock()
 		s.faultHistory = append(s.faultHistory, faultEvent)
 		s.mu.Unlock()
@@ -736,7 +736,7 @@ func (s *DebateResilienceService) performFaultDetection() {
 // recoveryOrchestrationWorker orchestrates recovery operations
 func (s *DebateResilienceService) recoveryOrchestrationWorker(ctx context.Context) {
 	s.logger.Info("Started recovery orchestration worker")
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -757,7 +757,7 @@ func (s *DebateResilienceService) processRecoveryOperations() {
 		recoveries = append(recoveries, recovery)
 	}
 	s.mu.RUnlock()
-	
+
 	for _, recovery := range recoveries {
 		switch recovery.Status {
 		case "initiated":
@@ -776,27 +776,27 @@ func (s *DebateResilienceService) initializeComponents() error {
 	if err := s.errorHandler.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize error handler: %w", err)
 	}
-	
+
 	// Initialize circuit breakers
 	if err := s.circuitBreaker.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize circuit breaker: %w", err)
 	}
-	
+
 	// Initialize retry manager
 	if err := s.retryManager.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize retry manager: %w", err)
 	}
-	
+
 	// Initialize health monitoring
 	if err := s.healthMonitor.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize health monitor: %w", err)
 	}
-	
+
 	// Initialize backup manager
 	if err := s.backupManager.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize backup manager: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -813,10 +813,10 @@ func (s *DebateResilienceService) determineHandlingStrategy(classification Error
 func (s *DebateResilienceService) executeErrorHandling(ctx context.Context, error *Error, strategy HandlingStrategy) (*ErrorHandlingResult, error) {
 	// Execute error handling based on strategy
 	return &ErrorHandlingResult{
-		Success:     true,
-		Strategy:    strategy.Type,
-		Resolution:  "error_resolved",
-		Timestamp:   time.Now(),
+		Success:    true,
+		Strategy:   strategy.Type,
+		Resolution: "error_resolved",
+		Timestamp:  time.Now(),
 	}, nil
 }
 
@@ -826,19 +826,19 @@ func (s *DebateResilienceService) wrapWithResilience(operation Operation, config
 		// Apply retry logic
 		var result *OperationResult
 		var err error
-		
+
 		for attempt := 0; attempt < s.maxRetryAttempts; attempt++ {
 			result, err = operation()
 			if err == nil {
 				break
 			}
-			
+
 			// Apply backoff
 			if attempt < s.maxRetryAttempts-1 {
 				time.Sleep(time.Duration(attempt+1) * time.Second)
 			}
 		}
-		
+
 		return result, err
 	}
 }
@@ -854,38 +854,38 @@ func (s *DebateResilienceService) generateRecoveryID() string {
 func (s *DebateResilienceService) executeRecovery(ctx context.Context, operation *RecoveryOperation) (*RecoveryResult, error) {
 	// Execute recovery operation
 	recoveryStrategy := s.recoveryStrategies.SelectStrategy(operation.Failure)
-	
+
 	recoveryResult := &RecoveryResult{
 		RecoveryID: operation.ID,
 		Success:    true,
 		Strategy:   recoveryStrategy.Name,
 		Duration:   time.Since(operation.StartTime),
 	}
-	
+
 	return recoveryResult, nil
 }
 
 func (s *DebateResilienceService) stopAllRecoveries() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	for recoveryID, recovery := range s.activeRecoveries {
 		recovery.Status = "stopped"
 		delete(s.activeRecoveries, recoveryID)
 	}
-	
+
 	return nil
 }
 
 func (s *DebateResilienceService) generateFinalResilienceReport() *ResilienceReport {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	return &ResilienceReport{
-		Timestamp:       time.Now(),
-		FaultHistory:    len(s.faultHistory),
-		RecoveryHistory: len(s.recoveryHistory),
-		HealthStatus:    s.healthStatus,
+		Timestamp:        time.Now(),
+		FaultHistory:     len(s.faultHistory),
+		RecoveryHistory:  len(s.recoveryHistory),
+		HealthStatus:     s.healthStatus,
 		ActiveRecoveries: len(s.activeRecoveries),
 	}
 }
@@ -897,17 +897,17 @@ func (s *DebateResilienceService) getAllComponents() []string {
 
 func (s *DebateResilienceService) handleHealthIssue(componentID string, healthCheck *HealthCheck) {
 	s.logger.Warnf("Health issue detected in component %s: %+v", componentID, healthCheck)
-	
+
 	// Trigger appropriate recovery based on health issue
 	if healthCheck.Status == "critical" {
 		// Initiate recovery process
 		failure := &Failure{
-			Type:      "health_degradation",
-			Component: componentID,
-			Severity:  "high",
+			Type:        "health_degradation",
+			Component:   componentID,
+			Severity:    "high",
 			Description: fmt.Sprintf("Critical health issue in %s", componentID),
 		}
-		
+
 		s.RecoverFromFailure(context.Background(), failure)
 	}
 }
@@ -915,10 +915,10 @@ func (s *DebateResilienceService) handleHealthIssue(componentID string, healthCh
 func (s *DebateResilienceService) generateHealthReport() *HealthReport {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	return &HealthReport{
-		Timestamp:    time.Now(),
-		Components:   s.healthStatus,
+		Timestamp:     time.Now(),
+		Components:    s.healthStatus,
 		OverallHealth: s.calculateOverallHealth(),
 	}
 }
@@ -926,8 +926,8 @@ func (s *DebateResilienceService) generateHealthReport() *HealthReport {
 func (s *DebateResilienceService) getSystemState() *SystemState {
 	// Get current system state for fault detection
 	return &SystemState{
-		Timestamp: time.Now(),
-		Components: s.getAllComponents(),
+		Timestamp:    time.Now(),
+		Components:   s.getAllComponents(),
 		HealthStatus: s.healthStatus,
 	}
 }
@@ -944,21 +944,21 @@ func (s *DebateResilienceService) classifyFault(fault *Fault) FaultClassificatio
 
 func (s *DebateResilienceService) handleFault(fault *Fault, classification FaultClassification) {
 	s.logger.Errorf("Handling fault: %+v (Classification: %+v)", fault, classification)
-	
+
 	// Apply fault isolation
 	if err := s.faultIsolation.IsolateFault(fault); err != nil {
 		s.logger.Errorf("Failed to isolate fault: %v", err)
 	}
-	
+
 	// Initiate recovery if needed
 	if classification.Impact == "high" || classification.Severity == "critical" {
 		recoveryFailure := &Failure{
-			Type:      fault.Type,
-			Component: fault.Component,
-			Severity:  fault.Severity,
+			Type:        fault.Type,
+			Component:   fault.Component,
+			Severity:    fault.Severity,
 			Description: fault.Description,
 		}
-		
+
 		s.RecoverFromFailure(context.Background(), recoveryFailure)
 	}
 }
@@ -981,12 +981,12 @@ func (s *DebateResilienceService) finalizeRecovery(recovery *RecoveryOperation) 
 		Status:     recovery.Status,
 		Duration:   time.Since(recovery.StartTime),
 	}
-	
+
 	s.mu.Lock()
 	s.recoveryHistory = append(s.recoveryHistory, recoveryEvent)
 	delete(s.activeRecoveries, recovery.ID)
 	s.mu.Unlock()
-	
+
 	s.logger.Infof("Recovery operation finalized: %s (Status: %s)", recovery.ID, recovery.Status)
 }
 
@@ -994,15 +994,15 @@ func (s *DebateResilienceService) calculateOverallHealth() string {
 	// Calculate overall system health based on component health
 	healthyCount := 0
 	totalCount := len(s.healthStatus)
-	
+
 	for _, health := range s.healthStatus {
 		if health.Status == "healthy" {
 			healthyCount++
 		}
 	}
-	
+
 	healthPercentage := float64(healthyCount) / float64(totalCount)
-	
+
 	if healthPercentage >= 0.9 {
 		return "healthy"
 	} else if healthPercentage >= 0.7 {
@@ -1132,10 +1132,10 @@ func NewFaultRecovery() *FaultRecovery {
 
 func NewFaultTolerance() *FaultTolerance {
 	return &FaultTolerance{
-		toleranceStrategies:  make(map[string]ToleranceStrategy),
-		redundancyManagers:   make(map[string]RedundancyManager),
-		replicationServices:  make(map[string]ReplicationService),
-		toleranceMetrics:     make(map[string]ToleranceMetric),
+		toleranceStrategies: make(map[string]ToleranceStrategy),
+		redundancyManagers:  make(map[string]RedundancyManager),
+		replicationServices: make(map[string]ReplicationService),
+		toleranceMetrics:    make(map[string]ToleranceMetric),
 	}
 }
 
@@ -1249,19 +1249,19 @@ func NewIntegrityValidator() *IntegrityValidator {
 
 func NewResilienceMonitor() *ResilienceMonitor {
 	return &ResilienceMonitor{
-		monitoringSystems:    make(map[string]ResilienceMonitoringSystem),
-		metricCollectors:     make(map[string]ResilienceMetricCollector),
-		alertGenerators:      make(map[string]ResilienceAlertGenerator),
-		reportGenerators:     make(map[string]ResilienceReportGenerator),
+		monitoringSystems: make(map[string]ResilienceMonitoringSystem),
+		metricCollectors:  make(map[string]ResilienceMetricCollector),
+		alertGenerators:   make(map[string]ResilienceAlertGenerator),
+		reportGenerators:  make(map[string]ResilienceReportGenerator),
 	}
 }
 
 func NewResilienceAlertManager() *ResilienceAlertManager {
 	return &ResilienceAlertManager{
-		alertRules:      make(map[string]ResilienceAlertRule),
-		alertHandlers:   make(map[string]ResilienceAlertHandler),
+		alertRules:        make(map[string]ResilienceAlertRule),
+		alertHandlers:     make(map[string]ResilienceAlertHandler),
 		alertDistributors: make(map[string]ResilienceAlertDistributor),
-		alertMetrics:    make(map[string]ResilienceAlertMetric),
+		alertMetrics:      make(map[string]ResilienceAlertMetric),
 	}
 }
 
@@ -1285,10 +1285,10 @@ func NewPerformanceOptimizer() *PerformanceOptimizer {
 
 func NewResilienceResourceManager() *ResilienceResourceManager {
 	return &ResilienceResourceManager{
-		resourcePools:       make(map[string]ResilienceResourcePool),
-		resourceAllocators:  make(map[string]ResourceAllocator),
-		resourceMonitors:    make(map[string]ResourceMonitor),
-		resourceMetrics:     make(map[string]ResourceMetric),
+		resourcePools:      make(map[string]ResilienceResourcePool),
+		resourceAllocators: make(map[string]ResourceAllocator),
+		resourceMonitors:   make(map[string]ResourceMonitor),
+		resourceMetrics:    make(map[string]ResourceMetric),
 	}
 }
 
@@ -1327,10 +1327,10 @@ type ErrorHandlingResult struct {
 type Operation func() (*OperationResult, error)
 
 type OperationResult struct {
-	Success   bool
-	Data      interface{}
-	Duration  time.Duration
-	Metadata  map[string]interface{}
+	Success  bool
+	Data     interface{}
+	Duration time.Duration
+	Metadata map[string]interface{}
 }
 
 type ResilienceConfig struct {
@@ -1418,9 +1418,9 @@ type RecoveryEvent struct {
 }
 
 type ResilienceMetrics struct {
-	FaultHistory    []FaultEvent
-	RecoveryHistory []RecoveryEvent
-	HealthStatus    map[string]*ComponentHealth
+	FaultHistory     []FaultEvent
+	RecoveryHistory  []RecoveryEvent
+	HealthStatus     map[string]*ComponentHealth
 	ActiveRecoveries int
 }
 
@@ -1431,11 +1431,11 @@ type ResilienceBackupRequest struct {
 }
 
 type ResilienceBackupResult struct {
-	BackupID   string
-	Success    bool
-	Size       int64
-	Duration   time.Duration
-	Checksum   string
+	BackupID string
+	Success  bool
+	Size     int64
+	Duration time.Duration
+	Checksum string
 }
 
 type RestoreRequest struct {
@@ -1452,16 +1452,16 @@ type RestoreResult struct {
 }
 
 type ResilienceReport struct {
-	Timestamp       time.Time
-	FaultHistory    int
-	RecoveryHistory int
-	HealthStatus    map[string]*ComponentHealth
+	Timestamp        time.Time
+	FaultHistory     int
+	RecoveryHistory  int
+	HealthStatus     map[string]*ComponentHealth
 	ActiveRecoveries int
 }
 
 type HealthReport struct {
-	Timestamp    time.Time
-	Components   map[string]*ComponentHealth
+	Timestamp     time.Time
+	Components    map[string]*ComponentHealth
 	OverallHealth string
 }
 
@@ -1575,7 +1575,9 @@ type CoordinationService interface{}
 type OrchestrationMetric interface{}
 type RecoveryWorkflow interface{}
 type CoordinationProtocol interface{}
-type RecoveryStrategy struct{}
+
+// Use common types
+// RecoveryStrategy removed - using common.RecoveryStrategy
 type StrategySelector struct{}
 type StrategyEvaluator struct{}
 type StrategyOptimizer struct{}
