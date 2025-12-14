@@ -5,10 +5,10 @@ A comprehensive, generic toolkit for building AI-powered applications with suppo
 ## Features
 
 - **Multi-Provider Support**: SiliconFlow, OpenRouter, NVIDIA, Claude, and extensible provider system
-- **Specialized Agents**: Generic assistant, code review, and custom agent support
+- **Specialized Agents**: Generic assistant, code review, and custom agent support with extensible architecture
 - **Configuration Management**: Flexible configuration builders and validation
 - **CLI Tool**: Command-line interface for easy management and testing
-- **Integration Testing**: Comprehensive test suite for validation
+- **Advanced Testing**: Comprehensive test suite with fuzzing, benchmarking, and 85.8% coverage
 - **Extensible Architecture**: Easy to add new providers and agents
 
 ## Installation
@@ -349,6 +349,30 @@ agents/
     config.go         # Configuration handling
 ```
 
+### Agents
+
+The toolkit provides specialized AI agents for different use cases:
+
+#### Generic Agent
+
+A versatile AI assistant for general tasks:
+
+```go
+agent := agents.NewGenericAgent("Assistant", "A helpful AI assistant", provider)
+result, err := agent.Execute(ctx, "Explain machine learning", nil)
+```
+
+#### Code Review Agent
+
+Specialized agent for code analysis and review:
+
+```go
+agent := agents.NewCodeReviewAgent("CodeReviewer", provider)
+feedback, err := agent.Execute(ctx, "func add(a, b int) int { return a + b }", map[string]interface{}{
+    "language": "go",
+})
+```
+
 ### Testing
 
 Run the test suite:
@@ -365,14 +389,17 @@ make test
 
 # With coverage
 make test-coverage
+
+# Fuzz tests
+make test-fuzz
 ```
 
 #### Test Coverage
 
 The toolkit maintains high test coverage across all modules:
 
-- **Overall Coverage**: 88.3%
-- **Commons Modules**: 89.2% - 100%
+- **Overall Coverage**: 85.8%
+- **Commons Modules**: 87.7% - 100%
   - `auth`: 87.9%
   - `config`: 97.1%
   - `discovery`: 99.0%
@@ -380,11 +407,14 @@ The toolkit maintains high test coverage across all modules:
   - `http`: 89.2%
   - `ratelimit`: 95.2%
   - `response`: 89.6%
-  - `testing`: 91.8%
+  - `testing`: 87.7%
 - **Provider Modules**: 72.5% - 92.1%
   - `Chutes`: 72.5%
   - `SiliconFlow`: 92.1%
-- **pkg/toolkit**: 100.0%
+- **pkg/toolkit**: 80.5% - 100%
+  - `agents`: 100.0%
+  - `common/*`: 80.5% - 100%
+  - `interfaces`: 100.0%
 
 Coverage reports are generated with `make test-coverage` and include detailed breakdowns by package.
 
@@ -394,6 +424,7 @@ Coverage reports are generated with `make test-coverage` and include detailed br
 - **Property-Based Testing**: Table-driven tests and invariant checks throughout the codebase
 - **Concurrent Testing**: Comprehensive testing of concurrent operations in rate limiting and discovery
 - **Integration Testing**: End-to-end tests for provider interactions with proper mocking
+- **Performance Benchmarking**: Benchmarks for HTTP clients, rate limiters, and core operations
 
 ### Code Quality
 
