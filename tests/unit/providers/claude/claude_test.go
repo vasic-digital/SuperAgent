@@ -20,20 +20,22 @@ func TestClaudeProvider_Basic(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, provider)
 
-	// Test configuration validation
-	valid, errs := provider.ValidateConfig(map[string]interface{}{})
+	// Test configuration validation with proper config
+	valid, errs := provider.ValidateConfig(map[string]interface{}{
+		"api_key": "test-api-key",
+		"model":   "claude-3-opus-20240229",
+	})
 	assert.True(t, valid)
 	assert.Empty(t, errs)
 }
 
 func TestClaudeProvider_EmptyAPIKey(t *testing.T) {
 	logger := logrus.New()
+	// Should fail to create provider with empty API key
 	provider, err := providers.NewClaudeProvider("", "", "claude-3-opus-20240229", 30*time.Second, 3, logger)
-	require.NoError(t, err)
-	err = provider.HealthCheck()
-	// HealthCheck returns nil for 400 status codes (expected behavior for Claude API)
-	// The API is reachable but returns 400 for GET requests to messages endpoint
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.Nil(t, provider)
+	assert.Contains(t, err.Error(), "API key is required")
 }
 
 func TestClaudeProvider_Capabilities(t *testing.T) {
@@ -186,16 +188,26 @@ func TestClaudeProvider_ValidateConfig(t *testing.T) {
 	provider, err := providers.NewClaudeProvider("test-api-key", "", "claude-3-opus-20240229", 30*time.Second, 3, logger)
 	require.NoError(t, err)
 
-	// Test with empty config
-	valid, errs := provider.ValidateConfig(map[string]interface{}{})
+	// Test with valid config
+	valid, errs := provider.ValidateConfig(map[string]interface{}{
+		"api_key": "test-api-key",
+		"model":   "claude-3-opus-20240229",
+	})
 	assert.True(t, valid)
 	assert.Empty(t, errs)
 
-	// Test with some config values
+	// Test with invalid config (missing required fields)
 	valid, errs = provider.ValidateConfig(map[string]interface{}{
 		"timeout": 30,
 		"retries": 3,
 	})
-	assert.True(t, valid)
-	assert.Empty(t, errs)
+	assert.False(t, valid)
+	assert.NotEmpty(t, errs)
+	assert.Contains(t, errs, "api_key is required")
+	assert.Contains(t, errs, "model is required")
+
+	// Test with empty config
+	valid, errs = provider.ValidateConfig(map[string]interface{}{})
+	assert.False(t, valid)
+	assert.NotEmpty(t, errs)
 }

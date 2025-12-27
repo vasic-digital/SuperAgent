@@ -1,0 +1,337 @@
+openapi: 3.0.3
+info:
+  title: SuperAgent AI Debate API
+  description: |
+    Comprehensive API for AI-powered debates with multi-provider support,
+    Cognee AI enhancement, and advanced monitoring capabilities.
+  version: 1.0.0
+  contact:
+    name: SuperAgent Support
+    email: support@superagent.ai
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.superagent.ai/v1
+    description: Production server
+  - url: http://localhost:8080/v1
+    description: Development server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /debates:
+    post:
+      summary: Create a new debate
+      description: Initiates a new AI debate with specified participants and configuration
+      operationId: createDebate
+      tags:
+        - Debates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DebateRequest'
+      responses:
+        '201':
+          description: Debate created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebateResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /debates/{debateId}:
+    get:
+      summary: Get debate details
+      description: Retrieves comprehensive information about a specific debate
+      operationId: getDebate
+      tags:
+        - Debates
+      parameters:
+        - name: debateId
+          in: path
+          required: true
+          description: Unique identifier for the debate
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9-]+$'
+      responses:
+        '200':
+          description: Debate details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebateDetails'
+        '404':
+          description: Debate not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token
+
+  schemas:
+    DebateRequest:
+      type: object
+      required:
+        - debateId
+        - topic
+        - participants
+        - maxRounds
+        - timeout
+      properties:
+        debateId:
+          type: string
+          description: Unique identifier for the debate
+          example: "debate-123"
+        topic:
+          type: string
+          description: The debate topic or question
+          example: "Should AI be regulated?"
+        participants:
+          type: array
+          minItems: 2
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/Participant'
+        maxRounds:
+          type: integer
+          description: Maximum number of debate rounds
+          minimum: 1
+          maximum: 10
+          example: 3
+        timeout:
+          type: integer
+          description: Total timeout in seconds
+          minimum: 60
+          maximum: 3600
+          example: 300
+        strategy:
+          type: string
+          description: Debate strategy to use
+          enum: [structured, free_form, round_robin, socratic, adversarial]
+          default: "structured"
+        enableCognee:
+          type: boolean
+          description: Enable Cognee AI enhancement
+          default: false
+        metadata:
+          type: object
+          description: Additional metadata
+          additionalProperties: true
+
+    Participant:
+      type: object
+      required:
+        - participantId
+        - name
+        - role
+        - llmProvider
+        - llmModel
+      properties:
+        participantId:
+          type: string
+          description: Unique identifier for the participant
+          example: "participant-1"
+        name:
+          type: string
+          description: Participant name
+          example: "Alice"
+        role:
+          type: string
+          description: Participant role in the debate
+          enum: [proponent, opponent, neutral, moderator]
+          example: "proponent"
+        llmProvider:
+          type: string
+          description: LLM provider to use
+          enum: [claude, deepseek, gemini, qwen, zai, ollama, openrouter]
+          example: "claude"
+        llmModel:
+          type: string
+          description: Specific model to use
+          example: "claude-3-opus-20240229"
+        maxRounds:
+          type: integer
+          description: Maximum rounds for this participant
+          minimum: 1
+          maximum: 10
+          example: 3
+        timeout:
+          type: integer
+          description: Timeout for this participant in seconds
+          minimum: 30
+          maximum: 600
+          example: 120
+        weight:
+          type: number
+          description: Voting weight for this participant
+          minimum: 0.1
+          maximum: 5.0
+          example: 1.0
+
+    DebateResponse:
+      type: object
+      properties:
+        debateId:
+          type: string
+          description: Unique identifier for the created debate
+        status:
+          type: string
+          description: Current status of the debate
+          enum: [created, running, completed, failed]
+        startTime:
+          type: string
+          format: date-time
+          description: When the debate was started
+        estimatedEndTime:
+          type: string
+          format: date-time
+          description: Estimated completion time
+        message:
+          type: string
+          description: Status message
+
+    DebateDetails:
+      type: object
+      properties:
+        debateId:
+          type: string
+        topic:
+          type: string
+        status:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+          description: Duration in seconds
+        totalRounds:
+          type: integer
+        currentRound:
+          type: integer
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantDetails'
+        consensus:
+          $ref: '#/components/schemas/ConsensusResult'
+        qualityScore:
+          type: number
+          minimum: 0
+          maximum: 1
+        success:
+          type: boolean
+        errorMessage:
+          type: string
+
+    ParticipantDetails:
+      type: object
+      properties:
+        participantId:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        currentResponse:
+          type: string
+        responseTime:
+          type: integer
+        error:
+          type: string
+
+    ConsensusResult:
+      type: object
+      properties:
+        achieved:
+          type: boolean
+        confidence:
+          type: number
+        agreementLevel:
+          type: number
+        finalPosition:
+          type: string
+        keyPoints:
+          type: array
+          items:
+            type: string
+        disagreements:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+          description: When the error occurred
+
+tags:
+  - name: Debates
+    description: Core debate operations
+  - name: Providers
+    description: LLM provider management
+  - name: History
+    description: Debate history and analytics
+  - name: Monitoring
+    description: System monitoring and metrics
+  - name: Results
+    description: Debate results and consensus
+  - name: Reporting
+    description: Report generation and export
+
+externalDocs:
+  description: Find more information about SuperAgent
+  url: https://docs.superagent.ai

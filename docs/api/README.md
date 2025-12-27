@@ -1,494 +1,654 @@
-# SuperAgent LLM Facade API Documentation
+# SuperAgent API Documentation
 
 ## Overview
 
-SuperAgent is a production-ready LLM facade system that provides unified access to multiple LLM providers through intelligent ensemble voting, streaming support, and comprehensive API compatibility.
+The SuperAgent API provides comprehensive endpoints for AI-powered debates with multi-provider support, Cognee AI enhancement, and advanced monitoring capabilities.
 
 ## Base URL
+
 ```
-https://api.superagent.ai/v1
+Production: https://api.superagent.ai/v1
+Development: http://localhost:8080/v1
 ```
 
 ## Authentication
 
-SuperAgent uses JWT-based authentication with Bearer tokens.
+All API requests require authentication using Bearer tokens:
 
-### Login
 ```http
-POST /v1/auth/login
-Content-Type: application/json
-
-{
-  "username": "string",
-  "password": "string"
-}
+Authorization: Bearer YOUR_API_TOKEN
 ```
 
-**Response:**
+## Content Types
+
+All requests and responses use `application/json` unless otherwise specified.
+
+---
+
+## Core Endpoints
+
+### Debates
+
+#### Create Debate
+
+**POST** `/debates`
+
+Creates a new AI debate with specified participants and configuration.
+
+**Request Body:**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expires_in": 86400,
-  "user": {
-    "id": "user123",
-    "username": "john_doe",
-    "role": "user"
-  }
-}
-```
-
-### Refresh Token
-```http
-POST /v1/auth/refresh
-Authorization: Bearer <token>
-```
-
-### Logout
-```http
-POST /v1/auth/logout
-Authorization: Bearer <token>
-```
-
-### Get User Info
-```http
-GET /v1/auth/me
-Authorization: Bearer <token>
-```
-
-## Completions API
-
-### Standard Completion
-Generate text completions using ensemble voting across multiple providers.
-
-```http
-POST /v1/completions
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "prompt": "Write a Python function to calculate fibonacci numbers",
-  "model": "claude-3-sonnet-20240229",
-  "temperature": 0.7,
-  "max_tokens": 1000,
-  "top_p": 1.0,
-  "stop": ["\n\n", "###"],
-  "ensemble_config": {
-    "strategy": "confidence_weighted",
-    "min_providers": 2,
-    "confidence_threshold": 0.8,
-    "fallback_to_best": true,
-    "preferred_providers": ["claude", "deepseek"]
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "id": "cmpl-1234567890",
-  "object": "text_completion",
-  "created": 1677652288,
-  "model": "claude-3-sonnet-20240229",
-  "choices": [
+  "debateId": "climate-debate-001",
+  "topic": "Should governments implement carbon taxes?",
+  "participants": [
     {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-        "content": "def fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)"
-      },
-      "finish_reason": "stop"
-    }
-  ],
-  "usage": {
-    "prompt_tokens": 15,
-    "completion_tokens": 35,
-    "total_tokens": 50
-  }
-}
-```
-
-### Streaming Completion
-```http
-POST /v1/completions/stream
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "prompt": "Write a comprehensive guide to Go concurrency",
-  "model": "deepseek-coder",
-  "stream": true,
-  "temperature": 0.8,
-  "max_tokens": 2000
-}
-```
-
-**Streaming Response:**
-```json
-data: {"id": "cmpl-123", "object": "text_completion", "choices": [{"index": 0, "delta": {"content": "Go"}}]}
-
-data: {"id": "cmpl-123", "object": "text_completion", "choices": [{"index": 0, "delta": {"content": " concurrency"}}]}
-
-data: [DONE]
-```
-
-## Chat API
-
-### Chat Completion
-```http
-POST /v1/chat/completions
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "model": "gpt-3.5-turbo",
-  "messages": [
-    {
-      "role": "system",
-      "content": "You are a helpful coding assistant."
+      "participantId": "ai-economist",
+      "name": "AI Economist",
+      "role": "proponent",
+      "llmProvider": "claude",
+      "llmModel": "claude-3-opus-20240229",
+      "maxRounds": 3,
+      "timeout": 120,
+      "weight": 1.0
     },
     {
-      "role": "user",
-      "content": "Explain goroutines in Go"
+      "participantId": "ai-policy-expert",
+      "name": "AI Policy Expert",
+      "role": "opponent",
+      "llmProvider": "deepseek",
+      "llmModel": "deepseek-chat",
+      "maxRounds": 3,
+      "timeout": 120,
+      "weight": 1.0
     }
   ],
-  "temperature": 0.7,
-  "max_tokens": 1000,
-  "memory_enhanced": true
-}
-```
-
-**Response:**
-```json
-{
-  "id": "chatcmpl-123",
-  "object": "chat.completion",
-  "created": 1677652288,
-  "model": "claude-3-sonnet-20240229",
-  "choices": [
-    {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-        "content": "Goroutines are lightweight threads managed by the Go runtime..."
-      },
-      "finish_reason": "stop"
-    }
-  ],
-  "usage": {
-    "prompt_tokens": 25,
-    "completion_tokens": 150,
-    "total_tokens": 175
+  "maxRounds": 3,
+  "timeout": 600,
+  "strategy": "structured",
+  "enableCognee": true,
+  "metadata": {
+    "category": "policy",
+    "difficulty": "advanced"
   }
 }
 ```
 
-### Streaming Chat
-```http
-POST /v1/chat/completions/stream
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "model": "claude-3-sonnet-20240229",
-  "messages": [
-    {"role": "user", "content": "Write a React component"}
-  ],
-  "stream": true,
-  "temperature": 0.7
-}
-```
-
-## Ensemble API
-
-### Ensemble Completion
-Use multiple providers with intelligent voting.
-
-```http
-POST /v1/ensemble/completions
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "prompt": "Design a microservices architecture",
-  "ensemble_config": {
-    "strategy": "confidence_weighted",
-    "min_providers": 3,
-    "confidence_threshold": 0.85,
-    "preferred_providers": ["claude", "deepseek", "gemini"]
-  }
-}
-```
-
-**Response:**
+**Response (201 Created):**
 ```json
 {
-  "id": "ensemble-123",
-  "object": "ensemble.completion",
-  "created": 1677652288,
-  "model": "claude-3-sonnet-20240229",
-  "choices": [
-    {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-        "content": "Microservices architecture involves..."
-      },
-      "finish_reason": "stop"
-    }
-  ],
-  "usage": {
-    "prompt_tokens": 20,
-    "completion_tokens": 200,
-    "total_tokens": 220
+  "debateId": "climate-debate-001",
+  "status": "created",
+  "startTime": "2024-01-15T10:30:00Z",
+  "estimatedEndTime": "2024-01-15T10:40:00Z",
+  "message": "Debate created successfully"
+}
+```
+
+**Error Response (400 Bad Request):**
+```json
+{
+  "error": "INVALID_REQUEST",
+  "message": "Invalid debate configuration",
+  "details": {
+    "field": "participants",
+    "reason": "At least 2 participants required"
   },
-  "ensemble": {
-    "voting_method": "confidence_weighted",
-    "responses_count": 3,
-    "scores": {
-      "claude": 0.92,
-      "deepseek": 0.88,
-      "gemini": 0.85
-    },
-    "metadata": {
-      "total_providers": 3,
-      "successful_providers": 3,
-      "failed_providers": 0,
-      "execution_time": 1250
-    },
-    "selected_provider": "claude",
-    "selection_score": 0.92
-  }
+  "timestamp": "2024-01-15T10:30:00Z"
 }
 ```
 
-## Models API
+#### Get Debate Details
 
-### List Available Models
-```http
-GET /v1/models
-```
+**GET** `/debates/{debateId}`
 
-**Response:**
+Retrieves comprehensive information about a specific debate.
+
+**Path Parameters:**
+- `debateId` (string, required): Unique identifier for the debate
+
+**Response (200 OK):**
 ```json
 {
-  "object": "list",
-  "data": [
+  "debateId": "climate-debate-001",
+  "topic": "Should governments implement carbon taxes?",
+  "status": "completed",
+  "startTime": "2024-01-15T10:30:00Z",
+  "endTime": "2024-01-15T10:38:00Z",
+  "duration": 480,
+  "totalRounds": 3,
+  "currentRound": 3,
+  "participants": [
     {
-      "id": "deepseek-coder",
-      "object": "model",
-      "created": 1677652288,
-      "owned_by": "deepseek",
-      "permission": "code_generation",
-      "root": "deepseek",
-      "parent": null
-    },
+      "participantId": "ai-economist",
+      "name": "AI Economist",
+      "role": "proponent",
+      "status": "completed",
+      "currentResponse": "Based on economic analysis, carbon taxes are the most efficient...",
+      "responseTime": 8500,
+      "error": null
+    }
+  ],
+  "consensus": {
+    "achieved": true,
+    "confidence": 0.78,
+    "agreementLevel": 0.65,
+    "finalPosition": "Carbon taxes should be implemented with careful consideration",
+    "keyPoints": [
+      "Economic efficiency of market-based solutions",
+      "Need for comprehensive policy framework",
+      "Importance of equitable implementation"
+    ],
+    "disagreements": [
+      "Optimal tax rate determination",
+      "Impact on low-income households"
+    ],
+    "timestamp": "2024-01-15T10:38:00Z"
+  },
+  "qualityScore": 0.85,
+  "success": true,
+  "errorMessage": null
+}
+```
+
+#### Get Debate Status
+
+**GET** `/debates/{debateId}/status`
+
+Retrieves real-time status of an ongoing debate.
+
+**Response (200 OK):**
+```json
+{
+  "debateId": "climate-debate-001",
+  "status": "running",
+  "currentRound": 2,
+  "totalRounds": 3,
+  "startTime": "2024-01-15T10:30:00Z",
+  "estimatedEndTime": "2024-01-15T10:40:00Z",
+  "participants": [
     {
-      "id": "claude-3-sonnet-20240229",
-      "object": "model",
-      "created": 1677652288,
-      "owned_by": "anthropic",
-      "permission": "reasoning",
-      "root": "claude",
-      "parent": null
+      "participantId": "ai-economist",
+      "name": "AI Economist",
+      "status": "responding",
+      "currentResponse": "Building on the previous point...",
+      "responseTime": 3200,
+      "error": null
     }
   ]
 }
 ```
 
-## Provider Management API
+#### Get Debate Results
 
-### List Providers
-```http
-GET /v1/providers
+**GET** `/debates/{debateId}/results`
+
+Retrieves final results and consensus information.
+
+**Response (200 OK):**
+```json
+{
+  "debateId": "climate-debate-001",
+  "startTime": "2024-01-15T10:30:00Z",
+  "endTime": "2024-01-15T10:38:00Z",
+  "duration": 480,
+  "totalRounds": 3,
+  "participants": [
+    {
+      "participantId": "ai-economist",
+      "name": "AI Economist",
+      "role": "proponent",
+      "round": 3,
+      "response": "In conclusion, carbon taxes represent the most economically efficient...",
+      "confidence": 0.92,
+      "qualityScore": 0.88,
+      "responseTime": 8500,
+      "llmProvider": "claude",
+      "llmModel": "claude-3-opus-20240229",
+      "timestamp": "2024-01-15T10:37:00Z"
+    }
+  ],
+  "consensus": {
+    "achieved": true,
+    "confidence": 0.78,
+    "agreementLevel": 0.65,
+    "finalPosition": "Carbon taxes should be implemented with careful consideration",
+    "keyPoints": [
+      "Economic efficiency of market-based solutions",
+      "Need for comprehensive policy framework",
+      "Importance of equitable implementation"
+    ],
+    "disagreements": [
+      "Optimal tax rate determination",
+      "Impact on low-income households"
+    ],
+    "timestamp": "2024-01-15T10:38:00Z"
+  },
+  "qualityScore": 0.85,
+  "success": true,
+  "errorMessage": null
+}
 ```
 
-**Response:**
+#### Generate Debate Report
+
+**GET** `/debates/{debateId}/report`
+
+Creates a comprehensive report for the debate.
+
+**Query Parameters:**
+- `format` (string, optional): Report format - `json`, `pdf`, or `html` (default: `json`)
+
+**Response (200 OK):**
+```json
+{
+  "reportId": "report-climate-debate-001",
+  "debateId": "climate-debate-001",
+  "generatedAt": "2024-01-15T10:40:00Z",
+  "summary": "The debate on carbon taxation resulted in consensus with 78% confidence...",
+  "keyFindings": [
+    "Both participants agreed on the economic efficiency of carbon taxes",
+    "Implementation challenges were extensively discussed",
+    "Consensus was reached on the need for comprehensive policy frameworks"
+  ],
+  "recommendations": [
+    "Implement carbon taxes with careful consideration of social impacts",
+    "Establish clear policy frameworks before implementation",
+    "Consider phased implementation to assess impacts"
+  ],
+  "metrics": {
+    "duration": 480,
+    "totalRounds": 3,
+    "qualityScore": 0.85,
+    "throughput": 0.375,
+    "latency": 8850,
+    "errorRate": 0.0,
+    "resourceUsage": {
+      "cpu": 0.15,
+      "memory": 104857600,
+      "network": 5242880
+    }
+  }
+}
+```
+
+### Providers
+
+#### List Available Providers
+
+**GET** `/providers`
+
+Retrieves all configured LLM providers and their capabilities.
+
+**Response (200 OK):**
 ```json
 {
   "providers": [
     {
-      "name": "claude",
-      "supported_models": ["claude-3-sonnet-20240229", "claude-3-opus-20240229"],
-      "supported_features": ["streaming", "function_calling"],
-      "supports_streaming": true,
-      "supports_function_calling": true,
-      "supports_vision": false,
-      "metadata": {
-        "version": "1.0.0",
-        "region": "us-west-2"
-      }
+      "providerId": "claude-001",
+      "name": "Anthropic Claude",
+      "type": "claude",
+      "status": "active",
+      "capabilities": {
+        "supportedModels": [
+          "claude-3-opus-20240229",
+          "claude-3-sonnet-20240229",
+          "claude-3-haiku-20240307"
+        ],
+        "supportedFeatures": [
+          "long_context",
+          "vision",
+          "tools",
+          "function_calling"
+        ],
+        "supportedRequestTypes": [
+          "completion",
+          "streaming"
+        ],
+        "supportsStreaming": true,
+        "supportsFunctionCalling": true,
+        "supportsVision": true,
+        "supportsTools": true,
+        "limits": {
+          "maxTokens": 200000,
+          "maxInputLength": 200000,
+          "maxOutputLength": 4096,
+          "maxConcurrentRequests": 50
+        },
+        "metadata": {
+          "provider": "anthropic",
+          "version": "2024-02-29"
+        }
+      },
+      "responseTime": 8500,
+      "lastHealthCheck": "2024-01-15T10:45:00Z"
     }
-  ],
-  "count": 3
-}
-```
-
-### Provider Health
-```http
-GET /v1/providers/{name}/health
-```
-
-**Response:**
-```json
-{
-  "provider": "claude",
-  "healthy": true
-}
-```
-
-## Health & Monitoring
-
-### System Health
-```http
-GET /v1/health
-```
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "providers": {
-    "total": 3,
-    "healthy": 3,
-    "unhealthy": 0
-  },
-  "timestamp": 1677652288
-}
-```
-
-### Metrics
-```http
-GET /metrics
-```
-
-Returns Prometheus metrics for monitoring.
-
-## Error Handling
-
-All APIs return standard HTTP status codes and error responses:
-
-```json
-{
-  "error": {
-    "message": "Invalid request format",
-    "type": "invalid_request",
-    "code": "400"
-  }
-}
-```
-
-## Rate Limiting
-
-- **Authenticated requests**: 1000 requests/hour per user
-- **Anonymous requests**: 100 requests/hour per IP
-- **Streaming requests**: 10 concurrent streams per user
-
-Rate limit headers are included in responses:
-```
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1677652288
-```
-
-## Memory Enhancement
-
-Enable memory-enhanced responses by setting `memory_enhanced: true`:
-
-```json
-{
-  "prompt": "Continue the story about the dragon",
-  "memory_enhanced": true,
-  "messages": [
-    {"role": "user", "content": "Once upon a time there was a dragon..."}
   ]
 }
 ```
 
-This integrates with Cognee for context-aware responses.
+#### Get Provider Health Status
 
-## Streaming Protocol
+**GET** `/providers/{providerId}/health`
 
-Streaming responses use Server-Sent Events format:
+Retrieves health status of a specific LLM provider.
 
-```
-data: {"id": "cmpl-123", "object": "text_completion", "choices": [{"index": 0, "delta": {"content": "Hello"}}]}
-
-data: {"id": "cmpl-123", "object": "text_completion", "choices": [{"index": 0, "delta": {"content": " world"}}]}
-
-data: [DONE]
-```
-
-## SDK Examples
-
-### Go Client
-```go
-client := superagent.NewClient("your-api-key")
-
-response, err := client.Completions(context.Background(), superagent.CompletionRequest{
-    Prompt: "Write a Go function",
-    Model:  "claude-3-sonnet-20240229",
-    Temperature: 0.7,
-})
+**Response (200 OK):**
+```json
+{
+  "providerId": "claude-001",
+  "status": "healthy",
+  "lastCheck": "2024-01-15T10:45:00Z",
+  "responseTime": 8200,
+  "errorCount": 2,
+  "successRate": 0.996
+}
 ```
 
-### Python Client
-```python
-import superagent
+### History
 
-client = superagent.Client("your-api-key")
-response = client.completions.create(
-    prompt="Write a Python function",
-    model="deepseek-coder",
-    temperature=0.7
-)
-```
+#### Get Debate History
 
-## WebSocket Support
+**GET** `/history`
 
-For real-time applications, WebSocket connections are available:
+Retrieves historical debate data with filtering options.
 
-```javascript
-const ws = new WebSocket('wss://api.superagent.ai/v1/ws/completions');
+**Query Parameters:**
+- `startTime` (string, optional): Start time (ISO 8601)
+- `endTime` (string, optional): End time (ISO 8601)
+- `participantIds` (array, optional): Filter by participant IDs
+- `minQualityScore` (number, optional): Minimum quality score (0-1)
+- `maxQualityScore` (number, optional): Maximum quality score (0-1)
+- `limit` (integer, optional): Maximum results (1-100, default: 50)
+- `offset` (integer, optional): Offset for pagination (default: 0)
 
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.choices[0].delta.content) {
-        console.log(data.choices[0].delta.content);
+**Response (200 OK):**
+```json
+{
+  "debates": [
+    {
+      "debateId": "climate-debate-001",
+      "topic": "Should governments implement carbon taxes?",
+      "startTime": "2024-01-15T10:30:00Z",
+      "endTime": "2024-01-15T10:38:00Z",
+      "duration": 480,
+      "totalRounds": 3,
+      "participants": ["AI Economist", "AI Policy Expert"],
+      "consensus": true,
+      "qualityScore": 0.85
     }
-};
-
-ws.send(JSON.stringify({
-    prompt: "Tell me a story",
-    stream: true,
-    model: "claude-3-sonnet-20240229"
-}));
+  ],
+  "totalCount": 156,
+  "limit": 50,
+  "offset": 0
+}
 ```
 
-## Configuration
+### Monitoring
 
-### Environment Variables
-- `SUPERAGENT_API_KEY`: Your API key
-- `JWT_SECRET`: JWT signing secret
-- `DB_HOST`: PostgreSQL host
-- `REDIS_HOST`: Redis host
-- `COGNEE_API_KEY`: Cognee API key
+#### Get System Metrics
 
-### Provider Configuration
-Configure provider API keys and settings through the admin interface or environment variables.
+**GET** `/metrics`
 
-## Security
+Retrieves performance and system metrics.
 
-- All API calls require authentication
-- TLS 1.3 encryption for all connections
-- Input validation and sanitization
-- Rate limiting and abuse prevention
-- Audit logging for all requests
-- Secure credential storage
+**Query Parameters:**
+- `timeRange` (string, optional): Time range - `1h`, `6h`, `24h`, `7d`, `30d` (default: `24h`)
+
+**Response (200 OK):**
+```json
+{
+  "timeRange": "24h",
+  "totalDebates": 47,
+  "averageDuration": 420,
+  "averageQualityScore": 0.82,
+  "successRate": 0.957,
+  "providerMetrics": [
+    {
+      "providerId": "claude-001",
+      "totalRequests": 156,
+      "successCount": 154,
+      "errorCount": 2,
+      "averageResponseTime": 8250,
+      "successRate": 0.987
+    }
+  ]
+}
+```
+
+---
+
+## Error Handling
+
+### Error Response Format
+
+All error responses follow a consistent format:
+
+```json
+{
+  "error": "ERROR_CODE",
+  "message": "Human-readable error message",
+  "details": {
+    "field": "specific_field",
+    "reason": "Detailed explanation"
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+### Common Error Codes
+
+| Error Code | Description | HTTP Status |
+|------------|-------------|-------------|
+| `INVALID_REQUEST` | Request validation failed | 400 |
+| `UNAUTHORIZED` | Authentication required | 401 |
+| `FORBIDDEN` | Insufficient permissions | 403 |
+| `NOT_FOUND` | Resource not found | 404 |
+| `RATE_LIMIT_EXCEEDED` | Too many requests | 429 |
+| `PROVIDER_ERROR` | LLM provider error | 502 |
+| `INTERNAL_ERROR` | Internal server error | 500 |
+
+### Error Handling Examples
+
+**Validation Error:**
+```json
+{
+  "error": "INVALID_REQUEST",
+  "message": "Invalid debate configuration",
+  "details": {
+    "field": "participants",
+    "reason": "At least 2 participants required"
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+**Provider Error:**
+```json
+{
+  "error": "PROVIDER_ERROR",
+  "message": "LLM provider unavailable",
+  "details": {
+    "provider": "claude",
+    "reason": "Rate limit exceeded"
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+---
+
+## Rate Limiting
+
+### Rate Limits
+
+- **Authenticated requests**: 1000 requests per hour
+- **Debate creation**: 50 debates per hour
+- **Provider requests**: Provider-specific limits apply
+
+### Rate Limit Headers
+
+```http
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 856
+X-RateLimit-Reset: 1705323600
+```
+
+---
+
+## Webhooks
+
+### Webhook Events
+
+Configure webhooks to receive real-time updates:
+
+**Debate Events:**
+- `debate.created` - New debate created
+- `debate.started` - Debate started
+- `debate.round_completed` - Round completed
+- `debate.completed` - Debate completed
+- `debate.failed` - Debate failed
+
+**Provider Events:**
+- `provider.health_changed` - Provider health status changed
+- `provider.rate_limit_hit` - Provider rate limit exceeded
+
+### Webhook Payload
+
+```json
+{
+  "event": "debate.completed",
+  "timestamp": "2024-01-15T10:38:00Z",
+  "data": {
+    "debateId": "climate-debate-001",
+    "status": "completed",
+    "qualityScore": 0.85,
+    "consensus": {
+      "achieved": true,
+      "confidence": 0.78
+    }
+  }
+}
+```
+
+---
+
+## SDKs and Libraries
+
+### Official SDKs
+
+- **Go**: `github.com/superagent/superagent-go`
+- **Python**: `pip install superagent-ai`
+- **JavaScript**: `npm install superagent-ai`
+- **TypeScript**: `npm install @superagent/ai`
+
+### Example Usage
+
+#### Python SDK
+```python
+from superagent_ai import SuperAgentClient
+
+client = SuperAgentClient(api_key="your-api-key")
+
+# Create a debate
+debate = client.debates.create({
+    "debateId": "climate-debate-001",
+    "topic": "Should governments implement carbon taxes?",
+    "participants": [
+        {
+            "participantId": "ai-economist",
+            "name": "AI Economist",
+            "role": "proponent",
+            "llmProvider": "claude",
+            "llmModel": "claude-3-opus-20240229"
+        }
+    ],
+    "maxRounds": 3,
+    "timeout": 300,
+    "enableCognee": True
+})
+
+# Monitor debate status
+status = client.debates.get_status("climate-debate-001")
+print(f"Current round: {status['currentRound']}")
+```
+
+#### JavaScript SDK
+```javascript
+import { SuperAgentClient } from '@superagent/ai';
+
+const client = new SuperAgentClient({
+  apiKey: 'your-api-key',
+  baseURL: 'https://api.superagent.ai/v1'
+});
+
+// Create and monitor a debate
+const debate = await client.debates.create({
+  debateId: 'climate-debate-001',
+  topic: 'Should governments implement carbon taxes?',
+  participants: [
+    {
+      participantId: 'ai-economist',
+      name: 'AI Economist',
+      role: 'proponent',
+      llmProvider: 'claude',
+      llmModel: 'claude-3-opus-20240229'
+    }
+  ],
+  maxRounds: 3,
+  timeout: 300,
+  enableCognee: true
+});
+
+// Poll for status updates
+const status = await client.debates.getStatus('climate-debate-001');
+console.log(`Current round: ${status.currentRound}`);
+```
+
+---
+
+## Best Practices
+
+### Request Optimization
+
+1. **Batch Operations**: Use bulk endpoints when available
+2. **Caching**: Cache provider capabilities and health status
+3. **Timeouts**: Set appropriate timeouts for long-running operations
+4. **Retry Logic**: Implement exponential backoff for transient errors
+
+### Security
+
+1. **API Key Storage**: Never expose API keys in client-side code
+2. **HTTPS Only**: Always use HTTPS for production requests
+3. **Rate Limiting**: Implement client-side rate limiting
+4. **Input Validation**: Validate all inputs before sending to API
+
+### Performance
+
+1. **Connection Pooling**: Reuse HTTP connections
+2. **Compression**: Enable gzip compression for large payloads
+3. **Async Processing**: Use webhooks for long-running operations
+4. **Caching**: Cache frequently accessed data
+
+---
 
 ## Support
 
-For support and documentation:
-- API Documentation: https://docs.superagent.ai
-- Community Forum: https://community.superagent.ai
-- GitHub Issues: https://github.com/superagent/superagent/issues
-- Email Support: support@superagent.ai
+### Getting Help
+
+- **Documentation**: https://docs.superagent.ai
+- **API Status**: https://status.superagent.ai
+- **Support Email**: support@superagent.ai
+- **Community**: https://community.superagent.ai
+
+### Status Codes
+
+Monitor API status at: https://status.superagent.ai
+
+### Changelog
+
+Stay updated with API changes: https://docs.superagent.ai/changelog
+
+---
+
+*Last Updated: 2024-12-27*
+*API Version: 1.0.0*
