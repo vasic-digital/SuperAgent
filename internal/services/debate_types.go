@@ -7,59 +7,83 @@ import (
 
 // DebateResult represents the outcome of a complete AI debate
 type DebateResult struct {
-	DebateID       string                 `json:"debate_id"`
-	StartTime      time.Time              `json:"start_time"`
-	EndTime        time.Time              `json:"end_time"`
-	Duration       time.Duration          `json:"duration"`
-	TotalRounds    int                    `json:"total_rounds"`
-	Participants   []ParticipantResponse  `json:"participants"`
-	Consensus      *ConsensusResult       `json:"consensus,omitempty"`
-	CogneeInsights *CogneeInsights        `json:"cognee_insights,omitempty"`
-	QualityScore   float64                `json:"quality_score"`
-	Success        bool                   `json:"success"`
-	ErrorMessage   string                 `json:"error_message,omitempty"`
-	Metadata       map[string]interface{} `json:"metadata,omitempty"`
+	DebateID        string                 `json:"debate_id"`
+	SessionID       string                 `json:"session_id,omitempty"`
+	Topic           string                 `json:"topic,omitempty"`
+	StartTime       time.Time              `json:"start_time"`
+	EndTime         time.Time              `json:"end_time"`
+	Duration        time.Duration          `json:"duration"`
+	TotalRounds     int                    `json:"total_rounds"`
+	RoundsConducted int                    `json:"rounds_conducted,omitempty"`
+	Participants    []ParticipantResponse  `json:"participants"`
+	AllResponses    []ParticipantResponse  `json:"all_responses,omitempty"`
+	BestResponse    *ParticipantResponse   `json:"best_response,omitempty"`
+	Consensus       *ConsensusResult       `json:"consensus,omitempty"`
+	CogneeInsights  *CogneeInsights        `json:"cognee_insights,omitempty"`
+	QualityScore    float64                `json:"quality_score"`
+	FinalScore      float64                `json:"final_score,omitempty"`
+	QualityMetrics  *QualityMetrics        `json:"quality_metrics,omitempty"`
+	Success         bool                   `json:"success"`
+	FallbackUsed    bool                   `json:"fallback_used,omitempty"`
+	CogneeEnhanced  bool                   `json:"cognee_enhanced,omitempty"`
+	MemoryUsed      bool                   `json:"memory_used,omitempty"`
+	Recommendations []string               `json:"recommendations,omitempty"`
+	ErrorMessage    string                 `json:"error_message,omitempty"`
+	Metadata        map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // ConsensusResult represents the consensus reached during debate
 type ConsensusResult struct {
+	Reached        bool          `json:"reached,omitempty"`
 	Achieved       bool          `json:"achieved"`
 	Confidence     float64       `json:"confidence"`
+	ConsensusLevel float64       `json:"consensus_level,omitempty"`
 	AgreementLevel float64       `json:"agreement_level"`
+	AgreementScore float64       `json:"agreement_score,omitempty"`
 	FinalPosition  string        `json:"final_position"`
 	KeyPoints      []string      `json:"key_points"`
 	Disagreements  []string      `json:"disagreements"`
+	Summary        string        `json:"summary,omitempty"`
 	VotingSummary  VotingSummary `json:"voting_summary"`
 	Timestamp      time.Time     `json:"timestamp"`
+	QualityScore   float64       `json:"quality_score,omitempty"`
 }
 
 // ParticipantResponse represents a single participant's response
 type ParticipantResponse struct {
-	ParticipantID   string          `json:"participant_id"`
-	ParticipantName string          `json:"participant_name"`
-	Role            string          `json:"role"`
-	Round           int             `json:"round"`
-	Response        string          `json:"response"`
-	Confidence      float64         `json:"confidence"`
-	QualityScore    float64         `json:"quality_score"`
-	ResponseTime    time.Duration   `json:"response_time"`
-	LLMProvider     string          `json:"llm_provider"`
-	LLMModel        string          `json:"llm_model"`
-	CogneeEnhanced  bool            `json:"cognee_enhanced"`
-	CogneeAnalysis  *CogneeAnalysis `json:"cognee_analysis,omitempty"`
-	Timestamp       time.Time       `json:"timestamp"`
+	ParticipantID   string                 `json:"participant_id"`
+	ParticipantName string                 `json:"participant_name"`
+	Role            string                 `json:"role"`
+	Round           int                    `json:"round"`
+	RoundNumber     int                    `json:"round_number,omitempty"`
+	Response        string                 `json:"response"`
+	Content         string                 `json:"content,omitempty"`
+	Confidence      float64                `json:"confidence"`
+	QualityScore    float64                `json:"quality_score"`
+	ResponseTime    time.Duration          `json:"response_time"`
+	LLMProvider     string                 `json:"llm_provider"`
+	LLMModel        string                 `json:"llm_model"`
+	LLMName         string                 `json:"llm_name,omitempty"`
+	CogneeEnhanced  bool                   `json:"cognee_enhanced"`
+	CogneeAnalysis  *CogneeAnalysis        `json:"cognee_analysis,omitempty"`
+	Timestamp       time.Time              `json:"timestamp"`
+	Metadata        map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // CogneeInsights represents insights generated by Cognee AI
 type CogneeInsights struct {
-	DatasetName       string            `json:"dataset_name"`
-	EnhancementTime   time.Duration     `json:"enhancement_time"`
-	SemanticAnalysis  SemanticAnalysis  `json:"semantic_analysis"`
-	EntityExtraction  []Entity          `json:"entity_extraction"`
-	SentimentAnalysis SentimentAnalysis `json:"sentiment_analysis"`
-	KnowledgeGraph    KnowledgeGraph    `json:"knowledge_graph"`
-	Recommendations   []string          `json:"recommendations"`
-	QualityMetrics    QualityMetrics    `json:"quality_metrics"`
+	DatasetName       string             `json:"dataset_name"`
+	EnhancementTime   time.Duration      `json:"enhancement_time"`
+	SemanticAnalysis  SemanticAnalysis   `json:"semantic_analysis"`
+	EntityExtraction  []Entity           `json:"entity_extraction"`
+	SentimentAnalysis SentimentAnalysis  `json:"sentiment_analysis"`
+	KnowledgeGraph    KnowledgeGraph     `json:"knowledge_graph"`
+	Recommendations   []string           `json:"recommendations"`
+	QualityMetrics    *QualityMetrics    `json:"quality_metrics,omitempty"`
+	TopicModeling     map[string]float64 `json:"topic_modeling,omitempty"`
+	CoherenceScore    float64            `json:"coherence_score,omitempty"`
+	RelevanceScore    float64            `json:"relevance_score,omitempty"`
+	InnovationScore   float64            `json:"innovation_score,omitempty"`
 }
 
 // CogneeAnalysis represents Cognee analysis for a single response
