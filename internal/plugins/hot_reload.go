@@ -72,7 +72,7 @@ func (h *HotReloadManager) Start(ctx context.Context) error {
 
 	// Load existing plugins
 	if err := h.loadExistingPlugins(); err != nil {
-		fmt.Errorf("Failed to load existing plugins: %v", err)
+		fmt.Printf("Failed to load existing plugins: %v\n", err)
 	}
 
 	// Start the watch loop
@@ -241,7 +241,7 @@ func (h *HotReloadManager) watchLoop(ctx context.Context) {
 			if !ok {
 				return
 			}
-			fmt.Errorf("File watcher error: %v", err)
+			fmt.Printf("File watcher error: %v\n", err)
 		}
 	}
 }
@@ -261,16 +261,16 @@ func (h *HotReloadManager) handleFileEvent(event fsnotify.Event) {
 			if _, exists := h.pluginMap[pluginName]; exists {
 				// Reload existing plugin
 				if err := h.ReloadPlugin(pluginName); err != nil {
-					fmt.Errorf("Failed to reload plugin %s: %v", pluginName, err)
+					fmt.Printf("Failed to reload plugin %s: %v\n", pluginName, err)
 				} else {
-					fmt.Printf("Successfully reloaded plugin: %s", pluginName)
+					fmt.Printf("Successfully reloaded plugin: %s\n", pluginName)
 				}
 			} else {
 				// Load new plugin
 				if err := h.LoadPlugin(path); err != nil {
-					fmt.Errorf("Failed to load plugin %s: %v", path, err)
+					fmt.Printf("Failed to load plugin %s: %v\n", path, err)
 				} else {
-					fmt.Printf("Successfully loaded new plugin: %s", pluginName)
+					fmt.Printf("Successfully loaded new plugin: %s\n", pluginName)
 				}
 			}
 		}
@@ -279,9 +279,9 @@ func (h *HotReloadManager) handleFileEvent(event fsnotify.Event) {
 		// File removed - unload plugin
 		if pluginName != "" {
 			if err := h.UnloadPlugin(pluginName); err != nil {
-				fmt.Errorf("Failed to unload plugin %s: %v", pluginName, err)
+				fmt.Printf("Failed to unload plugin %s: %v\n", pluginName, err)
 			} else {
-				fmt.Printf("Successfully unloaded plugin: %s", pluginName)
+				fmt.Printf("Successfully unloaded plugin: %s\n", pluginName)
 			}
 		}
 	}
@@ -296,16 +296,16 @@ func (h *HotReloadManager) loadExistingPlugins() error {
 			}
 
 			if h.isPluginFile(path) {
-				fmt.Printf("Loading existing plugin: %s", path)
+				fmt.Printf("Loading existing plugin: %s\n", path)
 				if err := h.LoadPlugin(path); err != nil {
-					fmt.Errorf("Failed to load plugin %s: %v", path, err)
+					fmt.Printf("Failed to load plugin %s: %v\n", path, err)
 					// Continue loading other plugins
 				}
 			}
 
 			return nil
 		}); err != nil {
-			fmt.Errorf("Error walking plugin directory %s: %v", watchPath, err)
+			fmt.Printf("Error walking plugin directory %s: %v\n", watchPath, err)
 		}
 	}
 
