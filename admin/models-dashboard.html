@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperAgent - Models.dev Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1/build/global/luxon.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div id="app" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">SuperAgent Models.dev Admin</h1>
+                        <span class="ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" id="health-status">
+                            Loading...
+                        </span>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button id="refresh-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            Refresh Data
+                        </button>
+                        <button id="incremental-refresh-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            Incremental Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Total Models</dt>
+                                    <dd class="text-lg font-medium text-gray-900" id="total-models">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Healthy Providers</dt>
+                                    <dd class="text-lg font-medium text-gray-900" id="healthy-providers">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Last Refresh</dt>
+                                    <dd class="text-lg font-medium text-gray-900" id="last-refresh">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Failed Refreshes</dt>
+                                    <dd class="text-lg font-medium text-gray-900" id="failed-refreshes">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- API Performance Chart -->
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">API Performance</h3>
+                    <canvas id="api-performance-chart" width="400" height="200"></canvas>
+                </div>
+
+                <!-- Cache Performance Chart -->
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Cache Performance</h3>
+                    <canvas id="cache-performance-chart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Refresh History -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Refresh History</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200" id="refresh-history-table">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Models</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="refresh-history-body">
+                                <tr>
+                                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Provider Status -->
+            <div class="mt-8 bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Provider Status</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="provider-status">
+                        <div class="text-center py-4">
+                            <div class="animate-pulse">
+                                <div class="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
+                                <div class="h-8 bg-gray-200 rounded w-1/2 mx-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Global state
+        let apiPerformanceChart = null;
+        let cachePerformanceChart = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            loadDashboardData();
+            setupEventListeners();
+
+            // Auto-refresh every 30 seconds
+            setInterval(loadDashboardData, 30000);
+        });
+
+        function setupEventListeners() {
+            document.getElementById('refresh-btn').addEventListener('click', () => triggerRefresh(false));
+            document.getElementById('incremental-refresh-btn').addEventListener('click', () => triggerRefresh(true));
+        }
+
+        function initializeCharts() {
+            const apiCtx = document.getElementById('api-performance-chart').getContext('2d');
+            apiPerformanceChart = new Chart(apiCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Response Time (ms)',
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        data: [],
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            const cacheCtx = document.getElementById('cache-performance-chart').getContext('2d');
+            cachePerformanceChart = new Chart(cacheCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cache Hits', 'Cache Misses'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: [
+                            'rgb(34, 197, 94)',
+                            'rgb(239, 68, 68)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Load health status
+                await loadHealthStatus();
+
+                // Load refresh history
+                await loadRefreshHistory();
+
+                // Load provider status
+                await loadProviderStatus();
+
+                // Update charts with mock data (in real implementation, this would come from metrics endpoint)
+                updateCharts();
+
+            } catch (error) {
+                console.error('Failed to load dashboard data:', error);
+                showError('Failed to load dashboard data');
+            }
+        }
+
+        async function loadHealthStatus() {
+            const response = await fetch('/v1/models/health');
+            const health = await response.json();
+
+            document.getElementById('total-models').textContent = health.total_models || '0';
+
+            const healthStatus = document.getElementById('health-status');
+            if (health.api_healthy && health.cache_healthy && health.circuit_breaker_healthy) {
+                healthStatus.textContent = 'Healthy';
+                healthStatus.className = 'ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800';
+            } else {
+                healthStatus.textContent = 'Issues Detected';
+                healthStatus.className = 'ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800';
+            }
+
+            if (health.last_refresh_time) {
+                const lastRefresh = new Date(health.last_refresh_time);
+                document.getElementById('last-refresh').textContent = lastRefresh.toLocaleString();
+            }
+        }
+
+        async function loadRefreshHistory() {
+            const response = await fetch('/admin/models/metadata/refresh/status');
+            const data = await response.json();
+
+            const tbody = document.getElementById('refresh-history-body');
+            tbody.innerHTML = '';
+
+            if (data.histories && data.histories.length > 0) {
+                data.histories.slice(0, 10).forEach(history => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${history.refresh_type}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                history.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                history.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                'bg-yellow-100 text-yellow-800'
+                            }">
+                                ${history.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${history.models_refreshed || 0}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${history.duration_seconds || 0}s</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(history.started_at).toLocaleString()}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                // Update failed refreshes count
+                const failedCount = data.histories.filter(h => h.status === 'failed').length;
+                document.getElementById('failed-refreshes').textContent = failedCount;
+            }
+        }
+
+        async function loadProviderStatus() {
+            // In a real implementation, this would fetch from a providers endpoint
+            // For now, we'll show some mock provider status
+            const container = document.getElementById('provider-status');
+            container.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded-md p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-green-800">OpenAI</h3>
+                            <div class="mt-2 text-sm text-green-700">
+                                <p>Last sync: 2 minutes ago • 150 models available</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-green-50 border border-green-200 rounded-md p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-green-800">Anthropic</h3>
+                            <div class="mt-2 text-sm text-green-700">
+                                <p>Last sync: 5 minutes ago • 25 models available</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-800">Google</h3>
+                            <div class="mt-2 text-sm text-yellow-700">
+                                <p>Sync in progress... • 89 models available</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('healthy-providers').textContent = '2'; // Mock data
+        }
+
+        function updateCharts() {
+            // Mock data for charts - in real implementation, this would come from metrics endpoint
+            const now = new Date();
+            const timeLabels = [];
+            for (let i = 9; i >= 0; i--) {
+                timeLabels.push(now.getTime() - i * 60000); // Last 10 minutes
+            }
+
+            // Mock API performance data
+            const apiData = [120, 95, 110, 85, 90, 75, 80, 70, 65, 60];
+            apiPerformanceChart.data.labels = timeLabels.map(t => new Date(t).toLocaleTimeString());
+            apiPerformanceChart.data.datasets[0].data = apiData;
+            apiPerformanceChart.update();
+
+            // Mock cache performance data
+            cachePerformanceChart.data.datasets[0].data = [850, 150]; // 85% hits, 15% misses
+            cachePerformanceChart.update();
+        }
+
+        async function triggerRefresh(incremental = false) {
+            const button = incremental ? document.getElementById('incremental-refresh-btn') : document.getElementById('refresh-btn');
+            const originalText = button.textContent;
+
+            button.textContent = 'Refreshing...';
+            button.disabled = true;
+
+            try {
+                const response = await fetch('/admin/models/metadata/refresh' + (incremental ? '?incremental=true' : ''), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    showSuccess(incremental ? 'Incremental refresh completed!' : 'Full refresh completed!');
+                    // Reload data after refresh
+                    setTimeout(loadDashboardData, 2000);
+                } else {
+                    const error = await response.json();
+                    showError(error.message || 'Refresh failed');
+                }
+            } catch (error) {
+                showError('Network error during refresh');
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+
+        function showSuccess(message) {
+            showNotification(message, 'success');
+        }
+
+        function showError(message) {
+            showNotification(message, 'error');
+        }
+
+        function showNotification(message, type) {
+            // Simple notification - in a real app, you'd use a proper notification system
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-4 py-2 rounded-md text-sm font-medium ${
+                type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`;
+            notification.textContent = message;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
