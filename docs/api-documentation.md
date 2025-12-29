@@ -51,6 +51,16 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
 | `/v1/providers` | GET | Bearer Token | Detailed provider info |
 | `/v1/providers/:name/health` | GET | Bearer Token | Provider-specific health |
 | `/v1/admin/health/all` | GET | Admin Token | Comprehensive system health |
+| `/mcp/capabilities` | GET | Bearer Token | MCP server capabilities |
+| `/mcp/tools` | GET | Bearer Token | Available MCP tools |
+| `/mcp/tools/call` | POST | Bearer Token | Execute MCP tool |
+| `/mcp/prompts` | GET | Bearer Token | Available MCP prompts |
+| `/mcp/resources` | GET | Bearer Token | Available MCP resources |
+| `/v1/debates` | POST | Bearer Token | Create AI debate |
+| `/v1/debates/{id}` | GET | Bearer Token | Get debate information |
+| `/v1/debates/{id}/status` | GET | Bearer Token | Get debate status |
+| `/v1/debates/{id}/results` | GET | Bearer Token | Get debate results |
+| `/v1/debates/{id}/report` | GET | Bearer Token | Generate debate report |
 
 ## Available Models
 
@@ -331,10 +341,317 @@ Check health status of all providers.
       "error_rate": 0.02
     }
   }
+
+```
+
+### 7. Model Context Protocol (MCP) Endpoints
+
+#### GET /mcp/capabilities
+Get MCP server capabilities and supported features.
+
+**Response:**
+```json
+{
+  "version": "1.0.0",
+  "capabilities": {
+    "tools": {
+      "listChanged": true
+    },
+    "prompts": {
+      "listChanged": true
+    },
+    "resources": {
+      "listChanged": true
+    }
+  },
+  "providers": ["deepseek", "qwen", "openrouter"],
+  "mcp_servers": ["filesystem-mcp", "database-mcp"]
 }
 ```
 
-### 7. Authentication Endpoints
+#### GET /mcp/tools
+List all available MCP tools across configured servers.
+
+**Response:**
+```json
+{
+  "tools": [
+    {
+      "name": "read_file",
+      "description": "Read contents of a file",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "File path to read"
+          }
+        },
+        "required": ["path"]
+      }
+    }
+  ]
+}
+```
+
+#### POST /mcp/tools/call
+Execute an MCP tool with specified parameters.
+
+**Request Body:**
+```json
+{
+  "name": "read_file",
+  "arguments": {
+    "path": "/etc/hostname"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "result": "superagent-server\n",
+  "success": true,
+  "execution_time": 0.045
+}
+```
+
+#### GET /mcp/prompts
+List available MCP prompts for enhanced interactions.
+
+**Response:**
+```json
+{
+  "prompts": [
+    {
+      "name": "summarize",
+      "description": "Summarize text content",
+      "arguments": [
+        {
+          "name": "text",
+          "description": "Text to summarize",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "analyze",
+      "description": "Analyze content for insights",
+      "arguments": [
+        {
+          "name": "content",
+          "description": "Content to analyze",
+          "required": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### GET /mcp/resources
+List available MCP resources and their metadata.
+
+**Response:**
+```json
+{
+  "resources": [
+    {
+      "uri": "superagent://providers",
+      "name": "Provider Information",
+      "description": "Information about configured LLM providers",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "superagent://models",
+      "name": "Model Metadata",
+      "description": "Metadata about available LLM models",
+      "mimeType": "application/json"
+    }
+  ]
+
+```
+
+### 8. AI Debate Endpoints
+
+#### POST /v1/debates
+Create and start a new AI debate with multiple participants.
+
+**Request Body:**
+```json
+{
+  "debateId": "climate-debate-001",
+  "topic": "What are the most effective strategies for combating climate change?",
+  "maximal_repeat_rounds": 5,
+  "consensus_threshold": 0.75,
+  "participants": [
+    {
+      "name": "EnvironmentalEconomist",
+      "role": "Economic Analyst",
+      "llms": [
+        {
+          "provider": "claude",
+          "model": "claude-3-5-sonnet-20241022",
+          "api_key": "${CLAUDE_API_KEY}"
+        }
+      ]
+    },
+    {
+      "name": "ClimateScientist",
+      "role": "Scientific Expert",
+      "llms": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-coder"
+        }
+      ]
+    }
+  ],
+  "enable_cognee": true,
+  "cognee_config": {
+    "dataset_name": "climate_debate_analysis"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "debateId": "climate-debate-001",
+  "status": "started",
+  "estimated_duration": 180,
+  "participants_count": 2,
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+#### GET /v1/debates/{debateId}
+Get comprehensive information about a specific debate.
+
+**Response:**
+```json
+{
+  "debateId": "climate-debate-001",
+  "topic": "What are the most effective strategies for combating climate change?",
+  "status": "completed",
+  "progress": {
+    "current_round": 3,
+    "total_rounds": 5,
+    "completed_responses": 6,
+    "total_expected_responses": 6
+  },
+  "participants": [
+    {
+      "name": "EnvironmentalEconomist",
+      "responses_count": 3,
+      "avg_quality_score": 0.85
+    }
+  ],
+  "quality_metrics": {
+    "overall_score": 0.82,
+    "consensus_achieved": true,
+    "consensus_confidence": 0.78
+  }
+}
+```
+
+#### GET /v1/debates/{debateId}/status
+Get real-time debate progress and status.
+
+**Response:**
+```json
+{
+  "debateId": "climate-debate-001",
+  "status": "in_progress",
+  "current_round": 2,
+  "current_participant": "ClimateScientist",
+  "time_elapsed": 45,
+  "estimated_remaining": 135,
+  "active_participants": 2,
+  "errors": []
+}
+```
+
+#### GET /v1/debates/{debateId}/results
+Get complete debate results and analysis.
+
+**Response:**
+```json
+{
+  "debateId": "climate-debate-001",
+  "topic": "What are the most effective strategies for combating climate change?",
+  "status": "completed",
+  "duration": 156,
+  "rounds_completed": 5,
+  "consensus": {
+    "achieved": true,
+    "confidence": 0.82,
+    "final_position": "A combination of economic incentives, technological innovation, and policy frameworks provides the most effective approach to combating climate change.",
+    "key_agreements": [
+      "Carbon pricing mechanisms are essential",
+      "Technological innovation must be accelerated",
+      "International cooperation is crucial"
+    ]
+  },
+  "participants": [
+    {
+      "name": "EnvironmentalEconomist",
+      "total_responses": 5,
+      "avg_quality_score": 0.88,
+      "contribution_score": 0.85,
+      "persuasion_effectiveness": 0.75
+    }
+  ],
+  "quality_metrics": {
+    "overall_debate_quality": 0.86,
+    "argument_diversity": 0.92,
+    "evidence_quality": 0.81,
+    "reasoning_depth": 0.89
+  },
+  "cognee_insights": {
+    "key_themes": ["economic_policy", "technological_innovation", "international_cooperation"],
+    "sentiment_analysis": "constructive_dialogue",
+    "recommendations": [
+      "Implement carbon pricing mechanisms",
+      "Increase R&D investment in clean technologies",
+      "Strengthen international climate agreements"
+    ]
+  }
+}
+```
+
+#### GET /v1/debates/{debateId}/report
+Generate and download a formatted debate report.
+
+**Query Parameters:**
+- `format`: Report format (`json`, `pdf`, `html`) - default: `json`
+
+**Response:** (JSON format shown)
+```json
+{
+  "report_title": "Climate Change Debate Analysis",
+  "generated_at": "2024-01-15T11:30:00Z",
+  "executive_summary": "A comprehensive debate between economic and scientific experts on climate change strategies...",
+  "debate_metrics": {
+    "duration_minutes": 2.6,
+    "participant_count": 2,
+    "total_responses": 10,
+    "consensus_achieved": true
+  },
+  "key_findings": [
+    "Economic incentives are crucial for adoption of clean technologies",
+    "Scientific evidence supports immediate action",
+    "Policy frameworks must balance economic and environmental goals"
+  ],
+  "recommendations": [
+    "Implement comprehensive carbon pricing",
+    "Accelerate clean technology development",
+    "Foster international cooperation"
+  ]
+}
+```
+
+### 9. Authentication Endpoints
 
 #### POST /v1/auth/register
 Register a new user account.
