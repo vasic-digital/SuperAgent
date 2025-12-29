@@ -6,11 +6,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/superagent/superagent/internal/config"
 	"github.com/superagent/superagent/internal/database"
 	"github.com/superagent/superagent/internal/handlers"
 	"github.com/superagent/superagent/internal/middleware"
 	"github.com/superagent/superagent/internal/models"
+	"github.com/superagent/superagent/internal/modelsdev"
 	"github.com/superagent/superagent/internal/services"
 	"github.com/superagent/superagent/pkg/metrics"
 )
@@ -38,6 +40,39 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Initialize services
 	registryConfig := services.LoadRegistryConfigFromAppConfig(cfg)
 	providerRegistry := services.NewProviderRegistry(registryConfig, memoryService)
+
+	// Initialize Models.dev integration (if enabled)
+	var modelMetadataHandler *handlers.ModelMetadataHandler
+	if cfg.ModelsDev.Enabled {
+		modelsDevClient := modelsdev.NewClient(&modelsdev.ClientConfig{
+			APIKey:    cfg.ModelsDev.APIKey,
+			BaseURL:   cfg.ModelsDev.BaseURL,
+			Timeout:   30 * time.Second,
+			UserAgent: "SuperAgent/1.0",
+		})
+
+		logger := logrus.New()
+		modelMetadataRepo := database.NewModelMetadataRepository(db.GetPool(), logger)
+		modelMetadataCache := services.NewModelMetadataCache(cfg.ModelsDev.CacheTTL)
+
+		modelMetadataService := services.NewModelMetadataService(
+			modelsDevClient,
+			modelMetadataRepo,
+			modelMetadataCache,
+			&services.ModelMetadataConfig{
+				RefreshInterval:   cfg.ModelsDev.RefreshInterval,
+				CacheTTL:          cfg.ModelsDev.CacheTTL,
+				DefaultBatchSize:  cfg.ModelsDev.DefaultBatchSize,
+				MaxRetries:        cfg.ModelsDev.MaxRetries,
+				EnableAutoRefresh: cfg.ModelsDev.AutoRefresh,
+			},
+			logger,
+		)
+
+		modelMetadataHandler = handlers.NewModelMetadataHandler(modelMetadataService)
+
+		logger.Info("Models.dev integration initialized successfully")
+	}
 
 	// Initialize completion handler
 	completionHandler := handlers.NewCompletionHandler(providerRegistry.GetRequestService())
@@ -101,6 +136,16 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	{
 		// Model listing
 		public.GET("/models", completionHandler.Models)
+
+		// Models.dev public endpoints (if enabled)
+		if cfg.ModelsDev.Enabled && modelMetadataHandler != nil {
+			public.GET("/models/metadata", modelMetadataHandler.ListModels)
+			public.GET("/models/metadata/:id", modelMetadataHandler.GetModel)
+			public.GET("/models/metadata/:id/benchmarks", modelMetadataHandler.GetModelBenchmarks)
+			public.GET("/models/metadata/compare", modelMetadataHandler.CompareModels)
+			public.GET("/models/metadata/capability/:capability", modelMetadataHandler.GetModelsByCapability)
+			public.GET("/providers/:provider_id/models/metadata", modelMetadataHandler.GetProviderModels)
+		}
 
 		// Provider info (public endpoints)
 		public.GET("/providers", func(c *gin.Context) {
@@ -285,6 +330,12 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 					"timestamp":       time.Now().Unix(),
 				})
 			})
+
+			// Models.dev admin endpoints (if enabled)
+			if cfg.ModelsDev.Enabled && modelMetadataHandler != nil {
+				admin.POST("/models/metadata/refresh", modelMetadataHandler.RefreshModels)
+				admin.GET("/models/metadata/refresh/status", modelMetadataHandler.GetRefreshStatus)
+			}
 		}
 	}
 

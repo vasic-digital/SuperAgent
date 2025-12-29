@@ -117,6 +117,11 @@ func (p *PostgresDB) Close() error {
 	return nil
 }
 
+// GetPool returns the underlying connection pool
+func (p *PostgresDB) GetPool() *pgxpool.Pool {
+	return p.pool
+}
+
 // HealthCheck performs a health check on the database.
 func (p *PostgresDB) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
