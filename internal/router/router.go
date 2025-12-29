@@ -15,7 +15,6 @@ import (
 	"github.com/superagent/superagent/internal/models"
 	"github.com/superagent/superagent/internal/modelsdev"
 	"github.com/superagent/superagent/internal/services"
-	"github.com/superagent/superagent/pkg/metrics"
 )
 
 // SetupRouter creates and configures the main HTTP router.
@@ -127,7 +126,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	})
 
 	// Metrics endpoint
-	r.GET("/metrics", gin.WrapH(metrics.Handler()))
+	// r.GET("/metrics", gin.WrapH(metrics.Handler())) // TODO: Re-enable when metrics package is available
 
 	// Authentication endpoints
 	authGroup := r.Group("/v1/auth")
