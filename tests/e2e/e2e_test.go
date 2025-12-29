@@ -339,7 +339,7 @@ func TestE2ENewServicesWorkflow(t *testing.T) {
 
 	t.Run("CompleteCodeAnalysisWorkflow", func(t *testing.T) {
 		// Initialize all services
-		mcpManager := services.NewMCPManager()
+		mcpManager := services.NewMCPManager(nil, nil, logger)
 		lspClient := services.NewLSPClient("/tmp", "go")
 		toolRegistry := services.NewToolRegistry(mcpManager, lspClient)
 		contextManager := services.NewContextManager(100)

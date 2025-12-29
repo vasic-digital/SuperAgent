@@ -148,8 +148,8 @@ func TestLSPClient_TypeDefinitions(t *testing.T) {
 	assert.Equal(t, "new text", changeEvent.Text)
 }
 
-func TestLSPServer_Type(t *testing.T) {
-	server := services.LSPServer{
+func TestLSPServerConnection_Type(t *testing.T) {
+	server := services.LSPServerConnection{
 		Capabilities: map[string]interface{}{
 			"test": "value",
 		},

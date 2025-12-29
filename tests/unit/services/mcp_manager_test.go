@@ -5,12 +5,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/superagent/superagent/internal/services"
 )
 
 func TestMCPManager_Basic(t *testing.T) {
-	manager := services.NewMCPManager()
+	logger := logrus.New()
+	logger.SetLevel(logrus.PanicLevel)
+	manager := services.NewMCPManager(nil, nil, logger)
 	assert.NotNil(t, manager)
 }
 
@@ -20,7 +23,7 @@ func TestMCPManager_WithConfig(t *testing.T) {
 }
 
 func TestMCPManager_RegisterServer_Valid(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	serverConfig := map[string]interface{}{
 		"name":    "test-server",
@@ -32,7 +35,7 @@ func TestMCPManager_RegisterServer_Valid(t *testing.T) {
 }
 
 func TestMCPManager_RegisterServer_MissingName(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	serverConfig := map[string]interface{}{
 		"command": []interface{}{"echo", "test"},
@@ -44,7 +47,7 @@ func TestMCPManager_RegisterServer_MissingName(t *testing.T) {
 }
 
 func TestMCPManager_RegisterServer_MissingCommand(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	serverConfig := map[string]interface{}{
 		"name": "test-server",
@@ -56,7 +59,7 @@ func TestMCPManager_RegisterServer_MissingCommand(t *testing.T) {
 }
 
 func TestMCPManager_RegisterServer_Duplicate(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	serverConfig := map[string]interface{}{
 		"name":    "test-server",
@@ -72,7 +75,7 @@ func TestMCPManager_RegisterServer_Duplicate(t *testing.T) {
 }
 
 func TestMCPManager_RegisterServer_EmptyCommand(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	serverConfig := map[string]interface{}{
 		"name":    "test-server",
@@ -93,13 +96,13 @@ func TestMCPManager_AutoDiscoverServers_Disabled(t *testing.T) {
 }
 
 func TestMCPManager_ListTools_Empty(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 	tools := manager.ListTools()
 	assert.Empty(t, tools)
 }
 
 func TestMCPManager_GetTool_NotFound(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	tool, err := manager.GetTool("nonexistent")
 	assert.Error(t, err)
@@ -108,7 +111,7 @@ func TestMCPManager_GetTool_NotFound(t *testing.T) {
 }
 
 func TestMCPManager_CallTool_NotFound(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	ctx := context.Background()
 	result, err := manager.CallTool(ctx, "nonexistent", map[string]interface{}{})
@@ -118,7 +121,7 @@ func TestMCPManager_CallTool_NotFound(t *testing.T) {
 }
 
 func TestMCPManager_Shutdown_Empty(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	ctx := context.Background()
 	err := manager.Shutdown(ctx)
@@ -126,7 +129,7 @@ func TestMCPManager_Shutdown_Empty(t *testing.T) {
 }
 
 func TestMCPManager_HealthCheck_Empty(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 	results := manager.HealthCheck()
 	assert.Empty(t, results)
 }
@@ -186,8 +189,8 @@ func TestMCPManager_TypeDefinitions(t *testing.T) {
 func TestMCPManager_NextMessageID(t *testing.T) {
 	// This is an internal method, but we can test it indirectly
 	// by checking that message IDs increment
-	manager1 := services.NewMCPManager()
-	manager2 := services.NewMCPManager()
+	manager1 := services.NewMCPManager(nil, nil, logger)
+	manager2 := services.NewMCPManager(nil, nil, logger)
 
 	// Both should start with ID 1
 	// We can't directly test nextMessageID() as it's private

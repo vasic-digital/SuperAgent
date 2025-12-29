@@ -415,7 +415,7 @@ func TestMajorityVoteStrategy(t *testing.T) {
 // MCPManager Tests
 
 func TestMCPManager_NewMCPManager(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	assert.NotNil(t, manager)
 
@@ -434,7 +434,7 @@ func TestMCPManager_NewMCPManager(t *testing.T) {
 }
 
 func TestMCPManager_RegisterServer(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	serverConfig := map[string]interface{}{
 		"name":    "test-server",
@@ -451,7 +451,7 @@ func TestMCPManager_RegisterServer(t *testing.T) {
 }
 
 func TestMCPManager_RegisterServer_InvalidConfig(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	// Missing name
 	serverConfig := map[string]interface{}{
@@ -480,7 +480,7 @@ func TestMCPManager_RegisterServer_InvalidConfig(t *testing.T) {
 }
 
 func TestMCPManager_ListTools(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	// Initially empty
 	tools := manager.ListTools()
@@ -489,7 +489,7 @@ func TestMCPManager_ListTools(t *testing.T) {
 }
 
 func TestMCPManager_GetTool(t *testing.T) {
-	manager := services.NewMCPManager()
+	manager := services.NewMCPManager(nil, nil, logger)
 
 	// Get non-existent tool
 	_, err := manager.GetTool("non-existent")
@@ -511,7 +511,7 @@ func TestLSPClient_NewLSPClient(t *testing.T) {
 // ToolRegistry Tests
 
 func TestToolRegistry_NewToolRegistry(t *testing.T) {
-	mcpManager := services.NewMCPManager()
+	mcpManager := services.NewMCPManager(nil, nil, logger)
 	lspClient := services.NewLSPClient("/tmp", "go")
 
 	registry := services.NewToolRegistry(mcpManager, lspClient)
@@ -802,7 +802,7 @@ func TestContextManager_BuildContext(t *testing.T) {
 // IntegrationOrchestrator Tests
 
 func TestIntegrationOrchestrator_NewIntegrationOrchestrator(t *testing.T) {
-	mcpManager := services.NewMCPManager()
+	mcpManager := services.NewMCPManager(nil, nil, logger)
 	lspClient := services.NewLSPClient("/tmp", "go")
 	toolRegistry := services.NewToolRegistry(mcpManager, lspClient)
 	contextManager := services.NewContextManager(100)
