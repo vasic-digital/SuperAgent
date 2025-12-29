@@ -109,9 +109,9 @@ services:
       OLLAMA_ENABLED: ${OLLAMA_ENABLED:-true}
 
       # Cognee Configuration
-      COGNEE_BASE_URL: ${COGNEE_BASE_URL:-}
+      COGNEE_BASE_URL: ${COGNEE_BASE_URL:-http://cognee:8000}
       COGNEE_API_KEY: ${COGNEE_API_KEY:-}
-      COGNEE_AUTO_COGNIFY: ${COGNEE_AUTO_COGNIFY:-false}
+      COGNEE_AUTO_COGNIFY: ${COGNEE_AUTO_COGNIFY:-true}
 
       # Plugin Configuration
       PLUGIN_WATCH_PATHS: ${PLUGIN_WATCH_PATHS:-/app/plugins}
@@ -203,6 +203,85 @@ services:
       - monitoring
       - full
 
+  # Cognee Knowledge Graph Service
+  cognee:
+    image: cognee/cognee:main
+    container_name: superagent-cognee
+    ports:
+      - "${COGNEE_PORT:-8000}:8000"
+    environment:
+      - DEBUG=false
+      - HOST=0.0.0.0
+      - ENVIRONMENT=local
+      - LOG_LEVEL=INFO
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      # Database configurations - using SuperAgent's existing databases
+      - GRAPH_DATABASE=networkx  # Use NetworkX for graph storage
+      - VECTOR_DATABASE=chromadb://chromadb:8000  # Use ChromaDB for vectors
+      - RELATIONAL_DATABASE=postgresql://superagent:superagent123@postgres:5432/superagent_db  # Use PostgreSQL
+      - CACHE_PROVIDER=redis://redis:6379  # Use Redis for caching
+    volumes:
+      - cognee_data:/app/data
+    networks:
+      - superagent-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    profiles:
+      - ai
+      - full
+
+  # ChromaDB for Vector Storage
+  chromadb:
+    image: chromadb/chroma:0.6.3
+    container_name: superagent-chromadb
+    environment:
+      - IS_PERSISTENT=TRUE
+      - CHROMA_SERVER_AUTH_CREDENTIALS=${VECTOR_DB_KEY:-cognee_vector_key}
+      - CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER=chromadb.auth.token.TokenConfigServerAuthCredentialsProvider
+      - CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER=AUTHORIZATION
+      - CHROMA_SERVER_AUTH_PROVIDER=chromadb.auth.token.TokenAuthServerProvider
+    volumes:
+      - chromadb_data:/chroma/chroma/
+    networks:
+      - superagent-network
+    ports:
+      - "8001:8000"
+    restart: unless-stopped
+    profiles:
+      - ai
+      - full
+
+  # Neo4j Graph Database (optional, for advanced graph features)
+  neo4j:
+    image: neo4j:latest
+    container_name: superagent-neo4j
+    environment:
+      - NEO4J_AUTH=neo4j/cognee123
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks:
+      - superagent-network
+    restart: unless-stopped
+    profiles:
+      - graph
+      - full
+
 volumes:
   postgres_data:
     driver: local
@@ -213,6 +292,14 @@ volumes:
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  cognee_data:
+    driver: local
+  chromadb_data:
+    driver: local
+  neo4j_data:
+    driver: local
+  neo4j_logs:
     driver: local
 
 networks:

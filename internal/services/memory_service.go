@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -116,6 +117,251 @@ func (m *MemoryService) SearchMemory(ctx context.Context, req *SearchRequest) ([
 	return sources, nil
 }
 
+// SearchMemoryWithInsights performs insight-based search using graph reasoning
+func (m *MemoryService) SearchMemoryWithInsights(ctx context.Context, req *SearchRequest) ([]models.MemorySource, error) {
+	if !m.enabled {
+		return nil, fmt.Errorf("memory service is disabled")
+	}
+
+	// Check cache first
+	cacheKey := fmt.Sprintf("insights:%s", strings.ToLower(req.Query))
+	if sources, exists := m.cache[cacheKey]; exists {
+		return sources, nil
+	}
+
+	// Search with insights
+	insightsReq := &llm.InsightsRequest{
+		Query:    req.Query,
+		Datasets: []string{req.DatasetName},
+		Limit:    req.Limit,
+	}
+
+	resp, err := m.client.SearchInsights(insightsReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search memory insights in Cognee: %w", err)
+	}
+
+	// Convert insights to MemorySource format
+	sources := m.convertInsightsToMemorySources(resp)
+
+	// Cache the results
+	m.cache[cacheKey] = sources
+
+	return sources, nil
+}
+
+// SearchMemoryWithGraphCompletion performs LLM-powered graph completion search
+func (m *MemoryService) SearchMemoryWithGraphCompletion(ctx context.Context, req *SearchRequest) ([]models.MemorySource, error) {
+	if !m.enabled {
+		return nil, fmt.Errorf("memory service is disabled")
+	}
+
+	// Check cache first
+	cacheKey := fmt.Sprintf("graph:%s", strings.ToLower(req.Query))
+	if sources, exists := m.cache[cacheKey]; exists {
+		return sources, nil
+	}
+
+	// Search with graph completion
+	resp, err := m.client.SearchGraphCompletion(req.Query, []string{req.DatasetName}, req.Limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search memory with graph completion in Cognee: %w", err)
+	}
+
+	// Convert to MemorySource format
+	sources := m.convertToMemorySourcesFromSearch(resp)
+
+	// Cache the results
+	m.cache[cacheKey] = sources
+
+	return sources, nil
+}
+
+// CognifyDataset processes a dataset into knowledge graphs
+func (m *MemoryService) CognifyDataset(ctx context.Context, datasetNames []string) error {
+	if !m.enabled {
+		return fmt.Errorf("memory service is disabled")
+	}
+
+	cognifyReq := &llm.CognifyRequest{
+		Datasets: datasetNames,
+	}
+
+	resp, err := m.client.Cognify(cognifyReq)
+	if err != nil {
+		return fmt.Errorf("failed to cognify dataset in Cognee: %w", err)
+	}
+
+	if resp.Status != "success" {
+		return fmt.Errorf("cognify failed with status: %s", resp.Status)
+	}
+
+	return nil
+}
+
+// ProcessCodeForMemory processes code content through Cognee's code pipeline
+func (m *MemoryService) ProcessCodeForMemory(ctx context.Context, code, language, datasetName string) error {
+	if !m.enabled {
+		return fmt.Errorf("memory service is disabled")
+	}
+
+	codeReq := &llm.CodePipelineRequest{
+		Code:        code,
+		DatasetName: datasetName,
+		Language:    language,
+	}
+
+	resp, err := m.client.ProcessCodePipeline(codeReq)
+	if err != nil {
+		return fmt.Errorf("failed to process code in Cognee: %w", err)
+	}
+
+	if !resp.Processed {
+		return fmt.Errorf("code processing failed")
+	}
+
+	return nil
+}
+
+// EnhanceCodeRequest enhances a code-related request with Cognee insights
+func (m *MemoryService) EnhanceCodeRequest(ctx context.Context, req *models.LLMRequest) error {
+	if !m.enabled {
+		return nil
+	}
+
+	// Extract code from the request
+	code := m.extractCodeFromRequest(req)
+	if code == "" {
+		return nil // No code to process
+	}
+
+	// Determine language
+	language := m.detectLanguage(code)
+
+	// Process code through Cognee
+	err := m.ProcessCodeForMemory(ctx, code, language, "code-analysis")
+	if err != nil {
+		return fmt.Errorf("failed to enhance code request: %w", err)
+	}
+
+	// Add code analysis context
+	if req.Memory == nil {
+		req.Memory = make(map[string]string)
+	}
+	req.Memory["code_language"] = language
+	req.Memory["code_processed"] = "true"
+
+	return nil
+}
+
+// extractCodeFromRequest extracts code snippets from LLM request
+func (m *MemoryService) extractCodeFromRequest(req *models.LLMRequest) string {
+	var codeParts []string
+
+	// Check prompt for code blocks
+	if strings.Contains(req.Prompt, "```") {
+		// Simple extraction - in production, use proper markdown parsing
+		parts := strings.Split(req.Prompt, "```")
+		for i := 1; i < len(parts); i += 2 {
+			if i < len(parts) {
+				codeParts = append(codeParts, parts[i])
+			}
+		}
+	}
+
+	// Check messages for code
+	for _, msg := range req.Messages {
+		if strings.Contains(msg.Content, "```") {
+			parts := strings.Split(msg.Content, "```")
+			for i := 1; i < len(parts); i += 2 {
+				if i < len(parts) {
+					codeParts = append(codeParts, parts[i])
+				}
+			}
+		}
+	}
+
+	return strings.Join(codeParts, "\n\n")
+}
+
+// detectLanguage attempts to detect programming language from code
+func (m *MemoryService) detectLanguage(code string) string {
+	code = strings.ToLower(strings.TrimSpace(code))
+
+	// Simple language detection based on keywords
+	if strings.Contains(code, "import ") || strings.Contains(code, "from ") || strings.Contains(code, "def ") {
+		return "python"
+	}
+	if strings.Contains(code, "func ") || strings.Contains(code, "package ") {
+		return "go"
+	}
+	if strings.Contains(code, "function ") || strings.Contains(code, "const ") || strings.Contains(code, "let ") {
+		return "javascript"
+	}
+	if strings.Contains(code, "class ") && strings.Contains(code, "public ") {
+		return "java"
+	}
+	if strings.Contains(code, "#include") || strings.Contains(code, "int main") {
+		return "c"
+	}
+
+	return "unknown"
+}
+
+// CreateDataset creates a new Cognee dataset
+func (m *MemoryService) CreateDataset(ctx context.Context, name, description string) error {
+	if !m.enabled {
+		return fmt.Errorf("memory service is disabled")
+	}
+
+	datasetReq := &llm.DatasetRequest{
+		Name:        name,
+		Description: description,
+		Metadata: map[string]interface{}{
+			"created_by": "helix-agent",
+			"created_at": time.Now().Format(time.RFC3339),
+		},
+	}
+
+	_, err := m.client.CreateDataset(datasetReq)
+	if err != nil {
+		return fmt.Errorf("failed to create dataset in Cognee: %w", err)
+	}
+
+	return nil
+}
+
+// ListDatasets retrieves all available datasets
+func (m *MemoryService) ListDatasets(ctx context.Context) ([]string, error) {
+	if !m.enabled {
+		return nil, fmt.Errorf("memory service is disabled")
+	}
+
+	resp, err := m.client.ListDatasets()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list datasets from Cognee: %w", err)
+	}
+
+	datasetNames := make([]string, len(resp.Datasets))
+	for i, dataset := range resp.Datasets {
+		datasetNames[i] = dataset.Name
+	}
+
+	return datasetNames, nil
+}
+
+// SwitchDataset changes the current working dataset
+func (m *MemoryService) SwitchDataset(datasetName string) {
+	m.dataset = datasetName
+	// Clear cache when switching datasets
+	m.ClearCache()
+}
+
+// GetCurrentDataset returns the current dataset name
+func (m *MemoryService) GetCurrentDataset() string {
+	return m.dataset
+}
+
 // EnhanceRequest enhances a request with relevant memory context
 func (m *MemoryService) EnhanceRequest(ctx context.Context, req *models.LLMRequest) error {
 	if !m.enabled || !req.MemoryEnhanced {
@@ -217,6 +463,35 @@ func (m *MemoryService) convertToMemorySourcesFromSearch(resp *llm.SearchRespons
 			Content:        result.Content,
 			RelevanceScore: result.RelevanceScore,
 			SourceType:     "cognee",
+		})
+	}
+
+	return sources
+}
+
+// convertInsightsToMemorySources converts Cognee insights responses to MemorySource format
+func (m *MemoryService) convertInsightsToMemorySources(resp *llm.InsightsResponse) []models.MemorySource {
+	if resp == nil {
+		return nil
+	}
+
+	sources := make([]models.MemorySource, 0, len(resp.Insights))
+
+	for _, insight := range resp.Insights {
+		content := ""
+		if c, ok := insight["content"].(string); ok {
+			content = c
+		} else {
+			// Convert map to JSON string
+			contentBytes, _ := json.Marshal(insight)
+			content = string(contentBytes)
+		}
+
+		sources = append(sources, models.MemorySource{
+			DatasetName:    "insights",
+			Content:        content,
+			RelevanceScore: 1.0,
+			SourceType:     "cognee_insights",
 		})
 	}
 
