@@ -89,6 +89,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Initialize unified OpenAI-compatible handler
 	unifiedHandler := handlers.NewUnifiedHandler(providerRegistry, cfg)
 
+	// Initialize Cognee handler
+	cogneeHandler := handlers.NewCogneeHandler(cfg)
+
 	// Initialize auth middleware
 	authConfig := middleware.AuthConfig{
 		SecretKey:   cfg.Server.JWTSecret,
@@ -326,6 +329,13 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 					c.JSON(404, gin.H{"error": "provider not found"})
 				}
 			})
+		}
+
+		// Cognee endpoints
+		cogneeGroup := protected.Group("/cognee")
+		{
+			cogneeGroup.GET("/visualize", cogneeHandler.VisualizeGraph)
+			cogneeGroup.GET("/datasets", cogneeHandler.GetDatasets)
 		}
 
 		// Admin endpoints

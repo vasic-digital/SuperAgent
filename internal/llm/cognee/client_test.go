@@ -169,7 +169,7 @@ func TestSearchResponseFields(t *testing.T) {
 func TestAutoContainerizeError(t *testing.T) {
 	cfg := &config.Config{
 		Cognee: config.CogneeConfig{
-			BaseURL: "http://localhost:9999", // Non-existent URL
+			BaseURL: "http://invalid-url",
 		},
 	}
 
@@ -180,7 +180,27 @@ func TestAutoContainerizeError(t *testing.T) {
 		t.Fatal("Expected AutoContainerize to return an error")
 	}
 
-	expectedErr := "Cognee is not running and auto-containerization is not implemented. Please start Cognee manually"
+	expectedErr := "neither 'docker compose' nor 'docker-compose' found in PATH"
+	if err.Error() != expectedErr {
+		t.Fatalf("Expected error '%s', got '%v'", expectedErr, err)
+	}
+}
+
+func TestStartCogneeContainerError(t *testing.T) {
+	cfg := &config.Config{
+		Cognee: config.CogneeConfig{
+			BaseURL: "http://invalid-url",
+		},
+	}
+
+	client := NewClient(cfg)
+	err := client.startCogneeContainer()
+
+	if err == nil {
+		t.Fatal("Expected startCogneeContainer to return an error")
+	}
+
+	expectedErr := "neither 'docker compose' nor 'docker-compose' found in PATH"
 	if err.Error() != expectedErr {
 		t.Fatalf("Expected error '%s', got '%v'", expectedErr, err)
 	}
@@ -198,24 +218,6 @@ func TestTestConnection(t *testing.T) {
 
 	if connected {
 		t.Fatal("Expected testConnection to return false for non-existent URL")
-	}
-}
-
-func TestStartCogneeContainerError(t *testing.T) {
-	cfg := &config.Config{
-		Cognee: config.CogneeConfig{},
-	}
-
-	client := NewClient(cfg)
-	err := client.startCogneeContainer()
-
-	if err == nil {
-		t.Fatal("Expected startCogneeContainer to return an error")
-	}
-
-	expectedErr := "Cognee is not running and auto-containerization is not implemented. Please start Cognee manually"
-	if err.Error() != expectedErr {
-		t.Fatalf("Expected error '%s', got '%v'", expectedErr, err)
 	}
 }
 
