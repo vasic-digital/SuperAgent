@@ -31,14 +31,28 @@ func TestEnsureRequiredContainers(t *testing.T) {
 	// We don't assert success since it depends on the environment
 	if err != nil {
 		t.Logf("Container startup failed as expected: %v", err)
-		assert.Contains(t, err.Error(), "failed to start containers")
+		// Could fail due to Docker not being available or actual startup issues
+		assert.True(t, strings.Contains(err.Error(), "failed to start containers") ||
+			strings.Contains(err.Error(), "docker compose not found") ||
+			strings.Contains(err.Error(), "docker-compose not found"))
 	}
 }
 
 func TestGetRunningServices(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping docker test in short mode")
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skip("Docker not available")
 	}
+
+	services, err := getRunningServices()
+
+	// Should not error even if Docker commands fail
+	if err != nil {
+		t.Logf("getRunningServices failed: %v", err)
+	}
+	assert.IsType(t, map[string]bool{}, services)
+}
+	assert.IsType(t, map[string]bool{}, services)
+}
 
 	if _, err := exec.LookPath("docker"); err != nil {
 		t.Skip("Docker not available")

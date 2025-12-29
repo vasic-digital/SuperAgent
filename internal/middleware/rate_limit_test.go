@@ -94,10 +94,10 @@ func TestMaxFunction(t *testing.T) {
 }
 
 func TestNewRateLimiter(t *testing.T) {
-	// Create a mock config
+	// Create a mock config with invalid Redis host to force cache disable
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host:     "localhost",
+			Host:     "nonexistent.redis.host.invalid",
 			Port:     "6379",
 			Password: "",
 			DB:       0,

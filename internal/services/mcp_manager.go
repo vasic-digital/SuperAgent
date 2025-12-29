@@ -162,9 +162,17 @@ func (m *MCPManager) RegisterServer(serverConfig map[string]interface{}) error {
 		return fmt.Errorf("server config must include 'command' as array")
 	}
 
+	if len(command) == 0 {
+		return fmt.Errorf("server command cannot be empty")
+	}
+
 	args := make([]string, len(command))
 	for i, c := range command {
-		args[i] = c.(string)
+		arg, ok := c.(string)
+		if !ok {
+			return fmt.Errorf("command argument %d must be a string", i)
+		}
+		args[i] = arg
 	}
 
 	return m.client.ConnectServer(context.Background(), name, name, args[0], args[1:])

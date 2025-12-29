@@ -18,11 +18,13 @@ import (
 
 // ProviderRegistry manages LLM provider registration and configuration
 type ProviderRegistry struct {
-	providers      map[string]llm.LLMProvider
-	ensemble       *EnsembleService
-	requestService *RequestService
-	memory         *MemoryService
-	mu             sync.RWMutex
+	providers       map[string]llm.LLMProvider
+	circuitBreakers map[string]*CircuitBreaker
+	config          *RegistryConfig
+	ensemble        *EnsembleService
+	requestService  *RequestService
+	memory          *MemoryService
+	mu              sync.RWMutex
 }
 
 // ProviderConfig holds configuration for an LLM provider
@@ -57,6 +59,7 @@ type RegistryConfig struct {
 	DefaultTimeout time.Duration              `json:"default_timeout"`
 	MaxRetries     int                        `json:"max_retries"`
 	HealthCheck    HealthCheckConfig          `json:"health_check"`
+	CircuitBreaker CircuitBreakerConfig       `json:"circuit_breaker"`
 	Providers      map[string]*ProviderConfig `json:"providers"`
 	Ensemble       *models.EnsembleConfig     `json:"ensemble"`
 	Routing        *RoutingConfig             `json:"routing"`
@@ -76,14 +79,70 @@ type RoutingConfig struct {
 	Weights  map[string]float64 `json:"weights"`
 }
 
+// CircuitBreakerConfig holds circuit breaker configuration
+type CircuitBreakerConfig struct {
+	Enabled          bool          `json:"enabled"`
+	FailureThreshold int           `json:"failure_threshold"`
+	RecoveryTimeout  time.Duration `json:"recovery_timeout"`
+	SuccessThreshold int           `json:"success_threshold"`
+}
+
+// circuitBreakerProvider wraps an LLMProvider with circuit breaker functionality
+type circuitBreakerProvider struct {
+	provider       llm.LLMProvider
+	circuitBreaker *CircuitBreaker
+	name           string
+}
+
+// Complete wraps the provider's Complete method with circuit breaker protection
+func (cbp *circuitBreakerProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+	var resp *models.LLMResponse
+	err := cbp.circuitBreaker.Call(func() error {
+		var callErr error
+		resp, callErr = cbp.provider.Complete(ctx, req)
+		return callErr
+	})
+	return resp, err
+}
+
+// CompleteStream wraps the provider's CompleteStream method with circuit breaker protection
+func (cbp *circuitBreakerProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+	var stream <-chan *models.LLMResponse
+	err := cbp.circuitBreaker.Call(func() error {
+		var callErr error
+		stream, callErr = cbp.provider.CompleteStream(ctx, req)
+		return callErr
+	})
+	return stream, err
+}
+
+// HealthCheck wraps the provider's HealthCheck method with circuit breaker protection
+func (cbp *circuitBreakerProvider) HealthCheck() error {
+	return cbp.circuitBreaker.Call(func() error {
+		return cbp.provider.HealthCheck()
+	})
+}
+
+// GetCapabilities delegates to the underlying provider
+func (cbp *circuitBreakerProvider) GetCapabilities() *models.ProviderCapabilities {
+	return cbp.provider.GetCapabilities()
+}
+
+// ValidateConfig delegates to the underlying provider
+func (cbp *circuitBreakerProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
+	return cbp.provider.ValidateConfig(config)
+}
+
 func NewProviderRegistry(cfg *RegistryConfig, memory *MemoryService) *ProviderRegistry {
 	if cfg == nil {
 		cfg = getDefaultRegistryConfig()
 	}
 
 	registry := &ProviderRegistry{
-		providers: make(map[string]llm.LLMProvider),
-		memory:    memory,
+		providers:       make(map[string]llm.LLMProvider),
+		circuitBreakers: make(map[string]*CircuitBreaker),
+		config:          cfg,
+		memory:          memory,
 	}
 
 	// Initialize ensemble service
@@ -229,11 +288,27 @@ func (r *ProviderRegistry) RegisterProvider(name string, provider llm.LLMProvide
 		return fmt.Errorf("provider %s already registered", name)
 	}
 
-	r.providers[name] = provider
+	// Wrap provider with circuit breaker if enabled
+	var wrappedProvider llm.LLMProvider = provider
+	if r.config.CircuitBreaker.Enabled {
+		cb := NewCircuitBreaker(
+			r.config.CircuitBreaker.FailureThreshold,
+			r.config.CircuitBreaker.SuccessThreshold,
+			r.config.CircuitBreaker.RecoveryTimeout,
+		)
+		r.circuitBreakers[name] = cb
+		wrappedProvider = &circuitBreakerProvider{
+			provider:       provider,
+			circuitBreaker: cb,
+			name:           name,
+		}
+	}
+
+	r.providers[name] = wrappedProvider
 
 	// Also register with ensemble and request services
-	r.ensemble.RegisterProvider(name, &providerAdapter{provider: provider})
-	r.requestService.RegisterProvider(name, &providerAdapter{provider: provider})
+	r.ensemble.RegisterProvider(name, &providerAdapter{provider: wrappedProvider})
+	r.requestService.RegisterProvider(name, &providerAdapter{provider: wrappedProvider})
 
 	return nil
 }
@@ -376,6 +451,12 @@ func getDefaultRegistryConfig() *RegistryConfig {
 			Interval:         60 * time.Second,
 			Timeout:          10 * time.Second,
 			FailureThreshold: 3,
+		},
+		CircuitBreaker: CircuitBreakerConfig{
+			Enabled:          true,
+			FailureThreshold: 5,
+			RecoveryTimeout:  60 * time.Second,
+			SuccessThreshold: 2,
 		},
 		Providers: make(map[string]*ProviderConfig),
 		Ensemble: &models.EnsembleConfig{

@@ -2,10 +2,12 @@ package services
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os/exec"
 	"sync"
 	"time"
@@ -53,10 +55,12 @@ type StdioTransport struct {
 
 // HTTPTransport implements MCP transport over HTTP
 type HTTPTransport struct {
-	baseURL   string
-	headers   map[string]string
-	connected bool
-	mu        sync.Mutex
+	baseURL      string
+	headers      map[string]string
+	connected    bool
+	mu           sync.Mutex
+	client       *http.Client
+	responseData []byte
 }
 
 // MCPRequest represents an MCP JSON-RPC request
@@ -603,14 +607,83 @@ func (t *StdioTransport) IsConnected() bool {
 	return t.connected
 }
 
-// HTTPTransport implementation (placeholder for future HTTP-based MCP servers)
+// HTTPTransport implementation for HTTP-based MCP servers
 
 func (t *HTTPTransport) Send(ctx context.Context, message interface{}) error {
-	return fmt.Errorf("HTTP transport not implemented")
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if !t.connected {
+		return fmt.Errorf("HTTP transport not connected")
+	}
+
+	// Convert message to JSON
+	data, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message: %w", err)
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequestWithContext(ctx, "POST", t.baseURL, bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	// Add custom headers
+	for key, value := range t.headers {
+		req.Header.Set(key, value)
+	}
+
+	// Send request
+	resp, err := t.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("HTTP request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Read response
+	responseData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Store response for Receive method
+	t.responseData = responseData
+
+	return nil
 }
 
 func (t *HTTPTransport) Receive(ctx context.Context) (interface{}, error) {
-	return nil, fmt.Errorf("HTTP transport not implemented")
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if !t.connected {
+		return nil, fmt.Errorf("HTTP transport not connected")
+	}
+
+	if len(t.responseData) == 0 {
+		return nil, fmt.Errorf("no response data available")
+	}
+
+	// Parse JSON response
+	var response interface{}
+	if err := json.Unmarshal(t.responseData, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	// Clear response data
+	t.responseData = nil
+
+	return response, nil
 }
 
 func (t *HTTPTransport) Close() error {
