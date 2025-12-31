@@ -42,11 +42,12 @@ func TestLoad(t *testing.T) {
 		if cfg.Server.Port != "8080" {
 			t.Errorf("Expected Server.Port '8080', got %s", cfg.Server.Port)
 		}
-		if cfg.Server.APIKey != "development-key" {
-			t.Errorf("Expected Server.APIKey 'development-key', got %s", cfg.Server.APIKey)
+		// APIKey and JWTSecret now require environment variables (no hardcoded defaults for security)
+		if cfg.Server.APIKey != "" {
+			t.Errorf("Expected Server.APIKey '' (must be set via env), got %s", cfg.Server.APIKey)
 		}
-		if cfg.Server.JWTSecret != "development-jwt-secret-key-change-in-production" {
-			t.Errorf("Expected Server.JWTSecret 'development-jwt-secret-key-change-in-production', got %s", cfg.Server.JWTSecret)
+		if cfg.Server.JWTSecret != "" {
+			t.Errorf("Expected Server.JWTSecret '' (must be set via env), got %s", cfg.Server.JWTSecret)
 		}
 		if cfg.Server.ReadTimeout != 30*time.Second {
 			t.Errorf("Expected Server.ReadTimeout 30s, got %v", cfg.Server.ReadTimeout)
