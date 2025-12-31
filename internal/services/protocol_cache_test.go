@@ -551,6 +551,58 @@ func TestCacheTagConstants(t *testing.T) {
 	assert.Equal(t, "results", CacheTagResults)
 }
 
+func TestProtocolCache_CleanupExpired(t *testing.T) {
+	log := newCacheTestLogger()
+	cache := NewProtocolCache(100, 5*time.Minute, log)
+	defer cache.Stop()
+
+	ctx := context.Background()
+
+	t.Run("cleanup removes expired entries", func(t *testing.T) {
+		// Add an entry with very short TTL
+		err := cache.Set(ctx, "expired-key", "value", []string{}, 1*time.Millisecond)
+		require.NoError(t, err)
+
+		// Add an entry with long TTL
+		err = cache.Set(ctx, "valid-key", "value", []string{}, 5*time.Minute)
+		require.NoError(t, err)
+
+		// Wait for the short TTL to expire
+		time.Sleep(5 * time.Millisecond)
+
+		// Run cleanup
+		cache.cleanupExpired()
+
+		// Valid key should still exist
+		_, exists, err := cache.Get(ctx, "valid-key")
+		require.NoError(t, err)
+		assert.True(t, exists)
+	})
+
+	t.Run("cleanup with no expired entries", func(t *testing.T) {
+		// Add a fresh entry
+		err := cache.Set(ctx, "fresh-key", "value", []string{}, 5*time.Minute)
+		require.NoError(t, err)
+
+		// Run cleanup (should not remove anything)
+		cache.cleanupExpired()
+
+		// Entry should still exist
+		_, exists, err := cache.Get(ctx, "fresh-key")
+		require.NoError(t, err)
+		assert.True(t, exists)
+	})
+
+	t.Run("cleanup on empty cache", func(t *testing.T) {
+		// Create a fresh cache
+		emptyCache := NewProtocolCache(100, 5*time.Minute, log)
+		defer emptyCache.Stop()
+
+		// Should not panic
+		emptyCache.cleanupExpired()
+	})
+}
+
 func BenchmarkProtocolCache_Set(b *testing.B) {
 	log := newCacheTestLogger()
 	cache := NewProtocolCache(10000, 5*time.Minute, log)

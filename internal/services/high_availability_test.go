@@ -584,3 +584,558 @@ func BenchmarkEventBus_Publish(b *testing.B) {
 		_ = eventBus.Publish(ctx, event)
 	}
 }
+
+// Tests for helper functions
+
+func TestProtocolFederation_GetNestedValue(t *testing.T) {
+	log := newFederationTestLogger()
+	federation := NewProtocolFederation(log)
+
+	t.Run("simple key", func(t *testing.T) {
+		data := map[string]interface{}{"key": "value"}
+		result, exists := federation.getNestedValue(data, "key")
+		assert.True(t, exists)
+		assert.Equal(t, "value", result)
+	})
+
+	t.Run("nested key", func(t *testing.T) {
+		data := map[string]interface{}{
+			"level1": map[string]interface{}{
+				"level2": "deep value",
+			},
+		}
+		result, exists := federation.getNestedValue(data, "level1.level2")
+		assert.True(t, exists)
+		assert.Equal(t, "deep value", result)
+	})
+
+	t.Run("deeply nested key", func(t *testing.T) {
+		data := map[string]interface{}{
+			"a": map[string]interface{}{
+				"b": map[string]interface{}{
+					"c": "deep",
+				},
+			},
+		}
+		result, exists := federation.getNestedValue(data, "a.b.c")
+		assert.True(t, exists)
+		assert.Equal(t, "deep", result)
+	})
+
+	t.Run("non-existent key", func(t *testing.T) {
+		data := map[string]interface{}{"key": "value"}
+		result, exists := federation.getNestedValue(data, "nonexistent")
+		assert.False(t, exists)
+		assert.Nil(t, result)
+	})
+
+	t.Run("non-existent nested key", func(t *testing.T) {
+		data := map[string]interface{}{
+			"level1": map[string]interface{}{
+				"level2": "value",
+			},
+		}
+		result, exists := federation.getNestedValue(data, "level1.level3")
+		assert.False(t, exists)
+		assert.Nil(t, result)
+	})
+
+	t.Run("invalid nested path", func(t *testing.T) {
+		data := map[string]interface{}{
+			"level1": "string value", // Not a map, so can't navigate further
+		}
+		result, exists := federation.getNestedValue(data, "level1.level2")
+		assert.False(t, exists)
+		assert.Nil(t, result)
+	})
+}
+
+func TestProtocolFederation_SetNestedValue(t *testing.T) {
+	log := newFederationTestLogger()
+	federation := NewProtocolFederation(log)
+
+	t.Run("simple key", func(t *testing.T) {
+		data := make(map[string]interface{})
+		federation.setNestedValue(data, "key", "value")
+		assert.Equal(t, "value", data["key"])
+	})
+
+	t.Run("nested key creates intermediate maps", func(t *testing.T) {
+		data := make(map[string]interface{})
+		federation.setNestedValue(data, "level1.level2", "deep value")
+
+		level1, ok := data["level1"].(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "deep value", level1["level2"])
+	})
+
+	t.Run("deeply nested key", func(t *testing.T) {
+		data := make(map[string]interface{})
+		federation.setNestedValue(data, "a.b.c", "deep")
+
+		a, ok := data["a"].(map[string]interface{})
+		require.True(t, ok)
+		b, ok := a["b"].(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "deep", b["c"])
+	})
+
+	t.Run("overwrites non-map value", func(t *testing.T) {
+		data := map[string]interface{}{
+			"level1": "string value",
+		}
+		federation.setNestedValue(data, "level1.level2", "new value")
+
+		level1, ok := data["level1"].(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "new value", level1["level2"])
+	})
+
+	t.Run("updates existing nested structure", func(t *testing.T) {
+		data := map[string]interface{}{
+			"level1": map[string]interface{}{
+				"existing": "keep me",
+			},
+		}
+		federation.setNestedValue(data, "level1.new", "added")
+
+		level1 := data["level1"].(map[string]interface{})
+		assert.Equal(t, "keep me", level1["existing"])
+		assert.Equal(t, "added", level1["new"])
+	})
+}
+
+func TestEventBus_Unsubscribe(t *testing.T) {
+	log := newFederationTestLogger()
+	eventBus := NewEventBus(log)
+
+	t.Run("unsubscribe from empty list", func(t *testing.T) {
+		handler := func(ctx context.Context, event *ProtocolEvent) error {
+			return nil
+		}
+		// Unsubscribe does not return error
+		eventBus.Unsubscribe("non-existent-event", handler)
+	})
+
+	t.Run("unsubscribe with subscribers", func(t *testing.T) {
+		handler := func(ctx context.Context, event *ProtocolEvent) error {
+			return nil
+		}
+		eventBus.Subscribe("unsubscribe-test", handler)
+
+		// Verify subscription exists
+		eventBus.mu.RLock()
+		assert.Len(t, eventBus.subscribers["unsubscribe-test"], 1)
+		eventBus.mu.RUnlock()
+
+		// Unsubscribe
+		eventBus.Unsubscribe("unsubscribe-test", handler)
+
+		// Verify subscription was removed
+		eventBus.mu.RLock()
+		assert.Len(t, eventBus.subscribers["unsubscribe-test"], 0)
+		eventBus.mu.RUnlock()
+	})
+}
+
+func TestProtocolFederation_TranslateRequest(t *testing.T) {
+	log := newFederationTestLogger()
+	federation := NewProtocolFederation(log)
+
+	t.Run("translate with translator", func(t *testing.T) {
+		translator := &DataTranslator{
+			SourceProtocol: "source",
+			TargetProtocol: "target",
+			Translations: map[string]TranslationRule{
+				"field": {
+					SourcePath: "oldKey",
+					TargetPath: "newKey",
+					Transform:  IdentityTransform,
+				},
+			},
+		}
+
+		request := &FederatedRequest{
+			ID:     "test",
+			Source: "source",
+			Target: "target",
+			Data:   map[string]interface{}{"oldKey": "value"},
+		}
+
+		result, err := federation.translateRequest(translator, request)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Contains(t, result.Data, "newKey")
+		assert.Equal(t, "value", result.Data["newKey"])
+	})
+
+	t.Run("translate preserves original data", func(t *testing.T) {
+		translator := &DataTranslator{
+			SourceProtocol: "source",
+			TargetProtocol: "target",
+			Translations:   map[string]TranslationRule{},
+		}
+
+		request := &FederatedRequest{
+			ID:     "test",
+			Source: "source",
+			Target: "target",
+			Data:   map[string]interface{}{"key": "value", "other": 123},
+		}
+
+		result, err := federation.translateRequest(translator, request)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, "value", result.Data["key"])
+		assert.Equal(t, 123, result.Data["other"])
+	})
+
+	t.Run("translate with nested path", func(t *testing.T) {
+		translator := &DataTranslator{
+			SourceProtocol: "source",
+			TargetProtocol: "target",
+			Translations: map[string]TranslationRule{
+				"nested": {
+					SourcePath: "parent.child",
+					TargetPath: "output.value",
+					Transform:  IdentityTransform,
+				},
+			},
+		}
+
+		request := &FederatedRequest{
+			ID:     "test",
+			Source: "source",
+			Target: "target",
+			Data: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"child": "nested-value",
+				},
+			},
+		}
+
+		result, err := federation.translateRequest(translator, request)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+
+		// Check nested output was set correctly
+		output, ok := result.Data["output"].(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "nested-value", output["value"])
+	})
+}
+
+func TestProtocolFederation_TranslateResponse(t *testing.T) {
+	log := newFederationTestLogger()
+	federation := NewProtocolFederation(log)
+
+	t.Run("translate with translator", func(t *testing.T) {
+		translator := &DataTranslator{
+			SourceProtocol: "source",
+			TargetProtocol: "target",
+			Translations: map[string]TranslationRule{
+				"field": {
+					SourcePath: "oldKey",
+					TargetPath: "newKey",
+					Transform:  IdentityTransform,
+				},
+			},
+		}
+
+		response := &FederatedResponse{
+			ID:      "test",
+			Success: true,
+			Data:    map[string]interface{}{"oldKey": "value"},
+		}
+
+		result, err := federation.translateResponse(translator, response)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.True(t, result.Success)
+		assert.Contains(t, result.Data, "newKey")
+	})
+
+	t.Run("translate preserves response metadata", func(t *testing.T) {
+		translator := &DataTranslator{
+			SourceProtocol: "source",
+			TargetProtocol: "target",
+			Translations:   map[string]TranslationRule{},
+		}
+
+		response := &FederatedResponse{
+			ID:            "test-id",
+			Success:       true,
+			Data:          map[string]interface{}{"key": "value"},
+			Error:         "",
+			CorrelationID: "corr-123",
+		}
+
+		result, err := federation.translateResponse(translator, response)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, "test-id", result.ID)
+		assert.True(t, result.Success)
+		assert.Equal(t, "corr-123", result.CorrelationID)
+	})
+
+	t.Run("translate with nested path", func(t *testing.T) {
+		translator := &DataTranslator{
+			SourceProtocol: "source",
+			TargetProtocol: "target",
+			Translations: map[string]TranslationRule{
+				"nested": {
+					SourcePath: "parent.child",
+					TargetPath: "output.value",
+					Transform:  IdentityTransform,
+				},
+			},
+		}
+
+		response := &FederatedResponse{
+			ID:      "test",
+			Success: true,
+			Data: map[string]interface{}{
+				"parent": map[string]interface{}{
+					"child": "nested-value",
+				},
+			},
+		}
+
+		result, err := federation.translateResponse(translator, response)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+
+		output, ok := result.Data["output"].(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "nested-value", output["value"])
+	})
+}
+
+// Tests for MCPFederatedProtocol
+
+func TestNewMCPFederatedProtocol(t *testing.T) {
+	log := newFederationTestLogger()
+
+	t.Run("create with nil client", func(t *testing.T) {
+		protocol := NewMCPFederatedProtocol(nil)
+		require.NotNil(t, protocol)
+		assert.Equal(t, "mcp", protocol.Name())
+	})
+
+	t.Run("create with client", func(t *testing.T) {
+		client := NewMCPClient(log)
+		protocol := NewMCPFederatedProtocol(client)
+		require.NotNil(t, protocol)
+		assert.Equal(t, "mcp", protocol.Name())
+	})
+}
+
+func TestMCPFederatedProtocol_GetCapabilities(t *testing.T) {
+	log := newFederationTestLogger()
+	client := NewMCPClient(log)
+	protocol := NewMCPFederatedProtocol(client)
+
+	caps := protocol.GetCapabilities()
+	require.NotNil(t, caps)
+	assert.Contains(t, caps, "type")
+	assert.Contains(t, caps, "tools")
+	assert.Contains(t, caps, "servers")
+	assert.Equal(t, "mcp", caps["type"])
+}
+
+func TestMCPFederatedProtocol_HandleFederatedRequest(t *testing.T) {
+	log := newFederationTestLogger()
+	client := NewMCPClient(log)
+	protocol := NewMCPFederatedProtocol(client)
+	ctx := context.Background()
+
+	t.Run("handle list_tools request", func(t *testing.T) {
+		request := &FederatedRequest{
+			ID:     "test-request",
+			Action: "list_tools",
+			Data:   map[string]interface{}{},
+		}
+
+		response, err := protocol.HandleFederatedRequest(ctx, request)
+		require.NoError(t, err)
+		assert.NotNil(t, response)
+		// Response may or may not be success depending on client state
+	})
+
+	t.Run("handle call_tool request", func(t *testing.T) {
+		request := &FederatedRequest{
+			ID:     "test-request",
+			Action: "call_tool",
+			Data: map[string]interface{}{
+				"serverID": "test-server",
+				"toolName": "test-tool",
+			},
+		}
+
+		response, err := protocol.HandleFederatedRequest(ctx, request)
+		require.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+
+	t.Run("handle unknown action", func(t *testing.T) {
+		request := &FederatedRequest{
+			ID:     "test-request",
+			Action: "unknown_action",
+			Data:   map[string]interface{}{},
+		}
+
+		response, err := protocol.HandleFederatedRequest(ctx, request)
+		require.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+}
+
+func TestMCPFederatedProtocol_PublishEvent(t *testing.T) {
+	log := newFederationTestLogger()
+	client := NewMCPClient(log)
+	protocol := NewMCPFederatedProtocol(client)
+	ctx := context.Background()
+
+	event := &ProtocolEvent{
+		ID:   "test-event",
+		Type: "tool-executed",
+		Data: map[string]interface{}{"tool": "test"},
+	}
+
+	err := protocol.PublishEvent(ctx, event)
+	assert.NoError(t, err)
+}
+
+// Tests for LSPFederatedProtocol
+
+func TestNewLSPFederatedProtocol(t *testing.T) {
+	log := newFederationTestLogger()
+
+	t.Run("create with nil client", func(t *testing.T) {
+		protocol := NewLSPFederatedProtocol(nil)
+		require.NotNil(t, protocol)
+		assert.Equal(t, "lsp", protocol.Name())
+	})
+
+	t.Run("create with client", func(t *testing.T) {
+		client := NewLSPClient(log)
+		protocol := NewLSPFederatedProtocol(client)
+		require.NotNil(t, protocol)
+		assert.Equal(t, "lsp", protocol.Name())
+	})
+}
+
+func TestLSPFederatedProtocol_GetCapabilities(t *testing.T) {
+	log := newFederationTestLogger()
+	client := NewLSPClient(log)
+	protocol := NewLSPFederatedProtocol(client)
+
+	caps := protocol.GetCapabilities()
+	require.NotNil(t, caps)
+	assert.Contains(t, caps, "type")
+	assert.Contains(t, caps, "languages")
+	assert.Contains(t, caps, "servers")
+	assert.Equal(t, "lsp", caps["type"])
+}
+
+func TestLSPFederatedProtocol_HandleFederatedRequest(t *testing.T) {
+	log := newFederationTestLogger()
+	client := NewLSPClient(log)
+	protocol := NewLSPFederatedProtocol(client)
+	ctx := context.Background()
+
+	t.Run("handle hover request", func(t *testing.T) {
+		request := &FederatedRequest{
+			ID:     "test-request",
+			Action: "hover",
+			Data: map[string]interface{}{
+				"serverID": "test-server",
+				"fileURI":  "file:///test.go",
+				"line":     10,
+				"column":   5,
+			},
+		}
+
+		response, err := protocol.HandleFederatedRequest(ctx, request)
+		require.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+
+	t.Run("handle completion request", func(t *testing.T) {
+		request := &FederatedRequest{
+			ID:     "test-request",
+			Action: "completion",
+			Data: map[string]interface{}{
+				"serverID": "test-server",
+				"fileURI":  "file:///test.go",
+				"line":     10,
+				"column":   5,
+			},
+		}
+
+		response, err := protocol.HandleFederatedRequest(ctx, request)
+		require.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+
+	t.Run("handle unknown action", func(t *testing.T) {
+		request := &FederatedRequest{
+			ID:     "test-request",
+			Action: "unknown_action",
+			Data:   map[string]interface{}{},
+		}
+
+		response, err := protocol.HandleFederatedRequest(ctx, request)
+		require.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+}
+
+func TestLSPFederatedProtocol_PublishEvent(t *testing.T) {
+	log := newFederationTestLogger()
+	client := NewLSPClient(log)
+	protocol := NewLSPFederatedProtocol(client)
+	ctx := context.Background()
+
+	event := &ProtocolEvent{
+		ID:   "test-event",
+		Type: "file-opened",
+		Data: map[string]interface{}{"uri": "file:///test.go"},
+	}
+
+	err := protocol.PublishEvent(ctx, event)
+	assert.NoError(t, err)
+}
+
+// Benchmarks for helper functions
+
+func BenchmarkProtocolFederation_GetNestedValue(b *testing.B) {
+	log := logrus.New()
+	log.SetLevel(logrus.PanicLevel)
+	federation := NewProtocolFederation(log)
+
+	data := map[string]interface{}{
+		"level1": map[string]interface{}{
+			"level2": map[string]interface{}{
+				"level3": "value",
+			},
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = federation.getNestedValue(data, "level1.level2.level3")
+	}
+}
+
+func BenchmarkProtocolFederation_SetNestedValue(b *testing.B) {
+	log := logrus.New()
+	log.SetLevel(logrus.PanicLevel)
+	federation := NewProtocolFederation(log)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		data := make(map[string]interface{})
+		federation.setNestedValue(data, "level1.level2.level3", "value")
+	}
+}

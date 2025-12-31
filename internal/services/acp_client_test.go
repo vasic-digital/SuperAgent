@@ -829,3 +829,220 @@ func BenchmarkLSPClient_HealthCheck(b *testing.B) {
 		_ = client.HealthCheck(ctx)
 	}
 }
+
+// Tests for LSP helper functions
+
+func TestConvertCompletionList(t *testing.T) {
+	t.Run("nil list returns nil", func(t *testing.T) {
+		result := convertCompletionList(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty list returns empty slice", func(t *testing.T) {
+		list := &CompletionList{
+			IsIncomplete: false,
+			Items:        []CompletionItem{},
+		}
+		result := convertCompletionList(list)
+		require.NotNil(t, result)
+		assert.Len(t, result, 0)
+	})
+
+	t.Run("converts completion items correctly", func(t *testing.T) {
+		list := &CompletionList{
+			IsIncomplete: true,
+			Items: []CompletionItem{
+				{
+					Label:         "Println",
+					Kind:          3, // Function
+					Detail:        "func(a ...interface{}) (n int, err error)",
+					Documentation: "Prints to stdout",
+				},
+				{
+					Label:         "Printf",
+					Kind:          3,
+					Detail:        "func(format string, a ...interface{}) (n int, err error)",
+					Documentation: "Formatted print",
+				},
+			},
+		}
+		result := convertCompletionList(list)
+		require.NotNil(t, result)
+		assert.Len(t, result, 2)
+
+		// Check first item
+		assert.Equal(t, "Println", result[0].Label)
+		assert.Equal(t, 3, result[0].Kind)
+		assert.Equal(t, "func(a ...interface{}) (n int, err error)", result[0].Detail)
+
+		// Check second item
+		assert.Equal(t, "Printf", result[1].Label)
+		assert.Equal(t, 3, result[1].Kind)
+	})
+
+	t.Run("handles single item", func(t *testing.T) {
+		list := &CompletionList{
+			IsIncomplete: false,
+			Items: []CompletionItem{
+				{
+					Label:  "TestFunc",
+					Kind:   3,
+					Detail: "test function",
+				},
+			},
+		}
+		result := convertCompletionList(list)
+		require.NotNil(t, result)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "TestFunc", result[0].Label)
+	})
+}
+
+func TestConvertHover(t *testing.T) {
+	t.Run("nil hover returns nil", func(t *testing.T) {
+		result := convertHover(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("converts hover correctly", func(t *testing.T) {
+		hover := &Hover{
+			Contents: MarkupContent{
+				Kind:  "markdown",
+				Value: "```go\nfunc Println(a ...interface{}) (n int, err error)\n```",
+			},
+			Range: &Range{
+				Start: Position{Line: 10, Character: 0},
+				End:   Position{Line: 10, Character: 7},
+			},
+		}
+		result := convertHover(hover)
+		require.NotNil(t, result)
+		assert.Equal(t, "```go\nfunc Println(a ...interface{}) (n int, err error)\n```", result.Content)
+	})
+
+	t.Run("converts hover with empty content", func(t *testing.T) {
+		hover := &Hover{
+			Contents: MarkupContent{
+				Kind:  "plaintext",
+				Value: "",
+			},
+		}
+		result := convertHover(hover)
+		require.NotNil(t, result)
+		assert.Equal(t, "", result.Content)
+	})
+
+	t.Run("converts hover without range", func(t *testing.T) {
+		hover := &Hover{
+			Contents: MarkupContent{
+				Kind:  "plaintext",
+				Value: "Simple hover text",
+			},
+			Range: nil,
+		}
+		result := convertHover(hover)
+		require.NotNil(t, result)
+		assert.Equal(t, "Simple hover text", result.Content)
+	})
+}
+
+func TestConvertLocation(t *testing.T) {
+	t.Run("nil location returns nil", func(t *testing.T) {
+		result := convertLocation(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("converts location correctly", func(t *testing.T) {
+		loc := &Location{
+			URI: "file:///workspace/main.go",
+			Range: Range{
+				Start: Position{Line: 10, Character: 5},
+				End:   Position{Line: 10, Character: 15},
+			},
+		}
+		result := convertLocation(loc)
+		require.NotNil(t, result)
+		assert.Equal(t, "file:///workspace/main.go", result.URI)
+		assert.Equal(t, 10, result.Range.Start.Line)
+		assert.Equal(t, 5, result.Range.Start.Character)
+		assert.Equal(t, 10, result.Range.End.Line)
+		assert.Equal(t, 15, result.Range.End.Character)
+	})
+
+	t.Run("converts location with zero positions", func(t *testing.T) {
+		loc := &Location{
+			URI: "file:///test.go",
+			Range: Range{
+				Start: Position{Line: 0, Character: 0},
+				End:   Position{Line: 0, Character: 0},
+			},
+		}
+		result := convertLocation(loc)
+		require.NotNil(t, result)
+		assert.Equal(t, "file:///test.go", result.URI)
+		assert.Equal(t, 0, result.Range.Start.Line)
+		assert.Equal(t, 0, result.Range.Start.Character)
+	})
+
+	t.Run("converts location with large line numbers", func(t *testing.T) {
+		loc := &Location{
+			URI: "file:///large-file.go",
+			Range: Range{
+				Start: Position{Line: 10000, Character: 100},
+				End:   Position{Line: 10050, Character: 0},
+			},
+		}
+		result := convertLocation(loc)
+		require.NotNil(t, result)
+		assert.Equal(t, 10000, result.Range.Start.Line)
+		assert.Equal(t, 100, result.Range.Start.Character)
+		assert.Equal(t, 10050, result.Range.End.Line)
+	})
+}
+
+// Benchmarks for helper functions
+
+func BenchmarkConvertCompletionList(b *testing.B) {
+	list := &CompletionList{
+		IsIncomplete: false,
+		Items: []CompletionItem{
+			{Label: "Println", Kind: 3, Detail: "func"},
+			{Label: "Printf", Kind: 3, Detail: "func"},
+			{Label: "Print", Kind: 3, Detail: "func"},
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = convertCompletionList(list)
+	}
+}
+
+func BenchmarkConvertHover(b *testing.B) {
+	hover := &Hover{
+		Contents: MarkupContent{
+			Kind:  "markdown",
+			Value: "```go\nfunc Println(a ...interface{}) (n int, err error)\n```",
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = convertHover(hover)
+	}
+}
+
+func BenchmarkConvertLocation(b *testing.B) {
+	loc := &Location{
+		URI: "file:///workspace/main.go",
+		Range: Range{
+			Start: Position{Line: 10, Character: 5},
+			End:   Position{Line: 10, Character: 15},
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = convertLocation(loc)
+	}
+}
