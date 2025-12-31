@@ -57,13 +57,6 @@ func TestNewClaudeProvider(t *testing.T) {
 	}
 }
 
-func TestClaudeProvider_HealthCheck(t *testing.T) {
-	t.Skip("HealthCheck method uses hardcoded Anthropic URL, cannot test with mock server")
-}
-
-func TestClaudeProvider_HealthCheck_Error(t *testing.T) {
-	t.Skip("HealthCheck method uses hardcoded Anthropic URL, cannot test with mock server")
-}
 
 func TestClaudeProvider_Complete_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -189,6 +182,20 @@ func TestClaudeProvider_CalculateConfidence(t *testing.T) {
 			expectedMin:  0.9,
 			expectedMax:  1.0,
 		},
+		{
+			name:         "long response over 50 chars",
+			content:      "This is a response that is over fifty characters in length.",
+			finishReason: "end_turn",
+			expectedMin:  0.95,
+			expectedMax:  1.0,
+		},
+		{
+			name:         "very long response over 200 chars",
+			content:      "This is a very long response that exceeds two hundred characters. It contains a lot of information and should demonstrate high quality output from the Claude model. The response includes multiple sentences and provides comprehensive information.",
+			finishReason: "end_turn",
+			expectedMin:  0.97,
+			expectedMax:  1.0,
+		},
 	}
 
 	for _, tt := range tests {
@@ -197,5 +204,411 @@ func TestClaudeProvider_CalculateConfidence(t *testing.T) {
 			assert.GreaterOrEqual(t, confidence, tt.expectedMin)
 			assert.LessOrEqual(t, confidence, tt.expectedMax)
 		})
+	}
+}
+
+func TestClaudeProvider_CompleteStream(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "test-key", r.Header.Get("x-api-key"))
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+
+		// Send streaming chunks in Claude format
+		w.Write([]byte("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n"))
+		w.Write([]byte("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\" World\"}}\n\n"))
+		w.Write([]byte("data: {\"type\":\"message_stop\"}\n\n"))
+		w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	provider := NewClaudeProvider("test-key", server.URL, "claude-3-sonnet-20240229")
+	req := &models.LLMRequest{
+		ID: "test-stream-request",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+		},
+	}
+
+	ch, err := provider.CompleteStream(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, ch)
+
+	// Collect responses
+	var responses []*models.LLMResponse
+	for resp := range ch {
+		responses = append(responses, resp)
+	}
+
+	// Should have received chunks plus final response
+	assert.GreaterOrEqual(t, len(responses), 2)
+}
+
+func TestClaudeProvider_GetCapabilities(t *testing.T) {
+	provider := NewClaudeProvider("test-key", "", "")
+	caps := provider.GetCapabilities()
+
+	require.NotNil(t, caps)
+
+	// Check supported models
+	assert.Contains(t, caps.SupportedModels, "claude-3-sonnet-20240229")
+	assert.Contains(t, caps.SupportedModels, "claude-3-opus-20240229")
+	assert.Contains(t, caps.SupportedModels, "claude-3-haiku-20240307")
+	assert.Contains(t, caps.SupportedModels, "claude-2.1")
+	assert.Contains(t, caps.SupportedModels, "claude-2.0")
+
+	// Check supported features
+	assert.Contains(t, caps.SupportedFeatures, "text_completion")
+	assert.Contains(t, caps.SupportedFeatures, "chat")
+	assert.Contains(t, caps.SupportedFeatures, "streaming")
+	assert.Contains(t, caps.SupportedFeatures, "function_calling")
+
+	// Check supported request types
+	assert.Contains(t, caps.SupportedRequestTypes, "text_completion")
+	assert.Contains(t, caps.SupportedRequestTypes, "chat")
+
+	// Check boolean capabilities
+	assert.True(t, caps.SupportsStreaming)
+	assert.True(t, caps.SupportsFunctionCalling)
+	assert.True(t, caps.SupportsVision)
+	assert.True(t, caps.SupportsTools)
+	assert.False(t, caps.SupportsSearch)
+	assert.True(t, caps.SupportsReasoning)
+	assert.True(t, caps.SupportsCodeCompletion)
+	assert.True(t, caps.SupportsCodeAnalysis)
+	assert.True(t, caps.SupportsRefactoring)
+
+	// Check limits
+	assert.Equal(t, 200000, caps.Limits.MaxTokens)
+	assert.Equal(t, 100000, caps.Limits.MaxInputLength)
+	assert.Equal(t, 4096, caps.Limits.MaxOutputLength)
+	assert.Equal(t, 10, caps.Limits.MaxConcurrentRequests)
+
+	// Check metadata
+	assert.Equal(t, "Anthropic", caps.Metadata["provider"])
+	assert.Equal(t, "Claude", caps.Metadata["model_family"])
+	assert.Equal(t, "2023-06-01", caps.Metadata["api_version"])
+}
+
+func TestClaudeProvider_ValidateConfig(t *testing.T) {
+	tests := []struct {
+		name         string
+		apiKey       string
+		baseURL      string
+		model        string
+		expectValid  bool
+		expectErrLen int
+	}{
+		{
+			name:         "all valid",
+			apiKey:       "test-key",
+			baseURL:      "https://api.anthropic.com",
+			model:        "claude-3-sonnet",
+			expectValid:  true,
+			expectErrLen: 0,
+		},
+		{
+			name:         "missing api key",
+			apiKey:       "",
+			baseURL:      "https://api.anthropic.com",
+			model:        "claude-3-sonnet",
+			expectValid:  false,
+			expectErrLen: 1,
+		},
+		{
+			name:         "missing base url",
+			apiKey:       "test-key",
+			baseURL:      "",
+			model:        "claude-3-sonnet",
+			expectValid:  false,
+			expectErrLen: 1,
+		},
+		{
+			name:         "missing model",
+			apiKey:       "test-key",
+			baseURL:      "https://api.anthropic.com",
+			model:        "",
+			expectValid:  false,
+			expectErrLen: 1,
+		},
+		{
+			name:         "all missing",
+			apiKey:       "",
+			baseURL:      "",
+			model:        "",
+			expectValid:  false,
+			expectErrLen: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := &ClaudeProvider{
+				apiKey:  tt.apiKey,
+				baseURL: tt.baseURL,
+				model:   tt.model,
+			}
+
+			valid, errs := provider.ValidateConfig(nil)
+			assert.Equal(t, tt.expectValid, valid)
+			assert.Len(t, errs, tt.expectErrLen)
+		})
+	}
+}
+
+func TestClaudeProvider_Complete_ContextCancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(100 * time.Millisecond) // Simulate slow response
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"id":"msg_123","content":[{"text":"test"}],"usage":{}}`))
+	}))
+	defer server.Close()
+
+	provider := NewClaudeProvider("test-key", server.URL, "claude-3-sonnet")
+	req := &models.LLMRequest{
+		ID: "test-request",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	resp, err := provider.Complete(ctx, req)
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+	assert.Contains(t, err.Error(), "context")
+}
+
+func TestClaudeProvider_RetryOnServerError(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts < 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"id":"msg_123","content":[{"type":"text","text":"success"}],"usage":{}}`))
+	}))
+	defer server.Close()
+
+	retryConfig := RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 10 * time.Millisecond,
+		MaxDelay:     100 * time.Millisecond,
+		Multiplier:   2.0,
+	}
+
+	provider := NewClaudeProviderWithRetry("test-key", server.URL, "claude-3-sonnet", retryConfig)
+	req := &models.LLMRequest{
+		ID: "test-request",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+		},
+	}
+
+	resp, err := provider.Complete(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, "success", resp.Content)
+	assert.Equal(t, 3, attempts)
+}
+
+func TestClaudeProvider_ConvertRequestWithSystemMessage(t *testing.T) {
+	provider := NewClaudeProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID: "test-request",
+		Messages: []models.Message{
+			{Role: "system", Content: "You are a helpful coding assistant."},
+			{Role: "user", Content: "Write hello world"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.5,
+		},
+	}
+
+	claudeReq := provider.convertRequest(req)
+
+	// System message should be extracted to System field
+	assert.Equal(t, "You are a helpful coding assistant.", claudeReq.System)
+	// Messages should only contain user/assistant messages (not system)
+	assert.Len(t, claudeReq.Messages, 1)
+	assert.Equal(t, "user", claudeReq.Messages[0].Role)
+	assert.Equal(t, "Write hello world", claudeReq.Messages[0].Content)
+}
+
+func TestClaudeProvider_ConvertResponse(t *testing.T) {
+	provider := NewClaudeProvider("test-key", "", "")
+	req := &models.LLMRequest{ID: "req-123"}
+
+	stopReason := "end_turn"
+	claudeResp := &ClaudeResponse{
+		ID:         "msg-456",
+		Type:       "message",
+		Role:       "assistant",
+		Model:      "claude-3-sonnet-20240229",
+		StopReason: &stopReason,
+		Content: []ClaudeContent{
+			{Type: "text", Text: "Hello there!"},
+		},
+		Usage: ClaudeUsage{
+			InputTokens:  10,
+			OutputTokens: 5,
+		},
+	}
+
+	startTime := time.Now()
+	resp := provider.convertResponse(req, claudeResp, startTime)
+
+	assert.Equal(t, "msg-456", resp.ID)
+	assert.Equal(t, "req-123", resp.RequestID)
+	assert.Equal(t, "claude", resp.ProviderID)
+	assert.Equal(t, "Claude", resp.ProviderName)
+	assert.Equal(t, "Hello there!", resp.Content)
+	assert.Equal(t, "end_turn", resp.FinishReason)
+	assert.Equal(t, 5, resp.TokensUsed)
+	assert.Greater(t, resp.Confidence, 0.0)
+	assert.NotNil(t, resp.Metadata)
+	assert.Equal(t, "claude-3-sonnet-20240229", resp.Metadata["model"])
+	assert.Equal(t, 10, resp.Metadata["input_tokens"])
+}
+
+func TestClaudeProvider_ConvertResponse_EmptyContent(t *testing.T) {
+	provider := NewClaudeProvider("test-key", "", "")
+	req := &models.LLMRequest{ID: "req-123"}
+
+	claudeResp := &ClaudeResponse{
+		ID:      "msg-456",
+		Content: []ClaudeContent{},
+		Usage:   ClaudeUsage{},
+	}
+
+	startTime := time.Now()
+	resp := provider.convertResponse(req, claudeResp, startTime)
+
+	assert.Equal(t, "", resp.Content)
+	assert.Equal(t, "", resp.FinishReason)
+}
+
+func TestDefaultRetryConfig(t *testing.T) {
+	config := DefaultRetryConfig()
+
+	assert.Equal(t, 3, config.MaxRetries)
+	assert.Equal(t, 1*time.Second, config.InitialDelay)
+	assert.Equal(t, 30*time.Second, config.MaxDelay)
+	assert.Equal(t, 2.0, config.Multiplier)
+}
+
+func TestNewClaudeProviderWithRetry(t *testing.T) {
+	retryConfig := RetryConfig{
+		MaxRetries:   5,
+		InitialDelay: 2 * time.Second,
+		MaxDelay:     60 * time.Second,
+		Multiplier:   3.0,
+	}
+
+	provider := NewClaudeProviderWithRetry("test-key", "", "", retryConfig)
+
+	assert.Equal(t, "test-key", provider.apiKey)
+	assert.Equal(t, ClaudeAPIURL, provider.baseURL)
+	assert.Equal(t, ClaudeModel, provider.model)
+	assert.Equal(t, 5, provider.retryConfig.MaxRetries)
+	assert.Equal(t, 2*time.Second, provider.retryConfig.InitialDelay)
+}
+
+func TestIsRetryableStatus(t *testing.T) {
+	tests := []struct {
+		statusCode int
+		retryable  bool
+	}{
+		{http.StatusOK, false},
+		{http.StatusBadRequest, false},
+		{http.StatusUnauthorized, false},
+		{http.StatusForbidden, false},
+		{http.StatusNotFound, false},
+		{http.StatusTooManyRequests, true},
+		{http.StatusInternalServerError, true},
+		{http.StatusBadGateway, true},
+		{http.StatusServiceUnavailable, true},
+		{http.StatusGatewayTimeout, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(http.StatusText(tt.statusCode), func(t *testing.T) {
+			assert.Equal(t, tt.retryable, isRetryableStatus(tt.statusCode))
+		})
+	}
+}
+
+func TestClaudeProvider_NextDelay(t *testing.T) {
+	provider := NewClaudeProviderWithRetry("test-key", "", "", RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 1 * time.Second,
+		MaxDelay:     10 * time.Second,
+		Multiplier:   2.0,
+	})
+
+	// First delay should be multiplied
+	next := provider.nextDelay(1 * time.Second)
+	assert.Equal(t, 2*time.Second, next)
+
+	// Should hit max delay
+	next = provider.nextDelay(8 * time.Second)
+	assert.Equal(t, 10*time.Second, next)
+}
+
+func TestClaudeProvider_Complete_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{invalid json`))
+	}))
+	defer server.Close()
+
+	provider := NewClaudeProvider("test-key", server.URL, "claude-3-sonnet")
+	req := &models.LLMRequest{
+		ID: "test-request",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+		},
+	}
+
+	resp, err := provider.Complete(context.Background(), req)
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+	assert.Contains(t, err.Error(), "failed to parse Claude response")
+}
+
+func BenchmarkClaudeProvider_ConvertRequest(b *testing.B) {
+	provider := NewClaudeProvider("test-key", "", "")
+	req := &models.LLMRequest{
+		ID: "bench-request",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   100,
+			Temperature: 0.7,
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.convertRequest(req)
+	}
+}
+
+func BenchmarkClaudeProvider_CalculateConfidence(b *testing.B) {
+	provider := NewClaudeProvider("test-key", "", "")
+	content := "This is a sample response from the Claude model that should be evaluated for confidence scoring."
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		provider.calculateConfidence(content, "end_turn")
 	}
 }

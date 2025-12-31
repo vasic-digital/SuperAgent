@@ -486,3 +486,419 @@ func TestHelperFunctions(t *testing.T) {
 		}
 	})
 }
+
+func TestHelperFunctions_WithUser(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("GetCurrentUser_WithClaims", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		claims := &Claims{
+			UserID:   "user123",
+			Username: "testuser",
+			Role:     "admin",
+		}
+		c.Set("claims", claims)
+
+		user := GetCurrentUser(c)
+		if user == nil {
+			t.Fatal("Expected user claims")
+		}
+		if user.UserID != "user123" {
+			t.Errorf("Expected user ID 'user123', got %s", user.UserID)
+		}
+	})
+
+	t.Run("GetCurrentUser_WrongType", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Set("claims", "not a claims struct")
+
+		user := GetCurrentUser(c)
+		if user != nil {
+			t.Error("Expected nil for invalid claims type")
+		}
+	})
+
+	t.Run("GetUserID_Valid", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Set("user_id", "user456")
+
+		userID := GetUserID(c)
+		if userID != "user456" {
+			t.Errorf("Expected 'user456', got %s", userID)
+		}
+	})
+
+	t.Run("GetUserID_WrongType", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Set("user_id", 123) // Not a string
+
+		userID := GetUserID(c)
+		if userID != "" {
+			t.Errorf("Expected empty string for wrong type, got %s", userID)
+		}
+	})
+
+	t.Run("GetUserRole_Valid", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Set("role", "moderator")
+
+		role := GetUserRole(c)
+		if role != "moderator" {
+			t.Errorf("Expected 'moderator', got %s", role)
+		}
+	})
+
+	t.Run("GetUserRole_WrongType", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Set("role", 123) // Not a string
+
+		role := GetUserRole(c)
+		if role != "" {
+			t.Errorf("Expected empty string for wrong type, got %s", role)
+		}
+	})
+
+	t.Run("IsAuthenticated_WithUser", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		claims := &Claims{UserID: "user123"}
+		c.Set("claims", claims)
+
+		if !IsAuthenticated(c) {
+			t.Error("Expected true for authenticated user")
+		}
+	})
+
+	t.Run("HasRole_UserRole", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Set("role", "editor")
+
+		if HasRole(c, "editor") != true {
+			t.Error("Expected true for matching role")
+		}
+		if HasRole(c, "admin") != false {
+			t.Error("Expected false for non-matching role")
+		}
+	})
+
+	t.Run("HasRole_AdminHasAllRoles", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Set("role", "admin")
+
+		if !HasRole(c, "editor") {
+			t.Error("Admin should have all roles")
+		}
+		if !HasRole(c, "moderator") {
+			t.Error("Admin should have all roles")
+		}
+	})
+
+	t.Run("IsAdmin_True", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Set("role", "admin")
+
+		if !IsAdmin(c) {
+			t.Error("Expected true for admin user")
+		}
+	})
+}
+
+func TestAuthMiddleware_RequireAdmin(t *testing.T) {
+	config := AuthConfig{
+		SecretKey:   "test-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
+
+	// Create a test Gin engine
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	// Add admin-only route
+	router.GET("/admin-only", middleware.Middleware([]string{}), middleware.RequireAdmin(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "admin only"})
+	})
+
+	t.Run("AdminAccessGranted", func(t *testing.T) {
+		token, _ := middleware.GenerateToken("admin123", "adminuser", "admin")
+		req := httptest.NewRequest("GET", "/admin-only", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+	})
+
+	t.Run("NonAdminAccessDenied", func(t *testing.T) {
+		token, _ := middleware.GenerateToken("user123", "testuser", "user")
+		req := httptest.NewRequest("GET", "/admin-only", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusForbidden {
+			t.Errorf("Expected status 403, got %d", w.Code)
+		}
+	})
+}
+
+func TestAuthMiddleware_RequireRole_EdgeCases(t *testing.T) {
+	config := AuthConfig{
+		SecretKey:   "test-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
+
+	gin.SetMode(gin.TestMode)
+
+	t.Run("NoRoleInContext", func(t *testing.T) {
+		router := gin.New()
+		router.GET("/test", middleware.RequireRole("admin"), func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "ok"})
+		})
+
+		req := httptest.NewRequest("GET", "/test", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusForbidden {
+			t.Errorf("Expected status 403, got %d", w.Code)
+		}
+	})
+
+	t.Run("InvalidRoleType", func(t *testing.T) {
+		router := gin.New()
+		router.GET("/test", func(c *gin.Context) {
+			c.Set("role", 123) // Invalid type
+			c.Next()
+		}, middleware.RequireRole("admin"), func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "ok"})
+		})
+
+		req := httptest.NewRequest("GET", "/test", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusForbidden {
+			t.Errorf("Expected status 403, got %d", w.Code)
+		}
+	})
+}
+
+func TestAuthMiddleware_Optional_EdgeCases(t *testing.T) {
+	config := AuthConfig{
+		SecretKey:   "test-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/optional", middleware.Optional([]string{}), func(c *gin.Context) {
+		authenticated := IsAuthenticated(c)
+		c.JSON(http.StatusOK, gin.H{"authenticated": authenticated})
+	})
+
+	t.Run("InvalidBearerFormat", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/optional", nil)
+		req.Header.Set("Authorization", "Basic invalid")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		// Should proceed without auth (optional)
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+	})
+
+	t.Run("InvalidToken", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/optional", nil)
+		req.Header.Set("Authorization", "Bearer invalid.token.here")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		// Should proceed without auth (optional)
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+	})
+
+	t.Run("SkipPath", func(t *testing.T) {
+		router2 := gin.New()
+		router2.GET("/public/test", middleware.Optional([]string{"/public"}), func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		})
+
+		req := httptest.NewRequest("GET", "/public/test", nil)
+		w := httptest.NewRecorder()
+		router2.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+	})
+}
+
+func TestAuthMiddleware_Middleware_InvalidToken(t *testing.T) {
+	config := AuthConfig{
+		SecretKey:   "test-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/protected", middleware.Middleware([]string{}), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "protected"})
+	})
+
+	t.Run("ExpiredToken", func(t *testing.T) {
+		// Create middleware with short expiry
+		shortConfig := AuthConfig{
+			SecretKey:   "test-secret-key",
+			TokenExpiry: -time.Hour, // Already expired
+		}
+		shortMiddleware, _ := NewAuthMiddleware(shortConfig, nil)
+		token, _ := shortMiddleware.GenerateToken("user123", "testuser", "user")
+
+		req := httptest.NewRequest("GET", "/protected", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status 401, got %d", w.Code)
+		}
+	})
+
+	t.Run("MalformedToken", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/protected", nil)
+		req.Header.Set("Authorization", "Bearer not.a.valid.jwt.token")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status 401, got %d", w.Code)
+		}
+	})
+}
+
+func TestAuthMiddleware_GetAuthInfo(t *testing.T) {
+	config := AuthConfig{
+		SecretKey:   "test-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
+
+	t.Run("Unauthenticated", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		info := middleware.GetAuthInfo(c)
+
+		if info["authenticated"] != false {
+			t.Error("Expected authenticated to be false")
+		}
+	})
+
+	t.Run("Authenticated", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		// Generate a valid token and extract claims from it
+		token, _ := middleware.GenerateToken("user123", "testuser", "admin")
+		claims, _ := middleware.validateToken(token)
+		c.Set("claims", claims)
+
+		info := middleware.GetAuthInfo(c)
+
+		if info["authenticated"] != true {
+			t.Error("Expected authenticated to be true")
+		}
+		if info["user_id"] != "user123" {
+			t.Errorf("Expected user_id 'user123', got %v", info["user_id"])
+		}
+		if info["username"] != "testuser" {
+			t.Errorf("Expected username 'testuser', got %v", info["username"])
+		}
+		if info["role"] != "admin" {
+			t.Errorf("Expected role 'admin', got %v", info["role"])
+		}
+	})
+}
+
+func TestAuthMiddleware_Logout(t *testing.T) {
+	config := AuthConfig{
+		SecretKey: "test-secret-key",
+	}
+	middleware, _ := NewAuthMiddleware(config, nil)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.POST("/logout", middleware.Logout)
+
+	req := httptest.NewRequest("POST", "/logout", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", w.Code)
+	}
+}
+
+func TestAuthMiddleware_Refresh(t *testing.T) {
+	config := AuthConfig{
+		SecretKey:   "test-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware, _ := NewAuthMiddleware(config, nil)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.POST("/refresh", middleware.Refresh)
+
+	t.Run("MissingToken", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/refresh", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status 401, got %d", w.Code)
+		}
+	})
+
+	t.Run("InvalidToken", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/refresh", nil)
+		req.Header.Set("Authorization", "Bearer invalid.token")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status 401, got %d", w.Code)
+		}
+	})
+
+	t.Run("ValidToken", func(t *testing.T) {
+		token, _ := middleware.GenerateToken("user123", "testuser", "user")
+		req := httptest.NewRequest("POST", "/refresh", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+	})
+}

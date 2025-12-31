@@ -478,3 +478,373 @@ func TestValidator_ValidateCompletionMiddleware_TopP(t *testing.T) {
 		})
 	}
 }
+
+func TestValidator_ValidateCompletionMiddleware_MaxTokensExceedsLimit(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	config := DefaultValidationConfig()
+	config.MaxTokensLimit = 1000
+	validator := NewValidator(config)
+
+	router := gin.New()
+	router.Use(validator.ValidateCompletionMiddleware())
+	router.POST("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	maxTokens := 5000 // Exceeds limit
+	body := CompletionValidationRequest{
+		Prompt:    "Hello",
+		MaxTokens: &maxTokens,
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/test", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", w.Code)
+	}
+}
+
+func TestValidator_ValidateCompletionMiddleware_PromptExceedsMaxLength(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	config := DefaultValidationConfig()
+	config.MaxPromptLength = 50
+	validator := NewValidator(config)
+
+	router := gin.New()
+	router.Use(validator.ValidateCompletionMiddleware())
+	router.POST("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	body := CompletionValidationRequest{
+		Prompt: strings.Repeat("a", 100), // Exceeds 50 char limit
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/test", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", w.Code)
+	}
+}
+
+func TestValidator_ValidateCompletionMiddleware_TooManyMessages(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	config := DefaultValidationConfig()
+	config.MaxMessagesCount = 3
+	validator := NewValidator(config)
+
+	router := gin.New()
+	router.Use(validator.ValidateCompletionMiddleware())
+	router.POST("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	body := CompletionValidationRequest{
+		Messages: []MessageValidation{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi"},
+			{Role: "user", Content: "How are you?"},
+			{Role: "assistant", Content: "Good"},
+			{Role: "user", Content: "Great"}, // 5th message exceeds limit of 3
+		},
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/test", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", w.Code)
+	}
+}
+
+func TestValidator_ValidateCompletionMiddleware_EmptyRole(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	validator := NewDefaultValidator()
+
+	router := gin.New()
+	router.Use(validator.ValidateCompletionMiddleware())
+	router.POST("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	body := CompletionValidationRequest{
+		Messages: []MessageValidation{
+			{Role: "", Content: "Hello"}, // Empty role
+		},
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/test", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", w.Code)
+	}
+}
+
+func TestValidator_ValidateCompletionMiddleware_MissingContent(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	validator := NewDefaultValidator()
+
+	router := gin.New()
+	router.Use(validator.ValidateCompletionMiddleware())
+	router.POST("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	body := CompletionValidationRequest{
+		Messages: []MessageValidation{
+			{Role: "user", Content: ""}, // Empty content for user
+		},
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/test", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", w.Code)
+	}
+}
+
+func TestValidator_ValidateCompletionMiddleware_AssistantEmptyContentAllowed(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	validator := NewDefaultValidator()
+
+	router := gin.New()
+	router.Use(validator.ValidateCompletionMiddleware())
+	router.POST("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	body := CompletionValidationRequest{
+		Messages: []MessageValidation{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: ""}, // Empty content allowed for assistant
+		},
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/test", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d. Body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestValidator_ValidateCompletionMiddleware_JSONTypeError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	validator := NewDefaultValidator()
+
+	router := gin.New()
+	router.Use(validator.ValidateCompletionMiddleware())
+	router.POST("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	// Send temperature as string instead of float
+	jsonBody := []byte(`{"prompt": "Hello", "temperature": "hot"}`)
+
+	req := httptest.NewRequest("POST", "/test", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp["error"] == nil {
+		t.Error("Expected error response")
+	}
+}
+
+func TestValidator_ValidateCompletionMiddleware_JSONSyntaxError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	validator := NewDefaultValidator()
+
+	router := gin.New()
+	router.Use(validator.ValidateCompletionMiddleware())
+	router.POST("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	// Malformed JSON with syntax error
+	jsonBody := []byte(`{"prompt": "Hello", temperature: 0.5}`) // Missing quotes around temperature
+
+	req := httptest.NewRequest("POST", "/test", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", w.Code)
+	}
+}
+
+func TestValidationErrors_Empty(t *testing.T) {
+	errs := &ValidationErrors{}
+
+	if errs.HasErrors() {
+		t.Error("Expected HasErrors() to return false for empty errors")
+	}
+
+	errMsg := errs.Error()
+	if errMsg != "validation failed" {
+		t.Errorf("Expected 'validation failed', got %s", errMsg)
+	}
+}
+
+func TestRequireContentType(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	router.Use(RequireContentType("application/json", "application/xml"))
+	router.POST("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	tests := []struct {
+		name           string
+		contentType    string
+		expectedStatus int
+	}{
+		{"JSON allowed", "application/json", http.StatusOK},
+		{"XML allowed", "application/xml", http.StatusOK},
+		{"text not allowed", "text/plain", http.StatusUnsupportedMediaType},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("POST", "/test", strings.NewReader(`{}`))
+			req.Header.Set("Content-Type", tt.contentType)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			if w.Code != tt.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+			}
+		})
+	}
+}
+
+func TestValidator_SanitizeInputMiddleware_PreservesValidContent(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	validator := NewDefaultValidator()
+
+	router := gin.New()
+	router.Use(validator.SanitizeInputMiddleware())
+	router.POST("/test", func(c *gin.Context) {
+		body, _ := c.GetRawData()
+		c.JSON(http.StatusOK, gin.H{"body": string(body)})
+	})
+
+	// Valid JSON with escaped newlines and tabs
+	input := `{"message": "Hello\nWorld\tTab"}`
+	req := httptest.NewRequest("POST", "/test", strings.NewReader(input))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", w.Code)
+	}
+
+	var resp map[string]string
+	json.Unmarshal(w.Body.Bytes(), &resp)
+
+	// The input should be preserved (the escaped \n and \t should still be in the body)
+	if !strings.Contains(resp["body"], `\n`) {
+		t.Error("Escaped newlines should be preserved")
+	}
+	if !strings.Contains(resp["body"], `\t`) {
+		t.Error("Escaped tabs should be preserved")
+	}
+}
+
+func TestValidator_ValidateCompletionMiddleware_FunctionRole(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	validator := NewDefaultValidator()
+
+	router := gin.New()
+	router.Use(validator.ValidateCompletionMiddleware())
+	router.POST("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	body := CompletionValidationRequest{
+		Messages: []MessageValidation{
+			{Role: "user", Content: "Call the weather function"},
+			{Role: "function", Content: `{"temperature": 72}`},
+		},
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/test", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d. Body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestValidator_ValidateCompletionMiddleware_ToolRole(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	validator := NewDefaultValidator()
+
+	router := gin.New()
+	router.Use(validator.ValidateCompletionMiddleware())
+	router.POST("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	body := CompletionValidationRequest{
+		Messages: []MessageValidation{
+			{Role: "user", Content: "Use the calculator tool"},
+			{Role: "tool", Content: `{"result": 42}`},
+		},
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/test", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d. Body: %s", w.Code, w.Body.String())
+	}
+}

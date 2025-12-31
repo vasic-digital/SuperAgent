@@ -346,7 +346,155 @@ func TestQwenProvider_Complete_InvalidJSON(t *testing.T) {
 }
 
 func TestQwenProvider_CompleteStream(t *testing.T) {
-	t.Skip("Streaming test needs proper server setup - TODO: implement later")
+	t.Run("successful streaming", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			response := QwenResponse{
+				ID:      "chatcmpl-stream",
+				Object:  "chat.completion",
+				Created: time.Now().Unix(),
+				Model:   "qwen-turbo",
+				Choices: []QwenChoice{
+					{
+						Index: 0,
+						Message: QwenMessage{
+							Role:    "assistant",
+							Content: "This is a streaming response that will be chunked into pieces",
+						},
+						FinishReason: "stop",
+					},
+				},
+				Usage: QwenUsage{
+					PromptTokens:     10,
+					CompletionTokens: 15,
+					TotalTokens:      25,
+				},
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(response)
+		}))
+		defer server.Close()
+
+		provider := NewQwenProvider("test-api-key", server.URL, "qwen-turbo")
+		provider.httpClient = server.Client()
+
+		req := &models.LLMRequest{
+			ID: "test-req-stream",
+			ModelParams: models.ModelParameters{
+				Model: "qwen-turbo",
+			},
+			Prompt: "Test streaming",
+		}
+
+		responseChan, err := provider.CompleteStream(context.Background(), req)
+		require.NoError(t, err)
+		require.NotNil(t, responseChan)
+
+		var chunks []*models.LLMResponse
+		for chunk := range responseChan {
+			chunks = append(chunks, chunk)
+		}
+
+		assert.NotEmpty(t, chunks)
+		// Last chunk should have "stop" finish reason
+		lastChunk := chunks[len(chunks)-1]
+		assert.Equal(t, "stop", lastChunk.FinishReason)
+	})
+
+	t.Run("context cancellation during streaming", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			response := QwenResponse{
+				ID:      "chatcmpl-stream-cancel",
+				Object:  "chat.completion",
+				Created: time.Now().Unix(),
+				Model:   "qwen-turbo",
+				Choices: []QwenChoice{
+					{
+						Index: 0,
+						Message: QwenMessage{
+							Role:    "assistant",
+							Content: "This is a very long streaming response that should be interrupted",
+						},
+						FinishReason: "stop",
+					},
+				},
+				Usage: QwenUsage{TotalTokens: 20},
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(response)
+		}))
+		defer server.Close()
+
+		provider := NewQwenProvider("test-api-key", server.URL, "qwen-turbo")
+		provider.httpClient = server.Client()
+
+		req := &models.LLMRequest{
+			ID:     "test-req-cancel",
+			Prompt: "Test",
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		responseChan, err := provider.CompleteStream(ctx, req)
+		require.NoError(t, err)
+
+		// Cancel context after getting first chunk
+		receivedFirst := false
+		for range responseChan {
+			if !receivedFirst {
+				receivedFirst = true
+				cancel()
+			}
+		}
+
+		// Channel should close (due to context cancellation or completion)
+		assert.True(t, true) // If we get here, the channel closed properly
+	})
+
+	t.Run("streaming with API error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			response := QwenError{
+				Error: struct {
+					Message string `json:"message"`
+					Type    string `json:"type"`
+					Code    string `json:"code"`
+				}{
+					Message: "Rate limit exceeded",
+					Type:    "rate_limit_error",
+					Code:    "429",
+				},
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusTooManyRequests)
+			json.NewEncoder(w).Encode(response)
+		}))
+		defer server.Close()
+
+		provider := NewQwenProviderWithRetry("test-api-key", server.URL, "qwen-turbo", RetryConfig{
+			MaxRetries:   0, // No retries
+			InitialDelay: 1 * time.Millisecond,
+		})
+		provider.httpClient = server.Client()
+
+		req := &models.LLMRequest{
+			ID:     "test-req-error",
+			Prompt: "Test",
+		}
+
+		responseChan, err := provider.CompleteStream(context.Background(), req)
+		require.NoError(t, err)
+
+		// Channel should close without sending any chunks due to error
+		var chunks []*models.LLMResponse
+		for chunk := range responseChan {
+			chunks = append(chunks, chunk)
+		}
+
+		assert.Empty(t, chunks)
+	})
 }
 
 func TestQwenProvider_HealthCheck_Success(t *testing.T) {
@@ -612,4 +760,331 @@ func TestQwenProvider_Complete_WithStopSequences(t *testing.T) {
 	require.NotNil(t, resp)
 	assert.Equal(t, "Response with stop sequences", resp.Content)
 	assert.Equal(t, 20, resp.TokensUsed)
+}
+
+func TestDefaultRetryConfig(t *testing.T) {
+	config := DefaultRetryConfig()
+
+	assert.Equal(t, 3, config.MaxRetries)
+	assert.Equal(t, 1*time.Second, config.InitialDelay)
+	assert.Equal(t, 30*time.Second, config.MaxDelay)
+	assert.Equal(t, 2.0, config.Multiplier)
+}
+
+func TestNewQwenProviderWithRetry(t *testing.T) {
+	customConfig := RetryConfig{
+		MaxRetries:   5,
+		InitialDelay: 500 * time.Millisecond,
+		MaxDelay:     10 * time.Second,
+		Multiplier:   1.5,
+	}
+
+	provider := NewQwenProviderWithRetry("test-key", "https://custom.url", "qwen-max", customConfig)
+
+	assert.Equal(t, "test-key", provider.apiKey)
+	assert.Equal(t, "https://custom.url", provider.baseURL)
+	assert.Equal(t, "qwen-max", provider.model)
+	assert.Equal(t, customConfig.MaxRetries, provider.retryConfig.MaxRetries)
+	assert.Equal(t, customConfig.InitialDelay, provider.retryConfig.InitialDelay)
+	assert.Equal(t, customConfig.MaxDelay, provider.retryConfig.MaxDelay)
+	assert.Equal(t, customConfig.Multiplier, provider.retryConfig.Multiplier)
+}
+
+func TestIsRetryableStatus(t *testing.T) {
+	tests := []struct {
+		statusCode int
+		retryable  bool
+	}{
+		{http.StatusTooManyRequests, true},     // 429
+		{http.StatusInternalServerError, true}, // 500
+		{http.StatusBadGateway, true},          // 502
+		{http.StatusServiceUnavailable, true},  // 503
+		{http.StatusGatewayTimeout, true},      // 504
+		{http.StatusOK, false},                 // 200
+		{http.StatusBadRequest, false},         // 400
+		{http.StatusUnauthorized, false},       // 401
+		{http.StatusForbidden, false},          // 403
+		{http.StatusNotFound, false},           // 404
+	}
+
+	for _, tt := range tests {
+		t.Run(http.StatusText(tt.statusCode), func(t *testing.T) {
+			result := isRetryableStatus(tt.statusCode)
+			assert.Equal(t, tt.retryable, result)
+		})
+	}
+}
+
+func TestQwenProvider_NextDelay(t *testing.T) {
+	provider := NewQwenProviderWithRetry("key", "", "", RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 100 * time.Millisecond,
+		MaxDelay:     1 * time.Second,
+		Multiplier:   2.0,
+	})
+
+	t.Run("exponential backoff", func(t *testing.T) {
+		delay1 := provider.nextDelay(100 * time.Millisecond)
+		assert.Equal(t, 200*time.Millisecond, delay1)
+
+		delay2 := provider.nextDelay(200 * time.Millisecond)
+		assert.Equal(t, 400*time.Millisecond, delay2)
+	})
+
+	t.Run("respects max delay", func(t *testing.T) {
+		delay := provider.nextDelay(800 * time.Millisecond)
+		assert.Equal(t, 1*time.Second, delay) // Capped at MaxDelay
+	})
+}
+
+func TestQwenProvider_RetryOnServerError(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts < 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+
+		response := QwenResponse{
+			ID:      "chatcmpl-retry",
+			Object:  "chat.completion",
+			Created: time.Now().Unix(),
+			Model:   "qwen-turbo",
+			Choices: []QwenChoice{
+				{
+					Index:        0,
+					Message:      QwenMessage{Role: "assistant", Content: "Success after retry"},
+					FinishReason: "stop",
+				},
+			},
+			Usage: QwenUsage{TotalTokens: 10},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	provider := NewQwenProviderWithRetry("test-key", server.URL, "qwen-turbo", RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 1 * time.Millisecond,
+		MaxDelay:     10 * time.Millisecond,
+		Multiplier:   2.0,
+	})
+	provider.httpClient = server.Client()
+
+	req := &models.LLMRequest{
+		ID:     "test-retry",
+		Prompt: "Test",
+	}
+
+	resp, err := provider.Complete(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, "Success after retry", resp.Content)
+	assert.Equal(t, 3, attempts)
+}
+
+func TestQwenProvider_RetryExhausted(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	provider := NewQwenProviderWithRetry("test-key", server.URL, "qwen-turbo", RetryConfig{
+		MaxRetries:   2,
+		InitialDelay: 1 * time.Millisecond,
+		MaxDelay:     10 * time.Millisecond,
+		Multiplier:   2.0,
+	})
+	provider.httpClient = server.Client()
+
+	req := &models.LLMRequest{
+		ID:     "test-exhaust",
+		Prompt: "Test",
+	}
+
+	resp, err := provider.Complete(context.Background(), req)
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+	assert.Contains(t, err.Error(), "503")
+	assert.Equal(t, 3, attempts) // Initial + 2 retries
+}
+
+func TestQwenProvider_ContextCancelledDuringRetry(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	provider := NewQwenProviderWithRetry("test-key", server.URL, "qwen-turbo", RetryConfig{
+		MaxRetries:   5,
+		InitialDelay: 100 * time.Millisecond,
+		MaxDelay:     1 * time.Second,
+		Multiplier:   2.0,
+	})
+	provider.httpClient = server.Client()
+
+	req := &models.LLMRequest{
+		ID:     "test-ctx-cancel",
+		Prompt: "Test",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	resp, err := provider.Complete(ctx, req)
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+	// Should fail before exhausting all retries
+	assert.Less(t, attempts, 5)
+}
+
+func TestQwenProvider_RateLimitRetry(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts < 2 {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+
+		response := QwenResponse{
+			ID:      "chatcmpl-ratelimit",
+			Object:  "chat.completion",
+			Created: time.Now().Unix(),
+			Model:   "qwen-turbo",
+			Choices: []QwenChoice{
+				{
+					Index:        0,
+					Message:      QwenMessage{Role: "assistant", Content: "Success after rate limit"},
+					FinishReason: "stop",
+				},
+			},
+			Usage: QwenUsage{TotalTokens: 10},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	provider := NewQwenProviderWithRetry("test-key", server.URL, "qwen-turbo", RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 1 * time.Millisecond,
+		MaxDelay:     10 * time.Millisecond,
+		Multiplier:   2.0,
+	})
+	provider.httpClient = server.Client()
+
+	req := &models.LLMRequest{
+		ID:     "test-ratelimit",
+		Prompt: "Test",
+	}
+
+	resp, err := provider.Complete(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, "Success after rate limit", resp.Content)
+}
+
+func TestQwenProvider_NonRetryableErrorNoRetry(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		response := QwenError{
+			Error: struct {
+				Message string `json:"message"`
+				Type    string `json:"type"`
+				Code    string `json:"code"`
+			}{
+				Message: "Invalid API key",
+				Type:    "authentication_error",
+				Code:    "401",
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	provider := NewQwenProviderWithRetry("invalid-key", server.URL, "qwen-turbo", RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 1 * time.Millisecond,
+		MaxDelay:     10 * time.Millisecond,
+		Multiplier:   2.0,
+	})
+	provider.httpClient = server.Client()
+
+	req := &models.LLMRequest{
+		ID:     "test-noretry",
+		Prompt: "Test",
+	}
+
+	resp, err := provider.Complete(context.Background(), req)
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+	assert.Contains(t, err.Error(), "Invalid API key")
+	assert.Equal(t, 1, attempts) // Only one attempt, no retries
+}
+
+func TestQwenProvider_NonJSONErrorResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Bad Request: plain text error"))
+	}))
+	defer server.Close()
+
+	provider := NewQwenProvider("test-key", server.URL, "qwen-turbo")
+	provider.httpClient = server.Client()
+
+	req := &models.LLMRequest{
+		ID:     "test-plaintext",
+		Prompt: "Test",
+	}
+
+	resp, err := provider.Complete(context.Background(), req)
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+	assert.Contains(t, err.Error(), "Qwen API returned status 400")
+	assert.Contains(t, err.Error(), "Bad Request")
+}
+
+func TestQwenProvider_WaitWithJitter(t *testing.T) {
+	provider := NewQwenProvider("key", "", "")
+
+	t.Run("respects context cancellation", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel immediately
+
+		start := time.Now()
+		provider.waitWithJitter(ctx, 1*time.Second)
+		elapsed := time.Since(start)
+
+		// Should return almost immediately due to cancelled context
+		assert.Less(t, elapsed, 100*time.Millisecond)
+	})
+
+	t.Run("waits for duration with jitter", func(t *testing.T) {
+		ctx := context.Background()
+		delay := 50 * time.Millisecond
+
+		start := time.Now()
+		provider.waitWithJitter(ctx, delay)
+		elapsed := time.Since(start)
+
+		// Should wait at least the delay time (jitter adds, not subtracts)
+		assert.GreaterOrEqual(t, elapsed, delay)
+		// Should not wait too much more (10% jitter max)
+		assert.Less(t, elapsed, delay+delay/5+10*time.Millisecond)
+	})
 }
