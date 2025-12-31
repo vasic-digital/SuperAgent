@@ -1,11 +1,6 @@
 -- SuperAgent Database Initialization Script
 -- This script sets up the initial database schema for testing
-
--- Create database if it doesn't exist
-CREATE DATABASE IF NOT EXISTS superagent_db;
-
--- Connect to the database
-\c superagent_db;
+-- Note: This runs automatically on the database specified by POSTGRES_DB
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -130,12 +125,12 @@ VALUES (
 ) ON CONFLICT (username) DO NOTHING;
 
 -- Insert test session
-INSERT INTO user_sessions (user_id, session_token, expires_at, metadata)
+INSERT INTO user_sessions (user_id, session_token, expires_at, context)
 SELECT
     id,
     'test-session-token-for-development',
     NOW() + INTERVAL '24 hours',
-    '{"test": true}'
+    '{"test": true}'::jsonb
 FROM users
 WHERE username = 'testuser'
 ON CONFLICT (session_token) DO NOTHING;

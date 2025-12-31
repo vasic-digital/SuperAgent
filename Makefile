@@ -81,6 +81,75 @@ test-all:
 	@echo "🧪 Running ALL tests with full infrastructure (no skipping)..."
 	@./scripts/run_all_tests.sh
 
+test-infra-start:
+	@echo "🐳 Starting test infrastructure (PostgreSQL, Redis, Mock LLM)..."
+	@docker-compose -f docker-compose.test.yml up -d postgres redis mock-llm
+	@echo "⏳ Waiting for services to be ready..."
+	@sleep 5
+	@echo "Checking PostgreSQL..."
+	@for i in 1 2 3 4 5 6 7 8 9 10; do \
+		docker-compose -f docker-compose.test.yml exec -T postgres pg_isready -U superagent -d superagent_db > /dev/null 2>&1 && break; \
+		echo "  Waiting for PostgreSQL... ($$i/10)"; \
+		sleep 2; \
+	done
+	@echo "Checking Redis..."
+	@for i in 1 2 3 4 5; do \
+		docker-compose -f docker-compose.test.yml exec -T redis redis-cli ping > /dev/null 2>&1 && break; \
+		echo "  Waiting for Redis... ($$i/5)"; \
+		sleep 1; \
+	done
+	@echo "Checking Mock LLM..."
+	@for i in 1 2 3 4 5 6 7 8 9 10; do \
+		curl -sf http://localhost:8081/health > /dev/null 2>&1 && break; \
+		echo "  Waiting for Mock LLM... ($$i/10)"; \
+		sleep 2; \
+	done
+	@echo "✅ Test infrastructure is ready!"
+	@echo ""
+	@echo "Services available at:"
+	@echo "  PostgreSQL: localhost:5432 (superagent/superagent123)"
+	@echo "  Redis:      localhost:6379 (password: superagent123)"
+	@echo "  Mock LLM:   http://localhost:8081"
+
+test-infra-stop:
+	@echo "🐳 Stopping test infrastructure..."
+	@docker-compose -f docker-compose.test.yml down
+	@echo "✅ Test infrastructure stopped"
+
+test-infra-clean:
+	@echo "🧹 Cleaning test infrastructure (including volumes)..."
+	@docker-compose -f docker-compose.test.yml down -v --remove-orphans
+	@echo "✅ Test infrastructure cleaned"
+
+test-infra-logs:
+	@echo "📋 Showing test infrastructure logs..."
+	@docker-compose -f docker-compose.test.yml logs -f
+
+test-infra-status:
+	@echo "📊 Test infrastructure status:"
+	@docker-compose -f docker-compose.test.yml ps
+
+test-with-infra:
+	@echo "🧪 Running tests with infrastructure..."
+	@$(MAKE) test-infra-start
+	@echo ""
+	@DB_HOST=localhost DB_PORT=5432 DB_USER=superagent DB_PASSWORD=superagent123 DB_NAME=superagent_db \
+		DATABASE_URL="postgres://superagent:superagent123@localhost:5432/superagent_db?sslmode=disable" \
+		REDIS_HOST=localhost REDIS_PORT=6379 REDIS_PASSWORD=superagent123 \
+		REDIS_URL="redis://:superagent123@localhost:6379" \
+		MOCK_LLM_URL=http://localhost:8081 MOCK_LLM_ENABLED=true \
+		CLAUDE_API_KEY=mock-api-key CLAUDE_BASE_URL=http://localhost:8081/v1 \
+		DEEPSEEK_API_KEY=mock-api-key DEEPSEEK_BASE_URL=http://localhost:8081/v1 \
+		GEMINI_API_KEY=mock-api-key GEMINI_BASE_URL=http://localhost:8081/v1 \
+		QWEN_API_KEY=mock-api-key QWEN_BASE_URL=http://localhost:8081/v1 \
+		ZAI_API_KEY=mock-api-key ZAI_BASE_URL=http://localhost:8081/v1 \
+		OLLAMA_BASE_URL=http://localhost:8081 \
+		JWT_SECRET=test-jwt-secret-key-for-testing \
+		CI=true FULL_TEST_MODE=true \
+		go test -v ./... -timeout 300s -cover
+	@echo ""
+	@echo "✅ Tests completed!"
+
 test-all-docker:
 	@echo "🐳 Starting test infrastructure and running all tests..."
 	@docker-compose -f docker-compose.test.yml up -d postgres redis mock-llm
@@ -371,16 +440,25 @@ help:
 	@echo "  run                Run SuperAgent locally"
 	@echo "  run-dev            Run SuperAgent in development mode"
 	@echo ""
-	@echo "🧪 Test Commands (6 Types):"
-	@echo "  test               Run all tests"
+	@echo "🧪 Test Commands:"
+	@echo "  test               Run all tests (quick, may skip some)"
+	@echo "  test-with-infra    Run ALL tests with Docker infrastructure"
+	@echo "  test-all           Run ALL tests with full infrastructure script"
 	@echo "  test-coverage      Run tests with coverage report"
-	@echo "  test-coverage-100  Run tests with 100% coverage requirement"
 	@echo "  test-unit          Run unit tests only"
+	@echo ""
+	@echo "🐳 Test Infrastructure:"
+	@echo "  test-infra-start   Start test infrastructure (PostgreSQL, Redis, Mock LLM)"
+	@echo "  test-infra-stop    Stop test infrastructure"
+	@echo "  test-infra-clean   Stop and clean test infrastructure (remove volumes)"
+	@echo "  test-infra-logs    Show test infrastructure logs"
+	@echo "  test-infra-status  Show test infrastructure status"
+	@echo ""
+	@echo "🧪 More Test Commands:"
 	@echo "  test-integration          Run integration tests with Docker deps"
 	@echo "  test-integration-verbose  Run integration tests (verbose)"
 	@echo "  test-integration-coverage Run integration tests with coverage"
 	@echo "  test-integration-keep     Run tests, keep containers running"
-	@echo "  test-integration-all      Run all tests with Docker deps"
 	@echo "  test-e2e           Run end-to-end tests"
 	@echo "  test-security      Run security tests"
 	@echo "  test-stress        Run stress tests"
@@ -432,4 +510,4 @@ help:
 # =============================================================================
 # PHONY TARGETS
 # =============================================================================
-.PHONY: all build build-debug build-all run run-dev test test-coverage test-unit test-integration test-bench test-race fmt vet lint security-scan docker-build docker-build-prod docker-run docker-stop docker-logs docker-clean docker-clean-all docker-test docker-dev docker-prod docker-full docker-monitoring docker-ai install-deps install uninstall clean clean-all check-deps update-deps generate docs docs-api setup-dev setup-prod help
+.PHONY: all build build-debug build-all run run-dev test test-coverage test-unit test-integration test-bench test-race test-all test-with-infra test-infra-start test-infra-stop test-infra-clean test-infra-logs test-infra-status fmt vet lint security-scan docker-build docker-build-prod docker-run docker-stop docker-logs docker-clean docker-clean-all docker-test docker-dev docker-prod docker-full docker-monitoring docker-ai install-deps install uninstall clean clean-all check-deps update-deps generate docs docs-api setup-dev setup-prod help
