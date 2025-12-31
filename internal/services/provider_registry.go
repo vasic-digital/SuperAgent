@@ -325,6 +325,11 @@ func (r *ProviderRegistry) UnregisterProvider(name string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	return r.unregisterProviderLocked(name)
+}
+
+// unregisterProviderLocked removes a provider (caller must hold the lock)
+func (r *ProviderRegistry) unregisterProviderLocked(name string) error {
 	if _, exists := r.providers[name]; !exists {
 		return fmt.Errorf("provider %s not found", name)
 	}
@@ -378,7 +383,7 @@ func (r *ProviderRegistry) ConfigureProvider(name string, config *ProviderConfig
 
 	// Re-register provider with new configuration if needed
 	if !config.Enabled {
-		return r.UnregisterProvider(name)
+		return r.unregisterProviderLocked(name)
 	}
 
 	// For now, we assume provider is already configured
@@ -486,13 +491,15 @@ func getDefaultRegistryConfig() *RegistryConfig {
 func LoadRegistryConfigFromAppConfig(appConfig *config.Config) *RegistryConfig {
 	cfg := getDefaultRegistryConfig()
 
-	// Override with application config
-	if appConfig.LLM.DefaultTimeout > 0 {
-		cfg.DefaultTimeout = appConfig.LLM.DefaultTimeout
-	}
+	// Override with application config if provided
+	if appConfig != nil {
+		if appConfig.LLM.DefaultTimeout > 0 {
+			cfg.DefaultTimeout = appConfig.LLM.DefaultTimeout
+		}
 
-	if appConfig.LLM.MaxRetries > 0 {
-		cfg.MaxRetries = appConfig.LLM.MaxRetries
+		if appConfig.LLM.MaxRetries > 0 {
+			cfg.MaxRetries = appConfig.LLM.MaxRetries
+		}
 	}
 
 	// Load provider configurations from environment variables
