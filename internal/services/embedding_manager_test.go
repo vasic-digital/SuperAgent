@@ -188,6 +188,152 @@ func TestEmbeddingManager_ConfigureVectorProvider(t *testing.T) {
 	assert.Equal(t, "weaviate", manager.vectorProvider)
 }
 
+func TestEmbeddingManager_StoreEmbedding(t *testing.T) {
+	log := newEmbeddingTestLogger()
+	manager := NewEmbeddingManager(nil, nil, log)
+	ctx := context.Background()
+
+	t.Run("store embedding successfully", func(t *testing.T) {
+		err := manager.StoreEmbedding(ctx, "doc-1", "test document text", []float64{0.1, 0.2, 0.3})
+		assert.NoError(t, err)
+	})
+
+	t.Run("store embedding with long text", func(t *testing.T) {
+		longText := "This is a longer document text that should be truncated in the log message for readability purposes"
+		err := manager.StoreEmbedding(ctx, "doc-2", longText, []float64{0.4, 0.5, 0.6})
+		assert.NoError(t, err)
+	})
+
+	t.Run("store embedding with empty vector", func(t *testing.T) {
+		err := manager.StoreEmbedding(ctx, "doc-3", "text", []float64{})
+		assert.NoError(t, err)
+	})
+}
+
+func TestEmbeddingManager_VectorSearch(t *testing.T) {
+	log := newEmbeddingTestLogger()
+	manager := NewEmbeddingManager(nil, nil, log)
+	ctx := context.Background()
+
+	t.Run("successful vector search", func(t *testing.T) {
+		req := VectorSearchRequest{
+			Query:     "machine learning",
+			Limit:     10,
+			Threshold: 0.8,
+		}
+		response, err := manager.VectorSearch(ctx, req)
+		require.NoError(t, err)
+		require.NotNil(t, response)
+		assert.True(t, response.Success)
+		assert.NotEmpty(t, response.Results)
+		assert.False(t, response.Timestamp.IsZero())
+	})
+
+	t.Run("vector search with vector", func(t *testing.T) {
+		req := VectorSearchRequest{
+			Query:     "",
+			Vector:    []float64{0.1, 0.2, 0.3},
+			Limit:     5,
+			Threshold: 0.5,
+		}
+		response, err := manager.VectorSearch(ctx, req)
+		require.NoError(t, err)
+		require.NotNil(t, response)
+		assert.True(t, response.Success)
+	})
+
+	t.Run("vector search results have expected structure", func(t *testing.T) {
+		req := VectorSearchRequest{
+			Query: "AI and ML",
+			Limit: 10,
+		}
+		response, err := manager.VectorSearch(ctx, req)
+		require.NoError(t, err)
+
+		for _, result := range response.Results {
+			assert.NotEmpty(t, result.ID)
+			assert.NotEmpty(t, result.Content)
+			assert.Greater(t, result.Score, 0.0)
+			assert.NotNil(t, result.Metadata)
+		}
+	})
+}
+
+func TestEmbeddingManager_IndexDocument(t *testing.T) {
+	log := newEmbeddingTestLogger()
+	manager := NewEmbeddingManager(nil, nil, log)
+	ctx := context.Background()
+
+	t.Run("index document successfully", func(t *testing.T) {
+		err := manager.IndexDocument(ctx, "doc-1", "Test Title", "This is the document content", map[string]interface{}{
+			"author": "test",
+			"source": "unit_test",
+		})
+		assert.NoError(t, err)
+	})
+
+	t.Run("index document with empty metadata", func(t *testing.T) {
+		err := manager.IndexDocument(ctx, "doc-2", "Another Title", "More content here", nil)
+		assert.NoError(t, err)
+	})
+
+	t.Run("index document with empty content", func(t *testing.T) {
+		err := manager.IndexDocument(ctx, "doc-3", "Empty Doc", "", nil)
+		assert.NoError(t, err)
+	})
+}
+
+func TestEmbeddingManager_BatchIndexDocuments(t *testing.T) {
+	log := newEmbeddingTestLogger()
+	manager := NewEmbeddingManager(nil, nil, log)
+	ctx := context.Background()
+
+	t.Run("batch index documents successfully", func(t *testing.T) {
+		documents := []map[string]interface{}{
+			{
+				"id":      "batch-doc-1",
+				"title":   "First Document",
+				"content": "Content of the first document",
+				"metadata": map[string]interface{}{
+					"type": "article",
+				},
+			},
+			{
+				"id":      "batch-doc-2",
+				"title":   "Second Document",
+				"content": "Content of the second document",
+				"metadata": map[string]interface{}{
+					"type": "blog",
+				},
+			},
+		}
+		err := manager.BatchIndexDocuments(ctx, documents)
+		assert.NoError(t, err)
+	})
+
+	t.Run("batch index empty documents", func(t *testing.T) {
+		documents := []map[string]interface{}{}
+		err := manager.BatchIndexDocuments(ctx, documents)
+		assert.NoError(t, err)
+	})
+
+	t.Run("batch index documents with missing fields", func(t *testing.T) {
+		documents := []map[string]interface{}{
+			{
+				"id": "partial-doc-1",
+				// Missing title and content
+			},
+			{
+				"title":   "Only Title",
+				"content": "Content but no id",
+			},
+		}
+		// Should not fail, just log errors and continue
+		err := manager.BatchIndexDocuments(ctx, documents)
+		assert.NoError(t, err)
+	})
+}
+
 // Test embedding types
 
 func TestEmbeddingRequest_Structure(t *testing.T) {

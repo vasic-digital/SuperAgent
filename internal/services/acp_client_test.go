@@ -1046,3 +1046,113 @@ func BenchmarkConvertLocation(b *testing.B) {
 		_ = convertLocation(loc)
 	}
 }
+
+// LSPClient helper function tests
+
+func TestLSPClient_NextMessageID(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	id1 := client.nextMessageID()
+	id2 := client.nextMessageID()
+	id3 := client.nextMessageID()
+
+	// Test that IDs increment sequentially
+	assert.Equal(t, id1+1, id2)
+	assert.Equal(t, id2+1, id3)
+	assert.Greater(t, id1, 0)
+}
+
+func TestLSPClient_UnmarshalMessage(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	t.Run("unmarshal valid message", func(t *testing.T) {
+		data := map[string]interface{}{
+			"jsonrpc": "2.0",
+			"id":      float64(1),
+			"method":  "textDocument/completion",
+			"params": map[string]interface{}{
+				"textDocument": map[string]interface{}{
+					"uri": "file:///test.go",
+				},
+			},
+		}
+
+		var message LSPMessage
+		err := client.unmarshalMessage(data, &message)
+		require.NoError(t, err)
+		assert.Equal(t, "2.0", message.JSONRPC)
+		assert.Equal(t, "textDocument/completion", message.Method)
+	})
+
+	t.Run("unmarshal response message", func(t *testing.T) {
+		data := map[string]interface{}{
+			"jsonrpc": "2.0",
+			"id":      float64(1),
+			"result": map[string]interface{}{
+				"items": []interface{}{},
+			},
+		}
+
+		var message LSPMessage
+		err := client.unmarshalMessage(data, &message)
+		require.NoError(t, err)
+		assert.Equal(t, "2.0", message.JSONRPC)
+		assert.NotNil(t, message.Result)
+	})
+}
+
+func TestLSPClient_UnmarshalResult(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	t.Run("unmarshal completion result", func(t *testing.T) {
+		result := map[string]interface{}{
+			"isIncomplete": true,
+			"items": []interface{}{
+				map[string]interface{}{
+					"label":  "Println",
+					"kind":   float64(3),
+					"detail": "func(a ...interface{}) (n int, err error)",
+				},
+			},
+		}
+
+		var target struct {
+			IsIncomplete bool `json:"isIncomplete"`
+			Items        []struct {
+				Label  string  `json:"label"`
+				Kind   float64 `json:"kind"`
+				Detail string  `json:"detail"`
+			} `json:"items"`
+		}
+
+		err := client.unmarshalResult(result, &target)
+		require.NoError(t, err)
+		assert.True(t, target.IsIncomplete)
+		assert.Len(t, target.Items, 1)
+		assert.Equal(t, "Println", target.Items[0].Label)
+	})
+
+	t.Run("unmarshal hover result", func(t *testing.T) {
+		result := map[string]interface{}{
+			"contents": map[string]interface{}{
+				"kind":  "markdown",
+				"value": "```go\nfunc main()\n```",
+			},
+		}
+
+		var target struct {
+			Contents struct {
+				Kind  string `json:"kind"`
+				Value string `json:"value"`
+			} `json:"contents"`
+		}
+
+		err := client.unmarshalResult(result, &target)
+		require.NoError(t, err)
+		assert.Equal(t, "markdown", target.Contents.Kind)
+		assert.Contains(t, target.Contents.Value, "func main()")
+	})
+}
