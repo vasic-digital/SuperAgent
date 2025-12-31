@@ -48,11 +48,11 @@ type RetryResult struct {
 // IsRetryableStatusCode determines if an HTTP status code warrants a retry
 func IsRetryableStatusCode(statusCode int) bool {
 	switch statusCode {
-	case http.StatusTooManyRequests,       // 429 - Rate limited
-		http.StatusInternalServerError,     // 500
-		http.StatusBadGateway,              // 502
-		http.StatusServiceUnavailable,      // 503
-		http.StatusGatewayTimeout:          // 504
+	case http.StatusTooManyRequests, // 429 - Rate limited
+		http.StatusInternalServerError, // 500
+		http.StatusBadGateway,          // 502
+		http.StatusServiceUnavailable,  // 503
+		http.StatusGatewayTimeout:      // 504
 		return true
 	default:
 		return false

@@ -413,11 +413,11 @@ func (o *OllamaProvider) makeRequest(ctx context.Context, req OllamaRequest) (*O
 // isRetryableStatus returns true for HTTP status codes that warrant a retry
 func isRetryableStatus(statusCode int) bool {
 	switch statusCode {
-	case http.StatusTooManyRequests,       // 429 - Rate limited
-		http.StatusInternalServerError,     // 500
-		http.StatusBadGateway,              // 502
-		http.StatusServiceUnavailable,      // 503
-		http.StatusGatewayTimeout:          // 504
+	case http.StatusTooManyRequests, // 429 - Rate limited
+		http.StatusInternalServerError, // 500
+		http.StatusBadGateway,          // 502
+		http.StatusServiceUnavailable,  // 503
+		http.StatusGatewayTimeout:      // 504
 		return true
 	default:
 		return false

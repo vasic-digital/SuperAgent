@@ -15,15 +15,15 @@ import (
 
 // ValidationConfig defines validation parameters
 type ValidationConfig struct {
-	MaxBodySize     int64   // Maximum request body size in bytes
-	MaxPromptLength int     // Maximum prompt length in characters
-	MaxTokensLimit  int     // Maximum tokens limit that can be requested
-	MinTemperature  float64 // Minimum temperature value
-	MaxTemperature  float64 // Maximum temperature value
-	MinTopP         float64 // Minimum top_p value
-	MaxTopP         float64 // Maximum top_p value
-	MaxStopSequences int    // Maximum number of stop sequences
-	MaxMessagesCount int    // Maximum number of messages in a request
+	MaxBodySize      int64   // Maximum request body size in bytes
+	MaxPromptLength  int     // Maximum prompt length in characters
+	MaxTokensLimit   int     // Maximum tokens limit that can be requested
+	MinTemperature   float64 // Minimum temperature value
+	MaxTemperature   float64 // Maximum temperature value
+	MinTopP          float64 // Minimum top_p value
+	MaxTopP          float64 // Maximum top_p value
+	MaxStopSequences int     // Maximum number of stop sequences
+	MaxMessagesCount int     // Maximum number of messages in a request
 }
 
 // DefaultValidationConfig returns sensible defaults for validation
@@ -115,14 +115,14 @@ func (v *Validator) BodySizeMiddleware() gin.HandlerFunc {
 
 // CompletionRequest represents the request structure for validation
 type CompletionValidationRequest struct {
-	Prompt      string                   `json:"prompt"`
-	Messages    []MessageValidation      `json:"messages"`
-	Model       string                   `json:"model"`
-	Temperature *float64                 `json:"temperature"`
-	MaxTokens   *int                     `json:"max_tokens"`
-	TopP        *float64                 `json:"top_p"`
-	Stop        []string                 `json:"stop"`
-	Stream      bool                     `json:"stream"`
+	Prompt      string              `json:"prompt"`
+	Messages    []MessageValidation `json:"messages"`
+	Model       string              `json:"model"`
+	Temperature *float64            `json:"temperature"`
+	MaxTokens   *int                `json:"max_tokens"`
+	TopP        *float64            `json:"top_p"`
+	Stop        []string            `json:"stop"`
+	Stream      bool                `json:"stream"`
 }
 
 // MessageValidation represents a message for validation
@@ -170,8 +170,8 @@ func (v *Validator) ValidateCompletionMiddleware() gin.HandlerFunc {
 					"error": gin.H{
 						"message": fmt.Sprintf("invalid type for field '%s': expected %s",
 							unmarshalErr.Field, unmarshalErr.Type.String()),
-						"type":    "invalid_request_error",
-						"code":    "type_error",
+						"type": "invalid_request_error",
+						"code": "type_error",
 					},
 				})
 			} else {

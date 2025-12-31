@@ -104,9 +104,9 @@ func TestGrpcServer_Complete_ResponseFields(t *testing.T) {
 	require.NotNil(t, resp)
 
 	// Response should have these fields defined (even if empty)
-	_ = resp.Content       // Should exist
-	_ = resp.Confidence    // Should exist
-	_ = resp.ProviderName  // Should exist
+	_ = resp.Content      // Should exist
+	_ = resp.Confidence   // Should exist
+	_ = resp.ProviderName // Should exist
 }
 
 func TestGrpcServerStruct(t *testing.T) {

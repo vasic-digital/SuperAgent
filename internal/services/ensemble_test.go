@@ -1009,7 +1009,7 @@ func TestEnsembleService_FilterProviders_MinProvidersFallback(t *testing.T) {
 		Prompt: "test",
 		EnsembleConfig: &models.EnsembleConfig{
 			PreferredProviders: []string{"p1"}, // Only one preferred
-			MinProviders:       2,               // But need at least 2
+			MinProviders:       2,              // But need at least 2
 		},
 	}
 

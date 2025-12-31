@@ -144,7 +144,7 @@ func TestCircuitBreaker_RejectsWhenOpen(t *testing.T) {
 func TestCircuitBreaker_TransitionsToHalfOpen(t *testing.T) {
 	config := CircuitBreakerConfig{
 		FailureThreshold:    2,
-		SuccessThreshold:    3, // High threshold so we can observe half-open
+		SuccessThreshold:    3,                      // High threshold so we can observe half-open
 		Timeout:             100 * time.Millisecond, // Short timeout for testing
 		HalfOpenMaxRequests: 5,
 	}

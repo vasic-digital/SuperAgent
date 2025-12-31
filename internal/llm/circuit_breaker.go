@@ -13,8 +13,8 @@ import (
 type CircuitState string
 
 const (
-	CircuitClosed   CircuitState = "closed"   // Normal operation
-	CircuitOpen     CircuitState = "open"     // Failing, rejecting requests
+	CircuitClosed   CircuitState = "closed"    // Normal operation
+	CircuitOpen     CircuitState = "open"      // Failing, rejecting requests
 	CircuitHalfOpen CircuitState = "half_open" // Testing with limited requests
 )
 
@@ -274,15 +274,15 @@ func (cb *CircuitBreaker) GetStats() CircuitBreakerStats {
 
 // CircuitBreakerStats contains circuit breaker statistics
 type CircuitBreakerStats struct {
-	ProviderID           string        `json:"provider_id"`
-	State                CircuitState  `json:"state"`
-	TotalRequests        int64         `json:"total_requests"`
-	TotalSuccesses       int64         `json:"total_successes"`
-	TotalFailures        int64         `json:"total_failures"`
-	ConsecutiveFailures  int           `json:"consecutive_failures"`
-	ConsecutiveSuccesses int           `json:"consecutive_successes"`
-	LastFailure          time.Time     `json:"last_failure,omitempty"`
-	LastStateChange      time.Time     `json:"last_state_change"`
+	ProviderID           string       `json:"provider_id"`
+	State                CircuitState `json:"state"`
+	TotalRequests        int64        `json:"total_requests"`
+	TotalSuccesses       int64        `json:"total_successes"`
+	TotalFailures        int64        `json:"total_failures"`
+	ConsecutiveFailures  int          `json:"consecutive_failures"`
+	ConsecutiveSuccesses int          `json:"consecutive_successes"`
+	LastFailure          time.Time    `json:"last_failure,omitempty"`
+	LastStateChange      time.Time    `json:"last_state_change"`
 }
 
 // Reset resets the circuit breaker to closed state

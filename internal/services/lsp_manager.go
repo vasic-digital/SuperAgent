@@ -555,4 +555,3 @@ func (m *LSPManager) refreshLSPServer(ctx context.Context, serverID string) erro
 
 	return nil
 }
-

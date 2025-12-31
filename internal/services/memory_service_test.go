@@ -275,7 +275,7 @@ func TestMemoryService_convertToMemorySources(t *testing.T) {
 			GraphNodes: map[string]interface{}{
 				"node1": "content1",
 				"node2": "content2",
-				"node3": 123,     // Non-string should be skipped
+				"node3": 123, // Non-string should be skipped
 				"node4": "content3",
 			},
 		}

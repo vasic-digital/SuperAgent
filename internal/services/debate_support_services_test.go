@@ -33,8 +33,8 @@ func TestDebateMonitoringService_StartMonitoring(t *testing.T) {
 	ctx := context.Background()
 
 	config := &DebateConfig{
-		DebateID: "debate-123",
-		Topic:    "Test Topic",
+		DebateID:  "debate-123",
+		Topic:     "Test Topic",
 		MaxRounds: 3,
 	}
 
@@ -259,8 +259,8 @@ func TestDebateSecurityService_ValidateDebateRequest(t *testing.T) {
 	ctx := context.Background()
 
 	config := &DebateConfig{
-		DebateID: "debate-123",
-		Topic:    "Test Topic",
+		DebateID:  "debate-123",
+		Topic:     "Test Topic",
 		MaxRounds: 3,
 	}
 

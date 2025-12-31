@@ -57,7 +57,6 @@ func TestNewDeepSeekProvider(t *testing.T) {
 	}
 }
 
-
 func TestDeepSeekProvider_Complete_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "POST", r.Method)
@@ -291,12 +290,12 @@ func TestDeepSeekProvider_GetCapabilities(t *testing.T) {
 
 func TestDeepSeekProvider_ValidateConfig(t *testing.T) {
 	tests := []struct {
-		name          string
-		apiKey        string
-		baseURL       string
-		model         string
-		expectValid   bool
-		expectErrLen  int
+		name         string
+		apiKey       string
+		baseURL      string
+		model        string
+		expectValid  bool
+		expectErrLen int
 	}{
 		{
 			name:         "all valid",

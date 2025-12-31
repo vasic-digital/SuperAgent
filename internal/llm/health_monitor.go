@@ -18,16 +18,16 @@ const (
 
 // ProviderHealth contains health information for a single provider
 type ProviderHealth struct {
-	ProviderID     string        `json:"provider_id"`
-	Status         HealthStatus  `json:"status"`
-	LastCheck      time.Time     `json:"last_check"`
-	LastSuccess    time.Time     `json:"last_success,omitempty"`
-	LastError      string        `json:"last_error,omitempty"`
-	ConsecutiveFails int         `json:"consecutive_fails"`
-	Latency        time.Duration `json:"latency,omitempty"`
-	CheckCount     int64         `json:"check_count"`
-	SuccessCount   int64         `json:"success_count"`
-	FailureCount   int64         `json:"failure_count"`
+	ProviderID       string        `json:"provider_id"`
+	Status           HealthStatus  `json:"status"`
+	LastCheck        time.Time     `json:"last_check"`
+	LastSuccess      time.Time     `json:"last_success,omitempty"`
+	LastError        string        `json:"last_error,omitempty"`
+	ConsecutiveFails int           `json:"consecutive_fails"`
+	Latency          time.Duration `json:"latency,omitempty"`
+	CheckCount       int64         `json:"check_count"`
+	SuccessCount     int64         `json:"success_count"`
+	FailureCount     int64         `json:"failure_count"`
 }
 
 // HealthMonitorConfig configures the health monitor
@@ -363,12 +363,12 @@ func (hm *HealthMonitor) GetAggregateHealth() AggregateHealth {
 	defer hm.mu.RUnlock()
 
 	agg := AggregateHealth{
-		TotalProviders:   len(hm.health),
-		HealthyProviders: 0,
-		DegradedProviders: 0,
+		TotalProviders:     len(hm.health),
+		HealthyProviders:   0,
+		DegradedProviders:  0,
 		UnhealthyProviders: 0,
-		UnknownProviders: 0,
-		Providers:        make(map[string]HealthStatus),
+		UnknownProviders:   0,
+		Providers:          make(map[string]HealthStatus),
 	}
 
 	for id, health := range hm.health {
@@ -401,12 +401,12 @@ func (hm *HealthMonitor) GetAggregateHealth() AggregateHealth {
 
 // AggregateHealth contains overall health summary
 type AggregateHealth struct {
-	OverallStatus      HealthStatus          `json:"overall_status"`
-	TotalProviders     int                   `json:"total_providers"`
-	HealthyProviders   int                   `json:"healthy_providers"`
-	DegradedProviders  int                   `json:"degraded_providers"`
-	UnhealthyProviders int                   `json:"unhealthy_providers"`
-	UnknownProviders   int                   `json:"unknown_providers"`
+	OverallStatus      HealthStatus            `json:"overall_status"`
+	TotalProviders     int                     `json:"total_providers"`
+	HealthyProviders   int                     `json:"healthy_providers"`
+	DegradedProviders  int                     `json:"degraded_providers"`
+	UnhealthyProviders int                     `json:"unhealthy_providers"`
+	UnknownProviders   int                     `json:"unknown_providers"`
 	Providers          map[string]HealthStatus `json:"providers"`
 }
 

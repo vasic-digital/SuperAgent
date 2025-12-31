@@ -13,10 +13,10 @@ import (
 
 // mockProvider is a mock LLM provider for testing
 type mockProvider struct {
-	healthErr    error
-	healthDelay  time.Duration
-	mu           sync.Mutex
-	checkCount   int
+	healthErr   error
+	healthDelay time.Duration
+	mu          sync.Mutex
+	checkCount  int
 }
 
 func (m *mockProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
@@ -326,8 +326,8 @@ func TestHealthMonitor_AggregateHealth(t *testing.T) {
 
 func TestHealthMonitor_AggregateHealth_AllHealthy(t *testing.T) {
 	config := HealthMonitorConfig{
-		HealthyThreshold:   1,
-		Enabled:            false,
+		HealthyThreshold: 1,
+		Enabled:          false,
 	}
 	hm := NewHealthMonitor(config)
 
@@ -360,9 +360,9 @@ func TestHealthMonitor_AggregateHealth_AllUnhealthy(t *testing.T) {
 
 func TestHealthMonitor_ForceCheck(t *testing.T) {
 	config := HealthMonitorConfig{
-		HealthyThreshold:   1,
-		Timeout:            5 * time.Second,
-		Enabled:            false,
+		HealthyThreshold: 1,
+		Timeout:          5 * time.Second,
+		Enabled:          false,
 	}
 	hm := NewHealthMonitor(config)
 	hm.ctx = context.Background()

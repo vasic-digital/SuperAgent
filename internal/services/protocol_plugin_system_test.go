@@ -387,7 +387,7 @@ func TestProtocolTemplateManager_GeneratePluginFromTemplate(t *testing.T) {
 		Protocol:    "mcp",
 		Version:     "1.0.0",
 		Files: map[string]string{
-			"main.go": "package main",
+			"main.go":   "package main",
 			"plugin.go": "package main\n\nfunc init() {}",
 		},
 		Tags:         []string{"test"},

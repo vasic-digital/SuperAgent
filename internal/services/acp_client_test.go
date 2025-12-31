@@ -19,18 +19,18 @@ func newACPTestLogger() *logrus.Logger {
 
 // MockACPTransport implements ACPTransport for testing
 type MockACPTransport struct {
-	connected     bool
-	sendFunc      func(ctx context.Context, message interface{}) error
-	receiveFunc   func(ctx context.Context) (interface{}, error)
-	closeFunc     func() error
-	sendCalls     []interface{}
-	receiveCalls  int
+	connected    bool
+	sendFunc     func(ctx context.Context, message interface{}) error
+	receiveFunc  func(ctx context.Context) (interface{}, error)
+	closeFunc    func() error
+	sendCalls    []interface{}
+	receiveCalls int
 }
 
 func NewMockACPTransport() *MockACPTransport {
 	return &MockACPTransport{
-		connected:  true,
-		sendCalls:  make([]interface{}, 0),
+		connected: true,
+		sendCalls: make([]interface{}, 0),
 	}
 }
 
@@ -1392,10 +1392,10 @@ func TestLSPClient_UpdateFile_FileNotOpen(t *testing.T) {
 
 	client.mu.Lock()
 	client.servers["test-server"] = &LSPServerConnection{
-		ID:           "test-server",
-		Transport:    mockTransport,
-		Connected:    true,
-		Files:        make(map[string]*LSPFileInfo),
+		ID:        "test-server",
+		Transport: mockTransport,
+		Connected: true,
+		Files:     make(map[string]*LSPFileInfo),
 	}
 	client.mu.Unlock()
 
@@ -1450,8 +1450,8 @@ func TestLSPClient_GetCompletion_ServerDoesNotSupportCompletion(t *testing.T) {
 
 	client.mu.Lock()
 	client.servers["test-server"] = &LSPServerConnection{
-		ID:           "test-server",
-		Transport:    mockTransport,
+		ID:        "test-server",
+		Transport: mockTransport,
 		Capabilities: &LSPCapabilities{
 			CompletionProvider: nil, // No completion support
 		},
@@ -1604,8 +1604,8 @@ func TestLSPClient_GetHover_ServerDoesNotSupportHover(t *testing.T) {
 
 	client.mu.Lock()
 	client.servers["test-server"] = &LSPServerConnection{
-		ID:           "test-server",
-		Transport:    mockTransport,
+		ID:        "test-server",
+		Transport: mockTransport,
 		Capabilities: &LSPCapabilities{
 			HoverProvider: false, // No hover support
 		},
@@ -1752,8 +1752,8 @@ func TestLSPClient_GetDefinition_ServerDoesNotSupportDefinition(t *testing.T) {
 
 	client.mu.Lock()
 	client.servers["test-server"] = &LSPServerConnection{
-		ID:           "test-server",
-		Transport:    mockTransport,
+		ID:        "test-server",
+		Transport: mockTransport,
 		Capabilities: &LSPCapabilities{
 			DefinitionProvider: false, // No definition support
 		},

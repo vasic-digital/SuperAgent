@@ -153,8 +153,8 @@ func (h *LSPHandler) ExecuteLSPRequest(c *gin.Context) {
 
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":              "unsupported operation",
-			"operation":          req.ToolName,
+			"error":               "unsupported operation",
+			"operation":           req.ToolName,
 			"supportedOperations": []string{"completion", "hover", "definition", "references", "diagnostics"},
 		})
 		return

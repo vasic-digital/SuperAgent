@@ -47,9 +47,9 @@ func (m *MockLLMProviderForRegistry) GetCapabilities() *models.ProviderCapabilit
 		return m.capabilities
 	}
 	return &models.ProviderCapabilities{
-		SupportsStreaming:    true,
-		SupportedFeatures:    []string{"text"},
-		SupportedModels:      []string{"test-model"},
+		SupportsStreaming: true,
+		SupportedFeatures: []string{"text"},
+		SupportedModels:   []string{"test-model"},
 	}
 }
 
@@ -483,9 +483,9 @@ func TestCircuitBreakerProvider_HealthCheck(t *testing.T) {
 
 func TestCircuitBreakerProvider_GetCapabilities(t *testing.T) {
 	caps := &models.ProviderCapabilities{
-		SupportsStreaming:    true,
-		SupportedFeatures:    []string{"text", "code"},
-		SupportedModels:      []string{"model-1", "model-2"},
+		SupportsStreaming: true,
+		SupportedFeatures: []string{"text", "code"},
+		SupportedModels:   []string{"model-1", "model-2"},
 	}
 	provider := &MockLLMProviderForRegistry{capabilities: caps}
 	cb := NewCircuitBreaker(5, 2, 60*time.Second)

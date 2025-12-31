@@ -253,7 +253,7 @@ func TestRateLimiter_Allow(t *testing.T) {
 		assert.True(t, limiter.Allow("key1"))
 		assert.False(t, limiter.Allow("key1")) // Over limit
 
-		assert.True(t, limiter.Allow("key2"))  // Different key, should be allowed
+		assert.True(t, limiter.Allow("key2")) // Different key, should be allowed
 		assert.True(t, limiter.Allow("key2"))
 	})
 }

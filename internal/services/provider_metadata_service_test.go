@@ -72,9 +72,9 @@ func (m *MockModelMetadataService) GetModelsByCapability(ctx context.Context, ca
 
 // MockProviderRegistry implements ProviderRegistryInterface for testing
 type MockProviderRegistry struct {
-	providers        map[string]*ProviderConfig
-	configureError   error
-	configureCalled  bool
+	providers       map[string]*ProviderConfig
+	configureError  error
+	configureCalled bool
 }
 
 func (m *MockProviderRegistry) ListProviders() []string {
@@ -178,12 +178,12 @@ func TestProviderMetadataService_UpdateProviderConfigs(t *testing.T) {
 		models: map[string][]*database.ModelMetadata{
 			"openai": {
 				{
-					ModelID:                  "gpt-4",
-					ModelName:                "GPT-4",
-					BenchmarkScore:           &benchmarkScore,
-					SupportsVision:           true,
-					SupportsFunctionCalling:  true,
-					SupportsStreaming:        true,
+					ModelID:                 "gpt-4",
+					ModelName:               "GPT-4",
+					BenchmarkScore:          &benchmarkScore,
+					SupportsVision:          true,
+					SupportsFunctionCalling: true,
+					SupportsStreaming:       true,
 				},
 			},
 		},
@@ -346,9 +346,9 @@ func TestProviderMetadataService_createCustomParams(t *testing.T) {
 
 	t.Run("includes capability flags", func(t *testing.T) {
 		model := &database.ModelMetadata{
-			SupportsVision:           true,
-			SupportsFunctionCalling:  true,
-			SupportsStreaming:        false,
+			SupportsVision:          true,
+			SupportsFunctionCalling: true,
+			SupportsStreaming:       false,
 		}
 		params := service.createCustomParams(model)
 		assert.Equal(t, true, params["supports_vision"])
@@ -602,11 +602,11 @@ func TestProviderMetadataService_GetProviderStats(t *testing.T) {
 		models: map[string][]*database.ModelMetadata{
 			"openai": {
 				{
-					ModelID:        "gpt-4",
-					BenchmarkScore: &benchmarkScore,
-					SupportsVision: true,
+					ModelID:           "gpt-4",
+					BenchmarkScore:    &benchmarkScore,
+					SupportsVision:    true,
 					SupportsStreaming: true,
-					LastRefreshedAt: time.Now(),
+					LastRefreshedAt:   time.Now(),
 				},
 				{ModelID: "gpt-3.5", LastRefreshedAt: time.Now().Add(-1 * time.Hour)},
 			},

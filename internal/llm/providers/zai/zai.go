@@ -96,18 +96,18 @@ type ZAIError struct {
 
 // ZAIStreamResponse represents a streaming response chunk from the Z.AI API
 type ZAIStreamResponse struct {
-	ID      string             `json:"id"`
-	Object  string             `json:"object"`
-	Created int64              `json:"created"`
-	Model   string             `json:"model"`
-	Choices []ZAIStreamChoice  `json:"choices"`
+	ID      string            `json:"id"`
+	Object  string            `json:"object"`
+	Created int64             `json:"created"`
+	Model   string            `json:"model"`
+	Choices []ZAIStreamChoice `json:"choices"`
 }
 
 // ZAIStreamChoice represents a choice in a streaming response
 type ZAIStreamChoice struct {
-	Index        int              `json:"index"`
-	Delta        ZAIStreamDelta   `json:"delta"`
-	FinishReason *string          `json:"finish_reason"`
+	Index        int            `json:"index"`
+	Delta        ZAIStreamDelta `json:"delta"`
+	FinishReason *string        `json:"finish_reason"`
 }
 
 // ZAIStreamDelta represents the delta content in a streaming chunk
@@ -274,7 +274,7 @@ func (z *ZAIProvider) CompleteStream(ctx context.Context, req *models.LLMRequest
 						Selected:       false,
 						SelectionScore: 0.0,
 						Metadata: map[string]interface{}{
-							"model":          streamResp.Model,
+							"model":           streamResp.Model,
 							"stream_complete": true,
 						},
 						CreatedAt: time.Now(),
@@ -559,11 +559,11 @@ func (z *ZAIProvider) makeRequest(ctx context.Context, req *ZAIRequest) (*ZAIRes
 // isRetryableStatus returns true for HTTP status codes that warrant a retry
 func isRetryableStatus(statusCode int) bool {
 	switch statusCode {
-	case http.StatusTooManyRequests,       // 429 - Rate limited
-		http.StatusInternalServerError,     // 500
-		http.StatusBadGateway,              // 502
-		http.StatusServiceUnavailable,      // 503
-		http.StatusGatewayTimeout:          // 504
+	case http.StatusTooManyRequests, // 429 - Rate limited
+		http.StatusInternalServerError, // 500
+		http.StatusBadGateway,          // 502
+		http.StatusServiceUnavailable,  // 503
+		http.StatusGatewayTimeout:      // 504
 		return true
 	default:
 		return false

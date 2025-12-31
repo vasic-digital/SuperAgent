@@ -759,9 +759,9 @@ func TestIntegrationOrchestrator_executeLSPStep_NilClient(t *testing.T) {
 	io := NewIntegrationOrchestrator(nil, nil, nil, nil) // Nil LSP client
 
 	step := &WorkflowStep{
-		ID:   "step1",
-		Name: "Initialize LSP Client",
-		Type: "lsp",
+		ID:         "step1",
+		Name:       "Initialize LSP Client",
+		Type:       "lsp",
 		Parameters: map[string]any{},
 	}
 
@@ -786,9 +786,9 @@ func TestIntegrationOrchestrator_executeLSPStep_UnknownStep(t *testing.T) {
 	io := NewIntegrationOrchestrator(nil, lspClient, nil, nil)
 
 	step := &WorkflowStep{
-		ID:   "step1",
-		Name: "Unknown LSP Operation",
-		Type: "lsp",
+		ID:         "step1",
+		Name:       "Unknown LSP Operation",
+		Type:       "lsp",
 		Parameters: map[string]any{},
 	}
 
@@ -935,9 +935,9 @@ func TestIntegrationOrchestrator_executeStep_LSPType(t *testing.T) {
 	io := NewIntegrationOrchestrator(nil, lspClient, nil, nil)
 
 	step := &WorkflowStep{
-		ID:   "step-lsp",
-		Name: "Unknown LSP Step",
-		Type: "lsp",
+		ID:         "step-lsp",
+		Name:       "Unknown LSP Step",
+		Type:       "lsp",
 		Parameters: map[string]any{},
 	}
 

@@ -437,6 +437,8 @@ func TestQwenProvider_CompleteStream(t *testing.T) {
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel() // Ensure cancel is always called
+
 		responseChan, err := provider.CompleteStream(ctx, req)
 		require.NoError(t, err)
 
