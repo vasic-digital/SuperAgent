@@ -188,13 +188,30 @@ func (io *IntegrationOrchestrator) executeWorkflow(ctx context.Context, workflow
 	completed := make(map[string]bool)
 	running := make(map[string]bool)
 
-	for len(completed) < len(workflow.Steps) {
+	// Mutex to protect shared state accessed by goroutines
+	var mu sync.Mutex
+
+	for {
+		mu.Lock()
+		completedCount := len(completed)
+		mu.Unlock()
+
+		if completedCount >= len(workflow.Steps) {
+			break
+		}
+
 		// Find steps that can be executed
+		mu.Lock()
 		executable := io.findExecutableSteps(workflow.Steps, dependencyGraph, completed, running)
+		mu.Unlock()
 
 		if len(executable) == 0 {
 			// Check for circular dependencies or deadlocks
-			if len(running) > 0 {
+			mu.Lock()
+			runningCount := len(running)
+			mu.Unlock()
+
+			if runningCount > 0 {
 				// Wait for running steps to complete
 				time.Sleep(100 * time.Millisecond)
 				continue
@@ -206,13 +223,20 @@ func (io *IntegrationOrchestrator) executeWorkflow(ctx context.Context, workflow
 		var wg sync.WaitGroup
 		for _, step := range executable {
 			wg.Add(1)
+			mu.Lock()
 			running[step.ID] = true
+			mu.Unlock()
 
 			go func(s WorkflowStep) {
 				defer wg.Done()
-				defer func() { delete(running, s.ID) }()
+				defer func() {
+					mu.Lock()
+					delete(running, s.ID)
+					mu.Unlock()
+				}()
 
 				result, err := io.executeStep(ctx, &s)
+				mu.Lock()
 				if err != nil {
 					s.Error = err
 					s.Status = "failed"
@@ -226,6 +250,7 @@ func (io *IntegrationOrchestrator) executeWorkflow(ctx context.Context, workflow
 				s.EndTime = &time.Time{}
 				*s.EndTime = time.Now()
 				completed[s.ID] = true
+				mu.Unlock()
 			}(step)
 		}
 
