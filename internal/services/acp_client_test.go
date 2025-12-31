@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -424,6 +425,53 @@ func TestLSPClient_CloseFile_NotConnected(t *testing.T) {
 	err := client.CloseFile(ctx, "non-existent", "file:///test.go")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestLSPClient_CloseFile_FileNotOpened(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Transport: mockTransport,
+		Connected: true,
+		Files:     make(map[string]*LSPFileInfo), // Empty files map
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	err := client.CloseFile(ctx, "test-server", "file:///not-opened.go")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not opened")
+}
+
+func TestLSPClient_CloseFile_SendError(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.sendFunc = func(ctx context.Context, message interface{}) error {
+		return errors.New("send failed")
+	}
+
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Transport: mockTransport,
+		Connected: true,
+		Files: map[string]*LSPFileInfo{
+			"file:///test.go": {URI: "file:///test.go"},
+		},
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	err := client.CloseFile(ctx, "test-server", "file:///test.go")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to send didClose")
 }
 
 func TestLSPClient_GetCompletion_NotConnected(t *testing.T) {
@@ -1067,6 +1115,14 @@ func TestLSPClient_UnmarshalMessage(t *testing.T) {
 	log := newACPTestLogger()
 	client := NewLSPClient(log)
 
+	t.Run("unmarshal marshal error", func(t *testing.T) {
+		// Channels cannot be marshaled to JSON
+		data := make(chan int)
+		var message LSPMessage
+		err := client.unmarshalMessage(data, &message)
+		assert.Error(t, err)
+	})
+
 	t.Run("unmarshal valid message", func(t *testing.T) {
 		data := map[string]interface{}{
 			"jsonrpc": "2.0",
@@ -1106,6 +1162,14 @@ func TestLSPClient_UnmarshalMessage(t *testing.T) {
 func TestLSPClient_UnmarshalResult(t *testing.T) {
 	log := newACPTestLogger()
 	client := NewLSPClient(log)
+
+	t.Run("unmarshal marshal error", func(t *testing.T) {
+		// Channels cannot be marshaled to JSON
+		result := make(chan int)
+		var target map[string]interface{}
+		err := client.unmarshalResult(result, &target)
+		assert.Error(t, err)
+	})
 
 	t.Run("unmarshal completion result", func(t *testing.T) {
 		result := map[string]interface{}{
@@ -1444,6 +1508,94 @@ func TestLSPClient_GetCompletion_WithSupport(t *testing.T) {
 	assert.NotNil(t, result)
 }
 
+func TestLSPClient_GetCompletion_SendError(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.sendFunc = func(ctx context.Context, message interface{}) error {
+		return errors.New("send failed")
+	}
+
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Transport: mockTransport,
+		Capabilities: &LSPCapabilities{
+			CompletionProvider: &CompletionOptions{},
+		},
+		Connected: true,
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	result, err := client.GetCompletion(ctx, "test-server", "file:///test.go", 10, 5)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to send completion request")
+}
+
+func TestLSPClient_GetCompletion_ReceiveError(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.receiveFunc = func(ctx context.Context) (interface{}, error) {
+		return nil, errors.New("receive failed")
+	}
+
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Transport: mockTransport,
+		Capabilities: &LSPCapabilities{
+			CompletionProvider: &CompletionOptions{},
+		},
+		Connected: true,
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	result, err := client.GetCompletion(ctx, "test-server", "file:///test.go", 10, 5)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to receive completion response")
+}
+
+func TestLSPClient_GetCompletion_ErrorResponse(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.receiveFunc = func(ctx context.Context) (interface{}, error) {
+		return map[string]interface{}{
+			"jsonrpc": "2.0",
+			"id":      float64(1),
+			"error": map[string]interface{}{
+				"code":    float64(-32600),
+				"message": "Invalid Request",
+			},
+		}, nil
+	}
+
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Transport: mockTransport,
+		Capabilities: &LSPCapabilities{
+			CompletionProvider: &CompletionOptions{},
+		},
+		Connected: true,
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	result, err := client.GetCompletion(ctx, "test-server", "file:///test.go", 10, 5)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "completion error")
+}
+
 func TestLSPClient_GetHover_ServerDoesNotSupportHover(t *testing.T) {
 	log := newACPTestLogger()
 	client := NewLSPClient(log)
@@ -1502,6 +1654,94 @@ func TestLSPClient_GetHover_WithSupport(t *testing.T) {
 	result, err := client.GetHover(ctx, "test-server", "file:///test.go", 10, 5)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
+}
+
+func TestLSPClient_GetHover_SendError(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.sendFunc = func(ctx context.Context, message interface{}) error {
+		return errors.New("send failed")
+	}
+
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Transport: mockTransport,
+		Capabilities: &LSPCapabilities{
+			HoverProvider: true,
+		},
+		Connected: true,
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	result, err := client.GetHover(ctx, "test-server", "file:///test.go", 10, 5)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to send hover request")
+}
+
+func TestLSPClient_GetHover_ReceiveError(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.receiveFunc = func(ctx context.Context) (interface{}, error) {
+		return nil, errors.New("receive failed")
+	}
+
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Transport: mockTransport,
+		Capabilities: &LSPCapabilities{
+			HoverProvider: true,
+		},
+		Connected: true,
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	result, err := client.GetHover(ctx, "test-server", "file:///test.go", 10, 5)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to receive hover response")
+}
+
+func TestLSPClient_GetHover_ErrorResponse(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.receiveFunc = func(ctx context.Context) (interface{}, error) {
+		return map[string]interface{}{
+			"jsonrpc": "2.0",
+			"id":      float64(1),
+			"error": map[string]interface{}{
+				"code":    float64(-32600),
+				"message": "Invalid Request",
+			},
+		}, nil
+	}
+
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Transport: mockTransport,
+		Capabilities: &LSPCapabilities{
+			HoverProvider: true,
+		},
+		Connected: true,
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	result, err := client.GetHover(ctx, "test-server", "file:///test.go", 10, 5)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "hover error")
 }
 
 func TestLSPClient_GetDefinition_ServerDoesNotSupportDefinition(t *testing.T) {
@@ -1569,6 +1809,94 @@ func TestLSPClient_GetDefinition_WithSupport(t *testing.T) {
 	result, err := client.GetDefinition(ctx, "test-server", "file:///test.go", 10, 5)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
+}
+
+func TestLSPClient_GetDefinition_SendError(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.sendFunc = func(ctx context.Context, message interface{}) error {
+		return errors.New("send failed")
+	}
+
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Transport: mockTransport,
+		Capabilities: &LSPCapabilities{
+			DefinitionProvider: true,
+		},
+		Connected: true,
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	result, err := client.GetDefinition(ctx, "test-server", "file:///test.go", 10, 5)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to send definition request")
+}
+
+func TestLSPClient_GetDefinition_ReceiveError(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.receiveFunc = func(ctx context.Context) (interface{}, error) {
+		return nil, errors.New("receive failed")
+	}
+
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Transport: mockTransport,
+		Capabilities: &LSPCapabilities{
+			DefinitionProvider: true,
+		},
+		Connected: true,
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	result, err := client.GetDefinition(ctx, "test-server", "file:///test.go", 10, 5)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to receive definition response")
+}
+
+func TestLSPClient_GetDefinition_ErrorResponse(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.receiveFunc = func(ctx context.Context) (interface{}, error) {
+		return map[string]interface{}{
+			"jsonrpc": "2.0",
+			"id":      float64(1),
+			"error": map[string]interface{}{
+				"code":    float64(-32600),
+				"message": "Invalid Request",
+			},
+		}, nil
+	}
+
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Transport: mockTransport,
+		Capabilities: &LSPCapabilities{
+			DefinitionProvider: true,
+		},
+		Connected: true,
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	result, err := client.GetDefinition(ctx, "test-server", "file:///test.go", 10, 5)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "definition error")
 }
 
 func TestLSPClient_ListServers_WithServers(t *testing.T) {
@@ -1885,6 +2213,70 @@ func TestACPClient_DisconnectAgent_Connected(t *testing.T) {
 	// Verify agent was removed
 	client.mu.RLock()
 	_, exists := client.agents["test-agent"]
+	client.mu.RUnlock()
+	assert.False(t, exists)
+}
+
+func TestLSPClient_DisconnectServer_ShutdownError(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.sendFunc = func(ctx context.Context, message interface{}) error {
+		return errors.New("send error")
+	}
+
+	// Add a mock server connection
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Name:      "Test LSP Server",
+		Language:  "go",
+		Transport: mockTransport,
+		Connected: true,
+		Files:     make(map[string]*LSPFileInfo),
+	}
+	client.mu.Unlock()
+
+	// Should still succeed even if shutdown send fails
+	err := client.DisconnectServer("test-server")
+	require.NoError(t, err)
+
+	// Verify server was removed
+	client.mu.RLock()
+	_, exists := client.servers["test-server"]
+	client.mu.RUnlock()
+	assert.False(t, exists)
+}
+
+func TestLSPClient_DisconnectServer_CloseError(t *testing.T) {
+	log := newACPTestLogger()
+	client := NewLSPClient(log)
+
+	mockTransport := NewMockLSPTransport()
+	mockTransport.closeFunc = func() error {
+		return errors.New("close error")
+	}
+
+	// Add a mock server connection
+	client.mu.Lock()
+	client.servers["test-server"] = &LSPServerConnection{
+		ID:        "test-server",
+		Name:      "Test LSP Server",
+		Language:  "go",
+		Transport: mockTransport,
+		Connected: true,
+		Files:     make(map[string]*LSPFileInfo),
+	}
+	client.mu.Unlock()
+
+	// Should still succeed even if close fails
+	err := client.DisconnectServer("test-server")
+	require.NoError(t, err)
+
+	// Verify server was removed
+	client.mu.RLock()
+	_, exists := client.servers["test-server"]
 	client.mu.RUnlock()
 	assert.False(t, exists)
 }

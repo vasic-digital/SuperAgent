@@ -38,6 +38,14 @@ func TestDiscoveryACPClient_UnmarshalMessage(t *testing.T) {
 	log := newDiscoveryTestLogger()
 	client := NewACPClient(log)
 
+	t.Run("unmarshal marshal error", func(t *testing.T) {
+		// Channels cannot be marshaled to JSON
+		data := make(chan int)
+		var message ACPMessage
+		err := client.unmarshalMessage(data, &message)
+		assert.Error(t, err)
+	})
+
 	t.Run("unmarshal valid message", func(t *testing.T) {
 		data := map[string]interface{}{
 			"jsonrpc": "2.0",
@@ -76,6 +84,14 @@ func TestDiscoveryACPClient_UnmarshalMessage(t *testing.T) {
 func TestDiscoveryACPClient_UnmarshalResult(t *testing.T) {
 	log := newDiscoveryTestLogger()
 	client := NewACPClient(log)
+
+	t.Run("unmarshal marshal error", func(t *testing.T) {
+		// Channels cannot be marshaled to JSON
+		result := make(chan int)
+		var target ACPInitializeResult
+		err := client.unmarshalResult(result, &target)
+		assert.Error(t, err)
+	})
 
 	t.Run("unmarshal initialize result", func(t *testing.T) {
 		result := map[string]interface{}{

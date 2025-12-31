@@ -748,4 +748,164 @@ func TestContextManager_CalculateRelevanceScore(t *testing.T) {
 		score := cm.calculateRelevanceScore(entry, "documentation")
 		assert.Greater(t, score, 0.0)
 	})
+
+	t.Run("llm entry for chat request", func(t *testing.T) {
+		entry := &ContextEntry{
+			ID:        "1",
+			Type:      "llm",
+			Content:   "chat conversation question answer",
+			Priority:  5,
+			Timestamp: time.Now(),
+		}
+		score := cm.calculateRelevanceScore(entry, "chat")
+		assert.Greater(t, score, 0.0)
+	})
+
+	t.Run("mcp entry for tool execution", func(t *testing.T) {
+		entry := &ContextEntry{
+			ID:        "1",
+			Type:      "mcp",
+			Content:   "MCP tool result",
+			Priority:  5,
+			Timestamp: time.Now(),
+		}
+		score := cm.calculateRelevanceScore(entry, "tool_execution")
+		assert.Greater(t, score, 0.0)
+	})
+
+	t.Run("entry with lsp source", func(t *testing.T) {
+		entry := &ContextEntry{
+			ID:        "1",
+			Type:      "lsp",
+			Source:    "lsp",
+			Content:   "LSP result",
+			Priority:  5,
+			Timestamp: time.Now(),
+		}
+		score := cm.calculateRelevanceScore(entry, "code_completion")
+		assert.Greater(t, score, 0.0)
+	})
+
+	t.Run("entry with mcp source", func(t *testing.T) {
+		entry := &ContextEntry{
+			ID:        "1",
+			Type:      "tool",
+			Source:    "mcp",
+			Content:   "MCP result",
+			Priority:  5,
+			Timestamp: time.Now(),
+		}
+		score := cm.calculateRelevanceScore(entry, "tool_execution")
+		assert.Greater(t, score, 0.0)
+	})
+
+	t.Run("entry with tool source", func(t *testing.T) {
+		entry := &ContextEntry{
+			ID:        "1",
+			Type:      "tool",
+			Source:    "tool",
+			Content:   "Tool result",
+			Priority:  5,
+			Timestamp: time.Now(),
+		}
+		score := cm.calculateRelevanceScore(entry, "tool_execution")
+		assert.Greater(t, score, 0.0)
+	})
+}
+
+func TestContextManager_DecompressEntry_InvalidData(t *testing.T) {
+	cm := NewContextManager(100)
+
+	t.Run("invalid gzip data", func(t *testing.T) {
+		entry := &ContextEntry{
+			ID:             "1",
+			Compressed:     true,
+			CompressedData: []byte("not valid gzip data"),
+		}
+		err := cm.decompressEntry(entry)
+		assert.Error(t, err)
+	})
+}
+
+func TestContextManager_GetEntry_DecompressionError(t *testing.T) {
+	cm := NewContextManager(100)
+
+	// Add entry directly with invalid compressed data
+	cm.mu.Lock()
+	cm.entries["corrupted"] = &ContextEntry{
+		ID:             "corrupted",
+		Compressed:     true,
+		CompressedData: []byte("invalid gzip data"),
+	}
+	cm.mu.Unlock()
+
+	// GetEntry should return nil, false when decompression fails
+	entry, exists := cm.GetEntry("corrupted")
+	assert.False(t, exists)
+	assert.Nil(t, entry)
+}
+
+func TestContextManager_BuildContext_WithCorruptedEntry(t *testing.T) {
+	cm := NewContextManager(100)
+
+	// Add a valid entry
+	_ = cm.AddEntry(&ContextEntry{
+		ID:       "valid",
+		Type:     "lsp",
+		Content:  "valid content",
+		Priority: 5,
+	})
+
+	// Add a corrupted compressed entry directly
+	cm.mu.Lock()
+	cm.entries["corrupted"] = &ContextEntry{
+		ID:             "corrupted",
+		Type:           "lsp",
+		Compressed:     true,
+		CompressedData: []byte("invalid gzip data"),
+		Priority:       8,
+	}
+	cm.mu.Unlock()
+
+	// BuildContext should skip the corrupted entry
+	entries, err := cm.BuildContext("code_completion", 1000)
+	require.NoError(t, err)
+
+	// Should have at least the valid entry
+	foundValid := false
+	for _, entry := range entries {
+		if entry.ID == "valid" {
+			foundValid = true
+		}
+	}
+	assert.True(t, foundValid, "Valid entry should be in the result")
+}
+
+func TestContextManager_UpdateEntry_WithCompression(t *testing.T) {
+	cm := NewContextManager(100)
+	cm.compressionThreshold = 50 // Low threshold for testing
+
+	// Add entry without compression
+	entry := &ContextEntry{
+		ID:       "update_compress_test",
+		Type:     "lsp",
+		Content:  "short",
+		Priority: 5,
+	}
+	_ = cm.AddEntry(entry)
+
+	// Create large content that will trigger compression
+	largeContent := ""
+	for i := 0; i < 20; i++ {
+		largeContent += "This is a line of text for compression testing. "
+	}
+
+	// Update with large content - should trigger compression
+	err := cm.UpdateEntry("update_compress_test", largeContent, map[string]interface{}{"updated": true})
+	require.NoError(t, err)
+
+	// Retrieve and verify the content is correct
+	retrieved, exists := cm.GetEntry("update_compress_test")
+	assert.True(t, exists)
+	assert.Equal(t, largeContent, retrieved.Content)
 }

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -131,6 +132,14 @@ func TestMCPClient_UnmarshalResponse(t *testing.T) {
 	log := newMCPClientTestLogger()
 	client := NewMCPClient(log)
 
+	t.Run("marshal error", func(t *testing.T) {
+		// Channels cannot be marshaled to JSON
+		data := make(chan int)
+		var response MCPResponse
+		err := client.unmarshalResponse(data, &response)
+		assert.Error(t, err)
+	})
+
 	t.Run("valid response", func(t *testing.T) {
 		data := map[string]interface{}{
 			"jsonrpc": "2.0",
@@ -168,6 +177,14 @@ func TestMCPClient_UnmarshalResponse(t *testing.T) {
 func TestMCPClient_UnmarshalResult(t *testing.T) {
 	log := newMCPClientTestLogger()
 	client := NewMCPClient(log)
+
+	t.Run("marshal error", func(t *testing.T) {
+		// Channels cannot be marshaled to JSON
+		result := make(chan int)
+		var target map[string]interface{}
+		err := client.unmarshalResult(result, &target)
+		assert.Error(t, err)
+	})
 
 	t.Run("unmarshal tools list", func(t *testing.T) {
 		result := map[string]interface{}{
@@ -449,3 +466,79 @@ func TestMCPClient_HealthCheck_WithServers(t *testing.T) {
 
 // Note: MCPServerConnection, MCPTool, MCPResponse, MCPError structure tests
 // are already defined in mcp_manager_test.go
+
+func TestMCPClient_DisconnectServer_CloseError(t *testing.T) {
+	log := newMCPClientTestLogger()
+	client := NewMCPClient(log)
+
+	mockTransport := NewMockMCPTransport()
+	mockTransport.closeFunc = func() error {
+		return errors.New("close error")
+	}
+
+	client.mu.Lock()
+	client.servers["test-server"] = &MCPServerConnection{
+		ID:        "test-server",
+		Name:      "Test Server",
+		Transport: mockTransport,
+		Connected: true,
+	}
+	client.mu.Unlock()
+
+	// Should still succeed even if Close() returns error (it's just logged)
+	err := client.DisconnectServer("test-server")
+	require.NoError(t, err)
+
+	// Verify server was removed
+	client.mu.RLock()
+	_, exists := client.servers["test-server"]
+	client.mu.RUnlock()
+	assert.False(t, exists)
+}
+
+func TestMCPClient_DisconnectServer_WithTools(t *testing.T) {
+	log := newMCPClientTestLogger()
+	client := NewMCPClient(log)
+
+	mockTransport := NewMockMCPTransport()
+
+	client.mu.Lock()
+	client.servers["test-server"] = &MCPServerConnection{
+		ID:        "test-server",
+		Name:      "test-server",
+		Transport: mockTransport,
+		Connected: true,
+	}
+	// Add tools associated with the server
+	client.tools["tool1"] = &MCPTool{
+		Name:   "tool1",
+		Server: &MCPServer{Name: "test-server"},
+	}
+	client.tools["tool2"] = &MCPTool{
+		Name:   "tool2",
+		Server: &MCPServer{Name: "test-server"},
+	}
+	client.tools["other-tool"] = &MCPTool{
+		Name:   "other-tool",
+		Server: &MCPServer{Name: "other-server"},
+	}
+	client.mu.Unlock()
+
+	err := client.DisconnectServer("test-server")
+	require.NoError(t, err)
+
+	// Verify server was removed
+	client.mu.RLock()
+	_, serverExists := client.servers["test-server"]
+	// Verify tools associated with server were removed
+	_, tool1Exists := client.tools["tool1"]
+	_, tool2Exists := client.tools["tool2"]
+	// Verify tools from other servers remain
+	_, otherToolExists := client.tools["other-tool"]
+	client.mu.RUnlock()
+
+	assert.False(t, serverExists)
+	assert.False(t, tool1Exists, "tool1 should be removed")
+	assert.False(t, tool2Exists, "tool2 should be removed")
+	assert.True(t, otherToolExists, "other-tool should remain")
+}
