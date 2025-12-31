@@ -372,3 +372,82 @@ func TestUnifiedProtocolManager_GetMonitor(t *testing.T) {
 	monitor := manager.GetMonitor()
 	assert.NotNil(t, monitor)
 }
+
+// TestUnifiedProtocolManager_ExecuteRequest_SecurityValidationFailed tests security validation failure
+func TestUnifiedProtocolManager_ExecuteRequest_SecurityValidationFailed(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.PanicLevel)
+	manager := NewUnifiedProtocolManager(nil, nil, logger)
+
+	// Create an API key with limited permissions (no mcp:* permission)
+	security := manager.GetSecurity()
+	testKey, err := security.CreateAPIKey("limited-key", "test", []string{"lsp:*"}) // Only LSP access
+	assert.NoError(t, err)
+
+	req := UnifiedProtocolRequest{
+		ProtocolType: "mcp", // Trying to access MCP without permission
+		ServerID:     "test-server",
+		ToolName:     "test-tool",
+		Arguments:    map[string]interface{}{},
+	}
+
+	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+
+	response, err := manager.ExecuteRequest(ctx, req)
+
+	assert.Error(t, err)
+	assert.False(t, response.Success)
+	assert.Contains(t, response.Error, "insufficient permissions")
+}
+
+// TestUnifiedProtocolManager_ExecuteRequest_EmbeddingMissingText tests embedding with missing text
+func TestUnifiedProtocolManager_ExecuteRequest_EmbeddingMissingText(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.PanicLevel)
+	manager := NewUnifiedProtocolManager(nil, nil, logger)
+
+	security := manager.GetSecurity()
+	testKey, err := security.CreateAPIKey("test-key", "test", []string{"embedding:*"})
+	assert.NoError(t, err)
+
+	req := UnifiedProtocolRequest{
+		ProtocolType: "embedding",
+		ServerID:     "embedding-server",
+		ToolName:     "generate",
+		Arguments:    map[string]interface{}{}, // Missing "text" argument
+	}
+
+	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+
+	response, err := manager.ExecuteRequest(ctx, req)
+
+	assert.Error(t, err)
+	assert.False(t, response.Success)
+	assert.Contains(t, err.Error(), "text argument is required")
+}
+
+// TestUnifiedProtocolManager_ExecuteRequest_EmbeddingWrongTextType tests embedding with wrong text type
+func TestUnifiedProtocolManager_ExecuteRequest_EmbeddingWrongTextType(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.PanicLevel)
+	manager := NewUnifiedProtocolManager(nil, nil, logger)
+
+	security := manager.GetSecurity()
+	testKey, err := security.CreateAPIKey("test-key", "test", []string{"embedding:*"})
+	assert.NoError(t, err)
+
+	req := UnifiedProtocolRequest{
+		ProtocolType: "embedding",
+		ServerID:     "embedding-server",
+		ToolName:     "generate",
+		Arguments:    map[string]interface{}{"text": 12345}, // Wrong type - should be string
+	}
+
+	ctx := context.WithValue(context.Background(), "api_key", testKey.Key)
+
+	response, err := manager.ExecuteRequest(ctx, req)
+
+	assert.Error(t, err)
+	assert.False(t, response.Success)
+	assert.Contains(t, err.Error(), "text argument is required")
+}

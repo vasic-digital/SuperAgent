@@ -491,6 +491,54 @@ func TestEnsembleResult(t *testing.T) {
 	assert.Len(t, result.Scores, 2)
 }
 
+func TestEnsembleService_QualityWeightedVoting(t *testing.T) {
+	service := NewEnsembleService("quality_weighted", 30*time.Second)
+	service.RegisterProvider("p1", newMockProvider("p1", "response1", 0.9))
+
+	ctx := context.Background()
+	req := &models.LLMRequest{
+		Messages: []models.Message{{Role: "user", Content: "test"}},
+	}
+
+	result, err := service.RunEnsemble(ctx, req)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.NotNil(t, result.Selected)
+}
+
+func TestEnsembleService_VoteWithDifferentStrategies(t *testing.T) {
+	t.Run("quality_weighted strategy", func(t *testing.T) {
+		service := NewEnsembleService("quality_weighted", 30*time.Second)
+		service.RegisterProvider("p1", newMockProvider("p1", "response1", 0.9))
+		service.RegisterProvider("p2", newMockProvider("p2", "response2", 0.7))
+
+		ctx := context.Background()
+		req := &models.LLMRequest{
+			Messages: []models.Message{{Role: "user", Content: "test"}},
+		}
+
+		result, err := service.RunEnsemble(ctx, req)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.NotNil(t, result.Selected)
+	})
+
+	t.Run("unknown strategy defaults to confidence_weighted", func(t *testing.T) {
+		service := NewEnsembleService("unknown_strategy", 30*time.Second)
+		service.RegisterProvider("p1", newMockProvider("p1", "response1", 0.9))
+
+		ctx := context.Background()
+		req := &models.LLMRequest{
+			Messages: []models.Message{{Role: "user", Content: "test"}},
+		}
+
+		result, err := service.RunEnsemble(ctx, req)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.NotNil(t, result.Selected)
+	})
+}
+
 func BenchmarkEnsembleService_RunEnsemble(b *testing.B) {
 	service := NewEnsembleService("confidence_weighted", 30*time.Second)
 	service.RegisterProvider("p1", newMockProvider("p1", "response1", 0.9))

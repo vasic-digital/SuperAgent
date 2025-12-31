@@ -1342,3 +1342,22 @@ func TestIntegrationOrchestrator_executeLLMStep_DefaultProvider(t *testing.T) {
 	require.True(t, ok)
 	assert.Contains(t, resp.Content, "default-provider")
 }
+
+func TestIntegrationOrchestrator_executeStep_WithRetry(t *testing.T) {
+	ctx := context.Background()
+	io := NewIntegrationOrchestrator(nil, nil, nil, nil)
+
+	step := &WorkflowStep{
+		ID:         "step1",
+		Name:       "Retry Step",
+		Type:       "unknown_type", // Will fail
+		Parameters: map[string]any{},
+		MaxRetries: 2,
+	}
+
+	result, err := io.executeStep(ctx, step)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	// Should have attempted retries (but still fail)
+	assert.Equal(t, 2, step.RetryCount)
+}

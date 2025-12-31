@@ -613,6 +613,18 @@ func TestGetEnvOrDefault(t *testing.T) {
 		result := getEnvOrDefault("NONEXISTENT_VAR_12345", "default_value")
 		assert.Equal(t, "default_value", result)
 	})
+
+	t.Run("returns env value when set", func(t *testing.T) {
+		t.Setenv("TEST_ENV_VAR_FOR_COVERAGE", "env-value")
+		result := getEnvOrDefault("TEST_ENV_VAR_FOR_COVERAGE", "default-value")
+		assert.Equal(t, "env-value", result)
+	})
+
+	t.Run("returns default when env is empty string", func(t *testing.T) {
+		t.Setenv("TEST_EMPTY_ENV_VAR", "")
+		result := getEnvOrDefault("TEST_EMPTY_ENV_VAR", "default-value")
+		assert.Equal(t, "default-value", result)
+	})
 }
 
 // Benchmarks

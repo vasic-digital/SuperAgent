@@ -237,6 +237,85 @@ func TestDiscoveryACPClient_GetAgentStatus_Connected(t *testing.T) {
 	assert.Equal(t, true, status["connected"])
 }
 
+func TestDiscoveryACPClient_GetAgentStatus_WithWebSocketTransport(t *testing.T) {
+	log := newDiscoveryTestLogger()
+	client := NewACPClient(log)
+
+	now := time.Now()
+	wsTransport := &WebSocketACPTransport{
+		connected: true,
+	}
+
+	client.mu.Lock()
+	client.agents["ws-agent"] = &ACPAgentConnection{
+		ID:        "ws-agent",
+		Name:      "WebSocket Agent",
+		Connected: true,
+		LastUsed:  now,
+		Transport: wsTransport,
+		Capabilities: map[string]interface{}{
+			"tools": true,
+		},
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	status, err := client.GetAgentStatus(ctx, "ws-agent")
+	require.NoError(t, err)
+	require.NotNil(t, status)
+
+	assert.Equal(t, "ws-agent", status["id"])
+	assert.Equal(t, "websocket", status["transport"])
+	// connected status comes from wsTransport.IsConnected() which requires a real conn
+	// Just verify the transport type was detected correctly
+	_, hasConnected := status["connected"]
+	assert.True(t, hasConnected)
+}
+
+func TestDiscoveryACPClient_GetAgentStatus_WithHTTPTransport(t *testing.T) {
+	log := newDiscoveryTestLogger()
+	client := NewACPClient(log)
+
+	// Create a test server for HTTP transport
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	now := time.Now()
+	httpTransport := &HTTPACPTransport{
+		baseURL:    server.URL,
+		httpClient: server.Client(),
+		connected:  true,
+	}
+
+	client.mu.Lock()
+	client.agents["http-agent"] = &ACPAgentConnection{
+		ID:        "http-agent",
+		Name:      "HTTP Agent",
+		Connected: true,
+		LastUsed:  now,
+		Transport: httpTransport,
+		Capabilities: map[string]interface{}{
+			"tools": true,
+		},
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	status, err := client.GetAgentStatus(ctx, "http-agent")
+	require.NoError(t, err)
+	require.NotNil(t, status)
+
+	assert.Equal(t, "http-agent", status["id"])
+	assert.Equal(t, "http", status["transport"])
+	assert.Equal(t, true, status["connected"])
+}
+
 func TestDiscoveryACPClient_BroadcastAction_WithAgents(t *testing.T) {
 	log := newDiscoveryTestLogger()
 	client := NewACPClient(log)

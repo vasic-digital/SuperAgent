@@ -2,11 +2,13 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/superagent/superagent/internal/database"
 )
 
 func newLSPTestLogger() *logrus.Logger {
@@ -340,4 +342,106 @@ func BenchmarkLSPManager_GetLSPStats(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = manager.GetLSPStats(ctx)
 	}
+}
+
+// MockCacheWithInvalidate implements CacheInterface and InvalidateByPattern
+type MockCacheWithInvalidate struct {
+	invalidateError error
+	invalidateCalls int
+}
+
+func (m *MockCacheWithInvalidate) Get(ctx context.Context, key string) (*database.ModelMetadata, bool, error) {
+	return nil, false, nil
+}
+
+func (m *MockCacheWithInvalidate) Set(ctx context.Context, key string, value *database.ModelMetadata) error {
+	return nil
+}
+
+func (m *MockCacheWithInvalidate) Delete(ctx context.Context, key string) error {
+	return nil
+}
+
+func (m *MockCacheWithInvalidate) GetBulk(ctx context.Context, keys []string) (map[string]*database.ModelMetadata, error) {
+	return nil, nil
+}
+
+func (m *MockCacheWithInvalidate) SetBulk(ctx context.Context, items map[string]*database.ModelMetadata) error {
+	return nil
+}
+
+func (m *MockCacheWithInvalidate) Clear(ctx context.Context) error {
+	return nil
+}
+
+func (m *MockCacheWithInvalidate) Size(ctx context.Context) (int, error) {
+	return 0, nil
+}
+
+func (m *MockCacheWithInvalidate) HealthCheck(ctx context.Context) error {
+	return nil
+}
+
+func (m *MockCacheWithInvalidate) GetProviderModels(ctx context.Context, provider string) ([]*database.ModelMetadata, error) {
+	return nil, nil
+}
+
+func (m *MockCacheWithInvalidate) SetProviderModels(ctx context.Context, provider string, models []*database.ModelMetadata) error {
+	return nil
+}
+
+func (m *MockCacheWithInvalidate) DeleteProviderModels(ctx context.Context, provider string) error {
+	return nil
+}
+
+func (m *MockCacheWithInvalidate) GetByCapability(ctx context.Context, capability string) ([]*database.ModelMetadata, error) {
+	return nil, nil
+}
+
+func (m *MockCacheWithInvalidate) SetByCapability(ctx context.Context, capability string, models []*database.ModelMetadata) error {
+	return nil
+}
+
+func (m *MockCacheWithInvalidate) InvalidateByPattern(ctx context.Context, pattern string) error {
+	m.invalidateCalls++
+	return m.invalidateError
+}
+
+func TestLSPManager_RefreshAllLSPServers_WithCache(t *testing.T) {
+	log := newLSPTestLogger()
+	ctx := context.Background()
+
+	t.Run("with cache that implements InvalidateByPattern", func(t *testing.T) {
+		mockCache := &MockCacheWithInvalidate{}
+		manager := NewLSPManager(nil, mockCache, log)
+
+		err := manager.RefreshAllLSPServers(ctx)
+		require.NoError(t, err)
+
+		// Should have called InvalidateByPattern for each server
+		servers, _ := manager.ListLSPServers(ctx)
+		assert.Equal(t, len(servers), mockCache.invalidateCalls)
+	})
+
+	t.Run("with cache that fails InvalidateByPattern", func(t *testing.T) {
+		mockCache := &MockCacheWithInvalidate{
+			invalidateError: errors.New("cache invalidation failed"),
+		}
+		manager := NewLSPManager(nil, mockCache, log)
+
+		// RefreshAllLSPServers should still succeed even if cache invalidation fails
+		err := manager.RefreshAllLSPServers(ctx)
+		require.NoError(t, err)
+
+		// Should have tried to call InvalidateByPattern for each server
+		servers, _ := manager.ListLSPServers(ctx)
+		assert.Equal(t, len(servers), mockCache.invalidateCalls)
+	})
+
+	t.Run("with nil cache", func(t *testing.T) {
+		manager := NewLSPManager(nil, nil, log)
+
+		err := manager.RefreshAllLSPServers(ctx)
+		require.NoError(t, err)
+	})
 }

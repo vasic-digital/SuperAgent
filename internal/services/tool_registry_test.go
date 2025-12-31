@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -397,6 +398,56 @@ func TestToolRegistry_RefreshTools(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.True(t, registry.lastRefresh.After(beforeRefresh))
+	})
+
+	t.Run("refresh with MCP manager adds MCP tools", func(t *testing.T) {
+		log := logrus.New()
+		log.SetLevel(logrus.PanicLevel)
+		mcpManager := NewMCPManager(nil, nil, log)
+
+		registryWithMCP := NewToolRegistry(mcpManager, nil)
+
+		err := registryWithMCP.RefreshTools(context.Background())
+		require.NoError(t, err)
+		// MCP manager starts with no tools, so count should be 0
+		tools := registryWithMCP.ListTools()
+		// Just verify it ran without error
+		assert.NotNil(t, tools)
+	})
+
+	t.Run("refresh clears non-custom tools", func(t *testing.T) {
+		freshRegistry := NewToolRegistry(nil, nil)
+
+		// Add a custom tool
+		_ = freshRegistry.RegisterCustomTool(newValidMockTool("custom-keep"))
+
+		// Add a non-custom tool by directly modifying (simulating MCP tool)
+		mcpTool := &MCPTool{
+			Name:        "mcp-tool-to-remove",
+			Description: "Should be removed",
+		}
+		wrapper := &MCPToolWrapper{mcpTool: mcpTool, mcpManager: nil}
+		freshRegistry.mu.Lock()
+		freshRegistry.tools["mcp-tool-to-remove"] = wrapper
+		freshRegistry.mu.Unlock()
+
+		// Verify both tools exist
+		_, customExists := freshRegistry.GetTool("custom-keep")
+		_, mcpExists := freshRegistry.GetTool("mcp-tool-to-remove")
+		assert.True(t, customExists)
+		assert.True(t, mcpExists)
+
+		// Refresh should remove non-custom tools
+		err := freshRegistry.RefreshTools(context.Background())
+		require.NoError(t, err)
+
+		// Custom tool should still exist
+		_, customExistsAfter := freshRegistry.GetTool("custom-keep")
+		assert.True(t, customExistsAfter)
+
+		// MCP tool should be removed (and not re-added since no MCP manager)
+		_, mcpExistsAfter := freshRegistry.GetTool("mcp-tool-to-remove")
+		assert.False(t, mcpExistsAfter)
 	})
 }
 
