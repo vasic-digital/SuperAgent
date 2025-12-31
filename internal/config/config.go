@@ -18,6 +18,7 @@ type Config struct {
 	Security    SecurityConfig
 	Plugins     PluginConfig
 	Performance PerformanceConfig
+	MCP         MCPConfig
 }
 
 type ServerConfig struct {
@@ -288,6 +289,11 @@ func Load() *Config {
 			ReadBufferSize:        getIntEnv("READ_BUFFER_SIZE", 4096),
 			WriteBufferSize:       getIntEnv("WRITE_BUFFER_SIZE", 4096),
 			EnableCompression:     getBoolEnv("ENABLE_COMPRESSION", true),
+		},
+		MCP: MCPConfig{
+			Enabled:              getBoolEnv("MCP_ENABLED", true),
+			ExposeAllTools:       getBoolEnv("MCP_EXPOSE_ALL_TOOLS", true),
+			UnifiedToolNamespace: getBoolEnv("MCP_UNIFIED_NAMESPACE", true),
 		},
 	}
 }

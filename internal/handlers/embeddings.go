@@ -160,3 +160,15 @@ func (h *EmbeddingHandler) SimilaritySearch(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+// ListEmbeddingProviders handles GET /v1/embeddings/providers
+func (h *EmbeddingHandler) ListEmbeddingProviders(c *gin.Context) {
+	providers, err := h.embeddingManager.ListEmbeddingProviders(c.Request.Context())
+	if err != nil {
+		h.log.WithError(err).Error("Failed to list embedding providers")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"providers": providers})
+}

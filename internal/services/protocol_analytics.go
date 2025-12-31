@@ -375,7 +375,9 @@ func (a *ProtocolAnalyticsService) GenerateUsageReport() *UsageReport {
 
 	report.Summary.TotalRequests = totalRequests
 	report.Summary.TotalErrors = totalErrors
-	report.Summary.AverageLatency = totalLatency / time.Duration(len(a.metrics))
+	if len(a.metrics) > 0 {
+		report.Summary.AverageLatency = totalLatency / time.Duration(len(a.metrics))
+	}
 
 	// Get top 5 protocols
 	report.TopProtocols = a.GetTopProtocols(5)

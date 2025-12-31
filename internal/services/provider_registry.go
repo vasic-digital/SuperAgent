@@ -595,3 +595,101 @@ func getEnvOrDefault(key, defaultValue string) string {
 	}
 	return defaultValue
 }
+
+// RegisterProviderFromConfig creates and registers a provider from configuration
+func (r *ProviderRegistry) RegisterProviderFromConfig(cfg ProviderConfig) error {
+	if cfg.Name == "" {
+		return fmt.Errorf("provider name is required")
+	}
+
+	// Create provider based on type
+	var provider llm.LLMProvider
+	model := getFirstModel(cfg.Models)
+	baseURL := cfg.BaseURL
+
+	switch cfg.Type {
+	case "claude":
+		provider = claude.NewClaudeProvider(cfg.APIKey, baseURL, model)
+	case "deepseek":
+		provider = deepseek.NewDeepSeekProvider(cfg.APIKey, baseURL, model)
+	case "gemini":
+		provider = gemini.NewGeminiProvider(cfg.APIKey, baseURL, model)
+	case "qwen":
+		provider = qwen.NewQwenProvider(cfg.APIKey, baseURL, model)
+	case "openrouter":
+		provider = openrouter.NewSimpleOpenRouterProviderWithBaseURL(cfg.APIKey, baseURL)
+	default:
+		return fmt.Errorf("unsupported provider type: %s", cfg.Type)
+	}
+
+	// Store the config
+	r.mu.Lock()
+	r.config.Providers[cfg.Name] = &cfg
+	r.mu.Unlock()
+
+	// Register the provider
+	return r.RegisterProvider(cfg.Name, provider)
+}
+
+// UpdateProvider updates a provider's configuration
+func (r *ProviderRegistry) UpdateProvider(name string, cfg ProviderConfig) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, exists := r.providers[name]; !exists {
+		return fmt.Errorf("provider %s not found", name)
+	}
+
+	// Update stored config
+	if existingConfig, exists := r.config.Providers[name]; exists {
+		if cfg.APIKey != "" {
+			existingConfig.APIKey = cfg.APIKey
+		}
+		if cfg.BaseURL != "" {
+			existingConfig.BaseURL = cfg.BaseURL
+		}
+		if cfg.Weight != 0 {
+			existingConfig.Weight = cfg.Weight
+		}
+		if len(cfg.Models) > 0 {
+			existingConfig.Models = cfg.Models
+		}
+		existingConfig.Enabled = cfg.Enabled
+	}
+
+	return nil
+}
+
+// RemoveProvider removes a provider with optional force flag
+func (r *ProviderRegistry) RemoveProvider(name string, force bool) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, exists := r.providers[name]; !exists {
+		return fmt.Errorf("provider %s not found", name)
+	}
+
+	// Check if provider is being used (in real implementation, check active requests)
+	// For now, we allow removal if force is true or if no active requests
+	if !force {
+		// Check if there are active requests (simplified check)
+		// In a real implementation, you'd check the request service
+	}
+
+	delete(r.providers, name)
+	delete(r.config.Providers, name)
+	delete(r.circuitBreakers, name)
+
+	r.ensemble.RemoveProvider(name)
+	r.requestService.RemoveProvider(name)
+
+	return nil
+}
+
+// getFirstModel returns the first model ID from a list of models
+func getFirstModel(models []ModelConfig) string {
+	if len(models) > 0 {
+		return models[0].ID
+	}
+	return ""
+}

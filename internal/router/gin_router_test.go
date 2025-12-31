@@ -318,6 +318,31 @@ func TestWithGinMode(t *testing.T) {
 	assert.Equal(t, gin.TestMode, gin.Mode())
 }
 
+func TestWithGinMode_ViaOption(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	// Create a router and apply WithGinMode option
+	router := &GinRouter{
+		config:  cfg,
+		log:     logrus.New(),
+		running: false,
+	}
+
+	// Apply the option
+	opt := WithGinMode(gin.DebugMode)
+	opt(router)
+
+	// Gin mode should be set
+	assert.Equal(t, gin.DebugMode, gin.Mode())
+
+	// Reset to test mode
+	gin.SetMode(gin.TestMode)
+}
+
 func TestGinRouter_GetStats_WhileRunning(t *testing.T) {
 	cfg := &config.Config{
 		Server: config.ServerConfig{
@@ -339,4 +364,110 @@ func TestGinRouter_GetStats_WhileRunning(t *testing.T) {
 	assert.True(t, stats.Running)
 	assert.Equal(t, int64(42), stats.RequestCount)
 	assert.True(t, stats.Uptime >= time.Hour)
+}
+
+func TestGinRouter_Start_AndShutdown(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	// Add a test route
+	router.engine.GET("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	})
+
+	// Start the server in a goroutine
+	serverErr := make(chan error, 1)
+	go func() {
+		err := router.Start(":0") // port 0 lets OS choose a free port
+		if err != nil && err != http.ErrServerClosed {
+			serverErr <- err
+		}
+		close(serverErr)
+	}()
+
+	// Give the server time to start
+	time.Sleep(50 * time.Millisecond)
+
+	// Check that it's running
+	assert.True(t, router.IsRunning())
+
+	// Shutdown the server
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := router.Shutdown(ctx)
+	assert.NoError(t, err)
+
+	// Wait for the server goroutine to exit
+	select {
+	case err := <-serverErr:
+		assert.NoError(t, err)
+	case <-time.After(2 * time.Second):
+		t.Fatal("server did not shutdown in time")
+	}
+}
+
+func TestGinRouter_Shutdown_WithRunningServer(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	// Add a route
+	router.engine.GET("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	})
+
+	// Create a custom server and set it up
+	router.server = &http.Server{
+		Addr:    ":0",
+		Handler: router.engine,
+	}
+	router.running = true
+
+	// Shutdown should work
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := router.Shutdown(ctx)
+	assert.NoError(t, err)
+	assert.False(t, router.IsRunning())
+}
+
+func TestGinRouter_StartTLS_AndShutdown(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	// Add a test route
+	router.engine.GET("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	})
+
+	// Start TLS server with invalid certs will fail, but we can test the error handling
+	serverErr := make(chan error, 1)
+	go func() {
+		err := router.StartTLS(":0", "nonexistent.pem", "nonexistent.key")
+		serverErr <- err
+	}()
+
+	// Wait for the error
+	select {
+	case err := <-serverErr:
+		// Should fail with file not found
+		assert.Error(t, err)
+	case <-time.After(2 * time.Second):
+		t.Fatal("StartTLS did not return error in time")
+	}
 }

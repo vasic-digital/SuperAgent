@@ -225,3 +225,15 @@ func (h *LSPHandler) GetLSPStats(c *gin.Context) {
 
 	c.JSON(http.StatusOK, stats)
 }
+
+// SyncLSPServers handles POST /v1/lsp/sync - syncs all LSP servers
+func (h *LSPHandler) SyncLSPServers(c *gin.Context) {
+	if err := h.lspService.RefreshAllLSPServers(c.Request.Context()); err != nil {
+		h.log.WithError(err).Error("Failed to sync all LSP servers")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	h.log.Info("All LSP servers sync completed")
+	c.JSON(http.StatusOK, gin.H{"message": "All LSP servers synced successfully"})
+}

@@ -28,6 +28,11 @@ type LLMProvider struct {
 	ResponseTime int64                  `json:"response_time" db:"response_time"`
 	CreatedAt    time.Time              `json:"created_at" db:"created_at"`
 	UpdatedAt    time.Time              `json:"updated_at" db:"updated_at"`
+	// Models.dev integration fields (from migration 002)
+	ModelsDevProviderID *string    `json:"modelsdev_provider_id,omitempty" db:"modelsdev_provider_id"`
+	TotalModels         int        `json:"total_models" db:"total_models"`
+	EnabledModels       int        `json:"enabled_models" db:"enabled_models"`
+	LastModelsSync      *time.Time `json:"last_models_sync,omitempty" db:"last_models_sync"`
 }
 
 // LLMRequest represents a request to an LLM provider

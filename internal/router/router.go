@@ -42,6 +42,22 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	registryConfig := services.LoadRegistryConfigFromAppConfig(cfg)
 	providerRegistry := services.NewProviderRegistry(registryConfig, memoryService)
 
+	// Initialize shared logger
+	logger := logrus.New()
+
+	// Initialize model metadata repository (used by multiple services)
+	modelMetadataRepo := database.NewModelMetadataRepository(db.GetPool(), logger)
+
+	// Initialize Redis client for caching if Redis is configured
+	var redisClient *cache.RedisClient
+	if cfg.Redis.Host != "" && cfg.Redis.Port != "" {
+		redisClient = cache.NewRedisClient(cfg)
+	}
+
+	// Create cache factory and shared cache
+	cacheFactory := services.NewCacheFactory(redisClient, logger)
+	sharedCache := cacheFactory.CreateDefaultCache(30 * time.Minute)
+
 	// Initialize Models.dev integration (if enabled)
 	var modelMetadataHandler *handlers.ModelMetadataHandler
 	if cfg.ModelsDev.Enabled {
@@ -52,17 +68,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			UserAgent: "SuperAgent/1.0",
 		})
 
-		logger := logrus.New()
-		modelMetadataRepo := database.NewModelMetadataRepository(db.GetPool(), logger)
-
-		// Create Redis client for caching if Redis is configured
-		var redisClient *cache.RedisClient
-		if cfg.Redis.Host != "" && cfg.Redis.Port != "" {
-			redisClient = cache.NewRedisClient(cfg)
-		}
-
-		// Create cache factory and get appropriate cache
-		cacheFactory := services.NewCacheFactory(redisClient, logger)
 		modelMetadataCache := cacheFactory.CreateDefaultCache(cfg.ModelsDev.CacheTTL)
 
 		modelMetadataService := services.NewModelMetadataService(
@@ -92,6 +97,25 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	// Initialize Cognee handler
 	cogneeHandler := handlers.NewCogneeHandler(cfg)
+
+	// Initialize Embedding handler
+	embeddingManager := services.NewEmbeddingManagerWithConfig(nil, sharedCache, logger, services.EmbeddingConfig{
+		VectorProvider: "pgvector",
+		Timeout:        30 * time.Second,
+		CacheEnabled:   true,
+	})
+	embeddingHandler := handlers.NewEmbeddingHandler(embeddingManager, logger)
+
+	// Initialize LSP handler
+	lspManager := services.NewLSPManager(modelMetadataRepo, sharedCache, logger)
+	lspHandler := handlers.NewLSPHandler(lspManager, logger)
+
+	// Initialize MCP handler
+	mcpHandler := handlers.NewMCPHandler(providerRegistry, &cfg.MCP)
+
+	// Initialize Protocol handler (UnifiedProtocolManager implements ProtocolManagerInterface)
+	protocolManager := services.NewUnifiedProtocolManager(modelMetadataRepo, sharedCache, logger)
+	protocolHandler := handlers.NewProtocolHandler(protocolManager, logger)
 
 	// Initialize auth middleware
 	authConfig := middleware.AuthConfig{
@@ -284,6 +308,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		})
 
 		// Provider management endpoints
+		providerMgmtHandler := handlers.NewProviderManagementHandler(providerRegistry, logger)
 		providerGroup := protected.Group("/providers")
 		{
 			providerGroup.GET("", func(c *gin.Context) {
@@ -311,6 +336,12 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 					"count":     len(result),
 				})
 			})
+
+			// Provider CRUD operations
+			providerGroup.POST("", providerMgmtHandler.AddProvider)
+			providerGroup.GET("/:id", providerMgmtHandler.GetProvider)
+			providerGroup.PUT("/:id", providerMgmtHandler.UpdateProvider)
+			providerGroup.DELETE("/:id", providerMgmtHandler.DeleteProvider)
 
 			providerGroup.GET("/:name/health", func(c *gin.Context) {
 				name := c.Param("name")
@@ -345,11 +376,61 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			})
 		}
 
+		// Session management endpoints
+		sessionHandler := handlers.NewSessionHandler(logger)
+		sessionGroup := protected.Group("/sessions")
+		{
+			sessionGroup.POST("", sessionHandler.CreateSession)
+			sessionGroup.GET("/:id", sessionHandler.GetSession)
+			sessionGroup.DELETE("/:id", sessionHandler.TerminateSession)
+			sessionGroup.GET("", sessionHandler.ListSessions)
+		}
+
 		// Cognee endpoints
 		cogneeGroup := protected.Group("/cognee")
 		{
 			cogneeGroup.GET("/visualize", cogneeHandler.VisualizeGraph)
 			cogneeGroup.GET("/datasets", cogneeHandler.GetDatasets)
+		}
+
+		// LSP endpoints
+		lspGroup := protected.Group("/lsp")
+		{
+			lspGroup.GET("/servers", lspHandler.ListLSPServers)
+			lspGroup.POST("/execute", lspHandler.ExecuteLSPRequest)
+			lspGroup.POST("/sync", lspHandler.SyncLSPServers)
+			lspGroup.GET("/stats", lspHandler.GetLSPStats)
+		}
+
+		// MCP endpoints
+		mcpGroup := protected.Group("/mcp")
+		{
+			mcpGroup.GET("/capabilities", mcpHandler.MCPCapabilities)
+			mcpGroup.GET("/tools", mcpHandler.MCPTools)
+			mcpGroup.POST("/tools/call", mcpHandler.MCPToolsCall)
+			mcpGroup.GET("/prompts", mcpHandler.MCPPrompts)
+			mcpGroup.GET("/resources", mcpHandler.MCPResources)
+		}
+
+		// Protocol endpoints
+		protocolGroup := protected.Group("/protocols")
+		{
+			protocolGroup.POST("/execute", protocolHandler.ExecuteProtocolRequest)
+			protocolGroup.GET("/servers", protocolHandler.ListProtocolServers)
+			protocolGroup.GET("/metrics", protocolHandler.GetProtocolMetrics)
+			protocolGroup.POST("/refresh", protocolHandler.RefreshProtocolServers)
+			protocolGroup.POST("/configure", protocolHandler.ConfigureProtocols)
+		}
+
+		// Embedding endpoints
+		embeddingGroup := protected.Group("/embeddings")
+		{
+			embeddingGroup.POST("/generate", embeddingHandler.GenerateEmbeddings)
+			embeddingGroup.POST("/search", embeddingHandler.VectorSearch)
+			embeddingGroup.POST("/index", embeddingHandler.IndexDocument)
+			embeddingGroup.POST("/batch-index", embeddingHandler.BatchIndexDocuments)
+			embeddingGroup.GET("/stats", embeddingHandler.GetEmbeddingStats)
+			embeddingGroup.GET("/providers", embeddingHandler.ListEmbeddingProviders)
 		}
 
 		// Admin endpoints
