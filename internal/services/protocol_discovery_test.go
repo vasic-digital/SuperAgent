@@ -347,6 +347,73 @@ func TestDiscoveryACPClient_BroadcastAction_WithAgents(t *testing.T) {
 	assert.Len(t, results, 2)
 }
 
+func TestDiscoveryACPClient_BroadcastAction_DisconnectedAgent(t *testing.T) {
+	log := newDiscoveryTestLogger()
+	client := NewACPClient(log)
+
+	mockTransport := &MockACPTransport{connected: false}
+
+	// Add an agent that is marked as disconnected
+	client.mu.Lock()
+	client.agents["disconnected-agent"] = &ACPAgentConnection{
+		ID:        "disconnected-agent",
+		Name:      "Disconnected Agent",
+		Transport: mockTransport,
+		Connected: false, // Agent is not connected
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	results := client.BroadcastAction(ctx, "test-action", nil)
+
+	// Should have result for the disconnected agent
+	require.Len(t, results, 1)
+	result := results["disconnected-agent"]
+	require.NotNil(t, result)
+	assert.False(t, result.Success)
+	assert.Equal(t, "agent not connected", result.Error)
+}
+
+func TestDiscoveryACPClient_BroadcastAction_MixedAgents(t *testing.T) {
+	log := newDiscoveryTestLogger()
+	client := NewACPClient(log)
+
+	mockTransport1 := &MockACPTransport{connected: true}
+	mockTransport2 := &MockACPTransport{connected: false}
+
+	// Add mix of connected and disconnected agents
+	client.mu.Lock()
+	client.agents["connected-agent"] = &ACPAgentConnection{
+		ID:        "connected-agent",
+		Name:      "Connected Agent",
+		Transport: mockTransport1,
+		Connected: true,
+	}
+	client.agents["disconnected-agent"] = &ACPAgentConnection{
+		ID:        "disconnected-agent",
+		Name:      "Disconnected Agent",
+		Transport: mockTransport2,
+		Connected: false,
+	}
+	client.mu.Unlock()
+
+	ctx := context.Background()
+	results := client.BroadcastAction(ctx, "test-action", map[string]interface{}{"key": "value"})
+
+	// Should have results for both agents
+	assert.Len(t, results, 2)
+
+	// Disconnected agent should have error
+	disconnectedResult := results["disconnected-agent"]
+	require.NotNil(t, disconnectedResult)
+	assert.False(t, disconnectedResult.Success)
+	assert.Equal(t, "agent not connected", disconnectedResult.Error)
+
+	// Connected agent should have a result (may have error due to mock, but not "not connected")
+	connectedResult := results["connected-agent"]
+	require.NotNil(t, connectedResult)
+}
+
 func TestDiscoveryACPClient_ListAgents_WithAgents(t *testing.T) {
 	log := newDiscoveryTestLogger()
 	client := NewACPClient(log)

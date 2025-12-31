@@ -2,12 +2,14 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/superagent/superagent/internal/database"
 )
 
 func newEmbeddingTestLogger() *logrus.Logger {
@@ -496,6 +498,88 @@ func TestEmbeddingManager_RefreshAllEmbeddings(t *testing.T) {
 		err := cacheManager.RefreshAllEmbeddings(ctx)
 		assert.NoError(t, err)
 	})
+
+	t.Run("refresh with cache that implements InvalidateByPattern", func(t *testing.T) {
+		mockCache := &MockEmbeddingCacheWithInvalidate{}
+		cacheManager := NewEmbeddingManager(nil, mockCache, log)
+		err := cacheManager.RefreshAllEmbeddings(ctx)
+		assert.NoError(t, err)
+		assert.True(t, mockCache.invalidateCalled)
+	})
+
+	t.Run("refresh with cache that fails InvalidateByPattern", func(t *testing.T) {
+		mockCache := &MockEmbeddingCacheWithInvalidate{
+			invalidateError: errors.New("cache invalidation failed"),
+		}
+		cacheManager := NewEmbeddingManager(nil, mockCache, log)
+		// Should still succeed even if cache invalidation fails
+		err := cacheManager.RefreshAllEmbeddings(ctx)
+		assert.NoError(t, err)
+		assert.True(t, mockCache.invalidateCalled)
+	})
+}
+
+// MockEmbeddingCacheWithInvalidate implements CacheInterface and InvalidateByPattern
+type MockEmbeddingCacheWithInvalidate struct {
+	invalidateError  error
+	invalidateCalled bool
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) Get(ctx context.Context, key string) (*database.ModelMetadata, bool, error) {
+	return nil, false, nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) Set(ctx context.Context, key string, value *database.ModelMetadata) error {
+	return nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) Delete(ctx context.Context, key string) error {
+	return nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) GetBulk(ctx context.Context, keys []string) (map[string]*database.ModelMetadata, error) {
+	return nil, nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) SetBulk(ctx context.Context, items map[string]*database.ModelMetadata) error {
+	return nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) Clear(ctx context.Context) error {
+	return nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) Size(ctx context.Context) (int, error) {
+	return 0, nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) HealthCheck(ctx context.Context) error {
+	return nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) GetProviderModels(ctx context.Context, provider string) ([]*database.ModelMetadata, error) {
+	return nil, nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) SetProviderModels(ctx context.Context, provider string, models []*database.ModelMetadata) error {
+	return nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) DeleteProviderModels(ctx context.Context, provider string) error {
+	return nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) GetByCapability(ctx context.Context, capability string) ([]*database.ModelMetadata, error) {
+	return nil, nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) SetByCapability(ctx context.Context, capability string, models []*database.ModelMetadata) error {
+	return nil
+}
+
+func (m *MockEmbeddingCacheWithInvalidate) InvalidateByPattern(ctx context.Context, pattern string) error {
+	m.invalidateCalled = true
+	return m.invalidateError
 }
 
 func TestEmbeddingManager_CosineSimilarity_EdgeCases(t *testing.T) {
