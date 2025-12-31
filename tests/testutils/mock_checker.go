@@ -24,10 +24,10 @@ type MockConfig struct {
 // GetMockConfig returns the mock service configuration from environment
 func GetMockConfig() MockConfig {
 	return MockConfig{
-		MockLLMURL:     getEnvOrDefault("MOCK_LLM_URL", "http://localhost:8081"),
+		MockLLMURL:     getEnvOrDefault("MOCK_LLM_URL", "http://localhost:18081"),
 		MockLLMEnabled: os.Getenv("MOCK_LLM_ENABLED") == "true" || os.Getenv("CI") == "true",
-		PostgresURL:    getEnvOrDefault("DATABASE_URL", "postgres://superagent:superagent123@localhost:5432/superagent_db?sslmode=disable"),
-		RedisURL:       getEnvOrDefault("REDIS_URL", "redis://:superagent123@localhost:6379"),
+		PostgresURL:    getEnvOrDefault("DATABASE_URL", "postgres://superagent:superagent123@localhost:15432/superagent_db?sslmode=disable"),
+		RedisURL:       getEnvOrDefault("REDIS_URL", "redis://:superagent123@localhost:16379"),
 		ServerURL:      getEnvOrDefault("SERVER_URL", "http://localhost:8080"),
 	}
 }
@@ -107,7 +107,7 @@ func IsFullTestEnvironment() bool {
 
 // GetMockLLMBaseURL returns the base URL for the mock LLM server
 func GetMockLLMBaseURL() string {
-	return getEnvOrDefault("MOCK_LLM_URL", "http://localhost:8081")
+	return getEnvOrDefault("MOCK_LLM_URL", "http://localhost:18081")
 }
 
 // GetMockAPIKey returns a mock API key for testing
@@ -122,7 +122,7 @@ func GetServerURL() string {
 
 // GetDatabaseURL returns the database URL for testing
 func GetDatabaseURL() string {
-	return getEnvOrDefault("DATABASE_URL", "postgres://superagent:superagent123@localhost:5432/superagent_db?sslmode=disable")
+	return getEnvOrDefault("DATABASE_URL", "postgres://superagent:superagent123@localhost:15432/superagent_db?sslmode=disable")
 }
 
 // RequireInfrastructure returns an error message if required infrastructure is not available

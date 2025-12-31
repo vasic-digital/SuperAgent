@@ -106,8 +106,8 @@ func TestClaudeProvider_WithRetry(t *testing.T) {
 func TestClaudeProvider_Complete(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	// Use mock LLM server
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// Use mock LLM server - Claude expects /v1/messages endpoint
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/messages"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := claude.NewClaudeProvider(apiKey, mockURL, "claude-3-opus-20240229")
@@ -133,8 +133,8 @@ func TestClaudeProvider_Complete(t *testing.T) {
 func TestClaudeProvider_CompleteStream(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	// Use mock LLM server
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// Use mock LLM server - Claude expects /v1/messages endpoint
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/messages"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := claude.NewClaudeProvider(apiKey, mockURL, "claude-3-opus-20240229")
@@ -173,8 +173,8 @@ func TestClaudeProvider_CompleteStream(t *testing.T) {
 func TestClaudeProvider_HealthCheck(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	// Use mock LLM server
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// Use mock LLM server - Claude expects /v1/messages endpoint
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/messages"
 	apiKey := testutils.GetMockAPIKey()
 
 	// Ensure environment variables are set for health check

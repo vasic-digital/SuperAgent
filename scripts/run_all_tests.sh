@@ -24,7 +24,7 @@ echo ""
 cleanup() {
     echo -e "${YELLOW}Cleaning up...${NC}"
     cd "$PROJECT_ROOT"
-    docker-compose -f docker-compose.test.yml down --volumes --remove-orphans 2>/dev/null || true
+    docker compose -f docker-compose.test.yml down --volumes --remove-orphans 2>/dev/null || true
 }
 
 # Register cleanup trap
@@ -36,11 +36,11 @@ cd "$PROJECT_ROOT"
 
 # Build mock LLM server first
 echo "Building mock LLM server..."
-docker-compose -f docker-compose.test.yml build mock-llm
+docker compose -f docker-compose.test.yml build mock-llm
 
 # Start all services
 echo "Starting services..."
-docker-compose -f docker-compose.test.yml up -d postgres redis mock-llm
+docker compose -f docker-compose.test.yml up -d postgres redis mock-llm
 
 # Wait for services to be healthy
 echo -e "${YELLOW}Waiting for services to be ready...${NC}"
@@ -69,7 +69,7 @@ wait_for_service() {
 # Wait for PostgreSQL
 echo "Waiting for PostgreSQL..."
 for i in {1..30}; do
-    if docker-compose -f docker-compose.test.yml exec -T postgres pg_isready -U superagent -d superagent_db > /dev/null 2>&1; then
+    if docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U superagent -d superagent_db > /dev/null 2>&1; then
         echo -e "${GREEN}PostgreSQL is ready!${NC}"
         break
     fi
@@ -80,7 +80,7 @@ done
 # Wait for Redis
 echo "Waiting for Redis..."
 for i in {1..30}; do
-    if docker-compose -f docker-compose.test.yml exec -T redis redis-cli ping > /dev/null 2>&1; then
+    if docker compose -f docker-compose.test.yml exec -T redis redis-cli ping > /dev/null 2>&1; then
         echo -e "${GREEN}Redis is ready!${NC}"
         break
     fi
@@ -89,36 +89,36 @@ for i in {1..30}; do
 done
 
 # Wait for Mock LLM
-wait_for_service "Mock LLM" "http://localhost:8081/health"
+wait_for_service "Mock LLM" "http://localhost:18081/health"
 
 # Export environment variables for tests
 export DB_HOST=localhost
-export DB_PORT=5432
+export DB_PORT=15432
 export DB_USER=superagent
 export DB_PASSWORD=superagent123
 export DB_NAME=superagent_db
-export DATABASE_URL="postgres://superagent:superagent123@localhost:5432/superagent_db?sslmode=disable"
+export DATABASE_URL="postgres://superagent:superagent123@localhost:15432/superagent_db?sslmode=disable"
 
 export REDIS_HOST=localhost
-export REDIS_PORT=6379
+export REDIS_PORT=16379
 export REDIS_PASSWORD=superagent123
-export REDIS_URL="redis://:superagent123@localhost:6379"
+export REDIS_URL="redis://:superagent123@localhost:16379"
 
-export MOCK_LLM_URL=http://localhost:8081
+export MOCK_LLM_URL=http://localhost:18081
 export MOCK_LLM_ENABLED=true
 
 # LLM Provider configurations pointing to mock server
 export CLAUDE_API_KEY=mock-api-key
-export CLAUDE_BASE_URL=http://localhost:8081/v1
+export CLAUDE_BASE_URL=http://localhost:18081/v1
 export DEEPSEEK_API_KEY=mock-api-key
-export DEEPSEEK_BASE_URL=http://localhost:8081/v1
+export DEEPSEEK_BASE_URL=http://localhost:18081/v1
 export GEMINI_API_KEY=mock-api-key
-export GEMINI_BASE_URL=http://localhost:8081/v1
+export GEMINI_BASE_URL=http://localhost:18081/v1
 export QWEN_API_KEY=mock-api-key
-export QWEN_BASE_URL=http://localhost:8081/v1
+export QWEN_BASE_URL=http://localhost:18081/v1
 export ZAI_API_KEY=mock-api-key
-export ZAI_BASE_URL=http://localhost:8081/v1
-export OLLAMA_BASE_URL=http://localhost:8081
+export ZAI_BASE_URL=http://localhost:18081/v1
+export OLLAMA_BASE_URL=http://localhost:18081
 
 # JWT and Server configuration
 export JWT_SECRET=test-jwt-secret-key-for-testing

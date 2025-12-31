@@ -125,7 +125,8 @@ func TestDeepSeekProvider_WithRetry(t *testing.T) {
 func TestDeepSeekProvider_Complete(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// DeepSeek expects /v1/chat/completions endpoint
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/chat/completions"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := deepseek.NewDeepSeekProvider(apiKey, mockURL, "deepseek-chat")
@@ -151,7 +152,8 @@ func TestDeepSeekProvider_Complete(t *testing.T) {
 func TestDeepSeekProvider_CompleteStream(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// DeepSeek expects /v1/chat/completions endpoint
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/chat/completions"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := deepseek.NewDeepSeekProvider(apiKey, mockURL, "deepseek-chat")
@@ -187,7 +189,8 @@ func TestDeepSeekProvider_CompleteStream(t *testing.T) {
 func TestDeepSeekProvider_HealthCheck(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// DeepSeek expects /v1/chat/completions endpoint
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/chat/completions"
 	apiKey := testutils.GetMockAPIKey()
 
 	os.Setenv("DEEPSEEK_API_KEY", apiKey)

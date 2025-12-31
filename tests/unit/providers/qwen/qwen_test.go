@@ -126,7 +126,8 @@ func TestQwenProvider_WithRetry(t *testing.T) {
 func TestQwenProvider_Complete(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// Qwen provider appends /services/aigc/text-generation/generation to base URL
+	mockURL := testutils.GetMockLLMBaseURL()
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := qwen.NewQwenProvider(apiKey, mockURL, "qwen-turbo")
@@ -152,7 +153,8 @@ func TestQwenProvider_Complete(t *testing.T) {
 func TestQwenProvider_CompleteStream(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// Qwen provider appends /services/aigc/text-generation/generation to base URL
+	mockURL := testutils.GetMockLLMBaseURL()
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := qwen.NewQwenProvider(apiKey, mockURL, "qwen-turbo")
@@ -188,7 +190,8 @@ func TestQwenProvider_CompleteStream(t *testing.T) {
 func TestQwenProvider_HealthCheck(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// Qwen provider appends /services/aigc/text-generation/generation to base URL
+	mockURL := testutils.GetMockLLMBaseURL()
 	apiKey := testutils.GetMockAPIKey()
 
 	os.Setenv("QWEN_API_KEY", apiKey)

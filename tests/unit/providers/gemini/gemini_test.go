@@ -127,7 +127,8 @@ func TestGeminiProvider_WithRetry(t *testing.T) {
 func TestGeminiProvider_Complete(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// Gemini expects format string with model name: /v1beta/models/%s:generateContent
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1beta/models/%s:generateContent"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := gemini.NewGeminiProvider(apiKey, mockURL, "gemini-pro")
@@ -153,7 +154,8 @@ func TestGeminiProvider_Complete(t *testing.T) {
 func TestGeminiProvider_CompleteStream(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// Gemini expects format string with model name: /v1beta/models/%s:generateContent
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1beta/models/%s:generateContent"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := gemini.NewGeminiProvider(apiKey, mockURL, "gemini-pro")
@@ -189,7 +191,8 @@ func TestGeminiProvider_CompleteStream(t *testing.T) {
 func TestGeminiProvider_HealthCheck(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL() + "/v1"
+	// Gemini expects format string with model name: /v1beta/models/%s:generateContent
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1beta/models/%s:generateContent"
 	apiKey := testutils.GetMockAPIKey()
 
 	os.Setenv("GEMINI_API_KEY", apiKey)

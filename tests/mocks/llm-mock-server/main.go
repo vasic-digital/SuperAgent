@@ -97,6 +97,97 @@ type EmbeddingData struct {
 	Embedding []float64 `json:"embedding"`
 }
 
+// Claude-specific request/response types
+type ClaudeRequest struct {
+	Model     string          `json:"model"`
+	MaxTokens int             `json:"max_tokens,omitempty"`
+	Messages  []ClaudeMessage `json:"messages"`
+	Stream    bool            `json:"stream,omitempty"`
+	System    string          `json:"system,omitempty"`
+}
+
+type ClaudeMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type ClaudeResponse struct {
+	ID           string          `json:"id"`
+	Type         string          `json:"type"`
+	Role         string          `json:"role"`
+	Content      []ClaudeContent `json:"content"`
+	Model        string          `json:"model"`
+	StopReason   *string         `json:"stop_reason"`
+	StopSequence *string         `json:"stop_sequence"`
+	Usage        ClaudeUsage     `json:"usage"`
+}
+
+type ClaudeContent struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type ClaudeUsage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
+}
+
+// Ollama-specific request/response types
+type OllamaRequest struct {
+	Model   string `json:"model"`
+	Prompt  string `json:"prompt"`
+	Stream  bool   `json:"stream,omitempty"`
+	Options struct {
+		Temperature float64  `json:"temperature,omitempty"`
+		MaxTokens   int      `json:"num_predict,omitempty"`
+	} `json:"options,omitempty"`
+}
+
+type OllamaResponse struct {
+	Model    string `json:"model"`
+	Response string `json:"response"`
+	Done     bool   `json:"done"`
+}
+
+// Gemini-specific request/response types
+type GeminiRequest struct {
+	Contents         []GeminiContent       `json:"contents"`
+	GenerationConfig *GeminiGenerationConfig `json:"generationConfig,omitempty"`
+}
+
+type GeminiContent struct {
+	Parts []GeminiPart `json:"parts"`
+	Role  string       `json:"role,omitempty"`
+}
+
+type GeminiPart struct {
+	Text string `json:"text,omitempty"`
+}
+
+type GeminiGenerationConfig struct {
+	Temperature     float64  `json:"temperature,omitempty"`
+	MaxOutputTokens int      `json:"maxOutputTokens,omitempty"`
+	TopP            float64  `json:"topP,omitempty"`
+	StopSequences   []string `json:"stopSequences,omitempty"`
+}
+
+type GeminiResponse struct {
+	Candidates    []GeminiCandidate    `json:"candidates"`
+	UsageMetadata *GeminiUsageMetadata `json:"usageMetadata,omitempty"`
+}
+
+type GeminiCandidate struct {
+	Content      GeminiContent `json:"content"`
+	FinishReason string        `json:"finishReason"`
+	Index        int           `json:"index"`
+}
+
+type GeminiUsageMetadata struct {
+	PromptTokenCount     int `json:"promptTokenCount"`
+	CandidatesTokenCount int `json:"candidatesTokenCount"`
+	TotalTokenCount      int `json:"totalTokenCount"`
+}
+
 var mockModels = []Model{
 	{ID: "mock-gpt-4", Object: "model", Created: time.Now().Unix(), OwnedBy: "mock-provider"},
 	{ID: "mock-claude-3", Object: "model", Created: time.Now().Unix(), OwnedBy: "mock-provider"},
@@ -324,6 +415,174 @@ func handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// handleOllamaGenerate handles Ollama's /api/generate endpoint
+func handleOllamaGenerate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req OllamaRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	responseContent := generateMockResponse(req.Prompt, req.Model)
+
+	// Return Ollama-compatible response format
+	response := OllamaResponse{
+		Model:    req.Model,
+		Response: responseContent,
+		Done:     true,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleGeminiGenerate handles Gemini's /v1beta/models/:model:generateContent endpoint
+func handleGeminiGenerate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req GeminiRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Extract prompt from contents
+	prompt := ""
+	if len(req.Contents) > 0 {
+		content := req.Contents[len(req.Contents)-1]
+		if len(content.Parts) > 0 {
+			prompt = content.Parts[0].Text
+		}
+	}
+
+	responseContent := generateMockResponse(prompt, "gemini")
+
+	// Return Gemini-compatible response format
+	response := GeminiResponse{
+		Candidates: []GeminiCandidate{
+			{
+				Content: GeminiContent{
+					Parts: []GeminiPart{
+						{Text: responseContent},
+					},
+					Role: "model",
+				},
+				FinishReason: "STOP",
+				Index:        0,
+			},
+		},
+		UsageMetadata: &GeminiUsageMetadata{
+			PromptTokenCount:     len(strings.Fields(prompt)) * 2,
+			CandidatesTokenCount: len(strings.Fields(responseContent)) * 2,
+			TotalTokenCount:      (len(strings.Fields(prompt)) + len(strings.Fields(responseContent))) * 2,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleQwenGeneration handles Qwen's /services/aigc/text-generation/generation endpoint
+func handleQwenGeneration(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req CompletionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Extract prompt from messages
+	prompt := ""
+	if len(req.Messages) > 0 {
+		prompt = req.Messages[len(req.Messages)-1].Content
+	}
+
+	responseContent := generateMockResponse(prompt, req.Model)
+
+	// Return OpenAI-compatible response (Qwen uses OpenAI format)
+	response := CompletionResponse{
+		ID:      fmt.Sprintf("qwen-cmpl-%d", time.Now().UnixNano()),
+		Object:  "chat.completion",
+		Created: time.Now().Unix(),
+		Model:   req.Model,
+		Choices: []Choice{
+			{
+				Index: 0,
+				Message: Message{
+					Role:    "assistant",
+					Content: responseContent,
+				},
+				FinishReason: "stop",
+			},
+		},
+		Usage: Usage{
+			PromptTokens:     len(strings.Fields(prompt)) * 2,
+			CompletionTokens: len(strings.Fields(responseContent)) * 2,
+			TotalTokens:      (len(strings.Fields(prompt)) + len(strings.Fields(responseContent))) * 2,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleClaudeMessages handles Claude-specific /v1/messages endpoint
+func handleClaudeMessages(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req ClaudeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Extract prompt from messages
+	prompt := ""
+	if len(req.Messages) > 0 {
+		prompt = req.Messages[len(req.Messages)-1].Content
+	}
+
+	responseContent := generateMockResponse(prompt, req.Model)
+	stopReason := "end_turn"
+
+	// Return Claude-compatible response format
+	response := ClaudeResponse{
+		ID:         fmt.Sprintf("msg_%d", time.Now().UnixNano()),
+		Type:       "message",
+		Role:       "assistant",
+		Model:      req.Model,
+		StopReason: &stopReason,
+		Content: []ClaudeContent{
+			{
+				Type: "text",
+				Text: responseContent,
+			},
+		},
+		Usage: ClaudeUsage{
+			InputTokens:  len(strings.Fields(prompt)) * 2,
+			OutputTokens: len(strings.Fields(responseContent)) * 2,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -348,6 +607,18 @@ func main() {
 	mux.HandleFunc("/v1/models", handleModels)
 	mux.HandleFunc("/v1/embeddings", handleEmbeddings)
 
+	// Claude-compatible endpoint
+	mux.HandleFunc("/v1/messages", handleClaudeMessages)
+
+	// Ollama-compatible endpoint
+	mux.HandleFunc("/api/generate", handleOllamaGenerate)
+
+	// Qwen-compatible endpoint
+	mux.HandleFunc("/services/aigc/text-generation/generation", handleQwenGeneration)
+
+	// Gemini-compatible endpoint (matches /v1beta/models/*/generateContent pattern)
+	mux.HandleFunc("/v1beta/models/", handleGeminiGenerate)
+
 	// Health check
 	mux.HandleFunc("/health", handleHealth)
 	mux.HandleFunc("/", handleHealth)
@@ -356,6 +627,10 @@ func main() {
 	log.Printf("Available endpoints:")
 	log.Printf("  POST /v1/completions")
 	log.Printf("  POST /v1/chat/completions")
+	log.Printf("  POST /v1/messages (Claude)")
+	log.Printf("  POST /api/generate (Ollama)")
+	log.Printf("  POST /services/aigc/text-generation/generation (Qwen)")
+	log.Printf("  POST /v1beta/models/:model:generateContent (Gemini)")
 	log.Printf("  GET  /v1/models")
 	log.Printf("  POST /v1/embeddings")
 	log.Printf("  GET  /health")

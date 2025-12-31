@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Mock LLM Server for testing (provides OpenAI-compatible API)
   mock-llm:
@@ -8,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: superagent-mock-llm
     ports:
-      - "8081:8081"
+      - "${MOCK_LLM_PORT:-18081}:8081"
     environment:
       PORT: 8081
     networks:
@@ -30,7 +28,7 @@ services:
       POSTGRES_PASSWORD: superagent123
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-15432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
@@ -49,7 +47,7 @@ services:
     container_name: superagent-redis
     command: redis-server --requirepass superagent123 --appendonly yes
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-16379}:6379"
     volumes:
       - redis_data:/data
     networks:

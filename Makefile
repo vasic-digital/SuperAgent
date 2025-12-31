@@ -83,67 +83,67 @@ test-all:
 
 test-infra-start:
 	@echo "🐳 Starting test infrastructure (PostgreSQL, Redis, Mock LLM)..."
-	@docker-compose -f docker-compose.test.yml up -d postgres redis mock-llm
+	@docker compose -f docker-compose.test.yml up -d postgres redis mock-llm
 	@echo "⏳ Waiting for services to be ready..."
 	@sleep 5
 	@echo "Checking PostgreSQL..."
 	@for i in 1 2 3 4 5 6 7 8 9 10; do \
-		docker-compose -f docker-compose.test.yml exec -T postgres pg_isready -U superagent -d superagent_db > /dev/null 2>&1 && break; \
+		docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U superagent -d superagent_db > /dev/null 2>&1 && break; \
 		echo "  Waiting for PostgreSQL... ($$i/10)"; \
 		sleep 2; \
 	done
 	@echo "Checking Redis..."
 	@for i in 1 2 3 4 5; do \
-		docker-compose -f docker-compose.test.yml exec -T redis redis-cli ping > /dev/null 2>&1 && break; \
+		docker compose -f docker-compose.test.yml exec -T redis redis-cli ping > /dev/null 2>&1 && break; \
 		echo "  Waiting for Redis... ($$i/5)"; \
 		sleep 1; \
 	done
 	@echo "Checking Mock LLM..."
 	@for i in 1 2 3 4 5 6 7 8 9 10; do \
-		curl -sf http://localhost:8081/health > /dev/null 2>&1 && break; \
+		curl -sf http://localhost:$${MOCK_LLM_PORT:-18081}/health > /dev/null 2>&1 && break; \
 		echo "  Waiting for Mock LLM... ($$i/10)"; \
 		sleep 2; \
 	done
 	@echo "✅ Test infrastructure is ready!"
 	@echo ""
 	@echo "Services available at:"
-	@echo "  PostgreSQL: localhost:5432 (superagent/superagent123)"
-	@echo "  Redis:      localhost:6379 (password: superagent123)"
-	@echo "  Mock LLM:   http://localhost:8081"
+	@echo "  PostgreSQL: localhost:$${POSTGRES_PORT:-15432} (superagent/superagent123)"
+	@echo "  Redis:      localhost:$${REDIS_PORT:-16379} (password: superagent123)"
+	@echo "  Mock LLM:   http://localhost:$${MOCK_LLM_PORT:-18081}"
 
 test-infra-stop:
 	@echo "🐳 Stopping test infrastructure..."
-	@docker-compose -f docker-compose.test.yml down
+	@docker compose -f docker-compose.test.yml down
 	@echo "✅ Test infrastructure stopped"
 
 test-infra-clean:
 	@echo "🧹 Cleaning test infrastructure (including volumes)..."
-	@docker-compose -f docker-compose.test.yml down -v --remove-orphans
+	@docker compose -f docker-compose.test.yml down -v --remove-orphans
 	@echo "✅ Test infrastructure cleaned"
 
 test-infra-logs:
 	@echo "📋 Showing test infrastructure logs..."
-	@docker-compose -f docker-compose.test.yml logs -f
+	@docker compose -f docker-compose.test.yml logs -f
 
 test-infra-status:
 	@echo "📊 Test infrastructure status:"
-	@docker-compose -f docker-compose.test.yml ps
+	@docker compose -f docker-compose.test.yml ps
 
 test-with-infra:
 	@echo "🧪 Running tests with infrastructure..."
 	@$(MAKE) test-infra-start
 	@echo ""
-	@DB_HOST=localhost DB_PORT=5432 DB_USER=superagent DB_PASSWORD=superagent123 DB_NAME=superagent_db \
-		DATABASE_URL="postgres://superagent:superagent123@localhost:5432/superagent_db?sslmode=disable" \
-		REDIS_HOST=localhost REDIS_PORT=6379 REDIS_PASSWORD=superagent123 \
-		REDIS_URL="redis://:superagent123@localhost:6379" \
-		MOCK_LLM_URL=http://localhost:8081 MOCK_LLM_ENABLED=true \
-		CLAUDE_API_KEY=mock-api-key CLAUDE_BASE_URL=http://localhost:8081/v1 \
-		DEEPSEEK_API_KEY=mock-api-key DEEPSEEK_BASE_URL=http://localhost:8081/v1 \
-		GEMINI_API_KEY=mock-api-key GEMINI_BASE_URL=http://localhost:8081/v1 \
-		QWEN_API_KEY=mock-api-key QWEN_BASE_URL=http://localhost:8081/v1 \
-		ZAI_API_KEY=mock-api-key ZAI_BASE_URL=http://localhost:8081/v1 \
-		OLLAMA_BASE_URL=http://localhost:8081 \
+	@DB_HOST=localhost DB_PORT=$${POSTGRES_PORT:-15432} DB_USER=superagent DB_PASSWORD=superagent123 DB_NAME=superagent_db \
+		DATABASE_URL="postgres://superagent:superagent123@localhost:$${POSTGRES_PORT:-15432}/superagent_db?sslmode=disable" \
+		REDIS_HOST=localhost REDIS_PORT=$${REDIS_PORT:-16379} REDIS_PASSWORD=superagent123 \
+		REDIS_URL="redis://:superagent123@localhost:$${REDIS_PORT:-16379}" \
+		MOCK_LLM_URL=http://localhost:$${MOCK_LLM_PORT:-18081} MOCK_LLM_ENABLED=true \
+		CLAUDE_API_KEY=mock-api-key CLAUDE_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
+		DEEPSEEK_API_KEY=mock-api-key DEEPSEEK_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
+		GEMINI_API_KEY=mock-api-key GEMINI_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
+		QWEN_API_KEY=mock-api-key QWEN_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
+		ZAI_API_KEY=mock-api-key ZAI_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
+		OLLAMA_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081} \
 		JWT_SECRET=test-jwt-secret-key-for-testing \
 		CI=true FULL_TEST_MODE=true \
 		go test -v ./... -timeout 300s -cover
@@ -152,7 +152,7 @@ test-with-infra:
 
 test-all-docker:
 	@echo "🐳 Starting test infrastructure and running all tests..."
-	@docker-compose -f docker-compose.test.yml up -d postgres redis mock-llm
+	@docker compose -f docker-compose.test.yml up -d postgres redis mock-llm
 	@echo "⏳ Waiting for services..."
 	@sleep 10
 	@DB_HOST=localhost DB_PORT=5432 DB_USER=superagent DB_PASSWORD=superagent123 DB_NAME=superagent_db \
@@ -165,7 +165,7 @@ test-all-docker:
 		ZAI_API_KEY=mock ZAI_BASE_URL=http://localhost:8081/v1 \
 		OLLAMA_BASE_URL=http://localhost:8081 \
 		CI=true go test -v ./... -timeout 300s
-	@docker-compose -f docker-compose.test.yml down
+	@docker compose -f docker-compose.test.yml down
 
 test-integration-coverage:
 	@echo "🧪 Running integration tests with coverage..."
@@ -264,52 +264,52 @@ docker-build-prod:
 
 docker-run:
 	@echo "🐳 Starting SuperAgent with Docker..."
-	docker-compose up -d
+	docker compose up -d
 
 docker-stop:
 	@echo "🐳 Stopping SuperAgent..."
-	docker-compose down
+	docker compose down
 
 docker-logs:
 	@echo "📋 Showing Docker logs..."
-	docker-compose logs -f
+	docker compose logs -f
 
 docker-clean:
 	@echo "🧹 Cleaning Docker containers..."
-	docker-compose down -v --remove-orphans
+	docker compose down -v --remove-orphans
 
 docker-clean-all:
 	@echo "🧹 Cleaning all Docker resources..."
-	docker-compose down -v --remove-orphans
+	docker compose down -v --remove-orphans
 	docker system prune -f
 	docker volume prune -f
 
 docker-test:
 	@echo "🧪 Running tests in Docker..."
-	docker-compose -f docker-compose.test.yml up --build -d
+	docker compose -f docker-compose.test.yml up --build -d
 	sleep 10
-	docker-compose -f docker-compose.test.yml exec superagent go test ./...
-	docker-compose -f docker-compose.test.yml down
+	docker compose -f docker-compose.test.yml exec superagent go test ./...
+	docker compose -f docker-compose.test.yml down
 
 docker-dev:
 	@echo "🧪 Starting development environment..."
-	docker-compose --profile dev up -d
+	docker compose --profile dev up -d
 
 docker-prod:
 	@echo "🚀 Starting production environment..."
-	docker-compose --profile prod up -d
+	docker compose --profile prod up -d
 
 docker-full:
 	@echo "🚀 Starting full environment..."
-	docker-compose --profile full up -d
+	docker compose --profile full up -d
 
 docker-monitoring:
 	@echo "📊 Starting monitoring stack..."
-	docker-compose --profile monitoring up -d
+	docker compose --profile monitoring up -d
 
 docker-ai:
 	@echo "🤖 Starting AI services..."
-	docker-compose --profile ai up -d
+	docker compose --profile ai up -d
 
 # =============================================================================
 # INSTALLATION TARGETS
