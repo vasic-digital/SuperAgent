@@ -32,6 +32,17 @@ type VulnerabilityResult struct {
 	Severity          string // "Low", "Medium", "High", "Critical"
 }
 
+// checkServerAvailable checks if the test server is reachable
+func checkServerAvailable(baseURL string, timeout time.Duration) bool {
+	client := &http.Client{Timeout: timeout}
+	resp, err := client.Get(baseURL + "/health")
+	if err != nil {
+		return false
+	}
+	resp.Body.Close()
+	return true
+}
+
 // TestInputValidation tests for input validation vulnerabilities
 func TestInputValidation(t *testing.T) {
 	if testing.Short() {
@@ -41,6 +52,11 @@ func TestInputValidation(t *testing.T) {
 	config := SecurityTestConfig{
 		BaseURL: "http://localhost:8080",
 		Timeout: 30 * time.Second,
+	}
+
+	// Skip if server is not available
+	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
+		t.Skip("Skipping security test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("SQLInjection", func(t *testing.T) {
@@ -228,6 +244,11 @@ func TestAuthenticationSecurity(t *testing.T) {
 	config := SecurityTestConfig{
 		BaseURL: "http://localhost:8080",
 		Timeout: 30 * time.Second,
+	}
+
+	// Skip if server is not available
+	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
+		t.Skip("Skipping security test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("UnauthorizedAccess", func(t *testing.T) {
@@ -449,6 +470,11 @@ func TestInformationDisclosure(t *testing.T) {
 	config := SecurityTestConfig{
 		BaseURL: "http://localhost:8080",
 		Timeout: 30 * time.Second,
+	}
+
+	// Skip if server is not available
+	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
+		t.Skip("Skipping security test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("ServerErrorMessages", func(t *testing.T) {

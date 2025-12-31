@@ -35,6 +35,17 @@ type StressTestResult struct {
 	Duration         time.Duration
 }
 
+// checkServerAvailable checks if the test server is reachable
+func checkServerAvailable(baseURL string, timeout time.Duration) bool {
+	client := &http.Client{Timeout: timeout}
+	resp, err := client.Get(baseURL + "/health")
+	if err != nil {
+		return false
+	}
+	resp.Body.Close()
+	return true
+}
+
 // TestHTTPStress performs HTTP stress testing
 func TestHTTPStress(t *testing.T) {
 	if testing.Short() {
@@ -47,6 +58,11 @@ func TestHTTPStress(t *testing.T) {
 		Duration:    30 * time.Second,
 		RequestRate: 100, // 100 req/sec
 		Timeout:     30 * time.Second,
+	}
+
+	// Skip if server is not available
+	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
+		t.Skip("Skipping stress test - server not available at " + config.BaseURL)
 	}
 
 	t.Run("APIEndpointStress", func(t *testing.T) {
@@ -99,6 +115,11 @@ func TestMemoryStress(t *testing.T) {
 		Timeout:     30 * time.Second,
 	}
 
+	// Skip if server is not available
+	if !checkServerAvailable(config.BaseURL, 5*time.Second) {
+		t.Skip("Skipping stress test - server not available at " + config.BaseURL)
+	}
+
 	t.Run("MemoryLeakDetection", func(t *testing.T) {
 		var memStats []runtime.MemStats
 
@@ -139,8 +160,13 @@ func TestConnectionStress(t *testing.T) {
 		t.Skip("Skipping connection stress test in short mode")
 	}
 
+	baseURL := "http://localhost:8080"
+	// Skip if server is not available
+	if !checkServerAvailable(baseURL, 5*time.Second) {
+		t.Skip("Skipping stress test - server not available at " + baseURL)
+	}
+
 	t.Run("MaxConnections", func(t *testing.T) {
-		baseURL := "http://localhost:8080"
 		maxConnections := 1000
 		var wg sync.WaitGroup
 		var mu sync.Mutex
@@ -222,6 +248,11 @@ func TestConnectionStress(t *testing.T) {
 func TestLoadGradual(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping gradual load test in short mode")
+	}
+
+	// Skip if server is not available
+	if !checkServerAvailable("http://localhost:8080", 5*time.Second) {
+		t.Skip("Skipping stress test - server not available")
 	}
 
 	stages := []struct {
