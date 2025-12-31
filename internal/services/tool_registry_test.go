@@ -1,0 +1,470 @@
+package services
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// MockTool implements the Tool interface for testing
+type MockTool struct {
+	name        string
+	description string
+	parameters  map[string]interface{}
+	source      string
+	executeFunc func(ctx context.Context, params map[string]interface{}) (interface{}, error)
+}
+
+func (m *MockTool) Name() string {
+	return m.name
+}
+
+func (m *MockTool) Description() string {
+	return m.description
+}
+
+func (m *MockTool) Parameters() map[string]interface{} {
+	return m.parameters
+}
+
+func (m *MockTool) Execute(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+	if m.executeFunc != nil {
+		return m.executeFunc(ctx, params)
+	}
+	return map[string]interface{}{"result": "success"}, nil
+}
+
+func (m *MockTool) Source() string {
+	return m.source
+}
+
+func newValidMockTool(name string) *MockTool {
+	return &MockTool{
+		name:        name,
+		description: "A test tool for " + name,
+		parameters: map[string]interface{}{
+			"input": map[string]interface{}{
+				"type":        "string",
+				"description": "Input parameter",
+			},
+		},
+		source: "custom",
+	}
+}
+
+func TestNewToolRegistry(t *testing.T) {
+	registry := NewToolRegistry(nil, nil)
+
+	require.NotNil(t, registry)
+	assert.NotNil(t, registry.tools)
+	assert.NotNil(t, registry.customTools)
+	assert.Nil(t, registry.mcpManager)
+	assert.Nil(t, registry.lspClient)
+}
+
+func TestToolRegistry_RegisterCustomTool(t *testing.T) {
+	registry := NewToolRegistry(nil, nil)
+
+	t.Run("register valid tool", func(t *testing.T) {
+		tool := newValidMockTool("test-tool")
+		err := registry.RegisterCustomTool(tool)
+
+		require.NoError(t, err)
+
+		// Verify tool is registered
+		registeredTool, exists := registry.GetTool("test-tool")
+		assert.True(t, exists)
+		assert.Equal(t, "test-tool", registeredTool.Name())
+	})
+
+	t.Run("register duplicate tool fails", func(t *testing.T) {
+		tool := newValidMockTool("duplicate-tool")
+		err := registry.RegisterCustomTool(tool)
+		require.NoError(t, err)
+
+		// Try to register again
+		duplicateTool := newValidMockTool("duplicate-tool")
+		err = registry.RegisterCustomTool(duplicateTool)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already registered")
+	})
+
+	t.Run("register tool with empty name fails", func(t *testing.T) {
+		tool := &MockTool{
+			name:        "",
+			description: "No name tool",
+			parameters:  map[string]interface{}{},
+			source:      "custom",
+		}
+		err := registry.RegisterCustomTool(tool)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "name cannot be empty")
+	})
+
+	t.Run("register tool with empty description fails", func(t *testing.T) {
+		tool := &MockTool{
+			name:        "no-desc-tool",
+			description: "",
+			parameters:  map[string]interface{}{},
+			source:      "custom",
+		}
+		err := registry.RegisterCustomTool(tool)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "description cannot be empty")
+	})
+
+	t.Run("register tool with nil parameters fails", func(t *testing.T) {
+		tool := &MockTool{
+			name:        "nil-params-tool",
+			description: "Tool with nil params",
+			parameters:  nil,
+			source:      "custom",
+		}
+		err := registry.RegisterCustomTool(tool)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "parameters cannot be nil")
+	})
+}
+
+func TestToolRegistry_ValidateParameterSchema(t *testing.T) {
+	registry := NewToolRegistry(nil, nil)
+
+	t.Run("valid parameter schema", func(t *testing.T) {
+		tool := &MockTool{
+			name:        "valid-schema-tool",
+			description: "Tool with valid schema",
+			parameters: map[string]interface{}{
+				"input": map[string]interface{}{
+					"type":        "string",
+					"description": "Input parameter",
+				},
+			},
+			source: "custom",
+		}
+		err := registry.RegisterCustomTool(tool)
+		assert.NoError(t, err)
+	})
+
+	t.Run("parameter schema without type fails", func(t *testing.T) {
+		tool := &MockTool{
+			name:        "no-type-tool",
+			description: "Tool with no type in schema",
+			parameters: map[string]interface{}{
+				"input": map[string]interface{}{
+					"description": "Missing type field",
+				},
+			},
+			source: "custom",
+		}
+		err := registry.RegisterCustomTool(tool)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "must have a type")
+	})
+
+	t.Run("parameter schema not a map fails", func(t *testing.T) {
+		tool := &MockTool{
+			name:        "invalid-schema-tool",
+			description: "Tool with invalid schema",
+			parameters: map[string]interface{}{
+				"input": "not a map",
+			},
+			source: "custom",
+		}
+		err := registry.RegisterCustomTool(tool)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "must be a map")
+	})
+}
+
+func TestToolRegistry_GetTool(t *testing.T) {
+	registry := NewToolRegistry(nil, nil)
+
+	t.Run("get existing tool", func(t *testing.T) {
+		tool := newValidMockTool("get-test-tool")
+		_ = registry.RegisterCustomTool(tool)
+
+		foundTool, exists := registry.GetTool("get-test-tool")
+		assert.True(t, exists)
+		assert.Equal(t, "get-test-tool", foundTool.Name())
+	})
+
+	t.Run("get non-existent tool", func(t *testing.T) {
+		tool, exists := registry.GetTool("non-existent-tool")
+		assert.False(t, exists)
+		assert.Nil(t, tool)
+	})
+}
+
+func TestToolRegistry_ListTools(t *testing.T) {
+	registry := NewToolRegistry(nil, nil)
+
+	t.Run("empty registry", func(t *testing.T) {
+		tools := registry.ListTools()
+		assert.Empty(t, tools)
+	})
+
+	t.Run("with registered tools", func(t *testing.T) {
+		_ = registry.RegisterCustomTool(newValidMockTool("tool-1"))
+		_ = registry.RegisterCustomTool(newValidMockTool("tool-2"))
+		_ = registry.RegisterCustomTool(newValidMockTool("tool-3"))
+
+		tools := registry.ListTools()
+		assert.Len(t, tools, 3)
+	})
+}
+
+func TestToolRegistry_ExecuteTool(t *testing.T) {
+	registry := NewToolRegistry(nil, nil)
+
+	t.Run("execute existing tool", func(t *testing.T) {
+		tool := &MockTool{
+			name:        "exec-tool",
+			description: "Executable tool",
+			parameters: map[string]interface{}{
+				"input": map[string]interface{}{
+					"type": "string",
+				},
+			},
+			source: "custom",
+			executeFunc: func(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+				return map[string]interface{}{"executed": true, "input": params["input"]}, nil
+			},
+		}
+		_ = registry.RegisterCustomTool(tool)
+
+		result, err := registry.ExecuteTool(context.Background(), "exec-tool", map[string]interface{}{"input": "test"})
+		require.NoError(t, err)
+
+		resultMap, ok := result.(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, true, resultMap["executed"])
+		assert.Equal(t, "test", resultMap["input"])
+	})
+
+	t.Run("execute non-existent tool", func(t *testing.T) {
+		result, err := registry.ExecuteTool(context.Background(), "non-existent", nil)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "not found")
+	})
+
+	t.Run("execute with missing required parameter", func(t *testing.T) {
+		tool := &MockTool{
+			name:        "required-param-tool",
+			description: "Tool with required param",
+			parameters: map[string]interface{}{
+				"required_input": map[string]interface{}{
+					"type": "string",
+				},
+			},
+			source: "custom",
+		}
+		_ = registry.RegisterCustomTool(tool)
+
+		result, err := registry.ExecuteTool(context.Background(), "required-param-tool", map[string]interface{}{})
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "missing required parameter")
+	})
+
+	t.Run("execute tool that returns error", func(t *testing.T) {
+		tool := &MockTool{
+			name:        "error-tool",
+			description: "Tool that errors",
+			parameters: map[string]interface{}{
+				"input": map[string]interface{}{
+					"type": "string",
+				},
+			},
+			source: "custom",
+			executeFunc: func(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+				return nil, errors.New("execution failed")
+			},
+		}
+		_ = registry.RegisterCustomTool(tool)
+
+		result, err := registry.ExecuteTool(context.Background(), "error-tool", map[string]interface{}{"input": "test"})
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "execution failed")
+	})
+
+	t.Run("execute with context timeout", func(t *testing.T) {
+		tool := &MockTool{
+			name:        "slow-tool",
+			description: "Slow executing tool",
+			parameters: map[string]interface{}{
+				"input": map[string]interface{}{
+					"type": "string",
+				},
+			},
+			source: "custom",
+			executeFunc: func(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(100 * time.Millisecond):
+					return "completed", nil
+				}
+			},
+		}
+		_ = registry.RegisterCustomTool(tool)
+
+		// Create a context with short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		defer cancel()
+
+		result, err := registry.ExecuteTool(ctx, "slow-tool", map[string]interface{}{"input": "test"})
+		assert.Error(t, err)
+		assert.Nil(t, result)
+	})
+}
+
+func TestToolRegistry_RegisterExternalToolSource(t *testing.T) {
+	registry := NewToolRegistry(nil, nil)
+
+	t.Run("register tools from external source", func(t *testing.T) {
+		fetcher := func() ([]Tool, error) {
+			return []Tool{
+				newValidMockTool("external-tool-1"),
+				newValidMockTool("external-tool-2"),
+			}, nil
+		}
+
+		err := registry.RegisterExternalToolSource("test-source", fetcher)
+		require.NoError(t, err)
+
+		tools := registry.ListTools()
+		assert.Len(t, tools, 2)
+	})
+
+	t.Run("fetcher returns error", func(t *testing.T) {
+		fetcher := func() ([]Tool, error) {
+			return nil, errors.New("fetch failed")
+		}
+
+		err := registry.RegisterExternalToolSource("failing-source", fetcher)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "fetch failed")
+	})
+
+	t.Run("skip duplicate tools from external source", func(t *testing.T) {
+		// Register a tool first
+		_ = registry.RegisterCustomTool(newValidMockTool("existing-tool"))
+
+		fetcher := func() ([]Tool, error) {
+			return []Tool{
+				newValidMockTool("existing-tool"), // Duplicate
+				newValidMockTool("new-tool"),
+			}, nil
+		}
+
+		err := registry.RegisterExternalToolSource("test-source", fetcher)
+		require.NoError(t, err)
+
+		// Should have the original plus new-tool (not duplicate)
+		_, exists := registry.GetTool("existing-tool")
+		assert.True(t, exists)
+		_, exists = registry.GetTool("new-tool")
+		assert.True(t, exists)
+	})
+}
+
+func TestToolRegistry_RefreshTools(t *testing.T) {
+	registry := NewToolRegistry(nil, nil)
+
+	t.Run("refresh keeps custom tools", func(t *testing.T) {
+		// Register custom tool
+		_ = registry.RegisterCustomTool(newValidMockTool("custom-tool"))
+
+		err := registry.RefreshTools(context.Background())
+		require.NoError(t, err)
+
+		// Custom tool should still exist
+		_, exists := registry.GetTool("custom-tool")
+		assert.True(t, exists)
+	})
+
+	t.Run("refresh updates lastRefresh time", func(t *testing.T) {
+		beforeRefresh := time.Now()
+		time.Sleep(10 * time.Millisecond)
+
+		err := registry.RefreshTools(context.Background())
+		require.NoError(t, err)
+
+		assert.True(t, registry.lastRefresh.After(beforeRefresh))
+	})
+}
+
+func TestMCPToolWrapper(t *testing.T) {
+	mcpTool := &MCPTool{
+		Name:        "mcp-test-tool",
+		Description: "An MCP test tool",
+		InputSchema: map[string]interface{}{
+			"param1": map[string]interface{}{
+				"type": "string",
+			},
+		},
+	}
+
+	wrapper := &MCPToolWrapper{
+		mcpTool:    mcpTool,
+		mcpManager: nil,
+	}
+
+	t.Run("Name", func(t *testing.T) {
+		assert.Equal(t, "mcp-test-tool", wrapper.Name())
+	})
+
+	t.Run("Description", func(t *testing.T) {
+		assert.Equal(t, "An MCP test tool", wrapper.Description())
+	})
+
+	t.Run("Parameters", func(t *testing.T) {
+		params := wrapper.Parameters()
+		assert.NotNil(t, params)
+		assert.Contains(t, params, "param1")
+	})
+
+	t.Run("Source", func(t *testing.T) {
+		assert.Equal(t, "mcp", wrapper.Source())
+	})
+}
+
+// Benchmark tests
+func BenchmarkToolRegistry_RegisterCustomTool(b *testing.B) {
+	registry := NewToolRegistry(nil, nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tool := newValidMockTool("bench-tool-" + string(rune(i)))
+		_ = registry.RegisterCustomTool(tool)
+	}
+}
+
+func BenchmarkToolRegistry_GetTool(b *testing.B) {
+	registry := NewToolRegistry(nil, nil)
+	_ = registry.RegisterCustomTool(newValidMockTool("bench-tool"))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = registry.GetTool("bench-tool")
+	}
+}
+
+func BenchmarkToolRegistry_ExecuteTool(b *testing.B) {
+	registry := NewToolRegistry(nil, nil)
+	_ = registry.RegisterCustomTool(newValidMockTool("bench-exec-tool"))
+
+	ctx := context.Background()
+	params := map[string]interface{}{"input": "test"}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = registry.ExecuteTool(ctx, "bench-exec-tool", params)
+	}
+}
