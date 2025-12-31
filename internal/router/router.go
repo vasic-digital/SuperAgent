@@ -95,8 +95,21 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Initialize unified OpenAI-compatible handler
 	unifiedHandler := handlers.NewUnifiedHandler(providerRegistry, cfg)
 
-	// Initialize Cognee handler
-	cogneeHandler := handlers.NewCogneeHandler(cfg)
+	// Initialize Cognee service with all features enabled
+	cogneeService := services.NewCogneeService(cfg, logger)
+
+	// Enhance all LLM providers with Cognee capabilities
+	// This wraps every provider with memory, graph reasoning, and context enhancement
+	if cfg.Cognee.Enabled {
+		if err := services.EnhanceProviderRegistry(providerRegistry, cogneeService, logger); err != nil {
+			logger.WithError(err).Warn("Failed to enhance providers with Cognee, continuing without enhancement")
+		} else {
+			logger.Info("All LLM providers enhanced with Cognee capabilities")
+		}
+	}
+
+	// Initialize Cognee API handler with comprehensive features
+	cogneeAPIHandler := handlers.NewCogneeAPIHandler(cogneeService, logger)
 
 	// Initialize Embedding handler
 	embeddingManager := services.NewEmbeddingManagerWithConfig(nil, sharedCache, logger, services.EmbeddingConfig{
@@ -386,12 +399,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			sessionGroup.GET("", sessionHandler.ListSessions)
 		}
 
-		// Cognee endpoints
-		cogneeGroup := protected.Group("/cognee")
-		{
-			cogneeGroup.GET("/visualize", cogneeHandler.VisualizeGraph)
-			cogneeGroup.GET("/datasets", cogneeHandler.GetDatasets)
-		}
+		// Cognee endpoints - comprehensive API with all features
+		cogneeAPIHandler.RegisterRoutes(protected)
 
 		// LSP endpoints
 		lspGroup := protected.Group("/lsp")
