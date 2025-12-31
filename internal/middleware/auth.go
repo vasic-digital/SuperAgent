@@ -38,9 +38,10 @@ type AuthConfig struct {
 }
 
 // NewAuthMiddleware creates a new authentication middleware
-func NewAuthMiddleware(config AuthConfig, userService *services.UserService) *AuthMiddleware {
+// SECURITY: SecretKey is required and must be provided via configuration
+func NewAuthMiddleware(config AuthConfig, userService *services.UserService) (*AuthMiddleware, error) {
 	if config.SecretKey == "" {
-		config.SecretKey = "default-secret-key-change-in-production"
+		return nil, fmt.Errorf("JWT secret key is required - set JWT_SECRET environment variable")
 	}
 	if config.TokenExpiry == 0 {
 		config.TokenExpiry = 24 * time.Hour
@@ -54,7 +55,7 @@ func NewAuthMiddleware(config AuthConfig, userService *services.UserService) *Au
 		tokenExpiry: config.TokenExpiry,
 		issuer:      config.Issuer,
 		userService: userService,
-	}
+	}, nil
 }
 
 // Middleware returns a Gin middleware function

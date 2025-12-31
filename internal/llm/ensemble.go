@@ -5,35 +5,36 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/superagent/superagent/internal/llm/providers/claude"
-	"github.com/superagent/superagent/internal/llm/providers/deepseek"
-	"github.com/superagent/superagent/internal/llm/providers/gemini"
-	"github.com/superagent/superagent/internal/llm/providers/ollama"
-	"github.com/superagent/superagent/internal/llm/providers/qwen"
-	"github.com/superagent/superagent/internal/llm/providers/zai"
 	"github.com/superagent/superagent/internal/models"
 )
 
-// RunEnsemble executes a parallel ensemble of LLM providers and returns the aggregated responses
+// EnsembleConfig holds configuration for ensemble execution
+type EnsembleConfig struct {
+	Providers []LLMProvider
+}
+
+// RunEnsemble executes a parallel ensemble of LLM providers and returns the aggregated responses.
+// IMPORTANT: Use services.ProviderRegistry.GetEnsembleService() for production code.
+// This standalone function requires pre-configured providers to be passed in.
 func RunEnsemble(req *models.LLMRequest) ([]*models.LLMResponse, *models.LLMResponse, error) {
+	return RunEnsembleWithProviders(req, nil)
+}
+
+// RunEnsembleWithProviders executes a parallel ensemble with the given providers.
+// If providers is nil or empty, returns an error requiring explicit provider configuration.
+func RunEnsembleWithProviders(req *models.LLMRequest, providers []LLMProvider) ([]*models.LLMResponse, *models.LLMResponse, error) {
 	if req == nil {
 		return nil, nil, fmt.Errorf("request cannot be nil")
 	}
 
-	// Initialize providers with default configurations
-	provs := []LLMProvider{
-		ollama.NewOllamaProvider("", ""),
-		deepseek.NewDeepSeekProvider("", "", ""),
-		claude.NewClaudeProvider("", "", ""),
-		gemini.NewGeminiProvider("", "", ""),
-		qwen.NewQwenProvider("", "", ""),
-		zai.NewZAIProvider("", "", ""),
+	if len(providers) == 0 {
+		return nil, nil, fmt.Errorf("no providers configured - use services.ProviderRegistry for proper credential injection")
 	}
 
 	var wg sync.WaitGroup
-	respCh := make(chan *models.LLMResponse, len(provs))
+	respCh := make(chan *models.LLMResponse, len(providers))
 
-	for _, p := range provs {
+	for _, p := range providers {
 		pp := p
 		wg.Add(1)
 		go func() {

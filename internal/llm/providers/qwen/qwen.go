@@ -6,18 +6,38 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/superagent/superagent/internal/models"
 )
 
+// RetryConfig defines retry behavior for API calls
+type RetryConfig struct {
+	MaxRetries   int
+	InitialDelay time.Duration
+	MaxDelay     time.Duration
+	Multiplier   float64
+}
+
+// DefaultRetryConfig returns sensible defaults for Qwen API retry behavior
+func DefaultRetryConfig() RetryConfig {
+	return RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 1 * time.Second,
+		MaxDelay:     30 * time.Second,
+		Multiplier:   2.0,
+	}
+}
+
 // QwenProvider implements the LLMProvider interface for Alibaba Cloud Qwen
 type QwenProvider struct {
-	apiKey     string
-	baseURL    string
-	model      string
-	httpClient *http.Client
+	apiKey      string
+	baseURL     string
+	model       string
+	httpClient  *http.Client
+	retryConfig RetryConfig
 }
 
 // QwenRequest represents a request to the Qwen API
@@ -72,6 +92,11 @@ type QwenError struct {
 
 // NewQwenProvider creates a new Qwen provider instance
 func NewQwenProvider(apiKey, baseURL, model string) *QwenProvider {
+	return NewQwenProviderWithRetry(apiKey, baseURL, model, DefaultRetryConfig())
+}
+
+// NewQwenProviderWithRetry creates a new Qwen provider instance with custom retry config
+func NewQwenProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig) *QwenProvider {
 	if baseURL == "" {
 		baseURL = "https://dashscope.aliyuncs.com/api/v1"
 	}
@@ -86,6 +111,7 @@ func NewQwenProvider(apiKey, baseURL, model string) *QwenProvider {
 		httpClient: &http.Client{
 			Timeout: 60 * time.Second,
 		},
+		retryConfig: retryConfig,
 	}
 }
 
@@ -309,44 +335,106 @@ func (q *QwenProvider) convertFromQwenResponse(resp *QwenResponse, requestID str
 	}, nil
 }
 
-// makeRequest sends a request to the Qwen API
+// makeRequest sends a request to the Qwen API with retry logic
 func (q *QwenProvider) makeRequest(ctx context.Context, req *QwenRequest) (*QwenResponse, error) {
 	jsonData, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", q.baseURL+"/services/aigc/text-generation/generation", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
-	}
+	var lastErr error
+	delay := q.retryConfig.InitialDelay
 
-	httpReq.Header.Set("Authorization", "Bearer "+q.apiKey)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := q.httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		var qwenErr QwenError
-		if err := json.Unmarshal(body, &qwenErr); err == nil && qwenErr.Error.Message != "" {
-			return nil, fmt.Errorf("Qwen API error: %s (%s)", qwenErr.Error.Message, qwenErr.Error.Type)
+	for attempt := 0; attempt <= q.retryConfig.MaxRetries; attempt++ {
+		// Check context before making request
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+		default:
 		}
-		return nil, fmt.Errorf("Qwen API returned status %d: %s", resp.StatusCode, string(body))
+
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", q.baseURL+"/services/aigc/text-generation/generation", bytes.NewBuffer(jsonData))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+		}
+
+		httpReq.Header.Set("Authorization", "Bearer "+q.apiKey)
+		httpReq.Header.Set("Content-Type", "application/json")
+
+		resp, err := q.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = fmt.Errorf("HTTP request failed: %w", err)
+			if attempt < q.retryConfig.MaxRetries {
+				q.waitWithJitter(ctx, delay)
+				delay = q.nextDelay(delay)
+				continue
+			}
+			return nil, lastErr
+		}
+
+		// Check for retryable status codes
+		if isRetryableStatus(resp.StatusCode) && attempt < q.retryConfig.MaxRetries {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
+			q.waitWithJitter(ctx, delay)
+			delay = q.nextDelay(delay)
+			continue
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			var qwenErr QwenError
+			if err := json.Unmarshal(body, &qwenErr); err == nil && qwenErr.Error.Message != "" {
+				return nil, fmt.Errorf("Qwen API error: %s (%s)", qwenErr.Error.Message, qwenErr.Error.Type)
+			}
+			return nil, fmt.Errorf("Qwen API returned status %d: %s", resp.StatusCode, string(body))
+		}
+
+		var qwenResp QwenResponse
+		if err := json.Unmarshal(body, &qwenResp); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		return &qwenResp, nil
 	}
 
-	var qwenResp QwenResponse
-	if err := json.Unmarshal(body, &qwenResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
+	return nil, fmt.Errorf("all %d retry attempts failed: %w", q.retryConfig.MaxRetries+1, lastErr)
+}
 
-	return &qwenResp, nil
+// isRetryableStatus returns true for HTTP status codes that warrant a retry
+func isRetryableStatus(statusCode int) bool {
+	switch statusCode {
+	case http.StatusTooManyRequests,       // 429 - Rate limited
+		http.StatusInternalServerError,     // 500
+		http.StatusBadGateway,              // 502
+		http.StatusServiceUnavailable,      // 503
+		http.StatusGatewayTimeout:          // 504
+		return true
+	default:
+		return false
+	}
+}
+
+// waitWithJitter waits for the specified duration plus random jitter
+func (q *QwenProvider) waitWithJitter(ctx context.Context, delay time.Duration) {
+	// Add 10% jitter
+	jitter := time.Duration(rand.Float64() * 0.1 * float64(delay))
+	select {
+	case <-ctx.Done():
+	case <-time.After(delay + jitter):
+	}
+}
+
+// nextDelay calculates the next delay using exponential backoff
+func (q *QwenProvider) nextDelay(currentDelay time.Duration) time.Duration {
+	nextDelay := time.Duration(float64(currentDelay) * q.retryConfig.Multiplier)
+	if nextDelay > q.retryConfig.MaxDelay {
+		nextDelay = q.retryConfig.MaxDelay
+	}
+	return nextDelay
 }

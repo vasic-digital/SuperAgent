@@ -75,12 +75,12 @@ func TestNewSimpleOpenRouterProviderWithBaseURL(t *testing.T) {
 			},
 		},
 		{
-			name:    "empty base URL",
+			name:    "empty base URL defaults to standard URL",
 			apiKey:  "test-key",
 			baseURL: "",
 			want: &SimpleOpenRouterProvider{
 				apiKey:  "test-key",
-				baseURL: "",
+				baseURL: "https://openrouter.ai/api/v1", // Defaults to standard URL when empty
 				client: &http.Client{
 					Timeout: 60 * time.Second,
 				},

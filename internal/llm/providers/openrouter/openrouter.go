@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -15,32 +16,54 @@ const (
 	defaultBaseURL = "https://openrouter.ai/api/v1"
 )
 
+// RetryConfig defines retry behavior for API calls
+type RetryConfig struct {
+	MaxRetries   int
+	InitialDelay time.Duration
+	MaxDelay     time.Duration
+	Multiplier   float64
+}
+
+// DefaultRetryConfig returns sensible defaults for OpenRouter API retry behavior
+func DefaultRetryConfig() RetryConfig {
+	return RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 1 * time.Second,
+		MaxDelay:     30 * time.Second,
+		Multiplier:   2.0,
+	}
+}
+
 // SimpleOpenRouterProvider implements LLM provider interface for OpenRouter
 type SimpleOpenRouterProvider struct {
-	apiKey  string
-	baseURL string
-	client  *http.Client
+	apiKey      string
+	baseURL     string
+	client      *http.Client
+	retryConfig RetryConfig
 }
 
 // NewSimpleOpenRouterProvider creates a new OpenRouter provider
 func NewSimpleOpenRouterProvider(apiKey string) *SimpleOpenRouterProvider {
-	return &SimpleOpenRouterProvider{
-		apiKey:  apiKey,
-		baseURL: defaultBaseURL,
-		client: &http.Client{
-			Timeout: 60 * time.Second,
-		},
-	}
+	return NewSimpleOpenRouterProviderWithRetry(apiKey, defaultBaseURL, DefaultRetryConfig())
 }
 
 // NewSimpleOpenRouterProviderWithBaseURL creates a new OpenRouter provider with custom base URL
 func NewSimpleOpenRouterProviderWithBaseURL(apiKey, baseURL string) *SimpleOpenRouterProvider {
+	return NewSimpleOpenRouterProviderWithRetry(apiKey, baseURL, DefaultRetryConfig())
+}
+
+// NewSimpleOpenRouterProviderWithRetry creates a new OpenRouter provider with custom retry config
+func NewSimpleOpenRouterProviderWithRetry(apiKey, baseURL string, retryConfig RetryConfig) *SimpleOpenRouterProvider {
+	if baseURL == "" {
+		baseURL = defaultBaseURL
+	}
 	return &SimpleOpenRouterProvider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		client: &http.Client{
 			Timeout: 60 * time.Second,
 		},
+		retryConfig: retryConfig,
 	}
 }
 
@@ -76,84 +99,148 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 		return nil, fmt.Errorf("failed to marshal OpenRouter request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+"/chat/completions", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create OpenRouter request: %w", err)
+	// Retry loop with exponential backoff
+	var lastErr error
+	delay := p.retryConfig.InitialDelay
+
+	for attempt := 0; attempt <= p.retryConfig.MaxRetries; attempt++ {
+		// Check context before making request
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+		default:
+		}
+
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+"/chat/completions", bytes.NewBuffer(jsonData))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create OpenRouter request: %w", err)
+		}
+
+		// Set headers
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
+		httpReq.Header.Set("HTTP-Referer", "superagent")
+
+		// Make request
+		resp, err := p.client.Do(httpReq)
+		if err != nil {
+			lastErr = fmt.Errorf("OpenRouter API request failed: %w", err)
+			if attempt < p.retryConfig.MaxRetries {
+				p.waitWithJitter(ctx, delay)
+				delay = p.nextDelay(delay)
+				continue
+			}
+			return nil, lastErr
+		}
+
+		// Check for retryable status codes
+		if isRetryableStatus(resp.StatusCode) && attempt < p.retryConfig.MaxRetries {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
+			p.waitWithJitter(ctx, delay)
+			delay = p.nextDelay(delay)
+			continue
+		}
+
+		// Parse response
+		var orResp struct {
+			ID      string `json:"id"`
+			Choices []struct {
+				Message struct {
+					Role    string `json:"role"`
+					Content string `json:"content"`
+				} `json:"message"`
+			} `json:"choices"`
+			Created int64  `json:"created"`
+			Model   string `json:"model"`
+			Usage   *struct {
+				PromptTokens     int `json:"prompt_tokens"`
+				CompletionTokens int `json:"completion_tokens"`
+				TotalTokens      int `json:"total_tokens"`
+			} `json:"usage,omitempty"`
+			Error *struct {
+				Message string `json:"message"`
+				Type    string `json:"type"`
+				Code    int    `json:"code,omitempty"`
+			} `json:"error,omitempty"`
+		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&orResp); err != nil {
+			resp.Body.Close()
+			return nil, fmt.Errorf("failed to decode OpenRouter response: %w", err)
+		}
+		resp.Body.Close()
+
+		if orResp.Error != nil {
+			return nil, fmt.Errorf("OpenRouter API error: %s", orResp.Error.Message)
+		}
+
+		// Convert to internal response format
+		if len(orResp.Choices) == 0 {
+			return nil, fmt.Errorf("no choices in OpenRouter response")
+		}
+
+		choice := orResp.Choices[0]
+		response := &models.LLMResponse{
+			ID:           orResp.ID,
+			RequestID:    req.ID,
+			ProviderID:   "openrouter",
+			ProviderName: "OpenRouter",
+			Content:      choice.Message.Content,
+			Confidence:   0.85, // OpenRouter doesn't provide confidence
+			TokensUsed:   0,
+			ResponseTime: time.Now().UnixMilli(),
+			FinishReason: "stop",
+			Metadata: map[string]any{
+				"model":    orResp.Model,
+				"provider": "openrouter",
+			},
+			Selected:       false,
+			SelectionScore: 0.0,
+			CreatedAt:      time.Now(),
+		}
+
+		if orResp.Usage != nil {
+			response.TokensUsed = orResp.Usage.TotalTokens
+		}
+
+		return response, nil
 	}
 
-	// Set headers
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
-	httpReq.Header.Set("HTTP-Referer", "superagent")
+	return nil, fmt.Errorf("all %d retry attempts failed: %w", p.retryConfig.MaxRetries+1, lastErr)
+}
 
-	// Make request
-	resp, err := p.client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("OpenRouter API request failed: %w", err)
+// isRetryableStatus returns true for HTTP status codes that warrant a retry
+func isRetryableStatus(statusCode int) bool {
+	switch statusCode {
+	case http.StatusTooManyRequests,       // 429 - Rate limited
+		http.StatusInternalServerError,     // 500
+		http.StatusBadGateway,              // 502
+		http.StatusServiceUnavailable,      // 503
+		http.StatusGatewayTimeout:          // 504
+		return true
+	default:
+		return false
 	}
-	defer resp.Body.Close()
+}
 
-	// Parse response
-	var orResp struct {
-		ID      string `json:"id"`
-		Choices []struct {
-			Message struct {
-				Role    string `json:"role"`
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
-		Created int64  `json:"created"`
-		Model   string `json:"model"`
-		Usage   *struct {
-			PromptTokens     int `json:"prompt_tokens"`
-			CompletionTokens int `json:"completion_tokens"`
-			TotalTokens      int `json:"total_tokens"`
-		} `json:"usage,omitempty"`
-		Error *struct {
-			Message string `json:"message"`
-			Type    string `json:"type"`
-			Code    int    `json:"code,omitempty"`
-		} `json:"error,omitempty"`
+// waitWithJitter waits for the specified duration plus random jitter
+func (p *SimpleOpenRouterProvider) waitWithJitter(ctx context.Context, delay time.Duration) {
+	// Add 10% jitter
+	jitter := time.Duration(rand.Float64() * 0.1 * float64(delay))
+	select {
+	case <-ctx.Done():
+	case <-time.After(delay + jitter):
 	}
+}
 
-	if err := json.NewDecoder(resp.Body).Decode(&orResp); err != nil {
-		return nil, fmt.Errorf("failed to decode OpenRouter response: %w", err)
+// nextDelay calculates the next delay using exponential backoff
+func (p *SimpleOpenRouterProvider) nextDelay(currentDelay time.Duration) time.Duration {
+	nextDelay := time.Duration(float64(currentDelay) * p.retryConfig.Multiplier)
+	if nextDelay > p.retryConfig.MaxDelay {
+		nextDelay = p.retryConfig.MaxDelay
 	}
-
-	if orResp.Error != nil {
-		return nil, fmt.Errorf("OpenRouter API error: %s", orResp.Error.Message)
-	}
-
-	// Convert to internal response format
-	if len(orResp.Choices) == 0 {
-		return nil, fmt.Errorf("no choices in OpenRouter response")
-	}
-
-	choice := orResp.Choices[0]
-	response := &models.LLMResponse{
-		ID:           orResp.ID,
-		RequestID:    req.ID,
-		ProviderID:   "openrouter",
-		ProviderName: "OpenRouter",
-		Content:      choice.Message.Content,
-		Confidence:   0.85, // OpenRouter doesn't provide confidence
-		TokensUsed:   0,
-		ResponseTime: time.Now().UnixMilli(),
-		FinishReason: "stop",
-		Metadata: map[string]any{
-			"model":    orResp.Model,
-			"provider": "openrouter",
-		},
-		Selected:       false,
-		SelectionScore: 0.0,
-		CreatedAt:      time.Now(),
-	}
-
-	if orResp.Usage != nil {
-		response.TokensUsed = orResp.Usage.TotalTokens
-	}
-
-	return response, nil
+	return nextDelay
 }
 
 // CompleteStream implements streaming completion

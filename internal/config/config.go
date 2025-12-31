@@ -174,8 +174,8 @@ func Load() *Config {
 	return &Config{
 		Server: ServerConfig{
 			Port:           getEnv("PORT", "8080"),
-			APIKey:         getEnv("SUPERAGENT_API_KEY", "development-key"),
-			JWTSecret:      getEnv("JWT_SECRET", "development-jwt-secret-key-change-in-production"),
+			APIKey:         getEnv("SUPERAGENT_API_KEY", ""), // SECURITY: Must be set via environment variable
+			JWTSecret:      getEnv("JWT_SECRET", ""),         // SECURITY: Must be set via environment variable
 			ReadTimeout:    getDurationEnv("READ_TIMEOUT", 30*time.Second),
 			WriteTimeout:   getDurationEnv("WRITE_TIMEOUT", 30*time.Second),
 			TokenExpiry:    getDurationEnv("TOKEN_EXPIRY", 24*time.Hour),

@@ -10,24 +10,15 @@ import (
 )
 
 func TestNewAuthMiddleware(t *testing.T) {
-	t.Run("DefaultConfig", func(t *testing.T) {
+	t.Run("EmptySecretKeyReturnsError", func(t *testing.T) {
 		config := AuthConfig{}
-		middleware := NewAuthMiddleware(config, nil)
+		middleware, err := NewAuthMiddleware(config, nil)
 
-		if middleware == nil {
-			t.Fatal("Expected middleware instance, got nil")
+		if err == nil {
+			t.Error("Expected error for empty secret key, got nil")
 		}
-
-		if middleware.secretKey != "default-secret-key-change-in-production" {
-			t.Errorf("Expected default secret key, got %s", middleware.secretKey)
-		}
-
-		if middleware.tokenExpiry != 24*time.Hour {
-			t.Errorf("Expected 24 hour token expiry, got %v", middleware.tokenExpiry)
-		}
-
-		if middleware.issuer != "superagent" {
-			t.Errorf("Expected issuer 'superagent', got %s", middleware.issuer)
+		if middleware != nil {
+			t.Error("Expected nil middleware for empty secret key")
 		}
 	})
 
@@ -37,7 +28,11 @@ func TestNewAuthMiddleware(t *testing.T) {
 			TokenExpiry: 2 * time.Hour,
 			Issuer:      "custom-issuer",
 		}
-		middleware := NewAuthMiddleware(config, nil)
+		middleware, err := NewAuthMiddleware(config, nil)
+
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
 
 		if middleware.secretKey != "custom-secret-key" {
 			t.Errorf("Expected custom secret key, got %s", middleware.secretKey)
@@ -51,6 +46,25 @@ func TestNewAuthMiddleware(t *testing.T) {
 			t.Errorf("Expected issuer 'custom-issuer', got %s", middleware.issuer)
 		}
 	})
+
+	t.Run("DefaultTokenExpiryAndIssuer", func(t *testing.T) {
+		config := AuthConfig{
+			SecretKey: "test-secret-key",
+		}
+		middleware, err := NewAuthMiddleware(config, nil)
+
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+
+		if middleware.tokenExpiry != 24*time.Hour {
+			t.Errorf("Expected 24 hour default token expiry, got %v", middleware.tokenExpiry)
+		}
+
+		if middleware.issuer != "superagent" {
+			t.Errorf("Expected default issuer 'superagent', got %s", middleware.issuer)
+		}
+	})
 }
 
 func TestAuthMiddleware_GenerateToken(t *testing.T) {
@@ -58,7 +72,10 @@ func TestAuthMiddleware_GenerateToken(t *testing.T) {
 		SecretKey:   "test-secret-key",
 		TokenExpiry: time.Hour,
 	}
-	middleware := NewAuthMiddleware(config, nil)
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
 
 	t.Run("ValidTokenGeneration", func(t *testing.T) {
 		token, err := middleware.GenerateToken("user123", "testuser", "user")
@@ -111,7 +128,10 @@ func TestAuthMiddleware_ValidateToken(t *testing.T) {
 		SecretKey:   "test-secret-key",
 		TokenExpiry: time.Hour,
 	}
-	middleware := NewAuthMiddleware(config, nil)
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
 
 	t.Run("ValidToken", func(t *testing.T) {
 		token, err := middleware.GenerateToken("user123", "testuser", "user")
@@ -148,7 +168,10 @@ func TestAuthMiddleware_ValidateToken(t *testing.T) {
 			SecretKey:   "wrong-secret-key",
 			TokenExpiry: time.Hour,
 		}
-		wrongMiddleware := NewAuthMiddleware(wrongConfig, nil)
+		wrongMiddleware, err := NewAuthMiddleware(wrongConfig, nil)
+		if err != nil {
+			t.Fatalf("Failed to create wrong middleware: %v", err)
+		}
 
 		_, err = wrongMiddleware.validateToken(token)
 		if err == nil {
@@ -158,8 +181,13 @@ func TestAuthMiddleware_ValidateToken(t *testing.T) {
 }
 
 func TestAuthMiddleware_ExtractTokenFromHeader(t *testing.T) {
-	config := AuthConfig{}
-	middleware := NewAuthMiddleware(config, nil)
+	config := AuthConfig{
+		SecretKey: "test-secret-key",
+	}
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
 
 	t.Run("ValidBearerToken", func(t *testing.T) {
 		authHeader := "Bearer test.token.here"
@@ -201,7 +229,10 @@ func TestAuthMiddleware_RefreshToken(t *testing.T) {
 		SecretKey:   "test-secret-key",
 		TokenExpiry: time.Hour,
 	}
-	middleware := NewAuthMiddleware(config, nil)
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
 
 	t.Run("ValidRefresh", func(t *testing.T) {
 		originalToken, err := middleware.GenerateToken("user123", "testuser", "user")
@@ -242,7 +273,10 @@ func TestAuthMiddleware_Middleware(t *testing.T) {
 		SecretKey:   "test-secret-key",
 		TokenExpiry: time.Hour,
 	}
-	middleware := NewAuthMiddleware(config, nil)
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
 
 	// Create a test Gin engine
 	gin.SetMode(gin.TestMode)
@@ -311,7 +345,10 @@ func TestAuthMiddleware_Optional(t *testing.T) {
 		SecretKey:   "test-secret-key",
 		TokenExpiry: time.Hour,
 	}
-	middleware := NewAuthMiddleware(config, nil)
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
 
 	// Create a test Gin engine
 	gin.SetMode(gin.TestMode)
@@ -355,7 +392,10 @@ func TestAuthMiddleware_RequireRole(t *testing.T) {
 		SecretKey:   "test-secret-key",
 		TokenExpiry: time.Hour,
 	}
-	middleware := NewAuthMiddleware(config, nil)
+	middleware, err := NewAuthMiddleware(config, nil)
+	if err != nil {
+		t.Fatalf("Failed to create middleware: %v", err)
+	}
 
 	// Create a test Gin engine
 	gin.SetMode(gin.TestMode)
@@ -443,168 +483,6 @@ func TestHelperFunctions(t *testing.T) {
 		isAdmin := IsAdmin(c)
 		if isAdmin {
 			t.Error("Expected false for non-admin user")
-		}
-	})
-}
-
-func TestGenerateToken(t *testing.T) {
-	config := AuthConfig{
-		SecretKey:   "test-secret-key",
-		TokenExpiry: time.Hour,
-	}
-	middleware := NewAuthMiddleware(config, nil)
-
-	t.Run("ValidTokenGeneration", func(t *testing.T) {
-		token, err := middleware.GenerateToken("user123", "testuser", "user")
-		if err != nil {
-			t.Fatalf("Failed to generate token: %v", err)
-		}
-
-		if token == "" {
-			t.Fatal("Expected non-empty token, got empty string")
-		}
-
-		// Validate the token
-		claims, err := middleware.validateToken(token)
-		if err != nil {
-			t.Fatalf("Failed to validate generated token: %v", err)
-		}
-
-		if claims.UserID != "user123" {
-			t.Errorf("Expected user ID 'user123', got %s", claims.UserID)
-		}
-
-		if claims.Username != "testuser" {
-			t.Errorf("Expected username 'testuser', got %s", claims.Username)
-		}
-
-		if claims.Role != "user" {
-			t.Errorf("Expected role 'user', got %s", claims.Role)
-		}
-
-		if claims.Issuer != "superagent" {
-			t.Errorf("Expected issuer 'superagent', got %s", claims.Issuer)
-		}
-	})
-
-	t.Run("DifferentRoles", func(t *testing.T) {
-		testCases := []struct {
-			userID   string
-			username string
-			role     string
-		}{
-			{"admin1", "adminuser", "admin"},
-			{"mod1", "moduser", "moderator"},
-			{"user1", "regularuser", "user"},
-		}
-
-		for _, tc := range testCases {
-			token, err := middleware.GenerateToken(tc.userID, tc.username, tc.role)
-			if err != nil {
-				t.Fatalf("Failed to generate token for %s: %v", tc.role, err)
-			}
-
-			claims, err := middleware.validateToken(token)
-			if err != nil {
-				t.Fatalf("Failed to validate token for %s: %v", tc.role, err)
-			}
-
-			if claims.Role != tc.role {
-				t.Errorf("Expected role %s, got %s", tc.role, claims.Role)
-			}
-		}
-	})
-}
-
-func TestValidateToken(t *testing.T) {
-	config := AuthConfig{
-		SecretKey:   "test-secret-key",
-		TokenExpiry: time.Hour,
-	}
-	middleware := NewAuthMiddleware(config, nil)
-
-	t.Run("ValidToken", func(t *testing.T) {
-		token, err := middleware.GenerateToken("user123", "testuser", "user")
-		if err != nil {
-			t.Fatalf("Failed to generate token: %v", err)
-		}
-
-		claims, err := middleware.validateToken(token)
-		if err != nil {
-			t.Fatalf("Failed to validate valid token: %v", err)
-		}
-
-		if claims.UserID != "user123" {
-			t.Errorf("Expected user ID 'user123', got %s", claims.UserID)
-		}
-	})
-
-	t.Run("InvalidTokenFormat", func(t *testing.T) {
-		_, err := middleware.validateToken("invalid.token.format")
-		if err == nil {
-			t.Error("Expected error for invalid token format, got nil")
-		}
-	})
-
-	t.Run("EmptyToken", func(t *testing.T) {
-		_, err := middleware.validateToken("")
-		if err == nil {
-			t.Error("Expected error for empty token, got nil")
-		}
-	})
-
-	t.Run("TamperedToken", func(t *testing.T) {
-		token, err := middleware.GenerateToken("user123", "testuser", "user")
-		if err != nil {
-			t.Fatalf("Failed to generate token: %v", err)
-		}
-
-		// Tamper with the token
-		tamperedToken := token[:len(token)-5] + "xxxxx"
-		_, err = middleware.validateToken(tamperedToken)
-		if err == nil {
-			t.Error("Expected error for tampered token, got nil")
-		}
-	})
-
-	t.Run("WrongSecretKey", func(t *testing.T) {
-		token, err := middleware.GenerateToken("user123", "testuser", "user")
-		if err != nil {
-			t.Fatalf("Failed to generate token: %v", err)
-		}
-
-		// Create middleware with different secret key
-		wrongConfig := AuthConfig{
-			SecretKey:   "different-secret-key",
-			TokenExpiry: time.Hour,
-		}
-		wrongMiddleware := NewAuthMiddleware(wrongConfig, nil)
-
-		_, err = wrongMiddleware.validateToken(token)
-		if err == nil {
-			t.Error("Expected error for token with wrong secret key, got nil")
-		}
-	})
-
-	t.Run("ExpiredToken", func(t *testing.T) {
-		// Create middleware with very short expiry
-		shortConfig := AuthConfig{
-			SecretKey:   "test-secret-key",
-			TokenExpiry: time.Millisecond,
-		}
-		shortMiddleware := NewAuthMiddleware(shortConfig, nil)
-
-		token, err := shortMiddleware.GenerateToken("user123", "testuser", "user")
-		if err != nil {
-			t.Fatalf("Failed to generate token: %v", err)
-		}
-
-		// Wait for token to expire
-		time.Sleep(2 * time.Millisecond)
-
-		_, err = shortMiddleware.validateToken(token)
-		if err == nil {
-			t.Error("Expected error for expired token, got nil")
 		}
 	})
 }

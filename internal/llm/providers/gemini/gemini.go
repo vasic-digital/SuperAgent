@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -19,10 +20,19 @@ const (
 )
 
 type GeminiProvider struct {
-	apiKey     string
-	baseURL    string
-	model      string
-	httpClient *http.Client
+	apiKey      string
+	baseURL     string
+	model       string
+	httpClient  *http.Client
+	retryConfig RetryConfig
+}
+
+// RetryConfig defines retry behavior for API calls
+type RetryConfig struct {
+	MaxRetries   int
+	InitialDelay time.Duration
+	MaxDelay     time.Duration
+	Multiplier   float64
 }
 
 type GeminiRequest struct {
@@ -95,7 +105,21 @@ type GeminiStreamResponse struct {
 	UsageMetadata *GeminiUsageMetadata `json:"usageMetadata,omitempty"`
 }
 
+// DefaultRetryConfig returns sensible defaults for Gemini API retry behavior
+func DefaultRetryConfig() RetryConfig {
+	return RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 1 * time.Second,
+		MaxDelay:     30 * time.Second,
+		Multiplier:   2.0,
+	}
+}
+
 func NewGeminiProvider(apiKey, baseURL, model string) *GeminiProvider {
+	return NewGeminiProviderWithRetry(apiKey, baseURL, model, DefaultRetryConfig())
+}
+
+func NewGeminiProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig) *GeminiProvider {
 	if baseURL == "" {
 		baseURL = GeminiAPIURL
 	}
@@ -110,6 +134,7 @@ func NewGeminiProvider(apiKey, baseURL, model string) *GeminiProvider {
 		httpClient: &http.Client{
 			Timeout: 60 * time.Second,
 		},
+		retryConfig: retryConfig,
 	}
 }
 
@@ -416,24 +441,87 @@ func (p *GeminiProvider) makeAPICall(ctx context.Context, req GeminiRequest) (*h
 	// Build URL with model
 	url := fmt.Sprintf(p.baseURL, p.model)
 
-	// Create HTTP request
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+	var lastErr error
+	delay := p.retryConfig.InitialDelay
+
+	for attempt := 0; attempt <= p.retryConfig.MaxRetries; attempt++ {
+		// Check context before making request
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+		default:
+		}
+
+		// Create HTTP request (fresh for each attempt)
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		// Set headers
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("x-goog-api-key", p.apiKey)
+		httpReq.Header.Set("User-Agent", "SuperAgent/1.0")
+
+		// Make request
+		resp, err := p.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = fmt.Errorf("HTTP request failed: %w", err)
+			// Retry on network errors
+			if attempt < p.retryConfig.MaxRetries {
+				p.waitWithJitter(ctx, delay)
+				delay = p.nextDelay(delay)
+				continue
+			}
+			return nil, lastErr
+		}
+
+		// Check for retryable status codes
+		if isRetryableStatus(resp.StatusCode) && attempt < p.retryConfig.MaxRetries {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
+			p.waitWithJitter(ctx, delay)
+			delay = p.nextDelay(delay)
+			continue
+		}
+
+		return resp, nil
 	}
 
-	// Set headers
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("x-goog-api-key", p.apiKey)
-	httpReq.Header.Set("User-Agent", "SuperAgent/1.0")
+	return nil, fmt.Errorf("all %d retry attempts failed: %w", p.retryConfig.MaxRetries+1, lastErr)
+}
 
-	// Make request
-	resp, err := p.httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
+// isRetryableStatus returns true for HTTP status codes that warrant a retry
+func isRetryableStatus(statusCode int) bool {
+	switch statusCode {
+	case http.StatusTooManyRequests,       // 429 - Rate limited
+		http.StatusInternalServerError,     // 500
+		http.StatusBadGateway,              // 502
+		http.StatusServiceUnavailable,      // 503
+		http.StatusGatewayTimeout:          // 504
+		return true
+	default:
+		return false
 	}
+}
 
-	return resp, nil
+// waitWithJitter waits for the specified duration plus random jitter
+func (p *GeminiProvider) waitWithJitter(ctx context.Context, delay time.Duration) {
+	// Add 10% jitter
+	jitter := time.Duration(rand.Float64() * 0.1 * float64(delay))
+	select {
+	case <-ctx.Done():
+	case <-time.After(delay + jitter):
+	}
+}
+
+// nextDelay calculates the next delay using exponential backoff
+func (p *GeminiProvider) nextDelay(currentDelay time.Duration) time.Duration {
+	nextDelay := time.Duration(float64(currentDelay) * p.retryConfig.Multiplier)
+	if nextDelay > p.retryConfig.MaxDelay {
+		nextDelay = p.retryConfig.MaxDelay
+	}
+	return nextDelay
 }
 
 // GetCapabilities returns the capabilities of the Gemini provider

@@ -579,6 +579,20 @@ const (
 	StateHalfOpen
 )
 
+// String returns the string representation of CircuitState
+func (s CircuitState) String() string {
+	switch s {
+	case StateClosed:
+		return "closed"
+	case StateOpen:
+		return "open"
+	case StateHalfOpen:
+		return "half-open"
+	default:
+		return "unknown"
+	}
+}
+
 // NewCircuitBreaker creates a new circuit breaker
 func NewCircuitBreaker(failureThreshold, successThreshold int, timeout time.Duration) *CircuitBreaker {
 	return &CircuitBreaker{

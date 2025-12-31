@@ -6,17 +6,37 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/superagent/superagent/internal/models"
 )
 
+// RetryConfig defines retry behavior for API calls
+type RetryConfig struct {
+	MaxRetries   int
+	InitialDelay time.Duration
+	MaxDelay     time.Duration
+	Multiplier   float64
+}
+
+// DefaultRetryConfig returns sensible defaults for Ollama API retry behavior
+func DefaultRetryConfig() RetryConfig {
+	return RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 1 * time.Second,
+		MaxDelay:     30 * time.Second,
+		Multiplier:   2.0,
+	}
+}
+
 // OllamaProvider implements the LLMProvider interface for local Ollama models
 type OllamaProvider struct {
-	baseURL    string
-	model      string
-	httpClient *http.Client
+	baseURL     string
+	model       string
+	httpClient  *http.Client
+	retryConfig RetryConfig
 }
 
 // OllamaRequest represents a request to the Ollama API
@@ -45,6 +65,11 @@ type OllamaResponse struct {
 
 // NewOllamaProvider creates a new Ollama provider instance
 func NewOllamaProvider(baseURL, model string) *OllamaProvider {
+	return NewOllamaProviderWithRetry(baseURL, model, DefaultRetryConfig())
+}
+
+// NewOllamaProviderWithRetry creates a new Ollama provider instance with custom retry config
+func NewOllamaProviderWithRetry(baseURL, model string, retryConfig RetryConfig) *OllamaProvider {
 	if baseURL == "" {
 		baseURL = "http://localhost:11434"
 	}
@@ -58,6 +83,7 @@ func NewOllamaProvider(baseURL, model string) *OllamaProvider {
 		httpClient: &http.Client{
 			Timeout: 120 * time.Second, // Ollama can be slow for first requests
 		},
+		retryConfig: retryConfig,
 	}
 }
 
@@ -157,7 +183,20 @@ func (o *OllamaProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 				if err == io.EOF {
 					break
 				}
-				continue
+				// Send error response and exit on decode error
+				select {
+				case ch <- &models.LLMResponse{
+					RequestID:    req.ID,
+					ProviderID:   "ollama",
+					ProviderName: "Ollama",
+					Content:      fmt.Sprintf("Error: failed to decode response: %v", err),
+					Confidence:   0.0,
+					FinishReason: "error",
+					CreatedAt:    time.Now(),
+				}:
+				case <-ctx.Done():
+				}
+				return
 			}
 
 			fullContent += streamResp.Response
@@ -305,39 +344,101 @@ func (o *OllamaProvider) convertResponse(resp *OllamaResponse, requestID string)
 	}, nil
 }
 
-// makeRequest sends a request to the Ollama API
+// makeRequest sends a request to the Ollama API with retry logic
 func (o *OllamaProvider) makeRequest(ctx context.Context, req OllamaRequest) (*OllamaResponse, error) {
 	jsonData, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", o.baseURL+"/api/generate", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+	var lastErr error
+	delay := o.retryConfig.InitialDelay
+
+	for attempt := 0; attempt <= o.retryConfig.MaxRetries; attempt++ {
+		// Check context before making request
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+		default:
+		}
+
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", o.baseURL+"/api/generate", bytes.NewBuffer(jsonData))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+		}
+
+		httpReq.Header.Set("Content-Type", "application/json")
+
+		resp, err := o.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = fmt.Errorf("HTTP request failed: %w", err)
+			if attempt < o.retryConfig.MaxRetries {
+				o.waitWithJitter(ctx, delay)
+				delay = o.nextDelay(delay)
+				continue
+			}
+			return nil, lastErr
+		}
+
+		// Check for retryable status codes
+		if isRetryableStatus(resp.StatusCode) && attempt < o.retryConfig.MaxRetries {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
+			o.waitWithJitter(ctx, delay)
+			delay = o.nextDelay(delay)
+			continue
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("Ollama API returned status %d: %s", resp.StatusCode, string(body))
+		}
+
+		var ollamaResp OllamaResponse
+		if err := json.Unmarshal(body, &ollamaResp); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		return &ollamaResp, nil
 	}
 
-	httpReq.Header.Set("Content-Type", "application/json")
+	return nil, fmt.Errorf("all %d retry attempts failed: %w", o.retryConfig.MaxRetries+1, lastErr)
+}
 
-	resp, err := o.httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
+// isRetryableStatus returns true for HTTP status codes that warrant a retry
+func isRetryableStatus(statusCode int) bool {
+	switch statusCode {
+	case http.StatusTooManyRequests,       // 429 - Rate limited
+		http.StatusInternalServerError,     // 500
+		http.StatusBadGateway,              // 502
+		http.StatusServiceUnavailable,      // 503
+		http.StatusGatewayTimeout:          // 504
+		return true
+	default:
+		return false
 	}
-	defer resp.Body.Close()
+}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+// waitWithJitter waits for the specified duration plus random jitter
+func (o *OllamaProvider) waitWithJitter(ctx context.Context, delay time.Duration) {
+	// Add 10% jitter
+	jitter := time.Duration(rand.Float64() * 0.1 * float64(delay))
+	select {
+	case <-ctx.Done():
+	case <-time.After(delay + jitter):
 	}
+}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Ollama API returned status %d: %s", resp.StatusCode, string(body))
+// nextDelay calculates the next delay using exponential backoff
+func (o *OllamaProvider) nextDelay(currentDelay time.Duration) time.Duration {
+	nextDelay := time.Duration(float64(currentDelay) * o.retryConfig.Multiplier)
+	if nextDelay > o.retryConfig.MaxDelay {
+		nextDelay = o.retryConfig.MaxDelay
 	}
-
-	var ollamaResp OllamaResponse
-	if err := json.Unmarshal(body, &ollamaResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return &ollamaResp, nil
+	return nextDelay
 }

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -166,13 +167,13 @@ func NewProviderRegistry(cfg *RegistryConfig, memory *MemoryService) *ProviderRe
 }
 
 func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
-	// Register DeepSeek provider
+	// Register DeepSeek provider (only if API key is configured)
 	deepseekConfig := cfg.Providers["deepseek"]
 	if deepseekConfig == nil {
 		deepseekConfig = &ProviderConfig{
 			Name:    "deepseek",
 			Type:    "deepseek",
-			Enabled: true,
+			Enabled: false, // Disabled by default - requires API key
 			Models: []ModelConfig{{
 				ID:      "deepseek-coder",
 				Name:    "DeepSeek Coder",
@@ -181,7 +182,7 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	if deepseekConfig.Enabled {
+	if deepseekConfig.Enabled && deepseekConfig.APIKey != "" {
 		r.RegisterProvider(deepseekConfig.Name, deepseek.NewDeepSeekProvider(
 			deepseekConfig.APIKey,
 			deepseekConfig.BaseURL,
@@ -189,13 +190,13 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 		))
 	}
 
-	// Register Claude provider
+	// Register Claude provider (only if API key is configured)
 	claudeConfig := cfg.Providers["claude"]
 	if claudeConfig == nil {
 		claudeConfig = &ProviderConfig{
 			Name:    "claude",
 			Type:    "claude",
-			Enabled: true,
+			Enabled: false, // Disabled by default - requires API key
 			Models: []ModelConfig{{
 				ID:      "claude-3-sonnet-20240229",
 				Name:    "Claude 3 Sonnet",
@@ -204,7 +205,7 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	if claudeConfig.Enabled {
+	if claudeConfig.Enabled && claudeConfig.APIKey != "" {
 		r.RegisterProvider(claudeConfig.Name, claude.NewClaudeProvider(
 			claudeConfig.APIKey,
 			claudeConfig.BaseURL,
@@ -212,13 +213,13 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 		))
 	}
 
-	// Register Gemini provider
+	// Register Gemini provider (only if API key is configured)
 	geminiConfig := cfg.Providers["gemini"]
 	if geminiConfig == nil {
 		geminiConfig = &ProviderConfig{
 			Name:    "gemini",
 			Type:    "gemini",
-			Enabled: true,
+			Enabled: false, // Disabled by default - requires API key
 			Models: []ModelConfig{{
 				ID:      "gemini-pro",
 				Name:    "Gemini Pro",
@@ -227,7 +228,7 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	if geminiConfig.Enabled {
+	if geminiConfig.Enabled && geminiConfig.APIKey != "" {
 		r.RegisterProvider(geminiConfig.Name, gemini.NewGeminiProvider(
 			geminiConfig.APIKey,
 			geminiConfig.BaseURL,
@@ -235,13 +236,13 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 		))
 	}
 
-	// Register Qwen provider
+	// Register Qwen provider (only if API key is configured)
 	qwenConfig := cfg.Providers["qwen"]
 	if qwenConfig == nil {
 		qwenConfig = &ProviderConfig{
 			Name:    "qwen",
 			Type:    "qwen",
-			Enabled: true,
+			Enabled: false, // Disabled by default - requires API key
 			Models: []ModelConfig{{
 				ID:      "qwen-turbo",
 				Name:    "Qwen Turbo",
@@ -250,7 +251,7 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	if qwenConfig.Enabled {
+	if qwenConfig.Enabled && qwenConfig.APIKey != "" {
 		r.RegisterProvider(qwenConfig.Name, qwen.NewQwenProvider(
 			qwenConfig.APIKey,
 			qwenConfig.BaseURL,
@@ -258,13 +259,13 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 		))
 	}
 
-	// Register OpenRouter provider
+	// Register OpenRouter provider (only if API key is configured)
 	openrouterConfig := cfg.Providers["openrouter"]
 	if openrouterConfig == nil {
 		openrouterConfig = &ProviderConfig{
 			Name:    "openrouter",
 			Type:    "openrouter",
-			Enabled: true,
+			Enabled: false, // Disabled by default - requires API key
 			Models: []ModelConfig{{
 				ID:      "x-ai/grok-4",
 				Name:    "Grok-4 via OpenRouter",
@@ -273,7 +274,7 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	if openrouterConfig.Enabled {
+	if openrouterConfig.Enabled && openrouterConfig.APIKey != "" {
 		r.RegisterProvider(openrouterConfig.Name, openrouter.NewSimpleOpenRouterProvider(
 			openrouterConfig.APIKey,
 		))
@@ -494,82 +495,100 @@ func LoadRegistryConfigFromAppConfig(appConfig *config.Config) *RegistryConfig {
 		cfg.MaxRetries = appConfig.LLM.MaxRetries
 	}
 
-	// Load provider configurations from environment variables or config
-	// This is a simplified implementation
+	// Load provider configurations from environment variables
+	// Providers are only enabled if their API key is configured
+
+	deepseekKey := os.Getenv("DEEPSEEK_API_KEY")
 	cfg.Providers["deepseek"] = &ProviderConfig{
 		Name:    "deepseek",
 		Type:    "deepseek",
-		Enabled: true,
+		Enabled: deepseekKey != "",
 		Models: []ModelConfig{{
-			ID:      "deepseek-coder",
+			ID:      getEnvOrDefault("DEEPSEEK_MODEL", "deepseek-coder"),
 			Name:    "DeepSeek Coder",
 			Enabled: true,
 			Weight:  1.0,
 		}},
-		APIKey:  "", // Should come from config or env
+		APIKey:  deepseekKey,
+		BaseURL: os.Getenv("DEEPSEEK_BASE_URL"),
 		Timeout: cfg.DefaultTimeout,
 		Weight:  1.0,
 	}
 
+	claudeKey := os.Getenv("ANTHROPIC_API_KEY")
 	cfg.Providers["claude"] = &ProviderConfig{
 		Name:    "claude",
 		Type:    "claude",
-		Enabled: true,
+		Enabled: claudeKey != "",
 		Models: []ModelConfig{{
-			ID:      "claude-3-sonnet-20240229",
+			ID:      getEnvOrDefault("CLAUDE_MODEL", "claude-3-sonnet-20240229"),
 			Name:    "Claude 3 Sonnet",
 			Enabled: true,
 			Weight:  1.0,
 		}},
-		APIKey:  "", // Should come from config or env
+		APIKey:  claudeKey,
+		BaseURL: os.Getenv("ANTHROPIC_BASE_URL"),
 		Timeout: cfg.DefaultTimeout,
 		Weight:  1.0,
 	}
 
+	geminiKey := os.Getenv("GEMINI_API_KEY")
 	cfg.Providers["gemini"] = &ProviderConfig{
 		Name:    "gemini",
 		Type:    "gemini",
-		Enabled: true,
+		Enabled: geminiKey != "",
 		Models: []ModelConfig{{
-			ID:      "gemini-pro",
+			ID:      getEnvOrDefault("GEMINI_MODEL", "gemini-pro"),
 			Name:    "Gemini Pro",
 			Enabled: true,
 			Weight:  1.0,
 		}},
-		APIKey:  "", // Should come from config or env
+		APIKey:  geminiKey,
+		BaseURL: os.Getenv("GEMINI_BASE_URL"),
 		Timeout: cfg.DefaultTimeout,
 		Weight:  1.0,
 	}
 
+	qwenKey := os.Getenv("QWEN_API_KEY")
 	cfg.Providers["qwen"] = &ProviderConfig{
 		Name:    "qwen",
 		Type:    "qwen",
-		Enabled: true,
+		Enabled: qwenKey != "",
 		Models: []ModelConfig{{
-			ID:      "qwen-turbo",
+			ID:      getEnvOrDefault("QWEN_MODEL", "qwen-turbo"),
 			Name:    "Qwen Turbo",
 			Enabled: true,
 			Weight:  1.0,
 		}},
-		APIKey:  "", // Should come from config or env
+		APIKey:  qwenKey,
+		BaseURL: os.Getenv("QWEN_BASE_URL"),
 		Timeout: cfg.DefaultTimeout,
 		Weight:  1.0,
 	}
 
+	openrouterKey := os.Getenv("OPENROUTER_API_KEY")
 	cfg.Providers["openrouter"] = &ProviderConfig{
 		Name:    "openrouter",
 		Type:    "openrouter",
-		Enabled: true,
+		Enabled: openrouterKey != "",
 		Models: []ModelConfig{{
-			ID:      "x-ai/grok-4",
+			ID:      getEnvOrDefault("OPENROUTER_MODEL", "x-ai/grok-4"),
 			Name:    "Grok-4 via OpenRouter",
 			Enabled: true,
 			Weight:  1.3,
 		}},
-		APIKey:  "", // Should come from config or env
+		APIKey:  openrouterKey,
 		Timeout: cfg.DefaultTimeout,
 		Weight:  1.3,
 	}
 
 	return cfg
+}
+
+// getEnvOrDefault returns the environment variable value or a default
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

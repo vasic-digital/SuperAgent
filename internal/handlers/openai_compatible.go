@@ -170,32 +170,7 @@ func (h *UnifiedHandler) ChatCompletions(c *gin.Context) {
 		return
 	}
 
-	// Check for test mode - provide mock response for testing without real API keys
-	if authHeader := c.GetHeader("Authorization"); authHeader == "Bearer test-key" {
-		mockResponse := &OpenAIChatResponse{
-			ID:      "chatcmpl-" + generateID(),
-			Object:  "chat.completion",
-			Created: time.Now().Unix(),
-			Model:   req.Model,
-			Choices: []OpenAIChoice{
-				{
-					Index: 0,
-					Message: OpenAIMessage{
-						Role:    "assistant",
-						Content: "This is a mock response from SuperAgent ensemble. The system is working correctly and ready to process requests with real API keys. Your request was: " + req.Messages[len(req.Messages)-1].Content,
-					},
-					FinishReason: "stop",
-				},
-			},
-			Usage: &OpenAIUsage{
-				PromptTokens:     10,
-				CompletionTokens: 20,
-				TotalTokens:      30,
-			},
-		}
-		c.JSON(http.StatusOK, mockResponse)
-		return
-	}
+	// Test mode removed for security - mock responses should not be available in production
 
 	// Convert to internal request format
 	internalReq := h.convertOpenAIChatRequest(&req, c)

@@ -329,6 +329,8 @@ func TestZAIProvider_GetCapabilities(t *testing.T) {
 }
 
 func TestZAIProvider_ValidateConfig(t *testing.T) {
+	// Note: NewZAIProvider sets defaults for baseURL and model,
+	// so only API key validation will fail when not provided
 	tests := []struct {
 		name        string
 		apiKey      string
@@ -354,28 +356,28 @@ func TestZAIProvider_ValidateConfig(t *testing.T) {
 			expectedErr: []string{"API key is required"},
 		},
 		{
-			name:        "missing base URL",
+			name:        "empty base URL uses default",
 			apiKey:      "test-key",
 			baseURL:     "",
 			model:       "z-ai-base",
-			expectValid: false,
-			expectedErr: []string{"base URL is required"},
+			expectValid: true, // NewZAIProvider sets default baseURL
+			expectedErr: []string{},
 		},
 		{
-			name:        "missing model",
+			name:        "empty model uses default",
 			apiKey:      "test-key",
 			baseURL:     "https://api.z.ai/v1",
 			model:       "",
-			expectValid: false,
-			expectedErr: []string{"model is required"},
+			expectValid: true, // NewZAIProvider sets default model
+			expectedErr: []string{},
 		},
 		{
-			name:        "missing all",
+			name:        "missing API key with defaults",
 			apiKey:      "",
 			baseURL:     "",
 			model:       "",
 			expectValid: false,
-			expectedErr: []string{"API key is required", "base URL is required", "model is required"},
+			expectedErr: []string{"API key is required"}, // Only API key error since others have defaults
 		},
 	}
 

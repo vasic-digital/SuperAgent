@@ -9,12 +9,15 @@ import (
 )
 
 // testEnsembleResponse is a helper to test ensemble responses in test environment
+// Note: RunEnsemble now requires providers to be passed - calling without providers returns an error
 func testEnsembleResponse(t *testing.T, responses []*models.LLMResponse, selected *models.LLMResponse, err error) {
-	// In test environment, providers will fail due to network/API issues
-	// So we expect either an error or no responses (nil)
+	// In test environment, RunEnsemble without providers returns an error
+	// This is the expected behavior - providers must be explicitly configured
 	if err != nil {
-		// Error is acceptable in test environment
-		t.Logf("Ensemble returned error (expected in tests): %v", err)
+		// Error is expected when no providers are configured
+		t.Logf("Ensemble returned error (expected without providers): %v", err)
+		assert.Nil(t, responses)
+		assert.Nil(t, selected)
 		return
 	}
 
@@ -166,21 +169,20 @@ func TestRunEnsemble_DifferentRequestTypes(t *testing.T) {
 }
 
 func TestRunEnsemble_ProviderFailureHandling(t *testing.T) {
-	// Test that ensemble handles provider failures gracefully
+	// Test that ensemble handles missing providers gracefully
+	// Since RunEnsemble now requires providers, it returns an error when none are configured
 	req := &models.LLMRequest{
 		ID:     "test-request-8",
-		Prompt: "This should work even if some providers fail",
+		Prompt: "This should return error without providers",
 	}
 
 	responses, selected, err := llm.RunEnsemble(req)
 
-	// Should not panic even if providers fail
-	// In test environment, all providers will fail, so err should be nil
-	// and responses should be nil (all providers failed)
-	assert.NoError(t, err)
-	// responses could be nil (all failed) or non-nil (some succeeded)
-	_ = responses
-	_ = selected // Use variables to avoid "declared and not used" error
+	// Should return error when no providers are configured
+	// This is the expected secure behavior - no default/mock providers
+	assert.Error(t, err)
+	assert.Nil(t, responses)
+	assert.Nil(t, selected)
 }
 
 func TestRunEnsemble_ResponseSelection(t *testing.T) {

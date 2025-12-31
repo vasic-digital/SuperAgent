@@ -6,18 +6,38 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/superagent/superagent/internal/models"
 )
 
+// RetryConfig defines retry behavior for API calls
+type RetryConfig struct {
+	MaxRetries   int
+	InitialDelay time.Duration
+	MaxDelay     time.Duration
+	Multiplier   float64
+}
+
+// DefaultRetryConfig returns sensible defaults for Z.AI API retry behavior
+func DefaultRetryConfig() RetryConfig {
+	return RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 1 * time.Second,
+		MaxDelay:     30 * time.Second,
+		Multiplier:   2.0,
+	}
+}
+
 // ZAIProvider implements the LLMProvider interface for Z.AI
 type ZAIProvider struct {
-	apiKey     string
-	baseURL    string
-	model      string
-	httpClient *http.Client
+	apiKey      string
+	baseURL     string
+	model       string
+	httpClient  *http.Client
+	retryConfig RetryConfig
 }
 
 // ZAIRequest represents a request to the Z.AI API
@@ -75,6 +95,11 @@ type ZAIError struct {
 
 // NewZAIProvider creates a new Z.AI provider instance
 func NewZAIProvider(apiKey, baseURL, model string) *ZAIProvider {
+	return NewZAIProviderWithRetry(apiKey, baseURL, model, DefaultRetryConfig())
+}
+
+// NewZAIProviderWithRetry creates a new Z.AI provider instance with custom retry config
+func NewZAIProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig) *ZAIProvider {
 	if baseURL == "" {
 		baseURL = "https://api.z.ai/v1"
 	}
@@ -89,6 +114,7 @@ func NewZAIProvider(apiKey, baseURL, model string) *ZAIProvider {
 		httpClient: &http.Client{
 			Timeout: 60 * time.Second,
 		},
+		retryConfig: retryConfig,
 	}
 }
 
@@ -108,63 +134,11 @@ func (z *ZAIProvider) Complete(ctx context.Context, req *models.LLMRequest) (*mo
 }
 
 // CompleteStream implements streaming completion for Z.AI
+// Note: Z.AI streaming is not yet implemented - this returns an error
 func (z *ZAIProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
-	responseChan := make(chan *models.LLMResponse, 10)
-
-	go func() {
-		defer close(responseChan)
-
-		// For now, simulate streaming by getting the complete response and sending it in chunks
-		// In a full implementation, this would use Z.AI's actual streaming API
-
-		response, err := z.Complete(ctx, req)
-		if err != nil {
-			// For streaming, we just close the channel on error
-			// In a real implementation, you might want to send an error response
-			return
-		}
-
-		// Simulate streaming by breaking the response into chunks
-		content := response.Content
-		chunkSize := 50 // characters per chunk
-
-		for i := 0; i < len(content); i += chunkSize {
-			end := i + chunkSize
-			if end > len(content) {
-				end = len(content)
-			}
-
-			chunk := content[i:end]
-
-			streamResponse := &models.LLMResponse{
-				ID:           fmt.Sprintf("%s-chunk-%d", response.ID, i/chunkSize),
-				ProviderID:   response.ProviderID,
-				ProviderName: response.ProviderName,
-				Content:      chunk,
-				Confidence:   response.Confidence,
-				TokensUsed:   response.TokensUsed / (len(content)/chunkSize + 1), // Approximate token distribution
-				ResponseTime: response.ResponseTime / int64(len(content)/chunkSize+1),
-				FinishReason: func() string {
-					if end >= len(content) {
-						return "stop"
-					}
-					return ""
-				}(),
-				CreatedAt: time.Now(),
-			}
-
-			select {
-			case responseChan <- streamResponse:
-			case <-ctx.Done():
-				return
-			}
-
-			// Small delay to simulate streaming
-			time.Sleep(50 * time.Millisecond)
-		}
-	}()
-
-	return responseChan, nil
+	// Z.AI streaming is not yet implemented
+	// GetCapabilities() returns SupportsStreaming: false
+	return nil, fmt.Errorf("streaming not yet implemented for Z.AI provider")
 }
 
 // HealthCheck implements health checking for the Z.AI provider
@@ -315,7 +289,7 @@ func (z *ZAIProvider) convertFromZAIResponse(resp *ZAIResponse, requestID string
 	}, nil
 }
 
-// makeRequest sends a request to the Z.AI API
+// makeRequest sends a request to the Z.AI API with retry logic
 func (z *ZAIProvider) makeRequest(ctx context.Context, req *ZAIRequest) (*ZAIResponse, error) {
 	jsonData, err := json.Marshal(req)
 	if err != nil {
@@ -328,37 +302,99 @@ func (z *ZAIProvider) makeRequest(ctx context.Context, req *ZAIRequest) (*ZAIRes
 		endpoint = "/chat/completions"
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", z.baseURL+endpoint, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
-	}
+	var lastErr error
+	delay := z.retryConfig.InitialDelay
 
-	httpReq.Header.Set("Authorization", "Bearer "+z.apiKey)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := z.httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		var zaiErr ZAIError
-		if err := json.Unmarshal(body, &zaiErr); err == nil && zaiErr.Error.Message != "" {
-			return nil, fmt.Errorf("Z.AI API error: %s (%s)", zaiErr.Error.Message, zaiErr.Error.Type)
+	for attempt := 0; attempt <= z.retryConfig.MaxRetries; attempt++ {
+		// Check context before making request
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+		default:
 		}
-		return nil, fmt.Errorf("Z.AI API returned status %d: %s", resp.StatusCode, string(body))
+
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", z.baseURL+endpoint, bytes.NewBuffer(jsonData))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+		}
+
+		httpReq.Header.Set("Authorization", "Bearer "+z.apiKey)
+		httpReq.Header.Set("Content-Type", "application/json")
+
+		resp, err := z.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = fmt.Errorf("HTTP request failed: %w", err)
+			if attempt < z.retryConfig.MaxRetries {
+				z.waitWithJitter(ctx, delay)
+				delay = z.nextDelay(delay)
+				continue
+			}
+			return nil, lastErr
+		}
+
+		// Check for retryable status codes
+		if isRetryableStatus(resp.StatusCode) && attempt < z.retryConfig.MaxRetries {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
+			z.waitWithJitter(ctx, delay)
+			delay = z.nextDelay(delay)
+			continue
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			var zaiErr ZAIError
+			if err := json.Unmarshal(body, &zaiErr); err == nil && zaiErr.Error.Message != "" {
+				return nil, fmt.Errorf("Z.AI API error: %s (%s)", zaiErr.Error.Message, zaiErr.Error.Type)
+			}
+			return nil, fmt.Errorf("Z.AI API returned status %d: %s", resp.StatusCode, string(body))
+		}
+
+		var zaiResp ZAIResponse
+		if err := json.Unmarshal(body, &zaiResp); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		return &zaiResp, nil
 	}
 
-	var zaiResp ZAIResponse
-	if err := json.Unmarshal(body, &zaiResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
+	return nil, fmt.Errorf("all %d retry attempts failed: %w", z.retryConfig.MaxRetries+1, lastErr)
+}
 
-	return &zaiResp, nil
+// isRetryableStatus returns true for HTTP status codes that warrant a retry
+func isRetryableStatus(statusCode int) bool {
+	switch statusCode {
+	case http.StatusTooManyRequests,       // 429 - Rate limited
+		http.StatusInternalServerError,     // 500
+		http.StatusBadGateway,              // 502
+		http.StatusServiceUnavailable,      // 503
+		http.StatusGatewayTimeout:          // 504
+		return true
+	default:
+		return false
+	}
+}
+
+// waitWithJitter waits for the specified duration plus random jitter
+func (z *ZAIProvider) waitWithJitter(ctx context.Context, delay time.Duration) {
+	// Add 10% jitter
+	jitter := time.Duration(rand.Float64() * 0.1 * float64(delay))
+	select {
+	case <-ctx.Done():
+	case <-time.After(delay + jitter):
+	}
+}
+
+// nextDelay calculates the next delay using exponential backoff
+func (z *ZAIProvider) nextDelay(currentDelay time.Duration) time.Duration {
+	nextDelay := time.Duration(float64(currentDelay) * z.retryConfig.Multiplier)
+	if nextDelay > z.retryConfig.MaxDelay {
+		nextDelay = z.retryConfig.MaxDelay
+	}
+	return nextDelay
 }

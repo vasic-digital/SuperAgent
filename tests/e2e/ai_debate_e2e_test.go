@@ -659,6 +659,9 @@ func (m *MockDebateService) ConductDebate(ctx context.Context, topic string, ini
 	// Add memory indicators
 	if m.enableMemory {
 		result.MemoryUsed = true
+		if result.BestResponse.Metadata == nil {
+			result.BestResponse.Metadata = make(map[string]any)
+		}
 		result.BestResponse.Metadata["memory_context"] = "mock_memory_context_applied"
 	}
 
@@ -695,7 +698,8 @@ func validateDebateResults(t *testing.T, result *services.DebateResult, expected
 	// Validate quality metrics
 	assert.NotNil(t, result.QualityMetrics, "Quality metrics should not be nil")
 	if result.QualityMetrics != nil {
-		assert.Contains(t, result.QualityMetrics, "avg_confidence", "Should have avg_confidence metric")
-		assert.Contains(t, result.QualityMetrics, "avg_quality", "Should have avg_quality metric")
+		assert.GreaterOrEqual(t, result.QualityMetrics.Coherence, 0.0, "Coherence should be non-negative")
+		assert.GreaterOrEqual(t, result.QualityMetrics.Relevance, 0.0, "Relevance should be non-negative")
+		assert.GreaterOrEqual(t, result.QualityMetrics.OverallScore, 0.0, "Overall score should be non-negative")
 	}
 }

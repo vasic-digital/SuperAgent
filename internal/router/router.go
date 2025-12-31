@@ -100,7 +100,10 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register"},
 		Required:    true,
 	}
-	auth := middleware.NewAuthMiddleware(authConfig, userService)
+	auth, err := middleware.NewAuthMiddleware(authConfig, userService)
+	if err != nil {
+		log.Fatalf("Failed to initialize auth middleware: %v", err)
+	}
 
 	// Health endpoints
 	r.GET("/health", func(c *gin.Context) {
@@ -327,7 +330,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 						// Add circuit breaker information if available
 						if cb := providerRegistry.GetCircuitBreaker(name); cb != nil {
 							response["circuit_breaker"] = gin.H{
-								"state":         string(cb.GetState()),
+								"state":         cb.GetState().String(),
 								"failure_count": cb.GetFailureCount(),
 								"last_failure":  cb.GetLastFailure(),
 							}
