@@ -409,11 +409,39 @@ func TestGeminiProvider_CompleteStream_Error(t *testing.T) {
 }
 
 func TestGeminiProvider_HealthCheck_Success(t *testing.T) {
-	t.Skip("Health check test requires network access to Google's API and uses hardcoded URL")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"models": []map[string]string{
+				{"name": "gemini-pro"},
+				{"name": "gemini-ultra"},
+			},
+		})
+	}))
+	defer server.Close()
+
+	provider := NewGeminiProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider.healthURL = server.URL + "/v1beta/models"
+	provider.httpClient = server.Client()
+
+	err := provider.HealthCheck()
+	require.NoError(t, err)
 }
 
 func TestGeminiProvider_HealthCheck_Error(t *testing.T) {
-	t.Skip("Health check test requires network access to Google's API and uses hardcoded URL")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"error": {"code": 401, "message": "Invalid API key"}}`))
+	}))
+	defer server.Close()
+
+	provider := NewGeminiProvider("invalid-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider.healthURL = server.URL + "/v1beta/models"
+	provider.httpClient = server.Client()
+
+	err := provider.HealthCheck()
+	assert.Error(t, err)
 }
 
 func TestGeminiProvider_CalculateConfidence(t *testing.T) {

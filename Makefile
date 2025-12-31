@@ -1,4 +1,4 @@
-.PHONY: all build test run fmt lint security-scan docker-build docker-run docker-stop docker-clean docker-logs docker-test docker-dev docker-prod coverage docker-clean-all install-deps help docs check-deps
+.PHONY: all build test run fmt lint security-scan docker-build docker-run docker-stop docker-clean docker-logs docker-test docker-dev docker-prod coverage docker-clean-all install-deps help docs check-deps test-all test-all-docker
 
 # =============================================================================
 # MAIN TARGETS
@@ -76,6 +76,27 @@ test-integration:
 test-integration-verbose:
 	@echo "🧪 Running integration tests (verbose)..."
 	@./scripts/run-integration-tests.sh --verbose --package ./internal/services/...
+
+test-all:
+	@echo "🧪 Running ALL tests with full infrastructure (no skipping)..."
+	@./scripts/run_all_tests.sh
+
+test-all-docker:
+	@echo "🐳 Starting test infrastructure and running all tests..."
+	@docker-compose -f docker-compose.test.yml up -d postgres redis mock-llm
+	@echo "⏳ Waiting for services..."
+	@sleep 10
+	@DB_HOST=localhost DB_PORT=5432 DB_USER=superagent DB_PASSWORD=superagent123 DB_NAME=superagent_db \
+		REDIS_HOST=localhost REDIS_PORT=6379 REDIS_PASSWORD=superagent123 \
+		MOCK_LLM_URL=http://localhost:8081 MOCK_LLM_ENABLED=true \
+		CLAUDE_API_KEY=mock CLAUDE_BASE_URL=http://localhost:8081/v1 \
+		DEEPSEEK_API_KEY=mock DEEPSEEK_BASE_URL=http://localhost:8081/v1 \
+		GEMINI_API_KEY=mock GEMINI_BASE_URL=http://localhost:8081/v1 \
+		QWEN_API_KEY=mock QWEN_BASE_URL=http://localhost:8081/v1 \
+		ZAI_API_KEY=mock ZAI_BASE_URL=http://localhost:8081/v1 \
+		OLLAMA_BASE_URL=http://localhost:8081 \
+		CI=true go test -v ./... -timeout 300s
+	@docker-compose -f docker-compose.test.yml down
 
 test-integration-coverage:
 	@echo "🧪 Running integration tests with coverage..."

@@ -1,6 +1,25 @@
 version: '3.8'
 
 services:
+  # Mock LLM Server for testing (provides OpenAI-compatible API)
+  mock-llm:
+    build:
+      context: ./tests/mocks/llm-mock-server
+      dockerfile: Dockerfile
+    container_name: superagent-mock-llm
+    ports:
+      - "8081:8081"
+    environment:
+      PORT: 8081
+    networks:
+      - superagent-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
@@ -89,16 +108,22 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: superagent123
 
-      # LLM Provider API Keys (using Ollama for testing)
-      CLAUDE_API_KEY: ""
-      DEEPSEEK_API_KEY: ""
-      GEMINI_API_KEY: ""
-      QWEN_API_KEY: ""
-      ZAI_API_KEY: ""
+      # LLM Provider Configuration (using mock server for testing)
+      # All providers point to mock-llm server for deterministic testing
+      CLAUDE_API_KEY: "mock-api-key"
+      CLAUDE_BASE_URL: http://mock-llm:8081/v1
+      DEEPSEEK_API_KEY: "mock-api-key"
+      DEEPSEEK_BASE_URL: http://mock-llm:8081/v1
+      GEMINI_API_KEY: "mock-api-key"
+      GEMINI_BASE_URL: http://mock-llm:8081/v1
+      QWEN_API_KEY: "mock-api-key"
+      QWEN_BASE_URL: http://mock-llm:8081/v1
+      ZAI_API_KEY: "mock-api-key"
+      ZAI_BASE_URL: http://mock-llm:8081/v1
 
-      # Ollama Configuration (free, no API keys needed)
-      OLLAMA_BASE_URL: http://ollama:11434
-      OLLAMA_MODEL: llama2
+      # Ollama Configuration (also pointing to mock server)
+      OLLAMA_BASE_URL: http://mock-llm:8081
+      OLLAMA_MODEL: mock-llama-3
 
       # Cognee Configuration (disabled for testing)
       COGNEE_BASE_URL: ""
@@ -128,6 +153,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      mock-llm:
         condition: service_healthy
       ollama:
         condition: service_healthy

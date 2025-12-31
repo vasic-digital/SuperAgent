@@ -42,8 +42,23 @@ func createTestGinRouter(cfg *config.Config, opts ...GinRouterOption) *GinRouter
 	return router
 }
 
-func TestNewGinRouter(t *testing.T) {
-	t.Skip("Skipping test that requires database - covered by integration tests")
+// TestNewGinRouter_Structure tests that the router is created with proper structure
+// This test uses createTestGinRouter to avoid route registration conflicts
+// The actual NewGinRouter function is tested via integration tests
+func TestNewGinRouter_Structure(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	// Test router structure using the test helper
+	router := createTestGinRouter(cfg)
+	require.NotNil(t, router)
+	assert.NotNil(t, router.engine)
+	assert.NotNil(t, router.log)
+	assert.NotNil(t, router.config)
+	assert.False(t, router.running)
 }
 
 func TestGinRouterStructure(t *testing.T) {

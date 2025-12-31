@@ -22,6 +22,7 @@ const (
 type GeminiProvider struct {
 	apiKey      string
 	baseURL     string
+	healthURL   string
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
@@ -591,8 +592,14 @@ func (p *GeminiProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Use healthURL if set, otherwise use default
+	healthURL := p.healthURL
+	if healthURL == "" {
+		healthURL = "https://generativelanguage.googleapis.com/v1beta/models"
+	}
+
 	// Simple health check - try to get models list
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://generativelanguage.googleapis.com/v1beta/models?key="+p.apiKey, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", healthURL+"?key="+p.apiKey, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create health check request: %w", err)
 	}
