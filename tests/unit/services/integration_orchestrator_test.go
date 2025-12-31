@@ -315,3 +315,126 @@ func TestIntegrationOrchestrator_OperationResultType(t *testing.T) {
 	assert.Nil(t, errResult.Data)
 	assert.Error(t, errResult.Error)
 }
+
+func TestIntegrationOrchestrator_SetProviderRegistry(t *testing.T) {
+	var mcpManager *services.MCPManager
+	var lspClient *services.LSPClient
+	var toolRegistry *services.ToolRegistry
+	var contextManager *services.ContextManager
+
+	orchestrator := services.NewIntegrationOrchestrator(mcpManager, lspClient, toolRegistry, contextManager)
+	assert.NotNil(t, orchestrator)
+
+	// Set a provider registry - just verify the method exists and can be called
+	// We don't have a way to verify the internal state, but we can test the API
+	assert.NotPanics(t, func() {
+		orchestrator.SetProviderRegistry(nil)
+	})
+
+	// Create a real registry for more thorough testing
+	registry := services.NewProviderRegistry(nil, nil)
+	assert.NotPanics(t, func() {
+		orchestrator.SetProviderRegistry(registry)
+	})
+}
+
+func TestIntegrationOrchestrator_LLMWorkflowStep(t *testing.T) {
+	t.Run("creates workflow step with LLM type", func(t *testing.T) {
+		step := services.WorkflowStep{
+			ID:   "llm-step-1",
+			Name: "Generate Code",
+			Type: "llm",
+			Parameters: map[string]interface{}{
+				"operation":   "complete",
+				"provider":    "test-provider",
+				"prompt":      "Generate a hello world function",
+				"model":       "gpt-4",
+				"temperature": 0.7,
+				"max_tokens":  1000,
+			},
+			MaxRetries: 3,
+		}
+
+		assert.Equal(t, "llm", step.Type)
+		assert.Equal(t, "complete", step.Parameters["operation"])
+		assert.Equal(t, "test-provider", step.Parameters["provider"])
+		assert.Equal(t, "Generate a hello world function", step.Parameters["prompt"])
+	})
+
+	t.Run("creates workflow step with streaming LLM operation", func(t *testing.T) {
+		step := services.WorkflowStep{
+			ID:   "llm-stream-step",
+			Name: "Stream Response",
+			Type: "llm",
+			Parameters: map[string]interface{}{
+				"operation": "stream",
+				"provider":  "test-provider",
+				"messages": []interface{}{
+					map[string]interface{}{
+						"role":    "user",
+						"content": "Tell me a story",
+					},
+				},
+			},
+		}
+
+		assert.Equal(t, "llm", step.Type)
+		assert.Equal(t, "stream", step.Parameters["operation"])
+		messages := step.Parameters["messages"].([]interface{})
+		assert.Len(t, messages, 1)
+	})
+}
+
+func TestIntegrationOrchestrator_LLMWorkflow(t *testing.T) {
+	// Test full workflow with LLM steps
+	workflow := &services.Workflow{
+		ID:          "llm-workflow",
+		Name:        "LLM Processing Workflow",
+		Description: "Workflow with LLM steps",
+		Steps: []services.WorkflowStep{
+			{
+				ID:   "analyze",
+				Name: "Analyze Code",
+				Type: "lsp",
+				Parameters: map[string]interface{}{
+					"filePath": "/test/file.go",
+				},
+			},
+			{
+				ID:   "generate",
+				Name: "Generate Suggestions",
+				Type: "llm",
+				Parameters: map[string]interface{}{
+					"operation": "complete",
+					"prompt":    "Based on the analysis, suggest improvements",
+				},
+				DependsOn: []string{"analyze"},
+			},
+			{
+				ID:   "stream-explanation",
+				Name: "Stream Explanation",
+				Type: "llm",
+				Parameters: map[string]interface{}{
+					"operation": "stream",
+					"prompt":    "Explain the improvements in detail",
+				},
+				DependsOn: []string{"generate"},
+			},
+		},
+		Status:    "pending",
+		Results:   make(map[string]interface{}),
+		CreatedAt: time.Now(),
+	}
+
+	assert.Equal(t, "llm-workflow", workflow.ID)
+	assert.Len(t, workflow.Steps, 3)
+
+	// Verify dependencies are correctly set
+	assert.Contains(t, workflow.Steps[1].DependsOn, "analyze")
+	assert.Contains(t, workflow.Steps[2].DependsOn, "generate")
+
+	// Verify step types
+	assert.Equal(t, "lsp", workflow.Steps[0].Type)
+	assert.Equal(t, "llm", workflow.Steps[1].Type)
+	assert.Equal(t, "llm", workflow.Steps[2].Type)
+}

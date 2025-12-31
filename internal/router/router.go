@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/superagent/superagent/internal/cache"
 	"github.com/superagent/superagent/internal/config"
@@ -131,8 +132,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		})
 	})
 
-	// Metrics endpoint
-	// r.GET("/metrics", gin.WrapH(metrics.Handler())) // TODO: Re-enable when metrics package is available
+	// Metrics endpoint - Prometheus metrics for monitoring
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Authentication endpoints
 	authGroup := r.Group("/v1/auth")

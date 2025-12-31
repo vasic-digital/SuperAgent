@@ -3,6 +3,7 @@ package zai
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -249,7 +250,125 @@ func TestZAIProvider_Complete_NoChoices(t *testing.T) {
 }
 
 func TestZAIProvider_CompleteStream(t *testing.T) {
-	provider := NewZAIProvider("test-api-key", "https://api.z.ai/v1", "z-ai-base")
+	// Create a mock SSE server for streaming responses
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/completions", r.URL.Path)
+		assert.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
+		assert.Equal(t, "text/event-stream", r.Header.Get("Accept"))
+
+		var req ZAIRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+		assert.True(t, req.Stream)
+
+		// Send SSE streaming response
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.WriteHeader(http.StatusOK)
+
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			t.Fatal("ResponseWriter does not support flushing")
+		}
+
+		// Send chunk 1
+		chunk1 := ZAIStreamResponse{
+			ID:      "stream-123",
+			Object:  "text_completion.chunk",
+			Created: time.Now().Unix(),
+			Model:   "z-ai-base",
+			Choices: []ZAIStreamChoice{
+				{Index: 0, Delta: ZAIStreamDelta{Content: "Hello "}, FinishReason: nil},
+			},
+		}
+		data1, _ := json.Marshal(chunk1)
+		fmt.Fprintf(w, "data: %s\n\n", data1)
+		flusher.Flush()
+
+		// Send chunk 2
+		chunk2 := ZAIStreamResponse{
+			ID:      "stream-123",
+			Object:  "text_completion.chunk",
+			Created: time.Now().Unix(),
+			Model:   "z-ai-base",
+			Choices: []ZAIStreamChoice{
+				{Index: 0, Delta: ZAIStreamDelta{Content: "World!"}, FinishReason: nil},
+			},
+		}
+		data2, _ := json.Marshal(chunk2)
+		fmt.Fprintf(w, "data: %s\n\n", data2)
+		flusher.Flush()
+
+		// Send final chunk with finish reason
+		finishReason := "stop"
+		chunk3 := ZAIStreamResponse{
+			ID:      "stream-123",
+			Object:  "text_completion.chunk",
+			Created: time.Now().Unix(),
+			Model:   "z-ai-base",
+			Choices: []ZAIStreamChoice{
+				{Index: 0, Delta: ZAIStreamDelta{Content: ""}, FinishReason: &finishReason},
+			},
+		}
+		data3, _ := json.Marshal(chunk3)
+		fmt.Fprintf(w, "data: %s\n\n", data3)
+		flusher.Flush()
+
+		// Send DONE marker
+		fmt.Fprintf(w, "data: [DONE]\n\n")
+		flusher.Flush()
+	}))
+	defer server.Close()
+
+	provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
+
+	req := &models.LLMRequest{
+		ID:     "test-123",
+		Prompt: "test prompt",
+	}
+
+	ch, err := provider.CompleteStream(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, ch)
+
+	// Collect responses
+	var responses []*models.LLMResponse
+	for resp := range ch {
+		responses = append(responses, resp)
+	}
+
+	// Verify we received chunks
+	assert.GreaterOrEqual(t, len(responses), 1, "should receive at least one response")
+
+	// Verify final response
+	if len(responses) > 0 {
+		lastResp := responses[len(responses)-1]
+		assert.Equal(t, "test-123", lastResp.RequestID)
+		assert.Equal(t, "zai", lastResp.ProviderID)
+		assert.Equal(t, "Z.AI", lastResp.ProviderName)
+	}
+}
+
+func TestZAIProvider_CompleteStream_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ZAIError{
+			Error: struct {
+				Message string `json:"message"`
+				Type    string `json:"type"`
+				Code    int    `json:"code"`
+			}{
+				Message: "Invalid streaming request",
+				Type:    "invalid_request_error",
+				Code:    400,
+			},
+		})
+	}))
+	defer server.Close()
+
+	provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
 
 	req := &models.LLMRequest{
 		ID:     "test-123",
@@ -259,7 +378,7 @@ func TestZAIProvider_CompleteStream(t *testing.T) {
 	ch, err := provider.CompleteStream(context.Background(), req)
 	assert.Error(t, err)
 	assert.Nil(t, ch)
-	assert.Contains(t, err.Error(), "streaming not yet implemented")
+	assert.Contains(t, err.Error(), "Invalid streaming request")
 }
 
 func TestZAIProvider_HealthCheck(t *testing.T) {
@@ -318,7 +437,7 @@ func TestZAIProvider_GetCapabilities(t *testing.T) {
 	assert.Contains(t, caps.SupportedModels, "z-ai-pro")
 	assert.Contains(t, caps.SupportedFeatures, "text_completion")
 	assert.Contains(t, caps.SupportedFeatures, "chat")
-	assert.False(t, caps.SupportsStreaming)
+	assert.True(t, caps.SupportsStreaming) // Streaming is now implemented
 	assert.False(t, caps.SupportsFunctionCalling)
 	assert.False(t, caps.SupportsVision)
 	assert.Equal(t, 4096, caps.Limits.MaxTokens)

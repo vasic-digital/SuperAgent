@@ -355,13 +355,71 @@ func (c *ProtocolCache) hasMatchingTags(entryTags, queryTags []string) bool {
 }
 
 func (c *ProtocolCache) matchesPattern(key, pattern string) bool {
-	// Simple wildcard matching
+	// Empty pattern matches nothing
+	if pattern == "" {
+		return false
+	}
+
+	// Full wildcard matches everything
 	if pattern == "*" {
 		return true
 	}
 
-	// TODO: Implement more sophisticated pattern matching
-	return len(key) >= len(pattern) && key[:len(pattern)] == pattern
+	// Use glob-style pattern matching with wildcards
+	return matchGlob(pattern, key)
+}
+
+// matchGlob performs glob-style pattern matching supporting:
+// - '*' matches any sequence of characters (including empty)
+// - '?' matches exactly one character
+// - All other characters must match exactly
+func matchGlob(pattern, text string) bool {
+	// dp[i][j] represents whether pattern[0:i] matches text[0:j]
+	// Using bottom-up dynamic programming for efficiency
+
+	pLen := len(pattern)
+	tLen := len(text)
+
+	// Create DP table
+	// dp[i][j] = true if pattern[0:i] matches text[0:j]
+	dp := make([][]bool, pLen+1)
+	for i := range dp {
+		dp[i] = make([]bool, tLen+1)
+	}
+
+	// Empty pattern matches empty text
+	dp[0][0] = true
+
+	// Handle patterns that start with * (can match empty string)
+	for i := 1; i <= pLen; i++ {
+		if pattern[i-1] == '*' {
+			dp[i][0] = dp[i-1][0]
+		}
+	}
+
+	// Fill the DP table
+	for i := 1; i <= pLen; i++ {
+		for j := 1; j <= tLen; j++ {
+			p := pattern[i-1]
+			t := text[j-1]
+
+			switch p {
+			case '*':
+				// '*' can match:
+				// - Zero characters: dp[i-1][j] (skip the *)
+				// - One or more characters: dp[i][j-1] (consume one char from text, keep *)
+				dp[i][j] = dp[i-1][j] || dp[i][j-1]
+			case '?':
+				// '?' matches exactly one character
+				dp[i][j] = dp[i-1][j-1]
+			default:
+				// Regular character must match exactly
+				dp[i][j] = dp[i-1][j-1] && p == t
+			}
+		}
+	}
+
+	return dp[pLen][tLen]
 }
 
 func (c *ProtocolCache) calculateSize(data interface{}) int {

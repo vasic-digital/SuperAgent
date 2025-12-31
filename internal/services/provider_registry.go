@@ -448,11 +448,7 @@ func (a *providerAdapter) Complete(ctx context.Context, req *models.LLMRequest) 
 }
 
 func (a *providerAdapter) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
-	// The llm.LLMProvider interface doesn't support streaming yet
-	// This would need to be added to the interface
-	ch := make(chan *models.LLMResponse)
-	close(ch)
-	return ch, fmt.Errorf("streaming not supported by provider interface")
+	return a.provider.CompleteStream(ctx, req)
 }
 
 func getDefaultRegistryConfig() *RegistryConfig {

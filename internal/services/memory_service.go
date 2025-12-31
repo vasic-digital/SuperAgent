@@ -548,11 +548,16 @@ func (m *MemoryService) ClearCache() {
 
 // GetStats returns memory service statistics
 func (m *MemoryService) GetStats() map[string]interface{} {
+	cogneeURL := ""
+	if m.client != nil {
+		cogneeURL = m.client.GetBaseURL()
+	}
+
 	return map[string]interface{}{
 		"enabled":     m.enabled,
 		"cache_size":  len(m.cache),
 		"dataset":     m.dataset,
 		"ttl_minutes": m.ttl.Minutes(),
-		"cognee_url":  m.client.GetBaseURL(),
+		"cognee_url":  cogneeURL,
 	}
 }

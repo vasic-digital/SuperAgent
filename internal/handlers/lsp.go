@@ -63,10 +63,25 @@ func (h *LSPHandler) ExecuteLSPRequest(c *gin.Context) {
 func (h *LSPHandler) SyncLSPServer(c *gin.Context) {
 	serverID := c.Param("id")
 
-	// Placeholder implementation
+	if err := h.lspService.SyncLSPServer(c.Request.Context(), serverID); err != nil {
+		h.log.WithFields(logrus.Fields{
+			"serverId": serverID,
+			"error":    err.Error(),
+		}).Error("Failed to sync LSP server")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":    err.Error(),
+			"serverId": serverID,
+		})
+		return
+	}
+
 	h.log.WithField("serverId", serverID).Info("LSP server sync completed")
 
-	c.JSON(http.StatusOK, gin.H{"message": "LSP server synced successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "LSP server synced successfully",
+		"serverId": serverID,
+		"syncedAt": c.Request.Context().Value("time"),
+	})
 }
 
 // GetLSPStats handles GET /v1/lsp/stats

@@ -210,7 +210,6 @@ func TestRequestService_ProcessRequest(t *testing.T) {
 }
 
 func TestRequestService_ProcessRequest_WithEnsemble(t *testing.T) {
-	t.Skip("Skipping test - mock provider implementation needs to be updated to match interface")
 	// Create ensemble service
 	ensemble := services.NewEnsembleService("confidence_weighted", 30*time.Second)
 
@@ -248,9 +247,11 @@ func TestRequestService_ProcessRequest_WithEnsemble(t *testing.T) {
 	provider1.On("Complete", mock.Anything, mock.Anything).Return(response1, nil)
 	provider2.On("Complete", mock.Anything, mock.Anything).Return(response2, nil)
 
-	// Register providers
+	// Register providers with both request service AND ensemble
 	requestService.RegisterProvider("provider1", provider1)
 	requestService.RegisterProvider("provider2", provider2)
+	ensemble.RegisterProvider("provider1", provider1)
+	ensemble.RegisterProvider("provider2", provider2)
 
 	// Create test request with ensemble config
 	req := &models.LLMRequest{

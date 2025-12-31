@@ -12,12 +12,13 @@ import (
 
 // IntegrationOrchestrator coordinates MCP, LSP, and tool execution
 type IntegrationOrchestrator struct {
-	mcpManager     *MCPManager
-	lspClient      *LSPClient
-	toolRegistry   *ToolRegistry
-	contextManager *ContextManager
-	workflows      map[string]*Workflow
-	mu             sync.RWMutex
+	mcpManager       *MCPManager
+	lspClient        *LSPClient
+	toolRegistry     *ToolRegistry
+	contextManager   *ContextManager
+	providerRegistry *ProviderRegistry
+	workflows        map[string]*Workflow
+	mu               sync.RWMutex
 }
 
 // Workflow represents a sequence of integrated operations
@@ -58,6 +59,11 @@ func NewIntegrationOrchestrator(mcpManager *MCPManager, lspClient *LSPClient, to
 		contextManager: contextManager,
 		workflows:      make(map[string]*Workflow),
 	}
+}
+
+// SetProviderRegistry sets the LLM provider registry for LLM workflow steps
+func (io *IntegrationOrchestrator) SetProviderRegistry(registry *ProviderRegistry) {
+	io.providerRegistry = registry
 }
 
 // ExecuteCodeAnalysis performs comprehensive code analysis
@@ -389,55 +395,118 @@ func (io *IntegrationOrchestrator) executeLLMStep(ctx context.Context, step *Wor
 		return nil, fmt.Errorf("LLM operation parameter required")
 	}
 
+	// Check if provider registry is available
+	if io.providerRegistry == nil {
+		return nil, fmt.Errorf("LLM provider registry not configured")
+	}
+
+	// Get provider name (default to first available)
+	providerName, _ := step.Parameters["provider"].(string)
+	if providerName == "" {
+		providers := io.providerRegistry.ListProviders()
+		if len(providers) == 0 {
+			return nil, fmt.Errorf("no LLM providers available")
+		}
+		providerName = providers[0]
+	}
+
+	provider, err := io.providerRegistry.GetProvider(providerName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider %s: %w", providerName, err)
+	}
+
+	// Build the LLM request
+	llmReq, err := io.buildLLMRequest(step)
+	if err != nil {
+		return nil, err
+	}
+
 	switch operation {
 	case "complete":
-		prompt, ok := step.Parameters["prompt"].(string)
-		if !ok {
-			return nil, fmt.Errorf("prompt parameter required for complete operation")
-		}
-
-		model, _ := step.Parameters["model"].(string)
-		if model == "" {
-			model = "gpt-3.5-turbo" // default
-		}
-
-		// Create LLM request
-		llmReq := &models.LLMRequest{
-			ID:     fmt.Sprintf("workflow-%s-%d", step.ID, time.Now().Unix()),
-			Prompt: prompt,
-			ModelParams: models.ModelParameters{
-				Model: model,
-			},
-			CreatedAt: time.Now(),
-		}
-
-		// Add messages if provided
-		if messages, ok := step.Parameters["messages"].([]interface{}); ok {
-			llmMessages := make([]models.Message, 0, len(messages))
-			for _, msg := range messages {
-				if msgMap, ok := msg.(map[string]interface{}); ok {
-					role, _ := msgMap["role"].(string)
-					content, _ := msgMap["content"].(string)
-					llmMessages = append(llmMessages, models.Message{
-						Role:    role,
-						Content: content,
-					})
-				}
-			}
-			llmReq.Messages = llmMessages
-		}
-
-		// For now, we'll need to get a provider registry or direct provider
-		// This is a simplified implementation
-		return nil, fmt.Errorf("LLM provider integration requires provider registry access")
+		return provider.Complete(ctx, llmReq)
 
 	case "stream":
-		// Similar to complete but for streaming
-		return nil, fmt.Errorf("LLM streaming not yet implemented in workflow steps")
+		// Get the streaming channel from provider
+		streamChan, err := provider.CompleteStream(ctx, llmReq)
+		if err != nil {
+			return nil, fmt.Errorf("failed to start streaming: %w", err)
+		}
+
+		// Collect all streamed responses into a single result
+		var fullContent string
+		var lastResponse *models.LLMResponse
+
+		for response := range streamChan {
+			if response != nil {
+				fullContent += response.Content
+				lastResponse = response
+			}
+		}
+
+		// Return combined response
+		if lastResponse != nil {
+			lastResponse.Content = fullContent
+			return lastResponse, nil
+		}
+
+		return &models.LLMResponse{
+			ID:        fmt.Sprintf("workflow-%s-%d", step.ID, time.Now().Unix()),
+			RequestID: llmReq.ID,
+			Content:   fullContent,
+			CreatedAt: time.Now(),
+		}, nil
 
 	default:
 		return nil, fmt.Errorf("unknown LLM operation: %s", operation)
 	}
+}
+
+// buildLLMRequest constructs an LLMRequest from workflow step parameters
+func (io *IntegrationOrchestrator) buildLLMRequest(step *WorkflowStep) (*models.LLMRequest, error) {
+	prompt, _ := step.Parameters["prompt"].(string)
+	model, _ := step.Parameters["model"].(string)
+	if model == "" {
+		model = "default"
+	}
+
+	llmReq := &models.LLMRequest{
+		ID:     fmt.Sprintf("workflow-%s-%d", step.ID, time.Now().Unix()),
+		Prompt: prompt,
+		ModelParams: models.ModelParameters{
+			Model: model,
+		},
+		CreatedAt: time.Now(),
+	}
+
+	// Add temperature if provided
+	if temp, ok := step.Parameters["temperature"].(float64); ok {
+		llmReq.ModelParams.Temperature = temp
+	}
+
+	// Add max_tokens if provided
+	if maxTokens, ok := step.Parameters["max_tokens"].(int); ok {
+		llmReq.ModelParams.MaxTokens = maxTokens
+	} else if maxTokensFloat, ok := step.Parameters["max_tokens"].(float64); ok {
+		llmReq.ModelParams.MaxTokens = int(maxTokensFloat)
+	}
+
+	// Add messages if provided
+	if messages, ok := step.Parameters["messages"].([]interface{}); ok {
+		llmMessages := make([]models.Message, 0, len(messages))
+		for _, msg := range messages {
+			if msgMap, ok := msg.(map[string]interface{}); ok {
+				role, _ := msgMap["role"].(string)
+				content, _ := msgMap["content"].(string)
+				llmMessages = append(llmMessages, models.Message{
+					Role:    role,
+					Content: content,
+				})
+			}
+		}
+		llmReq.Messages = llmMessages
+	}
+
+	return llmReq, nil
 }
 
 // executeOperation executes a single operation

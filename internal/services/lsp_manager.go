@@ -312,11 +312,7 @@ func (l *LSPManager) ValidateLSPRequest(ctx context.Context, req LSPRequest) err
 
 // SyncLSPServer synchronizes configuration with an LSP server
 func (l *LSPManager) SyncLSPServer(ctx context.Context, serverID string) error {
-	l.log.WithField("serverId", serverID).Info("Synchronizing LSP server")
-
-	// For demonstration, simulate synchronization
-	l.log.Info("LSP server synchronization completed")
-	return nil
+	return l.refreshLSPServer(ctx, serverID)
 }
 
 // GetLSPStats returns statistics about LSP usage
@@ -349,6 +345,84 @@ func (l *LSPManager) GetLSPStats(ctx context.Context) (map[string]interface{}, e
 
 // RefreshAllLSPServers refreshes all LSP servers
 func (m *LSPManager) RefreshAllLSPServers(ctx context.Context) error {
-	// Placeholder implementation
+	servers, err := m.ListLSPServers(ctx)
+	if err != nil {
+		m.log.WithError(err).Error("Failed to list LSP servers for refresh")
+		return fmt.Errorf("failed to list LSP servers: %w", err)
+	}
+
+	var refreshErrors []error
+	refreshedCount := 0
+
+	for _, server := range servers {
+		if !server.Enabled {
+			m.log.WithField("serverId", server.ID).Debug("Skipping disabled LSP server")
+			continue
+		}
+
+		if err := m.refreshLSPServer(ctx, server.ID); err != nil {
+			m.log.WithFields(logrus.Fields{
+				"serverId": server.ID,
+				"error":    err.Error(),
+			}).Warn("Failed to refresh LSP server")
+			refreshErrors = append(refreshErrors, err)
+		} else {
+			refreshedCount++
+		}
+	}
+
+	m.log.WithFields(logrus.Fields{
+		"refreshedCount": refreshedCount,
+		"totalServers":   len(servers),
+		"errorCount":     len(refreshErrors),
+	}).Info("LSP servers refresh completed")
+
+	if len(refreshErrors) > 0 {
+		return fmt.Errorf("failed to refresh %d of %d servers", len(refreshErrors), len(servers))
+	}
+
 	return nil
 }
+
+// refreshLSPServer refreshes a single LSP server by ID
+func (m *LSPManager) refreshLSPServer(ctx context.Context, serverID string) error {
+	server, err := m.GetLSPServer(ctx, serverID)
+	if err != nil {
+		return err
+	}
+
+	m.log.WithFields(logrus.Fields{
+		"serverId": serverID,
+		"language": server.Language,
+	}).Debug("Refreshing LSP server")
+
+	// In a real implementation, this would:
+	// 1. Check if the LSP server process is running
+	// 2. Send an initialization request if needed
+	// 3. Update capabilities
+	// 4. Invalidate relevant cache entries
+
+	// For now, we simulate the refresh by updating the lastSync time
+	now := time.Now()
+	server.LastSync = &now
+
+	// Clear any cached responses for this server
+	cachePattern := fmt.Sprintf("lsp_response_%s_*", serverID)
+	if m.cache != nil {
+		if invalidator, ok := m.cache.(interface {
+			InvalidateByPattern(ctx context.Context, pattern string) error
+		}); ok {
+			if err := invalidator.InvalidateByPattern(ctx, cachePattern); err != nil {
+				m.log.WithError(err).Warn("Failed to invalidate cache entries during refresh")
+			}
+		}
+	}
+
+	m.log.WithFields(logrus.Fields{
+		"serverId": serverID,
+		"lastSync": now,
+	}).Info("LSP server refreshed successfully")
+
+	return nil
+}
+

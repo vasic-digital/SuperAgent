@@ -50,8 +50,8 @@ func TestZaiProvider_GetCapabilities(t *testing.T) {
 	capabilities := provider.GetCapabilities()
 
 	assert.NotNil(t, capabilities)
-	// ZAI does NOT support streaming (explicitly documented)
-	assert.False(t, capabilities.SupportsStreaming)
+	// ZAI now supports streaming
+	assert.True(t, capabilities.SupportsStreaming)
 	// ZAI does NOT support function calling
 	assert.False(t, capabilities.SupportsFunctionCalling)
 	// ZAI does NOT support vision
@@ -120,19 +120,8 @@ func TestZaiProvider_WithRetry(t *testing.T) {
 	require.NotNil(t, provider)
 }
 
-func TestZaiProvider_CompleteStream_NotSupported(t *testing.T) {
-	provider := zai.NewZAIProvider(
-		"test-api-key",
-		"https://api.zai.com",
-		"zai-pro",
-	)
-	require.NotNil(t, provider)
-
-	// Streaming is not supported - should return error
-	ch, err := provider.CompleteStream(nil, nil)
-	assert.Error(t, err)
-	assert.Nil(t, ch)
-	assert.Contains(t, err.Error(), "streaming not yet implemented")
+func TestZaiProvider_CompleteStream(t *testing.T) {
+	t.Skip("Skipping integration test - requires valid ZAI API endpoint")
 }
 
 // Integration tests that require external API are skipped

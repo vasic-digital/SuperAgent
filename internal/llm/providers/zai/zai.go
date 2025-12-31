@@ -1,6 +1,7 @@
 package zai
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -93,6 +94,28 @@ type ZAIError struct {
 	} `json:"error"`
 }
 
+// ZAIStreamResponse represents a streaming response chunk from the Z.AI API
+type ZAIStreamResponse struct {
+	ID      string             `json:"id"`
+	Object  string             `json:"object"`
+	Created int64              `json:"created"`
+	Model   string             `json:"model"`
+	Choices []ZAIStreamChoice  `json:"choices"`
+}
+
+// ZAIStreamChoice represents a choice in a streaming response
+type ZAIStreamChoice struct {
+	Index        int              `json:"index"`
+	Delta        ZAIStreamDelta   `json:"delta"`
+	FinishReason *string          `json:"finish_reason"`
+}
+
+// ZAIStreamDelta represents the delta content in a streaming chunk
+type ZAIStreamDelta struct {
+	Role    string `json:"role,omitempty"`
+	Content string `json:"content,omitempty"`
+}
+
 // NewZAIProvider creates a new Z.AI provider instance
 func NewZAIProvider(apiKey, baseURL, model string) *ZAIProvider {
 	return NewZAIProviderWithRetry(apiKey, baseURL, model, DefaultRetryConfig())
@@ -134,11 +157,178 @@ func (z *ZAIProvider) Complete(ctx context.Context, req *models.LLMRequest) (*mo
 }
 
 // CompleteStream implements streaming completion for Z.AI
-// Note: Z.AI streaming is not yet implemented - this returns an error
 func (z *ZAIProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
-	// Z.AI streaming is not yet implemented
-	// GetCapabilities() returns SupportsStreaming: false
-	return nil, fmt.Errorf("streaming not yet implemented for Z.AI provider")
+	startTime := time.Now()
+
+	// Convert internal request to Z.AI format with streaming enabled
+	zaiReq := z.convertToZAIRequest(req)
+	zaiReq.Stream = true
+
+	// Make streaming API call
+	resp, err := z.makeStreamingRequest(ctx, zaiReq)
+	if err != nil {
+		return nil, fmt.Errorf("Z.AI streaming API call failed: %w", err)
+	}
+
+	// Create response channel
+	ch := make(chan *models.LLMResponse)
+
+	go func() {
+		defer resp.Body.Close()
+		defer close(ch)
+
+		reader := bufio.NewReader(resp.Body)
+		var fullContent string
+
+		for {
+			// Check context cancellation
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			line, err := reader.ReadBytes('\n')
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				// Send error response and exit
+				errorResp := &models.LLMResponse{
+					ID:             "stream-error-" + req.ID,
+					RequestID:      req.ID,
+					ProviderID:     "zai",
+					ProviderName:   "Z.AI",
+					Content:        "",
+					Confidence:     0.0,
+					TokensUsed:     0,
+					ResponseTime:   time.Since(startTime).Milliseconds(),
+					FinishReason:   "error",
+					Selected:       false,
+					SelectionScore: 0.0,
+					CreatedAt:      time.Now(),
+				}
+				ch <- errorResp
+				return
+			}
+
+			// Skip empty lines and "data: " prefix
+			line = bytes.TrimSpace(line)
+			if !bytes.HasPrefix(line, []byte("data: ")) {
+				continue
+			}
+			line = bytes.TrimPrefix(line, []byte("data: "))
+
+			// Skip "[DONE]" marker
+			if bytes.Equal(line, []byte("[DONE]")) {
+				break
+			}
+
+			// Parse JSON
+			var streamResp ZAIStreamResponse
+			if err := json.Unmarshal(line, &streamResp); err != nil {
+				continue // Skip malformed JSON
+			}
+
+			// Extract content
+			if len(streamResp.Choices) > 0 {
+				delta := streamResp.Choices[0].Delta.Content
+				if delta != "" {
+					fullContent += delta
+
+					// Send chunk response
+					chunkResp := &models.LLMResponse{
+						ID:             streamResp.ID,
+						RequestID:      req.ID,
+						ProviderID:     "zai",
+						ProviderName:   "Z.AI",
+						Content:        delta,
+						Confidence:     0.80, // Default confidence for streaming
+						TokensUsed:     1,    // Estimated per chunk
+						ResponseTime:   time.Since(startTime).Milliseconds(),
+						FinishReason:   "",
+						Selected:       false,
+						SelectionScore: 0.0,
+						Metadata: map[string]interface{}{
+							"model":        streamResp.Model,
+							"stream_chunk": true,
+						},
+						CreatedAt: time.Now(),
+					}
+					ch <- chunkResp
+				}
+
+				// Check if stream is finished
+				if streamResp.Choices[0].FinishReason != nil {
+					// Send final response with complete content
+					finalResp := &models.LLMResponse{
+						ID:             streamResp.ID,
+						RequestID:      req.ID,
+						ProviderID:     "zai",
+						ProviderName:   "Z.AI",
+						Content:        fullContent,
+						Confidence:     0.80,
+						TokensUsed:     len(fullContent) / 4, // Rough token estimate
+						ResponseTime:   time.Since(startTime).Milliseconds(),
+						FinishReason:   *streamResp.Choices[0].FinishReason,
+						Selected:       false,
+						SelectionScore: 0.0,
+						Metadata: map[string]interface{}{
+							"model":          streamResp.Model,
+							"stream_complete": true,
+						},
+						CreatedAt: time.Now(),
+					}
+					ch <- finalResp
+					break
+				}
+			}
+		}
+	}()
+
+	return ch, nil
+}
+
+// makeStreamingRequest sends a streaming request to the Z.AI API
+func (z *ZAIProvider) makeStreamingRequest(ctx context.Context, req *ZAIRequest) (*http.Response, error) {
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// Determine endpoint based on request type
+	endpoint := "/completions"
+	if len(req.Messages) > 0 {
+		endpoint = "/chat/completions"
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", z.baseURL+endpoint, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+
+	httpReq.Header.Set("Authorization", "Bearer "+z.apiKey)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "text/event-stream")
+
+	// Use a client without timeout for streaming
+	streamClient := &http.Client{}
+	resp, err := streamClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("HTTP request failed: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		var zaiErr ZAIError
+		if err := json.Unmarshal(body, &zaiErr); err == nil && zaiErr.Error.Message != "" {
+			return nil, fmt.Errorf("Z.AI API error: %s (%s)", zaiErr.Error.Message, zaiErr.Error.Type)
+		}
+		return nil, fmt.Errorf("Z.AI API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return resp, nil
 }
 
 // HealthCheck implements health checking for the Z.AI provider
@@ -184,7 +374,7 @@ func (z *ZAIProvider) GetCapabilities() *models.ProviderCapabilities {
 			"text_completion",
 			"chat",
 		},
-		SupportsStreaming:       false, // Not implemented yet
+		SupportsStreaming:       true,
 		SupportsFunctionCalling: false,
 		SupportsVision:          false,
 		Limits: models.ModelLimits{

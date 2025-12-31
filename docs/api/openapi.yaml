@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
-  title: SuperAgent AI Debate API
+  title: SuperAgent AI Platform API
   description: |
-    Comprehensive API for AI-powered debates with multi-provider support,
-    Cognee AI enhancement, and advanced monitoring capabilities.
+    Comprehensive API for AI-powered completions with multi-provider support,
+    ensemble reasoning, Cognee AI enhancement, and advanced monitoring capabilities.
   version: 1.0.0
   contact:
     name: SuperAgent Support
@@ -22,6 +22,627 @@ security:
   - bearerAuth: []
 
 paths:
+  /health:
+    get:
+      summary: Basic health check
+      description: Returns basic health status of the API
+      operationId: healthCheck
+      tags:
+        - Monitoring
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+
+  /v1/health:
+    get:
+      summary: Enhanced health check
+      description: Returns detailed health status including provider health
+      operationId: enhancedHealthCheck
+      tags:
+        - Monitoring
+      security: []
+      responses:
+        '200':
+          description: Service health details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnhancedHealthResponse'
+
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      description: Returns Prometheus-formatted metrics for monitoring
+      operationId: getMetrics
+      tags:
+        - Monitoring
+      security: []
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /v1/auth/register:
+    post:
+      summary: Register new user
+      description: Creates a new user account
+      operationId: registerUser
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/login:
+    post:
+      summary: User login
+      description: Authenticates user and returns JWT token
+      operationId: loginUser
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/refresh:
+    post:
+      summary: Refresh token
+      description: Refreshes the JWT token
+      operationId: refreshToken
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/logout:
+    post:
+      summary: User logout
+      description: Invalidates the current JWT token
+      operationId: logoutUser
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged out successfully
+
+  /v1/auth/me:
+    get:
+      summary: Get current user info
+      description: Returns information about the authenticated user
+      operationId: getCurrentUser
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: User info retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/models:
+    get:
+      summary: List available models
+      description: Returns a list of available LLM models
+      operationId: listModels
+      tags:
+        - Models
+      security: []
+      responses:
+        '200':
+          description: Models list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelsResponse'
+
+  /v1/providers:
+    get:
+      summary: List providers
+      description: Returns a list of available LLM providers with their capabilities
+      operationId: listProviders
+      tags:
+        - Providers
+      responses:
+        '200':
+          description: Providers list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvidersResponse'
+
+  /v1/providers/{name}/health:
+    get:
+      summary: Get provider health
+      description: Returns health status for a specific provider
+      operationId: getProviderHealth
+      tags:
+        - Providers
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Provider name
+          schema:
+            type: string
+            enum: [claude, deepseek, gemini, qwen, zai, ollama, openrouter]
+      responses:
+        '200':
+          description: Provider is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderHealthResponse'
+        '404':
+          description: Provider not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Provider is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderHealthResponse'
+
+  /v1/completions:
+    post:
+      summary: Create completion
+      description: Creates a completion using the specified model
+      operationId: createCompletion
+      tags:
+        - Completions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletionRequest'
+      responses:
+        '200':
+          description: Completion created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/completions/stream:
+    post:
+      summary: Create streaming completion
+      description: Creates a streaming completion using Server-Sent Events
+      operationId: createCompletionStream
+      tags:
+        - Completions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletionRequest'
+      responses:
+        '200':
+          description: Streaming completion started
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-Sent Events stream
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/chat/completions:
+    post:
+      summary: Create chat completion
+      description: Creates a chat completion with message history
+      operationId: createChatCompletion
+      tags:
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+      responses:
+        '200':
+          description: Chat completion created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/chat/completions/stream:
+    post:
+      summary: Create streaming chat completion
+      description: Creates a streaming chat completion using Server-Sent Events
+      operationId: createChatCompletionStream
+      tags:
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+      responses:
+        '200':
+          description: Streaming chat completion started
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-Sent Events stream
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/ensemble/completions:
+    post:
+      summary: Create ensemble completion
+      description: Creates a completion using ensemble of multiple LLM providers
+      operationId: createEnsembleCompletion
+      tags:
+        - Ensemble
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnsembleCompletionRequest'
+      responses:
+        '200':
+          description: Ensemble completion created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnsembleCompletionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/cognee/visualize:
+    get:
+      summary: Visualize knowledge graph
+      description: Returns a visualization of the Cognee knowledge graph
+      operationId: visualizeGraph
+      tags:
+        - Cognee
+      responses:
+        '200':
+          description: Graph visualization data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphVisualization'
+
+  /v1/cognee/datasets:
+    get:
+      summary: List Cognee datasets
+      description: Returns a list of available Cognee datasets
+      operationId: listDatasets
+      tags:
+        - Cognee
+      responses:
+        '200':
+          description: Datasets list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetsResponse'
+
+  /v1/models/metadata:
+    get:
+      summary: List model metadata
+      description: Returns metadata for all available models from Models.dev
+      operationId: listModelMetadata
+      tags:
+        - Models
+      security: []
+      parameters:
+        - name: capability
+          in: query
+          description: Filter by capability
+          schema:
+            type: string
+        - name: provider
+          in: query
+          description: Filter by provider
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Model metadata list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelMetadataListResponse'
+
+  /v1/models/metadata/{id}:
+    get:
+      summary: Get model metadata
+      description: Returns detailed metadata for a specific model
+      operationId: getModelMetadata
+      tags:
+        - Models
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Model ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Model metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelMetadata'
+        '404':
+          description: Model not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/models/metadata/{id}/benchmarks:
+    get:
+      summary: Get model benchmarks
+      description: Returns benchmark data for a specific model
+      operationId: getModelBenchmarks
+      tags:
+        - Models
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Model ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Model benchmarks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelBenchmarks'
+        '404':
+          description: Model not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/models/metadata/compare:
+    get:
+      summary: Compare models
+      description: Compares multiple models side by side
+      operationId: compareModels
+      tags:
+        - Models
+      security: []
+      parameters:
+        - name: models
+          in: query
+          description: Comma-separated list of model IDs to compare
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Model comparison
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelComparison'
+
+  /v1/admin/health/all:
+    get:
+      summary: Get all provider health
+      description: Returns health status for all providers (admin only)
+      operationId: getAllProviderHealth
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: All provider health
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllProviderHealthResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/admin/models/metadata/refresh:
+    post:
+      summary: Refresh model metadata
+      description: Triggers a refresh of model metadata from Models.dev (admin only)
+      operationId: refreshModelMetadata
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Refresh initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Refresh initiated
+                  taskId:
+                    type: string
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/admin/models/metadata/refresh/status:
+    get:
+      summary: Get refresh status
+      description: Returns the status of the model metadata refresh task (admin only)
+      operationId: getRefreshStatus
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Refresh status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshStatus'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /debates:
     post:
       summary: Create a new debate
@@ -50,12 +671,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
           content:
             application/json:
               schema:
@@ -99,6 +714,524 @@ components:
       description: JWT authentication token
 
   schemas:
+    EnhancedHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        providers:
+          type: object
+          properties:
+            total:
+              type: integer
+            healthy:
+              type: integer
+            unhealthy:
+              type: integer
+        timestamp:
+          type: integer
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    RefreshRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        refreshToken:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/UserInfo'
+
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+        createdAt:
+          type: string
+          format: date-time
+
+    ModelsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Model'
+
+    Model:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          example: model
+        provider:
+          type: string
+        created:
+          type: integer
+        owned_by:
+          type: string
+
+    ProvidersResponse:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Provider'
+        count:
+          type: integer
+
+    Provider:
+      type: object
+      properties:
+        name:
+          type: string
+        supported_models:
+          type: array
+          items:
+            type: string
+        supported_features:
+          type: array
+          items:
+            type: string
+        supports_streaming:
+          type: boolean
+        supports_function_calling:
+          type: boolean
+        supports_vision:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties: true
+
+    ProviderHealthResponse:
+      type: object
+      properties:
+        provider:
+          type: string
+        healthy:
+          type: boolean
+        error:
+          type: string
+        circuit_breaker:
+          type: object
+          properties:
+            state:
+              type: string
+              enum: [closed, open, half_open]
+            failure_count:
+              type: integer
+            last_failure:
+              type: string
+              format: date-time
+
+    CompletionRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          description: The prompt to complete
+        model:
+          type: string
+          description: Model to use
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+          default: 0.7
+        max_tokens:
+          type: integer
+          minimum: 1
+          maximum: 4096
+          default: 1000
+        top_p:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 1.0
+        stop:
+          type: array
+          items:
+            type: string
+        memory_enhanced:
+          type: boolean
+          default: false
+
+    CompletionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          example: completion
+        created:
+          type: integer
+        model:
+          type: string
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              text:
+                type: string
+              finish_reason:
+                type: string
+        usage:
+          $ref: '#/components/schemas/Usage'
+
+    ChatCompletionRequest:
+      type: object
+      required:
+        - messages
+      properties:
+        model:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+          default: 0.7
+        max_tokens:
+          type: integer
+          minimum: 1
+          maximum: 4096
+        top_p:
+          type: number
+          minimum: 0
+          maximum: 1
+        stream:
+          type: boolean
+          default: false
+
+    ChatMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant, function, tool]
+        content:
+          type: string
+        name:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            type: object
+
+    ChatCompletionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          example: chat.completion
+        created:
+          type: integer
+        model:
+          type: string
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              message:
+                $ref: '#/components/schemas/ChatMessage'
+              finish_reason:
+                type: string
+        usage:
+          $ref: '#/components/schemas/Usage'
+
+    Usage:
+      type: object
+      properties:
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+
+    EnsembleCompletionRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        model:
+          type: string
+        temperature:
+          type: number
+        max_tokens:
+          type: integer
+        ensemble_config:
+          $ref: '#/components/schemas/EnsembleConfig'
+        memory_enhanced:
+          type: boolean
+
+    EnsembleConfig:
+      type: object
+      properties:
+        strategy:
+          type: string
+          enum: [confidence_weighted, majority_vote, best_of_n, consensus]
+          default: confidence_weighted
+        min_providers:
+          type: integer
+          minimum: 1
+          default: 2
+        confidence_threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.8
+        fallback_to_best:
+          type: boolean
+          default: true
+        timeout:
+          type: integer
+          description: Timeout in seconds
+          default: 30
+        preferred_providers:
+          type: array
+          items:
+            type: string
+
+    EnsembleCompletionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          example: ensemble.completion
+        created:
+          type: integer
+        model:
+          type: string
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              message:
+                $ref: '#/components/schemas/ChatMessage'
+              finish_reason:
+                type: string
+        usage:
+          $ref: '#/components/schemas/Usage'
+        ensemble:
+          type: object
+          properties:
+            voting_method:
+              type: string
+            responses_count:
+              type: integer
+            scores:
+              type: object
+              additionalProperties:
+                type: number
+            metadata:
+              type: object
+            selected_provider:
+              type: string
+            selection_score:
+              type: number
+
+    GraphVisualization:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            type: object
+        edges:
+          type: array
+          items:
+            type: object
+        layout:
+          type: object
+
+    DatasetsResponse:
+      type: object
+      properties:
+        datasets:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+
+    ModelMetadataListResponse:
+      type: object
+      properties:
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelMetadata'
+        count:
+          type: integer
+
+    ModelMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        context_length:
+          type: integer
+        pricing:
+          type: object
+          properties:
+            input:
+              type: number
+            output:
+              type: number
+        last_updated:
+          type: string
+          format: date-time
+
+    ModelBenchmarks:
+      type: object
+      properties:
+        model_id:
+          type: string
+        benchmarks:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              score:
+                type: number
+              date:
+                type: string
+                format: date-time
+
+    ModelComparison:
+      type: object
+      properties:
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelMetadata'
+        comparison:
+          type: object
+          additionalProperties: true
+
+    AllProviderHealthResponse:
+      type: object
+      properties:
+        provider_health:
+          type: object
+          additionalProperties:
+            type: string
+        timestamp:
+          type: integer
+
+    RefreshStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        models_updated:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+
     DebateRequest:
       type: object
       required:
@@ -319,18 +1452,26 @@ components:
           description: When the error occurred
 
 tags:
-  - name: Debates
-    description: Core debate operations
+  - name: Monitoring
+    description: Health checks and metrics
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Models
+    description: Model listing and metadata
   - name: Providers
     description: LLM provider management
-  - name: History
-    description: Debate history and analytics
-  - name: Monitoring
-    description: System monitoring and metrics
-  - name: Results
-    description: Debate results and consensus
-  - name: Reporting
-    description: Report generation and export
+  - name: Completions
+    description: Text completion operations
+  - name: Chat
+    description: Chat completion operations
+  - name: Ensemble
+    description: Multi-provider ensemble operations
+  - name: Cognee
+    description: Cognee AI enhancement
+  - name: Debates
+    description: AI debate operations
+  - name: Admin
+    description: Administrative operations
 
 externalDocs:
   description: Find more information about SuperAgent
