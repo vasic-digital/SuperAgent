@@ -581,3 +581,393 @@ func BenchmarkExtractJSON(b *testing.B) {
 		extractJSON(input)
 	}
 }
+
+func TestDefaultGeneratorConfig(t *testing.T) {
+	config := DefaultGeneratorConfig()
+
+	assert.Equal(t, 3, config.MaxRetries)
+	assert.False(t, config.StrictMode)
+	assert.True(t, config.IncludeSchemaInPrompt)
+	assert.True(t, config.IncludeErrorFeedback)
+}
+
+func TestStructuredGenerator_GenerateWithType(t *testing.T) {
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"name": StringSchema(),
+		"age":  IntegerSchema(),
+	}, "name", "age")
+
+	provider := &mockProvider{
+		responses: []string{`{"name": "Alice", "age": 25}`},
+	}
+
+	generator, err := NewStructuredGenerator(provider, schema, nil)
+	require.NoError(t, err)
+
+	type Person struct {
+		Name string `json:"name"`
+		Age  int    `json:"age"`
+	}
+
+	var person Person
+	err = generator.GenerateWithType(context.Background(), "Generate a person", &person)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Alice", person.Name)
+	assert.Equal(t, 25, person.Age)
+}
+
+func TestStructuredGenerator_GenerateWithType_ValidationFails(t *testing.T) {
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"name": StringSchema(),
+		"age":  IntegerSchema(),
+	}, "name", "age")
+
+	config := DefaultGeneratorConfig()
+	config.MaxRetries = 0
+	config.StrictMode = true
+
+	provider := &mockProvider{
+		responses: []string{`{"name": "John"}`}, // Missing age
+	}
+
+	generator, err := NewStructuredGenerator(provider, schema, config)
+	require.NoError(t, err)
+
+	type Person struct {
+		Name string `json:"name"`
+		Age  int    `json:"age"`
+	}
+
+	var person Person
+	err = generator.GenerateWithType(context.Background(), "Generate a person", &person)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "validation failed")
+}
+
+type errorProvider struct {
+	err error
+}
+
+func (e *errorProvider) Complete(ctx context.Context, prompt string) (string, error) {
+	return "", e.err
+}
+
+func TestStructuredGenerator_ProviderError(t *testing.T) {
+	schema := StringSchema()
+
+	provider := &errorProvider{err: context.DeadlineExceeded}
+
+	generator, err := NewStructuredGenerator(provider, schema, nil)
+	require.NoError(t, err)
+
+	_, err = generator.Generate(context.Background(), "Test")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "LLM completion failed")
+}
+
+func TestRegexGenerator_ProviderError(t *testing.T) {
+	provider := &errorProvider{err: context.DeadlineExceeded}
+
+	generator, err := NewRegexGenerator(provider, `^test$`, nil)
+	require.NoError(t, err)
+
+	_, err = generator.Generate(context.Background(), "Test")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "LLM completion failed")
+}
+
+func TestChoiceGenerator_ProviderError(t *testing.T) {
+	provider := &errorProvider{err: context.DeadlineExceeded}
+
+	generator := NewChoiceGenerator(provider, []string{"a", "b"}, nil)
+
+	_, err := generator.Generate(context.Background(), "Test")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "LLM completion failed")
+}
+
+func TestRegexGenerator_Retry(t *testing.T) {
+	provider := &mockProvider{
+		responses: []string{
+			"not matching",
+			"still not matching",
+			"ABC123", // Matches
+		},
+	}
+
+	generator, err := NewRegexGenerator(provider, `^[A-Z]{3}[0-9]{3}$`, nil)
+	require.NoError(t, err)
+
+	result, err := generator.Generate(context.Background(), "Generate a code")
+	require.NoError(t, err)
+
+	assert.True(t, result.Valid)
+	assert.Equal(t, 2, result.Retries)
+}
+
+func TestRegexGenerator_StrictMode(t *testing.T) {
+	config := DefaultGeneratorConfig()
+	config.StrictMode = true
+
+	provider := &mockProvider{
+		responses: []string{"not matching"},
+	}
+
+	generator, err := NewRegexGenerator(provider, `^[A-Z]{3}[0-9]{3}$`, config)
+	require.NoError(t, err)
+
+	result, err := generator.Generate(context.Background(), "Generate a code")
+	require.NoError(t, err)
+
+	assert.False(t, result.Valid)
+	assert.Equal(t, 0, result.Retries)
+	assert.Contains(t, result.Errors[0], "does not match pattern")
+}
+
+func TestRegexGenerator_MaxRetries(t *testing.T) {
+	config := DefaultGeneratorConfig()
+	config.MaxRetries = 2
+
+	provider := &mockProvider{
+		responses: []string{"bad1", "bad2", "bad3"}, // All bad
+	}
+
+	generator, err := NewRegexGenerator(provider, `^[A-Z]{3}[0-9]{3}$`, config)
+	require.NoError(t, err)
+
+	result, err := generator.Generate(context.Background(), "Generate a code")
+	require.NoError(t, err)
+
+	assert.False(t, result.Valid)
+	assert.Equal(t, 2, result.Retries)
+}
+
+func TestChoiceGenerator_ContainsMatch(t *testing.T) {
+	provider := &mockProvider{
+		responses: []string{"I think the answer is red."},
+	}
+
+	generator := NewChoiceGenerator(provider, []string{"red", "green", "blue"}, nil)
+
+	result, err := generator.Generate(context.Background(), "Pick a color")
+	require.NoError(t, err)
+
+	assert.True(t, result.Valid)
+	assert.Equal(t, "red", result.Content)
+}
+
+func TestChoiceGenerator_Retry(t *testing.T) {
+	provider := &mockProvider{
+		responses: []string{
+			"yellow",
+			"purple",
+			"green",
+		},
+	}
+
+	generator := NewChoiceGenerator(provider, []string{"red", "green", "blue"}, nil)
+
+	result, err := generator.Generate(context.Background(), "Pick a color")
+	require.NoError(t, err)
+
+	assert.True(t, result.Valid)
+	assert.Equal(t, "green", result.Content)
+	assert.Equal(t, 2, result.Retries)
+}
+
+func TestChoiceGenerator_StrictMode(t *testing.T) {
+	config := DefaultGeneratorConfig()
+	config.StrictMode = true
+
+	provider := &mockProvider{
+		responses: []string{"yellow"},
+	}
+
+	generator := NewChoiceGenerator(provider, []string{"red", "green", "blue"}, config)
+
+	result, err := generator.Generate(context.Background(), "Pick a color")
+	require.NoError(t, err)
+
+	assert.False(t, result.Valid)
+	assert.Equal(t, 0, result.Retries)
+}
+
+func TestChoiceGenerator_MaxRetries(t *testing.T) {
+	config := DefaultGeneratorConfig()
+	config.MaxRetries = 1
+
+	provider := &mockProvider{
+		responses: []string{"yellow", "purple"},
+	}
+
+	generator := NewChoiceGenerator(provider, []string{"red", "green", "blue"}, config)
+
+	result, err := generator.Generate(context.Background(), "Pick a color")
+	require.NoError(t, err)
+
+	assert.False(t, result.Valid)
+	assert.Equal(t, 1, result.Retries)
+}
+
+func TestNewRegexGenerator_InvalidPattern(t *testing.T) {
+	provider := &mockProvider{}
+
+	_, err := NewRegexGenerator(provider, `[invalid`, nil)
+
+	assert.Error(t, err)
+}
+
+func TestNewStructuredGenerator_NilConfig(t *testing.T) {
+	schema := StringSchema()
+	provider := &mockProvider{responses: []string{`"test"`}}
+
+	generator, err := NewStructuredGenerator(provider, schema, nil)
+	require.NoError(t, err)
+	assert.NotNil(t, generator)
+}
+
+func TestStructuredGenerator_MaxRetriesExhausted(t *testing.T) {
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"name": StringSchema(),
+	}, "name")
+
+	config := DefaultGeneratorConfig()
+	config.MaxRetries = 2
+
+	provider := &mockProvider{
+		responses: []string{
+			`{"wrong": "field"}`,
+			`{"wrong": "field"}`,
+			`{"wrong": "field"}`,
+		},
+	}
+
+	generator, err := NewStructuredGenerator(provider, schema, config)
+	require.NoError(t, err)
+
+	result, err := generator.Generate(context.Background(), "Generate")
+	require.NoError(t, err)
+
+	assert.False(t, result.Valid)
+	assert.Equal(t, 2, result.Retries)
+	assert.Contains(t, result.Errors[0], "failed to generate valid output")
+}
+
+func TestStructuredGenerator_NoJSONRetry(t *testing.T) {
+	schema := StringSchema()
+
+	provider := &mockProvider{
+		responses: []string{
+			"Just plain text",
+			"Still plain text",
+			`"valid json string"`,
+		},
+	}
+
+	generator, err := NewStructuredGenerator(provider, schema, nil)
+	require.NoError(t, err)
+
+	result, err := generator.Generate(context.Background(), "Generate")
+	require.NoError(t, err)
+
+	assert.True(t, result.Valid)
+	assert.Equal(t, 2, result.Retries)
+}
+
+func TestExtractJSON_MarkdownCodeBlock(t *testing.T) {
+	input := "Here's the result:\n```\n{\"key\": \"value\"}\n```\nDone."
+
+	result := extractJSON(input)
+	assert.Equal(t, `{"key": "value"}`, result)
+}
+
+func TestExtractJSON_ArrayWithText(t *testing.T) {
+	input := "The array is: [1, 2, 3, 4] and that's it."
+
+	result := extractJSON(input)
+	assert.Equal(t, `[1, 2, 3, 4]`, result)
+}
+
+func TestSchemaValidator_Boolean(t *testing.T) {
+	schema := BooleanSchema()
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	result := validator.Validate(`true`)
+	assert.True(t, result.Valid)
+
+	result = validator.Validate(`false`)
+	assert.True(t, result.Valid)
+
+	result = validator.Validate(`"true"`)
+	assert.False(t, result.Valid)
+}
+
+func TestSchemaValidator_Null(t *testing.T) {
+	schema := &JSONSchema{Type: "null"}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	result := validator.Validate(`null`)
+	assert.True(t, result.Valid)
+
+	result = validator.Validate(`"null"`)
+	assert.False(t, result.Valid)
+}
+
+func TestSchemaBuilder_Integer(t *testing.T) {
+	schema := NewSchemaBuilder().
+		Integer().
+		Minimum(0).
+		Maximum(100).
+		Build()
+
+	assert.Equal(t, "integer", schema.Type)
+	assert.Equal(t, float64(0), *schema.Minimum)
+	assert.Equal(t, float64(100), *schema.Maximum)
+}
+
+func TestSchemaBuilder_Boolean(t *testing.T) {
+	schema := NewSchemaBuilder().Boolean().Build()
+
+	assert.Equal(t, "boolean", schema.Type)
+}
+
+func TestSchemaBuilder_Enum(t *testing.T) {
+	schema := NewSchemaBuilder().
+		Enum("a", "b", "c").
+		Build()
+
+	assert.Len(t, schema.Enum, 3)
+}
+
+func TestValidationResult_ErrorMessages(t *testing.T) {
+	result := &ValidationResult{
+		Valid: false,
+		Errors: []*ValidationError{
+			{Path: "field1", Message: "error 1"},
+			{Path: "field2", Message: "error 2"},
+		},
+	}
+
+	messages := result.ErrorMessages()
+
+	assert.Len(t, messages, 2)
+	assert.Contains(t, messages[0], "error 1")
+	assert.Contains(t, messages[1], "error 2")
+}
+
+func TestArraySchema(t *testing.T) {
+	schema := ArraySchema(StringSchema())
+
+	assert.Equal(t, "array", schema.Type)
+	assert.NotNil(t, schema.Items)
+	assert.Equal(t, "string", schema.Items.Type)
+}

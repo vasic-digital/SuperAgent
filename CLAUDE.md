@@ -97,6 +97,32 @@ make install-deps     # Install dev dependencies (golangci-lint, gosec)
 - **Protocol Managers**: Unified MCP/LSP/ACP protocol handling
 - **Cognee Integration**: Knowledge graph and RAG capabilities
 - **Middleware Chain**: Auth, rate limiting, validation pipeline
+- **LLM Optimization**: Semantic caching, structured output, enhanced streaming (see below)
+
+### LLM Optimization (`internal/optimization/`)
+
+SuperAgent integrates 8 LLM optimization tools for performance and quality:
+
+| Package | Purpose | Key Features |
+|---------|---------|--------------|
+| `gptcache/` | Semantic caching | Vector similarity, LRU eviction, TTL |
+| `outlines/` | Structured output | JSON schema validation, regex patterns, choice constraints |
+| `streaming/` | Enhanced streaming | Word/sentence buffering, progress tracking, rate limiting |
+| `sglang/` | Prefix caching | RadixAttention, session management (GPU required) |
+| `llamaindex/` | Document retrieval | HyDE, reranking, Cognee integration |
+| `langchain/` | Task decomposition | Chain execution, ReAct agents |
+| `guidance/` | Grammar constraints | CFG-based generation, templates |
+| `lmql/` | Query language | Declarative constraints, decoding strategies |
+
+**Start optimization services:**
+```bash
+docker-compose --profile optimization up -d     # CPU-only optimization
+docker-compose --profile optimization-gpu up -d # With GPU support (SGLang)
+```
+
+**Configuration**: See `configs/production.yaml` under `optimization:` section.
+
+**Documentation**: See `docs/optimization/` and `docs/guides/LLM_OPTIMIZATION_USER_GUIDE.md`.
 
 ## Technology Stack
 

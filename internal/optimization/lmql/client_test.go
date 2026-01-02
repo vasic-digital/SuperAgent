@@ -288,3 +288,327 @@ func TestClient_Timeout(t *testing.T) {
 	_, err := client.ExecuteQuery(ctx, &QueryRequest{Query: "test"})
 	assert.Error(t, err)
 }
+
+func TestDefaultConfig(t *testing.T) {
+	config := DefaultConfig()
+	assert.NotNil(t, config)
+	assert.Equal(t, "http://localhost:8014", config.BaseURL)
+	assert.Equal(t, 120*time.Second, config.Timeout)
+}
+
+func TestClient_Decode(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/decode", r.URL.Path)
+
+		var req DecodingRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		assert.NotEmpty(t, req.Prompt)
+		assert.NotEmpty(t, req.Strategy)
+
+		resp := &DecodingResponse{
+			Outputs:      []string{"Hello, world!", "Hi there!"},
+			StrategyUsed: req.Strategy,
+			Metadata: map[string]interface{}{
+				"total_tokens": 10,
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	resp, err := client.Decode(context.Background(), &DecodingRequest{
+		Prompt:      "Say hello",
+		Strategy:    "sample",
+		NumSamples:  2,
+		Temperature: 0.8,
+	})
+
+	require.NoError(t, err)
+	assert.Len(t, resp.Outputs, 2)
+	assert.Equal(t, "sample", resp.StrategyUsed)
+}
+
+func TestClient_Decode_DefaultStrategy(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req DecodingRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		assert.Equal(t, "argmax", req.Strategy) // Default strategy
+
+		resp := &DecodingResponse{
+			Outputs:      []string{"Result"},
+			StrategyUsed: req.Strategy,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	resp, err := client.Decode(context.Background(), &DecodingRequest{
+		Prompt: "Test prompt",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "argmax", resp.StrategyUsed)
+}
+
+func TestClient_DecodeGreedy(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req DecodingRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		assert.Equal(t, "argmax", req.Strategy)
+
+		resp := &DecodingResponse{
+			Outputs:      []string{"Greedy output"},
+			StrategyUsed: "argmax",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	result, err := client.DecodeGreedy(context.Background(), "Generate text")
+
+	require.NoError(t, err)
+	assert.Equal(t, "Greedy output", result)
+}
+
+func TestClient_DecodeGreedy_NoOutput(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := &DecodingResponse{
+			Outputs:      []string{},
+			StrategyUsed: "argmax",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	_, err := client.DecodeGreedy(context.Background(), "Generate text")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no output generated")
+}
+
+func TestClient_DecodeSample(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req DecodingRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		assert.Equal(t, "sample", req.Strategy)
+		assert.Equal(t, 5, req.NumSamples)
+		assert.Equal(t, 0.9, req.Temperature)
+
+		resp := &DecodingResponse{
+			Outputs:      []string{"Sample 1", "Sample 2", "Sample 3", "Sample 4", "Sample 5"},
+			StrategyUsed: "sample",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	results, err := client.DecodeSample(context.Background(), "Generate samples", 5, 0.9)
+
+	require.NoError(t, err)
+	assert.Len(t, results, 5)
+}
+
+func TestClient_DecodeSample_Defaults(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req DecodingRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		assert.Equal(t, 3, req.NumSamples)    // Default
+		assert.Equal(t, 0.7, req.Temperature) // Default
+
+		resp := &DecodingResponse{
+			Outputs:      []string{"S1", "S2", "S3"},
+			StrategyUsed: "sample",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	results, err := client.DecodeSample(context.Background(), "Generate samples", 0, 0)
+
+	require.NoError(t, err)
+	assert.Len(t, results, 3)
+}
+
+func TestClient_DecodeBeam(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req DecodingRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		assert.Equal(t, "beam", req.Strategy)
+		assert.Equal(t, 5, req.BeamWidth)
+
+		resp := &DecodingResponse{
+			Outputs:      []string{"Beam 1", "Beam 2", "Beam 3", "Beam 4", "Beam 5"},
+			StrategyUsed: "beam",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	results, err := client.DecodeBeam(context.Background(), "Generate with beam search", 5)
+
+	require.NoError(t, err)
+	assert.Len(t, results, 5)
+}
+
+func TestClient_DecodeBeam_DefaultWidth(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req DecodingRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		assert.Equal(t, 3, req.BeamWidth) // Default
+
+		resp := &DecodingResponse{
+			Outputs:      []string{"B1", "B2", "B3"},
+			StrategyUsed: "beam",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	results, err := client.DecodeBeam(context.Background(), "Beam search", 0)
+
+	require.NoError(t, err)
+	assert.Len(t, results, 3)
+}
+
+func TestClient_ScoreCompletions(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/score", r.URL.Path)
+
+		resp := &ScoreResponse{
+			Prompt: "The capital of France is",
+			Scores: map[string]float64{
+				"Paris":  0.95,
+				"London": 0.15,
+				"Berlin": 0.20,
+			},
+			Ranking: []int{0, 2, 1},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	result, err := client.ScoreCompletions(context.Background(),
+		"The capital of France is",
+		[]string{"Paris", "London", "Berlin"})
+
+	require.NoError(t, err)
+	assert.Equal(t, 0.95, result.Scores["Paris"])
+	assert.Greater(t, result.Scores["Paris"], result.Scores["London"])
+}
+
+func TestClient_SelectBestCompletion(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := &ScoreResponse{
+			Prompt: "What is 2+2?",
+			Scores: map[string]float64{
+				"4":     0.98,
+				"5":     0.01,
+				"3":     0.01,
+				"22":    0.0,
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	best, err := client.SelectBestCompletion(context.Background(),
+		"What is 2+2?",
+		[]string{"4", "5", "3", "22"})
+
+	require.NoError(t, err)
+	assert.Equal(t, "4", best)
+}
+
+func TestClient_ExecuteQuery_DefaultValues(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req QueryRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		assert.Equal(t, 0.7, req.Temperature) // Default
+		assert.Equal(t, 500, req.MaxTokens)   // Default
+
+		resp := &QueryResponse{
+			Result:               map[string]interface{}{"answer": "test"},
+			ConstraintsSatisfied: true,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	resp, err := client.ExecuteQuery(context.Background(), &QueryRequest{
+		Query: "test query",
+	})
+
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestClient_GenerateConstrained_DefaultTemperature(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req ConstrainedRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		assert.Equal(t, 0.7, req.Temperature) // Default
+
+		resp := &ConstrainedResponse{
+			Text:         "Result",
+			AllSatisfied: true,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	resp, err := client.GenerateConstrained(context.Background(), &ConstrainedRequest{
+		Prompt:      "Test",
+		Constraints: []Constraint{{Type: "max_length", Value: "50"}},
+	})
+
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+}
