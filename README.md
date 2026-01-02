@@ -453,10 +453,11 @@ export REQUEST_LOGGING=true
 ## 📚 Additional Resources
 
 ### Documentation
+- **[Full Documentation](./docs/README.md)**: Complete documentation index
 - **API Reference**: http://localhost:8080/docs
-- **Architecture Guide**: ./docs/architecture.md
-- **Plugin Development**: ./docs/plugin-development.md
-- **Deployment Guide**: ./docs/deployment.md
+- **[Architecture Guide](./docs/architecture/architecture.md)**: System architecture
+- **[Deployment Guide](./docs/deployment/DEPLOYMENT_GUIDE.md)**: Production deployment
+- **[Quick Start](./docs/guides/quick-start-guide.md)**: Getting started guide
 
 ### Community
 - **GitHub Discussions**: [Community Support](https://github.com/superagent/superagent/discussions)
