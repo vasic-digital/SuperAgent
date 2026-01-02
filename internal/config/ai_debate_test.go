@@ -1189,6 +1189,275 @@ func TestGetDefaultConfig(t *testing.T) {
 	}
 }
 
+func TestAIDebateConfigLoader_GetConfig(t *testing.T) {
+	loader := NewAIDebateConfigLoader("nonexistent.yaml")
+
+	t.Run("returns nil before loading", func(t *testing.T) {
+		config := loader.GetConfig()
+		if config != nil {
+			t.Error("Expected nil config before loading")
+		}
+	})
+
+	t.Run("returns config after loading from string", func(t *testing.T) {
+		configYAML := `
+enabled: true
+maximal_repeat_rounds: 3
+debate_timeout: 300000
+consensus_threshold: 0.75
+quality_threshold: 0.7
+max_response_time: 30000
+max_context_length: 32000
+debate_strategy: round_robin
+voting_strategy: majority
+participants:
+  - name: "TestParticipant1"
+    role: "Tester"
+    enabled: true
+    response_timeout: 30000
+    weight: 1.0
+    priority: 1
+    quality_threshold: 0.7
+    min_response_length: 50
+    max_response_length: 5000
+    debate_style: analytical
+    argumentation_style: logical
+    persuasion_level: 0.5
+    openness_to_change: 0.5
+    llms:
+      - name: "TestLLM1"
+        provider: "openrouter"
+        model: "test-model"
+        enabled: true
+        timeout: 30000
+        max_tokens: 1000
+        temperature: 0.7
+        top_p: 0.9
+  - name: "TestParticipant2"
+    role: "Reviewer"
+    enabled: true
+    response_timeout: 30000
+    weight: 1.0
+    priority: 2
+    quality_threshold: 0.7
+    min_response_length: 50
+    max_response_length: 5000
+    debate_style: critical
+    argumentation_style: evidence_based
+    persuasion_level: 0.6
+    openness_to_change: 0.4
+    llms:
+      - name: "TestLLM2"
+        provider: "claude"
+        model: "claude-3-sonnet"
+        enabled: true
+        timeout: 30000
+        max_tokens: 1000
+        temperature: 0.7
+        top_p: 0.9
+`
+		_, err := loader.LoadFromString(configYAML)
+		if err != nil {
+			t.Fatalf("Failed to load config from string: %v", err)
+		}
+
+		config := loader.GetConfig()
+		if config == nil {
+			t.Error("Expected config to be set after loading")
+		}
+		if !config.Enabled {
+			t.Error("Expected config.Enabled to be true")
+		}
+	})
+}
+
+func TestAIDebateConfigLoader_Reload(t *testing.T) {
+	// Create a temporary config file
+	tmpFile, err := os.CreateTemp("", "test_config_*.yaml")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	configContent := `
+enabled: true
+maximal_repeat_rounds: 5
+debate_timeout: 300000
+consensus_threshold: 0.8
+quality_threshold: 0.7
+max_response_time: 30000
+max_context_length: 32000
+debate_strategy: round_robin
+voting_strategy: majority
+participants:
+  - name: "Reloader1"
+    role: "Tester"
+    enabled: true
+    response_timeout: 30000
+    weight: 1.0
+    priority: 1
+    quality_threshold: 0.7
+    min_response_length: 50
+    max_response_length: 5000
+    debate_style: analytical
+    argumentation_style: logical
+    persuasion_level: 0.5
+    openness_to_change: 0.5
+    llms:
+      - name: "TestLLM1"
+        provider: "openrouter"
+        model: "test-model"
+        enabled: true
+        timeout: 30000
+        max_tokens: 1000
+        temperature: 0.7
+        top_p: 0.9
+  - name: "Reloader2"
+    role: "Reviewer"
+    enabled: true
+    response_timeout: 30000
+    weight: 1.0
+    priority: 2
+    quality_threshold: 0.7
+    min_response_length: 50
+    max_response_length: 5000
+    debate_style: critical
+    argumentation_style: evidence_based
+    persuasion_level: 0.6
+    openness_to_change: 0.4
+    llms:
+      - name: "TestLLM2"
+        provider: "claude"
+        model: "claude-3-sonnet"
+        enabled: true
+        timeout: 30000
+        max_tokens: 1000
+        temperature: 0.7
+        top_p: 0.9
+`
+	if _, err := tmpFile.WriteString(configContent); err != nil {
+		t.Fatalf("Failed to write config: %v", err)
+	}
+	tmpFile.Close()
+
+	loader := NewAIDebateConfigLoader(tmpFile.Name())
+
+	// First load
+	config1, err := loader.Load()
+	if err != nil {
+		t.Fatalf("First load failed: %v", err)
+	}
+	if config1.MaximalRepeatRounds != 5 {
+		t.Errorf("Expected MaximalRepeatRounds=5, got %d", config1.MaximalRepeatRounds)
+	}
+
+	// Reload
+	config2, err := loader.Reload()
+	if err != nil {
+		t.Fatalf("Reload failed: %v", err)
+	}
+	if config2.MaximalRepeatRounds != 5 {
+		t.Errorf("Expected MaximalRepeatRounds=5 after reload, got %d", config2.MaximalRepeatRounds)
+	}
+}
+
+func TestLLMConfiguration_Validate_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *LLMConfiguration
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "Valid with all fields",
+			config: &LLMConfiguration{
+				Name:        "Complete LLM",
+				Provider:    "claude",
+				Model:       "claude-3-sonnet",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxTokens:   1000,
+				Temperature: 0.7,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Disabled LLM skips validation",
+			config: &LLMConfiguration{
+				Name:     "DisabledLLM",
+				Provider: "claude",
+				Model:    "claude-3-sonnet",
+				Enabled:  false,
+				// These would fail if enabled, but should be skipped
+				Timeout:     0,
+				Temperature: -999.0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Missing name",
+			config: &LLMConfiguration{
+				Name:     "",
+				Provider: "claude",
+				Model:    "claude-3-sonnet",
+				Enabled:  true,
+			},
+			wantErr: true,
+			errMsg:  "name is required",
+		},
+		{
+			name: "Missing provider",
+			config: &LLMConfiguration{
+				Name:    "Test",
+				Enabled: true,
+			},
+			wantErr: true,
+			errMsg:  "provider is required",
+		},
+		{
+			name: "Invalid temperature below 0",
+			config: &LLMConfiguration{
+				Name:        "Test",
+				Provider:    "claude",
+				Model:       "test",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxTokens:   1000,
+				Temperature: -0.5,
+			},
+			wantErr: true,
+			errMsg:  "temperature must be between 0.0 and 2.0",
+		},
+		{
+			name: "Invalid temperature above 2",
+			config: &LLMConfiguration{
+				Name:        "Test",
+				Provider:    "claude",
+				Model:       "test",
+				Enabled:     true,
+				Timeout:     30000,
+				MaxTokens:   1000,
+				Temperature: 2.5,
+			},
+			wantErr: true,
+			errMsg:  "temperature must be between 0.0 and 2.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err != nil && tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
+				t.Errorf("Validate() error = %v, want error containing %v", err, tt.errMsg)
+			}
+		})
+	}
+}
+
 func TestCogneeDebateConfig_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
