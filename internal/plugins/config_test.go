@@ -298,3 +298,83 @@ func TestConfigManager_GetAllConfigs(t *testing.T) {
 	all["plugin-c"] = map[string]interface{}{"name": "c"}
 	assert.Len(t, cm.configs, 2)
 }
+
+func TestConfigManager_ValidateConfig_MaxRetries(t *testing.T) {
+	tmpDir := t.TempDir()
+	cm := NewConfigManager(tmpDir)
+
+	t.Run("max_retries as float (from JSON)", func(t *testing.T) {
+		// JSON unmarshals numbers as float64
+		config := map[string]interface{}{
+			"name":        "test-plugin",
+			"version":     "1.0.0",
+			"max_retries": 3.0, // float64 from JSON
+		}
+		err := cm.ValidateConfig("test", config)
+		// Will fail since code expects int, JSON gives float64
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "max_retries must be between 0 and 10")
+	})
+
+	t.Run("max_retries negative", func(t *testing.T) {
+		config := map[string]interface{}{
+			"name":        "test-plugin",
+			"version":     "1.0.0",
+			"max_retries": -1,
+		}
+		err := cm.ValidateConfig("test", config)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "max_retries must be between 0 and 10")
+	})
+
+	t.Run("max_retries too high", func(t *testing.T) {
+		config := map[string]interface{}{
+			"name":        "test-plugin",
+			"version":     "1.0.0",
+			"max_retries": 15,
+		}
+		err := cm.ValidateConfig("test", config)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "max_retries must be between 0 and 10")
+	})
+
+	t.Run("max_retries valid integer", func(t *testing.T) {
+		config := map[string]interface{}{
+			"name":        "test-plugin",
+			"version":     "1.0.0",
+			"max_retries": 5,
+		}
+		err := cm.ValidateConfig("test", config)
+		assert.NoError(t, err)
+	})
+}
+
+func TestConfigManager_SavePluginConfig_WriteError(t *testing.T) {
+	// Use non-existent parent directory to trigger write error
+	cm := NewConfigManager("/non/existent/path/that/does/not/exist")
+
+	config := map[string]interface{}{
+		"name":    "test-plugin",
+		"version": "1.0.0",
+	}
+
+	err := cm.SavePluginConfig("test", config)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to write config file")
+}
+
+func TestConfigManager_LoadPluginConfig_ReadError(t *testing.T) {
+	// Create a temp dir
+	tmpDir := t.TempDir()
+	cm := NewConfigManager(tmpDir)
+
+	// Create a directory with the same name as the config file
+	// This will cause a read error when trying to read it as a file
+	dirPath := filepath.Join(tmpDir, "plugin-as-dir.json")
+	err := os.MkdirAll(dirPath, 0755)
+	require.NoError(t, err)
+
+	_, err = cm.LoadPluginConfig("plugin-as-dir")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to read config file")
+}
