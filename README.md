@@ -327,6 +327,47 @@ func (p *MyPlugin) Shutdown(ctx context.Context) error { /* cleanup */ }
 - **Async Processing**: Non-blocking I/O operations
 - **Resource Limits**: Configurable timeouts and pool sizes
 
+## 🔬 LLM Optimization Framework
+
+SuperAgent includes a comprehensive LLM optimization framework for improving performance:
+
+### Native Go Optimizations
+- **Semantic Cache**: Vector similarity-based caching (GPTCache-inspired)
+- **Structured Output**: JSON schema validation and generation (Outlines-inspired)
+- **Enhanced Streaming**: Word/sentence buffering, progress tracking, rate limiting
+
+### External Service Integrations
+- **SGLang**: RadixAttention prefix caching for multi-turn conversations
+- **LlamaIndex**: Advanced document retrieval with Cognee sync
+- **LangChain**: Task decomposition and ReAct agents
+- **Guidance**: CFG/regex constrained generation
+- **LMQL**: Query language for LLM constraints
+
+### Quick Start with Optimization Services
+```bash
+# Start optimization services
+docker-compose --profile optimization up -d
+
+# Services available:
+# - langchain-server (port 8011)
+# - llamaindex-server (port 8012)
+# - guidance-server (port 8013)
+# - lmql-server (port 8014)
+# - sglang (port 30000, requires GPU)
+```
+
+### Usage Example
+```go
+import "github.com/superagent/superagent/internal/optimization"
+
+// Create and use optimization service
+config := optimization.DefaultConfig()
+svc, _ := optimization.NewService(config)
+
+// Check cache, retrieve context, decompose complex tasks
+optimized, _ := svc.OptimizeRequest(ctx, prompt, embedding)
+```
+
 ## 🧪 Testing Strategy
 
 ### Test Coverage

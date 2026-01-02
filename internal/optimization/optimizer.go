@@ -161,7 +161,7 @@ func (s *Service) OptimizeRequest(ctx context.Context, prompt string, embedding 
 	}
 
 	// Retrieve relevant context if LlamaIndex is available
-	if s.isServiceAvailable("llamaindex") {
+	if s.llamaindexClient != nil && s.isServiceAvailable("llamaindex") {
 		queryResp, err := s.llamaindexClient.Query(ctx, &llamaindex.QueryRequest{
 			Query:     prompt,
 			TopK:      5,
@@ -184,7 +184,7 @@ func (s *Service) OptimizeRequest(ctx context.Context, prompt string, embedding 
 	}
 
 	// Decompose complex tasks if LangChain is available
-	if s.isServiceAvailable("langchain") && isComplexTask(prompt) {
+	if s.langchainClient != nil && s.isServiceAvailable("langchain") && isComplexTask(prompt) {
 		decomposeResp, err := s.langchainClient.Decompose(ctx, &langchain.DecomposeRequest{
 			Task:     prompt,
 			MaxSteps: 5,
@@ -197,7 +197,7 @@ func (s *Service) OptimizeRequest(ctx context.Context, prompt string, embedding 
 	}
 
 	// Warm prefix cache if SGLang is available
-	if s.isServiceAvailable("sglang") {
+	if s.sglangClient != nil && s.isServiceAvailable("sglang") {
 		if _, err := s.sglangClient.WarmPrefix(ctx, prompt[:min(500, len(prompt))]); err == nil {
 			result.WarmPrefix = true
 		}
