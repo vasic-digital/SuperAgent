@@ -873,3 +873,32 @@ func BenchmarkCircuitBreaker_Call(b *testing.B) {
 		cb.Call(func() error { return nil })
 	}
 }
+
+// Tests for UpdateLoad functions on load balancers (no-op functions but need coverage)
+
+func TestRoundRobinLoadBalancer_UpdateLoad(t *testing.T) {
+	lb := &RoundRobinLoadBalancer{}
+
+	// UpdateLoad is a no-op for round-robin, but should not panic
+	lb.UpdateLoad("instance-1", 50)
+	lb.UpdateLoad("instance-2", 100)
+	lb.UpdateLoad("", 0) // edge case: empty instance ID
+}
+
+func TestLeastLoadedLoadBalancer_UpdateLoad(t *testing.T) {
+	lb := &LeastLoadedLoadBalancer{}
+
+	// UpdateLoad is a no-op for least-loaded (load scores stored in instances)
+	lb.UpdateLoad("instance-1", 50)
+	lb.UpdateLoad("instance-2", 100)
+	lb.UpdateLoad("", 0) // edge case: empty instance ID
+}
+
+func TestRandomLoadBalancer_UpdateLoad(t *testing.T) {
+	lb := &RandomLoadBalancer{}
+
+	// RandomLoadBalancer UpdateLoad is a no-op
+	lb.UpdateLoad("instance-1", 50)
+	lb.UpdateLoad("instance-2", 100)
+	lb.UpdateLoad("", 0) // edge case: empty instance ID
+}
