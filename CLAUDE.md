@@ -173,3 +173,44 @@ podman run -d --name superagent -p 8080:8080 superagent:latest
 3. Register in `internal/services/provider_registry.go`
 4. Add environment variables to `.env.example`
 5. Add tests in `internal/llm/providers/<name>/<name>_test.go`
+
+## Cloud Integration
+
+SuperAgent supports integration with major cloud AI providers:
+
+### AWS Bedrock
+- Models: Claude, Titan, Llama, Cohere
+- Implements AWS Signature V4 authentication
+- Configuration via `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+
+### GCP Vertex AI
+- Models: PaLM, Gemini
+- OAuth2 bearer token authentication
+- Configuration via `GCP_PROJECT_ID`, `GCP_LOCATION`, `GOOGLE_ACCESS_TOKEN`
+
+### Azure OpenAI
+- Models: GPT-4, GPT-3.5
+- API key authentication
+- Configuration via `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION`
+
+## Test Coverage Summary
+
+The project maintains comprehensive test coverage across 50+ test packages:
+
+| Package | Coverage | Notes |
+|---------|----------|-------|
+| internal/testing | 91.9% | Test framework utilities |
+| internal/plugins | 71.4% | Plugin system |
+| internal/services | 67.5% | Business logic |
+| internal/handlers | 55.9% | HTTP handlers |
+| internal/cloud | 42.8% | Cloud integrations (requires API credentials) |
+| internal/cache | 42.4% | Caching (requires Redis) |
+| internal/router | 23.8% | Router (requires database) |
+
+### Test Types
+- **Unit tests**: `./internal/...` - Core business logic
+- **Integration tests**: `./tests/integration/...` - Service interactions, cloud providers, plugins
+- **E2E tests**: `./tests/e2e/...` - Full workflow tests
+- **Security tests**: `./tests/security/...` - Authentication, authorization, input validation
+- **Stress tests**: `./tests/stress/...` - Load and performance testing
+- **Chaos tests**: `./tests/challenge/...` - Resilience testing
