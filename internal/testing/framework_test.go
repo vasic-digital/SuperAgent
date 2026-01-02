@@ -295,3 +295,358 @@ func TestRunSuite_NotFound(t *testing.T) {
 		t.Fatal("Expected error for non-existent suite")
 	}
 }
+
+func TestTestCaseFields(t *testing.T) {
+	testCase := TestCase{
+		Name:        "Test Case",
+		Description: "Test case description",
+		Command:     "echo",
+		Args:        []string{"hello", "world"},
+		Timeout:     30 * time.Second,
+		Expected: TestResult{
+			Passed: true,
+		},
+	}
+
+	if testCase.Name != "Test Case" {
+		t.Fatalf("Expected Name to be 'Test Case', got %s", testCase.Name)
+	}
+	if testCase.Description != "Test case description" {
+		t.Fatalf("Expected Description to be set")
+	}
+	if testCase.Command != "echo" {
+		t.Fatalf("Expected Command to be 'echo', got %s", testCase.Command)
+	}
+	if len(testCase.Args) != 2 {
+		t.Fatalf("Expected 2 args, got %d", len(testCase.Args))
+	}
+	if testCase.Timeout != 30*time.Second {
+		t.Fatalf("Expected Timeout to be 30s, got %v", testCase.Timeout)
+	}
+	if !testCase.Expected.Passed {
+		t.Fatal("Expected Expected.Passed to be true")
+	}
+}
+
+func TestTestSuiteFields(t *testing.T) {
+	suite := TestSuite{
+		Name: "My Suite",
+		Type: E2ETest,
+		Tests: []TestCase{
+			{Name: "Test 1"},
+			{Name: "Test 2"},
+		},
+		Config: TestConfig{
+			Parallel: true,
+			Coverage: true,
+		},
+	}
+
+	if suite.Name != "My Suite" {
+		t.Fatalf("Expected Name to be 'My Suite', got %s", suite.Name)
+	}
+	if suite.Type != E2ETest {
+		t.Fatalf("Expected Type to be E2ETest, got %s", suite.Type)
+	}
+	if len(suite.Tests) != 2 {
+		t.Fatalf("Expected 2 tests, got %d", len(suite.Tests))
+	}
+	if !suite.Config.Parallel {
+		t.Fatal("Expected Config.Parallel to be true")
+	}
+	if !suite.Config.Coverage {
+		t.Fatal("Expected Config.Coverage to be true")
+	}
+}
+
+func TestRunSuiteParallel(t *testing.T) {
+	framework := NewTestBankFramework()
+
+	// Create a suite with multiple tests that run in parallel
+	suite := &TestSuite{
+		Name: "Parallel Tests",
+		Type: StressTest,
+		Tests: []TestCase{
+			{
+				Name:    "Parallel Test 1",
+				Command: "echo",
+				Args:    []string{"parallel1"},
+			},
+			{
+				Name:    "Parallel Test 2",
+				Command: "echo",
+				Args:    []string{"parallel2"},
+			},
+			{
+				Name:    "Parallel Test 3",
+				Command: "echo",
+				Args:    []string{"parallel3"},
+			},
+		},
+		Config: TestConfig{
+			Parallel: true,
+			Timeout:  5 * time.Second,
+		},
+	}
+
+	framework.RegisterSuite(suite)
+
+	results, err := framework.RunSuite(StressTest)
+	if err != nil {
+		t.Fatalf("Failed to run parallel suite: %v", err)
+	}
+
+	if len(results) != 3 {
+		t.Fatalf("Expected 3 results, got %d", len(results))
+	}
+
+	for i, result := range results {
+		if !result.Passed {
+			t.Fatalf("Expected test %d to pass", i+1)
+		}
+	}
+}
+
+func TestRunTestCaseWithTimeout(t *testing.T) {
+	framework := NewTestBankFramework()
+
+	// Test case with specific timeout
+	testCase := &TestCase{
+		Name:    "Sleep Test",
+		Command: "sleep",
+		Args:    []string{"0.1"},
+		Timeout: 5 * time.Second,
+	}
+
+	cfg := &TestConfig{
+		Timeout: 10 * time.Second,
+	}
+
+	result := framework.runTestCase(testCase, cfg)
+
+	if !result.Passed {
+		t.Fatalf("Expected test to pass, got error: %s", result.Error)
+	}
+}
+
+func TestRunTestCaseFailure(t *testing.T) {
+	framework := NewTestBankFramework()
+
+	// Test case that fails
+	testCase := &TestCase{
+		Name:    "Failing Test",
+		Command: "false",
+		Args:    []string{},
+		Timeout: 5 * time.Second,
+	}
+
+	cfg := &TestConfig{
+		Timeout: 10 * time.Second,
+	}
+
+	result := framework.runTestCase(testCase, cfg)
+
+	if result.Passed {
+		t.Fatal("Expected test to fail")
+	}
+	if result.Error == "" {
+		t.Fatal("Expected error to be set")
+	}
+}
+
+func TestTestReportFields(t *testing.T) {
+	report := TestReport{
+		Timestamp:   time.Now(),
+		TotalTests:  10,
+		TotalPassed: 8,
+		TotalFailed: 2,
+		Suites: map[string]SuiteReport{
+			"unit": {
+				Type:   "unit",
+				Tests:  5,
+				Passed: 4,
+				Failed: 1,
+			},
+		},
+	}
+
+	if report.TotalTests != 10 {
+		t.Fatalf("Expected TotalTests to be 10, got %d", report.TotalTests)
+	}
+	if report.TotalPassed != 8 {
+		t.Fatalf("Expected TotalPassed to be 8, got %d", report.TotalPassed)
+	}
+	if report.TotalFailed != 2 {
+		t.Fatalf("Expected TotalFailed to be 2, got %d", report.TotalFailed)
+	}
+	if len(report.Suites) != 1 {
+		t.Fatalf("Expected 1 suite, got %d", len(report.Suites))
+	}
+}
+
+func TestSuiteReportFields(t *testing.T) {
+	report := SuiteReport{
+		Type:   "integration",
+		Tests:  10,
+		Passed: 9,
+		Failed: 1,
+		Results: []TestResult{
+			{Passed: true, Duration: 1 * time.Second},
+			{Passed: false, Error: "failed", Duration: 2 * time.Second},
+		},
+	}
+
+	if report.Type != "integration" {
+		t.Fatalf("Expected Type to be 'integration', got %s", report.Type)
+	}
+	if report.Tests != 10 {
+		t.Fatalf("Expected Tests to be 10, got %d", report.Tests)
+	}
+	if report.Passed != 9 {
+		t.Fatalf("Expected Passed to be 9, got %d", report.Passed)
+	}
+	if report.Failed != 1 {
+		t.Fatalf("Expected Failed to be 1, got %d", report.Failed)
+	}
+	if len(report.Results) != 2 {
+		t.Fatalf("Expected 2 results, got %d", len(report.Results))
+	}
+}
+
+func TestGenerateReportFormats(t *testing.T) {
+	framework := NewTestBankFramework()
+
+	framework.results[SecurityTest] = []TestResult{
+		{Passed: true, Output: "Security test passed", Duration: 500 * time.Millisecond},
+	}
+
+	t.Run("json format", func(t *testing.T) {
+		report, err := framework.GenerateReport("json")
+		if err != nil {
+			t.Fatalf("Failed to generate JSON report: %v", err)
+		}
+		if report == "" {
+			t.Fatal("Expected non-empty JSON report")
+		}
+		// Check it's valid JSON structure
+		if report[0] != '{' {
+			t.Fatal("Expected JSON report to start with '{'")
+		}
+	})
+
+	t.Run("html format", func(t *testing.T) {
+		report, err := framework.GenerateReport("html")
+		if err != nil {
+			t.Fatalf("Failed to generate HTML report: %v", err)
+		}
+		if report == "" {
+			t.Fatal("Expected non-empty HTML report")
+		}
+		// Check it contains HTML tags
+		if len(report) < 10 || report[:5] != "<html" {
+			t.Fatal("Expected HTML report to start with '<html'")
+		}
+	})
+
+	t.Run("text format", func(t *testing.T) {
+		report, err := framework.GenerateReport("text")
+		if err != nil {
+			t.Fatalf("Failed to generate text report: %v", err)
+		}
+		if report == "" {
+			t.Fatal("Expected non-empty text report")
+		}
+		// Check it contains expected text
+		if len(report) < 10 {
+			t.Fatal("Expected text report to have content")
+		}
+	})
+
+	t.Run("default format", func(t *testing.T) {
+		report, err := framework.GenerateReport("unknown")
+		if err != nil {
+			t.Fatalf("Failed to generate default report: %v", err)
+		}
+		// Should fall back to text format
+		if report == "" {
+			t.Fatal("Expected non-empty default report")
+		}
+	})
+}
+
+func TestDiscoverGoTests(t *testing.T) {
+	framework := NewTestBankFramework()
+
+	// Test with non-existent path - should return fallback
+	tests := framework.discoverGoTests("/nonexistent/path", "-run=Test")
+
+	if len(tests) != 1 {
+		t.Fatalf("Expected 1 fallback test, got %d", len(tests))
+	}
+	if tests[0].Name != "Basic Go Test" {
+		t.Fatalf("Expected fallback test name, got %s", tests[0].Name)
+	}
+}
+
+func TestDiscoverStandaloneTests(t *testing.T) {
+	framework := NewTestBankFramework()
+
+	// Test with non-existent path - should return fallback
+	tests := framework.discoverStandaloneTests("/nonexistent/path")
+
+	if len(tests) != 1 {
+		t.Fatalf("Expected 1 fallback test, got %d", len(tests))
+	}
+	if tests[0].Name != "Standalone Test" {
+		t.Fatalf("Expected fallback test name, got %s", tests[0].Name)
+	}
+}
+
+func TestLoadSuitesFromConfig(t *testing.T) {
+	framework := NewTestBankFramework()
+
+	err := framework.LoadSuitesFromConfig()
+	if err != nil {
+		t.Fatalf("Failed to load suites from config: %v", err)
+	}
+
+	// Check that suites were registered
+	suites := []TestType{UnitTest, IntegrationTest, E2ETest, StressTest, SecurityTest, StandaloneTest}
+	for _, suiteType := range suites {
+		if framework.suites[suiteType] == nil {
+			t.Fatalf("Expected %s suite to be registered", suiteType)
+		}
+	}
+}
+
+func TestConcurrentFrameworkAccess(t *testing.T) {
+	framework := NewTestBankFramework()
+
+	// Register a suite
+	suite := &TestSuite{
+		Name: "Concurrent Suite",
+		Type: UnitTest,
+		Tests: []TestCase{
+			{
+				Name:    "Concurrent Test",
+				Command: "echo",
+				Args:    []string{"concurrent"},
+			},
+		},
+	}
+	framework.RegisterSuite(suite)
+
+	// Access framework concurrently
+	done := make(chan bool)
+	for i := 0; i < 10; i++ {
+		go func() {
+			_, _ = framework.RunSuite(UnitTest)
+			_, _ = framework.GenerateReport("text")
+			done <- true
+		}()
+	}
+
+	for i := 0; i < 10; i++ {
+		<-done
+	}
+}
