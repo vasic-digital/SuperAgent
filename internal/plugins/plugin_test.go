@@ -287,6 +287,94 @@ func TestLifecycleManager_ShutdownAll(t *testing.T) {
 	})
 }
 
+func TestLifecycleManager_RestartPlugin_Errors(t *testing.T) {
+	t.Run("restart non-running plugin fails", func(t *testing.T) {
+		registry := NewRegistry()
+		loader := NewLoader(registry)
+		health := NewHealthMonitor(registry, 30*time.Second, 5*time.Second)
+		manager := NewLifecycleManager(registry, loader, health)
+
+		plugin := new(MockLLMPlugin)
+		plugin.On("Name").Return("test-plugin")
+		plugin.On("HealthCheck", mock.Anything).Return(nil)
+		plugin.On("Shutdown", mock.Anything).Return(nil)
+
+		err := registry.Register(plugin)
+		assert.NoError(t, err)
+
+		// Restart without starting first should fail on stop
+		err = manager.RestartPlugin(context.Background(), "test-plugin")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to stop plugin")
+	})
+}
+
+func TestLifecycleManager_StopPlugin_ShutdownError(t *testing.T) {
+	registry := NewRegistry()
+	loader := NewLoader(registry)
+	health := NewHealthMonitor(registry, 30*time.Second, 5*time.Second)
+	manager := NewLifecycleManager(registry, loader, health)
+
+	plugin := new(MockLLMPlugin)
+	plugin.On("Name").Return("test-plugin")
+	plugin.On("HealthCheck", mock.Anything).Return(nil)
+	plugin.On("Shutdown", mock.Anything).Return(errors.New("shutdown error"))
+
+	err := registry.Register(plugin)
+	assert.NoError(t, err)
+
+	// Start the plugin
+	err = manager.StartPlugin(context.Background(), "test-plugin")
+	assert.NoError(t, err)
+
+	// Stop should succeed even if shutdown returns error (logs warning)
+	err = manager.StopPlugin("test-plugin")
+	assert.NoError(t, err)
+	assert.NotContains(t, manager.GetRunningPlugins(), "test-plugin")
+}
+
+func TestLifecycleManager_ShutdownAll_WithErrors(t *testing.T) {
+	registry := NewRegistry()
+	loader := NewLoader(registry)
+	health := NewHealthMonitor(registry, 30*time.Second, 5*time.Second)
+	manager := NewLifecycleManager(registry, loader, health)
+
+	plugin1 := new(MockLLMPlugin)
+	plugin1.On("Name").Return("plugin-1")
+	plugin1.On("HealthCheck", mock.Anything).Return(nil)
+	plugin1.On("Shutdown", mock.Anything).Return(errors.New("shutdown error 1"))
+
+	plugin2 := new(MockLLMPlugin)
+	plugin2.On("Name").Return("plugin-2")
+	plugin2.On("HealthCheck", mock.Anything).Return(nil)
+	plugin2.On("Shutdown", mock.Anything).Return(nil)
+
+	err1 := registry.Register(plugin1)
+	assert.NoError(t, err1)
+	err2 := registry.Register(plugin2)
+	assert.NoError(t, err2)
+
+	err1 = manager.StartPlugin(context.Background(), "plugin-1")
+	assert.NoError(t, err1)
+	err2 = manager.StartPlugin(context.Background(), "plugin-2")
+	assert.NoError(t, err2)
+
+	// ShutdownAll should succeed even with individual shutdown errors
+	err := manager.ShutdownAll(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(manager.GetRunningPlugins()))
+}
+
+func TestLifecycleManager_GetRunningPlugins_Empty(t *testing.T) {
+	registry := NewRegistry()
+	loader := NewLoader(registry)
+	health := NewHealthMonitor(registry, 30*time.Second, 5*time.Second)
+	manager := NewLifecycleManager(registry, loader, health)
+
+	plugins := manager.GetRunningPlugins()
+	assert.Empty(t, plugins)
+}
+
 func TestHealthMonitor(t *testing.T) {
 	registry := NewRegistry()
 	monitor := NewHealthMonitor(registry, 30*time.Second, 5*time.Second)

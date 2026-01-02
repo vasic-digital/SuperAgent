@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/superagent/superagent/internal/models"
 )
 
 func TestNewHealthMonitor(t *testing.T) {
@@ -255,5 +256,68 @@ func TestPluginHealth_Structure(t *testing.T) {
 	assert.Equal(t, "test-plugin", health.Name)
 	assert.Equal(t, "healthy", health.Status)
 	assert.Equal(t, 100*time.Millisecond, health.ResponseTime)
+	assert.False(t, health.CircuitOpen)
+}
+
+// SlowMockPlugin is a mock that simulates slow responses
+type SlowMockPlugin struct {
+	mock.Mock
+}
+
+func (m *SlowMockPlugin) Name() string {
+	return "slow-plugin"
+}
+
+func (m *SlowMockPlugin) Version() string {
+	return "1.0.0"
+}
+
+func (m *SlowMockPlugin) Capabilities() *models.ProviderCapabilities {
+	return &models.ProviderCapabilities{}
+}
+
+func (m *SlowMockPlugin) Init(config map[string]any) error {
+	return nil
+}
+
+func (m *SlowMockPlugin) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+func (m *SlowMockPlugin) HealthCheck(ctx context.Context) error {
+	// Simulate slow response (>5s triggers "degraded" status)
+	time.Sleep(5001 * time.Millisecond)
+	return nil
+}
+
+func (m *SlowMockPlugin) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+	return nil, nil
+}
+
+func (m *SlowMockPlugin) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+	return nil, nil
+}
+
+func (m *SlowMockPlugin) SetSecurityContext(ctx *PluginSecurityContext) error {
+	return nil
+}
+
+func TestHealthMonitor_CheckPlugin_DegradedStatus(t *testing.T) {
+	t.Skip("Skipping slow test - requires >5s delay to trigger degraded status")
+
+	registry := NewRegistry()
+	// Use longer timeout to allow slow response to complete
+	monitor := NewHealthMonitor(registry, 30*time.Second, 10*time.Second)
+
+	slowPlugin := &SlowMockPlugin{}
+	err := registry.Register(slowPlugin)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	monitor.checkPlugin(ctx, "slow-plugin")
+
+	health, exists := monitor.GetHealth("slow-plugin")
+	assert.True(t, exists)
+	assert.Equal(t, "degraded", health.Status) // >5s response = degraded
 	assert.False(t, health.CircuitOpen)
 }
