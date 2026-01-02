@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SuperAgent is an AI-powered ensemble LLM service written in Go that combines responses from multiple language models. It provides OpenAI-compatible APIs and supports 6+ LLM providers (Claude, DeepSeek, Gemini, Qwen, ZAI, Ollama, OpenRouter).
+SuperAgent is an AI-powered ensemble LLM service written in Go (1.23+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 7 LLM providers (Claude, DeepSeek, Gemini, Qwen, ZAI, Ollama, OpenRouter).
 
 ## Build Commands
 
@@ -37,6 +37,14 @@ Run a single test:
 go test -v -run TestName ./path/to/package
 ```
 
+### Test Infrastructure (Docker-based)
+```bash
+make test-infra-start   # Start PostgreSQL, Redis, Mock LLM containers
+make test-infra-stop    # Stop test containers
+make test-infra-clean   # Stop and remove volumes
+make test-with-infra    # Run all tests with Docker infrastructure
+```
+
 ## Code Quality
 
 ```bash
@@ -65,12 +73,13 @@ make install-deps     # Install dev dependencies (golangci-lint, gosec)
   - `mcp_client.go` - Model Context Protocol client
   - `lsp_manager.go` - Language Server Protocol manager
   - `plugin_system.go` - Hot-reloadable plugin architecture
-- `handlers/` - HTTP handlers & API endpoints
-- `middleware/` - Auth, rate limiting, CORS
+- `handlers/` - HTTP handlers & API endpoints (OpenAI-compatible, MCP, LSP, Cognee)
+- `middleware/` - Auth, rate limiting, CORS, validation
 - `cache/` - Caching layer (Redis, in-memory)
-- `database/` - PostgreSQL connections
-- `repository/` - Data access layer
-- `models/` - Data models and enums
+- `database/` - PostgreSQL connections and repositories
+- `models/` - Data models, enums, and protocol types
+- `plugins/` - Hot-reloadable plugin system with discovery, health, metrics
+- `modelsdev/` - Models.dev API client for model metadata
 
 ### Key Interfaces (Extensibility Points)
 - `LLMProvider` - Provider implementation contract
@@ -80,11 +89,14 @@ make install-deps     # Install dev dependencies (golangci-lint, gosec)
 - `CloudProvider` - Cloud integration
 
 ### Architectural Patterns
-- **Provider Registry**: Unified interface for multiple LLM providers
-- **Ensemble Strategy**: Confidence-weighted voting, majority vote
-- **Plugin System**: Hot-reloadable plugins
-- **Circuit Breaker**: Fault tolerance for provider failures
-- **Middleware Chain**: Auth, rate limiting, logging pipeline
+- **Provider Registry**: Unified interface for multiple LLM providers with credential management
+- **Ensemble Strategy**: Confidence-weighted voting, majority vote, parallel execution
+- **AI Debate System**: Multi-round debate between providers for consensus (see `internal/services/debate_*.go`)
+- **Plugin System**: Hot-reloadable plugins with dependency resolution
+- **Circuit Breaker**: Fault tolerance for provider failures with health monitoring
+- **Protocol Managers**: Unified MCP/LSP/ACP protocol handling
+- **Cognee Integration**: Knowledge graph and RAG capabilities
+- **Middleware Chain**: Auth, rate limiting, validation pipeline
 
 ## Technology Stack
 
@@ -114,3 +126,11 @@ docker-compose --profile ai up -d       # Add AI services (ollama)
 docker-compose --profile monitoring up -d  # Add monitoring (prometheus, grafana)
 docker-compose --profile full up -d     # Everything
 ```
+
+## Adding a New LLM Provider
+
+1. Create provider package: `internal/llm/providers/<name>/<name>.go`
+2. Implement `LLMProvider` interface (Complete, CompleteStream, HealthCheck, GetCapabilities, ValidateConfig)
+3. Register in `internal/services/provider_registry.go`
+4. Add environment variables to `.env.example`
+5. Add tests in `internal/llm/providers/<name>/<name>_test.go`
