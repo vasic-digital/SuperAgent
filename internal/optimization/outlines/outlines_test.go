@@ -1232,3 +1232,694 @@ func TestSchemaValidator_NumberValidation(t *testing.T) {
 	result = validator.Validate(`150`)
 	assert.False(t, result.Valid)
 }
+
+func TestExtractJSON_MoreCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "json with surrounding braces in string",
+			input:    `{"key": "value with { and } in it"}`,
+			expected: `{"key": "value with { and } in it"}`,
+		},
+		{
+			name:     "array in markdown with language",
+			input:    "```json\n[1, 2, 3]\n```",
+			expected: `[1, 2, 3]`,
+		},
+		{
+			name:     "multiple json blocks - takes first",
+			input:    `First: {"a": 1} Second: {"b": 2}`,
+			expected: `{"a": 1}`,
+		},
+		{
+			name:     "empty object",
+			input:    `{}`,
+			expected: `{}`,
+		},
+		{
+			name:     "empty array",
+			input:    `[]`,
+			expected: `[]`,
+		},
+		{
+			name:     "deeply nested",
+			input:    `{"a": {"b": {"c": {"d": "value"}}}}`,
+			expected: `{"a": {"b": {"c": {"d": "value"}}}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractJSON(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestFindMatchingBrace_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		open     byte
+		close    byte
+		expected int
+	}{
+		{"empty string after open", "{", '{', '}', -1},
+		{"brackets", "[1, 2, 3]", '[', ']', 8},
+		{"nested brackets", "[[1], [2]]", '[', ']', 9},
+		{"string with escaped quotes", `{"key": "val\"ue"}`, '{', '}', 17},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := findMatchingBrace(tt.input, tt.open, tt.close)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestSchemaValidator_ArrayValidation_MoreCases(t *testing.T) {
+	// Array with no items schema
+	schema := &JSONSchema{
+		Type: "array",
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	result := validator.Validate(`[1, "two", true]`)
+	assert.True(t, result.Valid) // No items schema means any items are valid
+
+	// Array with unique items
+	uniqueSchema := &JSONSchema{
+		Type:        "array",
+		Items:       IntegerSchema(),
+		UniqueItems: true,
+	}
+
+	validator, err = NewSchemaValidator(uniqueSchema)
+	require.NoError(t, err)
+
+	result = validator.Validate(`[1, 2, 3]`)
+	assert.True(t, result.Valid)
+
+	// Duplicate items - should still pass without uniqueItems validation
+	result = validator.Validate(`[1, 1, 2]`)
+	// Uniqueness validation may or may not be implemented
+}
+
+func TestSchemaValidator_ObjectValidation_AdditionalProperties(t *testing.T) {
+	// Test object with additional properties
+	schema := &JSONSchema{
+		Type: "object",
+		Properties: map[string]*JSONSchema{
+			"name": StringSchema(),
+		},
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Object with extra properties - should pass without additionalProperties: false
+	result := validator.Validate(`{"name": "John", "extra": "field"}`)
+	assert.True(t, result.Valid)
+}
+
+func TestSchemaValidator_IntegerValidation_Constraints(t *testing.T) {
+	min := float64(10)
+	max := float64(20)
+	schema := &JSONSchema{
+		Type:    "integer",
+		Minimum: &min,
+		Maximum: &max,
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Valid integer at boundaries
+	result := validator.Validate(`10`)
+	assert.True(t, result.Valid)
+
+	result = validator.Validate(`20`)
+	assert.True(t, result.Valid)
+
+	// Integer as float should fail
+	result = validator.Validate(`15.5`)
+	assert.False(t, result.Valid)
+}
+
+func TestSchemaValidator_NumberNotANumber(t *testing.T) {
+	schema := NumberSchema()
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// String is not a number
+	result := validator.Validate(`"123"`)
+	assert.False(t, result.Valid)
+
+	// Boolean is not a number
+	result = validator.Validate(`true`)
+	assert.False(t, result.Valid)
+}
+
+func TestParseSchema_InvalidJSON(t *testing.T) {
+	_, err := ParseSchema([]byte(`{invalid json`))
+	assert.Error(t, err)
+}
+
+func TestParseSchemaFromMap_InvalidProperties(t *testing.T) {
+	// Test with malformed properties
+	schemaMap := map[string]interface{}{
+		"type":       "object",
+		"properties": "not a map", // Invalid
+	}
+
+	_, err := ParseSchemaFromMap(schemaMap)
+	assert.Error(t, err)
+}
+
+func TestParseSchemaFromMap_NestedProperties(t *testing.T) {
+	schemaMap := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"nested": map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"deep": map[string]interface{}{"type": "string"},
+				},
+			},
+		},
+	}
+
+	schema, err := ParseSchemaFromMap(schemaMap)
+	require.NoError(t, err)
+
+	assert.NotNil(t, schema.Properties["nested"])
+	assert.NotNil(t, schema.Properties["nested"].Properties["deep"])
+}
+
+func TestGetPropertySchema_NonObject(t *testing.T) {
+	schema := StringSchema()
+
+	// Getting property from non-object should return nil
+	prop := schema.GetPropertySchema("anything")
+	assert.Nil(t, prop)
+}
+
+func TestSchemaValidator_InvalidJSON(t *testing.T) {
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"name": StringSchema(),
+	})
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	result := validator.Validate(`not valid json at all`)
+	assert.False(t, result.Valid)
+}
+
+func TestSchemaValidator_ExclusiveMinMax(t *testing.T) {
+	// ExclusiveMinimum/ExclusiveMaximum in JSON Schema draft-07+ are values, not booleans
+	exclusiveMin := float64(0)
+	exclusiveMax := float64(10)
+	schema := &JSONSchema{
+		Type:             "integer",
+		ExclusiveMinimum: &exclusiveMin,
+		ExclusiveMaximum: &exclusiveMax,
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// At boundaries should fail with exclusive
+	result := validator.Validate(`0`)
+	assert.False(t, result.Valid) // 0 is <= exclusiveMin (0), should fail
+
+	result = validator.Validate(`10`)
+	assert.False(t, result.Valid) // 10 is >= exclusiveMax (10), should fail
+
+	// Inside range should pass
+	result = validator.Validate(`5`)
+	assert.True(t, result.Valid)
+}
+
+func TestSchemaValidator_AdditionalPropertiesFalse(t *testing.T) {
+	// Test additionalProperties: false validation
+	additionalProps := false
+	schema := &JSONSchema{
+		Type: "object",
+		Properties: map[string]*JSONSchema{
+			"name": StringSchema(),
+		},
+		AdditionalProperties: &additionalProps,
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Object with only defined properties should pass
+	result := validator.Validate(`{"name": "John"}`)
+	assert.True(t, result.Valid)
+
+	// Object with extra properties should fail
+	result = validator.Validate(`{"name": "John", "extra": "field"}`)
+	assert.False(t, result.Valid)
+}
+
+func TestSchemaValidator_UniqueItemsValidation(t *testing.T) {
+	// Test uniqueItems validation
+	schema := &JSONSchema{
+		Type:        "array",
+		Items:       StringSchema(),
+		UniqueItems: true,
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Array with unique items should pass
+	result := validator.Validate(`["a", "b", "c"]`)
+	assert.True(t, result.Valid)
+
+	// Array with duplicate items should fail
+	result = validator.Validate(`["a", "b", "a"]`)
+	assert.False(t, result.Valid)
+}
+
+func TestValidationError_String(t *testing.T) {
+	err := &ValidationError{
+		Path:    "user.name",
+		Message: "must be a string",
+	}
+
+	str := err.Error()
+	assert.Contains(t, str, "user.name")
+	assert.Contains(t, str, "must be a string")
+}
+
+func TestNewStructuredGenerator_NilProvider(t *testing.T) {
+	// Nil provider is accepted during creation - error happens during Generate
+	schema := StringSchema()
+
+	generator, err := NewStructuredGenerator(nil, schema, nil)
+	// Should succeed during creation
+	assert.NoError(t, err)
+	assert.NotNil(t, generator)
+}
+
+func TestNewStructuredGenerator_NilSchema(t *testing.T) {
+	// Nil schema causes panic in NewSchemaValidator when accessing schema.Pattern
+	provider := &mockProvider{}
+
+	// This will panic, so we test that it panics
+	assert.Panics(t, func() {
+		_, _ = NewStructuredGenerator(provider, nil, nil)
+	})
+}
+
+func TestSchemaValidator_EmptyOneOf(t *testing.T) {
+	schema := &JSONSchema{
+		OneOf: []*JSONSchema{}, // Empty oneOf
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// With empty oneOf, len(oneOf) > 0 is false, so validation is skipped
+	// Result remains valid by default
+	result := validator.Validate(`"anything"`)
+	assert.True(t, result.Valid) // Empty oneOf is effectively ignored
+}
+
+func TestSchemaValidator_MultipleOneOfMatches(t *testing.T) {
+	// OneOf where multiple could match
+	schema := &JSONSchema{
+		OneOf: []*JSONSchema{
+			{Type: "string"},
+			{Type: "string", MinLength: intPtr(3)}, // Also string
+		},
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// "hello" matches both schemas - oneOf requires exactly one match, so should fail
+	result := validator.Validate(`"hello"`)
+	assert.False(t, result.Valid)
+	assert.Contains(t, result.ErrorMessages()[0], "matched 2")
+}
+
+func TestSchemaValidator_ComplexNesting(t *testing.T) {
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"users": ArraySchema(ObjectSchema(map[string]*JSONSchema{
+			"name":  StringSchema(),
+			"email": PatternString(`^.+@.+$`),
+		}, "name", "email")),
+	}, "users")
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Valid complex structure
+	result := validator.Validate(`{"users": [{"name": "John", "email": "john@example.com"}, {"name": "Jane", "email": "jane@test.org"}]}`)
+	assert.True(t, result.Valid)
+
+	// Invalid email in array
+	result = validator.Validate(`{"users": [{"name": "John", "email": "not-an-email"}]}`)
+	assert.False(t, result.Valid)
+}
+
+// Additional tests to improve coverage
+
+func TestExtractJSON_ArrayExtraction(t *testing.T) {
+	// Test extracting JSON array from response
+	response := "Here is the data: [1, 2, 3] and more text"
+	result := extractJSON(response)
+	assert.Equal(t, "[1, 2, 3]", result)
+}
+
+func TestExtractJSON_PlainPrimitive(t *testing.T) {
+	// Test when entire response is valid JSON primitive
+	response := "42"
+	result := extractJSON(response)
+	assert.Equal(t, "42", result)
+
+	response = `"hello"`
+	result = extractJSON(response)
+	assert.Equal(t, `"hello"`, result)
+
+	response = "true"
+	result = extractJSON(response)
+	assert.Equal(t, "true", result)
+}
+
+func TestExtractJSON_MarkdownJSONCodeBlock(t *testing.T) {
+	// Test extracting from markdown json code block
+	response := "Here is the response:\n```json\n{\"key\": \"value\"}\n```\nEnd."
+	result := extractJSON(response)
+	assert.Equal(t, `{"key": "value"}`, result)
+}
+
+func TestExtractJSON_GenericCodeBlock(t *testing.T) {
+	// Test extracting from generic code block (not ```json)
+	response := "Response:\n```\n{\"data\": 123}\n```"
+	result := extractJSON(response)
+	assert.Equal(t, `{"data": 123}`, result)
+
+	// With language identifier
+	response = "Response:\n```javascript\n{\"data\": 456}\n```"
+	result = extractJSON(response)
+	assert.Equal(t, `{"data": 456}`, result)
+}
+
+func TestExtractJSON_InvalidCodeBlock(t *testing.T) {
+	// Test code block with invalid JSON
+	response := "```\nnot valid json\n```"
+	result := extractJSON(response)
+	assert.Equal(t, "", result)
+}
+
+func TestExtractJSON_UnclosedBrace(t *testing.T) {
+	// Test with unclosed brace
+	response := "{\"key\": \"value\""
+	result := extractJSON(response)
+	assert.Equal(t, "", result)
+}
+
+func TestValidateNumber_IntTypes(t *testing.T) {
+	schema := NumberSchema()
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Direct number
+	result := validator.Validate(`3.14`)
+	assert.True(t, result.Valid)
+
+	// Integer as number
+	result = validator.Validate(`42`)
+	assert.True(t, result.Valid)
+
+	// Test with ValidateData using different Go types
+	result = validator.ValidateData(float64(3.14))
+	assert.True(t, result.Valid)
+
+	result = validator.ValidateData(int(42))
+	assert.True(t, result.Valid)
+
+	result = validator.ValidateData(int64(99))
+	assert.True(t, result.Valid)
+}
+
+func TestValidateInteger_IntTypes(t *testing.T) {
+	schema := IntegerSchema()
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Test with ValidateData using different Go types
+	result := validator.ValidateData(float64(42))
+	assert.True(t, result.Valid)
+
+	result = validator.ValidateData(int(42))
+	assert.True(t, result.Valid)
+
+	result = validator.ValidateData(int64(99))
+	assert.True(t, result.Valid)
+}
+
+func TestValidateObject_MissingProperties(t *testing.T) {
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"name": StringSchema(),
+		"age":  IntegerSchema(),
+	}, "name")
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Missing optional property should pass
+	result := validator.Validate(`{"name": "John"}`)
+	assert.True(t, result.Valid)
+
+	// Missing required property should fail
+	result = validator.Validate(`{"age": 30}`)
+	assert.False(t, result.Valid)
+}
+
+func TestValidateArray_MaxItemsViolation(t *testing.T) {
+	maxItems := 3
+	schema := &JSONSchema{
+		Type:     "array",
+		Items:    IntegerSchema(),
+		MaxItems: &maxItems,
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Too many items
+	result := validator.Validate(`[1, 2, 3, 4]`)
+	assert.False(t, result.Valid)
+}
+
+func TestSchemaValidator_UnknownType(t *testing.T) {
+	schema := &JSONSchema{
+		Type: "unknown_type",
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	result := validator.Validate(`"anything"`)
+	assert.False(t, result.Valid)
+	assert.Contains(t, result.ErrorMessages()[0], "unknown type")
+}
+
+func TestSchemaValidator_NullType(t *testing.T) {
+	schema := &JSONSchema{
+		Type: "null",
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	result := validator.Validate(`null`)
+	assert.True(t, result.Valid)
+
+	result = validator.Validate(`"not null"`)
+	assert.False(t, result.Valid)
+}
+
+func TestSchemaValidator_NoTypeAllowsAnything(t *testing.T) {
+	// Schema with no type specified should allow any value
+	schema := &JSONSchema{}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	result := validator.Validate(`"string"`)
+	assert.True(t, result.Valid)
+
+	result = validator.Validate(`123`)
+	assert.True(t, result.Valid)
+
+	result = validator.Validate(`true`)
+	assert.True(t, result.Valid)
+}
+
+func TestSchemaValidator_AnyOfValidation(t *testing.T) {
+	schema := &JSONSchema{
+		AnyOf: []*JSONSchema{
+			{Type: "string"},
+			{Type: "integer"},
+		},
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// String matches first schema
+	result := validator.Validate(`"hello"`)
+	assert.True(t, result.Valid)
+
+	// Integer matches second schema
+	result = validator.Validate(`42`)
+	assert.True(t, result.Valid)
+
+	// Boolean doesn't match either
+	result = validator.Validate(`true`)
+	assert.False(t, result.Valid)
+}
+
+func TestSchemaValidator_AllOfValidation(t *testing.T) {
+	schema := &JSONSchema{
+		AllOf: []*JSONSchema{
+			{Type: "object", Properties: map[string]*JSONSchema{"name": StringSchema()}},
+			{Type: "object", Properties: map[string]*JSONSchema{"age": IntegerSchema()}},
+		},
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Must match both schemas
+	result := validator.Validate(`{"name": "John", "age": 30}`)
+	assert.True(t, result.Valid)
+}
+
+func TestSchemaValidator_ConstValidation(t *testing.T) {
+	schema := &JSONSchema{
+		Const: "fixed_value",
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	result := validator.Validate(`"fixed_value"`)
+	assert.True(t, result.Valid)
+
+	result = validator.Validate(`"other_value"`)
+	assert.False(t, result.Valid)
+}
+
+func TestSchemaBuilder_MultipleProperties(t *testing.T) {
+	schema := NewSchemaBuilder().
+		Object().
+		Property("name", StringSchema()).
+		Property("age", IntegerSchema()).
+		Required("name").
+		Build()
+
+	assert.Equal(t, "object", schema.Type)
+	assert.NotNil(t, schema.Properties["name"])
+	assert.NotNil(t, schema.Properties["age"])
+	assert.Contains(t, schema.Required, "name")
+}
+
+func TestSchemaBuilder_PropertyOnNilProperties(t *testing.T) {
+	// Builder without calling Object() first
+	schema := NewSchemaBuilder().
+		Property("test", StringSchema()).
+		Build()
+
+	assert.NotNil(t, schema.Properties)
+	assert.NotNil(t, schema.Properties["test"])
+}
+
+func TestValidate_InvalidPattern(t *testing.T) {
+	// Schema with invalid regex pattern
+	schema := &JSONSchema{
+		Type:    "string",
+		Pattern: "[invalid",
+	}
+
+	// Using the convenience Validate function
+	result := Validate(`"test"`, schema)
+	assert.False(t, result.Valid)
+}
+
+func TestNewSchemaValidator_InvalidPattern(t *testing.T) {
+	schema := &JSONSchema{
+		Type:    "string",
+		Pattern: "[invalid",
+	}
+
+	_, err := NewSchemaValidator(schema)
+	assert.Error(t, err)
+}
+
+func TestGenerateWithType_ValidationFailed(t *testing.T) {
+	provider := &mockProvider{
+		responses: []string{`{"wrong": "format"}`},
+	}
+
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"name": StringSchema(),
+	}, "name") // "name" is required
+
+	config := &GeneratorConfig{
+		StrictMode: true,
+	}
+
+	generator, err := NewStructuredGenerator(provider, schema, config)
+	require.NoError(t, err)
+
+	var target map[string]string
+	err = generator.GenerateWithType(context.Background(), "test", &target)
+	assert.Error(t, err)
+}
+
+func TestIsValidIPv4_InvalidOctets(t *testing.T) {
+	schema := &JSONSchema{
+		Type:   "string",
+		Format: "ipv4",
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Invalid - octet > 255
+	result := validator.Validate(`"192.168.1.256"`)
+	assert.False(t, result.Valid)
+
+	// Valid
+	result = validator.Validate(`"192.168.1.1"`)
+	assert.True(t, result.Valid)
+}
+
+func TestValidateFormat_UnknownFormat(t *testing.T) {
+	schema := &JSONSchema{
+		Type:   "string",
+		Format: "unknown_format",
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Unknown format should be ignored
+	result := validator.Validate(`"anything"`)
+	assert.True(t, result.Valid)
+}

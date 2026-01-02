@@ -2,6 +2,9 @@ package optimization
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -858,4 +861,467 @@ func TestPipeline_StreamWithPipeline_EmptyStream(t *testing.T) {
 	if result != nil {
 		assert.Equal(t, 0, result.TokenCount)
 	}
+}
+
+// Tests with mock servers for parallel and sequential stages
+
+func TestPipeline_ParallelStages_WithMockLlamaIndex(t *testing.T) {
+	// Create mock LlamaIndex server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/query" {
+			resp := map[string]interface{}{
+				"response": "test response",
+				"sources": []map[string]interface{}{
+					{"content": "context from llama", "metadata": map[string]string{}, "score": 0.9},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = true
+	config.LlamaIndex.Endpoint = server.URL
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = false
+
+	service, err := NewService(config)
+	require.NoError(t, err)
+
+	pipelineConfig := &PipelineConfig{
+		EnableCacheCheck:               false,
+		EnableContextRetrieval:         true,
+		EnableTaskDecomposition:        false,
+		EnablePrefixWarm:               false,
+		ParallelStages:                 true, // Parallel
+		MinPromptLengthForContext:      10,   // Low threshold
+		ContextRetrievalTimeout:        5 * time.Second,
+	}
+
+	pipeline := NewPipeline(service, pipelineConfig)
+	ctx := context.Background()
+	prompt := "A test prompt long enough to trigger context retrieval"
+
+	result, err := pipeline.OptimizeRequest(ctx, prompt, nil)
+	require.NoError(t, err)
+	assert.Contains(t, result.StagesRun, StageContextRetrieval)
+	assert.NotEmpty(t, result.RetrievedContext)
+}
+
+func TestPipeline_SequentialStages_WithMockLlamaIndex(t *testing.T) {
+	// Create mock LlamaIndex server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/query" {
+			resp := map[string]interface{}{
+				"response": "sequential response",
+				"sources": []map[string]interface{}{
+					{"content": "sequential context", "metadata": map[string]string{}, "score": 0.85},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = true
+	config.LlamaIndex.Endpoint = server.URL
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = false
+
+	service, err := NewService(config)
+	require.NoError(t, err)
+
+	pipelineConfig := &PipelineConfig{
+		EnableCacheCheck:               false,
+		EnableContextRetrieval:         true,
+		EnableTaskDecomposition:        false,
+		EnablePrefixWarm:               false,
+		ParallelStages:                 false, // Sequential
+		MinPromptLengthForContext:      10,
+		ContextRetrievalTimeout:        5 * time.Second,
+	}
+
+	pipeline := NewPipeline(service, pipelineConfig)
+	ctx := context.Background()
+	prompt := "A sequential test prompt long enough for context"
+
+	result, err := pipeline.OptimizeRequest(ctx, prompt, nil)
+	require.NoError(t, err)
+	assert.Contains(t, result.StagesRun, StageContextRetrieval)
+}
+
+func TestPipeline_ParallelStages_WithMockLangChain(t *testing.T) {
+	// Create mock LangChain server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/decompose" {
+			resp := map[string]interface{}{
+				"subtasks": []map[string]interface{}{
+					{"step": 1, "description": "First subtask"},
+					{"step": 2, "description": "Second subtask"},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = true
+	config.LangChain.Endpoint = server.URL
+	config.SGLang.Enabled = false
+
+	service, err := NewService(config)
+	require.NoError(t, err)
+
+	pipelineConfig := &PipelineConfig{
+		EnableCacheCheck:               false,
+		EnableContextRetrieval:         false,
+		EnableTaskDecomposition:        true,
+		EnablePrefixWarm:               false,
+		ParallelStages:                 true,
+		MinPromptLengthForDecomposition: 50,
+		TaskDecompositionTimeout:       5 * time.Second,
+	}
+
+	pipeline := NewPipeline(service, pipelineConfig)
+	ctx := context.Background()
+	// Complex prompt that triggers decomposition
+	prompt := "Please implement a complex multi-step feature with data processing, validation, and API integration step by step"
+
+	result, err := pipeline.OptimizeRequest(ctx, prompt, nil)
+	require.NoError(t, err)
+	assert.Contains(t, result.StagesRun, StageTaskDecomposition)
+	assert.NotEmpty(t, result.DecomposedTasks)
+}
+
+func TestPipeline_SequentialStages_WithMockLangChain(t *testing.T) {
+	// Create mock LangChain server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/decompose" {
+			resp := map[string]interface{}{
+				"subtasks": []map[string]interface{}{
+					{"step": 1, "description": "Sequential task 1"},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = true
+	config.LangChain.Endpoint = server.URL
+	config.SGLang.Enabled = false
+
+	service, err := NewService(config)
+	require.NoError(t, err)
+
+	pipelineConfig := &PipelineConfig{
+		EnableCacheCheck:               false,
+		EnableContextRetrieval:         false,
+		EnableTaskDecomposition:        true,
+		EnablePrefixWarm:               false,
+		ParallelStages:                 false, // Sequential
+		MinPromptLengthForDecomposition: 50,
+		TaskDecompositionTimeout:       5 * time.Second,
+	}
+
+	pipeline := NewPipeline(service, pipelineConfig)
+	ctx := context.Background()
+	// Prompt must be > 100 chars with a complex indicator for isComplexTask to return true
+	prompt := "Please build a comprehensive data processing pipeline with multiple steps involving validation and transformation. This needs to be done step by step."
+
+	result, err := pipeline.OptimizeRequest(ctx, prompt, nil)
+	require.NoError(t, err)
+	assert.Contains(t, result.StagesRun, StageTaskDecomposition)
+}
+
+func TestPipeline_ParallelStages_WithMockSGLang(t *testing.T) {
+	// Create mock SGLang server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			return
+		}
+		resp := map[string]interface{}{
+			"prefix_id": "test-prefix",
+			"cached":    true,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = true
+	config.SGLang.Endpoint = server.URL
+
+	service, err := NewService(config)
+	require.NoError(t, err)
+
+	pipelineConfig := &PipelineConfig{
+		EnableCacheCheck:        false,
+		EnableContextRetrieval:  false,
+		EnableTaskDecomposition: false,
+		EnablePrefixWarm:        true,
+		ParallelStages:          true,
+	}
+
+	pipeline := NewPipeline(service, pipelineConfig)
+	ctx := context.Background()
+	prompt := "Test prompt for prefix warming"
+
+	result, err := pipeline.OptimizeRequest(ctx, prompt, nil)
+	require.NoError(t, err)
+	assert.Contains(t, result.StagesRun, StagePrefixWarm)
+	assert.True(t, result.PrefixWarmed)
+}
+
+func TestPipeline_SequentialStages_WithMockSGLang(t *testing.T) {
+	// Create mock SGLang server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			return
+		}
+		resp := map[string]interface{}{
+			"prefix_id": "seq-prefix",
+			"cached":    true,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = true
+	config.SGLang.Endpoint = server.URL
+
+	service, err := NewService(config)
+	require.NoError(t, err)
+
+	pipelineConfig := &PipelineConfig{
+		EnableCacheCheck:        false,
+		EnableContextRetrieval:  false,
+		EnableTaskDecomposition: false,
+		EnablePrefixWarm:        true,
+		ParallelStages:          false, // Sequential
+	}
+
+	pipeline := NewPipeline(service, pipelineConfig)
+	ctx := context.Background()
+	prompt := "Sequential prefix warming test"
+
+	result, err := pipeline.OptimizeRequest(ctx, prompt, nil)
+	require.NoError(t, err)
+	assert.Contains(t, result.StagesRun, StagePrefixWarm)
+}
+
+func TestPipeline_ParallelStages_AllServicesEnabled(t *testing.T) {
+	// Create mock servers for all services
+	llamaServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/query" {
+			resp := map[string]interface{}{
+				"response": "context response",
+				"sources":  []map[string]interface{}{{"content": "doc context", "score": 0.9}},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer llamaServer.Close()
+
+	langchainServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/decompose" {
+			resp := map[string]interface{}{
+				"subtasks": []map[string]interface{}{{"step": 1, "description": "task"}},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer langchainServer.Close()
+
+	sglangServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]interface{}{"prefix_id": "all-prefix", "cached": true}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer sglangServer.Close()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = true
+	config.LlamaIndex.Endpoint = llamaServer.URL
+	config.LangChain.Enabled = true
+	config.LangChain.Endpoint = langchainServer.URL
+	config.SGLang.Enabled = true
+	config.SGLang.Endpoint = sglangServer.URL
+
+	service, err := NewService(config)
+	require.NoError(t, err)
+
+	pipelineConfig := &PipelineConfig{
+		EnableCacheCheck:               false,
+		EnableContextRetrieval:         true,
+		EnableTaskDecomposition:        true,
+		EnablePrefixWarm:               true,
+		ParallelStages:                 true,
+		MinPromptLengthForContext:      10,
+		MinPromptLengthForDecomposition: 50,
+		ContextRetrievalTimeout:        5 * time.Second,
+		TaskDecompositionTimeout:       5 * time.Second,
+	}
+
+	pipeline := NewPipeline(service, pipelineConfig)
+	ctx := context.Background()
+	prompt := "Implement a comprehensive data pipeline with multiple processing steps and API integration for complex workflow"
+
+	result, err := pipeline.OptimizeRequest(ctx, prompt, nil)
+	require.NoError(t, err)
+	// All stages should have run in parallel
+	assert.Contains(t, result.StagesRun, StageContextRetrieval)
+	assert.Contains(t, result.StagesRun, StageTaskDecomposition)
+	assert.Contains(t, result.StagesRun, StagePrefixWarm)
+}
+
+func TestPipeline_RetrieveContext_WithMockServer(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/query" {
+			resp := map[string]interface{}{
+				"response": "query response",
+				"sources": []map[string]interface{}{
+					{"content": "context 1", "metadata": map[string]string{}, "score": 0.95},
+					{"content": "context 2", "metadata": map[string]string{}, "score": 0.85},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.LlamaIndex.Enabled = true
+	config.LlamaIndex.Endpoint = server.URL
+
+	service, err := NewService(config)
+	require.NoError(t, err)
+
+	pipeline := NewPipeline(service, nil)
+	ctx := context.Background()
+
+	contexts, err := pipeline.retrieveContext(ctx, "test query")
+	require.NoError(t, err)
+	assert.Len(t, contexts, 2)
+	assert.Equal(t, "context 1", contexts[0])
+	assert.Equal(t, "context 2", contexts[1])
+}
+
+func TestPipeline_DecomposeTask_WithMockServer(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/decompose" {
+			resp := map[string]interface{}{
+				"subtasks": []map[string]interface{}{
+					{"step": 1, "description": "Decomposed step 1"},
+					{"step": 2, "description": "Decomposed step 2"},
+					{"step": 3, "description": "Decomposed step 3"},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.LangChain.Enabled = true
+	config.LangChain.Endpoint = server.URL
+
+	service, err := NewService(config)
+	require.NoError(t, err)
+
+	pipeline := NewPipeline(service, nil)
+	ctx := context.Background()
+
+	tasks, err := pipeline.decomposeTask(ctx, "complex task to decompose")
+	require.NoError(t, err)
+	assert.Len(t, tasks, 3)
+	assert.Equal(t, "Decomposed step 1", tasks[0])
 }
