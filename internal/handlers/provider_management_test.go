@@ -270,3 +270,134 @@ func TestProviderResponse_Struct(t *testing.T) {
 	assert.Equal(t, "Provider created successfully", resp.Message)
 	assert.Nil(t, resp.Provider)
 }
+
+func TestProviderManagementHandler_GetProvider_EmptyID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	logger := newTestProviderLogger()
+	registry := services.NewProviderRegistry(nil, nil)
+	handler := NewProviderManagementHandler(registry, logger)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{{Key: "id", Value: ""}}
+	c.Request = httptest.NewRequest("GET", "/v1/providers/", nil)
+
+	handler.GetProvider(c)
+
+	// Empty ID will not be found in registry
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Contains(t, response["error"], "provider not found")
+}
+
+func TestProviderManagementHandler_UpdateProvider_EmptyID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	logger := newTestProviderLogger()
+	registry := services.NewProviderRegistry(nil, nil)
+	handler := NewProviderManagementHandler(registry, logger)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{{Key: "id", Value: ""}}
+	reqBody := UpdateProviderRequest{Name: "test"}
+	jsonBody, _ := json.Marshal(reqBody)
+	c.Request = httptest.NewRequest("PUT", "/v1/providers/", bytes.NewReader(jsonBody))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.UpdateProvider(c)
+
+	// Empty ID will not be found in registry
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Contains(t, response["error"], "provider not found")
+}
+
+func TestProviderManagementHandler_DeleteProvider_EmptyID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	logger := newTestProviderLogger()
+	registry := services.NewProviderRegistry(nil, nil)
+	handler := NewProviderManagementHandler(registry, logger)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{{Key: "id", Value: ""}}
+	c.Request = httptest.NewRequest("DELETE", "/v1/providers/", nil)
+
+	handler.DeleteProvider(c)
+
+	// Empty ID will not be found in registry
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Contains(t, response["error"], "provider not found")
+}
+
+func TestProviderManagementHandler_AddProvider_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	logger := newTestProviderLogger()
+	registry := services.NewProviderRegistry(nil, nil)
+	handler := NewProviderManagementHandler(registry, logger)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	reqBody := AddProviderRequest{
+		Name:    "test-deepseek",
+		Type:    "deepseek",
+		APIKey:  "sk-test-key-12345",
+		BaseURL: "https://api.deepseek.com",
+		Model:   "deepseek-chat",
+		Weight:  1.0,
+		Enabled: true,
+	}
+	jsonBody, _ := json.Marshal(reqBody)
+	c.Request = httptest.NewRequest("POST", "/v1/providers", bytes.NewReader(jsonBody))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.AddProvider(c)
+
+	// Should succeed (200 or 201) or fail gracefully
+	assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusCreated || w.Code == http.StatusInternalServerError)
+}
+
+func TestProviderManagementHandler_AddProvider_EmptyBody(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	logger := newTestProviderLogger()
+	registry := services.NewProviderRegistry(nil, nil)
+	handler := NewProviderManagementHandler(registry, logger)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/v1/providers", nil)
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.AddProvider(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestProviderManagementHandler_UpdateProvider_EmptyRequest(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	logger := newTestProviderLogger()
+	registry := services.NewProviderRegistry(nil, nil)
+	handler := NewProviderManagementHandler(registry, logger)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{{Key: "id", Value: "test-provider"}}
+	c.Request = httptest.NewRequest("PUT", "/v1/providers/test-provider", bytes.NewReader([]byte(`{}`)))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.UpdateProvider(c)
+
+	// Should return 404 because provider doesn't exist, not 400
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}

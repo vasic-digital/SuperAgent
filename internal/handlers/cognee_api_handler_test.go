@@ -665,6 +665,633 @@ func TestCogneeAPIHandler_EnsureRunning(t *testing.T) {
 	assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusInternalServerError)
 }
 
+// TestCogneeAPIHandler_Cognify_ErrorPaths tests error handling in Cognify
+func TestCogneeAPIHandler_Cognify_ErrorPaths(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	t.Run("invalid JSON body", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/cognify", bytes.NewBufferString("not json"))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.Cognify(c)
+
+		// Cognify handles invalid JSON gracefully and uses default empty datasets
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("service returns error", func(t *testing.T) {
+		// Create server that returns error for cognify
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v1/cognify" {
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]interface{}{"error": "cognify failed"})
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		config := &services.CogneeServiceConfig{
+			Enabled: true,
+			BaseURL: server.URL,
+		}
+		cogneeService := services.NewCogneeServiceWithConfig(config, logger)
+		cogneeService.SetReady(true)
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		body := map[string]interface{}{"datasets": []string{"test"}}
+		jsonBody, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/cognify", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.Cognify(c)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+}
+
+// TestCogneeAPIHandler_GetInsights_ErrorPaths tests error handling in GetInsights
+func TestCogneeAPIHandler_GetInsights_ErrorPaths(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	t.Run("invalid JSON body", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/insights", bytes.NewBufferString("{broken"))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.GetInsights(c)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("missing required query field", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		body := map[string]interface{}{"datasets": []string{"test"}}
+		jsonBody, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/insights", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.GetInsights(c)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("service returns error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v1/insights" {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		config := &services.CogneeServiceConfig{
+			Enabled:              true,
+			BaseURL:              server.URL,
+			EnableGraphReasoning: true,
+		}
+		cogneeService := services.NewCogneeServiceWithConfig(config, logger)
+		cogneeService.SetReady(true)
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		body := map[string]interface{}{"query": "test query", "datasets": []string{"test"}}
+		jsonBody, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/insights", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.GetInsights(c)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+}
+
+// TestCogneeAPIHandler_CreateDataset_ErrorPaths tests error handling in CreateDataset
+func TestCogneeAPIHandler_CreateDataset_ErrorPaths(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	t.Run("invalid JSON body", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/datasets", bytes.NewBufferString("not json"))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.CreateDataset(c)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("missing required name field", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		body := map[string]interface{}{"description": "test dataset"}
+		jsonBody, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/datasets", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.CreateDataset(c)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("service returns error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v1/datasets" && r.Method == "POST" {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		config := &services.CogneeServiceConfig{
+			Enabled: true,
+			BaseURL: server.URL,
+		}
+		cogneeService := services.NewCogneeServiceWithConfig(config, logger)
+		cogneeService.SetReady(true)
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		body := map[string]interface{}{"name": "test-dataset"}
+		jsonBody, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/datasets", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.CreateDataset(c)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+}
+
+// TestCogneeAPIHandler_ListDatasets_ErrorPaths tests error handling in ListDatasets
+func TestCogneeAPIHandler_ListDatasets_ErrorPaths(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	t.Run("service returns error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v1/datasets" && r.Method == "GET" {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		config := &services.CogneeServiceConfig{
+			Enabled: true,
+			BaseURL: server.URL,
+		}
+		cogneeService := services.NewCogneeServiceWithConfig(config, logger)
+		cogneeService.SetReady(true)
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/cognee/datasets", nil)
+
+		handler.ListDatasets(c)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+}
+
+// TestCogneeAPIHandler_ProvideFeedback_ErrorPaths tests error handling in ProvideFeedback
+func TestCogneeAPIHandler_ProvideFeedback_ErrorPaths(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	t.Run("invalid JSON body", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/feedback", bytes.NewBufferString("invalid"))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.ProvideFeedback(c)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("missing required fields", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		body := map[string]interface{}{"query_id": "123"}
+		jsonBody, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/feedback", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.ProvideFeedback(c)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("successful with all required fields", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		body := map[string]interface{}{
+			"query_id":  "123",
+			"query":     "test query",
+			"response":  "test response",
+			"relevance": 0.9,
+			"approved":  true,
+		}
+		jsonBody, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/feedback", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.ProvideFeedback(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+}
+
+// TestCogneeAPIHandler_Health_Unhealthy tests Health when service is unhealthy
+func TestCogneeAPIHandler_Health_Unhealthy(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	// Create server that doesn't respond to health checks
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	config := &services.CogneeServiceConfig{
+		Enabled: true,
+		BaseURL: server.URL,
+	}
+	cogneeService := services.NewCogneeServiceWithConfig(config, logger)
+	// Don't set ready - service will be unhealthy
+
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/cognee/health", nil)
+
+	handler.Health(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, "unhealthy", response["status"])
+	assert.Equal(t, false, response["healthy"])
+}
+
+// TestCogneeAPIHandler_AddMemory_ErrorPaths tests error handling in AddMemory
+func TestCogneeAPIHandler_AddMemory_ErrorPaths(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	t.Run("invalid JSON body", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/memory", bytes.NewBufferString("{bad"))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.AddMemory(c)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("service returns error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v1/add" {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		config := &services.CogneeServiceConfig{
+			Enabled: true,
+			BaseURL: server.URL,
+		}
+		cogneeService := services.NewCogneeServiceWithConfig(config, logger)
+		cogneeService.SetReady(true)
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		body := map[string]interface{}{"content": "test content"}
+		jsonBody, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/memory", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.AddMemory(c)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+}
+
+// TestCogneeAPIHandler_SearchMemory_ErrorPaths tests error handling in SearchMemory
+func TestCogneeAPIHandler_SearchMemory_ErrorPaths(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	t.Run("invalid JSON body", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/search", bytes.NewBufferString("invalid"))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.SearchMemory(c)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("successful search with dataset", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		body := map[string]interface{}{
+			"query":   "test query",
+			"dataset": "test-dataset",
+			"limit":   5,
+		}
+		jsonBody, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/search", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.SearchMemory(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+}
+
+// TestCogneeAPIHandler_ProcessCode_ErrorPaths tests error handling in ProcessCode
+func TestCogneeAPIHandler_ProcessCode_ErrorPaths(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	t.Run("invalid JSON body", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/code", bytes.NewBufferString("{bad"))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.ProcessCode(c)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("service returns error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v1/code-pipeline/index" {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		config := &services.CogneeServiceConfig{
+			Enabled:                true,
+			BaseURL:                server.URL,
+			EnableCodeIntelligence: true,
+		}
+		cogneeService := services.NewCogneeServiceWithConfig(config, logger)
+		cogneeService.SetReady(true)
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		body := map[string]interface{}{"code": "func main() {}", "language": "go"}
+		jsonBody, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/code", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.ProcessCode(c)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+}
+
+// TestCogneeAPIHandler_VisualizeGraph_ErrorPath tests error handling in VisualizeGraph
+func TestCogneeAPIHandler_VisualizeGraph_ErrorPath(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/visualize" {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	config := &services.CogneeServiceConfig{
+		Enabled: true,
+		BaseURL: server.URL,
+	}
+	cogneeService := services.NewCogneeServiceWithConfig(config, logger)
+	cogneeService.SetReady(true)
+
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/cognee/graph/visualize?dataset=test", nil)
+
+	handler.VisualizeGraph(c)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+// TestCogneeAPIHandler_NilLogger tests handler creation with nil logger
+func TestCogneeAPIHandler_NilLogger(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	handler := NewCogneeAPIHandler(cogneeService, nil)
+
+	require.NotNil(t, handler)
+	assert.NotNil(t, handler.logger)
+}
+
+// TestCogneeAPIHandler_EnsureRunning_Success tests successful EnsureRunning
+func TestCogneeAPIHandler_EnsureRunning_Success(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/cognee/start", nil)
+
+	handler.EnsureRunning(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Equal(t, true, response["success"])
+	assert.Contains(t, response["message"].(string), "started successfully")
+}
+
+// TestCogneeAPIHandler_DeleteDataset_EmptyName tests DeleteDataset with empty name
+func TestCogneeAPIHandler_DeleteDataset_EmptyName(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("DELETE", "/cognee/datasets/", nil)
+	c.Params = gin.Params{{Key: "name", Value: ""}}
+
+	handler.DeleteDataset(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Contains(t, response["error"], "dataset name is required")
+}
+
+// TestCogneeAPIHandler_GetGraphCompletion_ErrorPaths tests error handling
+func TestCogneeAPIHandler_GetGraphCompletion_ErrorPaths(t *testing.T) {
+	logger := newTestCogneeLogger()
+	logger.SetLevel(logrus.PanicLevel)
+
+	t.Run("invalid JSON body", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/graph/completion", bytes.NewBufferString("{bad json"))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.GetGraphCompletion(c)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("missing required query", func(t *testing.T) {
+		server, cogneeService := setupCogneeTestServer()
+		defer server.Close()
+
+		handler := NewCogneeAPIHandler(cogneeService, logger)
+
+		body := map[string]interface{}{"datasets": []string{"test"}}
+		jsonBody, _ := json.Marshal(body)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/graph/completion", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.GetGraphCompletion(c)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
 func TestGetFloatParam(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

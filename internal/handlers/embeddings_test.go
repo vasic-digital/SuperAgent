@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/superagent/superagent/internal/services"
 )
 
 func TestNewEmbeddingHandler(t *testing.T) {
@@ -271,4 +272,107 @@ func TestEmbeddingHandler_HandlerStructure(t *testing.T) {
 	assert.NotNil(t, handler)
 	assert.Equal(t, log, handler.log)
 	assert.Nil(t, handler.embeddingManager)
+}
+
+// TestEmbeddingHandler_WithRealManager tests handlers with a real embedding manager
+func TestEmbeddingHandler_WithRealManager(t *testing.T) {
+	log := logrus.New()
+	log.SetLevel(logrus.PanicLevel)
+
+	// Create real embedding manager (without external dependencies)
+	manager := services.NewEmbeddingManager(nil, nil, log)
+	handler := NewEmbeddingHandler(manager, log)
+
+	t.Run("GenerateEmbeddings success", func(t *testing.T) {
+		body := `{"texts": ["Hello world"], "model": "text-embedding-3-small"}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/v1/embeddings/generate", bytes.NewBufferString(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.GenerateEmbeddings(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("VectorSearch success", func(t *testing.T) {
+		body := `{"query": "test query", "limit": 10, "threshold": 0.7}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/v1/embeddings/search", bytes.NewBufferString(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.VectorSearch(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("IndexDocument success", func(t *testing.T) {
+		body := `{"id": "doc-1", "title": "Test Doc", "content": "Test content", "metadata": {}}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/v1/embeddings/index", bytes.NewBufferString(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.IndexDocument(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("BatchIndexDocuments success", func(t *testing.T) {
+		body := `{"documents": [{"id": "doc-1", "title": "Test", "content": "Content"}]}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/v1/embeddings/batch-index", bytes.NewBufferString(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.BatchIndexDocuments(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("GetEmbeddingStats success", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/v1/embeddings/stats", nil)
+
+		handler.GetEmbeddingStats(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("ListEmbeddingProviders success", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/v1/embeddings/providers", nil)
+
+		handler.ListEmbeddingProviders(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("ConfigureProvider success", func(t *testing.T) {
+		body := `{"name": "openai", "enabled": true, "model": "text-embedding-3-small"}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("PUT", "/v1/embeddings/provider", bytes.NewBufferString(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.ConfigureProvider(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("SimilaritySearch success", func(t *testing.T) {
+		// SimilaritySearch uses VectorSearchRequest which needs query or vector
+		body := `{"query": "test similarity", "limit": 5}`
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/v1/embeddings/similarity", bytes.NewBufferString(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		handler.SimilaritySearch(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
 }

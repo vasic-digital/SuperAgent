@@ -788,3 +788,37 @@ func TestModelMetadataHandler_GetRefreshStatus_LimitParsing(t *testing.T) {
 		assert.True(t, limit <= 100)
 	})
 }
+
+func TestModelMetadataHandler_ListModels_InvalidLimitFormat(t *testing.T) {
+	handler := NewModelMetadataHandler(nil)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/v1/models/metadata?limit=abc", nil)
+
+	handler.ListModels(c)
+
+	// Invalid limit format should return bad request
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestModelMetadataHandler_ListModels_InvalidPageFormat(t *testing.T) {
+	handler := NewModelMetadataHandler(nil)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/v1/models/metadata?page=xyz", nil)
+
+	handler.ListModels(c)
+
+	// Invalid page format should return bad request
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// Note: RefreshModels and GetRefreshStatus tests with nil service cannot be run
+// because the handler doesn't check for nil service before calling service methods,
+// causing a panic. These would need the handler to be fixed to handle nil service gracefully.
+
+// Note: Tests for GetModel, CompareModels, GetProviderModels, GetModelsByCapability
+// with nil service cannot be run because the handler doesn't check for nil service
+// and causes a panic. These would need the handler to be fixed to handle nil service gracefully.
