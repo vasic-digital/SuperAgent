@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/superagent/superagent/internal/optimization/langchain"
+	"github.com/superagent/superagent/internal/optimization/llamaindex"
 	"github.com/superagent/superagent/internal/optimization/outlines"
 	"github.com/superagent/superagent/internal/optimization/streaming"
 )
@@ -293,7 +295,7 @@ func (p *Pipeline) retrieveContext(ctx context.Context, prompt string) ([]string
 		return nil, fmt.Errorf("llamaindex client not available")
 	}
 
-	resp, err := p.service.llamaindexClient.Query(ctx, &llamaindexQueryRequest{
+	resp, err := p.service.llamaindexClient.Query(ctx, &llamaindex.QueryRequest{
 		Query:     prompt,
 		TopK:      5,
 		UseCognee: p.service.config.LlamaIndex.UseCogneeIndex,
@@ -316,7 +318,7 @@ func (p *Pipeline) decomposeTask(ctx context.Context, task string) ([]string, er
 		return nil, fmt.Errorf("langchain client not available")
 	}
 
-	resp, err := p.service.langchainClient.Decompose(ctx, &langchainDecomposeRequest{
+	resp, err := p.service.langchainClient.Decompose(ctx, &langchain.DecomposeRequest{
 		Task:     task,
 		MaxSteps: 5,
 	})
@@ -402,15 +404,3 @@ func (p *Pipeline) SetConfig(config *PipelineConfig) {
 	p.config = config
 }
 
-// Internal request types to avoid import cycles
-type llamaindexQueryRequest struct {
-	Query     string
-	TopK      int
-	UseCognee bool
-	Rerank    bool
-}
-
-type langchainDecomposeRequest struct {
-	Task     string
-	MaxSteps int
-}
