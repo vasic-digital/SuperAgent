@@ -1,10 +1,12 @@
 package plugins
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/superagent/superagent/internal/models"
 )
 
 func TestNewDependencyResolver(t *testing.T) {
@@ -449,4 +451,172 @@ func TestDependencyResolver_ResolveLoadOrder_EdgeCases(t *testing.T) {
 		assert.Contains(t, order, "c")
 		assert.Contains(t, order, "d")
 	})
+}
+
+// =====================================================
+// ADDITIONAL CHECKCONFLICTS EDGE CASES
+// =====================================================
+
+func TestDependencyResolver_CheckConflicts_Extended(t *testing.T) {
+	t.Run("no conflicts with unversioned deps and registered plugin", func(t *testing.T) {
+		registry := NewRegistry()
+		resolver := NewDependencyResolver(registry)
+
+		// Add a plugin to registry
+		mockPlugin := &mockPluginForDeps{
+			name:    "plugin-b",
+			version: "1.0.0",
+			caps: &models.ProviderCapabilities{
+				SupportsStreaming: true,
+			},
+		}
+		registry.Register(mockPlugin)
+
+		// Check conflicts for plugin-a depending on plugin-b (no version constraint)
+		err := resolver.checkConflicts("plugin-a", []string{"plugin-b"})
+		assert.NoError(t, err)
+	})
+
+	t.Run("versioned deps not found in registry returns no error", func(t *testing.T) {
+		registry := NewRegistry()
+		resolver := NewDependencyResolver(registry)
+
+		// Add a plugin with version - note: registry.Get uses full dep string as key
+		mockPlugin := &mockPluginForDeps{
+			name:    "plugin-b",
+			version: "1.5.0",
+			caps:    &models.ProviderCapabilities{},
+		}
+		registry.Register(mockPlugin)
+
+		// Version-constrained deps don't match registry key (which uses plugin Name())
+		// So this returns no error since the plugin isn't found
+		err := resolver.checkConflicts("plugin-a", []string{"plugin-b@>=1.0.0"})
+		assert.NoError(t, err)
+	})
+
+	t.Run("capability conflict detected between plugins", func(t *testing.T) {
+		registry := NewRegistry()
+		resolver := NewDependencyResolver(registry)
+
+		// Add plugin-a with specific capabilities
+		pluginA := &mockPluginForDeps{
+			name:    "plugin-a",
+			version: "1.0.0",
+			caps: &models.ProviderCapabilities{
+				SupportsStreaming: true,
+			},
+		}
+		registry.Register(pluginA)
+
+		// Add plugin-b with conflicting capabilities
+		pluginB := &mockPluginForDeps{
+			name:    "plugin-b",
+			version: "1.0.0",
+			caps: &models.ProviderCapabilities{
+				SupportsStreaming: false,
+			},
+		}
+		registry.Register(pluginB)
+
+		// Check conflicts - should detect capability conflict
+		err := resolver.checkConflicts("plugin-a", []string{"plugin-b"})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "capability conflict")
+	})
+}
+
+func TestDependencyResolver_GetPluginCapabilities_Extended(t *testing.T) {
+	t.Run("returns capabilities for registered plugin", func(t *testing.T) {
+		registry := NewRegistry()
+		resolver := NewDependencyResolver(registry)
+
+		mockPlugin := &mockPluginForDeps{
+			name:    "test-plugin",
+			version: "1.0.0",
+			caps: &models.ProviderCapabilities{
+				SupportsStreaming:       true,
+				SupportsFunctionCalling: true,
+				SupportsVision:          false,
+			},
+		}
+		registry.Register(mockPlugin)
+
+		caps := resolver.getPluginCapabilities("test-plugin")
+
+		assert.NotNil(t, caps)
+		assert.Equal(t, true, (*caps)["streaming"])
+		assert.Equal(t, true, (*caps)["function_calling"])
+		assert.Equal(t, false, (*caps)["vision"])
+	})
+}
+
+func TestDependencyResolver_HasCapabilityConflict_Extended(t *testing.T) {
+	t.Run("no conflict when both nil", func(t *testing.T) {
+		registry := NewRegistry()
+		resolver := NewDependencyResolver(registry)
+
+		result := resolver.hasCapabilityConflict(nil, nil)
+		assert.False(t, result)
+	})
+
+	t.Run("no conflict when one is nil", func(t *testing.T) {
+		registry := NewRegistry()
+		resolver := NewDependencyResolver(registry)
+
+		caps := &map[string]interface{}{"streaming": true}
+		result := resolver.hasCapabilityConflict(caps, nil)
+		assert.False(t, result)
+
+		result = resolver.hasCapabilityConflict(nil, caps)
+		assert.False(t, result)
+	})
+
+	t.Run("no conflict when same values", func(t *testing.T) {
+		registry := NewRegistry()
+		resolver := NewDependencyResolver(registry)
+
+		caps1 := &map[string]interface{}{"streaming": true, "vision": false}
+		caps2 := &map[string]interface{}{"streaming": true, "vision": false}
+
+		result := resolver.hasCapabilityConflict(caps1, caps2)
+		assert.False(t, result)
+	})
+
+	t.Run("conflict when different values", func(t *testing.T) {
+		registry := NewRegistry()
+		resolver := NewDependencyResolver(registry)
+
+		caps1 := &map[string]interface{}{"streaming": true}
+		caps2 := &map[string]interface{}{"streaming": false}
+
+		result := resolver.hasCapabilityConflict(caps1, caps2)
+		assert.True(t, result)
+	})
+}
+
+// mockPluginForDeps is a configurable mock for dependency tests
+type mockPluginForDeps struct {
+	name    string
+	version string
+	caps    *models.ProviderCapabilities
+}
+
+func (m *mockPluginForDeps) Name() string    { return m.name }
+func (m *mockPluginForDeps) Version() string { return m.version }
+func (m *mockPluginForDeps) Capabilities() *models.ProviderCapabilities {
+	if m.caps == nil {
+		return &models.ProviderCapabilities{}
+	}
+	return m.caps
+}
+func (m *mockPluginForDeps) Init(config map[string]any) error                     { return nil }
+func (m *mockPluginForDeps) Shutdown(ctx context.Context) error                   { return nil }
+func (m *mockPluginForDeps) HealthCheck(ctx context.Context) error                { return nil }
+func (m *mockPluginForDeps) SetSecurityContext(ctx *PluginSecurityContext) error  { return nil }
+func (m *mockPluginForDeps) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+	return nil, nil
+}
+func (m *mockPluginForDeps) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+	return nil, nil
 }
