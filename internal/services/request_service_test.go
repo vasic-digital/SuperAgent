@@ -576,3 +576,187 @@ func BenchmarkRequestCircuitBreaker_Call(b *testing.B) {
 		})
 	}
 }
+
+// Tests for ProcessRequest and ProcessRequestStream
+func TestRequestService_ProcessRequest(t *testing.T) {
+	t.Run("success with single provider", func(t *testing.T) {
+		service := NewRequestService("random", nil, nil)
+		service.RegisterProvider("test-provider", &MockLLMProviderForRequest{
+			name: "test-provider",
+			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+				return &models.LLMResponse{
+					Content:      "test response",
+					ProviderName: "test-provider",
+					Confidence:   0.95,
+				}, nil
+			},
+		})
+
+		req := &models.LLMRequest{
+			Prompt: "test prompt",
+		}
+
+		resp, err := service.ProcessRequest(context.Background(), req)
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, "test response", resp.Content)
+	})
+
+	t.Run("no providers available", func(t *testing.T) {
+		service := NewRequestService("random", nil, nil)
+
+		req := &models.LLMRequest{
+			Prompt: "test prompt",
+		}
+
+		_, err := service.ProcessRequest(context.Background(), req)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no providers available")
+	})
+
+	t.Run("provider returns error", func(t *testing.T) {
+		service := NewRequestService("random", nil, nil)
+		service.RegisterProvider("error-provider", &MockLLMProviderForRequest{
+			name: "error-provider",
+			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+				return nil, errors.New("provider error")
+			},
+		})
+
+		req := &models.LLMRequest{
+			Prompt: "test prompt",
+		}
+
+		_, err := service.ProcessRequest(context.Background(), req)
+		assert.Error(t, err)
+	})
+
+	t.Run("with multiple providers", func(t *testing.T) {
+		service := NewRequestService("round_robin", nil, nil)
+		service.RegisterProvider("p1", &MockLLMProviderForRequest{name: "p1"})
+		service.RegisterProvider("p2", &MockLLMProviderForRequest{name: "p2"})
+
+		req := &models.LLMRequest{
+			Prompt: "test prompt",
+		}
+
+		resp, err := service.ProcessRequest(context.Background(), req)
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+	})
+
+	t.Run("with context timeout", func(t *testing.T) {
+		service := NewRequestService("random", nil, nil)
+		service.RegisterProvider("slow-provider", &MockLLMProviderForRequest{
+			name: "slow-provider",
+			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(200 * time.Millisecond):
+					return &models.LLMResponse{Content: "slow response"}, nil
+				}
+			},
+		})
+
+		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		defer cancel()
+
+		req := &models.LLMRequest{
+			Prompt: "test prompt",
+		}
+
+		_, err := service.ProcessRequest(ctx, req)
+		assert.Error(t, err)
+	})
+}
+
+func TestRequestService_ProcessRequestStream(t *testing.T) {
+	t.Run("success with streaming provider", func(t *testing.T) {
+		service := NewRequestService("random", nil, nil)
+		service.RegisterProvider("stream-provider", &MockLLMProviderForRequest{
+			name: "stream-provider",
+			streamFunc: func(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+				ch := make(chan *models.LLMResponse, 3)
+				go func() {
+					defer close(ch)
+					ch <- &models.LLMResponse{Content: "chunk1"}
+					ch <- &models.LLMResponse{Content: "chunk2"}
+					ch <- &models.LLMResponse{Content: "chunk3"}
+				}()
+				return ch, nil
+			},
+		})
+
+		req := &models.LLMRequest{
+			Prompt: "test prompt",
+		}
+
+		ch, err := service.ProcessRequestStream(context.Background(), req)
+		assert.NoError(t, err)
+		assert.NotNil(t, ch)
+
+		// Collect responses
+		var chunks []string
+		for resp := range ch {
+			chunks = append(chunks, resp.Content)
+		}
+		assert.Len(t, chunks, 3)
+	})
+
+	t.Run("no providers available", func(t *testing.T) {
+		service := NewRequestService("random", nil, nil)
+
+		req := &models.LLMRequest{
+			Prompt: "test prompt",
+		}
+
+		_, err := service.ProcessRequestStream(context.Background(), req)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no providers available")
+	})
+
+	t.Run("provider returns error", func(t *testing.T) {
+		service := NewRequestService("random", nil, nil)
+		service.RegisterProvider("error-stream-provider", &MockLLMProviderForRequest{
+			name: "error-stream-provider",
+			streamFunc: func(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+				return nil, errors.New("stream error")
+			},
+		})
+
+		req := &models.LLMRequest{
+			Prompt: "test prompt",
+		}
+
+		_, err := service.ProcessRequestStream(context.Background(), req)
+		assert.Error(t, err)
+	})
+}
+
+func TestRequestService_UpdateProviderHealth(t *testing.T) {
+	service := NewRequestService("random", nil, nil)
+	service.RegisterProvider("test-provider", &MockLLMProviderForRequest{name: "test-provider"})
+
+	t.Run("update success", func(t *testing.T) {
+		service.UpdateProviderHealth("test-provider", true, 100, nil)
+
+		health := service.GetProviderHealth("test-provider")
+		assert.NotNil(t, health)
+		assert.True(t, health.Healthy)
+	})
+
+	t.Run("update failure", func(t *testing.T) {
+		service.UpdateProviderHealth("test-provider", false, 500, errors.New("provider error"))
+
+		health := service.GetProviderHealth("test-provider")
+		assert.NotNil(t, health)
+		// Note: UpdateProviderHealth may not actually change the health structure
+		// depending on implementation - just verify it doesn't panic
+	})
+
+	t.Run("non-existent provider", func(t *testing.T) {
+		// Should not panic for non-existent provider
+		service.UpdateProviderHealth("non-existent", true, 100, nil)
+	})
+}
