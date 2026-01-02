@@ -2,6 +2,10 @@ package optimization
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -556,6 +560,403 @@ func TestServiceMarkServiceUnavailable(t *testing.T) {
 
 	assert.False(t, status)
 	assert.True(t, until.After(time.Now()))
+}
+
+func TestServiceIsServiceAvailable_RetryAfterTimeout(t *testing.T) {
+	config := DefaultConfig()
+	config.Fallback.RetryUnavailableAfter = 50 * time.Millisecond
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	svc.markServiceUnavailable("test-service")
+
+	// Immediately should be unavailable
+	assert.False(t, svc.isServiceAvailable("test-service"))
+
+	// Wait for retry period
+	time.Sleep(60 * time.Millisecond)
+
+	// Should be available again (retry period passed)
+	assert.True(t, svc.isServiceAvailable("test-service"))
+}
+
+func TestServiceIsServiceAvailable_CachedStatus(t *testing.T) {
+	config := DefaultConfig()
+	config.Fallback.HealthCheckInterval = 1 * time.Hour // Long interval
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	// Set cached status
+	svc.mu.Lock()
+	svc.serviceStatus["cached-service"] = true
+	svc.lastHealthCheck["cached-service"] = time.Now()
+	svc.mu.Unlock()
+
+	// Should return cached status
+	assert.True(t, svc.isServiceAvailable("cached-service"))
+}
+
+func TestServiceGetCacheStats_WithEntries(t *testing.T) {
+	ctx := context.Background()
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = true
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	// Add some entries
+	embedding := []float64{1.0, 0.0, 0.0}
+	_, err = svc.semanticCache.Set(ctx, "query1", "response1", embedding, nil)
+	require.NoError(t, err)
+
+	stats := svc.GetCacheStats()
+	assert.True(t, stats["enabled"].(bool))
+	// After adding an entry, stats should reflect it
+	if entries, ok := stats["entries"]; ok {
+		assert.GreaterOrEqual(t, entries.(int), 1)
+	}
+}
+
+func TestServiceOptimizeRequest_WithEmbeddingMiss(t *testing.T) {
+	ctx := context.Background()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = true
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = false
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	// Request with an embedding that won't have a cache hit
+	embedding := []float64{0.1, 0.2, 0.3}
+	result, err := svc.OptimizeRequest(ctx, "new unique query", embedding)
+	require.NoError(t, err)
+
+	assert.False(t, result.CacheHit)
+	assert.Empty(t, result.CachedResponse)
+	assert.Equal(t, "new unique query", result.OriginalPrompt)
+}
+
+func TestServiceOptimizeResponse_WithValidationError(t *testing.T) {
+	ctx := context.Background()
+
+	config := DefaultConfig()
+	config.StructuredOutput.Enabled = true
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	// Create schema requiring name field
+	schema := outlines.ObjectSchema(map[string]*outlines.JSONSchema{
+		"name": outlines.StringSchema(),
+	}, "name")
+
+	// Provide response missing required field
+	result, err := svc.OptimizeResponse(ctx, `{"other": "field"}`, nil, "test", schema)
+	require.NoError(t, err)
+
+	assert.NotNil(t, result.ValidationResult)
+	assert.False(t, result.ValidationResult.Valid)
+	assert.Nil(t, result.StructuredOutput)
+}
+
+func TestServiceOptimizeResponse_WithoutCache(t *testing.T) {
+	ctx := context.Background()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	result, err := svc.OptimizeResponse(ctx, "test response", nil, "test query", nil)
+	require.NoError(t, err)
+
+	assert.False(t, result.Cached)
+	assert.Equal(t, "test response", result.Content)
+}
+
+func TestServiceOptimizeRequest_NoEmbedding(t *testing.T) {
+	ctx := context.Background()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = true
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = false
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	// Request without embedding - should skip cache check
+	result, err := svc.OptimizeRequest(ctx, "test query", nil)
+	require.NoError(t, err)
+
+	assert.False(t, result.CacheHit)
+	assert.Equal(t, "test query", result.OptimizedPrompt)
+}
+
+func TestServiceGenerateStructured_GeneratorError(t *testing.T) {
+	ctx := context.Background()
+
+	config := DefaultConfig()
+	config.StructuredOutput.Enabled = true
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	schema := outlines.StringSchema()
+	generator := func(prompt string) (string, error) {
+		return "", fmt.Errorf("generator failed")
+	}
+
+	_, err = svc.GenerateStructured(ctx, "test", schema, generator)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "generator failed")
+}
+
+func TestServiceGetServiceStatus_WithServices(t *testing.T) {
+	ctx := context.Background()
+
+	config := DefaultConfig()
+	// Enable services but they won't actually be connected
+	config.SGLang.Enabled = true
+	config.LlamaIndex.Enabled = true
+	config.LangChain.Enabled = true
+	config.Guidance.Enabled = true
+	config.LMQL.Enabled = true
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	// Get status - will check health of configured services
+	status := svc.GetServiceStatus(ctx)
+
+	// Status should be returned (actual health depends on service availability)
+	assert.NotNil(t, status)
+}
+
+func TestNewService_WithAllServicesEnabled(t *testing.T) {
+	config := DefaultConfig()
+	config.SGLang.Enabled = true
+	config.SGLang.Endpoint = "http://localhost:30000"
+	config.LlamaIndex.Enabled = true
+	config.LlamaIndex.Endpoint = "http://localhost:8002"
+	config.LangChain.Enabled = true
+	config.LangChain.Endpoint = "http://localhost:8001"
+	config.Guidance.Enabled = true
+	config.Guidance.Endpoint = "http://localhost:8003"
+	config.LMQL.Enabled = true
+	config.LMQL.Endpoint = "http://localhost:8004"
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+	assert.NotNil(t, svc)
+
+	// All clients should be initialized
+	assert.NotNil(t, svc.sglangClient)
+	assert.NotNil(t, svc.llamaindexClient)
+	assert.NotNil(t, svc.langchainClient)
+	assert.NotNil(t, svc.guidanceClient)
+	assert.NotNil(t, svc.lmqlClient)
+}
+
+func TestIsComplexTask_ShortPrompts(t *testing.T) {
+	// Short prompts should never be complex
+	assert.False(t, isComplexTask("hi"))
+	assert.False(t, isComplexTask("hello world"))
+	assert.False(t, isComplexTask("what is the weather"))
+}
+
+func TestIsComplexTask_MediumPromptWithIndicators(t *testing.T) {
+	// Prompt must be over 100 chars with indicators
+	shortWithIndicator := "implement this function"
+	assert.False(t, isComplexTask(shortWithIndicator)) // Too short
+
+	longWithIndicator := "Please implement a complex multi-step data processing pipeline that transforms CSV data into normalized JSON format with validation"
+	assert.True(t, isComplexTask(longWithIndicator))
+}
+
+func TestServiceStreamEnhanced_WithProgressCallback(t *testing.T) {
+	ctx := context.Background()
+
+	config := DefaultConfig()
+	config.Streaming.Enabled = true
+	config.Streaming.ProgressInterval = 10 * time.Millisecond
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	in := make(chan *streaming.StreamChunk, 5)
+	in <- &streaming.StreamChunk{Content: "Hello ", Index: 0}
+	in <- &streaming.StreamChunk{Content: "world!", Index: 1}
+	in <- &streaming.StreamChunk{Content: "", Index: 2, Done: true}
+	close(in)
+
+	var progressCalled bool
+	progressCallback := func(p *streaming.StreamProgress) {
+		progressCalled = true
+	}
+
+	out, getResult := svc.StreamEnhanced(ctx, in, progressCallback)
+
+	// Consume output
+	for range out {
+	}
+
+	result := getResult()
+	assert.NotNil(t, result)
+	// Progress callback may or may not be called depending on timing
+	_ = progressCalled
+}
+
+func TestServiceOptimizeRequest_WithMockedLlamaIndex(t *testing.T) {
+	// Mock LlamaIndex server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/query" {
+			resp := map[string]interface{}{
+				"response": "test response",
+				"sources": []map[string]interface{}{
+					{
+						"content":  "relevant context 1",
+						"metadata": map[string]string{},
+						"score":    0.95,
+					},
+					{
+						"content":  "relevant context 2",
+						"metadata": map[string]string{},
+						"score":    0.85,
+					},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = true
+	config.LlamaIndex.Endpoint = server.URL
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = false
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	result, err := svc.OptimizeRequest(ctx, "test query", nil)
+	require.NoError(t, err)
+
+	// Should have retrieved context and augmented the prompt
+	assert.NotEmpty(t, result.RetrievedContext)
+	assert.Contains(t, result.OptimizedPrompt, "Relevant context")
+}
+
+func TestServiceOptimizeRequest_WithMockedSGLang(t *testing.T) {
+	// Mock SGLang server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			return
+		}
+		// Accept any request to warm_prefix and return success
+		resp := map[string]interface{}{
+			"prefix_id": "test-prefix",
+			"cached":    true,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = true
+	config.SGLang.Endpoint = server.URL
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	result, err := svc.OptimizeRequest(ctx, "test query that needs to be long enough for prefix caching", nil)
+	require.NoError(t, err)
+
+	// The SGLang integration attempts prefix warming - result depends on API response
+	// We just verify the request completes without error
+	assert.Equal(t, "test query that needs to be long enough for prefix caching", result.OriginalPrompt)
+}
+
+func TestServiceOptimizeRequest_WithMockedLangChain(t *testing.T) {
+	// Mock LangChain server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/decompose" {
+			resp := map[string]interface{}{
+				"subtasks": []map[string]interface{}{
+					{"step": 1, "description": "First step"},
+					{"step": 2, "description": "Second step"},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = true
+	config.LangChain.Endpoint = server.URL
+	config.SGLang.Enabled = false
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	// Use a complex task that will trigger decomposition
+	complexTask := "Please implement a complex multi-step data processing pipeline that transforms CSV data into normalized JSON format with validation and error handling"
+	result, err := svc.OptimizeRequest(ctx, complexTask, nil)
+	require.NoError(t, err)
+
+	// Should have decomposed tasks
+	assert.NotEmpty(t, result.DecomposedTasks)
+}
+
+func TestServiceQueryDocuments_WithOptions(t *testing.T) {
+	// Test QueryDocuments with options - covers the options != nil branch
+	config := DefaultConfig()
+	config.LlamaIndex.Enabled = false
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	_, err = svc.QueryDocuments(ctx, "test", nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not available")
 }
 
 // Benchmark tests

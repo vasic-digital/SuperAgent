@@ -971,3 +971,264 @@ func TestArraySchema(t *testing.T) {
 	assert.NotNil(t, schema.Items)
 	assert.Equal(t, "string", schema.Items.Type)
 }
+
+func TestParseSchemaFromMap(t *testing.T) {
+	schemaMap := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"name": map[string]interface{}{"type": "string"},
+			"age":  map[string]interface{}{"type": "integer"},
+		},
+		"required": []interface{}{"name"},
+	}
+
+	schema, err := ParseSchemaFromMap(schemaMap)
+	require.NoError(t, err)
+
+	assert.Equal(t, "object", schema.Type)
+	assert.Len(t, schema.Properties, 2)
+	assert.Contains(t, schema.Required, "name")
+}
+
+func TestJSONSchema_String(t *testing.T) {
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"name": StringSchema(),
+		"age":  IntegerSchema(),
+	}, "name")
+
+	str := schema.String()
+
+	assert.Contains(t, str, "object")
+	assert.Contains(t, str, "name")
+}
+
+func TestJSONSchema_GetPropertySchema(t *testing.T) {
+	nameSchema := StringSchema()
+	ageSchema := IntegerSchema()
+
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"name": nameSchema,
+		"age":  ageSchema,
+	}, "name")
+
+	prop := schema.GetPropertySchema("name")
+	assert.NotNil(t, prop)
+	assert.Equal(t, "string", prop.Type)
+
+	prop = schema.GetPropertySchema("age")
+	assert.NotNil(t, prop)
+	assert.Equal(t, "integer", prop.Type)
+
+	prop = schema.GetPropertySchema("nonexistent")
+	assert.Nil(t, prop)
+}
+
+func TestSchemaBuilder_Type(t *testing.T) {
+	schema := NewSchemaBuilder().
+		Type("custom").
+		Build()
+
+	assert.Equal(t, "custom", schema.Type)
+}
+
+func TestSchemaBuilder_Description(t *testing.T) {
+	schema := NewSchemaBuilder().
+		String().
+		Description("A test description").
+		Build()
+
+	assert.Equal(t, "A test description", schema.Description)
+}
+
+func TestSchemaBuilder_Default(t *testing.T) {
+	schema := NewSchemaBuilder().
+		String().
+		Default("default value").
+		Build()
+
+	assert.Equal(t, "default value", schema.Default)
+}
+
+func TestSchemaBuilder_Format(t *testing.T) {
+	schema := NewSchemaBuilder().
+		String().
+		Format("email").
+		Build()
+
+	assert.Equal(t, "email", schema.Format)
+}
+
+func TestNumberSchema(t *testing.T) {
+	schema := NumberSchema()
+
+	assert.Equal(t, "number", schema.Type)
+}
+
+func TestSchemaValidator_ValidateData(t *testing.T) {
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"name": StringSchema(),
+		"age":  IntegerSchema(),
+	}, "name")
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	data := map[string]interface{}{
+		"name": "John",
+		"age":  30,
+	}
+
+	result := validator.ValidateData(data)
+	assert.True(t, result.Valid)
+	assert.Empty(t, result.Errors)
+}
+
+func TestSchemaValidator_ValidateData_MissingRequired(t *testing.T) {
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"name": StringSchema(),
+		"age":  IntegerSchema(),
+	}, "name", "age")
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	data := map[string]interface{}{
+		"name": "John",
+	}
+
+	result := validator.ValidateData(data)
+	assert.False(t, result.Valid)
+	assert.NotEmpty(t, result.Errors)
+}
+
+func TestSchemaValidator_ValidateAllOf(t *testing.T) {
+	schema := &JSONSchema{
+		AllOf: []*JSONSchema{
+			{Type: "object", Properties: map[string]*JSONSchema{"name": StringSchema()}},
+			{Type: "object", Properties: map[string]*JSONSchema{"age": IntegerSchema()}},
+		},
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	result := validator.Validate(`{"name": "John", "age": 30}`)
+	assert.True(t, result.Valid)
+}
+
+func TestSchemaValidator_DateTimeFormat(t *testing.T) {
+	schema := NewSchemaBuilder().
+		String().
+		Format("date-time").
+		Build()
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Valid RFC3339 datetime
+	result := validator.Validate(`"2024-01-15T10:30:00Z"`)
+	assert.True(t, result.Valid)
+
+	// Invalid datetime
+	result = validator.Validate(`"not-a-datetime"`)
+	assert.False(t, result.Valid)
+}
+
+func TestSchemaValidator_TimeFormat(t *testing.T) {
+	schema := NewSchemaBuilder().
+		String().
+		Format("time").
+		Build()
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Valid time
+	result := validator.Validate(`"10:30:00"`)
+	assert.True(t, result.Valid)
+
+	// Invalid time
+	result = validator.Validate(`"not-a-time"`)
+	assert.False(t, result.Valid)
+}
+
+func TestSchemaValidator_IPv6Format(t *testing.T) {
+	schema := NewSchemaBuilder().
+		String().
+		Format("ipv6").
+		Build()
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Valid IPv6
+	result := validator.Validate(`"2001:0db8:85a3:0000:0000:8a2e:0370:7334"`)
+	assert.True(t, result.Valid)
+
+	// Invalid IPv6
+	result = validator.Validate(`"not-an-ipv6"`)
+	assert.False(t, result.Valid)
+}
+
+func TestExtractJSON_EdgeCases(t *testing.T) {
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"name": StringSchema(),
+	}, "name")
+
+	provider := &mockProvider{
+		responses: []string{`Here is the JSON: {"name": "John"} hope that helps!`},
+	}
+
+	generator, err := NewStructuredGenerator(provider, schema, nil)
+	require.NoError(t, err)
+
+	result, err := generator.Generate(context.Background(), "Generate a name")
+	require.NoError(t, err)
+
+	assert.True(t, result.Valid)
+}
+
+func TestExtractJSON_NestedBraces(t *testing.T) {
+	schema := ObjectSchema(map[string]*JSONSchema{
+		"data": ObjectSchema(map[string]*JSONSchema{
+			"nested": StringSchema(),
+		}),
+	}, "data")
+
+	provider := &mockProvider{
+		responses: []string{`{"data": {"nested": "value"}}`},
+	}
+
+	generator, err := NewStructuredGenerator(provider, schema, nil)
+	require.NoError(t, err)
+
+	result, err := generator.Generate(context.Background(), "Generate nested")
+	require.NoError(t, err)
+
+	assert.True(t, result.Valid)
+}
+
+func TestSchemaValidator_NumberValidation(t *testing.T) {
+	min := float64(0)
+	max := float64(100)
+	schema := &JSONSchema{
+		Type:    "number",
+		Minimum: &min,
+		Maximum: &max,
+	}
+
+	validator, err := NewSchemaValidator(schema)
+	require.NoError(t, err)
+
+	// Valid number
+	result := validator.Validate(`50.5`)
+	assert.True(t, result.Valid)
+
+	// Below minimum
+	result = validator.Validate(`-10`)
+	assert.False(t, result.Valid)
+
+	// Above maximum
+	result = validator.Validate(`150`)
+	assert.False(t, result.Valid)
+}

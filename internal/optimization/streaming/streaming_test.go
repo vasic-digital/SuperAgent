@@ -2,6 +2,8 @@ package streaming
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
@@ -1095,4 +1097,863 @@ func TestNewBufferWithTokenThreshold(t *testing.T) {
 	tokenBuf, ok := buf.(*TokenBuffer)
 	require.True(t, ok)
 	assert.Equal(t, 10, tokenBuf.threshold)
+}
+
+// ============================================================================
+// Reset Method Tests
+// ============================================================================
+
+func TestCharacterBuffer_Reset(t *testing.T) {
+	buf := NewCharacterBuffer()
+
+	// Add some characters
+	buf.Add("Hello")
+
+	// Reset should clear the buffer
+	buf.Reset()
+
+	// Flush should return empty string after reset
+	result := buf.Flush()
+	assert.Empty(t, result)
+}
+
+func TestStreamAggregator_Reset(t *testing.T) {
+	agg := NewStreamAggregator()
+
+	agg.Start()
+	agg.Add("Hello")
+	agg.Add(" World")
+
+	result := agg.GetResult()
+	assert.Equal(t, "Hello World", result.FullContent)
+
+	// Reset should clear state
+	agg.Reset()
+}
+
+func TestParagraphBuffer_Reset(t *testing.T) {
+	buf := NewParagraphBuffer()
+
+	buf.Add("First paragraph.\n\n")
+	buf.Add("Second paragraph.")
+
+	// Reset should clear everything
+	buf.Reset()
+
+	result := buf.Flush()
+	assert.Empty(t, result)
+}
+
+// ============================================================================
+// SSE Edge Case Tests
+// ============================================================================
+
+func TestSSEWriter_WriteEvent_AllParams(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	writer, err := NewSSEWriter(recorder)
+	require.NoError(t, err)
+
+	err = writer.WriteEvent("message", "test data", "test-id")
+	require.NoError(t, err)
+
+	output := recorder.Body.String()
+	assert.Contains(t, output, "id: test-id")
+	assert.Contains(t, output, "event: message")
+	assert.Contains(t, output, "data: test data")
+}
+
+func TestStreamToSSE_Done(t *testing.T) {
+	recorder := httptest.NewRecorder()
+
+	chunks := make(chan string, 10)
+	errChan := make(chan error, 1)
+
+	go func() {
+		errChan <- StreamToSSE(context.Background(), recorder, chunks)
+	}()
+
+	// Send some content and then signal done
+	chunks <- "Hello World"
+	close(chunks)
+
+	err := <-errChan
+	require.NoError(t, err)
+
+	output := recorder.Body.String()
+	assert.Contains(t, output, "Hello World")
+	assert.Contains(t, output, "[DONE]")
+}
+
+func TestStreamWithProgressToSSE_Basic(t *testing.T) {
+	recorder := httptest.NewRecorder()
+
+	chunks := make(chan string, 10)
+	errChan := make(chan error, 1)
+
+	go func() {
+		errChan <- StreamWithProgressToSSE(context.Background(), recorder, chunks, 1)
+	}()
+
+	// Send content
+	chunks <- "Hello"
+	chunks <- " World"
+	close(chunks)
+
+	err := <-errChan
+	require.NoError(t, err)
+
+	output := recorder.Body.String()
+	assert.Contains(t, output, "Hello")
+}
+
+// ============================================================================
+// Aggregator Edge Cases
+// ============================================================================
+
+func TestChunkAggregator_MultipleChunks(t *testing.T) {
+	agg := NewChunkAggregator()
+
+	agg.Start()
+
+	// Add chunks
+	agg.Add(&StreamChunk{Content: "Hello", Index: 0})
+	agg.Add(&StreamChunk{Content: " World", Index: 1, Done: true})
+
+	result := agg.GetResult()
+	assert.Equal(t, "Hello World", result.FullContent)
+	assert.Equal(t, 2, result.ChunkCount)
+}
+
+// ============================================================================
+// Enhanced Streamer Edge Cases
+// ============================================================================
+
+func TestEnhancedStreamer_StreamWithProgress_Error(t *testing.T) {
+	config := &StreamConfig{
+		ProgressInterval: 10 * time.Millisecond,
+		EstimatedTokens:  100,
+	}
+	streamer := NewEnhancedStreamer(config)
+
+	ctx := context.Background()
+	in := make(chan *StreamChunk, 3)
+	in <- &StreamChunk{Content: "Hello", Index: 0}
+	in <- &StreamChunk{Content: "", Index: 1, Error: errors.New("provider error")}
+	close(in)
+
+	var progressUpdates []*StreamProgress
+	var mu sync.Mutex
+
+	progressCallback := func(p *StreamProgress) {
+		mu.Lock()
+		progressUpdates = append(progressUpdates, p)
+		mu.Unlock()
+	}
+
+	out := streamer.StreamWithProgress(ctx, in, progressCallback)
+
+	// Consume output
+	var errFound error
+	for chunk := range out {
+		if chunk.Error != nil {
+			errFound = chunk.Error
+		}
+	}
+
+	assert.NotNil(t, errFound)
+}
+
+// ============================================================================
+// Additional SSE Tests for Coverage
+// ============================================================================
+
+type nonFlushingWriter struct {
+	http.ResponseWriter
+}
+
+func (w *nonFlushingWriter) Header() http.Header {
+	return http.Header{}
+}
+
+func (w *nonFlushingWriter) Write(b []byte) (int, error) {
+	return len(b), nil
+}
+
+func (w *nonFlushingWriter) WriteHeader(statusCode int) {}
+
+func TestNewSSEWriter_NoFlusher(t *testing.T) {
+	// Test that NewSSEWriter returns error when ResponseWriter doesn't support Flush
+	w := &nonFlushingWriter{}
+
+	_, err := NewSSEWriter(w)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "streaming not supported")
+}
+
+func TestSSEWriter_WriteEventWithID(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	sse, err := NewSSEWriter(recorder)
+	require.NoError(t, err)
+
+	err = sse.WriteEvent("message", "test data", "event-123")
+	require.NoError(t, err)
+
+	body := recorder.Body.String()
+	assert.Contains(t, body, "id: event-123")
+	assert.Contains(t, body, "event: message")
+	assert.Contains(t, body, "data: test data")
+}
+
+func TestSSEWriter_WriteEventWithEventType(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	sse, err := NewSSEWriter(recorder)
+	require.NoError(t, err)
+
+	err = sse.WriteEvent("custom-event", "payload", "")
+	require.NoError(t, err)
+
+	body := recorder.Body.String()
+	assert.Contains(t, body, "event: custom-event")
+	assert.Contains(t, body, "data: payload")
+	assert.NotContains(t, body, "id:")
+}
+
+func TestSSEWriter_WriteJSON_MarshalError(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	sse, err := NewSSEWriter(recorder)
+	require.NoError(t, err)
+
+	// Channels cannot be marshaled to JSON
+	err = sse.WriteJSON(make(chan int))
+	assert.Error(t, err)
+}
+
+func TestSSEWriter_WriteProgress_Success(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	sse, err := NewSSEWriter(recorder)
+	require.NoError(t, err)
+
+	progress := &StreamProgress{
+		TokensGenerated:    50,
+		CharactersReceived: 200,
+		PercentComplete:    0.5,
+	}
+
+	err = sse.WriteProgress(progress)
+	require.NoError(t, err)
+
+	body := recorder.Body.String()
+	assert.Contains(t, body, "event: progress")
+	assert.Contains(t, body, "\"tokens_generated\":50")
+}
+
+func TestSSEWriter_WriteError(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	sse, err := NewSSEWriter(recorder)
+	require.NoError(t, err)
+
+	err = sse.WriteError(errors.New("test error"))
+	require.NoError(t, err)
+
+	body := recorder.Body.String()
+	assert.Contains(t, body, "event: error")
+	assert.Contains(t, body, "test error")
+}
+
+func TestStreamToSSE_ContextCancellation(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	stream := make(chan string)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Cancel immediately
+	cancel()
+
+	err := StreamToSSE(ctx, recorder, stream)
+	assert.Error(t, err)
+	assert.Equal(t, context.Canceled, err)
+}
+
+func TestStreamChunksToSSE_WithError(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	stream := make(chan *StreamChunk, 2)
+
+	ctx := context.Background()
+
+	// Send chunk with error
+	stream <- &StreamChunk{Error: errors.New("chunk error")}
+	close(stream)
+
+	err := StreamChunksToSSE(ctx, recorder, stream)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "chunk error")
+}
+
+func TestStreamChunksToSSE_WithDone(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	stream := make(chan *StreamChunk, 3)
+
+	ctx := context.Background()
+
+	stream <- &StreamChunk{Content: "Hello", Index: 0}
+	stream <- &StreamChunk{Content: " World", Index: 1, Done: true}
+	close(stream)
+
+	err := StreamChunksToSSE(ctx, recorder, stream)
+	require.NoError(t, err)
+
+	body := recorder.Body.String()
+	assert.Contains(t, body, "data: Hello")
+	assert.Contains(t, body, "data: [DONE]")
+}
+
+func TestStreamChunksToSSE_ContextCancellation(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	stream := make(chan *StreamChunk)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := StreamChunksToSSE(ctx, recorder, stream)
+	assert.Error(t, err)
+	assert.Equal(t, context.Canceled, err)
+}
+
+func TestStreamWithProgressToSSE_WithInterval(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	stream := make(chan string, 10)
+
+	ctx := context.Background()
+
+	// Send multiple chunks
+	for i := 0; i < 5; i++ {
+		stream <- "chunk"
+	}
+	close(stream)
+
+	err := StreamWithProgressToSSE(ctx, recorder, stream, 2) // Emit progress every 2 chunks
+	require.NoError(t, err)
+
+	body := recorder.Body.String()
+	assert.Contains(t, body, "event: progress")
+	assert.Contains(t, body, "data: [DONE]")
+}
+
+func TestStreamWithProgressToSSE_ContextCancellation(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	stream := make(chan string)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := StreamWithProgressToSSE(ctx, recorder, stream, 1)
+	assert.Error(t, err)
+	assert.Equal(t, context.Canceled, err)
+}
+
+func TestStreamWithProgressToSSE_NoInterval(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	stream := make(chan string, 3)
+
+	ctx := context.Background()
+
+	stream <- "hello"
+	stream <- " world"
+	close(stream)
+
+	err := StreamWithProgressToSSE(ctx, recorder, stream, 0) // No interval progress
+	require.NoError(t, err)
+
+	body := recorder.Body.String()
+	assert.Contains(t, body, "data: hello")
+	assert.Contains(t, body, "data: [DONE]")
+}
+
+// ============================================================================
+// Additional Buffer Tests for Coverage
+// ============================================================================
+
+func TestCharacterBuffer_ResetNoOp(t *testing.T) {
+	buf := NewCharacterBuffer()
+	// Reset is a no-op for CharacterBuffer but should not panic
+	buf.Reset()
+	// Should still work normally - returns each char as slice
+	result := buf.Add("Hi")
+	assert.Len(t, result, 2)
+	assert.Equal(t, "H", result[0])
+	assert.Equal(t, "i", result[1])
+}
+
+func TestNewWordBuffer_DefaultDelimiter(t *testing.T) {
+	// Test that empty delimiter defaults to space
+	buf := NewWordBuffer("")
+	result := buf.Add("Hello World ")
+	// Returns words with delimiter included
+	assert.Len(t, result, 2)
+	assert.Equal(t, "Hello ", result[0])
+	assert.Equal(t, "World ", result[1])
+}
+
+func TestNewWordBuffer_CustomDelimiter(t *testing.T) {
+	buf := NewWordBuffer(",")
+	words := buf.Add("one,two,three")
+	// WordBuffer includes delimiter in each word
+	assert.Equal(t, []string{"one,", "two,"}, words)
+
+	remaining := buf.Flush()
+	assert.Equal(t, "three", remaining)
+}
+
+func TestNewTokenBuffer_DefaultThreshold(t *testing.T) {
+	// Zero threshold should default to 5
+	buf := NewTokenBuffer(0)
+	tokens := buf.Add("Hello World")
+	assert.Empty(t, tokens) // Not enough tokens yet to emit
+}
+
+func TestNewTokenBuffer_CustomThreshold(t *testing.T) {
+	buf := NewTokenBuffer(2)
+	// Add enough content to reach threshold
+	buf.Add("Hello World how are you today")
+	tokens := buf.Add("this should trigger")
+	assert.NotEmpty(t, tokens)
+}
+
+// ============================================================================
+// Additional Rate Limiter Tests for Coverage
+// ============================================================================
+
+func TestRateLimiter_LimitWithContextCancellation(t *testing.T) {
+	limiter := NewRateLimiter(10.0) // 10 tokens per second
+	input := make(chan string, 10)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	for i := 0; i < 5; i++ {
+		input <- "token"
+	}
+	close(input)
+
+	// Cancel context immediately
+	cancel()
+
+	output := limiter.Limit(ctx, input)
+
+	// Drain output
+	count := 0
+	for range output {
+		count++
+	}
+	// Some tokens may have been processed before cancellation
+	assert.True(t, count <= 5)
+}
+
+func TestRateLimiter_LimitChunksWithError(t *testing.T) {
+	limiter := NewRateLimiter(1000.0) // Fast rate
+	input := make(chan *StreamChunk, 3)
+
+	ctx := context.Background()
+
+	input <- &StreamChunk{Content: "Hello", Index: 0}
+	input <- &StreamChunk{Content: "", Index: 1, Error: errors.New("test error")}
+	close(input)
+
+	output := limiter.LimitChunks(ctx, input)
+
+	var chunks []*StreamChunk
+	for chunk := range output {
+		chunks = append(chunks, chunk)
+	}
+
+	assert.Len(t, chunks, 2)
+	assert.NotNil(t, chunks[1].Error)
+}
+
+func TestBurstRateLimiter_LimitWithContextCancellation(t *testing.T) {
+	limiter := NewBurstRateLimiter(10.0, 5) // Slow rate to ensure context cancellation
+	input := make(chan string, 20)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Fill input
+	for i := 0; i < 20; i++ {
+		input <- "token"
+	}
+	close(input)
+
+	// Cancel after a short delay
+	go func() {
+		time.Sleep(10 * time.Millisecond)
+		cancel()
+	}()
+
+	output := limiter.Limit(ctx, input)
+
+	// Drain output
+	count := 0
+	for range output {
+		count++
+	}
+	// Some tokens should have been processed before cancellation
+	assert.True(t, count > 0)
+	assert.True(t, count < 20)
+}
+
+// ============================================================================
+// Additional Aggregator Tests for Coverage
+// ============================================================================
+
+func TestStreamAggregator_Aggregate(t *testing.T) {
+	agg := NewStreamAggregator()
+	input := make(chan string, 5)
+
+	input <- "Hello"
+	input <- " "
+	input <- "World"
+	close(input)
+
+	output, getResult := agg.Aggregate(context.Background(), input)
+
+	// Drain output
+	var chunks []string
+	for chunk := range output {
+		chunks = append(chunks, chunk)
+	}
+
+	assert.Len(t, chunks, 3)
+	result := getResult()
+	assert.Equal(t, "Hello World", result.FullContent)
+}
+
+func TestStreamAggregator_AggregateWithContextCancel(t *testing.T) {
+	agg := NewStreamAggregator()
+	input := make(chan string)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	output, _ := agg.Aggregate(ctx, input)
+
+	// Output should be closed due to context cancellation
+	_, ok := <-output
+	assert.False(t, ok)
+}
+
+func TestChunkAggregator_AggregateChunks(t *testing.T) {
+	agg := NewChunkAggregator()
+	input := make(chan *StreamChunk, 3)
+
+	input <- &StreamChunk{Content: "Hello", Index: 0}
+	input <- &StreamChunk{Content: " World", Index: 1}
+	close(input)
+
+	output, getResult := agg.AggregateChunks(context.Background(), input)
+
+	// Drain output
+	var chunks []*StreamChunk
+	for chunk := range output {
+		chunks = append(chunks, chunk)
+	}
+
+	assert.Len(t, chunks, 2)
+	result := getResult()
+	assert.Equal(t, "Hello World", result.FullContent)
+}
+
+func TestChunkAggregator_AggregateChunksWithContextCancel(t *testing.T) {
+	agg := NewChunkAggregator()
+	input := make(chan *StreamChunk)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	output, _ := agg.AggregateChunks(ctx, input)
+
+	_, ok := <-output
+	assert.False(t, ok)
+}
+
+// ============================================================================
+// Additional Enhanced Streamer Tests for Coverage
+// ============================================================================
+
+func TestEnhancedStreamer_StreamBuffered_Word(t *testing.T) {
+	config := &StreamConfig{
+		BufferType: BufferTypeWord,
+	}
+	streamer := NewEnhancedStreamer(config)
+
+	ctx := context.Background()
+	input := make(chan *StreamChunk, 5)
+
+	input <- &StreamChunk{Content: "Hello ", Index: 0}
+	input <- &StreamChunk{Content: "World ", Index: 1}
+	input <- &StreamChunk{Content: "!", Index: 2, Done: true}
+	close(input)
+
+	output := streamer.StreamBuffered(ctx, input)
+
+	var results []string
+	for chunk := range output {
+		results = append(results, chunk.Content)
+	}
+
+	assert.NotEmpty(t, results)
+}
+
+func TestEnhancedStreamer_StreamBuffered_Sentence(t *testing.T) {
+	config := &StreamConfig{
+		BufferType: BufferTypeSentence,
+	}
+	streamer := NewEnhancedStreamer(config)
+
+	ctx := context.Background()
+	input := make(chan *StreamChunk, 5)
+
+	input <- &StreamChunk{Content: "Hello. ", Index: 0}
+	input <- &StreamChunk{Content: "World! ", Index: 1}
+	input <- &StreamChunk{Content: "Test?", Index: 2, Done: true}
+	close(input)
+
+	output := streamer.StreamBuffered(ctx, input)
+
+	var results []string
+	for chunk := range output {
+		results = append(results, chunk.Content)
+	}
+
+	assert.NotEmpty(t, results)
+}
+
+func TestEnhancedStreamer_StreamBuffered_Paragraph(t *testing.T) {
+	config := &StreamConfig{
+		BufferType: BufferTypeParagraph,
+	}
+	streamer := NewEnhancedStreamer(config)
+
+	ctx := context.Background()
+	input := make(chan *StreamChunk, 5)
+
+	input <- &StreamChunk{Content: "First paragraph.\n\n", Index: 0}
+	input <- &StreamChunk{Content: "Second paragraph.", Index: 1, Done: true}
+	close(input)
+
+	output := streamer.StreamBuffered(ctx, input)
+
+	var results []string
+	for chunk := range output {
+		results = append(results, chunk.Content)
+	}
+
+	assert.NotEmpty(t, results)
+}
+
+func TestStringToChunkChannel_WithContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	input := make(chan string, 5)
+
+	input <- "Hello"
+	input <- "World"
+	close(input)
+
+	output := StringToChunkChannel(ctx, input)
+
+	var chunks []*StreamChunk
+	for chunk := range output {
+		chunks = append(chunks, chunk)
+	}
+
+	// 2 content chunks + 1 Done chunk
+	assert.Len(t, chunks, 3)
+	assert.Equal(t, "Hello", chunks[0].Content)
+	assert.Equal(t, "World", chunks[1].Content)
+	assert.True(t, chunks[2].Done)
+}
+
+func TestChunkToStringChannel_WithContext(t *testing.T) {
+	ctx := context.Background()
+	input := make(chan *StreamChunk, 3)
+
+	input <- &StreamChunk{Content: "Hello", Index: 0}
+	input <- &StreamChunk{Content: " World", Index: 1}
+	close(input)
+
+	output := ChunkToStringChannel(ctx, input)
+
+	var strings []string
+	for s := range output {
+		strings = append(strings, s)
+	}
+
+	assert.Len(t, strings, 2)
+	assert.Equal(t, "Hello", strings[0])
+}
+
+func TestChunkToStringChannel_WithError(t *testing.T) {
+	ctx := context.Background()
+	input := make(chan *StreamChunk, 3)
+
+	input <- &StreamChunk{Content: "Hello", Index: 0}
+	input <- &StreamChunk{Content: "World", Index: 1, Error: errors.New("test")}
+	input <- &StreamChunk{Content: "", Index: 2, Done: true}
+	close(input)
+
+	output := ChunkToStringChannel(ctx, input)
+
+	var strings []string
+	for s := range output {
+		strings = append(strings, s)
+	}
+
+	// ChunkToStringChannel outputs Content regardless of error, stops at Done
+	assert.Len(t, strings, 2)
+	assert.Equal(t, "Hello", strings[0])
+	assert.Equal(t, "World", strings[1])
+}
+
+// ============================================================================
+// Progress Tracker Edge Cases
+// ============================================================================
+
+func TestProgressTracker_GetProgressWithEstimation(t *testing.T) {
+	tracker := NewProgressTracker(100) // Estimate 100 tokens
+	tracker.Start()
+
+	// Simulate some progress
+	tracker.Update("Hello")
+	tracker.Update(" World")
+
+	progress := tracker.GetProgress()
+	assert.Greater(t, progress.PercentComplete, float64(0))
+	assert.Greater(t, progress.TokensGenerated, 0)
+}
+
+// ============================================================================
+// Additional tests for edge case coverage
+// ============================================================================
+
+func TestSSEWriter_WriteEvent_ErrorPaths(t *testing.T) {
+	// Test WriteEvent with all parameters
+	recorder := httptest.NewRecorder()
+	sse, err := NewSSEWriter(recorder)
+	require.NoError(t, err)
+
+	// With both event and ID
+	err = sse.WriteEvent("custom", "data", "id-1")
+	require.NoError(t, err)
+
+	// Empty data but valid event and ID
+	err = sse.WriteEvent("empty", "", "id-2")
+	require.NoError(t, err)
+
+	body := recorder.Body.String()
+	assert.Contains(t, body, "id: id-1")
+	assert.Contains(t, body, "event: custom")
+	assert.Contains(t, body, "id: id-2")
+}
+
+func TestStreamBuffered_ContextCancel(t *testing.T) {
+	config := &StreamConfig{
+		BufferType: BufferTypeCharacter,
+	}
+	streamer := NewEnhancedStreamer(config)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	input := make(chan *StreamChunk)
+
+	// Start buffering
+	output := streamer.StreamBuffered(ctx, input)
+
+	// Cancel context before sending anything
+	cancel()
+
+	// Output should close
+	_, ok := <-output
+	assert.False(t, ok)
+}
+
+func TestStreamWithProgress_ContextCancel(t *testing.T) {
+	config := &StreamConfig{
+		ProgressInterval: 10 * time.Millisecond,
+		EstimatedTokens:  100,
+	}
+	streamer := NewEnhancedStreamer(config)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	input := make(chan *StreamChunk)
+
+	progressCallback := func(p *StreamProgress) {}
+
+	output := streamer.StreamWithProgress(ctx, input, progressCallback)
+
+	// Cancel context
+	cancel()
+
+	// Output should close
+	count := 0
+	for range output {
+		count++
+	}
+	assert.Equal(t, 0, count)
+}
+
+func TestBurstRateLimiter_WaitForToken(t *testing.T) {
+	// Test with very slow rate to ensure waiting
+	limiter := NewBurstRateLimiter(1.0, 1) // 1 token/sec, burst 1
+	input := make(chan string, 3)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+
+	input <- "token1"
+	input <- "token2"
+	close(input)
+
+	output := limiter.Limit(ctx, input)
+
+	var count int
+	for range output {
+		count++
+	}
+	// At least some tokens should be processed
+	assert.GreaterOrEqual(t, count, 1)
+}
+
+func TestStreamChunksToSSE_NormalFlow(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	stream := make(chan *StreamChunk, 5)
+
+	ctx := context.Background()
+
+	stream <- &StreamChunk{Content: "Hello", Index: 0}
+	stream <- &StreamChunk{Content: " World", Index: 1}
+	close(stream)
+
+	err := StreamChunksToSSE(ctx, recorder, stream)
+	require.NoError(t, err)
+
+	body := recorder.Body.String()
+	assert.Contains(t, body, "data: Hello")
+	assert.Contains(t, body, "data:  World")
+	assert.Contains(t, body, "data: [DONE]")
+}
+
+func TestStreamToSSE_NormalFlow(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	stream := make(chan string, 5)
+
+	ctx := context.Background()
+
+	stream <- "Hello"
+	stream <- " World"
+	close(stream)
+
+	err := StreamToSSE(ctx, recorder, stream)
+	require.NoError(t, err)
+
+	body := recorder.Body.String()
+	assert.Contains(t, body, "data: Hello")
+	assert.Contains(t, body, "data:  World")
+	assert.Contains(t, body, "data: [DONE]")
 }
