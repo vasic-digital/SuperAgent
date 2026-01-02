@@ -500,3 +500,111 @@ func BenchmarkCogneeAPIHandler_SearchMemory(b *testing.B) {
 		handler.SearchMemory(c)
 	}
 }
+
+// Test helper functions
+func TestGetIntParam(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("returns value when param exists", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/test?limit=42", nil)
+
+		result := getIntParam(c, "limit", 10)
+		assert.Equal(t, 42, result)
+	})
+
+	t.Run("returns default when param missing", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/test", nil)
+
+		result := getIntParam(c, "limit", 10)
+		assert.Equal(t, 10, result)
+	})
+
+	t.Run("returns default when param invalid", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/test?limit=not-a-number", nil)
+
+		result := getIntParam(c, "limit", 10)
+		assert.Equal(t, 10, result)
+	})
+
+	t.Run("handles zero value", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/test?offset=0", nil)
+
+		result := getIntParam(c, "offset", 5)
+		assert.Equal(t, 0, result)
+	})
+
+	t.Run("handles negative value", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/test?page=-1", nil)
+
+		result := getIntParam(c, "page", 1)
+		assert.Equal(t, -1, result)
+	})
+}
+
+func TestGetFloatParam(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("returns value when param exists", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/test?score=0.95", nil)
+
+		result := getFloatParam(c, "score", 0.5)
+		assert.Equal(t, 0.95, result)
+	})
+
+	t.Run("returns default when param missing", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/test", nil)
+
+		result := getFloatParam(c, "score", 0.5)
+		assert.Equal(t, 0.5, result)
+	})
+
+	t.Run("returns default when param invalid", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/test?score=not-a-float", nil)
+
+		result := getFloatParam(c, "score", 0.5)
+		assert.Equal(t, 0.5, result)
+	})
+
+	t.Run("handles zero value", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/test?threshold=0.0", nil)
+
+		result := getFloatParam(c, "threshold", 0.7)
+		assert.Equal(t, 0.0, result)
+	})
+
+	t.Run("handles large float value", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/test?value=1234567.89", nil)
+
+		result := getFloatParam(c, "value", 0.0)
+		assert.Equal(t, 1234567.89, result)
+	})
+
+	t.Run("handles scientific notation", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/test?value=1.5e-3", nil)
+
+		result := getFloatParam(c, "value", 0.0)
+		assert.Equal(t, 0.0015, result)
+	})
+}
