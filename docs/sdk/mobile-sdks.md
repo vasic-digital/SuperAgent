@@ -34,29 +34,46 @@ class ViewController: UIViewController {
         super.viewDidLoad()
 
         // Initialize client
-        client = SuperAgentClient(apiKey: "your-api-key")
+        client = SuperAgentClient(baseURL: "https://api.superagent.ai", apiKey: "your-api-key")
     }
 
-    func generateResponse() {
+    func generateResponse() async {
         let messages = [
-            ChatMessage(role: .user, content: "Explain quantum computing")
+            ChatMessage(role: "user", content: "Explain quantum computing")
         ]
 
-        let request = ChatCompletionRequest(
-            model: "superagent-ensemble",
-            messages: messages,
-            maxTokens: 500
+        do {
+            let response = try await client.chatCompletion(
+                model: "superagent-ensemble",
+                messages: messages,
+                maxTokens: 500
+            )
+            displayResponse(response.content)
+        } catch {
+            print("Error: \(error.localizedDescription)")
+        }
+    }
+
+    // With ensemble configuration
+    func generateEnsembleResponse() async {
+        let messages = [
+            ChatMessage(role: "user", content: "What is machine learning?")
+        ]
+        let ensemble = EnsembleConfig(
+            strategy: "confidence_weighted",
+            minProviders: 2,
+            confidenceThreshold: 0.8
         )
 
-        client.chat.completions.create(request: request) { result in
-            switch result {
-            case .success(let response):
-                DispatchQueue.main.async {
-                    self.displayResponse(response.choices[0].message.content)
-                }
-            case .failure(let error):
-                print("Error: \(error.localizedDescription)")
-            }
+        do {
+            let response = try await client.chatCompletionWithEnsemble(
+                model: "superagent-ensemble",
+                messages: messages,
+                ensembleConfig: ensemble
+            )
+            displayResponse(response.content)
+        } catch {
+            print("Error: \(error)")
         }
     }
 }
@@ -104,9 +121,11 @@ dependencies {
 ### Quick Start
 
 ```kotlin
-import ai.superagent.sdk.SuperAgentClient
-import ai.superagent.sdk.models.ChatMessage
-import ai.superagent.sdk.models.ChatCompletionRequest
+import com.superagent.protocol.SuperAgentClient
+import com.superagent.protocol.ChatMessage
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 class MainActivity : AppCompatActivity() {
     private lateinit var client: SuperAgentClient
@@ -116,36 +135,58 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Initialize client
-        client = SuperAgentClient.Builder()
-            .apiKey("your-api-key")
-            .build()
+        client = SuperAgentClient(
+            baseUrl = "https://api.superagent.ai",
+            apiKey = "your-api-key"
+        )
     }
 
     private fun generateResponse() {
-        val messages = listOf(
-            ChatMessage(ChatMessage.Role.USER, "Explain quantum computing")
-        )
+        CoroutineScope(Dispatchers.IO).launch {
+            val messages = listOf(
+                ChatMessage(role = "user", content = "Explain quantum computing")
+            )
 
-        val request = ChatCompletionRequest(
-            model = "superagent-ensemble",
-            messages = messages,
-            maxTokens = 500
-        )
-
-        client.chat.completions.create(request)
-            .enqueue(object : Callback<ChatCompletionResponse> {
-                override fun onResponse(call: Call<ChatCompletionResponse>, response: Response<ChatCompletionResponse>) {
-                    response.body()?.let { completion ->
-                        runOnUiThread {
-                            displayResponse(completion.choices[0].message.content)
-                        }
-                    }
+            try {
+                val response = client.chatCompletion(
+                    model = "superagent-ensemble",
+                    messages = messages,
+                    maxTokens = 500
+                )
+                runOnUiThread {
+                    displayResponse(response.choices.first().message.content)
                 }
+            } catch (e: Exception) {
+                Log.e("SuperAgent", "Error: ${e.message}")
+            }
+        }
+    }
 
-                override fun onFailure(call: Call<ChatCompletionResponse>, t: Throwable) {
-                    Log.e("SuperAgent", "Error: ${t.message}")
+    // With ensemble configuration
+    private fun generateEnsembleResponse() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val messages = listOf(
+                ChatMessage(role = "user", content = "What is machine learning?")
+            )
+            val ensemble = EnsembleConfig(
+                strategy = "confidence_weighted",
+                minProviders = 2,
+                confidenceThreshold = 0.8
+            )
+
+            try {
+                val response = client.chatCompletionWithEnsemble(
+                    model = "superagent-ensemble",
+                    messages = messages,
+                    ensembleConfig = ensemble
+                )
+                runOnUiThread {
+                    displayResponse(response.choices.first().message.content)
                 }
-            })
+            } catch (e: Exception) {
+                Log.e("SuperAgent", "Error: ${e.message}")
+            }
+        }
     }
 }
 ```
@@ -179,32 +220,43 @@ lifecycleScope.launch {
 ### iOS Debate Creation
 
 ```swift
-let debateConfig = DebateConfig(
-    debateId: "mobile-debate-001",
-    topic: "Should AI assistants be more opinionated?",
-    maximalRepeatRounds: 3,
-    consensusThreshold: 0.75,
-    participants: [
-        DebateParticipant(
-            name: "UserAdvocate",
-            role: "User Experience Expert",
-            llms: [LLMConfig(provider: "claude", model: "claude-3-haiku")]
-        ),
-        DebateParticipant(
-            name: "AIResearcher",
-            role: "AI Research Scientist",
-            llms: [LLMConfig(provider: "deepseek", model: "deepseek-chat")]
-        )
-    ]
-)
+// Create participants
+let participants = [
+    DebateParticipant(
+        name: "UserAdvocate",
+        role: "User Experience Expert",
+        provider: "claude",
+        model: "claude-3-haiku"
+    ),
+    DebateParticipant(
+        name: "AIResearcher",
+        role: "AI Research Scientist",
+        provider: "deepseek",
+        model: "deepseek-chat"
+    )
+]
 
-client.debates.create(config: debateConfig) { result in
-    switch result {
-    case .success(let debate):
-        print("Debate created: \(debate.debateId)")
-        self.monitorDebate(debate.debateId)
-    case .failure(let error):
-        print("Failed to create debate: \(error)")
+// Create debate
+Task {
+    do {
+        let debate = try await client.createDebate(
+            topic: "Should AI assistants be more opinionated?",
+            participants: participants,
+            maxRounds: 3,
+            strategy: "consensus"
+        )
+        print("Debate created: \(debate.id)")
+
+        // Wait for completion
+        let result = try await client.waitForDebateCompletion(
+            debateId: debate.id,
+            pollInterval: 5.0
+        )
+        if result.consensusReached {
+            print("Consensus: \(result.finalPosition ?? "")")
+        }
+    } catch {
+        print("Failed: \(error)")
     }
 }
 ```
@@ -212,38 +264,49 @@ client.debates.create(config: debateConfig) { result in
 ### Android Debate Creation
 
 ```kotlin
-val debateConfig = DebateConfig(
-    debateId = "mobile-debate-001",
-    topic = "Should AI assistants be more opinionated?",
-    maximalRepeatRounds = 3,
-    consensusThreshold = 0.75f,
-    participants = listOf(
+CoroutineScope(Dispatchers.IO).launch {
+    val participants = listOf(
         DebateParticipant(
             name = "UserAdvocate",
             role = "User Experience Expert",
-            llms = listOf(LLMConfig(provider = "claude", model = "claude-3-haiku"))
+            llmProvider = "claude",
+            llmModel = "claude-3-haiku"
         ),
         DebateParticipant(
             name = "AIResearcher",
             role = "AI Research Scientist",
-            llms = listOf(LLMConfig(provider = "deepseek", model = "deepseek-chat"))
+            llmProvider = "deepseek",
+            llmModel = "deepseek-chat"
         )
     )
-)
 
-client.debates.create(debateConfig)
-    .enqueue(object : Callback<Debate> {
-        override fun onResponse(call: Call<Debate>, response: Response<Debate>) {
-            response.body()?.let { debate ->
-                Log.d("SuperAgent", "Debate created: ${debate.debateId}")
-                monitorDebate(debate.debateId)
+    try {
+        val debate = client.createDebate(
+            topic = "Should AI assistants be more opinionated?",
+            participants = participants,
+            maxRounds = 3,
+            strategy = "consensus"
+        )
+        Log.d("SuperAgent", "Debate created: ${debate.debateId}")
+
+        // Poll for status
+        var status = client.getDebateStatus(debate.debateId)
+        while (status.status !in listOf("completed", "failed")) {
+            delay(5000)
+            status = client.getDebateStatus(debate.debateId)
+        }
+
+        // Get results
+        val result = client.getDebateResults(debate.debateId)
+        result.consensus?.let { consensus ->
+            if (consensus.reached) {
+                Log.d("SuperAgent", "Consensus: ${consensus.finalPosition}")
             }
         }
-
-        override fun onFailure(call: Call<Debate>, t: Throwable) {
-            Log.e("SuperAgent", "Failed to create debate: ${t.message}")
-        }
-    })
+    } catch (e: Exception) {
+        Log.e("SuperAgent", "Failed: ${e.message}")
+    }
+}
 ```
 
 ## Cross-Platform Features
