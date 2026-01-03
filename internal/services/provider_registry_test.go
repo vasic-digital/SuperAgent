@@ -627,6 +627,307 @@ func TestGetEnvOrDefault(t *testing.T) {
 	})
 }
 
+// Tests for ConfigureProvider config storage
+func TestProviderRegistry_ConfigureProvider_StoresConfig(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 30 * time.Second,
+		CircuitBreaker: CircuitBreakerConfig{
+			Enabled: false,
+		},
+		Providers: make(map[string]*ProviderConfig),
+		Ensemble: &models.EnsembleConfig{
+			Strategy: "confidence_weighted",
+		},
+		Routing: &RoutingConfig{
+			Strategy: "weighted",
+		},
+	}
+	registry := NewProviderRegistry(cfg, nil)
+
+	t.Run("stores and retrieves configuration", func(t *testing.T) {
+		provider := &MockLLMProviderForRegistry{name: "config-storage-provider"}
+		_ = registry.RegisterProvider("config-storage-provider", provider)
+
+		// Configure provider with detailed config
+		providerCfg := &ProviderConfig{
+			Name:           "config-storage-provider",
+			Type:           "test-type",
+			Enabled:        true,
+			APIKey:         "test-api-key",
+			BaseURL:        "https://api.example.com",
+			Timeout:        60 * time.Second,
+			MaxRetries:     5,
+			HealthCheckURL: "https://api.example.com/health",
+			Weight:         1.5,
+			Tags:           []string{"primary", "fast"},
+			Capabilities:   map[string]string{"streaming": "true", "json_mode": "true"},
+			CustomSettings: map[string]any{"temperature": 0.7, "max_tokens": 1000},
+			Models: []ModelConfig{
+				{
+					ID:           "test-model-1",
+					Name:         "Test Model 1",
+					Enabled:      true,
+					Weight:       1.0,
+					Capabilities: []string{"chat", "completion"},
+					CustomParams: map[string]any{"context_window": 128000},
+				},
+			},
+		}
+		err := registry.ConfigureProvider("config-storage-provider", providerCfg)
+		assert.NoError(t, err)
+
+		// Retrieve and verify the stored config
+		retrievedCfg, err := registry.GetProviderConfig("config-storage-provider")
+		assert.NoError(t, err)
+		assert.NotNil(t, retrievedCfg)
+
+		// Verify all fields
+		assert.Equal(t, "config-storage-provider", retrievedCfg.Name)
+		assert.Equal(t, "test-type", retrievedCfg.Type)
+		assert.True(t, retrievedCfg.Enabled)
+		assert.Equal(t, "test-api-key", retrievedCfg.APIKey)
+		assert.Equal(t, "https://api.example.com", retrievedCfg.BaseURL)
+		assert.Equal(t, 60*time.Second, retrievedCfg.Timeout)
+		assert.Equal(t, 5, retrievedCfg.MaxRetries)
+		assert.Equal(t, 1.5, retrievedCfg.Weight)
+		assert.Contains(t, retrievedCfg.Tags, "primary")
+		assert.Contains(t, retrievedCfg.Tags, "fast")
+		assert.Equal(t, "true", retrievedCfg.Capabilities["streaming"])
+		assert.Equal(t, 0.7, retrievedCfg.CustomSettings["temperature"])
+
+		// Verify models
+		require.Len(t, retrievedCfg.Models, 1)
+		assert.Equal(t, "test-model-1", retrievedCfg.Models[0].ID)
+		assert.Equal(t, "Test Model 1", retrievedCfg.Models[0].Name)
+		assert.Contains(t, retrievedCfg.Models[0].Capabilities, "chat")
+	})
+
+	t.Run("updates existing configuration", func(t *testing.T) {
+		provider := &MockLLMProviderForRegistry{name: "update-config-provider"}
+		_ = registry.RegisterProvider("update-config-provider", provider)
+
+		// Initial config
+		initialCfg := &ProviderConfig{
+			Name:    "update-config-provider",
+			Enabled: true,
+			Weight:  1.0,
+			Tags:    []string{"initial"},
+		}
+		err := registry.ConfigureProvider("update-config-provider", initialCfg)
+		assert.NoError(t, err)
+
+		// Updated config
+		updatedCfg := &ProviderConfig{
+			Name:    "update-config-provider",
+			Enabled: true,
+			Weight:  2.0,
+			Tags:    []string{"updated"},
+		}
+		err = registry.ConfigureProvider("update-config-provider", updatedCfg)
+		assert.NoError(t, err)
+
+		// Verify update
+		retrievedCfg, err := registry.GetProviderConfig("update-config-provider")
+		assert.NoError(t, err)
+		assert.Equal(t, 2.0, retrievedCfg.Weight)
+		assert.Contains(t, retrievedCfg.Tags, "updated")
+		assert.NotContains(t, retrievedCfg.Tags, "initial")
+	})
+
+	t.Run("returned config is a copy", func(t *testing.T) {
+		provider := &MockLLMProviderForRegistry{name: "copy-test-provider"}
+		_ = registry.RegisterProvider("copy-test-provider", provider)
+
+		providerCfg := &ProviderConfig{
+			Name:    "copy-test-provider",
+			Enabled: true,
+			Tags:    []string{"original"},
+		}
+		_ = registry.ConfigureProvider("copy-test-provider", providerCfg)
+
+		// Modify the returned config
+		retrievedCfg, _ := registry.GetProviderConfig("copy-test-provider")
+		retrievedCfg.Tags = append(retrievedCfg.Tags, "modified")
+
+		// Original should be unchanged
+		secondRetrieve, _ := registry.GetProviderConfig("copy-test-provider")
+		assert.NotContains(t, secondRetrieve.Tags, "modified")
+	})
+}
+
+// Tests for RemoveProvider with request tracking
+func TestProviderRegistry_RemoveProvider_RequestTracking(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 30 * time.Second,
+		CircuitBreaker: CircuitBreakerConfig{
+			Enabled: false,
+		},
+		Providers: make(map[string]*ProviderConfig),
+		Ensemble: &models.EnsembleConfig{
+			Strategy: "confidence_weighted",
+		},
+		Routing: &RoutingConfig{
+			Strategy: "weighted",
+		},
+	}
+
+	t.Run("force removes provider with active requests", func(t *testing.T) {
+		registry := NewProviderRegistry(cfg, nil)
+		provider := &MockLLMProviderForRegistry{name: "force-remove-provider"}
+		_ = registry.RegisterProvider("force-remove-provider", provider)
+
+		// Simulate active requests
+		registry.IncrementActiveRequests("force-remove-provider")
+		registry.IncrementActiveRequests("force-remove-provider")
+
+		// Force removal should succeed
+		err := registry.RemoveProvider("force-remove-provider", true)
+		assert.NoError(t, err)
+
+		// Provider should be removed
+		_, err = registry.GetProvider("force-remove-provider")
+		assert.Error(t, err)
+	})
+
+	t.Run("removes provider with no active requests", func(t *testing.T) {
+		registry := NewProviderRegistry(cfg, nil)
+		provider := &MockLLMProviderForRegistry{name: "no-requests-provider"}
+		_ = registry.RegisterProvider("no-requests-provider", provider)
+
+		// No active requests
+		err := registry.RemoveProvider("no-requests-provider", false)
+		assert.NoError(t, err)
+
+		// Provider should be removed
+		_, err = registry.GetProvider("no-requests-provider")
+		assert.Error(t, err)
+	})
+
+	t.Run("fails to remove non-existent provider", func(t *testing.T) {
+		registry := NewProviderRegistry(cfg, nil)
+
+		err := registry.RemoveProvider("non-existent-provider", false)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "not found")
+	})
+}
+
+// Tests for active request tracking methods
+func TestProviderRegistry_ActiveRequestTracking(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 30 * time.Second,
+		CircuitBreaker: CircuitBreakerConfig{
+			Enabled: false,
+		},
+		Providers: make(map[string]*ProviderConfig),
+		Ensemble: &models.EnsembleConfig{
+			Strategy: "confidence_weighted",
+		},
+		Routing: &RoutingConfig{
+			Strategy: "weighted",
+		},
+	}
+	registry := NewProviderRegistry(cfg, nil)
+
+	t.Run("increment and decrement active requests", func(t *testing.T) {
+		provider := &MockLLMProviderForRegistry{name: "tracking-provider"}
+		_ = registry.RegisterProvider("tracking-provider", provider)
+
+		// Initial count should be 0
+		count := registry.GetActiveRequestCount("tracking-provider")
+		assert.Equal(t, int64(0), count)
+
+		// Increment
+		ok := registry.IncrementActiveRequests("tracking-provider")
+		assert.True(t, ok)
+		count = registry.GetActiveRequestCount("tracking-provider")
+		assert.Equal(t, int64(1), count)
+
+		// Increment again
+		registry.IncrementActiveRequests("tracking-provider")
+		count = registry.GetActiveRequestCount("tracking-provider")
+		assert.Equal(t, int64(2), count)
+
+		// Decrement
+		ok = registry.DecrementActiveRequests("tracking-provider")
+		assert.True(t, ok)
+		count = registry.GetActiveRequestCount("tracking-provider")
+		assert.Equal(t, int64(1), count)
+
+		// Decrement again
+		registry.DecrementActiveRequests("tracking-provider")
+		count = registry.GetActiveRequestCount("tracking-provider")
+		assert.Equal(t, int64(0), count)
+	})
+
+	t.Run("operations on non-existent provider return false/-1", func(t *testing.T) {
+		ok := registry.IncrementActiveRequests("non-existent")
+		assert.False(t, ok)
+
+		ok = registry.DecrementActiveRequests("non-existent")
+		assert.False(t, ok)
+
+		count := registry.GetActiveRequestCount("non-existent")
+		assert.Equal(t, int64(-1), count)
+	})
+}
+
+// Test graceful drain timeout
+func TestProviderRegistry_DrainTimeout(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 30 * time.Second,
+		CircuitBreaker: CircuitBreakerConfig{
+			Enabled: false,
+		},
+		Providers: make(map[string]*ProviderConfig),
+		Ensemble: &models.EnsembleConfig{
+			Strategy: "confidence_weighted",
+		},
+		Routing: &RoutingConfig{
+			Strategy: "weighted",
+		},
+	}
+
+	t.Run("set and use custom drain timeout", func(t *testing.T) {
+		registry := NewProviderRegistry(cfg, nil)
+		provider := &MockLLMProviderForRegistry{name: "drain-test-provider"}
+		_ = registry.RegisterProvider("drain-test-provider", provider)
+
+		// Set a very short drain timeout
+		registry.SetDrainTimeout(200 * time.Millisecond)
+
+		// Add active request
+		registry.IncrementActiveRequests("drain-test-provider")
+
+		// Start a goroutine to decrement after 100ms
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			registry.DecrementActiveRequests("drain-test-provider")
+		}()
+
+		// Non-force removal should succeed after drain
+		err := registry.RemoveProvider("drain-test-provider", false)
+		assert.NoError(t, err)
+	})
+
+	t.Run("drain timeout fails when requests dont complete", func(t *testing.T) {
+		registry := NewProviderRegistry(cfg, nil)
+		provider := &MockLLMProviderForRegistry{name: "drain-fail-provider"}
+		_ = registry.RegisterProvider("drain-fail-provider", provider)
+
+		// Set a very short drain timeout
+		registry.SetDrainTimeout(100 * time.Millisecond)
+
+		// Add active request that won't complete
+		registry.IncrementActiveRequests("drain-fail-provider")
+
+		// Non-force removal should fail
+		err := registry.RemoveProvider("drain-fail-provider", false)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "active requests")
+	})
+}
+
 // Benchmarks
 func BenchmarkProviderRegistry_GetProvider(b *testing.B) {
 	cfg := &RegistryConfig{

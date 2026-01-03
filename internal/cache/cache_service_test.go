@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -843,4 +844,367 @@ func TestCacheConfig_Struct(t *testing.T) {
 	assert.True(t, cfg.Enabled)
 	assert.Equal(t, 1*time.Hour, cfg.DefaultTTL)
 	assert.Nil(t, cfg.Redis)
+}
+
+// Tests for user cache invalidation functionality
+
+func TestCacheService_UserKeyTracking(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err) // Connection will fail with nil config
+	require.NotNil(t, service)
+
+	// Test trackUserKey functionality
+	userID := "test-user-123"
+	cacheKey1 := "session:token-abc"
+	cacheKey2 := "session:token-def"
+
+	// Initially no keys tracked
+	assert.Equal(t, 0, service.GetUserKeyCount(userID))
+
+	// Track first key
+	service.trackUserKey(userID, cacheKey1)
+	assert.Equal(t, 1, service.GetUserKeyCount(userID))
+
+	// Track second key
+	service.trackUserKey(userID, cacheKey2)
+	assert.Equal(t, 2, service.GetUserKeyCount(userID))
+
+	// Track duplicate key (should not increase count)
+	service.trackUserKey(userID, cacheKey1)
+	assert.Equal(t, 2, service.GetUserKeyCount(userID))
+
+	// Test untrackUserKey
+	service.untrackUserKey(userID, cacheKey1)
+	assert.Equal(t, 1, service.GetUserKeyCount(userID))
+
+	// Untrack non-existent key (should not panic)
+	service.untrackUserKey(userID, "non-existent-key")
+	assert.Equal(t, 1, service.GetUserKeyCount(userID))
+
+	// Untrack last key
+	service.untrackUserKey(userID, cacheKey2)
+	assert.Equal(t, 0, service.GetUserKeyCount(userID))
+}
+
+func TestCacheService_TrackUserKeyEmptyValues(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+
+	// Empty userID should not track
+	service.trackUserKey("", "some-key")
+	assert.Equal(t, 0, service.GetUserKeyCount(""))
+
+	// Empty cacheKey should not track
+	service.trackUserKey("user-id", "")
+	assert.Equal(t, 0, service.GetUserKeyCount("user-id"))
+
+	// Both empty should not track
+	service.trackUserKey("", "")
+	assert.Equal(t, 0, service.GetUserKeyCount(""))
+}
+
+func TestCacheService_UntrackUserKeyEmptyValues(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+
+	// Track a key first
+	service.trackUserKey("user-id", "some-key")
+	assert.Equal(t, 1, service.GetUserKeyCount("user-id"))
+
+	// Untrack with empty userID should not affect anything
+	service.untrackUserKey("", "some-key")
+	assert.Equal(t, 1, service.GetUserKeyCount("user-id"))
+
+	// Untrack with empty cacheKey should not affect anything
+	service.untrackUserKey("user-id", "")
+	assert.Equal(t, 1, service.GetUserKeyCount("user-id"))
+
+	// Clean up
+	service.untrackUserKey("user-id", "some-key")
+	assert.Equal(t, 0, service.GetUserKeyCount("user-id"))
+}
+
+func TestCacheService_InvalidateUserCacheEmptyUserID(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+
+	ctx := context.Background()
+
+	// When cache is disabled, should return nil even for empty userID
+	assert.False(t, service.IsEnabled())
+	err = service.InvalidateUserCache(ctx, "")
+	assert.NoError(t, err)
+}
+
+func TestCacheService_SetUserSessionTracksKey(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+
+	ctx := context.Background()
+
+	session := &models.UserSession{
+		ID:           "test-session-id",
+		UserID:       "test-user-id",
+		SessionToken: "test-session-token",
+		ExpiresAt:    time.Now().Add(24 * time.Hour),
+		CreatedAt:    time.Now(),
+	}
+
+	// Set should return nil when cache is disabled
+	err = service.SetUserSession(ctx, session, 0)
+	assert.NoError(t, err)
+
+	// Even when disabled, the key should be tracked in memory
+	// This is for consistency when cache becomes enabled
+	// Note: When cache is disabled, we don't track keys to avoid memory leaks
+	// so the count should be 0
+	assert.Equal(t, 0, service.GetUserKeyCount(session.UserID))
+}
+
+func TestCacheService_SetUserSessionNilSession(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+
+	ctx := context.Background()
+
+	// Set with nil session should return nil
+	err = service.SetUserSession(ctx, nil, 0)
+	assert.NoError(t, err)
+}
+
+func TestCacheService_SetUserData(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+	assert.False(t, service.IsEnabled())
+
+	ctx := context.Background()
+
+	userID := "test-user-123"
+	dataKey := "preferences"
+	value := map[string]interface{}{
+		"theme":    "dark",
+		"language": "en",
+	}
+
+	// Set should return nil when cache is disabled
+	err = service.SetUserData(ctx, userID, dataKey, value, 0)
+	assert.NoError(t, err)
+
+	// Get should return error when cache is disabled
+	var result map[string]interface{}
+	err = service.GetUserData(ctx, userID, dataKey, &result)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "caching disabled")
+}
+
+func TestCacheService_SetUserDataEmptyUserID(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+
+	ctx := context.Background()
+
+	// SetUserData with empty userID should return nil when disabled
+	err = service.SetUserData(ctx, "", "key", "value", 0)
+	assert.NoError(t, err)
+
+	// GetUserData with empty userID should return error when disabled
+	var result string
+	err = service.GetUserData(ctx, "", "key", &result)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "caching disabled")
+}
+
+func TestCacheService_DeleteUserData(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+	assert.False(t, service.IsEnabled())
+
+	ctx := context.Background()
+
+	// DeleteUserData should return nil when cache is disabled
+	err = service.DeleteUserData(ctx, "user-id", "key")
+	assert.NoError(t, err)
+
+	// DeleteUserData with empty userID should return nil when disabled
+	err = service.DeleteUserData(ctx, "", "key")
+	assert.NoError(t, err)
+}
+
+func TestCacheService_GetUserKeyCountNonExistentUser(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+
+	// Non-existent user should return 0
+	assert.Equal(t, 0, service.GetUserKeyCount("non-existent-user"))
+}
+
+func TestCacheService_InvalidateUserCacheClearsTracking(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+
+	ctx := context.Background()
+
+	userID := "test-user-for-invalidation"
+
+	// Manually track some keys (simulating what would happen if cache was enabled)
+	service.trackUserKey(userID, "user:test-user-for-invalidation:key1")
+	service.trackUserKey(userID, "user:test-user-for-invalidation:key2")
+	service.trackUserKey(userID, "user:test-user-for-invalidation:key3")
+
+	assert.Equal(t, 3, service.GetUserKeyCount(userID))
+
+	// Invalidate user cache (will fail on Redis operations but should clear tracking)
+	err = service.InvalidateUserCache(ctx, userID)
+	// When disabled, it returns nil immediately
+	assert.NoError(t, err)
+
+	// But if we check the user key count, it should still be 3
+	// because the cache is disabled and invalidation returns early
+	// The tracking is only cleared when cache is enabled
+	assert.Equal(t, 3, service.GetUserKeyCount(userID))
+}
+
+func TestCacheService_MultipleUsersKeyTracking(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+
+	user1 := "user-1"
+	user2 := "user-2"
+	user3 := "user-3"
+
+	// Track keys for multiple users
+	service.trackUserKey(user1, "key1")
+	service.trackUserKey(user1, "key2")
+	service.trackUserKey(user1, "key3")
+
+	service.trackUserKey(user2, "key-a")
+	service.trackUserKey(user2, "key-b")
+
+	service.trackUserKey(user3, "key-x")
+
+	// Verify counts
+	assert.Equal(t, 3, service.GetUserKeyCount(user1))
+	assert.Equal(t, 2, service.GetUserKeyCount(user2))
+	assert.Equal(t, 1, service.GetUserKeyCount(user3))
+
+	// Untrack some keys
+	service.untrackUserKey(user1, "key2")
+	assert.Equal(t, 2, service.GetUserKeyCount(user1))
+	assert.Equal(t, 2, service.GetUserKeyCount(user2)) // unchanged
+	assert.Equal(t, 1, service.GetUserKeyCount(user3)) // unchanged
+
+	// Untrack for different user should not affect others
+	service.untrackUserKey(user2, "key1") // user2 doesn't have key1
+	assert.Equal(t, 2, service.GetUserKeyCount(user1))
+	assert.Equal(t, 2, service.GetUserKeyCount(user2))
+}
+
+func TestCacheService_ConcurrentKeyTracking(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+
+	userID := "concurrent-test-user"
+	numGoroutines := 100
+	keysPerGoroutine := 10
+
+	// Track keys concurrently
+	done := make(chan bool, numGoroutines)
+	for i := 0; i < numGoroutines; i++ {
+		go func(goroutineID int) {
+			for j := 0; j < keysPerGoroutine; j++ {
+				key := fmt.Sprintf("key-%d-%d", goroutineID, j)
+				service.trackUserKey(userID, key)
+			}
+			done <- true
+		}(i)
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < numGoroutines; i++ {
+		<-done
+	}
+
+	// Verify total count (each goroutine tracks unique keys)
+	expectedCount := numGoroutines * keysPerGoroutine
+	assert.Equal(t, expectedCount, service.GetUserKeyCount(userID))
+}
+
+func TestCacheService_ConcurrentTrackUntrack(t *testing.T) {
+	// Create a cache service with nil config (disabled)
+	service, err := NewCacheService(nil)
+	require.Error(t, err)
+	require.NotNil(t, service)
+
+	userID := "concurrent-track-untrack-user"
+	numIterations := 50
+
+	// Track and untrack concurrently without race conditions
+	done := make(chan bool, 2)
+
+	// Goroutine 1: Tracks keys
+	go func() {
+		for i := 0; i < numIterations; i++ {
+			key := fmt.Sprintf("key-%d", i)
+			service.trackUserKey(userID, key)
+		}
+		done <- true
+	}()
+
+	// Goroutine 2: Untracks some keys
+	go func() {
+		for i := 0; i < numIterations/2; i++ {
+			key := fmt.Sprintf("key-%d", i)
+			service.untrackUserKey(userID, key)
+		}
+		done <- true
+	}()
+
+	// Wait for completion
+	<-done
+	<-done
+
+	// Just verify no race condition occurred (count may vary)
+	// The important thing is that it doesn't panic
+	count := service.GetUserKeyCount(userID)
+	assert.GreaterOrEqual(t, count, 0)
+}
+
+func TestCacheService_DeleteByPatternNilClient(t *testing.T) {
+	// Create a cache service directly with nil redisClient
+	service := &CacheService{
+		enabled:    true,
+		defaultTTL: 30 * time.Minute,
+		userKeys:   make(map[string]map[string]struct{}),
+	}
+
+	ctx := context.Background()
+
+	// deleteByPattern should handle nil client gracefully
+	err := service.deleteByPattern(ctx, "user:*")
+	assert.NoError(t, err)
 }

@@ -32,14 +32,20 @@ type cpuStats struct {
 
 var metricsCollectorInstance = &systemMetricsCollector{}
 
+// DefaultAlertHistoryLimit is the default maximum number of alerts to retain in history
+const DefaultAlertHistoryLimit = 1000
+
 // ProtocolMonitor provides performance monitoring and alerting for protocols
 type ProtocolMonitor struct {
-	mu        sync.RWMutex
-	metrics   map[string]*ProtocolMetrics
-	alerts    []*AlertRule
-	alertChan chan *Alert
-	stopChan  chan struct{}
-	logger    *logrus.Logger
+	mu           sync.RWMutex
+	metrics      map[string]*ProtocolMetrics
+	alerts       []*AlertRule
+	alertChan    chan *Alert
+	stopChan     chan struct{}
+	logger       *logrus.Logger
+	alertHistory []*Alert
+	alertMu      sync.RWMutex
+	alertLimit   int
 }
 
 // ProtocolMetrics represents performance metrics for a protocol
@@ -117,14 +123,32 @@ type Alert struct {
 	ResolvedAt *time.Time
 }
 
+// AlertFilter defines filtering criteria for retrieving alerts
+type AlertFilter struct {
+	// Severity filters alerts by severity level (nil means all severities)
+	Severity *AlertSeverity
+	// Protocol filters alerts by protocol name (empty string means all protocols)
+	Protocol string
+	// StartTime filters alerts that occurred after this time (zero time means no lower bound)
+	StartTime time.Time
+	// EndTime filters alerts that occurred before this time (zero time means no upper bound)
+	EndTime time.Time
+	// Limit is the maximum number of alerts to return (0 means no limit)
+	Limit int
+	// IncludeResolved includes resolved alerts in results (default false means only unresolved)
+	IncludeResolved bool
+}
+
 // NewProtocolMonitor creates a new protocol monitor
 func NewProtocolMonitor(logger *logrus.Logger) *ProtocolMonitor {
 	monitor := &ProtocolMonitor{
-		metrics:   make(map[string]*ProtocolMetrics),
-		alerts:    []*AlertRule{},
-		alertChan: make(chan *Alert, 100),
-		stopChan:  make(chan struct{}),
-		logger:    logger,
+		metrics:      make(map[string]*ProtocolMetrics),
+		alerts:       []*AlertRule{},
+		alertChan:    make(chan *Alert, 100),
+		stopChan:     make(chan struct{}),
+		logger:       logger,
+		alertHistory: make([]*Alert, 0, DefaultAlertHistoryLimit),
+		alertLimit:   DefaultAlertHistoryLimit,
 	}
 
 	// Start monitoring goroutines
@@ -310,23 +334,151 @@ func (m *ProtocolMonitor) RemoveAlertRule(ruleID string) {
 	}
 }
 
-// GetAlerts returns recent alerts
+// GetAlerts returns recent alerts with optional limit (for backward compatibility)
 func (m *ProtocolMonitor) GetAlerts(limit int) []*Alert {
-	// For simplicity, return alerts from the channel
-	// In a real implementation, you'd store alerts in a database
-	alerts := make([]*Alert, 0, limit)
+	filter := &AlertFilter{
+		Limit:           limit,
+		IncludeResolved: true,
+	}
+	return m.GetAlertsFiltered(filter)
+}
 
-	// Non-blocking read from channel
-	for i := 0; i < limit; i++ {
-		select {
-		case alert := <-m.alertChan:
-			alerts = append(alerts, alert)
-		default:
+// GetAlertsFiltered returns alerts from stored history with filtering support
+func (m *ProtocolMonitor) GetAlertsFiltered(filter *AlertFilter) []*Alert {
+	m.alertMu.RLock()
+	defer m.alertMu.RUnlock()
+
+	if filter == nil {
+		filter = &AlertFilter{}
+	}
+
+	result := make([]*Alert, 0)
+
+	// Iterate in reverse order to get most recent alerts first
+	for i := len(m.alertHistory) - 1; i >= 0; i-- {
+		alert := m.alertHistory[i]
+
+		// Apply filters
+		if !m.matchesFilter(alert, filter) {
+			continue
+		}
+
+		// Create a copy to avoid race conditions
+		alertCopy := &Alert{
+			ID:         alert.ID,
+			RuleID:     alert.RuleID,
+			Protocol:   alert.Protocol,
+			Message:    alert.Message,
+			Severity:   alert.Severity,
+			Value:      alert.Value,
+			Threshold:  alert.Threshold,
+			Timestamp:  alert.Timestamp,
+			Resolved:   alert.Resolved,
+			ResolvedAt: alert.ResolvedAt,
+		}
+		result = append(result, alertCopy)
+
+		// Check limit
+		if filter.Limit > 0 && len(result) >= filter.Limit {
 			break
 		}
 	}
 
-	return alerts
+	return result
+}
+
+// matchesFilter checks if an alert matches the given filter criteria
+func (m *ProtocolMonitor) matchesFilter(alert *Alert, filter *AlertFilter) bool {
+	// Filter by resolved status
+	if !filter.IncludeResolved && alert.Resolved {
+		return false
+	}
+
+	// Filter by severity
+	if filter.Severity != nil && alert.Severity != *filter.Severity {
+		return false
+	}
+
+	// Filter by protocol
+	if filter.Protocol != "" && alert.Protocol != filter.Protocol {
+		return false
+	}
+
+	// Filter by start time
+	if !filter.StartTime.IsZero() && alert.Timestamp.Before(filter.StartTime) {
+		return false
+	}
+
+	// Filter by end time
+	if !filter.EndTime.IsZero() && alert.Timestamp.After(filter.EndTime) {
+		return false
+	}
+
+	return true
+}
+
+// storeAlert adds an alert to the history with limit enforcement
+func (m *ProtocolMonitor) storeAlert(alert *Alert) {
+	m.alertMu.Lock()
+	defer m.alertMu.Unlock()
+
+	// Add to history
+	m.alertHistory = append(m.alertHistory, alert)
+
+	// Enforce limit by removing oldest alerts if exceeded
+	if len(m.alertHistory) > m.alertLimit {
+		// Remove the oldest alerts to get back to limit
+		excess := len(m.alertHistory) - m.alertLimit
+		m.alertHistory = m.alertHistory[excess:]
+	}
+}
+
+// GetAlertCount returns the current number of stored alerts
+func (m *ProtocolMonitor) GetAlertCount() int {
+	m.alertMu.RLock()
+	defer m.alertMu.RUnlock()
+	return len(m.alertHistory)
+}
+
+// SetAlertLimit sets the maximum number of alerts to retain
+func (m *ProtocolMonitor) SetAlertLimit(limit int) {
+	m.alertMu.Lock()
+	defer m.alertMu.Unlock()
+
+	if limit < 1 {
+		limit = 1
+	}
+
+	m.alertLimit = limit
+
+	// Trim history if current size exceeds new limit
+	if len(m.alertHistory) > limit {
+		excess := len(m.alertHistory) - limit
+		m.alertHistory = m.alertHistory[excess:]
+	}
+}
+
+// ClearAlerts removes all alerts from history
+func (m *ProtocolMonitor) ClearAlerts() {
+	m.alertMu.Lock()
+	defer m.alertMu.Unlock()
+	m.alertHistory = make([]*Alert, 0, m.alertLimit)
+}
+
+// ResolveAlert marks an alert as resolved
+func (m *ProtocolMonitor) ResolveAlert(alertID string) bool {
+	m.alertMu.Lock()
+	defer m.alertMu.Unlock()
+
+	for _, alert := range m.alertHistory {
+		if alert.ID == alertID && !alert.Resolved {
+			alert.Resolved = true
+			now := time.Now()
+			alert.ResolvedAt = &now
+			return true
+		}
+	}
+	return false
 }
 
 // Alerts returns a channel for receiving alerts
@@ -586,6 +738,10 @@ func (m *ProtocolMonitor) checkAlerts() {
 				Timestamp: time.Now(),
 			}
 
+			// Store alert in history (always persisted)
+			m.storeAlert(alert)
+
+			// Also send to channel for real-time consumers
 			select {
 			case m.alertChan <- alert:
 				rule.LastAlert = time.Now()
@@ -597,7 +753,9 @@ func (m *ProtocolMonitor) checkAlerts() {
 					"threshold": rule.Threshold,
 				}).Warn("Alert triggered")
 			default:
-				m.logger.Warn("Alert channel full, dropping alert")
+				// Channel full, but alert is still stored in history
+				rule.LastAlert = time.Now()
+				m.logger.Warn("Alert channel full, alert stored in history only")
 			}
 		}
 	}

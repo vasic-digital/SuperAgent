@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/superagent/superagent/internal/config"
@@ -16,6 +17,11 @@ type CacheService struct {
 	redisClient *RedisClient
 	enabled     bool
 	defaultTTL  time.Duration
+
+	// userKeys tracks cache keys per user for efficient invalidation
+	// Maps userID -> set of cache keys
+	userKeys   map[string]map[string]struct{}
+	userKeysMu sync.RWMutex
 }
 
 // CacheKey represents different types of cache keys
@@ -48,6 +54,7 @@ func NewCacheService(cfg *config.Config) (*CacheService, error) {
 		return &CacheService{
 			enabled:    false,
 			defaultTTL: 30 * time.Minute,
+			userKeys:   make(map[string]map[string]struct{}),
 		}, fmt.Errorf("Redis connection failed, caching disabled: %w", err)
 	}
 
@@ -55,6 +62,7 @@ func NewCacheService(cfg *config.Config) (*CacheService, error) {
 		redisClient: redisClient,
 		enabled:     true,
 		defaultTTL:  30 * time.Minute,
+		userKeys:    make(map[string]map[string]struct{}),
 	}, nil
 }
 
@@ -182,11 +190,21 @@ func (c *CacheService) SetUserSession(ctx context.Context, session *models.UserS
 		return nil
 	}
 
+	if session == nil {
+		return nil
+	}
+
 	if ttl == 0 {
 		ttl = 24 * time.Hour // Session data
 	}
 
 	key := fmt.Sprintf("session:%s", session.SessionToken)
+
+	// Track this key for user-based invalidation
+	if session.UserID != "" {
+		c.trackUserKey(session.UserID, key)
+	}
+
 	return c.redisClient.Set(ctx, key, session, ttl)
 }
 
@@ -227,14 +245,166 @@ func (c *CacheService) InvalidateUserCache(ctx context.Context, userID string) e
 		return nil
 	}
 
-	// This would require maintaining a set of keys per user
-	// For now, we'll use a simple pattern-based deletion
-	// Redis doesn't support pattern deletion directly with go-redis
-	// This would require SCAN or maintaining separate key sets
-	// For now, we'll skip this implementation
-	_ = userID // Mark as used to avoid linting error
+	if userID == "" {
+		return fmt.Errorf("userID cannot be empty")
+	}
+
+	// First, delete any keys tracked in the in-memory user key set
+	c.userKeysMu.Lock()
+	userKeySet := c.userKeys[userID]
+	delete(c.userKeys, userID)
+	c.userKeysMu.Unlock()
+
+	// Delete all tracked keys from Redis
+	if userKeySet != nil && len(userKeySet) > 0 {
+		for key := range userKeySet {
+			if err := c.redisClient.Delete(ctx, key); err != nil {
+				// Log error but continue deleting other keys
+				continue
+			}
+		}
+	}
+
+	// Also use Redis SCAN to find and delete any user-prefixed keys
+	// This catches keys that may have been set without tracking
+	pattern := fmt.Sprintf("user:%s:*", userID)
+	if err := c.deleteByPattern(ctx, pattern); err != nil {
+		return fmt.Errorf("failed to delete user keys by pattern: %w", err)
+	}
 
 	return nil
+}
+
+// deleteByPattern uses Redis SCAN to find and delete keys matching a pattern
+func (c *CacheService) deleteByPattern(ctx context.Context, pattern string) error {
+	if c.redisClient == nil || c.redisClient.client == nil {
+		return nil
+	}
+
+	var cursor uint64
+	var keysToDelete []string
+
+	// Use SCAN to iterate through keys matching the pattern
+	for {
+		keys, nextCursor, err := c.redisClient.client.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			return fmt.Errorf("scan failed: %w", err)
+		}
+
+		keysToDelete = append(keysToDelete, keys...)
+		cursor = nextCursor
+
+		if cursor == 0 {
+			break
+		}
+	}
+
+	// Delete all found keys
+	if len(keysToDelete) > 0 {
+		if err := c.redisClient.client.Del(ctx, keysToDelete...).Err(); err != nil {
+			return fmt.Errorf("failed to delete keys: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// trackUserKey associates a cache key with a user for later invalidation
+func (c *CacheService) trackUserKey(userID, cacheKey string) {
+	if userID == "" || cacheKey == "" {
+		return
+	}
+
+	c.userKeysMu.Lock()
+	defer c.userKeysMu.Unlock()
+
+	if c.userKeys[userID] == nil {
+		c.userKeys[userID] = make(map[string]struct{})
+	}
+	c.userKeys[userID][cacheKey] = struct{}{}
+}
+
+// untrackUserKey removes a cache key from user tracking
+func (c *CacheService) untrackUserKey(userID, cacheKey string) {
+	if userID == "" || cacheKey == "" {
+		return
+	}
+
+	c.userKeysMu.Lock()
+	defer c.userKeysMu.Unlock()
+
+	if keySet, exists := c.userKeys[userID]; exists {
+		delete(keySet, cacheKey)
+		if len(keySet) == 0 {
+			delete(c.userKeys, userID)
+		}
+	}
+}
+
+// GetUserKeyCount returns the number of cached keys for a user (for testing/monitoring)
+func (c *CacheService) GetUserKeyCount(userID string) int {
+	c.userKeysMu.RLock()
+	defer c.userKeysMu.RUnlock()
+
+	if keySet, exists := c.userKeys[userID]; exists {
+		return len(keySet)
+	}
+	return 0
+}
+
+// SetUserData caches user-specific data with tracking for invalidation
+func (c *CacheService) SetUserData(ctx context.Context, userID string, dataKey string, value interface{}, ttl time.Duration) error {
+	if !c.enabled {
+		return nil
+	}
+
+	if userID == "" {
+		return fmt.Errorf("userID cannot be empty")
+	}
+
+	if ttl == 0 {
+		ttl = c.defaultTTL
+	}
+
+	// Create a user-prefixed key for easy pattern matching
+	key := fmt.Sprintf("user:%s:%s", userID, dataKey)
+
+	// Track this key for user-based invalidation
+	c.trackUserKey(userID, key)
+
+	return c.redisClient.Set(ctx, key, value, ttl)
+}
+
+// GetUserData retrieves user-specific cached data
+func (c *CacheService) GetUserData(ctx context.Context, userID string, dataKey string, dest interface{}) error {
+	if !c.enabled {
+		return fmt.Errorf("caching disabled")
+	}
+
+	if userID == "" {
+		return fmt.Errorf("userID cannot be empty")
+	}
+
+	key := fmt.Sprintf("user:%s:%s", userID, dataKey)
+	return c.redisClient.Get(ctx, key, dest)
+}
+
+// DeleteUserData deletes a specific user data entry
+func (c *CacheService) DeleteUserData(ctx context.Context, userID string, dataKey string) error {
+	if !c.enabled {
+		return nil
+	}
+
+	if userID == "" {
+		return fmt.Errorf("userID cannot be empty")
+	}
+
+	key := fmt.Sprintf("user:%s:%s", userID, dataKey)
+
+	// Remove from tracking
+	c.untrackUserKey(userID, key)
+
+	return c.redisClient.Delete(ctx, key)
 }
 
 // ClearExpired removes expired cache entries

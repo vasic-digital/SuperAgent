@@ -47,14 +47,124 @@ type RoundRobinStrategy struct {
 	mu      sync.Mutex
 }
 
+// ProviderMetrics tracks performance metrics for a provider with rolling window
+type ProviderMetrics struct {
+	SuccessCount   int64
+	FailureCount   int64
+	TotalLatencyMs int64
+	LatencyHistory []int64 // Rolling window of recent latencies
+	LastUpdated    time.Time
+	mu             sync.RWMutex
+}
+
+// GetSuccessRate returns the success rate (0.0 to 1.0)
+func (pm *ProviderMetrics) GetSuccessRate() float64 {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+	total := pm.SuccessCount + pm.FailureCount
+	if total == 0 {
+		return 1.0 // Default to 1.0 for new providers
+	}
+	return float64(pm.SuccessCount) / float64(total)
+}
+
+// GetAverageLatency returns the average latency in milliseconds
+func (pm *ProviderMetrics) GetAverageLatency() float64 {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+	if len(pm.LatencyHistory) == 0 {
+		return 1000.0 // Default latency for new providers
+	}
+	var sum int64
+	for _, lat := range pm.LatencyHistory {
+		sum += lat
+	}
+	return float64(sum) / float64(len(pm.LatencyHistory))
+}
+
+// RecordSuccess records a successful request with latency
+func (pm *ProviderMetrics) RecordSuccess(latencyMs int64) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+	pm.SuccessCount++
+	pm.TotalLatencyMs += latencyMs
+	pm.LastUpdated = time.Now()
+	// Maintain rolling window of last 100 latencies
+	pm.LatencyHistory = append(pm.LatencyHistory, latencyMs)
+	if len(pm.LatencyHistory) > 100 {
+		pm.LatencyHistory = pm.LatencyHistory[1:]
+	}
+}
+
+// RecordFailure records a failed request
+func (pm *ProviderMetrics) RecordFailure() {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+	pm.FailureCount++
+	pm.LastUpdated = time.Now()
+}
+
+// MetricsRegistry is a thread-safe registry for provider metrics
+type MetricsRegistry struct {
+	metrics map[string]*ProviderMetrics
+	mu      sync.RWMutex
+}
+
+// GlobalMetricsRegistry is the singleton metrics registry
+var GlobalMetricsRegistry = &MetricsRegistry{
+	metrics: make(map[string]*ProviderMetrics),
+}
+
+// GetMetrics returns metrics for a provider, creating if necessary
+func (mr *MetricsRegistry) GetMetrics(providerName string) *ProviderMetrics {
+	mr.mu.RLock()
+	if pm, exists := mr.metrics[providerName]; exists {
+		mr.mu.RUnlock()
+		return pm
+	}
+	mr.mu.RUnlock()
+
+	mr.mu.Lock()
+	defer mr.mu.Unlock()
+	// Double-check after acquiring write lock
+	if pm, exists := mr.metrics[providerName]; exists {
+		return pm
+	}
+	pm := &ProviderMetrics{
+		LatencyHistory: make([]int64, 0, 100),
+		LastUpdated:    time.Now(),
+	}
+	mr.metrics[providerName] = pm
+	return pm
+}
+
+// RecordRequest records the outcome of a request to the metrics registry
+func (mr *MetricsRegistry) RecordRequest(providerName string, success bool, latencyMs int64) {
+	pm := mr.GetMetrics(providerName)
+	if success {
+		pm.RecordSuccess(latencyMs)
+	} else {
+		pm.RecordFailure()
+	}
+}
+
 // WeightedStrategy implements weighted load balancing based on performance
-type WeightedStrategy struct{}
+type WeightedStrategy struct {
+	metricsRegistry *MetricsRegistry
+}
 
 // HealthBasedStrategy implements health-based routing
-type HealthBasedStrategy struct{}
+type HealthBasedStrategy struct {
+	circuitBreakers *CircuitBreakerPattern
+	providerRegistry interface {
+		GetCircuitBreaker(name string) *CircuitBreaker
+	}
+}
 
 // LatencyBasedStrategy implements latency-based routing
-type LatencyBasedStrategy struct{}
+type LatencyBasedStrategy struct {
+	metricsRegistry *MetricsRegistry
+}
 
 // RandomStrategy implements random provider selection
 type RandomStrategy struct{}
@@ -66,15 +176,23 @@ func NewRequestService(strategy string, ensemble *EnsembleService, memory *Memor
 	case "round_robin":
 		routingStrategy = &RoundRobinStrategy{}
 	case "weighted":
-		routingStrategy = &WeightedStrategy{}
+		routingStrategy = &WeightedStrategy{
+			metricsRegistry: GlobalMetricsRegistry,
+		}
 	case "health_based":
-		routingStrategy = &HealthBasedStrategy{}
+		routingStrategy = &HealthBasedStrategy{
+			circuitBreakers: NewCircuitBreakerPattern(),
+		}
 	case "latency_based":
-		routingStrategy = &LatencyBasedStrategy{}
+		routingStrategy = &LatencyBasedStrategy{
+			metricsRegistry: GlobalMetricsRegistry,
+		}
 	case "random":
 		routingStrategy = &RandomStrategy{}
 	default:
-		routingStrategy = &WeightedStrategy{} // Default
+		routingStrategy = &WeightedStrategy{
+			metricsRegistry: GlobalMetricsRegistry,
+		} // Default
 	}
 
 	return &RequestService{
@@ -183,8 +301,38 @@ func (r *RequestService) processSingleProvider(ctx context.Context, req *models.
 		return nil, fmt.Errorf("selected provider %s not found", providerName)
 	}
 
+	// Track request timing for metrics
+	startTime := time.Now()
+
 	// Execute request
 	resp, err := provider.Complete(ctx, req)
+	latencyMs := time.Since(startTime).Milliseconds()
+
+	// Record metrics
+	GlobalMetricsRegistry.RecordRequest(providerName, err == nil, latencyMs)
+
+	// Update circuit breaker for health-based strategy
+	if hbs, ok := r.strategy.(*HealthBasedStrategy); ok && hbs.circuitBreakers != nil {
+		cb := hbs.circuitBreakers.GetCircuitBreaker(providerName)
+		if err != nil {
+			cb.mu.Lock()
+			cb.FailureCount++
+			cb.LastFailTime = time.Now()
+			if cb.FailureCount >= cb.FailureThreshold {
+				cb.State = RequestStateOpen
+			}
+			cb.mu.Unlock()
+		} else {
+			cb.mu.Lock()
+			cb.SuccessCount++
+			if cb.State == RequestStateHalfOpen {
+				cb.State = RequestStateClosed
+				cb.FailureCount = 0
+			}
+			cb.mu.Unlock()
+		}
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("provider %s failed: %w", providerName, err)
 	}
@@ -208,21 +356,31 @@ func (r *RequestService) processSingleProviderStream(ctx context.Context, req *m
 		return nil, fmt.Errorf("selected provider %s not found", providerName)
 	}
 
+	// Track request timing for metrics
+	startTime := time.Now()
+
 	// Execute streaming request
 	streamChan, err := provider.CompleteStream(ctx, req)
 	if err != nil {
+		latencyMs := time.Since(startTime).Milliseconds()
+		GlobalMetricsRegistry.RecordRequest(providerName, false, latencyMs)
 		return nil, fmt.Errorf("provider %s failed: %w", providerName, err)
 	}
 
-	// Wrap responses with provider info
+	// Wrap responses with provider info and record metrics on completion
 	wrappedChan := make(chan *models.LLMResponse)
 	go func() {
 		defer close(wrappedChan)
+		hasResponses := false
 		for resp := range streamChan {
+			hasResponses = true
 			resp.ProviderID = providerName
 			resp.ProviderName = providerName
 			wrappedChan <- resp
 		}
+		// Record metrics after stream completes
+		latencyMs := time.Since(startTime).Milliseconds()
+		GlobalMetricsRegistry.RecordRequest(providerName, hasResponses, latencyMs)
 	}()
 
 	return wrappedChan, nil
@@ -255,22 +413,48 @@ func (s *WeightedStrategy) SelectProvider(providers map[string]LLMProvider, req 
 		return "", fmt.Errorf("no providers available")
 	}
 
-	// For now, use equal weights
-	// In a real implementation, you'd track performance and adjust weights
+	// Get the metrics registry (use global if not set)
+	registry := s.metricsRegistry
+	if registry == nil {
+		registry = GlobalMetricsRegistry
+	}
+
+	// Calculate dynamic weights based on performance metrics
 	weights := make(map[string]float64)
 	totalWeight := 0.0
 
 	for name := range providers {
-		weight := 1.0 // Equal weight for all providers
-		if req.EnsembleConfig != nil {
-			// Apply preference weights
+		metrics := registry.GetMetrics(name)
+
+		// Base weight calculation:
+		// - Success rate contributes 60% of the weight
+		// - Inverse latency contributes 40% (faster = higher weight)
+		successRate := metrics.GetSuccessRate()
+		avgLatency := metrics.GetAverageLatency()
+
+		// Normalize latency: lower latency = higher score (max 1.0 for latency < 100ms)
+		latencyScore := 1.0
+		if avgLatency > 0 {
+			latencyScore = math.Min(1.0, 1000.0/avgLatency) // 1000ms baseline
+		}
+
+		// Calculate composite weight
+		weight := (successRate * 0.6) + (latencyScore * 0.4)
+
+		// Ensure minimum weight of 0.1 to give underperforming providers a chance
+		weight = math.Max(0.1, weight)
+
+		// Apply preference weights from ensemble config
+		if req != nil && req.EnsembleConfig != nil {
 			for i, preferred := range req.EnsembleConfig.PreferredProviders {
 				if name == preferred {
-					weight = 2.0 - float64(i)*0.1 // Higher weight for more preferred providers
+					// Boost preferred providers by 50-100% based on position
+					weight *= 1.5 + (0.5 * (1.0 - float64(i)/float64(len(req.EnsembleConfig.PreferredProviders))))
 					break
 				}
 			}
 		}
+
 		weights[name] = weight
 		totalWeight += weight
 	}
@@ -300,20 +484,71 @@ func (s *HealthBasedStrategy) SelectProvider(providers map[string]LLMProvider, r
 		return "", fmt.Errorf("no providers available")
 	}
 
-	// Filter healthy providers
+	// Get circuit breaker pattern (create if not set)
+	cbPattern := s.circuitBreakers
+	if cbPattern == nil {
+		cbPattern = NewCircuitBreakerPattern()
+	}
+
+	// Filter healthy providers based on circuit breaker state and health metrics
 	healthyProviders := make([]string, 0)
+	halfOpenProviders := make([]string, 0)
+
 	for name := range providers {
-		// In a real implementation, you'd check actual health status
-		// For now, assume all providers are healthy
-		healthyProviders = append(healthyProviders, name)
+		cb := cbPattern.GetCircuitBreaker(name)
+
+		cb.mu.RLock()
+		state := cb.State
+		lastFailTime := cb.LastFailTime
+		recoveryTimeout := cb.RecoveryTimeout
+		cb.mu.RUnlock()
+
+		switch state {
+		case RequestStateClosed:
+			// Provider is healthy
+			healthyProviders = append(healthyProviders, name)
+		case RequestStateHalfOpen:
+			// Provider is recovering, give it a chance
+			halfOpenProviders = append(halfOpenProviders, name)
+		case RequestStateOpen:
+			// Check if enough time has passed to try again
+			if time.Since(lastFailTime) >= recoveryTimeout {
+				halfOpenProviders = append(halfOpenProviders, name)
+			}
+			// Otherwise, skip this provider
+		}
 	}
 
-	if len(healthyProviders) == 0 {
-		return "", fmt.Errorf("no healthy providers available")
+	// Prefer fully healthy providers
+	if len(healthyProviders) > 0 {
+		// Select based on success rate from metrics
+		registry := GlobalMetricsRegistry
+		bestProvider := healthyProviders[0]
+		bestScore := 0.0
+
+		for _, name := range healthyProviders {
+			metrics := registry.GetMetrics(name)
+			score := metrics.GetSuccessRate()
+			if score > bestScore {
+				bestScore = score
+				bestProvider = name
+			}
+		}
+		return bestProvider, nil
 	}
 
-	// Select first healthy provider
-	return healthyProviders[0], nil
+	// Fall back to half-open providers if no fully healthy ones
+	if len(halfOpenProviders) > 0 {
+		// Select randomly among recovering providers
+		return halfOpenProviders[rand.Intn(len(halfOpenProviders))], nil
+	}
+
+	return "", fmt.Errorf("no healthy providers available")
+}
+
+// SetCircuitBreakers sets the circuit breaker pattern for this strategy
+func (s *HealthBasedStrategy) SetCircuitBreakers(cb *CircuitBreakerPattern) {
+	s.circuitBreakers = cb
 }
 
 // LatencyBasedStrategy
@@ -322,19 +557,66 @@ func (s *LatencyBasedStrategy) SelectProvider(providers map[string]LLMProvider, 
 		return "", fmt.Errorf("no providers available")
 	}
 
-	// For now, select randomly
-	// In a real implementation, you'd track actual latency metrics
+	// Get the metrics registry (use global if not set)
+	registry := s.metricsRegistry
+	if registry == nil {
+		registry = GlobalMetricsRegistry
+	}
+
+	// Find provider with lowest average latency
+	var bestProvider string
+	lowestLatency := math.MaxFloat64
+
+	// Collect providers with metrics
+	providersWithMetrics := make([]string, 0)
+	providersWithoutMetrics := make([]string, 0)
+
+	for name := range providers {
+		metrics := registry.GetMetrics(name)
+
+		metrics.mu.RLock()
+		hasHistory := len(metrics.LatencyHistory) > 0
+		metrics.mu.RUnlock()
+
+		if hasHistory {
+			avgLatency := metrics.GetAverageLatency()
+			providersWithMetrics = append(providersWithMetrics, name)
+
+			if avgLatency < lowestLatency {
+				lowestLatency = avgLatency
+				bestProvider = name
+			}
+		} else {
+			// Provider has no latency history yet
+			providersWithoutMetrics = append(providersWithoutMetrics, name)
+		}
+	}
+
+	// If we found a provider with the lowest latency, use it (with some randomization to allow exploration)
+	if bestProvider != "" {
+		// 10% of the time, pick a random provider to allow exploration
+		if rand.Float64() < 0.1 {
+			// Pick from all providers for exploration
+			names := make([]string, 0, len(providers))
+			for name := range providers {
+				names = append(names, name)
+			}
+			return names[rand.Intn(len(names))], nil
+		}
+		return bestProvider, nil
+	}
+
+	// No providers with latency data yet, prefer those without metrics to build up data
+	if len(providersWithoutMetrics) > 0 {
+		return providersWithoutMetrics[rand.Intn(len(providersWithoutMetrics))], nil
+	}
+
+	// Fallback: select randomly from all providers
 	names := make([]string, 0, len(providers))
 	for name := range providers {
 		names = append(names, name)
 	}
-
-	if len(names) == 0 {
-		return "", fmt.Errorf("no providers available")
-	}
-
-	selected := names[rand.Intn(len(names))]
-	return selected, nil
+	return names[rand.Intn(len(names))], nil
 }
 
 // RandomStrategy

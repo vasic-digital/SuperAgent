@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/superagent/superagent/internal/config"
@@ -19,13 +20,16 @@ import (
 
 // ProviderRegistry manages LLM provider registration and configuration
 type ProviderRegistry struct {
-	providers       map[string]llm.LLMProvider
-	circuitBreakers map[string]*CircuitBreaker
-	config          *RegistryConfig
-	ensemble        *EnsembleService
-	requestService  *RequestService
-	memory          *MemoryService
-	mu              sync.RWMutex
+	providers        map[string]llm.LLMProvider
+	circuitBreakers  map[string]*CircuitBreaker
+	providerConfigs  map[string]*ProviderConfig // Stores provider configurations
+	activeRequests   map[string]*int64          // Atomic counters for active requests per provider
+	config           *RegistryConfig
+	ensemble         *EnsembleService
+	requestService   *RequestService
+	memory           *MemoryService
+	mu               sync.RWMutex
+	drainTimeout     time.Duration // Timeout for graceful shutdown request draining
 }
 
 // ProviderConfig holds configuration for an LLM provider
@@ -142,8 +146,11 @@ func NewProviderRegistry(cfg *RegistryConfig, memory *MemoryService) *ProviderRe
 	registry := &ProviderRegistry{
 		providers:       make(map[string]llm.LLMProvider),
 		circuitBreakers: make(map[string]*CircuitBreaker),
+		providerConfigs: make(map[string]*ProviderConfig),
+		activeRequests:  make(map[string]*int64),
 		config:          cfg,
 		memory:          memory,
+		drainTimeout:    30 * time.Second, // Default 30 second drain timeout
 	}
 
 	// Initialize ensemble service
@@ -307,6 +314,10 @@ func (r *ProviderRegistry) RegisterProvider(name string, provider llm.LLMProvide
 
 	r.providers[name] = wrappedProvider
 
+	// Initialize atomic counter for active requests
+	var counter int64
+	r.activeRequests[name] = &counter
+
 	// Also register with ensemble and request services
 	r.ensemble.RegisterProvider(name, &providerAdapter{provider: wrappedProvider})
 	r.requestService.RegisterProvider(name, &providerAdapter{provider: wrappedProvider})
@@ -376,19 +387,61 @@ func (r *ProviderRegistry) ConfigureProvider(name string, config *ProviderConfig
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	provider, exists := r.providers[name]
-	if !exists {
+	if _, exists := r.providers[name]; !exists {
 		return fmt.Errorf("provider %s not found", name)
 	}
 
-	// Re-register provider with new configuration if needed
+	// If disabling the provider, unregister it
 	if !config.Enabled {
 		return r.unregisterProviderLocked(name)
 	}
 
-	// For now, we assume provider is already configured
-	// In a real implementation, you might need to reinitialize the provider
-	_ = provider
+	// Store or update the configuration in memory
+	// Make a copy to avoid external modification
+	storedConfig := &ProviderConfig{
+		Name:           config.Name,
+		Type:           config.Type,
+		Enabled:        config.Enabled,
+		APIKey:         config.APIKey,
+		BaseURL:        config.BaseURL,
+		Timeout:        config.Timeout,
+		MaxRetries:     config.MaxRetries,
+		HealthCheckURL: config.HealthCheckURL,
+		Weight:         config.Weight,
+		Tags:           make([]string, len(config.Tags)),
+		Capabilities:   make(map[string]string),
+		CustomSettings: make(map[string]any),
+	}
+
+	// Copy slices and maps
+	copy(storedConfig.Tags, config.Tags)
+	for k, v := range config.Capabilities {
+		storedConfig.Capabilities[k] = v
+	}
+	for k, v := range config.CustomSettings {
+		storedConfig.CustomSettings[k] = v
+	}
+
+	// Copy models
+	if len(config.Models) > 0 {
+		storedConfig.Models = make([]ModelConfig, len(config.Models))
+		for i, m := range config.Models {
+			storedConfig.Models[i] = ModelConfig{
+				ID:           m.ID,
+				Name:         m.Name,
+				Enabled:      m.Enabled,
+				Weight:       m.Weight,
+				Capabilities: make([]string, len(m.Capabilities)),
+				CustomParams: make(map[string]any),
+			}
+			copy(storedConfig.Models[i].Capabilities, m.Capabilities)
+			for k, v := range m.CustomParams {
+				storedConfig.Models[i].CustomParams[k] = v
+			}
+		}
+	}
+
+	r.providerConfigs[name] = storedConfig
 
 	return nil
 }
@@ -397,12 +450,56 @@ func (r *ProviderRegistry) GetProviderConfig(name string) (*ProviderConfig, erro
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	// For now, return a basic config
-	// In a real implementation, this would return stored configuration
+	// First check if provider exists
 	if _, exists := r.providers[name]; !exists {
 		return nil, fmt.Errorf("provider %s not found", name)
 	}
 
+	// Return stored configuration if available
+	if storedConfig, exists := r.providerConfigs[name]; exists {
+		// Return a copy to prevent external modification
+		configCopy := &ProviderConfig{
+			Name:           storedConfig.Name,
+			Type:           storedConfig.Type,
+			Enabled:        storedConfig.Enabled,
+			APIKey:         storedConfig.APIKey,
+			BaseURL:        storedConfig.BaseURL,
+			Timeout:        storedConfig.Timeout,
+			MaxRetries:     storedConfig.MaxRetries,
+			HealthCheckURL: storedConfig.HealthCheckURL,
+			Weight:         storedConfig.Weight,
+			Tags:           make([]string, len(storedConfig.Tags)),
+			Capabilities:   make(map[string]string),
+			CustomSettings: make(map[string]any),
+		}
+		copy(configCopy.Tags, storedConfig.Tags)
+		for k, v := range storedConfig.Capabilities {
+			configCopy.Capabilities[k] = v
+		}
+		for k, v := range storedConfig.CustomSettings {
+			configCopy.CustomSettings[k] = v
+		}
+		if len(storedConfig.Models) > 0 {
+			configCopy.Models = make([]ModelConfig, len(storedConfig.Models))
+			for i, m := range storedConfig.Models {
+				configCopy.Models[i] = ModelConfig{
+					ID:           m.ID,
+					Name:         m.Name,
+					Enabled:      m.Enabled,
+					Weight:       m.Weight,
+					Capabilities: make([]string, len(m.Capabilities)),
+					CustomParams: make(map[string]any),
+				}
+				copy(configCopy.Models[i].Capabilities, m.Capabilities)
+				for k, v := range m.CustomParams {
+					configCopy.Models[i].CustomParams[k] = v
+				}
+			}
+		}
+		return configCopy, nil
+	}
+
+	// Return default config if no stored configuration exists
 	return &ProviderConfig{
 		Name:    name,
 		Enabled: true,
@@ -661,29 +758,125 @@ func (r *ProviderRegistry) UpdateProvider(name string, cfg ProviderConfig) error
 }
 
 // RemoveProvider removes a provider with optional force flag
+// If force is false and there are active requests, it will attempt graceful shutdown
+// by waiting for requests to drain up to the configured drain timeout
 func (r *ProviderRegistry) RemoveProvider(name string, force bool) error {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 
 	if _, exists := r.providers[name]; !exists {
+		r.mu.Unlock()
 		return fmt.Errorf("provider %s not found", name)
 	}
 
-	// Check if provider is being used (in real implementation, check active requests)
-	// For now, we allow removal if force is true or if no active requests
-	if !force {
-		// Check if there are active requests (simplified check)
-		// In a real implementation, you'd check the request service
+	// Check for active requests
+	counter, hasCounter := r.activeRequests[name]
+	if !force && hasCounter && counter != nil {
+		activeCount := atomic.LoadInt64(counter)
+		if activeCount > 0 {
+			// Release lock and attempt graceful drain
+			r.mu.Unlock()
+			if err := r.drainProviderRequests(name); err != nil {
+				return fmt.Errorf("provider %s has active requests and drain failed: %w", name, err)
+			}
+			// Re-acquire lock after draining
+			r.mu.Lock()
+		}
 	}
 
+	// Remove provider and associated data
 	delete(r.providers, name)
 	delete(r.config.Providers, name)
+	delete(r.providerConfigs, name)
 	delete(r.circuitBreakers, name)
+	delete(r.activeRequests, name)
 
 	r.ensemble.RemoveProvider(name)
 	r.requestService.RemoveProvider(name)
 
+	r.mu.Unlock()
 	return nil
+}
+
+// drainProviderRequests waits for active requests to complete up to the drain timeout
+func (r *ProviderRegistry) drainProviderRequests(name string) error {
+	r.mu.RLock()
+	counter, exists := r.activeRequests[name]
+	drainTimeout := r.drainTimeout
+	r.mu.RUnlock()
+
+	if !exists || counter == nil {
+		return nil
+	}
+
+	deadline := time.Now().Add(drainTimeout)
+	pollInterval := 100 * time.Millisecond
+
+	for time.Now().Before(deadline) {
+		activeCount := atomic.LoadInt64(counter)
+		if activeCount <= 0 {
+			return nil
+		}
+		time.Sleep(pollInterval)
+	}
+
+	// Check one final time
+	finalCount := atomic.LoadInt64(counter)
+	if finalCount > 0 {
+		return fmt.Errorf("timeout waiting for %d active requests to complete", finalCount)
+	}
+
+	return nil
+}
+
+// IncrementActiveRequests increments the active request counter for a provider
+// Returns false if the provider doesn't exist
+func (r *ProviderRegistry) IncrementActiveRequests(name string) bool {
+	r.mu.RLock()
+	counter, exists := r.activeRequests[name]
+	r.mu.RUnlock()
+
+	if !exists || counter == nil {
+		return false
+	}
+
+	atomic.AddInt64(counter, 1)
+	return true
+}
+
+// DecrementActiveRequests decrements the active request counter for a provider
+// Returns false if the provider doesn't exist
+func (r *ProviderRegistry) DecrementActiveRequests(name string) bool {
+	r.mu.RLock()
+	counter, exists := r.activeRequests[name]
+	r.mu.RUnlock()
+
+	if !exists || counter == nil {
+		return false
+	}
+
+	atomic.AddInt64(counter, -1)
+	return true
+}
+
+// GetActiveRequestCount returns the number of active requests for a provider
+// Returns -1 if the provider doesn't exist
+func (r *ProviderRegistry) GetActiveRequestCount(name string) int64 {
+	r.mu.RLock()
+	counter, exists := r.activeRequests[name]
+	r.mu.RUnlock()
+
+	if !exists || counter == nil {
+		return -1
+	}
+
+	return atomic.LoadInt64(counter)
+}
+
+// SetDrainTimeout sets the timeout for graceful shutdown request draining
+func (r *ProviderRegistry) SetDrainTimeout(timeout time.Duration) {
+	r.mu.Lock()
+	r.drainTimeout = timeout
+	r.mu.Unlock()
 }
 
 // getFirstModel returns the first model ID from a list of models

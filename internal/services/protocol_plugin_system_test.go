@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -596,26 +598,139 @@ func TestProtocolPluginSystem_ConfigurePlugin_NonExistent(t *testing.T) {
 
 func TestProtocolPluginSystem_DiscoverPlugins(t *testing.T) {
 	log := newPluginSystemTestLogger()
-	ps := NewProtocolPluginSystem("/test/plugins", log)
 
-	plugins, err := ps.DiscoverPlugins()
-	// The demo implementation returns mock plugin paths
-	require.NoError(t, err)
-	assert.Len(t, plugins, 3)
-	assert.Contains(t, plugins, "/test/plugins/mcp-custom.so")
-	assert.Contains(t, plugins, "/test/plugins/lsp-advanced.so")
-	assert.Contains(t, plugins, "/test/plugins/acp-specialized.so")
+	t.Run("empty plugin directory path", func(t *testing.T) {
+		ps := NewProtocolPluginSystem("", log)
+		plugins, err := ps.DiscoverPlugins()
+		require.NoError(t, err)
+		assert.Len(t, plugins, 0)
+	})
+
+	t.Run("non-existent directory returns empty list", func(t *testing.T) {
+		ps := NewProtocolPluginSystem("/non-existent-directory-for-testing-xyz123", log)
+		plugins, err := ps.DiscoverPlugins()
+		require.NoError(t, err)
+		assert.Len(t, plugins, 0)
+	})
+
+	t.Run("discovers .so files in directory", func(t *testing.T) {
+		// Create temporary directory with test plugin files
+		tmpDir := t.TempDir()
+
+		// Create some .so files
+		soFile1 := filepath.Join(tmpDir, "plugin1.so")
+		soFile2 := filepath.Join(tmpDir, "plugin2.so")
+		err := os.WriteFile(soFile1, []byte("fake plugin"), 0644)
+		require.NoError(t, err)
+		err = os.WriteFile(soFile2, []byte("fake plugin"), 0644)
+		require.NoError(t, err)
+
+		ps := NewProtocolPluginSystem(tmpDir, log)
+		plugins, err := ps.DiscoverPlugins()
+		require.NoError(t, err)
+		assert.Len(t, plugins, 2)
+		assert.Contains(t, plugins, soFile1)
+		assert.Contains(t, plugins, soFile2)
+	})
+
+	t.Run("ignores non-.so files", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Create various files
+		soFile := filepath.Join(tmpDir, "valid.so")
+		txtFile := filepath.Join(tmpDir, "readme.txt")
+		goFile := filepath.Join(tmpDir, "main.go")
+		err := os.WriteFile(soFile, []byte("fake plugin"), 0644)
+		require.NoError(t, err)
+		err = os.WriteFile(txtFile, []byte("readme content"), 0644)
+		require.NoError(t, err)
+		err = os.WriteFile(goFile, []byte("package main"), 0644)
+		require.NoError(t, err)
+
+		ps := NewProtocolPluginSystem(tmpDir, log)
+		plugins, err := ps.DiscoverPlugins()
+		require.NoError(t, err)
+		assert.Len(t, plugins, 1)
+		assert.Contains(t, plugins, soFile)
+	})
+
+	t.Run("ignores directories", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Create a .so file
+		soFile := filepath.Join(tmpDir, "plugin.so")
+		err := os.WriteFile(soFile, []byte("fake plugin"), 0644)
+		require.NoError(t, err)
+
+		// Create a directory named like a .so file
+		dirWithSoName := filepath.Join(tmpDir, "subdir.so")
+		err = os.Mkdir(dirWithSoName, 0755)
+		require.NoError(t, err)
+
+		ps := NewProtocolPluginSystem(tmpDir, log)
+		plugins, err := ps.DiscoverPlugins()
+		require.NoError(t, err)
+		assert.Len(t, plugins, 1)
+		assert.Contains(t, plugins, soFile)
+	})
+
+	t.Run("empty directory returns empty list", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		ps := NewProtocolPluginSystem(tmpDir, log)
+		plugins, err := ps.DiscoverPlugins()
+		require.NoError(t, err)
+		assert.Len(t, plugins, 0)
+	})
+
+	t.Run("returns error when path is a file not a directory", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		filePath := filepath.Join(tmpDir, "notadir")
+		err := os.WriteFile(filePath, []byte("content"), 0644)
+		require.NoError(t, err)
+
+		ps := NewProtocolPluginSystem(filePath, log)
+		plugins, err := ps.DiscoverPlugins()
+		assert.Error(t, err)
+		assert.Nil(t, plugins)
+		assert.Contains(t, err.Error(), "not a directory")
+	})
 }
 
 func TestProtocolPluginSystem_AutoLoadPlugins(t *testing.T) {
 	log := newPluginSystemTestLogger()
-	// Use a non-existent directory
-	ps := NewProtocolPluginSystem("/non-existent-path-for-testing", log)
 
-	err := ps.AutoLoadPlugins()
-	// Should fail or have no effect for non-existent directory
-	// No error expected since DiscoverPlugins handles directory not existing
-	_ = err
+	t.Run("non-existent directory does not error", func(t *testing.T) {
+		ps := NewProtocolPluginSystem("/non-existent-path-for-testing", log)
+		err := ps.AutoLoadPlugins()
+		// Should not error since DiscoverPlugins handles non-existent directory gracefully
+		require.NoError(t, err)
+		// No plugins should be loaded
+		assert.Len(t, ps.ListPlugins(), 0)
+	})
+
+	t.Run("empty directory loads no plugins", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		ps := NewProtocolPluginSystem(tmpDir, log)
+		err := ps.AutoLoadPlugins()
+		require.NoError(t, err)
+		assert.Len(t, ps.ListPlugins(), 0)
+	})
+
+	t.Run("fails gracefully for invalid plugin files", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		// Create a fake .so file that isn't a real plugin
+		soFile := filepath.Join(tmpDir, "fake.so")
+		err := os.WriteFile(soFile, []byte("not a real plugin"), 0644)
+		require.NoError(t, err)
+
+		ps := NewProtocolPluginSystem(tmpDir, log)
+		// Should not error overall, but individual plugin load will fail
+		err = ps.AutoLoadPlugins()
+		require.NoError(t, err)
+		// No valid plugins loaded
+		assert.Len(t, ps.ListPlugins(), 0)
+	})
 }
 
 func TestProtocolPluginSystem_LoadPlugin_InvalidPath(t *testing.T) {
@@ -624,4 +739,77 @@ func TestProtocolPluginSystem_LoadPlugin_InvalidPath(t *testing.T) {
 
 	err := ps.LoadPlugin("/non-existent-plugin-path.so")
 	assert.Error(t, err)
+}
+
+// Additional DiscoverPlugins edge case tests
+
+func TestProtocolPluginSystem_DiscoverPlugins_SymlinksAndSpecialFiles(t *testing.T) {
+	log := newPluginSystemTestLogger()
+
+	t.Run("handles multiple .so files with special names", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Create .so files with various naming patterns
+		files := []string{
+			"my-plugin.so",
+			"plugin_v1.2.3.so",
+			"libplugin.so",
+			"plugin.so.backup", // Should NOT be discovered (doesn't end with .so)
+		}
+
+		for _, f := range files {
+			path := filepath.Join(tmpDir, f)
+			err := os.WriteFile(path, []byte("content"), 0644)
+			require.NoError(t, err)
+		}
+
+		ps := NewProtocolPluginSystem(tmpDir, log)
+		plugins, err := ps.DiscoverPlugins()
+		require.NoError(t, err)
+		// Only files ending with .so should be discovered
+		assert.Len(t, plugins, 3)
+	})
+
+	t.Run("handles .so files in directory root only - does not recurse", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Create .so in root
+		rootSo := filepath.Join(tmpDir, "root.so")
+		err := os.WriteFile(rootSo, []byte("content"), 0644)
+		require.NoError(t, err)
+
+		// Create subdirectory with .so file
+		subDir := filepath.Join(tmpDir, "subdir")
+		err = os.Mkdir(subDir, 0755)
+		require.NoError(t, err)
+
+		subSo := filepath.Join(subDir, "nested.so")
+		err = os.WriteFile(subSo, []byte("content"), 0644)
+		require.NoError(t, err)
+
+		ps := NewProtocolPluginSystem(tmpDir, log)
+		plugins, err := ps.DiscoverPlugins()
+		require.NoError(t, err)
+		// Only root level .so file should be found
+		assert.Len(t, plugins, 1)
+		assert.Contains(t, plugins, rootSo)
+	})
+}
+
+func TestProtocolPluginSystem_DiscoverPlugins_ReturnsFullPaths(t *testing.T) {
+	log := newPluginSystemTestLogger()
+	tmpDir := t.TempDir()
+
+	soFile := filepath.Join(tmpDir, "test-plugin.so")
+	err := os.WriteFile(soFile, []byte("content"), 0644)
+	require.NoError(t, err)
+
+	ps := NewProtocolPluginSystem(tmpDir, log)
+	plugins, err := ps.DiscoverPlugins()
+	require.NoError(t, err)
+	require.Len(t, plugins, 1)
+
+	// Ensure full path is returned, not just filename
+	assert.Equal(t, soFile, plugins[0])
+	assert.True(t, filepath.IsAbs(plugins[0]))
 }

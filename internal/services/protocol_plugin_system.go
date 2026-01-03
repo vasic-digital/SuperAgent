@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"plugin"
 	"strings"
 	"sync"
@@ -275,15 +277,78 @@ func (ps *ProtocolPluginSystem) ConfigurePlugin(pluginID string, config map[stri
 
 // DiscoverPlugins discovers available plugins in the plugin directory
 func (ps *ProtocolPluginSystem) DiscoverPlugins() ([]string, error) {
-	// In a real implementation, this would scan the plugin directory
-	// for .so files and validate them
+	// Handle empty plugin directory
+	if ps.pluginDir == "" {
+		return []string{}, nil
+	}
 
-	// For demo, return some example plugin paths
-	return []string{
-		ps.pluginDir + "/mcp-custom.so",
-		ps.pluginDir + "/lsp-advanced.so",
-		ps.pluginDir + "/acp-specialized.so",
-	}, nil
+	// Check if the plugin directory exists
+	info, err := os.Stat(ps.pluginDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Directory doesn't exist - return empty list without error
+			ps.logger.WithField("pluginDir", ps.pluginDir).Debug("Plugin directory does not exist")
+			return []string{}, nil
+		}
+		// Other error (permission denied, etc.)
+		return nil, fmt.Errorf("failed to access plugin directory %s: %w", ps.pluginDir, err)
+	}
+
+	// Verify it's a directory
+	if !info.IsDir() {
+		return nil, fmt.Errorf("plugin path %s is not a directory", ps.pluginDir)
+	}
+
+	// Read directory contents
+	entries, err := os.ReadDir(ps.pluginDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read plugin directory %s: %w", ps.pluginDir, err)
+	}
+
+	var plugins []string
+	for _, entry := range entries {
+		// Skip directories
+		if entry.IsDir() {
+			continue
+		}
+
+		// Only process .so files (shared object plugins)
+		if !strings.HasSuffix(entry.Name(), ".so") {
+			continue
+		}
+
+		pluginPath := filepath.Join(ps.pluginDir, entry.Name())
+
+		// Validate the file is readable
+		fileInfo, err := os.Stat(pluginPath)
+		if err != nil {
+			ps.logger.WithError(err).WithField("path", pluginPath).Warn("Failed to stat plugin file")
+			continue
+		}
+
+		// Check if it's a regular file
+		if !fileInfo.Mode().IsRegular() {
+			ps.logger.WithField("path", pluginPath).Debug("Skipping non-regular file")
+			continue
+		}
+
+		// Check if file is readable (try to open it)
+		file, err := os.Open(pluginPath)
+		if err != nil {
+			ps.logger.WithError(err).WithField("path", pluginPath).Warn("Plugin file is not readable")
+			continue
+		}
+		file.Close()
+
+		plugins = append(plugins, pluginPath)
+	}
+
+	ps.logger.WithFields(logrus.Fields{
+		"pluginDir":    ps.pluginDir,
+		"pluginsFound": len(plugins),
+	}).Debug("Plugin discovery completed")
+
+	return plugins, nil
 }
 
 // AutoLoadPlugins automatically loads all discovered plugins

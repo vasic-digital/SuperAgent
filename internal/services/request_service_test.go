@@ -760,3 +760,398 @@ func TestRequestService_UpdateProviderHealth(t *testing.T) {
 		service.UpdateProviderHealth("non-existent", true, 100, nil)
 	})
 }
+
+// Tests for ProviderMetrics
+func TestProviderMetrics(t *testing.T) {
+	t.Run("GetSuccessRate with no requests", func(t *testing.T) {
+		pm := &ProviderMetrics{}
+		rate := pm.GetSuccessRate()
+		assert.Equal(t, 1.0, rate, "should return 1.0 for new providers")
+	})
+
+	t.Run("GetSuccessRate with mixed results", func(t *testing.T) {
+		pm := &ProviderMetrics{
+			SuccessCount: 80,
+			FailureCount: 20,
+		}
+		rate := pm.GetSuccessRate()
+		assert.Equal(t, 0.8, rate)
+	})
+
+	t.Run("GetAverageLatency with no history", func(t *testing.T) {
+		pm := &ProviderMetrics{
+			LatencyHistory: []int64{},
+		}
+		latency := pm.GetAverageLatency()
+		assert.Equal(t, 1000.0, latency, "should return default 1000ms for new providers")
+	})
+
+	t.Run("GetAverageLatency with history", func(t *testing.T) {
+		pm := &ProviderMetrics{
+			LatencyHistory: []int64{100, 200, 300},
+		}
+		latency := pm.GetAverageLatency()
+		assert.Equal(t, 200.0, latency)
+	})
+
+	t.Run("RecordSuccess updates metrics", func(t *testing.T) {
+		pm := &ProviderMetrics{
+			LatencyHistory: make([]int64, 0, 100),
+		}
+		pm.RecordSuccess(150)
+		assert.Equal(t, int64(1), pm.SuccessCount)
+		assert.Equal(t, int64(150), pm.TotalLatencyMs)
+		assert.Len(t, pm.LatencyHistory, 1)
+		assert.Equal(t, int64(150), pm.LatencyHistory[0])
+	})
+
+	t.Run("RecordSuccess maintains rolling window", func(t *testing.T) {
+		pm := &ProviderMetrics{
+			LatencyHistory: make([]int64, 100), // Pre-fill with 100 entries
+		}
+		pm.RecordSuccess(999)
+		assert.Len(t, pm.LatencyHistory, 100, "should maintain 100 entries")
+		assert.Equal(t, int64(999), pm.LatencyHistory[99], "newest entry should be at end")
+	})
+
+	t.Run("RecordFailure updates metrics", func(t *testing.T) {
+		pm := &ProviderMetrics{}
+		pm.RecordFailure()
+		assert.Equal(t, int64(1), pm.FailureCount)
+	})
+}
+
+// Tests for MetricsRegistry
+func TestMetricsRegistry(t *testing.T) {
+	t.Run("GetMetrics creates new entry", func(t *testing.T) {
+		registry := &MetricsRegistry{
+			metrics: make(map[string]*ProviderMetrics),
+		}
+		pm := registry.GetMetrics("new-provider")
+		assert.NotNil(t, pm)
+		assert.Equal(t, int64(0), pm.SuccessCount)
+	})
+
+	t.Run("GetMetrics returns existing entry", func(t *testing.T) {
+		registry := &MetricsRegistry{
+			metrics: make(map[string]*ProviderMetrics),
+		}
+		pm1 := registry.GetMetrics("provider")
+		pm1.SuccessCount = 42
+		pm2 := registry.GetMetrics("provider")
+		assert.Equal(t, int64(42), pm2.SuccessCount)
+	})
+
+	t.Run("RecordRequest updates metrics correctly", func(t *testing.T) {
+		registry := &MetricsRegistry{
+			metrics: make(map[string]*ProviderMetrics),
+		}
+		registry.RecordRequest("test-provider", true, 100)
+		pm := registry.GetMetrics("test-provider")
+		assert.Equal(t, int64(1), pm.SuccessCount)
+		assert.Len(t, pm.LatencyHistory, 1)
+
+		registry.RecordRequest("test-provider", false, 200)
+		assert.Equal(t, int64(1), pm.FailureCount)
+	})
+
+	t.Run("thread safety", func(t *testing.T) {
+		registry := &MetricsRegistry{
+			metrics: make(map[string]*ProviderMetrics),
+		}
+		done := make(chan bool)
+		for i := 0; i < 10; i++ {
+			go func(id int) {
+				for j := 0; j < 100; j++ {
+					registry.RecordRequest("concurrent-provider", true, int64(j))
+				}
+				done <- true
+			}(i)
+		}
+		for i := 0; i < 10; i++ {
+			<-done
+		}
+		pm := registry.GetMetrics("concurrent-provider")
+		assert.Equal(t, int64(1000), pm.SuccessCount)
+	})
+}
+
+// Tests for WeightedStrategy with metrics
+func TestWeightedStrategy_WithMetrics(t *testing.T) {
+	t.Run("prefers higher success rate providers", func(t *testing.T) {
+		registry := &MetricsRegistry{
+			metrics: make(map[string]*ProviderMetrics),
+		}
+
+		// Provider 1: 90% success rate
+		for i := 0; i < 90; i++ {
+			registry.RecordRequest("high-success", true, 100)
+		}
+		for i := 0; i < 10; i++ {
+			registry.RecordRequest("high-success", false, 100)
+		}
+
+		// Provider 2: 50% success rate
+		for i := 0; i < 50; i++ {
+			registry.RecordRequest("low-success", true, 100)
+		}
+		for i := 0; i < 50; i++ {
+			registry.RecordRequest("low-success", false, 100)
+		}
+
+		strategy := &WeightedStrategy{metricsRegistry: registry}
+		providers := map[string]LLMProvider{
+			"high-success": &MockLLMProviderForRequest{name: "high-success"},
+			"low-success":  &MockLLMProviderForRequest{name: "low-success"},
+		}
+
+		// Run multiple selections and count
+		selections := make(map[string]int)
+		for i := 0; i < 1000; i++ {
+			name, err := strategy.SelectProvider(providers, nil)
+			assert.NoError(t, err)
+			selections[name]++
+		}
+
+		// High success provider should be selected more often
+		assert.Greater(t, selections["high-success"], selections["low-success"],
+			"provider with higher success rate should be selected more often")
+	})
+
+	t.Run("prefers lower latency providers", func(t *testing.T) {
+		registry := &MetricsRegistry{
+			metrics: make(map[string]*ProviderMetrics),
+		}
+
+		// Both have 100% success rate, but different latencies
+		for i := 0; i < 100; i++ {
+			registry.RecordRequest("fast-provider", true, 100) // 100ms
+		}
+		for i := 0; i < 100; i++ {
+			registry.RecordRequest("slow-provider", true, 5000) // 5000ms
+		}
+
+		strategy := &WeightedStrategy{metricsRegistry: registry}
+		providers := map[string]LLMProvider{
+			"fast-provider": &MockLLMProviderForRequest{name: "fast-provider"},
+			"slow-provider": &MockLLMProviderForRequest{name: "slow-provider"},
+		}
+
+		selections := make(map[string]int)
+		for i := 0; i < 1000; i++ {
+			name, err := strategy.SelectProvider(providers, nil)
+			assert.NoError(t, err)
+			selections[name]++
+		}
+
+		// Fast provider should be selected more often
+		assert.Greater(t, selections["fast-provider"], selections["slow-provider"],
+			"provider with lower latency should be selected more often")
+	})
+}
+
+// Tests for HealthBasedStrategy with circuit breakers
+func TestHealthBasedStrategy_WithCircuitBreakers(t *testing.T) {
+	t.Run("filters out open circuit breakers", func(t *testing.T) {
+		cbPattern := NewCircuitBreakerPattern()
+
+		// Set one provider to open state
+		openCB := cbPattern.GetCircuitBreaker("unhealthy")
+		openCB.mu.Lock()
+		openCB.State = RequestStateOpen
+		openCB.LastFailTime = time.Now() // Recent failure
+		openCB.RecoveryTimeout = 60 * time.Second
+		openCB.mu.Unlock()
+
+		strategy := &HealthBasedStrategy{circuitBreakers: cbPattern}
+		providers := map[string]LLMProvider{
+			"healthy":   &MockLLMProviderForRequest{name: "healthy"},
+			"unhealthy": &MockLLMProviderForRequest{name: "unhealthy"},
+		}
+
+		// Should always select healthy provider
+		for i := 0; i < 100; i++ {
+			name, err := strategy.SelectProvider(providers, nil)
+			assert.NoError(t, err)
+			assert.Equal(t, "healthy", name)
+		}
+	})
+
+	t.Run("allows half-open providers when no healthy available", func(t *testing.T) {
+		cbPattern := NewCircuitBreakerPattern()
+
+		// Set provider to half-open state
+		halfOpenCB := cbPattern.GetCircuitBreaker("recovering")
+		halfOpenCB.mu.Lock()
+		halfOpenCB.State = RequestStateHalfOpen
+		halfOpenCB.mu.Unlock()
+
+		strategy := &HealthBasedStrategy{circuitBreakers: cbPattern}
+		providers := map[string]LLMProvider{
+			"recovering": &MockLLMProviderForRequest{name: "recovering"},
+		}
+
+		name, err := strategy.SelectProvider(providers, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, "recovering", name)
+	})
+
+	t.Run("returns error when all providers unhealthy", func(t *testing.T) {
+		cbPattern := NewCircuitBreakerPattern()
+
+		// Set all providers to open state with recent failures
+		for _, providerName := range []string{"p1", "p2"} {
+			cb := cbPattern.GetCircuitBreaker(providerName)
+			cb.mu.Lock()
+			cb.State = RequestStateOpen
+			cb.LastFailTime = time.Now()
+			cb.RecoveryTimeout = 60 * time.Second
+			cb.mu.Unlock()
+		}
+
+		strategy := &HealthBasedStrategy{circuitBreakers: cbPattern}
+		providers := map[string]LLMProvider{
+			"p1": &MockLLMProviderForRequest{name: "p1"},
+			"p2": &MockLLMProviderForRequest{name: "p2"},
+		}
+
+		_, err := strategy.SelectProvider(providers, nil)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no healthy providers available")
+	})
+
+	t.Run("allows recovery after timeout", func(t *testing.T) {
+		cbPattern := NewCircuitBreakerPattern()
+
+		// Set provider to open state with old failure (past recovery timeout)
+		cb := cbPattern.GetCircuitBreaker("recovering")
+		cb.mu.Lock()
+		cb.State = RequestStateOpen
+		cb.LastFailTime = time.Now().Add(-2 * time.Minute) // 2 minutes ago
+		cb.RecoveryTimeout = 60 * time.Second              // 1 minute timeout
+		cb.mu.Unlock()
+
+		strategy := &HealthBasedStrategy{circuitBreakers: cbPattern}
+		providers := map[string]LLMProvider{
+			"recovering": &MockLLMProviderForRequest{name: "recovering"},
+		}
+
+		name, err := strategy.SelectProvider(providers, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, "recovering", name)
+	})
+}
+
+// Tests for LatencyBasedStrategy with metrics
+func TestLatencyBasedStrategy_WithMetrics(t *testing.T) {
+	t.Run("selects lowest latency provider", func(t *testing.T) {
+		registry := &MetricsRegistry{
+			metrics: make(map[string]*ProviderMetrics),
+		}
+
+		// Record different latencies
+		for i := 0; i < 10; i++ {
+			registry.RecordRequest("fast", true, 50)
+			registry.RecordRequest("medium", true, 500)
+			registry.RecordRequest("slow", true, 2000)
+		}
+
+		strategy := &LatencyBasedStrategy{metricsRegistry: registry}
+		providers := map[string]LLMProvider{
+			"fast":   &MockLLMProviderForRequest{name: "fast"},
+			"medium": &MockLLMProviderForRequest{name: "medium"},
+			"slow":   &MockLLMProviderForRequest{name: "slow"},
+		}
+
+		// Most selections should be the fast provider (accounting for 10% exploration)
+		selections := make(map[string]int)
+		for i := 0; i < 100; i++ {
+			name, err := strategy.SelectProvider(providers, nil)
+			assert.NoError(t, err)
+			selections[name]++
+		}
+
+		// Fast provider should be selected most often
+		assert.Greater(t, selections["fast"], selections["medium"])
+		assert.Greater(t, selections["fast"], selections["slow"])
+	})
+
+	t.Run("explores new providers without metrics", func(t *testing.T) {
+		registry := &MetricsRegistry{
+			metrics: make(map[string]*ProviderMetrics),
+		}
+
+		// Only record for one provider
+		registry.RecordRequest("known", true, 100)
+
+		strategy := &LatencyBasedStrategy{metricsRegistry: registry}
+		providers := map[string]LLMProvider{
+			"known":   &MockLLMProviderForRequest{name: "known"},
+			"unknown": &MockLLMProviderForRequest{name: "unknown"},
+		}
+
+		// Should sometimes select unknown provider for exploration
+		selections := make(map[string]int)
+		for i := 0; i < 100; i++ {
+			name, err := strategy.SelectProvider(providers, nil)
+			assert.NoError(t, err)
+			selections[name]++
+		}
+
+		// Unknown provider should get some selections
+		assert.Greater(t, selections["unknown"], 0, "should explore unknown providers")
+	})
+}
+
+// Integration tests for metrics recording
+func TestRequestService_MetricsRecording(t *testing.T) {
+	// Reset global metrics for clean test
+	GlobalMetricsRegistry = &MetricsRegistry{
+		metrics: make(map[string]*ProviderMetrics),
+	}
+
+	t.Run("records success metrics", func(t *testing.T) {
+		service := NewRequestService("random", nil, nil)
+		service.RegisterProvider("metrics-test", &MockLLMProviderForRequest{
+			name: "metrics-test",
+			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+				time.Sleep(10 * time.Millisecond) // Simulate some latency
+				return &models.LLMResponse{Content: "success"}, nil
+			},
+		})
+
+		req := &models.LLMRequest{Prompt: "test"}
+		_, err := service.ProcessRequest(context.Background(), req)
+		assert.NoError(t, err)
+
+		// Check metrics were recorded
+		pm := GlobalMetricsRegistry.GetMetrics("metrics-test")
+		assert.Equal(t, int64(1), pm.SuccessCount)
+		assert.Equal(t, int64(0), pm.FailureCount)
+		assert.Greater(t, len(pm.LatencyHistory), 0)
+	})
+
+	t.Run("records failure metrics", func(t *testing.T) {
+		// Reset for this test
+		GlobalMetricsRegistry = &MetricsRegistry{
+			metrics: make(map[string]*ProviderMetrics),
+		}
+
+		service := NewRequestService("random", nil, nil)
+		service.RegisterProvider("failing-provider", &MockLLMProviderForRequest{
+			name: "failing-provider",
+			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+				return nil, errors.New("simulated failure")
+			},
+		})
+
+		req := &models.LLMRequest{Prompt: "test"}
+		_, err := service.ProcessRequest(context.Background(), req)
+		assert.Error(t, err)
+
+		// Check metrics were recorded
+		pm := GlobalMetricsRegistry.GetMetrics("failing-provider")
+		assert.Equal(t, int64(0), pm.SuccessCount)
+		assert.Equal(t, int64(1), pm.FailureCount)
+	})
+}

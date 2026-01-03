@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/superagent/superagent/internal/config"
@@ -12,35 +13,75 @@ import (
 	"github.com/superagent/superagent/internal/models"
 )
 
+// memoryCacheEntry represents a cached memory entry with timestamp tracking
+type memoryCacheEntry struct {
+	sources   []models.MemorySource
+	createdAt time.Time
+	expiresAt time.Time
+}
+
+// CleanupStats represents statistics from a cache cleanup operation
+type CleanupStats struct {
+	EntriesRemoved int
+	EntriesKept    int
+	TimeTaken      time.Duration
+	CleanupTime    time.Time
+}
+
 // MemoryService provides memory enhancement capabilities using Cognee
 type MemoryService struct {
-	client      *llm.Client
-	enabled     bool
-	dataset     string
-	cache       map[string][]models.MemorySource
-	ttl         time.Duration
-	lastCleanup time.Time
+	client          *llm.Client
+	enabled         bool
+	dataset         string
+	cache           map[string]*memoryCacheEntry
+	cacheMu         sync.RWMutex
+	ttl             time.Duration
+	cleanupInterval time.Duration
+	lastCleanup     time.Time
+	lastCleanupStats *CleanupStats
+	stopCh          chan struct{}
+	stopped         bool
 }
+
+// DefaultCleanupInterval is the default interval for cache cleanup
+const DefaultCleanupInterval = 1 * time.Minute
 
 // NewMemoryService creates a new memory service instance
 func NewMemoryService(cfg *config.Config) *MemoryService {
+	return NewMemoryServiceWithOptions(cfg, 5*time.Minute, DefaultCleanupInterval)
+}
+
+// NewMemoryServiceWithOptions creates a new memory service instance with custom TTL and cleanup interval
+func NewMemoryServiceWithOptions(cfg *config.Config, ttl, cleanupInterval time.Duration) *MemoryService {
 	if cfg == nil || !cfg.Cognee.AutoCognify {
-		return &MemoryService{
-			enabled: false,
-			cache:   make(map[string][]models.MemorySource),
-			ttl:     5 * time.Minute,
+		ms := &MemoryService{
+			enabled:         false,
+			cache:           make(map[string]*memoryCacheEntry),
+			ttl:             ttl,
+			cleanupInterval: cleanupInterval,
+			stopCh:          make(chan struct{}),
 		}
+		// Start background cleanup even for disabled service (for when cache is still used)
+		go ms.cleanupRoutine()
+		return ms
 	}
 
-	return &MemoryService{
+	ms := &MemoryService{
 		client: llm.NewClient(&config.Config{
 			Cognee: cfg.Cognee,
 		}),
-		enabled: true,
-		dataset: "default",
-		cache:   make(map[string][]models.MemorySource),
-		ttl:     5 * time.Minute,
+		enabled:         true,
+		dataset:         "default",
+		cache:           make(map[string]*memoryCacheEntry),
+		ttl:             ttl,
+		cleanupInterval: cleanupInterval,
+		stopCh:          make(chan struct{}),
 	}
+
+	// Start background cleanup goroutine
+	go ms.cleanupRoutine()
+
+	return ms
 }
 
 // AddMemory adds content to memory using Cognee
@@ -57,7 +98,9 @@ func (m *MemoryService) AddMemory(ctx context.Context, req *MemoryRequest) error
 			return 50
 		}
 	}()]))
-	if sources, exists := m.cache[cacheKey]; exists && len(sources) > 0 {
+
+	// Check if we have a valid cached entry
+	if sources := m.getCachedSources(cacheKey); sources != nil && len(sources) > 0 {
 		// Return cached results
 		return nil
 	}
@@ -77,8 +120,8 @@ func (m *MemoryService) AddMemory(ctx context.Context, req *MemoryRequest) error
 	// Convert to MemorySource format
 	sources := m.convertToMemorySources(resp)
 
-	// Cache the results
-	m.cache[cacheKey] = sources
+	// Cache the results with expiration
+	m.setCachedSources(cacheKey, sources)
 
 	return nil
 }
@@ -91,7 +134,7 @@ func (m *MemoryService) SearchMemory(ctx context.Context, req *SearchRequest) ([
 
 	// Check cache first
 	cacheKey := fmt.Sprintf("search:%s", strings.ToLower(req.Query))
-	if sources, exists := m.cache[cacheKey]; exists {
+	if sources := m.getCachedSources(cacheKey); sources != nil {
 		// Return cached results
 		return sources, nil
 	}
@@ -111,8 +154,8 @@ func (m *MemoryService) SearchMemory(ctx context.Context, req *SearchRequest) ([
 	// Convert to MemorySource format
 	sources := m.convertToMemorySourcesFromSearch(resp)
 
-	// Cache the results
-	m.cache[cacheKey] = sources
+	// Cache the results with expiration
+	m.setCachedSources(cacheKey, sources)
 
 	return sources, nil
 }
@@ -125,7 +168,7 @@ func (m *MemoryService) SearchMemoryWithInsights(ctx context.Context, req *Searc
 
 	// Check cache first
 	cacheKey := fmt.Sprintf("insights:%s", strings.ToLower(req.Query))
-	if sources, exists := m.cache[cacheKey]; exists {
+	if sources := m.getCachedSources(cacheKey); sources != nil {
 		return sources, nil
 	}
 
@@ -144,8 +187,8 @@ func (m *MemoryService) SearchMemoryWithInsights(ctx context.Context, req *Searc
 	// Convert insights to MemorySource format
 	sources := m.convertInsightsToMemorySources(resp)
 
-	// Cache the results
-	m.cache[cacheKey] = sources
+	// Cache the results with expiration
+	m.setCachedSources(cacheKey, sources)
 
 	return sources, nil
 }
@@ -158,7 +201,7 @@ func (m *MemoryService) SearchMemoryWithGraphCompletion(ctx context.Context, req
 
 	// Check cache first
 	cacheKey := fmt.Sprintf("graph:%s", strings.ToLower(req.Query))
-	if sources, exists := m.cache[cacheKey]; exists {
+	if sources := m.getCachedSources(cacheKey); sources != nil {
 		return sources, nil
 	}
 
@@ -171,8 +214,8 @@ func (m *MemoryService) SearchMemoryWithGraphCompletion(ctx context.Context, req
 	// Convert to MemorySource format
 	sources := m.convertToMemorySourcesFromSearch(resp)
 
-	// Cache the results
-	m.cache[cacheKey] = sources
+	// Cache the results with expiration
+	m.setCachedSources(cacheKey, sources)
 
 	return sources, nil
 }
@@ -412,19 +455,115 @@ func (m *MemoryService) GetMemorySources(ctx context.Context, req *models.LLMReq
 	return sources, nil
 }
 
-// CacheCleanup removes expired cache entries
-func (m *MemoryService) CacheCleanup() {
-	// Simple cleanup - remove all entries older than TTL
-	// In a real implementation, this would run periodically
-	now := time.Now()
+// CacheCleanup removes expired cache entries and returns cleanup statistics
+func (m *MemoryService) CacheCleanup() *CleanupStats {
+	startTime := time.Now()
 
-	for key := range m.cache {
-		// Mark all entries as expired for simplicity
-		delete(m.cache, key)
+	m.cacheMu.Lock()
+	defer m.cacheMu.Unlock()
+
+	entriesRemoved := 0
+	entriesKept := 0
+
+	for key, entry := range m.cache {
+		if time.Now().After(entry.expiresAt) {
+			delete(m.cache, key)
+			entriesRemoved++
+		} else {
+			entriesKept++
+		}
 	}
 
-	// This is a simplified cleanup - real implementation would track timestamps
-	m.lastCleanup = now
+	stats := &CleanupStats{
+		EntriesRemoved: entriesRemoved,
+		EntriesKept:    entriesKept,
+		TimeTaken:      time.Since(startTime),
+		CleanupTime:    startTime,
+	}
+
+	m.lastCleanup = startTime
+	m.lastCleanupStats = stats
+
+	return stats
+}
+
+// cleanupRoutine runs periodic cache cleanup in the background
+func (m *MemoryService) cleanupRoutine() {
+	ticker := time.NewTicker(m.cleanupInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-m.stopCh:
+			return
+		case <-ticker.C:
+			m.CacheCleanup()
+		}
+	}
+}
+
+// Stop stops the background cleanup goroutine gracefully
+func (m *MemoryService) Stop() {
+	m.cacheMu.Lock()
+	defer m.cacheMu.Unlock()
+
+	if m.stopped {
+		return
+	}
+	m.stopped = true
+	close(m.stopCh)
+}
+
+// getCachedSources retrieves cached sources if they exist and haven't expired
+func (m *MemoryService) getCachedSources(key string) []models.MemorySource {
+	m.cacheMu.RLock()
+	defer m.cacheMu.RUnlock()
+
+	entry, exists := m.cache[key]
+	if !exists {
+		return nil
+	}
+
+	// Check if expired
+	if time.Now().After(entry.expiresAt) {
+		return nil
+	}
+
+	return entry.sources
+}
+
+// setCachedSources stores sources in the cache with expiration
+func (m *MemoryService) setCachedSources(key string, sources []models.MemorySource) {
+	m.cacheMu.Lock()
+	defer m.cacheMu.Unlock()
+
+	now := time.Now()
+	m.cache[key] = &memoryCacheEntry{
+		sources:   sources,
+		createdAt: now,
+		expiresAt: now.Add(m.ttl),
+	}
+}
+
+// GetLastCleanupStats returns the statistics from the last cleanup operation
+func (m *MemoryService) GetLastCleanupStats() *CleanupStats {
+	m.cacheMu.RLock()
+	defer m.cacheMu.RUnlock()
+	return m.lastCleanupStats
+}
+
+// SetCleanupInterval sets the interval for background cache cleanup
+func (m *MemoryService) SetCleanupInterval(interval time.Duration) {
+	m.cacheMu.Lock()
+	defer m.cacheMu.Unlock()
+	m.cleanupInterval = interval
+}
+
+// GetCleanupInterval returns the current cleanup interval
+func (m *MemoryService) GetCleanupInterval() time.Duration {
+	m.cacheMu.RLock()
+	defer m.cacheMu.RUnlock()
+	return m.cleanupInterval
 }
 
 // convertToMemorySources converts Cognee responses to MemorySource format
@@ -543,21 +682,38 @@ func (m *MemoryService) IsEnabled() bool {
 
 // ClearCache clears the memory cache
 func (m *MemoryService) ClearCache() {
-	m.cache = make(map[string][]models.MemorySource)
+	m.cacheMu.Lock()
+	defer m.cacheMu.Unlock()
+	m.cache = make(map[string]*memoryCacheEntry)
 }
 
 // GetStats returns memory service statistics
 func (m *MemoryService) GetStats() map[string]interface{} {
+	m.cacheMu.RLock()
+	defer m.cacheMu.RUnlock()
+
 	cogneeURL := ""
 	if m.client != nil {
 		cogneeURL = m.client.GetBaseURL()
 	}
 
-	return map[string]interface{}{
-		"enabled":     m.enabled,
-		"cache_size":  len(m.cache),
-		"dataset":     m.dataset,
-		"ttl_minutes": m.ttl.Minutes(),
-		"cognee_url":  cogneeURL,
+	stats := map[string]interface{}{
+		"enabled":          m.enabled,
+		"cache_size":       len(m.cache),
+		"dataset":          m.dataset,
+		"ttl_minutes":      m.ttl.Minutes(),
+		"cognee_url":       cogneeURL,
+		"cleanup_interval": m.cleanupInterval.String(),
+		"last_cleanup":     m.lastCleanup,
 	}
+
+	if m.lastCleanupStats != nil {
+		stats["last_cleanup_stats"] = map[string]interface{}{
+			"entries_removed": m.lastCleanupStats.EntriesRemoved,
+			"entries_kept":    m.lastCleanupStats.EntriesKept,
+			"time_taken":      m.lastCleanupStats.TimeTaken.String(),
+		}
+	}
+
+	return stats
 }

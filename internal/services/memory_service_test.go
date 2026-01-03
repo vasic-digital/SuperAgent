@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,8 +14,29 @@ import (
 	"github.com/superagent/superagent/internal/models"
 )
 
+// makeCacheEntry creates a cache entry with the given sources and TTL
+func makeCacheEntry(sources []models.MemorySource, ttl time.Duration) *memoryCacheEntry {
+	now := time.Now()
+	return &memoryCacheEntry{
+		sources:   sources,
+		createdAt: now,
+		expiresAt: now.Add(ttl),
+	}
+}
+
+// makeExpiredCacheEntry creates an already-expired cache entry
+func makeExpiredCacheEntry(sources []models.MemorySource) *memoryCacheEntry {
+	past := time.Now().Add(-1 * time.Hour)
+	return &memoryCacheEntry{
+		sources:   sources,
+		createdAt: past,
+		expiresAt: past.Add(30 * time.Minute), // expired 30 minutes ago
+	}
+}
+
 func TestNewMemoryService_NilConfig(t *testing.T) {
 	ms := NewMemoryService(nil)
+	defer ms.Stop()
 	require.NotNil(t, ms)
 	assert.False(t, ms.enabled)
 	assert.NotNil(t, ms.cache)
@@ -27,6 +50,7 @@ func TestNewMemoryService_DisabledCognee(t *testing.T) {
 		},
 	}
 	ms := NewMemoryService(cfg)
+	defer ms.Stop()
 	require.NotNil(t, ms)
 	assert.False(t, ms.enabled)
 	assert.NotNil(t, ms.cache)
@@ -40,6 +64,7 @@ func TestNewMemoryService_EnabledCognee(t *testing.T) {
 		},
 	}
 	ms := NewMemoryService(cfg)
+	defer ms.Stop()
 	require.NotNil(t, ms)
 	assert.True(t, ms.enabled)
 	assert.NotNil(t, ms.client)
@@ -50,11 +75,11 @@ func TestNewMemoryService_EnabledCognee(t *testing.T) {
 func TestMemoryService_SwitchDataset(t *testing.T) {
 	ms := &MemoryService{
 		dataset: "original",
-		cache:   make(map[string][]models.MemorySource),
+		cache:   make(map[string]*memoryCacheEntry),
 	}
 
 	// Add something to cache
-	ms.cache["test-key"] = []models.MemorySource{{Content: "test"}}
+	ms.cache["test-key"] = makeCacheEntry([]models.MemorySource{{Content: "test"}}, 5*time.Minute)
 	assert.Len(t, ms.cache, 1)
 
 	// Switch dataset
@@ -85,9 +110,9 @@ func TestMemoryService_IsEnabled(t *testing.T) {
 
 func TestMemoryService_ClearCache(t *testing.T) {
 	ms := &MemoryService{
-		cache: map[string][]models.MemorySource{
-			"key1": {{Content: "content1"}},
-			"key2": {{Content: "content2"}},
+		cache: map[string]*memoryCacheEntry{
+			"key1": makeCacheEntry([]models.MemorySource{{Content: "content1"}}, 5*time.Minute),
+			"key2": makeCacheEntry([]models.MemorySource{{Content: "content2"}}, 5*time.Minute),
 		},
 	}
 
@@ -97,16 +122,33 @@ func TestMemoryService_ClearCache(t *testing.T) {
 }
 
 func TestMemoryService_CacheCleanup(t *testing.T) {
+	// Test with mixed expired and non-expired entries
 	ms := &MemoryService{
-		cache: map[string][]models.MemorySource{
-			"key1": {{Content: "content1"}},
-			"key2": {{Content: "content2"}},
+		cache: map[string]*memoryCacheEntry{
+			"expired1":    makeExpiredCacheEntry([]models.MemorySource{{Content: "expired content1"}}),
+			"expired2":    makeExpiredCacheEntry([]models.MemorySource{{Content: "expired content2"}}),
+			"notexpired1": makeCacheEntry([]models.MemorySource{{Content: "valid content1"}}, 5*time.Minute),
 		},
 	}
 
-	assert.Len(t, ms.cache, 2)
-	ms.CacheCleanup()
-	assert.Empty(t, ms.cache) // Cleanup removes all entries
+	assert.Len(t, ms.cache, 3)
+
+	// Run cleanup
+	stats := ms.CacheCleanup()
+
+	// Only expired entries should be removed
+	assert.Len(t, ms.cache, 1) // Only notexpired1 should remain
+	assert.NotNil(t, ms.cache["notexpired1"])
+	assert.Nil(t, ms.cache["expired1"])
+	assert.Nil(t, ms.cache["expired2"])
+
+	// Check cleanup stats
+	assert.Equal(t, 2, stats.EntriesRemoved)
+	assert.Equal(t, 1, stats.EntriesKept)
+	assert.False(t, stats.CleanupTime.IsZero())
+	assert.True(t, stats.TimeTaken >= 0)
+
+	// Verify lastCleanup was updated
 	assert.False(t, ms.lastCleanup.IsZero())
 }
 
@@ -114,11 +156,12 @@ func TestMemoryService_GetStats(t *testing.T) {
 	ms := &MemoryService{
 		enabled: true,
 		dataset: "test-dataset",
-		cache: map[string][]models.MemorySource{
-			"key1": {{Content: "content1"}},
-			"key2": {{Content: "content2"}},
+		cache: map[string]*memoryCacheEntry{
+			"key1": makeCacheEntry([]models.MemorySource{{Content: "content1"}}, 5*time.Minute),
+			"key2": makeCacheEntry([]models.MemorySource{{Content: "content2"}}, 5*time.Minute),
 		},
-		ttl: 5 * 60 * 1e9, // 5 minutes in nanoseconds
+		ttl:             5 * time.Minute,
+		cleanupInterval: 1 * time.Minute,
 	}
 
 	stats := ms.GetStats()
@@ -127,6 +170,7 @@ func TestMemoryService_GetStats(t *testing.T) {
 	assert.Equal(t, "test-dataset", stats["dataset"])
 	assert.Equal(t, 5.0, stats["ttl_minutes"])
 	assert.Equal(t, "", stats["cognee_url"]) // No client
+	assert.Equal(t, "1m0s", stats["cleanup_interval"])
 }
 
 func TestMemoryService_GetStats_WithClient(t *testing.T) {
@@ -137,6 +181,7 @@ func TestMemoryService_GetStats_WithClient(t *testing.T) {
 		},
 	}
 	ms := NewMemoryService(cfg)
+	defer ms.Stop()
 
 	stats := ms.GetStats()
 	assert.Equal(t, true, stats["enabled"])
@@ -386,7 +431,7 @@ func TestMemoryService_convertInsightsToMemorySources(t *testing.T) {
 func TestMemoryService_DisabledServiceErrors(t *testing.T) {
 	ms := &MemoryService{
 		enabled: false,
-		cache:   make(map[string][]models.MemorySource),
+		cache:   make(map[string]*memoryCacheEntry),
 	}
 	ctx := context.Background()
 
@@ -482,7 +527,8 @@ func TestMemoryService_EnhanceCodeRequest_NoCode(t *testing.T) {
 func TestMemoryService_AddMemory_CacheHit(t *testing.T) {
 	ms := &MemoryService{
 		enabled: true,
-		cache:   make(map[string][]models.MemorySource),
+		cache:   make(map[string]*memoryCacheEntry),
+		ttl:     5 * time.Minute,
 	}
 	ctx := context.Background()
 
@@ -491,7 +537,7 @@ func TestMemoryService_AddMemory_CacheHit(t *testing.T) {
 	testContent := "Test Content"
 	// Generate exact cache key: text:test content (lowercase)
 	cacheKey := "text:test content"
-	ms.cache[cacheKey] = []models.MemorySource{{Content: "cached content"}}
+	ms.cache[cacheKey] = makeCacheEntry([]models.MemorySource{{Content: "cached content"}}, 5*time.Minute)
 
 	// Request with content that matches cache key
 	req := &MemoryRequest{
@@ -508,7 +554,8 @@ func TestMemoryService_AddMemory_CacheHit(t *testing.T) {
 func TestMemoryService_SearchMemory_CacheHit(t *testing.T) {
 	ms := &MemoryService{
 		enabled: true,
-		cache:   make(map[string][]models.MemorySource),
+		cache:   make(map[string]*memoryCacheEntry),
+		ttl:     5 * time.Minute,
 	}
 	ctx := context.Background()
 
@@ -518,7 +565,7 @@ func TestMemoryService_SearchMemory_CacheHit(t *testing.T) {
 		{Content: "cached result 1", DatasetName: "test", RelevanceScore: 0.9},
 		{Content: "cached result 2", DatasetName: "test", RelevanceScore: 0.8},
 	}
-	ms.cache[cacheKey] = expectedSources
+	ms.cache[cacheKey] = makeCacheEntry(expectedSources, 5*time.Minute)
 
 	// Search should return cached results
 	req := &SearchRequest{
@@ -535,7 +582,8 @@ func TestMemoryService_SearchMemory_CacheHit(t *testing.T) {
 func TestMemoryService_SearchMemoryWithInsights_CacheHit(t *testing.T) {
 	ms := &MemoryService{
 		enabled: true,
-		cache:   make(map[string][]models.MemorySource),
+		cache:   make(map[string]*memoryCacheEntry),
+		ttl:     5 * time.Minute,
 	}
 	ctx := context.Background()
 
@@ -544,7 +592,7 @@ func TestMemoryService_SearchMemoryWithInsights_CacheHit(t *testing.T) {
 	expectedSources := []models.MemorySource{
 		{Content: "insight 1", DatasetName: "insights", RelevanceScore: 1.0},
 	}
-	ms.cache[cacheKey] = expectedSources
+	ms.cache[cacheKey] = makeCacheEntry(expectedSources, 5*time.Minute)
 
 	req := &SearchRequest{
 		Query:       "test insights query",
@@ -560,7 +608,8 @@ func TestMemoryService_SearchMemoryWithInsights_CacheHit(t *testing.T) {
 func TestMemoryService_SearchMemoryWithGraphCompletion_CacheHit(t *testing.T) {
 	ms := &MemoryService{
 		enabled: true,
-		cache:   make(map[string][]models.MemorySource),
+		cache:   make(map[string]*memoryCacheEntry),
+		ttl:     5 * time.Minute,
 	}
 	ctx := context.Background()
 
@@ -569,7 +618,7 @@ func TestMemoryService_SearchMemoryWithGraphCompletion_CacheHit(t *testing.T) {
 	expectedSources := []models.MemorySource{
 		{Content: "graph result", DatasetName: "graph", RelevanceScore: 0.95},
 	}
-	ms.cache[cacheKey] = expectedSources
+	ms.cache[cacheKey] = makeCacheEntry(expectedSources, 5*time.Minute)
 
 	req := &SearchRequest{
 		Query:       "test graph query",
@@ -602,4 +651,306 @@ func TestSearchRequest_Fields(t *testing.T) {
 	assert.Equal(t, "search term", req.Query)
 	assert.Equal(t, "my-dataset", req.DatasetName)
 	assert.Equal(t, 20, req.Limit)
+}
+
+// Tests for TTL-based cache cleanup
+
+func TestMemoryService_CacheCleanup_AllExpired(t *testing.T) {
+	ms := &MemoryService{
+		cache: map[string]*memoryCacheEntry{
+			"expired1": makeExpiredCacheEntry([]models.MemorySource{{Content: "content1"}}),
+			"expired2": makeExpiredCacheEntry([]models.MemorySource{{Content: "content2"}}),
+			"expired3": makeExpiredCacheEntry([]models.MemorySource{{Content: "content3"}}),
+		},
+	}
+
+	stats := ms.CacheCleanup()
+
+	assert.Empty(t, ms.cache)
+	assert.Equal(t, 3, stats.EntriesRemoved)
+	assert.Equal(t, 0, stats.EntriesKept)
+}
+
+func TestMemoryService_CacheCleanup_NoneExpired(t *testing.T) {
+	ms := &MemoryService{
+		cache: map[string]*memoryCacheEntry{
+			"valid1": makeCacheEntry([]models.MemorySource{{Content: "content1"}}, 10*time.Minute),
+			"valid2": makeCacheEntry([]models.MemorySource{{Content: "content2"}}, 10*time.Minute),
+		},
+	}
+
+	stats := ms.CacheCleanup()
+
+	assert.Len(t, ms.cache, 2)
+	assert.Equal(t, 0, stats.EntriesRemoved)
+	assert.Equal(t, 2, stats.EntriesKept)
+}
+
+func TestMemoryService_CacheCleanup_EmptyCache(t *testing.T) {
+	ms := &MemoryService{
+		cache: make(map[string]*memoryCacheEntry),
+	}
+
+	stats := ms.CacheCleanup()
+
+	assert.Empty(t, ms.cache)
+	assert.Equal(t, 0, stats.EntriesRemoved)
+	assert.Equal(t, 0, stats.EntriesKept)
+	assert.True(t, stats.TimeTaken >= 0)
+}
+
+func TestMemoryService_CacheCleanup_StatsTracking(t *testing.T) {
+	ms := &MemoryService{
+		cache: map[string]*memoryCacheEntry{
+			"expired": makeExpiredCacheEntry([]models.MemorySource{{Content: "expired"}}),
+			"valid":   makeCacheEntry([]models.MemorySource{{Content: "valid"}}, 10*time.Minute),
+		},
+	}
+
+	stats := ms.CacheCleanup()
+
+	// Verify stats are correct
+	assert.Equal(t, 1, stats.EntriesRemoved)
+	assert.Equal(t, 1, stats.EntriesKept)
+	assert.False(t, stats.CleanupTime.IsZero())
+	assert.True(t, stats.TimeTaken >= 0)
+
+	// Verify lastCleanupStats is set
+	lastStats := ms.GetLastCleanupStats()
+	assert.NotNil(t, lastStats)
+	assert.Equal(t, stats.EntriesRemoved, lastStats.EntriesRemoved)
+	assert.Equal(t, stats.EntriesKept, lastStats.EntriesKept)
+}
+
+func TestMemoryService_getCachedSources_ExpiredEntry(t *testing.T) {
+	ms := &MemoryService{
+		cache: map[string]*memoryCacheEntry{
+			"expired-key": makeExpiredCacheEntry([]models.MemorySource{{Content: "expired content"}}),
+		},
+	}
+
+	// Should return nil for expired entry
+	sources := ms.getCachedSources("expired-key")
+	assert.Nil(t, sources)
+}
+
+func TestMemoryService_getCachedSources_ValidEntry(t *testing.T) {
+	expectedSources := []models.MemorySource{{Content: "valid content"}}
+	ms := &MemoryService{
+		cache: map[string]*memoryCacheEntry{
+			"valid-key": makeCacheEntry(expectedSources, 10*time.Minute),
+		},
+	}
+
+	sources := ms.getCachedSources("valid-key")
+	assert.Equal(t, expectedSources, sources)
+}
+
+func TestMemoryService_getCachedSources_NonExistent(t *testing.T) {
+	ms := &MemoryService{
+		cache: make(map[string]*memoryCacheEntry),
+	}
+
+	sources := ms.getCachedSources("non-existent-key")
+	assert.Nil(t, sources)
+}
+
+func TestMemoryService_setCachedSources(t *testing.T) {
+	ms := &MemoryService{
+		cache: make(map[string]*memoryCacheEntry),
+		ttl:   5 * time.Minute,
+	}
+
+	expectedSources := []models.MemorySource{{Content: "test content"}}
+	ms.setCachedSources("test-key", expectedSources)
+
+	// Verify entry was created
+	entry, exists := ms.cache["test-key"]
+	require.True(t, exists)
+	assert.Equal(t, expectedSources, entry.sources)
+	assert.False(t, entry.createdAt.IsZero())
+	assert.False(t, entry.expiresAt.IsZero())
+
+	// Verify expiration is set correctly
+	assert.True(t, entry.expiresAt.After(entry.createdAt))
+	expectedExpiry := entry.createdAt.Add(5 * time.Minute)
+	assert.True(t, entry.expiresAt.Equal(expectedExpiry) || entry.expiresAt.After(expectedExpiry.Add(-time.Millisecond)))
+}
+
+func TestMemoryService_CleanupInterval(t *testing.T) {
+	ms := &MemoryService{
+		cleanupInterval: 2 * time.Minute,
+	}
+
+	// Test GetCleanupInterval
+	assert.Equal(t, 2*time.Minute, ms.GetCleanupInterval())
+
+	// Test SetCleanupInterval
+	ms.SetCleanupInterval(5 * time.Minute)
+	assert.Equal(t, 5*time.Minute, ms.GetCleanupInterval())
+}
+
+func TestMemoryService_StopCleanupRoutine(t *testing.T) {
+	ms := &MemoryService{
+		cache:           make(map[string]*memoryCacheEntry),
+		cleanupInterval: 100 * time.Millisecond,
+		stopCh:          make(chan struct{}),
+	}
+
+	// Start cleanup routine
+	go ms.cleanupRoutine()
+
+	// Give it a moment to start
+	time.Sleep(50 * time.Millisecond)
+
+	// Stop should not panic
+	ms.Stop()
+
+	// Calling Stop again should not panic (idempotent)
+	ms.Stop()
+
+	assert.True(t, ms.stopped)
+}
+
+func TestMemoryService_BackgroundCleanup(t *testing.T) {
+	ms := &MemoryService{
+		cache:           make(map[string]*memoryCacheEntry),
+		cleanupInterval: 50 * time.Millisecond,
+		stopCh:          make(chan struct{}),
+		ttl:             10 * time.Millisecond,
+	}
+
+	// Add an entry that will expire quickly
+	now := time.Now()
+	ms.cache["will-expire"] = &memoryCacheEntry{
+		sources:   []models.MemorySource{{Content: "expiring"}},
+		createdAt: now.Add(-1 * time.Second),
+		expiresAt: now.Add(-500 * time.Millisecond), // Already expired
+	}
+
+	// Add a valid entry
+	ms.cache["will-stay"] = makeCacheEntry([]models.MemorySource{{Content: "staying"}}, 1*time.Hour)
+
+	// Start cleanup routine
+	go ms.cleanupRoutine()
+
+	// Wait for cleanup to run
+	time.Sleep(150 * time.Millisecond)
+
+	// Stop the routine
+	ms.Stop()
+
+	// Verify expired entry was removed
+	ms.cacheMu.RLock()
+	_, expiredExists := ms.cache["will-expire"]
+	_, validExists := ms.cache["will-stay"]
+	ms.cacheMu.RUnlock()
+
+	assert.False(t, expiredExists, "Expired entry should have been removed")
+	assert.True(t, validExists, "Valid entry should still exist")
+}
+
+func TestMemoryService_GetStatsWithCleanupStats(t *testing.T) {
+	ms := &MemoryService{
+		enabled:         true,
+		dataset:         "test",
+		cache:           make(map[string]*memoryCacheEntry),
+		ttl:             5 * time.Minute,
+		cleanupInterval: 1 * time.Minute,
+	}
+
+	// Add some entries and run cleanup
+	ms.cache["expired"] = makeExpiredCacheEntry([]models.MemorySource{{Content: "old"}})
+	ms.cache["valid"] = makeCacheEntry([]models.MemorySource{{Content: "new"}}, 10*time.Minute)
+
+	ms.CacheCleanup()
+
+	stats := ms.GetStats()
+
+	// Verify cleanup stats are included
+	cleanupStats, ok := stats["last_cleanup_stats"].(map[string]interface{})
+	require.True(t, ok, "last_cleanup_stats should be a map")
+	assert.Equal(t, 1, cleanupStats["entries_removed"])
+	assert.Equal(t, 1, cleanupStats["entries_kept"])
+	assert.NotEmpty(t, cleanupStats["time_taken"])
+}
+
+func TestNewMemoryServiceWithOptions(t *testing.T) {
+	cfg := &config.Config{
+		Cognee: config.CogneeConfig{
+			AutoCognify: false,
+		},
+	}
+
+	customTTL := 10 * time.Minute
+	customCleanupInterval := 2 * time.Minute
+
+	ms := NewMemoryServiceWithOptions(cfg, customTTL, customCleanupInterval)
+	defer ms.Stop()
+
+	require.NotNil(t, ms)
+	assert.Equal(t, customTTL, ms.ttl)
+	assert.Equal(t, customCleanupInterval, ms.GetCleanupInterval())
+	assert.False(t, ms.enabled)
+	assert.NotNil(t, ms.cache)
+	assert.NotNil(t, ms.stopCh)
+}
+
+func TestNewMemoryServiceWithOptions_Enabled(t *testing.T) {
+	cfg := &config.Config{
+		Cognee: config.CogneeConfig{
+			AutoCognify: true,
+			BaseURL:     "http://localhost:8000",
+		},
+	}
+
+	ms := NewMemoryServiceWithOptions(cfg, 15*time.Minute, 3*time.Minute)
+	defer ms.Stop()
+
+	require.NotNil(t, ms)
+	assert.True(t, ms.enabled)
+	assert.Equal(t, 15*time.Minute, ms.ttl)
+	assert.Equal(t, 3*time.Minute, ms.GetCleanupInterval())
+}
+
+func TestMemoryService_ConcurrentAccess(t *testing.T) {
+	ms := &MemoryService{
+		cache:           make(map[string]*memoryCacheEntry),
+		ttl:             5 * time.Minute,
+		cleanupInterval: 100 * time.Millisecond,
+		stopCh:          make(chan struct{}),
+	}
+
+	// Start cleanup routine
+	go ms.cleanupRoutine()
+	defer ms.Stop()
+
+	// Run concurrent operations
+	done := make(chan bool)
+	for i := 0; i < 10; i++ {
+		go func(id int) {
+			for j := 0; j < 100; j++ {
+				key := fmt.Sprintf("key-%d-%d", id, j)
+				ms.setCachedSources(key, []models.MemorySource{{Content: key}})
+				ms.getCachedSources(key)
+			}
+			done <- true
+		}(i)
+	}
+
+	// Also run cleanup concurrently
+	go func() {
+		for i := 0; i < 10; i++ {
+			ms.CacheCleanup()
+			time.Sleep(10 * time.Millisecond)
+		}
+		done <- true
+	}()
+
+	// Wait for all goroutines
+	for i := 0; i < 11; i++ {
+		<-done
+	}
+
+	// If we get here without deadlock or race condition, test passes
 }

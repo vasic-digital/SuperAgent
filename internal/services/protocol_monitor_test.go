@@ -426,3 +426,486 @@ func BenchmarkProtocolMonitor_GetMetrics(b *testing.B) {
 		_, _ = monitor.GetMetrics("bench-protocol")
 	}
 }
+
+// Tests for alert storage and retrieval (P1 fix)
+
+func TestProtocolMonitor_StoreAlert(t *testing.T) {
+	log := newMonitorTestLogger()
+	monitor := NewProtocolMonitor(log)
+	defer monitor.Stop()
+
+	t.Run("stores alert in history", func(t *testing.T) {
+		alert := &Alert{
+			ID:        "test-alert-1",
+			RuleID:    "rule-1",
+			Protocol:  "mcp",
+			Message:   "Test alert message",
+			Severity:  SeverityWarning,
+			Value:     0.15,
+			Threshold: 0.1,
+			Timestamp: time.Now(),
+		}
+
+		monitor.storeAlert(alert)
+
+		count := monitor.GetAlertCount()
+		assert.Equal(t, 1, count)
+	})
+
+	t.Run("stores multiple alerts", func(t *testing.T) {
+		monitor.ClearAlerts()
+
+		for i := 0; i < 5; i++ {
+			alert := &Alert{
+				ID:        "test-alert-" + string(rune('a'+i)),
+				RuleID:    "rule-1",
+				Protocol:  "mcp",
+				Message:   "Test alert message",
+				Severity:  SeverityWarning,
+				Timestamp: time.Now(),
+			}
+			monitor.storeAlert(alert)
+		}
+
+		count := monitor.GetAlertCount()
+		assert.Equal(t, 5, count)
+	})
+}
+
+func TestProtocolMonitor_AlertHistoryLimit(t *testing.T) {
+	log := newMonitorTestLogger()
+	monitor := NewProtocolMonitor(log)
+	defer monitor.Stop()
+
+	t.Run("enforces default limit", func(t *testing.T) {
+		monitor.ClearAlerts()
+		monitor.SetAlertLimit(10) // Set small limit for testing
+
+		// Store more alerts than the limit
+		for i := 0; i < 15; i++ {
+			alert := &Alert{
+				ID:        "alert-" + string(rune('a'+i)),
+				RuleID:    "rule-1",
+				Protocol:  "mcp",
+				Message:   "Test message",
+				Severity:  SeverityInfo,
+				Timestamp: time.Now(),
+			}
+			monitor.storeAlert(alert)
+		}
+
+		count := monitor.GetAlertCount()
+		assert.Equal(t, 10, count)
+	})
+
+	t.Run("removes oldest alerts when limit exceeded", func(t *testing.T) {
+		monitor.ClearAlerts()
+		monitor.SetAlertLimit(5)
+
+		// Store alerts with identifiable IDs
+		for i := 0; i < 10; i++ {
+			alert := &Alert{
+				ID:        "order-" + string(rune('0'+i)),
+				RuleID:    "rule-1",
+				Protocol:  "mcp",
+				Message:   "Message",
+				Severity:  SeverityInfo,
+				Timestamp: time.Now().Add(time.Duration(i) * time.Second),
+			}
+			monitor.storeAlert(alert)
+		}
+
+		// Should have only the last 5 alerts
+		alerts := monitor.GetAlerts(10)
+		assert.Len(t, alerts, 5)
+
+		// Most recent should be first
+		assert.Equal(t, "order-9", alerts[0].ID)
+	})
+}
+
+func TestProtocolMonitor_GetAlertsFiltered(t *testing.T) {
+	log := newMonitorTestLogger()
+	monitor := NewProtocolMonitor(log)
+	defer monitor.Stop()
+
+	// Setup test data
+	baseTime := time.Now().Add(-time.Hour)
+	testAlerts := []*Alert{
+		{ID: "1", RuleID: "r1", Protocol: "mcp", Severity: SeverityInfo, Timestamp: baseTime, Resolved: false},
+		{ID: "2", RuleID: "r2", Protocol: "lsp", Severity: SeverityWarning, Timestamp: baseTime.Add(10 * time.Minute), Resolved: false},
+		{ID: "3", RuleID: "r3", Protocol: "mcp", Severity: SeverityError, Timestamp: baseTime.Add(20 * time.Minute), Resolved: true},
+		{ID: "4", RuleID: "r4", Protocol: "acp", Severity: SeverityCritical, Timestamp: baseTime.Add(30 * time.Minute), Resolved: false},
+		{ID: "5", RuleID: "r5", Protocol: "mcp", Severity: SeverityWarning, Timestamp: baseTime.Add(40 * time.Minute), Resolved: false},
+	}
+
+	monitor.ClearAlerts()
+	for _, alert := range testAlerts {
+		monitor.storeAlert(alert)
+	}
+
+	t.Run("filter by protocol", func(t *testing.T) {
+		filter := &AlertFilter{
+			Protocol:        "mcp",
+			IncludeResolved: true,
+		}
+		alerts := monitor.GetAlertsFiltered(filter)
+
+		assert.Len(t, alerts, 3)
+		for _, alert := range alerts {
+			assert.Equal(t, "mcp", alert.Protocol)
+		}
+	})
+
+	t.Run("filter by severity", func(t *testing.T) {
+		severity := SeverityWarning
+		filter := &AlertFilter{
+			Severity:        &severity,
+			IncludeResolved: true,
+		}
+		alerts := monitor.GetAlertsFiltered(filter)
+
+		assert.Len(t, alerts, 2)
+		for _, alert := range alerts {
+			assert.Equal(t, SeverityWarning, alert.Severity)
+		}
+	})
+
+	t.Run("filter excludes resolved by default", func(t *testing.T) {
+		filter := &AlertFilter{
+			Protocol:        "mcp",
+			IncludeResolved: false,
+		}
+		alerts := monitor.GetAlertsFiltered(filter)
+
+		assert.Len(t, alerts, 2) // Excludes the resolved one
+		for _, alert := range alerts {
+			assert.False(t, alert.Resolved)
+		}
+	})
+
+	t.Run("filter by time range", func(t *testing.T) {
+		filter := &AlertFilter{
+			StartTime:       baseTime.Add(15 * time.Minute),
+			EndTime:         baseTime.Add(35 * time.Minute),
+			IncludeResolved: true,
+		}
+		alerts := monitor.GetAlertsFiltered(filter)
+
+		assert.Len(t, alerts, 2)
+		for _, alert := range alerts {
+			assert.True(t, alert.Timestamp.After(baseTime.Add(15*time.Minute)) || alert.Timestamp.Equal(baseTime.Add(15*time.Minute)))
+			assert.True(t, alert.Timestamp.Before(baseTime.Add(35*time.Minute)) || alert.Timestamp.Equal(baseTime.Add(35*time.Minute)))
+		}
+	})
+
+	t.Run("filter with limit", func(t *testing.T) {
+		filter := &AlertFilter{
+			Limit:           2,
+			IncludeResolved: true,
+		}
+		alerts := monitor.GetAlertsFiltered(filter)
+
+		assert.Len(t, alerts, 2)
+		// Most recent first
+		assert.Equal(t, "5", alerts[0].ID)
+		assert.Equal(t, "4", alerts[1].ID)
+	})
+
+	t.Run("combined filters", func(t *testing.T) {
+		severity := SeverityWarning
+		filter := &AlertFilter{
+			Protocol:        "mcp",
+			Severity:        &severity,
+			IncludeResolved: true,
+		}
+		alerts := monitor.GetAlertsFiltered(filter)
+
+		assert.Len(t, alerts, 1)
+		assert.Equal(t, "5", alerts[0].ID)
+	})
+
+	t.Run("nil filter returns all", func(t *testing.T) {
+		alerts := monitor.GetAlertsFiltered(nil)
+		// Should return all unresolved (default IncludeResolved is false)
+		assert.Len(t, alerts, 4)
+	})
+}
+
+func TestProtocolMonitor_GetAlerts_BackwardCompatible(t *testing.T) {
+	log := newMonitorTestLogger()
+	monitor := NewProtocolMonitor(log)
+	defer monitor.Stop()
+
+	monitor.ClearAlerts()
+
+	// Store some alerts
+	for i := 0; i < 10; i++ {
+		alert := &Alert{
+			ID:        "compat-" + string(rune('0'+i)),
+			RuleID:    "rule-1",
+			Protocol:  "mcp",
+			Severity:  SeverityInfo,
+			Timestamp: time.Now(),
+		}
+		monitor.storeAlert(alert)
+	}
+
+	t.Run("GetAlerts respects limit", func(t *testing.T) {
+		alerts := monitor.GetAlerts(5)
+		assert.Len(t, alerts, 5)
+	})
+
+	t.Run("GetAlerts returns all when limit exceeds count", func(t *testing.T) {
+		alerts := monitor.GetAlerts(20)
+		assert.Len(t, alerts, 10)
+	})
+
+	t.Run("GetAlerts returns most recent first", func(t *testing.T) {
+		alerts := monitor.GetAlerts(10)
+		assert.Equal(t, "compat-9", alerts[0].ID)
+	})
+}
+
+func TestProtocolMonitor_SetAlertLimit(t *testing.T) {
+	log := newMonitorTestLogger()
+	monitor := NewProtocolMonitor(log)
+	defer monitor.Stop()
+
+	t.Run("increases limit", func(t *testing.T) {
+		monitor.ClearAlerts()
+		monitor.SetAlertLimit(5)
+
+		for i := 0; i < 5; i++ {
+			monitor.storeAlert(&Alert{ID: "a" + string(rune('0'+i)), Timestamp: time.Now()})
+		}
+
+		monitor.SetAlertLimit(10)
+
+		// Should still have all 5 alerts
+		assert.Equal(t, 5, monitor.GetAlertCount())
+
+		// Can now store more
+		for i := 0; i < 5; i++ {
+			monitor.storeAlert(&Alert{ID: "b" + string(rune('0'+i)), Timestamp: time.Now()})
+		}
+
+		assert.Equal(t, 10, monitor.GetAlertCount())
+	})
+
+	t.Run("decreases limit and trims history", func(t *testing.T) {
+		monitor.ClearAlerts()
+		monitor.SetAlertLimit(10)
+
+		for i := 0; i < 10; i++ {
+			monitor.storeAlert(&Alert{ID: "trim-" + string(rune('0'+i)), Timestamp: time.Now().Add(time.Duration(i) * time.Second)})
+		}
+
+		monitor.SetAlertLimit(5)
+
+		assert.Equal(t, 5, monitor.GetAlertCount())
+
+		// Should have kept the most recent 5
+		alerts := monitor.GetAlerts(5)
+		assert.Equal(t, "trim-9", alerts[0].ID)
+	})
+
+	t.Run("minimum limit is 1", func(t *testing.T) {
+		monitor.SetAlertLimit(0)
+		monitor.storeAlert(&Alert{ID: "min-test", Timestamp: time.Now()})
+		assert.Equal(t, 1, monitor.GetAlertCount())
+	})
+}
+
+func TestProtocolMonitor_ClearAlerts(t *testing.T) {
+	log := newMonitorTestLogger()
+	monitor := NewProtocolMonitor(log)
+	defer monitor.Stop()
+
+	// Store some alerts
+	for i := 0; i < 5; i++ {
+		monitor.storeAlert(&Alert{ID: "clear-" + string(rune('0'+i)), Timestamp: time.Now()})
+	}
+
+	assert.Equal(t, 5, monitor.GetAlertCount())
+
+	monitor.ClearAlerts()
+
+	assert.Equal(t, 0, monitor.GetAlertCount())
+	alerts := monitor.GetAlerts(10)
+	assert.Empty(t, alerts)
+}
+
+func TestProtocolMonitor_ResolveAlert(t *testing.T) {
+	log := newMonitorTestLogger()
+	monitor := NewProtocolMonitor(log)
+	defer monitor.Stop()
+
+	t.Run("resolves existing alert", func(t *testing.T) {
+		monitor.ClearAlerts()
+		alert := &Alert{
+			ID:        "resolve-test",
+			RuleID:    "rule-1",
+			Protocol:  "mcp",
+			Timestamp: time.Now(),
+			Resolved:  false,
+		}
+		monitor.storeAlert(alert)
+
+		resolved := monitor.ResolveAlert("resolve-test")
+		assert.True(t, resolved)
+
+		// Check the alert is now resolved
+		filter := &AlertFilter{IncludeResolved: true}
+		alerts := monitor.GetAlertsFiltered(filter)
+		require.Len(t, alerts, 1)
+		assert.True(t, alerts[0].Resolved)
+		assert.NotNil(t, alerts[0].ResolvedAt)
+	})
+
+	t.Run("returns false for non-existent alert", func(t *testing.T) {
+		resolved := monitor.ResolveAlert("non-existent")
+		assert.False(t, resolved)
+	})
+
+	t.Run("returns false for already resolved alert", func(t *testing.T) {
+		monitor.ClearAlerts()
+		resolvedTime := time.Now()
+		alert := &Alert{
+			ID:         "already-resolved",
+			RuleID:     "rule-1",
+			Protocol:   "mcp",
+			Timestamp:  time.Now(),
+			Resolved:   true,
+			ResolvedAt: &resolvedTime,
+		}
+		monitor.storeAlert(alert)
+
+		resolved := monitor.ResolveAlert("already-resolved")
+		assert.False(t, resolved)
+	})
+}
+
+func TestProtocolMonitor_GetAlertCount(t *testing.T) {
+	log := newMonitorTestLogger()
+	monitor := NewProtocolMonitor(log)
+	defer monitor.Stop()
+
+	t.Run("empty history returns 0", func(t *testing.T) {
+		monitor.ClearAlerts()
+		assert.Equal(t, 0, monitor.GetAlertCount())
+	})
+
+	t.Run("returns correct count", func(t *testing.T) {
+		monitor.ClearAlerts()
+		for i := 0; i < 7; i++ {
+			monitor.storeAlert(&Alert{ID: "count-" + string(rune('0'+i)), Timestamp: time.Now()})
+		}
+		assert.Equal(t, 7, monitor.GetAlertCount())
+	})
+}
+
+func TestAlertFilter_Structure(t *testing.T) {
+	severity := SeverityError
+	now := time.Now()
+
+	filter := AlertFilter{
+		Severity:        &severity,
+		Protocol:        "mcp",
+		StartTime:       now.Add(-time.Hour),
+		EndTime:         now,
+		Limit:           100,
+		IncludeResolved: true,
+	}
+
+	assert.Equal(t, SeverityError, *filter.Severity)
+	assert.Equal(t, "mcp", filter.Protocol)
+	assert.Equal(t, 100, filter.Limit)
+	assert.True(t, filter.IncludeResolved)
+}
+
+func TestProtocolMonitor_ConcurrentAlertAccess(t *testing.T) {
+	log := newMonitorTestLogger()
+	monitor := NewProtocolMonitor(log)
+	defer monitor.Stop()
+
+	done := make(chan bool)
+
+	// Writer goroutine
+	go func() {
+		for i := 0; i < 100; i++ {
+			monitor.storeAlert(&Alert{
+				ID:        "concurrent-" + string(rune(i)),
+				Protocol:  "mcp",
+				Timestamp: time.Now(),
+			})
+		}
+		done <- true
+	}()
+
+	// Reader goroutine
+	go func() {
+		for i := 0; i < 100; i++ {
+			_ = monitor.GetAlerts(10)
+			_ = monitor.GetAlertCount()
+		}
+		done <- true
+	}()
+
+	// Wait for both goroutines
+	<-done
+	<-done
+
+	// Should not panic or have race conditions
+	count := monitor.GetAlertCount()
+	assert.GreaterOrEqual(t, count, 1)
+}
+
+func BenchmarkProtocolMonitor_StoreAlert(b *testing.B) {
+	log := logrus.New()
+	log.SetLevel(logrus.PanicLevel)
+	monitor := NewProtocolMonitor(log)
+	defer monitor.Stop()
+
+	alert := &Alert{
+		ID:        "bench-alert",
+		RuleID:    "rule-1",
+		Protocol:  "mcp",
+		Message:   "Benchmark alert",
+		Severity:  SeverityInfo,
+		Timestamp: time.Now(),
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		monitor.storeAlert(alert)
+	}
+}
+
+func BenchmarkProtocolMonitor_GetAlertsFiltered(b *testing.B) {
+	log := logrus.New()
+	log.SetLevel(logrus.PanicLevel)
+	monitor := NewProtocolMonitor(log)
+	defer monitor.Stop()
+
+	// Store some alerts
+	for i := 0; i < 100; i++ {
+		monitor.storeAlert(&Alert{
+			ID:        "bench-" + string(rune(i)),
+			Protocol:  "mcp",
+			Severity:  SeverityInfo,
+			Timestamp: time.Now(),
+		})
+	}
+
+	filter := &AlertFilter{
+		Protocol:        "mcp",
+		Limit:           50,
+		IncludeResolved: true,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = monitor.GetAlertsFiltered(filter)
+	}
+}

@@ -561,7 +561,7 @@ func (e *EnsembleService) confidenceWeightedVoting(responses []*models.LLMRespon
 	return nil
 }
 
-func (e *EnsembleService) majorityVoting(responses []*models.LLMResponse, _ *models.EnsembleConfig) *models.LLMResponse {
+func (e *EnsembleService) majorityVoting(responses []*models.LLMResponse, config *models.EnsembleConfig) *models.LLMResponse {
 	if len(responses) == 0 {
 		return nil
 	}
@@ -605,7 +605,25 @@ func (e *EnsembleService) majorityVoting(responses []*models.LLMResponse, _ *mod
 		}
 	}
 
-	// Select the response with majority content
+	// Check if we have a true majority (> 50% of votes)
+	// If not, fallback to confidence-based selection when FallbackToBest is enabled
+	hasTrueMajority := float64(maxCount) > float64(len(responses))/2.0
+	fallbackEnabled := config != nil && config.FallbackToBest
+
+	if !hasTrueMajority && fallbackEnabled {
+		// No true majority - fallback to selecting by highest confidence
+		selectedResponse = e.selectBestResponse(responses)
+		if selectedResponse.Metadata == nil {
+			selectedResponse.Metadata = make(map[string]interface{})
+		}
+		selectedResponse.Metadata["voting_method"] = "majority_fallback_confidence"
+		selectedResponse.Metadata["fallback_reason"] = "no_true_majority"
+		selectedResponse.Metadata["max_vote_count"] = maxCount
+		selectedResponse.Metadata["total_responses"] = len(responses)
+		return selectedResponse
+	}
+
+	// Select the response with majority/plurality content
 	selectedResponse.Selected = true
 	selectedResponse.SelectionScore = float64(maxCount) / float64(len(responses))
 
@@ -613,7 +631,11 @@ func (e *EnsembleService) majorityVoting(responses []*models.LLMResponse, _ *mod
 	if selectedResponse.Metadata == nil {
 		selectedResponse.Metadata = make(map[string]interface{})
 	}
-	selectedResponse.Metadata["voting_method"] = "majority"
+	if hasTrueMajority {
+		selectedResponse.Metadata["voting_method"] = "majority"
+	} else {
+		selectedResponse.Metadata["voting_method"] = "plurality"
+	}
 	selectedResponse.Metadata["vote_count"] = maxCount
 	selectedResponse.Metadata["total_responses"] = len(responses)
 
