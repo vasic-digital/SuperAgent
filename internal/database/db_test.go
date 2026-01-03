@@ -1550,14 +1550,14 @@ func TestRowInterfaceScan(t *testing.T) {
 		var i int
 		var i64 int64
 		var b bool
-		var t time.Time
-		err := row.Scan(&s, &i, &i64, &b, &t)
+		var ts time.Time
+		err := row.Scan(&s, &i, &i64, &b, &ts)
 		assert.NoError(t, err)
 		assert.Equal(t, "text", s)
 		assert.Equal(t, 1, i)
 		assert.Equal(t, int64(2), i64)
 		assert.True(t, b)
-		assert.Equal(t, now, t)
+		assert.Equal(t, now, ts)
 	})
 }
 
