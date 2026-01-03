@@ -2,6 +2,8 @@ package adapters
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -236,12 +238,20 @@ func TestExtendedProviderRegistry_GetHealthyProviders(t *testing.T) {
 }
 
 func TestExtendedProviderRegistry_Complete(t *testing.T) {
+	// Create mock server that returns OpenAI-compatible response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"choices":[{"message":{"content":"Hello back!"}}]}`))
+	}))
+	defer server.Close()
+
 	cfg := &ExtendedRegistryConfig{
 		AutoVerifyNewProviders: false,
 	}
 	registry, _ := NewExtendedProviderRegistry(cfg)
 
-	registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{"model"})
+	registry.RegisterProvider(context.Background(), "test", "Test", "key", server.URL, []string{"model"})
 
 	// Verify the model first
 	registry.VerifyModel(context.Background(), "model", "test")

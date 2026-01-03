@@ -190,8 +190,8 @@ func TestAdvancedDebateService_ConductAdvancedDebate_EmptyParticipants(t *testin
 	}
 
 	result, err := ads.ConductAdvancedDebate(context.Background(), config)
-	require.NoError(t, err)
-	require.NotNil(t, result)
-
-	assert.Empty(t, result.Participants)
+	// Empty participants should trigger security validation error
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "security validation failed")
 }

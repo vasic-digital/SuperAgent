@@ -1,10 +1,26 @@
 package adapters
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"sync"
 	"time"
+)
+
+// HTTP helpers to avoid import issues in tests
+var (
+	jsonMarshal               = json.Marshal
+	jsonDecode                = func(r io.Reader, v interface{}) error { return json.NewDecoder(r).Decode(v) }
+	httpNewRequestWithContext = func(ctx context.Context, method, url string, body []byte) (*http.Request, error) {
+		return http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(body))
+	}
+	httpClient = func() *http.Client {
+		return &http.Client{Timeout: 60 * time.Second}
+	}
 )
 
 // Provider interface that adapters implement
@@ -107,13 +123,272 @@ func (a *ProviderAdapter) Complete(ctx context.Context, model, prompt string, op
 	start := time.Now()
 	a.recordRequest()
 
-	// This is a stub - actual implementation would call real provider
-	// For now, just return an error indicating provider not configured
+	// Build the API request based on provider type
+	var response string
+	var err error
+
+	maxTokens := getIntOption(options, "max_tokens", 1024)
+	temperature := getFloat64Option(options, "temperature", 0.7)
+
+	switch a.providerName {
+	case "claude", "anthropic":
+		response, err = a.completeAnthropic(ctx, model, prompt, maxTokens, temperature)
+	case "openai", "gpt":
+		response, err = a.completeOpenAI(ctx, model, prompt, maxTokens, temperature)
+	case "gemini", "google":
+		response, err = a.completeGemini(ctx, model, prompt, maxTokens, temperature)
+	case "deepseek":
+		response, err = a.completeDeepSeek(ctx, model, prompt, maxTokens, temperature)
+	case "ollama":
+		response, err = a.completeOllama(ctx, model, prompt, maxTokens, temperature)
+	default:
+		response, err = a.completeGeneric(ctx, model, prompt, maxTokens, temperature)
+	}
+
 	latency := time.Since(start).Milliseconds()
 
-	// Simulate a successful response for testing
+	if err != nil {
+		a.recordFailure(latency)
+		return "", fmt.Errorf("provider %s completion failed: %w", a.providerName, err)
+	}
+
 	a.recordSuccess(latency)
-	return fmt.Sprintf("Response from %s model %s", a.providerName, model), nil
+	return response, nil
+}
+
+// completeAnthropic handles Anthropic/Claude API calls
+func (a *ProviderAdapter) completeAnthropic(ctx context.Context, model, prompt string, maxTokens int, temperature float64) (string, error) {
+	if a.apiKey == "" {
+		return "", fmt.Errorf("anthropic API key not configured")
+	}
+
+	baseURL := a.baseURL
+	if baseURL == "" {
+		baseURL = "https://api.anthropic.com/v1"
+	}
+
+	reqBody := map[string]interface{}{
+		"model":      model,
+		"max_tokens": maxTokens,
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+	}
+
+	return a.makeHTTPRequest(ctx, baseURL+"/messages", reqBody, map[string]string{
+		"x-api-key":         a.apiKey,
+		"anthropic-version": "2023-06-01",
+		"Content-Type":      "application/json",
+	}, "anthropic")
+}
+
+// completeOpenAI handles OpenAI API calls
+func (a *ProviderAdapter) completeOpenAI(ctx context.Context, model, prompt string, maxTokens int, temperature float64) (string, error) {
+	if a.apiKey == "" {
+		return "", fmt.Errorf("openai API key not configured")
+	}
+
+	baseURL := a.baseURL
+	if baseURL == "" {
+		baseURL = "https://api.openai.com/v1"
+	}
+
+	reqBody := map[string]interface{}{
+		"model":       model,
+		"max_tokens":  maxTokens,
+		"temperature": temperature,
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+	}
+
+	return a.makeHTTPRequest(ctx, baseURL+"/chat/completions", reqBody, map[string]string{
+		"Authorization": "Bearer " + a.apiKey,
+		"Content-Type":  "application/json",
+	}, "openai")
+}
+
+// completeGemini handles Google Gemini API calls
+func (a *ProviderAdapter) completeGemini(ctx context.Context, model, prompt string, maxTokens int, temperature float64) (string, error) {
+	if a.apiKey == "" {
+		return "", fmt.Errorf("gemini API key not configured")
+	}
+
+	baseURL := a.baseURL
+	if baseURL == "" {
+		baseURL = "https://generativelanguage.googleapis.com/v1"
+	}
+
+	reqBody := map[string]interface{}{
+		"contents": []map[string]interface{}{
+			{
+				"parts": []map[string]string{
+					{"text": prompt},
+				},
+			},
+		},
+		"generationConfig": map[string]interface{}{
+			"maxOutputTokens": maxTokens,
+			"temperature":     temperature,
+		},
+	}
+
+	endpoint := fmt.Sprintf("%s/models/%s:generateContent?key=%s", baseURL, model, a.apiKey)
+	return a.makeHTTPRequest(ctx, endpoint, reqBody, map[string]string{
+		"Content-Type": "application/json",
+	}, "gemini")
+}
+
+// completeDeepSeek handles DeepSeek API calls
+func (a *ProviderAdapter) completeDeepSeek(ctx context.Context, model, prompt string, maxTokens int, temperature float64) (string, error) {
+	if a.apiKey == "" {
+		return "", fmt.Errorf("deepseek API key not configured")
+	}
+
+	baseURL := a.baseURL
+	if baseURL == "" {
+		baseURL = "https://api.deepseek.com/v1"
+	}
+
+	reqBody := map[string]interface{}{
+		"model":       model,
+		"max_tokens":  maxTokens,
+		"temperature": temperature,
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+	}
+
+	return a.makeHTTPRequest(ctx, baseURL+"/chat/completions", reqBody, map[string]string{
+		"Authorization": "Bearer " + a.apiKey,
+		"Content-Type":  "application/json",
+	}, "openai") // DeepSeek uses OpenAI-compatible format
+}
+
+// completeOllama handles local Ollama API calls
+func (a *ProviderAdapter) completeOllama(ctx context.Context, model, prompt string, maxTokens int, temperature float64) (string, error) {
+	baseURL := a.baseURL
+	if baseURL == "" {
+		baseURL = "http://localhost:11434"
+	}
+
+	reqBody := map[string]interface{}{
+		"model":  model,
+		"prompt": prompt,
+		"stream": false,
+		"options": map[string]interface{}{
+			"num_predict": maxTokens,
+			"temperature": temperature,
+		},
+	}
+
+	return a.makeHTTPRequest(ctx, baseURL+"/api/generate", reqBody, map[string]string{
+		"Content-Type": "application/json",
+	}, "ollama")
+}
+
+// completeGeneric handles generic OpenAI-compatible API calls
+func (a *ProviderAdapter) completeGeneric(ctx context.Context, model, prompt string, maxTokens int, temperature float64) (string, error) {
+	baseURL := a.baseURL
+	if baseURL == "" {
+		return "", fmt.Errorf("base URL required for generic provider")
+	}
+
+	reqBody := map[string]interface{}{
+		"model":       model,
+		"max_tokens":  maxTokens,
+		"temperature": temperature,
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+	}
+
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+	if a.apiKey != "" {
+		headers["Authorization"] = "Bearer " + a.apiKey
+	}
+
+	return a.makeHTTPRequest(ctx, baseURL+"/chat/completions", reqBody, headers, "openai")
+}
+
+// makeHTTPRequest performs the HTTP request and extracts the response content
+func (a *ProviderAdapter) makeHTTPRequest(ctx context.Context, url string, body interface{}, headers map[string]string, responseFormat string) (string, error) {
+	jsonBody, err := jsonMarshal(body)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := httpNewRequestWithContext(ctx, "POST", url, jsonBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	client := httpClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return "", fmt.Errorf("API returned status %d", resp.StatusCode)
+	}
+
+	var result map[string]interface{}
+	if err := jsonDecode(resp.Body, &result); err != nil {
+		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return extractContent(result, responseFormat)
+}
+
+// extractContent extracts the text content from different API response formats
+func extractContent(result map[string]interface{}, format string) (string, error) {
+	switch format {
+	case "anthropic":
+		if content, ok := result["content"].([]interface{}); ok && len(content) > 0 {
+			if block, ok := content[0].(map[string]interface{}); ok {
+				if text, ok := block["text"].(string); ok {
+					return text, nil
+				}
+			}
+		}
+	case "openai":
+		if choices, ok := result["choices"].([]interface{}); ok && len(choices) > 0 {
+			if choice, ok := choices[0].(map[string]interface{}); ok {
+				if message, ok := choice["message"].(map[string]interface{}); ok {
+					if content, ok := message["content"].(string); ok {
+						return content, nil
+					}
+				}
+			}
+		}
+	case "gemini":
+		if candidates, ok := result["candidates"].([]interface{}); ok && len(candidates) > 0 {
+			if candidate, ok := candidates[0].(map[string]interface{}); ok {
+				if content, ok := candidate["content"].(map[string]interface{}); ok {
+					if parts, ok := content["parts"].([]interface{}); ok && len(parts) > 0 {
+						if part, ok := parts[0].(map[string]interface{}); ok {
+							if text, ok := part["text"].(string); ok {
+								return text, nil
+							}
+						}
+					}
+				}
+			}
+		}
+	case "ollama":
+		if response, ok := result["response"].(string); ok {
+			return response, nil
+		}
+	}
+	return "", fmt.Errorf("could not extract content from %s response", format)
 }
 
 // CompleteStream sends a streaming completion request

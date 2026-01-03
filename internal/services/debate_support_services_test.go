@@ -41,7 +41,7 @@ func TestDebateMonitoringService_StartMonitoring(t *testing.T) {
 	monitoringID, err := service.StartMonitoring(ctx, config)
 	require.NoError(t, err)
 	assert.NotEmpty(t, monitoringID)
-	assert.Contains(t, monitoringID, "monitoring-")
+	assert.Contains(t, monitoringID, "mon-")
 }
 
 func TestDebateMonitoringService_StopMonitoring(t *testing.T) {
@@ -49,7 +49,20 @@ func TestDebateMonitoringService_StopMonitoring(t *testing.T) {
 	service := NewDebateMonitoringService(log)
 	ctx := context.Background()
 
-	err := service.StopMonitoring(ctx, "monitoring-123")
+	// First start monitoring
+	debateConfig := &DebateConfig{
+		DebateID:  "debate-stop-test",
+		Topic:     "Test Topic",
+		MaxRounds: 3,
+		Participants: []ParticipantConfig{
+			{ParticipantID: "p1", Name: "Participant 1", Role: "proposer"},
+		},
+	}
+	monitoringID, err := service.StartMonitoring(ctx, debateConfig)
+	require.NoError(t, err)
+
+	// Now stop it
+	err = service.StopMonitoring(ctx, monitoringID)
 	assert.NoError(t, err)
 }
 
@@ -58,12 +71,25 @@ func TestDebateMonitoringService_GetStatus(t *testing.T) {
 	service := NewDebateMonitoringService(log)
 	ctx := context.Background()
 
+	// First start monitoring for the debate
+	debateConfig := &DebateConfig{
+		DebateID:  "debate-123",
+		Topic:     "Test Topic",
+		MaxRounds: 3,
+		Participants: []ParticipantConfig{
+			{ParticipantID: "p1", Name: "Participant 1", Role: "proposer"},
+		},
+	}
+	_, err := service.StartMonitoring(ctx, debateConfig)
+	require.NoError(t, err)
+
+	// Now get the status
 	status, err := service.GetStatus(ctx, "debate-123")
 	require.NoError(t, err)
 	require.NotNil(t, status)
 	assert.Equal(t, "debate-123", status.DebateID)
-	assert.Equal(t, "completed", status.Status)
-	assert.Equal(t, 3, status.CurrentRound)
+	assert.Equal(t, "pending", status.Status)
+	assert.Equal(t, 0, status.CurrentRound)
 	assert.Equal(t, 3, status.TotalRounds)
 	assert.NotEmpty(t, status.Participants)
 }
@@ -108,7 +134,7 @@ func TestDebatePerformanceService_RecordMetrics(t *testing.T) {
 		QualityScore: 0.85,
 	}
 
-	err := service.RecordMetrics(ctx, metrics)
+	err := service.RecordMetrics(ctx, "test-debate-id", metrics)
 	assert.NoError(t, err)
 }
 
@@ -117,9 +143,18 @@ func TestDebatePerformanceService_GetMetrics(t *testing.T) {
 	service := NewDebatePerformanceService(log)
 	ctx := context.Background()
 
+	// First record some metrics
+	metricsToRecord := &PerformanceMetrics{
+		Duration:     5 * time.Minute,
+		TotalRounds:  3,
+		QualityScore: 0.85,
+	}
+	err := service.RecordMetrics(ctx, "test-debate-1", metricsToRecord)
+	require.NoError(t, err)
+
 	timeRange := TimeRange{
 		StartTime: time.Now().Add(-1 * time.Hour),
-		EndTime:   time.Now(),
+		EndTime:   time.Now().Add(1 * time.Hour),
 	}
 
 	metrics, err := service.GetMetrics(ctx, timeRange)
@@ -195,10 +230,24 @@ func TestDebateResilienceService_RecoverDebate(t *testing.T) {
 	service := NewDebateResilienceService(log)
 	ctx := context.Background()
 
-	result, err := service.RecoverDebate(ctx, "debate-123")
-	assert.NoError(t, err)
-	// Currently returns nil
-	assert.Nil(t, result)
+	// First register a debate
+	debateConfig := &DebateConfig{
+		DebateID:  "debate-123",
+		Topic:     "Test Topic",
+		MaxRounds: 3,
+		Participants: []ParticipantConfig{
+			{ParticipantID: "p1", Name: "Participant 1", Role: "proposer"},
+		},
+	}
+	state := service.RegisterDebate(debateConfig)
+	require.NotNil(t, state)
+	assert.Equal(t, "active", state.Status)
+	assert.Equal(t, "debate-123", state.DebateID)
+
+	// Recovery without debate service configured returns error
+	_, err := service.RecoverDebate(ctx, "debate-123")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "debate service not configured")
 }
 
 // DebateReportingService Tests
@@ -226,7 +275,8 @@ func TestDebateReportingService_GenerateReport(t *testing.T) {
 	report, err := service.GenerateReport(ctx, result)
 	require.NoError(t, err)
 	require.NotNil(t, report)
-	assert.Equal(t, "report-debate-123", report.ReportID)
+	assert.NotEmpty(t, report.ReportID)
+	assert.Contains(t, report.ReportID, "report-")
 	assert.Equal(t, "debate-123", report.DebateID)
 	assert.NotEmpty(t, report.Summary)
 	assert.NotEmpty(t, report.KeyFindings)
@@ -238,7 +288,18 @@ func TestDebateReportingService_ExportReport(t *testing.T) {
 	service := NewDebateReportingService(log)
 	ctx := context.Background()
 
-	data, err := service.ExportReport(ctx, "report-123", "json")
+	// First generate a report
+	result := &DebateResult{
+		DebateID:     "debate-456",
+		TotalRounds:  3,
+		QualityScore: 0.85,
+		Success:      true,
+	}
+	report, err := service.GenerateReport(ctx, result)
+	require.NoError(t, err)
+
+	// Now export the report
+	data, err := service.ExportReport(ctx, report.ReportID, "json")
 	require.NoError(t, err)
 	assert.NotEmpty(t, data)
 }
@@ -262,6 +323,13 @@ func TestDebateSecurityService_ValidateDebateRequest(t *testing.T) {
 		DebateID:  "debate-123",
 		Topic:     "Test Topic",
 		MaxRounds: 3,
+		Participants: []ParticipantConfig{
+			{
+				ParticipantID: "participant-1",
+				Name:          "Test Participant",
+				Role:          "proposer",
+			},
+		},
 	}
 
 	err := service.ValidateDebateRequest(ctx, config)
@@ -343,6 +411,20 @@ func TestAdvancedDebateService_GetDebateStatus(t *testing.T) {
 	)
 
 	ctx := context.Background()
+
+	// First start monitoring for the debate
+	debateConfig := &DebateConfig{
+		DebateID:  "debate-123",
+		Topic:     "Test Topic",
+		MaxRounds: 3,
+		Participants: []ParticipantConfig{
+			{ParticipantID: "p1", Name: "Participant 1", Role: "proposer"},
+		},
+	}
+	_, err := monitoringService.StartMonitoring(ctx, debateConfig)
+	require.NoError(t, err)
+
+	// Now get the status
 	status, err := service.GetDebateStatus(ctx, "debate-123")
 	require.NoError(t, err)
 	require.NotNil(t, status)

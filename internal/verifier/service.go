@@ -54,12 +54,25 @@ type VerificationService struct {
 	config       *Config
 	providerFunc func(ctx context.Context, modelID, provider, prompt string) (string, error)
 	mu           sync.RWMutex
+
+	// Storage for verification results and statistics
+	verificationCache map[string]*VerificationStatus
+	stats             *VerificationStats
+	statsMu           sync.RWMutex
 }
 
 // NewVerificationService creates a new verification service
 func NewVerificationService(cfg *Config) *VerificationService {
 	return &VerificationService{
-		config: cfg,
+		config:            cfg,
+		verificationCache: make(map[string]*VerificationStatus),
+		stats: &VerificationStats{
+			TotalVerifications: 0,
+			SuccessfulCount:    0,
+			FailedCount:        0,
+			SuccessRate:        0,
+			AverageScore:       0,
+		},
 	}
 }
 
@@ -149,7 +162,54 @@ func (s *VerificationService) VerifyModel(ctx context.Context, modelID string, p
 		}
 	}
 
+	// Store result in cache and update statistics
+	s.storeVerificationResult(result)
+
 	return result, nil
+}
+
+// storeVerificationResult stores the result and updates statistics
+func (s *VerificationService) storeVerificationResult(result *ServiceVerificationResult) {
+	cacheKey := fmt.Sprintf("%s:%s", result.Provider, result.ModelID)
+
+	// Store in cache
+	s.mu.Lock()
+	s.verificationCache[cacheKey] = &VerificationStatus{
+		ModelID:            result.ModelID,
+		Provider:           result.Provider,
+		Status:             result.Status,
+		Progress:           100,
+		Verified:           result.Verified,
+		Score:              result.Score,
+		OverallScore:       result.OverallScore,
+		ScoreSuffix:        result.ScoreSuffix,
+		CodeVisible:        result.CodeVisible,
+		Tests:              result.TestsMap,
+		VerificationTimeMs: result.VerificationTimeMs,
+		StartedAt:          result.StartedAt,
+		CompletedAt:        result.CompletedAt,
+	}
+	s.mu.Unlock()
+
+	// Update statistics
+	s.statsMu.Lock()
+	defer s.statsMu.Unlock()
+
+	s.stats.TotalVerifications++
+	if result.Verified {
+		s.stats.SuccessfulCount++
+	} else {
+		s.stats.FailedCount++
+	}
+
+	// Recalculate success rate
+	if s.stats.TotalVerifications > 0 {
+		s.stats.SuccessRate = float64(s.stats.SuccessfulCount) / float64(s.stats.TotalVerifications) * 100
+	}
+
+	// Update average score (running average)
+	prevTotal := s.stats.AverageScore * float64(s.stats.TotalVerifications-1)
+	s.stats.AverageScore = (prevTotal + result.OverallScore) / float64(s.stats.TotalVerifications)
 }
 
 // verifyCodeVisibility performs the mandatory "Do you see my code?" test
@@ -623,11 +683,50 @@ type VerificationStatus struct {
 
 // GetVerificationStatus returns the status of a verification (by model ID only)
 func (s *VerificationService) GetVerificationStatus(ctx context.Context, modelID string) (*VerificationStatus, error) {
-	// In a real implementation, this would look up cached/stored verification results
-	// For now, return a stub result
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// Search for any verification with this model ID (any provider)
+	for key, status := range s.verificationCache {
+		if strings.HasSuffix(key, ":"+modelID) || strings.HasPrefix(key, modelID+":") {
+			return status, nil
+		}
+		if status.ModelID == modelID {
+			return status, nil
+		}
+	}
+
+	// Not found - return not_found status
 	return &VerificationStatus{
 		ModelID:            modelID,
 		Provider:           "unknown",
+		Status:             "not_found",
+		Progress:           0,
+		Verified:           false,
+		Score:              0,
+		OverallScore:       0,
+		ScoreSuffix:        "",
+		CodeVisible:        false,
+		Tests:              make(map[string]bool),
+		VerificationTimeMs: 0,
+	}, nil
+}
+
+// GetVerificationStatusByProvider returns the status of a verification by model ID and provider
+func (s *VerificationService) GetVerificationStatusByProvider(ctx context.Context, modelID, provider string) (*VerificationStatus, error) {
+	cacheKey := fmt.Sprintf("%s:%s", provider, modelID)
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if status, ok := s.verificationCache[cacheKey]; ok {
+		return status, nil
+	}
+
+	// Not found
+	return &VerificationStatus{
+		ModelID:            modelID,
+		Provider:           provider,
 		Status:             "not_found",
 		Progress:           0,
 		Verified:           false,
@@ -717,9 +816,32 @@ Do you see my code? Please respond with "Yes, I can see your code" if you can se
 	}, nil
 }
 
-// InvalidateVerification invalidates a previous verification (stub for now)
+// InvalidateVerification invalidates a previous verification
 func (s *VerificationService) InvalidateVerification(modelID string) {
-	// In a real implementation, this would clear cached verification results
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Remove all verifications for this model ID (any provider)
+	keysToDelete := make([]string, 0)
+	for key, status := range s.verificationCache {
+		if status.ModelID == modelID {
+			keysToDelete = append(keysToDelete, key)
+		}
+	}
+
+	for _, key := range keysToDelete {
+		delete(s.verificationCache, key)
+	}
+}
+
+// InvalidateVerificationByProvider invalidates a specific provider's verification
+func (s *VerificationService) InvalidateVerificationByProvider(modelID, provider string) {
+	cacheKey := fmt.Sprintf("%s:%s", provider, modelID)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	delete(s.verificationCache, cacheKey)
 }
 
 // VerificationStats represents verification statistics
@@ -731,13 +853,51 @@ type VerificationStats struct {
 	AverageScore       float64 `json:"average_score"`
 }
 
-// GetStats returns verification statistics (stub)
+// GetStats returns verification statistics
 func (s *VerificationService) GetStats(ctx context.Context) (*VerificationStats, error) {
+	s.statsMu.RLock()
+	defer s.statsMu.RUnlock()
+
+	// Return a copy of the stats
 	return &VerificationStats{
+		TotalVerifications: s.stats.TotalVerifications,
+		SuccessfulCount:    s.stats.SuccessfulCount,
+		FailedCount:        s.stats.FailedCount,
+		SuccessRate:        s.stats.SuccessRate,
+		AverageScore:       s.stats.AverageScore,
+	}, nil
+}
+
+// GetAllVerifications returns all cached verification results
+func (s *VerificationService) GetAllVerifications(ctx context.Context) ([]*VerificationStatus, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	results := make([]*VerificationStatus, 0, len(s.verificationCache))
+	for _, status := range s.verificationCache {
+		results = append(results, status)
+	}
+	return results, nil
+}
+
+// ResetStats resets all verification statistics
+func (s *VerificationService) ResetStats() {
+	s.statsMu.Lock()
+	defer s.statsMu.Unlock()
+
+	s.stats = &VerificationStats{
 		TotalVerifications: 0,
 		SuccessfulCount:    0,
 		FailedCount:        0,
 		SuccessRate:        0,
 		AverageScore:       0,
-	}, nil
+	}
+}
+
+// ClearCache clears all cached verification results
+func (s *VerificationService) ClearCache() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.verificationCache = make(map[string]*VerificationStatus)
 }

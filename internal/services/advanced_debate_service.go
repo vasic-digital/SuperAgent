@@ -67,7 +67,7 @@ func (ads *AdvancedDebateService) ConductAdvancedDebate(
 
 	// Record performance metrics
 	metrics := ads.performanceService.CalculateMetrics(result)
-	if err := ads.performanceService.RecordMetrics(ctx, metrics); err != nil {
+	if err := ads.performanceService.RecordMetrics(ctx, result.DebateID, metrics); err != nil {
 		ads.logger.Warnf("Failed to record performance metrics: %v", err)
 	}
 

@@ -2,6 +2,8 @@ package adapters
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -62,7 +64,15 @@ func TestNewProviderAdapter_WithConfig(t *testing.T) {
 }
 
 func TestProviderAdapter_Complete(t *testing.T) {
-	adapter, _ := NewProviderAdapter("test", "Test Provider", "key", "url", nil)
+	// Create mock server that returns OpenAI-compatible response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"choices":[{"message":{"content":"Hello back!"}}]}`))
+	}))
+	defer server.Close()
+
+	adapter, _ := NewProviderAdapter("test", "Test Provider", "key", server.URL, nil)
 
 	response, err := adapter.Complete(context.Background(), "gpt-4", "Hello", nil)
 	if err != nil {
@@ -155,7 +165,15 @@ func TestProviderAdapter_GetCapabilities(t *testing.T) {
 }
 
 func TestProviderAdapter_GetMetrics(t *testing.T) {
-	adapter, _ := NewProviderAdapter("test", "Test Provider", "key", "url", nil)
+	// Create mock server that returns OpenAI-compatible response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"choices":[{"message":{"content":"Hello!"}}]}`))
+	}))
+	defer server.Close()
+
+	adapter, _ := NewProviderAdapter("test", "Test Provider", "key", server.URL, nil)
 
 	// Make some requests
 	adapter.Complete(context.Background(), "model", "prompt", nil)

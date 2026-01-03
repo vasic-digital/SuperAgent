@@ -243,25 +243,173 @@ func (p *SimpleOpenRouterProvider) nextDelay(currentDelay time.Duration) time.Du
 	return nextDelay
 }
 
-// CompleteStream implements streaming completion
+// CompleteStream implements streaming completion using Server-Sent Events
 func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+	ch := make(chan *models.LLMResponse, 100)
 
-	ch := make(chan *models.LLMResponse, 1)
+	// Create streaming request
+	type OpenRouterStreamRequest struct {
+		Model       string           `json:"model"`
+		Messages    []models.Message `json:"messages"`
+		Prompt      string           `json:"prompt,omitempty"`
+		MaxTokens   int              `json:"max_tokens,omitempty"`
+		Temperature float64          `json:"temperature,omitempty"`
+		Stream      bool             `json:"stream"`
+	}
+
+	orReq := OpenRouterStreamRequest{
+		Model:       req.ModelParams.Model,
+		Messages:    req.Messages,
+		Prompt:      req.Prompt,
+		MaxTokens:   req.ModelParams.MaxTokens,
+		Temperature: req.ModelParams.Temperature,
+		Stream:      true,
+	}
+
+	jsonData, err := json.Marshal(orReq)
+	if err != nil {
+		close(ch)
+		return nil, fmt.Errorf("failed to marshal OpenRouter stream request: %w", err)
+	}
 
 	go func() {
 		defer close(ch)
 
-		// OpenRouter streaming not implemented in this simple version
-		ch <- &models.LLMResponse{
-			ID:           "stream-not-supported",
-			RequestID:    req.ID,
-			ProviderID:   "openrouter",
-			ProviderName: "OpenRouter",
-			Content:      "Streaming not supported by OpenRouter provider",
-			FinishReason: "error",
-			CreatedAt:    time.Now(),
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+"/chat/completions", bytes.NewBuffer(jsonData))
+		if err != nil {
+			ch <- &models.LLMResponse{
+				ID:           "stream-error",
+				RequestID:    req.ID,
+				ProviderID:   "openrouter",
+				ProviderName: "OpenRouter",
+				Content:      fmt.Sprintf("Failed to create request: %v", err),
+				FinishReason: "error",
+				CreatedAt:    time.Now(),
+			}
+			return
+		}
+
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
+		httpReq.Header.Set("HTTP-Referer", "superagent")
+		httpReq.Header.Set("Accept", "text/event-stream")
+
+		resp, err := p.client.Do(httpReq)
+		if err != nil {
+			ch <- &models.LLMResponse{
+				ID:           "stream-error",
+				RequestID:    req.ID,
+				ProviderID:   "openrouter",
+				ProviderName: "OpenRouter",
+				Content:      fmt.Sprintf("Request failed: %v", err),
+				FinishReason: "error",
+				CreatedAt:    time.Now(),
+			}
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode >= 400 {
+			ch <- &models.LLMResponse{
+				ID:           "stream-error",
+				RequestID:    req.ID,
+				ProviderID:   "openrouter",
+				ProviderName: "OpenRouter",
+				Content:      fmt.Sprintf("API returned status %d", resp.StatusCode),
+				FinishReason: "error",
+				CreatedAt:    time.Now(),
+			}
+			return
+		}
+
+		// Read SSE stream
+		reader := resp.Body
+		buf := make([]byte, 4096)
+		var contentBuilder bytes.Buffer
+		chunkIndex := 0
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			n, err := reader.Read(buf)
+			if err != nil {
+				if err.Error() != "EOF" {
+					// Send final chunk with accumulated content
+					if contentBuilder.Len() > 0 {
+						ch <- &models.LLMResponse{
+							ID:           fmt.Sprintf("stream-%d", chunkIndex),
+							RequestID:    req.ID,
+							ProviderID:   "openrouter",
+							ProviderName: "OpenRouter",
+							Content:      contentBuilder.String(),
+							FinishReason: "stop",
+							CreatedAt:    time.Now(),
+						}
+					}
+				}
+				return
+			}
+
+			if n > 0 {
+				data := string(buf[:n])
+				// Parse SSE data lines
+				lines := bytes.Split([]byte(data), []byte("\n"))
+				for _, line := range lines {
+					lineStr := string(line)
+					if len(lineStr) > 6 && lineStr[:6] == "data: " {
+						jsonData := lineStr[6:]
+						if jsonData == "[DONE]" {
+							// Stream complete
+							ch <- &models.LLMResponse{
+								ID:           fmt.Sprintf("stream-%d", chunkIndex),
+								RequestID:    req.ID,
+								ProviderID:   "openrouter",
+								ProviderName: "OpenRouter",
+								Content:      contentBuilder.String(),
+								FinishReason: "stop",
+								CreatedAt:    time.Now(),
+							}
+							return
+						}
+
+						var chunk struct {
+							Choices []struct {
+								Delta struct {
+									Content string `json:"content"`
+								} `json:"delta"`
+								FinishReason string `json:"finish_reason"`
+							} `json:"choices"`
+						}
+
+						if err := json.Unmarshal([]byte(jsonData), &chunk); err == nil {
+							if len(chunk.Choices) > 0 && chunk.Choices[0].Delta.Content != "" {
+								content := chunk.Choices[0].Delta.Content
+								contentBuilder.WriteString(content)
+								chunkIndex++
+
+								// Send chunk
+								ch <- &models.LLMResponse{
+									ID:           fmt.Sprintf("stream-%d", chunkIndex),
+									RequestID:    req.ID,
+									ProviderID:   "openrouter",
+									ProviderName: "OpenRouter",
+									Content:      content,
+									FinishReason: "",
+									CreatedAt:    time.Now(),
+									Metadata: map[string]any{
+										"is_chunk": true,
+										"index":    chunkIndex,
+									},
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}()
 

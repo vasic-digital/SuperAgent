@@ -297,7 +297,29 @@ func TestSimpleOpenRouterProvider_Complete_InvalidJSON(t *testing.T) {
 }
 
 func TestSimpleOpenRouterProvider_CompleteStream(t *testing.T) {
+	// Create a mock server that simulates SSE streaming
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.WriteHeader(http.StatusOK)
+
+		// Send SSE data chunks
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			t.Fatal("server doesn't support flushing")
+		}
+
+		// Send a single chunk and the done message
+		w.Write([]byte("data: {\"id\":\"stream-1\",\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"))
+		flusher.Flush()
+		w.Write([]byte("data: [DONE]\n\n"))
+		flusher.Flush()
+	}))
+	defer server.Close()
+
 	provider := NewSimpleOpenRouterProvider("test-api-key")
+	provider.baseURL = server.URL
 
 	req := &models.LLMRequest{
 		ID: "test-req-stream",
@@ -311,19 +333,27 @@ func TestSimpleOpenRouterProvider_CompleteStream(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ch)
 
-	// Read from channel
-	select {
-	case resp := <-ch:
-		assert.NotNil(t, resp)
-		assert.Equal(t, "stream-not-supported", resp.ID)
-		assert.Equal(t, "test-req-stream", resp.RequestID)
-		assert.Equal(t, "openrouter", resp.ProviderID)
-		assert.Equal(t, "OpenRouter", resp.ProviderName)
-		assert.Equal(t, "Streaming not supported by OpenRouter provider", resp.Content)
-		assert.Equal(t, "error", resp.FinishReason)
-	case <-time.After(1 * time.Second):
-		t.Fatal("timeout waiting for streaming response")
+	// Read from channel with timeout
+	responses := make([]*models.LLMResponse, 0)
+	timeout := time.After(2 * time.Second)
+	done := false
+
+	for !done {
+		select {
+		case resp, ok := <-ch:
+			if !ok {
+				done = true
+				break
+			}
+			if resp != nil {
+				responses = append(responses, resp)
+			}
+		case <-timeout:
+			done = true
+		}
 	}
+
+	assert.NotEmpty(t, responses, "expected at least one response")
 }
 
 func TestSimpleOpenRouterProvider_HealthCheck(t *testing.T) {
