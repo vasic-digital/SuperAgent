@@ -82,6 +82,146 @@ public class SuperAgentClient {
         return try await makeRequest(endpoint: "/api/v1/mcp/servers")
     }
 
+    // MARK: - Chat Completions API
+
+    /// Create a chat completion
+    /// - Parameters:
+    ///   - model: The model to use (e.g., "superagent-ensemble")
+    ///   - messages: List of chat messages
+    ///   - temperature: Sampling temperature (0.0 to 2.0)
+    ///   - maxTokens: Maximum tokens to generate
+    ///   - topP: Top-p sampling parameter
+    ///   - stop: Stop sequences
+    /// - Returns: Chat completion response
+    public func chatCompletion(
+        model: String,
+        messages: [ChatMessage],
+        temperature: Double = 0.7,
+        maxTokens: Int = 1000,
+        topP: Double = 1.0,
+        stop: [String]? = nil
+    ) async throws -> ChatCompletionResponse {
+        var body: [String: Any] = [
+            "model": model,
+            "messages": messages.map { $0.toDictionary() },
+            "temperature": temperature,
+            "max_tokens": maxTokens,
+            "top_p": topP
+        ]
+
+        if let stop = stop {
+            body["stop"] = stop
+        }
+
+        let response = try await makeRequest(endpoint: "/v1/chat/completions", method: "POST", body: body)
+        return ChatCompletionResponse(from: response)
+    }
+
+    /// Create a chat completion with ensemble configuration
+    public func chatCompletionWithEnsemble(
+        model: String,
+        messages: [ChatMessage],
+        ensembleConfig: EnsembleConfig,
+        temperature: Double = 0.7,
+        maxTokens: Int = 1000
+    ) async throws -> ChatCompletionResponse {
+        let body: [String: Any] = [
+            "model": model,
+            "messages": messages.map { $0.toDictionary() },
+            "temperature": temperature,
+            "max_tokens": maxTokens,
+            "ensemble_config": ensembleConfig.toDictionary()
+        ]
+
+        let response = try await makeRequest(endpoint: "/v1/chat/completions", method: "POST", body: body)
+        return ChatCompletionResponse(from: response)
+    }
+
+    // MARK: - AI Debate API
+
+    /// Create a new debate
+    /// - Parameters:
+    ///   - topic: The debate topic
+    ///   - participants: List of debate participants
+    ///   - maxRounds: Maximum number of debate rounds
+    ///   - timeout: Timeout in seconds
+    ///   - strategy: Debate strategy (e.g., "consensus", "adversarial")
+    /// - Returns: Debate creation response
+    public func createDebate(
+        topic: String,
+        participants: [DebateParticipant],
+        maxRounds: Int = 3,
+        timeout: Int = 300,
+        strategy: String = "consensus"
+    ) async throws -> DebateResponse {
+        let body: [String: Any] = [
+            "topic": topic,
+            "participants": participants.map { $0.toDictionary() },
+            "max_rounds": maxRounds,
+            "timeout": timeout,
+            "strategy": strategy
+        ]
+
+        let response = try await makeRequest(endpoint: "/v1/debates", method: "POST", body: body)
+        return DebateResponse(from: response)
+    }
+
+    /// Get debate by ID
+    public func getDebate(debateId: String) async throws -> DebateResponse {
+        let response = try await makeRequest(endpoint: "/v1/debates/\(debateId)")
+        return DebateResponse(from: response)
+    }
+
+    /// Get debate status
+    public func getDebateStatus(debateId: String) async throws -> DebateStatus {
+        let response = try await makeRequest(endpoint: "/v1/debates/\(debateId)/status")
+        return DebateStatus(from: response)
+    }
+
+    /// Get debate results (when completed)
+    public func getDebateResults(debateId: String) async throws -> DebateResult {
+        let response = try await makeRequest(endpoint: "/v1/debates/\(debateId)/results")
+        return DebateResult(from: response)
+    }
+
+    /// List all debates
+    /// - Parameter status: Optional status filter (pending, running, completed, failed)
+    public func listDebates(status: String? = nil) async throws -> [DebateResponse] {
+        var endpoint = "/v1/debates"
+        if let status = status {
+            endpoint += "?status=\(status)"
+        }
+        let response = try await makeRequest(endpoint: endpoint)
+        let debatesArray = response["debates"] as? [[String: Any]] ?? []
+        return debatesArray.map { DebateResponse(from: $0) }
+    }
+
+    /// Delete a debate
+    public func deleteDebate(debateId: String) async throws -> [String: Any] {
+        return try await makeRequest(endpoint: "/v1/debates/\(debateId)", method: "DELETE")
+    }
+
+    /// Wait for debate completion with polling
+    public func waitForDebateCompletion(
+        debateId: String,
+        pollInterval: TimeInterval = 5.0,
+        timeout: TimeInterval = 600.0
+    ) async throws -> DebateResult {
+        let startTime = Date()
+        while Date().timeIntervalSince(startTime) < timeout {
+            let status = try await getDebateStatus(debateId: debateId)
+            switch status.status {
+            case "completed":
+                return try await getDebateResults(debateId: debateId)
+            case "failed":
+                throw SuperAgentError.debateFailed(status.error ?? "Unknown error")
+            default:
+                try await Task.sleep(nanoseconds: UInt64(pollInterval * 1_000_000_000))
+            }
+        }
+        throw SuperAgentError.timeout
+    }
+
     // MARK: - LSP Protocol Methods
 
     /// Get code completions
@@ -287,6 +427,8 @@ public enum SuperAgentError: Error {
     case invalidResponse
     case invalidURL
     case httpError(Int, String)
+    case debateFailed(String)
+    case timeout
 }
 
 // MARK: - Utility Classes
@@ -500,5 +642,253 @@ extension SuperAgentClient {
             "lsp_template": lspTemplate,
             "message": "Development environment initialized"
         ]
+    }
+}
+
+// MARK: - Chat Completions Data Structures
+
+/// Chat message for completions API
+public struct ChatMessage {
+    public let role: String
+    public let content: String
+    public let name: String?
+
+    public init(role: String, content: String, name: String? = nil) {
+        self.role = role
+        self.content = content
+        self.name = name
+    }
+
+    func toDictionary() -> [String: Any] {
+        var dict: [String: Any] = [
+            "role": role,
+            "content": content
+        ]
+        if let name = name {
+            dict["name"] = name
+        }
+        return dict
+    }
+}
+
+/// Chat completion choice
+public struct ChatChoice {
+    public let index: Int
+    public let message: ChatMessage
+    public let finishReason: String?
+
+    public init(from dict: [String: Any]) {
+        self.index = dict["index"] as? Int ?? 0
+        let messageDict = dict["message"] as? [String: Any] ?? [:]
+        self.message = ChatMessage(
+            role: messageDict["role"] as? String ?? "assistant",
+            content: messageDict["content"] as? String ?? "",
+            name: messageDict["name"] as? String
+        )
+        self.finishReason = dict["finish_reason"] as? String
+    }
+}
+
+/// Chat completion usage statistics
+public struct ChatUsage {
+    public let promptTokens: Int
+    public let completionTokens: Int
+    public let totalTokens: Int
+
+    public init(from dict: [String: Any]) {
+        self.promptTokens = dict["prompt_tokens"] as? Int ?? 0
+        self.completionTokens = dict["completion_tokens"] as? Int ?? 0
+        self.totalTokens = dict["total_tokens"] as? Int ?? 0
+    }
+}
+
+/// Chat completion response
+public struct ChatCompletionResponse {
+    public let id: String
+    public let object: String
+    public let created: Int
+    public let model: String
+    public let choices: [ChatChoice]
+    public let usage: ChatUsage?
+
+    public init(from dict: [String: Any]) {
+        self.id = dict["id"] as? String ?? ""
+        self.object = dict["object"] as? String ?? "chat.completion"
+        self.created = dict["created"] as? Int ?? Int(Date().timeIntervalSince1970)
+        self.model = dict["model"] as? String ?? ""
+        let choicesArray = dict["choices"] as? [[String: Any]] ?? []
+        self.choices = choicesArray.map { ChatChoice(from: $0) }
+        if let usageDict = dict["usage"] as? [String: Any] {
+            self.usage = ChatUsage(from: usageDict)
+        } else {
+            self.usage = nil
+        }
+    }
+
+    /// Get the content of the first choice
+    public var content: String {
+        choices.first?.message.content ?? ""
+    }
+}
+
+/// Ensemble configuration for multi-provider requests
+public struct EnsembleConfig {
+    public let strategy: String
+    public let minProviders: Int
+    public let confidenceThreshold: Double
+    public let fallbackToBest: Bool
+    public let providers: [String]?
+
+    public init(
+        strategy: String = "confidence_weighted",
+        minProviders: Int = 2,
+        confidenceThreshold: Double = 0.7,
+        fallbackToBest: Bool = true,
+        providers: [String]? = nil
+    ) {
+        self.strategy = strategy
+        self.minProviders = minProviders
+        self.confidenceThreshold = confidenceThreshold
+        self.fallbackToBest = fallbackToBest
+        self.providers = providers
+    }
+
+    func toDictionary() -> [String: Any] {
+        var dict: [String: Any] = [
+            "strategy": strategy,
+            "min_providers": minProviders,
+            "confidence_threshold": confidenceThreshold,
+            "fallback_to_best": fallbackToBest
+        ]
+        if let providers = providers {
+            dict["providers"] = providers
+        }
+        return dict
+    }
+}
+
+// MARK: - AI Debate Data Structures
+
+/// Debate participant configuration
+public struct DebateParticipant {
+    public let name: String
+    public let role: String
+    public let provider: String
+    public let model: String
+    public let systemPrompt: String?
+
+    public init(
+        name: String,
+        role: String,
+        provider: String,
+        model: String,
+        systemPrompt: String? = nil
+    ) {
+        self.name = name
+        self.role = role
+        self.provider = provider
+        self.model = model
+        self.systemPrompt = systemPrompt
+    }
+
+    func toDictionary() -> [String: Any] {
+        var dict: [String: Any] = [
+            "name": name,
+            "role": role,
+            "provider": provider,
+            "model": model
+        ]
+        if let systemPrompt = systemPrompt {
+            dict["system_prompt"] = systemPrompt
+        }
+        return dict
+    }
+}
+
+/// Debate creation/retrieval response
+public struct DebateResponse {
+    public let id: String
+    public let topic: String
+    public let status: String
+    public let participants: [String]
+    public let maxRounds: Int
+    public let createdAt: String
+
+    public init(from dict: [String: Any]) {
+        self.id = dict["id"] as? String ?? dict["debate_id"] as? String ?? ""
+        self.topic = dict["topic"] as? String ?? ""
+        self.status = dict["status"] as? String ?? "pending"
+        self.participants = dict["participants"] as? [String] ?? []
+        self.maxRounds = dict["max_rounds"] as? Int ?? 3
+        self.createdAt = dict["created_at"] as? String ?? ""
+    }
+}
+
+/// Debate status information
+public struct DebateStatus {
+    public let id: String
+    public let status: String
+    public let currentRound: Int
+    public let totalRounds: Int
+    public let progress: Double
+    public let error: String?
+
+    public init(from dict: [String: Any]) {
+        self.id = dict["id"] as? String ?? dict["debate_id"] as? String ?? ""
+        self.status = dict["status"] as? String ?? "unknown"
+        self.currentRound = dict["current_round"] as? Int ?? 0
+        self.totalRounds = dict["total_rounds"] as? Int ?? 0
+        self.progress = dict["progress"] as? Double ?? 0.0
+        self.error = dict["error"] as? String
+    }
+}
+
+/// Consensus result from debate
+public struct ConsensusResult {
+    public let reached: Bool
+    public let confidence: Double
+    public let finalPosition: String
+    public let supportingArguments: [String]
+
+    public init(from dict: [String: Any]) {
+        self.reached = dict["reached"] as? Bool ?? false
+        self.confidence = dict["confidence"] as? Double ?? 0.0
+        self.finalPosition = dict["final_position"] as? String ?? ""
+        self.supportingArguments = dict["supporting_arguments"] as? [String] ?? []
+    }
+}
+
+/// Complete debate result
+public struct DebateResult {
+    public let id: String
+    public let topic: String
+    public let status: String
+    public let rounds: [[String: Any]]
+    public let consensus: ConsensusResult?
+    public let duration: Double
+    public let completedAt: String
+
+    public init(from dict: [String: Any]) {
+        self.id = dict["id"] as? String ?? dict["debate_id"] as? String ?? ""
+        self.topic = dict["topic"] as? String ?? ""
+        self.status = dict["status"] as? String ?? "completed"
+        self.rounds = dict["rounds"] as? [[String: Any]] ?? []
+        if let consensusDict = dict["consensus"] as? [String: Any] {
+            self.consensus = ConsensusResult(from: consensusDict)
+        } else {
+            self.consensus = nil
+        }
+        self.duration = dict["duration"] as? Double ?? 0.0
+        self.completedAt = dict["completed_at"] as? String ?? ""
+    }
+
+    /// Check if consensus was reached
+    public var consensusReached: Bool {
+        consensus?.reached ?? false
+    }
+
+    /// Get the final position if consensus was reached
+    public var finalPosition: String? {
+        consensus?.finalPosition
     }
 }

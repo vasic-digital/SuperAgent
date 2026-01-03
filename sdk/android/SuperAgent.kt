@@ -113,6 +113,189 @@ class SuperAgentClient(
         return makeRequest("/api/v1/mcp/servers")
     }
 
+    // ==================== Chat Completions API ====================
+
+    /**
+     * Create a chat completion
+     * @param model The model to use (e.g., "superagent-ensemble")
+     * @param messages List of chat messages
+     * @param temperature Sampling temperature (0.0 to 2.0)
+     * @param maxTokens Maximum tokens to generate
+     * @param topP Top-p sampling parameter
+     * @param stop Stop sequences
+     * @return Chat completion response
+     */
+    suspend fun chatCompletion(
+        model: String,
+        messages: List<ChatMessage>,
+        temperature: Double = 0.7,
+        maxTokens: Int = 1000,
+        topP: Double = 1.0,
+        stop: List<String>? = null
+    ): ChatCompletionResponse {
+        val messagesArray = JSONArray()
+        messages.forEach { msg ->
+            messagesArray.put(JSONObject().apply {
+                put("role", msg.role)
+                put("content", msg.content)
+                msg.name?.let { put("name", it) }
+            })
+        }
+
+        val body = JSONObject().apply {
+            put("model", model)
+            put("messages", messagesArray)
+            put("temperature", temperature)
+            put("max_tokens", maxTokens)
+            put("top_p", topP)
+            stop?.let {
+                val stopArray = JSONArray()
+                it.forEach { s -> stopArray.put(s) }
+                put("stop", stopArray)
+            }
+        }
+
+        val response = makeRequest("/v1/chat/completions", "POST", body)
+        return ChatCompletionResponse.fromJson(response)
+    }
+
+    /**
+     * Create a chat completion with ensemble configuration
+     */
+    suspend fun chatCompletionWithEnsemble(
+        model: String,
+        messages: List<ChatMessage>,
+        ensembleConfig: EnsembleConfig,
+        temperature: Double = 0.7,
+        maxTokens: Int = 1000
+    ): ChatCompletionResponse {
+        val messagesArray = JSONArray()
+        messages.forEach { msg ->
+            messagesArray.put(JSONObject().apply {
+                put("role", msg.role)
+                put("content", msg.content)
+            })
+        }
+
+        val body = JSONObject().apply {
+            put("model", model)
+            put("messages", messagesArray)
+            put("temperature", temperature)
+            put("max_tokens", maxTokens)
+            put("ensemble_config", ensembleConfig.toJson())
+        }
+
+        val response = makeRequest("/v1/chat/completions", "POST", body)
+        return ChatCompletionResponse.fromJson(response)
+    }
+
+    // ==================== AI Debate API ====================
+
+    /**
+     * Create a new debate
+     * @param topic The debate topic
+     * @param participants List of debate participants
+     * @param maxRounds Maximum number of debate rounds
+     * @param timeout Timeout in seconds
+     * @param strategy Debate strategy (e.g., "consensus", "adversarial")
+     * @return Debate creation response
+     */
+    suspend fun createDebate(
+        topic: String,
+        participants: List<DebateParticipant>,
+        maxRounds: Int = 3,
+        timeout: Int = 300,
+        strategy: String = "consensus"
+    ): DebateResponse {
+        val participantsArray = JSONArray()
+        participants.forEach { p ->
+            participantsArray.put(JSONObject().apply {
+                put("name", p.name)
+                p.role?.let { put("role", it) }
+                p.llmProvider?.let { put("llm_provider", it) }
+                p.llmModel?.let { put("llm_model", it) }
+                p.weight?.let { put("weight", it) }
+            })
+        }
+
+        val body = JSONObject().apply {
+            put("topic", topic)
+            put("participants", participantsArray)
+            put("max_rounds", maxRounds)
+            put("timeout", timeout)
+            put("strategy", strategy)
+        }
+
+        val response = makeRequest("/v1/debates", "POST", body)
+        return DebateResponse.fromJson(response)
+    }
+
+    /**
+     * Get debate by ID
+     */
+    suspend fun getDebate(debateId: String): DebateResponse {
+        val response = makeRequest("/v1/debates/$debateId")
+        return DebateResponse.fromJson(response)
+    }
+
+    /**
+     * Get debate status
+     */
+    suspend fun getDebateStatus(debateId: String): DebateStatus {
+        val response = makeRequest("/v1/debates/$debateId/status")
+        return DebateStatus.fromJson(response)
+    }
+
+    /**
+     * Get debate results (when completed)
+     */
+    suspend fun getDebateResults(debateId: String): DebateResult {
+        val response = makeRequest("/v1/debates/$debateId/results")
+        return DebateResult.fromJson(response)
+    }
+
+    /**
+     * List all debates
+     * @param status Optional status filter (pending, running, completed, failed)
+     */
+    suspend fun listDebates(status: String? = null): List<DebateResponse> {
+        val endpoint = if (status != null) "/v1/debates?status=$status" else "/v1/debates"
+        val response = makeRequest(endpoint)
+        val debates = mutableListOf<DebateResponse>()
+        val debatesArray = response.optJSONArray("debates") ?: JSONArray()
+        for (i in 0 until debatesArray.length()) {
+            debates.add(DebateResponse.fromJson(debatesArray.getJSONObject(i)))
+        }
+        return debates
+    }
+
+    /**
+     * Delete a debate
+     */
+    suspend fun deleteDebate(debateId: String): JSONObject {
+        return makeRequest("/v1/debates/$debateId", "DELETE")
+    }
+
+    /**
+     * Wait for debate completion with polling
+     */
+    suspend fun waitForDebateCompletion(
+        debateId: String,
+        pollIntervalMs: Long = 5000,
+        timeoutMs: Long = 600000
+    ): DebateResult {
+        val startTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            val status = getDebateStatus(debateId)
+            when (status.status) {
+                "completed" -> return getDebateResults(debateId)
+                "failed" -> throw SuperAgentException(500, "Debate failed: ${status.error}")
+            }
+            delay(pollIntervalMs)
+        }
+        throw SuperAgentException(408, "Debate did not complete within timeout")
+    }
+
     // LSP Protocol Methods
     suspend fun lspCompletion(filePath: String, line: Int, character: Int): JSONObject {
         val body = JSONObject().apply {
@@ -503,3 +686,187 @@ class AnalyticsMonitor(
 
 // Exception class
 class SuperAgentException(val statusCode: Int, message: String) : Exception(message)
+
+// ==================== Data Classes ====================
+
+// Chat Completion Types
+data class ChatMessage(
+    val role: String,
+    val content: String,
+    val name: String? = null
+)
+
+data class ChatChoice(
+    val index: Int,
+    val message: ChatMessage,
+    val finishReason: String?
+)
+
+data class ChatUsage(
+    val promptTokens: Int,
+    val completionTokens: Int,
+    val totalTokens: Int
+)
+
+data class ChatCompletionResponse(
+    val id: String,
+    val model: String,
+    val created: Long,
+    val choices: List<ChatChoice>,
+    val usage: ChatUsage?
+) {
+    companion object {
+        fun fromJson(json: JSONObject): ChatCompletionResponse {
+            val choicesArray = json.getJSONArray("choices")
+            val choices = mutableListOf<ChatChoice>()
+            for (i in 0 until choicesArray.length()) {
+                val choiceJson = choicesArray.getJSONObject(i)
+                val messageJson = choiceJson.getJSONObject("message")
+                choices.add(ChatChoice(
+                    index = choiceJson.getInt("index"),
+                    message = ChatMessage(
+                        role = messageJson.getString("role"),
+                        content = messageJson.optString("content", "")
+                    ),
+                    finishReason = choiceJson.optString("finish_reason")
+                ))
+            }
+
+            val usageJson = json.optJSONObject("usage")
+            val usage = usageJson?.let {
+                ChatUsage(
+                    promptTokens = it.optInt("prompt_tokens", 0),
+                    completionTokens = it.optInt("completion_tokens", 0),
+                    totalTokens = it.optInt("total_tokens", 0)
+                )
+            }
+
+            return ChatCompletionResponse(
+                id = json.getString("id"),
+                model = json.getString("model"),
+                created = json.getLong("created"),
+                choices = choices,
+                usage = usage
+            )
+        }
+    }
+}
+
+data class EnsembleConfig(
+    val strategy: String = "confidence_weighted",
+    val minProviders: Int = 2,
+    val confidenceThreshold: Double = 0.8,
+    val fallbackToBest: Boolean = true,
+    val preferredProviders: List<String> = emptyList()
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("strategy", strategy)
+        put("min_providers", minProviders)
+        put("confidence_threshold", confidenceThreshold)
+        put("fallback_to_best", fallbackToBest)
+        val providersArray = JSONArray()
+        preferredProviders.forEach { providersArray.put(it) }
+        put("preferred_providers", providersArray)
+    }
+}
+
+// AI Debate Types
+data class DebateParticipant(
+    val name: String,
+    val role: String? = null,
+    val llmProvider: String? = null,
+    val llmModel: String? = null,
+    val weight: Double? = null
+)
+
+data class DebateResponse(
+    val debateId: String,
+    val status: String,
+    val topic: String,
+    val maxRounds: Int,
+    val participants: Int,
+    val createdAt: Long
+) {
+    companion object {
+        fun fromJson(json: JSONObject): DebateResponse = DebateResponse(
+            debateId = json.getString("debate_id"),
+            status = json.getString("status"),
+            topic = json.optString("topic", ""),
+            maxRounds = json.optInt("max_rounds", 3),
+            participants = json.optInt("participants", 0),
+            createdAt = json.optLong("created_at", 0)
+        )
+    }
+}
+
+data class DebateStatus(
+    val debateId: String,
+    val status: String,
+    val startTime: Long,
+    val endTime: Long?,
+    val durationSeconds: Double?,
+    val error: String?
+) {
+    companion object {
+        fun fromJson(json: JSONObject): DebateStatus = DebateStatus(
+            debateId = json.getString("debate_id"),
+            status = json.getString("status"),
+            startTime = json.getLong("start_time"),
+            endTime = if (json.has("end_time")) json.getLong("end_time") else null,
+            durationSeconds = if (json.has("duration_seconds")) json.getDouble("duration_seconds") else null,
+            error = json.optString("error").takeIf { it.isNotEmpty() }
+        )
+    }
+}
+
+data class ConsensusResult(
+    val reached: Boolean,
+    val confidence: Double,
+    val finalPosition: String,
+    val keyPoints: List<String>,
+    val disagreements: List<String>
+) {
+    companion object {
+        fun fromJson(json: JSONObject): ConsensusResult {
+            val keyPoints = mutableListOf<String>()
+            val keyPointsArray = json.optJSONArray("key_points") ?: JSONArray()
+            for (i in 0 until keyPointsArray.length()) {
+                keyPoints.add(keyPointsArray.getString(i))
+            }
+
+            val disagreements = mutableListOf<String>()
+            val disagreementsArray = json.optJSONArray("disagreements") ?: JSONArray()
+            for (i in 0 until disagreementsArray.length()) {
+                disagreements.add(disagreementsArray.getString(i))
+            }
+
+            return ConsensusResult(
+                reached = json.optBoolean("reached", false),
+                confidence = json.optDouble("confidence", 0.0),
+                finalPosition = json.optString("final_position", ""),
+                keyPoints = keyPoints,
+                disagreements = disagreements
+            )
+        }
+    }
+}
+
+data class DebateResult(
+    val debateId: String,
+    val topic: String,
+    val totalRounds: Int,
+    val success: Boolean,
+    val qualityScore: Double,
+    val consensus: ConsensusResult?
+) {
+    companion object {
+        fun fromJson(json: JSONObject): DebateResult = DebateResult(
+            debateId = json.getString("debate_id"),
+            topic = json.optString("topic", ""),
+            totalRounds = json.optInt("total_rounds", 0),
+            success = json.optBoolean("success", false),
+            qualityScore = json.optDouble("quality_score", 0.0),
+            consensus = json.optJSONObject("consensus")?.let { ConsensusResult.fromJson(it) }
+        )
+    }
+}
