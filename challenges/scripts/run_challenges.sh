@@ -129,6 +129,28 @@ create_results_dir() {
     print_info "Results directory: $RESULTS_DIR"
 }
 
+# Find latest results directory for a challenge
+find_latest_results() {
+    local challenge=$1
+    local base_path="$CHALLENGES_DIR/results/$challenge"
+
+    if [ ! -d "$base_path" ]; then
+        return 1
+    fi
+
+    # Find the most recent timestamp directory that contains a results subdirectory
+    local latest=$(find "$base_path" -type d -name "results" 2>/dev/null | \
+                   head -n 1 | \
+                   xargs -I {} dirname {})
+
+    if [ -n "$latest" ] && [ -d "$latest/results" ]; then
+        echo "$latest"
+        return 0
+    fi
+
+    return 1
+}
+
 # Check dependencies
 check_dependencies() {
     local challenge=$1
@@ -136,16 +158,20 @@ check_dependencies() {
     case "$challenge" in
         ai_debate_formation)
             # Check if provider_verification has run
-            if [ ! -d "$CHALLENGES_DIR/results/provider_verification" ]; then
+            PROVIDER_VERIFICATION_RESULTS=$(find_latest_results "provider_verification")
+            if [ -z "$PROVIDER_VERIFICATION_RESULTS" ]; then
                 print_error "Dependency not met: provider_verification must run first"
                 exit 1
             fi
+            print_info "Found provider_verification results at: $PROVIDER_VERIFICATION_RESULTS"
+            export DEPENDENCY_DIR="$PROVIDER_VERIFICATION_RESULTS"
             ;;
         api_quality_test)
-            # Check if ai_debate_formation has run
-            if [ ! -d "$CHALLENGES_DIR/results/ai_debate_formation" ]; then
-                print_error "Dependency not met: ai_debate_formation must run first"
-                exit 1
+            # Check if ai_debate_formation has run (optional)
+            AI_DEBATE_RESULTS=$(find_latest_results "ai_debate_formation")
+            if [ -n "$AI_DEBATE_RESULTS" ]; then
+                print_info "Found ai_debate_formation results at: $AI_DEBATE_RESULTS"
+                export DEPENDENCY_DIR="$AI_DEBATE_RESULTS"
             fi
             ;;
     esac
@@ -178,10 +204,19 @@ run_challenge() {
 
         cd "$CHALLENGES_DIR/codebase/go_files/$challenge"
 
+        # Build args
+        local args="--results-dir=\"$RESULTS_DIR\""
         if [ "$VERBOSE" = true ]; then
-            go run main.go --results-dir="$RESULTS_DIR" --verbose 2>&1 | tee "$RESULTS_DIR/logs/output.log"
+            args="$args --verbose"
+        fi
+        if [ -n "$DEPENDENCY_DIR" ]; then
+            args="$args --dependency-dir=\"$DEPENDENCY_DIR\""
+        fi
+
+        if [ "$VERBOSE" = true ]; then
+            eval "go run main.go $args" 2>&1 | tee "$RESULTS_DIR/logs/output.log"
         else
-            go run main.go --results-dir="$RESULTS_DIR" 2>&1 | tee "$RESULTS_DIR/logs/output.log"
+            eval "go run main.go $args" 2>&1 | tee "$RESULTS_DIR/logs/output.log"
         fi
 
         local exit_code=${PIPESTATUS[0]}

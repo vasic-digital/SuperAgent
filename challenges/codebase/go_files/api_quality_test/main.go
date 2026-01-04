@@ -690,6 +690,7 @@ func main() {
 	resultsDir := flag.String("results-dir", "", "Directory to store results")
 	apiURL := flag.String("api-url", "", "SuperAgent API URL")
 	verbose := flag.Bool("verbose", false, "Enable verbose output")
+	_ = flag.String("dependency-dir", "", "Path to ai_debate_formation results (optional)")
 	flag.Parse()
 
 	if *resultsDir == "" {
@@ -741,6 +742,30 @@ func main() {
 
 	if *verbose {
 		log.Printf("Testing API at: %s", baseURL)
+	}
+
+	// Check if API is reachable before running tests
+	healthCheck := func() error {
+		req, err := http.NewRequest("GET", baseURL+"/health", nil)
+		if err != nil {
+			return err
+		}
+		httpClient := &http.Client{Timeout: 5 * time.Second}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		return nil
+	}
+
+	if err := healthCheck(); err != nil {
+		log.Printf("WARNING: SuperAgent API at %s is not reachable: %v", baseURL, err)
+		log.Printf("This challenge requires SuperAgent to be running.")
+		log.Printf("Start SuperAgent with: make run (or docker-compose up)")
+		log.Printf("Continuing anyway to generate failure report...")
+	} else if *verbose {
+		log.Printf("API health check passed")
 	}
 
 	// Get test prompts

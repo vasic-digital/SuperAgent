@@ -126,6 +126,52 @@ func defaultFormationConfig() FormationConfig {
 	}
 }
 
+// Adjust configuration based on available models
+func adjustConfigForModels(config FormationConfig, availableModels int) FormationConfig {
+	if availableModels == 0 {
+		return config
+	}
+
+	// Total models needed = primaryCount * (1 + fallbacksPerPrimary)
+	totalNeeded := config.PrimaryCount * (1 + config.FallbacksPerPrimary)
+
+	if availableModels >= totalNeeded {
+		return config // Enough models available
+	}
+
+	// Adjust to fit available models
+	// First try reducing primaries while keeping fallbacks
+	for p := config.PrimaryCount; p >= 3; p-- {
+		for f := config.FallbacksPerPrimary; f >= 1; f-- {
+			needed := p * (1 + f)
+			if availableModels >= needed {
+				config.PrimaryCount = p
+				config.FallbacksPerPrimary = f
+				return config
+			}
+		}
+	}
+
+	// Minimum viable: 3 primaries with 1 fallback each
+	if availableModels >= 6 {
+		config.PrimaryCount = 3
+		config.FallbacksPerPrimary = 1
+		return config
+	}
+
+	// Even smaller: as many primaries as we can with no fallbacks
+	if availableModels >= 3 {
+		config.PrimaryCount = min(availableModels, 5)
+		config.FallbacksPerPrimary = 0
+		return config
+	}
+
+	// Absolute minimum
+	config.PrimaryCount = availableModels
+	config.FallbacksPerPrimary = 0
+	return config
+}
+
 // Load scored models from provider verification
 func loadScoredModels(dependencyPath string) ([]ModelScore, error) {
 	modelsFile := filepath.Join(dependencyPath, "results", "models_scored.json")
@@ -516,8 +562,17 @@ func main() {
 		log.Printf("Loaded %d scored models", len(models))
 	}
 
-	// Form debate group
+	// Form debate group with adjusted configuration
 	config := defaultFormationConfig()
+	originalConfig := config
+	config = adjustConfigForModels(config, len(models))
+
+	if config.PrimaryCount != originalConfig.PrimaryCount || config.FallbacksPerPrimary != originalConfig.FallbacksPerPrimary {
+		log.Printf("Adjusted configuration: %d primaries with %d fallbacks each (had %d models, needed %d)",
+			config.PrimaryCount, config.FallbacksPerPrimary, len(models),
+			originalConfig.PrimaryCount*(1+originalConfig.FallbacksPerPrimary))
+	}
+
 	group, metrics := FormDebateGroup(models, config)
 
 	// Validate
@@ -589,34 +644,53 @@ func main() {
 
 // findLatestResults finds the most recent results directory for a challenge
 func findLatestResults(challengeID string) string {
-	basePath := filepath.Join("results", challengeID)
-
-	// Also check from challenges directory
-	altPath := filepath.Join("..", "results", challengeID)
-	if _, err := os.Stat(basePath); os.IsNotExist(err) {
-		basePath = altPath
+	// Try multiple base paths
+	basePaths := []string{
+		filepath.Join("results", challengeID),
+		filepath.Join("..", "results", challengeID),
+		filepath.Join("..", "..", "results", challengeID),
+		filepath.Join("..", "..", "..", "results", challengeID),
 	}
 
-	// Walk to find the most recent timestamp directory
+	// Also check absolute path from challenges directory
+	if cwd, err := os.Getwd(); err == nil {
+		// Try to find challenges directory in path
+		if idx := strings.Index(cwd, "challenges"); idx > 0 {
+			challengesRoot := cwd[:idx+len("challenges")]
+			basePaths = append(basePaths, filepath.Join(challengesRoot, "results", challengeID))
+		}
+	}
+
 	var latestPath string
 	var latestTime time.Time
 
-	filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil
+	for _, basePath := range basePaths {
+		if _, err := os.Stat(basePath); os.IsNotExist(err) {
+			continue
 		}
-		if info.IsDir() {
-			// Check if this looks like a timestamp directory (YYYYMMDD_HHMMSS)
-			name := info.Name()
-			if len(name) == 15 && name[8] == '_' {
-				if info.ModTime().After(latestTime) {
-					latestTime = info.ModTime()
-					latestPath = path
+
+		// Walk to find the most recent timestamp directory
+		filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if info.IsDir() {
+				// Check if this looks like a timestamp directory (YYYYMMDD_HHMMSS)
+				name := info.Name()
+				if len(name) == 15 && name[8] == '_' {
+					// Verify this has a results subdirectory
+					resultsSubdir := filepath.Join(path, "results")
+					if _, err := os.Stat(resultsSubdir); err == nil {
+						if info.ModTime().After(latestTime) {
+							latestTime = info.ModTime()
+							latestPath = path
+						}
+					}
 				}
 			}
-		}
-		return nil
-	})
+			return nil
+		})
+	}
 
 	return latestPath
 }
