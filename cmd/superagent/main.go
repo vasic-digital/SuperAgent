@@ -412,11 +412,15 @@ func run(appCfg *AppConfig) error {
 		return nil
 	}
 
-	cfg := &config.Config{
-		Server: config.ServerConfig{
-			Host: appCfg.ServerHost,
-			Port: appCfg.ServerPort,
-		},
+	// Load full configuration from environment variables
+	cfg := config.Load()
+
+	// Override with command-line specified values if provided
+	if appCfg.ServerHost != "" && appCfg.ServerHost != "0.0.0.0" {
+		cfg.Server.Host = appCfg.ServerHost
+	}
+	if appCfg.ServerPort != "" && appCfg.ServerPort != "8080" {
+		cfg.Server.Port = appCfg.ServerPort
 	}
 
 	logger := appCfg.Logger

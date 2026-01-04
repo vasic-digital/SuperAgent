@@ -54,3 +54,4 @@ logs/
 # Generated files that might contain secrets
 *_actual.json
 *_actual.yaml
+challenges/codebase/mock_server/mock_server
