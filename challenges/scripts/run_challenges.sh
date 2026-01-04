@@ -102,12 +102,27 @@ parse_args() {
 
 # Load environment variables
 load_env() {
+    local env_loaded=false
+
+    # First try project root .env (primary location for API keys)
+    if [ -f "$PROJECT_ROOT/.env" ]; then
+        print_info "Loading environment from $PROJECT_ROOT/.env"
+        set -a
+        source "$PROJECT_ROOT/.env"
+        set +a
+        env_loaded=true
+    fi
+
+    # Then load challenges-specific .env (can override or add settings)
     if [ -f "$CHALLENGES_DIR/.env" ]; then
         print_info "Loading environment from $CHALLENGES_DIR/.env"
         set -a
         source "$CHALLENGES_DIR/.env"
         set +a
-    else
+        env_loaded=true
+    fi
+
+    if [ "$env_loaded" = false ]; then
         print_warning ".env file not found. Using system environment variables."
     fi
 }

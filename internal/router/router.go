@@ -26,14 +26,27 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
-	// Initialize database
-	db, err := database.NewPostgresDB(cfg)
+	// Initialize database with fallback to in-memory mode
+	var db *database.PostgresDB
+	standaloneMode := false
+
+	pgDB, memoryDB, err := database.NewPostgresDBWithFallback(cfg)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Printf("Database initialization failed: %v, using standalone mode", err)
+		standaloneMode = true
+	} else if memoryDB != nil {
+		standaloneMode = true
+		log.Println("Running in standalone mode (in-memory database)")
+	} else {
+		db = pgDB
 	}
 
-	// Initialize user service
-	userService := services.NewUserService(db, cfg.Server.JWTSecret, 24*time.Hour)
+	// Initialize user service (only if we have a real database)
+	var userService *services.UserService
+	if db != nil {
+		userService = services.NewUserService(db, cfg.Server.JWTSecret, 24*time.Hour)
+	}
+	// In standalone mode, userService will be nil - handled below
 
 	// Initialize memory service
 	memoryService := services.NewMemoryService(cfg)
@@ -46,7 +59,14 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	logger := logrus.New()
 
 	// Initialize model metadata repository (used by multiple services)
-	modelMetadataRepo := database.NewModelMetadataRepository(db.GetPool(), logger)
+	// In standalone mode, pass nil pool - repository will use in-memory storage
+	var modelMetadataRepo *database.ModelMetadataRepository
+	if db != nil {
+		modelMetadataRepo = database.NewModelMetadataRepository(db.GetPool(), logger)
+	} else {
+		modelMetadataRepo = database.NewModelMetadataRepository(nil, logger)
+		logger.Info("Model metadata repository running in standalone mode")
+	}
 
 	// Initialize Redis client for caching if Redis is configured
 	var redisClient *cache.RedisClient
@@ -89,8 +109,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		logger.Info("Models.dev integration initialized successfully")
 	}
 
-	// Initialize completion handler
-	completionHandler := handlers.NewCompletionHandler(providerRegistry.GetRequestService())
+	// Note: CompletionHandler functionality now provided by UnifiedHandler
+	// Legacy handler kept for reference but not used
+	_ = handlers.NewCompletionHandler // Suppress import warning
 
 	// Initialize unified OpenAI-compatible handler
 	unifiedHandler := handlers.NewUnifiedHandler(providerRegistry, cfg)
@@ -131,16 +152,33 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	protocolHandler := handlers.NewProtocolHandler(protocolManager, logger)
 
 	// Initialize auth middleware
-	authConfig := middleware.AuthConfig{
-		SecretKey:   cfg.Server.JWTSecret,
-		TokenExpiry: 24 * time.Hour,
-		Issuer:      "superagent",
-		SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register"},
-		Required:    true,
-	}
-	auth, err := middleware.NewAuthMiddleware(authConfig, userService)
-	if err != nil {
-		log.Fatalf("Failed to initialize auth middleware: %v", err)
+	// In standalone mode, make auth optional with more skip paths
+	var auth *middleware.AuthMiddleware
+	if standaloneMode {
+		log.Println("Running in standalone mode - authentication disabled for API endpoints")
+		authConfig := middleware.AuthConfig{
+			SecretKey:   cfg.Server.JWTSecret,
+			TokenExpiry: 24 * time.Hour,
+			Issuer:      "superagent",
+			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register", "/v1/chat/completions", "/v1/completions", "/v1/models", "/v1/ensemble"},
+			Required:    false,
+		}
+		auth, err = middleware.NewAuthMiddleware(authConfig, nil)
+		if err != nil {
+			log.Printf("Auth middleware not available in standalone mode: %v", err)
+		}
+	} else {
+		authConfig := middleware.AuthConfig{
+			SecretKey:   cfg.Server.JWTSecret,
+			TokenExpiry: 24 * time.Hour,
+			Issuer:      "superagent",
+			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register"},
+			Required:    true,
+		}
+		auth, err = middleware.NewAuthMiddleware(authConfig, userService)
+		if err != nil {
+			log.Fatalf("Failed to initialize auth middleware: %v", err)
+		}
 	}
 
 	// Health endpoints
@@ -172,59 +210,61 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Metrics endpoint - Prometheus metrics for monitoring
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	// Authentication endpoints
-	authGroup := r.Group("/v1/auth")
-	{
-		authGroup.POST("/register", auth.Register)
-		authGroup.POST("/login", auth.Login)
-		authGroup.POST("/refresh", auth.Refresh)
-		authGroup.POST("/logout", auth.Logout)
-		authGroup.GET("/me", func(c *gin.Context) {
-			c.JSON(200, auth.GetAuthInfo(c))
-		})
-	}
-
-	// Public API endpoints (no auth required)
-	public := r.Group("/v1")
-	{
-		// Model listing
-		public.GET("/models", completionHandler.Models)
-
-		// Models.dev public endpoints (if enabled)
-		if cfg.ModelsDev.Enabled && modelMetadataHandler != nil {
-			public.GET("/models/metadata", modelMetadataHandler.ListModels)
-			public.GET("/models/metadata/:id", modelMetadataHandler.GetModel)
-			public.GET("/models/metadata/:id/benchmarks", modelMetadataHandler.GetModelBenchmarks)
-			public.GET("/models/metadata/compare", modelMetadataHandler.CompareModels)
-			public.GET("/models/metadata/capability/:capability", modelMetadataHandler.GetModelsByCapability)
-			public.GET("/providers/:provider_id/models/metadata", modelMetadataHandler.GetProviderModels)
-		}
-
-		// Provider info (public endpoints)
-		public.GET("/providers", func(c *gin.Context) {
-			providers := providerRegistry.ListProviders()
-			c.JSON(200, gin.H{
-				"providers": providers,
-				"count":     len(providers),
+	// Authentication endpoints (skip in standalone mode if auth is nil)
+	if auth != nil {
+		authGroup := r.Group("/v1/auth")
+		{
+			authGroup.POST("/register", auth.Register)
+			authGroup.POST("/login", auth.Login)
+			authGroup.POST("/refresh", auth.Refresh)
+			authGroup.POST("/logout", auth.Logout)
+			authGroup.GET("/me", func(c *gin.Context) {
+				c.JSON(200, auth.GetAuthInfo(c))
 			})
-		})
+		}
+	} else {
+		// Provide stub auth endpoints in standalone mode
+		authGroup := r.Group("/v1/auth")
+		{
+			authGroup.POST("/register", func(c *gin.Context) {
+				c.JSON(503, gin.H{"error": "Authentication disabled in standalone mode"})
+			})
+			authGroup.POST("/login", func(c *gin.Context) {
+				c.JSON(503, gin.H{"error": "Authentication disabled in standalone mode"})
+			})
+		}
 	}
 
-	// Protected API endpoints (auth required)
-	protected := r.Group("/v1", auth.Middleware([]string{"/health", "/v1/health", "/metrics"}))
+	// API endpoints - single /v1 group with optional auth middleware
+	// In standalone mode, auth middleware is not applied
+	var protected *gin.RouterGroup
+	if auth != nil && !standaloneMode {
+		protected = r.Group("/v1", auth.Middleware([]string{
+			"/health", "/v1/health", "/metrics",
+			"/v1/models/metadata", "/v1/providers",
+		}))
+	} else {
+		// Standalone mode: no auth middleware
+		protected = r.Group("/v1")
+	}
+
+	// Models.dev endpoints
+	if cfg.ModelsDev.Enabled && modelMetadataHandler != nil {
+		protected.GET("/models/metadata", modelMetadataHandler.ListModels)
+		protected.GET("/models/metadata/:id", modelMetadataHandler.GetModel)
+		protected.GET("/models/metadata/:id/benchmarks", modelMetadataHandler.GetModelBenchmarks)
+		protected.GET("/models/metadata/compare", modelMetadataHandler.CompareModels)
+		protected.GET("/models/metadata/capability/:capability", modelMetadataHandler.GetModelsByCapability)
+	}
 	{
 		// Register OpenAI-compatible routes for seamless integration
+		// This handles /completions, /chat/completions, /models
 		unifiedHandler.RegisterOpenAIRoutes(protected, func(c *gin.Context) {
-			c.Next() // Already authenticated by the group middleware
+			c.Next()
 		})
 
-		// Legacy endpoints (keep for backward compatibility)
-		protected.POST("/completions", completionHandler.Complete)
-		protected.POST("/completions/stream", completionHandler.CompleteStream)
-
-		// Chat endpoints
-		protected.POST("/chat/completions", completionHandler.Chat)
-		protected.POST("/chat/completions/stream", completionHandler.ChatStream)
+		// Note: Legacy /completions and /chat/completions routes removed
+		// to avoid duplicates with UnifiedHandler routes
 
 		// Ensemble endpoints
 		protected.POST("/ensemble/completions", func(c *gin.Context) {
@@ -356,8 +396,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			providerGroup.PUT("/:id", providerMgmtHandler.UpdateProvider)
 			providerGroup.DELETE("/:id", providerMgmtHandler.DeleteProvider)
 
-			providerGroup.GET("/:name/health", func(c *gin.Context) {
-				name := c.Param("name")
+			providerGroup.GET("/:id/health", func(c *gin.Context) {
+				name := c.Param("id")
 				health := providerRegistry.HealthCheck()
 
 				response := gin.H{

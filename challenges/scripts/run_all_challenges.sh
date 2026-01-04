@@ -6,6 +6,21 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHALLENGES_DIR="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(dirname "$CHALLENGES_DIR")"
+
+# Load environment from project root first (primary location for API keys)
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    set -a
+    source "$PROJECT_ROOT/.env"
+    set +a
+fi
+
+# Then load challenges-specific .env (can override or add settings)
+if [ -f "$CHALLENGES_DIR/.env" ]; then
+    set -a
+    source "$CHALLENGES_DIR/.env"
+    set +a
+fi
 
 # Colors
 RED='\033[0;31m'

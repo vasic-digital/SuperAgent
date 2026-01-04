@@ -40,6 +40,7 @@ setup_challenge() {
     local challenge_name=$1
     export CHALLENGE_NAME="$challenge_name"
     export CHALLENGES_DIR=$(get_challenges_dir)
+    export PROJECT_ROOT="$(dirname "$CHALLENGES_DIR")"
 
     # Parse arguments
     while [ $# -gt 0 ]; do
@@ -54,7 +55,14 @@ setup_challenge() {
         shift
     done
 
-    # Load environment
+    # Load environment from project root first (primary location for API keys)
+    if [ -f "$PROJECT_ROOT/.env" ]; then
+        set -a
+        source "$PROJECT_ROOT/.env"
+        set +a
+    fi
+
+    # Then load challenges-specific .env (can override or add settings)
     if [ -f "$CHALLENGES_DIR/.env" ]; then
         set -a
         source "$CHALLENGES_DIR/.env"
