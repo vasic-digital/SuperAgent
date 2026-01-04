@@ -109,10 +109,10 @@ func TestNewDiscoveryService(t *testing.T) {
 }
 
 func TestDiscoveryService_DiscoverModels(t *testing.T) {
-	// Create a test server
+	// Create a test server with standard OpenAI-style response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"models": [{"id": "gpt-4", "object": "model"}]}`))
+		w.Write([]byte(`{"object": "list", "data": [{"id": "gpt-4", "object": "model", "created": 1687882410, "owned_by": "openai"}]}`))
 	}))
 	defer server.Close()
 
@@ -121,14 +121,7 @@ func TestDiscoveryService_DiscoverModels(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Mock the fetch to return mock data instead of real API
-	// Since fetchModelsFromAPI is private, we'll test the mock path
-	// But for now, let's skip the real API test and focus on cache
-	service.cache["openai"] = []toolkit.ModelInfo{
-		{ID: "gpt-4", Object: "model", OwnedBy: "openai"},
-	}
-	service.cacheTime["openai"] = time.Now()
-
+	// Test real API call parsing
 	models, err := service.DiscoverModels(ctx, "openai")
 	if err != nil {
 		t.Fatalf("DiscoverModels failed: %v", err)
@@ -140,6 +133,9 @@ func TestDiscoveryService_DiscoverModels(t *testing.T) {
 
 	// Check first model
 	model := models[0]
+	if model.ID != "gpt-4" {
+		t.Errorf("Expected ID 'gpt-4', got '%s'", model.ID)
+	}
 	if model.OwnedBy != "openai" {
 		t.Errorf("Expected OwnedBy 'openai', got '%s'", model.OwnedBy)
 	}
@@ -152,6 +148,131 @@ func TestDiscoveryService_DiscoverModels(t *testing.T) {
 
 	if len(models2) != len(models) {
 		t.Error("Cached result differs from original")
+	}
+}
+
+func TestDiscoveryService_DiscoverModels_DirectArrayFormat(t *testing.T) {
+	// Create a test server with direct array response format
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`[{"id": "model-1", "object": "model", "created": 1687882410, "owned_by": "provider1"}, {"id": "model-2", "object": "model", "created": 1687882411, "owned_by": "provider1"}]`))
+	}))
+	defer server.Close()
+
+	client := httpclient.NewClient(server.URL, "test-key")
+	service := NewDiscoveryService(client, server.URL)
+
+	ctx := context.Background()
+
+	models, err := service.DiscoverModels(ctx, "provider1")
+	if err != nil {
+		t.Fatalf("DiscoverModels failed: %v", err)
+	}
+
+	if len(models) != 2 {
+		t.Fatalf("Expected 2 models, got %d", len(models))
+	}
+
+	if models[0].ID != "model-1" {
+		t.Errorf("Expected first model ID 'model-1', got '%s'", models[0].ID)
+	}
+}
+
+func TestDiscoveryService_DiscoverModels_APIError(t *testing.T) {
+	// Create a test server that returns an error
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "internal server error"}`))
+	}))
+	defer server.Close()
+
+	client := httpclient.NewClient(server.URL, "test-key")
+	service := NewDiscoveryService(client, server.URL)
+
+	ctx := context.Background()
+
+	_, err := service.DiscoverModels(ctx, "provider")
+	if err == nil {
+		t.Fatal("Expected error for 500 status")
+	}
+}
+
+func TestDiscoveryService_DiscoverModels_InvalidJSON(t *testing.T) {
+	// Create a test server that returns invalid JSON
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`not valid json`))
+	}))
+	defer server.Close()
+
+	client := httpclient.NewClient(server.URL, "test-key")
+	service := NewDiscoveryService(client, server.URL)
+
+	ctx := context.Background()
+
+	// Invalid JSON is handled gracefully by returning empty results
+	// This allows the service to continue working with providers that
+	// may return unexpected formats
+	models, err := service.DiscoverModels(ctx, "provider")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if len(models) != 0 {
+		t.Errorf("Expected 0 models for invalid JSON, got %d", len(models))
+	}
+}
+
+func TestDiscoveryService_DiscoverModels_EmptyResponse(t *testing.T) {
+	// Create a test server that returns empty data
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"object": "list", "data": []}`))
+	}))
+	defer server.Close()
+
+	client := httpclient.NewClient(server.URL, "test-key")
+	service := NewDiscoveryService(client, server.URL)
+
+	ctx := context.Background()
+
+	models, err := service.DiscoverModels(ctx, "provider")
+	if err != nil {
+		t.Fatalf("DiscoverModels failed: %v", err)
+	}
+
+	if len(models) != 0 {
+		t.Errorf("Expected 0 models, got %d", len(models))
+	}
+}
+
+func TestDiscoveryService_DiscoverModels_UsesCache(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"object": "list", "data": [{"id": "model-1", "object": "model", "created": 1687882410, "owned_by": "test"}]}`))
+	}))
+	defer server.Close()
+
+	client := httpclient.NewClient(server.URL, "test-key")
+	service := NewDiscoveryService(client, server.URL)
+
+	ctx := context.Background()
+
+	// First call
+	_, err := service.DiscoverModels(ctx, "test")
+	if err != nil {
+		t.Fatalf("First DiscoverModels failed: %v", err)
+	}
+
+	// Second call - should use cache
+	_, err = service.DiscoverModels(ctx, "test")
+	if err != nil {
+		t.Fatalf("Second DiscoverModels failed: %v", err)
+	}
+
+	if callCount != 1 {
+		t.Errorf("Expected 1 API call (caching), got %d", callCount)
 	}
 }
 

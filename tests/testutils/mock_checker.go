@@ -3,13 +3,12 @@ package testutils
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
 	"time"
 
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5"
 )
 
 // MockConfig holds configuration for mock services
@@ -45,18 +44,18 @@ func IsPostgresAvailable() bool {
 		return false
 	}
 
-	// Try to connect
+	// Try to connect using pgx
 	cfg := GetMockConfig()
-	db, err := sql.Open("postgres", cfg.PostgresURL)
-	if err != nil {
-		return false
-	}
-	defer db.Close()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	return db.PingContext(ctx) == nil
+	conn, err := pgx.Connect(ctx, cfg.PostgresURL)
+	if err != nil {
+		return false
+	}
+	defer conn.Close(ctx)
+
+	return conn.Ping(ctx) == nil
 }
 
 // IsRedisAvailable checks if Redis is running

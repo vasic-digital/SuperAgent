@@ -270,6 +270,166 @@ var migrations = []string{
 	`CREATE INDEX IF NOT EXISTS idx_cognee_memories_session_id ON cognee_memories(session_id)`,
 	`CREATE INDEX IF NOT EXISTS idx_cognee_memories_dataset_name ON cognee_memories(dataset_name)`,
 	`CREATE INDEX IF NOT EXISTS idx_cognee_memories_search_key ON cognee_memories(search_key)`,
+
+	// Migration 002: Models.dev Integration
+	`ALTER TABLE llm_providers ADD COLUMN IF NOT EXISTS modelsdev_provider_id VARCHAR(255)`,
+	`ALTER TABLE llm_providers ADD COLUMN IF NOT EXISTS total_models INTEGER DEFAULT 0`,
+	`ALTER TABLE llm_providers ADD COLUMN IF NOT EXISTS enabled_models INTEGER DEFAULT 0`,
+	`ALTER TABLE llm_providers ADD COLUMN IF NOT EXISTS last_models_sync TIMESTAMP WITH TIME ZONE`,
+
+	`CREATE TABLE IF NOT EXISTS models_metadata (
+		id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+		model_id VARCHAR(255) UNIQUE NOT NULL,
+		model_name VARCHAR(255) NOT NULL,
+		provider_id VARCHAR(255) NOT NULL,
+		provider_name VARCHAR(255) NOT NULL,
+		description TEXT,
+		context_window INTEGER,
+		max_tokens INTEGER,
+		pricing_input DECIMAL(10, 6),
+		pricing_output DECIMAL(10, 6),
+		pricing_currency VARCHAR(10) DEFAULT 'USD',
+		supports_vision BOOLEAN DEFAULT FALSE,
+		supports_function_calling BOOLEAN DEFAULT FALSE,
+		supports_streaming BOOLEAN DEFAULT FALSE,
+		supports_json_mode BOOLEAN DEFAULT FALSE,
+		supports_image_generation BOOLEAN DEFAULT FALSE,
+		supports_audio BOOLEAN DEFAULT FALSE,
+		supports_code_generation BOOLEAN DEFAULT FALSE,
+		supports_reasoning BOOLEAN DEFAULT FALSE,
+		benchmark_score DECIMAL(5, 2),
+		popularity_score INTEGER,
+		reliability_score DECIMAL(5, 2),
+		model_type VARCHAR(100),
+		model_family VARCHAR(100),
+		version VARCHAR(50),
+		tags JSONB DEFAULT '[]',
+		modelsdev_url TEXT,
+		modelsdev_id VARCHAR(255),
+		modelsdev_api_version VARCHAR(50),
+		raw_metadata JSONB DEFAULT '{}',
+		last_refreshed_at TIMESTAMP WITH TIME ZONE NOT NULL,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	)`,
+
+	`CREATE TABLE IF NOT EXISTS model_benchmarks (
+		id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+		model_id VARCHAR(255) NOT NULL,
+		benchmark_name VARCHAR(255) NOT NULL,
+		benchmark_type VARCHAR(100),
+		score DECIMAL(10, 4),
+		rank INTEGER,
+		normalized_score DECIMAL(5, 2),
+		benchmark_date DATE,
+		metadata JSONB DEFAULT '{}',
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	)`,
+
+	`CREATE TABLE IF NOT EXISTS models_refresh_history (
+		id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+		refresh_type VARCHAR(50) NOT NULL,
+		status VARCHAR(50) NOT NULL,
+		models_refreshed INTEGER DEFAULT 0,
+		models_failed INTEGER DEFAULT 0,
+		error_message TEXT,
+		started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		completed_at TIMESTAMP WITH TIME ZONE,
+		duration_seconds INTEGER,
+		metadata JSONB DEFAULT '{}'
+	)`,
+
+	`CREATE INDEX IF NOT EXISTS idx_models_metadata_provider_id ON models_metadata(provider_id)`,
+	`CREATE INDEX IF NOT EXISTS idx_models_metadata_model_type ON models_metadata(model_type)`,
+	`CREATE INDEX IF NOT EXISTS idx_models_metadata_last_refreshed ON models_metadata(last_refreshed_at)`,
+	`CREATE INDEX IF NOT EXISTS idx_benchmarks_model_id ON model_benchmarks(model_id)`,
+	`CREATE INDEX IF NOT EXISTS idx_refresh_history_started ON models_refresh_history(started_at)`,
+
+	// Migration 003: Protocol Support
+	`ALTER TABLE models_metadata ADD COLUMN IF NOT EXISTS protocol_support JSONB DEFAULT '[]'`,
+	`ALTER TABLE models_metadata ADD COLUMN IF NOT EXISTS mcp_server_id VARCHAR(255)`,
+	`ALTER TABLE models_metadata ADD COLUMN IF NOT EXISTS lsp_server_id VARCHAR(255)`,
+	`ALTER TABLE models_metadata ADD COLUMN IF NOT EXISTS acp_server_id VARCHAR(255)`,
+	`ALTER TABLE models_metadata ADD COLUMN IF NOT EXISTS embedding_provider VARCHAR(50) DEFAULT 'pgvector'`,
+	`ALTER TABLE models_metadata ADD COLUMN IF NOT EXISTS protocol_config JSONB DEFAULT '{}'`,
+	`ALTER TABLE models_metadata ADD COLUMN IF NOT EXISTS protocol_last_sync TIMESTAMP WITH TIME ZONE DEFAULT NOW()`,
+
+	`CREATE TABLE IF NOT EXISTS mcp_servers (
+		id VARCHAR(255) PRIMARY KEY,
+		name VARCHAR(255) NOT NULL,
+		type VARCHAR(20) NOT NULL,
+		command TEXT,
+		url TEXT,
+		enabled BOOLEAN NOT NULL DEFAULT true,
+		tools JSONB NOT NULL DEFAULT '[]',
+		last_sync TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	)`,
+
+	`CREATE TABLE IF NOT EXISTS lsp_servers (
+		id VARCHAR(255) PRIMARY KEY,
+		name VARCHAR(255) NOT NULL,
+		language VARCHAR(50) NOT NULL,
+		command VARCHAR(500) NOT NULL,
+		enabled BOOLEAN NOT NULL DEFAULT true,
+		workspace VARCHAR(1000) DEFAULT '/workspace',
+		capabilities JSONB NOT NULL DEFAULT '[]',
+		last_sync TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	)`,
+
+	`CREATE TABLE IF NOT EXISTS acp_servers (
+		id VARCHAR(255) PRIMARY KEY,
+		name VARCHAR(255) NOT NULL,
+		type VARCHAR(20) NOT NULL,
+		url TEXT,
+		enabled BOOLEAN NOT NULL DEFAULT true,
+		tools JSONB NOT NULL DEFAULT '[]',
+		last_sync TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	)`,
+
+	`CREATE TABLE IF NOT EXISTS embedding_config (
+		id SERIAL PRIMARY KEY,
+		provider VARCHAR(50) NOT NULL DEFAULT 'pgvector',
+		model VARCHAR(100) NOT NULL DEFAULT 'text-embedding-ada-002',
+		dimension INTEGER NOT NULL DEFAULT 1536,
+		api_endpoint TEXT,
+		api_key TEXT,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	)`,
+
+	`CREATE TABLE IF NOT EXISTS protocol_cache (
+		cache_key VARCHAR(255) PRIMARY KEY,
+		cache_data JSONB NOT NULL,
+		expires_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	)`,
+
+	`CREATE TABLE IF NOT EXISTS protocol_metrics (
+		id SERIAL PRIMARY KEY,
+		protocol_type VARCHAR(20) NOT NULL,
+		server_id VARCHAR(255),
+		operation VARCHAR(100) NOT NULL,
+		status VARCHAR(20) NOT NULL,
+		duration_ms INTEGER,
+		error_message TEXT,
+		metadata JSONB DEFAULT '{}',
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	)`,
+
+	`CREATE INDEX IF NOT EXISTS idx_mcp_servers_enabled ON mcp_servers(enabled)`,
+	`CREATE INDEX IF NOT EXISTS idx_lsp_servers_enabled ON lsp_servers(enabled)`,
+	`CREATE INDEX IF NOT EXISTS idx_acp_servers_enabled ON acp_servers(enabled)`,
+	`CREATE INDEX IF NOT EXISTS idx_protocol_cache_expires_at ON protocol_cache(expires_at)`,
+	`CREATE INDEX IF NOT EXISTS idx_protocol_metrics_protocol_type ON protocol_metrics(protocol_type)`,
+	`CREATE INDEX IF NOT EXISTS idx_protocol_metrics_created_at ON protocol_metrics(created_at)`,
 }
 
 // Legacy interface for backward compatibility

@@ -12,6 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 
 	"github.com/superagent/superagent/internal/config"
@@ -269,14 +271,75 @@ func verifyServicesHealthWithConfig(services []string, logger *logrus.Logger, cf
 
 // checkPostgresHealth verifies PostgreSQL connectivity
 func checkPostgresHealth() error {
-	// Simple health check - in production this would use actual database connection
-	time.Sleep(2 * time.Second) // Give it time to start
-	return nil                  // For now, assume it's healthy
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		dbPort = "5432"
+	}
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		dbUser = "superagent"
+	}
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		dbPassword = "secret"
+	}
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "superagent_db"
+	}
+
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&connect_timeout=5",
+		dbUser, dbPassword, dbHost, dbPort, dbName)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Try to establish a connection
+	conn, err := pgx.Connect(ctx, connString)
+	if err != nil {
+		return fmt.Errorf("failed to connect to PostgreSQL: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	// Ping to verify connection is working
+	if err := conn.Ping(ctx); err != nil {
+		return fmt.Errorf("PostgreSQL ping failed: %w", err)
+	}
+
+	return nil
 }
 
 // checkRedisHealth verifies Redis connectivity
 func checkRedisHealth() error {
-	time.Sleep(1 * time.Second)
+	redisHost := os.Getenv("REDIS_HOST")
+	if redisHost == "" {
+		redisHost = "localhost"
+	}
+	redisPort := os.Getenv("REDIS_PORT")
+	if redisPort == "" {
+		redisPort = "6379"
+	}
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:        redisHost + ":" + redisPort,
+		Password:    redisPassword,
+		DB:          0,
+		DialTimeout: 5 * time.Second,
+	})
+	defer rdb.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		return fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+
 	return nil
 }
 

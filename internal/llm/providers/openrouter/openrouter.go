@@ -418,10 +418,38 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 
 // HealthCheck implements provider health monitoring
 func (p *SimpleOpenRouterProvider) HealthCheck() error {
-	// OpenRouter doesn't have a specific health check endpoint
 	if p.apiKey == "" {
 		return fmt.Errorf("OpenRouter API key is required for health check")
 	}
+
+	// Create a context with timeout for health check
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Use the /models endpoint as a lightweight health check
+	// This verifies both connectivity and API key validity
+	req, err := http.NewRequestWithContext(ctx, "GET", p.baseURL+"/models", nil)
+	if err != nil {
+		return fmt.Errorf("failed to create health check request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+p.apiKey)
+	req.Header.Set("HTTP-Referer", "superagent")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("OpenRouter health check failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return fmt.Errorf("OpenRouter API key is invalid or expired")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("OpenRouter health check returned status %d", resp.StatusCode)
+	}
+
 	return nil
 }
 

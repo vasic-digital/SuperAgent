@@ -2,7 +2,9 @@ package discovery
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 	"time"
@@ -140,6 +142,20 @@ func (d *DiscoveryService) checkCache(providerName string) ([]toolkit.ModelInfo,
 	return models, exists
 }
 
+// ModelsResponse represents the API response for models
+type ModelsResponse struct {
+	Data   []ModelData `json:"data"`
+	Object string      `json:"object"`
+}
+
+// ModelData represents a model in the API response
+type ModelData struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Created int64  `json:"created"`
+	OwnedBy string `json:"owned_by"`
+}
+
 // fetchModelsFromAPI fetches models from the provider's API
 func (d *DiscoveryService) fetchModelsFromAPI(ctx context.Context, providerName string) ([]toolkit.ModelInfo, error) {
 	// This is a generic implementation - specific providers may override this
@@ -155,9 +171,46 @@ func (d *DiscoveryService) fetchModelsFromAPI(ctx context.Context, providerName 
 		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
 	}
 
-	// Note: In a real implementation, you'd decode the response body here
-	// For now, we'll return mock data based on provider
-	return d.getMockModels(providerName), nil
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	var models []toolkit.ModelInfo
+
+	// Try standard OpenAI-style response format first: {"data": [...]}
+	var modelsResp ModelsResponse
+	if err := json.Unmarshal(body, &modelsResp); err == nil && len(modelsResp.Data) > 0 {
+		models = make([]toolkit.ModelInfo, 0, len(modelsResp.Data))
+		for _, m := range modelsResp.Data {
+			models = append(models, toolkit.ModelInfo{
+				ID:      m.ID,
+				Object:  m.Object,
+				Created: m.Created,
+				OwnedBy: m.OwnedBy,
+			})
+		}
+		return models, nil
+	}
+
+	// Try alternative response format (array directly): [...]
+	var directModels []ModelData
+	if err := json.Unmarshal(body, &directModels); err == nil && len(directModels) > 0 {
+		models = make([]toolkit.ModelInfo, 0, len(directModels))
+		for _, m := range directModels {
+			models = append(models, toolkit.ModelInfo{
+				ID:      m.ID,
+				Object:  m.Object,
+				Created: m.Created,
+				OwnedBy: m.OwnedBy,
+			})
+		}
+		return models, nil
+	}
+
+	// If neither format worked, return empty result (not an error - empty is valid)
+	return models, nil
 }
 
 // getMockModels returns mock model data for testing
