@@ -1,0 +1,56 @@
+# SuperAgent Challenges - Git Ignore
+# SECURITY: Never commit API keys or sensitive information!
+
+# Environment files with actual API keys
+.env
+.env.local
+.env.*.local
+
+# Configuration files with actual values
+config/config.yaml
+config/*.yaml
+!config/*.example
+!config/*.yaml.example
+
+# Results directories (contain logs with potential sensitive data)
+# Only master summaries are versioned
+results/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Binary outputs
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test output
+*.test
+coverage.out
+coverage.html
+
+# Log files that might contain sensitive data
+*.log
+logs/
+
+# Backup files
+*.bak
+*.backup
+
+# Generated files that might contain secrets
+*_actual.json
+*_actual.yaml

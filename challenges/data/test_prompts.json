@@ -1,0 +1,151 @@
+{
+  "version": "1.0",
+  "description": "Test prompts for API quality validation",
+  "prompts": {
+    "code_generation": [
+      {
+        "id": "go_factorial",
+        "category": "simple_function",
+        "prompt": "Write a Go function to calculate factorial of a number. Include error handling for negative numbers.",
+        "expected_elements": ["func", "if", "return"],
+        "min_response_length": 100
+      },
+      {
+        "id": "python_binary_search",
+        "category": "algorithm",
+        "prompt": "Implement binary search in Python. The function should take a sorted list and a target value, returning the index or -1 if not found.",
+        "expected_elements": ["def", "while", "return", "mid"],
+        "min_response_length": 150
+      },
+      {
+        "id": "typescript_user_class",
+        "category": "class_design",
+        "prompt": "Create a TypeScript class for user management with properties for id, email, name, and methods for validation and serialization.",
+        "expected_elements": ["class", "constructor", "public", "private"],
+        "min_response_length": 200
+      },
+      {
+        "id": "rust_linked_list",
+        "category": "data_structure",
+        "prompt": "Implement a singly linked list in Rust with push, pop, and peek operations.",
+        "expected_elements": ["struct", "impl", "Option", "Box"],
+        "min_response_length": 250
+      },
+      {
+        "id": "java_singleton",
+        "category": "design_pattern",
+        "prompt": "Implement a thread-safe singleton pattern in Java using double-checked locking.",
+        "expected_elements": ["class", "private", "static", "synchronized", "volatile"],
+        "min_response_length": 150
+      }
+    ],
+    "code_review": [
+      {
+        "id": "division_bug",
+        "category": "bug_detection",
+        "prompt": "Review this Go code for bugs and explain the issues:\n```go\nfunc divide(a, b int) int {\n    return a / b\n}\n```",
+        "expected_mentions": ["zero", "division", "panic", "error"],
+        "quality_threshold": 0.7
+      },
+      {
+        "id": "sql_injection",
+        "category": "security_review",
+        "prompt": "Find security issues in this code:\n```go\nfunc getUser(db *sql.DB, userInput string) (*User, error) {\n    query := \"SELECT * FROM users WHERE id = \" + userInput\n    return db.Query(query)\n}\n```",
+        "expected_mentions": ["injection", "sanitize", "parameterized", "prepared"],
+        "quality_threshold": 0.8
+      },
+      {
+        "id": "race_condition",
+        "category": "concurrency_review",
+        "prompt": "Identify the race condition in this code:\n```go\nvar counter int\nfunc increment() {\n    counter++\n}\nfunc main() {\n    for i := 0; i < 1000; i++ {\n        go increment()\n    }\n}\n```",
+        "expected_mentions": ["race", "mutex", "atomic", "sync"],
+        "quality_threshold": 0.7
+      },
+      {
+        "id": "memory_leak",
+        "category": "memory_review",
+        "prompt": "Find the potential memory leak:\n```javascript\nclass EventManager {\n    constructor() {\n        this.listeners = [];\n    }\n    addListener(callback) {\n        this.listeners.push(callback);\n    }\n}\nconst manager = new EventManager();\nsetInterval(() => {\n    manager.addListener(() => console.log('tick'));\n}, 1000);\n```",
+        "expected_mentions": ["memory", "leak", "remove", "unbounded", "grow"],
+        "quality_threshold": 0.7
+      }
+    ],
+    "reasoning": [
+      {
+        "id": "sheep_problem",
+        "category": "math",
+        "prompt": "A farmer has 17 sheep. All but 9 run away. How many sheep are left?",
+        "expected_answer": "9",
+        "requires_reasoning": true
+      },
+      {
+        "id": "syllogism",
+        "category": "logic",
+        "prompt": "If all A are B, and all B are C, are all A also C? Explain your reasoning step by step.",
+        "expected_answer_contains": ["yes", "true"],
+        "requires_reasoning": true
+      },
+      {
+        "id": "time_zones",
+        "category": "practical",
+        "prompt": "If it's 3 PM in New York (EST), what time is it in London (GMT) during standard time (not daylight saving)?",
+        "expected_answer": "8 PM",
+        "requires_reasoning": true
+      },
+      {
+        "id": "algorithm_complexity",
+        "category": "technical",
+        "prompt": "What is the time complexity of binary search and why? Explain the reasoning.",
+        "expected_mentions": ["O(log n)", "halving", "divide"],
+        "requires_reasoning": true
+      }
+    ],
+    "quality": [
+      {
+        "id": "rest_api_practices",
+        "category": "explanation",
+        "prompt": "Explain REST API best practices for building scalable services. Cover naming conventions, HTTP methods, status codes, and versioning.",
+        "min_response_length": 300,
+        "expected_topics": ["GET", "POST", "PUT", "DELETE", "status", "version", "endpoint"]
+      },
+      {
+        "id": "microservices_tradeoffs",
+        "category": "architecture",
+        "prompt": "What are the main tradeoffs between microservices and monolithic architecture? When would you choose one over the other?",
+        "min_response_length": 250,
+        "expected_topics": ["scalability", "complexity", "deployment", "communication"]
+      },
+      {
+        "id": "capital_france",
+        "category": "factual",
+        "prompt": "What is the capital of France?",
+        "expected_answer": "Paris",
+        "min_response_length": 5
+      },
+      {
+        "id": "git_workflow",
+        "category": "practical",
+        "prompt": "Explain the Git Flow branching strategy and its benefits for team collaboration.",
+        "min_response_length": 200,
+        "expected_topics": ["main", "develop", "feature", "release", "hotfix"]
+      }
+    ],
+    "debate_specific": [
+      {
+        "id": "consensus_test",
+        "category": "debate",
+        "prompt": "What is 2 + 2? Answer with just the number.",
+        "expected_answer": "4",
+        "consensus_required": true,
+        "description": "Simple test to verify debate group reaches consensus"
+      },
+      {
+        "id": "code_debate",
+        "category": "debate",
+        "prompt": "What is the best way to handle errors in Go: multiple return values or panic/recover? Provide a brief recommendation.",
+        "expected_mentions": ["return", "error", "nil"],
+        "consensus_required": false,
+        "description": "Test debate group handles opinionated questions"
+      }
+    ]
+  }
+}

@@ -1,0 +1,356 @@
+{
+  "version": "1.0",
+  "description": "SuperAgent Challenges Registry",
+  "challenges": [
+    {
+      "id": "provider_verification",
+      "name": "Provider Verification",
+      "description": "Verify all configured LLM providers and score their models using LLMsVerifier integration",
+      "category": "core",
+      "dependencies": [],
+      "estimated_duration": "2-5 minutes",
+      "inputs": [
+        {
+          "name": "api_keys",
+          "source": ".env",
+          "required": true
+        },
+        {
+          "name": "provider_configs",
+          "source": "config/providers.yaml",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "providers_verified.json",
+          "type": "json",
+          "description": "List of verified providers with status"
+        },
+        {
+          "name": "models_scored.json",
+          "type": "json",
+          "description": "Scored model list with rankings"
+        },
+        {
+          "name": "verification_report.md",
+          "type": "markdown",
+          "description": "Human-readable verification report"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "min_count",
+          "target": "providers_verified",
+          "value": 1,
+          "message": "At least 1 provider must be verified"
+        },
+        {
+          "type": "all_valid",
+          "target": "api_keys",
+          "message": "All provided API keys must be valid"
+        }
+      ],
+      "metrics": [
+        "provider_count_verified",
+        "provider_count_failed",
+        "model_count_total",
+        "avg_response_time_ms",
+        "capability_coverage_percent"
+      ]
+    },
+    {
+      "id": "ai_debate_formation",
+      "name": "AI Debate Group Formation",
+      "description": "Form an optimal AI debate group from top-scoring models with fallback assignments",
+      "category": "core",
+      "dependencies": ["provider_verification"],
+      "estimated_duration": "3-8 minutes",
+      "inputs": [
+        {
+          "name": "models_scored.json",
+          "source": "provider_verification",
+          "required": true
+        },
+        {
+          "name": "group_config",
+          "source": ".env",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "debate_group.json",
+          "type": "json",
+          "description": "Complete debate group configuration"
+        },
+        {
+          "name": "member_assignments.json",
+          "type": "json",
+          "description": "Primary and fallback member assignments"
+        },
+        {
+          "name": "formation_report.md",
+          "type": "markdown",
+          "description": "Formation process details and decisions"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "exact_count",
+          "target": "primary_members",
+          "value": 5,
+          "message": "Must have exactly 5 primary members"
+        },
+        {
+          "type": "exact_count",
+          "target": "fallbacks_per_primary",
+          "value": 2,
+          "message": "Must have exactly 2 fallbacks per primary"
+        },
+        {
+          "type": "no_duplicates",
+          "target": "all_models",
+          "message": "No model can appear more than once"
+        },
+        {
+          "type": "min_score",
+          "target": "average_group_score",
+          "value": 7.0,
+          "message": "Average group score must be at least 7.0"
+        }
+      ],
+      "metrics": [
+        "total_models_selected",
+        "average_primary_score",
+        "average_fallback_score",
+        "provider_diversity_index",
+        "capability_coverage_percent"
+      ],
+      "configuration": {
+        "debate_group_size": 5,
+        "fallbacks_per_member": 2,
+        "selection_criteria": {
+          "verification_score": 0.4,
+          "capability_coverage": 0.3,
+          "response_speed": 0.2,
+          "provider_diversity": 0.1
+        }
+      }
+    },
+    {
+      "id": "api_quality_test",
+      "name": "API Quality Testing",
+      "description": "Validate response quality of the AI debate group via OpenAI-compatible API",
+      "category": "validation",
+      "dependencies": ["ai_debate_formation"],
+      "estimated_duration": "5-15 minutes",
+      "inputs": [
+        {
+          "name": "debate_group.json",
+          "source": "ai_debate_formation",
+          "required": true
+        },
+        {
+          "name": "test_prompts",
+          "source": "data/test_prompts.json",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "test_results.json",
+          "type": "json",
+          "description": "Detailed test results with pass/fail status"
+        },
+        {
+          "name": "assertion_report.json",
+          "type": "json",
+          "description": "Individual assertion outcomes"
+        },
+        {
+          "name": "api_quality_report.md",
+          "type": "markdown",
+          "description": "Human-readable quality report"
+        },
+        {
+          "name": "api_requests.log",
+          "type": "log",
+          "description": "All API requests made"
+        },
+        {
+          "name": "api_responses.log",
+          "type": "log",
+          "description": "All API responses received"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "all_pass",
+          "target": "tests",
+          "message": "All tests must pass"
+        },
+        {
+          "type": "no_mock_responses",
+          "target": "responses",
+          "message": "No mock or placeholder responses allowed"
+        },
+        {
+          "type": "min_score",
+          "target": "average_quality_score",
+          "value": 0.8,
+          "message": "Average quality score must be at least 0.8"
+        },
+        {
+          "type": "max_latency",
+          "target": "response_time",
+          "value": 30000,
+          "message": "Each request must complete within 30 seconds"
+        }
+      ],
+      "metrics": [
+        "tests_passed",
+        "tests_failed",
+        "average_quality_score",
+        "average_response_time_ms",
+        "mock_detections",
+        "assertion_pass_rate"
+      ],
+      "test_categories": [
+        {
+          "name": "code_generation",
+          "tests": [
+            {
+              "id": "simple_function",
+              "prompt": "Write a Go function to calculate factorial",
+              "assertions": ["contains:func", "not_empty", "min_length:50"]
+            },
+            {
+              "id": "algorithm",
+              "prompt": "Implement binary search in Python",
+              "assertions": ["contains:def", "contains:return", "code_valid"]
+            },
+            {
+              "id": "class_design",
+              "prompt": "Create a TypeScript class for user management",
+              "assertions": ["contains:class", "contains:constructor"]
+            }
+          ]
+        },
+        {
+          "name": "code_review",
+          "tests": [
+            {
+              "id": "bug_detection",
+              "prompt": "Review this Go code for bugs: `func divide(a,b int) int { return a/b }`",
+              "assertions": ["contains_any:zero,division", "quality_score:0.7"]
+            },
+            {
+              "id": "security_review",
+              "prompt": "Find security issues in: `db.Query(\"SELECT * FROM users WHERE id = \" + userInput)`",
+              "assertions": ["contains_any:injection,sanitize,parameterized"]
+            }
+          ]
+        },
+        {
+          "name": "reasoning",
+          "tests": [
+            {
+              "id": "math_problem",
+              "prompt": "A farmer has 17 sheep. All but 9 run away. How many sheep are left?",
+              "assertions": ["contains:9", "reasoning_present"]
+            },
+            {
+              "id": "logic_puzzle",
+              "prompt": "If all A are B, and all B are C, are all A also C? Explain your reasoning.",
+              "assertions": ["contains_any:yes,true", "reasoning_present"]
+            }
+          ]
+        },
+        {
+          "name": "quality",
+          "tests": [
+            {
+              "id": "completeness",
+              "prompt": "Explain REST API best practices for building scalable services",
+              "assertions": ["min_length:200", "not_mock"]
+            },
+            {
+              "id": "accuracy",
+              "prompt": "What is the capital of France?",
+              "assertions": ["contains:Paris", "not_empty"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assertion_types": {
+    "not_empty": {
+      "description": "Response must not be empty",
+      "params": []
+    },
+    "not_mock": {
+      "description": "Response must not be a mock or placeholder",
+      "params": [],
+      "patterns": ["lorem ipsum", "placeholder", "mock response", "TODO", "not implemented"]
+    },
+    "contains": {
+      "description": "Response must contain specified text",
+      "params": ["value"]
+    },
+    "contains_any": {
+      "description": "Response must contain any of the specified values",
+      "params": ["values"]
+    },
+    "min_length": {
+      "description": "Response must have minimum character count",
+      "params": ["value"]
+    },
+    "quality_score": {
+      "description": "Response quality must meet threshold",
+      "params": ["min_value"]
+    },
+    "reasoning_present": {
+      "description": "Response must show reasoning steps",
+      "params": [],
+      "indicators": ["because", "therefore", "since", "thus", "step", "first", "then"]
+    },
+    "code_valid": {
+      "description": "Response must contain valid code syntax",
+      "params": []
+    },
+    "min_count": {
+      "description": "Collection must have minimum count",
+      "params": ["value"]
+    },
+    "exact_count": {
+      "description": "Collection must have exact count",
+      "params": ["value"]
+    },
+    "max_latency": {
+      "description": "Operation must complete within time limit (ms)",
+      "params": ["value"]
+    },
+    "all_valid": {
+      "description": "All items must be valid",
+      "params": []
+    },
+    "no_duplicates": {
+      "description": "No duplicate items allowed",
+      "params": []
+    },
+    "all_pass": {
+      "description": "All items must pass",
+      "params": []
+    },
+    "no_mock_responses": {
+      "description": "No mock or fake responses allowed",
+      "params": []
+    },
+    "min_score": {
+      "description": "Score must meet minimum threshold",
+      "params": ["value"]
+    }
+  }
+}
