@@ -1,7 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
@@ -21,10 +25,14 @@ import (
 )
 
 var (
-	configFile      = flag.String("config", "", "Path to configuration file (YAML)")
-	version         = flag.Bool("version", false, "Show version information")
-	help            = flag.Bool("help", false, "Show help message")
-	autoStartDocker = flag.Bool("auto-start-docker", true, "Automatically start required Docker containers")
+	configFile           = flag.String("config", "", "Path to configuration file (YAML)")
+	version              = flag.Bool("version", false, "Show version information")
+	help                 = flag.Bool("help", false, "Show help message")
+	autoStartDocker      = flag.Bool("auto-start-docker", true, "Automatically start required Docker containers")
+	generateAPIKey       = flag.Bool("generate-api-key", false, "Generate a new SuperAgent API key and output it")
+	generateOpenCode     = flag.Bool("generate-opencode-config", false, "Generate OpenCode configuration JSON")
+	openCodeOutput       = flag.String("opencode-output", "", "Output path for OpenCode config (default: stdout)")
+	apiKeyEnvFile        = flag.String("api-key-env-file", "", "Path to .env file to write the generated API key")
 )
 
 // CommandExecutor interface for executing system commands (allows mocking)
@@ -371,13 +379,17 @@ func checkChromaDBHealthWithConfig(cfg *ContainerConfig) error {
 
 // AppConfig holds application configuration for testing
 type AppConfig struct {
-	ShowHelp        bool
-	ShowVersion     bool
-	AutoStartDocker bool
-	ServerHost      string
-	ServerPort      string
-	Logger          *logrus.Logger
-	ShutdownSignal  chan os.Signal
+	ShowHelp             bool
+	ShowVersion          bool
+	AutoStartDocker      bool
+	GenerateAPIKey       bool
+	GenerateOpenCode     bool
+	OpenCodeOutput       string
+	APIKeyEnvFile        string
+	ServerHost           string
+	ServerPort           string
+	Logger               *logrus.Logger
+	ShutdownSignal       chan os.Signal
 }
 
 // DefaultAppConfig returns the default application configuration
@@ -410,6 +422,16 @@ func run(appCfg *AppConfig) error {
 	if appCfg.ShowVersion {
 		showVersion()
 		return nil
+	}
+
+	// Handle API key generation command
+	if appCfg.GenerateAPIKey {
+		return handleGenerateAPIKey(appCfg)
+	}
+
+	// Handle OpenCode config generation command
+	if appCfg.GenerateOpenCode {
+		return handleGenerateOpenCode(appCfg)
 	}
 
 	// Load full configuration from environment variables
@@ -504,10 +526,205 @@ func main() {
 	appCfg.ShowHelp = *help
 	appCfg.ShowVersion = *version
 	appCfg.AutoStartDocker = *autoStartDocker
+	appCfg.GenerateAPIKey = *generateAPIKey
+	appCfg.GenerateOpenCode = *generateOpenCode
+	appCfg.OpenCodeOutput = *openCodeOutput
+	appCfg.APIKeyEnvFile = *apiKeyEnvFile
 
 	if err := run(appCfg); err != nil {
 		appCfg.Logger.WithError(err).Fatal("Application failed")
 	}
+}
+
+// generateSecureAPIKey generates a cryptographically secure API key
+func generateSecureAPIKey() (string, error) {
+	bytes := make([]byte, 32) // 256 bits
+	if _, err := rand.Read(bytes); err != nil {
+		return "", fmt.Errorf("failed to generate random bytes: %w", err)
+	}
+	return "sk-" + hex.EncodeToString(bytes), nil
+}
+
+// handleGenerateAPIKey handles the --generate-api-key command
+func handleGenerateAPIKey(appCfg *AppConfig) error {
+	logger := appCfg.Logger
+	if logger == nil {
+		logger = logrus.New()
+	}
+
+	// Generate the API key
+	apiKey, err := generateSecureAPIKey()
+	if err != nil {
+		return fmt.Errorf("failed to generate API key: %w", err)
+	}
+
+	// If env file is specified, write to it
+	if appCfg.APIKeyEnvFile != "" {
+		if err := writeAPIKeyToEnvFile(appCfg.APIKeyEnvFile, apiKey); err != nil {
+			return fmt.Errorf("failed to write API key to env file: %w", err)
+		}
+		logger.WithField("file", appCfg.APIKeyEnvFile).Info("API key written to env file")
+	}
+
+	// Output the API key to stdout
+	fmt.Println(apiKey)
+	return nil
+}
+
+// writeAPIKeyToEnvFile writes or updates the SUPERAGENT_API_KEY in the specified .env file
+func writeAPIKeyToEnvFile(filePath, apiKey string) error {
+	// Read existing file contents if it exists
+	existingContent := make(map[string]string)
+	var lineOrder []string
+
+	if file, err := os.Open(filePath); err == nil {
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			// Skip empty lines and comments
+			if line == "" || strings.HasPrefix(line, "#") {
+				lineOrder = append(lineOrder, line)
+				continue
+			}
+			// Parse key=value
+			if idx := strings.Index(line, "="); idx > 0 {
+				key := strings.TrimSpace(line[:idx])
+				value := strings.TrimSpace(line[idx+1:])
+				existingContent[key] = value
+				lineOrder = append(lineOrder, key)
+			} else {
+				lineOrder = append(lineOrder, line)
+			}
+		}
+	}
+
+	// Update the API key
+	existingContent["SUPERAGENT_API_KEY"] = apiKey
+
+	// Check if key already exists in order
+	keyExists := false
+	for _, item := range lineOrder {
+		if item == "SUPERAGENT_API_KEY" {
+			keyExists = true
+			break
+		}
+	}
+	if !keyExists {
+		lineOrder = append(lineOrder, "SUPERAGENT_API_KEY")
+	}
+
+	// Write back to file
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create env file: %w", err)
+	}
+	defer file.Close()
+
+	for _, item := range lineOrder {
+		if item == "" || strings.HasPrefix(item, "#") {
+			// Write empty lines and comments as-is
+			fmt.Fprintln(file, item)
+		} else if value, ok := existingContent[item]; ok {
+			// Write key=value
+			fmt.Fprintf(file, "%s=%s\n", item, value)
+		}
+	}
+
+	return nil
+}
+
+// OpenCodeConfig represents the OpenCode configuration structure
+type OpenCodeConfig struct {
+	Schema   string                  `json:"$schema"`
+	Provider map[string]ProviderDef  `json:"provider"`
+	Agent    *AgentDef               `json:"agent,omitempty"`
+}
+
+// ProviderDef represents a provider definition in OpenCode config
+type ProviderDef struct {
+	Name    string                 `json:"name"`
+	Options map[string]interface{} `json:"options"`
+}
+
+// AgentDef represents agent configuration
+type AgentDef struct {
+	Model string `json:"model"`
+}
+
+// handleGenerateOpenCode handles the --generate-opencode-config command
+func handleGenerateOpenCode(appCfg *AppConfig) error {
+	logger := appCfg.Logger
+	if logger == nil {
+		logger = logrus.New()
+	}
+
+	// Get configuration values
+	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	if apiKey == "" {
+		// If no API key in env, check if we should generate one
+		var err error
+		apiKey, err = generateSecureAPIKey()
+		if err != nil {
+			return fmt.Errorf("failed to generate API key: %w", err)
+		}
+		logger.Warn("No SUPERAGENT_API_KEY found in environment, generated a new one")
+
+		// If env file is specified, write the generated key
+		if appCfg.APIKeyEnvFile != "" {
+			if err := writeAPIKeyToEnvFile(appCfg.APIKeyEnvFile, apiKey); err != nil {
+				logger.WithError(err).Warn("Failed to write generated API key to env file")
+			}
+		}
+	}
+
+	// Get host and port
+	host := os.Getenv("SUPERAGENT_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	baseURL := fmt.Sprintf("http://%s:%s/v1", host, port)
+
+	// Build the OpenCode configuration
+	config := OpenCodeConfig{
+		Schema: "https://opencode.ai/config.json",
+		Provider: map[string]ProviderDef{
+			"superagent": {
+				Name: "SuperAgent AI Debate Ensemble",
+				Options: map[string]interface{}{
+					"apiKey":  apiKey,
+					"baseURL": baseURL,
+					"timeout": 600000,
+				},
+			},
+		},
+		Agent: &AgentDef{
+			Model: "superagent/superagent-debate",
+		},
+	}
+
+	// Marshal to JSON with indentation
+	jsonData, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal OpenCode config: %w", err)
+	}
+
+	// Output to file or stdout
+	if appCfg.OpenCodeOutput != "" {
+		if err := os.WriteFile(appCfg.OpenCodeOutput, jsonData, 0644); err != nil {
+			return fmt.Errorf("failed to write OpenCode config to file: %w", err)
+		}
+		logger.WithField("file", appCfg.OpenCodeOutput).Info("OpenCode configuration written to file")
+	} else {
+		fmt.Println(string(jsonData))
+	}
+
+	return nil
 }
 
 func showHelp() {
@@ -521,6 +738,14 @@ Options:
         Path to configuration file (YAML)
   -auto-start-docker
         Automatically start required Docker containers (default: true)
+  -generate-api-key
+        Generate a new SuperAgent API key and output it to stdout
+  -generate-opencode-config
+        Generate OpenCode configuration JSON (uses SUPERAGENT_API_KEY env or generates new)
+  -opencode-output string
+        Output path for OpenCode config (default: stdout)
+  -api-key-env-file string
+        Path to .env file to write the generated API key
   -version
         Show version information
   -help
@@ -538,6 +763,19 @@ Features:
   - Auto-refresh with configurable intervals
   - Model comparison and capability filtering
   - Comprehensive monitoring and health checks
+
+API Key & Configuration Commands:
+  # Generate a new API key and display it
+  superagent -generate-api-key
+
+  # Generate API key and save to .env file
+  superagent -generate-api-key -api-key-env-file .env
+
+  # Generate OpenCode configuration (uses SUPERAGENT_API_KEY from env)
+  superagent -generate-opencode-config
+
+  # Generate OpenCode config and save to file, with API key to .env
+  superagent -generate-opencode-config -opencode-output opencode.json -api-key-env-file .env
 
 Examples:
   superagent

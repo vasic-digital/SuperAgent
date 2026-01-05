@@ -1030,198 +1030,57 @@ EOF
 phase6_opencode_config() {
     log_phase "PHASE 6: OpenCode Configuration Generation"
 
-    log_info "Generating OpenCode configuration using LLMsVerifier types and validation..."
+    log_info "Generating OpenCode configuration using SuperAgent binary..."
 
     local opencode_output="$OUTPUT_DIR/opencode.json"
     local opencode_redacted="$OUTPUT_DIR/opencode.json.example"
-    local debate_input="$OUTPUT_DIR/debate_group.json"
     local validation_output="$OUTPUT_DIR/opencode_validation.json"
+    local superagent_binary="$PROJECT_ROOT/bin/superagent"
 
-    local superagent_port="${SUPERAGENT_PORT:-8080}"
-    local superagent_host="${SUPERAGENT_HOST:-localhost}"
+    # Check if SuperAgent binary exists
+    if [ ! -x "$superagent_binary" ]; then
+        log_warning "SuperAgent binary not found at $superagent_binary, attempting build..."
+        run_cmd "cd $PROJECT_ROOT && make build"
+    fi
 
-    # Get actual API key values (OpenCode does NOT support variable references)
-    local superagent_api_key="${SUPERAGENT_API_KEY:-}"
-    local github_token="${GITHUB_TOKEN:-}"
+    if [ ! -x "$superagent_binary" ]; then
+        log_error "Failed to find or build SuperAgent binary"
+        return 1
+    fi
 
-    # Generate OpenCode configuration following the official schema
-    # Using LLMsVerifier's validated schema: ONLY these top-level keys are valid:
-    # $schema, plugin, enterprise, instructions, provider, mcp, tools, agent,
-    # command, keybinds, username, share, permission, compaction, sse, mode, autoshare
+    # Step 1: Generate API key if not set in environment
+    if [ -z "$SUPERAGENT_API_KEY" ]; then
+        log_info "SUPERAGENT_API_KEY not set, generating new API key..."
 
-    # IMPORTANT: OpenCode does NOT support environment variable references like ${VAR}
-    # All values must be actual strings. Pass env vars as arguments to Python.
+        # Generate API key and save to .env file
+        local generated_key
+        generated_key=$("$superagent_binary" -generate-api-key -api-key-env-file "$PROJECT_ROOT/.env" 2>&1 | grep -E '^sk-')
 
-    python3 - "$opencode_output" "$debate_input" "$superagent_host" "$superagent_port" "$superagent_api_key" "$github_token" << 'GENPYTHON'
-import json
-import sys
-from datetime import datetime
+        if [ -n "$generated_key" ]; then
+            export SUPERAGENT_API_KEY="$generated_key"
+            log_success "Generated and saved API key: ${generated_key:0:12}..."
+        else
+            log_error "Failed to generate API key"
+            return 1
+        fi
+    else
+        log_info "Using existing SUPERAGENT_API_KEY: ${SUPERAGENT_API_KEY:0:12}..."
+    fi
 
-output_file = sys.argv[1]
-debate_file = sys.argv[2]
-host = sys.argv[3]
-port = sys.argv[4]
-superagent_api_key = sys.argv[5] if len(sys.argv) > 5 else ""
-github_token = sys.argv[6] if len(sys.argv) > 6 else ""
+    # Step 2: Generate OpenCode configuration using the binary
+    log_info "Generating OpenCode configuration via SuperAgent binary..."
 
-# LLMsVerifier's validated top-level keys (from pkg/opencode/config/types.go)
-VALID_TOP_LEVEL_KEYS = {
-    "$schema", "plugin", "enterprise", "instructions", "provider",
-    "mcp", "tools", "agent", "command", "keybinds", "username",
-    "share", "permission", "compaction", "sse", "mode", "autoshare"
-}
-
-# Read debate group data
-primary = []
-fallbacks = []
-providers = []
-total_models = 0
-avg_score = 0.0
-
-try:
-    with open(debate_file, 'r') as f:
-        data = json.load(f)
-
-    providers_set = set()
-    for member in data.get('members', []):
-        model = member.get('model', {})
-        if model.get('model_id'):
-            primary.append(model.get('model_id'))
-            providers_set.add(model.get('provider', ''))
-        for fb in member.get('fallbacks', []):
-            if fb.get('model_id'):
-                fallbacks.append(fb.get('model_id'))
-                providers_set.add(fb.get('provider', ''))
-
-    providers = list(providers_set)
-    total_models = data.get('total_models', len(primary) + len(fallbacks))
-    avg_score = data.get('average_score', 0)
-except:
-    primary = ["model-1", "model-2", "model-3", "model-4", "model-5"]
-    fallbacks = ["fallback-1", "fallback-2", "fallback-3", "fallback-4"]
-    providers = ["provider-1", "provider-2"]
-    total_models = 9
-    avg_score = 8.0
-
-# Valid OpenCode configuration - ONLY using keys from VALID_TOP_LEVEL_KEYS
-# Following LLMsVerifier's pkg/opencode/config/types.go structure
-config = {
-    "$schema": "https://opencode.ai/config.json",
-
-    # Username for display
-    "username": "SuperAgent AI Ensemble",
-
-    # Provider configuration (REQUIRED per LLMsVerifier validator)
-    # NOTE: OpenCode does NOT support ${VAR} references - must use actual values
-    "provider": {
-        "superagent": {
-            "options": {
-                "apiKey": superagent_api_key if superagent_api_key else "YOUR_SUPERAGENT_API_KEY_HERE",
-                "baseURL": f"http://{host}:{port}/v1",
-                "timeout": 600000
-            }
-        }
-    },
-
-    # MCP servers (type must be "local" or "remote" per LLMsVerifier)
-    "mcp": {
-        "superagent-tools": {
-            "type": "remote",
-            "url": f"http://{host}:{port}/v1/mcp"
-        },
-        "filesystem": {
-            "type": "local",
-            "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/"]
-        },
-        "github": {
-            "type": "local",
-            "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
-            "environment": {
-                "GITHUB_TOKEN": github_token if github_token else "YOUR_GITHUB_TOKEN_HERE"
-            }
-        },
-        "memory": {
-            "type": "local",
-            "command": ["npx", "-y", "@modelcontextprotocol/server-memory"]
-        }
-    },
-
-    # Agent configurations (must have model or prompt per LLMsVerifier)
-    "agent": {
-        "default": {
-            "model": "superagent/superagent-debate",
-            "description": "SuperAgent AI Debate - ensemble of top-performing LLMs",
-            "prompt": "You are SuperAgent, an ensemble AI combining top language models through AI debate for optimal responses."
-        },
-        "code-reviewer": {
-            "model": "superagent/superagent-debate",
-            "description": "Code review agent",
-            "prompt": "You are a code reviewer. Analyze code for bugs, security issues, and improvements.",
-            "tools": {
-                "write": False,
-                "bash": False
-            }
-        }
-    },
-
-    # Permission model
-    "permission": {
-        "edit": "ask",
-        "bash": "ask"
-    },
-
-    # Tools configuration
-    "tools": {
-        "write": {"enabled": True},
-        "bash": {"enabled": True},
-        "edit": {"enabled": True},
-        "glob": {"enabled": True},
-        "grep": {"enabled": True},
-        "read": {"enabled": True},
-        "fetch": {"enabled": True}
-    },
-
-    # Instructions (references verified models from debate group)
-    "instructions": [
-        f"SuperAgent provides access to an AI debate group with {len(primary)} primary LLMs",
-        f"Underlying models verified via LLMsVerifier: {', '.join(primary[:3])}{'...' if len(primary) > 3 else ''}",
-        f"Average verification score: {avg_score}",
-        "MCP tools available via SuperAgent at /v1/mcp",
-        f"Generated: {datetime.now().isoformat()}"
-    ],
-
-    # Compaction settings
-    "compaction": {
-        "auto": True,
-        "prune": True
-    },
-
-    # SSE settings
-    "sse": {
-        "enabled": True
-    }
-}
-
-# Validate that all keys are valid OpenCode keys (LLMsVerifier check)
-invalid_keys = [k for k in config.keys() if k not in VALID_TOP_LEVEL_KEYS]
-if invalid_keys:
-    print(f"ERROR: Invalid top-level keys: {invalid_keys}", file=sys.stderr)
-    sys.exit(1)
-
-with open(output_file, 'w') as f:
-    json.dump(config, f, indent=2)
-
-print(f"OpenCode configuration generated with {len(primary)} primary models and {len(fallbacks)} fallbacks")
-print(f"Configuration validated against LLMsVerifier schema")
-GENPYTHON
-
+    "$superagent_binary" -generate-opencode-config -opencode-output "$opencode_output" 2>&1
     local gen_exit=$?
+
     if [ $gen_exit -ne 0 ]; then
         log_error "Failed to generate OpenCode configuration"
         return 1
     fi
 
-    # Validate the generated configuration using LLMsVerifier's validation rules
+    log_success "OpenCode configuration generated: $opencode_output"
+
+    # Step 3: Validate the generated configuration using LLMsVerifier's validation rules
     log_info "Validating configuration using LLMsVerifier implementation..."
 
     python3 - "$opencode_output" "$validation_output" << 'VALIDATEPYTHON'
@@ -1333,11 +1192,27 @@ VALIDATEPYTHON
 
     log_success "OpenCode configuration validated using LLMsVerifier"
 
-    # Generate redacted example version
-    cp "$opencode_output" "$opencode_redacted"
+    # Generate redacted example version (mask the API key)
+    python3 - "$opencode_output" "$opencode_redacted" << 'REDACTPYTHON'
+import json
+import sys
+
+with open(sys.argv[1], 'r') as f:
+    config = json.load(f)
+
+# Mask API key in example version
+if "provider" in config:
+    for provider in config["provider"].values():
+        if "options" in provider and "apiKey" in provider["options"]:
+            provider["options"]["apiKey"] = "YOUR_SUPERAGENT_API_KEY_HERE"
+
+with open(sys.argv[2], 'w') as f:
+    json.dump(config, f, indent=2)
+REDACTPYTHON
 
     log_success "OpenCode configuration generated and validated"
     log_info "Config: $opencode_output"
+    log_info "Example (redacted): $opencode_redacted"
     log_info "Validation: $validation_output"
 
     # Copy to Downloads

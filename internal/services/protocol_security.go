@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -46,12 +47,17 @@ func NewProtocolSecurity(logger *logrus.Logger) *ProtocolSecurity {
 	}
 }
 
-// CreateAPIKey creates a new API key with permissions
+// CreateAPIKey creates a new API key with permissions (auto-generates the key)
 func (s *ProtocolSecurity) CreateAPIKey(name, owner string, permissions []string) (*APIKey, error) {
+	key := generateSecureToken()
+	return s.CreateAPIKeyWithValue(name, owner, key, permissions)
+}
+
+// CreateAPIKeyWithValue creates an API key with a specific key value
+// This is useful when you want to set the API key from an environment variable
+func (s *ProtocolSecurity) CreateAPIKeyWithValue(name, owner, key string, permissions []string) (*APIKey, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	key := generateSecureToken()
 
 	apiKey := &APIKey{
 		Key:         key,
@@ -139,15 +145,32 @@ func (s *ProtocolSecurity) ListAPIKeys() []*APIKey {
 
 // InitializeDefaultSecurity sets up default security configuration
 func (s *ProtocolSecurity) InitializeDefaultSecurity() error {
-	// Create admin key with full access
-	adminKey, err := s.CreateAPIKey("admin-key", "system", []string{
-		"*", // Full access
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create admin key: %w", err)
-	}
+	// Check if SUPERAGENT_API_KEY is set in environment
+	// This allows external configuration of the admin API key
+	envAPIKey := os.Getenv("SUPERAGENT_API_KEY")
 
-	s.logger.WithField("key", adminKey.Key[:8]+"...").Info("Admin API key created")
+	var adminKey *APIKey
+	var err error
+
+	if envAPIKey != "" {
+		// Use the API key from environment variable
+		adminKey, err = s.CreateAPIKeyWithValue("admin-key", "system", envAPIKey, []string{
+			"*", // Full access
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create admin key from env: %w", err)
+		}
+		s.logger.WithField("key", adminKey.Key[:8]+"...").Info("Admin API key created from SUPERAGENT_API_KEY env var")
+	} else {
+		// Generate a new admin key
+		adminKey, err = s.CreateAPIKey("admin-key", "system", []string{
+			"*", // Full access
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create admin key: %w", err)
+		}
+		s.logger.WithField("key", adminKey.Key[:8]+"...").Info("Admin API key created (auto-generated)")
+	}
 
 	// Create user key with limited access
 	userKey, err := s.CreateAPIKey("user-key", "demo", []string{
