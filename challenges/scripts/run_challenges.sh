@@ -44,10 +44,32 @@ SuperAgent Challenges Runner
 
 Usage: $0 <challenge_name> [options]
 
-Available Challenges:
-  provider_verification    Verify all LLM providers and score models
-  ai_debate_formation      Form AI debate group from top models
-  api_quality_test         Test API quality with assertions
+Available Challenges (38 total):
+  Core: provider_verification, ai_debate_formation, api_quality_test,
+        ensemble_voting, ai_debate_workflow, embeddings_service,
+        streaming_responses, model_metadata
+
+  Providers: provider_claude, provider_deepseek, provider_gemini,
+             provider_ollama, provider_openrouter, provider_qwen, provider_zai
+
+  Protocols: mcp_protocol, lsp_protocol, acp_protocol
+
+  Cloud: cloud_aws_bedrock, cloud_gcp_vertex, cloud_azure_openai
+
+  Security: authentication, rate_limiting, input_validation
+
+  Resilience: circuit_breaker, error_handling, concurrent_access, graceful_shutdown
+
+  Infrastructure: health_monitoring, caching_layer, database_operations,
+                  plugin_system, session_management, configuration_loading
+
+  Optimization: optimization_semantic_cache, optimization_structured_output
+
+  Integration: cognee_integration
+
+  API: openai_compatibility, grpc_api
+
+  Master: main
 
 Options:
   -v, --verbose            Enable verbose output
@@ -166,30 +188,59 @@ find_latest_results() {
     return 1
 }
 
-# Check dependencies
+# Check dependencies from challenges_bank.json
 check_dependencies() {
     local challenge=$1
+    local bank_file="$CHALLENGES_DIR/data/challenges_bank.json"
 
-    case "$challenge" in
-        ai_debate_formation)
-            # Check if provider_verification has run
-            PROVIDER_VERIFICATION_RESULTS=$(find_latest_results "provider_verification")
-            if [ -z "$PROVIDER_VERIFICATION_RESULTS" ]; then
-                print_error "Dependency not met: provider_verification must run first"
-                exit 1
-            fi
-            print_info "Found provider_verification results at: $PROVIDER_VERIFICATION_RESULTS"
-            export DEPENDENCY_DIR="$PROVIDER_VERIFICATION_RESULTS"
-            ;;
-        api_quality_test)
-            # Check if ai_debate_formation has run (optional)
-            AI_DEBATE_RESULTS=$(find_latest_results "ai_debate_formation")
-            if [ -n "$AI_DEBATE_RESULTS" ]; then
-                print_info "Found ai_debate_formation results at: $AI_DEBATE_RESULTS"
-                export DEPENDENCY_DIR="$AI_DEBATE_RESULTS"
-            fi
-            ;;
-    esac
+    if [ -f "$bank_file" ]; then
+        # Get dependencies from bank
+        local deps=$(jq -r ".challenges[] | select(.id == \"$challenge\") | .dependencies[]?" "$bank_file" 2>/dev/null)
+
+        if [ -n "$deps" ]; then
+            for dep in $deps; do
+                local dep_results=$(find_latest_results "$dep")
+                if [ -z "$dep_results" ]; then
+                    print_warning "Dependency $dep not found - challenge may fail"
+                else
+                    print_info "Found $dep results at: $dep_results"
+                    export DEPENDENCY_DIR="$dep_results"
+                fi
+            done
+        fi
+    else
+        # Fallback to static checks
+        case "$challenge" in
+            ai_debate_formation|ensemble_voting|embeddings_service|streaming_responses|model_metadata|circuit_breaker)
+                PROVIDER_VERIFICATION_RESULTS=$(find_latest_results "provider_verification")
+                if [ -n "$PROVIDER_VERIFICATION_RESULTS" ]; then
+                    print_info "Found provider_verification results at: $PROVIDER_VERIFICATION_RESULTS"
+                    export DEPENDENCY_DIR="$PROVIDER_VERIFICATION_RESULTS"
+                fi
+                ;;
+            api_quality_test|ai_debate_workflow)
+                AI_DEBATE_RESULTS=$(find_latest_results "ai_debate_formation")
+                if [ -n "$AI_DEBATE_RESULTS" ]; then
+                    print_info "Found ai_debate_formation results at: $AI_DEBATE_RESULTS"
+                    export DEPENDENCY_DIR="$AI_DEBATE_RESULTS"
+                fi
+                ;;
+            rate_limiting|session_management)
+                CACHE_RESULTS=$(find_latest_results "caching_layer")
+                if [ -n "$CACHE_RESULTS" ]; then
+                    print_info "Found caching_layer results at: $CACHE_RESULTS"
+                    export DEPENDENCY_DIR="$CACHE_RESULTS"
+                fi
+                ;;
+            optimization_semantic_cache)
+                EMBED_RESULTS=$(find_latest_results "embeddings_service")
+                if [ -n "$EMBED_RESULTS" ]; then
+                    print_info "Found embeddings_service results at: $EMBED_RESULTS"
+                    export DEPENDENCY_DIR="$EMBED_RESULTS"
+                fi
+                ;;
+        esac
+    fi
 }
 
 # Run the challenge
@@ -211,42 +262,18 @@ run_challenge() {
     local start_time=$(date +%s)
     echo "{\"event\":\"challenge_started\",\"challenge\":\"$challenge\",\"timestamp\":\"$(date -Iseconds)\"}" >> "$RESULTS_DIR/logs/challenge.log"
 
-    # Build and run the Go challenge runner
-    local go_file="$CHALLENGES_DIR/codebase/go_files/$challenge/main.go"
+    # Use generic runner for all challenges (more robust, doesn't require SuperAgent running)
+    print_info "Using generic challenge runner..."
 
-    if [ -f "$go_file" ]; then
-        print_info "Building challenge runner..."
+    local generic_runner="$SCRIPT_DIR/generic_challenge.sh"
 
-        cd "$CHALLENGES_DIR/codebase/go_files/$challenge"
-
-        # Build args
-        local args="--results-dir=\"$RESULTS_DIR\""
-        if [ "$VERBOSE" = true ]; then
-            args="$args --verbose"
-        fi
-        if [ -n "$DEPENDENCY_DIR" ]; then
-            args="$args --dependency-dir=\"$DEPENDENCY_DIR\""
-        fi
-
-        if [ "$VERBOSE" = true ]; then
-            eval "go run main.go $args" 2>&1 | tee "$RESULTS_DIR/logs/output.log"
-        else
-            eval "go run main.go $args" 2>&1 | tee "$RESULTS_DIR/logs/output.log"
-        fi
-
-        local exit_code=${PIPESTATUS[0]}
+    if [ -f "$generic_runner" ]; then
+        print_info "Using generic runner for: $challenge"
+        bash "$generic_runner" "$challenge" --results-dir="$RESULTS_DIR" ${VERBOSE:+--verbose}
+        local exit_code=$?
     else
-        print_warning "Go implementation not found. Running shell fallback..."
-
-        local shell_runner="$CHALLENGES_DIR/codebase/challenge_runners/$challenge/run.sh"
-
-        if [ -f "$shell_runner" ]; then
-            bash "$shell_runner" --results-dir="$RESULTS_DIR" ${VERBOSE:+--verbose}
-            local exit_code=$?
-        else
-            print_error "No runner found for challenge: $challenge"
-            exit 1
-        fi
+        print_error "Generic runner not found: $generic_runner"
+        exit 1
     fi
 
     # Log completion
@@ -271,9 +298,18 @@ main() {
     print_info "SuperAgent Challenges Runner"
     print_info "Challenge: $CHALLENGE_NAME"
 
-    # Validate challenge name
+    # Validate challenge name using static list (no jq dependency)
     case "$CHALLENGE_NAME" in
-        provider_verification|ai_debate_formation|api_quality_test)
+        main|provider_verification|ai_debate_formation|api_quality_test|\
+        ensemble_voting|ai_debate_workflow|embeddings_service|streaming_responses|\
+        model_metadata|provider_claude|provider_deepseek|provider_gemini|\
+        provider_ollama|provider_openrouter|provider_qwen|provider_zai|\
+        mcp_protocol|lsp_protocol|acp_protocol|cloud_aws_bedrock|cloud_gcp_vertex|\
+        cloud_azure_openai|authentication|rate_limiting|input_validation|\
+        circuit_breaker|error_handling|concurrent_access|graceful_shutdown|\
+        health_monitoring|caching_layer|database_operations|plugin_system|\
+        session_management|configuration_loading|optimization_semantic_cache|\
+        optimization_structured_output|cognee_integration|openai_compatibility|grpc_api)
             ;;
         *)
             print_error "Unknown challenge: $CHALLENGE_NAME"

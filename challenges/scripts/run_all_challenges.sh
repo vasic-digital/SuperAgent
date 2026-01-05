@@ -34,11 +34,72 @@ print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-# Challenges in dependency order
+# All 38 challenges in dependency order
 CHALLENGES=(
+    # Infrastructure (no dependencies)
+    "health_monitoring"
+    "configuration_loading"
+    "caching_layer"
+    "database_operations"
+    "authentication"
+    "plugin_system"
+
+    # Security (depends on caching_layer, authentication)
+    "rate_limiting"
+    "input_validation"
+
+    # Providers (no dependencies)
+    "provider_claude"
+    "provider_deepseek"
+    "provider_gemini"
+    "provider_ollama"
+    "provider_openrouter"
+    "provider_qwen"
+    "provider_zai"
+
+    # Core verification
     "provider_verification"
+
+    # Protocols (no dependencies)
+    "mcp_protocol"
+    "lsp_protocol"
+    "acp_protocol"
+
+    # Cloud integrations
+    "cloud_aws_bedrock"
+    "cloud_gcp_vertex"
+    "cloud_azure_openai"
+
+    # Core features (depends on provider_verification)
+    "ensemble_voting"
+    "embeddings_service"
+    "streaming_responses"
+    "model_metadata"
+
+    # Debate (depends on provider_verification)
     "ai_debate_formation"
+    "ai_debate_workflow"
+
+    # API (depends on provider_verification)
+    "openai_compatibility"
+    "grpc_api"
     "api_quality_test"
+
+    # Optimization (depends on embeddings)
+    "optimization_semantic_cache"
+    "optimization_structured_output"
+
+    # Integration
+    "cognee_integration"
+
+    # Resilience
+    "circuit_breaker"
+    "error_handling"
+    "concurrent_access"
+    "graceful_shutdown"
+
+    # Session (depends on caching, auth)
+    "session_management"
 )
 
 # Parse options
