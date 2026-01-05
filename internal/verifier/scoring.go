@@ -202,6 +202,10 @@ func (s *ScoringService) GetTopModels(ctx context.Context, limit int) ([]*ModelW
 		return models[i].OverallScore > models[j].OverallScore
 	})
 
+	// Handle invalid limits
+	if limit <= 0 {
+		return []*ModelWithScore{}, nil
+	}
 	if limit > len(models) {
 		limit = len(models)
 	}
@@ -237,6 +241,10 @@ func (s *ScoringService) GetModelsByScoreRange(ctx context.Context, minScore, ma
 		return filtered[i].OverallScore > filtered[j].OverallScore
 	})
 
+	// Handle invalid limits
+	if limit <= 0 {
+		return []*ModelWithScore{}, nil
+	}
 	if limit > len(filtered) {
 		limit = len(filtered)
 	}

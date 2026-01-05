@@ -23,6 +23,7 @@ type ModelDiscoveryService struct {
 	mu                  sync.RWMutex
 	stopCh              chan struct{}
 	wg                  sync.WaitGroup
+	stopped             bool
 }
 
 // DiscoveryConfig represents discovery configuration
@@ -96,6 +97,13 @@ func NewModelDiscoveryService(
 
 // Start starts the discovery service
 func (s *ModelDiscoveryService) Start(credentials []ProviderCredentials) error {
+	s.mu.Lock()
+	if s.stopped {
+		// Reset for restart
+		s.stopCh = make(chan struct{})
+		s.stopped = false
+	}
+	s.mu.Unlock()
 	s.wg.Add(1)
 	go s.discoveryLoop(credentials)
 	return nil
@@ -103,7 +111,14 @@ func (s *ModelDiscoveryService) Start(credentials []ProviderCredentials) error {
 
 // Stop stops the discovery service
 func (s *ModelDiscoveryService) Stop() {
+	s.mu.Lock()
+	if s.stopped {
+		s.mu.Unlock()
+		return
+	}
+	s.stopped = true
 	close(s.stopCh)
+	s.mu.Unlock()
 	s.wg.Wait()
 }
 
