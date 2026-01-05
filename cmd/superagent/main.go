@@ -697,21 +697,22 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 	baseURL := fmt.Sprintf("http://%s:%s/v1", host, port)
 
 	// Build the OpenCode configuration
+	// Use "openai" provider type since SuperAgent exposes OpenAI-compatible API
+	// The custom baseURL points to SuperAgent's /v1 endpoint
 	config := OpenCodeConfig{
 		Schema: "https://opencode.ai/config.json",
 		Provider: map[string]ProviderDef{
-			"superagent": {
+			"openai": {
 				Name: "SuperAgent AI Debate Ensemble",
 				Options: map[string]interface{}{
 					"apiKey":  apiKey,
 					"baseURL": baseURL,
-					"timeout": 600000,
 				},
 			},
 		},
 		Agent: &AgentDef{
 			Model: &ModelRef{
-				Provider: "superagent",
+				Provider: "openai",
 				Model:    "superagent-debate",
 			},
 		},
