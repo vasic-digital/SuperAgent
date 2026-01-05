@@ -163,10 +163,11 @@ func GenerateSuperAgentConfig(host string, port int, debateMembers []DebateGroup
 			"All underlying models have been verified through real API calls by LLMsVerifier.",
 		},
 		// Provider configuration (REQUIRED per LLMsVerifier validator)
+		// NOTE: OpenCode does NOT support ${VAR} references - must use actual values
 		Provider: map[string]ProviderConfig{
 			"superagent": {
 				Options: map[string]interface{}{
-					"apiKey":  "${SUPERAGENT_API_KEY}",
+					"apiKey":  os.Getenv("SUPERAGENT_API_KEY"),
 					"baseURL": baseURL,
 					"timeout": 600000,
 				},
@@ -189,7 +190,7 @@ func GenerateSuperAgentConfig(host string, port int, debateMembers []DebateGroup
 				Command: []string{"npx", "-y", "@modelcontextprotocol/server-github"},
 				Enabled: &enabled,
 				Environment: map[string]string{
-					"GITHUB_TOKEN": "${GITHUB_TOKEN}",
+					"GITHUB_TOKEN": os.Getenv("GITHUB_TOKEN"),
 				},
 			},
 			"memory": {

@@ -1040,12 +1040,19 @@ phase6_opencode_config() {
     local superagent_port="${SUPERAGENT_PORT:-8080}"
     local superagent_host="${SUPERAGENT_HOST:-localhost}"
 
+    # Get actual API key values (OpenCode does NOT support variable references)
+    local superagent_api_key="${SUPERAGENT_API_KEY:-}"
+    local github_token="${GITHUB_TOKEN:-}"
+
     # Generate OpenCode configuration following the official schema
     # Using LLMsVerifier's validated schema: ONLY these top-level keys are valid:
     # $schema, plugin, enterprise, instructions, provider, mcp, tools, agent,
     # command, keybinds, username, share, permission, compaction, sse, mode, autoshare
 
-    python3 - "$opencode_output" "$debate_input" "$superagent_host" "$superagent_port" << 'GENPYTHON'
+    # IMPORTANT: OpenCode does NOT support environment variable references like ${VAR}
+    # All values must be actual strings. Pass env vars as arguments to Python.
+
+    python3 - "$opencode_output" "$debate_input" "$superagent_host" "$superagent_port" "$superagent_api_key" "$github_token" << 'GENPYTHON'
 import json
 import sys
 from datetime import datetime
@@ -1054,6 +1061,8 @@ output_file = sys.argv[1]
 debate_file = sys.argv[2]
 host = sys.argv[3]
 port = sys.argv[4]
+superagent_api_key = sys.argv[5] if len(sys.argv) > 5 else ""
+github_token = sys.argv[6] if len(sys.argv) > 6 else ""
 
 # LLMsVerifier's validated top-level keys (from pkg/opencode/config/types.go)
 VALID_TOP_LEVEL_KEYS = {
@@ -1103,10 +1112,11 @@ config = {
     "username": "SuperAgent AI Ensemble",
 
     # Provider configuration (REQUIRED per LLMsVerifier validator)
+    # NOTE: OpenCode does NOT support ${VAR} references - must use actual values
     "provider": {
         "superagent": {
             "options": {
-                "apiKey": "${SUPERAGENT_API_KEY}",
+                "apiKey": superagent_api_key if superagent_api_key else "YOUR_SUPERAGENT_API_KEY_HERE",
                 "baseURL": f"http://{host}:{port}/v1",
                 "timeout": 600000
             }
@@ -1127,7 +1137,7 @@ config = {
             "type": "local",
             "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
             "environment": {
-                "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+                "GITHUB_TOKEN": github_token if github_token else "YOUR_GITHUB_TOKEN_HERE"
             }
         },
         "memory": {
