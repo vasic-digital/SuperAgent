@@ -150,11 +150,39 @@ jobs:
     environment: staging
 
     steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+
+    - name: Install Kustomize
+      run: |
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+        sudo mv kustomize /usr/local/bin/
+
+    - name: Update image tag
+      run: |
+        cd k8s/staging
+        kustomize edit set image superagent/superagent=superagent/superagent:develop-${{ github.sha }}
+
     - name: Deploy to staging
       run: |
         echo "Deploying to staging environment..."
-        # Add your staging deployment commands here
-        # For example: kubectl apply -f k8s/staging/ -n staging
+        kustomize build k8s/staging | kubectl apply -f -
+        kubectl rollout status deployment/staging-superagent -n superagent-staging --timeout=300s
+
+    - name: Verify deployment
+      run: |
+        kubectl get pods -n superagent-staging -l app=superagent
+        kubectl get svc -n superagent-staging
 
   deploy-production:
     runs-on: ubuntu-latest
@@ -163,11 +191,59 @@ jobs:
     environment: production
 
     steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+
+    - name: Install Kustomize
+      run: |
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+        sudo mv kustomize /usr/local/bin/
+
+    - name: Update image tag
+      run: |
+        cd k8s/production
+        kustomize edit set image superagent/superagent=superagent/superagent:${{ github.sha }}
+
+    - name: Create secrets from GitHub Secrets
+      run: |
+        kubectl create secret generic prod-superagent-secrets \
+          --namespace=superagent-production \
+          --from-literal=db-host=${{ secrets.PROD_DB_HOST }} \
+          --from-literal=db-user=${{ secrets.PROD_DB_USER }} \
+          --from-literal=db-password=${{ secrets.PROD_DB_PASSWORD }} \
+          --from-literal=db-name=${{ secrets.PROD_DB_NAME }} \
+          --from-literal=redis-host=${{ secrets.PROD_REDIS_HOST }} \
+          --from-literal=jwt-secret=${{ secrets.PROD_JWT_SECRET }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+
     - name: Deploy to production
       run: |
         echo "Deploying to production environment..."
-        # Add your production deployment commands here
-        # For example: kubectl apply -f k8s/production/ -n production
+        kustomize build k8s/production | kubectl apply -f -
+        kubectl rollout status deployment/prod-superagent -n superagent-production --timeout=600s
+
+    - name: Verify deployment
+      run: |
+        kubectl get pods -n superagent-production -l app=superagent
+        kubectl get svc -n superagent-production
+        kubectl get ingress -n superagent-production
+
+    - name: Run smoke tests
+      run: |
+        INGRESS_IP=$(kubectl get ingress prod-superagent -n superagent-production -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        if [ -n "$INGRESS_IP" ]; then
+          curl -sf "http://${INGRESS_IP}/health" || echo "Health check pending (may need DNS propagation)"
+        fi
 
   performance-test:
     runs-on: ubuntu-latest

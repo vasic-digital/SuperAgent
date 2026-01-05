@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: superagent
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: superagent
+          env:
+            - name: GIN_MODE
+              value: "debug"
+            - name: LOG_LEVEL
+              value: "debug"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

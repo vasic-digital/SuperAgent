@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: superagent
+  labels:
+    app: superagent
+    app.kubernetes.io/name: superagent
+    app.kubernetes.io/component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: superagent
+  template:
+    metadata:
+      labels:
+        app: superagent
+    spec:
+      containers:
+        - name: superagent
+          image: superagent/superagent:latest
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 9090
+              name: grpc
+          env:
+            - name: GIN_MODE
+              value: "release"
+            - name: PORT
+              value: "8080"
+            - name: GRPC_PORT
+              value: "9090"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: superagent-secrets
+                  key: db-host
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: superagent-secrets
+                  key: db-user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: superagent-secrets
+                  key: db-password
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: superagent-secrets
+                  key: db-name
+            - name: REDIS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: superagent-secrets
+                  key: redis-host
+            - name: REDIS_PORT
+              value: "6379"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: superagent-secrets
+                  key: jwt-secret
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      securityContext:
+        fsGroup: 1000
+      serviceAccountName: superagent
