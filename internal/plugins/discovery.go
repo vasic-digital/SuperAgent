@@ -34,9 +34,21 @@ func (d *Discovery) DiscoverAndLoad() error {
 }
 
 func (d *Discovery) discoverInPath(rootPath string) error {
+	// Check if root path exists first
+	if _, err := os.Stat(rootPath); os.IsNotExist(err) {
+		return err
+	}
+
 	return filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			// Handle permission errors gracefully - skip inaccessible directories
+			if os.IsPermission(err) {
+				utils.GetLogger().Warnf("Permission denied accessing %s, skipping", path)
+				return filepath.SkipDir
+			}
+			// For other errors on subdirectories, log and skip
+			utils.GetLogger().Warnf("Error accessing %s: %v, skipping", path, err)
+			return filepath.SkipDir
 		}
 
 		// Skip directories

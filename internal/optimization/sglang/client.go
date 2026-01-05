@@ -128,10 +128,21 @@ func (c *Client) Health(ctx context.Context) (*HealthResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	var result HealthResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		// SGLang might return plain text
+	// Read body to check for content
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read health response: %w", err)
+	}
+
+	// Handle empty response as healthy
+	if len(body) == 0 {
 		return &HealthResponse{Status: "healthy"}, nil
+	}
+
+	var result HealthResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		// Return error for malformed JSON
+		return nil, fmt.Errorf("failed to parse health response: %w", err)
 	}
 	return &result, nil
 }
@@ -169,7 +180,8 @@ func (c *Client) CompleteSimple(ctx context.Context, prompt string) (string, err
 	if len(result.Choices) > 0 {
 		return result.Choices[0].Message.Content, nil
 	}
-	return "", fmt.Errorf("no completion generated")
+	// Return empty string without error for empty responses
+	return "", nil
 }
 
 // CompleteWithSystem performs a completion with a system prompt.
@@ -273,6 +285,9 @@ func (c *Client) DeleteSession(ctx context.Context, sessionID string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	if _, exists := c.sessions[sessionID]; !exists {
+		return fmt.Errorf("session not found: %s", sessionID)
+	}
 	delete(c.sessions, sessionID)
 	return nil
 }

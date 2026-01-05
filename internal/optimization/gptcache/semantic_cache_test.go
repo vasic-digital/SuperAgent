@@ -1165,6 +1165,7 @@ func TestSemanticCache_LRUEvictionOrder(t *testing.T) {
 	cache := NewSemanticCache(
 		WithMaxEntries(3),
 		WithEvictionPolicy(EvictionLRU),
+		WithSimilarityThreshold(0.99), // High threshold for exact matching
 	)
 
 	// Add 3 entries

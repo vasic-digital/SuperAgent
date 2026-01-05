@@ -4,6 +4,7 @@ package optimization
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -408,28 +409,37 @@ func (s *Service) checkServiceHealth(ctx context.Context) {
 	defer s.mu.Unlock()
 
 	now := time.Now()
+	checkInterval := s.config.Fallback.HealthCheckInterval
 
-	if s.sglangClient != nil {
+	// Helper function to check if health check is needed
+	needsCheck := func(service string) bool {
+		if lastCheck, ok := s.lastHealthCheck[service]; ok {
+			return time.Since(lastCheck) >= checkInterval
+		}
+		return true
+	}
+
+	if s.sglangClient != nil && needsCheck("sglang") {
 		s.serviceStatus["sglang"] = s.sglangClient.IsAvailable(ctx)
 		s.lastHealthCheck["sglang"] = now
 	}
 
-	if s.llamaindexClient != nil {
+	if s.llamaindexClient != nil && needsCheck("llamaindex") {
 		s.serviceStatus["llamaindex"] = s.llamaindexClient.IsAvailable(ctx)
 		s.lastHealthCheck["llamaindex"] = now
 	}
 
-	if s.langchainClient != nil {
+	if s.langchainClient != nil && needsCheck("langchain") {
 		s.serviceStatus["langchain"] = s.langchainClient.IsAvailable(ctx)
 		s.lastHealthCheck["langchain"] = now
 	}
 
-	if s.guidanceClient != nil {
+	if s.guidanceClient != nil && needsCheck("guidance") {
 		s.serviceStatus["guidance"] = s.guidanceClient.IsAvailable(ctx)
 		s.lastHealthCheck["guidance"] = now
 	}
 
-	if s.lmqlClient != nil {
+	if s.lmqlClient != nil && needsCheck("lmql") {
 		s.serviceStatus["lmql"] = s.lmqlClient.IsAvailable(ctx)
 		s.lastHealthCheck["lmql"] = now
 	}
@@ -468,7 +478,7 @@ func isComplexTask(prompt string) bool {
 }
 
 func containsIgnoreCase(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && len(substr) > 0)
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
 func min(a, b int) int {
