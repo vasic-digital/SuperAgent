@@ -39,7 +39,7 @@ func TestUnifiedHandler_Models(t *testing.T) {
 	body := w.Body.String()
 	assert.Contains(t, body, "object")
 	assert.Contains(t, body, "data")
-	assert.Contains(t, body, "superagent-ensemble")
+	assert.Contains(t, body, "superagent-debate")
 }
 
 // TestUnifiedHandler_ModelsPublic tests public models endpoint
@@ -57,7 +57,7 @@ func TestUnifiedHandler_ModelsPublic(t *testing.T) {
 	body := w.Body.String()
 	assert.Contains(t, body, "object")
 	assert.Contains(t, body, "data")
-	assert.Contains(t, body, "superagent-ensemble")
+	assert.Contains(t, body, "superagent-debate")
 }
 
 // TestUnifiedHandler_ChatCompletions_InvalidRequest tests invalid request

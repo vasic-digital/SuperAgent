@@ -260,84 +260,20 @@ func (h *UnifiedHandler) CompletionsStream(c *gin.Context) {
 	h.Completions(c) // Reuse completions logic
 }
 
-// Models returns all available models from all configured providers
+// Models returns only the SuperAgent virtual model
+// SuperAgent exposes a single unified model that internally uses AI debate ensemble
+// Backend provider models are implementation details and not exposed to clients
 func (h *UnifiedHandler) Models(c *gin.Context) {
-	var models []OpenAIModel
-
-	// Check if provider registry is available
-	if h.providerRegistry != nil {
-		// Get all providers and their capabilities
-		providers := h.providerRegistry.ListProviders()
-
-		for _, providerName := range providers {
-			provider, err := h.providerRegistry.GetProvider(providerName)
-			if err != nil {
-				continue
-			}
-
-			capabilities := provider.GetCapabilities()
-
-			// Add each model from this provider
-			for _, modelName := range capabilities.SupportedModels {
-				// Determine model ownership
-				ownedBy := providerName
-				switch providerName {
-				case "openrouter":
-					if contains(modelName, "anthropic") {
-						ownedBy = "anthropic"
-					} else if contains(modelName, "openai") {
-						ownedBy = "openai"
-					} else if contains(modelName, "google") {
-						ownedBy = "google"
-					}
-				case "deepseek":
-					ownedBy = "deepseek"
-				case "claude":
-					ownedBy = "anthropic"
-				case "gemini":
-					ownedBy = "google"
-				case "qwen":
-					ownedBy = "alibaba"
-				}
-
-				model := OpenAIModel{
-					ID:      modelName,
-					Object:  "model",
-					Created: time.Now().Unix(),
-					OwnedBy: ownedBy,
-					Permission: []OpenAIModelPermission{
-						{
-							ID:                 modelName + "-permission",
-							Object:             "model_permission",
-							Created:            time.Now().Unix(),
-							AllowCreateEngine:  true,
-							AllowSampling:      true,
-							AllowLogprobs:      false,
-							AllowSearchIndices: false,
-							AllowView:          true,
-							AllowFineTuning:    false,
-							Organization:       "superagent",
-							IsBlocking:         false,
-						},
-					},
-					Root:   modelName,
-					Parent: nil,
-				}
-
-				models = append(models, model)
-			}
-		}
-	}
-
-	// Add SuperAgent ensemble model as primary model
-	ensembleModel := OpenAIModel{
-		ID:      "superagent-ensemble",
+	// SuperAgent exposes only ONE virtual model: superagent-debate
+	// This model internally uses AI debate ensemble with multiple LLMs
+	superagentModel := OpenAIModel{
+		ID:      "superagent-debate",
 		Object:  "model",
 		Created: time.Now().Unix(),
 		OwnedBy: "superagent",
 		Permission: []OpenAIModelPermission{
 			{
-				ID:                 "superagent-ensemble-permission",
+				ID:                 "superagent-debate-permission",
 				Object:             "model_permission",
 				Created:            time.Now().Unix(),
 				AllowCreateEngine:  true,
@@ -350,16 +286,13 @@ func (h *UnifiedHandler) Models(c *gin.Context) {
 				IsBlocking:         false,
 			},
 		},
-		Root:   "superagent",
+		Root:   "superagent-debate",
 		Parent: nil,
 	}
 
-	// Add ensemble model at the beginning
-	models = append([]OpenAIModel{ensembleModel}, models...)
-
 	response := OpenAIModelsResponse{
 		Object: "list",
-		Data:   models,
+		Data:   []OpenAIModel{superagentModel},
 	}
 
 	c.JSON(http.StatusOK, response)
