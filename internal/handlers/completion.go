@@ -103,7 +103,7 @@ func (h *CompletionHandler) Complete(c *gin.Context) {
 	// Process request
 	response, err := h.requestService.ProcessRequest(c.Request.Context(), internalReq)
 	if err != nil {
-		h.sendError(c, http.StatusInternalServerError, "internal_error", "Failed to process request", err.Error())
+		h.sendCategorizedError(c, err)
 		return
 	}
 
@@ -131,7 +131,7 @@ func (h *CompletionHandler) CompleteStream(c *gin.Context) {
 	// Process streaming request
 	streamChan, err := h.requestService.ProcessRequestStream(c.Request.Context(), internalReq)
 	if err != nil {
-		h.sendError(c, http.StatusInternalServerError, "internal_error", "Failed to process streaming request", err.Error())
+		h.sendCategorizedError(c, err)
 		return
 	}
 
@@ -462,4 +462,25 @@ func (h *CompletionHandler) sendError(c *gin.Context, statusCode int, errorType,
 	}
 
 	c.JSON(statusCode, errorResp)
+}
+
+// sendCategorizedError sends an error response with proper HTTP status code based on error category
+func (h *CompletionHandler) sendCategorizedError(c *gin.Context, err error) {
+	// Check if it's already a categorized LLM service error
+	if llmErr, ok := err.(*services.LLMServiceError); ok {
+		response := llmErr.ToOpenAIError()
+		if llmErr.RetryAfter > 0 {
+			c.Header("Retry-After", fmt.Sprintf("%d", int(llmErr.RetryAfter.Seconds())))
+		}
+		c.JSON(llmErr.HTTPStatus, response)
+		return
+	}
+
+	// Categorize unknown errors
+	categorized := services.CategorizeError(err, "unknown")
+	response := categorized.ToOpenAIError()
+	if categorized.RetryAfter > 0 {
+		c.Header("Retry-After", fmt.Sprintf("%d", int(categorized.RetryAfter.Seconds())))
+	}
+	c.JSON(categorized.HTTPStatus, response)
 }

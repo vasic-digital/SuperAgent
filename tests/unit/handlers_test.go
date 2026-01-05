@@ -455,7 +455,11 @@ func TestConvertToInternalRequest(t *testing.T) {
 
 	// The request should be processed (even if it fails due to no providers)
 	// We're mainly testing that the conversion doesn't panic and sets defaults correctly
-	assert.True(t, w.Code >= 200 && w.Code <= 500)
+	// Valid status codes include:
+	// - 200 (OK)
+	// - 400-499 (client errors)
+	// - 500-504 (server errors including 502 Bad Gateway, 503 Service Unavailable)
+	assert.True(t, w.Code >= 200 && w.Code <= 504, "Expected status 200-504, got %d", w.Code)
 }
 
 // Helper function

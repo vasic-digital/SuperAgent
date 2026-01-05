@@ -89,13 +89,13 @@ func (e *EnsembleService) RunEnsemble(ctx context.Context, req *models.LLMReques
 	e.mu.RUnlock()
 
 	if len(providers) == 0 {
-		return nil, fmt.Errorf("no providers available")
+		return nil, NewConfigurationError("no providers available", nil)
 	}
 
 	// Filter providers based on request preferences
 	filteredProviders := e.filterProviders(providers, req)
 	if len(filteredProviders) == 0 {
-		return nil, fmt.Errorf("no suitable providers available")
+		return nil, NewConfigurationError("no suitable providers available for request", nil)
 	}
 
 	// Create context with timeout
@@ -166,12 +166,12 @@ func (e *EnsembleService) RunEnsemble(ctx context.Context, req *models.LLMReques
 		}, nil
 	}
 
-	// If no responses and we have errors, return the errors
+	// If no responses and we have errors, return categorized error
 	if len(errors) > 0 {
-		return nil, fmt.Errorf("all providers failed: %v", errors)
+		return nil, NewAllProvidersFailedError(len(errors), len(filteredProviders), errors)
 	}
 
-	return nil, fmt.Errorf("no responses received from any provider")
+	return nil, NewServiceUnavailableError("no responses received from any provider", 0)
 }
 
 func (e *EnsembleService) RunEnsembleStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
@@ -183,13 +183,13 @@ func (e *EnsembleService) RunEnsembleStream(ctx context.Context, req *models.LLM
 	e.mu.RUnlock()
 
 	if len(providers) == 0 {
-		return nil, fmt.Errorf("no providers available")
+		return nil, NewConfigurationError("no providers available for streaming", nil)
 	}
 
 	// Filter providers based on request preferences
 	filteredProviders := e.filterProviders(providers, req)
 	if len(filteredProviders) == 0 {
-		return nil, fmt.Errorf("no suitable providers available")
+		return nil, NewConfigurationError("no suitable providers available for streaming request", nil)
 	}
 
 	// Create context with timeout - use longer timeout for streaming

@@ -279,7 +279,8 @@ func TestEnsembleService_RunEnsemble_AllProvidersFail(t *testing.T) {
 	result, err := service.RunEnsemble(context.Background(), req)
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "all providers failed")
+	// Error message format: "[all_providers_failed] All X providers failed"
+	assert.Contains(t, err.Error(), "providers failed")
 }
 
 func TestEnsembleService_RunEnsemble_Timeout(t *testing.T) {

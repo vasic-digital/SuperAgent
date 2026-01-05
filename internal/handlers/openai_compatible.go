@@ -184,7 +184,7 @@ func (h *UnifiedHandler) ChatCompletions(c *gin.Context) {
 	// Process with ensemble for best results
 	result, err := h.processWithEnsemble(c.Request.Context(), internalReq, &req)
 	if err != nil {
-		h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Failed to process request", err.Error())
+		h.sendCategorizedError(c, err)
 		return
 	}
 
@@ -202,7 +202,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	// Process with ensemble streaming
 	streamChan, err := h.processWithEnsembleStream(c.Request.Context(), internalReq, req)
 	if err != nil {
-		h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Failed to process streaming request", err.Error())
+		h.sendCategorizedError(c, err)
 		return
 	}
 
@@ -255,7 +255,7 @@ func (h *UnifiedHandler) ChatCompletionsStream(c *gin.Context) {
 	// Process with ensemble streaming
 	streamChan, err := h.processWithEnsembleStream(c.Request.Context(), internalReq, &req)
 	if err != nil {
-		h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Failed to process streaming request", err.Error())
+		h.sendCategorizedError(c, err)
 		return
 	}
 
@@ -438,13 +438,13 @@ func (h *UnifiedHandler) convertOpenAIChatRequest(req *OpenAIChatRequest, c *gin
 func (h *UnifiedHandler) processWithEnsemble(ctx context.Context, req *models.LLMRequest, openaiReq *OpenAIChatRequest) (*services.EnsembleResult, error) {
 	// Check if provider registry is available
 	if h.providerRegistry == nil {
-		return nil, fmt.Errorf("provider registry not available")
+		return nil, services.NewConfigurationError("provider registry not available", nil)
 	}
 
 	// Get ensemble service
 	ensembleService := h.providerRegistry.GetEnsembleService()
 	if ensembleService == nil {
-		return nil, fmt.Errorf("ensemble service not available")
+		return nil, services.NewConfigurationError("ensemble service not available", nil)
 	}
 
 	// If specific provider requested, try to use it
@@ -454,7 +454,8 @@ func (h *UnifiedHandler) processWithEnsemble(ctx context.Context, req *models.LL
 			// Use single provider
 			response, err := provider.Complete(ctx, req)
 			if err != nil {
-				return nil, err
+				// Categorize the provider error
+				return nil, services.CategorizeError(err, openaiReq.ForceProvider)
 			}
 
 			// Create ensemble result with single provider
@@ -478,13 +479,13 @@ func (h *UnifiedHandler) processWithEnsemble(ctx context.Context, req *models.LL
 func (h *UnifiedHandler) processWithEnsembleStream(ctx context.Context, req *models.LLMRequest, openaiReq *OpenAIChatRequest) (<-chan *models.LLMResponse, error) {
 	// Check if provider registry is available
 	if h.providerRegistry == nil {
-		return nil, fmt.Errorf("provider registry not available")
+		return nil, services.NewConfigurationError("provider registry not available", nil)
 	}
 
 	// Get ensemble service
 	ensembleService := h.providerRegistry.GetEnsembleService()
 	if ensembleService == nil {
-		return nil, fmt.Errorf("ensemble service not available")
+		return nil, services.NewConfigurationError("ensemble service not available", nil)
 	}
 
 	// For streaming, we'll use the first available provider
@@ -551,6 +552,36 @@ func (h *UnifiedHandler) sendOpenAIError(c *gin.Context, statusCode int, errorTy
 	}
 
 	c.JSON(statusCode, errorResp)
+}
+
+// sendCategorizedError handles LLMServiceError with proper HTTP status codes
+func (h *UnifiedHandler) sendCategorizedError(c *gin.Context, err error) {
+	// Check if it's a categorized LLM service error
+	if llmErr, ok := err.(*services.LLMServiceError); ok {
+		response := llmErr.ToOpenAIError()
+
+		// Add retry-after header if applicable
+		if llmErr.RetryAfter > 0 {
+			c.Header("Retry-After", fmt.Sprintf("%d", int(llmErr.RetryAfter.Seconds())))
+		}
+
+		c.JSON(llmErr.HTTPStatus, response)
+		return
+	}
+
+	// Categorize unknown errors
+	categorized := services.CategorizeError(err, "unknown")
+	if categorized != nil {
+		response := categorized.ToOpenAIError()
+		if categorized.RetryAfter > 0 {
+			c.Header("Retry-After", fmt.Sprintf("%d", int(categorized.RetryAfter.Seconds())))
+		}
+		c.JSON(categorized.HTTPStatus, response)
+		return
+	}
+
+	// Fallback to generic 500 error
+	h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "An unexpected error occurred", err.Error())
 }
 
 // Helper function to check if string contains substring
