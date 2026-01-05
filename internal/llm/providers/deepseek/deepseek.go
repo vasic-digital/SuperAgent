@@ -163,6 +163,13 @@ func (p *DeepSeekProvider) CompleteStream(ctx context.Context, req *models.LLMRe
 		return nil, fmt.Errorf("DeepSeek streaming API call failed: %w", err)
 	}
 
+	// Check for HTTP errors before starting stream
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		return nil, fmt.Errorf("DeepSeek API error: HTTP %d - %s", resp.StatusCode, string(body))
+	}
+
 	// Create response channel
 	ch := make(chan *models.LLMResponse)
 

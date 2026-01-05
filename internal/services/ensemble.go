@@ -192,9 +192,12 @@ func (e *EnsembleService) RunEnsembleStream(ctx context.Context, req *models.LLM
 		return nil, fmt.Errorf("no suitable providers available")
 	}
 
-	// Create context with timeout
-	timeoutCtx, cancel := context.WithTimeout(ctx, e.timeout)
-	defer cancel()
+	// Create context with timeout - use longer timeout for streaming
+	streamTimeout := e.timeout * 2 // Double timeout for streaming operations
+	if streamTimeout < 60*time.Second {
+		streamTimeout = 60 * time.Second // Minimum 60 seconds for streaming
+	}
+	timeoutCtx, cancel := context.WithTimeout(ctx, streamTimeout)
 
 	// For streaming, we'll use the first available provider for now
 	// In a more sophisticated implementation, we could merge streams
@@ -205,19 +208,28 @@ func (e *EnsembleService) RunEnsembleStream(ctx context.Context, req *models.LLM
 		}
 
 		// Wrap responses with provider info
+		// IMPORTANT: Cancel context only when stream is fully consumed
 		wrappedChan := make(chan *models.LLMResponse)
-		go func() {
+		go func(providerName string) {
 			defer close(wrappedChan)
+			defer cancel() // Cancel context when stream is done
+
 			for resp := range streamChan {
-				resp.ProviderID = name
-				resp.ProviderName = name
-				wrappedChan <- resp
+				resp.ProviderID = providerName
+				resp.ProviderName = providerName
+				select {
+				case wrappedChan <- resp:
+				case <-timeoutCtx.Done():
+					return
+				}
 			}
-		}()
+		}(name)
 
 		return wrappedChan, nil
 	}
 
+	// Cancel if no providers could stream
+	cancel()
 	return nil, fmt.Errorf("no providers available for streaming")
 }
 

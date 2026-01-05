@@ -59,9 +59,9 @@ func TestGeminiProvider_GetCapabilities(t *testing.T) {
 	assert.True(t, capabilities.SupportsFunctionCalling)
 	assert.True(t, capabilities.SupportsVision)
 	assert.NotEmpty(t, capabilities.SupportedModels)
-	assert.Contains(t, capabilities.SupportedModels, "gemini-pro")
-	assert.Contains(t, capabilities.SupportedModels, "gemini-pro-vision")
-	assert.Contains(t, capabilities.SupportedModels, "gemini-1.5-pro")
+	assert.Contains(t, capabilities.SupportedModels, "gemini-2.0-flash")
+	assert.Contains(t, capabilities.SupportedModels, "gemini-2.5-flash")
+	assert.Contains(t, capabilities.SupportedModels, "gemini-2.5-pro")
 
 	// Check supported features
 	assert.Contains(t, capabilities.SupportedFeatures, "text_completion")

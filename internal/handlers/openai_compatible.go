@@ -163,6 +163,7 @@ func (h *UnifiedHandler) RegisterOpenAIRoutes(r *gin.RouterGroup, auth gin.Handl
 }
 
 // ChatCompletions handles OpenAI chat completions with automatic ensemble
+// Supports both streaming and non-streaming modes based on the "stream" parameter
 func (h *UnifiedHandler) ChatCompletions(c *gin.Context) {
 	// Parse OpenAI request
 	var req OpenAIChatRequest
@@ -171,7 +172,11 @@ func (h *UnifiedHandler) ChatCompletions(c *gin.Context) {
 		return
 	}
 
-	// Test mode removed for security - mock responses should not be available in production
+	// If streaming is requested, handle with SSE streaming
+	if req.Stream {
+		h.handleStreamingChatCompletions(c, &req)
+		return
+	}
 
 	// Convert to internal request format
 	internalReq := h.convertOpenAIChatRequest(&req, c)
@@ -187,6 +192,49 @@ func (h *UnifiedHandler) ChatCompletions(c *gin.Context) {
 	response := h.convertToOpenAIChatResponse(result, &req)
 
 	c.JSON(http.StatusOK, response)
+}
+
+// handleStreamingChatCompletions handles streaming chat completions with SSE
+func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *OpenAIChatRequest) {
+	// Convert to internal request format
+	internalReq := h.convertOpenAIChatRequest(req, c)
+
+	// Process with ensemble streaming
+	streamChan, err := h.processWithEnsembleStream(c.Request.Context(), internalReq, req)
+	if err != nil {
+		h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Failed to process streaming request", err.Error())
+		return
+	}
+
+	// Set streaming headers
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("X-Accel-Buffering", "no") // Disable nginx buffering
+
+	// Stream responses
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		h.sendOpenAIError(c, http.StatusInternalServerError, "internal_error", "Streaming not supported", "")
+		return
+	}
+
+	for response := range streamChan {
+		// Convert to streaming format
+		streamResp := h.convertToOpenAIChatStreamResponse(response, req)
+
+		// Send as Server-Sent Events
+		data, _ := json.Marshal(streamResp)
+		c.Writer.Write([]byte("data: "))
+		c.Writer.Write(data)
+		c.Writer.Write([]byte("\n\n"))
+		flusher.Flush()
+	}
+
+	// Send final event
+	c.Writer.Write([]byte("data: [DONE]\n\n"))
+	flusher.Flush()
 }
 
 // ChatCompletionsStream handles streaming OpenAI chat completions

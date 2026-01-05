@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"time"
@@ -288,55 +289,35 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 		return nil, fmt.Errorf("failed to marshal OpenRouter stream request: %w", err)
 	}
 
+	// Make HTTP request BEFORE starting goroutine to check for errors early
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+"/chat/completions", bytes.NewBuffer(jsonData))
+	if err != nil {
+		close(ch)
+		return nil, fmt.Errorf("failed to create OpenRouter stream request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
+	httpReq.Header.Set("HTTP-Referer", "superagent")
+	httpReq.Header.Set("Accept", "text/event-stream")
+
+	resp, err := p.client.Do(httpReq)
+	if err != nil {
+		close(ch)
+		return nil, fmt.Errorf("OpenRouter stream request failed: %w", err)
+	}
+
+	// Check for HTTP errors before starting stream
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		close(ch)
+		return nil, fmt.Errorf("OpenRouter API error: HTTP %d - %s", resp.StatusCode, string(body))
+	}
+
 	go func() {
 		defer close(ch)
-
-		httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+"/chat/completions", bytes.NewBuffer(jsonData))
-		if err != nil {
-			ch <- &models.LLMResponse{
-				ID:           "stream-error",
-				RequestID:    req.ID,
-				ProviderID:   "openrouter",
-				ProviderName: "OpenRouter",
-				Content:      fmt.Sprintf("Failed to create request: %v", err),
-				FinishReason: "error",
-				CreatedAt:    time.Now(),
-			}
-			return
-		}
-
-		httpReq.Header.Set("Content-Type", "application/json")
-		httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
-		httpReq.Header.Set("HTTP-Referer", "superagent")
-		httpReq.Header.Set("Accept", "text/event-stream")
-
-		resp, err := p.client.Do(httpReq)
-		if err != nil {
-			ch <- &models.LLMResponse{
-				ID:           "stream-error",
-				RequestID:    req.ID,
-				ProviderID:   "openrouter",
-				ProviderName: "OpenRouter",
-				Content:      fmt.Sprintf("Request failed: %v", err),
-				FinishReason: "error",
-				CreatedAt:    time.Now(),
-			}
-			return
-		}
 		defer resp.Body.Close()
-
-		if resp.StatusCode >= 400 {
-			ch <- &models.LLMResponse{
-				ID:           "stream-error",
-				RequestID:    req.ID,
-				ProviderID:   "openrouter",
-				ProviderName: "OpenRouter",
-				Content:      fmt.Sprintf("API returned status %d", resp.StatusCode),
-				FinishReason: "error",
-				CreatedAt:    time.Now(),
-			}
-			return
-		}
 
 		// Read SSE stream
 		reader := resp.Body

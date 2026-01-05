@@ -44,9 +44,9 @@ func TestNewGeminiProvider(t *testing.T) {
 			want: &GeminiProvider{
 				apiKey:  "test-key",
 				baseURL: "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent",
-				model:   "gemini-pro",
+				model:   "gemini-2.0-flash",
 				httpClient: &http.Client{
-					Timeout: 60 * time.Second,
+					Timeout: 120 * time.Second,
 				},
 			},
 		},
@@ -73,7 +73,7 @@ func TestNewGeminiProvider(t *testing.T) {
 			assert.Equal(t, tt.want.baseURL, got.baseURL)
 			assert.Equal(t, tt.want.model, got.model)
 			assert.NotNil(t, got.httpClient)
-			assert.Equal(t, 60*time.Second, got.httpClient.Timeout)
+			assert.Equal(t, 120*time.Second, got.httpClient.Timeout)
 		})
 	}
 }
@@ -381,31 +381,22 @@ func TestGeminiProvider_CompleteStream_Error(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewGeminiProvider("invalid-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
+	provider := NewGeminiProvider("invalid-api-key", server.URL+"/v1beta/models/%s:streamGenerateContent", "gemini-2.0-flash")
 	provider.httpClient = server.Client()
 
 	req := &models.LLMRequest{
 		ID: "test-req-stream-error",
 		ModelParams: models.ModelParameters{
-			Model: "gemini-pro",
+			Model: "gemini-2.0-flash",
 		},
 		Prompt: "Test prompt",
 	}
 
+	// CompleteStream now returns an error for non-2xx HTTP status codes
 	ch, err := provider.CompleteStream(context.Background(), req)
-	require.NoError(t, err) // The method returns a channel even for error status codes
-	require.NotNil(t, ch)
-
-	// Collect responses from channel
-	var responses []*models.LLMResponse
-	for resp := range ch {
-		responses = append(responses, resp)
-	}
-
-	// Should have at least one response
-	assert.Greater(t, len(responses), 0)
-	assert.Equal(t, "gemini", responses[0].ProviderID)
-	// Note: The actual implementation might not set finishReason to "error" for streaming errors
+	require.Error(t, err) // Should return error for 401 status
+	require.Nil(t, ch)
+	assert.Contains(t, err.Error(), "HTTP 401")
 }
 
 func TestGeminiProvider_HealthCheck_Success(t *testing.T) {

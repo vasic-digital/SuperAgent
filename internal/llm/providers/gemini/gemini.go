@@ -9,19 +9,22 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/superagent/superagent/internal/models"
 )
 
 const (
-	GeminiAPIURL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent"
-	GeminiModel  = "gemini-pro"
+	GeminiAPIURL       = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent"
+	GeminiStreamAPIURL = "https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent"
+	GeminiModel        = "gemini-2.0-flash" // Updated from deprecated gemini-pro
 )
 
 type GeminiProvider struct {
 	apiKey      string
 	baseURL     string
+	streamURL   string
 	healthURL   string
 	model       string
 	httpClient  *http.Client
@@ -128,12 +131,23 @@ func NewGeminiProviderWithRetry(apiKey, baseURL, model string, retryConfig Retry
 		model = GeminiModel
 	}
 
+	// Derive streaming URL from base URL
+	streamURL := GeminiStreamAPIURL
+	if baseURL != GeminiAPIURL {
+		// Custom base URL - try to derive stream URL by replacing generateContent with streamGenerateContent
+		streamURL = baseURL
+		if len(streamURL) > 15 && streamURL[len(streamURL)-15:] == ":generateContent" {
+			streamURL = streamURL[:len(streamURL)-15] + ":streamGenerateContent"
+		}
+	}
+
 	return &GeminiProvider{
-		apiKey:  apiKey,
-		baseURL: baseURL,
-		model:   model,
+		apiKey:    apiKey,
+		baseURL:   baseURL,
+		streamURL: streamURL,
+		model:     model,
 		httpClient: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout: 120 * time.Second, // Longer timeout for streaming
 		},
 		retryConfig: retryConfig,
 	}
@@ -182,10 +196,17 @@ func (p *GeminiProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 		geminiReq.GenerationConfig.MaxOutputTokens = 2048
 	}
 
-	// Make streaming API call
-	resp, err := p.makeAPICall(ctx, geminiReq)
+	// Make streaming API call using stream URL
+	resp, err := p.makeStreamAPICall(ctx, geminiReq)
 	if err != nil {
 		return nil, fmt.Errorf("Gemini streaming API call failed: %w", err)
+	}
+
+	// Check for non-2xx status codes before starting stream
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		return nil, fmt.Errorf("Gemini API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 
 	// Create response channel
@@ -223,22 +244,46 @@ func (p *GeminiProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 				return
 			}
 
-			// Skip empty lines and "data: " prefix
+			// Trim whitespace
 			line = bytes.TrimSpace(line)
-			if !bytes.HasPrefix(line, []byte("data: ")) {
+			if len(line) == 0 {
 				continue
 			}
-			line = bytes.TrimPrefix(line, []byte("data: "))
+
+			// Handle SSE format (data: prefix) if present
+			if bytes.HasPrefix(line, []byte("data: ")) {
+				line = bytes.TrimPrefix(line, []byte("data: "))
+			}
 
 			// Skip "[DONE]" marker
 			if bytes.Equal(line, []byte("[DONE]")) {
 				break
 			}
 
-			// Parse JSON
+			// Try to parse as Gemini response JSON
+			// Gemini streaming returns JSON objects, possibly in a JSON array wrapper
 			var streamResp GeminiStreamResponse
+
+			// Handle potential JSON array wrapper from Gemini streaming
+			lineStr := string(line)
+			if len(lineStr) > 0 && lineStr[0] == '[' {
+				// Remove array wrapper if present
+				lineStr = strings.TrimPrefix(lineStr, "[")
+				lineStr = strings.TrimSuffix(lineStr, "]")
+				lineStr = strings.TrimPrefix(lineStr, ",")
+				lineStr = strings.TrimSpace(lineStr)
+				line = []byte(lineStr)
+			}
+
 			if err := json.Unmarshal(line, &streamResp); err != nil {
-				continue // Skip malformed JSON
+				// Try parsing as full GeminiResponse
+				var fullResp GeminiResponse
+				if err2 := json.Unmarshal(line, &fullResp); err2 == nil && len(fullResp.Candidates) > 0 {
+					// Convert to stream response format
+					streamResp.Candidates = fullResp.Candidates
+				} else {
+					continue // Skip malformed JSON
+				}
 			}
 
 			// Extract content from candidates
@@ -500,6 +545,70 @@ func (p *GeminiProvider) makeAPICall(ctx context.Context, req GeminiRequest) (*h
 	return nil, fmt.Errorf("all %d retry attempts failed: %w", p.retryConfig.MaxRetries+1, lastErr)
 }
 
+// makeStreamAPICall makes a streaming API call using the stream URL
+func (p *GeminiProvider) makeStreamAPICall(ctx context.Context, req GeminiRequest) (*http.Response, error) {
+	// Marshal request
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// Build URL with model using stream URL
+	url := fmt.Sprintf(p.streamURL, p.model)
+
+	// Add alt=sse parameter for SSE streaming format
+	url += "?alt=sse&key=" + p.apiKey
+
+	var lastErr error
+	delay := p.retryConfig.InitialDelay
+
+	for attempt := 0; attempt <= p.retryConfig.MaxRetries; attempt++ {
+		// Check context before making request
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+		default:
+		}
+
+		// Create HTTP request (fresh for each attempt)
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		// Set headers for streaming
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("Accept", "text/event-stream")
+		httpReq.Header.Set("User-Agent", "SuperAgent/1.0")
+
+		// Make request
+		resp, err := p.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = fmt.Errorf("HTTP request failed: %w", err)
+			// Retry on network errors
+			if attempt < p.retryConfig.MaxRetries {
+				p.waitWithJitter(ctx, delay)
+				delay = p.nextDelay(delay)
+				continue
+			}
+			return nil, lastErr
+		}
+
+		// Check for retryable status codes
+		if isRetryableStatus(resp.StatusCode) && attempt < p.retryConfig.MaxRetries {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
+			p.waitWithJitter(ctx, delay)
+			delay = p.nextDelay(delay)
+			continue
+		}
+
+		return resp, nil
+	}
+
+	return nil, fmt.Errorf("all %d retry attempts failed: %w", p.retryConfig.MaxRetries+1, lastErr)
+}
+
 // isRetryableStatus returns true for HTTP status codes that warrant a retry
 func isRetryableStatus(statusCode int) bool {
 	switch statusCode {
@@ -537,10 +646,11 @@ func (p *GeminiProvider) nextDelay(currentDelay time.Duration) time.Duration {
 func (p *GeminiProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
 		SupportedModels: []string{
-			"gemini-pro",
-			"gemini-pro-vision",
-			"gemini-1.5-pro",
-			"gemini-1.5-flash",
+			"gemini-2.0-flash",
+			"gemini-2.5-flash",
+			"gemini-2.5-pro",
+			"gemini-3-flash-preview",
+			"gemini-3-pro-preview",
 		},
 		SupportedFeatures: []string{
 			"text_completion",
