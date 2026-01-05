@@ -49,7 +49,39 @@ Generated: $(date)
 |-----------|--------|----------|----------|
 EOF
 
-    for challenge in provider_verification ai_debate_formation api_quality_test; do
+    # All 38 challenges in dependency order
+    CHALLENGES=(
+        # Infrastructure
+        "health_monitoring" "configuration_loading" "caching_layer" "database_operations"
+        "authentication" "plugin_system"
+        # Security
+        "rate_limiting" "input_validation"
+        # Providers
+        "provider_claude" "provider_deepseek" "provider_gemini" "provider_ollama"
+        "provider_openrouter" "provider_qwen" "provider_zai"
+        # Core verification
+        "provider_verification"
+        # Protocols
+        "mcp_protocol" "lsp_protocol" "acp_protocol"
+        # Cloud integrations
+        "cloud_aws_bedrock" "cloud_gcp_vertex" "cloud_azure_openai"
+        # Core features
+        "ensemble_voting" "embeddings_service" "streaming_responses" "model_metadata"
+        # Debate
+        "ai_debate_formation" "ai_debate_workflow"
+        # API
+        "openai_compatibility" "grpc_api" "api_quality_test"
+        # Optimization
+        "optimization_semantic_cache" "optimization_structured_output"
+        # Integration
+        "cognee_integration"
+        # Resilience
+        "circuit_breaker" "error_handling" "concurrent_access" "graceful_shutdown"
+        # Session
+        "session_management"
+    )
+
+    for challenge in "${CHALLENGES[@]}"; do
         local latest_dir=$(find "$CHALLENGES_DIR/results/$challenge" -maxdepth 4 -type d -name "[0-9]*_[0-9]*" 2>/dev/null | sort -r | head -1)
 
         if [ -n "$latest_dir" ] && [ -d "$latest_dir" ]; then
@@ -71,6 +103,18 @@ EOF
                 fi
             fi
 
+            # If status still unknown, check the report file directly
+            if [ "$status" = "unknown" ]; then
+                local report_file="$latest_dir/results/${challenge}_report.md"
+                if [ -f "$report_file" ]; then
+                    if grep -q "Status:\*\* PASSED" "$report_file"; then
+                        status="PASSED"
+                    elif grep -q "Status:\*\* FAILED" "$report_file"; then
+                        status="FAILED"
+                    fi
+                fi
+            fi
+
             echo "| $challenge | $status | $duration | $timestamp |" >> "$MASTER_SUMMARY"
         else
             echo "| $challenge | NOT RUN | - | - |" >> "$MASTER_SUMMARY"
@@ -84,7 +128,7 @@ EOF
 EOF
 
     # Add details for each challenge
-    for challenge in provider_verification ai_debate_formation api_quality_test; do
+    for challenge in "${CHALLENGES[@]}"; do
         local latest_dir=$(find "$CHALLENGES_DIR/results/$challenge" -maxdepth 4 -type d -name "[0-9]*_[0-9]*" 2>/dev/null | sort -r | head -1)
 
         echo "### $challenge" >> "$MASTER_SUMMARY"
