@@ -649,7 +649,13 @@ type ProviderDef struct {
 
 // AgentDef represents agent configuration
 type AgentDef struct {
-	Model string `json:"model"`
+	Model *ModelRef `json:"model"`
+}
+
+// ModelRef represents a model reference in OpenCode config
+type ModelRef struct {
+	Provider string `json:"provider"`
+	Model    string `json:"model"`
 }
 
 // handleGenerateOpenCode handles the --generate-opencode-config command
@@ -704,7 +710,10 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 			},
 		},
 		Agent: &AgentDef{
-			Model: "superagent/superagent-debate",
+			Model: &ModelRef{
+				Provider: "superagent",
+				Model:    "superagent-debate",
+			},
 		},
 	}
 
