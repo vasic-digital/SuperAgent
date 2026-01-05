@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ - SuperAgent Documentation</title>
+    <meta name="description" content="Frequently asked questions about SuperAgent - AI-powered multi-provider LLM orchestration platform. Find answers to common questions about installation, configuration, and usage.">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://superagent.ai/docs/faq">
+    <meta property="og:title" content="FAQ - SuperAgent Documentation">
+    <meta property="og:description" content="Frequently asked questions about SuperAgent - installation, configuration, usage, and troubleshooting.">
+    <meta property="og:image" content="https://superagent.ai/assets/images/og-image.svg">
+    <meta property="og:site_name" content="SuperAgent">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://superagent.ai/docs/faq">
+    <meta property="twitter:title" content="FAQ - SuperAgent Documentation">
+    <meta property="twitter:description" content="Frequently asked questions about SuperAgent - installation, configuration, usage, and troubleshooting.">
+    <meta property="twitter:image" content="https://superagent.ai/assets/images/og-image.svg">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/logo.svg">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- Additional SEO Meta Tags -->
+    <meta name="keywords" content="SuperAgent FAQ, LLM orchestration help, AI platform questions, troubleshooting, common issues">
+    <meta name="author" content="SuperAgent Team">
+    <meta name="robots" content="index, follow">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://superagent.ai/docs/faq">
+
+    <!-- Structured Data - FAQ Page -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is SuperAgent?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "SuperAgent is an AI-powered multi-provider LLM orchestration platform that enables intelligent routing between multiple AI providers including Claude, Gemini, DeepSeek, and more. It provides ensemble capabilities, AI debate features, and enterprise-grade monitoring."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which AI providers does SuperAgent support?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "SuperAgent supports Claude (Anthropic), Gemini (Google), DeepSeek, Qwen (Alibaba), Zai, Ollama, and OpenRouter for unified access to multiple providers."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the AI debate system?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The AI debate system allows multiple AI models to discuss and reason together on complex problems, improving accuracy through collaborative intelligence and consensus building."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is SuperAgent compatible with OpenAI's API?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, SuperAgent provides an OpenAI-compatible API, making it easy to integrate with existing applications that use the OpenAI SDK."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/components.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        .faq-section {
+            padding: 2rem 0;
+        }
+
+        .faq-item {
+            background: var(--card-bg, #1a1a2e);
+            border: 1px solid var(--border-color, #2a2a4a);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            padding: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-primary, #fff);
+            transition: background 0.3s ease;
+        }
+
+        .faq-question:hover {
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .faq-question svg {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+            margin-left: 1rem;
+        }
+
+        .faq-item.active .faq-question svg {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 1000px;
+        }
+
+        .faq-answer-content {
+            padding: 0 1.5rem 1.5rem;
+            color: var(--text-secondary, #a0a0b0);
+            line-height: 1.7;
+        }
+
+        .faq-answer-content ul {
+            margin-top: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        .faq-answer-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .faq-answer-content code {
+            background: rgba(37, 99, 235, 0.2);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        .faq-category {
+            margin-bottom: 3rem;
+        }
+
+        .faq-category-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary, #fff);
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-color, #2563eb);
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/">
+                    <img src="/assets/images/logo.svg" alt="SuperAgent" class="nav-logo">
+                    <span class="nav-title">SuperAgent</span>
+                </a>
+            </div>
+
+            <div class="nav-menu" id="nav-menu">
+                <a href="/#features" class="nav-link">Features</a>
+                <a href="/#providers" class="nav-link">Providers</a>
+                <a href="/docs" class="nav-link active">Documentation</a>
+                <a href="/#pricing" class="nav-link">Pricing</a>
+                <a href="https://github.com/superagent/superagent" class="nav-link">GitHub</a>
+            </div>
+
+            <div class="nav-actions">
+                <a href="/docs" class="btn btn-outline">Get Started</a>
+                <a href="https://github.com/superagent/superagent" class="btn btn-primary">Star on GitHub</a>
+            </div>
+
+            <div class="nav-toggle" id="nav-toggle">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- FAQ Hero -->
+    <section class="hero hero-small">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Frequently Asked <span class="gradient-text">Questions</span>
+                </h1>
+                <p class="hero-description">
+                    Find answers to common questions about SuperAgent, from installation to advanced configuration.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Content -->
+    <section class="faq-section">
+        <div class="container">
+
+            <!-- General Questions -->
+            <div class="faq-category">
+                <h2 class="faq-category-title">General Questions</h2>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>What is SuperAgent?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>SuperAgent is an AI-powered multi-provider LLM orchestration platform written in Go. It combines responses from multiple language models using intelligent aggregation strategies, providing:</p>
+                            <ul>
+                                <li>OpenAI-compatible APIs for easy integration</li>
+                                <li>Support for 7+ LLM providers (Claude, DeepSeek, Gemini, Qwen, Zai, Ollama, OpenRouter)</li>
+                                <li>AI debate capabilities for enhanced reasoning</li>
+                                <li>Enterprise-grade monitoring with Prometheus and Grafana</li>
+                                <li>95%+ test coverage for production reliability</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Which AI providers does SuperAgent support?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>SuperAgent natively supports the following LLM providers:</p>
+                            <ul>
+                                <li><strong>Claude (Anthropic)</strong> - claude-opus-4, claude-sonnet-4, claude-3.5-haiku</li>
+                                <li><strong>Gemini (Google)</strong> - gemini-2.5-pro, gemini-2.5-flash, gemini-2.0</li>
+                                <li><strong>DeepSeek</strong> - deepseek-chat, deepseek-coder</li>
+                                <li><strong>Qwen (Alibaba)</strong> - qwen-max, qwen-plus, qwen-turbo</li>
+                                <li><strong>Zai</strong> - zai-pro, zai-lite</li>
+                                <li><strong>Ollama</strong> - Local LLM deployment (llama2, mistral, codellama)</li>
+                                <li><strong>OpenRouter</strong> - Unified access to 20+ additional models</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Is SuperAgent compatible with OpenAI's API?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>Yes! SuperAgent provides an OpenAI-compatible API, which means you can use existing OpenAI SDKs and client libraries with minimal changes. Simply point your OpenAI client to SuperAgent's endpoint and use the <code>superagent-ensemble</code> model for intelligent multi-provider aggregation.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>What is the AI debate system?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>The AI debate system allows multiple AI models to discuss and reason together on complex problems. Key features include:</p>
+                            <ul>
+                                <li>Configure 2-10 AI participants with distinct roles and personalities</li>
+                                <li>LLM fallback chains for reliability (primary + backup models)</li>
+                                <li>Multiple debate strategies: round-robin, structured, adversarial, collaborative</li>
+                                <li>Consensus mechanisms with configurable thresholds</li>
+                                <li>Cognee AI integration for enhanced response quality</li>
+                                <li>Comprehensive metrics and quality scoring</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Installation & Setup -->
+            <div class="faq-category">
+                <h2 class="faq-category-title">Installation & Setup</h2>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>What are the system requirements?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>SuperAgent requires:</p>
+                            <ul>
+                                <li><strong>Go 1.23+</strong> for building from source</li>
+                                <li><strong>PostgreSQL 15</strong> for database storage</li>
+                                <li><strong>Redis 7</strong> for caching</li>
+                                <li><strong>Docker</strong> (optional) for containerized deployment</li>
+                                <li>At least one configured LLM provider API key</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>How do I install SuperAgent?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>You can install SuperAgent using Go or Docker:</p>
+                            <p><strong>Using Go:</strong></p>
+                            <pre><code>git clone https://github.com/superagent/superagent.git
+cd superagent
+make build
+./superagent --config configs/development.yaml</code></pre>
+                            <p><strong>Using Docker:</strong></p>
+                            <pre><code>docker-compose up -d</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>How do I configure API keys for different providers?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>Set API keys as environment variables:</p>
+                            <pre><code>export CLAUDE_API_KEY=your_claude_key
+export DEEPSEEK_API_KEY=your_deepseek_key
+export GEMINI_API_KEY=your_gemini_key
+export QWEN_API_KEY=your_qwen_key
+export OPENROUTER_API_KEY=your_openrouter_key</code></pre>
+                            <p>Or configure them in your YAML configuration file using <code>${ENV_VAR}</code> syntax.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage & Features -->
+            <div class="faq-category">
+                <h2 class="faq-category-title">Usage & Features</h2>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>What is ensemble mode and how does it work?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>Ensemble mode (<code>superagent-ensemble</code>) sends your request to multiple LLM providers simultaneously and aggregates their responses using intelligent strategies:</p>
+                            <ul>
+                                <li><strong>Confidence-weighted voting</strong> - Responses weighted by confidence scores</li>
+                                <li><strong>Majority vote</strong> - Most common response wins</li>
+                                <li><strong>Quality-weighted</strong> - Best quality response selected</li>
+                                <li><strong>Consensus</strong> - Requires high agreement among providers</li>
+                            </ul>
+                            <p>This improves accuracy and reliability by leveraging the strengths of multiple models.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Does SuperAgent support streaming responses?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>Yes! SuperAgent supports streaming responses for all supported providers. Set <code>"stream": true</code> in your request to enable streaming. The response will be returned as Server-Sent Events (SSE) in OpenAI-compatible format.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Can I use local LLMs with SuperAgent?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>Yes! SuperAgent supports Ollama for local LLM deployment. Configure Ollama by setting:</p>
+                            <pre><code>export OLLAMA_ENABLED=true
+export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_MODEL=llama2</code></pre>
+                            <p>You can run models like llama2, mistral, codellama, and more locally without sending data to external APIs.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>What are the LLM optimization features?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>SuperAgent includes 8 optimization tools:</p>
+                            <ul>
+                                <li><strong>GPTCache</strong> - Semantic caching with vector similarity</li>
+                                <li><strong>Outlines</strong> - Structured JSON output generation</li>
+                                <li><strong>Enhanced Streaming</strong> - Word/sentence buffering, progress tracking</li>
+                                <li><strong>SGLang</strong> - RadixAttention prefix caching (GPU required)</li>
+                                <li><strong>LlamaIndex</strong> - Document retrieval with HyDE and reranking</li>
+                                <li><strong>LangChain</strong> - Task decomposition and ReAct agents</li>
+                                <li><strong>Guidance</strong> - CFG-based constrained generation</li>
+                                <li><strong>LMQL</strong> - Query language with declarative constraints</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Troubleshooting -->
+            <div class="faq-category">
+                <h2 class="faq-category-title">Troubleshooting</h2>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>I'm getting authentication errors. What should I check?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>If you're getting 401 errors:</p>
+                            <ul>
+                                <li>Verify your JWT token is valid using <code>GET /v1/auth/me</code></li>
+                                <li>Check that the token hasn't expired</li>
+                                <li>Ensure you're including the <code>Authorization: Bearer TOKEN</code> header</li>
+                                <li>Try refreshing your token with <code>POST /v1/auth/refresh</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>A provider is not responding. How do I debug this?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>To debug provider issues:</p>
+                            <ul>
+                                <li>Check provider health: <code>GET /v1/providers/[name]/health</code></li>
+                                <li>View all provider status: <code>GET /v1/health</code></li>
+                                <li>Verify API keys are correctly set</li>
+                                <li>Check network connectivity to the provider</li>
+                                <li>Review rate limiting settings</li>
+                                <li>Enable debug logging: <code>--log-level debug</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>I'm hitting rate limits. What can I do?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>Rate limits are applied per-user:</p>
+                            <ul>
+                                <li>Check your current limits in response headers (<code>X-RateLimit-*</code>)</li>
+                                <li>Implement exponential backoff in your client</li>
+                                <li>Use semantic caching to reduce redundant requests</li>
+                                <li>Consider upgrading to a higher tier for increased limits</li>
+                                <li>Batch requests when possible</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security & Privacy -->
+            <div class="faq-category">
+                <h2 class="faq-category-title">Security & Privacy</h2>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Is my data secure with SuperAgent?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>SuperAgent implements enterprise-grade security measures:</p>
+                            <ul>
+                                <li>JWT-based authentication</li>
+                                <li>API key management with encryption</li>
+                                <li>Request validation and sanitization</li>
+                                <li>Rate limiting to prevent abuse</li>
+                                <li>Comprehensive audit logging</li>
+                                <li>Security sandboxing for tool execution</li>
+                                <li>Environment variable-based secret management</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Can I self-host SuperAgent?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            <p>Yes! SuperAgent is open-source and designed for self-hosting. You can deploy it:</p>
+                            <ul>
+                                <li>On-premises using Docker Compose</li>
+                                <li>On Kubernetes using provided manifests</li>
+                                <li>On cloud platforms (AWS, GCP, Azure)</li>
+                                <li>With local LLMs using Ollama for complete data privacy</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title">Still Have Questions?</h2>
+                <p class="cta-description">
+                    Can't find what you're looking for? Our support team is here to help.
+                </p>
+                <div class="cta-actions">
+                    <a href="/contact" class="btn btn-primary btn-large">
+                        Contact Support
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </a>
+                    <a href="https://github.com/superagent/superagent/issues" class="btn btn-outline btn-large">
+                        GitHub Issues
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-brand">
+                        <img src="/assets/images/logo.svg" alt="SuperAgent" class="footer-logo">
+                        <span class="footer-title">SuperAgent</span>
+                    </div>
+                    <p class="footer-description">
+                        AI-powered multi-provider LLM orchestration platform with enterprise-grade capabilities.
+                    </p>
+                    <div class="footer-social">
+                        <a href="https://github.com/superagent/superagent" class="social-link">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Documentation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs">Quick Start</a></li>
+                        <li><a href="/docs/api">API Reference</a></li>
+                        <li><a href="/docs/deployment">Deployment</a></li>
+                        <li><a href="/docs/ai-debate">AI Debate</a></li>
+                        <li><a href="/docs/optimization">LLM Optimization</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://github.com/superagent/superagent">GitHub</a></li>
+                        <li><a href="/docs/tutorial">Tutorials</a></li>
+                        <li><a href="/docs/architecture">Architecture</a></li>
+                        <li><a href="/docs/protocols">Protocol Integration</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs/faq">FAQ</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                        <li><a href="/docs/troubleshooting">Troubleshooting</a></li>
+                        <li><a href="/docs/support">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-legal">
+                    <p>&copy; 2026 SuperAgent. All rights reserved.</p>
+                    <div class="footer-legal-links">
+                        <a href="/privacy">Privacy Policy</a>
+                        <a href="/terms">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/scripts/main.js"></script>
+    <script>
+        // FAQ Accordion functionality
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', () => {
+                const faqItem = question.parentElement;
+                const isActive = faqItem.classList.contains('active');
+
+                // Close all other FAQ items
+                document.querySelectorAll('.faq-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+
+                // Toggle current item
+                if (!isActive) {
+                    faqItem.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

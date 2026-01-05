@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -472,5 +475,326 @@ func TestAuthManager_TokenRefresh_RefreshesExpiredToken(t *testing.T) {
 
 	if callCount < 2 {
 		t.Errorf("Expected RefreshToken to be called at least twice for expired tokens, got %d", callCount)
+	}
+}
+
+func TestAuthManager_TokenRefresh_WithinBuffer(t *testing.T) {
+	callCount := 0
+	// Token expires in 3 minutes - within the 5 minute buffer
+	refresher := &countingRefresher{
+		token:     "about-to-expire-token",
+		expiresAt: time.Now().Add(3 * time.Minute),
+		callCount: &callCount,
+	}
+
+	manager := NewAuthManager("api-key", refresher)
+	ctx := context.Background()
+
+	// First call should trigger refresh since token is within 5 minute buffer
+	_, err := manager.GetAuthHeader(ctx)
+	if err != nil {
+		t.Fatalf("Call failed: %v", err)
+	}
+
+	// Verify refresh was called
+	if callCount != 1 {
+		t.Errorf("Expected RefreshToken to be called once, got %d", callCount)
+	}
+}
+
+// ErrorRefresher is a mock that returns errors
+type ErrorRefresher struct {
+	err error
+}
+
+func (e *ErrorRefresher) RefreshToken(ctx context.Context) (*TokenResponse, error) {
+	return nil, e.err
+}
+
+func TestAuthManager_TokenRefresh_Error(t *testing.T) {
+	refresher := &ErrorRefresher{err: http.ErrAbortHandler}
+
+	manager := NewAuthManager("api-key", refresher)
+	ctx := context.Background()
+
+	_, err := manager.GetAuthHeader(ctx)
+	if err == nil {
+		t.Fatal("Expected error from failed token refresh")
+	}
+
+	if !strings.Contains(err.Error(), "failed to refresh token") {
+		t.Errorf("Expected 'failed to refresh token' in error message, got: %s", err.Error())
+	}
+}
+
+func TestOAuth2Refresher_InvalidURL(t *testing.T) {
+	refresher := NewOAuth2Refresher("client", "secret", "://invalid-url")
+
+	ctx := context.Background()
+	_, err := refresher.RefreshToken(ctx)
+
+	if err == nil {
+		t.Fatal("Expected error for invalid URL")
+	}
+}
+
+func TestOAuth2Refresher_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	refresher := NewOAuth2Refresher("client", "secret", server.URL)
+
+	ctx := context.Background()
+	_, err := refresher.RefreshToken(ctx)
+
+	if err == nil {
+		t.Fatal("Expected error for invalid JSON response")
+	}
+
+	if !strings.Contains(err.Error(), "failed to parse token response") {
+		t.Errorf("Expected 'failed to parse token response' in error, got: %s", err.Error())
+	}
+}
+
+func TestOAuth2Refresher_NonOKStatus(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test",
+			"expires_in":   3600,
+		})
+	}))
+	defer server.Close()
+
+	refresher := NewOAuth2Refresher("client", "secret", server.URL)
+
+	ctx := context.Background()
+	_, err := refresher.RefreshToken(ctx)
+
+	if err == nil {
+		t.Fatal("Expected error for non-OK status")
+	}
+
+	if !strings.Contains(err.Error(), "500") {
+		t.Errorf("Expected status code 500 in error, got: %s", err.Error())
+	}
+}
+
+func TestOAuth2Refresher_ContextCancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Slow response
+		time.Sleep(100 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	refresher := NewOAuth2Refresher("client", "secret", server.URL)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	_, err := refresher.RefreshToken(ctx)
+
+	if err == nil {
+		t.Fatal("Expected error for cancelled context")
+	}
+}
+
+func TestAuthInterceptor_ErrorHandler(t *testing.T) {
+	errorAuth := &ErrorAuthManager{}
+	interceptor := NewAuthInterceptor(errorAuth)
+
+	req, _ := http.NewRequest("GET", "http://example.com", nil)
+	err := interceptor.Intercept(req)
+
+	if err == nil {
+		t.Fatal("Expected error from auth interceptor")
+	}
+
+	if !strings.Contains(err.Error(), "failed to get auth header") {
+		t.Errorf("Expected 'failed to get auth header' in error, got: %s", err.Error())
+	}
+}
+
+// ErrorAuthManager always returns an error
+type ErrorAuthManager struct{}
+
+func (e *ErrorAuthManager) GetAuthHeader(ctx context.Context) (string, error) {
+	return "", http.ErrAbortHandler
+}
+
+func TestAuthTransport_ErrorHandler(t *testing.T) {
+	errorAuth := &ErrorAuthManager{}
+
+	transport := &authTransport{
+		base:        http.DefaultTransport,
+		authManager: errorAuth,
+	}
+
+	client := &http.Client{Transport: transport}
+
+	_, err := client.Get("http://example.com")
+
+	if err == nil {
+		t.Fatal("Expected error from auth transport")
+	}
+
+	if !strings.Contains(err.Error(), "failed to get auth header") {
+		t.Errorf("Expected 'failed to get auth header' in error, got: %s", err.Error())
+	}
+}
+
+func TestMiddleware_WrapClient_PreservesSettings(t *testing.T) {
+	apiKey := "test-api-key"
+	auth := NewAPIKeyAuth(apiKey)
+	middleware := NewMiddleware(auth)
+
+	jar := &testCookieJar{}
+	checkRedirect := func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
+	originalClient := &http.Client{
+		Timeout:       45 * time.Second,
+		Jar:           jar,
+		CheckRedirect: checkRedirect,
+	}
+
+	wrappedClient := middleware.WrapClient(originalClient)
+
+	// Verify settings are preserved
+	if wrappedClient.Timeout != originalClient.Timeout {
+		t.Errorf("Expected timeout %v, got %v", originalClient.Timeout, wrappedClient.Timeout)
+	}
+
+	if wrappedClient.Jar != originalClient.Jar {
+		t.Error("Expected cookie jar to be preserved")
+	}
+}
+
+// testCookieJar is a minimal cookie jar for testing
+type testCookieJar struct{}
+
+func (j *testCookieJar) SetCookies(u *http.URL, cookies []*http.Cookie) {}
+func (j *testCookieJar) Cookies(u *http.URL) []*http.Cookie            { return nil }
+
+func TestAuthManager_ConcurrentAccess(t *testing.T) {
+	callCount := 0
+	var mu sync.Mutex
+
+	refresher := &syncRefresher{
+		token:     "concurrent-token",
+		expiresAt: time.Now().Add(time.Hour),
+		callCount: &callCount,
+		mu:        &mu,
+	}
+
+	manager := NewAuthManager("api-key", refresher)
+	ctx := context.Background()
+
+	// Run multiple goroutines concurrently
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := manager.GetAuthHeader(ctx)
+			if err != nil {
+				t.Errorf("Concurrent call failed: %v", err)
+			}
+		}()
+	}
+	wg.Wait()
+
+	// Token should only be refreshed once due to caching
+	if callCount != 1 {
+		t.Errorf("Expected RefreshToken to be called once, got %d", callCount)
+	}
+}
+
+type syncRefresher struct {
+	token     string
+	expiresAt time.Time
+	callCount *int
+	mu        *sync.Mutex
+}
+
+func (s *syncRefresher) RefreshToken(ctx context.Context) (*TokenResponse, error) {
+	s.mu.Lock()
+	*s.callCount++
+	s.mu.Unlock()
+	return &TokenResponse{
+		Token:     s.token,
+		ExpiresAt: s.expiresAt,
+	}, nil
+}
+
+func TestAPIKeyAuth_NilContext(t *testing.T) {
+	auth := NewAPIKeyAuth("test-key")
+
+	// This should work even with a nil context (implementation uses context internally)
+	header, err := auth.GetAuthHeader(context.Background())
+
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	if header != "Bearer test-key" {
+		t.Errorf("Expected 'Bearer test-key', got '%s'", header)
+	}
+}
+
+func TestOAuth2Refresher_AllOptions(t *testing.T) {
+	customClient := &http.Client{Timeout: 60 * time.Second}
+
+	refresher := NewOAuth2Refresher(
+		"client-id",
+		"client-secret",
+		"http://example.com/token",
+		WithRefreshToken("refresh-token"),
+		WithScopes([]string{"read", "write"}),
+		WithHTTPClient(customClient),
+	)
+
+	if refresher.clientID != "client-id" {
+		t.Errorf("Expected clientID 'client-id', got %s", refresher.clientID)
+	}
+
+	if refresher.clientSecret != "client-secret" {
+		t.Errorf("Expected clientSecret 'client-secret', got %s", refresher.clientSecret)
+	}
+
+	if refresher.tokenURL != "http://example.com/token" {
+		t.Errorf("Expected tokenURL 'http://example.com/token', got %s", refresher.tokenURL)
+	}
+
+	if refresher.refreshToken != "refresh-token" {
+		t.Errorf("Expected refreshToken 'refresh-token', got %s", refresher.refreshToken)
+	}
+
+	if len(refresher.scopes) != 2 || refresher.scopes[0] != "read" || refresher.scopes[1] != "write" {
+		t.Errorf("Expected scopes [read, write], got %v", refresher.scopes)
+	}
+
+	if refresher.httpClient != customClient {
+		t.Error("Expected custom HTTP client to be set")
+	}
+}
+
+func TestNewMiddleware(t *testing.T) {
+	auth := NewAPIKeyAuth("test-key")
+	middleware := NewMiddleware(auth)
+
+	if middleware == nil {
+		t.Fatal("Expected non-nil middleware")
+	}
+
+	if middleware.authManager == nil {
+		t.Error("Expected authManager to be set")
 	}
 }

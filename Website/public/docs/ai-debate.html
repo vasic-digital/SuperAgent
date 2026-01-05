@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Debate Configuration - SuperAgent Documentation</title>
+    <meta name="description" content="Learn how to configure and use the SuperAgent AI debate system with multiple participants, LLM fallback chains, and Cognee AI integration.">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://superagent.ai/docs/ai-debate">
+    <meta property="og:title" content="AI Debate Configuration - SuperAgent Documentation">
+    <meta property="og:description" content="Configure multi-agent AI debates with intelligent fallback chains and consensus building.">
+    <meta property="og:image" content="https://superagent.ai/assets/images/og-image.svg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://superagent.ai/docs/ai-debate">
+    <meta property="twitter:title" content="AI Debate Configuration - SuperAgent Documentation">
+    <meta property="twitter:description" content="Configure multi-agent AI debates with intelligent fallback chains and consensus building.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/logo.svg">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        .docs-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .docs-header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color, #e5e7eb);
+        }
+        .docs-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary, #111827);
+        }
+        .docs-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary, #6b7280);
+            line-height: 1.6;
+        }
+        .docs-content {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 3rem;
+        }
+        .docs-main {
+            min-width: 0;
+        }
+        .docs-sidebar {
+            position: sticky;
+            top: 100px;
+            align-self: start;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+        .docs-nav {
+            background: var(--bg-secondary, #f9fafb);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        .docs-nav-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary, #6b7280);
+            margin-bottom: 1rem;
+        }
+        .docs-nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .docs-nav-list li {
+            margin-bottom: 0.5rem;
+        }
+        .docs-nav-list a {
+            display: block;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-secondary, #6b7280);
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.9375rem;
+            transition: all 0.2s;
+        }
+        .docs-nav-list a:hover {
+            color: var(--primary, #2563eb);
+            background: var(--bg-primary, #fff);
+        }
+        .docs-section {
+            margin-bottom: 3rem;
+        }
+        .docs-section h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary, #111827);
+            padding-top: 1rem;
+        }
+        .docs-section h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.75rem;
+            color: var(--text-primary, #111827);
+        }
+        .docs-section p {
+            color: var(--text-secondary, #4b5563);
+            line-height: 1.7;
+            margin-bottom: 1rem;
+        }
+        .docs-section ul, .docs-section ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+        .docs-section li {
+            color: var(--text-secondary, #4b5563);
+            line-height: 1.7;
+            margin-bottom: 0.5rem;
+        }
+        .code-block {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+        .code-block code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: #e5e7eb;
+        }
+        .info-box {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid #2563eb;
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 1.25rem;
+            margin: 1.5rem 0;
+        }
+        .info-box p {
+            margin: 0;
+            color: #1e40af;
+        }
+        .warning-box {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border-left: 4px solid #f59e0b;
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 1.25rem;
+            margin: 1.5rem 0;
+        }
+        .warning-box p {
+            margin: 0;
+            color: #92400e;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .feature-card {
+            background: var(--bg-secondary, #f9fafb);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color, #e5e7eb);
+        }
+        .feature-card h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary, #111827);
+        }
+        .feature-card p {
+            font-size: 0.9375rem;
+            margin: 0;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+        .docs-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9375rem;
+        }
+        .docs-table th, .docs-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color, #e5e7eb);
+        }
+        .docs-table th {
+            background: var(--bg-secondary, #f9fafb);
+            font-weight: 600;
+            color: var(--text-primary, #111827);
+        }
+        .docs-table td {
+            color: var(--text-secondary, #4b5563);
+        }
+        .docs-table code {
+            background: var(--bg-secondary, #f3f4f6);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        @media (max-width: 1024px) {
+            .docs-content {
+                grid-template-columns: 1fr;
+            }
+            .docs-sidebar {
+                display: none;
+            }
+        }
+        @media (max-width: 768px) {
+            .docs-container {
+                padding: 1rem;
+            }
+            .docs-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="/assets/images/logo.svg" alt="SuperAgent" class="nav-logo">
+                <span class="nav-title">SuperAgent</span>
+            </div>
+
+            <div class="nav-menu" id="nav-menu">
+                <a href="/#features" class="nav-link">Features</a>
+                <a href="/#providers" class="nav-link">Providers</a>
+                <a href="/#docs" class="nav-link">Documentation</a>
+                <a href="/#pricing" class="nav-link">Pricing</a>
+                <a href="https://github.com/superagent/superagent" class="nav-link">GitHub</a>
+            </div>
+
+            <div class="nav-actions">
+                <a href="/docs" class="btn btn-outline">Get Started</a>
+                <a href="https://github.com/superagent/superagent" class="btn btn-primary">Star on GitHub</a>
+            </div>
+
+            <div class="nav-toggle" id="nav-toggle">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="docs-container" style="margin-top: 80px;">
+        <div class="docs-header">
+            <h1 class="docs-title">AI Debate Configuration</h1>
+            <p class="docs-subtitle">
+                Configure and manage multi-agent AI debates with multiple participants, intelligent LLM fallback chains,
+                and Cognee AI integration for enhanced reasoning and consensus building.
+            </p>
+        </div>
+
+        <div class="docs-content">
+            <div class="docs-main">
+                <section id="overview" class="docs-section">
+                    <h2>Overview</h2>
+                    <p>
+                        The AI Debate Configuration System provides a comprehensive framework for configuring and managing
+                        AI-powered debates with multiple participants, each backed by multiple LLMs with intelligent fallback
+                        chains. The system integrates with Cognee AI for enhanced response quality and consensus analysis.
+                    </p>
+
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h4>Multiple Participants</h4>
+                            <p>Configure 2-10 AI participants with distinct roles and personalities for diverse perspectives.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>LLM Fallback Chains</h4>
+                            <p>Each participant can have multiple LLMs with automatic fallback for reliability.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Cognee AI Integration</h4>
+                            <p>Enhanced responses, consensus analysis, and insights generation through Cognee AI.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Configurable Strategies</h4>
+                            <p>Multiple debate and voting strategies available for different use cases.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="configuration" class="docs-section">
+                    <h2>Configuration Structure</h2>
+
+                    <h3>Global Configuration</h3>
+                    <p>Configure global debate settings including timeouts, consensus thresholds, and strategy options:</p>
+
+                    <div class="code-block">
+                        <pre><code class="language-yaml"># Global AI debate settings
+enabled: true
+maximal_repeat_rounds: 3
+debate_timeout: 300000  # 5 minutes in milliseconds
+consensus_threshold: 0.75
+enable_cognee: true
+
+# Debate strategy configuration
+debate_strategy: "structured"  # round_robin, free_form, structured, adversarial, collaborative
+voting_strategy: "confidence_weighted"  # majority, weighted, consensus, confidence_weighted
+response_format: "detailed"  # brief, detailed, structured, bullet_points
+
+# Memory and context management
+enable_memory: true
+memory_retention: 2592000000  # 30 days in milliseconds
+max_context_length: 32000
+
+# Quality and performance settings
+quality_threshold: 0.7
+max_response_time: 30000  # 30 seconds
+enable_streaming: false</code></pre>
+                    </div>
+
+                    <h3>Cognee AI Configuration</h3>
+                    <p>Configure Cognee AI integration for enhanced debate capabilities:</p>
+
+                    <div class="code-block">
+                        <pre><code class="language-yaml">cognee_config:
+  enabled: true
+  enhance_responses: true
+  analyze_consensus: true
+  generate_insights: true
+  dataset_name: "ai_debate_enhancement"
+  max_enhancement_time: 10000  # 10 seconds
+  enhancement_strategy: "hybrid"  # semantic_enhancement, contextual_analysis, knowledge_integration
+  memory_integration: true
+  contextual_analysis: true</code></pre>
+                    </div>
+
+                    <h3>Participant Configuration</h3>
+                    <p>Configure individual debate participants with their roles, styles, and LLM configurations:</p>
+
+                    <div class="code-block">
+                        <pre><code class="language-yaml">participants:
+  - name: "Analyst"
+    role: "Primary Analyst"
+    description: "Main analytical participant with comprehensive reasoning"
+    enabled: true
+    maximal_repeat_rounds: 3
+    response_timeout: 30000
+    weight: 1.5
+    priority: 1
+
+    # Debate behavior
+    debate_style: "analytical"  # analytical, creative, balanced, aggressive, diplomatic
+    argumentation_style: "logical"  # logical, emotional, evidence_based, hypothetical
+    persuasion_level: 0.8
+    openness_to_change: 0.3
+
+    # Quality settings
+    quality_threshold: 0.8
+    min_response_length: 100
+    max_response_length: 2000
+
+    llms:
+      - name: "Claude Primary"
+        provider: "claude"
+        model: "claude-3-5-sonnet-20241022"
+        enabled: true
+        api_key: "${CLAUDE_API_KEY}"
+        temperature: 0.1
+        max_tokens: 2000
+        weight: 1.0
+
+      - name: "DeepSeek Fallback"
+        provider: "deepseek"
+        model: "deepseek-coder"
+        enabled: true
+        api_key: "${DEEPSEEK_API_KEY}"
+        temperature: 0.1
+        max_tokens: 2000
+        weight: 0.9</code></pre>
+                    </div>
+                </section>
+
+                <section id="strategies" class="docs-section">
+                    <h2>Debate Strategies</h2>
+
+                    <h3>Available Debate Strategies</h3>
+                    <div class="table-wrapper">
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Strategy</th>
+                                    <th>Description</th>
+                                    <th>Best For</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>round_robin</code></td>
+                                    <td>Each participant takes turns in a fixed order</td>
+                                    <td>Structured discussions</td>
+                                </tr>
+                                <tr>
+                                    <td><code>free_form</code></td>
+                                    <td>Participants respond in any order based on availability</td>
+                                    <td>Dynamic brainstorming</td>
+                                </tr>
+                                <tr>
+                                    <td><code>structured</code></td>
+                                    <td>Organized rounds with specific roles and timing</td>
+                                    <td>Formal analysis</td>
+                                </tr>
+                                <tr>
+                                    <td><code>adversarial</code></td>
+                                    <td>Designed for opposing viewpoints and debate</td>
+                                    <td>Critical evaluation</td>
+                                </tr>
+                                <tr>
+                                    <td><code>collaborative</code></td>
+                                    <td>Focus on building consensus and agreement</td>
+                                    <td>Team problem-solving</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>Voting Strategies</h3>
+                    <div class="table-wrapper">
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Strategy</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>majority</code></td>
+                                    <td>Simple majority vote among participants</td>
+                                </tr>
+                                <tr>
+                                    <td><code>weighted</code></td>
+                                    <td>Weighted by participant weights</td>
+                                </tr>
+                                <tr>
+                                    <td><code>consensus</code></td>
+                                    <td>Requires high agreement level</td>
+                                </tr>
+                                <tr>
+                                    <td><code>confidence_weighted</code></td>
+                                    <td>Weighted by response confidence scores</td>
+                                </tr>
+                                <tr>
+                                    <td><code>quality_weighted</code></td>
+                                    <td>Weighted by response quality scores</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="fallback" class="docs-section">
+                    <h2>Fallback Mechanism</h2>
+                    <p>The system implements intelligent fallback mechanisms to ensure reliability:</p>
+
+                    <ul>
+                        <li><strong>Primary LLM Failure:</strong> Automatically tries next LLM in chain</li>
+                        <li><strong>Retry Logic:</strong> Configurable retry attempts per LLM</li>
+                        <li><strong>Timeout Handling:</strong> Respects timeout settings at multiple levels</li>
+                        <li><strong>Quality Fallback:</strong> Falls back if response quality is too low</li>
+                        <li><strong>Consensus Fallback:</strong> Continues debate if consensus isn't reached</li>
+                    </ul>
+
+                    <div class="info-box">
+                        <p><strong>Best Practice:</strong> Always configure at least 2 LLMs per participant to ensure fallback availability.</p>
+                    </div>
+                </section>
+
+                <section id="usage" class="docs-section">
+                    <h2>Programmatic Usage</h2>
+                    <p>Use the AI Debate system programmatically in your Go applications:</p>
+
+                    <div class="code-block">
+                        <pre><code class="language-go">package main
+
+import (
+    "context"
+    "log"
+    "time"
+
+    "github.com/superagent/superagent/internal/config"
+    "github.com/superagent/superagent/internal/services"
+)
+
+func main() {
+    // Load configuration
+    loader := config.NewAIDebateConfigLoader("configs/ai-debate-example.yaml")
+    cfg, err := loader.Load()
+    if err != nil {
+        log.Fatalf("Failed to load configuration: %v", err)
+    }
+
+    // Create debate service
+    debateService, err := services.NewAIDebateService(cfg, nil, nil)
+    if err != nil {
+        log.Fatalf("Failed to create debate service: %v", err)
+    }
+
+    // Conduct a debate
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+    defer cancel()
+
+    result, err := debateService.ConductDebate(ctx,
+        "Should AI be regulated?",
+        "Initial context about AI regulation")
+    if err != nil {
+        log.Fatalf("Debate failed: %v", err)
+    }
+
+    // Process results
+    log.Printf("Debate completed in %v", result.Duration)
+    log.Printf("Consensus reached: %v", result.Consensus != nil && result.Consensus.Reached)
+    log.Printf("Best response: %s", result.BestResponse.Content)
+}</code></pre>
+                    </div>
+                </section>
+
+                <section id="validation" class="docs-section">
+                    <h2>Configuration Validation</h2>
+                    <p>The system performs comprehensive validation on all configuration parameters:</p>
+
+                    <h3>Global Validation Rules</h3>
+                    <div class="table-wrapper">
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Valid Range</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>maximal_repeat_rounds</code></td>
+                                    <td>1-10</td>
+                                </tr>
+                                <tr>
+                                    <td><code>consensus_threshold</code></td>
+                                    <td>0.0-1.0</td>
+                                </tr>
+                                <tr>
+                                    <td><code>quality_threshold</code></td>
+                                    <td>0.0-1.0</td>
+                                </tr>
+                                <tr>
+                                    <td><code>participants</code></td>
+                                    <td>2-10 participants</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>LLM Validation Rules</h3>
+                    <div class="table-wrapper">
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Valid Range</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>temperature</code></td>
+                                    <td>0.0-2.0</td>
+                                </tr>
+                                <tr>
+                                    <td><code>top_p</code></td>
+                                    <td>0.0-1.0</td>
+                                </tr>
+                                <tr>
+                                    <td><code>frequency_penalty</code></td>
+                                    <td>-2.0 to 2.0</td>
+                                </tr>
+                                <tr>
+                                    <td><code>presence_penalty</code></td>
+                                    <td>-2.0 to 2.0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="warning-box">
+                        <p><strong>Important:</strong> Store API keys in environment variables, never in configuration files directly.</p>
+                    </div>
+                </section>
+
+                <section id="environment" class="docs-section">
+                    <h2>Environment Variables</h2>
+                    <p>Required environment variables for AI debate configuration:</p>
+
+                    <div class="code-block">
+                        <pre><code class="language-bash"># LLM Provider API Keys
+CLAUDE_API_KEY=your_claude_api_key
+DEEPSEEK_API_KEY=your_deepseek_api_key
+GEMINI_API_KEY=your_gemini_api_key
+QWEN_API_KEY=your_qwen_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+ZAI_API_KEY=your_zai_api_key
+
+# Cognee AI Configuration (optional)
+COGNEE_API_KEY=your_cognee_api_key
+COGNEE_ENABLED=true</code></pre>
+                    </div>
+                </section>
+
+                <section id="best-practices" class="docs-section">
+                    <h2>Best Practices</h2>
+                    <ul>
+                        <li><strong>Use Environment Variables:</strong> Store API keys and sensitive data in environment variables</li>
+                        <li><strong>Configure Timeouts Appropriately:</strong> Set realistic timeouts based on your use case</li>
+                        <li><strong>Implement Fallback Chains:</strong> Always configure multiple LLMs for reliability</li>
+                        <li><strong>Monitor Performance:</strong> Use built-in metrics to monitor system performance</li>
+                        <li><strong>Test Configurations:</strong> Thoroughly test configurations before production deployment</li>
+                        <li><strong>Regular Updates:</strong> Keep LLM models and configurations updated</li>
+                        <li><strong>Security First:</strong> Follow security best practices for API key management</li>
+                    </ul>
+                </section>
+            </div>
+
+            <aside class="docs-sidebar">
+                <nav class="docs-nav">
+                    <h4 class="docs-nav-title">On This Page</h4>
+                    <ul class="docs-nav-list">
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#configuration">Configuration Structure</a></li>
+                        <li><a href="#strategies">Debate Strategies</a></li>
+                        <li><a href="#fallback">Fallback Mechanism</a></li>
+                        <li><a href="#usage">Programmatic Usage</a></li>
+                        <li><a href="#validation">Validation</a></li>
+                        <li><a href="#environment">Environment Variables</a></li>
+                        <li><a href="#best-practices">Best Practices</a></li>
+                    </ul>
+                </nav>
+            </aside>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-brand">
+                        <img src="/assets/images/logo.svg" alt="SuperAgent" class="footer-logo">
+                        <span class="footer-title">SuperAgent</span>
+                    </div>
+                    <p class="footer-description">
+                        AI-powered multi-provider LLM orchestration platform with enterprise-grade capabilities.
+                    </p>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Documentation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs">Quick Start</a></li>
+                        <li><a href="/docs/api">API Reference</a></li>
+                        <li><a href="/docs/deployment">Deployment</a></li>
+                        <li><a href="/docs/ai-debate">AI Debate</a></li>
+                        <li><a href="/docs/optimization">LLM Optimization</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://github.com/superagent/superagent">GitHub</a></li>
+                        <li><a href="/docs/tutorial">Tutorials</a></li>
+                        <li><a href="/docs/architecture">Architecture</a></li>
+                        <li><a href="/docs/protocols">Protocol Integration</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs/faq">FAQ</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                        <li><a href="/docs/troubleshooting">Troubleshooting</a></li>
+                        <li><a href="/docs/support">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-legal">
+                    <p>&copy; 2026 SuperAgent. All rights reserved.</p>
+                    <div class="footer-legal-links">
+                        <a href="/privacy">Privacy Policy</a>
+                        <a href="/terms">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="/scripts/main.js"></script>
+</body>
+</html>

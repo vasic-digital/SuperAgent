@@ -3,8 +3,11 @@ package sglang
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -383,4 +386,329 @@ func TestClient_Timeout(t *testing.T) {
 		Messages: []Message{{Role: "user", Content: "test"}},
 	})
 	assert.Error(t, err)
+}
+
+// TestClient_SessionHistory tests session history management
+func TestClient_SessionHistory(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req CompletionRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		resp := &CompletionResponse{
+			Choices: []CompletionChoice{
+				{Message: Message{Role: "assistant", Content: "Response " + string(rune(len(req.Messages)))}},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	// Create session
+	client.sessions["history-test"] = &Session{
+		ID:           "history-test",
+		SystemPrompt: "You are helpful",
+		History:      []Message{},
+		CreatedAt:    time.Now(),
+		LastUsedAt:   time.Now(),
+	}
+
+	// Multiple interactions
+	for i := 0; i < 5; i++ {
+		_, err := client.ContinueSession(context.Background(), "history-test", fmt.Sprintf("Message %d", i))
+		require.NoError(t, err)
+	}
+
+	session, _ := client.GetSession(context.Background(), "history-test")
+	assert.Equal(t, 10, len(session.History)) // 5 user messages + 5 assistant responses
+}
+
+// TestClient_ConcurrentSessions tests concurrent session access
+func TestClient_ConcurrentSessions(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := &CompletionResponse{
+			Choices: []CompletionChoice{
+				{Message: Message{Role: "assistant", Content: "Concurrent response"}},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+	ctx := context.Background()
+
+	// Create multiple sessions
+	for i := 0; i < 10; i++ {
+		client.CreateSession(ctx, fmt.Sprintf("session-%d", i), "System prompt")
+	}
+
+	var wg sync.WaitGroup
+	errors := make(chan error, 100)
+
+	// Concurrent session operations
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			sessionID := fmt.Sprintf("session-%d", idx%10)
+			_, err := client.ContinueSession(ctx, sessionID, "Hello")
+			if err != nil {
+				errors <- err
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	close(errors)
+
+	var errCount int
+	for range errors {
+		errCount++
+	}
+	assert.Equal(t, 0, errCount)
+}
+
+// TestClient_CompleteWithOptions tests completion with various options
+func TestClient_CompleteWithOptions(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req CompletionRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		// Verify request options
+		assert.NotZero(t, req.Temperature)
+		assert.NotZero(t, req.MaxTokens)
+		assert.NotEmpty(t, req.Model)
+
+		resp := &CompletionResponse{
+			Choices: []CompletionChoice{
+				{Message: Message{Role: "assistant", Content: "Response with options"}},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	resp, err := client.Complete(context.Background(), &CompletionRequest{
+		Model:       "test-model",
+		Messages:    []Message{{Role: "user", Content: "test"}},
+		Temperature: 0.9,
+		MaxTokens:   100,
+		TopP:        0.95,
+	})
+
+	require.NoError(t, err)
+	assert.NotEmpty(t, resp.Choices)
+}
+
+// TestClient_ListSessions tests session listing
+func TestClient_ListSessions(t *testing.T) {
+	client := NewClient(&ClientConfig{BaseURL: "http://localhost", Timeout: 5 * time.Second})
+
+	// Create sessions
+	for i := 0; i < 5; i++ {
+		client.sessions[fmt.Sprintf("session-%d", i)] = &Session{
+			ID:         fmt.Sprintf("session-%d", i),
+			CreatedAt:  time.Now(),
+			LastUsedAt: time.Now(),
+		}
+	}
+
+	ctx := context.Background()
+	sessions := client.ListSessions(ctx)
+	assert.Len(t, sessions, 5)
+}
+
+// TestClient_SessionExpiry tests session cleanup based on age
+func TestClient_SessionExpiry(t *testing.T) {
+	client := NewClient(&ClientConfig{BaseURL: "http://localhost", Timeout: 5 * time.Second})
+
+	// Create old sessions
+	oldTime := time.Now().Add(-24 * time.Hour)
+	for i := 0; i < 3; i++ {
+		client.sessions[fmt.Sprintf("old-%d", i)] = &Session{
+			ID:         fmt.Sprintf("old-%d", i),
+			LastUsedAt: oldTime,
+		}
+	}
+
+	// Create recent sessions
+	for i := 0; i < 2; i++ {
+		client.sessions[fmt.Sprintf("new-%d", i)] = &Session{
+			ID:         fmt.Sprintf("new-%d", i),
+			LastUsedAt: time.Now(),
+		}
+	}
+
+	// Cleanup sessions older than 1 hour
+	removed := client.CleanupSessions(context.Background(), 1*time.Hour)
+	assert.Equal(t, 3, removed)
+	assert.Equal(t, 2, len(client.sessions))
+}
+
+// TestClient_WarmPrefixWithLongContent tests prefix warming with long content
+func TestClient_WarmPrefixWithLongContent(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req CompletionRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		// Verify long prefix was sent
+		assert.True(t, len(req.Messages[0].Content) > 100)
+
+		resp := &CompletionResponse{
+			Choices: []CompletionChoice{
+				{Message: Message{Role: "assistant", Content: ""}},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	longPrefix := strings.Repeat("This is a long system prompt that provides extensive context. ", 20)
+	resp, err := client.WarmPrefix(context.Background(), longPrefix)
+
+	require.NoError(t, err)
+	assert.True(t, resp.Cached)
+}
+
+// TestClient_RetryOnNetworkError tests retry behavior on network errors
+func TestClient_RetryOnNetworkError(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount < 3 {
+			// Simulate temporary error
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		resp := &CompletionResponse{
+			Choices: []CompletionChoice{
+				{Message: Message{Role: "assistant", Content: "Success after retry"}},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	// This will fail since we don't have built-in retry
+	_, err := client.Complete(context.Background(), &CompletionRequest{
+		Messages: []Message{{Role: "user", Content: "test"}},
+	})
+	assert.Error(t, err)
+	assert.Equal(t, 1, callCount)
+}
+
+// TestClient_EmptyResponse tests handling of empty responses
+func TestClient_EmptyResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := &CompletionResponse{
+			Choices: []CompletionChoice{},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	result, err := client.CompleteSimple(context.Background(), "test")
+	require.NoError(t, err)
+	assert.Empty(t, result)
+}
+
+// TestClient_ContinueSession_NotFound tests continuing non-existent session
+func TestClient_ContinueSession_NotFound(t *testing.T) {
+	client := NewClient(&ClientConfig{BaseURL: "http://localhost", Timeout: 5 * time.Second})
+
+	_, err := client.ContinueSession(context.Background(), "nonexistent", "hello")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "session not found")
+}
+
+// TestClient_DeleteSession_NotFound tests deleting non-existent session
+func TestClient_DeleteSession_NotFound(t *testing.T) {
+	client := NewClient(&ClientConfig{BaseURL: "http://localhost", Timeout: 5 * time.Second})
+
+	err := client.DeleteSession(context.Background(), "nonexistent")
+	assert.Error(t, err)
+}
+
+// TestClient_Health_MalformedResponse tests handling of malformed health response
+func TestClient_Health_MalformedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{invalid json`))
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+
+	_, err := client.Health(context.Background())
+	assert.Error(t, err)
+}
+
+// BenchmarkClient_Complete benchmarks completion requests
+func BenchmarkClient_Complete(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := &CompletionResponse{
+			Choices: []CompletionChoice{
+				{Message: Message{Role: "assistant", Content: "Response"}},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+	ctx := context.Background()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		client.Complete(ctx, &CompletionRequest{
+			Messages: []Message{{Role: "user", Content: "test"}},
+		})
+	}
+}
+
+// BenchmarkClient_SessionContinue benchmarks session continuation
+func BenchmarkClient_SessionContinue(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := &CompletionResponse{
+			Choices: []CompletionChoice{
+				{Message: Message{Role: "assistant", Content: "Response"}},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{BaseURL: server.URL, Timeout: 5 * time.Second})
+	ctx := context.Background()
+
+	client.sessions["bench-session"] = &Session{
+		ID:           "bench-session",
+		SystemPrompt: "You are helpful",
+		History:      []Message{},
+		CreatedAt:    time.Now(),
+		LastUsedAt:   time.Now(),
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		client.ContinueSession(ctx, "bench-session", "Hello")
+	}
 }

@@ -1,6 +1,7 @@
 package verifier
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -281,5 +282,424 @@ func TestSelectedModel_ZeroValue(t *testing.T) {
 	}
 	if model.Selected {
 		t.Error("zero Selected should be false")
+	}
+}
+
+// =====================================================
+// ADDITIONAL DISCOVERY TESTS FOR COMPREHENSIVE COVERAGE
+// =====================================================
+
+func TestModelDiscoveryService_getDiscoveryEndpoint(t *testing.T) {
+	svc := NewModelDiscoveryService(nil, nil, nil, nil)
+
+	tests := []struct {
+		name           string
+		cred           ProviderCredentials
+		expectedPrefix string
+	}{
+		{
+			name:           "openai",
+			cred:           ProviderCredentials{ProviderName: "openai"},
+			expectedPrefix: "https://api.openai.com",
+		},
+		{
+			name:           "anthropic",
+			cred:           ProviderCredentials{ProviderName: "anthropic"},
+			expectedPrefix: "https://api.anthropic.com",
+		},
+		{
+			name:           "google",
+			cred:           ProviderCredentials{ProviderName: "google"},
+			expectedPrefix: "https://generativelanguage.googleapis.com",
+		},
+		{
+			name:           "groq",
+			cred:           ProviderCredentials{ProviderName: "groq"},
+			expectedPrefix: "https://api.groq.com",
+		},
+		{
+			name:           "together",
+			cred:           ProviderCredentials{ProviderName: "together"},
+			expectedPrefix: "https://api.together.xyz",
+		},
+		{
+			name:           "mistral",
+			cred:           ProviderCredentials{ProviderName: "mistral"},
+			expectedPrefix: "https://api.mistral.ai",
+		},
+		{
+			name:           "deepseek",
+			cred:           ProviderCredentials{ProviderName: "deepseek"},
+			expectedPrefix: "https://api.deepseek.com",
+		},
+		{
+			name:           "ollama",
+			cred:           ProviderCredentials{ProviderName: "ollama"},
+			expectedPrefix: "http://localhost:11434",
+		},
+		{
+			name:           "openrouter",
+			cred:           ProviderCredentials{ProviderName: "openrouter"},
+			expectedPrefix: "https://openrouter.ai",
+		},
+		{
+			name:           "xai",
+			cred:           ProviderCredentials{ProviderName: "xai"},
+			expectedPrefix: "https://api.x.ai",
+		},
+		{
+			name:           "cerebras",
+			cred:           ProviderCredentials{ProviderName: "cerebras"},
+			expectedPrefix: "https://api.cerebras.ai",
+		},
+		{
+			name:           "custom base URL",
+			cred:           ProviderCredentials{ProviderName: "custom", BaseURL: "https://custom.api.com"},
+			expectedPrefix: "https://custom.api.com/models",
+		},
+		{
+			name:           "unknown provider",
+			cred:           ProviderCredentials{ProviderName: "unknown"},
+			expectedPrefix: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			endpoint := svc.getDiscoveryEndpoint(tt.cred)
+			if tt.expectedPrefix == "" && endpoint != "" {
+				t.Errorf("expected empty endpoint for unknown provider, got %s", endpoint)
+			}
+			if tt.expectedPrefix != "" && !strings.HasPrefix(endpoint, tt.expectedPrefix) {
+				t.Errorf("expected endpoint to start with %s, got %s", tt.expectedPrefix, endpoint)
+			}
+		})
+	}
+}
+
+func TestModelDiscoveryService_isChatModel(t *testing.T) {
+	svc := NewModelDiscoveryService(nil, nil, nil, nil)
+
+	tests := []struct {
+		name     string
+		modelID  string
+		provider string
+		expected bool
+	}{
+		{"gpt-4", "gpt-4", "openai", true},
+		{"gpt-4o", "gpt-4o", "openai", true},
+		{"claude-3", "claude-3-opus", "anthropic", true},
+		{"embedding model", "text-embedding-ada-002", "openai", false},
+		{"embed model", "embed-v1", "openai", false},
+		{"moderation model", "text-moderation-001", "openai", false},
+		{"tts model", "tts-1", "openai", false},
+		{"whisper model", "whisper-1", "openai", false},
+		{"dall-e model", "dall-e-3", "openai", false},
+		{"davinci model", "text-davinci-003", "openai", false},
+		{"babbage model", "babbage-002", "openai", false},
+		{"curie model", "curie-001", "openai", false},
+		{"ada model", "ada-001", "openai", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := svc.isChatModel(tt.modelID, tt.provider)
+			if result != tt.expected {
+				t.Errorf("isChatModel(%s, %s) = %v, want %v", tt.modelID, tt.provider, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestModelDiscoveryService_calculateVoteWeight(t *testing.T) {
+	svc := NewModelDiscoveryService(nil, nil, nil, nil)
+
+	tests := []struct {
+		name        string
+		model       *DiscoveredModel
+		minWeight   float64
+		maxWeight   float64
+	}{
+		{
+			name: "high score with code visibility",
+			model: &DiscoveredModel{
+				OverallScore: 9.5,
+				CodeVisible:  true,
+			},
+			minWeight: 0.95,
+			maxWeight: 1.0,
+		},
+		{
+			name: "high score without code visibility",
+			model: &DiscoveredModel{
+				OverallScore: 9.5,
+				CodeVisible:  false,
+			},
+			minWeight: 0.9,
+			maxWeight: 1.0,
+		},
+		{
+			name: "low score",
+			model: &DiscoveredModel{
+				OverallScore: 5.0,
+				CodeVisible:  false,
+			},
+			minWeight: 0.4,
+			maxWeight: 0.6,
+		},
+		{
+			name: "very high score caps at 1.0",
+			model: &DiscoveredModel{
+				OverallScore: 10.0,
+				CodeVisible:  true,
+			},
+			minWeight: 1.0,
+			maxWeight: 1.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			weight := svc.calculateVoteWeight(tt.model)
+			if weight < tt.minWeight || weight > tt.maxWeight {
+				t.Errorf("expected weight in range [%f, %f], got %f", tt.minWeight, tt.maxWeight, weight)
+			}
+		})
+	}
+}
+
+func TestModelDiscoveryService_selectTopModels(t *testing.T) {
+	cfg := &DiscoveryConfig{
+		MaxModelsForEnsemble: 3,
+		MinScore:             7.0,
+		RequireDiversity:     true,
+	}
+	svc := NewModelDiscoveryService(nil, nil, nil, cfg)
+
+	models := []*DiscoveredModel{
+		{ModelID: "model1", Provider: "openai", OverallScore: 9.5},
+		{ModelID: "model2", Provider: "anthropic", OverallScore: 9.0},
+		{ModelID: "model3", Provider: "google", OverallScore: 8.5},
+		{ModelID: "model4", Provider: "openai", OverallScore: 8.0}, // Same provider as model1
+		{ModelID: "model5", Provider: "groq", OverallScore: 6.0},   // Below min score
+	}
+
+	selected := svc.selectTopModels(models)
+
+	if len(selected) != 3 {
+		t.Errorf("expected 3 selected models, got %d", len(selected))
+	}
+
+	// Check ranking
+	for i, s := range selected {
+		if s.Rank != i+1 {
+			t.Errorf("expected rank %d, got %d", i+1, s.Rank)
+		}
+		if !s.Selected {
+			t.Error("Selected should be true")
+		}
+	}
+}
+
+func TestModelDiscoveryService_selectTopModels_NoDiversity(t *testing.T) {
+	cfg := &DiscoveryConfig{
+		MaxModelsForEnsemble: 3,
+		MinScore:             7.0,
+		RequireDiversity:     false,
+	}
+	svc := NewModelDiscoveryService(nil, nil, nil, cfg)
+
+	models := []*DiscoveredModel{
+		{ModelID: "model1", Provider: "openai", OverallScore: 9.5},
+		{ModelID: "model2", Provider: "openai", OverallScore: 9.0},
+		{ModelID: "model3", Provider: "openai", OverallScore: 8.5},
+	}
+
+	selected := svc.selectTopModels(models)
+
+	if len(selected) != 3 {
+		t.Errorf("expected 3 selected models (no diversity required), got %d", len(selected))
+	}
+}
+
+func TestModelDiscoveryService_selectTopModels_AllBelowMinScore(t *testing.T) {
+	cfg := &DiscoveryConfig{
+		MaxModelsForEnsemble: 3,
+		MinScore:             9.0,
+		RequireDiversity:     false,
+	}
+	svc := NewModelDiscoveryService(nil, nil, nil, cfg)
+
+	models := []*DiscoveredModel{
+		{ModelID: "model1", Provider: "openai", OverallScore: 6.0},
+		{ModelID: "model2", Provider: "anthropic", OverallScore: 5.0},
+	}
+
+	selected := svc.selectTopModels(models)
+
+	if len(selected) != 0 {
+		t.Errorf("expected 0 selected models (all below min score), got %d", len(selected))
+	}
+}
+
+func TestModelDiscoveryService_Start_Stop(t *testing.T) {
+	cfg := &DiscoveryConfig{
+		Enabled:           true,
+		DiscoveryInterval: 100 * time.Millisecond,
+	}
+	svc := NewModelDiscoveryService(nil, nil, nil, cfg)
+
+	// Start with empty credentials
+	err := svc.Start([]ProviderCredentials{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Allow some time for the goroutine to start
+	time.Sleep(50 * time.Millisecond)
+
+	// Stop
+	svc.Stop()
+
+	// Stopping again should be safe
+	svc.Stop()
+}
+
+func TestContainsIgnoreCase(t *testing.T) {
+	tests := []struct {
+		s        string
+		substr   string
+		expected bool
+	}{
+		{"Hello World", "world", true},
+		{"Hello World", "HELLO", true},
+		{"Hello World", "xyz", false},
+		{"", "test", false},
+		{"test", "", true},
+		{"UPPERCASE", "uppercase", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.s+"_"+tt.substr, func(t *testing.T) {
+			result := containsIgnoreCase(tt.s, tt.substr)
+			if result != tt.expected {
+				t.Errorf("containsIgnoreCase(%q, %q) = %v, want %v", tt.s, tt.substr, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestDiscoveryStats_Calculation(t *testing.T) {
+	vs := NewVerificationService(nil)
+	ss, _ := NewScoringService(nil)
+	hs := NewHealthService(nil)
+	cfg := DefaultDiscoveryConfig()
+
+	svc := NewModelDiscoveryService(vs, ss, hs, cfg)
+
+	// Manually add some discovered models
+	svc.mu.Lock()
+	svc.discoveredModels["model1"] = &DiscoveredModel{
+		ModelID:      "model1",
+		Provider:     "openai",
+		Verified:     true,
+		CodeVisible:  true,
+		OverallScore: 9.0,
+	}
+	svc.discoveredModels["model2"] = &DiscoveredModel{
+		ModelID:      "model2",
+		Provider:     "anthropic",
+		Verified:     true,
+		CodeVisible:  false,
+		OverallScore: 8.0,
+	}
+	svc.discoveredModels["model3"] = &DiscoveredModel{
+		ModelID:      "model3",
+		Provider:     "openai",
+		Verified:     false,
+		CodeVisible:  false,
+		OverallScore: 5.0,
+	}
+	svc.selectedModels = []*SelectedModel{
+		{
+			DiscoveredModel: svc.discoveredModels["model1"],
+			Rank:            1,
+		},
+	}
+	svc.mu.Unlock()
+
+	stats := svc.GetDiscoveryStats()
+
+	if stats.TotalDiscovered != 3 {
+		t.Errorf("expected 3 discovered, got %d", stats.TotalDiscovered)
+	}
+	if stats.TotalVerified != 2 {
+		t.Errorf("expected 2 verified, got %d", stats.TotalVerified)
+	}
+	if stats.CodeVisibleCount != 1 {
+		t.Errorf("expected 1 code visible, got %d", stats.CodeVisibleCount)
+	}
+	if stats.TotalSelected != 1 {
+		t.Errorf("expected 1 selected, got %d", stats.TotalSelected)
+	}
+	if stats.ByProvider["openai"] != 2 {
+		t.Errorf("expected 2 openai models, got %d", stats.ByProvider["openai"])
+	}
+	if stats.ByProvider["anthropic"] != 1 {
+		t.Errorf("expected 1 anthropic model, got %d", stats.ByProvider["anthropic"])
+	}
+}
+
+func TestModelDiscoveryService_GetModelForDebate_Found(t *testing.T) {
+	svc := NewModelDiscoveryService(nil, nil, nil, nil)
+
+	// Add a selected model
+	svc.mu.Lock()
+	svc.selectedModels = []*SelectedModel{
+		{
+			DiscoveredModel: &DiscoveredModel{
+				ModelID:  "test-model",
+				Provider: "openai",
+			},
+			Selected: true,
+		},
+	}
+	svc.mu.Unlock()
+
+	model, found := svc.GetModelForDebate("test-model")
+	if !found {
+		t.Error("expected to find model")
+	}
+	if model.ModelID != "test-model" {
+		t.Errorf("expected model ID 'test-model', got '%s'", model.ModelID)
+	}
+}
+
+func TestDiscoveryConfig_DefaultValues(t *testing.T) {
+	cfg := DefaultDiscoveryConfig()
+
+	if !cfg.Enabled {
+		t.Error("expected Enabled to be true by default")
+	}
+	if cfg.DiscoveryInterval != 24*time.Hour {
+		t.Errorf("expected DiscoveryInterval 24h, got %v", cfg.DiscoveryInterval)
+	}
+	if cfg.MaxModelsForEnsemble != 5 {
+		t.Errorf("expected MaxModelsForEnsemble 5, got %d", cfg.MaxModelsForEnsemble)
+	}
+	if cfg.MinScore != 7.0 {
+		t.Errorf("expected MinScore 7.0, got %f", cfg.MinScore)
+	}
+	if !cfg.RequireVerification {
+		t.Error("expected RequireVerification to be true")
+	}
+	if !cfg.RequireCodeVisibility {
+		t.Error("expected RequireCodeVisibility to be true")
+	}
+	if !cfg.RequireDiversity {
+		t.Error("expected RequireDiversity to be true")
+	}
+	if len(cfg.ProviderPriority) == 0 {
+		t.Error("expected ProviderPriority to be non-empty")
 	}
 }

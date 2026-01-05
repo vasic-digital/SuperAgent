@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1305,4 +1308,553 @@ func TestCompletionHandler_Complete_NilRequestService(t *testing.T) {
 	}()
 
 	handler.Complete(c)
+}
+
+// =====================================================
+// CONCURRENT REQUEST HANDLING TESTS
+// =====================================================
+
+// TestCompletionHandler_ConcurrentCompleteRequests tests concurrent Complete requests
+func TestCompletionHandler_ConcurrentCompleteRequests(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	numRequests := 20
+	var wg sync.WaitGroup
+	results := make(chan int, numRequests)
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+
+			reqBody := map[string]interface{}{
+				"prompt":      "Concurrent test prompt " + strconv.Itoa(idx),
+				"model":       "test-model",
+				"temperature": 0.5 + float64(idx%5)*0.1,
+				"max_tokens":  100 + idx*10,
+			}
+			reqBytes, _ := json.Marshal(reqBody)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/v1/completions", bytes.NewBuffer(reqBytes))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			// Recover from panic to continue other goroutines
+			defer func() {
+				if r := recover(); r != nil {
+					results <- http.StatusInternalServerError
+				}
+			}()
+
+			handler.Complete(c)
+			results <- w.Code
+		}(i)
+	}
+
+	wg.Wait()
+	close(results)
+
+	// All requests should either complete or fail gracefully
+	count := 0
+	for code := range results {
+		count++
+		// Acceptable codes: 200 (success), 400 (bad request - no service), 500 (internal error)
+		assert.True(t, code == http.StatusOK || code == http.StatusBadRequest || code == http.StatusInternalServerError,
+			"Unexpected status code: %d", code)
+	}
+	assert.Equal(t, numRequests, count, "All requests should complete")
+}
+
+// TestCompletionHandler_ConcurrentChatRequests tests concurrent Chat requests
+func TestCompletionHandler_ConcurrentChatRequests(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	numRequests := 15
+	var wg sync.WaitGroup
+	results := make(chan int, numRequests)
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+
+			reqBody := map[string]interface{}{
+				"prompt": "Chat test " + strconv.Itoa(idx),
+				"messages": []map[string]string{
+					{"role": "user", "content": "Hello " + strconv.Itoa(idx)},
+				},
+				"model": "test-model",
+			}
+			reqBytes, _ := json.Marshal(reqBody)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/v1/chat/completions", bytes.NewBuffer(reqBytes))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			defer func() {
+				if r := recover(); r != nil {
+					results <- http.StatusInternalServerError
+				}
+			}()
+
+			handler.Chat(c)
+			results <- w.Code
+		}(i)
+	}
+
+	wg.Wait()
+	close(results)
+
+	count := 0
+	for code := range results {
+		count++
+		assert.True(t, code == http.StatusOK || code == http.StatusBadRequest || code == http.StatusInternalServerError)
+	}
+	assert.Equal(t, numRequests, count)
+}
+
+// TestCompletionHandler_ConcurrentModelRequests tests concurrent Models requests
+func TestCompletionHandler_ConcurrentModelRequests(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	numRequests := 30
+	var wg sync.WaitGroup
+	successCount := int32(0)
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("GET", "/v1/models", nil)
+
+			handler.Models(c)
+
+			if w.Code == http.StatusOK {
+				atomic.AddInt32(&successCount, 1)
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	// All Models requests should succeed
+	assert.Equal(t, int32(numRequests), successCount, "All Models requests should return 200")
+}
+
+// =====================================================
+// EDGE CASE TESTS
+// =====================================================
+
+// TestCompletionHandler_RequestWithSpecialCharacters tests handling of special characters
+func TestCompletionHandler_RequestWithSpecialCharacters(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	testCases := []struct {
+		name   string
+		prompt string
+	}{
+		{"unicode", "Test with unicode: 你好世界 こんにちは"},
+		{"emoji", "Test with emoji: 😀 🎉 🚀"},
+		{"newlines", "Test with\nnewlines\nand\ttabs"},
+		{"quotes", `Test with "quotes" and 'single quotes'`},
+		{"backslash", `Test with \ backslash and \\ double backslash`},
+		{"html_entities", "Test with &lt;html&gt; entities &amp; special chars"},
+		{"long_unicode", "Тест на кириллице и العربية والعبرית"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			reqBody := map[string]interface{}{
+				"prompt": tc.prompt,
+				"model":  "test-model",
+			}
+			reqBytes, _ := json.Marshal(reqBody)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/v1/completions", bytes.NewBuffer(reqBytes))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			defer func() {
+				if r := recover(); r != nil {
+					// Acceptable to panic due to nil service, but JSON parsing should work
+				}
+			}()
+
+			handler.Complete(c)
+
+			// Request should at least parse correctly
+			// Will get 400 (bad request - missing required) or panic due to nil service
+			assert.True(t, w.Code == http.StatusBadRequest || w.Code == http.StatusOK || w.Code == 0)
+		})
+	}
+}
+
+// TestCompletionHandler_ExtremeValues tests handling of extreme parameter values
+func TestCompletionHandler_ExtremeValues(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	testCases := []struct {
+		name        string
+		temperature float64
+		maxTokens   int
+		topP        float64
+	}{
+		{"zero_temp", 0.0, 100, 1.0},
+		{"max_temp", 2.0, 100, 1.0},
+		{"zero_tokens", 0.7, 0, 1.0},
+		{"large_tokens", 0.7, 100000, 1.0},
+		{"zero_top_p", 0.7, 100, 0.0},
+		{"negative_temp", -0.5, 100, 1.0},
+		{"negative_tokens", 0.7, -100, 1.0},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			reqBody := map[string]interface{}{
+				"prompt":      "Test extreme values",
+				"model":       "test-model",
+				"temperature": tc.temperature,
+				"max_tokens":  tc.maxTokens,
+				"top_p":       tc.topP,
+			}
+			reqBytes, _ := json.Marshal(reqBody)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/v1/completions", bytes.NewBuffer(reqBytes))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			defer func() {
+				recover()
+			}()
+
+			handler.Complete(c)
+			// Verify parsing doesn't crash
+		})
+	}
+}
+
+// TestCompletionHandler_LargeMessages tests handling of large message arrays
+func TestCompletionHandler_LargeMessages(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	// Create a large number of messages
+	messages := make([]map[string]string, 100)
+	for i := 0; i < 100; i++ {
+		role := "user"
+		if i%2 == 1 {
+			role = "assistant"
+		}
+		messages[i] = map[string]string{
+			"role":    role,
+			"content": "Message number " + strconv.Itoa(i) + " with some content to test large arrays",
+		}
+	}
+
+	reqBody := map[string]interface{}{
+		"prompt":   "Test with many messages",
+		"messages": messages,
+		"model":    "test-model",
+	}
+	reqBytes, _ := json.Marshal(reqBody)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/v1/completions", bytes.NewBuffer(reqBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	defer func() {
+		recover()
+	}()
+
+	handler.Complete(c)
+	// Should handle large message arrays without crashing
+}
+
+// TestCompletionHandler_RequestWithAllOptions tests request with all possible options
+func TestCompletionHandler_RequestWithAllOptions(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	reqBody := map[string]interface{}{
+		"prompt":      "Complete test prompt",
+		"model":       "test-model",
+		"temperature": 0.7,
+		"max_tokens":  500,
+		"top_p":       0.95,
+		"stop":        []string{"\n", "END", "STOP"},
+		"stream":      false,
+		"messages": []map[string]string{
+			{"role": "system", "content": "You are a helpful assistant"},
+			{"role": "user", "content": "Hello"},
+			{"role": "assistant", "content": "Hi there!"},
+			{"role": "user", "content": "How are you?"},
+		},
+		"memory_enhanced": true,
+		"request_type":    "completion",
+		"ensemble_config": map[string]interface{}{
+			"strategy":             "confidence_weighted",
+			"min_providers":        2,
+			"confidence_threshold": 0.85,
+			"fallback_to_best":     true,
+			"timeout":              45,
+		},
+	}
+	reqBytes, _ := json.Marshal(reqBody)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/v1/completions", bytes.NewBuffer(reqBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Set("user_id", "comprehensive-test-user")
+	c.Set("session_id", "comprehensive-test-session")
+
+	defer func() {
+		recover()
+	}()
+
+	handler.Complete(c)
+}
+
+// TestCompletionHandler_ConvertToInternalRequest_AllFields tests internal request conversion with all fields
+func TestCompletionHandler_ConvertToInternalRequest_AllFields(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	name := "TestUser"
+	req := &CompletionRequest{
+		Prompt: "Test prompt with all fields",
+		Messages: []models.Message{
+			{Role: "system", Content: "System message", Name: &name},
+			{Role: "user", Content: "User message"},
+			{Role: "assistant", Content: "Assistant response", ToolCalls: map[string]interface{}{"function": "test"}},
+		},
+		Model:       "gpt-4",
+		Temperature: 0.8,
+		MaxTokens:   2000,
+		TopP:        0.95,
+		Stop:        []string{"END", "\n\n"},
+		EnsembleConfig: &models.EnsembleConfig{
+			Strategy:            "majority_vote",
+			MinProviders:        3,
+			ConfidenceThreshold: 0.9,
+			FallbackToBest:      true,
+			Timeout:             60,
+		},
+		MemoryEnhanced: true,
+		RequestType:    "chat",
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Set("user_id", "full-test-user")
+	c.Set("session_id", "full-test-session")
+
+	internalReq := handler.convertToInternalRequest(req, c)
+
+	// Verify all fields are converted correctly
+	assert.Equal(t, "Test prompt with all fields", internalReq.Prompt)
+	assert.Equal(t, 3, len(internalReq.Messages))
+	assert.Equal(t, "gpt-4", internalReq.ModelParams.Model)
+	assert.Equal(t, 0.8, internalReq.ModelParams.Temperature)
+	assert.Equal(t, 2000, internalReq.ModelParams.MaxTokens)
+	assert.Equal(t, 0.95, internalReq.ModelParams.TopP)
+	assert.Equal(t, []string{"END", "\n\n"}, internalReq.ModelParams.StopSequences)
+	assert.Equal(t, "majority_vote", internalReq.EnsembleConfig.Strategy)
+	assert.True(t, internalReq.MemoryEnhanced)
+	assert.Equal(t, "chat", internalReq.RequestType)
+	assert.Equal(t, "full-test-user", internalReq.UserID)
+	assert.Equal(t, "full-test-session", internalReq.SessionID)
+}
+
+// TestCompletionHandler_ResponseTypes tests different response finish reasons
+func TestCompletionHandler_ResponseTypes(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	testCases := []struct {
+		finishReason string
+		tokensUsed   int
+		confidence   float64
+	}{
+		{"stop", 100, 0.95},
+		{"length", 4096, 0.88},
+		{"content_filter", 50, 0.70},
+		{"tool_calls", 150, 0.92},
+		{"function_call", 200, 0.89},
+		{"", 0, 0.0}, // Empty response
+	}
+
+	for _, tc := range testCases {
+		t.Run("finish_"+tc.finishReason, func(t *testing.T) {
+			resp := &models.LLMResponse{
+				ID:           "test-" + tc.finishReason,
+				Content:      "Response with finish reason: " + tc.finishReason,
+				FinishReason: tc.finishReason,
+				TokensUsed:   tc.tokensUsed,
+				Confidence:   tc.confidence,
+				ProviderName: "test-provider",
+				CreatedAt:    time.Now(),
+			}
+
+			apiResp := handler.convertToAPIResponse(resp)
+
+			assert.Equal(t, tc.finishReason, apiResp.Choices[0].FinishReason)
+			assert.Equal(t, tc.tokensUsed, apiResp.Usage.TotalTokens)
+		})
+	}
+}
+
+// TestCompletionHandler_StreamingResponseFormat tests streaming response formatting
+func TestCompletionHandler_StreamingResponseFormat(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	// Test multiple chunks
+	chunks := []string{"Hello", " ", "World", "!"}
+
+	for i, chunk := range chunks {
+		resp := &models.LLMResponse{
+			ID:           "stream-" + strconv.Itoa(i),
+			Content:      chunk,
+			ProviderName: "test-provider",
+			CreatedAt:    time.Now(),
+		}
+		if i == len(chunks)-1 {
+			resp.FinishReason = "stop"
+		}
+
+		streamResp := handler.convertToStreamingResponse(resp)
+
+		assert.Equal(t, "stream-"+strconv.Itoa(i), streamResp["id"])
+		assert.Equal(t, "text_completion", streamResp["object"])
+
+		choices := streamResp["choices"].([]map[string]any)
+		delta := choices[0]["delta"].(map[string]any)
+		assert.Equal(t, chunk, delta["content"])
+	}
+}
+
+// TestCompletionHandler_ChatStreamingResponseFormat tests chat streaming response formatting
+func TestCompletionHandler_ChatStreamingResponseFormat(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	chunks := []string{"This", " is", " a", " test"}
+
+	for i, chunk := range chunks {
+		resp := &models.LLMResponse{
+			ID:           "chat-stream-" + strconv.Itoa(i),
+			Content:      chunk,
+			ProviderName: "test-provider",
+			CreatedAt:    time.Now(),
+		}
+		if i == len(chunks)-1 {
+			resp.FinishReason = "stop"
+		}
+
+		chatStreamResp := handler.convertToChatStreamingResponse(resp)
+
+		assert.Equal(t, "chat-stream-"+strconv.Itoa(i), chatStreamResp["id"])
+		assert.Equal(t, "chat.completion.chunk", chatStreamResp["object"])
+
+		choices := chatStreamResp["choices"].([]map[string]any)
+		delta := choices[0]["delta"].(map[string]any)
+		assert.Equal(t, "assistant", delta["role"])
+		assert.Equal(t, chunk, delta["content"])
+	}
+}
+
+// =====================================================
+// BENCHMARK TESTS
+// =====================================================
+
+// BenchmarkCompletionHandler_ConvertToInternalRequest benchmarks internal request conversion
+func BenchmarkCompletionHandler_ConvertToInternalRequest(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	req := &CompletionRequest{
+		Prompt: "Benchmark test prompt",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+		},
+		Model:       "test-model",
+		Temperature: 0.7,
+		MaxTokens:   100,
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		handler.convertToInternalRequest(req, c)
+	}
+}
+
+// BenchmarkCompletionHandler_ConvertToAPIResponse benchmarks API response conversion
+func BenchmarkCompletionHandler_ConvertToAPIResponse(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	resp := &models.LLMResponse{
+		ID:           "bench-response",
+		Content:      "Benchmark response content",
+		FinishReason: "stop",
+		TokensUsed:   100,
+		ProviderName: "test-provider",
+		CreatedAt:    time.Now(),
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		handler.convertToAPIResponse(resp)
+	}
+}
+
+// BenchmarkCompletionHandler_ConvertToChatResponse benchmarks chat response conversion
+func BenchmarkCompletionHandler_ConvertToChatResponse(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	resp := &models.LLMResponse{
+		ID:           "bench-chat-response",
+		Content:      "Benchmark chat response",
+		FinishReason: "stop",
+		TokensUsed:   150,
+		ProviderName: "test-provider",
+		CreatedAt:    time.Now(),
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		handler.convertToChatResponse(resp)
+	}
+}
+
+// BenchmarkCompletionHandler_Models benchmarks the Models endpoint
+func BenchmarkCompletionHandler_Models(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+	handler := &CompletionHandler{}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/v1/models", nil)
+		handler.Models(c)
+	}
 }

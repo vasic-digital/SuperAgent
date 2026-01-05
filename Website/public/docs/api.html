@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - SuperAgent Documentation</title>
+    <meta name="description" content="Complete API reference for SuperAgent - OpenAI-compatible endpoints, authentication, rate limiting, and SDK examples for Go, Python, and JavaScript.">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://superagent.ai/docs/api">
+    <meta property="og:title" content="API Reference - SuperAgent Documentation">
+    <meta property="og:description" content="Complete API reference for SuperAgent - endpoints, authentication, rate limiting, and SDK examples.">
+    <meta property="og:image" content="https://superagent.ai/assets/images/og-image.svg">
+    <meta property="og:site_name" content="SuperAgent">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://superagent.ai/docs/api">
+    <meta property="twitter:title" content="API Reference - SuperAgent Documentation">
+    <meta property="twitter:description" content="Complete API reference for SuperAgent - endpoints, authentication, rate limiting, and SDK examples.">
+    <meta property="twitter:image" content="https://superagent.ai/assets/images/og-image.svg">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/logo.svg">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- Additional SEO Meta Tags -->
+    <meta name="keywords" content="SuperAgent API, REST API, OpenAI compatible, chat completions, ensemble API, LLM API, AI orchestration API">
+    <meta name="author" content="SuperAgent Team">
+    <meta name="robots" content="index, follow">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://superagent.ai/docs/api">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/">
+                    <img src="/assets/images/logo.svg" alt="SuperAgent" class="nav-logo">
+                    <span class="nav-title">SuperAgent</span>
+                </a>
+            </div>
+
+            <div class="nav-menu" id="nav-menu">
+                <a href="/#features" class="nav-link">Features</a>
+                <a href="/#providers" class="nav-link">Providers</a>
+                <a href="/docs" class="nav-link active">Documentation</a>
+                <a href="/#pricing" class="nav-link">Pricing</a>
+                <a href="https://github.com/superagent/superagent" class="nav-link">GitHub</a>
+            </div>
+
+            <div class="nav-actions">
+                <a href="/docs" class="btn btn-outline">Get Started</a>
+                <a href="https://github.com/superagent/superagent" class="btn btn-primary">Star on GitHub</a>
+            </div>
+
+            <div class="nav-toggle" id="nav-toggle">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- API Reference Hero -->
+    <section class="hero hero-small">
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-text">OpenAI Compatible</span>
+                </div>
+                <h1 class="hero-title">
+                    <span class="gradient-text">API Reference</span>
+                </h1>
+                <p class="hero-description">
+                    Complete API documentation with endpoints, authentication, and code examples.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Base URL Section -->
+    <section class="documentation">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Base URL</h2>
+            </div>
+
+            <div class="doc-card">
+                <div class="code-block">
+                    <pre><code>Development: http://localhost:8080
+Production:  https://api.yourdomain.com</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Authentication Section -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Authentication</h2>
+                <p class="section-description">
+                    SuperAgent uses JWT-based authentication for secure access
+                </p>
+            </div>
+
+            <div class="docs-grid">
+                <div class="doc-card">
+                    <h3 class="doc-title">Get JWT Token</h3>
+                    <div class="code-block">
+                        <pre><code class="language-bash">curl -X POST http://localhost:8080/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "your-username",
+    "password": "your-password"
+  }'</code></pre>
+                    </div>
+                </div>
+
+                <div class="doc-card">
+                    <h3 class="doc-title">Use Token in Requests</h3>
+                    <div class="code-block">
+                        <pre><code class="language-bash">curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  http://localhost:8080/v1/models</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Endpoints Section -->
+    <section class="documentation">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">API Endpoints</h2>
+                <p class="section-description">
+                    Complete list of available API endpoints
+                </p>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">Endpoint Summary</h3>
+                <div class="table-responsive">
+                    <table class="api-table">
+                        <thead>
+                            <tr>
+                                <th>Endpoint</th>
+                                <th>Method</th>
+                                <th>Auth</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>/health</code></td>
+                                <td>GET</td>
+                                <td>None</td>
+                                <td>Basic health check</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/health</code></td>
+                                <td>GET</td>
+                                <td>None</td>
+                                <td>Enhanced health with provider status</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/models</code></td>
+                                <td>GET</td>
+                                <td>None</td>
+                                <td>List available models</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/chat/completions</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Chat completion</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/completions</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Legacy text completion</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/ensemble/completions</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Direct ensemble completion</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/providers</code></td>
+                                <td>GET</td>
+                                <td>Bearer Token</td>
+                                <td>Detailed provider info</td>
+                            </tr>
+                            <tr>
+                                <td><code>/v1/debates</code></td>
+                                <td>POST</td>
+                                <td>Bearer Token</td>
+                                <td>Create AI debate</td>
+                            </tr>
+                            <tr>
+                                <td><code>/mcp/tools</code></td>
+                                <td>GET</td>
+                                <td>Bearer Token</td>
+                                <td>Available MCP tools</td>
+                            </tr>
+                            <tr>
+                                <td><code>/metrics</code></td>
+                                <td>GET</td>
+                                <td>None</td>
+                                <td>Prometheus metrics</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chat Completions Section -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Chat Completions</h2>
+                <p class="section-description">
+                    Create chat completions with the ensemble model or specific providers
+                </p>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">POST /v1/chat/completions</h3>
+                <p>Create a chat completion with streaming support.</p>
+
+                <h4>Request Body</h4>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "model": "superagent-ensemble",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful AI assistant."
+    },
+    {
+      "role": "user",
+      "content": "Explain quantum computing in simple terms."
+    }
+  ],
+  "max_tokens": 1000,
+  "temperature": 0.7,
+  "stream": false
+}</code></pre>
+                </div>
+
+                <h4>Response</h4>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "id": "chatcmpl-superagent-123",
+  "object": "chat.completion",
+  "created": 1703123456,
+  "model": "superagent-ensemble",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Quantum computing is like..."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 25,
+    "completion_tokens": 75,
+    "total_tokens": 100
+  },
+  "ensemble": {
+    "providers_used": ["deepseek", "qwen", "openrouter"],
+    "confidence_score": 0.92,
+    "voting_strategy": "confidence_weighted"
+  }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Available Models Section -->
+    <section class="documentation">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Available Models</h2>
+                <p class="section-description">
+                    SuperAgent supports 22+ models from multiple providers
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3 class="feature-title">Ensemble Models</h3>
+                    <ul class="feature-list">
+                        <li><code>superagent-ensemble</code> - Intelligent multi-provider aggregation</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <h3 class="feature-title">DeepSeek Models</h3>
+                    <ul class="feature-list">
+                        <li><code>deepseek-chat</code> - General purpose chat</li>
+                        <li><code>deepseek-coder</code> - Code generation</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <h3 class="feature-title">Qwen Models</h3>
+                    <ul class="feature-list">
+                        <li><code>qwen-turbo</code> - Fast, cost-effective</li>
+                        <li><code>qwen-plus</code> - Balanced performance</li>
+                        <li><code>qwen-max</code> - Highest quality</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <h3 class="feature-title">OpenRouter Models</h3>
+                    <ul class="feature-list">
+                        <li><code>openrouter/anthropic/claude-3.5-sonnet</code></li>
+                        <li><code>openrouter/openai/gpt-4o</code></li>
+                        <li><code>openrouter/meta-llama/llama-3.1-405b</code></li>
+                        <li><code>openrouter/google/gemini-2.5</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ensemble Configuration -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Ensemble Configuration</h2>
+                <p class="section-description">
+                    Advanced ensemble completion with custom configuration
+                </p>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">POST /v1/ensemble/completions</h3>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "prompt": "Explain quantum computing",
+  "model": "superagent-ensemble",
+  "temperature": 0.7,
+  "max_tokens": 1000,
+  "ensemble_config": {
+    "strategy": "confidence_weighted",
+    "min_providers": 2,
+    "confidence_threshold": 0.8,
+    "fallback_to_best": true,
+    "timeout": 30,
+    "preferred_providers": ["deepseek", "qwen"]
+  },
+  "memory_enhanced": true
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Debates Section -->
+    <section class="documentation">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">AI Debates</h2>
+                <p class="section-description">
+                    Create and manage multi-participant AI debates
+                </p>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">POST /v1/debates</h3>
+                <p>Create and start a new AI debate with multiple participants.</p>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "debateId": "climate-debate-001",
+  "topic": "What are the most effective strategies for combating climate change?",
+  "maximal_repeat_rounds": 5,
+  "consensus_threshold": 0.75,
+  "participants": [
+    {
+      "name": "EnvironmentalEconomist",
+      "role": "Economic Analyst",
+      "llms": [
+        {
+          "provider": "claude",
+          "model": "claude-3-5-sonnet-20241022"
+        }
+      ]
+    },
+    {
+      "name": "ClimateScientist",
+      "role": "Scientific Expert",
+      "llms": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-coder"
+        }
+      ]
+    }
+  ],
+  "enable_cognee": true
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rate Limiting Section -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Rate Limiting</h2>
+                <p class="section-description">
+                    SuperAgent implements intelligent rate limiting
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3 class="feature-title">Rate Limits</h3>
+                    <ul class="feature-list">
+                        <li><strong>Anonymous:</strong> 100 requests/minute</li>
+                        <li><strong>Authenticated:</strong> 1000 requests/minute</li>
+                        <li><strong>Premium:</strong> 10000 requests/minute</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <h3 class="feature-title">Rate Limit Headers</h3>
+                    <div class="code-block">
+                        <pre><code>X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 999
+X-RateLimit-Reset: 1703123456</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SDK Examples Section -->
+    <section class="documentation">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">SDK Examples</h2>
+                <p class="section-description">
+                    Use SuperAgent with your favorite programming language
+                </p>
+            </div>
+
+            <div class="docs-grid">
+                <div class="doc-card">
+                    <h3 class="doc-title">Go SDK</h3>
+                    <div class="code-block">
+                        <pre><code class="language-go">package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/superagent/superagent-go"
+)
+
+func main() {
+    client := superagent.NewClient("your-api-key")
+
+    resp, err := client.CreateChatCompletion(
+        context.Background(),
+        &superagent.ChatCompletionRequest{
+            Model: "superagent-ensemble",
+            Messages: []superagent.Message{
+                {Role: "user", Content: "Hello!"},
+            },
+        },
+    )
+
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println(resp.Choices[0].Message.Content)
+}</code></pre>
+                    </div>
+                </div>
+
+                <div class="doc-card">
+                    <h3 class="doc-title">Python SDK</h3>
+                    <div class="code-block">
+                        <pre><code class="language-python">from superagent import SuperAgentClient
+
+client = SuperAgentClient(api_key="your-api-key")
+
+response = client.chat.completions.create(
+    model="superagent-ensemble",
+    messages=[
+        {"role": "user", "content": "Hello!"}
+    ]
+)
+
+print(response.choices[0].message.content)</code></pre>
+                    </div>
+                </div>
+
+                <div class="doc-card">
+                    <h3 class="doc-title">JavaScript SDK</h3>
+                    <div class="code-block">
+                        <pre><code class="language-javascript">import { SuperAgentClient } from '@superagent/client';
+
+const client = new SuperAgentClient({
+    apiKey: 'your-api-key'
+});
+
+const response = await client.chat.completions.create({
+    model: 'superagent-ensemble',
+    messages: [
+        { role: 'user', content: 'Hello!' }
+    ]
+});
+
+console.log(response.choices[0].message.content);</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Error Handling Section -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Error Handling</h2>
+                <p class="section-description">
+                    Understanding and handling API errors
+                </p>
+            </div>
+
+            <div class="doc-card">
+                <h3 class="doc-title">Error Response Format</h3>
+                <div class="code-block">
+                    <pre><code class="language-json">{
+  "error": {
+    "message": "Invalid model specified",
+    "type": "invalid_request_error",
+    "code": "invalid_model",
+    "param": "model",
+    "timestamp": "2024-01-15T10:30:00Z"
+  }
+}</code></pre>
+                </div>
+
+                <h4>Common Error Codes</h4>
+                <div class="table-responsive">
+                    <table class="api-table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>invalid_model</code></td>
+                                <td>Model not found or not supported</td>
+                            </tr>
+                            <tr>
+                                <td><code>invalid_request</code></td>
+                                <td>Request validation failed</td>
+                            </tr>
+                            <tr>
+                                <td><code>invalid_api_key</code></td>
+                                <td>API key is invalid or expired</td>
+                            </tr>
+                            <tr>
+                                <td><code>rate_limit_exceeded</code></td>
+                                <td>Rate limit exceeded</td>
+                            </tr>
+                            <tr>
+                                <td><code>provider_error</code></td>
+                                <td>LLM provider returned an error</td>
+                            </tr>
+                            <tr>
+                                <td><code>ensemble_failed</code></td>
+                                <td>Ensemble processing failed</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title">Ready to Get Started?</h2>
+                <p class="cta-description">
+                    Start building with SuperAgent's powerful API today.
+                </p>
+                <div class="cta-actions">
+                    <a href="/docs" class="btn btn-primary btn-large">
+                        View Documentation
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </a>
+                    <a href="https://github.com/superagent/superagent" class="btn btn-outline btn-large">
+                        View on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-brand">
+                        <img src="/assets/images/logo.svg" alt="SuperAgent" class="footer-logo">
+                        <span class="footer-title">SuperAgent</span>
+                    </div>
+                    <p class="footer-description">
+                        AI-powered multi-provider LLM orchestration platform with enterprise-grade capabilities.
+                    </p>
+                    <div class="footer-social">
+                        <a href="https://github.com/superagent/superagent" class="social-link">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Documentation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs">Quick Start</a></li>
+                        <li><a href="/docs/api">API Reference</a></li>
+                        <li><a href="/docs/deployment">Deployment</a></li>
+                        <li><a href="/docs/ai-debate">AI Debate</a></li>
+                        <li><a href="/docs/optimization">LLM Optimization</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://github.com/superagent/superagent">GitHub</a></li>
+                        <li><a href="/docs/tutorial">Tutorials</a></li>
+                        <li><a href="/docs/architecture">Architecture</a></li>
+                        <li><a href="/docs/protocols">Protocol Integration</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs/faq">FAQ</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                        <li><a href="/docs/troubleshooting">Troubleshooting</a></li>
+                        <li><a href="/docs/support">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-legal">
+                    <p>&copy; 2026 SuperAgent. All rights reserved.</p>
+                    <div class="footer-legal-links">
+                        <a href="/privacy">Privacy Policy</a>
+                        <a href="/terms">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="/scripts/main.js"></script>
+</body>
+</html>

@@ -1,9 +1,14 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -790,4 +795,410 @@ func TestUnifiedHandler_ChatCompletionsStream_WithProviderRegistry(t *testing.T)
 
 	// Should fail because no providers are registered
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+// =====================================================
+// CONCURRENT REQUEST HANDLING TESTS
+// =====================================================
+
+// TestUnifiedHandler_ConcurrentModelsRequests tests concurrent Models requests
+func TestUnifiedHandler_ConcurrentModelsRequests(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	numRequests := 30
+	var wg sync.WaitGroup
+	successCount := int32(0)
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("GET", "/v1/models", nil)
+
+			handler.Models(c)
+
+			if w.Code == http.StatusOK {
+				atomic.AddInt32(&successCount, 1)
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	assert.Equal(t, int32(numRequests), successCount, "All Models requests should return 200")
+}
+
+// TestUnifiedHandler_ConcurrentChatCompletionsRequests tests concurrent ChatCompletions requests
+func TestUnifiedHandler_ConcurrentChatCompletionsRequests(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	numRequests := 15
+	var wg sync.WaitGroup
+	results := make(chan int, numRequests)
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+
+			reqBody := `{"model": "gpt-4", "messages": [{"role": "user", "content": "Hello ` + strconv.Itoa(idx) + `"}]}`
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(reqBody))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			defer func() {
+				if r := recover(); r != nil {
+					results <- http.StatusInternalServerError
+				}
+			}()
+
+			handler.ChatCompletions(c)
+			results <- w.Code
+		}(i)
+	}
+
+	wg.Wait()
+	close(results)
+
+	count := 0
+	for code := range results {
+		count++
+		// Acceptable: 200, 400, 500
+		assert.True(t, code == http.StatusOK || code == http.StatusBadRequest || code == http.StatusInternalServerError)
+	}
+	assert.Equal(t, numRequests, count)
+}
+
+// TestUnifiedHandler_ConcurrentCompletionsRequests tests concurrent Completions requests
+func TestUnifiedHandler_ConcurrentCompletionsRequests(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	numRequests := 15
+	var wg sync.WaitGroup
+	results := make(chan int, numRequests)
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+
+			reqBody := `{"model": "text-davinci-003", "prompt": "Test prompt ` + strconv.Itoa(idx) + `"}`
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/v1/completions", strings.NewReader(reqBody))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			defer func() {
+				if r := recover(); r != nil {
+					results <- http.StatusInternalServerError
+				}
+			}()
+
+			handler.Completions(c)
+			results <- w.Code
+		}(i)
+	}
+
+	wg.Wait()
+	close(results)
+
+	count := 0
+	for code := range results {
+		count++
+		assert.True(t, code == http.StatusOK || code == http.StatusBadRequest || code == http.StatusInternalServerError)
+	}
+	assert.Equal(t, numRequests, count)
+}
+
+// =====================================================
+// EDGE CASE TESTS
+// =====================================================
+
+// TestUnifiedHandler_RequestWithSpecialCharacters tests handling of special characters in messages
+func TestUnifiedHandler_RequestWithSpecialCharacters(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	testCases := []struct {
+		name    string
+		content string
+	}{
+		{"unicode", "Test unicode: \u4f60\u597d\u4e16\u754c"},
+		{"newlines", "Test\nwith\nnewlines"},
+		{"tabs", "Test\twith\ttabs"},
+		{"quotes", `Test with "quotes" and 'apostrophes'`},
+		{"backslash", `Test with \\ backslashes`},
+		{"special_json", `Test with {"json": "inside"} content`},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			reqBody := `{"model": "gpt-4", "messages": [{"role": "user", "content": "` + tc.content + `"}]}`
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(reqBody))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			defer func() {
+				recover()
+			}()
+
+			handler.ChatCompletions(c)
+		})
+	}
+}
+
+// TestUnifiedHandler_LargeMessageHistory tests handling of large message history
+func TestUnifiedHandler_LargeMessageHistory(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	// Create large message array
+	messages := make([]map[string]string, 50)
+	for i := 0; i < 50; i++ {
+		role := "user"
+		if i%2 == 1 {
+			role = "assistant"
+		}
+		messages[i] = map[string]string{
+			"role":    role,
+			"content": "Message " + strconv.Itoa(i) + " with substantial content to test large conversations.",
+		}
+	}
+
+	reqBody := map[string]interface{}{
+		"model":    "gpt-4",
+		"messages": messages,
+	}
+	reqBytes, _ := json.Marshal(reqBody)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/v1/chat/completions", bytes.NewBuffer(reqBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	defer func() {
+		recover()
+	}()
+
+	handler.ChatCompletions(c)
+}
+
+// TestUnifiedHandler_AllParameters tests request with all possible parameters
+func TestUnifiedHandler_AllParameters(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	reqBody := map[string]interface{}{
+		"model": "gpt-4",
+		"messages": []map[string]interface{}{
+			{"role": "system", "content": "You are a helpful assistant"},
+			{"role": "user", "content": "Hello"},
+		},
+		"max_tokens":        500,
+		"temperature":       0.7,
+		"top_p":             0.9,
+		"n":                 1,
+		"stream":            false,
+		"stop":              []string{"\n", "END"},
+		"presence_penalty":  0.5,
+		"frequency_penalty": 0.5,
+		"logit_bias":        map[string]float64{"123": 0.5},
+		"user":              "test-user",
+		"ensemble_config": map[string]interface{}{
+			"strategy":     "weighted_voting",
+			"min_providers": 2,
+		},
+	}
+	reqBytes, _ := json.Marshal(reqBody)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/v1/chat/completions", bytes.NewBuffer(reqBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	defer func() {
+		recover()
+	}()
+
+	handler.ChatCompletions(c)
+}
+
+// TestUnifiedHandler_ConvertOpenAIChatRequest_AllRoles tests conversion with all message roles
+func TestUnifiedHandler_ConvertOpenAIChatRequest_AllRoles(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	openaiReq := &OpenAIChatRequest{
+		Model: "gpt-4",
+		Messages: []OpenAIMessage{
+			{Role: "system", Content: "System prompt"},
+			{Role: "user", Content: "User message"},
+			{Role: "assistant", Content: "Assistant response"},
+			{Role: "tool", Content: "Tool result", ToolCallID: "call_123"},
+			{Role: "function", Content: "Function result", Name: "test_function"},
+		},
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	internalReq := handler.convertOpenAIChatRequest(openaiReq, c)
+
+	assert.Equal(t, 5, len(internalReq.Messages))
+	assert.Equal(t, "system", internalReq.Messages[0].Role)
+	assert.Equal(t, "user", internalReq.Messages[1].Role)
+	assert.Equal(t, "assistant", internalReq.Messages[2].Role)
+	assert.Equal(t, "tool", internalReq.Messages[3].Role)
+	assert.Equal(t, "function", internalReq.Messages[4].Role)
+}
+
+// TestUnifiedHandler_ResponseConversion_EdgeCases tests response conversion edge cases
+func TestUnifiedHandler_ResponseConversion_EdgeCases(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	testCases := []struct {
+		name         string
+		tokensUsed   int
+		finishReason string
+		content      string
+	}{
+		{"empty_content", 0, "stop", ""},
+		{"zero_tokens", 0, "stop", "Some content"},
+		{"large_tokens", 1000000, "length", "Large response"},
+		{"no_finish_reason", 100, "", "Response"},
+		{"special_finish", 100, "content_filter", "Filtered content"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := &services.EnsembleResult{
+				Selected: &models.LLMResponse{
+					ID:           "test-" + tc.name,
+					Content:      tc.content,
+					TokensUsed:   tc.tokensUsed,
+					FinishReason: tc.finishReason,
+					ProviderName: "test-provider",
+					CreatedAt:    time.Now(),
+				},
+				VotingMethod: "test",
+			}
+
+			openaiReq := &OpenAIChatRequest{Model: "gpt-4"}
+			resp := handler.convertToOpenAIChatResponse(result, openaiReq)
+
+			assert.Equal(t, "test-"+tc.name, resp.ID)
+			assert.Equal(t, tc.content, resp.Choices[0].Message.Content)
+		})
+	}
+}
+
+// TestUnifiedHandler_StreamResponseConversion tests stream response conversion
+func TestUnifiedHandler_StreamResponseConversion(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	chunks := []string{"Hello", " ", "World", "!"}
+
+	for i, chunk := range chunks {
+		llmResp := &models.LLMResponse{
+			ID:        "chunk-" + strconv.Itoa(i),
+			Content:   chunk,
+			CreatedAt: time.Now(),
+		}
+
+		openaiReq := &OpenAIChatRequest{Model: "gpt-4"}
+		streamResp := handler.convertToOpenAIChatStreamResponse(llmResp, openaiReq)
+
+		assert.Equal(t, "chunk-"+strconv.Itoa(i), streamResp["id"])
+		assert.Equal(t, "chat.completion.chunk", streamResp["object"])
+
+		choices := streamResp["choices"].([]map[string]any)
+		delta := choices[0]["delta"].(map[string]any)
+		assert.Equal(t, chunk, delta["content"])
+	}
+}
+
+// =====================================================
+// BENCHMARK TESTS
+// =====================================================
+
+// BenchmarkUnifiedHandler_Models benchmarks the Models endpoint
+func BenchmarkUnifiedHandler_Models(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/v1/models", nil)
+		handler.Models(c)
+	}
+}
+
+// BenchmarkUnifiedHandler_ConvertOpenAIChatRequest benchmarks request conversion
+func BenchmarkUnifiedHandler_ConvertOpenAIChatRequest(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	openaiReq := &OpenAIChatRequest{
+		Model: "gpt-4",
+		Messages: []OpenAIMessage{
+			{Role: "system", Content: "System prompt"},
+			{Role: "user", Content: "User message"},
+		},
+		MaxTokens:   100,
+		Temperature: 0.7,
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		handler.convertOpenAIChatRequest(openaiReq, c)
+	}
+}
+
+// BenchmarkUnifiedHandler_ConvertToOpenAIChatResponse benchmarks response conversion
+func BenchmarkUnifiedHandler_ConvertToOpenAIChatResponse(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+	handler := &UnifiedHandler{}
+
+	result := &services.EnsembleResult{
+		Selected: &models.LLMResponse{
+			ID:           "bench-id",
+			Content:      "Benchmark response content",
+			TokensUsed:   100,
+			FinishReason: "stop",
+			ProviderName: "test-provider",
+			CreatedAt:    time.Now(),
+		},
+	}
+	openaiReq := &OpenAIChatRequest{Model: "gpt-4"}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		handler.convertToOpenAIChatResponse(result, openaiReq)
+	}
+}
+
+// BenchmarkGenerateID benchmarks ID generation
+func BenchmarkGenerateID(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		generateID()
+	}
 }

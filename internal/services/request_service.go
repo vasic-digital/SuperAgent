@@ -709,20 +709,32 @@ func NewCircuitBreakerPattern() *CircuitBreakerPattern {
 }
 
 func (c *CircuitBreakerPattern) GetCircuitBreaker(name string) *RequestCircuitBreaker {
+	// First try with read lock
 	c.mu.RLock()
-	defer c.mu.RUnlock()
-
 	cb, exists := c.providers[name]
-	if !exists {
-		cb = &RequestCircuitBreaker{
-			Name:             name,
-			State:            RequestStateClosed,
-			FailureThreshold: 5,
-			Timeout:          60 * time.Second,
-			RecoveryTimeout:  30 * time.Second,
-		}
-		c.providers[name] = cb
+	c.mu.RUnlock()
+
+	if exists {
+		return cb
 	}
+
+	// Need to create new circuit breaker - acquire write lock
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Double-check after acquiring write lock (another goroutine may have created it)
+	if cb, exists = c.providers[name]; exists {
+		return cb
+	}
+
+	cb = &RequestCircuitBreaker{
+		Name:             name,
+		State:            RequestStateClosed,
+		FailureThreshold: 5,
+		Timeout:          60 * time.Second,
+		RecoveryTimeout:  30 * time.Second,
+	}
+	c.providers[name] = cb
 
 	return cb
 }

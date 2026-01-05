@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SuperAgent is an AI-powered ensemble LLM service written in Go (1.23+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 7 LLM providers (Claude, DeepSeek, Gemini, Qwen, ZAI, Ollama, OpenRouter).
+SuperAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 7 LLM providers (Claude, DeepSeek, Gemini, Qwen, ZAI, Ollama, OpenRouter).
+
+The project also includes:
+- **Toolkit** (`Toolkit/`): A standalone Go library for building AI applications with multi-provider support
+- **LLMsVerifier** (`LLMsVerifier/`): A verification system for LLM provider accuracy and reliability
 
 ## Build Commands
 
@@ -219,79 +223,16 @@ SuperAgent supports integration with major cloud AI providers:
 - API key authentication
 - Configuration via `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION`
 
-## LLM Optimization
+## LLMsVerifier Integration
 
-SuperAgent includes a unified LLM optimization framework for improving performance with large codebases:
-
-### Optimization Packages (`internal/optimization/`)
-
-| Package | Type | Purpose |
-|---------|------|---------|
-| `gptcache/` | Native Go | Semantic caching with vector similarity |
-| `outlines/` | Native Go | Structured JSON output generation |
-| `streaming/` | Native Go | Enhanced streaming with buffering |
-| `sglang/` | HTTP Client | RadixAttention prefix caching |
-| `llamaindex/` | HTTP Client | Document retrieval with Cognee sync |
-| `langchain/` | HTTP Client | Task decomposition, ReAct agents |
-| `guidance/` | HTTP Client | CFG/regex constrained generation |
-| `lmql/` | HTTP Client | Query language constraints |
-
-### Docker Services
+The project includes LLMsVerifier for validating LLM provider accuracy:
 
 ```bash
-# Start optimization services
-docker-compose --profile optimization up -d
-
-# Services:
-# - langchain-server (port 8011): Task decomposition
-# - llamaindex-server (port 8012): Document retrieval
-# - guidance-server (port 8013): Constrained generation
-# - lmql-server (port 8014): Query language
-# - sglang (port 30000): Prefix caching (GPU required)
-```
-
-### Usage Example
-
-```go
-import "github.com/superagent/superagent/internal/optimization"
-
-// Create optimization service
-config := optimization.DefaultConfig()
-svc, _ := optimization.NewService(config)
-
-// Optimize request (check cache, retrieve context, decompose)
-optimized, _ := svc.OptimizeRequest(ctx, prompt, embedding)
-
-// Generate structured output
-schema := outlines.ObjectSchema(map[string]*outlines.JSONSchema{
-    "answer": outlines.StringSchema(),
-})
-result, _ := svc.GenerateStructured(ctx, prompt, schema, llmFunc)
-
-// Enhanced streaming
-outChan, getResult := svc.StreamEnhanced(ctx, inChan, progressCallback)
-```
-
-### Configuration
-
-Add to `configs/development.yaml`:
-```yaml
-optimization:
-  enabled: true
-  semantic_cache:
-    enabled: true
-    similarity_threshold: 0.85
-    max_entries: 10000
-    ttl: 24h
-  streaming:
-    enabled: true
-    buffer_type: "word"
-  sglang:
-    enabled: true
-    endpoint: "http://localhost:30000"
-  llamaindex:
-    enabled: true
-    endpoint: "http://localhost:8012"
+make verifier-init        # Initialize the LLMsVerifier submodule
+make verifier-build       # Build verifier CLI
+make verifier-test        # Run verifier tests
+make verifier-run         # Run SuperAgent with verifier enabled
+make verifier-verify MODEL=gpt-4 PROVIDER=openai  # Verify a model
 ```
 
 ## Test Coverage Summary

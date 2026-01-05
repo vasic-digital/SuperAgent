@@ -1,6 +1,7 @@
 package verifier
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -565,4 +566,339 @@ func TestCircuitBreaker_Fields(t *testing.T) {
 	if cb.resetTimeout != 30*time.Second {
 		t.Errorf("expected resetTimeout 30s, got %v", cb.resetTimeout)
 	}
+}
+
+// =====================================================
+// ADDITIONAL HEALTH SERVICE TESTS FOR COMPREHENSIVE COVERAGE
+// =====================================================
+
+func TestCircuitBreaker_ConcurrentAccess(t *testing.T) {
+	cb := NewCircuitBreaker("concurrent-test")
+
+	done := make(chan bool, 20)
+
+	// Concurrent success and failure recordings
+	for i := 0; i < 10; i++ {
+		go func() {
+			cb.RecordSuccess()
+			done <- true
+		}()
+		go func() {
+			cb.RecordFailure()
+			done <- true
+		}()
+	}
+
+	for i := 0; i < 20; i++ {
+		<-done
+	}
+
+	// Just ensure no panic/deadlock
+	_ = cb.State()
+	_ = cb.IsAvailable()
+}
+
+func TestCircuitBreaker_Call_WithError(t *testing.T) {
+	cb := NewCircuitBreaker("error-test")
+
+	err := cb.Call(func() error {
+		return fmt.Errorf("test error")
+	})
+
+	if err == nil {
+		t.Error("expected error")
+	}
+
+	// After one failure, circuit should still be closed
+	if cb.State() != CircuitClosed {
+		t.Error("circuit should still be closed after one failure")
+	}
+
+	// After threshold failures, circuit should open
+	for i := 0; i < 5; i++ {
+		cb.Call(func() error {
+			return fmt.Errorf("test error")
+		})
+	}
+
+	if cb.State() != CircuitOpen {
+		t.Error("circuit should be open after threshold failures")
+	}
+}
+
+func TestHealthService_MultipleProviders(t *testing.T) {
+	svc := NewHealthService(nil)
+
+	providers := []string{"openai", "anthropic", "google", "groq"}
+	for _, p := range providers {
+		svc.AddProvider(p, p+" Provider")
+	}
+
+	all := svc.GetAllProviderHealth()
+	if len(all) != 4 {
+		t.Errorf("expected 4 providers, got %d", len(all))
+	}
+
+	// Remove one
+	svc.RemoveProvider("anthropic")
+
+	all = svc.GetAllProviderHealth()
+	if len(all) != 3 {
+		t.Errorf("expected 3 providers after removal, got %d", len(all))
+	}
+}
+
+func TestHealthService_ExecuteWithFailover_Retry(t *testing.T) {
+	svc := NewHealthService(nil)
+	svc.AddProvider("failing", "Failing Provider")
+	svc.AddProvider("working", "Working Provider")
+
+	// Make "failing" circuit open
+	for i := 0; i < 5; i++ {
+		svc.RecordFailure("failing")
+	}
+
+	callCount := 0
+	err := svc.ExecuteWithFailover(nil, []string{"failing", "working"}, func(providerID string) error {
+		callCount++
+		if providerID == "working" {
+			return nil
+		}
+		return fmt.Errorf("failed")
+	})
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	// Should have skipped "failing" due to open circuit and called "working"
+	if callCount != 1 {
+		t.Errorf("expected 1 call (to working), got %d", callCount)
+	}
+}
+
+func TestHealthService_PerformHealthCheck_UnknownProvider(t *testing.T) {
+	svc := NewHealthService(nil)
+
+	result := svc.performHealthCheck("unknown-provider")
+	if result {
+		t.Error("expected false for unknown provider")
+	}
+}
+
+func TestHealthService_PerformHealthCheck_KnownProviders(t *testing.T) {
+	svc := NewHealthService(nil)
+
+	// These will fail because we're not actually reaching the endpoints
+	// but they test the code path
+	providers := []string{"openai", "anthropic", "google", "groq", "together", "mistral", "deepseek", "openrouter", "xai", "cerebras"}
+
+	for _, p := range providers {
+		// Just verify no panic - actual network calls will fail
+		_ = svc.performHealthCheck(p)
+	}
+}
+
+func TestHealthService_CheckProviderHealth_Integration(t *testing.T) {
+	cfg := &Config{
+		Health: HealthConfig{
+			Timeout:       1 * time.Second,
+			CheckInterval: 10 * time.Second,
+		},
+	}
+	svc := NewHealthService(cfg)
+	svc.AddProvider("test-provider", "openai")
+
+	// Run a health check
+	svc.checkProviderHealth("test-provider")
+
+	// Verify health was updated
+	health, err := svc.GetProviderHealth("test-provider")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// LastCheckedAt should be updated
+	if health.LastCheckedAt.IsZero() {
+		t.Error("LastCheckedAt should be set after health check")
+	}
+}
+
+func TestHealthService_HealthCheckLoop_WithCancel(t *testing.T) {
+	cfg := &Config{
+		Health: HealthConfig{
+			Timeout:       100 * time.Millisecond,
+			CheckInterval: 50 * time.Millisecond,
+		},
+	}
+	svc := NewHealthService(cfg)
+	svc.AddProvider("test", "test")
+
+	err := svc.Start()
+	if err != nil {
+		t.Fatalf("failed to start: %v", err)
+	}
+
+	// Let it run a bit
+	time.Sleep(150 * time.Millisecond)
+
+	// Stop
+	svc.Stop()
+
+	// Verify service is stopped
+	svc.mu.RLock()
+	running := svc.running
+	svc.mu.RUnlock()
+
+	if running {
+		t.Error("service should not be running after Stop()")
+	}
+}
+
+func TestHealthService_UptimePercentCalculation(t *testing.T) {
+	svc := NewHealthService(nil)
+	svc.AddProvider("test", "test")
+
+	// Manually set success and failure counts
+	svc.mu.Lock()
+	svc.providerHealth["test"].SuccessCount = 9
+	svc.providerHealth["test"].FailureCount = 1
+	// Manually calculate uptime
+	total := float64(10)
+	svc.providerHealth["test"].UptimePercent = float64(9) / total * 100
+	svc.mu.Unlock()
+
+	health, _ := svc.GetProviderHealth("test")
+	if health.UptimePercent != 90.0 {
+		t.Errorf("expected uptime 90%%, got %f%%", health.UptimePercent)
+	}
+}
+
+func TestCircuitBreaker_ResetAfterSuccess(t *testing.T) {
+	cb := NewCircuitBreaker("reset-test")
+	cb.resetTimeout = 50 * time.Millisecond
+
+	// Trigger circuit open
+	for i := 0; i < 5; i++ {
+		cb.RecordFailure()
+	}
+
+	if cb.State() != CircuitOpen {
+		t.Fatal("circuit should be open")
+	}
+
+	// Wait for reset timeout
+	time.Sleep(60 * time.Millisecond)
+
+	// Check availability - should transition to half-open
+	if !cb.IsAvailable() {
+		t.Error("circuit should be available (half-open) after reset timeout")
+	}
+
+	// Success should close the circuit
+	cb.RecordSuccess()
+
+	if cb.State() != CircuitClosed {
+		t.Errorf("expected circuit closed after success in half-open, got %s", cb.State())
+	}
+
+	// Failure count should be reset
+	if cb.failureCount != 0 {
+		t.Errorf("expected failure count 0, got %d", cb.failureCount)
+	}
+}
+
+func TestHealthService_GetFastestProvider_MultipleWithSameLatency(t *testing.T) {
+	svc := NewHealthService(nil)
+	svc.AddProvider("p1", "P1")
+	svc.AddProvider("p2", "P2")
+
+	// Set same latency for both
+	svc.mu.Lock()
+	svc.providerHealth["p1"].AvgResponseMs = 100
+	svc.providerHealth["p2"].AvgResponseMs = 100
+	svc.mu.Unlock()
+
+	fastest, err := svc.GetFastestProvider([]string{"p1", "p2"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Should return one of them
+	if fastest != "p1" && fastest != "p2" {
+		t.Errorf("expected p1 or p2, got %s", fastest)
+	}
+}
+
+func TestHealthService_AddProvider_Duplicate(t *testing.T) {
+	svc := NewHealthService(nil)
+	svc.AddProvider("test", "Test")
+	svc.AddProvider("test", "Test Updated") // Should overwrite
+
+	health, err := svc.GetProviderHealth("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Provider name should be updated
+	if health.ProviderName != "Test Updated" {
+		t.Errorf("expected 'Test Updated', got '%s'", health.ProviderName)
+	}
+}
+
+func TestHealthService_GetHealthyProviders_WithCircuitOpen(t *testing.T) {
+	svc := NewHealthService(nil)
+	svc.AddProvider("healthy", "Healthy")
+	svc.AddProvider("unhealthy", "Unhealthy")
+
+	// Open circuit for unhealthy
+	for i := 0; i < 5; i++ {
+		svc.RecordFailure("unhealthy")
+	}
+
+	healthy := svc.GetHealthyProviders()
+
+	// Only "healthy" should be returned
+	if len(healthy) != 1 {
+		t.Errorf("expected 1 healthy provider, got %d", len(healthy))
+	}
+	if len(healthy) > 0 && healthy[0] != "healthy" {
+		t.Errorf("expected 'healthy', got '%s'", healthy[0])
+	}
+}
+
+func TestCircuitState_AllStates(t *testing.T) {
+	tests := []struct {
+		state    CircuitState
+		expected string
+	}{
+		{CircuitClosed, "closed"},
+		{CircuitOpen, "open"},
+		{CircuitHalfOpen, "half-open"},
+		{CircuitState(100), "unknown"},
+		{CircuitState(-1), "unknown"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.expected, func(t *testing.T) {
+			result := tt.state.String()
+			if result != tt.expected {
+				t.Errorf("expected %s, got %s", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestHealthService_PerformHealthChecks_Empty(t *testing.T) {
+	svc := NewHealthService(nil)
+
+	// Should not panic with empty providers
+	svc.performHealthChecks()
+}
+
+func TestHealthService_CheckProviderHealth_NilCircuitBreaker(t *testing.T) {
+	svc := NewHealthService(nil)
+
+	// Should not panic when checking non-existent provider
+	svc.checkProviderHealth("non-existent")
 }

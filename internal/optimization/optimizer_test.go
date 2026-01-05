@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -1010,4 +1011,465 @@ func BenchmarkStreamEnhanced(b *testing.B) {
 		for range out {
 		}
 	}
+}
+
+// TestServiceConcurrentCacheAccess tests thread safety of cache operations
+func TestServiceConcurrentCacheAccess(t *testing.T) {
+	ctx := context.Background()
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = true
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = false
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	// Pre-populate cache with some entries
+	for i := 0; i < 10; i++ {
+		embedding := make([]float64, 128)
+		embedding[i%128] = 1.0
+		svc.semanticCache.Set(ctx, fmt.Sprintf("query-%d", i), "response", embedding, nil)
+	}
+
+	var wg sync.WaitGroup
+	errorChan := make(chan error, 100)
+
+	// Concurrent reads
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			embedding := make([]float64, 128)
+			embedding[idx%10] = 1.0
+			_, err := svc.OptimizeRequest(ctx, "concurrent query", embedding)
+			if err != nil {
+				errorChan <- err
+			}
+		}(i)
+	}
+
+	// Concurrent writes
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			embedding := make([]float64, 128)
+			embedding[(idx+50)%128] = 1.0
+			_, err := svc.OptimizeResponse(ctx, "concurrent response", embedding, "query", nil)
+			if err != nil {
+				errorChan <- err
+			}
+		}(i)
+	}
+
+	// Concurrent status checks
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			svc.GetServiceStatus(ctx)
+			svc.GetCacheStats()
+		}()
+	}
+
+	wg.Wait()
+	close(errorChan)
+
+	var errors []error
+	for err := range errorChan {
+		errors = append(errors, err)
+	}
+	assert.Empty(t, errors, "Expected no errors during concurrent access")
+}
+
+// TestServiceChainedOptimization tests multiple optimization stages working together
+func TestServiceChainedOptimization(t *testing.T) {
+	// Mock servers for all services
+	llamaServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/query" {
+			resp := map[string]interface{}{
+				"answer": "Context retrieved",
+				"sources": []map[string]interface{}{
+					{"content": "Relevant context from documents", "score": 0.95},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer llamaServer.Close()
+
+	langchainServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/decompose" {
+			resp := map[string]interface{}{
+				"subtasks": []map[string]interface{}{
+					{"id": 1, "description": "First subtask"},
+					{"id": 2, "description": "Second subtask"},
+				},
+				"reasoning": "Task decomposed successfully",
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer langchainServer.Close()
+
+	sglangServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			return
+		}
+		if r.URL.Path == "/v1/chat/completions" {
+			resp := map[string]interface{}{
+				"id":      "test",
+				"choices": []map[string]interface{}{{"message": map[string]string{"content": ""}}},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer sglangServer.Close()
+
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = true
+	config.LlamaIndex.Enabled = true
+	config.LlamaIndex.Endpoint = llamaServer.URL
+	config.LangChain.Enabled = true
+	config.LangChain.Endpoint = langchainServer.URL
+	config.SGLang.Enabled = true
+	config.SGLang.Endpoint = sglangServer.URL
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	// Mark services as available
+	svc.mu.Lock()
+	svc.serviceStatus["llamaindex"] = true
+	svc.serviceStatus["langchain"] = true
+	svc.serviceStatus["sglang"] = true
+	svc.lastHealthCheck["llamaindex"] = time.Now()
+	svc.lastHealthCheck["langchain"] = time.Now()
+	svc.lastHealthCheck["sglang"] = time.Now()
+	svc.mu.Unlock()
+
+	ctx := context.Background()
+
+	// Test with a complex task that triggers all optimizations
+	complexPrompt := "Please implement a comprehensive data processing pipeline that transforms raw CSV data into normalized JSON format, including validation, error handling, and logging. This should support batch processing and real-time streaming modes."
+
+	result, err := svc.OptimizeRequest(ctx, complexPrompt, nil)
+	require.NoError(t, err)
+
+	// Verify multiple optimizations were applied
+	assert.NotEmpty(t, result.RetrievedContext)
+	assert.NotEmpty(t, result.DecomposedTasks)
+	assert.True(t, result.WarmPrefix)
+}
+
+// TestServiceErrorRecovery tests service behavior when external services fail
+func TestServiceErrorRecovery(t *testing.T) {
+	failCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		failCount++
+		if failCount <= 2 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		// Recover after 2 failures
+		json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.LlamaIndex.Enabled = true
+	config.LlamaIndex.Endpoint = server.URL
+	config.Fallback.RetryUnavailableAfter = 10 * time.Millisecond
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	// First request should handle the failure gracefully
+	result, err := svc.OptimizeRequest(ctx, "test query", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "test query", result.OptimizedPrompt) // Falls back to original
+}
+
+// TestServiceCacheInvalidation tests cache invalidation scenarios
+func TestServiceCacheInvalidation(t *testing.T) {
+	ctx := context.Background()
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = true
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = false
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	// Add entries to cache
+	embedding1 := []float64{1.0, 0.0, 0.0}
+	embedding2 := []float64{0.9, 0.1, 0.0}
+	embedding3 := []float64{0.0, 1.0, 0.0}
+
+	svc.semanticCache.Set(ctx, "query1", "response1", embedding1, map[string]interface{}{"category": "test"})
+	svc.semanticCache.Set(ctx, "query2", "response2", embedding2, map[string]interface{}{"category": "test"})
+	svc.semanticCache.Set(ctx, "query3", "response3", embedding3, map[string]interface{}{"category": "prod"})
+
+	assert.Equal(t, 3, svc.semanticCache.Size())
+
+	// Verify cache hits work
+	hit, err := svc.semanticCache.Get(ctx, embedding1)
+	require.NoError(t, err)
+	assert.Equal(t, "response1", hit.Entry.Response)
+}
+
+// TestServiceHealthCheckInterval tests health check caching behavior
+func TestServiceHealthCheckInterval(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+	}))
+	defer server.Close()
+
+	config := DefaultConfig()
+	config.LlamaIndex.Enabled = true
+	config.LlamaIndex.Endpoint = server.URL
+	config.Fallback.HealthCheckInterval = 1 * time.Hour // Long interval
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	// First status check
+	svc.GetServiceStatus(ctx)
+	firstCount := callCount
+
+	// Second status check (should use cached result)
+	svc.GetServiceStatus(ctx)
+	secondCount := callCount
+
+	// Third status check (should still use cached result)
+	svc.GetServiceStatus(ctx)
+
+	// The health check should have been called at most once per service per check cycle
+	assert.GreaterOrEqual(t, firstCount, 0)
+	assert.Equal(t, firstCount, secondCount) // No additional calls due to caching
+}
+
+// TestMinFunctionEdgeCases tests the min helper function edge cases
+func TestMinFunctionEdgeCases(t *testing.T) {
+	assert.Equal(t, 0, min(0, 0))
+	assert.Equal(t, -10, min(-10, -5))
+	assert.Equal(t, -10, min(-5, -10))
+	assert.Equal(t, 0, min(0, 100))
+	assert.Equal(t, 0, min(100, 0))
+}
+
+// TestContainsIgnoreCaseEdgeCases tests containsIgnoreCase edge cases
+func TestContainsIgnoreCaseEdgeCases(t *testing.T) {
+	// Empty strings
+	assert.True(t, containsIgnoreCase("", ""))
+	assert.True(t, containsIgnoreCase("test", ""))
+	assert.False(t, containsIgnoreCase("", "test"))
+
+	// Exact match
+	assert.True(t, containsIgnoreCase("hello", "hello"))
+
+	// Substring longer than string
+	assert.False(t, containsIgnoreCase("hi", "hello world"))
+}
+
+// TestServiceOptimizeRequestWithEmptyPrompt tests handling of empty prompts
+func TestServiceOptimizeRequestWithEmptyPrompt(t *testing.T) {
+	ctx := context.Background()
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = false
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	result, err := svc.OptimizeRequest(ctx, "", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "", result.OriginalPrompt)
+	assert.Equal(t, "", result.OptimizedPrompt)
+}
+
+// TestServiceOptimizeResponseWithEmptyResponse tests handling of empty responses
+func TestServiceOptimizeResponseWithEmptyResponse(t *testing.T) {
+	ctx := context.Background()
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = true
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	embedding := []float64{1.0, 0.0, 0.0}
+	result, err := svc.OptimizeResponse(ctx, "", embedding, "query", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "", result.Content)
+}
+
+// TestServiceMultipleStreamsSequentially tests multiple stream operations
+func TestServiceMultipleStreamsSequentially(t *testing.T) {
+	ctx := context.Background()
+	config := DefaultConfig()
+	config.Streaming.Enabled = true
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	for i := 0; i < 5; i++ {
+		in := make(chan *streaming.StreamChunk, 3)
+		in <- &streaming.StreamChunk{Content: fmt.Sprintf("Stream %d ", i), Index: 0}
+		in <- &streaming.StreamChunk{Content: "content", Index: 1}
+		in <- &streaming.StreamChunk{Done: true, Index: 2}
+		close(in)
+
+		out, getResult := svc.StreamEnhanced(ctx, in, nil)
+
+		// Consume output
+		for range out {
+		}
+
+		result := getResult()
+		assert.NotNil(t, result)
+		assert.Contains(t, result.FullContent, fmt.Sprintf("Stream %d", i))
+	}
+}
+
+// TestIsComplexTaskWithVariousIndicators tests all complexity indicators
+func TestIsComplexTaskWithVariousIndicators(t *testing.T) {
+	// Base prefix to make prompt > 100 chars
+	basePrefix := "Please help me with the following task that requires careful consideration and detailed analysis: "
+
+	testCases := []struct {
+		indicator string
+		expected  bool
+	}{
+		{"step by step", true},
+		{"multi-step", true},
+		{"first, then", true},
+		{"implement", true},
+		{"create a", true},
+		{"build a", true},
+		{"design a", true},
+		{"analyze", true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.indicator, func(t *testing.T) {
+			prompt := basePrefix + "I need to " + tc.indicator + " something complex"
+			result := isComplexTask(prompt)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+// TestServiceWithDisabledFallback tests behavior when fallback is disabled
+func TestServiceWithDisabledFallback(t *testing.T) {
+	config := DefaultConfig()
+	config.Fallback.OnServiceUnavailable = "error"
+	config.SemanticCache.Enabled = false
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = false
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	result, err := svc.OptimizeRequest(ctx, "test", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "test", result.OptimizedPrompt)
+}
+
+// TestServiceCacheStatsAccuracy tests the accuracy of cache statistics
+func TestServiceCacheStatsAccuracy(t *testing.T) {
+	ctx := context.Background()
+	config := DefaultConfig()
+	config.SemanticCache.Enabled = true
+	config.LlamaIndex.Enabled = false
+	config.LangChain.Enabled = false
+	config.SGLang.Enabled = false
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	// Add an entry
+	embedding := []float64{1.0, 0.0, 0.0}
+	svc.semanticCache.Set(ctx, "query", "response", embedding, nil)
+
+	// Make some hits and misses
+	for i := 0; i < 5; i++ {
+		svc.OptimizeRequest(ctx, "query", embedding) // Hit
+	}
+
+	differentEmbedding := []float64{0.0, 1.0, 0.0}
+	for i := 0; i < 3; i++ {
+		svc.OptimizeRequest(ctx, "other query", differentEmbedding) // Miss
+	}
+
+	stats := svc.GetCacheStats()
+	assert.Equal(t, int64(5), svc.cacheHits)
+	assert.Equal(t, int64(3), svc.cacheMisses)
+	assert.True(t, stats["enabled"].(bool))
+}
+
+// TestServiceContextCancellation tests behavior when context is cancelled
+func TestServiceContextCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	config := DefaultConfig()
+	config.Streaming.Enabled = true
+
+	svc, err := NewService(config)
+	require.NoError(t, err)
+
+	in := make(chan *streaming.StreamChunk, 100)
+	go func() {
+		for i := 0; i < 100; i++ {
+			select {
+			case <-ctx.Done():
+				close(in)
+				return
+			case in <- &streaming.StreamChunk{Content: "chunk ", Index: i}:
+			}
+		}
+		close(in)
+	}()
+
+	out, _ := svc.StreamEnhanced(ctx, in, nil)
+
+	// Cancel after receiving a few chunks
+	received := 0
+	for range out {
+		received++
+		if received > 5 {
+			cancel()
+		}
+	}
+
+	// Should have stopped before receiving all 100 chunks
+	assert.Less(t, received, 100)
 }

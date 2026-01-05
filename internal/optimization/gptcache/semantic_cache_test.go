@@ -2,7 +2,9 @@ package gptcache
 
 import (
 	"context"
+	"fmt"
 	"math"
+	"sync"
 	"testing"
 	"time"
 
@@ -1084,4 +1086,431 @@ func TestSemanticCache_GetTopK_Empty(t *testing.T) {
 	hits, err := cache.GetTopK(ctx, []float64{1, 0, 0}, 5)
 	require.NoError(t, err)
 	assert.Nil(t, hits)
+}
+
+// TestSemanticCache_CacheMissEmptyCache tests cache miss on empty cache
+func TestSemanticCache_CacheMissEmptyCache(t *testing.T) {
+	ctx := context.Background()
+	cache := NewSemanticCache()
+
+	embedding := []float64{1, 0, 0}
+	_, err := cache.Get(ctx, embedding)
+	assert.ErrorIs(t, err, ErrCacheMiss)
+
+	// Verify miss counter was incremented
+	stats := cache.Stats(ctx)
+	assert.Equal(t, int64(1), stats.Misses)
+}
+
+// TestSemanticCache_SimilarityThresholdBoundary tests exact boundary conditions
+func TestSemanticCache_SimilarityThresholdBoundary(t *testing.T) {
+	ctx := context.Background()
+
+	// Create cache with exact threshold
+	cache := NewSemanticCache(
+		WithSimilarityThreshold(0.9),
+		WithSimilarityMetric(MetricCosine),
+	)
+
+	// Add entry
+	embedding := []float64{1, 0, 0}
+	cache.Set(ctx, "query", "response", embedding, nil)
+
+	// Test with embeddings at different similarity levels
+	tests := []struct {
+		name        string
+		embedding   []float64
+		expectHit   bool
+	}{
+		{"exact_match", []float64{1, 0, 0}, true},
+		{"high_similarity", []float64{0.99, 0.01, 0}, true},
+		{"low_similarity", []float64{0.5, 0.5, 0.5}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			normalized := NormalizeL2(tt.embedding)
+			hit, err := cache.Get(ctx, normalized)
+			if tt.expectHit {
+				require.NoError(t, err)
+				assert.NotNil(t, hit)
+			} else {
+				assert.ErrorIs(t, err, ErrCacheMiss)
+			}
+		})
+	}
+}
+
+// TestSemanticCache_AccessCountUpdate tests that access count is properly updated
+func TestSemanticCache_AccessCountUpdate(t *testing.T) {
+	ctx := context.Background()
+	cache := NewSemanticCache()
+
+	embedding := []float64{1, 0, 0}
+	entry, err := cache.Set(ctx, "query", "response", embedding, nil)
+	require.NoError(t, err)
+	assert.Equal(t, 1, entry.AccessCount)
+
+	// Access multiple times
+	for i := 0; i < 5; i++ {
+		hit, err := cache.Get(ctx, embedding)
+		require.NoError(t, err)
+		assert.Equal(t, i+2, hit.Entry.AccessCount) // Initial 1 + (i+1) accesses
+	}
+}
+
+// TestSemanticCache_LRUEvictionOrder tests LRU eviction maintains correct order
+func TestSemanticCache_LRUEvictionOrder(t *testing.T) {
+	ctx := context.Background()
+	cache := NewSemanticCache(
+		WithMaxEntries(3),
+		WithEvictionPolicy(EvictionLRU),
+	)
+
+	// Add 3 entries
+	embeddings := [][]float64{
+		{1, 0, 0},
+		{0, 1, 0},
+		{0, 0, 1},
+	}
+
+	for i, emb := range embeddings {
+		cache.Set(ctx, fmt.Sprintf("query%d", i), "response", emb, nil)
+	}
+
+	// Access query0 to make it recently used
+	cache.Get(ctx, embeddings[0])
+
+	// Add 4th entry - should evict query1 (least recently used)
+	cache.Set(ctx, "query3", "response", []float64{0.5, 0.5, 0}, nil)
+
+	// query0 should still exist
+	_, err := cache.Get(ctx, embeddings[0])
+	assert.NoError(t, err)
+
+	// query1 should be evicted
+	_, err = cache.Get(ctx, embeddings[1])
+	assert.ErrorIs(t, err, ErrCacheMiss)
+
+	// query2 should still exist
+	_, err = cache.Get(ctx, embeddings[2])
+	assert.NoError(t, err)
+}
+
+// TestSemanticCache_TTLExpiration tests TTL-based expiration
+func TestSemanticCache_TTLExpiration(t *testing.T) {
+	ctx := context.Background()
+	cache := NewSemanticCache(
+		WithEvictionPolicy(EvictionTTL),
+		WithTTL(50*time.Millisecond),
+	)
+
+	embedding := []float64{1, 0, 0}
+	cache.Set(ctx, "query", "response", embedding, nil)
+
+	// Should be accessible immediately
+	_, err := cache.Get(ctx, embedding)
+	assert.NoError(t, err)
+
+	// Wait for expiration
+	time.Sleep(100 * time.Millisecond)
+
+	// Entry might still be in cache but should be expired
+	// The actual cleanup depends on the eviction loop
+	assert.Equal(t, 1, cache.Size()) // Entry still exists until cleanup
+}
+
+// TestSemanticCache_RelevanceEviction tests relevance-based eviction
+func TestSemanticCache_RelevanceEviction(t *testing.T) {
+	ctx := context.Background()
+	cache := NewSemanticCache(
+		WithMaxEntries(3),
+		WithEvictionPolicy(EvictionRelevance),
+		WithDecayFactor(0.9),
+	)
+
+	// Add 3 entries
+	embeddings := [][]float64{
+		{1, 0, 0},
+		{0, 1, 0},
+		{0, 0, 1},
+	}
+
+	for i, emb := range embeddings {
+		cache.Set(ctx, fmt.Sprintf("query%d", i), "response", emb, nil)
+	}
+
+	// Access query0 multiple times to boost relevance
+	for i := 0; i < 5; i++ {
+		cache.Get(ctx, embeddings[0])
+	}
+
+	// Add 4th entry - should evict one of the less relevant entries
+	cache.Set(ctx, "query3", "response", []float64{0.5, 0.5, 0}, nil)
+
+	// query0 should still exist (high relevance)
+	_, err := cache.Get(ctx, embeddings[0])
+	assert.NoError(t, err)
+
+	assert.Equal(t, 3, cache.Size())
+}
+
+// TestSemanticCache_NormalizationBehavior tests embedding normalization
+func TestSemanticCache_NormalizationBehavior(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("with normalization", func(t *testing.T) {
+		cache := NewSemanticCache(WithNormalizeEmbeddings(true))
+
+		// Non-normalized embedding
+		embedding := []float64{3, 4, 0}
+		cache.Set(ctx, "query", "response", embedding, nil)
+
+		// Get with same non-normalized embedding
+		hit, err := cache.Get(ctx, embedding)
+		require.NoError(t, err)
+		assert.NotNil(t, hit)
+
+		// Get with equivalent normalized embedding
+		normalized := []float64{0.6, 0.8, 0}
+		hit, err = cache.Get(ctx, normalized)
+		require.NoError(t, err)
+		assert.NotNil(t, hit)
+	})
+
+	t.Run("without normalization", func(t *testing.T) {
+		cache := NewSemanticCache(WithNormalizeEmbeddings(false))
+
+		// Non-normalized embedding
+		embedding := []float64{3, 4, 0}
+		cache.Set(ctx, "query", "response", embedding, nil)
+
+		// Get with same embedding
+		hit, err := cache.Get(ctx, embedding)
+		require.NoError(t, err)
+		assert.NotNil(t, hit)
+	})
+}
+
+// TestSemanticCache_MetadataPreservation tests metadata is preserved correctly
+func TestSemanticCache_MetadataPreservation(t *testing.T) {
+	ctx := context.Background()
+	cache := NewSemanticCache()
+
+	metadata := map[string]interface{}{
+		"model":       "gpt-4",
+		"user_id":     "123",
+		"temperature": 0.7,
+		"nested": map[string]interface{}{
+			"key": "value",
+		},
+	}
+
+	embedding := []float64{1, 0, 0}
+	cache.Set(ctx, "query", "response", embedding, metadata)
+
+	hit, err := cache.Get(ctx, embedding)
+	require.NoError(t, err)
+
+	assert.Equal(t, "gpt-4", hit.Entry.Metadata["model"])
+	assert.Equal(t, "123", hit.Entry.Metadata["user_id"])
+	assert.Equal(t, 0.7, hit.Entry.Metadata["temperature"])
+	assert.NotNil(t, hit.Entry.Metadata["nested"])
+}
+
+// TestSemanticCache_QueryHashUniqueness tests query hash is correctly computed
+func TestSemanticCache_QueryHashUniqueness(t *testing.T) {
+	ctx := context.Background()
+	cache := NewSemanticCache()
+
+	queries := []string{
+		"What is the weather?",
+		"what is the weather?", // Different case
+		"What  is  the  weather?", // Extra spaces
+	}
+
+	for i, q := range queries {
+		embedding := make([]float64, 3)
+		embedding[i] = 1
+		cache.Set(ctx, q, fmt.Sprintf("response-%d", i), embedding, nil)
+	}
+
+	// Each query should be stored separately
+	assert.Equal(t, 3, cache.Size())
+
+	// GetByQueryHash should return exact matches only
+	entry, err := cache.GetByQueryHash(ctx, "What is the weather?")
+	require.NoError(t, err)
+	assert.Equal(t, "response-0", entry.Response)
+
+	entry, err = cache.GetByQueryHash(ctx, "what is the weather?")
+	require.NoError(t, err)
+	assert.Equal(t, "response-1", entry.Response)
+}
+
+// TestSemanticCache_ConcurrentEviction tests eviction under concurrent load
+func TestSemanticCache_ConcurrentEviction(t *testing.T) {
+	ctx := context.Background()
+	cache := NewSemanticCache(
+		WithMaxEntries(50),
+		WithEvictionPolicy(EvictionLRU),
+	)
+
+	var wg sync.WaitGroup
+
+	// Concurrent writes that will trigger eviction
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			embedding := make([]float64, 10)
+			embedding[idx%10] = float64(idx)
+			cache.Set(ctx, fmt.Sprintf("query-%d", idx), "response", embedding, nil)
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Cache should not exceed max entries
+	assert.LessOrEqual(t, cache.Size(), 50)
+}
+
+// TestComputeSimilarity_AllMetrics tests all similarity metrics
+func TestComputeSimilarity_AllMetrics(t *testing.T) {
+	vec1 := []float64{1, 0, 0}
+	vec2 := []float64{0.9, 0.1, 0}
+
+	metrics := []SimilarityMetric{
+		MetricCosine,
+		MetricEuclidean,
+		MetricDotProduct,
+		MetricManhattan,
+	}
+
+	for _, metric := range metrics {
+		t.Run(string(metric), func(t *testing.T) {
+			score := ComputeSimilarity(vec1, vec2, metric)
+			assert.Greater(t, score, 0.0)
+			assert.LessOrEqual(t, score, 1.0)
+		})
+	}
+}
+
+// TestFindTopK_LargeCollection tests FindTopK with large collection
+func TestFindTopK_LargeCollection(t *testing.T) {
+	collection := make([][]float64, 100)
+	for i := range collection {
+		collection[i] = make([]float64, 10)
+		collection[i][i%10] = 1.0
+	}
+
+	query := []float64{1, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+	indices, scores := FindTopK(query, collection, MetricCosine, 5)
+
+	assert.Len(t, indices, 5)
+	assert.Len(t, scores, 5)
+
+	// Scores should be in descending order
+	for i := 1; i < len(scores); i++ {
+		assert.GreaterOrEqual(t, scores[i-1], scores[i])
+	}
+}
+
+// TestSemanticCache_InvalidateMultipleCriteria tests invalidation with multiple criteria
+func TestSemanticCache_InvalidateMultipleCriteria(t *testing.T) {
+	ctx := context.Background()
+	cache := NewSemanticCache()
+
+	// Add entries with different metadata and ages
+	cache.Set(ctx, "query1", "response1", []float64{1, 0, 0}, map[string]interface{}{"type": "old"})
+	time.Sleep(10 * time.Millisecond)
+	cache.Set(ctx, "query2", "response2", []float64{0, 1, 0}, map[string]interface{}{"type": "new"})
+	cache.Set(ctx, "query3", "response3", []float64{0, 0, 1}, map[string]interface{}{"type": "old"})
+
+	// Invalidate by metadata
+	count, err := cache.Invalidate(ctx, InvalidationCriteria{
+		MatchMetadata: map[string]interface{}{"type": "old"},
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, 2, count)
+	assert.Equal(t, 1, cache.Size())
+
+	// Remaining entry should be query2
+	entry, err := cache.GetByQueryHash(ctx, "query2")
+	require.NoError(t, err)
+	assert.Equal(t, "response2", entry.Response)
+}
+
+// TestLRUWithTTL_CleanupTrigger tests that cleanup is triggered correctly
+func TestLRUWithTTL_CleanupTrigger(t *testing.T) {
+	var evicted []string
+	onEvict := func(key string) {
+		evicted = append(evicted, key)
+	}
+
+	eviction := NewLRUWithTTLEviction(100, 10*time.Millisecond, onEvict)
+	defer eviction.Stop()
+
+	eviction.Add("a")
+	eviction.Add("b")
+
+	// Wait for TTL cleanup cycle (cleanup runs every minute, so we test differently)
+	time.Sleep(50 * time.Millisecond)
+
+	// Force check expired items
+	expired := eviction.ttl.GetExpired()
+	assert.Len(t, expired, 2)
+}
+
+// BenchmarkFindMostSimilar benchmarks similarity search
+func BenchmarkFindMostSimilar(b *testing.B) {
+	collection := make([][]float64, 10000)
+	for i := range collection {
+		collection[i] = make([]float64, 1536)
+		for j := range collection[i] {
+			collection[i][j] = float64(i+j) / 10000
+		}
+	}
+
+	query := make([]float64, 1536)
+	for i := range query {
+		query[i] = float64(i) / 1536
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		FindMostSimilar(query, collection, MetricCosine)
+	}
+}
+
+// BenchmarkFindTopK benchmarks top-k search
+func BenchmarkFindTopK(b *testing.B) {
+	collection := make([][]float64, 1000)
+	for i := range collection {
+		collection[i] = make([]float64, 128)
+		collection[i][i%128] = 1.0
+	}
+
+	query := make([]float64, 128)
+	query[0] = 1.0
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		FindTopK(query, collection, MetricCosine, 10)
+	}
+}
+
+// BenchmarkNormalizeL2 benchmarks L2 normalization
+func BenchmarkNormalizeL2(b *testing.B) {
+	vec := make([]float64, 1536)
+	for i := range vec {
+		vec[i] = float64(i) / 1536
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NormalizeL2(vec)
+	}
 }

@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1348,4 +1351,473 @@ func TestGetFloatParam(t *testing.T) {
 		result := getFloatParam(c, "value", 0.0)
 		assert.Equal(t, 0.0015, result)
 	})
+}
+
+// =====================================================
+// CONCURRENT REQUEST HANDLING TESTS
+// =====================================================
+
+// TestCogneeAPIHandler_ConcurrentHealthRequests tests concurrent Health requests
+func TestCogneeAPIHandler_ConcurrentHealthRequests(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := newTestCogneeLogger()
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	numRequests := 30
+	var wg sync.WaitGroup
+	successCount := int32(0)
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("GET", "/cognee/health", nil)
+
+			handler.Health(c)
+
+			if w.Code == http.StatusOK {
+				atomic.AddInt32(&successCount, 1)
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	assert.Equal(t, int32(numRequests), successCount, "All Health requests should return 200")
+}
+
+// TestCogneeAPIHandler_ConcurrentSearchRequests tests concurrent SearchMemory requests
+func TestCogneeAPIHandler_ConcurrentSearchRequests(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := newTestCogneeLogger()
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	numRequests := 20
+	var wg sync.WaitGroup
+	results := make(chan int, numRequests)
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+
+			body := map[string]interface{}{
+				"query":   "concurrent search " + strconv.Itoa(idx),
+				"dataset": "default",
+				"limit":   5,
+			}
+			jsonBody, _ := json.Marshal(body)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/cognee/search", bytes.NewReader(jsonBody))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			handler.SearchMemory(c)
+			results <- w.Code
+		}(i)
+	}
+
+	wg.Wait()
+	close(results)
+
+	count := 0
+	successCount := 0
+	for code := range results {
+		count++
+		if code == http.StatusOK {
+			successCount++
+		}
+	}
+
+	assert.Equal(t, numRequests, count, "All requests should complete")
+	assert.Equal(t, numRequests, successCount, "All concurrent search requests should succeed")
+}
+
+// TestCogneeAPIHandler_ConcurrentAddMemoryRequests tests concurrent AddMemory requests
+func TestCogneeAPIHandler_ConcurrentAddMemoryRequests(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := newTestCogneeLogger()
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	numRequests := 15
+	var wg sync.WaitGroup
+	results := make(chan int, numRequests)
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+
+			body := map[string]interface{}{
+				"content": "Concurrent memory content " + strconv.Itoa(idx),
+				"dataset": "test-concurrent",
+			}
+			jsonBody, _ := json.Marshal(body)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/cognee/memory", bytes.NewReader(jsonBody))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			handler.AddMemory(c)
+			results <- w.Code
+		}(i)
+	}
+
+	wg.Wait()
+	close(results)
+
+	count := 0
+	successCount := 0
+	for code := range results {
+		count++
+		if code == http.StatusCreated {
+			successCount++
+		}
+	}
+
+	assert.Equal(t, numRequests, count)
+	assert.Equal(t, numRequests, successCount, "All concurrent add memory requests should succeed")
+}
+
+// TestCogneeAPIHandler_ConcurrentStatsRequests tests concurrent Stats requests
+func TestCogneeAPIHandler_ConcurrentStatsRequests(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := newTestCogneeLogger()
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	numRequests := 25
+	var wg sync.WaitGroup
+	successCount := int32(0)
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("GET", "/cognee/stats", nil)
+
+			handler.Stats(c)
+
+			if w.Code == http.StatusOK {
+				atomic.AddInt32(&successCount, 1)
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	assert.Equal(t, int32(numRequests), successCount)
+}
+
+// =====================================================
+// EDGE CASE TESTS
+// =====================================================
+
+// TestCogneeAPIHandler_RequestWithSpecialContent tests handling of special content
+func TestCogneeAPIHandler_RequestWithSpecialContent(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := newTestCogneeLogger()
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	testCases := []struct {
+		name    string
+		content string
+	}{
+		{"unicode", "Test content with unicode: \u4f60\u597d\u4e16\u754c"},
+		{"emoji", "Test content with emoji: testing"},
+		{"newlines", "Test content\nwith\nnewlines"},
+		{"tabs", "Test content\twith\ttabs"},
+		{"quotes", `Test content with "quotes" and 'apostrophes'`},
+		{"code", "func main() { fmt.Println(\"Hello, World!\") }"},
+		{"sql", "SELECT * FROM users WHERE id = 1; DROP TABLE users;"},
+		{"html", "<script>alert('XSS')</script>"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			body := map[string]interface{}{
+				"content": tc.content,
+				"dataset": "test",
+			}
+			jsonBody, _ := json.Marshal(body)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/cognee/memory", bytes.NewReader(jsonBody))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			handler.AddMemory(c)
+
+			assert.Equal(t, http.StatusCreated, w.Code, "Should handle special content: %s", tc.name)
+		})
+	}
+}
+
+// TestCogneeAPIHandler_LargeContent tests handling of large content
+func TestCogneeAPIHandler_LargeContent(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := newTestCogneeLogger()
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	// Create large content
+	largeContent := ""
+	for i := 0; i < 1000; i++ {
+		largeContent += "This is a test sentence to create large content. "
+	}
+
+	body := map[string]interface{}{
+		"content": largeContent,
+		"dataset": "test",
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/cognee/memory", bytes.NewReader(jsonBody))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.AddMemory(c)
+
+	assert.Equal(t, http.StatusCreated, w.Code, "Should handle large content")
+}
+
+// TestCogneeAPIHandler_EmptyContent tests handling of empty content
+func TestCogneeAPIHandler_EmptyContent(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := newTestCogneeLogger()
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	body := map[string]interface{}{
+		"content": "",
+		"dataset": "test",
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/cognee/memory", bytes.NewReader(jsonBody))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.AddMemory(c)
+
+	// Empty content should be rejected
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// TestCogneeAPIHandler_SearchWithVariousLimits tests search with various limit values
+func TestCogneeAPIHandler_SearchWithVariousLimits(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := newTestCogneeLogger()
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	limits := []int{0, 1, 5, 10, 50, 100, 1000}
+
+	for _, limit := range limits {
+		t.Run(strconv.Itoa(limit), func(t *testing.T) {
+			body := map[string]interface{}{
+				"query":   "test query",
+				"dataset": "default",
+				"limit":   limit,
+			}
+			jsonBody, _ := json.Marshal(body)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/cognee/search", bytes.NewReader(jsonBody))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			handler.SearchMemory(c)
+
+			assert.Equal(t, http.StatusOK, w.Code, "Should handle limit: %d", limit)
+		})
+	}
+}
+
+// TestCogneeAPIHandler_ProcessCodeAllLanguages tests code processing with various languages
+func TestCogneeAPIHandler_ProcessCodeAllLanguages(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := newTestCogneeLogger()
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	languages := []struct {
+		name string
+		code string
+	}{
+		{"go", "package main\n\nfunc main() {}"},
+		{"python", "def main():\n    print('hello')"},
+		{"javascript", "function main() { console.log('hello'); }"},
+		{"typescript", "const main = (): void => { console.log('hello'); };"},
+		{"java", "public class Main { public static void main(String[] args) {} }"},
+		{"rust", "fn main() { println!(\"hello\"); }"},
+		{"c", "int main() { return 0; }"},
+		{"cpp", "#include <iostream>\nint main() { std::cout << \"hello\"; return 0; }"},
+	}
+
+	for _, lang := range languages {
+		t.Run(lang.name, func(t *testing.T) {
+			body := map[string]interface{}{
+				"code":     lang.code,
+				"language": lang.name,
+				"dataset":  "code-test",
+			}
+			jsonBody, _ := json.Marshal(body)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/cognee/code", bytes.NewReader(jsonBody))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			handler.ProcessCode(c)
+
+			assert.Equal(t, http.StatusOK, w.Code, "Should handle language: %s", lang.name)
+		})
+	}
+}
+
+// TestCogneeAPIHandler_InsightsWithAllOptions tests insights with all options
+func TestCogneeAPIHandler_InsightsWithAllOptions(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := newTestCogneeLogger()
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	body := map[string]interface{}{
+		"query":    "comprehensive insights query",
+		"datasets": []string{"default", "custom", "code"},
+		"limit":    20,
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/cognee/insights", bytes.NewReader(jsonBody))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.GetInsights(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+// TestCogneeAPIHandler_FeedbackVariousScores tests feedback with various relevance scores
+func TestCogneeAPIHandler_FeedbackVariousScores(t *testing.T) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := newTestCogneeLogger()
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	scores := []float64{0.0, 0.25, 0.5, 0.75, 1.0}
+
+	for _, score := range scores {
+		t.Run(strconv.FormatFloat(score, 'f', 2, 64), func(t *testing.T) {
+			body := map[string]interface{}{
+				"query_id":  "test-query-" + strconv.FormatFloat(score, 'f', 2, 64),
+				"query":     "test query",
+				"response":  "test response",
+				"relevance": score,
+				"approved":  score >= 0.5,
+			}
+			jsonBody, _ := json.Marshal(body)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/cognee/feedback", bytes.NewReader(jsonBody))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			handler.ProvideFeedback(c)
+
+			assert.Equal(t, http.StatusOK, w.Code, "Should handle relevance: %f", score)
+		})
+	}
+}
+
+// =====================================================
+// ADDITIONAL BENCHMARK TESTS
+// =====================================================
+
+// BenchmarkCogneeAPIHandler_AddMemory benchmarks AddMemory
+func BenchmarkCogneeAPIHandler_AddMemory(b *testing.B) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	body := map[string]interface{}{
+		"content": "Benchmark memory content for testing performance",
+		"dataset": "benchmark",
+	}
+	jsonBody, _ := json.Marshal(body)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/cognee/memory", bytes.NewReader(jsonBody))
+		c.Request.Header.Set("Content-Type", "application/json")
+		handler.AddMemory(c)
+	}
+}
+
+// BenchmarkCogneeAPIHandler_Stats benchmarks Stats
+func BenchmarkCogneeAPIHandler_Stats(b *testing.B) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/cognee/stats", nil)
+		handler.Stats(c)
+	}
+}
+
+// BenchmarkCogneeAPIHandler_GetConfig benchmarks GetConfig
+func BenchmarkCogneeAPIHandler_GetConfig(b *testing.B) {
+	server, cogneeService := setupCogneeTestServer()
+	defer server.Close()
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	handler := NewCogneeAPIHandler(cogneeService, logger)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/cognee/config", nil)
+		handler.GetConfig(c)
+	}
 }

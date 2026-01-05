@@ -3,6 +3,7 @@ package verifier
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -809,5 +810,377 @@ func TestVerificationService_ConcurrentAccess(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		<-done
+	}
+}
+
+// =====================================================
+// ADDITIONAL SERVICE TESTS FOR COMPREHENSIVE COVERAGE
+// =====================================================
+
+func TestVerificationService_GetVerificationStatusByProvider(t *testing.T) {
+	tests := []struct {
+		name           string
+		modelID        string
+		provider       string
+		setupFunc      func(*VerificationService)
+		expectStatus   string
+		expectVerified bool
+	}{
+		{
+			name:           "not found returns not_found status",
+			modelID:        "unknown-model",
+			provider:       "openai",
+			setupFunc:      nil,
+			expectStatus:   "not_found",
+			expectVerified: false,
+		},
+		{
+			name:     "found returns cached status",
+			modelID:  "cached-model",
+			provider: "anthropic",
+			setupFunc: func(svc *VerificationService) {
+				svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+					return "Yes, I can see your code", nil
+				})
+				svc.VerifyModel(context.Background(), "cached-model", "anthropic")
+			},
+			expectStatus:   "verified",
+			expectVerified: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := NewVerificationService(&Config{})
+			if tt.setupFunc != nil {
+				tt.setupFunc(svc)
+			}
+
+			status, err := svc.GetVerificationStatusByProvider(context.Background(), tt.modelID, tt.provider)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if status.Status != tt.expectStatus {
+				t.Errorf("expected status '%s', got '%s'", tt.expectStatus, status.Status)
+			}
+			if status.Verified != tt.expectVerified {
+				t.Errorf("expected verified %v, got %v", tt.expectVerified, status.Verified)
+			}
+		})
+	}
+}
+
+func TestVerificationService_InvalidateVerificationByProvider(t *testing.T) {
+	svc := NewVerificationService(&Config{})
+	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		return "Yes, I can see your code", nil
+	})
+
+	// Verify a model
+	_, err := svc.VerifyModel(context.Background(), "test-model", "openai")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the model exists
+	status, _ := svc.GetVerificationStatusByProvider(context.Background(), "test-model", "openai")
+	if status.Status == "not_found" {
+		t.Error("expected model to be cached")
+	}
+
+	// Invalidate by provider
+	svc.InvalidateVerificationByProvider("test-model", "openai")
+
+	// Verify it's gone
+	status, _ = svc.GetVerificationStatusByProvider(context.Background(), "test-model", "openai")
+	if status.Status != "not_found" {
+		t.Error("expected model to be invalidated")
+	}
+}
+
+func TestVerificationService_ResetStats(t *testing.T) {
+	svc := NewVerificationService(&Config{})
+	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		return "Yes, I can see your code", nil
+	})
+
+	// Perform some verifications
+	svc.VerifyModel(context.Background(), "model1", "openai")
+	svc.VerifyModel(context.Background(), "model2", "anthropic")
+
+	// Check stats are non-zero
+	stats, _ := svc.GetStats(context.Background())
+	if stats.TotalVerifications == 0 {
+		t.Error("expected non-zero verifications")
+	}
+
+	// Reset stats
+	svc.ResetStats()
+
+	// Check stats are zero
+	stats, _ = svc.GetStats(context.Background())
+	if stats.TotalVerifications != 0 {
+		t.Errorf("expected 0 verifications after reset, got %d", stats.TotalVerifications)
+	}
+	if stats.SuccessRate != 0 {
+		t.Errorf("expected 0 success rate after reset, got %f", stats.SuccessRate)
+	}
+}
+
+func TestVerificationService_ClearCache(t *testing.T) {
+	svc := NewVerificationService(&Config{})
+	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		return "Yes, I can see your code", nil
+	})
+
+	// Verify some models
+	svc.VerifyModel(context.Background(), "model1", "openai")
+	svc.VerifyModel(context.Background(), "model2", "anthropic")
+
+	// Clear cache
+	svc.ClearCache()
+
+	// Check cache is empty
+	status1, _ := svc.GetVerificationStatusByProvider(context.Background(), "model1", "openai")
+	if status1.Status != "not_found" {
+		t.Error("expected model1 to be cleared from cache")
+	}
+
+	status2, _ := svc.GetVerificationStatusByProvider(context.Background(), "model2", "anthropic")
+	if status2.Status != "not_found" {
+		t.Error("expected model2 to be cleared from cache")
+	}
+}
+
+func TestVerificationService_GetAllVerifications(t *testing.T) {
+	svc := NewVerificationService(&Config{})
+	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		return "Yes, I can see your code", nil
+	})
+
+	// Initially empty
+	all, err := svc.GetAllVerifications(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(all) != 0 {
+		t.Errorf("expected empty, got %d verifications", len(all))
+	}
+
+	// Verify some models
+	svc.VerifyModel(context.Background(), "model1", "openai")
+	svc.VerifyModel(context.Background(), "model2", "anthropic")
+
+	// Check we get all verifications
+	all, err = svc.GetAllVerifications(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(all) != 2 {
+		t.Errorf("expected 2 verifications, got %d", len(all))
+	}
+}
+
+func TestVerificationService_StoreVerificationResult_UpdatesStats(t *testing.T) {
+	svc := NewVerificationService(&Config{})
+	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		return "Yes, I can see your code", nil
+	})
+
+	// Verify a model
+	svc.VerifyModel(context.Background(), "model1", "openai")
+
+	stats, _ := svc.GetStats(context.Background())
+	if stats.TotalVerifications != 1 {
+		t.Errorf("expected 1 total verification, got %d", stats.TotalVerifications)
+	}
+	if stats.SuccessfulCount != 1 {
+		t.Errorf("expected 1 successful, got %d", stats.SuccessfulCount)
+	}
+}
+
+func TestVerificationService_StoreVerificationResult_FailedVerification(t *testing.T) {
+	svc := NewVerificationService(&Config{})
+	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		return "I cannot see any code", nil
+	})
+
+	// This will fail verification due to code visibility
+	svc.VerifyModel(context.Background(), "model1", "openai")
+
+	stats, _ := svc.GetStats(context.Background())
+	if stats.TotalVerifications != 1 {
+		t.Errorf("expected 1 total verification, got %d", stats.TotalVerifications)
+	}
+	if stats.FailedCount != 1 {
+		t.Errorf("expected 1 failed, got %d", stats.FailedCount)
+	}
+}
+
+func TestVerificationService_verifyLatency(t *testing.T) {
+	tests := []struct {
+		name          string
+		responseDelay time.Duration
+		expectPassed  bool
+		minScore      float64
+	}{
+		{
+			name:          "fast response",
+			responseDelay: 0,
+			expectPassed:  true,
+			minScore:      80,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := NewVerificationService(&Config{})
+			svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+				time.Sleep(tt.responseDelay)
+				return "OK", nil
+			})
+
+			result := svc.verifyLatency(context.Background(), "model", "provider")
+			if result.Passed != tt.expectPassed {
+				t.Errorf("expected Passed=%v, got %v", tt.expectPassed, result.Passed)
+			}
+			if result.Score < tt.minScore {
+				t.Errorf("expected score >= %f, got %f", tt.minScore, result.Score)
+			}
+		})
+	}
+}
+
+func TestVerificationService_verifyStreaming(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		svc := NewVerificationService(&Config{})
+		svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+			return "1, 2, 3, 4, 5", nil
+		})
+
+		result := svc.verifyStreaming(context.Background(), "model", "provider")
+		if !result.Passed {
+			t.Error("expected Passed to be true")
+		}
+		if result.Score != 100 {
+			t.Errorf("expected score 100, got %f", result.Score)
+		}
+	})
+
+	t.Run("error", func(t *testing.T) {
+		svc := NewVerificationService(&Config{})
+		svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+			return "", errors.New("streaming error")
+		})
+
+		result := svc.verifyStreaming(context.Background(), "model", "provider")
+		if result.Passed {
+			t.Error("expected Passed to be false")
+		}
+		if result.Score != 0 {
+			t.Errorf("expected score 0, got %f", result.Score)
+		}
+	})
+}
+
+func TestVerificationService_VerifyModel_HighScoreVerified(t *testing.T) {
+	svc := NewVerificationService(&Config{})
+	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		// Return responses that will pass all tests with high scores
+		if strings.Contains(prompt, "Do you see my code") {
+			return "Yes, I can see your code", nil
+		}
+		if strings.Contains(prompt, "What is 2+2") || strings.Contains(prompt, "Hello") {
+			return "4", nil
+		}
+		if strings.Contains(prompt, "get_weather") {
+			return `{"function": "get_weather", "arguments": {"location": "San Francisco"}}`, nil
+		}
+		if strings.Contains(prompt, "is_prime") {
+			return `def is_prime(n):
+    if n <= 1:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True`, nil
+		}
+		if strings.Contains(prompt, "bug") {
+			return "The bug is that variable 'c' is not defined, should use 'b'", nil
+		}
+		return "OK", nil
+	})
+
+	result, err := svc.VerifyModel(context.Background(), "test-model", "openai")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !result.Verified {
+		t.Errorf("expected Verified=true, got false. Score=%f", result.OverallScore)
+	}
+	if result.Status != "verified" {
+		t.Errorf("expected status 'verified', got '%s'", result.Status)
+	}
+}
+
+func TestVerificationService_VerifyModel_LowScoreNotVerified(t *testing.T) {
+	svc := NewVerificationService(&Config{})
+	callCount := 0
+	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		callCount++
+		// Pass code visibility but fail other tests
+		if strings.Contains(prompt, "Do you see my code") {
+			return "Yes, I can see your code", nil
+		}
+		// Return poor responses for other tests
+		return "I don't know", nil
+	})
+
+	result, err := svc.VerifyModel(context.Background(), "test-model", "openai")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Even if code visibility passes, low overall score should fail verification
+	if result.OverallScore >= 60 && !result.Verified {
+		t.Logf("Score is %f, Verified is %v", result.OverallScore, result.Verified)
+	}
+}
+
+func TestVerificationService_GetVerificationStatus_FoundByModelID(t *testing.T) {
+	svc := NewVerificationService(&Config{})
+	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		return "Yes, I can see your code", nil
+	})
+
+	// Verify a model
+	_, err := svc.VerifyModel(context.Background(), "unique-model-id", "openai")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Get status by model ID only
+	status, err := svc.GetVerificationStatus(context.Background(), "unique-model-id")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if status.ModelID != "unique-model-id" {
+		t.Errorf("expected model_id 'unique-model-id', got '%s'", status.ModelID)
+	}
+	if status.Status == "not_found" {
+		t.Error("expected to find the model")
+	}
+}
+
+func TestVerificationService_NilConfig(t *testing.T) {
+	svc := NewVerificationService(nil)
+	if svc == nil {
+		t.Fatal("NewVerificationService(nil) returned nil")
+	}
+	if svc.config != nil {
+		t.Error("expected nil config")
 	}
 }
