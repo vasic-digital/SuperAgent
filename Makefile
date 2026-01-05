@@ -81,6 +81,14 @@ test-all:
 	@echo "🧪 Running ALL tests with full infrastructure (no skipping)..."
 	@./scripts/run_all_tests.sh
 
+test-complete:
+	@echo "🧪 Running COMPLETE test suite (all 6 types) with full infrastructure..."
+	@./scripts/run_complete_test_suite.sh --verbose --coverage
+
+test-complete-keep:
+	@echo "🧪 Running COMPLETE test suite (keeping containers for debugging)..."
+	@./scripts/run_complete_test_suite.sh --verbose --coverage --keep
+
 test-infra-start:
 	@echo "🐳 Starting test infrastructure (PostgreSQL, Redis, Mock LLM)..."
 	@docker compose -f docker-compose.test.yml up -d postgres redis mock-llm
@@ -200,19 +208,37 @@ test-chaos:
 	go test -v ./tests/challenge
 
 test-all-types:
-	@echo "🧪 Running all 6 test types..."
-	@echo "1. Unit tests..."
-	go test -v ./internal/... -short
-	@echo "2. Integration tests..."
-	go test -v ./tests/integration
-	@echo "3. E2E tests..."
-	go test -v ./tests/e2e
-	@echo "4. Security tests..."
-	go test -v ./tests/security
-	@echo "5. Stress tests..."
-	go test -v ./tests/stress
-	@echo "6. Chaos tests..."
-	go test -v ./tests/challenge
+	@echo "🧪 Running all 6 test types with full infrastructure..."
+	@./scripts/run_complete_test_suite.sh --verbose
+
+test-all-types-coverage:
+	@echo "🧪 Running all 6 test types with full infrastructure and coverage..."
+	@./scripts/run_complete_test_suite.sh --verbose --coverage
+
+# Individual test types with infrastructure
+test-type-unit:
+	@echo "🧪 Running unit tests with infrastructure..."
+	@./scripts/run_complete_test_suite.sh --type unit --verbose
+
+test-type-integration:
+	@echo "🧪 Running integration tests with infrastructure..."
+	@./scripts/run_complete_test_suite.sh --type integration --verbose
+
+test-type-e2e:
+	@echo "🧪 Running E2E tests with infrastructure..."
+	@./scripts/run_complete_test_suite.sh --type e2e --verbose
+
+test-type-security:
+	@echo "🔒 Running security tests with infrastructure..."
+	@./scripts/run_complete_test_suite.sh --type security --verbose
+
+test-type-stress:
+	@echo "⚡ Running stress tests with infrastructure..."
+	@./scripts/run_complete_test_suite.sh --type stress --verbose
+
+test-type-chaos:
+	@echo "🌀 Running chaos tests with infrastructure..."
+	@./scripts/run_complete_test_suite.sh --type chaos --verbose
 
 test-bench:
 	@echo "⚡ Running benchmark tests..."
