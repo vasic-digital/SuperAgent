@@ -60,7 +60,7 @@ type CogneeServiceConfig struct {
 	// Search settings
 	DefaultSearchLimit   int      `json:"default_search_limit"`
 	DefaultDataset       string   `json:"default_dataset"`
-	SearchTypes          []string `json:"search_types"` // VECTOR, GRAPH, INSIGHTS, GRAPH_COMPLETION
+	SearchTypes          []string `json:"search_types"` // CHUNKS, GRAPH_COMPLETION, RAG_COMPLETION, SUMMARIES
 	CombineSearchResults bool     `json:"combine_search_results"`
 
 	// Performance settings
@@ -193,7 +193,7 @@ func NewCogneeService(cfg *config.Config, logger *logrus.Logger) *CogneeService 
 		EnableCodeIntelligence: true,
 		DefaultSearchLimit:     10,
 		DefaultDataset:         "default",
-		SearchTypes:            []string{"VECTOR", "GRAPH", "INSIGHTS"},
+		SearchTypes:            []string{"CHUNKS", "GRAPH_COMPLETION", "RAG_COMPLETION"},
 		CombineSearchResults:   true,
 		CacheEnabled:           true,
 		CacheTTL:               30 * time.Minute,
@@ -682,28 +682,39 @@ func (s *CogneeService) SearchMemory(ctx context.Context, query string, dataset 
 			defer mu.Unlock()
 
 			switch st {
-			case "VECTOR":
+			case "CHUNKS", "CHUNKS_LEXICAL", "SUMMARIES":
+				// Vector/chunk-based search results
 				for _, r := range results {
 					if entry, ok := r.(MemoryEntry); ok {
 						result.VectorResults = append(result.VectorResults, entry)
+					} else if m, ok := r.(map[string]interface{}); ok {
+						// Convert map to MemoryEntry if possible
+						entry := MemoryEntry{}
+						if content, ok := m["content"].(string); ok {
+							entry.Content = content
+						}
+						if id, ok := m["id"].(string); ok {
+							entry.ID = id
+						}
+						if rel, ok := m["relevance"].(float64); ok {
+							entry.Relevance = rel
+						}
+						result.VectorResults = append(result.VectorResults, entry)
 					}
 				}
-			case "GRAPH":
+			case "GRAPH_COMPLETION", "GRAPH_SUMMARY_COMPLETION", "GRAPH_COMPLETION_COT", "GRAPH_COMPLETION_CONTEXT_EXTENSION":
+				// Graph-based completion results
 				for _, r := range results {
 					if m, ok := r.(map[string]interface{}); ok {
 						result.GraphResults = append(result.GraphResults, m)
+						result.GraphCompletions = append(result.GraphCompletions, m)
 					}
 				}
-			case "INSIGHTS":
+			case "RAG_COMPLETION", "TRIPLET_COMPLETION", "NATURAL_LANGUAGE", "FEELING_LUCKY":
+				// RAG/Insights-style results
 				for _, r := range results {
 					if m, ok := r.(map[string]interface{}); ok {
 						result.InsightsResults = append(result.InsightsResults, m)
-					}
-				}
-			case "GRAPH_COMPLETION":
-				for _, r := range results {
-					if m, ok := r.(map[string]interface{}); ok {
-						result.GraphCompletions = append(result.GraphCompletions, m)
 					}
 				}
 			}
@@ -981,7 +992,7 @@ func (s *CogneeService) GetInsights(ctx context.Context, query string, datasets 
 		"query":       query,
 		"datasets":    datasets,
 		"limit":       limit,
-		"search_type": "INSIGHTS",
+		"search_type": "RAG_COMPLETION",
 	}
 
 	data, err := json.Marshal(reqBody)
@@ -1119,7 +1130,7 @@ func (s *CogneeService) GetCodeContext(ctx context.Context, query string) ([]Cod
 
 	reqBody := map[string]interface{}{
 		"query":       query,
-		"search_type": "CODE",
+		"search_type": "CODING_RULES",
 		"limit":       5,
 	}
 

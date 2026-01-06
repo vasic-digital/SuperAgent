@@ -1374,3 +1374,304 @@ func TestTruncateText_EdgeCases(t *testing.T) {
 		assert.Equal(t, "test text", result)
 	})
 }
+
+// =====================================================
+// COGNEE SEARCH TYPE VALIDATION TESTS
+// These tests ensure we use valid Cognee API search types
+// Valid types (as of Cognee 0.5.0): SUMMARIES, CHUNKS, RAG_COMPLETION,
+// TRIPLET_COMPLETION, GRAPH_COMPLETION, GRAPH_SUMMARY_COMPLETION, CYPHER,
+// NATURAL_LANGUAGE, GRAPH_COMPLETION_COT, GRAPH_COMPLETION_CONTEXT_EXTENSION,
+// FEELING_LUCKY, FEEDBACK, TEMPORAL, CODING_RULES, CHUNKS_LEXICAL
+// =====================================================
+
+func TestCogneeSearchTypes_ValidTypes(t *testing.T) {
+	// Valid search types as per Cognee API
+	validTypes := []string{
+		"SUMMARIES",
+		"CHUNKS",
+		"RAG_COMPLETION",
+		"TRIPLET_COMPLETION",
+		"GRAPH_COMPLETION",
+		"GRAPH_SUMMARY_COMPLETION",
+		"CYPHER",
+		"NATURAL_LANGUAGE",
+		"GRAPH_COMPLETION_COT",
+		"GRAPH_COMPLETION_CONTEXT_EXTENSION",
+		"FEELING_LUCKY",
+		"FEEDBACK",
+		"TEMPORAL",
+		"CODING_RULES",
+		"CHUNKS_LEXICAL",
+	}
+
+	// Invalid/deprecated search types that should NOT be used
+	invalidTypes := []string{
+		"VECTOR",   // Deprecated - use CHUNKS instead
+		"GRAPH",    // Deprecated - use GRAPH_COMPLETION instead
+		"INSIGHTS", // Deprecated - use RAG_COMPLETION instead
+		"CODE",     // Deprecated - use CODING_RULES instead
+	}
+
+	t.Run("default config uses valid search types", func(t *testing.T) {
+		cfg := &config.Config{
+			Cognee: config.CogneeConfig{
+				Enabled: true,
+				BaseURL: "http://localhost:8000",
+			},
+		}
+		service := NewCogneeService(cfg, newTestLogger())
+
+		for _, searchType := range service.config.SearchTypes {
+			isValid := false
+			for _, valid := range validTypes {
+				if searchType == valid {
+					isValid = true
+					break
+				}
+			}
+			assert.True(t, isValid, "Search type %s should be valid", searchType)
+		}
+	})
+
+	t.Run("default config does not use deprecated types", func(t *testing.T) {
+		cfg := &config.Config{
+			Cognee: config.CogneeConfig{
+				Enabled: true,
+				BaseURL: "http://localhost:8000",
+			},
+		}
+		service := NewCogneeService(cfg, newTestLogger())
+
+		for _, searchType := range service.config.SearchTypes {
+			for _, invalid := range invalidTypes {
+				assert.NotEqual(t, invalid, searchType,
+					"Search type %s is deprecated and should not be used", invalid)
+			}
+		}
+	})
+
+	t.Run("default search types are CHUNKS, GRAPH_COMPLETION, RAG_COMPLETION", func(t *testing.T) {
+		cfg := &config.Config{
+			Cognee: config.CogneeConfig{
+				Enabled: true,
+				BaseURL: "http://localhost:8000",
+			},
+		}
+		service := NewCogneeService(cfg, newTestLogger())
+
+		expectedTypes := []string{"CHUNKS", "GRAPH_COMPLETION", "RAG_COMPLETION"}
+		assert.Equal(t, expectedTypes, service.config.SearchTypes)
+	})
+}
+
+func TestCogneeSearchTypes_SearchRequestFormat(t *testing.T) {
+	t.Run("search request sends valid search_type", func(t *testing.T) {
+		var receivedSearchType string
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v1/search" && r.Method == "POST" {
+				var reqBody map[string]interface{}
+				json.NewDecoder(r.Body).Decode(&reqBody)
+				if st, ok := reqBody["search_type"].(string); ok {
+					receivedSearchType = st
+				}
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"results": []interface{}{},
+				})
+				return
+			}
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer server.Close()
+
+		cfg := &CogneeServiceConfig{
+			Enabled:            true,
+			BaseURL:            server.URL,
+			DefaultDataset:     "default",
+			DefaultSearchLimit: 10,
+			SearchTypes:        []string{"CHUNKS"}, // Use only one valid type
+		}
+		service := NewCogneeServiceWithConfig(cfg, newTestLogger())
+
+		ctx := context.Background()
+		_, err := service.SearchMemory(ctx, "test query", "", 0)
+
+		require.NoError(t, err)
+		assert.Equal(t, "CHUNKS", receivedSearchType,
+			"Search request should use valid search type CHUNKS, not deprecated VECTOR")
+	})
+
+	t.Run("GetInsights uses RAG_COMPLETION not INSIGHTS", func(t *testing.T) {
+		var receivedSearchType string
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v1/search" && r.Method == "POST" {
+				var reqBody map[string]interface{}
+				json.NewDecoder(r.Body).Decode(&reqBody)
+				if st, ok := reqBody["search_type"].(string); ok {
+					receivedSearchType = st
+				}
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"insights": []interface{}{},
+				})
+				return
+			}
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer server.Close()
+
+		cfg := &CogneeServiceConfig{
+			Enabled:              true,
+			BaseURL:              server.URL,
+			DefaultDataset:       "default",
+			DefaultSearchLimit:   10,
+			EnableGraphReasoning: true,
+		}
+		service := NewCogneeServiceWithConfig(cfg, newTestLogger())
+
+		ctx := context.Background()
+		_, _ = service.GetInsights(ctx, "test query", nil, 0)
+
+		assert.Equal(t, "RAG_COMPLETION", receivedSearchType,
+			"GetInsights should use RAG_COMPLETION, not deprecated INSIGHTS")
+	})
+
+	t.Run("GetCodeContext uses CODING_RULES not CODE", func(t *testing.T) {
+		var receivedSearchType string
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/v1/search" && r.Method == "POST" {
+				var reqBody map[string]interface{}
+				json.NewDecoder(r.Body).Decode(&reqBody)
+				if st, ok := reqBody["search_type"].(string); ok {
+					receivedSearchType = st
+				}
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"results": []interface{}{},
+				})
+				return
+			}
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer server.Close()
+
+		cfg := &CogneeServiceConfig{
+			Enabled:                true,
+			BaseURL:                server.URL,
+			EnableCodeIntelligence: true,
+		}
+		service := NewCogneeServiceWithConfig(cfg, newTestLogger())
+
+		ctx := context.Background()
+		_, _ = service.GetCodeContext(ctx, "test code query")
+
+		assert.Equal(t, "CODING_RULES", receivedSearchType,
+			"GetCodeContext should use CODING_RULES, not deprecated CODE")
+	})
+}
+
+func TestCogneeSearchTypes_ResultHandling(t *testing.T) {
+	t.Run("handles CHUNKS results correctly", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"results": []interface{}{
+					map[string]interface{}{
+						"content":   "chunk content 1",
+						"id":        "chunk-1",
+						"relevance": 0.95,
+					},
+					map[string]interface{}{
+						"content":   "chunk content 2",
+						"id":        "chunk-2",
+						"relevance": 0.85,
+					},
+				},
+			})
+		}))
+		defer server.Close()
+
+		cfg := &CogneeServiceConfig{
+			Enabled:            true,
+			BaseURL:            server.URL,
+			DefaultDataset:     "default",
+			DefaultSearchLimit: 10,
+			SearchTypes:        []string{"CHUNKS"},
+		}
+		service := NewCogneeServiceWithConfig(cfg, newTestLogger())
+
+		ctx := context.Background()
+		result, err := service.SearchMemory(ctx, "test", "", 0)
+
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Len(t, result.VectorResults, 2)
+		assert.Equal(t, "chunk content 1", result.VectorResults[0].Content)
+	})
+
+	t.Run("handles GRAPH_COMPLETION results correctly", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"results": []interface{}{
+					map[string]interface{}{
+						"completion": "graph completion result",
+						"nodes":      []string{"node1", "node2"},
+					},
+				},
+			})
+		}))
+		defer server.Close()
+
+		cfg := &CogneeServiceConfig{
+			Enabled:            true,
+			BaseURL:            server.URL,
+			DefaultDataset:     "default",
+			DefaultSearchLimit: 10,
+			SearchTypes:        []string{"GRAPH_COMPLETION"},
+		}
+		service := NewCogneeServiceWithConfig(cfg, newTestLogger())
+
+		ctx := context.Background()
+		result, err := service.SearchMemory(ctx, "test", "", 0)
+
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Len(t, result.GraphResults, 1)
+		assert.Len(t, result.GraphCompletions, 1)
+	})
+
+	t.Run("handles RAG_COMPLETION results correctly", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"results": []interface{}{
+					map[string]interface{}{
+						"answer":  "RAG completion answer",
+						"context": "supporting context",
+					},
+				},
+			})
+		}))
+		defer server.Close()
+
+		cfg := &CogneeServiceConfig{
+			Enabled:            true,
+			BaseURL:            server.URL,
+			DefaultDataset:     "default",
+			DefaultSearchLimit: 10,
+			SearchTypes:        []string{"RAG_COMPLETION"},
+		}
+		service := NewCogneeServiceWithConfig(cfg, newTestLogger())
+
+		ctx := context.Background()
+		result, err := service.SearchMemory(ctx, "test", "", 0)
+
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Len(t, result.InsightsResults, 1)
+	})
+}

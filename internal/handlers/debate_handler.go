@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"time"
@@ -195,9 +196,9 @@ func (h *DebateHandler) runDebate(debateID string, config *services.DebateConfig
 	var err error
 
 	if h.advancedDebate != nil {
-		result, err = h.advancedDebate.ConductAdvancedDebate(nil, config)
+		result, err = h.advancedDebate.ConductAdvancedDebate(context.Background(), config)
 	} else if h.debateService != nil {
-		result, err = h.debateService.ConductDebate(nil, config)
+		result, err = h.debateService.ConductDebate(context.Background(), config)
 	} else {
 		err = &debateError{message: "no debate service configured"}
 	}
