@@ -50,9 +50,9 @@ llm_providers:
     base_url: "https://api.openai.com/v1"
     temperature: 0.7
     max_tokens: 2048
-    timeout: "30s"
+    timeout: "120s"
     weight: 1.0
-    
+
   # Anthropic Claude (fallback)
   anthropic:
     enabled: true
@@ -61,18 +61,63 @@ llm_providers:
     base_url: "https://api.anthropic.com"
     temperature: 0.7
     max_tokens: 2048
-    timeout: "30s"
+    timeout: "120s"
     weight: 0.8
-    
-  # Ollama (local models)
-  ollama:
+
+  # Google Gemini (highest LLMsVerifier score: 8.6)
+  gemini:
     enabled: true
-    base_url: "http://localhost:11434"
-    model: "llama2"
+    api_key: "${GEMINI_API_KEY}"
+    model: "gemini-1.5-pro"
+    base_url: "https://generativelanguage.googleapis.com/v1beta"
     temperature: 0.7
     max_tokens: 2048
-    timeout: "60s"
-    weight: 0.5
+    timeout: "120s"
+    weight: 1.0
+
+  # DeepSeek (LLMsVerifier score: 8.0)
+  deepseek:
+    enabled: true
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat"
+    base_url: "https://api.deepseek.com/v1"
+    temperature: 0.7
+    max_tokens: 2048
+    timeout: "120s"
+    weight: 0.9
+
+  # Mistral (LLMsVerifier score: 7.0)
+  mistral:
+    enabled: true
+    api_key: "${MISTRAL_API_KEY}"
+    model: "mistral-large-latest"
+    base_url: "https://api.mistral.ai/v1"
+    temperature: 0.7
+    max_tokens: 2048
+    timeout: "120s"
+    weight: 0.8
+
+  # Cerebras (LLMsVerifier score: 7.0 - fast inference)
+  cerebras:
+    enabled: true
+    api_key: "${CEREBRAS_API_KEY}"
+    model: "llama-3.3-70b"
+    base_url: "https://api.cerebras.ai/v1"
+    temperature: 0.7
+    max_tokens: 2048
+    timeout: "120s"
+    weight: 0.7
+
+  # Fireworks (LLMsVerifier score: 7.2)
+  fireworks:
+    enabled: true
+    api_key: "${FIREWORKS_API_KEY}"
+    model: "accounts/fireworks/models/llama-v3p1-70b-instruct"
+    base_url: "https://api.fireworks.ai/inference/v1"
+    temperature: 0.7
+    max_tokens: 2048
+    timeout: "120s"
+    weight: 0.7
 
 security:
   # JWT configuration (development - less secure)
@@ -254,10 +299,10 @@ performance:
   profiling_enabled: true
   graceful_shutdown_timeout: "15s"
   max_request_size: 5242880  # 5MB
-  request_timeout: "60s"
-  idle_timeout: "120s"
-  read_timeout: "60s"
-  write_timeout: "60s"
+  request_timeout: "180s"
+  idle_timeout: "300s"
+  read_timeout: "180s"
+  write_timeout: "180s"
 
 external_services:
   # External integrations (mostly disabled for development)
