@@ -44,7 +44,7 @@ SuperAgent Challenges Runner
 
 Usage: $0 <challenge_name> [options]
 
-Available Challenges (38 total):
+Available Challenges (40 total):
   Core: provider_verification, ai_debate_formation, api_quality_test,
         ensemble_voting, ai_debate_workflow, embeddings_service,
         streaming_responses, model_metadata
@@ -68,6 +68,8 @@ Available Challenges (38 total):
   Integration: cognee_integration
 
   API: openai_compatibility, grpc_api
+
+  Validation: opencode
 
   Master: main
 
@@ -309,7 +311,8 @@ main() {
         circuit_breaker|error_handling|concurrent_access|graceful_shutdown|\
         health_monitoring|caching_layer|database_operations|plugin_system|\
         session_management|configuration_loading|optimization_semantic_cache|\
-        optimization_structured_output|cognee_integration|openai_compatibility|grpc_api)
+        optimization_structured_output|cognee_integration|openai_compatibility|grpc_api|\
+        opencode)
             ;;
         *)
             print_error "Unknown challenge: $CHALLENGE_NAME"

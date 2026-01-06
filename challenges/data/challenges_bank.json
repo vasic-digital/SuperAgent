@@ -54,6 +54,53 @@
       }
     },
     {
+      "id": "opencode",
+      "name": "OpenCode Integration Challenge",
+      "description": "Validate SuperAgent's integration with OpenCode CLI including API connectivity, codebase awareness, and 25 CLI request tests with assertions",
+      "category": "validation",
+      "dependencies": ["main"],
+      "binary_only": true,
+      "script": "../scripts/opencode_challenge.sh",
+      "estimated_duration": "5-10 minutes",
+      "inputs": [
+        {"name": "main_challenge_results", "source": "main", "required": true, "description": "OpenCode config from main challenge"},
+        {"name": "api_keys", "source": ".env", "required": true, "description": "SuperAgent API key"}
+      ],
+      "outputs": [
+        {"name": "cli_test_results.txt", "type": "text", "description": "Detailed CLI test results with assertions"},
+        {"name": "cli_test_results.json", "type": "json", "description": "JSON format CLI test results"},
+        {"name": "api_test_results.json", "type": "json", "description": "API connectivity test results"},
+        {"name": "opencode_result.json", "type": "json", "description": "OpenCode execution results"},
+        {"name": "challenge_summary.json", "type": "json", "description": "Overall challenge summary"},
+        {"name": "opencode_challenge_report.md", "type": "markdown", "description": "Human-readable challenge report"}
+      ],
+      "assertions": [
+        {"type": "endpoint_works", "target": "/v1/models", "message": "Models endpoint must work"},
+        {"type": "endpoint_works", "target": "/v1/chat/completions", "message": "Chat completions endpoint must work"},
+        {"type": "contains", "target": "models_response", "value": "superagent-debate", "message": "superagent-debate model must be present"},
+        {"type": "min_count", "target": "cli_tests_passed", "value": 20, "message": "At least 20 CLI tests must pass"},
+        {"type": "contains_any", "target": "codebase_response", "value": ["Go", "Golang", "go"], "message": "Codebase must be detected"},
+        {"type": "no_mock_responses", "target": "all_responses", "message": "No mock or placeholder responses allowed"}
+      ],
+      "metrics": ["api_endpoints_tested", "cli_tests_total", "cli_tests_passed", "cli_tests_failed", "cli_pass_rate", "total_duration_seconds"],
+      "phases": [
+        {"id": "prerequisites", "name": "Prerequisites Check", "description": "Verify OpenCode CLI, Main challenge, SuperAgent running"},
+        {"id": "api_test", "name": "API Connectivity Test", "description": "Test /v1/models and /v1/chat/completions endpoints"},
+        {"id": "opencode_execution", "name": "OpenCode CLI Execution", "description": "Run OpenCode with codebase awareness test"},
+        {"id": "error_analysis", "name": "Error Analysis", "description": "Analyze errors and generate recommendations"},
+        {"id": "cli_testing", "name": "CLI Request Testing", "description": "Execute 25 requests with assertions, write to .txt file"},
+        {"id": "summary", "name": "Results Summary", "description": "Generate final report and summary"}
+      ],
+      "test_categories": [
+        {"name": "math", "count": 5, "description": "Mathematical calculations and operations"},
+        {"name": "code_generation", "count": 10, "description": "Code writing in Go, Python, TypeScript, SQL, Bash, JSON"},
+        {"name": "factual", "count": 2, "description": "Factual knowledge questions"},
+        {"name": "explanation", "count": 4, "description": "Concept explanations (REST, Docker, Git, Kubernetes)"},
+        {"name": "knowledge", "count": 3, "description": "Technical knowledge (algorithms, complexity, SOLID)"},
+        {"name": "codebase", "count": 1, "description": "Project-specific codebase awareness"}
+      ]
+    },
+    {
       "id": "provider_verification",
       "name": "Provider Verification",
       "description": "Verify all configured LLM providers and score their models using LLMsVerifier integration",

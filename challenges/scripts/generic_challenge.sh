@@ -66,6 +66,8 @@ if [[ -z "$CHALLENGE_CATEGORY" ]]; then
             CHALLENGE_CATEGORY="integration" ;;
         openai_compatibility|grpc_api)
             CHALLENGE_CATEGORY="api" ;;
+        opencode)
+            CHALLENGE_CATEGORY="validation" ;;
         main)
             CHALLENGE_CATEGORY="master" ;;
         *) CHALLENGE_CATEGORY="core" ;;
@@ -668,14 +670,35 @@ run_api_tests() {
 
 # Validation tests
 run_validation_tests() {
-    # Verify validation code exists
-    if [[ -f "$PROJECT_ROOT/internal/middleware/validation.go" ]]; then
-        record_assertion "validation_code" "validation.go" "true" "Validation code exists"
-        ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
-    fi
-    if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
-        run_api_test "/v1/models" "GET" "" "200" "Validation API test"
-    fi
+    case "$CHALLENGE_ID" in
+        opencode)
+            log_info "Running OpenCode challenge - delegating to opencode_challenge.sh"
+            if [[ -x "$SCRIPT_DIR/opencode_challenge.sh" ]]; then
+                "$SCRIPT_DIR/opencode_challenge.sh" --skip-main
+                local exit_code=$?
+                if [[ $exit_code -eq 0 ]]; then
+                    ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
+                    record_assertion "opencode_challenge" "passed" "true" "OpenCode challenge passed"
+                else
+                    ASSERTIONS_FAILED=$((ASSERTIONS_FAILED + 1))
+                    record_assertion "opencode_challenge" "failed" "false" "OpenCode challenge failed"
+                fi
+            else
+                log_error "opencode_challenge.sh not found"
+                ASSERTIONS_FAILED=$((ASSERTIONS_FAILED + 1))
+            fi
+            ;;
+        *)
+            # Verify validation code exists
+            if [[ -f "$PROJECT_ROOT/internal/middleware/validation.go" ]]; then
+                record_assertion "validation_code" "validation.go" "true" "Validation code exists"
+                ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
+            fi
+            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+                run_api_test "/v1/models" "GET" "" "200" "Validation API test"
+            fi
+            ;;
+    esac
 }
 
 # Master tests
