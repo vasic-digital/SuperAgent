@@ -390,11 +390,27 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 				})
 			})
 
-			// Provider CRUD operations
+			// Provider verification endpoints (for debate group validation)
+			// NOTE: These must come BEFORE /:id routes to avoid matching issues
+			providerGroup.GET("/verification", providerMgmtHandler.GetAllProvidersVerification)
+			providerGroup.POST("/verify", providerMgmtHandler.VerifyAllProviders)
+
+			// Provider auto-discovery endpoints (automatic detection from .env API keys)
+			// NOTE: These must come BEFORE /:id routes to avoid matching issues
+			providerGroup.GET("/discovery", providerMgmtHandler.GetDiscoverySummary)
+			providerGroup.POST("/discover", providerMgmtHandler.DiscoverAndVerifyProviders)
+			providerGroup.POST("/rediscover", providerMgmtHandler.ReDiscoverProviders)
+			providerGroup.GET("/best", providerMgmtHandler.GetBestProviders)
+
+			// Provider CRUD operations (parameterized routes must come AFTER specific routes)
 			providerGroup.POST("", providerMgmtHandler.AddProvider)
 			providerGroup.GET("/:id", providerMgmtHandler.GetProvider)
 			providerGroup.PUT("/:id", providerMgmtHandler.UpdateProvider)
 			providerGroup.DELETE("/:id", providerMgmtHandler.DeleteProvider)
+
+			// Provider-specific verification endpoints
+			providerGroup.GET("/:id/verification", providerMgmtHandler.GetProviderVerification)
+			providerGroup.POST("/:id/verify", providerMgmtHandler.VerifyProvider)
 
 			providerGroup.GET("/:id/health", func(c *gin.Context) {
 				name := c.Param("id")

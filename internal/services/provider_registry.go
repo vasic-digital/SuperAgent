@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/superagent/superagent/internal/config"
 	"github.com/superagent/superagent/internal/llm"
 	"github.com/superagent/superagent/internal/llm/providers/claude"
@@ -22,14 +24,17 @@ import (
 type ProviderRegistry struct {
 	providers        map[string]llm.LLMProvider
 	circuitBreakers  map[string]*CircuitBreaker
-	providerConfigs  map[string]*ProviderConfig // Stores provider configurations
-	activeRequests   map[string]*int64          // Atomic counters for active requests per provider
+	providerConfigs  map[string]*ProviderConfig             // Stores provider configurations
+	providerHealth   map[string]*ProviderVerificationResult // Stores provider health verification results
+	activeRequests   map[string]*int64                      // Atomic counters for active requests per provider
 	config           *RegistryConfig
 	ensemble         *EnsembleService
 	requestService   *RequestService
 	memory           *MemoryService
+	discovery        *ProviderDiscovery // Auto-discovery service for environment-based provider detection
 	mu               sync.RWMutex
 	drainTimeout     time.Duration // Timeout for graceful shutdown request draining
+	autoDiscovery    bool          // Whether auto-discovery is enabled
 }
 
 // ProviderConfig holds configuration for an LLM provider
@@ -47,6 +52,27 @@ type ProviderConfig struct {
 	Tags           []string          `json:"tags"`
 	Capabilities   map[string]string `json:"capabilities"`
 	CustomSettings map[string]any    `json:"custom_settings"`
+}
+
+// ProviderHealthStatus represents the verified health status of a provider
+type ProviderHealthStatus string
+
+const (
+	ProviderStatusUnknown     ProviderHealthStatus = "unknown"
+	ProviderStatusHealthy     ProviderHealthStatus = "healthy"
+	ProviderStatusRateLimited ProviderHealthStatus = "rate_limited"
+	ProviderStatusAuthFailed  ProviderHealthStatus = "auth_failed"
+	ProviderStatusUnhealthy   ProviderHealthStatus = "unhealthy"
+)
+
+// ProviderVerificationResult contains the result of verifying a provider
+type ProviderVerificationResult struct {
+	Provider     string               `json:"provider"`
+	Status       ProviderHealthStatus `json:"status"`
+	Verified     bool                 `json:"verified"`
+	ResponseTime time.Duration        `json:"response_time_ms"`
+	Error        string               `json:"error,omitempty"`
+	TestedAt     time.Time            `json:"tested_at"`
 }
 
 // ModelConfig holds configuration for a specific model
@@ -143,14 +169,20 @@ func NewProviderRegistry(cfg *RegistryConfig, memory *MemoryService) *ProviderRe
 		cfg = getDefaultRegistryConfig()
 	}
 
+	// Initialize logger for registry
+	logger := logrus.New()
+	logger.SetLevel(logrus.InfoLevel)
+
 	registry := &ProviderRegistry{
 		providers:       make(map[string]llm.LLMProvider),
 		circuitBreakers: make(map[string]*CircuitBreaker),
 		providerConfigs: make(map[string]*ProviderConfig),
+		providerHealth:  make(map[string]*ProviderVerificationResult),
 		activeRequests:  make(map[string]*int64),
 		config:          cfg,
 		memory:          memory,
 		drainTimeout:    30 * time.Second, // Default 30 second drain timeout
+		autoDiscovery:   true,             // Enable auto-discovery by default
 	}
 
 	// Initialize ensemble service
@@ -167,10 +199,119 @@ func NewProviderRegistry(cfg *RegistryConfig, memory *MemoryService) *ProviderRe
 	}
 	registry.requestService = NewRequestService(routingStrategy, registry.ensemble, memory)
 
-	// Register default providers
+	// Register providers from config file (backward compatibility)
 	registry.registerDefaultProviders(cfg)
 
+	// Auto-discover additional providers from environment variables
+	// This supplements config file providers with any additional API keys found
+	registry.initAutoDiscovery(logger)
+
 	return registry
+}
+
+// initAutoDiscovery initializes the auto-discovery service and discovers providers from env vars
+func (r *ProviderRegistry) initAutoDiscovery(logger *logrus.Logger) {
+	if !r.autoDiscovery {
+		return
+	}
+
+	// Create discovery service (verify on startup disabled - we'll do it on-demand)
+	r.discovery = NewProviderDiscovery(logger, false)
+
+	// Discover providers from environment variables
+	discovered, err := r.discovery.DiscoverProviders()
+	if err != nil {
+		logger.WithError(err).Warn("Provider auto-discovery failed")
+		return
+	}
+
+	if len(discovered) == 0 {
+		logger.Info("No additional providers discovered from environment")
+		return
+	}
+
+	// Register discovered providers that aren't already registered via config
+	existingProviders := r.ListProviders()
+	existingMap := make(map[string]bool)
+	for _, name := range existingProviders {
+		existingMap[name] = true
+	}
+
+	newProviders := 0
+	for _, dp := range discovered {
+		// Skip if already registered via config (config takes precedence)
+		if existingMap[dp.Name] {
+			logger.WithField("provider", dp.Name).Debug("Provider already registered via config, skipping auto-discovery")
+			continue
+		}
+
+		// Register the discovered provider
+		if dp.Provider != nil {
+			if err := r.RegisterProvider(dp.Name, dp.Provider); err != nil {
+				logger.WithError(err).WithField("provider", dp.Name).Warn("Failed to register auto-discovered provider")
+			} else {
+				newProviders++
+				logger.WithFields(logrus.Fields{
+					"provider": dp.Name,
+					"type":     dp.Type,
+					"env_var":  dp.APIKeyEnvVar,
+				}).Info("Auto-discovered and registered provider from environment")
+			}
+		}
+	}
+
+	logger.WithFields(logrus.Fields{
+		"discovered": len(discovered),
+		"registered": newProviders,
+		"skipped":    len(discovered) - newProviders,
+	}).Info("Provider auto-discovery completed")
+}
+
+// GetDiscovery returns the provider discovery service
+func (r *ProviderRegistry) GetDiscovery() *ProviderDiscovery {
+	return r.discovery
+}
+
+// DiscoverAndVerifyProviders runs provider discovery and verification
+// Returns a summary of discovered and verified providers
+func (r *ProviderRegistry) DiscoverAndVerifyProviders(ctx context.Context) map[string]interface{} {
+	if r.discovery == nil {
+		return map[string]interface{}{
+			"error":   "auto-discovery not initialized",
+			"enabled": false,
+		}
+	}
+
+	// Verify all discovered providers
+	r.discovery.VerifyAllProviders(ctx)
+
+	// Get and return summary
+	summary := r.discovery.Summary()
+	summary["auto_discovery_enabled"] = r.autoDiscovery
+
+	return summary
+}
+
+// GetBestProvidersForDebate returns the best verified providers for the debate group
+func (r *ProviderRegistry) GetBestProvidersForDebate(minProviders, maxProviders int) []string {
+	if r.discovery == nil {
+		// Fall back to healthy providers from verification
+		return r.GetHealthyProviders()
+	}
+
+	bestProviders := r.discovery.GetDebateGroupProviders(minProviders, maxProviders)
+	names := make([]string, 0, len(bestProviders))
+	for _, p := range bestProviders {
+		names = append(names, p.Name)
+	}
+	return names
+}
+
+// SetAutoDiscovery enables or disables auto-discovery
+func (r *ProviderRegistry) SetAutoDiscovery(enabled bool) {
+	r.mu.Lock()
+	r.autoDiscovery = enabled
+	r.mu.Unlock()
 }
 
 func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
@@ -691,6 +832,181 @@ func getEnvOrDefault(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// VerifyProvider tests a provider with an actual API call and returns the verification result
+// This is a critical function that ensures providers actually work before being used in the ensemble
+func (r *ProviderRegistry) VerifyProvider(ctx context.Context, providerName string) *ProviderVerificationResult {
+	start := time.Now()
+	result := &ProviderVerificationResult{
+		Provider: providerName,
+		Status:   ProviderStatusUnknown,
+		Verified: false,
+		TestedAt: time.Now(),
+	}
+
+	// Get the provider
+	r.mu.RLock()
+	provider, exists := r.providers[providerName]
+	r.mu.RUnlock()
+
+	if !exists {
+		result.Status = ProviderStatusUnhealthy
+		result.Error = "provider not registered"
+		return result
+	}
+
+	// Create a simple test request
+	testReq := &models.LLMRequest{
+		ID:        fmt.Sprintf("verify_%s_%d", providerName, time.Now().UnixNano()),
+		SessionID: "verification",
+		Prompt:    "Say OK",
+		Messages: []models.Message{
+			{Role: "user", Content: "Say OK"},
+		},
+		ModelParams: models.ModelParameters{
+			MaxTokens:   5,
+			Temperature: 0.1,
+		},
+		Status:    "pending",
+		CreatedAt: time.Now(),
+	}
+
+	// Create context with timeout for verification
+	verifyCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	// Make the actual API call
+	resp, err := provider.Complete(verifyCtx, testReq)
+	result.ResponseTime = time.Since(start)
+
+	if err != nil {
+		errStr := err.Error()
+
+		// Categorize the error
+		switch {
+		case containsAny(errStr, "429", "quota", "rate", "RESOURCE_EXHAUSTED"):
+			result.Status = ProviderStatusRateLimited
+			result.Error = "rate limited or quota exceeded"
+		case containsAny(errStr, "401", "403", "unauthorized", "invalid", "authentication", "API_KEY"):
+			result.Status = ProviderStatusAuthFailed
+			result.Error = "authentication failed or invalid API key"
+		default:
+			result.Status = ProviderStatusUnhealthy
+			result.Error = errStr
+		}
+		return result
+	}
+
+	// Check for valid response
+	if resp != nil && resp.Content != "" {
+		result.Status = ProviderStatusHealthy
+		result.Verified = true
+	} else {
+		result.Status = ProviderStatusUnhealthy
+		result.Error = "empty response from provider"
+	}
+
+	// Store the result
+	r.mu.Lock()
+	r.providerHealth[providerName] = result
+	r.mu.Unlock()
+
+	return result
+}
+
+// VerifyAllProviders verifies all registered providers and returns their status
+func (r *ProviderRegistry) VerifyAllProviders(ctx context.Context) map[string]*ProviderVerificationResult {
+	results := make(map[string]*ProviderVerificationResult)
+
+	r.mu.RLock()
+	providerNames := make([]string, 0, len(r.providers))
+	for name := range r.providers {
+		providerNames = append(providerNames, name)
+	}
+	r.mu.RUnlock()
+
+	// Verify providers concurrently
+	var wg sync.WaitGroup
+	resultsChan := make(chan *ProviderVerificationResult, len(providerNames))
+
+	for _, name := range providerNames {
+		wg.Add(1)
+		go func(providerName string) {
+			defer wg.Done()
+			result := r.VerifyProvider(ctx, providerName)
+			resultsChan <- result
+		}(name)
+	}
+
+	// Wait for all verifications to complete
+	go func() {
+		wg.Wait()
+		close(resultsChan)
+	}()
+
+	// Collect results
+	for result := range resultsChan {
+		results[result.Provider] = result
+	}
+
+	return results
+}
+
+// GetProviderHealth returns the last verification result for a provider
+func (r *ProviderRegistry) GetProviderHealth(providerName string) *ProviderVerificationResult {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.providerHealth[providerName]
+}
+
+// GetAllProviderHealth returns all provider health verification results
+func (r *ProviderRegistry) GetAllProviderHealth() map[string]*ProviderVerificationResult {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	results := make(map[string]*ProviderVerificationResult, len(r.providerHealth))
+	for k, v := range r.providerHealth {
+		results[k] = v
+	}
+	return results
+}
+
+// IsProviderHealthy returns true if the provider has been verified as healthy
+func (r *ProviderRegistry) IsProviderHealthy(providerName string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	health, exists := r.providerHealth[providerName]
+	if !exists {
+		return false // Not verified yet, assume unhealthy
+	}
+	return health.Status == ProviderStatusHealthy && health.Verified
+}
+
+// GetHealthyProviders returns a list of providers that have been verified as healthy
+func (r *ProviderRegistry) GetHealthyProviders() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	healthy := make([]string, 0)
+	for name, health := range r.providerHealth {
+		if health.Status == ProviderStatusHealthy && health.Verified {
+			healthy = append(healthy, name)
+		}
+	}
+	return healthy
+}
+
+// containsAny checks if the string contains any of the substrings (case-insensitive)
+func containsAny(s string, substrs ...string) bool {
+	sLower := strings.ToLower(s)
+	for _, sub := range substrs {
+		if strings.Contains(sLower, strings.ToLower(sub)) {
+			return true
+		}
+	}
+	return false
 }
 
 // RegisterProviderFromConfig creates and registers a provider from configuration

@@ -452,7 +452,106 @@ phase2_provider_verification() {
         ["together"]="TOGETHER_API_KEY"
     )
 
+    # Function to test provider with actual API call
+    test_provider_api() {
+        local provider="$1"
+        local api_key="$2"
+        local timeout=15
+
+        case "$provider" in
+            deepseek)
+                local response=$(curl -s --max-time $timeout -X POST "https://api.deepseek.com/v1/chat/completions" \
+                    -H "Content-Type: application/json" \
+                    -H "Authorization: Bearer $api_key" \
+                    -d '{"model":"deepseek-chat","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}' 2>/dev/null)
+                if echo "$response" | grep -q '"choices"'; then
+                    echo "working"
+                elif echo "$response" | grep -qi "429\|quota\|rate"; then
+                    echo "rate_limited"
+                elif echo "$response" | grep -qi "401\|unauthorized\|invalid"; then
+                    echo "auth_failed"
+                else
+                    echo "failed"
+                fi
+                ;;
+            google)
+                local response=$(curl -s --max-time $timeout "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$api_key" \
+                    -H "Content-Type: application/json" \
+                    -d '{"contents":[{"parts":[{"text":"Say OK"}]}]}' 2>/dev/null)
+                if echo "$response" | grep -q '"candidates"'; then
+                    echo "working"
+                elif echo "$response" | grep -qi "429\|quota\|rate\|RESOURCE_EXHAUSTED"; then
+                    echo "rate_limited"
+                elif echo "$response" | grep -qi "401\|403\|invalid\|API_KEY"; then
+                    echo "auth_failed"
+                else
+                    echo "failed"
+                fi
+                ;;
+            openrouter)
+                local response=$(curl -s --max-time $timeout -X POST "https://openrouter.ai/api/v1/chat/completions" \
+                    -H "Content-Type: application/json" \
+                    -H "Authorization: Bearer $api_key" \
+                    -d '{"model":"openai/gpt-3.5-turbo","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}' 2>/dev/null)
+                if echo "$response" | grep -q '"choices"'; then
+                    echo "working"
+                elif echo "$response" | grep -qi "429\|quota\|rate"; then
+                    echo "rate_limited"
+                elif echo "$response" | grep -qi "401\|not found\|invalid"; then
+                    echo "auth_failed"
+                else
+                    echo "failed"
+                fi
+                ;;
+            openai)
+                local response=$(curl -s --max-time $timeout "https://api.openai.com/v1/models" \
+                    -H "Authorization: Bearer $api_key" 2>/dev/null)
+                if echo "$response" | grep -q '"data"'; then
+                    echo "working"
+                elif echo "$response" | grep -qi "429\|rate"; then
+                    echo "rate_limited"
+                elif echo "$response" | grep -qi "401\|invalid"; then
+                    echo "auth_failed"
+                else
+                    echo "failed"
+                fi
+                ;;
+            anthropic)
+                local response=$(curl -s --max-time $timeout -X POST "https://api.anthropic.com/v1/messages" \
+                    -H "Content-Type: application/json" \
+                    -H "x-api-key: $api_key" \
+                    -H "anthropic-version: 2023-06-01" \
+                    -d '{"model":"claude-3-haiku-20240307","max_tokens":5,"messages":[{"role":"user","content":"OK"}]}' 2>/dev/null)
+                if echo "$response" | grep -q '"content"'; then
+                    echo "working"
+                elif echo "$response" | grep -qi "429\|rate"; then
+                    echo "rate_limited"
+                elif echo "$response" | grep -qi "401\|invalid\|authentication"; then
+                    echo "auth_failed"
+                else
+                    echo "failed"
+                fi
+                ;;
+            *)
+                # For other providers, check endpoint reachability
+                local http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "${PROVIDER_ENDPOINTS[$provider]}" -H "Authorization: Bearer $api_key" 2>/dev/null)
+                if [ "$http_code" = "200" ] || [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
+                    # Endpoint reachable - assume working if we have a key
+                    echo "working"
+                elif [ "$http_code" = "429" ]; then
+                    echo "rate_limited"
+                else
+                    echo "unknown"
+                fi
+                ;;
+        esac
+    }
+
     local first_provider=true
+    local working_count=0
+    local rate_limited_count=0
+    local auth_failed_count=0
+
     for provider in "${!PROVIDER_ENDPOINTS[@]}"; do
         local key_var="${PROVIDER_KEYS[$provider]}"
         local api_key=$(eval echo "\$$key_var")
@@ -461,8 +560,43 @@ phase2_provider_verification() {
         providers_count=$((providers_count + 1))
 
         if [ -n "$api_key" ] && [ "$api_key" != "xxxxx" ] && [[ ! "$api_key" =~ ^\*+$ ]]; then
-            # Provider has API key configured - mark as valid
-            valid_count=$((valid_count + 1))
+            # Provider has API key configured - TEST IT with real API call
+            log_info "  Testing provider $provider with real API call..."
+
+            local test_result=$(test_provider_api "$provider" "$api_key")
+            local status="inactive"
+            local verified=false
+            local error_msg=""
+
+            case "$test_result" in
+                working)
+                    status="active"
+                    verified=true
+                    valid_count=$((valid_count + 1))
+                    working_count=$((working_count + 1))
+                    log_success "    Provider $provider: WORKING"
+                    ;;
+                rate_limited)
+                    status="rate_limited"
+                    verified=false
+                    rate_limited_count=$((rate_limited_count + 1))
+                    error_msg="Quota exceeded or rate limited"
+                    log_warning "    Provider $provider: RATE LIMITED (temporary)"
+                    ;;
+                auth_failed)
+                    status="auth_failed"
+                    verified=false
+                    auth_failed_count=$((auth_failed_count + 1))
+                    error_msg="Invalid or expired API key"
+                    log_error "    Provider $provider: AUTH FAILED (check API key)"
+                    ;;
+                *)
+                    status="failed"
+                    verified=false
+                    error_msg="API test failed"
+                    log_error "    Provider $provider: FAILED"
+                    ;;
+            esac
 
             if [ "$first_provider" = false ]; then
                 echo "    ," >> "$validated_providers"
@@ -474,13 +608,20 @@ phase2_provider_verification() {
       "name": "$provider",
       "endpoint": "$endpoint",
       "api_key_configured": true,
-      "status": "active",
-      "verified": true
+      "status": "$status",
+      "verified": $verified,
+      "error": "$error_msg",
+      "tested_at": "$(date -Iseconds)"
     }
 EOF
-            log_info "  Provider $provider: API key configured, marked active"
         fi
     done
+
+    # Log summary
+    log_info "Provider Test Summary:"
+    log_info "  Working: $working_count"
+    log_info "  Rate Limited: $rate_limited_count"
+    log_info "  Auth Failed: $auth_failed_count"
 
     echo '  ],' >> "$validated_providers"
     echo '  "total_providers": '$providers_count',' >> "$validated_providers"

@@ -268,3 +268,390 @@ func (h *ProviderManagementHandler) DeleteProvider(c *gin.Context) {
 		Message: "Provider removed successfully",
 	})
 }
+
+// VerifyProvider handles POST /v1/providers/:id/verify
+// This endpoint triggers verification of a specific provider with an actual API call
+func (h *ProviderManagementHandler) VerifyProvider(c *gin.Context) {
+	providerID := c.Param("id")
+
+	h.log.WithField("provider_id", providerID).Info("Starting provider verification")
+
+	// Verify the provider with actual API call
+	result := h.providerRegistry.VerifyProvider(c.Request.Context(), providerID)
+
+	// Build response based on verification result
+	response := gin.H{
+		"provider":         result.Provider,
+		"status":           result.Status,
+		"verified":         result.Verified,
+		"response_time_ms": result.ResponseTime.Milliseconds(),
+		"tested_at":        result.TestedAt,
+	}
+
+	if result.Error != "" {
+		response["error"] = result.Error
+	}
+
+	// Determine HTTP status code based on verification result
+	statusCode := http.StatusOK
+	if !result.Verified {
+		switch result.Status {
+		case services.ProviderStatusRateLimited:
+			statusCode = http.StatusTooManyRequests
+		case services.ProviderStatusAuthFailed:
+			statusCode = http.StatusUnauthorized
+		case services.ProviderStatusUnhealthy:
+			statusCode = http.StatusServiceUnavailable
+		default:
+			statusCode = http.StatusServiceUnavailable
+		}
+	}
+
+	h.log.WithFields(logrus.Fields{
+		"provider_id": providerID,
+		"status":      result.Status,
+		"verified":    result.Verified,
+	}).Info("Provider verification completed")
+
+	c.JSON(statusCode, response)
+}
+
+// VerifyAllProviders handles POST /v1/providers/verify
+// This endpoint triggers verification of all registered providers
+func (h *ProviderManagementHandler) VerifyAllProviders(c *gin.Context) {
+	h.log.Info("Starting verification of all providers")
+
+	// Verify all providers concurrently
+	results := h.providerRegistry.VerifyAllProviders(c.Request.Context())
+
+	// Build response with statistics
+	var healthy, rateLimited, authFailed, unhealthy int
+	providerResults := make([]gin.H, 0, len(results))
+
+	for _, result := range results {
+		switch result.Status {
+		case services.ProviderStatusHealthy:
+			healthy++
+		case services.ProviderStatusRateLimited:
+			rateLimited++
+		case services.ProviderStatusAuthFailed:
+			authFailed++
+		default:
+			unhealthy++
+		}
+
+		providerResult := gin.H{
+			"provider":         result.Provider,
+			"status":           result.Status,
+			"verified":         result.Verified,
+			"response_time_ms": result.ResponseTime.Milliseconds(),
+			"tested_at":        result.TestedAt,
+		}
+		if result.Error != "" {
+			providerResult["error"] = result.Error
+		}
+		providerResults = append(providerResults, providerResult)
+	}
+
+	// Determine overall ensemble operational status
+	ensembleOperational := healthy > 0
+
+	h.log.WithFields(logrus.Fields{
+		"total":               len(results),
+		"healthy":             healthy,
+		"rate_limited":        rateLimited,
+		"auth_failed":         authFailed,
+		"unhealthy":           unhealthy,
+		"ensemble_operational": ensembleOperational,
+	}).Info("All providers verification completed")
+
+	c.JSON(http.StatusOK, gin.H{
+		"providers": providerResults,
+		"summary": gin.H{
+			"total":        len(results),
+			"healthy":      healthy,
+			"rate_limited": rateLimited,
+			"auth_failed":  authFailed,
+			"unhealthy":    unhealthy,
+		},
+		"ensemble_operational": ensembleOperational,
+		"tested_at":            time.Now(),
+	})
+}
+
+// GetProviderVerification handles GET /v1/providers/:id/verification
+// This endpoint returns the last verification result for a specific provider
+func (h *ProviderManagementHandler) GetProviderVerification(c *gin.Context) {
+	providerID := c.Param("id")
+
+	result := h.providerRegistry.GetProviderHealth(providerID)
+	if result == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":       "no verification result found for provider",
+			"provider_id": providerID,
+			"hint":        "Use POST /v1/providers/" + providerID + "/verify to verify the provider",
+		})
+		return
+	}
+
+	response := gin.H{
+		"provider":         result.Provider,
+		"status":           result.Status,
+		"verified":         result.Verified,
+		"response_time_ms": result.ResponseTime.Milliseconds(),
+		"tested_at":        result.TestedAt,
+	}
+
+	if result.Error != "" {
+		response["error"] = result.Error
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetAllProvidersVerification handles GET /v1/providers/verification
+// This endpoint returns verification results for all providers
+func (h *ProviderManagementHandler) GetAllProvidersVerification(c *gin.Context) {
+	results := h.providerRegistry.GetAllProviderHealth()
+
+	// Build response with statistics
+	var healthy, rateLimited, authFailed, unhealthy, unknown int
+	providerResults := make([]gin.H, 0, len(results))
+
+	for _, result := range results {
+		switch result.Status {
+		case services.ProviderStatusHealthy:
+			healthy++
+		case services.ProviderStatusRateLimited:
+			rateLimited++
+		case services.ProviderStatusAuthFailed:
+			authFailed++
+		case services.ProviderStatusUnknown:
+			unknown++
+		default:
+			unhealthy++
+		}
+
+		providerResult := gin.H{
+			"provider":         result.Provider,
+			"status":           result.Status,
+			"verified":         result.Verified,
+			"response_time_ms": result.ResponseTime.Milliseconds(),
+			"tested_at":        result.TestedAt,
+		}
+		if result.Error != "" {
+			providerResult["error"] = result.Error
+		}
+		providerResults = append(providerResults, providerResult)
+	}
+
+	// Determine overall ensemble operational status
+	ensembleOperational := healthy > 0
+
+	// Get list of healthy providers for the debate group
+	healthyProviders := h.providerRegistry.GetHealthyProviders()
+
+	c.JSON(http.StatusOK, gin.H{
+		"providers": providerResults,
+		"summary": gin.H{
+			"total":        len(results),
+			"healthy":      healthy,
+			"rate_limited": rateLimited,
+			"auth_failed":  authFailed,
+			"unhealthy":    unhealthy,
+			"unknown":      unknown,
+		},
+		"ensemble_operational": ensembleOperational,
+		"healthy_providers":    healthyProviders,
+		"debate_group_ready":   len(healthyProviders) >= 2,
+	})
+}
+
+// GetDiscoverySummary handles GET /v1/providers/discovery
+// This endpoint returns a summary of auto-discovered providers and their scores
+func (h *ProviderManagementHandler) GetDiscoverySummary(c *gin.Context) {
+	discovery := h.providerRegistry.GetDiscovery()
+	if discovery == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"auto_discovery_enabled": false,
+			"message":                "Provider auto-discovery is not initialized",
+		})
+		return
+	}
+
+	// Get discovery summary
+	summary := discovery.Summary()
+
+	h.log.WithFields(logrus.Fields{
+		"total_discovered": summary["total_discovered"],
+		"healthy":          summary["healthy"],
+	}).Info("Provider discovery summary requested")
+
+	c.JSON(http.StatusOK, summary)
+}
+
+// DiscoverAndVerifyProviders handles POST /v1/providers/discover
+// This endpoint triggers auto-discovery and verification of all providers from environment
+func (h *ProviderManagementHandler) DiscoverAndVerifyProviders(c *gin.Context) {
+	h.log.Info("Starting provider auto-discovery and verification")
+
+	// Run discovery and verification
+	summary := h.providerRegistry.DiscoverAndVerifyProviders(c.Request.Context())
+
+	// Check if auto-discovery is enabled
+	if enabled, ok := summary["auto_discovery_enabled"].(bool); !ok || !enabled {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "auto-discovery not enabled or not initialized",
+			"summary": summary,
+		})
+		return
+	}
+
+	h.log.WithFields(logrus.Fields{
+		"total_discovered": summary["total_discovered"],
+		"healthy":          summary["healthy"],
+		"debate_ready":     summary["debate_ready"],
+	}).Info("Provider auto-discovery and verification completed")
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Auto-discovery and verification completed",
+		"summary": summary,
+	})
+}
+
+// GetBestProviders handles GET /v1/providers/best
+// This endpoint returns the best providers for the debate group based on scores
+func (h *ProviderManagementHandler) GetBestProviders(c *gin.Context) {
+	// Parse query parameters
+	minProviders := 2
+	maxProviders := 5
+
+	if min := c.Query("min"); min != "" {
+		if _, err := h.parseIntParam(min, &minProviders); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid min parameter"})
+			return
+		}
+	}
+
+	if max := c.Query("max"); max != "" {
+		if _, err := h.parseIntParam(max, &maxProviders); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid max parameter"})
+			return
+		}
+	}
+
+	// Get best providers for debate group
+	bestProviders := h.providerRegistry.GetBestProvidersForDebate(minProviders, maxProviders)
+
+	// Get detailed provider information
+	discovery := h.providerRegistry.GetDiscovery()
+	providerDetails := make([]gin.H, 0, len(bestProviders))
+
+	for _, name := range bestProviders {
+		detail := gin.H{
+			"name": name,
+		}
+
+		// Add discovery details if available
+		if discovery != nil {
+			if dp := discovery.GetProviderByName(name); dp != nil {
+				detail["type"] = dp.Type
+				detail["score"] = dp.Score
+				detail["status"] = dp.Status
+				detail["verified"] = dp.Verified
+				detail["default_model"] = dp.DefaultModel
+			}
+
+			if score := discovery.GetProviderScore(name); score != nil {
+				detail["score_details"] = gin.H{
+					"overall":        score.OverallScore,
+					"response_speed": score.ResponseSpeed,
+					"reliability":    score.Reliability,
+					"capabilities":   score.Capabilities,
+					"scored_at":      score.ScoredAt,
+				}
+			}
+		}
+
+		providerDetails = append(providerDetails, detail)
+	}
+
+	h.log.WithFields(logrus.Fields{
+		"best_providers": len(bestProviders),
+		"min_requested":  minProviders,
+		"max_requested":  maxProviders,
+	}).Info("Best providers requested")
+
+	c.JSON(http.StatusOK, gin.H{
+		"best_providers":     providerDetails,
+		"count":              len(providerDetails),
+		"min_providers":      minProviders,
+		"max_providers":      maxProviders,
+		"debate_group_ready": len(providerDetails) >= minProviders,
+	})
+}
+
+// parseIntParam parses a string to int
+func (h *ProviderManagementHandler) parseIntParam(s string, result *int) (bool, error) {
+	var val int
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false, nil
+		}
+		val = val*10 + int(c-'0')
+	}
+	*result = val
+	return true, nil
+}
+
+// ReDiscoverProviders handles POST /v1/providers/rediscover
+// This endpoint re-runs provider discovery from environment variables
+func (h *ProviderManagementHandler) ReDiscoverProviders(c *gin.Context) {
+	discovery := h.providerRegistry.GetDiscovery()
+	if discovery == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "auto-discovery not initialized",
+		})
+		return
+	}
+
+	h.log.Info("Re-running provider auto-discovery")
+
+	// Re-discover providers
+	discovered, err := discovery.DiscoverProviders()
+	if err != nil {
+		h.log.WithError(err).Error("Provider re-discovery failed")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Register any newly discovered providers
+	existingProviders := h.providerRegistry.ListProviders()
+	existingMap := make(map[string]bool)
+	for _, name := range existingProviders {
+		existingMap[name] = true
+	}
+
+	newlyRegistered := 0
+	for _, dp := range discovered {
+		if !existingMap[dp.Name] && dp.Provider != nil {
+			if err := h.providerRegistry.RegisterProvider(dp.Name, dp.Provider); err == nil {
+				newlyRegistered++
+			}
+		}
+	}
+
+	h.log.WithFields(logrus.Fields{
+		"discovered":       len(discovered),
+		"newly_registered": newlyRegistered,
+	}).Info("Provider re-discovery completed")
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":          "Provider re-discovery completed",
+		"discovered":       len(discovered),
+		"newly_registered": newlyRegistered,
+		"total_providers":  len(h.providerRegistry.ListProviders()),
+	})
+}
