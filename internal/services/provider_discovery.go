@@ -11,9 +11,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/superagent/superagent/internal/llm"
+	"github.com/superagent/superagent/internal/llm/providers/cerebras"
 	"github.com/superagent/superagent/internal/llm/providers/claude"
 	"github.com/superagent/superagent/internal/llm/providers/deepseek"
 	"github.com/superagent/superagent/internal/llm/providers/gemini"
+	"github.com/superagent/superagent/internal/llm/providers/mistral"
 	"github.com/superagent/superagent/internal/llm/providers/ollama"
 	"github.com/superagent/superagent/internal/llm/providers/openrouter"
 	"github.com/superagent/superagent/internal/llm/providers/qwen"
@@ -217,8 +219,24 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 	case "ollama":
 		return ollama.NewOllamaProvider(mapping.BaseURL, mapping.DefaultModel), nil
 
+	case "mistral":
+		// Use native Mistral provider for direct API access
+		baseURL := mapping.BaseURL
+		if baseURL == "" || !strings.Contains(baseURL, "/chat/completions") {
+			baseURL = "https://api.mistral.ai/v1/chat/completions"
+		}
+		return mistral.NewMistralProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "cerebras":
+		// Use native Cerebras provider for direct API access
+		baseURL := mapping.BaseURL
+		if baseURL == "" || !strings.Contains(baseURL, "/chat/completions") {
+			baseURL = "https://api.cerebras.ai/v1/chat/completions"
+		}
+		return cerebras.NewCerebrasProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
 	// For providers without native implementations, use OpenRouter as a proxy
-	case "groq", "mistral", "fireworks", "together", "hyperbolic", "cerebras",
+	case "groq", "fireworks", "together", "hyperbolic",
 		 "sambanova", "replicate", "siliconflow", "cloudflare", "nvidia",
 		 "kimi", "huggingface", "novita", "upstage", "chutes", "openai":
 		// Create OpenRouter-compatible provider

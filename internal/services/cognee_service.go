@@ -750,8 +750,13 @@ func (s *CogneeService) SearchMemory(ctx context.Context, query string, dataset 
 	return result, nil
 }
 
-// performSearch executes a single search type
+// performSearch executes a single search type with per-search timeout
 func (s *CogneeService) performSearch(ctx context.Context, query, dataset string, limit int, searchType string) ([]interface{}, error) {
+	// Apply per-search timeout (5 seconds) to prevent one slow search from blocking others
+	searchTimeout := 5 * time.Second
+	searchCtx, cancel := context.WithTimeout(ctx, searchTimeout)
+	defer cancel()
+
 	reqBody := map[string]interface{}{
 		"query":       query,
 		"datasets":    []string{dataset},
@@ -765,9 +770,11 @@ func (s *CogneeService) performSearch(ctx context.Context, query, dataset string
 	}
 
 	url := fmt.Sprintf("%s/api/v1/search", s.baseURL)
-	resp, err := s.doRequest(ctx, "POST", url, data)
+	resp, err := s.doRequest(searchCtx, "POST", url, data)
 	if err != nil {
-		return nil, err
+		// Log but don't fail - return empty results on timeout
+		s.logger.WithField("search_type", searchType).WithError(err).Warn("Search error occurred")
+		return []interface{}{}, nil
 	}
 
 	var results struct {
