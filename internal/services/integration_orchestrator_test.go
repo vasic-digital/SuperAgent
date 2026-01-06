@@ -733,8 +733,8 @@ func TestIntegrationOrchestrator_executeLLMStep_NoProviders(t *testing.T) {
 	ctx := context.Background()
 	io := NewIntegrationOrchestrator(nil, nil, nil, nil)
 
-	// Set empty provider registry
-	io.providerRegistry = NewProviderRegistry(nil, nil)
+	// Set empty provider registry (without auto-discovery for predictable test behavior)
+	io.providerRegistry = NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
 	step := &WorkflowStep{
 		ID:   "step1",
@@ -1312,8 +1312,8 @@ func TestIntegrationOrchestrator_executeLLMStep_DefaultProvider(t *testing.T) {
 	ctx := context.Background()
 	io := NewIntegrationOrchestrator(nil, nil, nil, nil)
 
-	// Create provider registry with mock provider (no explicit provider in step)
-	registry := NewProviderRegistry(&RegistryConfig{
+	// Create provider registry with mock provider (without auto-discovery for predictable test behavior)
+	registry := NewProviderRegistryWithoutAutoDiscovery(&RegistryConfig{
 		DefaultTimeout: 30 * time.Second,
 		CircuitBreaker: CircuitBreakerConfig{Enabled: false},
 		Providers:      make(map[string]*ProviderConfig),

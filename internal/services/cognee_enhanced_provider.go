@@ -210,8 +210,8 @@ func (p *CogneeEnhancedProvider) CompleteStream(ctx context.Context, req *models
 			outputChan <- resp
 		}
 
-		// Store the complete response
-		if p.config.StoreAfterResponse && lastResp != nil && p.cogneeService != nil {
+		// Store the complete response (only if Cognee is ready)
+		if p.config.StoreAfterResponse && lastResp != nil && p.cogneeService != nil && p.cogneeService.IsReady() {
 			completeResp := &models.LLMResponse{
 				ID:           lastResp.ID,
 				Content:      fullContent.String(),
@@ -375,6 +375,12 @@ func (p *CogneeEnhancedProvider) enhanceMessages(messages []models.Message, enha
 
 // storeResponse stores the response in Cognee
 func (p *CogneeEnhancedProvider) storeResponse(ctx context.Context, req *models.LLMRequest, resp *models.LLMResponse) {
+	// Double-check Cognee is ready before attempting to store
+	if p.cogneeService == nil || !p.cogneeService.IsReady() {
+		p.logger.Debug("Cognee not ready, skipping response storage")
+		return
+	}
+
 	if err := p.cogneeService.ProcessResponse(ctx, req, resp); err != nil {
 		p.logger.WithError(err).Warn("Failed to store response in Cognee")
 		p.stats.mu.Lock()

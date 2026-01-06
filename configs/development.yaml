@@ -140,10 +140,10 @@ ai_debate:
   max_participants: 5
   max_rounds: 3
   consensus_threshold: 0.6
-  
-  # Cognee integration (disabled for development)
+
+  # Cognee integration (enabled for full AI capabilities)
   cognee:
-    enabled: false
+    enabled: true
     api_url: "http://localhost:8000"
     dataset_name: "superagent_dev_debates"
 
@@ -230,7 +230,7 @@ plugins:
 feature_flags:
   # Feature toggles (all enabled for development)
   ai_debate: true
-  cognee_integration: false
+  cognee_integration: true
   plugin_system: true
   real_time_monitoring: true
   advanced_analytics: true

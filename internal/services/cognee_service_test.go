@@ -99,8 +99,10 @@ func TestNewCogneeServiceWithConfig(t *testing.T) {
 func TestCogneeService_IsHealthy(t *testing.T) {
 	t.Run("healthy when service responds OK", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/health" {
+			// IsHealthy now uses "/" root endpoint for faster health checks
+			if r.URL.Path == "/" || r.URL.Path == "/health" {
 				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"message":"Hello, World, I am alive!"}`))
 				return
 			}
 			w.WriteHeader(http.StatusNotFound)
@@ -1165,8 +1167,21 @@ func TestCogneeService_EnsureRunning(t *testing.T) {
 
 	t.Run("returns nil if already healthy", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/health" {
+			// Handle root endpoint for health check (IsHealthy uses "/" for fast check)
+			if r.URL.Path == "/" || r.URL.Path == "/health" {
 				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"message":"Hello, World, I am alive!"}`))
+				return
+			}
+			// Handle auth endpoints for automatic authentication
+			if r.URL.Path == "/api/v1/auth/register" {
+				w.WriteHeader(http.StatusCreated)
+				w.Write([]byte(`{"id":"test-user-id","email":"test@test.com"}`))
+				return
+			}
+			if r.URL.Path == "/api/v1/auth/login" {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"access_token":"test-token","token_type":"bearer"}`))
 				return
 			}
 			w.WriteHeader(http.StatusNotFound)
@@ -1174,8 +1189,10 @@ func TestCogneeService_EnsureRunning(t *testing.T) {
 		defer server.Close()
 
 		config := &CogneeServiceConfig{
-			Enabled: true,
-			BaseURL: server.URL,
+			Enabled:      true,
+			BaseURL:      server.URL,
+			AuthEmail:    "test@test.com",
+			AuthPassword: "testpass",
 		}
 		service := NewCogneeServiceWithConfig(config, logger)
 

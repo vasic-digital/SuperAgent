@@ -699,6 +699,298 @@ func TestWrapProvidersWithCognee(t *testing.T) {
 }
 
 // =====================================================
+// TESTS FOR ISREADY CHECKS
+// =====================================================
+
+func TestCogneeEnhancedProvider_storeResponse_IsReadyCheck(t *testing.T) {
+	logger := newTestLogger()
+
+	t.Run("skips storage when cognee is nil", func(t *testing.T) {
+		mockProvider := &CogneeMockProvider{}
+		enhanced := NewCogneeEnhancedProvider("test", mockProvider, nil, logger)
+
+		ctx := context.Background()
+		req := &models.LLMRequest{Prompt: "Hello"}
+		resp := &models.LLMResponse{Content: "Response"}
+
+		// Should return early without error
+		enhanced.storeResponse(ctx, req, resp)
+
+		// Stats should not change
+		stats := enhanced.GetStats()
+		assert.Equal(t, int64(0), stats.StoredResponses)
+		assert.Equal(t, int64(0), stats.StorageErrors)
+	})
+
+	t.Run("skips storage when cognee is not ready", func(t *testing.T) {
+		cogneeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer cogneeServer.Close()
+
+		cogneeConfig := &CogneeServiceConfig{
+			Enabled:        true,
+			StoreResponses: true,
+			BaseURL:        cogneeServer.URL,
+		}
+		cogneeService := NewCogneeServiceWithConfig(cogneeConfig, logger)
+		cogneeService.isReady = false // NOT ready
+
+		mockProvider := &CogneeMockProvider{}
+		providerConfig := &CogneeProviderConfig{
+			StoreAfterResponse: true,
+		}
+		enhanced := NewCogneeEnhancedProviderWithConfig("test", mockProvider, cogneeService, providerConfig, logger)
+
+		ctx := context.Background()
+		req := &models.LLMRequest{Prompt: "Hello"}
+		resp := &models.LLMResponse{Content: "Response"}
+
+		enhanced.storeResponse(ctx, req, resp)
+
+		// Stats should not change - storage was skipped
+		stats := enhanced.GetStats()
+		assert.Equal(t, int64(0), stats.StoredResponses)
+		assert.Equal(t, int64(0), stats.StorageErrors)
+	})
+
+	t.Run("proceeds when cognee is ready", func(t *testing.T) {
+		cogneeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
+		}))
+		defer cogneeServer.Close()
+
+		cogneeConfig := &CogneeServiceConfig{
+			Enabled:        true,
+			StoreResponses: true,
+			BaseURL:        cogneeServer.URL,
+		}
+		cogneeService := NewCogneeServiceWithConfig(cogneeConfig, logger)
+		cogneeService.isReady = true // Ready
+
+		mockProvider := &CogneeMockProvider{}
+		providerConfig := &CogneeProviderConfig{
+			StoreAfterResponse: true,
+		}
+		enhanced := NewCogneeEnhancedProviderWithConfig("test", mockProvider, cogneeService, providerConfig, logger)
+
+		ctx := context.Background()
+		req := &models.LLMRequest{Prompt: "Hello"}
+		resp := &models.LLMResponse{Content: "Response"}
+
+		enhanced.storeResponse(ctx, req, resp)
+
+		// Should have attempted storage
+		stats := enhanced.GetStats()
+		assert.Equal(t, int64(1), stats.StoredResponses)
+	})
+}
+
+func TestCogneeEnhancedProvider_CompleteStream_IsReadyCheck(t *testing.T) {
+	logger := newTestLogger()
+
+	t.Run("does not store when cognee is not ready during stream", func(t *testing.T) {
+		cogneeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
+		}))
+		defer cogneeServer.Close()
+
+		cogneeConfig := &CogneeServiceConfig{
+			Enabled:        true,
+			BaseURL:        cogneeServer.URL,
+			EnhancePrompts: true,
+			StoreResponses: true,
+			SearchTypes:    []string{"VECTOR"},
+		}
+		cogneeService := NewCogneeServiceWithConfig(cogneeConfig, logger)
+		cogneeService.isReady = false // NOT ready
+
+		mockProvider := &CogneeMockProvider{}
+
+		providerConfig := &CogneeProviderConfig{
+			EnhanceStreamingPrompt: true,
+			StoreAfterResponse:     true,
+			StreamingBufferSize:    10,
+		}
+
+		enhanced := NewCogneeEnhancedProviderWithConfig(
+			"test",
+			mockProvider,
+			cogneeService,
+			providerConfig,
+			logger,
+		)
+
+		ctx := context.Background()
+		req := &models.LLMRequest{Prompt: "Hello"}
+
+		stream, err := enhanced.CompleteStream(ctx, req)
+		require.NoError(t, err)
+
+		// Consume stream
+		var content string
+		for resp := range stream {
+			content += resp.Content
+		}
+		assert.Equal(t, "Hello World!", content)
+
+		// Wait a bit for any async operations
+		time.Sleep(100 * time.Millisecond)
+
+		// Should not have stored anything since not ready
+		stats := enhanced.GetStats()
+		assert.Equal(t, int64(0), stats.StoredResponses)
+	})
+
+	t.Run("stores when cognee is ready during stream", func(t *testing.T) {
+		storeCalledCh := make(chan struct{}, 1)
+		cogneeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			if r.URL.Path == "/api/v1/add" {
+				select {
+				case storeCalledCh <- struct{}{}:
+				default:
+				}
+			}
+			json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
+		}))
+		defer cogneeServer.Close()
+
+		cogneeConfig := &CogneeServiceConfig{
+			Enabled:        true,
+			BaseURL:        cogneeServer.URL,
+			EnhancePrompts: false,
+			StoreResponses: true,
+			SearchTypes:    []string{"VECTOR"},
+		}
+		cogneeService := NewCogneeServiceWithConfig(cogneeConfig, logger)
+		cogneeService.isReady = true // Ready
+
+		mockProvider := &CogneeMockProvider{}
+
+		providerConfig := &CogneeProviderConfig{
+			EnhanceStreamingPrompt: false,
+			StoreAfterResponse:     true,
+			StreamingBufferSize:    10,
+		}
+
+		enhanced := NewCogneeEnhancedProviderWithConfig(
+			"test",
+			mockProvider,
+			cogneeService,
+			providerConfig,
+			logger,
+		)
+
+		ctx := context.Background()
+		req := &models.LLMRequest{Prompt: "Hello"}
+
+		stream, err := enhanced.CompleteStream(ctx, req)
+		require.NoError(t, err)
+
+		// Consume stream
+		var content string
+		for resp := range stream {
+			content += resp.Content
+		}
+		assert.Equal(t, "Hello World!", content)
+
+		// Wait for async storage
+		select {
+		case <-storeCalledCh:
+			// Storage was attempted
+		case <-time.After(2 * time.Second):
+			// Storage might have been attempted - check stats
+		}
+
+		// Give async operation time to complete
+		time.Sleep(200 * time.Millisecond)
+
+		// Should have attempted storage
+		stats := enhanced.GetStats()
+		assert.True(t, stats.StoredResponses > 0 || stats.StorageErrors > 0,
+			"Expected storage attempt when cognee is ready")
+	})
+}
+
+func TestCogneeEnhancedProvider_GracefulDegradation(t *testing.T) {
+	logger := newTestLogger()
+
+	t.Run("works without cognee service", func(t *testing.T) {
+		mockProvider := &CogneeMockProvider{
+			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+				return &models.LLMResponse{
+					Content:      "Response without Cognee",
+					ProviderName: "mock",
+				}, nil
+			},
+		}
+
+		// Disable enhancement in config when no Cognee service
+		config := &CogneeProviderConfig{
+			EnhanceBeforeRequest: false,
+			StoreAfterResponse:   false,
+		}
+		enhanced := NewCogneeEnhancedProviderWithConfig("test", mockProvider, nil, config, logger)
+
+		ctx := context.Background()
+		req := &models.LLMRequest{Prompt: "Hello"}
+
+		resp, err := enhanced.Complete(ctx, req)
+
+		require.NoError(t, err)
+		assert.Equal(t, "Response without Cognee", resp.Content)
+		// Metadata reflects config setting, not Cognee availability
+		assert.False(t, resp.Metadata["cognee_enhanced"].(bool))
+	})
+
+	t.Run("works when cognee becomes unavailable", func(t *testing.T) {
+		cogneeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Simulate server going down
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}))
+		defer cogneeServer.Close()
+
+		cogneeConfig := &CogneeServiceConfig{
+			Enabled:        true,
+			BaseURL:        cogneeServer.URL,
+			EnhancePrompts: true,
+			StoreResponses: true,
+		}
+		cogneeService := NewCogneeServiceWithConfig(cogneeConfig, logger)
+		cogneeService.isReady = true // Was ready, but server fails
+
+		mockProvider := &CogneeMockProvider{
+			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+				return &models.LLMResponse{
+					Content:      "Response despite Cognee failure",
+					ProviderName: "mock",
+				}, nil
+			},
+		}
+
+		providerConfig := &CogneeProviderConfig{
+			EnhanceBeforeRequest: true,
+			StoreAfterResponse:   true,
+			EnhancementTimeout:   1 * time.Second,
+		}
+
+		enhanced := NewCogneeEnhancedProviderWithConfig("test", mockProvider, cogneeService, providerConfig, logger)
+
+		ctx := context.Background()
+		req := &models.LLMRequest{Prompt: "Hello"}
+
+		resp, err := enhanced.Complete(ctx, req)
+
+		// Should still complete despite Cognee failure
+		require.NoError(t, err)
+		assert.Equal(t, "Response despite Cognee failure", resp.Content)
+	})
+}
+
+// =====================================================
 // BENCHMARK TESTS
 // =====================================================
 

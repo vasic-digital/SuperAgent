@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +23,7 @@ import (
 type CogneeService struct {
 	baseURL      string
 	apiKey       string
+	authToken    string // JWT token for Cognee API authentication
 	client       *http.Client
 	logger       *logrus.Logger
 	config       *CogneeServiceConfig
@@ -38,6 +41,10 @@ type CogneeServiceConfig struct {
 	APIKey           string        `json:"api_key"`
 	Timeout          time.Duration `json:"timeout"`
 	AutoContainerize bool          `json:"auto_containerize"`
+
+	// Authentication settings (for Cognee 0.5.0+)
+	AuthEmail    string `json:"auth_email"`
+	AuthPassword string `json:"auth_password"`
 
 	// Memory enhancement settings
 	AutoCognify            bool    `json:"auto_cognify"`
@@ -157,12 +164,24 @@ func NewCogneeService(cfg *config.Config, logger *logrus.Logger) *CogneeService 
 		logger = logrus.New()
 	}
 
+	// Default auth credentials for Cognee (can be overridden via config)
+	authEmail := os.Getenv("COGNEE_AUTH_EMAIL")
+	if authEmail == "" {
+		authEmail = "superagent@localhost.com"
+	}
+	authPassword := os.Getenv("COGNEE_AUTH_PASSWORD")
+	if authPassword == "" {
+		authPassword = "SuperAgent123"
+	}
+
 	serviceConfig := &CogneeServiceConfig{
 		Enabled:                cfg.Cognee.Enabled,
 		BaseURL:                cfg.Cognee.BaseURL,
 		APIKey:                 cfg.Cognee.APIKey,
 		Timeout:                cfg.Cognee.Timeout,
 		AutoContainerize:       true,
+		AuthEmail:              authEmail,
+		AuthPassword:           authPassword,
 		AutoCognify:            cfg.Cognee.AutoCognify,
 		EnhancePrompts:         true,
 		StoreResponses:         true,
@@ -259,26 +278,78 @@ func (s *CogneeService) EnsureRunning(ctx context.Context) error {
 
 	s.logger.Info("Cognee not running, attempting to start containers...")
 
-	// Try docker compose
-	var cmd *exec.Cmd
-	if _, err := exec.LookPath("docker"); err != nil {
-		return fmt.Errorf("docker not found: %w", err)
-	}
-
-	cmd = exec.CommandContext(ctx, "docker", "compose", "up", "-d", "cognee", "chromadb", "postgres", "redis")
-	cmd.Dir = "/media/milosvasic/DATA4TB/Projects/HelixAgent"
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		// Try docker-compose fallback
-		cmd = exec.CommandContext(ctx, "docker-compose", "up", "-d", "cognee", "chromadb", "postgres", "redis")
-		cmd.Dir = "/media/milosvasic/DATA4TB/Projects/HelixAgent"
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("failed to start containers: %w, output: %s", err, string(output))
+	// Determine working directory - try current directory first, then known paths
+	workDir, _ := os.Getwd()
+	if _, err := os.Stat(filepath.Join(workDir, "docker-compose.yml")); err != nil {
+		// Try known project paths
+		knownPaths := []string{
+			"/run/media/milosvasic/DATA4TB/Projects/HelixAgent",
+			"/media/milosvasic/DATA4TB/Projects/HelixAgent",
+		}
+		for _, path := range knownPaths {
+			if _, err := os.Stat(filepath.Join(path, "docker-compose.yml")); err == nil {
+				workDir = path
+				break
+			}
 		}
 	}
 
+	// Try container runtime in order: docker, podman
+	var cmd *exec.Cmd
+	var output []byte
+	var err error
+
+	// Try docker compose first
+	if dockerPath, lookErr := exec.LookPath("docker"); lookErr == nil {
+		cmd = exec.CommandContext(ctx, dockerPath, "compose", "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
+		cmd.Dir = workDir
+		output, err = cmd.CombinedOutput()
+		if err == nil {
+			s.logger.Info("Started Cognee using docker compose")
+			goto waitForHealth
+		}
+
+		// Try docker-compose fallback
+		if dcPath, dcErr := exec.LookPath("docker-compose"); dcErr == nil {
+			cmd = exec.CommandContext(ctx, dcPath, "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
+			cmd.Dir = workDir
+			output, err = cmd.CombinedOutput()
+			if err == nil {
+				s.logger.Info("Started Cognee using docker-compose")
+				goto waitForHealth
+			}
+		}
+	}
+
+	// Try podman-compose
+	if pcPath, lookErr := exec.LookPath("podman-compose"); lookErr == nil {
+		cmd = exec.CommandContext(ctx, pcPath, "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
+		cmd.Dir = workDir
+		output, err = cmd.CombinedOutput()
+		if err == nil {
+			s.logger.Info("Started Cognee using podman-compose")
+			goto waitForHealth
+		}
+	}
+
+	// Try podman compose
+	if podmanPath, lookErr := exec.LookPath("podman"); lookErr == nil {
+		cmd = exec.CommandContext(ctx, podmanPath, "compose", "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
+		cmd.Dir = workDir
+		output, err = cmd.CombinedOutput()
+		if err == nil {
+			s.logger.Info("Started Cognee using podman compose")
+			goto waitForHealth
+		}
+	}
+
+	// No container runtime found or all failed
+	if err != nil {
+		return fmt.Errorf("failed to start containers: %w, output: %s", err, string(output))
+	}
+	return fmt.Errorf("no container runtime found (tried docker, docker-compose, podman-compose, podman)")
+
+waitForHealth:
 	// Wait for services with exponential backoff
 	maxWait := 60 * time.Second
 	interval := 2 * time.Second
@@ -306,21 +377,42 @@ func (s *CogneeService) EnsureRunning(ctx context.Context) error {
 }
 
 // IsHealthy checks if Cognee is healthy and responding
+// Uses the root endpoint for faster response (the /health endpoint can be slow due to embedding tests)
 func (s *CogneeService) IsHealthy(ctx context.Context) bool {
-	url := fmt.Sprintf("%s/health", s.baseURL)
+	// Use root endpoint which returns immediately with "Hello, World, I am alive!"
+	url := fmt.Sprintf("%s/", s.baseURL)
+
+	// Create a short-timeout client for health checks
+	healthClient := &http.Client{Timeout: 5 * time.Second}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return false
 	}
 
-	resp, err := s.client.Do(req)
+	resp, err := healthClient.Do(req)
 	if err != nil {
 		return false
 	}
 	defer resp.Body.Close()
 
-	return resp.StatusCode == http.StatusOK
+	if resp.StatusCode == http.StatusOK {
+		// Server is up, try to authenticate if we don't have a token
+		s.mu.RLock()
+		hasToken := s.authToken != ""
+		s.mu.RUnlock()
+
+		if !hasToken {
+			// Try to get auth token in background
+			go func() {
+				if err := s.authenticate(context.Background()); err != nil {
+					s.logger.WithError(err).Warn("Failed to authenticate with Cognee")
+				}
+			}()
+		}
+		return true
+	}
+	return false
 }
 
 // IsReady returns whether the service is ready
@@ -335,6 +427,150 @@ func (s *CogneeService) SetReady(ready bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.isReady = ready
+}
+
+// =====================================================
+// AUTHENTICATION OPERATIONS
+// =====================================================
+
+// authenticate registers and/or logs in to Cognee to get an auth token
+func (s *CogneeService) authenticate(ctx context.Context) error {
+	s.mu.Lock()
+	if s.authToken != "" {
+		s.mu.Unlock()
+		return nil // Already authenticated
+	}
+	s.mu.Unlock()
+
+	email := s.config.AuthEmail
+	password := s.config.AuthPassword
+
+	// Try to login first (in case user already exists)
+	token, err := s.login(ctx, email, password)
+	if err == nil {
+		s.mu.Lock()
+		s.authToken = token
+		s.mu.Unlock()
+		s.logger.Info("Authenticated with Cognee successfully")
+		return nil
+	}
+
+	// Login failed, try to register then login
+	s.logger.Debug("Login failed, attempting to register new user")
+	if err := s.register(ctx, email, password); err != nil {
+		// Registration might fail if user already exists, ignore
+		s.logger.WithError(err).Debug("Registration failed (user may already exist)")
+	}
+
+	// Try login again
+	token, err = s.login(ctx, email, password)
+	if err != nil {
+		return fmt.Errorf("failed to authenticate with Cognee: %w", err)
+	}
+
+	s.mu.Lock()
+	s.authToken = token
+	s.mu.Unlock()
+	s.logger.Info("Authenticated with Cognee successfully after registration")
+	return nil
+}
+
+// register creates a new user in Cognee
+func (s *CogneeService) register(ctx context.Context, email, password string) error {
+	url := fmt.Sprintf("%s/api/v1/auth/register", s.baseURL)
+
+	reqBody, _ := json.Marshal(map[string]string{
+		"email":    email,
+		"password": password,
+	})
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("registration failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// login authenticates with Cognee and returns the access token
+func (s *CogneeService) login(ctx context.Context, email, password string) (string, error) {
+	url := fmt.Sprintf("%s/api/v1/auth/login", s.baseURL)
+
+	// Use form-urlencoded for login as per Cognee's OAuth2 spec
+	formData := fmt.Sprintf("username=%s&password=%s", email, password)
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(formData))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("login failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		AccessToken string `json:"access_token"`
+		TokenType   string `json:"token_type"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("failed to decode login response: %w", err)
+	}
+
+	return result.AccessToken, nil
+}
+
+// GetAuthToken returns the current auth token (for use by handlers)
+func (s *CogneeService) GetAuthToken() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.authToken
+}
+
+// EnsureAuthenticated ensures we have a valid auth token
+func (s *CogneeService) EnsureAuthenticated(ctx context.Context) error {
+	s.mu.RLock()
+	hasToken := s.authToken != ""
+	s.mu.RUnlock()
+
+	if hasToken {
+		return nil
+	}
+
+	return s.authenticate(ctx)
+}
+
+// addAuthHeader adds the auth token to a request
+func (s *CogneeService) addAuthHeader(req *http.Request) {
+	s.mu.RLock()
+	token := s.authToken
+	s.mu.RUnlock()
+
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	} else if s.apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+s.apiKey)
+	}
 }
 
 // =====================================================
@@ -1069,6 +1305,11 @@ func (s *CogneeService) GetConfig() *CogneeServiceConfig {
 
 // doRequest performs an HTTP request to Cognee
 func (s *CogneeService) doRequest(ctx context.Context, method, url string, body []byte) ([]byte, error) {
+	// Ensure we're authenticated before making API requests
+	if err := s.EnsureAuthenticated(ctx); err != nil {
+		s.logger.WithError(err).Warn("Failed to authenticate with Cognee, continuing anyway")
+	}
+
 	var bodyReader io.Reader
 	if body != nil {
 		bodyReader = bytes.NewReader(body)
@@ -1080,9 +1321,7 @@ func (s *CogneeService) doRequest(ctx context.Context, method, url string, body 
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	if s.apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+s.apiKey)
-	}
+	s.addAuthHeader(req) // Use auth token or API key
 
 	resp, err := s.client.Do(req)
 	if err != nil {
