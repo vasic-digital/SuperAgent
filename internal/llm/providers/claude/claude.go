@@ -374,6 +374,11 @@ func (p *ClaudeProvider) calculateConfidence(content, finishReason string) float
 }
 
 func (p *ClaudeProvider) makeAPICall(ctx context.Context, req ClaudeRequest) (*http.Response, error) {
+	return p.makeAPICallWithAuthRetry(ctx, req, true)
+}
+
+// makeAPICallWithAuthRetry performs the API call with optional 401 retry
+func (p *ClaudeProvider) makeAPICallWithAuthRetry(ctx context.Context, req ClaudeRequest, allowAuthRetry bool) (*http.Response, error) {
 	// Marshal request
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -416,7 +421,18 @@ func (p *ClaudeProvider) makeAPICall(ctx context.Context, req ClaudeRequest) (*h
 			return nil, lastErr
 		}
 
-		// Check for retryable status codes
+		// Check for auth errors (401) - retry once with a short delay
+		// This handles transient auth issues (token validation delays, auth service hiccups)
+		if isAuthRetryableStatus(resp.StatusCode) && allowAuthRetry {
+			resp.Body.Close()
+			// Short delay before auth retry (500ms with jitter)
+			authRetryDelay := 500 * time.Millisecond
+			p.waitWithJitter(ctx, authRetryDelay)
+			// Recursive call with auth retry disabled to prevent infinite loops
+			return p.makeAPICallWithAuthRetry(ctx, req, false)
+		}
+
+		// Check for retryable status codes (429, 5xx)
 		if isRetryableStatus(resp.StatusCode) && attempt < p.retryConfig.MaxRetries {
 			resp.Body.Close()
 			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
@@ -443,6 +459,12 @@ func isRetryableStatus(statusCode int) bool {
 	default:
 		return false
 	}
+}
+
+// isAuthRetryableStatus returns true for auth errors that may be transient
+// (e.g., token validation delays, temporary auth service issues)
+func isAuthRetryableStatus(statusCode int) bool {
+	return statusCode == http.StatusUnauthorized // 401
 }
 
 // waitWithJitter waits for the specified duration plus random jitter

@@ -233,6 +233,12 @@ func isRetryableStatus(statusCode int) bool {
 	}
 }
 
+// isAuthRetryableStatus returns true for auth errors that may be transient
+// (e.g., token validation delays, temporary auth service issues)
+func isAuthRetryableStatus(statusCode int) bool {
+	return statusCode == http.StatusUnauthorized // 401
+}
+
 // waitWithJitter waits for the specified duration plus random jitter
 func (p *SimpleOpenRouterProvider) waitWithJitter(ctx context.Context, delay time.Duration) {
 	// Add 10% jitter

@@ -1469,7 +1469,8 @@ func TestQwenProvider_NonRetryableErrorNoRetry(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, resp)
 	assert.Contains(t, err.Error(), "Invalid API key")
-	assert.Equal(t, 1, attempts) // Only one attempt, no retries
+	// 401 is now retried once for transient auth issues, so expect 2 attempts
+	assert.Equal(t, 2, attempts) // Initial attempt + 1 auth retry
 }
 
 func TestQwenProvider_NonJSONErrorResponse(t *testing.T) {

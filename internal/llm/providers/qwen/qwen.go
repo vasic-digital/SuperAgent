@@ -485,6 +485,11 @@ func (q *QwenProvider) convertFromQwenResponse(resp *QwenResponse, requestID str
 
 // makeRequest sends a request to the Qwen API with retry logic
 func (q *QwenProvider) makeRequest(ctx context.Context, req *QwenRequest) (*QwenResponse, error) {
+	return q.makeRequestWithAuthRetry(ctx, req, true)
+}
+
+// makeRequestWithAuthRetry sends a request to the Qwen API with optional 401 retry
+func (q *QwenProvider) makeRequestWithAuthRetry(ctx context.Context, req *QwenRequest, allowAuthRetry bool) (*QwenResponse, error) {
 	jsonData, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -520,7 +525,18 @@ func (q *QwenProvider) makeRequest(ctx context.Context, req *QwenRequest) (*Qwen
 			return nil, lastErr
 		}
 
-		// Check for retryable status codes
+		// Check for auth errors (401) - retry once with a short delay
+		// This handles transient auth issues (token validation delays, auth service hiccups)
+		if isAuthRetryableStatus(resp.StatusCode) && allowAuthRetry {
+			resp.Body.Close()
+			// Short delay before auth retry (500ms with jitter)
+			authRetryDelay := 500 * time.Millisecond
+			q.waitWithJitter(ctx, authRetryDelay)
+			// Recursive call with auth retry disabled to prevent infinite loops
+			return q.makeRequestWithAuthRetry(ctx, req, false)
+		}
+
+		// Check for retryable status codes (429, 5xx)
 		if isRetryableStatus(resp.StatusCode) && attempt < q.retryConfig.MaxRetries {
 			resp.Body.Close()
 			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
@@ -671,6 +687,12 @@ func isRetryableStatus(statusCode int) bool {
 	default:
 		return false
 	}
+}
+
+// isAuthRetryableStatus returns true for auth errors that may be transient
+// (e.g., token validation delays, temporary auth service issues)
+func isAuthRetryableStatus(statusCode int) bool {
+	return statusCode == http.StatusUnauthorized // 401
 }
 
 // waitWithJitter waits for the specified duration plus random jitter
