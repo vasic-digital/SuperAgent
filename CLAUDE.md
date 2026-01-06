@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SuperAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 7 LLM providers (Claude, DeepSeek, Gemini, Qwen, ZAI, Ollama, OpenRouter).
+SuperAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 18+ LLM providers with **dynamic provider selection** based on LLMsVerifier verification scores. Main providers: Claude, DeepSeek, Gemini, Qwen, ZAI, OpenRouter, Mistral, Cerebras, and more.
 
 The project also includes:
 - **Toolkit** (`Toolkit/`): A standalone Go library for building AI applications with multi-provider support
@@ -149,20 +149,33 @@ Environment variables defined in `.env.example`. Key categories:
 - LLM providers: `CLAUDE_API_KEY`, `DEEPSEEK_API_KEY`, `GEMINI_API_KEY`, etc.
 - Cognee: `COGNEE_AUTH_EMAIL`, `COGNEE_AUTH_PASSWORD` (form-encoded OAuth2 auth)
 
-### Primary LLM Provider: Gemini
+### Dynamic LLM Provider Selection (LLMsVerifier Integration)
 
-**Gemini is the verified highest-scoring LLM provider** (Score: 8.5 by LLMsVerifier):
+SuperAgent uses **DYNAMIC provider selection** based on real-time LLMsVerifier verification scores. The system automatically selects the best-performing LLM provider based on actual benchmarks.
 
-| Provider | Model | Score |
-|----------|-------|-------|
-| **Gemini** | gemini-1.5-flash | **8.5** |
-| DeepSeek | deepseek-coder | 8.1 |
-| DeepSeek | deepseek-chat | 8.0 |
-| Llama 3 | 70B | 7.7 |
+**How it works:**
+1. LLMsVerifier runs verification tests on all available providers
+2. Scores are calculated based on: response speed (25%), model efficiency (20%), cost effectiveness (25%), capability (20%), recency (10%)
+3. `ProviderDiscovery.calculateProviderScore()` uses these dynamic scores
+4. The highest-scoring verified provider is automatically preferred
 
-Cognee uses Gemini for all AI operations (embeddings, graph reasoning, knowledge extraction).
+**Key files:**
+- `internal/services/provider_discovery.go` - Provider scoring logic
+- `internal/services/llmsverifier_score_adapter.go` - LLMsVerifier integration
+- `internal/verifier/scoring.go` - Score calculation
 
-**Ollama is DEPRECATED** - Use Gemini instead. Ollama is kept for legacy compatibility only.
+**Current verified scores (from LLMsVerifier):**
+
+| Provider | Model | Score | Notes |
+|----------|-------|-------|-------|
+| **Dynamic** | Auto-selected | **Highest** | System selects best |
+| Gemini | gemini-2.0-flash | ~8.5 | High baseline score |
+| DeepSeek | deepseek-coder | ~8.1 | Code-focused |
+| Claude | claude-3.5-sonnet | ~9.5 | Premium tier |
+
+Cognee uses the highest-scoring available provider for AI operations.
+
+**Ollama is DEPRECATED** - Lowest priority (score: 5.0). Only used as fallback when no other providers are available. The system dynamically prefers higher-scoring providers.
 
 Configuration files in `/configs`: `development.yaml`, `production.yaml`, `multi-provider.yaml`
 

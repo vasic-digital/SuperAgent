@@ -18,15 +18,18 @@ data:
       level: info
       format: json
 
+    # Gemini is the verified strongest LLM provider (Score: 8.5 by LLMsVerifier)
+    # Ollama is DEPRECATED and disabled - use Gemini instead
     providers:
       enabled:
+        - gemini    # Primary LLM (verified strongest, Score: 8.5)
         - claude
         - deepseek
-        - gemini
         - qwen
-        - ollama
         - openrouter
         - zai
+      disabled:
+        - ollama    # DEPRECATED: Use Gemini instead
 
     ensemble:
       strategy: weighted_voting

@@ -22,13 +22,25 @@ import (
 	"github.com/superagent/superagent/internal/models"
 )
 
+// LLMsVerifierScoreProvider interface for getting dynamic scores from LLMsVerifier
+type LLMsVerifierScoreProvider interface {
+	// GetProviderScore returns the LLMsVerifier score for a provider (0-10)
+	GetProviderScore(providerType string) (float64, bool)
+	// GetModelScore returns the LLMsVerifier score for a specific model
+	GetModelScore(modelID string) (float64, bool)
+	// RefreshScores refreshes scores from LLMsVerifier
+	RefreshScores(ctx context.Context) error
+}
+
 // ProviderDiscovery handles automatic detection of LLM providers from environment variables
 type ProviderDiscovery struct {
-	providers       map[string]*DiscoveredProvider
-	scores          map[string]*ProviderScore
-	mu              sync.RWMutex
-	log             *logrus.Logger
-	verifyOnStartup bool
+	providers          map[string]*DiscoveredProvider
+	scores             map[string]*ProviderScore
+	mu                 sync.RWMutex
+	log                *logrus.Logger
+	verifyOnStartup    bool
+	verifierScores     LLMsVerifierScoreProvider // Dynamic LLMsVerifier score provider
+	useDynamicScoring  bool                       // Use LLMsVerifier scores instead of hardcoded
 }
 
 // DiscoveredProvider represents a provider discovered from environment
@@ -125,11 +137,39 @@ func NewProviderDiscovery(log *logrus.Logger, verifyOnStartup bool) *ProviderDis
 	}
 
 	return &ProviderDiscovery{
-		providers:       make(map[string]*DiscoveredProvider),
-		scores:          make(map[string]*ProviderScore),
-		log:             log,
-		verifyOnStartup: verifyOnStartup,
+		providers:         make(map[string]*DiscoveredProvider),
+		scores:            make(map[string]*ProviderScore),
+		log:               log,
+		verifyOnStartup:   verifyOnStartup,
+		useDynamicScoring: true, // Enable dynamic LLMsVerifier scoring by default
 	}
+}
+
+// NewProviderDiscoveryWithVerifier creates a provider discovery with LLMsVerifier integration
+func NewProviderDiscoveryWithVerifier(log *logrus.Logger, verifyOnStartup bool, verifierScores LLMsVerifierScoreProvider) *ProviderDiscovery {
+	pd := NewProviderDiscovery(log, verifyOnStartup)
+	pd.verifierScores = verifierScores
+	pd.useDynamicScoring = verifierScores != nil
+	return pd
+}
+
+// SetVerifierScoreProvider sets the LLMsVerifier score provider for dynamic scoring
+func (pd *ProviderDiscovery) SetVerifierScoreProvider(provider LLMsVerifierScoreProvider) {
+	pd.mu.Lock()
+	defer pd.mu.Unlock()
+	pd.verifierScores = provider
+	pd.useDynamicScoring = provider != nil
+
+	if provider != nil {
+		pd.log.Info("LLMsVerifier dynamic scoring enabled - provider selection will use real verification scores")
+	}
+}
+
+// EnableDynamicScoring enables or disables dynamic LLMsVerifier scoring
+func (pd *ProviderDiscovery) EnableDynamicScoring(enabled bool) {
+	pd.mu.Lock()
+	defer pd.mu.Unlock()
+	pd.useDynamicScoring = enabled && pd.verifierScores != nil
 }
 
 // DiscoverProviders scans environment variables and discovers available providers
@@ -376,9 +416,10 @@ func (pd *ProviderDiscovery) verifyProvider(ctx context.Context, provider *Disco
 }
 
 // calculateProviderScore calculates a quality score for a provider
+// DYNAMIC: Uses LLMsVerifier scores when available, falls back to hardcoded scores
 func (pd *ProviderDiscovery) calculateProviderScore(provider *DiscoveredProvider, responseTime time.Duration) float64 {
-	// Base score from provider priority/tier
-	baseScore := getBaseScoreForProvider(provider.Type)
+	// DYNAMIC SCORING: Try to get score from LLMsVerifier first
+	baseScore := pd.getDynamicBaseScore(provider)
 
 	// Response time bonus (faster is better, up to 2 points)
 	responseBonus := 0.0
@@ -414,6 +455,14 @@ func (pd *ProviderDiscovery) calculateProviderScore(provider *DiscoveredProvider
 		totalScore = 10.0
 	}
 
+	// Determine score source for logging
+	scoreSource := "static"
+	if pd.useDynamicScoring && pd.verifierScores != nil {
+		if _, found := pd.verifierScores.GetProviderScore(provider.Type); found {
+			scoreSource = "llmsverifier"
+		}
+	}
+
 	// Store detailed score
 	pd.mu.Lock()
 	pd.scores[provider.Name] = &ProviderScore{
@@ -427,7 +476,43 @@ func (pd *ProviderDiscovery) calculateProviderScore(provider *DiscoveredProvider
 	}
 	pd.mu.Unlock()
 
+	pd.log.WithFields(logrus.Fields{
+		"provider":     provider.Name,
+		"base_score":   baseScore,
+		"total_score":  totalScore,
+		"score_source": scoreSource,
+	}).Debug("Provider score calculated")
+
 	return totalScore
+}
+
+// getDynamicBaseScore gets base score from LLMsVerifier if available, otherwise uses hardcoded fallback
+func (pd *ProviderDiscovery) getDynamicBaseScore(provider *DiscoveredProvider) float64 {
+	// Try LLMsVerifier dynamic scores first
+	if pd.useDynamicScoring && pd.verifierScores != nil {
+		// Try to get score by model first (more specific)
+		if score, found := pd.verifierScores.GetModelScore(provider.DefaultModel); found {
+			pd.log.WithFields(logrus.Fields{
+				"provider": provider.Name,
+				"model":    provider.DefaultModel,
+				"score":    score,
+			}).Debug("Using LLMsVerifier model score")
+			return score
+		}
+
+		// Fall back to provider-level score
+		if score, found := pd.verifierScores.GetProviderScore(provider.Type); found {
+			pd.log.WithFields(logrus.Fields{
+				"provider": provider.Name,
+				"type":     provider.Type,
+				"score":    score,
+			}).Debug("Using LLMsVerifier provider score")
+			return score
+		}
+	}
+
+	// Fall back to static hardcoded scores
+	return getBaseScoreForProvider(provider.Type)
 }
 
 // getBaseScoreForProvider returns a base quality score for a provider type

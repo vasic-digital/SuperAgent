@@ -161,24 +161,27 @@ participants:
           turbo_mode: true
           multilingual: true
       
-      - name: "Ollama Fallback"
-        provider: "ollama"
-        model: "llama2"
+      # DEPRECATED: Ollama is replaced by Gemini (verified strongest LLM, Score: 8.5)
+      - name: "Gemini Fallback"
+        provider: "gemini"
+        model: "gemini-2.0-flash-exp"
         enabled: true
-        base_url: "http://localhost:11434"
+        api_key: "${GEMINI_API_KEY}"
         timeout: 20000  # 20 seconds in milliseconds
         max_retries: 2
         temperature: 0.3
         max_tokens: 1500
-        weight: 0.7
-        rate_limit_rps: 5
+        weight: 0.9
+        rate_limit_rps: 8
         request_timeout: 25000  # 25 seconds in milliseconds
         capabilities:
           - "general"
           - "conversation"
+          - "reasoning"
+          - "multimodal"
         custom_params:
-          local_processing: true
-          privacy_focused: true
+          flash_reasoning: true
+          multimodal: true
 
   # Creative thinking participant
   - name: "Creative Thinker"

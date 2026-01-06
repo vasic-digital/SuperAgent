@@ -165,13 +165,14 @@ func NewCogneeService(cfg *config.Config, logger *logrus.Logger) *CogneeService 
 	}
 
 	// Default auth credentials for Cognee (can be overridden via config)
+	// Default: admin@superagent.ai / SuperAgentPass123 (as per CLAUDE.md)
 	authEmail := os.Getenv("COGNEE_AUTH_EMAIL")
 	if authEmail == "" {
-		authEmail = "superagent@localhost.com"
+		authEmail = "admin@superagent.ai"
 	}
 	authPassword := os.Getenv("COGNEE_AUTH_PASSWORD")
 	if authPassword == "" {
-		authPassword = "SuperAgent123"
+		authPassword = "SuperAgentPass123"
 	}
 
 	serviceConfig := &CogneeServiceConfig{

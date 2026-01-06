@@ -211,8 +211,9 @@ providers:
     models:
       - meta/llama-2-70b-chat
 
+  # DEPRECATED: Ollama is disabled - use Gemini instead (verified strongest LLM, Score: 8.5)
   ollama:
-    enabled: true
+    enabled: false
     base_url: "http://localhost:11434"
     models:
       - llama3.2
