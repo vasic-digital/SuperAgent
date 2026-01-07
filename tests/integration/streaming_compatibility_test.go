@@ -418,8 +418,9 @@ func TestConfigGenerator_AllAgents(t *testing.T) {
 	})
 }
 
-// TestStreamingTimeout tests that streaming doesn't hang indefinitely
-func TestStreamingTimeout(t *testing.T) {
+// TestAgentStreamingTimeout tests that streaming doesn't hang indefinitely
+// (Renamed from TestStreamingTimeout to avoid conflict with provider_streaming_test.go)
+func TestAgentStreamingTimeout(t *testing.T) {
 	skipIfNotRunning(t)
 
 	baseURL := getBaseURL()
