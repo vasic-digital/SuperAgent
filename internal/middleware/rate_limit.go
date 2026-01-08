@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/helixagent/helixagent/internal/cache"
+	"dev.helix.agent/internal/cache"
 )
 
 // RateLimiter implements rate limiting with in-memory storage

@@ -29,7 +29,7 @@
 ### [0:45-1:45] INSTALLATION AND SETUP
 **Visual**: Terminal commands, file creation, configuration
 **Audio**:
-"Let's start by installing HelixAgent. Open your terminal and run 'go get github.com/helixagent/helixagent'. While that's downloading, let's create our project directory and main file."
+"Let's start by installing HelixAgent. Open your terminal and run 'go get dev.helix.agent'. While that's downloading, let's create our project directory and main file."
 
 [Show terminal commands]
 ```bash
@@ -77,8 +77,8 @@ import (
     "fmt"
     "log"
     
-    "github.com/helixagent/helixagent/pkg/api"
-    "github.com/helixagent/helixagent/pkg/config"
+    "dev.helix.agent/pkg/api"
+    "dev.helix.agent/pkg/config"
 )
 
 func main() {
@@ -183,7 +183,7 @@ fmt.Printf("Number of Rounds: %d\n", debateResponse.Rounds)
 **On-screen text**: 
 - "Get Started: https://helixagent.ai"
 - "Documentation: https://helixagent.ai/docs"
-- "GitHub: https://github.com/helixagent/helixagent"
+- "GitHub: https://dev.helix.agent"
 - "Don't forget to ⭐ on GitHub!"
 
 ## Technical Recording Notes
@@ -205,8 +205,8 @@ import (
     "fmt"
     "log"
     
-    "github.com/helixagent/helixagent/pkg/api"
-    "github.com/helixagent/helixagent/pkg/config"
+    "dev.helix.agent/pkg/api"
+    "dev.helix.agent/pkg/config"
 )
 
 func main() {

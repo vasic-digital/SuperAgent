@@ -5,7 +5,7 @@ A comprehensive Go SDK for the HelixAgent AI orchestration platform, providing i
 ## Installation
 
 ```bash
-go get github.com/helixagent/helixagent-go
+go get dev.helix.agent-go
 ```
 
 ## Quick Start
@@ -17,7 +17,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/helixagent/helixagent-go"
+    "dev.helix.agent-go"
 )
 
 func main() {
@@ -421,7 +421,7 @@ for name, status := range health.Providers {
 The SDK provides structured error handling:
 
 ```go
-import "github.com/helixagent/helixagent-go/errors"
+import "dev.helix.agent-go/errors"
 
 resp, err := client.Chat.Completions.Create(context.Background(), &helixagent.ChatCompletionRequest{
     Model: "invalid-model",

@@ -240,7 +240,7 @@ Create `codebase/go_files/my_challenge/main.go`:
 ```go
 package main
 
-import "github.com/helixagent/helixagent/challenges"
+import "dev.helix.agent/challenges"
 
 func main() {
     runner := challenges.NewRunner("my_challenge")

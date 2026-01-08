@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/helixagent/helixagent/internal/config"
+	"dev.helix.agent/internal/config"
 )
 
 // MemoryDB implements DB interface using in-memory storage

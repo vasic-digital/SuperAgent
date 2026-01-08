@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/helixagent/helixagent/internal/llm"
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/models"
 )
 
 // CogneeEnhancedProvider wraps any LLM provider with Cognee capabilities

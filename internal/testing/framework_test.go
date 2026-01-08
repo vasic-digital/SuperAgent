@@ -76,7 +76,7 @@ func TestParseCoverage(t *testing.T) {
 	// Test with coverage output
 	output := `PASS
 coverage: 76.7% of statements
-ok  	github.com/helixagent/helixagent/internal/utils	0.875s`
+ok  	dev.helix.agent/internal/utils	0.875s`
 
 	coverage := framework.parseCoverage(output)
 	if coverage != 76.7 {
@@ -85,7 +85,7 @@ ok  	github.com/helixagent/helixagent/internal/utils	0.875s`
 
 	// Test without coverage
 	output2 := `PASS
-ok  	github.com/helixagent/helixagent/internal/utils	0.875s`
+ok  	dev.helix.agent/internal/utils	0.875s`
 
 	coverage2 := framework.parseCoverage(output2)
 	if coverage2 != 0.0 {

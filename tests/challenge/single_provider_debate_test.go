@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/services"
 )
 
 // TestSingleProviderMultiInstanceDebate tests the core single-provider multi-instance functionality

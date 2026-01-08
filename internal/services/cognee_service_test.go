@@ -13,8 +13,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/config"
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/models"
 )
 
 // newTestLogger is defined in cache_factory_test.go

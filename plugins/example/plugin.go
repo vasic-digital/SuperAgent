@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/helixagent/helixagent/internal/models"
-	"github.com/helixagent/helixagent/internal/plugins"
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/plugins"
 )
 
 // Plugin is the exported plugin instance

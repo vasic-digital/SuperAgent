@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 const (

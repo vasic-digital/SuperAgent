@@ -93,7 +93,7 @@ buffer := streaming.NewBufferWithTokenThreshold(streaming.BufferTypeToken, 5)
 ### EnhancedStreamer
 
 ```go
-import "github.com/helixagent/helixagent/internal/optimization/streaming"
+import "dev.helix.agent/internal/optimization/streaming"
 
 config := &streaming.StreamConfig{
     BufferType:       streaming.BufferTypeWord,

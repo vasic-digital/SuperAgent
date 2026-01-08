@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 // TestContext provides a common context for testing

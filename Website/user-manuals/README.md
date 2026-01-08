@@ -56,4 +56,4 @@ Welcome to the HelixAgent user manual collection. These guides will help you get
 
 ## Support
 
-For additional help, visit our [community forums](https://github.com/helixagent/helixagent/discussions) or contact [support@helixagent.ai](mailto:support@helixagent.ai).
+For additional help, visit our [community forums](https://dev.helix.agent/discussions) or contact [support@helixagent.ai](mailto:support@helixagent.ai).

@@ -139,7 +139,7 @@ This document provides a comprehensive, nano-level integration plan for incorpor
 **File**: `go.mod` (update)
 
 ```go
-module github.com/helixagent/helixagent
+module dev.helix.agent
 
 go 1.23
 
@@ -218,7 +218,7 @@ package verifier
 
 import (
     "llm-verifier/database"
-    pgdb "github.com/helixagent/helixagent/internal/database"
+    pgdb "dev.helix.agent/internal/database"
 )
 
 // DatabaseBridge bridges LLMsVerifier SQLite and HelixAgent PostgreSQL
@@ -702,7 +702,7 @@ package adapters
 import (
     "context"
 
-    "github.com/helixagent/helixagent/internal/llm"
+    "dev.helix.agent/internal/llm"
     verifierProviders "llm-verifier/providers"
 )
 
@@ -785,8 +785,8 @@ import (
     "context"
     "sync"
 
-    "github.com/helixagent/helixagent/internal/llm"
-    "github.com/helixagent/helixagent/internal/verifier/adapters"
+    "dev.helix.agent/internal/llm"
+    "dev.helix.agent/internal/verifier/adapters"
 )
 
 // ExtendedProviderRegistry manages all providers including LLMsVerifier providers
@@ -1215,7 +1215,7 @@ import (
     "net/http"
 
     "github.com/gin-gonic/gin"
-    "github.com/helixagent/helixagent/internal/verifier"
+    "dev.helix.agent/internal/verifier"
 )
 
 // VerificationHandler handles verification API endpoints
@@ -1533,7 +1533,7 @@ import (
     "strconv"
 
     "github.com/gin-gonic/gin"
-    "github.com/helixagent/helixagent/internal/verifier"
+    "dev.helix.agent/internal/verifier"
 )
 
 // ScoringHandler handles scoring API endpoints
@@ -1732,7 +1732,7 @@ package llm
 import (
     "context"
 
-    "github.com/helixagent/helixagent/internal/verifier"
+    "dev.helix.agent/internal/verifier"
 )
 
 // EnsembleWithFailover enhances ensemble with health-aware routing

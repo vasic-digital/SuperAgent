@@ -206,7 +206,7 @@ First, clone the repository. Then, we'll copy the environment example file and c
 
 ```bash
 # Clone the HelixAgent repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 ```
 
@@ -281,7 +281,7 @@ Narration: "We can verify the installation by calling the health endpoint. A suc
 DOCKER INSTALLATION STEPS
 
 1. Clone Repository
-   git clone https://github.com/helixagent/helixagent.git
+   git clone https://dev.helix.agent.git
 
 2. Configure Environment
    cp .env.example .env
@@ -1054,7 +1054,7 @@ Next Steps:
 
 Resources:
 - Documentation: docs.helixagent.ai
-- GitHub: github.com/helixagent/helixagent
+- GitHub: dev.helix.agent
 - Support: support@helixagent.ai
 ```
 

@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/helixagent/helixagent/internal/optimization/langchain"
-	"github.com/helixagent/helixagent/internal/optimization/llamaindex"
-	"github.com/helixagent/helixagent/internal/optimization/outlines"
-	"github.com/helixagent/helixagent/internal/optimization/streaming"
+	"dev.helix.agent/internal/optimization/langchain"
+	"dev.helix.agent/internal/optimization/llamaindex"
+	"dev.helix.agent/internal/optimization/outlines"
+	"dev.helix.agent/internal/optimization/streaming"
 )
 
 // PipelineStage represents a stage in the optimization pipeline.

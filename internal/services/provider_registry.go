@@ -10,14 +10,14 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/helixagent/helixagent/internal/config"
-	"github.com/helixagent/helixagent/internal/llm"
-	"github.com/helixagent/helixagent/internal/llm/providers/claude"
-	"github.com/helixagent/helixagent/internal/llm/providers/deepseek"
-	"github.com/helixagent/helixagent/internal/llm/providers/gemini"
-	"github.com/helixagent/helixagent/internal/llm/providers/openrouter"
-	"github.com/helixagent/helixagent/internal/llm/providers/qwen"
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/deepseek"
+	"dev.helix.agent/internal/llm/providers/gemini"
+	"dev.helix.agent/internal/llm/providers/openrouter"
+	"dev.helix.agent/internal/llm/providers/qwen"
+	"dev.helix.agent/internal/models"
 )
 
 // ProviderRegistry manages LLM provider registration and configuration

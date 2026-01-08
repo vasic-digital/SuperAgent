@@ -10,8 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/config"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/services"
 )
 
 // TestAIDebateSystem_E2E tests the complete AI debate system end-to-end

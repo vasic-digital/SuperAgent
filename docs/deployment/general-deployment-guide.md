@@ -13,7 +13,7 @@ Complete deployment instructions for HelixAgent across various platforms and env
 
 ```bash
 # Clone repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Copy environment template
@@ -385,7 +385,7 @@ sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker
 sudo chmod +x /usr/local/bin/docker-compose
 
 # Clone repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Configure environment
@@ -408,7 +408,7 @@ sudo systemctl start helixagent
 sudo dnf install -y podman podman-compose
 
 # Clone and configure
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Use Podman instead of Docker
@@ -758,8 +758,8 @@ docker-compose up -d --scale helixagent=1
 - [Troubleshooting Guide](./troubleshooting.md)
 
 ### Community Support
-- [GitHub Issues](https://github.com/helixagent/helixagent/issues)
-- [Discussions](https://github.com/helixagent/helixagent/discussions)
+- [GitHub Issues](https://dev.helix.agent/issues)
+- [Discussions](https://dev.helix.agent/discussions)
 
 ### Enterprise Support
 - Email: enterprise@helixagent.ai

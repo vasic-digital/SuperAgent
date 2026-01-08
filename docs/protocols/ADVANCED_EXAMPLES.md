@@ -23,7 +23,7 @@ package main
 
 import (
     "context"
-    "github.com/helixagent/helixagent/internal/services"
+    "dev.helix.agent/internal/services"
     "github.com/sirupsen/logrus"
 )
 
@@ -373,7 +373,7 @@ package main
 
 import (
     "context"
-    "github.com/helixagent/helixagent/internal/services"
+    "dev.helix.agent/internal/services"
     "github.com/sirupsen/logrus"
 )
 
@@ -811,7 +811,7 @@ package main
 
 import (
     "context"
-    "github.com/helixagent/helixagent/internal/services"
+    "dev.helix.agent/internal/services"
     "github.com/sirupsen/logrus"
 )
 
@@ -1281,4 +1281,4 @@ This document provided 30+ advanced examples across the three protocols supporte
 
 - **ACP Examples**: Server registration and discovery, action execution, real-time WebSocket communication, server synchronization, batch requests, error handling with retry, statistics and monitoring, test generation, code refactoring, and multi-agent coordination.
 
-For more information, see the [HelixAgent documentation](https://github.com/helixagent/helixagent).
+For more information, see the [HelixAgent documentation](https://dev.helix.agent).

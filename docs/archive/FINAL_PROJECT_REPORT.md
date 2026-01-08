@@ -113,7 +113,7 @@ HelixAgent has been successfully transformed from a broken codebase with failing
 
 ### **Quick Start (5 minutes)**
 ```bash
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 cp .env.example .env
 # Configure API keys

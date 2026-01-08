@@ -906,7 +906,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
 
-    "github.com/helixagent/helixagent/internal/mypackage"
+    "dev.helix.agent/internal/mypackage"
 )
 
 func TestMyFunction(t *testing.T) {

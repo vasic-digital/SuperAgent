@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/helixagent/helixagent/internal/config"
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/models"
 )
 
 // CogneeService provides comprehensive Cognee integration for LLM enhancement

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 // RequestService handles LLM request routing and load balancing

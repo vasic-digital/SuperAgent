@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/helixagent/helixagent/internal/config"
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/models"
 )
 
 // CacheService provides comprehensive caching functionality

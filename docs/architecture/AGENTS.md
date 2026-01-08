@@ -59,9 +59,9 @@ import (
     "github.com/sirupsen/logrus"
 
     // 3. Internal packages
-    "github.com/helixagent/helixagent/internal/models"
-    "github.com/helixagent/helixagent/internal/services"
-    "github.com/helixagent/helixagent/internal/modelsdev"
+    "dev.helix.agent/internal/models"
+    "dev.helix.agent/internal/services"
+    "dev.helix.agent/internal/modelsdev"
 )
 ```
 
@@ -197,7 +197,7 @@ func (h *Handler) Handle(c *gin.Context) {
 
 #### Client Usage
 ```go
-import "github.com/helixagent/helixagent/internal/modelsdev"
+import "dev.helix.agent/internal/modelsdev"
 
 // Create client with configuration
 client := modelsdev.NewClient(&modelsdev.ClientConfig{
@@ -223,7 +223,7 @@ results, err := client.SearchModels(ctx, "code", nil)
 
 #### Service Layer Integration
 ```go
-import "github.com/helixagent/helixagent/internal/services"
+import "dev.helix.agent/internal/services"
 
 // Initialize model metadata service
 modelMetadataService := services.NewModelMetadataService(
@@ -255,7 +255,7 @@ visionModels, err := modelMetadataService.GetModelsByCapability(ctx, "vision")
 
 #### Database Repository Pattern
 ```go
-import "github.com/helixagent/helixagent/internal/database"
+import "dev.helix.agent/internal/database"
 
 // Repository interface for testability
 type ModelMetadataRepository interface {
@@ -291,7 +291,7 @@ if size > maxCacheSize {
 
 ### API Handler Pattern
 ```go
-import "github.com/helixagent/helixagent/internal/handlers"
+import "dev.helix.agent/internal/handlers"
 
 type ModelMetadataHandler struct {
     service *services.ModelMetadataService

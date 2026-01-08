@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/helixagent/helixagent/internal/llm/providers/qwen"
-	"github.com/helixagent/helixagent/internal/models"
-	"github.com/helixagent/helixagent/tests/testutils"
+	"dev.helix.agent/internal/llm/providers/qwen"
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/tests/testutils"
 )
 
 func TestNewQwenProvider(t *testing.T) {

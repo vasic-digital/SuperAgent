@@ -1545,7 +1545,7 @@ spec:
 kubectl get deployment helixagent -o jsonpath='{.spec.template.spec.containers[0].image}'
 
 # 2. Review release notes
-# https://github.com/helixagent/helixagent/releases
+# https://dev.helix.agent/releases
 
 # 3. Update to new version
 kubectl set image deployment/helixagent \

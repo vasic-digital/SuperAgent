@@ -168,7 +168,7 @@ Subscribe for:
 
 Whether you're building startup prototypes or enterprise AI systems, learn how to orchestrate multiple AI providers effectively.
 
-🔗 GitHub: https://github.com/helixagent/helixagent
+🔗 GitHub: https://dev.helix.agent
 🌐 Website: https://helixagent.ai
 📧 Contact: hello@helixagent.ai
 ```

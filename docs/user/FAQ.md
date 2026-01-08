@@ -344,7 +344,7 @@ rate_limit:
 ### Which SDKs are available?
 
 - Python: `pip install helixagent-py`
-- Go: `go get github.com/helixagent/helixagent-go`
+- Go: `go get dev.helix.agent-go`
 - JavaScript: `npm install helixagent-js`
 - iOS: Swift Package Manager
 - Android: Maven/Gradle
@@ -430,7 +430,7 @@ curl -X POST ... -d '{"messages":[{"role":"user","content":"Hello"}]}'
 
 ### How do I report a bug?
 
-1. Check existing issues: https://github.com/helixagent/helixagent/issues
+1. Check existing issues: https://dev.helix.agent/issues
 2. Enable debug logging
 3. Collect: error message, logs, steps to reproduce
 4. Open issue with template
@@ -465,7 +465,7 @@ Check https://helixagent.ai for managed hosting options with:
 ### Where can I get support?
 
 - Documentation: https://helixagent.ai/docs
-- GitHub Issues: https://github.com/helixagent/helixagent/issues
+- GitHub Issues: https://dev.helix.agent/issues
 - Discord: https://discord.gg/helixagent
 - Email: support@helixagent.ai
 

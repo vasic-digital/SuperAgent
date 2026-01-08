@@ -3,7 +3,7 @@ package testutils
 import (
 	"time"
 
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 // Test fixtures for common test data

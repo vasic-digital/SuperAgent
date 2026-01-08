@@ -318,7 +318,7 @@ These implementations have placeholder logic that doesn't provide real functiona
 
 | Package | Coverage | Gap to 100% |
 |---------|----------|-------------|
-| `github.com/helixagent/helixagent` (root) | 0.0% | 100% |
+| `dev.helix.agent` (root) | 0.0% | 100% |
 | `cmd/helixagent` | 28.8% | 71.2% |
 | `cmd/grpc-server` | 23.8% | 76.2% |
 | `internal/database` | 28.1% | 71.9% |

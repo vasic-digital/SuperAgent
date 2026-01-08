@@ -17,7 +17,7 @@ This guide will help you get HelixAgent running and making your first AI-powered
 ### Step 1: Clone and Setup
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Create environment file

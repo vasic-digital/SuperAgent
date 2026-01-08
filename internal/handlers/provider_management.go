@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"github.com/helixagent/helixagent/internal/models"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/services"
 )
 
 // ProviderManagementHandler handles provider CRUD operations

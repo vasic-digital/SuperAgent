@@ -40,10 +40,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/helixagent/helixagent"
-Documentation = "https://github.com/helixagent/helixagent/tree/main/docs/sdk"
-Repository = "https://github.com/helixagent/helixagent"
-Issues = "https://github.com/helixagent/helixagent/issues"
+Homepage = "https://dev.helix.agent"
+Documentation = "https://dev.helix.agent/tree/main/docs/sdk"
+Repository = "https://dev.helix.agent"
+Issues = "https://dev.helix.agent/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

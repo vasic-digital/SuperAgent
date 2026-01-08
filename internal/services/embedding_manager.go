@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/helixagent/helixagent/internal/database"
+	"dev.helix.agent/internal/database"
 )
 
 // EmbeddingManager handles embedding generation and vector database operations

@@ -997,7 +997,7 @@ package main
 import (
     "context"
     "fmt"
-    "github.com/helixagent/helixagent-go"
+    "dev.helix.agent-go"
 )
 
 func main() {
@@ -1295,4 +1295,4 @@ func main() {
 
 ---
 
-For more detailed information, see the [HelixAgent GitHub repository](https://github.com/helixagent/helixagent).
+For more detailed information, see the [HelixAgent GitHub repository](https://dev.helix.agent).

@@ -579,7 +579,7 @@ Configure webhooks to receive real-time updates:
 
 ### Official SDKs
 
-- **Go**: `github.com/helixagent/helixagent-go`
+- **Go**: `dev.helix.agent-go`
 - **Python**: `pip install helixagent-ai`
 - **JavaScript**: `npm install helixagent-ai`
 - **TypeScript**: `npm install @helixagent/ai`

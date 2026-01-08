@@ -35,7 +35,7 @@ This guide provides comprehensive instructions for deploying HelixAgent in produ
 
 #### 1. Clone Repository
 ```bash
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 ```
 
@@ -157,7 +157,7 @@ docker-compose logs -f helixagent
 #### 1. Build Binary
 ```bash
 # Clone and build
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Build for production

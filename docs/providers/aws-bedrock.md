@@ -125,7 +125,7 @@ import (
     "os"
 
     "github.com/sirupsen/logrus"
-    "github.com/helixagent/helixagent/internal/cloud"
+    "dev.helix.agent/internal/cloud"
 )
 
 func main() {

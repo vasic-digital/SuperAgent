@@ -10,8 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/optimization"
-	"github.com/helixagent/helixagent/tests/mocks"
+	"dev.helix.agent/internal/optimization"
+	"dev.helix.agent/tests/mocks"
 )
 
 func TestOptimization_Chaos_RandomServiceFailures(t *testing.T) {

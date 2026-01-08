@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/helixagent/helixagent/internal/config"
-	"github.com/helixagent/helixagent/internal/models"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/services"
 )
 
 // UnifiedHandler provides 100% OpenAI-compatible API with automatic ensemble support

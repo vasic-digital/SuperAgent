@@ -779,8 +779,8 @@ package main
 
 import (
     "context"
-    "github.com/helixagent/helixagent/internal/services"
-    "github.com/helixagent/helixagent/internal/llm/providers/claude"
+    "dev.helix.agent/internal/services"
+    "dev.helix.agent/internal/llm/providers/claude"
     "github.com/sirupsen/logrus"
 )
 

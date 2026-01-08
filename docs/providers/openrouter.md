@@ -93,8 +93,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/helixagent/helixagent/internal/llm/providers/openrouter"
-    "github.com/helixagent/helixagent/internal/models"
+    "dev.helix.agent/internal/llm/providers/openrouter"
+    "dev.helix.agent/internal/models"
 )
 
 func main() {

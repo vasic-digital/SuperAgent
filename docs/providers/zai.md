@@ -71,8 +71,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/helixagent/helixagent/internal/llm/providers/zai"
-    "github.com/helixagent/helixagent/internal/models"
+    "dev.helix.agent/internal/llm/providers/zai"
+    "dev.helix.agent/internal/models"
 )
 
 func main() {

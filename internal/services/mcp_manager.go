@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	"github.com/helixagent/helixagent/internal/database"
+	"dev.helix.agent/internal/database"
 )
 
 // MCPTool represents an MCP tool

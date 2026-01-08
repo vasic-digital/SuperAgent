@@ -1,4 +1,4 @@
-module github.com/helixagent/helixagent
+module dev.helix.agent
 
 go 1.24.0
 
@@ -7,11 +7,11 @@ toolchain go1.24.11
 require github.com/gin-gonic/gin v1.11.0
 
 require (
+	dev.helix.agent/pkg/api v0.0.0-00010101000000-000000000000
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/helixagent/helixagent/pkg/api v0.0.0-00010101000000-000000000000
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.23.2
@@ -25,7 +25,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-replace github.com/helixagent/helixagent/pkg/api => ./pkg/api
+replace dev.helix.agent/pkg/api => ./pkg/api
 
 replace llm-verifier => ./LLMsVerifier/llm-verifier
 

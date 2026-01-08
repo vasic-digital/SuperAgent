@@ -40,7 +40,7 @@ package plugins
 
 import (
     "context"
-    "github.com/helixagent/helixagent/internal/models"
+    "dev.helix.agent/internal/models"
 )
 
 // LLMPlugin defines the interface for LLM provider plugins
@@ -208,8 +208,8 @@ import (
     "fmt"
     "time"
 
-    "github.com/helixagent/helixagent/internal/models"
-    "github.com/helixagent/helixagent/internal/plugins"
+    "dev.helix.agent/internal/models"
+    "dev.helix.agent/internal/plugins"
 )
 
 // Plugin is the exported plugin instance - REQUIRED
@@ -550,7 +550,7 @@ import (
 
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
-    "github.com/helixagent/helixagent/internal/models"
+    "dev.helix.agent/internal/models"
 )
 
 func TestPluginInit(t *testing.T) {
@@ -828,4 +828,4 @@ err := loader.UnloadPlugin("myprovider")
 
 ---
 
-For additional support, see the [HelixAgent GitHub repository](https://github.com/helixagent/helixagent) or join our community Discord.
+For additional support, see the [HelixAgent GitHub repository](https://dev.helix.agent) or join our community Discord.

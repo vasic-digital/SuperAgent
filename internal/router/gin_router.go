@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/helixagent/helixagent/internal/config"
+	"dev.helix.agent/internal/config"
 )
 
 // GinRouter provides a wrapper around the Gin router with lifecycle management

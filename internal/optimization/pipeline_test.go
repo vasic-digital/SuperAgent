@@ -10,8 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/optimization/outlines"
-	"github.com/helixagent/helixagent/internal/optimization/streaming"
+	"dev.helix.agent/internal/optimization/outlines"
+	"dev.helix.agent/internal/optimization/streaming"
 )
 
 func TestDefaultPipelineConfig(t *testing.T) {

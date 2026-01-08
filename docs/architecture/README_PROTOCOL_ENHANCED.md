@@ -4,7 +4,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=flat-square&logo=docker)](https://www.docker.com)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-326CE5?style=flat-square&logo=kubernetes)](https://kubernetes.io)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen?style=flat-square)](https://github.com/helixagent/helixagent/actions/workflows/tests)
+[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen?style=flat-square)](https://dev.helix.agent/actions/workflows/tests)
 [![MCP](https://img.shields.io/badge/MCP-Supported-FF6B35?style=flat-square)](https://modelcontextprotocol.io)
 [![LSP](https://img.shields.io/badge/LSP-Supported-007ACC?style=flat-square)](https://microsoft.github.io/language-server-protocol)
 
@@ -32,7 +32,7 @@ HelixAgent uniquely supports **four major AI protocols** through a unified API:
 ### Using Docker (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Start with full protocol support

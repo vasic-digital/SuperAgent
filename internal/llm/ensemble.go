@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 // EnsembleConfig holds configuration for ensemble execution

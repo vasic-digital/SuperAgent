@@ -1,3 +1,3 @@
-module github.com/helixagent/helixagent/pkg/api
+module dev.helix.agent/pkg/api
 
 go 1.23

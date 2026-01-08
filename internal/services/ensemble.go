@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 // EnsembleService manages multiple LLM providers and implements voting strategies

@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/helixagent/helixagent/internal/llm/providers/claude"
-	"github.com/helixagent/helixagent/internal/models"
-	"github.com/helixagent/helixagent/tests/testutils"
+	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/tests/testutils"
 )
 
 func TestClaudeProvider_Basic(t *testing.T) {

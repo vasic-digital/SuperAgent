@@ -7,7 +7,7 @@ This guide covers deploying HelixAgent in various environments.
 ### Docker Deployment (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Configure environment

@@ -73,7 +73,7 @@ Docker Compose provides the simplest and most reliable way to deploy HelixAgent 
 
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 ```
 
@@ -171,7 +171,7 @@ go version
 
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Download dependencies
@@ -755,8 +755,8 @@ docker-compose logs helixagent | grep -i error
 ### Getting Help
 
 - **Documentation**: Check the `/docs` directory for detailed guides
-- **Issues**: Report bugs at [GitHub Issues](https://github.com/helixagent/helixagent/issues)
-- **Community**: Join discussions at [GitHub Discussions](https://github.com/helixagent/helixagent/discussions)
+- **Issues**: Report bugs at [GitHub Issues](https://dev.helix.agent/issues)
+- **Community**: Join discussions at [GitHub Discussions](https://dev.helix.agent/discussions)
 - **Support**: Contact support@helixagent.ai for enterprise support
 
 ---

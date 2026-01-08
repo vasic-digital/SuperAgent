@@ -228,4 +228,4 @@ Final Response → User
 
 ---
 
-For implementation details, see the [HelixAgent source code](https://github.com/helixagent/helixagent).
+For implementation details, see the [HelixAgent source code](https://dev.helix.agent).

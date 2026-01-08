@@ -31,7 +31,7 @@ echo "🚀 HelixAgent Demo - Multi-Provider AI Orchestration"
 echo "==================================================="
 
 echo "1. Installing HelixAgent..."
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 make build
 
