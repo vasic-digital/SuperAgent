@@ -74,15 +74,16 @@ func GetQwenCredentialsPath() string {
 }
 
 // ReadClaudeCredentials reads and returns Claude OAuth credentials from the CLI config
+// It automatically refreshes the token if it's about to expire
 func (r *OAuthCredentialReader) ReadClaudeCredentials() (*ClaudeOAuthCredentials, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	// Check cache validity
 	if r.claudeCredentials != nil && time.Since(r.claudeLastRead) < r.cacheDuration {
-		// Verify token is not expired
+		// Verify token is not expired and doesn't need refresh
 		if r.claudeCredentials.ClaudeAiOauth != nil &&
-			r.claudeCredentials.ClaudeAiOauth.ExpiresAt > time.Now().UnixMilli() {
+			!NeedsRefresh(r.claudeCredentials.ClaudeAiOauth.ExpiresAt) {
 			return r.claudeCredentials, nil
 		}
 	}
@@ -114,8 +115,23 @@ func (r *OAuthCredentialReader) ReadClaudeCredentials() (*ClaudeOAuthCredentials
 		return nil, fmt.Errorf("empty access token in Claude Code credentials")
 	}
 
-	// Check expiration
-	if creds.ClaudeAiOauth.ExpiresAt > 0 && creds.ClaudeAiOauth.ExpiresAt <= time.Now().UnixMilli() {
+	// Auto-refresh if token is expiring soon or expired
+	if NeedsRefresh(creds.ClaudeAiOauth.ExpiresAt) {
+		refreshedCreds, err := AutoRefreshClaudeToken(&creds)
+		if err != nil {
+			// If refresh failed and token is already expired, return error
+			if IsExpired(creds.ClaudeAiOauth.ExpiresAt) {
+				return nil, fmt.Errorf("Claude OAuth token has expired and refresh failed: %w", err)
+			}
+			// Token not expired yet, log warning and continue with existing token
+			fmt.Fprintf(os.Stderr, "Warning: Claude token refresh failed (token still valid): %v\n", err)
+		} else {
+			creds = *refreshedCreds
+		}
+	}
+
+	// Final expiration check
+	if IsExpired(creds.ClaudeAiOauth.ExpiresAt) {
 		return nil, fmt.Errorf("Claude OAuth token has expired (expired at %s)", time.UnixMilli(creds.ClaudeAiOauth.ExpiresAt).Format(time.RFC3339))
 	}
 
@@ -127,14 +143,15 @@ func (r *OAuthCredentialReader) ReadClaudeCredentials() (*ClaudeOAuthCredentials
 }
 
 // ReadQwenCredentials reads and returns Qwen OAuth credentials from the CLI config
+// It automatically refreshes the token if it's about to expire
 func (r *OAuthCredentialReader) ReadQwenCredentials() (*QwenOAuthCredentials, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	// Check cache validity
 	if r.qwenCredentials != nil && time.Since(r.qwenLastRead) < r.cacheDuration {
-		// Verify token is not expired
-		if r.qwenCredentials.ExpiryDate > time.Now().UnixMilli() {
+		// Verify token is not expired and doesn't need refresh
+		if !NeedsRefresh(r.qwenCredentials.ExpiryDate) {
 			return r.qwenCredentials, nil
 		}
 	}
@@ -162,8 +179,23 @@ func (r *OAuthCredentialReader) ReadQwenCredentials() (*QwenOAuthCredentials, er
 		return nil, fmt.Errorf("empty access token in Qwen Code credentials")
 	}
 
-	// Check expiration
-	if creds.ExpiryDate > 0 && creds.ExpiryDate <= time.Now().UnixMilli() {
+	// Auto-refresh if token is expiring soon or expired
+	if NeedsRefresh(creds.ExpiryDate) {
+		refreshedCreds, err := AutoRefreshQwenToken(&creds)
+		if err != nil {
+			// If refresh failed and token is already expired, return error
+			if IsExpired(creds.ExpiryDate) {
+				return nil, fmt.Errorf("Qwen OAuth token has expired and refresh failed: %w", err)
+			}
+			// Token not expired yet, log warning and continue with existing token
+			fmt.Fprintf(os.Stderr, "Warning: Qwen token refresh failed (token still valid): %v\n", err)
+		} else {
+			creds = *refreshedCreds
+		}
+	}
+
+	// Final expiration check
+	if IsExpired(creds.ExpiryDate) {
 		return nil, fmt.Errorf("Qwen OAuth token has expired (expired at %s)", time.UnixMilli(creds.ExpiryDate).Format(time.RFC3339))
 	}
 
