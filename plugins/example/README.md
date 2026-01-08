@@ -1,6 +1,6 @@
 # Example LLM Provider Plugin
 
-This is a template for creating LLM provider plugins for SuperAgent.
+This is a template for creating LLM provider plugins for HelixAgent.
 
 ## Building the Plugin
 

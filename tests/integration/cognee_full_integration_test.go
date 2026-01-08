@@ -21,7 +21,7 @@ import (
 
 const (
 	cogneeBaseURL      = "http://localhost:8000"
-	superagentBaseURL  = "http://localhost:8080"
+	helixagentBaseURL  = "http://localhost:8080"
 	cogneeStartTimeout = 60 * time.Second
 )
 
@@ -32,7 +32,7 @@ func TestCogneeInfrastructure(t *testing.T) {
 	}
 
 	t.Run("ContainersRunning", func(t *testing.T) {
-		containers := []string{"superagent-cognee", "superagent-chromadb", "superagent-postgres", "superagent-redis"}
+		containers := []string{"helixagent-cognee", "helixagent-chromadb", "helixagent-postgres", "helixagent-redis"}
 
 		for _, container := range containers {
 			cmd := exec.Command("podman", "ps", "--filter", fmt.Sprintf("name=%s", container), "--format", "{{.Status}}")
@@ -99,24 +99,24 @@ func TestCogneeHealthEndpoint(t *testing.T) {
 		}
 	})
 
-	t.Run("SuperAgentCogneeHealth", func(t *testing.T) {
-		apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	t.Run("HelixAgentCogneeHealth", func(t *testing.T) {
+		apiKey := os.Getenv("HELIXAGENT_API_KEY")
 		if apiKey == "" {
 			apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 		}
 
-		req, _ := http.NewRequest("GET", superagentBaseURL+"/v1/cognee/health", nil)
+		req, _ := http.NewRequest("GET", helixagentBaseURL+"/v1/cognee/health", nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Logf("SuperAgent Cognee health check failed: %v", err)
-			t.Skip("SuperAgent not accessible")
+			t.Logf("HelixAgent Cognee health check failed: %v", err)
+			t.Skip("HelixAgent not accessible")
 		}
 		defer resp.Body.Close()
 
 		body, _ := io.ReadAll(resp.Body)
-		t.Logf("SuperAgent Cognee health response: %s", string(body))
+		t.Logf("HelixAgent Cognee health response: %s", string(body))
 
 		var healthResp map[string]interface{}
 		if json.Unmarshal(body, &healthResp) == nil {
@@ -139,7 +139,7 @@ func TestCogneeFeatureConfiguration(t *testing.T) {
 		t.Skip("Skipping feature configuration test in short mode")
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
@@ -147,12 +147,12 @@ func TestCogneeFeatureConfiguration(t *testing.T) {
 	client := &http.Client{Timeout: 30 * time.Second}
 
 	t.Run("AllFeaturesEnabled", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", superagentBaseURL+"/v1/cognee/config", nil)
+		req, _ := http.NewRequest("GET", helixagentBaseURL+"/v1/cognee/config", nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Skip("SuperAgent not accessible")
+			t.Skip("HelixAgent not accessible")
 		}
 		defer resp.Body.Close()
 
@@ -192,7 +192,7 @@ func TestCogneeFeatureConfiguration(t *testing.T) {
 		}
 
 		for _, ep := range endpoints {
-			req, _ := http.NewRequest(ep.method, superagentBaseURL+ep.path, nil)
+			req, _ := http.NewRequest(ep.method, helixagentBaseURL+ep.path, nil)
 			req.Header.Set("Authorization", "Bearer "+apiKey)
 
 			resp, err := client.Do(req)
@@ -213,7 +213,7 @@ func TestCogneeMemoryOperations(t *testing.T) {
 		t.Skip("Skipping memory operations test in short mode")
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
@@ -234,7 +234,7 @@ func TestCogneeMemoryOperations(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", superagentBaseURL+"/v1/cognee/memory", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/memory", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -265,7 +265,7 @@ func TestCogneeMemoryOperations(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", superagentBaseURL+"/v1/cognee/search", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/search", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -294,7 +294,7 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 		t.Skip("Skipping knowledge graph test in short mode")
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
@@ -307,7 +307,7 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", superagentBaseURL+"/v1/cognee/cognify", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/cognify", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -329,7 +329,7 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", superagentBaseURL+"/v1/cognee/graph/complete", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/graph/complete", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -351,7 +351,7 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", superagentBaseURL+"/v1/cognee/insights", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/insights", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -373,7 +373,7 @@ func TestCogneeCodeIntelligence(t *testing.T) {
 		t.Skip("Skipping code intelligence test in short mode")
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
@@ -397,7 +397,7 @@ func main() {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", superagentBaseURL+"/v1/cognee/code", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/code", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -432,7 +432,7 @@ func TestCogneeDatasetManagement(t *testing.T) {
 		t.Skip("Skipping dataset management test in short mode")
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
@@ -447,7 +447,7 @@ func TestCogneeDatasetManagement(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", superagentBaseURL+"/v1/cognee/datasets", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/datasets", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -463,7 +463,7 @@ func TestCogneeDatasetManagement(t *testing.T) {
 	})
 
 	t.Run("ListDatasets", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", superagentBaseURL+"/v1/cognee/datasets", nil)
+		req, _ := http.NewRequest("GET", helixagentBaseURL+"/v1/cognee/datasets", nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
@@ -478,7 +478,7 @@ func TestCogneeDatasetManagement(t *testing.T) {
 	})
 
 	t.Run("DeleteDataset", func(t *testing.T) {
-		req, _ := http.NewRequest("DELETE", superagentBaseURL+"/v1/cognee/datasets/"+testDatasetName, nil)
+		req, _ := http.NewRequest("DELETE", helixagentBaseURL+"/v1/cognee/datasets/"+testDatasetName, nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
@@ -499,7 +499,7 @@ func TestCogneeFeedback(t *testing.T) {
 		t.Skip("Skipping feedback test in short mode")
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
@@ -515,7 +515,7 @@ func TestCogneeFeedback(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", superagentBaseURL+"/v1/cognee/feedback", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/feedback", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -537,7 +537,7 @@ func TestCogneeGracefulDegradation(t *testing.T) {
 		t.Skip("Skipping graceful degradation test in short mode")
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
@@ -545,28 +545,28 @@ func TestCogneeGracefulDegradation(t *testing.T) {
 	client := &http.Client{Timeout: 30 * time.Second}
 
 	t.Run("SystemHealthWithoutCognee", func(t *testing.T) {
-		// Test that SuperAgent main health endpoint works even if Cognee is degraded
-		req, _ := http.NewRequest("GET", superagentBaseURL+"/health", nil)
+		// Test that HelixAgent main health endpoint works even if Cognee is degraded
+		req, _ := http.NewRequest("GET", helixagentBaseURL+"/health", nil)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Skip("SuperAgent not accessible")
+			t.Skip("HelixAgent not accessible")
 		}
 		defer resp.Body.Close()
 
 		body, _ := io.ReadAll(resp.Body)
-		t.Logf("SuperAgent health: %s", string(body))
+		t.Logf("HelixAgent health: %s", string(body))
 
-		assert.Equal(t, 200, resp.StatusCode, "SuperAgent should be healthy even with Cognee issues")
+		assert.Equal(t, 200, resp.StatusCode, "HelixAgent should be healthy even with Cognee issues")
 	})
 
 	t.Run("CogneeStatsWithDegradedState", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", superagentBaseURL+"/v1/cognee/stats", nil)
+		req, _ := http.NewRequest("GET", helixagentBaseURL+"/v1/cognee/stats", nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Skip("SuperAgent not accessible")
+			t.Skip("HelixAgent not accessible")
 		}
 		defer resp.Body.Close()
 
@@ -585,7 +585,7 @@ func TestCogneeLLMIntegration(t *testing.T) {
 		t.Skip("Skipping LLM integration test in short mode")
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
@@ -595,13 +595,13 @@ func TestCogneeLLMIntegration(t *testing.T) {
 	t.Run("ChatCompletionWithCogneeEnhancement", func(t *testing.T) {
 		// First add some memory
 		memPayload := map[string]interface{}{
-			"content":      "The SuperAgent project is an AI-powered ensemble LLM service that combines responses from multiple language models.",
-			"dataset":      "superagent_knowledge",
+			"content":      "The HelixAgent project is an AI-powered ensemble LLM service that combines responses from multiple language models.",
+			"dataset":      "helixagent_knowledge",
 			"content_type": "text",
 		}
 
 		jsonBody, _ := json.Marshal(memPayload)
-		req, _ := http.NewRequest("POST", superagentBaseURL+"/v1/cognee/memory", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/memory", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -612,17 +612,17 @@ func TestCogneeLLMIntegration(t *testing.T) {
 
 		// Now test chat completion that should be enhanced by Cognee
 		chatPayload := map[string]interface{}{
-			"model": "superagent-debate-v1",
+			"model": "helixagent-debate-v1",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
-					"content": "What is SuperAgent and how does it work?",
+					"content": "What is HelixAgent and how does it work?",
 				},
 			},
 		}
 
 		jsonBody, _ = json.Marshal(chatPayload)
-		req, _ = http.NewRequest("POST", superagentBaseURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
+		req, _ = http.NewRequest("POST", helixagentBaseURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -644,7 +644,7 @@ func TestCogneeContainerAutoStart(t *testing.T) {
 		t.Skip("Skipping container auto-start test in short mode")
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
@@ -652,7 +652,7 @@ func TestCogneeContainerAutoStart(t *testing.T) {
 	client := &http.Client{Timeout: 120 * time.Second}
 
 	t.Run("StartCogneeViaAPI", func(t *testing.T) {
-		req, _ := http.NewRequest("POST", superagentBaseURL+"/v1/cognee/start", nil)
+		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/start", nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
@@ -701,24 +701,24 @@ func TestAllCogneeEndpoints(t *testing.T) {
 		return
 	}
 
-	// First check if SuperAgent is running with Cognee enabled
+	// First check if HelixAgent is running with Cognee enabled
 	client := &http.Client{Timeout: 10 * time.Second}
-	healthResp, err := client.Get(superagentBaseURL + "/health")
+	healthResp, err := client.Get(helixagentBaseURL + "/health")
 	if err != nil {
-		t.Skipf("SuperAgent not accessible: %v", err)
+		t.Skipf("HelixAgent not accessible: %v", err)
 		return
 	}
 	healthResp.Body.Close()
 
 	// Check if Cognee health endpoint exists (primary indicator of Cognee routes)
-	cogneeHealthResp, err := client.Get(superagentBaseURL + "/v1/cognee/health")
+	cogneeHealthResp, err := client.Get(helixagentBaseURL + "/v1/cognee/health")
 	if err != nil {
 		t.Skipf("Cognee routes not accessible: %v", err)
 		return
 	}
 	if cogneeHealthResp.StatusCode == 404 {
 		cogneeHealthResp.Body.Close()
-		t.Skip("Cognee routes not registered in SuperAgent (404 on /v1/cognee/health)")
+		t.Skip("Cognee routes not registered in HelixAgent (404 on /v1/cognee/health)")
 		return
 	}
 	cogneeHealthResp.Body.Close()
@@ -744,7 +744,7 @@ func TestAllCogneeEndpoints(t *testing.T) {
 		{"/v1/cognee/feedback", "POST"},
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
@@ -752,7 +752,7 @@ func TestAllCogneeEndpoints(t *testing.T) {
 	for _, ep := range expectedEndpoints {
 		t.Run(strings.Replace(ep.path, "/", "_", -1), func(t *testing.T) {
 			// Use correct HTTP method for each endpoint
-			req, _ := http.NewRequest(ep.method, superagentBaseURL+ep.path, nil)
+			req, _ := http.NewRequest(ep.method, helixagentBaseURL+ep.path, nil)
 			req.Header.Set("Authorization", "Bearer "+apiKey)
 			req.Header.Set("Content-Type", "application/json")
 
@@ -774,7 +774,7 @@ func TestAllCogneeEndpoints(t *testing.T) {
 
 // BenchmarkCogneeSearch benchmarks Cognee search performance
 func BenchmarkCogneeSearch(b *testing.B) {
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
@@ -790,7 +790,7 @@ func BenchmarkCogneeSearch(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		req, _ := http.NewRequest("POST", superagentBaseURL+"/v1/cognee/search", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/search", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 

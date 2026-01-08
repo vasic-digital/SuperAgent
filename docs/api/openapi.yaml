@@ -1,19 +1,19 @@
 openapi: 3.0.3
 info:
-  title: SuperAgent AI Platform API
+  title: HelixAgent AI Platform API
   description: |
     Comprehensive API for AI-powered completions with multi-provider support,
     ensemble reasoning, Cognee AI enhancement, and advanced monitoring capabilities.
   version: 1.0.0
   contact:
-    name: SuperAgent Support
-    email: support@superagent.ai
+    name: HelixAgent Support
+    email: support@helixagent.ai
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://api.superagent.ai/v1
+  - url: https://api.helixagent.ai/v1
     description: Production server
   - url: http://localhost:8080/v1
     description: Development server
@@ -2073,5 +2073,5 @@ tags:
     description: Administrative operations
 
 externalDocs:
-  description: Find more information about SuperAgent
-  url: https://docs.superagent.ai
+  description: Find more information about HelixAgent
+  url: https://docs.helixagent.ai

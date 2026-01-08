@@ -793,7 +793,7 @@ package streaming
 import (
     "context"
 
-    "superagent/internal/models"
+    "helixagent/internal/models"
 )
 
 // BufferType defines the buffering strategy
@@ -922,7 +922,7 @@ func (e *EnhancedStreamer) createBuffer() Buffer {
 }
 ```
 
-## Integration with SuperAgent
+## Integration with HelixAgent
 
 ### Provider Integration
 

@@ -1,11 +1,11 @@
-# SuperAgent Python SDK
+# HelixAgent Python SDK
 
-A Python client for the SuperAgent AI orchestration platform. Provides OpenAI-compatible API access with support for ensemble LLM strategies.
+A Python client for the HelixAgent AI orchestration platform. Provides OpenAI-compatible API access with support for ensemble LLM strategies.
 
 ## Installation
 
 ```bash
-pip install superagent-sdk
+pip install helixagent-sdk
 ```
 
 Or install from source:
@@ -18,17 +18,17 @@ pip install -e .
 ## Quick Start
 
 ```python
-from superagent import SuperAgent
+from helixagent import HelixAgent
 
 # Initialize client
-client = SuperAgent(
+client = HelixAgent(
     api_key="your-api-key",
-    base_url="http://localhost:8080"  # Or your SuperAgent instance
+    base_url="http://localhost:8080"  # Or your HelixAgent instance
 )
 
 # Chat completion
 response = client.chat.completions.create(
-    model="superagent-ensemble",
+    model="helixagent-ensemble",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "What is the capital of France?"}
@@ -43,7 +43,7 @@ print(response.choices[0].message.content)
 ```python
 # Stream responses
 for chunk in client.chat.completions.create(
-    model="superagent-ensemble",
+    model="helixagent-ensemble",
     messages=[{"role": "user", "content": "Tell me a story"}],
     stream=True
 ):
@@ -54,10 +54,10 @@ for chunk in client.chat.completions.create(
 ## Ensemble Mode
 
 ```python
-from superagent import SuperAgent
-from superagent.types import EnsembleConfig
+from helixagent import HelixAgent
+from helixagent.types import EnsembleConfig
 
-client = SuperAgent(api_key="your-key")
+client = HelixAgent(api_key="your-key")
 
 # Configure ensemble
 ensemble = EnsembleConfig(
@@ -68,7 +68,7 @@ ensemble = EnsembleConfig(
 )
 
 response = client.chat.completions.create(
-    model="superagent-ensemble",
+    model="helixagent-ensemble",
     messages=[{"role": "user", "content": "Complex question"}],
     ensemble_config=ensemble
 )
@@ -80,7 +80,7 @@ The SDK can be configured via constructor or environment variables:
 
 ```python
 # Via constructor
-client = SuperAgent(
+client = HelixAgent(
     api_key="your-key",
     base_url="http://localhost:8080",
     timeout=60,
@@ -88,8 +88,8 @@ client = SuperAgent(
 )
 
 # Via environment variables
-# SUPERAGENT_API_KEY=your-key
-client = SuperAgent()  # Uses env vars
+# HELIXAGENT_API_KEY=your-key
+client = HelixAgent()  # Uses env vars
 ```
 
 ## API Reference
@@ -137,8 +137,8 @@ print(health["status"])
 ## Error Handling
 
 ```python
-from superagent.exceptions import (
-    SuperAgentError,
+from helixagent.exceptions import (
+    HelixAgentError,
     AuthenticationError,
     RateLimitError,
     APIError,
@@ -152,24 +152,24 @@ except RateLimitError as e:
     print(f"Rate limited. Retry after: {e.retry_after}s")
 except APIError as e:
     print(f"API error [{e.status_code}]: {e.message}")
-except SuperAgentError as e:
+except HelixAgentError as e:
     print(f"Error: {e}")
 ```
 
 ## OpenAI Compatibility
 
-SuperAgent is fully compatible with the OpenAI API format. You can also use the official OpenAI Python client:
+HelixAgent is fully compatible with the OpenAI API format. You can also use the official OpenAI Python client:
 
 ```python
 from openai import OpenAI
 
 client = OpenAI(
-    api_key="your-superagent-key",
+    api_key="your-helixagent-key",
     base_url="http://localhost:8080/v1"
 )
 
 response = client.chat.completions.create(
-    model="superagent-ensemble",
+    model="helixagent-ensemble",
     messages=[{"role": "user", "content": "Hello!"}]
 )
 ```
@@ -184,11 +184,11 @@ pip install -e ".[dev]"
 pytest
 
 # Type checking
-mypy superagent
+mypy helixagent
 
 # Formatting
-black superagent tests
-isort superagent tests
+black helixagent tests
+isort helixagent tests
 ```
 
 ## License

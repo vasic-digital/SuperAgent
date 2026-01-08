@@ -548,7 +548,7 @@ func (e *TTLEviction) cleanupLoop() {
 }
 ```
 
-## Integration with SuperAgent
+## Integration with HelixAgent
 
 ### RequestService Integration
 
@@ -636,7 +636,7 @@ func TestTTLEviction_Refresh(t *testing.T)
 
 ## Conclusion
 
-GPTCache is an excellent candidate for native Go implementation. The core algorithms (cosine similarity, LRU eviction, TTL management) are straightforward mathematical operations without Python-specific dependencies. The main integration point is embedding generation, which can leverage the existing `EmbeddingManager` in SuperAgent.
+GPTCache is an excellent candidate for native Go implementation. The core algorithms (cosine similarity, LRU eviction, TTL management) are straightforward mathematical operations without Python-specific dependencies. The main integration point is embedding generation, which can leverage the existing `EmbeddingManager` in HelixAgent.
 
 **Estimated Implementation Time**: 1 week
 **Risk Level**: Low

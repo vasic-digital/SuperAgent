@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides comprehensive documentation for the CLI Agents testing infrastructure in HelixAgent/SuperAgent. The test suite validates streaming response integrity, content quality, and compatibility across multiple CLI AI agents.
+This document provides comprehensive documentation for the CLI Agents testing infrastructure in HelixAgent/HelixAgent. The test suite validates streaming response integrity, content quality, and compatibility across multiple CLI AI agents.
 
 ## Supported CLI Agents
 
@@ -10,7 +10,7 @@ This document provides comprehensive documentation for the CLI Agents testing in
 |-------|----------|--------------|---------------|
 | **HelixCode** | `/Projects/HelixCode/HelixCode/` | Pre-built binary available | Full |
 | **OpenCode** | `/Projects/HelixCode/Example_Projects/OpenCode/OpenCode/` | Built via `go build` | Full |
-| **Cline** | `/Projects/HelixCode/Example_Projects/Cline/` | Requires gRPC generation | SuperAgent proxy |
+| **Cline** | `/Projects/HelixCode/Example_Projects/Cline/` | Requires gRPC generation | HelixAgent proxy |
 | **Bear-Mail** (test target) | `/Projects/Bear-Mail/` | N/A (test project) | Full |
 
 ## Test Files
@@ -175,7 +175,7 @@ Last comprehensive test run: **ALL PASS** (591.684 seconds)
 **Root Cause**: HTTP server WriteTimeout was 30 seconds, which limits total response time for SSE streaming.
 
 **Fix**: Increased WriteTimeout to 300 seconds (5 minutes):
-- `cmd/superagent/main.go`
+- `cmd/helixagent/main.go`
 - `internal/router/gin_router.go`
 
 ```go
@@ -215,7 +215,7 @@ selectedStream := streamChans[0]
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SUPERAGENT_URL` | `http://localhost:8080` | SuperAgent base URL |
+| `HELIXAGENT_URL` | `http://localhost:8080` | HelixAgent base URL |
 | `BEAR_MAIL_PATH` | `/Projects/Bear-Mail` | Bear-Mail test project |
 | `HELIX_CODE_PATH` | `/Projects/HelixCode` | HelixCode project |
 
@@ -227,7 +227,7 @@ Cline CLI requires gRPC generated code that depends on a submodule:
 github.com/cline/grpc-go@v0.0.0 (replaced by ./src/generated/grpc-go): missing go.mod
 ```
 
-**Workaround**: Tests use SuperAgent directly with Cline system prompts.
+**Workaround**: Tests use HelixAgent directly with Cline system prompts.
 
 ### Long Response Timeouts
 Some tests with high `max_tokens` (2500+) may approach the 5-minute timeout.

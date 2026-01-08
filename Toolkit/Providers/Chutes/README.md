@@ -89,8 +89,8 @@ export CHUTES_API_KEY="your-chutes-api-key-here"
 
 ```go
 import (
-    "github.com/superagent/toolkit/pkg/toolkit"
-    _ "github.com/superagent/toolkit/providers/chutes" // Auto-registration
+    "github.com/helixagent/toolkit/pkg/toolkit"
+    _ "github.com/helixagent/toolkit/providers/chutes" // Auto-registration
 )
 
 // Create toolkit instance

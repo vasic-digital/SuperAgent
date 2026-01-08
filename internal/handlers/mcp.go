@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/config"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/config"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // MCPHandler handles Model Context Protocol (MCP) endpoints
@@ -195,13 +195,13 @@ func (h *MCPHandler) MCPResources(c *gin.Context) {
 
 	resources := []map[string]interface{}{
 		{
-			"uri":         "superagent://providers",
+			"uri":         "helixagent://providers",
 			"name":        "Provider Information",
 			"description": "Information about configured LLM providers",
 			"mimeType":    "application/json",
 		},
 		{
-			"uri":         "superagent://models",
+			"uri":         "helixagent://models",
 			"name":        "Model Metadata",
 			"description": "Metadata about available LLM models",
 			"mimeType":    "application/json",

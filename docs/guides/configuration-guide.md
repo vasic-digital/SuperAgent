@@ -1,14 +1,14 @@
-# SuperAgent Configuration Guide
+# HelixAgent Configuration Guide
 
 ## 📋 Overview
 
-This guide covers all configuration options for SuperAgent, from basic setup to advanced production configurations. SuperAgent is highly configurable to support different use cases and deployment scenarios.
+This guide covers all configuration options for HelixAgent, from basic setup to advanced production configurations. HelixAgent is highly configurable to support different use cases and deployment scenarios.
 
 ---
 
 ## 🏗️ Configuration Files Structure
 
-SuperAgent uses a layered configuration approach:
+HelixAgent uses a layered configuration approach:
 
 ```
 configs/
@@ -33,14 +33,14 @@ LOG_LEVEL=info          # debug, info, warn, error
 
 # Security
 JWT_SECRET=your-secure-jwt-secret-here
-SUPERAGENT_API_KEY=your-super-secret-api-key-here
+HELIXAGENT_API_KEY=your-super-secret-api-key-here
 
 # Database (PostgreSQL)
 DB_HOST=localhost
 DB_PORT=5432
-DB_USER=superagent
+DB_USER=helixagent
 DB_PASSWORD=password
-DB_NAME=superagent_db
+DB_NAME=helixagent_db
 DB_SSL_MODE=disable
 
 # Redis (Optional, for caching)
@@ -161,7 +161,7 @@ log_level: debug
 database:
   host: localhost
   port: 5432
-  name: superagent_dev
+  name: helixagent_dev
   ssl_mode: disable
 
 providers:
@@ -367,14 +367,14 @@ monitoring:
     output: "stdout"
     file:
       enabled: true
-      path: "/var/log/superagent.log"
+      path: "/var/log/helixagent.log"
       max_size_mb: 100
       max_backups: 10
       max_age_days: 30
   
   tracing:
     enabled: true
-    service_name: "superagent"
+    service_name: "helixagent"
     exporter: "jaeger"  # or "zipkin", "otlp"
     endpoint: "http://localhost:14268/api/traces"
     sampling_rate: 0.1
@@ -420,7 +420,7 @@ plugins:
 version: '3.8'
 
 services:
-  superagent:
+  helixagent:
     build: .
     ports:
       - "8080:8080"
@@ -440,8 +440,8 @@ services:
   postgres:
     image: postgres:15
     environment:
-      - POSTGRES_DB=superagent
-      - POSTGRES_USER=superagent
+      - POSTGRES_DB=helixagent
+      - POSTGRES_USER=helixagent
       - POSTGRES_PASSWORD=password
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -464,20 +464,20 @@ volumes:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: superagent
+  name: helixagent
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: superagent
+      app: helixagent
   template:
     metadata:
       labels:
-        app: superagent
+        app: helixagent
     spec:
       containers:
-      - name: superagent
-        image: superagent:latest
+      - name: helixagent
+        image: helixagent:latest
         ports:
         - containerPort: 8080
         env:
@@ -644,7 +644,7 @@ testing:
 
 ### Schema Validation
 
-SuperAgent validates configuration against a schema:
+HelixAgent validates configuration against a schema:
 
 ```bash
 # Check configuration syntax

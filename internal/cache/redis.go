@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/superagent/superagent/internal/config"
+	"github.com/helixagent/helixagent/internal/config"
 )
 
 type RedisClient struct {

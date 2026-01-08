@@ -13,18 +13,18 @@ from pydantic import BaseModel, Field
 import httpx
 
 # Configuration
-SUPERAGENT_URL = os.getenv("SUPERAGENT_URL", "http://localhost:8080")
-LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", f"{SUPERAGENT_URL}/v1/chat/completions")
+HELIXAGENT_URL = os.getenv("HELIXAGENT_URL", "http://localhost:8080")
+LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", f"{HELIXAGENT_URL}/v1/chat/completions")
 
 
 class LLMClient:
-    """HTTP client for SuperAgent LLM."""
+    """HTTP client for HelixAgent LLM."""
 
     def __init__(self):
         self.client = httpx.AsyncClient(timeout=120.0)
 
     async def generate(self, prompt: str, temperature: float = 0.7, stop: list[str] = None, max_tokens: int = 500) -> str:
-        """Generate response from SuperAgent."""
+        """Generate response from HelixAgent."""
         try:
             payload = {
                 "model": "default",
@@ -264,7 +264,7 @@ async def health_check():
     llm_ok = False
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{SUPERAGENT_URL}/health")
+            resp = await client.get(f"{HELIXAGENT_URL}/health")
             llm_ok = resp.status_code == 200
     except Exception:
         pass

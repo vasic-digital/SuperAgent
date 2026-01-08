@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // MockTool implements the Tool interface for testing

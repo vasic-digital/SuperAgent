@@ -1,4 +1,4 @@
-# SuperAgent Challenges - Security Practices
+# HelixAgent Challenges - Security Practices
 
 This document outlines security practices for handling API keys and sensitive data in the Challenges System.
 

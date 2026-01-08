@@ -8,14 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/cache"
-	"github.com/superagent/superagent/internal/config"
-	"github.com/superagent/superagent/internal/database"
-	"github.com/superagent/superagent/internal/handlers"
-	"github.com/superagent/superagent/internal/middleware"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/modelsdev"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/cache"
+	"github.com/helixagent/helixagent/internal/config"
+	"github.com/helixagent/helixagent/internal/database"
+	"github.com/helixagent/helixagent/internal/handlers"
+	"github.com/helixagent/helixagent/internal/middleware"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/modelsdev"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // SetupRouter creates and configures the main HTTP router.
@@ -85,7 +85,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			APIKey:    cfg.ModelsDev.APIKey,
 			BaseURL:   cfg.ModelsDev.BaseURL,
 			Timeout:   30 * time.Second,
-			UserAgent: "SuperAgent/1.0",
+			UserAgent: "HelixAgent/1.0",
 		})
 
 		modelMetadataCache := cacheFactory.CreateDefaultCache(cfg.ModelsDev.CacheTTL)
@@ -159,7 +159,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		authConfig := middleware.AuthConfig{
 			SecretKey:   cfg.Server.JWTSecret,
 			TokenExpiry: 24 * time.Hour,
-			Issuer:      "superagent",
+			Issuer:      "helixagent",
 			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register", "/v1/chat/completions", "/v1/completions", "/v1/models", "/v1/ensemble"},
 			Required:    false,
 		}
@@ -171,7 +171,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		authConfig := middleware.AuthConfig{
 			SecretKey:   cfg.Server.JWTSecret,
 			TokenExpiry: 24 * time.Hour,
-			Issuer:      "superagent",
+			Issuer:      "helixagent",
 			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register"},
 			Required:    true,
 		}

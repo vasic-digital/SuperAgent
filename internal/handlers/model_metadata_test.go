@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/superagent/superagent/internal/database"
+	"github.com/helixagent/helixagent/internal/database"
 )
 
 type MockMetadataService struct{}

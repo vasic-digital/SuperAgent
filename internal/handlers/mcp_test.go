@@ -10,8 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/superagent/superagent/internal/config"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/config"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // TestMCPHandler_MCPCapabilities_Disabled tests MCP capabilities when disabled
@@ -292,8 +292,8 @@ func TestMCPHandler_MCPResources_Enabled(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()
 	assert.Contains(t, body, "resources")
-	assert.Contains(t, body, "superagent://providers")
-	assert.Contains(t, body, "superagent://models")
+	assert.Contains(t, body, "helixagent://providers")
+	assert.Contains(t, body, "helixagent://models")
 	assert.Contains(t, body, "name")
 	assert.Contains(t, body, "description")
 	assert.Contains(t, body, "mimeType")
@@ -649,12 +649,12 @@ func TestMCPHandler_MCPResources_ResponseStructure(t *testing.T) {
 
 	// Check providers resource
 	providers := resources[0].(map[string]interface{})
-	assert.Equal(t, "superagent://providers", providers["uri"])
+	assert.Equal(t, "helixagent://providers", providers["uri"])
 	assert.Equal(t, "application/json", providers["mimeType"])
 
 	// Check models resource
 	models := resources[1].(map[string]interface{})
-	assert.Equal(t, "superagent://models", models["uri"])
+	assert.Equal(t, "helixagent://models", models["uri"])
 	assert.Equal(t, "application/json", models["mimeType"])
 }
 

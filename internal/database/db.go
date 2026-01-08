@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/superagent/superagent/internal/config"
+	"github.com/helixagent/helixagent/internal/config"
 )
 
 // Row interface for row scanning
@@ -56,7 +56,7 @@ func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
 
 	dbUser := cfg.Database.User
 	if dbUser == "" {
-		dbUser = getEnv("DB_USER", "superagent")
+		dbUser = getEnv("DB_USER", "helixagent")
 	}
 
 	dbPassword := cfg.Database.Password
@@ -66,7 +66,7 @@ func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
 
 	dbName := cfg.Database.Name
 	if dbName == "" {
-		dbName = getEnv("DB_NAME", "superagent_db")
+		dbName = getEnv("DB_NAME", "helixagent_db")
 	}
 
 	sslMode := cfg.Database.SSLMode
@@ -444,9 +444,9 @@ type LegacyDB interface {
 func Connect() (LegacyDB, error) {
 	dbHost := getEnv("DB_HOST", "localhost")
 	dbPort := getEnv("DB_PORT", "5432")
-	dbUser := getEnv("DB_USER", "superagent")
+	dbUser := getEnv("DB_USER", "helixagent")
 	dbPassword := getEnv("DB_PASSWORD", "secret")
-	dbName := getEnv("DB_NAME", "superagent_db")
+	dbName := getEnv("DB_NAME", "helixagent_db")
 
 	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		dbUser, dbPassword, dbHost, dbPort, dbName)

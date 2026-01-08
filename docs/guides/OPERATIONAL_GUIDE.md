@@ -12,10 +12,10 @@ This guide provides comprehensive procedures for operating and maintaining the A
 ```bash
 #!/bin/bash
 # Daily health check script
-# Save as: /opt/superagent/scripts/daily-health-check.sh
+# Save as: /opt/helixagent/scripts/daily-health-check.sh
 
 # Configuration
-LOG_FILE="/var/log/superagent/ops/daily-health-$(date +%Y%m%d).log"
+LOG_FILE="/var/log/helixagent/ops/daily-health-$(date +%Y%m%d).log"
 ALERT_EMAIL="ops-team@company.com"
 WEBHOOK_URL="https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
 
@@ -27,11 +27,11 @@ log_and_alert() {
     
     if [[ "$level" == "ERROR" || "$level" == "CRITICAL" ]]; then
         # Send email alert
-        echo "$message" | mail -s "SuperAgent Alert: $level" "$ALERT_EMAIL"
+        echo "$message" | mail -s "HelixAgent Alert: $level" "$ALERT_EMAIL"
         
         # Send Slack alert
         curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"🚨 SuperAgent Alert: $level - $message\"}" \
+            --data "{\"text\":\"🚨 HelixAgent Alert: $level - $message\"}" \
             "$WEBHOOK_URL"
     fi
 }
@@ -71,8 +71,8 @@ check_application_health() {
     log_and_alert "INFO" "Checking application health..."
     
     # Check main service
-    if ! systemctl is-active --quiet superagent-advanced; then
-        log_and_alert "ERROR" "SuperAgent service is not running"
+    if ! systemctl is-active --quiet helixagent-advanced; then
+        log_and_alert "ERROR" "HelixAgent service is not running"
         return 1
     fi
     
@@ -99,7 +99,7 @@ check_database_health() {
     fi
     
     # Test database connection
-    if ! sudo -u postgres psql -h localhost -U superagent -d superagent_advanced -c "SELECT 1;" &> /dev/null; then
+    if ! sudo -u postgres psql -h localhost -U helixagent -d helixagent_advanced -c "SELECT 1;" &> /dev/null; then
         log_and_alert "ERROR" "Database connection failed"
     fi
     
@@ -124,17 +124,17 @@ check_recent_errors() {
     log_and_alert "INFO" "Checking for recent errors..."
     
     # Check application logs for errors in last hour
-    ERROR_COUNT=$(grep -c "ERROR\|CRITICAL" /var/log/superagent/advanced/error.log | tail -100)
+    ERROR_COUNT=$(grep -c "ERROR\|CRITICAL" /var/log/helixagent/advanced/error.log | tail -100)
     if [[ $ERROR_COUNT -gt 10 ]]; then
         log_and_alert "WARNING" "High error count in logs: $ERROR_COUNT errors in last 100 lines"
     fi
     
     # Check for specific error patterns
-    if grep -q "database connection failed" /var/log/superagent/advanced/error.log; then
+    if grep -q "database connection failed" /var/log/helixagent/advanced/error.log; then
         log_and_alert "ERROR" "Database connection failures detected"
     fi
     
-    if grep -q "rate limit exceeded" /var/log/superagent/advanced/error.log; then
+    if grep -q "rate limit exceeded" /var/log/helixagent/advanced/error.log; then
         log_and_alert "WARNING" "Rate limit exceeded events detected"
     fi
 }
@@ -158,7 +158,7 @@ main "$@"
 #### Manual Health Check Commands
 ```bash
 # Quick health check
-systemctl status superagent-advanced
+systemctl status helixagent-advanced
 curl -f http://localhost:8080/health
 
 # Detailed system check
@@ -168,8 +168,8 @@ df -h
 free -h
 
 # Application-specific checks
-sudo journalctl -u superagent-advanced -f
-tail -f /var/log/superagent/advanced/error.log
+sudo journalctl -u helixagent-advanced -f
+tail -f /var/log/helixagent/advanced/error.log
 ```
 
 ### 2. Performance Monitoring
@@ -200,15 +200,15 @@ error_metrics:
 ```bash
 #!/bin/bash
 # Performance monitoring script
-# Save as: /opt/superagent/scripts/performance-monitor.sh
+# Save as: /opt/helixagent/scripts/performance-monitor.sh
 
-METRICS_FILE="/var/log/superagent/metrics/performance-$(date +%Y%m%d).json"
+METRICS_FILE="/var/log/helixagent/metrics/performance-$(date +%Y%m%d).json"
 ALERT_THRESHOLD_CPU=80
 ALERT_THRESHOLD_MEMORY=85
 ALERT_THRESHOLD_DISK=90
 
 # Create metrics directory
-mkdir -p /var/log/superagent/metrics
+mkdir -p /var/log/helixagent/metrics
 
 # Collect performance metrics
 collect_metrics() {
@@ -247,15 +247,15 @@ EOF
     
     # Check for alerts
     if (( $(echo "$cpu_usage > $ALERT_THRESHOLD_CPU" | bc -l) )); then
-        echo "ALERT: High CPU usage: ${cpu_usage}%" | logger -t superagent-performance
+        echo "ALERT: High CPU usage: ${cpu_usage}%" | logger -t helixagent-performance
     fi
     
     if (( $(echo "$memory_usage > $ALERT_THRESHOLD_MEMORY" | bc -l) )); then
-        echo "ALERT: High memory usage: ${memory_usage}%" | logger -t superagent-performance
+        echo "ALERT: High memory usage: ${memory_usage}%" | logger -t helixagent-performance
     fi
     
     if [[ $disk_usage -gt $ALERT_THRESHOLD_DISK ]]; then
-        echo "ALERT: High disk usage: ${disk_usage}%" | logger -t superagent-performance
+        echo "ALERT: High disk usage: ${disk_usage}%" | logger -t helixagent-performance
     fi
 }
 
@@ -268,38 +268,38 @@ collect_metrics
 #### Log Rotation Configuration
 ```bash
 # Create logrotate configuration
-sudo tee /etc/logrotate.d/superagent-advanced > /dev/null << 'EOF'
-/var/log/superagent/advanced/*.log {
+sudo tee /etc/logrotate.d/helixagent-advanced > /dev/null << 'EOF'
+/var/log/helixagent/advanced/*.log {
     daily
     missingok
     rotate 30
     compress
     delaycompress
     notifempty
-    create 644 superagent superagent
+    create 644 helixagent helixagent
     postrotate
-        systemctl reload superagent-advanced > /dev/null 2>&1 || true
+        systemctl reload helixagent-advanced > /dev/null 2>&1 || true
     endscript
 }
 EOF
 
 # Manual log rotation test
-sudo logrotate -d /etc/logrotate.d/superagent-advanced
+sudo logrotate -d /etc/logrotate.d/helixagent-advanced
 ```
 
 #### Log Analysis Commands
 ```bash
 # Check for errors
-grep -i "error\|critical\|fatal" /var/log/superagent/advanced/error.log | tail -50
+grep -i "error\|critical\|fatal" /var/log/helixagent/advanced/error.log | tail -50
 
 # Monitor real-time logs
-tail -f /var/log/superagent/advanced/service.log
+tail -f /var/log/helixagent/advanced/service.log
 
 # Search for specific patterns
-grep -i "database\|connection\|timeout" /var/log/superagent/advanced/error.log
+grep -i "database\|connection\|timeout" /var/log/helixagent/advanced/error.log
 
 # Analyze performance logs
-awk '/response_time/ {sum+=$2; count++} END {print "Average response time:", sum/count}' /var/log/superagent/advanced/service.log
+awk '/response_time/ {sum+=$2; count++} END {print "Average response time:", sum/count}' /var/log/helixagent/advanced/service.log
 ```
 
 ## 🔄 Weekly Operations
@@ -310,12 +310,12 @@ awk '/response_time/ {sum+=$2; count++} END {print "Average response time:", sum
 ```bash
 #!/bin/bash
 # Database maintenance script
-# Save as: /opt/superagent/scripts/database-maintenance.sh
+# Save as: /opt/helixagent/scripts/database-maintenance.sh
 
-DB_NAME="superagent_advanced"
-DB_USER="superagent"
+DB_NAME="helixagent_advanced"
+DB_USER="helixagent"
 DB_HOST="localhost"
-LOG_FILE="/var/log/superagent/ops/db-maintenance-$(date +%Y%m%d).log"
+LOG_FILE="/var/log/helixagent/ops/db-maintenance-$(date +%Y%m%d).log"
 
 # Function to log
 log_message() {
@@ -420,13 +420,13 @@ main "$@"
 ```bash
 #!/bin/bash
 # Database backup script
-# Save as: /opt/superagent/scripts/database-backup.sh
+# Save as: /opt/helixagent/scripts/database-backup.sh
 
-BACKUP_DIR="/var/backups/superagent/database"
-DB_NAME="superagent_advanced"
-DB_USER="superagent"
+BACKUP_DIR="/var/backups/helixagent/database"
+DB_NAME="helixagent_advanced"
+DB_USER="helixagent"
 RETENTION_DAYS=30
-LOG_FILE="/var/log/superagent/ops/db-backup-$(date +%Y%m%d).log"
+LOG_FILE="/var/log/helixagent/ops/db-backup-$(date +%Y%m%d).log"
 
 # Create backup directory
 mkdir -p "$BACKUP_DIR"
@@ -438,7 +438,7 @@ log_message() {
 
 # Create backup
 create_backup() {
-    local backup_file="$BACKUP_DIR/superagent-advanced-$(date +%Y%m%d-%H%M%S).sql.gz"
+    local backup_file="$BACKUP_DIR/helixagent-advanced-$(date +%Y%m%d-%H%M%S).sql.gz"
     
     log_message "Creating database backup: $backup_file"
     
@@ -465,15 +465,15 @@ create_backup() {
 cleanup_old_backups() {
     log_message "Cleaning up old backups (older than $RETENTION_DAYS days)..."
     
-    find "$BACKUP_DIR" -name "superagent-advanced-*.sql.gz" -mtime +$RETENTION_DAYS -delete
+    find "$BACKUP_DIR" -name "helixagent-advanced-*.sql.gz" -mtime +$RETENTION_DAYS -delete
     
-    local remaining_backups=$(find "$BACKUP_DIR" -name "superagent-advanced-*.sql.gz" | wc -l)
+    local remaining_backups=$(find "$BACKUP_DIR" -name "helixagent-advanced-*.sql.gz" | wc -l)
     log_message "Cleanup completed. Remaining backups: $remaining_backups"
 }
 
 # Test backup restoration
 test_restore() {
-    local latest_backup=$(find "$BACKUP_DIR" -name "superagent-advanced-*.sql.gz" -type f -exec ls -t {} + | head -n1)
+    local latest_backup=$(find "$BACKUP_DIR" -name "helixagent-advanced-*.sql.gz" -type f -exec ls -t {} + | head -n1)
     
     if [[ -n "$latest_backup" ]]; then
         log_message "Testing backup restoration from: $latest_backup"
@@ -517,13 +517,13 @@ main "$@"
 ```bash
 #!/bin/bash
 # Security audit script
-# Save as: /opt/superagent/scripts/security-audit.sh
+# Save as: /opt/helixagent/scripts/security-audit.sh
 
-AUDIT_LOG="/var/log/superagent/security/audit-$(date +%Y%m%d).log"
+AUDIT_LOG="/var/log/helixagent/security/audit-$(date +%Y%m%d).log"
 ALERT_EMAIL="security-team@company.com"
 
 # Create security log directory
-mkdir -p /var/log/superagent/security
+mkdir -p /var/log/helixagent/security
 
 # Function to log security events
 log_security() {
@@ -535,7 +535,7 @@ check_failed_auth() {
     log_security "Checking for failed authentication attempts..."
     
     # Check application logs
-    FAILED_LOGINS=$(grep -c "authentication_failed" /var/log/superagent/advanced/audit.log 2>/dev/null || echo "0")
+    FAILED_LOGINS=$(grep -c "authentication_failed" /var/log/helixagent/advanced/audit.log 2>/dev/null || echo "0")
     
     if [[ $FAILED_LOGINS -gt 10 ]]; then
         log_security "ALERT: High number of failed login attempts: $FAILED_LOGINS"
@@ -555,14 +555,14 @@ check_access_patterns() {
     log_security "Checking for unusual access patterns..."
     
     # Check for access outside business hours
-    AFTER_HOURS_ACCESS=$(grep -c "access_granted" /var/log/superagent/advanced/audit.log | grep -E "(0[0-6]|1[8-9]|2[0-3]):" | wc -l)
+    AFTER_HOURS_ACCESS=$(grep -c "access_granted" /var/log/helixagent/advanced/audit.log | grep -E "(0[0-6]|1[8-9]|2[0-3]):" | wc -l)
     
     if [[ $AFTER_HOURS_ACCESS -gt 10 ]]; then
         log_security "WARNING: High number of after-hours access attempts: $AFTER_HOURS_ACCESS"
     fi
     
     # Check for multiple access from same IP
-    SUSPICIOUS_IPS=$(awk '/access_granted/ {print $NF}' /var/log/superagent/advanced/audit.log | sort | uniq -c | sort -nr | head -5)
+    SUSPICIOUS_IPS=$(awk '/access_granted/ {print $NF}' /var/log/helixagent/advanced/audit.log | sort | uniq -c | sort -nr | head -5)
     
     while read -r count ip; do
         if [[ $count -gt 50 ]]; then
@@ -575,7 +575,7 @@ check_access_patterns() {
 check_certificates() {
     log_security "Checking certificate expiration..."
     
-    CERT_FILE="/etc/superagent/certs/server.crt"
+    CERT_FILE="/etc/helixagent/certs/server.crt"
     
     if [[ -f "$CERT_FILE" ]]; then
         EXPIRY_DATE=$(openssl x509 -enddate -noout -in "$CERT_FILE" | cut -d= -f2)
@@ -595,7 +595,7 @@ check_dependencies() {
     log_security "Checking for outdated dependencies..."
     
     # Check Go dependencies
-    cd /opt/superagent/advanced
+    cd /opt/helixagent/advanced
     if go list -u -m all 2>/dev/null | grep -q "\["; then
         log_security "WARNING: Outdated Go dependencies detected"
     fi
@@ -614,17 +614,17 @@ check_file_permissions() {
     log_security "Checking file permissions..."
     
     # Check configuration file permissions
-    if [[ "$(stat -c '%a' /etc/superagent/advanced/config.yaml)" != "644" ]]; then
+    if [[ "$(stat -c '%a' /etc/helixagent/advanced/config.yaml)" != "644" ]]; then
         log_security "WARNING: Config file has incorrect permissions"
     fi
     
     # Check environment file permissions
-    if [[ "$(stat -c '%a' /etc/superagent/advanced/.env)" != "600" ]]; then
+    if [[ "$(stat -c '%a' /etc/helixagent/advanced/.env)" != "600" ]]; then
         log_security "WARNING: Environment file has incorrect permissions"
     fi
     
     # Check certificate permissions
-    if [[ "$(stat -c '%a' /etc/superagent/certs/server.key)" != "600" ]]; then
+    if [[ "$(stat -c '%a' /etc/helixagent/certs/server.key)" != "600" ]]; then
         log_security "WARNING: Private key has incorrect permissions"
     fi
 }
@@ -651,9 +651,9 @@ main "$@"
 ```bash
 #!/bin/bash
 # Performance optimization script
-# Save as: /opt/superagent/scripts/performance-optimize.sh
+# Save as: /opt/helixagent/scripts/performance-optimize.sh
 
-LOG_FILE="/var/log/superagent/ops/performance-optimize-$(date +%Y%m%d).log"
+LOG_FILE="/var/log/helixagent/ops/performance-optimize-$(date +%Y%m%d).log"
 PERFORMANCE_THRESHOLD_CPU=70
 PERFORMANCE_THRESHOLD_MEMORY=75
 
@@ -738,16 +738,16 @@ optimize_application() {
     log_performance "Optimizing application configuration..."
     
     # Update worker pool sizes
-    sed -i 's/worker_pool_size: .*/worker_pool_size: 50/' /etc/superagent/advanced/config.yaml
-    sed -i 's/max_connections: .*/max_connections: 200/' /etc/superagent/advanced/config.yaml
-    sed -i 's/buffer_size: .*/buffer_size: 8192/' /etc/superagent/advanced/config.yaml
+    sed -i 's/worker_pool_size: .*/worker_pool_size: 50/' /etc/helixagent/advanced/config.yaml
+    sed -i 's/max_connections: .*/max_connections: 200/' /etc/helixagent/advanced/config.yaml
+    sed -i 's/buffer_size: .*/buffer_size: 8192/' /etc/helixagent/advanced/config.yaml
     
     # Enable connection pooling
-    sed -i 's/connection_pooling: .*/connection_pooling: true/' /etc/superagent/advanced/config.yaml
-    sed -i 's/pool_size: .*/pool_size: 20/' /etc/superagent/advanced/config.yaml
+    sed -i 's/connection_pooling: .*/connection_pooling: true/' /etc/helixagent/advanced/config.yaml
+    sed -i 's/pool_size: .*/pool_size: 20/' /etc/helixagent/advanced/config.yaml
     
     # Restart application
-    sudo systemctl restart superagent-advanced
+    sudo systemctl restart helixagent-advanced
     
     log_performance "Application configuration optimized"
 }
@@ -761,7 +761,7 @@ optimize_system() {
     echo "* hard nofile 65536" >> /etc/security/limits.conf
     
     # Optimize TCP settings
-    cat > /etc/sysctl.d/99-superagent.conf << 'EOF'
+    cat > /etc/sysctl.d/99-helixagent.conf << 'EOF'
 # Network optimizations
 net.core.rmem_max = 16777216
 net.core.wmem_max = 16777216
@@ -777,7 +777,7 @@ vm.dirty_ratio = 15
 vm.dirty_background_ratio = 5
 EOF
     
-    sudo sysctl -p /etc/sysctl.d/99-superagent.conf
+    sudo sysctl -p /etc/sysctl.d/99-helixagent.conf
     
     log_performance "System parameters optimized"
 }
@@ -829,9 +829,9 @@ main "$@"
 ```bash
 #!/bin/bash
 # Capacity planning script
-# Save as: /opt/superagent/scripts/capacity-planning.sh
+# Save as: /opt/helixagent/scripts/capacity-planning.sh
 
-CAPACITY_LOG="/var/log/superagent/ops/capacity-$(date +%Y%m%d).log"
+CAPACITY_LOG="/var/log/helixagent/ops/capacity-$(date +%Y%m%d).log"
 GROWTH_THRESHOLD=20  # 20% growth triggers scaling recommendation
 
 # Function to log capacity metrics
@@ -848,14 +848,14 @@ analyze_historical_usage() {
     local end_date=$(date +%Y-%m-%d)
     
     # Analyze debate volume
-    MONTHLY_DEBATES=$(sudo -u postgres psql -d superagent_advanced -t -c "
+    MONTHLY_DEBATES=$(sudo -u postgres psql -d helixagent_advanced -t -c "
     SELECT COUNT(*) FROM debate_sessions 
     WHERE created_at >= '$start_date' AND created_at < '$end_date';
     " | xargs)
     
     # Analyze resource usage
-    AVG_CPU=$(awk '{sum+=$1; count++} END {print sum/count}' /var/log/superagent/metrics/cpu-usage-*.log 2>/dev/null || echo "0")
-    AVG_MEMORY=$(awk '{sum+=$1; count++} END {print sum/count}' /var/log/superagent/metrics/memory-usage-*.log 2>/dev/null || echo "0")
+    AVG_CPU=$(awk '{sum+=$1; count++} END {print sum/count}' /var/log/helixagent/metrics/cpu-usage-*.log 2>/dev/null || echo "0")
+    AVG_MEMORY=$(awk '{sum+=$1; count++} END {print sum/count}' /var/log/helixagent/metrics/memory-usage-*.log 2>/dev/null || echo "0")
     
     log_capacity "Monthly debate volume: $MONTHLY_DEBATES"
     log_capacity "Average CPU usage: ${AVG_CPU}%"
@@ -974,9 +974,9 @@ main "$@"
 ```bash
 #!/bin/bash
 # Security update script
-# Save as: /opt/superagent/scripts/security-updates.sh
+# Save as: /opt/helixagent/scripts/security-updates.sh
 
-UPDATE_LOG="/var/log/superagent/ops/security-updates-$(date +%Y%m%d).log"
+UPDATE_LOG="/var/log/helixagent/ops/security-updates-$(date +%Y%m%d).log"
 SECURITY_EMAIL="security-team@company.com"
 
 # Function to log
@@ -1035,7 +1035,7 @@ update_system_packages() {
 update_app_dependencies() {
     log_update "Updating application dependencies..."
     
-    cd /opt/superagent/advanced
+    cd /opt/helixagent/advanced
     
     # Check for Go module updates
     go list -u -m all > /tmp/go-updates.txt 2>&1
@@ -1049,9 +1049,9 @@ update_app_dependencies() {
         go mod tidy >> "$UPDATE_LOG" 2>&1
         
         # Test the build
-        if go build -o /tmp/superagent-test ./cmd/main.go >> "$UPDATE_LOG" 2>&1; then
+        if go build -o /tmp/helixagent-test ./cmd/main.go >> "$UPDATE_LOG" 2>&1; then
             log_update "Build test successful after dependency updates"
-            rm -f /tmp/superagent-test
+            rm -f /tmp/helixagent-test
         else
             log_update "ERROR: Build failed after dependency updates"
             return 1
@@ -1159,14 +1159,14 @@ severity_levels:
 ```bash
 #!/bin/bash
 # Incident response script
-# Save as: /opt/superagent/scripts/incident-response.sh
+# Save as: /opt/helixagent/scripts/incident-response.sh
 
 INCIDENT_ID="INC-$(date +%Y%m%d-%H%M%S)"
-INCIDENT_LOG="/var/log/superagent/incidents/${INCIDENT_ID}.log"
+INCIDENT_LOG="/var/log/helixagent/incidents/${INCIDENT_ID}.log"
 RESPONSE_TEAM="oncall@company.com"
 
 # Create incident log directory
-mkdir -p /var/log/superagent/incidents
+mkdir -p /var/log/helixagent/incidents
 
 # Function to log incident
 log_incident() {
@@ -1229,20 +1229,20 @@ recover_database() {
     fi
     
     # Test database connection
-    if ! sudo -u postgres psql -d superagent_advanced -c "SELECT 1;" &> /dev/null; then
+    if ! sudo -u postgres psql -d helixagent_advanced -c "SELECT 1;" &> /dev/null; then
         log_incident "Database connection failed, attempting recovery from backup..."
         
         # Find latest backup
-        LATEST_BACKUP=$(find /var/backups/superagent/database -name "superagent-advanced-*.sql.gz" -type f -exec ls -t {} + | head -n1)
+        LATEST_BACKUP=$(find /var/backups/helixagent/database -name "helixagent-advanced-*.sql.gz" -type f -exec ls -t {} + | head -n1)
         
         if [[ -n "$LATEST_BACKUP" ]]; then
             log_incident "Restoring from backup: $LATEST_BACKUP"
             
             # Create recovery database
-            sudo -u postgres createdb superagent_recovery
+            sudo -u postgres createdb helixagent_recovery
             
             # Restore from backup
-            gunzip -c "$LATEST_BACKUP" | sudo -u postgres psql -d superagent_recovery
+            gunzip -c "$LATEST_BACKUP" | sudo -u postgres psql -d helixagent_recovery
             
             if [[ $? -eq 0 ]]; then
                 log_incident "Database recovery successful"
@@ -1266,19 +1266,19 @@ recover_service() {
     log_incident "Executing service recovery procedures..."
     
     # Check service status
-    if ! systemctl is-active --quiet superagent-advanced; then
-        log_incident "SuperAgent service is down, attempting restart..."
-        sudo systemctl restart superagent-advanced
+    if ! systemctl is-active --quiet helixagent-advanced; then
+        log_incident "HelixAgent service is down, attempting restart..."
+        sudo systemctl restart helixagent-advanced
         
         # Wait for service to start
         sleep 30
         
         # Verify service is running
-        if systemctl is-active --quiet superagent-advanced; then
+        if systemctl is-active --quiet helixagent-advanced; then
             log_incident "Service restart successful"
         else
             log_incident "ERROR: Service restart failed, checking logs..."
-            sudo journalctl -u superagent-advanced -n 50 >> "$INCIDENT_LOG"
+            sudo journalctl -u helixagent-advanced -n 50 >> "$INCIDENT_LOG"
         fi
     else
         log_incident "Service is running normally"
@@ -1329,7 +1329,7 @@ recover_performance() {
     redis-cli FLUSHALL
     
     # Restart application with clean state
-    sudo systemctl restart superagent-advanced
+    sudo systemctl restart helixagent-advanced
     
     log_incident "Performance recovery procedures completed"
 }
@@ -1397,20 +1397,20 @@ main "$@"
 ```bash
 #!/bin/bash
 # Monthly performance report
-# Save as: /opt/superagent/scripts/monthly-performance-report.sh
+# Save as: /opt/helixagent/scripts/monthly-performance-report.sh
 
-REPORT_FILE="/var/reports/superagent/performance-monthly-$(date +%Y%m).html"
+REPORT_FILE="/var/reports/helixagent/performance-monthly-$(date +%Y%m).html"
 REPORT_DATE=$(date +"%B %Y")
 
 # Create reports directory
-mkdir -p /var/reports/superagent
+mkdir -p /var/reports/helixagent
 
 # Generate HTML report
 cat > "$REPORT_FILE" << 'EOF'
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SuperAgent Advanced - Monthly Performance Report</title>
+    <title>HelixAgent Advanced - Monthly Performance Report</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .header { background-color: #f0f0f0; padding: 20px; border-radius: 5px; }
@@ -1425,7 +1425,7 @@ cat > "$REPORT_FILE" << 'EOF'
 </head>
 <body>
     <div class="header">
-        <h1>SuperAgent Advanced</h1>
+        <h1>HelixAgent Advanced</h1>
         <h2>Monthly Performance Report</h2>
         <p>Report Period: REPORT_DATE</p>
     </div>
@@ -1467,7 +1467,7 @@ cat > "$REPORT_FILE" << 'EOF'
     <p>See attached CSV file for detailed metrics data.</p>
     
     <hr>
-    <p><small>Generated automatically by SuperAgent Advanced Monitoring System</small></p>
+    <p><small>Generated automatically by HelixAgent Advanced Monitoring System</small></p>
 </body>
 </html>
 EOF
@@ -1515,20 +1515,20 @@ improvements:
 # Support contacts
 support_contacts:
   technical:
-    email: "support@superagent.com"
-    phone: "+1-800-SUPERAGENT"
+    email: "support@helixagent.com"
+    phone: "+1-800-HELIXAGENT"
     hours: "24/7"
-    escalation: "technical-team@superagent.com"
+    escalation: "technical-team@helixagent.com"
     
   security:
-    email: "security@superagent.com"
+    email: "security@helixagent.com"
     phone: "+1-800-SECURITY"
     hours: "24/7"
-    escalation: "security-team@superagent.com"
+    escalation: "security-team@helixagent.com"
     
   emergency:
     phone: "+1-800-EMERGENCY"
-    escalation: "executive-team@superagent.com"
+    escalation: "executive-team@helixagent.com"
 ```
 
 #### Escalation Matrix
@@ -1539,25 +1539,25 @@ escalation_matrix:
     description: "First-line support (L1)"
     response_time: "15 minutes"
     resolution_time: "4 hours"
-    contact: "support@superagent.com"
+    contact: "support@helixagent.com"
     
   level_2:
     description: "Technical specialists (L2)"
     response_time: "30 minutes"
     resolution_time: "8 hours"
-    contact: "technical-team@superagent.com"
+    contact: "technical-team@helixagent.com"
     
   level_3:
     description: "Engineering team (L3)"
     response_time: "1 hour"
     resolution_time: "24 hours"
-    contact: "engineering-team@superagent.com"
+    contact: "engineering-team@helixagent.com"
     
   level_4:
     description: "Executive escalation"
     response_time: "2 hours"
     resolution_time: "48 hours"
-    contact: "executive-team@superagent.com"
+    contact: "executive-team@helixagent.com"
 ```
 
 ## 📚 Documentation Maintenance

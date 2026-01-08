@@ -1,8 +1,8 @@
-# SuperAgent Quick Start Guide
+# HelixAgent Quick Start Guide
 
 ## 🚀 Get Started in 5 Minutes
 
-This guide will help you get SuperAgent running and making your first AI-powered requests in under 5 minutes.
+This guide will help you get HelixAgent running and making your first AI-powered requests in under 5 minutes.
 
 ### Prerequisites
 
@@ -17,8 +17,8 @@ This guide will help you get SuperAgent running and making your first AI-powered
 ### Step 1: Clone and Setup
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Create environment file
 cp .env.example .env
@@ -37,7 +37,7 @@ QWEN_API_KEY=your-qwen-key-here
 ZAI_API_KEY=your-zai-key-here
 ```
 
-### Step 3: Start SuperAgent
+### Step 3: Start HelixAgent
 ```bash
 # Start all services (AI + Monitoring)
 make docker-full
@@ -82,13 +82,13 @@ export DEEPSEEK_API_KEY="sk-your-deepseek-key-here"
 export GEMINI_API_KEY="your-gemini-api-key-here"
 ```
 
-### Step 3: Run SuperAgent
+### Step 3: Run HelixAgent
 ```bash
 # Run in development mode
 make run-dev
 
 # Or run directly
-go run ./cmd/superagent/main.go
+go run ./cmd/helixagent/main.go
 ```
 
 ---
@@ -100,7 +100,7 @@ go run ./cmd/superagent/main.go
 curl -X POST http://localhost:8080/v1/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "Hello, what is SuperAgent?",
+    "prompt": "Hello, what is HelixAgent?",
     "model": "claude-3-sonnet-20240229",
     "max_tokens": 100
   }'
@@ -253,7 +253,7 @@ docker-compose logs postgres
 ## 🎉 Congratulations!
 
 You've successfully:
-1. ✅ Set up SuperAgent
+1. ✅ Set up HelixAgent
 2. ✅ Made your first API requests
 3. ✅ Tested ensemble intelligence
 4. ✅ Verified system health
@@ -264,7 +264,7 @@ You've successfully:
 
 ## 🆘 Need Help?
 
-1. **Check logs**: `docker-compose logs superagent`
+1. **Check logs**: `docker-compose logs helixagent`
 2. **Verify configuration**: `cat .env`
 3. **Test connectivity**: `curl http://localhost:8080/health`
 4. **Review documentation**: All docs are in `/docs/` directory

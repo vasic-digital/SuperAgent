@@ -1,15 +1,15 @@
-# SuperAgent Video Courses
+# HelixAgent Video Courses
 
-Welcome to the SuperAgent video course library. These comprehensive courses will guide you through everything you need to know about SuperAgent, from basic setup to advanced AI orchestration techniques.
+Welcome to the HelixAgent video course library. These comprehensive courses will guide you through everything you need to know about HelixAgent, from basic setup to advanced AI orchestration techniques.
 
 ## Course Catalog
 
-### Course 1: SuperAgent Fundamentals (60 minutes)
+### Course 1: HelixAgent Fundamentals (60 minutes)
 **Perfect for beginners**
 
 #### Modules:
-1. Introduction to SuperAgent (10 min)
-   - What is SuperAgent?
+1. Introduction to HelixAgent (10 min)
+   - What is HelixAgent?
    - Key features and benefits
    - Use cases and applications
 
@@ -124,18 +124,18 @@ Welcome to the SuperAgent video course library. These comprehensive courses will
 
 ## Getting Started
 
-1. Start with Course 1 if you're new to SuperAgent
+1. Start with Course 1 if you're new to HelixAgent
 2. Progress through courses in order
 3. Complete hands-on exercises
 4. Join our community for additional support
 
 ## Support and Resources
 
-- [Documentation](https://superagent.ai/docs)
-- [GitHub Repository](https://github.com/superagent/superagent)
-- [Community Forums](https://github.com/superagent/superagent/discussions)
-- [Support Email](mailto:support@superagent.ai)
+- [Documentation](https://helixagent.ai/docs)
+- [GitHub Repository](https://github.com/helixagent/helixagent)
+- [Community Forums](https://github.com/helixagent/helixagent/discussions)
+- [Support Email](mailto:support@helixagent.ai)
 
 ## Certification
 
-Complete all courses and exercises to earn a SuperAgent Professional Certificate. Contact us at [certification@superagent.ai](mailto:certification@superagent.ai) for more information.
+Complete all courses and exercises to earn a HelixAgent Professional Certificate. Contact us at [certification@helixagent.ai](mailto:certification@helixagent.ai) for more information.

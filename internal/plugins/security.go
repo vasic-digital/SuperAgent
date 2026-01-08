@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/superagent/superagent/internal/utils"
+	"github.com/helixagent/helixagent/internal/utils"
 )
 
 // SecurityValidator provides sandboxing and security validation for plugins

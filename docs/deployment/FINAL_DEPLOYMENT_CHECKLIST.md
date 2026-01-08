@@ -17,7 +17,7 @@ echo "==============================================="
 
 # ✅ Service Status Check
 echo "✅ Checking all core services..."
-for service in superagent-advanced postgresql redis-server rabbitmq-server; do
+for service in helixagent-advanced postgresql redis-server rabbitmq-server; do
     if systemctl is-active --quiet $service; then
         echo "  ✅ $service is running"
     else
@@ -87,7 +87,7 @@ echo "🔒 FINAL SECURITY VERIFICATION"
 
 # Check certificate validity
 echo "✅ Checking SSL certificates..."
-if openssl x509 -checkend 86400 -noout -in /etc/superagent/certs/server.crt; then
+if openssl x509 -checkend 86400 -noout -in /etc/helixagent/certs/server.crt; then
     echo "  ✅ SSL certificate is valid for > 24 hours"
 else
     echo "  ⚠️  SSL certificate expires within 24 hours - renew before deployment"
@@ -106,7 +106,7 @@ fi
 
 # Check audit logging
 echo "✅ Verifying audit logging..."
-if grep -q "authentication_success\|authentication_failed" /var/log/superagent/advanced/audit.log; then
+if grep -q "authentication_success\|authentication_failed" /var/log/helixagent/advanced/audit.log; then
     echo "  ✅ Audit logging is active and recording security events"
 else
     echo "  ⚠️  Limited audit log activity - review before deployment"
@@ -125,7 +125,7 @@ echo "🗄️ FINAL DATABASE HEALTH CHECK"
 
 # Check database connectivity
 echo "✅ Testing database connectivity..."
-if sudo -u postgres psql -d superagent_advanced -c "SELECT 1;" &> /dev/null; then
+if sudo -u postgres psql -d helixagent_advanced -c "SELECT 1;" &> /dev/null; then
     echo "  ✅ Database connection successful"
 else
     echo "  ❌ Database connection failed - DEPLOYMENT BLOCKED"
@@ -134,7 +134,7 @@ fi
 
 # Check database performance
 echo "✅ Checking database performance..."
-sudo -u postgres psql -d superagent_advanced -c "
+sudo -u postgres psql -d helixagent_advanced -c "
 SELECT 
     count(*) as total_sessions,
     COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_sessions,
@@ -156,30 +156,30 @@ echo "⚙️ FINAL CONFIGURATION REVIEW"
 
 # Check configuration file
 echo "✅ Reviewing final configuration..."
-if [[ -f /etc/superagent/advanced/config.yaml ]]; then
+if [[ -f /etc/helixagent/advanced/config.yaml ]]; then
     echo "  ✅ Main configuration file exists"
     
     # Verify key settings
-    if grep -q "security_level: advanced" /etc/superagent/advanced/config.yaml; then
+    if grep -q "security_level: advanced" /etc/helixagent/advanced/config.yaml; then
         echo "  ✅ Security level set to 'advanced'"
     fi
     
-    if grep -q "monitoring_enabled: true" /etc/superagent/advanced/config.yaml; then
+    if grep -q "monitoring_enabled: true" /etc/helixagent/advanced/config.yaml; then
         echo "  ✅ Monitoring is enabled"
     fi
     
-    if grep -q "encryption_enabled: true" /etc/superagent/advanced/config.yaml; then
+    if grep -q "encryption_enabled: true" /etc/helixagent/advanced/config.yaml; then
         echo "  ✅ Encryption is enabled"
     fi
 fi
 
 # Check environment variables
 echo "✅ Checking environment variables..."
-if [[ -f /etc/superagent/advanced/.env ]]; then
+if [[ -f /etc/helixagent/advanced/.env ]]; then
     echo "  ✅ Environment file exists with proper permissions (600)"
     
     # Verify critical environment variables are set
-    if grep -q "DB_PASSWORD=" /etc/superagent/advanced/.env; then
+    if grep -q "DB_PASSWORD=" /etc/helixagent/advanced/.env; then
         echo "  ✅ Database password is configured"
     fi
 fi
@@ -270,25 +270,25 @@ echo "Time: $(date)"
 
 # 1. Stop services
 echo "1. Stopping services..."
-sudo systemctl stop superagent-advanced
+sudo systemctl stop helixagent-advanced
 
 # 2. Restore from backup
 echo "2. Restoring from backup..."
-LATEST_BACKUP=$(find /var/backups/superagent -name "*.sql.gz" -type f -exec ls -t {} + | head -n1)
+LATEST_BACKUP=$(find /var/backups/helixagent -name "*.sql.gz" -type f -exec ls -t {} + | head -n1)
 if [[ -n "$LATEST_BACKUP" ]]; then
     echo "  Restoring from: $LATEST_BACKUP"
     # Restore database
-    sudo -u postgres psql -d superagent_advanced < <(gunzip -c "$LATEST_BACKUP")
+    sudo -u postgres psql -d helixagent_advanced < <(gunzip -c "$LATEST_BACKUP")
     echo "  ✅ Database restored"
 fi
 
 # 3. Rollback configuration
 echo "3. Rolling back configuration..."
-cp /etc/superagent/advanced/config.yaml.backup /etc/superagent/advanced/config.yaml
+cp /etc/helixagent/advanced/config.yaml.backup /etc/helixagent/advanced/config.yaml
 
 # 4. Restart services
 echo "4. Restarting services..."
-sudo systemctl start superagent-advanced
+sudo systemctl start helixagent-advanced
 
 echo "✅ Emergency rollback completed"
 echo "Notify: oncall@company.com, emergency@company.com"
@@ -300,7 +300,7 @@ echo "Notify: oncall@company.com, emergency@company.com"
 ```yaml
 emergency_contacts:
   technical_team:
-    phone: "+1-800-SUPERAGENT-EMERGENCY"
+    phone: "+1-800-HELIXAGENT-EMERGENCY"
     email: "emergency-tech@company.com"
     escalation_time: "15 minutes"
     
@@ -313,9 +313,9 @@ emergency_contacts:
     escalation_time: "1 hour"
     
   external_support:
-    vendor: "SuperAgent Support"
+    vendor: "HelixAgent Support"
     phone: "+1-800-VENDOR-SUPPORT"
-    email: "emergency@superagent.com"
+    email: "emergency@helixagent.com"
 ```
 
 ## ✅ **Final Deployment Confirmation**

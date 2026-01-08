@@ -1,14 +1,14 @@
-# SuperAgent Security Sandboxing
+# HelixAgent Security Sandboxing
 
 ## Overview
 
-SuperAgent implements comprehensive security sandboxing to isolate plugin execution, tool operations, and external integrations. This document covers the security model, sandboxing capabilities, configuration options, and best practices.
+HelixAgent implements comprehensive security sandboxing to isolate plugin execution, tool operations, and external integrations. This document covers the security model, sandboxing capabilities, configuration options, and best practices.
 
 ## Security Model
 
 ### Defense in Depth
 
-SuperAgent employs a multi-layered security approach:
+HelixAgent employs a multi-layered security approach:
 
 ```
 +--------------------------------------------------+
@@ -46,7 +46,7 @@ SuperAgent employs a multi-layered security approach:
 
 ### Process Isolation
 
-SuperAgent can run plugins and tools in isolated processes:
+HelixAgent can run plugins and tools in isolated processes:
 
 ```go
 type ProcessSandbox struct {
@@ -77,7 +77,7 @@ type ProcessSandbox struct {
 
 ### Container Isolation
 
-For maximum isolation, SuperAgent supports Docker/Podman containers:
+For maximum isolation, HelixAgent supports Docker/Podman containers:
 
 ```go
 type ContainerSandbox struct {
@@ -193,7 +193,7 @@ security:
     # Container sandbox settings
     container:
       runtime: "docker"
-      default_image: "superagent/sandbox:latest"
+      default_image: "helixagent/sandbox:latest"
       read_only: true
       no_new_privileges: true
       drop_capabilities:
@@ -564,7 +564,7 @@ plugins:
       sandbox_enabled: true
       sandbox_type: "container"
       container:
-        image: "superagent/plugin-sandbox:latest"
+        image: "helixagent/plugin-sandbox:latest"
         read_only: true
         no_new_privileges: true
 ```
@@ -591,11 +591,11 @@ Keep sandbox images and dependencies updated:
 
 ```bash
 # Update sandbox images
-docker pull superagent/sandbox:latest
-docker pull superagent/plugin-sandbox:latest
+docker pull helixagent/sandbox:latest
+docker pull helixagent/plugin-sandbox:latest
 
 # Scan for vulnerabilities
-trivy image superagent/sandbox:latest
+trivy image helixagent/sandbox:latest
 ```
 
 ### 10. Monitor and Alert
@@ -641,4 +641,4 @@ monitoring:
 
 ---
 
-For more information, see the [SuperAgent Security Documentation](https://github.com/superagent/superagent/tree/main/docs/security).
+For more information, see the [HelixAgent Security Documentation](https://github.com/helixagent/helixagent/tree/main/docs/security).

@@ -1,4 +1,4 @@
-"""Tests for SuperAgent client."""
+"""Tests for HelixAgent client."""
 
 import json
 import os
@@ -7,9 +7,9 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from threading import Thread
 from unittest.mock import patch
 
-from superagent import SuperAgent
-from superagent.exceptions import AuthenticationError, APIError
-from superagent.types import ChatMessage
+from helixagent import HelixAgent
+from helixagent.exceptions import AuthenticationError, APIError
+from helixagent.types import ChatMessage
 
 
 class MockHandler(BaseHTTPRequestHandler):
@@ -71,7 +71,7 @@ class MockHandler(BaseHTTPRequestHandler):
                 "id": "chatcmpl-123",
                 "object": "chat.completion",
                 "created": 1234567890,
-                "model": data.get("model", "superagent-ensemble"),
+                "model": data.get("model", "helixagent-ensemble"),
                 "choices": [
                     {
                         "index": 0,
@@ -94,8 +94,8 @@ class MockHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
 
-class TestSuperAgentClient(unittest.TestCase):
-    """Test SuperAgent client."""
+class TestHelixAgentClient(unittest.TestCase):
+    """Test HelixAgent client."""
 
     @classmethod
     def setUpClass(cls):
@@ -113,7 +113,7 @@ class TestSuperAgentClient(unittest.TestCase):
 
     def test_client_initialization(self):
         """Test client initialization."""
-        client = SuperAgent(
+        client = HelixAgent(
             api_key="test-key",
             base_url=f"http://localhost:{self.port}"
         )
@@ -122,13 +122,13 @@ class TestSuperAgentClient(unittest.TestCase):
 
     def test_client_initialization_from_env(self):
         """Test client initialization from environment."""
-        with patch.dict(os.environ, {"SUPERAGENT_API_KEY": "env-key"}):
-            client = SuperAgent(base_url=f"http://localhost:{self.port}")
+        with patch.dict(os.environ, {"HELIXAGENT_API_KEY": "env-key"}):
+            client = HelixAgent(base_url=f"http://localhost:{self.port}")
             self.assertEqual(client.api_key, "env-key")
 
     def test_health_check(self):
         """Test health check endpoint."""
-        client = SuperAgent(
+        client = HelixAgent(
             api_key="test-key",
             base_url=f"http://localhost:{self.port}"
         )
@@ -137,7 +137,7 @@ class TestSuperAgentClient(unittest.TestCase):
 
     def test_list_models(self):
         """Test listing models."""
-        client = SuperAgent(
+        client = HelixAgent(
             api_key="test-key",
             base_url=f"http://localhost:{self.port}"
         )
@@ -148,7 +148,7 @@ class TestSuperAgentClient(unittest.TestCase):
 
     def test_list_providers(self):
         """Test listing providers."""
-        client = SuperAgent(
+        client = HelixAgent(
             api_key="test-key",
             base_url=f"http://localhost:{self.port}"
         )
@@ -157,12 +157,12 @@ class TestSuperAgentClient(unittest.TestCase):
 
     def test_chat_completion(self):
         """Test chat completion."""
-        client = SuperAgent(
+        client = HelixAgent(
             api_key="test-key",
             base_url=f"http://localhost:{self.port}"
         )
         response = client.chat.completions.create(
-            model="superagent-ensemble",
+            model="helixagent-ensemble",
             messages=[{"role": "user", "content": "Hello!"}]
         )
         self.assertEqual(response.id, "chatcmpl-123")
@@ -172,24 +172,24 @@ class TestSuperAgentClient(unittest.TestCase):
 
     def test_chat_completion_with_chat_message(self):
         """Test chat completion with ChatMessage objects."""
-        client = SuperAgent(
+        client = HelixAgent(
             api_key="test-key",
             base_url=f"http://localhost:{self.port}"
         )
         response = client.chat.completions.create(
-            model="superagent-ensemble",
+            model="helixagent-ensemble",
             messages=[ChatMessage(role="user", content="Hello!")]
         )
         self.assertEqual(response.id, "chatcmpl-123")
 
     def test_chat_completion_unauthorized(self):
         """Test chat completion without auth."""
-        client = SuperAgent(
+        client = HelixAgent(
             base_url=f"http://localhost:{self.port}"
         )
         with self.assertRaises(AuthenticationError):
             client.chat.completions.create(
-                model="superagent-ensemble",
+                model="helixagent-ensemble",
                 messages=[{"role": "user", "content": "Hello!"}]
             )
 

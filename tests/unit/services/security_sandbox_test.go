@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 func TestSecuritySandbox_Basic(t *testing.T) {

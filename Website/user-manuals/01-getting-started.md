@@ -1,10 +1,10 @@
-# SuperAgent Getting Started Guide
+# HelixAgent Getting Started Guide
 
 ## Introduction
 
-SuperAgent is an enterprise-grade AI-powered ensemble LLM service that aggregates responses from multiple language model providers using intelligent orchestration strategies. Built with Go 1.23+ and designed for production environments, SuperAgent provides OpenAI-compatible APIs while offering advanced features like AI debates, knowledge graph integration, and multi-provider ensemble capabilities.
+HelixAgent is an enterprise-grade AI-powered ensemble LLM service that aggregates responses from multiple language model providers using intelligent orchestration strategies. Built with Go 1.23+ and designed for production environments, HelixAgent provides OpenAI-compatible APIs while offering advanced features like AI debates, knowledge graph integration, and multi-provider ensemble capabilities.
 
-This comprehensive guide will walk you through the installation, configuration, and your first API requests with SuperAgent.
+This comprehensive guide will walk you through the installation, configuration, and your first API requests with HelixAgent.
 
 ---
 
@@ -13,7 +13,7 @@ This comprehensive guide will walk you through the installation, configuration, 
 1. [System Requirements](#system-requirements)
 2. [Installation Methods](#installation-methods)
 3. [Initial Configuration](#initial-configuration)
-4. [Starting SuperAgent](#starting-superagent)
+4. [Starting HelixAgent](#starting-helixagent)
 5. [Your First API Request](#your-first-api-request)
 6. [Basic Usage Examples](#basic-usage-examples)
 7. [Understanding the Architecture](#understanding-the-architecture)
@@ -26,7 +26,7 @@ This comprehensive guide will walk you through the installation, configuration, 
 
 ### Minimum Requirements
 
-Before installing SuperAgent, ensure your system meets these minimum requirements:
+Before installing HelixAgent, ensure your system meets these minimum requirements:
 
 | Component | Minimum | Recommended |
 |-----------|---------|-------------|
@@ -47,7 +47,7 @@ Before installing SuperAgent, ensure your system meets these minimum requirement
 
 ### API Key Requirements
 
-SuperAgent supports 7 LLM providers. While you can run locally with Ollama (no API key required), production deployments typically require at least one cloud provider API key:
+HelixAgent supports 7 LLM providers. While you can run locally with Ollama (no API key required), production deployments typically require at least one cloud provider API key:
 
 | Provider | API Key Environment Variable | Required |
 |----------|------------------------------|----------|
@@ -63,18 +63,18 @@ SuperAgent supports 7 LLM providers. While you can run locally with Ollama (no A
 
 ## Installation Methods
 
-SuperAgent offers multiple installation methods to suit different deployment scenarios.
+HelixAgent offers multiple installation methods to suit different deployment scenarios.
 
 ### Method 1: Docker Compose (Recommended)
 
-Docker Compose provides the simplest and most reliable way to deploy SuperAgent with all its dependencies.
+Docker Compose provides the simplest and most reliable way to deploy HelixAgent with all its dependencies.
 
 #### Step 1: Clone the Repository
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 ```
 
 #### Step 2: Configure Environment Variables
@@ -97,9 +97,9 @@ JWT_SECRET=your-secure-jwt-secret-change-in-production
 # Database Configuration
 DB_HOST=postgres
 DB_PORT=5432
-DB_USER=superagent
+DB_USER=helixagent
 DB_PASSWORD=your-secure-password
-DB_NAME=superagent_db
+DB_NAME=helixagent_db
 
 # Redis Configuration
 REDIS_HOST=redis
@@ -121,7 +121,7 @@ OLLAMA_MODEL=llama2
 #### Step 3: Start Services
 
 ```bash
-# Start core services (PostgreSQL, Redis, SuperAgent)
+# Start core services (PostgreSQL, Redis, HelixAgent)
 docker-compose up -d
 
 # Or start with AI services (adds Ollama)
@@ -152,7 +152,7 @@ Expected response:
 
 ### Method 2: Build from Source
 
-For development or custom deployments, you can build SuperAgent from source.
+For development or custom deployments, you can build HelixAgent from source.
 
 #### Step 1: Install Go
 
@@ -171,8 +171,8 @@ go version
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Download dependencies
 go mod download
@@ -186,7 +186,7 @@ make build-debug
 
 #### Step 3: Set Up Database
 
-You need PostgreSQL and Redis running before starting SuperAgent:
+You need PostgreSQL and Redis running before starting HelixAgent:
 
 ```bash
 # Start PostgreSQL
@@ -194,30 +194,30 @@ sudo systemctl start postgresql
 
 # Create database and user
 sudo -u postgres psql << EOF
-CREATE DATABASE superagent_db;
-CREATE USER superagent WITH ENCRYPTED PASSWORD 'your-password';
-GRANT ALL PRIVILEGES ON DATABASE superagent_db TO superagent;
+CREATE DATABASE helixagent_db;
+CREATE USER helixagent WITH ENCRYPTED PASSWORD 'your-password';
+GRANT ALL PRIVILEGES ON DATABASE helixagent_db TO helixagent;
 EOF
 
 # Start Redis
 sudo systemctl start redis-server
 ```
 
-#### Step 4: Run SuperAgent
+#### Step 4: Run HelixAgent
 
 ```bash
 # Set environment variables
 export DB_HOST=localhost
 export DB_PORT=5432
-export DB_USER=superagent
+export DB_USER=helixagent
 export DB_PASSWORD=your-password
-export DB_NAME=superagent_db
+export DB_NAME=helixagent_db
 export REDIS_HOST=localhost
 export REDIS_PORT=6379
 export JWT_SECRET=your-jwt-secret
 
-# Run SuperAgent
-./superagent
+# Run HelixAgent
+./helixagent
 
 # Or run in development mode
 make run-dev
@@ -225,7 +225,7 @@ make run-dev
 
 ### Method 3: Podman (Alternative to Docker)
 
-SuperAgent fully supports Podman as an alternative container runtime:
+HelixAgent fully supports Podman as an alternative container runtime:
 
 ```bash
 # Enable Podman socket for Docker compatibility
@@ -236,8 +236,8 @@ pip install podman-compose
 podman-compose up -d
 
 # Or run directly
-podman build -t superagent:latest .
-podman run -d --name superagent -p 8080:8080 superagent:latest
+podman build -t helixagent:latest .
+podman run -d --name helixagent -p 8080:8080 helixagent:latest
 ```
 
 ---
@@ -246,7 +246,7 @@ podman run -d --name superagent -p 8080:8080 superagent:latest
 
 ### Configuration Files
 
-SuperAgent uses YAML configuration files located in the `configs/` directory:
+HelixAgent uses YAML configuration files located in the `configs/` directory:
 
 | File | Purpose |
 |------|---------|
@@ -324,11 +324,11 @@ security:
 
 ---
 
-## Starting SuperAgent
+## Starting HelixAgent
 
 ### Using Make Commands
 
-SuperAgent provides convenient Make commands:
+HelixAgent provides convenient Make commands:
 
 ```bash
 # Build the binary
@@ -354,7 +354,7 @@ make test-coverage
 docker-compose up -d
 
 # View logs
-docker-compose logs -f superagent
+docker-compose logs -f helixagent
 
 # Stop all services
 docker-compose down
@@ -366,7 +366,7 @@ docker-compose up -d
 
 ### Verifying the Installation
 
-After starting SuperAgent, verify it is running correctly:
+After starting HelixAgent, verify it is running correctly:
 
 ```bash
 # Basic health check
@@ -426,7 +426,7 @@ curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "superagent-ensemble",
+    "model": "helixagent-ensemble",
     "messages": [
       {
         "role": "system",
@@ -434,7 +434,7 @@ curl -X POST http://localhost:8080/v1/chat/completions \
       },
       {
         "role": "user",
-        "content": "What is SuperAgent and what are its key features?"
+        "content": "What is HelixAgent and what are its key features?"
       }
     ],
     "temperature": 0.7,
@@ -445,16 +445,16 @@ curl -X POST http://localhost:8080/v1/chat/completions \
 Response:
 ```json
 {
-  "id": "chatcmpl-superagent-abc123",
+  "id": "chatcmpl-helixagent-abc123",
   "object": "chat.completion",
   "created": 1704067200,
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "choices": [
     {
       "index": 0,
       "message": {
         "role": "assistant",
-        "content": "SuperAgent is an AI-powered ensemble LLM service..."
+        "content": "HelixAgent is an AI-powered ensemble LLM service..."
       },
       "finish_reason": "stop"
     }
@@ -499,7 +499,7 @@ curl -X POST http://localhost:8080/v1/chat/completions/stream \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "superagent-ensemble",
+    "model": "helixagent-ensemble",
     "messages": [
       {"role": "user", "content": "Tell me a short story."}
     ],
@@ -515,7 +515,7 @@ import requests
 BASE_URL = "http://localhost:8080"
 TOKEN = "your-jwt-token"
 
-def chat_completion(messages, model="superagent-ensemble"):
+def chat_completion(messages, model="helixagent-ensemble"):
     response = requests.post(
         f"{BASE_URL}/v1/chat/completions",
         headers={
@@ -551,7 +551,7 @@ const client = axios.create({
   }
 });
 
-async function chatCompletion(messages, model = 'superagent-ensemble') {
+async function chatCompletion(messages, model = 'helixagent-ensemble') {
   const response = await client.post('/v1/chat/completions', {
     model,
     messages,
@@ -585,7 +585,7 @@ func main() {
     url := "http://localhost:8080/v1/chat/completions"
 
     payload := map[string]interface{}{
-        "model": "superagent-ensemble",
+        "model": "helixagent-ensemble",
         "messages": []map[string]string{
             {"role": "user", "content": "Hello, how are you?"},
         },
@@ -617,7 +617,7 @@ func main() {
 
 ### Core Components
 
-SuperAgent consists of several key components:
+HelixAgent consists of several key components:
 
 ```
                     ┌─────────────────────────────────────┐
@@ -625,7 +625,7 @@ SuperAgent consists of several key components:
                     └─────────────────┬───────────────────┘
                                       │
                     ┌─────────────────▼───────────────────┐
-                    │         SuperAgent Server           │
+                    │         HelixAgent Server           │
                     │  ┌──────────┬──────────┬──────────┐ │
                     │  │ Handlers │ Services │ Ensemble │ │
                     │  └──────────┴──────────┴──────────┘ │
@@ -647,7 +647,7 @@ SuperAgent consists of several key components:
 
 ### Request Flow
 
-1. **Client Request**: API request arrives at SuperAgent
+1. **Client Request**: API request arrives at HelixAgent
 2. **Authentication**: JWT token validated via middleware
 3. **Rate Limiting**: Request rate checked against limits
 4. **Model Selection**: Target model(s) determined
@@ -714,7 +714,7 @@ docker-compose ps postgres
 docker-compose logs postgres
 
 # Verify connection
-psql -h localhost -U superagent -d superagent_db
+psql -h localhost -U helixagent -d helixagent_db
 ```
 
 #### Redis Connection Failed
@@ -749,20 +749,20 @@ curl http://localhost:8080/v1/providers/deepseek/health
 echo $DEEPSEEK_API_KEY
 
 # Check logs for errors
-docker-compose logs superagent | grep -i error
+docker-compose logs helixagent | grep -i error
 ```
 
 ### Getting Help
 
 - **Documentation**: Check the `/docs` directory for detailed guides
-- **Issues**: Report bugs at [GitHub Issues](https://github.com/superagent/superagent/issues)
-- **Community**: Join discussions at [GitHub Discussions](https://github.com/superagent/superagent/discussions)
-- **Support**: Contact support@superagent.ai for enterprise support
+- **Issues**: Report bugs at [GitHub Issues](https://github.com/helixagent/helixagent/issues)
+- **Community**: Join discussions at [GitHub Discussions](https://github.com/helixagent/helixagent/discussions)
+- **Support**: Contact support@helixagent.ai for enterprise support
 
 ---
 
 ## Summary
 
-You have successfully installed SuperAgent and made your first API request. SuperAgent provides a powerful platform for orchestrating multiple LLM providers with features like ensemble voting, AI debates, and knowledge graph integration.
+You have successfully installed HelixAgent and made your first API request. HelixAgent provides a powerful platform for orchestrating multiple LLM providers with features like ensemble voting, AI debates, and knowledge graph integration.
 
 Continue to the [Provider Configuration Guide](02-provider-configuration.md) to learn how to configure and optimize each LLM provider for your use case.

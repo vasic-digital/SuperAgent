@@ -1,8 +1,8 @@
-# SuperAgent LLM Facade Quickstart Guide
+# HelixAgent LLM Facade Quickstart Guide
 
 ## Overview
 
-SuperAgent LLM Facade is a unified API service that abstracts multiple LLM providers (DeepSeek, Claude, Gemini, Qwen, Z.AI) into a single intelligent interface with ensemble voting, memory enhancement via Cognee, and comprehensive monitoring.
+HelixAgent LLM Facade is a unified API service that abstracts multiple LLM providers (DeepSeek, Claude, Gemini, Qwen, Z.AI) into a single intelligent interface with ensemble voting, memory enhancement via Cognee, and comprehensive monitoring.
 
 ## Prerequisites
 
@@ -16,8 +16,8 @@ SuperAgent LLM Facade is a unified API service that abstracts multiple LLM provi
 ### 1. Clone and Setup
 
 ```bash
-git clone https://github.com/your-org/superagent.git
-cd superagent
+git clone https://github.com/your-org/helixagent.git
+cd helixagent
 ```
 
 ### 2. Configure Environment
@@ -42,9 +42,9 @@ ZAI_API_KEY=your_zai_api_key
 # Database Configuration
 DB_HOST=localhost
 DB_PORT=5432
-DB_USER=superagent
+DB_USER=helixagent
 DB_PASSWORD=your_secure_password
-DB_NAME=superagent_db
+DB_NAME=helixagent_db
 
 # Cognee Configuration
 COGNEE_PASSWORD=your_cognee_password
@@ -63,7 +63,7 @@ This starts:
 - PostgreSQL database with pgvector
 - Cognee memory system with ChromaDB and Neo4j
 - Redis for caching
-- SuperAgent API service
+- HelixAgent API service
 
 ### 4. Build and Run the Application
 
@@ -75,7 +75,7 @@ make build
 make dev
 
 # Or run directly
-go run cmd/superagent/main.go
+go run cmd/helixagent/main.go
 ```
 
 The API will be available at `http://localhost:8080`
@@ -346,7 +346,7 @@ plugins/newprovider/
 
 ```bash
 # Build image
-docker build -t superagent:latest .
+docker build -t helixagent:latest .
 
 # Run with Docker Compose
 docker-compose -f docker-compose.prod.yml up -d
@@ -359,7 +359,7 @@ docker-compose -f docker-compose.prod.yml up -d
 kubectl apply -f k8s/
 
 # Check deployment
-kubectl get pods -l app=superagent
+kubectl get pods -l app=helixagent
 ```
 
 ### Environment Variables
@@ -367,7 +367,7 @@ kubectl get pods -l app=superagent
 Production environment variables:
 ```bash
 # Required
-SUPERAGENT_API_KEY=your_production_api_key
+HELIXAGENT_API_KEY=your_production_api_key
 DB_HOST=your_database_host
 DB_PASSWORD=your_secure_db_password
 
@@ -400,7 +400,7 @@ TRACING_ENABLED=true
 
 ```bash
 # View application logs
-docker-compose logs -f superagent
+docker-compose logs -f helixagent
 
 # View specific component logs
 docker-compose logs -f cognee
@@ -429,7 +429,7 @@ curl -H "X-API-Key: your_api_key" \
 - Documentation: `/docs`
 - Issue tracking: GitHub Issues
 - Community: Discord/Slack channel
-- Support email: support@superagent.com
+- Support email: support@helixagent.com
 
 ## License
 

@@ -1,10 +1,10 @@
 #!/bin/bash
 #===============================================================================
-# SUPERAGENT SINGLE-PROVIDER MULTI-INSTANCE CHALLENGE
+# HELIXAGENT SINGLE-PROVIDER MULTI-INSTANCE CHALLENGE
 #===============================================================================
 # This challenge validates the single-provider multi-instance debate mode.
 # It specifically tests scenarios where only ONE LLM provider is available,
-# and SuperAgent must use that provider with multiple instances/models
+# and HelixAgent must use that provider with multiple instances/models
 # to fulfill all debate group roles.
 #
 # The challenge:
@@ -59,11 +59,11 @@ API_LOG="$LOGS_DIR/api_responses.log"
 ERROR_LOG="$LOGS_DIR/errors.log"
 
 # Binary paths
-SUPERAGENT_BINARY="$PROJECT_ROOT/bin/superagent"
+HELIXAGENT_BINARY="$PROJECT_ROOT/bin/helixagent"
 
 # Test configuration
-SUPERAGENT_PORT="${SUPERAGENT_PORT:-8080}"
-SUPERAGENT_HOST="${SUPERAGENT_HOST:-localhost}"
+HELIXAGENT_PORT="${HELIXAGENT_PORT:-8080}"
+HELIXAGENT_HOST="${HELIXAGENT_HOST:-localhost}"
 
 # Default options
 PROVIDER=""
@@ -132,7 +132,7 @@ log_phase() {
 
 usage() {
     cat << EOF
-${GREEN}SuperAgent Single-Provider Multi-Instance Challenge${NC}
+${GREEN}HelixAgent Single-Provider Multi-Instance Challenge${NC}
 
 ${BLUE}Usage:${NC}
     $0 [options]
@@ -182,42 +182,42 @@ load_environment() {
     fi
 }
 
-check_superagent_running() {
-    log_info "Checking if SuperAgent is running..."
+check_helixagent_running() {
+    log_info "Checking if HelixAgent is running..."
 
-    if curl -s "http://$SUPERAGENT_HOST:$SUPERAGENT_PORT/health" > /dev/null 2>&1 || \
-       curl -s "http://$SUPERAGENT_HOST:$SUPERAGENT_PORT/v1/models" > /dev/null 2>&1; then
-        log_success "SuperAgent is running on port $SUPERAGENT_PORT"
+    if curl -s "http://$HELIXAGENT_HOST:$HELIXAGENT_PORT/health" > /dev/null 2>&1 || \
+       curl -s "http://$HELIXAGENT_HOST:$HELIXAGENT_PORT/v1/models" > /dev/null 2>&1; then
+        log_success "HelixAgent is running on port $HELIXAGENT_PORT"
         return 0
     else
         return 1
     fi
 }
 
-start_superagent() {
-    log_info "Starting SuperAgent..."
+start_helixagent() {
+    log_info "Starting HelixAgent..."
 
-    if [ ! -x "$SUPERAGENT_BINARY" ]; then
-        log_warning "SuperAgent binary not found, building..."
+    if [ ! -x "$HELIXAGENT_BINARY" ]; then
+        log_warning "HelixAgent binary not found, building..."
         (cd "$PROJECT_ROOT" && make build)
     fi
 
-    "$SUPERAGENT_BINARY" > "$LOGS_DIR/superagent.log" 2>&1 &
+    "$HELIXAGENT_BINARY" > "$LOGS_DIR/helixagent.log" 2>&1 &
     local pid=$!
-    echo $pid > "$OUTPUT_DIR/superagent.pid"
+    echo $pid > "$OUTPUT_DIR/helixagent.pid"
 
     local max_attempts=30
     local attempt=0
     while [ $attempt -lt $max_attempts ]; do
-        if check_superagent_running; then
-            log_success "SuperAgent started (PID: $pid)"
+        if check_helixagent_running; then
+            log_success "HelixAgent started (PID: $pid)"
             return 0
         fi
         attempt=$((attempt + 1))
         sleep 1
     done
 
-    log_error "SuperAgent failed to start"
+    log_error "HelixAgent failed to start"
     return 1
 }
 
@@ -233,11 +233,11 @@ phase1_provider_discovery() {
     log_info "Discovering available providers..."
 
     # Call the discovery endpoint
-    local response=$(curl -s "http://$SUPERAGENT_HOST:$SUPERAGENT_PORT/v1/providers/discovery" 2>&1)
+    local response=$(curl -s "http://$HELIXAGENT_HOST:$HELIXAGENT_PORT/v1/providers/discovery" 2>&1)
 
     if [ -z "$response" ]; then
         log_warning "Discovery endpoint not available, using verification endpoint..."
-        response=$(curl -s "http://$SUPERAGENT_HOST:$SUPERAGENT_PORT/v1/providers/verify" 2>&1)
+        response=$(curl -s "http://$HELIXAGENT_HOST:$HELIXAGENT_PORT/v1/providers/verify" 2>&1)
     fi
 
     if [ -z "$response" ]; then
@@ -352,9 +352,9 @@ DEBATEREQUEST
     local start_time=$(date +%s%N)
     local response=$(curl -s -X POST \
         -H "Content-Type: application/json" \
-        -H "Authorization: Bearer $SUPERAGENT_API_KEY" \
+        -H "Authorization: Bearer $HELIXAGENT_API_KEY" \
         -d "$debate_request" \
-        "http://$SUPERAGENT_HOST:$SUPERAGENT_PORT/v1/debates" 2>&1)
+        "http://$HELIXAGENT_HOST:$HELIXAGENT_PORT/v1/debates" 2>&1)
     local end_time=$(date +%s%N)
     local duration_ms=$(( (end_time - start_time) / 1000000 ))
 
@@ -748,7 +748,7 @@ $RESULTS_DIR/
 
 $(if [ "$overall_success" = "true" ]; then
     echo "The single-provider multi-instance mode is working correctly."
-    echo "SuperAgent can successfully conduct debates with diverse perspectives"
+    echo "HelixAgent can successfully conduct debates with diverse perspectives"
     echo "even when only one LLM provider is available."
 else
     echo "Some tests did not pass. Review the debate outputs and diversity analysis"
@@ -756,7 +756,7 @@ else
 fi)
 
 ---
-*Generated by SuperAgent Single-Provider Challenge*
+*Generated by HelixAgent Single-Provider Challenge*
 EOF
 
     # Print summary
@@ -829,10 +829,10 @@ main() {
     log_info "Start time: $START_TIME"
     log_info "Results directory: $RESULTS_DIR"
 
-    # Check/Start SuperAgent
-    if ! check_superagent_running; then
-        if ! start_superagent; then
-            log_error "Failed to start SuperAgent"
+    # Check/Start HelixAgent
+    if ! check_helixagent_running; then
+        if ! start_helixagent; then
+            log_error "Failed to start HelixAgent"
             exit 1
         fi
     fi

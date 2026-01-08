@@ -1,4 +1,4 @@
-# SuperAgent Comprehensive Audit Report
+# HelixAgent Comprehensive Audit Report
 
 **Generated**: December 31, 2025
 **Status**: CRITICAL ISSUES FOUND - NOT PRODUCTION READY
@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-This comprehensive audit analyzed all documentation, specifications, source code, tests, and marketing materials for the SuperAgent project. **The project has severe issues that make it unsuitable for production use.**
+This comprehensive audit analyzed all documentation, specifications, source code, tests, and marketing materials for the HelixAgent project. **The project has severe issues that make it unsuitable for production use.**
 
 ### Critical Findings at a Glance
 
@@ -69,7 +69,7 @@ Location: `/internal/handlers/openai_compatible.go:173-197`
 ```go
 if authHeader := c.GetHeader("Authorization"); authHeader == "Bearer test-key" {
     mockResponse := &OpenAIChatResponse{
-        Content: "This is a mock response from SuperAgent ensemble...",
+        Content: "This is a mock response from HelixAgent ensemble...",
     }
     c.JSON(http.StatusOK, mockResponse)
     return
@@ -127,7 +127,7 @@ The following handlers exist but are NOT registered in the router:
 
 ### 2.3 OpenAPI Endpoints Not Implemented
 
-From `specs/001-super-agent/contracts/openapi.yaml`:
+From `specs/001-helix-agent/contracts/openapi.yaml`:
 
 | Endpoint | Status |
 |----------|--------|
@@ -220,11 +220,11 @@ return count, nil
 ### 4.2 OpenAPI Specification Mismatches
 
 Two different OpenAPI specs exist with different purposes:
-- `specs/001-super-agent/contracts/openapi.yaml` - LLM Facade API
+- `specs/001-helix-agent/contracts/openapi.yaml` - LLM Facade API
 - `docs/api/openapi.yaml` - AI Debate API
 
 Issues:
-- Different production domains (`superagent.com` vs `superagent.ai`)
+- Different production domains (`helixagent.com` vs `helixagent.ai`)
 - Different security scheme definitions
 - Provider list discrepancies
 - Error schema inconsistencies
@@ -272,7 +272,7 @@ Issues:
 | `internal/llm/providers/claude` | 41.9% | Poor |
 | `internal/llm/providers/deepseek` | 39.8% | Poor |
 | `internal/cache` | 39.2% | Poor |
-| `cmd/superagent` | 31.4% | Poor |
+| `cmd/helixagent` | 31.4% | Poor |
 | `internal/handlers` | 28.4% | Poor |
 | `internal/database` | 24.8% | Poor |
 | `internal/modelsdev` | 23.5% | Poor |

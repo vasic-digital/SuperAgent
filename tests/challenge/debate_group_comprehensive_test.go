@@ -20,7 +20,7 @@ func TestDebateGroupComprehensive(t *testing.T) {
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
-		t.Skip("SuperAgent server not running at " + baseURL)
+		t.Skip("HelixAgent server not running at " + baseURL)
 	}
 
 	// Run all comprehensive tests
@@ -109,7 +109,7 @@ func testDebateGroupSizes(t *testing.T, baseURL string) {
 
 			// Make a debate request with specific provider count
 			result := runDebateWithConfig(baseURL, DebateRequest{
-				Model:    "superagent-debate",
+				Model:    "helixagent-debate",
 				Messages: []Message{{Role: "user", Content: "What is 1+1? Answer with just the number."}},
 				EnsembleConfig: &EnsembleConfig{
 					MinProviders:        tc.minProviders,
@@ -222,7 +222,7 @@ func testFallbackScenarios(t *testing.T, baseURL string) {
 			t.Logf("  Testing %s: %s", tc.name, tc.description)
 
 			result := runDebateWithConfig(baseURL, DebateRequest{
-				Model:    "superagent-debate",
+				Model:    "helixagent-debate",
 				Messages: []Message{{Role: "user", Content: "Say OK"}},
 				EnsembleConfig: &EnsembleConfig{
 					MinProviders:        tc.minProviders,
@@ -277,7 +277,7 @@ func testVotingStrategies(t *testing.T, baseURL string) {
 			t.Logf("  Testing strategy: %s", strategy)
 
 			result := runDebateWithConfig(baseURL, DebateRequest{
-				Model:    "superagent-debate",
+				Model:    "helixagent-debate",
 				Messages: []Message{{Role: "user", Content: "What color is the sky? Answer in one word."}},
 				EnsembleConfig: &EnsembleConfig{
 					MinProviders:        1,
@@ -325,7 +325,7 @@ func testProviderCombinations(t *testing.T, baseURL string) {
 
 			// Test with preferred providers
 			result := runDebateWithConfig(baseURL, DebateRequest{
-				Model:    "superagent-debate",
+				Model:    "helixagent-debate",
 				Messages: []Message{{Role: "user", Content: "Say hello"}},
 				EnsembleConfig: &EnsembleConfig{
 					MinProviders:       len(combo),
@@ -373,7 +373,7 @@ func testConcurrentDebates(t *testing.T, baseURL string) {
 		go func(index int) {
 			defer wg.Done()
 			result := runDebateWithConfig(baseURL, DebateRequest{
-				Model:    "superagent-debate",
+				Model:    "helixagent-debate",
 				Messages: []Message{{Role: "user", Content: fmt.Sprintf("Say 'concurrent %d'", index)}},
 				EnsembleConfig: &EnsembleConfig{
 					MinProviders:    1,
@@ -437,7 +437,7 @@ func testDebateGroupFailover(t *testing.T, baseURL string) {
 	// Test that ensemble still works with degraded providers
 	if healthyCount > 0 {
 		result := runDebateWithConfig(baseURL, DebateRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []Message{{Role: "user", Content: "Test failover: say OK"}},
 			EnsembleConfig: &EnsembleConfig{
 				MinProviders:    1,
@@ -623,7 +623,7 @@ func TestDebateGroupWithMockedProviders(t *testing.T) {
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
-		t.Skip("SuperAgent server not running at " + baseURL)
+		t.Skip("HelixAgent server not running at " + baseURL)
 	}
 
 	// Get provider health first
@@ -643,7 +643,7 @@ func TestDebateGroupWithMockedProviders(t *testing.T) {
 	t.Run("AllProvidersHealthy", func(t *testing.T) {
 		if healthyCount >= 2 {
 			result := runDebateWithConfig(baseURL, DebateRequest{
-				Model:    "superagent-debate",
+				Model:    "helixagent-debate",
 				Messages: []Message{{Role: "user", Content: "All healthy: say OK"}},
 				EnsembleConfig: &EnsembleConfig{
 					MinProviders:    2,
@@ -665,7 +665,7 @@ func TestDebateGroupWithMockedProviders(t *testing.T) {
 	t.Run("SingleProviderDegraded", func(t *testing.T) {
 		// Test with fallback when only some providers work
 		result := runDebateWithConfig(baseURL, DebateRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []Message{{Role: "user", Content: "Degraded mode: say OK"}},
 			EnsembleConfig: &EnsembleConfig{
 				MinProviders:    1,
@@ -684,7 +684,7 @@ func TestDebateGroupWithMockedProviders(t *testing.T) {
 	t.Run("NoFallbackRequired", func(t *testing.T) {
 		// Test strict mode without fallback
 		result := runDebateWithConfig(baseURL, DebateRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []Message{{Role: "user", Content: "Strict mode: say OK"}},
 			EnsembleConfig: &EnsembleConfig{
 				MinProviders:    1,
@@ -707,12 +707,12 @@ func TestDebateGroupEdgeCases(t *testing.T) {
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
-		t.Skip("SuperAgent server not running at " + baseURL)
+		t.Skip("HelixAgent server not running at " + baseURL)
 	}
 
 	t.Run("EmptyMessage", func(t *testing.T) {
 		result := runDebateWithConfig(baseURL, DebateRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []Message{{Role: "user", Content: ""}},
 		})
 		// Should handle gracefully
@@ -722,7 +722,7 @@ func TestDebateGroupEdgeCases(t *testing.T) {
 	t.Run("VeryLongMessage", func(t *testing.T) {
 		longMessage := strings.Repeat("This is a test message. ", 100)
 		result := runDebateWithConfig(baseURL, DebateRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []Message{{Role: "user", Content: longMessage}},
 		})
 		t.Logf("  Long message (%d chars): Success=%v", len(longMessage), result.Success)
@@ -730,7 +730,7 @@ func TestDebateGroupEdgeCases(t *testing.T) {
 
 	t.Run("MultipleMessages", func(t *testing.T) {
 		result := runDebateWithConfig(baseURL, DebateRequest{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []Message{
 				{Role: "system", Content: "You are a helpful assistant."},
 				{Role: "user", Content: "Hello!"},
@@ -747,7 +747,7 @@ func TestDebateGroupEdgeCases(t *testing.T) {
 
 	t.Run("ZeroMinProviders", func(t *testing.T) {
 		result := runDebateWithConfig(baseURL, DebateRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []Message{{Role: "user", Content: "Zero min: say OK"}},
 			EnsembleConfig: &EnsembleConfig{
 				MinProviders:    0,
@@ -761,7 +761,7 @@ func TestDebateGroupEdgeCases(t *testing.T) {
 
 	t.Run("HighMinProviders", func(t *testing.T) {
 		result := runDebateWithConfig(baseURL, DebateRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []Message{{Role: "user", Content: "High min: say OK"}},
 			EnsembleConfig: &EnsembleConfig{
 				MinProviders:    10,
@@ -775,7 +775,7 @@ func TestDebateGroupEdgeCases(t *testing.T) {
 
 	t.Run("InvalidStrategy", func(t *testing.T) {
 		result := runDebateWithConfig(baseURL, DebateRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []Message{{Role: "user", Content: "Invalid strategy: say OK"}},
 			EnsembleConfig: &EnsembleConfig{
 				MinProviders:    1,
@@ -793,7 +793,7 @@ func TestDebateGroupPerformance(t *testing.T) {
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
-		t.Skip("SuperAgent server not running at " + baseURL)
+		t.Skip("HelixAgent server not running at " + baseURL)
 	}
 
 	t.Run("ResponseLatency", func(t *testing.T) {
@@ -803,7 +803,7 @@ func TestDebateGroupPerformance(t *testing.T) {
 
 		for i := 0; i < numSamples; i++ {
 			result := runDebateWithConfig(baseURL, DebateRequest{
-				Model:    "superagent-debate",
+				Model:    "helixagent-debate",
 				Messages: []Message{{Role: "user", Content: "Latency test: say OK"}},
 				EnsembleConfig: &EnsembleConfig{
 					MinProviders:    1,
@@ -846,7 +846,7 @@ func TestDebateGroupPerformance(t *testing.T) {
 				time.Sleep(time.Duration(idx%concurrency) * 200 * time.Millisecond)
 
 				result := runDebateWithConfig(baseURL, DebateRequest{
-					Model:    "superagent-debate",
+					Model:    "helixagent-debate",
 					Messages: []Message{{Role: "user", Content: fmt.Sprintf("Load test %d: say OK", idx)}},
 					EnsembleConfig: &EnsembleConfig{
 						MinProviders:    1,
@@ -879,7 +879,7 @@ func TestDebateGroupRecovery(t *testing.T) {
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
-		t.Skip("SuperAgent server not running at " + baseURL)
+		t.Skip("HelixAgent server not running at " + baseURL)
 	}
 
 	// Get provider health first
@@ -900,7 +900,7 @@ func TestDebateGroupRecovery(t *testing.T) {
 		// First request with short timeout (may timeout)
 		shortClient := &http.Client{Timeout: 1 * time.Second}
 		body, _ := json.Marshal(DebateRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []Message{{Role: "user", Content: "Very long computation required"}},
 		})
 		req, _ := http.NewRequest("POST", baseURL+"/v1/chat/completions", bytes.NewReader(body))
@@ -909,7 +909,7 @@ func TestDebateGroupRecovery(t *testing.T) {
 
 		// Second request should still work
 		result := runDebateWithConfig(baseURL, DebateRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []Message{{Role: "user", Content: "Recovery test: say OK"}},
 		})
 

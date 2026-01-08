@@ -1,6 +1,6 @@
 # Models Package
 
-The models package contains data structures and types used throughout SuperAgent.
+The models package contains data structures and types used throughout HelixAgent.
 
 ## Overview
 

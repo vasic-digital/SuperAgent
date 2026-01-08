@@ -1,4 +1,4 @@
-// Package integration provides comprehensive integration tests for OpenCode CLI with SuperAgent.
+// Package integration provides comprehensive integration tests for OpenCode CLI with HelixAgent.
 // These tests verify all CLI commands, API endpoints, and end-to-end workflows.
 package integration
 
@@ -29,10 +29,10 @@ import (
 // =============================================================================
 
 const (
-	// Default SuperAgent configuration
-	DefaultSuperAgentHost = "localhost"
-	DefaultSuperAgentPort = "8080"
-	SuperAgentBinary      = "../../bin/superagent"
+	// Default HelixAgent configuration
+	DefaultHelixAgentHost = "localhost"
+	DefaultHelixAgentPort = "8080"
+	HelixAgentBinary      = "../../bin/helixagent"
 
 	// Timeouts
 	APITimeout     = 30 * time.Second
@@ -43,9 +43,9 @@ const (
 
 // TestConfig holds test configuration
 type TestConfig struct {
-	SuperAgentHost   string
-	SuperAgentPort   string
-	SuperAgentAPIKey string
+	HelixAgentHost   string
+	HelixAgentPort   string
+	HelixAgentAPIKey string
 	BaseURL          string
 	BinaryPath       string
 	TempDir          string
@@ -165,13 +165,13 @@ func loadTestConfig(t *testing.T) *TestConfig {
 	}
 
 	config := &TestConfig{
-		SuperAgentHost:   getEnvOrDefault("SUPERAGENT_HOST", DefaultSuperAgentHost),
-		SuperAgentPort:   getEnvOrDefault("PORT", DefaultSuperAgentPort),
-		SuperAgentAPIKey: os.Getenv("SUPERAGENT_API_KEY"),
-		BinaryPath:       filepath.Join(projectRoot, "bin", "superagent"),
+		HelixAgentHost:   getEnvOrDefault("HELIXAGENT_HOST", DefaultHelixAgentHost),
+		HelixAgentPort:   getEnvOrDefault("PORT", DefaultHelixAgentPort),
+		HelixAgentAPIKey: os.Getenv("HELIXAGENT_API_KEY"),
+		BinaryPath:       filepath.Join(projectRoot, "bin", "helixagent"),
 	}
 
-	config.BaseURL = fmt.Sprintf("http://%s:%s/v1", config.SuperAgentHost, config.SuperAgentPort)
+	config.BaseURL = fmt.Sprintf("http://%s:%s/v1", config.HelixAgentHost, config.HelixAgentPort)
 
 	// Create temp directory for test files
 	tempDir, err := os.MkdirTemp("", "opencode-test-*")
@@ -224,7 +224,7 @@ func TestGenerateAPIKeyCommand(t *testing.T) {
 
 	t.Run("GenerateAPIKeyToStdout", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Skip("SuperAgent binary not found, run 'make build' first")
+			t.Skip("HelixAgent binary not found, run 'make build' first")
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), CommandTimeout)
@@ -244,7 +244,7 @@ func TestGenerateAPIKeyCommand(t *testing.T) {
 
 	t.Run("GenerateAPIKeyToEnvFile", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Skip("SuperAgent binary not found, run 'make build' first")
+			t.Skip("HelixAgent binary not found, run 'make build' first")
 		}
 
 		envFilePath := filepath.Join(config.TempDir, ".env.test")
@@ -264,13 +264,13 @@ func TestGenerateAPIKeyCommand(t *testing.T) {
 		content, err := os.ReadFile(envFilePath)
 		require.NoError(t, err, "Failed to read env file")
 
-		assert.Contains(t, string(content), "SUPERAGENT_API_KEY="+apiKey,
+		assert.Contains(t, string(content), "HELIXAGENT_API_KEY="+apiKey,
 			"Env file should contain the generated API key")
 	})
 
 	t.Run("GenerateAPIKeyPreservesExistingEnv", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Skip("SuperAgent binary not found, run 'make build' first")
+			t.Skip("HelixAgent binary not found, run 'make build' first")
 		}
 
 		envFilePath := filepath.Join(config.TempDir, ".env.preserve")
@@ -297,12 +297,12 @@ func TestGenerateAPIKeyCommand(t *testing.T) {
 		assert.Contains(t, contentStr, "EXISTING_VAR=existing_value")
 		assert.Contains(t, contentStr, "# Comment line")
 		assert.Contains(t, contentStr, "ANOTHER_VAR=another")
-		assert.Contains(t, contentStr, "SUPERAGENT_API_KEY=sk-")
+		assert.Contains(t, contentStr, "HELIXAGENT_API_KEY=sk-")
 	})
 
 	t.Run("GenerateMultipleUniqueKeys", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Skip("SuperAgent binary not found, run 'make build' first")
+			t.Skip("HelixAgent binary not found, run 'make build' first")
 		}
 
 		keys := make(map[string]bool)
@@ -331,7 +331,7 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 
 	t.Run("GenerateConfigToStdout", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Skip("SuperAgent binary not found, run 'make build' first")
+			t.Skip("HelixAgent binary not found, run 'make build' first")
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), CommandTimeout)
@@ -345,20 +345,20 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 		err = json.Unmarshal(output, &openCodeConfig)
 		require.NoError(t, err, "Output should be valid JSON")
 
-		// Validate config structure - uses "superagent" provider, NOT "openai"
+		// Validate config structure - uses "helixagent" provider, NOT "openai"
 		assert.Equal(t, "https://opencode.ai/config.json", openCodeConfig.Schema)
-		assert.NotNil(t, openCodeConfig.Provider["superagent"])
-		assert.Equal(t, "SuperAgent AI Debate Ensemble", openCodeConfig.Provider["superagent"].Name)
-		assert.NotNil(t, openCodeConfig.Provider["superagent"].Options["apiKey"])
-		assert.NotNil(t, openCodeConfig.Provider["superagent"].Options["baseURL"])
+		assert.NotNil(t, openCodeConfig.Provider["helixagent"])
+		assert.Equal(t, "HelixAgent AI Debate Ensemble", openCodeConfig.Provider["helixagent"].Name)
+		assert.NotNil(t, openCodeConfig.Provider["helixagent"].Options["apiKey"])
+		assert.NotNil(t, openCodeConfig.Provider["helixagent"].Options["baseURL"])
 		assert.NotNil(t, openCodeConfig.Agent)
-		assert.Equal(t, "superagent", openCodeConfig.Agent.Model.Provider)
-		assert.Equal(t, "superagent-debate", openCodeConfig.Agent.Model.Model)
+		assert.Equal(t, "helixagent", openCodeConfig.Agent.Model.Provider)
+		assert.Equal(t, "helixagent-debate", openCodeConfig.Agent.Model.Model)
 	})
 
 	t.Run("GenerateConfigToFile", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Skip("SuperAgent binary not found, run 'make build' first")
+			t.Skip("HelixAgent binary not found, run 'make build' first")
 		}
 
 		configPath := filepath.Join(config.TempDir, "opencode.json")
@@ -385,13 +385,13 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 
 	t.Run("GenerateConfigWithEnvAPIKey", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Skip("SuperAgent binary not found, run 'make build' first")
+			t.Skip("HelixAgent binary not found, run 'make build' first")
 		}
 
 		// Set a specific API key in environment
 		testAPIKey := "sk-test1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd"
-		os.Setenv("SUPERAGENT_API_KEY", testAPIKey)
-		defer os.Unsetenv("SUPERAGENT_API_KEY")
+		os.Setenv("HELIXAGENT_API_KEY", testAPIKey)
+		defer os.Unsetenv("HELIXAGENT_API_KEY")
 
 		ctx, cancel := context.WithTimeout(context.Background(), CommandTimeout)
 		defer cancel()
@@ -404,18 +404,18 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 		err = json.Unmarshal(output, &openCodeConfig)
 		require.NoError(t, err)
 
-		assert.Equal(t, testAPIKey, openCodeConfig.Provider["superagent"].Options["apiKey"])
+		assert.Equal(t, testAPIKey, openCodeConfig.Provider["helixagent"].Options["apiKey"])
 	})
 
 	t.Run("GenerateConfigWithCustomHostPort", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Skip("SuperAgent binary not found, run 'make build' first")
+			t.Skip("HelixAgent binary not found, run 'make build' first")
 		}
 
-		os.Setenv("SUPERAGENT_HOST", "custom-host.example.com")
+		os.Setenv("HELIXAGENT_HOST", "custom-host.example.com")
 		os.Setenv("PORT", "9090")
 		defer func() {
-			os.Unsetenv("SUPERAGENT_HOST")
+			os.Unsetenv("HELIXAGENT_HOST")
 			os.Unsetenv("PORT")
 		}()
 
@@ -430,7 +430,7 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 		err = json.Unmarshal(output, &openCodeConfig)
 		require.NoError(t, err)
 
-		baseURL := openCodeConfig.Provider["superagent"].Options["baseURL"].(string)
+		baseURL := openCodeConfig.Provider["helixagent"].Options["baseURL"].(string)
 		assert.Equal(t, "http://custom-host.example.com:9090/v1", baseURL)
 	})
 }
@@ -441,7 +441,7 @@ func TestHelpCommand(t *testing.T) {
 	defer cleanupTestConfig(t, config)
 
 	if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-		t.Skip("SuperAgent binary not found, run 'make build' first")
+		t.Skip("HelixAgent binary not found, run 'make build' first")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), CommandTimeout)
@@ -452,7 +452,7 @@ func TestHelpCommand(t *testing.T) {
 	require.NoError(t, err)
 
 	helpText := string(output)
-	assert.Contains(t, helpText, "SuperAgent")
+	assert.Contains(t, helpText, "HelixAgent")
 	assert.Contains(t, helpText, "-generate-api-key")
 	assert.Contains(t, helpText, "-generate-opencode-config")
 	assert.Contains(t, helpText, "-config")
@@ -469,12 +469,12 @@ func skipIfNoServer(t *testing.T, config *TestConfig) {
 	client := &http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Get(config.BaseURL + "/models")
 	if err != nil {
-		t.Skipf("SuperAgent server not running at %s: %v", config.BaseURL, err)
+		t.Skipf("HelixAgent server not running at %s: %v", config.BaseURL, err)
 	}
 	resp.Body.Close()
 
-	if resp.StatusCode == http.StatusUnauthorized && config.SuperAgentAPIKey == "" {
-		t.Skip("SuperAgent requires API key but SUPERAGENT_API_KEY not set")
+	if resp.StatusCode == http.StatusUnauthorized && config.HelixAgentAPIKey == "" {
+		t.Skip("HelixAgent requires API key but HELIXAGENT_API_KEY not set")
 	}
 }
 
@@ -491,8 +491,8 @@ func TestModelsEndpoint(t *testing.T) {
 		req, err := http.NewRequestWithContext(ctx, "GET", config.BaseURL+"/models", nil)
 		require.NoError(t, err)
 
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -509,15 +509,15 @@ func TestModelsEndpoint(t *testing.T) {
 		assert.Equal(t, "list", modelsResp.Object)
 		assert.NotEmpty(t, modelsResp.Data, "Should have at least one model")
 
-		// Check for superagent-debate model
+		// Check for helixagent-debate model
 		hasDebateModel := false
 		for _, model := range modelsResp.Data {
-			if model.ID == "superagent-debate" {
+			if model.ID == "helixagent-debate" {
 				hasDebateModel = true
 				break
 			}
 		}
-		assert.True(t, hasDebateModel, "Should include superagent-debate model")
+		assert.True(t, hasDebateModel, "Should include helixagent-debate model")
 	})
 
 	t.Run("ModelsWithInvalidAuth", func(t *testing.T) {
@@ -554,7 +554,7 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 		defer cancel()
 
 		chatReq := OpenAIChatRequest{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Say 'Hello' and nothing else."},
 			},
@@ -570,8 +570,8 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 			config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -605,7 +605,7 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 		defer cancel()
 
 		chatReq := OpenAIChatRequest{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "system", Content: "You are a helpful assistant. Always respond with exactly one word."},
 				{Role: "user", Content: "What is 2+2?"},
@@ -622,8 +622,8 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 			config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -651,7 +651,7 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 		defer cancel()
 
 		chatReq := OpenAIChatRequest{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "My name is Alice."},
 				{Role: "assistant", Content: "Hello Alice! Nice to meet you."},
@@ -669,8 +669,8 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 			config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -703,8 +703,8 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 			config.BaseURL+"/chat/completions", strings.NewReader("not valid json"))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -720,7 +720,7 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 		defer cancel()
 
 		chatReq := OpenAIChatRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []OpenAIMessage{},
 			Stream:   false,
 		}
@@ -732,8 +732,8 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 			config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -757,7 +757,7 @@ func TestChatCompletionsStreamingEndpoint(t *testing.T) {
 		defer cancel()
 
 		chatReq := OpenAIChatRequest{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Count from 1 to 5."},
 			},
@@ -774,8 +774,8 @@ func TestChatCompletionsStreamingEndpoint(t *testing.T) {
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "text/event-stream")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -824,7 +824,7 @@ func TestChatCompletionsStreamingEndpoint(t *testing.T) {
 		defer cancel()
 
 		chatReq := OpenAIChatRequest{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Say exactly: 'The quick brown fox jumps over the lazy dog.'"},
 			},
@@ -841,8 +841,8 @@ func TestChatCompletionsStreamingEndpoint(t *testing.T) {
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "text/event-stream")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -888,7 +888,7 @@ func TestChatCompletionsStreamingEndpoint(t *testing.T) {
 		defer cancel()
 
 		chatReq := OpenAIChatRequest{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Write a very long story about a dragon."},
 			},
@@ -905,8 +905,8 @@ func TestChatCompletionsStreamingEndpoint(t *testing.T) {
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "text/event-stream")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -951,7 +951,7 @@ func TestConcurrentRequests(t *testing.T) {
 				defer cancel()
 
 				chatReq := OpenAIChatRequest{
-					Model: "superagent-debate",
+					Model: "helixagent-debate",
 					Messages: []OpenAIMessage{
 						{Role: "user", Content: fmt.Sprintf("What is %d + %d?", idx, idx)},
 					},
@@ -964,8 +964,8 @@ func TestConcurrentRequests(t *testing.T) {
 				req, _ := http.NewRequestWithContext(ctx, "POST",
 					config.BaseURL+"/chat/completions", bytes.NewReader(body))
 				req.Header.Set("Content-Type", "application/json")
-				if config.SuperAgentAPIKey != "" {
-					req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+				if config.HelixAgentAPIKey != "" {
+					req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 				}
 
 				client := &http.Client{}
@@ -1028,7 +1028,7 @@ func TestConcurrentRequests(t *testing.T) {
 				defer cancel()
 
 				chatReq := OpenAIChatRequest{
-					Model: "superagent-debate",
+					Model: "helixagent-debate",
 					Messages: []OpenAIMessage{
 						{Role: "user", Content: fmt.Sprintf("Count from %d to %d", idx*3+1, idx*3+3)},
 					},
@@ -1042,8 +1042,8 @@ func TestConcurrentRequests(t *testing.T) {
 					config.BaseURL+"/chat/completions", bytes.NewReader(body))
 				req.Header.Set("Content-Type", "application/json")
 				req.Header.Set("Accept", "text/event-stream")
-				if config.SuperAgentAPIKey != "" {
-					req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+				if config.HelixAgentAPIKey != "" {
+					req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 				}
 
 				client := &http.Client{}
@@ -1132,7 +1132,7 @@ func TestConcurrentRequests(t *testing.T) {
 				defer cancel()
 
 				chatReq := OpenAIChatRequest{
-					Model: "superagent-debate",
+					Model: "helixagent-debate",
 					Messages: []OpenAIMessage{
 						{Role: "user", Content: "Say hello."},
 					},
@@ -1148,8 +1148,8 @@ func TestConcurrentRequests(t *testing.T) {
 				if useStream {
 					req.Header.Set("Accept", "text/event-stream")
 				}
-				if config.SuperAgentAPIKey != "" {
-					req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+				if config.HelixAgentAPIKey != "" {
+					req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 				}
 
 				client := &http.Client{}
@@ -1236,7 +1236,7 @@ func TestOpenCodeConfigValidation(t *testing.T) {
 			Schema: "https://opencode.ai/config.json",
 			Provider: map[string]OpenCodeProviderDef{
 				"openai": {
-					Name: "SuperAgent AI Debate Ensemble",
+					Name: "HelixAgent AI Debate Ensemble",
 					Options: map[string]interface{}{
 						"apiKey":  "sk-test123",
 						"baseURL": "http://localhost:8080/v1",
@@ -1246,7 +1246,7 @@ func TestOpenCodeConfigValidation(t *testing.T) {
 			Agent: &OpenCodeAgentDef{
 				Model: &OpenCodeModelRef{
 					Provider: "openai",
-					Model:    "superagent-debate",
+					Model:    "helixagent-debate",
 				},
 			},
 		}
@@ -1260,7 +1260,7 @@ func TestOpenCodeConfigValidation(t *testing.T) {
 
 		assert.NotNil(t, parsed.Agent)
 		assert.Equal(t, "openai", parsed.Agent.Model.Provider)
-		assert.Equal(t, "superagent-debate", parsed.Agent.Model.Model)
+		assert.Equal(t, "helixagent-debate", parsed.Agent.Model.Model)
 	})
 
 	t.Run("ConfigWithMissingAPIKey", func(t *testing.T) {
@@ -1347,8 +1347,8 @@ func TestErrorHandling(t *testing.T) {
 		req, _ := http.NewRequestWithContext(ctx, "POST",
 			config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -1365,7 +1365,7 @@ func TestErrorHandling(t *testing.T) {
 		defer cancel()
 
 		chatReq := OpenAIChatRequest{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Hello"},
 			},
@@ -1415,8 +1415,8 @@ func TestErrorHandling(t *testing.T) {
 		req, _ := http.NewRequestWithContext(ctx, "POST",
 			config.BaseURL+"/chat/completions", strings.NewReader("{malformed"))
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -1434,8 +1434,8 @@ func TestErrorHandling(t *testing.T) {
 		req, _ := http.NewRequestWithContext(ctx, "POST",
 			config.BaseURL+"/chat/completions", strings.NewReader(""))
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -1453,8 +1453,8 @@ func TestErrorHandling(t *testing.T) {
 		// Try GET on POST-only endpoint
 		req, _ := http.NewRequestWithContext(ctx, "GET",
 			config.BaseURL+"/chat/completions", nil)
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -1479,7 +1479,7 @@ func TestEndToEndWorkflow(t *testing.T) {
 
 	t.Run("GenerateConfigAndTestAPI", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Skip("SuperAgent binary not found, run 'make build' first")
+			t.Skip("HelixAgent binary not found, run 'make build' first")
 		}
 
 		// Step 1: Generate OpenCode config
@@ -1501,11 +1501,11 @@ func TestEndToEndWorkflow(t *testing.T) {
 		err = json.Unmarshal(content, &openCodeConfig)
 		require.NoError(t, err, "Generated config should be valid JSON")
 
-		// Step 3: Extract API key and base URL from config (uses "superagent" provider)
-		apiKey, ok := openCodeConfig.Provider["superagent"].Options["apiKey"].(string)
+		// Step 3: Extract API key and base URL from config (uses "helixagent" provider)
+		apiKey, ok := openCodeConfig.Provider["helixagent"].Options["apiKey"].(string)
 		require.True(t, ok, "Config should contain API key")
 
-		baseURL, ok := openCodeConfig.Provider["superagent"].Options["baseURL"].(string)
+		baseURL, ok := openCodeConfig.Provider["helixagent"].Options["baseURL"].(string)
 		require.True(t, ok, "Config should contain base URL")
 
 		t.Logf("Generated config with baseURL: %s", baseURL)
@@ -1531,18 +1531,18 @@ func TestEndToEndWorkflow(t *testing.T) {
 
 	t.Run("FullConfigGenerationWithEnvFile", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Skip("SuperAgent binary not found, run 'make build' first")
+			t.Skip("HelixAgent binary not found, run 'make build' first")
 		}
 
 		envPath := filepath.Join(config.TempDir, ".env")
 		configPath := filepath.Join(config.TempDir, "opencode-full.json")
 
 		// Unset any existing API key to force generation
-		origAPIKey := os.Getenv("SUPERAGENT_API_KEY")
-		os.Unsetenv("SUPERAGENT_API_KEY")
+		origAPIKey := os.Getenv("HELIXAGENT_API_KEY")
+		os.Unsetenv("HELIXAGENT_API_KEY")
 		defer func() {
 			if origAPIKey != "" {
-				os.Setenv("SUPERAGENT_API_KEY", origAPIKey)
+				os.Setenv("HELIXAGENT_API_KEY", origAPIKey)
 			}
 		}()
 
@@ -1563,7 +1563,7 @@ func TestEndToEndWorkflow(t *testing.T) {
 		// Verify env file contains API key
 		envContent, err := os.ReadFile(envPath)
 		require.NoError(t, err)
-		assert.Contains(t, string(envContent), "SUPERAGENT_API_KEY=sk-")
+		assert.Contains(t, string(envContent), "HELIXAGENT_API_KEY=sk-")
 
 		// Verify config file contains matching API key
 		configContent, err := os.ReadFile(configPath)
@@ -1573,7 +1573,7 @@ func TestEndToEndWorkflow(t *testing.T) {
 		err = json.Unmarshal(configContent, &openCodeConfig)
 		require.NoError(t, err)
 
-		configAPIKey := openCodeConfig.Provider["superagent"].Options["apiKey"].(string)
+		configAPIKey := openCodeConfig.Provider["helixagent"].Options["apiKey"].(string)
 		assert.True(t, strings.HasPrefix(configAPIKey, "sk-"))
 	})
 }
@@ -1602,16 +1602,16 @@ func BenchmarkChatCompletion(b *testing.B) {
 	envFile := filepath.Join(projectRoot, ".env")
 	godotenv.Load(envFile)
 
-	host := getEnvOrDefault("SUPERAGENT_HOST", DefaultSuperAgentHost)
-	port := getEnvOrDefault("PORT", DefaultSuperAgentPort)
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	host := getEnvOrDefault("HELIXAGENT_HOST", DefaultHelixAgentHost)
+	port := getEnvOrDefault("PORT", DefaultHelixAgentPort)
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	baseURL := fmt.Sprintf("http://%s:%s/v1", host, port)
 
 	// Check if server is running
 	client := &http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Get(baseURL + "/models")
 	if err != nil {
-		b.Skip("SuperAgent server not running")
+		b.Skip("HelixAgent server not running")
 	}
 	resp.Body.Close()
 
@@ -1619,7 +1619,7 @@ func BenchmarkChatCompletion(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		chatReq := OpenAIChatRequest{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Say 'ok'"},
 			},

@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 func TestContextManager_NewContextManager(t *testing.T) {

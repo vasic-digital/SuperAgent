@@ -1,7 +1,7 @@
-# 🎬 SuperAgent Video Script: "SuperAgent in 5 Minutes"
+# 🎬 HelixAgent Video Script: "HelixAgent in 5 Minutes"
 
 ## Video Overview
-**Title**: "SuperAgent in 5 Minutes - Multi-Provider AI Orchestration Made Simple"
+**Title**: "HelixAgent in 5 Minutes - Multi-Provider AI Orchestration Made Simple"
 **Target Length**: 5 minutes (300 seconds)
 **Target Audience**: Developers, AI engineers, technical decision-makers
 **Primary Goal**: Drive GitHub repository visits and project awareness
@@ -11,7 +11,7 @@
 ## 🎬 DETAILED SHOT-BY-SHOT SCRIPT
 
 ### [OPENING - 0:00-0:15] Hook & Problem Statement
-**VISUAL**: Dynamic intro with SuperAgent logo animation
+**VISUAL**: Dynamic intro with HelixAgent logo animation
 **AUDIO**: Upbeat, professional background music
 
 **HOST (Direct Address)**:
@@ -21,9 +21,9 @@
 **GRAPHICS**: "Vendor Lock-in?" text overlay with animated lock
 
 **HOST**:
-"Today, I'm going to show you how SuperAgent solves this problem in just 5 minutes."
+"Today, I'm going to show you how HelixAgent solves this problem in just 5 minutes."
 
-**VISUAL**: SuperAgent logo with "5-Minute Demo" text
+**VISUAL**: HelixAgent logo with "5-Minute Demo" text
 **TRANSITION**: Smooth zoom into desktop setup
 
 ---
@@ -33,15 +33,15 @@
 **AUDIO**: Music fades to background
 
 **HOST**:
-"SuperAgent is an open-source platform that orchestrates multiple LLM providers with intelligent routing, cost optimization, and even AI debate capabilities."
+"HelixAgent is an open-source platform that orchestrates multiple LLM providers with intelligent routing, cost optimization, and even AI debate capabilities."
 
-**VISUAL**: Screen recording of SuperAgent website (superagent.ai)
+**VISUAL**: Screen recording of HelixAgent website (helixagent.ai)
 **GRAPHICS**: Animated feature icons appearing
 
 **HOST**:
 "Think of it as the 'load balancer' for AI models, but with superpowers."
 
-**VISUAL**: Animation showing multiple AI models connecting to SuperAgent
+**VISUAL**: Animation showing multiple AI models connecting to HelixAgent
 **TRANSITION**: Switch to technical demonstration
 
 ---
@@ -51,12 +51,12 @@
 **AUDIO**: Clear, professional narration
 
 **HOST**:
-"Let's get SuperAgent running. Installation is incredibly simple."
+"Let's get HelixAgent running. Installation is incredibly simple."
 
 **VISUAL**: Type in terminal:
 ```bash
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 make build
 ```
 
@@ -104,7 +104,7 @@ providers:
 **GRAPHICS**: "Multi-Provider Setup" label
 
 **HOST**:
-"SuperAgent automatically routes requests to the best provider based on performance, cost, or your custom rules."
+"HelixAgent automatically routes requests to the best provider based on performance, cost, or your custom rules."
 
 **TRANSITION**: Switch to live demo
 
@@ -115,7 +115,7 @@ providers:
 **AUDIO**: Real-time narration of actions
 
 **HOST**:
-"Let's make our first request. I'll ask SuperAgent to analyze some data."
+"Let's make our first request. I'll ask HelixAgent to analyze some data."
 
 **VISUAL**: Type and execute:
 ```bash
@@ -147,7 +147,7 @@ curl -X POST http://localhost:8080/api/v1/completion \
 **AUDIO**: Professional explanation
 
 **HOST**:
-"SuperAgent includes enterprise-grade monitoring. Let me show you the dashboard."
+"HelixAgent includes enterprise-grade monitoring. Let me show you the dashboard."
 
 **VISUAL**: Navigate to monitoring dashboard
 **GRAPHICS**: "Enterprise Monitoring" overlay
@@ -183,14 +183,14 @@ Single Provider (Claude):
 - 100K requests: $500
 - 1M requests: $5,000
 
-Multi-Provider (SuperAgent):
+Multi-Provider (HelixAgent):
 - 10K requests: $35 (30% savings)
 - 100K requests: $320 (36% savings)
 - 1M requests: $3,100 (38% savings)
 ```
 
 **HOST**:
-"With intelligent routing, SuperAgent can reduce your AI costs by 30-40% while improving reliability."
+"With intelligent routing, HelixAgent can reduce your AI costs by 30-40% while improving reliability."
 
 **VISUAL**: Animated savings calculator
 **GRAPHICS**: "30-40% Cost Savings" highlight
@@ -207,7 +207,7 @@ Multi-Provider (SuperAgent):
 **AUDIO**: Energetic, motivating conclusion
 
 **HOST**:
-"SuperAgent is open source and ready for production. Whether you're building a startup or scaling enterprise AI, it gives you the flexibility and control you need."
+"HelixAgent is open source and ready for production. Whether you're building a startup or scaling enterprise AI, it gives you the flexibility and control you need."
 
 **VISUAL**: Show GitHub repository page
 **GRAPHICS**: "⭐ Star on GitHub" call-to-action
@@ -253,7 +253,7 @@ Multi-Provider (SuperAgent):
 **Desktop**: Organized, professional appearance
 
 ### Graphics & Animations
-**Logo**: SuperAgent logo with proper spacing
+**Logo**: HelixAgent logo with proper spacing
 **Colors**: Brand colors (#2563eb primary, #1e40af secondary)
 **Fonts**: Consistent with website typography
 **Transitions**: Smooth, professional animations
@@ -261,7 +261,7 @@ Multi-Provider (SuperAgent):
 ## 🎯 OPTIMIZATION NOTES
 
 ### SEO Optimization
-**Title**: Include keywords "AI orchestration", "multi-provider", "SuperAgent"
+**Title**: Include keywords "AI orchestration", "multi-provider", "HelixAgent"
 **Description**: Detailed summary with relevant keywords
 **Tags**: AI, LLM, orchestration, multi-provider, Claude, Gemini, DeepSeek
 **Thumbnail**: Clear text, branded colors, compelling visual
@@ -307,6 +307,6 @@ Multi-Provider (SuperAgent):
 
 ---
 
-**🎬 This script is designed to create a compelling, educational, and actionable video that drives viewers to engage with SuperAgent and visit the GitHub repository.**
+**🎬 This script is designed to create a compelling, educational, and actionable video that drives viewers to engage with HelixAgent and visit the GitHub repository.**
 
 *Remember: Authenticity and enthusiasm are key. Know your material, but don't sound like you're reading from a script.*

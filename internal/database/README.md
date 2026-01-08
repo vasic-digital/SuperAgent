@@ -1,6 +1,6 @@
 # Database Package
 
-The database package provides PostgreSQL database connectivity and connection management for SuperAgent.
+The database package provides PostgreSQL database connectivity and connection management for HelixAgent.
 
 ## Overview
 
@@ -34,7 +34,7 @@ database:
   port: ${DB_PORT:5432}
   user: "${DB_USER}"
   password: "${DB_PASSWORD}"
-  name: "${DB_NAME:superagent}"
+  name: "${DB_NAME:helixagent}"
   ssl_mode: "prefer"
   max_connections: 25
   min_connections: 5
@@ -50,7 +50,7 @@ database:
 | `DB_PORT` | Database port | 5432 |
 | `DB_USER` | Database user | - |
 | `DB_PASSWORD` | Database password | - |
-| `DB_NAME` | Database name | superagent |
+| `DB_NAME` | Database name | helixagent |
 | `DB_SSL_MODE` | SSL mode | prefer |
 
 ## Connection Pool

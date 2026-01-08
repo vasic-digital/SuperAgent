@@ -478,7 +478,7 @@ import (
     "context"
     "fmt"
 
-    "superagent/internal/services"
+    "helixagent/internal/services"
 )
 
 // CogneeAdapter adapts Cognee for use with LlamaIndex retrieval patterns

@@ -5,7 +5,7 @@
 
 ## What Was Built
 
-Successfully implemented comprehensive Models.dev integration into SuperAgent, providing production-grade model and provider information management with multi-layer caching, automatic refresh, and a complete REST API.
+Successfully implemented comprehensive Models.dev integration into HelixAgent, providing production-grade model and provider information management with multi-layer caching, automatic refresh, and a complete REST API.
 
 ## 📦 Deliverables
 
@@ -422,7 +422,7 @@ ORDER BY b.score DESC;
 curl http://localhost:8080/api/v1/models/refresh/status
 
 # Check logs for errors
-tail -f logs/superagent.log | grep -i refresh
+tail -f logs/helixagent.log | grep -i refresh
 
 # Check MODELSDEV_ENABLED flag
 env | grep MODELSDEV

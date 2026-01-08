@@ -232,7 +232,7 @@ Paris has been the capital of France since the 10th century. It is the country's
 	}
 
 	// Default response
-	return "This is a response from the mock SuperAgent API server. The prompt was processed successfully."
+	return "This is a response from the mock HelixAgent API server. The prompt was processed successfully."
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -294,7 +294,7 @@ func main() {
 	http.HandleFunc("/v1/chat/completions", chatCompletionsHandler)
 
 	port := "8080"
-	log.Printf("Mock SuperAgent API server starting on port %s...", port)
+	log.Printf("Mock HelixAgent API server starting on port %s...", port)
 	log.Printf("Endpoints:")
 	log.Printf("  GET  /health")
 	log.Printf("  POST /v1/chat/completions")

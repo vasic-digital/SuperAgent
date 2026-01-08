@@ -1,8 +1,8 @@
-# SuperAgent Video Course: Complete Training Program
+# HelixAgent Video Course: Complete Training Program
 
 ## Course Overview
 
-**Title**: "Mastering SuperAgent: Multi-Provider AI Orchestration"
+**Title**: "Mastering HelixAgent: Multi-Provider AI Orchestration"
 **Duration**: 10+ hours across 11 comprehensive modules
 **Target Audience**: Developers, DevOps engineers, AI engineers, and technical decision-makers
 **Prerequisites**: Basic programming knowledge, familiarity with REST APIs, Go 1.23+ for development modules
@@ -14,8 +14,8 @@
 
 Upon completion of this course, participants will be able to:
 
-1. Understand the architecture and design principles of SuperAgent
-2. Install, configure, and deploy SuperAgent in various environments
+1. Understand the architecture and design principles of HelixAgent
+2. Install, configure, and deploy HelixAgent in various environments
 3. Integrate multiple LLM providers (Claude, Gemini, DeepSeek, Qwen, Ollama, OpenRouter, ZAI)
 4. Implement ensemble voting strategies for improved AI responses
 5. Configure and utilize the AI Debate System for complex problem-solving
@@ -27,10 +27,10 @@ Upon completion of this course, participants will be able to:
 
 ---
 
-## Module 1: Introduction to SuperAgent (45 minutes)
+## Module 1: Introduction to HelixAgent (45 minutes)
 
 ### Learning Objectives
-- Understand what SuperAgent is and its core value proposition
+- Understand what HelixAgent is and its core value proposition
 - Learn the benefits of multi-provider AI orchestration
 - Familiarize with the system architecture and components
 
@@ -43,7 +43,7 @@ Upon completion of this course, participants will be able to:
 - Learning outcomes overview
 - How to get the most from this course
 
-#### 1.2 What is SuperAgent? (15 min)
+#### 1.2 What is HelixAgent? (15 min)
 - Multi-provider AI orchestration explained
 - The problem of vendor lock-in
 - Benefits of intelligent routing
@@ -64,7 +64,7 @@ Upon completion of this course, participants will be able to:
 - Scalability and performance design
 
 ### Hands-On Lab
-- Explore the SuperAgent repository structure
+- Explore the HelixAgent repository structure
 - Review key configuration files
 - Examine API documentation
 
@@ -74,7 +74,7 @@ Upon completion of this course, participants will be able to:
 
 ### Learning Objectives
 - Set up development environment
-- Install SuperAgent using different methods
+- Install HelixAgent using different methods
 - Verify successful installation
 
 ### Videos
@@ -128,7 +128,7 @@ Upon completion of this course, participants will be able to:
 ## Module 3: Configuration (60 minutes)
 
 ### Learning Objectives
-- Master SuperAgent configuration options
+- Master HelixAgent configuration options
 - Configure environment variables and YAML files
 - Set up multi-environment configurations
 
@@ -378,7 +378,7 @@ Upon completion of this course, participants will be able to:
 ## Module 8: MCP/LSP Integration (60 minutes)
 
 ### Learning Objectives
-- Understand protocol support in SuperAgent
+- Understand protocol support in HelixAgent
 - Configure MCP, LSP, and ACP servers
 - Implement protocol-based workflows
 
@@ -512,14 +512,14 @@ Upon completion of this course, participants will be able to:
 ## Module 11: Testing and CI/CD (75 minutes)
 
 ### Learning Objectives
-- Master SuperAgent testing strategies
+- Master HelixAgent testing strategies
 - Set up comprehensive CI/CD pipelines
 - Implement quality gates
 
 ### Videos
 
 #### 11.1 Testing Strategy Overview (15 min)
-- Test pyramid for SuperAgent
+- Test pyramid for HelixAgent
 - Test types:
   - Unit tests
   - Integration tests
@@ -600,7 +600,7 @@ Upon completion of this course, participants will be able to:
 
 ## Certification Path
 
-### Level 1: SuperAgent Fundamentals
+### Level 1: HelixAgent Fundamentals
 - Modules 1-3
 - Basic installation and configuration
 - Assessment: Written quiz + Lab exercise

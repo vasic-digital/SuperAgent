@@ -113,7 +113,7 @@ func mainTest() {
 	fmt.Println("====================================================")
 
 	testModels := []string{
-		"superagent-ensemble",
+		"helixagent-ensemble",
 		"deepseek-chat",
 		"qwen-turbo",
 		"anthropic/claude-3.5-sonnet",

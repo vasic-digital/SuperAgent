@@ -2,9 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 metadata:
-  name: superagent-staging
+  name: helixagent-staging
 
-namespace: superagent-staging
+namespace: helixagent-staging
 
 namePrefix: staging-
 
@@ -19,23 +19,23 @@ patches:
   - path: hpa-patch.yaml
 
 configMapGenerator:
-  - name: superagent-config
+  - name: helixagent-config
     behavior: merge
     literals:
       - LOG_LEVEL=debug
       - ENVIRONMENT=staging
 
 secretGenerator:
-  - name: superagent-secrets
+  - name: helixagent-secrets
     type: Opaque
     literals:
-      - db-host=postgres-staging.superagent-staging.svc.cluster.local
-      - db-user=superagent
+      - db-host=postgres-staging.helixagent-staging.svc.cluster.local
+      - db-user=helixagent
       - db-password=staging-password-change-me
-      - db-name=superagent_staging
-      - redis-host=redis-staging.superagent-staging.svc.cluster.local
+      - db-name=helixagent_staging
+      - redis-host=redis-staging.helixagent-staging.svc.cluster.local
       - jwt-secret=staging-jwt-secret-change-me
 
 images:
-  - name: superagent/superagent
+  - name: helixagent/helixagent
     newTag: develop

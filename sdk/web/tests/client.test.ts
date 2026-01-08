@@ -1,8 +1,8 @@
 /**
- * SuperAgent SDK Tests
+ * HelixAgent SDK Tests
  */
 
-import { SuperAgent } from '../src/client';
+import { HelixAgent } from '../src/client';
 import {
   AuthenticationError,
   RateLimitError,
@@ -14,28 +14,28 @@ import {
 const mockFetch = jest.fn();
 global.fetch = mockFetch as unknown as typeof fetch;
 
-describe('SuperAgent', () => {
+describe('HelixAgent', () => {
   beforeEach(() => {
     mockFetch.mockClear();
   });
 
   describe('constructor', () => {
     it('should create client with default config', () => {
-      const client = new SuperAgent();
-      expect(client).toBeInstanceOf(SuperAgent);
+      const client = new HelixAgent();
+      expect(client).toBeInstanceOf(HelixAgent);
     });
 
     it('should create client with custom config', () => {
-      const client = new SuperAgent({
+      const client = new HelixAgent({
         apiKey: 'test-key',
         baseUrl: 'https://custom.api.com',
         timeout: 30000,
       });
-      expect(client).toBeInstanceOf(SuperAgent);
+      expect(client).toBeInstanceOf(HelixAgent);
     });
 
     it('should have chat, completions, debates, and models sub-modules', () => {
-      const client = new SuperAgent();
+      const client = new HelixAgent();
       expect(client.chat).toBeDefined();
       expect(client.completions).toBeDefined();
       expect(client.debates).toBeDefined();
@@ -56,7 +56,7 @@ describe('SuperAgent', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent();
+      const client = new HelixAgent();
       const health = await client.health();
 
       expect(health.status).toBe('healthy');
@@ -74,7 +74,7 @@ describe('SuperAgent', () => {
         json: async () => ({ providers: ['openai', 'anthropic', 'google'] }),
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const providers = await client.providers();
 
       expect(providers).toEqual(['openai', 'anthropic', 'google']);
@@ -87,7 +87,7 @@ describe('SuperAgent', () => {
         id: 'chatcmpl-123',
         object: 'chat.completion',
         created: Date.now(),
-        model: 'superagent-ensemble',
+        model: 'helixagent-ensemble',
         choices: [
           {
             index: 0,
@@ -110,9 +110,9 @@ describe('SuperAgent', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const response = await client.chat.create({
-        model: 'superagent-ensemble',
+        model: 'helixagent-ensemble',
         messages: [{ role: 'user', content: 'Hello!' }],
       });
 
@@ -121,7 +121,7 @@ describe('SuperAgent', () => {
     });
 
     it('should throw error when using stream:true with create()', async () => {
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
 
       await expect(
         client.chat.create({
@@ -150,7 +150,7 @@ describe('SuperAgent', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const debate = await client.debates.create({
         topic: 'Test topic',
         participants: [{ name: 'Alice' }, { name: 'Bob' }],
@@ -172,7 +172,7 @@ describe('SuperAgent', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const status = await client.debates.getStatus('debate-123');
 
       expect(status.status).toBe('running');
@@ -192,7 +192,7 @@ describe('SuperAgent', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const result = await client.debates.list();
 
       expect(result.count).toBe(2);
@@ -205,7 +205,7 @@ describe('SuperAgent', () => {
         json: async () => ({ message: 'Debate deleted', debate_id: 'debate-123' }),
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const result = await client.debates.delete('debate-123');
 
       expect(result.message).toBe('Debate deleted');
@@ -227,7 +227,7 @@ describe('SuperAgent', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const models = await client.models.list();
 
       expect(models).toHaveLength(2);
@@ -245,7 +245,7 @@ describe('SuperAgent', () => {
         json: async () => ({ error: { message: 'Invalid API key' } }),
       });
 
-      const client = new SuperAgent();
+      const client = new HelixAgent();
 
       await expect(client.health()).rejects.toThrow(AuthenticationError);
     });
@@ -260,7 +260,7 @@ describe('SuperAgent', () => {
         json: async () => ({ error: { message: 'Rate limit exceeded' } }),
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
 
       try {
         await client.health();
@@ -280,7 +280,7 @@ describe('SuperAgent', () => {
         json: async () => ({ error: { message: 'Server error', type: 'internal_error' } }),
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
 
       try {
         await client.health();
@@ -294,7 +294,7 @@ describe('SuperAgent', () => {
 });
 
 describe('Error classes', () => {
-  it('AuthenticationError should extend SuperAgentError', () => {
+  it('AuthenticationError should extend HelixAgentError', () => {
     const error = new AuthenticationError('test');
     expect(error.name).toBe('AuthenticationError');
     expect(error.message).toBe('test');

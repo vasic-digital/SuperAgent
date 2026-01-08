@@ -344,14 +344,14 @@ func TestMCPInitializeRequest_Structure(t *testing.T) {
 		ProtocolVersion: "2024-11-05",
 		Capabilities:    map[string]interface{}{},
 		ClientInfo: map[string]string{
-			"name":    "superagent",
+			"name":    "helixagent",
 			"version": "1.0.0",
 		},
 	}
 
 	assert.Equal(t, "2024-11-05", req.ProtocolVersion)
 	assert.NotNil(t, req.Capabilities)
-	assert.Equal(t, "superagent", req.ClientInfo["name"])
+	assert.Equal(t, "helixagent", req.ClientInfo["name"])
 }
 
 func TestMCPInitializeResult_Structure(t *testing.T) {

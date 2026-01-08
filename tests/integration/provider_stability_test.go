@@ -105,7 +105,7 @@ func TestProviderStability_AllProviders(t *testing.T) {
 			ExpectedFields: []string{"id", "choices", "model"},
 		},
 		// Gemini uses a different API format - skip in direct tests
-		// SuperAgent handles Gemini through its native provider
+		// HelixAgent handles Gemini through its native provider
 	}
 
 	for _, provider := range providers {
@@ -307,39 +307,39 @@ func TestProviderStability_ResponseTime(t *testing.T) {
 	}
 }
 
-// TestSuperAgent_ProviderIntegration tests SuperAgent's integration with providers
-func TestSuperAgent_ProviderIntegration(t *testing.T) {
+// TestHelixAgent_ProviderIntegration tests HelixAgent's integration with providers
+func TestHelixAgent_ProviderIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping SuperAgent integration test in short mode")
+		t.Skip("Skipping HelixAgent integration test in short mode")
 	}
 
-	superagentURL := os.Getenv("SUPERAGENT_URL")
-	if superagentURL == "" {
-		superagentURL = "http://localhost:8080"
+	helixagentURL := os.Getenv("HELIXAGENT_URL")
+	if helixagentURL == "" {
+		helixagentURL = "http://localhost:8080"
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"
 	}
 
 	// Check health first
 	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(superagentURL + "/health")
+	resp, err := client.Get(helixagentURL + "/health")
 	if err != nil {
-		t.Skipf("SuperAgent not available: %v", err)
+		t.Skipf("HelixAgent not available: %v", err)
 	}
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		t.Skipf("SuperAgent unhealthy: %d", resp.StatusCode)
+		t.Skipf("HelixAgent unhealthy: %d", resp.StatusCode)
 	}
 
 	// Test chat completion
 	t.Run("ChatCompletion", func(t *testing.T) {
 		provider := ProviderStabilityConfig{
-			Name:        "SuperAgent",
-			APIEndpoint: superagentURL + "/v1/chat/completions",
-			Model:       "superagent-debate",
+			Name:        "HelixAgent",
+			APIEndpoint: helixagentURL + "/v1/chat/completions",
+			Model:       "helixagent-debate",
 			Timeout:     120 * time.Second,
 		}
 
@@ -363,7 +363,7 @@ func TestSuperAgent_ProviderIntegration(t *testing.T) {
 		elapsed := time.Since(start)
 
 		if err != nil {
-			t.Skipf("SuperAgent request failed (network issue, server may be overloaded): %v", err)
+			t.Skipf("HelixAgent request failed (network issue, server may be overloaded): %v", err)
 		}
 		defer httpResp.Body.Close()
 
@@ -375,14 +375,14 @@ func TestSuperAgent_ProviderIntegration(t *testing.T) {
 		}
 
 		if chatResp.Error != nil {
-			t.Skipf("SuperAgent returned error (may indicate service unavailable): %s", chatResp.Error.Message)
+			t.Skipf("HelixAgent returned error (may indicate service unavailable): %s", chatResp.Error.Message)
 		}
 
 		if len(chatResp.Choices) == 0 {
-			t.Skip("SuperAgent returned no choices (may indicate service unavailable)")
+			t.Skip("HelixAgent returned no choices (may indicate service unavailable)")
 		}
 
-		t.Logf("SuperAgent responded in %v: %s", elapsed, truncateString(chatResp.Choices[0].Message.Content, 100))
+		t.Logf("HelixAgent responded in %v: %s", elapsed, truncateString(chatResp.Choices[0].Message.Content, 100))
 	})
 
 	// Test debate endpoint
@@ -398,7 +398,7 @@ func TestSuperAgent_ProviderIntegration(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(debateReq)
-		httpReq, _ := http.NewRequest("POST", superagentURL+"/v1/debates", bytes.NewBuffer(jsonBody))
+		httpReq, _ := http.NewRequest("POST", helixagentURL+"/v1/debates", bytes.NewBuffer(jsonBody))
 		httpReq.Header.Set("Content-Type", "application/json")
 		httpReq.Header.Set("Authorization", "Bearer "+apiKey)
 

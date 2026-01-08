@@ -1,13 +1,13 @@
-# SuperAgent Marketing Materials
+# HelixAgent Marketing Materials
 
 ## Brand Positioning
 
-**SuperAgent** is the enterprise-grade, AI-powered multi-provider LLM orchestration platform that enables organizations to harness the collective intelligence of multiple AI models through advanced debate mechanisms and intelligent routing.
+**HelixAgent** is the enterprise-grade, AI-powered multi-provider LLM orchestration platform that enables organizations to harness the collective intelligence of multiple AI models through advanced debate mechanisms and intelligent routing.
 
 ## Key Messages
 
 ### Primary Value Proposition
-"Orchestrate multiple AI models intelligently. Build better AI applications with SuperAgent's enterprise-grade multi-provider platform."
+"Orchestrate multiple AI models intelligently. Build better AI applications with HelixAgent's enterprise-grade multi-provider platform."
 
 ### Supporting Messages
 1. **Multi-Provider Intelligence**: "Don't rely on a single AI. Combine the strengths of Claude, Gemini, DeepSeek, and more."
@@ -92,35 +92,35 @@
 5. "Optimizing AI Costs with Intelligent Routing"
 
 ### Case Studies
-1. "How [Company] Improved AI Accuracy by 40% with SuperAgent"
-2. "Reducing AI Costs by 60%: A SuperAgent Success Story"
+1. "How [Company] Improved AI Accuracy by 40% with HelixAgent"
+2. "Reducing AI Costs by 60%: A HelixAgent Success Story"
 3. "From Single Provider to Multi-Model: A Migration Guide"
-4. "Enterprise AI at Scale: SuperAgent in Production"
+4. "Enterprise AI at Scale: HelixAgent in Production"
 
 ## Social Media Content
 
 ### Twitter/X Posts
-1. "🚀 Tired of AI provider lock-in? SuperAgent lets you orchestrate multiple AI models intelligently. Better outcomes, lower costs. #AI #Enterprise"
-2. "💡 What if AI models could debate each other? With SuperAgent's AI debate system, they can! Better decisions through collaborative intelligence."
-3. "📊 Reduce AI costs by 60% while improving accuracy. SuperAgent's intelligent routing selects the best provider for each request. #CostOptimization"
+1. "🚀 Tired of AI provider lock-in? HelixAgent lets you orchestrate multiple AI models intelligently. Better outcomes, lower costs. #AI #Enterprise"
+2. "💡 What if AI models could debate each other? With HelixAgent's AI debate system, they can! Better decisions through collaborative intelligence."
+3. "📊 Reduce AI costs by 60% while improving accuracy. HelixAgent's intelligent routing selects the best provider for each request. #CostOptimization"
 
 ### LinkedIn Posts
-1. "The future of enterprise AI isn't single-provider dependency—it's intelligent multi-model orchestration. Here's how SuperAgent is changing the game..."
+1. "The future of enterprise AI isn't single-provider dependency—it's intelligent multi-model orchestration. Here's how HelixAgent is changing the game..."
 2. "Our AI debate system lets multiple models reason together, achieving 40% better accuracy on complex problems. Learn how we're making AI more reliable..."
 
 ### GitHub Content
-1. "🌟 New Release: SuperAgent v1.0 - Multi-provider AI orchestration with debate capabilities"
+1. "🌟 New Release: HelixAgent v1.0 - Multi-provider AI orchestration with debate capabilities"
 2. "📈 Performance Update: 99.9% uptime achieved with our new failover system"
 3. "🔧 Feature Spotlight: AI debate configuration now supports custom consensus mechanisms"
 
 ## Email Marketing
 
 ### Welcome Email Series
-1. **Welcome**: "Welcome to SuperAgent - Your Multi-Provider AI Platform"
-2. **Setup Guide**: "Get Started with SuperAgent in 5 Minutes"
-3. **Best Practices**: "Optimizing Your AI Performance with SuperAgent"
+1. **Welcome**: "Welcome to HelixAgent - Your Multi-Provider AI Platform"
+2. **Setup Guide**: "Get Started with HelixAgent in 5 Minutes"
+3. **Best Practices**: "Optimizing Your AI Performance with HelixAgent"
 4. **Advanced Features**: "Unlocking AI Debate Capabilities"
-5. **Community**: "Join the SuperAgent Developer Community"
+5. **Community**: "Join the HelixAgent Developer Community"
 
 ### Newsletter Content
 - Monthly feature updates

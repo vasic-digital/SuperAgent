@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/plugins"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/plugins"
 )
 
 // TestExamplePlugin_Name tests the Name method
@@ -40,7 +40,7 @@ func TestExamplePlugin_Capabilities(t *testing.T) {
 	assert.Equal(t, 2048, caps.Limits.MaxInputLength)
 	assert.Equal(t, 2048, caps.Limits.MaxOutputLength)
 	assert.Equal(t, 10, caps.Limits.MaxConcurrentRequests)
-	assert.Equal(t, "SuperAgent Team", caps.Metadata["author"])
+	assert.Equal(t, "HelixAgent Team", caps.Metadata["author"])
 	assert.Equal(t, "MIT", caps.Metadata["license"])
 }
 

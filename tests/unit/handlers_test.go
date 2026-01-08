@@ -11,9 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/superagent/superagent/internal/handlers"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/handlers"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 func TestCompletionHandler_Complete(t *testing.T) {

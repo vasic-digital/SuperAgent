@@ -20,12 +20,12 @@ from langchain.chains import LLMChain
 from langchain.schema import HumanMessage, SystemMessage
 
 # Configuration
-SUPERAGENT_URL = os.getenv("SUPERAGENT_URL", "http://localhost:8080")
-LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", f"{SUPERAGENT_URL}/v1/chat/completions")
+HELIXAGENT_URL = os.getenv("HELIXAGENT_URL", "http://localhost:8080")
+LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", f"{HELIXAGENT_URL}/v1/chat/completions")
 
 
-class SuperAgentLLM:
-    """Custom LLM that routes requests through SuperAgent."""
+class HelixAgentLLM:
+    """Custom LLM that routes requests through HelixAgent."""
 
     def __init__(self, model: str = "default", temperature: float = 0.7):
         self.model = model
@@ -33,7 +33,7 @@ class SuperAgentLLM:
         self.client = httpx.AsyncClient(timeout=120.0)
 
     async def generate(self, prompt: str) -> str:
-        """Generate a response from SuperAgent."""
+        """Generate a response from HelixAgent."""
         try:
             response = await self.client.post(
                 LLM_ENDPOINT,
@@ -54,14 +54,14 @@ class SuperAgentLLM:
 
 
 # Global LLM instance
-llm: Optional[SuperAgentLLM] = None
+llm: Optional[HelixAgentLLM] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     global llm
-    llm = SuperAgentLLM()
+    llm = HelixAgentLLM()
     yield
     await llm.close()
 
@@ -132,7 +132,7 @@ async def health_check():
     llm_ok = False
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{SUPERAGENT_URL}/health")
+            resp = await client.get(f"{HELIXAGENT_URL}/health")
             llm_ok = resp.status_code == 200
     except Exception:
         pass

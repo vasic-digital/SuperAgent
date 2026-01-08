@@ -1,22 +1,22 @@
 //
-//  SuperAgent.swift
-//  SuperAgent Protocol Enhancement iOS SDK
+//  HelixAgent.swift
+//  HelixAgent Protocol Enhancement iOS SDK
 //
-//  Created by SuperAgent
-//  Copyright © 2024 SuperAgent. All rights reserved.
+//  Created by HelixAgent
+//  Copyright © 2024 HelixAgent. All rights reserved.
 //
 
 import Foundation
 
-/// Main client class for SuperAgent Protocol Enhancement API
-public class SuperAgentClient {
+/// Main client class for HelixAgent Protocol Enhancement API
+public class HelixAgentClient {
     private let baseURL: URL
     private let session: URLSession
     private let apiKey: String?
 
-    /// Initialize the SuperAgent client
+    /// Initialize the HelixAgent client
     /// - Parameters:
-    ///   - baseURL: The base URL of the SuperAgent API server
+    ///   - baseURL: The base URL of the HelixAgent API server
     ///   - apiKey: Optional API key for authentication
     ///   - timeout: Request timeout in seconds (default: 30)
     public init(baseURL: String = "http://localhost:8080", apiKey: String? = nil, timeout: TimeInterval = 30) {
@@ -46,12 +46,12 @@ public class SuperAgentClient {
         let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw SuperAgentError.invalidResponse
+            throw HelixAgentError.invalidResponse
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw SuperAgentError.httpError(httpResponse.statusCode, errorMessage)
+            throw HelixAgentError.httpError(httpResponse.statusCode, errorMessage)
         }
 
         return try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
@@ -86,7 +86,7 @@ public class SuperAgentClient {
 
     /// Create a chat completion
     /// - Parameters:
-    ///   - model: The model to use (e.g., "superagent-ensemble")
+    ///   - model: The model to use (e.g., "helixagent-ensemble")
     ///   - messages: List of chat messages
     ///   - temperature: Sampling temperature (0.0 to 2.0)
     ///   - maxTokens: Maximum tokens to generate
@@ -141,7 +141,7 @@ public class SuperAgentClient {
 
     /// Create a streaming chat completion
     /// - Parameters:
-    ///   - model: The model to use (e.g., "superagent-ensemble")
+    ///   - model: The model to use (e.g., "helixagent-ensemble")
     ///   - messages: List of chat messages
     ///   - temperature: Sampling temperature (0.0 to 2.0)
     ///   - maxTokens: Maximum tokens to generate
@@ -246,11 +246,11 @@ public class SuperAgentClient {
         let (bytes, response) = try await session.bytes(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw SuperAgentError.invalidResponse
+            throw HelixAgentError.invalidResponse
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
-            throw SuperAgentError.httpError(httpResponse.statusCode, "Stream request failed")
+            throw HelixAgentError.httpError(httpResponse.statusCode, "Stream request failed")
         }
 
         var buffer = ""
@@ -389,12 +389,12 @@ public class SuperAgentClient {
             case "completed":
                 return try await getDebateResults(debateId: debateId)
             case "failed":
-                throw SuperAgentError.debateFailed(status.error ?? "Unknown error")
+                throw HelixAgentError.debateFailed(status.error ?? "Unknown error")
             default:
                 try await Task.sleep(nanoseconds: UInt64(pollInterval * 1_000_000_000))
             }
         }
-        throw SuperAgentError.timeout
+        throw HelixAgentError.timeout
     }
 
     // MARK: - LSP Protocol Methods
@@ -530,7 +530,7 @@ public class SuperAgentClient {
         components?.queryItems = queryItems
 
         guard let url = components?.url else {
-            throw SuperAgentError.invalidURL
+            throw HelixAgentError.invalidURL
         }
 
         var request = URLRequest(url: url)
@@ -542,7 +542,7 @@ public class SuperAgentClient {
         let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw SuperAgentError.invalidResponse
+            throw HelixAgentError.invalidResponse
         }
 
         return try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
@@ -598,7 +598,7 @@ public class SuperAgentClient {
 
 // MARK: - Error Types
 
-public enum SuperAgentError: Error {
+public enum HelixAgentError: Error {
     case invalidResponse
     case invalidURL
     case httpError(Int, String)
@@ -612,9 +612,9 @@ public enum SuperAgentError: Error {
 
 /// Workflow orchestrator for complex operations
 public class WorkflowOrchestrator {
-    private let client: SuperAgentClient
+    private let client: HelixAgentClient
 
-    public init(client: SuperAgentClient) {
+    public init(client: HelixAgentClient) {
         self.client = client
     }
 
@@ -625,7 +625,7 @@ public class WorkflowOrchestrator {
         for operation in operations {
             guard let tool = operation["tool"] as? String,
                   let params = operation["params"] as? [String: Any] else {
-                throw SuperAgentError.invalidResponse
+                throw HelixAgentError.invalidResponse
             }
 
             do {
@@ -655,7 +655,7 @@ public class WorkflowOrchestrator {
             guard let type = operation["type"] as? String,
                   let line = operation["line"] as? Int,
                   let character = operation["character"] as? Int else {
-                throw SuperAgentError.invalidResponse
+                throw HelixAgentError.invalidResponse
             }
 
             do {
@@ -668,7 +668,7 @@ public class WorkflowOrchestrator {
                 case "definition":
                     result = try await client.lspDefinition(filePath: filePath, line: line, character: character)
                 default:
-                    throw SuperAgentError.invalidResponse
+                    throw HelixAgentError.invalidResponse
                 }
 
                 results.append([
@@ -702,7 +702,7 @@ public class WorkflowOrchestrator {
                           let targets = operation["targets"] as? [String] {
                     result = try await client.acpBroadcast(message: message, targets: targets)
                 } else {
-                    throw SuperAgentError.invalidResponse
+                    throw HelixAgentError.invalidResponse
                 }
 
                 results.append([
@@ -725,11 +725,11 @@ public class WorkflowOrchestrator {
 
 /// Analytics monitor for real-time metrics
 public class AnalyticsMonitor {
-    private let client: SuperAgentClient
+    private let client: HelixAgentClient
     private var timer: Timer?
     private let interval: TimeInterval
 
-    public init(client: SuperAgentClient, interval: TimeInterval = 30.0) {
+    public init(client: HelixAgentClient, interval: TimeInterval = 30.0) {
         self.client = client
         self.interval = interval
     }
@@ -756,7 +756,7 @@ public class AnalyticsMonitor {
 
             // Post notification for monitoring updates
             NotificationCenter.default.post(
-                name: NSNotification.Name("SuperAgentMetricsUpdate"),
+                name: NSNotification.Name("HelixAgentMetricsUpdate"),
                 object: nil,
                 userInfo: [
                     "health": health,
@@ -792,12 +792,12 @@ public class AnalyticsMonitor {
 
 // MARK: - Extensions
 
-extension SuperAgentClient {
+extension HelixAgentClient {
     /// Create client from environment variables
-    public static func fromEnvironment() -> SuperAgentClient {
-        let baseURL = ProcessInfo.processInfo.environment["SUPERAGENT_URL"] ?? "http://localhost:8080"
-        let apiKey = ProcessInfo.processInfo.environment["SUPERAGENT_API_KEY"]
-        return SuperAgentClient(baseURL: baseURL, apiKey: apiKey)
+    public static func fromEnvironment() -> HelixAgentClient {
+        let baseURL = ProcessInfo.processInfo.environment["HELIXAGENT_URL"] ?? "http://localhost:8080"
+        let apiKey = ProcessInfo.processInfo.environment["HELIXAGENT_API_KEY"]
+        return HelixAgentClient(baseURL: baseURL, apiKey: apiKey)
     }
 
     /// Initialize development environment

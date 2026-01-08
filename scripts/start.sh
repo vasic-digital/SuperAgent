@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# SuperAgent Start Script
-# This script starts all SuperAgent services using Docker Compose
+# HelixAgent Start Script
+# This script starts all HelixAgent services using Docker Compose
 
 set -e
 
-echo "🚀 Starting SuperAgent services..."
+echo "🚀 Starting HelixAgent services..."
 
 # Check if docker-compose is available
 if ! command -v docker-compose &> /dev/null; then
@@ -17,9 +17,9 @@ fi
 if [ ! -f ".env" ]; then
     echo "⚠️  .env file not found. Creating default configuration..."
     cat > .env << EOF
-# SuperAgent Configuration
+# HelixAgent Configuration
 PORT=8080
-SUPERAGENT_API_KEY=test-api-key-for-development
+HELIXAGENT_API_KEY=test-api-key-for-development
 
 # JWT Configuration
 JWT_SECRET=development-jwt-secret-key-change-in-production
@@ -27,14 +27,14 @@ JWT_SECRET=development-jwt-secret-key-change-in-production
 # Database Configuration
 DB_HOST=postgres
 DB_PORT=5432
-DB_USER=superagent
-DB_PASSWORD=superagent123
-DB_NAME=superagent_db
+DB_USER=helixagent
+DB_PASSWORD=helixagent123
+DB_NAME=helixagent_db
 
 # Redis Configuration
 REDIS_HOST=redis
 REDIS_PORT=6379
-REDIS_PASSWORD=superagent123
+REDIS_PASSWORD=helixagent123
 
 # LLM Provider API Keys (using Ollama for testing - no keys needed)
 CLAUDE_API_KEY=
@@ -98,20 +98,20 @@ check_service() {
 check_service postgres
 check_service redis
 check_service ollama
-check_service superagent
+check_service helixagent
 
 # Pull and run Ollama model
 echo "🤖 Setting up Ollama model..."
 docker-compose -f docker-compose.test.yml exec -T ollama ollama pull llama2
 
 # Test the system
-echo "🧪 Testing SuperAgent..."
+echo "🧪 Testing HelixAgent..."
 
 # Test health endpoint
 if curl -f -s http://localhost:8080/health > /dev/null; then
-    echo "✅ SuperAgent health check passed"
+    echo "✅ HelixAgent health check passed"
 else
-    echo "❌ SuperAgent health check failed"
+    echo "❌ HelixAgent health check failed"
     exit 1
 fi
 
@@ -132,10 +132,10 @@ else
 fi
 
 echo ""
-echo "🎉 SuperAgent is now running!"
+echo "🎉 HelixAgent is now running!"
 echo ""
 echo "📊 Service URLs:"
-echo "   SuperAgent API: http://localhost:8080"
+echo "   HelixAgent API: http://localhost:8080"
 echo "   Grafana:        http://localhost:3000 (admin/admin123)"
 echo "   Prometheus:     http://localhost:9090"
 echo ""
@@ -144,6 +144,6 @@ echo "   curl http://localhost:8080/health"
 echo "   curl http://localhost:8080/v1/models"
 echo "   curl -X POST http://localhost:8080/v1/ensemble/completions \\"
 echo "     -H 'Content-Type: application/json' \\"
-echo "     -d '{\"prompt\": \"Hello from SuperAgent!\", \"ensemble_config\": {\"strategy\": \"confidence_weighted\", \"min_providers\": 1}}'"
+echo "     -d '{\"prompt\": \"Hello from HelixAgent!\", \"ensemble_config\": {\"strategy\": \"confidence_weighted\", \"min_providers\": 1}}'"
 echo ""
 echo "🛑 To stop: ./scripts/stop.sh"

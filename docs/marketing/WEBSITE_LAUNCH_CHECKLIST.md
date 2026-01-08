@@ -1,4 +1,4 @@
-# SuperAgent Website & Marketing Launch Checklist
+# HelixAgent Website & Marketing Launch Checklist
 
 ## 🚀 **IMMEDIATE DEPLOYMENT STEPS**
 
@@ -17,7 +17,7 @@
 - [ ] Verify analytics are working
 
 ### **3. Domain Setup (Optional)**
-- [ ] Purchase custom domain (recommended: superagent.ai)
+- [ ] Purchase custom domain (recommended: helixagent.ai)
 - [ ] Configure DNS settings in GitHub Pages
 - [ ] Set up SSL certificates
 - [ ] Update all links to use custom domain
@@ -65,7 +65,7 @@
 ### **Week 1: Setup & First Video**
 - [ ] Set up recording equipment
 - [ ] Test audio/video quality
-- [ ] Record "SuperAgent in 5 Minutes" tutorial
+- [ ] Record "HelixAgent in 5 Minutes" tutorial
 - [ ] Edit and publish first video
 - [ ] Create custom thumbnail
 - [ ] Optimize for SEO
@@ -130,7 +130,7 @@
 
 ## ✅ **PROJECT STATUS: READY FOR LAUNCH**
 
-**SuperAgent Phase 4 is COMPLETE with:**
+**HelixAgent Phase 4 is COMPLETE with:**
 
 ✅ **Professional Website**: Built, optimized, and ready for deployment  
 ✅ **Marketing Strategy**: Complete with content and campaigns ready  
@@ -152,7 +152,7 @@
 3. **Launch social media campaign**
 4. **Monitor analytics and iterate**
 
-**SuperAgent is ready to change how enterprises approach AI!** 🚀
+**HelixAgent is ready to change how enterprises approach AI!** 🚀
 
 ---
 

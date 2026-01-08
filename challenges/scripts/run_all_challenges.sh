@@ -1,10 +1,10 @@
 #!/bin/bash
-# SuperAgent Challenges - Run All Challenges in Sequence
+# HelixAgent Challenges - Run All Challenges in Sequence
 # Usage: ./scripts/run_all_challenges.sh [options]
 #
 # This script automatically:
-# 1. Builds SuperAgent binary if needed
-# 2. Starts all required infrastructure (SuperAgent server)
+# 1. Builds HelixAgent binary if needed
+# 2. Starts all required infrastructure (HelixAgent server)
 # 3. Runs all 40 challenges
 # 4. Reports final results
 
@@ -44,7 +44,7 @@ print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 print_phase() { echo -e "${PURPLE}[PHASE]${NC} $1"; }
 
 # Track started services for cleanup
-SUPERAGENT_PID=""
+HELIXAGENT_PID=""
 STARTED_SERVICES=()
 
 #===============================================================================
@@ -53,15 +53,15 @@ STARTED_SERVICES=()
 cleanup() {
     print_info "Cleaning up..."
 
-    # Stop SuperAgent if we started it
-    if [ -n "$SUPERAGENT_PID" ] && kill -0 "$SUPERAGENT_PID" 2>/dev/null; then
-        print_info "Stopping SuperAgent (PID: $SUPERAGENT_PID)..."
-        kill "$SUPERAGENT_PID" 2>/dev/null || true
-        wait "$SUPERAGENT_PID" 2>/dev/null || true
+    # Stop HelixAgent if we started it
+    if [ -n "$HELIXAGENT_PID" ] && kill -0 "$HELIXAGENT_PID" 2>/dev/null; then
+        print_info "Stopping HelixAgent (PID: $HELIXAGENT_PID)..."
+        kill "$HELIXAGENT_PID" 2>/dev/null || true
+        wait "$HELIXAGENT_PID" 2>/dev/null || true
     fi
 
     # Remove PID file
-    rm -f "$CHALLENGES_DIR/results/superagent_challenges.pid"
+    rm -f "$CHALLENGES_DIR/results/helixagent_challenges.pid"
 }
 
 trap cleanup EXIT
@@ -70,41 +70,41 @@ trap cleanup EXIT
 # INFRASTRUCTURE FUNCTIONS
 #===============================================================================
 
-# Build SuperAgent binary if needed
-build_superagent() {
-    print_phase "Building SuperAgent Binary"
+# Build HelixAgent binary if needed
+build_helixagent() {
+    print_phase "Building HelixAgent Binary"
 
     local binary=""
-    if [ -x "$PROJECT_ROOT/bin/superagent" ]; then
-        binary="$PROJECT_ROOT/bin/superagent"
-    elif [ -x "$PROJECT_ROOT/superagent" ]; then
-        binary="$PROJECT_ROOT/superagent"
+    if [ -x "$PROJECT_ROOT/bin/helixagent" ]; then
+        binary="$PROJECT_ROOT/bin/helixagent"
+    elif [ -x "$PROJECT_ROOT/helixagent" ]; then
+        binary="$PROJECT_ROOT/helixagent"
     fi
 
     if [ -n "$binary" ]; then
-        print_success "SuperAgent binary found: $binary"
+        print_success "HelixAgent binary found: $binary"
         return 0
     fi
 
-    print_info "Building SuperAgent..."
+    print_info "Building HelixAgent..."
     if (cd "$PROJECT_ROOT" && make build 2>&1); then
-        if [ -x "$PROJECT_ROOT/bin/superagent" ]; then
-            print_success "SuperAgent built successfully"
+        if [ -x "$PROJECT_ROOT/bin/helixagent" ]; then
+            print_success "HelixAgent built successfully"
             return 0
-        elif [ -x "$PROJECT_ROOT/superagent" ]; then
-            print_success "SuperAgent built successfully"
+        elif [ -x "$PROJECT_ROOT/helixagent" ]; then
+            print_success "HelixAgent built successfully"
             return 0
         fi
     fi
 
-    print_error "Failed to build SuperAgent"
+    print_error "Failed to build HelixAgent"
     return 1
 }
 
-# Check if SuperAgent is running
-check_superagent() {
-    local port="${SUPERAGENT_PORT:-8080}"
-    local host="${SUPERAGENT_HOST:-localhost}"
+# Check if HelixAgent is running
+check_helixagent() {
+    local port="${HELIXAGENT_PORT:-8080}"
+    local host="${HELIXAGENT_HOST:-localhost}"
 
     if curl -s "http://$host:$port/health" > /dev/null 2>&1; then
         return 0
@@ -114,59 +114,59 @@ check_superagent() {
     return 1
 }
 
-# Start SuperAgent server
-start_superagent() {
-    print_phase "Starting SuperAgent Server"
+# Start HelixAgent server
+start_helixagent() {
+    print_phase "Starting HelixAgent Server"
 
-    local port="${SUPERAGENT_PORT:-8080}"
-    local host="${SUPERAGENT_HOST:-localhost}"
+    local port="${HELIXAGENT_PORT:-8080}"
+    local host="${HELIXAGENT_HOST:-localhost}"
 
     # Check if already running
-    if check_superagent; then
-        print_success "SuperAgent already running on $host:$port"
+    if check_helixagent; then
+        print_success "HelixAgent already running on $host:$port"
         return 0
     fi
 
     # Find binary
     local binary=""
-    if [ -x "$PROJECT_ROOT/bin/superagent" ]; then
-        binary="$PROJECT_ROOT/bin/superagent"
-    elif [ -x "$PROJECT_ROOT/superagent" ]; then
-        binary="$PROJECT_ROOT/superagent"
+    if [ -x "$PROJECT_ROOT/bin/helixagent" ]; then
+        binary="$PROJECT_ROOT/bin/helixagent"
+    elif [ -x "$PROJECT_ROOT/helixagent" ]; then
+        binary="$PROJECT_ROOT/helixagent"
     fi
 
     if [ -z "$binary" ]; then
-        print_error "SuperAgent binary not found"
+        print_error "HelixAgent binary not found"
         return 1
     fi
 
-    print_info "Starting SuperAgent from: $binary"
+    print_info "Starting HelixAgent from: $binary"
 
     # Create results directory if needed
     mkdir -p "$CHALLENGES_DIR/results"
 
-    # Start SuperAgent in background
-    nohup "$binary" > "$CHALLENGES_DIR/results/superagent_challenges.log" 2>&1 &
-    SUPERAGENT_PID=$!
-    echo $SUPERAGENT_PID > "$CHALLENGES_DIR/results/superagent_challenges.pid"
-    STARTED_SERVICES+=("superagent")
+    # Start HelixAgent in background
+    nohup "$binary" > "$CHALLENGES_DIR/results/helixagent_challenges.log" 2>&1 &
+    HELIXAGENT_PID=$!
+    echo $HELIXAGENT_PID > "$CHALLENGES_DIR/results/helixagent_challenges.pid"
+    STARTED_SERVICES+=("helixagent")
 
     # Wait for startup
-    print_info "Waiting for SuperAgent to start..."
+    print_info "Waiting for HelixAgent to start..."
     local max_attempts=30
     local attempt=0
     while [ $attempt -lt $max_attempts ]; do
-        if check_superagent; then
-            print_success "SuperAgent started successfully (PID: $SUPERAGENT_PID)"
+        if check_helixagent; then
+            print_success "HelixAgent started successfully (PID: $HELIXAGENT_PID)"
             return 0
         fi
         attempt=$((attempt + 1))
         sleep 1
     done
 
-    print_error "SuperAgent failed to start within ${max_attempts}s"
-    print_error "Check log: $CHALLENGES_DIR/results/superagent_challenges.log"
-    cat "$CHALLENGES_DIR/results/superagent_challenges.log" | tail -20
+    print_error "HelixAgent failed to start within ${max_attempts}s"
+    print_error "Check log: $CHALLENGES_DIR/results/helixagent_challenges.log"
+    cat "$CHALLENGES_DIR/results/helixagent_challenges.log" | tail -20
     return 1
 }
 
@@ -177,15 +177,15 @@ start_infrastructure() {
     print_info "=========================================="
     echo ""
 
-    # Build SuperAgent if needed
-    if ! build_superagent; then
-        print_error "Failed to build SuperAgent - cannot continue"
+    # Build HelixAgent if needed
+    if ! build_helixagent; then
+        print_error "Failed to build HelixAgent - cannot continue"
         exit 1
     fi
 
-    # Start SuperAgent
-    if ! start_superagent; then
-        print_error "Failed to start SuperAgent - cannot continue"
+    # Start HelixAgent
+    if ! start_helixagent; then
+        print_error "Failed to start HelixAgent - cannot continue"
         exit 1
     fi
 
@@ -296,7 +296,7 @@ done
 
 # Main execution
 print_info "=========================================="
-print_info "  SuperAgent - Run All Challenges"
+print_info "  HelixAgent - Run All Challenges"
 print_info "=========================================="
 print_info "Start time: $(date)"
 print_info "Total challenges: ${#CHALLENGES[@]}"
@@ -307,12 +307,12 @@ if [ "$SKIP_INFRA" = false ]; then
     start_infrastructure
 else
     print_warning "Skipping infrastructure startup (--skip-infra)"
-    if ! check_superagent; then
-        print_error "SuperAgent is not running! Cannot continue."
-        print_error "Either start SuperAgent manually or remove --skip-infra"
+    if ! check_helixagent; then
+        print_error "HelixAgent is not running! Cannot continue."
+        print_error "Either start HelixAgent manually or remove --skip-infra"
         exit 1
     fi
-    print_success "SuperAgent is running"
+    print_success "HelixAgent is running"
 fi
 
 echo ""

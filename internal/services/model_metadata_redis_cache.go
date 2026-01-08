@@ -8,8 +8,8 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/cache"
-	"github.com/superagent/superagent/internal/database"
+	"github.com/helixagent/helixagent/internal/cache"
+	"github.com/helixagent/helixagent/internal/database"
 )
 
 // ModelMetadataRedisCache implements Redis-based caching for model metadata

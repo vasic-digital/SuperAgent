@@ -30,7 +30,7 @@ docker-compose --profile optimization up -d sglang
 ## Configuration
 
 Environment variables:
-- `SGLANG_MODEL`: Model to serve (default: uses SuperAgent's configured model)
+- `SGLANG_MODEL`: Model to serve (default: uses HelixAgent's configured model)
 - `SGLANG_PORT`: Server port (default: 30000)
 - `SGLANG_TOKENIZER`: Tokenizer path (optional)
 
@@ -42,9 +42,9 @@ The SGLang server exposes OpenAI-compatible endpoints:
 - `POST /v1/completions` - Text completions
 - `GET /health` - Health check
 
-## Integration with SuperAgent
+## Integration with HelixAgent
 
-SuperAgent's SGLang client (`internal/optimization/sglang/`) provides:
+HelixAgent's SGLang client (`internal/optimization/sglang/`) provides:
 - Prefix caching for repeated prompts
 - Session management for multi-turn conversations
 - Automatic fallback to standard providers if unavailable

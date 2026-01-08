@@ -216,8 +216,8 @@ DEEPSEEK_API_KEY=sk-xxx
 GEMINI_API_KEY=xxx
 OPENROUTER_API_KEY=sk-xxx
 
-# SuperAgent Server
-SUPERAGENT_URL=http://localhost:8080
+# HelixAgent Server
+HELIXAGENT_URL=http://localhost:8080
 ```
 
 ### Circuit Breaker Settings

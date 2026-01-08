@@ -1,14 +1,14 @@
 #!/bin/bash
 #===============================================================================
-# SUPERAGENT OPENCODE CHALLENGE
+# HELIXAGENT OPENCODE CHALLENGE
 #===============================================================================
-# This challenge validates SuperAgent's integration with OpenCode CLI.
+# This challenge validates HelixAgent's integration with OpenCode CLI.
 # It runs on top of Main challenge and tests real-world coding assistant usage.
 #
 # The OpenCode challenge:
 # 1. Ensures Main challenge has been run (uses its outputs)
 # 2. Generates/validates OpenCode configuration
-# 3. Starts SuperAgent server if not running
+# 3. Starts HelixAgent server if not running
 # 4. Executes OpenCode CLI with a codebase awareness test
 # 5. Captures all verbose output and errors
 # 6. Analyzes API responses and identifies failures
@@ -56,7 +56,7 @@ API_LOG="$LOGS_DIR/api_responses.log"
 ERROR_LOG="$LOGS_DIR/errors.log"
 
 # Binary paths
-SUPERAGENT_BINARY="$PROJECT_ROOT/bin/superagent"
+HELIXAGENT_BINARY="$PROJECT_ROOT/bin/helixagent"
 OPENCODE_CONFIG="$HOME/.config/opencode/opencode.json"
 
 # Main challenge latest results
@@ -64,8 +64,8 @@ MAIN_CHALLENGE_RESULTS="$CHALLENGES_DIR/results/main_challenge"
 
 # Test configuration
 TEST_PROMPT="Do you see my codebase? If yes, tell me what programming language is dominant in this project and list the main directories."
-SUPERAGENT_PORT="${SUPERAGENT_PORT:-8080}"
-SUPERAGENT_HOST="${SUPERAGENT_HOST:-localhost}"
+HELIXAGENT_PORT="${HELIXAGENT_PORT:-8080}"
+HELIXAGENT_HOST="${HELIXAGENT_HOST:-localhost}"
 
 # Colors
 RED='\033[0;31m'
@@ -133,7 +133,7 @@ log_phase() {
 
 usage() {
     cat << EOF
-${GREEN}SuperAgent OpenCode Challenge${NC}
+${GREEN}HelixAgent OpenCode Challenge${NC}
 
 ${BLUE}Usage:${NC}
     $0 [options]
@@ -147,7 +147,7 @@ ${BLUE}Options:${NC}
 ${BLUE}What this challenge does:${NC}
     1. Validates Main challenge has been run
     2. Generates/validates OpenCode configuration
-    3. Starts SuperAgent if not running
+    3. Starts HelixAgent if not running
     4. Executes OpenCode CLI with codebase awareness test
     5. Captures all verbose output and errors
     6. Analyzes API responses for failures
@@ -161,7 +161,7 @@ ${BLUE}Test Prompt:${NC}
 ${BLUE}Requirements:${NC}
     - Main challenge completed
     - OpenCode CLI installed
-    - SuperAgent built
+    - HelixAgent built
 
 ${BLUE}Output:${NC}
     Results stored in: ${YELLOW}$RESULTS_BASE/<date>/<timestamp>/${NC}
@@ -228,57 +228,57 @@ check_main_challenge() {
     return 0
 }
 
-check_superagent_running() {
-    log_info "Checking if SuperAgent is running..."
+check_helixagent_running() {
+    log_info "Checking if HelixAgent is running..."
 
-    if curl -s "http://$SUPERAGENT_HOST:$SUPERAGENT_PORT/health" > /dev/null 2>&1 || \
-       curl -s "http://$SUPERAGENT_HOST:$SUPERAGENT_PORT/v1/models" > /dev/null 2>&1; then
-        log_success "SuperAgent is running on port $SUPERAGENT_PORT"
+    if curl -s "http://$HELIXAGENT_HOST:$HELIXAGENT_PORT/health" > /dev/null 2>&1 || \
+       curl -s "http://$HELIXAGENT_HOST:$HELIXAGENT_PORT/v1/models" > /dev/null 2>&1; then
+        log_success "HelixAgent is running on port $HELIXAGENT_PORT"
         return 0
     else
         return 1
     fi
 }
 
-start_superagent() {
-    log_info "Starting SuperAgent..."
+start_helixagent() {
+    log_info "Starting HelixAgent..."
 
-    if [ ! -x "$SUPERAGENT_BINARY" ]; then
-        log_warning "SuperAgent binary not found, building..."
+    if [ ! -x "$HELIXAGENT_BINARY" ]; then
+        log_warning "HelixAgent binary not found, building..."
         (cd "$PROJECT_ROOT" && make build)
     fi
 
-    # Start SuperAgent in background
-    "$SUPERAGENT_BINARY" > "$LOGS_DIR/superagent.log" 2>&1 &
+    # Start HelixAgent in background
+    "$HELIXAGENT_BINARY" > "$LOGS_DIR/helixagent.log" 2>&1 &
     local pid=$!
-    echo $pid > "$OUTPUT_DIR/superagent.pid"
+    echo $pid > "$OUTPUT_DIR/helixagent.pid"
 
     # Wait for startup
     local max_attempts=30
     local attempt=0
     while [ $attempt -lt $max_attempts ]; do
-        if check_superagent_running; then
-            log_success "SuperAgent started (PID: $pid)"
+        if check_helixagent_running; then
+            log_success "HelixAgent started (PID: $pid)"
             return 0
         fi
         attempt=$((attempt + 1))
         sleep 1
     done
 
-    log_error "SuperAgent failed to start"
+    log_error "HelixAgent failed to start"
     return 1
 }
 
-stop_superagent() {
-    if [ -f "$OUTPUT_DIR/superagent.pid" ]; then
-        local pid=$(cat "$OUTPUT_DIR/superagent.pid")
+stop_helixagent() {
+    if [ -f "$OUTPUT_DIR/helixagent.pid" ]; then
+        local pid=$(cat "$OUTPUT_DIR/helixagent.pid")
         if kill -0 "$pid" 2>/dev/null; then
-            log_info "Stopping SuperAgent (PID: $pid)..."
+            log_info "Stopping HelixAgent (PID: $pid)..."
             kill "$pid" 2>/dev/null || true
             wait "$pid" 2>/dev/null || true
-            log_success "SuperAgent stopped"
+            log_success "HelixAgent stopped"
         fi
-        rm -f "$OUTPUT_DIR/superagent.pid"
+        rm -f "$OUTPUT_DIR/helixagent.pid"
     fi
 }
 
@@ -288,9 +288,9 @@ validate_opencode_config() {
     if [ ! -f "$OPENCODE_CONFIG" ]; then
         log_warning "OpenCode config not found, generating..."
 
-        # Generate using SuperAgent binary
+        # Generate using HelixAgent binary
         set -a && source "$PROJECT_ROOT/.env" && set +a
-        "$SUPERAGENT_BINARY" -generate-opencode-config -opencode-output "$OPENCODE_CONFIG"
+        "$HELIXAGENT_BINARY" -generate-opencode-config -opencode-output "$OPENCODE_CONFIG"
 
         # Update with correct provider structure
         python3 - "$OPENCODE_CONFIG" << 'UPDATECONFIG'
@@ -304,22 +304,22 @@ with open(config_path, 'r') as f:
     config = json.load(f)
 
 # Get API key from environment
-api_key = os.environ.get('SUPERAGENT_API_KEY', '')
+api_key = os.environ.get('HELIXAGENT_API_KEY', '')
 
 # Update to use openai-compatible provider
 config = {
     "$schema": "https://opencode.ai/config.json",
     "provider": {
-        "superagent": {
+        "helixagent": {
             "npm": "@ai-sdk/openai-compatible",
-            "name": "SuperAgent AI Debate",
+            "name": "HelixAgent AI Debate",
             "options": {
                 "baseURL": "http://localhost:8080/v1",
                 "apiKey": api_key
             },
             "models": {
-                "superagent-debate": {
-                    "name": "SuperAgent Debate Ensemble",
+                "helixagent-debate": {
+                    "name": "HelixAgent Debate Ensemble",
                     "attachments": True,
                     "reasoning": True
                 }
@@ -328,8 +328,8 @@ config = {
     },
     "agent": {
         "model": {
-            "provider": "superagent",
-            "model": "superagent-debate"
+            "provider": "helixagent",
+            "model": "helixagent-debate"
         }
     }
 }
@@ -375,9 +375,9 @@ phase1_prerequisites() {
         errors=$((errors + 1))
     fi
 
-    # Check/Start SuperAgent
-    if ! check_superagent_running; then
-        if ! start_superagent; then
+    # Check/Start HelixAgent
+    if ! check_helixagent_running; then
+        if ! start_helixagent; then
             errors=$((errors + 1))
         fi
     fi
@@ -402,13 +402,13 @@ phase1_prerequisites() {
 phase2_api_test() {
     log_phase "PHASE 2: API Connectivity Test"
 
-    log_info "Testing SuperAgent API endpoints..."
+    log_info "Testing HelixAgent API endpoints..."
 
     local api_results="$OUTPUT_DIR/api_test_results.json"
 
     # Test /v1/models endpoint
     log_info "Testing /v1/models..."
-    local models_response=$(curl -s -w "\n%{http_code}" "http://$SUPERAGENT_HOST:$SUPERAGENT_PORT/v1/models" 2>&1)
+    local models_response=$(curl -s -w "\n%{http_code}" "http://$HELIXAGENT_HOST:$HELIXAGENT_PORT/v1/models" 2>&1)
     local models_body=$(echo "$models_response" | head -n -1)
     local models_status=$(echo "$models_response" | tail -n 1)
 
@@ -420,12 +420,12 @@ phase2_api_test() {
     if [ "$models_status" = "200" ]; then
         log_success "/v1/models returned 200 OK"
 
-        # Verify superagent-debate model is present
-        if echo "$models_body" | grep -q "superagent-debate"; then
-            log_success "superagent-debate model found"
+        # Verify helixagent-debate model is present
+        if echo "$models_body" | grep -q "helixagent-debate"; then
+            log_success "helixagent-debate model found"
         else
-            log_error "superagent-debate model NOT found in response"
-            echo "ERROR: superagent-debate model missing from /v1/models" >> "$ERROR_LOG"
+            log_error "helixagent-debate model NOT found in response"
+            echo "ERROR: helixagent-debate model missing from /v1/models" >> "$ERROR_LOG"
         fi
     else
         log_error "/v1/models returned status $models_status"
@@ -435,12 +435,12 @@ phase2_api_test() {
     # Test /v1/chat/completions endpoint with simple request
     log_info "Testing /v1/chat/completions..."
 
-    local chat_request='{"model":"superagent-debate","messages":[{"role":"user","content":"Say hello"}],"max_tokens":50}'
+    local chat_request='{"model":"helixagent-debate","messages":[{"role":"user","content":"Say hello"}],"max_tokens":50}'
     local chat_response=$(curl -s -w "\n%{http_code}" \
         -H "Content-Type: application/json" \
-        -H "Authorization: Bearer $SUPERAGENT_API_KEY" \
+        -H "Authorization: Bearer $HELIXAGENT_API_KEY" \
         -d "$chat_request" \
-        "http://$SUPERAGENT_HOST:$SUPERAGENT_PORT/v1/chat/completions" 2>&1)
+        "http://$HELIXAGENT_HOST:$HELIXAGENT_PORT/v1/chat/completions" 2>&1)
 
     local chat_body=$(echo "$chat_response" | head -n -1)
     local chat_status=$(echo "$chat_response" | tail -n 1)
@@ -474,8 +474,8 @@ phase2_api_test() {
             "success": $([ "$chat_status" = "200" ] && echo "true" || echo "false")
         }
     ],
-    "superagent_host": "$SUPERAGENT_HOST",
-    "superagent_port": "$SUPERAGENT_PORT"
+    "helixagent_host": "$HELIXAGENT_HOST",
+    "helixagent_port": "$HELIXAGENT_PORT"
 }
 EOF
 
@@ -698,22 +698,22 @@ if 'provider_errors' in categories or 'ensemble_failure' in issues:
 if 'authentication_errors' in categories or 'invalid_api_key' in issues:
     recommendations.append({
         "issue": "Authentication Errors",
-        "recommendation": "Check SUPERAGENT_API_KEY is set correctly in .env",
-        "action": "Regenerate API key using: ./bin/superagent -generate-api-key -api-key-env-file .env"
+        "recommendation": "Check HELIXAGENT_API_KEY is set correctly in .env",
+        "action": "Regenerate API key using: ./bin/helixagent -generate-api-key -api-key-env-file .env"
     })
 
 if 'model_errors' in categories or 'model_not_available' in issues:
     recommendations.append({
         "issue": "Model Not Found",
-        "recommendation": "Ensure superagent-debate model is registered",
-        "action": "Verify /v1/models returns superagent-debate"
+        "recommendation": "Ensure helixagent-debate model is registered",
+        "action": "Verify /v1/models returns helixagent-debate"
     })
 
 if 'provider_not_configured' in issues:
     recommendations.append({
         "issue": "Provider Not Configured",
         "recommendation": "Update OpenCode config with correct provider settings",
-        "action": "Regenerate config: ./bin/superagent -generate-opencode-config"
+        "action": "Regenerate config: ./bin/helixagent -generate-opencode-config"
     })
 
 analysis['recommendations'] = recommendations
@@ -910,7 +910,7 @@ phase5_cli_testing() {
     # Initialize results file with header
     cat > "$cli_results_file" << 'RESULTSHEADER'
 ================================================================================
-SUPERAGENT OPENCODE CLI TEST RESULTS
+HELIXAGENT OPENCODE CLI TEST RESULTS
 ================================================================================
 Generated: TIMESTAMP_PLACEHOLDER
 Total Tests: 25
@@ -938,10 +938,10 @@ RESULTSHEADER
         local response=""
         local exit_code=0
 
-        # Use curl to call the SuperAgent API directly (OpenCode uses this internally)
+        # Use curl to call the HelixAgent API directly (OpenCode uses this internally)
         local request_body=$(cat << REQUESTEOF
 {
-    "model": "superagent-debate",
+    "model": "helixagent-debate",
     "messages": [{"role": "user", "content": "$prompt"}],
     "max_tokens": 500,
     "temperature": 0.7
@@ -951,9 +951,9 @@ REQUESTEOF
 
         response=$(curl -s -X POST \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $SUPERAGENT_API_KEY" \
+            -H "Authorization: Bearer $HELIXAGENT_API_KEY" \
             -d "$request_body" \
-            "http://$SUPERAGENT_HOST:$SUPERAGENT_PORT/v1/chat/completions" 2>&1)
+            "http://$HELIXAGENT_HOST:$HELIXAGENT_PORT/v1/chat/completions" 2>&1)
         exit_code=$?
 
         local end_time=$(date +%s%N)
@@ -1084,7 +1084,7 @@ Results written to:
   - Text: $cli_results_file
   - JSON: $cli_results_json
 
-Generated by SuperAgent OpenCode Challenge
+Generated by HelixAgent OpenCode Challenge
 ================================================================================
 CLIFOOTER
 
@@ -1262,7 +1262,7 @@ except:
 ## Next Steps
 
 $(if [ "$overall_success" = "true" ]; then
-    echo "Challenge completed successfully. SuperAgent is working with OpenCode."
+    echo "Challenge completed successfully. HelixAgent is working with OpenCode."
     echo ""
     echo "All $cli_total CLI request tests passed with assertions validated."
 else
@@ -1274,7 +1274,7 @@ else
 fi)
 
 ---
-*Generated by SuperAgent OpenCode Challenge*
+*Generated by HelixAgent OpenCode Challenge*
 EOF
 
     # Print summary
@@ -1307,8 +1307,8 @@ EOF
 
 cleanup() {
     log_info "Cleaning up..."
-    # Don't stop SuperAgent - user may want it running
-    # stop_superagent
+    # Don't stop HelixAgent - user may want it running
+    # stop_helixagent
 }
 
 trap cleanup EXIT
@@ -1349,7 +1349,7 @@ main() {
     setup_directories
     load_environment
 
-    log_phase "SUPERAGENT OPENCODE CHALLENGE"
+    log_phase "HELIXAGENT OPENCODE CHALLENGE"
     log_info "Start time: $START_TIME"
     log_info "Results directory: $RESULTS_DIR"
 

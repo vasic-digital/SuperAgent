@@ -6,7 +6,7 @@
 
 ## Slide 1: Title Slide
 
-**SuperAgent: Multi-Provider AI Orchestration**
+**HelixAgent: Multi-Provider AI Orchestration**
 
 - Module 4: LLM Provider Integration
 - Duration: 75 minutes
@@ -493,7 +493,7 @@ Time: 30 minutes
 Go through each provider and discuss when to use each. Emphasize that provider selection depends on the specific use case.
 
 ### Slide 19 Notes
-Demonstrate fallback in action by simulating a provider failure. Show how SuperAgent automatically routes to the next provider.
+Demonstrate fallback in action by simulating a provider failure. Show how HelixAgent automatically routes to the next provider.
 
 ### Slide 25 Notes
 Discuss cost implications in real-world scenarios. Many organizations can save 30-50% by intelligent routing.

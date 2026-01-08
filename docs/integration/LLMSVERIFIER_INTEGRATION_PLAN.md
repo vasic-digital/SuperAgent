@@ -1,8 +1,8 @@
-# LLMsVerifier Integration Plan for SuperAgent
+# LLMsVerifier Integration Plan for HelixAgent
 
 ## Executive Summary
 
-This document provides a comprehensive, nano-level integration plan for incorporating LLMsVerifier (enterprise-grade LLM verification, monitoring, and optimization platform) into SuperAgent. The integration covers 30+ feature categories across 10 phases, ensuring 100% feature utilization with complete test coverage.
+This document provides a comprehensive, nano-level integration plan for incorporating LLMsVerifier (enterprise-grade LLM verification, monitoring, and optimization platform) into HelixAgent. The integration covers 30+ feature categories across 10 phases, ensuring 100% feature utilization with complete test coverage.
 
 ---
 
@@ -29,7 +29,7 @@ This document provides a comprehensive, nano-level integration plan for incorpor
 
 ### 1.1 Current State
 
-**SuperAgent (HelixAgent)**:
+**HelixAgent (HelixAgent)**:
 - Go 1.23+ with Gin framework
 - 7 LLM providers: Claude, DeepSeek, Gemini, Qwen, ZAI, Ollama, OpenRouter
 - Ensemble orchestration with voting strategies
@@ -54,7 +54,7 @@ This document provides a comprehensive, nano-level integration plan for incorpor
 
 1. **Full Feature Utilization**: Every LLMsVerifier feature must be integrated and used
 2. **100% Test Coverage**: All test types (unit, integration, e2e, security, stress, chaos)
-3. **Zero Breaking Changes**: Existing SuperAgent functionality preserved
+3. **Zero Breaking Changes**: Existing HelixAgent functionality preserved
 4. **Enhanced Capabilities**: Combined power of both systems
 5. **Complete Documentation**: User guides, video courses, API references
 
@@ -62,7 +62,7 @@ This document provides a comprehensive, nano-level integration plan for incorpor
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         SuperAgent                               │
+│                         HelixAgent                               │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
 │  │   API Layer     │  │  Services       │  │   Handlers      │  │
@@ -139,7 +139,7 @@ This document provides a comprehensive, nano-level integration plan for incorpor
 **File**: `go.mod` (update)
 
 ```go
-module github.com/superagent/superagent
+module github.com/helixagent/helixagent
 
 go 1.23
 
@@ -207,7 +207,7 @@ submodule-status:
 
 ### 1.2 Database Integration
 
-**Objective**: Integrate LLMsVerifier SQLite database with SuperAgent PostgreSQL.
+**Objective**: Integrate LLMsVerifier SQLite database with HelixAgent PostgreSQL.
 
 #### 1.2.1 Dual Database Strategy
 
@@ -218,13 +218,13 @@ package verifier
 
 import (
     "llm-verifier/database"
-    pgdb "github.com/superagent/superagent/internal/database"
+    pgdb "github.com/helixagent/helixagent/internal/database"
 )
 
-// DatabaseBridge bridges LLMsVerifier SQLite and SuperAgent PostgreSQL
+// DatabaseBridge bridges LLMsVerifier SQLite and HelixAgent PostgreSQL
 type DatabaseBridge struct {
     verifierDB *database.Database  // LLMsVerifier SQLite
-    superagentDB *pgdb.Database    // SuperAgent PostgreSQL
+    helixagentDB *pgdb.Database    // HelixAgent PostgreSQL
 }
 
 // NewDatabaseBridge creates a new database bridge
@@ -235,15 +235,15 @@ func NewDatabaseBridge(verifierDBPath string, pgConfig *pgdb.Config) (*DatabaseB
         return nil, fmt.Errorf("failed to init verifier DB: %w", err)
     }
 
-    // Connect to SuperAgent PostgreSQL
-    superagentDB, err := pgdb.New(pgConfig)
+    // Connect to HelixAgent PostgreSQL
+    helixagentDB, err := pgdb.New(pgConfig)
     if err != nil {
-        return nil, fmt.Errorf("failed to init superagent DB: %w", err)
+        return nil, fmt.Errorf("failed to init helixagent DB: %w", err)
     }
 
     return &DatabaseBridge{
         verifierDB: verifierDB,
-        superagentDB: superagentDB,
+        helixagentDB: helixagentDB,
     }, nil
 }
 
@@ -255,7 +255,7 @@ func (db *DatabaseBridge) SyncVerificationResults() error {
     }
 
     for _, result := range results {
-        if err := db.superagentDB.UpsertVerificationResult(result); err != nil {
+        if err := db.helixagentDB.UpsertVerificationResult(result); err != nil {
             return err
         }
     }
@@ -473,7 +473,7 @@ verifier:
       enabled: true
       interval: 12h
 
-# Provider Configuration (merged with SuperAgent providers)
+# Provider Configuration (merged with HelixAgent providers)
 providers:
   # LLMsVerifier Additional Providers
   together_ai:
@@ -621,7 +621,7 @@ func TestDatabaseBridge_SyncVerificationResults(t *testing.T) {
     require.NoError(t, err)
 
     // Verify in PostgreSQL
-    results, err := bridge.superagentDB.GetVerificationResults()
+    results, err := bridge.helixagentDB.GetVerificationResults()
     require.NoError(t, err)
     assert.Len(t, results, 1)
 }
@@ -633,7 +633,7 @@ func TestDatabaseBridge_SyncVerificationResults(t *testing.T) {
 
 ### 2.1 Unified Provider Registry
 
-**Objective**: Merge LLMsVerifier 12+ providers with SuperAgent 7 providers.
+**Objective**: Merge LLMsVerifier 12+ providers with HelixAgent 7 providers.
 
 #### 2.1.1 Provider Interface Extension
 
@@ -702,11 +702,11 @@ package adapters
 import (
     "context"
 
-    "github.com/superagent/superagent/internal/llm"
+    "github.com/helixagent/helixagent/internal/llm"
     verifierProviders "llm-verifier/providers"
 )
 
-// VerifierProviderAdapter wraps LLMsVerifier provider for SuperAgent
+// VerifierProviderAdapter wraps LLMsVerifier provider for HelixAgent
 type VerifierProviderAdapter struct {
     provider    verifierProviders.Provider
     name        string
@@ -739,7 +739,7 @@ func NewVerifierProviderAdapter(
 
 // Complete implements LLMProvider.Complete
 func (a *VerifierProviderAdapter) Complete(ctx context.Context, req *llm.CompletionRequest) (*llm.CompletionResponse, error) {
-    // Convert SuperAgent request to LLMsVerifier format
+    // Convert HelixAgent request to LLMsVerifier format
     verifierReq := convertToVerifierRequest(req)
 
     // Call LLMsVerifier provider
@@ -748,8 +748,8 @@ func (a *VerifierProviderAdapter) Complete(ctx context.Context, req *llm.Complet
         return nil, err
     }
 
-    // Convert back to SuperAgent format
-    return convertToSuperAgentResponse(verifierResp), nil
+    // Convert back to HelixAgent format
+    return convertToHelixAgentResponse(verifierResp), nil
 }
 
 // CompleteStream implements LLMProvider.CompleteStream
@@ -785,8 +785,8 @@ import (
     "context"
     "sync"
 
-    "github.com/superagent/superagent/internal/llm"
-    "github.com/superagent/superagent/internal/verifier/adapters"
+    "github.com/helixagent/helixagent/internal/llm"
+    "github.com/helixagent/helixagent/internal/verifier/adapters"
 )
 
 // ExtendedProviderRegistry manages all providers including LLMsVerifier providers
@@ -804,7 +804,7 @@ func NewExtendedProviderRegistry(cfg *Config) (*ExtendedProviderRegistry, error)
         providers: make(map[string]llm.ExtendedLLMProvider),
     }
 
-    // Register SuperAgent native providers
+    // Register HelixAgent native providers
     if err := registry.registerNativeProviders(cfg); err != nil {
         return nil, err
     }
@@ -1215,7 +1215,7 @@ import (
     "net/http"
 
     "github.com/gin-gonic/gin"
-    "github.com/superagent/superagent/internal/verifier"
+    "github.com/helixagent/helixagent/internal/verifier"
 )
 
 // VerificationHandler handles verification API endpoints
@@ -1533,7 +1533,7 @@ import (
     "strconv"
 
     "github.com/gin-gonic/gin"
-    "github.com/superagent/superagent/internal/verifier"
+    "github.com/helixagent/helixagent/internal/verifier"
 )
 
 // ScoringHandler handles scoring API endpoints
@@ -1732,7 +1732,7 @@ package llm
 import (
     "context"
 
-    "github.com/superagent/superagent/internal/verifier"
+    "github.com/helixagent/helixagent/internal/verifier"
 )
 
 // EnsembleWithFailover enhances ensemble with health-aware routing
@@ -2129,7 +2129,7 @@ import (
     "llm-verifier/client"
 )
 
-// VerifierClient wraps LLMsVerifier client for SuperAgent
+// VerifierClient wraps LLMsVerifier client for HelixAgent
 type VerifierClient struct {
     client *client.Client
 }
@@ -2159,10 +2159,10 @@ func (c *VerifierClient) ListVerifiedModels(ctx context.Context) ([]*Model, erro
 
 ### 9.2 Python SDK Wrapper
 
-**File**: `pkg/sdk/python/superagent_verifier/__init__.py`
+**File**: `pkg/sdk/python/helixagent_verifier/__init__.py`
 
 ```python
-"""SuperAgent Verifier SDK"""
+"""HelixAgent Verifier SDK"""
 
 from .client import VerifierClient
 from .models import VerificationResult, ScoringResult, Model
@@ -2170,7 +2170,7 @@ from .models import VerificationResult, ScoringResult, Model
 __all__ = ['VerifierClient', 'VerificationResult', 'ScoringResult', 'Model']
 ```
 
-**File**: `pkg/sdk/python/superagent_verifier/client.py`
+**File**: `pkg/sdk/python/helixagent_verifier/client.py`
 
 ```python
 import aiohttp
@@ -2179,7 +2179,7 @@ from .models import VerificationResult, ScoringResult, Model
 
 
 class VerifierClient:
-    """SuperAgent Verifier Client"""
+    """HelixAgent Verifier Client"""
 
     def __init__(self, base_url: str, api_key: Optional[str] = None):
         self.base_url = base_url.rstrip('/')
@@ -2351,7 +2351,7 @@ tests/
 version: '3.8'
 
 services:
-  superagent:
+  helixagent:
     build: .
     ports:
       - "8080:8080"
@@ -2382,14 +2382,14 @@ volumes:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: superagent-with-verifier
+  name: helixagent-with-verifier
 spec:
   replicas: 3
   template:
     spec:
       containers:
-        - name: superagent
-          image: superagent:latest
+        - name: helixagent
+          image: helixagent:latest
           env:
             - name: VERIFIER_ENABLED
               value: "true"
@@ -2406,7 +2406,7 @@ spec:
 
 ## Summary
 
-This integration plan provides a comprehensive, phased approach to integrating all LLMsVerifier features into SuperAgent:
+This integration plan provides a comprehensive, phased approach to integrating all LLMsVerifier features into HelixAgent:
 
 - **10 Phases** covering all aspects of integration
 - **30+ Feature Categories** fully integrated
@@ -2420,4 +2420,4 @@ Each phase includes:
 - Test specifications
 - Documentation requirements
 
-The integration ensures backward compatibility while significantly enhancing SuperAgent's capabilities with enterprise-grade LLM verification, scoring, and monitoring features.
+The integration ensures backward compatibility while significantly enhancing HelixAgent's capabilities with enterprise-grade LLM verification, scoring, and monitoring features.

@@ -760,9 +760,9 @@ func TestHandlePrometheusMetrics(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Header().Get("Content-Type"), "text/plain")
-	assert.Contains(t, w.Body.String(), "superagent_protocols_active")
-	assert.Contains(t, w.Body.String(), "superagent_plugins_loaded")
-	assert.Contains(t, w.Body.String(), "superagent_requests_total")
+	assert.Contains(t, w.Body.String(), "helixagent_protocols_active")
+	assert.Contains(t, w.Body.String(), "helixagent_plugins_loaded")
+	assert.Contains(t, w.Body.String(), "helixagent_requests_total")
 }
 
 func TestHandlePrometheusMetricsWithData(t *testing.T) {
@@ -790,7 +790,7 @@ func TestHandlePrometheusMetricsWithData(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	// With recorded data, total requests should be > 0
-	assert.Contains(t, w.Body.String(), "superagent_requests_total")
+	assert.Contains(t, w.Body.String(), "helixagent_requests_total")
 }
 
 // Helper to setup test router with CORS middleware (mirrors Start() function)

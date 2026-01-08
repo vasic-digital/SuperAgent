@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // failingProvider is a mock that can be configured to fail

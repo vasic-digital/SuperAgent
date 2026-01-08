@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // AuthMiddleware handles JWT authentication
@@ -47,7 +47,7 @@ func NewAuthMiddleware(config AuthConfig, userService *services.UserService) (*A
 		config.TokenExpiry = 24 * time.Hour
 	}
 	if config.Issuer == "" {
-		config.Issuer = "superagent"
+		config.Issuer = "helixagent"
 	}
 
 	return &AuthMiddleware{

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SuperAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 18+ LLM providers with **dynamic provider selection** based on LLMsVerifier verification scores. Main providers: Claude, DeepSeek, Gemini, Qwen, ZAI, OpenRouter, Mistral, Cerebras, and more.
+HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 18+ LLM providers with **dynamic provider selection** based on LLMsVerifier verification scores. Main providers: Claude, DeepSeek, Gemini, Qwen, ZAI, OpenRouter, Mistral, Cerebras, and more.
 
 The project also includes:
 - **Toolkit** (`Toolkit/`): A standalone Go library for building AI applications with multi-provider support
@@ -13,7 +13,7 @@ The project also includes:
 ## Build Commands
 
 ```bash
-make build              # Build SuperAgent binary
+make build              # Build HelixAgent binary
 make build-debug        # Build with debug symbols
 make run                # Run locally
 make run-dev            # Run in development mode (GIN_MODE=debug)
@@ -62,7 +62,7 @@ make install-deps     # Install dev dependencies (golangci-lint, gosec)
 ## Architecture
 
 ### Entry Points
-- `cmd/superagent/` - Main SuperAgent application
+- `cmd/helixagent/` - Main HelixAgent application
 - `cmd/api/` - API server
 - `cmd/grpc-server/` - gRPC server
 
@@ -108,7 +108,7 @@ make install-deps     # Install dev dependencies (golangci-lint, gosec)
 
 ### LLM Optimization (`internal/optimization/`)
 
-SuperAgent integrates 8 LLM optimization tools for performance and quality:
+HelixAgent integrates 8 LLM optimization tools for performance and quality:
 
 | Package | Purpose | Key Features |
 |---------|---------|--------------|
@@ -151,7 +151,7 @@ Environment variables defined in `.env.example`. Key categories:
 
 ### Dynamic LLM Provider Selection (LLMsVerifier Integration)
 
-SuperAgent uses **DYNAMIC provider selection** based on real-time LLMsVerifier verification scores. The system automatically selects the best-performing LLM provider based on actual benchmarks.
+HelixAgent uses **DYNAMIC provider selection** based on real-time LLMsVerifier verification scores. The system automatically selects the best-performing LLM provider based on actual benchmarks.
 
 **How it works:**
 1. LLMsVerifier runs verification tests on all available providers
@@ -181,21 +181,21 @@ Configuration files in `/configs`: `development.yaml`, `production.yaml`, `multi
 
 ## Cognee Authentication (IMPORTANT)
 
-Cognee 0.5.0+ requires authentication. SuperAgent handles this automatically.
+Cognee 0.5.0+ requires authentication. HelixAgent handles this automatically.
 
 ### Default Credentials
 ```
-Email:    admin@superagent.ai
-Password: SuperAgentPass123
+Email:    admin@helixagent.ai
+Password: HelixAgentPass123
 ```
 
 These are configured in `.env`:
 ```bash
-COGNEE_AUTH_EMAIL=admin@superagent.ai
-COGNEE_AUTH_PASSWORD=SuperAgentPass123
+COGNEE_AUTH_EMAIL=admin@helixagent.ai
+COGNEE_AUTH_PASSWORD=HelixAgentPass123
 ```
 
-**IMPORTANT**: Cognee uses form-encoded OAuth2-style login (NOT JSON). The SuperAgent CogneeService handles this automatically.
+**IMPORTANT**: Cognee uses form-encoded OAuth2-style login (NOT JSON). The HelixAgent CogneeService handles this automatically.
 
 ### Changing Credentials
 
@@ -205,7 +205,7 @@ COGNEE_AUTH_PASSWORD=SuperAgentPass123
 COGNEE_AUTH_EMAIL=your-email@example.com
 COGNEE_AUTH_PASSWORD=YourSecurePassword123
 
-# Restart SuperAgent - new user will be auto-registered
+# Restart HelixAgent - new user will be auto-registered
 ```
 
 **Option 2: Create additional users via API**
@@ -226,23 +226,23 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
 # First login to get token
 TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=superagent@localhost.com&password=SuperAgent123" | jq -r '.access_token')
+  -d "username=helixagent@localhost.com&password=HelixAgent123" | jq -r '.access_token')
 
 # Then use the forgot-password flow or update via API
 curl -X POST http://localhost:8000/api/v1/auth/forgot-password \
   -H "Content-Type: application/json" \
-  -d '{"email": "superagent@localhost.com"}'
+  -d '{"email": "helixagent@localhost.com"}'
 ```
 
 ### Credential Security Notes
 - Default credentials are for development only
 - For production, change credentials immediately after deployment
 - Cognee tokens expire after 1 hour by default
-- SuperAgent auto-refreshes tokens as needed
+- HelixAgent auto-refreshes tokens as needed
 
 ## Container Runtime Support (Docker/Podman)
 
-SuperAgent supports both Docker and Podman as container runtimes. Use the wrapper script for automatic detection:
+HelixAgent supports both Docker and Podman as container runtimes. Use the wrapper script for automatic detection:
 
 ```bash
 # Source the container runtime script
@@ -277,8 +277,8 @@ podman-compose --profile ai up -d       # Add AI services
 podman-compose --profile full up -d     # Everything
 
 # Or use Podman directly
-podman build -t superagent:latest .
-podman run -d --name superagent -p 8080:8080 superagent:latest
+podman build -t helixagent:latest .
+podman run -d --name helixagent -p 8080:8080 helixagent:latest
 ```
 
 ### Container Compatibility Tests
@@ -298,7 +298,7 @@ podman run -d --name superagent -p 8080:8080 superagent:latest
 
 ## Cloud Integration
 
-SuperAgent supports integration with major cloud AI providers:
+HelixAgent supports integration with major cloud AI providers:
 
 ### AWS Bedrock
 - Models: Claude, Titan, Llama, Cohere
@@ -323,7 +323,7 @@ The project includes LLMsVerifier for validating LLM provider accuracy:
 make verifier-init        # Initialize the LLMsVerifier submodule
 make verifier-build       # Build verifier CLI
 make verifier-test        # Run verifier tests
-make verifier-run         # Run SuperAgent with verifier enabled
+make verifier-run         # Run HelixAgent with verifier enabled
 make verifier-verify MODEL=gpt-4 PROVIDER=openai  # Verify a model
 ```
 
@@ -355,11 +355,11 @@ The `challenges/` directory contains a comprehensive challenge framework for tes
 
 ### Key Concepts
 
-**SuperAgent as Virtual LLM Provider**: SuperAgent presents itself as a **single LLM provider** with **ONE virtual model** - the AI Debate Ensemble. The underlying implementation leverages multiple top-performing LLMs through consensus-driven voting.
+**HelixAgent as Virtual LLM Provider**: HelixAgent presents itself as a **single LLM provider** with **ONE virtual model** - the AI Debate Ensemble. The underlying implementation leverages multiple top-performing LLMs through consensus-driven voting.
 
 **Real Data Only - No Stubs**: ALL verification data comes from REAL API calls. No hardcoded scores, no sample data, no cached demonstrations.
 
-**Auto-Start Infrastructure**: ALL infrastructure starts automatically when needed - SuperAgent binary is built if not present, server auto-starts if not running, containers start automatically.
+**Auto-Start Infrastructure**: ALL infrastructure starts automatically when needed - HelixAgent binary is built if not present, server auto-starts if not running, containers start automatically.
 
 ### Running Challenges
 
@@ -395,14 +395,14 @@ The Main Challenge generates an OpenCode-compatible configuration:
 
 ```bash
 ./challenges/scripts/main_challenge.sh
-# Output: ~/Downloads/opencode-super-agent.json
+# Output: ~/Downloads/opencode-helix-agent.json
 ```
 
 The generated configuration is validated using LLMsVerifier's OpenCode validator implementation.
 
 ## OpenCode Configuration
 
-SuperAgent generates OpenCode configurations following the official schema (`https://opencode.ai/config.json`).
+HelixAgent generates OpenCode configurations following the official schema (`https://opencode.ai/config.json`).
 
 ### Valid Top-Level Keys (per LLMsVerifier)
 

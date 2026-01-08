@@ -1,8 +1,8 @@
-"""Tests for SuperAgent Verifier SDK exceptions."""
+"""Tests for HelixAgent Verifier SDK exceptions."""
 
 import unittest
 
-from superagent_verifier.exceptions import (
+from helixagent_verifier.exceptions import (
     VerifierError,
     APIError,
     ValidationError,

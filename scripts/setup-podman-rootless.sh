@@ -1,5 +1,5 @@
 #!/bin/bash
-# Setup script for rootless Podman - enables container support for SuperAgent/Cognee
+# Setup script for rootless Podman - enables container support for HelixAgent/Cognee
 # Run with: sudo ./scripts/setup-podman-rootless.sh
 
 set -e
@@ -9,7 +9,7 @@ SUBUID_START=100000
 SUBUID_COUNT=65536
 
 echo "=========================================="
-echo "Rootless Podman Setup for SuperAgent"
+echo "Rootless Podman Setup for HelixAgent"
 echo "=========================================="
 echo ""
 

@@ -119,7 +119,7 @@ jobs:
           <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>SuperAgent Documentation</title>
+              <title>HelixAgent Documentation</title>
               <style>
                   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; }
                   h1 { color: #2563eb; }
@@ -133,8 +133,8 @@ jobs:
               </style>
           </head>
           <body>
-              <h1>🚀 SuperAgent Documentation</h1>
-              <p>Welcome to the comprehensive documentation for SuperAgent - the AI-powered multi-provider LLM orchestration platform.</p>
+              <h1>🚀 HelixAgent Documentation</h1>
+              <p>Welcome to the comprehensive documentation for HelixAgent - the AI-powered multi-provider LLM orchestration platform.</p>
               
               <div class="nav">
                   <a href="/">🏠 Home</a>
@@ -142,7 +142,7 @@ jobs:
                   <a href="/docs/api/">🔧 API</a>
                   <a href="/docs/developer/">💻 Developer</a>
                   <a href="/docs/user/">👤 User Guide</a>
-                  <a href="https://github.com/superagent/superagent">⭐ GitHub</a>
+                  <a href="https://github.com/helixagent/helixagent">⭐ GitHub</a>
               </div>
 
               <h2>📖 Documentation Sections</h2>
@@ -159,7 +159,7 @@ jobs:
 
               <h2>🎯 Quick Start</h2>
               <ol>
-                  <li><a href="user/">Read the User Guide</a> to understand SuperAgent capabilities</li>
+                  <li><a href="user/">Read the User Guide</a> to understand HelixAgent capabilities</li>
                   <li><a href="developer/">Check the Developer Guide</a> for installation and setup</li>
                   <li><a href="api/">Explore the API Documentation</a> for integration details</li>
                   <li><a href="deployment/">Follow the Deployment Guide</a> for production setup</li>
@@ -167,7 +167,7 @@ jobs:
 
               <h2>🔗 Quick Links</h2>
               <ul>
-                  <li><a href="https://github.com/superagent/superagent">GitHub Repository</a></li>
+                  <li><a href="https://github.com/helixagent/helixagent">GitHub Repository</a></li>
                   <li><a href="api/openapi.yaml">OpenAPI Specification</a></li>
                   <li><a href="architecture.md">Architecture Overview</a></li>
                   <li><a href="DEVELOPMENT_STATUS.md">Development Status</a></li>

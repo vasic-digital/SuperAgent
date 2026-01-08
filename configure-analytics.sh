@@ -1,9 +1,9 @@
-# SuperAgent Analytics Configuration Script
+# HelixAgent Analytics Configuration Script
 # This script helps configure analytics with real tracking IDs
 
 #!/bin/bash
 
-echo "🚀 SuperAgent Analytics Configuration"
+echo "🚀 HelixAgent Analytics Configuration"
 echo "===================================="
 echo ""
 
@@ -146,7 +146,7 @@ case $choice in
         echo "1. Visit https://analytics.google.com/"
         echo "2. Sign in with Google account"
         echo "3. Click 'Start measuring' or 'Admin' → 'Create Property'"
-        echo "4. Enter property name: 'SuperAgent Website'"
+        echo "4. Enter property name: 'HelixAgent Website'"
         echo "5. Configure time zone and currency"
         echo "6. Click 'Create' → 'Web' → Enter website URL"
         echo "7. Copy Measurement ID (G-XXXXXXXXXX format)"

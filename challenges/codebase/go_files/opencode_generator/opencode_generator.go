@@ -146,9 +146,9 @@ type ValidationResult struct {
 	Warnings []string          `json:"warnings"`
 }
 
-// GenerateSuperAgentConfig creates an OpenCode configuration for SuperAgent
+// GenerateHelixAgentConfig creates an OpenCode configuration for HelixAgent
 // Uses ONLY valid top-level keys from LLMsVerifier's schema validation
-func GenerateSuperAgentConfig(host string, port int, debateMembers []DebateGroupMember) *Config {
+func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroupMember) *Config {
 	baseURL := fmt.Sprintf("http://%s:%d/v1", host, port)
 
 	enabled := true
@@ -156,18 +156,18 @@ func GenerateSuperAgentConfig(host string, port int, debateMembers []DebateGroup
 
 	config := &Config{
 		Schema:   "https://opencode.ai/config.json",
-		Username: "SuperAgent AI Ensemble",
+		Username: "HelixAgent AI Ensemble",
 		Instructions: []string{
-			"You are connected to SuperAgent, a Virtual LLM Provider that exposes ONE model backed by an AI debate ensemble.",
-			"The superagent-debate model combines responses from multiple top-performing LLMs through confidence-weighted voting.",
+			"You are connected to HelixAgent, a Virtual LLM Provider that exposes ONE model backed by an AI debate ensemble.",
+			"The helixagent-debate model combines responses from multiple top-performing LLMs through confidence-weighted voting.",
 			"All underlying models have been verified through real API calls by LLMsVerifier.",
 		},
 		// Provider configuration (REQUIRED per LLMsVerifier validator)
 		// NOTE: OpenCode does NOT support ${VAR} references - must use actual values
 		Provider: map[string]ProviderConfig{
-			"superagent": {
+			"helixagent": {
 				Options: map[string]interface{}{
-					"apiKey":  os.Getenv("SUPERAGENT_API_KEY"),
+					"apiKey":  os.Getenv("HELIXAGENT_API_KEY"),
 					"baseURL": baseURL,
 					"timeout": 600000,
 				},
@@ -175,7 +175,7 @@ func GenerateSuperAgentConfig(host string, port int, debateMembers []DebateGroup
 		},
 		// MCP servers (type must be "local" or "remote" per LLMsVerifier)
 		Mcp: map[string]McpConfig{
-			"superagent-tools": {
+			"helixagent-tools": {
 				Type:    "remote",
 				URL:     fmt.Sprintf("http://%s:%d/v1/mcp", host, port),
 				Enabled: &enabled,
@@ -202,10 +202,10 @@ func GenerateSuperAgentConfig(host string, port int, debateMembers []DebateGroup
 		// Agent configurations (must have model or prompt per LLMsVerifier)
 		Agent: map[string]AgentConfig{
 			"default": {
-				Model:       "superagent/superagent-debate",
+				Model:       "helixagent/helixagent-debate",
 				Temperature: &temperature,
-				Prompt:      "You are SuperAgent, an AI ensemble that combines the intelligence of multiple top-performing LLMs through debate and consensus.",
-				Description: "SuperAgent AI Debate Ensemble - verified models with confidence-weighted voting",
+				Prompt:      "You are HelixAgent, an AI ensemble that combines the intelligence of multiple top-performing LLMs through debate and consensus.",
+				Description: "HelixAgent AI Debate Ensemble - verified models with confidence-weighted voting",
 				Tools: map[string]bool{
 					"read":     true,
 					"write":    true,
@@ -216,7 +216,7 @@ func GenerateSuperAgentConfig(host string, port int, debateMembers []DebateGroup
 				},
 			},
 			"code-reviewer": {
-				Model:       "superagent/superagent-debate",
+				Model:       "helixagent/helixagent-debate",
 				Prompt:      "You are a code reviewer. Analyze code for bugs, security issues, and improvements.",
 				Description: "Code review agent",
 				Tools: map[string]bool{
@@ -391,8 +391,8 @@ func main() {
 		validate   string
 	)
 
-	flag.StringVar(&host, "host", "localhost", "SuperAgent host")
-	flag.IntVar(&port, "port", 8080, "SuperAgent port")
+	flag.StringVar(&host, "host", "localhost", "HelixAgent host")
+	flag.IntVar(&port, "port", 8080, "HelixAgent port")
 	flag.StringVar(&outputPath, "output", "", "Output path for generated config")
 	flag.StringVar(&validate, "validate", "", "Path to config file to validate")
 	flag.Parse()
@@ -433,17 +433,17 @@ func main() {
 	if outputPath == "" {
 		// Default to user's Downloads folder
 		homeDir, _ := os.UserHomeDir()
-		outputPath = filepath.Join(homeDir, "Downloads", "opencode-super-agent.json")
+		outputPath = filepath.Join(homeDir, "Downloads", "opencode-helix-agent.json")
 	}
 
 	fmt.Println("=" + repeatString("=", 69))
-	fmt.Println("SUPERAGENT OPENCODE CONFIGURATION GENERATOR")
+	fmt.Println("HELIXAGENT OPENCODE CONFIGURATION GENERATOR")
 	fmt.Println("Using LLMsVerifier validation implementation")
 	fmt.Println("=" + repeatString("=", 69))
 	fmt.Println()
 
 	// Generate config
-	config := GenerateSuperAgentConfig(host, port, nil)
+	config := GenerateHelixAgentConfig(host, port, nil)
 
 	// Validate before saving
 	result := ValidateConfig(config)

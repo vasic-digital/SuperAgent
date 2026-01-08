@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "🌐 SuperAgent API Demo"
+echo "🌐 HelixAgent API Demo"
 echo "===================="
 
 echo "1. Making simple completion request..."

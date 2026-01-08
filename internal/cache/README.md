@@ -1,6 +1,6 @@
 # Cache Package
 
-The cache package provides comprehensive caching functionality for SuperAgent using Redis as the backend.
+The cache package provides comprehensive caching functionality for HelixAgent using Redis as the backend.
 
 ## Overview
 

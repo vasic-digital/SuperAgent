@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // TestUserRepositoryInterface tests that UserRepository interface is properly defined

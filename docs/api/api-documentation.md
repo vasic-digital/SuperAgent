@@ -1,8 +1,8 @@
-# SuperAgent API Documentation
+# HelixAgent API Documentation
 
 ## Overview
 
-SuperAgent provides a unified OpenAI-compatible API that aggregates responses from multiple LLM providers (DeepSeek, Qwen, OpenRouter, Claude, Gemini) and offers intelligent ensemble capabilities. The system includes advanced features like Model Context Protocol (MCP) support, Language Server Protocol (LSP) integration, intelligent tool orchestration, context management, and security sandboxing.
+HelixAgent provides a unified OpenAI-compatible API that aggregates responses from multiple LLM providers (DeepSeek, Qwen, OpenRouter, Claude, Gemini) and offers intelligent ensemble capabilities. The system includes advanced features like Model Context Protocol (MCP) support, Language Server Protocol (LSP) integration, intelligent tool orchestration, context management, and security sandboxing.
 
 ## Base URL
 
@@ -13,7 +13,7 @@ Production: https://api.yourdomain.com
 
 ## Authentication
 
-SuperAgent uses JWT-based authentication for secure access:
+HelixAgent uses JWT-based authentication for secure access:
 
 ```bash
 # Get JWT token
@@ -64,10 +64,10 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
 
 ## Available Models
 
-SuperAgent supports 22+ models from multiple providers:
+HelixAgent supports 22+ models from multiple providers:
 
 ### Ensemble Models
-- `superagent-ensemble` - Intelligent multi-provider aggregation with confidence-weighted voting
+- `helixagent-ensemble` - Intelligent multi-provider aggregation with confidence-weighted voting
 
 ### DeepSeek Models
 - `deepseek-chat` - General purpose chat model
@@ -140,10 +140,10 @@ List all available models.
   "object": "list",
   "data": [
     {
-      "id": "superagent-ensemble",
+      "id": "helixagent-ensemble",
       "object": "model",
       "created": 1703123456,
-      "owned_by": "superagent"
+      "owned_by": "helixagent"
     },
     {
       "id": "deepseek-chat",
@@ -163,7 +163,7 @@ Create chat completion with streaming support.
 **Request Body:**
 ```json
 {
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "messages": [
     {
       "role": "system",
@@ -183,10 +183,10 @@ Create chat completion with streaming support.
 **Response:**
 ```json
 {
-  "id": "chatcmpl-superagent-123",
+  "id": "chatcmpl-helixagent-123",
   "object": "chat.completion",
   "created": 1703123456,
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "choices": [
     {
       "index": 0,
@@ -410,7 +410,7 @@ Execute an MCP tool with specified parameters.
 **Response:**
 ```json
 {
-  "result": "superagent-server\n",
+  "result": "helixagent-server\n",
   "success": true,
   "execution_time": 0.045
 }
@@ -457,13 +457,13 @@ List available MCP resources and their metadata.
 {
   "resources": [
     {
-      "uri": "superagent://providers",
+      "uri": "helixagent://providers",
       "name": "Provider Information",
       "description": "Information about configured LLM providers",
       "mimeType": "application/json"
     },
     {
-      "uri": "superagent://models",
+      "uri": "helixagent://models",
       "name": "Model Metadata",
       "description": "Metadata about available LLM models",
       "mimeType": "application/json"
@@ -762,7 +762,7 @@ Direct ensemble completion endpoint with advanced configuration.
 ```json
 {
   "prompt": "Explain quantum computing",
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "temperature": 0.7,
   "max_tokens": 1000,
   "ensemble_config": {
@@ -903,19 +903,19 @@ Prometheus metrics endpoint (no authentication required).
 
 **Response:**
 ```
-# HELP superagent_requests_total Total number of requests
-# TYPE superagent_requests_total counter
-superagent_requests_total{endpoint="/v1/chat/completions",method="POST"} 1234
+# HELP helixagent_requests_total Total number of requests
+# TYPE helixagent_requests_total counter
+helixagent_requests_total{endpoint="/v1/chat/completions",method="POST"} 1234
 
-# HELP superagent_request_duration_seconds Request duration in seconds
-# TYPE superagent_request_duration_seconds histogram
-superagent_request_duration_seconds_bucket{endpoint="/v1/chat/completions",le="0.1"} 1000
-superagent_request_duration_seconds_bucket{endpoint="/v1/chat/completions",le="0.5"} 1200
+# HELP helixagent_request_duration_seconds Request duration in seconds
+# TYPE helixagent_request_duration_seconds histogram
+helixagent_request_duration_seconds_bucket{endpoint="/v1/chat/completions",le="0.1"} 1000
+helixagent_request_duration_seconds_bucket{endpoint="/v1/chat/completions",le="0.5"} 1200
 
-# HELP superagent_provider_responses_total Total provider responses
-# TYPE superagent_provider_responses_total counter
-superagent_provider_responses_total{provider="deepseek",status="success"} 1000
-superagent_provider_responses_total{provider="deepseek",status="error"} 50
+# HELP helixagent_provider_responses_total Total provider responses
+# TYPE helixagent_provider_responses_total counter
+helixagent_provider_responses_total{provider="deepseek",status="success"} 1000
+helixagent_provider_responses_total{provider="deepseek",status="error"} 50
 ```
 
 ## Error Handling
@@ -950,7 +950,7 @@ superagent_provider_responses_total{provider="deepseek",status="error"} 50
 
 ## Rate Limiting
 
-SuperAgent implements intelligent rate limiting:
+HelixAgent implements intelligent rate limiting:
 
 - **Anonymous requests**: 100 requests/minute
 - **Authenticated users**: 1000 requests/minute  
@@ -971,7 +971,7 @@ All chat and text completion endpoints support streaming:
 **Request:**
 ```json
 {
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "messages": [{"role": "user", "content": "Hello"}],
   "stream": true
 }
@@ -997,15 +997,15 @@ package main
 import (
     "context"
     "fmt"
-    "github.com/superagent/superagent-go"
+    "github.com/helixagent/helixagent-go"
 )
 
 func main() {
-    client := superagent.NewClient("your-api-key")
+    client := helixagent.NewClient("your-api-key")
     
-    resp, err := client.CreateChatCompletion(context.Background(), &superagent.ChatCompletionRequest{
-        Model: "superagent-ensemble",
-        Messages: []superagent.Message{
+    resp, err := client.CreateChatCompletion(context.Background(), &helixagent.ChatCompletionRequest{
+        Model: "helixagent-ensemble",
+        Messages: []helixagent.Message{
             {Role: "user", Content: "Hello, how are you?"},
         },
     })
@@ -1020,12 +1020,12 @@ func main() {
 
 ### Python SDK
 ```python
-from superagent import SuperAgentClient
+from helixagent import HelixAgentClient
 
-client = SuperAgentClient(api_key="your-api-key")
+client = HelixAgentClient(api_key="your-api-key")
 
 response = client.chat.completions.create(
-    model="superagent-ensemble",
+    model="helixagent-ensemble",
     messages=[
         {"role": "user", "content": "Hello, how are you?"}
     ]
@@ -1036,12 +1036,12 @@ print(response.choices[0].message.content)
 
 ### JavaScript SDK
 ```javascript
-import { SuperAgentClient } from '@superagent/client';
+import { HelixAgentClient } from '@helixagent/client';
 
-const client = new SuperAgentClient({ apiKey: 'your-api-key' });
+const client = new HelixAgentClient({ apiKey: 'your-api-key' });
 
 const response = await client.chat.completions.create({
-    model: 'superagent-ensemble',
+    model: 'helixagent-ensemble',
     messages: [
         { role: 'user', content: 'Hello, how are you?' }
     ]
@@ -1054,7 +1054,7 @@ console.log(response.choices[0].message.content);
 
 ### Prometheus Metrics
 
-SuperAgent exposes comprehensive metrics at `/metrics`:
+HelixAgent exposes comprehensive metrics at `/metrics`:
 
 - `http_requests_total` - Total HTTP requests
 - `http_request_duration_seconds` - Request duration histogram
@@ -1070,12 +1070,12 @@ Import the pre-configured dashboard:
 ```bash
 curl -X POST http://admin:admin@localhost:3000/api/dashboards/db \
   -H "Content-Type: application/json" \
-  -d @monitoring/dashboards/superagent-dashboard.json
+  -d @monitoring/dashboards/helixagent-dashboard.json
 ```
 
 ## Advanced Services
 
-SuperAgent includes several advanced services that enhance LLM interactions and provide enterprise-grade capabilities. These services are currently available as internal APIs and will be exposed via REST endpoints in future releases.
+HelixAgent includes several advanced services that enhance LLM interactions and provide enterprise-grade capabilities. These services are currently available as internal APIs and will be exposed via REST endpoints in future releases.
 
 ### 1. Model Context Protocol (MCP)
 
@@ -1151,14 +1151,14 @@ Workflow orchestration for complex multi-step operations.
 
 ## OpenAPI Specification
 
-SuperAgent provides a complete OpenAPI 3.0 specification for automated API documentation and client generation.
+HelixAgent provides a complete OpenAPI 3.0 specification for automated API documentation and client generation.
 
 ### Accessing the OpenAPI Spec
 
 **Local Development:**
 ```bash
 # Download the OpenAPI spec
-curl -o superagent-openapi.yaml http://localhost:8080/openapi.yaml
+curl -o helixagent-openapi.yaml http://localhost:8080/openapi.yaml
 
 # Or view in browser
 open http://localhost:8080/swagger-ui/
@@ -1166,42 +1166,42 @@ open http://localhost:8080/swagger-ui/
 
 **Production:**
 ```bash
-curl -o superagent-openapi.yaml https://api.yourdomain.com/openapi.yaml
+curl -o helixagent-openapi.yaml https://api.yourdomain.com/openapi.yaml
 ```
 
 ### Generating Clients
 
 **TypeScript/JavaScript:**
 ```bash
-npx openapi-typescript-codegen --input superagent-openapi.yaml --output ./client --client axios
+npx openapi-typescript-codegen --input helixagent-openapi.yaml --output ./client --client axios
 ```
 
 **Python:**
 ```bash
 pip install openapi-python-client
-openapi-python-client generate --path superagent-openapi.yaml --output ./python-client
+openapi-python-client generate --path helixagent-openapi.yaml --output ./python-client
 ```
 
 **Go:**
 ```bash
 go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest
-oapi-codegen -package superagent superagent-openapi.yaml > client.gen.go
+oapi-codegen -package helixagent helixagent-openapi.yaml > client.gen.go
 ```
 
 ### Example OpenAPI Usage
 
 **TypeScript Client Example:**
 ```typescript
-import { SuperAgentClient } from './client';
+import { HelixAgentClient } from './client';
 
-const client = new SuperAgentClient({
+const client = new HelixAgentClient({
   BASE: 'http://localhost:8080',
   TOKEN: 'your-jwt-token'
 });
 
 // Make a chat completion request
 const response = await client.chatCompletions({
-  model: 'superagent-ensemble',
+  model: 'helixagent-ensemble',
   messages: [
     { role: 'user', content: 'Explain quantum computing' }
   ],
@@ -1214,15 +1214,15 @@ console.log(response.choices[0].message.content);
 
 **Python Client Example:**
 ```python
-from superagent_client import SuperAgentClient
+from helixagent_client import HelixAgentClient
 
-client = SuperAgentClient(
+client = HelixAgentClient(
     base_url="http://localhost:8080",
     token="your-jwt-token"
 )
 
 response = client.chat_completions(
-    model="superagent-ensemble",
+    model="helixagent-ensemble",
     messages=[
         {"role": "user", "content": "Explain quantum computing"}
     ],
@@ -1240,16 +1240,16 @@ package main
 import (
     "context"
     "fmt"
-    "github.com/your-org/superagent-client"
+    "github.com/your-org/helixagent-client"
 )
 
 func main() {
-    client := superagent.NewClient("http://localhost:8080")
+    client := helixagent.NewClient("http://localhost:8080")
     client.SetToken("your-jwt-token")
     
-    req := superagent.ChatCompletionRequest{
-        Model: "superagent-ensemble",
-        Messages: []superagent.Message{
+    req := helixagent.ChatCompletionRequest{
+        Model: "helixagent-ensemble",
+        Messages: []helixagent.Message{
             {Role: "user", Content: "Explain quantum computing"},
         },
         Temperature: 0.7,
@@ -1268,7 +1268,7 @@ func main() {
 ## Best Practices
 
 ### 1. Model Selection
-- Use `superagent-ensemble` for most reliable responses
+- Use `helixagent-ensemble` for most reliable responses
 - Choose specific models for cost optimization
 - Consider response time requirements
 
@@ -1295,4 +1295,4 @@ func main() {
 
 ---
 
-For more detailed information, see the [SuperAgent GitHub repository](https://github.com/superagent/superagent).
+For more detailed information, see the [HelixAgent GitHub repository](https://github.com/helixagent/helixagent).

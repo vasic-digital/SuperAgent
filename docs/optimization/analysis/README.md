@@ -1,6 +1,6 @@
 # LLM Optimization Tools Analysis
 
-This directory contains deep analysis reports for 8 open-source LLM optimization tools being integrated into SuperAgent.
+This directory contains deep analysis reports for 8 open-source LLM optimization tools being integrated into HelixAgent.
 
 ## Analysis Documents
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# SuperAgent Challenges - Infrastructure Setup Script
+# HelixAgent Challenges - Infrastructure Setup Script
 # This script sets up the required infrastructure for running all challenges
 #
 # REQUIRES: sudo/root access for initial setup
@@ -23,7 +23,7 @@ print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 echo "=========================================="
-echo "  SuperAgent Infrastructure Setup"
+echo "  HelixAgent Infrastructure Setup"
 echo "=========================================="
 
 # Check for root/sudo
@@ -67,18 +67,18 @@ start_postgres() {
     local USER_NAME="${SUDO_USER:-$USER}"
 
     # Remove existing container if exists
-    sudo -u "$USER_NAME" podman rm -f superagent-postgres 2>/dev/null || true
+    sudo -u "$USER_NAME" podman rm -f helixagent-postgres 2>/dev/null || true
 
     # Create network if not exists
-    sudo -u "$USER_NAME" podman network create superagent-net 2>/dev/null || true
+    sudo -u "$USER_NAME" podman network create helixagent-net 2>/dev/null || true
 
     # Start PostgreSQL
     sudo -u "$USER_NAME" podman run -d \
-        --name superagent-postgres \
-        --network superagent-net \
-        -e POSTGRES_USER=superagent \
-        -e POSTGRES_PASSWORD=superagent123 \
-        -e POSTGRES_DB=superagent_db \
+        --name helixagent-postgres \
+        --network helixagent-net \
+        -e POSTGRES_USER=helixagent \
+        -e POSTGRES_PASSWORD=helixagent123 \
+        -e POSTGRES_DB=helixagent_db \
         -p 5432:5432 \
         docker.io/postgres:15-alpine
 
@@ -92,12 +92,12 @@ start_redis() {
     local USER_NAME="${SUDO_USER:-$USER}"
 
     # Remove existing container if exists
-    sudo -u "$USER_NAME" podman rm -f superagent-redis 2>/dev/null || true
+    sudo -u "$USER_NAME" podman rm -f helixagent-redis 2>/dev/null || true
 
     # Start Redis
     sudo -u "$USER_NAME" podman run -d \
-        --name superagent-redis \
-        --network superagent-net \
+        --name helixagent-redis \
+        --network helixagent-net \
         -p 6379:6379 \
         docker.io/redis:7-alpine
 
@@ -112,7 +112,7 @@ wait_for_services() {
     local attempt=1
 
     while [ $attempt -le $max_attempts ]; do
-        if pg_isready -h localhost -p 5432 -U superagent 2>/dev/null; then
+        if pg_isready -h localhost -p 5432 -U helixagent 2>/dev/null; then
             print_success "PostgreSQL is ready"
             break
         fi
@@ -133,37 +133,37 @@ wait_for_services() {
     done
 }
 
-# Start SuperAgent
-start_superagent() {
-    print_info "Starting SuperAgent..."
+# Start HelixAgent
+start_helixagent() {
+    print_info "Starting HelixAgent..."
 
     cd "$PROJECT_ROOT"
 
-    export JWT_SECRET="superagent-jwt-secret-for-testing-32chars"
+    export JWT_SECRET="helixagent-jwt-secret-for-testing-32chars"
     export GIN_MODE=release
     export DB_HOST=localhost
     export DB_PORT=5432
-    export DB_USER=superagent
-    export DB_PASSWORD=superagent123
-    export DB_NAME=superagent_db
+    export DB_USER=helixagent
+    export DB_PASSWORD=helixagent123
+    export DB_NAME=helixagent_db
     export REDIS_HOST=localhost
     export REDIS_PORT=6379
 
     # Build if needed
-    if [ ! -f "./bin/superagent" ]; then
+    if [ ! -f "./bin/helixagent" ]; then
         make build
     fi
 
     # Start in background
-    nohup ./bin/superagent --auto-start-docker=false > /tmp/superagent.log 2>&1 &
+    nohup ./bin/helixagent --auto-start-docker=false > /tmp/helixagent.log 2>&1 &
 
     sleep 3
 
     if curl -s http://localhost:8080/health | grep -q healthy; then
-        print_success "SuperAgent is running"
+        print_success "HelixAgent is running"
     else
-        print_error "SuperAgent failed to start"
-        cat /tmp/superagent.log
+        print_error "HelixAgent failed to start"
+        cat /tmp/helixagent.log
         exit 1
     fi
 }
@@ -179,11 +179,11 @@ main() {
     print_info ""
     print_success "Infrastructure is ready!"
     print_info ""
-    print_info "To start SuperAgent, run as your user:"
-    print_info "  export JWT_SECRET='superagent-jwt-secret-for-testing-32chars'"
-    print_info "  export DB_HOST=localhost DB_PORT=5432 DB_USER=superagent DB_PASSWORD=superagent123 DB_NAME=superagent_db"
+    print_info "To start HelixAgent, run as your user:"
+    print_info "  export JWT_SECRET='helixagent-jwt-secret-for-testing-32chars'"
+    print_info "  export DB_HOST=localhost DB_PORT=5432 DB_USER=helixagent DB_PASSWORD=helixagent123 DB_NAME=helixagent_db"
     print_info "  export REDIS_HOST=localhost REDIS_PORT=6379"
-    print_info "  ./bin/superagent --auto-start-docker=false"
+    print_info "  ./bin/helixagent --auto-start-docker=false"
     print_info ""
     print_info "Then run all challenges:"
     print_info "  cd challenges && ./scripts/run_all_challenges.sh"

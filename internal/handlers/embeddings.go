@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // EmbeddingHandler handles embedding and vector search HTTP endpoints

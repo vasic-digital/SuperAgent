@@ -1,5 +1,5 @@
 #!/bin/bash
-# SuperAgent Debate Group Verification Script
+# HelixAgent Debate Group Verification Script
 # Purpose: Verify that all LLM providers in the debate group are properly configured
 #          and contributing to the ensemble
 #
@@ -19,7 +19,7 @@ CHALLENGES_DIR="$(dirname "$SCRIPT_DIR")"
 PROJECT_ROOT="$(dirname "$CHALLENGES_DIR")"
 
 # Configuration
-SUPERAGENT_URL="${SUPERAGENT_URL:-http://localhost:8080}"
+HELIXAGENT_URL="${HELIXAGENT_URL:-http://localhost:8080}"
 TIMEOUT_SECONDS=30
 VERBOSE=false
 JSON_OUTPUT=false
@@ -44,7 +44,7 @@ NC='\033[0m' # No Color
 # Print functions
 print_header() {
     echo -e "${CYAN}========================================${NC}"
-    echo -e "${CYAN}  SuperAgent Debate Group Verification${NC}"
+    echo -e "${CYAN}  HelixAgent Debate Group Verification${NC}"
     echo -e "${CYAN}========================================${NC}"
     echo ""
 }
@@ -95,7 +95,7 @@ parse_args() {
 
 usage() {
     cat << EOF
-SuperAgent Debate Group Verification
+HelixAgent Debate Group Verification
 
 Usage: $0 [options]
 
@@ -105,7 +105,7 @@ Options:
   -h, --help       Show this help message
 
 Environment Variables:
-  SUPERAGENT_URL   SuperAgent server URL (default: http://localhost:8080)
+  HELIXAGENT_URL   HelixAgent server URL (default: http://localhost:8080)
 
 Examples:
   $0                    # Run verification with default settings
@@ -114,18 +114,18 @@ Examples:
 EOF
 }
 
-# Check if SuperAgent server is running
+# Check if HelixAgent server is running
 check_server() {
-    print_section "1" "Checking SuperAgent Server"
+    print_section "1" "Checking HelixAgent Server"
 
     local health_response
-    health_response=$(curl -s --max-time 5 "${SUPERAGENT_URL}/health" 2>/dev/null)
+    health_response=$(curl -s --max-time 5 "${HELIXAGENT_URL}/health" 2>/dev/null)
 
     if echo "$health_response" | grep -q "healthy"; then
-        print_success "Server is healthy at ${SUPERAGENT_URL}"
+        print_success "Server is healthy at ${HELIXAGENT_URL}"
         return 0
     else
-        print_error "Server not responding at ${SUPERAGENT_URL}"
+        print_error "Server not responding at ${HELIXAGENT_URL}"
         return 1
     fi
 }
@@ -135,7 +135,7 @@ get_providers() {
     print_section "2" "Getting Registered Providers"
 
     local providers_response
-    providers_response=$(curl -s --max-time 10 "${SUPERAGENT_URL}/v1/providers" 2>/dev/null)
+    providers_response=$(curl -s --max-time 10 "${HELIXAGENT_URL}/v1/providers" 2>/dev/null)
 
     if [ -z "$providers_response" ]; then
         print_error "Failed to get providers list"
@@ -170,9 +170,9 @@ test_provider() {
 
     local start_time=$(date +%s%N)
     local response
-    response=$(curl -s --max-time ${TIMEOUT_SECONDS} -X POST "${SUPERAGENT_URL}/v1/chat/completions" \
+    response=$(curl -s --max-time ${TIMEOUT_SECONDS} -X POST "${HELIXAGENT_URL}/v1/chat/completions" \
         -H "Content-Type: application/json" \
-        -d "{\"model\": \"superagent-debate\", \"messages\": [{\"role\": \"user\", \"content\": \"${test_message}\"}], \"force_provider\": \"${provider}\"}" 2>/dev/null)
+        -d "{\"model\": \"helixagent-debate\", \"messages\": [{\"role\": \"user\", \"content\": \"${test_message}\"}], \"force_provider\": \"${provider}\"}" 2>/dev/null)
     local end_time=$(date +%s%N)
     local duration=$(( (end_time - start_time) / 1000000 ))
 
@@ -262,9 +262,9 @@ test_ensemble() {
     print_section "4" "Testing Ensemble Functionality"
 
     local response
-    response=$(curl -s --max-time ${TIMEOUT_SECONDS} -X POST "${SUPERAGENT_URL}/v1/chat/completions" \
+    response=$(curl -s --max-time ${TIMEOUT_SECONDS} -X POST "${HELIXAGENT_URL}/v1/chat/completions" \
         -H "Content-Type: application/json" \
-        -d '{"model": "superagent-debate", "messages": [{"role": "user", "content": "What is 2+2? Answer briefly."}]}' 2>/dev/null)
+        -d '{"model": "helixagent-debate", "messages": [{"role": "user", "content": "What is 2+2? Answer briefly."}]}' 2>/dev/null)
 
     if echo "$response" | grep -q '"choices"'; then
         print_success "Ensemble is operational"
@@ -393,7 +393,7 @@ generate_json() {
     cat << EOF
 {
   "timestamp": "$(date -Iseconds)",
-  "superagent_url": "${SUPERAGENT_URL}",
+  "helixagent_url": "${HELIXAGENT_URL}",
   "providers": {
     "total": ${TOTAL_PROVIDERS},
     "working": ${PROVIDERS_WORKING},
@@ -432,9 +432,9 @@ write_results() {
 
     # Write text report
     {
-        echo "SuperAgent Debate Group Verification Report"
+        echo "HelixAgent Debate Group Verification Report"
         echo "Generated: $(date)"
-        echo "Server: ${SUPERAGENT_URL}"
+        echo "Server: ${HELIXAGENT_URL}"
         echo ""
         echo "Provider Status:"
         for provider in deepseek gemini openrouter; do

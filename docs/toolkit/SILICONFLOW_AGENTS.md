@@ -3,8 +3,8 @@
 ## Essential Commands
 
 ### Installation & Setup
-- **Add to Go project**: `go get github.com/superagent/toolkit/SiliconFlow/providers/siliconflow`
-- **Initialize module**: `go mod init github.com/superagent/toolkit/SiliconFlow`
+- **Add to Go project**: `go get github.com/helixagent/toolkit/SiliconFlow/providers/siliconflow`
+- **Initialize module**: `go mod init github.com/helixagent/toolkit/SiliconFlow`
 - **Install dependencies**: `go mod tidy`
 
 ### Testing
@@ -35,7 +35,7 @@
 ### Go Dependencies
 - **Go version**: 1.23+
 - **External dependencies**: None (uses only standard library)
-- **Module path**: `github.com/superagent/toolkit/SiliconFlow`
+- **Module path**: `github.com/helixagent/toolkit/SiliconFlow`
 
 ### Runtime Requirements
 - **Go**: 1.23+ for building and running
@@ -59,7 +59,7 @@
 
 ### File Organization
 - **Single responsibility**: Each file has a clear, focused purpose
-- **Interface compliance**: Implements SuperAgent Toolkit interfaces
+- **Interface compliance**: Implements HelixAgent Toolkit interfaces
 - **Test coverage**: Comprehensive unit tests for all functionality
 - **Build system**: Standard Go module and build system
 
@@ -87,8 +87,8 @@
 
 ## Configuration Compatibility
 
-### SuperAgent Toolkit Integration
-- Fully compatible with SuperAgent Toolkit `Provider` interface
+### HelixAgent Toolkit Integration
+- Fully compatible with HelixAgent Toolkit `Provider` interface
 - Supports all standard provider configuration options
 - Intelligent default model selection based on capabilities
 - Thread-safe implementation for concurrent use
@@ -159,7 +159,7 @@ go test -race ./providers/siliconflow/...
 - **Input validation**: Validate all inputs before API calls
 
 ### Platform-Specific Considerations
-- **SuperAgent Toolkit**: Direct integration via Provider interface
+- **HelixAgent Toolkit**: Direct integration via Provider interface
 - **Go ecosystem**: Uses standard library for HTTP and JSON
 - **Cross-platform**: Works on all Go-supported platforms
 
@@ -203,7 +203,7 @@ go vet ./...
 ### Module Management
 ```bash
 # Initialize module
-go mod init github.com/superagent/toolkit/SiliconFlow
+go mod init github.com/helixagent/toolkit/SiliconFlow
 
 # Add dependencies
 go get package-name
@@ -246,7 +246,7 @@ go clean -cache
 - Uses `context` for cancellation
 
 ### Interface-Driven Design
-- Implements SuperAgent Toolkit `Provider` interface
+- Implements HelixAgent Toolkit `Provider` interface
 - Clean separation between interface and implementation
 - Easy to test and mock
 

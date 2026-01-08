@@ -225,26 +225,26 @@ func TestLLMProviders_AuthValidation(t *testing.T) {
 	}
 }
 
-// TestSuperAgent_Endpoint tests the SuperAgent chat completions endpoint
-func TestSuperAgent_Endpoint(t *testing.T) {
+// TestHelixAgent_Endpoint tests the HelixAgent chat completions endpoint
+func TestHelixAgent_Endpoint(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping SuperAgent endpoint test in short mode")
+		t.Skip("Skipping HelixAgent endpoint test in short mode")
 	}
 
-	superagentURL := os.Getenv("SUPERAGENT_URL")
-	if superagentURL == "" {
-		superagentURL = "http://localhost:8080"
+	helixagentURL := os.Getenv("HELIXAGENT_URL")
+	if helixagentURL == "" {
+		helixagentURL = "http://localhost:8080"
 	}
 
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"
 	}
 
 	provider := VerifyProviderConfig{
-		Name:       "SuperAgent",
-		BaseURL:    superagentURL + "/v1/chat/completions",
-		Model:      "super-agent",
+		Name:       "HelixAgent",
+		BaseURL:    helixagentURL + "/v1/chat/completions",
+		Model:      "helix-agent",
 		MaxTimeout: 60 * time.Second,
 	}
 
@@ -253,29 +253,29 @@ func TestSuperAgent_Endpoint(t *testing.T) {
 	elapsed := time.Since(start)
 
 	if err != nil {
-		t.Fatalf("SuperAgent request failed: %v", err)
+		t.Fatalf("HelixAgent request failed: %v", err)
 	}
 
 	if resp.Error != nil {
-		t.Fatalf("SuperAgent returned error: %s", resp.Error.Message)
+		t.Fatalf("HelixAgent returned error: %s", resp.Error.Message)
 	}
 
 	if len(resp.Choices) == 0 {
-		t.Fatal("SuperAgent returned no choices")
+		t.Fatal("HelixAgent returned no choices")
 	}
 
-	t.Logf("SuperAgent responded in %v: %s", elapsed, resp.Choices[0].Message.Content[:verifyMin(100, len(resp.Choices[0].Message.Content))])
+	t.Logf("HelixAgent responded in %v: %s", elapsed, resp.Choices[0].Message.Content[:verifyMin(100, len(resp.Choices[0].Message.Content))])
 }
 
-// TestSuperAgent_Health tests the SuperAgent health endpoint
-func TestSuperAgent_Health(t *testing.T) {
-	superagentURL := os.Getenv("SUPERAGENT_URL")
-	if superagentURL == "" {
-		superagentURL = "http://localhost:8080"
+// TestHelixAgent_Health tests the HelixAgent health endpoint
+func TestHelixAgent_Health(t *testing.T) {
+	helixagentURL := os.Getenv("HELIXAGENT_URL")
+	if helixagentURL == "" {
+		helixagentURL = "http://localhost:8080"
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(superagentURL + "/health")
+	resp, err := client.Get(helixagentURL + "/health")
 	if err != nil {
 		t.Fatalf("Health check failed: %v", err)
 	}
@@ -295,7 +295,7 @@ func TestSuperAgent_Health(t *testing.T) {
 		t.Fatalf("Unexpected health status: %v", health)
 	}
 
-	t.Log("SuperAgent health check passed")
+	t.Log("HelixAgent health check passed")
 }
 
 // testVerifyProvider is a helper function to test a single provider

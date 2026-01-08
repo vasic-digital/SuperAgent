@@ -1,8 +1,8 @@
-# SuperAgent Advanced Protocol Enhancement - Deployment Guide
+# HelixAgent Advanced Protocol Enhancement - Deployment Guide
 
 ## Overview
 
-SuperAgent has been enhanced with comprehensive protocol support, advanced caching, security, monitoring, and performance optimizations. This guide covers deployment, configuration, and usage of the enhanced system.
+HelixAgent has been enhanced with comprehensive protocol support, advanced caching, security, monitoring, and performance optimizations. This guide covers deployment, configuration, and usage of the enhanced system.
 
 ## Architecture
 
@@ -51,8 +51,8 @@ go mod download
 ### 1. Clone and Build
 ```bash
 git clone <repository-url>
-cd superagent
-go build -o superagent cmd/superagent/main.go
+cd helixagent
+go build -o helixagent cmd/helixagent/main.go
 ```
 
 ### 2. Configuration
@@ -63,7 +63,7 @@ server:
   host: "0.0.0.0"
 
 database:
-  url: "postgres://user:password@localhost/superagent?sslmode=disable"
+  url: "postgres://user:password@localhost/helixagent?sslmode=disable"
 
 redis:
   enabled: true
@@ -125,7 +125,7 @@ embeddings:
 
 ### 3. Environment Variables
 ```bash
-export DATABASE_URL="postgres://user:password@localhost/superagent?sslmode=disable"
+export DATABASE_URL="postgres://user:password@localhost/helixagent?sslmode=disable"
 export REDIS_URL="redis://localhost:6379"
 export JWT_SECRET="your-super-secret-jwt-key"
 export OPENAI_API_KEY="sk-your-openai-key"
@@ -135,18 +135,18 @@ export LOG_LEVEL="info"
 ### 4. Database Setup
 ```bash
 # Create database
-createdb superagent
+createdb helixagent
 
 # Run migrations
-go run cmd/superagent/main.go --migrate
+go run cmd/helixagent/main.go --migrate
 
 # Optional: Load sample data
-go run cmd/superagent/main.go --seed
+go run cmd/helixagent/main.go --seed
 ```
 
 ### 5. Start the Server
 ```bash
-./superagent --config config.yaml
+./helixagent --config config.yaml
 ```
 
 ## API Usage Examples
@@ -205,16 +205,16 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o superagent cmd/superagent/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o helixagent cmd/helixagent/main.go
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
-COPY --from=builder /app/superagent .
+COPY --from=builder /app/helixagent .
 COPY --from=builder /app/config.yaml .
 
 EXPOSE 8080
-CMD ["./superagent", "--config", "config.yaml"]
+CMD ["./helixagent", "--config", "config.yaml"]
 ```
 
 ### Docker Compose
@@ -222,12 +222,12 @@ CMD ["./superagent", "--config", "config.yaml"]
 version: '3.8'
 
 services:
-  superagent:
+  helixagent:
     build: .
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=postgres://user:password@postgres/superagent?sslmode=disable
+      - DATABASE_URL=postgres://user:password@postgres/helixagent?sslmode=disable
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=your-secret-key
     depends_on:
@@ -239,7 +239,7 @@ services:
   postgres:
     image: postgres:15
     environment:
-      - POSTGRES_DB=superagent
+      - POSTGRES_DB=helixagent
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
     volumes:
@@ -267,37 +267,37 @@ docker-compose up -d
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: superagent
+  name: helixagent
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: superagent
+      app: helixagent
   template:
     metadata:
       labels:
-        app: superagent
+        app: helixagent
     spec:
       containers:
-      - name: superagent
-        image: your-registry/superagent:latest
+      - name: helixagent
+        image: your-registry/helixagent:latest
         ports:
         - containerPort: 8080
         env:
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: superagent-secrets
+              name: helixagent-secrets
               key: database-url
         - name: REDIS_URL
           valueFrom:
             secretKeyRef:
-              name: superagent-secrets
+              name: helixagent-secrets
               key: redis-url
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
-              name: superagent-secrets
+              name: helixagent-secrets
               key: jwt-secret
         resources:
           requests:
@@ -325,10 +325,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: superagent-service
+  name: helixagent-service
 spec:
   selector:
-    app: superagent
+    app: helixagent
   ports:
   - port: 80
     targetPort: 8080
@@ -340,23 +340,23 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: superagent-ingress
+  name: helixagent-ingress
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   tls:
   - hosts:
-    - api.superagent.example.com
-    secretName: superagent-tls
+    - api.helixagent.example.com
+    secretName: helixagent-tls
   rules:
-  - host: api.superagent.example.com
+  - host: api.helixagent.example.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: superagent-service
+            name: helixagent-service
             port:
               number: 80
 ```
@@ -367,7 +367,7 @@ spec:
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: 'superagent'
+  - job_name: 'helixagent'
     static_configs:
       - targets: ['localhost:8080']
     metrics_path: '/v1/monitoring/metrics'
@@ -385,7 +385,7 @@ Import the provided dashboard JSON or create panels for:
 ### Alert Manager Rules
 ```yaml
 groups:
-  - name: superagent
+  - name: helixagent
     rules:
       - alert: HighErrorRate
         expr: rate(protocol_requests_total{status="error"}[5m]) / rate(protocol_requests_total[5m]) > 0.1
@@ -529,7 +529,7 @@ export LOG_LEVEL=debug
 export PROTOCOL_DEBUG=true
 
 # Check logs
-tail -f logs/superagent.log
+tail -f logs/helixagent.log
 ```
 
 ### Health Checks
@@ -561,4 +561,4 @@ curl http://localhost:8080/v1/lsp/health
 - Optimize queries and add appropriate indexes
 - Consider database sharding for very high loads
 
-This deployment guide provides comprehensive instructions for deploying SuperAgent with all its advanced protocol features in production environments.
+This deployment guide provides comprehensive instructions for deploying HelixAgent with all its advanced protocol features in production environments.

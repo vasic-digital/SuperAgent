@@ -1,3 +1,3 @@
 #!/bin/bash
 
-export UPSTREAMABLE_REPOSITORY="git@github.com:vasic-digital/SuperAgent.git"
+export UPSTREAMABLE_REPOSITORY="git@github.com:vasic-digital/HelixAgent.git"

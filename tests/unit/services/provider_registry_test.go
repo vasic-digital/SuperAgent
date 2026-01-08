@@ -7,9 +7,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/llm"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/llm"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // mockLLMProvider implements llm.LLMProvider for testing

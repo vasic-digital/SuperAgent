@@ -14,8 +14,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/config"
-	"github.com/superagent/superagent/internal/database"
+	"github.com/helixagent/helixagent/internal/config"
+	"github.com/helixagent/helixagent/internal/database"
 )
 
 // ACPManager handles ACP (Agent Client Protocol) operations

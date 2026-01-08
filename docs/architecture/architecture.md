@@ -1,14 +1,14 @@
-# SuperAgent Architecture
+# HelixAgent Architecture
 
 ## System Overview
 
-SuperAgent is a multi-provider LLM orchestration platform that provides unified access to multiple AI providers with intelligent ensemble capabilities and advanced tooling support.
+HelixAgent is a multi-provider LLM orchestration platform that provides unified access to multiple AI providers with intelligent ensemble capabilities and advanced tooling support.
 
 ## High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        SuperAgent                               │
+│                        HelixAgent                               │
 │                    LLM Orchestration Platform                   │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
@@ -194,7 +194,7 @@ Final Response → User
 │              Production Deployment             │
 ├─────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────┐ │
-│  │   Load      │  │  SuperAgent │  │  Load   │ │
+│  │   Load      │  │  HelixAgent │  │  Load   │ │
 │  │  Balancer   │  │   API       │  │  Balancer│ │
 │  │  (Nginx)    │  │   Servers   │  │  (Nginx) │ │
 │  └─────────────┘  └─────────────┘  └─────────┘ │
@@ -228,4 +228,4 @@ Final Response → User
 
 ---
 
-For implementation details, see the [SuperAgent source code](https://github.com/superagent/superagent).
+For implementation details, see the [HelixAgent source code](https://github.com/helixagent/helixagent).

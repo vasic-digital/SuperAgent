@@ -1,4 +1,4 @@
-name: SuperAgent Protocol Enhancement CI/CD
+name: HelixAgent Protocol Enhancement CI/CD
 
 on:
   push:
@@ -125,7 +125,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: superagent/superagent
+        images: helixagent/helixagent
         tags: |
           type=ref,event=branch
           type=ref,event=pr
@@ -171,18 +171,18 @@ jobs:
     - name: Update image tag
       run: |
         cd k8s/staging
-        kustomize edit set image superagent/superagent=superagent/superagent:develop-${{ github.sha }}
+        kustomize edit set image helixagent/helixagent=helixagent/helixagent:develop-${{ github.sha }}
 
     - name: Deploy to staging
       run: |
         echo "Deploying to staging environment..."
         kustomize build k8s/staging | kubectl apply -f -
-        kubectl rollout status deployment/staging-superagent -n superagent-staging --timeout=300s
+        kubectl rollout status deployment/staging-helixagent -n helixagent-staging --timeout=300s
 
     - name: Verify deployment
       run: |
-        kubectl get pods -n superagent-staging -l app=superagent
-        kubectl get svc -n superagent-staging
+        kubectl get pods -n helixagent-staging -l app=helixagent
+        kubectl get svc -n helixagent-staging
 
   deploy-production:
     runs-on: ubuntu-latest
@@ -212,12 +212,12 @@ jobs:
     - name: Update image tag
       run: |
         cd k8s/production
-        kustomize edit set image superagent/superagent=superagent/superagent:${{ github.sha }}
+        kustomize edit set image helixagent/helixagent=helixagent/helixagent:${{ github.sha }}
 
     - name: Create secrets from GitHub Secrets
       run: |
-        kubectl create secret generic prod-superagent-secrets \
-          --namespace=superagent-production \
+        kubectl create secret generic prod-helixagent-secrets \
+          --namespace=helixagent-production \
           --from-literal=db-host=${{ secrets.PROD_DB_HOST }} \
           --from-literal=db-user=${{ secrets.PROD_DB_USER }} \
           --from-literal=db-password=${{ secrets.PROD_DB_PASSWORD }} \
@@ -230,17 +230,17 @@ jobs:
       run: |
         echo "Deploying to production environment..."
         kustomize build k8s/production | kubectl apply -f -
-        kubectl rollout status deployment/prod-superagent -n superagent-production --timeout=600s
+        kubectl rollout status deployment/prod-helixagent -n helixagent-production --timeout=600s
 
     - name: Verify deployment
       run: |
-        kubectl get pods -n superagent-production -l app=superagent
-        kubectl get svc -n superagent-production
-        kubectl get ingress -n superagent-production
+        kubectl get pods -n helixagent-production -l app=helixagent
+        kubectl get svc -n helixagent-production
+        kubectl get ingress -n helixagent-production
 
     - name: Run smoke tests
       run: |
-        INGRESS_IP=$(kubectl get ingress prod-superagent -n superagent-production -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        INGRESS_IP=$(kubectl get ingress prod-helixagent -n helixagent-production -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
         if [ -n "$INGRESS_IP" ]; then
           curl -sf "http://${INGRESS_IP}/health" || echo "Health check pending (may need DNS propagation)"
         fi

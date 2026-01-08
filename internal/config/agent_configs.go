@@ -18,7 +18,7 @@ const (
 	AgentTypeHelixCode AgentType = "helixcode"
 )
 
-// AgentConfig holds configuration for SuperAgent to work with different AI agents
+// AgentConfig holds configuration for HelixAgent to work with different AI agents
 type AgentConfig struct {
 	BaseURL    string            `json:"base_url"`
 	APIKey     string            `json:"api_key,omitempty"`
@@ -161,7 +161,7 @@ func (g *ConfigGenerator) GenerateOpenCodeConfig() (*OpenCodeConfig, error) {
 	config := &OpenCodeConfig{
 		Schema: "https://opencode.ai/config.json",
 		Provider: map[string]OpenCodeProvider{
-			"superagent": {
+			"helixagent": {
 				NPM: "@ai-sdk/openai-compatible",
 				Options: OpenCodeProviderOptions{
 					BaseURL: g.baseURL,
@@ -184,14 +184,14 @@ func (g *ConfigGenerator) GenerateCrushConfig() (*CrushConfig, error) {
 	config := &CrushConfig{
 		Schema: "https://charm.land/crush.json",
 		Providers: map[string]CrushProvider{
-			"superagent": {
+			"helixagent": {
 				Type:    "openai-compat",
 				BaseURL: g.baseURL,
 				APIKey:  g.apiKey,
 				Models: []CrushModel{
 					{
 						ID:              g.model,
-						Name:            "SuperAgent AI Debate Ensemble",
+						Name:            "HelixAgent AI Debate Ensemble",
 						ContextWindow:   128000,
 						DefaultMaxTokens: g.maxTokens,
 					},
@@ -211,7 +211,7 @@ func (g *ConfigGenerator) GenerateHelixCodeConfig() (*HelixCodeConfig, error) {
 
 	config := &HelixCodeConfig{
 		Providers: map[string]HelixCodeProvider{
-			"superagent": {
+			"helixagent": {
 				Type:      "openai-compatible",
 				BaseURL:   g.baseURL,
 				APIKey:    g.apiKey,
@@ -221,7 +221,7 @@ func (g *ConfigGenerator) GenerateHelixCodeConfig() (*HelixCodeConfig, error) {
 			},
 		},
 		Settings: HelixCodeSettings{
-			DefaultProvider:  "superagent",
+			DefaultProvider:  "helixagent",
 			StreamingEnabled: true,
 			AutoSave:         true,
 		},

@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/plugins"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/plugins"
 )
 
 // Plugin is the exported plugin instance
@@ -41,7 +41,7 @@ func (p *ExamplePlugin) Capabilities() *models.ProviderCapabilities {
 			MaxConcurrentRequests: 10,
 		},
 		Metadata: map[string]string{
-			"author":  "SuperAgent Team",
+			"author":  "HelixAgent Team",
 			"license": "MIT",
 		},
 	}

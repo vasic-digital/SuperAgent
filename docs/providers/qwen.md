@@ -2,7 +2,7 @@
 
 ## Overview
 
-Qwen (Tongyi Qianwen) is Alibaba Cloud's large language model family, offering multilingual capabilities with strong performance in Chinese and English. SuperAgent integrates with the DashScope API to provide access to Qwen models.
+Qwen (Tongyi Qianwen) is Alibaba Cloud's large language model family, offering multilingual capabilities with strong performance in Chinese and English. HelixAgent integrates with the DashScope API to provide access to Qwen models.
 
 ### Supported Models
 
@@ -82,8 +82,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/superagent/superagent/internal/llm/providers/qwen"
-    "github.com/superagent/superagent/internal/models"
+    "github.com/helixagent/helixagent/internal/llm/providers/qwen"
+    "github.com/helixagent/helixagent/internal/models"
 )
 
 func main() {
@@ -171,11 +171,11 @@ req := &models.LLMRequest{
 
 ### Concurrent Request Limits
 
-SuperAgent configures a default limit of 50 concurrent requests per provider instance.
+HelixAgent configures a default limit of 50 concurrent requests per provider instance.
 
 ### Best Practices for Rate Limits
 
-1. **Use exponential backoff** - SuperAgent automatically implements retry with backoff
+1. **Use exponential backoff** - HelixAgent automatically implements retry with backoff
 2. **Monitor usage** - Track token consumption through the DashScope console
 3. **Choose appropriate models** - Use `qwen-turbo` for cost-effective operations
 4. **Batch requests** - Combine related queries when possible
@@ -203,7 +203,7 @@ Qwen API error: Too Many Requests (rate_limit_exceeded)
 
 **Solution:**
 - Wait for the rate limit window to reset
-- SuperAgent automatically retries with exponential backoff
+- HelixAgent automatically retries with exponential backoff
 - Consider using request queuing for high-volume applications
 
 #### Quota Exceeded (403)
@@ -230,7 +230,7 @@ Qwen API error: Bad Request (invalid_request)
 
 ### Health Check
 
-SuperAgent provides a health check endpoint for Qwen:
+HelixAgent provides a health check endpoint for Qwen:
 
 ```go
 err := provider.HealthCheck()

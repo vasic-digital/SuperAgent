@@ -1,11 +1,11 @@
-# SuperAgent JavaScript SDK
+# HelixAgent JavaScript SDK
 
 > **Status: Available**
 >
 > The TypeScript/JavaScript SDK is implemented at `/sdk/web/`.
 > Install from source or wait for npm publication.
 
-A comprehensive JavaScript/TypeScript SDK for the SuperAgent AI orchestration platform, providing type-safe access to multi-provider LLM capabilities, AI debates, and advanced features.
+A comprehensive JavaScript/TypeScript SDK for the HelixAgent AI orchestration platform, providing type-safe access to multi-provider LLM capabilities, AI debates, and advanced features.
 
 ## Installation
 
@@ -16,22 +16,22 @@ npm install
 npm run build
 
 # Or when published to npm:
-# npm install superagent-sdk
+# npm install helixagent-sdk
 ```
 
 ## Quick Start
 
 ```javascript
-import { SuperAgent } from '@superagent/sdk';
+import { HelixAgent } from '@helixagent/sdk';
 
-const client = new SuperAgent({
+const client = new HelixAgent({
   apiKey: 'your-api-key',
-  baseURL: 'https://api.superagent.ai'
+  baseURL: 'https://api.helixagent.ai'
 });
 
 // Simple chat completion
 const response = await client.chat.completions.create({
-  model: 'superagent-ensemble',
+  model: 'helixagent-ensemble',
   messages: [
     { role: 'user', content: 'Explain quantum computing' }
   ]
@@ -43,10 +43,10 @@ console.log(response.choices[0].message.content);
 ## TypeScript Support
 
 ```typescript
-import { SuperAgent, ChatCompletionRequest, DebateConfig } from '@superagent/sdk';
+import { HelixAgent, ChatCompletionRequest, DebateConfig } from '@helixagent/sdk';
 
-const client = new SuperAgent({
-  apiKey: process.env.SUPERAGENT_API_KEY!
+const client = new HelixAgent({
+  apiKey: process.env.HELIXAGENT_API_KEY!
 });
 
 interface CustomDebateConfig extends DebateConfig {
@@ -58,17 +58,17 @@ interface CustomDebateConfig extends DebateConfig {
 
 ```javascript
 // API Key authentication
-const client = new SuperAgent({
+const client = new HelixAgent({
   apiKey: 'your-api-key'
 });
 
 // JWT Token authentication
-const client = new SuperAgent({
+const client = new HelixAgent({
   token: 'your-jwt-token'
 });
 
 // Custom configuration
-const client = new SuperAgent({
+const client = new HelixAgent({
   apiKey: 'your-api-key',
   baseURL: 'http://localhost:8080',
   timeout: 30000,
@@ -82,7 +82,7 @@ const client = new SuperAgent({
 
 ```javascript
 const response = await client.chat.completions.create({
-  model: 'superagent-ensemble',
+  model: 'helixagent-ensemble',
   messages: [
     { role: 'system', content: 'You are a helpful assistant.' },
     { role: 'user', content: 'What is machine learning?' }
@@ -329,7 +329,7 @@ Object.entries(health.providers).forEach(([name, status]) => {
 ## Error Handling
 
 ```javascript
-import { SuperAgentError, AuthenticationError, RateLimitError } from '@superagent/sdk';
+import { HelixAgentError, AuthenticationError, RateLimitError } from '@helixagent/sdk';
 
 try {
   const response = await client.chat.completions.create({
@@ -341,8 +341,8 @@ try {
     console.error('Authentication failed:', error.message);
   } else if (error instanceof RateLimitError) {
     console.error('Rate limit exceeded:', error.message);
-  } else if (error instanceof SuperAgentError) {
-    console.error('SuperAgent error:', error.message);
+  } else if (error instanceof HelixAgentError) {
+    console.error('HelixAgent error:', error.message);
   } else {
     console.error('Unknown error:', error);
   }
@@ -363,7 +363,7 @@ const customAxios = axios.create({
   }
 });
 
-const client = new SuperAgent({
+const client = new HelixAgent({
   apiKey: 'your-api-key',
   axiosInstance: customAxios
 });
@@ -372,7 +372,7 @@ const client = new SuperAgent({
 ### Timeout and Retry Configuration
 
 ```javascript
-const client = new SuperAgent({
+const client = new HelixAgent({
   apiKey: 'your-api-key',
   timeout: 30000, // 30 seconds
   maxRetries: 3,
@@ -427,7 +427,7 @@ async function safeCompletion(model, messages) {
 ```javascript
 async function handleStreaming() {
   const stream = await client.chat.completions.create({
-    model: 'superagent-ensemble',
+    model: 'helixagent-ensemble',
     messages: [{ role: 'user', content: 'Write a long story' }],
     stream: true
   });
@@ -497,7 +497,7 @@ class DebateOrchestrator {
 
 ```javascript
 // Connection pooling
-const client = new SuperAgent({
+const client = new HelixAgent({
   apiKey: 'your-api-key',
   maxConnections: 10,
   keepAlive: true
@@ -514,7 +514,7 @@ process.on('SIGTERM', async () => {
 
 ### Classes
 
-- `SuperAgent`: Main client class
+- `HelixAgent`: Main client class
 - `ChatCompletions`: Chat completion operations
 - `Completions`: Text completion operations
 - `Ensemble`: Ensemble operations
@@ -551,7 +551,7 @@ interface MCPToolCall {
 
 ### Exceptions
 
-- `SuperAgentError`: Base exception
+- `HelixAgentError`: Base exception
 - `AuthenticationError`: Authentication failures
 - `RateLimitError`: Rate limit exceeded
 - `ProviderError`: Provider-specific errors

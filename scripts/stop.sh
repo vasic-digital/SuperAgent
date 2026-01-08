@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# SuperAgent Stop Script
-# This script stops all SuperAgent services and cleans up
+# HelixAgent Stop Script
+# This script stops all HelixAgent services and cleans up
 
 set -e
 
-echo "🛑 Stopping SuperAgent services..."
+echo "🛑 Stopping HelixAgent services..."
 
 # Check if docker-compose is available
 if ! command -v docker-compose &> /dev/null; then
@@ -25,7 +25,7 @@ docker-compose -f docker-compose.test.yml down
 echo "🧽 Cleaning up orphaned containers..."
 docker system prune -f
 
-echo "✅ SuperAgent services stopped successfully"
+echo "✅ HelixAgent services stopped successfully"
 echo ""
 echo "💡 To restart: ./scripts/start.sh"
 echo "💡 To view logs: docker-compose -f docker-compose.test.yml logs"

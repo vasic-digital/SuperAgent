@@ -1,6 +1,6 @@
 # AI Coding Agent Compatibility Guide
 
-SuperAgent provides full compatibility with OpenCode, Crush, and HelixCode AI coding assistants through its OpenAI-compatible API.
+HelixAgent provides full compatibility with OpenCode, Crush, and HelixCode AI coding assistants through its OpenAI-compatible API.
 
 ## Supported Agents
 
@@ -12,7 +12,7 @@ SuperAgent provides full compatibility with OpenCode, Crush, and HelixCode AI co
 
 ## Streaming Compatibility
 
-SuperAgent implements the OpenAI streaming specification exactly as required by these agents:
+HelixAgent implements the OpenAI streaming specification exactly as required by these agents:
 
 ### Chunk Format
 
@@ -21,8 +21,8 @@ SuperAgent implements the OpenAI streaming specification exactly as required by 
   "id": "chatcmpl-1234567890",
   "object": "chat.completion.chunk",
   "created": 1767779259,
-  "model": "superagent-ensemble",
-  "system_fingerprint": "fp_superagent_v1",
+  "model": "helixagent-ensemble",
+  "system_fingerprint": "fp_helixagent_v1",
   "choices": [{
     "index": 0,
     "delta": {
@@ -60,18 +60,18 @@ data: [DONE]\n\n
 
 ## Configuration Generation
 
-SuperAgent provides a configuration generator for all three agents:
+HelixAgent provides a configuration generator for all three agents:
 
 ### Go API
 
 ```go
-import "github.com/superagent/superagent/internal/config"
+import "github.com/helixagent/helixagent/internal/config"
 
 // Create generator
 gen := config.NewConfigGenerator(
     "http://localhost:8080/v1",
     "your-api-key",
-    "superagent-ensemble",
+    "helixagent-ensemble",
 )
 gen.SetTimeout(120).SetMaxTokens(8192)
 
@@ -109,7 +109,7 @@ result, err := validator.ValidateJSON(config.AgentTypeOpenCode, jsonData)
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "superagent": {
+    "helixagent": {
       "npm": "@ai-sdk/openai-compatible",
       "options": {
         "baseURL": "http://localhost:8080/v1",
@@ -127,13 +127,13 @@ result, err := validator.ValidateJSON(config.AgentTypeOpenCode, jsonData)
 {
   "$schema": "https://charm.land/crush.json",
   "providers": {
-    "superagent": {
+    "helixagent": {
       "type": "openai-compat",
       "base_url": "http://localhost:8080/v1",
       "api_key": "your-api-key",
       "models": [{
-        "id": "superagent-ensemble",
-        "name": "SuperAgent AI Debate Ensemble",
+        "id": "helixagent-ensemble",
+        "name": "HelixAgent AI Debate Ensemble",
         "context_window": 128000,
         "default_max_tokens": 8192
       }]
@@ -147,17 +147,17 @@ result, err := validator.ValidateJSON(config.AgentTypeOpenCode, jsonData)
 ```json
 {
   "providers": {
-    "superagent": {
+    "helixagent": {
       "type": "openai-compatible",
       "base_url": "http://localhost:8080/v1",
       "api_key": "your-api-key",
-      "model": "superagent-ensemble",
+      "model": "helixagent-ensemble",
       "max_tokens": 8192,
       "timeout": 120
     }
   },
   "settings": {
-    "default_provider": "superagent",
+    "default_provider": "helixagent",
     "streaming_enabled": true,
     "auto_save": true
   }
@@ -171,7 +171,7 @@ result, err := validator.ValidateJSON(config.AgentTypeOpenCode, jsonData)
 ```json
 {
   "mcp": {
-    "superagent-mcp": {
+    "helixagent-mcp": {
       "type": "remote",
       "url": "http://localhost:8080/mcp",
       "headers": {
@@ -187,7 +187,7 @@ result, err := validator.ValidateJSON(config.AgentTypeOpenCode, jsonData)
 ```json
 {
   "mcp": {
-    "superagent-mcp": {
+    "helixagent-mcp": {
       "type": "http",
       "url": "http://localhost:8080/mcp",
       "timeout": 30,
@@ -205,31 +205,31 @@ result, err := validator.ValidateJSON(config.AgentTypeOpenCode, jsonData)
 
 **Cause**: Missing `finish_reason: "stop"` in final chunk.
 
-**Fix**: SuperAgent now sends a proper final chunk with `finish_reason: "stop"` before the `[DONE]` marker.
+**Fix**: HelixAgent now sends a proper final chunk with `finish_reason: "stop"` before the `[DONE]` marker.
 
 ### Content Repeating in Loop
 
 **Cause**: Role included in every chunk instead of only the first.
 
-**Fix**: SuperAgent now only includes `delta.role: "assistant"` in the first chunk.
+**Fix**: HelixAgent now only includes `delta.role: "assistant"` in the first chunk.
 
 ### Connection Reset After 30 Seconds
 
 **Cause**: No idle timeout handling.
 
-**Fix**: SuperAgent implements a 30-second idle timeout that gracefully closes the stream with `[DONE]`.
+**Fix**: HelixAgent implements a 30-second idle timeout that gracefully closes the stream with `[DONE]`.
 
 ### Empty Events Cause Issues (OpenCode Issue #2840)
 
 **Cause**: Empty content chunks sent to client.
 
-**Fix**: SuperAgent filters out chunks with empty content before sending.
+**Fix**: HelixAgent filters out chunks with empty content before sending.
 
 ### Empty tool_calls Array (OpenCode Issue #4255)
 
 **Cause**: `tool_calls: []` sent in chunks.
 
-**Fix**: SuperAgent never includes an empty `tool_calls` array in streaming responses.
+**Fix**: HelixAgent never includes an empty `tool_calls` array in streaming responses.
 
 ## Testing Compatibility
 
@@ -238,7 +238,7 @@ result, err := validator.ValidateJSON(config.AgentTypeOpenCode, jsonData)
 ```bash
 curl -s http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model": "superagent-ensemble", "messages": [{"role": "user", "content": "Say hi"}], "stream": true}'
+  -d '{"model": "helixagent-ensemble", "messages": [{"role": "user", "content": "Say hi"}], "stream": true}'
 ```
 
 Expected output:
@@ -268,10 +268,10 @@ go test -v ./internal/config/...
 
 ## Model Names
 
-SuperAgent exposes a single virtual model that combines multiple LLM providers:
+HelixAgent exposes a single virtual model that combines multiple LLM providers:
 
-- **Model ID**: `superagent-ensemble`
-- **Display Name**: SuperAgent AI Debate Ensemble
+- **Model ID**: `helixagent-ensemble`
+- **Display Name**: HelixAgent AI Debate Ensemble
 - **Context Window**: 128,000 tokens
 - **Max Output Tokens**: 8,192 tokens (configurable)
 
@@ -294,7 +294,7 @@ MISTRAL_API_KEY=...
 
 ## Version Compatibility
 
-| SuperAgent | OpenCode | Crush | HelixCode |
+| HelixAgent | OpenCode | Crush | HelixCode |
 |------------|----------|-------|-----------|
 | 1.0.0+ | 0.1.0+ | 0.1.0+ | 0.1.0+ |
 

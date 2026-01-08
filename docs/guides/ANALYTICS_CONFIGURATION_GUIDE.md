@@ -1,21 +1,21 @@
-# SuperAgent Analytics Configuration Guide
+# HelixAgent Analytics Configuration Guide
 
 ## Overview
-This guide will help you configure analytics for the SuperAgent website with privacy-first tracking and comprehensive monitoring.
+This guide will help you configure analytics for the HelixAgent website with privacy-first tracking and comprehensive monitoring.
 
 ## Step 1: Google Analytics 4 Setup
 
 ### Create GA4 Property
 1. Go to [Google Analytics](https://analytics.google.com/)
 2. Click "Admin" → "Create Property"
-3. Enter property name: "SuperAgent Website"
+3. Enter property name: "HelixAgent Website"
 4. Set time zone and currency
 5. Click "Next" and complete setup
 
 ### Get Measurement ID
 1. In your GA4 property, go to Admin → Data Streams
 2. Click "Web" → "Create Stream"
-3. Enter website URL: `https://superagent.ai` (or your GitHub Pages URL)
+3. Enter website URL: `https://helixagent.ai` (or your GitHub Pages URL)
 4. Copy the Measurement ID (format: G-XXXXXXXXXX)
 
 ### Update Website
@@ -35,8 +35,8 @@ gtag('config', 'G-XXXXXXXXXX', {
 1. Go to [Microsoft Clarity](https://clarity.microsoft.com/)
 2. Sign up/in with Microsoft account
 3. Click "New Project"
-4. Enter project name: "SuperAgent Website"
-5. Enter website URL: `https://superagent.ai`
+4. Enter project name: "HelixAgent Website"
+5. Enter website URL: `https://helixagent.ai`
 6. Copy the Project ID
 
 ### Update Website
@@ -84,7 +84,7 @@ Monitors:
 - Cumulative Layout Shift (CLS)
 
 ### Business Events
-Custom events for SuperAgent:
+Custom events for HelixAgent:
 - Provider clicks (Claude, Gemini, etc.)
 - Feature interactions
 - Documentation views

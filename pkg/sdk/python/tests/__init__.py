@@ -1,1 +1,1 @@
-"""Tests for SuperAgent Verifier SDK."""
+"""Tests for HelixAgent Verifier SDK."""

@@ -1,10 +1,10 @@
 # OpenRouter AI Provider Integration
 
-This document provides comprehensive guidance for integrating OpenRouter AI with SuperAgent.
+This document provides comprehensive guidance for integrating OpenRouter AI with HelixAgent.
 
 ## Overview
 
-OpenRouter is an AI model routing service that provides access to multiple AI models through a single API key. SuperAgent now supports OpenRouter with:
+OpenRouter is an AI model routing service that provides access to multiple AI models through a single API key. HelixAgent now supports OpenRouter with:
 
 - **Multi-tenancy**: Multiple configurations with the same OpenRouter API key
 - **Model selection**: Choose between 50+ AI models
@@ -92,7 +92,7 @@ OPENROUTER_PERFORMANCE_CACHE=true
 
 2. **Configure Environment**: Add the OpenRouter environment variables to your `.env` file
 
-3. **Start SuperAgent**: `make docker-full` will include OpenRouter
+3. **Start HelixAgent**: `make docker-full` will include OpenRouter
 
 4. **Test Integration**: Use `OPENROUTER_API_KEY` to test the integration
 
@@ -117,7 +117,7 @@ curl -X POST https://openrouter.ai/api/v1/chat/completions \
 ```bash
 curl -X POST https://openrouter.ai/api/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "HTTP-Referer: superagent" \
+  -H "HTTP-Referer: helixagent" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openrouter/google/gemini-pro",
@@ -131,9 +131,9 @@ curl -X POST https://openrouter.ai/api/v1/chat/completions \
   }'
 ```
 
-## 🎯 **Integration with SuperAgent**
+## 🎯 **Integration with HelixAgent**
 
-SuperAgent automatically detects and integrates with OpenRouter when `OPENROUTER_API_KEY` is configured.
+HelixAgent automatically detects and integrates with OpenRouter when `OPENROUTER_API_KEY` is configured.
 
 ### Configuration Examples
 
@@ -141,7 +141,7 @@ SuperAgent automatically detects and integrates with OpenRouter when `OPENROUTER
 # docker-compose.yml (partial)
 version: '3.8'
 services:
-  superagent:
+  helixagent:
     environment:
       - OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       - OPENROUTER_ENABLED: "true"
@@ -157,7 +157,7 @@ services:
 ```bash
 curl -H https://openrouter.ai/api/v1/models \
   -H "Authorization: Bearer test_key" \
-  -H "HTTP-Referer: superagent"
+  -H "HTTP-Referer: helixagent"
 # Expected: 401 Unauthorized
 # Solution: Set OPENROUTER_API_KEY correctly
 ```
@@ -214,8 +214,8 @@ curl -H https://openrouter.ai/api/v1/models \
 For OpenRouter support issues or questions:
 
 1. Check the [OpenRouter Documentation](https://openrouter.ai/docs)
-2. Review SuperAgent logs for OpenRouter integration issues
-3. Check the SuperAgent dashboard for provider statistics
+2. Review HelixAgent logs for OpenRouter integration issues
+3. Check the HelixAgent dashboard for provider statistics
 
 4. Join the [OpenRouter Community](https://community.openrouter.ai) for community support
 
@@ -224,7 +224,7 @@ For OpenRouter support issues or questions:
 - [OpenRouter Official Docs](https://openrouter.ai/docs)
 - [OpenRouter Pricing](https://openrouter.ai/pricing)
 - [OpenRouter Community Discord](https://discord.gg/openrouter)
-- [SuperAgent Dashboard](https://dashboard.openrouter.ai)
+- [HelixAgent Dashboard](https://dashboard.openrouter.ai)
 
 ---
 

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superagent/superagent/internal/utils"
+	"github.com/helixagent/helixagent/internal/utils"
 )
 
 // HealthMonitor manages plugin health checks and circuit breaking

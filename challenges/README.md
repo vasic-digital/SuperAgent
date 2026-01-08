@@ -1,12 +1,12 @@
-# SuperAgent Challenges System
+# HelixAgent Challenges System
 
 A comprehensive challenge framework for testing, verifying, and validating LLM providers, AI debate groups, and API quality.
 
 ## Key Concepts
 
-### SuperAgent as Virtual LLM Provider
+### HelixAgent as Virtual LLM Provider
 
-SuperAgent presents itself as a **single LLM provider** with **ONE virtual model** - the AI Debate Ensemble. The underlying implementation leverages multiple top-performing LLMs through consensus-driven voting.
+HelixAgent presents itself as a **single LLM provider** with **ONE virtual model** - the AI Debate Ensemble. The underlying implementation leverages multiple top-performing LLMs through consensus-driven voting.
 
 ### Real Data Only - No Stubs
 
@@ -15,18 +15,18 @@ SuperAgent presents itself as a **single LLM provider** with **ONE virtual model
 ### Auto-Start Infrastructure
 
 **ALL infrastructure starts automatically** when needed:
-- SuperAgent binary is built if not present
-- SuperAgent server auto-starts if not running
+- HelixAgent binary is built if not present
+- HelixAgent server auto-starts if not running
 - Docker/Podman containers start automatically
 
 ## Overview
 
-The SuperAgent Challenges System provides:
+The HelixAgent Challenges System provides:
 
 - **Automated Provider Verification**: Test and score all configured LLM providers with REAL API calls
 - **AI Debate Group Formation**: Create optimized groups of top-performing verified models
 - **API Quality Testing**: Validate response quality with comprehensive assertions
-- **Auto-Start Infrastructure**: SuperAgent and containers start automatically when needed
+- **Auto-Start Infrastructure**: HelixAgent and containers start automatically when needed
 - **Dual Container Runtime**: Supports both Docker and Podman
 - **Comprehensive Logging**: Full audit trail of all API communications
 - **Execution Reports**: Detailed reports and master summaries with history tracking
@@ -38,7 +38,7 @@ The SuperAgent Challenges System provides:
 cp .env.example .env
 nano .env  # Add your API keys + JWT_SECRET
 
-# 2. Build SuperAgent (optional - auto-builds if needed)
+# 2. Build HelixAgent (optional - auto-builds if needed)
 make build
 
 # 3. Run all 39 challenges (auto-starts everything)
@@ -185,9 +185,9 @@ OPENROUTER_API_KEY=sk-or-v1-...
 DEEPSEEK_API_KEY=sk-...
 GEMINI_API_KEY=...
 
-# SuperAgent Configuration
-SUPERAGENT_BASE_URL=http://localhost:8080
-SUPERAGENT_API_KEY=...
+# HelixAgent Configuration
+HELIXAGENT_BASE_URL=http://localhost:8080
+HELIXAGENT_API_KEY=...
 ```
 
 ### Provider Configuration (providers.yaml)
@@ -243,12 +243,12 @@ go test -cover ./...
 
 When running any challenge, the system automatically:
 
-1. **Checks if SuperAgent is running** on port 8080
+1. **Checks if HelixAgent is running** on port 8080
 2. **Builds binary if needed** (`make build`)
-3. **Starts SuperAgent** with required environment variables
+3. **Starts HelixAgent** with required environment variables
 4. **Waits for health check** to pass (up to 30 seconds)
 5. **Runs challenge tests**
-6. **Stops SuperAgent** when done
+6. **Stops HelixAgent** when done
 
 ### Required Environment Variables
 
@@ -288,7 +288,7 @@ The Main Challenge is the comprehensive orchestration that:
 
 ```bash
 ./challenges/scripts/main_challenge.sh
-# Output: /home/user/Downloads/opencode-super-agent.json
+# Output: /home/user/Downloads/opencode-helix-agent.json
 ```
 
 See [06_MAIN_CHALLENGE.md](docs/06_MAIN_CHALLENGE.md) for detailed documentation.
@@ -296,8 +296,8 @@ See [06_MAIN_CHALLENGE.md](docs/06_MAIN_CHALLENGE.md) for detailed documentation
 ## Architecture Documentation
 
 For comprehensive architecture details, see:
-- [SUPERAGENT_COMPREHENSIVE_ARCHITECTURE.md](../docs/architecture/SUPERAGENT_COMPREHENSIVE_ARCHITECTURE.md)
+- [HELIXAGENT_COMPREHENSIVE_ARCHITECTURE.md](../docs/architecture/HELIXAGENT_COMPREHENSIVE_ARCHITECTURE.md)
 
 ## License
 
-Part of the SuperAgent project.
+Part of the HelixAgent project.

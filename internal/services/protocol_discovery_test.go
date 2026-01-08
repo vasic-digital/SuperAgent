@@ -517,14 +517,14 @@ func TestDiscoveryACPInitializeRequest_Structure(t *testing.T) {
 		ProtocolVersion: "1.0.0",
 		Capabilities:    map[string]interface{}{"streaming": true},
 		ClientInfo: map[string]string{
-			"name":    "superagent",
+			"name":    "helixagent",
 			"version": "1.0.0",
 		},
 	}
 
 	assert.Equal(t, "1.0.0", req.ProtocolVersion)
 	assert.Equal(t, true, req.Capabilities["streaming"])
-	assert.Equal(t, "superagent", req.ClientInfo["name"])
+	assert.Equal(t, "helixagent", req.ClientInfo["name"])
 }
 
 func TestDiscoveryACPInitializeResult_Structure(t *testing.T) {

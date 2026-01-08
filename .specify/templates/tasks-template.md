@@ -20,15 +20,15 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-- **SuperAgent Go Project**: `cmd/superagent/`, `internal/`, `pkg/`, `tests/` at repository root
-- **Application Entry**: `cmd/superagent/main.go`
+- **HelixAgent Go Project**: `cmd/helixagent/`, `internal/`, `pkg/`, `tests/` at repository root
+- **Application Entry**: `cmd/helixagent/main.go`
 - **Business Logic**: `internal/services/`, `internal/handlers/`
 - **Models**: `internal/models/`
 - **LLM Integration**: `internal/llm/`
 - **Plugins**: `internal/plugins/`
 - **Testing**: `tests/unit/`, `tests/integration/`, `tests/e2e/`, `tests/stress/`, `tests/security/`, `tests/challenges/`
 - **API**: `pkg/api/`
-- Paths shown below follow SuperAgent Go structure
+- Paths shown below follow HelixAgent Go structure
 
 <!-- 
   ============================================================================

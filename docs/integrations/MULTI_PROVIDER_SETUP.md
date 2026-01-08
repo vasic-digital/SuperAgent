@@ -1,8 +1,8 @@
-# SuperAgent Multi-Provider Setup Guide
+# HelixAgent Multi-Provider Setup Guide
 
 ## Overview
 
-SuperAgent now provides 100% OpenAI API compatibility with automatic ensemble multi-provider support. Configure multiple LLM providers (DeepSeek, Qwen, OpenRouter Grok-4, OpenRouter Gemini 2.5) and use them transparently through a single unified endpoint.
+HelixAgent now provides 100% OpenAI API compatibility with automatic ensemble multi-provider support. Configure multiple LLM providers (DeepSeek, Qwen, OpenRouter Grok-4, OpenRouter Gemini 2.5) and use them transparently through a single unified endpoint.
 
 ## Quick Start
 
@@ -20,14 +20,14 @@ export OPENROUTER_API_KEY="sk-or-your-openrouter-key"
 
 ```bash
 # Using default configuration
-go run ./cmd/superagent/main_multi_provider.go
+go run ./cmd/helixagent/main_multi_provider.go
 
 # Or with custom config
-CONFIG_PATH=configs/multi-provider.yaml go run ./cmd/superagent/main_multi_provider.go
+CONFIG_PATH=configs/multi-provider.yaml go run ./cmd/helixagent/main_multi_provider.go
 
 # Or build and run
-go build -o superagent-multi ./cmd/superagent/main_multi_provider.go
-./superagent-multi
+go build -o helixagent-multi ./cmd/helixagent/main_multi_provider.go
+./helixagent-multi
 ```
 
 ### 3. Use with AI CLI Tools
@@ -36,16 +36,16 @@ The server runs on `http://localhost:8080` and exposes OpenAI-compatible endpoin
 
 ```bash
 # Test with OpenCode
-opencode --api-key test-key --base-url http://localhost:8080/v1 --model superagent-ensemble "Write a Go function"
+opencode --api-key test-key --base-url http://localhost:8080/v1 --model helixagent-ensemble "Write a Go function"
 
 # Test with Crush
-crush --api-key test-key --base-url http://localhost:8080/v1 --model superagent-ensemble "Explain microservices"
+crush --api-key test-key --base-url http://localhost:8080/v1 --model helixagent-ensemble "Explain microservices"
 
 # Any OpenAI-compatible tool
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer test-key" \
-  -d '{"model":"superagent-ensemble","messages":[{"role":"user","content":"Hello"}]}'
+  -d '{"model":"helixagent-ensemble","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 ## Configuration
@@ -106,7 +106,7 @@ ensemble:
 ## Available Models
 
 ### Ensemble Model
-- **superagent-ensemble**: Automatically uses all configured providers with intelligent voting to return the best result
+- **helixagent-ensemble**: Automatically uses all configured providers with intelligent voting to return the best result
 
 ### Individual Models
 - **deepseek-chat**: DeepSeek Chat model
@@ -151,7 +151,7 @@ chmod +x test_multi_provider.sh
 
 ## How It Works
 
-1. **Automatic Ensemble**: By default, all requests use `superagent-ensemble` which queries multiple providers and selects the best response
+1. **Automatic Ensemble**: By default, all requests use `helixagent-ensemble` which queries multiple providers and selects the best response
 2. **Provider Selection**: You can also specify individual models to use a specific provider
 3. **OpenAI Compatible**: 100% compatible with OpenAI API format - works with any OpenAI-compatible tool
 4. **Intelligent Routing**: Automatic failover and confidence-based response selection

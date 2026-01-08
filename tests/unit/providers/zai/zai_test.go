@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/superagent/superagent/internal/llm/providers/zai"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/tests/testutils"
+	"github.com/helixagent/helixagent/internal/llm/providers/zai"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/tests/testutils"
 )
 
 func TestNewZaiProvider(t *testing.T) {

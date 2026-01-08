@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/superagent/superagent/internal/llm/providers/openrouter"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/llm/providers/openrouter"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 func TestOpenRouterProvider_Basic(t *testing.T) {

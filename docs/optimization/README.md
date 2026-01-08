@@ -1,6 +1,6 @@
 # LLM Optimization Framework
 
-SuperAgent's LLM Optimization Framework provides a unified set of tools for improving performance, reducing costs, and enhancing the quality of LLM responses.
+HelixAgent's LLM Optimization Framework provides a unified set of tools for improving performance, reducing costs, and enhancing the quality of LLM responses.
 
 ## Overview
 
@@ -22,7 +22,7 @@ The optimization framework consists of:
 ### Basic Usage
 
 ```go
-import "github.com/superagent/superagent/internal/optimization"
+import "github.com/helixagent/helixagent/internal/optimization"
 
 // Create service with default config
 config := optimization.DefaultConfig()

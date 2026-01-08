@@ -1,4 +1,4 @@
-# SuperAgent Video Course Content
+# HelixAgent Video Course Content
 
 > **Note**: This document has been superseded by the comprehensive course materials in `/docs/courses/`. Please refer to:
 > - **Course Outline**: `/docs/courses/COURSE_OUTLINE.md` - Complete 11-module training program
@@ -6,14 +6,14 @@
 
 ## Course Overview
 
-**Title**: "Mastering AI Debates with SuperAgent"
+**Title**: "Mastering AI Debates with HelixAgent"
 **Duration**: 6+ hours across 6 comprehensive modules
 **Target Audience**: Developers, AI enthusiasts, and technical professionals
 **Prerequisites**: Basic programming knowledge, familiarity with REST APIs
 
 ---
 
-## Module 1: Introduction to SuperAgent (30 minutes)
+## Module 1: Introduction to HelixAgent (30 minutes)
 
 ### Video 1.1: Course Overview and Learning Objectives (5 minutes)
 
@@ -31,7 +31,7 @@
 
 **Visual Elements:**
 - Course roadmap animation
-- SuperAgent logo and branding
+- HelixAgent logo and branding
 - Architecture diagram overview
 
 ---
@@ -57,7 +57,7 @@
 
 ---
 
-### Video 1.3: SuperAgent Architecture and Core Components (15 minutes)
+### Video 1.3: HelixAgent Architecture and Core Components (15 minutes)
 
 **Content:**
 - System architecture overview
@@ -105,7 +105,7 @@
 
 **Content:**
 - Docker installation and verification
-- Pulling SuperAgent image
+- Pulling HelixAgent image
 - Running first instance
 - Basic configuration
 - Verification of successful setup
@@ -477,7 +477,7 @@
 **Skills**: Plugin architecture, Go programming, integration testing
 
 ### Lab 5: Production Deployment (120 minutes)
-**Exercise**: Deploy SuperAgent in a production environment
+**Exercise**: Deploy HelixAgent in a production environment
 **Skills**: Docker orchestration, Kubernetes setup, security hardening
 
 ---
@@ -508,7 +508,7 @@
 
 ## Certification Path
 
-### Level 1: SuperAgent Fundamentals
+### Level 1: HelixAgent Fundamentals
 - Basic debate creation
 - Simple provider configuration
 - Understanding core concepts

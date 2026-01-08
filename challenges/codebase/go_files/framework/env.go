@@ -21,7 +21,7 @@ func NewEnvLoader() *EnvLoader {
 	return &EnvLoader{
 		values: make(map[string]string),
 		providers: map[string]string{
-			// SuperAgent primary providers
+			// HelixAgent primary providers
 			"anthropic":  "ANTHROPIC_API_KEY",
 			"openai":     "OPENAI_API_KEY",
 			"deepseek":   "DEEPSEEK_API_KEY",

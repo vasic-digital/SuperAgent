@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superagent/superagent/internal/utils"
+	"github.com/helixagent/helixagent/internal/utils"
 )
 
 // LifecycleManager handles plugin lifecycle operations

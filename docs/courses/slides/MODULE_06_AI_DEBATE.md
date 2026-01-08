@@ -6,7 +6,7 @@
 
 ## Slide 1: Title Slide
 
-**SuperAgent: Multi-Provider AI Orchestration**
+**HelixAgent: Multi-Provider AI Orchestration**
 
 - Module 6: AI Debate System
 - Duration: 90 minutes

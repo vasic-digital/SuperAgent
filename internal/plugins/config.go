@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/superagent/superagent/internal/utils"
+	"github.com/helixagent/helixagent/internal/utils"
 )
 
 // ConfigManager handles plugin configuration management

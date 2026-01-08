@@ -1,4 +1,4 @@
-"""Tests for SuperAgent Verifier SDK client."""
+"""Tests for HelixAgent Verifier SDK client."""
 
 import json
 import unittest
@@ -6,9 +6,9 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from threading import Thread
 from unittest.mock import patch, MagicMock
 
-from superagent_verifier.client import VerifierClient
-from superagent_verifier.models import ScoringWeights
-from superagent_verifier.exceptions import (
+from helixagent_verifier.client import VerifierClient
+from helixagent_verifier.models import ScoringWeights
+from helixagent_verifier.exceptions import (
     APIError,
     AuthenticationError,
     NotFoundError,

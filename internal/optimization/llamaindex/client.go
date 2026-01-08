@@ -126,7 +126,7 @@ type HealthResponse struct {
 	Status             string `json:"status"`
 	Version            string `json:"version"`
 	CogneeAvailable    bool   `json:"cognee_available"`
-	SuperagentAvailable bool  `json:"superagent_available"`
+	HelixagentAvailable bool  `json:"helixagent_available"`
 }
 
 // Health checks the service health.

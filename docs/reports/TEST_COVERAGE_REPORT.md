@@ -1,10 +1,10 @@
-# SuperAgent Test Coverage Report
+# HelixAgent Test Coverage Report
 
 **Generated:** January 3, 2026
 
 ## Executive Summary
 
-This report documents the comprehensive test coverage across all SuperAgent modules, SDKs, and subsystems. The project maintains 100+ test packages with extensive unit, integration, E2E, security, stress, and chaos testing.
+This report documents the comprehensive test coverage across all HelixAgent modules, SDKs, and subsystems. The project maintains 100+ test packages with extensive unit, integration, E2E, security, stress, and chaos testing.
 
 ## Test Suite Overview
 
@@ -122,7 +122,7 @@ Run with: `go test ./tests/integration/...`
 ### E2E Tests
 Run with: `make test-e2e`
 - Tests complete workflows
-- Requires running SuperAgent server
+- Requires running HelixAgent server
 - Validates API contracts
 
 ### Security Tests

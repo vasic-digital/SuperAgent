@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 const (
@@ -128,7 +128,7 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 		// Set headers
 		httpReq.Header.Set("Content-Type", "application/json")
 		httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
-		httpReq.Header.Set("HTTP-Referer", "superagent")
+		httpReq.Header.Set("HTTP-Referer", "helixagent")
 
 		// Make request
 		resp, err := p.client.Do(httpReq)
@@ -304,7 +304,7 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
-	httpReq.Header.Set("HTTP-Referer", "superagent")
+	httpReq.Header.Set("HTTP-Referer", "helixagent")
 	httpReq.Header.Set("Accept", "text/event-stream")
 
 	resp, err := p.client.Do(httpReq)
@@ -437,7 +437,7 @@ func (p *SimpleOpenRouterProvider) HealthCheck() error {
 	}
 
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
-	req.Header.Set("HTTP-Referer", "superagent")
+	req.Header.Set("HTTP-Referer", "helixagent")
 
 	resp, err := p.client.Do(req)
 	if err != nil {

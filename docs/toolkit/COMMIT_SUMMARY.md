@@ -3,7 +3,7 @@
 ## ✅ Successfully Completed
 
 ### Main Repository (Pushed)
-- **Repository**: `https://github.com/vasic-digital/SuperAgent`
+- **Repository**: `https://github.com/vasic-digital/HelixAgent`
 - **Branch**: `main`
 - **Commit**: `4ed9312` - "Move Chutes provider to Toolkit/Chutes following SiliconFlow pattern"
 - **Status**: ✅ **PUSHED SUCCESSFULLY**

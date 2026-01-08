@@ -1,6 +1,6 @@
-# SuperAgent User Manual
+# HelixAgent User Manual
 
-Comprehensive guide for using SuperAgent - the intelligent ensemble LLM service.
+Comprehensive guide for using HelixAgent - the intelligent ensemble LLM service.
 
 ## Table of Contents
 
@@ -24,7 +24,7 @@ Comprehensive guide for using SuperAgent - the intelligent ensemble LLM service.
 
 ## Introduction
 
-SuperAgent is an AI-powered ensemble LLM service that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 7+ LLM providers.
+HelixAgent is an AI-powered ensemble LLM service that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 7+ LLM providers.
 
 ### Key Features
 
@@ -51,8 +51,8 @@ SuperAgent is an AI-powered ensemble LLM service that combines responses from mu
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Copy and configure environment
 cp .env.example .env
@@ -67,7 +67,7 @@ curl http://localhost:8080/health
 
 ### Docker Profiles
 
-SuperAgent uses Docker profiles to control which services start:
+HelixAgent uses Docker profiles to control which services start:
 
 ```bash
 # Core services only (postgres, redis, cognee, chromadb)
@@ -93,8 +93,8 @@ docker-compose --profile full up -d
 # https://golang.org/doc/install
 
 # Clone repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Install dependencies
 go mod download
@@ -107,7 +107,7 @@ cp .env.example .env
 nano .env
 
 # Run
-./bin/superagent
+./bin/helixagent
 ```
 
 ### Podman Support
@@ -140,9 +140,9 @@ JWT_SECRET=your-secret-key
 # Database
 DB_HOST=localhost
 DB_PORT=5432
-DB_USER=superagent
+DB_USER=helixagent
 DB_PASSWORD=your-db-password
-DB_NAME=superagent
+DB_NAME=helixagent
 
 # Redis Cache
 REDIS_HOST=localhost
@@ -242,7 +242,7 @@ database:
 
 ## LLM Providers
 
-SuperAgent supports 7 LLM providers out of the box.
+HelixAgent supports 7 LLM providers out of the box.
 
 ### OpenAI
 
@@ -461,7 +461,7 @@ Ensemble mode aggregates responses from multiple LLM providers to produce higher
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "superagent-ensemble",
+    "model": "helixagent-ensemble",
     "messages": [
       {"role": "user", "content": "Explain quantum entanglement."}
     ],
@@ -523,7 +523,7 @@ Returns the highest-scored response:
 ```json
 {
   "id": "ensemble-abc123",
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "choices": [
     {
       "message": {
@@ -741,7 +741,7 @@ curl -X POST http://localhost:8080/api/v1/verifier/health/fastest \
 
 ## Streaming
 
-SuperAgent supports Server-Sent Events (SSE) for real-time response streaming.
+HelixAgent supports Server-Sent Events (SSE) for real-time response streaming.
 
 ### Basic Streaming Request
 
@@ -819,14 +819,14 @@ for event := range stream.Events() {
 ### Python SDK
 
 ```bash
-pip install superagent-py
+pip install helixagent-py
 ```
 
 ```python
-from superagent import SuperAgent
+from helixagent import HelixAgent
 
 # Initialize client
-client = SuperAgent(
+client = HelixAgent(
     api_key="your-api-key",
     base_url="http://localhost:8080"  # Optional
 )
@@ -843,7 +843,7 @@ print(response.choices[0].message.content)
 
 # Ensemble chat
 response = client.chat.create(
-    model="superagent-ensemble",
+    model="helixagent-ensemble",
     messages=[{"role": "user", "content": "What is AI?"}],
     ensemble_config={"strategy": "confidence_weighted", "min_providers": 2}
 )
@@ -864,22 +864,22 @@ results = client.debates.wait_for_completion(debate.debate_id)
 ### Go SDK
 
 ```bash
-go get github.com/superagent/superagent-go
+go get github.com/helixagent/helixagent-go
 ```
 
 ```go
-import "github.com/superagent/superagent-go"
+import "github.com/helixagent/helixagent-go"
 
 // Initialize client
-client := superagent.NewClient(&superagent.Config{
+client := helixagent.NewClient(&helixagent.Config{
     APIKey:  "your-api-key",
     BaseURL: "http://localhost:8080",
 })
 
 // Chat completion
-resp, err := client.Chat.Completions.Create(ctx, &superagent.ChatCompletionRequest{
+resp, err := client.Chat.Completions.Create(ctx, &helixagent.ChatCompletionRequest{
     Model: "gpt-4",
-    Messages: []superagent.ChatMessage{
+    Messages: []helixagent.ChatMessage{
         {Role: "system", Content: "You are a helpful assistant."},
         {Role: "user", Content: "Hello!"},
     },
@@ -887,12 +887,12 @@ resp, err := client.Chat.Completions.Create(ctx, &superagent.ChatCompletionReque
 fmt.Println(resp.Choices[0].Message.Content)
 
 // Ensemble chat
-resp, _ := client.Chat.Completions.Create(ctx, &superagent.ChatCompletionRequest{
-    Model: "superagent-ensemble",
-    Messages: []superagent.ChatMessage{
+resp, _ := client.Chat.Completions.Create(ctx, &helixagent.ChatCompletionRequest{
+    Model: "helixagent-ensemble",
+    Messages: []helixagent.ChatMessage{
         {Role: "user", Content: "What is AI?"},
     },
-    EnsembleConfig: &superagent.EnsembleConfig{
+    EnsembleConfig: &helixagent.EnsembleConfig{
         Strategy:     "confidence_weighted",
         MinProviders: 2,
     },
@@ -902,14 +902,14 @@ resp, _ := client.Chat.Completions.Create(ctx, &superagent.ChatCompletionRequest
 ### JavaScript SDK
 
 ```bash
-npm install superagent-js
+npm install helixagent-js
 ```
 
 ```javascript
-import { SuperAgent } from 'superagent-js';
+import { HelixAgent } from 'helixagent-js';
 
 // Initialize client
-const client = new SuperAgent({
+const client = new HelixAgent({
   apiKey: 'your-api-key',
   baseUrl: 'http://localhost:8080',
 });
@@ -926,7 +926,7 @@ console.log(response.choices[0].message.content);
 
 // Ensemble chat
 const ensembleResponse = await client.chat.create({
-  model: 'superagent-ensemble',
+  model: 'helixagent-ensemble',
   messages: [{ role: 'user', content: 'What is AI?' }],
   ensembleConfig: { strategy: 'confidence_weighted', minProviders: 2 },
 });
@@ -937,9 +937,9 @@ const ensembleResponse = await client.chat.create({
 #### iOS (Swift)
 
 ```swift
-import SuperAgentSDK
+import HelixAgentSDK
 
-let client = SuperAgent(apiKey: "your-api-key")
+let client = HelixAgent(apiKey: "your-api-key")
 
 let response = try await client.chat.create(
     model: "gpt-4",
@@ -953,9 +953,9 @@ print(response.choices[0].message.content)
 #### Android (Kotlin)
 
 ```kotlin
-import com.superagent.sdk.SuperAgent
+import com.helixagent.sdk.HelixAgent
 
-val client = SuperAgent.Builder()
+val client = HelixAgent.Builder()
     .apiKey("your-api-key")
     .build()
 
@@ -976,7 +976,7 @@ println(response.choices[0].message.content)
 
 ### Cognee Integration (Knowledge Graph)
 
-SuperAgent integrates with Cognee for knowledge graph and RAG capabilities:
+HelixAgent integrates with Cognee for knowledge graph and RAG capabilities:
 
 ```bash
 # Add document to knowledge graph
@@ -990,12 +990,12 @@ curl -X POST http://localhost:8080/api/v1/cognee/documents \
 # Query knowledge graph
 curl -X POST http://localhost:8080/api/v1/cognee/query \
   -H "Content-Type: application/json" \
-  -d '{"query": "What is the architecture of SuperAgent?"}'
+  -d '{"query": "What is the architecture of HelixAgent?"}'
 ```
 
 ### Plugin System
 
-SuperAgent supports hot-reloadable plugins:
+HelixAgent supports hot-reloadable plugins:
 
 ```bash
 # List plugins
@@ -1128,19 +1128,19 @@ curl http://localhost:8080/metrics
 ```
 
 Available metrics:
-- `superagent_requests_total` - Total requests by endpoint
-- `superagent_request_duration_seconds` - Request latency
-- `superagent_provider_requests_total` - Requests per provider
-- `superagent_provider_errors_total` - Errors per provider
-- `superagent_ensemble_votes_total` - Ensemble votes
-- `superagent_cache_hits_total` - Cache hit rate
+- `helixagent_requests_total` - Total requests by endpoint
+- `helixagent_request_duration_seconds` - Request latency
+- `helixagent_provider_requests_total` - Requests per provider
+- `helixagent_provider_errors_total` - Errors per provider
+- `helixagent_ensemble_votes_total` - Ensemble votes
+- `helixagent_cache_hits_total` - Cache hit rate
 
 ### Grafana Dashboards
 
 Access Grafana at `http://localhost:3000` (default credentials: admin/admin).
 
 Pre-configured dashboards:
-- SuperAgent Overview
+- HelixAgent Overview
 - Provider Performance
 - Ensemble Analytics
 - Cache Performance
@@ -1166,9 +1166,9 @@ logging:
 **Symptom**: `curl: (7) Failed to connect to localhost port 8080`
 
 **Solutions**:
-1. Check if SuperAgent is running: `docker-compose ps`
+1. Check if HelixAgent is running: `docker-compose ps`
 2. Verify port binding: `netstat -tlnp | grep 8080`
-3. Check logs: `docker-compose logs superagent`
+3. Check logs: `docker-compose logs helixagent`
 
 #### Provider Authentication Errors
 
@@ -1186,7 +1186,7 @@ logging:
 
 **Solutions**:
 1. Start PostgreSQL: `docker-compose up -d postgres`
-2. Check connection: `psql -h localhost -U superagent -d superagent`
+2. Check connection: `psql -h localhost -U helixagent -d helixagent`
 3. Initialize database: `make db-migrate`
 
 #### Redis Connection Errors
@@ -1235,9 +1235,9 @@ logging:
 
 ### Getting Help
 
-- GitHub Issues: https://github.com/superagent/superagent/issues
-- Documentation: https://superagent.ai/docs
-- Discord: https://discord.gg/superagent
+- GitHub Issues: https://github.com/helixagent/helixagent/issues
+- Documentation: https://helixagent.ai/docs
+- Discord: https://discord.gg/helixagent
 
 ---
 

@@ -3,7 +3,7 @@ package fixtures
 import (
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // MockProviders returns a list of mock LLM providers for testing

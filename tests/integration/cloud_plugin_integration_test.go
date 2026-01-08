@@ -8,9 +8,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/cloud"
-	"github.com/superagent/superagent/internal/plugins"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/cloud"
+	"github.com/helixagent/helixagent/internal/plugins"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // TestCloudIntegrationManager tests cloud provider integration

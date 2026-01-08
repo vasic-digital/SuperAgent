@@ -19,7 +19,7 @@ OUTPUT_DIR=""
 LOG_FILE=""
 RESULTS_FILE=""
 START_TIME=""
-SUPERAGENT_PID=""
+HELIXAGENT_PID=""
 PROJECT_ROOT=""
 
 # Initialize challenge
@@ -118,14 +118,14 @@ check_binary() {
     return 0
 }
 
-# Get SuperAgent binary path
-get_superagent_binary() {
-    local binary="$PROJECT_ROOT/superagent"
+# Get HelixAgent binary path
+get_helixagent_binary() {
+    local binary="$PROJECT_ROOT/helixagent"
     if [[ ! -x "$binary" ]]; then
-        binary="$PROJECT_ROOT/bin/superagent"
+        binary="$PROJECT_ROOT/bin/helixagent"
     fi
     if [[ ! -x "$binary" ]]; then
-        log_error "SuperAgent binary not found. Run: make build"
+        log_error "HelixAgent binary not found. Run: make build"
         return 1
     fi
     echo "$binary"
@@ -144,25 +144,25 @@ get_verifier_binary() {
     echo "$binary"
 }
 
-# Start SuperAgent
-start_superagent() {
+# Start HelixAgent
+start_helixagent() {
     local port="${1:-8080}"
     local config="${2:-$PROJECT_ROOT/configs/production.yaml}"
 
-    local binary=$(get_superagent_binary) || return 1
+    local binary=$(get_helixagent_binary) || return 1
 
-    log_info "Starting SuperAgent on port $port..."
+    log_info "Starting HelixAgent on port $port..."
 
     # Check if already running
     if curl -s "http://localhost:$port/health" > /dev/null 2>&1; then
-        log_info "SuperAgent already running on port $port"
+        log_info "HelixAgent already running on port $port"
         return 0
     fi
 
-    # Start SuperAgent
-    PORT=$port "$binary" > "$OUTPUT_DIR/logs/superagent.log" 2>&1 &
-    SUPERAGENT_PID=$!
-    echo "$SUPERAGENT_PID" > "$OUTPUT_DIR/superagent.pid"
+    # Start HelixAgent
+    PORT=$port "$binary" > "$OUTPUT_DIR/logs/helixagent.log" 2>&1 &
+    HELIXAGENT_PID=$!
+    echo "$HELIXAGENT_PID" > "$OUTPUT_DIR/helixagent.pid"
 
     # Wait for startup
     local max_wait=30
@@ -171,31 +171,31 @@ start_superagent() {
         sleep 1
         waited=$((waited + 1))
         if [[ $waited -ge $max_wait ]]; then
-            log_error "SuperAgent failed to start within ${max_wait}s"
+            log_error "HelixAgent failed to start within ${max_wait}s"
             return 1
         fi
     done
 
-    log_success "SuperAgent started (PID: $SUPERAGENT_PID)"
+    log_success "HelixAgent started (PID: $HELIXAGENT_PID)"
     return 0
 }
 
-# Stop SuperAgent
-stop_superagent() {
-    if [[ -n "$SUPERAGENT_PID" ]] && kill -0 "$SUPERAGENT_PID" 2>/dev/null; then
-        log_info "Stopping SuperAgent (PID: $SUPERAGENT_PID)..."
-        kill "$SUPERAGENT_PID" 2>/dev/null || true
-        wait "$SUPERAGENT_PID" 2>/dev/null || true
-        log_info "SuperAgent stopped"
+# Stop HelixAgent
+stop_helixagent() {
+    if [[ -n "$HELIXAGENT_PID" ]] && kill -0 "$HELIXAGENT_PID" 2>/dev/null; then
+        log_info "Stopping HelixAgent (PID: $HELIXAGENT_PID)..."
+        kill "$HELIXAGENT_PID" 2>/dev/null || true
+        wait "$HELIXAGENT_PID" 2>/dev/null || true
+        log_info "HelixAgent stopped"
     fi
 
     # Also check for pid file
-    if [[ -f "$OUTPUT_DIR/superagent.pid" ]]; then
-        local pid=$(cat "$OUTPUT_DIR/superagent.pid")
+    if [[ -f "$OUTPUT_DIR/helixagent.pid" ]]; then
+        local pid=$(cat "$OUTPUT_DIR/helixagent.pid")
         if kill -0 "$pid" 2>/dev/null; then
             kill "$pid" 2>/dev/null || true
         fi
-        rm -f "$OUTPUT_DIR/superagent.pid"
+        rm -f "$OUTPUT_DIR/helixagent.pid"
     fi
 }
 
@@ -237,12 +237,12 @@ stop_infrastructure() {
     fi
 }
 
-# Make API request to SuperAgent
+# Make API request to HelixAgent
 api_request() {
     local method="$1"
     local endpoint="$2"
     local data="$3"
-    local port="${SUPERAGENT_PORT:-8080}"
+    local port="${HELIXAGENT_PORT:-8080}"
 
     local url="http://localhost:$port$endpoint"
     local response_file="$OUTPUT_DIR/logs/api_response_$(date +%s%N).json"
@@ -250,13 +250,13 @@ api_request() {
     if [[ -n "$data" ]]; then
         curl -s -X "$method" "$url" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${SUPERAGENT_API_KEY:-test}" \
+            -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
             -d "$data" \
             -o "$response_file" \
             -w "%{http_code}"
     else
         curl -s -X "$method" "$url" \
-            -H "Authorization: Bearer ${SUPERAGENT_API_KEY:-test}" \
+            -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
             -o "$response_file" \
             -w "%{http_code}"
     fi
@@ -395,7 +395,7 @@ EOF
 
 # Cleanup on exit
 cleanup() {
-    stop_superagent
+    stop_helixagent
 }
 
 trap cleanup EXIT
@@ -403,7 +403,7 @@ trap cleanup EXIT
 # Export all functions
 export -f init_challenge log_info log_success log_warning log_error
 export -f load_env detect_container_runtime check_binary
-export -f get_superagent_binary get_verifier_binary
-export -f start_superagent stop_superagent
+export -f get_helixagent_binary get_verifier_binary
+export -f start_helixagent stop_helixagent
 export -f start_infrastructure stop_infrastructure
 export -f api_request record_assertion record_metric finalize_challenge

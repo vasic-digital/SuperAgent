@@ -2,7 +2,7 @@
 
 ## Overview
 
-Claude is Anthropic's flagship AI assistant, known for its helpfulness, harmlessness, and honesty. SuperAgent integrates with the Claude API to provide access to various Claude model versions including Claude 3 Opus, Sonnet, and Haiku.
+Claude is Anthropic's flagship AI assistant, known for its helpfulness, harmlessness, and honesty. HelixAgent integrates with the Claude API to provide access to various Claude model versions including Claude 3 Opus, Sonnet, and Haiku.
 
 ### Supported Models
 
@@ -35,7 +35,7 @@ Claude is Anthropic's flagship AI assistant, known for its helpfulness, harmless
 
 1. Navigate to **API Keys** in the console
 2. Click **Create Key**
-3. Give your key a descriptive name (e.g., "SuperAgent Production")
+3. Give your key a descriptive name (e.g., "HelixAgent Production")
 4. Copy the API key immediately - it will only be shown once
 
 ### Step 3: Store Your API Key Securely
@@ -75,8 +75,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/superagent/superagent/internal/llm/providers/claude"
-    "github.com/superagent/superagent/internal/models"
+    "github.com/helixagent/helixagent/internal/llm/providers/claude"
+    "github.com/helixagent/helixagent/internal/models"
 )
 
 func main() {
@@ -162,7 +162,7 @@ req := &models.LLMRequest{
 
 ### Best Practices for Rate Limits
 
-1. **Implement exponential backoff** - SuperAgent automatically retries with backoff on 429 errors
+1. **Implement exponential backoff** - HelixAgent automatically retries with backoff on 429 errors
 2. **Monitor usage** - Track token consumption to avoid hitting limits
 3. **Use appropriate models** - Use Haiku for simple tasks to save quota
 4. **Batch requests** - Combine related queries when possible
@@ -189,7 +189,7 @@ Claude API error: 429 - {"error": {"type": "rate_limit_error", "message": "Rate 
 ```
 
 **Solution:**
-- Wait and retry (SuperAgent handles this automatically)
+- Wait and retry (HelixAgent handles this automatically)
 - Upgrade your usage tier if hitting limits frequently
 - Implement request queuing for high-volume applications
 
@@ -216,7 +216,7 @@ Claude API error: 400 - {"error": {"type": "invalid_request_error", "message": "
 
 ### Health Check
 
-SuperAgent provides a health check endpoint for Claude:
+HelixAgent provides a health check endpoint for Claude:
 
 ```go
 err := provider.HealthCheck()

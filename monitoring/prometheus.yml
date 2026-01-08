@@ -7,9 +7,9 @@ rule_files:
   # - "second_rules.yml"
 
 scrape_configs:
-  - job_name: 'superagent'
+  - job_name: 'helixagent'
     static_configs:
-      - targets: ['superagent:8080']
+      - targets: ['helixagent:8080']
     metrics_path: '/metrics'
     scrape_interval: 5s
 

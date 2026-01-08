@@ -1,14 +1,14 @@
-# SuperAgent Plugin Development Guide
+# HelixAgent Plugin Development Guide
 
 ## Overview
 
-SuperAgent's plugin system enables extensibility through hot-reloadable plugins that can add new LLM providers, custom tools, and specialized functionality. This guide covers everything you need to know to develop, test, and deploy plugins for SuperAgent.
+HelixAgent's plugin system enables extensibility through hot-reloadable plugins that can add new LLM providers, custom tools, and specialized functionality. This guide covers everything you need to know to develop, test, and deploy plugins for HelixAgent.
 
 ## Plugin Architecture
 
 ### Core Concepts
 
-SuperAgent plugins are Go packages compiled as shared libraries (`.so` files) that implement predefined interfaces. The plugin system provides:
+HelixAgent plugins are Go packages compiled as shared libraries (`.so` files) that implement predefined interfaces. The plugin system provides:
 
 - **Hot Reloading**: Plugins can be loaded, unloaded, and reloaded at runtime without restarting the server
 - **Dependency Resolution**: Automatic handling of plugin dependencies with cycle detection
@@ -40,7 +40,7 @@ package plugins
 
 import (
     "context"
-    "github.com/superagent/superagent/internal/models"
+    "github.com/helixagent/helixagent/internal/models"
 )
 
 // LLMPlugin defines the interface for LLM provider plugins
@@ -208,8 +208,8 @@ import (
     "fmt"
     "time"
 
-    "github.com/superagent/superagent/internal/models"
-    "github.com/superagent/superagent/internal/plugins"
+    "github.com/helixagent/helixagent/internal/models"
+    "github.com/helixagent/helixagent/internal/plugins"
 )
 
 // Plugin is the exported plugin instance - REQUIRED
@@ -518,7 +518,7 @@ make install
 
 ### Step 4: Configure Plugin Loading
 
-Add your plugin configuration to SuperAgent:
+Add your plugin configuration to HelixAgent:
 
 ```yaml
 # configs/development.yaml
@@ -550,7 +550,7 @@ import (
 
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
-    "github.com/superagent/superagent/internal/models"
+    "github.com/helixagent/helixagent/internal/models"
 )
 
 func TestPluginInit(t *testing.T) {
@@ -828,4 +828,4 @@ err := loader.UnloadPlugin("myprovider")
 
 ---
 
-For additional support, see the [SuperAgent GitHub repository](https://github.com/superagent/superagent) or join our community Discord.
+For additional support, see the [HelixAgent GitHub repository](https://github.com/helixagent/helixagent) or join our community Discord.

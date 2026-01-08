@@ -57,7 +57,7 @@ optimization:
 ### Client Initialization
 
 ```go
-import "github.com/superagent/superagent/internal/optimization/sglang"
+import "github.com/helixagent/helixagent/internal/optimization/sglang"
 
 config := &sglang.ClientConfig{
     BaseURL: "http://localhost:30000",

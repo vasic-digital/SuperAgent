@@ -2,9 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 metadata:
-  name: superagent-production
+  name: helixagent-production
 
-namespace: superagent-production
+namespace: helixagent-production
 
 namePrefix: prod-
 
@@ -20,23 +20,23 @@ patches:
   - path: hpa-patch.yaml
 
 configMapGenerator:
-  - name: superagent-config
+  - name: helixagent-config
     behavior: merge
     literals:
       - LOG_LEVEL=info
       - ENVIRONMENT=production
 
 secretGenerator:
-  - name: superagent-secrets
+  - name: helixagent-secrets
     type: Opaque
     literals:
-      - db-host=postgres-production.superagent-production.svc.cluster.local
-      - db-user=superagent
+      - db-host=postgres-production.helixagent-production.svc.cluster.local
+      - db-user=helixagent
       - db-password=CHANGE_ME_IN_CI_FROM_SECRET
-      - db-name=superagent_production
-      - redis-host=redis-production.superagent-production.svc.cluster.local
+      - db-name=helixagent_production
+      - redis-host=redis-production.helixagent-production.svc.cluster.local
       - jwt-secret=CHANGE_ME_IN_CI_FROM_SECRET
 
 images:
-  - name: superagent/superagent
+  - name: helixagent/helixagent
     newTag: latest

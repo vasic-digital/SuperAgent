@@ -10,7 +10,7 @@ func TestLoad(t *testing.T) {
 	// Save original environment
 	originalEnv := make(map[string]string)
 	for _, key := range []string{
-		"PORT", "SUPERAGENT_API_KEY", "JWT_SECRET",
+		"PORT", "HELIXAGENT_API_KEY", "JWT_SECRET",
 		"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME",
 		"REDIS_HOST", "REDIS_PORT",
 		"COGNEE_BASE_URL", "COGNEE_API_KEY",
@@ -84,14 +84,14 @@ func TestLoad(t *testing.T) {
 		if cfg.Database.Port != "5432" {
 			t.Errorf("Expected Database.Port '5432', got %s", cfg.Database.Port)
 		}
-		if cfg.Database.User != "superagent" {
-			t.Errorf("Expected Database.User 'superagent', got %s", cfg.Database.User)
+		if cfg.Database.User != "helixagent" {
+			t.Errorf("Expected Database.User 'helixagent', got %s", cfg.Database.User)
 		}
 		if cfg.Database.Password != "secret" {
 			t.Errorf("Expected Database.Password 'secret', got %s", cfg.Database.Password)
 		}
-		if cfg.Database.Name != "superagent_db" {
-			t.Errorf("Expected Database.Name 'superagent_db', got %s", cfg.Database.Name)
+		if cfg.Database.Name != "helixagent_db" {
+			t.Errorf("Expected Database.Name 'helixagent_db', got %s", cfg.Database.Name)
 		}
 		if cfg.Database.SSLMode != "disable" {
 			t.Errorf("Expected Database.SSLMode 'disable', got %s", cfg.Database.SSLMode)
@@ -159,7 +159,7 @@ func TestLoad(t *testing.T) {
 	t.Run("EnvironmentOverrides", func(t *testing.T) {
 		// Set environment variables
 		os.Setenv("PORT", "9090")
-		os.Setenv("SUPERAGENT_API_KEY", "test-api-key")
+		os.Setenv("HELIXAGENT_API_KEY", "test-api-key")
 		os.Setenv("JWT_SECRET", "test-jwt-secret")
 		os.Setenv("DB_HOST", "test-db-host")
 		os.Setenv("DB_PORT", "5433")

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // CircuitState represents the state of the circuit breaker

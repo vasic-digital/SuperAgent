@@ -328,7 +328,7 @@ func (c *MCPClient) initializeServer(ctx context.Context, connection *MCPServerC
 			ProtocolVersion: "2024-11-05",
 			Capabilities:    map[string]interface{}{},
 			ClientInfo: map[string]string{
-				"name":    "superagent",
+				"name":    "helixagent",
 				"version": "1.0.0",
 			},
 		},

@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superagent/superagent/internal/config"
-	llm "github.com/superagent/superagent/internal/llm/cognee"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/config"
+	llm "github.com/helixagent/helixagent/internal/llm/cognee"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // memoryCacheEntry represents a cached memory entry with timestamp tracking

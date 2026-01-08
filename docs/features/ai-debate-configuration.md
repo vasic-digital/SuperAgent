@@ -360,8 +360,8 @@ import (
     "log"
     "time"
     
-    "github.com/superagent/superagent/internal/config"
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/config"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func main() {

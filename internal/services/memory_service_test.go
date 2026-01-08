@@ -9,9 +9,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/config"
-	llm "github.com/superagent/superagent/internal/llm/cognee"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/config"
+	llm "github.com/helixagent/helixagent/internal/llm/cognee"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // makeCacheEntry creates a cache entry with the given sources and TTL

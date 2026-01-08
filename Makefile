@@ -11,32 +11,32 @@ all: fmt vet lint test build
 # =============================================================================
 
 build:
-	@echo "🔨 Building SuperAgent..."
-	go build -ldflags="-w -s" -o bin/superagent ./cmd/superagent
+	@echo "🔨 Building HelixAgent..."
+	go build -ldflags="-w -s" -o bin/helixagent ./cmd/helixagent
 
 build-debug:
-	@echo "🐛 Building SuperAgent (debug)..."
-	go build -gcflags="all=-N -l" -o bin/superagent-debug ./cmd/superagent
+	@echo "🐛 Building HelixAgent (debug)..."
+	go build -gcflags="all=-N -l" -o bin/helixagent-debug ./cmd/helixagent
 
 build-all:
 	@echo "🔨 Building all architectures..."
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o bin/superagent-linux-amd64 ./cmd/superagent
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-w -s" -o bin/superagent-linux-arm64 ./cmd/superagent
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-w -s" -o bin/superagent-darwin-amd64 ./cmd/superagent
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-w -s" -o bin/superagent-darwin-arm64 ./cmd/superagent
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-w -s" -o bin/superagent-windows-amd64.exe ./cmd/superagent
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o bin/helixagent-linux-amd64 ./cmd/helixagent
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-w -s" -o bin/helixagent-linux-arm64 ./cmd/helixagent
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-w -s" -o bin/helixagent-darwin-amd64 ./cmd/helixagent
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-w -s" -o bin/helixagent-darwin-arm64 ./cmd/helixagent
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-w -s" -o bin/helixagent-windows-amd64.exe ./cmd/helixagent
 
 # =============================================================================
 # RUN TARGETS
 # =============================================================================
 
 run:
-	@echo "🚀 Running SuperAgent..."
-	go run ./cmd/superagent/main.go
+	@echo "🚀 Running HelixAgent..."
+	go run ./cmd/helixagent/main.go
 
 run-dev:
-	@echo "🔧 Running SuperAgent in development mode..."
-	GIN_MODE=debug go run ./cmd/superagent/main.go
+	@echo "🔧 Running HelixAgent in development mode..."
+	GIN_MODE=debug go run ./cmd/helixagent/main.go
 
 # =============================================================================
 # TEST TARGETS
@@ -47,9 +47,9 @@ test:
 	@# Check if infrastructure is available
 	@if nc -z localhost $${POSTGRES_PORT:-15432} 2>/dev/null && nc -z localhost $${REDIS_PORT:-16379} 2>/dev/null; then \
 		echo "✅ Infrastructure available - running full tests"; \
-		DB_HOST=localhost DB_PORT=$${POSTGRES_PORT:-15432} DB_USER=superagent DB_PASSWORD=superagent123 DB_NAME=superagent_db \
-		DATABASE_URL="postgres://superagent:superagent123@localhost:$${POSTGRES_PORT:-15432}/superagent_db?sslmode=disable" \
-		REDIS_HOST=localhost REDIS_PORT=$${REDIS_PORT:-16379} REDIS_PASSWORD=superagent123 \
+		DB_HOST=localhost DB_PORT=$${POSTGRES_PORT:-15432} DB_USER=helixagent DB_PASSWORD=helixagent123 DB_NAME=helixagent_db \
+		DATABASE_URL="postgres://helixagent:helixagent123@localhost:$${POSTGRES_PORT:-15432}/helixagent_db?sslmode=disable" \
+		REDIS_HOST=localhost REDIS_PORT=$${REDIS_PORT:-16379} REDIS_PASSWORD=helixagent123 \
 		go test -v ./...; \
 	else \
 		echo "⚠️  Infrastructure not available - running unit tests only"; \
@@ -135,32 +135,32 @@ test-infra-direct-start:
 		echo "Using Podman with --userns=host mode"; \
 	fi; \
 	# Create network if not exists \
-	$$RUNTIME network create superagent-test-net 2>/dev/null || true; \
+	$$RUNTIME network create helixagent-test-net 2>/dev/null || true; \
 	# Stop and remove existing containers \
-	$$RUNTIME rm -f superagent-test-postgres superagent-test-redis 2>/dev/null || true; \
+	$$RUNTIME rm -f helixagent-test-postgres helixagent-test-redis 2>/dev/null || true; \
 	# Start PostgreSQL (using fully qualified name for Podman) \
 	echo "🐘 Starting PostgreSQL..."; \
-	$$RUNTIME run -d --name superagent-test-postgres $$EXTRA_OPTS \
-		--network superagent-test-net \
+	$$RUNTIME run -d --name helixagent-test-postgres $$EXTRA_OPTS \
+		--network helixagent-test-net \
 		-p $${POSTGRES_PORT:-15432}:5432 \
-		-e POSTGRES_DB=superagent_db \
-		-e POSTGRES_USER=superagent \
-		-e POSTGRES_PASSWORD=superagent123 \
+		-e POSTGRES_DB=helixagent_db \
+		-e POSTGRES_USER=helixagent \
+		-e POSTGRES_PASSWORD=helixagent123 \
 		docker.io/library/postgres:15-alpine || exit 1; \
 	# Start Redis (using fully qualified name for Podman) \
 	echo "🔴 Starting Redis..."; \
-	$$RUNTIME run -d --name superagent-test-redis $$EXTRA_OPTS \
-		--network superagent-test-net \
+	$$RUNTIME run -d --name helixagent-test-redis $$EXTRA_OPTS \
+		--network helixagent-test-net \
 		-p $${REDIS_PORT:-16379}:6379 \
-		docker.io/library/redis:7-alpine redis-server --requirepass superagent123 --appendonly yes || exit 1; \
+		docker.io/library/redis:7-alpine redis-server --requirepass helixagent123 --appendonly yes || exit 1; \
 	echo "✅ Containers started"
 
 # Stop direct containers
 test-infra-direct-stop:
 	@RUNTIME="$$(command -v docker 2>/dev/null || command -v podman 2>/dev/null)"; \
 	if [ -n "$$RUNTIME" ]; then \
-		$$RUNTIME rm -f superagent-test-postgres superagent-test-redis 2>/dev/null || true; \
-		$$RUNTIME network rm superagent-test-net 2>/dev/null || true; \
+		$$RUNTIME rm -f helixagent-test-postgres helixagent-test-redis 2>/dev/null || true; \
+		$$RUNTIME network rm helixagent-test-net 2>/dev/null || true; \
 		echo "✅ Test containers stopped"; \
 	fi
 
@@ -214,7 +214,7 @@ test-infra-start:
 	@sleep 5
 	@echo "Checking PostgreSQL..."
 	@for i in 1 2 3 4 5 6 7 8 9 10; do \
-		docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U superagent -d superagent_db > /dev/null 2>&1 && break; \
+		docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U helixagent -d helixagent_db > /dev/null 2>&1 && break; \
 		echo "  Waiting for PostgreSQL... ($$i/10)"; \
 		sleep 2; \
 	done
@@ -233,8 +233,8 @@ test-infra-start:
 	@echo "✅ Test infrastructure is ready!"
 	@echo ""
 	@echo "Services available at:"
-	@echo "  PostgreSQL: localhost:$${POSTGRES_PORT:-15432} (superagent/superagent123)"
-	@echo "  Redis:      localhost:$${REDIS_PORT:-16379} (password: superagent123)"
+	@echo "  PostgreSQL: localhost:$${POSTGRES_PORT:-15432} (helixagent/helixagent123)"
+	@echo "  Redis:      localhost:$${REDIS_PORT:-16379} (password: helixagent123)"
 	@echo "  Mock LLM:   http://localhost:$${MOCK_LLM_PORT:-18081}"
 
 test-infra-stop:
@@ -259,10 +259,10 @@ test-with-infra:
 	@echo "🧪 Running tests with infrastructure..."
 	@$(MAKE) test-infra-start
 	@echo ""
-	@DB_HOST=localhost DB_PORT=$${POSTGRES_PORT:-15432} DB_USER=superagent DB_PASSWORD=superagent123 DB_NAME=superagent_db \
-		DATABASE_URL="postgres://superagent:superagent123@localhost:$${POSTGRES_PORT:-15432}/superagent_db?sslmode=disable" \
-		REDIS_HOST=localhost REDIS_PORT=$${REDIS_PORT:-16379} REDIS_PASSWORD=superagent123 \
-		REDIS_URL="redis://:superagent123@localhost:$${REDIS_PORT:-16379}" \
+	@DB_HOST=localhost DB_PORT=$${POSTGRES_PORT:-15432} DB_USER=helixagent DB_PASSWORD=helixagent123 DB_NAME=helixagent_db \
+		DATABASE_URL="postgres://helixagent:helixagent123@localhost:$${POSTGRES_PORT:-15432}/helixagent_db?sslmode=disable" \
+		REDIS_HOST=localhost REDIS_PORT=$${REDIS_PORT:-16379} REDIS_PASSWORD=helixagent123 \
+		REDIS_URL="redis://:helixagent123@localhost:$${REDIS_PORT:-16379}" \
 		MOCK_LLM_URL=http://localhost:$${MOCK_LLM_PORT:-18081} MOCK_LLM_ENABLED=true \
 		CLAUDE_API_KEY=mock-api-key CLAUDE_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
 		DEEPSEEK_API_KEY=mock-api-key DEEPSEEK_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
@@ -281,8 +281,8 @@ test-all-docker:
 	@docker compose -f docker-compose.test.yml up -d postgres redis mock-llm
 	@echo "⏳ Waiting for services..."
 	@sleep 10
-	@DB_HOST=localhost DB_PORT=5432 DB_USER=superagent DB_PASSWORD=superagent123 DB_NAME=superagent_db \
-		REDIS_HOST=localhost REDIS_PORT=6379 REDIS_PASSWORD=superagent123 \
+	@DB_HOST=localhost DB_PORT=5432 DB_USER=helixagent DB_PASSWORD=helixagent123 DB_NAME=helixagent_db \
+		REDIS_HOST=localhost REDIS_PORT=6379 REDIS_PASSWORD=helixagent123 \
 		MOCK_LLM_URL=http://localhost:8081 MOCK_LLM_ENABLED=true \
 		CLAUDE_API_KEY=mock CLAUDE_BASE_URL=http://localhost:8081/v1 \
 		DEEPSEEK_API_KEY=mock DEEPSEEK_BASE_URL=http://localhost:8081/v1 \
@@ -400,18 +400,18 @@ security-scan:
 
 docker-build:
 	@echo "🐳 Building Docker image..."
-	docker build -t superagent:latest .
+	docker build -t helixagent:latest .
 
 docker-build-prod:
 	@echo "🐳 Building production Docker image..."
-	docker build --target=production -t superagent:prod .
+	docker build --target=production -t helixagent:prod .
 
 docker-run:
-	@echo "🐳 Starting SuperAgent with Docker..."
+	@echo "🐳 Starting HelixAgent with Docker..."
 	docker compose up -d
 
 docker-stop:
-	@echo "🐳 Stopping SuperAgent..."
+	@echo "🐳 Stopping HelixAgent..."
 	docker compose down
 
 docker-logs:
@@ -432,7 +432,7 @@ docker-test:
 	@echo "🧪 Running tests in Docker..."
 	docker compose -f docker-compose.test.yml up --build -d
 	sleep 10
-	docker compose -f docker-compose.test.yml exec superagent go test ./...
+	docker compose -f docker-compose.test.yml exec helixagent go test ./...
 	docker compose -f docker-compose.test.yml down
 
 docker-dev:
@@ -490,7 +490,7 @@ container-test:
 # Podman-specific targets
 podman-build:
 	@echo "🦭 Building with Podman..."
-	podman build -t superagent:latest .
+	podman build -t helixagent:latest .
 
 podman-run:
 	@echo "🦭 Running with Podman Compose..."
@@ -534,15 +534,15 @@ install-deps:
 	fi
 
 install:
-	@echo "📦 Installing SuperAgent..."
+	@echo "📦 Installing HelixAgent..."
 	mkdir -p /usr/local/bin
-	cp bin/superagent /usr/local/bin/
-	@echo "✅ SuperAgent installed to /usr/local/bin/superagent"
+	cp bin/helixagent /usr/local/bin/
+	@echo "✅ HelixAgent installed to /usr/local/bin/helixagent"
 
 uninstall:
-	@echo "🗑️ Uninstalling SuperAgent..."
-	rm -f /usr/local/bin/superagent
-	@echo "✅ SuperAgent uninstalled"
+	@echo "🗑️ Uninstalling HelixAgent..."
+	rm -f /usr/local/bin/helixagent
+	@echo "✅ HelixAgent uninstalled"
 
 # =============================================================================
 # UTILITIES TARGETS
@@ -630,16 +630,16 @@ setup-prod:
 # =============================================================================
 
 help:
-	@echo "🚀 SuperAgent Makefile Commands"
+	@echo "🚀 HelixAgent Makefile Commands"
 	@echo ""
 	@echo "🔨 Build Commands:"
-	@echo "  build              Build SuperAgent binary"
-	@echo "  build-debug        Build SuperAgent binary (debug mode)"
+	@echo "  build              Build HelixAgent binary"
+	@echo "  build-debug        Build HelixAgent binary (debug mode)"
 	@echo "  build-all          Build for all architectures"
 	@echo ""
 	@echo "🏃 Run Commands:"
-	@echo "  run                Run SuperAgent locally"
-	@echo "  run-dev            Run SuperAgent in development mode"
+	@echo "  run                Run HelixAgent locally"
+	@echo "  run-dev            Run HelixAgent in development mode"
 	@echo ""
 	@echo "🧪 Test Commands:"
 	@echo "  test               Run all tests (quick, may skip some)"
@@ -686,8 +686,8 @@ help:
 	@echo ""
 	@echo "📦 Installation:"
 	@echo "  install-deps       Install development dependencies"
-	@echo "  install            Install SuperAgent to system"
-	@echo "  uninstall          Remove SuperAgent from system"
+	@echo "  install            Install HelixAgent to system"
+	@echo "  uninstall          Remove HelixAgent from system"
 	@echo ""
 	@echo "🧰 Utilities:"
 	@echo "  clean              Clean build artifacts"
@@ -798,7 +798,7 @@ verifier-test-coverage-100:
 
 verifier-run:
 	@echo "🚀 Running verifier service..."
-	VERIFIER_ENABLED=true go run ./cmd/superagent/main.go
+	VERIFIER_ENABLED=true go run ./cmd/helixagent/main.go
 
 verifier-health:
 	@echo "💚 Checking verifier health..."
@@ -849,7 +849,7 @@ verifier-clean:
 
 verifier-docker-build:
 	@echo "🐳 Building verifier Docker image..."
-	docker build -t superagent-verifier:latest -f Dockerfile.verifier .
+	docker build -t helixagent-verifier:latest -f Dockerfile.verifier .
 	@echo "✅ Verifier Docker image built"
 
 verifier-docker-run:
@@ -869,12 +869,12 @@ verifier-sdk-go:
 
 verifier-sdk-python:
 	@echo "🐍 Building Python SDK for verifier..."
-	cd pkg/sdk/python/superagent_verifier && pip install -e .
+	cd pkg/sdk/python/helixagent_verifier && pip install -e .
 	@echo "✅ Python SDK installed"
 
 verifier-sdk-js:
 	@echo "📦 Building JavaScript SDK for verifier..."
-	cd pkg/sdk/javascript/superagent-verifier && npm install && npm run build
+	cd pkg/sdk/javascript/helixagent-verifier && npm install && npm run build
 	@echo "✅ JavaScript SDK built"
 
 verifier-sdk-all:

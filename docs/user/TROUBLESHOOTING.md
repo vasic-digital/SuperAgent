@@ -1,6 +1,6 @@
-# SuperAgent Troubleshooting Guide
+# HelixAgent Troubleshooting Guide
 
-Quick solutions for common issues when running SuperAgent.
+Quick solutions for common issues when running HelixAgent.
 
 ## Table of Contents
 
@@ -100,7 +100,7 @@ kill -9 <PID>
 
 # Or use different port
 export PORT=8081
-./bin/superagent
+./bin/helixagent
 ```
 
 ### Configuration File Not Found
@@ -116,7 +116,7 @@ ls configs/
 cp configs/development.yaml.example configs/development.yaml
 
 # Or specify config path
-./bin/superagent --config /path/to/config.yaml
+./bin/helixagent --config /path/to/config.yaml
 ```
 
 ### Environment Variables Not Set
@@ -145,7 +145,7 @@ export $(cat .env | xargs)
 **Solution**:
 ```bash
 # Make binary executable
-chmod +x ./bin/superagent
+chmod +x ./bin/helixagent
 
 # Fix Docker socket permissions
 sudo chmod 666 /var/run/docker.sock
@@ -285,7 +285,7 @@ docker-compose logs postgres
 cat .env | grep DB_
 
 # Reset password (Docker)
-docker-compose exec postgres psql -U postgres -c "ALTER USER superagent PASSWORD 'newpassword';"
+docker-compose exec postgres psql -U postgres -c "ALTER USER helixagent PASSWORD 'newpassword';"
 
 # Update .env
 DB_PASSWORD=newpassword
@@ -293,12 +293,12 @@ DB_PASSWORD=newpassword
 
 ### Database Does Not Exist
 
-**Error**: `database "superagent" does not exist`
+**Error**: `database "helixagent" does not exist`
 
 **Solution**:
 ```bash
 # Create database
-docker-compose exec postgres psql -U postgres -c "CREATE DATABASE superagent;"
+docker-compose exec postgres psql -U postgres -c "CREATE DATABASE helixagent;"
 
 # Or run migrations
 make db-migrate
@@ -318,7 +318,7 @@ make db-reset
 make db-migrate
 
 # Manual fix
-docker-compose exec postgres psql -U superagent -d superagent
+docker-compose exec postgres psql -U helixagent -d helixagent
 ```
 
 ### Too Many Connections
@@ -423,7 +423,7 @@ curl -w "@curl-timing.txt" -o /dev/null http://localhost:8080/v1/chat/completion
 docker stats
 
 # Check database queries
-docker-compose exec postgres psql -U superagent -c "SELECT * FROM pg_stat_statements ORDER BY total_time DESC LIMIT 5;"
+docker-compose exec postgres psql -U helixagent -c "SELECT * FROM pg_stat_statements ORDER BY total_time DESC LIMIT 5;"
 ```
 
 **Solutions**:
@@ -440,7 +440,7 @@ docker-compose exec postgres psql -U superagent -c "SELECT * FROM pg_stat_statem
 **Diagnosis**:
 ```bash
 # Monitor memory
-docker stats --no-stream superagent
+docker stats --no-stream helixagent
 
 # Check Go runtime stats
 curl http://localhost:8080/debug/pprof/heap > heap.prof
@@ -455,7 +455,7 @@ cache:
   eviction_policy: lru
 
 # Set Go GC percentage
-GOGC=50 ./bin/superagent
+GOGC=50 ./bin/helixagent
 ```
 
 ### CPU Spike
@@ -670,13 +670,13 @@ location /v1/chat/completions {
 **Solution**:
 ```bash
 # Build with no cache
-docker build --no-cache -t superagent .
+docker build --no-cache -t helixagent .
 
 # Check Dockerfile syntax
-docker build --progress=plain -t superagent .
+docker build --progress=plain -t helixagent .
 
 # Use BuildKit
-DOCKER_BUILDKIT=1 docker build -t superagent .
+DOCKER_BUILDKIT=1 docker build -t helixagent .
 ```
 
 ### Container Won't Start
@@ -686,13 +686,13 @@ DOCKER_BUILDKIT=1 docker build -t superagent .
 **Solution**:
 ```bash
 # Check logs
-docker-compose logs superagent
+docker-compose logs helixagent
 
 # Run interactively
-docker-compose run --rm superagent /bin/sh
+docker-compose run --rm helixagent /bin/sh
 
 # Check entrypoint
-docker inspect superagent | grep -A5 Entrypoint
+docker inspect helixagent | grep -A5 Entrypoint
 ```
 
 ### Podman Compatibility
@@ -733,7 +733,7 @@ podman run --userns=keep-id -v ./data:/data ...
 ```bash
 # Check network
 docker network ls
-docker network inspect superagent_default
+docker network inspect helixagent_default
 
 # Recreate network
 docker-compose down
@@ -762,7 +762,7 @@ redis-cli ping
 docker-compose ps
 
 # Application logs
-docker-compose logs -f superagent
+docker-compose logs -f helixagent
 
 # Resource usage
 docker stats
@@ -795,9 +795,9 @@ If these solutions don't resolve your issue:
    ```
 
 3. **Open Issue**:
-   - GitHub: https://github.com/superagent/superagent/issues
+   - GitHub: https://github.com/helixagent/helixagent/issues
    - Include: error message, logs, steps to reproduce
 
 4. **Community Support**:
-   - Discord: https://discord.gg/superagent
-   - Documentation: https://superagent.ai/docs
+   - Discord: https://discord.gg/helixagent
+   - Documentation: https://helixagent.ai/docs

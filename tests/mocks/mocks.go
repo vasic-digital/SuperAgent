@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // MockLLMProvider implements a mock LLM provider for testing

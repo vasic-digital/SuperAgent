@@ -9,8 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/config"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/config"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // TestAdvancedAIDebateIntegration tests the complete advanced AI debate system

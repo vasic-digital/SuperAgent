@@ -7,7 +7,7 @@ This document provides a detailed, phased implementation plan to bring the Helix
 ## 📊 Current State Assessment
 
 ### Critical Issues Blocking Progress
-- **Go Module Dependencies**: All imports failing due to missing `github.com/superagent/toolkit/pkg/toolkit`
+- **Go Module Dependencies**: All imports failing due to missing `github.com/helixagent/toolkit/pkg/toolkit`
 - **Missing Build System**: No `go.mod`, `Makefile`, or CI/CD
 - **Test Coverage**: Only 1/6 test types implemented, 12 missing test files
 - **Documentation**: 6 missing core documents, incomplete provider docs
@@ -30,7 +30,7 @@ This document provides a detailed, phased implementation plan to bring the Helix
    ```
 
 2. **Fix Import Paths**
-   - Replace all `github.com/superagent/toolkit` with `github.com/HelixDevelopment/HelixAgent/Toolkit`
+   - Replace all `github.com/helixagent/toolkit` with `github.com/HelixDevelopment/HelixAgent/Toolkit`
    - Update internal package imports
    - Create missing internal packages
 

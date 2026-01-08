@@ -1,6 +1,6 @@
-# SuperAgent CLI Reference
+# HelixAgent CLI Reference
 
-This document provides a comprehensive reference for the SuperAgent command-line interface (CLI), including all available commands, flags, configuration options, and usage examples.
+This document provides a comprehensive reference for the HelixAgent command-line interface (CLI), including all available commands, flags, configuration options, and usage examples.
 
 ## Table of Contents
 
@@ -17,7 +17,7 @@ This document provides a comprehensive reference for the SuperAgent command-line
 
 ## Overview
 
-SuperAgent is an AI-powered ensemble LLM service that combines responses from multiple language models using intelligent aggregation strategies. The CLI provides a simple interface to start and configure the SuperAgent server.
+HelixAgent is an AI-powered ensemble LLM service that combines responses from multiple language models using intelligent aggregation strategies. The CLI provides a simple interface to start and configure the HelixAgent server.
 
 ### Key Features
 
@@ -39,13 +39,13 @@ SuperAgent is an AI-powered ensemble LLM service that combines responses from mu
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Build the binary
 make build
 
-# The binary will be available at ./bin/superagent
+# The binary will be available at ./bin/helixagent
 ```
 
 ### Build Variants
@@ -79,14 +79,14 @@ sudo make uninstall
 make docker-build
 
 # Or build directly
-docker build -t superagent:latest .
+docker build -t helixagent:latest .
 ```
 
 ---
 
 ## Global Options
 
-The SuperAgent CLI accepts the following global options:
+The HelixAgent CLI accepts the following global options:
 
 ### `--config`
 
@@ -97,7 +97,7 @@ The SuperAgent CLI accepts the following global options:
 Specifies the path to a YAML configuration file.
 
 ```bash
-superagent --config /path/to/config.yaml
+helixagent --config /path/to/config.yaml
 ```
 
 ### `--auto-start-docker`
@@ -105,14 +105,14 @@ superagent --config /path/to/config.yaml
 **Type:** `boolean`
 **Default:** `true`
 
-When enabled, SuperAgent automatically starts required Docker containers (PostgreSQL, Redis, Cognee, ChromaDB) before starting the server.
+When enabled, HelixAgent automatically starts required Docker containers (PostgreSQL, Redis, Cognee, ChromaDB) before starting the server.
 
 ```bash
 # Start with auto-container management (default)
-superagent
+helixagent
 
 # Disable auto-container management
-superagent --auto-start-docker=false
+helixagent --auto-start-docker=false
 ```
 
 ### `--version`
@@ -123,8 +123,8 @@ superagent --auto-start-docker=false
 Displays version information and exits.
 
 ```bash
-superagent --version
-# Output: SuperAgent v1.0.0 - Models.dev Enhanced Edition
+helixagent --version
+# Output: HelixAgent v1.0.0 - Models.dev Enhanced Edition
 ```
 
 ### `--help`
@@ -135,7 +135,7 @@ superagent --version
 Displays help message with all available options.
 
 ```bash
-superagent --help
+helixagent --help
 ```
 
 ---
@@ -144,17 +144,17 @@ superagent --help
 
 ### Start Server (Default)
 
-The default command starts the SuperAgent HTTP server.
+The default command starts the HelixAgent HTTP server.
 
 ```bash
 # Start with defaults
-superagent
+helixagent
 
 # Start with custom config
-superagent --config configs/production.yaml
+helixagent --config configs/production.yaml
 
 # Start without auto-container management
-superagent --auto-start-docker=false
+helixagent --auto-start-docker=false
 ```
 
 ### Version
@@ -162,7 +162,7 @@ superagent --auto-start-docker=false
 Display version information:
 
 ```bash
-superagent --version
+helixagent --version
 ```
 
 ### Help
@@ -170,14 +170,14 @@ superagent --version
 Display help information:
 
 ```bash
-superagent --help
+helixagent --help
 ```
 
 ---
 
 ## Configuration
 
-SuperAgent can be configured through:
+HelixAgent can be configured through:
 
 1. **Command-line flags** (highest priority)
 2. **Environment variables**
@@ -209,9 +209,9 @@ server:
 database:
   host: "localhost"
   port: 5432
-  user: "superagent"
+  user: "helixagent"
   password: "secret"
-  name: "superagent_db"
+  name: "helixagent_db"
   sslmode: "disable"
   max_open_connections: 20
   max_idle_connections: 5
@@ -293,7 +293,7 @@ optimization:
 
 ## Environment Variables
 
-SuperAgent supports extensive configuration through environment variables. These override defaults but are overridden by configuration file values.
+HelixAgent supports extensive configuration through environment variables. These override defaults but are overridden by configuration file values.
 
 ### Server Configuration
 
@@ -303,7 +303,7 @@ SuperAgent supports extensive configuration through environment variables. These
 | `SERVER_HOST` | Server bind address | `0.0.0.0` |
 | `GIN_MODE` | Gin framework mode (`debug`, `release`) | `release` |
 | `JWT_SECRET` | JWT signing secret (**required**) | - |
-| `SUPERAGENT_API_KEY` | API key for authentication | - |
+| `HELIXAGENT_API_KEY` | API key for authentication | - |
 | `READ_TIMEOUT` | HTTP read timeout | `30s` |
 | `WRITE_TIMEOUT` | HTTP write timeout | `30s` |
 | `TOKEN_EXPIRY` | JWT token expiration | `24h` |
@@ -318,9 +318,9 @@ SuperAgent supports extensive configuration through environment variables. These
 |----------|-------------|---------|
 | `DB_HOST` | PostgreSQL host | `localhost` |
 | `DB_PORT` | PostgreSQL port | `5432` |
-| `DB_USER` | PostgreSQL username | `superagent` |
+| `DB_USER` | PostgreSQL username | `helixagent` |
 | `DB_PASSWORD` | PostgreSQL password | `secret` |
-| `DB_NAME` | Database name | `superagent_db` |
+| `DB_NAME` | Database name | `helixagent_db` |
 | `DB_SSLMODE` | SSL mode (`disable`, `require`) | `disable` |
 | `DB_MAX_CONNECTIONS` | Maximum connections | `20` |
 | `DB_CONN_TIMEOUT` | Connection timeout | `10s` |
@@ -461,28 +461,28 @@ SuperAgent supports extensive configuration through environment variables. These
 
 ```bash
 # Start with all defaults
-superagent
+helixagent
 ```
 
 #### Development Mode
 
 ```bash
 # Start in debug mode with verbose logging
-GIN_MODE=debug LOG_LEVEL=debug superagent
+GIN_MODE=debug LOG_LEVEL=debug helixagent
 ```
 
 #### Production Mode
 
 ```bash
 # Start with production configuration
-superagent --config configs/production.yaml
+helixagent --config configs/production.yaml
 ```
 
 #### Without Auto-Container Management
 
 ```bash
 # Start without automatically starting Docker containers
-superagent --auto-start-docker=false
+helixagent --auto-start-docker=false
 ```
 
 ### Running with Different Providers
@@ -494,7 +494,7 @@ superagent --auto-start-docker=false
 OLLAMA_ENABLED=true \
 OLLAMA_BASE_URL=http://localhost:11434 \
 OLLAMA_MODEL=llama2 \
-superagent
+helixagent
 ```
 
 #### Using Claude API
@@ -502,7 +502,7 @@ superagent
 ```bash
 # Start with Claude provider
 CLAUDE_API_KEY=your-api-key \
-superagent
+helixagent
 ```
 
 #### Using Multiple Providers
@@ -515,7 +515,7 @@ GEMINI_API_KEY=your-gemini-key \
 OLLAMA_ENABLED=true \
 ENSEMBLE_STRATEGY=confidence_weighted \
 ENSEMBLE_MIN_PROVIDERS=2 \
-superagent
+helixagent
 ```
 
 ### Using Docker
@@ -626,7 +626,7 @@ docker compose up -d postgres redis cognee chromadb
 docker compose ps postgres
 
 # Verify connection settings
-psql -h localhost -U superagent -d superagent_db
+psql -h localhost -U helixagent -d helixagent_db
 
 # Check logs
 docker compose logs postgres
@@ -676,7 +676,7 @@ curl https://api.anthropic.com/v1/messages \
 lsof -i :8080
 
 # Kill the process or use a different port
-PORT=8081 superagent
+PORT=8081 helixagent
 ```
 
 #### 6. Memory Issues
@@ -686,10 +686,10 @@ PORT=8081 superagent
 **Solution:**
 ```bash
 # Reduce cache size
-CACHE_MAX_ENTRIES=5000 superagent
+CACHE_MAX_ENTRIES=5000 helixagent
 
 # Limit concurrent requests
-MAX_CONCURRENT_REQUESTS=5 superagent
+MAX_CONCURRENT_REQUESTS=5 helixagent
 
 # Check container memory limits
 docker stats
@@ -705,7 +705,7 @@ GIN_MODE=debug \
 LOG_LEVEL=debug \
 DEBUG_ENABLED=true \
 REQUEST_LOGGING=true \
-superagent
+helixagent
 ```
 
 #### Debug Logging Levels
@@ -719,7 +719,7 @@ superagent
 
 ```bash
 # View Docker logs
-docker compose logs -f superagent
+docker compose logs -f helixagent
 
 # View specific service logs
 docker compose logs -f postgres
@@ -737,7 +737,7 @@ docker compose logs -f
 docker compose ps
 
 # Check specific container health
-docker inspect --format='{{.State.Health.Status}}' superagent-app
+docker inspect --format='{{.State.Health.Status}}' helixagent-app
 
 # Check infrastructure status
 make test-infra-status

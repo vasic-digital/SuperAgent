@@ -1,22 +1,22 @@
-# SuperAgent API Key and OpenCode Configuration Guide
+# HelixAgent API Key and OpenCode Configuration Guide
 
-This guide explains how to generate and manage SuperAgent API keys and OpenCode configurations using the SuperAgent binary.
+This guide explains how to generate and manage HelixAgent API keys and OpenCode configurations using the HelixAgent binary.
 
 ## Overview
 
-SuperAgent provides built-in CLI commands for:
+HelixAgent provides built-in CLI commands for:
 - Generating secure API keys
 - Creating OpenCode configuration files
 - Managing API keys in environment files
 
-All configuration generation is done through the main SuperAgent binary - no separate scripts required.
+All configuration generation is done through the main HelixAgent binary - no separate scripts required.
 
 ## API Key Generation
 
 ### Generate a New API Key
 
 ```bash
-./bin/superagent -generate-api-key
+./bin/helixagent -generate-api-key
 ```
 
 This outputs a cryptographically secure API key in the format:
@@ -32,43 +32,43 @@ sk-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 ### Generate and Save to .env File
 
 ```bash
-./bin/superagent -generate-api-key -api-key-env-file .env
+./bin/helixagent -generate-api-key -api-key-env-file .env
 ```
 
 This will:
 1. Generate a new API key
-2. Add/update `SUPERAGENT_API_KEY` in the specified `.env` file
+2. Add/update `HELIXAGENT_API_KEY` in the specified `.env` file
 3. Output the generated key to stdout
 
-If the `.env` file exists, it preserves existing content and only updates the `SUPERAGENT_API_KEY` entry.
+If the `.env` file exists, it preserves existing content and only updates the `HELIXAGENT_API_KEY` entry.
 
 ## OpenCode Configuration Generation
 
 ### Generate OpenCode Configuration
 
 ```bash
-./bin/superagent -generate-opencode-config
+./bin/helixagent -generate-opencode-config
 ```
 
 This generates a valid OpenCode configuration JSON to stdout. The configuration:
-- Uses `SUPERAGENT_API_KEY` from environment (or generates a new one if not set)
+- Uses `HELIXAGENT_API_KEY` from environment (or generates a new one if not set)
 - Follows the official OpenCode schema (`https://opencode.ai/config.json`)
-- Includes SuperAgent as the provider with the AI Debate model
+- Includes HelixAgent as the provider with the AI Debate model
 
 ### Generate and Save to File
 
 ```bash
-./bin/superagent -generate-opencode-config -opencode-output opencode.json
+./bin/helixagent -generate-opencode-config -opencode-output opencode.json
 ```
 
 ### Generate with API Key to .env
 
 ```bash
-./bin/superagent -generate-opencode-config -opencode-output opencode.json -api-key-env-file .env
+./bin/helixagent -generate-opencode-config -opencode-output opencode.json -api-key-env-file .env
 ```
 
 This command:
-1. Checks for `SUPERAGENT_API_KEY` in environment
+1. Checks for `HELIXAGENT_API_KEY` in environment
 2. If not found, generates a new key and saves to `.env`
 3. Generates OpenCode configuration with the actual API key value
 4. Saves configuration to the specified output file
@@ -81,8 +81,8 @@ The generated configuration follows the LLMsVerifier-validated schema:
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "superagent": {
-      "name": "SuperAgent AI Debate Ensemble",
+    "helixagent": {
+      "name": "HelixAgent AI Debate Ensemble",
       "options": {
         "apiKey": "sk-...",
         "baseURL": "http://localhost:8080/v1",
@@ -91,7 +91,7 @@ The generated configuration follows the LLMsVerifier-validated schema:
     }
   },
   "agent": {
-    "model": "superagent/superagent-debate"
+    "model": "helixagent/helixagent-debate"
   }
 }
 ```
@@ -100,20 +100,20 @@ The generated configuration follows the LLMsVerifier-validated schema:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `SUPERAGENT_API_KEY` | API key for authentication | Generated if not set |
-| `SUPERAGENT_HOST` | SuperAgent server host | `localhost` |
-| `PORT` | SuperAgent server port | `8080` |
+| `HELIXAGENT_API_KEY` | API key for authentication | Generated if not set |
+| `HELIXAGENT_HOST` | HelixAgent server host | `localhost` |
+| `PORT` | HelixAgent server port | `8080` |
 
 ## Using with OpenCode
 
 1. Generate the configuration:
    ```bash
-   ./bin/superagent -generate-opencode-config -opencode-output ~/.config/opencode/config.json -api-key-env-file .env
+   ./bin/helixagent -generate-opencode-config -opencode-output ~/.config/opencode/config.json -api-key-env-file .env
    ```
 
-2. Start SuperAgent:
+2. Start HelixAgent:
    ```bash
-   ./bin/superagent
+   ./bin/helixagent
    ```
 
 3. Use with OpenCode:
@@ -124,14 +124,14 @@ The generated configuration follows the LLMsVerifier-validated schema:
 ## Challenge Integration
 
 The main challenge script automatically:
-1. Generates an API key if `SUPERAGENT_API_KEY` is not set
+1. Generates an API key if `HELIXAGENT_API_KEY` is not set
 2. Saves the key to the project `.env` file
 3. Generates OpenCode configuration using the binary
 4. Validates the configuration against LLMsVerifier rules
 
 ## API Key Format
 
-SuperAgent API keys follow this format:
+HelixAgent API keys follow this format:
 - Prefix: `sk-`
 - Body: 64 hexadecimal characters (256 bits of entropy)
 - Example: `sk-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`
@@ -171,19 +171,19 @@ SuperAgent API keys follow this format:
 
 Ensure the `.env` file path is correct and writable:
 ```bash
-./bin/superagent -generate-api-key -api-key-env-file /full/path/to/.env
+./bin/helixagent -generate-api-key -api-key-env-file /full/path/to/.env
 ```
 
 ### OpenCode Config Validation Fails
 
 The binary generates configurations that comply with LLMsVerifier's validation rules. If validation fails:
-1. Check that `SUPERAGENT_API_KEY` is set correctly
+1. Check that `HELIXAGENT_API_KEY` is set correctly
 2. Verify the configuration has required fields
 3. Ensure JSON is properly formatted
 
-### SuperAgent Not Using Environment API Key
+### HelixAgent Not Using Environment API Key
 
-The service reads `SUPERAGENT_API_KEY` at startup. Ensure:
+The service reads `HELIXAGENT_API_KEY` at startup. Ensure:
 1. The `.env` file is in the project root
 2. The service is restarted after updating the `.env`
 3. The key format is correct (`sk-` prefix)

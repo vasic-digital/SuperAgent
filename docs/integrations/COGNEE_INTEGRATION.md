@@ -1,6 +1,6 @@
 # Cognee Integration Guide
 
-SuperAgent integrates with [Cognee](https://github.com/topoteretes/cognee) - an AI Memory Engine that provides knowledge graphs, vector search, temporal awareness, and advanced reasoning capabilities. This integration extends every LLM provider beyond standard boundaries with persistent memory and contextual intelligence.
+HelixAgent integrates with [Cognee](https://github.com/topoteretes/cognee) - an AI Memory Engine that provides knowledge graphs, vector search, temporal awareness, and advanced reasoning capabilities. This integration extends every LLM provider beyond standard boundaries with persistent memory and contextual intelligence.
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ SuperAgent integrates with [Cognee](https://github.com/topoteretes/cognee) - an 
 
 ## Overview
 
-Cognee transforms SuperAgent into an intelligent agent with:
+Cognee transforms HelixAgent into an intelligent agent with:
 
 - **Persistent Memory**: Store and retrieve knowledge across sessions
 - **Knowledge Graphs**: Build connected understanding of concepts
@@ -38,7 +38,7 @@ Every LLM request is automatically enhanced with relevant context from Cognee, a
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        SuperAgent                                │
+│                        HelixAgent                                │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │                  LLM Request Flow                         │   │
 │  │                                                           │   │
@@ -189,7 +189,7 @@ COGNEE_LLM_MODEL=gpt-4o-mini
 # Add memory
 curl -X POST http://localhost:8080/api/v1/cognee/memory \
   -H "Content-Type: application/json" \
-  -d '{"content": "SuperAgent uses ensemble learning to combine multiple LLM responses."}'
+  -d '{"content": "HelixAgent uses ensemble learning to combine multiple LLM responses."}'
 
 # Search memory
 curl -X POST http://localhost:8080/api/v1/cognee/search \
@@ -199,7 +199,7 @@ curl -X POST http://localhost:8080/api/v1/cognee/search \
 # Any LLM request is automatically enhanced
 curl -X POST http://localhost:8080/api/v1/llm/complete \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "How does SuperAgent work?", "model": "claude"}'
+  -d '{"prompt": "How does HelixAgent work?", "model": "claude"}'
 # Response is informed by stored knowledge about ensemble learning
 ```
 
@@ -724,13 +724,13 @@ cogneeService.ProcessCode(ctx, sourceCode, "go", "codebase")
 
 ```bash
 # Check Cognee logs
-docker logs superagent-cognee
+docker logs helixagent-cognee
 
 # Verify ChromaDB is running
 curl http://localhost:8001/api/v1/heartbeat
 
 # Check PostgreSQL connection
-docker exec superagent-postgres pg_isready
+docker exec helixagent-postgres pg_isready
 ```
 
 ### Slow Enhancement
@@ -765,7 +765,7 @@ docker exec superagent-postgres pg_isready
 docker-compose ps
 
 # Check network connectivity
-docker exec superagent-app curl http://cognee:8000/health
+docker exec helixagent-app curl http://cognee:8000/health
 ```
 
 ---
@@ -779,8 +779,8 @@ package main
 
 import (
     "context"
-    "github.com/superagent/superagent/internal/services"
-    "github.com/superagent/superagent/internal/llm/providers/claude"
+    "github.com/helixagent/helixagent/internal/services"
+    "github.com/helixagent/helixagent/internal/llm/providers/claude"
     "github.com/sirupsen/logrus"
 )
 
@@ -811,7 +811,7 @@ func main() {
     // Use enhanced provider
     ctx := context.Background()
     req := &models.LLMRequest{
-        Prompt: "What is SuperAgent?",
+        Prompt: "What is HelixAgent?",
     }
 
     // Cognee automatically:
@@ -869,7 +869,7 @@ func customSearch(cogneeService *services.CogneeService, query string) ([]servic
 
 ## Summary
 
-The Cognee integration provides SuperAgent with:
+The Cognee integration provides HelixAgent with:
 
 - **Automatic Enhancement**: Every LLM request is enriched with relevant context
 - **Knowledge Persistence**: Responses are stored for future reference

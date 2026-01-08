@@ -703,7 +703,7 @@ func (v *SchemaValidator) validateBoolean(data any, schema *JSONSchema, path str
 }
 ```
 
-## Integration with SuperAgent
+## Integration with HelixAgent
 
 ### Structured Generator Wrapper
 
@@ -716,8 +716,8 @@ import (
     "context"
     "fmt"
 
-    "superagent/internal/llm"
-    "superagent/internal/models"
+    "helixagent/internal/llm"
+    "helixagent/internal/models"
 )
 
 // StructuredGenerator wraps an LLM provider for structured output

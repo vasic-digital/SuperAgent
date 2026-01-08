@@ -1,8 +1,8 @@
-# SuperAgent Comprehensive Completion Plan
+# HelixAgent Comprehensive Completion Plan
 
 ## Executive Summary
 
-This document provides a complete audit of unfinished items in the SuperAgent/HelixAgent project and a detailed phased implementation plan to achieve 100% completion across all modules, tests, documentation, and content.
+This document provides a complete audit of unfinished items in the HelixAgent/HelixAgent project and a detailed phased implementation plan to achieve 100% completion across all modules, tests, documentation, and content.
 
 ---
 
@@ -34,7 +34,7 @@ Found **50+ tests** with `t.Skip()` across the codebase:
 
 #### Infrastructure-Dependent Tests (Acceptable)
 ```
-cmd/superagent/main_test.go - 18 tests requiring Docker/infrastructure
+cmd/helixagent/main_test.go - 18 tests requiring Docker/infrastructure
 internal/cloud/cloud_integration_test.go - 12 tests requiring cloud credentials
 internal/router/router_setup_test.go - 1 test requiring DB_HOST
 ```
@@ -43,7 +43,7 @@ internal/router/router_setup_test.go - 1 test requiring DB_HOST
 ```
 tests/challenge/challenge_test.go - 4 tests skipped in short mode
 tests/e2e/*.go - 6 tests skipped in short mode
-cmd/superagent/main_test.go - 5 tests with sleeps
+cmd/helixagent/main_test.go - 5 tests with sleeps
 ```
 
 #### Tests Needing Fixes (Action Required)
@@ -86,7 +86,7 @@ cmd/superagent/main_test.go - 5 tests with sleeps
 |----------|----------|--------|
 | Website Tests | `Website/` | "No tests specified" |
 | LLMsVerifier Video Course | `LLMsVerifier/video-course/` | Only logo exists |
-| SuperAgent Video Courses | `Website/video-courses/` | README only, no actual videos |
+| HelixAgent Video Courses | `Website/video-courses/` | README only, no actual videos |
 | Java SDK Docs | `docs/sdk/` | Missing |
 | .NET SDK Docs | `docs/sdk/` | Missing |
 | API Examples for Verifier | `docs/verifier/` | Incomplete |
@@ -305,7 +305,7 @@ auth.test.ts            # NEW
 
 ### Phase 7: Video Course Production (3-5 days)
 
-#### 7.1 SuperAgent Video Courses
+#### 7.1 HelixAgent Video Courses
 | Course | Duration | Modules | Status |
 |--------|----------|---------|--------|
 | Fundamentals | 60 min | 4 | Script exists |
@@ -327,7 +327,7 @@ auth.test.ts            # NEW
 | Model Verification | 20 min | Verification workflow |
 | Scoring System | 15 min | Score calculation |
 | API Usage | 20 min | API endpoints |
-| Integration | 20 min | SuperAgent integration |
+| Integration | 20 min | HelixAgent integration |
 
 ### Phase 8: Website Completion (2-3 days)
 
@@ -425,7 +425,7 @@ test-performance.js     # Lighthouse metrics
 - [ ] Troubleshooting guide complete
 
 ### Phase 7 Deliverables
-- [ ] 4 SuperAgent video courses produced
+- [ ] 4 HelixAgent video courses produced
 - [ ] 1 LLMsVerifier video course produced
 - [ ] All videos uploaded and linked
 

@@ -1,14 +1,14 @@
 # Deployment Guide
 
-This guide covers deploying SuperAgent in various environments.
+This guide covers deploying HelixAgent in various environments.
 
 ## 🚀 Quick Start
 
 ### Docker Deployment (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Configure environment
 cp .env.example .env
@@ -24,10 +24,10 @@ make docker-full
 kubectl apply -f deploy/kubernetes/
 
 # Check deployment status
-kubectl get pods -n superagent
+kubectl get pods -n helixagent
 
 # Port forward for local access
-kubectl port-forward svc/superagent-api 8080:8080 -n superagent
+kubectl port-forward svc/helixagent-api 8080:8080 -n helixagent
 ```
 
 ## 🏗 Production Deployment
@@ -45,14 +45,14 @@ Copy `.env.example` to `.env.prod` and configure:
 ```bash
 # Server
 PORT=8080
-SUPERAGENT_API_KEY=your-production-api-key
+HELIXAGENT_API_KEY=your-production-api-key
 JWT_SECRET=your-production-jwt-secret-32-chars
 
 # Database
 DB_HOST=your-db-host
-DB_USER=superagent
+DB_USER=helixagent
 DB_PASSWORD=your-db-password
-DB_NAME=superagent_db
+DB_NAME=helixagent_db
 ```
 
 #### Optional Variables
@@ -80,30 +80,30 @@ docker-compose --profile prod up -d
 docker-compose --profile prod --env-file .env.prod up -d
 
 # Scale services
-docker-compose --profile prod up -d --scale superagent=3
+docker-compose --profile prod up -d --scale helixagent=3
 ```
 
 ### Kubernetes Production
 ```yaml
-# deploy/kubernetes/superagent-deployment.yaml
+# deploy/kubernetes/helixagent-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: superagent
-  namespace: superagent
+  name: helixagent
+  namespace: helixagent
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: superagent
+      app: helixagent
   template:
     metadata:
       labels:
-        app: superagent
+        app: helixagent
     spec:
       containers:
-      - name: superagent
-        image: superagent:latest
+      - name: helixagent
+        image: helixagent:latest
         ports:
         - containerPort: 8080
         env:
@@ -112,7 +112,7 @@ spec:
         - name: DB_HOST
           valueFrom:
             secretKeyRef:
-              name: superagent-secrets
+              name: helixagent-secrets
               key: db-host
         resources:
           requests:
@@ -164,7 +164,7 @@ export RATE_LIMIT_WINDOW=1m
 ### Secrets Management
 ```bash
 # Using Kubernetes secrets
-kubectl create secret generic superagent-secrets \
+kubectl create secret generic helixagent-secrets \
   --from-literal=db-host=your-db-host \
   --from-literal=db-password=your-db-password \
   --from-literal=jwt-secret=your-jwt-secret
@@ -183,9 +183,9 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'superagent'
+  - job_name: 'helixagent'
     static_configs:
-      - targets: ['superagent:8080']
+      - targets: ['helixagent:8080']
     metrics_path: '/metrics'
     scrape_interval: 5s
 ```
@@ -206,12 +206,12 @@ curl -X POST \
 filebeat.inputs:
 - type: docker
   containers.ids:
-  - superagent
+  - helixagent
   processors:
   - add_docker_metadata:
       match_fields: ["container.name"]
   fields:
-    service: superagent
+    service: helixagent
     environment: production
 
 output.elasticsearch:
@@ -223,18 +223,18 @@ output.elasticsearch:
 ### Horizontal Scaling
 ```bash
 # Docker Compose scaling
-docker-compose --profile prod up -d --scale superagent=5
+docker-compose --profile prod up -d --scale helixagent=5
 
 # Kubernetes HPA
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: superagent-hpa
+  name: helixagent-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: superagent
+    name: helixagent
   minReplicas: 2
   maxReplicas: 10
   metrics:
@@ -263,26 +263,26 @@ redis-cli --cluster create 127.0.0.1:7000 127.0.0.1:7001 127.0.0.1:7002
 ```bash
 # Build and push to ECR
 aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 123456789012.dkr.ecr.us-west-2.amazonaws.com
-docker build -t superagent:latest .
-docker tag superagent:latest 123456789012.dkr.ecr.us-west-2.amazonaws.com/superagent:latest
-docker push 123456789012.dkr.ecr.us-west-2.amazonaws.com/superagent:latest
+docker build -t helixagent:latest .
+docker tag helixagent:latest 123456789012.dkr.ecr.us-west-2.amazonaws.com/helixagent:latest
+docker push 123456789012.dkr.ecr.us-west-2.amazonaws.com/helixagent:latest
 
 # Deploy to ECS
-aws ecs create-cluster --cluster-name superagent-cluster
+aws ecs create-cluster --cluster-name helixagent-cluster
 aws ecs register-task-definition --cli-input-json file://task-definition.json
-aws ecs create-service --cluster superagent-cluster --service-name superagent --task-definition superagent:1
+aws ecs create-service --cluster helixagent-cluster --service-name helixagent --task-definition helixagent:1
 ```
 
 ### Google Cloud Run
 ```bash
 # Build and push to GCR
 gcloud auth configure-docker
-gcloud builds submit --tag gcr.io/PROJECT-ID/superagent:latest
-docker push gcr.io/PROJECT-ID/superagent:latest
+gcloud builds submit --tag gcr.io/PROJECT-ID/helixagent:latest
+docker push gcr.io/PROJECT-ID/helixagent:latest
 
 # Deploy to Cloud Run
-gcloud run deploy superagent \
-  --image gcr.io/PROJECT-ID/superagent:latest \
+gcloud run deploy helixagent \
+  --image gcr.io/PROJECT-ID/helixagent:latest \
   --platform managed \
   --region us-central1 \
   --allow-unauthenticated \
@@ -292,15 +292,15 @@ gcloud run deploy superagent \
 ### Azure Container Instances
 ```bash
 # Build and push to ACR
-az acr login --name superagent-registry
-docker build -t superagent-registry.azurecr.io/superagent:latest .
-docker push superagent-registry.azurecr.io/superagent:latest
+az acr login --name helixagent-registry
+docker build -t helixagent-registry.azurecr.io/helixagent:latest .
+docker push helixagent-registry.azurecr.io/helixagent:latest
 
 # Deploy to ACI
 az container create \
-  --resource-group superagent-rg \
-  --name superagent \
-  --image superagent-registry.azurecr.io/superagent:latest \
+  --resource-group helixagent-rg \
+  --name helixagent \
+  --image helixagent-registry.azurecr.io/helixagent:latest \
   --cpu 1 \
   --memory 2 \
   --ports 8080
@@ -320,23 +320,23 @@ curl http://localhost:8080/v1/providers/health
 ### Updates & Rollbacks
 ```bash
 # Zero-downtime deployment
-docker-compose --profile prod up -d --no-deps superagent
+docker-compose --profile prod up -d --no-deps helixagent
 
 # Rollback to previous version
-docker tag superagent:previous superagent:latest
+docker tag helixagent:previous helixagent:latest
 docker-compose --profile prod up -d
 ```
 
 ### Backup & Recovery
 ```bash
 # Database backup
-docker-compose exec postgres pg_dump -U superagent superagent_db > backup_$(date +%Y%m%d_%H%M%S).sql
+docker-compose exec postgres pg_dump -U helixagent helixagent_db > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # Redis backup
 docker-compose exec redis redis-cli BGSAVE
 
 # Configuration backup
-kubectl get configmap superagent-config -o yaml > config-backup.yaml
+kubectl get configmap helixagent-config -o yaml > config-backup.yaml
 ```
 
 ## 🚨 Troubleshooting
@@ -346,22 +346,22 @@ kubectl get configmap superagent-config -o yaml > config-backup.yaml
 #### Container Fails to Start
 ```bash
 # Check logs
-docker-compose logs superagent
+docker-compose logs helixagent
 
 # Verify environment
-docker-compose exec superagent env | grep -E "(DB_HOST|REDIS_HOST)"
+docker-compose exec helixagent env | grep -E "(DB_HOST|REDIS_HOST)"
 
 # Check resource usage
-docker stats superagent
+docker stats helixagent
 ```
 
 #### Database Connection Issues
 ```bash
 # Test database connectivity
-docker-compose exec postgres pg_isready -U superagent -d superagent_db
+docker-compose exec postgres pg_isready -U helixagent -d helixagent_db
 
 # Check network connectivity
-docker-compose exec superagent ping postgres
+docker-compose exec helixagent ping postgres
 
 # Review database logs
 docker-compose logs postgres | tail -100
@@ -376,7 +376,7 @@ docker stats --no-stream
 curl -w "@{time_total}\n" -o /dev/null -s http://localhost:8080/health
 
 # Profile application
-docker-compose exec superagent ./superagent -cpuprofile=cpu.prof -memprofile=mem.prof
+docker-compose exec helixagent ./helixagent -cpuprofile=cpu.prof -memprofile=mem.prof
 ```
 
 ### Debug Commands
@@ -387,12 +387,12 @@ export GIN_MODE=debug
 docker-compose --profile dev up -d
 
 # View detailed logs
-docker-compose logs -f --tail=100 superagent
+docker-compose logs -f --tail=100 helixagent
 
 # Interactive debugging
-docker-compose exec superagent /bin/sh
+docker-compose exec helixagent /bin/sh
 ```
 
 ---
 
-For more detailed information, see the [SuperAgent Documentation](https://docs.superagent.ai).
+For more detailed information, see the [HelixAgent Documentation](https://docs.helixagent.ai).

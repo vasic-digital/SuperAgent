@@ -2,7 +2,7 @@
 
 ## Overview
 
-Ollama is an open-source platform for running large language models locally on your own hardware. SuperAgent integrates with Ollama to provide access to a wide variety of open-source models without requiring cloud API keys.
+Ollama is an open-source platform for running large language models locally on your own hardware. HelixAgent integrates with Ollama to provide access to a wide variety of open-source models without requiring cloud API keys.
 
 ### Supported Models
 
@@ -111,8 +111,8 @@ import (
     "context"
     "fmt"
 
-    "github.com/superagent/superagent/internal/llm/providers/ollama"
-    "github.com/superagent/superagent/internal/models"
+    "github.com/helixagent/helixagent/internal/llm/providers/ollama"
+    "github.com/helixagent/helixagent/internal/models"
 )
 
 func main() {
@@ -244,7 +244,7 @@ Since Ollama runs locally, there are no API rate limits. However, performance de
 
 ### Concurrent Request Limits
 
-By default, Ollama processes one request at a time. SuperAgent sets `MaxConcurrentRequests: 1` for the Ollama provider.
+By default, Ollama processes one request at a time. HelixAgent sets `MaxConcurrentRequests: 1` for the Ollama provider.
 
 ### Best Practices for Performance
 
@@ -306,7 +306,7 @@ context deadline exceeded
 
 ### Health Check
 
-SuperAgent provides a health check endpoint for Ollama:
+HelixAgent provides a health check endpoint for Ollama:
 
 ```go
 err := provider.HealthCheck()
@@ -334,7 +334,7 @@ If running Ollama on a different host:
 # On the Ollama host, bind to all interfaces
 OLLAMA_HOST=0.0.0.0 ollama serve
 
-# Configure SuperAgent to connect to remote Ollama
+# Configure HelixAgent to connect to remote Ollama
 export OLLAMA_BASE_URL=http://remote-host:11434
 ```
 

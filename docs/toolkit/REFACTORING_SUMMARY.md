@@ -46,7 +46,7 @@ Toolkit/
 ## 🔧 Technical Implementation
 
 ### Module Structure
-- **Main Module**: `github.com/superagent/toolkit` (root)
+- **Main Module**: `github.com/helixagent/toolkit` (root)
 - **Provider Modules**: Individual go.mod files with local replace directives
 - **Shared Dependencies**: All providers use common toolkit interfaces from `pkg/toolkit`
 - **Import Paths**: Updated to use local paths within the main repository

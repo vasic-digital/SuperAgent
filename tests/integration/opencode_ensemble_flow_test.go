@@ -16,8 +16,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // =============================================================================
@@ -343,7 +343,7 @@ func TestResponseMetadataValidation(t *testing.T) {
 // TestOpenCodeAPIIntegration tests the full API flow with real HTTP requests
 func TestOpenCodeAPIIntegration(t *testing.T) {
 	// Skip if no server is running
-	serverURL := os.Getenv("SUPERAGENT_TEST_URL")
+	serverURL := os.Getenv("HELIXAGENT_TEST_URL")
 	if serverURL == "" {
 		serverURL = "http://localhost:8080"
 	}
@@ -352,16 +352,16 @@ func TestOpenCodeAPIIntegration(t *testing.T) {
 	client := &http.Client{Timeout: 60 * time.Second}
 	healthResp, err := client.Get(serverURL + "/health")
 	if err != nil {
-		t.Skip("SuperAgent server not available, skipping integration test")
+		t.Skip("HelixAgent server not available, skipping integration test")
 	}
 	healthResp.Body.Close()
 	if healthResp.StatusCode != http.StatusOK {
-		t.Skip("SuperAgent server not healthy, skipping integration test")
+		t.Skip("HelixAgent server not healthy, skipping integration test")
 	}
 
 	t.Run("ChatCompletions returns ensemble response", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "What is 2+2? Answer with just the number."},
 			},
@@ -390,13 +390,13 @@ func TestOpenCodeAPIIntegration(t *testing.T) {
 		// Verify response model indicates ensemble
 		model, ok := result["model"].(string)
 		assert.True(t, ok)
-		assert.Equal(t, "superagent-ensemble", model,
-			"Response model should be superagent-ensemble")
+		assert.Equal(t, "helixagent-ensemble", model,
+			"Response model should be helixagent-ensemble")
 
 		// Verify system fingerprint
 		fingerprint, ok := result["system_fingerprint"].(string)
 		assert.True(t, ok)
-		assert.Equal(t, "fp_superagent_ensemble", fingerprint,
+		assert.Equal(t, "fp_helixagent_ensemble", fingerprint,
 			"System fingerprint should indicate ensemble")
 
 		// Verify we got choices
@@ -415,7 +415,7 @@ func TestOpenCodeAPIIntegration(t *testing.T) {
 				defer wg.Done()
 
 				reqBody := map[string]interface{}{
-					"model": "superagent-ensemble",
+					"model": "helixagent-ensemble",
 					"messages": []map[string]string{
 						{"role": "user", "content": fmt.Sprintf("Say 'test %d'", idx)},
 					},
@@ -445,8 +445,8 @@ func TestOpenCodeAPIIntegration(t *testing.T) {
 				model, _ := result["model"].(string)
 				fingerprint, _ := result["system_fingerprint"].(string)
 
-				results <- (model == "superagent-ensemble" &&
-					fingerprint == "fp_superagent_ensemble")
+				results <- (model == "helixagent-ensemble" &&
+					fingerprint == "fp_helixagent_ensemble")
 			}(i)
 		}
 

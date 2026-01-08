@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/superagent/superagent/internal/optimization/outlines"
-	"github.com/superagent/superagent/internal/optimization/streaming"
+	"github.com/helixagent/helixagent/internal/optimization/outlines"
+	"github.com/helixagent/helixagent/internal/optimization/streaming"
 )
 
 func TestDefaultConfig(t *testing.T) {

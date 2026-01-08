@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: superagent
+  name: helixagent
   labels:
-    app: superagent
-    app.kubernetes.io/name: superagent
+    app: helixagent
+    app.kubernetes.io/name: helixagent
     app.kubernetes.io/component: api
 spec:
   type: ClusterIP
@@ -18,14 +18,14 @@ spec:
       targetPort: 9090
       protocol: TCP
   selector:
-    app: superagent
+    app: helixagent
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: superagent-headless
+  name: helixagent-headless
   labels:
-    app: superagent
+    app: helixagent
 spec:
   clusterIP: None
   ports:
@@ -36,4 +36,4 @@ spec:
       port: 9090
       targetPort: 9090
   selector:
-    app: superagent
+    app: helixagent

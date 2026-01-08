@@ -157,8 +157,8 @@ The Chutes implementation achieves **100% feature parity** with SiliconFlow:
 ### Programmatic Usage
 ```go
 import (
-    "github.com/superagent/toolkit/pkg/toolkit"
-    _ "github.com/superagent/toolkit/providers/chutes" // Auto-registration
+    "github.com/helixagent/toolkit/pkg/toolkit"
+    _ "github.com/helixagent/toolkit/providers/chutes" // Auto-registration
 )
 
 // Create toolkit

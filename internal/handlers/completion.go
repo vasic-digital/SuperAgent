@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // CompletionHandler handles LLM completion requests
@@ -473,7 +473,7 @@ func (h *CompletionHandler) convertToAPIResponse(resp *models.LLMResponse) *Comp
 			CompletionTokens: resp.TokensUsed / 2, // Estimate
 			TotalTokens:      resp.TokensUsed,
 		},
-		SystemFingerprint: "superagent-v1.0",
+		SystemFingerprint: "helixagent-v1.0",
 	}
 }
 

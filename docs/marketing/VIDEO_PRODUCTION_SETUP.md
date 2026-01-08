@@ -1,7 +1,7 @@
-# SuperAgent Video Production Setup
+# HelixAgent Video Production Setup
 
 ## Overview
-This guide covers the complete video recording setup for creating professional tutorials and marketing videos for SuperAgent.
+This guide covers the complete video recording setup for creating professional tutorials and marketing videos for HelixAgent.
 
 ## Equipment Requirements
 
@@ -124,7 +124,7 @@ This guide covers the complete video recording setup for creating professional t
    - Intriguing question
 
 2. Solution (30-90 seconds)
-   - How SuperAgent solves the problem
+   - How HelixAgent solves the problem
    - Key benefits and features
    - Social proof/testimonials
 
@@ -136,13 +136,13 @@ This guide covers the complete video recording setup for creating professional t
 
 ## Specific Video Scripts
 
-### Video 1: "SuperAgent in 5 Minutes" (Tutorial)
+### Video 1: "HelixAgent in 5 Minutes" (Tutorial)
 **Target Length**: 5 minutes
-**Audience**: Developers new to SuperAgent
+**Audience**: Developers new to HelixAgent
 
 ```
 INTRODUCTION (0:30)
-"Are you tired of being locked into a single AI provider? What if you could combine the strengths of Claude, Gemini, and DeepSeek in one application? Today I'll show you how to get started with SuperAgent in just 5 minutes."
+"Are you tired of being locked into a single AI provider? What if you could combine the strengths of Claude, Gemini, and DeepSeek in one application? Today I'll show you how to get started with HelixAgent in just 5 minutes."
 
 PREREQUISITES (0:45)
 "You'll need Go 1.23+, a code editor, and API keys for at least one AI provider. I'll put all the links in the description."
@@ -166,11 +166,11 @@ HOOK (0:10)
 "What if your AI could think like a team instead of an individual?"
 
 SOLUTION (2:40)
-"SuperAgent's AI debate system lets multiple AI models discuss problems together..."
+"HelixAgent's AI debate system lets multiple AI models discuss problems together..."
 [Explain the concept with visual examples]
 
 CALL TO ACTION (0:10)
-"Learn more at superagent.ai"
+"Learn more at helixagent.ai"
 ```
 
 ## Post-Production Guidelines

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Azure OpenAI Service provides access to OpenAI's powerful language models including GPT-4, GPT-3.5, and other models through Microsoft Azure's enterprise-grade cloud infrastructure. SuperAgent integrates with Azure OpenAI to provide secure, compliant access to these models.
+Azure OpenAI Service provides access to OpenAI's powerful language models including GPT-4, GPT-3.5, and other models through Microsoft Azure's enterprise-grade cloud infrastructure. HelixAgent integrates with Azure OpenAI to provide secure, compliant access to these models.
 
 ### Supported Models
 
@@ -120,7 +120,7 @@ import (
     "os"
 
     "github.com/sirupsen/logrus"
-    "github.com/superagent/superagent/internal/cloud"
+    "github.com/helixagent/helixagent/internal/cloud"
 )
 
 func main() {
@@ -290,7 +290,7 @@ Azure OpenAI API error: 429 - Rate limit exceeded
 
 **Solution:**
 - Wait for the rate limit window to reset
-- SuperAgent automatically retries with exponential backoff
+- HelixAgent automatically retries with exponential backoff
 - Increase your TPM quota
 - Use multiple deployments for load distribution
 

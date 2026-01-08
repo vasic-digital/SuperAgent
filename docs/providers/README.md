@@ -1,6 +1,6 @@
 # LLM Provider Setup Guides
 
-SuperAgent supports 9 LLM providers, offering flexibility to choose the right model for your use case. This directory contains detailed setup guides for each provider.
+HelixAgent supports 9 LLM providers, offering flexibility to choose the right model for your use case. This directory contains detailed setup guides for each provider.
 
 ## Provider Overview
 
@@ -97,7 +97,7 @@ if err != nil {
 3. Ensure the API is enabled for your account
 
 ### Rate Limiting
-1. SuperAgent automatically retries with exponential backoff
+1. HelixAgent automatically retries with exponential backoff
 2. Consider upgrading your plan for higher limits
 3. Use request queuing for high-volume applications
 

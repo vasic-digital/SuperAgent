@@ -13,8 +13,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // TestCompletionHandler_Complete_Success tests successful completion request
@@ -172,7 +172,7 @@ func TestConvertToAPIResponse(t *testing.T) {
 	assert.Equal(t, 50, apiResp.Usage.PromptTokens)
 	assert.Equal(t, 50, apiResp.Usage.CompletionTokens)
 	assert.Equal(t, 100, apiResp.Usage.TotalTokens)
-	assert.Equal(t, "superagent-v1.0", apiResp.SystemFingerprint)
+	assert.Equal(t, "helixagent-v1.0", apiResp.SystemFingerprint)
 }
 
 // TestConvertToChatResponse tests conversion to chat response format

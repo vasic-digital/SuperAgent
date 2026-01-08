@@ -1,5 +1,5 @@
 #!/bin/bash
-# SuperAgent Challenges - Results Cleanup Script
+# HelixAgent Challenges - Results Cleanup Script
 # Usage: ./scripts/cleanup_results.sh [days]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,7 +29,7 @@ for arg in "$@"; do
     fi
 done
 
-print_info "SuperAgent Challenges - Cleanup"
+print_info "HelixAgent Challenges - Cleanup"
 print_info "Removing results older than $DAYS days"
 
 if [ "$DRY_RUN" = true ]; then

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-SuperAgent integrates with 7 major LLM providers, allowing you to leverage the strengths of each model while maintaining a unified API interface. This guide provides comprehensive configuration instructions for each provider, including authentication, model selection, performance tuning, and best practices.
+HelixAgent integrates with 7 major LLM providers, allowing you to leverage the strengths of each model while maintaining a unified API interface. This guide provides comprehensive configuration instructions for each provider, including authentication, model selection, performance tuning, and best practices.
 
 ---
 
@@ -556,15 +556,15 @@ llm_providers:
 
 ```bash
 # Pull a model
-docker exec -it superagent-ollama ollama pull llama2
+docker exec -it helixagent-ollama ollama pull llama2
 
 # List installed models
-docker exec -it superagent-ollama ollama list
+docker exec -it helixagent-ollama ollama list
 
 # Pull additional models
-docker exec -it superagent-ollama ollama pull codellama
-docker exec -it superagent-ollama ollama pull mistral
-docker exec -it superagent-ollama ollama pull llama2:70b
+docker exec -it helixagent-ollama ollama pull codellama
+docker exec -it helixagent-ollama ollama pull mistral
+docker exec -it helixagent-ollama ollama pull llama2:70b
 ```
 
 ### Available Models
@@ -621,7 +621,7 @@ OPENROUTER_API_KEY=sk-or-v1-your-key-here
 OPENROUTER_MODEL=openai/gpt-4
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_SITE_URL=https://your-site.com
-OPENROUTER_APP_NAME=SuperAgent
+OPENROUTER_APP_NAME=HelixAgent
 ```
 
 #### YAML Configuration
@@ -874,7 +874,7 @@ curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "superagent-ensemble",
+    "model": "helixagent-ensemble",
     "messages": [{"role": "user", "content": "Hello"}],
     "options": {
       "fallback_enabled": true,
@@ -966,7 +966,7 @@ optimization:
 curl http://localhost:8080/v1/providers/deepseek/test
 
 # View provider logs
-docker-compose logs superagent | grep "deepseek"
+docker-compose logs helixagent | grep "deepseek"
 
 # Check rate limit status
 curl http://localhost:8080/v1/providers/claude/rate-limit
@@ -976,7 +976,7 @@ curl http://localhost:8080/v1/providers/claude/rate-limit
 
 ## Summary
 
-This guide covered the configuration of all 7 LLM providers supported by SuperAgent. Key takeaways:
+This guide covered the configuration of all 7 LLM providers supported by HelixAgent. Key takeaways:
 
 1. **Choose providers based on strengths**: Claude for reasoning, DeepSeek for code, Gemini for multimodal
 2. **Configure fallbacks**: Ensure high availability with proper fallback chains
@@ -984,4 +984,4 @@ This guide covered the configuration of all 7 LLM providers supported by SuperAg
 4. **Optimize performance**: Use caching, pooling, and batching
 5. **Balance cost and quality**: Mix providers based on use case requirements
 
-Continue to the [AI Debate System Guide](03-ai-debate-system.md) to learn about SuperAgent's unique multi-AI debate capabilities.
+Continue to the [AI Debate System Guide](03-ai-debate-system.md) to learn about HelixAgent's unique multi-AI debate capabilities.

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 var log = logrus.New()
@@ -508,7 +508,7 @@ func (p *MistralProvider) makeAPICallWithAuthRetry(ctx context.Context, req Mist
 		// Set headers - Mistral uses Bearer token auth
 		httpReq.Header.Set("Content-Type", "application/json")
 		httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
-		httpReq.Header.Set("User-Agent", "SuperAgent/1.0")
+		httpReq.Header.Set("User-Agent", "HelixAgent/1.0")
 
 		// Make request
 		resp, err := p.httpClient.Do(httpReq)

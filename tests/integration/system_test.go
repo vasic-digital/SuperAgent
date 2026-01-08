@@ -23,7 +23,7 @@ func checkServerAvailable(baseURL string, timeout time.Duration) bool {
 	return true
 }
 
-// TestFullSystemIntegration tests the complete SuperAgent system
+// TestFullSystemIntegration tests the complete HelixAgent system
 func TestFullSystemIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -274,9 +274,9 @@ func TestDockerServicesIntegration(t *testing.T) {
 	}
 
 	services := map[string]string{
-		"SuperAgent": "http://localhost:8080/health",
-		"PostgreSQL": "http://localhost:8080/health", // Indirect check via SuperAgent
-		"Redis":      "http://localhost:8080/health", // Indirect check via SuperAgent
+		"HelixAgent": "http://localhost:8080/health",
+		"PostgreSQL": "http://localhost:8080/health", // Indirect check via HelixAgent
+		"Redis":      "http://localhost:8080/health", // Indirect check via HelixAgent
 		"Ollama":     "http://localhost:11434/api/tags",
 	}
 

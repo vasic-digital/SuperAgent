@@ -25,12 +25,12 @@ import (
 const (
 	// CogneeBaseURL is the Cognee service URL
 	CogneeBaseURL = "http://localhost:8000"
-	// SuperAgentBaseURL is the SuperAgent service URL
-	SuperAgentBaseURL = "http://localhost:8080"
+	// HelixAgentBaseURL is the HelixAgent service URL
+	HelixAgentBaseURL = "http://localhost:8080"
 	// TestEmail is the test user email for Cognee authentication
-	TestEmail = "admin@superagent.ai"
+	TestEmail = "admin@helixagent.ai"
 	// TestPassword is the test user password for Cognee authentication
-	TestPassword = "SuperAgentPass123"
+	TestPassword = "HelixAgentPass123"
 )
 
 // TestCogneeGeminiIntegration_AuthenticationFormEncoded verifies Cognee uses form-encoded login
@@ -107,13 +107,13 @@ func TestCogneeGeminiIntegration_GeminiAsPrimaryLLM(t *testing.T) {
 		assert.NotEmpty(t, apiKey, "GEMINI_API_KEY or ApiKey_Gemini should be configured")
 	})
 
-	// Test 2: Verify SuperAgent Cognee health reports Gemini-powered features
+	// Test 2: Verify HelixAgent Cognee health reports Gemini-powered features
 	t.Run("CogneeHealthShowsGeminiFeatures", func(t *testing.T) {
 		client := &http.Client{Timeout: 30 * time.Second}
 
-		resp, err := client.Get(SuperAgentBaseURL + "/v1/cognee/health")
+		resp, err := client.Get(HelixAgentBaseURL + "/v1/cognee/health")
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer resp.Body.Close()
 
@@ -162,9 +162,9 @@ func TestCogneeGeminiIntegration_NoOllamaDependency(t *testing.T) {
 		}
 
 		// Cognee should still be healthy regardless of Ollama status
-		cogneeResp, err := client.Get(SuperAgentBaseURL + "/v1/cognee/health")
+		cogneeResp, err := client.Get(HelixAgentBaseURL + "/v1/cognee/health")
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer cogneeResp.Body.Close()
 
@@ -181,10 +181,10 @@ func TestCogneeGeminiIntegration_NoOllamaDependency(t *testing.T) {
 		}
 	})
 
-	// Test 2: Verify SuperAgent ensemble works without Ollama
+	// Test 2: Verify HelixAgent ensemble works without Ollama
 	t.Run("EnsembleWorksWithoutOllama", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-debate",
+			"model": "helixagent-debate",
 			"messages": []map[string]string{
 				{"role": "user", "content": "Reply OK"},
 			},
@@ -192,13 +192,13 @@ func TestCogneeGeminiIntegration_NoOllamaDependency(t *testing.T) {
 		}
 		bodyBytes, _ := json.Marshal(reqBody)
 
-		req, err := http.NewRequest("POST", SuperAgentBaseURL+"/v1/chat/completions", bytes.NewReader(bodyBytes))
+		req, err := http.NewRequest("POST", HelixAgentBaseURL+"/v1/chat/completions", bytes.NewReader(bodyBytes))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer resp.Body.Close()
 
@@ -210,8 +210,8 @@ func TestCogneeGeminiIntegration_NoOllamaDependency(t *testing.T) {
 		}
 		json.NewDecoder(resp.Body).Decode(&result)
 
-		assert.Equal(t, "superagent-ensemble", result.Model, "Should use ensemble model")
-		assert.Equal(t, "fp_superagent_ensemble", result.SystemFingerprint, "Should have ensemble fingerprint")
+		assert.Equal(t, "helixagent-ensemble", result.Model, "Should use ensemble model")
+		assert.Equal(t, "fp_helixagent_ensemble", result.SystemFingerprint, "Should have ensemble fingerprint")
 	})
 }
 
@@ -333,21 +333,21 @@ func TestCogneeGeminiIntegration_HealthcheckConfiguration(t *testing.T) {
 		assert.Contains(t, result.Message, "alive", "Should indicate service is alive")
 	})
 
-	// Test 2: SuperAgent health includes Cognee status
-	t.Run("SuperAgentHealthIncludesCognee", func(t *testing.T) {
-		resp, err := client.Get(SuperAgentBaseURL + "/health")
+	// Test 2: HelixAgent health includes Cognee status
+	t.Run("HelixAgentHealthIncludesCognee", func(t *testing.T) {
+		resp, err := client.Get(HelixAgentBaseURL + "/health")
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer resp.Body.Close()
 
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "SuperAgent health should return 200")
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "HelixAgent health should return 200")
 
 		var health struct {
 			Status string `json:"status"`
 		}
 		json.NewDecoder(resp.Body).Decode(&health)
-		assert.Equal(t, "healthy", health.Status, "SuperAgent should be healthy")
+		assert.Equal(t, "healthy", health.Status, "HelixAgent should be healthy")
 	})
 }
 
@@ -361,9 +361,9 @@ func TestCogneeGeminiIntegration_CogneeServiceConfig(t *testing.T) {
 
 	// Test: Verify all Cognee features are enabled
 	t.Run("AllFeaturesEnabled", func(t *testing.T) {
-		resp, err := client.Get(SuperAgentBaseURL + "/v1/cognee/health")
+		resp, err := client.Get(HelixAgentBaseURL + "/v1/cognee/health")
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer resp.Body.Close()
 
@@ -447,12 +447,12 @@ func BenchmarkCogneeGeminiAuthentication(b *testing.B) {
 	}
 }
 
-// BenchmarkSuperAgentEnsemble benchmarks SuperAgent ensemble requests
-func BenchmarkSuperAgentEnsemble(b *testing.B) {
+// BenchmarkHelixAgentEnsemble benchmarks HelixAgent ensemble requests
+func BenchmarkHelixAgentEnsemble(b *testing.B) {
 	client := &http.Client{Timeout: 60 * time.Second}
 
 	reqBody := map[string]interface{}{
-		"model": "superagent-debate",
+		"model": "helixagent-debate",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Reply OK"},
 		},
@@ -462,12 +462,12 @@ func BenchmarkSuperAgentEnsemble(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		req, _ := http.NewRequest("POST", SuperAgentBaseURL+"/v1/chat/completions", bytes.NewReader(bodyBytes))
+		req, _ := http.NewRequest("POST", HelixAgentBaseURL+"/v1/chat/completions", bytes.NewReader(bodyBytes))
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
-			b.Skipf("SuperAgent service not available: %v", err)
+			b.Skipf("HelixAgent service not available: %v", err)
 		}
 		resp.Body.Close()
 	}

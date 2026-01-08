@@ -1,6 +1,6 @@
-# SuperAgent User Manuals
+# HelixAgent User Manuals
 
-Welcome to the SuperAgent user manual collection. These guides will help you get started with SuperAgent and make the most of its powerful AI orchestration capabilities.
+Welcome to the HelixAgent user manual collection. These guides will help you get started with HelixAgent and make the most of its powerful AI orchestration capabilities.
 
 ## Available Manuals
 
@@ -56,4 +56,4 @@ Welcome to the SuperAgent user manual collection. These guides will help you get
 
 ## Support
 
-For additional help, visit our [community forums](https://github.com/superagent/superagent/discussions) or contact [support@superagent.ai](mailto:support@superagent.ai).
+For additional help, visit our [community forums](https://github.com/helixagent/helixagent/discussions) or contact [support@helixagent.ai](mailto:support@helixagent.ai).

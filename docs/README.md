@@ -1,7 +1,7 @@
-# SuperAgent Documentation
+# HelixAgent Documentation
 
 ## Overview
-SuperAgent is an advanced AI-powered multi-provider LLM orchestration platform with AI debate capabilities, comprehensive monitoring, and enterprise-grade features.
+HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform with AI debate capabilities, comprehensive monitoring, and enterprise-grade features.
 
 ## Documentation Structure
 

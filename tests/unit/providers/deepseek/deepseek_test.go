@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/superagent/superagent/internal/llm/providers/deepseek"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/tests/testutils"
+	"github.com/helixagent/helixagent/internal/llm/providers/deepseek"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/tests/testutils"
 )
 
 func TestNewDeepSeekProvider(t *testing.T) {

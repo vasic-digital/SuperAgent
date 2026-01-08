@@ -3,12 +3,12 @@
 ## Build/Lint/Test Commands
 ```bash
 # Build
-make build                 # Build SuperAgent binary
+make build                 # Build HelixAgent binary
 make build-debug           # Build with debug symbols
 make build-all            # Build for all architectures (linux/darwin/windows, amd64/arm64)
 
 # Run
-make run                  # Run SuperAgent locally
+make run                  # Run HelixAgent locally
 make run-dev              # Run in development mode
 
 # Test (6-tier testing strategy)
@@ -59,9 +59,9 @@ import (
     "github.com/sirupsen/logrus"
 
     // 3. Internal packages
-    "github.com/superagent/superagent/internal/models"
-    "github.com/superagent/superagent/internal/services"
-    "github.com/superagent/superagent/internal/modelsdev"
+    "github.com/helixagent/helixagent/internal/models"
+    "github.com/helixagent/helixagent/internal/services"
+    "github.com/helixagent/helixagent/internal/modelsdev"
 )
 ```
 
@@ -197,14 +197,14 @@ func (h *Handler) Handle(c *gin.Context) {
 
 #### Client Usage
 ```go
-import "github.com/superagent/superagent/internal/modelsdev"
+import "github.com/helixagent/helixagent/internal/modelsdev"
 
 // Create client with configuration
 client := modelsdev.NewClient(&modelsdev.ClientConfig{
     APIKey:    os.Getenv("MODELSDEV_API_KEY"),
     BaseURL:   "https://api.models.dev/v1",
     Timeout:   30 * time.Second,
-    UserAgent: "SuperAgent/1.0",
+    UserAgent: "HelixAgent/1.0",
 })
 
 // List models
@@ -223,7 +223,7 @@ results, err := client.SearchModels(ctx, "code", nil)
 
 #### Service Layer Integration
 ```go
-import "github.com/superagent/superagent/internal/services"
+import "github.com/helixagent/helixagent/internal/services"
 
 // Initialize model metadata service
 modelMetadataService := services.NewModelMetadataService(
@@ -255,7 +255,7 @@ visionModels, err := modelMetadataService.GetModelsByCapability(ctx, "vision")
 
 #### Database Repository Pattern
 ```go
-import "github.com/superagent/superagent/internal/database"
+import "github.com/helixagent/helixagent/internal/database"
 
 // Repository interface for testability
 type ModelMetadataRepository interface {
@@ -291,7 +291,7 @@ if size > maxCacheSize {
 
 ### API Handler Pattern
 ```go
-import "github.com/superagent/superagent/internal/handlers"
+import "github.com/helixagent/helixagent/internal/handlers"
 
 type ModelMetadataHandler struct {
     service *services.ModelMetadataService

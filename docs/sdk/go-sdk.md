@@ -1,11 +1,11 @@
-# SuperAgent Go SDK
+# HelixAgent Go SDK
 
-A comprehensive Go SDK for the SuperAgent AI orchestration platform, providing idiomatic Go access to multi-provider LLM capabilities, AI debates, and advanced features.
+A comprehensive Go SDK for the HelixAgent AI orchestration platform, providing idiomatic Go access to multi-provider LLM capabilities, AI debates, and advanced features.
 
 ## Installation
 
 ```bash
-go get github.com/superagent/superagent-go
+go get github.com/helixagent/helixagent-go
 ```
 
 ## Quick Start
@@ -17,19 +17,19 @@ import (
     "fmt"
     "log"
 
-    "github.com/superagent/superagent-go"
+    "github.com/helixagent/helixagent-go"
 )
 
 func main() {
-    client := superagent.NewClient(&superagent.Config{
+    client := helixagent.NewClient(&helixagent.Config{
         APIKey: "your-api-key",
-        BaseURL: "https://api.superagent.ai",
+        BaseURL: "https://api.helixagent.ai",
     })
 
     // Simple chat completion
-    resp, err := client.Chat.Completions.Create(context.Background(), &superagent.ChatCompletionRequest{
-        Model: "superagent-ensemble",
-        Messages: []superagent.ChatMessage{
+    resp, err := client.Chat.Completions.Create(context.Background(), &helixagent.ChatCompletionRequest{
+        Model: "helixagent-ensemble",
+        Messages: []helixagent.ChatMessage{
             {Role: "user", Content: "Explain quantum computing"},
         },
     })
@@ -44,16 +44,16 @@ func main() {
 ## Configuration
 
 ```go
-config := &superagent.Config{
+config := &helixagent.Config{
     APIKey:      "your-api-key",
-    BaseURL:     "https://api.superagent.ai",
+    BaseURL:     "https://api.helixagent.ai",
     Timeout:     30 * time.Second,
     MaxRetries:  3,
     UserAgent:   "MyApp/1.0",
     Debug:       false,
 }
 
-client := superagent.NewClient(config)
+client := helixagent.NewClient(config)
 ```
 
 ## Authentication
@@ -62,12 +62,12 @@ The SDK supports multiple authentication methods:
 
 ```go
 // API Key authentication (default)
-client := superagent.NewClient(&superagent.Config{
+client := helixagent.NewClient(&helixagent.Config{
     APIKey: "your-api-key",
 })
 
 // JWT Token authentication
-client := superagent.NewClient(&superagent.Config{
+client := helixagent.NewClient(&helixagent.Config{
     Token: "your-jwt-token",
 })
 
@@ -79,7 +79,7 @@ httpClient := &http.Client{
     },
 }
 
-client := superagent.NewClientWithHTTP(&superagent.Config{
+client := helixagent.NewClientWithHTTP(&helixagent.Config{
     APIKey: "your-api-key",
 }, httpClient)
 ```
@@ -89,9 +89,9 @@ client := superagent.NewClientWithHTTP(&superagent.Config{
 ### Basic Chat Completion
 
 ```go
-resp, err := client.Chat.Completions.Create(context.Background(), &superagent.ChatCompletionRequest{
-    Model: "superagent-ensemble",
-    Messages: []superagent.ChatMessage{
+resp, err := client.Chat.Completions.Create(context.Background(), &helixagent.ChatCompletionRequest{
+    Model: "helixagent-ensemble",
+    Messages: []helixagent.ChatMessage{
         {Role: "system", Content: "You are a helpful assistant."},
         {Role: "user", Content: "What is machine learning?"},
     },
@@ -109,9 +109,9 @@ fmt.Printf("Usage: %d tokens\n", resp.Usage.TotalTokens)
 ### Streaming Chat Completion
 
 ```go
-stream, err := client.Chat.Completions.CreateStream(context.Background(), &superagent.ChatCompletionRequest{
+stream, err := client.Chat.Completions.CreateStream(context.Background(), &helixagent.ChatCompletionRequest{
     Model: "deepseek-chat",
-    Messages: []superagent.ChatMessage{
+    Messages: []helixagent.ChatMessage{
         {Role: "user", Content: "Tell me a story"},
     },
     Stream: true,
@@ -136,12 +136,12 @@ if err := stream.Err(); err != nil {
 ### Ensemble Completion
 
 ```go
-resp, err := client.Ensemble.Completions.Create(context.Background(), &superagent.EnsembleCompletionRequest{
-    Messages: []superagent.ChatMessage{
+resp, err := client.Ensemble.Completions.Create(context.Background(), &helixagent.EnsembleCompletionRequest{
+    Messages: []helixagent.ChatMessage{
         {Role: "user", Content: "What is the future of AI?"},
     },
-    EnsembleConfig: &superagent.EnsembleConfig{
-        Strategy:            superagent.StrategyConfidenceWeighted,
+    EnsembleConfig: &helixagent.EnsembleConfig{
+        Strategy:            helixagent.StrategyConfidenceWeighted,
         MinProviders:        3,
         ConfidenceThreshold: 0.8,
         FallbackToBest:      true,
@@ -161,7 +161,7 @@ fmt.Printf("Confidence: %.2f\n", resp.Ensemble.ConfidenceScore)
 ### Basic Text Completion
 
 ```go
-resp, err := client.Completions.Create(context.Background(), &superagent.CompletionRequest{
+resp, err := client.Completions.Create(context.Background(), &helixagent.CompletionRequest{
     Model:       "qwen-max",
     Prompt:      "The future of technology is",
     MaxTokens:   100,
@@ -178,7 +178,7 @@ fmt.Println(resp.Choices[0].Text)
 ### Streaming Text Completion
 
 ```go
-stream, err := client.Completions.CreateStream(context.Background(), &superagent.CompletionRequest{
+stream, err := client.Completions.CreateStream(context.Background(), &helixagent.CompletionRequest{
     Model:  "openrouter/grok-4",
     Prompt: "Write a haiku about programming:",
     Stream: true,
@@ -203,16 +203,16 @@ if err := stream.Err(); err != nil {
 ### Creating a Basic Debate
 
 ```go
-debateConfig := &superagent.DebateConfig{
+debateConfig := &helixagent.DebateConfig{
     DebateID:            "ai-ethics-debate-001",
     Topic:               "Should AI systems have ethical constraints built into their core architecture?",
     MaximalRepeatRounds: 5,
     ConsensusThreshold:  0.75,
-    Participants: []superagent.DebateParticipant{
+    Participants: []helixagent.DebateParticipant{
         {
             Name: "EthicsExpert",
             Role: "AI Ethics Specialist",
-            LLMs: []superagent.LLMConfig{
+            LLMs: []helixagent.LLMConfig{
                 {
                     Provider: "claude",
                     Model:    "claude-3-5-sonnet-20241022",
@@ -223,7 +223,7 @@ debateConfig := &superagent.DebateConfig{
         {
             Name: "AIScientist",
             Role: "AI Research Scientist",
-            LLMs: []superagent.LLMConfig{
+            LLMs: []helixagent.LLMConfig{
                 {
                     Provider: "deepseek",
                     Model:    "deepseek-coder",
@@ -284,21 +284,21 @@ for _, participant := range results.Participants {
 ### Advanced Debate with Cognee Enhancement
 
 ```go
-debateConfig := &superagent.DebateConfig{
+debateConfig := &helixagent.DebateConfig{
     DebateID:            "enhanced-debate-001",
     Topic:               "How should society regulate artificial general intelligence?",
     EnableCognee:        true,
-    CogneeConfig: &superagent.CogneeConfig{
+    CogneeConfig: &helixagent.CogneeConfig{
         DatasetName:         "agi_regulation_debate",
         EnhancementStrategy: "hybrid",
         MaxEnhancementTime:  30000,
     },
-    Participants: []superagent.DebateParticipant{
+    Participants: []helixagent.DebateParticipant{
         {
             Name:          "PolicyMaker",
             Role:          "Government Policy Advisor",
             EnableCognee:  true,
-            CogneeSettings: &superagent.CogneeParticipantConfig{
+            CogneeSettings: &helixagent.CogneeParticipantConfig{
                 EnhanceResponses: true,
                 AnalyzeSentiment: true,
                 DatasetName:      "policy_debate_data",
@@ -348,7 +348,7 @@ for _, tool := range tools.Tools {
 ### Executing MCP Tools
 
 ```go
-result, err := client.MCP.Tools.Call(context.Background(), &superagent.MCPToolCall{
+result, err := client.MCP.Tools.Call(context.Background(), &helixagent.MCPToolCall{
     Name: "read_file",
     Arguments: map[string]interface{}{
         "path": "/etc/hostname",
@@ -421,11 +421,11 @@ for name, status := range health.Providers {
 The SDK provides structured error handling:
 
 ```go
-import "github.com/superagent/superagent-go/errors"
+import "github.com/helixagent/helixagent-go/errors"
 
-resp, err := client.Chat.Completions.Create(context.Background(), &superagent.ChatCompletionRequest{
+resp, err := client.Chat.Completions.Create(context.Background(), &helixagent.ChatCompletionRequest{
     Model: "invalid-model",
-    Messages: []superagent.ChatMessage{
+    Messages: []helixagent.ChatMessage{
         {Role: "user", Content: "Hello"},
     },
 })
@@ -463,7 +463,7 @@ httpClient := &http.Client{
     Transport: transport,
 }
 
-client := superagent.NewClientWithHTTP(&superagent.Config{
+client := helixagent.NewClientWithHTTP(&helixagent.Config{
     APIKey: "your-api-key",
 }, httpClient)
 ```
@@ -474,9 +474,9 @@ client := superagent.NewClientWithHTTP(&superagent.Config{
 ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 defer cancel()
 
-resp, err := client.Chat.Completions.Create(ctx, &superagent.ChatCompletionRequest{
-    Model: "superagent-ensemble",
-    Messages: []superagent.ChatMessage{
+resp, err := client.Chat.Completions.Create(ctx, &helixagent.ChatCompletionRequest{
+    Model: "helixagent-ensemble",
+    Messages: []helixagent.ChatMessage{
         {Role: "user", Content: "Write a long response"},
     },
     MaxTokens: 2000,
@@ -488,13 +488,13 @@ resp, err := client.Chat.Completions.Create(ctx, &superagent.ChatCompletionReque
 ### Logging and Debugging
 
 ```go
-config := &superagent.Config{
+config := &helixagent.Config{
     APIKey: "your-api-key",
     Debug:  true, // Enable debug logging
     Logger: myCustomLogger,
 }
 
-client := superagent.NewClient(config)
+client := helixagent.NewClient(config)
 ```
 
 ## Best Practices
@@ -502,8 +502,8 @@ client := superagent.NewClient(config)
 ### 1. Error Handling
 
 ```go
-func safeCompletion(ctx context.Context, model string, messages []superagent.ChatMessage) (string, error) {
-    resp, err := client.Chat.Completions.Create(ctx, &superagent.ChatCompletionRequest{
+func safeCompletion(ctx context.Context, model string, messages []helixagent.ChatMessage) (string, error) {
+    resp, err := client.Chat.Completions.Create(ctx, &helixagent.ChatCompletionRequest{
         Model:    model,
         Messages: messages,
         MaxTokens: 1000,
@@ -548,7 +548,7 @@ func processBatch(ctx context.Context, prompts []string) ([]string, error) {
             sem <- struct{}{}        // Acquire
             defer func() { <-sem }() // Release
 
-            content, err := safeCompletion(ctx, "superagent-ensemble", []superagent.ChatMessage{
+            content, err := safeCompletion(ctx, "helixagent-ensemble", []helixagent.ChatMessage{
                 {Role: "user", Content: p},
             })
 
@@ -576,19 +576,19 @@ func processBatch(ctx context.Context, prompts []string) ([]string, error) {
 
 ```go
 type DebateOrchestrator struct {
-    client     *superagent.Client
-    activeDebates map[string]*superagent.Debate
+    client     *helixagent.Client
+    activeDebates map[string]*helixagent.Debate
     mu         sync.RWMutex
 }
 
-func NewDebateOrchestrator(client *superagent.Client) *DebateOrchestrator {
+func NewDebateOrchestrator(client *helixagent.Client) *DebateOrchestrator {
     return &DebateOrchestrator{
         client:         client,
-        activeDebates:  make(map[string]*superagent.Debate),
+        activeDebates:  make(map[string]*helixagent.Debate),
     }
 }
 
-func (d *DebateOrchestrator) CreateDebate(ctx context.Context, config *superagent.DebateConfig) (*superagent.Debate, error) {
+func (d *DebateOrchestrator) CreateDebate(ctx context.Context, config *helixagent.DebateConfig) (*helixagent.Debate, error) {
     debate, err := d.client.Debates.Create(ctx, config)
     if err != nil {
         return nil, err
@@ -601,7 +601,7 @@ func (d *DebateOrchestrator) CreateDebate(ctx context.Context, config *superagen
     return debate, nil
 }
 
-func (d *DebateOrchestrator) MonitorDebate(ctx context.Context, debateID string) (*superagent.DebateStatus, error) {
+func (d *DebateOrchestrator) MonitorDebate(ctx context.Context, debateID string) (*helixagent.DebateStatus, error) {
     status, err := d.client.Debates.GetStatus(ctx, debateID)
     if err != nil {
         return nil, err
@@ -616,9 +616,9 @@ func (d *DebateOrchestrator) MonitorDebate(ctx context.Context, debateID string)
     return status, nil
 }
 
-func (d *DebateOrchestrator) GetActiveDebates() []*superagent.Debate {
+func (d *DebateOrchestrator) GetActiveDebates() []*helixagent.Debate {
     d.mu.RLock()
-    debates := make([]*superagent.Debate, 0, len(d.activeDebates))
+    debates := make([]*helixagent.Debate, 0, len(d.activeDebates))
     for _, debate := range d.activeDebates {
         debates = append(debates, debate)
     }
@@ -630,7 +630,7 @@ func (d *DebateOrchestrator) GetActiveDebates() []*superagent.Debate {
 ### 4. Connection Pooling
 
 ```go
-config := &superagent.Config{
+config := &helixagent.Config{
     APIKey: "your-api-key",
     HTTPClient: &http.Client{
         Timeout: 30 * time.Second,
@@ -643,7 +643,7 @@ config := &superagent.Config{
     },
 }
 
-client := superagent.NewClient(config)
+client := helixagent.NewClient(config)
 ```
 
 ## API Reference
@@ -699,14 +699,14 @@ type DebateConfig struct {
 
 ```go
 func TestChatCompletion(t *testing.T) {
-    client := superagent.NewClient(&superagent.Config{
+    client := helixagent.NewClient(&helixagent.Config{
         APIKey: "test-key",
         BaseURL: "http://localhost:8080", // Use test server
     })
 
-    resp, err := client.Chat.Completions.Create(context.Background(), &superagent.ChatCompletionRequest{
+    resp, err := client.Chat.Completions.Create(context.Background(), &helixagent.ChatCompletionRequest{
         Model: "test-model",
-        Messages: []superagent.ChatMessage{
+        Messages: []helixagent.ChatMessage{
             {Role: "user", Content: "Hello"},
         },
     })

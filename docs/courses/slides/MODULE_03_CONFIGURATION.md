@@ -6,7 +6,7 @@
 
 ## Slide 1: Title Slide
 
-**SuperAgent: Multi-Provider AI Orchestration**
+**HelixAgent: Multi-Provider AI Orchestration**
 
 - Module 3: Configuration
 - Duration: 60 minutes
@@ -18,7 +18,7 @@
 
 **By the end of this module, you will:**
 
-- Master SuperAgent configuration architecture
+- Master HelixAgent configuration architecture
 - Configure environment variables and YAML files
 - Set up provider-specific configurations
 - Implement multi-environment configurations
@@ -381,7 +381,7 @@ logging:
 
   file:
     enabled: true
-    path: /var/log/superagent
+    path: /var/log/helixagent
     max_size: 100M
     max_backups: 5
     max_age: 30
@@ -485,7 +485,7 @@ secrets/
 make validate-config
 
 # Test with dry run
-./bin/superagent --config configs/production.yaml --dry-run
+./bin/helixagent --config configs/production.yaml --dry-run
 
 # Verify provider connections
 curl http://localhost:8080/v1/providers/health

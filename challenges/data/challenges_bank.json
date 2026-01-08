@@ -1,10 +1,10 @@
 {
   "version": "3.0",
-  "description": "SuperAgent Comprehensive Challenges Registry - All Features Coverage",
+  "description": "HelixAgent Comprehensive Challenges Registry - All Features Coverage",
   "challenges": [
     {
       "id": "main",
-      "name": "Main SuperAgent Challenge",
+      "name": "Main HelixAgent Challenge",
       "description": "Comprehensive challenge: Verify 30+ providers, benchmark 900+ LLMs, form AI debate group with 5 primary + 2 fallbacks each, verify system as single LLM, generate OpenCode config",
       "category": "master",
       "dependencies": [],
@@ -14,7 +14,7 @@
       "inputs": [
         {"name": "api_keys", "source": ".env", "required": true, "description": "All LLM provider API keys"},
         {"name": "llmsverifier_binary", "source": "../LLMsVerifier/llm-verifier/llm-verifier", "required": true, "description": "LLMsVerifier production binary"},
-        {"name": "superagent_binary", "source": "../superagent", "required": true, "description": "SuperAgent production binary"}
+        {"name": "helixagent_binary", "source": "../helixagent", "required": true, "description": "HelixAgent production binary"}
       ],
       "outputs": [
         {"name": "providers_verified.json", "type": "json", "description": "All verified providers with status"},
@@ -32,7 +32,7 @@
         {"type": "exact_count", "target": "debate_group.fallbacks_per_primary", "value": 2, "message": "Must have exactly 2 fallbacks per primary member"},
         {"type": "min_score", "target": "debate_group.average_score", "value": 7.0, "message": "Average debate group score must be at least 7.0"},
         {"type": "system_verified", "target": "system_verification", "value": true, "message": "System must pass verification as single LLM"},
-        {"type": "file_exists", "target": "/home/milosvasic/Downloads/opencode-super-agent.json", "message": "OpenCode config must be copied to Downloads"},
+        {"type": "file_exists", "target": "/home/milosvasic/Downloads/opencode-helix-agent.json", "message": "OpenCode config must be copied to Downloads"},
         {"type": "no_sensitive_data_in_git", "target": "opencode.json.example", "message": "Redacted config must not contain API keys"}
       ],
       "metrics": ["providers_total", "providers_verified", "providers_failed", "models_total", "models_verified", "top_15_average_score", "debate_group_average_score", "system_verification_score", "total_duration_seconds"],
@@ -41,7 +41,7 @@
         {"id": "provider_verification", "name": "Provider Verification", "description": "Verify all 30+ providers using LLMsVerifier binary"},
         {"id": "model_benchmark", "name": "Model Benchmarking", "description": "Test and benchmark 900+ LLMs"},
         {"id": "debate_formation", "name": "Debate Group Formation", "description": "Select top 15+ LLMs, form 5 primary + 2 fallbacks"},
-        {"id": "system_verification", "name": "System Verification", "description": "Verify SuperAgent as single LLM using LLMsVerifier"},
+        {"id": "system_verification", "name": "System Verification", "description": "Verify HelixAgent as single LLM using LLMsVerifier"},
         {"id": "config_generation", "name": "Configuration Generation", "description": "Generate OpenCode config with MCP, ACP, LSP, Embeddings"},
         {"id": "final_report", "name": "Final Report", "description": "Generate master summary and copy to Downloads"}
       ],
@@ -56,7 +56,7 @@
     {
       "id": "opencode",
       "name": "OpenCode Integration Challenge",
-      "description": "Validate SuperAgent's integration with OpenCode CLI including API connectivity, codebase awareness, and 25 CLI request tests with assertions",
+      "description": "Validate HelixAgent's integration with OpenCode CLI including API connectivity, codebase awareness, and 25 CLI request tests with assertions",
       "category": "validation",
       "dependencies": ["main"],
       "binary_only": true,
@@ -64,7 +64,7 @@
       "estimated_duration": "5-10 minutes",
       "inputs": [
         {"name": "main_challenge_results", "source": "main", "required": true, "description": "OpenCode config from main challenge"},
-        {"name": "api_keys", "source": ".env", "required": true, "description": "SuperAgent API key"}
+        {"name": "api_keys", "source": ".env", "required": true, "description": "HelixAgent API key"}
       ],
       "outputs": [
         {"name": "cli_test_results.txt", "type": "text", "description": "Detailed CLI test results with assertions"},
@@ -77,14 +77,14 @@
       "assertions": [
         {"type": "endpoint_works", "target": "/v1/models", "message": "Models endpoint must work"},
         {"type": "endpoint_works", "target": "/v1/chat/completions", "message": "Chat completions endpoint must work"},
-        {"type": "contains", "target": "models_response", "value": "superagent-debate", "message": "superagent-debate model must be present"},
+        {"type": "contains", "target": "models_response", "value": "helixagent-debate", "message": "helixagent-debate model must be present"},
         {"type": "min_count", "target": "cli_tests_passed", "value": 20, "message": "At least 20 CLI tests must pass"},
         {"type": "contains_any", "target": "codebase_response", "value": ["Go", "Golang", "go"], "message": "Codebase must be detected"},
         {"type": "no_mock_responses", "target": "all_responses", "message": "No mock or placeholder responses allowed"}
       ],
       "metrics": ["api_endpoints_tested", "cli_tests_total", "cli_tests_passed", "cli_tests_failed", "cli_pass_rate", "total_duration_seconds"],
       "phases": [
-        {"id": "prerequisites", "name": "Prerequisites Check", "description": "Verify OpenCode CLI, Main challenge, SuperAgent running"},
+        {"id": "prerequisites", "name": "Prerequisites Check", "description": "Verify OpenCode CLI, Main challenge, HelixAgent running"},
         {"id": "api_test", "name": "API Connectivity Test", "description": "Test /v1/models and /v1/chat/completions endpoints"},
         {"id": "opencode_execution", "name": "OpenCode CLI Execution", "description": "Run OpenCode with codebase awareness test"},
         {"id": "error_analysis", "name": "Error Analysis", "description": "Analyze errors and generate recommendations"},

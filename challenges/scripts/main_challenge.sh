@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# SUPERAGENT MAIN CHALLENGE
+# HELIXAGENT MAIN CHALLENGE
 #===============================================================================
 # This is the master orchestration script for the Main challenge.
 #
@@ -58,7 +58,7 @@ SYSTEM_LOG="$LOGS_DIR/system_verification.log"
 COMMANDS_LOG="$LOGS_DIR/commands.log"
 
 # Binary paths
-SUPERAGENT_BINARY="$PROJECT_ROOT/superagent"
+HELIXAGENT_BINARY="$PROJECT_ROOT/helixagent"
 LLMSVERIFIER_BINARY="$PROJECT_ROOT/LLMsVerifier/bin/llm-verifier"
 LLMSVERIFIER_CONFIG="$PROJECT_ROOT/LLMsVerifier/llm-verifier/config_full.yaml"
 LLMSVERIFIER_SERVER_PORT="8081"
@@ -152,7 +152,7 @@ run_cmd() {
 
 usage() {
     cat << EOF
-${GREEN}SuperAgent Main Challenge${NC}
+${GREEN}HelixAgent Main Challenge${NC}
 
 ${BLUE}Usage:${NC}
     $0 [options]
@@ -175,7 +175,7 @@ ${BLUE}What this challenge does:${NC}
 ${BLUE}Requirements:${NC}
     - Docker or Podman installed
     - API keys configured in .env
-    - SuperAgent and LLMsVerifier binaries built
+    - HelixAgent and LLMsVerifier binaries built
 
 ${BLUE}Output:${NC}
     Results stored in: ${YELLOW}$RESULTS_BASE/<date>/<timestamp>/${NC}
@@ -224,11 +224,11 @@ detect_container_runtime() {
 check_binaries() {
     log_info "Checking binary availability..."
 
-    # Check SuperAgent
-    if [ -x "$SUPERAGENT_BINARY" ]; then
-        log_success "SuperAgent binary found: $SUPERAGENT_BINARY"
+    # Check HelixAgent
+    if [ -x "$HELIXAGENT_BINARY" ]; then
+        log_success "HelixAgent binary found: $HELIXAGENT_BINARY"
     else
-        log_warning "SuperAgent binary not found, attempting build..."
+        log_warning "HelixAgent binary not found, attempting build..."
         if [ -f "$PROJECT_ROOT/Makefile" ]; then
             run_cmd "cd $PROJECT_ROOT && make build"
         fi
@@ -938,7 +938,7 @@ try:
     # Build debate group structure
     debate_group = {
         "id": f"debate_group_{int(datetime.now().timestamp())}",
-        "name": "SuperAgent AI Debate Group",
+        "name": "HelixAgent AI Debate Group",
         "created_at": datetime.now().isoformat(),
         "members": [],
         "total_models": len(primary_members) + min(len(remaining_models), DEBATE_GROUP_SIZE * FALLBACKS_PER_MEMBER),
@@ -1111,7 +1111,7 @@ phase5_system_verification() {
         return 0
     fi
 
-    log_info "Verifying SuperAgent as single LLM using LLMsVerifier..."
+    log_info "Verifying HelixAgent as single LLM using LLMsVerifier..."
 
     local system_output="$OUTPUT_DIR/system_verification.json"
     local system_report="$OUTPUT_DIR/system_verification_report.md"
@@ -1120,7 +1120,7 @@ phase5_system_verification() {
     cat > "$system_output" << EOF
 {
   "timestamp": "$(date -Iseconds)",
-  "system": "SuperAgent",
+  "system": "HelixAgent",
   "version": "1.0.0",
   "endpoint": "http://localhost:8080/v1",
   "verified": true,
@@ -1141,7 +1141,7 @@ EOF
 # System Verification Report
 
 **Generated**: $(date '+%Y-%m-%d %H:%M:%S')
-**System**: SuperAgent with AI Debate Group
+**System**: HelixAgent with AI Debate Group
 **Endpoint**: http://localhost:8080/v1
 
 ## Verification Summary
@@ -1156,7 +1156,7 @@ EOF
 
 ## Overall Score: 10.0/10
 
-The SuperAgent system with AI Debate Group has been successfully verified
+The HelixAgent system with AI Debate Group has been successfully verified
 as a fully functional OpenAI-compatible API endpoint.
 EOF
 
@@ -1171,54 +1171,54 @@ EOF
 phase6_opencode_config() {
     log_phase "PHASE 6: OpenCode Configuration Generation"
 
-    log_info "Generating OpenCode configuration using SuperAgent binary..."
+    log_info "Generating OpenCode configuration using HelixAgent binary..."
 
     local opencode_output="$OUTPUT_DIR/opencode.json"
     local opencode_redacted="$OUTPUT_DIR/opencode.json.example"
     local validation_output="$OUTPUT_DIR/opencode_validation.json"
-    local superagent_binary="$PROJECT_ROOT/superagent"
+    local helixagent_binary="$PROJECT_ROOT/helixagent"
 
-    # Check if SuperAgent binary exists (try common locations)
-    if [ ! -x "$superagent_binary" ]; then
-        superagent_binary="$PROJECT_ROOT/bin/superagent"
+    # Check if HelixAgent binary exists (try common locations)
+    if [ ! -x "$helixagent_binary" ]; then
+        helixagent_binary="$PROJECT_ROOT/bin/helixagent"
     fi
 
-    if [ ! -x "$superagent_binary" ]; then
-        log_warning "SuperAgent binary not found, attempting build..."
-        run_cmd "cd $PROJECT_ROOT && go build -o superagent ./cmd/superagent/"
-        superagent_binary="$PROJECT_ROOT/superagent"
+    if [ ! -x "$helixagent_binary" ]; then
+        log_warning "HelixAgent binary not found, attempting build..."
+        run_cmd "cd $PROJECT_ROOT && go build -o helixagent ./cmd/helixagent/"
+        helixagent_binary="$PROJECT_ROOT/helixagent"
     fi
 
-    if [ ! -x "$superagent_binary" ]; then
-        log_error "Failed to find or build SuperAgent binary"
+    if [ ! -x "$helixagent_binary" ]; then
+        log_error "Failed to find or build HelixAgent binary"
         return 1
     fi
 
-    log_info "Using SuperAgent binary: $superagent_binary"
+    log_info "Using HelixAgent binary: $helixagent_binary"
 
     # Step 1: Generate API key if not set in environment
-    if [ -z "$SUPERAGENT_API_KEY" ]; then
-        log_info "SUPERAGENT_API_KEY not set, generating new API key..."
+    if [ -z "$HELIXAGENT_API_KEY" ]; then
+        log_info "HELIXAGENT_API_KEY not set, generating new API key..."
 
         # Generate API key and save to .env file
         local generated_key
-        generated_key=$("$superagent_binary" -generate-api-key -api-key-env-file "$PROJECT_ROOT/.env" 2>&1 | grep -E '^sk-')
+        generated_key=$("$helixagent_binary" -generate-api-key -api-key-env-file "$PROJECT_ROOT/.env" 2>&1 | grep -E '^sk-')
 
         if [ -n "$generated_key" ]; then
-            export SUPERAGENT_API_KEY="$generated_key"
+            export HELIXAGENT_API_KEY="$generated_key"
             log_success "Generated and saved API key: ${generated_key:0:12}..."
         else
             log_error "Failed to generate API key"
             return 1
         fi
     else
-        log_info "Using existing SUPERAGENT_API_KEY: ${SUPERAGENT_API_KEY:0:12}..."
+        log_info "Using existing HELIXAGENT_API_KEY: ${HELIXAGENT_API_KEY:0:12}..."
     fi
 
     # Step 2: Generate OpenCode configuration using the binary
-    log_info "Generating OpenCode configuration via SuperAgent binary..."
+    log_info "Generating OpenCode configuration via HelixAgent binary..."
 
-    "$superagent_binary" -generate-opencode-config -opencode-output "$opencode_output" 2>&1
+    "$helixagent_binary" -generate-opencode-config -opencode-output "$opencode_output" 2>&1
     local gen_exit=$?
 
     if [ $gen_exit -ne 0 ]; then
@@ -1228,11 +1228,11 @@ phase6_opencode_config() {
 
     log_success "OpenCode configuration generated: $opencode_output"
 
-    # Step 3: Validate the generated configuration using SuperAgent binary
+    # Step 3: Validate the generated configuration using HelixAgent binary
     # NOTE: Uses 100% binary-based validation - NO 3rd party scripts!
-    log_info "Validating configuration using SuperAgent binary (LLMsVerifier rules)..."
+    log_info "Validating configuration using HelixAgent binary (LLMsVerifier rules)..."
 
-    "$superagent_binary" -validate-opencode-config "$opencode_output" 2>&1 | tee -a "$MAIN_LOG"
+    "$helixagent_binary" -validate-opencode-config "$opencode_output" 2>&1 | tee -a "$MAIN_LOG"
     local validation_exit=${PIPESTATUS[0]}
 
     if [ $validation_exit -ne 0 ]; then
@@ -1246,15 +1246,15 @@ phase6_opencode_config() {
   "config_path": "$opencode_output",
   "valid": true,
   "errors": [],
-  "validator": "superagent-binary",
+  "validator": "helixagent-binary",
   "timestamp": "$(date -Iseconds)"
 }
 VALIDJSON
 
-    log_success "OpenCode configuration validated using SuperAgent binary"
+    log_success "OpenCode configuration validated using HelixAgent binary"
 
     # Generate redacted example version (mask the API key) - NO Python, uses sed
-    sed 's/"apiKey": "sk-[a-f0-9]*"/"apiKey": "YOUR_SUPERAGENT_API_KEY_HERE"/g' "$opencode_output" > "$opencode_redacted"
+    sed 's/"apiKey": "sk-[a-f0-9]*"/"apiKey": "YOUR_HELIXAGENT_API_KEY_HERE"/g' "$opencode_output" > "$opencode_redacted"
 
     log_success "OpenCode configuration generated and validated"
     log_info "Config: $opencode_output"
@@ -1262,7 +1262,7 @@ VALIDJSON
     log_info "Validation: $validation_output"
 
     # Copy to Downloads
-    local downloads_target="/home/milosvasic/Downloads/opencode-super-agent.json"
+    local downloads_target="/home/milosvasic/Downloads/opencode-helix-agent.json"
     cp "$opencode_output" "$downloads_target" 2>/dev/null || log_warning "Could not copy to Downloads"
 
     if [ -f "$downloads_target" ]; then
@@ -1288,7 +1288,7 @@ phase7_final_report() {
     local avg_score=$(python3 -c "import json; d=json.load(open('$OUTPUT_DIR/debate_group.json')); print(f\"{d.get('average_score',0):.1f}\")" 2>/dev/null || echo "N/A")
 
     cat > "$master_summary" << EOF
-# SuperAgent Main Challenge - Master Summary
+# HelixAgent Main Challenge - Master Summary
 
 **Challenge ID**: main_$TIMESTAMP
 **Start Time**: $START_TIME
@@ -1300,7 +1300,7 @@ phase7_final_report() {
 
 ## Executive Summary
 
-The Main SuperAgent Challenge has been executed successfully using **REAL API verification**.
+The Main HelixAgent Challenge has been executed successfully using **REAL API verification**.
 No sample or hardcoded data was used. All models were verified through actual API calls.
 
 This challenge:
@@ -1377,22 +1377,22 @@ SHOWGROUP
 ## OpenCode Configuration
 
 - **Endpoint**: http://localhost:8080/v1
-- **Model**: superagent/superagent-debate
-- **MCP Servers**: filesystem, github, memory, superagent-tools
+- **Model**: helixagent/helixagent-debate
+- **MCP Servers**: filesystem, github, memory, helixagent-tools
 - **Verification**: All underlying models verified via real API calls
 
-Configuration copied to: \`/home/milosvasic/Downloads/opencode-super-agent.json\`
+Configuration copied to: \`/home/milosvasic/Downloads/opencode-helix-agent.json\`
 
 ---
 
 ## Quick Start
 
 \`\`\`bash
-# 1. Start SuperAgent
+# 1. Start HelixAgent
 ./challenges/scripts/start_system.sh
 
 # 2. Use with OpenCode
-export OPENCODE_CONFIG=/home/milosvasic/Downloads/opencode-super-agent.json
+export OPENCODE_CONFIG=/home/milosvasic/Downloads/opencode-helix-agent.json
 opencode
 
 # 3. Stop when done
@@ -1410,7 +1410,7 @@ opencode
 
 ---
 
-*Generated by SuperAgent Main Challenge*
+*Generated by HelixAgent Main Challenge*
 *$(date '+%Y-%m-%d %H:%M:%S')*
 EOF
 
@@ -1460,7 +1460,7 @@ main() {
     load_environment
     check_binaries
 
-    log_phase "SUPERAGENT MAIN CHALLENGE"
+    log_phase "HELIXAGENT MAIN CHALLENGE"
     log_info "Start time: $START_TIME"
     log_info "Results directory: $RESULTS_DIR"
     log_info "Verbose: $VERBOSE"
@@ -1481,7 +1481,7 @@ main() {
     log_success "Main challenge completed successfully!"
     log_info "Results: $RESULTS_DIR"
     log_info "Master summary: $CHALLENGES_DIR/master_results/latest_summary.md"
-    log_info "OpenCode config: /home/milosvasic/Downloads/opencode-super-agent.json"
+    log_info "OpenCode config: /home/milosvasic/Downloads/opencode-helix-agent.json"
 }
 
 main "$@"

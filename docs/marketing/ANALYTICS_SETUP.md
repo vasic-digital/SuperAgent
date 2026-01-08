@@ -1,7 +1,7 @@
-# SuperAgent Analytics & Monitoring Setup
+# HelixAgent Analytics & Monitoring Setup
 
 ## Overview
-This document outlines the complete analytics and monitoring setup for the SuperAgent website and documentation.
+This document outlines the complete analytics and monitoring setup for the HelixAgent website and documentation.
 
 ## Analytics Platforms
 
@@ -55,10 +55,10 @@ clarity('event', eventName, properties);
 ### Page View Events
 ```javascript
 // Automatic page view tracking
-window.SuperAgentAnalytics.trackPageView(page, properties);
+window.HelixAgentAnalytics.trackPageView(page, properties);
 
 // Manual page view tracking for SPAs
-window.SuperAgentAnalytics.trackPageView('/docs/api', {
+window.HelixAgentAnalytics.trackPageView('/docs/api', {
   page_title: 'API Documentation',
   section: 'documentation'
 });
@@ -67,33 +67,33 @@ window.SuperAgentAnalytics.trackPageView('/docs/api', {
 ### CTA Click Events
 ```javascript
 // Track CTA clicks
-window.SuperAgentAnalytics.trackCTA('hero_get_started', {
+window.HelixAgentAnalytics.trackCTA('hero_get_started', {
   position: 'hero_section',
   variant: 'primary_button'
 });
 
 // Track provider clicks
-window.SuperAgentAnalytics.trackProviderClick('claude');
+window.HelixAgentAnalytics.trackProviderClick('claude');
 ```
 
 ### Feature Interaction Events
 ```javascript
 // Track feature interactions
-window.SuperAgentAnalytics.trackFeatureInteraction('code_copy', 'click');
-window.SuperAgentAnalytics.trackFeatureInteraction('navigation', 'mobile_menu_open');
+window.HelixAgentAnalytics.trackFeatureInteraction('code_copy', 'click');
+window.HelixAgentAnalytics.trackFeatureInteraction('navigation', 'mobile_menu_open');
 ```
 
 ### Custom Business Events
 ```javascript
 // Track documentation views
-window.SuperAgentAnalytics.track('documentation_view', {
+window.HelixAgentAnalytics.track('documentation_view', {
   page: 'api_reference',
   time_spent: 120,
   scroll_depth: 0.8
 });
 
 // Track conversion funnel
-window.SuperAgentAnalytics.track('conversion_funnel', {
+window.HelixAgentAnalytics.track('conversion_funnel', {
   step: 'documentation_viewed',
   previous_step: 'homepage_visit',
   time_to_convert: 45
@@ -110,7 +110,7 @@ window.SuperAgentAnalytics.track('conversion_funnel', {
 
 ```javascript
 // Automatic tracking in main.js
-window.SuperAgentAnalytics.track('web_vital_lcp', {
+window.HelixAgentAnalytics.track('web_vital_lcp', {
   value: 2300,
   rating: 'good'
 });
@@ -119,7 +119,7 @@ window.SuperAgentAnalytics.track('web_vital_lcp', {
 ### Performance Metrics
 ```javascript
 // Page load performance
-window.SuperAgentAnalytics.track('page_load_complete', {
+window.HelixAgentAnalytics.track('page_load_complete', {
   load_time: 1200,
   dom_content_loaded: 800,
   first_paint: 600,
@@ -127,7 +127,7 @@ window.SuperAgentAnalytics.track('page_load_complete', {
 });
 
 // Resource loading
-window.SuperAgentAnalytics.track('resource_load', {
+window.HelixAgentAnalytics.track('resource_load', {
   resource_type: 'image',
   resource_url: '/assets/images/logo.svg',
   load_time: 150,
@@ -140,7 +140,7 @@ window.SuperAgentAnalytics.track('resource_load', {
 ### JavaScript Errors
 ```javascript
 // Automatic error tracking
-window.SuperAgentAnalytics.track('javascript_error', {
+window.HelixAgentAnalytics.track('javascript_error', {
   error_message: "TypeError: Cannot read property 'x' of undefined",
   error_filename: "main.js",
   error_lineno: 156,
@@ -151,7 +151,7 @@ window.SuperAgentAnalytics.track('javascript_error', {
 ### API Errors
 ```javascript
 // Track API errors
-window.SuperAgentAnalytics.track('api_error', {
+window.HelixAgentAnalytics.track('api_error', {
   endpoint: '/api/v1/completion',
   status_code: 500,
   error_message: 'Provider timeout',
@@ -194,7 +194,7 @@ const safeProperties = {
 
 ### Key Metrics Dashboard
 ```
-📊 SUPERAGENT ANALYTICS DASHBOARD
+📊 HELIXAGENT ANALYTICS DASHBOARD
 
 🌐 Website Performance
 ├── Page Views: 12,345 (↗️ +15%)
@@ -303,7 +303,7 @@ function getVariant(testName) {
 
 // Track A/B test participation
 const headlineVariant = getVariant('hero_headline');
-window.SuperAgentAnalytics.track('ab_test_participation', {
+window.HelixAgentAnalytics.track('ab_test_participation', {
   test_name: 'hero_headline',
   variant: headlineVariant
 });

@@ -1,6 +1,6 @@
 # LLMsVerifier Integration
 
-SuperAgent integrates [LLMsVerifier](https://github.com/vasic-digital/LLMsVerifier) as a Git submodule to provide comprehensive LLM verification, scoring, and health monitoring capabilities.
+HelixAgent integrates [LLMsVerifier](https://github.com/vasic-digital/LLMsVerifier) as a Git submodule to provide comprehensive LLM verification, scoring, and health monitoring capabilities.
 
 ## Table of Contents
 
@@ -15,7 +15,7 @@ SuperAgent integrates [LLMsVerifier](https://github.com/vasic-digital/LLMsVerifi
 
 ## Overview
 
-The LLMsVerifier integration adds the following capabilities to SuperAgent:
+The LLMsVerifier integration adds the following capabilities to HelixAgent:
 
 1. **Model Verification** - Verify LLM models work correctly, including the unique "Do you see my code?" test
 2. **Comprehensive Scoring** - 5-component weighted scoring system
@@ -190,7 +190,7 @@ health:
 ### Go SDK
 
 ```go
-import "github.com/superagent/superagent/pkg/sdk/go/verifier"
+import "github.com/helixagent/helixagent/pkg/sdk/go/verifier"
 
 client := verifier.NewClient(verifier.ClientConfig{
     BaseURL: "http://localhost:8081",
@@ -206,7 +206,7 @@ result, err := client.VerifyModel(ctx, verifier.VerificationRequest{
 ### Python SDK
 
 ```python
-from superagent_verifier import VerifierClient
+from helixagent_verifier import VerifierClient
 
 client = VerifierClient(
     base_url="http://localhost:8081",
@@ -223,14 +223,14 @@ print(f"Verified: {result.verified}, Score: {result.overall_score}")
 
 Metrics available at `/metrics/verifier`:
 
-- `superagent_verifier_verifications_total` - Total verifications
-- `superagent_verifier_verification_duration_seconds` - Verification duration
-- `superagent_verifier_code_visibility_tests_total` - Code visibility tests
-- `superagent_verifier_model_score` - Model scores
-- `superagent_verifier_provider_healthy` - Provider health status
-- `superagent_verifier_circuit_breaker_state` - Circuit breaker states
-- `superagent_verifier_provider_latency_seconds` - Provider latency
-- `superagent_verifier_failover_attempts_total` - Failover attempts
+- `helixagent_verifier_verifications_total` - Total verifications
+- `helixagent_verifier_verification_duration_seconds` - Verification duration
+- `helixagent_verifier_code_visibility_tests_total` - Code visibility tests
+- `helixagent_verifier_model_score` - Model scores
+- `helixagent_verifier_provider_healthy` - Provider health status
+- `helixagent_verifier_circuit_breaker_state` - Circuit breaker states
+- `helixagent_verifier_provider_latency_seconds` - Provider latency
+- `helixagent_verifier_failover_attempts_total` - Failover attempts
 
 ### Grafana Dashboard
 
@@ -283,7 +283,7 @@ internal/handlers/
 
 pkg/sdk/
 ├── go/verifier/                # Go SDK
-├── python/superagent_verifier/ # Python SDK
+├── python/helixagent_verifier/ # Python SDK
 └── javascript/                 # JavaScript SDK
 ```
 

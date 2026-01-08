@@ -1,8 +1,8 @@
-# SuperAgent Deployment Guide
+# HelixAgent Deployment Guide
 
 ## Overview
 
-This guide provides comprehensive instructions for deploying SuperAgent in production environments. SuperAgent is a production-ready LLM facade system with multi-provider support, ensemble voting, and enterprise-grade features.
+This guide provides comprehensive instructions for deploying HelixAgent in production environments. HelixAgent is a production-ready LLM facade system with multi-provider support, ensemble voting, and enterprise-grade features.
 
 ## Prerequisites
 
@@ -35,8 +35,8 @@ This guide provides comprehensive instructions for deploying SuperAgent in produ
 
 #### 1. Clone Repository
 ```bash
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 ```
 
 #### 2. Environment Configuration
@@ -44,7 +44,7 @@ Create `.env` file:
 ```bash
 # Server Configuration
 PORT=8080
-SUPERAGENT_API_KEY=your-super-secret-api-key
+HELIXAGENT_API_KEY=your-super-secret-api-key
 
 # JWT Configuration
 JWT_SECRET=your-jwt-secret-key-change-in-production
@@ -52,9 +52,9 @@ JWT_SECRET=your-jwt-secret-key-change-in-production
 # Database Configuration
 DB_HOST=localhost
 DB_PORT=5432
-DB_USER=superagent
+DB_USER=helixagent
 DB_PASSWORD=your-db-password
-DB_NAME=superagent_db
+DB_NAME=helixagent_db
 
 # Redis Configuration
 REDIS_HOST=localhost
@@ -81,7 +81,7 @@ PLUGIN_WATCH_PATHS=./plugins
 version: '3.8'
 
 services:
-  superagent:
+  helixagent:
     build: .
     ports:
       - "8080:8080"
@@ -99,8 +99,8 @@ services:
   postgres:
     image: postgres:15
     environment:
-      POSTGRES_DB: superagent_db
-      POSTGRES_USER: superagent
+      POSTGRES_DB: helixagent_db
+      POSTGRES_USER: helixagent
       POSTGRES_PASSWORD: your-db-password
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -132,7 +132,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./docs/monitoring/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/superagent.json
+      - ./docs/monitoring/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/helixagent.json
 
 volumes:
   postgres_data:
@@ -143,13 +143,13 @@ volumes:
 #### 4. Build and Deploy
 ```bash
 # Build the application
-docker build -t superagent .
+docker build -t helixagent .
 
 # Start all services
 docker-compose up -d
 
 # Check logs
-docker-compose logs -f superagent
+docker-compose logs -f helixagent
 ```
 
 ### Option 2: Binary Deployment
@@ -157,45 +157,45 @@ docker-compose logs -f superagent
 #### 1. Build Binary
 ```bash
 # Clone and build
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Build for production
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o superagent ./cmd/superagent
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o helixagent ./cmd/helixagent
 
 # Or build with optimizations
-go build -ldflags="-w -s" -o superagent ./cmd/superagent
+go build -ldflags="-w -s" -o helixagent ./cmd/helixagent
 ```
 
 #### 2. System Setup
 ```bash
 # Create system user
-sudo useradd -r -s /bin/false superagent
+sudo useradd -r -s /bin/false helixagent
 
 # Create directories
-sudo mkdir -p /opt/superagent
-sudo mkdir -p /var/log/superagent
-sudo mkdir -p /etc/superagent/plugins
+sudo mkdir -p /opt/helixagent
+sudo mkdir -p /var/log/helixagent
+sudo mkdir -p /etc/helixagent/plugins
 
 # Set permissions
-sudo chown -R superagent:superagent /opt/superagent
-sudo chown -R superagent:superagent /var/log/superagent
-sudo chown -R superagent:superagent /etc/superagent
+sudo chown -R helixagent:helixagent /opt/helixagent
+sudo chown -R helixagent:helixagent /var/log/helixagent
+sudo chown -R helixagent:helixagent /etc/helixagent
 ```
 
 #### 3. Configuration Files
 ```bash
-# /etc/superagent/config.env
+# /etc/helixagent/config.env
 PORT=8080
-SUPERAGENT_API_KEY=your-super-secret-api-key
+HELIXAGENT_API_KEY=your-super-secret-api-key
 JWT_SECRET=your-jwt-secret-key-change-in-production
 
 # Database
 DB_HOST=localhost
 DB_PORT=5432
-DB_USER=superagent
+DB_USER=helixagent
 DB_PASSWORD=your-db-password
-DB_NAME=superagent_db
+DB_NAME=helixagent_db
 
 # Redis
 REDIS_HOST=localhost
@@ -215,30 +215,30 @@ COGNEE_AUTO_COGNIFY=true
 
 #### 4. Systemd Service
 ```bash
-# /etc/systemd/system/superagent.service
+# /etc/systemd/system/helixagent.service
 [Unit]
-Description=SuperAgent LLM Facade
+Description=HelixAgent LLM Facade
 After=network.target postgresql.service redis.service
 Requires=postgresql.service redis.service
 
 [Service]
 Type=simple
-User=superagent
-Group=superagent
-WorkingDirectory=/opt/superagent
-ExecStart=/opt/superagent/superagent
-EnvironmentFile=/etc/superagent/config.env
+User=helixagent
+Group=helixagent
+WorkingDirectory=/opt/helixagent
+ExecStart=/opt/helixagent/helixagent
+EnvironmentFile=/etc/helixagent/config.env
 Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=superagent
+SyslogIdentifier=helixagent
 
 # Security settings
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
-ReadWritePaths=/var/log/superagent
+ReadWritePaths=/var/log/helixagent
 ProtectHome=yes
 
 # Resource limits
@@ -257,12 +257,12 @@ sudo apt install postgresql postgresql-contrib
 
 # Create database and user
 sudo -u postgres psql
-CREATE DATABASE superagent_db;
-CREATE USER superagent WITH PASSWORD 'your-db-password';
-GRANT ALL PRIVILEGES ON DATABASE superagent_db TO superagent;
+CREATE DATABASE helixagent_db;
+CREATE USER helixagent WITH PASSWORD 'your-db-password';
+GRANT ALL PRIVILEGES ON DATABASE helixagent_db TO helixagent;
 \q
 
-# Run migrations (SuperAgent will auto-migrate on startup)
+# Run migrations (HelixAgent will auto-migrate on startup)
 ```
 
 #### 6. Redis Setup
@@ -283,25 +283,25 @@ sudo systemctl enable redis
 #### 7. Deploy and Start
 ```bash
 # Copy binary
-sudo cp superagent /opt/superagent/
-sudo chmod +x /opt/superagent/superagent
+sudo cp helixagent /opt/helixagent/
+sudo chmod +x /opt/helixagent/helixagent
 
 # Start service
 sudo systemctl daemon-reload
-sudo systemctl start superagent
-sudo systemctl enable superagent
+sudo systemctl start helixagent
+sudo systemctl enable helixagent
 
 # Check status
-sudo systemctl status superagent
-journalctl -u superagent -f
+sudo systemctl status helixagent
+journalctl -u helixagent -f
 ```
 
 ## Load Balancing Setup
 
 ### Nginx Configuration
 ```nginx
-# /etc/nginx/sites-available/superagent
-upstream superagent_backend {
+# /etc/nginx/sites-available/helixagent
+upstream helixagent_backend {
     server 127.0.0.1:8080;
     server 127.0.0.1:8081;
     server 127.0.0.1:8082;
@@ -309,16 +309,16 @@ upstream superagent_backend {
 
 server {
     listen 80;
-    server_name api.superagent.ai;
+    server_name api.helixagent.ai;
     return 301 https://$server_name$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name api.superagent.ai;
+    server_name api.helixagent.ai;
 
-    ssl_certificate /etc/ssl/certs/superagent.crt;
-    ssl_certificate_key /etc/ssl/private/superagent.key;
+    ssl_certificate /etc/ssl/certs/helixagent.crt;
+    ssl_certificate_key /etc/ssl/private/helixagent.key;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384;
 
@@ -333,7 +333,7 @@ server {
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
 
     location / {
-        proxy_pass http://superagent_backend;
+        proxy_pass http://helixagent_backend;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -378,7 +378,7 @@ rule_files:
   # - "second_rules.yml"
 
 scrape_configs:
-  - job_name: 'superagent'
+  - job_name: 'helixagent'
     static_configs:
       - targets: ['localhost:8080']
     metrics_path: '/metrics'
@@ -412,7 +412,7 @@ curl -X POST -H "Content-Type: application/json" \
 ```bash
 # Let's Encrypt (recommended)
 sudo apt install certbot
-sudo certbot certonly --standalone -d api.superagent.ai
+sudo certbot certonly --standalone -d api.helixagent.ai
 
 # Or self-signed for testing
 openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
@@ -424,7 +424,7 @@ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -node
 sudo ufw allow ssh
 sudo ufw allow 80
 sudo ufw allow 443
-sudo ufw allow 8080  # SuperAgent port
+sudo ufw allow 8080  # HelixAgent port
 sudo ufw --force enable
 ```
 
@@ -434,7 +434,7 @@ sudo ufw --force enable
 openssl rand -hex 32
 
 # Store in environment securely
-echo "SUPERAGENT_API_KEY=$(openssl rand -hex 32)" >> /etc/superagent/config.env
+echo "HELIXAGENT_API_KEY=$(openssl rand -hex 32)" >> /etc/helixagent/config.env
 ```
 
 ## Scaling and High Availability
@@ -445,7 +445,7 @@ echo "SUPERAGENT_API_KEY=$(openssl rand -hex 32)" >> /etc/superagent/config.env
 version: '3.8'
 
 services:
-  superagent:
+  helixagent:
     deploy:
       replicas: 3
       resources:
@@ -489,11 +489,11 @@ appendonly yes
 ```bash
 # Automated backup script
 #!/bin/bash
-BACKUP_DIR="/var/backups/superagent"
+BACKUP_DIR="/var/backups/helixagent"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 # PostgreSQL backup
-pg_dump -U superagent -h localhost superagent_db > $BACKUP_DIR/db_$DATE.sql
+pg_dump -U helixagent -h localhost helixagent_db > $BACKUP_DIR/db_$DATE.sql
 
 # Redis backup
 redis-cli -a your-redis-password --rdb $BACKUP_DIR/redis_$DATE.rdb
@@ -507,9 +507,9 @@ find $BACKUP_DIR -name "*.rdb" -mtime +7 -delete
 ### Configuration Backup
 ```bash
 # Backup configurations
-tar -czf /var/backups/superagent/config_$DATE.tar.gz \
-  /etc/superagent/ \
-  /etc/nginx/sites-available/superagent \
+tar -czf /var/backups/helixagent/config_$DATE.tar.gz \
+  /etc/helixagent/ \
+  /etc/nginx/sites-available/helixagent \
   /etc/prometheus/prometheus.yml
 ```
 
@@ -523,7 +523,7 @@ tar -czf /var/backups/superagent/config_$DATE.tar.gz \
 sudo systemctl status postgresql
 
 # Check connection
-psql -U superagent -d superagent_db -h localhost
+psql -U helixagent -d helixagent_db -h localhost
 
 # View logs
 sudo tail -f /var/log/postgresql/postgresql-*.log
@@ -574,10 +574,10 @@ curl -X POST http://localhost:8080/v1/admin/providers/claude/reset-circuit-break
 ### Log Analysis
 ```bash
 # View application logs
-journalctl -u superagent -f
+journalctl -u helixagent -f
 
 # Search for errors
-journalctl -u superagent | grep ERROR
+journalctl -u helixagent | grep ERROR
 
 # Performance monitoring
 curl http://localhost:8080/metrics | grep llm_response_time
@@ -620,24 +620,24 @@ databases 16
 ### Rolling Updates
 ```bash
 # Update binary
-sudo systemctl stop superagent
-sudo cp new-superagent /opt/superagent/superagent
-sudo systemctl start superagent
+sudo systemctl stop helixagent
+sudo cp new-helixagent /opt/helixagent/helixagent
+sudo systemctl start helixagent
 
 # Verify health
 curl http://localhost:8080/health
 
 # Rollback if needed
-sudo systemctl stop superagent
-sudo cp backup-superagent /opt/superagent/superagent
-sudo systemctl start superagent
+sudo systemctl stop helixagent
+sudo cp backup-helixagent /opt/helixagent/helixagent
+sudo systemctl start helixagent
 ```
 
 ### Database Migrations
 ```bash
-# SuperAgent handles migrations automatically on startup
+# HelixAgent handles migrations automatically on startup
 # For manual control:
-psql -U superagent -d superagent_db -f migration.sql
+psql -U helixagent -d helixagent_db -f migration.sql
 ```
 
 ## Support and Maintenance
@@ -648,7 +648,7 @@ psql -U superagent -d superagent_db -f migration.sql
 curl http://localhost:8080/v1/health
 
 # Database health
-pg_isready -U superagent -d superagent_db
+pg_isready -U helixagent -d helixagent_db
 
 # Redis health
 redis-cli -a your-redis-password ping
@@ -665,13 +665,13 @@ redis-cli -a your-redis-password ping
 ### Log Rotation
 ```bash
 # Configure logrotate
-echo "/var/log/superagent/*.log {
+echo "/var/log/helixagent/*.log {
     daily
     rotate 30
     compress
     missingok
     notifempty
-}" > /etc/logrotate.d/superagent
+}" > /etc/logrotate.d/helixagent
 ```
 
-This deployment guide provides a comprehensive foundation for running SuperAgent in production. For specific environment requirements or advanced configurations, consult the project documentation or community forums.
+This deployment guide provides a comprehensive foundation for running HelixAgent in production. For specific environment requirements or advanced configurations, consult the project documentation or community forums.

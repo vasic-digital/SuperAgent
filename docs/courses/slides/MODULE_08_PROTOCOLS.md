@@ -6,7 +6,7 @@
 
 ## Slide 1: Title Slide
 
-**SuperAgent: Multi-Provider AI Orchestration**
+**HelixAgent: Multi-Provider AI Orchestration**
 
 - Module 8: MCP/LSP Integration
 - Duration: 60 minutes
@@ -18,7 +18,7 @@
 
 **By the end of this module, you will:**
 
-- Understand protocol support in SuperAgent
+- Understand protocol support in HelixAgent
 - Configure MCP, LSP, and ACP servers
 - Implement protocol-based workflows
 - Use embeddings for semantic search
@@ -450,7 +450,7 @@ Response:
 ```python
 import requests
 
-class SuperAgentClient:
+class HelixAgentClient:
     def __init__(self, base_url="http://localhost:8080"):
         self.base_url = base_url
 
@@ -465,7 +465,7 @@ class SuperAgentClient:
             }
         ).json()
 
-client = SuperAgentClient()
+client = HelixAgentClient()
 result = client.execute_mcp_tool(
     "filesystem-tools",
     "read_file",
@@ -481,11 +481,11 @@ result = client.execute_mcp_tool(
 
 ```bash
 # Protocol Configuration
-SUPERAGENT_PROTOCOLS_ENABLED=true
-SUPERAGENT_MCP_ENABLED=true
-SUPERAGENT_LSP_ENABLED=true
-SUPERAGENT_ACP_ENABLED=true
-SUPERAGENT_EMBEDDINGS_ENABLED=true
+HELIXAGENT_PROTOCOLS_ENABLED=true
+HELIXAGENT_MCP_ENABLED=true
+HELIXAGENT_LSP_ENABLED=true
+HELIXAGENT_ACP_ENABLED=true
+HELIXAGENT_EMBEDDINGS_ENABLED=true
 
 # MCP Configuration
 MCP_SERVER_TIMEOUT=30s

@@ -1,4 +1,4 @@
--- SuperAgent Database Initialization Script
+-- HelixAgent Database Initialization Script
 -- This script sets up the initial database schema for testing
 -- Note: This runs automatically on the database specified by POSTGRES_DB
 

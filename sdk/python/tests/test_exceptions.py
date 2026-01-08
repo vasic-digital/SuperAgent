@@ -1,9 +1,9 @@
-"""Tests for SuperAgent SDK exceptions."""
+"""Tests for HelixAgent SDK exceptions."""
 
 import unittest
 
-from superagent.exceptions import (
-    SuperAgentError,
+from helixagent.exceptions import (
+    HelixAgentError,
     AuthenticationError,
     RateLimitError,
     APIError,
@@ -14,35 +14,35 @@ from superagent.exceptions import (
 )
 
 
-class TestSuperAgentError(unittest.TestCase):
-    """Test SuperAgentError base exception."""
+class TestHelixAgentError(unittest.TestCase):
+    """Test HelixAgentError base exception."""
 
     def test_basic_error(self):
         """Test basic error."""
-        error = SuperAgentError("Something went wrong")
+        error = HelixAgentError("Something went wrong")
         self.assertEqual(error.message, "Something went wrong")
         self.assertIsNone(error.status_code)
         self.assertIsNone(error.response)
 
     def test_error_with_status_code(self):
         """Test error with status code."""
-        error = SuperAgentError("Error", status_code=500)
+        error = HelixAgentError("Error", status_code=500)
         self.assertEqual(error.status_code, 500)
 
     def test_error_with_response(self):
         """Test error with response."""
         response = {"error": {"message": "Details"}}
-        error = SuperAgentError("Error", response=response)
+        error = HelixAgentError("Error", response=response)
         self.assertEqual(error.response, response)
 
     def test_str_with_status_code(self):
         """Test string representation with status code."""
-        error = SuperAgentError("Not found", status_code=404)
+        error = HelixAgentError("Not found", status_code=404)
         self.assertEqual(str(error), "[404] Not found")
 
     def test_str_without_status_code(self):
         """Test string representation without status code."""
-        error = SuperAgentError("Some error")
+        error = HelixAgentError("Some error")
         self.assertEqual(str(error), "Some error")
 
 
@@ -50,9 +50,9 @@ class TestAuthenticationError(unittest.TestCase):
     """Test AuthenticationError exception."""
 
     def test_inheritance(self):
-        """Test inheritance from SuperAgentError."""
+        """Test inheritance from HelixAgentError."""
         error = AuthenticationError("Invalid API key")
-        self.assertIsInstance(error, SuperAgentError)
+        self.assertIsInstance(error, HelixAgentError)
 
     def test_with_status_code(self):
         """Test with status code."""
@@ -64,9 +64,9 @@ class TestRateLimitError(unittest.TestCase):
     """Test RateLimitError exception."""
 
     def test_inheritance(self):
-        """Test inheritance from SuperAgentError."""
+        """Test inheritance from HelixAgentError."""
         error = RateLimitError("Rate limit exceeded")
-        self.assertIsInstance(error, SuperAgentError)
+        self.assertIsInstance(error, HelixAgentError)
 
     def test_with_retry_after(self):
         """Test with retry_after."""
@@ -94,36 +94,36 @@ class TestAPIError(unittest.TestCase):
     """Test APIError exception."""
 
     def test_inheritance(self):
-        """Test inheritance from SuperAgentError."""
+        """Test inheritance from HelixAgentError."""
         error = APIError("API error")
-        self.assertIsInstance(error, SuperAgentError)
+        self.assertIsInstance(error, HelixAgentError)
 
 
 class TestConnectionError(unittest.TestCase):
     """Test ConnectionError exception."""
 
     def test_inheritance(self):
-        """Test inheritance from SuperAgentError."""
+        """Test inheritance from HelixAgentError."""
         error = ConnectionError("Connection failed")
-        self.assertIsInstance(error, SuperAgentError)
+        self.assertIsInstance(error, HelixAgentError)
 
 
 class TestValidationError(unittest.TestCase):
     """Test ValidationError exception."""
 
     def test_inheritance(self):
-        """Test inheritance from SuperAgentError."""
+        """Test inheritance from HelixAgentError."""
         error = ValidationError("Invalid input")
-        self.assertIsInstance(error, SuperAgentError)
+        self.assertIsInstance(error, HelixAgentError)
 
 
 class TestTimeoutError(unittest.TestCase):
     """Test TimeoutError exception."""
 
     def test_inheritance(self):
-        """Test inheritance from SuperAgentError."""
+        """Test inheritance from HelixAgentError."""
         error = TimeoutError("Request timed out")
-        self.assertIsInstance(error, SuperAgentError)
+        self.assertIsInstance(error, HelixAgentError)
 
 
 class TestRaiseForStatus(unittest.TestCase):

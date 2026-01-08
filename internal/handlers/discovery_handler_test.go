@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/superagent/superagent/internal/verifier"
+	"github.com/helixagent/helixagent/internal/verifier"
 )
 
 func setupDiscoveryHandler() (*DiscoveryHandler, *gin.Engine) {

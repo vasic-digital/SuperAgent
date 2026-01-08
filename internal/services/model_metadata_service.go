@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/database"
-	"github.com/superagent/superagent/internal/modelsdev"
+	"github.com/helixagent/helixagent/internal/database"
+	"github.com/helixagent/helixagent/internal/modelsdev"
 )
 
 // ModelMetadataRepositoryInterface defines the interface for model metadata persistence

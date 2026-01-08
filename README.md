@@ -1,11 +1,11 @@
-# SuperAgent: AI-Powered Ensemble LLM Service
+# HelixAgent: AI-Powered Ensemble LLM Service
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD1E?style=flat-square&logo=go)](https://golang.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=flat-square&logo=docker)](https://www.docker.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen?style=flat-square)](https://github.com/superagent/superagent/actions/workflows/tests)
+[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen?style=flat-square)](https://github.com/helixagent/helixagent/actions/workflows/tests)
 
-SuperAgent is a production-ready, AI-powered ensemble LLM service that intelligently combines responses from multiple language models to provide the most accurate and reliable outputs.
+HelixAgent is a production-ready, AI-powered ensemble LLM service that intelligently combines responses from multiple language models to provide the most accurate and reliable outputs.
 
 ## 🚀 Quick Start
 
@@ -17,8 +17,8 @@ SuperAgent is a production-ready, AI-powered ensemble LLM service that intellige
 ### Using Docker (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Copy environment configuration
 cp .env.example .env
@@ -68,7 +68,7 @@ make run-dev
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   SuperAgent   │    │   PostgreSQL   │    │     Redis      │
+│   HelixAgent   │    │   PostgreSQL   │    │     Redis      │
 │                │    │                │    │                │
 │ ┌─────────────┐│    │                │    │                │
 │ │   Web API  │◄───┼────────────────┼───►│                │
@@ -97,28 +97,28 @@ make run-dev
 ### Prometheus Metrics
 - **URL**: http://localhost:9090
 - **Metrics Available**:
-  - `superagent_requests_total`
-  - `superagent_response_time_seconds`
-  - `superagent_errors_total`
-  - `superagent_provider_health`
+  - `helixagent_requests_total`
+  - `helixagent_response_time_seconds`
+  - `helixagent_errors_total`
+  - `helixagent_provider_health`
 
 ## 🔌 Configuration
 
 ### Environment Variables
-SuperAgent uses comprehensive environment-based configuration. Key variables:
+HelixAgent uses comprehensive environment-based configuration. Key variables:
 
 ```bash
 # Server Configuration
 PORT=8080
-SUPERAGENT_API_KEY=your-api-key
+HELIXAGENT_API_KEY=your-api-key
 GIN_MODE=release
 
 # Database
 DB_HOST=localhost
 DB_PORT=5432
-DB_USER=superagent
+DB_USER=helixagent
 DB_PASSWORD=your-password
-DB_NAME=superagent_db
+DB_NAME=helixagent_db
 
 # LLM Providers (Optional - can use Ollama for free)
 OLLAMA_ENABLED=true
@@ -299,7 +299,7 @@ curl -X POST http://localhost:8080/v1/completions/stream \
 package main
 
 import (
-    "github.com/superagent/superagent/internal/plugins"
+    "github.com/helixagent/helixagent/internal/plugins"
 )
 
 type MyPlugin struct {
@@ -329,7 +329,7 @@ func (p *MyPlugin) Shutdown(ctx context.Context) error { /* cleanup */ }
 
 ## 🔬 LLM Optimization Framework
 
-SuperAgent includes a comprehensive LLM optimization framework for improving performance:
+HelixAgent includes a comprehensive LLM optimization framework for improving performance:
 
 ### Native Go Optimizations
 - **Semantic Cache**: Vector similarity-based caching (GPTCache-inspired)
@@ -358,7 +358,7 @@ docker-compose --profile optimization up -d
 
 ### Usage Example
 ```go
-import "github.com/superagent/superagent/internal/optimization"
+import "github.com/helixagent/helixagent/internal/optimization"
 
 // Create and use optimization service
 config := optimization.DefaultConfig()
@@ -389,7 +389,7 @@ optimized, _ := svc.OptimizeRequest(ctx, prompt, embedding)
 // Request metrics
 requestCounter := prometheus.NewCounterVec(
     prometheus.CounterOpts{
-        Name: "superagent_requests_total",
+        Name: "helixagent_requests_total",
         Help: "Total number of requests processed",
     },
     []string{"method", "endpoint", "provider"},
@@ -398,7 +398,7 @@ requestCounter := prometheus.NewCounterVec(
 // Response time metrics
 responseTime := prometheus.NewHistogramVec(
     prometheus.HistogramOpts{
-        Name: "superagent_response_time_seconds",
+        Name: "helixagent_response_time_seconds",
         Help: "Request response time in seconds",
     },
     []string{"method", "endpoint"},
@@ -455,16 +455,16 @@ curl http://localhost:8080/v1/providers
 curl http://localhost:8080/v1/providers/ollama/health
 
 # View logs
-docker-compose logs superagent
+docker-compose logs helixagent
 ```
 
 #### Database Connection
 ```bash
 # Check database connectivity
-docker-compose exec postgres pg_isready -U superagent -d superagent_db
+docker-compose exec postgres pg_isready -U helixagent -d helixagent_db
 
 # Test from application container
-docker-compose exec superagent ./superagent check-db
+docker-compose exec helixagent ./helixagent check-db
 ```
 
 #### Performance Issues
@@ -473,7 +473,7 @@ docker-compose exec superagent ./superagent check-db
 curl -w "@{time_total}\n" -o /dev/null -s http://localhost:8080/health
 
 # Check resource usage
-docker stats superagent
+docker stats helixagent
 
 # View metrics
 curl http://localhost:9090/metrics
@@ -501,14 +501,14 @@ export REQUEST_LOGGING=true
 - **[Quick Start](./docs/guides/quick-start-guide.md)**: Getting started guide
 
 ### Community
-- **GitHub Discussions**: [Community Support](https://github.com/superagent/superagent/discussions)
-- **Issues**: [Bug Reports & Feature Requests](https://github.com/superagent/superagent/issues)
+- **GitHub Discussions**: [Community Support](https://github.com/helixagent/helixagent/discussions)
+- **Issues**: [Bug Reports & Feature Requests](https://github.com/helixagent/helixagent/issues)
 - **Contributing**: [Contribution Guidelines](CONTRIBUTING.md)
 
 ### Support
-- **Documentation**: [SuperAgent Docs](https://docs.superagent.ai)
-- **Website**: [SuperAgent.ai](https://superagent.ai)
-- **Email**: [support@superagent.ai](mailto:support@superagent.ai)
+- **Documentation**: [HelixAgent Docs](https://docs.helixagent.ai)
+- **Website**: [HelixAgent.ai](https://helixagent.ai)
+- **Email**: [support@helixagent.ai](mailto:support@helixagent.ai)
 
 ---
 
@@ -537,4 +537,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**SuperAgent** - Intelligent ensemble LLM service for production workloads. 🚀
+**HelixAgent** - Intelligent ensemble LLM service for production workloads. 🚀

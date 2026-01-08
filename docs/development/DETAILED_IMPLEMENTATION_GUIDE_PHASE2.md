@@ -25,7 +25,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/llm/providers"
+    "github.com/helixagent/helixagent/internal/llm/providers"
 )
 
 func TestClaudeProvider_Initialization(t *testing.T) {
@@ -137,8 +137,8 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/llm"
-    "github.com/superagent/superagent/internal/llm/providers"
+    "github.com/helixagent/helixagent/internal/llm"
+    "github.com/helixagent/helixagent/internal/llm/providers"
 )
 
 func TestClaudeProvider_Complete(t *testing.T) {
@@ -298,8 +298,8 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/llm"
-    "github.com/superagent/superagent/internal/llm/providers"
+    "github.com/helixagent/helixagent/internal/llm"
+    "github.com/helixagent/helixagent/internal/llm/providers"
 )
 
 func TestClaudeProvider_ErrorHandling(t *testing.T) {
@@ -451,8 +451,8 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/llm"
-    "github.com/superagent/superagent/internal/llm/providers"
+    "github.com/helixagent/helixagent/internal/llm"
+    "github.com/helixagent/helixagent/internal/llm/providers"
 )
 
 func TestClaudeProvider_RateLimiting(t *testing.T) {
@@ -557,7 +557,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/llm/providers"
+    "github.com/helixagent/helixagent/internal/llm/providers"
 )
 
 func TestClaudeProvider_Capabilities(t *testing.T) {
@@ -639,8 +639,8 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/llm"
-    "github.com/superagent/superagent/internal/llm/providers"
+    "github.com/helixagent/helixagent/internal/llm"
+    "github.com/helixagent/helixagent/internal/llm/providers"
 )
 
 func TestClaudeProvider_InterfaceCompliance(t *testing.T) {
@@ -742,7 +742,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func TestDebateService_ConductDebate(t *testing.T) {
@@ -892,7 +892,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func TestConsensusService_BuildConsensus(t *testing.T) {
@@ -981,7 +981,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/middleware"
+    "github.com/helixagent/helixagent/internal/middleware"
 )
 
 func TestAuthMiddleware(t *testing.T) {
@@ -1048,7 +1048,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/database"
+    "github.com/helixagent/helixagent/internal/database"
 )
 
 func TestDatabase_Connection(t *testing.T) {
@@ -1097,7 +1097,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/cache"
+    "github.com/helixagent/helixagent/internal/cache"
 )
 
 func TestCacheService_EdgeCases(t *testing.T) {
@@ -1186,7 +1186,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func TestMultiProviderIntegration(t *testing.T) {
@@ -1302,7 +1302,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func TestAdvancedDebateWorkflow(t *testing.T) {
@@ -1379,7 +1379,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func TestCogneeIntegration(t *testing.T) {
@@ -1447,8 +1447,8 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/cache"
-    "github.com/superagent/superagent/internal/database"
+    "github.com/helixagent/helixagent/internal/cache"
+    "github.com/helixagent/helixagent/internal/database"
 )
 
 func TestDatabaseCacheIntegration(t *testing.T) {
@@ -1500,7 +1500,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/plugins"
+    "github.com/helixagent/helixagent/internal/plugins"
 )
 
 func TestPluginIntegration(t *testing.T) {
@@ -1540,7 +1540,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func TestDebateWorkflow_E2E(t *testing.T) {
@@ -1604,7 +1604,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func TestConsensusBuilding_E2E(t *testing.T) {
@@ -1668,7 +1668,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func TestPerformance_E2E(t *testing.T) {
@@ -1762,7 +1762,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func TestResilience_E2E(t *testing.T) {
@@ -1826,7 +1826,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func TestSecurity_E2E(t *testing.T) {
@@ -1893,7 +1893,7 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 
 func TestConcurrent_E2E(t *testing.T) {

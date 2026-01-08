@@ -1,7 +1,7 @@
 # Models.dev Integration - Comprehensive Implementation Plan
 
 ## Executive Summary
-This document outlines the complete plan for integrating Models.dev into the SuperAgent project to dramatically enhance model and provider information capabilities. The integration will provide detailed, up-to-date model metadata, pricing, capabilities, and performance metrics.
+This document outlines the complete plan for integrating Models.dev into the HelixAgent project to dramatically enhance model and provider information capabilities. The integration will provide detailed, up-to-date model metadata, pricing, capabilities, and performance metrics.
 
 ## 1. Research & Analysis Phase
 
@@ -27,7 +27,7 @@ This document outlines the complete plan for integrating Models.dev into the Sup
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     SuperAgent API Layer                    │
+│                     HelixAgent API Layer                    │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
 │  │ Model Info   │  │ Provider     │  │ Capabilities │      │
 │  │ Endpoints   │  │ Endpoints   │  │ Endpoints   │      │

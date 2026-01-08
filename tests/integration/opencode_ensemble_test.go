@@ -1,4 +1,4 @@
-// Package integration provides ensemble and provider combination tests for OpenCode with SuperAgent.
+// Package integration provides ensemble and provider combination tests for OpenCode with HelixAgent.
 // These tests verify all LLM provider combinations and ensemble strategies work correctly.
 package integration
 
@@ -87,7 +87,7 @@ func getAvailableProviders(t *testing.T) []EnsembleProviderConfig {
 // ENSEMBLE CONFIGURATION TESTS
 // =============================================================================
 
-// EnsembleConfig represents SuperAgent ensemble configuration
+// EnsembleConfig represents HelixAgent ensemble configuration
 type EnsembleConfig struct {
 	Strategy         string   `json:"strategy,omitempty"`
 	Providers        []string `json:"providers,omitempty"`
@@ -126,7 +126,7 @@ func TestEnsembleStrategies(t *testing.T) {
 			defer cancel()
 
 			chatReq := ChatRequestWithEnsemble{
-				Model: "superagent-debate",
+				Model: "helixagent-debate",
 				Messages: []OpenAIMessage{
 					{Role: "user", Content: "What is 2+2? Answer with just the number."},
 				},
@@ -148,8 +148,8 @@ func TestEnsembleStrategies(t *testing.T) {
 				config.BaseURL+"/chat/completions", bytes.NewReader(body))
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
-			if config.SuperAgentAPIKey != "" {
-				req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+			if config.HelixAgentAPIKey != "" {
+				req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 			}
 
 			client := &http.Client{}
@@ -210,7 +210,7 @@ func TestProviderCombinations(t *testing.T) {
 				defer cancel()
 
 				chatReq := ChatRequestWithEnsemble{
-					Model: "superagent-debate",
+					Model: "helixagent-debate",
 					Messages: []OpenAIMessage{
 						{Role: "user", Content: "Say 'hello' and nothing else."},
 					},
@@ -231,8 +231,8 @@ func TestProviderCombinations(t *testing.T) {
 					config.BaseURL+"/chat/completions", bytes.NewReader(body))
 				require.NoError(t, err)
 				req.Header.Set("Content-Type", "application/json")
-				if config.SuperAgentAPIKey != "" {
-					req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+				if config.HelixAgentAPIKey != "" {
+					req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 				}
 
 				client := &http.Client{}
@@ -264,7 +264,7 @@ func TestForceProvider(t *testing.T) {
 			defer cancel()
 
 			chatReq := ChatRequestWithEnsemble{
-				Model: "superagent-debate",
+				Model: "helixagent-debate",
 				Messages: []OpenAIMessage{
 					{Role: "user", Content: "Say 'test' and nothing else."},
 				},
@@ -281,8 +281,8 @@ func TestForceProvider(t *testing.T) {
 				config.BaseURL+"/chat/completions", bytes.NewReader(body))
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
-			if config.SuperAgentAPIKey != "" {
-				req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+			if config.HelixAgentAPIKey != "" {
+				req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 			}
 
 			client := &http.Client{}
@@ -310,7 +310,7 @@ func TestEnsembleStreaming(t *testing.T) {
 		defer cancel()
 
 		chatReq := ChatRequestWithEnsemble{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Count from 1 to 3."},
 			},
@@ -332,8 +332,8 @@ func TestEnsembleStreaming(t *testing.T) {
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "text/event-stream")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -388,7 +388,7 @@ func TestEnsembleStreaming(t *testing.T) {
 		defer cancel()
 
 		chatReq := ChatRequestWithEnsemble{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Say hello."},
 			},
@@ -406,8 +406,8 @@ func TestEnsembleStreaming(t *testing.T) {
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "text/event-stream")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -435,7 +435,7 @@ func TestProviderFallback(t *testing.T) {
 
 		// Request with an invalid provider first, should fallback
 		chatReq := ChatRequestWithEnsemble{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Say 'fallback test' and nothing else."},
 			},
@@ -456,8 +456,8 @@ func TestProviderFallback(t *testing.T) {
 			config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -481,7 +481,7 @@ func TestTimeoutHandling(t *testing.T) {
 		defer cancel()
 
 		chatReq := ChatRequestWithEnsemble{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Write a very short poem."},
 			},
@@ -500,8 +500,8 @@ func TestTimeoutHandling(t *testing.T) {
 			config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -518,7 +518,7 @@ func TestTimeoutHandling(t *testing.T) {
 		defer cancel()
 
 		chatReq := ChatRequestWithEnsemble{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Say hello."},
 			},
@@ -537,8 +537,8 @@ func TestTimeoutHandling(t *testing.T) {
 			config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -581,7 +581,7 @@ func TestRateLimitHandling(t *testing.T) {
 				defer cancel()
 
 				chatReq := OpenAIChatRequest{
-					Model: "superagent-debate",
+					Model: "helixagent-debate",
 					Messages: []OpenAIMessage{
 						{Role: "user", Content: "Say 'ok'."},
 					},
@@ -594,8 +594,8 @@ func TestRateLimitHandling(t *testing.T) {
 				req, _ := http.NewRequestWithContext(ctx, "POST",
 					config.BaseURL+"/chat/completions", bytes.NewReader(body))
 				req.Header.Set("Content-Type", "application/json")
-				if config.SuperAgentAPIKey != "" {
-					req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+				if config.HelixAgentAPIKey != "" {
+					req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 				}
 
 				client := &http.Client{}
@@ -660,8 +660,8 @@ func TestModelDiscovery(t *testing.T) {
 
 		req, err := http.NewRequestWithContext(ctx, "GET", config.BaseURL+"/models", nil)
 		require.NoError(t, err)
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -680,12 +680,12 @@ func TestModelDiscovery(t *testing.T) {
 			t.Logf("  - %s (owned by: %s)", model.ID, model.OwnedBy)
 		}
 
-		// Should have at least the superagent-debate model
+		// Should have at least the helixagent-debate model
 		modelIDs := make(map[string]bool)
 		for _, m := range modelsResp.Data {
 			modelIDs[m.ID] = true
 		}
-		assert.True(t, modelIDs["superagent-debate"], "Should include superagent-debate model")
+		assert.True(t, modelIDs["helixagent-debate"], "Should include helixagent-debate model")
 	})
 
 	t.Run("TestEachDiscoveredModel", func(t *testing.T) {
@@ -694,8 +694,8 @@ func TestModelDiscovery(t *testing.T) {
 
 		req, err := http.NewRequestWithContext(ctx, "GET", config.BaseURL+"/models", nil)
 		require.NoError(t, err)
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -736,8 +736,8 @@ func TestModelDiscovery(t *testing.T) {
 				req, _ := http.NewRequestWithContext(ctx, "POST",
 					config.BaseURL+"/chat/completions", bytes.NewReader(body))
 				req.Header.Set("Content-Type", "application/json")
-				if config.SuperAgentAPIKey != "" {
-					req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+				if config.HelixAgentAPIKey != "" {
+					req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 				}
 
 				client := &http.Client{}
@@ -770,7 +770,7 @@ func TestProviderHealthChecks(t *testing.T) {
 
 		for _, endpoint := range endpoints {
 			req, err := http.NewRequestWithContext(ctx, "GET",
-				fmt.Sprintf("http://%s:%s%s", config.SuperAgentHost, config.SuperAgentPort, endpoint), nil)
+				fmt.Sprintf("http://%s:%s%s", config.HelixAgentHost, config.HelixAgentPort, endpoint), nil)
 			require.NoError(t, err)
 
 			client := &http.Client{}
@@ -795,8 +795,8 @@ func TestProviderHealthChecks(t *testing.T) {
 
 		req, err := http.NewRequestWithContext(ctx, "GET", config.BaseURL+"/models", nil)
 		require.NoError(t, err)
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -827,7 +827,7 @@ func TestDeepSeekSpecific(t *testing.T) {
 		defer cancel()
 
 		chatReq := ChatRequestWithEnsemble{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Hello from DeepSeek test."},
 			},
@@ -841,8 +841,8 @@ func TestDeepSeekSpecific(t *testing.T) {
 		req, _ := http.NewRequestWithContext(ctx, "POST",
 			config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -869,7 +869,7 @@ func TestGeminiSpecific(t *testing.T) {
 		defer cancel()
 
 		chatReq := ChatRequestWithEnsemble{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Hello from Gemini test."},
 			},
@@ -883,8 +883,8 @@ func TestGeminiSpecific(t *testing.T) {
 		req, _ := http.NewRequestWithContext(ctx, "POST",
 			config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}
@@ -911,7 +911,7 @@ func TestOpenRouterSpecific(t *testing.T) {
 		defer cancel()
 
 		chatReq := ChatRequestWithEnsemble{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenAIMessage{
 				{Role: "user", Content: "Hello from OpenRouter test."},
 			},
@@ -925,8 +925,8 @@ func TestOpenRouterSpecific(t *testing.T) {
 		req, _ := http.NewRequestWithContext(ctx, "POST",
 			config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		client := &http.Client{}

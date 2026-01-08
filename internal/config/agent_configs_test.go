@@ -14,11 +14,11 @@ import (
 // ========================================
 
 func TestNewConfigGenerator(t *testing.T) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 
 	assert.Equal(t, "http://localhost:8080/v1", gen.baseURL)
 	assert.Equal(t, "test-key", gen.apiKey)
-	assert.Equal(t, "superagent-debate", gen.model)
+	assert.Equal(t, "helixagent-debate", gen.model)
 	assert.Equal(t, 120, gen.timeout)
 	assert.Equal(t, 8192, gen.maxTokens)
 }
@@ -36,7 +36,7 @@ func TestConfigGenerator_SetMaxTokens(t *testing.T) {
 }
 
 func TestConfigGenerator_Validate_Success(t *testing.T) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 	err := gen.validate()
 	assert.NoError(t, err)
 }
@@ -67,16 +67,16 @@ func TestConfigGenerator_Validate_InvalidURL(t *testing.T) {
 // ========================================
 
 func TestConfigGenerator_GenerateOpenCodeConfig(t *testing.T) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 	gen.SetTimeout(180)
 
 	config, err := gen.GenerateOpenCodeConfig()
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://opencode.ai/config.json", config.Schema)
-	assert.Contains(t, config.Provider, "superagent")
+	assert.Contains(t, config.Provider, "helixagent")
 
-	provider := config.Provider["superagent"]
+	provider := config.Provider["helixagent"]
 	assert.Equal(t, "@ai-sdk/openai-compatible", provider.NPM)
 	assert.Equal(t, "http://localhost:8080/v1", provider.Options.BaseURL)
 	assert.Equal(t, "test-key", provider.Options.APIKey)
@@ -84,7 +84,7 @@ func TestConfigGenerator_GenerateOpenCodeConfig(t *testing.T) {
 }
 
 func TestConfigGenerator_GenerateOpenCodeConfig_JSON(t *testing.T) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 
 	jsonData, err := gen.GenerateJSON(AgentTypeOpenCode)
 	require.NoError(t, err)
@@ -99,7 +99,7 @@ func TestConfigGenerator_GenerateOpenCodeConfig_JSON(t *testing.T) {
 	assert.Contains(t, parsed, "provider")
 
 	providers := parsed["provider"].(map[string]interface{})
-	assert.Contains(t, providers, "superagent")
+	assert.Contains(t, providers, "helixagent")
 }
 
 // ========================================
@@ -107,26 +107,26 @@ func TestConfigGenerator_GenerateOpenCodeConfig_JSON(t *testing.T) {
 // ========================================
 
 func TestConfigGenerator_GenerateCrushConfig(t *testing.T) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 	gen.SetMaxTokens(4096)
 
 	config, err := gen.GenerateCrushConfig()
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://charm.land/crush.json", config.Schema)
-	assert.Contains(t, config.Providers, "superagent")
+	assert.Contains(t, config.Providers, "helixagent")
 
-	provider := config.Providers["superagent"]
+	provider := config.Providers["helixagent"]
 	assert.Equal(t, "openai-compat", provider.Type)
 	assert.Equal(t, "http://localhost:8080/v1", provider.BaseURL)
 	assert.Equal(t, "test-key", provider.APIKey)
 	assert.Len(t, provider.Models, 1)
-	assert.Equal(t, "superagent-debate", provider.Models[0].ID)
+	assert.Equal(t, "helixagent-debate", provider.Models[0].ID)
 	assert.Equal(t, 4096, provider.Models[0].DefaultMaxTokens)
 }
 
 func TestConfigGenerator_GenerateCrushConfig_JSON(t *testing.T) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 
 	jsonData, err := gen.GenerateJSON(AgentTypeCrush)
 	require.NoError(t, err)
@@ -141,10 +141,10 @@ func TestConfigGenerator_GenerateCrushConfig_JSON(t *testing.T) {
 	assert.Contains(t, parsed, "providers")
 
 	providers := parsed["providers"].(map[string]interface{})
-	assert.Contains(t, providers, "superagent")
+	assert.Contains(t, providers, "helixagent")
 
-	superagent := providers["superagent"].(map[string]interface{})
-	assert.Equal(t, "openai-compat", superagent["type"])
+	helixagent := providers["helixagent"].(map[string]interface{})
+	assert.Equal(t, "openai-compat", helixagent["type"])
 }
 
 // ========================================
@@ -152,28 +152,28 @@ func TestConfigGenerator_GenerateCrushConfig_JSON(t *testing.T) {
 // ========================================
 
 func TestConfigGenerator_GenerateHelixCodeConfig(t *testing.T) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 	gen.SetTimeout(300).SetMaxTokens(16384)
 
 	config, err := gen.GenerateHelixCodeConfig()
 	require.NoError(t, err)
 
-	assert.Contains(t, config.Providers, "superagent")
+	assert.Contains(t, config.Providers, "helixagent")
 
-	provider := config.Providers["superagent"]
+	provider := config.Providers["helixagent"]
 	assert.Equal(t, "openai-compatible", provider.Type)
 	assert.Equal(t, "http://localhost:8080/v1", provider.BaseURL)
 	assert.Equal(t, "test-key", provider.APIKey)
-	assert.Equal(t, "superagent-debate", provider.Model)
+	assert.Equal(t, "helixagent-debate", provider.Model)
 	assert.Equal(t, 16384, provider.MaxTokens)
 	assert.Equal(t, 300, provider.Timeout)
 
-	assert.Equal(t, "superagent", config.Settings.DefaultProvider)
+	assert.Equal(t, "helixagent", config.Settings.DefaultProvider)
 	assert.True(t, config.Settings.StreamingEnabled)
 }
 
 func TestConfigGenerator_GenerateHelixCodeConfig_JSON(t *testing.T) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 
 	jsonData, err := gen.GenerateJSON(AgentTypeHelixCode)
 	require.NoError(t, err)
@@ -193,7 +193,7 @@ func TestConfigGenerator_GenerateHelixCodeConfig_JSON(t *testing.T) {
 // ========================================
 
 func TestConfigGenerator_GenerateConfig_AllTypes(t *testing.T) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 
 	tests := []struct {
 		agentType AgentType
@@ -238,7 +238,7 @@ func TestConfigValidator_ValidateOpenCodeConfig_Valid(t *testing.T) {
 	config := &OpenCodeConfig{
 		Schema: "https://opencode.ai/config.json",
 		Provider: map[string]OpenCodeProvider{
-			"superagent": {
+			"helixagent": {
 				NPM: "@ai-sdk/openai-compatible",
 				Options: OpenCodeProviderOptions{
 					BaseURL: "http://localhost:8080/v1",
@@ -317,12 +317,12 @@ func TestConfigValidator_ValidateCrushConfig_Valid(t *testing.T) {
 	config := &CrushConfig{
 		Schema: "https://charm.land/crush.json",
 		Providers: map[string]CrushProvider{
-			"superagent": {
+			"helixagent": {
 				Type:    "openai-compat",
 				BaseURL: "http://localhost:8080/v1",
 				APIKey:  "test-key",
 				Models: []CrushModel{
-					{ID: "superagent-debate"},
+					{ID: "helixagent-debate"},
 				},
 			},
 		},
@@ -419,15 +419,15 @@ func TestConfigValidator_ValidateHelixCodeConfig_Valid(t *testing.T) {
 
 	config := &HelixCodeConfig{
 		Providers: map[string]HelixCodeProvider{
-			"superagent": {
+			"helixagent": {
 				Type:    "openai-compatible",
 				BaseURL: "http://localhost:8080/v1",
-				Model:   "superagent-debate",
+				Model:   "helixagent-debate",
 				Timeout: 120,
 			},
 		},
 		Settings: HelixCodeSettings{
-			DefaultProvider: "superagent",
+			DefaultProvider: "helixagent",
 		},
 	}
 
@@ -500,7 +500,7 @@ func TestConfigValidator_ValidateJSON_OpenCode(t *testing.T) {
 	jsonData := `{
 		"$schema": "https://opencode.ai/config.json",
 		"provider": {
-			"superagent": {
+			"helixagent": {
 				"npm": "@ai-sdk/openai-compatible",
 				"options": {
 					"baseURL": "http://localhost:8080/v1",
@@ -521,10 +521,10 @@ func TestConfigValidator_ValidateJSON_Crush(t *testing.T) {
 	jsonData := `{
 		"$schema": "https://charm.land/crush.json",
 		"providers": {
-			"superagent": {
+			"helixagent": {
 				"type": "openai-compat",
 				"base_url": "http://localhost:8080/v1",
-				"models": [{"id": "superagent-debate"}]
+				"models": [{"id": "helixagent-debate"}]
 			}
 		}
 	}`
@@ -539,10 +539,10 @@ func TestConfigValidator_ValidateJSON_HelixCode(t *testing.T) {
 
 	jsonData := `{
 		"providers": {
-			"superagent": {
+			"helixagent": {
 				"type": "openai-compatible",
 				"base_url": "http://localhost:8080/v1",
-				"model": "superagent-debate"
+				"model": "helixagent-debate"
 			}
 		}
 	}`
@@ -598,7 +598,7 @@ func TestValidationResult_String_Invalid(t *testing.T) {
 // ========================================
 
 func TestConfigGenerator_GenerateAndValidate_AllAgents(t *testing.T) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 	v := NewConfigValidator()
 
 	agents := []AgentType{AgentTypeOpenCode, AgentTypeCrush, AgentTypeHelixCode}
@@ -622,7 +622,7 @@ func TestConfigGenerator_GenerateAndValidate_AllAgents(t *testing.T) {
 // ========================================
 
 func BenchmarkConfigGenerator_GenerateOpenCodeConfig(b *testing.B) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -631,7 +631,7 @@ func BenchmarkConfigGenerator_GenerateOpenCodeConfig(b *testing.B) {
 }
 
 func BenchmarkConfigGenerator_GenerateCrushConfig(b *testing.B) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -640,7 +640,7 @@ func BenchmarkConfigGenerator_GenerateCrushConfig(b *testing.B) {
 }
 
 func BenchmarkConfigGenerator_GenerateHelixCodeConfig(b *testing.B) {
-	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "superagent-debate")
+	gen := NewConfigGenerator("http://localhost:8080/v1", "test-key", "helixagent-debate")
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -652,7 +652,7 @@ func BenchmarkConfigValidator_ValidateOpenCodeConfig(b *testing.B) {
 	v := NewConfigValidator()
 	config := &OpenCodeConfig{
 		Provider: map[string]OpenCodeProvider{
-			"superagent": {
+			"helixagent": {
 				Options: OpenCodeProviderOptions{
 					BaseURL: "http://localhost:8080/v1",
 				},

@@ -49,13 +49,13 @@ func TestLLMProviderConfiguration_GeminiIsPrimary(t *testing.T) {
 		assert.True(t, strings.HasPrefix(apiKey, "AIza"), "Gemini API key should start with 'AIza'")
 	})
 
-	// Test 2: Verify Gemini provider is available in SuperAgent
+	// Test 2: Verify Gemini provider is available in HelixAgent
 	t.Run("GeminiProviderAvailable", func(t *testing.T) {
 		client := &http.Client{Timeout: 30 * time.Second}
 
-		resp, err := client.Get(SuperAgentBaseURL + "/v1/providers")
+		resp, err := client.Get(HelixAgentBaseURL + "/v1/providers")
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer resp.Body.Close()
 
@@ -118,22 +118,22 @@ func TestLLMProviderConfiguration_OllamaDeprecated(t *testing.T) {
 		t.Log("Warning: Ollama is running. It should be disabled for production. Use Gemini instead.")
 	})
 
-	// Test 2: Verify SuperAgent works without Ollama
-	t.Run("SuperAgentWorksWithoutOllama", func(t *testing.T) {
-		resp, err := client.Get(SuperAgentBaseURL + "/health")
+	// Test 2: Verify HelixAgent works without Ollama
+	t.Run("HelixAgentWorksWithoutOllama", func(t *testing.T) {
+		resp, err := client.Get(HelixAgentBaseURL + "/health")
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer resp.Body.Close()
 
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "SuperAgent should be healthy without Ollama")
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "HelixAgent should be healthy without Ollama")
 	})
 
 	// Test 3: Verify Cognee works without Ollama
 	t.Run("CogneeWorksWithoutOllama", func(t *testing.T) {
-		resp, err := client.Get(SuperAgentBaseURL + "/v1/cognee/health")
+		resp, err := client.Get(HelixAgentBaseURL + "/v1/cognee/health")
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer resp.Body.Close()
 
@@ -166,7 +166,7 @@ func TestLLMProviderConfiguration_EnsembleUsesVerifiedProviders(t *testing.T) {
 	// Test 1: Verify ensemble responds correctly
 	t.Run("EnsembleRespondsCorrectly", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-debate",
+			"model": "helixagent-debate",
 			"messages": []map[string]string{
 				{"role": "user", "content": "What is 2+2? Reply with just the number."},
 			},
@@ -174,13 +174,13 @@ func TestLLMProviderConfiguration_EnsembleUsesVerifiedProviders(t *testing.T) {
 		}
 		bodyBytes, _ := json.Marshal(reqBody)
 
-		req, err := http.NewRequest("POST", SuperAgentBaseURL+"/v1/chat/completions", bytes.NewReader(bodyBytes))
+		req, err := http.NewRequest("POST", HelixAgentBaseURL+"/v1/chat/completions", bytes.NewReader(bodyBytes))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer resp.Body.Close()
 
@@ -200,8 +200,8 @@ func TestLLMProviderConfiguration_EnsembleUsesVerifiedProviders(t *testing.T) {
 		}
 		json.NewDecoder(resp.Body).Decode(&result)
 
-		assert.Equal(t, "superagent-ensemble", result.Model, "Should use ensemble model")
-		assert.Equal(t, "fp_superagent_ensemble", result.SystemFingerprint, "Should have ensemble fingerprint")
+		assert.Equal(t, "helixagent-ensemble", result.Model, "Should use ensemble model")
+		assert.Equal(t, "fp_helixagent_ensemble", result.SystemFingerprint, "Should have ensemble fingerprint")
 		if len(result.Choices) == 0 {
 			t.Skip("No choices returned (providers may be temporarily unavailable)")
 		}
@@ -210,9 +210,9 @@ func TestLLMProviderConfiguration_EnsembleUsesVerifiedProviders(t *testing.T) {
 
 	// Test 2: Verify model list shows verified models
 	t.Run("ModelListShowsVerifiedModels", func(t *testing.T) {
-		resp, err := client.Get(SuperAgentBaseURL + "/v1/models")
+		resp, err := client.Get(HelixAgentBaseURL + "/v1/models")
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer resp.Body.Close()
 
@@ -254,9 +254,9 @@ func TestLLMProviderConfiguration_CogneeUsesGemini(t *testing.T) {
 		// Verify through Cognee health that Gemini features work
 		client := &http.Client{Timeout: 30 * time.Second}
 
-		resp, err := client.Get(SuperAgentBaseURL + "/v1/cognee/health")
+		resp, err := client.Get(HelixAgentBaseURL + "/v1/cognee/health")
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer resp.Body.Close()
 
@@ -297,9 +297,9 @@ func TestLLMProviderConfiguration_ProviderFallback(t *testing.T) {
 
 	// Test: Verify providers endpoint shows fallback configuration
 	t.Run("ProvidersShowFallbackConfig", func(t *testing.T) {
-		resp, err := client.Get(SuperAgentBaseURL + "/v1/providers")
+		resp, err := client.Get(HelixAgentBaseURL + "/v1/providers")
 		if err != nil {
-			t.Skipf("SuperAgent service not available: %v", err)
+			t.Skipf("HelixAgent service not available: %v", err)
 		}
 		defer resp.Body.Close()
 

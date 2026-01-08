@@ -1,17 +1,17 @@
 {
-  "name": "superagent-sdk",
+  "name": "helixagent-sdk",
   "version": "1.0.0",
-  "description": "SuperAgent JavaScript/TypeScript SDK for AI orchestration platform",
-  "main": "dist/superagent.js",
-  "module": "dist/superagent.esm.js",
-  "types": "dist/superagent.d.ts",
-  "browser": "dist/superagent.browser.js",
+  "description": "HelixAgent JavaScript/TypeScript SDK for AI orchestration platform",
+  "main": "dist/helixagent.js",
+  "module": "dist/helixagent.esm.js",
+  "types": "dist/helixagent.d.ts",
+  "browser": "dist/helixagent.browser.js",
   "exports": {
     ".": {
-      "types": "./dist/superagent.d.ts",
-      "import": "./dist/superagent.esm.js",
-      "require": "./dist/superagent.js",
-      "browser": "./dist/superagent.browser.js"
+      "types": "./dist/helixagent.d.ts",
+      "import": "./dist/helixagent.esm.js",
+      "require": "./dist/helixagent.js",
+      "browser": "./dist/helixagent.browser.js"
     }
   },
   "files": [
@@ -24,7 +24,7 @@
     "build": "npm run build:cjs && npm run build:esm && npm run build:browser && npm run build:types",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json",
-    "build:browser": "esbuild src/index.ts --bundle --minify --outfile=dist/superagent.browser.js --platform=browser --target=es2020",
+    "build:browser": "esbuild src/index.ts --bundle --minify --outfile=dist/helixagent.browser.js --platform=browser --target=es2020",
     "build:types": "tsc -p tsconfig.types.json",
     "test": "jest",
     "test:coverage": "jest --coverage",
@@ -33,7 +33,7 @@
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
-    "superagent",
+    "helixagent",
     "ai",
     "llm",
     "openai",
@@ -43,15 +43,15 @@
     "multi-model",
     "typescript"
   ],
-  "author": "SuperAgent",
+  "author": "HelixAgent",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/superagent/superagent.git"
+    "url": "https://github.com/helixagent/helixagent.git"
   },
-  "homepage": "https://github.com/superagent/superagent#readme",
+  "homepage": "https://github.com/helixagent/helixagent#readme",
   "bugs": {
-    "url": "https://github.com/superagent/superagent/issues"
+    "url": "https://github.com/helixagent/helixagent/issues"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 const (
@@ -520,7 +520,7 @@ func (p *GeminiProvider) makeAPICallWithAuthRetry(ctx context.Context, req Gemin
 		// Set headers
 		httpReq.Header.Set("Content-Type", "application/json")
 		httpReq.Header.Set("x-goog-api-key", p.apiKey)
-		httpReq.Header.Set("User-Agent", "SuperAgent/1.0")
+		httpReq.Header.Set("User-Agent", "HelixAgent/1.0")
 
 		// Make request
 		resp, err := p.httpClient.Do(httpReq)
@@ -595,7 +595,7 @@ func (p *GeminiProvider) makeStreamAPICall(ctx context.Context, req GeminiReques
 		// Set headers for streaming
 		httpReq.Header.Set("Content-Type", "application/json")
 		httpReq.Header.Set("Accept", "text/event-stream")
-		httpReq.Header.Set("User-Agent", "SuperAgent/1.0")
+		httpReq.Header.Set("User-Agent", "HelixAgent/1.0")
 
 		// Make request
 		resp, err := p.httpClient.Do(httpReq)

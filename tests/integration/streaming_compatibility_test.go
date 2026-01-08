@@ -1,4 +1,4 @@
-// Package integration provides integration tests for SuperAgent
+// Package integration provides integration tests for HelixAgent
 package integration
 
 import (
@@ -14,7 +14,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/config"
+	"github.com/helixagent/helixagent/internal/config"
 )
 
 // StreamingChunk represents an OpenAI-compatible streaming chunk
@@ -35,20 +35,20 @@ type StreamingChunkChoice struct {
 	FinishReason interface{}            `json:"finish_reason"`
 }
 
-// getBaseURL returns the SuperAgent base URL for testing
+// getBaseURL returns the HelixAgent base URL for testing
 func getBaseURL() string {
-	if url := os.Getenv("SUPERAGENT_URL"); url != "" {
+	if url := os.Getenv("HELIXAGENT_URL"); url != "" {
 		return url
 	}
 	return "http://localhost:8080"
 }
 
-// skipIfNotRunning skips the test if SuperAgent is not running
+// skipIfNotRunning skips the test if HelixAgent is not running
 func skipIfNotRunning(t *testing.T) {
 	baseURL := getBaseURL()
 	resp, err := http.Get(baseURL + "/health")
 	if err != nil || resp.StatusCode != 200 {
-		t.Skipf("SuperAgent not running at %s, skipping integration test", baseURL)
+		t.Skipf("HelixAgent not running at %s, skipping integration test", baseURL)
 	}
 	resp.Body.Close()
 }
@@ -61,7 +61,7 @@ func TestStreamingFormat_OpenCodeCompatibility(t *testing.T) {
 	baseURL := getBaseURL()
 
 	reqBody := map[string]interface{}{
-		"model": "superagent-ensemble",
+		"model": "helixagent-ensemble",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Say hello in exactly 3 words"},
 		},
@@ -204,7 +204,7 @@ func TestStreamingFormat_CrushCompatibility(t *testing.T) {
 	baseURL := getBaseURL()
 
 	reqBody := map[string]interface{}{
-		"model": "superagent-ensemble",
+		"model": "helixagent-ensemble",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Hi"},
 		},
@@ -278,7 +278,7 @@ func TestStreamingFormat_HelixCodeCompatibility(t *testing.T) {
 	baseURL := getBaseURL()
 
 	reqBody := map[string]interface{}{
-		"model": "superagent-ensemble",
+		"model": "helixagent-ensemble",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Hello"},
 		},
@@ -349,7 +349,7 @@ func TestConfigGenerator_AllAgents(t *testing.T) {
 	gen := config.NewConfigGenerator(
 		"http://localhost:8080/v1",
 		"test-api-key",
-		"superagent-ensemble",
+		"helixagent-ensemble",
 	)
 	gen.SetTimeout(120).SetMaxTokens(8192)
 
@@ -372,7 +372,7 @@ func TestConfigGenerator_AllAgents(t *testing.T) {
 		assert.Contains(t, cfg, "provider")
 
 		provider := cfg["provider"].(map[string]interface{})
-		assert.Contains(t, provider, "superagent")
+		assert.Contains(t, provider, "helixagent")
 	})
 
 	t.Run("Crush", func(t *testing.T) {
@@ -390,9 +390,9 @@ func TestConfigGenerator_AllAgents(t *testing.T) {
 
 		assert.Contains(t, cfg, "providers")
 		providers := cfg["providers"].(map[string]interface{})
-		assert.Contains(t, providers, "superagent")
+		assert.Contains(t, providers, "helixagent")
 
-		sa := providers["superagent"].(map[string]interface{})
+		sa := providers["helixagent"].(map[string]interface{})
 		assert.Equal(t, "openai-compat", sa["type"])
 	})
 
@@ -413,7 +413,7 @@ func TestConfigGenerator_AllAgents(t *testing.T) {
 		assert.Contains(t, cfg, "settings")
 
 		settings := cfg["settings"].(map[string]interface{})
-		assert.Equal(t, "superagent", settings["default_provider"])
+		assert.Equal(t, "helixagent", settings["default_provider"])
 		assert.True(t, settings["streaming_enabled"].(bool))
 	})
 }
@@ -426,7 +426,7 @@ func TestAgentStreamingTimeout(t *testing.T) {
 	baseURL := getBaseURL()
 
 	reqBody := map[string]interface{}{
-		"model": "superagent-ensemble",
+		"model": "helixagent-ensemble",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Count to 3"},
 		},
@@ -468,7 +468,7 @@ func TestNonStreamingCompatibility(t *testing.T) {
 	baseURL := getBaseURL()
 
 	reqBody := map[string]interface{}{
-		"model": "superagent-ensemble",
+		"model": "helixagent-ensemble",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Say hi in one word"},
 		},
@@ -519,12 +519,12 @@ func BenchmarkStreamingThroughput(b *testing.B) {
 	// Check if running
 	resp, err := http.Get(baseURL + "/health")
 	if err != nil || resp.StatusCode != 200 {
-		b.Skip("SuperAgent not running")
+		b.Skip("HelixAgent not running")
 	}
 	resp.Body.Close()
 
 	reqBody := map[string]interface{}{
-		"model": "superagent-ensemble",
+		"model": "helixagent-ensemble",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Hi"},
 		},

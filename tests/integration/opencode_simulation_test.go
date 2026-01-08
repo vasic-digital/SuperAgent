@@ -1,5 +1,5 @@
 // Package integration provides OpenCode simulation tests
-// These tests verify SuperAgent works correctly with OpenCode-style requests
+// These tests verify HelixAgent works correctly with OpenCode-style requests
 package integration
 
 import (
@@ -63,7 +63,7 @@ type OpenCodeError struct {
 }
 
 func getTestURL() string {
-	url := os.Getenv("SUPERAGENT_URL")
+	url := os.Getenv("HELIXAGENT_URL")
 	if url == "" {
 		url = "http://localhost:8080"
 	}
@@ -71,14 +71,14 @@ func getTestURL() string {
 }
 
 func getTestAPIKey() string {
-	key := os.Getenv("SUPERAGENT_API_KEY")
+	key := os.Getenv("HELIXAGENT_API_KEY")
 	if key == "" {
 		key = "sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"
 	}
 	return key
 }
 
-// TestOpenCode_HealthCheck verifies SuperAgent is ready for OpenCode
+// TestOpenCode_HealthCheck verifies HelixAgent is ready for OpenCode
 func TestOpenCode_HealthCheck(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping OpenCode simulation in short mode")
@@ -87,14 +87,14 @@ func TestOpenCode_HealthCheck(t *testing.T) {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(getTestURL() + "/health")
 	if err != nil {
-		t.Fatalf("SuperAgent health check failed: %v", err)
+		t.Fatalf("HelixAgent health check failed: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("SuperAgent unhealthy: status %d", resp.StatusCode)
+		t.Fatalf("HelixAgent unhealthy: status %d", resp.StatusCode)
 	}
-	t.Log("SuperAgent health check passed")
+	t.Log("HelixAgent health check passed")
 }
 
 // TestOpenCode_CodebaseQuery simulates "Do you see my codebase?" query
@@ -104,7 +104,7 @@ func TestOpenCode_CodebaseQuery(t *testing.T) {
 	}
 
 	request := OpenCodeRequest{
-		Model: "superagent-debate",
+		Model: "helixagent-debate",
 		Messages: []OpenCodeMessage{
 			{Role: "user", Content: "Do you see my codebase? Give me a brief overview."},
 		},
@@ -144,7 +144,7 @@ func TestOpenCode_InitRequest(t *testing.T) {
 	}
 
 	request := OpenCodeRequest{
-		Model: "superagent-debate",
+		Model: "helixagent-debate",
 		Messages: []OpenCodeMessage{
 			{Role: "user", Content: "Initialize and analyze this project. What is the main purpose and structure?"},
 		},
@@ -179,7 +179,7 @@ func TestOpenCode_DocumentationRequest(t *testing.T) {
 	}
 
 	request := OpenCodeRequest{
-		Model: "superagent-debate",
+		Model: "helixagent-debate",
 		Messages: []OpenCodeMessage{
 			{Role: "system", Content: "You are a documentation expert."},
 			{Role: "user", Content: "Once you are done write detailed reports and documentation about the key components."},
@@ -219,21 +219,21 @@ func TestOpenCode_ConcurrentRequests(t *testing.T) {
 
 	requests := []OpenCodeRequest{
 		{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenCodeMessage{
 				{Role: "user", Content: "Do you see my codebase?"},
 			},
 			MaxTokens: 200,
 		},
 		{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenCodeMessage{
 				{Role: "user", Content: "Initialize and analyze this project."},
 			},
 			MaxTokens: 500,
 		},
 		{
-			Model: "superagent-debate",
+			Model: "helixagent-debate",
 			Messages: []OpenCodeMessage{
 				{Role: "user", Content: "Write a brief report about the key components."},
 			},
@@ -329,7 +329,7 @@ func TestOpenCode_NoEndlessLoop(t *testing.T) {
 	}
 
 	request := OpenCodeRequest{
-		Model: "superagent-debate",
+		Model: "helixagent-debate",
 		Messages: []OpenCodeMessage{
 			{Role: "user", Content: "Say hello in 10 words or less."},
 		},
@@ -398,7 +398,7 @@ func TestOpenCode_SequentialRequests(t *testing.T) {
 		{
 			name: "codebase_query",
 			request: OpenCodeRequest{
-				Model: "superagent-debate",
+				Model: "helixagent-debate",
 				Messages: []OpenCodeMessage{
 					{Role: "user", Content: "Do you see my codebase?"},
 				},
@@ -408,7 +408,7 @@ func TestOpenCode_SequentialRequests(t *testing.T) {
 		{
 			name: "init_request",
 			request: OpenCodeRequest{
-				Model: "superagent-debate",
+				Model: "helixagent-debate",
 				Messages: []OpenCodeMessage{
 					{Role: "user", Content: "Initialize and analyze the project structure."},
 				},
@@ -418,7 +418,7 @@ func TestOpenCode_SequentialRequests(t *testing.T) {
 		{
 			name: "documentation_request",
 			request: OpenCodeRequest{
-				Model: "superagent-debate",
+				Model: "helixagent-debate",
 				Messages: []OpenCodeMessage{
 					{Role: "user", Content: "Write detailed reports and documentation about key components."},
 				},

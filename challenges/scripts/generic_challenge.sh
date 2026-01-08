@@ -1,5 +1,5 @@
 #!/bin/bash
-# Generic Challenge Runner - Runs any challenge using SuperAgent binary
+# Generic Challenge Runner - Runs any challenge using HelixAgent binary
 # BINARY ONLY - NO SOURCE CODE EXECUTION
 
 set -e
@@ -100,7 +100,7 @@ run_api_test() {
     local expected_status="${4:-200}"
     local description="$5"
 
-    local port="${SUPERAGENT_PORT:-8080}"
+    local port="${HELIXAGENT_PORT:-8080}"
     local url="http://localhost:$port$endpoint"
     local response_file="$OUTPUT_DIR/logs/response_$(date +%s%N).json"
 
@@ -111,12 +111,12 @@ run_api_test() {
         http_code=$(curl -s -w "%{http_code}" -o "$response_file" \
             -X "$method" "$url" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${SUPERAGENT_API_KEY:-test}" \
+            -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
             -d "$data" 2>/dev/null) || http_code="000"
     else
         http_code=$(curl -s -w "%{http_code}" -o "$response_file" \
             -X "$method" "$url" \
-            -H "Authorization: Bearer ${SUPERAGENT_API_KEY:-test}" 2>/dev/null) || http_code="000"
+            -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" 2>/dev/null) || http_code="000"
     fi
 
     if [[ "$http_code" == "$expected_status" ]]; then
@@ -138,7 +138,7 @@ run_optional_api_test() {
     local expected_status="${4:-200}"
     local description="$5"
 
-    local port="${SUPERAGENT_PORT:-8080}"
+    local port="${HELIXAGENT_PORT:-8080}"
     local url="http://localhost:$port$endpoint"
     local response_file="$OUTPUT_DIR/logs/response_$(date +%s%N).json"
 
@@ -149,12 +149,12 @@ run_optional_api_test() {
         http_code=$(curl -s -w "%{http_code}" -o "$response_file" \
             -X "$method" "$url" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${SUPERAGENT_API_KEY:-test}" \
+            -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
             -d "$data" 2>/dev/null) || http_code="000"
     else
         http_code=$(curl -s -w "%{http_code}" -o "$response_file" \
             -X "$method" "$url" \
-            -H "Authorization: Bearer ${SUPERAGENT_API_KEY:-test}" 2>/dev/null) || http_code="000"
+            -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" 2>/dev/null) || http_code="000"
     fi
 
     if [[ "$http_code" == "$expected_status" ]]; then
@@ -220,13 +220,13 @@ run_challenge_tests() {
 run_infrastructure_tests() {
     case "$CHALLENGE_ID" in
         health_monitoring)
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_api_test "/health" "GET" "" "200" "Health endpoint"
                 run_api_test "/v1/health" "GET" "" "200" "API Health endpoint"
             else
                 # Config-based verification
-                if [[ -x "$PROJECT_ROOT/superagent" ]]; then
-                    record_assertion "binary_exists" "superagent" "true" "SuperAgent binary exists"
+                if [[ -x "$PROJECT_ROOT/helixagent" ]]; then
+                    record_assertion "binary_exists" "helixagent" "true" "HelixAgent binary exists"
                     ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
                 fi
                 if [[ -f "$PROJECT_ROOT/configs/production.yaml" ]]; then
@@ -241,7 +241,7 @@ run_infrastructure_tests() {
                 record_assertion "redis_configured" "redis" "true" "Redis configured"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_optional_api_test "/v1/cache/stats" "GET" "" "200" "Cache stats"
             fi
             ;;
@@ -251,7 +251,7 @@ run_infrastructure_tests() {
                 record_assertion "database_configured" "postgres" "true" "Database configured"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_api_test "/health" "GET" "" "200" "Database health via API"
             fi
             ;;
@@ -271,7 +271,7 @@ run_infrastructure_tests() {
                 record_assertion "plugin_code" "internal/plugins" "true" "Plugin system code exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_optional_api_test "/v1/plugins" "GET" "" "200" "Plugin listing"
             fi
             ;;
@@ -281,7 +281,7 @@ run_infrastructure_tests() {
                 record_assertion "session_code" "memory_service" "true" "Session service exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_optional_api_test "/v1/sessions" "GET" "" "200" "Session listing"
             fi
             ;;
@@ -316,8 +316,8 @@ run_provider_tests() {
         record_assertion "api_key_configured" "$provider_name" "true" "API key configured"
         ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
 
-        # Test via SuperAgent API if running (optional - depends on provider being available)
-        if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+        # Test via HelixAgent API if running (optional - depends on provider being available)
+        if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
             local test_data='{"model":"'$provider_name'","messages":[{"role":"user","content":"Say hello"}],"max_tokens":50}'
             run_optional_api_test "/v1/chat/completions" "POST" "$test_data" "200" "Provider $provider_name completion"
         fi
@@ -343,7 +343,7 @@ run_protocol_tests() {
                 record_assertion "mcp_handler" "mcp.go" "true" "MCP handler exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_optional_api_test "/v1/mcp/servers" "GET" "" "200" "MCP servers listing"
                 run_optional_api_test "/v1/mcp/tools" "GET" "" "200" "MCP tools listing"
             fi
@@ -358,7 +358,7 @@ run_protocol_tests() {
                 record_assertion "lsp_handler" "lsp.go" "true" "LSP handler exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_optional_api_test "/v1/lsp/servers" "GET" "" "200" "LSP servers listing"
             fi
             ;;
@@ -368,7 +368,7 @@ run_protocol_tests() {
                 record_assertion "acp_code" "acp_manager.go" "true" "ACP manager code exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_optional_api_test "/v1/acp/servers" "GET" "" "200" "ACP servers listing"
             fi
             ;;
@@ -385,8 +385,8 @@ run_security_tests() {
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
             # Test unauthorized access if API available
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
-                local port="${SUPERAGENT_PORT:-8080}"
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
+                local port="${HELIXAGENT_PORT:-8080}"
                 local http_code=$(curl -s -w "%{http_code}" -o /dev/null \
                     "http://localhost:$port/v1/chat/completions" \
                     -X POST -H "Content-Type: application/json" \
@@ -412,7 +412,7 @@ run_security_tests() {
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
             # Test with invalid input if API available (optional - depends on model config)
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 local test_data='{"model":"","messages":null}'
                 run_optional_api_test "/v1/chat/completions" "POST" "$test_data" "400" "Invalid input rejected"
             fi
@@ -429,7 +429,7 @@ run_core_tests() {
                 record_assertion "provider_registry" "provider_registry.go" "true" "Provider registry exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_api_test "/v1/models" "GET" "" "200" "Models listing"
             fi
             ;;
@@ -439,7 +439,7 @@ run_core_tests() {
                 record_assertion "ensemble_code" "ensemble.go" "true" "Ensemble code exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 local test_data='{"model":"ensemble","messages":[{"role":"user","content":"What is 2+2?"}]}'
                 run_optional_api_test "/v1/chat/completions" "POST" "$test_data" "200" "Ensemble voting"
             fi
@@ -450,7 +450,7 @@ run_core_tests() {
                 record_assertion "debate_service" "debate_service.go" "true" "Debate service exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_optional_api_test "/v1/debates" "GET" "" "200" "Debate listing"
             fi
             ;;
@@ -460,7 +460,7 @@ run_core_tests() {
                 record_assertion "advanced_debate" "advanced_debate_service.go" "true" "Advanced debate exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 local test_data='{"topic":"Test debate","participants":2}'
                 run_optional_api_test "/v1/debates" "POST" "$test_data" "200" "Debate creation"
             fi
@@ -475,7 +475,7 @@ run_core_tests() {
                 record_assertion "embedding_handler" "embeddings.go" "true" "Embedding handler exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 local test_data='{"input":"test text","model":"text-embedding-3-small"}'
                 run_optional_api_test "/v1/embeddings" "POST" "$test_data" "200" "Embeddings generation"
             fi
@@ -493,7 +493,7 @@ run_core_tests() {
                 record_assertion "metadata_service" "model_metadata_service.go" "true" "Metadata service exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_api_test "/v1/models" "GET" "" "200" "Model metadata"
             fi
             ;;
@@ -503,7 +503,7 @@ run_core_tests() {
                 record_assertion "completion_handler" "completion.go" "true" "Completion handler exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 local test_data='{"model":"gpt-4","messages":[{"role":"user","content":"Write a hello world in Python"}]}'
                 run_optional_api_test "/v1/chat/completions" "POST" "$test_data" "200" "Quality test"
             fi
@@ -607,7 +607,7 @@ run_integration_tests() {
                 record_assertion "cognee_handler" "cognee.go" "true" "Cognee handler exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_optional_api_test "/v1/cognee/health" "GET" "" "200" "Cognee health"
             fi
             ;;
@@ -630,7 +630,7 @@ run_resilience_tests() {
                 record_assertion "error_json" "handlers" "true" "Error handling with JSON responses"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_optional_api_test "/v1/nonexistent" "GET" "" "404" "404 error handling"
             fi
             ;;
@@ -653,7 +653,7 @@ run_api_tests() {
                 record_assertion "openai_handler" "completion.go" "true" "OpenAI-compatible handler exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_optional_api_test "/v1/chat/completions" "POST" '{"model":"gpt-4","messages":[{"role":"user","content":"Hi"}]}' "200" "Chat completions"
                 run_api_test "/v1/models" "GET" "" "200" "Models listing"
             fi
@@ -694,7 +694,7 @@ run_validation_tests() {
                 record_assertion "validation_code" "validation.go" "true" "Validation code exists"
                 ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
             fi
-            if [[ "$SUPERAGENT_AVAILABLE" == "true" ]]; then
+            if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
                 run_api_test "/v1/models" "GET" "" "200" "Validation API test"
             fi
             ;;
@@ -717,9 +717,9 @@ run_basic_tests() {
     run_api_test "/health" "GET" "" "200" "Basic health check"
 }
 
-# Auto-start SuperAgent if binary exists and not running
-auto_start_superagent() {
-    local port="${SUPERAGENT_PORT:-8080}"
+# Auto-start HelixAgent if binary exists and not running
+auto_start_helixagent() {
+    local port="${HELIXAGENT_PORT:-8080}"
 
     # Check if already running
     if curl -s "http://localhost:$port/health" > /dev/null 2>&1; then
@@ -728,24 +728,24 @@ auto_start_superagent() {
 
     # Check if binary exists (prefer bin/ over root level)
     local binary=""
-    if [[ -x "$PROJECT_ROOT/bin/superagent" ]]; then
-        binary="$PROJECT_ROOT/bin/superagent"
-    elif [[ -x "$PROJECT_ROOT/superagent" ]]; then
-        binary="$PROJECT_ROOT/superagent"
+    if [[ -x "$PROJECT_ROOT/bin/helixagent" ]]; then
+        binary="$PROJECT_ROOT/bin/helixagent"
+    elif [[ -x "$PROJECT_ROOT/helixagent" ]]; then
+        binary="$PROJECT_ROOT/helixagent"
     fi
 
     if [[ -z "$binary" ]]; then
-        log_warning "SuperAgent binary not found - attempting to build..."
+        log_warning "HelixAgent binary not found - attempting to build..."
         # Try to build
         if make -C "$PROJECT_ROOT" build > /dev/null 2>&1; then
-            log_info "SuperAgent built successfully"
-            if [[ -x "$PROJECT_ROOT/superagent" ]]; then
-                binary="$PROJECT_ROOT/superagent"
-            elif [[ -x "$PROJECT_ROOT/bin/superagent" ]]; then
-                binary="$PROJECT_ROOT/bin/superagent"
+            log_info "HelixAgent built successfully"
+            if [[ -x "$PROJECT_ROOT/helixagent" ]]; then
+                binary="$PROJECT_ROOT/helixagent"
+            elif [[ -x "$PROJECT_ROOT/bin/helixagent" ]]; then
+                binary="$PROJECT_ROOT/bin/helixagent"
             fi
         else
-            log_warning "Could not build SuperAgent"
+            log_warning "Could not build HelixAgent"
             return 1
         fi
     fi
@@ -754,17 +754,17 @@ auto_start_superagent() {
         return 1
     fi
 
-    log_info "Auto-starting SuperAgent from $binary..."
+    log_info "Auto-starting HelixAgent from $binary..."
 
     # Set default JWT_SECRET if not set
     if [[ -z "$JWT_SECRET" ]]; then
-        export JWT_SECRET="superagent-test-secret-key-$(date +%s)"
+        export JWT_SECRET="helixagent-test-secret-key-$(date +%s)"
     fi
 
-    # Start SuperAgent with required environment
-    PORT=$port GIN_MODE=release JWT_SECRET="$JWT_SECRET" "$binary" > "$OUTPUT_DIR/logs/superagent.log" 2>&1 &
-    SUPERAGENT_PID=$!
-    echo "$SUPERAGENT_PID" > "$OUTPUT_DIR/superagent.pid"
+    # Start HelixAgent with required environment
+    PORT=$port GIN_MODE=release JWT_SECRET="$JWT_SECRET" "$binary" > "$OUTPUT_DIR/logs/helixagent.log" 2>&1 &
+    HELIXAGENT_PID=$!
+    echo "$HELIXAGENT_PID" > "$OUTPUT_DIR/helixagent.pid"
 
     # Wait for startup (up to 30 seconds)
     local max_wait=30
@@ -773,17 +773,17 @@ auto_start_superagent() {
         sleep 1
         waited=$((waited + 1))
         if [[ $waited -ge $max_wait ]]; then
-            log_warning "SuperAgent failed to start within ${max_wait}s"
+            log_warning "HelixAgent failed to start within ${max_wait}s"
             # Check if process died
-            if ! kill -0 "$SUPERAGENT_PID" 2>/dev/null; then
-                log_error "SuperAgent process died - check $OUTPUT_DIR/logs/superagent.log"
-                tail -20 "$OUTPUT_DIR/logs/superagent.log" 2>/dev/null || true
+            if ! kill -0 "$HELIXAGENT_PID" 2>/dev/null; then
+                log_error "HelixAgent process died - check $OUTPUT_DIR/logs/helixagent.log"
+                tail -20 "$OUTPUT_DIR/logs/helixagent.log" 2>/dev/null || true
             fi
             return 1
         fi
     done
 
-    log_success "SuperAgent auto-started (PID: $SUPERAGENT_PID)"
+    log_success "HelixAgent auto-started (PID: $HELIXAGENT_PID)"
     return 0
 }
 
@@ -794,21 +794,21 @@ main() {
     log_info "  Category: $CHALLENGE_CATEGORY"
     log_info "=========================================="
 
-    # Check if SuperAgent is running, auto-start if needed
-    local port="${SUPERAGENT_PORT:-8080}"
-    SUPERAGENT_AVAILABLE=false
+    # Check if HelixAgent is running, auto-start if needed
+    local port="${HELIXAGENT_PORT:-8080}"
+    HELIXAGENT_AVAILABLE=false
 
     if curl -s "http://localhost:$port/health" > /dev/null 2>&1; then
-        SUPERAGENT_AVAILABLE=true
-        log_info "SuperAgent is running on port $port"
+        HELIXAGENT_AVAILABLE=true
+        log_info "HelixAgent is running on port $port"
     else
-        log_info "SuperAgent not running - attempting auto-start..."
-        if auto_start_superagent; then
-            SUPERAGENT_AVAILABLE=true
-            log_info "SuperAgent is now running on port $port"
+        log_info "HelixAgent not running - attempting auto-start..."
+        if auto_start_helixagent; then
+            HELIXAGENT_AVAILABLE=true
+            log_info "HelixAgent is now running on port $port"
         else
-            log_info "SuperAgent not available - running config-based tests only"
-            # Don't fail immediately - some tests can run without SuperAgent
+            log_info "HelixAgent not available - running config-based tests only"
+            # Don't fail immediately - some tests can run without HelixAgent
         fi
     fi
 

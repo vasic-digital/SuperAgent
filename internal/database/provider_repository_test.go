@@ -18,7 +18,7 @@ import (
 
 func setupProviderTestDB(t *testing.T) (*pgxpool.Pool, *ProviderRepository) {
 	ctx := context.Background()
-	connString := "postgres://superagent:secret@localhost:5432/superagent_db?sslmode=disable"
+	connString := "postgres://helixagent:secret@localhost:5432/helixagent_db?sslmode=disable"
 
 	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {

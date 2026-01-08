@@ -1,8 +1,8 @@
 #!/bin/bash
 #===============================================================================
-# SUPERAGENT SYSTEM STOPPER
+# HELIXAGENT SYSTEM STOPPER
 #===============================================================================
-# This script stops all infrastructure and the SuperAgent system.
+# This script stops all infrastructure and the HelixAgent system.
 # Uses ONLY production binaries and Docker/Podman - NO source code execution!
 #
 # Usage:
@@ -36,7 +36,7 @@ CLEAN=false
 
 usage() {
     cat << EOF
-${GREEN}SuperAgent System Stopper${NC}
+${GREEN}HelixAgent System Stopper${NC}
 
 Usage: $0 [options]
 
@@ -78,23 +78,23 @@ while [ $# -gt 0 ]; do
 done
 
 log_info "=========================================="
-log_info "  SuperAgent System Stopper"
+log_info "  HelixAgent System Stopper"
 log_info "=========================================="
 log_info ""
 
-# Stop SuperAgent binary if running
-PID_FILE="$CHALLENGES_DIR/results/superagent.pid"
+# Stop HelixAgent binary if running
+PID_FILE="$CHALLENGES_DIR/results/helixagent.pid"
 if [ -f "$PID_FILE" ]; then
     PID=$(cat "$PID_FILE")
     if kill -0 "$PID" 2>/dev/null; then
-        log_info "Stopping SuperAgent (PID: $PID)..."
+        log_info "Stopping HelixAgent (PID: $PID)..."
         kill "$PID" 2>/dev/null || true
         sleep 2
         # Force kill if still running
         if kill -0 "$PID" 2>/dev/null; then
             kill -9 "$PID" 2>/dev/null || true
         fi
-        log_success "SuperAgent stopped"
+        log_success "HelixAgent stopped"
     fi
     rm -f "$PID_FILE"
 fi
@@ -105,7 +105,7 @@ log_info "Container runtime: $RUNTIME"
 
 if [ "$RUNTIME" = "none" ]; then
     log_warning "No container runtime found"
-    log_info "SuperAgent binary stopped (if was running)"
+    log_info "HelixAgent binary stopped (if was running)"
     exit 0
 fi
 

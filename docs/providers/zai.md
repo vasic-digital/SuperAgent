@@ -2,7 +2,7 @@
 
 ## Overview
 
-Z.AI is an AI platform providing access to various language models through a unified API. SuperAgent integrates with Z.AI to provide text completion and chat capabilities.
+Z.AI is an AI platform providing access to various language models through a unified API. HelixAgent integrates with Z.AI to provide text completion and chat capabilities.
 
 ### Supported Models
 
@@ -71,8 +71,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/superagent/superagent/internal/llm/providers/zai"
-    "github.com/superagent/superagent/internal/models"
+    "github.com/helixagent/helixagent/internal/llm/providers/zai"
+    "github.com/helixagent/helixagent/internal/models"
 )
 
 func main() {
@@ -161,7 +161,7 @@ for chunk := range streamChan {
 
 ### Best Practices for Rate Limits
 
-1. **Use exponential backoff** - SuperAgent automatically implements retry with backoff
+1. **Use exponential backoff** - HelixAgent automatically implements retry with backoff
 2. **Monitor usage** - Track token consumption in your account dashboard
 3. **Choose appropriate models** - Use base model for simple tasks
 4. **Implement request queuing** - For high-volume applications
@@ -189,7 +189,7 @@ Z.AI API error: Too Many Requests (rate_limit_exceeded)
 
 **Solution:**
 - Wait for the rate limit window to reset
-- SuperAgent automatically retries with exponential backoff
+- HelixAgent automatically retries with exponential backoff
 - Consider upgrading your plan for higher limits
 
 #### Model Not Found (404)
@@ -216,7 +216,7 @@ Z.AI API error: Bad Request (invalid_request)
 
 ### Health Check
 
-SuperAgent provides a health check endpoint for Z.AI:
+HelixAgent provides a health check endpoint for Z.AI:
 
 ```go
 err := provider.HealthCheck()
@@ -306,7 +306,7 @@ Used when only `prompt` is provided:
 
 Endpoint: `POST /v1/completions`
 
-SuperAgent automatically selects the appropriate endpoint based on the request content.
+HelixAgent automatically selects the appropriate endpoint based on the request content.
 
 ## Model Selection Guide
 

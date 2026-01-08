@@ -13,8 +13,8 @@ if ! command -v "$PROTO_GEN_GO" >/dev/null 2>&1; then
   exit 0
 fi
 PROJ_ROOT=$(pwd)
-PROTO_PATH="$PROJ_ROOT/specs/001-super-agent/contracts/llm-facade.proto"
-OUT_DIR="$PROJ_ROOT/specs/001-super-agent/contracts/"
+PROTO_PATH="$PROJ_ROOT/specs/001-helix-agent/contracts/llm-facade.proto"
+OUT_DIR="$PROJ_ROOT/specs/001-helix-agent/contracts/"
 
 echo "Generating Go bindings from $PROTO_PATH to $OUT_DIR";
 protoc --go_out="$OUT_DIR" "$PROTO_PATH" || true

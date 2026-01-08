@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // UserRepository defines operations for user data

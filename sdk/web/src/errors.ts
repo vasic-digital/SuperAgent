@@ -1,16 +1,16 @@
 /**
- * SuperAgent SDK Error Classes
+ * HelixAgent SDK Error Classes
  */
 
-export class SuperAgentError extends Error {
+export class HelixAgentError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'SuperAgentError';
-    Object.setPrototypeOf(this, SuperAgentError.prototype);
+    this.name = 'HelixAgentError';
+    Object.setPrototypeOf(this, HelixAgentError.prototype);
   }
 }
 
-export class AuthenticationError extends SuperAgentError {
+export class AuthenticationError extends HelixAgentError {
   constructor(message: string = 'Authentication failed') {
     super(message);
     this.name = 'AuthenticationError';
@@ -18,7 +18,7 @@ export class AuthenticationError extends SuperAgentError {
   }
 }
 
-export class RateLimitError extends SuperAgentError {
+export class RateLimitError extends HelixAgentError {
   retryAfter: number | null;
 
   constructor(message: string = 'Rate limit exceeded', retryAfter: number | null = null) {
@@ -29,7 +29,7 @@ export class RateLimitError extends SuperAgentError {
   }
 }
 
-export class APIError extends SuperAgentError {
+export class APIError extends HelixAgentError {
   statusCode: number;
   type?: string;
   param?: string;
@@ -50,7 +50,7 @@ export class APIError extends SuperAgentError {
   }
 }
 
-export class ValidationError extends SuperAgentError {
+export class ValidationError extends HelixAgentError {
   constructor(message: string = 'Validation failed') {
     super(message);
     this.name = 'ValidationError';
@@ -58,7 +58,7 @@ export class ValidationError extends SuperAgentError {
   }
 }
 
-export class NetworkError extends SuperAgentError {
+export class NetworkError extends HelixAgentError {
   constructor(message: string = 'Network error occurred') {
     super(message);
     this.name = 'NetworkError';
@@ -66,7 +66,7 @@ export class NetworkError extends SuperAgentError {
   }
 }
 
-export class TimeoutError extends SuperAgentError {
+export class TimeoutError extends HelixAgentError {
   constructor(message: string = 'Request timeout') {
     super(message);
     this.name = 'TimeoutError';
@@ -74,7 +74,7 @@ export class TimeoutError extends SuperAgentError {
   }
 }
 
-export class ProviderError extends SuperAgentError {
+export class ProviderError extends HelixAgentError {
   provider: string;
 
   constructor(message: string, provider: string) {
@@ -85,7 +85,7 @@ export class ProviderError extends SuperAgentError {
   }
 }
 
-export class DebateError extends SuperAgentError {
+export class DebateError extends HelixAgentError {
   debateId: string;
 
   constructor(message: string, debateId: string) {

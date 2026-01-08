@@ -21,7 +21,7 @@ A comprehensive, generic toolkit for building AI-powered applications with suppo
 ### Install from Source
 
 ```bash
-git clone https://github.com/superagent/toolkit.git
+git clone https://github.com/helixagent/toolkit.git
 cd toolkit
 go mod download
 make build
@@ -58,7 +58,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/superagent/toolkit/pkg/toolkit"
+    "github.com/helixagent/toolkit/pkg/toolkit"
 )
 
 func main() {
@@ -540,8 +540,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/superagent/toolkit/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/superagent/toolkit/discussions)
+- **Issues**: [GitHub Issues](https://github.com/helixagent/toolkit/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/helixagent/toolkit/discussions)
 - **Documentation**: [API Reference](API_REFERENCE.md)
 
 ## Changelog

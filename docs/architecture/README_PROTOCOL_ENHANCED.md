@@ -1,19 +1,19 @@
-# SuperAgent: Advanced AI Protocol Orchestration Platform
+# HelixAgent: Advanced AI Protocol Orchestration Platform
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD1E?style=flat-square&logo=go)](https://golang.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=flat-square&logo=docker)](https://www.docker.com)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-326CE5?style=flat-square&logo=kubernetes)](https://kubernetes.io)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen?style=flat-square)](https://github.com/superagent/superagent/actions/workflows/tests)
+[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen?style=flat-square)](https://github.com/helixagent/helixagent/actions/workflows/tests)
 [![MCP](https://img.shields.io/badge/MCP-Supported-FF6B35?style=flat-square)](https://modelcontextprotocol.io)
 [![LSP](https://img.shields.io/badge/LSP-Supported-007ACC?style=flat-square)](https://microsoft.github.io/language-server-protocol)
 
-**SuperAgent is a comprehensive AI orchestration platform that seamlessly integrates multiple AI protocols (MCP, LSP, ACP, Embeddings) with advanced caching, security, monitoring, and enterprise-grade features.**
+**HelixAgent is a comprehensive AI orchestration platform that seamlessly integrates multiple AI protocols (MCP, LSP, ACP, Embeddings) with advanced caching, security, monitoring, and enterprise-grade features.**
 
-## 🚀 What Makes SuperAgent Special
+## 🚀 What Makes HelixAgent Special
 
 ### 🏗️ Multi-Protocol AI Orchestration
-SuperAgent uniquely supports **four major AI protocols** through a unified API:
+HelixAgent uniquely supports **four major AI protocols** through a unified API:
 
 - **🔧 MCP (Model Context Protocol)** - Tool execution and agent integration
 - **💻 LSP (Language Server Protocol)** - Code intelligence and language services
@@ -32,8 +32,8 @@ SuperAgent uniquely supports **four major AI protocols** through a unified API:
 ### Using Docker (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Start with full protocol support
 docker-compose -f docker-compose.protocol.yml up -d
@@ -48,7 +48,7 @@ make docker-protocol-full
 go mod tidy
 
 # Run with all protocols enabled
-go run cmd/superagent/main.go --protocols=all --config=config.yaml
+go run cmd/helixagent/main.go --protocols=all --config=config.yaml
 
 # Run the demo to see all features
 go run demo.go
@@ -223,23 +223,23 @@ docker-compose -f docker-compose.prod.yml up -d
 kubectl apply -f k8s/
 
 # Check deployment
-kubectl get pods -l app=superagent
+kubectl get pods -l app=helixagent
 
 # View logs
-kubectl logs -l app=superagent -f
+kubectl logs -l app=helixagent -f
 ```
 
 ### Manual Installation
 ```bash
 # Build from source
-go build -o superagent cmd/superagent/main.go
+go build -o helixagent cmd/helixagent/main.go
 
 # Configure
 cp config.example.yaml config.yaml
 # Edit config.yaml with your settings
 
 # Run
-./superagent --config config.yaml
+./helixagent --config config.yaml
 ```
 
 ## ⚙️ Configuration
@@ -262,7 +262,7 @@ protocols:
     enabled: true
 
 database:
-  url: "postgres://user:password@localhost/superagent"
+  url: "postgres://user:password@localhost/helixagent"
 
 redis:
   enabled: true
@@ -311,7 +311,7 @@ embeddings:
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: 'superagent'
+  - job_name: 'helixagent'
     static_configs:
       - targets: ['localhost:8080']
     metrics_path: '/v1/monitoring/metrics'
@@ -321,7 +321,7 @@ scrape_configs:
 ### Alert Rules
 ```yaml
 groups:
-  - name: superagent
+  - name: helixagent
     rules:
       - alert: HighErrorRate
         expr: rate(protocol_requests_total{status="error"}[5m]) > 0.1
@@ -400,8 +400,8 @@ go run demo.go
 ### Development Setup
 ```bash
 # Fork and clone
-git clone https://github.com/yourusername/superagent.git
-cd superagent
+git clone https://github.com/yourusername/helixagent.git
+cd helixagent
 
 # Install dependencies
 go mod tidy
@@ -434,8 +434,8 @@ make run-dev
 
 For enterprise deployments, custom integrations, or priority support:
 
-- 📧 **Email**: enterprise@superagent.ai
-- 💬 **Slack**: [Join our community](https://superagent.slack.com)
+- 📧 **Email**: enterprise@helixagent.ai
+- 💬 **Slack**: [Join our community](https://helixagent.slack.com)
 - 📖 **Documentation**: [Enterprise Guide](./docs/enterprise.md)
 
 ## 📄 License
@@ -451,5 +451,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**SuperAgent: Orchestrating the Future of AI Integration** 🚀</content>
+**HelixAgent: Orchestrating the Future of AI Integration** 🚀</content>
 <parameter name="filePath">/media/milosvasic/DATA4TB/Projects/HelixAgent/README.md

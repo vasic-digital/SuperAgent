@@ -1,4 +1,4 @@
-# ⚡ SuperAgent Immediate Launch Checklist
+# ⚡ HelixAgent Immediate Launch Checklist
 
 ## 🚨 PRIORITY 1: DEPLOYMENT (Do Today)
 
@@ -10,7 +10,7 @@
 
 ### Analytics Configuration
 - [ ] **Set up Google Analytics 4**: https://analytics.google.com/
-  - Create property: "SuperAgent Website"
+  - Create property: "HelixAgent Website"
   - Copy Measurement ID (G-XXXXXXXXXX format)
 - [ ] **Set up Microsoft Clarity**: https://clarity.microsoft.com/
   - Create project with website URL
@@ -24,15 +24,15 @@
 - [ ] **Test analytics**: Visit website, check browser console for events
 
 ### Social Media Account Setup
-- [ ] **Create Twitter account**: @SuperAgentAI (or available handle)
+- [ ] **Create Twitter account**: @HelixAgentAI (or available handle)
   - Upload logo as profile picture
   - Create branded header image
   - Write bio with website link
-- [ ] **Create LinkedIn Company Page**: "SuperAgent"
+- [ ] **Create LinkedIn Company Page**: "HelixAgent"
   - Complete all profile sections
   - Upload logo and banner
   - Add website and GitHub links
-- [ ] **Create YouTube channel**: "SuperAgent AI"
+- [ ] **Create YouTube channel**: "HelixAgent AI"
   - Customize channel art and profile
   - Set up channel description
 
@@ -64,7 +64,7 @@
 - [ ] **Install OBS Studio**: Download and configure for recording
 
 ### First Video Recording
-- [ ] **Practice script**: Read through `VIDEO_SCRIPT_SUPERAGENT_5_MINUTES.md`
+- [ ] **Practice script**: Read through `VIDEO_SCRIPT_HELIXAGENT_5_MINUTES.md`
 - [ ] **Set up screen recording**: Configure OBS for screen + webcam
 - [ ] **Record multiple takes**: Aim for natural delivery, energy, clarity
 - [ ] **Review recordings**: Choose best takes for editing
@@ -72,7 +72,7 @@
 ### Video Editing
 - [ ] **Edit video**: Remove mistakes, add intro/outro, graphics
 - [ ] **Enhance audio**: Noise reduction, compression, normalization
-- [ ] **Add branding**: SuperAgent logo, consistent colors
+- [ ] **Add branding**: HelixAgent logo, consistent colors
 - [ ] **Create thumbnail**: Custom thumbnail with compelling text
 - [ ] **Export optimized**: 1080p, proper format for YouTube
 
@@ -109,7 +109,7 @@
 - [ ] **Google Trends**: Research trending topics
 
 ### Communication
-- [ ] **Email Setup**: hello@superagent.ai (professional contact)
+- [ ] **Email Setup**: hello@helixagent.ai (professional contact)
 - [ ] **Calendar Blocking**: Schedule content creation time
 - [ ] **Notification Management**: Set up alerts for mentions
 
@@ -216,4 +216,4 @@
 
 *Remember: Consistency and quality beat perfection. Start with good enough and improve iteratively.*
 
-**🚀 Ready to launch SuperAgent and change the AI infrastructure game? Let's do this!** 💪
+**🚀 Ready to launch HelixAgent and change the AI infrastructure game? Let's do this!** 💪

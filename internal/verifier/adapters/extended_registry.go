@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superagent/superagent/internal/verifier"
+	"github.com/helixagent/helixagent/internal/verifier"
 )
 
-// ExtendedProviderRegistry extends SuperAgent's provider registry with LLMsVerifier capabilities
+// ExtendedProviderRegistry extends HelixAgent's provider registry with LLMsVerifier capabilities
 type ExtendedProviderRegistry struct {
 	adapters            *ProviderAdapterRegistry
 	verificationService *verifier.VerificationService

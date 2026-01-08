@@ -6,9 +6,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/optimization"
-	"github.com/superagent/superagent/internal/optimization/outlines"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/optimization"
+	"github.com/helixagent/helixagent/internal/optimization/outlines"
 )
 
 func TestNewOptimizedRequestService(t *testing.T) {

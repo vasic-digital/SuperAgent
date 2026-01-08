@@ -32,7 +32,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 COMPOSE_FILE="docker-compose.test.yml"
 COMPOSE_FILE_INT="docker-compose.integration.yml"
-PROJECT_NAME="superagent-test-suite"
+PROJECT_NAME="helixagent-test-suite"
 MAX_WAIT_TIME=120
 LOG_FILE="${PROJECT_ROOT}/test_suite_results.log"
 
@@ -83,7 +83,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --help)
-            echo "SuperAgent Complete Test Suite Runner"
+            echo "HelixAgent Complete Test Suite Runner"
             echo ""
             echo "Usage: $0 [options]"
             echo ""
@@ -232,7 +232,7 @@ wait_for_postgres() {
     log_info "Waiting for PostgreSQL to be ready..."
     local count=0
     while [ $count -lt $MAX_WAIT_TIME ]; do
-        if $COMPOSE_CMD -f "$COMPOSE_FILE" exec -T postgres pg_isready -U superagent -d superagent_db > /dev/null 2>&1; then
+        if $COMPOSE_CMD -f "$COMPOSE_FILE" exec -T postgres pg_isready -U helixagent -d helixagent_db > /dev/null 2>&1; then
             log_success "PostgreSQL is ready!"
             return 0
         fi
@@ -248,7 +248,7 @@ wait_for_redis() {
     log_info "Waiting for Redis to be ready..."
     local count=0
     while [ $count -lt $MAX_WAIT_TIME ]; do
-        if $COMPOSE_CMD -f "$COMPOSE_FILE" exec -T redis redis-cli -a superagent123 ping 2>/dev/null | grep -q "PONG"; then
+        if $COMPOSE_CMD -f "$COMPOSE_FILE" exec -T redis redis-cli -a helixagent123 ping 2>/dev/null | grep -q "PONG"; then
             log_success "Redis is ready!"
             return 0
         fi
@@ -286,17 +286,17 @@ setup_test_environment() {
     # Database Configuration
     export DB_HOST=localhost
     export DB_PORT=${POSTGRES_PORT:-15432}
-    export DB_USER=superagent
-    export DB_PASSWORD=superagent123
-    export DB_NAME=superagent_db
+    export DB_USER=helixagent
+    export DB_PASSWORD=helixagent123
+    export DB_NAME=helixagent_db
     export DB_SSLMODE=disable
-    export DATABASE_URL="postgres://superagent:superagent123@localhost:${POSTGRES_PORT:-15432}/superagent_db?sslmode=disable"
+    export DATABASE_URL="postgres://helixagent:helixagent123@localhost:${POSTGRES_PORT:-15432}/helixagent_db?sslmode=disable"
 
     # Redis Configuration
     export REDIS_HOST=localhost
     export REDIS_PORT=${REDIS_PORT:-16379}
-    export REDIS_PASSWORD=superagent123
-    export REDIS_URL="redis://:superagent123@localhost:${REDIS_PORT:-16379}"
+    export REDIS_PASSWORD=helixagent123
+    export REDIS_URL="redis://:helixagent123@localhost:${REDIS_PORT:-16379}"
 
     # Mock LLM Configuration
     export MOCK_LLM_URL="http://localhost:${MOCK_LLM_PORT:-18081}"
@@ -319,7 +319,7 @@ setup_test_environment() {
 
     # JWT and Server Configuration
     export JWT_SECRET=test-jwt-secret-key-for-testing-purposes
-    export SUPERAGENT_API_KEY=test-api-key-for-development
+    export HELIXAGENT_API_KEY=test-api-key-for-development
 
     # Test Configuration
     export GIN_MODE=test
@@ -596,7 +596,7 @@ main() {
     # Clear log file
     > "$LOG_FILE"
 
-    log_header "SuperAgent Complete Test Suite"
+    log_header "HelixAgent Complete Test Suite"
 
     # Detect container runtime
     CONTAINER_RUNTIME=$(detect_container_runtime)

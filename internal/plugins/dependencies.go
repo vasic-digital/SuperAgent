@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/superagent/superagent/internal/utils"
+	"github.com/helixagent/helixagent/internal/utils"
 )
 
 // DependencyResolver handles plugin dependency resolution and conflict detection

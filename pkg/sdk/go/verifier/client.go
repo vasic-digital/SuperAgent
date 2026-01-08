@@ -1,4 +1,4 @@
-// Package verifier provides a Go SDK for the SuperAgent LLMsVerifier API
+// Package verifier provides a Go SDK for the HelixAgent LLMsVerifier API
 package verifier
 
 import (

@@ -60,7 +60,7 @@ optimization:
 ### Client Initialization
 
 ```go
-import "github.com/superagent/superagent/internal/optimization/llamaindex"
+import "github.com/helixagent/helixagent/internal/optimization/llamaindex"
 
 config := &llamaindex.ClientConfig{
     BaseURL: "http://localhost:8012",

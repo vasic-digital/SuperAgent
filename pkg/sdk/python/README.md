@@ -1,11 +1,11 @@
-# SuperAgent Verifier Python SDK
+# HelixAgent Verifier Python SDK
 
-Python SDK for interacting with the SuperAgent LLMsVerifier API. This SDK provides model verification, scoring, and health monitoring capabilities.
+Python SDK for interacting with the HelixAgent LLMsVerifier API. This SDK provides model verification, scoring, and health monitoring capabilities.
 
 ## Installation
 
 ```bash
-pip install superagent-verifier
+pip install helixagent-verifier
 ```
 
 Or install from source:
@@ -18,7 +18,7 @@ pip install -e .
 ## Quick Start
 
 ```python
-from superagent_verifier import VerifierClient
+from helixagent_verifier import VerifierClient
 
 # Initialize the client
 client = VerifierClient(
@@ -87,7 +87,7 @@ name = client.get_model_name_with_score("gpt-4")
 # Returns: "GPT-4 (SC:9.2)"
 
 # Update scoring weights
-from superagent_verifier import ScoringWeights
+from helixagent_verifier import ScoringWeights
 
 weights = ScoringWeights(
     response_speed=0.30,
@@ -124,7 +124,7 @@ available = client.is_provider_available("openai")
 ## Error Handling
 
 ```python
-from superagent_verifier import (
+from helixagent_verifier import (
     VerifierError,
     APIError,
     ValidationError,
@@ -166,13 +166,13 @@ pip install -e ".[dev]"
 pytest
 
 # Run with coverage
-pytest --cov=superagent_verifier
+pytest --cov=helixagent_verifier
 
 # Type checking
-mypy superagent_verifier
+mypy helixagent_verifier
 
 # Format code
-black superagent_verifier
+black helixagent_verifier
 ```
 
 ## License

@@ -9,7 +9,7 @@
 ## Module 1: Architecture Overview (15 minutes)
 
 ### Opening Slide
-**Title:** Production Deployment with SuperAgent
+**Title:** Production Deployment with HelixAgent
 **Duration:** 30 seconds
 
 ---
@@ -18,16 +18,16 @@
 
 #### Narration Script:
 
-Welcome to the Production Deployment course. Before deploying SuperAgent to production, it's essential to understand its architecture and how the components work together.
+Welcome to the Production Deployment course. Before deploying HelixAgent to production, it's essential to understand its architecture and how the components work together.
 
-SuperAgent is designed as a modern microservices-friendly application with clear separation of concerns. Let me walk you through the key components.
+HelixAgent is designed as a modern microservices-friendly application with clear separation of concerns. Let me walk you through the key components.
 
 The core application is a Go binary that handles all API requests, provider orchestration, and debate management. It connects to PostgreSQL for persistent storage and Redis for caching and session management.
 
 #### Key Components:
 
 ```
-SUPERAGENT ARCHITECTURE
+HELIXAGENT ARCHITECTURE
 
                          +-------------------+
                          |   Load Balancer   |
@@ -37,7 +37,7 @@ SUPERAGENT ARCHITECTURE
               +--------------------+--------------------+
               |                    |                    |
     +---------v---------+ +--------v--------+ +--------v--------+
-    |  SuperAgent Node  | |  SuperAgent Node| |  SuperAgent Node|
+    |  HelixAgent Node  | |  HelixAgent Node| |  HelixAgent Node|
     |     (Go App)      | |     (Go App)    | |     (Go App)    |
     +--------+----------+ +--------+--------+ +--------+--------+
              |                     |                    |
@@ -59,7 +59,7 @@ SUPERAGENT ARCHITECTURE
 
 | Component | Purpose | Scaling Strategy |
 |-----------|---------|------------------|
-| SuperAgent App | API handling, orchestration | Horizontal (stateless) |
+| HelixAgent App | API handling, orchestration | Horizontal (stateless) |
 | PostgreSQL | Persistent data, sessions | Primary-replica |
 | Redis | Caching, rate limiting | Cluster mode |
 | Load Balancer | Traffic distribution | Active-passive |
@@ -96,9 +96,9 @@ SYSTEM COMPONENTS
 
 #### Narration Script:
 
-Understanding how data flows through SuperAgent helps you optimize performance and troubleshoot issues. Let me trace a typical API request from client to response.
+Understanding how data flows through HelixAgent helps you optimize performance and troubleshoot issues. Let me trace a typical API request from client to response.
 
-When a request arrives, it first hits your load balancer, which routes it to an available SuperAgent node. The node authenticates the request, checks the cache for recent similar queries, and if needed, forwards the request to the appropriate LLM provider.
+When a request arrives, it first hits your load balancer, which routes it to an available HelixAgent node. The node authenticates the request, checks the cache for recent similar queries, and if needed, forwards the request to the appropriate LLM provider.
 
 #### Request Flow Diagram:
 
@@ -109,19 +109,19 @@ CLIENT REQUEST FLOW
    - SSL termination
    - Health check routing
 
-2. Load Balancer --> SuperAgent Node
+2. Load Balancer --> HelixAgent Node
    - JWT validation
    - Rate limit check (Redis)
 
-3. SuperAgent --> Cache Check
+3. HelixAgent --> Cache Check
    - Semantic cache lookup
    - Session context retrieval
 
-4. SuperAgent --> Provider Selection
+4. HelixAgent --> Provider Selection
    - Circuit breaker check
    - Load-based routing
 
-5. SuperAgent --> LLM Provider
+5. HelixAgent --> LLM Provider
    - Request transformation
    - Response streaming
 
@@ -151,9 +151,9 @@ tracing:
 
 #### Narration Script:
 
-SuperAgent is designed to scale horizontally. Since the application nodes are stateless, you can add more instances to handle increased load. Let me explain the key scalability patterns.
+HelixAgent is designed to scale horizontally. Since the application nodes are stateless, you can add more instances to handle increased load. Let me explain the key scalability patterns.
 
-First, horizontal scaling of application nodes. You can run as many SuperAgent instances as needed behind a load balancer. They all share the same PostgreSQL and Redis backends.
+First, horizontal scaling of application nodes. You can run as many HelixAgent instances as needed behind a load balancer. They all share the same PostgreSQL and Redis backends.
 
 Second, database scaling. PostgreSQL supports read replicas for scaling read operations. For write-heavy workloads, consider partitioning strategies.
 
@@ -189,11 +189,11 @@ LLM Provider (slowest) > Network > Database > CPU
 
 #### Narration Script:
 
-Production systems need high availability. SuperAgent includes several features to ensure uptime even when components fail.
+Production systems need high availability. HelixAgent includes several features to ensure uptime even when components fail.
 
-The circuit breaker pattern prevents cascading failures. When a provider starts failing, SuperAgent automatically stops sending requests to it and routes traffic to healthy alternatives.
+The circuit breaker pattern prevents cascading failures. When a provider starts failing, HelixAgent automatically stops sending requests to it and routes traffic to healthy alternatives.
 
-Health checks continuously monitor all components. If a SuperAgent node becomes unhealthy, the load balancer removes it from rotation.
+Health checks continuously monitor all components. If a HelixAgent node becomes unhealthy, the load balancer removes it from rotation.
 
 Failover mechanisms ensure that if one provider is down, traffic automatically routes to alternatives.
 
@@ -272,7 +272,7 @@ Claude (primary)
 
 #### Narration Script:
 
-Docker is the most common way to deploy SuperAgent. Let me show you a production-ready Docker Compose configuration and explain the key settings.
+Docker is the most common way to deploy HelixAgent. Let me show you a production-ready Docker Compose configuration and explain the key settings.
 
 #### Production Docker Compose:
 ```yaml
@@ -280,8 +280,8 @@ Docker is the most common way to deploy SuperAgent. Let me show you a production
 version: "3.8"
 
 services:
-  superagent:
-    image: superagent/superagent:latest
+  helixagent:
+    image: helixagent/helixagent:latest
     deploy:
       replicas: 3
       resources:
@@ -317,7 +317,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - superagent-network
+      - helixagent-network
 
   postgres:
     image: postgres:15-alpine
@@ -339,7 +339,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - superagent-network
+      - helixagent-network
 
   redis:
     image: redis:7-alpine
@@ -357,7 +357,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - superagent-network
+      - helixagent-network
 
   nginx:
     image: nginx:alpine
@@ -368,25 +368,25 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
     depends_on:
-      - superagent
+      - helixagent
     networks:
-      - superagent-network
+      - helixagent-network
 
 volumes:
   postgres-data:
   redis-data:
 
 networks:
-  superagent-network:
+  helixagent-network:
     driver: bridge
 ```
 
 #### Nginx Configuration:
 ```nginx
 # nginx.conf
-upstream superagent {
+upstream helixagent {
     least_conn;
-    server superagent:8080 weight=1;
+    server helixagent:8080 weight=1;
     keepalive 32;
 }
 
@@ -409,7 +409,7 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
 
     location / {
-        proxy_pass http://superagent;
+        proxy_pass http://helixagent;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -425,7 +425,7 @@ server {
     }
 
     location /health {
-        proxy_pass http://superagent/health;
+        proxy_pass http://helixagent/health;
         access_log off;
     }
 }
@@ -447,26 +447,26 @@ For larger deployments, Kubernetes provides advanced orchestration capabilities.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: superagent
+  name: helixagent
   labels:
-    app: superagent
+    app: helixagent
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: superagent
+      app: helixagent
   template:
     metadata:
       labels:
-        app: superagent
+        app: helixagent
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9090"
         prometheus.io/path: "/metrics"
     spec:
       containers:
-        - name: superagent
-          image: superagent/superagent:v1.0.0
+        - name: helixagent
+          image: helixagent/helixagent:v1.0.0
           ports:
             - containerPort: 8080
               name: http
@@ -478,17 +478,17 @@ spec:
             - name: DB_HOST
               valueFrom:
                 secretKeyRef:
-                  name: superagent-secrets
+                  name: helixagent-secrets
                   key: db-host
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: superagent-secrets
+                  name: helixagent-secrets
                   key: db-password
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: superagent-secrets
+                  name: helixagent-secrets
                   key: anthropic-api-key
           resources:
             requests:
@@ -520,7 +520,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: superagent-config
+            name: helixagent-config
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -531,7 +531,7 @@ spec:
                     - key: app
                       operator: In
                       values:
-                        - superagent
+                        - helixagent
                 topologyKey: kubernetes.io/hostname
 ```
 
@@ -541,9 +541,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: superagent
+  name: helixagent
   labels:
-    app: superagent
+    app: helixagent
 spec:
   type: ClusterIP
   ports:
@@ -556,7 +556,7 @@ spec:
       protocol: TCP
       name: metrics
   selector:
-    app: superagent
+    app: helixagent
 ```
 
 **Ingress:**
@@ -565,7 +565,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: superagent
+  name: helixagent
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -575,7 +575,7 @@ spec:
   tls:
     - hosts:
         - api.yourcompany.com
-      secretName: superagent-tls
+      secretName: helixagent-tls
   rules:
     - host: api.yourcompany.com
       http:
@@ -584,7 +584,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: superagent
+                name: helixagent
                 port:
                   number: 80
 ```
@@ -595,12 +595,12 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: superagent
+  name: helixagent
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: superagent
+    name: helixagent
   minReplicas: 3
   maxReplicas: 20
   metrics:
@@ -671,8 +671,8 @@ Best for: Mixed hardware capabilities
 #### AWS Application Load Balancer:
 ```yaml
 # terraform/alb.tf
-resource "aws_lb" "superagent" {
-  name               = "superagent-alb"
+resource "aws_lb" "helixagent" {
+  name               = "helixagent-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
@@ -682,8 +682,8 @@ resource "aws_lb" "superagent" {
   idle_timeout               = 300  # 5 minutes for debates
 }
 
-resource "aws_lb_target_group" "superagent" {
-  name     = "superagent-tg"
+resource "aws_lb_target_group" "helixagent" {
+  name     = "helixagent-tg"
   port     = 8080
   protocol = "HTTP"
   vpc_id   = var.vpc_id
@@ -717,10 +717,10 @@ Auto-scaling ensures your deployment can handle traffic spikes while minimizing 
 
 ```yaml
 # AWS Auto Scaling Group
-resource "aws_autoscaling_group" "superagent" {
-  name                = "superagent-asg"
+resource "aws_autoscaling_group" "helixagent" {
+  name                = "helixagent-asg"
   vpc_zone_identifier = var.private_subnets
-  target_group_arns   = [aws_lb_target_group.superagent.arn]
+  target_group_arns   = [aws_lb_target_group.helixagent.arn]
   health_check_type   = "ELB"
 
   min_size         = 2
@@ -728,28 +728,28 @@ resource "aws_autoscaling_group" "superagent" {
   desired_capacity = 3
 
   launch_template {
-    id      = aws_launch_template.superagent.id
+    id      = aws_launch_template.helixagent.id
     version = "$Latest"
   }
 
   tag {
     key                 = "Name"
-    value               = "superagent"
+    value               = "helixagent"
     propagate_at_launch = true
   }
 }
 
 # Scale up policy - CPU
 resource "aws_autoscaling_policy" "scale_up_cpu" {
-  name                   = "superagent-scale-up-cpu"
-  autoscaling_group_name = aws_autoscaling_group.superagent.name
+  name                   = "helixagent-scale-up-cpu"
+  autoscaling_group_name = aws_autoscaling_group.helixagent.name
   adjustment_type        = "ChangeInCapacity"
   scaling_adjustment     = 2
   cooldown               = 60
 }
 
 resource "aws_cloudwatch_metric_alarm" "cpu_high" {
-  alarm_name          = "superagent-cpu-high"
+  alarm_name          = "helixagent-cpu-high"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "CPUUtilization"
@@ -763,8 +763,8 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
 
 # Scale down policy
 resource "aws_autoscaling_policy" "scale_down" {
-  name                   = "superagent-scale-down"
-  autoscaling_group_name = aws_autoscaling_group.superagent.name
+  name                   = "helixagent-scale-down"
+  autoscaling_group_name = aws_autoscaling_group.helixagent.name
   adjustment_type        = "ChangeInCapacity"
   scaling_adjustment     = -1
   cooldown               = 300
@@ -802,7 +802,7 @@ KEY SCALING METRICS
 
 #### Narration Script:
 
-Prometheus is the standard for collecting metrics in cloud-native applications. SuperAgent exposes a comprehensive set of metrics that help you understand system health and performance.
+Prometheus is the standard for collecting metrics in cloud-native applications. HelixAgent exposes a comprehensive set of metrics that help you understand system health and performance.
 
 #### Prometheus Configuration:
 ```yaml
@@ -821,7 +821,7 @@ rule_files:
   - /etc/prometheus/alerts/*.yml
 
 scrape_configs:
-  - job_name: 'superagent'
+  - job_name: 'helixagent'
     kubernetes_sd_configs:
       - role: pod
     relabel_configs:
@@ -834,7 +834,7 @@ scrape_configs:
         regex: (.+)
     metrics_path: /metrics
     static_configs:
-      - targets: ['superagent:9090']
+      - targets: ['helixagent:9090']
 
   - job_name: 'postgres'
     static_configs:
@@ -845,48 +845,48 @@ scrape_configs:
       - targets: ['redis-exporter:9121']
 ```
 
-#### Key SuperAgent Metrics:
+#### Key HelixAgent Metrics:
 
 ```
 # Request metrics
-superagent_http_requests_total{method="POST",path="/v1/completions",status="200"}
-superagent_http_request_duration_seconds{quantile="0.95"}
-superagent_http_requests_in_flight
+helixagent_http_requests_total{method="POST",path="/v1/completions",status="200"}
+helixagent_http_request_duration_seconds{quantile="0.95"}
+helixagent_http_requests_in_flight
 
 # Provider metrics
-superagent_provider_requests_total{provider="claude",status="success"}
-superagent_provider_latency_seconds{provider="claude",quantile="0.99"}
-superagent_provider_circuit_breaker_state{provider="claude"} # 0=closed, 1=open, 2=half-open
-superagent_provider_health_status{provider="claude"} # 1=healthy, 0=unhealthy
+helixagent_provider_requests_total{provider="claude",status="success"}
+helixagent_provider_latency_seconds{provider="claude",quantile="0.99"}
+helixagent_provider_circuit_breaker_state{provider="claude"} # 0=closed, 1=open, 2=half-open
+helixagent_provider_health_status{provider="claude"} # 1=healthy, 0=unhealthy
 
 # Debate metrics
-superagent_debates_total{status="completed"}
-superagent_debate_duration_seconds{quantile="0.95"}
-superagent_debate_quality_score{debate_id="*"}
-superagent_debate_consensus_level{debate_id="*"}
+helixagent_debates_total{status="completed"}
+helixagent_debate_duration_seconds{quantile="0.95"}
+helixagent_debate_quality_score{debate_id="*"}
+helixagent_debate_consensus_level{debate_id="*"}
 
 # Cache metrics
-superagent_cache_hits_total
-superagent_cache_misses_total
-superagent_cache_hit_rate
+helixagent_cache_hits_total
+helixagent_cache_misses_total
+helixagent_cache_hit_rate
 
 # Resource metrics
-superagent_goroutines_count
-superagent_memory_alloc_bytes
-superagent_gc_duration_seconds
+helixagent_goroutines_count
+helixagent_memory_alloc_bytes
+helixagent_gc_duration_seconds
 ```
 
 #### Alert Rules:
 ```yaml
-# alerts/superagent.yml
+# alerts/helixagent.yml
 groups:
-  - name: superagent
+  - name: helixagent
     rules:
       - alert: HighErrorRate
         expr: |
-          sum(rate(superagent_http_requests_total{status=~"5.."}[5m]))
+          sum(rate(helixagent_http_requests_total{status=~"5.."}[5m]))
           /
-          sum(rate(superagent_http_requests_total[5m])) > 0.05
+          sum(rate(helixagent_http_requests_total[5m])) > 0.05
         for: 5m
         labels:
           severity: critical
@@ -895,7 +895,7 @@ groups:
           description: "Error rate is {{ $value | humanizePercentage }}"
 
       - alert: ProviderCircuitOpen
-        expr: superagent_provider_circuit_breaker_state == 1
+        expr: helixagent_provider_circuit_breaker_state == 1
         for: 1m
         labels:
           severity: warning
@@ -905,7 +905,7 @@ groups:
 
       - alert: HighLatency
         expr: |
-          histogram_quantile(0.95, sum(rate(superagent_http_request_duration_seconds_bucket[5m])) by (le)) > 5
+          histogram_quantile(0.95, sum(rate(helixagent_http_request_duration_seconds_bucket[5m])) by (le)) > 5
         for: 5m
         labels:
           severity: warning
@@ -914,7 +914,7 @@ groups:
           description: "95th percentile latency is {{ $value }}s"
 
       - alert: LowCacheHitRate
-        expr: superagent_cache_hit_rate < 0.5
+        expr: helixagent_cache_hit_rate < 0.5
         for: 15m
         labels:
           severity: warning
@@ -929,28 +929,28 @@ groups:
 
 #### Narration Script:
 
-Grafana provides beautiful visualizations for your Prometheus metrics. Let me show you how to set up comprehensive dashboards for SuperAgent monitoring.
+Grafana provides beautiful visualizations for your Prometheus metrics. Let me show you how to set up comprehensive dashboards for HelixAgent monitoring.
 
 #### Dashboard JSON (Key Panels):
 ```json
 {
   "dashboard": {
-    "title": "SuperAgent Production Dashboard",
+    "title": "HelixAgent Production Dashboard",
     "panels": [
       {
         "title": "Request Rate",
         "type": "graph",
         "targets": [
           {
-            "expr": "sum(rate(superagent_http_requests_total[5m]))",
+            "expr": "sum(rate(helixagent_http_requests_total[5m]))",
             "legendFormat": "Total Requests/s"
           },
           {
-            "expr": "sum(rate(superagent_http_requests_total{status=~'2..'}[5m]))",
+            "expr": "sum(rate(helixagent_http_requests_total{status=~'2..'}[5m]))",
             "legendFormat": "Success"
           },
           {
-            "expr": "sum(rate(superagent_http_requests_total{status=~'5..'}[5m]))",
+            "expr": "sum(rate(helixagent_http_requests_total{status=~'5..'}[5m]))",
             "legendFormat": "Errors"
           }
         ]
@@ -960,11 +960,11 @@ Grafana provides beautiful visualizations for your Prometheus metrics. Let me sh
         "type": "graph",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, sum(rate(superagent_http_request_duration_seconds_bucket[5m])) by (le))",
+            "expr": "histogram_quantile(0.95, sum(rate(helixagent_http_request_duration_seconds_bucket[5m])) by (le))",
             "legendFormat": "p95 Latency"
           },
           {
-            "expr": "histogram_quantile(0.50, sum(rate(superagent_http_request_duration_seconds_bucket[5m])) by (le))",
+            "expr": "histogram_quantile(0.50, sum(rate(helixagent_http_request_duration_seconds_bucket[5m])) by (le))",
             "legendFormat": "p50 Latency"
           }
         ]
@@ -974,7 +974,7 @@ Grafana provides beautiful visualizations for your Prometheus metrics. Let me sh
         "type": "stat",
         "targets": [
           {
-            "expr": "superagent_provider_health_status",
+            "expr": "helixagent_provider_health_status",
             "legendFormat": "{{provider}}"
           }
         ],
@@ -992,7 +992,7 @@ Grafana provides beautiful visualizations for your Prometheus metrics. Let me sh
         "type": "graph",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, sum(rate(superagent_provider_latency_seconds_bucket[5m])) by (le, provider))",
+            "expr": "histogram_quantile(0.95, sum(rate(helixagent_provider_latency_seconds_bucket[5m])) by (le, provider))",
             "legendFormat": "{{provider}}"
           }
         ]
@@ -1002,7 +1002,7 @@ Grafana provides beautiful visualizations for your Prometheus metrics. Let me sh
         "type": "stat",
         "targets": [
           {
-            "expr": "sum(superagent_debates_active)",
+            "expr": "sum(helixagent_debates_active)",
             "legendFormat": "Active"
           }
         ]
@@ -1012,7 +1012,7 @@ Grafana provides beautiful visualizations for your Prometheus metrics. Let me sh
         "type": "heatmap",
         "targets": [
           {
-            "expr": "sum(rate(superagent_debate_quality_score_bucket[1h])) by (le)"
+            "expr": "sum(rate(helixagent_debate_quality_score_bucket[1h])) by (le)"
           }
         ]
       },
@@ -1021,7 +1021,7 @@ Grafana provides beautiful visualizations for your Prometheus metrics. Let me sh
         "type": "gauge",
         "targets": [
           {
-            "expr": "superagent_cache_hit_rate * 100"
+            "expr": "helixagent_cache_hit_rate * 100"
           }
         ],
         "fieldConfig": {
@@ -1082,7 +1082,7 @@ RECOMMENDED DASHBOARD LAYOUT
 
 #### Narration Script:
 
-Centralized logging is essential for troubleshooting production issues. SuperAgent produces structured logs that can be easily parsed and analyzed.
+Centralized logging is essential for troubleshooting production issues. HelixAgent produces structured logs that can be easily parsed and analyzed.
 
 #### Log Configuration:
 ```yaml
@@ -1094,7 +1094,7 @@ logging:
 
   # Fields included in all logs
   default_fields:
-    service: "superagent"
+    service: "helixagent"
     environment: "production"
     version: "1.0.0"
 
@@ -1167,9 +1167,9 @@ filebeat.inputs:
 output.elasticsearch:
   hosts: ["elasticsearch:9200"]
   indices:
-    - index: "superagent-logs-%{+yyyy.MM.dd}"
+    - index: "helixagent-logs-%{+yyyy.MM.dd}"
       when.contains:
-        kubernetes.labels.app: "superagent"
+        kubernetes.labels.app: "helixagent"
 ```
 
 ---
@@ -1212,18 +1212,18 @@ route:
 receivers:
   - name: 'default'
     slack_configs:
-      - channel: '#superagent-alerts'
+      - channel: '#helixagent-alerts'
 
   - name: 'slack-critical'
     slack_configs:
-      - channel: '#superagent-critical'
+      - channel: '#helixagent-critical'
         title: '{{ .GroupLabels.alertname }}'
         text: '{{ .Annotations.description }}'
         send_resolved: true
 
   - name: 'slack-warnings'
     slack_configs:
-      - channel: '#superagent-warnings'
+      - channel: '#helixagent-warnings'
 
   - name: 'pagerduty-critical'
     pagerduty_configs:
@@ -1268,7 +1268,7 @@ ALERT SEVERITY LEVELS
 
 #### Narration Script:
 
-Production deployments require proper authentication. SuperAgent supports multiple authentication methods including JWT tokens, API keys, and OAuth 2.0.
+Production deployments require proper authentication. HelixAgent supports multiple authentication methods including JWT tokens, API keys, and OAuth 2.0.
 
 #### Security Configuration:
 ```yaml
@@ -1280,7 +1280,7 @@ security:
     expiration: "1h"
     refresh_expiration: "24h"
     algorithm: "HS256"
-    issuer: "superagent"
+    issuer: "helixagent"
 
   # API Key Configuration
   api_key:
@@ -1353,7 +1353,7 @@ curl -X DELETE http://localhost:8080/admin/api-keys/sk-prod-abc123xyz \
 
 #### Narration Script:
 
-Rate limiting protects your system from abuse and ensures fair resource distribution. SuperAgent implements multiple rate limiting strategies.
+Rate limiting protects your system from abuse and ensures fair resource distribution. HelixAgent implements multiple rate limiting strategies.
 
 #### Rate Limiting Strategies:
 ```yaml
@@ -1409,7 +1409,7 @@ rate_limiting:
 
 #### Narration Script:
 
-Regular backups are essential for disaster recovery. Let me show you how to configure automated backups for SuperAgent's data.
+Regular backups are essential for disaster recovery. Let me show you how to configure automated backups for HelixAgent's data.
 
 #### Backup Configuration:
 ```yaml
@@ -1424,7 +1424,7 @@ backup:
     compression: true
     storage:
       type: "s3"
-      bucket: "superagent-backups"
+      bucket: "helixagent-backups"
       prefix: "postgresql/"
 
   redis:
@@ -1432,7 +1432,7 @@ backup:
     retention_days: 7
     storage:
       type: "s3"
-      bucket: "superagent-backups"
+      bucket: "helixagent-backups"
       prefix: "redis/"
 
   configuration:
@@ -1442,7 +1442,7 @@ backup:
       - "/app/secrets/*.env"
     storage:
       type: "s3"
-      bucket: "superagent-backups"
+      bucket: "helixagent-backups"
       prefix: "config/"
 ```
 
@@ -1455,7 +1455,7 @@ set -e
 
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="/tmp/backups/${DATE}"
-S3_BUCKET="superagent-backups"
+S3_BUCKET="helixagent-backups"
 
 mkdir -p ${BACKUP_DIR}
 
@@ -1494,7 +1494,7 @@ echo "Backup completed: ${DATE}"
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: superagent-backup
+  name: helixagent-backup
 spec:
   schedule: "0 2 * * *"
   jobTemplate:
@@ -1503,12 +1503,12 @@ spec:
         spec:
           containers:
             - name: backup
-              image: superagent/backup:latest
+              image: helixagent/backup:latest
               env:
                 - name: DB_HOST
                   valueFrom:
                     secretKeyRef:
-                      name: superagent-secrets
+                      name: helixagent-secrets
                       key: db-host
               volumeMounts:
                 - name: backup-scripts
@@ -1526,7 +1526,7 @@ spec:
 
 #### Narration Script:
 
-Keeping SuperAgent updated ensures you have the latest features and security patches. Here's how to manage updates with minimal downtime.
+Keeping HelixAgent updated ensures you have the latest features and security patches. Here's how to manage updates with minimal downtime.
 
 #### Rolling Update Strategy:
 ```yaml
@@ -1542,20 +1542,20 @@ spec:
 #### Update Procedure:
 ```bash
 # 1. Check current version
-kubectl get deployment superagent -o jsonpath='{.spec.template.spec.containers[0].image}'
+kubectl get deployment helixagent -o jsonpath='{.spec.template.spec.containers[0].image}'
 
 # 2. Review release notes
-# https://github.com/superagent/superagent/releases
+# https://github.com/helixagent/helixagent/releases
 
 # 3. Update to new version
-kubectl set image deployment/superagent \
-  superagent=superagent/superagent:v1.1.0
+kubectl set image deployment/helixagent \
+  helixagent=helixagent/helixagent:v1.1.0
 
 # 4. Monitor rollout
-kubectl rollout status deployment/superagent
+kubectl rollout status deployment/helixagent
 
 # 5. If issues, rollback
-kubectl rollout undo deployment/superagent
+kubectl rollout undo deployment/helixagent
 ```
 
 #### Blue-Green Deployment:
@@ -1567,11 +1567,11 @@ kubectl apply -f deployment-green.yaml
 curl http://green.internal/health
 
 # Switch traffic
-kubectl patch service superagent \
+kubectl patch service helixagent \
   -p '{"spec":{"selector":{"version":"green"}}}'
 
 # Monitor and cleanup old version
-kubectl delete deployment superagent-blue
+kubectl delete deployment helixagent-blue
 ```
 
 ---
@@ -1580,11 +1580,11 @@ kubectl delete deployment superagent-blue
 
 #### Narration Script:
 
-Congratulations on completing the Production Deployment course! You now have the knowledge to deploy SuperAgent in production with confidence.
+Congratulations on completing the Production Deployment course! You now have the knowledge to deploy HelixAgent in production with confidence.
 
 We covered the system architecture and components, deployment strategies for Docker and Kubernetes, comprehensive monitoring with Prometheus and Grafana, and security best practices including authentication and backups.
 
-In the final course, we'll cover custom integrations - building plugins, creating custom providers, and extending SuperAgent's capabilities.
+In the final course, we'll cover custom integrations - building plugins, creating custom providers, and extending HelixAgent's capabilities.
 
 #### Slide Content:
 ```

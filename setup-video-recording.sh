@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# SuperAgent Video Production Setup Script
+# HelixAgent Video Production Setup Script
 # This script sets up everything needed for recording the first video
 
-echo "🎬 SuperAgent Video Production Setup"
+echo "🎬 HelixAgent Video Production Setup"
 echo "===================================="
 echo ""
 
@@ -25,14 +25,14 @@ cd recording
 echo "📝 Creating video recording structure..."
 
 # Create project files for demonstration
-cat > superagent-demo.sh << 'EOF'
+cat > helixagent-demo.sh << 'EOF'
 #!/bin/bash
-echo "🚀 SuperAgent Demo - Multi-Provider AI Orchestration"
+echo "🚀 HelixAgent Demo - Multi-Provider AI Orchestration"
 echo "==================================================="
 
-echo "1. Installing SuperAgent..."
-git clone https://github.com/superagent/superagent.git
-cd superagent
+echo "1. Installing HelixAgent..."
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 make build
 
 echo "2. Creating configuration..."
@@ -61,18 +61,18 @@ ai_debate:
       llms: ["gemini"]
 CONFIG
 
-echo "3. Starting SuperAgent..."
-./superagent --config config.yaml
+echo "3. Starting HelixAgent..."
+./helixagent --config config.yaml
 
-echo "🎉 SuperAgent is running! Visit http://localhost:8080"
+echo "🎉 HelixAgent is running! Visit http://localhost:8080"
 EOF
 
-chmod +x superagent-demo.sh
+chmod +x helixagent-demo.sh
 
 # Create demo API request
 cat > api-demo.sh << 'EOF'
 #!/bin/bash
-echo "🌐 SuperAgent API Demo"
+echo "🌐 HelixAgent API Demo"
 echo "===================="
 
 echo "1. Making simple completion request..."
@@ -109,7 +109,7 @@ cat > dashboard.html << 'EOF'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuperAgent Monitoring Dashboard</title>
+    <title>HelixAgent Monitoring Dashboard</title>
     <style>
         body { font-family: 'Inter', sans-serif; margin: 0; padding: 20px; background: #0f172a; color: #f8fafc; }
         .dashboard { max-width: 1200px; margin: 0 auto; }
@@ -127,7 +127,7 @@ cat > dashboard.html << 'EOF'
 <body>
     <div class="dashboard">
         <div class="header">
-            <h1>🚀 SuperAgent Monitoring Dashboard</h1>
+            <h1>🚀 HelixAgent Monitoring Dashboard</h1>
             <p>Real-time AI orchestration performance metrics</p>
         </div>
         
@@ -244,7 +244,7 @@ EOF
 echo "✅ Created recording environment files"
 echo ""
 echo "🎬 Video Recording Assets Created:"
-echo "   - superagent-demo.sh: Installation and setup script"
+echo "   - helixagent-demo.sh: Installation and setup script"
 echo "   - api-demo.sh: API demonstration script"
 echo "   - dashboard.html: Monitoring dashboard example"
 echo "   - terminal-theme.md: Terminal setup guidelines"
@@ -253,10 +253,10 @@ echo ""
 echo "📁 Directory structure ready at: $(pwd)"
 echo ""
 echo "🎯 Next Steps for Recording:"
-echo "1. Review VIDEO_SCRIPT_SUPERAGENT_5_MINUTES.md for script"
+echo "1. Review VIDEO_SCRIPT_HELIXAGENT_5_MINUTES.md for script"
 echo "2. Check VIDEO_PRODUCTION_SETUP_COMPLETE.md for equipment setup"
 echo "3. Practice delivery with provided demo scripts"
 echo "4. Record multiple takes, choose the best"
 echo "5. Edit following post-production workflow"
 echo ""
-echo "🚀 Ready to create professional SuperAgent video content!"
+echo "🚀 Ready to create professional HelixAgent video content!"

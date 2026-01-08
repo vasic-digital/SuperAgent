@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# SUPERAGENT RE-VERIFICATION SCRIPT
+# HELIXAGENT RE-VERIFICATION SCRIPT
 #===============================================================================
 # This script re-verifies all 30+ providers and 900+ LLMs using LLMsVerifier.
 # Uses ONLY production binaries - NO source code execution!
@@ -44,7 +44,7 @@ OUTPUT_DIR="$RESULTS_DIR/results"
 
 # Binary paths
 LLMSVERIFIER_BIN="$LLMSVERIFIER_DIR/llm-verifier/llm-verifier"
-SUPERAGENT_BIN="$PROJECT_ROOT/superagent"
+HELIXAGENT_BIN="$PROJECT_ROOT/helixagent"
 
 # Colors
 RED='\033[0;31m'
@@ -106,7 +106,7 @@ run_binary() {
 
 usage() {
     cat << EOF
-${GREEN}SuperAgent Re-Verification Script${NC}
+${GREEN}HelixAgent Re-Verification Script${NC}
 
 Usage: $0 [options]
 
@@ -120,7 +120,7 @@ Options:
 ${YELLOW}IMPORTANT:${NC}
 This script uses ONLY production binaries:
 - LLMsVerifier binary: $LLMSVERIFIER_BIN
-- SuperAgent binary: $SUPERAGENT_BIN
+- HelixAgent binary: $HELIXAGENT_BIN
 
 NO source code is executed!
 
@@ -166,10 +166,10 @@ check_binaries() {
         exit 1
     fi
 
-    if [ -x "$SUPERAGENT_BIN" ]; then
-        log_success "SuperAgent binary: $SUPERAGENT_BIN"
+    if [ -x "$HELIXAGENT_BIN" ]; then
+        log_success "HelixAgent binary: $HELIXAGENT_BIN"
     else
-        log_warning "SuperAgent binary not found: $SUPERAGENT_BIN"
+        log_warning "HelixAgent binary not found: $HELIXAGENT_BIN"
     fi
 }
 
@@ -300,15 +300,15 @@ update_opencode_config() {
 
     # Create redacted version
     if [ -f "$OUTPUT_DIR/opencode.json" ]; then
-        sed 's/"api_key":\s*"[^"]*"/"api_key": "\${SUPERAGENT_API_KEY}"/g' \
+        sed 's/"api_key":\s*"[^"]*"/"api_key": "\${HELIXAGENT_API_KEY}"/g' \
             "$OUTPUT_DIR/opencode.json" > "$OUTPUT_DIR/opencode.json.example"
         log_success "OpenCode configuration generated"
     fi
 
     # Copy to Downloads
     if [ -f "$OUTPUT_DIR/opencode.json" ]; then
-        cp "$OUTPUT_DIR/opencode.json" "/home/milosvasic/Downloads/opencode-super-agent.json" 2>/dev/null || true
-        log_info "Copied to /home/milosvasic/Downloads/opencode-super-agent.json"
+        cp "$OUTPUT_DIR/opencode.json" "/home/milosvasic/Downloads/opencode-helix-agent.json" 2>/dev/null || true
+        log_info "Copied to /home/milosvasic/Downloads/opencode-helix-agent.json"
     fi
 }
 
@@ -365,7 +365,7 @@ $RESULTS_DIR/
 ## Binaries Used
 
 - **LLMsVerifier**: \`$LLMSVERIFIER_BIN\`
-- **SuperAgent**: \`$SUPERAGENT_BIN\`
+- **HelixAgent**: \`$HELIXAGENT_BIN\`
 
 ---
 
@@ -396,7 +396,7 @@ main() {
     setup
     check_binaries
 
-    log_phase "SUPERAGENT RE-VERIFICATION"
+    log_phase "HELIXAGENT RE-VERIFICATION"
     log_info "Start time: $(date '+%Y-%m-%d %H:%M:%S')"
     log_info "Results: $RESULTS_DIR"
     log_info ""

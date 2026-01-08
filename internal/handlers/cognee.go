@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/superagent/superagent/internal/config"
-	llm "github.com/superagent/superagent/internal/llm/cognee"
+	"github.com/helixagent/helixagent/internal/config"
+	llm "github.com/helixagent/helixagent/internal/llm/cognee"
 )
 
 // CogneeHandler handles Cognee-related requests

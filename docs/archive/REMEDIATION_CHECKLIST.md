@@ -1,4 +1,4 @@
-# SuperAgent Remediation Checklist
+# HelixAgent Remediation Checklist
 
 **Created**: January 1, 2026
 **Purpose**: Track individual remediation tasks with verification
@@ -216,7 +216,7 @@
 |---------|--------|-------|-------------|----------|
 | `cmd/api` | 0.0% | ___% | ___ | [ ] |
 | `internal/router` | 16.2% | ___% | ___ | [ ] |
-| `cmd/superagent` | 16.9% | ___% | ___ | [ ] |
+| `cmd/helixagent` | 16.9% | ___% | ___ | [ ] |
 | `cmd/grpc-server` | 23.8% | ___% | ___ | [ ] |
 | `internal/database` | 24.6% | ___% | ___ | [ ] |
 | `internal/cache` | 42.4% | ___% | ___ | [ ] |
@@ -258,7 +258,7 @@
 
 ### API Documentation
 - [ ] docs/api/openapi.yaml updated
-- [ ] specs/001-super-agent/contracts/openapi.yaml aligned
+- [ ] specs/001-helix-agent/contracts/openapi.yaml aligned
 - [ ] Endpoint documentation complete
 
 ### Video/Tutorial Content
