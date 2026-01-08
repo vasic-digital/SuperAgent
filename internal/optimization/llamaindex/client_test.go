@@ -231,7 +231,7 @@ func TestClient_Health(t *testing.T) {
 			Status:             "healthy",
 			Version:            "1.0.0",
 			CogneeAvailable:    true,
-			SuperagentAvailable: true,
+			HelixagentAvailable: true,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -935,7 +935,7 @@ func TestClient_HealthCheckFields(t *testing.T) {
 			Status:              "healthy",
 			Version:             "1.0.0",
 			CogneeAvailable:     true,
-			SuperagentAvailable: true,
+			HelixagentAvailable: true,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
@@ -950,7 +950,7 @@ func TestClient_HealthCheckFields(t *testing.T) {
 	assert.Equal(t, "healthy", health.Status)
 	assert.Equal(t, "1.0.0", health.Version)
 	assert.True(t, health.CogneeAvailable)
-	assert.True(t, health.SuperagentAvailable)
+	assert.True(t, health.HelixagentAvailable)
 }
 
 // TestClient_EmptyQueryResponse tests handling of empty query response

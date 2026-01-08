@@ -1,4 +1,4 @@
-# SuperAgent Social Media Content Pack
+# HelixAgent Social Media Content Pack
 
 ## Launch Campaign Content
 
@@ -6,7 +6,7 @@
 
 #### Post 1: Launch Announcement
 ```
-🚀 LAUNCH DAY! Introducing SuperAgent - the AI-powered multi-provider LLM orchestration platform that's changing how enterprises build AI applications.
+🚀 LAUNCH DAY! Introducing HelixAgent - the AI-powered multi-provider LLM orchestration platform that's changing how enterprises build AI applications.
 
 ✅ Multi-provider support (Claude, Gemini, DeepSeek + more)
 ✅ AI debate system for better reasoning
@@ -14,7 +14,7 @@
 ✅ 99.9% uptime guarantee
 
 Get started free 👇
-https://superagent.ai
+https://helixagent.ai
 
 #AI #Enterprise #LLM #MultiProvider #Launch
 ```
@@ -23,14 +23,14 @@ https://superagent.ai
 ```
 🤔 Tired of AI provider lock-in? Hit rate limits? Inconsistent quality?
 
-SuperAgent solves this by intelligently orchestrating multiple AI providers:
+HelixAgent solves this by intelligently orchestrating multiple AI providers:
 
 🎯 Automatic provider selection based on performance
 💰 Cost optimization through intelligent routing
 🔧 Single API for 7+ providers
 ⚡ 99.9% uptime with automatic failover
 
-Try it free → https://superagent.ai
+Try it free → https://helixagent.ai
 
 #AIOrchestration #EnterpriseAI
 ```
@@ -39,14 +39,14 @@ Try it free → https://superagent.ai
 ```
 💡 What if AI models could debate each other?
 
-With SuperAgent's AI debate system, they can! Configure multiple AI agents with different roles to:
+With HelixAgent's AI debate system, they can! Configure multiple AI agents with different roles to:
 
 🗣️ Discuss complex problems
 🤝 Build consensus
 📊 Improve accuracy by 40%
 🧠 Reason through multi-step problems
 
-The future of AI is collaborative → https://superagent.ai
+The future of AI is collaborative → https://helixagent.ai
 
 #AIDebate #MultiAgentAI #CollaborativeAI
 ```
@@ -55,7 +55,7 @@ The future of AI is collaborative → https://superagent.ai
 ```
 🔧 Technical Tuesday: Multi-Provider AI Architecture
 
-SuperAgent's intelligent routing considers:
+HelixAgent's intelligent routing considers:
 📊 Historical performance data
 💰 Real-time pricing
 ⏱️ Current latency
@@ -64,7 +64,7 @@ SuperAgent's intelligent routing considers:
 Result? 60% cost reduction + better accuracy
 
 Implementation guide 👇
-https://superagent.ai/docs/developer/
+https://helixagent.ai/docs/developer/
 
 #TechTuesday #AIArchitecture #Developer
 ```
@@ -74,10 +74,10 @@ https://superagent.ai/docs/developer/
 📈 Customer Story: How [Company] improved AI accuracy by 40%
 
 Challenge: Single AI provider wasn't meeting accuracy requirements
-Solution: SuperAgent's multi-provider orchestration + AI debate
+Solution: HelixAgent's multi-provider orchestration + AI debate
 Result: 40% accuracy improvement, 60% cost reduction
 
-Read the full case study → https://superagent.ai/case-studies
+Read the full case study → https://helixagent.ai/case-studies
 
 #CustomerSuccess #AI #Enterprise
 ```
@@ -86,9 +86,9 @@ Read the full case study → https://superagent.ai/case-studies
 
 #### Post 1: Enterprise Focus
 ```
-🚀 Excited to announce the launch of SuperAgent - the enterprise-grade multi-provider AI orchestration platform.
+🚀 Excited to announce the launch of HelixAgent - the enterprise-grade multi-provider AI orchestration platform.
 
-In today's AI landscape, relying on a single provider is a strategic risk. SuperAgent enables organizations to:
+In today's AI landscape, relying on a single provider is a strategic risk. HelixAgent enables organizations to:
 
 ✅ Avoid vendor lock-in
 ✅ Optimize costs through intelligent routing
@@ -98,7 +98,7 @@ In today's AI landscape, relying on a single provider is a strategic risk. Super
 
 Built for production workloads with 99.9% uptime, comprehensive security, and scalable architecture.
 
-Ready to transform your AI infrastructure? Get started at https://superagent.ai
+Ready to transform your AI infrastructure? Get started at https://helixagent.ai
 
 #EnterpriseAI #AIInfrastructure #DigitalTransformation #MultiCloud
 ```
@@ -123,9 +123,9 @@ The solution? Intelligent multi-provider orchestration that:
 ✅ Enables provider comparison
 ✅ Future-proofs AI investments
 
-At SuperAgent, we're building the infrastructure layer that makes multi-provider AI practical for enterprises.
+At HelixAgent, we're building the infrastructure layer that makes multi-provider AI practical for enterprises.
 
-Learn more about our approach: https://superagent.ai/architecture
+Learn more about our approach: https://helixagent.ai/architecture
 
 #AITransformation #EnterpriseArchitecture #MultiCloudStrategy
 ```
@@ -136,7 +136,7 @@ Learn more about our approach: https://superagent.ai/architecture
 
 Tired of juggling multiple AI provider APIs? Frustrated with inconsistent response formats? Want to implement ensemble methods but don't have the infrastructure?
 
-SuperAgent provides:
+HelixAgent provides:
 🔌 Unified API for 7+ providers
 🎯 Intelligent provider selection
 📊 Performance monitoring
@@ -145,8 +145,8 @@ SuperAgent provides:
 
 Built by developers, for developers. Open source, well-documented, and production-ready.
 
-Check out our developer guide: https://superagent.ai/docs/developer
-Star us on GitHub: https://github.com/superagent/superagent
+Check out our developer guide: https://helixagent.ai/docs/developer
+Star us on GitHub: https://github.com/helixagent/helixagent
 
 #AI #MachineLearning #DeveloperTools #OpenSource
 ```
@@ -174,7 +174,7 @@ Compare responses from multiple providers and select the best one.
 5/ Future Flexibility 🔮
 Avoid vendor lock-in. Switch providers as better ones emerge.
 
-Ready to implement multi-provider AI? Start here: https://superagent.ai
+Ready to implement multi-provider AI? Start here: https://helixagent.ai
 ```
 
 #### Thread 2: AI Debate System Explained
@@ -196,7 +196,7 @@ Final decisions are more robust when multiple models agree.
 5/ Confidence Scoring 📊
 Debate helps identify when models are uncertain or disagree.
 
-Want to implement AI debate in your application? https://superagent.ai/docs/ai-debate
+Want to implement AI debate in your application? https://helixagent.ai/docs/ai-debate
 ```
 
 ### Visual Content Ideas
@@ -226,9 +226,9 @@ Want to implement AI debate in your application? https://superagent.ai/docs/ai-d
 
 ### GitHub Content
 ```
-🌟 **Star us on GitHub if you find SuperAgent useful!**
+🌟 **Star us on GitHub if you find HelixAgent useful!**
 
-SuperAgent is an open-source multi-provider AI orchestration platform:
+HelixAgent is an open-source multi-provider AI orchestration platform:
 
 ✨ Features:
 • Multi-provider support (Claude, Gemini, DeepSeek + more)
@@ -237,25 +237,25 @@ SuperAgent is an open-source multi-provider AI orchestration platform:
 • 99.9% uptime with automatic failover
 • Simple API integration
 
-🔗 https://github.com/superagent/superagent
+🔗 https://github.com/helixagent/helixagent
 
 #OpenSource #AI #MultiProvider #Enterprise
 ```
 
 ### YouTube Video Ideas
-1. "SuperAgent Tutorial: Multi-Provider AI in 5 Minutes"
-2. "Building Reliable AI Applications with SuperAgent"
+1. "HelixAgent Tutorial: Multi-Provider AI in 5 Minutes"
+2. "Building Reliable AI Applications with HelixAgent"
 3. "AI Debate System: Let Models Reason Together"
 4. "Cost Optimization with Intelligent AI Routing"
-5. "Enterprise AI Monitoring with SuperAgent"
+5. "Enterprise AI Monitoring with HelixAgent"
 
 ### Reddit Posts
 ```
-[Show HN] SuperAgent - Multi-Provider AI Orchestration Platform
+[Show HN] HelixAgent - Multi-Provider AI Orchestration Platform
 
-Hey HN! We built SuperAgent to solve a problem we faced: relying on a single AI provider creates vendor lock-in, inconsistent quality, and scaling challenges.
+Hey HN! We built HelixAgent to solve a problem we faced: relying on a single AI provider creates vendor lock-in, inconsistent quality, and scaling challenges.
 
-SuperAgent provides:
+HelixAgent provides:
 • Intelligent routing across 7+ providers
 • AI debate system for better accuracy
 • Enterprise monitoring and 99.9% uptime
@@ -266,9 +266,9 @@ Tech stack: Go, Docker, Kubernetes, Prometheus, Grafana
 
 We've been using it in production for 6 months with great results. Happy to answer questions!
 
-GitHub: https://github.com/superagent/superagent
-Website: https://superagent.ai
-Docs: https://superagent.ai/docs
+GitHub: https://github.com/helixagent/helixagent
+Website: https://helixagent.ai
+Docs: https://helixagent.ai/docs
 ```
 
 ## Content Calendar

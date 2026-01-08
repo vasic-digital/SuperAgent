@@ -1,5 +1,5 @@
 """
-Setup script for SuperAgent Verifier Python SDK.
+Setup script for HelixAgent Verifier Python SDK.
 """
 
 from setuptools import setup, find_packages
@@ -8,14 +8,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="superagent-verifier",
+    name="helixagent-verifier",
     version="1.0.0",
-    author="SuperAgent Team",
-    author_email="team@superagent.io",
-    description="Python SDK for SuperAgent LLMsVerifier API",
+    author="HelixAgent Team",
+    author_email="team@helixagent.io",
+    description="Python SDK for HelixAgent LLMsVerifier API",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/superagent/superagent",
+    url="https://github.com/helixagent/helixagent",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -46,10 +46,10 @@ setup(
             "types-requests>=2.28.0",
         ],
     },
-    keywords="llm verification scoring health monitoring superagent",
+    keywords="llm verification scoring health monitoring helixagent",
     project_urls={
-        "Bug Tracker": "https://github.com/superagent/superagent/issues",
-        "Documentation": "https://superagent.io/docs/sdk/python",
-        "Source Code": "https://github.com/superagent/superagent/tree/main/pkg/sdk/python",
+        "Bug Tracker": "https://github.com/helixagent/helixagent/issues",
+        "Documentation": "https://helixagent.io/docs/sdk/python",
+        "Source Code": "https://github.com/helixagent/helixagent/tree/main/pkg/sdk/python",
     },
 )

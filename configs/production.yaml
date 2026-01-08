@@ -1,4 +1,4 @@
-# SuperAgent Production Configuration
+# HelixAgent Production Configuration
 # This configuration is optimized for production environments
 
 server:
@@ -141,7 +141,7 @@ ai_debate:
   cognee:
     enabled: true
     api_url: "${COGNEE_API_URL}"
-    dataset_name: "superagent_debates"
+    dataset_name: "helixagent_debates"
 
 optimization:
   # LLM Optimization Framework (enabled for production)
@@ -241,7 +241,7 @@ logging:
   # File logging (enabled for production)
   file:
     enabled: true
-    path: "./logs/superagent.log"
+    path: "./logs/helixagent.log"
     max_size: "100MB"
     max_backups: 10
     max_age: "30d"
@@ -301,7 +301,7 @@ modelsdev:
   
   # API request settings
   timeout: "${MODELSDEV_TIMEOUT:-30s}"
-  user_agent: "${MODELSDEV_USER_AGENT:-SuperAgent/1.0}"
+  user_agent: "${MODELSDEV_USER_AGENT:-HelixAgent/1.0}"
   rate_limit: ${MODELSDEV_RATE_LIMIT:-10}
   
   # Advanced settings

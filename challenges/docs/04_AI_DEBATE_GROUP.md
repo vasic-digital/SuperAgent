@@ -1,10 +1,10 @@
-# SuperAgent Challenges - AI Debate Group
+# HelixAgent Challenges - AI Debate Group
 
 Comprehensive documentation for the AI Debate Group formation and operation.
 
 ## Overview
 
-The AI Debate Group is SuperAgent's core ensemble mechanism, combining multiple top-performing LLMs into a single virtual model. This document details how groups are formed, configured, and operated.
+The AI Debate Group is HelixAgent's core ensemble mechanism, combining multiple top-performing LLMs into a single virtual model. This document details how groups are formed, configured, and operated.
 
 ## Group Architecture
 
@@ -126,7 +126,7 @@ Fallbacks are assigned based on:
 ```json
 {
   "id": "dg_20250104_103000",
-  "name": "SuperAgent Debate Group",
+  "name": "HelixAgent Debate Group",
   "created_at": "2025-01-04T10:30:00Z",
   "members": [
     {
@@ -258,7 +258,7 @@ curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "superagent-debate",
+    "model": "helixagent-debate",
     "messages": [{"role": "user", "content": "Write a Go function"}]
   }'
 ```
@@ -270,7 +270,7 @@ curl -X POST http://localhost:8080/v1/chat/completions \
   "id": "chatcmpl-abc123",
   "object": "chat.completion",
   "created": 1704362400,
-  "model": "superagent-debate",
+  "model": "helixagent-debate",
   "choices": [{
     "index": 0,
     "message": {

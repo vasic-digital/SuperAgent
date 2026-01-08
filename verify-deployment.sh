@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# SuperAgent Website Deployment Verification Script
+# HelixAgent Website Deployment Verification Script
 # This script helps verify that the website is properly configured for deployment
 
-echo "🚀 SuperAgent Website Deployment Verification"
+echo "🚀 HelixAgent Website Deployment Verification"
 echo "==========================================="
 echo ""
 
@@ -74,7 +74,7 @@ echo ""
 # Domain recommendations
 echo "🌐 Domain Recommendations:"
 echo "For production deployment, consider:"
-echo "1. Custom domain: superagent.ai (recommended)"
+echo "1. Custom domain: helixagent.ai (recommended)"
 echo "2. GitHub Pages default: https://[username].github.io/[repository]/"
 echo ""
 
@@ -93,5 +93,5 @@ echo "- Conversion: 5%+ click-through rate to GitHub"
 echo "- Social growth: 500+ Twitter followers, 300+ LinkedIn followers"
 echo ""
 
-echo "✨ SuperAgent is ready for deployment!"
+echo "✨ HelixAgent is ready for deployment!"
 echo "Follow the WEBSITE_LAUNCH_CHECKLIST.md for detailed launch steps."

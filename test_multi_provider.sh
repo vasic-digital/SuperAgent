@@ -1,18 +1,18 @@
 #!/bin/bash
 
-# SuperAgent Multi-Provider Test Script
+# HelixAgent Multi-Provider Test Script
 # Tests OpenAI compatibility with automatic ensemble support
 
 set -e
 
 # Configuration
-SUPERAGENT_URL="http://localhost:8080"
-API_KEY="${SUPERAGENT_API_KEY:-test-key}"
-MODEL="${MODEL:-superagent-ensemble}"
+HELIXAGENT_URL="http://localhost:8080"
+API_KEY="${HELIXAGENT_API_KEY:-test-key}"
+MODEL="${MODEL:-helixagent-ensemble}"
 
-echo "🚀 Testing SuperAgent Multi-Provider OpenAI Compatibility"
+echo "🚀 Testing HelixAgent Multi-Provider OpenAI Compatibility"
 echo "=========================================================="
-echo "URL: $SUPERAGENT_URL"
+echo "URL: $HELIXAGENT_URL"
 echo "Model: $MODEL"
 echo ""
 
@@ -32,12 +32,12 @@ test_endpoint() {
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $API_KEY" \
             -d "$data" \
-            "$SUPERAGENT_URL$endpoint")
+            "$HELIXAGENT_URL$endpoint")
     else
         response=$(curl -s -w "\n%{http_code}" \
             -X "$method" \
             -H "Authorization: Bearer $API_KEY" \
-            "$SUPERAGENT_URL$endpoint")
+            "$HELIXAGENT_URL$endpoint")
     fi
     
     # Split response and status code
@@ -72,7 +72,7 @@ test_streaming() {
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $API_KEY" \
         -d "$data" \
-        "$SUPERAGENT_URL$endpoint" || echo "TIMEOUT")
+        "$HELIXAGENT_URL$endpoint" || echo "TIMEOUT")
     
     if [[ "$response" == *"data:"* ]] || [[ "$response" == *"DONE"* ]]; then
         echo "   ✅ Streaming successful"
@@ -88,10 +88,10 @@ test_streaming() {
 }
 
 # Check if server is running
-echo "🔍 Checking if SuperAgent server is running..."
-if ! curl -s "$SUPERAGENT_URL/health" >/dev/null 2>&1; then
-    echo "❌ SuperAgent server is not running at $SUPERAGENT_URL"
-    echo "Please start the server with: ./superagent"
+echo "🔍 Checking if HelixAgent server is running..."
+if ! curl -s "$HELIXAGENT_URL/health" >/dev/null 2>&1; then
+    echo "❌ HelixAgent server is not running at $HELIXAGENT_URL"
+    echo "Please start the server with: ./helixagent"
     exit 1
 fi
 echo "✅ Server is running"
@@ -179,10 +179,10 @@ echo "  • Confidence-weighted voting for best results"
 echo "  • Fallback to highest confidence if no consensus"
 echo "  • Full OpenAI API compatibility"
 echo ""
-echo "🚀 Your SuperAgent is ready for use with OpenCode, Crush, and other AI CLI tools!"
+echo "🚀 Your HelixAgent is ready for use with OpenCode, Crush, and other AI CLI tools!"
 echo ""
 echo "💡 Usage Examples:"
-echo "   opencode --api-key $API_KEY --base-url $SUPERAGENT_URL/v1 --model $MODEL \"Write a REST API\""
+echo "   opencode --api-key $API_KEY --base-url $HELIXAGENT_URL/v1 --model $MODEL \"Write a REST API\""
 echo "   curl -H 'Authorization: Bearer $API_KEY' -H 'Content-Type: application/json' \\"
 echo "        -d '{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}' \\"
-echo "        $SUPERAGENT_URL/v1/chat/completions"
+echo "        $HELIXAGENT_URL/v1/chat/completions"

@@ -51,10 +51,10 @@ type FinalEnsemble struct {
 }
 
 func finalProductionMain() {
-	baseURL := getEnv("SUPERAGENT_URL", "http://localhost:8080")
-	apiKey := getEnv("SUPERAGENT_API_KEY", "test-key")
+	baseURL := getEnv("HELIXAGENT_URL", "http://localhost:8080")
+	apiKey := getEnv("HELIXAGENT_API_KEY", "test-key")
 
-	fmt.Println("🚀 SuperAgent Final Production Validation Test")
+	fmt.Println("🚀 HelixAgent Final Production Validation Test")
 	fmt.Println("==========================================")
 
 	// Test 1: Health Check
@@ -95,13 +95,13 @@ func finalProductionMain() {
 	}
 	fmt.Println("✅ Provider health check passed")
 
-	fmt.Println("\n🎉 SuperAgent Production Validation Complete!")
+	fmt.Println("\n🎉 HelixAgent Production Validation Complete!")
 	fmt.Println("=====================================")
 	fmt.Println("✅ All core systems are functional")
 	fmt.Println("✅ API endpoints are responding")
 	fmt.Println("✅ Multi-provider system is working")
 	fmt.Println("✅ Ensemble capabilities are available")
-	fmt.Println("\n🚀 SuperAgent is ready for production deployment!")
+	fmt.Println("\n🚀 HelixAgent is ready for production deployment!")
 }
 
 func testHealthCheck(baseURL string) error {
@@ -163,7 +163,7 @@ func testModelsEndpoint(baseURL, apiKey string) ([]interface{}, error) {
 
 func finalTestChatCompletion(baseURL, apiKey string) error {
 	request := FinalTestRequest{
-		Model: "superagent-ensemble",
+		Model: "helixagent-ensemble",
 		Messages: []FinalMessage{
 			{Role: "user", Content: "Hello! Please respond with a simple greeting."},
 		},
@@ -220,7 +220,7 @@ func finalTestChatCompletion(baseURL, apiKey string) error {
 
 func testEnsembleRequest(baseURL, apiKey string) error {
 	request := FinalTestRequest{
-		Model: "superagent-ensemble",
+		Model: "helixagent-ensemble",
 		Messages: []FinalMessage{
 			{Role: "user", Content: "What is 2+2? Just give the number."},
 		},

@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: superagent
+  name: helixagent
 spec:
   replicas: 3
   template:
     spec:
       containers:
-        - name: superagent
+        - name: helixagent
           env:
             - name: GIN_MODE
               value: "release"
@@ -27,7 +27,7 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app: superagent
+                    app: helixagent
                 topologyKey: kubernetes.io/hostname
       topologySpreadConstraints:
         - maxSkew: 1
@@ -35,4 +35,4 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: superagent
+              app: helixagent

@@ -70,21 +70,21 @@ func ensureBearMailExists(t *testing.T) {
 	t.Logf("Successfully cloned Bear-Mail to %s", bearMailPath)
 }
 
-// bearMailGetBaseURL returns the SuperAgent base URL for testing
+// bearMailGetBaseURL returns the HelixAgent base URL for testing
 func bearMailGetBaseURL() string {
-	if url := os.Getenv("SUPERAGENT_URL"); url != "" {
+	if url := os.Getenv("HELIXAGENT_URL"); url != "" {
 		return url
 	}
 	return "http://localhost:8080"
 }
 
-// bearMailSkipIfNotRunning skips the test if SuperAgent is not running
+// bearMailSkipIfNotRunning skips the test if HelixAgent is not running
 func bearMailSkipIfNotRunning(t *testing.T) {
 	t.Helper()
 	baseURL := bearMailGetBaseURL()
 	resp, err := http.Get(baseURL + "/health")
 	if err != nil || resp.StatusCode != 200 {
-		t.Skipf("SuperAgent not running at %s, skipping integration test", baseURL)
+		t.Skipf("HelixAgent not running at %s, skipping integration test", baseURL)
 	}
 	resp.Body.Close()
 }
@@ -106,7 +106,7 @@ func TestBearMailOpenCodeConversation(t *testing.T) {
 	t.Run("Step1_Codebase_Visibility_Check", func(t *testing.T) {
 		// First message: "Do you see my codebase?"
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -137,7 +137,7 @@ func TestBearMailOpenCodeConversation(t *testing.T) {
 	t.Run("Step2_AGENTS_MD_Creation_Request", func(t *testing.T) {
 		// Second message: Full AGENTS.md creation request
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -190,7 +190,7 @@ If there's already an AGENTS.md, improve it if it's located in /run/media/milosv
 	t.Run("Step3_Documentation_Request", func(t *testing.T) {
 		// Third message: Documentation request
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -218,7 +218,7 @@ If there's already an AGENTS.md, improve it if it's located in /run/media/milosv
 	t.Run("Step4_Test_Coverage_Check", func(t *testing.T) {
 		// Fourth message: Test coverage check
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -254,7 +254,7 @@ func TestBearMailContentQuality(t *testing.T) {
 
 	t.Run("No_Hallucinated_Structure", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -282,7 +282,7 @@ func TestBearMailContentQuality(t *testing.T) {
 
 	t.Run("Specific_Build_Commands", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -322,7 +322,7 @@ func TestBearMailResponseCompleteness(t *testing.T) {
 
 	t.Run("Long_Response_No_Cutoff", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role": "user",
@@ -394,7 +394,7 @@ Make sure to complete ALL sections. Do not stop mid-section.`,
 		allComplete := true
 		for i, prompt := range prompts {
 			reqBody := map[string]interface{}{
-				"model": "superagent-ensemble",
+				"model": "helixagent-ensemble",
 				"messages": []map[string]string{
 					{"role": "user", "content": prompt},
 				},
@@ -434,7 +434,7 @@ func TestBearMailMultiProviderParticipation(t *testing.T) {
 
 	t.Run("Complex_Analysis_Uses_Multiple_Providers", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role": "user",
@@ -646,7 +646,7 @@ func TestBearMailStreamingContentIntegrity(t *testing.T) {
 	t.Run("No_Word_Duplication", func(t *testing.T) {
 		// Request a specific phrase to detect interleaving
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -690,7 +690,7 @@ func TestBearMailStreamingContentIntegrity(t *testing.T) {
 
 	t.Run("Coherent_Sentence_Structure", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -723,7 +723,7 @@ func TestBearMailStreamingContentIntegrity(t *testing.T) {
 
 	t.Run("Consistent_Stream_ID", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -754,7 +754,7 @@ func TestBearMailStreamingFormatValidity(t *testing.T) {
 
 	t.Run("Proper_SSE_Format", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -806,7 +806,7 @@ func TestBearMailStreamingFormatValidity(t *testing.T) {
 
 	t.Run("First_Chunk_Has_Role", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -866,7 +866,7 @@ func TestBearMailStreamingFormatValidity(t *testing.T) {
 
 	t.Run("Last_Chunk_Has_Finish_Reason", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -898,7 +898,7 @@ func TestOpenCodeToolCallFormat(t *testing.T) {
 	t.Run("Bash_Command_Format", func(t *testing.T) {
 		// Request that should generate bash commands
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -932,7 +932,7 @@ func TestOpenCodeToolCallFormat(t *testing.T) {
 	t.Run("Write_To_File_Request", func(t *testing.T) {
 		// Request that should generate file write commands
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -962,7 +962,7 @@ func TestOpenCodeToolCallFormat(t *testing.T) {
 	t.Run("Response_No_Incomplete_Tags", func(t *testing.T) {
 		// Verify responses don't have incomplete/broken XML-like tags
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -1002,7 +1002,7 @@ func TestResponseContentValidity(t *testing.T) {
 
 	t.Run("No_Empty_Response", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -1025,7 +1025,7 @@ func TestResponseContentValidity(t *testing.T) {
 
 	t.Run("Response_Has_Expected_Content", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -1051,7 +1051,7 @@ func TestResponseContentValidity(t *testing.T) {
 
 	t.Run("Response_Follows_Instructions", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -1086,7 +1086,7 @@ func TestBearMailNoResponseCutoff(t *testing.T) {
 
 	t.Run("Medium_Response_Completes", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -1122,7 +1122,7 @@ func TestBearMailNoResponseCutoff(t *testing.T) {
 
 	t.Run("Long_Response_Completes", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role": "user",

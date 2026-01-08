@@ -1,4 +1,4 @@
-// Package main_challenge implements the Main SuperAgent Challenge
+// Package main_challenge implements the Main HelixAgent Challenge
 // that verifies all providers, benchmarks LLMs, forms AI debate groups,
 // and generates OpenCode configuration.
 //
@@ -20,8 +20,8 @@ type MainChallengeConfig struct {
 	// LLMsVerifier binary path
 	LLMsVerifierPath string `json:"llmsverifier_path"`
 
-	// SuperAgent binary path
-	SuperAgentPath string `json:"superagent_path"`
+	// HelixAgent binary path
+	HelixAgentPath string `json:"helixagent_path"`
 
 	// Results directory
 	ResultsDir string `json:"results_dir"`
@@ -44,7 +44,7 @@ type MainChallengeConfig struct {
 func DefaultMainChallengeConfig() *MainChallengeConfig {
 	return &MainChallengeConfig{
 		LLMsVerifierPath:            "../LLMsVerifier/llm-verifier/llm-verifier",
-		SuperAgentPath:              "./superagent",
+		HelixAgentPath:              "./helixagent",
 		ResultsDir:                  "challenges/results/main_challenge",
 		DebateGroupSize:             5,
 		FallbacksPerMember:          2,
@@ -222,7 +222,7 @@ func NewMainChallenge(config *MainChallengeConfig) *MainChallenge {
 		config: config,
 		result: &MainChallengeResult{
 			ChallengeID:   fmt.Sprintf("main_%d", time.Now().Unix()),
-			ChallengeName: "Main SuperAgent Challenge",
+			ChallengeName: "Main HelixAgent Challenge",
 			StartTime:     time.Now(),
 		},
 	}
@@ -303,7 +303,7 @@ func FormDebateGroup(models []ModelScore, primaryCount, fallbacksPerPrimary int)
 
 	group := &DebateGroup{
 		ID:        fmt.Sprintf("debate_group_%d", time.Now().Unix()),
-		Name:      "SuperAgent AI Debate Group",
+		Name:      "HelixAgent AI Debate Group",
 		CreatedAt: time.Now(),
 		Members:   make([]DebateGroupMember, 0, primaryCount),
 		Configuration: DebateConfiguration{
@@ -350,7 +350,7 @@ func GenerateOpenCodeConfig(group *DebateGroup, endpoint, apiKey string) *OpenCo
 	return &OpenCodeConfig{
 		Endpoint: endpoint,
 		APIKey:   apiKey,
-		Model:    "superagent-ensemble",
+		Model:    "helixagent-ensemble",
 		Features: OpenCodeFeatures{
 			MCP: MCPConfig{
 				Enabled: true,

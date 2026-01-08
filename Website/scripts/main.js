@@ -1,4 +1,4 @@
-// SuperAgent Website JavaScript
+// HelixAgent Website JavaScript
 (function() {
     'use strict';
 
@@ -336,7 +336,7 @@
     }
 
     // Expose global functions for external use
-    window.SuperAgentWebsite = {
+    window.HelixAgentWebsite = {
         initialize: initialize,
         copyCode: async function(text) {
             try {

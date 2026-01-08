@@ -68,7 +68,7 @@ type ProviderConfig struct {
 	BaseURL string `json:"base_url"`
 }
 
-// ProviderAdapter adapts LLMsVerifier providers to SuperAgent's provider interface
+// ProviderAdapter adapts LLMsVerifier providers to HelixAgent's provider interface
 type ProviderAdapter struct {
 	providerID   string
 	providerName string

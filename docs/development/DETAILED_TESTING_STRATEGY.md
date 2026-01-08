@@ -1,8 +1,8 @@
-# SuperAgent Detailed Testing Strategy
+# HelixAgent Detailed Testing Strategy
 
 ## Overview
 
-This document outlines the comprehensive testing strategy for SuperAgent, covering all 6 test types with a goal of achieving 100% test coverage across all modules. The strategy follows a 6-tier testing approach to ensure maximum quality and reliability.
+This document outlines the comprehensive testing strategy for HelixAgent, covering all 6 test types with a goal of achieving 100% test coverage across all modules. The strategy follows a 6-tier testing approach to ensure maximum quality and reliability.
 
 ## 1. Unit Tests (Target: 100% Coverage)
 

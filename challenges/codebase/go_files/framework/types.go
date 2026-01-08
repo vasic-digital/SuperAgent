@@ -1,4 +1,4 @@
-// Package framework provides core types and interfaces for the SuperAgent Challenges system.
+// Package framework provides core types and interfaces for the HelixAgent Challenges system.
 package framework
 
 import (

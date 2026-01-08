@@ -1,4 +1,4 @@
-package com.superagent.protocol
+package com.helixagent.protocol
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
@@ -16,13 +16,13 @@ import java.io.InputStreamReader
 import java.util.concurrent.TimeUnit
 
 /**
- * SuperAgent Protocol Enhancement Android SDK
- * Kotlin client library for SuperAgent Protocol Enhancement API
+ * HelixAgent Protocol Enhancement Android SDK
+ * Kotlin client library for HelixAgent Protocol Enhancement API
  *
  * @version 1.0.0
- * @author SuperAgent
+ * @author HelixAgent
  */
-class SuperAgentClient(
+class HelixAgentClient(
     private val baseUrl: String = "http://localhost:8080",
     private val apiKey: String? = null,
     private val timeoutSeconds: Long = 30
@@ -80,7 +80,7 @@ class SuperAgentClient(
                     } else {
                         val errorMsg = responseBody ?: "Unknown error"
                         continuation.resumeWithException(
-                            SuperAgentException(response.code, errorMsg)
+                            HelixAgentException(response.code, errorMsg)
                         )
                     }
                 } catch (e: Exception) {
@@ -123,7 +123,7 @@ class SuperAgentClient(
 
     /**
      * Create a chat completion
-     * @param model The model to use (e.g., "superagent-ensemble")
+     * @param model The model to use (e.g., "helixagent-ensemble")
      * @param messages List of chat messages
      * @param temperature Sampling temperature (0.0 to 2.0)
      * @param maxTokens Maximum tokens to generate
@@ -199,7 +199,7 @@ class SuperAgentClient(
 
     /**
      * Create a streaming chat completion
-     * @param model The model to use (e.g., "superagent-ensemble")
+     * @param model The model to use (e.g., "helixagent-ensemble")
      * @param messages List of chat messages
      * @param temperature Sampling temperature (0.0 to 2.0)
      * @param maxTokens Maximum tokens to generate
@@ -261,13 +261,13 @@ class SuperAgentClient(
 
             override fun onResponse(call: Call, response: Response) {
                 if (!response.isSuccessful) {
-                    close(SuperAgentException(response.code, response.message))
+                    close(HelixAgentException(response.code, response.message))
                     return
                 }
 
                 val responseBody = response.body
                 if (responseBody == null) {
-                    close(SuperAgentException(500, "Empty response body"))
+                    close(HelixAgentException(500, "Empty response body"))
                     return
                 }
 
@@ -374,13 +374,13 @@ class SuperAgentClient(
 
             override fun onResponse(call: Call, response: Response) {
                 if (!response.isSuccessful) {
-                    close(SuperAgentException(response.code, response.message))
+                    close(HelixAgentException(response.code, response.message))
                     return
                 }
 
                 val responseBody = response.body
                 if (responseBody == null) {
-                    close(SuperAgentException(500, "Empty response body"))
+                    close(HelixAgentException(500, "Empty response body"))
                     return
                 }
 
@@ -525,11 +525,11 @@ class SuperAgentClient(
             val status = getDebateStatus(debateId)
             when (status.status) {
                 "completed" -> return getDebateResults(debateId)
-                "failed" -> throw SuperAgentException(500, "Debate failed: ${status.error}")
+                "failed" -> throw HelixAgentException(500, "Debate failed: ${status.error}")
             }
             delay(pollIntervalMs)
         }
-        throw SuperAgentException(408, "Debate did not complete within timeout")
+        throw HelixAgentException(408, "Debate did not complete within timeout")
     }
 
     // LSP Protocol Methods
@@ -717,16 +717,16 @@ class SuperAgentClient(
         /**
          * Create client from environment variables
          */
-        fun fromEnvironment(): SuperAgentClient {
-            val baseUrl = System.getenv("SUPERAGENT_URL") ?: "http://localhost:8080"
-            val apiKey = System.getenv("SUPERAGENT_API_KEY")
-            return SuperAgentClient(baseUrl, apiKey)
+        fun fromEnvironment(): HelixAgentClient {
+            val baseUrl = System.getenv("HELIXAGENT_URL") ?: "http://localhost:8080"
+            val apiKey = System.getenv("HELIXAGENT_API_KEY")
+            return HelixAgentClient(baseUrl, apiKey)
         }
 
         /**
          * Initialize development environment
          */
-        suspend fun initializeDevelopmentEnvironment(client: SuperAgentClient): JSONObject {
+        suspend fun initializeDevelopmentEnvironment(client: HelixAgentClient): JSONObject {
             // Generate default MCP integration
             val mcpConfig = JSONObject().apply {
                 put("enabled", true)
@@ -751,7 +751,7 @@ class SuperAgentClient(
 }
 
 // Workflow Orchestrator
-class WorkflowOrchestrator(private val client: SuperAgentClient) {
+class WorkflowOrchestrator(private val client: HelixAgentClient) {
 
     suspend fun executeMCPWorkflow(serverId: String, operations: JSONArray): JSONArray {
         val results = JSONArray()
@@ -859,7 +859,7 @@ class WorkflowOrchestrator(private val client: SuperAgentClient) {
 
 // Analytics Monitor
 class AnalyticsMonitor(
-    private val client: SuperAgentClient,
+    private val client: HelixAgentClient,
     private val intervalMs: Long = 30000
 ) {
     private var job: Job? = null
@@ -921,7 +921,7 @@ class AnalyticsMonitor(
 }
 
 // Exception class
-class SuperAgentException(val statusCode: Int, message: String) : Exception(message)
+class HelixAgentException(val statusCode: Int, message: String) : Exception(message)
 
 // ==================== Data Classes ====================
 

@@ -1,4 +1,4 @@
-# SuperAgent Challenges: Main Challenge Implementation Request
+# HelixAgent Challenges: Main Challenge Implementation Request
 
 ## Document Version
 - **Version**: 2.0.0
@@ -13,15 +13,15 @@ All 10 phases have been completed successfully:
 - Designed and implemented Main challenge using ONLY production binaries
 - Created bash scripts for system management and re-verification
 - Generated OpenCode configuration with all features (MCP, ACP, LSP, Embeddings)
-- Deployed production config to `/home/milosvasic/Downloads/opencode-super-agent.json`
+- Deployed production config to `/home/milosvasic/Downloads/opencode-helix-agent.json`
 
-The Main challenge verifies the existing AI Debate Group functionality in SuperAgent through actual production binary execution and real API calls.
+The Main challenge verifies the existing AI Debate Group functionality in HelixAgent through actual production binary execution and real API calls.
 
 ---
 
 ## Executive Summary
 
-This document describes the comprehensive "Main" challenge implementation for the SuperAgent project. The Main challenge integrates LLMsVerifier to verify, test, and benchmark all 30+ providers with 900+ LLMs, then creates an optimized AI debate group with the strongest 15+ LLMs, each with 2+ fallbacks. The system is then benchmarked as a single LLM and an OpenCode configuration is generated for end-user consumption.
+This document describes the comprehensive "Main" challenge implementation for the HelixAgent project. The Main challenge integrates LLMsVerifier to verify, test, and benchmark all 30+ providers with 900+ LLMs, then creates an optimized AI debate group with the strongest 15+ LLMs, each with 2+ fallbacks. The system is then benchmarked as a single LLM and an OpenCode configuration is generated for end-user consumption.
 
 ---
 
@@ -73,7 +73,7 @@ All challenges MUST follow the LLMsVerifier Challenge Specification:
 
 #### Tasks:
 - [ ] Verify LLMsVerifier challenge implementations follow specification
-- [ ] Verify SuperAgent challenge implementations follow specification
+- [ ] Verify HelixAgent challenge implementations follow specification
 - [ ] Identify gaps and inconsistencies
 - [ ] Create verification report
 
@@ -214,10 +214,10 @@ AI Debate Group
 **Estimated Duration**: 3-4 hours
 
 #### Tasks:
-- [ ] Start SuperAgent with configured debate group
-- [ ] Configure SuperAgent as OpenAI-compatible API
-- [ ] Use LLMsVerifier to verify SuperAgent as single LLM
-- [ ] Run comprehensive test suite against SuperAgent
+- [ ] Start HelixAgent with configured debate group
+- [ ] Configure HelixAgent as OpenAI-compatible API
+- [ ] Use LLMsVerifier to verify HelixAgent as single LLM
+- [ ] Run comprehensive test suite against HelixAgent
 - [ ] Generate verification report
 
 #### Verification Tests:
@@ -229,7 +229,7 @@ AI Debate Group
 - Error handling tests
 
 #### Acceptance Criteria:
-- SuperAgent verified as working LLM
+- HelixAgent verified as working LLM
 - All critical tests pass
 - Performance metrics captured
 - Final verification report generated
@@ -242,7 +242,7 @@ AI Debate Group
 
 #### Scripts to Create:
 1. `main_challenge.sh` - Main orchestrator script
-2. `start_system.sh` - Start all infrastructure and SuperAgent
+2. `start_system.sh` - Start all infrastructure and HelixAgent
 3. `stop_system.sh` - Stop all services gracefully
 4. `reverify_all.sh` - Re-verify all providers and LLMs
 5. `update_debate_group.sh` - Update debate group with new best models
@@ -271,8 +271,8 @@ AI Debate Group
 ```json
 {
   "endpoint": "http://localhost:8080/v1",
-  "api_key": "${SUPERAGENT_API_KEY}",
-  "model": "superagent-ensemble",
+  "api_key": "${HELIXAGENT_API_KEY}",
+  "model": "helixagent-ensemble",
   "features": {
     "mcp": {
       "enabled": true,
@@ -396,7 +396,7 @@ challenges/docs/
 - [ ] Create summary report
 
 #### Final Deliverables:
-1. `~/Downloads/opencode-super-agent.json` - Production configuration
+1. `~/Downloads/opencode-helix-agent.json` - Production configuration
 2. Master summary report
 3. All verification reports
 4. Documentation updates
@@ -540,7 +540,7 @@ challenges/results/
 | Phase 1 | COMPLETED | 2026-01-05 | 2026-01-05 | Verified existing implementations, fixed non-compliant LLMsVerifier challenges |
 | Phase 2 | COMPLETED | 2026-01-05 | 2026-01-05 | Designed Main challenge architecture in Go and Bash |
 | Phase 3 | COMPLETED | 2026-01-05 | 2026-01-05 | Implemented provider verification via LLMsVerifier binary |
-| Phase 4 | COMPLETED | 2026-01-05 | 2026-01-05 | Implemented AI debate group selection (verifies existing SuperAgent feature) |
+| Phase 4 | COMPLETED | 2026-01-05 | 2026-01-05 | Implemented AI debate group selection (verifies existing HelixAgent feature) |
 | Phase 5 | COMPLETED | 2026-01-05 | 2026-01-05 | Implemented system self-verification using LLMsVerifier |
 | Phase 6 | COMPLETED | 2026-01-05 | 2026-01-05 | Created start/stop/reverify bash scripts |
 | Phase 7 | COMPLETED | 2026-01-05 | 2026-01-05 | Created OpenCode configuration with MCP, ACP, LSP, Embeddings |
@@ -548,7 +548,7 @@ challenges/results/
 | Phase 9 | COMPLETED | 2026-01-05 | 2026-01-05 | Created comprehensive documentation and quick start guides |
 | Phase 10 | COMPLETED | 2026-01-05 | 2026-01-05 | Updated challenges_bank.json, deployed opencode.json to Downloads |
 
-**NOTE**: The AI Debate Group functionality is already implemented in SuperAgent. The Main challenge verifies its production usability by:
+**NOTE**: The AI Debate Group functionality is already implemented in HelixAgent. The Main challenge verifies its production usability by:
 1. Testing all providers through actual API calls
 2. Benchmarking all LLMs using LLMsVerifier binary
 3. Verifying the debate group selection produces valid results
@@ -610,14 +610,14 @@ cat challenges/master_results/latest_summary.md
 
 ```bash
 # After successful run
-cp challenges/results/main_challenge/latest/opencode.json ~/Downloads/opencode-super-agent.json
+cp challenges/results/main_challenge/latest/opencode.json ~/Downloads/opencode-helix-agent.json
 ```
 
 ---
 
 ## Appendix A: LLM Providers Reference
 
-### Primary Providers (SuperAgent Native)
+### Primary Providers (HelixAgent Native)
 1. Anthropic (Claude)
 2. OpenAI (GPT)
 3. DeepSeek

@@ -1,6 +1,6 @@
-# LLMsVerifier Power Features in SuperAgent
+# LLMsVerifier Power Features in HelixAgent
 
-This document explains how SuperAgent leverages LLMsVerifier's power features to automatically discover, verify, score, and select the best LLM models for AI debate ensemble communication.
+This document explains how HelixAgent leverages LLMsVerifier's power features to automatically discover, verify, score, and select the best LLM models for AI debate ensemble communication.
 
 ## Table of Contents
 
@@ -28,7 +28,7 @@ Traditional LLM integration requires users to:
 
 ### The LLMsVerifier Solution
 
-With LLMsVerifier integration, SuperAgent users simply provide:
+With LLMsVerifier integration, HelixAgent users simply provide:
 - **API keys** for their LLM providers
 - **Optionally**: Custom API base URLs
 
@@ -37,7 +37,7 @@ LLMsVerifier then automatically:
 2. **Verifies** each model works correctly (including code visibility)
 3. **Scores** each model using 5 weighted components
 4. **Selects** the top-scoring models
-5. **Provides** them to SuperAgent for AI debate ensemble
+5. **Provides** them to HelixAgent for AI debate ensemble
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -61,7 +61,7 @@ LLMsVerifier then automatically:
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                    SUPERAGENT AI DEBATE ENSEMBLE                        │
+│                    HELIXAGENT AI DEBATE ENSEMBLE                        │
 │                                                                         │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
 │  │  GPT-4o (SC:9.4) ◄──► Claude 3.5 (SC:9.2) ◄──► Gemini 1.5 (SC:8.9)│ │
@@ -359,7 +359,7 @@ model_selection:
 
 ### How Selected Models Power AI Debate
 
-The top-scoring verified models are automatically used by SuperAgent's AI Debate system:
+The top-scoring verified models are automatically used by HelixAgent's AI Debate system:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -591,7 +591,7 @@ providers:
 ### The Complete Flow
 
 ```
-USER PROVIDES:                    LLMSVERIFIER DOES:               SUPERAGENT USES:
+USER PROVIDES:                    LLMSVERIFIER DOES:               HELIXAGENT USES:
 ┌──────────────┐                  ┌─────────────────┐              ┌─────────────────┐
 │ API Keys     │  ──────────────▶ │ Discovery       │ ──────────▶ │ AI Debate with  │
 │ (optionally  │                  │ Verification    │              │ Top 5 Verified  │
@@ -631,7 +631,7 @@ USER PROVIDES:                    LLMSVERIFIER DOES:               SUPERAGENT US
    make verifier-run
    ```
 
-3. SuperAgent automatically discovers, verifies, scores, and selects the best models for AI debate!
+3. HelixAgent automatically discovers, verifies, scores, and selects the best models for AI debate!
 
 ### Verify It's Working
 
@@ -650,7 +650,7 @@ curl http://localhost:8081/api/v1/verifier/health/providers
 
 ## Conclusion
 
-LLMsVerifier transforms SuperAgent from a manually-configured LLM ensemble into an **intelligent, self-optimizing AI system** that:
+LLMsVerifier transforms HelixAgent from a manually-configured LLM ensemble into an **intelligent, self-optimizing AI system** that:
 
 - Automatically finds the best available models
 - Verifies they work correctly (especially code visibility)

@@ -1,4 +1,4 @@
-// Package framework provides core interfaces for the SuperAgent Challenges system.
+// Package framework provides core interfaces for the HelixAgent Challenges system.
 package framework
 
 import (
@@ -224,7 +224,7 @@ type SelectionWeights struct {
 	ProviderDiversity   float64 `json:"provider_diversity"`
 }
 
-// APITester tests the SuperAgent API with quality assertions.
+// APITester tests the HelixAgent API with quality assertions.
 type APITester interface {
 	// RunTest executes a single API test.
 	RunTest(ctx context.Context, prompt TestPrompt) (*APITestResult, error)

@@ -17,7 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // =============================================================================
@@ -447,7 +447,7 @@ func TestCogneeAuthenticationResilience(t *testing.T) {
 
 // TestCogneeLiveIntegrationResilience tests live Cognee resilience
 func TestCogneeLiveIntegrationResilience(t *testing.T) {
-	serverURL := os.Getenv("SUPERAGENT_TEST_URL")
+	serverURL := os.Getenv("HELIXAGENT_TEST_URL")
 	if serverURL == "" {
 		serverURL = "http://localhost:8080"
 	}
@@ -457,17 +457,17 @@ func TestCogneeLiveIntegrationResilience(t *testing.T) {
 	// Check if server is available
 	healthResp, err := client.Get(serverURL + "/health")
 	if err != nil {
-		t.Skip("SuperAgent server not available")
+		t.Skip("HelixAgent server not available")
 	}
 	healthResp.Body.Close()
 	if healthResp.StatusCode != http.StatusOK {
-		t.Skip("SuperAgent server not healthy")
+		t.Skip("HelixAgent server not healthy")
 	}
 
 	t.Run("Cognee errors don't break chat completions", func(t *testing.T) {
 		// Even if Cognee has issues, chat should work
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "Say hello"},
 			},
@@ -496,7 +496,7 @@ func TestCogneeLiveIntegrationResilience(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify response
-		assert.Equal(t, "superagent-ensemble", result["model"])
+		assert.Equal(t, "helixagent-ensemble", result["model"])
 	})
 
 	t.Run("Cognee search endpoint handles errors gracefully", func(t *testing.T) {

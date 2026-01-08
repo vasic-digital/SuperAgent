@@ -1,6 +1,6 @@
-# SuperAgent Deployment Guide
+# HelixAgent Deployment Guide
 
-This guide covers production deployment of SuperAgent across different environments.
+This guide covers production deployment of HelixAgent across different environments.
 
 ## Prerequisites
 
@@ -16,8 +16,8 @@ This guide covers production deployment of SuperAgent across different environme
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Copy and configure environment
 cp .env.example .env
@@ -43,9 +43,9 @@ JWT_SECRET=your-secure-jwt-secret-min-32-chars
 # Database Configuration
 DB_HOST=postgres
 DB_PORT=5432
-DB_USER=superagent
+DB_USER=helixagent
 DB_PASSWORD=secure-database-password
-DB_NAME=superagent_db
+DB_NAME=helixagent_db
 DB_SSL_MODE=require
 
 # Redis Configuration
@@ -71,7 +71,7 @@ OPENROUTER_API_KEY=your-key
 
 | Profile | Description | Services |
 |---------|-------------|----------|
-| `core` | Core services only | SuperAgent, PostgreSQL, Redis |
+| `core` | Core services only | HelixAgent, PostgreSQL, Redis |
 | `ai` | Core + AI services | Core + Ollama |
 | `monitoring` | Core + monitoring | Core + Prometheus, Grafana |
 | `full` | All services | Core + AI + Monitoring + ChromaDB |
@@ -93,7 +93,7 @@ docker-compose --profile ai up -d
 docker-compose --profile full down
 
 # View logs
-docker-compose logs -f superagent
+docker-compose logs -f helixagent
 ```
 
 ## Kubernetes Deployment
@@ -108,29 +108,29 @@ docker-compose logs -f superagent
 
 ```bash
 # Create namespace
-kubectl create namespace superagent-staging
+kubectl create namespace helixagent-staging
 
 # Apply staging configuration
 kustomize build k8s/staging | kubectl apply -f -
 
 # Verify deployment
-kubectl get pods -n superagent-staging
-kubectl get svc -n superagent-staging
+kubectl get pods -n helixagent-staging
+kubectl get svc -n helixagent-staging
 ```
 
 ### Production Deployment
 
 ```bash
 # Create namespace
-kubectl create namespace superagent-production
+kubectl create namespace helixagent-production
 
 # Create secrets from GitHub Secrets or environment
-kubectl create secret generic superagent-secrets \
-  --namespace=superagent-production \
+kubectl create secret generic helixagent-secrets \
+  --namespace=helixagent-production \
   --from-literal=db-host=your-db-host \
-  --from-literal=db-user=superagent \
+  --from-literal=db-user=helixagent \
   --from-literal=db-password=secure-password \
-  --from-literal=db-name=superagent_production \
+  --from-literal=db-name=helixagent_production \
   --from-literal=redis-host=your-redis-host \
   --from-literal=jwt-secret=your-jwt-secret
 
@@ -138,7 +138,7 @@ kubectl create secret generic superagent-secrets \
 kustomize build k8s/production | kubectl apply -f -
 
 # Monitor rollout
-kubectl rollout status deployment/prod-superagent -n superagent-production
+kubectl rollout status deployment/prod-helixagent -n helixagent-production
 ```
 
 ### Kubernetes Resources
@@ -159,10 +159,10 @@ Production deployment includes:
 
 ```bash
 # Create EKS cluster
-eksctl create cluster --name superagent --region us-east-1
+eksctl create cluster --name helixagent --region us-east-1
 
 # Configure kubectl
-aws eks update-kubeconfig --name superagent --region us-east-1
+aws eks update-kubeconfig --name helixagent --region us-east-1
 
 # Deploy
 kustomize build k8s/production | kubectl apply -f -
@@ -172,12 +172,12 @@ kustomize build k8s/production | kubectl apply -f -
 
 ```bash
 # Create GKE cluster
-gcloud container clusters create superagent \
+gcloud container clusters create helixagent \
   --zone us-central1-a \
   --num-nodes 3
 
 # Get credentials
-gcloud container clusters get-credentials superagent --zone us-central1-a
+gcloud container clusters get-credentials helixagent --zone us-central1-a
 
 # Deploy
 kustomize build k8s/production | kubectl apply -f -
@@ -187,12 +187,12 @@ kustomize build k8s/production | kubectl apply -f -
 
 ```bash
 # Create AKS cluster
-az aks create --resource-group superagent-rg \
-  --name superagent \
+az aks create --resource-group helixagent-rg \
+  --name helixagent \
   --node-count 3
 
 # Get credentials
-az aks get-credentials --resource-group superagent-rg --name superagent
+az aks get-credentials --resource-group helixagent-rg --name helixagent
 
 # Deploy
 kustomize build k8s/production | kubectl apply -f -
@@ -217,7 +217,7 @@ curl http://localhost:8080/v1/providers/ollama/health
 
 ```bash
 # PostgreSQL health
-docker-compose exec postgres pg_isready -U superagent
+docker-compose exec postgres pg_isready -U helixagent
 
 # Redis health
 docker-compose exec redis redis-cli ping
@@ -229,16 +229,16 @@ docker-compose exec redis redis-cli ping
 
 Available at `http://localhost:9090` (or your Prometheus endpoint):
 
-- `superagent_requests_total` - Request counter by method/endpoint/provider
-- `superagent_response_time_seconds` - Response time histogram
-- `superagent_errors_total` - Error counter by type
-- `superagent_provider_health` - Provider health status
+- `helixagent_requests_total` - Request counter by method/endpoint/provider
+- `helixagent_response_time_seconds` - Response time histogram
+- `helixagent_errors_total` - Error counter by type
+- `helixagent_provider_health` - Provider health status
 
 ### Grafana Dashboards
 
 Access at `http://localhost:3000` (default credentials: admin/admin123):
 
-- SuperAgent Overview Dashboard
+- HelixAgent Overview Dashboard
 - Provider Performance Dashboard
 - Error Rate Dashboard
 - Resource Usage Dashboard
@@ -247,13 +247,13 @@ Access at `http://localhost:3000` (default credentials: admin/admin123):
 
 ```bash
 # View application logs
-docker-compose logs -f superagent
+docker-compose logs -f helixagent
 
 # View all service logs
 docker-compose logs -f
 
 # Kubernetes logs
-kubectl logs -f deployment/superagent -n superagent-production
+kubectl logs -f deployment/helixagent -n helixagent-production
 ```
 
 ## Scaling
@@ -262,10 +262,10 @@ kubectl logs -f deployment/superagent -n superagent-production
 
 ```bash
 # Docker Compose
-docker-compose up -d --scale superagent=3
+docker-compose up -d --scale helixagent=3
 
 # Kubernetes
-kubectl scale deployment/superagent --replicas=5 -n superagent-production
+kubectl scale deployment/helixagent --replicas=5 -n helixagent-production
 ```
 
 ### Vertical Scaling
@@ -288,17 +288,17 @@ resources:
 
 ```bash
 # Create backup
-docker-compose exec postgres pg_dump -U superagent superagent_db > backup.sql
+docker-compose exec postgres pg_dump -U helixagent helixagent_db > backup.sql
 
 # Restore from backup
-docker-compose exec -T postgres psql -U superagent superagent_db < backup.sql
+docker-compose exec -T postgres psql -U helixagent helixagent_db < backup.sql
 ```
 
 ### Configuration Backup
 
 ```bash
 # Backup secrets (Kubernetes)
-kubectl get secrets -n superagent-production -o yaml > secrets-backup.yaml
+kubectl get secrets -n helixagent-production -o yaml > secrets-backup.yaml
 ```
 
 ## Troubleshooting
@@ -308,22 +308,22 @@ kubectl get secrets -n superagent-production -o yaml > secrets-backup.yaml
 1. **Database Connection Failed**
    ```bash
    # Check database connectivity
-   docker-compose exec superagent nc -zv postgres 5432
+   docker-compose exec helixagent nc -zv postgres 5432
    ```
 
 2. **Provider Authentication Failed**
    ```bash
    # Verify API keys
-   docker-compose exec superagent env | grep API_KEY
+   docker-compose exec helixagent env | grep API_KEY
    ```
 
 3. **High Memory Usage**
    ```bash
    # Check container stats
-   docker stats superagent
+   docker stats helixagent
 
    # Restart with limits
-   docker-compose restart superagent
+   docker-compose restart helixagent
    ```
 
 4. **Slow Response Times**

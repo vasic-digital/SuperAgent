@@ -11,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/handlers"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/handlers"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // TestAPIEndToEndScenarios tests complete API workflows

@@ -1,5 +1,5 @@
 // Cognee Mock Server - Provides local Cognee API compatibility
-// This ensures Cognee is ALWAYS available for SuperAgent
+// This ensures Cognee is ALWAYS available for HelixAgent
 package main
 
 import (

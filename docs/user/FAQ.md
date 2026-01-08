@@ -1,27 +1,27 @@
-# SuperAgent Frequently Asked Questions
+# HelixAgent Frequently Asked Questions
 
 ## General Questions
 
-### What is SuperAgent?
+### What is HelixAgent?
 
-SuperAgent is an AI-powered ensemble LLM service that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs, supports 7+ LLM providers, and includes advanced features like AI debates and model verification.
+HelixAgent is an AI-powered ensemble LLM service that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs, supports 7+ LLM providers, and includes advanced features like AI debates and model verification.
 
-### How is SuperAgent different from using a single LLM provider?
+### How is HelixAgent different from using a single LLM provider?
 
-SuperAgent offers several advantages over using a single provider:
+HelixAgent offers several advantages over using a single provider:
 - **Better Accuracy**: Ensemble mode aggregates responses from multiple models
 - **Higher Availability**: Automatic failover between providers
 - **Cost Optimization**: Route to the most cost-effective provider
 - **Feature Comparison**: Test and compare models with built-in verification
 - **AI Debates**: Get multiple perspectives on complex questions
 
-### Is SuperAgent compatible with OpenAI's API?
+### Is HelixAgent compatible with OpenAI's API?
 
-Yes, SuperAgent provides full OpenAI API compatibility. You can use existing OpenAI client libraries by changing the base URL to your SuperAgent server.
+Yes, HelixAgent provides full OpenAI API compatibility. You can use existing OpenAI client libraries by changing the base URL to your HelixAgent server.
 
 ### What LLM providers are supported?
 
-SuperAgent supports:
+HelixAgent supports:
 - OpenAI (GPT-4, GPT-3.5)
 - Anthropic (Claude 3)
 - Google (Gemini)
@@ -34,7 +34,7 @@ SuperAgent supports:
 - GCP Vertex AI
 - Azure OpenAI
 
-### Can I run SuperAgent locally without cloud providers?
+### Can I run HelixAgent locally without cloud providers?
 
 Yes, you can use Ollama for completely local inference:
 ```bash
@@ -44,7 +44,7 @@ curl -fsSL https://ollama.com/install.sh | sh
 # Pull a model
 ollama pull llama2
 
-# Enable in SuperAgent
+# Enable in HelixAgent
 OLLAMA_ENABLED=true
 OLLAMA_BASE_URL=http://localhost:11434
 ```
@@ -90,7 +90,7 @@ providers:
 ### How do I set up high availability?
 
 For production deployments:
-1. Run multiple SuperAgent instances
+1. Run multiple HelixAgent instances
 2. Use a load balancer (nginx, HAProxy)
 3. Configure shared PostgreSQL and Redis
 4. Enable health checks
@@ -98,7 +98,7 @@ For production deployments:
 ```yaml
 # In each instance
 server:
-  instance_id: superagent-1  # Unique per instance
+  instance_id: helixagent-1  # Unique per instance
 
 database:
   host: shared-postgres.example.com
@@ -107,7 +107,7 @@ cache:
   host: shared-redis.example.com
 ```
 
-### Can I use SuperAgent with Kubernetes?
+### Can I use HelixAgent with Kubernetes?
 
 Yes, see `docs/deployment/kubernetes-deployment.md` for:
 - Helm charts
@@ -157,7 +157,7 @@ Yes, use `preferred_providers` or `excluded_providers`:
 
 ### What happens if a provider fails during ensemble?
 
-SuperAgent automatically handles failures:
+HelixAgent automatically handles failures:
 1. Retries failed requests (configurable)
 2. Proceeds with remaining providers
 3. Returns result if `min_providers` threshold met
@@ -253,7 +253,7 @@ Automate with cron:
 
 ### How does semantic caching work?
 
-SuperAgent caches responses based on semantic similarity. Similar queries hit the cache instead of calling providers.
+HelixAgent caches responses based on semantic similarity. Similar queries hit the cache instead of calling providers.
 
 Configure similarity threshold:
 ```yaml
@@ -294,7 +294,7 @@ Full stack (with DB/Redis): ~2GB
 
 ### How is authentication handled?
 
-SuperAgent supports:
+HelixAgent supports:
 - JWT tokens (default)
 - API keys
 - OAuth 2.0
@@ -316,7 +316,7 @@ Provider API keys are:
 - Encrypted in database if stored
 - Excluded from JSON serialization
 
-### Does SuperAgent support rate limiting?
+### Does HelixAgent support rate limiting?
 
 Yes, configurable per user/IP:
 ```yaml
@@ -343,9 +343,9 @@ rate_limit:
 
 ### Which SDKs are available?
 
-- Python: `pip install superagent-py`
-- Go: `go get github.com/superagent/superagent-go`
-- JavaScript: `npm install superagent-js`
+- Python: `pip install helixagent-py`
+- Go: `go get github.com/helixagent/helixagent-go`
+- JavaScript: `npm install helixagent-js`
 - iOS: Swift Package Manager
 - Android: Maven/Gradle
 
@@ -430,7 +430,7 @@ curl -X POST ... -d '{"messages":[{"role":"user","content":"Hello"}]}'
 
 ### How do I report a bug?
 
-1. Check existing issues: https://github.com/superagent/superagent/issues
+1. Check existing issues: https://github.com/helixagent/helixagent/issues
 2. Enable debug logging
 3. Collect: error message, logs, steps to reproduce
 4. Open issue with template
@@ -441,18 +441,18 @@ curl -X POST ... -d '{"messages":[{"role":"user","content":"Hello"}]}'
 
 ### What is the license?
 
-SuperAgent is open source under the MIT License. You can use it freely for personal and commercial projects.
+HelixAgent is open source under the MIT License. You can use it freely for personal and commercial projects.
 
 ### What are the costs?
 
-SuperAgent itself is free. Costs come from:
+HelixAgent itself is free. Costs come from:
 - LLM provider API usage (OpenAI, Anthropic, etc.)
 - Infrastructure (servers, databases)
 - Optional: Managed cloud hosting
 
 ### Is there a managed/hosted version?
 
-Check https://superagent.ai for managed hosting options with:
+Check https://helixagent.ai for managed hosting options with:
 - No infrastructure management
 - Automatic scaling
 - 24/7 support
@@ -464,10 +464,10 @@ Check https://superagent.ai for managed hosting options with:
 
 ### Where can I get support?
 
-- Documentation: https://superagent.ai/docs
-- GitHub Issues: https://github.com/superagent/superagent/issues
-- Discord: https://discord.gg/superagent
-- Email: support@superagent.ai
+- Documentation: https://helixagent.ai/docs
+- GitHub Issues: https://github.com/helixagent/helixagent/issues
+- Discord: https://discord.gg/helixagent
+- Email: support@helixagent.ai
 
 ### How do I contribute?
 
@@ -482,4 +482,4 @@ Check https://superagent.ai for managed hosting options with:
 - `examples/` directory in repository
 - API documentation: `docs/api/`
 - SDK documentation: `docs/sdk/`
-- Tutorial videos: https://superagent.ai/tutorials
+- Tutorial videos: https://helixagent.ai/tutorials

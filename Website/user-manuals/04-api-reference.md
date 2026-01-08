@@ -1,8 +1,8 @@
-# SuperAgent API Reference
+# HelixAgent API Reference
 
 ## Introduction
 
-This comprehensive API reference documents all endpoints available in SuperAgent's REST API. The API is OpenAI-compatible, meaning existing OpenAI client libraries can be used with minimal modifications. SuperAgent extends the standard API with additional endpoints for ensemble operations, AI debates, provider management, and knowledge graph integration.
+This comprehensive API reference documents all endpoints available in HelixAgent's REST API. The API is OpenAI-compatible, meaning existing OpenAI client libraries can be used with minimal modifications. HelixAgent extends the standard API with additional endpoints for ensemble operations, AI debates, provider management, and knowledge graph integration.
 
 ---
 
@@ -28,13 +28,13 @@ This comprehensive API reference documents all endpoints available in SuperAgent
 ### Base URL
 
 ```
-Production:  https://api.superagent.ai/v1
+Production:  https://api.helixagent.ai/v1
 Development: http://localhost:8080/v1
 ```
 
 ### Authentication Methods
 
-SuperAgent supports multiple authentication methods:
+HelixAgent supports multiple authentication methods:
 
 #### JWT Bearer Token
 
@@ -217,7 +217,7 @@ POST /v1/chat/completions
 
 ```json
 {
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "messages": [
     {
       "role": "system",
@@ -268,10 +268,10 @@ POST /v1/chat/completions
 
 ```json
 {
-  "id": "chatcmpl-superagent-abc123",
+  "id": "chatcmpl-helixagent-abc123",
   "object": "chat.completion",
   "created": 1704067200,
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "choices": [
     {
       "index": 0,
@@ -351,7 +351,7 @@ POST /v1/chat/completions
 
 ```json
 {
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "messages": [
     {"role": "user", "content": "Explain quantum computing"}
   ],
@@ -501,10 +501,10 @@ GET /v1/models
   "object": "list",
   "data": [
     {
-      "id": "superagent-ensemble",
+      "id": "helixagent-ensemble",
       "object": "model",
       "created": 1704067200,
-      "owned_by": "superagent",
+      "owned_by": "helixagent",
       "permission": [],
       "capabilities": {
         "chat": true,
@@ -923,13 +923,13 @@ POST /v1/cognee/add
 
 ```json
 {
-  "content": "SuperAgent is an AI orchestration platform...",
+  "content": "HelixAgent is an AI orchestration platform...",
   "metadata": {
     "source": "documentation",
     "category": "product_info",
     "tags": ["ai", "orchestration", "llm"]
   },
-  "dataset": "superagent_docs"
+  "dataset": "helixagent_docs"
 }
 ```
 
@@ -961,7 +961,7 @@ POST /v1/cognee/search
   "search_type": "vector",
   "limit": 10,
   "filters": {
-    "dataset": "superagent_docs",
+    "dataset": "helixagent_docs",
     "category": "technical"
   }
 }
@@ -1095,15 +1095,15 @@ GET /metrics
 **Response**
 
 ```
-# HELP superagent_requests_total Total number of requests
-# TYPE superagent_requests_total counter
-superagent_requests_total{endpoint="/v1/chat/completions",status="200"} 15234
+# HELP helixagent_requests_total Total number of requests
+# TYPE helixagent_requests_total counter
+helixagent_requests_total{endpoint="/v1/chat/completions",status="200"} 15234
 
-# HELP superagent_request_duration_seconds Request duration in seconds
-# TYPE superagent_request_duration_seconds histogram
-superagent_request_duration_seconds_bucket{endpoint="/v1/chat/completions",le="0.5"} 12000
-superagent_request_duration_seconds_bucket{endpoint="/v1/chat/completions",le="1"} 14500
-superagent_request_duration_seconds_bucket{endpoint="/v1/chat/completions",le="5"} 15200
+# HELP helixagent_request_duration_seconds Request duration in seconds
+# TYPE helixagent_request_duration_seconds histogram
+helixagent_request_duration_seconds_bucket{endpoint="/v1/chat/completions",le="0.5"} 12000
+helixagent_request_duration_seconds_bucket{endpoint="/v1/chat/completions",le="1"} 14500
+helixagent_request_duration_seconds_bucket{endpoint="/v1/chat/completions",le="5"} 15200
 ```
 
 ---
@@ -1184,7 +1184,7 @@ All errors follow a consistent format:
 
 ## Summary
 
-This API reference covers all SuperAgent endpoints. Key points:
+This API reference covers all HelixAgent endpoints. Key points:
 
 1. **OpenAI-Compatible**: Standard chat/completion endpoints work with existing clients
 2. **Extended Features**: Ensemble, debate, and knowledge endpoints add unique capabilities

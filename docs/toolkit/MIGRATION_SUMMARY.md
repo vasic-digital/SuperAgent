@@ -28,9 +28,9 @@ Toolkit/Chutes/
 
 ### Main Toolkit
 1. **`cmd/toolkit/main_multi_provider.go`** - Updated import paths:
-   - Changed: `"github.com/superagent/toolkit/providers/chutes"`
+   - Changed: `"github.com/helixagent/toolkit/providers/chutes"`
    - To: `"github.com/HelixDevelopment/HelixAgent-Chutes/providers/chutes"`
-   - Changed: `"github.com/superagent/toolkit/SiliconFlow/providers/siliconflow"`
+   - Changed: `"github.com/helixagent/toolkit/SiliconFlow/providers/siliconflow"`
    - To: `"github.com/HelixDevelopment/HelixAgent-SiliconFlow/providers/siliconflow"`
 
 2. **`go.mod`** - Added module replacements:
@@ -67,9 +67,9 @@ Toolkit/Chutes/
 ## Import Path Updates
 
 Updated all import paths in Chutes provider files:
-- `"github.com/superagent/toolkit/pkg/toolkit"`
-- `"github.com/superagent/toolkit/pkg/toolkit/common/http"`
-- `"github.com/superagent/toolkit/pkg/toolkit/common/discovery"`
+- `"github.com/helixagent/toolkit/pkg/toolkit"`
+- `"github.com/helixagent/toolkit/pkg/toolkit/common/http"`
+- `"github.com/helixagent/toolkit/pkg/toolkit/common/discovery"`
 
 ## Verification Results
 

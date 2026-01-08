@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/database"
+	"github.com/helixagent/helixagent/internal/database"
 )
 
 // ModelMetadataServiceInterface defines the interface for model metadata service

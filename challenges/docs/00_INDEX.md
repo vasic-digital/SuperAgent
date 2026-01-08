@@ -1,4 +1,4 @@
-# SuperAgent Challenges - Documentation Index
+# HelixAgent Challenges - Documentation Index
 
 ## Overview Documents
 

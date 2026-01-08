@@ -1,10 +1,10 @@
 /**
- * SuperAgent SDK Type Definitions
+ * HelixAgent SDK Type Definitions
  */
 
 // ==================== Configuration ====================
 
-export interface SuperAgentConfig {
+export interface HelixAgentConfig {
   apiKey?: string;
   baseUrl?: string;
   timeout?: number;

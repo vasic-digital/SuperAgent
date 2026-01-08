@@ -1,6 +1,6 @@
-# SuperAgent Quick Start Guide
+# HelixAgent Quick Start Guide
 
-Get started with SuperAgent in 5 minutes.
+Get started with HelixAgent in 5 minutes.
 
 ## Prerequisites
 
@@ -11,8 +11,8 @@ Get started with SuperAgent in 5 minutes.
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Copy environment file
 cp .env.example .env
@@ -32,8 +32,8 @@ curl http://localhost:8080/health
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Install dependencies
 go mod download
@@ -47,7 +47,7 @@ make run-dev
 
 # Or build and run
 make build
-./bin/superagent
+./bin/helixagent
 ```
 
 ## Your First API Call
@@ -71,7 +71,7 @@ curl -X POST http://localhost:8080/v1/chat/completions \
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "superagent-ensemble",
+    "model": "helixagent-ensemble",
     "messages": [
       {"role": "user", "content": "What is the best programming language?"}
     ],
@@ -138,13 +138,13 @@ ensemble:
 ### Python SDK
 
 ```bash
-pip install superagent-py
+pip install helixagent-py
 ```
 
 ```python
-from superagent import SuperAgent
+from helixagent import HelixAgent
 
-client = SuperAgent(api_key="your-key")
+client = HelixAgent(api_key="your-key")
 response = client.chat.create(
     model="gpt-4",
     messages=[{"role": "user", "content": "Hello!"}]
@@ -155,14 +155,14 @@ print(response.choices[0].message.content)
 ### Go SDK
 
 ```go
-import "github.com/superagent/superagent-go"
+import "github.com/helixagent/helixagent-go"
 
-client := superagent.NewClient(&superagent.Config{
+client := helixagent.NewClient(&helixagent.Config{
     APIKey: "your-key",
 })
-resp, _ := client.Chat.Completions.Create(ctx, &superagent.ChatCompletionRequest{
+resp, _ := client.Chat.Completions.Create(ctx, &helixagent.ChatCompletionRequest{
     Model: "gpt-4",
-    Messages: []superagent.ChatMessage{
+    Messages: []helixagent.ChatMessage{
         {Role: "user", Content: "Hello!"},
     },
 })
@@ -172,9 +172,9 @@ fmt.Println(resp.Choices[0].Message.Content)
 ### JavaScript SDK
 
 ```javascript
-import { SuperAgent } from 'superagent-js';
+import { HelixAgent } from 'helixagent-js';
 
-const client = new SuperAgent({ apiKey: 'your-key' });
+const client = new HelixAgent({ apiKey: 'your-key' });
 const response = await client.chat.create({
   model: 'gpt-4',
   messages: [{ role: 'user', content: 'Hello!' }],
@@ -184,7 +184,7 @@ console.log(response.choices[0].message.content);
 
 ## LLMsVerifier Integration
 
-SuperAgent includes LLMsVerifier for model verification and scoring:
+HelixAgent includes LLMsVerifier for model verification and scoring:
 
 ```bash
 # Verify a model
@@ -215,5 +215,5 @@ curl -X POST http://localhost:8080/api/v1/verifier/code-visibility \
 
 ## Getting Help
 
-- GitHub Issues: https://github.com/superagent/superagent/issues
-- Documentation: https://superagent.ai/docs
+- GitHub Issues: https://github.com/helixagent/helixagent/issues
+- Documentation: https://helixagent.ai/docs

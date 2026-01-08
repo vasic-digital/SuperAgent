@@ -102,7 +102,7 @@ The specification, plan, and tasks are ready for implementation with the followi
 ## 🚀 NEXT STEPS
 
 ### Primary Recommendation
-**PROCEED WITH IMPLEMENTATION** using the generated `/specs/001-super-agent/tasks.md`
+**PROCEED WITH IMPLEMENTATION** using the generated `/specs/001-helix-agent/tasks.md`
 
 ### Alternative (if needed)
 If you wish to address any minor inconsistencies found in this analysis, you may run:

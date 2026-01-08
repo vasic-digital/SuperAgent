@@ -1,8 +1,8 @@
-# SuperAgent Protocol Support Documentation
+# HelixAgent Protocol Support Documentation
 
 ## Overview
 
-SuperAgent now supports comprehensive LLM protocol integration, transforming it from a model management system into a complete AI orchestration platform. The system supports four major protocols:
+HelixAgent now supports comprehensive LLM protocol integration, transforming it from a model management system into a complete AI orchestration platform. The system supports four major protocols:
 
 - **MCP (Model Context Protocol)** - Tool execution and agent integration
 - **LSP (Language Server Protocol)** - Code intelligence and language services
@@ -400,7 +400,7 @@ Response:
 import requests
 import json
 
-class SuperAgentClient:
+class HelixAgentClient:
     def __init__(self, base_url="http://localhost:8080"):
         self.base_url = base_url
 
@@ -430,7 +430,7 @@ class SuperAgentClient:
         return response.json()
 
 # Usage
-client = SuperAgentClient()
+client = HelixAgentClient()
 
 # List available servers
 servers = client.list_servers()
@@ -453,7 +453,7 @@ print("Metrics:", json.dumps(metrics, indent=2))
 ### JavaScript/Node.js Client Example
 
 ```javascript
-class SuperAgentClient {
+class HelixAgentClient {
     constructor(baseURL = 'http://localhost:8080') {
         this.baseURL = baseURL;
     }
@@ -489,7 +489,7 @@ class SuperAgentClient {
 }
 
 // Usage
-const client = new SuperAgentClient();
+const client = new HelixAgentClient();
 
 // Execute embedding generation
 client.executeProtocolRequest(
@@ -519,7 +519,7 @@ import (
     "net/http"
 )
 
-type SuperAgentClient struct {
+type HelixAgentClient struct {
     baseURL string
     client  *http.Client
 }
@@ -539,14 +539,14 @@ type ProtocolResponse struct {
     Protocol  string                 `json:"protocol,omitempty"`
 }
 
-func NewSuperAgentClient(baseURL string) *SuperAgentClient {
-    return &SuperAgentClient{
+func NewHelixAgentClient(baseURL string) *HelixAgentClient {
+    return &HelixAgentClient{
         baseURL: baseURL,
         client:  &http.Client{},
     }
 }
 
-func (c *SuperAgentClient) ExecuteProtocolRequest(req ProtocolRequest) (*ProtocolResponse, error) {
+func (c *HelixAgentClient) ExecuteProtocolRequest(req ProtocolRequest) (*ProtocolResponse, error) {
     url := c.baseURL + "/v1/protocols/execute"
 
     jsonData, err := json.Marshal(req)
@@ -569,7 +569,7 @@ func (c *SuperAgentClient) ExecuteProtocolRequest(req ProtocolRequest) (*Protoco
 }
 
 func main() {
-    client := NewSuperAgentClient("http://localhost:8080")
+    client := NewHelixAgentClient("http://localhost:8080")
 
     // Execute MCP tool
     req := ProtocolRequest{
@@ -597,11 +597,11 @@ func main() {
 
 ```bash
 # Protocol Configuration
-SUPERAGENT_PROTOCOLS_ENABLED=true
-SUPERAGENT_MCP_ENABLED=true
-SUPERAGENT_LSP_ENABLED=true
-SUPERAGENT_ACP_ENABLED=true
-SUPERAGENT_EMBEDDINGS_ENABLED=true
+HELIXAGENT_PROTOCOLS_ENABLED=true
+HELIXAGENT_MCP_ENABLED=true
+HELIXAGENT_LSP_ENABLED=true
+HELIXAGENT_ACP_ENABLED=true
+HELIXAGENT_EMBEDDINGS_ENABLED=true
 
 # MCP Configuration
 MCP_SERVER_TIMEOUT=30s
@@ -821,4 +821,4 @@ type ProtocolManager interface {
 }
 ```
 
-This documentation provides comprehensive guidance for using SuperAgent's protocol support features. The system is designed to be extensible, allowing easy integration of additional AI protocols as they emerge.
+This documentation provides comprehensive guidance for using HelixAgent's protocol support features. The system is designed to be extensible, allowing easy integration of additional AI protocols as they emerge.

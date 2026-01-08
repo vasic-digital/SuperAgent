@@ -3,7 +3,7 @@ package grpcshim
 import (
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 type ShimCompleteRequest struct {

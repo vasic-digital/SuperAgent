@@ -1,4 +1,4 @@
-# SuperAgent Developer Documentation
+# HelixAgent Developer Documentation
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@
 ├─────────────────────────────────────────────────────────────┤
 │                    API Gateway                              │
 ├─────────────────────────────────────────────────────────────┤
-│                  SuperAgent Core                            │
+│                  HelixAgent Core                            │
 │  ┌─────────────┬─────────────┬─────────────┬─────────────┐ │
 │  │   Debate    │  Provider   │   Cognee    │ Monitoring  │ │
 │  │   Service   │  Manager    │  Service    │  Service    │ │
@@ -81,8 +81,8 @@ make install-db-deps
 
 ```bash
 # Clone repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Install dependencies
 go mod download
@@ -110,8 +110,8 @@ server:
 database:
   host: "localhost"
   port: 5432
-  name: "superagent_dev"
-  user: "superagent"
+  name: "helixagent_dev"
+  user: "helixagent"
   password: "dev_password"
 
 providers:
@@ -266,7 +266,7 @@ package providers
 
 import (
     "context"
-    "github.com/superagent/superagent/internal/models"
+    "github.com/helixagent/helixagent/internal/models"
 )
 
 type NewProvider struct {
@@ -392,7 +392,7 @@ package main
 
 import (
     "context"
-    "github.com/superagent/superagent/plugins"
+    "github.com/helixagent/helixagent/plugins"
 )
 
 type ExamplePlugin struct {
@@ -602,7 +602,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/superagent
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/helixagent
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates tzdata
@@ -621,33 +621,33 @@ CMD ["./main"]
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: superagent
+  name: helixagent
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: superagent
+      app: helixagent
   template:
     metadata:
       labels:
-        app: superagent
+        app: helixagent
     spec:
       containers:
-      - name: superagent
-        image: superagent/superagent:latest
+      - name: helixagent
+        image: helixagent/helixagent:latest
         ports:
         - containerPort: 8080
         - containerPort: 9090
         env:
-        - name: SUPERAGENT_API_KEY
+        - name: HELIXAGENT_API_KEY
           valueFrom:
             secretKeyRef:
-              name: superagent-secrets
+              name: helixagent-secrets
               key: api-key
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: superagent-secrets
+              name: helixagent-secrets
               key: database-url
         livenessProbe:
           httpGet:
@@ -667,9 +667,9 @@ spec:
 
 ```bash
 # Production environment variables
-export SUPERAGENT_API_KEY=your-production-api-key
+export HELIXAGENT_API_KEY=your-production-api-key
 export JWT_SECRET=your-jwt-secret
-export DATABASE_URL=postgres://user:pass@prod-db:5432/superagent
+export DATABASE_URL=postgres://user:pass@prod-db:5432/helixagent
 export REDIS_URL=redis://prod-redis:6379
 export COGNEE_API_KEY=your-cognee-api-key
 
@@ -806,15 +806,15 @@ func (s *IntelligentSelector) SelectProvider(
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: superagent-cluster
+  name: helixagent-cluster
 spec:
-  serviceName: superagent
+  serviceName: helixagent
   replicas: 5
   template:
     spec:
       containers:
-      - name: superagent
-        image: superagent/superagent:latest
+      - name: helixagent
+        image: helixagent/helixagent:latest
         env:
         - name: NODE_ID
           valueFrom:
@@ -843,10 +843,10 @@ spec:
 
 ### Community
 
-- **GitHub**: https://github.com/superagent/superagent
-- **Discord**: https://discord.gg/superagent
-- **Forum**: https://community.superagent.ai
-- **Blog**: https://blog.superagent.ai
+- **GitHub**: https://github.com/helixagent/helixagent
+- **Discord**: https://discord.gg/helixagent
+- **Forum**: https://community.helixagent.ai
+- **Blog**: https://blog.helixagent.ai
 
 ---
 

@@ -1,11 +1,11 @@
-# SuperAgent Challenges - Quick Start Guide
+# HelixAgent Challenges - Quick Start Guide
 
-Get started with SuperAgent Challenges in 5 minutes.
+Get started with HelixAgent Challenges in 5 minutes.
 
 ## Prerequisites
 
 - Go 1.24+
-- SuperAgent built (`make build`)
+- HelixAgent built (`make build`)
 - LLMsVerifier built (in `../LLMsVerifier`)
 - At least one LLM provider API key
 

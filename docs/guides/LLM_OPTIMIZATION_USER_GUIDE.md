@@ -1,6 +1,6 @@
 # LLM Optimization User Guide
 
-This guide explains how to use SuperAgent's LLM optimization features to improve performance, reduce costs, and enhance output quality for large codebases.
+This guide explains how to use HelixAgent's LLM optimization features to improve performance, reduce costs, and enhance output quality for large codebases.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ This guide explains how to use SuperAgent's LLM optimization features to improve
 
 ## Overview
 
-SuperAgent integrates 8 LLM optimization tools to provide:
+HelixAgent integrates 8 LLM optimization tools to provide:
 
 | Capability | Tool | Benefit |
 |------------|------|---------|

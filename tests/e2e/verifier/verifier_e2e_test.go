@@ -13,7 +13,7 @@ import (
 )
 
 // TestVerifierE2EWorkflow tests complete verifier workflows
-// Note: These tests require a running SuperAgent server with verifier enabled
+// Note: These tests require a running HelixAgent server with verifier enabled
 // To run these tests:
 // 1. Start the server: make run-dev
 // 2. Run E2E tests: make test-e2e
@@ -28,7 +28,7 @@ func TestVerifierE2EWorkflow(t *testing.T) {
 	// Check if server is running
 	resp, err := client.Get(baseURL + "/health")
 	if err != nil {
-		t.Skipf("Skipping E2E test: SuperAgent server not running at %s. Start server with 'make run-dev'", baseURL)
+		t.Skipf("Skipping E2E test: HelixAgent server not running at %s. Start server with 'make run-dev'", baseURL)
 	}
 	defer resp.Body.Close()
 
@@ -36,7 +36,7 @@ func TestVerifierE2EWorkflow(t *testing.T) {
 		t.Skipf("Skipping E2E test: Server at %s returned status %d", baseURL, resp.StatusCode)
 	}
 
-	t.Logf("SuperAgent server is running at %s", baseURL)
+	t.Logf("HelixAgent server is running at %s", baseURL)
 
 	t.Run("CompleteVerificationWorkflow", func(t *testing.T) {
 		// Step 1: Verify a model
@@ -261,7 +261,7 @@ func TestVerifierIntegrationWithChat(t *testing.T) {
 	// Check if server is running
 	resp, err := client.Get(baseURL + "/health")
 	if err != nil {
-		t.Skipf("Skipping E2E test: SuperAgent server not running at %s", baseURL)
+		t.Skipf("Skipping E2E test: HelixAgent server not running at %s", baseURL)
 	}
 	defer resp.Body.Close()
 
@@ -310,7 +310,7 @@ func TestVerifierEndpointDiscovery(t *testing.T) {
 	// Check if server is running
 	resp, err := client.Get(baseURL + "/health")
 	if err != nil {
-		t.Skipf("Skipping E2E test: SuperAgent server not running at %s", baseURL)
+		t.Skipf("Skipping E2E test: HelixAgent server not running at %s", baseURL)
 	}
 	resp.Body.Close()
 

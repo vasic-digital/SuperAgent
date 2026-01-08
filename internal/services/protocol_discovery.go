@@ -374,7 +374,7 @@ func (c *ACPDiscoveryClient) initializeAgent(ctx context.Context, connection *AC
 		ProtocolVersion: "1.0.0",
 		Capabilities:    map[string]interface{}{},
 		ClientInfo: map[string]string{
-			"name":    "superagent",
+			"name":    "helixagent",
 			"version": "1.0.0",
 		},
 	}

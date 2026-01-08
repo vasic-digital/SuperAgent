@@ -1,17 +1,17 @@
-# SuperAgent Troubleshooting Guide
+# HelixAgent Troubleshooting Guide
 
 ## 🚨 Quick Diagnosis
 
 ### First Steps
-1. **Check if SuperAgent is running**: `curl http://localhost:8080/health`
-2. **Check logs**: `docker-compose logs superagent` or `tail -f logs/superagent.log`
+1. **Check if HelixAgent is running**: `curl http://localhost:8080/health`
+2. **Check logs**: `docker-compose logs helixagent` or `tail -f logs/helixagent.log`
 3. **Verify configuration**: `make validate-config`
 
 ---
 
 ## 🔍 Common Issues & Solutions
 
-### 1. **SuperAgent Won't Start**
+### 1. **HelixAgent Won't Start**
 
 #### Symptoms:
 - "Port already in use" error
@@ -25,7 +25,7 @@
 # Check what's using port 8080
 sudo lsof -i :8080
 
-# Kill the process or change SuperAgent port
+# Kill the process or change HelixAgent port
 export PORT=8081
 make run-dev
 ```
@@ -39,7 +39,7 @@ docker-compose ps postgres
 docker-compose logs postgres
 
 # Test database connection
-psql -h localhost -U superagent -d superagent_db
+psql -h localhost -U helixagent -d helixagent_db
 
 # Reset database (development only)
 make reset-db
@@ -95,14 +95,14 @@ make show-routes
 **Internal Server Errors:**
 ```bash
 # Check application logs
-tail -f logs/superagent.log
+tail -f logs/helixagent.log
 
 # Enable debug logging
 export LOG_LEVEL=debug
 make restart
 
 # Check for panic in logs
-grep -i panic logs/superagent.log
+grep -i panic logs/helixagent.log
 ```
 
 ### 3. **LLM Provider Issues**
@@ -217,10 +217,10 @@ make migrate-reset
 **Performance Issues:**
 ```bash
 # Check database size
-docker-compose exec postgres psql -U superagent -c "SELECT pg_size_pretty(pg_database_size('superagent_db'));"
+docker-compose exec postgres psql -U helixagent -c "SELECT pg_size_pretty(pg_database_size('helixagent_db'));"
 
 # Check slow queries
-docker-compose exec postgres psql -U superagent -c "SELECT query, calls, total_time, mean_time FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;"
+docker-compose exec postgres psql -U helixagent -c "SELECT query, calls, total_time, mean_time FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;"
 
 # Add indexes for performance
 make optimize-db
@@ -259,7 +259,7 @@ export TRACING_SAMPLE_RATE=0.1
 curl -w "\\nTime: %{time_total}s\\n" http://localhost:8080/health
 
 # Monitor with Prometheus
-curl http://localhost:8080/metrics | grep superagent
+curl http://localhost:8080/metrics | grep helixagent
 ```
 
 **Cache Issues:**
@@ -337,7 +337,7 @@ docker system prune -a
 docker-compose build --no-cache
 
 # Check Dockerfile syntax
-docker build --target builder -t superagent-builder .
+docker build --target builder -t helixagent-builder .
 
 # Test multi-stage build
 make docker-test
@@ -346,29 +346,29 @@ make docker-test
 **Kubernetes:**
 ```bash
 # Check pod status
-kubectl get pods -n superagent
+kubectl get pods -n helixagent
 
 # Check pod logs
-kubectl logs -f deployment/superagent -n superagent
+kubectl logs -f deployment/helixagent -n helixagent
 
 # Check resource limits
-kubectl describe deployment superagent -n superagent
+kubectl describe deployment helixagent -n helixagent
 
 # Debug with exec
-kubectl exec -it deployment/superagent -n superagent -- /bin/sh
+kubectl exec -it deployment/helixagent -n helixagent -- /bin/sh
 ```
 
 **Load Balancer:**
 ```bash
 # Check service endpoints
-kubectl get endpoints -n superagent
+kubectl get endpoints -n helixagent
 
 # Test load balancer
 curl http://loadbalancer-ip/health
 
 # Check ingress configuration
-kubectl get ingress -n superagent
-kubectl describe ingress superagent -n superagent
+kubectl get ingress -n helixagent
+kubectl describe ingress helixagent -n helixagent
 ```
 
 ---
@@ -395,10 +395,10 @@ make diagnostic-report
 make logs
 
 # Search for errors
-grep -i error logs/superagent.log
+grep -i error logs/helixagent.log
 
 # Search for specific patterns
-grep "provider.*failed" logs/superagent.log
+grep "provider.*failed" logs/helixagent.log
 
 # Analyze log patterns
 make analyze-logs
@@ -426,9 +426,9 @@ make performance-report
 
 ### Key Metrics to Monitor
 
-1. **Response Time**: `superagent_request_duration_seconds`
-2. **Error Rate**: `superagent_request_errors_total`
-3. **Provider Health**: `superagent_provider_health`
+1. **Response Time**: `helixagent_request_duration_seconds`
+2. **Error Rate**: `helixagent_request_errors_total`
+3. **Provider Health**: `helixagent_provider_health`
 4. **Memory Usage**: `process_resident_memory_bytes`
 5. **Database Connections**: `db_connections_active`
 
@@ -452,7 +452,7 @@ Access: http://localhost:3000
 - Password: `admin`
 
 Key dashboards:
-1. **SuperAgent Overview**: Overall system health
+1. **HelixAgent Overview**: Overall system health
 2. **Provider Performance**: LLM provider metrics
 3. **API Analytics**: Request/response statistics
 4. **Database Metrics**: PostgreSQL performance
@@ -618,13 +618,13 @@ make monthly-optimize
 
 ### Community Support
 
-1. **GitHub Issues**: https://github.com/superagent/superagent/issues
+1. **GitHub Issues**: https://github.com/helixagent/helixagent/issues
 2. **Discord Community**: [Link in README]
-3. **Stack Overflow**: Tag `superagent`
+3. **Stack Overflow**: Tag `helixagent`
 
 ### Professional Support
 
-1. **Enterprise Support**: Contact sales@superagent.ai
+1. **Enterprise Support**: Contact sales@helixagent.ai
 2. **Consulting Services**: Implementation and optimization
 3. **Training**: Custom workshops and training
 
@@ -633,12 +633,12 @@ make monthly-optimize
 ## 📋 Troubleshooting Checklist
 
 ### Quick Checklist
-- [ ] SuperAgent running? `curl http://localhost:8080/health`
+- [ ] HelixAgent running? `curl http://localhost:8080/health`
 - [ ] Database connected? `docker-compose ps postgres`
 - [ ] API keys valid? `make test-providers`
 - [ ] Enough resources? `docker stats` or `kubectl top pods`
 - [ ] Recent changes? `git log --oneline -5`
-- [ ] Error logs? `tail -f logs/superagent.log`
+- [ ] Error logs? `tail -f logs/helixagent.log`
 
 ### Detailed Checklist
 - [ ] Network connectivity

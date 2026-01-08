@@ -17,7 +17,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}=== SuperAgent Full Test Suite ===${NC}"
+echo -e "${GREEN}=== HelixAgent Full Test Suite ===${NC}"
 echo ""
 
 # Function to cleanup on exit
@@ -69,7 +69,7 @@ wait_for_service() {
 # Wait for PostgreSQL
 echo "Waiting for PostgreSQL..."
 for i in {1..30}; do
-    if docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U superagent -d superagent_db > /dev/null 2>&1; then
+    if docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U helixagent -d helixagent_db > /dev/null 2>&1; then
         echo -e "${GREEN}PostgreSQL is ready!${NC}"
         break
     fi
@@ -94,15 +94,15 @@ wait_for_service "Mock LLM" "http://localhost:18081/health"
 # Export environment variables for tests
 export DB_HOST=localhost
 export DB_PORT=15432
-export DB_USER=superagent
-export DB_PASSWORD=superagent123
-export DB_NAME=superagent_db
-export DATABASE_URL="postgres://superagent:superagent123@localhost:15432/superagent_db?sslmode=disable"
+export DB_USER=helixagent
+export DB_PASSWORD=helixagent123
+export DB_NAME=helixagent_db
+export DATABASE_URL="postgres://helixagent:helixagent123@localhost:15432/helixagent_db?sslmode=disable"
 
 export REDIS_HOST=localhost
 export REDIS_PORT=16379
-export REDIS_PASSWORD=superagent123
-export REDIS_URL="redis://:superagent123@localhost:16379"
+export REDIS_PASSWORD=helixagent123
+export REDIS_URL="redis://:helixagent123@localhost:16379"
 
 export MOCK_LLM_URL=http://localhost:18081
 export MOCK_LLM_ENABLED=true
@@ -122,7 +122,7 @@ export OLLAMA_BASE_URL=http://localhost:18081
 
 # JWT and Server configuration
 export JWT_SECRET=test-jwt-secret-key-for-testing
-export SUPERAGENT_API_KEY=test-api-key
+export HELIXAGENT_API_KEY=test-api-key
 
 # Test configuration
 export GIN_MODE=test

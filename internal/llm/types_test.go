@@ -1,7 +1,7 @@
 package llm
 
 import (
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 	"testing"
 )
 

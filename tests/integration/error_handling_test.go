@@ -16,13 +16,13 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // testConfig holds configuration for error handling tests
 type testConfig struct {
 	BaseURL          string
-	SuperAgentAPIKey string
+	HelixAgentAPIKey string
 }
 
 // loadErrorTestConfig loads test configuration
@@ -36,7 +36,7 @@ func loadErrorTestConfig(t *testing.T) *testConfig {
 		t.Logf("Warning: Could not load .env file: %v", err)
 	}
 
-	host := os.Getenv("SUPERAGENT_HOST")
+	host := os.Getenv("HELIXAGENT_HOST")
 	if host == "" {
 		host = "localhost"
 	}
@@ -47,7 +47,7 @@ func loadErrorTestConfig(t *testing.T) *testConfig {
 
 	return &testConfig{
 		BaseURL:          fmt.Sprintf("http://%s:%s/v1", host, port),
-		SuperAgentAPIKey: os.Getenv("SUPERAGENT_API_KEY"),
+		HelixAgentAPIKey: os.Getenv("HELIXAGENT_API_KEY"),
 	}
 }
 
@@ -445,8 +445,8 @@ func TestLiveChatCompletionsErrorHandling(t *testing.T) {
 		body, _ := json.Marshal(chatReq)
 		req, _ := http.NewRequest("POST", config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		resp, err := client.Do(req)
@@ -477,15 +477,15 @@ func TestLiveChatCompletionsErrorHandling(t *testing.T) {
 
 	t.Run("empty messages returns validation error", func(t *testing.T) {
 		chatReq := map[string]interface{}{
-			"model":    "superagent-debate",
+			"model":    "helixagent-debate",
 			"messages": []map[string]string{},
 		}
 
 		body, _ := json.Marshal(chatReq)
 		req, _ := http.NewRequest("POST", config.BaseURL+"/chat/completions", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
-		if config.SuperAgentAPIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+config.SuperAgentAPIKey)
+		if config.HelixAgentAPIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+config.HelixAgentAPIKey)
 		}
 
 		resp, err := client.Do(req)

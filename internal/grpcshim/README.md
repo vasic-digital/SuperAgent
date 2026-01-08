@@ -1,6 +1,6 @@
 # gRPC Shim Package
 
-The grpcshim package provides a compatibility layer for gRPC services in SuperAgent.
+The grpcshim package provides a compatibility layer for gRPC services in HelixAgent.
 
 ## Overview
 

@@ -22,8 +22,8 @@ func TestOpenCodeBinaryValidation(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	// Find the superagent binary
-	binaryPath := findSuperAgentBinary(t)
+	// Find the helixagent binary
+	binaryPath := findHelixAgentBinary(t)
 
 	t.Run("ValidConfigFile", func(t *testing.T) {
 		// Create a valid config file
@@ -96,7 +96,7 @@ func TestOpenCodeBinaryGeneration(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	binaryPath := findSuperAgentBinary(t)
+	binaryPath := findHelixAgentBinary(t)
 
 	t.Run("GenerateToStdout", func(t *testing.T) {
 		cmd := exec.Command(binaryPath, "-generate-opencode-config")
@@ -159,7 +159,7 @@ func TestOpenCodeValidationScenarios(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	binaryPath := findSuperAgentBinary(t)
+	binaryPath := findHelixAgentBinary(t)
 
 	tests := []struct {
 		name        string
@@ -345,12 +345,12 @@ func TestOpenCodeRealConfigs(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	binaryPath := findSuperAgentBinary(t)
+	binaryPath := findHelixAgentBinary(t)
 	homeDir, err := os.UserHomeDir()
 	require.NoError(t, err)
 
 	t.Run("DownloadsConfig", func(t *testing.T) {
-		configPath := filepath.Join(homeDir, "Downloads", "opencode-super-agent.json")
+		configPath := filepath.Join(homeDir, "Downloads", "opencode-helix-agent.json")
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
 			t.Skip("Downloads config file does not exist")
 		}
@@ -382,7 +382,7 @@ func TestOpenCodeHelpOutput(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	binaryPath := findSuperAgentBinary(t)
+	binaryPath := findHelixAgentBinary(t)
 
 	cmd := exec.Command(binaryPath, "-help")
 	output, err := cmd.CombinedOutput()
@@ -399,14 +399,14 @@ func TestOpenCodeHelpOutput(t *testing.T) {
 // Helper Functions
 // =============================================================================
 
-// findSuperAgentBinary finds the superagent binary
-func findSuperAgentBinary(t *testing.T) string {
+// findHelixAgentBinary finds the helixagent binary
+func findHelixAgentBinary(t *testing.T) string {
 	// Try common locations
 	locations := []string{
-		"../../superagent",
-		"../../bin/superagent",
-		"./superagent",
-		"./bin/superagent",
+		"../../helixagent",
+		"../../bin/helixagent",
+		"./helixagent",
+		"./bin/helixagent",
 	}
 
 	for _, loc := range locations {
@@ -417,13 +417,13 @@ func findSuperAgentBinary(t *testing.T) string {
 	}
 
 	// Try to build it
-	t.Log("SuperAgent binary not found, attempting to build...")
-	cmd := exec.Command("go", "build", "-o", "../../superagent", "../../cmd/superagent/")
+	t.Log("HelixAgent binary not found, attempting to build...")
+	cmd := exec.Command("go", "build", "-o", "../../helixagent", "../../cmd/helixagent/")
 	if err := cmd.Run(); err != nil {
-		t.Skipf("Could not find or build superagent binary: %v", err)
+		t.Skipf("Could not find or build helixagent binary: %v", err)
 	}
 
-	absPath, _ := filepath.Abs("../../superagent")
+	absPath, _ := filepath.Abs("../../helixagent")
 	return absPath
 }
 
@@ -446,7 +446,7 @@ func createTempOpenCodeConfig(t *testing.T, config map[string]interface{}) strin
 // OpenCode API Tests (requires running server)
 // =============================================================================
 
-// TestOpenCodeWithRunningServer tests OpenCode validation with a running SuperAgent
+// TestOpenCodeWithRunningServer tests OpenCode validation with a running HelixAgent
 func TestOpenCodeWithRunningServer(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -454,10 +454,10 @@ func TestOpenCodeWithRunningServer(t *testing.T) {
 
 	// Check if server is running
 	if !isServerRunning("http://localhost:8080/health") {
-		t.Skip("SuperAgent server not running on localhost:8080")
+		t.Skip("HelixAgent server not running on localhost:8080")
 	}
 
-	binaryPath := findSuperAgentBinary(t)
+	binaryPath := findHelixAgentBinary(t)
 
 	t.Run("GeneratedConfigConnectsToServer", func(t *testing.T) {
 		// Generate config

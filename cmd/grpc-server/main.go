@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	llm "github.com/superagent/superagent/internal/llm"
-	models "github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/services"
-	pb "github.com/superagent/superagent/pkg/api"
+	llm "github.com/helixagent/helixagent/internal/llm"
+	models "github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/services"
+	pb "github.com/helixagent/helixagent/pkg/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -1174,7 +1174,7 @@ func main() {
 	providerServer := NewLLMProviderServer(providerRegistry)
 	pb.RegisterLLMProviderServer(grpcServer, providerServer)
 
-	log.Println("SuperAgent gRPC server listening on :50051")
+	log.Println("HelixAgent gRPC server listening on :50051")
 	log.Println("Registered services: LLMFacade, LLMProvider")
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("server failed: %v", err)

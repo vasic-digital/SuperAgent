@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/cache"
+	"github.com/helixagent/helixagent/internal/cache"
 )
 
 // CacheFactory creates cache instances based on configuration

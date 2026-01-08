@@ -1,6 +1,6 @@
-# SuperAgent Hello World Tutorial
+# HelixAgent Hello World Tutorial
 
-This tutorial will guide you through setting up and using SuperAgent, a production-ready LLM facade system that intelligently routes requests across multiple LLM providers.
+This tutorial will guide you through setting up and using HelixAgent, a production-ready LLM facade system that intelligently routes requests across multiple LLM providers.
 
 ## Prerequisites
 
@@ -8,12 +8,12 @@ This tutorial will guide you through setting up and using SuperAgent, a producti
 - curl (for API testing)
 - Git
 
-## Step 1: Clone and Setup SuperAgent
+## Step 1: Clone and Setup HelixAgent
 
 ```bash
 # Clone the repository
-git clone https://github.com/vasic-digital/SuperAgent.git
-cd SuperAgent
+git clone https://github.com/vasic-digital/HelixAgent.git
+cd HelixAgent
 
 # The project is already built and ready to run
 ```
@@ -23,9 +23,9 @@ cd SuperAgent
 Create a `.env` file with your LLM provider API keys:
 
 ```bash
-# SuperAgent Configuration
+# HelixAgent Configuration
 PORT=8080
-SUPERAGENT_API_KEY=your-super-secret-api-key-here
+HELIXAGENT_API_KEY=your-super-secret-api-key-here
 
 # JWT Secret (generate a secure random string)
 JWT_SECRET=your-secure-jwt-secret-here
@@ -42,9 +42,9 @@ ZAI_API_KEY=your-zai-key-here
 # Database (will use SQLite for this tutorial)
 DB_HOST=localhost
 DB_PORT=5432
-DB_USER=superagent
+DB_USER=helixagent
 DB_PASSWORD=password
-DB_NAME=superagent_db
+DB_NAME=helixagent_db
 
 # Redis (optional for this tutorial)
 REDIS_HOST=localhost
@@ -58,7 +58,7 @@ REDIS_PASSWORD=
 2. **DeepSeek**: https://platform.deepseek.com/
 3. **Gemini (Google)**: https://makersuite.google.com/app/apikey
 
-## Step 3: Start SuperAgent with Docker
+## Step 3: Start HelixAgent with Docker
 
 ```bash
 # Build and start the services
@@ -68,13 +68,13 @@ docker-compose up --build -d
 docker-compose ps
 
 # View logs
-docker-compose logs -f superagent
+docker-compose logs -f helixagent
 ```
 
 ## Step 4: Verify System Health
 
 ```bash
-# Check if SuperAgent is running
+# Check if HelixAgent is running
 curl http://localhost:8080/health
 
 # Expected response:
@@ -124,7 +124,7 @@ curl -X POST http://localhost:8080/v1/completions \
 
 ## Step 6: Experience Ensemble Intelligence
 
-SuperAgent's magic happens with ensemble voting - it routes your request to multiple providers and returns the best response:
+HelixAgent's magic happens with ensemble voting - it routes your request to multiple providers and returns the best response:
 
 ```bash
 curl -X POST http://localhost:8080/v1/ensemble/completions \
@@ -233,7 +233,7 @@ docker-compose down -v
 
 ## What You Learned
 
-1. **Multi-Provider Intelligence**: SuperAgent routes requests across Claude, DeepSeek, and Gemini
+1. **Multi-Provider Intelligence**: HelixAgent routes requests across Claude, DeepSeek, and Gemini
 2. **Ensemble Voting**: The system intelligently selects the best response using confidence scoring
 3. **OpenAI Compatibility**: Use familiar API patterns with enhanced capabilities
 4. **Health Monitoring**: Built-in health checks and metrics collection
@@ -260,7 +260,7 @@ docker-compose down -v
 
 ```bash
 # Check container logs
-docker-compose logs superagent
+docker-compose logs helixagent
 
 # Restart services
 docker-compose restart
@@ -280,4 +280,4 @@ docker-compose up --build --force-recreate
 
 ---
 
-**Congratulations!** You've successfully set up and used SuperAgent, an enterprise-grade LLM facade system. The system is now intelligently routing your requests across multiple providers and delivering the best possible responses through ensemble voting. 🚀
+**Congratulations!** You've successfully set up and used HelixAgent, an enterprise-grade LLM facade system. The system is now intelligently routing your requests across multiple providers and delivering the best possible responses through ensemble voting. 🚀

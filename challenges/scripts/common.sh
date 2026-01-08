@@ -1,5 +1,5 @@
 #!/bin/bash
-# SuperAgent Challenges - Common Functions
+# HelixAgent Challenges - Common Functions
 # Source this file in challenge runner scripts
 
 # Colors

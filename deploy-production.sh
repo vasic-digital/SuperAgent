@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# SuperAgent Production Deployment Script
-# This script sets up SuperAgent for production use
+# HelixAgent Production Deployment Script
+# This script sets up HelixAgent for production use
 
 set -e
 
-echo "🚀 SuperAgent Production Deployment Script"
+echo "🚀 HelixAgent Production Deployment Script"
 echo "=========================================="
 
 # Colors for output
@@ -62,7 +62,7 @@ fi
 print_success "System requirements met!"
 
 # Create deployment directory
-DEPLOY_DIR="./superagent-deployment"
+DEPLOY_DIR="./helixagent-deployment"
 if [ -d "$DEPLOY_DIR" ]; then
     print_warning "Deployment directory already exists: $DEPLOY_DIR"
     read -p "Remove and recreate? (y/N): " -n 1 -r
@@ -80,8 +80,8 @@ mkdir -p "$DEPLOY_DIR"
 cd "$DEPLOY_DIR"
 
 # Clone the repository
-print_status "Cloning SuperAgent repository..."
-if ! git clone https://github.com/superagent/superagent.git .; then
+print_status "Cloning HelixAgent repository..."
+if ! git clone https://github.com/helixagent/helixagent.git .; then
     print_error "Failed to clone repository. Please check your internet connection."
     exit 1
 fi
@@ -92,7 +92,7 @@ print_success "Repository cloned successfully!"
 print_status "Setting up environment configuration..."
 
 cat > .env << EOF
-# SuperAgent Production Environment Configuration
+# HelixAgent Production Environment Configuration
 # Generated on: $(date)
 
 # ===========================================
@@ -108,9 +108,9 @@ REQUEST_TIMEOUT=30
 # ===========================================
 DB_HOST=postgres
 DB_PORT=5432
-DB_USER=superagent_prod
+DB_USER=helixagent_prod
 DB_PASSWORD=CHANGE_THIS_STRONG_PASSWORD
-DB_NAME=superagent_prod
+DB_NAME=helixagent_prod
 DB_MAX_CONNECTIONS=20
 DB_SSL_MODE=disable
 
@@ -182,34 +182,34 @@ print_status "Creating helper scripts..."
 
 cat > start.sh << 'EOF'
 #!/bin/bash
-echo "Starting SuperAgent in production mode..."
+echo "Starting HelixAgent in production mode..."
 docker-compose --profile prod up -d
-echo "SuperAgent is starting up..."
+echo "HelixAgent is starting up..."
 echo "API will be available at: http://localhost:8080"
 echo "Health check: http://localhost:8080/health"
 echo "Grafana dashboards: http://localhost:3000 (admin/admin123)"
 echo "Prometheus metrics: http://localhost:9090"
 echo ""
-echo "To view logs: docker-compose logs -f superagent"
+echo "To view logs: docker-compose logs -f helixagent"
 echo "To stop: docker-compose down"
 EOF
 
 cat > stop.sh << 'EOF'
 #!/bin/bash
-echo "Stopping SuperAgent..."
+echo "Stopping HelixAgent..."
 docker-compose down
-echo "SuperAgent stopped."
+echo "HelixAgent stopped."
 EOF
 
 cat > logs.sh << 'EOF'
 #!/bin/bash
-echo "Showing SuperAgent logs..."
-docker-compose logs -f superagent
+echo "Showing HelixAgent logs..."
+docker-compose logs -f helixagent
 EOF
 
 cat > status.sh << 'EOF'
 #!/bin/bash
-echo "SuperAgent Status:"
+echo "HelixAgent Status:"
 echo "=================="
 docker-compose ps
 
@@ -237,7 +237,7 @@ version: '3.8'
 
 services:
   # Override for production settings
-  superagent:
+  helixagent:
     environment:
       - GIN_MODE=release
       - LOG_LEVEL=info
@@ -306,9 +306,9 @@ print_success "Production configuration created!"
 # Final instructions
 cat << EOF
 
-🎉 **SuperAgent Production Deployment Ready!**
+🎉 **HelixAgent Production Deployment Ready!**
 
-Your SuperAgent instance is now configured for production deployment.
+Your HelixAgent instance is now configured for production deployment.
 
 **Next Steps:**
 
@@ -318,7 +318,7 @@ Your SuperAgent instance is now configured for production deployment.
    \`\`\`
    Edit the .env file and add your AI provider API keys (at minimum, configure CLAUDE_API_KEY or OPENROUTER_API_KEY)
 
-2. **Start SuperAgent:**
+2. **Start HelixAgent:**
    \`\`\`bash
    ./start.sh
    \`\`\`
@@ -357,9 +357,9 @@ Your SuperAgent instance is now configured for production deployment.
 - Troubleshooting: See \`docs/troubleshooting-guide.md\`
 - API Reference: See \`docs/api-documentation.md\`
 
-**SuperAgent is now ready for production! 🚀**
+**HelixAgent is now ready for production! 🚀**
 
 EOF
 
-print_success "SuperAgent production deployment setup complete!"
+print_success "HelixAgent production deployment setup complete!"
 print_warning "Remember to configure your API keys in .env before starting!"

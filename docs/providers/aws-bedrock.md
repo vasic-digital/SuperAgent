@@ -2,7 +2,7 @@
 
 ## Overview
 
-Amazon Bedrock is a fully managed service that provides access to foundation models from leading AI companies including Anthropic, Amazon, Meta, Cohere, and others through a unified API. SuperAgent integrates with AWS Bedrock to provide enterprise-grade access to these models.
+Amazon Bedrock is a fully managed service that provides access to foundation models from leading AI companies including Anthropic, Amazon, Meta, Cohere, and others through a unified API. HelixAgent integrates with AWS Bedrock to provide enterprise-grade access to these models.
 
 ### Supported Models
 
@@ -125,7 +125,7 @@ import (
     "os"
 
     "github.com/sirupsen/logrus"
-    "github.com/superagent/superagent/internal/cloud"
+    "github.com/helixagent/helixagent/internal/cloud"
 )
 
 func main() {
@@ -240,7 +240,7 @@ response, err := bedrock.InvokeModel(
 
 ## AWS Signature V4 Authentication
 
-SuperAgent implements AWS Signature V4 for authenticating requests:
+HelixAgent implements AWS Signature V4 for authenticating requests:
 
 ```go
 // The signRequest method handles:
@@ -297,7 +297,7 @@ AWS Bedrock API error: 429 - ThrottlingException
 ```
 
 **Solution:**
-- Wait and retry (SuperAgent handles this automatically)
+- Wait and retry (HelixAgent handles this automatically)
 - Request a quota increase
 - Implement request queuing
 

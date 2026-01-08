@@ -1,8 +1,8 @@
-# Circuit Breaker Pattern in SuperAgent
+# Circuit Breaker Pattern in HelixAgent
 
 ## Overview
 
-SuperAgent implements the Circuit Breaker pattern to provide fault tolerance and graceful degradation when communicating with LLM providers. This pattern prevents cascading failures, reduces load on failing services, and enables automatic recovery.
+HelixAgent implements the Circuit Breaker pattern to provide fault tolerance and graceful degradation when communicating with LLM providers. This pattern prevents cascading failures, reduces load on failing services, and enables automatic recovery.
 
 ## Pattern Explanation
 
@@ -273,25 +273,25 @@ func (cb *CircuitBreaker) recordHalfOpenFailure() {
 
 ### Prometheus Metrics
 
-SuperAgent exports comprehensive circuit breaker metrics:
+HelixAgent exports comprehensive circuit breaker metrics:
 
 ```prometheus
 # Circuit breaker state (0=closed, 1=open, 2=half-open)
-superagent_circuit_breaker_state{provider="deepseek"} 0
+helixagent_circuit_breaker_state{provider="deepseek"} 0
 
 # Total state transitions
-superagent_circuit_breaker_state_transitions_total{provider="deepseek",from="closed",to="open"} 5
+helixagent_circuit_breaker_state_transitions_total{provider="deepseek",from="closed",to="open"} 5
 
 # Request outcomes
-superagent_circuit_breaker_requests_total{provider="deepseek",result="success"} 1000
-superagent_circuit_breaker_requests_total{provider="deepseek",result="failure"} 50
-superagent_circuit_breaker_requests_total{provider="deepseek",result="rejected"} 200
+helixagent_circuit_breaker_requests_total{provider="deepseek",result="success"} 1000
+helixagent_circuit_breaker_requests_total{provider="deepseek",result="failure"} 50
+helixagent_circuit_breaker_requests_total{provider="deepseek",result="rejected"} 200
 
 # Current failure count
-superagent_circuit_breaker_failures{provider="deepseek"} 3
+helixagent_circuit_breaker_failures{provider="deepseek"} 3
 
 # Time since last state change
-superagent_circuit_breaker_time_in_state_seconds{provider="deepseek",state="closed"} 3600
+helixagent_circuit_breaker_time_in_state_seconds{provider="deepseek",state="closed"} 3600
 ```
 
 ### Metric Types
@@ -311,17 +311,17 @@ Example Grafana queries for circuit breaker monitoring:
 
 ```promql
 # Circuit breaker state timeline
-superagent_circuit_breaker_state{provider=~"$provider"}
+helixagent_circuit_breaker_state{provider=~"$provider"}
 
 # Requests rejected by open circuit
-rate(superagent_circuit_breaker_requests_total{result="rejected"}[5m])
+rate(helixagent_circuit_breaker_requests_total{result="rejected"}[5m])
 
 # Recovery time (time from open to closed)
-superagent_circuit_breaker_time_in_state_seconds{state="open"}
+helixagent_circuit_breaker_time_in_state_seconds{state="open"}
 
 # Failure rate by provider
-rate(superagent_circuit_breaker_requests_total{result="failure"}[5m])
-  / rate(superagent_circuit_breaker_requests_total[5m])
+rate(helixagent_circuit_breaker_requests_total{result="failure"}[5m])
+  / rate(helixagent_circuit_breaker_requests_total[5m])
 ```
 
 ### Health Check Endpoint
@@ -561,4 +561,4 @@ func TestCircuitBreakerOpens(t *testing.T) {
 
 ---
 
-For more information, see the [SuperAgent documentation](https://github.com/superagent/superagent).
+For more information, see the [HelixAgent documentation](https://github.com/helixagent/helixagent).

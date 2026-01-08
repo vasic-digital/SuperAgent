@@ -1,8 +1,8 @@
-# SuperAgent Multi-Provider Configuration Example
+# HelixAgent Multi-Provider Configuration Example
 # This configuration enables DeepSeek, Qwen, and OpenRouter (Grok-4 and Gemini 2.5)
 # All requests will automatically use ensemble voting to return the best possible result
 
-# SuperAgent server configuration
+# HelixAgent server configuration
 server:
   host: "0.0.0.0"
   port: 8080
@@ -13,7 +13,7 @@ server:
 database:
   host: "localhost"
   port: 5432
-  name: "superagent"
+  name: "helixagent"
   user: "postgres"
   password: "${DB_PASSWORD}"
   ssl_mode: "disable"
@@ -131,7 +131,7 @@ openai_compatible:
   enabled: true
   base_path: "/v1"                  # OpenAI API compatible endpoint
   expose_all_models: true           # Show all provider models in /v1/models
-  ensemble_model_name: "superagent-ensemble"  # Primary model name for ensemble
+  ensemble_model_name: "helixagent-ensemble"  # Primary model name for ensemble
   enable_streaming: true           # Support for Server-Sent Events streaming
   enable_functions: true           # Support for OpenAI function calling
   enable_tools: true               # Support for OpenAI tools
@@ -140,7 +140,7 @@ openai_compatible:
 mcp:
   enabled: true
   expose_all_tools: true           # Expose all available tools from all providers
-  unified_tool_namespace: true     # Use superagent namespace for all tools
+  unified_tool_namespace: true     # Use helixagent namespace for all tools
   
 # LSP (Language Server Protocol) configuration  
 lsp:
@@ -184,7 +184,7 @@ modelsdev:
   
   # API request settings
   timeout: "${MODELSDEV_TIMEOUT:-30s}"
-  user_agent: "${MODELSDEV_USER_AGENT:-SuperAgent/1.0}"
+  user_agent: "${MODELSDEV_USER_AGENT:-HelixAgent/1.0}"
   rate_limit: ${MODELSDEV_RATE_LIMIT:-10}
   
   # Features for multi-provider configuration
@@ -195,7 +195,7 @@ modelsdev:
   
   # Provider-specific configuration
   provider_mappings:
-    # Map SuperAgent provider names to Models.dev provider IDs
+    # Map HelixAgent provider names to Models.dev provider IDs
     openai: "openai"
     anthropic: "anthropic"
     deepseek: "deepseek"

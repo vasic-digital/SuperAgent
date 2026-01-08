@@ -1,4 +1,4 @@
-# SuperAgent Remediation Tracker
+# HelixAgent Remediation Tracker
 
 **Last Updated:** 2026-01-03
 **Status:** P0 Complete - All show-stoppers fixed
@@ -256,7 +256,7 @@ go test -v -cover ./internal/services/... -run TestDebate
 
 ---
 
-### COV-003: cmd/superagent (28.8%)
+### COV-003: cmd/helixagent (28.8%)
 **Priority:** P2
 **Status:** [ ] Not Started
 

@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 func TestNewSimpleOpenRouterProvider(t *testing.T) {
@@ -105,7 +105,7 @@ func TestSimpleOpenRouterProvider_Complete_Success(t *testing.T) {
 		assert.Equal(t, "/chat/completions", r.URL.Path)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		assert.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
-		assert.Equal(t, "superagent", r.Header.Get("HTTP-Referer"))
+		assert.Equal(t, "helixagent", r.Header.Get("HTTP-Referer"))
 
 		var reqBody struct {
 			Model       string           `json:"model"`

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-SuperAgent's AI Debate System is a groundbreaking feature that enables multiple AI participants to engage in structured debates, analyze topics from different perspectives, and reach consensus through collaborative reasoning. This system leverages the diverse strengths of multiple LLM providers to produce more balanced, thoroughly considered responses.
+HelixAgent's AI Debate System is a groundbreaking feature that enables multiple AI participants to engage in structured debates, analyze topics from different perspectives, and reach consensus through collaborative reasoning. This system leverages the diverse strengths of multiple LLM providers to produce more balanced, thoroughly considered responses.
 
 The debate system is particularly valuable for complex decision-making, fact verification, creative brainstorming, and scenarios where multiple perspectives improve outcome quality.
 
@@ -454,7 +454,7 @@ curl -X POST http://localhost:8080/v1/debates \
 
 ### Available Strategies
 
-SuperAgent supports multiple consensus strategies:
+HelixAgent supports multiple consensus strategies:
 
 #### 1. Confidence-Weighted Voting
 

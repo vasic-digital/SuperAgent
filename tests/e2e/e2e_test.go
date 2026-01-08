@@ -13,11 +13,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // TestE2EUserWorkflow tests complete user workflows
-// Note: These tests require a running SuperAgent server on localhost:8080
+// Note: These tests require a running HelixAgent server on localhost:8080
 // To run these tests:
 // 1. Start the server: make run-dev
 // 2. Run E2E tests: make test-e2e
@@ -33,7 +33,7 @@ func TestE2EUserWorkflow(t *testing.T) {
 	// Check if server is running
 	resp, err := client.Get(baseURL + "/health")
 	if err != nil {
-		t.Skipf("Skipping E2E test: SuperAgent server not running at %s. Start server with 'make run-dev'", baseURL)
+		t.Skipf("Skipping E2E test: HelixAgent server not running at %s. Start server with 'make run-dev'", baseURL)
 	}
 	defer resp.Body.Close()
 
@@ -41,7 +41,7 @@ func TestE2EUserWorkflow(t *testing.T) {
 		t.Skipf("Skipping E2E test: Server at %s returned status %d", baseURL, resp.StatusCode)
 	}
 
-	t.Logf("✅ SuperAgent server is running at %s", baseURL)
+	t.Logf("✅ HelixAgent server is running at %s", baseURL)
 
 	t.Run("CompleteChatWorkflow", func(t *testing.T) {
 		// Step 1: Check available models
@@ -216,7 +216,7 @@ func TestE2EErrorHandling(t *testing.T) {
 	// Check if server is running
 	resp, err := client.Get(baseURL + "/health")
 	if err != nil {
-		t.Skipf("Skipping E2E test: SuperAgent server not running at %s. Start server with 'make run-dev'", baseURL)
+		t.Skipf("Skipping E2E test: HelixAgent server not running at %s. Start server with 'make run-dev'", baseURL)
 	}
 	defer resp.Body.Close()
 

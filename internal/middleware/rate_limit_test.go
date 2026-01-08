@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/superagent/superagent/internal/cache"
-	"github.com/superagent/superagent/internal/config"
+	"github.com/helixagent/helixagent/internal/cache"
+	"github.com/helixagent/helixagent/internal/config"
 )
 
 func TestDefaultKeyFunc(t *testing.T) {

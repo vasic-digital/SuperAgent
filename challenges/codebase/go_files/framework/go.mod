@@ -1,3 +1,3 @@
-module github.com/superagent/superagent/challenges/framework
+module github.com/helixagent/helixagent/challenges/framework
 
 go 1.23

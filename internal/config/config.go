@@ -192,7 +192,7 @@ func Load() *Config {
 	return &Config{
 		Server: ServerConfig{
 			Port:           getEnv("PORT", "8080"),
-			APIKey:         getEnv("SUPERAGENT_API_KEY", ""), // SECURITY: Must be set via environment variable
+			APIKey:         getEnv("HELIXAGENT_API_KEY", ""), // SECURITY: Must be set via environment variable
 			JWTSecret:      getEnv("JWT_SECRET", ""),         // SECURITY: Must be set via environment variable
 			ReadTimeout:    getDurationEnv("READ_TIMEOUT", 30*time.Second),
 			WriteTimeout:   getDurationEnv("WRITE_TIMEOUT", 30*time.Second),
@@ -207,9 +207,9 @@ func Load() *Config {
 		Database: DatabaseConfig{
 			Host:           getEnv("DB_HOST", "localhost"),
 			Port:           getEnv("DB_PORT", "5432"),
-			User:           getEnv("DB_USER", "superagent"),
+			User:           getEnv("DB_USER", "helixagent"),
 			Password:       getEnv("DB_PASSWORD", "secret"),
-			Name:           getEnv("DB_NAME", "superagent_db"),
+			Name:           getEnv("DB_NAME", "helixagent_db"),
 			SSLMode:        getEnv("DB_SSLMODE", "disable"),
 			MaxConnections: getIntEnv("DB_MAX_CONNECTIONS", 20),
 			ConnTimeout:    getDurationEnv("DB_CONN_TIMEOUT", 10*time.Second),
@@ -270,7 +270,7 @@ func Load() *Config {
 				Enabled:   getBoolEnv("PROMETHEUS_ENABLED", true),
 				Path:      getEnv("PROMETHEUS_PATH", "/metrics"),
 				Port:      getEnv("PROMETHEUS_PORT", "9090"),
-				Namespace: getEnv("PROMETHEUS_NAMESPACE", "superagent"),
+				Namespace: getEnv("PROMETHEUS_NAMESPACE", "helixagent"),
 			},
 		},
 		Security: SecurityConfig{

@@ -1,4 +1,4 @@
-# SuperAgent Production Deployment Guide
+# HelixAgent Production Deployment Guide
 
 ## 🚀 Quick Production Setup
 
@@ -40,11 +40,11 @@ docker-compose --profile prod up -d
 
 # Kubernetes Production  
 kubectl apply -f deploy/kubernetes/
-kubectl set image deployment/superagent superagent=superagent:latest
+kubectl set image deployment/helixagent helixagent=helixagent:latest
 
 # Verify deployment
-kubectl get pods -n superagent
-kubectl logs -f deployment/superagent -n superagent
+kubectl get pods -n helixagent
+kubectl logs -f deployment/helixagent -n helixagent
 ```
 
 ## 🔒 Production Security
@@ -77,14 +77,14 @@ export CSP_ENABLED=true
 ### 3. Secrets Management
 ```bash
 # Kubernetes secrets
-kubectl create secret generic superagent-prod-secrets \
+kubectl create secret generic helixagent-prod-secrets \
   --from-literal=db-password=$DB_PASSWORD \
   --from-literal=jwt-secret=$JWT_SECRET \
   --from-literal=deepseek-api-key=$DEEPSEEK_API_KEY
 
 # Docker secrets
-docker secret create superagent-db-password $DB_PASSWORD
-docker secret create superagent-jwt-secret $JWT_SECRET
+docker secret create helixagent-db-password $DB_PASSWORD
+docker secret create helixagent-jwt-secret $JWT_SECRET
 ```
 
 ## 📊 Production Monitoring
@@ -100,9 +100,9 @@ rule_files:
   - "alert-rules.yml"
 
 scrape_configs:
-  - job_name: 'superagent'
+  - job_name: 'helixagent'
     static_configs:
-      - targets: ['superagent:8080']
+      - targets: ['helixagent:8080']
     metrics_path: '/metrics'
     scrape_interval: 5s
     basic_auth:
@@ -128,7 +128,7 @@ alerting:
 ```yaml
 # monitoring/alert-rules.yml
 groups:
-- name: superagent-production
+- name: helixagent-production
   rules:
   - alert: HighErrorRate
     expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
@@ -173,7 +173,7 @@ groups:
 curl -X POST \
   http://admin:$GRAFANA_PASSWORD@localhost:3000/api/dashboards/db \
   -H "Content-Type: application/json" \
-  -d @monitoring/dashboards/superagent-dashboard.json
+  -d @monitoring/dashboards/helixagent-dashboard.json
 
 # Configure alerts
 curl -X POST \
@@ -193,17 +193,17 @@ curl -X POST \
 ### 1. Horizontal Scaling
 ```bash
 # Docker Compose scaling
-docker-compose --profile prod up -d --scale superagent=5
+docker-compose --profile prod up -d --scale helixagent=5
 
 # Kubernetes HPA
-kubectl autoscale deployment superagent \
+kubectl autoscale deployment helixagent \
   --cpu-percent=70 \
   --min=2 \
   --max=20 \
-  -n superagent
+  -n helixagent
 
 # Manual scaling
-kubectl scale deployment superagent --replicas=10 -n superagent
+kubectl scale deployment helixagent --replicas=10 -n helixagent
 ```
 
 ### 2. Database Scaling
@@ -219,7 +219,7 @@ SELECT pg_reload_conf();
 
 -- Connection pooling configuration
 CREATE USER pgbouncer WITH PASSWORD 'secure-pgbouncer-password';
-GRANT CONNECT ON DATABASE superagent_db TO pgbouncer;
+GRANT CONNECT ON DATABASE helixagent_db TO pgbouncer;
 ```
 
 ### 3. Redis Clustering
@@ -249,13 +249,13 @@ pg_dump -h $DB_HOST -U $DB_USER -d $DB_NAME \
 
 # Automated backup script
 #!/bin/bash
-BACKUP_DIR="/backups/superagent"
+BACKUP_DIR="/backups/helixagent"
 DATE=$(date +%Y%m%d_%H%M%S)
 mkdir -p $BACKUP_DIR
 
 pg_dump -h $DB_HOST -U $DB_USER -d $DB_NAME \
   --no-password --format=custom --compress=9 \
-  > $BACKUP_DIR/superagent_$DATE.dump
+  > $BACKUP_DIR/helixagent_$DATE.dump
 
 # Keep last 7 days of backups
 find $BACKUP_DIR -name "*.dump" -mtime +7 -delete
@@ -264,17 +264,17 @@ find $BACKUP_DIR -name "*.dump" -mtime +7 -delete
 ### 2. Log Management
 ```bash
 # Configure log rotation
-cat > /etc/logrotate.d/superagent << EOF
-/var/log/superagent/*.log {
+cat > /etc/logrotate.d/helixagent << EOF
+/var/log/helixagent/*.log {
     daily
     missingok
     rotate 30
     compress
     delaycompress
     notifempty
-    create 0644 superagent superagent
+    create 0644 helixagent helixagent
     postrotate
-        docker-compose restart superagent
+        docker-compose restart helixagent
     endscript
 }
 EOF
@@ -282,7 +282,7 @@ EOF
 # Log aggregation with ELK
 docker run -d \
   --name filebeat \
-  -v /var/log/superagent:/var/log/superagent \
+  -v /var/log/helixagent:/var/log/helixagent \
   -v ./filebeat.yml:/usr/share/filebeat/filebeat.yml \
   docker.elastic.co/beats/filebeat:8.5.0
 ```
@@ -295,14 +295,14 @@ HEALTH_ENDPOINT="https://api.yourdomain.com/health"
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_ENDPOINT)
 
 if [ $RESPONSE -eq 200 ]; then
-    echo "✅ SuperAgent is healthy"
+    echo "✅ HelixAgent is healthy"
     exit 0
 else
-    echo "❌ SuperAgent is unhealthy (HTTP $RESPONSE)"
+    echo "❌ HelixAgent is unhealthy (HTTP $RESPONSE)"
     # Send alert
     curl -X POST "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK" \
       -H 'Content-type: application/json' \
-      --data "{\"text\":\"🚨 SuperAgent health check failed: HTTP $RESPONSE\"}"
+      --data "{\"text\":\"🚨 HelixAgent health check failed: HTTP $RESPONSE\"}"
     exit 1
 fi
 ```
@@ -312,8 +312,8 @@ fi
 ### 1. Common Issues
 ```bash
 # High memory usage
-docker stats --no-stream | grep superagent
-kubectl top pods -n superagent
+docker stats --no-stream | grep helixagent
+kubectl top pods -n helixagent
 
 # Database connection issues
 psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "SELECT count(*) FROM pg_stat_activity;"
@@ -324,7 +324,7 @@ curl -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
 
 # Plugin issues
 ls -la /app/plugins/
-docker exec superagent ls -la /app/plugins/
+docker exec helixagent ls -la /app/plugins/
 ```
 
 ### 2. Performance Tuning
@@ -348,14 +348,14 @@ redis-cli info memory
 ```bash
 # Immediate response checklist
 1. Check service status: docker-compose ps
-2. Review logs: docker-compose logs superagent
+2. Review logs: docker-compose logs helixagent
 3. Verify external services: curl $DB_HOST:5432
-4. Check metrics: http://localhost:3000/d/superagent-dashboard
+4. Check metrics: http://localhost:3000/d/helixagent-dashboard
 5. Notify team: slack://alerts-channel
 
 # Recovery procedures
-docker-compose restart superagent
-kubectl rollout restart deployment/superagent -n superagent
+docker-compose restart helixagent
+kubectl rollout restart deployment/helixagent -n helixagent
 ```
 
 ## 📈 Production Metrics
@@ -387,4 +387,4 @@ Warning Alerts:
 
 ---
 
-This production guide provides everything needed to deploy SuperAgent at scale with proper monitoring, security, and maintenance procedures.
+This production guide provides everything needed to deploy HelixAgent at scale with proper monitoring, security, and maintenance procedures.

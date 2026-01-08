@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/superagent/superagent/internal/database"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/database"
+	"github.com/helixagent/helixagent/internal/models"
 	"golang.org/x/crypto/argon2"
 )
 

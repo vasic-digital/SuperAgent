@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ============================================================================
-# SuperAgent Integration Test Runner
+# HelixAgent Integration Test Runner
 # ============================================================================
 # This script automatically starts all required dependencies (PostgreSQL, Redis)
 # using Docker Compose, runs the tests, and cleans up afterwards.
@@ -21,7 +21,7 @@ set -e
 
 # Configuration
 COMPOSE_FILE="docker-compose.integration.yml"
-PROJECT_NAME="superagent-integration-tests"
+PROJECT_NAME="helixagent-integration-tests"
 MAX_WAIT_TIME=60
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -59,7 +59,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --help)
-            echo "SuperAgent Integration Test Runner"
+            echo "HelixAgent Integration Test Runner"
             echo ""
             echo "Usage: $0 [options]"
             echo ""
@@ -125,7 +125,7 @@ wait_for_postgres() {
     log_info "Waiting for PostgreSQL to be ready..."
     local count=0
     while [ $count -lt $MAX_WAIT_TIME ]; do
-        if $DOCKER_COMPOSE -f "$COMPOSE_FILE" -p "$PROJECT_NAME" exec -T postgres-test pg_isready -U superagent_test -d superagent_test_db > /dev/null 2>&1; then
+        if $DOCKER_COMPOSE -f "$COMPOSE_FILE" -p "$PROJECT_NAME" exec -T postgres-test pg_isready -U helixagent_test -d helixagent_test_db > /dev/null 2>&1; then
             log_success "PostgreSQL is ready!"
             return 0
         fi
@@ -161,7 +161,7 @@ initialize_database() {
     log_info "Initializing test database schema..."
 
     # Create a test-specific init script
-    $DOCKER_COMPOSE -f "$COMPOSE_FILE" -p "$PROJECT_NAME" exec -T postgres-test psql -U superagent_test -d superagent_test_db <<'EOF'
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" -p "$PROJECT_NAME" exec -T postgres-test psql -U helixagent_test -d helixagent_test_db <<'EOF'
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -319,7 +319,7 @@ EOF
 # Main execution
 echo ""
 echo "=============================================="
-echo "  SuperAgent Integration Test Runner"
+echo "  HelixAgent Integration Test Runner"
 echo "=============================================="
 echo ""
 
@@ -364,9 +364,9 @@ initialize_database
 # Set environment variables for tests
 export TEST_DB_HOST=localhost
 export TEST_DB_PORT=5433
-export TEST_DB_USER=superagent_test
+export TEST_DB_USER=helixagent_test
 export TEST_DB_PASSWORD=test123
-export TEST_DB_NAME=superagent_test_db
+export TEST_DB_NAME=helixagent_test_db
 export TEST_DB_SSLMODE=disable
 
 export TEST_REDIS_HOST=localhost
@@ -375,9 +375,9 @@ export TEST_REDIS_PASSWORD=test123
 
 export DB_HOST=localhost
 export DB_PORT=5433
-export DB_USER=superagent_test
+export DB_USER=helixagent_test
 export DB_PASSWORD=test123
-export DB_NAME=superagent_test_db
+export DB_NAME=helixagent_test_db
 export DB_SSLMODE=disable
 
 export REDIS_HOST=localhost

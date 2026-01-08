@@ -1,5 +1,5 @@
 #!/bin/bash
-# SuperAgent Challenges - Challenge Runner Script
+# HelixAgent Challenges - Challenge Runner Script
 # Usage: ./scripts/run_challenges.sh [challenge_name] [options]
 
 set -e
@@ -40,7 +40,7 @@ print_error() {
 # Show usage
 usage() {
     cat << EOF
-SuperAgent Challenges Runner
+HelixAgent Challenges Runner
 
 Usage: $0 <challenge_name> [options]
 
@@ -264,7 +264,7 @@ run_challenge() {
     local start_time=$(date +%s)
     echo "{\"event\":\"challenge_started\",\"challenge\":\"$challenge\",\"timestamp\":\"$(date -Iseconds)\"}" >> "$RESULTS_DIR/logs/challenge.log"
 
-    # Use generic runner for all challenges (more robust, doesn't require SuperAgent running)
+    # Use generic runner for all challenges (more robust, doesn't require HelixAgent running)
     print_info "Using generic challenge runner..."
 
     local generic_runner="$SCRIPT_DIR/generic_challenge.sh"
@@ -297,7 +297,7 @@ run_challenge() {
 main() {
     parse_args "$@"
 
-    print_info "SuperAgent Challenges Runner"
+    print_info "HelixAgent Challenges Runner"
     print_info "Challenge: $CHALLENGE_NAME"
 
     # Validate challenge name using static list (no jq dependency)

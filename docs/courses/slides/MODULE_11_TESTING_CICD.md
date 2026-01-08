@@ -6,7 +6,7 @@
 
 ## Slide 1: Title Slide
 
-**SuperAgent: Multi-Provider AI Orchestration**
+**HelixAgent: Multi-Provider AI Orchestration**
 
 - Module 11: Testing and CI/CD
 - Duration: 75 minutes
@@ -18,7 +18,7 @@
 
 **By the end of this module, you will:**
 
-- Master SuperAgent testing strategies
+- Master HelixAgent testing strategies
 - Write effective unit and integration tests
 - Set up comprehensive CI/CD pipelines
 - Implement quality gates
@@ -27,7 +27,7 @@
 
 ## Slide 3: Testing Strategy
 
-**Test Pyramid for SuperAgent:**
+**Test Pyramid for HelixAgent:**
 
 ```
          /\
@@ -448,7 +448,7 @@ jobs:
         run: |
           docker login -u ${{ secrets.DOCKER_USER }} \
             -p ${{ secrets.DOCKER_PASS }}
-          docker push superagent/superagent:latest
+          docker push helixagent/helixagent:latest
 ```
 
 ---
@@ -494,8 +494,8 @@ jobs:
     steps:
       - name: Deploy to staging
         run: |
-          kubectl set image deployment/superagent \
-            superagent=superagent/superagent:${{ github.sha }}
+          kubectl set image deployment/helixagent \
+            helixagent=helixagent/helixagent:${{ github.sha }}
 
       - name: Run smoke tests
         run: |
@@ -505,8 +505,8 @@ jobs:
         if: success()
         run: |
           kubectl --context=production set image \
-            deployment/superagent \
-            superagent=superagent/superagent:${{ github.sha }}
+            deployment/helixagent \
+            helixagent=helixagent/helixagent:${{ github.sha }}
 ```
 
 ---

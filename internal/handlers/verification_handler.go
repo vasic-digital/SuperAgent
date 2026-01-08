@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/superagent/superagent/internal/verifier"
-	"github.com/superagent/superagent/internal/verifier/adapters"
+	"github.com/helixagent/helixagent/internal/verifier"
+	"github.com/helixagent/helixagent/internal/verifier/adapters"
 )
 
 // VerificationHandler handles verification-related HTTP requests

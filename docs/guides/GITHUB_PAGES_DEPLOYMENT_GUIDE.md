@@ -1,9 +1,9 @@
-# 🚀 SuperAgent GitHub Pages Deployment Guide
+# 🚀 HelixAgent GitHub Pages Deployment Guide
 
 ## QUICK SETUP INSTRUCTIONS
 
 ### Step 1: Enable GitHub Pages
-1. Go to your GitHub repository: https://github.com/vasic-digital/SuperAgent
+1. Go to your GitHub repository: https://github.com/vasic-digital/HelixAgent
 2. Click **Settings** (top right, gear icon)
 3. Scroll down to **Pages** section in left sidebar
 4. Under **Source**, select: **GitHub Actions**
@@ -14,7 +14,7 @@
 ### Step 2: Configure Analytics
 1. **Get Google Analytics 4 ID:**
    - Visit: https://analytics.google.com/
-   - Create property: "SuperAgent Website"
+   - Create property: "HelixAgent Website"
    - Copy Measurement ID (format: G-XXXXXXXXXX)
 
 2. **Get Microsoft Clarity ID:**
@@ -40,7 +40,7 @@
 1. After enabling GitHub Pages, wait 1-2 minutes
 2. Visit your GitHub Pages URL (automatically generated):
    ```
-   https://vasic-digital.github.io/SuperAgent/
+   https://vasic-digital.github.io/HelixAgent/
    ```
 3. Verify website loads correctly
 4. Check browser console for analytics events
@@ -49,7 +49,7 @@
 
 ### If GitHub Pages Doesn't Deploy:
 1. **Check GitHub Actions tab:**
-   - Go to https://github.com/vasic-digital/SuperAgent/actions
+   - Go to https://github.com/vasic-digital/HelixAgent/actions
    - Look for "Deploy Documentation and Website" workflow
    - Check if it's running/completed/failed
 
@@ -66,7 +66,7 @@
 ### If Website Doesn't Load:
 1. **Check URL format:**
    - Correct: `https://<username>.github.io/<repository>`
-   - Example: `https://vasic-digital.github.io/SuperAgent/`
+   - Example: `https://vasic-digital.github.io/HelixAgent/`
 
 2. **Wait for propagation:**
    - GitHub Pages can take 1-10 minutes to deploy
@@ -81,11 +81,11 @@
 
 ## CUSTOM DOMAIN SETUP (Optional)
 
-### Recommended Domain: superagent.ai
+### Recommended Domain: helixagent.ai
 
 1. **Purchase domain** (if not already owned)
    - Use domain registrar like Namecheap, Google Domains, etc.
-   - Domain suggestion: superagent.ai
+   - Domain suggestion: helixagent.ai
 
 2. **Configure DNS:**
    - Add CNAME record pointing to `vasic-digital.github.io`
@@ -149,7 +149,7 @@ If automatic deployment doesn't work:
 ## MONITORING
 
 ### GitHub Actions Status
-- **URL**: https://github.com/vasic-digital/SuperAgent/actions
+- **URL**: https://github.com/vasic-digital/HelixAgent/actions
 - **Workflow**: "Deploy Documentation and Website"
 - **Frequency**: On push to main/master branches
 
@@ -209,8 +209,8 @@ If automatic deployment doesn't work:
 
 **🚀 READY TO LAUNCH?**
 
-Once GitHub Pages is enabled and analytics configured, SuperAgent will be live at:
-`https://vasic-digital.github.io/SuperAgent/`
+Once GitHub Pages is enabled and analytics configured, HelixAgent will be live at:
+`https://vasic-digital.github.io/HelixAgent/`
 
 **Next Steps:**
 1. Enable GitHub Pages (Settings → Pages)
@@ -218,4 +218,4 @@ Once GitHub Pages is enabled and analytics configured, SuperAgent will be live a
 3. Test the live website
 4. Begin marketing campaign!
 
-**🎉 Congratulations! Your SuperAgent website is ready to go live!**
+**🎉 Congratulations! Your HelixAgent website is ready to go live!**

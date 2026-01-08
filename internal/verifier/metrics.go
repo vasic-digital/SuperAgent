@@ -45,7 +45,7 @@ type VerifierMetrics struct {
 // NewVerifierMetrics creates new verifier metrics
 func NewVerifierMetrics(namespace string) *VerifierMetrics {
 	if namespace == "" {
-		namespace = "superagent_verifier"
+		namespace = "helixagent_verifier"
 	}
 
 	return &VerifierMetrics{

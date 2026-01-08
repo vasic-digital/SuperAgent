@@ -44,21 +44,21 @@ type CLIAgentTestResponse struct {
 	CutoffDetected  bool
 }
 
-// cliAgentGetBaseURL returns the SuperAgent base URL for testing
+// cliAgentGetBaseURL returns the HelixAgent base URL for testing
 func cliAgentGetBaseURL() string {
-	if url := os.Getenv("SUPERAGENT_URL"); url != "" {
+	if url := os.Getenv("HELIXAGENT_URL"); url != "" {
 		return url
 	}
 	return "http://localhost:8080"
 }
 
-// cliAgentSkipIfNotRunning skips the test if SuperAgent is not running
+// cliAgentSkipIfNotRunning skips the test if HelixAgent is not running
 func cliAgentSkipIfNotRunning(t *testing.T) {
 	t.Helper()
 	baseURL := cliAgentGetBaseURL()
 	resp, err := http.Get(baseURL + "/health")
 	if err != nil || resp.StatusCode != 200 {
-		t.Skipf("SuperAgent not running at %s, skipping integration test", baseURL)
+		t.Skipf("HelixAgent not running at %s, skipping integration test", baseURL)
 	}
 	resp.Body.Close()
 }
@@ -228,7 +228,7 @@ func TestHelixCodeStreamingIntegrity(t *testing.T) {
 
 	t.Run("No_Word_Duplication", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -255,7 +255,7 @@ func TestHelixCodeStreamingIntegrity(t *testing.T) {
 
 	t.Run("Coherent_Sentence_Structure", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -280,7 +280,7 @@ func TestHelixCodeStreamingIntegrity(t *testing.T) {
 
 	t.Run("Consistent_Stream_ID", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -310,7 +310,7 @@ func TestHelixCodeCodebaseAnalysis(t *testing.T) {
 
 	t.Run("Project_Structure_Analysis", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -337,7 +337,7 @@ func TestHelixCodeCodebaseAnalysis(t *testing.T) {
 
 	t.Run("Build_Commands_Request", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -374,7 +374,7 @@ func TestOpenCodeStreamingIntegrity(t *testing.T) {
 
 	t.Run("No_Word_Duplication", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -400,7 +400,7 @@ func TestOpenCodeStreamingIntegrity(t *testing.T) {
 
 	t.Run("Long_Response_No_Cutoff", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -434,7 +434,7 @@ func TestOpenCodeStreamingIntegrity(t *testing.T) {
 
 	t.Run("SSE_Format_Validity", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -466,7 +466,7 @@ func TestOpenCodeBearMailAnalysis(t *testing.T) {
 
 	t.Run("Codebase_Visibility", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -501,14 +501,14 @@ func TestClineStreamingIntegrity(t *testing.T) {
 
 	// Check if Cline CLI is available
 	if _, err := os.Stat(clineCLIPath); err != nil {
-		t.Logf("Cline CLI not available at %s, using SuperAgent directly", clineCLIPath)
+		t.Logf("Cline CLI not available at %s, using HelixAgent directly", clineCLIPath)
 	}
 
 	baseURL := cliAgentGetBaseURL()
 
 	t.Run("No_Word_Duplication_Cline_Style", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -534,7 +534,7 @@ func TestClineStreamingIntegrity(t *testing.T) {
 
 	t.Run("Code_Generation_Task", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "system",
@@ -588,7 +588,7 @@ func TestCrossAgentConsistency(t *testing.T) {
 		for _, agent := range agentContexts {
 			t.Run(agent.name, func(t *testing.T) {
 				reqBody := map[string]interface{}{
-					"model": "superagent-ensemble",
+					"model": "helixagent-ensemble",
 					"messages": []map[string]string{
 						{
 							"role":    "system",
@@ -624,7 +624,7 @@ func TestToolCallFormatAcrossAgents(t *testing.T) {
 
 	t.Run("Bash_Command_Format", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -649,7 +649,7 @@ func TestToolCallFormatAcrossAgents(t *testing.T) {
 
 	t.Run("File_Write_Format", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -671,7 +671,7 @@ func TestToolCallFormatAcrossAgents(t *testing.T) {
 
 	t.Run("No_Incomplete_Tags", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -719,7 +719,7 @@ func TestResponseValidityAllAgents(t *testing.T) {
 
 	t.Run("No_Empty_Response", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -740,7 +740,7 @@ func TestResponseValidityAllAgents(t *testing.T) {
 
 	t.Run("Response_Has_Expected_Content", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -762,7 +762,7 @@ func TestResponseValidityAllAgents(t *testing.T) {
 
 	t.Run("Numbered_List_Response", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -794,7 +794,7 @@ func TestNoResponseCutoffAllAgents(t *testing.T) {
 
 	t.Run("Medium_Response_Completes", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",
@@ -817,7 +817,7 @@ func TestNoResponseCutoffAllAgents(t *testing.T) {
 
 	t.Run("Long_Response_Completes", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{
 					"role":    "user",

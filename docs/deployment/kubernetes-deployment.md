@@ -117,31 +117,31 @@ sudo rabbitmq-plugins enable rabbitmq_management
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Checkout the advanced features branch
 git checkout advanced-features-complete
 
 # Build the application
 go mod download
-go build -o superagent-advanced ./cmd/main.go
+go build -o helixagent-advanced ./cmd/main.go
 ```
 
 ### 2. Configuration Setup
 
 #### Create Configuration Directory
 ```bash
-sudo mkdir -p /etc/superagent/advanced
-sudo mkdir -p /var/log/superagent
-sudo mkdir -p /var/lib/superagent
-sudo chown -R $USER:$USER /etc/superagent /var/log/superagent /var/lib/superagent
+sudo mkdir -p /etc/helixagent/advanced
+sudo mkdir -p /var/log/helixagent
+sudo mkdir -p /var/lib/helixagent
+sudo chown -R $USER:$USER /etc/helixagent /var/log/helixagent /var/lib/helixagent
 ```
 
 #### Generate Configuration Files
 ```bash
 # Create main configuration
-cat > /etc/superagent/advanced/config.yaml << 'EOF'
+cat > /etc/helixagent/advanced/config.yaml << 'EOF'
 # Advanced AI Debate Configuration System
 server:
   host: 0.0.0.0
@@ -149,14 +149,14 @@ server:
   mode: production
   tls:
     enabled: true
-    cert_file: /etc/superagent/certs/server.crt
-    key_file: /etc/superagent/certs/server.key
+    cert_file: /etc/helixagent/certs/server.crt
+    key_file: /etc/helixagent/certs/server.key
 
 database:
   host: localhost
   port: 5432
-  name: superagent_advanced
-  user: superagent
+  name: helixagent_advanced
+  user: helixagent
   password: ${DB_PASSWORD}
   ssl_mode: require
   max_connections: 100
@@ -175,7 +175,7 @@ message_queue:
   type: rabbitmq
   host: localhost
   port: 5672
-  user: superagent
+  user: helixagent
   password: ${RABBITMQ_PASSWORD}
   vhost: /
   ssl: false
@@ -264,7 +264,7 @@ monitoring:
         smtp_port: ${SMTP_PORT}
         smtp_user: ${SMTP_USER}
         smtp_password: ${SMTP_PASSWORD}
-        from_address: alerts@superagent.com
+        from_address: alerts@helixagent.com
         to_addresses: ["admin@company.com"]
       - type: slack
         enabled: true
@@ -371,7 +371,7 @@ logging:
   level: "info"
   format: "json"
   output: "file"
-  file: "/var/log/superagent/advanced/superagent.log"
+  file: "/var/log/helixagent/advanced/helixagent.log"
   max_size: 100MB
   max_backups: 10
   max_age: 30d
@@ -380,7 +380,7 @@ logging:
 EOF
 
 # Create environment file
-cat > /etc/superagent/advanced/.env << 'EOF'
+cat > /etc/helixagent/advanced/.env << 'EOF'
 # Database Configuration
 DB_PASSWORD=your_secure_database_password
 DB_HOST=localhost
@@ -411,13 +411,13 @@ SMTP_PASSWORD=your_email_password
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
 
 # TLS Certificates
-TLS_CERT_FILE=/etc/superagent/certs/server.crt
-TLS_KEY_FILE=/etc/superagent/certs/server.key
+TLS_CERT_FILE=/etc/helixagent/certs/server.crt
+TLS_KEY_FILE=/etc/helixagent/certs/server.key
 EOF
 
 # Set proper permissions
-chmod 600 /etc/superagent/advanced/.env
-chmod 644 /etc/superagent/advanced/config.yaml
+chmod 600 /etc/helixagent/advanced/.env
+chmod 644 /etc/helixagent/advanced/config.yaml
 ```
 
 ### 3. Database Setup
@@ -426,11 +426,11 @@ chmod 644 /etc/superagent/advanced/config.yaml
 ```bash
 # Create database and user
 sudo -u postgres psql << 'EOF'
-CREATE DATABASE superagent_advanced;
-CREATE USER superagent WITH ENCRYPTED PASSWORD 'your_secure_database_password';
-GRANT ALL PRIVILEGES ON DATABASE superagent_advanced TO superagent;
-ALTER DATABASE superagent_advanced OWNER TO superagent;
-\c superagent_advanced;
+CREATE DATABASE helixagent_advanced;
+CREATE USER helixagent WITH ENCRYPTED PASSWORD 'your_secure_database_password';
+GRANT ALL PRIVILEGES ON DATABASE helixagent_advanced TO helixagent;
+ALTER DATABASE helixagent_advanced OWNER TO helixagent;
+\c helixagent_advanced;
 
 -- Create advanced debate tables
 CREATE SCHEMA advanced;
@@ -557,15 +557,15 @@ CREATE TRIGGER update_llm_configurations_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Grant permissions
-GRANT USAGE ON SCHEMA advanced TO superagent;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA advanced TO superagent;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA advanced TO superagent;
+GRANT USAGE ON SCHEMA advanced TO helixagent;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA advanced TO helixagent;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA advanced TO helixagent;
 
 EOF
 
 # Create Redis configuration
-cat > /etc/redis/conf.d/superagent.conf << 'EOF'
-# Redis configuration for SuperAgent Advanced
+cat > /etc/redis/conf.d/helixagent.conf << 'EOF'
+# Redis configuration for HelixAgent Advanced
 maxmemory 2gb
 maxmemory-policy allkeys-lru
 save 900 1
@@ -578,8 +578,8 @@ appendfsync everysec
 EOF
 
 # Create RabbitMQ configuration
-cat > /etc/rabbitmq/conf.d/superagent.conf << 'EOF'
-# RabbitMQ configuration for SuperAgent Advanced
+cat > /etc/rabbitmq/conf.d/helixagent.conf << 'EOF'
+# RabbitMQ configuration for HelixAgent Advanced
 loopback_users.guest = false
 listeners.tcp.default = 5672
 management.tcp.port = 15672
@@ -591,18 +591,18 @@ EOF
 
 ```bash
 # Create certificate directory
-sudo mkdir -p /etc/superagent/certs
-sudo chmod 700 /etc/superagent/certs
+sudo mkdir -p /etc/helixagent/certs
+sudo chmod 700 /etc/helixagent/certs
 
 # Generate self-signed certificates (for development)
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout /etc/superagent/certs/server.key \
-  -out /etc/superagent/certs/server.crt \
-  -subj "/C=US/ST=State/L=City/O=Organization/CN=superagent.local"
+  -keyout /etc/helixagent/certs/server.key \
+  -out /etc/helixagent/certs/server.crt \
+  -subj "/C=US/ST=State/L=City/O=Organization/CN=helixagent.local"
 
 # Set proper permissions
-sudo chmod 600 /etc/superagent/certs/server.key
-sudo chmod 644 /etc/superagent/certs/server.crt
+sudo chmod 600 /etc/helixagent/certs/server.key
+sudo chmod 644 /etc/helixagent/certs/server.crt
 
 # For production, use Let's Encrypt or commercial certificates
 # sudo certbot certonly --standalone -d your-domain.com
@@ -626,9 +626,9 @@ sudo systemctl start rabbitmq-server
 sudo systemctl enable rabbitmq-server
 
 # Create RabbitMQ user
-sudo rabbitmqctl add_user superagent your_secure_rabbitmq_password
-sudo rabbitmqctl set_user_tags superagent administrator
-sudo rabbitmqctl set_permissions -p / superagent ".*" ".*" ".*"
+sudo rabbitmqctl add_user helixagent your_secure_rabbitmq_password
+sudo rabbitmqctl set_user_tags helixagent administrator
+sudo rabbitmqctl set_permissions -p / helixagent ".*" ".*" ".*"
 ```
 
 ### 2. Application Deployment
@@ -637,35 +637,35 @@ sudo rabbitmqctl set_permissions -p / superagent ".*" ".*" ".*"
 
 ```bash
 # Create systemd service file
-sudo tee /etc/systemd/system/superagent-advanced.service > /dev/null << 'EOF'
+sudo tee /etc/systemd/system/helixagent-advanced.service > /dev/null << 'EOF'
 [Unit]
-Description=SuperAgent Advanced AI Debate Configuration System
-Documentation=https://github.com/superagent/superagent
+Description=HelixAgent Advanced AI Debate Configuration System
+Documentation=https://github.com/helixagent/helixagent
 After=network.target postgresql.service redis-server.service rabbitmq-server.service
 Wants=postgresql.service redis-server.service rabbitmq-server.service
 
 [Service]
 Type=simple
-User=superagent
-Group=superagent
-WorkingDirectory=/opt/superagent/advanced
-ExecStart=/opt/superagent/advanced/superagent-advanced --config /etc/superagent/advanced/config.yaml
+User=helixagent
+Group=helixagent
+WorkingDirectory=/opt/helixagent/advanced
+ExecStart=/opt/helixagent/advanced/helixagent-advanced --config /etc/helixagent/advanced/config.yaml
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=mixed
 KillSignal=SIGTERM
 TimeoutStopSec=30
 
 # Environment
-Environment=SUPERAGENT_CONFIG_PATH=/etc/superagent/advanced
-Environment=SUPERAGENT_LOG_PATH=/var/log/superagent/advanced
-EnvironmentFile=/etc/superagent/advanced/.env
+Environment=HELIXAGENT_CONFIG_PATH=/etc/helixagent/advanced
+Environment=HELIXAGENT_LOG_PATH=/var/log/helixagent/advanced
+EnvironmentFile=/etc/helixagent/advanced/.env
 
 # Security
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/log/superagent/advanced /var/lib/superagent/advanced
+ReadWritePaths=/var/log/helixagent/advanced /var/lib/helixagent/advanced
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 # Resource limits
@@ -675,36 +675,36 @@ MemoryMax=4G
 CPUQuota=400%
 
 # Logging
-StandardOutput=append:/var/log/superagent/advanced/service.log
-StandardError=append:/var/log/superagent/advanced/error.log
-SyslogIdentifier=superagent-advanced
+StandardOutput=append:/var/log/helixagent/advanced/service.log
+StandardError=append:/var/log/helixagent/advanced/error.log
+SyslogIdentifier=helixagent-advanced
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
 # Create application user
-sudo useradd -r -s /bin/false -d /opt/superagent superagent
-sudo mkdir -p /opt/superagent/advanced
-sudo chown superagent:superagent /opt/superagent/advanced
+sudo useradd -r -s /bin/false -d /opt/helixagent helixagent
+sudo mkdir -p /opt/helixagent/advanced
+sudo chown helixagent:helixagent /opt/helixagent/advanced
 
 # Copy application binary
-sudo cp superagent-advanced /opt/superagent/advanced/
-sudo chmod +x /opt/superagent/advanced/superagent-advanced
-sudo chown superagent:superagent /opt/superagent/advanced/superagent-advanced
+sudo cp helixagent-advanced /opt/helixagent/advanced/
+sudo chmod +x /opt/helixagent/advanced/helixagent-advanced
+sudo chown helixagent:helixagent /opt/helixagent/advanced/helixagent-advanced
 
 # Create log directory
-sudo mkdir -p /var/log/superagent/advanced
-sudo chown superagent:superagent /var/log/superagent/advanced
+sudo mkdir -p /var/log/helixagent/advanced
+sudo chown helixagent:helixagent /var/log/helixagent/advanced
 
 # Create data directory
-sudo mkdir -p /var/lib/superagent/advanced
-sudo chown superagent:superagent /var/lib/superagent/advanced
+sudo mkdir -p /var/lib/helixagent/advanced
+sudo chown helixagent:helixagent /var/lib/helixagent/advanced
 
 # Enable and start service
 sudo systemctl daemon-reload
-sudo systemctl enable superagent-advanced
-sudo systemctl start superagent-advanced
+sudo systemctl enable helixagent-advanced
+sudo systemctl start helixagent-advanced
 ```
 
 #### Option B: Docker Deployment
@@ -717,32 +717,32 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -o superagent-advanced ./cmd/main.go
+RUN go build -o helixagent-advanced ./cmd/main.go
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /root/
 
 # Copy binary
-COPY --from=builder /app/superagent-advanced .
+COPY --from=builder /app/helixagent-advanced .
 
 # Copy configuration
-COPY --from=builder /app/configs /etc/superagent/advanced
+COPY --from=builder /app/configs /etc/helixagent/advanced
 
 # Create user
-RUN addgroup -g 1000 -S superagent && \
-    adduser -u 1000 -S superagent -G superagent
+RUN addgroup -g 1000 -S helixagent && \
+    adduser -u 1000 -S helixagent -G helixagent
 
 # Create directories
-RUN mkdir -p /var/log/superagent/advanced /var/lib/superagent/advanced && \
-    chown -R superagent:superagent /var/log/superagent /var/lib/superagent
+RUN mkdir -p /var/log/helixagent/advanced /var/lib/helixagent/advanced && \
+    chown -R helixagent:helixagent /var/log/helixagent /var/lib/helixagent
 
-USER superagent
+USER helixagent
 
 EXPOSE 8080 8443
 
-ENTRYPOINT ["./superagent-advanced"]
-CMD ["--config", "/etc/superagent/advanced/config.yaml"]
+ENTRYPOINT ["./helixagent-advanced"]
+CMD ["--config", "/etc/helixagent/advanced/config.yaml"]
 ```
 
 ```yaml
@@ -752,10 +752,10 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: superagent-postgres
+    container_name: helixagent-postgres
     environment:
-      POSTGRES_DB: superagent_advanced
-      POSTGRES_USER: superagent
+      POSTGRES_DB: helixagent_advanced
+      POSTGRES_USER: helixagent
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -763,24 +763,24 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - superagent-network
+      - helixagent-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U superagent"]
+      test: ["CMD-SHELL", "pg_isready -U helixagent"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: superagent-redis
-    command: redis-server /etc/redis/conf.d/superagent.conf
+    container_name: helixagent-redis
+    command: redis-server /etc/redis/conf.d/helixagent.conf
     volumes:
-      - ./redis.conf:/etc/redis/conf.d/superagent.conf
+      - ./redis.conf:/etc/redis/conf.d/helixagent.conf
       - redis_data:/data
     ports:
       - "6379:6379"
     networks:
-      - superagent-network
+      - helixagent-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -789,27 +789,27 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.12-management-alpine
-    container_name: superagent-rabbitmq
+    container_name: helixagent-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: superagent
+      RABBITMQ_DEFAULT_USER: helixagent
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./rabbitmq.conf:/etc/rabbitmq/conf.d/superagent.conf
+      - ./rabbitmq.conf:/etc/rabbitmq/conf.d/helixagent.conf
     ports:
       - "5672:5672"
       - "15672:15672"
     networks:
-      - superagent-network
+      - helixagent-network
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
       timeout: 10s
       retries: 5
 
-  superagent:
+  helixagent:
     build: .
-    container_name: superagent-advanced
+    container_name: helixagent-advanced
     depends_on:
       postgres:
         condition: service_healthy
@@ -818,7 +818,7 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      - SUPERAGENT_CONFIG_PATH=/etc/superagent/advanced
+      - HELIXAGENT_CONFIG_PATH=/etc/helixagent/advanced
       - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
@@ -826,15 +826,15 @@ services:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
-      - ./config.yaml:/etc/superagent/advanced/config.yaml:ro
-      - ./certs:/etc/superagent/certs:ro
-      - superagent_logs:/var/log/superagent/advanced
-      - superagent_data:/var/lib/superagent/advanced
+      - ./config.yaml:/etc/helixagent/advanced/config.yaml:ro
+      - ./certs:/etc/helixagent/certs:ro
+      - helixagent_logs:/var/log/helixagent/advanced
+      - helixagent_data:/var/lib/helixagent/advanced
     ports:
       - "8080:8080"
       - "8443:8443"
     networks:
-      - superagent-network
+      - helixagent-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -847,11 +847,11 @@ volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
-  superagent_logs:
-  superagent_data:
+  helixagent_logs:
+  helixagent_data:
 
 networks:
-  superagent-network:
+  helixagent-network:
     driver: bridge
     ipam:
       config:
@@ -865,9 +865,9 @@ networks:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: superagent-advanced
+  name: helixagent-advanced
   labels:
-    name: superagent-advanced
+    name: helixagent-advanced
 ```
 
 ```yaml
@@ -875,8 +875,8 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: superagent-config
-  namespace: superagent-advanced
+  name: helixagent-config
+  namespace: helixagent-advanced
 data:
   config.yaml: |
     # Main configuration (same as above)
@@ -918,7 +918,7 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'superagent-advanced'
+  - job_name: 'helixagent-advanced'
     static_configs:
       - targets: ['localhost:8080']
     metrics_path: '/metrics'
@@ -950,11 +950,11 @@ sudo ufw enable
 # Configure fail2ban
 sudo apt install fail2ban
 sudo tee /etc/fail2ban/jail.local > /dev/null << 'EOF'
-[superagent]
+[helixagent]
 enabled = true
 port = 8080,8443
-filter = superagent
-logpath = /var/log/superagent/advanced/error.log
+filter = helixagent
+logpath = /var/log/helixagent/advanced/error.log
 maxretry = 5
 bantime = 3600
 findtime = 600
@@ -987,10 +987,10 @@ EOF
 
 ```bash
 # Check service status
-sudo systemctl status superagent-advanced
+sudo systemctl status helixagent-advanced
 
 # Check logs
-sudo journalctl -u superagent-advanced -f
+sudo journalctl -u helixagent-advanced -f
 
 # Test health endpoint
 curl -f http://localhost:8080/health
@@ -1029,10 +1029,10 @@ ab -n 100 -c 5 -T 'application/json' -H 'Authorization: Bearer YOUR_API_KEY' \
 #### 1. Service Won't Start
 ```bash
 # Check logs
-sudo journalctl -u superagent-advanced -n 50
+sudo journalctl -u helixagent-advanced -n 50
 
 # Check configuration
-sudo -u superagent /opt/superagent/advanced/superagent-advanced --config /etc/superagent/advanced/config.yaml --validate
+sudo -u helixagent /opt/helixagent/advanced/helixagent-advanced --config /etc/helixagent/advanced/config.yaml --validate
 
 # Check dependencies
 sudo systemctl status postgresql redis-server rabbitmq-server
@@ -1041,7 +1041,7 @@ sudo systemctl status postgresql redis-server rabbitmq-server
 #### 2. Database Connection Issues
 ```bash
 # Test database connection
-sudo -u postgres psql -h localhost -U superagent -d superagent_advanced -c "SELECT 1;"
+sudo -u postgres psql -h localhost -U helixagent -d helixagent_advanced -c "SELECT 1;"
 
 # Check PostgreSQL logs
 sudo tail -f /var/log/postgresql/postgresql-*.log
@@ -1050,7 +1050,7 @@ sudo tail -f /var/log/postgresql/postgresql-*.log
 #### 3. Performance Issues
 ```bash
 # Check system resources
-top -p $(pgrep superagent-advanced)
+top -p $(pgrep helixagent-advanced)
 iostat -x 1
 free -h
 
@@ -1061,15 +1061,15 @@ curl http://localhost:8080/metrics | grep -E "(cpu|memory|goroutine)"
 ## 📚 Additional Resources
 
 ### Documentation Links
-- [API Documentation](https://docs.superagent.com/api)
-- [Configuration Reference](https://docs.superagent.com/configuration)
-- [Security Guide](https://docs.superagent.com/security)
-- [Monitoring Guide](https://docs.superagent.com/monitoring)
+- [API Documentation](https://docs.helixagent.com/api)
+- [Configuration Reference](https://docs.helixagent.com/configuration)
+- [Security Guide](https://docs.helixagent.com/security)
+- [Monitoring Guide](https://docs.helixagent.com/monitoring)
 
 ### Support Contacts
-- Technical Support: support@superagent.com
-- Security Issues: security@superagent.com
-- General Inquiries: info@superagent.com
+- Technical Support: support@helixagent.com
+- Security Issues: security@helixagent.com
+- General Inquiries: info@helixagent.com
 
 ---
 

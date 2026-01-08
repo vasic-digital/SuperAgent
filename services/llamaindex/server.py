@@ -14,10 +14,10 @@ import httpx
 import numpy as np
 
 # Configuration
-SUPERAGENT_URL = os.getenv("SUPERAGENT_URL", "http://localhost:8080")
+HELIXAGENT_URL = os.getenv("HELIXAGENT_URL", "http://localhost:8080")
 COGNEE_URL = os.getenv("COGNEE_URL", "http://localhost:8000")
-EMBEDDING_ENDPOINT = os.getenv("EMBEDDING_ENDPOINT", f"{SUPERAGENT_URL}/v1/embeddings")
-LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", f"{SUPERAGENT_URL}/v1/chat/completions")
+EMBEDDING_ENDPOINT = os.getenv("EMBEDDING_ENDPOINT", f"{HELIXAGENT_URL}/v1/embeddings")
+LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", f"{HELIXAGENT_URL}/v1/chat/completions")
 
 
 class ServiceClients:
@@ -27,7 +27,7 @@ class ServiceClients:
         self.client = httpx.AsyncClient(timeout=120.0)
 
     async def get_embedding(self, text: str) -> list[float]:
-        """Get embedding from SuperAgent."""
+        """Get embedding from HelixAgent."""
         try:
             response = await self.client.post(
                 EMBEDDING_ENDPOINT,
@@ -40,7 +40,7 @@ class ServiceClients:
             raise HTTPException(status_code=500, detail=f"Embedding failed: {e}")
 
     async def generate(self, prompt: str, temperature: float = 0.7) -> str:
-        """Generate response from SuperAgent."""
+        """Generate response from HelixAgent."""
         try:
             response = await self.client.post(
                 LLM_ENDPOINT,
@@ -155,7 +155,7 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     cognee_available: bool
-    superagent_available: bool
+    helixagent_available: bool
 
 
 # Utility functions
@@ -190,7 +190,7 @@ async def rerank_documents(query: str, documents: list[dict], query_embedding: l
 async def health_check():
     """Health check endpoint."""
     cognee_ok = False
-    superagent_ok = False
+    helixagent_ok = False
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -201,8 +201,8 @@ async def health_check():
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{SUPERAGENT_URL}/health")
-            superagent_ok = resp.status_code == 200
+            resp = await client.get(f"{HELIXAGENT_URL}/health")
+            helixagent_ok = resp.status_code == 200
     except Exception:
         pass
 
@@ -210,7 +210,7 @@ async def health_check():
         status="healthy",
         version="1.0.0",
         cognee_available=cognee_ok,
-        superagent_available=superagent_ok,
+        helixagent_available=helixagent_ok,
     )
 
 

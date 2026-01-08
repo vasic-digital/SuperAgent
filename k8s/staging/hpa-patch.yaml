@@ -1,7 +1,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: superagent
+  name: helixagent
 spec:
   minReplicas: 1
   maxReplicas: 3

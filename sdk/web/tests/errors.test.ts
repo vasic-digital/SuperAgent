@@ -3,7 +3,7 @@
  */
 
 import {
-  SuperAgentError,
+  HelixAgentError,
   AuthenticationError,
   RateLimitError,
   APIError,
@@ -14,15 +14,15 @@ import {
   DebateError,
 } from '../src/errors';
 
-describe('SuperAgentError', () => {
+describe('HelixAgentError', () => {
   it('should create error with message', () => {
-    const error = new SuperAgentError('Test error');
+    const error = new HelixAgentError('Test error');
     expect(error.message).toBe('Test error');
-    expect(error.name).toBe('SuperAgentError');
+    expect(error.name).toBe('HelixAgentError');
   });
 
   it('should be instance of Error', () => {
-    const error = new SuperAgentError('Test');
+    const error = new HelixAgentError('Test');
     expect(error).toBeInstanceOf(Error);
   });
 });
@@ -39,9 +39,9 @@ describe('AuthenticationError', () => {
     expect(error.message).toBe('Invalid token');
   });
 
-  it('should extend SuperAgentError', () => {
+  it('should extend HelixAgentError', () => {
     const error = new AuthenticationError();
-    expect(error).toBeInstanceOf(SuperAgentError);
+    expect(error).toBeInstanceOf(HelixAgentError);
   });
 });
 
@@ -59,9 +59,9 @@ describe('RateLimitError', () => {
     expect(error.retryAfter).toBe(60);
   });
 
-  it('should extend SuperAgentError', () => {
+  it('should extend HelixAgentError', () => {
     const error = new RateLimitError();
-    expect(error).toBeInstanceOf(SuperAgentError);
+    expect(error).toBeInstanceOf(HelixAgentError);
   });
 });
 
@@ -84,9 +84,9 @@ describe('APIError', () => {
     expect(error.code).toBe('model_not_found');
   });
 
-  it('should extend SuperAgentError', () => {
+  it('should extend HelixAgentError', () => {
     const error = new APIError('Error', 500);
-    expect(error).toBeInstanceOf(SuperAgentError);
+    expect(error).toBeInstanceOf(HelixAgentError);
   });
 });
 
@@ -102,9 +102,9 @@ describe('ValidationError', () => {
     expect(error.message).toBe('Invalid input');
   });
 
-  it('should extend SuperAgentError', () => {
+  it('should extend HelixAgentError', () => {
     const error = new ValidationError();
-    expect(error).toBeInstanceOf(SuperAgentError);
+    expect(error).toBeInstanceOf(HelixAgentError);
   });
 });
 
@@ -120,9 +120,9 @@ describe('NetworkError', () => {
     expect(error.message).toBe('Connection refused');
   });
 
-  it('should extend SuperAgentError', () => {
+  it('should extend HelixAgentError', () => {
     const error = new NetworkError();
-    expect(error).toBeInstanceOf(SuperAgentError);
+    expect(error).toBeInstanceOf(HelixAgentError);
   });
 });
 
@@ -138,9 +138,9 @@ describe('TimeoutError', () => {
     expect(error.message).toBe('Request timed out after 30s');
   });
 
-  it('should extend SuperAgentError', () => {
+  it('should extend HelixAgentError', () => {
     const error = new TimeoutError();
-    expect(error).toBeInstanceOf(SuperAgentError);
+    expect(error).toBeInstanceOf(HelixAgentError);
   });
 });
 
@@ -152,9 +152,9 @@ describe('ProviderError', () => {
     expect(error.name).toBe('ProviderError');
   });
 
-  it('should extend SuperAgentError', () => {
+  it('should extend HelixAgentError', () => {
     const error = new ProviderError('Error', 'test');
-    expect(error).toBeInstanceOf(SuperAgentError);
+    expect(error).toBeInstanceOf(HelixAgentError);
   });
 });
 
@@ -166,8 +166,8 @@ describe('DebateError', () => {
     expect(error.name).toBe('DebateError');
   });
 
-  it('should extend SuperAgentError', () => {
+  it('should extend HelixAgentError', () => {
     const error = new DebateError('Error', 'test');
-    expect(error).toBeInstanceOf(SuperAgentError);
+    expect(error).toBeInstanceOf(HelixAgentError);
   });
 });

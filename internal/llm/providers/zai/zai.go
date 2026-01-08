@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // RetryConfig defines retry behavior for API calls

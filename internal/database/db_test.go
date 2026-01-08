@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/config"
+	"github.com/helixagent/helixagent/internal/config"
 )
 
 func TestNewPostgresDB(t *testing.T) {
@@ -501,39 +501,39 @@ func TestPgxRowScan(t *testing.T) {
 func TestGetEnvComprehensive(t *testing.T) {
 	t.Run("ReturnsDefaultWhenNotSet", func(t *testing.T) {
 		// Use a unique env var name that definitely doesn't exist
-		result := getEnv("SUPERAGENT_TEST_DEFINITELY_NOT_SET_123456", "mydefault")
+		result := getEnv("HELIXAGENT_TEST_DEFINITELY_NOT_SET_123456", "mydefault")
 		assert.Equal(t, "mydefault", result)
 	})
 
 	t.Run("ReturnsValueWhenSet", func(t *testing.T) {
-		os.Setenv("SUPERAGENT_TEST_VAR", "testvalue")
-		defer os.Unsetenv("SUPERAGENT_TEST_VAR")
+		os.Setenv("HELIXAGENT_TEST_VAR", "testvalue")
+		defer os.Unsetenv("HELIXAGENT_TEST_VAR")
 
-		result := getEnv("SUPERAGENT_TEST_VAR", "default")
+		result := getEnv("HELIXAGENT_TEST_VAR", "default")
 		assert.Equal(t, "testvalue", result)
 	})
 
 	t.Run("ReturnsDefaultForEmptyString", func(t *testing.T) {
-		os.Setenv("SUPERAGENT_TEST_EMPTY", "")
-		defer os.Unsetenv("SUPERAGENT_TEST_EMPTY")
+		os.Setenv("HELIXAGENT_TEST_EMPTY", "")
+		defer os.Unsetenv("HELIXAGENT_TEST_EMPTY")
 
-		result := getEnv("SUPERAGENT_TEST_EMPTY", "fallback")
+		result := getEnv("HELIXAGENT_TEST_EMPTY", "fallback")
 		assert.Equal(t, "fallback", result)
 	})
 
 	t.Run("ReturnsValueWithSpaces", func(t *testing.T) {
-		os.Setenv("SUPERAGENT_TEST_SPACES", "  value with spaces  ")
-		defer os.Unsetenv("SUPERAGENT_TEST_SPACES")
+		os.Setenv("HELIXAGENT_TEST_SPACES", "  value with spaces  ")
+		defer os.Unsetenv("HELIXAGENT_TEST_SPACES")
 
-		result := getEnv("SUPERAGENT_TEST_SPACES", "default")
+		result := getEnv("HELIXAGENT_TEST_SPACES", "default")
 		assert.Equal(t, "  value with spaces  ", result)
 	})
 
 	t.Run("HandlesSpecialCharacters", func(t *testing.T) {
-		os.Setenv("SUPERAGENT_TEST_SPECIAL", "user@host:password!#$%")
-		defer os.Unsetenv("SUPERAGENT_TEST_SPECIAL")
+		os.Setenv("HELIXAGENT_TEST_SPECIAL", "user@host:password!#$%")
+		defer os.Unsetenv("HELIXAGENT_TEST_SPECIAL")
 
-		result := getEnv("SUPERAGENT_TEST_SPECIAL", "default")
+		result := getEnv("HELIXAGENT_TEST_SPECIAL", "default")
 		assert.Equal(t, "user@host:password!#$%", result)
 	})
 
@@ -1580,35 +1580,35 @@ func TestEmptyMigrations(t *testing.T) {
 func TestGetEnvEdgeCases(t *testing.T) {
 	t.Run("VeryLongValue", func(t *testing.T) {
 		longValue := strings.Repeat("a", 10000)
-		os.Setenv("SUPERAGENT_TEST_LONG", longValue)
-		defer os.Unsetenv("SUPERAGENT_TEST_LONG")
+		os.Setenv("HELIXAGENT_TEST_LONG", longValue)
+		defer os.Unsetenv("HELIXAGENT_TEST_LONG")
 
-		result := getEnv("SUPERAGENT_TEST_LONG", "default")
+		result := getEnv("HELIXAGENT_TEST_LONG", "default")
 		assert.Equal(t, longValue, result)
 		assert.Len(t, result, 10000)
 	})
 
 	t.Run("UnicodeValue", func(t *testing.T) {
-		os.Setenv("SUPERAGENT_TEST_UNICODE", "值中文日本語한국어")
-		defer os.Unsetenv("SUPERAGENT_TEST_UNICODE")
+		os.Setenv("HELIXAGENT_TEST_UNICODE", "值中文日本語한국어")
+		defer os.Unsetenv("HELIXAGENT_TEST_UNICODE")
 
-		result := getEnv("SUPERAGENT_TEST_UNICODE", "default")
+		result := getEnv("HELIXAGENT_TEST_UNICODE", "default")
 		assert.Equal(t, "值中文日本語한국어", result)
 	})
 
 	t.Run("NewlineInValue", func(t *testing.T) {
-		os.Setenv("SUPERAGENT_TEST_NEWLINE", "line1\nline2")
-		defer os.Unsetenv("SUPERAGENT_TEST_NEWLINE")
+		os.Setenv("HELIXAGENT_TEST_NEWLINE", "line1\nline2")
+		defer os.Unsetenv("HELIXAGENT_TEST_NEWLINE")
 
-		result := getEnv("SUPERAGENT_TEST_NEWLINE", "default")
+		result := getEnv("HELIXAGENT_TEST_NEWLINE", "default")
 		assert.Equal(t, "line1\nline2", result)
 	})
 
 	t.Run("TabInValue", func(t *testing.T) {
-		os.Setenv("SUPERAGENT_TEST_TAB", "val1\tval2")
-		defer os.Unsetenv("SUPERAGENT_TEST_TAB")
+		os.Setenv("HELIXAGENT_TEST_TAB", "val1\tval2")
+		defer os.Unsetenv("HELIXAGENT_TEST_TAB")
 
-		result := getEnv("SUPERAGENT_TEST_TAB", "default")
+		result := getEnv("HELIXAGENT_TEST_TAB", "default")
 		assert.Equal(t, "val1\tval2", result)
 	})
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/verifier"
+	"github.com/helixagent/helixagent/internal/verifier"
 )
 
 // LLMsVerifierScoreAdapter implements LLMsVerifierScoreProvider interface

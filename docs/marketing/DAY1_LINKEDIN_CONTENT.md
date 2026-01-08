@@ -1,4 +1,4 @@
-# 💼 SuperAgent Day 1 Launch Content - LinkedIn
+# 💼 HelixAgent Day 1 Launch Content - LinkedIn
 
 ## Primary Company Page Post
 
@@ -7,9 +7,9 @@
 **Tone**: Professional, authoritative, forward-thinking
 
 ```
-🎉 Excited to announce the launch of SuperAgent - an open-source platform that's changing how we approach AI infrastructure.
+🎉 Excited to announce the launch of HelixAgent - an open-source platform that's changing how we approach AI infrastructure.
 
-As someone who's worked with multiple AI providers, I know the pain of vendor lock-in, unpredictable costs, and reliability issues. That's why we built SuperAgent.
+As someone who's worked with multiple AI providers, I know the pain of vendor lock-in, unpredictable costs, and reliability issues. That's why we built HelixAgent.
 
 What makes it different?
 • Orchestrates multiple LLM providers intelligently
@@ -18,7 +18,7 @@ What makes it different?
 • Provides enterprise-grade monitoring and analytics
 • Open source and completely self-hosted
 
-Whether you're building a startup or scaling enterprise AI applications, SuperAgent gives you the flexibility and control you need.
+Whether you're building a startup or scaling enterprise AI applications, HelixAgent gives you the flexibility and control you need.
 
 Ready to break free from single-provider limitations? Check out the GitHub repository and let me know what you think!
 
@@ -44,7 +44,7 @@ The result? Companies are stuck between paying inflated prices or rebuilding the
 
 That's why today, I'm excited to share what we've been building.
 
-SuperAgent is an open-source platform that orchestrates multiple AI providers with intelligent routing. Think of it as the "load balancer" for AI models, but smarter.
+HelixAgent is an open-source platform that orchestrates multiple AI providers with intelligent routing. Think of it as the "load balancer" for AI models, but smarter.
 
 Here's what makes it powerful:
 
@@ -233,7 +233,7 @@ Building flexible AI infrastructure isn't just smart engineering—it's smart bu
 
 Sound familiar? You're not alone.
 
-This is why we built SuperAgent with multi-provider orchestration. You maintain control while getting the best capabilities from each provider.
+This is why we built HelixAgent with multi-provider orchestration. You maintain control while getting the best capabilities from each provider.
 
 Infrastructure should work for you, not against you.
 
@@ -263,7 +263,7 @@ This is enterprise-grade infrastructure built for production workloads.
 ### Evening (5:00 PM EST)
 **Community Appreciation Post**
 ```
-🙏 Grateful for the incredible response to today's SuperAgent launch!
+🙏 Grateful for the incredible response to today's HelixAgent launch!
 
 The LinkedIn community never fails to impress with thoughtful questions and constructive feedback. Your engagement drives us to build better solutions.
 
@@ -273,7 +273,7 @@ Special thanks to everyone who:
 - Offered encouragement and support
 - Connected us with relevant teams
 
-This is exactly why we built SuperAgent as an open-source project. The community's insights make everyone stronger.
+This is exactly why we built HelixAgent as an open-source project. The community's insights make everyone stronger.
 
 Looking forward to continuing these important conversations about the future of AI infrastructure. More technical content coming tomorrow!
 
@@ -287,7 +287,7 @@ Looking forward to continuing these important conversations about the future of 
 2. **"Multi-Provider vs Single Provider"** - Comparison chart
 3. **"AI Infrastructure Evolution"** - Timeline and trends
 4. **"Enterprise AI Challenges"** - Problem identification
-5. **"SuperAgent Solution Framework"** - Benefits overview
+5. **"HelixAgent Solution Framework"** - Benefits overview
 
 **Document Uploads:**
 1. **White Paper**: "Multi-Provider AI Orchestration Strategy"

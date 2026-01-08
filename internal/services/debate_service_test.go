@@ -10,8 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/llm"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/llm"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // debateMockLLMProvider implements llm.LLMProvider for testing

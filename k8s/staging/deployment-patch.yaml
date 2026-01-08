@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: superagent
+  name: helixagent
 spec:
   replicas: 1
   template:
     spec:
       containers:
-        - name: superagent
+        - name: helixagent
           env:
             - name: GIN_MODE
               value: "debug"

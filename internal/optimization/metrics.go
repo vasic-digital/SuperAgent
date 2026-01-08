@@ -64,31 +64,31 @@ func newMetrics() *Metrics {
 	m := &Metrics{
 		// Cache metrics
 		CacheHits: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "cache_hits_total",
 			Help:      "Total number of semantic cache hits",
 		}),
 		CacheMisses: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "cache_misses_total",
 			Help:      "Total number of semantic cache misses",
 		}),
 		CacheSize: promauto.NewGauge(prometheus.GaugeOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "cache_size",
 			Help:      "Current number of entries in the semantic cache",
 		}),
 		CacheEvictions: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "cache_evictions_total",
 			Help:      "Total number of cache evictions",
 		}),
 		CacheLookupDuration: promauto.NewHistogram(prometheus.HistogramOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "cache_lookup_duration_seconds",
 			Help:      "Duration of cache lookups in seconds",
@@ -97,25 +97,25 @@ func newMetrics() *Metrics {
 
 		// Validation metrics
 		ValidationAttempts: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "validation_attempts_total",
 			Help:      "Total number of structured output validation attempts",
 		}),
 		ValidationSuccesses: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "validation_successes_total",
 			Help:      "Total number of successful validations",
 		}),
 		ValidationFailures: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "validation_failures_total",
 			Help:      "Total number of failed validations",
 		}),
 		ValidationDuration: promauto.NewHistogram(prometheus.HistogramOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "validation_duration_seconds",
 			Help:      "Duration of validation in seconds",
@@ -124,38 +124,38 @@ func newMetrics() *Metrics {
 
 		// Streaming metrics
 		StreamsStarted: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "streams_started_total",
 			Help:      "Total number of enhanced streams started",
 		}),
 		StreamsCompleted: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "streams_completed_total",
 			Help:      "Total number of enhanced streams completed",
 		}),
 		StreamErrors: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "stream_errors_total",
 			Help:      "Total number of stream errors",
 		}),
 		TokensStreamed: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "tokens_streamed_total",
 			Help:      "Total number of tokens streamed",
 		}),
 		StreamDuration: promauto.NewHistogram(prometheus.HistogramOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "stream_duration_seconds",
 			Help:      "Duration of streams in seconds",
 			Buckets:   prometheus.ExponentialBuckets(0.1, 2, 10), // 100ms to ~100s
 		}),
 		TokensPerSecond: promauto.NewHistogram(prometheus.HistogramOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "tokens_per_second",
 			Help:      "Token throughput per stream",
@@ -164,26 +164,26 @@ func newMetrics() *Metrics {
 
 		// External service metrics
 		ServiceRequests: promauto.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "service_requests_total",
 			Help:      "Total number of requests to external optimization services",
 		}, []string{"service", "method"}),
 		ServiceErrors: promauto.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "service_errors_total",
 			Help:      "Total number of errors from external optimization services",
 		}, []string{"service", "error_type"}),
 		ServiceLatency: promauto.NewHistogramVec(prometheus.HistogramOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "service_latency_seconds",
 			Help:      "Latency of external service calls in seconds",
 			Buckets:   prometheus.ExponentialBuckets(0.01, 2, 10), // 10ms to ~10s
 		}, []string{"service", "method"}),
 		ServiceAvailable: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "service_available",
 			Help:      "Whether an external service is available (1=yes, 0=no)",
@@ -191,38 +191,38 @@ func newMetrics() *Metrics {
 
 		// Pipeline metrics
 		RequestsOptimized: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "requests_optimized_total",
 			Help:      "Total number of requests optimized",
 		}),
 		ResponsesOptimized: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "responses_optimized_total",
 			Help:      "Total number of responses optimized",
 		}),
 		OptimizationDuration: promauto.NewHistogram(prometheus.HistogramOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "optimization_duration_seconds",
 			Help:      "Duration of request/response optimization in seconds",
 			Buckets:   prometheus.ExponentialBuckets(0.001, 2, 12),
 		}),
 		ContextRetrieved: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "context_retrieved_total",
 			Help:      "Total number of times context was retrieved from documents",
 		}),
 		TasksDecomposed: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "tasks_decomposed_total",
 			Help:      "Total number of complex tasks decomposed",
 		}),
 		PrefixesWarmed: promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: "superagent",
+			Namespace: "helixagent",
 			Subsystem: "optimization",
 			Name:      "prefixes_warmed_total",
 			Help:      "Total number of prefixes warmed in cache",

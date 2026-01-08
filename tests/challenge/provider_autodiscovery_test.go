@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // TestProviderAutoDiscovery tests the provider auto-discovery system
@@ -231,7 +231,7 @@ func testBackwardCompatibility(t *testing.T) {
 }
 
 // TestProviderAutoDiscoveryAPI tests the HTTP endpoints for auto-discovery
-// This test requires a running SuperAgent server
+// This test requires a running HelixAgent server
 //
 // Run with: go test -v ./tests/challenge -run TestProviderAutoDiscoveryAPI -timeout 300s
 func TestProviderAutoDiscoveryAPI(t *testing.T) {
@@ -239,7 +239,7 @@ func TestProviderAutoDiscoveryAPI(t *testing.T) {
 
 	// Skip if server is not running
 	if !serverHealthy(baseURL) {
-		t.Skip("SuperAgent server not running at " + baseURL)
+		t.Skip("HelixAgent server not running at " + baseURL)
 	}
 
 	t.Run("GetDiscoverySummary", func(t *testing.T) {
@@ -400,7 +400,7 @@ func TestProviderAutoDiscoveryIntegration(t *testing.T) {
 
 	// Skip if server is not running
 	if !serverHealthy(baseURL) {
-		t.Skip("SuperAgent server not running at " + baseURL)
+		t.Skip("HelixAgent server not running at " + baseURL)
 	}
 
 	client := &http.Client{Timeout: 120 * time.Second}
@@ -444,7 +444,7 @@ func TestProviderAutoDiscoveryIntegration(t *testing.T) {
 
 	t.Log("Step 3: Testing ensemble with auto-discovered providers...")
 	ensembleReq := map[string]interface{}{
-		"model": "superagent-debate",
+		"model": "helixagent-debate",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Say 'Auto-discovery integration test successful'"},
 		},

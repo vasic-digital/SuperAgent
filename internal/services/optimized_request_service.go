@@ -6,10 +6,10 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/optimization"
-	"github.com/superagent/superagent/internal/optimization/outlines"
-	"github.com/superagent/superagent/internal/optimization/streaming"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/optimization"
+	"github.com/helixagent/helixagent/internal/optimization/outlines"
+	"github.com/helixagent/helixagent/internal/optimization/streaming"
 )
 
 // OptimizedRequestService wraps RequestService with optimization capabilities.

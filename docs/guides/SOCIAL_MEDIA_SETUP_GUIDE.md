@@ -1,7 +1,7 @@
-# 📱 SuperAgent Social Media Setup Guide
+# 📱 HelixAgent Social Media Setup Guide
 
 ## Overview
-Complete guide for setting up and optimizing social media accounts for SuperAgent marketing launch.
+Complete guide for setting up and optimizing social media accounts for HelixAgent marketing launch.
 
 ## 🎯 PLATFORM STRATEGY
 
@@ -23,27 +23,27 @@ Complete guide for setting up and optimizing social media accounts for SuperAgen
 
 ### Account Creation
 **Handle Options** (in order of preference):
-1. @SuperAgentAI
-2. @SuperAgentHQ
-3. @SuperAgentDev
-4. @SuperAgentPlatform
+1. @HelixAgentAI
+2. @HelixAgentHQ
+3. @HelixAgentDev
+4. @HelixAgentPlatform
 
 **Profile Setup:**
-- **Name**: SuperAgent
+- **Name**: HelixAgent
 - **Bio**: "Open-source multi-provider AI orchestration platform. Built for developers who need reliable, cost-effective AI infrastructure. 🚀"
 - **Location**: "Global" or your city
-- **Website**: https://superagent.ai (or GitHub Pages URL)
+- **Website**: https://helixagent.ai (or GitHub Pages URL)
 - **Birth Date**: Project launch date
 
 **Profile Image:**
-- Use SuperAgent logo (circle format)
+- Use HelixAgent logo (circle format)
 - 400x400px minimum
 - High contrast for visibility
 - Consistent across all platforms
 
 **Header Image:**
 - 1500x500px dimensions
-- SuperAgent branding with tagline
+- HelixAgent branding with tagline
 - Include key features visually
 - Professional, clean design
 
@@ -88,16 +88,16 @@ Complete guide for setting up and optimizing social media accounts for SuperAgen
 ## 💼 LINKEDIN SETUP
 
 ### Company Page Creation
-**Page Name**: "SuperAgent"
+**Page Name**: "HelixAgent"
 **Tagline**: "AI-Powered Multi-Provider LLM Orchestration Platform"
-**Website**: https://superagent.ai
+**Website**: https://helixagent.ai
 **Industry**: "Software Development"
 **Company Size**: "11-50 employees" (or appropriate)
 **Headquarters**: Your location
 
 **About Section:**
 ```
-SuperAgent is an open-source platform that revolutionizes how organizations approach AI infrastructure. By orchestrating multiple LLM providers with intelligent routing and cost optimization, we help businesses build reliable, scalable AI applications without vendor lock-in.
+HelixAgent is an open-source platform that revolutionizes how organizations approach AI infrastructure. By orchestrating multiple LLM providers with intelligent routing and cost optimization, we help businesses build reliable, scalable AI applications without vendor lock-in.
 
 Our mission is to make enterprise-grade AI orchestration accessible to organizations of all sizes, from startups to Fortune 500 companies.
 
@@ -108,7 +108,7 @@ Key Capabilities:
 • Enterprise monitoring and analytics
 • Open source and self-hosted
 
-Founded by developers who understand the challenges of production AI systems, SuperAgent is built for reliability, performance, and developer productivity.
+Founded by developers who understand the challenges of production AI systems, HelixAgent is built for reliability, performance, and developer productivity.
 ```
 
 **Logo & Branding:**
@@ -153,11 +153,11 @@ Founded by developers who understand the challenges of production AI systems, Su
 ## 📺 YOUTUBE SETUP
 
 ### Channel Creation
-**Channel Name**: "SuperAgent AI"
-**Handle**: @SuperAgentAI
+**Channel Name**: "HelixAgent AI"
+**Handle**: @HelixAgentAI
 **Description**:
 ```
-SuperAgent is an open-source multi-provider AI orchestration platform built for developers and enterprises. 
+HelixAgent is an open-source multi-provider AI orchestration platform built for developers and enterprises. 
 
 Subscribe for:
 • Tutorials and how-to guides
@@ -168,13 +168,13 @@ Subscribe for:
 
 Whether you're building startup prototypes or enterprise AI systems, learn how to orchestrate multiple AI providers effectively.
 
-🔗 GitHub: https://github.com/superagent/superagent
-🌐 Website: https://superagent.ai
-📧 Contact: hello@superagent.ai
+🔗 GitHub: https://github.com/helixagent/helixagent
+🌐 Website: https://helixagent.ai
+📧 Contact: hello@helixagent.ai
 ```
 
 **Channel Art:**
-- **Profile Picture**: SuperAgent logo (800x800px)
+- **Profile Picture**: HelixAgent logo (800x800px)
 - **Banner**: 2560x1440px with branding and tagline
 - **Video Watermark**: Subtle logo in corner
 

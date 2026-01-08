@@ -1,4 +1,4 @@
-# SuperAgent Remediation Tracking Plan
+# HelixAgent Remediation Tracking Plan
 
 **Last Updated**: December 31, 2025
 **Status**: NOT STARTED
@@ -327,7 +327,7 @@ This document tracks all remediation tasks. Each task has:
 #### Task 2.2.5: Implement Provider CRUD Endpoints
 - [ ] **Status**: `TODO`
 - **File**: `internal/handlers/` (new file)
-- **OpenAPI Reference**: `specs/001-super-agent/contracts/openapi.yaml`
+- **OpenAPI Reference**: `specs/001-helix-agent/contracts/openapi.yaml`
 - **Routes to implement**:
   - [ ] `POST /v1/providers` -> Create provider
   - [ ] `PUT /v1/providers/{id}` -> Update provider
@@ -579,7 +579,7 @@ This document tracks all remediation tasks. Each task has:
 - [ ] **Status**: `TODO`
 - **Action**: Merge or clearly differentiate specs
 - **Files**:
-  - [ ] `specs/001-super-agent/contracts/openapi.yaml`
+  - [ ] `specs/001-helix-agent/contracts/openapi.yaml`
   - [ ] `docs/api/openapi.yaml`
 
 #### Task 5.1.3: Update User Documentation

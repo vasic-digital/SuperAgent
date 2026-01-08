@@ -2,7 +2,7 @@
 
 **Total Duration: 90 minutes**
 **Level: Intermediate**
-**Prerequisites: Completion of Course 1 (SuperAgent Fundamentals)**
+**Prerequisites: Completion of Course 1 (HelixAgent Fundamentals)**
 
 ---
 
@@ -18,7 +18,7 @@
 
 #### Narration Script:
 
-Welcome to the AI Debate System Mastery course. In this course, we'll explore one of SuperAgent's most innovative features - the ability to orchestrate structured debates between multiple AI participants.
+Welcome to the AI Debate System Mastery course. In this course, we'll explore one of HelixAgent's most innovative features - the ability to orchestrate structured debates between multiple AI participants.
 
 AI Debate is a multi-agent collaboration system where different AI models take on distinct roles and engage in thoughtful discussion on complex topics. Unlike simple ensemble approaches that just pick the best response, AI Debate allows models to build on each other's ideas, challenge assumptions, and reach well-reasoned conclusions through iterative refinement.
 
@@ -108,7 +108,7 @@ Final:   Consensus Analysis
 
 #### Narration Script:
 
-Consensus building is how AI Debate determines the final outcome. SuperAgent analyzes all responses across all rounds to identify areas of agreement, measure the strength of different arguments, and produce a final position that represents the collective wisdom.
+Consensus building is how AI Debate determines the final outcome. HelixAgent analyzes all responses across all rounds to identify areas of agreement, measure the strength of different arguments, and produce a final position that represents the collective wisdom.
 
 The consensus algorithm considers several factors: text similarity between responses to identify agreement, quality scores for each response, the confidence levels reported by each model, and the coherence of arguments presented.
 
@@ -280,7 +280,7 @@ curl -X POST http://localhost:8080/v1/debates \
 
 #### Narration Script:
 
-Roles define how each participant approaches the debate. SuperAgent includes several predefined roles, each with a specific system prompt that guides the model's behavior. Understanding these roles helps you design effective debates.
+Roles define how each participant approaches the debate. HelixAgent includes several predefined roles, each with a specific system prompt that guides the model's behavior. Understanding these roles helps you design effective debates.
 
 #### Predefined Roles:
 
@@ -497,7 +497,7 @@ Your response:
 
 #### Narration Script:
 
-SuperAgent can integrate persistent memory into debates, allowing participants to recall relevant information from previous conversations or a knowledge base. This is particularly powerful for ongoing projects where context builds over time.
+HelixAgent can integrate persistent memory into debates, allowing participants to recall relevant information from previous conversations or a knowledge base. This is particularly powerful for ongoing projects where context builds over time.
 
 #### Code Example - Memory-Enhanced Debate:
 ```yaml
@@ -643,7 +643,7 @@ debate_config:
 
 #### Narration Script:
 
-SuperAgent supports different debate and voting strategies. The debate strategy determines how participants interact, while the voting strategy determines how the final consensus is calculated.
+HelixAgent supports different debate and voting strategies. The debate strategy determines how participants interact, while the voting strategy determines how the final consensus is calculated.
 
 #### Debate Strategies:
 
@@ -723,7 +723,7 @@ curl -X POST http://localhost:8080/v1/debates \
 
 #### Narration Script:
 
-Monitoring debate performance is essential for optimization. SuperAgent provides comprehensive metrics for each debate, including timing information, quality scores, and provider performance.
+Monitoring debate performance is essential for optimization. HelixAgent provides comprehensive metrics for each debate, including timing information, quality scores, and provider performance.
 
 #### Key Metrics Dashboard:
 
@@ -776,17 +776,17 @@ Monitoring debate performance is essential for optimization. SuperAgent provides
 #### Prometheus Metrics:
 ```
 # Debate timing metrics
-superagent_debate_duration_seconds{debate_id="abc123"} 45.23
-superagent_debate_round_duration_seconds{debate_id="abc123",round="1"} 12.5
-superagent_debate_round_duration_seconds{debate_id="abc123",round="2"} 15.2
+helixagent_debate_duration_seconds{debate_id="abc123"} 45.23
+helixagent_debate_round_duration_seconds{debate_id="abc123",round="1"} 12.5
+helixagent_debate_round_duration_seconds{debate_id="abc123",round="2"} 15.2
 
 # Quality metrics
-superagent_debate_quality_score{debate_id="abc123"} 0.84
-superagent_debate_consensus_level{debate_id="abc123"} 0.87
+helixagent_debate_quality_score{debate_id="abc123"} 0.84
+helixagent_debate_consensus_level{debate_id="abc123"} 0.87
 
 # Provider performance
-superagent_provider_response_time_seconds{provider="claude"} 2.89
-superagent_provider_success_rate{provider="claude"} 0.98
+helixagent_provider_response_time_seconds{provider="claude"} 2.89
+helixagent_provider_success_rate{provider="claude"} 0.98
 ```
 
 ---
@@ -795,7 +795,7 @@ superagent_provider_success_rate{provider="claude"} 0.98
 
 #### Narration Script:
 
-Understanding why debates succeed or fail is crucial for continuous improvement. SuperAgent provides detailed quality analysis that helps you identify areas for optimization.
+Understanding why debates succeed or fail is crucial for continuous improvement. HelixAgent provides detailed quality analysis that helps you identify areas for optimization.
 
 #### Quality Report Structure:
 ```json
@@ -1120,7 +1120,7 @@ Balance cost vs quality
 
 #### Narration Script:
 
-Congratulations on completing the AI Debate System Mastery course! You now have a comprehensive understanding of how to configure, run, and optimize AI debates using SuperAgent.
+Congratulations on completing the AI Debate System Mastery course! You now have a comprehensive understanding of how to configure, run, and optimize AI debates using HelixAgent.
 
 You've learned how multi-agent collaboration works, how to configure participants with different roles and providers, advanced techniques like memory integration and Cognee enhancement, and how to monitor and troubleshoot your debates.
 

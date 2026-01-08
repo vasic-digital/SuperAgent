@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/superagent/superagent/internal/utils"
+	"github.com/helixagent/helixagent/internal/utils"
 )
 
 // Version represents a semantic version

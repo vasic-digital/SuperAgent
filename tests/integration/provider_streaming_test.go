@@ -237,42 +237,42 @@ func TestGeminiNativeNonStreaming(t *testing.T) {
 	testGeminiNonStreaming(t, apiKey, "gemini-2.0-flash")
 }
 
-// TestSuperAgentEnsembleStreaming tests SuperAgent's ensemble streaming
-func TestSuperAgentEnsembleStreaming(t *testing.T) {
+// TestHelixAgentEnsembleStreaming tests HelixAgent's ensemble streaming
+func TestHelixAgentEnsembleStreaming(t *testing.T) {
 	loadEnvFile(t)
 
-	// Check if SuperAgent is running
+	// Check if HelixAgent is running
 	resp, err := http.Get("http://localhost:8080/health")
 	if err != nil {
-		t.Skip("Skipping SuperAgent test: server not running")
+		t.Skip("Skipping HelixAgent test: server not running")
 		return
 	}
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		t.Skip("Skipping SuperAgent test: server not healthy")
+		t.Skip("Skipping HelixAgent test: server not healthy")
 		return
 	}
 
-	testSuperAgentStreaming(t)
+	testHelixAgentStreaming(t)
 }
 
-// TestSuperAgentEnsembleNonStreaming tests SuperAgent's ensemble non-streaming
-func TestSuperAgentEnsembleNonStreaming(t *testing.T) {
+// TestHelixAgentEnsembleNonStreaming tests HelixAgent's ensemble non-streaming
+func TestHelixAgentEnsembleNonStreaming(t *testing.T) {
 	loadEnvFile(t)
 
-	// Check if SuperAgent is running
+	// Check if HelixAgent is running
 	resp, err := http.Get("http://localhost:8080/health")
 	if err != nil {
-		t.Skip("Skipping SuperAgent test: server not running")
+		t.Skip("Skipping HelixAgent test: server not running")
 		return
 	}
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		t.Skip("Skipping SuperAgent test: server not healthy")
+		t.Skip("Skipping HelixAgent test: server not healthy")
 		return
 	}
 
-	testSuperAgentNonStreaming(t)
+	testHelixAgentNonStreaming(t)
 }
 
 // TestHTTPErrorHandling tests that providers properly handle HTTP errors
@@ -651,11 +651,11 @@ func testGeminiNonStreaming(t *testing.T, apiKey, model string) {
 	t.Logf("Gemini non-streaming response: %s", content)
 }
 
-func testSuperAgentStreaming(t *testing.T) {
+func testHelixAgentStreaming(t *testing.T) {
 	client := &http.Client{Timeout: 120 * time.Second}
 
 	req := ChatRequest{
-		Model: "superagent",
+		Model: "helixagent",
 		Messages: []TestMessage{
 			{Role: "user", Content: "What is 2+2? Reply with just the number."},
 		},
@@ -670,7 +670,7 @@ func testSuperAgentStreaming(t *testing.T) {
 	require.NoError(t, err)
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-test"
 	}
@@ -681,7 +681,7 @@ func testSuperAgentStreaming(t *testing.T) {
 		errStr := err.Error()
 		if strings.Contains(errStr, "EOF") || strings.Contains(errStr, "connection") ||
 			strings.Contains(errStr, "timeout") || strings.Contains(errStr, "deadline") {
-			t.Skipf("SuperAgent connection issue: %v", err)
+			t.Skipf("HelixAgent connection issue: %v", err)
 		}
 		require.NoError(t, err)
 	}
@@ -689,11 +689,11 @@ func testSuperAgentStreaming(t *testing.T) {
 
 	// Skip on auth errors or server errors
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		t.Skip("SuperAgent returned auth error - API key may be missing or invalid")
+		t.Skip("HelixAgent returned auth error - API key may be missing or invalid")
 	}
 	if resp.StatusCode >= 500 {
 		body, _ := io.ReadAll(resp.Body)
-		t.Skipf("SuperAgent returned server error %d: %s", resp.StatusCode, string(body))
+		t.Skipf("HelixAgent returned server error %d: %s", resp.StatusCode, string(body))
 	}
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK")
@@ -740,14 +740,14 @@ func testSuperAgentStreaming(t *testing.T) {
 	}
 
 	assert.NotEmpty(t, fullContent, "Should have content (no error messages)")
-	t.Logf("SuperAgent streaming response: %s (chunks: %d)", fullContent, len(chunks))
+	t.Logf("HelixAgent streaming response: %s (chunks: %d)", fullContent, len(chunks))
 }
 
-func testSuperAgentNonStreaming(t *testing.T) {
+func testHelixAgentNonStreaming(t *testing.T) {
 	client := &http.Client{Timeout: 120 * time.Second}
 
 	req := ChatRequest{
-		Model: "superagent",
+		Model: "helixagent",
 		Messages: []TestMessage{
 			{Role: "user", Content: "What is 5+5? Reply with just the number."},
 		},
@@ -761,7 +761,7 @@ func testSuperAgentNonStreaming(t *testing.T) {
 	require.NoError(t, err)
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	apiKey := os.Getenv("SUPERAGENT_API_KEY")
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-test"
 	}
@@ -773,14 +773,14 @@ func testSuperAgentNonStreaming(t *testing.T) {
 
 	// Skip on auth errors or server errors
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		t.Skip("SuperAgent returned auth error - API key may be missing or invalid")
+		t.Skip("HelixAgent returned auth error - API key may be missing or invalid")
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
 	if resp.StatusCode >= 500 {
-		t.Skipf("SuperAgent returned server error %d: %s", resp.StatusCode, string(body))
+		t.Skipf("HelixAgent returned server error %d: %s", resp.StatusCode, string(body))
 	}
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK")
@@ -793,7 +793,7 @@ func testSuperAgentNonStreaming(t *testing.T) {
 	if len(chatResp.Choices) > 0 {
 		content := chatResp.Choices[0].Message.Content
 		assert.NotEmpty(t, content, "Should have content")
-		t.Logf("SuperAgent non-streaming response: %s", content)
+		t.Logf("HelixAgent non-streaming response: %s", content)
 	}
 }
 

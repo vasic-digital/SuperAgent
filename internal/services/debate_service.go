@@ -11,9 +11,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/database"
-	"github.com/superagent/superagent/internal/llm"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/database"
+	"github.com/helixagent/helixagent/internal/llm"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // DebateService provides core debate functionality with real LLM provider calls

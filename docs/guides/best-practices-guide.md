@@ -1,6 +1,6 @@
-# SuperAgent Best Practices Guide
+# HelixAgent Best Practices Guide
 
-This guide provides recommendations and best practices for optimal SuperAgent usage, covering provider selection, performance tuning, cost optimization, security, and maintenance.
+This guide provides recommendations and best practices for optimal HelixAgent usage, covering provider selection, performance tuning, cost optimization, security, and maintenance.
 
 ## Table of Contents
 - [Provider Selection Strategies](#provider-selection-strategies)
@@ -113,17 +113,17 @@ http:
 
 **1. Monitor Memory Usage:**
 ```bash
-# Check SuperAgent memory usage
-docker stats superagent
+# Check HelixAgent memory usage
+docker stats helixagent
 # or
-ps aux | grep superagent
+ps aux | grep helixagent
 ```
 
 **2. Configure Memory Limits:**
 ```yaml
 # In docker-compose.yml
 services:
-  superagent:
+  helixagent:
     deploy:
       resources:
         limits:
@@ -320,7 +320,7 @@ func checkPermission(role UserRole, resource string, action string) bool {
 # Generate new key
 openssl rand -base64 32 > new_api_key.txt
 # Update environment
-export SUPERAGENT_API_KEY=$(cat new_api_key.txt)
+export HELIXAGENT_API_KEY=$(cat new_api_key.txt)
 ```
 
 ## Monitoring and Maintenance
@@ -331,7 +331,7 @@ export SUPERAGENT_API_KEY=$(cat new_api_key.txt)
 ```yaml
 # Docker Compose health check
 services:
-  superagent:
+  helixagent:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -343,14 +343,14 @@ services:
 **2. Monitor Key Metrics:**
 ```bash
 # Check Prometheus metrics
-curl http://localhost:9090/metrics | grep superagent
+curl http://localhost:9090/metrics | grep helixagent
 
 # Key metrics to monitor:
-# - superagent_requests_total
-# - superagent_request_duration_seconds
-# - superagent_tokens_used_total
-# - superagent_errors_total
-# - superagent_provider_availability
+# - helixagent_requests_total
+# - helixagent_request_duration_seconds
+# - helixagent_tokens_used_total
+# - helixagent_errors_total
+# - helixagent_provider_availability
 ```
 
 **3. Set Up Alerts:**
@@ -359,7 +359,7 @@ curl http://localhost:9090/metrics | grep superagent
 alerting:
   rules:
     - alert: HighErrorRate
-      expr: rate(superagent_errors_total[5m]) > 0.1
+      expr: rate(helixagent_errors_total[5m]) > 0.1
       for: 5m
       labels:
         severity: warning
@@ -380,15 +380,15 @@ REINDEX TABLE completions;
 **2. Log Rotation:**
 ```bash
 # Set up log rotation
-sudo logrotate -f /etc/logrotate.d/superagent
+sudo logrotate -f /etc/logrotate.d/helixagent
 ```
 
 **3. Backup Strategy:**
 ```bash
 # Daily database backup
-pg_dump superagent > /backups/superagent-$(date +%Y%m%d).sql
+pg_dump helixagent > /backups/helixagent-$(date +%Y%m%d).sql
 # Encrypt backup
-gpg --encrypt --recipient backup@example.com /backups/superagent-$(date +%Y%m%d).sql
+gpg --encrypt --recipient backup@example.com /backups/helixagent-$(date +%Y%m%d).sql
 ```
 
 ## Development Workflow
@@ -432,14 +432,14 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o superagent ./cmd/superagent
+RUN CGO_ENABLED=0 GOOS=linux go build -o helixagent ./cmd/helixagent
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
-COPY --from=builder /app/superagent .
+COPY --from=builder /app/helixagent .
 EXPOSE 8080
-CMD ["./superagent"]
+CMD ["./helixagent"]
 ```
 
 ### Testing Strategy
@@ -485,14 +485,14 @@ k6 run --vus 100 --duration 30s load-test.js
 **Deployment Process:**
 ```bash
 # 1. Build new version
-docker build -t superagent:$(git rev-parse --short HEAD) .
+docker build -t helixagent:$(git rev-parse --short HEAD) .
 
 # 2. Run migration
-docker run --rm superagent:latest migrate up
+docker run --rm helixagent:latest migrate up
 
 # 3. Deploy with zero downtime
-docker-compose up -d --no-deps --scale superagent=2 superagent
-docker-compose up -d --no-deps --scale superagent=1 superagent
+docker-compose up -d --no-deps --scale helixagent=2 helixagent
+docker-compose up -d --no-deps --scale helixagent=1 helixagent
 ```
 
 ### Scaling Strategies
@@ -501,8 +501,8 @@ docker-compose up -d --no-deps --scale superagent=1 superagent
 ```yaml
 # Docker Compose scaling
 services:
-  superagent:
-    image: superagent:latest
+  helixagent:
+    image: helixagent:latest
     deploy:
       replicas: 3
       resources:
@@ -514,16 +514,16 @@ services:
 **2. Load Balancing:**
 ```nginx
 # Nginx configuration
-upstream superagent {
+upstream helixagent {
     least_conn;
-    server superagent1:8080;
-    server superagent2:8080;
-    server superagent3:8080;
+    server helixagent1:8080;
+    server helixagent2:8080;
+    server helixagent3:8080;
 }
 
 server {
     location / {
-        proxy_pass http://superagent;
+        proxy_pass http://helixagent;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -545,10 +545,10 @@ server {
 #!/bin/bash
 # backup.sh
 DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="/backups/superagent"
+BACKUP_DIR="/backups/helixagent"
 
 # Backup database
-pg_dump superagent > $BACKUP_DIR/db_$DATE.sql
+pg_dump helixagent > $BACKUP_DIR/db_$DATE.sql
 
 # Backup configuration
 tar -czf $BACKUP_DIR/config_$DATE.tar.gz configs/
@@ -570,7 +570,7 @@ BACKUP_FILE=$1
 docker-compose down
 
 # Restore database
-psql superagent < $BACKUP_FILE
+psql helixagent < $BACKUP_FILE
 
 # Restore configuration
 tar -xzf config_backup.tar.gz -C /

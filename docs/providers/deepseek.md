@@ -2,7 +2,7 @@
 
 ## Overview
 
-DeepSeek is a Chinese AI company that develops advanced large language models, particularly known for their code-focused models. SuperAgent integrates with DeepSeek's API to provide access to their chat and code completion models.
+DeepSeek is a Chinese AI company that develops advanced large language models, particularly known for their code-focused models. HelixAgent integrates with DeepSeek's API to provide access to their chat and code completion models.
 
 ### Supported Models
 
@@ -74,8 +74,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/superagent/superagent/internal/llm/providers/deepseek"
-    "github.com/superagent/superagent/internal/models"
+    "github.com/helixagent/helixagent/internal/llm/providers/deepseek"
+    "github.com/helixagent/helixagent/internal/models"
 )
 
 func main() {
@@ -161,7 +161,7 @@ req := &models.LLMRequest{
 
 ### Best Practices for Rate Limits
 
-1. **Use exponential backoff** - SuperAgent automatically implements retry with backoff
+1. **Use exponential backoff** - HelixAgent automatically implements retry with backoff
 2. **Monitor token usage** - Track consumption through response metadata
 3. **Batch code reviews** - Combine related code snippets when possible
 4. **Choose appropriate temperature** - Use lower values (0.1-0.3) for code generation
@@ -189,7 +189,7 @@ DeepSeek API error: 429 - {"error": {"message": "Rate limit exceeded"}}
 
 **Solution:**
 - Wait for the rate limit window to reset
-- SuperAgent automatically retries with exponential backoff
+- HelixAgent automatically retries with exponential backoff
 - Consider upgrading your plan for higher limits
 
 #### Model Not Found (404)
@@ -214,7 +214,7 @@ DeepSeek API error: 400 - {"error": {"message": "Content filtered"}}
 
 ### Health Check
 
-SuperAgent provides a health check endpoint for DeepSeek:
+HelixAgent provides a health check endpoint for DeepSeek:
 
 ```go
 err := provider.HealthCheck()

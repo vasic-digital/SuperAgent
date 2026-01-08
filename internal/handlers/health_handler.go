@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/superagent/superagent/internal/verifier"
+	"github.com/helixagent/helixagent/internal/verifier"
 )
 
 // HealthHandler handles health monitoring HTTP requests

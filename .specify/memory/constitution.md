@@ -8,12 +8,12 @@ Templates requiring updates: All templates need review for Go/LLM context
 Follow-up TODOs: Implement SpecKit integration check
 -->
 
-# SuperAgent Constitution
+# HelixAgent Constitution
 
 ## Core Principles
 
 ### I. Model Facade Architecture
-SuperAgent MUST expose a unified LLM facade that abstracts multiple underlying models as a single super agent. The system MUST support DeepSeek, Qwen, Z.AI (GLM), Claude, Gemini, and other top LLMs. All configured models MUST work cooperatively to deliver optimal results while maintaining full feature parity including tooling, reasoning, search, and MCP capabilities.
+HelixAgent MUST expose a unified LLM facade that abstracts multiple underlying models as a single super agent. The system MUST support DeepSeek, Qwen, Z.AI (GLM), Claude, Gemini, and other top LLMs. All configured models MUST work cooperatively to deliver optimal results while maintaining full feature parity including tooling, reasoning, search, and MCP capabilities.
 
 ### II. Go-First Implementation (NON-NEGOTIABLE)
 All implementation MUST be in Go Lang using Gin Gonic framework. HTTP3/Quic with Toon MUST be the default protocol with fallback to HTTP2/JSON. The codebase MUST be clean, extensible, and follow Go best practices with comprehensive documentation for every component.

@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
-// DemoApplication demonstrates the advanced SuperAgent protocol capabilities
+// DemoApplication demonstrates the advanced HelixAgent protocol capabilities
 type DemoApplication struct {
 	manager *services.UnifiedProtocolManager
 	logger  *logrus.Logger
@@ -58,10 +58,10 @@ func NewDemoApplication() *DemoApplication {
 
 // RunDemo executes the comprehensive demo
 func (d *DemoApplication) RunDemo() {
-	fmt.Println("🚀 SuperAgent Advanced Protocol Enhancement Demo")
+	fmt.Println("🚀 HelixAgent Advanced Protocol Enhancement Demo")
 	fmt.Println(strings.Repeat("=", 60))
 
-	d.logger.Info("Starting SuperAgent Protocol Demo")
+	d.logger.Info("Starting HelixAgent Protocol Demo")
 
 	// Demo 1: Protocol Server Management
 	d.demoProtocolServerManagement()
@@ -88,7 +88,7 @@ func (d *DemoApplication) RunDemo() {
 	d.demoRateLimiting()
 
 	fmt.Println("\n✅ Demo completed successfully!")
-	fmt.Println("SuperAgent is now running with full protocol support!")
+	fmt.Println("HelixAgent is now running with full protocol support!")
 }
 
 // demoProtocolServerManagement demonstrates server listing and management
@@ -297,7 +297,7 @@ func (d *DemoApplication) createAuthenticatedContext() context.Context {
 func main() {
 	demo := NewDemoApplication()
 
-	fmt.Println("SuperAgent Advanced Protocol Enhancement Demo")
+	fmt.Println("HelixAgent Advanced Protocol Enhancement Demo")
 	fmt.Println("This demo showcases all the advanced features we've implemented:")
 	fmt.Println("  ✅ Real MCP Protocol Client")
 	fmt.Println("  ✅ Advanced Protocol-Aware Caching")
@@ -308,9 +308,9 @@ func main() {
 
 	demo.RunDemo()
 
-	fmt.Println("\n🎉 Demo completed! SuperAgent is now a comprehensive AI orchestration platform.")
+	fmt.Println("\n🎉 Demo completed! HelixAgent is now a comprehensive AI orchestration platform.")
 	fmt.Println("\nTo start the real server:")
-	fmt.Println("  go run cmd/superagent/main.go")
+	fmt.Println("  go run cmd/helixagent/main.go")
 	fmt.Println("\nTo explore the API:")
 	fmt.Println("  curl http://localhost:8080/v1/protocols/servers")
 }

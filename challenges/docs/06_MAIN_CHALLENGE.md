@@ -1,4 +1,4 @@
-# Main SuperAgent Challenge - Documentation
+# Main HelixAgent Challenge - Documentation
 
 ## Overview
 
@@ -20,7 +20,7 @@ The **Main** challenge is the comprehensive challenge that:
 
 ```bash
 # 1. Ensure binaries are built
-make build                    # SuperAgent binary
+make build                    # HelixAgent binary
 cd LLMsVerifier && make build # LLMsVerifier binary
 
 # 2. Configure API keys
@@ -41,7 +41,7 @@ docker --version   # or podman --version
 cat challenges/master_results/latest_summary.md
 
 # Your OpenCode config is ready at:
-cat /home/milosvasic/Downloads/opencode-super-agent.json
+cat /home/milosvasic/Downloads/opencode-helix-agent.json
 ```
 
 ### Options
@@ -89,8 +89,8 @@ cat /home/milosvasic/Downloads/opencode-super-agent.json
 - Outputs: `debate_group.json`, `member_assignments.json`
 
 ### Phase 5: System Verification
-- Starts SuperAgent with debate group configuration
-- Uses LLMsVerifier to verify SuperAgent as OpenAI-compatible API
+- Starts HelixAgent with debate group configuration
+- Uses LLMsVerifier to verify HelixAgent as OpenAI-compatible API
 - Runs comprehensive test suite
 - Outputs: `system_verification.json`
 
@@ -116,7 +116,7 @@ cat /home/milosvasic/Downloads/opencode-super-agent.json
 | Script | Purpose |
 |--------|---------|
 | `main_challenge.sh` | Main orchestrator - runs all phases |
-| `start_system.sh` | Start infrastructure and SuperAgent |
+| `start_system.sh` | Start infrastructure and HelixAgent |
 | `stop_system.sh` | Stop all services gracefully |
 | `reverify_all.sh` | Re-verify all providers and update debate group |
 | `run_challenges.sh` | Run specific challenges from bank |
@@ -216,8 +216,8 @@ The generated `opencode.json` includes:
 ```json
 {
   "endpoint": "http://localhost:8080/v1",
-  "api_key": "${SUPERAGENT_API_KEY}",
-  "model": "superagent-ensemble",
+  "api_key": "${HELIXAGENT_API_KEY}",
+  "model": "helixagent-ensemble",
   "features": {
     "mcp": {
       "enabled": true,
@@ -272,7 +272,7 @@ Bearer sk-xxxxx       -> Bearer ***
 
 ### Binary Not Found
 ```bash
-# Build SuperAgent
+# Build HelixAgent
 make build
 
 # Build LLMsVerifier

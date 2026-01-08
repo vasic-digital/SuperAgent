@@ -1,9 +1,9 @@
-"""Tests for SuperAgent SDK types."""
+"""Tests for HelixAgent SDK types."""
 
 import unittest
 from datetime import datetime
 
-from superagent.types import (
+from helixagent.types import (
     ChatMessage,
     Usage,
     ChatCompletionChoice,
@@ -185,7 +185,7 @@ class TestChatCompletionResponse(unittest.TestCase):
             "id": "chatcmpl-456",
             "object": "chat.completion",
             "created": 1234567890,
-            "model": "superagent-ensemble",
+            "model": "helixagent-ensemble",
             "choices": [
                 {
                     "index": 0,
@@ -197,7 +197,7 @@ class TestChatCompletionResponse(unittest.TestCase):
         }
         response = ChatCompletionResponse.from_dict(data)
         self.assertEqual(response.id, "chatcmpl-456")
-        self.assertEqual(response.model, "superagent-ensemble")
+        self.assertEqual(response.model, "helixagent-ensemble")
         self.assertEqual(len(response.choices), 1)
         self.assertEqual(response.choices[0].message.content, "Hi!")
         self.assertEqual(response.usage.total_tokens, 15)

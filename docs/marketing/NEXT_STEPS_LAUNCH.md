@@ -1,4 +1,4 @@
-# 🚀 SuperAgent: NEXT STEPS FOR LAUNCH
+# 🚀 HelixAgent: NEXT STEPS FOR LAUNCH
 
 ## ✅ WHAT'S COMPLETED
 
@@ -25,7 +25,7 @@
 ### 1. **Enable GitHub Pages** (Critical - Repository Owner Only)
 **Action**: Go to repository Settings → Pages → Source: "GitHub Actions" → Save
 **Time**: 2 minutes
-**Result**: Website goes live at: `https://vasic-digital.github.io/SuperAgent/`
+**Result**: Website goes live at: `https://vasic-digital.github.io/HelixAgent/`
 
 ### 2. **Configure Analytics** (High Priority)
 **Action**: Run `./configure-analytics.sh` and enter real tracking IDs
@@ -38,9 +38,9 @@
 ### 3. **Create Social Media Accounts** (High Priority)
 **Action**: Use `SOCIAL_MEDIA_SETUP_GUIDE.md` to create accounts
 **Platforms**:
-- Twitter: @SuperAgentAI (or similar)
-- LinkedIn Company Page: "SuperAgent"
-- YouTube Channel: "SuperAgent AI"
+- Twitter: @HelixAgentAI (or similar)
+- LinkedIn Company Page: "HelixAgent"
+- YouTube Channel: "HelixAgent AI"
 - Reddit: Engage in relevant communities
 
 ## 🎬 VIDEO PRODUCTION READY
@@ -52,7 +52,7 @@
 - **Software**: OBS Studio (free) or Camtasia
 
 ### Recording Script
-- **File**: `VIDEO_SCRIPT_SUPERAGENT_5_MINUTES.md`
+- **File**: `VIDEO_SCRIPT_HELIXAGENT_5_MINUTES.md`
 - **Duration**: 5 minutes exactly
 - **Sections**: Hook, Problem, Solution, Demo, Value, CTA
 - **Visuals**: Screen recording + webcam overlay
@@ -179,4 +179,4 @@
 
 **The foundation is solid. The strategy is proven. The content is ready.**
 
-**🚀 Time to launch SuperAgent to the world!**
+**🚀 Time to launch HelixAgent to the world!**

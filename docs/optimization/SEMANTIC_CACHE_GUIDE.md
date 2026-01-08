@@ -31,7 +31,7 @@ optimization:
 
 ```go
 import (
-    "github.com/superagent/superagent/internal/optimization/gptcache"
+    "github.com/helixagent/helixagent/internal/optimization/gptcache"
 )
 
 // Create cache
@@ -177,7 +177,7 @@ svc.OptimizeResponse(ctx, response, embedding, prompt, nil)
 Default metric, range [-1, 1], normalized to [0, 1]:
 
 ```go
-import "github.com/superagent/superagent/internal/optimization/gptcache"
+import "github.com/helixagent/helixagent/internal/optimization/gptcache"
 
 similarity := gptcache.CosineSimilarity(vec1, vec2)
 ```

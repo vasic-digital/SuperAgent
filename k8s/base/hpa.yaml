@@ -1,14 +1,14 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: superagent
+  name: helixagent
   labels:
-    app: superagent
+    app: helixagent
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: superagent
+    name: helixagent
   minReplicas: 2
   maxReplicas: 10
   metrics:

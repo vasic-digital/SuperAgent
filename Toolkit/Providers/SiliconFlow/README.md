@@ -3,14 +3,14 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/go-1.23+-blue.svg)](https://golang.org/)
 
-A Go implementation of the SiliconFlow AI provider for the SuperAgent Toolkit. Provides comprehensive integration with SiliconFlow's API endpoints including chat completions, embeddings, image generation, and model discovery.
+A Go implementation of the SiliconFlow AI provider for the HelixAgent Toolkit. Provides comprehensive integration with SiliconFlow's API endpoints including chat completions, embeddings, image generation, and model discovery.
 
 ## ✨ Features
 
 - **🔄 Dynamic Model Discovery**: Automatically fetches and categorizes all available SiliconFlow models
 - **🎯 Full API Coverage**: Supports all SiliconFlow endpoints (chat, embeddings, rerank, images, audio, video)
 - **✅ Comprehensive Testing**: Real API integration tests with extensive model validation
-- **📋 Schema Compatibility**: Fully compatible with SuperAgent Toolkit interfaces
+- **📋 Schema Compatibility**: Fully compatible with HelixAgent Toolkit interfaces
 - **💾 Intelligent Caching**: Reduces API calls with smart response caching
 - **🛡️ Enterprise Security**: Secure API key handling with proper error management
 - **📊 Rich Logging**: Structured logging with context for monitoring
@@ -22,7 +22,7 @@ A Go implementation of the SiliconFlow AI provider for the SuperAgent Toolkit. P
 Add to your Go project:
 
 ```bash
-go get github.com/superagent/toolkit/SiliconFlow/providers/siliconflow
+go get github.com/helixagent/toolkit/SiliconFlow/providers/siliconflow
 ```
 
 ### Basic Usage
@@ -34,8 +34,8 @@ import (
     "context"
     "log"
 
-    "github.com/superagent/toolkit/SiliconFlow/providers/siliconflow"
-    "github.com/superagent/toolkit/pkg/toolkit"
+    "github.com/helixagent/toolkit/SiliconFlow/providers/siliconflow"
+    "github.com/helixagent/toolkit/pkg/toolkit"
 )
 
 func main() {
@@ -96,7 +96,7 @@ SiliconFlow/
 
 ### API Client Features
 
-The `SiliconFlowProvider` implements the full SuperAgent Toolkit `Provider` interface:
+The `SiliconFlowProvider` implements the full HelixAgent Toolkit `Provider` interface:
 
 #### Chat Completions
 ```go
@@ -165,7 +165,7 @@ config := map[string]interface{}{
 }
 ```
 
-### Integration with SuperAgent Toolkit
+### Integration with HelixAgent Toolkit
 
 Register the provider with the toolkit:
 
@@ -281,7 +281,7 @@ git clone <repository-url>
 cd SiliconFlow
 
 # Initialize Go module (if not already done)
-go mod init github.com/superagent/toolkit/SiliconFlow
+go mod init github.com/helixagent/toolkit/SiliconFlow
 
 # Install dependencies
 go mod tidy
@@ -322,5 +322,5 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## 🙏 Acknowledgments
 
 - **SiliconFlow**: For providing comprehensive AI infrastructure
-- **SuperAgent Team**: For the toolkit framework
+- **HelixAgent Team**: For the toolkit framework
 - **Go Community**: For excellent HTTP and JSON libraries

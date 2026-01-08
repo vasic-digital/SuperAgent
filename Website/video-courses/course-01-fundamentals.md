@@ -1,4 +1,4 @@
-# SuperAgent Fundamentals - Complete Video Course Script
+# HelixAgent Fundamentals - Complete Video Course Script
 
 **Total Duration: 60 minutes**
 **Level: Beginner**
@@ -6,21 +6,21 @@
 
 ---
 
-## Module 1: Introduction to SuperAgent (10 minutes)
+## Module 1: Introduction to HelixAgent (10 minutes)
 
 ### Opening Slide
-**Title:** Welcome to SuperAgent
+**Title:** Welcome to HelixAgent
 **Duration:** 30 seconds
 
 ---
 
-### Section 1.1: What is SuperAgent? (3 minutes)
+### Section 1.1: What is HelixAgent? (3 minutes)
 
 #### Narration Script:
 
-Welcome to the SuperAgent Fundamentals course. I'm excited to introduce you to SuperAgent - an AI-powered ensemble LLM service that revolutionizes how you interact with multiple language models.
+Welcome to the HelixAgent Fundamentals course. I'm excited to introduce you to HelixAgent - an AI-powered ensemble LLM service that revolutionizes how you interact with multiple language models.
 
-SuperAgent is written in Go 1.23+ and provides a unified interface for working with multiple AI providers. Instead of managing separate integrations for each AI service, SuperAgent acts as your intelligent orchestrator, combining responses from multiple models using sophisticated aggregation strategies.
+HelixAgent is written in Go 1.23+ and provides a unified interface for working with multiple AI providers. Instead of managing separate integrations for each AI service, HelixAgent acts as your intelligent orchestrator, combining responses from multiple models using sophisticated aggregation strategies.
 
 #### Key Points to Cover:
 - Unified interface for 7+ LLM providers
@@ -31,7 +31,7 @@ SuperAgent is written in Go 1.23+ and provides a unified interface for working w
 
 #### Slide Content:
 ```
-SUPERAGENT AT A GLANCE
+HELIXAGENT AT A GLANCE
 - Multi-LLM Orchestration Platform
 - 7 Supported Providers:
   - Claude (Anthropic)
@@ -51,13 +51,13 @@ SUPERAGENT AT A GLANCE
 
 #### Narration Script:
 
-What makes SuperAgent different from simply calling one AI model? Let me walk you through the key features that make SuperAgent a powerful platform.
+What makes HelixAgent different from simply calling one AI model? Let me walk you through the key features that make HelixAgent a powerful platform.
 
-First, ensemble orchestration. SuperAgent can query multiple AI models simultaneously and intelligently combine their responses. This means you get better quality outputs by leveraging the strengths of different models.
+First, ensemble orchestration. HelixAgent can query multiple AI models simultaneously and intelligently combine their responses. This means you get better quality outputs by leveraging the strengths of different models.
 
 Second, the AI Debate system. This unique feature allows multiple AI participants to engage in structured debates, reaching consensus through multi-round discussions. We'll cover this in depth in Course 2.
 
-Third, fault tolerance. With built-in circuit breakers, automatic retries, and health monitoring, SuperAgent ensures your applications remain resilient even when individual providers experience issues.
+Third, fault tolerance. With built-in circuit breakers, automatic retries, and health monitoring, HelixAgent ensures your applications remain resilient even when individual providers experience issues.
 
 #### Key Points to Cover:
 - Ensemble strategies: confidence-weighted voting, majority vote
@@ -91,7 +91,7 @@ KEY FEATURES
 #### Demo Scenario:
 Show a diagram of request flow:
 ```
-Client Request --> SuperAgent --> [Provider A] --> Response A
+Client Request --> HelixAgent --> [Provider A] --> Response A
                               --> [Provider B] --> Response B
                               --> [Provider C] --> Response C
                                     |
@@ -108,9 +108,9 @@ Client Request --> SuperAgent --> [Provider A] --> Response A
 
 #### Narration Script:
 
-SuperAgent excels in scenarios where reliability, quality, and intelligent orchestration matter. Let me share some common use cases.
+HelixAgent excels in scenarios where reliability, quality, and intelligent orchestration matter. Let me share some common use cases.
 
-For enterprise AI applications, you need consistent, high-quality responses. SuperAgent's ensemble approach ensures that if one model provides a subpar response, others can compensate.
+For enterprise AI applications, you need consistent, high-quality responses. HelixAgent's ensemble approach ensures that if one model provides a subpar response, others can compensate.
 
 For research and analysis, the AI Debate feature allows you to set up structured discussions between different AI models, each with different perspectives or roles. This leads to more thorough analysis of complex topics.
 
@@ -157,7 +157,7 @@ USE CASES
 
 #### Narration Script:
 
-Before we install SuperAgent, let's review the system requirements. The good news is that SuperAgent is designed to be lightweight and flexible.
+Before we install HelixAgent, let's review the system requirements. The good news is that HelixAgent is designed to be lightweight and flexible.
 
 For development, you'll need Docker Desktop installed. If you prefer running natively, you'll need Go 1.23 or later. For the database and caching layers, we'll use PostgreSQL 15 and Redis 7, which our Docker setup handles automatically.
 
@@ -196,7 +196,7 @@ SYSTEM REQUIREMENTS
 
 #### Narration Script:
 
-The fastest way to get SuperAgent running is with Docker. Let's walk through the complete setup process.
+The fastest way to get HelixAgent running is with Docker. Let's walk through the complete setup process.
 
 First, clone the repository. Then, we'll copy the environment example file and configure our API keys. Finally, we'll start the services using docker-compose.
 
@@ -205,12 +205,12 @@ First, clone the repository. Then, we'll copy the environment example file and c
 **Step 1: Clone the Repository**
 
 ```bash
-# Clone the SuperAgent repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+# Clone the HelixAgent repository
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 ```
 
-Narration: "First, we clone the SuperAgent repository. This contains everything you need including Docker configurations, configuration files, and the source code."
+Narration: "First, we clone the HelixAgent repository. This contains everything you need including Docker configurations, configuration files, and the source code."
 
 **Step 2: Configure Environment**
 
@@ -233,9 +233,9 @@ GIN_MODE=release
 # Database Configuration
 DB_HOST=postgres
 DB_PORT=5432
-DB_USER=superagent
+DB_USER=helixagent
 DB_PASSWORD=your_secure_password
-DB_NAME=superagent
+DB_NAME=helixagent
 
 # Redis Configuration
 REDIS_HOST=redis
@@ -255,7 +255,7 @@ JWT_SECRET=your-jwt-secret-change-this
 **Step 3: Start Core Services**
 
 ```bash
-# Start the core services (PostgreSQL, Redis, SuperAgent)
+# Start the core services (PostgreSQL, Redis, HelixAgent)
 docker-compose up -d
 
 # Check the status
@@ -267,7 +267,7 @@ Narration: "Now we start the core services. The dash-d flag runs them in detache
 **Step 4: Verify Installation**
 
 ```bash
-# Check SuperAgent health
+# Check HelixAgent health
 curl http://localhost:8080/health
 
 # Expected response:
@@ -281,7 +281,7 @@ Narration: "We can verify the installation by calling the health endpoint. A suc
 DOCKER INSTALLATION STEPS
 
 1. Clone Repository
-   git clone https://github.com/superagent/superagent.git
+   git clone https://github.com/helixagent/helixagent.git
 
 2. Configure Environment
    cp .env.example .env
@@ -307,13 +307,13 @@ DOCKER INSTALLATION STEPS
 
 #### Narration Script:
 
-SuperAgent uses YAML configuration files for detailed settings. Let's explore the main configuration file structure and the most important options.
+HelixAgent uses YAML configuration files for detailed settings. Let's explore the main configuration file structure and the most important options.
 
 The configuration is divided into logical sections: server settings, database connections, LLM providers, security, and monitoring. Let me show you the key sections.
 
 #### Code Example - development.yaml:
 ```yaml
-# SuperAgent Configuration
+# HelixAgent Configuration
 
 server:
   port: 8080
@@ -324,9 +324,9 @@ server:
 database:
   host: "localhost"
   port: 5432
-  user: "superagent"
+  user: "helixagent"
   password: "${DB_PASSWORD}"
-  name: "superagent"
+  name: "helixagent"
   max_open_connections: 10
   max_idle_connections: 2
 
@@ -408,7 +408,7 @@ connection strings, pool sizes
 
 #### Narration Script:
 
-Let's make our first API call to SuperAgent. We'll use the completions endpoint, which follows the OpenAI-compatible format. This means if you have existing code that works with OpenAI's API, it should work with SuperAgent with minimal changes.
+Let's make our first API call to HelixAgent. We'll use the completions endpoint, which follows the OpenAI-compatible format. This means if you have existing code that works with OpenAI's API, it should work with HelixAgent with minimal changes.
 
 #### Code Example:
 ```bash
@@ -421,7 +421,7 @@ curl -X POST http://localhost:8080/v1/completions \
     "messages": [
       {
         "role": "user",
-        "content": "Explain what makes SuperAgent unique in one paragraph."
+        "content": "Explain what makes HelixAgent unique in one paragraph."
       }
     ],
     "max_tokens": 200,
@@ -441,7 +441,7 @@ curl -X POST http://localhost:8080/v1/completions \
       "index": 0,
       "message": {
         "role": "assistant",
-        "content": "SuperAgent is unique because it serves as an intelligent orchestration layer..."
+        "content": "HelixAgent is unique because it serves as an intelligent orchestration layer..."
       },
       "finish_reason": "stop"
     }
@@ -456,7 +456,7 @@ curl -X POST http://localhost:8080/v1/completions \
 }
 ```
 
-Narration: "Notice that the response includes additional metadata like provider_id and confidence score. These SuperAgent-specific fields help you understand which provider handled the request and how confident the system is in the response quality."
+Narration: "Notice that the response includes additional metadata like provider_id and confidence score. These HelixAgent-specific fields help you understand which provider handled the request and how confident the system is in the response quality."
 
 ---
 
@@ -466,7 +466,7 @@ Narration: "Notice that the response includes additional metadata like provider_
 
 #### Narration Script:
 
-SuperAgent supports seven LLM providers out of the box. Each provider has its own strengths, and SuperAgent makes it easy to configure and use them together. Let's look at how to set up each provider.
+HelixAgent supports seven LLM providers out of the box. Each provider has its own strengths, and HelixAgent makes it easy to configure and use them together. Let's look at how to set up each provider.
 
 #### Provider Setup Overview:
 
@@ -670,7 +670,7 @@ curl -X POST http://localhost:8080/v1/ensemble/completions \
 
 #### Narration Script:
 
-API key security is crucial. SuperAgent provides multiple ways to manage API keys securely. Never hardcode API keys in your configuration files - always use environment variables or a secrets manager.
+API key security is crucial. HelixAgent provides multiple ways to manage API keys securely. Never hardcode API keys in your configuration files - always use environment variables or a secrets manager.
 
 #### Key Points to Cover:
 - Environment variable injection
@@ -706,7 +706,7 @@ llm_providers:
 
 #### Narration Script:
 
-SuperAgent continuously monitors provider health. This enables automatic failover and ensures your application remains responsive even when providers experience issues.
+HelixAgent continuously monitors provider health. This enables automatic failover and ensures your application remains responsive even when providers experience issues.
 
 #### Code Example - Health Check Implementation:
 
@@ -714,7 +714,7 @@ The health check system works in three layers:
 
 **Layer 1: Basic Connectivity**
 ```bash
-# Check if SuperAgent can reach the provider
+# Check if HelixAgent can reach the provider
 curl http://localhost:8080/v1/providers/claude/health
 ```
 
@@ -781,7 +781,7 @@ Closed --> (failures) --> Open
 
 #### Narration Script:
 
-SuperAgent provides OpenAI-compatible endpoints for chat completions. This means you can use existing OpenAI client libraries with SuperAgent. Let's explore the main completion endpoints.
+HelixAgent provides OpenAI-compatible endpoints for chat completions. This means you can use existing OpenAI client libraries with HelixAgent. Let's explore the main completion endpoints.
 
 #### Code Examples:
 
@@ -830,16 +830,16 @@ data: [DONE]
 ```python
 from openai import OpenAI
 
-# Point to SuperAgent instead of OpenAI
+# Point to HelixAgent instead of OpenAI
 client = OpenAI(
     base_url="http://localhost:8080/v1",
-    api_key="your-superagent-key"
+    api_key="your-helixagent-key"
 )
 
 response = client.chat.completions.create(
     model="claude-3-sonnet-20240229",
     messages=[
-        {"role": "user", "content": "Hello, SuperAgent!"}
+        {"role": "user", "content": "Hello, HelixAgent!"}
     ]
 )
 
@@ -852,7 +852,7 @@ print(response.choices[0].message.content)
 
 #### Narration Script:
 
-SuperAgent extends the standard chat interface with additional features like conversation memory, context management, and multi-turn conversations. Let's see how to use these features effectively.
+HelixAgent extends the standard chat interface with additional features like conversation memory, context management, and multi-turn conversations. Let's see how to use these features effectively.
 
 #### Code Examples:
 
@@ -905,7 +905,7 @@ curl -X POST http://localhost:8080/v1/chat/completions \
 
 #### Narration Script:
 
-Understanding response structure is essential for building robust applications. SuperAgent responses include both standard OpenAI fields and additional metadata specific to our platform.
+Understanding response structure is essential for building robust applications. HelixAgent responses include both standard OpenAI fields and additional metadata specific to our platform.
 
 #### Response Structure:
 ```json
@@ -930,7 +930,7 @@ Understanding response structure is essential for building robust applications. 
     "total_tokens": 200
   },
 
-  // SuperAgent-specific fields
+  // HelixAgent-specific fields
   "provider_id": "claude",
   "provider_name": "Claude",
   "confidence": 0.94,
@@ -954,7 +954,7 @@ Understanding response structure is essential for building robust applications. 
 
 #### Narration Script:
 
-Proper error handling is crucial for production applications. SuperAgent provides detailed error responses that help you diagnose and handle issues gracefully.
+Proper error handling is crucial for production applications. HelixAgent provides detailed error responses that help you diagnose and handle issues gracefully.
 
 #### Error Response Structure:
 ```json
@@ -1029,9 +1029,9 @@ ERROR HANDLING BEST PRACTICES
 
 #### Narration Script:
 
-Congratulations! You've completed the SuperAgent Fundamentals course. You now understand what SuperAgent is, how to install and configure it, how to work with multiple LLM providers, and how to make API calls and handle responses.
+Congratulations! You've completed the HelixAgent Fundamentals course. You now understand what HelixAgent is, how to install and configure it, how to work with multiple LLM providers, and how to make API calls and handle responses.
 
-In the next course, we'll dive deep into the AI Debate system - one of SuperAgent's most powerful features. We'll learn how to configure debate participants, run multi-round discussions, and leverage consensus building for complex reasoning tasks.
+In the next course, we'll dive deep into the AI Debate system - one of HelixAgent's most powerful features. We'll learn how to configure debate participants, run multi-round discussions, and leverage consensus building for complex reasoning tasks.
 
 Thank you for learning with us, and we'll see you in Course 2: AI Debate System Mastery!
 
@@ -1040,7 +1040,7 @@ Thank you for learning with us, and we'll see you in Course 2: AI Debate System 
 COURSE COMPLETE!
 
 What You Learned:
-- SuperAgent architecture and benefits
+- HelixAgent architecture and benefits
 - Installation with Docker
 - Configuration and environment setup
 - Working with multiple LLM providers
@@ -1053,9 +1053,9 @@ Next Steps:
 - Join our community forums
 
 Resources:
-- Documentation: docs.superagent.ai
-- GitHub: github.com/superagent/superagent
-- Support: support@superagent.ai
+- Documentation: docs.helixagent.ai
+- GitHub: github.com/helixagent/helixagent
+- Support: support@helixagent.ai
 ```
 
 ---
@@ -1075,7 +1075,7 @@ Configure ensemble mode and compare responses from multiple providers.
 ```
 ESSENTIAL COMMANDS
 
-# Start SuperAgent
+# Start HelixAgent
 docker-compose up -d
 
 # Check health
@@ -1090,5 +1090,5 @@ curl -X POST http://localhost:8080/v1/chat/completions \
   -d '{"model":"claude-3-sonnet-20240229","messages":[{"role":"user","content":"Hello"}]}'
 
 # View logs
-docker-compose logs -f superagent
+docker-compose logs -f helixagent
 ```

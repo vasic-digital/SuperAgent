@@ -8,14 +8,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superagent/superagent/internal/optimization/gptcache"
-	"github.com/superagent/superagent/internal/optimization/guidance"
-	"github.com/superagent/superagent/internal/optimization/langchain"
-	"github.com/superagent/superagent/internal/optimization/llamaindex"
-	"github.com/superagent/superagent/internal/optimization/lmql"
-	"github.com/superagent/superagent/internal/optimization/outlines"
-	"github.com/superagent/superagent/internal/optimization/sglang"
-	"github.com/superagent/superagent/internal/optimization/streaming"
+	"github.com/helixagent/helixagent/internal/optimization/gptcache"
+	"github.com/helixagent/helixagent/internal/optimization/guidance"
+	"github.com/helixagent/helixagent/internal/optimization/langchain"
+	"github.com/helixagent/helixagent/internal/optimization/llamaindex"
+	"github.com/helixagent/helixagent/internal/optimization/lmql"
+	"github.com/helixagent/helixagent/internal/optimization/outlines"
+	"github.com/helixagent/helixagent/internal/optimization/sglang"
+	"github.com/helixagent/helixagent/internal/optimization/streaming"
 )
 
 // Service provides unified access to all optimization capabilities.

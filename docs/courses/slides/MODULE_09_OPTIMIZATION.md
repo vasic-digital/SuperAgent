@@ -6,7 +6,7 @@
 
 ## Slide 1: Title Slide
 
-**SuperAgent: Multi-Provider AI Orchestration**
+**HelixAgent: Multi-Provider AI Orchestration**
 
 - Module 9: Optimization Features
 - Duration: 75 minutes
@@ -99,7 +99,7 @@ optimization:
 **Programmatic Usage:**
 
 ```go
-import "github.com/superagent/superagent/internal/optimization/gptcache"
+import "github.com/helixagent/helixagent/internal/optimization/gptcache"
 
 cache := gptcache.NewCache(config)
 
@@ -147,7 +147,7 @@ cache.Set(embedding, response)
 **Schema Definition:**
 
 ```go
-import "github.com/superagent/superagent/internal/optimization/outlines"
+import "github.com/helixagent/helixagent/internal/optimization/outlines"
 
 schema := outlines.ObjectSchema(map[string]*outlines.JSONSchema{
     "name":   outlines.StringSchema(),
@@ -214,7 +214,7 @@ optimization:
 **Programmatic Streaming:**
 
 ```go
-import "github.com/superagent/superagent/internal/optimization/streaming"
+import "github.com/helixagent/helixagent/internal/optimization/streaming"
 
 streamer := streaming.NewStreamer(config)
 
@@ -383,7 +383,7 @@ docker-compose --profile optimization-gpu up -d
 **Using Optimization Service:**
 
 ```go
-import "github.com/superagent/superagent/internal/optimization"
+import "github.com/helixagent/helixagent/internal/optimization"
 
 config := optimization.DefaultConfig()
 svc, err := optimization.NewService(config)

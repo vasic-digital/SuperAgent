@@ -140,7 +140,7 @@ check_podman_setup() {
 # Build image with appropriate runtime
 build_image() {
     local dockerfile="${1:-Dockerfile}"
-    local tag="${2:-superagent:latest}"
+    local tag="${2:-helixagent:latest}"
     local context="${3:-.}"
 
     echo -e "${BLUE}Building image: $tag${NC}"

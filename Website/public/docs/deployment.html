@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Production Deployment - SuperAgent Documentation</title>
-    <meta name="description" content="Deploy SuperAgent in production with Docker, Kubernetes, or bare metal. Complete deployment guide with security hardening and monitoring.">
+    <title>Production Deployment - HelixAgent Documentation</title>
+    <meta name="description" content="Deploy HelixAgent in production with Docker, Kubernetes, or bare metal. Complete deployment guide with security hardening and monitoring.">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://superagent.ai/docs/deployment">
-    <meta property="og:title" content="Production Deployment - SuperAgent Documentation">
-    <meta property="og:description" content="Deploy SuperAgent in production with Docker, Kubernetes, or bare metal.">
-    <meta property="og:image" content="https://superagent.ai/assets/images/og-image.svg">
+    <meta property="og:url" content="https://helixagent.ai/docs/deployment">
+    <meta property="og:title" content="Production Deployment - HelixAgent Documentation">
+    <meta property="og:description" content="Deploy HelixAgent in production with Docker, Kubernetes, or bare metal.">
+    <meta property="og:image" content="https://helixagent.ai/assets/images/og-image.svg">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://superagent.ai/docs/deployment">
-    <meta property="twitter:title" content="Production Deployment - SuperAgent Documentation">
-    <meta property="twitter:description" content="Deploy SuperAgent in production with Docker, Kubernetes, or bare metal.">
+    <meta property="twitter:url" content="https://helixagent.ai/docs/deployment">
+    <meta property="twitter:title" content="Production Deployment - HelixAgent Documentation">
+    <meta property="twitter:description" content="Deploy HelixAgent in production with Docker, Kubernetes, or bare metal.">
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
@@ -253,8 +253,8 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
-                <img src="/assets/images/logo.svg" alt="SuperAgent" class="nav-logo">
-                <span class="nav-title">SuperAgent</span>
+                <img src="/assets/images/logo.svg" alt="HelixAgent" class="nav-logo">
+                <span class="nav-title">HelixAgent</span>
             </div>
 
             <div class="nav-menu" id="nav-menu">
@@ -262,12 +262,12 @@
                 <a href="/#providers" class="nav-link">Providers</a>
                 <a href="/#docs" class="nav-link">Documentation</a>
                 <a href="/#pricing" class="nav-link">Pricing</a>
-                <a href="https://github.com/superagent/superagent" class="nav-link">GitHub</a>
+                <a href="https://github.com/helixagent/helixagent" class="nav-link">GitHub</a>
             </div>
 
             <div class="nav-actions">
                 <a href="/docs" class="btn btn-outline">Get Started</a>
-                <a href="https://github.com/superagent/superagent" class="btn btn-primary">Star on GitHub</a>
+                <a href="https://github.com/helixagent/helixagent" class="btn btn-primary">Star on GitHub</a>
             </div>
 
             <div class="nav-toggle" id="nav-toggle">
@@ -282,7 +282,7 @@
         <div class="docs-header">
             <h1 class="docs-title">Production Deployment</h1>
             <p class="docs-subtitle">
-                Deploy SuperAgent in production environments with Docker, Kubernetes, or bare metal installations.
+                Deploy HelixAgent in production environments with Docker, Kubernetes, or bare metal installations.
                 This guide covers system requirements, installation, configuration, and security hardening.
             </p>
         </div>
@@ -394,7 +394,7 @@ sudo apt install redis-server</code></pre>
 
                 <section id="docker" class="docs-section">
                     <h2>Docker Deployment</h2>
-                    <p>The recommended way to deploy SuperAgent in production:</p>
+                    <p>The recommended way to deploy HelixAgent in production:</p>
 
                     <h3>Docker Compose Configuration</h3>
                     <div class="code-block">
@@ -403,42 +403,42 @@ sudo apt install redis-server</code></pre>
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: superagent-postgres
+    container_name: helixagent-postgres
     environment:
-      POSTGRES_DB: superagent
-      POSTGRES_USER: superagent
+      POSTGRES_DB: helixagent
+      POSTGRES_USER: helixagent
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
-      - superagent-network
+      - helixagent-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U superagent"]
+      test: ["CMD-SHELL", "pg_isready -U helixagent"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: superagent-redis
+    container_name: helixagent-redis
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
     ports:
       - "6379:6379"
     networks:
-      - superagent-network
+      - helixagent-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
 
-  superagent:
+  helixagent:
     build: .
-    container_name: superagent
+    container_name: helixagent
     depends_on:
       postgres:
         condition: service_healthy
@@ -454,7 +454,7 @@ services:
       - "8080:8080"
       - "8443:8443"
     networks:
-      - superagent-network
+      - helixagent-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -467,7 +467,7 @@ volumes:
   redis_data:
 
 networks:
-  superagent-network:
+  helixagent-network:
     driver: bridge</code></pre>
                     </div>
 
@@ -486,7 +486,7 @@ docker-compose --profile monitoring up -d
 docker-compose --profile full up -d
 
 # View logs
-docker-compose logs -f superagent</code></pre>
+docker-compose logs -f helixagent</code></pre>
                     </div>
                 </section>
 
@@ -499,15 +499,15 @@ docker-compose logs -f superagent</code></pre>
                         <pre><code class="language-yaml">apiVersion: v1
 kind: Namespace
 metadata:
-  name: superagent
+  name: helixagent
   labels:
-    name: superagent
+    name: helixagent
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: superagent-config
-  namespace: superagent
+  name: helixagent-config
+  namespace: helixagent
 data:
   config.yaml: |
     server:
@@ -517,7 +517,7 @@ data:
     database:
       host: postgres-service
       port: 5432
-      name: superagent
+      name: helixagent
     cache:
       type: redis
       host: redis-service
@@ -529,29 +529,29 @@ data:
                         <pre><code class="language-yaml">apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: superagent
-  namespace: superagent
+  name: helixagent
+  namespace: helixagent
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: superagent
+      app: helixagent
   template:
     metadata:
       labels:
-        app: superagent
+        app: helixagent
     spec:
       containers:
-      - name: superagent
-        image: superagent:latest
+      - name: helixagent
+        image: helixagent:latest
         ports:
         - containerPort: 8080
         envFrom:
         - secretRef:
-            name: superagent-secrets
+            name: helixagent-secrets
         volumeMounts:
         - name: config
-          mountPath: /etc/superagent
+          mountPath: /etc/helixagent
         resources:
           requests:
             memory: "512Mi"
@@ -574,16 +574,16 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: superagent-config
+          name: helixagent-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: superagent-service
-  namespace: superagent
+  name: helixagent-service
+  namespace: helixagent
 spec:
   selector:
-    app: superagent
+    app: helixagent
   ports:
   - port: 8080
     targetPort: 8080
@@ -597,31 +597,31 @@ spec:
 
                     <div class="code-block">
                         <pre><code class="language-ini">[Unit]
-Description=SuperAgent AI Orchestration Platform
-Documentation=https://github.com/superagent/superagent
+Description=HelixAgent AI Orchestration Platform
+Documentation=https://github.com/helixagent/helixagent
 After=network.target postgresql.service redis-server.service
 Wants=postgresql.service redis-server.service
 
 [Service]
 Type=simple
-User=superagent
-Group=superagent
-WorkingDirectory=/opt/superagent
-ExecStart=/opt/superagent/superagent --config /etc/superagent/config.yaml
+User=helixagent
+Group=helixagent
+WorkingDirectory=/opt/helixagent
+ExecStart=/opt/helixagent/helixagent --config /etc/helixagent/config.yaml
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=mixed
 TimeoutStopSec=30
 
 # Environment
-Environment=SUPERAGENT_CONFIG_PATH=/etc/superagent
-EnvironmentFile=/etc/superagent/.env
+Environment=HELIXAGENT_CONFIG_PATH=/etc/helixagent
+EnvironmentFile=/etc/helixagent/.env
 
 # Security
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/log/superagent /var/lib/superagent
+ReadWritePaths=/var/log/helixagent /var/lib/helixagent
 
 # Resource limits
 LimitNOFILE=65536
@@ -636,20 +636,20 @@ WantedBy=multi-user.target</code></pre>
                     <h3>Enable and Start</h3>
                     <div class="code-block">
                         <pre><code class="language-bash"># Copy service file
-sudo cp superagent.service /etc/systemd/system/
+sudo cp helixagent.service /etc/systemd/system/
 
 # Reload systemd
 sudo systemctl daemon-reload
 
 # Enable and start
-sudo systemctl enable superagent
-sudo systemctl start superagent
+sudo systemctl enable helixagent
+sudo systemctl start helixagent
 
 # Check status
-sudo systemctl status superagent
+sudo systemctl status helixagent
 
 # View logs
-sudo journalctl -u superagent -f</code></pre>
+sudo journalctl -u helixagent -f</code></pre>
                     </div>
                 </section>
 
@@ -660,13 +660,13 @@ sudo journalctl -u superagent -f</code></pre>
                     <div class="code-block">
                         <pre><code class="language-bash"># Generate self-signed certificates (development)
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout /etc/superagent/certs/server.key \
-  -out /etc/superagent/certs/server.crt \
-  -subj "/C=US/ST=State/L=City/O=Organization/CN=superagent.local"
+  -keyout /etc/helixagent/certs/server.key \
+  -out /etc/helixagent/certs/server.crt \
+  -subj "/C=US/ST=State/L=City/O=Organization/CN=helixagent.local"
 
 # Set permissions
-sudo chmod 600 /etc/superagent/certs/server.key
-sudo chmod 644 /etc/superagent/certs/server.crt
+sudo chmod 600 /etc/helixagent/certs/server.key
+sudo chmod 644 /etc/helixagent/certs/server.crt
 
 # For production, use Let's Encrypt
 sudo certbot certonly --standalone -d your-domain.com</code></pre>
@@ -684,11 +684,11 @@ sudo ufw enable
 # Configure fail2ban
 sudo apt install fail2ban
 sudo tee /etc/fail2ban/jail.local > /dev/null << 'EOF'
-[superagent]
+[helixagent]
 enabled = true
 port = 8080,8443
-filter = superagent
-logpath = /var/log/superagent/error.log
+filter = helixagent
+logpath = /var/log/helixagent/error.log
 maxretry = 5
 bantime = 3600
 findtime = 600
@@ -726,7 +726,7 @@ curl -f http://localhost:8080/metrics</code></pre>
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'superagent'
+  - job_name: 'helixagent'
     static_configs:
       - targets: ['localhost:8080']
     metrics_path: '/metrics'
@@ -743,7 +743,7 @@ scrape_configs:
 
                     <div class="code-block">
                         <pre><code class="language-bash"># Check service status
-sudo systemctl status superagent
+sudo systemctl status helixagent
 
 # Test health endpoint
 curl -f http://localhost:8080/health
@@ -791,8 +791,8 @@ ab -n 1000 -c 10 http://localhost:8080/health</code></pre>
             <div class="footer-content">
                 <div class="footer-section">
                     <div class="footer-brand">
-                        <img src="/assets/images/logo.svg" alt="SuperAgent" class="footer-logo">
-                        <span class="footer-title">SuperAgent</span>
+                        <img src="/assets/images/logo.svg" alt="HelixAgent" class="footer-logo">
+                        <span class="footer-title">HelixAgent</span>
                     </div>
                     <p class="footer-description">
                         AI-powered multi-provider LLM orchestration platform with enterprise-grade capabilities.
@@ -813,7 +813,7 @@ ab -n 1000 -c 10 http://localhost:8080/health</code></pre>
                 <div class="footer-section">
                     <h4 class="footer-heading">Resources</h4>
                     <ul class="footer-links">
-                        <li><a href="https://github.com/superagent/superagent">GitHub</a></li>
+                        <li><a href="https://github.com/helixagent/helixagent">GitHub</a></li>
                         <li><a href="/docs/tutorial">Tutorials</a></li>
                         <li><a href="/docs/architecture">Architecture</a></li>
                         <li><a href="/docs/protocols">Protocol Integration</a></li>
@@ -833,7 +833,7 @@ ab -n 1000 -c 10 http://localhost:8080/health</code></pre>
 
             <div class="footer-bottom">
                 <div class="footer-legal">
-                    <p>&copy; 2026 SuperAgent. All rights reserved.</p>
+                    <p>&copy; 2026 HelixAgent. All rights reserved.</p>
                     <div class="footer-legal-links">
                         <a href="/privacy">Privacy Policy</a>
                         <a href="/terms">Terms of Service</a>

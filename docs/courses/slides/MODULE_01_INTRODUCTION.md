@@ -1,4 +1,4 @@
-# Module 1: Introduction to SuperAgent
+# Module 1: Introduction to HelixAgent
 
 ## Presentation Slides Outline
 
@@ -6,7 +6,7 @@
 
 ## Slide 1: Title Slide
 
-**SuperAgent: Multi-Provider AI Orchestration**
+**HelixAgent: Multi-Provider AI Orchestration**
 
 - Mastering Enterprise AI Infrastructure
 - Module 1: Introduction
@@ -18,7 +18,7 @@
 
 **By the end of this module, you will:**
 
-- Understand what SuperAgent is and its core value proposition
+- Understand what HelixAgent is and its core value proposition
 - Learn the benefits of multi-provider AI orchestration
 - Familiarize with the system architecture and components
 - Recognize use cases for enterprise AI orchestration
@@ -39,16 +39,16 @@
 
 ---
 
-## Slide 4: What is SuperAgent?
+## Slide 4: What is HelixAgent?
 
-**SuperAgent is an AI-powered ensemble LLM service that:**
+**HelixAgent is an AI-powered ensemble LLM service that:**
 
 - Combines responses from multiple language models
 - Uses intelligent aggregation strategies
 - Provides OpenAI-compatible APIs
 - Supports 7 LLM providers out of the box
 
-*Visual: Hub and spoke diagram with SuperAgent at center*
+*Visual: Hub and spoke diagram with HelixAgent at center*
 
 ---
 
@@ -70,7 +70,7 @@
 
 ## Slide 6: Key Benefits
 
-**Why Choose SuperAgent?**
+**Why Choose HelixAgent?**
 
 1. **Reliability**: Automatic failover between providers
 2. **Quality**: Ensemble voting for better responses
@@ -211,7 +211,7 @@ type LLMProvider interface {
 
 ## Slide 15: Real-World Use Cases
 
-**Where SuperAgent Excels:**
+**Where HelixAgent Excels:**
 
 1. **Content Generation**: Multi-model review for quality
 2. **Code Analysis**: Cross-provider code review
@@ -267,7 +267,7 @@ type LLMProvider interface {
 **Lab Exercise 1.1: Repository Exploration**
 
 Tasks:
-1. Clone the SuperAgent repository
+1. Clone the HelixAgent repository
 2. Explore the directory structure
 3. Review the CLAUDE.md for guidance
 4. Examine sample configuration files
@@ -281,7 +281,7 @@ Time: 20 minutes
 
 **Key Takeaways:**
 
-- SuperAgent solves multi-provider AI orchestration
+- HelixAgent solves multi-provider AI orchestration
 - 7 LLM providers supported out of the box
 - Ensemble voting improves response quality
 - AI Debate enables complex reasoning

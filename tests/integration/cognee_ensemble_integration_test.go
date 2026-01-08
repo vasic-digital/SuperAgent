@@ -15,8 +15,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // =============================================================================
@@ -229,7 +229,7 @@ func TestAllEnsembleProvidersHaveCogneeCapabilities(t *testing.T) {
 
 // TestCogneeLiveIntegration tests Cognee integration with live server
 func TestCogneeLiveIntegration(t *testing.T) {
-	serverURL := os.Getenv("SUPERAGENT_TEST_URL")
+	serverURL := os.Getenv("HELIXAGENT_TEST_URL")
 	if serverURL == "" {
 		serverURL = "http://localhost:8080"
 	}
@@ -240,11 +240,11 @@ func TestCogneeLiveIntegration(t *testing.T) {
 	// Check if server is available
 	healthResp, err := client.Get(serverURL + "/health")
 	if err != nil {
-		t.Skip("SuperAgent server not available, skipping live integration test")
+		t.Skip("HelixAgent server not available, skipping live integration test")
 	}
 	healthResp.Body.Close()
 	if healthResp.StatusCode != http.StatusOK {
-		t.Skip("SuperAgent server not healthy, skipping live integration test")
+		t.Skip("HelixAgent server not healthy, skipping live integration test")
 	}
 
 	t.Run("Chat completion shows Cognee enhancement in providers", func(t *testing.T) {
@@ -313,7 +313,7 @@ func TestCogneeLiveIntegration(t *testing.T) {
 
 	t.Run("Chat request goes through Cognee-enhanced ensemble", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "What is 1+1?"},
 			},
@@ -343,8 +343,8 @@ func TestCogneeLiveIntegration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify ensemble response
-		assert.Equal(t, "superagent-ensemble", result["model"])
-		assert.Equal(t, "fp_superagent_ensemble", result["system_fingerprint"])
+		assert.Equal(t, "helixagent-ensemble", result["model"])
+		assert.Equal(t, "fp_helixagent_ensemble", result["system_fingerprint"])
 
 		// Verify we got a response (Cognee enhancement happens transparently)
 		choices, ok := result["choices"].([]interface{})
@@ -366,7 +366,7 @@ func TestCogneeLiveIntegration(t *testing.T) {
 				defer wg.Done()
 
 				reqBody := map[string]interface{}{
-					"model": "superagent-ensemble",
+					"model": "helixagent-ensemble",
 					"messages": []map[string]string{
 						{"role": "user", "content": fmt.Sprintf("Count to %d", idx+1)},
 					},
@@ -403,7 +403,7 @@ func TestCogneeLiveIntegration(t *testing.T) {
 				fingerprint, _ := result["system_fingerprint"].(string)
 
 				results <- reqResult{
-					success:        (model == "superagent-ensemble" && fingerprint == "fp_superagent_ensemble"),
+					success:        (model == "helixagent-ensemble" && fingerprint == "fp_helixagent_ensemble"),
 					providerFailed: false,
 				}
 			}(i)

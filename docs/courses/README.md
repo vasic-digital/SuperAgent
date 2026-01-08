@@ -1,6 +1,6 @@
-# SuperAgent Video Course Materials
+# HelixAgent Video Course Materials
 
-This directory contains comprehensive video course materials for SuperAgent training.
+This directory contains comprehensive video course materials for HelixAgent training.
 
 ## Directory Structure
 
@@ -24,7 +24,7 @@ docs/courses/
 
 ## Course Overview
 
-**Title**: Mastering SuperAgent: Multi-Provider AI Orchestration
+**Title**: Mastering HelixAgent: Multi-Provider AI Orchestration
 **Duration**: 10+ hours across 11 comprehensive modules
 **Target Audience**: Developers, DevOps engineers, AI engineers, technical decision-makers
 **Skill Level**: Beginner to Advanced
@@ -33,7 +33,7 @@ docs/courses/
 
 | Module | Title | Duration |
 |--------|-------|----------|
-| 1 | Introduction to SuperAgent | 45 min |
+| 1 | Introduction to HelixAgent | 45 min |
 | 2 | Installation and Setup | 60 min |
 | 3 | Configuration | 60 min |
 | 4 | LLM Provider Integration | 75 min |
@@ -98,7 +98,7 @@ See the video production setup guide at:
 
 The course supports a 4-level certification path:
 
-1. **Level 1: SuperAgent Fundamentals** - Modules 1-3
+1. **Level 1: HelixAgent Fundamentals** - Modules 1-3
 2. **Level 2: Provider Expert** - Modules 4-6
 3. **Level 3: Advanced Practitioner** - Modules 7-9
 4. **Level 4: Master Engineer** - Modules 10-11

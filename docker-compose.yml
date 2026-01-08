@@ -4,11 +4,11 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: superagent-postgres
+    container_name: helixagent-postgres
     environment:
-      POSTGRES_DB: ${DB_NAME:-superagent_db}
-      POSTGRES_USER: ${DB_USER:-superagent}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-superagent123}
+      POSTGRES_DB: ${DB_NAME:-helixagent_db}
+      POSTGRES_USER: ${DB_USER:-helixagent}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-helixagent123}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
     ports:
       - "${DB_PORT:-5432}:5432"
@@ -16,9 +16,9 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
-      - superagent-network
+      - helixagent-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-superagent} -d ${DB_NAME:-superagent_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-helixagent} -d ${DB_NAME:-helixagent_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,14 +27,14 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: superagent-redis
-    command: redis-server --requirepass ${REDIS_PASSWORD:-superagent123} --appendonly yes
+    container_name: helixagent-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-helixagent123} --appendonly yes
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     networks:
-      - superagent-network
+      - helixagent-network
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 10s
@@ -48,13 +48,13 @@ services:
   # To use Gemini (recommended): Set GEMINI_API_KEY in .env
   ollama:
     image: ollama/ollama:latest
-    container_name: superagent-ollama
+    container_name: helixagent-ollama
     ports:
       - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama_data:/root/.ollama
     networks:
-      - superagent-network
+      - helixagent-network
     environment:
       - OLLAMA_HOST=0.0.0.0
     healthcheck:
@@ -67,18 +67,18 @@ services:
       - legacy  # Changed from 'ai' to 'legacy' - use Gemini instead
       - full
 
-  # SuperAgent Application
-  superagent:
+  # HelixAgent Application
+  helixagent:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: superagent-app
+    container_name: helixagent-app
     ports:
       - "${PORT:-8080}:8080"
     environment:
       # Server Configuration
       PORT: ${PORT:-8080}
-      SUPERAGENT_API_KEY: ${SUPERAGENT_API_KEY:-development-key}
+      HELIXAGENT_API_KEY: ${HELIXAGENT_API_KEY:-development-key}
       GIN_MODE: ${GIN_MODE:-release}
 
       # JWT Configuration
@@ -88,15 +88,15 @@ services:
       # Database Configuration
       DB_HOST: ${DB_HOST:-postgres}
       DB_PORT: ${DB_PORT:-5432}
-      DB_USER: ${DB_USER:-superagent}
-      DB_PASSWORD: ${DB_PASSWORD:-superagent123}
-      DB_NAME: ${DB_NAME:-superagent_db}
+      DB_USER: ${DB_USER:-helixagent}
+      DB_PASSWORD: ${DB_PASSWORD:-helixagent123}
+      DB_NAME: ${DB_NAME:-helixagent_db}
       DB_SSLMODE: ${DB_SSLMODE:-disable}
 
       # Redis Configuration
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-superagent123}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-helixagent123}
       REDIS_DB: ${REDIS_DB:-0}
 
       # LLM Provider API Keys (optional for production)
@@ -116,8 +116,8 @@ services:
       COGNEE_BASE_URL: ${COGNEE_BASE_URL:-http://cognee:8000}
       COGNEE_API_KEY: ${COGNEE_API_KEY:-}
       COGNEE_AUTO_COGNIFY: ${COGNEE_AUTO_COGNIFY:-true}
-      COGNEE_AUTH_EMAIL: ${COGNEE_AUTH_EMAIL:-admin@superagent.ai}
-      COGNEE_AUTH_PASSWORD: ${COGNEE_AUTH_PASSWORD:-SuperAgentPass123}
+      COGNEE_AUTH_EMAIL: ${COGNEE_AUTH_EMAIL:-admin@helixagent.ai}
+      COGNEE_AUTH_PASSWORD: ${COGNEE_AUTH_PASSWORD:-HelixAgentPass123}
 
       # Plugin Configuration
       PLUGIN_WATCH_PATHS: ${PLUGIN_WATCH_PATHS:-/app/plugins}
@@ -133,7 +133,7 @@ services:
       MODELSDEV_MAX_RETRIES: ${MODELSDEV_MAX_RETRIES:-3}
       MODELSDEV_AUTO_REFRESH: ${MODELSDEV_AUTO_REFRESH:-true}
       MODELSDEV_TIMEOUT: ${MODELSDEV_TIMEOUT:-30}
-      MODELSDEV_USER_AGENT: ${MODELSDEV_USER_AGENT:-SuperAgent/1.0}
+      MODELSDEV_USER_AGENT: ${MODELSDEV_USER_AGENT:-HelixAgent/1.0}
       MODELSDEV_RATE_LIMIT: ${MODELSDEV_RATE_LIMIT:-10}
 
       # Rate Limiting
@@ -152,7 +152,7 @@ services:
       - ./plugins:/app/plugins
       - ./logs:/app/logs
     networks:
-      - superagent-network
+      - helixagent-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -163,7 +163,7 @@ services:
   # Prometheus Monitoring
   prometheus:
     image: prom/prometheus:latest
-    container_name: superagent-prometheus
+    container_name: helixagent-prometheus
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
@@ -178,7 +178,7 @@ services:
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
     networks:
-      - superagent-network
+      - helixagent-network
     restart: unless-stopped
     profiles:
       - monitoring
@@ -187,7 +187,7 @@ services:
   # Grafana Dashboard
   grafana:
     image: grafana/grafana:latest
-    container_name: superagent-grafana
+    container_name: helixagent-grafana
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
@@ -197,11 +197,11 @@ services:
       - "${GRAFANA_PORT:-3000}:3000"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./docs/monitoring/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/superagent.json
+      - ./docs/monitoring/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/helixagent.json
       - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
       - ./monitoring/grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
     networks:
-      - superagent-network
+      - helixagent-network
     depends_on:
       - prometheus
     restart: unless-stopped
@@ -218,7 +218,7 @@ services:
   # - Requires GEMINI_API_KEY in .env
   cognee:
     image: cognee/cognee:main
-    container_name: superagent-cognee
+    container_name: helixagent-cognee
     # Using host network for direct API access
     environment:
       # Core Configuration
@@ -228,7 +228,7 @@ services:
       - ENVIRONMENT=${COGNEE_ENVIRONMENT:-production}
       - LOG_LEVEL=${COGNEE_LOG_LEVEL:-INFO}
 
-      # Disable multi-user access control (required for SuperAgent integration)
+      # Disable multi-user access control (required for HelixAgent integration)
       - ENABLE_BACKEND_ACCESS_CONTROL=false
 
       # Disable model downloading to avoid network issues
@@ -259,11 +259,11 @@ services:
 
       # Relational Database - PostgreSQL with pgvector (using host network ports)
       - RELATIONAL_DATABASE=postgresql
-      - RELATIONAL_DATABASE_URL=postgresql://${DB_USER:-superagent}:${DB_PASSWORD:-superagent123}@localhost:5432/${DB_NAME:-superagent_db}
+      - RELATIONAL_DATABASE_URL=postgresql://${DB_USER:-helixagent}:${DB_PASSWORD:-helixagent123}@localhost:5432/${DB_NAME:-helixagent_db}
 
       # Cache Provider - Redis for performance (using host network ports)
       - CACHE_PROVIDER=redis
-      - CACHE_URL=redis://:${REDIS_PASSWORD:-superagent123}@localhost:6379/0
+      - CACHE_URL=redis://:${REDIS_PASSWORD:-helixagent123}@localhost:6379/0
 
       # Cognee Feature Flags - ALL ENABLED for maximum capability
       - COGNEE_ENABLE_TEMPORAL=true
@@ -328,7 +328,7 @@ services:
   # ChromaDB for Vector Storage
   chromadb:
     image: chromadb/chroma:0.6.3
-    container_name: superagent-chromadb
+    container_name: helixagent-chromadb
     environment:
       - IS_PERSISTENT=TRUE
       - CHROMA_SERVER_AUTH_CREDENTIALS=${VECTOR_DB_KEY:-cognee_vector_key}
@@ -338,7 +338,7 @@ services:
     volumes:
       - chromadb_data:/chroma/chroma/
     networks:
-      - superagent-network
+      - helixagent-network
     ports:
       - "8001:8000"
     restart: unless-stopped
@@ -350,7 +350,7 @@ services:
   # Neo4j Graph Database (optional, for advanced graph features)
   neo4j:
     image: neo4j:latest
-    container_name: superagent-neo4j
+    container_name: helixagent-neo4j
     environment:
       - NEO4J_AUTH=neo4j/cognee123
       - NEO4J_PLUGINS=["apoc", "graph-data-science"]
@@ -361,7 +361,7 @@ services:
       - neo4j_data:/data
       - neo4j_logs:/logs
     networks:
-      - superagent-network
+      - helixagent-network
     restart: unless-stopped
     profiles:
       - graph
@@ -370,7 +370,7 @@ services:
   # Memgraph - High-performance in-memory graph database (alternative to Neo4j)
   memgraph:
     image: memgraph/memgraph-mage:latest
-    container_name: superagent-memgraph
+    container_name: helixagent-memgraph
     ports:
       - "7688:7687"  # Bolt protocol
       - "7445:7444"  # Lab UI
@@ -381,7 +381,7 @@ services:
       - memgraph_data:/var/lib/memgraph
       - memgraph_logs:/var/log/memgraph
     networks:
-      - superagent-network
+      - helixagent-network
     restart: unless-stopped
     deploy:
       resources:
@@ -398,14 +398,14 @@ services:
     build:
       context: ./tests/mock-llm-server
       dockerfile: Dockerfile
-    container_name: superagent-mock-llm
+    container_name: helixagent-mock-llm
     ports:
       - "${MOCK_LLM_PORT:-8090}:8090"
     environment:
       - PORT=8090
       - RESPONSE_DELAY=${MOCK_LLM_DELAY:-100}
     networks:
-      - superagent-network
+      - helixagent-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
       interval: 10s
@@ -425,16 +425,16 @@ services:
     build:
       context: ./services/langchain
       dockerfile: Dockerfile
-    container_name: superagent-langchain
+    container_name: helixagent-langchain
     ports:
       - "${LANGCHAIN_PORT:-8011}:8001"
     environment:
-      - SUPERAGENT_URL=http://superagent:8080
-      - LLM_ENDPOINT=http://superagent:8080/v1/chat/completions
+      - HELIXAGENT_URL=http://helixagent:8080
+      - LLM_ENDPOINT=http://helixagent:8080/v1/chat/completions
     networks:
-      - superagent-network
+      - helixagent-network
     depends_on:
-      superagent:
+      helixagent:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
@@ -457,18 +457,18 @@ services:
     build:
       context: ./services/llamaindex
       dockerfile: Dockerfile
-    container_name: superagent-llamaindex
+    container_name: helixagent-llamaindex
     ports:
       - "${LLAMAINDEX_PORT:-8012}:8002"
     environment:
-      - SUPERAGENT_URL=http://superagent:8080
+      - HELIXAGENT_URL=http://helixagent:8080
       - COGNEE_URL=http://cognee:8000
-      - EMBEDDING_ENDPOINT=http://superagent:8080/v1/embeddings
-      - LLM_ENDPOINT=http://superagent:8080/v1/chat/completions
+      - EMBEDDING_ENDPOINT=http://helixagent:8080/v1/embeddings
+      - LLM_ENDPOINT=http://helixagent:8080/v1/chat/completions
     networks:
-      - superagent-network
+      - helixagent-network
     depends_on:
-      superagent:
+      helixagent:
         condition: service_healthy
       cognee:
         condition: service_healthy
@@ -493,16 +493,16 @@ services:
     build:
       context: ./services/guidance
       dockerfile: Dockerfile
-    container_name: superagent-guidance
+    container_name: helixagent-guidance
     ports:
       - "${GUIDANCE_PORT:-8013}:8003"
     environment:
-      - SUPERAGENT_URL=http://superagent:8080
-      - LLM_ENDPOINT=http://superagent:8080/v1/chat/completions
+      - HELIXAGENT_URL=http://helixagent:8080
+      - LLM_ENDPOINT=http://helixagent:8080/v1/chat/completions
     networks:
-      - superagent-network
+      - helixagent-network
     depends_on:
-      superagent:
+      helixagent:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
@@ -525,16 +525,16 @@ services:
     build:
       context: ./services/lmql
       dockerfile: Dockerfile
-    container_name: superagent-lmql
+    container_name: helixagent-lmql
     ports:
       - "${LMQL_PORT:-8014}:8004"
     environment:
-      - SUPERAGENT_URL=http://superagent:8080
-      - LLM_ENDPOINT=http://superagent:8080/v1/chat/completions
+      - HELIXAGENT_URL=http://helixagent:8080
+      - LLM_ENDPOINT=http://helixagent:8080/v1/chat/completions
     networks:
-      - superagent-network
+      - helixagent-network
     depends_on:
-      superagent:
+      helixagent:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
@@ -555,7 +555,7 @@ services:
   # SGLang Service - RadixAttention Prefix Caching (GPU Required)
   sglang:
     image: lmsysorg/sglang:latest
-    container_name: superagent-sglang
+    container_name: helixagent-sglang
     ports:
       - "${SGLANG_PORT:-30000}:30000"
     environment:
@@ -564,7 +564,7 @@ services:
     volumes:
       - sglang_cache:/root/.cache
     networks:
-      - superagent-network
+      - helixagent-network
     deploy:
       resources:
         reservations:
@@ -606,7 +606,7 @@ volumes:
     driver: local
 
 networks:
-  superagent-network:
+  helixagent-network:
     driver: bridge
     ipam:
       config:

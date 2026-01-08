@@ -28,7 +28,7 @@ Toolkit/Chutes/                           # Chutes module (correct location)
 - **Module Name**: `github.com/HelixDevelopment/HelixAgent-Chutes`
 - **Go Version**: 1.21
 - **Import Paths**: Updated to use proper module paths
-- **Dependencies**: Uses `github.com/superagent/toolkit/pkg/toolkit`
+- **Dependencies**: Uses `github.com/helixagent/toolkit/pkg/toolkit`
 
 ### Integration with Main Toolkit
 - **Import Path**: `"github.com/HelixDevelopment/HelixAgent-Chutes/providers/chutes"`

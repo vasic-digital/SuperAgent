@@ -1,4 +1,4 @@
-# SuperAgent Comprehensive Remediation Plan
+# HelixAgent Comprehensive Remediation Plan
 
 **Generated**: January 1, 2026
 **Status**: ACTIVE - Tracked for Resume/Continue
@@ -121,7 +121,7 @@ Missing fields from `002_modelsdev_integration.sql`:
 |---------|----------|--------|----------|
 | `cmd/api` | 0.0% | 100% | HIGH |
 | `internal/router` | 16.2% | 100% | HIGH |
-| `cmd/superagent` | 16.9% | 100% | HIGH |
+| `cmd/helixagent` | 16.9% | 100% | HIGH |
 | `cmd/grpc-server` | 23.8% | 100% | MEDIUM |
 | `internal/database` | 24.6% | 100% | HIGH |
 | `internal/cache` | 42.4% | 100% | MEDIUM |
@@ -132,7 +132,7 @@ Missing fields from `002_modelsdev_integration.sql`:
 
 ### 3.3 Missing OpenAPI Endpoint Implementations
 
-From `/specs/001-super-agent/contracts/openapi.yaml`:
+From `/specs/001-helix-agent/contracts/openapi.yaml`:
 
 | Endpoint | Method | Status |
 |----------|--------|--------|
@@ -224,7 +224,7 @@ Multiple status documents exist with conflicting claims:
 
 | Package | Current | Actions |
 |---------|---------|---------|
-| `cmd/superagent` | 16.9% | Test service initialization |
+| `cmd/helixagent` | 16.9% | Test service initialization |
 | `cmd/grpc-server` | 23.8% | Add gRPC handler tests |
 | `internal/cache` | 42.4% | Add Redis mock tests |
 
@@ -390,7 +390,7 @@ When resuming work on this remediation:
 | `CLAUDE.md` | Build/test commands |
 | `README.md` | Project overview |
 | `docs/architecture.md` | System design |
-| `specs/001-super-agent/spec.md` | Requirements specification |
+| `specs/001-helix-agent/spec.md` | Requirements specification |
 
 ### Migration Files
 

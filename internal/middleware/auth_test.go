@@ -61,8 +61,8 @@ func TestNewAuthMiddleware(t *testing.T) {
 			t.Errorf("Expected 24 hour default token expiry, got %v", middleware.tokenExpiry)
 		}
 
-		if middleware.issuer != "superagent" {
-			t.Errorf("Expected default issuer 'superagent', got %s", middleware.issuer)
+		if middleware.issuer != "helixagent" {
+			t.Errorf("Expected default issuer 'helixagent', got %s", middleware.issuer)
 		}
 	})
 }

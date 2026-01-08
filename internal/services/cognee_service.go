@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/config"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/config"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // CogneeService provides comprehensive Cognee integration for LLM enhancement
@@ -165,14 +165,14 @@ func NewCogneeService(cfg *config.Config, logger *logrus.Logger) *CogneeService 
 	}
 
 	// Default auth credentials for Cognee (can be overridden via config)
-	// Default: admin@superagent.ai / SuperAgentPass123 (as per CLAUDE.md)
+	// Default: admin@helixagent.ai / HelixAgentPass123 (as per CLAUDE.md)
 	authEmail := os.Getenv("COGNEE_AUTH_EMAIL")
 	if authEmail == "" {
-		authEmail = "admin@superagent.ai"
+		authEmail = "admin@helixagent.ai"
 	}
 	authPassword := os.Getenv("COGNEE_AUTH_PASSWORD")
 	if authPassword == "" {
-		authPassword = "SuperAgentPass123"
+		authPassword = "HelixAgentPass123"
 	}
 
 	serviceConfig := &CogneeServiceConfig{
@@ -1203,8 +1203,8 @@ func (s *CogneeService) EnsureDefaultDataset(ctx context.Context) error {
 
 	// Create default dataset
 	s.logger.WithField("dataset", datasetName).Info("Creating default dataset for Cognee")
-	err = s.CreateDataset(ctx, datasetName, "Default dataset for SuperAgent Cognee integration", map[string]interface{}{
-		"created_by": "superagent",
+	err = s.CreateDataset(ctx, datasetName, "Default dataset for HelixAgent Cognee integration", map[string]interface{}{
+		"created_by": "helixagent",
 		"auto_created": true,
 		"created_at": time.Now().Format(time.RFC3339),
 	})

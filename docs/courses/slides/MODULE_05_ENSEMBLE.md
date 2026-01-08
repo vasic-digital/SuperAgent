@@ -6,7 +6,7 @@
 
 ## Slide 1: Title Slide
 
-**SuperAgent: Multi-Provider AI Orchestration**
+**HelixAgent: Multi-Provider AI Orchestration**
 
 - Module 5: Ensemble Strategies
 - Duration: 60 minutes
@@ -53,7 +53,7 @@
 
 ## Slide 5: Ensemble Architecture
 
-**How SuperAgent Ensemble Works:**
+**How HelixAgent Ensemble Works:**
 
 ```
 Request --> +------------------+

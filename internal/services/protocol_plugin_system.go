@@ -737,7 +737,7 @@ func main() {
 			"timeout": "30s",
 		},
 		Tags:         []string{"mcp", "basic", "integration"},
-		Author:       "SuperAgent",
+		Author:       "HelixAgent",
 		Category:     "integration",
 		Requirements: []string{"mcp-client"},
 	}
@@ -826,7 +826,7 @@ func main() {
 			"enabled":  true,
 		},
 		Tags:         []string{"lsp", "completion", "code"},
-		Author:       "SuperAgent",
+		Author:       "HelixAgent",
 		Category:     "development",
 		Requirements: []string{"lsp-client"},
 	}

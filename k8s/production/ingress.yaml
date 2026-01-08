@@ -1,9 +1,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: superagent
+  name: helixagent
   labels:
-    app: superagent
+    app: helixagent
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
@@ -17,16 +17,16 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - api.superagent.example.com
-      secretName: superagent-tls
+        - api.helixagent.example.com
+      secretName: helixagent-tls
   rules:
-    - host: api.superagent.example.com
+    - host: api.helixagent.example.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: prod-superagent
+                name: prod-helixagent
                 port:
                   number: 80

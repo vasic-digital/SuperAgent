@@ -1,6 +1,6 @@
-# SuperAgent Deployment Guide
+# HelixAgent Deployment Guide
 
-Complete deployment instructions for SuperAgent across various platforms and environments.
+Complete deployment instructions for HelixAgent across various platforms and environments.
 
 ## Quick Start with Docker
 
@@ -13,8 +13,8 @@ Complete deployment instructions for SuperAgent across various platforms and env
 
 ```bash
 # Clone repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Copy environment template
 cp .env.example .env
@@ -30,7 +30,7 @@ curl http://localhost:8080/health
 ```
 
 ### What's Included
-- SuperAgent API server
+- HelixAgent API server
 - PostgreSQL database
 - Redis cache
 - Prometheus monitoring
@@ -59,9 +59,9 @@ LOG_LEVEL=info
 # Database
 DB_HOST=postgres
 DB_PORT=5432
-DB_USER=superagent_prod
+DB_USER=helixagent_prod
 DB_PASSWORD=your_secure_password
-DB_NAME=superagent_prod
+DB_NAME=helixagent_prod
 
 # Redis
 REDIS_HOST=redis
@@ -88,8 +88,8 @@ GRAFANA_ENABLED=true
 version: '3.8'
 
 services:
-  superagent:
-    image: superagent/superagent:latest
+  helixagent:
+    image: helixagent/helixagent:latest
     environment:
       - GIN_MODE=release
       - LOG_LEVEL=info
@@ -110,15 +110,15 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: superagent_prod
-      POSTGRES_USER: superagent_prod
+      POSTGRES_DB: helixagent_prod
+      POSTGRES_USER: helixagent_prod
       POSTGRES_PASSWORD: your_secure_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U superagent_prod"]
+      test: ["CMD-SHELL", "pg_isready -U helixagent_prod"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -170,7 +170,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/ssl:/etc/nginx/ssl
     depends_on:
-      - superagent
+      - helixagent
     restart: unless-stopped
 
 volumes:
@@ -191,16 +191,16 @@ volumes:
 ### Using Helm Chart
 
 ```bash
-# Add SuperAgent Helm repository
-helm repo add superagent https://charts.superagent.ai
+# Add HelixAgent Helm repository
+helm repo add helixagent https://charts.helixagent.ai
 helm repo update
 
 # Install with default configuration
-helm install superagent superagent/superagent
+helm install helixagent helixagent/helixagent
 
 # Install with custom values
-helm install superagent superagent/superagent \
-  --set superagent.apiKey="your-api-key" \
+helm install helixagent helixagent/helixagent \
+  --set helixagent.apiKey="your-api-key" \
   --set postgresql.auth.password="your-db-password" \
   --set redis.auth.password="your-redis-password"
 ```
@@ -209,7 +209,7 @@ helm install superagent superagent/superagent \
 
 Create namespace:
 ```bash
-kubectl create namespace superagent
+kubectl create namespace helixagent
 ```
 
 Apply configurations:
@@ -219,8 +219,8 @@ kubectl apply -f deploy/kubernetes/
 
 Monitor deployment:
 ```bash
-kubectl get pods -n superagent
-kubectl logs -f deployment/superagent -n superagent
+kubectl get pods -n helixagent
+kubectl logs -f deployment/helixagent -n helixagent
 ```
 
 ### Kubernetes Manifests Structure
@@ -242,9 +242,9 @@ deploy/kubernetes/
 │   ├── grafana-deployment.yaml
 │   └── grafana-service.yaml
 ├── api/
-│   ├── superagent-deployment.yaml
-│   ├── superagent-service.yaml
-│   └── superagent-ingress.yaml
+│   ├── helixagent-deployment.yaml
+│   ├── helixagent-service.yaml
+│   └── helixagent-ingress.yaml
 └── rbac/
     ├── serviceaccount.yaml
     ├── clusterrole.yaml
@@ -259,16 +259,16 @@ deploy/kubernetes/
 
 ```bash
 # Create cluster
-aws ecs create-cluster --cluster-name superagent-cluster
+aws ecs create-cluster --cluster-name helixagent-cluster
 
 # Register task definition
 aws ecs register-task-definition --cli-input-json file://aws/task-definition.json
 
 # Create service
 aws ecs create-service \
-  --cluster superagent-cluster \
-  --service-name superagent-service \
-  --task-definition superagent-task \
+  --cluster helixagent-cluster \
+  --service-name helixagent-service \
+  --task-definition helixagent-task \
   --desired-count 2 \
   --launch-type FARGATE \
   --network-configuration "awsvpcConfiguration={subnets=[subnet-12345,subnet-67890],securityGroups=[sg-12345],assignPublicIp=ENABLED}"
@@ -281,38 +281,38 @@ import * as cdk from 'aws-cdk-lib';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 
-export class SuperAgentStack extends cdk.Stack {
+export class HelixAgentStack extends cdk.Stack {
   constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // VPC
-    const vpc = new ec2.Vpc(this, 'SuperAgentVpc', {
+    const vpc = new ec2.Vpc(this, 'HelixAgentVpc', {
       maxAzs: 2,
     });
 
     // ECS Cluster
-    const cluster = new ecs.Cluster(this, 'SuperAgentCluster', {
+    const cluster = new ecs.Cluster(this, 'HelixAgentCluster', {
       vpc,
     });
 
     // Task Definition
-    const taskDefinition = new ecs.FargateTaskDefinition(this, 'SuperAgentTask', {
+    const taskDefinition = new ecs.FargateTaskDefinition(this, 'HelixAgentTask', {
       memoryLimitMiB: 2048,
       cpu: 1024,
     });
 
     // Container
-    taskDefinition.addContainer('SuperAgentContainer', {
-      image: ecs.ContainerImage.fromRegistry('superagent/superagent:latest'),
+    taskDefinition.addContainer('HelixAgentContainer', {
+      image: ecs.ContainerImage.fromRegistry('helixagent/helixagent:latest'),
       environment: {
         GIN_MODE: 'release',
         // Add other environment variables
       },
-      logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'superagent' }),
+      logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'helixagent' }),
     });
 
     // Service
-    new ecs.FargateService(this, 'SuperAgentService', {
+    new ecs.FargateService(this, 'HelixAgentService', {
       cluster,
       taskDefinition,
       desiredCount: 2,
@@ -325,11 +325,11 @@ export class SuperAgentStack extends cdk.Stack {
 
 ```bash
 # Build and push container
-gcloud builds submit --tag gcr.io/YOUR_PROJECT/superagent
+gcloud builds submit --tag gcr.io/YOUR_PROJECT/helixagent
 
 # Deploy to Cloud Run
-gcloud run deploy superagent \
-  --image gcr.io/YOUR_PROJECT/superagent \
+gcloud run deploy helixagent \
+  --image gcr.io/YOUR_PROJECT/helixagent \
   --platform managed \
   --region us-central1 \
   --allow-unauthenticated \
@@ -344,18 +344,18 @@ gcloud run deploy superagent \
 
 ```bash
 # Create resource group
-az group create --name superagent-rg --location eastus
+az group create --name helixagent-rg --location eastus
 
 # Create container instance
 az container create \
-  --resource-group superagent-rg \
-  --name superagent-container \
-  --image superagent/superagent:latest \
+  --resource-group helixagent-rg \
+  --name helixagent-container \
+  --image helixagent/helixagent:latest \
   --ports 8080 \
   --environment-variables GIN_MODE=release \
   --memory 2 \
   --cpu 1 \
-  --dns-name-label superagent-api \
+  --dns-name-label helixagent-api \
   --os-type Linux
 ```
 
@@ -385,8 +385,8 @@ sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker
 sudo chmod +x /usr/local/bin/docker-compose
 
 # Clone repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Configure environment
 cp .env.example .env
@@ -396,9 +396,9 @@ nano .env  # Edit configuration
 docker-compose up -d
 
 # Enable systemd service
-sudo cp deploy/systemd/superagent.service /etc/systemd/system/
-sudo systemctl enable superagent
-sudo systemctl start superagent
+sudo cp deploy/systemd/helixagent.service /etc/systemd/system/
+sudo systemctl enable helixagent
+sudo systemctl start helixagent
 ```
 
 ### Red Hat Enterprise Linux
@@ -408,8 +408,8 @@ sudo systemctl start superagent
 sudo dnf install -y podman podman-compose
 
 # Clone and configure
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Use Podman instead of Docker
 export DOCKER=podman
@@ -424,19 +424,19 @@ podman-compose up -d
 ### Load Balancing with Nginx
 
 ```nginx
-upstream superagent_backend {
+upstream helixagent_backend {
     least_conn;
-    server superagent-1:8080;
-    server superagent-2:8080;
-    server superagent-3:8080;
+    server helixagent-1:8080;
+    server helixagent-2:8080;
+    server helixagent-3:8080;
 }
 
 server {
     listen 80;
-    server_name api.superagent.ai;
+    server_name api.helixagent.ai;
 
     location / {
-        proxy_pass http://superagent_backend;
+        proxy_pass http://helixagent_backend;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -450,7 +450,7 @@ server {
 
     # Health check endpoint
     location /health {
-        proxy_pass http://superagent_backend;
+        proxy_pass http://helixagent_backend;
         access_log off;
     }
 }
@@ -521,9 +521,9 @@ rule_files:
   # - "second_rules.yml"
 
 scrape_configs:
-  - job_name: 'superagent'
+  - job_name: 'helixagent'
     static_configs:
-      - targets: ['superagent:8080']
+      - targets: ['helixagent:8080']
     scrape_interval: 5s
     metrics_path: '/metrics'
 
@@ -541,7 +541,7 @@ scrape_configs:
 ### Grafana Dashboards
 
 Pre-configured dashboards available:
-- SuperAgent API Performance
+- HelixAgent API Performance
 - Database Metrics
 - Cache Performance
 - Provider Health Status
@@ -560,16 +560,16 @@ open http://localhost:3000
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name api.superagent.ai;
+    server_name api.helixagent.ai;
 
-    ssl_certificate /etc/nginx/ssl/superagent.crt;
-    ssl_certificate_key /etc/nginx/ssl/superagent.key;
+    ssl_certificate /etc/nginx/ssl/helixagent.crt;
+    ssl_certificate_key /etc/nginx/ssl/helixagent.key;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384;
     ssl_prefer_server_ciphers off;
 
     location / {
-        proxy_pass http://superagent_backend;
+        proxy_pass http://helixagent_backend;
         # ... other proxy settings
     }
 }
@@ -603,7 +603,7 @@ secrets:
     file: ./secrets/db_password.txt
 
 services:
-  superagent:
+  helixagent:
     secrets:
       - api_key
       - db_password
@@ -615,22 +615,22 @@ services:
 
 ```bash
 # Daily PostgreSQL backup
-0 2 * * * docker exec superagent-postgres-1 pg_dump -U superagent superagent_db > /backup/superagent_$(date +\%Y\%m\%d).sql
+0 2 * * * docker exec helixagent-postgres-1 pg_dump -U helixagent helixagent_db > /backup/helixagent_$(date +\%Y\%m\%d).sql
 
 # Redis backup
-0 3 * * * docker exec superagent-redis-1 redis-cli --rdb /backup/redis_$(date +\%Y\%m\%d).rdb
+0 3 * * * docker exec helixagent-redis-1 redis-cli --rdb /backup/redis_$(date +\%Y\%m\%d).rdb
 ```
 
 ### Automated Backups with Cron
 
 ```bash
 # Install backup script
-sudo cp scripts/backup.sh /usr/local/bin/superagent-backup
-sudo chmod +x /usr/local/bin/superagent-backup
+sudo cp scripts/backup.sh /usr/local/bin/helixagent-backup
+sudo chmod +x /usr/local/bin/helixagent-backup
 
 # Add to crontab
 crontab -e
-# Add: 0 2 * * * /usr/local/bin/superagent-backup
+# Add: 0 2 * * * /usr/local/bin/helixagent-backup
 ```
 
 ## Troubleshooting
@@ -640,7 +640,7 @@ crontab -e
 #### Container Won't Start
 ```bash
 # Check logs
-docker-compose logs superagent
+docker-compose logs helixagent
 
 # Check resource usage
 docker stats
@@ -652,7 +652,7 @@ docker-compose config
 #### Database Connection Issues
 ```bash
 # Test database connectivity
-docker-compose exec postgres pg_isready -U superagent -d superagent_db
+docker-compose exec postgres pg_isready -U helixagent -d helixagent_db
 
 # Check database logs
 docker-compose logs postgres
@@ -664,7 +664,7 @@ docker-compose logs postgres
 docker stats
 
 # Adjust container limits
-superagent:
+helixagent:
   deploy:
     resources:
       limits:
@@ -731,7 +731,7 @@ FROM pg_stat_database;
 docker-compose pull
 
 # Rolling restart
-docker-compose up -d --no-deps superagent
+docker-compose up -d --no-deps helixagent
 
 # Verify health
 curl http://localhost:8080/health
@@ -741,13 +741,13 @@ curl http://localhost:8080/health
 
 ```bash
 # Deploy new version alongside old
-docker-compose up -d --scale superagent=2
+docker-compose up -d --scale helixagent=2
 
 # Wait for new instances to be healthy
 sleep 30
 
 # Remove old instances
-docker-compose up -d --scale superagent=1
+docker-compose up -d --scale helixagent=1
 ```
 
 ## Support and Resources
@@ -758,11 +758,11 @@ docker-compose up -d --scale superagent=1
 - [Troubleshooting Guide](./troubleshooting.md)
 
 ### Community Support
-- [GitHub Issues](https://github.com/superagent/superagent/issues)
-- [Discussions](https://github.com/superagent/superagent/discussions)
+- [GitHub Issues](https://github.com/helixagent/helixagent/issues)
+- [Discussions](https://github.com/helixagent/helixagent/discussions)
 
 ### Enterprise Support
-- Email: enterprise@superagent.ai
+- Email: enterprise@helixagent.ai
 - SLA: 99.9% uptime guarantee
 - Phone: +1 (555) 123-4567
 

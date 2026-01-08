@@ -1,33 +1,33 @@
-# SuperAgent JavaScript/TypeScript SDK
+# HelixAgent JavaScript/TypeScript SDK
 
-A JavaScript/TypeScript SDK for the SuperAgent AI orchestration platform. Provides OpenAI-compatible API access with support for ensemble LLM strategies and AI debates.
+A JavaScript/TypeScript SDK for the HelixAgent AI orchestration platform. Provides OpenAI-compatible API access with support for ensemble LLM strategies and AI debates.
 
 ## Installation
 
 ```bash
-npm install superagent-sdk
+npm install helixagent-sdk
 ```
 
 Or with yarn:
 
 ```bash
-yarn add superagent-sdk
+yarn add helixagent-sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { SuperAgent } from 'superagent-sdk';
+import { HelixAgent } from 'helixagent-sdk';
 
 // Initialize client
-const client = new SuperAgent({
+const client = new HelixAgent({
   apiKey: 'your-api-key',
   baseUrl: 'http://localhost:8080'
 });
 
 // Chat completion
 const response = await client.chat.create({
-  model: 'superagent-ensemble',
+  model: 'helixagent-ensemble',
   messages: [
     { role: 'system', content: 'You are a helpful assistant.' },
     { role: 'user', content: 'What is the capital of France?' }
@@ -42,7 +42,7 @@ console.log(response.choices[0].message.content);
 ```typescript
 // Stream responses
 const stream = client.chat.createStream({
-  model: 'superagent-ensemble',
+  model: 'helixagent-ensemble',
   messages: [{ role: 'user', content: 'Tell me a story' }]
 });
 
@@ -57,7 +57,7 @@ for await (const chunk of stream) {
 
 ```typescript
 const response = await client.chat.create({
-  model: 'superagent-ensemble',
+  model: 'helixagent-ensemble',
   messages: [{ role: 'user', content: 'Complex question' }],
   ensemble_config: {
     strategy: 'confidence_weighted',
@@ -113,7 +113,7 @@ await client.debates.delete(debate.debate_id);
 
 ```typescript
 // Via constructor
-const client = new SuperAgent({
+const client = new HelixAgent({
   apiKey: 'your-key',
   baseUrl: 'http://localhost:8080',
   timeout: 60000,
@@ -122,8 +122,8 @@ const client = new SuperAgent({
 });
 
 // Via environment variable
-// SUPERAGENT_API_KEY=your-key
-const client = new SuperAgent(); // Uses env var
+// HELIXAGENT_API_KEY=your-key
+const client = new HelixAgent(); // Uses env var
 ```
 
 ## API Reference
@@ -212,13 +212,13 @@ const result = await client.debates.waitForCompletion(debateId, { pollInterval, 
 
 ```typescript
 import {
-  SuperAgentError,
+  HelixAgentError,
   AuthenticationError,
   RateLimitError,
   APIError,
   TimeoutError,
   NetworkError
-} from 'superagent-sdk';
+} from 'helixagent-sdk';
 
 try {
   const response = await client.chat.create({...});
@@ -239,18 +239,18 @@ try {
 
 ## OpenAI Compatibility
 
-SuperAgent is fully compatible with the OpenAI API format. You can use the official OpenAI JavaScript client:
+HelixAgent is fully compatible with the OpenAI API format. You can use the official OpenAI JavaScript client:
 
 ```typescript
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-  apiKey: 'your-superagent-key',
+  apiKey: 'your-helixagent-key',
   baseURL: 'http://localhost:8080/v1'
 });
 
 const response = await openai.chat.completions.create({
-  model: 'superagent-ensemble',
+  model: 'helixagent-ensemble',
   messages: [{ role: 'user', content: 'Hello!' }]
 });
 ```
@@ -258,15 +258,15 @@ const response = await openai.chat.completions.create({
 ## Browser Usage
 
 ```html
-<script src="https://unpkg.com/superagent-sdk/dist/superagent.browser.js"></script>
+<script src="https://unpkg.com/helixagent-sdk/dist/helixagent.browser.js"></script>
 <script>
-const client = new SuperAgent({
+const client = new HelixAgent({
   apiKey: 'your-key',
-  baseUrl: 'https://api.superagent.ai'
+  baseUrl: 'https://api.helixagent.ai'
 });
 
 client.chat.create({
-  model: 'superagent-ensemble',
+  model: 'helixagent-ensemble',
   messages: [{ role: 'user', content: 'Hello!' }]
 }).then(response => {
   console.log(response.choices[0].message.content);
@@ -280,15 +280,15 @@ Full TypeScript support with type definitions included:
 
 ```typescript
 import {
-  SuperAgent,
+  HelixAgent,
   ChatCompletionRequest,
   ChatCompletionResponse,
   CreateDebateRequest,
   DebateResult
-} from 'superagent-sdk';
+} from 'helixagent-sdk';
 
 const request: ChatCompletionRequest = {
-  model: 'superagent-ensemble',
+  model: 'helixagent-ensemble',
   messages: [{ role: 'user', content: 'Hello' }]
 };
 

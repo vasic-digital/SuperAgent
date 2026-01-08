@@ -33,9 +33,9 @@ func testEnsemble() {
 	}
 
 	// Test 2: Test ensemble model specifically
-	fmt.Println("🤖 Testing superagent-ensemble model...")
+	fmt.Println("🤖 Testing helixagent-ensemble model...")
 	request := EnsembleTestRequest{
-		Model: "superagent-ensemble",
+		Model: "helixagent-ensemble",
 		Messages: []EnsembleMessage{
 			{Role: "user", Content: "What is microservices architecture? Explain in one sentence."},
 		},
@@ -85,7 +85,7 @@ func testEnsemble() {
 		fmt.Printf("Response: %s\n", string(body))
 	}
 
-	fmt.Println("\n🎉 SuperAgent Multi-Provider System Test Complete!")
+	fmt.Println("\n🎉 HelixAgent Multi-Provider System Test Complete!")
 	fmt.Println("✅ OpenAI API Compatibility: WORKING")
 	fmt.Println("✅ Ensemble Multi-Provider: WORKING")
 	fmt.Println("✅ MCP Protocol Support: WORKING")

@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	pb "github.com/superagent/superagent/pkg/api"
+	pb "github.com/helixagent/helixagent/pkg/api"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 

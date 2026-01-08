@@ -1,13 +1,13 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: superagent
+  name: helixagent
   labels:
-    app: superagent
+    app: helixagent
 spec:
   podSelector:
     matchLabels:
-      app: superagent
+      app: helixagent
   policyTypes:
     - Ingress
     - Egress
@@ -18,7 +18,7 @@ spec:
               name: ingress-nginx
         - podSelector:
             matchLabels:
-              app: superagent
+              app: helixagent
       ports:
         - protocol: TCP
           port: 8080

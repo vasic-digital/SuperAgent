@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 func TestNewGeminiProvider(t *testing.T) {
@@ -84,7 +84,7 @@ func TestGeminiProvider_Complete_Success(t *testing.T) {
 		assert.Equal(t, "/v1beta/models/gemini-pro:generateContent", r.URL.Path)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		assert.Equal(t, "test-api-key", r.Header.Get("x-goog-api-key"))
-		assert.Equal(t, "SuperAgent/1.0", r.Header.Get("User-Agent"))
+		assert.Equal(t, "HelixAgent/1.0", r.Header.Get("User-Agent"))
 
 		var reqBody GeminiRequest
 		body, err := io.ReadAll(r.Body)

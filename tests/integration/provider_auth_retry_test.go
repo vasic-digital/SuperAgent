@@ -12,13 +12,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/llm/providers/cerebras"
-	"github.com/superagent/superagent/internal/llm/providers/claude"
-	"github.com/superagent/superagent/internal/llm/providers/deepseek"
-	"github.com/superagent/superagent/internal/llm/providers/gemini"
-	"github.com/superagent/superagent/internal/llm/providers/mistral"
-	"github.com/superagent/superagent/internal/llm/providers/qwen"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/llm/providers/cerebras"
+	"github.com/helixagent/helixagent/internal/llm/providers/claude"
+	"github.com/helixagent/helixagent/internal/llm/providers/deepseek"
+	"github.com/helixagent/helixagent/internal/llm/providers/gemini"
+	"github.com/helixagent/helixagent/internal/llm/providers/mistral"
+	"github.com/helixagent/helixagent/internal/llm/providers/qwen"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // TestIntegration_AllProviders401Retry tests that all providers properly retry on 401 errors

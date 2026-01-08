@@ -217,7 +217,7 @@ func (pr *ParticipantResponse) Validate() error {
 Add import for services package at the top:
 ```go
 import (
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
 )
 ```
 
@@ -640,8 +640,8 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/services"
-    "github.com/superagent/superagent/internal/utils"
+    "github.com/helixagent/helixagent/internal/services"
+    "github.com/helixagent/helixagent/internal/utils"
 )
 
 func TestAdvancedDebateService_Integration(t *testing.T) {
@@ -817,8 +817,8 @@ import (
     
     "github.com/stretchr/testify/mock"
     
-    "github.com/superagent/superagent/internal/llm"
-    "github.com/superagent/superagent/internal/models"
+    "github.com/helixagent/helixagent/internal/llm"
+    "github.com/helixagent/helixagent/internal/models"
 )
 
 // mockLLMProvider is a mock implementation of LLMProvider
@@ -890,7 +890,7 @@ import (
     
     "github.com/sirupsen/logrus"
     
-    "github.com/superagent/superagent/internal/llm"
+    "github.com/helixagent/helixagent/internal/llm"
 )
 
 // ClaudeProvider implements LLMProvider for Anthropic Claude
@@ -1096,7 +1096,7 @@ import (
     
     "github.com/sirupsen/logrus"
     
-    "github.com/superagent/superagent/internal/llm"
+    "github.com/helixagent/helixagent/internal/llm"
 )
 
 // DeepSeekProvider implements LLMProvider for DeepSeek
@@ -1280,8 +1280,8 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/llm"
-    "github.com/superagent/superagent/internal/llm/providers"
+    "github.com/helixagent/helixagent/internal/llm"
+    "github.com/helixagent/helixagent/internal/llm/providers"
 )
 
 func TestNewClaudeProvider(t *testing.T) {
@@ -1497,8 +1497,8 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/superagent/superagent/internal/llm"
-    "github.com/superagent/superagent/internal/llm/providers"
+    "github.com/helixagent/helixagent/internal/llm"
+    "github.com/helixagent/helixagent/internal/llm/providers"
 )
 
 func TestNewDeepSeekProvider(t *testing.T) {

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/superagent/superagent/internal/config"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/config"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // UnifiedHandler provides 100% OpenAI-compatible API with automatic ensemble support
@@ -74,7 +74,7 @@ type OpenAIChatRequest struct {
 	FrequencyPenalty float64            `json:"frequency_penalty,omitempty"`
 	LogitBias        map[string]float64 `json:"logit_bias,omitempty"`
 	User             string             `json:"user,omitempty"`
-	// SuperAgent extensions
+	// HelixAgent extensions
 	EnsembleConfig *models.EnsembleConfig `json:"ensemble_config,omitempty"`
 	ForceProvider  string                 `json:"force_provider,omitempty"`
 }
@@ -328,8 +328,8 @@ StreamLoop:
 			"id":                 streamID, // Same ID as all other chunks
 			"object":             "chat.completion.chunk",
 			"created":            time.Now().Unix(),
-			"model":              "superagent-ensemble",
-			"system_fingerprint": "fp_superagent_v1",
+			"model":              "helixagent-ensemble",
+			"system_fingerprint": "fp_helixagent_v1",
 			"choices": []map[string]any{
 				{
 					"index":         0,
@@ -493,8 +493,8 @@ StreamLoop:
 			"id":                 streamID, // Same ID as all other chunks
 			"object":             "chat.completion.chunk",
 			"created":            time.Now().Unix(),
-			"model":              "superagent-ensemble",
-			"system_fingerprint": "fp_superagent_v1",
+			"model":              "helixagent-ensemble",
+			"system_fingerprint": "fp_helixagent_v1",
 			"choices": []map[string]any{
 				{
 					"index":         0,
@@ -541,20 +541,20 @@ func (h *UnifiedHandler) CompletionsStream(c *gin.Context) {
 	h.Completions(c) // Reuse completions logic
 }
 
-// Models returns only the SuperAgent virtual model
-// SuperAgent exposes a single unified model that internally uses AI debate ensemble
+// Models returns only the HelixAgent virtual model
+// HelixAgent exposes a single unified model that internally uses AI debate ensemble
 // Backend provider models are implementation details and not exposed to clients
 func (h *UnifiedHandler) Models(c *gin.Context) {
-	// SuperAgent exposes only ONE virtual model: superagent-debate
+	// HelixAgent exposes only ONE virtual model: helixagent-debate
 	// This model internally uses AI debate ensemble with multiple LLMs
-	superagentModel := OpenAIModel{
-		ID:      "superagent-debate",
+	helixagentModel := OpenAIModel{
+		ID:      "helixagent-debate",
 		Object:  "model",
 		Created: time.Now().Unix(),
-		OwnedBy: "superagent",
+		OwnedBy: "helixagent",
 		Permission: []OpenAIModelPermission{
 			{
-				ID:                 "superagent-debate-permission",
+				ID:                 "helixagent-debate-permission",
 				Object:             "model_permission",
 				Created:            time.Now().Unix(),
 				AllowCreateEngine:  true,
@@ -563,17 +563,17 @@ func (h *UnifiedHandler) Models(c *gin.Context) {
 				AllowSearchIndices: true,
 				AllowView:          true,
 				AllowFineTuning:    false,
-				Organization:       "superagent",
+				Organization:       "helixagent",
 				IsBlocking:         false,
 			},
 		},
-		Root:   "superagent-debate",
+		Root:   "helixagent-debate",
 		Parent: nil,
 	}
 
 	response := OpenAIModelsResponse{
 		Object: "list",
-		Data:   []OpenAIModel{superagentModel},
+		Data:   []OpenAIModel{helixagentModel},
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -750,10 +750,10 @@ func (h *UnifiedHandler) convertToOpenAIChatResponse(result *services.EnsembleRe
 		ID:                selected.ID,
 		Object:            "chat.completion",
 		Created:           selected.CreatedAt.Unix(),
-		Model:             "superagent-ensemble", // Always show ensemble model
+		Model:             "helixagent-ensemble", // Always show ensemble model
 		Choices:           []OpenAIChoice{choice},
 		Usage:             usage,
-		SystemFingerprint: "fp_superagent_ensemble",
+		SystemFingerprint: "fp_helixagent_ensemble",
 	}
 }
 
@@ -806,8 +806,8 @@ func (h *UnifiedHandler) convertToOpenAIChatStreamResponse(resp *models.LLMRespo
 		"id":                 id,
 		"object":             "chat.completion.chunk",
 		"created":            resp.CreatedAt.Unix(),
-		"model":              "superagent-ensemble",
-		"system_fingerprint": "fp_superagent_v1",
+		"model":              "helixagent-ensemble",
+		"system_fingerprint": "fp_helixagent_v1",
 		"choices":            []map[string]any{choice},
 	}
 }

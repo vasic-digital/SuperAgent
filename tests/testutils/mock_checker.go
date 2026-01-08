@@ -25,8 +25,8 @@ func GetMockConfig() MockConfig {
 	return MockConfig{
 		MockLLMURL:     getEnvOrDefault("MOCK_LLM_URL", "http://localhost:18081"),
 		MockLLMEnabled: os.Getenv("MOCK_LLM_ENABLED") == "true" || os.Getenv("CI") == "true",
-		PostgresURL:    getEnvOrDefault("DATABASE_URL", "postgres://superagent:superagent123@localhost:15432/superagent_db?sslmode=disable"),
-		RedisURL:       getEnvOrDefault("REDIS_URL", "redis://:superagent123@localhost:16379"),
+		PostgresURL:    getEnvOrDefault("DATABASE_URL", "postgres://helixagent:helixagent123@localhost:15432/helixagent_db?sslmode=disable"),
+		RedisURL:       getEnvOrDefault("REDIS_URL", "redis://:helixagent123@localhost:16379"),
 		ServerURL:      getEnvOrDefault("SERVER_URL", "http://localhost:8080"),
 	}
 }
@@ -68,7 +68,7 @@ func IsRedisAvailable() bool {
 	return true
 }
 
-// IsServerAvailable checks if the SuperAgent server is running
+// IsServerAvailable checks if the HelixAgent server is running
 func IsServerAvailable() bool {
 	return IsServerAvailableAt(GetMockConfig().ServerURL)
 }
@@ -121,7 +121,7 @@ func GetServerURL() string {
 
 // GetDatabaseURL returns the database URL for testing
 func GetDatabaseURL() string {
-	return getEnvOrDefault("DATABASE_URL", "postgres://superagent:superagent123@localhost:15432/superagent_db?sslmode=disable")
+	return getEnvOrDefault("DATABASE_URL", "postgres://helixagent:helixagent123@localhost:15432/helixagent_db?sslmode=disable")
 }
 
 // RequireInfrastructure returns an error message if required infrastructure is not available
@@ -143,7 +143,7 @@ func RequireInfrastructure(needs ...string) string {
 			}
 		case "server":
 			if !IsServerAvailable() {
-				return fmt.Sprintf("SuperAgent server not available at %s. Start with: make run-dev", GetServerURL())
+				return fmt.Sprintf("HelixAgent server not available at %s. Start with: make run-dev", GetServerURL())
 			}
 		case "docker":
 			if !IsDockerAvailable() {

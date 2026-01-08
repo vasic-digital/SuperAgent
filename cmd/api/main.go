@@ -1,4 +1,4 @@
-// SuperAgent Protocol Enhancement REST API Server
+// HelixAgent Protocol Enhancement REST API Server
 // This server provides REST API endpoints for all protocol operations
 
 package main
@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // APIServer represents the REST API server
@@ -39,7 +39,7 @@ func NewAPIServer(port string) *APIServer {
 		},
 		logger,
 	)
-	pluginSystem := services.NewProtocolPluginSystem("/opt/superagent/plugins", logger)
+	pluginSystem := services.NewProtocolPluginSystem("/opt/helixagent/plugins", logger)
 	pluginRegistry := services.NewProtocolPluginRegistry(logger)
 	templateManager := services.NewProtocolTemplateManager(logger)
 
@@ -137,7 +137,7 @@ func (s *APIServer) Start() error {
 		api.GET("/metrics", s.handlePrometheusMetrics)
 	}
 
-	s.logger.WithField("port", s.port).Info("Starting SuperAgent Protocol Enhancement API Server")
+	s.logger.WithField("port", s.port).Info("Starting HelixAgent Protocol Enhancement API Server")
 	return r.Run(":" + s.port)
 }
 
@@ -527,17 +527,17 @@ func (s *APIServer) handleStatus(c *gin.Context) {
 func (s *APIServer) handlePrometheusMetrics(c *gin.Context) {
 	// Simple Prometheus metrics format
 	metrics := `
-# HELP superagent_protocols_active Number of active protocols
-# TYPE superagent_protocols_active gauge
-superagent_protocols_active %d
+# HELP helixagent_protocols_active Number of active protocols
+# TYPE helixagent_protocols_active gauge
+helixagent_protocols_active %d
 
-# HELP superagent_plugins_loaded Number of loaded plugins
-# TYPE superagent_plugins_loaded gauge
-superagent_plugins_loaded %d
+# HELP helixagent_plugins_loaded Number of loaded plugins
+# TYPE helixagent_plugins_loaded gauge
+helixagent_plugins_loaded %d
 
-# HELP superagent_requests_total Total number of requests processed
-# TYPE superagent_requests_total counter
-superagent_requests_total %d
+# HELP helixagent_requests_total Total number of requests processed
+# TYPE helixagent_requests_total counter
+helixagent_requests_total %d
 `
 
 	allMetrics := s.protocolAnalytics.GetAllProtocolMetrics()

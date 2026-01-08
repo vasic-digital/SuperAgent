@@ -165,7 +165,7 @@ go test -v ./tests/challenge -run ModelsMetadataChaos
 ### Test Database Configuration
 ```bash
 # Set test database URL
-export TEST_DATABASE_URL="postgres://testuser:testpass@localhost:5432/superagent_test?sslmode=disable"
+export TEST_DATABASE_URL="postgres://testuser:testpass@localhost:5432/helixagent_test?sslmode=disable"
 
 # Run tests
 go test -v ./internal/database -run TestModelMetadata
@@ -240,7 +240,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: superagent_test
+          POSTGRES_DB: helixagent_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s

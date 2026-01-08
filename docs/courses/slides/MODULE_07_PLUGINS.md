@@ -6,11 +6,11 @@
 
 ## Slide 1: Title Slide
 
-**SuperAgent: Multi-Provider AI Orchestration**
+**HelixAgent: Multi-Provider AI Orchestration**
 
 - Module 7: Plugin Development
 - Duration: 75 minutes
-- Extending SuperAgent Functionality
+- Extending HelixAgent Functionality
 
 ---
 
@@ -430,11 +430,11 @@ func TestPlugin_Initialize(t *testing.T) {
 
 ## Slide 20: Integration Testing
 
-**Testing with SuperAgent:**
+**Testing with HelixAgent:**
 
 ```go
 func TestPlugin_Integration(t *testing.T) {
-    // Start SuperAgent with plugin
+    // Start HelixAgent with plugin
     app := testutil.NewTestApp(t)
     app.LoadPlugin(t, "./plugins/my-plugin")
 
@@ -549,7 +549,7 @@ Time: 35 minutes
 
 **Key Takeaways:**
 
-- Plugins extend SuperAgent without core changes
+- Plugins extend HelixAgent without core changes
 - Implement Plugin interface for custom functionality
 - Hot-reload enables zero-downtime updates
 - Dependency resolution for plugin ordering

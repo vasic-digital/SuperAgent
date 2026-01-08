@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // RequestService handles LLM request routing and load balancing

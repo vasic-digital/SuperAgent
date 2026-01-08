@@ -1,6 +1,6 @@
-# SuperAgent API Reference Examples
+# HelixAgent API Reference Examples
 
-This document provides practical examples for using the SuperAgent API with various programming languages and tools.
+This document provides practical examples for using the HelixAgent API with various programming languages and tools.
 
 ## Table of Contents
 1. [Quick Start](#quick-start)
@@ -13,18 +13,18 @@ This document provides practical examples for using the SuperAgent API with vari
 
 ## Quick Start
 
-### 1. Install and Start SuperAgent
+### 1. Install and Start HelixAgent
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Build the binary
-go build -o superagent cmd/superagent/main_multi_provider.go
+go build -o helixagent cmd/helixagent/main_multi_provider.go
 
 # Start with multi-provider configuration
-./superagent --config configs/multi-provider.yaml
+./helixagent --config configs/multi-provider.yaml
 ```
 
 ### 2. Test Basic Connectivity
@@ -82,7 +82,7 @@ curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "superagent-ensemble",
+    "model": "helixagent-ensemble",
     "messages": [
       {
         "role": "system",
@@ -105,7 +105,7 @@ curl -X POST http://localhost:8080/v1/chat/completions/stream \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "superagent-ensemble",
+    "model": "helixagent-ensemble",
     "messages": [
       {
         "role": "user",
@@ -147,7 +147,7 @@ curl -X POST http://localhost:8080/v1/ensemble/completions \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Compare and contrast Python and JavaScript for web development.",
-    "model": "superagent-ensemble",
+    "model": "helixagent-ensemble",
     "temperature": 0.5,
     "max_tokens": 800,
     "ensemble_config": {
@@ -170,7 +170,7 @@ curl -X POST http://localhost:8080/v1/ensemble/completions \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Based on our previous conversation about machine learning, what are the latest trends?",
-    "model": "superagent-ensemble",
+    "model": "helixagent-ensemble",
     "temperature": 0.6,
     "max_tokens": 600,
     "ensemble_config": {
@@ -245,7 +245,7 @@ curl http://localhost:8080/v1/health
 curl http://localhost:8080/metrics
 
 # Filter specific metrics
-curl http://localhost:8080/metrics | grep superagent_requests_total
+curl http://localhost:8080/metrics | grep helixagent_requests_total
 
 # Get metrics with timestamp
 curl "http://localhost:8080/metrics?timestamp=$(date +%s)"
@@ -255,10 +255,10 @@ curl "http://localhost:8080/metrics?timestamp=$(date +%s)"
 
 ```bash
 # Count total requests
-curl http://localhost:8080/metrics | grep 'superagent_requests_total{' | awk '{print $2}'
+curl http://localhost:8080/metrics | grep 'helixagent_requests_total{' | awk '{print $2}'
 
 # Get average response time
-curl http://localhost:8080/metrics | grep 'superagent_request_duration_seconds_sum' | awk '{print $2}'
+curl http://localhost:8080/metrics | grep 'helixagent_request_duration_seconds_sum' | awk '{print $2}'
 ```
 
 ## Integration Examples
@@ -269,7 +269,7 @@ curl http://localhost:8080/metrics | grep 'superagent_request_duration_seconds_s
 import requests
 import json
 
-class SuperAgentClient:
+class HelixAgentClient:
     def __init__(self, base_url="http://localhost:8080", token=None):
         self.base_url = base_url
         self.token = token
@@ -277,7 +277,7 @@ class SuperAgentClient:
         if token:
             self.session.headers.update({"Authorization": f"Bearer {token}"})
     
-    def chat_completion(self, messages, model="superagent-ensemble", **kwargs):
+    def chat_completion(self, messages, model="helixagent-ensemble", **kwargs):
         url = f"{self.base_url}/v1/chat/completions"
         data = {
             "model": model,
@@ -288,7 +288,7 @@ class SuperAgentClient:
         response.raise_for_status()
         return response.json()
     
-    def stream_chat_completion(self, messages, model="superagent-ensemble", **kwargs):
+    def stream_chat_completion(self, messages, model="helixagent-ensemble", **kwargs):
         url = f"{self.base_url}/v1/chat/completions/stream"
         data = {
             "model": model,
@@ -312,7 +312,7 @@ class SuperAgentClient:
                         continue
 
 # Usage example
-client = SuperAgentClient(token="your-token")
+client = HelixAgentClient(token="your-token")
 
 # Single completion
 response = client.chat_completion([
@@ -335,7 +335,7 @@ for chunk in client.stream_chat_completion([
 ```javascript
 const axios = require('axios');
 
-class SuperAgentClient {
+class HelixAgentClient {
   constructor(baseURL = 'http://localhost:8080', token = null) {
     this.client = axios.create({
       baseURL,
@@ -343,7 +343,7 @@ class SuperAgentClient {
     });
   }
 
-  async chatCompletion(messages, model = 'superagent-ensemble', options = {}) {
+  async chatCompletion(messages, model = 'helixagent-ensemble', options = {}) {
     const response = await this.client.post('/v1/chat/completions', {
       model,
       messages,
@@ -352,7 +352,7 @@ class SuperAgentClient {
     return response.data;
   }
 
-  async *streamChatCompletion(messages, model = 'superagent-ensemble', options = {}) {
+  async *streamChatCompletion(messages, model = 'helixagent-ensemble', options = {}) {
     const response = await this.client.post('/v1/chat/completions/stream', {
       model,
       messages,
@@ -383,7 +383,7 @@ class SuperAgentClient {
 
 // Usage example
 async function main() {
-  const client = new SuperAgentClient('http://localhost:8080', 'your-token');
+  const client = new HelixAgentClient('http://localhost:8080', 'your-token');
   
   // Single completion
   const response = await client.chatCompletion([
@@ -420,14 +420,14 @@ import (
 	"strings"
 )
 
-type SuperAgentClient struct {
+type HelixAgentClient struct {
 	baseURL string
 	token   string
 	client  *http.Client
 }
 
-func NewSuperAgentClient(baseURL, token string) *SuperAgentClient {
-	return &SuperAgentClient{
+func NewHelixAgentClient(baseURL, token string) *HelixAgentClient {
+	return &HelixAgentClient{
 		baseURL: baseURL,
 		token:   token,
 		client:  &http.Client{},
@@ -451,7 +451,7 @@ type ChatCompletionResponse struct {
 	} `json:"choices"`
 }
 
-func (c *SuperAgentClient) ChatCompletion(ctx context.Context, req ChatCompletionRequest) (*ChatCompletionResponse, error) {
+func (c *HelixAgentClient) ChatCompletion(ctx context.Context, req ChatCompletionRequest) (*ChatCompletionResponse, error) {
 	url := c.baseURL + "/v1/chat/completions"
 	
 	body, err := json.Marshal(req)
@@ -487,7 +487,7 @@ func (c *SuperAgentClient) ChatCompletion(ctx context.Context, req ChatCompletio
 	return &result, nil
 }
 
-func (c *SuperAgentClient) StreamChatCompletion(ctx context.Context, req ChatCompletionRequest, callback func(string) error) error {
+func (c *HelixAgentClient) StreamChatCompletion(ctx context.Context, req ChatCompletionRequest, callback func(string) error) error {
 	req.Stream = true
 	
 	url := c.baseURL + "/v1/chat/completions/stream"
@@ -551,11 +551,11 @@ func (c *SuperAgentClient) StreamChatCompletion(ctx context.Context, req ChatCom
 
 // Usage example
 func main() {
-	client := NewSuperAgentClient("http://localhost:8080", "your-token")
+	client := NewHelixAgentClient("http://localhost:8080", "your-token")
 	
 	// Single completion
 	req := ChatCompletionRequest{
-		Model: "superagent-ensemble",
+		Model: "helixagent-ensemble",
 		Messages: []ChatMessage{
 			{Role: "user", Content: "Hello, how are you?"},
 		},
@@ -570,7 +570,7 @@ func main() {
 	
 	// Streaming completion
 	streamReq := ChatCompletionRequest{
-		Model: "superagent-ensemble",
+		Model: "helixagent-ensemble",
 		Messages: []ChatMessage{
 			{Role: "user", Content: "Tell me a story"},
 		},
@@ -624,20 +624,20 @@ func main() {
 
 1. **Enable Detailed Logging**
    ```bash
-   # Start SuperAgent with debug logging
-   ./superagent --config configs/multi-provider.yaml --log-level debug
+   # Start HelixAgent with debug logging
+   ./helixagent --config configs/multi-provider.yaml --log-level debug
    
    # Check logs
-   tail -f superagent.log
+   tail -f helixagent.log
    ```
 
 2. **Monitor Metrics**
    ```bash
    # Watch request metrics
-   watch -n 5 'curl -s http://localhost:8080/metrics | grep superagent_requests_total'
+   watch -n 5 'curl -s http://localhost:8080/metrics | grep helixagent_requests_total'
    
    # Monitor provider responses
-   watch -n 5 'curl -s http://localhost:8080/metrics | grep superagent_provider_responses_total'
+   watch -n 5 'curl -s http://localhost:8080/metrics | grep helixagent_provider_responses_total'
    ```
 
 3. **Test Individual Providers**
@@ -666,7 +666,7 @@ func main() {
    - Add monitoring and alerting
 
 3. **Scale Your Deployment**
-   - Configure multiple SuperAgent instances
+   - Configure multiple HelixAgent instances
    - Set up load balancing
    - Implement high availability
 

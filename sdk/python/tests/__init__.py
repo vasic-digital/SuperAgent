@@ -1,1 +1,1 @@
-"""Tests for SuperAgent Python SDK."""
+"""Tests for HelixAgent Python SDK."""

@@ -1,6 +1,6 @@
 # Protocol Advanced Examples
 
-This document provides comprehensive advanced examples for the three protocols supported by SuperAgent: Language Server Protocol (LSP), Model Context Protocol (MCP), and Agent Client Protocol (ACP).
+This document provides comprehensive advanced examples for the three protocols supported by HelixAgent: Language Server Protocol (LSP), Model Context Protocol (MCP), and Agent Client Protocol (ACP).
 
 ## Table of Contents
 
@@ -12,7 +12,7 @@ This document provides comprehensive advanced examples for the three protocols s
 
 ## LSP Advanced Examples
 
-SuperAgent's LSP integration enables advanced code intelligence capabilities through Language Server Protocol servers.
+HelixAgent's LSP integration enables advanced code intelligence capabilities through Language Server Protocol servers.
 
 ### Example 1: Multi-Language Workspace Setup
 
@@ -23,7 +23,7 @@ package main
 
 import (
     "context"
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
     "github.com/sirupsen/logrus"
 )
 
@@ -362,7 +362,7 @@ func renameSymbol(ctx context.Context, lspClient *services.LSPClient) error {
 
 ## MCP Advanced Examples
 
-SuperAgent's MCP integration enables interaction with external tools and services.
+HelixAgent's MCP integration enables interaction with external tools and services.
 
 ### Example 1: Multi-Server MCP Configuration
 
@@ -373,7 +373,7 @@ package main
 
 import (
     "context"
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
     "github.com/sirupsen/logrus"
 )
 
@@ -483,7 +483,7 @@ func manageResources(ctx context.Context, mcpClient *services.MCPClient) error {
     }
 
     // Read a specific resource
-    content, err := mcpClient.ReadResource(ctx, "superagent://providers")
+    content, err := mcpClient.ReadResource(ctx, "helixagent://providers")
     if err != nil {
         return err
     }
@@ -581,8 +581,8 @@ func githubOperations(ctx context.Context, mcpClient *services.MCPClient) error 
         ServerID: "github",
         Name:     "create_pull_request",
         Arguments: map[string]interface{}{
-            "owner":  "superagent",
-            "repo":   "superagent",
+            "owner":  "helixagent",
+            "repo":   "helixagent",
             "title":  "Add new feature",
             "body":   "This PR adds a new feature for...",
             "head":   "feature-branch",
@@ -599,8 +599,8 @@ func githubOperations(ctx context.Context, mcpClient *services.MCPClient) error 
         ServerID: "github",
         Name:     "list_issues",
         Arguments: map[string]interface{}{
-            "owner":  "superagent",
-            "repo":   "superagent",
+            "owner":  "helixagent",
+            "repo":   "helixagent",
             "state":  "open",
             "labels": []string{"bug", "high-priority"},
         },
@@ -800,7 +800,7 @@ func registerCustomTools(ctx context.Context, mcpClient *services.MCPClient) err
 
 ## ACP Advanced Examples
 
-SuperAgent's ACP (Agent Client Protocol) enables communication with external agent servers.
+HelixAgent's ACP (Agent Client Protocol) enables communication with external agent servers.
 
 ### Example 1: ACP Server Registration and Discovery
 
@@ -811,7 +811,7 @@ package main
 
 import (
     "context"
-    "github.com/superagent/superagent/internal/services"
+    "github.com/helixagent/helixagent/internal/services"
     "github.com/sirupsen/logrus"
 )
 
@@ -1273,7 +1273,7 @@ func extractModifiedFiles(issues []interface{}) []string {
 
 ## Summary
 
-This document provided 30+ advanced examples across the three protocols supported by SuperAgent:
+This document provided 30+ advanced examples across the three protocols supported by HelixAgent:
 
 - **LSP Examples**: Multi-language workspaces, advanced completions, go-to-definition, hover information, document synchronization, references, symbol search, code actions, formatting, and renaming.
 
@@ -1281,4 +1281,4 @@ This document provided 30+ advanced examples across the three protocols supporte
 
 - **ACP Examples**: Server registration and discovery, action execution, real-time WebSocket communication, server synchronization, batch requests, error handling with retry, statistics and monitoring, test generation, code refactoring, and multi-agent coordination.
 
-For more information, see the [SuperAgent documentation](https://github.com/superagent/superagent).
+For more information, see the [HelixAgent documentation](https://github.com/helixagent/helixagent).

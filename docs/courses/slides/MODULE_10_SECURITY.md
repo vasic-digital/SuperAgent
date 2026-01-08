@@ -6,7 +6,7 @@
 
 ## Slide 1: Title Slide
 
-**SuperAgent: Multi-Provider AI Orchestration**
+**HelixAgent: Multi-Provider AI Orchestration**
 
 - Module 10: Security Best Practices
 - Duration: 60 minutes
@@ -77,7 +77,7 @@ security:
     secret: ${JWT_SECRET}
     expiration: 24h
     refresh_expiration: 168h
-    issuer: "superagent"
+    issuer: "helixagent"
     algorithm: HS256
 ```
 
@@ -94,7 +94,7 @@ security:
   "sub": "user-123",
   "iat": 1704067200,
   "exp": 1704153600,
-  "iss": "superagent",
+  "iss": "helixagent",
   "roles": ["user", "admin"],
   "permissions": [
     "read:providers",
@@ -263,10 +263,10 @@ DB_PASSWORD=secure-password
 os.Getenv("JWT_SECRET")
 
 # In Docker
-docker run -e JWT_SECRET=... superagent
+docker run -e JWT_SECRET=... helixagent
 
 # From secrets manager
-aws secretsmanager get-secret-value --secret-id superagent/jwt
+aws secretsmanager get-secret-value --secret-id helixagent/jwt
 ```
 
 ---
@@ -341,8 +341,8 @@ USER appuser
 
 # Minimal base image
 FROM scratch
-COPY --from=builder /app/superagent /superagent
-ENTRYPOINT ["/superagent"]
+COPY --from=builder /app/helixagent /helixagent
+ENTRYPOINT ["/helixagent"]
 ```
 
 ---
@@ -354,7 +354,7 @@ ENTRYPOINT ["/superagent"]
 ```yaml
 # docker-compose.yml
 services:
-  superagent:
+  helixagent:
     networks:
       - frontend
       - backend
@@ -382,7 +382,7 @@ logging:
   audit:
     enabled: true
     level: info
-    output: /var/log/superagent/audit.log
+    output: /var/log/helixagent/audit.log
 
     events:
       - authentication

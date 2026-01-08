@@ -1,10 +1,10 @@
-# SuperAgent Mobile SDKs
+# HelixAgent Mobile SDKs
 
-Cross-platform mobile SDKs for integrating SuperAgent AI capabilities into iOS and Android applications.
+Cross-platform mobile SDKs for integrating HelixAgent AI capabilities into iOS and Android applications.
 
 ## Overview
 
-SuperAgent provides native mobile SDKs for iOS (Swift) and Android (Kotlin) that enable seamless integration of AI-powered features into mobile applications.
+HelixAgent provides native mobile SDKs for iOS (Swift) and Android (Kotlin) that enable seamless integration of AI-powered features into mobile applications.
 
 ## iOS SDK (Swift)
 
@@ -12,29 +12,29 @@ SuperAgent provides native mobile SDKs for iOS (Swift) and Android (Kotlin) that
 
 #### CocoaPods
 ```ruby
-pod 'SuperAgent', '~> 1.0.0'
+pod 'HelixAgent', '~> 1.0.0'
 ```
 
 #### Swift Package Manager
 ```swift
 dependencies: [
-    .package(url: "https://github.com/superagent/superagent-ios.git", .upToNextMajor(from: "1.0.0"))
+    .package(url: "https://github.com/helixagent/helixagent-ios.git", .upToNextMajor(from: "1.0.0"))
 ]
 ```
 
 ### Quick Start
 
 ```swift
-import SuperAgent
+import HelixAgent
 
 class ViewController: UIViewController {
-    private var client: SuperAgentClient!
+    private var client: HelixAgentClient!
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         // Initialize client
-        client = SuperAgentClient(baseURL: "https://api.superagent.ai", apiKey: "your-api-key")
+        client = HelixAgentClient(baseURL: "https://api.helixagent.ai", apiKey: "your-api-key")
     }
 
     func generateResponse() async {
@@ -44,7 +44,7 @@ class ViewController: UIViewController {
 
         do {
             let response = try await client.chatCompletion(
-                model: "superagent-ensemble",
+                model: "helixagent-ensemble",
                 messages: messages,
                 maxTokens: 500
             )
@@ -67,7 +67,7 @@ class ViewController: UIViewController {
 
         do {
             let response = try await client.chatCompletionWithEnsemble(
-                model: "superagent-ensemble",
+                model: "helixagent-ensemble",
                 messages: messages,
                 ensembleConfig: ensemble
             )
@@ -114,29 +114,29 @@ client.chat.completions.createStream(request: request) { result in
 #### Gradle
 ```kotlin
 dependencies {
-    implementation 'ai.superagent:sdk:1.0.0'
+    implementation 'ai.helixagent:sdk:1.0.0'
 }
 ```
 
 ### Quick Start
 
 ```kotlin
-import com.superagent.protocol.SuperAgentClient
-import com.superagent.protocol.ChatMessage
+import com.helixagent.protocol.HelixAgentClient
+import com.helixagent.protocol.ChatMessage
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var client: SuperAgentClient
+    private lateinit var client: HelixAgentClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         // Initialize client
-        client = SuperAgentClient(
-            baseUrl = "https://api.superagent.ai",
+        client = HelixAgentClient(
+            baseUrl = "https://api.helixagent.ai",
             apiKey = "your-api-key"
         )
     }
@@ -149,7 +149,7 @@ class MainActivity : AppCompatActivity() {
 
             try {
                 val response = client.chatCompletion(
-                    model = "superagent-ensemble",
+                    model = "helixagent-ensemble",
                     messages = messages,
                     maxTokens = 500
                 )
@@ -157,7 +157,7 @@ class MainActivity : AppCompatActivity() {
                     displayResponse(response.choices.first().message.content)
                 }
             } catch (e: Exception) {
-                Log.e("SuperAgent", "Error: ${e.message}")
+                Log.e("HelixAgent", "Error: ${e.message}")
             }
         }
     }
@@ -176,7 +176,7 @@ class MainActivity : AppCompatActivity() {
 
             try {
                 val response = client.chatCompletionWithEnsemble(
-                    model = "superagent-ensemble",
+                    model = "helixagent-ensemble",
                     messages = messages,
                     ensembleConfig = ensemble
                 )
@@ -184,7 +184,7 @@ class MainActivity : AppCompatActivity() {
                     displayResponse(response.choices.first().message.content)
                 }
             } catch (e: Exception) {
-                Log.e("SuperAgent", "Error: ${e.message}")
+                Log.e("HelixAgent", "Error: ${e.message}")
             }
         }
     }
@@ -202,7 +202,7 @@ lifecycleScope.launch {
         )
 
         val request = ChatCompletionRequest(
-            model = "superagent-ensemble",
+            model = "helixagent-ensemble",
             messages = messages
         )
 
@@ -210,7 +210,7 @@ lifecycleScope.launch {
         displayResponse(response.choices[0].message.content)
 
     } catch (e: Exception) {
-        Log.e("SuperAgent", "Error: ${e.message}")
+        Log.e("HelixAgent", "Error: ${e.message}")
     }
 }
 ```
@@ -287,7 +287,7 @@ CoroutineScope(Dispatchers.IO).launch {
             maxRounds = 3,
             strategy = "consensus"
         )
-        Log.d("SuperAgent", "Debate created: ${debate.debateId}")
+        Log.d("HelixAgent", "Debate created: ${debate.debateId}")
 
         // Poll for status
         var status = client.getDebateStatus(debate.debateId)
@@ -300,11 +300,11 @@ CoroutineScope(Dispatchers.IO).launch {
         val result = client.getDebateResults(debate.debateId)
         result.consensus?.let { consensus ->
             if (consensus.reached) {
-                Log.d("SuperAgent", "Consensus: ${consensus.finalPosition}")
+                Log.d("HelixAgent", "Consensus: ${consensus.finalPosition}")
             }
         }
     } catch (e: Exception) {
-        Log.e("SuperAgent", "Failed: ${e.message}")
+        Log.e("HelixAgent", "Failed: ${e.message}")
     }
 }
 ```
@@ -408,7 +408,7 @@ try {
 } catch (e: NetworkException) {
     // Handle network error
     showRetryDialog()
-} catch (e: SuperAgentException) {
+} catch (e: HelixAgentException) {
     // Handle other errors
     showGenericError()
 }
@@ -420,7 +420,7 @@ try {
 
 ```swift
 // Configure connection pooling
-let config = SuperAgentConfig(
+let config = HelixAgentConfig(
     apiKey: "your-api-key",
     maxConnections: 5,
     timeout: 30.0
@@ -428,7 +428,7 @@ let config = SuperAgentConfig(
 
 // Use background sessions for large requests
 client.backgroundSession = URLSession(
-    configuration: .background(withIdentifier: "com.superagent.background")
+    configuration: .background(withIdentifier: "com.helixagent.background")
 )
 ```
 
@@ -443,7 +443,7 @@ val okHttpClient = OkHttpClient.Builder()
     .connectionPool(ConnectionPool(5, 5, TimeUnit.MINUTES))
     .build()
 
-val client = SuperAgentClient.Builder()
+val client = HelixAgentClient.Builder()
     .apiKey("your-api-key")
     .httpClient(okHttpClient)
     .build()
@@ -456,10 +456,10 @@ val client = SuperAgentClient.Builder()
 ```swift
 // iOS Keychain
 let keychain = KeychainSwift()
-keychain.set("your-api-key", forKey: "superagent-api-key")
+keychain.set("your-api-key", forKey: "helixagent-api-key")
 
-let config = SuperAgentConfig(
-    apiKey: keychain.get("superagent-api-key")!
+let config = HelixAgentConfig(
+    apiKey: keychain.get("helixagent-api-key")!
 )
 ```
 
@@ -471,13 +471,13 @@ val masterKey = MasterKey.Builder(context)
 
 val sharedPreferences = EncryptedSharedPreferences.create(
     context,
-    "superagent_prefs",
+    "helixagent_prefs",
     masterKey,
     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
 )
 
-val client = SuperAgentClient.Builder()
+val client = HelixAgentClient.Builder()
     .apiKey(sharedPreferences.getString("api_key", "")!!)
     .build()
 ```
@@ -486,7 +486,7 @@ val client = SuperAgentClient.Builder()
 
 ```swift
 // iOS Certificate Pinning
-let config = SuperAgentConfig(
+let config = HelixAgentConfig(
     apiKey: "your-api-key",
     certificatePinning: CertificatePinning(
         publicKeyHashes: ["your-public-key-hash"]
@@ -497,7 +497,7 @@ let config = SuperAgentConfig(
 ```kotlin
 // Android Certificate Pinning
 val certificatePinner = CertificatePinner.Builder()
-    .add("api.superagent.ai", "sha256/your-public-key-hash")
+    .add("api.helixagent.ai", "sha256/your-public-key-hash")
     .build()
 
 val okHttpClient = OkHttpClient.Builder()
@@ -521,8 +521,8 @@ val okHttpClient = OkHttpClient.Builder()
 
 Complete sample applications are available in the SDK repositories:
 
-- [iOS Sample App](https://github.com/superagent/superagent-ios/tree/main/Example)
-- [Android Sample App](https://github.com/superagent/superagent-android/tree/main/sample)
+- [iOS Sample App](https://github.com/helixagent/helixagent-ios/tree/main/Example)
+- [Android Sample App](https://github.com/helixagent/helixagent-android/tree/main/sample)
 
 ## Contributing
 
@@ -536,9 +536,9 @@ We welcome contributions to the mobile SDKs:
 
 ## Support
 
-- [iOS SDK Issues](https://github.com/superagent/superagent-ios/issues)
-- [Android SDK Issues](https://github.com/superagent/superagent-android/issues)
-- [Documentation](https://docs.superagent.ai/mobile)
+- [iOS SDK Issues](https://github.com/helixagent/helixagent-ios/issues)
+- [Android SDK Issues](https://github.com/helixagent/helixagent-android/issues)
+- [Documentation](https://docs.helixagent.ai/mobile)
 
 ## License
 

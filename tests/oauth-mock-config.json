@@ -3,14 +3,14 @@
   "httpServer": "NettyWrapper",
   "tokenCallbacks": [
     {
-      "issuerId": "superagent",
+      "issuerId": "helixagent",
       "tokenExpiry": 3600,
       "requestMappings": [
         {
           "requestParam": "grant_type",
           "match": "client_credentials",
           "claims": {
-            "aud": ["superagent-api"],
+            "aud": ["helixagent-api"],
             "scope": "read write admin"
           }
         },
@@ -18,7 +18,7 @@
           "requestParam": "grant_type",
           "match": "refresh_token",
           "claims": {
-            "aud": ["superagent-api"],
+            "aud": ["helixagent-api"],
             "scope": "read write"
           }
         },
@@ -26,7 +26,7 @@
           "requestParam": "grant_type",
           "match": "authorization_code",
           "claims": {
-            "aud": ["superagent-api"],
+            "aud": ["helixagent-api"],
             "scope": "openid profile email"
           }
         }

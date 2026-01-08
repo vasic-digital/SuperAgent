@@ -6,7 +6,7 @@
 
 ## Slide 1: Title Slide
 
-**SuperAgent: Multi-Provider AI Orchestration**
+**HelixAgent: Multi-Provider AI Orchestration**
 
 - Module 2: Installation and Setup
 - Duration: 60 minutes
@@ -19,8 +19,8 @@
 **By the end of this module, you will be able to:**
 
 - Set up a complete development environment
-- Install SuperAgent using Docker (recommended)
-- Install SuperAgent from source
+- Install HelixAgent using Docker (recommended)
+- Install HelixAgent from source
 - Verify successful installation
 - Run initial health checks
 
@@ -121,8 +121,8 @@ docker compose version
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Start core services
 docker-compose up -d
@@ -159,7 +159,7 @@ docker-compose --profile full up -d
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| superagent | 8080 | Main API |
+| helixagent | 8080 | Main API |
 | postgres | 5432 | Database |
 | redis | 6379 | Cache |
 | cognee | 8001 | Knowledge Graph |
@@ -189,10 +189,10 @@ docker-compose --profile monitoring up -d
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
+git clone https://github.com/helixagent/helixagent.git
 
 # Navigate to project directory
-cd superagent
+cd helixagent
 
 # Check out main branch
 git checkout main
@@ -220,7 +220,7 @@ which gosec
 
 ## Slide 14: Manual Installation - Build
 
-**Step 3: Build SuperAgent**
+**Step 3: Build HelixAgent**
 
 ```bash
 # Standard build
@@ -230,7 +230,7 @@ make build
 make build-debug
 
 # Verify build
-./bin/superagent --version
+./bin/helixagent --version
 ```
 
 ---
@@ -255,7 +255,7 @@ nano .env
 
 ---
 
-## Slide 16: Running SuperAgent
+## Slide 16: Running HelixAgent
 
 **Step 5: Start the Server**
 
@@ -267,7 +267,7 @@ make run
 make run-dev
 
 # Or directly
-GIN_MODE=debug ./bin/superagent
+GIN_MODE=debug ./bin/helixagent
 ```
 
 ---
@@ -419,7 +419,7 @@ curl -X POST http://localhost:8080/v1/completion \
 
 - Docker is the fastest way to get started
 - Go 1.23+ required for source installation
-- Core services: PostgreSQL, Redis, SuperAgent
+- Core services: PostgreSQL, Redis, HelixAgent
 - Multiple profiles for different use cases
 - Health endpoints for verification
 - Development tools for code quality

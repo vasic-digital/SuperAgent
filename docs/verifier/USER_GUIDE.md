@@ -1,6 +1,6 @@
 # LLMsVerifier User Guide
 
-This guide covers how to use the LLMsVerifier integration in SuperAgent for verifying, scoring, and monitoring LLM providers.
+This guide covers how to use the LLMsVerifier integration in HelixAgent for verifying, scoring, and monitoring LLM providers.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ This guide covers how to use the LLMsVerifier integration in SuperAgent for veri
 
 ### Prerequisites
 
-- SuperAgent installed and running
+- HelixAgent installed and running
 - API key for at least one LLM provider
 - Optional: models.dev API access for enhanced scoring
 
@@ -103,7 +103,7 @@ curl -X POST http://localhost:8081/api/v1/verifier/verify/batch \
 ### Using the Python SDK
 
 ```python
-from superagent_verifier import VerifierClient
+from helixagent_verifier import VerifierClient
 
 client = VerifierClient(base_url="http://localhost:8081")
 
@@ -436,5 +436,5 @@ curl -X POST http://localhost:8081/api/v1/verifier/scores/cache/invalidate \
 ## Getting Help
 
 - **Documentation:** [docs/verifier/](.)
-- **Issues:** [GitHub Issues](https://github.com/superagent/superagent/issues)
+- **Issues:** [GitHub Issues](https://github.com/helixagent/helixagent/issues)
 - **API Reference:** [docs/verifier/API.md](API.md)

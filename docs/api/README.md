@@ -1,4 +1,4 @@
-# SuperAgent Debate API Documentation
+# HelixAgent Debate API Documentation
 
 > **Status: Planned Features**
 >
@@ -11,12 +11,12 @@
 
 ## Overview
 
-The SuperAgent Debate API will provide comprehensive endpoints for AI-powered debates with multi-provider support, Cognee AI enhancement, and advanced monitoring capabilities.
+The HelixAgent Debate API will provide comprehensive endpoints for AI-powered debates with multi-provider support, Cognee AI enhancement, and advanced monitoring capabilities.
 
 ## Base URL
 
 ```
-Production: https://api.superagent.ai/v1
+Production: https://api.helixagent.ai/v1
 Development: http://localhost:8080/v1
 ```
 
@@ -579,18 +579,18 @@ Configure webhooks to receive real-time updates:
 
 ### Official SDKs
 
-- **Go**: `github.com/superagent/superagent-go`
-- **Python**: `pip install superagent-ai`
-- **JavaScript**: `npm install superagent-ai`
-- **TypeScript**: `npm install @superagent/ai`
+- **Go**: `github.com/helixagent/helixagent-go`
+- **Python**: `pip install helixagent-ai`
+- **JavaScript**: `npm install helixagent-ai`
+- **TypeScript**: `npm install @helixagent/ai`
 
 ### Example Usage
 
 #### Python SDK
 ```python
-from superagent_ai import SuperAgentClient
+from helixagent_ai import HelixAgentClient
 
-client = SuperAgentClient(api_key="your-api-key")
+client = HelixAgentClient(api_key="your-api-key")
 
 # Create a debate
 debate = client.debates.create({
@@ -617,11 +617,11 @@ print(f"Current round: {status['currentRound']}")
 
 #### JavaScript SDK
 ```javascript
-import { SuperAgentClient } from '@superagent/ai';
+import { HelixAgentClient } from '@helixagent/ai';
 
-const client = new SuperAgentClient({
+const client = new HelixAgentClient({
   apiKey: 'your-api-key',
-  baseURL: 'https://api.superagent.ai/v1'
+  baseURL: 'https://api.helixagent.ai/v1'
 });
 
 // Create and monitor a debate
@@ -678,18 +678,18 @@ console.log(`Current round: ${status.currentRound}`);
 
 ### Getting Help
 
-- **Documentation**: https://docs.superagent.ai
-- **API Status**: https://status.superagent.ai
-- **Support Email**: support@superagent.ai
-- **Community**: https://community.superagent.ai
+- **Documentation**: https://docs.helixagent.ai
+- **API Status**: https://status.helixagent.ai
+- **Support Email**: support@helixagent.ai
+- **Community**: https://community.helixagent.ai
 
 ### Status Codes
 
-Monitor API status at: https://status.superagent.ai
+Monitor API status at: https://status.helixagent.ai
 
 ### Changelog
 
-Stay updated with API changes: https://docs.superagent.ai/changelog
+Stay updated with API changes: https://docs.helixagent.ai/changelog
 
 ---
 

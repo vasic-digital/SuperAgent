@@ -1,21 +1,21 @@
-# SuperAgent Comprehensive Architecture
+# HelixAgent Comprehensive Architecture
 
 ## Executive Summary
 
-SuperAgent is an AI-powered ensemble LLM service that acts as a **Virtual LLM Provider** - exposing a single unified model that internally leverages multiple top-performing language models through an AI debate mechanism. This document provides complete clarity on the architecture, ensuring no misunderstandings about how the system operates.
+HelixAgent is an AI-powered ensemble LLM service that acts as a **Virtual LLM Provider** - exposing a single unified model that internally leverages multiple top-performing language models through an AI debate mechanism. This document provides complete clarity on the architecture, ensuring no misunderstandings about how the system operates.
 
 ---
 
 ## Core Architecture Principles
 
-### 1. SuperAgent as a Virtual LLM Provider
+### 1. HelixAgent as a Virtual LLM Provider
 
-**CRITICAL CONCEPT**: SuperAgent is NOT a traditional LLM aggregator. It presents itself as a **single LLM provider** with **ONE virtual model** - the AI Debate Ensemble.
+**CRITICAL CONCEPT**: HelixAgent is NOT a traditional LLM aggregator. It presents itself as a **single LLM provider** with **ONE virtual model** - the AI Debate Ensemble.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     EXTERNAL VIEW                               │
-│    SuperAgent appears as ONE provider with ONE model            │
+│    HelixAgent appears as ONE provider with ONE model            │
 │    Similar to how OpenAI or Anthropic expose their APIs         │
 └─────────────────────────────────────────────────────────────────┘
                               │
@@ -29,14 +29,14 @@ SuperAgent is an AI-powered ensemble LLM service that acts as a **Virtual LLM Pr
 
 ### 2. The Virtual Model - AI Debate Ensemble
 
-The single exposed model (`superagent-debate` or `superagent/superagent-debate`) is backed by:
+The single exposed model (`helixagent-debate` or `helixagent/helixagent-debate`) is backed by:
 
 - **5 Primary LLMs**: Top-scoring verified models from different providers
 - **2-3 Fallbacks per Primary**: Backup models for resilience
 - **Confidence-Weighted Voting**: Responses are aggregated based on quality scores
 
 ```
-superagent/superagent-debate
+helixagent/helixagent-debate
 ├── Primary 1: Gemini Pro (Score: 8.5)
 │   ├── Fallback 1.1: Gemini 1.5 Pro
 │   └── Fallback 1.2: DeepSeek Coder
@@ -92,7 +92,7 @@ Every model score is obtained through actual API calls to the provider.
 
 ### Overview
 
-The challenge system validates SuperAgent's functionality through 39 comprehensive tests:
+The challenge system validates HelixAgent's functionality through 39 comprehensive tests:
 
 | Category | Count | Description |
 |----------|-------|-------------|
@@ -112,35 +112,35 @@ The challenge system validates SuperAgent's functionality through 39 comprehensi
 **CRITICAL**: ALL infrastructure starts automatically when needed.
 
 ```bash
-# When running any challenge, SuperAgent auto-starts if not running:
-# 1. Detects if SuperAgent is running on port 8080
+# When running any challenge, HelixAgent auto-starts if not running:
+# 1. Detects if HelixAgent is running on port 8080
 # 2. If not running, builds binary if needed
-# 3. Starts SuperAgent with required environment
+# 3. Starts HelixAgent with required environment
 # 4. Waits for health check to pass
 # 5. Runs challenge tests
-# 6. Stops SuperAgent when done
+# 6. Stops HelixAgent when done
 ```
 
 ### Auto-Start Implementation
 
 ```bash
-auto_start_superagent() {
+auto_start_helixagent() {
     # Check if already running
     if curl -s "http://localhost:$port/health" > /dev/null 2>&1; then
         return 0
     fi
 
-    # Find or build binary (prefers bin/superagent)
-    if [[ -x "$PROJECT_ROOT/bin/superagent" ]]; then
-        binary="$PROJECT_ROOT/bin/superagent"
+    # Find or build binary (prefers bin/helixagent)
+    if [[ -x "$PROJECT_ROOT/bin/helixagent" ]]; then
+        binary="$PROJECT_ROOT/bin/helixagent"
     fi
 
     # Set JWT_SECRET if not set
     if [[ -z "$JWT_SECRET" ]]; then
-        export JWT_SECRET="superagent-test-secret-key-$(date +%s)"
+        export JWT_SECRET="helixagent-test-secret-key-$(date +%s)"
     fi
 
-    # Start SuperAgent
+    # Start HelixAgent
     PORT=$port GIN_MODE=release JWT_SECRET="$JWT_SECRET" "$binary" &
 
     # Wait for startup (up to 30 seconds)
@@ -171,7 +171,7 @@ run_optional_api_test "/v1/cache/stats" "GET" "" "200" "Cache stats"
 
 ### Docker and Podman
 
-SuperAgent supports both Docker and Podman container runtimes:
+HelixAgent supports both Docker and Podman container runtimes:
 
 ```bash
 # Auto-detection
@@ -187,7 +187,7 @@ systemctl --user enable --now podman.socket
 |---------|---------|--------------|
 | PostgreSQL | Database | 15432 |
 | Redis | Cache | 16379 |
-| SuperAgent | Main API | 8080 |
+| HelixAgent | Main API | 8080 |
 | LLMsVerifier | Verification | 8081 |
 
 ---
@@ -199,7 +199,7 @@ The Main Challenge generates an OpenCode-compatible configuration:
 ```json
 {
   "$schema": "https://opencode.sh/schema.json",
-  "username": "SuperAgent AI Ensemble",
+  "username": "HelixAgent AI Ensemble",
   "features": {
     "streaming": true,
     "tool_calling": true,
@@ -211,7 +211,7 @@ The Main Challenge generates an OpenCode-compatible configuration:
     "debate_mode": true
   },
   "metadata": {
-    "generator": "SuperAgent Main Challenge",
+    "generator": "HelixAgent Main Challenge",
     "verification_method": "real_api_verification",
     "debate_group": {
       "primary_members": 5,
@@ -222,14 +222,14 @@ The Main Challenge generates an OpenCode-compatible configuration:
     }
   },
   "provider": {
-    "superagent": {
+    "helixagent": {
       "options": {
-        "apiKey": "${SUPERAGENT_API_KEY}",
+        "apiKey": "${HELIXAGENT_API_KEY}",
         "baseURL": "http://localhost:8080/v1"
       },
       "models": {
-        "superagent-debate": {
-          "name": "SuperAgent AI Debate Group",
+        "helixagent-debate": {
+          "name": "HelixAgent AI Debate Group",
           "maxTokens": 128000,
           "supports_streaming": true,
           "underlying_models": {
@@ -241,7 +241,7 @@ The Main Challenge generates an OpenCode-compatible configuration:
     }
   },
   "mcp": {
-    "superagent-tools": {
+    "helixagent-tools": {
       "type": "http",
       "url": "http://localhost:8080/v1/mcp"
     },
@@ -281,7 +281,7 @@ The Main Challenge generates an OpenCode-compatible configuration:
 ### Phase 1: Infrastructure
 - Auto-detect container runtime (Docker/Podman)
 - Start PostgreSQL, Redis if needed
-- Build SuperAgent binary if needed
+- Build HelixAgent binary if needed
 
 ### Phase 2: Provider Verification
 - Start LLMsVerifier server
@@ -300,7 +300,7 @@ The Main Challenge generates an OpenCode-compatible configuration:
 - Generate `debate_group.json`
 
 ### Phase 5: System Verification
-- Start SuperAgent with debate configuration
+- Start HelixAgent with debate configuration
 - Verify as OpenAI-compatible endpoint
 - Generate `system_verification.json`
 
@@ -320,7 +320,7 @@ The Main Challenge generates an OpenCode-compatible configuration:
 ### Environment Variables
 
 - `JWT_SECRET`: Required for API authentication
-- `SUPERAGENT_API_KEY`: API key for SuperAgent access
+- `HELIXAGENT_API_KEY`: API key for HelixAgent access
 - `*_API_KEY`: Provider-specific API keys
 
 ### Git-Ignored Files
@@ -350,7 +350,7 @@ The Main Challenge generates an OpenCode-compatible configuration:
 
 ```bash
 ./challenges/scripts/main_challenge.sh
-# Generates: /home/user/Downloads/opencode-super-agent.json
+# Generates: /home/user/Downloads/opencode-helix-agent.json
 ```
 
 ### Run Tests
@@ -363,7 +363,7 @@ make test
 ### Build Everything
 
 ```bash
-make build                    # SuperAgent
+make build                    # HelixAgent
 cd LLMsVerifier && make build # LLMsVerifier
 ```
 
@@ -371,14 +371,14 @@ cd LLMsVerifier && make build # LLMsVerifier
 
 ## Important Clarifications
 
-### What SuperAgent IS:
+### What HelixAgent IS:
 
 - A Virtual LLM Provider exposing ONE model
 - An AI debate orchestrator combining multiple LLMs
 - An OpenAI-compatible API server
 - A protocol gateway (MCP, LSP, ACP)
 
-### What SuperAgent is NOT:
+### What HelixAgent is NOT:
 
 - A simple load balancer
 - A multi-model router
@@ -387,7 +387,7 @@ cd LLMsVerifier && make build # LLMsVerifier
 
 ### Key Points:
 
-1. **ONE model endpoint**: `superagent/superagent-debate`
+1. **ONE model endpoint**: `helixagent/helixagent-debate`
 2. **REAL verification**: All scores from actual API calls
 3. **Auto-start**: Infrastructure starts automatically
 4. **Both runtimes**: Docker and Podman supported

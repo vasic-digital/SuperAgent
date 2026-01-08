@@ -11,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/config"
-	"github.com/superagent/superagent/internal/router"
+	"github.com/helixagent/helixagent/internal/config"
+	"github.com/helixagent/helixagent/internal/router"
 )
 
 func setupTestRouter(t *testing.T) (*gin.Engine, func()) {
@@ -28,9 +28,9 @@ func setupTestRouter(t *testing.T) (*gin.Engine, func()) {
 		Database: config.DatabaseConfig{
 			Host:           "localhost",
 			Port:           "5432",
-			User:           "superagent",
+			User:           "helixagent",
 			Password:       "secret",
-			Name:           "superagent_db",
+			Name:           "helixagent_db",
 			SSLMode:        "disable",
 			MaxConnections: 10,
 			PoolSize:       5,

@@ -148,7 +148,7 @@ fi
 
 # Test 11: Network creation capability
 echo -e "${BLUE}Test: Network Creation${NC}"
-network_name="superagent-test-network-$$"
+network_name="helixagent-test-network-$$"
 if $CONTAINER_CMD network create "$network_name" &> /dev/null; then
     test_pass "Can create network"
     $CONTAINER_CMD network rm "$network_name" &> /dev/null || true
@@ -158,7 +158,7 @@ fi
 
 # Test 12: Volume creation capability
 echo -e "${BLUE}Test: Volume Creation${NC}"
-volume_name="superagent-test-volume-$$"
+volume_name="helixagent-test-volume-$$"
 if $CONTAINER_CMD volume create "$volume_name" &> /dev/null; then
     test_pass "Can create volume"
     $CONTAINER_CMD volume rm "$volume_name" &> /dev/null || true

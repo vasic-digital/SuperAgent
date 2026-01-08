@@ -1,10 +1,10 @@
 # AGENTS.md
 
-This document provides guidance for AI agents working on the SuperAgent project. It includes essential commands for building, testing, and formatting code, as well as code style guidelines.
+This document provides guidance for AI agents working on the HelixAgent project. It includes essential commands for building, testing, and formatting code, as well as code style guidelines.
 
 ## Project Overview
 
-SuperAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 7 LLM providers (Claude, DeepSeek, Gemini, Qwen, ZAI, Ollama, OpenRouter).
+HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 7 LLM providers (Claude, DeepSeek, Gemini, Qwen, ZAI, Ollama, OpenRouter).
 
 ## Quick Start
 
@@ -20,10 +20,10 @@ SuperAgent is an AI-powered ensemble LLM service written in Go (1.24+) that comb
 The project uses a Makefile with the following key targets:
 
 ### Core Build Commands
-- `make build` – Build SuperAgent binary (output in `bin/`)
+- `make build` – Build HelixAgent binary (output in `bin/`)
 - `make build-debug` – Build with debug symbols
 - `make build-all` – Build for all architectures (Linux, macOS, Windows)
-- `make run` – Run SuperAgent locally
+- `make run` – Run HelixAgent locally
 - `make run-dev` – Run in development mode (`GIN_MODE=debug`)
 
 ### Container Build Commands
@@ -167,4 +167,4 @@ Note: Some of these rules are TypeScript‑specific; for Go code, follow the Go�
 
 ---
 
-*This document is intended for AI agents working in the SuperAgent repository. Keep it up to date as the project evolves.*
+*This document is intended for AI agents working in the HelixAgent repository. Keep it up to date as the project evolves.*

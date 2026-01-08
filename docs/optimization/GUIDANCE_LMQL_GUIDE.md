@@ -34,7 +34,7 @@ optimization:
 ### Client Initialization
 
 ```go
-import "github.com/superagent/superagent/internal/optimization/guidance"
+import "github.com/helixagent/helixagent/internal/optimization/guidance"
 
 config := &guidance.ClientConfig{
     BaseURL: "http://localhost:8013",
@@ -154,7 +154,7 @@ optimization:
 ### Client Initialization
 
 ```go
-import "github.com/superagent/superagent/internal/optimization/lmql"
+import "github.com/helixagent/helixagent/internal/optimization/lmql"
 
 config := &lmql.ClientConfig{
     BaseURL: "http://localhost:8014",

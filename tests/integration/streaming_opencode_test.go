@@ -30,7 +30,7 @@ func TestStreaming_OpenCode_DoneMarker(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		t.Run(strings.Repeat("request_", 1)+string(rune('A'+i)), func(t *testing.T) {
 			payload := map[string]interface{}{
-				"model": "superagent-debate",
+				"model": "helixagent-debate",
 				"messages": []map[string]string{
 					{"role": "user", "content": "Say hi"},
 				},
@@ -39,13 +39,13 @@ func TestStreaming_OpenCode_DoneMarker(t *testing.T) {
 			}
 			body, _ := json.Marshal(payload)
 
-			req, err := http.NewRequest("POST", SuperAgentBaseURL+"/v1/chat/completions", bytes.NewReader(body))
+			req, err := http.NewRequest("POST", HelixAgentBaseURL+"/v1/chat/completions", bytes.NewReader(body))
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
 
 			resp, err := client.Do(req)
 			if err != nil {
-				t.Skipf("SuperAgent not available: %v", err)
+				t.Skipf("HelixAgent not available: %v", err)
 			}
 			defer resp.Body.Close()
 
@@ -98,7 +98,7 @@ func TestStreaming_OpenCode_ChunkFormat(t *testing.T) {
 	client := &http.Client{Timeout: 60 * time.Second}
 
 	payload := map[string]interface{}{
-		"model": "superagent-debate",
+		"model": "helixagent-debate",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Count: 1, 2, 3"},
 		},
@@ -107,13 +107,13 @@ func TestStreaming_OpenCode_ChunkFormat(t *testing.T) {
 	}
 	body, _ := json.Marshal(payload)
 
-	req, err := http.NewRequest("POST", SuperAgentBaseURL+"/v1/chat/completions", bytes.NewReader(body))
+	req, err := http.NewRequest("POST", HelixAgentBaseURL+"/v1/chat/completions", bytes.NewReader(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		t.Skipf("SuperAgent not available: %v", err)
+		t.Skipf("HelixAgent not available: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -173,7 +173,7 @@ func TestStreaming_OpenCode_NoInfiniteLoop(t *testing.T) {
 	client := &http.Client{Timeout: 90 * time.Second}
 
 	payload := map[string]interface{}{
-		"model": "superagent-debate",
+		"model": "helixagent-debate",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Hello"},
 		},
@@ -182,13 +182,13 @@ func TestStreaming_OpenCode_NoInfiniteLoop(t *testing.T) {
 	}
 	body, _ := json.Marshal(payload)
 
-	req, err := http.NewRequest("POST", SuperAgentBaseURL+"/v1/chat/completions", bytes.NewReader(body))
+	req, err := http.NewRequest("POST", HelixAgentBaseURL+"/v1/chat/completions", bytes.NewReader(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		t.Skipf("SuperAgent not available: %v", err)
+		t.Skipf("HelixAgent not available: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -260,7 +260,7 @@ func TestStreaming_OpenCode_Headers(t *testing.T) {
 	client := &http.Client{Timeout: 30 * time.Second}
 
 	payload := map[string]interface{}{
-		"model": "superagent-debate",
+		"model": "helixagent-debate",
 		"messages": []map[string]string{
 			{"role": "user", "content": "Hi"},
 		},
@@ -269,13 +269,13 @@ func TestStreaming_OpenCode_Headers(t *testing.T) {
 	}
 	body, _ := json.Marshal(payload)
 
-	req, err := http.NewRequest("POST", SuperAgentBaseURL+"/v1/chat/completions", bytes.NewReader(body))
+	req, err := http.NewRequest("POST", HelixAgentBaseURL+"/v1/chat/completions", bytes.NewReader(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		t.Skipf("SuperAgent not available: %v", err)
+		t.Skipf("HelixAgent not available: %v", err)
 	}
 	defer resp.Body.Close()
 

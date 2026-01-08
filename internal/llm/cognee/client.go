@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/superagent/superagent/internal/config"
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/config"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 type Client struct {

@@ -26,7 +26,7 @@ func TestDebateGroupVerification(t *testing.T) {
 
 	// Skip if server is not running
 	if !serverHealthy(baseURL) {
-		t.Skip("SuperAgent server not running at " + baseURL)
+		t.Skip("HelixAgent server not running at " + baseURL)
 	}
 
 	t.Run("ServerHealth", func(t *testing.T) {
@@ -51,7 +51,7 @@ func TestDebateGroupVerification(t *testing.T) {
 }
 
 func getBaseURL() string {
-	url := os.Getenv("SUPERAGENT_URL")
+	url := os.Getenv("HELIXAGENT_URL")
 	if url == "" {
 		url = "http://localhost:8080"
 	}
@@ -234,7 +234,7 @@ func testSingleProvider(baseURL, provider string) ProviderTestResult {
 	client := &http.Client{Timeout: 30 * time.Second}
 
 	reqBody := ChatCompletionRequest{
-		Model:         "superagent-debate",
+		Model:         "helixagent-debate",
 		Messages:      []Message{{Role: "user", Content: "Say OK"}},
 		ForceProvider: provider,
 	}
@@ -303,7 +303,7 @@ func testEnsembleFunctionality(t *testing.T, baseURL string) {
 	client := &http.Client{Timeout: 60 * time.Second}
 
 	reqBody := ChatCompletionRequest{
-		Model:    "superagent-debate",
+		Model:    "helixagent-debate",
 		Messages: []Message{{Role: "user", Content: "What is 2+2? Answer with just the number."}},
 	}
 
@@ -347,13 +347,13 @@ func testEnsembleFunctionality(t *testing.T, baseURL string) {
 	}
 
 	// Verify model identifier
-	if chatResp.Model != "superagent-ensemble" {
-		t.Logf("Expected model 'superagent-ensemble', got '%s'", chatResp.Model)
+	if chatResp.Model != "helixagent-ensemble" {
+		t.Logf("Expected model 'helixagent-ensemble', got '%s'", chatResp.Model)
 	}
 
 	// Verify fingerprint
-	if chatResp.SystemFingerprint != "fp_superagent_ensemble" {
-		t.Logf("Expected fingerprint 'fp_superagent_ensemble', got '%s'", chatResp.SystemFingerprint)
+	if chatResp.SystemFingerprint != "fp_helixagent_ensemble" {
+		t.Logf("Expected fingerprint 'fp_helixagent_ensemble', got '%s'", chatResp.SystemFingerprint)
 	}
 
 	// Log response details
@@ -383,7 +383,7 @@ func testProviderContribution(t *testing.T, baseURL string) {
 		client := &http.Client{Timeout: 60 * time.Second}
 
 		reqBody := ChatCompletionRequest{
-			Model:    "superagent-debate",
+			Model:    "helixagent-debate",
 			Messages: []Message{{Role: "user", Content: fmt.Sprintf("Say 'test %d'", i+1)}},
 		}
 
@@ -428,7 +428,7 @@ func TestProviderHealthEndpoints(t *testing.T) {
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
-		t.Skip("SuperAgent server not running at " + baseURL)
+		t.Skip("HelixAgent server not running at " + baseURL)
 	}
 
 	providers := []string{"deepseek", "gemini", "openrouter"}

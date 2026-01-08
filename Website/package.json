@@ -1,7 +1,7 @@
 {
-  "name": "superagent-website",
+  "name": "helixagent-website",
   "version": "1.0.0",
-  "description": "SuperAgent - AI-Powered Multi-Provider LLM Orchestration Platform Website",
+  "description": "HelixAgent - AI-Powered Multi-Provider LLM Orchestration Platform Website",
   "main": "public/index.html",
   "scripts": {
     "dev": "python -m http.server 8080 --directory public",
@@ -23,16 +23,16 @@
     "enterprise",
     "website"
   ],
-  "author": "SuperAgent Team",
+  "author": "HelixAgent Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/superagent/superagent.git",
+    "url": "https://github.com/helixagent/helixagent.git",
     "directory": "Website"
   },
-  "homepage": "https://superagent.ai",
+  "homepage": "https://helixagent.ai",
   "bugs": {
-    "url": "https://github.com/superagent/superagent/issues"
+    "url": "https://github.com/helixagent/helixagent/issues"
   },
   "engines": {
     "node": ">=16.0.0"

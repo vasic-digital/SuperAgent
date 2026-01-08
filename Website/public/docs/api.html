@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Reference - SuperAgent Documentation</title>
-    <meta name="description" content="Complete API reference for SuperAgent - OpenAI-compatible endpoints, authentication, rate limiting, and SDK examples for Go, Python, and JavaScript.">
+    <title>API Reference - HelixAgent Documentation</title>
+    <meta name="description" content="Complete API reference for HelixAgent - OpenAI-compatible endpoints, authentication, rate limiting, and SDK examples for Go, Python, and JavaScript.">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://superagent.ai/docs/api">
-    <meta property="og:title" content="API Reference - SuperAgent Documentation">
-    <meta property="og:description" content="Complete API reference for SuperAgent - endpoints, authentication, rate limiting, and SDK examples.">
-    <meta property="og:image" content="https://superagent.ai/assets/images/og-image.svg">
-    <meta property="og:site_name" content="SuperAgent">
+    <meta property="og:url" content="https://helixagent.ai/docs/api">
+    <meta property="og:title" content="API Reference - HelixAgent Documentation">
+    <meta property="og:description" content="Complete API reference for HelixAgent - endpoints, authentication, rate limiting, and SDK examples.">
+    <meta property="og:image" content="https://helixagent.ai/assets/images/og-image.svg">
+    <meta property="og:site_name" content="HelixAgent">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://superagent.ai/docs/api">
-    <meta property="twitter:title" content="API Reference - SuperAgent Documentation">
-    <meta property="twitter:description" content="Complete API reference for SuperAgent - endpoints, authentication, rate limiting, and SDK examples.">
-    <meta property="twitter:image" content="https://superagent.ai/assets/images/og-image.svg">
+    <meta property="twitter:url" content="https://helixagent.ai/docs/api">
+    <meta property="twitter:title" content="API Reference - HelixAgent Documentation">
+    <meta property="twitter:description" content="Complete API reference for HelixAgent - endpoints, authentication, rate limiting, and SDK examples.">
+    <meta property="twitter:image" content="https://helixagent.ai/assets/images/og-image.svg">
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
@@ -27,12 +27,12 @@
     <meta name="theme-color" content="#2563eb">
 
     <!-- Additional SEO Meta Tags -->
-    <meta name="keywords" content="SuperAgent API, REST API, OpenAI compatible, chat completions, ensemble API, LLM API, AI orchestration API">
-    <meta name="author" content="SuperAgent Team">
+    <meta name="keywords" content="HelixAgent API, REST API, OpenAI compatible, chat completions, ensemble API, LLM API, AI orchestration API">
+    <meta name="author" content="HelixAgent Team">
     <meta name="robots" content="index, follow">
 
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://superagent.ai/docs/api">
+    <link rel="canonical" href="https://helixagent.ai/docs/api">
 
     <!-- Styles -->
     <link rel="stylesheet" href="/styles/main.css">
@@ -50,8 +50,8 @@
         <div class="nav-container">
             <div class="nav-brand">
                 <a href="/">
-                    <img src="/assets/images/logo.svg" alt="SuperAgent" class="nav-logo">
-                    <span class="nav-title">SuperAgent</span>
+                    <img src="/assets/images/logo.svg" alt="HelixAgent" class="nav-logo">
+                    <span class="nav-title">HelixAgent</span>
                 </a>
             </div>
 
@@ -60,12 +60,12 @@
                 <a href="/#providers" class="nav-link">Providers</a>
                 <a href="/docs" class="nav-link active">Documentation</a>
                 <a href="/#pricing" class="nav-link">Pricing</a>
-                <a href="https://github.com/superagent/superagent" class="nav-link">GitHub</a>
+                <a href="https://github.com/helixagent/helixagent" class="nav-link">GitHub</a>
             </div>
 
             <div class="nav-actions">
                 <a href="/docs" class="btn btn-outline">Get Started</a>
-                <a href="https://github.com/superagent/superagent" class="btn btn-primary">Star on GitHub</a>
+                <a href="https://github.com/helixagent/helixagent" class="btn btn-primary">Star on GitHub</a>
             </div>
 
             <div class="nav-toggle" id="nav-toggle">
@@ -115,7 +115,7 @@ Production:  https://api.yourdomain.com</code></pre>
             <div class="section-header">
                 <h2 class="section-title">Authentication</h2>
                 <p class="section-description">
-                    SuperAgent uses JWT-based authentication for secure access
+                    HelixAgent uses JWT-based authentication for secure access
                 </p>
             </div>
 
@@ -250,7 +250,7 @@ Production:  https://api.yourdomain.com</code></pre>
                 <h4>Request Body</h4>
                 <div class="code-block">
                     <pre><code class="language-json">{
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "messages": [
     {
       "role": "system",
@@ -270,10 +270,10 @@ Production:  https://api.yourdomain.com</code></pre>
                 <h4>Response</h4>
                 <div class="code-block">
                     <pre><code class="language-json">{
-  "id": "chatcmpl-superagent-123",
+  "id": "chatcmpl-helixagent-123",
   "object": "chat.completion",
   "created": 1703123456,
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "choices": [
     {
       "index": 0,
@@ -306,7 +306,7 @@ Production:  https://api.yourdomain.com</code></pre>
             <div class="section-header">
                 <h2 class="section-title">Available Models</h2>
                 <p class="section-description">
-                    SuperAgent supports 22+ models from multiple providers
+                    HelixAgent supports 22+ models from multiple providers
                 </p>
             </div>
 
@@ -314,7 +314,7 @@ Production:  https://api.yourdomain.com</code></pre>
                 <div class="feature-card">
                     <h3 class="feature-title">Ensemble Models</h3>
                     <ul class="feature-list">
-                        <li><code>superagent-ensemble</code> - Intelligent multi-provider aggregation</li>
+                        <li><code>helixagent-ensemble</code> - Intelligent multi-provider aggregation</li>
                     </ul>
                 </div>
 
@@ -363,7 +363,7 @@ Production:  https://api.yourdomain.com</code></pre>
                 <div class="code-block">
                     <pre><code class="language-json">{
   "prompt": "Explain quantum computing",
-  "model": "superagent-ensemble",
+  "model": "helixagent-ensemble",
   "temperature": 0.7,
   "max_tokens": 1000,
   "ensemble_config": {
@@ -435,7 +435,7 @@ Production:  https://api.yourdomain.com</code></pre>
             <div class="section-header">
                 <h2 class="section-title">Rate Limiting</h2>
                 <p class="section-description">
-                    SuperAgent implements intelligent rate limiting
+                    HelixAgent implements intelligent rate limiting
                 </p>
             </div>
 
@@ -467,7 +467,7 @@ X-RateLimit-Reset: 1703123456</code></pre>
             <div class="section-header">
                 <h2 class="section-title">SDK Examples</h2>
                 <p class="section-description">
-                    Use SuperAgent with your favorite programming language
+                    Use HelixAgent with your favorite programming language
                 </p>
             </div>
 
@@ -480,17 +480,17 @@ X-RateLimit-Reset: 1703123456</code></pre>
 import (
     "context"
     "fmt"
-    "github.com/superagent/superagent-go"
+    "github.com/helixagent/helixagent-go"
 )
 
 func main() {
-    client := superagent.NewClient("your-api-key")
+    client := helixagent.NewClient("your-api-key")
 
     resp, err := client.CreateChatCompletion(
         context.Background(),
-        &superagent.ChatCompletionRequest{
-            Model: "superagent-ensemble",
-            Messages: []superagent.Message{
+        &helixagent.ChatCompletionRequest{
+            Model: "helixagent-ensemble",
+            Messages: []helixagent.Message{
                 {Role: "user", Content: "Hello!"},
             },
         },
@@ -508,12 +508,12 @@ func main() {
                 <div class="doc-card">
                     <h3 class="doc-title">Python SDK</h3>
                     <div class="code-block">
-                        <pre><code class="language-python">from superagent import SuperAgentClient
+                        <pre><code class="language-python">from helixagent import HelixAgentClient
 
-client = SuperAgentClient(api_key="your-api-key")
+client = HelixAgentClient(api_key="your-api-key")
 
 response = client.chat.completions.create(
-    model="superagent-ensemble",
+    model="helixagent-ensemble",
     messages=[
         {"role": "user", "content": "Hello!"}
     ]
@@ -526,14 +526,14 @@ print(response.choices[0].message.content)</code></pre>
                 <div class="doc-card">
                     <h3 class="doc-title">JavaScript SDK</h3>
                     <div class="code-block">
-                        <pre><code class="language-javascript">import { SuperAgentClient } from '@superagent/client';
+                        <pre><code class="language-javascript">import { HelixAgentClient } from '@helixagent/client';
 
-const client = new SuperAgentClient({
+const client = new HelixAgentClient({
     apiKey: 'your-api-key'
 });
 
 const response = await client.chat.completions.create({
-    model: 'superagent-ensemble',
+    model: 'helixagent-ensemble',
     messages: [
         { role: 'user', content: 'Hello!' }
     ]
@@ -617,7 +617,7 @@ console.log(response.choices[0].message.content);</code></pre>
             <div class="cta-content">
                 <h2 class="cta-title">Ready to Get Started?</h2>
                 <p class="cta-description">
-                    Start building with SuperAgent's powerful API today.
+                    Start building with HelixAgent's powerful API today.
                 </p>
                 <div class="cta-actions">
                     <a href="/docs" class="btn btn-primary btn-large">
@@ -626,7 +626,7 @@ console.log(response.choices[0].message.content);</code></pre>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                         </svg>
                     </a>
-                    <a href="https://github.com/superagent/superagent" class="btn btn-outline btn-large">
+                    <a href="https://github.com/helixagent/helixagent" class="btn btn-outline btn-large">
                         View on GitHub
                     </a>
                 </div>
@@ -640,14 +640,14 @@ console.log(response.choices[0].message.content);</code></pre>
             <div class="footer-content">
                 <div class="footer-section">
                     <div class="footer-brand">
-                        <img src="/assets/images/logo.svg" alt="SuperAgent" class="footer-logo">
-                        <span class="footer-title">SuperAgent</span>
+                        <img src="/assets/images/logo.svg" alt="HelixAgent" class="footer-logo">
+                        <span class="footer-title">HelixAgent</span>
                     </div>
                     <p class="footer-description">
                         AI-powered multi-provider LLM orchestration platform with enterprise-grade capabilities.
                     </p>
                     <div class="footer-social">
-                        <a href="https://github.com/superagent/superagent" class="social-link">
+                        <a href="https://github.com/helixagent/helixagent" class="social-link">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                             </svg>
@@ -669,7 +669,7 @@ console.log(response.choices[0].message.content);</code></pre>
                 <div class="footer-section">
                     <h4 class="footer-heading">Resources</h4>
                     <ul class="footer-links">
-                        <li><a href="https://github.com/superagent/superagent">GitHub</a></li>
+                        <li><a href="https://github.com/helixagent/helixagent">GitHub</a></li>
                         <li><a href="/docs/tutorial">Tutorials</a></li>
                         <li><a href="/docs/architecture">Architecture</a></li>
                         <li><a href="/docs/protocols">Protocol Integration</a></li>
@@ -689,7 +689,7 @@ console.log(response.choices[0].message.content);</code></pre>
 
             <div class="footer-bottom">
                 <div class="footer-legal">
-                    <p>&copy; 2026 SuperAgent. All rights reserved.</p>
+                    <p>&copy; 2026 HelixAgent. All rights reserved.</p>
                     <div class="footer-legal-links">
                         <a href="/privacy">Privacy Policy</a>
                         <a href="/terms">Terms of Service</a>

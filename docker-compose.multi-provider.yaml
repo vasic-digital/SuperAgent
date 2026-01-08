@@ -4,28 +4,28 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: superagent-postgres
+    container_name: helixagent-postgres
     environment:
-      POSTGRES_DB: superagent_db
-      POSTGRES_USER: superagent
-      POSTGRES_PASSWORD: superagent123
+      POSTGRES_DB: helixagent_db
+      POSTGRES_USER: helixagent
+      POSTGRES_PASSWORD: helixagent123
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U superagent -d superagent_db"]
+      test: ["CMD-SHELL", "pg_isready -U helixagent -d helixagent_db"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - superagent-network
+      - helixagent-network
 
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: superagent-redis
-    command: redis-server --requirepass superagent123
+    container_name: helixagent-redis
+    command: redis-server --requirepass helixagent123
     ports:
       - "6379:6379"
     volumes:
@@ -36,28 +36,28 @@ services:
       timeout: 3s
       retries: 5
     networks:
-      - superagent-network
+      - helixagent-network
 
-  # SuperAgent Multi-Provider Server
-  superagent:
+  # HelixAgent Multi-Provider Server
+  helixagent:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: superagent-server
+    container_name: helixagent-server
     ports:
       - "8080:8080"
     environment:
       # Database Configuration
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: superagent
-      DB_PASSWORD: superagent123
-      DB_NAME: superagent_db
+      DB_USER: helixagent
+      DB_PASSWORD: helixagent123
+      DB_NAME: helixagent_db
       
       # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: superagent123
+      REDIS_PASSWORD: helixagent123
       REDIS_DB: 0
       
       # Multi-Provider API Keys (set your actual keys here)
@@ -66,12 +66,12 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       
       # Server Configuration
-      SUPERAGENT_HOST: 0.0.0.0
-      SUPERAGENT_PORT: 8080
-      SUPERAGENT_DEBUG: "false"
+      HELIXAGENT_HOST: 0.0.0.0
+      HELIXAGENT_PORT: 8080
+      HELIXAGENT_DEBUG: "false"
       
       # JWT Configuration
-      JWT_SECRET: superagent-jwt-secret-key-minimum-32-characters-long
+      JWT_SECRET: helixagent-jwt-secret-key-minimum-32-characters-long
       
       # Configuration Path
       CONFIG_PATH: /app/configs/multi-provider.yaml
@@ -103,7 +103,7 @@ services:
       MODELSDEV_MAX_RETRIES: ${MODELSDEV_MAX_RETRIES:-3}
       MODELSDEV_AUTO_REFRESH: ${MODELSDEV_AUTO_REFRESH:-true}
       MODELSDEV_TIMEOUT: ${MODELSDEV_TIMEOUT:-30}
-      MODELSDEV_USER_AGENT: ${MODELSDEV_USER_AGENT:-SuperAgent/1.0}
+      MODELSDEV_USER_AGENT: ${MODELSDEV_USER_AGENT:-HelixAgent/1.0}
       MODELSDEV_RATE_LIMIT: ${MODELSDEV_RATE_LIMIT:-10}
       
       # Ensemble Configuration
@@ -128,12 +128,12 @@ services:
       retries: 3
     restart: unless-stopped
     networks:
-      - superagent-network
+      - helixagent-network
 
   # Prometheus for Metrics
   prometheus:
     image: prom/prometheus:latest
-    container_name: superagent-prometheus
+    container_name: helixagent-prometheus
     ports:
       - "9090:9090"
     volumes:
@@ -146,7 +146,7 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
     networks:
-      - superagent-network
+      - helixagent-network
     profiles:
       - monitoring
       - full
@@ -154,7 +154,7 @@ services:
   # Grafana for Visualization
   grafana:
     image: grafana/grafana:latest
-    container_name: superagent-grafana
+    container_name: helixagent-grafana
     ports:
       - "3000:3000"
     environment:
@@ -166,7 +166,7 @@ services:
     depends_on:
       - prometheus
     networks:
-      - superagent-network
+      - helixagent-network
     profiles:
       - monitoring
       - full
@@ -184,5 +184,5 @@ volumes:
 
 # Networks
 networks:
-  superagent-network:
+  helixagent-network:
     driver: bridge

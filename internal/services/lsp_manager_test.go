@@ -17,7 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/superagent/superagent/internal/database"
+	"github.com/helixagent/helixagent/internal/database"
 )
 
 func newLSPTestLogger() *logrus.Logger {

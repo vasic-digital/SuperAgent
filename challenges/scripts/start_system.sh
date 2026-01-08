@@ -1,8 +1,8 @@
 #!/bin/bash
 #===============================================================================
-# SUPERAGENT SYSTEM STARTER
+# HELIXAGENT SYSTEM STARTER
 #===============================================================================
-# This script starts all infrastructure and the SuperAgent system.
+# This script starts all infrastructure and the HelixAgent system.
 # Uses ONLY production binaries and Docker/Podman - NO source code execution!
 #
 # Usage:
@@ -41,7 +41,7 @@ FULL=false
 
 usage() {
     cat << EOF
-${GREEN}SuperAgent System Starter${NC}
+${GREEN}HelixAgent System Starter${NC}
 
 Usage: $0 [options]
 
@@ -88,7 +88,7 @@ while [ $# -gt 0 ]; do
 done
 
 log_info "=========================================="
-log_info "  SuperAgent System Starter"
+log_info "  HelixAgent System Starter"
 log_info "=========================================="
 log_info ""
 
@@ -146,24 +146,24 @@ log_info ""
 log_info "Service status:"
 $COMPOSE ps
 
-# Check if SuperAgent binary exists and start it
-SUPERAGENT_BIN="$PROJECT_ROOT/bin/superagent"
-if [ ! -x "$SUPERAGENT_BIN" ]; then
-    SUPERAGENT_BIN="$PROJECT_ROOT/superagent"
+# Check if HelixAgent binary exists and start it
+HELIXAGENT_BIN="$PROJECT_ROOT/bin/helixagent"
+if [ ! -x "$HELIXAGENT_BIN" ]; then
+    HELIXAGENT_BIN="$PROJECT_ROOT/helixagent"
 fi
 
-if [ -x "$SUPERAGENT_BIN" ]; then
+if [ -x "$HELIXAGENT_BIN" ]; then
     log_info ""
-    log_info "Starting SuperAgent binary..."
-    log_info "Binary: $SUPERAGENT_BIN"
+    log_info "Starting HelixAgent binary..."
+    log_info "Binary: $HELIXAGENT_BIN"
 
-    # Start SuperAgent in background
-    nohup $SUPERAGENT_BIN server > "$CHALLENGES_DIR/results/superagent.log" 2>&1 &
-    SUPERAGENT_PID=$!
-    echo $SUPERAGENT_PID > "$CHALLENGES_DIR/results/superagent.pid"
-    log_success "SuperAgent started with PID: $SUPERAGENT_PID"
+    # Start HelixAgent in background
+    nohup $HELIXAGENT_BIN server > "$CHALLENGES_DIR/results/helixagent.log" 2>&1 &
+    HELIXAGENT_PID=$!
+    echo $HELIXAGENT_PID > "$CHALLENGES_DIR/results/helixagent.pid"
+    log_success "HelixAgent started with PID: $HELIXAGENT_PID"
 else
-    log_warning "SuperAgent binary not found"
+    log_warning "HelixAgent binary not found"
     log_warning "Run 'make build' from project root to build it"
 fi
 
@@ -174,7 +174,7 @@ log_success "  System Started Successfully!"
 log_success "=========================================="
 log_info ""
 log_info "Services available at:"
-log_info "  SuperAgent API:     http://localhost:8080"
+log_info "  HelixAgent API:     http://localhost:8080"
 log_info "  PostgreSQL:         localhost:5432"
 log_info "  Redis:              localhost:6379"
 

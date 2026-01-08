@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Single-Provider Multi-Instance Debate Mode allows SuperAgent to conduct AI debates even when only **ONE** LLM provider is available. Instead of requiring multiple different providers (e.g., Claude, DeepSeek, Gemini), this mode uses a single provider with multiple instances to fulfill all debate participant roles.
+The Single-Provider Multi-Instance Debate Mode allows HelixAgent to conduct AI debates even when only **ONE** LLM provider is available. Instead of requiring multiple different providers (e.g., Claude, DeepSeek, Gemini), this mode uses a single provider with multiple instances to fulfill all debate participant roles.
 
 ## When Is This Mode Activated?
 
@@ -281,7 +281,7 @@ CLAUDE_API_KEY=sk-xxx
 GEMINI_API_KEY=xxx
 
 # Server configuration
-SUPERAGENT_PORT=8080
+HELIXAGENT_PORT=8080
 ```
 
 ### Provider Model Lists

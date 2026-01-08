@@ -1,4 +1,4 @@
-# SuperAgent/HelixAgent - Comprehensive Completion Plan
+# HelixAgent/HelixAgent - Comprehensive Completion Plan
 
 ## Executive Summary
 
@@ -357,7 +357,7 @@ tests/challenge/
 
 **Location**: `Website/video-courses/` AND `docs/video-courses/`
 
-**Course 1: SuperAgent Fundamentals**
+**Course 1: HelixAgent Fundamentals**
 ```
 video-courses/
 ├── course-1-fundamentals/
@@ -725,5 +725,5 @@ npm run preview  # Production preview
 ---
 
 *Document generated: 2026-01-02*
-*Project: SuperAgent/HelixAgent*
+*Project: HelixAgent/HelixAgent*
 *Version: 1.0*

@@ -1,4 +1,4 @@
-# SuperAgent User Guide
+# HelixAgent User Guide
 
 ## Table of Contents
 
@@ -15,9 +15,9 @@
 
 ## Getting Started
 
-### What is SuperAgent?
+### What is HelixAgent?
 
-SuperAgent is a comprehensive AI debate platform that enables intelligent discussions between multiple AI participants using different LLM providers. It features:
+HelixAgent is a comprehensive AI debate platform that enables intelligent discussions between multiple AI participants using different LLM providers. It features:
 
 - **Multi-Provider Support**: Claude, DeepSeek, Gemini, Qwen, Zai, and Ollama
 - **Cognee AI Enhancement**: Advanced semantic analysis and insights
@@ -40,22 +40,22 @@ SuperAgent is a comprehensive AI debate platform that enables intelligent discus
 
 ```bash
 # Pull the latest image
-docker pull superagent/superagent:latest
+docker pull helixagent/helixagent:latest
 
 # Run with basic configuration
 docker run -d \
-  --name superagent \
+  --name helixagent \
   -p 8080:8080 \
-  -e SUPERAGENT_API_KEY=your-api-key \
-  superagent/superagent:latest
+  -e HELIXAGENT_API_KEY=your-api-key \
+  helixagent/helixagent:latest
 ```
 
 #### Manual Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/superagent/superagent.git
-cd superagent
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
 
 # Build the application
 make build
@@ -64,7 +64,7 @@ make build
 make test
 
 # Start the server
-./bin/superagent-server
+./bin/helixagent-server
 ```
 
 ---
@@ -125,10 +125,10 @@ security:
 Set these environment variables:
 
 ```bash
-export SUPERAGENT_API_KEY=your-api-key
+export HELIXAGENT_API_KEY=your-api-key
 export JWT_SECRET=your-jwt-secret
 export COGNEE_API_KEY=your-cognee-api-key
-export POSTGRES_URL=postgres://user:pass@localhost/superagent
+export POSTGRES_URL=postgres://user:pass@localhost/helixagent
 export REDIS_URL=redis://localhost:6379
 ```
 
@@ -845,11 +845,11 @@ print(json.dumps(health, indent=2))
 
 ## Support
 
-- **Documentation**: https://docs.superagent.ai
+- **Documentation**: https://docs.helixagent.ai
 - **API Reference**: `/docs/api`
 - **Examples**: `/docs/examples`
-- **Community**: https://community.superagent.ai
-- **Support**: support@superagent.ai
+- **Community**: https://community.helixagent.ai
+- **Support**: support@helixagent.ai
 
 ---
 

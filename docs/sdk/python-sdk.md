@@ -1,11 +1,11 @@
-# SuperAgent Python SDK
+# HelixAgent Python SDK
 
 > **Status: Available**
 >
 > The Python SDK is implemented and available at `/sdk/python/`.
 > Install from source or wait for PyPI publication.
 
-A comprehensive Python SDK for interacting with the SuperAgent AI orchestration platform, providing easy access to multi-provider LLM capabilities and OpenAI-compatible API.
+A comprehensive Python SDK for interacting with the HelixAgent AI orchestration platform, providing easy access to multi-provider LLM capabilities and OpenAI-compatible API.
 
 ## Installation
 
@@ -15,23 +15,23 @@ cd sdk/python
 pip install -e .
 
 # Or when published to PyPI:
-# pip install superagent-sdk
+# pip install helixagent-sdk
 ```
 
 ## Quick Start
 
 ```python
-from superagent import SuperAgent
+from helixagent import HelixAgent
 
 # Initialize client
-client = SuperAgent(
+client = HelixAgent(
     api_key="your-api-key",
-    base_url="https://api.superagent.ai"
+    base_url="https://api.helixagent.ai"
 )
 
 # Simple chat completion
 response = client.chat.completions.create(
-    model="superagent-ensemble",
+    model="helixagent-ensemble",
     messages=[
         {"role": "user", "content": "Explain quantum computing"}
     ]
@@ -46,13 +46,13 @@ The SDK supports multiple authentication methods:
 
 ```python
 # API Key authentication
-client = SuperAgent(api_key="your-api-key")
+client = HelixAgent(api_key="your-api-key")
 
 # JWT Token authentication
-client = SuperAgent(token="your-jwt-token")
+client = HelixAgent(token="your-jwt-token")
 
 # Custom base URL
-client = SuperAgent(
+client = HelixAgent(
     api_key="your-api-key",
     base_url="http://localhost:8080"
 )
@@ -63,12 +63,12 @@ client = SuperAgent(
 ### Basic Chat Completion
 
 ```python
-from superagent import SuperAgent
+from helixagent import HelixAgent
 
-client = SuperAgent(api_key="your-api-key")
+client = HelixAgent(api_key="your-api-key")
 
 response = client.chat.completions.create(
-    model="superagent-ensemble",
+    model="helixagent-ensemble",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "What is machine learning?"}
@@ -307,7 +307,7 @@ for name, status in health.providers.items():
 The SDK provides comprehensive error handling:
 
 ```python
-from superagent.exceptions import (
+from helixagent.exceptions import (
     AuthenticationError,
     RateLimitError,
     ProviderError,
@@ -335,13 +335,13 @@ except AuthenticationError as e:
 
 ```python
 import requests
-from superagent.client import SuperAgentClient
+from helixagent.client import HelixAgentClient
 
 # Custom session with proxy
 session = requests.Session()
 session.proxies = {"https": "https://proxy.company.com:8080"}
 
-client = SuperAgentClient(
+client = HelixAgentClient(
     api_key="your-api-key",
     session=session
 )
@@ -350,7 +350,7 @@ client = SuperAgentClient(
 ### Timeout Configuration
 
 ```python
-client = SuperAgent(
+client = HelixAgent(
     api_key="your-api-key",
     timeout=30.0,  # 30 seconds
     max_retries=3
@@ -365,7 +365,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 # SDK will use the standard Python logging
-client = SuperAgent(api_key="your-api-key")
+client = HelixAgent(api_key="your-api-key")
 ```
 
 ## Best Practices
@@ -413,7 +413,7 @@ For multiple requests, consider batching:
 responses = []
 for prompt in prompts:
     response = client.completions.create(
-        model="superagent-ensemble",
+        model="helixagent-ensemble",
         prompt=prompt
     )
     responses.append(response)
@@ -424,7 +424,7 @@ import asyncio
 async def batch_completions(prompts):
     tasks = [
         client.completions.acreate(
-            model="superagent-ensemble",
+            model="helixagent-ensemble",
             prompt=prompt
         )
         for prompt in prompts
@@ -449,7 +449,7 @@ print(f"Success rate: {usage.success_rate}%")
 
 ### Classes
 
-- `SuperAgent`: Main client class
+- `HelixAgent`: Main client class
 - `ChatCompletions`: Chat completion operations
 - `Completions`: Text completion operations
 - `Ensemble`: Ensemble operations
@@ -459,7 +459,7 @@ print(f"Success rate: {usage.success_rate}%")
 
 ### Exceptions
 
-- `SuperAgentError`: Base exception
+- `HelixAgentError`: Base exception
 - `AuthenticationError`: Authentication failures
 - `RateLimitError`: Rate limit exceeded
 - `ProviderError`: Provider-specific errors

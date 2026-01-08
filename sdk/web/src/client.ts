@@ -1,9 +1,9 @@
 /**
- * SuperAgent SDK Client
+ * HelixAgent SDK Client
  */
 
 import type {
-  SuperAgentConfig,
+  HelixAgentConfig,
   ChatCompletionRequest,
   ChatCompletionResponse,
   ChatCompletionChunk,
@@ -23,7 +23,7 @@ import type {
 } from './types';
 
 import {
-  SuperAgentError,
+  HelixAgentError,
   AuthenticationError,
   RateLimitError,
   APIError,
@@ -35,7 +35,7 @@ const DEFAULT_BASE_URL = 'http://localhost:8080';
 const DEFAULT_TIMEOUT = 60000;
 const DEFAULT_MAX_RETRIES = 3;
 
-export class SuperAgent {
+export class HelixAgent {
   private apiKey?: string;
   private baseUrl: string;
   private timeout: number;
@@ -47,8 +47,8 @@ export class SuperAgent {
   public readonly debates: Debates;
   public readonly models: Models;
 
-  constructor(config: SuperAgentConfig = {}) {
-    this.apiKey = config.apiKey || process.env.SUPERAGENT_API_KEY;
+  constructor(config: HelixAgentConfig = {}) {
+    this.apiKey = config.apiKey || process.env.HELIXAGENT_API_KEY;
     this.baseUrl = (config.baseUrl || DEFAULT_BASE_URL).replace(/\/$/, '');
     this.timeout = config.timeout || DEFAULT_TIMEOUT;
     this.maxRetries = config.maxRetries || DEFAULT_MAX_RETRIES;
@@ -107,7 +107,7 @@ export class SuperAgent {
     } catch (error) {
       clearTimeout(timeoutId);
 
-      if (error instanceof SuperAgentError) {
+      if (error instanceof HelixAgentError) {
         throw error;
       }
 
@@ -118,7 +118,7 @@ export class SuperAgent {
         throw new NetworkError(error.message);
       }
 
-      throw new SuperAgentError('Unknown error occurred');
+      throw new HelixAgentError('Unknown error occurred');
     }
   }
 
@@ -186,7 +186,7 @@ export class SuperAgent {
     } catch (error) {
       clearTimeout(timeoutId);
 
-      if (error instanceof SuperAgentError) {
+      if (error instanceof HelixAgentError) {
         throw error;
       }
 
@@ -197,7 +197,7 @@ export class SuperAgent {
         throw new NetworkError(error.message);
       }
 
-      throw new SuperAgentError('Unknown stream error');
+      throw new HelixAgentError('Unknown stream error');
     }
   }
 
@@ -249,11 +249,11 @@ export class SuperAgent {
 }
 
 class ChatCompletions {
-  constructor(private client: SuperAgent) {}
+  constructor(private client: HelixAgent) {}
 
   async create(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
     if (request.stream) {
-      throw new SuperAgentError(
+      throw new HelixAgentError(
         'Use createStream() for streaming completions'
       );
     }
@@ -275,11 +275,11 @@ class ChatCompletions {
 }
 
 class Completions {
-  constructor(private client: SuperAgent) {}
+  constructor(private client: HelixAgent) {}
 
   async create(request: CompletionRequest): Promise<CompletionResponse> {
     if (request.stream) {
-      throw new SuperAgentError(
+      throw new HelixAgentError(
         'Use createStream() for streaming completions'
       );
     }
@@ -301,7 +301,7 @@ class Completions {
 }
 
 class Debates {
-  constructor(private client: SuperAgent) {}
+  constructor(private client: HelixAgent) {}
 
   async create(request: CreateDebateRequest): Promise<DebateResponse> {
     return this.client.request<DebateResponse>('/v1/debates', {
@@ -352,7 +352,7 @@ class Debates {
       }
 
       if (status.status === 'failed') {
-        throw new SuperAgentError(
+        throw new HelixAgentError(
           `Debate ${debateId} failed: ${status.error || 'Unknown error'}`
         );
       }
@@ -365,7 +365,7 @@ class Debates {
 }
 
 class Models {
-  constructor(private client: SuperAgent) {}
+  constructor(private client: HelixAgent) {}
 
   async list(): Promise<Model[]> {
     const response = await this.client.request<ModelListResponse>('/v1/models');
@@ -377,4 +377,4 @@ class Models {
   }
 }
 
-export default SuperAgent;
+export default HelixAgent;

@@ -14,9 +14,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/superagent/superagent/internal/config"
-	"github.com/superagent/superagent/internal/models"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/config"
+	"github.com/helixagent/helixagent/internal/models"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 // stringPtr returns a pointer to the given string
@@ -39,7 +39,7 @@ func TestUnifiedHandler_Models(t *testing.T) {
 	body := w.Body.String()
 	assert.Contains(t, body, "object")
 	assert.Contains(t, body, "data")
-	assert.Contains(t, body, "superagent-debate")
+	assert.Contains(t, body, "helixagent-debate")
 }
 
 // TestUnifiedHandler_ModelsPublic tests public models endpoint
@@ -57,7 +57,7 @@ func TestUnifiedHandler_ModelsPublic(t *testing.T) {
 	body := w.Body.String()
 	assert.Contains(t, body, "object")
 	assert.Contains(t, body, "data")
-	assert.Contains(t, body, "superagent-debate")
+	assert.Contains(t, body, "helixagent-debate")
 }
 
 // TestUnifiedHandler_ChatCompletions_InvalidRequest tests invalid request
@@ -248,7 +248,7 @@ func TestUnifiedHandler_ConvertOpenAIChatRequest_WithEnsemble(t *testing.T) {
 	}
 
 	openaiReq := &OpenAIChatRequest{
-		Model: "superagent-ensemble",
+		Model: "helixagent-ensemble",
 		Messages: []OpenAIMessage{
 			{
 				Role:    "user",
@@ -300,7 +300,7 @@ func TestUnifiedHandler_ConvertToOpenAIChatResponse(t *testing.T) {
 	assert.Equal(t, "test-id-123", response.ID)
 	assert.Equal(t, "chat.completion", response.Object)
 	assert.Equal(t, testTime.Unix(), response.Created)
-	assert.Equal(t, "superagent-ensemble", response.Model)
+	assert.Equal(t, "helixagent-ensemble", response.Model)
 	assert.Equal(t, 1, len(response.Choices))
 	assert.Equal(t, "assistant", response.Choices[0].Message.Role)
 	assert.Equal(t, "This is a test response", response.Choices[0].Message.Content)
@@ -309,7 +309,7 @@ func TestUnifiedHandler_ConvertToOpenAIChatResponse(t *testing.T) {
 	assert.Equal(t, 15, response.Usage.PromptTokens)     // Half of 30
 	assert.Equal(t, 15, response.Usage.CompletionTokens) // Half of 30
 	assert.Equal(t, 30, response.Usage.TotalTokens)
-	assert.Equal(t, "fp_superagent_ensemble", response.SystemFingerprint)
+	assert.Equal(t, "fp_helixagent_ensemble", response.SystemFingerprint)
 }
 
 // TestUnifiedHandler_ConvertToOpenAIChatStreamResponse tests stream response conversion
@@ -336,7 +336,7 @@ func TestUnifiedHandler_ConvertToOpenAIChatStreamResponse(t *testing.T) {
 	assert.Equal(t, "stream-test-id-456", response["id"])
 	assert.Equal(t, "chat.completion.chunk", response["object"])
 	assert.Equal(t, testTime.Unix(), response["created"])
-	assert.Equal(t, "superagent-ensemble", response["model"])
+	assert.Equal(t, "helixagent-ensemble", response["model"])
 
 	choices, ok := response["choices"].([]map[string]any)
 	assert.True(t, ok)
@@ -1361,8 +1361,8 @@ func TestStreamingChunkFormat(t *testing.T) {
 	// Verify response structure
 	assert.Equal(t, streamID, streamResp["id"])
 	assert.Equal(t, "chat.completion.chunk", streamResp["object"])
-	assert.Equal(t, "superagent-ensemble", streamResp["model"])
-	assert.Equal(t, "fp_superagent_v1", streamResp["system_fingerprint"])
+	assert.Equal(t, "helixagent-ensemble", streamResp["model"])
+	assert.Equal(t, "fp_helixagent_v1", streamResp["system_fingerprint"])
 
 	// Verify choices structure
 	choices, ok := streamResp["choices"].([]map[string]any)

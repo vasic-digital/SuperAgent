@@ -145,9 +145,9 @@ func (s *ProtocolSecurity) ListAPIKeys() []*APIKey {
 
 // InitializeDefaultSecurity sets up default security configuration
 func (s *ProtocolSecurity) InitializeDefaultSecurity() error {
-	// Check if SUPERAGENT_API_KEY is set in environment
+	// Check if HELIXAGENT_API_KEY is set in environment
 	// This allows external configuration of the admin API key
-	envAPIKey := os.Getenv("SUPERAGENT_API_KEY")
+	envAPIKey := os.Getenv("HELIXAGENT_API_KEY")
 
 	var adminKey *APIKey
 	var err error
@@ -160,7 +160,7 @@ func (s *ProtocolSecurity) InitializeDefaultSecurity() error {
 		if err != nil {
 			return fmt.Errorf("failed to create admin key from env: %w", err)
 		}
-		s.logger.WithField("key", adminKey.Key[:8]+"...").Info("Admin API key created from SUPERAGENT_API_KEY env var")
+		s.logger.WithField("key", adminKey.Key[:8]+"...").Info("Admin API key created from HELIXAGENT_API_KEY env var")
 	} else {
 		// Generate a new admin key
 		adminKey, err = s.CreateAPIKey("admin-key", "system", []string{

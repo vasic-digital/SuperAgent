@@ -35,7 +35,7 @@ optimization:
 ### Schema Builder
 
 ```go
-import "github.com/superagent/superagent/internal/optimization/outlines"
+import "github.com/helixagent/helixagent/internal/optimization/outlines"
 
 // Create a simple schema
 schema := outlines.ObjectSchema(map[string]*outlines.JSONSchema{

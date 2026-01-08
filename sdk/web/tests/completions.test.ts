@@ -2,8 +2,8 @@
  * Completions and Extended Client Tests
  */
 
-import { SuperAgent } from '../src/client';
-import { SuperAgentError } from '../src/errors';
+import { HelixAgent } from '../src/client';
+import { HelixAgentError } from '../src/errors';
 
 // Mock fetch globally
 const mockFetch = jest.fn();
@@ -40,7 +40,7 @@ describe('Completions', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const response = await client.completions.create({
         model: 'gpt-3.5-turbo-instruct',
         prompt: 'Say hello',
@@ -52,7 +52,7 @@ describe('Completions', () => {
     });
 
     it('should throw error when using stream:true with create()', async () => {
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
 
       await expect(
         client.completions.create({
@@ -80,7 +80,7 @@ describe('Completions', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const response = await client.completions.create({
         model: 'gpt-3.5-turbo-instruct',
         prompt: ['Prompt 1', 'Prompt 2'],
@@ -103,7 +103,7 @@ describe('Completions', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const response = await client.completions.create({
         model: 'gpt-3.5-turbo-instruct',
         prompt: 'Test',
@@ -140,7 +140,7 @@ describe('Models Extended', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const model = await client.models.retrieve('gpt-4');
 
       expect(model.id).toBe('gpt-4');
@@ -189,7 +189,7 @@ describe('Provider Extended', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const details = await client.providerDetails();
 
       expect(details.providers).toHaveLength(2);
@@ -214,7 +214,7 @@ describe('Provider Extended', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const health = await client.providerHealth('openai');
 
       expect(health.provider).toBe('openai');
@@ -239,7 +239,7 @@ describe('Provider Extended', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const health = await client.providerHealth('openai');
 
       expect(health.healthy).toBe(false);
@@ -271,7 +271,7 @@ describe('Debates Extended', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const debate = await client.debates.get('debate-123');
 
       expect(debate.debate_id).toBe('debate-123');
@@ -307,7 +307,7 @@ describe('Debates Extended', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const results = await client.debates.getResults('debate-123');
 
       expect(results.success).toBe(true);
@@ -330,7 +330,7 @@ describe('Debates Extended', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const result = await client.debates.list('completed');
 
       expect(result.count).toBe(1);
@@ -372,7 +372,7 @@ describe('Debates Extended', () => {
         .mockResolvedValueOnce({ ok: true, json: async () => statusCompleted })
         .mockResolvedValueOnce({ ok: true, json: async () => results });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const result = await client.debates.waitForCompletion('debate-123', {
         pollInterval: 10,
         timeout: 5000,
@@ -394,14 +394,14 @@ describe('Debates Extended', () => {
         json: async () => statusFailed,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
 
       await expect(
         client.debates.waitForCompletion('debate-123', {
           pollInterval: 10,
           timeout: 1000,
         })
-      ).rejects.toThrow(SuperAgentError);
+      ).rejects.toThrow(HelixAgentError);
     });
   });
 });
@@ -417,7 +417,7 @@ describe('Chat Extended', () => {
         id: 'chatcmpl-123',
         object: 'chat.completion',
         created: Date.now(),
-        model: 'superagent-ensemble',
+        model: 'helixagent-ensemble',
         choices: [
           {
             index: 0,
@@ -440,9 +440,9 @@ describe('Chat Extended', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const response = await client.chat.create({
-        model: 'superagent-ensemble',
+        model: 'helixagent-ensemble',
         messages: [{ role: 'user', content: 'Hello!' }],
         ensemble_config: {
           strategy: 'confidence_weighted',
@@ -491,7 +491,7 @@ describe('Chat Extended', () => {
         json: async () => mockResponse,
       });
 
-      const client = new SuperAgent({ apiKey: 'test-key' });
+      const client = new HelixAgent({ apiKey: 'test-key' });
       const response = await client.chat.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: 'What is the weather in London?' }],
@@ -530,7 +530,7 @@ describe('Client Configuration', () => {
       json: async () => ({ status: 'healthy' }),
     });
 
-    const client = new SuperAgent({
+    const client = new HelixAgent({
       apiKey: 'test-key',
       baseUrl: 'https://api.example.com/',
     });
@@ -548,7 +548,7 @@ describe('Client Configuration', () => {
       json: async () => ({ status: 'healthy' }),
     });
 
-    const client = new SuperAgent({
+    const client = new HelixAgent({
       apiKey: 'test-key',
       headers: {
         'X-Custom-Header': 'custom-value',

@@ -1,5 +1,5 @@
 #!/bin/bash
-# SuperAgent Challenges - Configuration Verification Script
+# HelixAgent Challenges - Configuration Verification Script
 # Usage: ./scripts/verify_config.sh
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -48,7 +48,7 @@ check_env_var() {
 }
 
 echo "=========================================="
-echo "  SuperAgent Challenges - Config Check"
+echo "  HelixAgent Challenges - Config Check"
 echo "=========================================="
 echo ""
 
@@ -63,7 +63,7 @@ else
 fi
 
 echo ""
-echo "--- Primary SuperAgent Providers ---"
+echo "--- Primary HelixAgent Providers ---"
 check_env_var "ANTHROPIC_API_KEY"
 check_env_var "OPENAI_API_KEY"
 check_env_var "DEEPSEEK_API_KEY"

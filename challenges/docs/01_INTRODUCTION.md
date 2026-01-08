@@ -1,8 +1,8 @@
-# SuperAgent Challenges - Introduction
+# HelixAgent Challenges - Introduction
 
 ## What is the Challenges System?
 
-The SuperAgent Challenges System is a comprehensive framework for:
+The HelixAgent Challenges System is a comprehensive framework for:
 
 1. **Testing LLM Providers**: Automated verification of all configured providers
 2. **Scoring Models**: Quantitative assessment based on capabilities and performance
@@ -123,9 +123,9 @@ The SuperAgent Challenges System is a comprehensive framework for:
 - Plugin architecture for custom tests
 - Integration with external tools
 
-## Integration with SuperAgent
+## Integration with HelixAgent
 
-The Challenges System integrates with SuperAgent's core components:
+The Challenges System integrates with HelixAgent's core components:
 
 - **Provider Registry**: Uses the same provider configurations
 - **Ensemble Service**: Tests the AI debate group functionality

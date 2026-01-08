@@ -31,7 +31,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-### SuperAgent Constitutional Requirements
+### HelixAgent Constitutional Requirements
 - [ ] **Go Implementation**: MUST use Go 1.21+ with Gin Gonic framework
 - [ ] **Model Facade**: MUST expose unified LLM interface supporting multiple providers
 - [ ] **Testing Coverage**: MUST achieve 100% test coverage with all test types
@@ -64,8 +64,8 @@ specs/[###-feature]/
 -->
 
 ```text
-# SuperAgent Go Project Structure
-cmd/superagent/
+# HelixAgent Go Project Structure
+cmd/helixagent/
 ├── main.go              # Application entry point
 └── server/              # HTTP server setup
 

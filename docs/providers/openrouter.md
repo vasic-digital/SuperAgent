@@ -50,7 +50,7 @@ OpenRouter provides access to 100+ models including:
 
 1. Go to **API Keys** in your dashboard
 2. Click **Create Key**
-3. Name your key (e.g., "SuperAgent")
+3. Name your key (e.g., "HelixAgent")
 4. Copy the API key immediately
 
 ### Step 4: Store Your API Key Securely
@@ -93,8 +93,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/superagent/superagent/internal/llm/providers/openrouter"
-    "github.com/superagent/superagent/internal/models"
+    "github.com/helixagent/helixagent/internal/llm/providers/openrouter"
+    "github.com/helixagent/helixagent/internal/models"
 )
 
 func main() {
@@ -200,7 +200,7 @@ Different models have different rate limits based on the underlying provider. Ch
 
 ### Best Practices for Rate Limits
 
-1. **Use exponential backoff** - SuperAgent automatically implements retry with backoff
+1. **Use exponential backoff** - HelixAgent automatically implements retry with backoff
 2. **Monitor usage** - Check your OpenRouter dashboard for usage statistics
 3. **Use appropriate models** - Choose cost-effective models for simple tasks
 4. **Enable request queuing** - For high-volume applications
@@ -256,7 +256,7 @@ OpenRouter API error: Rate limit exceeded
 
 **Solution:**
 - Wait for the rate limit to reset
-- SuperAgent automatically retries with exponential backoff
+- HelixAgent automatically retries with exponential backoff
 - Upgrade to a higher tier if needed
 
 #### Model Not Found (404)
@@ -277,13 +277,13 @@ OpenRouter API error: Provider temporarily unavailable
 ```
 
 **Solution:**
-- Wait and retry (automatic with SuperAgent)
+- Wait and retry (automatic with HelixAgent)
 - Try an alternative model from a different provider
 - Check OpenRouter status page
 
 ### Health Check
 
-SuperAgent provides a health check for OpenRouter:
+HelixAgent provides a health check for OpenRouter:
 
 ```go
 err := provider.HealthCheck()
@@ -333,8 +333,8 @@ provider := openrouter.NewSimpleOpenRouterProviderWithRetry(
 OpenRouter supports additional headers for tracking:
 
 ```go
-httpReq.Header.Set("HTTP-Referer", "superagent")  // Identify your app
-httpReq.Header.Set("X-Title", "SuperAgent App")   // Your app name
+httpReq.Header.Set("HTTP-Referer", "helixagent")  // Identify your app
+httpReq.Header.Set("X-Title", "HelixAgent App")   // Your app name
 ```
 
 These headers help OpenRouter track usage and may be required for some models.

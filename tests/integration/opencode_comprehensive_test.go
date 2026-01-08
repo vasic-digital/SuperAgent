@@ -25,7 +25,7 @@ func TestOpenCodeComprehensiveRequest(t *testing.T) {
 
 	t.Run("Response_Is_Complete_Not_Cutoff", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "Write a simple hello world function in Go. Include the function signature, body, and a brief comment."},
 			},
@@ -73,7 +73,7 @@ func TestOpenCodeComprehensiveRequest(t *testing.T) {
 
 	t.Run("Multi_Provider_Participation_In_Debate", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "What are the pros and cons of using Go vs Rust for systems programming?"},
 			},
@@ -140,7 +140,7 @@ func TestOpenCodeComprehensiveRequest(t *testing.T) {
 
 		for i, prompt := range prompts {
 			reqBody := map[string]interface{}{
-				"model": "superagent-ensemble",
+				"model": "helixagent-ensemble",
 				"messages": []map[string]string{
 					{"role": "user", "content": prompt},
 				},
@@ -171,7 +171,7 @@ func TestOpenCodeComprehensiveRequest(t *testing.T) {
 
 	t.Run("Stream_ID_Consistency", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "Count from 1 to 3"},
 			},
@@ -207,7 +207,7 @@ func TestOpenCodeComprehensiveRequest(t *testing.T) {
 
 	t.Run("First_Chunk_Has_Role", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "Say OK"},
 			},
@@ -243,7 +243,7 @@ func TestOpenCodeComprehensiveRequest(t *testing.T) {
 	t.Run("No_Premature_Termination_Long_Response", func(t *testing.T) {
 		// Request that requires a longer response
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "Explain the HTTP request-response cycle in detail, covering DNS resolution, TCP handshake, request headers, response codes, and content delivery. Be thorough."},
 			},
@@ -320,7 +320,7 @@ func TestOpenCodeConcurrentRequests(t *testing.T) {
 			defer wg.Done()
 
 			reqBody := map[string]interface{}{
-				"model": "superagent-ensemble",
+				"model": "helixagent-ensemble",
 				"messages": []map[string]string{
 					{"role": "user", "content": fmt.Sprintf("Request %d: What is %d + %d?", idx, idx, idx*2)},
 				},
@@ -389,7 +389,7 @@ func TestOpenCodeEdgeCases(t *testing.T) {
 
 	t.Run("Empty_Message_Handling", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": ""},
 			},
@@ -415,7 +415,7 @@ func TestOpenCodeEdgeCases(t *testing.T) {
 		longPrompt := strings.Repeat("This is a test sentence. ", 100)
 
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": longPrompt + " Summarize in one sentence."},
 			},
@@ -443,7 +443,7 @@ func TestOpenCodeEdgeCases(t *testing.T) {
 
 	t.Run("Special_Characters_In_Prompt", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "What does this symbol mean: < > & \" ' \n\t ?"},
 			},
@@ -469,7 +469,7 @@ func TestOpenCodeEdgeCases(t *testing.T) {
 
 	t.Run("Timeout_Context_Cancellation", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "Say hello"},
 			},
@@ -512,7 +512,7 @@ func TestFallbackMechanismValidation(t *testing.T) {
 
 		for i := 0; i < 3; i++ {
 			reqBody := map[string]interface{}{
-				"model": "superagent-ensemble",
+				"model": "helixagent-ensemble",
 				"messages": []map[string]string{
 					{"role": "user", "content": fmt.Sprintf("Test request %d: Say hello", i)},
 				},
@@ -603,7 +603,7 @@ func TestFallbackMechanismValidation(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			start := time.Now()
 			reqBody := map[string]interface{}{
-				"model": "superagent-ensemble",
+				"model": "helixagent-ensemble",
 				"messages": []map[string]string{
 					{"role": "user", "content": "Ping"},
 				},
@@ -650,7 +650,7 @@ func TestContentValidation(t *testing.T) {
 
 	t.Run("JSON_Response_Valid", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "Reply with just: OK"},
 			},
@@ -684,7 +684,7 @@ func TestContentValidation(t *testing.T) {
 
 	t.Run("No_Duplicate_Finish_Reason", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"model": "superagent-ensemble",
+			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
 				{"role": "user", "content": "Count: 1, 2, 3"},
 			},

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Gemini is Google's multimodal AI model family, capable of understanding and generating text, code, images, and more. SuperAgent integrates with the Google AI Studio API to provide access to Gemini models for text and vision tasks.
+Gemini is Google's multimodal AI model family, capable of understanding and generating text, code, images, and more. HelixAgent integrates with the Google AI Studio API to provide access to Gemini models for text and vision tasks.
 
 ### Supported Models
 
@@ -82,8 +82,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/superagent/superagent/internal/llm/providers/gemini"
-    "github.com/superagent/superagent/internal/models"
+    "github.com/helixagent/helixagent/internal/llm/providers/gemini"
+    "github.com/helixagent/helixagent/internal/models"
 )
 
 func main() {
@@ -172,14 +172,14 @@ req := &models.LLMRequest{
 
 ### Best Practices for Rate Limits
 
-1. **Use exponential backoff** - SuperAgent automatically implements retry with backoff
+1. **Use exponential backoff** - HelixAgent automatically implements retry with backoff
 2. **Monitor quota usage** - Check the Google Cloud Console for usage statistics
 3. **Use appropriate models** - Use Flash for speed-critical applications
 4. **Implement caching** - Cache responses for repeated queries
 
 ## Safety Settings
 
-Gemini includes built-in safety filters. SuperAgent configures these settings by default:
+Gemini includes built-in safety filters. HelixAgent configures these settings by default:
 
 ```go
 SafetySettings: []GeminiSafetySetting{
@@ -219,7 +219,7 @@ Gemini API error: 429 - {"error": {"message": "Resource exhausted"}}
 
 **Solution:**
 - Wait for the rate limit to reset (usually 1 minute)
-- SuperAgent automatically retries with exponential backoff
+- HelixAgent automatically retries with exponential backoff
 - Consider upgrading to a paid plan
 
 #### Safety Filter Triggered (400)
@@ -246,7 +246,7 @@ Gemini API error: 404 - {"error": {"message": "Model not found"}}
 
 ### Health Check
 
-SuperAgent provides a health check endpoint for Gemini:
+HelixAgent provides a health check endpoint for Gemini:
 
 ```go
 err := provider.HealthCheck()

@@ -1,8 +1,8 @@
-# SuperAgent Deployment Guide
+# HelixAgent Deployment Guide
 
 ## Introduction
 
-This guide provides comprehensive instructions for deploying SuperAgent in production environments. It covers Docker, Kubernetes, cloud-native deployments, high availability configurations, and operational best practices for running SuperAgent at scale.
+This guide provides comprehensive instructions for deploying HelixAgent in production environments. It covers Docker, Kubernetes, cloud-native deployments, high availability configurations, and operational best practices for running HelixAgent at scale.
 
 ---
 
@@ -47,7 +47,7 @@ This guide provides comprehensive instructions for deploying SuperAgent in produ
               │                         │                         │
               ▼                         ▼                         ▼
      ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-     │  SuperAgent-1   │      │  SuperAgent-2   │      │  SuperAgent-3   │
+     │  HelixAgent-1   │      │  HelixAgent-2   │      │  HelixAgent-3   │
      │    (Replica)    │      │    (Replica)    │      │    (Replica)    │
      └────────┬────────┘      └────────┬────────┘      └────────┬────────┘
               │                         │                         │
@@ -119,8 +119,8 @@ Create a production-ready `docker-compose.prod.yml`:
 version: '3.8'
 
 services:
-  superagent:
-    image: superagent/superagent:latest
+  helixagent:
+    image: helixagent/helixagent:latest
     deploy:
       replicas: 3
       resources:
@@ -142,7 +142,7 @@ services:
       - DB_PORT=5432
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=superagent_prod
+      - DB_NAME=helixagent_prod
       - DB_SSLMODE=require
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -169,7 +169,7 @@ services:
         max-size: "100m"
         max-file: "5"
     networks:
-      - superagent-network
+      - helixagent-network
 
   postgres:
     image: postgres:15-alpine
@@ -179,7 +179,7 @@ services:
           cpus: '2'
           memory: 4G
     environment:
-      - POSTGRES_DB=superagent_prod
+      - POSTGRES_DB=helixagent_prod
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
@@ -218,12 +218,12 @@ services:
       - "-c"
       - "max_parallel_workers=8"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d superagent_prod"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d helixagent_prod"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - superagent-network
+      - helixagent-network
 
   redis:
     image: redis:7-alpine
@@ -246,7 +246,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - superagent-network
+      - helixagent-network
 
   nginx:
     image: nginx:alpine
@@ -257,16 +257,16 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
-      - superagent
+      - helixagent
     networks:
-      - superagent-network
+      - helixagent-network
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
-  superagent-network:
+  helixagent-network:
     driver: bridge
 ```
 
@@ -280,9 +280,9 @@ events {
 }
 
 http {
-    upstream superagent {
+    upstream helixagent {
         least_conn;
-        server superagent:8080 weight=1 max_fails=3 fail_timeout=30s;
+        server helixagent:8080 weight=1 max_fails=3 fail_timeout=30s;
     }
 
     # Rate limiting
@@ -297,7 +297,7 @@ http {
 
     server {
         listen 443 ssl http2;
-        server_name api.superagent.example.com;
+        server_name api.helixagent.example.com;
 
         ssl_certificate /etc/nginx/ssl/fullchain.pem;
         ssl_certificate_key /etc/nginx/ssl/privkey.pem;
@@ -315,7 +315,7 @@ http {
             limit_req zone=api burst=20 nodelay;
             limit_conn conn 10;
 
-            proxy_pass http://superagent;
+            proxy_pass http://helixagent;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -333,7 +333,7 @@ http {
         }
 
         location /health {
-            proxy_pass http://superagent/health;
+            proxy_pass http://helixagent/health;
             access_log off;
         }
     }
@@ -354,14 +354,14 @@ docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 docker-compose -f docker-compose.prod.yml ps
 
 # View logs
-docker-compose -f docker-compose.prod.yml logs -f superagent
+docker-compose -f docker-compose.prod.yml logs -f helixagent
 
 # Scale replicas
-docker-compose -f docker-compose.prod.yml up -d --scale superagent=5
+docker-compose -f docker-compose.prod.yml up -d --scale helixagent=5
 
 # Rolling update
 docker-compose -f docker-compose.prod.yml pull
-docker-compose -f docker-compose.prod.yml up -d --no-deps superagent
+docker-compose -f docker-compose.prod.yml up -d --no-deps helixagent
 ```
 
 ---
@@ -375,23 +375,23 @@ docker-compose -f docker-compose.prod.yml up -d --no-deps superagent
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: superagent
+  name: helixagent
   labels:
-    name: superagent
+    name: helixagent
 
 ---
 # k8s/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: superagent-config
-  namespace: superagent
+  name: helixagent-config
+  namespace: helixagent
 data:
   PORT: "8080"
   GIN_MODE: "release"
   DB_HOST: "postgres-service"
   DB_PORT: "5432"
-  DB_NAME: "superagent_prod"
+  DB_NAME: "helixagent_prod"
   DB_SSLMODE: "require"
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"
@@ -404,12 +404,12 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: superagent-secrets
-  namespace: superagent
+  name: helixagent-secrets
+  namespace: helixagent
 type: Opaque
 stringData:
   JWT_SECRET: "your-jwt-secret-here"
-  DB_USER: "superagent"
+  DB_USER: "helixagent"
   DB_PASSWORD: "your-db-password"
   REDIS_PASSWORD: "your-redis-password"
   CLAUDE_API_KEY: "sk-ant-..."
@@ -424,10 +424,10 @@ stringData:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: superagent
-  namespace: superagent
+  name: helixagent
+  namespace: helixagent
   labels:
-    app: superagent
+    app: helixagent
 spec:
   replicas: 3
   strategy:
@@ -437,33 +437,33 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: superagent
+      app: helixagent
   template:
     metadata:
       labels:
-        app: superagent
+        app: helixagent
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
-      serviceAccountName: superagent
+      serviceAccountName: helixagent
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
       containers:
-        - name: superagent
-          image: superagent/superagent:v1.0.0
+        - name: helixagent
+          image: helixagent/helixagent:v1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http
           envFrom:
             - configMapRef:
-                name: superagent-config
+                name: helixagent-config
             - secretRef:
-                name: superagent-secrets
+                name: helixagent-secrets
           resources:
             requests:
               cpu: "500m"
@@ -513,7 +513,7 @@ spec:
                     - key: app
                       operator: In
                       values:
-                        - superagent
+                        - helixagent
                 topologyKey: kubernetes.io/hostname
 ```
 
@@ -524,10 +524,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: superagent-service
-  namespace: superagent
+  name: helixagent-service
+  namespace: helixagent
   labels:
-    app: superagent
+    app: helixagent
 spec:
   type: ClusterIP
   ports:
@@ -536,7 +536,7 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: superagent
+    app: helixagent
 ```
 
 ### Ingress
@@ -546,8 +546,8 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: superagent-ingress
-  namespace: superagent
+  name: helixagent-ingress
+  namespace: helixagent
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -557,17 +557,17 @@ metadata:
 spec:
   tls:
     - hosts:
-        - api.superagent.example.com
-      secretName: superagent-tls
+        - api.helixagent.example.com
+      secretName: helixagent-tls
   rules:
-    - host: api.superagent.example.com
+    - host: api.helixagent.example.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: superagent-service
+                name: helixagent-service
                 port:
                   number: 80
 ```
@@ -579,13 +579,13 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: superagent-hpa
-  namespace: superagent
+  name: helixagent-hpa
+  namespace: helixagent
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: superagent
+    name: helixagent
   minReplicas: 3
   maxReplicas: 20
   metrics:
@@ -628,7 +628,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgres
-  namespace: superagent
+  namespace: helixagent
 spec:
   serviceName: postgres-service
   replicas: 1
@@ -647,16 +647,16 @@ spec:
             - containerPort: 5432
           env:
             - name: POSTGRES_DB
-              value: superagent_prod
+              value: helixagent_prod
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: superagent-secrets
+                  name: helixagent-secrets
                   key: DB_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: superagent-secrets
+                  name: helixagent-secrets
                   key: DB_PASSWORD
           volumeMounts:
             - name: postgres-data
@@ -683,7 +683,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres-service
-  namespace: superagent
+  namespace: helixagent
 spec:
   ports:
     - port: 5432
@@ -699,21 +699,21 @@ spec:
 kubectl apply -f k8s/
 
 # Check deployment status
-kubectl -n superagent get pods
-kubectl -n superagent get deployments
-kubectl -n superagent get services
+kubectl -n helixagent get pods
+kubectl -n helixagent get deployments
+kubectl -n helixagent get services
 
 # View logs
-kubectl -n superagent logs -f deployment/superagent
+kubectl -n helixagent logs -f deployment/helixagent
 
 # Scale manually
-kubectl -n superagent scale deployment/superagent --replicas=5
+kubectl -n helixagent scale deployment/helixagent --replicas=5
 
 # Rolling restart
-kubectl -n superagent rollout restart deployment/superagent
+kubectl -n helixagent rollout restart deployment/helixagent
 
 # Check rollout status
-kubectl -n superagent rollout status deployment/superagent
+kubectl -n helixagent rollout status deployment/helixagent
 ```
 
 ---
@@ -725,7 +725,7 @@ kubectl -n superagent rollout status deployment/superagent
 ```bash
 # Create EKS cluster
 eksctl create cluster \
-  --name superagent-prod \
+  --name helixagent-prod \
   --region us-east-1 \
   --nodegroup-name standard-workers \
   --node-type m5.xlarge \
@@ -738,9 +738,9 @@ eksctl create cluster \
 helm repo add eks https://aws.github.io/eks-charts
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
-  --set clusterName=superagent-prod
+  --set clusterName=helixagent-prod
 
-# Deploy SuperAgent
+# Deploy HelixAgent
 kubectl apply -f k8s/
 ```
 
@@ -748,7 +748,7 @@ kubectl apply -f k8s/
 
 ```bash
 # Create GKE cluster
-gcloud container clusters create superagent-prod \
+gcloud container clusters create helixagent-prod \
   --zone us-central1-a \
   --num-nodes 3 \
   --machine-type e2-standard-4 \
@@ -757,9 +757,9 @@ gcloud container clusters create superagent-prod \
   --max-nodes 10
 
 # Get credentials
-gcloud container clusters get-credentials superagent-prod --zone us-central1-a
+gcloud container clusters get-credentials helixagent-prod --zone us-central1-a
 
-# Deploy SuperAgent
+# Deploy HelixAgent
 kubectl apply -f k8s/
 ```
 
@@ -768,8 +768,8 @@ kubectl apply -f k8s/
 ```bash
 # Create AKS cluster
 az aks create \
-  --resource-group superagent-rg \
-  --name superagent-prod \
+  --resource-group helixagent-rg \
+  --name helixagent-prod \
   --node-count 3 \
   --node-vm-size Standard_D4s_v3 \
   --enable-cluster-autoscaler \
@@ -777,9 +777,9 @@ az aks create \
   --max-count 10
 
 # Get credentials
-az aks get-credentials --resource-group superagent-rg --name superagent-prod
+az aks get-credentials --resource-group helixagent-rg --name helixagent-prod
 
-# Deploy SuperAgent
+# Deploy HelixAgent
 kubectl apply -f k8s/
 ```
 
@@ -795,21 +795,21 @@ regions:
   - name: us-east-1
     role: primary
     services:
-      - superagent (3 replicas)
+      - helixagent (3 replicas)
       - postgres (primary)
       - redis (cluster)
 
   - name: us-west-2
     role: secondary
     services:
-      - superagent (3 replicas)
+      - helixagent (3 replicas)
       - postgres (replica)
       - redis (cluster)
 
   - name: eu-west-1
     role: secondary
     services:
-      - superagent (2 replicas)
+      - helixagent (2 replicas)
       - postgres (replica)
       - redis (cluster)
 ```
@@ -849,12 +849,12 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'superagent'
+  - job_name: 'helixagent'
     kubernetes_sd_configs:
       - role: pod
         namespaces:
           names:
-            - superagent
+            - helixagent
     relabel_configs:
       - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
         action: keep
@@ -885,10 +885,10 @@ Import the included Grafana dashboard from `monitoring/grafana-dashboard.json` o
 ```yaml
 # monitoring/alerts.yml
 groups:
-  - name: superagent-alerts
+  - name: helixagent-alerts
     rules:
       - alert: HighErrorRate
-        expr: rate(superagent_requests_total{status=~"5.."}[5m]) / rate(superagent_requests_total[5m]) > 0.05
+        expr: rate(helixagent_requests_total{status=~"5.."}[5m]) / rate(helixagent_requests_total[5m]) > 0.05
         for: 5m
         labels:
           severity: critical
@@ -897,7 +897,7 @@ groups:
           description: Error rate is above 5% for 5 minutes
 
       - alert: HighLatency
-        expr: histogram_quantile(0.99, rate(superagent_request_duration_seconds_bucket[5m])) > 10
+        expr: histogram_quantile(0.99, rate(helixagent_request_duration_seconds_bucket[5m])) > 10
         for: 5m
         labels:
           severity: warning
@@ -906,7 +906,7 @@ groups:
           description: P99 latency is above 10 seconds
 
       - alert: ProviderUnhealthy
-        expr: superagent_provider_health == 0
+        expr: helixagent_provider_health == 0
         for: 2m
         labels:
           severity: warning
@@ -926,12 +926,12 @@ groups:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: superagent-network-policy
-  namespace: superagent
+  name: helixagent-network-policy
+  namespace: helixagent
 spec:
   podSelector:
     matchLabels:
-      app: superagent
+      app: helixagent
   policyTypes:
     - Ingress
     - Egress
@@ -977,7 +977,7 @@ spec:
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
-  name: superagent-psp
+  name: helixagent-psp
 spec:
   privileged: false
   runAsUser:
@@ -1006,13 +1006,13 @@ spec:
 
 BACKUP_DIR="/backups/postgres"
 DATE=$(date +%Y%m%d-%H%M%S)
-BACKUP_FILE="$BACKUP_DIR/superagent-$DATE.sql.gz"
+BACKUP_FILE="$BACKUP_DIR/helixagent-$DATE.sql.gz"
 
 # Create backup
 pg_dump -h $DB_HOST -U $DB_USER -d $DB_NAME | gzip > $BACKUP_FILE
 
 # Upload to S3
-aws s3 cp $BACKUP_FILE s3://superagent-backups/postgres/
+aws s3 cp $BACKUP_FILE s3://helixagent-backups/postgres/
 
 # Cleanup old backups (keep 30 days)
 find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
@@ -1026,7 +1026,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: postgres-backup
-  namespace: superagent
+  namespace: helixagent
 spec:
   schedule: "0 2 * * *"  # Daily at 2 AM
   jobTemplate:
@@ -1043,7 +1043,7 @@ spec:
                   pg_dump -h $DB_HOST -U $DB_USER -d $DB_NAME | gzip > /backup/backup-$(date +%Y%m%d).sql.gz
               envFrom:
                 - secretRef:
-                    name: superagent-secrets
+                    name: helixagent-secrets
               volumeMounts:
                 - name: backup-volume
                   mountPath: /backup
@@ -1091,7 +1091,7 @@ performance:
 
 | Component | CPU Request | CPU Limit | Memory Request | Memory Limit |
 |-----------|-------------|-----------|----------------|--------------|
-| SuperAgent | 500m | 2000m | 1Gi | 4Gi |
+| HelixAgent | 500m | 2000m | 1Gi | 4Gi |
 | PostgreSQL | 500m | 2000m | 1Gi | 4Gi |
 | Redis | 250m | 1000m | 512Mi | 2Gi |
 | Cognee | 500m | 2000m | 1Gi | 4Gi |
@@ -1114,22 +1114,22 @@ performance:
 
 ```bash
 # Check pod status
-kubectl -n superagent get pods -o wide
+kubectl -n helixagent get pods -o wide
 
 # Describe pod for events
-kubectl -n superagent describe pod <pod-name>
+kubectl -n helixagent describe pod <pod-name>
 
 # View container logs
-kubectl -n superagent logs <pod-name> -c superagent
+kubectl -n helixagent logs <pod-name> -c helixagent
 
 # Execute shell in container
-kubectl -n superagent exec -it <pod-name> -- /bin/sh
+kubectl -n helixagent exec -it <pod-name> -- /bin/sh
 
 # Check resource usage
-kubectl -n superagent top pods
+kubectl -n helixagent top pods
 
 # View events
-kubectl -n superagent get events --sort-by='.lastTimestamp'
+kubectl -n helixagent get events --sort-by='.lastTimestamp'
 ```
 
 ---

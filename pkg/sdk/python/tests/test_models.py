@@ -1,8 +1,8 @@
-"""Tests for SuperAgent Verifier SDK models."""
+"""Tests for HelixAgent Verifier SDK models."""
 
 import unittest
 
-from superagent_verifier.models import (
+from helixagent_verifier.models import (
     VerificationRequest,
     VerificationResult,
     BatchVerifyRequest,

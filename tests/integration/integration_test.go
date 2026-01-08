@@ -10,10 +10,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/superagent/superagent/internal/config"
-	"github.com/superagent/superagent/internal/database"
-	"github.com/superagent/superagent/internal/handlers"
-	"github.com/superagent/superagent/internal/services"
+	"github.com/helixagent/helixagent/internal/config"
+	"github.com/helixagent/helixagent/internal/database"
+	"github.com/helixagent/helixagent/internal/handlers"
+	"github.com/helixagent/helixagent/internal/services"
 )
 
 func TestMultiProviderIntegration(t *testing.T) {
@@ -26,7 +26,7 @@ func TestMultiProviderIntegration(t *testing.T) {
 		Database: config.DatabaseConfig{
 			Host:     "localhost",
 			Port:     "5432",
-			Name:     "test_superagent",
+			Name:     "test_helixagent",
 			User:     "test_user",
 			Password: "test_password",
 			SSLMode:  "disable",

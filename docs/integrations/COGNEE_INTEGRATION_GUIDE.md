@@ -10,10 +10,10 @@ The HelixAgent automatically starts required containers when it starts:
 
 ```bash
 # Start HelixAgent - it will automatically start postgres, redis, cognee, and chromadb
-./bin/superagent
+./bin/helixagent
 
 # Or with custom settings
-./bin/superagent -auto-start-docker=true
+./bin/helixagent -auto-start-docker=true
 ```
 
 **What gets started automatically:**
@@ -36,7 +36,7 @@ docker compose --profile ai up -d
 docker compose --profile full up -d
 
 # Then start HelixAgent without auto-startup
-./bin/superagent -auto-start-docker=false
+./bin/helixagent -auto-start-docker=false
 ```
 
 2. **Configure Environment**:

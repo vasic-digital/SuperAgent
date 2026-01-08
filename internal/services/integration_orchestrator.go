@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superagent/superagent/internal/models"
+	"github.com/helixagent/helixagent/internal/models"
 )
 
 // IntegrationOrchestrator coordinates MCP, LSP, and tool execution

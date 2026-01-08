@@ -1,8 +1,8 @@
 {
   "dashboard": {
     "id": null,
-    "title": "SuperAgent LLM Facade - Production Monitoring",
-    "tags": ["superagent", "llm", "monitoring"],
+    "title": "HelixAgent LLM Facade - Production Monitoring",
+    "tags": ["helixagent", "llm", "monitoring"],
     "timezone": "UTC",
     "panels": [
       {
@@ -11,7 +11,7 @@
         "type": "stat",
         "targets": [
           {
-            "expr": "up{job=\"superagent\"}",
+            "expr": "up{job=\"helixagent\"}",
             "legendFormat": "Service Status"
           }
         ],
@@ -164,11 +164,11 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "pg_stat_activity_count{datname=\"superagent_db\"}",
+            "expr": "pg_stat_activity_count{datname=\"helixagent_db\"}",
             "legendFormat": "Active Connections"
           },
           {
-            "expr": "pg_stat_activity_count{datname=\"superagent_db\", state=\"idle\"}",
+            "expr": "pg_stat_activity_count{datname=\"helixagent_db\", state=\"idle\"}",
             "legendFormat": "Idle Connections"
           }
         ]
@@ -179,11 +179,11 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "process_resident_memory_bytes{job=\"superagent\"}",
+            "expr": "process_resident_memory_bytes{job=\"helixagent\"}",
             "legendFormat": "Resident Memory"
           },
           {
-            "expr": "go_memstats_heap_alloc_bytes{job=\"superagent\"}",
+            "expr": "go_memstats_heap_alloc_bytes{job=\"helixagent\"}",
             "legendFormat": "Heap Allocated"
           }
         ],
@@ -200,7 +200,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "go_goroutines{job=\"superagent\"}",
+            "expr": "go_goroutines{job=\"helixagent\"}",
             "legendFormat": "Goroutines"
           }
         ]
@@ -211,7 +211,7 @@
         "type": "heatmap",
         "targets": [
           {
-            "expr": "rate(http_request_duration_seconds_bucket{job=\"superagent\"}[5m])",
+            "expr": "rate(http_request_duration_seconds_bucket{job=\"helixagent\"}[5m])",
             "legendFormat": "{{le}}"
           }
         ],

@@ -1,4 +1,4 @@
-# SuperAgent Common Use Cases
+# HelixAgent Common Use Cases
 
 ## 1. Multi-Provider Chat Completion
 
@@ -8,7 +8,7 @@ Use multiple LLM providers to get the best response:
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "superagent-ensemble",
+    "model": "helixagent-ensemble",
     "messages": [
       {"role": "system", "content": "You are a helpful assistant."},
       {"role": "user", "content": "Explain quantum computing in simple terms."}
@@ -194,16 +194,16 @@ providers:
 ### Python Example
 
 ```python
-from superagent import SuperAgent
+from helixagent import HelixAgent
 
-client = SuperAgent(
+client = HelixAgent(
     api_key="your-key",
     base_url="http://localhost:8080"
 )
 
 # Ensemble chat
 response = client.chat.create(
-    model="superagent-ensemble",
+    model="helixagent-ensemble",
     messages=[{"role": "user", "content": "Hello!"}],
     ensemble_config={
         "strategy": "confidence_weighted",
@@ -228,27 +228,27 @@ print(f"Consensus: {results.consensus}")
 ### Go Example
 
 ```go
-client := superagent.NewClient(&superagent.Config{
+client := helixagent.NewClient(&helixagent.Config{
     APIKey:  "your-key",
     BaseURL: "http://localhost:8080",
 })
 
 // Ensemble chat
-resp, _ := client.Chat.Completions.Create(ctx, &superagent.ChatCompletionRequest{
-    Model: "superagent-ensemble",
-    Messages: []superagent.ChatMessage{
+resp, _ := client.Chat.Completions.Create(ctx, &helixagent.ChatCompletionRequest{
+    Model: "helixagent-ensemble",
+    Messages: []helixagent.ChatMessage{
         {Role: "user", Content: "Hello!"},
     },
-    EnsembleConfig: &superagent.EnsembleConfig{
+    EnsembleConfig: &helixagent.EnsembleConfig{
         Strategy:     "confidence_weighted",
         MinProviders: 2,
     },
 })
 
 // Start debate
-debate, _ := client.Debates.Create(ctx, &superagent.DebateRequest{
+debate, _ := client.Debates.Create(ctx, &helixagent.DebateRequest{
     Topic: "Is AI beneficial for society?",
-    Participants: []superagent.Participant{
+    Participants: []helixagent.Participant{
         {Provider: "openai", Model: "gpt-4"},
         {Provider: "anthropic", Model: "claude-3-opus"},
     },

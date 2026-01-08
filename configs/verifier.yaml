@@ -1,5 +1,5 @@
 # LLMsVerifier Configuration
-# This file configures the integrated LLMsVerifier module for SuperAgent
+# This file configures the integrated LLMsVerifier module for HelixAgent
 
 verifier:
   enabled: true

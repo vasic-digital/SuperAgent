@@ -1,4 +1,4 @@
-# SuperAgent Challenges - Challenge Catalog
+# HelixAgent Challenges - Challenge Catalog
 
 Complete specification of all available challenges.
 
@@ -240,7 +240,7 @@ Create `codebase/go_files/my_challenge/main.go`:
 ```go
 package main
 
-import "github.com/superagent/superagent/challenges"
+import "github.com/helixagent/helixagent/challenges"
 
 func main() {
     runner := challenges.NewRunner("my_challenge")

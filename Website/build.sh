@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# SuperAgent Website Build Script
+# HelixAgent Website Build Script
 # This script builds the website for production deployment
 
 set -e
 
-echo "🚀 Building SuperAgent Website..."
+echo "🚀 Building HelixAgent Website..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -89,19 +89,19 @@ cat > public/sitemap.xml << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>https://superagent.ai/</loc>
+        <loc>https://helixagent.ai/</loc>
         <lastmod>$(date +%Y-%m-%d)</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>https://superagent.ai/docs/</loc>
+        <loc>https://helixagent.ai/docs/</loc>
         <lastmod>$(date +%Y-%m-%d)</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://superagent.ai/docs/api/</loc>
+        <loc>https://helixagent.ai/docs/api/</loc>
         <lastmod>$(date +%Y-%m-%d)</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
@@ -114,7 +114,7 @@ cat > public/robots.txt << 'EOF'
 User-agent: *
 Allow: /
 
-Sitemap: https://superagent.ai/sitemap.xml
+Sitemap: https://helixagent.ai/sitemap.xml
 EOF
 
 print_status "Adding security headers..."

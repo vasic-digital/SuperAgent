@@ -37,7 +37,7 @@ optimization:
 ### Client Initialization
 
 ```go
-import "github.com/superagent/superagent/internal/optimization/langchain"
+import "github.com/helixagent/helixagent/internal/optimization/langchain"
 
 config := &langchain.ClientConfig{
     BaseURL: "http://localhost:8011",

@@ -1,4 +1,4 @@
-module github.com/superagent/superagent
+module github.com/helixagent/helixagent
 
 go 1.24.0
 
@@ -11,6 +11,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/helixagent/helixagent/pkg/api v0.0.0-00010101000000-000000000000
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.23.2
@@ -18,14 +19,13 @@ require (
 	github.com/redis/go-redis/v9 v9.17.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
-	github.com/superagent/superagent/pkg/api v0.0.0-00010101000000-000000000000
 	golang.org/x/crypto v0.43.0
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-replace github.com/superagent/superagent/pkg/api => ./pkg/api
+replace github.com/helixagent/helixagent/pkg/api => ./pkg/api
 
 replace llm-verifier => ./LLMsVerifier/llm-verifier
 
