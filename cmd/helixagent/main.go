@@ -20,8 +20,8 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 
-	"github.com/helixagent/helixagent/internal/config"
-	"github.com/helixagent/helixagent/internal/router"
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/router"
 )
 
 var (
@@ -1077,7 +1077,7 @@ Examples:
   helixagent -config /path/to/config.yaml
   helixagent -version
 
-For more information, visit: https://github.com/helixagent/helixagent
+For more information, visit: https://dev.helix.agent
 `)
 }
 

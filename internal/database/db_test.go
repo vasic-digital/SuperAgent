@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/config"
+	"dev.helix.agent/internal/config"
 )
 
 func TestNewPostgresDB(t *testing.T) {

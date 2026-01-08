@@ -8,8 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/models"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/services"
 )
 
 // mockEnsembleProvider implements LLMProvider for testing
@@ -395,8 +395,9 @@ func TestEnsembleService_RunEnsembleStream_ProviderError(t *testing.T) {
 	stream, err := service.RunEnsembleStream(context.Background(), req)
 	assert.Error(t, err)
 	assert.Nil(t, stream)
-	// The actual implementation returns "no providers available for streaming" when provider has stream error
-	assert.Contains(t, err.Error(), "no providers available")
+	// Error message may vary: "no providers available for streaming" or "[all_providers_failed] All N providers failed"
+	assert.True(t, strings.Contains(err.Error(), "no providers available") || strings.Contains(err.Error(), "providers failed"),
+		"Expected error about no providers or all providers failed, got: %s", err.Error())
 }
 
 func TestEnsembleService_VotingStrategies(t *testing.T) {

@@ -65,7 +65,7 @@ HelixAgent provides a configuration generator for all three agents:
 ### Go API
 
 ```go
-import "github.com/helixagent/helixagent/internal/config"
+import "dev.helix.agent/internal/config"
 
 // Create generator
 gen := config.NewConfigGenerator(

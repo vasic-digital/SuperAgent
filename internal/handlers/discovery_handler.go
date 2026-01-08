@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/helixagent/helixagent/internal/verifier"
+	"dev.helix.agent/internal/verifier"
 )
 
 // DiscoveryHandler handles model discovery HTTP requests

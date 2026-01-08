@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/helixagent/helixagent/internal/models"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/services"
 )
 
 // mockMCPManager implements MCPManager for testing

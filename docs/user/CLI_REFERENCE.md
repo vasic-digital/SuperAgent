@@ -39,7 +39,7 @@ HelixAgent is an AI-powered ensemble LLM service that combines responses from mu
 
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Build the binary

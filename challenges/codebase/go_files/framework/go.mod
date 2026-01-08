@@ -1,3 +1,3 @@
-module github.com/helixagent/helixagent/challenges/framework
+module dev.helix.agent/challenges/framework
 
 go 1.23

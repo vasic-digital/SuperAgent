@@ -10,10 +10,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/helixagent/helixagent/internal/config"
-	"github.com/helixagent/helixagent/internal/database"
-	"github.com/helixagent/helixagent/internal/handlers"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/database"
+	"dev.helix.agent/internal/handlers"
+	"dev.helix.agent/internal/services"
 )
 
 func TestMultiProviderIntegration(t *testing.T) {

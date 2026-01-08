@@ -16,7 +16,7 @@ This guide covers production deployment of HelixAgent across different environme
 
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Copy and configure environment

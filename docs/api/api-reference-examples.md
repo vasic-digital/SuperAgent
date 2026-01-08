@@ -17,7 +17,7 @@ This document provides practical examples for using the HelixAgent API with vari
 
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Build the binary

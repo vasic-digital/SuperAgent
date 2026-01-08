@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/services"
 )
 
 // AuthMiddleware handles JWT authentication

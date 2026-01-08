@@ -11,13 +11,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/llm/providers/cerebras"
-	"github.com/helixagent/helixagent/internal/llm/providers/claude"
-	"github.com/helixagent/helixagent/internal/llm/providers/deepseek"
-	"github.com/helixagent/helixagent/internal/llm/providers/gemini"
-	"github.com/helixagent/helixagent/internal/llm/providers/mistral"
-	"github.com/helixagent/helixagent/internal/llm/providers/qwen"
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/llm/providers/cerebras"
+	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/deepseek"
+	"dev.helix.agent/internal/llm/providers/gemini"
+	"dev.helix.agent/internal/llm/providers/mistral"
+	"dev.helix.agent/internal/llm/providers/qwen"
+	"dev.helix.agent/internal/models"
 )
 
 // TestAuthRetry_MistralProvider tests that Mistral provider retries on 401

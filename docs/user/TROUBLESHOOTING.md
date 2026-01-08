@@ -795,7 +795,7 @@ If these solutions don't resolve your issue:
    ```
 
 3. **Open Issue**:
-   - GitHub: https://github.com/helixagent/helixagent/issues
+   - GitHub: https://dev.helix.agent/issues
    - Include: error message, logs, steps to reproduce
 
 4. **Community Support**:

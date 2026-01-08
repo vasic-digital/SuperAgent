@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/helixagent/helixagent/internal/verifier"
+	"dev.helix.agent/internal/verifier"
 )
 
 func setupHealthHandler() (*HealthHandler, *gin.Engine) {

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 func TestShimCompleteRequest_ToLLMRequest(t *testing.T) {

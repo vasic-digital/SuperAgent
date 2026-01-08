@@ -82,8 +82,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/helixagent/helixagent/internal/llm/providers/gemini"
-    "github.com/helixagent/helixagent/internal/models"
+    "dev.helix.agent/internal/llm/providers/gemini"
+    "dev.helix.agent/internal/models"
 )
 
 func main() {

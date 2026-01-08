@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"plugin"
 
-	"github.com/helixagent/helixagent/internal/utils"
+	"dev.helix.agent/internal/utils"
 )
 
 // Loader implements PluginLoader for loading Go plugins

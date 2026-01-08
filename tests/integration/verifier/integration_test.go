@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/helixagent/helixagent/internal/handlers"
-	"github.com/helixagent/helixagent/internal/verifier"
-	"github.com/helixagent/helixagent/internal/verifier/adapters"
+	"dev.helix.agent/internal/handlers"
+	"dev.helix.agent/internal/verifier"
+	"dev.helix.agent/internal/verifier/adapters"
 )
 
 func setupTestRouter(t *testing.T) (*gin.Engine, *verifier.VerificationService, *verifier.ScoringService, *verifier.HealthService) {

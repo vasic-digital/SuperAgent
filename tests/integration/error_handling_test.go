@@ -16,7 +16,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/services"
 )
 
 // testConfig holds configuration for error handling tests

@@ -18,7 +18,7 @@ pod 'HelixAgent', '~> 1.0.0'
 #### Swift Package Manager
 ```swift
 dependencies: [
-    .package(url: "https://github.com/helixagent/helixagent-ios.git", .upToNextMajor(from: "1.0.0"))
+    .package(url: "https://dev.helix.agent-ios.git", .upToNextMajor(from: "1.0.0"))
 ]
 ```
 
@@ -521,8 +521,8 @@ val okHttpClient = OkHttpClient.Builder()
 
 Complete sample applications are available in the SDK repositories:
 
-- [iOS Sample App](https://github.com/helixagent/helixagent-ios/tree/main/Example)
-- [Android Sample App](https://github.com/helixagent/helixagent-android/tree/main/sample)
+- [iOS Sample App](https://dev.helix.agent-ios/tree/main/Example)
+- [Android Sample App](https://dev.helix.agent-android/tree/main/sample)
 
 ## Contributing
 
@@ -536,8 +536,8 @@ We welcome contributions to the mobile SDKs:
 
 ## Support
 
-- [iOS SDK Issues](https://github.com/helixagent/helixagent-ios/issues)
-- [Android SDK Issues](https://github.com/helixagent/helixagent-android/issues)
+- [iOS SDK Issues](https://dev.helix.agent-ios/issues)
+- [Android SDK Issues](https://dev.helix.agent-android/issues)
 - [Documentation](https://docs.helixagent.ai/mobile)
 
 ## License

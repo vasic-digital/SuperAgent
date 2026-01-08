@@ -81,7 +81,7 @@ cd "$DEPLOY_DIR"
 
 # Clone the repository
 print_status "Cloning HelixAgent repository..."
-if ! git clone https://github.com/helixagent/helixagent.git .; then
+if ! git clone https://dev.helix.agent.git .; then
     print_error "Failed to clone repository. Please check your internet connection."
     exit 1
 fi

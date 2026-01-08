@@ -30,7 +30,7 @@ Key Features:
 **Tweet 5 (Value Prop):**
 ```
 Built for developers who need reliable, cost-effective AI infrastructure. Perfect for startups and enterprises alike. Check it out! 👇
-https://github.com/helixagent/helixagent
+https://dev.helix.agent
 ```
 
 **Tweet 6 (Community):**

@@ -1,7 +1,7 @@
 package llm
 
 import (
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 	"testing"
 )
 

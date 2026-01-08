@@ -82,8 +82,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/helixagent/helixagent/internal/llm/providers/qwen"
-    "github.com/helixagent/helixagent/internal/models"
+    "dev.helix.agent/internal/llm/providers/qwen"
+    "dev.helix.agent/internal/models"
 )
 
 func main() {

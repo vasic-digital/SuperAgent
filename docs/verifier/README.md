@@ -190,7 +190,7 @@ health:
 ### Go SDK
 
 ```go
-import "github.com/helixagent/helixagent/pkg/sdk/go/verifier"
+import "dev.helix.agent/pkg/sdk/go/verifier"
 
 client := verifier.NewClient(verifier.ClientConfig{
     BaseURL: "http://localhost:8081",

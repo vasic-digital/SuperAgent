@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 // SessionHandler handles session management endpoints

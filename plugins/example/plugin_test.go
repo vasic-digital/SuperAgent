@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/models"
-	"github.com/helixagent/helixagent/internal/plugins"
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/plugins"
 )
 
 // TestExamplePlugin_Name tests the Name method

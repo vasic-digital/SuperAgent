@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/helixagent/helixagent/internal/config"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/services"
 )
 
 // MCPHandler handles Model Context Protocol (MCP) endpoints

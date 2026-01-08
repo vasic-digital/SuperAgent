@@ -2,7 +2,7 @@ package llm
 
 import (
 	"context"
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 // LLMProvider defines an interface for LLM providers to integrate with the facade.

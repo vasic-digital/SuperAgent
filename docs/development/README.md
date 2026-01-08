@@ -81,7 +81,7 @@ make install-db-deps
 
 ```bash
 # Clone repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Install dependencies
@@ -266,7 +266,7 @@ package providers
 
 import (
     "context"
-    "github.com/helixagent/helixagent/internal/models"
+    "dev.helix.agent/internal/models"
 )
 
 type NewProvider struct {
@@ -392,7 +392,7 @@ package main
 
 import (
     "context"
-    "github.com/helixagent/helixagent/plugins"
+    "dev.helix.agent/plugins"
 )
 
 type ExamplePlugin struct {
@@ -843,7 +843,7 @@ spec:
 
 ### Community
 
-- **GitHub**: https://github.com/helixagent/helixagent
+- **GitHub**: https://dev.helix.agent
 - **Discord**: https://discord.gg/helixagent
 - **Forum**: https://community.helixagent.ai
 - **Blog**: https://blog.helixagent.ai

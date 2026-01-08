@@ -74,8 +74,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/helixagent/helixagent/internal/llm/providers/deepseek"
-    "github.com/helixagent/helixagent/internal/models"
+    "dev.helix.agent/internal/llm/providers/deepseek"
+    "dev.helix.agent/internal/models"
 )
 
 func main() {

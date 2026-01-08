@@ -51,7 +51,7 @@ HelixAgent is an AI-powered ensemble LLM service that combines responses from mu
 
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Copy and configure environment
@@ -93,7 +93,7 @@ docker-compose --profile full up -d
 # https://golang.org/doc/install
 
 # Clone repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Install dependencies
@@ -864,11 +864,11 @@ results = client.debates.wait_for_completion(debate.debate_id)
 ### Go SDK
 
 ```bash
-go get github.com/helixagent/helixagent-go
+go get dev.helix.agent-go
 ```
 
 ```go
-import "github.com/helixagent/helixagent-go"
+import "dev.helix.agent-go"
 
 // Initialize client
 client := helixagent.NewClient(&helixagent.Config{
@@ -1235,7 +1235,7 @@ logging:
 
 ### Getting Help
 
-- GitHub Issues: https://github.com/helixagent/helixagent/issues
+- GitHub Issues: https://dev.helix.agent/issues
 - Documentation: https://helixagent.ai/docs
 - Discord: https://discord.gg/helixagent
 

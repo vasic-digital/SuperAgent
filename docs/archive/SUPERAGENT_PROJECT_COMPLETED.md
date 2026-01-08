@@ -39,7 +39,7 @@ After comprehensive development, testing, and quality improvements, the **HelixA
 
 ### 🚀 **Ready for Production Deployment:**
 ```bash
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 cp .env.example .env
 # Configure your settings

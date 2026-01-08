@@ -3,8 +3,8 @@ package unit
 import (
 	"testing"
 
-	"github.com/helixagent/helixagent/internal/llm"
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/models"
 )
 
 func TestRunEnsembleBasic(t *testing.T) {

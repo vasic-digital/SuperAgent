@@ -47,11 +47,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/helixagent/helixagent.git"
+    "url": "https://dev.helix.agent.git"
   },
-  "homepage": "https://github.com/helixagent/helixagent#readme",
+  "homepage": "https://dev.helix.agent#readme",
   "bugs": {
-    "url": "https://github.com/helixagent/helixagent/issues"
+    "url": "https://dev.helix.agent/issues"
   },
   "engines": {
     "node": ">=18.0.0"

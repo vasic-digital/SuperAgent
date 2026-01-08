@@ -4,7 +4,7 @@ package plugins
 import (
 	"context"
 
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 // LLMPlugin defines the interface for pluggable LLM providers

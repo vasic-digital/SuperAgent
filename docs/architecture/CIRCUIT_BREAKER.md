@@ -561,4 +561,4 @@ func TestCircuitBreakerOpens(t *testing.T) {
 
 ---
 
-For more information, see the [HelixAgent documentation](https://github.com/helixagent/helixagent).
+For more information, see the [HelixAgent documentation](https://dev.helix.agent).

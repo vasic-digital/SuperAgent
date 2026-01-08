@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 func TestProviderConfig_DefaultValues(t *testing.T) {

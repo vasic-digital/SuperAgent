@@ -618,7 +618,7 @@ make monthly-optimize
 
 ### Community Support
 
-1. **GitHub Issues**: https://github.com/helixagent/helixagent/issues
+1. **GitHub Issues**: https://dev.helix.agent/issues
 2. **Discord Community**: [Link in README]
 3. **Stack Overflow**: Tag `helixagent`
 

@@ -217,7 +217,7 @@ func (pr *ParticipantResponse) Validate() error {
 Add import for services package at the top:
 ```go
 import (
-    "github.com/helixagent/helixagent/internal/services"
+    "dev.helix.agent/internal/services"
 )
 ```
 
@@ -640,8 +640,8 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/helixagent/helixagent/internal/services"
-    "github.com/helixagent/helixagent/internal/utils"
+    "dev.helix.agent/internal/services"
+    "dev.helix.agent/internal/utils"
 )
 
 func TestAdvancedDebateService_Integration(t *testing.T) {
@@ -817,8 +817,8 @@ import (
     
     "github.com/stretchr/testify/mock"
     
-    "github.com/helixagent/helixagent/internal/llm"
-    "github.com/helixagent/helixagent/internal/models"
+    "dev.helix.agent/internal/llm"
+    "dev.helix.agent/internal/models"
 )
 
 // mockLLMProvider is a mock implementation of LLMProvider
@@ -890,7 +890,7 @@ import (
     
     "github.com/sirupsen/logrus"
     
-    "github.com/helixagent/helixagent/internal/llm"
+    "dev.helix.agent/internal/llm"
 )
 
 // ClaudeProvider implements LLMProvider for Anthropic Claude
@@ -1096,7 +1096,7 @@ import (
     
     "github.com/sirupsen/logrus"
     
-    "github.com/helixagent/helixagent/internal/llm"
+    "dev.helix.agent/internal/llm"
 )
 
 // DeepSeekProvider implements LLMProvider for DeepSeek
@@ -1280,8 +1280,8 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/helixagent/helixagent/internal/llm"
-    "github.com/helixagent/helixagent/internal/llm/providers"
+    "dev.helix.agent/internal/llm"
+    "dev.helix.agent/internal/llm/providers"
 )
 
 func TestNewClaudeProvider(t *testing.T) {
@@ -1497,8 +1497,8 @@ import (
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
     
-    "github.com/helixagent/helixagent/internal/llm"
-    "github.com/helixagent/helixagent/internal/llm/providers"
+    "dev.helix.agent/internal/llm"
+    "dev.helix.agent/internal/llm/providers"
 )
 
 func TestNewDeepSeekProvider(t *testing.T) {

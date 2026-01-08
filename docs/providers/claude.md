@@ -75,8 +75,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/helixagent/helixagent/internal/llm/providers/claude"
-    "github.com/helixagent/helixagent/internal/models"
+    "dev.helix.agent/internal/llm/providers/claude"
+    "dev.helix.agent/internal/models"
 )
 
 func main() {

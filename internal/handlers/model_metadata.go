@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/helixagent/helixagent/internal/database"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/database"
+	"dev.helix.agent/internal/services"
 )
 
 type ModelMetadataHandler struct {

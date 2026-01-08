@@ -436,5 +436,5 @@ curl -X POST http://localhost:8081/api/v1/verifier/scores/cache/invalidate \
 ## Getting Help
 
 - **Documentation:** [docs/verifier/](.)
-- **Issues:** [GitHub Issues](https://github.com/helixagent/helixagent/issues)
+- **Issues:** [GitHub Issues](https://dev.helix.agent/issues)
 - **API Reference:** [docs/verifier/API.md](API.md)

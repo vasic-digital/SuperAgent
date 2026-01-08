@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/helixagent/helixagent/internal/cache"
-	"github.com/helixagent/helixagent/internal/config"
+	"dev.helix.agent/internal/cache"
+	"dev.helix.agent/internal/config"
 )
 
 func TestDefaultKeyFunc(t *testing.T) {

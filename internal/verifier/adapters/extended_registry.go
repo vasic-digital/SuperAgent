@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/helixagent/helixagent/internal/verifier"
+	"dev.helix.agent/internal/verifier"
 )
 
 // ExtendedProviderRegistry extends HelixAgent's provider registry with LLMsVerifier capabilities

@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/config"
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/models"
 )
 
 func init() {

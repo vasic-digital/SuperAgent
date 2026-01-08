@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/helixagent/helixagent/internal/utils"
+	"dev.helix.agent/internal/utils"
 )
 
 // Reloader handles hot-reloading of plugin configurations without service interruption

@@ -641,4 +641,4 @@ monitoring:
 
 ---
 
-For more information, see the [HelixAgent Security Documentation](https://github.com/helixagent/helixagent/tree/main/docs/security).
+For more information, see the [HelixAgent Security Documentation](https://dev.helix.agent/tree/main/docs/security).

@@ -146,7 +146,7 @@ HelixAgent provides:
 Built by developers, for developers. Open source, well-documented, and production-ready.
 
 Check out our developer guide: https://helixagent.ai/docs/developer
-Star us on GitHub: https://github.com/helixagent/helixagent
+Star us on GitHub: https://dev.helix.agent
 
 #AI #MachineLearning #DeveloperTools #OpenSource
 ```
@@ -237,7 +237,7 @@ HelixAgent is an open-source multi-provider AI orchestration platform:
 • 99.9% uptime with automatic failover
 • Simple API integration
 
-🔗 https://github.com/helixagent/helixagent
+🔗 https://dev.helix.agent
 
 #OpenSource #AI #MultiProvider #Enterprise
 ```
@@ -266,7 +266,7 @@ Tech stack: Go, Docker, Kubernetes, Prometheus, Grafana
 
 We've been using it in production for 6 months with great results. Happy to answer questions!
 
-GitHub: https://github.com/helixagent/helixagent
+GitHub: https://dev.helix.agent
 Website: https://helixagent.ai
 Docs: https://helixagent.ai/docs
 ```

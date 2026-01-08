@@ -14,7 +14,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/config"
+	"dev.helix.agent/internal/config"
 )
 
 // StreamingChunk represents an OpenAI-compatible streaming chunk

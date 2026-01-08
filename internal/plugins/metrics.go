@@ -5,7 +5,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/helixagent/helixagent/internal/utils"
+	"dev.helix.agent/internal/utils"
 )
 
 var (

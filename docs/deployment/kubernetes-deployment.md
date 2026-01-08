@@ -117,7 +117,7 @@ sudo rabbitmq-plugins enable rabbitmq_management
 
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Checkout the advanced features branch
@@ -640,7 +640,7 @@ sudo rabbitmqctl set_permissions -p / helixagent ".*" ".*" ".*"
 sudo tee /etc/systemd/system/helixagent-advanced.service > /dev/null << 'EOF'
 [Unit]
 Description=HelixAgent Advanced AI Debate Configuration System
-Documentation=https://github.com/helixagent/helixagent
+Documentation=https://dev.helix.agent
 After=network.target postgresql.service redis-server.service rabbitmq-server.service
 Wants=postgresql.service redis-server.service rabbitmq-server.service
 

@@ -11,7 +11,7 @@ Get started with HelixAgent in 5 minutes.
 
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Copy environment file
@@ -32,7 +32,7 @@ curl http://localhost:8080/health
 
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Install dependencies
@@ -155,7 +155,7 @@ print(response.choices[0].message.content)
 ### Go SDK
 
 ```go
-import "github.com/helixagent/helixagent-go"
+import "dev.helix.agent-go"
 
 client := helixagent.NewClient(&helixagent.Config{
     APIKey: "your-key",
@@ -215,5 +215,5 @@ curl -X POST http://localhost:8080/api/v1/verifier/code-visibility \
 
 ## Getting Help
 
-- GitHub Issues: https://github.com/helixagent/helixagent/issues
+- GitHub Issues: https://dev.helix.agent/issues
 - Documentation: https://helixagent.ai/docs

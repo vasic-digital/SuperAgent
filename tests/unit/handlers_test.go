@@ -11,10 +11,29 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/helixagent/helixagent/internal/handlers"
-	"github.com/helixagent/helixagent/internal/models"
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/handlers"
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/services"
 )
+
+// closeNotifierRecorder wraps httptest.ResponseRecorder to implement http.CloseNotifier
+// This is needed for testing SSE/streaming handlers
+type closeNotifierRecorder struct {
+	*httptest.ResponseRecorder
+	closeNotify chan bool
+}
+
+func newCloseNotifierRecorder() *closeNotifierRecorder {
+	return &closeNotifierRecorder{
+		ResponseRecorder: httptest.NewRecorder(),
+		closeNotify:      make(chan bool, 1),
+	}
+}
+
+// CloseNotify implements http.CloseNotifier (deprecated but still used by some handlers)
+func (c *closeNotifierRecorder) CloseNotify() <-chan bool {
+	return c.closeNotify
+}
 
 func TestCompletionHandler_Complete(t *testing.T) {
 	// Create a mock request service
@@ -270,8 +289,8 @@ func TestCompletionHandler_Stream(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/v1/completions/stream", bytes.NewBuffer(reqBody))
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	// Create response recorder
-	w := httptest.NewRecorder()
+	// Create response recorder with CloseNotifier support for SSE streaming
+	w := newCloseNotifierRecorder()
 
 	// Create Gin context
 	c, _ := gin.CreateTestContext(w)

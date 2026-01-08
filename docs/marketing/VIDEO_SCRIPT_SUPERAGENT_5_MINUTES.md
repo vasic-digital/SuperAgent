@@ -55,7 +55,7 @@
 
 **VISUAL**: Type in terminal:
 ```bash
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 make build
 ```

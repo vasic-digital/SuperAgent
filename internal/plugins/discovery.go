@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/helixagent/helixagent/internal/utils"
+	"dev.helix.agent/internal/utils"
 )
 
 // Discovery handles automatic discovery and registration of plugins

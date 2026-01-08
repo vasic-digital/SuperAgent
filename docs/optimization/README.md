@@ -22,7 +22,7 @@ The optimization framework consists of:
 ### Basic Usage
 
 ```go
-import "github.com/helixagent/helixagent/internal/optimization"
+import "dev.helix.agent/internal/optimization"
 
 // Create service with default config
 config := optimization.DefaultConfig()

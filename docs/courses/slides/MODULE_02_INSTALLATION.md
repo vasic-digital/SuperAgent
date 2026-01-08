@@ -121,7 +121,7 @@ docker compose version
 
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Start core services
@@ -189,7 +189,7 @@ docker-compose --profile monitoring up -d
 
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 
 # Navigate to project directory
 cd helixagent

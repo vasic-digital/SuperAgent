@@ -8,8 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/helixagent/helixagent/internal/cache"
-	"github.com/helixagent/helixagent/internal/database"
+	"dev.helix.agent/internal/cache"
+	"dev.helix.agent/internal/database"
 )
 
 func newTestLogger() *logrus.Logger {

@@ -526,7 +526,8 @@ RUNSCRIPT
     # Analyze the output
     local output_lines=$(wc -l < "$OPENCODE_LOG" | tr -d ' ')
     local error_lines=$(grep -ci "error\|fail\|exception" "$OPENCODE_LOG" 2>/dev/null | tr -d ' ' || echo "0")
-    local api_errors=$(grep -ci "api.*error\|status.*[45][0-9][0-9]" "$OPENCODE_LOG" 2>/dev/null | tr -d ' ' || echo "0")
+    # More specific pattern to avoid false positives - look for actual API errors, not just mentions of "api"
+    local api_errors=$(grep -ci "api error\|api_error\|API Error\|status=[45][0-9][0-9]\|HTTP [45][0-9][0-9]\|statusCode=[45][0-9][0-9]" "$OPENCODE_LOG" 2>/dev/null | tr -d ' ' || echo "0")
 
     # Ensure numeric values
     output_lines=${output_lines:-0}
@@ -540,7 +541,7 @@ RUNSCRIPT
     # Extract any API error details
     if [ "$api_errors" -gt 0 ] 2>/dev/null; then
         log_warning "API errors detected in OpenCode output"
-        grep -i "api.*error\|status.*[45][0-9][0-9]\|failed.*request" "$OPENCODE_LOG" >> "$ERROR_LOG" 2>/dev/null || true
+        grep -i "api error\|api_error\|status=[45][0-9][0-9]\|HTTP [45][0-9][0-9]\|statusCode=[45][0-9][0-9]\|failed.*request" "$OPENCODE_LOG" >> "$ERROR_LOG" 2>/dev/null || true
     fi
 
     # Check if the response mentions the codebase

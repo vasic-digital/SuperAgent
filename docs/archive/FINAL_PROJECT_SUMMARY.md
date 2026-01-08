@@ -78,7 +78,7 @@ The HelixAgent project has been successfully completed and is now fully producti
 
 ### Quick Start Method
 ```bash
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 cp .env.example .env
 # Configure API keys and settings

@@ -97,7 +97,7 @@
 ### Development Environment
 ```bash
 # Clone and setup
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Start development stack

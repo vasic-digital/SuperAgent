@@ -132,8 +132,8 @@ Welcome to the HelixAgent video course library. These comprehensive courses will
 ## Support and Resources
 
 - [Documentation](https://helixagent.ai/docs)
-- [GitHub Repository](https://github.com/helixagent/helixagent)
-- [Community Forums](https://github.com/helixagent/helixagent/discussions)
+- [GitHub Repository](https://dev.helix.agent)
+- [Community Forums](https://dev.helix.agent/discussions)
 - [Support Email](mailto:support@helixagent.ai)
 
 ## Certification

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/helixagent/helixagent/internal/config"
+	"dev.helix.agent/internal/config"
 )
 
 func TestRouterImplementation(t *testing.T) {

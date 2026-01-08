@@ -3,7 +3,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD1E?style=flat-square&logo=go)](https://golang.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=flat-square&logo=docker)](https://www.docker.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen?style=flat-square)](https://github.com/helixagent/helixagent/actions/workflows/tests)
+[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen?style=flat-square)](https://dev.helix.agent/actions/workflows/tests)
 
 HelixAgent is a production-ready, AI-powered ensemble LLM service that intelligently combines responses from multiple language models to provide the most accurate and reliable outputs.
 
@@ -17,7 +17,7 @@ HelixAgent is a production-ready, AI-powered ensemble LLM service that intellige
 ### Using Docker (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 
 # Copy environment configuration
@@ -299,7 +299,7 @@ curl -X POST http://localhost:8080/v1/completions/stream \
 package main
 
 import (
-    "github.com/helixagent/helixagent/internal/plugins"
+    "dev.helix.agent/internal/plugins"
 )
 
 type MyPlugin struct {
@@ -358,7 +358,7 @@ docker-compose --profile optimization up -d
 
 ### Usage Example
 ```go
-import "github.com/helixagent/helixagent/internal/optimization"
+import "dev.helix.agent/internal/optimization"
 
 // Create and use optimization service
 config := optimization.DefaultConfig()
@@ -501,8 +501,8 @@ export REQUEST_LOGGING=true
 - **[Quick Start](./docs/guides/quick-start-guide.md)**: Getting started guide
 
 ### Community
-- **GitHub Discussions**: [Community Support](https://github.com/helixagent/helixagent/discussions)
-- **Issues**: [Bug Reports & Feature Requests](https://github.com/helixagent/helixagent/issues)
+- **GitHub Discussions**: [Community Support](https://dev.helix.agent/discussions)
+- **Issues**: [Bug Reports & Feature Requests](https://dev.helix.agent/issues)
 - **Contributing**: [Contribution Guidelines](CONTRIBUTING.md)
 
 ### Support

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/models"
 )
 
 // UserRepository defines operations for user data

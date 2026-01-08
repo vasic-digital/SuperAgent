@@ -10,16 +10,16 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/helixagent/helixagent/internal/llm"
-	"github.com/helixagent/helixagent/internal/llm/providers/cerebras"
-	"github.com/helixagent/helixagent/internal/llm/providers/claude"
-	"github.com/helixagent/helixagent/internal/llm/providers/deepseek"
-	"github.com/helixagent/helixagent/internal/llm/providers/gemini"
-	"github.com/helixagent/helixagent/internal/llm/providers/mistral"
-	"github.com/helixagent/helixagent/internal/llm/providers/ollama"
-	"github.com/helixagent/helixagent/internal/llm/providers/openrouter"
-	"github.com/helixagent/helixagent/internal/llm/providers/qwen"
-	"github.com/helixagent/helixagent/internal/models"
+	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/llm/providers/cerebras"
+	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/deepseek"
+	"dev.helix.agent/internal/llm/providers/gemini"
+	"dev.helix.agent/internal/llm/providers/mistral"
+	"dev.helix.agent/internal/llm/providers/ollama"
+	"dev.helix.agent/internal/llm/providers/openrouter"
+	"dev.helix.agent/internal/llm/providers/qwen"
+	"dev.helix.agent/internal/models"
 )
 
 // LLMsVerifierScoreProvider interface for getting dynamic scores from LLMsVerifier

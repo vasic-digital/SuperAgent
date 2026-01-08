@@ -55,7 +55,7 @@ Configuration tests working correctly
 
 ### Quick Start Works
 ```bash
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 cp .env.example .env
 # Configure settings

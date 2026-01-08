@@ -51,7 +51,7 @@ Based on comprehensive analysis and the final completion summary, the HelixAgent
 
 ### Quick Start Method
 ```bash
-git clone https://github.com/helixagent/helixagent.git
+git clone https://dev.helix.agent.git
 cd helixagent
 cp .env.example .env
 # Configure API keys and settings

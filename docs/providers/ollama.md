@@ -111,8 +111,8 @@ import (
     "context"
     "fmt"
 
-    "github.com/helixagent/helixagent/internal/llm/providers/ollama"
-    "github.com/helixagent/helixagent/internal/models"
+    "dev.helix.agent/internal/llm/providers/ollama"
+    "dev.helix.agent/internal/models"
 )
 
 func main() {

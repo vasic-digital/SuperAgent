@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/helixagent/helixagent/internal/services"
+	"dev.helix.agent/internal/services"
 )
 
 // DebateHandler handles debate API endpoints
