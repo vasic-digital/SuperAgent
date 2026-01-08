@@ -158,9 +158,9 @@ func NewQwenProviderWithOAuth(baseURL, model string) (*QwenProvider, error) {
 
 // NewQwenProviderWithOAuthAndRetry creates a new Qwen provider using OAuth credentials with custom retry config
 func NewQwenProviderWithOAuthAndRetry(baseURL, model string, retryConfig RetryConfig) (*QwenProvider, error) {
+	// OAuth tokens from Qwen Code CLI work with the DashScope API
 	if baseURL == "" {
-		// For OAuth, use the Qwen chat API endpoint instead of DashScope
-		baseURL = "https://chat.qwen.ai/api/v1"
+		baseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 	}
 	if model == "" {
 		model = "qwen-turbo"
