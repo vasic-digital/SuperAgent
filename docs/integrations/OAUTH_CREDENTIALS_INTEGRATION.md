@@ -130,6 +130,84 @@ const (
    - OAuth: `Authorization: Bearer <token>`
    - API Key: `x-api-key: <key>` (Claude) or `Authorization: Bearer <key>` (Qwen)
 
+## Auto-Refresh Mechanism
+
+The OAuth implementation includes automatic token refresh to ensure credentials remain valid during long-running operations.
+
+### How It Works
+
+Located at: `internal/auth/oauth_credentials/token_refresh.go`
+
+**Key Constants**:
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `RefreshThreshold` | 10 minutes | Time before expiration when proactive refresh occurs |
+| `RefreshTimeout` | 30 seconds | HTTP timeout for refresh requests |
+| `ClaudeTokenEndpoint` | `https://claude.ai/api/auth/oauth/token` | Claude OAuth token endpoint |
+| `QwenTokenEndpoint` | `https://oauth.aliyun.com/v1/token` | Qwen OAuth token endpoint |
+
+**Refresh Flow**:
+
+1. When credentials are read, the system checks if the token expires within the `RefreshThreshold` (10 minutes)
+2. If expiring soon and a refresh token is available, automatic refresh is attempted
+3. On successful refresh:
+   - New access token is obtained
+   - Credential file is updated on disk
+   - In-memory cache is refreshed
+4. If refresh fails but token is still valid, the existing token continues to be used
+5. Rate limiting prevents excessive refresh attempts (minimum 30 seconds between attempts)
+
+### Token Refresh Functions
+
+| Function | Description |
+|----------|-------------|
+| `NeedsRefresh(expiresAt)` | Check if token needs refresh (expires within 10 min) |
+| `IsExpired(expiresAt)` | Check if token is already expired |
+| `AutoRefreshClaudeToken(creds)` | Automatically refresh Claude token if needed |
+| `AutoRefreshQwenToken(creds)` | Automatically refresh Qwen token if needed |
+| `GetRefreshStatus()` | Get refresh status for both providers |
+| `StartBackgroundRefresh(stopChan)` | Start background refresh goroutine |
+
+### Background Refresh
+
+For long-running applications, you can enable background token refresh:
+
+```go
+import "dev.helix.agent/internal/auth/oauth_credentials"
+
+// Create stop channel
+stopChan := make(chan struct{})
+
+// Start background refresh (checks every 5 minutes)
+oauth_credentials.StartBackgroundRefresh(stopChan)
+
+// When shutting down
+close(stopChan)
+```
+
+### Getting Refresh Status
+
+```go
+status := oauth_credentials.GetRefreshStatus()
+fmt.Printf("Refresh threshold: %s\n", status["refresh_threshold"])
+
+if claude, ok := status["claude"].(map[string]interface{}); ok {
+    fmt.Printf("Claude needs refresh: %v\n", claude["needs_refresh"])
+    fmt.Printf("Claude has refresh token: %v\n", claude["has_refresh_token"])
+    fmt.Printf("Claude expires at: %s\n", claude["expires_at"])
+}
+```
+
+### Credential File Updates
+
+When tokens are refreshed, the credential files are automatically updated:
+
+- `~/.claude/.credentials.json` - Updated with new Claude tokens
+- `~/.qwen/oauth_creds.json` - Updated with new Qwen tokens
+
+File permissions are preserved (0600 - user read/write only).
+
 ## Provider Registry Integration
 
 The provider registry in `internal/services/provider_registry.go` automatically:
@@ -320,8 +398,10 @@ if available, ok := info["available"].(bool); ok && available {
 
 | File | Action | Description |
 |------|--------|-------------|
-| `internal/auth/oauth_credentials/oauth_credentials.go` | Created | OAuth credential reader |
+| `internal/auth/oauth_credentials/oauth_credentials.go` | Created | OAuth credential reader with auto-refresh |
+| `internal/auth/oauth_credentials/token_refresh.go` | Created | Token auto-refresh mechanism |
 | `internal/auth/oauth_credentials/oauth_credentials_test.go` | Created | Unit tests |
+| `internal/auth/oauth_credentials/token_refresh_test.go` | Created | Auto-refresh tests |
 | `internal/llm/providers/claude/claude.go` | Modified | OAuth support |
 | `internal/llm/providers/qwen/qwen.go` | Modified | OAuth support |
 | `internal/services/provider_registry.go` | Modified | Auto OAuth selection |
@@ -347,13 +427,22 @@ if available, ok := info["available"].(bool); ok && available {
 
 ### Token Expired
 
-OAuth tokens typically expire after several hours. Re-authenticate via:
+OAuth tokens typically expire after several hours. The auto-refresh mechanism will automatically refresh tokens before they expire if a refresh token is available.
+
+If auto-refresh fails or no refresh token exists, re-authenticate via:
 ```bash
 # Claude Code
 claude --login
 
 # Qwen Code
 qwen --login
+```
+
+### Checking Refresh Status
+
+```go
+status := oauth_credentials.GetRefreshStatus()
+// Check if tokens need refresh or have refresh tokens available
 ```
 
 ### Environment Variable Not Working
@@ -381,6 +470,17 @@ Some providers may return 401 on health check endpoints even with valid OAuth cr
 OAuth2 credential integration provides seamless authentication for users already logged into Claude Code or Qwen Code CLI agents. The implementation is:
 
 - **Backward Compatible**: Falls back to API keys when OAuth unavailable
-- **Secure**: Respects token expiration and doesn't store credentials
+- **Auto-Refreshing**: Automatically refreshes tokens before expiration
+- **Secure**: Respects token expiration and safely updates credential files
 - **Transparent**: Logs which authentication method is active
-- **Tested**: Comprehensive unit and integration test coverage
+- **Tested**: Comprehensive unit and integration test coverage (35+ tests)
+
+### Auto-Refresh Summary
+
+| Feature | Claude | Qwen |
+|---------|--------|------|
+| Proactive refresh | 10 min before expiry | 10 min before expiry |
+| Refresh rate limit | 30 sec minimum | 30 sec minimum |
+| File update on refresh | Yes | Yes |
+| Background refresh | Supported | Supported |
+| Graceful fallback | Yes | Yes |
