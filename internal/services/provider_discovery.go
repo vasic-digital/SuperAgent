@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/claude"
@@ -234,8 +235,120 @@ func (pd *ProviderDiscovery) DiscoverProviders() ([]*DiscoveredProvider, error) 
 		seen[mapping.ProviderName] = true
 	}
 
-	pd.log.Infof("Discovered %d providers from environment", len(discovered))
+	// Discover OAuth-based providers (Claude Code and Qwen Code CLI)
+	oauthProviders := pd.discoverOAuthProviders(seen)
+	for _, dp := range oauthProviders {
+		pd.providers[dp.Name] = dp
+		discovered = append(discovered, dp)
+		seen[dp.Name] = true
+	}
+
+	pd.log.Infof("Discovered %d providers from environment (including %d OAuth providers)", len(discovered), len(oauthProviders))
 	return discovered, nil
+}
+
+// discoverOAuthProviders discovers providers using OAuth credentials from CLI agents
+func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*DiscoveredProvider {
+	discovered := make([]*DiscoveredProvider, 0)
+	oauthReader := oauth_credentials.GetGlobalReader()
+
+	// Discover Claude OAuth provider
+	if !seen["claude"] && !seen["claude-oauth"] && oauth_credentials.IsClaudeOAuthEnabled() {
+		if oauthReader.HasValidClaudeCredentials() {
+			pd.log.WithFields(logrus.Fields{
+				"provider": "claude-oauth",
+				"type":     "claude",
+				"source":   "oauth_credentials",
+			}).Info("Discovered Claude provider from OAuth credentials (Claude Code CLI)")
+
+			// Create Claude provider with OAuth token (reads token internally)
+			provider, err := claude.NewClaudeProviderWithOAuth("https://api.anthropic.com", "claude-sonnet-4-20250514")
+			if err != nil {
+				pd.log.WithError(err).Warn("Failed to create Claude OAuth provider")
+			} else {
+				// Get token for reference (masked in logs)
+				accessToken, _ := oauthReader.GetClaudeAccessToken()
+				maskedToken := maskToken(accessToken)
+
+				dp := &DiscoveredProvider{
+					Name:         "claude-oauth",
+					Type:         "claude",
+					APIKeyEnvVar: "OAUTH:~/.claude/.credentials.json",
+					APIKey:       accessToken, // Store for internal use
+					BaseURL:      "https://api.anthropic.com",
+					DefaultModel: "claude-sonnet-4-20250514",
+					Provider:     provider,
+					Status:       ProviderStatusUnknown,
+					Score:        0,
+					Verified:     false,
+				}
+
+				if provider != nil {
+					dp.Capabilities = provider.GetCapabilities()
+					if dp.Capabilities != nil {
+						dp.SupportsModels = dp.Capabilities.SupportedModels
+					}
+				}
+
+				discovered = append(discovered, dp)
+				pd.log.WithField("token", maskedToken).Info("Claude OAuth provider discovered successfully")
+			}
+		}
+	}
+
+	// Discover Qwen OAuth provider
+	if !seen["qwen"] && !seen["qwen-oauth"] && oauth_credentials.IsQwenOAuthEnabled() {
+		if oauthReader.HasValidQwenCredentials() {
+			pd.log.WithFields(logrus.Fields{
+				"provider": "qwen-oauth",
+				"type":     "qwen",
+				"source":   "oauth_credentials",
+			}).Info("Discovered Qwen provider from OAuth credentials (Qwen Code CLI)")
+
+			// Create Qwen provider with OAuth token (reads token internally)
+			provider, err := qwen.NewQwenProviderWithOAuth("https://dashscope.aliyuncs.com/api/v1", "qwen-turbo")
+			if err != nil {
+				pd.log.WithError(err).Warn("Failed to create Qwen OAuth provider")
+			} else {
+				// Get token for reference (masked in logs)
+				accessToken, _ := oauthReader.GetQwenAccessToken()
+				maskedToken := maskToken(accessToken)
+
+				dp := &DiscoveredProvider{
+					Name:         "qwen-oauth",
+					Type:         "qwen",
+					APIKeyEnvVar: "OAUTH:~/.qwen/oauth_creds.json",
+					APIKey:       accessToken, // Store for internal use
+					BaseURL:      "https://dashscope.aliyuncs.com/api/v1",
+					DefaultModel: "qwen-turbo",
+					Provider:     provider,
+					Status:       ProviderStatusUnknown,
+					Score:        0,
+					Verified:     false,
+				}
+
+				if provider != nil {
+					dp.Capabilities = provider.GetCapabilities()
+					if dp.Capabilities != nil {
+						dp.SupportsModels = dp.Capabilities.SupportedModels
+					}
+				}
+
+				discovered = append(discovered, dp)
+				pd.log.WithField("token", maskedToken).Info("Qwen OAuth provider discovered successfully")
+			}
+		}
+	}
+
+	return discovered
+}
+
+// maskToken masks the middle part of a token for safe logging
+func maskToken(token string) string {
+	if len(token) <= 10 {
+		return "***"
+	}
+	return token[:5] + "..." + token[len(token)-5:]
 }
 
 // createProvider creates an LLM provider instance based on the mapping

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"time"
@@ -458,10 +459,29 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		// Cognee endpoints - comprehensive API with all features
 		cogneeAPIHandler.RegisterRoutes(protected)
 
-		// AI Debate endpoints
+		// AI Debate endpoints with Claude/Qwen team configuration
+		// Initialize debate team configuration with provider discovery
+		debateTeamConfig := services.NewDebateTeamConfig(
+			providerRegistry,
+			providerRegistry.GetDiscovery(),
+			logger,
+		)
+
+		// Initialize the debate team (Claude Sonnet/Opus for positions 1-2,
+		// LLMsVerifier-scored providers for 3-5, Qwen as fallbacks)
+		if err := debateTeamConfig.InitializeTeam(context.Background()); err != nil {
+			logger.WithError(err).Warn("Failed to initialize debate team, some positions may be unfilled")
+		}
+
 		debateService := services.NewDebateServiceWithDeps(logger, providerRegistry, cogneeService)
+		debateService.SetTeamConfig(debateTeamConfig) // Set the team configuration
 		debateHandler := handlers.NewDebateHandler(debateService, nil, logger)
 		debateHandler.RegisterRoutes(protected)
+
+		// Add debate team configuration endpoint
+		protected.GET("/debates/team", func(c *gin.Context) {
+			c.JSON(http.StatusOK, debateTeamConfig.GetTeamSummary())
+		})
 
 		// LSP endpoints
 		lspGroup := protected.Group("/lsp")

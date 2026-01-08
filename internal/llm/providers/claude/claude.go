@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	ClaudeAPIURL = "https://api.anthropic.com/v1/messages"
-	ClaudeModel  = "claude-3-sonnet-20240229"
+	ClaudeAPIURL     = "https://api.anthropic.com/v1/messages"
+	ClaudeModel      = "claude-3-sonnet-20240229"
+	ClaudeOAuthModel = "claude-3-5-sonnet-20241022" // Default model for OAuth auth
 )
 
 // AuthType represents the type of authentication used
@@ -138,11 +139,12 @@ func NewClaudeProviderWithOAuth(baseURL, model string) (*ClaudeProvider, error) 
 
 // NewClaudeProviderWithOAuthAndRetry creates a new Claude provider using OAuth credentials with custom retry config
 func NewClaudeProviderWithOAuthAndRetry(baseURL, model string, retryConfig RetryConfig) (*ClaudeProvider, error) {
+	// OAuth tokens from Claude Code CLI work with the standard Anthropic API
 	if baseURL == "" {
 		baseURL = ClaudeAPIURL
 	}
 	if model == "" {
-		model = ClaudeModel
+		model = ClaudeOAuthModel
 	}
 
 	credReader := oauth_credentials.GetGlobalReader()

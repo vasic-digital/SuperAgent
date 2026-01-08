@@ -22,6 +22,7 @@ type DebateService struct {
 	providerRegistry *ProviderRegistry
 	cogneeService    *CogneeService
 	logRepository    DebateLogRepository // Optional: for persistent logging
+	teamConfig       *DebateTeamConfig   // Team configuration with Claude/Qwen roles
 }
 
 // DebateLogRepository interface for logging debate activities
@@ -65,6 +66,16 @@ func (ds *DebateService) SetCogneeService(service *CogneeService) {
 // SetLogRepository sets the log repository for persistent logging
 func (ds *DebateService) SetLogRepository(repo DebateLogRepository) {
 	ds.logRepository = repo
+}
+
+// SetTeamConfig sets the debate team configuration with Claude/Qwen role assignments
+func (ds *DebateService) SetTeamConfig(config *DebateTeamConfig) {
+	ds.teamConfig = config
+}
+
+// GetTeamConfig returns the debate team configuration
+func (ds *DebateService) GetTeamConfig() *DebateTeamConfig {
+	return ds.teamConfig
 }
 
 // logDebateEntry logs a debate entry to the repository if configured

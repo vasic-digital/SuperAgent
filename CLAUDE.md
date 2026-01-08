@@ -99,6 +99,37 @@ make install-deps     # Install dev dependencies (golangci-lint, gosec)
 - **AI Debate System**: Multi-round debate between providers for consensus (see `internal/services/debate_*.go`)
   - API: POST `/v1/debates`, GET `/v1/debates`, GET `/v1/debates/:id`, DELETE `/v1/debates/:id`
   - Supports async execution with status polling via `/v1/debates/:id/status`
+  - **Team Configuration**: See `internal/services/debate_team_config.go` for team composition
+
+### AI Debate Team Composition
+
+The AI Debate Team consists of 5 positions with Claude and Qwen models for primary roles and fallbacks:
+
+| Position | Role | Primary Provider | Primary Model | Fallback Chain |
+|----------|------|------------------|---------------|----------------|
+| 1 | Analyst | Claude | claude-3-5-sonnet-20241022 | Qwen (qwen-max) |
+| 2 | Proposer | Claude | claude-3-opus-20240229 | Qwen (qwen-plus) |
+| 3 | Critic | LLMsVerifier scored | Dynamic | Claude Haiku -> Qwen (qwen-turbo) |
+| 4 | Synthesis | LLMsVerifier scored | Dynamic | Claude Haiku -> Qwen (qwen-coder-turbo) |
+| 5 | Mediator | LLMsVerifier scored | Dynamic | Claude Haiku -> Qwen (qwen-long) |
+
+**Key Files:**
+- `internal/services/debate_team_config.go` - Team configuration and model assignments
+- `internal/services/debate_team_config_test.go` - Unit tests for team configuration
+
+**Claude Models** (defined in `ClaudeModels`):
+- `claude-3-5-sonnet-20241022` (Position 1 - Analyst)
+- `claude-3-opus-20240229` (Position 2 - Proposer)
+- `claude-3-haiku-20240307` (Fallback for positions 3, 4, 5)
+
+**Qwen Models** (defined in `QwenModels`, unique per position - no duplicates):
+- `qwen-max` (Position 1 fallback)
+- `qwen-plus` (Position 2 fallback)
+- `qwen-turbo` (Position 3 fallback)
+- `qwen-coder-turbo` (Position 4 fallback)
+- `qwen-long` (Position 5 fallback)
+
+**Provider Verification**: All providers are verified on startup using health checks. Invalid/expired credentials trigger fallback activation.
 - **Plugin System**: Hot-reloadable plugins with dependency resolution
 - **Circuit Breaker**: Fault tolerance for provider failures with health monitoring
 - **Protocol Managers**: Unified MCP/LSP/ACP protocol handling
