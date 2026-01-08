@@ -101,35 +101,72 @@ make install-deps     # Install dev dependencies (golangci-lint, gosec)
   - Supports async execution with status polling via `/v1/debates/:id/status`
   - **Team Configuration**: See `internal/services/debate_team_config.go` for team composition
 
-### AI Debate Team Composition
+### AI Debate Team Composition (15 LLMs Total)
 
-The AI Debate Team consists of 5 positions with Claude and Qwen models for primary roles and fallbacks:
+The AI Debate Team uses a dynamic selection algorithm:
 
-| Position | Role | Primary Provider | Primary Model | Fallback Chain |
-|----------|------|------------------|---------------|----------------|
-| 1 | Analyst | Claude | claude-3-5-sonnet-20241022 | Qwen (qwen-max) |
-| 2 | Proposer | Claude | claude-3-opus-20240229 | Qwen (qwen-plus) |
-| 3 | Critic | LLMsVerifier scored | Dynamic | Claude Haiku -> Qwen (qwen-turbo) |
-| 4 | Synthesis | LLMsVerifier scored | Dynamic | Claude Haiku -> Qwen (qwen-coder-turbo) |
-| 5 | Mediator | LLMsVerifier scored | Dynamic | Claude Haiku -> Qwen (qwen-long) |
+1. **OAuth2 Providers First**: Claude and Qwen (if verified by LLMsVerifier)
+2. **LLMsVerifier Scored**: Remaining positions filled with best-scored verified providers
+3. **Reuse Allowed**: Same LLM can be used in multiple instances if needed
+4. **Total**: 5 positions × 3 LLMs each (1 primary + 2 fallbacks) = **15 LLMs**
+
+**Selection Algorithm:**
+```
+1. Verify all providers via LLMsVerifier
+2. Collect OAuth2 models (Claude, Qwen) if verified
+3. Collect LLMsVerifier-scored providers (sorted by score)
+4. Sort all: OAuth first, then by score (highest first)
+5. Assign top 5 to primary positions
+6. Assign next best as fallbacks (2 per position)
+```
+
+**Available Model Pools:**
+
+| Provider Type | Models | Count |
+|---------------|--------|-------|
+| **Claude (OAuth2)** | Sonnet Latest, Opus, Haiku | 3 |
+| **Qwen (OAuth2)** | Max, Plus, Turbo, Coder, Long | 5 |
+| **LLMsVerifier** | DeepSeek, Gemini, Mistral, Groq, Cerebras | 5 |
+| **Total Available** | | **13** |
+
+**Model Definitions:**
+
+```go
+// OAuth2 Providers (prioritized if verified)
+ClaudeModels.SonnetLatest = "claude-3-5-sonnet-20241022"  // Score: 9.5
+ClaudeModels.Opus         = "claude-3-opus-20240229"      // Score: 9.5
+ClaudeModels.Haiku        = "claude-3-haiku-20240307"     // Score: 8.5
+
+QwenModels.Max   = "qwen-max"          // Score: 8.0
+QwenModels.Plus  = "qwen-plus"         // Score: 7.8
+QwenModels.Turbo = "qwen-turbo"        // Score: 7.5
+QwenModels.Coder = "qwen-coder-turbo"  // Score: 7.5
+QwenModels.Long  = "qwen-long"         // Score: 7.5
+
+// LLMsVerifier Scored Providers (fill remaining positions)
+LLMsVerifierModels.DeepSeek = "deepseek-chat"           // Score: 8.5
+LLMsVerifierModels.Gemini   = "gemini-2.0-flash"        // Score: 9.0
+LLMsVerifierModels.Mistral  = "mistral-large-latest"    // Score: 8.5
+LLMsVerifierModels.Groq     = "llama-3.1-70b-versatile" // Score: 8.0
+LLMsVerifierModels.Cerebras = "llama3.1-70b"            // Score: 7.5
+```
+
+**Key Constants:**
+```go
+TotalDebatePositions = 5   // 5 debate positions
+FallbacksPerPosition = 2   // 2 fallbacks per position
+TotalDebateLLMs      = 15  // 5 × (1 + 2) = 15 LLMs total
+```
 
 **Key Files:**
-- `internal/services/debate_team_config.go` - Team configuration and model assignments
-- `internal/services/debate_team_config_test.go` - Unit tests for team configuration
+- `internal/services/debate_team_config.go` - Team configuration and dynamic selection
+- `internal/services/debate_team_config_test.go` - Comprehensive unit tests
 
-**Claude Models** (defined in `ClaudeModels`):
-- `claude-3-5-sonnet-20241022` (Position 1 - Analyst)
-- `claude-3-opus-20240229` (Position 2 - Proposer)
-- `claude-3-haiku-20240307` (Fallback for positions 3, 4, 5)
-
-**Qwen Models** (defined in `QwenModels`, unique per position - no duplicates):
-- `qwen-max` (Position 1 fallback)
-- `qwen-plus` (Position 2 fallback)
-- `qwen-turbo` (Position 3 fallback)
-- `qwen-coder-turbo` (Position 4 fallback)
-- `qwen-long` (Position 5 fallback)
-
-**Provider Verification**: All providers are verified on startup using health checks. Invalid/expired credentials trigger fallback activation.
+**Provider Verification:**
+- All providers verified on startup via LLMsVerifier
+- OAuth2 tokens validated (expired/invalid credentials handled)
+- Invalid providers trigger automatic fallback activation
+- Same LLM can fill multiple slots if insufficient verified providers
 - **Plugin System**: Hot-reloadable plugins with dependency resolution
 - **Circuit Breaker**: Fault tolerance for provider failures with health monitoring
 - **Protocol Managers**: Unified MCP/LSP/ACP protocol handling
