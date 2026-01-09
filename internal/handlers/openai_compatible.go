@@ -818,12 +818,14 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					flusher.Flush()
 				}
 				sentFinalChunk = true
+				logrus.WithField("tool_calls_count", len(actionToolCalls)).Info("AI Debate: sent tool_calls with finish_reason:tool_calls")
 
 				// CRITICAL: After sending tool_calls, immediately end the response
 				// The client will execute the tools and send another request with results
 				// Do NOT send any more content or footer - it confuses the tool calling protocol
 				c.Writer.Write([]byte("data: [DONE]\n\n"))
 				flusher.Flush()
+				logrus.Info("AI Debate with tool_calls: sent [DONE] - stream complete")
 				return
 			}
 		}
