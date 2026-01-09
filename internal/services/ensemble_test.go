@@ -1021,3 +1021,200 @@ func TestEnsembleService_FilterProviders_MinProvidersFallback(t *testing.T) {
 	assert.GreaterOrEqual(t, len(filtered), 2) // Should add more to meet minimum
 	assert.Contains(t, filtered, "p1")
 }
+
+// Tests for getSortedProviderNames
+
+// mockScoreProvider implements LLMsVerifierScoreProvider for testing
+type mockScoreProvider struct {
+	scores map[string]float64
+}
+
+func (m *mockScoreProvider) GetProviderScore(providerType string) (float64, bool) {
+	score, ok := m.scores[providerType]
+	return score, ok
+}
+
+func (m *mockScoreProvider) GetModelScore(modelID string) (float64, bool) {
+	return 0, false
+}
+
+func (m *mockScoreProvider) RefreshScores(ctx context.Context) error {
+	return nil
+}
+
+func TestEnsembleService_GetSortedProviderNames_WithLLMsVerifierScores(t *testing.T) {
+	service := NewEnsembleService("confidence_weighted", 30*time.Second)
+
+	// Set up LLMsVerifier score provider with scores
+	scoreProvider := &mockScoreProvider{
+		scores: map[string]float64{
+			"deepseek":   9.5,
+			"gemini":     8.5,
+			"claude":     9.0,
+			"openrouter": 7.5,
+			"qwen":       8.0,
+			"mistral":    7.0,
+		},
+	}
+	service.SetScoreProvider(scoreProvider)
+
+	// Create providers
+	providers := map[string]LLMProvider{
+		"mistral":    newMockProvider("mistral", "resp", 0.5),
+		"deepseek":   newMockProvider("deepseek", "resp", 0.9),
+		"claude":     newMockProvider("claude", "resp", 0.95),
+		"gemini":     newMockProvider("gemini", "resp", 0.85),
+		"openrouter": newMockProvider("openrouter", "resp", 0.75),
+		"qwen":       newMockProvider("qwen", "resp", 0.7),
+	}
+
+	sorted := service.getSortedProviderNames(providers)
+
+	// Verify order based on LLMsVerifier scores (highest first)
+	assert.Len(t, sorted, 6)
+
+	// Order by score: deepseek(9.5), claude(9.0), gemini(8.5), qwen(8.0), openrouter(7.5), mistral(7.0)
+	assert.Equal(t, "deepseek", sorted[0], "DeepSeek should be first (score=9.5)")
+	assert.Equal(t, "claude", sorted[1], "Claude should be second (score=9.0)")
+	assert.Equal(t, "gemini", sorted[2], "Gemini should be third (score=8.5)")
+	assert.Equal(t, "qwen", sorted[3], "Qwen should be fourth (score=8.0)")
+	assert.Equal(t, "openrouter", sorted[4], "OpenRouter should be fifth (score=7.5)")
+	assert.Equal(t, "mistral", sorted[5], "Mistral should be last (score=7.0)")
+}
+
+func TestEnsembleService_GetSortedProviderNames_OAuth2Priority(t *testing.T) {
+	service := NewEnsembleService("confidence_weighted", 30*time.Second)
+
+	// Set up LLMsVerifier score provider
+	scoreProvider := &mockScoreProvider{
+		scores: map[string]float64{
+			"deepseek": 9.5,
+			"claude":   9.0, // Score for base "claude" applies to "claude-oauth"
+			"qwen":     8.0, // Score for base "qwen" applies to "qwen-oauth"
+			"gemini":   8.5,
+		},
+	}
+	service.SetScoreProvider(scoreProvider)
+
+	// Mix of OAuth and non-OAuth providers
+	providers := map[string]LLMProvider{
+		"deepseek":     newMockProvider("deepseek", "resp", 0.9),
+		"claude-oauth": newMockProvider("claude-oauth", "resp", 0.95),
+		"qwen-oauth":   newMockProvider("qwen-oauth", "resp", 0.7),
+		"gemini":       newMockProvider("gemini", "resp", 0.85),
+	}
+
+	sorted := service.getSortedProviderNames(providers)
+
+	// OAuth providers should come first (sorted by score), then non-OAuth (sorted by score)
+	assert.Len(t, sorted, 4)
+
+	// OAuth first: claude-oauth(9.0), qwen-oauth(8.0)
+	// Then non-OAuth: deepseek(9.5), gemini(8.5)
+	assert.Equal(t, "claude-oauth", sorted[0], "Claude OAuth should be first (OAuth + score=9.0)")
+	assert.Equal(t, "qwen-oauth", sorted[1], "Qwen OAuth should be second (OAuth + score=8.0)")
+	assert.Equal(t, "deepseek", sorted[2], "DeepSeek should be third (non-OAuth, score=9.5)")
+	assert.Equal(t, "gemini", sorted[3], "Gemini should be fourth (non-OAuth, score=8.5)")
+}
+
+func TestEnsembleService_GetSortedProviderNames_NoScoreProvider(t *testing.T) {
+	service := NewEnsembleService("confidence_weighted", 30*time.Second)
+	// No score provider set - should sort alphabetically with OAuth priority
+
+	providers := map[string]LLMProvider{
+		"zebra":        newMockProvider("zebra", "resp", 0.5),
+		"alpha":        newMockProvider("alpha", "resp", 0.5),
+		"claude-oauth": newMockProvider("claude-oauth", "resp", 0.95),
+	}
+
+	sorted := service.getSortedProviderNames(providers)
+
+	// OAuth first, then alphabetically
+	assert.Len(t, sorted, 3)
+	assert.Equal(t, "claude-oauth", sorted[0], "OAuth provider should be first")
+	assert.Equal(t, "alpha", sorted[1], "alpha should be second (alphabetical)")
+	assert.Equal(t, "zebra", sorted[2], "zebra should be last (alphabetical)")
+}
+
+func TestEnsembleService_GetSortedProviderNames_Alphabetical(t *testing.T) {
+	service := NewEnsembleService("confidence_weighted", 30*time.Second)
+
+	// Create providers without score provider
+	providers := map[string]LLMProvider{
+		"zebra":  newMockProvider("zebra", "resp", 0.5),
+		"alpha":  newMockProvider("alpha", "resp", 0.5),
+		"middle": newMockProvider("middle", "resp", 0.5),
+	}
+
+	sorted := service.getSortedProviderNames(providers)
+
+	// Without score provider, providers should be sorted alphabetically
+	assert.Len(t, sorted, 3)
+	assert.Equal(t, "alpha", sorted[0])
+	assert.Equal(t, "middle", sorted[1])
+	assert.Equal(t, "zebra", sorted[2])
+}
+
+func TestEnsembleService_GetSortedProviderNames_Empty(t *testing.T) {
+	service := NewEnsembleService("confidence_weighted", 30*time.Second)
+
+	providers := map[string]LLMProvider{}
+
+	sorted := service.getSortedProviderNames(providers)
+
+	assert.Len(t, sorted, 0)
+}
+
+func TestEnsembleService_GetSortedProviderNames_Deterministic(t *testing.T) {
+	service := NewEnsembleService("confidence_weighted", 30*time.Second)
+
+	// Set up score provider for deterministic ordering
+	scoreProvider := &mockScoreProvider{
+		scores: map[string]float64{
+			"deepseek": 9.5,
+			"gemini":   8.5,
+			"mistral":  7.0,
+		},
+	}
+	service.SetScoreProvider(scoreProvider)
+
+	providers := map[string]LLMProvider{
+		"gemini":   newMockProvider("gemini", "resp", 0.85),
+		"deepseek": newMockProvider("deepseek", "resp", 0.9),
+		"mistral":  newMockProvider("mistral", "resp", 0.5),
+	}
+
+	// Run multiple times to verify deterministic ordering
+	for i := 0; i < 10; i++ {
+		sorted := service.getSortedProviderNames(providers)
+		assert.Equal(t, "deepseek", sorted[0], "Iteration %d: DeepSeek should always be first (score=9.5)", i)
+		assert.Equal(t, "gemini", sorted[1], "Iteration %d: Gemini should always be second (score=8.5)", i)
+		assert.Equal(t, "mistral", sorted[2], "Iteration %d: Mistral should always be third (score=7.0)", i)
+	}
+}
+
+func TestEnsembleService_GetSortedProviderNames_AllOAuthProviders(t *testing.T) {
+	service := NewEnsembleService("confidence_weighted", 30*time.Second)
+
+	// Set up score provider
+	scoreProvider := &mockScoreProvider{
+		scores: map[string]float64{
+			"claude": 9.0,
+			"qwen":   8.0,
+		},
+	}
+	service.SetScoreProvider(scoreProvider)
+
+	// All OAuth providers
+	providers := map[string]LLMProvider{
+		"qwen-oauth":   newMockProvider("qwen-oauth", "resp", 0.7),
+		"claude-oauth": newMockProvider("claude-oauth", "resp", 0.95),
+	}
+
+	sorted := service.getSortedProviderNames(providers)
+
+	// Should sort by score among OAuth providers
+	assert.Len(t, sorted, 2)
+	assert.Equal(t, "claude-oauth", sorted[0], "Claude OAuth should be first (score=9.0)")
+	assert.Equal(t, "qwen-oauth", sorted[1], "Qwen OAuth should be second (score=8.0)")
+}

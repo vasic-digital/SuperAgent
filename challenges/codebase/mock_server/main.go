@@ -293,7 +293,7 @@ func main() {
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/v1/chat/completions", chatCompletionsHandler)
 
-	port := "8080"
+	port := "7061"
 	log.Printf("Mock HelixAgent API server starting on port %s...", port)
 	log.Printf("Endpoints:")
 	log.Printf("  GET  /health")

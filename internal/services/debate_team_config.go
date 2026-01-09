@@ -424,20 +424,63 @@ func (dtc *DebateTeamConfig) assignAllFallbacks() {
 }
 
 // getFallbackLLMs returns fallback LLMs different from the primary
+// IMPORTANT: For OAuth primaries, prioritize non-OAuth fallbacks to ensure
+// fallback chain works when OAuth tokens are incompatible with public APIs
 func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel string, count int) []*VerifiedLLM {
 	fallbacks := make([]*VerifiedLLM, 0, count)
 
+	// Check if primary is OAuth
+	primaryIsOAuth := false
+	for _, llm := range dtc.verifiedLLMs {
+		if llm.ProviderName == primaryProvider && llm.ModelName == primaryModel {
+			primaryIsOAuth = llm.IsOAuth
+			break
+		}
+	}
+
+	// First pass: For OAuth primaries, prioritize non-OAuth providers as fallbacks
+	// This ensures fallback works when OAuth tokens fail with public APIs
+	if primaryIsOAuth {
+		for _, llm := range dtc.verifiedLLMs {
+			if len(fallbacks) >= count {
+				break
+			}
+			// Prioritize non-OAuth providers for OAuth primaries
+			if !llm.IsOAuth && (llm.ProviderName != primaryProvider || llm.ModelName != primaryModel) {
+				fallbacks = append(fallbacks, llm)
+				dtc.logger.WithFields(logrus.Fields{
+					"primary_provider": primaryProvider,
+					"fallback_provider": llm.ProviderName,
+					"fallback_model":   llm.ModelName,
+					"reason":           "non-oauth fallback for oauth primary",
+				}).Debug("Selected non-OAuth fallback for OAuth primary")
+			}
+		}
+	}
+
+	// Second pass: If still need more fallbacks, add different provider/model
 	for _, llm := range dtc.verifiedLLMs {
 		if len(fallbacks) >= count {
 			break
 		}
-		// Prefer different provider/model, but allow same if needed
+		// Skip if already added
+		alreadyUsed := false
+		for _, fb := range fallbacks {
+			if fb == llm {
+				alreadyUsed = true
+				break
+			}
+		}
+		if alreadyUsed {
+			continue
+		}
+		// Prefer different provider/model
 		if llm.ProviderName != primaryProvider || llm.ModelName != primaryModel {
 			fallbacks = append(fallbacks, llm)
 		}
 	}
 
-	// If not enough different LLMs, allow reuse
+	// Third pass: If still not enough, allow reuse (last resort)
 	for i := 0; len(fallbacks) < count && i < len(dtc.verifiedLLMs); i++ {
 		alreadyUsed := false
 		for _, fb := range fallbacks {

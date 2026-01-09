@@ -200,8 +200,14 @@ func (p *ClaudeProvider) getAuthHeader() (string, string, error) {
 		if err != nil {
 			return "", "", fmt.Errorf("failed to get OAuth token: %w", err)
 		}
-		return "Authorization", "Bearer " + token, nil
+		// Claude OAuth tokens (sk-ant-oat01-*) from Claude Code CLI
+		// NOTE: These tokens are designed for Claude Code infrastructure, not the public API.
+		// The public api.anthropic.com does not accept OAuth tokens.
+		// We use x-api-key header for compatibility, but this may fail for OAuth tokens.
+		// When OAuth fails, the system falls back to other verified providers.
+		return "x-api-key", token, nil
 	default:
+		// Regular API keys use x-api-key header
 		return "x-api-key", p.apiKey, nil
 	}
 }

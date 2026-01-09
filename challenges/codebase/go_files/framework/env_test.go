@@ -294,7 +294,7 @@ func TestEnvLoader_GetAllRedacted(t *testing.T) {
 	loader.values["ANTHROPIC_API_KEY"] = "sk-ant-secret-12345"
 	loader.values["DEBUG_MODE"] = "true"
 	loader.values["PASSWORD"] = "mysecret"
-	loader.values["PORT"] = "8080"
+	loader.values["PORT"] = "7061"
 
 	redacted := loader.GetAllRedacted()
 
@@ -316,7 +316,7 @@ func TestEnvLoader_GetAllRedacted(t *testing.T) {
 	if redacted["DEBUG_MODE"] != "true" {
 		t.Error("DEBUG_MODE should not be redacted")
 	}
-	if redacted["PORT"] != "8080" {
+	if redacted["PORT"] != "7061" {
 		t.Error("PORT should not be redacted")
 	}
 }

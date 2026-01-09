@@ -244,8 +244,8 @@ func TestCogneeSearchErrorHandling(t *testing.T) {
 				})
 
 			case r.URL.Path == "/api/v1/search" && r.Method == "POST":
-				// Simulate slow response
-				time.Sleep(10 * time.Second)
+				// Simulate slow response (keep short to avoid test hanging)
+				time.Sleep(1 * time.Second)
 				w.WriteHeader(http.StatusOK)
 
 			default:
@@ -258,14 +258,14 @@ func TestCogneeSearchErrorHandling(t *testing.T) {
 			Enabled:            true,
 			BaseURL:            server.URL,
 			DefaultDataset:     "default",
-			Timeout:            2 * time.Second, // Short timeout
+			Timeout:            500 * time.Millisecond, // Very short timeout to test timeout behavior
 			DefaultSearchLimit: 10,
 			SearchTypes:        []string{"CHUNKS"},
 		}
 		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
 		// Create context with short timeout
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
 		result, err := service.SearchMemory(ctx, "test query", "default", 10)
@@ -447,6 +447,9 @@ func TestCogneeAuthenticationResilience(t *testing.T) {
 
 // TestCogneeLiveIntegrationResilience tests live Cognee resilience
 func TestCogneeLiveIntegrationResilience(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live integration test in short mode")
+	}
 	serverURL := os.Getenv("HELIXAGENT_TEST_URL")
 	if serverURL == "" {
 		serverURL = "http://localhost:7061"

@@ -60,16 +60,42 @@ type EnterpriseConfig struct {
 }
 
 type ProviderConfig struct {
+	Npm     string                 `json:"npm,omitempty"`
+	Name    string                 `json:"name,omitempty"`
 	Options map[string]interface{} `json:"options,omitempty"`
 	Models  map[string]ModelConfig `json:"models,omitempty"`
 }
 
 type ModelConfig struct {
-	Name           string  `json:"name,omitempty"`
-	MaxTokens      int     `json:"maxTokens,omitempty"`
-	CostPer1MIn    float64 `json:"cost_per_1m_in,omitempty"`
-	CostPer1MOut   float64 `json:"cost_per_1m_out,omitempty"`
-	SupportsBrotli bool    `json:"supports_brotli,omitempty"`
+	Name           string   `json:"name,omitempty"`
+	MaxTokens      int      `json:"maxTokens,omitempty"`
+	CostPer1MIn    float64  `json:"cost_per_1m_in,omitempty"`
+	CostPer1MOut   float64  `json:"cost_per_1m_out,omitempty"`
+	SupportsBrotli bool     `json:"supports_brotli,omitempty"`
+	// Enhanced capabilities
+	Attachments    bool     `json:"attachments,omitempty"`
+	Reasoning      bool     `json:"reasoning,omitempty"`
+	Vision         bool     `json:"vision,omitempty"`
+	ImageInput     bool     `json:"imageInput,omitempty"`
+	ImageOutput    bool     `json:"imageOutput,omitempty"`
+	OCR            bool     `json:"ocr,omitempty"`
+	PDF            bool     `json:"pdf,omitempty"`
+	Audio          bool     `json:"audio,omitempty"`
+	Video          bool     `json:"video,omitempty"`
+	Streaming      bool     `json:"streaming,omitempty"`
+	FunctionCalls  bool     `json:"functionCalls,omitempty"`
+	ToolUse        bool     `json:"toolUse,omitempty"`
+	Embeddings     bool     `json:"embeddings,omitempty"`
+	CodeExecution  bool     `json:"codeExecution,omitempty"`
+	WebBrowsing    bool     `json:"webBrowsing,omitempty"`
+	FileUpload     bool     `json:"fileUpload,omitempty"`
+	NoFileLimit    bool     `json:"noFileLimit,omitempty"`
+	// Protocol support
+	MCP            bool     `json:"mcp,omitempty"`
+	ACP            bool     `json:"acp,omitempty"`
+	LSP            bool     `json:"lsp,omitempty"`
+	// Fallback configuration
+	Fallbacks      []string `json:"fallbacks,omitempty"`
 }
 
 type McpConfig struct {
@@ -148,11 +174,19 @@ type ValidationResult struct {
 
 // GenerateHelixAgentConfig creates an OpenCode configuration for HelixAgent
 // Uses ONLY valid top-level keys from LLMsVerifier's schema validation
+// Includes all protocol support: MCP, ACP, LSP, Embeddings, Vision, and more
 func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroupMember) *Config {
 	baseURL := fmt.Sprintf("http://%s:%d/v1", host, port)
 
 	enabled := true
 	temperature := 0.7
+	timeout := 120
+
+	// Build fallback list from debate members sorted by score
+	var fallbacks []string
+	for _, member := range debateMembers {
+		fallbacks = append(fallbacks, fmt.Sprintf("%s/%s", member.Provider, member.Model))
+	}
 
 	config := &Config{
 		Schema:   "https://opencode.ai/config.json",
@@ -161,25 +195,109 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 			"You are connected to HelixAgent, a Virtual LLM Provider that exposes ONE model backed by an AI debate ensemble.",
 			"The helixagent-debate model combines responses from multiple top-performing LLMs through confidence-weighted voting.",
 			"All underlying models have been verified through real API calls by LLMsVerifier.",
+			"This ensemble supports: MCP, ACP, LSP protocols, embeddings, vision/OCR, file handling, and all generative capabilities.",
+			"Protocol requests use automatic fallback to the next strongest LLM if the primary fails.",
 		},
 		// Provider configuration (REQUIRED per LLMsVerifier validator)
-		// NOTE: OpenCode does NOT support ${VAR} references - must use actual values
 		Provider: map[string]ProviderConfig{
 			"helixagent": {
+				Npm:  "@ai-sdk/openai-compatible",
+				Name: "HelixAgent AI Debate Ensemble",
 				Options: map[string]interface{}{
 					"apiKey":  os.Getenv("HELIXAGENT_API_KEY"),
 					"baseURL": baseURL,
 					"timeout": 600000,
 				},
+				Models: map[string]ModelConfig{
+					"helixagent-debate": {
+						Name:          "HelixAgent Debate Ensemble",
+						MaxTokens:     128000,
+						// Full capabilities - combined from all 15 LLMs in debate team
+						Attachments:   true,
+						Reasoning:     true,
+						Vision:        true,
+						ImageInput:    true,
+						ImageOutput:   true,
+						OCR:           true,
+						PDF:           true,
+						Audio:         true,
+						Video:         true,
+						Streaming:     true,
+						FunctionCalls: true,
+						ToolUse:       true,
+						Embeddings:    true,
+						CodeExecution: true,
+						WebBrowsing:   true,
+						FileUpload:    true,
+						NoFileLimit:   true,
+						// Protocol support
+						MCP:           true,
+						ACP:           true,
+						LSP:           true,
+						// Fallback chain (sorted by LLMsVerifier score)
+						Fallbacks:     fallbacks,
+					},
+				},
 			},
 		},
-		// MCP servers (type must be "local" or "remote" per LLMsVerifier)
+		// MCP servers - comprehensive protocol support
 		Mcp: map[string]McpConfig{
-			"helixagent-tools": {
+			// HelixAgent native protocol endpoints
+			"helixagent-mcp": {
 				Type:    "remote",
 				URL:     fmt.Sprintf("http://%s:%d/v1/mcp", host, port),
 				Enabled: &enabled,
+				Timeout: &timeout,
+				Headers: map[string]string{
+					"Authorization": "Bearer " + os.Getenv("HELIXAGENT_API_KEY"),
+				},
 			},
+			"helixagent-acp": {
+				Type:    "remote",
+				URL:     fmt.Sprintf("http://%s:%d/v1/acp", host, port),
+				Enabled: &enabled,
+				Timeout: &timeout,
+				Headers: map[string]string{
+					"Authorization": "Bearer " + os.Getenv("HELIXAGENT_API_KEY"),
+				},
+			},
+			"helixagent-lsp": {
+				Type:    "remote",
+				URL:     fmt.Sprintf("http://%s:%d/v1/lsp", host, port),
+				Enabled: &enabled,
+				Timeout: &timeout,
+				Headers: map[string]string{
+					"Authorization": "Bearer " + os.Getenv("HELIXAGENT_API_KEY"),
+				},
+			},
+			"helixagent-embeddings": {
+				Type:    "remote",
+				URL:     fmt.Sprintf("http://%s:%d/v1/embeddings", host, port),
+				Enabled: &enabled,
+				Timeout: &timeout,
+				Headers: map[string]string{
+					"Authorization": "Bearer " + os.Getenv("HELIXAGENT_API_KEY"),
+				},
+			},
+			"helixagent-vision": {
+				Type:    "remote",
+				URL:     fmt.Sprintf("http://%s:%d/v1/vision", host, port),
+				Enabled: &enabled,
+				Timeout: &timeout,
+				Headers: map[string]string{
+					"Authorization": "Bearer " + os.Getenv("HELIXAGENT_API_KEY"),
+				},
+			},
+			"helixagent-cognee": {
+				Type:    "remote",
+				URL:     fmt.Sprintf("http://%s:%d/v1/cognee", host, port),
+				Enabled: &enabled,
+				Timeout: &timeout,
+				Headers: map[string]string{
+					"Authorization": "Bearer " + os.Getenv("HELIXAGENT_API_KEY"),
+				},
+			},
+			// Standard MCP servers
 			"filesystem": {
 				Type:    "local",
 				Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "/"},
@@ -198,54 +316,105 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 				Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"},
 				Enabled: &enabled,
 			},
+			"fetch": {
+				Type:    "local",
+				Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"},
+				Enabled: &enabled,
+			},
+			"puppeteer": {
+				Type:    "local",
+				Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"},
+				Enabled: &enabled,
+			},
+			"sqlite": {
+				Type:    "local",
+				Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite"},
+				Enabled: &enabled,
+			},
 		},
 		// Agent configurations (must have model or prompt per LLMsVerifier)
 		Agent: map[string]AgentConfig{
 			"default": {
 				Model:       "helixagent/helixagent-debate",
 				Temperature: &temperature,
-				Prompt:      "You are HelixAgent, an AI ensemble that combines the intelligence of multiple top-performing LLMs through debate and consensus.",
-				Description: "HelixAgent AI Debate Ensemble - verified models with confidence-weighted voting",
+				Prompt:      "You are HelixAgent, an AI ensemble that combines the intelligence of multiple top-performing LLMs through debate and consensus. You have full access to MCP, ACP, LSP protocols, embeddings, vision/OCR, and all generative capabilities.",
+				Description: "HelixAgent AI Debate Ensemble - 15 verified LLMs with protocol support and fallback chain",
 				Tools: map[string]bool{
-					"read":     true,
-					"write":    true,
-					"bash":     true,
-					"glob":     true,
-					"grep":     true,
-					"webfetch": true,
+					"read":       true,
+					"write":      true,
+					"bash":       true,
+					"glob":       true,
+					"grep":       true,
+					"webfetch":   true,
+					"edit":       true,
+					"mcp":        true,
+					"embeddings": true,
+					"vision":     true,
 				},
 			},
 			"code-reviewer": {
 				Model:       "helixagent/helixagent-debate",
-				Prompt:      "You are a code reviewer. Analyze code for bugs, security issues, and improvements.",
-				Description: "Code review agent",
+				Prompt:      "You are a code reviewer with access to LSP protocol for code intelligence. Analyze code for bugs, security issues, and improvements.",
+				Description: "Code review agent with LSP support",
 				Tools: map[string]bool{
+					"read":  true,
 					"write": false,
 					"bash":  false,
+					"lsp":   true,
+				},
+			},
+			"embeddings-agent": {
+				Model:       "helixagent/helixagent-debate",
+				Prompt:      "You are an embeddings specialist. Generate and work with vector embeddings for semantic search and similarity.",
+				Description: "Embeddings specialist agent",
+				Tools: map[string]bool{
+					"read":       true,
+					"embeddings": true,
+				},
+			},
+			"vision-agent": {
+				Model:       "helixagent/helixagent-debate",
+				Prompt:      "You are a vision specialist. Analyze images, perform OCR, and understand visual content.",
+				Description: "Vision and OCR specialist agent",
+				Tools: map[string]bool{
+					"read":   true,
+					"vision": true,
+					"ocr":    true,
 				},
 			},
 		},
 		// Permission model
 		Permission: &PermissionConfig{
-			Edit: "ask",
-			Bash: "ask",
+			Edit:              "ask",
+			Bash:              "ask",
+			Webfetch:          "auto",
+			ExternalDirectory: "ask",
 		},
-		// Tools configuration
+		// Tools configuration - all enabled
 		Tools: map[string]interface{}{
-			"read":  map[string]interface{}{"enabled": true},
-			"write": map[string]interface{}{"enabled": true},
-			"bash":  map[string]interface{}{"enabled": true},
-			"glob":  map[string]interface{}{"enabled": true},
-			"grep":  map[string]interface{}{"enabled": true},
-			"edit":  map[string]interface{}{"enabled": true},
-			"fetch": map[string]interface{}{"enabled": true},
+			"read":       map[string]interface{}{"enabled": true},
+			"write":      map[string]interface{}{"enabled": true},
+			"bash":       map[string]interface{}{"enabled": true},
+			"glob":       map[string]interface{}{"enabled": true},
+			"grep":       map[string]interface{}{"enabled": true},
+			"edit":       map[string]interface{}{"enabled": true},
+			"fetch":      map[string]interface{}{"enabled": true},
+			"mcp":        map[string]interface{}{"enabled": true},
+			"lsp":        map[string]interface{}{"enabled": true},
+			"acp":        map[string]interface{}{"enabled": true},
+			"embeddings": map[string]interface{}{"enabled": true},
+			"vision":     map[string]interface{}{"enabled": true},
+			"ocr":        map[string]interface{}{"enabled": true},
+			"pdf":        map[string]interface{}{"enabled": true},
+			"audio":      map[string]interface{}{"enabled": true},
+			"video":      map[string]interface{}{"enabled": true},
 		},
 		// Compaction settings
 		Compaction: &CompactionConfig{
 			Auto:  &enabled,
 			Prune: &enabled,
 		},
-		// SSE settings
+		// SSE settings - required for streaming
 		Sse: &SseConfig{
 			Enabled: &enabled,
 		},

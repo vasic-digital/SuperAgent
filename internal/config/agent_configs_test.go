@@ -665,3 +665,260 @@ func BenchmarkConfigValidator_ValidateOpenCodeConfig(b *testing.B) {
 		_ = v.ValidateOpenCodeConfig(config)
 	}
 }
+
+// ========================================
+// OpenCode Agent Section Regression Tests
+// These tests prevent the bug where OpenCode closes without opening
+// due to invalid agent section format.
+//
+// CRITICAL: The agent section requires NAMED sub-objects like "default",
+// NOT a direct model property at the agent level.
+//
+// WRONG (causes OpenCode to close immediately):
+//   "agent": {"model": "provider/model"}
+//
+// CORRECT (works properly):
+//   "agent": {"default": {"model": "provider/model"}}
+// ========================================
+
+func TestOpenCodeConfig_AgentSection_HasNamedSubObject(t *testing.T) {
+	// This is the most critical test - ensures agent section uses named sub-objects
+	gen := NewConfigGenerator("http://localhost:7061/v1", "test-key", "helixagent-debate")
+	config, err := gen.GenerateOpenCodeConfig()
+	require.NoError(t, err)
+
+	// Agent section must exist
+	require.NotNil(t, config.Agent, "Agent section must be present")
+	require.NotEmpty(t, config.Agent, "Agent section must have at least one named sub-object")
+
+	// Agent section must have a "default" entry (or at least one named entry)
+	defaultAgent, exists := config.Agent["default"]
+	assert.True(t, exists, "Agent section must have a 'default' named sub-object")
+	assert.NotEmpty(t, defaultAgent.Model, "Agent 'default' must have a model")
+}
+
+func TestOpenCodeConfig_AgentSection_ModelFormat(t *testing.T) {
+	// Verify the model format is "provider/model"
+	gen := NewConfigGenerator("http://localhost:7061/v1", "test-key", "helixagent-debate")
+	config, err := gen.GenerateOpenCodeConfig()
+	require.NoError(t, err)
+
+	defaultAgent := config.Agent["default"]
+	assert.Equal(t, "helixagent/helixagent-debate", defaultAgent.Model,
+		"Agent model must be in format 'provider/model'")
+	assert.Contains(t, defaultAgent.Model, "/",
+		"Agent model must contain '/' separator")
+}
+
+func TestOpenCodeConfig_AgentSection_JSONStructure(t *testing.T) {
+	// This test verifies the JSON structure is correct at the raw JSON level
+	gen := NewConfigGenerator("http://localhost:7061/v1", "test-key", "helixagent-debate")
+	jsonData, err := gen.GenerateJSON(AgentTypeOpenCode)
+	require.NoError(t, err)
+
+	// Parse as raw JSON to verify structure
+	var rawJSON map[string]interface{}
+	err = json.Unmarshal(jsonData, &rawJSON)
+	require.NoError(t, err)
+
+	// Check agent section exists
+	agentSection, ok := rawJSON["agent"]
+	require.True(t, ok, "JSON must have 'agent' key")
+	require.NotNil(t, agentSection, "Agent section must not be nil")
+
+	// Agent section must be a map (object with named keys)
+	agentMap, ok := agentSection.(map[string]interface{})
+	require.True(t, ok, "Agent section must be a JSON object, not a primitive")
+	require.NotEmpty(t, agentMap, "Agent section must have at least one entry")
+
+	// First level must contain named objects, not direct model property
+	_, hasDirectModel := agentMap["model"]
+	assert.False(t, hasDirectModel,
+		"CRITICAL: Agent section must NOT have direct 'model' property - this causes OpenCode to crash!")
+
+	// Check for named sub-objects (like "default")
+	defaultEntry, hasDefault := agentMap["default"]
+	assert.True(t, hasDefault, "Agent section should have 'default' named sub-object")
+
+	// The named sub-object should have the model property
+	if hasDefault {
+		defaultMap, ok := defaultEntry.(map[string]interface{})
+		require.True(t, ok, "default entry must be a JSON object")
+		_, hasModel := defaultMap["model"]
+		assert.True(t, hasModel, "default sub-object must have 'model' property")
+	}
+}
+
+func TestOpenCodeConfig_AgentSection_Validation_MissingModel(t *testing.T) {
+	v := NewConfigValidator()
+
+	config := &OpenCodeConfig{
+		Provider: map[string]OpenCodeProvider{
+			"helixagent": {
+				Options: OpenCodeProviderOptions{
+					BaseURL: "http://localhost:7061/v1",
+				},
+			},
+		},
+		Agent: map[string]OpenCodeAgent{
+			"default": {
+				Model: "", // Empty model should fail validation
+			},
+		},
+	}
+
+	result := v.ValidateOpenCodeConfig(config)
+	assert.False(t, result.Valid, "Config with empty agent model should be invalid")
+	assert.Contains(t, strings.Join(result.Errors, ","), "model is required")
+}
+
+func TestOpenCodeConfig_AgentSection_Validation_InvalidModelFormat(t *testing.T) {
+	v := NewConfigValidator()
+
+	config := &OpenCodeConfig{
+		Provider: map[string]OpenCodeProvider{
+			"helixagent": {
+				Options: OpenCodeProviderOptions{
+					BaseURL: "http://localhost:7061/v1",
+				},
+			},
+		},
+		Agent: map[string]OpenCodeAgent{
+			"default": {
+				Model: "model-without-provider", // Missing provider/ prefix should warn
+			},
+		},
+	}
+
+	result := v.ValidateOpenCodeConfig(config)
+	// Should be valid but with warning about format
+	assert.True(t, result.Valid)
+	assert.Contains(t, strings.Join(result.Warnings, ","), "should be in format 'provider/model'")
+}
+
+func TestOpenCodeConfig_AgentSection_CompleteWorkingConfig(t *testing.T) {
+	// Test a complete configuration that matches what actually works with OpenCode
+	v := NewConfigValidator()
+
+	// This is the exact structure that was verified to work with OpenCode
+	config := &OpenCodeConfig{
+		Schema: "https://opencode.ai/config.json",
+		Provider: map[string]OpenCodeProvider{
+			"helixagent": {
+				NPM:  "@ai-sdk/openai-compatible",
+				Name: "HelixAgent AI Debate Ensemble",
+				Options: OpenCodeProviderOptions{
+					BaseURL: "http://localhost:7061/v1",
+					APIKey:  "helixagent-local",
+					Timeout: 600000,
+				},
+				Models: map[string]OpenCodeModel{
+					"helixagent-debate": {
+						Name:       "HelixAgent Debate Ensemble",
+						Attachment: true,
+						Reasoning:  true,
+						ToolCall:   true,
+						Limit: &OpenCodeLimit{
+							Context: 128000,
+							Output:  8192,
+						},
+					},
+				},
+			},
+		},
+		Agent: map[string]OpenCodeAgent{
+			"default": {
+				Model: "helixagent/helixagent-debate",
+			},
+		},
+	}
+
+	result := v.ValidateOpenCodeConfig(config)
+	assert.True(t, result.Valid, "Complete working config should be valid: %v", result.Errors)
+	assert.Empty(t, result.Errors, "Complete working config should have no errors")
+}
+
+func TestOpenCodeConfig_ModelsSection_Structure(t *testing.T) {
+	// Verify the models section is properly structured
+	gen := NewConfigGenerator("http://localhost:7061/v1", "test-key", "helixagent-debate")
+	config, err := gen.GenerateOpenCodeConfig()
+	require.NoError(t, err)
+
+	provider := config.Provider["helixagent"]
+	require.NotNil(t, provider.Models, "Provider must have models section")
+
+	model, exists := provider.Models["helixagent-debate"]
+	assert.True(t, exists, "Model must exist with correct key")
+	assert.NotEmpty(t, model.Name, "Model must have name")
+	assert.NotNil(t, model.Limit, "Model must have limits")
+	assert.Greater(t, model.Limit.Context, 0, "Context limit must be positive")
+	assert.Greater(t, model.Limit.Output, 0, "Output limit must be positive")
+}
+
+func TestOpenCodeConfig_ProviderSection_RequiredFields(t *testing.T) {
+	gen := NewConfigGenerator("http://localhost:7061/v1", "test-key", "helixagent-debate")
+	config, err := gen.GenerateOpenCodeConfig()
+	require.NoError(t, err)
+
+	provider := config.Provider["helixagent"]
+	assert.NotEmpty(t, provider.NPM, "Provider must have npm package")
+	assert.NotEmpty(t, provider.Name, "Provider must have name")
+	assert.NotEmpty(t, provider.Options.BaseURL, "Provider must have baseURL")
+}
+
+func TestOpenCodeConfig_ValidateJSON_WithAgentSection(t *testing.T) {
+	v := NewConfigValidator()
+
+	// Valid config with proper agent section
+	validJSON := `{
+		"$schema": "https://opencode.ai/config.json",
+		"provider": {
+			"helixagent": {
+				"npm": "@ai-sdk/openai-compatible",
+				"options": {
+					"baseURL": "http://localhost:7061/v1",
+					"apiKey": "test-key"
+				}
+			}
+		},
+		"agent": {
+			"default": {
+				"model": "helixagent/helixagent-debate"
+			}
+		}
+	}`
+
+	result, err := v.ValidateJSON(AgentTypeOpenCode, []byte(validJSON))
+	require.NoError(t, err)
+	assert.True(t, result.Valid, "Config with proper agent section should be valid: %v", result.Errors)
+}
+
+func TestOpenCodeConfig_GeneratedConfigCanBeReParsed(t *testing.T) {
+	// Test that generated config can be serialized and deserialized without loss
+	gen := NewConfigGenerator("http://localhost:7061/v1", "test-key", "helixagent-debate")
+	v := NewConfigValidator()
+
+	// Generate config
+	originalConfig, err := gen.GenerateOpenCodeConfig()
+	require.NoError(t, err)
+
+	// Serialize to JSON
+	jsonData, err := json.MarshalIndent(originalConfig, "", "  ")
+	require.NoError(t, err)
+
+	// Deserialize back
+	var parsedConfig OpenCodeConfig
+	err = json.Unmarshal(jsonData, &parsedConfig)
+	require.NoError(t, err)
+
+	// Validate parsed config
+	result := v.ValidateOpenCodeConfig(&parsedConfig)
+	assert.True(t, result.Valid, "Re-parsed config should be valid: %v", result.Errors)
+
+	// Verify agent section survived round-trip
+	assert.NotEmpty(t, parsedConfig.Agent, "Agent section must survive round-trip")
+	defaultAgent, exists := parsedConfig.Agent["default"]
+	assert.True(t, exists, "default agent must survive round-trip")
+	assert.Equal(t, "helixagent/helixagent-debate", defaultAgent.Model,
+		"Agent model must survive round-trip")
+}

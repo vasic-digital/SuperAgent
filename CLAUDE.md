@@ -100,6 +100,7 @@ make install-deps     # Install dev dependencies (golangci-lint, gosec)
   - API: POST `/v1/debates`, GET `/v1/debates`, GET `/v1/debates/:id`, DELETE `/v1/debates/:id`
   - Supports async execution with status polling via `/v1/debates/:id/status`
   - **Team Configuration**: See `internal/services/debate_team_config.go` for team composition
+  - **Dialogue Rendering**: Theatrical dialogue presentation in streaming responses (see below)
 
 ### AI Debate Team Composition (15 LLMs Total)
 
@@ -167,12 +168,123 @@ TotalDebateLLMs      = 15  // 5 × (1 + 2) = 15 LLMs total
 - OAuth2 tokens validated (expired/invalid credentials handled)
 - Invalid providers trigger automatic fallback activation
 - Same LLM can fill multiple slots if insufficient verified providers
+
+### AI Debate Dialogue Rendering
+
+HelixAgent provides theatrical dialogue presentation for AI debate ensemble responses. Every streaming response includes:
+
+**Response Structure:**
+```
+╔══════════════════════════════════════════════════════════════════╗
+║           🎭 HELIXAGENT AI DEBATE ENSEMBLE 🎭                    ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Five AI minds deliberate to synthesize the optimal response.    ║
+╚══════════════════════════════════════════════════════════════════╝
+
+📋 TOPIC: [User's query]
+
+═══════════════════════════════════════════════════════════════════
+                         DRAMATIS PERSONAE
+═══════════════════════════════════════════════════════════════════
+  [A]  THE ANALYST      │ [model] ([provider])
+  [P]  THE PROPOSER     │ [model] ([provider])
+  [C]  THE CRITIC       │ [model] ([provider])
+  [S]  THE SYNTHESIZER  │ [model] ([provider])
+  [M]  THE MEDIATOR     │ [model] ([provider])
+
+═══════════════════════════════════════════════════════════════════
+                        THE DELIBERATION
+═══════════════════════════════════════════════════════════════════
+
+[A] THE ANALYST: "Let me analyze this systematically..."
+[P] THE PROPOSER: "I propose we approach this..."
+[C] THE CRITIC: "I must challenge some assumptions..."
+[S] THE SYNTHESIZER: "Combining these perspectives..."
+[M] THE MEDIATOR: "After weighing all arguments..."
+
+═══════════════════════════════════════════════════════════════════
+                      📜 CONSENSUS REACHED 📜
+═══════════════════════════════════════════════════════════════════
+
+[Final synthesized response from the AI debate ensemble]
+
+───────────────────────────────────────────────────────────────────
+         ✨ Powered by HelixAgent AI Debate Ensemble ✨
+───────────────────────────────────────────────────────────────────
+```
+
+**Dialogue Styles:**
+| Style | Description |
+|-------|-------------|
+| `theater` | Default theatrical presentation (shown above) |
+| `novel` | Novel-style prose narration |
+| `screenplay` | Screenplay/script format |
+| `minimal` | Minimal formatting |
+
+**Key Files:**
+- `internal/services/debate_dialogue.go` - Dialogue formatter
+- `internal/services/debate_dialogue_test.go` - Comprehensive tests
+- `internal/handlers/openai_compatible.go` - Streaming integration
+
 - **Plugin System**: Hot-reloadable plugins with dependency resolution
 - **Circuit Breaker**: Fault tolerance for provider failures with health monitoring
 - **Protocol Managers**: Unified MCP/LSP/ACP protocol handling
 - **Cognee Integration**: Knowledge graph and RAG capabilities
 - **Middleware Chain**: Auth, rate limiting, validation pipeline
 - **LLM Optimization**: Semantic caching, structured output, enhanced streaming (see below)
+
+### Protocol Support and Capabilities
+
+HelixAgent exposes comprehensive protocol support with automatic fallback mechanism:
+
+**Supported Protocols:**
+| Protocol | Endpoint | Description |
+|----------|----------|-------------|
+| MCP | `/v1/mcp` | Model Context Protocol |
+| ACP | `/v1/acp` | Agent Communication Protocol |
+| LSP | `/v1/lsp` | Language Server Protocol |
+| Embeddings | `/v1/embeddings` | Vector embeddings generation |
+| Vision | `/v1/vision` | Image analysis, OCR |
+| Cognee | `/v1/cognee` | Knowledge graph & RAG |
+
+**Full Model Capabilities:**
+| Capability | Description |
+|------------|-------------|
+| `attachments` | File attachments support |
+| `reasoning` | Extended reasoning/thinking |
+| `vision` | Image input processing |
+| `imageInput/Output` | Image generation and analysis |
+| `ocr` | Optical character recognition |
+| `pdf` | PDF document processing |
+| `audio` | Audio input/output |
+| `video` | Video processing |
+| `streaming` | Real-time streaming responses |
+| `functionCalls` | Function/tool calling |
+| `embeddings` | Vector embeddings |
+| `codeExecution` | Code execution sandbox |
+| `webBrowsing` | Web browsing capability |
+| `fileUpload` | File upload (no limit) |
+
+**Protocol Fallback Mechanism:**
+```
+1. Request comes to protocol endpoint (e.g., /v1/embeddings)
+2. Route to strongest LLM supporting the protocol (by LLMsVerifier score)
+3. If primary fails → fallback to next strongest LLM
+4. Continue fallback chain until success or all LLMs exhausted
+5. Fallback order: OAuth providers first, then by score
+```
+
+**OpenCode Configuration:**
+The generated configuration at `/home/milosvasic/.config/opencode/opencode.json` includes:
+- 12 MCP server endpoints (6 HelixAgent + 6 standard)
+- 4 specialized agents (default, code-reviewer, embeddings, vision)
+- All protocol tools enabled
+- Full capability declaration
+
+**Key Files:**
+- `challenges/codebase/go_files/opencode_generator/` - Configuration generator
+- `internal/handlers/` - Protocol endpoint handlers
+- `internal/services/protocol_*.go` - Protocol implementations
 
 ### LLM Optimization (`internal/optimization/`)
 
@@ -432,7 +544,7 @@ The `challenges/` directory contains a comprehensive challenge framework for tes
 ### Running Challenges
 
 ```bash
-# Run all 39 challenges (auto-starts everything)
+# Run all 44 challenges (auto-starts everything)
 ./challenges/scripts/run_all_challenges.sh
 
 # Run the main challenge (provider verification + debate group formation + OpenCode config)
@@ -440,6 +552,12 @@ The `challenges/` directory contains a comprehensive challenge framework for tes
 
 # Run specific challenge
 ./challenges/scripts/run_challenges.sh provider_verification
+
+# Run new everyday use-case challenges
+./challenges/scripts/protocol_challenge.sh        # MCP/ACP/LSP/Embeddings/Vision
+./challenges/scripts/curl_api_challenge.sh        # Comprehensive curl API testing
+./challenges/scripts/cli_agents_challenge.sh      # OpenCode/Crush/HelixCode integration
+./challenges/scripts/content_generation_challenge.sh  # Content generation & web search
 ```
 
 ### Challenge Categories
@@ -456,6 +574,7 @@ The `challenges/` directory contains a comprehensive challenge framework for tes
 | Integration | 1 | Cognee |
 | Resilience | 3 | Circuit breaker, error handling, concurrent access |
 | API | 2 | OpenAI compatibility, gRPC |
+| Everyday Use | 4 | Protocol support, curl API, CLI agents, content generation |
 
 ### Main Challenge Output
 
@@ -496,6 +615,28 @@ A Go-based generator is available at `challenges/codebase/go_files/opencode_gene
 ```bash
 cd challenges/codebase/go_files/opencode_generator
 go build -o opencode_generator opencode_generator.go
-./opencode_generator --host localhost --port 8080 --output config.json
+./opencode_generator --host localhost --port 7061 --output config.json
 ./opencode_generator --validate config.json  # Validate existing config
 ```
+
+### Protocol Support and Capabilities
+
+The OpenCode configuration exposes comprehensive protocol support:
+
+| Protocol | Endpoint | Description |
+|----------|----------|-------------|
+| MCP | `/v1/mcp` | Model Context Protocol for tools and resources |
+| ACP | `/v1/acp` | Agent Communication Protocol |
+| LSP | `/v1/lsp` | Language Server Protocol for code intelligence |
+| Embeddings | `/v1/embeddings` | Text embeddings generation |
+| Vision | `/v1/vision` | Image analysis and OCR |
+| Cognee | `/v1/cognee` | Knowledge graph and RAG capabilities |
+
+**Model Capabilities** (helixagent-debate):
+- `maxTokens`: 128000
+- `vision`, `imageInput`, `imageOutput`, `ocr`, `pdf`: true
+- `streaming`, `functionCalls`, `toolUse`, `embeddings`: true
+- `fileUpload`, `noFileLimit`: true
+- `mcp`, `acp`, `lsp`: true
+
+**Fallback Mechanism**: All protocol requests automatically fall back to the next highest-scoring LLM if the primary fails, using LLMsVerifier scores for prioritization.

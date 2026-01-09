@@ -347,6 +347,133 @@
       ]
     },
     {
+      "id": "opencode_init",
+      "name": "OpenCode Init Challenge",
+      "description": "Validate the /init command functionality for OpenCode, testing project scanning, codebase analysis, and file generation",
+      "category": "validation",
+      "dependencies": [],
+      "binary_only": true,
+      "script": "../scripts/opencode_init_challenge.sh",
+      "estimated_duration": "3-5 minutes",
+      "inputs": [
+        {
+          "name": "api_keys",
+          "source": ".env",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "analysis_content.txt",
+          "type": "text",
+          "description": "Project analysis content from LLM"
+        },
+        {
+          "name": "analysis_validation.json",
+          "type": "json",
+          "description": "Analysis validation results"
+        },
+        {
+          "name": "codebase_scanning.json",
+          "type": "json",
+          "description": "Codebase scanning test results"
+        },
+        {
+          "name": "file_generation.json",
+          "type": "json",
+          "description": "File generation test results"
+        },
+        {
+          "name": "git_verification.json",
+          "type": "json",
+          "description": "Git status verification results"
+        },
+        {
+          "name": "challenge_summary.json",
+          "type": "json",
+          "description": "Overall challenge summary"
+        },
+        {
+          "name": "opencode_init_report.md",
+          "type": "markdown",
+          "description": "Human-readable challenge report"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "api_responds",
+          "target": "/v1/models",
+          "message": "HelixAgent API must respond"
+        },
+        {
+          "type": "analysis_validates",
+          "target": "analysis_validation.json",
+          "min_validation_score": 3,
+          "message": "Project analysis must pass at least 3/5 validations"
+        },
+        {
+          "type": "codebase_scanned",
+          "target": "codebase_scanning.json",
+          "min_tests_passed": 3,
+          "message": "Codebase scanning must pass at least 3/5 tests"
+        },
+        {
+          "type": "file_generated",
+          "target": "file_generation.json",
+          "message": "File generation must succeed"
+        }
+      ],
+      "phases": [
+        {
+          "id": "prerequisites",
+          "name": "Prerequisites Check",
+          "description": "Verify HelixAgent is running and API responds"
+        },
+        {
+          "id": "project_analysis",
+          "name": "Project Analysis Request",
+          "description": "Send project analysis request to HelixAgent"
+        },
+        {
+          "id": "codebase_scanning",
+          "name": "Codebase Scanning Test",
+          "description": "Test codebase awareness through specific queries"
+        },
+        {
+          "id": "file_generation",
+          "name": "File Generation Test",
+          "description": "Test AGENTS.md file generation capability"
+        },
+        {
+          "id": "git_verification",
+          "name": "Git Status Verification",
+          "description": "Verify git status shows activity"
+        },
+        {
+          "id": "summary",
+          "name": "Results Summary",
+          "description": "Generate final summary and report"
+        }
+      ],
+      "test_categories": [
+        {
+          "name": "analysis",
+          "count": 5,
+          "description": "Project analysis validation checks"
+        },
+        {
+          "name": "scanning",
+          "count": 5,
+          "description": "Codebase scanning tests"
+        },
+        {
+          "name": "generation",
+          "count": 1,
+          "description": "File generation test"
+        }
+      ]
+    },
+    {
       "id": "provider_verification",
       "name": "Provider Verification",
       "description": "Verify all configured LLM providers and score their models using LLMsVerifier integration",

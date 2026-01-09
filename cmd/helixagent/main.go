@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 
@@ -29,6 +30,7 @@ var (
 	version              = flag.Bool("version", false, "Show version information")
 	help                 = flag.Bool("help", false, "Show help message")
 	autoStartDocker      = flag.Bool("auto-start-docker", true, "Automatically start required Docker containers")
+	strictDependencies   = flag.Bool("strict-dependencies", true, "MANDATORY: Fail if any integration dependency (Cognee, DB, Redis) is unavailable")
 	generateAPIKey       = flag.Bool("generate-api-key", false, "Generate a new HelixAgent API key and output it")
 	generateOpenCode     = flag.Bool("generate-opencode-config", false, "Generate OpenCode configuration JSON")
 	validateOpenCode     = flag.String("validate-opencode-config", "", "Path to OpenCode config file to validate")
@@ -83,6 +85,72 @@ func (r *RealCommandExecutor) RunCommandWithDir(dir string, name string, args ..
 	return cmd.CombinedOutput()
 }
 
+// ContainerRuntime represents the detected container runtime (Docker or Podman)
+type ContainerRuntime string
+
+const (
+	RuntimeDocker ContainerRuntime = "docker"
+	RuntimePodman ContainerRuntime = "podman"
+	RuntimeNone   ContainerRuntime = "none"
+)
+
+// DetectContainerRuntime automatically detects available container runtime
+// Prefers Docker, falls back to Podman if Docker is not available
+func DetectContainerRuntime() (ContainerRuntime, string, error) {
+	// Try Docker first
+	if path, err := exec.LookPath("docker"); err == nil {
+		// Verify Docker daemon is accessible
+		cmd := exec.Command("docker", "info")
+		if err := cmd.Run(); err == nil {
+			return RuntimeDocker, path, nil
+		}
+	}
+
+	// Try Podman as fallback
+	if path, err := exec.LookPath("podman"); err == nil {
+		// Verify Podman is accessible
+		cmd := exec.Command("podman", "info")
+		if err := cmd.Run(); err == nil {
+			return RuntimePodman, path, nil
+		}
+	}
+
+	return RuntimeNone, "", fmt.Errorf("no container runtime found: neither Docker nor Podman is available")
+}
+
+// DetectComposeCommand detects the compose command for the container runtime
+// Returns: compose command, args prefix, error
+func DetectComposeCommand(runtime ContainerRuntime) (string, []string, error) {
+	switch runtime {
+	case RuntimeDocker:
+		// Try "docker compose" first (newer syntax)
+		cmd := exec.Command("docker", "compose", "version")
+		if err := cmd.Run(); err == nil {
+			return "docker", []string{"compose"}, nil
+		}
+		// Fall back to "docker-compose"
+		if path, err := exec.LookPath("docker-compose"); err == nil {
+			return path, nil, nil
+		}
+		return "", nil, fmt.Errorf("docker compose command not found")
+
+	case RuntimePodman:
+		// Try "podman-compose" first
+		if path, err := exec.LookPath("podman-compose"); err == nil {
+			return path, nil, nil
+		}
+		// Try "podman compose" (if podman has compose plugin)
+		cmd := exec.Command("podman", "compose", "version")
+		if err := cmd.Run(); err == nil {
+			return "podman", []string{"compose"}, nil
+		}
+		return "", nil, fmt.Errorf("podman-compose not found: install with 'pip install podman-compose'")
+
+	default:
+		return "", nil, fmt.Errorf("unknown container runtime")
+	}
+}
+
 // HealthChecker interface for checking service health (allows mocking)
 type HealthChecker interface {
 	CheckHealth(url string) error
@@ -126,11 +194,18 @@ type ContainerConfig struct {
 
 // DefaultContainerConfig returns the default container configuration
 func DefaultContainerConfig() *ContainerConfig {
+	// Try to detect project directory from executable location
+	// or use current working directory
+	projectDir, err := os.Getwd()
+	if err != nil {
+		projectDir = "/run/media/milosvasic/DATA4TB/Projects/HelixAgent"
+	}
+
 	return &ContainerConfig{
-		ProjectDir:       "/media/milosvasic/DATA4TB/Projects/HelixAgent",
+		ProjectDir:       projectDir,
 		RequiredServices: []string{"postgres", "redis", "cognee", "chromadb"},
-		CogneeURL:        "http://cognee:8000/health",
-		ChromaDBURL:      "http://chromadb:8000/api/v1/heartbeat",
+		CogneeURL:        "http://localhost:8000/",
+		ChromaDBURL:      "http://localhost:8001/api/v1/heartbeat",
 		Executor:         &RealCommandExecutor{},
 		HealthChecker:    NewHTTPHealthChecker(10 * time.Second),
 	}
@@ -144,17 +219,33 @@ func ensureRequiredContainers(logger *logrus.Logger) error {
 	return ensureRequiredContainersWithConfig(logger, containerConfig)
 }
 
-// ensureRequiredContainersWithConfig starts required Docker containers using provided config
+// ensureRequiredContainersWithConfig starts required Docker/Podman containers using provided config
+// Automatically detects and uses Docker or Podman (whichever is available)
 func ensureRequiredContainersWithConfig(logger *logrus.Logger, cfg *ContainerConfig) error {
-	executor := cfg.Executor
-
-	// Check if docker is available
-	if _, err := executor.LookPath("docker"); err != nil {
-		return fmt.Errorf("docker not found in PATH: %w", err)
+	// Detect container runtime (Docker or Podman)
+	runtime, runtimePath, err := DetectContainerRuntime()
+	if err != nil {
+		return fmt.Errorf("container runtime detection failed: %w", err)
 	}
 
+	logger.WithFields(logrus.Fields{
+		"runtime": runtime,
+		"path":    runtimePath,
+	}).Info("Detected container runtime")
+
+	// Detect compose command
+	composeCmd, composeArgs, err := DetectComposeCommand(runtime)
+	if err != nil {
+		return fmt.Errorf("compose command detection failed: %w", err)
+	}
+
+	logger.WithFields(logrus.Fields{
+		"compose_command": composeCmd,
+		"compose_args":    composeArgs,
+	}).Info("Detected compose command")
+
 	// Check which services are already running
-	runningServices, err := getRunningServicesWithConfig(cfg)
+	runningServices, err := getRunningServicesWithRuntimeConfig(cfg, composeCmd, composeArgs)
 	if err != nil {
 		logger.WithError(err).Warn("Could not check running services, attempting to start all")
 		runningServices = make(map[string]bool)
@@ -175,39 +266,66 @@ func ensureRequiredContainersWithConfig(logger *logrus.Logger, cfg *ContainerCon
 
 	logger.WithField("services", strings.Join(servicesToStart, ", ")).Info("Starting required containers")
 
-	// Try docker compose first (newer syntax), fall back to docker-compose
+	// Build compose command with profile for Cognee/ChromaDB
 	var output []byte
+	var cmdArgs []string
 
-	// Check for docker compose (as a subcommand of docker)
-	args := append([]string{"compose", "up", "-d"}, servicesToStart...)
-	output, err = executor.RunCommandWithDir(cfg.ProjectDir, "docker", args...)
+	if len(composeArgs) > 0 {
+		// Format: docker compose --profile default up -d <services>
+		cmdArgs = append(cmdArgs, composeArgs...)
+	}
+	cmdArgs = append(cmdArgs, "--profile", "default", "up", "-d")
+	cmdArgs = append(cmdArgs, servicesToStart...)
+
+	cmd := exec.Command(composeCmd, cmdArgs...)
+	cmd.Dir = cfg.ProjectDir
+	output, err = cmd.CombinedOutput()
+
 	if err != nil {
-		// Try docker-compose as fallback
-		if _, lookErr := executor.LookPath("docker-compose"); lookErr == nil {
-			composeArgs := append([]string{"up", "-d"}, servicesToStart...)
-			output, err = executor.RunCommandWithDir(cfg.ProjectDir, "docker-compose", composeArgs...)
-		}
+		return fmt.Errorf("failed to start containers with %s: %w\nOutput: %s", runtime, err, string(output))
 	}
 
-	if err != nil {
-		return fmt.Errorf("failed to start containers: %w, output: %s", err, string(output))
-	}
-
+	logger.WithField("output", string(output)).Debug("Compose output")
 	logger.Info("Waiting for containers to be healthy...")
 
-	// Wait for containers to be ready (simple approach - wait a bit)
-	// In tests, this can be mocked to skip the sleep
-	if cfg.Executor != nil {
-		time.Sleep(15 * time.Second)
-	}
+	// Wait for containers to be ready
+	time.Sleep(20 * time.Second)
 
 	// Verify critical services are running
 	if err := verifyServicesHealthWithConfig(cfg.RequiredServices, logger, cfg); err != nil {
-		logger.WithError(err).Warn("Some services may not be fully ready, but continuing")
+		return fmt.Errorf("service health verification failed: %w", err)
 	}
 
-	logger.Info("Container startup completed")
+	logger.Info("Container startup completed successfully")
 	return nil
+}
+
+// getRunningServicesWithRuntimeConfig checks which compose services are currently running
+func getRunningServicesWithRuntimeConfig(cfg *ContainerConfig, composeCmd string, composeArgs []string) (map[string]bool, error) {
+	running := make(map[string]bool)
+
+	var cmdArgs []string
+	if len(composeArgs) > 0 {
+		cmdArgs = append(cmdArgs, composeArgs...)
+	}
+	cmdArgs = append(cmdArgs, "ps", "--services", "--filter", "status=running")
+
+	cmd := exec.Command(composeCmd, cmdArgs...)
+	cmd.Dir = cfg.ProjectDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return running, fmt.Errorf("failed to list running services: %w", err)
+	}
+
+	services := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, service := range services {
+		service = strings.TrimSpace(service)
+		if service != "" {
+			running[service] = true
+		}
+	}
+
+	return running, nil
 }
 
 // getRunningServices checks which docker-compose services are currently running
@@ -316,7 +434,7 @@ func checkPostgresHealth() error {
 	}
 	dbPassword := os.Getenv("DB_PASSWORD")
 	if dbPassword == "" {
-		dbPassword = "secret"
+		dbPassword = "helixagent123" // Default from docker-compose.yml
 	}
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
@@ -355,6 +473,9 @@ func checkRedisHealth() error {
 		redisPort = "6379"
 	}
 	redisPassword := os.Getenv("REDIS_PASSWORD")
+	if redisPassword == "" {
+		redisPassword = "helixagent123" // Default from docker-compose.yml
+	}
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:        redisHost + ":" + redisPort,
@@ -400,11 +521,102 @@ func checkChromaDBHealthWithConfig(cfg *ContainerConfig) error {
 	return nil
 }
 
+// MandatoryDependency represents a required integration dependency
+type MandatoryDependency struct {
+	Name        string
+	Description string
+	CheckFunc   func() error
+	Required    bool
+}
+
+// GetMandatoryDependencies returns all mandatory integration dependencies
+func GetMandatoryDependencies() []MandatoryDependency {
+	return []MandatoryDependency{
+		{
+			Name:        "PostgreSQL",
+			Description: "Primary database for storing configuration, sessions, and metadata",
+			CheckFunc:   checkPostgresHealth,
+			Required:    true,
+		},
+		{
+			Name:        "Redis",
+			Description: "Cache layer for sessions, rate limiting, and response caching",
+			CheckFunc:   checkRedisHealth,
+			Required:    true,
+		},
+		{
+			Name:        "Cognee",
+			Description: "Knowledge graph and RAG integration for AI memory and reasoning",
+			CheckFunc:   checkCogneeHealth,
+			Required:    true,
+		},
+		{
+			Name:        "ChromaDB",
+			Description: "Vector database for embeddings and semantic search",
+			CheckFunc:   checkChromaDBHealth,
+			Required:    true,
+		},
+	}
+}
+
+// verifyAllMandatoryDependencies checks ALL required integration dependencies
+// Returns an error if ANY mandatory dependency is unavailable
+func verifyAllMandatoryDependencies(logger *logrus.Logger) error {
+	dependencies := GetMandatoryDependencies()
+	var failedDeps []string
+	var successDeps []string
+
+	logger.Info("╔══════════════════════════════════════════════════════════════════╗")
+	logger.Info("║           MANDATORY DEPENDENCY VERIFICATION                       ║")
+	logger.Info("╚══════════════════════════════════════════════════════════════════╝")
+
+	for _, dep := range dependencies {
+		logger.WithField("dependency", dep.Name).Info("Checking dependency...")
+
+		if err := dep.CheckFunc(); err != nil {
+			failedDeps = append(failedDeps, fmt.Sprintf("%s: %v", dep.Name, err))
+			logger.WithFields(logrus.Fields{
+				"dependency":  dep.Name,
+				"description": dep.Description,
+				"error":       err,
+			}).Error("❌ DEPENDENCY FAILED")
+		} else {
+			successDeps = append(successDeps, dep.Name)
+			logger.WithFields(logrus.Fields{
+				"dependency":  dep.Name,
+				"description": dep.Description,
+			}).Info("✅ DEPENDENCY OK")
+		}
+	}
+
+	logger.Info("────────────────────────────────────────────────────────────────────")
+	logger.WithFields(logrus.Fields{
+		"total":    len(dependencies),
+		"passed":   len(successDeps),
+		"failed":   len(failedDeps),
+	}).Info("Dependency verification summary")
+
+	if len(failedDeps) > 0 {
+		errorMsg := fmt.Sprintf("BOOT BLOCKED: %d of %d mandatory dependencies failed:\n", len(failedDeps), len(dependencies))
+		for i, failure := range failedDeps {
+			errorMsg += fmt.Sprintf("  %d. %s\n", i+1, failure)
+		}
+		errorMsg += "\nHelixAgent REQUIRES all integration components to be running.\n"
+		errorMsg += "Please start all dependencies with: docker-compose up -d\n"
+		errorMsg += "Or use: make docker-start"
+
+		return fmt.Errorf("%s", errorMsg)
+	}
+
+	return nil
+}
+
 // AppConfig holds application configuration for testing
 type AppConfig struct {
 	ShowHelp             bool
 	ShowVersion          bool
 	AutoStartDocker      bool
+	StrictDependencies   bool   // MANDATORY: If true, fail boot when ANY dependency is unavailable
 	GenerateAPIKey       bool
 	GenerateOpenCode     bool
 	ValidateOpenCode     string
@@ -425,13 +637,14 @@ func DefaultAppConfig() *AppConfig {
 	})
 
 	return &AppConfig{
-		ShowHelp:        false,
-		ShowVersion:     false,
-		AutoStartDocker: true,
-		ServerHost:      "0.0.0.0",
-		ServerPort:      "7061",
-		Logger:          logger,
-		ShutdownSignal:  nil,
+		ShowHelp:           false,
+		ShowVersion:        false,
+		AutoStartDocker:    true,
+		StrictDependencies: true, // MANDATORY: All dependencies must be available
+		ServerHost:         "0.0.0.0",
+		ServerPort:         "7061",
+		Logger:             logger,
+		ShutdownSignal:     nil,
 	}
 }
 
@@ -487,10 +700,22 @@ func run(appCfg *AppConfig) error {
 	if appCfg.AutoStartDocker {
 		logger.Info("Checking and starting required Docker containers...")
 		if err := ensureRequiredContainers(logger); err != nil {
+			if appCfg.StrictDependencies {
+				return fmt.Errorf("FATAL: Failed to start required containers (strict mode enabled): %w", err)
+			}
 			logger.WithError(err).Warn("Failed to start some containers, continuing with application startup")
 		} else {
 			logger.Info("Docker containers are ready")
 		}
+	}
+
+	// MANDATORY: Verify ALL integration dependencies are healthy before starting server
+	if appCfg.StrictDependencies {
+		logger.Info("Verifying ALL integration dependencies (strict mode)...")
+		if err := verifyAllMandatoryDependencies(logger); err != nil {
+			return fmt.Errorf("FATAL: Integration dependency verification failed: %w", err)
+		}
+		logger.Info("All mandatory dependencies verified successfully")
 	}
 
 	r := router.SetupRouter(cfg)
@@ -550,12 +775,23 @@ func run(appCfg *AppConfig) error {
 }
 
 func main() {
+	// Load environment variables from .env file (if present)
+	// This allows API keys and configuration to be loaded automatically
+	if err := godotenv.Load(); err != nil {
+		// Don't fail if .env doesn't exist - environment variables may be set directly
+		// Only log if there's a real error (not "file not found")
+		if !os.IsNotExist(err) {
+			logrus.WithError(err).Debug("Could not load .env file")
+		}
+	}
+
 	flag.Parse()
 
 	appCfg := DefaultAppConfig()
 	appCfg.ShowHelp = *help
 	appCfg.ShowVersion = *version
 	appCfg.AutoStartDocker = *autoStartDocker
+	appCfg.StrictDependencies = *strictDependencies
 	appCfg.GenerateAPIKey = *generateAPIKey
 	appCfg.GenerateOpenCode = *generateOpenCode
 	appCfg.ValidateOpenCode = *validateOpenCode
@@ -1024,6 +1260,13 @@ Options:
         Path to configuration file (YAML)
   -auto-start-docker
         Automatically start required Docker containers (default: true)
+  -strict-dependencies
+        MANDATORY: Fail if any integration dependency is unavailable (default: true)
+        When enabled, HelixAgent will NOT start unless ALL dependencies are healthy:
+        - PostgreSQL (database)
+        - Redis (cache)
+        - Cognee (knowledge graph)
+        - ChromaDB (vector database)
   -generate-api-key
         Generate a new HelixAgent API key and output it to stdout
   -generate-opencode-config

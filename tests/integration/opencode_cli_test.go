@@ -31,7 +31,7 @@ import (
 const (
 	// Default HelixAgent configuration
 	DefaultHelixAgentHost = "localhost"
-	DefaultHelixAgentPort = "8080"
+	DefaultHelixAgentPort = "7061"
 	HelixAgentBinary      = "../../bin/helixagent"
 
 	// Timeouts
@@ -545,6 +545,9 @@ func TestModelsEndpoint(t *testing.T) {
 
 // TestChatCompletionsEndpoint tests POST /v1/chat/completions (non-streaming)
 func TestChatCompletionsEndpoint(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running chat completions test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -748,6 +751,9 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 
 // TestChatCompletionsStreamingEndpoint tests POST /v1/chat/completions with streaming
 func TestChatCompletionsStreamingEndpoint(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running streaming chat completions test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -933,6 +939,9 @@ func TestChatCompletionsStreamingEndpoint(t *testing.T) {
 
 // TestConcurrentRequests tests multiple simultaneous requests
 func TestConcurrentRequests(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running concurrent requests test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -1474,6 +1483,9 @@ func TestErrorHandling(t *testing.T) {
 
 // TestEndToEndWorkflow tests complete OpenCode integration workflow
 func TestEndToEndWorkflow(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running end-to-end workflow test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 

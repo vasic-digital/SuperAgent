@@ -738,7 +738,7 @@ func main() {
 		baseURL = os.Getenv("HELIXAGENT_API_URL")
 	}
 	if baseURL == "" {
-		baseURL = "http://localhost:8080"
+		baseURL = "http://localhost:7061"
 	}
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")

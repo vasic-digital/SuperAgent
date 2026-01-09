@@ -458,6 +458,32 @@ CLAUDE_CODE_USE_OAUTH_CREDENTIALS=true
 
 Some providers may return 401 on health check endpoints even with valid OAuth credentials. This doesn't affect normal API operations.
 
+## Important Limitations
+
+### Claude OAuth Tokens and Anthropic API
+
+**CRITICAL**: Claude Code OAuth tokens (`sk-ant-oat01-*`) are **NOT compatible** with the public Anthropic API (`api.anthropic.com`). The Anthropic API explicitly rejects OAuth tokens with the error: `"OAuth authentication is currently not supported."`
+
+This means:
+1. **Claude Code OAuth tokens are for internal Claude Code CLI use only**
+2. **To use Claude models programmatically, you MUST have a proper Anthropic API key** (`sk-ant-api03-*`)
+3. **HelixAgent automatically falls back to alternative providers** when Claude OAuth fails
+
+### Fallback Behavior
+
+When OAuth-authenticated providers fail (e.g., due to API incompatibility), HelixAgent's debate ensemble automatically:
+1. Logs the failure with details (provider, model, attempt number)
+2. Tries the next provider in the fallback chain
+3. Continues until a working provider responds or all attempts are exhausted
+4. Maximum fallback attempts: 5 (primary + 4 fallbacks)
+
+### Recommended Configuration
+
+For best results with HelixAgent:
+1. **Obtain proper API keys** for providers you want to use programmatically
+2. **Configure multiple providers** to enable automatic fallback
+3. **OAuth credentials** are useful for authentication verification but may not work for all API endpoints
+
 ## Security Considerations
 
 1. **Credential Files**: OAuth credential files are stored with user-only permissions

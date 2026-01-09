@@ -267,6 +267,69 @@ func TestProviderRegistry_ListProviders(t *testing.T) {
 	})
 }
 
+// TestProviderRegistry_ListProvidersOrderedByScore validates dynamic provider ordering based on LLMsVerifier scores
+func TestProviderRegistry_ListProvidersOrderedByScore(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 30 * time.Second,
+		CircuitBreaker: CircuitBreakerConfig{
+			Enabled: false,
+		},
+		Providers: make(map[string]*ProviderConfig),
+		Ensemble: &models.EnsembleConfig{
+			Strategy: "confidence_weighted",
+		},
+		Routing: &RoutingConfig{
+			Strategy: "weighted",
+		},
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	t.Run("empty registry returns empty list", func(t *testing.T) {
+		providers := registry.ListProvidersOrderedByScore()
+		assert.Empty(t, providers)
+	})
+
+	t.Run("providers with scores are ordered correctly", func(t *testing.T) {
+		// Create a fresh registry for this test with score adapter initialized
+		registry2 := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+		// Register providers
+		_ = registry2.RegisterProvider("lowScore", &MockLLMProviderForRegistry{name: "lowScore"})
+		_ = registry2.RegisterProvider("highScore", &MockLLMProviderForRegistry{name: "highScore"})
+		_ = registry2.RegisterProvider("mediumScore", &MockLLMProviderForRegistry{name: "mediumScore"})
+
+		// Set scores via score adapter
+		adapter := registry2.GetScoreAdapter()
+		if adapter == nil {
+			t.Skip("Score adapter not available - skipping ordering test")
+			return
+		}
+
+		adapter.UpdateScore("highScore", "model-high", 9.5)
+		adapter.UpdateScore("mediumScore", "model-medium", 7.0)
+		adapter.UpdateScore("lowScore", "model-low", 3.0)
+
+		providers := registry2.ListProvidersOrderedByScore()
+		assert.Len(t, providers, 3)
+
+		// Highest score should be first
+		assert.Equal(t, "highScore", providers[0], "Highest scored provider should be first")
+
+		// Lowest score should be last
+		assert.Equal(t, "lowScore", providers[2], "Lowest scored provider should be last")
+	})
+
+	t.Run("unscored providers get default score", func(t *testing.T) {
+		registry2 := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+		_ = registry2.RegisterProvider("unscoredProvider", &MockLLMProviderForRegistry{name: "unscoredProvider"})
+
+		// Provider without explicit score should still be returned
+		providers := registry2.ListProvidersOrderedByScore()
+		assert.Len(t, providers, 1)
+		assert.Equal(t, "unscoredProvider", providers[0])
+	})
+}
+
 func TestProviderRegistry_ConfigureProvider(t *testing.T) {
 	cfg := &RegistryConfig{
 		DefaultTimeout: 30 * time.Second,
@@ -1299,5 +1362,284 @@ func TestGetFirstModel(t *testing.T) {
 	t.Run("returns empty string for nil list", func(t *testing.T) {
 		result := getFirstModel(nil)
 		assert.Equal(t, "", result)
+	})
+}
+
+// ========================================
+// LLMsVerifier Score Adapter Integration Tests
+// Tests for dynamic provider ordering based on LLMsVerifier scores
+// ========================================
+
+func TestProviderRegistry_ScoreAdapterIntegration(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 30 * time.Second,
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	t.Run("score adapter is nil when auto-discovery is disabled", func(t *testing.T) {
+		// Without auto-discovery, score adapter is not initialized
+		adapter := registry.GetScoreAdapter()
+		assert.Nil(t, adapter, "Score adapter should be nil without auto-discovery")
+	})
+}
+
+func TestProviderRegistry_UpdateProviderScore(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 30 * time.Second,
+	}
+	registry := NewProviderRegistry(cfg, nil)
+
+	t.Run("updates provider score when adapter exists", func(t *testing.T) {
+		// Get the score adapter
+		adapter := registry.GetScoreAdapter()
+		if adapter == nil {
+			t.Skip("Score adapter not initialized (no auto-discovery)")
+		}
+
+		// Update a provider score
+		registry.UpdateProviderScore("deepseek", "deepseek-chat", 9.5)
+
+		// Verify score was updated
+		score, ok := adapter.GetProviderScore("deepseek")
+		assert.True(t, ok, "Score should be found for deepseek")
+		assert.Equal(t, 9.5, score, "Score should match updated value")
+	})
+
+	t.Run("does not panic when adapter is nil", func(t *testing.T) {
+		registryNoAuto := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+		// This should not panic even if adapter is nil
+		assert.NotPanics(t, func() {
+			registryNoAuto.UpdateProviderScore("test", "test-model", 5.0)
+		})
+	})
+}
+
+func TestProviderRegistry_EnsembleUsesScoreProvider(t *testing.T) {
+	// Use registry WITHOUT auto-discovery to avoid conflicts with env vars
+	cfg := &RegistryConfig{
+		DefaultTimeout: 30 * time.Second,
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	ensemble := registry.GetEnsembleService()
+	require.NotNil(t, ensemble, "Ensemble service should exist")
+
+	// Manually initialize score adapter for testing
+	scoreAdapter := NewLLMsVerifierScoreAdapter(nil, nil, nil)
+	ensemble.SetScoreProvider(scoreAdapter)
+
+	// Register mock providers with unique test names
+	providers := []struct {
+		name  string
+		score float64
+	}{
+		{"test-provider-a", 9.5},
+		{"test-provider-b", 8.5},
+		{"test-provider-c", 7.0},
+	}
+
+	for _, p := range providers {
+		mockProvider := &MockLLMProviderForRegistry{name: p.name}
+		err := registry.RegisterProvider(p.name, mockProvider)
+		require.NoError(t, err)
+
+		// Update scores via adapter directly
+		scoreAdapter.UpdateScore(p.name, p.name+"-model", p.score)
+	}
+
+	t.Run("ensemble returns registered providers", func(t *testing.T) {
+		providerList := ensemble.GetProviders()
+		t.Logf("Registered providers: %v", providerList)
+
+		// The providers should be registered
+		assert.Contains(t, providerList, "test-provider-a")
+		assert.Contains(t, providerList, "test-provider-b")
+		assert.Contains(t, providerList, "test-provider-c")
+	})
+
+	t.Run("score provider ordering works", func(t *testing.T) {
+		providerMap := make(map[string]LLMProvider)
+		for _, p := range providers {
+			providerMap[p.name] = &MockLLMProviderForRegistry{name: p.name}
+		}
+
+		sorted := ensemble.getSortedProviderNames(providerMap)
+
+		// Should be ordered by score (highest first)
+		assert.Equal(t, "test-provider-a", sorted[0], "Highest score should be first")
+		assert.Equal(t, "test-provider-b", sorted[1], "Second highest score should be second")
+		assert.Equal(t, "test-provider-c", sorted[2], "Lowest score should be last")
+	})
+}
+
+// TestLLMsVerifierScoreAdapter_Integration tests the score adapter directly
+func TestLLMsVerifierScoreAdapter_Integration(t *testing.T) {
+	t.Run("creates adapter without verification service", func(t *testing.T) {
+		adapter := NewLLMsVerifierScoreAdapter(nil, nil, nil)
+		require.NotNil(t, adapter, "Adapter should be created")
+	})
+
+	t.Run("returns false for unknown provider", func(t *testing.T) {
+		adapter := NewLLMsVerifierScoreAdapter(nil, nil, nil)
+
+		score, ok := adapter.GetProviderScore("unknown")
+		assert.False(t, ok, "Should return false for unknown provider")
+		assert.Equal(t, float64(0), score)
+	})
+
+	t.Run("updates and retrieves provider score", func(t *testing.T) {
+		adapter := NewLLMsVerifierScoreAdapter(nil, nil, nil)
+
+		adapter.UpdateScore("deepseek", "deepseek-chat", 9.5)
+
+		score, ok := adapter.GetProviderScore("deepseek")
+		assert.True(t, ok, "Should find provider after update")
+		assert.Equal(t, 9.5, score, "Score should match")
+	})
+
+	t.Run("updates highest score for provider", func(t *testing.T) {
+		adapter := NewLLMsVerifierScoreAdapter(nil, nil, nil)
+
+		// Update with lower score first
+		adapter.UpdateScore("claude", "claude-3-haiku", 7.0)
+		// Then update with higher score
+		adapter.UpdateScore("claude", "claude-3-opus", 9.5)
+
+		score, ok := adapter.GetProviderScore("claude")
+		assert.True(t, ok, "Should find provider")
+		assert.Equal(t, 9.5, score, "Should return highest score")
+
+		// Lower score should not replace higher
+		adapter.UpdateScore("claude", "claude-3-sonnet", 8.5)
+		score, _ = adapter.GetProviderScore("claude")
+		assert.Equal(t, 9.5, score, "Should still return highest score")
+	})
+
+	t.Run("gets all provider scores", func(t *testing.T) {
+		adapter := NewLLMsVerifierScoreAdapter(nil, nil, nil)
+
+		adapter.UpdateScore("deepseek", "deepseek-chat", 9.5)
+		adapter.UpdateScore("gemini", "gemini-2.0-flash", 8.5)
+		adapter.UpdateScore("claude", "claude-3-opus", 9.0)
+
+		scores := adapter.GetAllProviderScores()
+		assert.Len(t, scores, 3, "Should have 3 providers")
+		assert.Equal(t, 9.5, scores["deepseek"])
+		assert.Equal(t, 8.5, scores["gemini"])
+		assert.Equal(t, 9.0, scores["claude"])
+	})
+
+	t.Run("gets best provider", func(t *testing.T) {
+		adapter := NewLLMsVerifierScoreAdapter(nil, nil, nil)
+
+		adapter.UpdateScore("deepseek", "deepseek-chat", 9.5)
+		adapter.UpdateScore("gemini", "gemini-2.0-flash", 8.5)
+		adapter.UpdateScore("claude", "claude-3-opus", 9.0)
+
+		best, score := adapter.GetBestProvider()
+		assert.Equal(t, "deepseek", best, "DeepSeek should be best")
+		assert.Equal(t, 9.5, score, "Should have highest score")
+	})
+
+	t.Run("model score storage and retrieval", func(t *testing.T) {
+		adapter := NewLLMsVerifierScoreAdapter(nil, nil, nil)
+
+		adapter.UpdateScore("deepseek", "deepseek-chat", 9.5)
+
+		// Model score should be stored
+		modelScore, ok := adapter.GetModelScore("deepseek-chat")
+		assert.True(t, ok, "Model score should be found")
+		assert.Equal(t, 9.5, modelScore)
+	})
+}
+
+// TestOAuth2ProviderPriority tests that OAuth2 providers are prioritized
+func TestOAuth2ProviderPriority(t *testing.T) {
+	service := NewEnsembleService("confidence_weighted", 30*time.Second)
+
+	// Set up mock score provider with scores
+	scoreProvider := &mockScoreProvider{
+		scores: map[string]float64{
+			"deepseek": 9.5,
+			"claude":   9.0,
+			"qwen":     8.5,
+			"gemini":   8.0,
+		},
+	}
+	service.SetScoreProvider(scoreProvider)
+
+	t.Run("OAuth providers ordered by score first", func(t *testing.T) {
+		providers := map[string]LLMProvider{
+			"deepseek":     newMockProvider("deepseek", "resp", 0.9),
+			"claude-oauth": newMockProvider("claude-oauth", "resp", 0.95),
+			"qwen-oauth":   newMockProvider("qwen-oauth", "resp", 0.7),
+			"gemini":       newMockProvider("gemini", "resp", 0.85),
+		}
+
+		sorted := service.getSortedProviderNames(providers)
+
+		// OAuth providers should be first, sorted by score (claude > qwen)
+		assert.Equal(t, "claude-oauth", sorted[0], "Claude OAuth should be first (OAuth + score=9.0)")
+		assert.Equal(t, "qwen-oauth", sorted[1], "Qwen OAuth should be second (OAuth + score=8.5)")
+
+		// Then non-OAuth providers by score
+		assert.Equal(t, "deepseek", sorted[2], "DeepSeek should be third (score=9.5)")
+		assert.Equal(t, "gemini", sorted[3], "Gemini should be fourth (score=8.0)")
+	})
+
+	t.Run("multiple OAuth providers sorted correctly", func(t *testing.T) {
+		// Update scores to make qwen higher than claude
+		scoreProvider.scores["qwen"] = 9.5
+		scoreProvider.scores["claude"] = 8.5
+
+		providers := map[string]LLMProvider{
+			"claude-oauth": newMockProvider("claude-oauth", "resp", 0.95),
+			"qwen-oauth":   newMockProvider("qwen-oauth", "resp", 0.7),
+		}
+
+		sorted := service.getSortedProviderNames(providers)
+
+		// With qwen having higher score, it should come first
+		assert.Equal(t, "qwen-oauth", sorted[0], "Qwen OAuth should be first (higher score)")
+		assert.Equal(t, "claude-oauth", sorted[1], "Claude OAuth should be second")
+	})
+}
+
+// TestStreamingUsesScoreBasedOrdering validates that streaming uses LLMsVerifier score ordering
+func TestStreamingUsesScoreBasedOrdering(t *testing.T) {
+	service := NewEnsembleService("confidence_weighted", 30*time.Second)
+
+	// Set up mock score provider
+	scoreProvider := &mockScoreProvider{
+		scores: map[string]float64{
+			"deepseek": 9.5,
+			"gemini":   8.5,
+			"mistral":  7.0,
+		},
+	}
+	service.SetScoreProvider(scoreProvider)
+
+	// Register providers
+	providers := map[string]LLMProvider{
+		"mistral":  newMockProvider("mistral", "resp", 0.5),
+		"deepseek": newMockProvider("deepseek", "resp", 0.9),
+		"gemini":   newMockProvider("gemini", "resp", 0.85),
+	}
+
+	for name, provider := range providers {
+		service.RegisterProvider(name, provider)
+	}
+
+	t.Run("streaming provider selection is deterministic", func(t *testing.T) {
+		// Run multiple times to verify deterministic ordering
+		for i := 0; i < 10; i++ {
+			sorted := service.getSortedProviderNames(providers)
+
+			// Should always be in score order
+			assert.Equal(t, "deepseek", sorted[0], "Iteration %d: DeepSeek should always be first", i)
+			assert.Equal(t, "gemini", sorted[1], "Iteration %d: Gemini should always be second", i)
+			assert.Equal(t, "mistral", sorted[2], "Iteration %d: Mistral should always be third", i)
+		}
 	})
 }

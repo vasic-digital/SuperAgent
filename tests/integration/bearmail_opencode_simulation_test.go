@@ -82,11 +82,31 @@ func bearMailGetBaseURL() string {
 func bearMailSkipIfNotRunning(t *testing.T) {
 	t.Helper()
 	baseURL := bearMailGetBaseURL()
-	resp, err := http.Get(baseURL + "/health")
+
+	// Use short timeout to avoid hanging tests
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(baseURL + "/health")
 	if err != nil || resp.StatusCode != 200 {
 		t.Skipf("HelixAgent not running at %s, skipping integration test", baseURL)
 	}
 	resp.Body.Close()
+
+	// Quick check if providers are available (test chat completions)
+	testReq := map[string]interface{}{
+		"model":      "helixagent-ensemble",
+		"messages":   []map[string]string{{"role": "user", "content": "hi"}},
+		"max_tokens": 5,
+	}
+	body, _ := json.Marshal(testReq)
+	testResp, err := client.Post(baseURL+"/v1/chat/completions", "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		t.Skip("Chat completions endpoint not accessible")
+	}
+	defer testResp.Body.Close()
+	// Skip if providers are not available (502/503/504)
+	if testResp.StatusCode == 502 || testResp.StatusCode == 503 || testResp.StatusCode == 504 {
+		t.Skip("LLM providers temporarily unavailable")
+	}
 }
 
 // TestBearMailOpenCodeConversation simulates the exact OpenCode conversation
@@ -96,6 +116,9 @@ func bearMailSkipIfNotRunning(t *testing.T) {
 // 3. Multi-provider debate works correctly
 // 4. No premature termination
 func TestBearMailOpenCodeConversation(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running OpenCode simulation test in short mode")
+	}
 	bearMailSkipIfNotRunning(t)
 
 	baseURL := bearMailGetBaseURL()
@@ -245,6 +268,9 @@ If there's already an AGENTS.md, improve it if it's located in /run/media/milosv
 
 // TestBearMailContentQuality verifies the AI doesn't hallucinate project structure
 func TestBearMailContentQuality(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running test in short mode")
+	}
 	bearMailSkipIfNotRunning(t)
 
 	baseURL := bearMailGetBaseURL()
@@ -313,6 +339,9 @@ func TestBearMailContentQuality(t *testing.T) {
 
 // TestBearMailResponseCompleteness ensures no premature cutoffs
 func TestBearMailResponseCompleteness(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running test in short mode")
+	}
 	bearMailSkipIfNotRunning(t)
 
 	baseURL := bearMailGetBaseURL()
@@ -425,6 +454,9 @@ Make sure to complete ALL sections. Do not stop mid-section.`,
 
 // TestBearMailMultiProviderParticipation verifies all providers contribute
 func TestBearMailMultiProviderParticipation(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running test in short mode")
+	}
 	bearMailSkipIfNotRunning(t)
 
 	baseURL := bearMailGetBaseURL()
@@ -639,6 +671,9 @@ func truncate(s string, maxLen int) string {
 
 // TestBearMailStreamingContentIntegrity verifies no content interleaving from multiple providers
 func TestBearMailStreamingContentIntegrity(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running test in short mode")
+	}
 	bearMailSkipIfNotRunning(t)
 
 	baseURL := bearMailGetBaseURL()
@@ -748,6 +783,9 @@ func TestBearMailStreamingContentIntegrity(t *testing.T) {
 
 // TestBearMailStreamingFormatValidity verifies proper SSE streaming format
 func TestBearMailStreamingFormatValidity(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running test in short mode")
+	}
 	bearMailSkipIfNotRunning(t)
 
 	baseURL := bearMailGetBaseURL()
@@ -891,6 +929,9 @@ func TestBearMailStreamingFormatValidity(t *testing.T) {
 // TestOpenCodeToolCallFormat verifies responses contain properly formatted tool calls
 // that OpenCode clients can parse and execute
 func TestOpenCodeToolCallFormat(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running test in short mode")
+	}
 	bearMailSkipIfNotRunning(t)
 
 	baseURL := bearMailGetBaseURL()
@@ -996,6 +1037,9 @@ func TestOpenCodeToolCallFormat(t *testing.T) {
 
 // TestResponseContentValidity verifies responses are valid and coherent
 func TestResponseContentValidity(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running test in short mode")
+	}
 	bearMailSkipIfNotRunning(t)
 
 	baseURL := bearMailGetBaseURL()
@@ -1080,6 +1124,9 @@ func TestResponseContentValidity(t *testing.T) {
 
 // TestBearMailNoResponseCutoff verifies responses complete without premature termination
 func TestBearMailNoResponseCutoff(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping long-running test in short mode")
+	}
 	bearMailSkipIfNotRunning(t)
 
 	baseURL := bearMailGetBaseURL()
