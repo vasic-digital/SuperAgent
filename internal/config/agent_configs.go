@@ -32,15 +32,18 @@ type AgentConfig struct {
 // OpenCodeConfig represents configuration for OpenCode
 // Schema: https://opencode.ai/config.json
 type OpenCodeConfig struct {
-	Schema   string                    `json:"$schema,omitempty"`
+	Schema   string                      `json:"$schema,omitempty"`
 	Provider map[string]OpenCodeProvider `json:"provider"`
-	MCP      map[string]OpenCodeMCP    `json:"mcp,omitempty"`
+	Agent    map[string]OpenCodeAgent    `json:"agent,omitempty"`
+	MCP      map[string]OpenCodeMCP      `json:"mcp,omitempty"`
 }
 
 // OpenCodeProvider represents a provider configuration in OpenCode
 type OpenCodeProvider struct {
-	NPM     string                 `json:"npm,omitempty"`
-	Options OpenCodeProviderOptions `json:"options"`
+	NPM     string                      `json:"npm,omitempty"`
+	Name    string                      `json:"name,omitempty"`
+	Options OpenCodeProviderOptions     `json:"options"`
+	Models  map[string]OpenCodeModel    `json:"models,omitempty"`
 }
 
 // OpenCodeProviderOptions represents provider options in OpenCode
@@ -48,6 +51,27 @@ type OpenCodeProviderOptions struct {
 	BaseURL string `json:"baseURL"`
 	APIKey  string `json:"apiKey,omitempty"`
 	Timeout int    `json:"timeout,omitempty"` // in milliseconds
+}
+
+// OpenCodeModel represents a model configuration in OpenCode provider
+type OpenCodeModel struct {
+	Name       string          `json:"name,omitempty"`
+	Attachment bool            `json:"attachment,omitempty"`
+	Reasoning  bool            `json:"reasoning,omitempty"`
+	ToolCall   bool            `json:"tool_call,omitempty"`
+	Limit      *OpenCodeLimit  `json:"limit,omitempty"`
+}
+
+// OpenCodeLimit represents token limits for a model
+type OpenCodeLimit struct {
+	Context int `json:"context"`
+	Output  int `json:"output"`
+}
+
+// OpenCodeAgent represents an agent configuration in OpenCode
+// Note: Agent section requires named sub-objects (e.g., "default"), NOT direct model property
+type OpenCodeAgent struct {
+	Model string `json:"model"`
 }
 
 // OpenCodeMCP represents MCP server configuration in OpenCode
@@ -162,12 +186,31 @@ func (g *ConfigGenerator) GenerateOpenCodeConfig() (*OpenCodeConfig, error) {
 		Schema: "https://opencode.ai/config.json",
 		Provider: map[string]OpenCodeProvider{
 			"helixagent": {
-				NPM: "@ai-sdk/openai-compatible",
+				NPM:  "@ai-sdk/openai-compatible",
+				Name: "HelixAgent AI Debate Ensemble",
 				Options: OpenCodeProviderOptions{
 					BaseURL: g.baseURL,
 					APIKey:  g.apiKey,
 					Timeout: g.timeout * 1000, // Convert to milliseconds
 				},
+				Models: map[string]OpenCodeModel{
+					g.model: {
+						Name:       "HelixAgent Debate Ensemble",
+						Attachment: true,
+						Reasoning:  true,
+						ToolCall:   true,
+						Limit: &OpenCodeLimit{
+							Context: 128000,
+							Output:  g.maxTokens,
+						},
+					},
+				},
+			},
+		},
+		// Agent section requires named sub-objects like "default", NOT direct model property
+		Agent: map[string]OpenCodeAgent{
+			"default": {
+				Model: fmt.Sprintf("helixagent/%s", g.model),
 			},
 		},
 	}
@@ -309,6 +352,30 @@ func (v *ConfigValidator) ValidateOpenCodeConfig(config *OpenCodeConfig) *Valida
 		// Check for recommended fields
 		if provider.Options.Timeout == 0 {
 			result.addWarning(fmt.Sprintf("provider '%s': timeout not set, using default", name))
+		}
+
+		// Validate models if present
+		for modelName, model := range provider.Models {
+			if model.Limit != nil {
+				if model.Limit.Context <= 0 {
+					result.addWarning(fmt.Sprintf("provider '%s' model '%s': context limit should be positive", name, modelName))
+				}
+				if model.Limit.Output <= 0 {
+					result.addWarning(fmt.Sprintf("provider '%s' model '%s': output limit should be positive", name, modelName))
+				}
+			}
+		}
+	}
+
+	// Validate Agent section - must use named sub-objects like "default"
+	for agentName, agent := range config.Agent {
+		if agent.Model == "" {
+			result.addError(fmt.Sprintf("agent '%s': model is required", agentName))
+		} else {
+			// Validate model format (should be provider/model)
+			if !strings.Contains(agent.Model, "/") {
+				result.addWarning(fmt.Sprintf("agent '%s': model should be in format 'provider/model'", agentName))
+			}
 		}
 	}
 

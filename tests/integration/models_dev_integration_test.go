@@ -20,7 +20,7 @@ func setupTestRouter(t *testing.T) (*gin.Engine, func()) {
 
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			Port:         "8080",
+			Port:         "7061",
 			Mode:         gin.TestMode,
 			EnableCORS:   false,
 			DebugEnabled: false,

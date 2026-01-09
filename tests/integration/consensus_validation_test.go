@@ -1,0 +1,295 @@
+package integration
+
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"net/http"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// ===============================================================================================
+// CRITICAL CONSENSUS VALIDATION TESTS
+// These tests MUST FAIL if the debate ensemble consensus section is empty
+// ===============================================================================================
+
+const helixAgentURL = "http://localhost:7061"
+
+// TestConsensusNotEmpty_EndToEnd tests that the consensus section in the debate ensemble
+// is NOT empty when making a real API request
+// THIS TEST WILL FAIL if the consensus generation is broken
+func TestConsensusNotEmpty_EndToEnd(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// Check if server is running
+	resp, err := http.Get(helixAgentURL + "/health")
+	if err != nil {
+		t.Skip("Skipping: HelixAgent server not running at " + helixAgentURL)
+	}
+	resp.Body.Close()
+
+	// Create a test request
+	requestBody := map[string]interface{}{
+		"model": "helixagent-debate",
+		"messages": []map[string]string{
+			{
+				"role":    "user",
+				"content": "What is 2+2?",
+			},
+		},
+		"stream": true,
+	}
+
+	jsonBody, err := json.Marshal(requestBody)
+	require.NoError(t, err)
+
+	// Make the request with a timeout
+	client := &http.Client{Timeout: 120 * time.Second}
+	req, err := http.NewRequest("POST", helixAgentURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err = client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Read the full response
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	fullResponse := string(body)
+
+	// CRITICAL ASSERTIONS: These MUST pass for the debate ensemble to be working correctly
+
+	// 1. Must have the debate ensemble header
+	assert.Contains(t, fullResponse, "HELIXAGENT AI DEBATE ENSEMBLE",
+		"Response must contain debate ensemble header")
+
+	// 2. Must have the CONSENSUS section
+	assert.Contains(t, fullResponse, "CONSENSUS REACHED",
+		"Response must contain 'CONSENSUS REACHED' section")
+
+	// 3. Must have the footer
+	assert.Contains(t, fullResponse, "Powered by HelixAgent AI Debate Ensemble",
+		"Response must contain footer")
+
+	// 4. CRITICAL: There must be CONTENT between CONSENSUS and footer
+	// This is the main test that validates the consensus is not empty
+	consensusIndex := strings.Index(fullResponse, "CONSENSUS REACHED")
+	footerIndex := strings.Index(fullResponse, "Powered by HelixAgent AI Debate Ensemble")
+
+	if consensusIndex >= 0 && footerIndex >= 0 && footerIndex > consensusIndex {
+		consensusSection := fullResponse[consensusIndex:footerIndex]
+
+		// The consensus section must have substantial content (not just whitespace/formatting)
+		// Remove the header lines and check for actual content
+		lines := strings.Split(consensusSection, "\n")
+		contentLines := 0
+		for _, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			// Skip empty lines and formatting lines (═, ─, etc.)
+			if len(trimmed) > 5 && !strings.HasPrefix(trimmed, "═") && !strings.HasPrefix(trimmed, "─") &&
+				!strings.Contains(trimmed, "CONSENSUS") && !strings.Contains(trimmed, "synthesized") {
+				contentLines++
+			}
+		}
+
+		assert.Greater(t, contentLines, 0,
+			"CONSENSUS section must have actual content, not just headers. Got %d content lines in: %s",
+			contentLines, consensusSection)
+	} else {
+		t.Fatalf("Could not find CONSENSUS section or footer in response")
+	}
+
+	// 5. Must have all 5 debate positions
+	expectedPositions := []string{"THE ANALYST", "THE PROPOSER", "THE CRITIC", "THE SYNTHESIZER", "THE MEDIATOR"}
+	for _, pos := range expectedPositions {
+		assert.Contains(t, fullResponse, pos, "Response must contain position: %s", pos)
+	}
+
+	// 6. Each position must have a response (not "Unable to provide analysis")
+	for _, pos := range expectedPositions {
+		posIndex := strings.Index(fullResponse, pos)
+		if posIndex >= 0 {
+			// Get the section after this position
+			afterPos := fullResponse[posIndex:]
+			nextPosIndex := len(afterPos)
+
+			// Find the next position or section
+			for _, nextPos := range []string{"THE ANALYST", "THE PROPOSER", "THE CRITIC", "THE SYNTHESIZER", "THE MEDIATOR", "CONSENSUS"} {
+				if nextPos == pos {
+					continue
+				}
+				idx := strings.Index(afterPos[len(pos):], nextPos)
+				if idx >= 0 && idx+len(pos) < nextPosIndex {
+					nextPosIndex = idx + len(pos)
+				}
+			}
+
+			positionSection := afterPos[:nextPosIndex]
+
+			// Check this position doesn't have the error message
+			assert.NotContains(t, positionSection, "Unable to provide analysis",
+				"Position %s should have real content, not error message", pos)
+		}
+	}
+}
+
+// TestConsensusHasSubstantiveContent validates that the consensus is not just filler text
+func TestConsensusHasSubstantiveContent(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// Check if server is running
+	resp, err := http.Get(helixAgentURL + "/health")
+	if err != nil {
+		t.Skip("Skipping: HelixAgent server not running at " + helixAgentURL)
+	}
+	resp.Body.Close()
+
+	// Create a test request with a specific question
+	requestBody := map[string]interface{}{
+		"model": "helixagent-debate",
+		"messages": []map[string]string{
+			{
+				"role":    "user",
+				"content": "What are the benefits of using Go for backend development?",
+			},
+		},
+		"stream": true,
+	}
+
+	jsonBody, err := json.Marshal(requestBody)
+	require.NoError(t, err)
+
+	client := &http.Client{Timeout: 120 * time.Second}
+	req, err := http.NewRequest("POST", helixAgentURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err = client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	fullResponse := string(body)
+
+	// Extract the consensus section content
+	consensusIndex := strings.Index(fullResponse, "CONSENSUS REACHED")
+	footerIndex := strings.Index(fullResponse, "Powered by HelixAgent AI Debate Ensemble")
+
+	require.True(t, consensusIndex >= 0, "Must have CONSENSUS section")
+	require.True(t, footerIndex > consensusIndex, "Footer must come after CONSENSUS")
+
+	consensusSection := fullResponse[consensusIndex:footerIndex]
+
+	// The consensus must reference the actual topic
+	// For a question about Go, the consensus should mention relevant concepts
+	relevantTerms := []string{"Go", "backend", "development", "concurrency", "performance", "goroutines", "compile", "type", "simple"}
+	foundRelevant := 0
+	for _, term := range relevantTerms {
+		if strings.Contains(strings.ToLower(consensusSection), strings.ToLower(term)) {
+			foundRelevant++
+		}
+	}
+
+	assert.Greater(t, foundRelevant, 2,
+		"Consensus should reference at least 3 relevant terms from the question. Found %d. Consensus: %s",
+		foundRelevant, consensusSection)
+
+	// Consensus should not be a generic fallback message
+	genericMessages := []string{
+		"could not be reached",
+		"consensus was not achieved",
+		"Unable to provide",
+		"error occurred",
+	}
+	for _, msg := range genericMessages {
+		assert.NotContains(t, consensusSection, msg,
+			"Consensus should not contain generic error/fallback message: %s", msg)
+	}
+}
+
+// TestAllDebatePositionsHaveRealResponses validates each position has actual LLM responses
+func TestAllDebatePositionsHaveRealResponses(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// Check if server is running
+	resp, err := http.Get(helixAgentURL + "/health")
+	if err != nil {
+		t.Skip("Skipping: HelixAgent server not running at " + helixAgentURL)
+	}
+	resp.Body.Close()
+
+	requestBody := map[string]interface{}{
+		"model": "helixagent-debate",
+		"messages": []map[string]string{
+			{
+				"role":    "user",
+				"content": "Explain the concept of polymorphism in object-oriented programming.",
+			},
+		},
+		"stream": true,
+	}
+
+	jsonBody, err := json.Marshal(requestBody)
+	require.NoError(t, err)
+
+	client := &http.Client{Timeout: 120 * time.Second}
+	req, err := http.NewRequest("POST", helixAgentURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err = client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	fullResponse := string(body)
+
+	// All 5 positions must be present
+	positions := []string{"THE ANALYST", "THE PROPOSER", "THE CRITIC", "THE SYNTHESIZER", "THE MEDIATOR"}
+	for _, position := range positions {
+		assert.Contains(t, fullResponse, position,
+			"Response must contain position: %s", position)
+	}
+
+	// The response must NOT contain the error fallback message
+	assert.NotContains(t, fullResponse, "Unable to provide analysis",
+		"Response should not contain error fallback messages")
+
+	// The response must contain the query term (polymorphism) somewhere in the debate
+	assert.Contains(t, strings.ToLower(fullResponse), "polymorphism",
+		"Response should reference the query term 'polymorphism'")
+
+	// The consensus section must exist and have content
+	assert.Contains(t, fullResponse, "CONSENSUS REACHED",
+		"Response must have CONSENSUS section")
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}

@@ -473,6 +473,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			logger.WithError(err).Warn("Failed to initialize debate team, some positions may be unfilled")
 		}
 
+		// Set the debate team config on the unified handler for dialogue display
+		unifiedHandler.SetDebateTeamConfig(debateTeamConfig)
+
 		debateService := services.NewDebateServiceWithDeps(logger, providerRegistry, cogneeService)
 		debateService.SetTeamConfig(debateTeamConfig) // Set the team configuration
 		debateHandler := handlers.NewDebateHandler(debateService, nil, logger)

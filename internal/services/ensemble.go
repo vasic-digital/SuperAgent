@@ -14,10 +14,11 @@ import (
 
 // EnsembleService manages multiple LLM providers and implements voting strategies
 type EnsembleService struct {
-	providers map[string]LLMProvider
-	strategy  string
-	timeout   time.Duration
-	mu        sync.RWMutex
+	providers     map[string]LLMProvider
+	strategy      string
+	timeout       time.Duration
+	mu            sync.RWMutex
+	scoreProvider LLMsVerifierScoreProvider // Optional: provides LLMsVerifier scores for provider ordering
 }
 
 // LLMProvider interface for all LLM providers
@@ -67,6 +68,13 @@ func (e *EnsembleService) RemoveProvider(name string) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	delete(e.providers, name)
+}
+
+// SetScoreProvider sets the LLMsVerifier score provider for dynamic provider ordering
+func (e *EnsembleService) SetScoreProvider(sp LLMsVerifierScoreProvider) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.scoreProvider = sp
 }
 
 func (e *EnsembleService) GetProviders() []string {
@@ -218,8 +226,13 @@ func (e *EnsembleService) RunEnsembleStream(ctx context.Context, req *models.LLM
 	providerNames := make([]string, 0, len(filteredProviders))
 	failedProviderNames := make([]string, 0)
 
-	// PHASE 1: Try all filtered providers first
-	for name, provider := range filteredProviders {
+	// DETERMINISTIC PROVIDER ORDERING: Sort providers by priority to ensure
+	// high-quality verified providers are tried first (fixes random map iteration)
+	sortedProviderNames := e.getSortedProviderNames(filteredProviders)
+
+	// PHASE 1: Try all filtered providers first (in sorted priority order)
+	for _, name := range sortedProviderNames {
+		provider := filteredProviders[name]
 		streamChan, err := provider.CompleteStream(timeoutCtx, req)
 		if err != nil {
 			// Categorize the error
@@ -237,8 +250,10 @@ func (e *EnsembleService) RunEnsembleStream(ctx context.Context, req *models.LLM
 
 	// PHASE 2: FALLBACK - If primary providers failed, try ALL remaining providers
 	if activeStreams == 0 && len(failedProviders) > 0 {
-		// All filtered providers failed - try ALL providers as fallback
-		for name, provider := range providers {
+		// All filtered providers failed - try ALL providers as fallback (in sorted order)
+		sortedFallbackNames := e.getSortedProviderNames(providers)
+		for _, name := range sortedFallbackNames {
+			provider := providers[name]
 			// Skip already-tried providers
 			alreadyTried := false
 			for _, failed := range failedProviderNames {
@@ -391,6 +406,69 @@ func (e *EnsembleService) filterProviders(providers map[string]LLMProvider, req 
 	}
 
 	return filtered
+}
+
+// getSortedProviderNames returns provider names sorted by LLMsVerifier scores for deterministic ordering.
+// This ensures streaming always tries high-quality verified providers first.
+// Priority order:
+// 1. Verified OAuth2 providers (claude-oauth, qwen-oauth) - sorted by LLMsVerifier score (highest first)
+// 2. All other providers - sorted by LLMsVerifier score (highest first)
+// 3. Providers without scores - alphabetically sorted
+func (e *EnsembleService) getSortedProviderNames(providers map[string]LLMProvider) []string {
+	names := make([]string, 0, len(providers))
+	for name := range providers {
+		names = append(names, name)
+	}
+
+	// Get provider scores from LLMsVerifier
+	providerScores := make(map[string]float64)
+	if e.scoreProvider != nil {
+		for _, name := range names {
+			// Try to get score by provider name
+			if score, ok := e.scoreProvider.GetProviderScore(name); ok {
+				providerScores[name] = score
+			} else {
+				// Try base provider name (e.g., "claude" for "claude-oauth")
+				baseName := strings.TrimSuffix(name, "-oauth")
+				if score, ok := e.scoreProvider.GetProviderScore(baseName); ok {
+					providerScores[name] = score
+				}
+			}
+		}
+	}
+
+	// Helper to check if provider is OAuth2
+	isOAuth := func(name string) bool {
+		return strings.HasSuffix(name, "-oauth")
+	}
+
+	// Sort providers:
+	// 1. OAuth2 providers first (by score, highest first)
+	// 2. Non-OAuth providers second (by score, highest first)
+	// 3. Within same category: by score descending, then alphabetically
+	sort.Slice(names, func(i, j int) bool {
+		oauthI := isOAuth(names[i])
+		oauthJ := isOAuth(names[j])
+
+		// OAuth2 providers come first
+		if oauthI != oauthJ {
+			return oauthI // OAuth providers have priority
+		}
+
+		// Get scores (0 if not found)
+		scoreI := providerScores[names[i]]
+		scoreJ := providerScores[names[j]]
+
+		// Sort by score (highest first)
+		if scoreI != scoreJ {
+			return scoreI > scoreJ
+		}
+
+		// Same score - sort alphabetically for deterministic ordering
+		return names[i] < names[j]
+	})
+
+	return names
 }
 
 func (e *EnsembleService) vote(responses []*models.LLMResponse, req *models.LLMRequest) (*models.LLMResponse, map[string]float64, error) {

@@ -66,10 +66,12 @@ if [[ -z "$CHALLENGE_CATEGORY" ]]; then
             CHALLENGE_CATEGORY="integration" ;;
         openai_compatibility|grpc_api)
             CHALLENGE_CATEGORY="api" ;;
-        opencode)
+        opencode|oauth_credentials)
             CHALLENGE_CATEGORY="validation" ;;
         main)
             CHALLENGE_CATEGORY="master" ;;
+        protocol_challenge|curl_api_challenge|cli_agents_challenge|content_generation_challenge)
+            CHALLENGE_CATEGORY="standalone" ;;
         *) CHALLENGE_CATEGORY="core" ;;
     esac
 fi
@@ -100,7 +102,7 @@ run_api_test() {
     local expected_status="${4:-200}"
     local description="$5"
 
-    local port="${HELIXAGENT_PORT:-8080}"
+    local port="${HELIXAGENT_PORT:-7061}"
     local url="http://localhost:$port$endpoint"
     local response_file="$OUTPUT_DIR/logs/response_$(date +%s%N).json"
 
@@ -138,7 +140,7 @@ run_optional_api_test() {
     local expected_status="${4:-200}"
     local description="$5"
 
-    local port="${HELIXAGENT_PORT:-8080}"
+    local port="${HELIXAGENT_PORT:-7061}"
     local url="http://localhost:$port$endpoint"
     local response_file="$OUTPUT_DIR/logs/response_$(date +%s%N).json"
 
@@ -209,11 +211,37 @@ run_challenge_tests() {
         master)
             run_master_tests
             ;;
+        standalone)
+            run_standalone_tests
+            ;;
         *)
             log_warning "Unknown category: $CHALLENGE_CATEGORY - running basic tests"
             run_basic_tests
             ;;
     esac
+}
+
+# Standalone tests (delegate to dedicated challenge scripts)
+run_standalone_tests() {
+    local script_name="${CHALLENGE_ID}.sh"
+    local script_path="$SCRIPT_DIR/$script_name"
+
+    if [[ -x "$script_path" ]]; then
+        log_info "Running standalone challenge: $script_path"
+        "$script_path"
+        local exit_code=$?
+        if [[ $exit_code -eq 0 ]]; then
+            ASSERTIONS_PASSED=$((ASSERTIONS_PASSED + 1))
+            record_assertion "$CHALLENGE_ID" "passed" "true" "$CHALLENGE_ID challenge passed"
+        else
+            ASSERTIONS_FAILED=$((ASSERTIONS_FAILED + 1))
+            record_assertion "$CHALLENGE_ID" "failed" "false" "$CHALLENGE_ID challenge failed"
+        fi
+    else
+        log_error "Challenge script not found: $script_path"
+        ASSERTIONS_FAILED=$((ASSERTIONS_FAILED + 1))
+        record_assertion "$CHALLENGE_ID" "not_found" "false" "Challenge script not found"
+    fi
 }
 
 # Infrastructure tests
@@ -386,7 +414,7 @@ run_security_tests() {
             fi
             # Test unauthorized access if API available
             if [[ "$HELIXAGENT_AVAILABLE" == "true" ]]; then
-                local port="${HELIXAGENT_PORT:-8080}"
+                local port="${HELIXAGENT_PORT:-7061}"
                 local http_code=$(curl -s -w "%{http_code}" -o /dev/null \
                     "http://localhost:$port/v1/chat/completions" \
                     -X POST -H "Content-Type: application/json" \
@@ -736,7 +764,7 @@ run_basic_tests() {
 
 # Auto-start HelixAgent if binary exists and not running
 auto_start_helixagent() {
-    local port="${HELIXAGENT_PORT:-8080}"
+    local port="${HELIXAGENT_PORT:-7061}"
 
     # Check if already running
     if curl -s "http://localhost:$port/health" > /dev/null 2>&1; then
@@ -812,7 +840,7 @@ main() {
     log_info "=========================================="
 
     # Check if HelixAgent is running, auto-start if needed
-    local port="${HELIXAGENT_PORT:-8080}"
+    local port="${HELIXAGENT_PORT:-7061}"
     HELIXAGENT_AVAILABLE=false
 
     if curl -s "http://localhost:$port/health" > /dev/null 2>&1; then

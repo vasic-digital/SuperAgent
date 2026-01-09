@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -32,7 +33,8 @@ type ProviderRegistry struct {
 	ensemble         *EnsembleService
 	requestService   *RequestService
 	memory           *MemoryService
-	discovery        *ProviderDiscovery // Auto-discovery service for environment-based provider detection
+	discovery        *ProviderDiscovery          // Auto-discovery service for environment-based provider detection
+	scoreAdapter     *LLMsVerifierScoreAdapter   // LLMsVerifier score adapter for dynamic provider ordering
 	mu               sync.RWMutex
 	drainTimeout     time.Duration // Timeout for graceful shutdown request draining
 	autoDiscovery    bool          // Whether auto-discovery is enabled
@@ -278,6 +280,35 @@ func (r *ProviderRegistry) initAutoDiscovery(logger *logrus.Logger) {
 		"registered": newProviders,
 		"skipped":    len(discovered) - newProviders,
 	}).Info("Provider auto-discovery completed")
+
+	// Initialize LLMsVerifier score adapter for dynamic provider ordering
+	// This allows the ensemble to prioritize providers by their LLMsVerifier scores
+	r.initScoreAdapter(logger)
+}
+
+// initScoreAdapter initializes the LLMsVerifier score adapter and connects it to the ensemble
+func (r *ProviderRegistry) initScoreAdapter(logger *logrus.Logger) {
+	// Create score adapter (will load scores from verification cache)
+	r.scoreAdapter = NewLLMsVerifierScoreAdapter(nil, nil, logger)
+
+	// Connect to ensemble service for dynamic provider ordering
+	if r.ensemble != nil && r.scoreAdapter != nil {
+		r.ensemble.SetScoreProvider(r.scoreAdapter)
+		logger.Info("LLMsVerifier score adapter connected to ensemble service for dynamic provider ordering")
+	}
+}
+
+// GetScoreAdapter returns the LLMsVerifier score adapter
+func (r *ProviderRegistry) GetScoreAdapter() *LLMsVerifierScoreAdapter {
+	return r.scoreAdapter
+}
+
+// UpdateProviderScore updates the LLMsVerifier score for a provider
+// This should be called after provider verification
+func (r *ProviderRegistry) UpdateProviderScore(provider, modelID string, score float64) {
+	if r.scoreAdapter != nil {
+		r.scoreAdapter.UpdateScore(provider, modelID, score)
+	}
 }
 
 // GetDiscovery returns the provider discovery service
@@ -567,6 +598,48 @@ func (r *ProviderRegistry) ListProviders() []string {
 		names = append(names, name)
 	}
 	return names
+}
+
+// ListProvidersOrderedByScore returns providers ordered by their LLMsVerifier scores (highest first)
+// CRITICAL: This enables dynamic provider selection based on real verification results
+// Providers without scores are placed at the end with a default score of 5.0
+func (r *ProviderRegistry) ListProvidersOrderedByScore() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	type providerScore struct {
+		name  string
+		score float64
+	}
+
+	// Collect all providers with their scores
+	var scored []providerScore
+	for name := range r.providers {
+		score := 5.0 // Default score for unverified providers
+		if r.scoreAdapter != nil {
+			if s, found := r.scoreAdapter.GetProviderScore(name); found {
+				score = s
+			}
+		}
+		// Also check health - verified healthy providers get a bonus
+		if health, exists := r.providerHealth[name]; exists && health.Verified && health.Status == ProviderStatusHealthy {
+			score += 0.5 // Small bonus for verified healthy providers
+		}
+		scored = append(scored, providerScore{name: name, score: score})
+	}
+
+	// Sort by score descending (highest first)
+	sort.Slice(scored, func(i, j int) bool {
+		return scored[i].score > scored[j].score
+	})
+
+	// Extract names in sorted order
+	result := make([]string, len(scored))
+	for i, ps := range scored {
+		result[i] = ps.name
+	}
+
+	return result
 }
 
 func (r *ProviderRegistry) GetEnsembleService() *EnsembleService {
@@ -1254,4 +1327,30 @@ func getFirstModel(models []ModelConfig) string {
 		return models[0].ID
 	}
 	return ""
+}
+
+// GetKnownProviderTypes returns provider types that have implementations in the codebase
+// DYNAMIC: This reads from providerMappings in provider_discovery.go instead of hardcoding
+// This ensures new provider implementations are automatically recognized
+func (r *ProviderRegistry) GetKnownProviderTypes() []string {
+	seen := make(map[string]bool)
+	types := make([]string, 0)
+
+	// Get types from provider mappings (these are the implementations we have)
+	for _, mapping := range providerMappings {
+		if mapping.ProviderType != "" && !seen[mapping.ProviderType] {
+			seen[mapping.ProviderType] = true
+			types = append(types, mapping.ProviderType)
+		}
+	}
+
+	// Also include types from currently configured providers
+	for _, cfg := range r.config.Providers {
+		if cfg.Type != "" && !seen[cfg.Type] {
+			seen[cfg.Type] = true
+			types = append(types, cfg.Type)
+		}
+	}
+
+	return types
 }

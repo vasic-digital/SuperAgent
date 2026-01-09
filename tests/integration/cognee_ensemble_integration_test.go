@@ -229,6 +229,9 @@ func TestAllEnsembleProvidersHaveCogneeCapabilities(t *testing.T) {
 
 // TestCogneeLiveIntegration tests Cognee integration with live server
 func TestCogneeLiveIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping live integration test in short mode")
+	}
 	serverURL := os.Getenv("HELIXAGENT_TEST_URL")
 	if serverURL == "" {
 		serverURL = "http://localhost:7061"

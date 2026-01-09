@@ -94,6 +94,23 @@ func (df *DialogueFormatter) RegisterCharacter(member *DebateTeamMember) *Dialog
 	return char
 }
 
+// GetCharacter returns the character for a given position
+func (df *DialogueFormatter) GetCharacter(position DebateTeamPosition) *DialogueCharacter {
+	if df.characters == nil {
+		return nil
+	}
+	return df.characters[position]
+}
+
+// GetAllCharacters returns all registered characters
+func (df *DialogueFormatter) GetAllCharacters() []*DialogueCharacter {
+	chars := make([]*DialogueCharacter, 0, len(df.characters))
+	for _, char := range df.characters {
+		chars = append(chars, char)
+	}
+	return chars
+}
+
 // getCharacterName returns a theatrical name for the role
 func (df *DialogueFormatter) getCharacterName(role DebateRole) string {
 	names := map[DebateRole]string{

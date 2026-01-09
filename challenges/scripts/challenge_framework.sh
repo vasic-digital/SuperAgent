@@ -146,7 +146,7 @@ get_verifier_binary() {
 
 # Start HelixAgent
 start_helixagent() {
-    local port="${1:-8080}"
+    local port="${1:-7061}"
     local config="${2:-$PROJECT_ROOT/configs/production.yaml}"
 
     local binary=$(get_helixagent_binary) || return 1
@@ -242,7 +242,7 @@ api_request() {
     local method="$1"
     local endpoint="$2"
     local data="$3"
-    local port="${HELIXAGENT_PORT:-8080}"
+    local port="${HELIXAGENT_PORT:-7061}"
 
     local url="http://localhost:$port$endpoint"
     local response_file="$OUTPUT_DIR/logs/api_response_$(date +%s%N).json"

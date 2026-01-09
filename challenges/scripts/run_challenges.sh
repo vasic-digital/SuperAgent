@@ -312,7 +312,8 @@ main() {
         health_monitoring|caching_layer|database_operations|plugin_system|\
         session_management|configuration_loading|optimization_semantic_cache|\
         optimization_structured_output|cognee_integration|openai_compatibility|grpc_api|\
-        opencode|oauth_credentials)
+        opencode|oauth_credentials|\
+        protocol_challenge|curl_api_challenge|cli_agents_challenge|content_generation_challenge)
             ;;
         *)
             print_error "Unknown challenge: $CHALLENGE_NAME"

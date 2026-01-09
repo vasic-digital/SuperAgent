@@ -140,7 +140,7 @@ func NewTestConfig() *config.Config {
 	return &config.Config{
 		Server: config.ServerConfig{
 			Host:      "localhost",
-			Port:      "8080",
+			Port:      "7061",
 			JWTSecret: "test-secret-key-for-testing-purposes-only-1234567890",
 		},
 		Database: config.DatabaseConfig{

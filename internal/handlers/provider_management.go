@@ -64,8 +64,9 @@ func (h *ProviderManagementHandler) AddProvider(c *gin.Context) {
 		return
 	}
 
-	// Validate provider type
-	validTypes := []string{"deepseek", "claude", "gemini", "qwen", "zai", "ollama", "openrouter"}
+	// Validate provider type - DYNAMIC: get valid types from provider registry/discovery
+	// This ensures new provider types are automatically supported
+	validTypes := h.getValidProviderTypes()
 	isValidType := false
 	for _, t := range validTypes {
 		if req.Type == t {
@@ -77,6 +78,7 @@ func (h *ProviderManagementHandler) AddProvider(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":       "invalid provider type",
 			"valid_types": validTypes,
+			"hint":        "Provider types are dynamically discovered from environment variables and registered providers",
 		})
 		return
 	}
@@ -654,4 +656,37 @@ func (h *ProviderManagementHandler) ReDiscoverProviders(c *gin.Context) {
 		"newly_registered": newlyRegistered,
 		"total_providers":  len(h.providerRegistry.ListProviders()),
 	})
+}
+
+// getValidProviderTypes returns dynamically discovered provider types
+// DYNAMIC: No hardcoded list - types come from:
+// 1. Provider mappings in discovery (from environment scan)
+// 2. Known provider implementations from registry
+func (h *ProviderManagementHandler) getValidProviderTypes() []string {
+	seen := make(map[string]bool)
+	types := make([]string, 0)
+
+	// Get types from discovery (provider mappings scanned from environment)
+	discovery := h.providerRegistry.GetDiscovery()
+	if discovery != nil {
+		allProviders := discovery.GetAllProviders()
+		for _, p := range allProviders {
+			if p.Type != "" && !seen[p.Type] {
+				seen[p.Type] = true
+				types = append(types, p.Type)
+			}
+		}
+	}
+
+	// Add known implementation types from the registry
+	// These are types we have implementations for in the codebase
+	knownTypes := h.providerRegistry.GetKnownProviderTypes()
+	for _, t := range knownTypes {
+		if !seen[t] {
+			seen[t] = true
+			types = append(types, t)
+		}
+	}
+
+	return types
 }

@@ -590,6 +590,24 @@ func TestCogneeLLMIntegration(t *testing.T) {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 	}
 
+	// Quick health check with short timeout
+	healthClient := &http.Client{Timeout: 5 * time.Second}
+	healthResp, err := healthClient.Get(helixagentBaseURL + "/health")
+	if err != nil {
+		t.Skip("HelixAgent not accessible - skipping LLM integration test")
+	}
+	healthResp.Body.Close()
+
+	// Check Cognee status with short timeout
+	cogneeHealthResp, err := healthClient.Get(helixagentBaseURL + "/v1/cognee/health")
+	if err != nil || cogneeHealthResp.StatusCode != 200 {
+		if cogneeHealthResp != nil {
+			cogneeHealthResp.Body.Close()
+		}
+		t.Skip("Cognee service not available - skipping LLM integration test")
+	}
+	cogneeHealthResp.Body.Close()
+
 	client := &http.Client{Timeout: 120 * time.Second}
 
 	t.Run("ChatCompletionWithCogneeEnhancement", func(t *testing.T) {

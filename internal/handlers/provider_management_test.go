@@ -88,7 +88,8 @@ func TestProviderManagementHandler_AddProvider_Validation(t *testing.T) {
 	})
 
 	t.Run("accepts valid provider types", func(t *testing.T) {
-		validTypes := []string{"deepseek", "claude", "gemini", "qwen", "zai", "ollama", "openrouter"}
+		// DYNAMIC: Test provider types that exist in providerMappings
+		validTypes := []string{"deepseek", "claude", "gemini", "qwen", "ollama", "openrouter", "mistral"}
 
 		for _, providerType := range validTypes {
 			t.Run(providerType, func(t *testing.T) {
@@ -578,11 +579,14 @@ func TestProviderManagementHandler_DeleteProvider_ForceParamVariations(t *testin
 }
 
 // TestProviderManagementHandler_AddProvider_AllProviderTypes tests adding all valid provider types
+// DYNAMIC: Provider types are now discovered from providerMappings, not hardcoded
 func TestProviderManagementHandler_AddProvider_AllProviderTypes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
 
-	providerTypes := []string{"deepseek", "claude", "gemini", "qwen", "zai", "ollama", "openrouter"}
+	// DYNAMIC: Test provider types that exist in providerMappings
+	// This list should match what's available in provider_discovery.go
+	providerTypes := []string{"deepseek", "claude", "gemini", "qwen", "ollama", "openrouter", "mistral"}
 
 	for i, providerType := range providerTypes {
 		t.Run(providerType, func(t *testing.T) {

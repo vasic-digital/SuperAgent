@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -162,16 +163,20 @@ func (a *LLMsVerifierScoreAdapter) RefreshScores(ctx context.Context) error {
 }
 
 // refreshFromScoringService uses the scoring service to get updated scores
+// DYNAMIC: Models are discovered from verification results and scoring service, NOT hardcoded
 func (a *LLMsVerifierScoreAdapter) refreshFromScoringService(ctx context.Context) {
-	// Get known models from scoring service
-	knownModels := []string{
-		"gemini-pro", "gemini-1.5-flash", "gemini-2.0-flash",
-		"claude-3-5-sonnet-20241022", "claude-3-opus-20240229",
-		"gpt-4", "gpt-4o",
-		"deepseek-chat", "deepseek-coder",
-		"mistral-large-latest",
-		"qwen-turbo",
-		"llama3.2", "llama2",
+	// DYNAMIC MODEL DISCOVERY: Get models from verification results, not a hardcoded list
+	// This ensures the system adapts to whatever models are actually being verified
+	knownModels := a.getKnownModelsFromVerifications()
+
+	// If no verified models yet, try to get from scoring service's available models
+	if len(knownModels) == 0 && a.scoringService != nil {
+		knownModels = a.scoringService.GetAvailableModels()
+	}
+
+	if len(knownModels) == 0 {
+		a.log.Debug("No models found for score refresh - waiting for verification results")
+		return
 	}
 
 	a.mu.Lock()
@@ -186,8 +191,8 @@ func (a *LLMsVerifierScoreAdapter) refreshFromScoringService(ctx context.Context
 		if result != nil && result.OverallScore > 0 {
 			a.modelScores[modelID] = result.OverallScore
 
-			// Map model to provider
-			provider := mapModelToProvider(modelID)
+			// Map model to provider DYNAMICALLY
+			provider := inferProviderFromModel(modelID)
 			if provider != "" {
 				if existingScore, ok := a.providerScores[provider]; ok {
 					if result.OverallScore > existingScore {
@@ -204,6 +209,30 @@ func (a *LLMsVerifierScoreAdapter) refreshFromScoringService(ctx context.Context
 		"provider_scores": len(a.providerScores),
 		"model_scores":    len(a.modelScores),
 	}).Debug("Refreshed scores from ScoringService")
+}
+
+// getKnownModelsFromVerifications extracts unique model IDs from verification results
+// DYNAMIC: No hardcoded list - models come from actual verification data
+func (a *LLMsVerifierScoreAdapter) getKnownModelsFromVerifications() []string {
+	if a.verificationSvc == nil {
+		return nil
+	}
+
+	ctx := context.Background()
+	verifications, err := a.verificationSvc.GetAllVerifications(ctx)
+	if err != nil {
+		return nil
+	}
+
+	seen := make(map[string]bool)
+	var models []string
+	for _, v := range verifications {
+		if v.ModelID != "" && !seen[v.ModelID] {
+			models = append(models, v.ModelID)
+			seen[v.ModelID] = true
+		}
+	}
+	return models
 }
 
 // UpdateScore updates the score for a specific model/provider after verification
@@ -259,35 +288,107 @@ func (a *LLMsVerifierScoreAdapter) GetBestProvider() (string, float64) {
 	return bestProvider, bestScore
 }
 
-// mapModelToProvider maps a model ID to its provider type
-func mapModelToProvider(modelID string) string {
-	modelProviderMap := map[string]string{
-		"gemini-pro":                   "gemini",
-		"gemini-1.5-flash":             "gemini",
-		"gemini-2.0-flash":             "gemini",
-		"gemini-2.0-flash-exp":         "gemini",
-		"claude-3-5-sonnet-20241022":   "claude",
-		"claude-3-opus-20240229":       "claude",
-		"claude-3-sonnet-20240229":     "claude",
-		"gpt-4":                        "openai",
-		"gpt-4o":                       "openai",
-		"gpt-4-turbo":                  "openai",
-		"deepseek-chat":                "deepseek",
-		"deepseek-coder":               "deepseek",
-		"mistral-large-latest":         "mistral",
-		"mistral-small-latest":         "mistral",
-		"codestral-latest":             "mistral",
-		"qwen-turbo":                   "qwen",
-		"qwen-plus":                    "qwen",
-		"llama3.2":                     "ollama",
-		"llama2":                       "ollama",
-		"llama-3.1-70b-versatile":      "groq",
-		"llama3.1-70b":                 "cerebras",
+// inferProviderFromModel dynamically infers provider type from model ID patterns
+// DYNAMIC: Uses pattern matching instead of hardcoded mappings
+// This ensures new models from any provider are automatically categorized correctly
+func inferProviderFromModel(modelID string) string {
+	modelLower := strings.ToLower(modelID)
+
+	// IMPORTANT: Check OpenRouter format FIRST (provider/model pattern)
+	// This handles models like "anthropic/claude-3", "meta-llama/llama-3.1-70b"
+	if strings.Contains(modelLower, "/") {
+		parts := strings.Split(modelLower, "/")
+		if len(parts) >= 2 {
+			providerPart := parts[0]
+			switch {
+			case providerPart == "anthropic":
+				return "claude"
+			case providerPart == "openai":
+				return "openai"
+			case providerPart == "google":
+				return "gemini"
+			case providerPart == "meta-llama" || providerPart == "meta":
+				return "openrouter" // Meta/Llama models via OpenRouter
+			case providerPart == "together" || providerPart == "togethercomputer":
+				return "together"
+			default:
+				return "openrouter" // Generic OpenRouter model
+			}
+		}
 	}
 
-	if provider, ok := modelProviderMap[modelID]; ok {
-		return provider
+	// Check provider-specific prefixes BEFORE generic model names
+	// This handles cases like "groq-llama" where provider prefix should take precedence
+	if strings.HasPrefix(modelLower, "groq-") || strings.HasPrefix(modelLower, "groq_") {
+		return "groq"
 	}
+	if strings.HasPrefix(modelLower, "cerebras-") || strings.HasPrefix(modelLower, "cerebras_") {
+		return "cerebras"
+	}
+	if strings.HasPrefix(modelLower, "together-") || strings.HasPrefix(modelLower, "together_") {
+		return "together"
+	}
+
+	// Pattern-based inference - matches model naming conventions
+	switch {
+	// Claude/Anthropic models
+	case strings.Contains(modelLower, "claude"):
+		return "claude"
+	case strings.Contains(modelLower, "anthropic"):
+		return "claude"
+
+	// OpenAI models
+	case strings.HasPrefix(modelLower, "gpt-"):
+		return "openai"
+	case strings.HasPrefix(modelLower, "o1"):
+		return "openai"
+	case strings.Contains(modelLower, "openai"):
+		return "openai"
+
+	// Google/Gemini models
+	case strings.Contains(modelLower, "gemini"):
+		return "gemini"
+	case strings.Contains(modelLower, "palm"):
+		return "gemini"
+	case strings.Contains(modelLower, "bard"):
+		return "gemini"
+
+	// DeepSeek models
+	case strings.Contains(modelLower, "deepseek"):
+		return "deepseek"
+
+	// Mistral models
+	case strings.Contains(modelLower, "mistral"):
+		return "mistral"
+	case strings.Contains(modelLower, "codestral"):
+		return "mistral"
+	case strings.Contains(modelLower, "mixtral"):
+		return "mistral"
+
+	// Qwen models
+	case strings.Contains(modelLower, "qwen"):
+		return "qwen"
+
+	// Groq-specific indicators (already checked prefix above)
+	case strings.Contains(modelLower, "groq"):
+		return "groq"
+
+	// Cerebras-specific indicators (already checked prefix above)
+	case strings.Contains(modelLower, "cerebras"):
+		return "cerebras"
+
+	// Llama models - check provider context if available
+	// NOTE: This is checked LAST because llama can be served by many providers
+	case strings.Contains(modelLower, "llama"):
+		// Llama can be served by multiple providers
+		// If hosted locally, it's usually ollama
+		// If via API, could be groq, cerebras, together, etc.
+		// Return empty to let the caller provide context
+		return ""
+	}
+
+	// Unable to determine provider - return empty string
+	// The caller should handle this case by using the model as-is
 	return ""
 }
 

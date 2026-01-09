@@ -103,7 +103,7 @@ build_helixagent() {
 
 # Check if HelixAgent is running
 check_helixagent() {
-    local port="${HELIXAGENT_PORT:-8080}"
+    local port="${HELIXAGENT_PORT:-7061}"
     local host="${HELIXAGENT_HOST:-localhost}"
 
     if curl -s "http://$host:$port/health" > /dev/null 2>&1; then
@@ -118,7 +118,7 @@ check_helixagent() {
 start_helixagent() {
     print_phase "Starting HelixAgent Server"
 
-    local port="${HELIXAGENT_PORT:-8080}"
+    local port="${HELIXAGENT_PORT:-7061}"
     local host="${HELIXAGENT_HOST:-localhost}"
 
     # Check if already running
@@ -263,6 +263,19 @@ CHALLENGES=(
 
     # Validation (depends on main challenge)
     "opencode"
+    "opencode_init"
+
+    # Protocol challenges (new)
+    "protocol_challenge"
+
+    # API challenges (new)
+    "curl_api_challenge"
+
+    # CLI agent challenges (new)
+    "cli_agents_challenge"
+
+    # Content generation challenges (new)
+    "content_generation_challenge"
 )
 
 # Parse options

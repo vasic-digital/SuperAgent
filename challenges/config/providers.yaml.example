@@ -148,7 +148,7 @@ debate_group:
 # API quality testing
 api_testing:
   # Base URL for SuperAgent API
-  superagent_api_url: "http://localhost:8080"
+  superagent_api_url: "http://localhost:7061"
 
   # API authentication
   api_key: "${SUPERAGENT_API_KEY}"

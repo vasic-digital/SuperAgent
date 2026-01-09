@@ -88,14 +88,14 @@ type ProviderMapping struct {
 // providerMappings defines all known API key to provider mappings
 var providerMappings = []ProviderMapping{
 	// Tier 1: Premium providers (direct API access)
-	{EnvVar: "ANTHROPIC_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com", DefaultModel: "claude-3-5-sonnet-20241022", Priority: 1},
-	{EnvVar: "CLAUDE_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com", DefaultModel: "claude-3-5-sonnet-20241022", Priority: 1},
+	{EnvVar: "ANTHROPIC_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-3-5-sonnet-20241022", Priority: 1},
+	{EnvVar: "CLAUDE_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-3-5-sonnet-20241022", Priority: 1},
 	{EnvVar: "OPENAI_API_KEY", ProviderType: "openai", ProviderName: "openai", BaseURL: "https://api.openai.com/v1", DefaultModel: "gpt-4o", Priority: 1},
 	{EnvVar: "GEMINI_API_KEY", ProviderType: "gemini", ProviderName: "gemini", BaseURL: "https://generativelanguage.googleapis.com/v1beta", DefaultModel: "gemini-pro", Priority: 2},
 	{EnvVar: "GOOGLE_API_KEY", ProviderType: "gemini", ProviderName: "gemini", BaseURL: "https://generativelanguage.googleapis.com/v1beta", DefaultModel: "gemini-pro", Priority: 2},
 
 	// Tier 2: High-quality specialized providers
-	{EnvVar: "DEEPSEEK_API_KEY", ProviderType: "deepseek", ProviderName: "deepseek", BaseURL: "https://api.deepseek.com", DefaultModel: "deepseek-chat", Priority: 3},
+	{EnvVar: "DEEPSEEK_API_KEY", ProviderType: "deepseek", ProviderName: "deepseek", BaseURL: "https://api.deepseek.com/v1/chat/completions", DefaultModel: "deepseek-chat", Priority: 3},
 	{EnvVar: "MISTRAL_API_KEY", ProviderType: "mistral", ProviderName: "mistral", BaseURL: "https://api.mistral.ai/v1", DefaultModel: "mistral-large-latest", Priority: 3},
 	{EnvVar: "CODESTRAL_API_KEY", ProviderType: "mistral", ProviderName: "codestral", BaseURL: "https://codestral.mistral.ai/v1", DefaultModel: "codestral-latest", Priority: 3},
 	{EnvVar: "QWEN_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-turbo", Priority: 4},
@@ -262,7 +262,8 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 			}).Info("Discovered Claude provider from OAuth credentials (Claude Code CLI)")
 
 			// Create Claude provider with OAuth token (reads token internally)
-			provider, err := claude.NewClaudeProviderWithOAuth("https://api.anthropic.com", "claude-sonnet-4-20250514")
+			// Use full API URL for Claude Messages endpoint
+			provider, err := claude.NewClaudeProviderWithOAuth("https://api.anthropic.com/v1/messages", "claude-sonnet-4-20250514")
 			if err != nil {
 				pd.log.WithError(err).Warn("Failed to create Claude OAuth provider")
 			} else {
@@ -275,7 +276,7 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 					Type:         "claude",
 					APIKeyEnvVar: "OAUTH:~/.claude/.credentials.json",
 					APIKey:       accessToken, // Store for internal use
-					BaseURL:      "https://api.anthropic.com",
+					BaseURL:      "https://api.anthropic.com/v1/messages",
 					DefaultModel: "claude-sonnet-4-20250514",
 					Provider:     provider,
 					Status:       ProviderStatusUnknown,
@@ -306,7 +307,8 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 			}).Info("Discovered Qwen provider from OAuth credentials (Qwen Code CLI)")
 
 			// Create Qwen provider with OAuth token (reads token internally)
-			provider, err := qwen.NewQwenProviderWithOAuth("https://dashscope.aliyuncs.com/api/v1", "qwen-turbo")
+			// OAuth uses compatible-mode endpoint which differs from regular API
+			provider, err := qwen.NewQwenProviderWithOAuth("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-turbo")
 			if err != nil {
 				pd.log.WithError(err).Warn("Failed to create Qwen OAuth provider")
 			} else {
@@ -319,7 +321,7 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 					Type:         "qwen",
 					APIKeyEnvVar: "OAUTH:~/.qwen/oauth_creds.json",
 					APIKey:       accessToken, // Store for internal use
-					BaseURL:      "https://dashscope.aliyuncs.com/api/v1",
+					BaseURL:      "https://dashscope.aliyuncs.com/compatible-mode/v1",
 					DefaultModel: "qwen-turbo",
 					Provider:     provider,
 					Status:       ProviderStatusUnknown,
@@ -629,52 +631,19 @@ func (pd *ProviderDiscovery) getDynamicBaseScore(provider *DiscoveredProvider) f
 }
 
 // getBaseScoreForProvider returns a base quality score for a provider type
+// DYNAMIC SCORING: This function is a FALLBACK ONLY when LLMsVerifier scores are unavailable.
+// Scores should come from real LLMsVerifier verification results, not hardcoded values.
+// The default score of 5.0 ensures all providers start equal and are differentiated by actual performance.
 func getBaseScoreForProvider(providerType string) float64 {
-	scores := map[string]float64{
-		// Tier 1: Top-tier providers
-		"claude":   9.5,
-		"openai":   9.5,
-		"gemini":   9.0,
-
-		// Tier 2: High-quality specialized
-		"deepseek": 8.5,
-		"mistral":  8.5,
-		"qwen":     8.0,
-
-		// Tier 3: Fast inference
-		"groq":     8.0,
-		"cerebras": 7.5,
-		"sambanova": 7.5,
-
-		// Tier 4: Alternative providers
-		"fireworks":  7.5,
-		"together":   7.5,
-		"hyperbolic": 7.0,
-
-		// Tier 5: Specialized
-		"replicate":   7.0,
-		"siliconflow": 7.0,
-		"cloudflare":  6.5,
-		"nvidia":      7.0,
-
-		// Tier 6: Regional/others
-		"kimi":        6.5,
-		"huggingface": 6.0,
-		"novita":      6.0,
-		"upstage":     6.5,
-		"chutes":      6.0,
-
-		// Tier 7: Aggregators
-		"openrouter": 7.5,
-
-		// Tier 8: Self-hosted
-		"ollama": 5.0,
-	}
-
-	if score, ok := scores[providerType]; ok {
-		return score
-	}
-	return 5.0 // Default score for unknown providers
+	// CRITICAL: NO hardcoded provider scores - all providers get the same baseline
+	// The actual differentiation comes from:
+	// 1. LLMsVerifier real verification scores (primary source)
+	// 2. Response time bonuses during verification
+	// 3. Capability bonuses (streaming, function calling, etc.)
+	//
+	// This ensures the system is truly dynamic and doesn't favor any provider
+	// based on arbitrary hardcoded values.
+	return 5.0 // Neutral baseline - let real metrics differentiate providers
 }
 
 // GetBestProviders returns the top N verified providers sorted by score
