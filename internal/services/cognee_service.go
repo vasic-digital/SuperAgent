@@ -21,16 +21,18 @@ import (
 
 // CogneeService provides comprehensive Cognee integration for LLM enhancement
 type CogneeService struct {
-	baseURL      string
-	apiKey       string
-	authToken    string // JWT token for Cognee API authentication
-	client       *http.Client
-	logger       *logrus.Logger
-	config       *CogneeServiceConfig
-	mu           sync.RWMutex
-	isReady      bool
-	stats        *CogneeStats
-	feedbackLoop *FeedbackLoop
+	baseURL           string
+	apiKey            string
+	authToken         string // JWT token for Cognee API authentication
+	client            *http.Client
+	logger            *logrus.Logger
+	config            *CogneeServiceConfig
+	mu                sync.RWMutex
+	isReady           bool
+	stats             *CogneeStats
+	feedbackLoop      *FeedbackLoop
+	lastSearchWarning time.Time // Rate limit search warnings
+	lastStoreWarning  time.Time // Rate limit store warnings
 }
 
 // CogneeServiceConfig holds all configuration for the Cognee service
@@ -598,16 +600,14 @@ func (s *CogneeService) AddMemory(ctx context.Context, content, dataset, content
 		dataset = s.config.DefaultDataset
 	}
 
+	// Use memify endpoint with JSON content (add endpoint requires multipart/form-data)
 	reqBody := map[string]interface{}{
-		"content":      content,
-		"dataset_name": dataset,
-		"content_type": contentType,
-		"metadata":     metadata,
+		"data":        content,
+		"datasetName": dataset,
 	}
 
 	if s.config.TemporalAwareness {
-		reqBody["temporal_cognify"] = true
-		reqBody["timestamp"] = time.Now().UTC().Format(time.RFC3339)
+		reqBody["runInBackground"] = false
 	}
 
 	data, err := json.Marshal(reqBody)
@@ -615,7 +615,7 @@ func (s *CogneeService) AddMemory(ctx context.Context, content, dataset, content
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/v1/add", s.baseURL)
+	url := fmt.Sprintf("%s/api/v1/memify", s.baseURL)
 	resp, err := s.doRequest(ctx, "POST", url, data)
 	if err != nil {
 		s.stats.mu.Lock()
@@ -735,9 +735,22 @@ func (s *CogneeService) SearchMemory(ctx context.Context, query string, dataset 
 	wg.Wait()
 	close(errChan)
 
-	// Collect any errors
+	// Collect any errors (rate-limit warnings to once per 30 seconds to avoid spam)
+	var searchErrors []error
 	for err := range errChan {
-		s.logger.WithError(err).Warn("Search error occurred")
+		searchErrors = append(searchErrors, err)
+	}
+	if len(searchErrors) > 0 {
+		s.mu.Lock()
+		now := time.Now()
+		shouldLog := s.lastSearchWarning.IsZero() || now.Sub(s.lastSearchWarning) > 30*time.Second
+		if shouldLog {
+			s.lastSearchWarning = now
+			s.mu.Unlock()
+			s.logger.WithField("error_count", len(searchErrors)).Warn("Search errors occurred (rate-limited)")
+		} else {
+			s.mu.Unlock()
+		}
 	}
 
 	// Calculate totals
@@ -770,10 +783,10 @@ func (s *CogneeService) performSearch(ctx context.Context, query, dataset string
 	defer cancel()
 
 	reqBody := map[string]interface{}{
-		"query":       query,
-		"datasets":    []string{dataset},
-		"limit":       limit,
-		"search_type": searchType,
+		"query":      query,
+		"datasets":   []string{dataset},
+		"topK":       limit,
+		"searchType": searchType,
 	}
 
 	data, err := json.Marshal(reqBody)
@@ -882,7 +895,17 @@ func (s *CogneeService) ProcessResponse(ctx context.Context, req *models.LLMRequ
 
 	_, err := s.AddMemory(ctx, conversationContent, s.config.DefaultDataset, "conversation", metadata)
 	if err != nil {
-		s.logger.WithError(err).Warn("Failed to store response in memory")
+		// Rate limit this warning to once per 30 seconds
+		s.mu.Lock()
+		now := time.Now()
+		shouldLog := s.lastStoreWarning.IsZero() || now.Sub(s.lastStoreWarning) > 30*time.Second
+		if shouldLog {
+			s.lastStoreWarning = now
+			s.mu.Unlock()
+			s.logger.WithError(err).Warn("Failed to store response in memory (rate-limited)")
+		} else {
+			s.mu.Unlock()
+		}
 		return err
 	}
 
