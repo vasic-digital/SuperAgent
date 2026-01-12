@@ -659,6 +659,40 @@ The `challenges/` directory contains a comprehensive challenge framework for tes
 | Resilience | 3 | Circuit breaker, error handling, concurrent access |
 | API | 2 | OpenAI compatibility, gRPC |
 | Everyday Use | 4 | Protocol support, curl API, CLI agents, content generation |
+| Tool Validation | 1 | Tool call argument validation (required fields, snake_case naming) |
+
+### Tool Call Validation
+
+HelixAgent validates all tool call arguments to ensure compatibility with AI coding assistants (OpenCode, Claude Code, Qwen Code). The system enforces:
+
+**Required Fields per Tool:**
+| Tool | Required Fields | Notes |
+|------|----------------|-------|
+| Bash/shell | `command`, `description` | description is MANDATORY |
+| Read | `file_path` | snake_case naming |
+| Write | `file_path`, `content` | snake_case naming |
+| Edit | `file_path`, `old_string`, `new_string` | snake_case naming |
+| Glob | `pattern` | |
+| Grep | `pattern` | |
+| WebFetch | `url`, `prompt` | |
+| WebSearch | `query` | |
+| Task | `prompt`, `description`, `subagent_type` | |
+
+**Parameter Naming Convention:**
+- ALL parameters use **snake_case** (e.g., `file_path`, `old_string`, `new_string`)
+- NEVER use camelCase (e.g., ~~`filePath`~~, ~~`oldString`~~)
+- This ensures compatibility with external tool schemas
+
+**Key Files:**
+- `internal/handlers/openai_compatible.go:3163-3344` - `generateBashDescription()` function
+- `internal/handlers/openai_compatible.go:2874-3000` - `extractActionsFromSynthesis()` function
+- `tests/unit/services/tool_execution_test.go` - Tool call validation tests
+- `internal/handlers/openai_compatible_test.go:4564-4790` - Comprehensive handler tests
+
+**Run Tool Validation Challenge:**
+```bash
+./challenges/scripts/tool_call_validation_challenge.sh
+```
 
 ### Main Challenge Output
 

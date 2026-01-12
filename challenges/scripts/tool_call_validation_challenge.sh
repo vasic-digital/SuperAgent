@@ -78,6 +78,22 @@ else
     record_result "Bash tool description tests" "fail" "$(cat $RESULTS_DIR/results/bash_tool_tests.txt)"
 fi
 
+# Run the comprehensive tool validation tests
+echo -e "${BLUE}[RUN]${NC} Running all tool types required fields tests..."
+if go test -v -run "TestAllToolCallsHaveRequiredFields" ./internal/handlers/... > "$RESULTS_DIR/results/all_tools_tests.txt" 2>&1; then
+    record_result "All tool types required fields tests" "pass" ""
+else
+    record_result "All tool types required fields tests" "fail" "$(cat $RESULTS_DIR/results/all_tools_tests.txt)"
+fi
+
+# Run the parameter naming tests
+echo -e "${BLUE}[RUN]${NC} Running parameter naming convention tests..."
+if go test -v -run "TestToolCallParameterNaming" ./internal/handlers/... > "$RESULTS_DIR/results/parameter_naming_tests.txt" 2>&1; then
+    record_result "Parameter naming convention tests (snake_case)" "pass" ""
+else
+    record_result "Parameter naming convention tests (snake_case)" "fail" "$(cat $RESULTS_DIR/results/parameter_naming_tests.txt)"
+fi
+
 echo ""
 echo "----------------------------------------------------------------------"
 echo "Phase 2: Tool Call JSON Schema Validation"

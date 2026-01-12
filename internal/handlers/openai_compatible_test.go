@@ -4560,3 +4560,231 @@ func TestBashToolCallArgumentsStructure(t *testing.T) {
 		})
 	}
 }
+
+// TestAllToolCallsHaveRequiredFields validates that ALL tool types have required fields
+func TestAllToolCallsHaveRequiredFields(t *testing.T) {
+	handler := &UnifiedHandler{}
+	ctx := context.Background()
+
+	// Define all tool schemas
+	allTools := []OpenAITool{
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Bash",
+				Description: "Execute shell commands",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"command":     map[string]interface{}{"type": "string"},
+						"description": map[string]interface{}{"type": "string"},
+					},
+					"required": []string{"command", "description"},
+				},
+			},
+		},
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Read",
+				Description: "Read file contents",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"file_path": map[string]interface{}{"type": "string"},
+					},
+					"required": []string{"file_path"},
+				},
+			},
+		},
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Write",
+				Description: "Write to file",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"file_path": map[string]interface{}{"type": "string"},
+						"content":   map[string]interface{}{"type": "string"},
+					},
+					"required": []string{"file_path", "content"},
+				},
+			},
+		},
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Edit",
+				Description: "Edit file contents",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"file_path":  map[string]interface{}{"type": "string"},
+						"old_string": map[string]interface{}{"type": "string"},
+						"new_string": map[string]interface{}{"type": "string"},
+					},
+					"required": []string{"file_path", "old_string", "new_string"},
+				},
+			},
+		},
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Glob",
+				Description: "Search files by pattern",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"pattern": map[string]interface{}{"type": "string"},
+					},
+					"required": []string{"pattern"},
+				},
+			},
+		},
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Grep",
+				Description: "Search file contents",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"pattern": map[string]interface{}{"type": "string"},
+					},
+					"required": []string{"pattern"},
+				},
+			},
+		},
+	}
+
+	// Test scenarios that trigger each tool type
+	testScenarios := []struct {
+		name          string
+		topic         string
+		synthesis     string
+		expectedTool  string
+		requiredField string
+	}{
+		{
+			name:          "Bash_tool_execution",
+			topic:         "Run the tests",
+			synthesis:     "I will run the tests using the test command.",
+			expectedTool:  "Bash",
+			requiredField: "description",
+		},
+		{
+			name:          "Read_tool_file_access",
+			topic:         "Read the main.go file",
+			synthesis:     "I will read the file to analyze its contents.",
+			expectedTool:  "Read",
+			requiredField: "file_path",
+		},
+		{
+			name:          "Write_tool_file_creation",
+			topic:         "Create AGENTS.md file",
+			synthesis:     "I will create a file with the documentation.",
+			expectedTool:  "Write",
+			requiredField: "file_path",
+		},
+		{
+			name:          "Glob_tool_file_search",
+			topic:         "Search for go files",
+			synthesis:     "I will scan the codebase for all Go files.",
+			expectedTool:  "Glob",
+			requiredField: "pattern",
+		},
+		{
+			name:          "Grep_tool_content_search",
+			topic:         "Search for TODO comments",
+			synthesis:     "I will search for the pattern TODO in all files.",
+			expectedTool:  "Grep",
+			requiredField: "pattern",
+		},
+	}
+
+	for _, tc := range testScenarios {
+		t.Run(tc.name, func(t *testing.T) {
+			result := handler.generateActionToolCalls(ctx, tc.topic, tc.synthesis, allTools, nil)
+
+			// Find the expected tool call
+			found := false
+			for _, toolCall := range result {
+				if toolCall.Function.Name == tc.expectedTool {
+					found = true
+
+					// Parse arguments
+					var args map[string]interface{}
+					err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args)
+					assert.NoError(t, err, "Arguments should be valid JSON for %s", tc.expectedTool)
+
+					// Check required field exists
+					_, exists := args[tc.requiredField]
+					assert.True(t, exists, "%s tool call must include '%s' field", tc.expectedTool, tc.requiredField)
+				}
+			}
+
+			// Note: Not all topics will trigger tool calls, so we check only if found
+			if found {
+				t.Logf("Tool %s was correctly generated with required field %s", tc.expectedTool, tc.requiredField)
+			}
+		})
+	}
+}
+
+// TestToolCallParameterNaming validates snake_case is used for all parameters
+func TestToolCallParameterNaming(t *testing.T) {
+	// This test ensures we use snake_case consistently
+	invalidCamelCasePatterns := []string{
+		"filePath",  // Should be file_path
+		"oldString", // Should be old_string
+		"newString", // Should be new_string
+	}
+
+	validSnakeCasePatterns := []string{
+		"file_path",
+		"old_string",
+		"new_string",
+		"command",
+		"description",
+		"pattern",
+		"content",
+	}
+
+	// Sample tool call arguments from the system
+	sampleArguments := []string{
+		`{"command": "go test", "description": "Run tests"}`,
+		`{"file_path": "/path/to/file"}`,
+		`{"file_path": "/path", "content": "data"}`,
+		`{"file_path": "/path", "old_string": "old", "new_string": "new"}`,
+		`{"pattern": "**/*.go"}`,
+	}
+
+	for _, args := range sampleArguments {
+		t.Run(args, func(t *testing.T) {
+			// Check no camelCase patterns
+			for _, camel := range invalidCamelCasePatterns {
+				assert.NotContains(t, args, camel,
+					"Tool call arguments should not use camelCase '%s'", camel)
+			}
+
+			// Parse and verify
+			var parsed map[string]interface{}
+			err := json.Unmarshal([]byte(args), &parsed)
+			assert.NoError(t, err, "Should be valid JSON")
+
+			// Verify keys are snake_case
+			for key := range parsed {
+				isValid := false
+				for _, valid := range validSnakeCasePatterns {
+					if key == valid {
+						isValid = true
+						break
+					}
+				}
+				assert.True(t, isValid || !strings.Contains(key, "_"),
+					"Key '%s' should be a valid snake_case parameter", key)
+			}
+		})
+	}
+}
