@@ -14,13 +14,15 @@ import (
 
 // CogneeEnhancedProvider wraps any LLM provider with Cognee capabilities
 type CogneeEnhancedProvider struct {
-	provider      llm.LLMProvider
-	cogneeService *CogneeService
-	logger        *logrus.Logger
-	config        *CogneeProviderConfig
-	name          string
-	mu            sync.RWMutex
-	stats         *CogneeProviderStats
+	provider           llm.LLMProvider
+	cogneeService      *CogneeService
+	logger             *logrus.Logger
+	config             *CogneeProviderConfig
+	name               string
+	mu                 sync.RWMutex
+	stats              *CogneeProviderStats
+	lastCogneeWarning  time.Time // Rate limit Cognee health warnings
+	lastStoreWarning   time.Time // Rate limit Cognee store warnings
 }
 
 // CogneeProviderConfig configures the enhanced provider behavior
@@ -233,13 +235,23 @@ func (p *CogneeEnhancedProvider) HealthCheck() error {
 		return err
 	}
 
-	// Optionally check Cognee health
+	// Optionally check Cognee health (only log warning once per minute to avoid spam)
 	if p.cogneeService != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		if !p.cogneeService.IsHealthy(ctx) {
-			p.logger.Warn("Cognee service is not healthy, enhancement disabled")
+			// Rate limit this warning - log only once per minute
+			p.mu.Lock()
+			now := time.Now()
+			shouldLog := p.lastCogneeWarning.IsZero() || now.Sub(p.lastCogneeWarning) > time.Minute
+			if shouldLog {
+				p.lastCogneeWarning = now
+				p.mu.Unlock()
+				p.logger.Warn("Cognee service is not healthy, enhancement disabled")
+			} else {
+				p.mu.Unlock()
+			}
 		}
 	}
 
@@ -381,7 +393,17 @@ func (p *CogneeEnhancedProvider) storeResponse(ctx context.Context, req *models.
 	}
 
 	if err := p.cogneeService.ProcessResponse(ctx, req, resp); err != nil {
-		p.logger.WithError(err).Warn("Failed to store response in Cognee")
+		// Rate limit this warning to once per 30 seconds
+		p.mu.Lock()
+		now := time.Now()
+		shouldLog := p.lastStoreWarning.IsZero() || now.Sub(p.lastStoreWarning) > 30*time.Second
+		if shouldLog {
+			p.lastStoreWarning = now
+			p.mu.Unlock()
+			p.logger.WithError(err).Warn("Failed to store response in Cognee (rate-limited)")
+		} else {
+			p.mu.Unlock()
+		}
 		p.stats.mu.Lock()
 		p.stats.StorageErrors++
 		p.stats.mu.Unlock()
