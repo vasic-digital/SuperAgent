@@ -368,12 +368,12 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 				},
 			},
 		},
-		// Permission model - string values only
+		// Permission model - only valid keys: read, edit, bash, webfetch
 		Permission: map[string]string{
-			"edit":               "ask",
-			"bash":               "ask",
-			"webfetch":           "auto",
-			"external_directory": "ask",
+			"read":     "allow",
+			"edit":     "ask",
+			"bash":     "ask",
+			"webfetch": "allow",
 		},
 		// Tools configuration - boolean values
 		Tools: map[string]bool{
