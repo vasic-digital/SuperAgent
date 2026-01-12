@@ -26,7 +26,6 @@ var ValidTopLevelKeys = map[string]bool{
 	"share":        true,
 	"permission":   true,
 	"compaction":   true,
-	"sse":          true,
 	"mode":         true,
 	"autoshare":    true,
 }
@@ -34,7 +33,7 @@ var ValidTopLevelKeys = map[string]bool{
 // Config represents OpenCode configuration (matching LLMsVerifier types)
 // ONLY these top-level keys are valid per LLMsVerifier validator:
 // $schema, plugin, enterprise, instructions, provider, mcp, tools, agent,
-// command, keybinds, username, share, permission, compaction, sse, mode, autoshare
+// command, keybinds, username, share, permission, compaction, mode, autoshare
 type Config struct {
 	Schema       string                    `json:"$schema,omitempty"`
 	Plugin       []string                  `json:"plugin,omitempty"`
@@ -42,15 +41,14 @@ type Config struct {
 	Instructions []string                  `json:"instructions,omitempty"`
 	Provider     map[string]ProviderConfig `json:"provider,omitempty"`
 	Mcp          map[string]McpConfig      `json:"mcp,omitempty"`
-	Tools        map[string]interface{}    `json:"tools,omitempty"`
+	Tools        map[string]bool           `json:"tools,omitempty"`
 	Agent        map[string]AgentConfig    `json:"agent,omitempty"`
 	Command      map[string]CommandConfig  `json:"command,omitempty"`
 	Keybinds     *KeybindsConfig           `json:"keybinds,omitempty"`
 	Username     string                    `json:"username,omitempty"`
 	Share        interface{}               `json:"share,omitempty"`
-	Permission   *PermissionConfig         `json:"permission,omitempty"`
+	Permission   map[string]string         `json:"permission,omitempty"`
 	Compaction   *CompactionConfig         `json:"compaction,omitempty"`
-	Sse          *SseConfig                `json:"sse,omitempty"`
 	Mode         map[string]interface{}    `json:"mode,omitempty"`
 	Autoshare    interface{}               `json:"autoshare,omitempty"`
 }
@@ -133,22 +131,9 @@ type KeybindsConfig struct {
 	AppExit  string `json:"app_exit,omitempty"`
 }
 
-type PermissionConfig struct {
-	Edit              string      `json:"edit,omitempty"`
-	Bash              interface{} `json:"bash,omitempty"`
-	Skill             interface{} `json:"skill,omitempty"`
-	Webfetch          string      `json:"webfetch,omitempty"`
-	DoomLoop          string      `json:"doom_loop,omitempty"`
-	ExternalDirectory string      `json:"external_directory,omitempty"`
-}
-
 type CompactionConfig struct {
 	Auto  *bool `json:"auto,omitempty"`
 	Prune *bool `json:"prune,omitempty"`
-}
-
-type SseConfig struct {
-	Enabled *bool `json:"enabled,omitempty"`
 }
 
 // DebateGroupMember represents a member of the AI debate group
@@ -383,40 +368,29 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 				},
 			},
 		},
-		// Permission model
-		Permission: &PermissionConfig{
-			Edit:              "ask",
-			Bash:              "ask",
-			Webfetch:          "auto",
-			ExternalDirectory: "ask",
+		// Permission model - string values only
+		Permission: map[string]string{
+			"edit":               "ask",
+			"bash":               "ask",
+			"webfetch":           "auto",
+			"external_directory": "ask",
 		},
-		// Tools configuration - all enabled
-		Tools: map[string]interface{}{
-			"read":       map[string]interface{}{"enabled": true},
-			"write":      map[string]interface{}{"enabled": true},
-			"bash":       map[string]interface{}{"enabled": true},
-			"glob":       map[string]interface{}{"enabled": true},
-			"grep":       map[string]interface{}{"enabled": true},
-			"edit":       map[string]interface{}{"enabled": true},
-			"fetch":      map[string]interface{}{"enabled": true},
-			"mcp":        map[string]interface{}{"enabled": true},
-			"lsp":        map[string]interface{}{"enabled": true},
-			"acp":        map[string]interface{}{"enabled": true},
-			"embeddings": map[string]interface{}{"enabled": true},
-			"vision":     map[string]interface{}{"enabled": true},
-			"ocr":        map[string]interface{}{"enabled": true},
-			"pdf":        map[string]interface{}{"enabled": true},
-			"audio":      map[string]interface{}{"enabled": true},
-			"video":      map[string]interface{}{"enabled": true},
+		// Tools configuration - boolean values
+		Tools: map[string]bool{
+			"Read":      true,
+			"Write":     true,
+			"Bash":      true,
+			"Glob":      true,
+			"Grep":      true,
+			"Edit":      true,
+			"WebFetch":  true,
+			"Task":      true,
+			"TodoWrite": true,
 		},
 		// Compaction settings
 		Compaction: &CompactionConfig{
 			Auto:  &enabled,
 			Prune: &enabled,
-		},
-		// SSE settings - required for streaming
-		Sse: &SseConfig{
-			Enabled: &enabled,
 		},
 	}
 
