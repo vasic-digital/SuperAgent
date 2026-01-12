@@ -3054,6 +3054,152 @@
           "message": "Qwen OAuth credentials must be valid if available"
         }
       ]
+    },
+    {
+      "id": "background_task_queue",
+      "name": "Background Task Queue Challenge",
+      "description": "Validates background task queue operations including priority ordering and dead-letter queue",
+      "category": "background",
+      "dependencies": [],
+      "binary_only": true,
+      "script": "../scripts/background_task_queue_challenge.sh",
+      "estimated_duration": "2-5 minutes",
+      "assertions": [
+        {
+          "type": "service_running",
+          "target": "helixagent",
+          "message": "HelixAgent must be running or mock validation used"
+        }
+      ]
+    },
+    {
+      "id": "background_worker_pool",
+      "name": "Background Worker Pool Challenge",
+      "description": "Validates worker pool operations including adaptive scaling and concurrent execution",
+      "category": "background",
+      "dependencies": [],
+      "binary_only": true,
+      "script": "../scripts/background_worker_pool_challenge.sh",
+      "estimated_duration": "2-5 minutes",
+      "assertions": [
+        {
+          "type": "service_running",
+          "target": "helixagent",
+          "message": "HelixAgent must be running or mock validation used"
+        }
+      ]
+    },
+    {
+      "id": "background_resource_monitor",
+      "name": "Background Resource Monitor Challenge",
+      "description": "Validates resource monitoring for background tasks including CPU, memory, and I/O tracking",
+      "category": "background",
+      "dependencies": [],
+      "binary_only": true,
+      "script": "../scripts/background_resource_monitor_challenge.sh",
+      "estimated_duration": "2-5 minutes",
+      "assertions": [
+        {
+          "type": "service_running",
+          "target": "helixagent",
+          "message": "HelixAgent must be running or mock validation used"
+        }
+      ]
+    },
+    {
+      "id": "background_stuck_detection",
+      "name": "Background Stuck Detection Challenge",
+      "description": "Validates stuck detection algorithms including heartbeat timeout and resource exhaustion detection",
+      "category": "background",
+      "dependencies": [],
+      "binary_only": true,
+      "script": "../scripts/background_stuck_detection_challenge.sh",
+      "estimated_duration": "2-5 minutes",
+      "assertions": [
+        {
+          "type": "service_running",
+          "target": "helixagent",
+          "message": "HelixAgent must be running or mock validation used"
+        }
+      ]
+    },
+    {
+      "id": "background_notifications",
+      "name": "Background Notifications Challenge",
+      "description": "Validates notification mechanisms including SSE, WebSocket, Webhooks, and Polling API",
+      "category": "background",
+      "dependencies": [],
+      "binary_only": true,
+      "script": "../scripts/background_notifications_challenge.sh",
+      "estimated_duration": "2-5 minutes",
+      "assertions": [
+        {
+          "type": "service_running",
+          "target": "helixagent",
+          "message": "HelixAgent must be running or mock validation used"
+        }
+      ]
+    },
+    {
+      "id": "background_endless_process",
+      "name": "Background Endless Process Challenge",
+      "description": "Validates endless/long-running process support with monitoring and graceful shutdown",
+      "category": "background",
+      "dependencies": [],
+      "binary_only": true,
+      "script": "../scripts/background_endless_process_challenge.sh",
+      "estimated_duration": "2-5 minutes",
+      "assertions": [
+        {
+          "type": "service_running",
+          "target": "helixagent",
+          "message": "HelixAgent must be running or mock validation used"
+        }
+      ]
+    },
+    {
+      "id": "background_cli_rendering",
+      "name": "Background CLI Rendering Challenge",
+      "description": "Validates CLI rendering output including progress bars, status tables, and resource gauges",
+      "category": "background",
+      "dependencies": [],
+      "binary_only": true,
+      "script": "../scripts/background_cli_rendering_challenge.sh",
+      "estimated_duration": "1-2 minutes",
+      "assertions": [
+        {
+          "type": "code_valid",
+          "target": "cli_package",
+          "message": "CLI package must compile successfully"
+        }
+      ]
+    },
+    {
+      "id": "background_full_integration",
+      "name": "Background Full Integration Challenge",
+      "description": "Comprehensive E2E test of background task queue, worker pool, notifications, and CLI rendering",
+      "category": "background",
+      "dependencies": [
+        "background_task_queue",
+        "background_worker_pool",
+        "background_notifications",
+        "background_cli_rendering"
+      ],
+      "binary_only": true,
+      "script": "../scripts/background_full_integration_challenge.sh",
+      "estimated_duration": "3-5 minutes",
+      "assertions": [
+        {
+          "type": "code_valid",
+          "target": "all_packages",
+          "message": "All background packages must compile"
+        },
+        {
+          "type": "file_exists",
+          "target": "required_files",
+          "message": "All 15 required files must be present"
+        }
+      ]
     }
   ],
   "assertion_types": {
@@ -3672,6 +3818,10 @@
     "validation": {
       "description": "Validation and quality challenges",
       "color": "lime"
+    },
+    "background": {
+      "description": "Background command execution system challenges",
+      "color": "violet"
     }
   }
 }
