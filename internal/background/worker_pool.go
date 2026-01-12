@@ -840,3 +840,156 @@ func min(a, b, c int) int {
 	}
 	return c
 }
+
+// Verify AdaptiveWorkerPool implements TaskWaiter
+var _ TaskWaiter = (*AdaptiveWorkerPool)(nil)
+
+// WaitForCompletion blocks until the task completes, fails, or times out
+// progressCallback is called with progress updates during execution
+func (wp *AdaptiveWorkerPool) WaitForCompletion(ctx context.Context, taskID string, timeout time.Duration, progressCallback func(progress float64, message string)) (*models.BackgroundTask, error) {
+	startTime := time.Now()
+
+	// Create a context with timeout
+	waitCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// Polling interval - start fast, then slow down
+	pollInterval := 100 * time.Millisecond
+	maxPollInterval := 2 * time.Second
+	lastProgress := float64(-1)
+
+	wp.logger.WithFields(logrus.Fields{
+		"task_id": taskID,
+		"timeout": timeout,
+	}).Info("Waiting for task completion")
+
+	for {
+		select {
+		case <-waitCtx.Done():
+			if waitCtx.Err() == context.DeadlineExceeded {
+				return nil, fmt.Errorf("timeout waiting for task %s after %v", taskID, timeout)
+			}
+			return nil, waitCtx.Err()
+		case <-time.After(pollInterval):
+			// Get current task state
+			task, err := wp.repository.GetByID(ctx, taskID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get task %s: %w", taskID, err)
+			}
+
+			// Report progress if changed
+			if progressCallback != nil && task.Progress != lastProgress {
+				msg := ""
+				if task.ProgressMessage != nil {
+					msg = *task.ProgressMessage
+				}
+				progressCallback(task.Progress, msg)
+				lastProgress = task.Progress
+			}
+
+			// Check if task is in a terminal state
+			if isTerminalStatus(task.Status) {
+				wp.logger.WithFields(logrus.Fields{
+					"task_id":  taskID,
+					"status":   task.Status,
+					"duration": time.Since(startTime),
+				}).Info("Task completed")
+
+				if task.Status == models.TaskStatusFailed {
+					errMsg := "unknown error"
+					if task.ProgressMessage != nil {
+						errMsg = *task.ProgressMessage
+					}
+					return task, fmt.Errorf("task failed: %s", errMsg)
+				}
+				if task.Status == models.TaskStatusCancelled {
+					return task, fmt.Errorf("task was cancelled")
+				}
+				if task.Status == models.TaskStatusDeadLetter {
+					return task, fmt.Errorf("task moved to dead letter queue")
+				}
+
+				return task, nil
+			}
+
+			// Adaptive polling - slow down over time
+			if pollInterval < maxPollInterval {
+				pollInterval = time.Duration(float64(pollInterval) * 1.5)
+				if pollInterval > maxPollInterval {
+					pollInterval = maxPollInterval
+				}
+			}
+		}
+	}
+}
+
+// WaitForCompletionWithOutput waits for task completion and returns captured output
+func (wp *AdaptiveWorkerPool) WaitForCompletionWithOutput(ctx context.Context, taskID string, timeout time.Duration) (*models.BackgroundTask, []byte, error) {
+	task, err := wp.WaitForCompletion(ctx, taskID, timeout, nil)
+	if err != nil {
+		return task, nil, err
+	}
+
+	// Get output from task result if available
+	var output []byte
+	if task != nil && task.Config.CaptureOutput {
+		// Output would be stored in the task's checkpoint or a separate storage
+		// For now, we return the progress message as output
+		if task.ProgressMessage != nil {
+			output = []byte(*task.ProgressMessage)
+		}
+	}
+
+	return task, output, nil
+}
+
+// isTerminalStatus returns true if the status is a terminal state
+func isTerminalStatus(status models.TaskStatus) bool {
+	switch status {
+	case models.TaskStatusCompleted,
+		models.TaskStatusFailed,
+		models.TaskStatusCancelled,
+		models.TaskStatusDeadLetter:
+		return true
+	default:
+		return false
+	}
+}
+
+// WaitForMultiple waits for multiple tasks to complete
+// Returns a map of taskID to WaitResult
+func (wp *AdaptiveWorkerPool) WaitForMultiple(ctx context.Context, taskIDs []string, timeout time.Duration) map[string]*WaitResult {
+	results := make(map[string]*WaitResult)
+	resultChan := make(chan struct {
+		id     string
+		result *WaitResult
+	}, len(taskIDs))
+
+	// Wait for each task in parallel
+	for _, taskID := range taskIDs {
+		go func(id string) {
+			startTime := time.Now()
+			task, output, err := wp.WaitForCompletionWithOutput(ctx, id, timeout)
+			resultChan <- struct {
+				id     string
+				result *WaitResult
+			}{
+				id: id,
+				result: &WaitResult{
+					Task:     task,
+					Output:   output,
+					Duration: time.Since(startTime),
+					Error:    err,
+				},
+			}
+		}(taskID)
+	}
+
+	// Collect results
+	for range taskIDs {
+		r := <-resultChan
+		results[r.id] = r.result
+	}
+
+	return results
+}

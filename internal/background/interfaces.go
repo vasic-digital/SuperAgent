@@ -73,6 +73,25 @@ type TaskQueue interface {
 	GetQueueDepth(ctx context.Context) (map[models.TaskPriority]int64, error)
 }
 
+// TaskWaiter provides synchronous waiting for task completion
+type TaskWaiter interface {
+	// WaitForCompletion blocks until the task completes, fails, or times out
+	// Returns the final task state and any error
+	// progressCallback is called with progress updates (can be nil)
+	WaitForCompletion(ctx context.Context, taskID string, timeout time.Duration, progressCallback func(progress float64, message string)) (*models.BackgroundTask, error)
+
+	// WaitForCompletionWithOutput waits and returns both task state and captured output
+	WaitForCompletionWithOutput(ctx context.Context, taskID string, timeout time.Duration) (*models.BackgroundTask, []byte, error)
+}
+
+// WaitResult contains the result of waiting for a task
+type WaitResult struct {
+	Task     *models.BackgroundTask
+	Output   []byte
+	Duration time.Duration
+	Error    error
+}
+
 // TaskRepository handles database operations for tasks
 type TaskRepository interface {
 	// CRUD operations

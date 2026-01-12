@@ -3200,6 +3200,66 @@
           "message": "All 15 required files must be present"
         }
       ]
+    },
+    {
+      "id": "dialogue_rendering",
+      "name": "Dialogue Rendering and Tool Validation Challenge",
+      "description": "Validates dialogue rendering, tool tag stripping, markdown support, scripting languages, and CLI agent compatibility (OpenCode, Crush, HelixCode, KiloCode)",
+      "category": "rendering",
+      "dependencies": [],
+      "script": "../scripts/dialogue_rendering_challenge.sh",
+      "assertions": [
+        {
+          "name": "code_compilation",
+          "type": "not_empty",
+          "message": "All code must compile successfully"
+        },
+        {
+          "name": "bash_tag_stripping",
+          "type": "not_empty",
+          "message": "Bash tags must be stripped from dialogue output"
+        },
+        {
+          "name": "markdown_preservation",
+          "type": "not_empty",
+          "message": "Markdown code blocks must be preserved"
+        },
+        {
+          "name": "tool_argument_format",
+          "type": "not_empty",
+          "message": "Tool arguments must use correct parameter names (camelCase)"
+        },
+        {
+          "name": "scripting_language_tags",
+          "type": "not_empty",
+          "message": "All scripting language tags (python, ruby, php, etc.) must be stripped"
+        },
+        {
+          "name": "opencode_compatibility",
+          "type": "not_empty",
+          "message": "OpenCode configuration must be valid"
+        },
+        {
+          "name": "streaming_response",
+          "type": "not_empty",
+          "message": "Streaming must use correct SSE format"
+        },
+        {
+          "name": "debate_dialogue_format",
+          "type": "not_empty",
+          "message": "Debate dialogue must render correctly"
+        },
+        {
+          "name": "unit_tests",
+          "type": "not_empty",
+          "message": "All dialogue rendering unit tests must pass"
+        },
+        {
+          "name": "background_task_wait",
+          "type": "not_empty",
+          "message": "TaskWaiter interface and WaitForCompletion must exist"
+        }
+      ]
     }
   ],
   "assertion_types": {
