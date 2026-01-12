@@ -46,11 +46,40 @@ type MistralRequest struct {
 	TopP        float64          `json:"top_p,omitempty"`
 	Stream      bool             `json:"stream,omitempty"`
 	SafePrompt  bool             `json:"safe_prompt,omitempty"`
+	Tools       []MistralTool    `json:"tools,omitempty"`
+	ToolChoice  interface{}      `json:"tool_choice,omitempty"`
 }
 
 type MistralMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role      string            `json:"role"`
+	Content   string            `json:"content"`
+	ToolCalls []MistralToolCall `json:"tool_calls,omitempty"`
+}
+
+// MistralTool represents a tool definition for Mistral API
+type MistralTool struct {
+	Type     string           `json:"type"`
+	Function MistralToolFunc  `json:"function"`
+}
+
+// MistralToolFunc represents a function definition
+type MistralToolFunc struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description,omitempty"`
+	Parameters  map[string]interface{} `json:"parameters,omitempty"`
+}
+
+// MistralToolCall represents a tool call in the response
+type MistralToolCall struct {
+	ID       string                  `json:"id"`
+	Type     string                  `json:"type"`
+	Function MistralToolCallFunction `json:"function"`
+}
+
+// MistralToolCallFunction represents the function call details
+type MistralToolCallFunction struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 type MistralResponse struct {
@@ -400,7 +429,7 @@ func (p *MistralProvider) convertRequest(req *models.LLMRequest) MistralRequest 
 		maxTokens = 32768 // Mistral's max limit for large models
 	}
 
-	return MistralRequest{
+	mistralReq := MistralRequest{
 		Model:       p.model,
 		Messages:    messages,
 		Temperature: req.ModelParams.Temperature,
@@ -409,15 +438,55 @@ func (p *MistralProvider) convertRequest(req *models.LLMRequest) MistralRequest 
 		Stream:      false,
 		SafePrompt:  false,
 	}
+
+	// Convert tools if provided
+	if len(req.Tools) > 0 {
+		mistralReq.Tools = make([]MistralTool, len(req.Tools))
+		for i, tool := range req.Tools {
+			mistralReq.Tools[i] = MistralTool{
+				Type: tool.Type,
+				Function: MistralToolFunc{
+					Name:        tool.Function.Name,
+					Description: tool.Function.Description,
+					Parameters:  tool.Function.Parameters,
+				},
+			}
+		}
+		if req.ToolChoice != "" {
+			mistralReq.ToolChoice = req.ToolChoice
+		}
+	}
+
+	return mistralReq
 }
 
 func (p *MistralProvider) convertResponse(req *models.LLMRequest, mistralResp *MistralResponse, startTime time.Time) *models.LLMResponse {
 	var content string
 	var finishReason string
+	var toolCalls []models.ToolCall
 
 	if len(mistralResp.Choices) > 0 {
 		content = mistralResp.Choices[0].Message.Content
 		finishReason = mistralResp.Choices[0].FinishReason
+
+		// Parse tool_calls from response
+		if len(mistralResp.Choices[0].Message.ToolCalls) > 0 {
+			toolCalls = make([]models.ToolCall, len(mistralResp.Choices[0].Message.ToolCalls))
+			for i, tc := range mistralResp.Choices[0].Message.ToolCalls {
+				toolCalls[i] = models.ToolCall{
+					ID:   tc.ID,
+					Type: tc.Type,
+					Function: models.ToolCallFunction{
+						Name:      tc.Function.Name,
+						Arguments: tc.Function.Arguments,
+					},
+				}
+			}
+			// Set finish_reason to tool_calls if we have tool calls
+			if finishReason == "" || finishReason == "stop" {
+				finishReason = "tool_calls"
+			}
+		}
 	}
 
 	// Calculate confidence based on finish reason and response quality
@@ -433,6 +502,7 @@ func (p *MistralProvider) convertResponse(req *models.LLMRequest, mistralResp *M
 		TokensUsed:   mistralResp.Usage.TotalTokens,
 		ResponseTime: time.Since(startTime).Milliseconds(),
 		FinishReason: finishReason,
+		ToolCalls:    toolCalls,
 		Metadata: map[string]any{
 			"model":             mistralResp.Model,
 			"prompt_tokens":     mistralResp.Usage.PromptTokens,

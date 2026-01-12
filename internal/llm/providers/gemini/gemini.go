@@ -43,6 +43,30 @@ type GeminiRequest struct {
 	Contents         []GeminiContent        `json:"contents"`
 	GenerationConfig GeminiGenerationConfig `json:"generationConfig,omitempty"`
 	SafetySettings   []GeminiSafetySetting  `json:"safetySettings,omitempty"`
+	Tools            []GeminiToolDef        `json:"tools,omitempty"`
+	ToolConfig       *GeminiToolConfig      `json:"toolConfig,omitempty"`
+}
+
+// GeminiToolDef represents a tool definition for Gemini API
+type GeminiToolDef struct {
+	FunctionDeclarations []GeminiFunctionDeclaration `json:"functionDeclarations,omitempty"`
+}
+
+// GeminiFunctionDeclaration represents a function declaration
+type GeminiFunctionDeclaration struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description,omitempty"`
+	Parameters  map[string]interface{} `json:"parameters,omitempty"`
+}
+
+// GeminiToolConfig configures tool behavior
+type GeminiToolConfig struct {
+	FunctionCallingConfig *GeminiFunctionCallingConfig `json:"functionCallingConfig,omitempty"`
+}
+
+// GeminiFunctionCallingConfig configures function calling
+type GeminiFunctionCallingConfig struct {
+	Mode string `json:"mode,omitempty"` // AUTO, NONE, ANY
 }
 
 type GeminiContent struct {
@@ -379,7 +403,7 @@ func (p *GeminiProvider) convertRequest(req *models.LLMRequest) GeminiRequest {
 		maxTokens = 8192 // Safe max for Gemini models
 	}
 
-	return GeminiRequest{
+	geminiReq := GeminiRequest{
 		Contents: contents,
 		GenerationConfig: GeminiGenerationConfig{
 			Temperature:     req.ModelParams.Temperature,
@@ -406,23 +430,82 @@ func (p *GeminiProvider) convertRequest(req *models.LLMRequest) GeminiRequest {
 			},
 		},
 	}
+
+	// Convert tools if provided
+	if len(req.Tools) > 0 {
+		funcDecls := make([]GeminiFunctionDeclaration, len(req.Tools))
+		for i, tool := range req.Tools {
+			funcDecls[i] = GeminiFunctionDeclaration{
+				Name:        tool.Function.Name,
+				Description: tool.Function.Description,
+				Parameters:  tool.Function.Parameters,
+			}
+		}
+		geminiReq.Tools = []GeminiToolDef{
+			{FunctionDeclarations: funcDecls},
+		}
+
+		// Set tool config based on ToolChoice
+		if req.ToolChoice != "" {
+			mode := "AUTO"
+			switch req.ToolChoice {
+			case "none":
+				mode = "NONE"
+			case "auto":
+				mode = "AUTO"
+			case "required":
+				mode = "ANY"
+			}
+			geminiReq.ToolConfig = &GeminiToolConfig{
+				FunctionCallingConfig: &GeminiFunctionCallingConfig{
+					Mode: mode,
+				},
+			}
+		}
+	}
+
+	return geminiReq
 }
 
 func (p *GeminiProvider) convertResponse(req *models.LLMRequest, geminiResp *GeminiResponse, startTime time.Time) *models.LLMResponse {
 	var content string
 	var finishReason string
 	var tokensUsed int
+	var toolCalls []models.ToolCall
 
 	if len(geminiResp.Candidates) > 0 {
 		candidate := geminiResp.Candidates[0]
 		if len(candidate.Content.Parts) > 0 {
-			for _, part := range candidate.Content.Parts {
+			for i, part := range candidate.Content.Parts {
 				if part.Text != "" {
 					content += part.Text
+				}
+				// Parse function calls from Gemini response
+				if part.FunctionCall != nil {
+					// Extract function name and arguments
+					name, _ := part.FunctionCall["name"].(string)
+					args, _ := part.FunctionCall["args"].(map[string]interface{})
+
+					// Convert args to JSON string
+					argsJSON, _ := json.Marshal(args)
+
+					toolCalls = append(toolCalls, models.ToolCall{
+						ID:   fmt.Sprintf("call_%d", i),
+						Type: "function",
+						Function: models.ToolCallFunction{
+							Name:      name,
+							Arguments: string(argsJSON),
+						},
+					})
 				}
 			}
 		}
 		finishReason = candidate.FinishReason
+
+		// Set finish_reason to tool_calls if we have function calls
+		if len(toolCalls) > 0 && (finishReason == "" || finishReason == "STOP") {
+			finishReason = "tool_calls"
+		}
 	}
 
 	if geminiResp.UsageMetadata != nil {
@@ -442,6 +525,7 @@ func (p *GeminiProvider) convertResponse(req *models.LLMRequest, geminiResp *Gem
 		TokensUsed:   tokensUsed,
 		ResponseTime: time.Since(startTime).Milliseconds(),
 		FinishReason: finishReason,
+		ToolCalls:    toolCalls,
 		Metadata: map[string]any{
 			"model": p.model,
 		},

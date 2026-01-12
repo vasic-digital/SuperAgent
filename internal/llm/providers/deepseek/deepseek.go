@@ -43,11 +43,40 @@ type DeepSeekRequest struct {
 	TopP        float64           `json:"top_p,omitempty"`
 	Stream      bool              `json:"stream,omitempty"`
 	Stop        []string          `json:"stop,omitempty"`
+	Tools       []DeepSeekTool    `json:"tools,omitempty"`
+	ToolChoice  interface{}       `json:"tool_choice,omitempty"`
 }
 
 type DeepSeekMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role      string             `json:"role"`
+	Content   string             `json:"content"`
+	ToolCalls []DeepSeekToolCall `json:"tool_calls,omitempty"`
+}
+
+// DeepSeekTool represents a tool definition for DeepSeek API
+type DeepSeekTool struct {
+	Type     string             `json:"type"`
+	Function DeepSeekToolFunc   `json:"function"`
+}
+
+// DeepSeekToolFunc represents a function definition
+type DeepSeekToolFunc struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description,omitempty"`
+	Parameters  map[string]interface{} `json:"parameters,omitempty"`
+}
+
+// DeepSeekToolCall represents a tool call in the response
+type DeepSeekToolCall struct {
+	ID       string                   `json:"id"`
+	Type     string                   `json:"type"`
+	Function DeepSeekToolCallFunction `json:"function"`
+}
+
+// DeepSeekToolCallFunction represents the function call details
+type DeepSeekToolCallFunction struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 type DeepSeekResponse struct {
@@ -303,7 +332,7 @@ func (p *DeepSeekProvider) convertRequest(req *models.LLMRequest) DeepSeekReques
 		maxTokens = 8192 // DeepSeek's max limit
 	}
 
-	return DeepSeekRequest{
+	dsReq := DeepSeekRequest{
 		Model:       p.model,
 		Messages:    messages,
 		Temperature: req.ModelParams.Temperature,
@@ -312,15 +341,55 @@ func (p *DeepSeekProvider) convertRequest(req *models.LLMRequest) DeepSeekReques
 		Stream:      false,
 		Stop:        req.ModelParams.StopSequences,
 	}
+
+	// Convert tools if provided
+	if len(req.Tools) > 0 {
+		dsReq.Tools = make([]DeepSeekTool, len(req.Tools))
+		for i, tool := range req.Tools {
+			dsReq.Tools[i] = DeepSeekTool{
+				Type: tool.Type,
+				Function: DeepSeekToolFunc{
+					Name:        tool.Function.Name,
+					Description: tool.Function.Description,
+					Parameters:  tool.Function.Parameters,
+				},
+			}
+		}
+		if req.ToolChoice != "" {
+			dsReq.ToolChoice = req.ToolChoice
+		}
+	}
+
+	return dsReq
 }
 
 func (p *DeepSeekProvider) convertResponse(req *models.LLMRequest, dsResp *DeepSeekResponse, startTime time.Time) *models.LLMResponse {
 	var content string
 	var finishReason string
+	var toolCalls []models.ToolCall
 
 	if len(dsResp.Choices) > 0 {
 		content = dsResp.Choices[0].Message.Content
 		finishReason = dsResp.Choices[0].FinishReason
+
+		// Parse tool_calls from response
+		if len(dsResp.Choices[0].Message.ToolCalls) > 0 {
+			toolCalls = make([]models.ToolCall, len(dsResp.Choices[0].Message.ToolCalls))
+			for i, tc := range dsResp.Choices[0].Message.ToolCalls {
+				toolCalls[i] = models.ToolCall{
+					ID:   tc.ID,
+					Type: tc.Type,
+					Function: models.ToolCallFunction{
+						Name:      tc.Function.Name,
+						Arguments: tc.Function.Arguments,
+					},
+				}
+			}
+			// Set finish_reason to tool_calls if we have tool calls
+			if finishReason == "" || finishReason == "stop" {
+				finishReason = "tool_calls"
+			}
+		}
 	}
 
 	// Calculate confidence based on finish reason and response quality
@@ -336,6 +405,7 @@ func (p *DeepSeekProvider) convertResponse(req *models.LLMRequest, dsResp *DeepS
 		TokensUsed:   dsResp.Usage.TotalTokens,
 		ResponseTime: time.Since(startTime).Milliseconds(),
 		FinishReason: finishReason,
+		ToolCalls:    toolCalls,
 		Metadata: map[string]any{
 			"model":             dsResp.Model,
 			"prompt_tokens":     dsResp.Usage.PromptTokens,

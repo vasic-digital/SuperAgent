@@ -47,6 +47,10 @@ func setupCogneeTestServer() (*httptest.Server, *services.CogneeService) {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]interface{}{"id": "mem-123", "success": true})
 
+		case r.URL.Path == "/api/v1/memify" && r.Method == "POST":
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]interface{}{"id": "mem-123", "vector_id": "vec-123", "status": "success"})
+
 		case r.URL.Path == "/api/v1/search" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]interface{}{

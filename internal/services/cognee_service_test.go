@@ -151,7 +151,8 @@ func TestCogneeService_IsHealthy(t *testing.T) {
 func TestCogneeService_AddMemory(t *testing.T) {
 	t.Run("adds memory successfully", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/api/v1/add" && r.Method == "POST" {
+			// AddMemory now uses /api/v1/memify endpoint (not /add which requires multipart)
+			if r.URL.Path == "/api/v1/memify" && r.Method == "POST" {
 				w.WriteHeader(http.StatusOK)
 				json.NewEncoder(w).Encode(map[string]interface{}{
 					"id":          "mem-123",
@@ -1472,7 +1473,7 @@ func TestCogneeSearchTypes_SearchRequestFormat(t *testing.T) {
 			if r.URL.Path == "/api/v1/search" && r.Method == "POST" {
 				var reqBody map[string]interface{}
 				json.NewDecoder(r.Body).Decode(&reqBody)
-				if st, ok := reqBody["search_type"].(string); ok {
+				if st, ok := reqBody["searchType"].(string); ok {
 					receivedSearchType = st
 				}
 				w.WriteHeader(http.StatusOK)
@@ -1509,6 +1510,7 @@ func TestCogneeSearchTypes_SearchRequestFormat(t *testing.T) {
 			if r.URL.Path == "/api/v1/search" && r.Method == "POST" {
 				var reqBody map[string]interface{}
 				json.NewDecoder(r.Body).Decode(&reqBody)
+				// GetInsights uses snake_case search_type in its request
 				if st, ok := reqBody["search_type"].(string); ok {
 					receivedSearchType = st
 				}
@@ -1545,6 +1547,7 @@ func TestCogneeSearchTypes_SearchRequestFormat(t *testing.T) {
 			if r.URL.Path == "/api/v1/search" && r.Method == "POST" {
 				var reqBody map[string]interface{}
 				json.NewDecoder(r.Body).Decode(&reqBody)
+				// GetCodeContext uses snake_case search_type in its request
 				if st, ok := reqBody["search_type"].(string); ok {
 					receivedSearchType = st
 				}
@@ -2001,7 +2004,8 @@ func TestCogneeService_TokenRefreshIntegration(t *testing.T) {
 				return
 			}
 
-			if strings.Contains(r.URL.Path, "/api/v1/add") {
+			// AddMemory now uses /api/v1/memify endpoint (not /add which requires multipart)
+			if strings.Contains(r.URL.Path, "/api/v1/memify") {
 				authHeader := r.Header.Get("Authorization")
 				if authHeader == "Bearer expired-token" {
 					events = append(events, "request-expired")
@@ -2013,8 +2017,10 @@ func TestCogneeService_TokenRefreshIntegration(t *testing.T) {
 					events = append(events, "request-fresh")
 					w.Header().Set("Content-Type", "application/json")
 					json.NewEncoder(w).Encode(map[string]interface{}{
-						"id":      "mem-123",
-						"content": "test",
+						"id":          "mem-123",
+						"vector_id":   "vec-456",
+						"graph_nodes": []string{"node1"},
+						"status":      "success",
 					})
 					return
 				}

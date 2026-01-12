@@ -52,12 +52,15 @@ type ZAIRequest struct {
 	TopP        float64                `json:"top_p,omitempty"`
 	Stop        []string               `json:"stop,omitempty"`
 	Parameters  map[string]interface{} `json:"parameters,omitempty"`
+	Tools       []ZAITool              `json:"tools,omitempty"`
+	ToolChoice  interface{}            `json:"tool_choice,omitempty"`
 }
 
 // ZAIMessage represents a message in the Z.AI API format
 type ZAIMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role      string        `json:"role"`
+	Content   string        `json:"content"`
+	ToolCalls []ZAIToolCall `json:"tool_calls,omitempty"`
 }
 
 // ZAIResponse represents a response from the Z.AI API
@@ -112,8 +115,35 @@ type ZAIStreamChoice struct {
 
 // ZAIStreamDelta represents the delta content in a streaming chunk
 type ZAIStreamDelta struct {
-	Role    string `json:"role,omitempty"`
-	Content string `json:"content,omitempty"`
+	Role      string        `json:"role,omitempty"`
+	Content   string        `json:"content,omitempty"`
+	ToolCalls []ZAIToolCall `json:"tool_calls,omitempty"`
+}
+
+// ZAITool represents a tool definition for Z.AI API
+type ZAITool struct {
+	Type     string      `json:"type"`
+	Function ZAIToolFunc `json:"function"`
+}
+
+// ZAIToolFunc represents the function definition within a tool
+type ZAIToolFunc struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description,omitempty"`
+	Parameters  map[string]interface{} `json:"parameters,omitempty"`
+}
+
+// ZAIToolCall represents a tool call in the response
+type ZAIToolCall struct {
+	ID       string              `json:"id"`
+	Type     string              `json:"type"`
+	Function ZAIToolCallFunction `json:"function"`
+}
+
+// ZAIToolCallFunction represents the function call details
+type ZAIToolCallFunction struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 // NewZAIProvider creates a new Z.AI provider instance
@@ -369,14 +399,16 @@ func (z *ZAIProvider) GetCapabilities() *models.ProviderCapabilities {
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",
+			"function_calling",
 		},
 		SupportedRequestTypes: []string{
 			"text_completion",
 			"chat",
 		},
 		SupportsStreaming:       true,
-		SupportsFunctionCalling: false,
+		SupportsFunctionCalling: true,
 		SupportsVision:          false,
+		SupportsTools:           true,
 		Limits: models.ModelLimits{
 			MaxTokens:             4096,
 			MaxInputLength:        8192,
@@ -438,6 +470,23 @@ func (z *ZAIProvider) convertToZAIRequest(req *models.LLMRequest) *ZAIRequest {
 		zaiReq.Prompt = req.Prompt
 	}
 
+	// Convert tools if provided
+	if len(req.Tools) > 0 {
+		zaiTools := make([]ZAITool, 0, len(req.Tools))
+		for _, tool := range req.Tools {
+			zaiTools = append(zaiTools, ZAITool{
+				Type: tool.Type,
+				Function: ZAIToolFunc{
+					Name:        tool.Function.Name,
+					Description: tool.Function.Description,
+					Parameters:  tool.Function.Parameters,
+				},
+			})
+		}
+		zaiReq.Tools = zaiTools
+		zaiReq.ToolChoice = "auto"
+	}
+
 	return zaiReq
 }
 
@@ -455,11 +504,10 @@ func (z *ZAIProvider) convertFromZAIResponse(resp *ZAIResponse, requestID string
 		content = choice.Text
 	} else if choice.Message.Content != "" {
 		content = choice.Message.Content
-	} else {
-		return nil, fmt.Errorf("no content found in Z.AI response")
 	}
+	// Note: Content may be empty if only tool_calls are returned
 
-	return &models.LLMResponse{
+	llmResp := &models.LLMResponse{
 		ID:           resp.ID,
 		RequestID:    requestID,
 		ProviderID:   "zai",
@@ -476,7 +524,31 @@ func (z *ZAIProvider) convertFromZAIResponse(resp *ZAIResponse, requestID string
 			"completion_tokens": resp.Usage.CompletionTokens,
 		},
 		CreatedAt: time.Now(),
-	}, nil
+	}
+
+	// Convert tool calls if present
+	if len(choice.Message.ToolCalls) > 0 {
+		toolCalls := make([]models.ToolCall, 0, len(choice.Message.ToolCalls))
+		for _, tc := range choice.Message.ToolCalls {
+			toolCalls = append(toolCalls, models.ToolCall{
+				ID:   tc.ID,
+				Type: tc.Type,
+				Function: models.ToolCallFunction{
+					Name:      tc.Function.Name,
+					Arguments: tc.Function.Arguments,
+				},
+			})
+		}
+		llmResp.ToolCalls = toolCalls
+		// Update finish_reason if tool_calls are present
+		if choice.FinishReason == "" || choice.FinishReason == "stop" {
+			llmResp.FinishReason = "tool_calls"
+		}
+	} else if content == "" {
+		return nil, fmt.Errorf("no content or tool_calls found in Z.AI response")
+	}
+
+	return llmResp, nil
 }
 
 // makeRequest sends a request to the Z.AI API with retry logic

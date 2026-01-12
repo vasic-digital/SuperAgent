@@ -77,12 +77,23 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 		defer cancel()
 	}
 
-	// Convert to OpenRouter format (no prompt field - convert to system message for compatibility)
+	// Convert to OpenRouter format (OpenAI-compatible)
+	type OpenRouterTool struct {
+		Type     string `json:"type"`
+		Function struct {
+			Name        string                 `json:"name"`
+			Description string                 `json:"description,omitempty"`
+			Parameters  map[string]interface{} `json:"parameters,omitempty"`
+		} `json:"function"`
+	}
+
 	type OpenRouterRequest struct {
 		Model       string           `json:"model"`
 		Messages    []models.Message `json:"messages"`
 		MaxTokens   int              `json:"max_tokens,omitempty"`
 		Temperature float64          `json:"temperature,omitempty"`
+		Tools       []OpenRouterTool `json:"tools,omitempty"`
+		ToolChoice  interface{}      `json:"tool_choice,omitempty"`
 	}
 
 	// Cap max_tokens to reasonable limit (varies by model, using 16384 as safe max)
@@ -108,6 +119,25 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 		Messages:    messages,
 		MaxTokens:   maxTokens,
 		Temperature: req.ModelParams.Temperature,
+	}
+
+	// Convert tools if present
+	if len(req.Tools) > 0 {
+		orReq.Tools = make([]OpenRouterTool, 0, len(req.Tools))
+		for _, tool := range req.Tools {
+			if tool.Type == "function" {
+				orTool := OpenRouterTool{
+					Type: "function",
+				}
+				orTool.Function.Name = tool.Function.Name
+				orTool.Function.Description = tool.Function.Description
+				orTool.Function.Parameters = tool.Function.Parameters
+				orReq.Tools = append(orReq.Tools, orTool)
+			}
+		}
+		if req.ToolChoice != nil {
+			orReq.ToolChoice = req.ToolChoice
+		}
 	}
 
 	// Make request
@@ -160,13 +190,24 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 		}
 
 		// Parse response
+		type OpenRouterToolCall struct {
+			ID       string `json:"id"`
+			Type     string `json:"type"`
+			Function struct {
+				Name      string `json:"name"`
+				Arguments string `json:"arguments"`
+			} `json:"function"`
+		}
+
 		var orResp struct {
 			ID      interface{} `json:"id"` // Can be string or number depending on provider
 			Choices []struct {
 				Message struct {
-					Role    string `json:"role"`
-					Content string `json:"content"`
+					Role      string               `json:"role"`
+					Content   string               `json:"content"`
+					ToolCalls []OpenRouterToolCall `json:"tool_calls,omitempty"`
 				} `json:"message"`
+				FinishReason string `json:"finish_reason,omitempty"`
 			} `json:"choices"`
 			Created int64  `json:"created"`
 			Model   string `json:"model"`
@@ -204,6 +245,29 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 		}
 
 		choice := orResp.Choices[0]
+
+		// Convert tool calls if present
+		var toolCalls []models.ToolCall
+		if len(choice.Message.ToolCalls) > 0 {
+			toolCalls = make([]models.ToolCall, 0, len(choice.Message.ToolCalls))
+			for _, tc := range choice.Message.ToolCalls {
+				toolCalls = append(toolCalls, models.ToolCall{
+					ID:   tc.ID,
+					Type: tc.Type,
+					Function: models.ToolCallFunction{
+						Name:      tc.Function.Name,
+						Arguments: tc.Function.Arguments,
+					},
+				})
+			}
+		}
+
+		// Determine finish reason
+		finishReason := choice.FinishReason
+		if finishReason == "" {
+			finishReason = "stop"
+		}
+
 		response := &models.LLMResponse{
 			ID:           responseID,
 			RequestID:    req.ID,
@@ -213,7 +277,7 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 			Confidence:   0.85, // OpenRouter doesn't provide confidence
 			TokensUsed:   0,
 			ResponseTime: time.Now().UnixMilli(),
-			FinishReason: "stop",
+			FinishReason: finishReason,
 			Metadata: map[string]any{
 				"model":    orResp.Model,
 				"provider": "openrouter",
@@ -221,6 +285,7 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 			Selected:       false,
 			SelectionScore: 0.0,
 			CreatedAt:      time.Now(),
+			ToolCalls:      toolCalls,
 		}
 
 		if orResp.Usage != nil {
