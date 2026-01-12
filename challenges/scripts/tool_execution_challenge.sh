@@ -219,13 +219,14 @@ test_model_structures() {
 # Test 5: Verify providers support tools
 test_provider_tool_support() {
     log_info "Test 5: Providers support tools"
+    local all_passed=true
 
     # Check Claude provider has tool support
     if grep -q "ClaudeTool\|Tools.*\[\]ClaudeTool" "$PROJECT_ROOT/internal/llm/providers/claude/claude.go"; then
         log_info "PASS: Claude provider has tool structures"
     else
         log_error "FAIL: Claude provider missing tool support"
-        return 1
+        all_passed=false
     fi
 
     # Check OpenRouter provider has tool support
@@ -233,10 +234,57 @@ test_provider_tool_support() {
         log_info "PASS: OpenRouter provider has tool structures"
     else
         log_error "FAIL: OpenRouter provider missing tool support"
-        return 1
+        all_passed=false
     fi
 
-    return 0
+    # Check DeepSeek provider has tool support
+    if grep -q "DeepSeekTool\|Tools.*\[\]DeepSeekTool" "$PROJECT_ROOT/internal/llm/providers/deepseek/deepseek.go"; then
+        log_info "PASS: DeepSeek provider has tool structures"
+    else
+        log_error "FAIL: DeepSeek provider missing tool support"
+        all_passed=false
+    fi
+
+    # Check Gemini provider has tool support
+    if grep -q "GeminiToolDef\|GeminiFunctionDeclaration" "$PROJECT_ROOT/internal/llm/providers/gemini/gemini.go"; then
+        log_info "PASS: Gemini provider has tool structures"
+    else
+        log_error "FAIL: Gemini provider missing tool support"
+        all_passed=false
+    fi
+
+    # Check Mistral provider has tool support
+    if grep -q "MistralTool\|Tools.*\[\]MistralTool" "$PROJECT_ROOT/internal/llm/providers/mistral/mistral.go"; then
+        log_info "PASS: Mistral provider has tool structures"
+    else
+        log_error "FAIL: Mistral provider missing tool support"
+        all_passed=false
+    fi
+
+    # Check Qwen provider has tool support
+    if grep -q "QwenTool\|Tools.*\[\]QwenTool" "$PROJECT_ROOT/internal/llm/providers/qwen/qwen.go"; then
+        log_info "PASS: Qwen provider has tool structures"
+    else
+        log_error "FAIL: Qwen provider missing tool support"
+        all_passed=false
+    fi
+
+    # Check ZAI provider has tool support
+    if grep -q "ZAITool\|Tools.*\[\]ZAITool" "$PROJECT_ROOT/internal/llm/providers/zai/zai.go"; then
+        log_info "PASS: ZAI provider has tool structures"
+    else
+        log_error "FAIL: ZAI provider missing tool support"
+        all_passed=false
+    fi
+
+    # Ollama and Cerebras explicitly don't support tools (which is correct)
+    log_info "INFO: Ollama and Cerebras providers intentionally do not support tools"
+
+    if [ "$all_passed" = true ]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Test 6: Verify LLM-based tool generation function exists

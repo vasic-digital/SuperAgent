@@ -437,8 +437,10 @@ func TestZAIProvider_GetCapabilities(t *testing.T) {
 	assert.Contains(t, caps.SupportedModels, "z-ai-pro")
 	assert.Contains(t, caps.SupportedFeatures, "text_completion")
 	assert.Contains(t, caps.SupportedFeatures, "chat")
+	assert.Contains(t, caps.SupportedFeatures, "function_calling")
 	assert.True(t, caps.SupportsStreaming) // Streaming is now implemented
-	assert.False(t, caps.SupportsFunctionCalling)
+	assert.True(t, caps.SupportsFunctionCalling)
+	assert.True(t, caps.SupportsTools)
 	assert.False(t, caps.SupportsVision)
 	assert.Equal(t, 4096, caps.Limits.MaxTokens)
 	assert.Equal(t, 8192, caps.Limits.MaxInputLength)
@@ -662,7 +664,7 @@ func TestZAIProvider_convertFromZAIResponse(t *testing.T) {
 		resp, err := provider.convertFromZAIResponse(zaiResp, "test-789")
 		assert.Error(t, err)
 		assert.Nil(t, resp)
-		assert.Contains(t, err.Error(), "no content found")
+		assert.Contains(t, err.Error(), "no content or tool_calls found")
 	})
 }
 
