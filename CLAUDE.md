@@ -634,13 +634,76 @@ podman run -d --name helixagent -p 8080:7061 helixagent:latest
 ./tests/container/container_runtime_test.sh
 ```
 
+## Provider Tool/Function Calling Support
+
+HelixAgent supports OpenAI-compatible tool/function calling across most providers. Here's the support matrix:
+
+| Provider | Tool Support | Tool Types | Notes |
+|----------|-------------|------------|-------|
+| **Claude** | ✅ Yes | `ClaudeTool`, `ClaudeToolCall` | Full support with native Anthropic format |
+| **OpenRouter** | ✅ Yes | `OpenRouterTool`, `OpenRouterToolCall` | OpenAI-compatible format |
+| **DeepSeek** | ✅ Yes | `DeepSeekTool`, `DeepSeekToolCall` | OpenAI-compatible format |
+| **Gemini** | ✅ Yes | `GeminiToolDef`, `GeminiFunctionDeclaration` | Google-specific format with functionDeclarations |
+| **Mistral** | ✅ Yes | `MistralTool`, `MistralToolCall` | OpenAI-compatible format |
+| **Qwen** | ✅ Yes | `QwenTool`, `QwenToolCall` | OpenAI-compatible format |
+| **ZAI** | ✅ Yes | `ZAITool`, `ZAIToolCall` | OpenAI-compatible format |
+| **Ollama** | ❌ No | N/A | Local models - tool support depends on model |
+| **Cerebras** | ❌ No | N/A | Hardware-accelerated inference - no tool support |
+
+### Tool Request/Response Flow
+
+```go
+// Request tools are converted from models.Tool to provider-specific format
+type Tool struct {
+    Type     string       `json:"type"`      // Always "function"
+    Function ToolFunction `json:"function"`
+}
+
+// Response tool_calls are converted from provider-specific format to models.ToolCall
+type ToolCall struct {
+    ID       string           `json:"id"`
+    Type     string           `json:"type"`      // Always "function"
+    Function ToolCallFunction `json:"function"`
+}
+```
+
+### Using Tools with HelixAgent
+
+```bash
+curl -X POST http://localhost:7061/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "helixagent-debate",
+    "messages": [{"role": "user", "content": "List Go files in my project"}],
+    "tools": [{
+      "type": "function",
+      "function": {
+        "name": "Glob",
+        "description": "Find files matching a pattern",
+        "parameters": {
+          "type": "object",
+          "properties": {"pattern": {"type": "string"}},
+          "required": ["pattern"]
+        }
+      }
+    }]
+  }'
+```
+
 ## Adding a New LLM Provider
 
 1. Create provider package: `internal/llm/providers/<name>/<name>.go`
 2. Implement `LLMProvider` interface (Complete, CompleteStream, HealthCheck, GetCapabilities, ValidateConfig)
-3. Register in `internal/services/provider_registry.go`
-4. Add environment variables to `.env.example`
-5. Add tests in `internal/llm/providers/<name>/<name>_test.go`
+3. **Add tool support** (if the provider API supports it):
+   - Define provider-specific tool types (`<Provider>Tool`, `<Provider>ToolCall`, etc.)
+   - Add `Tools` field to request struct
+   - Add `ToolCalls` field to message/response struct
+   - Update `convertToRequest` to convert `models.Tool` to provider format
+   - Update `convertFromResponse` to convert tool_calls to `models.ToolCall`
+   - Set `SupportsTools: true` and `SupportsFunctionCalling: true` in GetCapabilities
+4. Register in `internal/services/provider_registry.go`
+5. Add environment variables to `.env.example`
+6. Add tests in `internal/llm/providers/<name>/<name>_test.go`
 
 ## Cloud Integration
 
