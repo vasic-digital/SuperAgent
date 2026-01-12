@@ -2282,7 +2282,7 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 					Type:  "function",
 					Function: OpenAIFunctionCall{
 						Name:      tool.Function.Name,
-						Arguments: fmt.Sprintf(`{"filePath": "%s"}`, escapeJSONString(filePath)),
+						Arguments: fmt.Sprintf(`{"file_path": "%s"}`, escapeJSONString(filePath)),
 					},
 				})
 			} else if tool, ok := availableTools["Read"]; ok {
@@ -2292,7 +2292,7 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 					Type:  "function",
 					Function: OpenAIFunctionCall{
 						Name:      tool.Function.Name,
-						Arguments: fmt.Sprintf(`{"filePath": "%s"}`, escapeJSONString(filePath)),
+						Arguments: fmt.Sprintf(`{"file_path": "%s"}`, escapeJSONString(filePath)),
 					},
 				})
 			}
@@ -2345,7 +2345,7 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 					Type:  "function",
 					Function: OpenAIFunctionCall{
 						Name:      tool.Function.Name,
-						Arguments: fmt.Sprintf(`{"filePath": "%s", "content": "%s"}`, escapeJSONString(filePath), escapeJSONString(content)),
+						Arguments: fmt.Sprintf(`{"file_path": "%s", "content": "%s"}`, escapeJSONString(filePath), escapeJSONString(content)),
 					},
 				})
 			} else if tool, ok := availableTools["Write"]; ok {
@@ -2356,7 +2356,7 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 					Type:  "function",
 					Function: OpenAIFunctionCall{
 						Name:      tool.Function.Name,
-						Arguments: fmt.Sprintf(`{"filePath": "%s", "content": "%s"}`, escapeJSONString(filePath), escapeJSONString(content)),
+						Arguments: fmt.Sprintf(`{"file_path": "%s", "content": "%s"}`, escapeJSONString(filePath), escapeJSONString(content)),
 					},
 				})
 			}
@@ -2474,7 +2474,7 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 						Type:  "function",
 						Function: OpenAIFunctionCall{
 							Name:      tool.Function.Name,
-							Arguments: fmt.Sprintf(`{"filePath": "TESTING_PLAN.md", "content": "%s"}`, escapeJSONString(content)),
+							Arguments: fmt.Sprintf(`{"file_path": "TESTING_PLAN.md", "content": "%s"}`, escapeJSONString(content)),
 						},
 					})
 				}
@@ -2863,7 +2863,7 @@ func extractToolArguments(toolName string, context string) string {
 		// Try to extract a search pattern from context
 		return `{"pattern": ".*"}`
 	case "read", "Read":
-		return `{"filePath": "README.md"}`
+		return `{"file_path": "README.md"}`
 	case "ls":
 		return `{"path": "."}`
 	default:
@@ -2892,7 +2892,7 @@ func extractActionsFromSynthesis(synthesis string, availableTools map[string]Ope
 				if path == "" {
 					path = "README.md"
 				}
-				return fmt.Sprintf(`{"filePath": "%s"}`, escapeJSONString(path))
+				return fmt.Sprintf(`{"file_path": "%s"}`, escapeJSONString(path))
 			},
 		},
 		// File writing patterns
@@ -2905,7 +2905,7 @@ func extractActionsFromSynthesis(synthesis string, availableTools map[string]Ope
 					path = "output.md"
 				}
 				content := extractContentForFile(s, path)
-				return fmt.Sprintf(`{"filePath": "%s", "content": "%s"}`, escapeJSONString(path), escapeJSONString(content))
+				return fmt.Sprintf(`{"file_path": "%s", "content": "%s"}`, escapeJSONString(path), escapeJSONString(content))
 			},
 		},
 		// File search patterns
@@ -2951,7 +2951,7 @@ func extractActionsFromSynthesis(synthesis string, availableTools map[string]Ope
 				if path == "" {
 					path = "file.txt"
 				}
-				return fmt.Sprintf(`{"filePath": "%s", "oldString": "", "newString": ""}`, escapeJSONString(path))
+				return fmt.Sprintf(`{"file_path": "%s", "old_string": "", "new_string": ""}`, escapeJSONString(path))
 			},
 		},
 	}
@@ -3047,7 +3047,7 @@ func extractActionsFromSynthesis(synthesis string, availableTools map[string]Ope
 					Type:  "function",
 					Function: OpenAIFunctionCall{
 						Name:      tool.Function.Name,
-						Arguments: fmt.Sprintf(`{"filePath": "./%s", "content": "%s"}`, fileName, escapeJSONString(content)),
+						Arguments: fmt.Sprintf(`{"file_path": "./%s", "content": "%s"}`, fileName, escapeJSONString(content)),
 					},
 				})
 			}
