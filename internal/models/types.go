@@ -51,6 +51,23 @@ type LLMRequest struct {
 	StartedAt      *time.Time        `json:"started_at" db:"started_at"`
 	CompletedAt    *time.Time        `json:"completed_at" db:"completed_at"`
 	RequestType    string            `json:"request_type" db:"request_type"`
+	// Tools available for the LLM to call (OpenAI format)
+	Tools []Tool `json:"tools,omitempty"`
+	// ToolChoice specifies how the model should use tools ("none", "auto", "required", or specific tool)
+	ToolChoice interface{} `json:"tool_choice,omitempty"`
+}
+
+// Tool represents a tool available for the LLM to call
+type Tool struct {
+	Type     string       `json:"type"` // Always "function" for now
+	Function ToolFunction `json:"function"`
+}
+
+// ToolFunction describes a function that can be called
+type ToolFunction struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description,omitempty"`
+	Parameters  map[string]interface{} `json:"parameters,omitempty"`
 }
 
 type LLMResponse struct {
@@ -67,6 +84,21 @@ type LLMResponse struct {
 	Selected       bool                   `json:"selected" db:"selected"`
 	SelectionScore float64                `json:"selection_score" db:"selection_score"`
 	CreatedAt      time.Time              `json:"created_at" db:"created_at"`
+	// ToolCalls returned by the LLM when it wants to use tools
+	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
+}
+
+// ToolCall represents a tool call requested by the LLM
+type ToolCall struct {
+	ID       string           `json:"id"`
+	Type     string           `json:"type"` // Always "function" for now
+	Function ToolCallFunction `json:"function"`
+}
+
+// ToolCallFunction contains the function name and arguments to call
+type ToolCallFunction struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"` // JSON string of arguments
 }
 
 type Message struct {

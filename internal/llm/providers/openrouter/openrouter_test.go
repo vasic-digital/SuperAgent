@@ -110,7 +110,6 @@ func TestSimpleOpenRouterProvider_Complete_Success(t *testing.T) {
 		var reqBody struct {
 			Model       string           `json:"model"`
 			Messages    []models.Message `json:"messages"`
-			Prompt      string           `json:"prompt,omitempty"`
 			MaxTokens   int              `json:"max_tokens,omitempty"`
 			Temperature float64          `json:"temperature,omitempty"`
 		}
@@ -121,7 +120,10 @@ func TestSimpleOpenRouterProvider_Complete_Success(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, "openrouter/anthropic/claude-3.5-sonnet", reqBody.Model)
-		assert.Equal(t, "Hello, how are you?", reqBody.Prompt)
+		// Prompt is converted to a system message for compatibility
+		assert.NotEmpty(t, reqBody.Messages, "Messages should not be empty")
+		assert.Equal(t, "system", reqBody.Messages[0].Role)
+		assert.Equal(t, "Hello, how are you?", reqBody.Messages[0].Content)
 		assert.Equal(t, 1000, reqBody.MaxTokens)
 		assert.Equal(t, 0.7, reqBody.Temperature)
 

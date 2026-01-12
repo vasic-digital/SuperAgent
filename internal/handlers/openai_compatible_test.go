@@ -2951,7 +2951,7 @@ func TestGenerateActionToolCalls(t *testing.T) {
 	}
 
 	t.Run("returns_empty_when_no_tools", func(t *testing.T) {
-		result := handler.generateActionToolCalls(ctx, "test topic", "synthesis", nil, nil)
+		result := handler.generateActionToolCalls(ctx, "test topic", "synthesis", nil, nil, nil)
 		assert.Empty(t, result, "Should return empty when no tools provided")
 	})
 
@@ -2959,7 +2959,7 @@ func TestGenerateActionToolCalls(t *testing.T) {
 		topic := "Do you see my codebase?"
 		synthesis := "Yes, I can access the codebase using the available tools."
 
-		result := handler.generateActionToolCalls(ctx, topic, synthesis, tools, nil)
+		result := handler.generateActionToolCalls(ctx, topic, synthesis, tools, nil, nil)
 
 		assert.NotEmpty(t, result, "Should generate tool calls for codebase access")
 		assert.Equal(t, "Glob", result[0].Function.Name)
@@ -2970,7 +2970,7 @@ func TestGenerateActionToolCalls(t *testing.T) {
 		topic := "Search for OpenAITool in the codebase"
 		synthesis := "I can search for OpenAITool using grep."
 
-		result := handler.generateActionToolCalls(ctx, topic, synthesis, tools, nil)
+		result := handler.generateActionToolCalls(ctx, topic, synthesis, tools, nil, nil)
 
 		// Should contain Grep tool call
 		foundGrep := false
@@ -2988,7 +2988,7 @@ func TestGenerateActionToolCalls(t *testing.T) {
 		topic := "Read README.md please"
 		synthesis := "I will read the README.md file."
 
-		result := handler.generateActionToolCalls(ctx, topic, synthesis, tools, nil)
+		result := handler.generateActionToolCalls(ctx, topic, synthesis, tools, nil, nil)
 
 		// Should contain Read tool call
 		foundRead := false
@@ -3006,7 +3006,7 @@ func TestGenerateActionToolCalls(t *testing.T) {
 		topic := "How is the project structured?"
 		synthesis := "To understand the project structure, I recommend using the Glob tool to explore the file system."
 
-		result := handler.generateActionToolCalls(ctx, topic, synthesis, tools, nil)
+		result := handler.generateActionToolCalls(ctx, topic, synthesis, tools, nil, nil)
 
 		// Should generate Glob from both structure keyword and synthesis mentioning "glob tool"
 		assert.NotEmpty(t, result, "Should generate tool calls from synthesis")
@@ -3016,7 +3016,7 @@ func TestGenerateActionToolCalls(t *testing.T) {
 		topic := "Can you access my code?"
 		synthesis := "Yes, I can access the codebase."
 
-		result := handler.generateActionToolCalls(ctx, topic, synthesis, tools, nil)
+		result := handler.generateActionToolCalls(ctx, topic, synthesis, tools, nil, nil)
 
 		for i, tc := range result {
 			assert.Equal(t, i, tc.Index, "Index should match position")
@@ -3026,6 +3026,137 @@ func TestGenerateActionToolCalls(t *testing.T) {
 			assert.NotEmpty(t, tc.Function.Arguments, "Arguments should not be empty")
 		}
 	})
+}
+
+// TestGenerateLLMBasedToolCalls tests the LLM-based tool call generation
+func TestGenerateLLMBasedToolCalls(t *testing.T) {
+	handler := &UnifiedHandler{
+		providerRegistry:  nil, // Will cause early return
+		debateTeamConfig:  nil,
+	}
+
+	ctx := context.Background()
+
+	tools := []OpenAITool{
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Glob",
+				Description: "Find files by pattern",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"pattern": map[string]interface{}{
+							"type":        "string",
+							"description": "Glob pattern to match files",
+						},
+					},
+					"required": []string{"pattern"},
+				},
+			},
+		},
+	}
+
+	messages := []OpenAIMessage{
+		{Role: "user", Content: "Can you help me explore my codebase?"},
+		{Role: "assistant", Content: "Yes, I can help you explore your codebase using the available tools."},
+		{Role: "user", Content: "yes, please proceed"},
+	}
+
+	synthesis := "To explore the codebase, I will use the Glob tool to list all files."
+
+	t.Run("returns_empty_when_no_registry", func(t *testing.T) {
+		result := handler.generateLLMBasedToolCalls(ctx, messages, tools, synthesis)
+		assert.Empty(t, result, "Should return empty when provider registry is nil")
+	})
+
+	t.Run("returns_empty_when_no_tools", func(t *testing.T) {
+		result := handler.generateLLMBasedToolCalls(ctx, messages, nil, synthesis)
+		assert.Empty(t, result, "Should return empty when no tools provided")
+	})
+
+	t.Run("returns_empty_when_no_debate_config", func(t *testing.T) {
+		handlerWithRegistry := &UnifiedHandler{
+			providerRegistry:  nil,
+			debateTeamConfig:  nil,
+		}
+		result := handlerWithRegistry.generateLLMBasedToolCalls(ctx, messages, tools, synthesis)
+		assert.Empty(t, result, "Should return empty when debate config is nil")
+	})
+}
+
+// TestConvertModelToolCallsToStreamingToolCalls tests the conversion function
+func TestConvertModelToolCallsToStreamingToolCalls(t *testing.T) {
+	handler := &UnifiedHandler{}
+
+	modelToolCalls := []models.ToolCall{
+		{
+			ID:   "call_123",
+			Type: "function",
+			Function: models.ToolCallFunction{
+				Name:      "Glob",
+				Arguments: `{"pattern": "**/*.go"}`,
+			},
+		},
+		{
+			ID:   "call_456",
+			Type: "function",
+			Function: models.ToolCallFunction{
+				Name:      "Read",
+				Arguments: `{"file_path": "README.md"}`,
+			},
+		},
+	}
+
+	result := handler.convertModelToolCallsToStreamingToolCalls(modelToolCalls)
+
+	assert.Len(t, result, 2, "Should convert all tool calls")
+	assert.Equal(t, 0, result[0].Index)
+	assert.Equal(t, "call_123", result[0].ID)
+	assert.Equal(t, "function", result[0].Type)
+	assert.Equal(t, "Glob", result[0].Function.Name)
+	assert.Equal(t, `{"pattern": "**/*.go"}`, result[0].Function.Arguments)
+
+	assert.Equal(t, 1, result[1].Index)
+	assert.Equal(t, "call_456", result[1].ID)
+	assert.Equal(t, "Read", result[1].Function.Name)
+}
+
+// TestConvertOpenAIToolsToModelTools tests the conversion function
+func TestConvertOpenAIToolsToModelTools(t *testing.T) {
+	handler := &UnifiedHandler{}
+
+	openAITools := []OpenAITool{
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Glob",
+				Description: "Find files by pattern",
+				Parameters: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"pattern": map[string]interface{}{
+							"type": "string",
+						},
+					},
+				},
+			},
+		},
+		{
+			Type: "other", // Should be skipped
+			Function: OpenAIToolFunction{
+				Name: "SkipMe",
+			},
+		},
+	}
+
+	result := handler.convertOpenAIToolsToModelTools(openAITools)
+
+	assert.Len(t, result, 1, "Should only convert function tools")
+	assert.Equal(t, "function", result[0].Type)
+	assert.Equal(t, "Glob", result[0].Function.Name)
+	assert.Equal(t, "Find files by pattern", result[0].Function.Description)
+	assert.NotNil(t, result[0].Function.Parameters)
 }
 
 // TestStreamingToolCallStruct tests the StreamingToolCall structure
@@ -4537,7 +4668,7 @@ func TestBashToolCallArgumentsStructure(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := handler.generateActionToolCalls(ctx, tc.topic, tc.synthesis, tools, nil)
+			result := handler.generateActionToolCalls(ctx, tc.topic, tc.synthesis, tools, nil, nil)
 
 			// Find Bash tool call
 			for _, toolCall := range result {
@@ -4706,7 +4837,7 @@ func TestAllToolCallsHaveRequiredFields(t *testing.T) {
 
 	for _, tc := range testScenarios {
 		t.Run(tc.name, func(t *testing.T) {
-			result := handler.generateActionToolCalls(ctx, tc.topic, tc.synthesis, allTools, nil)
+			result := handler.generateActionToolCalls(ctx, tc.topic, tc.synthesis, allTools, nil, nil)
 
 			// Find the expected tool call
 			found := false

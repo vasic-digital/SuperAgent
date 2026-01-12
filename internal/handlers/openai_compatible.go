@@ -759,7 +759,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		// ACTION PHASE: If tools are available, make one final call that can return actual tool_calls
 		// This allows the AI coding assistant to actually USE the tools, not just talk about them
 		if len(req.Tools) > 0 {
-			actionToolCalls := h.generateActionToolCalls(ctx, topic, synthesisResponse, req.Tools, previousResponses)
+			actionToolCalls := h.generateActionToolCalls(ctx, topic, synthesisResponse, req.Tools, previousResponses, req.Messages)
 			if len(actionToolCalls) > 0 {
 				// Stream the tool calls to the client
 				for _, toolCall := range actionToolCalls {
@@ -1863,8 +1863,20 @@ func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, positio
 			ModelParams: models.ModelParameters{
 				Model:       currentMember.ModelName,
 				Temperature: 0.7,
-				MaxTokens:   256, // Keep responses concise for debate
+				MaxTokens:   512, // Increased to allow for tool call responses
 			},
+		}
+
+		// CRITICAL: Pass tools to the LLM so it can actually call them
+		// This enables the AI Debate to use tools like Read, Write, Glob, Grep, Bash
+		if len(tools) > 0 {
+			llmReq.Tools = h.convertOpenAIToolsToModelTools(tools)
+			llmReq.ToolChoice = "auto" // Let the LLM decide when to use tools
+			// Also pass via ProviderSpecific for backward compatibility
+			llmReq.ModelParams.ProviderSpecific = map[string]interface{}{
+				"tools":       tools,
+				"tool_choice": "auto",
+			}
 		}
 
 		// Call the LLM with a timeout
@@ -2175,7 +2187,8 @@ func (h *UnifiedHandler) generateResponseFooter() string {
 // generateActionToolCalls analyzes the debate synthesis and generates actual tool calls
 // CRITICAL: This function enables AI coding assistants to execute tools, not just talk about them
 // It analyzes the topic/question and synthesis to determine what tools should be called
-func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic string, synthesis string, tools []OpenAITool, previousResponses map[services.DebateTeamPosition]string) []StreamingToolCall {
+// Now uses a hybrid approach: pattern matching for common cases, LLM-based for confirmations
+func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic string, synthesis string, tools []OpenAITool, previousResponses map[services.DebateTeamPosition]string, messages []OpenAIMessage) []StreamingToolCall {
 	if len(tools) == 0 {
 		return nil
 	}
@@ -2835,92 +2848,105 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 	isConfirmation := containsAny(topicLower, confirmationPhrases)
 
 	if isConfirmation && len(toolCalls) == 0 {
-		logrus.WithField("topic", topic).Info("Detected user confirmation - parsing synthesis for actions")
+		logrus.WithField("topic", topic).Info("Detected user confirmation - using LLM-based tool call generation")
 
-		// Parse synthesis for actionable items and generate tool calls
-		toolCalls = append(toolCalls, extractActionsFromSynthesis(synthesis, availableTools)...)
-
-		// If synthesis mentions test coverage/testing, run tests
-		if containsAny(synthesisLower, []string{"test coverage", "coverage report", "run test", "execute test", "pytest", "jest", "go test"}) {
-			if tool, ok := availableTools["Bash"]; ok {
-				toolCalls = append(toolCalls, StreamingToolCall{
-					Index: len(toolCalls),
-					ID:    fmt.Sprintf("call_%s", generateToolCallID()),
-					Type:  "function",
-					Function: OpenAIFunctionCall{
-						Name:      tool.Function.Name,
-						Arguments: `{"command": "go test -coverprofile=coverage.out ./... 2>&1 || npm test --coverage 2>&1 || pytest --cov 2>&1 || echo 'Running available tests...'", "description": "Generate test coverage report"}`,
-					},
-				})
-			} else if tool, ok := availableTools["bash"]; ok {
-				toolCalls = append(toolCalls, StreamingToolCall{
-					Index: len(toolCalls),
-					ID:    fmt.Sprintf("call_%s", generateToolCallID()),
-					Type:  "function",
-					Function: OpenAIFunctionCall{
-						Name:      tool.Function.Name,
-						Arguments: `{"command": "go test -coverprofile=coverage.out ./... 2>&1 || npm test --coverage 2>&1 || pytest --cov 2>&1 || echo 'Running available tests...'", "description": "Generate test coverage report"}`,
-					},
-				})
-			}
+		// CRITICAL: Use LLM-based tool call generation first!
+		// This allows the LLM to intelligently decide which tools to call based on the full context
+		llmToolCalls := h.generateLLMBasedToolCalls(ctx, messages, tools, synthesis)
+		if len(llmToolCalls) > 0 {
+			logrus.WithField("tool_count", len(llmToolCalls)).Info("LLM generated tool calls on confirmation")
+			toolCalls = append(toolCalls, llmToolCalls...)
 		}
 
-		// If synthesis mentions documentation, generate docs
-		if containsAny(synthesisLower, []string{"documentation", "document", "readme", "docstring", "jsdoc"}) {
-			if tool, ok := availableTools["Write"]; ok {
-				content := extractDocumentationContent(synthesis)
-				if content != "" {
+		// If LLM didn't generate tool calls, fall back to pattern matching
+		if len(toolCalls) == 0 {
+			logrus.Info("LLM didn't generate tool calls, falling back to pattern matching")
+
+			// Parse synthesis for actionable items and generate tool calls
+			toolCalls = append(toolCalls, extractActionsFromSynthesis(synthesis, availableTools)...)
+
+			// If synthesis mentions test coverage/testing, run tests
+			if containsAny(synthesisLower, []string{"test coverage", "coverage report", "run test", "execute test", "pytest", "jest", "go test"}) {
+				if tool, ok := availableTools["Bash"]; ok {
 					toolCalls = append(toolCalls, StreamingToolCall{
 						Index: len(toolCalls),
 						ID:    fmt.Sprintf("call_%s", generateToolCallID()),
 						Type:  "function",
 						Function: OpenAIFunctionCall{
 							Name:      tool.Function.Name,
-							Arguments: fmt.Sprintf(`{"file_path": "TESTING_PLAN.md", "content": "%s"}`, escapeJSONString(content)),
+							Arguments: `{"command": "go test -coverprofile=coverage.out ./... 2>&1 || npm test --coverage 2>&1 || pytest --cov 2>&1 || echo 'Running available tests...'", "description": "Generate test coverage report"}`,
+						},
+					})
+				} else if tool, ok := availableTools["bash"]; ok {
+					toolCalls = append(toolCalls, StreamingToolCall{
+						Index: len(toolCalls),
+						ID:    fmt.Sprintf("call_%s", generateToolCallID()),
+						Type:  "function",
+						Function: OpenAIFunctionCall{
+							Name:      tool.Function.Name,
+							Arguments: `{"command": "go test -coverprofile=coverage.out ./... 2>&1 || npm test --coverage 2>&1 || pytest --cov 2>&1 || echo 'Running available tests...'", "description": "Generate test coverage report"}`,
 						},
 					})
 				}
 			}
-		}
 
-		// If synthesis mentions scanning/analyzing codebase
-		if containsAny(synthesisLower, []string{"scan", "analyze", "inventory", "identify"}) {
-			if tool, ok := availableTools["Glob"]; ok {
-				toolCalls = append(toolCalls, StreamingToolCall{
-					Index: len(toolCalls),
-					ID:    fmt.Sprintf("call_%s", generateToolCallID()),
-					Type:  "function",
-					Function: OpenAIFunctionCall{
-						Name:      tool.Function.Name,
-						Arguments: `{"pattern": "**/*.{py,js,ts,go,java,kt}"}`,
-					},
-				})
-			} else if tool, ok := availableTools["glob"]; ok {
-				toolCalls = append(toolCalls, StreamingToolCall{
-					Index: len(toolCalls),
-					ID:    fmt.Sprintf("call_%s", generateToolCallID()),
-					Type:  "function",
-					Function: OpenAIFunctionCall{
-						Name:      tool.Function.Name,
-						Arguments: `{"pattern": "**/*.{py,js,ts,go,java,kt}"}`,
-					},
-				})
+			// If synthesis mentions documentation, generate docs
+			if containsAny(synthesisLower, []string{"documentation", "document", "readme", "docstring", "jsdoc"}) {
+				if tool, ok := availableTools["Write"]; ok {
+					content := extractDocumentationContent(synthesis)
+					if content != "" {
+						toolCalls = append(toolCalls, StreamingToolCall{
+							Index: len(toolCalls),
+							ID:    fmt.Sprintf("call_%s", generateToolCallID()),
+							Type:  "function",
+							Function: OpenAIFunctionCall{
+								Name:      tool.Function.Name,
+								Arguments: fmt.Sprintf(`{"file_path": "TESTING_PLAN.md", "content": "%s"}`, escapeJSONString(content)),
+							},
+						})
+					}
+				}
 			}
-		}
 
-		// If no specific tool calls extracted, at least do a codebase scan as a starting action
-		if len(toolCalls) == 0 {
-			logrus.Info("User confirmed action but no specific tools extracted - starting with codebase analysis")
-			if tool, ok := availableTools["Glob"]; ok {
-				toolCalls = append(toolCalls, StreamingToolCall{
-					Index: len(toolCalls),
-					ID:    fmt.Sprintf("call_%s", generateToolCallID()),
-					Type:  "function",
-					Function: OpenAIFunctionCall{
-						Name:      tool.Function.Name,
-						Arguments: `{"pattern": "**/*"}`,
-					},
-				})
+			// If synthesis mentions scanning/analyzing codebase
+			if containsAny(synthesisLower, []string{"scan", "analyze", "inventory", "identify"}) {
+				if tool, ok := availableTools["Glob"]; ok {
+					toolCalls = append(toolCalls, StreamingToolCall{
+						Index: len(toolCalls),
+						ID:    fmt.Sprintf("call_%s", generateToolCallID()),
+						Type:  "function",
+						Function: OpenAIFunctionCall{
+							Name:      tool.Function.Name,
+							Arguments: `{"pattern": "**/*.{py,js,ts,go,java,kt}"}`,
+						},
+					})
+				} else if tool, ok := availableTools["glob"]; ok {
+					toolCalls = append(toolCalls, StreamingToolCall{
+						Index: len(toolCalls),
+						ID:    fmt.Sprintf("call_%s", generateToolCallID()),
+						Type:  "function",
+						Function: OpenAIFunctionCall{
+							Name:      tool.Function.Name,
+							Arguments: `{"pattern": "**/*.{py,js,ts,go,java,kt}"}`,
+						},
+					})
+				}
+			}
+
+			// If no specific tool calls extracted, at least do a codebase scan as a starting action
+			if len(toolCalls) == 0 {
+				logrus.Info("User confirmed action but no specific tools extracted - starting with codebase analysis")
+				if tool, ok := availableTools["Glob"]; ok {
+					toolCalls = append(toolCalls, StreamingToolCall{
+						Index: len(toolCalls),
+						ID:    fmt.Sprintf("call_%s", generateToolCallID()),
+						Type:  "function",
+						Function: OpenAIFunctionCall{
+							Name:      tool.Function.Name,
+							Arguments: `{"pattern": "**/*"}`,
+						},
+					})
+				}
 			}
 		}
 	}
@@ -2985,6 +3011,200 @@ func sanitizeDisplayContent(content string) string {
 	content = strings.TrimSpace(content)
 
 	return content
+}
+
+// convertOpenAIToolsToModelTools converts OpenAI format tools to models.Tool format
+func (h *UnifiedHandler) convertOpenAIToolsToModelTools(tools []OpenAITool) []models.Tool {
+	result := make([]models.Tool, 0, len(tools))
+	for _, tool := range tools {
+		if tool.Type == "function" {
+			modelTool := models.Tool{
+				Type: "function",
+				Function: models.ToolFunction{
+					Name:        tool.Function.Name,
+					Description: tool.Function.Description,
+					Parameters:  tool.Function.Parameters,
+				},
+			}
+			result = append(result, modelTool)
+		}
+	}
+	return result
+}
+
+// convertModelToolCallsToStreamingToolCalls converts models.ToolCall to StreamingToolCall
+func (h *UnifiedHandler) convertModelToolCallsToStreamingToolCalls(toolCalls []models.ToolCall) []StreamingToolCall {
+	result := make([]StreamingToolCall, 0, len(toolCalls))
+	for i, tc := range toolCalls {
+		result = append(result, StreamingToolCall{
+			Index: i,
+			ID:    tc.ID,
+			Type:  tc.Type,
+			Function: OpenAIFunctionCall{
+				Name:      tc.Function.Name,
+				Arguments: tc.Function.Arguments,
+			},
+		})
+	}
+	return result
+}
+
+// generateLLMBasedToolCalls makes an actual LLM call with tools enabled to get proper tool_calls
+// CRITICAL: This function enables real tool execution based on LLM decisions, not pattern matching
+// It sends the full conversation context to the LLM and lets the model decide which tools to call
+func (h *UnifiedHandler) generateLLMBasedToolCalls(ctx context.Context, messages []OpenAIMessage, tools []OpenAITool, synthesis string) []StreamingToolCall {
+	if h.providerRegistry == nil || h.debateTeamConfig == nil || len(tools) == 0 {
+		return nil
+	}
+
+	// Build tool descriptions for the system prompt
+	var toolDescriptions strings.Builder
+	toolDescriptions.WriteString("You have access to the following tools:\n\n")
+	for _, tool := range tools {
+		if tool.Type == "function" {
+			toolDescriptions.WriteString(fmt.Sprintf("- %s: %s\n", tool.Function.Name, tool.Function.Description))
+			if tool.Function.Parameters != nil {
+				if props, ok := tool.Function.Parameters["properties"].(map[string]interface{}); ok {
+					toolDescriptions.WriteString("  Parameters:\n")
+					for name, details := range props {
+						if detailsMap, ok := details.(map[string]interface{}); ok {
+							desc := ""
+							if d, ok := detailsMap["description"].(string); ok {
+								desc = d
+							}
+							toolDescriptions.WriteString(fmt.Sprintf("    - %s: %s\n", name, desc))
+						}
+					}
+				}
+			}
+			toolDescriptions.WriteString("\n")
+		}
+	}
+
+	// Build the system prompt for tool selection
+	systemPrompt := fmt.Sprintf(`You are an AI coding assistant that can execute tools to help users with their tasks.
+
+%s
+IMPORTANT INSTRUCTIONS:
+1. Based on the conversation context and synthesis, determine what tool(s) should be called
+2. You MUST use tools to take action - do not just describe what you would do
+3. If the user has confirmed (e.g., "yes", "proceed", "go ahead"), immediately execute the planned action
+4. If exploring a codebase, start with Glob to list files, then Read to examine specific files
+5. For search queries, use Grep to find patterns in code
+6. For writing files, use Write with the full file path and content
+7. For running commands, use Bash with appropriate commands
+
+The AI Debate Team has synthesized the following consensus:
+%s
+
+Based on this context, call the appropriate tool(s) to execute the planned action.`, toolDescriptions.String(), synthesis)
+
+	// Build the user prompt from conversation context
+	var userPromptBuilder strings.Builder
+	userPromptBuilder.WriteString("Conversation context:\n\n")
+	for i, msg := range messages {
+		if msg.Role == "user" || msg.Role == "assistant" {
+			prefix := "User"
+			if msg.Role == "assistant" {
+				prefix = "Assistant"
+			}
+			// Truncate long messages
+			content := msg.Content
+			if len(content) > 500 {
+				content = content[:500] + "..."
+			}
+			userPromptBuilder.WriteString(fmt.Sprintf("[%d] %s: %s\n\n", i+1, prefix, content))
+		}
+	}
+	userPromptBuilder.WriteString("\nBased on this conversation, call the appropriate tool(s) NOW to help the user.")
+
+	// Get the mediator (or first available) member for the tool call
+	mediatorMember := h.debateTeamConfig.GetTeamMember(services.PositionMediator)
+	if mediatorMember == nil {
+		// Try other positions
+		positions := []services.DebateTeamPosition{
+			services.PositionSynthesis,
+			services.PositionAnalyst,
+			services.PositionProposer,
+			services.PositionCritic,
+		}
+		for _, pos := range positions {
+			mediatorMember = h.debateTeamConfig.GetTeamMember(pos)
+			if mediatorMember != nil {
+				break
+			}
+		}
+	}
+	if mediatorMember == nil {
+		logrus.Warn("No provider available for LLM-based tool call generation")
+		return nil
+	}
+
+	// Get provider
+	provider, err := h.getProviderForMember(mediatorMember)
+	if err != nil {
+		// Try fallbacks
+		currentMember := mediatorMember.Fallback
+		for currentMember != nil {
+			provider, err = h.getProviderForMember(currentMember)
+			if err == nil {
+				break
+			}
+			currentMember = currentMember.Fallback
+		}
+		if provider == nil {
+			logrus.WithError(err).Warn("Failed to get provider for LLM-based tool calls")
+			return nil
+		}
+	}
+
+	// Create the LLM request with tools enabled
+	llmReq := &models.LLMRequest{
+		ID:        fmt.Sprintf("tool-call-%d", time.Now().UnixNano()),
+		SessionID: "tool-call-session",
+		Prompt:    userPromptBuilder.String(),
+		Messages: []models.Message{
+			{Role: "system", Content: systemPrompt},
+			{Role: "user", Content: userPromptBuilder.String()},
+		},
+		ModelParams: models.ModelParameters{
+			Model:       mediatorMember.ModelName,
+			Temperature: 0.3, // Lower temperature for more deterministic tool selection
+			MaxTokens:   1024,
+		},
+		Tools:      h.convertOpenAIToolsToModelTools(tools),
+		ToolChoice: "auto", // Let the LLM decide when to use tools
+	}
+
+	// Also pass via ProviderSpecific for backward compatibility with providers that check there
+	llmReq.ModelParams.ProviderSpecific = map[string]interface{}{
+		"tools":       tools,
+		"tool_choice": "auto",
+	}
+
+	// Call the LLM with timeout
+	llmCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	resp, err := provider.Complete(llmCtx, llmReq)
+	if err != nil {
+		logrus.WithError(err).WithField("provider", mediatorMember.ProviderName).Warn("LLM tool call generation failed")
+		return nil
+	}
+
+	// Check if the response contains tool_calls
+	if len(resp.ToolCalls) > 0 {
+		logrus.WithFields(logrus.Fields{
+			"provider":        mediatorMember.ProviderName,
+			"tool_calls":      len(resp.ToolCalls),
+			"first_tool_name": resp.ToolCalls[0].Function.Name,
+		}).Info("LLM generated tool calls successfully")
+		return h.convertModelToolCallsToStreamingToolCalls(resp.ToolCalls)
+	}
+
+	// No tool calls in response - the LLM decided not to use tools
+	logrus.WithField("provider", mediatorMember.ProviderName).Debug("LLM did not generate any tool calls")
+	return nil
 }
 
 // extractSearchTerm extracts the search term from a query
@@ -4544,9 +4764,10 @@ func parseEmbeddedFunctionCalls(content string) []EmbeddedFunctionCall {
 	// <Write><file_path>...</file_path><content>...</content></Write>
 	// Also handles lowercase variants: <bash>, <read>, etc.
 	// Go's regexp doesn't support backreferences, so we check each tag separately
-	simpleTags := []string{"Write", "Edit", "Read", "Glob", "Grep", "Bash", "write", "edit", "read", "glob", "grep", "bash", "shell"}
+	// Note: Only use one case variant per tag since regex is case-insensitive
+	simpleTags := []string{"Write", "Edit", "Read", "Glob", "Grep", "Bash", "shell"}
 	for _, tag := range simpleTags {
-		// Use case-insensitive matching with (?i) flag
+		// Use case-insensitive matching with (?i) flag - handles both <Write> and <write>
 		tagPattern := regexp.MustCompile(`(?si)<` + tag + `>(.*?)</` + tag + `>`)
 		tagMatches := tagPattern.FindAllStringSubmatch(content, -1)
 		for _, match := range tagMatches {

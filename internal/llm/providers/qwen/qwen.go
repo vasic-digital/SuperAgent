@@ -62,12 +62,15 @@ type QwenRequest struct {
 	MaxTokens   int           `json:"max_tokens,omitempty"`
 	TopP        float64       `json:"top_p,omitempty"`
 	Stop        []string      `json:"stop,omitempty"`
+	Tools       []QwenTool    `json:"tools,omitempty"`
+	ToolChoice  interface{}   `json:"tool_choice,omitempty"`
 }
 
 // QwenMessage represents a message in the Qwen API format
 type QwenMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role      string         `json:"role"`
+	Content   string         `json:"content"`
+	ToolCalls []QwenToolCall `json:"tool_calls,omitempty"`
 }
 
 // QwenResponse represents a response from the Qwen API
@@ -121,8 +124,35 @@ type QwenStreamChoice struct {
 
 // QwenStreamDelta represents the delta content in a streaming response
 type QwenStreamDelta struct {
-	Role    string `json:"role,omitempty"`
-	Content string `json:"content,omitempty"`
+	Role      string         `json:"role,omitempty"`
+	Content   string         `json:"content,omitempty"`
+	ToolCalls []QwenToolCall `json:"tool_calls,omitempty"`
+}
+
+// QwenTool represents a tool definition for Qwen API
+type QwenTool struct {
+	Type     string       `json:"type"`
+	Function QwenToolFunc `json:"function"`
+}
+
+// QwenToolFunc represents the function definition within a tool
+type QwenToolFunc struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description,omitempty"`
+	Parameters  map[string]interface{} `json:"parameters,omitempty"`
+}
+
+// QwenToolCall represents a tool call in the response
+type QwenToolCall struct {
+	ID       string               `json:"id"`
+	Type     string               `json:"type"`
+	Function QwenToolCallFunction `json:"function"`
+}
+
+// QwenToolCallFunction represents the function call details
+type QwenToolCallFunction struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 // NewQwenProvider creates a new Qwen provider instance
@@ -545,7 +575,7 @@ func (q *QwenProvider) convertToQwenRequest(req *models.LLMRequest) *QwenRequest
 		})
 	}
 
-	return &QwenRequest{
+	qwenReq := &QwenRequest{
 		Model:       q.model,
 		Messages:    messages,
 		Stream:      false,
@@ -554,6 +584,25 @@ func (q *QwenProvider) convertToQwenRequest(req *models.LLMRequest) *QwenRequest
 		TopP:        req.ModelParams.TopP,
 		Stop:        req.ModelParams.StopSequences,
 	}
+
+	// Convert tools if provided
+	if len(req.Tools) > 0 {
+		qwenTools := make([]QwenTool, 0, len(req.Tools))
+		for _, tool := range req.Tools {
+			qwenTools = append(qwenTools, QwenTool{
+				Type: tool.Type,
+				Function: QwenToolFunc{
+					Name:        tool.Function.Name,
+					Description: tool.Function.Description,
+					Parameters:  tool.Function.Parameters,
+				},
+			})
+		}
+		qwenReq.Tools = qwenTools
+		qwenReq.ToolChoice = "auto"
+	}
+
+	return qwenReq
 }
 
 // convertFromQwenResponse converts Qwen API response to internal format
@@ -564,7 +613,7 @@ func (q *QwenProvider) convertFromQwenResponse(resp *QwenResponse, requestID str
 
 	choice := resp.Choices[0]
 
-	return &models.LLMResponse{
+	llmResp := &models.LLMResponse{
 		ID:           resp.ID,
 		RequestID:    requestID,
 		ProviderID:   "qwen",
@@ -581,7 +630,29 @@ func (q *QwenProvider) convertFromQwenResponse(resp *QwenResponse, requestID str
 			"completion_tokens": resp.Usage.CompletionTokens,
 		},
 		CreatedAt: time.Now(),
-	}, nil
+	}
+
+	// Convert tool calls if present
+	if len(choice.Message.ToolCalls) > 0 {
+		toolCalls := make([]models.ToolCall, 0, len(choice.Message.ToolCalls))
+		for _, tc := range choice.Message.ToolCalls {
+			toolCalls = append(toolCalls, models.ToolCall{
+				ID:   tc.ID,
+				Type: tc.Type,
+				Function: models.ToolCallFunction{
+					Name:      tc.Function.Name,
+					Arguments: tc.Function.Arguments,
+				},
+			})
+		}
+		llmResp.ToolCalls = toolCalls
+		// Update finish_reason if tool_calls are present
+		if choice.FinishReason == "" || choice.FinishReason == "stop" {
+			llmResp.FinishReason = "tool_calls"
+		}
+	}
+
+	return llmResp, nil
 }
 
 // makeRequest sends a request to the Qwen API with retry logic

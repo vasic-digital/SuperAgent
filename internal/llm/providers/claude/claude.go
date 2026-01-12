@@ -56,6 +56,16 @@ type ClaudeRequest struct {
 	Stream        bool            `json:"stream,omitempty"`
 	Messages      []ClaudeMessage `json:"messages"`
 	System        string          `json:"system,omitempty"`
+	// Tools for function calling
+	Tools      []ClaudeTool `json:"tools,omitempty"`
+	ToolChoice interface{}  `json:"tool_choice,omitempty"` // "auto", "any", {"type": "tool", "name": "tool_name"}
+}
+
+// ClaudeTool represents a tool definition for Claude
+type ClaudeTool struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description,omitempty"`
+	InputSchema map[string]interface{} `json:"input_schema"`
 }
 
 type ClaudeMessage struct {
@@ -76,7 +86,11 @@ type ClaudeResponse struct {
 
 type ClaudeContent struct {
 	Type string `json:"type"`
-	Text string `json:"text"`
+	Text string `json:"text,omitempty"`
+	// For tool_use content blocks
+	ID    string                 `json:"id,omitempty"`
+	Name  string                 `json:"name,omitempty"`
+	Input map[string]interface{} `json:"input,omitempty"`
 }
 
 type ClaudeUsage struct {
@@ -386,7 +400,7 @@ func (p *ClaudeProvider) convertRequest(req *models.LLMRequest) ClaudeRequest {
 		}
 	}
 
-	return ClaudeRequest{
+	claudeReq := ClaudeRequest{
 		Model:         p.model,
 		MaxTokens:     req.ModelParams.MaxTokens,
 		Temperature:   req.ModelParams.Temperature,
@@ -396,18 +410,71 @@ func (p *ClaudeProvider) convertRequest(req *models.LLMRequest) ClaudeRequest {
 		Messages:      messages,
 		System:        systemPrompt,
 	}
+
+	// Convert tools if present
+	if len(req.Tools) > 0 {
+		claudeReq.Tools = make([]ClaudeTool, 0, len(req.Tools))
+		for _, tool := range req.Tools {
+			if tool.Type == "function" {
+				claudeTool := ClaudeTool{
+					Name:        tool.Function.Name,
+					Description: tool.Function.Description,
+					InputSchema: tool.Function.Parameters,
+				}
+				// Ensure input_schema has a type field (required by Claude)
+				if claudeTool.InputSchema == nil {
+					claudeTool.InputSchema = map[string]interface{}{
+						"type":       "object",
+						"properties": map[string]interface{}{},
+					}
+				} else if _, hasType := claudeTool.InputSchema["type"]; !hasType {
+					claudeTool.InputSchema["type"] = "object"
+				}
+				claudeReq.Tools = append(claudeReq.Tools, claudeTool)
+			}
+		}
+		// Set tool_choice based on request
+		if req.ToolChoice != nil {
+			claudeReq.ToolChoice = req.ToolChoice
+		}
+	}
+
+	return claudeReq
 }
 
 func (p *ClaudeProvider) convertResponse(req *models.LLMRequest, claudeResp *ClaudeResponse, startTime time.Time) *models.LLMResponse {
 	var content string
 	var finishReason string
+	var toolCalls []models.ToolCall
 
-	if len(claudeResp.Content) > 0 {
-		content = claudeResp.Content[0].Text
+	// Process all content blocks
+	for _, block := range claudeResp.Content {
+		switch block.Type {
+		case "text":
+			content += block.Text
+		case "tool_use":
+			// Convert tool_use to ToolCall
+			args, err := json.Marshal(block.Input)
+			if err != nil {
+				args = []byte("{}")
+			}
+			toolCalls = append(toolCalls, models.ToolCall{
+				ID:   block.ID,
+				Type: "function",
+				Function: models.ToolCallFunction{
+					Name:      block.Name,
+					Arguments: string(args),
+				},
+			})
+		}
 	}
 
 	if claudeResp.StopReason != nil {
 		finishReason = *claudeResp.StopReason
+		// Map Claude's tool_use stop reason to OpenAI's tool_calls
+		if finishReason == "tool_use" {
+			finishReason = "tool_calls"
+		}
 	}
 
 	// Calculate confidence based on finish reason and response quality
@@ -431,6 +498,7 @@ func (p *ClaudeProvider) convertResponse(req *models.LLMRequest, claudeResp *Cla
 		Selected:       false,
 		SelectionScore: 0.0,
 		CreatedAt:      time.Now(),
+		ToolCalls:      toolCalls,
 	}
 }
 
