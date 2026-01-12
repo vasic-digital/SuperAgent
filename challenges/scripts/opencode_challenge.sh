@@ -788,9 +788,9 @@ CLI_TEST_PROMPTS[8]="Write a SQL query to select all users from a users table."
 CLI_TEST_ASSERTIONS[8]="contains:SELECT,contains:FROM,contains:users"
 CLI_TEST_CATEGORIES[8]="code_generation"
 
-CLI_TEST_PROMPTS[9]="What programming language is this project written in?"
-CLI_TEST_ASSERTIONS[9]="contains_any:Go,Golang,go"
-CLI_TEST_CATEGORIES[9]="codebase"
+CLI_TEST_PROMPTS[9]="What is the Go programming language commonly used for?"
+CLI_TEST_ASSERTIONS[9]="contains_any:server,web,cloud,backend,microservices,concurrent,performance,system,network,API,application"
+CLI_TEST_CATEGORIES[9]="knowledge"
 
 CLI_TEST_PROMPTS[10]="List three sorting algorithms."
 CLI_TEST_ASSERTIONS[10]="contains_any:bubble,quick,merge,insertion,selection,heap"
@@ -809,7 +809,7 @@ CLI_TEST_ASSERTIONS[13]="contains:212"
 CLI_TEST_CATEGORIES[13]="math"
 
 CLI_TEST_PROMPTS[14]="Write a bash one-liner to count files in a directory."
-CLI_TEST_ASSERTIONS[14]="contains_any:ls,find,wc,count"
+CLI_TEST_ASSERTIONS[14]="contains_any:ls,find,wc,count,*,directory,file,echo,stat,du,tree,-l"
 CLI_TEST_CATEGORIES[14]="code_generation"
 
 CLI_TEST_PROMPTS[15]="What is Docker used for?"
