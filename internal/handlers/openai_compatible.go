@@ -2282,7 +2282,7 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 					Type:  "function",
 					Function: OpenAIFunctionCall{
 						Name:      tool.Function.Name,
-						Arguments: fmt.Sprintf(`{"file_path": "%s"}`, escapeJSONString(filePath)),
+						Arguments: fmt.Sprintf(`{"filePath": "%s"}`, escapeJSONString(filePath)),
 					},
 				})
 			} else if tool, ok := availableTools["Read"]; ok {
@@ -2292,7 +2292,7 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 					Type:  "function",
 					Function: OpenAIFunctionCall{
 						Name:      tool.Function.Name,
-						Arguments: fmt.Sprintf(`{"file_path": "%s"}`, escapeJSONString(filePath)),
+						Arguments: fmt.Sprintf(`{"filePath": "%s"}`, escapeJSONString(filePath)),
 					},
 				})
 			}
@@ -2344,7 +2344,7 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 					Type:  "function",
 					Function: OpenAIFunctionCall{
 						Name:      tool.Function.Name,
-						Arguments: fmt.Sprintf(`{"file_path": "%s", "content": "%s"}`, escapeJSONString(filePath), escapeJSONString(content)),
+						Arguments: fmt.Sprintf(`{"filePath": "%s", "content": "%s"}`, escapeJSONString(filePath), escapeJSONString(content)),
 					},
 				})
 			} else if tool, ok := availableTools["Write"]; ok {
@@ -2355,7 +2355,7 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 					Type:  "function",
 					Function: OpenAIFunctionCall{
 						Name:      tool.Function.Name,
-						Arguments: fmt.Sprintf(`{"file_path": "%s", "content": "%s"}`, escapeJSONString(filePath), escapeJSONString(content)),
+						Arguments: fmt.Sprintf(`{"filePath": "%s", "content": "%s"}`, escapeJSONString(filePath), escapeJSONString(content)),
 					},
 				})
 			}
@@ -2734,7 +2734,7 @@ func extractToolArguments(toolName string, context string) string {
 		// Try to extract a search pattern from context
 		return `{"pattern": ".*"}`
 	case "read", "Read":
-		return `{"file_path": "README.md"}`
+		return `{"filePath": "README.md"}`
 	case "ls":
 		return `{"path": "."}`
 	default:
@@ -2944,7 +2944,83 @@ func (h *UnifiedHandler) processEmbeddedFunctionCalls(ctx context.Context, conte
 		}
 	}
 
+	// Strip any remaining unparsed tool tags that weren't matched by our patterns
+	cleanedContent = stripUnparsedToolTags(cleanedContent)
+
 	return cleanedContent, executedTools
+}
+
+// stripUnparsedToolTags removes any remaining <bash>, <read>, etc. tags that weren't parsed
+// This prevents raw tool XML from appearing in the dialogue output
+// Also handles scripting language tags: ruby, python, php, perl, etc.
+func stripUnparsedToolTags(content string) string {
+	// Tool and command tags to strip
+	toolTags := []string{
+		// Core tool tags
+		"bash", "shell", "read", "write", "edit", "glob", "grep",
+		"find", "cat", "ls", "cd", "mkdir", "rm", "mv", "cp",
+		"function", "function_call", "command", "execute", "run", "code",
+		// Scripting language tags
+		"python", "ruby", "php", "perl", "node", "nodejs", "javascript", "js",
+		"typescript", "ts", "go", "golang", "rust", "java", "kotlin", "scala",
+		"swift", "csharp", "cs", "cpp", "c", "sql", "powershell", "ps1",
+		"lua", "r", "julia", "haskell", "elixir", "clojure", "lisp",
+		// Script execution tags
+		"script", "exec", "terminal", "console", "sh", "zsh", "fish", "cmd",
+	}
+
+	result := content
+	for _, tag := range toolTags {
+		// Match opening and closing tags with any content (case-insensitive)
+		// Pattern matches: <tag>...</tag> or <TAG>...</TAG> or <Tag>...</Tag>
+		pattern := regexp.MustCompile(`(?si)<` + tag + `[^>]*>(.*?)</` + tag + `>`)
+		// Replace with just the inner content (without the tags)
+		result = pattern.ReplaceAllString(result, "$1")
+
+		// Also strip standalone tags like <bash> without closing
+		standalonePattern := regexp.MustCompile(`(?i)</?` + tag + `[^>]*>`)
+		result = standalonePattern.ReplaceAllString(result, "")
+	}
+
+	// Convert XML-style code blocks to proper markdown if they contain code
+	// Pattern: code content that looks like it should be in a code block
+	result = convertXMLCodeToMarkdown(result)
+
+	// Clean up excessive whitespace and newlines left by tag removal
+	result = regexp.MustCompile(`\n{3,}`).ReplaceAllString(result, "\n\n")
+
+	return result
+}
+
+// convertXMLCodeToMarkdown converts any remaining XML-like code blocks to proper markdown
+func convertXMLCodeToMarkdown(content string) string {
+	result := content
+
+	// Languages that should be formatted as code blocks
+	languages := []string{
+		"python", "ruby", "php", "perl", "javascript", "typescript", "go",
+		"rust", "java", "kotlin", "scala", "swift", "csharp", "cpp", "c",
+		"sql", "bash", "shell", "powershell", "lua", "r", "julia", "haskell",
+	}
+
+	for _, lang := range languages {
+		// Match ```lang ... ``` that might be malformed
+		// Also match code that was in XML tags and now needs formatting
+		malformedPattern := regexp.MustCompile(`(?si)` + "`{0,3}" + lang + `\s*\n(.*?)\n` + "`{0,3}")
+		result = malformedPattern.ReplaceAllStringFunc(result, func(match string) string {
+			// Extract the code content
+			inner := regexp.MustCompile(`(?si)` + "`{0,3}" + lang + `\s*\n(.*?)\n` + "`{0,3}").FindStringSubmatch(match)
+			if len(inner) >= 2 {
+				code := strings.TrimSpace(inner[1])
+				if code != "" {
+					return fmt.Sprintf("\n```%s\n%s\n```\n", lang, code)
+				}
+			}
+			return match
+		})
+	}
+
+	return result
 }
 
 // parseEmbeddedFunctionCalls parses function calls from LLM response text
@@ -3004,10 +3080,12 @@ func parseEmbeddedFunctionCalls(content string) []EmbeddedFunctionCall {
 
 	// Pattern 3: Simple XML format with Write/Edit/Read tags
 	// <Write><file_path>...</file_path><content>...</content></Write>
+	// Also handles lowercase variants: <bash>, <read>, etc.
 	// Go's regexp doesn't support backreferences, so we check each tag separately
-	simpleTags := []string{"Write", "Edit", "Read", "Glob", "Grep", "Bash"}
+	simpleTags := []string{"Write", "Edit", "Read", "Glob", "Grep", "Bash", "write", "edit", "read", "glob", "grep", "bash", "shell"}
 	for _, tag := range simpleTags {
-		tagPattern := regexp.MustCompile(`(?s)<` + tag + `>(.*?)</` + tag + `>`)
+		// Use case-insensitive matching with (?i) flag
+		tagPattern := regexp.MustCompile(`(?si)<` + tag + `>(.*?)</` + tag + `>`)
 		tagMatches := tagPattern.FindAllStringSubmatch(content, -1)
 		for _, match := range tagMatches {
 			if len(match) >= 2 {
