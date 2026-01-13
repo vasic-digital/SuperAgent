@@ -166,6 +166,7 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 	enabled := true
 	temperature := 0.7
 	timeout := 60000 // 60 seconds in milliseconds - required for MCP SSE connections
+	homeDir, _ := os.UserHomeDir()
 
 	// Build fallback list from debate members sorted by score
 	var fallbacks []string
@@ -303,7 +304,7 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 			},
 			"fetch": {
 				Type:    "local",
-				Command: []string{"npx", "-y", "mcp-fetch"},
+				Command: []string{homeDir + "/Applications/node-v20.18.0-linux-x64/bin/npx", "-y", "mcp-fetch"},
 				Enabled: &enabled,
 			},
 			"puppeteer": {
@@ -313,7 +314,7 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 			},
 			"sqlite": {
 				Type:    "local",
-				Command: []string{"npx", "-y", "mcp-sqlite"},
+				Command: []string{homeDir + "/Applications/node-v20.18.0-linux-x64/bin/npx", "-y", "mcp-sqlite", homeDir + "/.local/share/opencode/opencode.db"},
 				Enabled: &enabled,
 			},
 		},
