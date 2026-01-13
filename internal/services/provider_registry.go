@@ -455,9 +455,10 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	// Try OAuth first if enabled
-	if claudeConfig.Enabled || oauth_credentials.IsClaudeOAuthEnabled() {
-		if oauth_credentials.IsClaudeOAuthEnabled() {
+	// Try OAuth first if enabled (only check OAuth if auto-discovery is enabled)
+	claudeOAuthEnabled := r.autoDiscovery && oauth_credentials.IsClaudeOAuthEnabled()
+	if claudeConfig.Enabled || claudeOAuthEnabled {
+		if claudeOAuthEnabled {
 			credReader := oauth_credentials.GetGlobalReader()
 			if credReader.HasValidClaudeCredentials() {
 				claudeProvider, err := claude.NewClaudeProviderWithOAuth(
@@ -521,9 +522,10 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	// Try OAuth first if enabled
-	if qwenConfig.Enabled || oauth_credentials.IsQwenOAuthEnabled() {
-		if oauth_credentials.IsQwenOAuthEnabled() {
+	// Try OAuth first if enabled (only check OAuth if auto-discovery is enabled)
+	qwenOAuthEnabled := r.autoDiscovery && oauth_credentials.IsQwenOAuthEnabled()
+	if qwenConfig.Enabled || qwenOAuthEnabled {
+		if qwenOAuthEnabled {
 			credReader := oauth_credentials.GetGlobalReader()
 			if credReader.HasValidQwenCredentials() {
 				qwenProvider, err := qwen.NewQwenProviderWithOAuth(

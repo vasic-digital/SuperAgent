@@ -215,6 +215,7 @@ func TestProviderMappingClaudeModels(t *testing.T) {
 		"claude-3-sonnet-20240229",
 		"claude-3-haiku-20240307",
 		"claude-sonnet-4-20250514",
+		"claude-sonnet-4-5-20250929", // Claude 4.5 Sonnet (balanced)
 	}
 
 	for _, mapping := range providerMappings {

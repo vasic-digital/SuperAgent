@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - HelixAgent Multi-Provider AI Platform</title>
+    <meta name="description" content="HelixAgent pricing plans for multi-provider AI orchestration. Free open source tier, professional support, and enterprise solutions.">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Pricing - HelixAgent">
+    <meta property="og:description" content="Choose the right HelixAgent plan for your AI orchestration needs.">
+    <meta property="og:url" content="https://helixagent.ai/pricing">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        .pricing-section {
+            padding: 120px 0 80px;
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        }
+
+        .pricing-header {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 60px;
+        }
+
+        .pricing-title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 20px;
+        }
+
+        .pricing-subtitle {
+            font-size: 1.25rem;
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .pricing-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .pricing-card.featured {
+            border: 2px solid #2563eb;
+            position: relative;
+        }
+
+        .pricing-card.featured::before {
+            content: "Most Popular";
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2563eb;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        .plan-description {
+            color: #64748b;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        .plan-price {
+            margin-bottom: 30px;
+        }
+
+        .price-amount {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .price-period {
+            color: #64748b;
+            font-size: 1rem;
+        }
+
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 30px;
+        }
+
+        .plan-features li {
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            color: #475569;
+        }
+
+        .plan-features li:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            width: 20px;
+            height: 20px;
+            color: #22c55e;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .plan-cta {
+            width: 100%;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+
+        .plan-cta.primary {
+            background: #2563eb;
+            color: white;
+            border: none;
+        }
+
+        .plan-cta.primary:hover {
+            background: #1d4ed8;
+        }
+
+        .plan-cta.outline {
+            background: white;
+            color: #2563eb;
+            border: 2px solid #2563eb;
+        }
+
+        .plan-cta.outline:hover {
+            background: #eff6ff;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            padding: 80px 0;
+            background: white;
+        }
+
+        .faq-title {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 50px;
+            color: #1e293b;
+        }
+
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .faq-item {
+            padding: 20px 0;
+        }
+
+        .faq-question {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        .faq-answer {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        /* Enterprise Section */
+        .enterprise-section {
+            padding: 80px 0;
+            background: #1e293b;
+            color: white;
+        }
+
+        .enterprise-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+
+        .enterprise-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .enterprise-description {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .enterprise-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .enterprise-feature {
+            text-align: center;
+        }
+
+        .enterprise-feature-icon {
+            width: 48px;
+            height: 48px;
+            color: #60a5fa;
+            margin-bottom: 15px;
+        }
+
+        .enterprise-feature-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .enterprise-feature-desc {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .enterprise-cta {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .enterprise-cta:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">
+                <img src="/assets/images/logo.svg" alt="HelixAgent" class="nav-logo">
+                <span class="nav-title">HelixAgent</span>
+            </a>
+
+            <div class="nav-menu">
+                <a href="/#features" class="nav-link">Features</a>
+                <a href="/#providers" class="nav-link">Providers</a>
+                <a href="/docs" class="nav-link">Documentation</a>
+                <a href="/pricing" class="nav-link active">Pricing</a>
+            </div>
+
+            <div class="nav-actions">
+                <a href="/docs" class="btn btn-outline">Get Started</a>
+                <a href="https://github.com/helixagent/helixagent" class="btn btn-primary">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section">
+        <div class="pricing-header">
+            <h1 class="pricing-title">Simple, Transparent Pricing</h1>
+            <p class="pricing-subtitle">
+                HelixAgent is open source and free to use. Choose the support level that fits your needs.
+            </p>
+        </div>
+
+        <div class="pricing-grid">
+            <!-- Open Source -->
+            <div class="pricing-card">
+                <h2 class="plan-name">Open Source</h2>
+                <p class="plan-description">Perfect for developers and small projects</p>
+                <div class="plan-price">
+                    <span class="price-amount">$0</span>
+                    <span class="price-period">/ forever</span>
+                </div>
+                <ul class="plan-features">
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Full source code access
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        All 18+ LLM providers
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        AI Debate System
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Community support
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Documentation access
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        GitHub issues support
+                    </li>
+                </ul>
+                <a href="https://github.com/helixagent/helixagent" class="plan-cta outline">Get Started Free</a>
+            </div>
+
+            <!-- Professional -->
+            <div class="pricing-card featured">
+                <h2 class="plan-name">Professional</h2>
+                <p class="plan-description">For teams needing priority support</p>
+                <div class="plan-price">
+                    <span class="price-amount">$299</span>
+                    <span class="price-period">/ month</span>
+                </div>
+                <ul class="plan-features">
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Everything in Open Source
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Priority email support
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        4-hour response time
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Video course access
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Monthly office hours
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Deployment assistance
+                    </li>
+                </ul>
+                <a href="/contact" class="plan-cta primary">Contact Sales</a>
+            </div>
+
+            <!-- Enterprise -->
+            <div class="pricing-card">
+                <h2 class="plan-name">Enterprise</h2>
+                <p class="plan-description">For organizations with custom needs</p>
+                <div class="plan-price">
+                    <span class="price-amount">Custom</span>
+                    <span class="price-period">/ pricing</span>
+                </div>
+                <ul class="plan-features">
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Everything in Professional
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Dedicated support engineer
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        1-hour response SLA
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Custom integrations
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        On-premises deployment
+                    </li>
+                    <li>
+                        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Security review & audit
+                    </li>
+                </ul>
+                <a href="/contact" class="plan-cta outline">Contact Sales</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+        <h2 class="faq-title">Frequently Asked Questions</h2>
+        <div class="faq-grid">
+            <div class="faq-item">
+                <h3 class="faq-question">Is HelixAgent really free?</h3>
+                <p class="faq-answer">Yes! HelixAgent is open source under the MIT license. You can use it for free in any project, including commercial ones. The paid plans provide professional support services.</p>
+            </div>
+            <div class="faq-item">
+                <h3 class="faq-question">What LLM providers are supported?</h3>
+                <p class="faq-answer">HelixAgent supports 18+ providers including Claude, Gemini, DeepSeek, Qwen, OpenRouter, Mistral, Cerebras, Groq, and more. You only pay for the API usage from your chosen providers.</p>
+            </div>
+            <div class="faq-item">
+                <h3 class="faq-question">Do I need a paid plan to use AI Debate?</h3>
+                <p class="faq-answer">No, the AI Debate system is included in the free open source version. All features are available at no cost - paid plans only add support services.</p>
+            </div>
+            <div class="faq-item">
+                <h3 class="faq-question">Can I self-host HelixAgent?</h3>
+                <p class="faq-answer">Absolutely! HelixAgent is designed for self-hosting. You have complete control over your data and infrastructure. We provide Docker and Kubernetes deployment guides.</p>
+            </div>
+            <div class="faq-item">
+                <h3 class="faq-question">What kind of support is included?</h3>
+                <p class="faq-answer">Free tier includes community support via GitHub. Professional tier adds priority email support with 4-hour response. Enterprise includes dedicated support engineer and 1-hour SLA.</p>
+            </div>
+            <div class="faq-item">
+                <h3 class="faq-question">Can I upgrade or downgrade my plan?</h3>
+                <p class="faq-answer">Yes, you can change plans at any time. Upgrades take effect immediately, and downgrades take effect at the next billing cycle. No long-term contracts required.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enterprise CTA -->
+    <section class="enterprise-section">
+        <div class="enterprise-container">
+            <h2 class="enterprise-title">Need Custom Solutions?</h2>
+            <p class="enterprise-description">
+                We work with enterprise teams to provide custom integrations, dedicated support, and tailored solutions.
+            </p>
+            <div class="enterprise-features">
+                <div class="enterprise-feature">
+                    <svg class="enterprise-feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    <h3 class="enterprise-feature-title">Security First</h3>
+                    <p class="enterprise-feature-desc">SOC 2 compliance, security audits, and private deployments</p>
+                </div>
+                <div class="enterprise-feature">
+                    <svg class="enterprise-feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <h3 class="enterprise-feature-title">Dedicated Team</h3>
+                    <p class="enterprise-feature-desc">Dedicated engineers and success managers</p>
+                </div>
+                <div class="enterprise-feature">
+                    <svg class="enterprise-feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <h3 class="enterprise-feature-title">Custom Integration</h3>
+                    <p class="enterprise-feature-desc">Tailored solutions for your specific needs</p>
+                </div>
+                <div class="enterprise-feature">
+                    <svg class="enterprise-feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <h3 class="enterprise-feature-title">SLA Guarantee</h3>
+                    <p class="enterprise-feature-desc">99.9% uptime with guaranteed response times</p>
+                </div>
+            </div>
+            <a href="/contact" class="enterprise-cta">Talk to Sales</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-brand">
+                        <img src="/assets/images/logo.svg" alt="HelixAgent" class="footer-logo">
+                        <span class="footer-title">HelixAgent</span>
+                    </div>
+                    <p class="footer-description">
+                        AI-powered multi-provider LLM orchestration platform.
+                    </p>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="/#features">Features</a></li>
+                        <li><a href="/pricing">Pricing</a></li>
+                        <li><a href="/docs">Documentation</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://github.com/helixagent/helixagent">GitHub</a></li>
+                        <li><a href="/docs/api">API Reference</a></li>
+                        <li><a href="/docs/faq">FAQ</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-heading">Legal</h4>
+                    <ul class="footer-links">
+                        <li><a href="/privacy">Privacy</a></li>
+                        <li><a href="/terms">Terms</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 HelixAgent. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/scripts/main.js"></script>
+</body>
+</html>

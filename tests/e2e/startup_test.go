@@ -31,11 +31,10 @@ func TestE2E_StartupPerformance(t *testing.T) {
 
 	// Initialize worker pool
 	pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
-		MinWorkers: 4,
-		MaxWorkers: 16,
-		QueueSize:  1000,
+		Workers:   8,
+		QueueSize: 1000,
 	})
-	require.NoError(t, pool.Start())
+	pool.Start()
 
 	// Initialize cache
 	cacheConfig := &cache.TieredCacheConfig{
@@ -72,7 +71,7 @@ func TestE2E_LazyLoadingReducesStartupTime(t *testing.T) {
 	// Initialize all components immediately
 	bus1 := events.NewEventBus(nil)
 	pool1 := concurrency.NewWorkerPool(nil)
-	pool1.Start()
+	pool1.Start() // Start returns void
 	cache1 := cache.NewTieredCache(nil, &cache.TieredCacheConfig{
 		L1MaxSize: 10000,
 		L1TTL:     time.Minute,

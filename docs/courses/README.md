@@ -7,19 +7,30 @@ This directory contains comprehensive video course materials for HelixAgent trai
 ```
 docs/courses/
 |-- COURSE_OUTLINE.md          # Complete 11-module course outline
+|-- INSTRUCTOR_GUIDE.md        # Guide for course instructors
 |-- README.md                  # This file
 |-- slides/                    # Presentation slides for each module
-    |-- MODULE_01_INTRODUCTION.md
-    |-- MODULE_02_INSTALLATION.md
-    |-- MODULE_03_CONFIGURATION.md
-    |-- MODULE_04_PROVIDERS.md
-    |-- MODULE_05_ENSEMBLE.md
-    |-- MODULE_06_AI_DEBATE.md
-    |-- MODULE_07_PLUGINS.md
-    |-- MODULE_08_PROTOCOLS.md
-    |-- MODULE_09_OPTIMIZATION.md
-    |-- MODULE_10_SECURITY.md
-    |-- MODULE_11_TESTING_CICD.md
+|   |-- MODULE_01_INTRODUCTION.md
+|   |-- MODULE_02_INSTALLATION.md
+|   |-- MODULE_03_CONFIGURATION.md
+|   |-- MODULE_04_PROVIDERS.md
+|   |-- MODULE_05_ENSEMBLE.md
+|   |-- MODULE_06_AI_DEBATE.md
+|   |-- MODULE_07_PLUGINS.md
+|   |-- MODULE_08_PROTOCOLS.md
+|   |-- MODULE_09_OPTIMIZATION.md
+|   |-- MODULE_10_SECURITY.md
+|   |-- MODULE_11_TESTING_CICD.md
+|-- labs/                      # Hands-on lab exercises
+|   |-- README.md
+|   |-- LAB_01_GETTING_STARTED.md
+|   |-- LAB_02_PROVIDER_SETUP.md
+|   |-- LAB_03_AI_DEBATE.md
+|-- reference/                 # Quick reference materials
+|   |-- QUICK_REFERENCE.md
+|-- assessments/               # Quizzes and certifications
+    |-- QUIZ_MODULE_1_3.md
+    |-- QUIZ_MODULE_4_6.md
 ```
 
 ## Course Overview
@@ -103,6 +114,34 @@ The course supports a 4-level certification path:
 3. **Level 3: Advanced Practitioner** - Modules 7-9
 4. **Level 4: Master Engineer** - Modules 10-11
 
+## Hands-On Labs
+
+The course includes 5 comprehensive hands-on labs:
+
+| Lab | Title | Duration | Difficulty |
+|-----|-------|----------|------------|
+| 1 | [Getting Started](labs/LAB_01_GETTING_STARTED.md) | 45 min | Beginner |
+| 2 | [Provider Setup](labs/LAB_02_PROVIDER_SETUP.md) | 60 min | Intermediate |
+| 3 | [AI Debate](labs/LAB_03_AI_DEBATE.md) | 75 min | Intermediate |
+| 4 | MCP Integration | 60 min | Intermediate |
+| 5 | Production Deployment | 120 min | Advanced |
+
+## Reference Materials
+
+- **[Quick Reference Card](reference/QUICK_REFERENCE.md)** - Essential commands and API endpoints
+- **[Instructor Guide](INSTRUCTOR_GUIDE.md)** - Delivery guidelines for trainers
+
+## Assessments
+
+Certification assessments are provided for each level:
+
+| Assessment | Modules | Questions | Passing |
+|------------|---------|-----------|---------|
+| [Level 1 Quiz](assessments/QUIZ_MODULE_1_3.md) | 1-3 | 25 | 80% |
+| [Level 2 Quiz](assessments/QUIZ_MODULE_4_6.md) | 4-6 | 30 | 80% |
+| Level 3 Quiz | 7-9 | 30 | 80% |
+| Level 4 Quiz | 10-11 | 25 | 80% |
+
 ## Contributing
 
 To update or improve course materials:
@@ -114,6 +153,7 @@ To update or improve course materials:
 
 ## Version History
 
+- **v2.1.0** (January 2026) - Added labs, assessments, quick reference, instructor guide
 - **v2.0.0** (January 2026) - Complete 11-module curriculum
 - **v1.0.0** (December 2024) - Initial 6-module course
 
