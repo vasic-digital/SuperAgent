@@ -64,8 +64,8 @@ test_npm_package "@modelcontextprotocol/server-filesystem" "exists" "Official fi
 test_npm_package "@modelcontextprotocol/server-github" "exists" "Official github server"
 test_npm_package "@modelcontextprotocol/server-memory" "exists" "Official memory server"
 test_npm_package "@modelcontextprotocol/server-puppeteer" "exists" "Official puppeteer server"
-test_npm_package "mcp-fetch-server" "exists" "Alternative fetch server"
-test_npm_package "mcp-server-sqlite" "exists" "Alternative sqlite server"
+test_npm_package "mcp-fetch" "exists" "Alternative fetch server"
+test_npm_package "mcp-sqlite" "exists" "Alternative sqlite server"
 
 # Packages that should NOT exist (common misconceptions)
 test_npm_package "@modelcontextprotocol/server-fetch" "not_exists" "Does NOT exist"
@@ -131,8 +131,8 @@ log_info "=============================================="
 if command -v npx &> /dev/null; then
     test_local_server_startup "filesystem" npx -y @modelcontextprotocol/server-filesystem "$HOME"
     test_local_server_startup "memory" npx -y @modelcontextprotocol/server-memory
-    test_local_server_startup "fetch" npx -y mcp-fetch-server
-    test_local_server_startup "sqlite" npx -y mcp-server-sqlite
+    test_local_server_startup "fetch" npx -y mcp-fetch
+    test_local_server_startup "sqlite" npx -y mcp-sqlite
 else
     log_warning "npx not found, skipping local server tests"
 fi
@@ -264,7 +264,7 @@ if [ -f "$OPENCODE_CONFIG" ]; then
 
     TOTAL=$((TOTAL + 1))
     # Check for correct alternatives
-    if grep -q "mcp-fetch-server\|mcp-server-sqlite" "$OPENCODE_CONFIG" || ! grep -q "fetch\|sqlite" "$OPENCODE_CONFIG"; then
+    if grep -q "mcp-fetch\|mcp-sqlite" "$OPENCODE_CONFIG" || ! grep -q "fetch\|sqlite" "$OPENCODE_CONFIG"; then
         log_success "OpenCode config uses correct alternative packages or doesn't use them"
         PASSED=$((PASSED + 1))
     else

@@ -1042,8 +1042,8 @@ When configuring CLI agents (OpenCode, Crush, HelixCode, Kilo Code) to connect t
 ### MCP Package Names (Important)
 
 The following packages **DO NOT EXIST** in npm (common misconceptions):
-- `@modelcontextprotocol/server-fetch` - Use `mcp-fetch-server` instead
-- `@modelcontextprotocol/server-sqlite` - Use `mcp-server-sqlite` instead
+- `@modelcontextprotocol/server-fetch` - Use `mcp-fetch` instead
+- `@modelcontextprotocol/server-sqlite` - Use `mcp-sqlite` instead
 
 Verified official packages:
 - `@modelcontextprotocol/server-filesystem` ✓
