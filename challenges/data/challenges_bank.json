@@ -3666,6 +3666,43 @@
         "tracing"
       ],
       "expected_duration_seconds": 120
+    },
+    {
+      "id": "llmsverifier_cliagents",
+      "name": "LLMsVerifier CLI Agents Challenge",
+      "description": "Tests unified CLI agent configuration generation and validation via LLMsVerifier. Verifies all 16 CLI agents (OpenCode, Crush, KiloCode, HelixCode, Aider, Continue, Cursor, Cline, Windsurf, Zed, Neovim AI, VS Code AI, IntelliJ AI, Claude Code, Qwen Code, GitHub Copilot) can be generated and validated.",
+      "category": "validation",
+      "script": "challenges/scripts/llmsverifier_cliagents_challenge.sh",
+      "enabled": true,
+      "priority": 57,
+      "dependencies": [],
+      "tags": [
+        "llmsverifier",
+        "cli-agents",
+        "configuration",
+        "validation",
+        "opencode",
+        "generation"
+      ],
+      "expected_duration_seconds": 60,
+      "assertions": [
+        {
+          "type": "exact_count",
+          "target": "supported_agents",
+          "value": 16,
+          "message": "Must support exactly 16 CLI agents"
+        },
+        {
+          "type": "all_pass",
+          "target": "generation_results",
+          "message": "All CLI agent configurations must generate successfully"
+        },
+        {
+          "type": "all_pass",
+          "target": "validation_results",
+          "message": "All generated configurations must pass validation"
+        }
+      ]
     }
   ],
   "assertion_types": {

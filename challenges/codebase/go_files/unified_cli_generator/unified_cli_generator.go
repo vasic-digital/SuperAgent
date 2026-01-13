@@ -1,28 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
+
+	"llm-verifier/pkg/cliagents"
 )
-
-// CLIAgentType represents supported CLI agent types
-type CLIAgentType string
-
-const (
-	OpenCodeAgent  CLIAgentType = "opencode"
-	CrushAgent     CLIAgentType = "crush"
-	KiloCodeAgent  CLIAgentType = "kilocode"
-	HelixCodeAgent CLIAgentType = "helixcode"
-)
-
-// AllAgents returns all supported agent types
-func AllAgents() []CLIAgentType {
-	return []CLIAgentType{OpenCodeAgent, CrushAgent, KiloCodeAgent, HelixCodeAgent}
-}
 
 // DebateGroupMember represents a member of the AI debate group
 type DebateGroupMember struct {
@@ -32,35 +20,27 @@ type DebateGroupMember struct {
 	Fallbacks []string `json:"fallbacks,omitempty"`
 }
 
-// GenerationResult holds the result of config generation
-type GenerationResult struct {
-	AgentType   CLIAgentType `json:"agent_type"`
-	OutputPath  string       `json:"output_path"`
-	Success     bool         `json:"success"`
-	Error       string       `json:"error,omitempty"`
-	ConfigStats ConfigStats  `json:"stats,omitempty"`
-}
-
-// ConfigStats holds statistics about generated config
-type ConfigStats struct {
-	Providers   int `json:"providers"`
-	Agents      int `json:"agents,omitempty"`
-	MCPServers  int `json:"mcp_servers,omitempty"`
-	LSPServers  int `json:"lsp_servers,omitempty"`
-	Tools       int `json:"tools,omitempty"`
-}
-
-// UnifiedGenerator generates configurations for all CLI agents
-type UnifiedGenerator struct {
+// UnifiedCLIGenerator wraps LLMsVerifier's unified generator with HelixAgent-specific functionality
+type UnifiedCLIGenerator struct {
+	generator     *cliagents.UnifiedGenerator
 	host          string
 	port          int
 	outputDir     string
 	debateMembers []DebateGroupMember
 }
 
-// NewUnifiedGenerator creates a new unified generator
-func NewUnifiedGenerator(host string, port int, outputDir string) *UnifiedGenerator {
-	return &UnifiedGenerator{
+// NewUnifiedCLIGenerator creates a new unified generator using LLMsVerifier
+func NewUnifiedCLIGenerator(host string, port int, outputDir string) *UnifiedCLIGenerator {
+	config := &cliagents.GeneratorConfig{
+		HelixAgentHost: host,
+		HelixAgentPort: port,
+		OutputDir:      outputDir,
+		IncludeScores:  true,
+		MCPServers:     cliagents.DefaultMCPServers(),
+	}
+
+	return &UnifiedCLIGenerator{
+		generator: cliagents.NewUnifiedGenerator(config),
 		host:      host,
 		port:      port,
 		outputDir: outputDir,
@@ -68,561 +48,220 @@ func NewUnifiedGenerator(host string, port int, outputDir string) *UnifiedGenera
 }
 
 // SetDebateMembers sets the debate group members for fallback configuration
-func (g *UnifiedGenerator) SetDebateMembers(members []DebateGroupMember) {
+func (g *UnifiedCLIGenerator) SetDebateMembers(members []DebateGroupMember) {
 	g.debateMembers = members
 }
 
-// GenerateAll generates configurations for all supported CLI agents
-func (g *UnifiedGenerator) GenerateAll() []GenerationResult {
-	var results []GenerationResult
+// GenerationResult holds the result of config generation
+type GenerationResult struct {
+	AgentType   cliagents.AgentType `json:"agent_type"`
+	OutputPath  string              `json:"output_path"`
+	Success     bool                `json:"success"`
+	Error       string              `json:"error,omitempty"`
+	ConfigStats ConfigStats         `json:"stats,omitempty"`
+	Validated   bool                `json:"validated,omitempty"`
+	Warnings    []string            `json:"warnings,omitempty"`
+}
 
-	for _, agentType := range AllAgents() {
-		result := g.Generate(agentType)
-		results = append(results, result)
+// ConfigStats holds statistics about generated config
+type ConfigStats struct {
+	Providers  int `json:"providers"`
+	Agents     int `json:"agents,omitempty"`
+	MCPServers int `json:"mcp_servers,omitempty"`
+	LSPServers int `json:"lsp_servers,omitempty"`
+	Tools      int `json:"tools,omitempty"`
+}
+
+// GenerateAll generates configurations for all supported CLI agents
+func (g *UnifiedCLIGenerator) GenerateAll() []GenerationResult {
+	ctx := context.Background()
+	results, _ := g.generator.GenerateAll(ctx)
+
+	var genResults []GenerationResult
+	for _, result := range results {
+		genResult := g.convertResult(result)
+		if genResult.Success {
+			// Save the config
+			if err := g.saveConfig(result); err != nil {
+				genResult.Success = false
+				genResult.Error = fmt.Sprintf("failed to save config: %v", err)
+			}
+		}
+		genResults = append(genResults, genResult)
 	}
 
-	return results
+	return genResults
 }
 
 // Generate generates configuration for a specific CLI agent
-func (g *UnifiedGenerator) Generate(agentType CLIAgentType) GenerationResult {
-	result := GenerationResult{AgentType: agentType}
-
-	var config interface{}
-	var filename string
-	var stats ConfigStats
-
-	switch agentType {
-	case OpenCodeAgent:
-		cfg := g.generateOpenCodeConfig()
-		config = cfg
-		filename = "opencode-helix-agent.json"
-		stats = ConfigStats{
-			Providers:  len(cfg.Provider),
-			Agents:     len(cfg.Agent),
-			MCPServers: len(cfg.Mcp),
-			Tools:      len(cfg.Tools),
+func (g *UnifiedCLIGenerator) Generate(agentType cliagents.AgentType) GenerationResult {
+	ctx := context.Background()
+	result, err := g.generator.Generate(ctx, agentType)
+	if err != nil {
+		return GenerationResult{
+			AgentType: agentType,
+			Success:   false,
+			Error:     err.Error(),
 		}
+	}
 
-	case CrushAgent:
-		cfg := g.generateCrushConfig()
-		config = cfg
-		filename = "crush-helix-agent.json"
-		stats = ConfigStats{
-			Providers:  len(cfg.Providers),
-			MCPServers: len(cfg.MCP),
-			LSPServers: len(cfg.LSP),
+	genResult := g.convertResult(result)
+	if genResult.Success {
+		// Save the config
+		if err := g.saveConfig(result); err != nil {
+			genResult.Success = false
+			genResult.Error = fmt.Sprintf("failed to save config: %v", err)
 		}
+	}
 
-	case KiloCodeAgent:
-		cfg := g.generateKiloCodeConfig()
-		config = cfg
-		filename = "kilocode-helix-agent.json"
-		stats = ConfigStats{
-			Providers:  len(cfg.Providers),
-			Agents:     len(cfg.Agents),
-			MCPServers: len(cfg.MCP),
-			Tools:      len(cfg.Tools),
+	return genResult
+}
+
+// convertResult converts LLMsVerifier result to our format
+func (g *UnifiedCLIGenerator) convertResult(result *cliagents.GenerationResult) GenerationResult {
+	genResult := GenerationResult{
+		AgentType: result.AgentType,
+		Success:   result.Success,
+	}
+
+	if !result.Success {
+		if len(result.Errors) > 0 {
+			genResult.Error = result.Errors[0]
 		}
+		return genResult
+	}
 
-	case HelixCodeAgent:
-		cfg := g.generateHelixCodeConfig()
-		config = cfg
-		filename = "helixcode-helix-agent.json"
-		stats = ConfigStats{
-			Providers: len(cfg.Providers),
+	// Extract stats based on config type
+	genResult.ConfigStats = g.extractStats(result)
+
+	// Check validation
+	if result.ValidationResult != nil {
+		genResult.Validated = result.ValidationResult.Valid
+		genResult.Warnings = result.ValidationResult.Warnings
+		if !result.ValidationResult.Valid && len(result.ValidationResult.Errors) > 0 {
+			genResult.Error = result.ValidationResult.Errors[0]
+			genResult.Success = false
 		}
+	}
 
-	default:
-		result.Success = false
-		result.Error = fmt.Sprintf("unsupported agent type: %s", agentType)
-		return result
+	return genResult
+}
+
+// extractStats extracts configuration statistics from the result
+func (g *UnifiedCLIGenerator) extractStats(result *cliagents.GenerationResult) ConfigStats {
+	stats := ConfigStats{
+		Providers: 1, // We always have the helixagent provider
+	}
+
+	switch cfg := result.Config.(type) {
+	case *cliagents.OpenCodeConfig:
+		stats.MCPServers = len(cfg.MCP)
+		stats.Agents = len(cfg.Agent)
+		stats.Tools = len(cfg.Tools)
+	case *cliagents.CrushConfig:
+		stats.MCPServers = len(cfg.MCP)
+		stats.Agents = len(cfg.Agents)
+	case *cliagents.KiloCodeConfig:
+		stats.MCPServers = len(cfg.MCP)
+		stats.Agents = len(cfg.Agents)
+	case *cliagents.HelixCodeConfig:
+		stats.MCPServers = len(cfg.MCP)
+		stats.Agents = len(cfg.Agents)
+		stats.Tools = countHelixCodeTools(cfg.Tools)
+	case *cliagents.GenericAgentConfig:
+		stats.MCPServers = len(cfg.MCP)
+	}
+
+	return stats
+}
+
+// countHelixCodeTools counts enabled tools
+func countHelixCodeTools(tools cliagents.HelixCodeTools) int {
+	count := 0
+	if tools.FileSystem {
+		count++
+	}
+	if tools.Terminal {
+		count++
+	}
+	if tools.Browser {
+		count++
+	}
+	if tools.Search {
+		count++
+	}
+	if tools.Git {
+		count++
+	}
+	if tools.MCP {
+		count++
+	}
+	if tools.LSP {
+		count++
+	}
+	if tools.Embeddings {
+		count++
+	}
+	if tools.Vision {
+		count++
+	}
+	return count
+}
+
+// saveConfig saves the configuration to disk
+func (g *UnifiedCLIGenerator) saveConfig(result *cliagents.GenerationResult) error {
+	if result.Config == nil {
+		return fmt.Errorf("no configuration to save")
 	}
 
 	// Create output directory if needed
 	if err := os.MkdirAll(g.outputDir, 0755); err != nil {
-		result.Success = false
-		result.Error = fmt.Sprintf("failed to create output directory: %v", err)
-		return result
+		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	// Marshal and save
+	// Get the schema for filename extension
+	schema, _ := g.generator.GetSchema(result.AgentType)
+
+	// Always use unique filename based on agent type to prevent overwrites
+	// Format: {agent-type}-helixagent.{extension}
+	ext := ".json"
+	if schema != nil && schema.ConfigFileName != "" {
+		// Get extension from schema config file name
+		if filepath.Ext(schema.ConfigFileName) != "" {
+			ext = filepath.Ext(schema.ConfigFileName)
+		}
+	}
+	filename := fmt.Sprintf("%s-helixagent%s", result.AgentType, ext)
+
 	outputPath := filepath.Join(g.outputDir, filename)
-	data, err := json.MarshalIndent(config, "", "  ")
+
+	// Marshal and save
+	data, err := json.MarshalIndent(result.Config, "", "  ")
 	if err != nil {
-		result.Success = false
-		result.Error = fmt.Sprintf("failed to marshal config: %v", err)
-		return result
+		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
 	if err := os.WriteFile(outputPath, data, 0644); err != nil {
-		result.Success = false
-		result.Error = fmt.Sprintf("failed to write config: %v", err)
-		return result
+		return fmt.Errorf("failed to write config: %w", err)
 	}
 
-	result.Success = true
-	result.OutputPath = outputPath
-	result.ConfigStats = stats
-	return result
+	result.ConfigPath = outputPath
+	return nil
 }
 
-// ========================
-// OpenCode Configuration
-// ========================
-
-type OpenCodeConfig struct {
-	Schema       string                        `json:"$schema,omitempty"`
-	Plugin       []string                      `json:"plugin,omitempty"`
-	Instructions []string                      `json:"instructions,omitempty"`
-	Provider     map[string]OpenCodeProvider   `json:"provider,omitempty"`
-	Mcp          map[string]OpenCodeMCP        `json:"mcp,omitempty"`
-	Tools        map[string]bool               `json:"tools,omitempty"`
-	Agent        map[string]OpenCodeAgentConfig      `json:"agent,omitempty"`
-	Permission   map[string]string             `json:"permission,omitempty"`
-	Username     string                        `json:"username,omitempty"`
+// ListSupportedAgents returns all supported agent types
+func (g *UnifiedCLIGenerator) ListSupportedAgents() []cliagents.AgentType {
+	return g.generator.ListSupportedAgents()
 }
 
-type OpenCodeProvider struct {
-	Npm     string                       `json:"npm,omitempty"`
-	Name    string                       `json:"name,omitempty"`
-	Options map[string]interface{}       `json:"options,omitempty"`
-	Models  map[string]OpenCodeModel     `json:"models,omitempty"`
+// GetAllSchemas returns schemas for all agents
+func (g *UnifiedCLIGenerator) GetAllSchemas() map[cliagents.AgentType]*cliagents.AgentSchema {
+	return g.generator.GetAllSchemas()
 }
 
-type OpenCodeModel struct {
-	Name          string   `json:"name,omitempty"`
-	MaxTokens     int      `json:"maxTokens,omitempty"`
-	Attachments   bool     `json:"attachments,omitempty"`
-	Reasoning     bool     `json:"reasoning,omitempty"`
-	Vision        bool     `json:"vision,omitempty"`
-	Streaming     bool     `json:"streaming,omitempty"`
-	FunctionCalls bool     `json:"functionCalls,omitempty"`
-	Embeddings    bool     `json:"embeddings,omitempty"`
-	MCP           bool     `json:"mcp,omitempty"`
-	ACP           bool     `json:"acp,omitempty"`
-	LSP           bool     `json:"lsp,omitempty"`
-	Fallbacks     []string `json:"fallbacks,omitempty"`
-}
-
-type OpenCodeMCP struct {
-	Type        string            `json:"type"`
-	Command     []string          `json:"command,omitempty"`
-	URL         string            `json:"url,omitempty"`
-	Headers     map[string]string `json:"headers,omitempty"`
-	Enabled     *bool             `json:"enabled,omitempty"`
-	Timeout     *int              `json:"timeout,omitempty"`
-	Environment map[string]string `json:"environment,omitempty"`
-}
-
-type OpenCodeAgentConfig struct {
-	Model       string          `json:"model,omitempty"`
-	Prompt      string          `json:"prompt,omitempty"`
-	Description string          `json:"description,omitempty"`
-	Tools       map[string]bool `json:"tools,omitempty"`
-}
-
-func (g *UnifiedGenerator) generateOpenCodeConfig() *OpenCodeConfig {
-	baseURL := fmt.Sprintf("http://%s:%d/v1", g.host, g.port)
-	enabled := true
-	timeout := 120
-
-	var fallbacks []string
-	for _, member := range g.debateMembers {
-		fallbacks = append(fallbacks, fmt.Sprintf("%s/%s", member.Provider, member.Model))
-	}
-
-	return &OpenCodeConfig{
-		Schema:   "https://opencode.ai/config.json",
-		Username: "HelixAgent AI Ensemble",
-		Instructions: []string{
-			"You are connected to HelixAgent, a Virtual LLM Provider that exposes ONE model backed by an AI debate ensemble.",
-			"The helixagent-debate model combines responses from multiple top-performing LLMs through confidence-weighted voting.",
-		},
-		Provider: map[string]OpenCodeProvider{
-			"helixagent": {
-				Npm:  "@ai-sdk/openai-compatible",
-				Name: "HelixAgent AI Debate Ensemble",
-				Options: map[string]interface{}{
-					"apiKey":  os.Getenv("HELIXAGENT_API_KEY"),
-					"baseURL": baseURL,
-					"timeout": 600000,
-				},
-				Models: map[string]OpenCodeModel{
-					"helixagent-debate": {
-						Name:          "HelixAgent Debate Ensemble",
-						MaxTokens:     128000,
-						Attachments:   true,
-						Reasoning:     true,
-						Vision:        true,
-						Streaming:     true,
-						FunctionCalls: true,
-						Embeddings:    true,
-						MCP:           true,
-						ACP:           true,
-						LSP:           true,
-						Fallbacks:     fallbacks,
-					},
-				},
-			},
-		},
-		Mcp: map[string]OpenCodeMCP{
-			"helixagent-mcp": {
-				Type:    "remote",
-				URL:     fmt.Sprintf("http://%s:%d/v1/mcp", g.host, g.port),
-				Enabled: &enabled,
-				Timeout: &timeout,
-				Headers: map[string]string{"Authorization": "Bearer " + os.Getenv("HELIXAGENT_API_KEY")},
-			},
-			"helixagent-embeddings": {
-				Type:    "remote",
-				URL:     fmt.Sprintf("http://%s:%d/v1/embeddings", g.host, g.port),
-				Enabled: &enabled,
-				Timeout: &timeout,
-				Headers: map[string]string{"Authorization": "Bearer " + os.Getenv("HELIXAGENT_API_KEY")},
-			},
-			"filesystem": {
-				Type:    "local",
-				Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "/"},
-				Enabled: &enabled,
-			},
-			"github": {
-				Type:        "local",
-				Command:     []string{"npx", "-y", "@modelcontextprotocol/server-github"},
-				Enabled:     &enabled,
-				Environment: map[string]string{"GITHUB_TOKEN": os.Getenv("GITHUB_TOKEN")},
-			},
-		},
-		Agent: map[string]OpenCodeAgentConfig{
-			"default": {
-				Model:       "helixagent/helixagent-debate",
-				Prompt:      "You are HelixAgent, an AI ensemble combining multiple LLMs through debate and consensus.",
-				Description: "HelixAgent AI Debate Ensemble",
-				Tools: map[string]bool{
-					"read": true, "write": true, "bash": true, "glob": true, "grep": true,
-					"webfetch": true, "edit": true, "mcp": true, "embeddings": true,
-				},
-			},
-		},
-		Tools: map[string]bool{
-			"Read": true, "Write": true, "Bash": true, "Glob": true,
-			"Grep": true, "Edit": true, "WebFetch": true, "Task": true,
-		},
-		Permission: map[string]string{
-			"read": "allow", "edit": "ask", "bash": "ask", "webfetch": "allow",
-		},
-	}
-}
-
-// ========================
-// Crush Configuration
-// ========================
-
-type CrushConfig struct {
-	Schema    string                   `json:"$schema,omitempty"`
-	Providers map[string]CrushProvider `json:"providers"`
-	MCP       map[string]CrushMCP      `json:"mcp,omitempty"`
-	LSP       map[string]CrushLSP      `json:"lsp,omitempty"`
-	Options   CrushOptions             `json:"options,omitempty"`
-}
-
-type CrushProvider struct {
-	Name    string       `json:"name,omitempty"`
-	Type    string       `json:"type"`
-	BaseURL string       `json:"base_url,omitempty"`
-	APIKey  string       `json:"api_key,omitempty"`
-	Models  []CrushModel `json:"models,omitempty"`
-	Timeout int          `json:"timeout,omitempty"`
-}
-
-type CrushModel struct {
-	ID               string   `json:"id"`
-	Name             string   `json:"name,omitempty"`
-	ContextWindow    int      `json:"context_window,omitempty"`
-	DefaultMaxTokens int      `json:"default_max_tokens,omitempty"`
-	Fallbacks        []string `json:"fallbacks,omitempty"`
-}
-
-type CrushMCP struct {
-	Type    string            `json:"type"`
-	Command string            `json:"command,omitempty"`
-	Args    []string          `json:"args,omitempty"`
-	URL     string            `json:"url,omitempty"`
-	Timeout int               `json:"timeout,omitempty"`
-	Headers map[string]string `json:"headers,omitempty"`
-	Enabled bool              `json:"enabled"`
-}
-
-type CrushLSP struct {
-	Command string   `json:"command"`
-	Args    []string `json:"args,omitempty"`
-	Enabled bool     `json:"enabled"`
-}
-
-type CrushOptions struct {
-	DefaultProvider           string `json:"default_provider,omitempty"`
-	StreamingEnabled          bool   `json:"streaming_enabled,omitempty"`
-	DisableProviderAutoUpdate bool   `json:"disable_provider_auto_update,omitempty"`
-}
-
-func (g *UnifiedGenerator) generateCrushConfig() *CrushConfig {
-	baseURL := fmt.Sprintf("http://%s:%d/v1", g.host, g.port)
-
-	var fallbacks []string
-	for _, member := range g.debateMembers {
-		fallbacks = append(fallbacks, fmt.Sprintf("%s/%s", member.Provider, member.Model))
-	}
-
-	return &CrushConfig{
-		Schema: "https://charm.land/crush.json",
-		Providers: map[string]CrushProvider{
-			"helixagent": {
-				Name:    "HelixAgent AI Debate Ensemble",
-				Type:    "openai-compat",
-				BaseURL: baseURL,
-				APIKey:  os.Getenv("HELIXAGENT_API_KEY"),
-				Timeout: 600,
-				Models: []CrushModel{
-					{
-						ID:               "helixagent-debate",
-						Name:             "HelixAgent AI Debate Ensemble",
-						ContextWindow:    128000,
-						DefaultMaxTokens: 8192,
-						Fallbacks:        fallbacks,
-					},
-				},
-			},
-		},
-		MCP: map[string]CrushMCP{
-			"helixagent-mcp": {
-				Type:    "http",
-				URL:     fmt.Sprintf("http://%s:%d/v1/mcp", g.host, g.port),
-				Enabled: true,
-				Timeout: 120,
-				Headers: map[string]string{"Authorization": "Bearer " + os.Getenv("HELIXAGENT_API_KEY")},
-			},
-			"filesystem": {
-				Type:    "stdio",
-				Command: "npx",
-				Args:    []string{"-y", "@modelcontextprotocol/server-filesystem", "/"},
-				Enabled: true,
-			},
-			"github": {
-				Type:    "stdio",
-				Command: "npx",
-				Args:    []string{"-y", "@modelcontextprotocol/server-github"},
-				Enabled: true,
-			},
-		},
-		LSP: map[string]CrushLSP{
-			"go":         {Command: "gopls", Enabled: true},
-			"typescript": {Command: "typescript-language-server", Args: []string{"--stdio"}, Enabled: true},
-			"python":     {Command: "pylsp", Enabled: true},
-			"rust":       {Command: "rust-analyzer", Enabled: true},
-		},
-		Options: CrushOptions{
-			DefaultProvider:  "helixagent",
-			StreamingEnabled: true,
-		},
-	}
-}
-
-// ========================
-// Kilo Code Configuration
-// ========================
-
-type KiloCodeConfig struct {
-	Schema      string                  `json:"$schema,omitempty"`
-	Version     string                  `json:"version,omitempty"`
-	Providers   map[string]KiloProvider `json:"providers"`
-	Agents      map[string]KiloAgent    `json:"agents,omitempty"`
-	MCP         map[string]KiloMCP      `json:"mcp,omitempty"`
-	Tools       map[string]bool         `json:"tools,omitempty"`
-	Settings    KiloSettings            `json:"settings,omitempty"`
-	Permissions KiloPermissions         `json:"permissions,omitempty"`
-}
-
-type KiloProvider struct {
-	Type    string      `json:"type"`
-	Name    string      `json:"name,omitempty"`
-	BaseURL string      `json:"baseUrl,omitempty"`
-	APIKey  string      `json:"apiKey,omitempty"`
-	Models  []KiloModel `json:"models,omitempty"`
-	Timeout int         `json:"timeout,omitempty"`
-}
-
-type KiloModel struct {
-	ID            string            `json:"id"`
-	Name          string            `json:"name,omitempty"`
-	MaxTokens     int               `json:"maxTokens,omitempty"`
-	ContextWindow int               `json:"contextWindow,omitempty"`
-	Capabilities  KiloCapabilities  `json:"capabilities,omitempty"`
-	Fallbacks     []string          `json:"fallbacks,omitempty"`
-}
-
-type KiloCapabilities struct {
-	Vision        bool `json:"vision,omitempty"`
-	Streaming     bool `json:"streaming,omitempty"`
-	FunctionCalls bool `json:"functionCalls,omitempty"`
-	Embeddings    bool `json:"embeddings,omitempty"`
-	MCP           bool `json:"mcp,omitempty"`
-}
-
-type KiloAgent struct {
-	Model        string          `json:"model"`
-	Provider     string          `json:"provider,omitempty"`
-	SystemPrompt string          `json:"systemPrompt,omitempty"`
-	Description  string          `json:"description,omitempty"`
-	Tools        map[string]bool `json:"tools,omitempty"`
-}
-
-type KiloMCP struct {
-	Type        string            `json:"type"`
-	Command     []string          `json:"command,omitempty"`
-	URL         string            `json:"url,omitempty"`
-	Headers     map[string]string `json:"headers,omitempty"`
-	Enabled     bool              `json:"enabled"`
-	Timeout     int               `json:"timeout,omitempty"`
-	Environment map[string]string `json:"environment,omitempty"`
-}
-
-type KiloSettings struct {
-	DefaultProvider  string `json:"defaultProvider,omitempty"`
-	DefaultModel     string `json:"defaultModel,omitempty"`
-	StreamingEnabled bool   `json:"streamingEnabled,omitempty"`
-	AutoSave         bool   `json:"autoSave,omitempty"`
-}
-
-type KiloPermissions struct {
-	Read     string `json:"read,omitempty"`
-	Write    string `json:"write,omitempty"`
-	Bash     string `json:"bash,omitempty"`
-	WebFetch string `json:"webFetch,omitempty"`
-}
-
-func (g *UnifiedGenerator) generateKiloCodeConfig() *KiloCodeConfig {
-	baseURL := fmt.Sprintf("http://%s:%d/v1", g.host, g.port)
-
-	var fallbacks []string
-	for _, member := range g.debateMembers {
-		fallbacks = append(fallbacks, fmt.Sprintf("%s/%s", member.Provider, member.Model))
-	}
-
-	return &KiloCodeConfig{
-		Schema:  "https://kilocode.dev/config-schema.json",
-		Version: "1.0",
-		Providers: map[string]KiloProvider{
-			"helixagent": {
-				Type:    "openai-compatible",
-				Name:    "HelixAgent AI Debate Ensemble",
-				BaseURL: baseURL,
-				APIKey:  os.Getenv("HELIXAGENT_API_KEY"),
-				Timeout: 600000,
-				Models: []KiloModel{
-					{
-						ID:            "helixagent-debate",
-						Name:          "HelixAgent AI Debate Ensemble",
-						MaxTokens:     8192,
-						ContextWindow: 128000,
-						Capabilities: KiloCapabilities{
-							Vision:        true,
-							Streaming:     true,
-							FunctionCalls: true,
-							Embeddings:    true,
-							MCP:           true,
-						},
-						Fallbacks: fallbacks,
-					},
-				},
-			},
-		},
-		Agents: map[string]KiloAgent{
-			"default": {
-				Model:        "helixagent-debate",
-				Provider:     "helixagent",
-				SystemPrompt: "You are HelixAgent, an AI ensemble combining multiple LLMs through debate and consensus.",
-				Description:  "HelixAgent AI Debate Ensemble",
-				Tools: map[string]bool{
-					"read": true, "write": true, "bash": true, "glob": true,
-					"grep": true, "edit": true, "webfetch": true, "mcp": true,
-				},
-			},
-		},
-		MCP: map[string]KiloMCP{
-			"helixagent-mcp": {
-				Type:    "remote",
-				URL:     fmt.Sprintf("http://%s:%d/v1/mcp", g.host, g.port),
-				Enabled: true,
-				Timeout: 120,
-				Headers: map[string]string{"Authorization": "Bearer " + os.Getenv("HELIXAGENT_API_KEY")},
-			},
-			"filesystem": {
-				Type:    "local",
-				Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "/"},
-				Enabled: true,
-			},
-		},
-		Tools: map[string]bool{
-			"Read": true, "Write": true, "Bash": true, "Glob": true,
-			"Grep": true, "Edit": true, "WebFetch": true, "Task": true,
-		},
-		Settings: KiloSettings{
-			DefaultProvider:  "helixagent",
-			DefaultModel:     "helixagent-debate",
-			StreamingEnabled: true,
-			AutoSave:         true,
-		},
-		Permissions: KiloPermissions{
-			Read: "allow", Write: "ask", Bash: "ask", WebFetch: "allow",
-		},
-	}
-}
-
-// ========================
-// HelixCode Configuration
-// ========================
-
-type HelixCodeConfig struct {
-	Schema    string                      `json:"$schema,omitempty"`
-	Providers map[string]HelixCodeProvider `json:"providers"`
-	Settings  HelixCodeSettings           `json:"settings,omitempty"`
-}
-
-type HelixCodeProvider struct {
-	Type      string `json:"type"`
-	BaseURL   string `json:"base_url"`
-	APIKey    string `json:"api_key,omitempty"`
-	Model     string `json:"model"`
-	MaxTokens int    `json:"max_tokens,omitempty"`
-	Timeout   int    `json:"timeout,omitempty"`
-}
-
-type HelixCodeSettings struct {
-	DefaultProvider  string `json:"default_provider,omitempty"`
-	StreamingEnabled bool   `json:"streaming_enabled,omitempty"`
-	AutoSave         bool   `json:"auto_save,omitempty"`
-}
-
-func (g *UnifiedGenerator) generateHelixCodeConfig() *HelixCodeConfig {
-	baseURL := fmt.Sprintf("http://%s:%d/v1", g.host, g.port)
-
-	return &HelixCodeConfig{
-		Providers: map[string]HelixCodeProvider{
-			"helixagent": {
-				Type:      "openai-compatible",
-				BaseURL:   baseURL,
-				APIKey:    os.Getenv("HELIXAGENT_API_KEY"),
-				Model:     "helixagent-debate",
-				MaxTokens: 8192,
-				Timeout:   120,
-			},
-		},
-		Settings: HelixCodeSettings{
-			DefaultProvider:  "helixagent",
-			StreamingEnabled: true,
-			AutoSave:         true,
-		},
-	}
+// Validate validates a configuration for a specific agent
+func (g *UnifiedCLIGenerator) Validate(agentType cliagents.AgentType, config any) (*cliagents.ValidationResult, error) {
+	return g.generator.Validate(agentType, config)
 }
 
 // ========================
@@ -636,22 +275,38 @@ func main() {
 		outputDir  string
 		agentType  string
 		listAgents bool
+		validate   string
 	)
 
 	flag.StringVar(&host, "host", "localhost", "HelixAgent host")
 	flag.IntVar(&port, "port", 7061, "HelixAgent port")
 	flag.StringVar(&outputDir, "output-dir", "", "Output directory for generated configs")
-	flag.StringVar(&agentType, "agent", "all", "Agent type to generate (opencode, crush, kilocode, helixcode, or all)")
-	flag.BoolVar(&listAgents, "list", false, "List supported agent types")
+	flag.StringVar(&agentType, "agent", "all", "Agent type to generate (opencode, crush, kilocode, helixcode, aider, continue, cursor, cline, windsurf, zed, neovim-ai, vscode-ai, intellij-ai, claude-code, qwen-code, github-copilot, or all)")
+	flag.BoolVar(&listAgents, "list", false, "List supported agent types and their schemas")
+	flag.StringVar(&validate, "validate", "", "Validate existing config file")
 	flag.Parse()
 
 	if listAgents {
-		fmt.Println("Supported CLI Agent Types:")
-		fmt.Println("  - opencode   : OpenCode AI (https://opencode.ai)")
-		fmt.Println("  - crush      : Crush by Charm (https://charm.land/crush)")
-		fmt.Println("  - kilocode   : Kilo Code (VS Code extension)")
-		fmt.Println("  - helixcode  : HelixCode (HelixAgent native)")
-		fmt.Println("  - all        : Generate all configurations")
+		fmt.Println("Supported CLI Agent Types (via LLMsVerifier):")
+		fmt.Println("-" + repeatString("-", 68))
+
+		generator := NewUnifiedCLIGenerator(host, port, "")
+		schemas := generator.GetAllSchemas()
+
+		for agentType, schema := range schemas {
+			fmt.Printf("  %-15s : %s\n", agentType, schema.Description)
+			fmt.Printf("                  Config: %s\n", schema.ConfigFileName)
+			fmt.Printf("                  Dir: %s\n", schema.DefaultConfigDir)
+			fmt.Println()
+		}
+
+		fmt.Printf("\nTotal: %d CLI agents supported\n", len(schemas))
+		return
+	}
+
+	if validate != "" {
+		fmt.Printf("Validating config file: %s\n", validate)
+		validateConfigFile(validate)
 		return
 	}
 
@@ -662,21 +317,22 @@ func main() {
 
 	fmt.Println("=" + repeatString("=", 69))
 	fmt.Println("HELIXAGENT UNIFIED CLI AGENT CONFIGURATION GENERATOR")
+	fmt.Println("  Powered by LLMsVerifier")
 	fmt.Println("=" + repeatString("=", 69))
 	fmt.Println()
 
-	generator := NewUnifiedGenerator(host, port, outputDir)
+	generator := NewUnifiedCLIGenerator(host, port, outputDir)
 
 	var results []GenerationResult
 
 	if agentType == "all" {
-		fmt.Println("Generating configurations for ALL supported CLI agents...")
+		fmt.Println("Generating configurations for ALL 16 supported CLI agents...")
 		fmt.Println()
 		results = generator.GenerateAll()
 	} else {
 		fmt.Printf("Generating configuration for: %s\n", agentType)
 		fmt.Println()
-		result := generator.Generate(CLIAgentType(agentType))
+		result := generator.Generate(cliagents.AgentType(agentType))
 		results = []GenerationResult{result}
 	}
 
@@ -695,7 +351,6 @@ func main() {
 
 		fmt.Printf("[%s] %s\n", status, result.AgentType)
 		if result.Success {
-			fmt.Printf("      Output: %s\n", result.OutputPath)
 			fmt.Printf("      Stats: providers=%d", result.ConfigStats.Providers)
 			if result.ConfigStats.Agents > 0 {
 				fmt.Printf(", agents=%d", result.ConfigStats.Agents)
@@ -710,6 +365,12 @@ func main() {
 				fmt.Printf(", tools=%d", result.ConfigStats.Tools)
 			}
 			fmt.Println()
+			if result.Validated {
+				fmt.Printf("      Validated: %s\n", "PASS")
+			}
+			if len(result.Warnings) > 0 {
+				fmt.Printf("      Warnings: %v\n", result.Warnings)
+			}
 		} else {
 			fmt.Printf("      Error: %s\n", result.Error)
 		}
@@ -725,6 +386,47 @@ func main() {
 	// Exit with error code if any failed
 	if successCount != len(results) {
 		os.Exit(1)
+	}
+}
+
+// validateConfigFile validates an existing configuration file
+func validateConfigFile(path string) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Printf("Error reading file: %v\n", err)
+		os.Exit(1)
+	}
+
+	var config map[string]interface{}
+	if err := json.Unmarshal(data, &config); err != nil {
+		fmt.Printf("Error parsing JSON: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Try to detect agent type and validate
+	generator := cliagents.NewUnifiedGenerator(nil)
+
+	// Try each agent type
+	for _, agentType := range cliagents.SupportedAgents {
+		result, _ := generator.Validate(cliagents.AgentType(agentType), config)
+		if result != nil && result.Valid {
+			fmt.Printf("Valid configuration for: %s\n", agentType)
+			return
+		}
+	}
+
+	// If no valid agent type found, try OpenCode specifically (most common)
+	result, _ := generator.Validate(cliagents.AgentOpenCode, config)
+	if result != nil {
+		if result.Valid {
+			fmt.Println("Valid OpenCode configuration")
+		} else {
+			fmt.Println("Validation errors:")
+			for _, err := range result.Errors {
+				fmt.Printf("  - %s\n", err)
+			}
+			os.Exit(1)
+		}
 	}
 }
 
