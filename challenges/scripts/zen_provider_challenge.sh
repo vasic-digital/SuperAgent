@@ -131,18 +131,18 @@ log_info "=============================================="
 log_info "Section 3: Debate Team Configuration"
 log_info "=============================================="
 
-# Test 8: Zen models in debate team config
+# Test 8: Zen models struct defined in debate team config
 TOTAL=$((TOTAL + 1))
-log_info "Test 8: Zen models defined in debate team config"
+log_info "Test 8: ZenModels struct defined in debate team config"
 if grep -q "ZenModels = struct" "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
-    log_success "Zen models defined in debate team config"
+    log_success "ZenModels struct defined in debate team config"
     PASSED=$((PASSED + 1))
 else
-    log_error "Zen models NOT in debate team config!"
+    log_error "ZenModels struct NOT in debate team config!"
     FAILED=$((FAILED + 1))
 fi
 
-# Test 9: Zen models in team summary
+# Test 9: Zen models in GetTeamSummary
 TOTAL=$((TOTAL + 1))
 log_info "Test 9: Zen models in GetTeamSummary"
 if grep -q '"zen_models":' "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
@@ -150,6 +150,39 @@ if grep -q '"zen_models":' "$PROJECT_ROOT/internal/services/debate_team_config.g
     PASSED=$((PASSED + 1))
 else
     log_error "Zen models NOT in team summary!"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 9a: collectZenModels function exists
+TOTAL=$((TOTAL + 1))
+log_info "Test 9a: collectZenModels() function exists"
+if grep -q "func.*collectZenModels()" "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
+    log_success "collectZenModels() function exists"
+    PASSED=$((PASSED + 1))
+else
+    log_error "collectZenModels() function NOT found!"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 9b: collectZenModels is called in collectVerifiedLLMs
+TOTAL=$((TOTAL + 1))
+log_info "Test 9b: collectZenModels called in collectVerifiedLLMs"
+if grep -q "dtc.collectZenModels()" "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
+    log_success "collectZenModels() called in collectVerifiedLLMs"
+    PASSED=$((PASSED + 1))
+else
+    log_error "collectZenModels() NOT called!"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 9c: countZenModels function exists
+TOTAL=$((TOTAL + 1))
+log_info "Test 9c: countZenModels() function exists"
+if grep -q "func.*countZenModels()" "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
+    log_success "countZenModels() function exists"
+    PASSED=$((PASSED + 1))
+else
+    log_error "countZenModels() function NOT found!"
     FAILED=$((FAILED + 1))
 fi
 
