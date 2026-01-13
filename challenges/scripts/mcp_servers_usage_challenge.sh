@@ -327,6 +327,174 @@ else
 fi
 
 # ============================================================================
+# Section 5: Local MCP Server RUNTIME Verification
+# CRITICAL: This section tests that servers can actually START and RUN
+# Not just that config is correct or packages exist
+# ============================================================================
+
+log_info ""
+log_info "=============================================="
+log_info "Section 5: Local MCP Server RUNTIME Verification"
+log_info "=============================================="
+
+# Node.js v20 LTS path (required for MCP server compatibility)
+NODE20_DIR="$HOME/Applications/node-v20.18.0-linux-x64"
+NODE20_NPX="$NODE20_DIR/bin/npx"
+NODE20_NODE="$NODE20_DIR/bin/node"
+
+# Test 21: Node.js v20 LTS is installed
+TOTAL=$((TOTAL + 1))
+log_info "Testing Node.js v20 LTS installation"
+if [ -x "$NODE20_NODE" ]; then
+    node_version=$("$NODE20_NODE" --version 2>/dev/null)
+    log_success "Node.js v20 LTS installed: $node_version"
+    PASSED=$((PASSED + 1))
+else
+    log_error "Node.js v20 LTS not found at: $NODE20_DIR"
+    log_error "Install with: wget -qO- https://nodejs.org/dist/v20.18.0/node-v20.18.0-linux-x64.tar.xz | tar -xJ -C ~/Applications/"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 22: mcp-fetch server can actually START and stay running
+# Note: MCP servers are STDIO-based - they need stdin to stay open
+# We use a FIFO to keep stdin open while verifying the server doesn't crash
+TOTAL=$((TOTAL + 1))
+log_info "Testing mcp-fetch server can START (runtime test)"
+if [ -x "$NODE20_NPX" ]; then
+    # Create a FIFO to keep stdin open
+    FETCH_FIFO=$(mktemp -u)
+    mkfifo "$FETCH_FIFO"
+    FETCH_LOG=$(mktemp)
+
+    # Start server reading from FIFO
+    timeout 8s "$NODE20_NPX" -y mcp-fetch < "$FETCH_FIFO" > "$FETCH_LOG" 2>&1 &
+    FETCH_PID=$!
+
+    # Keep FIFO open
+    exec 3>"$FETCH_FIFO"
+
+    # Wait for server to initialize
+    sleep 3
+
+    # Check if still running (not crashed)
+    if kill -0 $FETCH_PID 2>/dev/null; then
+        log_success "mcp-fetch server started and running (PID: $FETCH_PID)"
+        PASSED=$((PASSED + 1))
+        kill $FETCH_PID 2>/dev/null || true
+    else
+        error_msg=$(cat "$FETCH_LOG" | head -3)
+        log_error "mcp-fetch server crashed: $error_msg"
+        FAILED=$((FAILED + 1))
+    fi
+
+    # Cleanup
+    exec 3>&-
+    rm -f "$FETCH_FIFO" "$FETCH_LOG"
+else
+    log_error "Cannot test mcp-fetch - Node.js v20 not available"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 23: mcp-sqlite server can actually START and respond to JSON-RPC
+TOTAL=$((TOTAL + 1))
+log_info "Testing mcp-sqlite server can START and respond (runtime test)"
+if [ -x "$NODE20_NPX" ]; then
+    # Create temp database file
+    SQLITE_TEST_DIR=$(mktemp -d)
+    SQLITE_DB="$SQLITE_TEST_DIR/test.db"
+    touch "$SQLITE_DB"
+
+    # mcp-sqlite is lighter and responds to JSON-RPC ping
+    SQLITE_RESPONSE=$(echo '{"jsonrpc":"2.0","id":1,"method":"ping"}' | timeout 10s "$NODE20_NPX" -y mcp-sqlite "$SQLITE_DB" 2>&1)
+
+    if echo "$SQLITE_RESPONSE" | grep -q '"jsonrpc"'; then
+        log_success "mcp-sqlite server responds to JSON-RPC: ${SQLITE_RESPONSE:0:60}..."
+        PASSED=$((PASSED + 1))
+    else
+        # If no response but no error, try the FIFO approach
+        SQLITE_FIFO=$(mktemp -u)
+        mkfifo "$SQLITE_FIFO"
+        SQLITE_LOG=$(mktemp)
+
+        timeout 8s "$NODE20_NPX" -y mcp-sqlite "$SQLITE_DB" < "$SQLITE_FIFO" > "$SQLITE_LOG" 2>&1 &
+        SQLITE_PID=$!
+
+        exec 4>"$SQLITE_FIFO"
+        sleep 3
+
+        if kill -0 $SQLITE_PID 2>/dev/null; then
+            log_success "mcp-sqlite server started and running (PID: $SQLITE_PID)"
+            PASSED=$((PASSED + 1))
+            kill $SQLITE_PID 2>/dev/null || true
+        else
+            error_msg=$(cat "$SQLITE_LOG" | head -3)
+            log_error "mcp-sqlite server failed: $error_msg"
+            FAILED=$((FAILED + 1))
+        fi
+
+        exec 4>&-
+        rm -f "$SQLITE_FIFO" "$SQLITE_LOG"
+    fi
+
+    # Cleanup
+    rm -rf "$SQLITE_TEST_DIR"
+else
+    log_error "Cannot test mcp-sqlite - Node.js v20 not available"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 24: OpenCode config uses correct Node.js path for fetch
+TOTAL=$((TOTAL + 1))
+log_info "Testing OpenCode config uses Node.js v20 for fetch"
+if [ -f "$OPENCODE_CONFIG" ]; then
+    fetch_npx=$(jq -r '.mcp.fetch.command[0]' "$OPENCODE_CONFIG" 2>/dev/null)
+    if echo "$fetch_npx" | grep -q "node-v20"; then
+        log_success "fetch uses Node.js v20 npx: $fetch_npx"
+        PASSED=$((PASSED + 1))
+    else
+        log_error "fetch uses wrong npx: $fetch_npx (should use node-v20)"
+        FAILED=$((FAILED + 1))
+    fi
+else
+    log_error "Cannot check - config not found"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 25: OpenCode config uses correct Node.js path for sqlite
+TOTAL=$((TOTAL + 1))
+log_info "Testing OpenCode config uses Node.js v20 for sqlite"
+if [ -f "$OPENCODE_CONFIG" ]; then
+    sqlite_npx=$(jq -r '.mcp.sqlite.command[0]' "$OPENCODE_CONFIG" 2>/dev/null)
+    if echo "$sqlite_npx" | grep -q "node-v20"; then
+        log_success "sqlite uses Node.js v20 npx: $sqlite_npx"
+        PASSED=$((PASSED + 1))
+    else
+        log_error "sqlite uses wrong npx: $sqlite_npx (should use node-v20)"
+        FAILED=$((FAILED + 1))
+    fi
+else
+    log_error "Cannot check - config not found"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 26: sqlite database path is configured
+TOTAL=$((TOTAL + 1))
+log_info "Testing sqlite has database path configured"
+if [ -f "$OPENCODE_CONFIG" ]; then
+    sqlite_db=$(jq -r '.mcp.sqlite.command[3]' "$OPENCODE_CONFIG" 2>/dev/null)
+    if [ -n "$sqlite_db" ] && [ "$sqlite_db" != "null" ]; then
+        log_success "sqlite database path configured: $sqlite_db"
+        PASSED=$((PASSED + 1))
+    else
+        log_error "sqlite database path not configured"
+        FAILED=$((FAILED + 1))
+    fi
+else
+    log_error "Cannot check - config not found"
+    FAILED=$((FAILED + 1))
+fi
+
+# ============================================================================
 # Summary
 # ============================================================================
 
