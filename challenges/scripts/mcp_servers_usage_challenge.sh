@@ -194,15 +194,15 @@ else
     FAILED=$((FAILED + 1))
 fi
 
-# Test 13: mcp-sqlite package
+# Test 13: mcp-server-sqlite package
 TOTAL=$((TOTAL + 1))
-log_info "Testing mcp-sqlite package availability"
-if npm view mcp-sqlite version >/dev/null 2>&1; then
-    version=$(npm view mcp-sqlite version 2>/dev/null)
-    log_success "mcp-sqlite package available (version: $version)"
+log_info "Testing mcp-server-sqlite package availability"
+if npm view mcp-server-sqlite version >/dev/null 2>&1; then
+    version=$(npm view mcp-server-sqlite version 2>/dev/null)
+    log_success "mcp-server-sqlite package available (version: $version)"
     PASSED=$((PASSED + 1))
 else
-    log_error "mcp-sqlite package not available"
+    log_error "mcp-server-sqlite package not available"
     FAILED=$((FAILED + 1))
 fi
 
@@ -311,14 +311,14 @@ fi
 
 # Test 20: Correct sqlite package name
 TOTAL=$((TOTAL + 1))
-log_info "Testing sqlite uses correct package (mcp-sqlite)"
+log_info "Testing sqlite uses correct package (mcp-server-sqlite)"
 if [ -f "$OPENCODE_CONFIG" ]; then
     sqlite_pkg=$(jq -r '.mcp.sqlite.command[2]' "$OPENCODE_CONFIG" 2>/dev/null)
-    if [ "$sqlite_pkg" = "mcp-sqlite" ]; then
+    if [ "$sqlite_pkg" = "mcp-server-sqlite" ]; then
         log_success "sqlite uses correct package: $sqlite_pkg"
         PASSED=$((PASSED + 1))
     else
-        log_error "sqlite uses wrong package: $sqlite_pkg (expected: mcp-sqlite)"
+        log_error "sqlite uses wrong package: $sqlite_pkg (expected: mcp-server-sqlite)"
         FAILED=$((FAILED + 1))
     fi
 else
@@ -395,51 +395,36 @@ else
     FAILED=$((FAILED + 1))
 fi
 
-# Test 23: mcp-sqlite server can actually START and respond to JSON-RPC
+# Test 23: mcp-server-sqlite can actually START and respond to MCP protocol
 TOTAL=$((TOTAL + 1))
-log_info "Testing mcp-sqlite server can START and respond (runtime test)"
+log_info "Testing mcp-server-sqlite can START and respond (runtime test)"
 if [ -x "$NODE20_NPX" ]; then
     # Create temp database file
     SQLITE_TEST_DIR=$(mktemp -d)
     SQLITE_DB="$SQLITE_TEST_DIR/test.db"
     touch "$SQLITE_DB"
 
-    # mcp-sqlite is lighter and responds to JSON-RPC ping
-    SQLITE_RESPONSE=$(echo '{"jsonrpc":"2.0","id":1,"method":"ping"}' | timeout 10s "$NODE20_NPX" -y mcp-sqlite "$SQLITE_DB" 2>&1)
+    # mcp-server-sqlite responds to MCP protocol with proper initialization
+    SQLITE_RESPONSE=$(cat << 'EOF' | timeout 15s "$NODE20_NPX" -y mcp-server-sqlite "$SQLITE_DB" 2>&1
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}
+{"jsonrpc":"2.0","method":"notifications/initialized"}
+{"jsonrpc":"2.0","id":2,"method":"tools/list"}
+EOF
+)
 
-    if echo "$SQLITE_RESPONSE" | grep -q '"jsonrpc"'; then
-        log_success "mcp-sqlite server responds to JSON-RPC: ${SQLITE_RESPONSE:0:60}..."
+    if echo "$SQLITE_RESPONSE" | grep -q '"tools"'; then
+        tool_count=$(echo "$SQLITE_RESPONSE" | grep -o '"name"' | wc -l)
+        log_success "mcp-server-sqlite responds with $tool_count tools"
         PASSED=$((PASSED + 1))
     else
-        # If no response but no error, try the FIFO approach
-        SQLITE_FIFO=$(mktemp -u)
-        mkfifo "$SQLITE_FIFO"
-        SQLITE_LOG=$(mktemp)
-
-        timeout 8s "$NODE20_NPX" -y mcp-sqlite "$SQLITE_DB" < "$SQLITE_FIFO" > "$SQLITE_LOG" 2>&1 &
-        SQLITE_PID=$!
-
-        exec 4>"$SQLITE_FIFO"
-        sleep 3
-
-        if kill -0 $SQLITE_PID 2>/dev/null; then
-            log_success "mcp-sqlite server started and running (PID: $SQLITE_PID)"
-            PASSED=$((PASSED + 1))
-            kill $SQLITE_PID 2>/dev/null || true
-        else
-            error_msg=$(cat "$SQLITE_LOG" | head -3)
-            log_error "mcp-sqlite server failed: $error_msg"
-            FAILED=$((FAILED + 1))
-        fi
-
-        exec 4>&-
-        rm -f "$SQLITE_FIFO" "$SQLITE_LOG"
+        log_error "mcp-server-sqlite failed to respond: ${SQLITE_RESPONSE:0:100}"
+        FAILED=$((FAILED + 1))
     fi
 
     # Cleanup
     rm -rf "$SQLITE_TEST_DIR"
 else
-    log_error "Cannot test mcp-sqlite - Node.js v20 not available"
+    log_error "Cannot test mcp-server-sqlite - Node.js v20 not available"
     FAILED=$((FAILED + 1))
 fi
 
