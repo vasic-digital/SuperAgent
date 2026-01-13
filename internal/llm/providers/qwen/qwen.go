@@ -238,6 +238,15 @@ func (q *QwenProvider) GetAuthType() AuthType {
 	return q.authType
 }
 
+// getAPIEndpoint returns the correct API endpoint based on the base URL
+// OpenAI-compatible mode uses /chat/completions, DashScope native uses /services/aigc/text-generation/generation
+func (q *QwenProvider) getAPIEndpoint() string {
+	if strings.Contains(q.baseURL, "compatible-mode") {
+		return q.baseURL + "/chat/completions"
+	}
+	return q.baseURL + "/services/aigc/text-generation/generation"
+}
+
 // getAuthHeader returns the appropriate authorization header based on auth type
 func (q *QwenProvider) getAuthHeader() (string, error) {
 	switch q.authType {
@@ -678,7 +687,7 @@ func (q *QwenProvider) makeRequestWithAuthRetry(ctx context.Context, req *QwenRe
 		default:
 		}
 
-		httpReq, err := http.NewRequestWithContext(ctx, "POST", q.baseURL+"/services/aigc/text-generation/generation", bytes.NewBuffer(jsonData))
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", q.getAPIEndpoint(), bytes.NewBuffer(jsonData))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 		}
@@ -769,7 +778,7 @@ func (q *QwenProvider) makeStreamingRequest(ctx context.Context, req *QwenReques
 		default:
 		}
 
-		httpReq, err := http.NewRequestWithContext(ctx, "POST", q.baseURL+"/services/aigc/text-generation/generation", bytes.NewBuffer(jsonData))
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", q.getAPIEndpoint(), bytes.NewBuffer(jsonData))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 		}
