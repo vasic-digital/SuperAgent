@@ -130,19 +130,34 @@ The AI Debate Team uses a dynamic selection algorithm:
 
 | Provider Type | Models | Count |
 |---------------|--------|-------|
-| **Claude (OAuth2)** | Sonnet Latest, Opus, Haiku | 3 |
+| **Claude (OAuth2)** | Opus 4.5, Sonnet 4.5, Haiku 4.5, + 4.x/3.5/3.x fallbacks | 10 |
 | **Qwen (OAuth2)** | Max, Plus, Turbo, Coder, Long | 5 |
 | **LLMsVerifier** | DeepSeek, Gemini, Mistral, Groq, Cerebras | 5 |
-| **Total Available** | | **13** |
+| **Total Available** | | **20** |
 
 **Model Definitions:**
 
 ```go
-// OAuth2 Providers (prioritized if verified)
-ClaudeModels.SonnetLatest = "claude-3-5-sonnet-20241022"  // Score: 9.5
-ClaudeModels.Opus         = "claude-3-opus-20240229"      // Score: 9.5
-ClaudeModels.Haiku        = "claude-3-haiku-20240307"     // Score: 8.5
+// Claude OAuth2 Models (prioritized by generation)
+// Claude 4.5 (Latest - November 2025)
+ClaudeModels.Opus45   = "claude-opus-4-5-20251101"   // Score: 10.0 - Most capable
+ClaudeModels.Sonnet45 = "claude-sonnet-4-5-20250929" // Score: 9.8 - Balanced
+ClaudeModels.Haiku45  = "claude-haiku-4-5-20251001"  // Score: 9.5 - Fast, efficient
 
+// Claude 4.x (May 2025)
+ClaudeModels.Opus4   = "claude-opus-4-20250514"   // Score: 9.5
+ClaudeModels.Sonnet4 = "claude-sonnet-4-20250514" // Score: 9.3
+
+// Claude 3.5 (Legacy fallbacks)
+ClaudeModels.Sonnet35 = "claude-3-5-sonnet-20241022" // Score: 9.0
+ClaudeModels.Haiku35  = "claude-3-5-haiku-20241022"  // Score: 8.5
+
+// Claude 3 (Legacy fallbacks)
+ClaudeModels.Opus3   = "claude-3-opus-20240229"   // Score: 8.5
+ClaudeModels.Sonnet3 = "claude-3-sonnet-20240229" // Score: 8.0
+ClaudeModels.Haiku3  = "claude-3-haiku-20240307"  // Score: 7.5
+
+// Qwen OAuth2 Models
 QwenModels.Max   = "qwen-max"          // Score: 8.0
 QwenModels.Plus  = "qwen-plus"         // Score: 7.8
 QwenModels.Turbo = "qwen-turbo"        // Score: 7.5
@@ -494,6 +509,76 @@ Environment variables defined in `.env.example`. Key categories:
 - Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
 - LLM providers: `CLAUDE_API_KEY`, `DEEPSEEK_API_KEY`, `GEMINI_API_KEY`, etc.
 - Cognee: `COGNEE_AUTH_EMAIL`, `COGNEE_AUTH_PASSWORD` (form-encoded OAuth2 auth)
+- OAuth2: `CLAUDE_CODE_USE_OAUTH_CREDENTIALS`, `QWEN_CODE_USE_OAUTH_CREDENTIALS`
+
+### OAuth2 Authentication (Claude & Qwen)
+
+HelixAgent supports OAuth2 authentication for Claude and Qwen providers, allowing usage of credentials from their respective CLI tools.
+
+**Requirements:**
+1. Enable OAuth in `.env`:
+   ```bash
+   CLAUDE_CODE_USE_OAUTH_CREDENTIALS=true
+   QWEN_CODE_USE_OAUTH_CREDENTIALS=true
+   ```
+2. Log in via the respective CLI tools:
+   - **Claude**: `claude auth login` (creates `~/.claude/.credentials.json`)
+   - **Qwen**: Login via Qwen Code CLI (creates `~/.qwen/oauth_creds.json`)
+
+**Credential Locations:**
+| Provider | Credentials File | Token Auto-Refresh |
+|----------|------------------|-------------------|
+| Claude | `~/.claude/.credentials.json` | Yes |
+| Qwen | `~/.qwen/oauth_creds.json` | Yes |
+
+**Automatic Token Refresh:**
+
+HelixAgent includes automatic token refresh mechanisms:
+
+1. **Standard Refresh**: Attempts to refresh tokens using refresh_token grant
+2. **CLI-Based Refresh (Qwen)**: If standard refresh fails, invokes `qwen` CLI to refresh tokens
+
+The CLI-based refresh works by running:
+```bash
+qwen "exit" -o json --max-session-turns 1
+```
+
+This triggers Qwen CLI's built-in token refresh and updates `~/.qwen/oauth_creds.json`.
+
+**Troubleshooting OAuth2 Issues:**
+
+1. **"Token expired" errors**:
+   ```bash
+   # Check Claude token expiry
+   jq '.claudeAiOauth.expiresAt' ~/.claude/.credentials.json | xargs -I{} date -d @$(({} / 1000))
+
+   # Check Qwen token expiry
+   jq '.expiry_date' ~/.qwen/oauth_creds.json | xargs -I{} date -d @$(({} / 1000))
+   ```
+   **Solution**:
+   - Claude: `claude auth login`
+   - Qwen: Run `qwen` CLI (opens interactive mode, auto-refreshes token)
+
+2. **"Credentials not found" errors**:
+   - Ensure the credentials file exists at the expected location
+   - Verify you're logged in via the CLI tool
+
+3. **"OAuth not enabled" issues**:
+   - Check that environment variables are set: `echo $CLAUDE_CODE_USE_OAUTH_CREDENTIALS`
+   - Ensure `.env` is sourced: `source .env`
+
+**Key Files:**
+- `internal/auth/oauth_credentials/oauth_credentials.go` - OAuth credential reader
+- `internal/auth/oauth_credentials/token_refresh.go` - Standard auto-refresh mechanism
+- `internal/auth/oauth_credentials/cli_refresh.go` - CLI-based refresh for Qwen
+- `internal/llm/providers/claude/claude.go` - Claude OAuth integration
+- `internal/llm/providers/qwen/qwen.go` - Qwen OAuth integration
+
+**Challenge Validation:**
+```bash
+# Run OAuth refresh challenge
+./challenges/scripts/qwen_oauth_refresh_challenge.sh
+```
 
 ### Dynamic LLM Provider Selection (LLMsVerifier Integration)
 
@@ -953,3 +1038,15 @@ When configuring CLI agents (OpenCode, Crush, HelixCode, Kilo Code) to connect t
 - **Timeout**: Use `60000` (60 seconds). Default timeouts of 120ms will cause connection failures.
 - **Immediate Response**: HelixAgent sends the `endpoint` event immediately upon SSE connection.
 - **Heartbeat**: Server sends heartbeat every 30 seconds to maintain connection.
+
+### MCP Package Names (Important)
+
+The following packages **DO NOT EXIST** in npm (common misconceptions):
+- `@modelcontextprotocol/server-fetch` - Use `mcp-fetch-server` instead
+- `@modelcontextprotocol/server-sqlite` - Use `mcp-server-sqlite` instead
+
+Verified official packages:
+- `@modelcontextprotocol/server-filesystem` ✓
+- `@modelcontextprotocol/server-github` ✓
+- `@modelcontextprotocol/server-memory` ✓
+- `@modelcontextprotocol/server-puppeteer` ✓

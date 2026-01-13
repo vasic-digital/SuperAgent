@@ -26,25 +26,46 @@ func TestConstants(t *testing.T) {
 }
 
 func TestClaudeModels(t *testing.T) {
-	t.Run("Claude models are defined", func(t *testing.T) {
-		assert.NotEmpty(t, ClaudeModels.Sonnet, "Sonnet model should be defined")
-		assert.NotEmpty(t, ClaudeModels.Opus, "Opus model should be defined")
-		assert.NotEmpty(t, ClaudeModels.Haiku, "Haiku model should be defined")
-		assert.NotEmpty(t, ClaudeModels.SonnetLatest, "SonnetLatest model should be defined")
-		assert.NotEmpty(t, ClaudeModels.OpusLatest, "OpusLatest model should be defined")
+	t.Run("Claude 4.5 models are defined", func(t *testing.T) {
+		assert.NotEmpty(t, ClaudeModels.Opus45, "Opus 4.5 model should be defined")
+		assert.NotEmpty(t, ClaudeModels.Sonnet45, "Sonnet 4.5 model should be defined")
+		assert.NotEmpty(t, ClaudeModels.Haiku45, "Haiku 4.5 model should be defined")
 	})
 
-	t.Run("Claude model names follow Anthropic naming convention", func(t *testing.T) {
-		assert.Contains(t, ClaudeModels.Sonnet, "claude-3", "Sonnet should be Claude 3 family")
-		assert.Contains(t, ClaudeModels.Opus, "claude-3", "Opus should be Claude 3 family")
-		assert.Contains(t, ClaudeModels.Haiku, "claude-3", "Haiku should be Claude 3 family")
+	t.Run("Claude 4.x models are defined", func(t *testing.T) {
+		assert.NotEmpty(t, ClaudeModels.Opus4, "Opus 4 model should be defined")
+		assert.NotEmpty(t, ClaudeModels.Sonnet4, "Sonnet 4 model should be defined")
+	})
+
+	t.Run("Claude 3.5 fallback models are defined", func(t *testing.T) {
+		assert.NotEmpty(t, ClaudeModels.Sonnet35, "Sonnet 3.5 model should be defined")
+		assert.NotEmpty(t, ClaudeModels.Haiku35, "Haiku 3.5 model should be defined")
+	})
+
+	t.Run("Claude 3 legacy models are defined", func(t *testing.T) {
+		assert.NotEmpty(t, ClaudeModels.Opus3, "Opus 3 model should be defined")
+		assert.NotEmpty(t, ClaudeModels.Sonnet3, "Sonnet 3 model should be defined")
+		assert.NotEmpty(t, ClaudeModels.Haiku3, "Haiku 3 model should be defined")
+	})
+
+	t.Run("Claude 4.5 model names follow Anthropic naming convention", func(t *testing.T) {
+		assert.Contains(t, ClaudeModels.Opus45, "claude-opus-4-5", "Opus 4.5 should have correct prefix")
+		assert.Contains(t, ClaudeModels.Sonnet45, "claude-sonnet-4-5", "Sonnet 4.5 should have correct prefix")
+		assert.Contains(t, ClaudeModels.Haiku45, "claude-haiku-4-5", "Haiku 4.5 should have correct prefix")
 	})
 
 	t.Run("All Claude models are unique", func(t *testing.T) {
 		models := []string{
-			ClaudeModels.Sonnet,
-			ClaudeModels.Opus,
-			ClaudeModels.Haiku,
+			ClaudeModels.Opus45,
+			ClaudeModels.Sonnet45,
+			ClaudeModels.Haiku45,
+			ClaudeModels.Opus4,
+			ClaudeModels.Sonnet4,
+			ClaudeModels.Sonnet35,
+			ClaudeModels.Haiku35,
+			ClaudeModels.Opus3,
+			ClaudeModels.Sonnet3,
+			ClaudeModels.Haiku3,
 		}
 		uniqueModels := make(map[string]bool)
 		for _, model := range models {
@@ -164,14 +185,14 @@ func TestVerifiedLLM(t *testing.T) {
 	t.Run("VerifiedLLM struct fields", func(t *testing.T) {
 		llm := &VerifiedLLM{
 			ProviderName: "claude",
-			ModelName:    ClaudeModels.SonnetLatest,
+			ModelName:    ClaudeModels.Sonnet45,
 			Score:        9.5,
 			IsOAuth:      true,
 			Verified:     true,
 		}
 
 		assert.Equal(t, "claude", llm.ProviderName)
-		assert.Equal(t, ClaudeModels.SonnetLatest, llm.ModelName)
+		assert.Equal(t, ClaudeModels.Sonnet45, llm.ModelName)
 		assert.Equal(t, 9.5, llm.Score)
 		assert.True(t, llm.IsOAuth)
 		assert.True(t, llm.Verified)
@@ -184,7 +205,7 @@ func TestDebateTeamMember(t *testing.T) {
 			Position:     PositionAnalyst,
 			Role:         RoleAnalyst,
 			ProviderName: "claude",
-			ModelName:    ClaudeModels.SonnetLatest,
+			ModelName:    ClaudeModels.Sonnet45,
 			Score:        9.5,
 			IsActive:     true,
 			IsOAuth:      true,
@@ -193,7 +214,7 @@ func TestDebateTeamMember(t *testing.T) {
 		assert.Equal(t, PositionAnalyst, member.Position)
 		assert.Equal(t, RoleAnalyst, member.Role)
 		assert.Equal(t, "claude", member.ProviderName)
-		assert.Equal(t, ClaudeModels.SonnetLatest, member.ModelName)
+		assert.Equal(t, ClaudeModels.Sonnet45, member.ModelName)
 		assert.Equal(t, 9.5, member.Score)
 		assert.True(t, member.IsActive)
 		assert.True(t, member.IsOAuth)
@@ -214,7 +235,7 @@ func TestDebateTeamMember(t *testing.T) {
 			Position:     PositionCritic,
 			Role:         RoleCritic,
 			ProviderName: "claude",
-			ModelName:    ClaudeModels.Haiku,
+			ModelName:    ClaudeModels.Haiku45,
 			Score:        8.5,
 			IsActive:     false,
 			IsOAuth:      true,
@@ -281,7 +302,7 @@ func TestDebateTeamConfigGetTeamSummary(t *testing.T) {
 		Position:     PositionAnalyst,
 		Role:         RoleAnalyst,
 		ProviderName: "claude",
-		ModelName:    ClaudeModels.SonnetLatest,
+		ModelName:    ClaudeModels.Sonnet45,
 		Score:        9.5,
 		IsActive:     true,
 		IsOAuth:      true,
@@ -299,9 +320,20 @@ func TestDebateTeamConfigGetTeamSummary(t *testing.T) {
 		summary := config.GetTeamSummary()
 
 		claudeModels := summary["claude_models"].(map[string]string)
-		assert.NotEmpty(t, claudeModels["sonnet_latest"])
-		assert.NotEmpty(t, claudeModels["opus"])
-		assert.NotEmpty(t, claudeModels["haiku"])
+		// Claude 4.5 models
+		assert.NotEmpty(t, claudeModels["opus_45"])
+		assert.NotEmpty(t, claudeModels["sonnet_45"])
+		assert.NotEmpty(t, claudeModels["haiku_45"])
+		// Claude 4.x models
+		assert.NotEmpty(t, claudeModels["opus_4"])
+		assert.NotEmpty(t, claudeModels["sonnet_4"])
+		// Claude 3.5 models
+		assert.NotEmpty(t, claudeModels["sonnet_35"])
+		assert.NotEmpty(t, claudeModels["haiku_35"])
+		// Claude 3 legacy models
+		assert.NotEmpty(t, claudeModels["opus_3"])
+		assert.NotEmpty(t, claudeModels["sonnet_3"])
+		assert.NotEmpty(t, claudeModels["haiku_3"])
 	})
 
 	t.Run("Summary includes Qwen models", func(t *testing.T) {
@@ -392,7 +424,7 @@ func TestDebateTeamConfigGetAllLLMs(t *testing.T) {
 	config.members[PositionAnalyst] = &DebateTeamMember{
 		Position:     PositionAnalyst,
 		ProviderName: "claude",
-		ModelName:    ClaudeModels.SonnetLatest,
+		ModelName:    ClaudeModels.Sonnet45,
 		Fallback:     fallback1,
 	}
 
@@ -445,7 +477,7 @@ func TestDebateTeamConfigActivateFallback(t *testing.T) {
 		config.members[PositionProposer] = &DebateTeamMember{
 			Position:     PositionProposer,
 			ProviderName: "claude",
-			ModelName:    ClaudeModels.Opus,
+			ModelName:    ClaudeModels.Opus45,
 			IsActive:     true,
 			Fallback:     fallback,
 		}
@@ -532,9 +564,16 @@ func TestNoModelDuplication(t *testing.T) {
 	t.Run("Claude models have no duplicates", func(t *testing.T) {
 		models := map[string]bool{}
 		claudeList := []string{
-			ClaudeModels.Sonnet,
-			ClaudeModels.Opus,
-			ClaudeModels.Haiku,
+			ClaudeModels.Opus45,
+			ClaudeModels.Sonnet45,
+			ClaudeModels.Haiku45,
+			ClaudeModels.Opus4,
+			ClaudeModels.Sonnet4,
+			ClaudeModels.Sonnet35,
+			ClaudeModels.Haiku35,
+			ClaudeModels.Opus3,
+			ClaudeModels.Sonnet3,
+			ClaudeModels.Haiku3,
 		}
 		for _, m := range claudeList {
 			assert.False(t, models[m], "Claude model %s is duplicated", m)
@@ -578,10 +617,17 @@ func TestTotalLLMCount(t *testing.T) {
 		// Count all unique models defined
 		allModels := map[string]bool{}
 
-		// Claude models (3)
-		allModels[ClaudeModels.SonnetLatest] = true
-		allModels[ClaudeModels.Opus] = true
-		allModels[ClaudeModels.Haiku] = true
+		// Claude models (10)
+		allModels[ClaudeModels.Opus45] = true
+		allModels[ClaudeModels.Sonnet45] = true
+		allModels[ClaudeModels.Haiku45] = true
+		allModels[ClaudeModels.Opus4] = true
+		allModels[ClaudeModels.Sonnet4] = true
+		allModels[ClaudeModels.Sonnet35] = true
+		allModels[ClaudeModels.Haiku35] = true
+		allModels[ClaudeModels.Opus3] = true
+		allModels[ClaudeModels.Sonnet3] = true
+		allModels[ClaudeModels.Haiku3] = true
 
 		// Qwen models (5)
 		allModels[QwenModels.Turbo] = true
@@ -597,8 +643,8 @@ func TestTotalLLMCount(t *testing.T) {
 		allModels[LLMsVerifierModels.Groq] = true
 		allModels[LLMsVerifierModels.Cerebras] = true
 
-		// Total should be >= 15 (some might be same if needed)
-		assert.GreaterOrEqual(t, len(allModels), 13, "Should have at least 13 unique models defined")
+		// Total should be >= 20 (10 Claude + 5 Qwen + 5 LLMsVerifier)
+		assert.GreaterOrEqual(t, len(allModels), 20, "Should have at least 20 unique models defined")
 	})
 }
 
@@ -616,7 +662,7 @@ func TestGetVerifiedLLMs(t *testing.T) {
 	t.Run("Returns verified LLMs after initialization", func(t *testing.T) {
 		// Manually add verified LLMs
 		config.verifiedLLMs = []*VerifiedLLM{
-			{ProviderName: "claude", ModelName: ClaudeModels.SonnetLatest, Score: 9.5, IsOAuth: true, Verified: true},
+			{ProviderName: "claude", ModelName: ClaudeModels.Sonnet45, Score: 9.5, IsOAuth: true, Verified: true},
 			{ProviderName: "deepseek", ModelName: LLMsVerifierModels.DeepSeek, Score: 8.5, IsOAuth: false, Verified: true},
 		}
 
