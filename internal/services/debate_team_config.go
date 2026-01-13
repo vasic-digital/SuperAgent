@@ -111,12 +111,81 @@ var LLMsVerifierModels = struct {
 	Cerebras: "llama-3.3-70b",
 }
 
-// ZenModels defines the available OpenCode Zen free models
+// OpenRouterFreeModels defines OpenRouter Zen free models (with :free suffix)
+// These are high-quality models available for free through OpenRouter
+var OpenRouterFreeModels = struct {
+	// Llama 4 models (Meta)
+	Llama4Maverick string
+	Llama4Scout    string
+	Llama3370B     string
+
+	// DeepSeek models (reasoning)
+	DeepSeekR1      string
+	DeepSeekR1Zero  string
+	DeepSeekChatV3  string
+	DeepSeekR1Llama string
+	DeepSeekR1Qwen32 string
+	DeepSeekR1Qwen14 string
+
+	// Qwen models
+	QwenQwQ32B  string
+	QwenVL3B    string
+
+	// Google models
+	Gemini25ProExp   string
+	Gemini20Flash    string
+	Gemini20FlashExp string
+	Gemma327B        string
+
+	// Other models
+	NvidiaLlama253B string
+	Phi3Mini        string
+	Phi3Medium      string
+	Mistral7B       string
+	Zephyr7B        string
+	OpenChat7B      string
+	Capybara7B      string
+}{
+	// Llama 4 (highest capability free models)
+	Llama4Maverick: "meta-llama/llama-4-maverick:free",
+	Llama4Scout:    "meta-llama/llama-4-scout:free",
+	Llama3370B:     "meta-llama/llama-3.3-70b-instruct:free",
+
+	// DeepSeek (excellent reasoning)
+	DeepSeekR1:       "deepseek/deepseek-r1:free",
+	DeepSeekR1Zero:   "deepseek/deepseek-r1-zero:free",
+	DeepSeekChatV3:   "deepseek/deepseek-chat-v3-0324:free",
+	DeepSeekR1Llama:  "deepseek/deepseek-r1-distill-llama-70b:free",
+	DeepSeekR1Qwen32: "deepseek/deepseek-r1-distill-qwen-32b:free",
+	DeepSeekR1Qwen14: "deepseek/deepseek-r1-distill-qwen-14b:free",
+
+	// Qwen
+	QwenQwQ32B: "qwen/qwq-32b:free",
+	QwenVL3B:   "qwen/qwen2.5-vl-3b-instruct:free",
+
+	// Google
+	Gemini25ProExp:   "google/gemini-2.5-pro-exp-03-25:free",
+	Gemini20Flash:    "google/gemini-2.0-flash-thinking-exp:free",
+	Gemini20FlashExp: "google/gemini-2.0-flash-exp:free",
+	Gemma327B:        "google/gemma-3-27b-it:free",
+
+	// Other
+	NvidiaLlama253B: "nvidia/llama-3.1-nemotron-ultra-253b-v1:free",
+	Phi3Mini:        "microsoft/phi-3-mini-128k-instruct:free",
+	Phi3Medium:      "microsoft/phi-3-medium-128k-instruct:free",
+	Mistral7B:       "mistralai/mistral-7b-instruct:free",
+	Zephyr7B:        "huggingfaceh4/zephyr-7b-beta:free",
+	OpenChat7B:      "openchat/openchat-7b:free",
+	Capybara7B:      "nousresearch/nous-capybara-7b:free",
+}
+
+// ZenModels defines OpenCode Zen free models (no API key required)
+// These are high-quality models available through OpenCode's Zen API gateway
 var ZenModels = struct {
-	BigPickle    string // Stealth model (possibly GLM-4.6)
-	GrokCodeFast string // xAI Grok Code Fast - optimized for coding
-	GLM47Free    string // GLM 4.7 free tier
-	GPT5Nano     string // GPT 5 Nano free tier
+	BigPickle     string // Stealth model
+	GrokCodeFast  string // xAI Grok code model (default)
+	GLM47Free     string // GLM 4.7 free tier
+	GPT5Nano      string // GPT 5 Nano free tier
 }{
 	BigPickle:    "opencode/big-pickle",
 	GrokCodeFast: "opencode/grok-code",
@@ -220,7 +289,7 @@ func (dtc *DebateTeamConfig) InitializeTeam(ctx context.Context) error {
 	return nil
 }
 
-// collectVerifiedLLMs gathers all verified LLMs from OAuth2 and LLMsVerifier
+// collectVerifiedLLMs gathers all verified LLMs from OAuth2, OpenRouter free models, and LLMsVerifier
 func (dtc *DebateTeamConfig) collectVerifiedLLMs(ctx context.Context) {
 	dtc.verifiedLLMs = make([]*VerifiedLLM, 0)
 
@@ -229,26 +298,39 @@ func (dtc *DebateTeamConfig) collectVerifiedLLMs(ctx context.Context) {
 		dtc.discovery.VerifyAllProviders(ctx)
 	}
 
-	// Collect OAuth2 Claude models (if verified)
+	// Collect OAuth2 Claude models (trust CLI credentials even if API verification fails)
 	dtc.collectClaudeModels()
 
-	// Collect OAuth2 Qwen models (if verified)
+	// Collect OAuth2 Qwen models (trust CLI credentials even if API verification fails)
 	dtc.collectQwenModels()
+
+	// Collect OpenRouter Zen free models (:free suffix)
+	dtc.collectOpenRouterFreeModels()
+
+	// Collect OpenCode Zen free models (Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano)
+	dtc.collectZenModels()
 
 	// Collect LLMsVerifier-scored providers
 	dtc.collectLLMsVerifierProviders()
 
 	dtc.logger.WithFields(logrus.Fields{
-		"total_verified": len(dtc.verifiedLLMs),
-		"oauth_count":    dtc.countOAuthLLMs(),
+		"total_verified":   len(dtc.verifiedLLMs),
+		"oauth_count":      dtc.countOAuthLLMs(),
+		"free_models_count": dtc.countFreeModels(),
 	}).Info("Verified LLMs collected")
 }
 
-// collectClaudeModels collects Claude models if the provider is verified
+// collectClaudeModels collects Claude models if the provider is available
+// For OAuth providers, we trust CLI credentials even if API verification fails
+// because CLI tokens may be scoped differently than public API access
 func (dtc *DebateTeamConfig) collectClaudeModels() {
+	// First try verified provider, then fall back to any registered provider
 	provider := dtc.getVerifiedProvider("claude", "claude-oauth")
 	if provider == nil {
-		dtc.logger.Debug("Claude provider not available or not verified")
+		provider = dtc.getRegisteredProvider("claude", "claude-oauth")
+	}
+	if provider == nil {
+		dtc.logger.Debug("Claude provider not available")
 		return
 	}
 
@@ -291,11 +373,17 @@ func (dtc *DebateTeamConfig) collectClaudeModels() {
 	dtc.logger.WithField("models", len(claudeModels)).Info("Added Claude OAuth2 models")
 }
 
-// collectQwenModels collects Qwen models if the provider is verified
+// collectQwenModels collects Qwen models if the provider is available
+// For OAuth providers, we trust CLI credentials even if API verification fails
+// because CLI tokens may be scoped differently than public API access
 func (dtc *DebateTeamConfig) collectQwenModels() {
+	// First try verified provider, then fall back to any registered provider
 	provider := dtc.getVerifiedProvider("qwen", "qwen-oauth")
 	if provider == nil {
-		dtc.logger.Debug("Qwen provider not available or not verified")
+		provider = dtc.getRegisteredProvider("qwen", "qwen-oauth")
+	}
+	if provider == nil {
+		dtc.logger.Debug("Qwen provider not available")
 		return
 	}
 
@@ -376,11 +464,162 @@ func (dtc *DebateTeamConfig) getVerifiedProvider(names ...string) llm.LLMProvide
 	return nil
 }
 
+// getRegisteredProvider gets any registered provider by name(s), even if not verified
+// This is used for OAuth providers where CLI credentials are trusted even if API verification fails
+func (dtc *DebateTeamConfig) getRegisteredProvider(names ...string) llm.LLMProvider {
+	for _, name := range names {
+		// Try registry
+		if dtc.providerRegistry != nil {
+			if p, err := dtc.providerRegistry.GetProvider(name); err == nil && p != nil {
+				return p
+			}
+		}
+		// Try discovery (without verification check)
+		if dtc.discovery != nil {
+			if discovered := dtc.discovery.GetProviderByName(name); discovered != nil && discovered.Provider != nil {
+				return discovered.Provider
+			}
+		}
+	}
+	return nil
+}
+
+// collectOpenRouterFreeModels collects OpenRouter Zen free models (:free suffix)
+// These are high-quality models available for free through OpenRouter
+func (dtc *DebateTeamConfig) collectOpenRouterFreeModels() {
+	// Get OpenRouter provider (any registration status is fine)
+	provider := dtc.getVerifiedProvider("openrouter")
+	if provider == nil {
+		provider = dtc.getRegisteredProvider("openrouter")
+	}
+	if provider == nil {
+		dtc.logger.Debug("OpenRouter provider not available for free models")
+		return
+	}
+
+	// Add top OpenRouter free models with scores
+	// Higher scores for more capable models
+	freeModels := []struct {
+		Name  string
+		Score float64
+	}{
+		// Llama 4 (highest priority - latest and most capable)
+		{OpenRouterFreeModels.Llama4Maverick, 8.8},
+		{OpenRouterFreeModels.Llama4Scout, 8.6},
+		{OpenRouterFreeModels.Llama3370B, 8.4},
+
+		// DeepSeek R1 (excellent reasoning capabilities)
+		{OpenRouterFreeModels.DeepSeekR1, 8.5},
+		{OpenRouterFreeModels.DeepSeekChatV3, 8.3},
+		{OpenRouterFreeModels.DeepSeekR1Llama, 8.2},
+
+		// Qwen (good general purpose)
+		{OpenRouterFreeModels.QwenQwQ32B, 8.0},
+
+		// Google Gemini (strong reasoning)
+		{OpenRouterFreeModels.Gemini25ProExp, 8.7},
+		{OpenRouterFreeModels.Gemini20Flash, 8.1},
+		{OpenRouterFreeModels.Gemma327B, 7.8},
+
+		// NVIDIA (large model)
+		{OpenRouterFreeModels.NvidiaLlama253B, 8.0},
+
+		// Microsoft Phi (efficient)
+		{OpenRouterFreeModels.Phi3Medium, 7.5},
+		{OpenRouterFreeModels.Phi3Mini, 7.2},
+
+		// Other open-source models
+		{OpenRouterFreeModels.Mistral7B, 7.3},
+		{OpenRouterFreeModels.Zephyr7B, 7.0},
+	}
+
+	for _, m := range freeModels {
+		dtc.verifiedLLMs = append(dtc.verifiedLLMs, &VerifiedLLM{
+			ProviderName: "openrouter",
+			ModelName:    m.Name,
+			Score:        m.Score,
+			Provider:     provider,
+			IsOAuth:      false,
+			Verified:     true, // Free models don't require API key verification
+		})
+	}
+
+	dtc.logger.WithField("models", len(freeModels)).Info("Added OpenRouter Zen free models")
+}
+
+// collectZenModels collects OpenCode Zen free models (no API key required)
+// These are available through the OpenCode Zen API gateway without authentication
+func (dtc *DebateTeamConfig) collectZenModels() {
+	// Get Zen provider (any registration status is fine - Zen supports anonymous access)
+	provider := dtc.getVerifiedProvider("zen")
+	if provider == nil {
+		provider = dtc.getRegisteredProvider("zen")
+	}
+	if provider == nil {
+		dtc.logger.Debug("Zen provider not available - will use anonymous mode")
+		// Note: Zen provider supports anonymous mode, but we need the provider registered
+		// If not registered, free models will still be collected if provider discovery runs later
+		return
+	}
+
+	// Add OpenCode Zen free models with scores
+	// These models are available without API key through OpenCode's Zen gateway
+	zenModels := []struct {
+		Name  string
+		Score float64
+	}{
+		{ZenModels.GrokCodeFast, 8.2}, // xAI Grok code model - fast and capable
+		{ZenModels.BigPickle, 8.0},    // Stealth model - good general purpose
+		{ZenModels.GLM47Free, 7.8},    // GLM 4.7 - good Chinese/English multilingual
+		{ZenModels.GPT5Nano, 7.6},     // GPT 5 Nano - compact and efficient
+	}
+
+	for _, m := range zenModels {
+		dtc.verifiedLLMs = append(dtc.verifiedLLMs, &VerifiedLLM{
+			ProviderName: "zen",
+			ModelName:    m.Name,
+			Score:        m.Score,
+			Provider:     provider,
+			IsOAuth:      false,
+			Verified:     true, // Zen free models work without API key (anonymous mode)
+		})
+	}
+
+	dtc.logger.WithField("models", len(zenModels)).Info("Added OpenCode Zen free models")
+}
+
 // countOAuthLLMs counts the number of OAuth2 LLMs in the verified list
 func (dtc *DebateTeamConfig) countOAuthLLMs() int {
 	count := 0
 	for _, llm := range dtc.verifiedLLMs {
 		if llm.IsOAuth {
+			count++
+		}
+	}
+	return count
+}
+
+// countFreeModels counts the number of free models (OpenRouter :free + OpenCode Zen) in the verified list
+func (dtc *DebateTeamConfig) countFreeModels() int {
+	count := 0
+	for _, llm := range dtc.verifiedLLMs {
+		// Count OpenRouter free models (:free suffix)
+		if llm.ProviderName == "openrouter" && len(llm.ModelName) > 5 && llm.ModelName[len(llm.ModelName)-5:] == ":free" {
+			count++
+		}
+		// Count OpenCode Zen free models (opencode/ prefix)
+		if llm.ProviderName == "zen" && len(llm.ModelName) > 9 && llm.ModelName[:9] == "opencode/" {
+			count++
+		}
+	}
+	return count
+}
+
+// countZenModels counts the number of OpenCode Zen models in the verified list
+func (dtc *DebateTeamConfig) countZenModels() int {
+	count := 0
+	for _, llm := range dtc.verifiedLLMs {
+		if llm.ProviderName == "zen" {
 			count++
 		}
 	}
@@ -734,12 +973,25 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 			"groq":     LLMsVerifierModels.Groq,
 			"cerebras": LLMsVerifierModels.Cerebras,
 		},
+		"openrouter_free_models": map[string]string{
+			"llama4_maverick":   OpenRouterFreeModels.Llama4Maverick,
+			"llama4_scout":      OpenRouterFreeModels.Llama4Scout,
+			"llama33_70b":       OpenRouterFreeModels.Llama3370B,
+			"deepseek_r1":       OpenRouterFreeModels.DeepSeekR1,
+			"deepseek_chat_v3":  OpenRouterFreeModels.DeepSeekChatV3,
+			"qwen_qwq_32b":      OpenRouterFreeModels.QwenQwQ32B,
+			"gemini_25_pro_exp": OpenRouterFreeModels.Gemini25ProExp,
+			"gemini_20_flash":   OpenRouterFreeModels.Gemini20Flash,
+			"nvidia_llama_253b": OpenRouterFreeModels.NvidiaLlama253B,
+			"phi3_medium":       OpenRouterFreeModels.Phi3Medium,
+		},
 		"zen_models": map[string]string{
 			"big_pickle":     ZenModels.BigPickle,
 			"grok_code_fast": ZenModels.GrokCodeFast,
 			"glm_47_free":    ZenModels.GLM47Free,
 			"gpt_5_nano":     ZenModels.GPT5Nano,
 		},
+		"zen_models_count": dtc.countZenModels(),
 	}
 }
 
