@@ -282,10 +282,10 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 					"Authorization": "Bearer " + os.Getenv("HELIXAGENT_API_KEY"),
 				},
 			},
-			// Standard MCP servers
+			// Standard MCP servers - using verified package names
 			"filesystem": {
 				Type:    "local",
-				Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "/"},
+				Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", os.Getenv("HOME")},
 				Enabled: &enabled,
 			},
 			"github": {
@@ -303,7 +303,7 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 			},
 			"fetch": {
 				Type:    "local",
-				Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"},
+				Command: []string{"npx", "-y", "mcp-fetch-server"},
 				Enabled: &enabled,
 			},
 			"puppeteer": {
@@ -313,7 +313,7 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 			},
 			"sqlite": {
 				Type:    "local",
-				Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite"},
+				Command: []string{"npx", "-y", "mcp-server-sqlite"},
 				Enabled: &enabled,
 			},
 		},

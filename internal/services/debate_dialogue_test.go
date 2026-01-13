@@ -96,7 +96,7 @@ func TestRegisterCharacter(t *testing.T) {
 			Position:     PositionAnalyst,
 			Role:         RoleAnalyst,
 			ProviderName: "claude",
-			ModelName:    ClaudeModels.SonnetLatest,
+			ModelName:    ClaudeModels.Sonnet45,
 		}
 
 		char := df.RegisterCharacter(member)
@@ -113,7 +113,7 @@ func TestRegisterCharacter(t *testing.T) {
 			Position:     PositionProposer,
 			Role:         RoleProposer,
 			ProviderName: "claude",
-			ModelName:    ClaudeModels.Opus,
+			ModelName:    ClaudeModels.Opus45,
 		}
 
 		char := df.RegisterCharacter(member)
@@ -185,7 +185,7 @@ func TestDialogueCharacter(t *testing.T) {
 			Role:     RoleAnalyst,
 			Position: PositionAnalyst,
 			Provider: "claude",
-			Model:    ClaudeModels.SonnetLatest,
+			Model:    ClaudeModels.Sonnet45,
 			Avatar:   "[A]",
 		}
 
@@ -193,7 +193,7 @@ func TestDialogueCharacter(t *testing.T) {
 		assert.Equal(t, RoleAnalyst, char.Role)
 		assert.Equal(t, PositionAnalyst, char.Position)
 		assert.Equal(t, "claude", char.Provider)
-		assert.Equal(t, ClaudeModels.SonnetLatest, char.Model)
+		assert.Equal(t, ClaudeModels.Sonnet45, char.Model)
 		assert.Equal(t, "[A]", char.Avatar)
 	})
 }
@@ -683,8 +683,8 @@ func TestDialogueDebateIntegration(t *testing.T) {
 
 		// Register all 5 characters
 		members := []*DebateTeamMember{
-			{Position: PositionAnalyst, Role: RoleAnalyst, ProviderName: "claude", ModelName: ClaudeModels.SonnetLatest},
-			{Position: PositionProposer, Role: RoleProposer, ProviderName: "claude", ModelName: ClaudeModels.Opus},
+			{Position: PositionAnalyst, Role: RoleAnalyst, ProviderName: "claude", ModelName: ClaudeModels.Sonnet45},
+			{Position: PositionProposer, Role: RoleProposer, ProviderName: "claude", ModelName: ClaudeModels.Opus45},
 			{Position: PositionCritic, Role: RoleCritic, ProviderName: "deepseek", ModelName: LLMsVerifierModels.DeepSeek},
 			{Position: PositionSynthesis, Role: RoleSynthesis, ProviderName: "gemini", ModelName: LLMsVerifierModels.Gemini},
 			{Position: PositionMediator, Role: RoleMediator, ProviderName: "mistral", ModelName: LLMsVerifierModels.Mistral},
@@ -753,24 +753,24 @@ func TestDialogueDebateIntegration(t *testing.T) {
 			Level    string
 		}{
 			// Position 1
-			{PositionAnalyst, RoleAnalyst, "claude", ClaudeModels.SonnetLatest, "primary"},
+			{PositionAnalyst, RoleAnalyst, "claude", ClaudeModels.Sonnet45, "primary"},
 			{PositionAnalyst, RoleAnalyst, "groq", LLMsVerifierModels.Groq, "fallback1"},
 			{PositionAnalyst, RoleAnalyst, "qwen", QwenModels.Max, "fallback2"},
 			// Position 2
-			{PositionProposer, RoleProposer, "claude", ClaudeModels.Opus, "primary"},
+			{PositionProposer, RoleProposer, "claude", ClaudeModels.Opus45, "primary"},
 			{PositionProposer, RoleProposer, "cerebras", LLMsVerifierModels.Cerebras, "fallback1"},
 			{PositionProposer, RoleProposer, "qwen", QwenModels.Plus, "fallback2"},
 			// Position 3
 			{PositionCritic, RoleCritic, "deepseek", LLMsVerifierModels.DeepSeek, "primary"},
-			{PositionCritic, RoleCritic, "claude", ClaudeModels.Haiku, "fallback1"},
+			{PositionCritic, RoleCritic, "claude", ClaudeModels.Haiku45, "fallback1"},
 			{PositionCritic, RoleCritic, "qwen", QwenModels.Turbo, "fallback2"},
 			// Position 4
 			{PositionSynthesis, RoleSynthesis, "gemini", LLMsVerifierModels.Gemini, "primary"},
-			{PositionSynthesis, RoleSynthesis, "claude", ClaudeModels.Haiku, "fallback1"},
+			{PositionSynthesis, RoleSynthesis, "claude", ClaudeModels.Haiku45, "fallback1"},
 			{PositionSynthesis, RoleSynthesis, "qwen", QwenModels.Coder, "fallback2"},
 			// Position 5
 			{PositionMediator, RoleMediator, "mistral", LLMsVerifierModels.Mistral, "primary"},
-			{PositionMediator, RoleMediator, "claude", ClaudeModels.Haiku, "fallback1"},
+			{PositionMediator, RoleMediator, "claude", ClaudeModels.Haiku45, "fallback1"},
 			{PositionMediator, RoleMediator, "qwen", QwenModels.Long, "fallback2"},
 		}
 

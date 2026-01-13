@@ -3351,6 +3351,100 @@
         "concurrent_success",
         "protocols_initialized"
       ]
+    },
+    {
+      "id": "mcp_all_servers",
+      "name": "MCP All Servers Challenge",
+      "description": "Comprehensive validation of all MCP servers: npm package existence, local server startup, HelixAgent SSE endpoints, and OpenCode configuration",
+      "category": "protocol",
+      "dependencies": [],
+      "script": "../scripts/mcp_all_servers_challenge.sh",
+      "estimated_duration": "1-2 minutes",
+      "inputs": [
+        {
+          "name": "api_keys",
+          "source": ".env",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "mcp_all_servers_report.json",
+          "type": "json",
+          "description": "MCP all servers test results"
+        }
+      ],
+      "assertions": [
+        {
+          "name": "npm_packages_exist",
+          "type": "npm_package_exists",
+          "target": "true",
+          "message": "Official MCP packages must exist in npm registry"
+        },
+        {
+          "name": "npm_packages_not_exist",
+          "type": "npm_package_not_exists",
+          "target": "true",
+          "message": "Non-existent packages must be detected (server-fetch, server-sqlite)"
+        },
+        {
+          "name": "local_servers_start",
+          "type": "server_startup",
+          "target": "success",
+          "message": "Local MCP servers must start successfully"
+        },
+        {
+          "name": "helixagent_sse_endpoints",
+          "type": "http_status",
+          "target": "200",
+          "message": "All HelixAgent SSE endpoints must respond correctly"
+        },
+        {
+          "name": "jsonrpc_initialize",
+          "type": "json_contains",
+          "target": "result",
+          "message": "JSON-RPC initialize must return valid result"
+        },
+        {
+          "name": "opencode_config_valid",
+          "type": "config_valid",
+          "target": "true",
+          "message": "OpenCode config must use correct package names"
+        },
+        {
+          "name": "endpoint_timeouts",
+          "type": "timeout_adequate",
+          "target": ">=30000",
+          "message": "HelixAgent endpoint timeouts must be adequate"
+        }
+      ],
+      "metrics": [
+        "npm_packages_checked",
+        "local_servers_tested",
+        "sse_endpoints_tested",
+        "jsonrpc_methods_tested",
+        "config_validations",
+        "total_tests",
+        "pass_rate"
+      ]
+    },
+    {
+      "id": "qwen_oauth_refresh",
+      "name": "Qwen OAuth Refresh Challenge",
+      "description": "Validates Qwen OAuth token refresh mechanism including CLI availability, credentials, token validity, and automatic refresh",
+      "category": "oauth",
+      "script": "challenges/scripts/qwen_oauth_refresh_challenge.sh",
+      "enabled": true,
+      "priority": 50,
+      "dependencies": [],
+      "tags": [
+        "oauth",
+        "qwen",
+        "token-refresh",
+        "cli",
+        "automation"
+      ],
+      "expected_duration_seconds": 30
     }
   ],
   "assertion_types": {

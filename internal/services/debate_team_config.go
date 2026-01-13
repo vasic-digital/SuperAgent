@@ -42,18 +42,43 @@ const (
 )
 
 // ClaudeModels defines the available Claude models (OAuth2 provider)
+// Updated 2025-01-13 with latest Claude 4.x and 4.5 models
 var ClaudeModels = struct {
-	Sonnet       string // High quality
-	Opus         string // Highest quality
-	Haiku        string // Fast, efficient
-	SonnetLatest string // Latest Sonnet version
-	OpusLatest   string // Latest Opus version
+	// Claude 4.5 (Latest generation - November 2025)
+	Opus45   string // claude-opus-4-5-20251101 - Most capable
+	Sonnet45 string // claude-sonnet-4-5-20250929 - Balanced
+	Haiku45  string // claude-haiku-4-5-20251001 - Fast, efficient
+
+	// Claude 4.x (May 2025)
+	Opus4   string // claude-opus-4-20250514 - Previous flagship
+	Sonnet4 string // claude-sonnet-4-20250514 - Previous generation
+
+	// Claude 3.5 (Legacy - can be used as fallbacks)
+	Sonnet35 string // claude-3-5-sonnet-20241022
+	Haiku35  string // claude-3-5-haiku-20241022
+
+	// Claude 3 (Legacy - can be used as fallbacks)
+	Opus3   string // claude-3-opus-20240229
+	Sonnet3 string // claude-3-sonnet-20240229
+	Haiku3  string // claude-3-haiku-20240307
 }{
-	Sonnet:       "claude-3-sonnet-20240229",
-	Opus:         "claude-3-opus-20240229",
-	Haiku:        "claude-3-haiku-20240307",
-	SonnetLatest: "claude-3-5-sonnet-20241022",
-	OpusLatest:   "claude-3-opus-20240229",
+	// Claude 4.5 (Primary models for AI Debate Team)
+	Opus45:   "claude-opus-4-5-20251101",
+	Sonnet45: "claude-sonnet-4-5-20250929",
+	Haiku45:  "claude-haiku-4-5-20251001",
+
+	// Claude 4.x
+	Opus4:   "claude-opus-4-20250514",
+	Sonnet4: "claude-sonnet-4-20250514",
+
+	// Claude 3.5 (Fallbacks)
+	Sonnet35: "claude-3-5-sonnet-20241022",
+	Haiku35:  "claude-3-5-haiku-20241022",
+
+	// Claude 3 (Legacy fallbacks)
+	Opus3:   "claude-3-opus-20240229",
+	Sonnet3: "claude-3-sonnet-20240229",
+	Haiku3:  "claude-3-haiku-20240307",
 }
 
 // QwenModels defines the available Qwen models (OAuth2 provider)
@@ -214,14 +239,29 @@ func (dtc *DebateTeamConfig) collectClaudeModels() {
 		return
 	}
 
-	// Add all Claude models
+	// Add all Claude models (prioritized by generation and capability)
+	// Claude 4.5 models get highest scores, then 4.x, then 3.5, then 3.x
 	claudeModels := []struct {
 		Name  string
 		Score float64
 	}{
-		{ClaudeModels.SonnetLatest, 9.5},
-		{ClaudeModels.Opus, 9.5},
-		{ClaudeModels.Haiku, 8.5},
+		// Claude 4.5 (Primary - highest scores)
+		{ClaudeModels.Opus45, 9.8},   // Most capable Claude model
+		{ClaudeModels.Sonnet45, 9.6}, // High quality balanced
+		{ClaudeModels.Haiku45, 9.0},  // Fast and efficient
+
+		// Claude 4.x (Secondary)
+		{ClaudeModels.Opus4, 9.4},
+		{ClaudeModels.Sonnet4, 9.2},
+
+		// Claude 3.5 (Fallbacks)
+		{ClaudeModels.Sonnet35, 8.8},
+		{ClaudeModels.Haiku35, 8.4},
+
+		// Claude 3 (Legacy fallbacks)
+		{ClaudeModels.Opus3, 8.0},
+		{ClaudeModels.Sonnet3, 7.5},
+		{ClaudeModels.Haiku3, 7.0},
 	}
 
 	for _, m := range claudeModels {
@@ -652,9 +692,20 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 		"positions":             positions,
 		"verified_llms_count":   len(dtc.verifiedLLMs),
 		"claude_models": map[string]string{
-			"sonnet_latest": ClaudeModels.SonnetLatest,
-			"opus":          ClaudeModels.Opus,
-			"haiku":         ClaudeModels.Haiku,
+			// Claude 4.5 (Latest)
+			"opus_45":   ClaudeModels.Opus45,
+			"sonnet_45": ClaudeModels.Sonnet45,
+			"haiku_45":  ClaudeModels.Haiku45,
+			// Claude 4.x
+			"opus_4":   ClaudeModels.Opus4,
+			"sonnet_4": ClaudeModels.Sonnet4,
+			// Claude 3.5 (Fallbacks)
+			"sonnet_35": ClaudeModels.Sonnet35,
+			"haiku_35":  ClaudeModels.Haiku35,
+			// Claude 3 (Legacy)
+			"opus_3":   ClaudeModels.Opus3,
+			"sonnet_3": ClaudeModels.Sonnet3,
+			"haiku_3":  ClaudeModels.Haiku3,
 		},
 		"qwen_models": map[string]string{
 			"turbo": QwenModels.Turbo,
