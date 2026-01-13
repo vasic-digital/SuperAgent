@@ -20,6 +20,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/openrouter"
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/verifier"
 )
 
 // ProviderRegistry manages LLM provider registration and configuration
@@ -71,11 +72,14 @@ const (
 // ProviderVerificationResult contains the result of verifying a provider
 type ProviderVerificationResult struct {
 	Provider     string               `json:"provider"`
+	Name         string               `json:"name"`                   // Alias for Provider for compatibility
 	Status       ProviderHealthStatus `json:"status"`
 	Verified     bool                 `json:"verified"`
+	Score        float64              `json:"score"`                  // LLMsVerifier score (0-10)
 	ResponseTime time.Duration        `json:"response_time_ms"`
 	Error        string               `json:"error,omitempty"`
 	TestedAt     time.Time            `json:"tested_at"`
+	VerifiedAt   time.Time            `json:"verified_at,omitempty"`  // Alias for TestedAt
 }
 
 // ModelConfig holds configuration for a specific model
@@ -287,15 +291,69 @@ func (r *ProviderRegistry) initAutoDiscovery(logger *logrus.Logger) {
 }
 
 // initScoreAdapter initializes the LLMsVerifier score adapter and connects it to the ensemble
+// This is the central point where LLMsVerifier becomes the heart of all provider validation
 func (r *ProviderRegistry) initScoreAdapter(logger *logrus.Logger) {
-	// Create score adapter (will load scores from verification cache)
-	r.scoreAdapter = NewLLMsVerifierScoreAdapter(nil, nil, logger)
+	// Create LLMsVerifier configuration with defaults
+	verifierCfg := verifier.DefaultConfig()
+	verifierCfg.Enabled = true
+
+	// Create ScoringService for score calculations
+	scoringService, err := verifier.NewScoringService(verifierCfg)
+	if err != nil {
+		logger.WithError(err).Warn("Failed to create LLMsVerifier scoring service, using fallback")
+		scoringService = nil
+	}
+
+	// Create VerificationService for provider/model verification
+	verificationService := verifier.NewVerificationService(verifierCfg)
+
+	// Wire the verification service to use our registered providers for actual API calls
+	// This allows LLMsVerifier to verify models using ProviderRegistry's providers
+	verificationService.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		r.mu.RLock()
+		p, exists := r.providers[provider]
+		r.mu.RUnlock()
+
+		if !exists {
+			return "", fmt.Errorf("provider %s not registered", provider)
+		}
+
+		req := &models.LLMRequest{
+			ID:        fmt.Sprintf("verify_%s_%d", modelID, time.Now().UnixNano()),
+			SessionID: "llmsverifier",
+			Prompt:    prompt,
+			Messages: []models.Message{
+				{Role: "user", Content: prompt},
+			},
+			ModelParams: models.ModelParameters{
+				Model:       modelID,
+				MaxTokens:   100,
+				Temperature: 0.1,
+			},
+			Status:    "pending",
+			CreatedAt: time.Now(),
+		}
+
+		resp, err := p.Complete(ctx, req)
+		if err != nil {
+			return "", err
+		}
+		return resp.Content, nil
+	})
+
+	// Create score adapter with real services
+	r.scoreAdapter = NewLLMsVerifierScoreAdapter(scoringService, verificationService, logger)
 
 	// Connect to ensemble service for dynamic provider ordering
 	if r.ensemble != nil && r.scoreAdapter != nil {
 		r.ensemble.SetScoreProvider(r.scoreAdapter)
 		logger.Info("LLMsVerifier score adapter connected to ensemble service for dynamic provider ordering")
 	}
+
+	logger.WithFields(logrus.Fields{
+		"scoring_service":      scoringService != nil,
+		"verification_service": verificationService != nil,
+	}).Info("LLMsVerifier services initialized as central authority for provider validation")
 }
 
 // GetScoreAdapter returns the LLMsVerifier score adapter

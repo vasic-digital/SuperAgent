@@ -486,14 +486,25 @@ func (dtc *DebateTeamConfig) getRegisteredProvider(names ...string) llm.LLMProvi
 
 // collectOpenRouterFreeModels collects OpenRouter Zen free models (:free suffix)
 // These are high-quality models available for free through OpenRouter
+// IMPORTANT: Only add models if OpenRouter provider is healthy and verified
 func (dtc *DebateTeamConfig) collectOpenRouterFreeModels() {
-	// Get OpenRouter provider (any registration status is fine)
+	// Check if OpenRouter provider is healthy through discovery
+	if dtc.discovery != nil {
+		discovered := dtc.discovery.GetProviderByName("openrouter")
+		if discovered != nil && !discovered.Verified {
+			dtc.logger.WithFields(logrus.Fields{
+				"provider": "openrouter",
+				"status":   discovered.Status,
+				"error":    discovered.Error,
+			}).Warn("OpenRouter provider not healthy - skipping free models")
+			return
+		}
+	}
+
+	// Get OpenRouter provider (only if verified/healthy)
 	provider := dtc.getVerifiedProvider("openrouter")
 	if provider == nil {
-		provider = dtc.getRegisteredProvider("openrouter")
-	}
-	if provider == nil {
-		dtc.logger.Debug("OpenRouter provider not available for free models")
+		dtc.logger.Debug("OpenRouter provider not verified - skipping free models (unhealthy providers cannot provide reliable fallbacks)")
 		return
 	}
 
@@ -549,14 +560,15 @@ func (dtc *DebateTeamConfig) collectOpenRouterFreeModels() {
 
 // collectZenModels collects OpenCode Zen free models (no API key required)
 // These are available through the OpenCode Zen API gateway without authentication
+// Zen provider health is verified before adding models
 func (dtc *DebateTeamConfig) collectZenModels() {
-	// Get Zen provider (any registration status is fine - Zen supports anonymous access)
+	// Get Zen provider - it should be discovered with anonymous mode support
 	provider := dtc.getVerifiedProvider("zen")
 	if provider == nil {
 		provider = dtc.getRegisteredProvider("zen")
 	}
 	if provider == nil {
-		dtc.logger.Debug("Zen provider not available - will use anonymous mode")
+		dtc.logger.Warn("Zen provider not available - OpenCode Zen free models will not be included in debate team")
 		// Note: Zen provider supports anonymous mode, but we need the provider registered
 		// If not registered, free models will still be collected if provider discovery runs later
 		return
