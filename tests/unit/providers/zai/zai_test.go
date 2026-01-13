@@ -57,8 +57,8 @@ func TestZaiProvider_GetCapabilities(t *testing.T) {
 	assert.NotNil(t, capabilities)
 	// ZAI now supports streaming
 	assert.True(t, capabilities.SupportsStreaming)
-	// ZAI does NOT support function calling
-	assert.False(t, capabilities.SupportsFunctionCalling)
+	// ZAI now supports function calling
+	assert.True(t, capabilities.SupportsFunctionCalling)
 	// ZAI does NOT support vision
 	assert.False(t, capabilities.SupportsVision)
 	// Check limits

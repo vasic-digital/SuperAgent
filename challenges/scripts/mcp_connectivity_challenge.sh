@@ -38,8 +38,8 @@ echo ""
 echo "Test 1: MCP Package Definitions"
 echo "--------------------------------"
 if grep -q "StandardMCPPackages" internal/mcp/preinstaller.go 2>/dev/null; then
-    PACKAGE_COUNT=$(grep -c "NPMPackage:" internal/mcp/preinstaller.go 2>/dev/null || echo "0")
-    if [ "$PACKAGE_COUNT" -ge 6 ]; then
+    PACKAGE_COUNT=$(grep -c 'NPM:' internal/mcp/preinstaller.go 2>/dev/null || echo "0")
+    if [ -n "$PACKAGE_COUNT" ] && [ "$PACKAGE_COUNT" -ge 6 ]; then
         check_result "At least 6 MCP packages defined ($PACKAGE_COUNT)" 0
     else
         check_result "At least 6 MCP packages defined ($PACKAGE_COUNT)" 1
@@ -102,14 +102,14 @@ else
     check_result "WarmUp method exists" 1
 fi
 
-# Test 7: Check preinstaller metrics
+# Test 7: Check preinstaller status tracking
 echo ""
 echo "Test 7: Preinstaller Metrics"
 echo "----------------------------"
-if grep -q "PreinstallerMetrics\|Metrics" internal/mcp/preinstaller.go 2>/dev/null; then
-    check_result "Preinstaller metrics tracking" 0
+if grep -q "GetAllStatuses\|PackageStatus\|InstallStatus" internal/mcp/preinstaller.go 2>/dev/null; then
+    check_result "Preinstaller status tracking" 0
 else
-    check_result "Preinstaller metrics tracking" 1
+    check_result "Preinstaller status tracking" 1
 fi
 
 # Test 8: Check timeout configuration

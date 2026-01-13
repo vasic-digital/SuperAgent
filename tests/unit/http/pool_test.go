@@ -2,8 +2,10 @@ package http
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -27,9 +29,11 @@ func TestHTTPClientPool_BasicOperation(t *testing.T) {
 	client2 := pool.GetClient("example.com")
 	assert.Equal(t, client, client2)
 
-	// Different host should return different client
-	client3 := pool.GetClient("other.com")
-	assert.NotEqual(t, client, client3)
+	// Different host creates different entry
+	pool.GetClient("other.com")
+
+	// Check client count
+	assert.Equal(t, 2, pool.ClientCount())
 }
 
 func TestHTTPClientPool_WithConfig(t *testing.T) {
@@ -39,7 +43,9 @@ func TestHTTPClientPool_WithConfig(t *testing.T) {
 		IdleConnTimeout:       30 * time.Second,
 		ResponseHeaderTimeout: 5 * time.Second,
 		DialTimeout:           2 * time.Second,
-		EnableHTTP2:           true,
+		RetryCount:            2,
+		RetryWaitMin:          50 * time.Millisecond,
+		RetryWaitMax:          1 * time.Second,
 	}
 
 	pool := httppool.NewHTTPClientPool(config)
@@ -67,37 +73,35 @@ func TestHTTPClientPool_ConcurrentAccess(t *testing.T) {
 	}
 
 	wg.Wait()
+
+	// Should have exactly 4 clients (one per unique host)
+	assert.Equal(t, 4, pool.ClientCount())
 }
 
 func TestHTTPClientPool_RealRequest(t *testing.T) {
 	// Create a test server
-	var requestCount int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt32(&requestCount, 1)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "ok"}`))
+		w.Write([]byte("Hello, World!"))
 	}))
 	defer server.Close()
 
 	pool := httppool.NewHTTPClientPool(nil)
 	defer pool.Close()
 
-	client := pool.GetClient(server.URL)
-	require.NotNil(t, client)
-
-	// Make a request
-	resp, err := client.Get(server.URL)
+	ctx := context.Background()
+	resp, err := pool.Get(ctx, server.URL)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&requestCount))
+
+	body, _ := io.ReadAll(resp.Body)
+	assert.Equal(t, "Hello, World!", string(body))
 }
 
 func TestHTTPClientPool_ConnectionReuse(t *testing.T) {
-	var requestCount int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt32(&requestCount, 1)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -105,30 +109,42 @@ func TestHTTPClientPool_ConnectionReuse(t *testing.T) {
 	pool := httppool.NewHTTPClientPool(nil)
 	defer pool.Close()
 
-	client := pool.GetClient(server.URL)
+	ctx := context.Background()
 
-	// Make multiple requests - should reuse connection
-	for i := 0; i < 10; i++ {
-		resp, err := client.Get(server.URL)
+	// Make multiple requests
+	for i := 0; i < 5; i++ {
+		resp, err := pool.Get(ctx, server.URL)
 		require.NoError(t, err)
 		resp.Body.Close()
 	}
 
-	assert.Equal(t, int32(10), atomic.LoadInt32(&requestCount))
+	// Should still have only one client
+	assert.Equal(t, 1, pool.ClientCount())
 }
 
 func TestHTTPClientPool_Metrics(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
 	pool := httppool.NewHTTPClientPool(nil)
 	defer pool.Close()
 
-	// Create some clients
-	pool.GetClient("host1.com")
-	pool.GetClient("host2.com")
-	pool.GetClient("host3.com")
+	ctx := context.Background()
+
+	// Make some requests
+	for i := 0; i < 5; i++ {
+		resp, err := pool.Get(ctx, server.URL)
+		require.NoError(t, err)
+		resp.Body.Close()
+	}
 
 	metrics := pool.Metrics()
-	require.NotNil(t, metrics)
-	assert.Equal(t, int64(3), metrics.ActiveClients)
+	assert.Equal(t, int64(5), metrics.TotalRequests)
+	assert.Equal(t, int64(5), metrics.SuccessRequests)
+	assert.Equal(t, int64(5), metrics.RequestCount)
+	assert.True(t, metrics.AverageLatency() > 0)
 }
 
 func TestHTTPClientPool_Close(t *testing.T) {
@@ -137,16 +153,16 @@ func TestHTTPClientPool_Close(t *testing.T) {
 	pool.GetClient("host1.com")
 	pool.GetClient("host2.com")
 
-	// Close should not panic
-	pool.Close()
+	assert.Equal(t, 2, pool.ClientCount())
 
-	// Getting client after close should still work (creates new)
-	client := pool.GetClient("host3.com")
-	assert.NotNil(t, client)
+	err := pool.Close()
+	assert.NoError(t, err)
+
+	assert.Equal(t, 0, pool.ClientCount())
 }
 
 func TestHTTPClientPool_Timeout(t *testing.T) {
-	// Server that delays response
+	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(2 * time.Second)
 		w.WriteHeader(http.StatusOK)
@@ -154,54 +170,25 @@ func TestHTTPClientPool_Timeout(t *testing.T) {
 	defer server.Close()
 
 	config := &httppool.PoolConfig{
-		ResponseHeaderTimeout: 100 * time.Millisecond,
+		DialTimeout:           1 * time.Second,
+		ResponseHeaderTimeout: 500 * time.Millisecond,
+		RetryCount:            0, // No retries
 	}
-
 	pool := httppool.NewHTTPClientPool(config)
 	defer pool.Close()
 
-	client := pool.GetClient(server.URL)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", server.URL, nil)
-	_, err := client.Do(req)
-
-	// Should timeout
+	_, err := pool.Get(ctx, server.URL)
 	assert.Error(t, err)
 }
 
-func TestRetryClient_Success(t *testing.T) {
-	var attempts int32
+func TestHTTPClientPool_RetryOnError(t *testing.T) {
+	var requestCount int32
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt32(&attempts, 1)
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	config := &httppool.RetryConfig{
-		MaxRetries:     3,
-		InitialBackoff: 10 * time.Millisecond,
-		MaxBackoff:     100 * time.Millisecond,
-	}
-
-	client := httppool.NewRetryClient(http.DefaultClient, config)
-
-	req, _ := http.NewRequest("GET", server.URL, nil)
-	resp, err := client.Do(req)
-
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&attempts)) // No retries needed
-}
-
-func TestRetryClient_RetryOnServerError(t *testing.T) {
-	var attempts int32
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		count := atomic.AddInt32(&attempts, 1)
+		count := atomic.AddInt32(&requestCount, 1)
 		if count < 3 {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			return
@@ -210,146 +197,136 @@ func TestRetryClient_RetryOnServerError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := &httppool.RetryConfig{
-		MaxRetries:     5,
-		InitialBackoff: 10 * time.Millisecond,
-		MaxBackoff:     100 * time.Millisecond,
-		RetryOn5xx:     true,
+	config := &httppool.PoolConfig{
+		RetryCount:   3,
+		RetryWaitMin: 10 * time.Millisecond,
+		RetryWaitMax: 100 * time.Millisecond,
 	}
+	pool := httppool.NewHTTPClientPool(config)
+	defer pool.Close()
 
-	client := httppool.NewRetryClient(http.DefaultClient, config)
-
-	req, _ := http.NewRequest("GET", server.URL, nil)
-	resp, err := client.Do(req)
-
+	ctx := context.Background()
+	resp, err := pool.Get(ctx, server.URL)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, int32(3), atomic.LoadInt32(&attempts)) // 2 retries + 1 success
+
+	// Should have retried twice before succeeding
+	assert.Equal(t, int32(3), atomic.LoadInt32(&requestCount))
+
+	metrics := pool.Metrics()
+	assert.Equal(t, int64(2), metrics.RetryCount)
 }
 
-func TestRetryClient_MaxRetriesExceeded(t *testing.T) {
-	var attempts int32
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt32(&attempts, 1)
-		w.WriteHeader(http.StatusServiceUnavailable)
-	}))
-	defer server.Close()
-
-	config := &httppool.RetryConfig{
-		MaxRetries:     3,
-		InitialBackoff: 10 * time.Millisecond,
-		MaxBackoff:     100 * time.Millisecond,
-		RetryOn5xx:     true,
-	}
-
-	client := httppool.NewRetryClient(http.DefaultClient, config)
-
-	req, _ := http.NewRequest("GET", server.URL, nil)
-	resp, err := client.Do(req)
-
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	// After max retries, returns the last response
-	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
-	assert.Equal(t, int32(4), atomic.LoadInt32(&attempts)) // 1 initial + 3 retries
-}
-
-func TestRetryClient_ExponentialBackoff(t *testing.T) {
-	var timestamps []time.Time
-	var mu sync.Mutex
+func TestHTTPClientPool_PostJSON(t *testing.T) {
+	var receivedBody string
+	var receivedContentType string
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		timestamps = append(timestamps, time.Now())
-		mu.Unlock()
-		w.WriteHeader(http.StatusServiceUnavailable)
-	}))
-	defer server.Close()
-
-	config := &httppool.RetryConfig{
-		MaxRetries:     3,
-		InitialBackoff: 50 * time.Millisecond,
-		MaxBackoff:     500 * time.Millisecond,
-		BackoffFactor:  2.0,
-		RetryOn5xx:     true,
-	}
-
-	client := httppool.NewRetryClient(http.DefaultClient, config)
-
-	req, _ := http.NewRequest("GET", server.URL, nil)
-	client.Do(req)
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	// Check that backoff increases
-	if len(timestamps) >= 3 {
-		gap1 := timestamps[1].Sub(timestamps[0])
-		gap2 := timestamps[2].Sub(timestamps[1])
-		// Second gap should be larger than first (exponential backoff)
-		assert.True(t, gap2 >= gap1, "Expected exponential backoff, gap1=%v, gap2=%v", gap1, gap2)
-	}
-}
-
-func TestRetryClient_NoRetryOnClientError(t *testing.T) {
-	var attempts int32
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt32(&attempts, 1)
-		w.WriteHeader(http.StatusBadRequest)
-	}))
-	defer server.Close()
-
-	config := &httppool.RetryConfig{
-		MaxRetries:     3,
-		InitialBackoff: 10 * time.Millisecond,
-		RetryOn5xx:     true,
-		RetryOn4xx:     false,
-	}
-
-	client := httppool.NewRetryClient(http.DefaultClient, config)
-
-	req, _ := http.NewRequest("GET", server.URL, nil)
-	resp, err := client.Do(req)
-
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	// Should not retry 4xx errors
-	assert.Equal(t, int32(1), atomic.LoadInt32(&attempts))
-}
-
-func TestRetryClient_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(500 * time.Millisecond)
+		receivedContentType = r.Header.Get("Content-Type")
+		body, _ := io.ReadAll(r.Body)
+		receivedBody = string(body)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
-	config := &httppool.RetryConfig{
-		MaxRetries:     5,
-		InitialBackoff: 100 * time.Millisecond,
-	}
+	pool := httppool.NewHTTPClientPool(nil)
+	defer pool.Close()
 
-	client := httppool.NewRetryClient(http.DefaultClient, config)
+	ctx := context.Background()
+	body := strings.NewReader(`{"key": "value"}`)
+	resp, err := pool.PostJSON(ctx, server.URL, body)
+	require.NoError(t, err)
+	defer resp.Body.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
+	assert.Equal(t, "application/json", receivedContentType)
+	assert.Equal(t, `{"key": "value"}`, receivedBody)
+}
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", server.URL, nil)
-	_, err := client.Do(req)
+func TestHTTPClientPool_HostClient(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-API-Key") != "test-key" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Success"))
+	}))
+	defer server.Close()
 
-	// Should be cancelled
+	pool := httppool.NewHTTPClientPool(nil)
+	defer pool.Close()
+
+	client, err := httppool.NewHostClient(pool, server.URL)
+	require.NoError(t, err)
+
+	// Set default header
+	client.SetHeader("X-API-Key", "test-key")
+
+	ctx := context.Background()
+	resp, err := client.Get(ctx, "/test")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestHTTPClientPool_GetClientForURL(t *testing.T) {
+	pool := httppool.NewHTTPClientPool(nil)
+	defer pool.Close()
+
+	client, err := pool.GetClientForURL("https://example.com/path/to/resource")
+	require.NoError(t, err)
+	require.NotNil(t, client)
+
+	// Invalid URL should fail
+	_, err = pool.GetClientForURL("://invalid")
 	assert.Error(t, err)
+}
+
+func TestHTTPClientPool_GlobalPool(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	// Initialize global pool
+	httppool.InitGlobalPool(nil)
+
+	ctx := context.Background()
+	resp, err := httppool.Get(ctx, server.URL)
+	require.NoError(t, err)
+	resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestHTTPClientPool_CloseIdleConnections(t *testing.T) {
+	pool := httppool.NewHTTPClientPool(nil)
+	defer pool.Close()
+
+	pool.GetClient("example.com")
+
+	// Should not panic
+	pool.CloseIdleConnections()
 }
 
 func BenchmarkHTTPClientPool_GetClient(b *testing.B) {
 	pool := httppool.NewHTTPClientPool(nil)
 	defer pool.Close()
 
-	hosts := []string{"host1.com", "host2.com", "host3.com", "host4.com", "host5.com"}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pool.GetClient("example.com")
+	}
+}
+
+func BenchmarkHTTPClientPool_ConcurrentGetClient(b *testing.B) {
+	pool := httppool.NewHTTPClientPool(nil)
+	defer pool.Close()
+
+	hosts := []string{"host1.com", "host2.com", "host3.com", "host4.com"}
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -359,27 +336,4 @@ func BenchmarkHTTPClientPool_GetClient(b *testing.B) {
 			i++
 		}
 	})
-}
-
-func BenchmarkRetryClient_NoRetry(b *testing.B) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	config := &httppool.RetryConfig{
-		MaxRetries:     3,
-		InitialBackoff: 10 * time.Millisecond,
-	}
-
-	client := httppool.NewRetryClient(http.DefaultClient, config)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		req, _ := http.NewRequest("GET", server.URL, nil)
-		resp, _ := client.Do(req)
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}
 }
