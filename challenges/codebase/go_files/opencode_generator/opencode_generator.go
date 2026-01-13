@@ -314,7 +314,7 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 			},
 			"sqlite": {
 				Type:    "local",
-				Command: []string{homeDir + "/Applications/node-v20.18.0-linux-x64/bin/npx", "-y", "mcp-sqlite", homeDir + "/.local/share/opencode/opencode.db"},
+				Command: []string{homeDir + "/Applications/node-v20.18.0-linux-x64/bin/npx", "-y", "mcp-server-sqlite", homeDir + "/.local/share/opencode/opencode.db"},
 				Enabled: &enabled,
 			},
 		},
