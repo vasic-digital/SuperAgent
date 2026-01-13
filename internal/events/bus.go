@@ -99,7 +99,7 @@ type Subscriber struct {
 	Filter   func(*Event) bool
 	Types    []EventType
 	Closed   bool
-	mu       sync.Mutex
+	mu       sync.RWMutex
 }
 
 // Close closes the subscriber channel
@@ -109,6 +109,28 @@ func (s *Subscriber) Close() {
 	if !s.Closed {
 		s.Closed = true
 		close(s.Channel)
+	}
+}
+
+// trySend attempts to send an event to the subscriber channel
+// Returns true if sent, false if closed or would block
+func (s *Subscriber) trySend(event *Event, timeout time.Duration) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.Closed {
+		return false
+	}
+
+	// Non-blocking send with timeout
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	select {
+	case s.Channel <- event:
+		return true
+	case <-timer.C:
+		return false
 	}
 }
 
@@ -206,23 +228,15 @@ func (b *EventBus) Publish(event *Event) {
 
 // publishToSubscriber sends event to a single subscriber
 func (b *EventBus) publishToSubscriber(sub *Subscriber, event *Event) {
-	sub.mu.Lock()
-	if sub.Closed {
-		sub.mu.Unlock()
-		return
-	}
-	sub.mu.Unlock()
-
-	// Apply filter if present
+	// Apply filter if present (outside lock)
 	if sub.Filter != nil && !sub.Filter(event) {
 		return
 	}
 
-	// Try to send with timeout
-	select {
-	case sub.Channel <- event:
+	// Use the subscriber's trySend method which properly holds the read lock
+	if sub.trySend(event, b.config.PublishTimeout) {
 		atomic.AddInt64(&b.metrics.EventsDelivered, 1)
-	case <-time.After(b.config.PublishTimeout):
+	} else {
 		atomic.AddInt64(&b.metrics.EventsDropped, 1)
 	}
 }

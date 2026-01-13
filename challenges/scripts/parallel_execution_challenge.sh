@@ -77,7 +77,7 @@ fi
 echo ""
 echo "Test 5: Race Condition Detection"
 echo "---------------------------------"
-if go test -race -short -timeout 120s ./internal/concurrency/... 2>&1 | grep -q "PASS\|ok"; then
+if go test -race -short -timeout 120s ./tests/unit/concurrency/... 2>&1 | grep -q "PASS\|ok"; then
     check_result "No race conditions in concurrency package" 0
 else
     check_result "No race conditions in concurrency package" 1
@@ -87,7 +87,7 @@ fi
 echo ""
 echo "Test 6: Event Bus Race Detection"
 echo "---------------------------------"
-if go test -race -short -timeout 120s ./internal/events/... 2>&1 | grep -q "PASS\|ok"; then
+if go test -race -short -timeout 120s ./tests/unit/events/... 2>&1 | grep -q "PASS\|ok"; then
     check_result "No race conditions in events package" 0
 else
     check_result "No race conditions in events package" 1
