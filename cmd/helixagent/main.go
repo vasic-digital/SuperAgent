@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/mcp"
 	"dev.helix.agent/internal/router"
 )
 
@@ -36,6 +37,8 @@ var (
 	validateOpenCode     = flag.String("validate-opencode-config", "", "Path to OpenCode config file to validate")
 	openCodeOutput       = flag.String("opencode-output", "", "Output path for OpenCode config (default: stdout)")
 	apiKeyEnvFile        = flag.String("api-key-env-file", "", "Path to .env file to write the generated API key")
+	preinstallMCP        = flag.Bool("preinstall-mcp", false, "Pre-install standard MCP server npm packages")
+	skipMCPPreinstall    = flag.Bool("skip-mcp-preinstall", false, "Skip automatic MCP package pre-installation at startup")
 )
 
 // ValidOpenCodeTopLevelKeys contains the valid top-level keys per OpenCode.ai official schema
@@ -622,6 +625,8 @@ type AppConfig struct {
 	ValidateOpenCode     string
 	OpenCodeOutput       string
 	APIKeyEnvFile        string
+	PreinstallMCP        bool   // Run MCP package pre-installation and exit
+	SkipMCPPreinstall    bool   // Skip automatic MCP pre-installation at startup
 	ServerHost           string
 	ServerPort           string
 	Logger               *logrus.Logger
@@ -676,6 +681,11 @@ func run(appCfg *AppConfig) error {
 		return handleGenerateOpenCode(appCfg)
 	}
 
+	// Handle MCP pre-installation command
+	if appCfg.PreinstallMCP {
+		return handlePreinstallMCP(appCfg)
+	}
+
 	// Load full configuration from environment variables
 	cfg := config.Load()
 
@@ -719,6 +729,11 @@ func run(appCfg *AppConfig) error {
 	}
 
 	r := router.SetupRouter(cfg)
+
+	// Start background MCP package pre-installation (unless skipped)
+	if !appCfg.SkipMCPPreinstall {
+		startBackgroundMCPPreinstall(logger)
+	}
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port),
@@ -797,6 +812,8 @@ func main() {
 	appCfg.ValidateOpenCode = *validateOpenCode
 	appCfg.OpenCodeOutput = *openCodeOutput
 	appCfg.APIKeyEnvFile = *apiKeyEnvFile
+	appCfg.PreinstallMCP = *preinstallMCP
+	appCfg.SkipMCPPreinstall = *skipMCPPreinstall
 
 	if err := run(appCfg); err != nil {
 		appCfg.Logger.WithError(err).Fatal("Application failed")
@@ -969,6 +986,88 @@ type ModelRef struct {
 	Model    string `json:"model"`
 }
 
+// buildMCPServerConfig builds the complete MCP server configuration
+// Returns 12 MCP servers: 6 HelixAgent remote + 6 standard local (pre-installed)
+func buildMCPServerConfig(host, port, apiKey, homeDir string) map[string]MCPServerDef {
+	// Base directory for pre-installed MCP packages
+	mcpInstallDir := fmt.Sprintf("%s/.helixagent/mcp-servers", homeDir)
+
+	// Check if Node.js is available for local servers
+	nodePath, nodeErr := exec.LookPath("node")
+	includeLocalServers := nodeErr == nil
+
+	servers := map[string]MCPServerDef{
+		// HelixAgent native protocol endpoints (6) - all connect to HelixAgent server
+		"helixagent-mcp": {
+			Type:    "remote",
+			URL:     fmt.Sprintf("http://%s:%s/v1/mcp", host, port),
+			Headers: map[string]string{"Authorization": "Bearer " + apiKey},
+		},
+		"helixagent-acp": {
+			Type:    "remote",
+			URL:     fmt.Sprintf("http://%s:%s/v1/acp", host, port),
+			Headers: map[string]string{"Authorization": "Bearer " + apiKey},
+		},
+		"helixagent-lsp": {
+			Type:    "remote",
+			URL:     fmt.Sprintf("http://%s:%s/v1/lsp", host, port),
+			Headers: map[string]string{"Authorization": "Bearer " + apiKey},
+		},
+		"helixagent-embeddings": {
+			Type:    "remote",
+			URL:     fmt.Sprintf("http://%s:%s/v1/embeddings", host, port),
+			Headers: map[string]string{"Authorization": "Bearer " + apiKey},
+		},
+		"helixagent-vision": {
+			Type:    "remote",
+			URL:     fmt.Sprintf("http://%s:%s/v1/vision", host, port),
+			Headers: map[string]string{"Authorization": "Bearer " + apiKey},
+		},
+		"helixagent-cognee": {
+			Type:    "remote",
+			URL:     fmt.Sprintf("http://%s:%s/v1/cognee", host, port),
+			Headers: map[string]string{"Authorization": "Bearer " + apiKey},
+		},
+	}
+
+	// Add standard MCP servers (6) if Node.js is available
+	// These use pre-installed packages from ~/.helixagent/mcp-servers/
+	// Run: ./bin/helixagent -preinstall-mcp to install them
+	if includeLocalServers {
+		// Standard MCP packages with their entry points
+		localServers := []struct {
+			name       string
+			npmPkg     string
+			entryPoint string
+		}{
+			{"filesystem", "@modelcontextprotocol/server-filesystem", "dist/index.js"},
+			{"github", "@modelcontextprotocol/server-github", "dist/index.js"},
+			{"memory", "@modelcontextprotocol/server-memory", "dist/index.js"},
+			{"fetch", "mcp-fetch", "dist/index.js"},
+			{"puppeteer", "@modelcontextprotocol/server-puppeteer", "dist/index.js"},
+			{"sqlite", "mcp-server-sqlite", "dist/index.js"},
+		}
+
+		for _, srv := range localServers {
+			// Build the path to the entry point
+			entryPath := fmt.Sprintf("%s/%s/node_modules/%s/%s",
+				mcpInstallDir, srv.name, srv.npmPkg, srv.entryPoint)
+
+			servers[srv.name] = MCPServerDef{
+				Type:    "local",
+				Command: []string{nodePath, entryPath},
+				Environment: map[string]string{
+					"HOME":       homeDir,
+					"NODE_ENV":   "production",
+					"GITHUB_TOKEN": os.Getenv("GITHUB_TOKEN"),
+				},
+			}
+		}
+	}
+
+	return servers
+}
+
 // handleGenerateOpenCode handles the --generate-opencode-config command
 func handleGenerateOpenCode(appCfg *AppConfig) error {
 	logger := appCfg.Logger
@@ -1047,66 +1146,11 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 				},
 			},
 		},
-		// MCP servers - 6 HelixAgent + 6 standard = 12 total
-		MCP: map[string]MCPServerDef{
-			// HelixAgent native protocol endpoints (6)
-			"helixagent-mcp": {
-				Type:    "remote",
-				URL:     fmt.Sprintf("http://%s:%s/v1/mcp", host, port),
-				Headers: map[string]string{"Authorization": "Bearer " + apiKey},
-			},
-			"helixagent-acp": {
-				Type:    "remote",
-				URL:     fmt.Sprintf("http://%s:%s/v1/acp", host, port),
-				Headers: map[string]string{"Authorization": "Bearer " + apiKey},
-			},
-			"helixagent-lsp": {
-				Type:    "remote",
-				URL:     fmt.Sprintf("http://%s:%s/v1/lsp", host, port),
-				Headers: map[string]string{"Authorization": "Bearer " + apiKey},
-			},
-			"helixagent-embeddings": {
-				Type:    "remote",
-				URL:     fmt.Sprintf("http://%s:%s/v1/embeddings", host, port),
-				Headers: map[string]string{"Authorization": "Bearer " + apiKey},
-			},
-			"helixagent-vision": {
-				Type:    "remote",
-				URL:     fmt.Sprintf("http://%s:%s/v1/vision", host, port),
-				Headers: map[string]string{"Authorization": "Bearer " + apiKey},
-			},
-			"helixagent-cognee": {
-				Type:    "remote",
-				URL:     fmt.Sprintf("http://%s:%s/v1/cognee", host, port),
-				Headers: map[string]string{"Authorization": "Bearer " + apiKey},
-			},
-			// Standard MCP servers (6)
-			"filesystem": {
-				Type:    "local",
-				Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", homeDir},
-			},
-			"github": {
-				Type:        "local",
-				Command:     []string{"npx", "-y", "@modelcontextprotocol/server-github"},
-				Environment: map[string]string{"GITHUB_TOKEN": os.Getenv("GITHUB_TOKEN")},
-			},
-			"memory": {
-				Type:    "local",
-				Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"},
-			},
-			"fetch": {
-				Type:    "local",
-				Command: []string{"npx", "-y", "mcp-fetch"},
-			},
-			"puppeteer": {
-				Type:    "local",
-				Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"},
-			},
-			"sqlite": {
-				Type:    "local",
-				Command: []string{"npx", "-y", "mcp-server-sqlite", homeDir + "/.local/share/opencode/opencode.db"},
-			},
-		},
+		// MCP servers - 12 total:
+		// - 6 HelixAgent remote endpoints (all protocols supported)
+		// - 6 standard local servers (pre-installed to ~/.helixagent/mcp-servers/)
+		// Use: ./bin/helixagent -preinstall-mcp to pre-install the standard servers
+		MCP: buildMCPServerConfig(host, port, apiKey, homeDir),
 		// Agent configurations - 5 specialized agents
 		Agent: map[string]AgentConfigDef{
 			"default": {
@@ -1162,6 +1206,122 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 	}
 
 	return nil
+}
+
+// handlePreinstallMCP handles the --preinstall-mcp command
+// Pre-installs all standard MCP server npm packages for faster startup
+func handlePreinstallMCP(appCfg *AppConfig) error {
+	logger := appCfg.Logger
+	if logger == nil {
+		logger = logrus.New()
+	}
+
+	logger.Info("Starting MCP package pre-installation...")
+
+	// Get home directory for install location
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		return fmt.Errorf("HOME environment variable not set")
+	}
+
+	// Create preinstaller
+	preinstaller, err := mcp.NewPreinstaller(mcp.PreinstallerConfig{
+		InstallDir:  fmt.Sprintf("%s/.helixagent/mcp-servers", homeDir),
+		Logger:      logger,
+		Concurrency: 4,
+		Timeout:     5 * time.Minute,
+		OnProgress: func(pkg string, status mcp.InstallStatus, progress float64) {
+			logger.WithFields(logrus.Fields{
+				"package":  pkg,
+				"status":   status,
+				"progress": fmt.Sprintf("%.0f%%", progress*100),
+			}).Info("MCP package installation progress")
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create MCP preinstaller: %w", err)
+	}
+
+	// Check if Node.js is available
+	if !preinstaller.IsNodeAvailable() {
+		return fmt.Errorf("Node.js is not available - MCP packages cannot be installed")
+	}
+
+	// Run pre-installation
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	if err := preinstaller.PreInstallAll(ctx); err != nil {
+		return fmt.Errorf("MCP pre-installation failed: %w", err)
+	}
+
+	// Print summary
+	statuses := preinstaller.GetAllStatuses()
+	installed := 0
+	failed := 0
+	for _, status := range statuses {
+		if status.Status == mcp.StatusInstalled {
+			installed++
+			logger.WithFields(logrus.Fields{
+				"package":  status.Package.Name,
+				"path":     status.InstallPath,
+				"duration": status.Duration,
+			}).Info("Package installed")
+		} else if status.Status == mcp.StatusFailed {
+			failed++
+			logger.WithError(status.Error).WithField("package", status.Package.Name).Error("Package failed")
+		}
+	}
+
+	logger.WithFields(logrus.Fields{
+		"installed": installed,
+		"failed":    failed,
+		"total":     len(statuses),
+	}).Info("MCP pre-installation complete")
+
+	if failed > 0 {
+		return fmt.Errorf("%d packages failed to install", failed)
+	}
+
+	return nil
+}
+
+// startBackgroundMCPPreinstall starts MCP package pre-installation in background
+// This is called at server startup unless --skip-mcp-preinstall is specified
+func startBackgroundMCPPreinstall(logger *logrus.Logger) {
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		logger.Warn("HOME not set, skipping background MCP pre-installation")
+		return
+	}
+
+	preinstaller, err := mcp.NewPreinstaller(mcp.PreinstallerConfig{
+		InstallDir:  fmt.Sprintf("%s/.helixagent/mcp-servers", homeDir),
+		Logger:      logger,
+		Concurrency: 2, // Lower concurrency for background
+		Timeout:     10 * time.Minute,
+	})
+	if err != nil {
+		logger.WithError(err).Warn("Failed to create background MCP preinstaller")
+		return
+	}
+
+	if !preinstaller.IsNodeAvailable() {
+		logger.Debug("Node.js not available, skipping background MCP pre-installation")
+		return
+	}
+
+	go func() {
+		logger.Info("Starting background MCP package pre-installation...")
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+		defer cancel()
+
+		if err := preinstaller.PreInstallAll(ctx); err != nil {
+			logger.WithError(err).Warn("Background MCP pre-installation had errors")
+		} else {
+			logger.Info("Background MCP pre-installation completed successfully")
+		}
+	}()
 }
 
 // OpenCodeValidationError represents a validation error in OpenCode config

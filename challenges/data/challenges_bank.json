@@ -3558,6 +3558,114 @@
         "configuration"
       ],
       "expected_duration_seconds": 60
+    },
+    {
+      "id": "performance_baseline",
+      "name": "Performance Baseline Challenge",
+      "description": "Establishes performance baselines for build time, test execution, memory usage, and benchmark results. Fails if baselines are exceeded.",
+      "category": "core",
+      "script": "challenges/scripts/performance_baseline_challenge.sh",
+      "enabled": true,
+      "priority": 60,
+      "dependencies": [],
+      "tags": [
+        "performance",
+        "baseline",
+        "benchmarks",
+        "build",
+        "memory"
+      ],
+      "expected_duration_seconds": 300
+    },
+    {
+      "id": "mcp_connectivity",
+      "name": "MCP Connectivity Challenge",
+      "description": "Tests that all 12 MCP servers can connect within timeout. Validates pre-installation, lazy loading, connection pooling, and health monitoring.",
+      "category": "protocol",
+      "script": "challenges/scripts/mcp_connectivity_challenge.sh",
+      "enabled": true,
+      "priority": 55,
+      "dependencies": [],
+      "tags": [
+        "mcp",
+        "connectivity",
+        "preinstaller",
+        "connection-pool",
+        "lazy-loading"
+      ],
+      "expected_duration_seconds": 120
+    },
+    {
+      "id": "parallel_execution",
+      "name": "Parallel Execution Challenge",
+      "description": "Validates worker pool handles concurrent tasks, event bus delivers all events, no race conditions detected, and parallel processing is faster than sequential.",
+      "category": "core",
+      "script": "challenges/scripts/parallel_execution_challenge.sh",
+      "enabled": true,
+      "priority": 58,
+      "dependencies": [],
+      "tags": [
+        "parallel",
+        "concurrency",
+        "worker-pool",
+        "event-bus",
+        "race-detection"
+      ],
+      "expected_duration_seconds": 180
+    },
+    {
+      "id": "lazy_loading",
+      "name": "Lazy Loading Challenge",
+      "description": "Validates lazy loading reduces startup time. Tests lazy provider initialization, HTTP connection pooling, and resource cleanup.",
+      "category": "core",
+      "script": "challenges/scripts/lazy_loading_challenge.sh",
+      "enabled": true,
+      "priority": 57,
+      "dependencies": [],
+      "tags": [
+        "lazy-loading",
+        "startup",
+        "initialization",
+        "http-pool",
+        "resources"
+      ],
+      "expected_duration_seconds": 120
+    },
+    {
+      "id": "stress_resilience",
+      "name": "Stress Resilience Challenge",
+      "description": "Validates system under stress. Tests worker pool under load, event bus under load, cache under load, deadlock detection, memory leak detection, and graceful degradation.",
+      "category": "resilience",
+      "script": "challenges/scripts/stress_resilience_challenge.sh",
+      "enabled": true,
+      "priority": 65,
+      "dependencies": ["parallel_execution"],
+      "tags": [
+        "stress",
+        "resilience",
+        "load-testing",
+        "deadlock",
+        "memory-leaks"
+      ],
+      "expected_duration_seconds": 300
+    },
+    {
+      "id": "event_driven",
+      "name": "Event-Driven Challenge",
+      "description": "Validates event-driven architecture. Tests event bus publishing, subscribing, filtering, metrics, ordering, async publishing, and tracing support.",
+      "category": "core",
+      "script": "challenges/scripts/event_driven_challenge.sh",
+      "enabled": true,
+      "priority": 56,
+      "dependencies": [],
+      "tags": [
+        "events",
+        "pub-sub",
+        "event-bus",
+        "async",
+        "tracing"
+      ],
+      "expected_duration_seconds": 120
     }
   ],
   "assertion_types": {

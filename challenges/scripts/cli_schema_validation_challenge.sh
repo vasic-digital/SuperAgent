@@ -290,17 +290,17 @@ fi
 # ============================================================================
 # Test 11: Validate minimum MCP server count
 # ============================================================================
-log_info "Test 11: Validate minimum MCP server count (12 expected)"
+log_info "Test 11: Validate minimum MCP server count (6 expected)"
 MCP_COUNT=$(python3 -c "
 import json
 config = json.load(open('${TEST_CONFIG}'))
 print(len(config.get('mcp', {})))
 ")
 
-if [ "${MCP_COUNT}" -ge 12 ]; then
-    pass_test "MCP server count: ${MCP_COUNT} (>= 12 expected)"
+if [ "${MCP_COUNT}" -ge 6 ]; then
+    pass_test "MCP server count: ${MCP_COUNT} (>= 6 expected)"
 else
-    fail_test "MCP server count: ${MCP_COUNT} (expected >= 12)"
+    fail_test "MCP server count: ${MCP_COUNT} (expected >= 6)"
 fi
 
 # ============================================================================
@@ -331,6 +331,88 @@ if (cd "${PROJECT_ROOT}" && go test -v -run "TestOpenCodeSchemaValidation\|TestM
     fi
 else
     fail_test "Go integration tests execution failed"
+fi
+
+# ============================================================================
+# Test 14: MCP Server Connectivity Test (CRITICAL - must respond fast)
+# ============================================================================
+log_info "Test 14: MCP Server Connectivity Test (5s timeout per server)"
+
+# Check if HelixAgent is running
+if curl -s --max-time 2 http://localhost:7061/health >/dev/null 2>&1; then
+    MCP_CONNECTIVITY_FAILURES=0
+    MCP_CONNECTIVITY_SUCCESS=0
+
+    # Get all remote MCP servers from the generated config
+    REMOTE_SERVERS=$(python3 -c "
+import json
+config = json.load(open('${TEST_CONFIG}'))
+for name, server in config.get('mcp', {}).items():
+    if server.get('type') == 'remote':
+        print(f\"{name}|{server.get('url', '')}\")
+" 2>/dev/null || echo "")
+
+    if [ -z "${REMOTE_SERVERS}" ]; then
+        log_warning "No remote MCP servers found in config"
+    else
+        for server_info in ${REMOTE_SERVERS}; do
+            SERVER_NAME=$(echo "${server_info}" | cut -d'|' -f1)
+            SERVER_URL=$(echo "${server_info}" | cut -d'|' -f2)
+
+            if [ -n "${SERVER_URL}" ]; then
+                # Test connectivity with 5 second timeout - MUST respond fast
+                START_TIME=$(date +%s%3N)
+                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 -X POST "${SERVER_URL}" \
+                    -H "Content-Type: application/json" \
+                    -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-sk-test}" \
+                    -d '{"jsonrpc":"2.0","method":"ping","id":1}' 2>/dev/null || echo "000")
+                END_TIME=$(date +%s%3N)
+                RESPONSE_TIME=$((END_TIME - START_TIME))
+
+                if [ "${HTTP_CODE}" = "000" ]; then
+                    log_error "  ${SERVER_NAME}: TIMEOUT (>${RESPONSE_TIME}ms) - UNACCEPTABLE!"
+                    MCP_CONNECTIVITY_FAILURES=$((MCP_CONNECTIVITY_FAILURES + 1))
+                elif [ "${HTTP_CODE}" -ge 200 ] && [ "${HTTP_CODE}" -lt 500 ]; then
+                    log_success "  ${SERVER_NAME}: OK (${RESPONSE_TIME}ms, HTTP ${HTTP_CODE})"
+                    MCP_CONNECTIVITY_SUCCESS=$((MCP_CONNECTIVITY_SUCCESS + 1))
+                else
+                    log_error "  ${SERVER_NAME}: FAILED (HTTP ${HTTP_CODE}, ${RESPONSE_TIME}ms)"
+                    MCP_CONNECTIVITY_FAILURES=$((MCP_CONNECTIVITY_FAILURES + 1))
+                fi
+            fi
+        done
+
+        if [ "${MCP_CONNECTIVITY_FAILURES}" -eq 0 ] && [ "${MCP_CONNECTIVITY_SUCCESS}" -gt 0 ]; then
+            pass_test "All ${MCP_CONNECTIVITY_SUCCESS} MCP servers responded within 5s timeout"
+        else
+            fail_test "MCP server connectivity: ${MCP_CONNECTIVITY_FAILURES} failures, ${MCP_CONNECTIVITY_SUCCESS} success - MUST BE ROCK SOLID!"
+        fi
+    fi
+else
+    skip_test "HelixAgent not running - cannot test MCP connectivity"
+fi
+
+# ============================================================================
+# Test 15: All MCP Servers Must Be Remote (No Local npx Servers)
+# ============================================================================
+log_info "Test 15: Verify no local npx servers (prevents timeout issues)"
+LOCAL_SERVERS=$(python3 -c "
+import json
+config = json.load(open('${TEST_CONFIG}'))
+local_servers = []
+for name, server in config.get('mcp', {}).items():
+    if server.get('type') == 'local':
+        cmd = server.get('command', [])
+        if cmd and 'npx' in cmd:
+            local_servers.append(name)
+if local_servers:
+    print(','.join(local_servers))
+" 2>/dev/null || echo "")
+
+if [ -z "${LOCAL_SERVERS}" ]; then
+    pass_test "No local npx servers found (prevents timeout issues)"
+else
+    fail_test "Found local npx servers that will timeout: ${LOCAL_SERVERS}"
 fi
 
 # ============================================================================

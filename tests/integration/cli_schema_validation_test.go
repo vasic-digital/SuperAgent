@@ -3,11 +3,13 @@ package integration
 
 import (
 	"encoding/json"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // CLIAgent represents a CLI agent that we support
@@ -317,8 +319,8 @@ func TestGeneratedConfigHasNoInvalidFields(t *testing.T) {
 	if len(config.Provider) == 0 {
 		t.Error("Generated config has no providers")
 	}
-	if len(config.MCP) < 12 {
-		t.Errorf("Generated config should have at least 12 MCP servers, got %d", len(config.MCP))
+	if len(config.MCP) < 6 {
+		t.Errorf("Generated config should have at least 6 MCP servers, got %d", len(config.MCP))
 	}
 	if len(config.Agent) < 5 {
 		t.Errorf("Generated config should have at least 5 agents, got %d", len(config.Agent))
@@ -388,4 +390,135 @@ func TestMCPServerFieldValidation(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestMCPServerConnectivity tests that all remote MCP servers respond within timeout
+// This is CRITICAL for rock-solid stability - servers MUST respond fast
+func TestMCPServerConnectivity(t *testing.T) {
+	// Check if HelixAgent is running
+	resp, err := http.Get("http://localhost:7061/health")
+	if err != nil {
+		t.Skip("HelixAgent not running - cannot test MCP connectivity")
+	}
+	resp.Body.Close()
+
+	configPath := filepath.Join(os.Getenv("HOME"), ".config", "opencode", "opencode.json")
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Skipf("OpenCode config not found: %v", err)
+	}
+
+	var config OpenCodeSchemaConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		t.Fatalf("Failed to parse config: %v", err)
+	}
+
+	client := &http.Client{
+		Timeout: 5 * time.Second, // MUST respond within 5 seconds
+	}
+
+	failures := 0
+	successes := 0
+
+	for serverName, serverConfig := range config.MCP {
+		if serverConfig.Type != "remote" {
+			continue
+		}
+
+		if serverConfig.URL == "" {
+			t.Errorf("Remote MCP server %s has no URL", serverName)
+			failures++
+			continue
+		}
+
+		start := time.Now()
+		req, err := http.NewRequest("POST", serverConfig.URL, strings.NewReader(`{"jsonrpc":"2.0","method":"ping","id":1}`))
+		if err != nil {
+			t.Errorf("Failed to create request for %s: %v", serverName, err)
+			failures++
+			continue
+		}
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(req)
+		elapsed := time.Since(start)
+
+		if err != nil {
+			t.Errorf("MCP server %s TIMEOUT after %v - UNACCEPTABLE! Error: %v", serverName, elapsed, err)
+			failures++
+			continue
+		}
+		resp.Body.Close()
+
+		if resp.StatusCode >= 200 && resp.StatusCode < 500 {
+			t.Logf("MCP server %s: OK (%v, HTTP %d)", serverName, elapsed, resp.StatusCode)
+			successes++
+		} else {
+			t.Errorf("MCP server %s: FAILED (HTTP %d, %v)", serverName, resp.StatusCode, elapsed)
+			failures++
+		}
+	}
+
+	if failures > 0 {
+		t.Fatalf("MCP server connectivity: %d failures, %d success - MUST BE ROCK SOLID!", failures, successes)
+	}
+
+	t.Logf("All %d MCP servers responded within 5s timeout", successes)
+}
+
+// TestNoLocalNpxServers ensures no local npx servers are in config (they timeout)
+func TestNoLocalNpxServers(t *testing.T) {
+	configPath := filepath.Join(os.Getenv("HOME"), ".config", "opencode", "opencode.json")
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Skipf("OpenCode config not found: %v", err)
+	}
+
+	var rawConfig map[string]interface{}
+	if err := json.Unmarshal(data, &rawConfig); err != nil {
+		t.Fatalf("Failed to parse config: %v", err)
+	}
+
+	mcpRaw, ok := rawConfig["mcp"]
+	if !ok {
+		return // No MCP section
+	}
+
+	mcpMap, ok := mcpRaw.(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	var npxServers []string
+	for serverName, serverRaw := range mcpMap {
+		serverMap, ok := serverRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		if serverMap["type"] != "local" {
+			continue
+		}
+
+		cmd, ok := serverMap["command"].([]interface{})
+		if !ok || len(cmd) == 0 {
+			continue
+		}
+
+		// Check if command uses npx
+		for _, c := range cmd {
+			if str, ok := c.(string); ok && str == "npx" {
+				npxServers = append(npxServers, serverName)
+				break
+			}
+		}
+	}
+
+	if len(npxServers) > 0 {
+		t.Fatalf("Found local npx servers that will timeout: %v - These MUST NOT be in config!", npxServers)
+	}
+
+	t.Log("No local npx servers found (prevents timeout issues)")
 }
