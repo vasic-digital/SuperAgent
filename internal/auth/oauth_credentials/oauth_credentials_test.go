@@ -102,7 +102,6 @@ func TestIsQwenOAuthEnabled(t *testing.T) {
 		{"1 value", "QWEN_CODE_USE_OAUTH_CREDENTIALS", "1", true},
 		{"yes value", "QWEN_CODE_USE_OAUTH_CREDENTIALS", "yes", true},
 		{"false value", "QWEN_CODE_USE_OAUTH_CREDENTIALS", "false", false},
-		{"empty value", "QWEN_CODE_USE_OAUTH_CREDENTIALS", "", false},
 		{"typo version true", "QWEN_CODE_USE_OUATH_CREDENTIALS", "true", true},
 	}
 
@@ -119,6 +118,28 @@ func TestIsQwenOAuthEnabled(t *testing.T) {
 			}
 		})
 	}
+
+	// Test "no env var" case separately - when env var is not set, auto-detection kicks in
+	// Result depends on whether credentials file exists
+	t.Run("no env var with no credentials", func(t *testing.T) {
+		os.Unsetenv("QWEN_CODE_USE_OAUTH_CREDENTIALS")
+		os.Unsetenv("QWEN_CODE_USE_OUATH_CREDENTIALS")
+
+		// Mock HOME to a temp dir without credentials for deterministic test
+		tempDir := t.TempDir()
+		originalHome := os.Getenv("HOME")
+		os.Setenv("HOME", tempDir)
+		defer os.Setenv("HOME", originalHome)
+
+		// Clear cache to use new HOME
+		reader := GetGlobalReader()
+		reader.ClearCache()
+
+		result := IsQwenOAuthEnabled()
+		if result {
+			t.Errorf("Expected false when no env var and no credentials file, got true")
+		}
+	})
 }
 
 func TestReadClaudeCredentials_FileNotFound(t *testing.T) {

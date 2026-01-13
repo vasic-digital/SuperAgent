@@ -639,9 +639,10 @@ func TestE2EMCPSSEConnection(t *testing.T) {
 			if resp.StatusCode == http.StatusOK {
 				assert.Equal(t, "text/event-stream", contentType, "%s should return SSE content type", protocol)
 
-				// Try to read some data
+				// Try to read some data with timeout
+				// Note: http.Response.Body doesn't support SetReadDeadline directly
+				// Using a simple read with the client timeout we already set
 				buf := make([]byte, 1024)
-				resp.Body.SetReadDeadline(time.Now().Add(2 * time.Second))
 				n, err := resp.Body.Read(buf)
 				if err == nil && n > 0 {
 					data := string(buf[:n])

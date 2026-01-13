@@ -398,9 +398,10 @@ func TestSimpleOpenRouterProvider_GetCapabilities(t *testing.T) {
 
 	assert.NotNil(t, caps)
 	assert.NotEmpty(t, caps.SupportedModels)
-	assert.Contains(t, caps.SupportedModels, "openrouter/anthropic/claude-3.5-sonnet")
-	assert.Contains(t, caps.SupportedModels, "openrouter/openai/gpt-4o")
-	assert.Contains(t, caps.SupportedModels, "openrouter/google/gemini-pro")
+	// Model names don't include openrouter/ prefix
+	assert.Contains(t, caps.SupportedModels, "anthropic/claude-3.5-sonnet")
+	assert.Contains(t, caps.SupportedModels, "openai/gpt-4o")
+	assert.Contains(t, caps.SupportedModels, "google/gemini-pro")
 
 	assert.Contains(t, caps.SupportedFeatures, "text_completion")
 	assert.Contains(t, caps.SupportedFeatures, "chat")
