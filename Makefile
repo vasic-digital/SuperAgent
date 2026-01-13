@@ -1,4 +1,4 @@
-.PHONY: all build test run fmt lint security-scan docker-build docker-run docker-stop docker-clean docker-logs docker-test docker-dev docker-prod coverage docker-clean-all install-deps help docs check-deps test-all test-all-docker container-detect container-build container-start container-stop container-logs container-status container-test podman-build podman-run podman-stop podman-logs podman-clean podman-full
+.PHONY: all build test run fmt lint security-scan docker-build docker-run docker-stop docker-clean docker-logs docker-test docker-dev docker-prod coverage docker-clean-all install-deps help docs check-deps test-all test-all-docker container-detect container-build container-start container-stop container-logs container-status container-test podman-build podman-run podman-stop podman-logs podman-clean podman-full test-no-skip test-all-must-pass test-performance test-performance-bench test-challenges test-coverage-100
 
 # =============================================================================
 # MAIN TARGETS
@@ -182,6 +182,53 @@ test-coverage-100:
 		echo "✅ Coverage is $$coverage%"; \
 	fi
 	go tool cover -html=coverage.out -o coverage.html
+
+test-no-skip:
+	@echo "🔍 Checking for unconditionally disabled tests..."
+	@# Only flag unconditional t.Skip() calls at function start without conditions
+	@SKIPPED=$$(grep -rn "^\s*t\.Skip\(\"" ./tests/ --include="*.go" 2>/dev/null | grep -v "short\|integration\|infra\|server\|provider\|env\|condition" | wc -l); \
+	if [ "$$SKIPPED" -gt 0 ]; then \
+		echo "❌ Found $$SKIPPED unconditionally skipped tests"; \
+		grep -rn "^\s*t\.Skip\(\"" ./tests/ --include="*.go" 2>/dev/null | grep -v "short\|integration\|infra\|server\|provider\|env\|condition"; \
+		exit 1; \
+	fi
+	@echo "✅ No unconditionally disabled tests found"
+
+test-all-must-pass:
+	@echo "🧪 Running all tests (none can fail)..."
+	@go test -v -failfast ./... 2>&1 | tee test_output.log; \
+	if grep -q "FAIL" test_output.log; then \
+		echo "❌ Some tests failed"; \
+		rm -f test_output.log; \
+		exit 1; \
+	fi
+	@rm -f test_output.log
+	@echo "✅ All tests passed"
+
+test-performance:
+	@echo "🏃 Running performance tests..."
+	@go test -v -timeout 180s ./tests/unit/concurrency/...
+	@go test -v -timeout 180s ./tests/unit/events/...
+	@go test -v -timeout 180s ./tests/unit/cache/...
+	@go test -v -timeout 180s ./tests/unit/http/...
+	@echo "✅ Performance tests completed"
+
+test-performance-bench:
+	@echo "📊 Running performance benchmarks..."
+	@go test -bench=. -benchmem ./internal/concurrency/...
+	@go test -bench=. -benchmem ./internal/events/...
+	@go test -bench=. -benchmem ./internal/cache/...
+	@echo "✅ Performance benchmarks completed"
+
+test-challenges:
+	@echo "🏆 Running performance challenges..."
+	@./challenges/scripts/performance_baseline_challenge.sh
+	@./challenges/scripts/parallel_execution_challenge.sh
+	@./challenges/scripts/lazy_loading_challenge.sh
+	@./challenges/scripts/event_driven_challenge.sh
+	@./challenges/scripts/mcp_connectivity_challenge.sh
+	@./challenges/scripts/stress_resilience_challenge.sh
+	@echo "✅ All performance challenges passed"
 
 test-unit:
 	@echo "🧪 Running unit tests..."

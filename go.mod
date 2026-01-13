@@ -31,6 +31,7 @@ replace dev.helix.agent/pkg/api => ./pkg/api
 replace llm-verifier => ./LLMsVerifier/llm-verifier
 
 require (
+	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.14.0 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
