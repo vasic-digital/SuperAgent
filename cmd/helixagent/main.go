@@ -21,6 +21,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 
+	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/mcp"
 	"dev.helix.agent/internal/router"
@@ -757,6 +758,11 @@ func run(appCfg *AppConfig) error {
 		}
 	}()
 
+	// Start background OAuth token refresh for Claude and Qwen
+	stopRefresh := make(chan struct{})
+	oauth_credentials.StartBackgroundRefresh(stopRefresh)
+	logger.Info("Started background OAuth token refresh for Claude and Qwen")
+
 	// Use provided shutdown signal or create one
 	quit := appCfg.ShutdownSignal
 	if quit == nil {
@@ -773,6 +779,9 @@ func run(appCfg *AppConfig) error {
 	}
 
 	logger.Info("Shutting down server...")
+
+	// Stop background OAuth token refresh
+	close(stopRefresh)
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()

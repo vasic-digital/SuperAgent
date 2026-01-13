@@ -235,13 +235,22 @@ func IsClaudeOAuthEnabled() bool {
 }
 
 // IsQwenOAuthEnabled checks if Qwen OAuth credentials should be used
+// Auto-detects credentials if environment variable is not set
 func IsQwenOAuthEnabled() bool {
 	// Check environment variable (supports both spellings)
 	val := os.Getenv("QWEN_CODE_USE_OAUTH_CREDENTIALS")
 	if val == "" {
 		val = os.Getenv("QWEN_CODE_USE_OUATH_CREDENTIALS") // Support typo in existing configs
 	}
-	return val == "true" || val == "1" || val == "yes"
+
+	// If explicitly set, use that value
+	if val != "" {
+		return val == "true" || val == "1" || val == "yes"
+	}
+
+	// Auto-detect: check if credentials file exists and has valid token
+	reader := GetGlobalReader()
+	return reader.HasValidQwenCredentials()
 }
 
 // HasValidClaudeCredentials checks if valid Claude OAuth credentials are available

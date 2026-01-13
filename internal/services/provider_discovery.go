@@ -313,7 +313,8 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 
 			// Create Qwen provider with OAuth token (reads token internally)
 			// OAuth uses compatible-mode endpoint which differs from regular API
-			provider, err := qwen.NewQwenProviderWithOAuth("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-turbo")
+			// Use qwen-plus as default model (most widely available)
+			provider, err := qwen.NewQwenProviderWithOAuth("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-plus")
 			if err != nil {
 				pd.log.WithError(err).Warn("Failed to create Qwen OAuth provider")
 			} else {
