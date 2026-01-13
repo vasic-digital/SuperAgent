@@ -3501,6 +3501,44 @@
         "end-to-end"
       ],
       "expected_duration_seconds": 90
+    },
+    {
+      "id": "zen_provider",
+      "name": "OpenCode Zen Provider Challenge",
+      "description": "Validates Zen free models integration (Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano) with API and CLI agent support",
+      "category": "provider",
+      "script": "challenges/scripts/zen_provider_challenge.sh",
+      "enabled": true,
+      "priority": 44,
+      "dependencies": ["provider_verification"],
+      "tags": [
+        "zen",
+        "opencode",
+        "free-models",
+        "cli-agents",
+        "streaming",
+        "api"
+      ],
+      "expected_duration_seconds": 60
+    },
+    {
+      "id": "startup_scoring",
+      "name": "Startup Scoring Challenge",
+      "description": "Validates automatic provider scoring at system startup - ensures all 30+ providers and 900+ LLMs are scored on every boot",
+      "category": "infrastructure",
+      "script": "challenges/scripts/startup_scoring_challenge.sh",
+      "enabled": true,
+      "priority": 45,
+      "dependencies": ["provider_verification"],
+      "tags": [
+        "startup",
+        "scoring",
+        "providers",
+        "llms",
+        "automation",
+        "validation"
+      ],
+      "expected_duration_seconds": 120
     }
   ],
   "assertion_types": {

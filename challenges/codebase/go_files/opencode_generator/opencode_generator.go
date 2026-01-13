@@ -225,6 +225,48 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 					},
 				},
 			},
+			// OpenCode Zen provider - FREE models (Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano)
+			"zen": {
+				Npm:  "@ai-sdk/openai-compatible",
+				Name: "OpenCode Zen Free Models",
+				Options: map[string]interface{}{
+					"apiKey":  os.Getenv("OPENCODE_API_KEY"),
+					"baseURL": "https://opencode.ai/zen/v1",
+					"timeout": 60000,
+				},
+				Models: map[string]ModelConfig{
+					"opencode-big-pickle": {
+						Name:          "Big Pickle (Stealth Model)",
+						MaxTokens:     128000,
+						Streaming:     true,
+						FunctionCalls: true,
+						ToolUse:       true,
+						CodeExecution: true,
+					},
+					"opencode-grok-code": {
+						Name:          "Grok Code Fast (xAI Code Model)",
+						MaxTokens:     128000,
+						Streaming:     true,
+						FunctionCalls: true,
+						ToolUse:       true,
+						CodeExecution: true,
+					},
+					"opencode-glm-4.7-free": {
+						Name:          "GLM 4.7 Free",
+						MaxTokens:     128000,
+						Streaming:     true,
+						FunctionCalls: true,
+						ToolUse:       true,
+					},
+					"opencode-gpt-5-nano": {
+						Name:          "GPT 5 Nano Free Tier",
+						MaxTokens:     128000,
+						Streaming:     true,
+						FunctionCalls: true,
+						ToolUse:       true,
+					},
+				},
+			},
 		},
 		// MCP servers - comprehensive protocol support
 		Mcp: map[string]McpConfig{
@@ -366,6 +408,19 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 					"read":   true,
 					"vision": true,
 					"ocr":    true,
+				},
+			},
+			"zen-agent": {
+				Model:       "zen/opencode-grok-code",
+				Prompt:      "You are an OpenCode Zen agent using free models (Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano). You are specialized in fast code assistance and stealth operations.",
+				Description: "OpenCode Zen free models agent - fast code assistance",
+				Tools: map[string]bool{
+					"read":  true,
+					"write": true,
+					"bash":  true,
+					"glob":  true,
+					"grep":  true,
+					"edit":  true,
 				},
 			},
 		},

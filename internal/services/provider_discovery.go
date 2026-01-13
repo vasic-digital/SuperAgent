@@ -20,6 +20,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/ollama"
 	"dev.helix.agent/internal/llm/providers/openrouter"
 	"dev.helix.agent/internal/llm/providers/qwen"
+	"dev.helix.agent/internal/llm/providers/zen"
 	"dev.helix.agent/internal/models"
 )
 
@@ -86,19 +87,20 @@ type ProviderMapping struct {
 }
 
 // providerMappings defines all known API key to provider mappings
+// Updated 2025-01-13: Use Claude 4.5 (latest), Gemini 2.0, and Qwen Max
 var providerMappings = []ProviderMapping{
 	// Tier 1: Premium providers (direct API access)
-	{EnvVar: "ANTHROPIC_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-3-5-sonnet-20241022", Priority: 1},
-	{EnvVar: "CLAUDE_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-3-5-sonnet-20241022", Priority: 1},
+	{EnvVar: "ANTHROPIC_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-5-20250929", Priority: 1},
+	{EnvVar: "CLAUDE_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-5-20250929", Priority: 1},
 	{EnvVar: "OPENAI_API_KEY", ProviderType: "openai", ProviderName: "openai", BaseURL: "https://api.openai.com/v1", DefaultModel: "gpt-4o", Priority: 1},
-	{EnvVar: "GEMINI_API_KEY", ProviderType: "gemini", ProviderName: "gemini", BaseURL: "https://generativelanguage.googleapis.com/v1beta", DefaultModel: "gemini-pro", Priority: 2},
-	{EnvVar: "GOOGLE_API_KEY", ProviderType: "gemini", ProviderName: "gemini", BaseURL: "https://generativelanguage.googleapis.com/v1beta", DefaultModel: "gemini-pro", Priority: 2},
+	{EnvVar: "GEMINI_API_KEY", ProviderType: "gemini", ProviderName: "gemini", BaseURL: "https://generativelanguage.googleapis.com/v1beta", DefaultModel: "gemini-2.0-flash", Priority: 2},
+	{EnvVar: "GOOGLE_API_KEY", ProviderType: "gemini", ProviderName: "gemini", BaseURL: "https://generativelanguage.googleapis.com/v1beta", DefaultModel: "gemini-2.0-flash", Priority: 2},
 
 	// Tier 2: High-quality specialized providers
 	{EnvVar: "DEEPSEEK_API_KEY", ProviderType: "deepseek", ProviderName: "deepseek", BaseURL: "https://api.deepseek.com/v1/chat/completions", DefaultModel: "deepseek-chat", Priority: 3},
 	{EnvVar: "MISTRAL_API_KEY", ProviderType: "mistral", ProviderName: "mistral", BaseURL: "https://api.mistral.ai/v1", DefaultModel: "mistral-large-latest", Priority: 3},
 	{EnvVar: "CODESTRAL_API_KEY", ProviderType: "mistral", ProviderName: "codestral", BaseURL: "https://codestral.mistral.ai/v1", DefaultModel: "codestral-latest", Priority: 3},
-	{EnvVar: "QWEN_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-turbo", Priority: 4},
+	{EnvVar: "QWEN_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-max", Priority: 4},
 
 	// Tier 3: Fast inference providers
 	{EnvVar: "GROQ_API_KEY", ProviderType: "groq", ProviderName: "groq", BaseURL: "https://api.groq.com/openai/v1", DefaultModel: "llama-3.1-70b-versatile", Priority: 5},
@@ -126,6 +128,9 @@ var providerMappings = []ProviderMapping{
 
 	// Tier 7: Aggregators (use as fallback)
 	{EnvVar: "OPENROUTER_API_KEY", ProviderType: "openrouter", ProviderName: "openrouter", BaseURL: "https://openrouter.ai/api/v1", DefaultModel: "anthropic/claude-3.5-sonnet", Priority: 10},
+
+	// Tier 7.5: OpenCode Zen (free models gateway)
+	{EnvVar: "OPENCODE_API_KEY", ProviderType: "zen", ProviderName: "zen", BaseURL: "https://opencode.ai/zen/v1/chat/completions", DefaultModel: "opencode/grok-code", Priority: 4},
 
 	// Tier 8: Self-hosted (local)
 	{EnvVar: "OLLAMA_BASE_URL", ProviderType: "ollama", ProviderName: "ollama", BaseURL: "http://localhost:11434", DefaultModel: "llama3.2", Priority: 20},
@@ -389,6 +394,20 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 			baseURL = "https://api.cerebras.ai/v1/chat/completions"
 		}
 		return cerebras.NewCerebrasProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "zen":
+		// Use native Zen provider for OpenCode Zen free models
+		// Supports both authenticated (API key) and anonymous (free models only) modes
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://opencode.ai/zen/v1/chat/completions"
+		}
+		// If no API key provided, use anonymous mode for free models
+		if apiKey == "" {
+			logrus.Info("Creating Zen provider in anonymous mode (free models only)")
+			return zen.NewZenProviderAnonymous(mapping.DefaultModel), nil
+		}
+		return zen.NewZenProvider(apiKey, baseURL, mapping.DefaultModel), nil
 
 	// For providers without native implementations, use OpenRouter as a proxy
 	case "groq", "fireworks", "together", "hyperbolic",
