@@ -1393,15 +1393,31 @@ func (ds *DebateService) IsSingleProviderMode(config *DebateConfig) (bool, *Sing
 // GetAvailableModelsForProvider returns available models for a provider
 func (ds *DebateService) GetAvailableModelsForProvider(providerName string) []string {
 	// Default model lists for known providers
+	// Updated 2025-01-13: Use Claude 4.5 (latest) and expanded Qwen models
 	knownModels := map[string][]string{
 		"deepseek": {"deepseek-chat", "deepseek-coder", "deepseek-reasoner"},
-		"claude":   {"claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"},
-		"openai":   {"gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"},
-		"gemini":   {"gemini-pro", "gemini-1.5-pro", "gemini-1.5-flash"},
-		"mistral":  {"mistral-large-latest", "mistral-medium", "mistral-small"},
-		"qwen":     {"qwen-turbo", "qwen-plus", "qwen-max"},
-		"groq":     {"llama-3.1-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"},
-		"ollama":   {"llama3.2", "llama3.1", "mistral", "codellama", "gemma2"},
+		// Claude 4.5 (Primary) + Claude 4.x + Legacy fallbacks
+		"claude": {
+			"claude-opus-4-5-20251101",   // Claude 4.5 Opus (most capable)
+			"claude-sonnet-4-5-20250929", // Claude 4.5 Sonnet (balanced)
+			"claude-haiku-4-5-20251001",  // Claude 4.5 Haiku (fast)
+			"claude-opus-4-20250514",     // Claude 4 Opus
+			"claude-sonnet-4-20250514",   // Claude 4 Sonnet
+			"claude-3-5-sonnet-20241022", // Legacy fallback
+		},
+		"openai":  {"gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"},
+		"gemini":  {"gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"},
+		"mistral": {"mistral-large-latest", "mistral-medium", "mistral-small"},
+		// Qwen models (all variants)
+		"qwen": {
+			"qwen-max",         // Most capable
+			"qwen-plus",        // Balanced
+			"qwen-turbo",       // Fast
+			"qwen-coder-turbo", // Code-focused
+			"qwen-long",        // Long context
+		},
+		"groq":   {"llama-3.1-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"},
+		"ollama": {"llama3.2", "llama3.1", "mistral", "codellama", "gemma2"},
 	}
 
 	if models, ok := knownModels[providerName]; ok {

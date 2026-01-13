@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 18+ LLM providers with **dynamic provider selection** based on LLMsVerifier verification scores. Main providers: Claude, DeepSeek, Gemini, Qwen, ZAI, OpenRouter, Mistral, Cerebras, and more.
+HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 18+ LLM providers with **dynamic provider selection** based on LLMsVerifier verification scores. Main providers: Claude, DeepSeek, Gemini, Qwen, ZAI, OpenRouter, Mistral, Cerebras, **OpenCode Zen** (free models), and more.
 
 The project also includes:
 - **Toolkit** (`Toolkit/`): A standalone Go library for building AI applications with multi-provider support
@@ -68,7 +68,7 @@ make install-deps     # Install dev dependencies (golangci-lint, gosec)
 
 ### Core Packages (`internal/`)
 - `llm/` - LLM provider abstractions and ensemble orchestration
-  - `providers/` - Individual implementations (claude, deepseek, gemini, ollama, qwen, zai, openrouter)
+  - `providers/` - Individual implementations (claude, deepseek, gemini, ollama, qwen, zai, openrouter, zen)
   - `ensemble.go` - Ensemble orchestration logic
 - `services/` - Business logic
   - `provider_registry.go` - Provider management
@@ -507,7 +507,7 @@ Environment variables defined in `.env.example`. Key categories:
 - Server: `PORT`, `GIN_MODE`, `JWT_SECRET`
 - Database: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
 - Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
-- LLM providers: `CLAUDE_API_KEY`, `DEEPSEEK_API_KEY`, `GEMINI_API_KEY`, etc.
+- LLM providers: `CLAUDE_API_KEY`, `DEEPSEEK_API_KEY`, `GEMINI_API_KEY`, `OPENCODE_API_KEY` (Zen), etc.
 - Cognee: `COGNEE_AUTH_EMAIL`, `COGNEE_AUTH_PASSWORD` (form-encoded OAuth2 auth)
 - OAuth2: `CLAUDE_CODE_USE_OAUTH_CREDENTIALS`, `QWEN_CODE_USE_OAUTH_CREDENTIALS`
 
@@ -775,6 +775,48 @@ curl -X POST http://localhost:7061/v1/chat/completions \
   }'
 ```
 
+## OpenCode Zen Provider (Free Models)
+
+HelixAgent includes full integration with OpenCode Zen, providing access to FREE LLM models.
+
+### Free Models Available
+
+| Model | ID | Description |
+|-------|-----|-------------|
+| **Big Pickle** | `opencode/big-pickle` | Stealth model for covert operations |
+| **Grok Code Fast** | `opencode/grok-code` | xAI code-focused model (default) |
+| **GLM 4.7 Free** | `opencode/glm-4.7-free` | GLM 4.7 free tier |
+| **GPT 5 Nano** | `opencode/gpt-5-nano` | GPT 5 Nano free tier |
+
+### Configuration
+
+```bash
+# Set the OpenCode API key
+export OPENCODE_API_KEY=your-opencode-key
+```
+
+### API Endpoint
+- Base URL: `https://opencode.ai/zen/v1/chat/completions`
+- Auth: Bearer token (API key)
+- Format: OpenAI-compatible
+
+### Key Files
+- `internal/llm/providers/zen/zen.go` - Zen provider implementation
+- `internal/llm/providers/zen/zen_test.go` - Unit tests
+- `internal/services/debate_team_config.go` - ZenModels configuration
+- `challenges/scripts/zen_provider_challenge.sh` - Comprehensive challenge (20 tests)
+
+### CLI Agent Support
+The Zen provider is available through all CLI agents:
+- **OpenCode**: Configure `provider=zen` in opencode.json
+- **Crush**: Use HelixAgent endpoint with Zen model ID
+- **HelixCode**: Auto-discovered when `OPENCODE_API_KEY` is set
+
+### LLMsVerifier Integration
+Zen provider is fully integrated into LLMsVerifier:
+- `LLMsVerifier/llm-verifier/providers/config.go` - Provider configuration
+- `LLMsVerifier/llm-verifier/enhanced/adapters/providers.go` - ZenAdapter
+
 ## Adding a New LLM Provider
 
 1. Create provider package: `internal/llm/providers/<name>/<name>.go`
@@ -879,7 +921,7 @@ The `challenges/` directory contains a comprehensive challenge framework for tes
 | Category | Count | Description |
 |----------|-------|-------------|
 | Infrastructure | 7 | Health, caching, database, config, plugins, sessions, shutdown |
-| Providers | 7 | Claude, DeepSeek, Gemini, Ollama, OpenRouter, Qwen, ZAI |
+| Providers | 8 | Claude, DeepSeek, Gemini, Ollama, OpenRouter, Qwen, ZAI, Zen |
 | Protocols | 3 | MCP, LSP, ACP |
 | Security | 3 | Authentication, rate limiting, input validation |
 | Core | 8 | Provider verification, ensemble, debate, embeddings, streaming, metadata, quality |

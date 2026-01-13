@@ -50,7 +50,9 @@ Available Challenges (41 total):
         streaming_responses, model_metadata, oauth_credentials
 
   Providers: provider_claude, provider_deepseek, provider_gemini,
-             provider_ollama, provider_openrouter, provider_qwen, provider_zai
+             provider_ollama, provider_openrouter, provider_qwen, provider_zai, provider_zen
+
+  Scoring: startup_scoring
 
   Protocols: mcp_protocol, lsp_protocol, acp_protocol
 
@@ -305,7 +307,8 @@ main() {
         main|provider_verification|ai_debate_formation|api_quality_test|\
         ensemble_voting|ai_debate_workflow|embeddings_service|streaming_responses|\
         model_metadata|provider_claude|provider_deepseek|provider_gemini|\
-        provider_ollama|provider_openrouter|provider_qwen|provider_zai|\
+        provider_ollama|provider_openrouter|provider_qwen|provider_zai|provider_zen|\
+        startup_scoring|\
         mcp_protocol|lsp_protocol|acp_protocol|cloud_aws_bedrock|cloud_gcp_vertex|\
         cloud_azure_openai|authentication|rate_limiting|input_validation|\
         circuit_breaker|error_handling|concurrent_access|graceful_shutdown|\

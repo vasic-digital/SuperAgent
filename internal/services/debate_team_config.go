@@ -111,6 +111,19 @@ var LLMsVerifierModels = struct {
 	Cerebras: "llama-3.3-70b",
 }
 
+// ZenModels defines the available OpenCode Zen free models
+var ZenModels = struct {
+	BigPickle    string // Stealth model (possibly GLM-4.6)
+	GrokCodeFast string // xAI Grok Code Fast - optimized for coding
+	GLM47Free    string // GLM 4.7 free tier
+	GPT5Nano     string // GPT 5 Nano free tier
+}{
+	BigPickle:    "opencode/big-pickle",
+	GrokCodeFast: "opencode/grok-code",
+	GLM47Free:    "opencode/glm-4.7-free",
+	GPT5Nano:     "opencode/gpt-5-nano",
+}
+
 // VerifiedLLM represents a verified LLM from LLMsVerifier
 type VerifiedLLM struct {
 	ProviderName string
@@ -720,6 +733,12 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 			"mistral":  LLMsVerifierModels.Mistral,
 			"groq":     LLMsVerifierModels.Groq,
 			"cerebras": LLMsVerifierModels.Cerebras,
+		},
+		"zen_models": map[string]string{
+			"big_pickle":     ZenModels.BigPickle,
+			"grok_code_fast": ZenModels.GrokCodeFast,
+			"glm_47_free":    ZenModels.GLM47Free,
+			"gpt_5_nano":     ZenModels.GPT5Nano,
 		},
 	}
 }

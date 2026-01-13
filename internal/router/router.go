@@ -59,6 +59,13 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Initialize shared logger
 	logger := logrus.New()
 
+	// AUTOMATIC STARTUP SCORING: Score all 30+ providers and 900+ LLMs at startup
+	// This ensures we always have up-to-date provider scores for optimal routing
+	startupScoringConfig := services.DefaultStartupScoringConfig()
+	startupScoringService := services.NewStartupScoringService(providerRegistry, startupScoringConfig, logger)
+	startupScoringService.Run(context.Background())
+	logger.Info("Automatic provider scoring initiated (running in background)")
+
 	// Initialize model metadata repository (used by multiple services)
 	// In standalone mode, pass nil pool - repository will use in-memory storage
 	var modelMetadataRepo *database.ModelMetadataRepository

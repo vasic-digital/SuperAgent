@@ -1,0 +1,908 @@
+package zen
+
+import (
+	"bufio"
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"math/rand"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	"dev.helix.agent/internal/models"
+)
+
+var log = logrus.New()
+
+const (
+	// ZenAPIURL is the base URL for OpenCode Zen API
+	ZenAPIURL = "https://opencode.ai/zen/v1/chat/completions"
+	// ZenModelsURL is the endpoint to fetch available models
+	ZenModelsURL = "https://opencode.ai/zen/v1/models"
+
+	// Default free models - available WITHOUT API key
+	ModelBigPickle     = "opencode/big-pickle"
+	ModelGrokCodeFast  = "opencode/grok-code"
+	ModelGLM47Free     = "opencode/glm-4.7-free"
+	ModelGPT5Nano      = "opencode/gpt-5-nano"
+
+	// Default model for Zen provider
+	DefaultZenModel = ModelGrokCodeFast
+
+	// Anonymous access identifier for free models
+	AnonymousDeviceHeader = "X-Device-ID"
+)
+
+// FreeModels returns the list of free models available on Zen
+func FreeModels() []string {
+	return []string{
+		ModelBigPickle,
+		ModelGrokCodeFast,
+		ModelGLM47Free,
+		ModelGPT5Nano,
+	}
+}
+
+// generateDeviceID generates a unique device identifier for anonymous access
+func generateDeviceID() string {
+	// Generate a pseudo-random device ID for anonymous access
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	b := make([]byte, 32)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return fmt.Sprintf("helix-%s", string(b))
+}
+
+// IsAnonymousAccessAllowed checks if a model can be used without API key
+func IsAnonymousAccessAllowed(model string) bool {
+	return isFreeModel(model)
+}
+
+// ZenProvider implements the LLM provider interface for OpenCode Zen
+// Supports both authenticated (API key) and anonymous (free models only) access
+type ZenProvider struct {
+	apiKey       string
+	baseURL      string
+	model        string
+	httpClient   *http.Client
+	retryConfig  RetryConfig
+	deviceID     string // For anonymous access to free models
+	anonymousMode bool  // True when using free models without API key
+}
+
+// RetryConfig defines retry behavior for API calls
+type RetryConfig struct {
+	MaxRetries   int
+	InitialDelay time.Duration
+	MaxDelay     time.Duration
+	Multiplier   float64
+}
+
+// ZenRequest represents a request to Zen API
+type ZenRequest struct {
+	Model       string       `json:"model"`
+	Messages    []ZenMessage `json:"messages"`
+	Temperature float64      `json:"temperature,omitempty"`
+	MaxTokens   int          `json:"max_tokens,omitempty"`
+	TopP        float64      `json:"top_p,omitempty"`
+	Stream      bool         `json:"stream,omitempty"`
+}
+
+// ZenMessage represents a message in Zen API
+type ZenMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// ZenResponse represents a response from Zen API
+type ZenResponse struct {
+	ID      string      `json:"id"`
+	Object  string      `json:"object"`
+	Created int64       `json:"created"`
+	Model   string      `json:"model"`
+	Choices []ZenChoice `json:"choices"`
+	Usage   ZenUsage    `json:"usage"`
+}
+
+// ZenChoice represents a choice in the response
+type ZenChoice struct {
+	Index        int        `json:"index"`
+	Message      ZenMessage `json:"message"`
+	FinishReason string     `json:"finish_reason"`
+}
+
+// ZenUsage represents token usage
+type ZenUsage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
+// ZenStreamResponse represents a streaming response chunk
+type ZenStreamResponse struct {
+	ID      string            `json:"id"`
+	Object  string            `json:"object"`
+	Created int64             `json:"created"`
+	Model   string            `json:"model"`
+	Choices []ZenStreamChoice `json:"choices"`
+}
+
+// ZenStreamChoice represents a choice in a streaming response
+type ZenStreamChoice struct {
+	Index        int        `json:"index"`
+	Delta        ZenMessage `json:"delta"`
+	FinishReason *string    `json:"finish_reason"`
+}
+
+// ZenErrorResponse represents an error response
+type ZenErrorResponse struct {
+	Error struct {
+		Message string `json:"message"`
+		Type    string `json:"type"`
+		Code    string `json:"code"`
+	} `json:"error"`
+}
+
+// ZenModelInfo represents model information from the models endpoint
+type ZenModelInfo struct {
+	ID            string `json:"id"`
+	Object        string `json:"object"`
+	OwnedBy       string `json:"owned_by"`
+	Created       int64  `json:"created"`
+	ContextWindow int    `json:"context_window"`
+	MaxOutputTokens int  `json:"max_output_tokens"`
+	Pricing       struct {
+		Input       float64 `json:"input"`
+		Output      float64 `json:"output"`
+		CachedRead  float64 `json:"cached_read"`
+		CachedWrite float64 `json:"cached_write"`
+	} `json:"pricing"`
+	Capabilities []string `json:"capabilities"`
+}
+
+// ZenModelsResponse represents the response from the models endpoint
+type ZenModelsResponse struct {
+	Object string         `json:"object"`
+	Data   []ZenModelInfo `json:"data"`
+}
+
+// DefaultRetryConfig returns sensible defaults for Zen API retry behavior
+func DefaultRetryConfig() RetryConfig {
+	return RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 1 * time.Second,
+		MaxDelay:     30 * time.Second,
+		Multiplier:   2.0,
+	}
+}
+
+// NewZenProvider creates a new Zen provider instance
+func NewZenProvider(apiKey, baseURL, model string) *ZenProvider {
+	return NewZenProviderWithRetry(apiKey, baseURL, model, DefaultRetryConfig())
+}
+
+// NewZenProviderWithRetry creates a new Zen provider with custom retry config
+// If apiKey is empty and model is a free model, anonymous mode is enabled
+func NewZenProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig) *ZenProvider {
+	if baseURL == "" {
+		baseURL = ZenAPIURL
+	}
+	if model == "" {
+		model = DefaultZenModel
+	}
+
+	// Determine if we're in anonymous mode (no API key, free model)
+	anonymousMode := apiKey == "" && isFreeModel(model)
+	deviceID := ""
+	if anonymousMode {
+		deviceID = generateDeviceID()
+		log.WithFields(logrus.Fields{
+			"provider": "zen",
+			"model":    model,
+			"mode":     "anonymous",
+		}).Info("Zen provider initialized in anonymous mode for free model")
+	}
+
+	return &ZenProvider{
+		apiKey:        apiKey,
+		baseURL:       baseURL,
+		model:         model,
+		httpClient: &http.Client{
+			Timeout: 120 * time.Second,
+		},
+		retryConfig:   retryConfig,
+		deviceID:      deviceID,
+		anonymousMode: anonymousMode,
+	}
+}
+
+// NewZenProviderAnonymous creates a Zen provider for anonymous access (free models only)
+func NewZenProviderAnonymous(model string) *ZenProvider {
+	if model == "" {
+		model = DefaultZenModel
+	}
+	// Ensure only free models can be used anonymously
+	if !isFreeModel(model) {
+		log.WithField("model", model).Warn("Non-free model requested for anonymous access, defaulting to free model")
+		model = DefaultZenModel
+	}
+	return NewZenProviderWithRetry("", ZenAPIURL, model, DefaultRetryConfig())
+}
+
+// Complete performs a non-streaming completion request
+func (p *ZenProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+	startTime := time.Now()
+	requestID := req.ID
+	if requestID == "" {
+		requestID = fmt.Sprintf("zen-%d", time.Now().UnixNano())
+	}
+
+	log.WithFields(logrus.Fields{
+		"provider":   "zen",
+		"model":      p.model,
+		"request_id": requestID,
+		"messages":   len(req.Messages),
+	}).Debug("Starting Zen API call")
+
+	// Convert internal request to Zen format
+	zenReq := p.convertRequest(req)
+
+	log.WithFields(logrus.Fields{
+		"provider":   "zen",
+		"request_id": requestID,
+		"max_tokens": zenReq.MaxTokens,
+		"temp":       zenReq.Temperature,
+	}).Debug("Request converted, making API call")
+
+	// Make API call
+	resp, err := p.makeAPICall(ctx, zenReq)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"provider":   "zen",
+			"request_id": requestID,
+			"error":      err.Error(),
+			"duration":   time.Since(startTime).String(),
+		}).Error("Zen API call failed")
+		return nil, fmt.Errorf("Zen API call failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Parse response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"provider":   "zen",
+			"request_id": requestID,
+			"error":      err.Error(),
+		}).Error("Failed to read response body")
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	log.WithFields(logrus.Fields{
+		"provider":    "zen",
+		"request_id":  requestID,
+		"status_code": resp.StatusCode,
+		"body_size":   len(body),
+	}).Debug("Received API response")
+
+	if resp.StatusCode != http.StatusOK {
+		var errResp ZenErrorResponse
+		if json.Unmarshal(body, &errResp) == nil && errResp.Error.Message != "" {
+			log.WithFields(logrus.Fields{
+				"provider":    "zen",
+				"request_id":  requestID,
+				"status_code": resp.StatusCode,
+				"error_msg":   errResp.Error.Message,
+				"error_type":  errResp.Error.Type,
+			}).Error("Zen API returned error")
+			return nil, fmt.Errorf("Zen API error: %d - %s", resp.StatusCode, errResp.Error.Message)
+		}
+		log.WithFields(logrus.Fields{
+			"provider":    "zen",
+			"request_id":  requestID,
+			"status_code": resp.StatusCode,
+			"body":        string(body[:min(500, len(body))]),
+		}).Error("Zen API error response")
+		return nil, fmt.Errorf("Zen API error: %d - %s", resp.StatusCode, string(body))
+	}
+
+	var zenResp ZenResponse
+	if err := json.Unmarshal(body, &zenResp); err != nil {
+		log.WithFields(logrus.Fields{
+			"provider":   "zen",
+			"request_id": requestID,
+			"error":      err.Error(),
+			"body":       string(body[:min(200, len(body))]),
+		}).Error("Failed to parse Zen response")
+		return nil, fmt.Errorf("failed to parse Zen response: %w", err)
+	}
+
+	// Check for empty choices
+	if len(zenResp.Choices) == 0 {
+		log.WithFields(logrus.Fields{
+			"provider":   "zen",
+			"request_id": requestID,
+			"response":   string(body[:min(500, len(body))]),
+		}).Error("Zen API returned no choices")
+		return nil, fmt.Errorf("Zen API returned no choices")
+	}
+
+	duration := time.Since(startTime)
+	log.WithFields(logrus.Fields{
+		"provider":      "zen",
+		"request_id":    requestID,
+		"duration":      duration.String(),
+		"tokens_used":   zenResp.Usage.TotalTokens,
+		"content_len":   len(zenResp.Choices[0].Message.Content),
+		"finish_reason": zenResp.Choices[0].FinishReason,
+	}).Info("Zen API call completed successfully")
+
+	// Convert back to internal format
+	return p.convertResponse(req, &zenResp, startTime), nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// CompleteStream performs a streaming completion request
+func (p *ZenProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+	startTime := time.Now()
+
+	// Convert internal request to Zen format
+	zenReq := p.convertRequest(req)
+	zenReq.Stream = true
+
+	// Make streaming API call
+	resp, err := p.makeAPICall(ctx, zenReq)
+	if err != nil {
+		return nil, fmt.Errorf("Zen streaming API call failed: %w", err)
+	}
+
+	// Check for HTTP errors before starting stream
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		return nil, fmt.Errorf("Zen API error: HTTP %d - %s", resp.StatusCode, string(body))
+	}
+
+	// Create response channel
+	ch := make(chan *models.LLMResponse)
+
+	go func() {
+		defer resp.Body.Close()
+		defer close(ch)
+
+		reader := bufio.NewReader(resp.Body)
+		var fullContent string
+
+		for {
+			line, err := reader.ReadBytes('\n')
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				// Send error response and exit
+				errorResp := &models.LLMResponse{
+					ID:             "stream-error-" + req.ID,
+					RequestID:      req.ID,
+					ProviderID:     "zen",
+					ProviderName:   "OpenCode Zen",
+					Content:        "",
+					Confidence:     0.0,
+					TokensUsed:     0,
+					ResponseTime:   time.Since(startTime).Milliseconds(),
+					FinishReason:   "error",
+					Selected:       false,
+					SelectionScore: 0.0,
+					CreatedAt:      time.Now(),
+				}
+				ch <- errorResp
+				return
+			}
+
+			// Skip empty lines and "data: " prefix
+			line = bytes.TrimSpace(line)
+			if !bytes.HasPrefix(line, []byte("data: ")) {
+				continue
+			}
+			line = bytes.TrimPrefix(line, []byte("data: "))
+
+			// Skip "[DONE]" marker
+			if bytes.Equal(line, []byte("[DONE]")) {
+				break
+			}
+
+			// Parse JSON
+			var streamResp ZenStreamResponse
+			if err := json.Unmarshal(line, &streamResp); err != nil {
+				continue // Skip malformed JSON
+			}
+
+			// Extract content
+			if len(streamResp.Choices) > 0 {
+				delta := streamResp.Choices[0].Delta.Content
+				if delta != "" {
+					fullContent += delta
+
+					// Send chunk response
+					chunkResp := &models.LLMResponse{
+						ID:             streamResp.ID,
+						RequestID:      req.ID,
+						ProviderID:     "zen",
+						ProviderName:   "OpenCode Zen",
+						Content:        delta,
+						Confidence:     0.8,
+						TokensUsed:     1,
+						ResponseTime:   time.Since(startTime).Milliseconds(),
+						FinishReason:   "",
+						Selected:       false,
+						SelectionScore: 0.0,
+						CreatedAt:      time.Now(),
+					}
+					ch <- chunkResp
+				}
+
+				// Check if stream is finished
+				if streamResp.Choices[0].FinishReason != nil {
+					break
+				}
+			}
+		}
+
+		// Send final response
+		finalResp := &models.LLMResponse{
+			ID:             "stream-final-" + req.ID,
+			RequestID:      req.ID,
+			ProviderID:     "zen",
+			ProviderName:   "OpenCode Zen",
+			Content:        "",
+			Confidence:     0.8,
+			TokensUsed:     len(fullContent) / 4,
+			ResponseTime:   time.Since(startTime).Milliseconds(),
+			FinishReason:   "stop",
+			Selected:       false,
+			SelectionScore: 0.0,
+			CreatedAt:      time.Now(),
+		}
+		ch <- finalResp
+	}()
+
+	return ch, nil
+}
+
+// convertRequest converts internal request to Zen format
+func (p *ZenProvider) convertRequest(req *models.LLMRequest) ZenRequest {
+	// Convert messages
+	messages := make([]ZenMessage, 0, len(req.Messages)+1)
+
+	// Add system prompt if present
+	if req.Prompt != "" {
+		messages = append(messages, ZenMessage{
+			Role:    "system",
+			Content: req.Prompt,
+		})
+	}
+
+	// Add conversation messages
+	for _, msg := range req.Messages {
+		messages = append(messages, ZenMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	// Cap max_tokens to reasonable limits for free models
+	maxTokens := req.ModelParams.MaxTokens
+	if maxTokens <= 0 {
+		maxTokens = 4096 // Default
+	} else if maxTokens > 16384 {
+		maxTokens = 16384 // Zen's typical limit
+	}
+
+	// Determine which model to use
+	model := p.model
+	if req.ModelParams.Model != "" && strings.HasPrefix(req.ModelParams.Model, "opencode/") {
+		model = req.ModelParams.Model
+	}
+
+	return ZenRequest{
+		Model:       model,
+		Messages:    messages,
+		Temperature: req.ModelParams.Temperature,
+		MaxTokens:   maxTokens,
+		TopP:        req.ModelParams.TopP,
+		Stream:      false,
+	}
+}
+
+// convertResponse converts Zen response to internal format
+func (p *ZenProvider) convertResponse(req *models.LLMRequest, zenResp *ZenResponse, startTime time.Time) *models.LLMResponse {
+	var content string
+	var finishReason string
+
+	if len(zenResp.Choices) > 0 {
+		content = zenResp.Choices[0].Message.Content
+		finishReason = zenResp.Choices[0].FinishReason
+	}
+
+	// Calculate confidence based on finish reason and response quality
+	confidence := p.calculateConfidence(content, finishReason)
+
+	// Extract model name for display
+	modelName := zenResp.Model
+	if modelName == "" {
+		modelName = p.model
+	}
+
+	return &models.LLMResponse{
+		ID:           zenResp.ID,
+		RequestID:    req.ID,
+		ProviderID:   "zen",
+		ProviderName: "OpenCode Zen",
+		Content:      content,
+		Confidence:   confidence,
+		TokensUsed:   zenResp.Usage.TotalTokens,
+		ResponseTime: time.Since(startTime).Milliseconds(),
+		FinishReason: finishReason,
+		Metadata: map[string]any{
+			"model":             modelName,
+			"prompt_tokens":     zenResp.Usage.PromptTokens,
+			"completion_tokens": zenResp.Usage.CompletionTokens,
+			"free_model":        isFreeModel(modelName),
+		},
+		Selected:       false,
+		SelectionScore: 0.0,
+		CreatedAt:      time.Now(),
+	}
+}
+
+// isFreeModel checks if a model is in the free tier
+func isFreeModel(model string) bool {
+	freeModels := FreeModels()
+	for _, m := range freeModels {
+		if m == model || strings.HasSuffix(model, strings.TrimPrefix(m, "opencode/")) {
+			return true
+		}
+	}
+	return false
+}
+
+// calculateConfidence calculates confidence score based on response
+func (p *ZenProvider) calculateConfidence(content, finishReason string) float64 {
+	confidence := 0.8 // Base confidence for free models
+
+	// Adjust based on finish reason
+	switch finishReason {
+	case "stop":
+		confidence += 0.1
+	case "length":
+		confidence -= 0.1
+	}
+
+	// Adjust based on content length
+	if len(content) > 100 {
+		confidence += 0.05
+	}
+	if len(content) > 500 {
+		confidence += 0.05
+	}
+
+	// Ensure confidence is within bounds
+	if confidence > 1.0 {
+		confidence = 1.0
+	}
+	if confidence < 0.0 {
+		confidence = 0.0
+	}
+
+	return confidence
+}
+
+// makeAPICall performs the HTTP request to Zen API
+func (p *ZenProvider) makeAPICall(ctx context.Context, req ZenRequest) (*http.Response, error) {
+	return p.makeAPICallWithAuthRetry(ctx, req, true)
+}
+
+// makeAPICallWithAuthRetry performs the API call with optional 401 retry
+func (p *ZenProvider) makeAPICallWithAuthRetry(ctx context.Context, req ZenRequest, allowAuthRetry bool) (*http.Response, error) {
+	// Marshal request
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	var lastErr error
+	delay := p.retryConfig.InitialDelay
+
+	for attempt := 0; attempt <= p.retryConfig.MaxRetries; attempt++ {
+		// Check context before making request
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+		default:
+		}
+
+		// Create HTTP request (fresh for each attempt)
+		httpReq, err := http.NewRequestWithContext(ctx, "POST", p.baseURL, bytes.NewBuffer(body))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		// Set headers - Zen uses Bearer token auth or device ID for anonymous access
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("User-Agent", "HelixAgent/1.0")
+		if p.anonymousMode {
+			// Anonymous mode: use device ID for free models
+			httpReq.Header.Set(AnonymousDeviceHeader, p.deviceID)
+		} else if p.apiKey != "" {
+			// Authenticated mode: use Bearer token
+			httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
+		}
+
+		// Make request
+		resp, err := p.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = fmt.Errorf("HTTP request failed: %w", err)
+			// Retry on network errors
+			if attempt < p.retryConfig.MaxRetries {
+				p.waitWithJitter(ctx, delay)
+				delay = p.nextDelay(delay)
+				continue
+			}
+			return nil, lastErr
+		}
+
+		// Check for auth errors (401) - retry once with a short delay
+		if isAuthRetryableStatus(resp.StatusCode) && allowAuthRetry {
+			resp.Body.Close()
+			log.WithFields(logrus.Fields{
+				"provider":    "zen",
+				"status_code": resp.StatusCode,
+				"attempt":     attempt + 1,
+			}).Warn("Received 401 Unauthorized, retrying once after short delay")
+
+			// Short delay before auth retry (500ms with jitter)
+			authRetryDelay := 500 * time.Millisecond
+			p.waitWithJitter(ctx, authRetryDelay)
+
+			// Recursive call with auth retry disabled to prevent infinite loops
+			return p.makeAPICallWithAuthRetry(ctx, req, false)
+		}
+
+		// Check for retryable status codes (429, 5xx)
+		if isRetryableStatus(resp.StatusCode) && attempt < p.retryConfig.MaxRetries {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
+			log.WithFields(logrus.Fields{
+				"provider":    "zen",
+				"status_code": resp.StatusCode,
+				"attempt":     attempt + 1,
+				"max_retries": p.retryConfig.MaxRetries,
+			}).Debug("Retrying after retryable error")
+			p.waitWithJitter(ctx, delay)
+			delay = p.nextDelay(delay)
+			continue
+		}
+
+		return resp, nil
+	}
+
+	return nil, fmt.Errorf("all %d retry attempts failed: %w", p.retryConfig.MaxRetries+1, lastErr)
+}
+
+// isRetryableStatus returns true for HTTP status codes that warrant a retry
+func isRetryableStatus(statusCode int) bool {
+	switch statusCode {
+	case http.StatusTooManyRequests, // 429 - Rate limited
+		http.StatusInternalServerError, // 500
+		http.StatusBadGateway,          // 502
+		http.StatusServiceUnavailable,  // 503
+		http.StatusGatewayTimeout:      // 504
+		return true
+	default:
+		return false
+	}
+}
+
+// isAuthRetryableStatus returns true for auth errors that may be transient
+func isAuthRetryableStatus(statusCode int) bool {
+	return statusCode == http.StatusUnauthorized // 401
+}
+
+// waitWithJitter waits for the specified duration plus random jitter
+func (p *ZenProvider) waitWithJitter(ctx context.Context, delay time.Duration) {
+	// Add 10% jitter
+	jitter := time.Duration(rand.Float64() * 0.1 * float64(delay))
+	select {
+	case <-ctx.Done():
+	case <-time.After(delay + jitter):
+	}
+}
+
+// nextDelay calculates the next delay using exponential backoff
+func (p *ZenProvider) nextDelay(currentDelay time.Duration) time.Duration {
+	nextDelay := time.Duration(float64(currentDelay) * p.retryConfig.Multiplier)
+	if nextDelay > p.retryConfig.MaxDelay {
+		nextDelay = p.retryConfig.MaxDelay
+	}
+	return nextDelay
+}
+
+// GetCapabilities returns the capabilities of the Zen provider
+func (p *ZenProvider) GetCapabilities() *models.ProviderCapabilities {
+	return &models.ProviderCapabilities{
+		SupportedModels: []string{
+			ModelBigPickle,
+			ModelGrokCodeFast,
+			ModelGLM47Free,
+			ModelGPT5Nano,
+		},
+		SupportedFeatures: []string{
+			"text_completion",
+			"chat",
+			"streaming",
+			"code_completion",
+		},
+		SupportedRequestTypes: []string{
+			"text_completion",
+			"chat",
+		},
+		SupportsStreaming:       true,
+		SupportsFunctionCalling: true,
+		SupportsVision:          false, // Free models may not support vision
+		SupportsTools:           true,
+		SupportsSearch:          false,
+		SupportsReasoning:       true,
+		SupportsCodeCompletion:  true,
+		SupportsCodeAnalysis:    true,
+		SupportsRefactoring:     true,
+		Limits: models.ModelLimits{
+			MaxTokens:             16384,
+			MaxInputLength:        200000, // Most free models have 200k context
+			MaxOutputLength:       16384,
+			MaxConcurrentRequests: 10,
+		},
+		Metadata: map[string]string{
+			"provider":     "OpenCode Zen",
+			"model_family": "Mixed",
+			"api_version":  "v1",
+			"note":         "OpenCode Zen gateway - Free models (Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano)",
+			"free_tier":    "true",
+			"base_url":     ZenAPIURL,
+		},
+	}
+}
+
+// ValidateConfig validates the provider configuration
+func (p *ZenProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
+	var errors []string
+
+	// API key is only required for non-free models
+	// Free models can work in anonymous mode without API key
+	if p.apiKey == "" && !p.anonymousMode {
+		// Check if the model is a free model - if so, anonymous mode should be enabled
+		if !isFreeModel(p.model) {
+			errors = append(errors, "OPENCODE_API_KEY is required for non-free models")
+		}
+	}
+
+	if p.baseURL == "" {
+		errors = append(errors, "base URL is required")
+	}
+
+	if p.model == "" {
+		errors = append(errors, "model is required")
+	}
+
+	return len(errors) == 0, errors
+}
+
+// IsAnonymousMode returns whether the provider is in anonymous mode
+func (p *ZenProvider) IsAnonymousMode() bool {
+	return p.anonymousMode
+}
+
+// HealthCheck implements health checking for the Zen provider
+func (p *ZenProvider) HealthCheck() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Health check - try to get models list
+	req, err := http.NewRequestWithContext(ctx, "GET", ZenModelsURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create health check request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if p.anonymousMode {
+		req.Header.Set(AnonymousDeviceHeader, p.deviceID)
+	} else if p.apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+p.apiKey)
+	}
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("health check request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// GetModel returns the current model
+func (p *ZenProvider) GetModel() string {
+	return p.model
+}
+
+// SetModel sets the model to use
+func (p *ZenProvider) SetModel(model string) {
+	p.model = model
+}
+
+// GetAvailableModels fetches the list of available models from Zen API
+func (p *ZenProvider) GetAvailableModels(ctx context.Context) ([]ZenModelInfo, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", ZenModelsURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if p.anonymousMode {
+		req.Header.Set(AnonymousDeviceHeader, p.deviceID)
+	} else if p.apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+p.apiKey)
+	}
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API error: %d - %s", resp.StatusCode, string(body))
+	}
+
+	var modelsResp ZenModelsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&modelsResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return modelsResp.Data, nil
+}
+
+// GetFreeModels returns only the free models from the available models list
+func (p *ZenProvider) GetFreeModels(ctx context.Context) ([]ZenModelInfo, error) {
+	allModels, err := p.GetAvailableModels(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	freeModelIDs := FreeModels()
+	freeModels := make([]ZenModelInfo, 0)
+
+	for _, model := range allModels {
+		for _, freeID := range freeModelIDs {
+			if model.ID == freeID || strings.HasSuffix(freeID, model.ID) {
+				freeModels = append(freeModels, model)
+				break
+			}
+		}
+	}
+
+	return freeModels, nil
+}
