@@ -1043,7 +1043,7 @@ func buildMCPServerConfig(host, port, apiKey, homeDir string) map[string]MCPServ
 			{"filesystem", "@modelcontextprotocol/server-filesystem", "dist/index.js"},
 			{"github", "@modelcontextprotocol/server-github", "dist/index.js"},
 			{"memory", "@modelcontextprotocol/server-memory", "dist/index.js"},
-			{"fetch", "mcp-fetch", "dist/index.js"},
+			{"fetch", "mcp-fetch", "dist/stdio.js"},
 			{"puppeteer", "@modelcontextprotocol/server-puppeteer", "dist/index.js"},
 			{"sqlite", "mcp-server-sqlite", "dist/index.js"},
 		}
