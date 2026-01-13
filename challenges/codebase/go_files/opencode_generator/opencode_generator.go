@@ -303,7 +303,7 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 			},
 			"fetch": {
 				Type:    "local",
-				Command: []string{"npx", "-y", "mcp-fetch-server"},
+				Command: []string{"npx", "-y", "mcp-fetch"},
 				Enabled: &enabled,
 			},
 			"puppeteer": {
@@ -313,7 +313,7 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 			},
 			"sqlite": {
 				Type:    "local",
-				Command: []string{"npx", "-y", "mcp-server-sqlite"},
+				Command: []string{"npx", "-y", "mcp-sqlite"},
 				Enabled: &enabled,
 			},
 		},

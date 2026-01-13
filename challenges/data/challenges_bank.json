@@ -3445,6 +3445,62 @@
         "automation"
       ],
       "expected_duration_seconds": 30
+    },
+    {
+      "id": "mcp_servers_usage",
+      "name": "MCP Servers Usage Challenge",
+      "description": "Validates all 12 MCP servers are operational: fetch, filesystem, github, helixagent-*, memory, puppeteer, sqlite",
+      "category": "protocol",
+      "script": "challenges/scripts/mcp_servers_usage_challenge.sh",
+      "enabled": true,
+      "priority": 45,
+      "dependencies": [],
+      "tags": [
+        "mcp",
+        "servers",
+        "opencode",
+        "protocol"
+      ],
+      "expected_duration_seconds": 60
+    },
+    {
+      "id": "protocol_missions",
+      "name": "Protocol Missions Challenge",
+      "description": "Validates all protocols through real-world mission scenarios: LSP, Embeddings, Vision, Cognee, MCP, ACP",
+      "category": "protocol",
+      "script": "challenges/scripts/protocol_missions_challenge.sh",
+      "enabled": true,
+      "priority": 44,
+      "dependencies": [],
+      "tags": [
+        "protocol",
+        "missions",
+        "lsp",
+        "embeddings",
+        "vision",
+        "cognee",
+        "mcp",
+        "acp"
+      ],
+      "expected_duration_seconds": 45
+    },
+    {
+      "id": "opencode_conversation",
+      "name": "OpenCode Conversation Challenge",
+      "description": "Simulates real OpenCode conversations using all 12 MCP servers through realistic use-case scenarios",
+      "category": "protocol",
+      "script": "challenges/scripts/opencode_conversation_challenge.sh",
+      "enabled": true,
+      "priority": 43,
+      "dependencies": ["mcp_servers_usage"],
+      "tags": [
+        "opencode",
+        "conversation",
+        "mcp",
+        "simulation",
+        "end-to-end"
+      ],
+      "expected_duration_seconds": 90
     }
   ],
   "assertion_types": {

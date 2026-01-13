@@ -50,8 +50,8 @@ func TestMCPPackageExistence(t *testing.T) {
 		{"@modelcontextprotocol/server-sqlite", false},
 
 		// Alternative packages that EXIST
-		{"mcp-fetch-server", true},
-		{"mcp-server-sqlite", true},
+		{"mcp-fetch", true},
+		{"mcp-sqlite", true},
 	}
 
 	for _, pkg := range packages {
@@ -83,8 +83,8 @@ func TestMCPLocalServerStartup(t *testing.T) {
 	}{
 		{"filesystem", []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", os.Getenv("HOME")}},
 		{"memory", []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
-		{"fetch", []string{"npx", "-y", "mcp-fetch-server"}},
-		{"sqlite", []string{"npx", "-y", "mcp-server-sqlite"}},
+		{"fetch", []string{"npx", "-y", "mcp-fetch"}},
+		{"sqlite", []string{"npx", "-y", "mcp-sqlite"}},
 	}
 
 	for _, server := range servers {
@@ -260,8 +260,8 @@ func TestOpenCodeConfiguration(t *testing.T) {
 			joined := strings.Join(cmdStr, " ")
 			assert.NotContains(t, joined, "@modelcontextprotocol/server-fetch",
 				"fetch should NOT use @modelcontextprotocol/server-fetch (doesn't exist)")
-			assert.Contains(t, joined, "mcp-fetch-server",
-				"fetch should use mcp-fetch-server")
+			assert.Contains(t, joined, "mcp-fetch",
+				"fetch should use mcp-fetch")
 		}
 	}
 
@@ -275,8 +275,8 @@ func TestOpenCodeConfiguration(t *testing.T) {
 			joined := strings.Join(cmdStr, " ")
 			assert.NotContains(t, joined, "@modelcontextprotocol/server-sqlite",
 				"sqlite should NOT use @modelcontextprotocol/server-sqlite (doesn't exist)")
-			assert.Contains(t, joined, "mcp-server-sqlite",
-				"sqlite should use mcp-server-sqlite")
+			assert.Contains(t, joined, "mcp-sqlite",
+				"sqlite should use mcp-sqlite")
 		}
 	}
 
