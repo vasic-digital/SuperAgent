@@ -631,6 +631,96 @@ func TestFormatEventAsText(t *testing.T) {
 		assert.Contains(t, result, "CONSENSUS")
 		assert.Contains(t, result, "Final answer")
 	})
+
+	// Multi-pass validation phase events
+	t.Run("Formats phase start event", func(t *testing.T) {
+		event := &DialogueEvent{Type: EventPhaseStart, Content: "PHASE 1: INITIAL RESPONSE"}
+		result := FormatEventAsText(event)
+		assert.Contains(t, result, "PHASE 1")
+		assert.Contains(t, result, "═")
+	})
+
+	t.Run("Formats phase progress event", func(t *testing.T) {
+		event := &DialogueEvent{Type: EventPhaseProgress, Content: "Processing responses..."}
+		result := FormatEventAsText(event)
+		assert.Contains(t, result, "▸")
+		assert.Contains(t, result, "Processing responses")
+	})
+
+	t.Run("Formats phase end event", func(t *testing.T) {
+		event := &DialogueEvent{Type: EventPhaseEnd, Content: "Phase complete"}
+		result := FormatEventAsText(event)
+		assert.Contains(t, result, "Phase Complete")
+		assert.Contains(t, result, "─")
+	})
+
+	t.Run("Formats validation result event", func(t *testing.T) {
+		event := &DialogueEvent{Type: EventValidationResult, Content: "Score: 0.85"}
+		result := FormatEventAsText(event)
+		assert.Contains(t, result, "✓")
+		assert.Contains(t, result, "Validation")
+		assert.Contains(t, result, "Score")
+	})
+
+	t.Run("Formats polish result event", func(t *testing.T) {
+		event := &DialogueEvent{Type: EventPolishResult, Content: "Improved by 15%"}
+		result := FormatEventAsText(event)
+		assert.Contains(t, result, "✨")
+		assert.Contains(t, result, "Polish")
+		assert.Contains(t, result, "15%")
+	})
+
+	t.Run("Formats final synthesis event", func(t *testing.T) {
+		event := &DialogueEvent{Type: EventFinalSynthesis, Content: "Synthesized conclusion"}
+		result := FormatEventAsText(event)
+		assert.Contains(t, result, "FINAL CONCLUSION")
+		assert.Contains(t, result, "Synthesized conclusion")
+		assert.Contains(t, result, "═")
+	})
+}
+
+// TestDialogueEventTypeNewPhaseEvents tests all new phase event types are defined
+func TestDialogueEventTypeNewPhaseEvents(t *testing.T) {
+	t.Run("All phase event types are defined", func(t *testing.T) {
+		assert.Equal(t, DialogueEventType("phase_start"), EventPhaseStart)
+		assert.Equal(t, DialogueEventType("phase_progress"), EventPhaseProgress)
+		assert.Equal(t, DialogueEventType("phase_end"), EventPhaseEnd)
+		assert.Equal(t, DialogueEventType("validation_result"), EventValidationResult)
+		assert.Equal(t, DialogueEventType("polish_result"), EventPolishResult)
+		assert.Equal(t, DialogueEventType("final_synthesis"), EventFinalSynthesis)
+	})
+
+	t.Run("Phase event types are unique", func(t *testing.T) {
+		types := []DialogueEventType{
+			EventPhaseStart, EventPhaseProgress, EventPhaseEnd,
+			EventValidationResult, EventPolishResult, EventFinalSynthesis,
+		}
+		uniqueTypes := make(map[DialogueEventType]bool)
+		for _, et := range types {
+			assert.False(t, uniqueTypes[et], "Event type %s should be unique", et)
+			uniqueTypes[et] = true
+		}
+	})
+}
+
+// TestPhaseEventData tests the phase event data structure
+func TestPhaseEventData(t *testing.T) {
+	t.Run("Creates valid phase event data", func(t *testing.T) {
+		data := PhaseEventData{
+			Phase:           "validation",
+			PhaseOrder:      2,
+			PhaseIcon:       "✓",
+			ValidationScore: 0.85,
+			PolishScore:     0.0,
+			Confidence:      0.8,
+		}
+		assert.Equal(t, "validation", data.Phase)
+		assert.Equal(t, 2, data.PhaseOrder)
+		assert.Equal(t, "✓", data.PhaseIcon)
+		assert.InDelta(t, 0.85, data.ValidationScore, 0.01)
+		assert.Equal(t, 0.0, data.PolishScore)
+		assert.InDelta(t, 0.8, data.Confidence, 0.01)
+	})
 }
 
 // TestDebateRound tests debate round struct

@@ -530,6 +530,13 @@ const (
 	EventActEnd        DialogueEventType = "act_end"
 	EventEpilogue      DialogueEventType = "epilogue"
 	EventConsensus     DialogueEventType = "consensus"
+	// Multi-pass validation phase events
+	EventPhaseStart       DialogueEventType = "phase_start"
+	EventPhaseProgress    DialogueEventType = "phase_progress"
+	EventPhaseEnd         DialogueEventType = "phase_end"
+	EventValidationResult DialogueEventType = "validation_result"
+	EventPolishResult     DialogueEventType = "polish_result"
+	EventFinalSynthesis   DialogueEventType = "final_synthesis"
 )
 
 // DialogueStream provides streaming dialogue events
@@ -599,7 +606,41 @@ func FormatEventAsText(event *DialogueEvent) string {
 		return event.Content
 	case EventConsensus:
 		return fmt.Sprintf("\n╔══ CONSENSUS ══╗\n%s\n╚═══════════════╝\n", event.Content)
+	// Multi-pass validation phase events
+	case EventPhaseStart:
+		return fmt.Sprintf("\n%s\n%s\n%s\n",
+			strings.Repeat("═", 70),
+			event.Content,
+			strings.Repeat("═", 70))
+	case EventPhaseProgress:
+		return fmt.Sprintf("  ▸ %s\n", event.Content)
+	case EventPhaseEnd:
+		return fmt.Sprintf("\n%s\n[Phase Complete]\n%s\n",
+			strings.Repeat("─", 70),
+			strings.Repeat("─", 70))
+	case EventValidationResult:
+		return fmt.Sprintf("  ✓ Validation: %s\n", event.Content)
+	case EventPolishResult:
+		return fmt.Sprintf("  ✨ Polish: %s\n", event.Content)
+	case EventFinalSynthesis:
+		return fmt.Sprintf(`
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           📜 FINAL CONCLUSION 📜                              ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+%s
+╚══════════════════════════════════════════════════════════════════════════════╝
+`, event.Content)
 	default:
 		return event.Content
 	}
+}
+
+// DialogueEvent extension fields for multi-pass validation
+type PhaseEventData struct {
+	Phase           string  `json:"phase,omitempty"`
+	PhaseOrder      int     `json:"phase_order,omitempty"`
+	PhaseIcon       string  `json:"phase_icon,omitempty"`
+	ValidationScore float64 `json:"validation_score,omitempty"`
+	PolishScore     float64 `json:"polish_score,omitempty"`
+	Confidence      float64 `json:"confidence,omitempty"`
 }
