@@ -189,10 +189,10 @@ var ZenModels = struct {
 	GLM47Free     string // GLM 4.7 free tier
 	GPT5Nano      string // GPT 5 Nano free tier
 }{
-	BigPickle:    "big-pickle",
-	GrokCodeFast: "grok-code",
-	GLM47Free:    "glm-4.7-free",
-	GPT5Nano:     "gpt-5-nano",
+	BigPickle:    "opencode/big-pickle",
+	GrokCodeFast: "opencode/grok-code",
+	GLM47Free:    "opencode/glm-4.7-free",
+	GPT5Nano:     "opencode/gpt-5-nano",
 }
 
 // VerifiedLLM represents a verified LLM from LLMsVerifier
