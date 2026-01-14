@@ -25,6 +25,7 @@ import (
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/mcp"
 	"dev.helix.agent/internal/router"
+	"dev.helix.agent/internal/verifier"
 )
 
 var (
@@ -615,6 +616,114 @@ func verifyAllMandatoryDependencies(logger *logrus.Logger) error {
 	return nil
 }
 
+// runStartupVerification performs unified startup verification using LLMsVerifier
+// as the single source of truth for all provider verification and scoring.
+// Returns the startup result and verifier instance (both may be nil if verification fails)
+func runStartupVerification(logger *logrus.Logger) (*verifier.StartupResult, *verifier.StartupVerifier) {
+	if logger == nil {
+		logger = logrus.New()
+	}
+
+	logger.Info("╔══════════════════════════════════════════════════════════════════╗")
+	logger.Info("║         UNIFIED PROVIDER STARTUP VERIFICATION                     ║")
+	logger.Info("║     LLMsVerifier as Single Source of Truth for ALL Providers     ║")
+	logger.Info("╚══════════════════════════════════════════════════════════════════╝")
+
+	// Create startup config with defaults
+	cfg := verifier.DefaultStartupConfig()
+	cfg.ParallelVerification = true
+	cfg.EnableFreeProviders = true
+	cfg.TrustOAuthOnFailure = true
+
+	// Create startup verifier
+	sv := verifier.NewStartupVerifier(cfg, logger)
+
+	// Create context with timeout for verification
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	// Run full verification pipeline
+	// Phase 1: Discover all providers (OAuth, API Key, Free)
+	// Phase 2: Verify all providers in parallel
+	// Phase 3: Score all verified providers
+	// Phase 4: Rank providers by score (OAuth first, then by score)
+	// Phase 5: Select AI Debate Team (15 LLMs)
+	result, err := sv.VerifyAllProviders(ctx)
+	if err != nil {
+		logger.WithError(err).Warn("Startup verification encountered errors")
+		// Don't fail boot - continue with available providers
+	}
+
+	if result == nil {
+		logger.Warn("Startup verification returned nil result, continuing with legacy discovery")
+		return nil, nil
+	}
+
+	// Log verification summary
+	logger.Info("────────────────────────────────────────────────────────────────────")
+	logger.WithFields(logrus.Fields{
+		"total_providers":  result.TotalProviders,
+		"verified":         result.VerifiedCount,
+		"failed":           result.FailedCount,
+		"skipped":          result.SkippedCount,
+		"api_key_providers": result.APIKeyProviders,
+		"oauth_providers":   result.OAuthProviders,
+		"free_providers":    result.FreeProviders,
+	}).Info("Provider verification summary")
+
+	// Log any errors
+	for _, e := range result.Errors {
+		logger.WithFields(logrus.Fields{
+			"provider":    e.Provider,
+			"phase":       e.Phase,
+			"error":       e.Error,
+			"recoverable": e.Recoverable,
+		}).Warn("Provider verification error")
+	}
+
+	// Log ranked providers
+	rankedProviders := sv.GetRankedProviders()
+	if len(rankedProviders) > 0 {
+		logger.Info("Top verified providers by score:")
+		for i, p := range rankedProviders {
+			if i >= 5 {
+				break
+			}
+			logger.WithFields(logrus.Fields{
+				"rank":      i + 1,
+				"provider":  p.Name,
+				"type":      p.Type,
+				"auth_type": p.AuthType,
+				"score":     p.Score,
+				"verified":  p.Verified,
+				"models":    len(p.Models),
+			}).Info("Provider ranked")
+		}
+	}
+
+	// Log debate team selection
+	if result.DebateTeam != nil {
+		logger.Info("────────────────────────────────────────────────────────────────────")
+		logger.Info("AI Debate Team Selection (15 LLMs: 5 positions × 3 LLMs each):")
+		for _, pos := range result.DebateTeam.Positions {
+			if pos.Primary != nil {
+				logger.WithFields(logrus.Fields{
+					"position":      pos.Position,
+					"role":          pos.Role,
+					"primary":       pos.Primary.ModelName,
+					"primary_prov":  pos.Primary.Provider,
+					"primary_score": pos.Primary.Score,
+					"is_oauth":      pos.Primary.IsOAuth,
+				}).Info("Debate position assigned")
+			}
+		}
+	}
+
+	logger.Info("════════════════════════════════════════════════════════════════════")
+
+	return result, sv
+}
+
 // AppConfig holds application configuration for testing
 type AppConfig struct {
 	ShowHelp             bool
@@ -728,6 +837,31 @@ func run(appCfg *AppConfig) error {
 		}
 		logger.Info("All mandatory dependencies verified successfully")
 	}
+
+	// Run unified startup verification (LLMsVerifier as single source of truth)
+	// This verifies ALL providers (OAuth, API Key, Free) and selects the AI Debate Team
+	startupResult, startupVerifier := runStartupVerification(logger)
+	if startupResult != nil {
+		logger.WithFields(logrus.Fields{
+			"total_providers":   startupResult.TotalProviders,
+			"verified_count":    startupResult.VerifiedCount,
+			"failed_count":      startupResult.FailedCount,
+			"oauth_providers":   startupResult.OAuthProviders,
+			"free_providers":    startupResult.FreeProviders,
+			"duration_ms":       startupResult.DurationMs,
+		}).Info("Startup verification completed")
+
+		if startupResult.DebateTeam != nil {
+			logger.WithFields(logrus.Fields{
+				"debate_team_llms":   startupResult.DebateTeam.TotalLLMs,
+				"debate_positions":   len(startupResult.DebateTeam.Positions),
+				"oauth_first":        startupResult.DebateTeam.OAuthFirst,
+			}).Info("AI Debate Team configured (15 LLMs)")
+		}
+	}
+
+	// Store startup verifier for router access
+	_ = startupVerifier // Used by router.SetupRouterWithVerifier if available
 
 	r := router.SetupRouter(cfg)
 

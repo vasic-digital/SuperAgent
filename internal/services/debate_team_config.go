@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/verifier"
 )
 
 // TotalDebatePositions is the total number of positions in the AI debate team
@@ -223,6 +224,7 @@ type DebateTeamConfig struct {
 	verifiedLLMs     []*VerifiedLLM // All verified LLMs sorted by score
 	providerRegistry *ProviderRegistry
 	discovery        *ProviderDiscovery
+	startupVerifier  *verifier.StartupVerifier // Unified startup verification (optional)
 	logger           *logrus.Logger
 }
 
@@ -241,6 +243,32 @@ func NewDebateTeamConfig(
 		providerRegistry: providerRegistry,
 		discovery:        discovery,
 		logger:           logger,
+	}
+	return config
+}
+
+// SetStartupVerifier sets the unified startup verifier
+// When set, InitializeTeam will use the StartupVerifier's verified providers
+// instead of performing manual verification
+func (dtc *DebateTeamConfig) SetStartupVerifier(sv *verifier.StartupVerifier) {
+	dtc.mu.Lock()
+	defer dtc.mu.Unlock()
+	dtc.startupVerifier = sv
+}
+
+// NewDebateTeamConfigWithStartupVerifier creates a new debate team config with StartupVerifier
+func NewDebateTeamConfigWithStartupVerifier(
+	sv *verifier.StartupVerifier,
+	logger *logrus.Logger,
+) *DebateTeamConfig {
+	if logger == nil {
+		logger = logrus.New()
+	}
+	config := &DebateTeamConfig{
+		members:         make(map[DebateTeamPosition]*DebateTeamMember),
+		verifiedLLMs:    make([]*VerifiedLLM, 0),
+		startupVerifier: sv,
+		logger:          logger,
 	}
 	return config
 }
@@ -290,9 +318,17 @@ func (dtc *DebateTeamConfig) InitializeTeam(ctx context.Context) error {
 }
 
 // collectVerifiedLLMs gathers all verified LLMs from OAuth2, OpenRouter free models, and LLMsVerifier
+// If StartupVerifier is configured, it uses the unified verification pipeline instead
 func (dtc *DebateTeamConfig) collectVerifiedLLMs(ctx context.Context) {
 	dtc.verifiedLLMs = make([]*VerifiedLLM, 0)
 
+	// Use StartupVerifier if available (unified pipeline)
+	if dtc.startupVerifier != nil {
+		dtc.collectFromStartupVerifier()
+		return
+	}
+
+	// Legacy path: Use discovery and manual collection
 	// Verify providers if discovery is available
 	if dtc.discovery != nil {
 		dtc.discovery.VerifyAllProviders(ctx)
@@ -318,6 +354,57 @@ func (dtc *DebateTeamConfig) collectVerifiedLLMs(ctx context.Context) {
 		"oauth_count":      dtc.countOAuthLLMs(),
 		"free_models_count": dtc.countFreeModels(),
 	}).Info("Verified LLMs collected")
+}
+
+// collectFromStartupVerifier collects verified LLMs from the unified StartupVerifier
+func (dtc *DebateTeamConfig) collectFromStartupVerifier() {
+	rankedProviders := dtc.startupVerifier.GetRankedProviders()
+
+	for _, provider := range rankedProviders {
+		if !provider.Verified {
+			continue
+		}
+
+		// Add each model from the provider
+		for _, model := range provider.Models {
+			if !model.Verified {
+				continue
+			}
+
+			isOAuth := provider.AuthType == verifier.AuthTypeOAuth
+
+			dtc.verifiedLLMs = append(dtc.verifiedLLMs, &VerifiedLLM{
+				ProviderName: provider.Name,
+				ModelName:    model.ID,
+				Score:        model.Score,
+				Provider:     provider.Instance,
+				IsOAuth:      isOAuth,
+				Verified:     true,
+			})
+		}
+
+		// If provider has no models but is verified, add with default model
+		if len(provider.Models) == 0 && provider.DefaultModel != "" {
+			isOAuth := provider.AuthType == verifier.AuthTypeOAuth
+
+			dtc.verifiedLLMs = append(dtc.verifiedLLMs, &VerifiedLLM{
+				ProviderName: provider.Name,
+				ModelName:    provider.DefaultModel,
+				Score:        provider.Score,
+				Provider:     provider.Instance,
+				IsOAuth:      isOAuth,
+				Verified:     true,
+			})
+		}
+	}
+
+	dtc.logger.WithFields(logrus.Fields{
+		"total_verified":     len(dtc.verifiedLLMs),
+		"oauth_count":        dtc.countOAuthLLMs(),
+		"free_models_count":  dtc.countFreeModels(),
+		"source":             "startup_verifier",
+		"providers_verified": len(rankedProviders),
+	}).Info("Verified LLMs collected from StartupVerifier")
 }
 
 // collectClaudeModels collects Claude models if the provider is available
