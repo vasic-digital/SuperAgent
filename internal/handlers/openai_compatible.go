@@ -2880,7 +2880,17 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 		"available_tools": len(availableTools),
 	}).Debug("Generated action tool calls from debate synthesis")
 
-	return toolCalls
+	// CRITICAL: Validate all tool calls before returning
+	// This prevents sending tool calls with missing/invalid arguments to clients
+	validatedToolCalls := validateAndFilterToolCalls(toolCalls)
+	if len(validatedToolCalls) != len(toolCalls) {
+		logrus.WithFields(logrus.Fields{
+			"original_count":  len(toolCalls),
+			"validated_count": len(validatedToolCalls),
+		}).Warn("Some tool calls were filtered due to invalid arguments")
+	}
+
+	return validatedToolCalls
 }
 
 // containsAny checks if text contains any of the patterns
@@ -2891,6 +2901,133 @@ func containsAny(text string, patterns []string) bool {
 		}
 	}
 	return false
+}
+
+// validateAndFilterToolCalls validates all tool calls and filters out invalid ones
+// CRITICAL: This ensures all tool calls have valid arguments before being sent to clients
+// This prevents errors like "filePath: expected string, received undefined"
+func validateAndFilterToolCalls(toolCalls []StreamingToolCall) []StreamingToolCall {
+	if len(toolCalls) == 0 {
+		return toolCalls
+	}
+
+	// Define required fields for each tool type (using snake_case as per schema)
+	toolRequiredFields := map[string][]string{
+		// Filesystem tools
+		"read":   {"file_path"},
+		"Read":   {"file_path"},
+		"write":  {"file_path", "content"},
+		"Write":  {"file_path", "content"},
+		"edit":   {"file_path", "old_string", "new_string"},
+		"Edit":   {"file_path", "old_string", "new_string"},
+		"glob":   {"pattern"},
+		"Glob":   {"pattern"},
+		"grep":   {"pattern"},
+		"Grep":   {"pattern"},
+		// Core tools
+		"bash":  {"command", "description"},
+		"Bash":  {"command", "description"},
+		"shell": {"command", "description"},
+		"task":  {"prompt", "description", "subagent_type"},
+		"Task":  {"prompt", "description", "subagent_type"},
+		// Version control
+		"git":  {"operation", "description"},
+		"Git":  {"operation", "description"},
+		"diff": {"description"},
+		"Diff": {"description"},
+		// Testing
+		"test": {"description"},
+		"Test": {"description"},
+		"lint": {"description"},
+		"Lint": {"description"},
+		// Code intelligence
+		"treeview":   {"description"},
+		"TreeView":   {"description"},
+		"fileinfo":   {"file_path", "description"},
+		"FileInfo":   {"file_path", "description"},
+		"symbols":    {"description"},
+		"Symbols":    {"description"},
+		"references": {"symbol", "description"},
+		"References": {"symbol", "description"},
+		"definition": {"symbol", "description"},
+		"Definition": {"symbol", "description"},
+		// Workflow tools
+		"pr":       {"action", "description"},
+		"PR":       {"action", "description"},
+		"issue":    {"action", "description"},
+		"Issue":    {"action", "description"},
+		"workflow": {"action", "description"},
+		"Workflow": {"action", "description"},
+		// Web tools
+		"webfetch":   {"url", "prompt"},
+		"WebFetch":   {"url", "prompt"},
+		"websearch":  {"query"},
+		"WebSearch":  {"query"},
+	}
+
+	var validToolCalls []StreamingToolCall
+
+	for _, tc := range toolCalls {
+		toolName := tc.Function.Name
+		requiredFields, hasRequirements := toolRequiredFields[toolName]
+
+		// If no requirements defined, pass through (but log warning)
+		if !hasRequirements {
+			logrus.WithField("tool", toolName).Debug("No validation rules for tool, passing through")
+			validToolCalls = append(validToolCalls, tc)
+			continue
+		}
+
+		// Parse the arguments JSON
+		var args map[string]interface{}
+		if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"tool":      toolName,
+				"arguments": tc.Function.Arguments,
+				"error":     err.Error(),
+			}).Warn("Failed to parse tool call arguments, skipping")
+			continue
+		}
+
+		// Check all required fields
+		isValid := true
+		missingFields := []string{}
+		emptyFields := []string{}
+
+		for _, field := range requiredFields {
+			val, exists := args[field]
+			if !exists {
+				isValid = false
+				missingFields = append(missingFields, field)
+				continue
+			}
+
+			// Check for empty strings
+			if strVal, ok := val.(string); ok && strings.TrimSpace(strVal) == "" {
+				isValid = false
+				emptyFields = append(emptyFields, field)
+			}
+
+			// Check for nil values
+			if val == nil {
+				isValid = false
+				missingFields = append(missingFields, field)
+			}
+		}
+
+		if isValid {
+			validToolCalls = append(validToolCalls, tc)
+		} else {
+			logrus.WithFields(logrus.Fields{
+				"tool":           toolName,
+				"missing_fields": missingFields,
+				"empty_fields":   emptyFields,
+				"arguments":      tc.Function.Arguments,
+			}).Warn("Tool call has invalid arguments, filtering out")
+		}
+	}
+
+	return validToolCalls
 }
 
 // generateToolCallID generates a unique ID for a tool call

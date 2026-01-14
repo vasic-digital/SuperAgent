@@ -3191,6 +3191,326 @@ func TestContainsAny(t *testing.T) {
 	})
 }
 
+// TestValidateAndFilterToolCalls tests the comprehensive tool call validation
+// This test suite covers ALL 21 tools and ensures invalid tool calls are filtered
+func TestValidateAndFilterToolCalls(t *testing.T) {
+	// Helper to create a tool call
+	createToolCall := func(name, args string) StreamingToolCall {
+		return StreamingToolCall{
+			Index: 0,
+			ID:    "call_test",
+			Type:  "function",
+			Function: OpenAIFunctionCall{
+				Name:      name,
+				Arguments: args,
+			},
+		}
+	}
+
+	// ============================================
+	// Test 1: Valid tool calls pass through
+	// ============================================
+	t.Run("valid_read_tool_passes", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Read", `{"file_path": "README.md"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 1, "Valid Read tool call should pass")
+	})
+
+	t.Run("valid_write_tool_passes", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Write", `{"file_path": "output.md", "content": "Hello World"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 1, "Valid Write tool call should pass")
+	})
+
+	t.Run("valid_edit_tool_passes", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Edit", `{"file_path": "file.go", "old_string": "foo", "new_string": "bar"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 1, "Valid Edit tool call should pass")
+	})
+
+	t.Run("valid_glob_tool_passes", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Glob", `{"pattern": "**/*.go"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 1, "Valid Glob tool call should pass")
+	})
+
+	t.Run("valid_grep_tool_passes", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Grep", `{"pattern": "func.*Test"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 1, "Valid Grep tool call should pass")
+	})
+
+	t.Run("valid_bash_tool_passes", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Bash", `{"command": "go test", "description": "Run tests"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 1, "Valid Bash tool call should pass")
+	})
+
+	t.Run("valid_git_tool_passes", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Git", `{"operation": "status", "description": "Check git status"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 1, "Valid Git tool call should pass")
+	})
+
+	t.Run("valid_websearch_tool_passes", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("WebSearch", `{"query": "golang testing"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 1, "Valid WebSearch tool call should pass")
+	})
+
+	t.Run("valid_webfetch_tool_passes", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("WebFetch", `{"url": "https://example.com", "prompt": "Summarize"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 1, "Valid WebFetch tool call should pass")
+	})
+
+	// ============================================
+	// Test 2: Invalid tool calls are filtered
+	// ============================================
+	t.Run("write_missing_file_path_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Write", `{"content": "Hello World"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "Write without file_path should be filtered")
+	})
+
+	t.Run("write_missing_content_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Write", `{"file_path": "output.md"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "Write without content should be filtered")
+	})
+
+	t.Run("write_empty_file_path_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Write", `{"file_path": "", "content": "Hello"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "Write with empty file_path should be filtered")
+	})
+
+	t.Run("read_missing_file_path_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Read", `{}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "Read without file_path should be filtered")
+	})
+
+	t.Run("bash_missing_description_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Bash", `{"command": "ls"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "Bash without description should be filtered")
+	})
+
+	t.Run("bash_missing_command_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Bash", `{"description": "List files"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "Bash without command should be filtered")
+	})
+
+	t.Run("glob_missing_pattern_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Glob", `{}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "Glob without pattern should be filtered")
+	})
+
+	t.Run("grep_missing_pattern_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Grep", `{}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "Grep without pattern should be filtered")
+	})
+
+	t.Run("git_missing_operation_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Git", `{"description": "Git operation"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "Git without operation should be filtered")
+	})
+
+	t.Run("websearch_missing_query_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("WebSearch", `{}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "WebSearch without query should be filtered")
+	})
+
+	t.Run("webfetch_missing_url_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("WebFetch", `{"prompt": "Summarize"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "WebFetch without url should be filtered")
+	})
+
+	t.Run("webfetch_missing_prompt_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("WebFetch", `{"url": "https://example.com"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "WebFetch without prompt should be filtered")
+	})
+
+	// ============================================
+	// Test 3: Edge cases
+	// ============================================
+	t.Run("invalid_json_arguments_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Read", `{not valid json}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "Invalid JSON should be filtered")
+	})
+
+	t.Run("empty_tool_calls_returns_empty", func(t *testing.T) {
+		result := validateAndFilterToolCalls([]StreamingToolCall{})
+		assert.Len(t, result, 0, "Empty input should return empty")
+	})
+
+	t.Run("nil_tool_calls_returns_nil", func(t *testing.T) {
+		result := validateAndFilterToolCalls(nil)
+		assert.Nil(t, result, "Nil input should return nil")
+	})
+
+	t.Run("mixed_valid_invalid_filters_correctly", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Read", `{"file_path": "valid.md"}`),       // Valid
+			createToolCall("Write", `{"content": "missing path"}`),    // Invalid
+			createToolCall("Glob", `{"pattern": "**/*.go"}`),          // Valid
+			createToolCall("Bash", `{"command": "ls"}`),               // Invalid (missing description)
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 2, "Should filter out 2 invalid tool calls")
+	})
+
+	t.Run("whitespace_only_values_filtered", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("Read", `{"file_path": "   "}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "Whitespace-only file_path should be filtered")
+	})
+
+	// ============================================
+	// Test 4: Case insensitivity for tool names
+	// ============================================
+	t.Run("lowercase_read_validates", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("read", `{"file_path": "file.txt"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 1, "Lowercase tool names should validate")
+	})
+
+	t.Run("lowercase_write_validates", func(t *testing.T) {
+		toolCalls := []StreamingToolCall{
+			createToolCall("write", `{"file_path": "file.txt", "content": "test"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 1, "Lowercase tool names should validate")
+	})
+
+	// ============================================
+	// Test 5: All 21 tools validation rules
+	// ============================================
+	t.Run("all_tools_have_validation_rules", func(t *testing.T) {
+		// Test that all known tools have proper validation
+		toolsToTest := []struct {
+			name     string
+			validArgs   string
+			invalidArgs string
+		}{
+			{"Read", `{"file_path": "f.txt"}`, `{}`},
+			{"Write", `{"file_path": "f.txt", "content": "c"}`, `{"content": "c"}`},
+			{"Edit", `{"file_path": "f.txt", "old_string": "a", "new_string": "b"}`, `{"file_path": "f.txt"}`},
+			{"Glob", `{"pattern": "*"}`, `{}`},
+			{"Grep", `{"pattern": ".*"}`, `{}`},
+			{"Bash", `{"command": "ls", "description": "List"}`, `{"command": "ls"}`},
+			{"Task", `{"prompt": "p", "description": "d", "subagent_type": "s"}`, `{"prompt": "p"}`},
+			{"Git", `{"operation": "status", "description": "d"}`, `{"operation": "status"}`},
+			{"Diff", `{"description": "Show diff"}`, `{}`},
+			{"Test", `{"description": "Run tests"}`, `{}`},
+			{"Lint", `{"description": "Run lint"}`, `{}`},
+			{"TreeView", `{"description": "Show tree"}`, `{}`},
+			{"FileInfo", `{"file_path": "f.txt", "description": "d"}`, `{"description": "d"}`},
+			{"Symbols", `{"description": "List symbols"}`, `{}`},
+			{"References", `{"symbol": "foo", "description": "d"}`, `{"symbol": "foo"}`},
+			{"Definition", `{"symbol": "foo", "description": "d"}`, `{"symbol": "foo"}`},
+			{"PR", `{"action": "list", "description": "d"}`, `{"action": "list"}`},
+			{"Issue", `{"action": "list", "description": "d"}`, `{"action": "list"}`},
+			{"Workflow", `{"action": "status", "description": "d"}`, `{"action": "status"}`},
+			{"WebFetch", `{"url": "https://x.com", "prompt": "p"}`, `{"url": "https://x.com"}`},
+			{"WebSearch", `{"query": "q"}`, `{}`},
+		}
+
+		for _, tc := range toolsToTest {
+			t.Run(tc.name+"_valid", func(t *testing.T) {
+				toolCalls := []StreamingToolCall{createToolCall(tc.name, tc.validArgs)}
+				result := validateAndFilterToolCalls(toolCalls)
+				assert.Len(t, result, 1, "%s with valid args should pass", tc.name)
+			})
+
+			t.Run(tc.name+"_invalid", func(t *testing.T) {
+				toolCalls := []StreamingToolCall{createToolCall(tc.name, tc.invalidArgs)}
+				result := validateAndFilterToolCalls(toolCalls)
+				assert.Len(t, result, 0, "%s with invalid args should be filtered", tc.name)
+			})
+		}
+	})
+
+	// ============================================
+	// Test 6: CRITICAL - Undefined/null field handling
+	// This tests the exact error user reported: "filePath: undefined"
+	// ============================================
+	t.Run("null_file_path_value_filtered", func(t *testing.T) {
+		// This simulates the case where filePath is null/undefined in JSON
+		toolCalls := []StreamingToolCall{
+			createToolCall("Write", `{"file_path": null, "content": "test"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "null file_path should be filtered")
+	})
+
+	t.Run("write_with_camelCase_filePath_missing_filtered", func(t *testing.T) {
+		// LLM might generate with camelCase, but we require snake_case
+		toolCalls := []StreamingToolCall{
+			createToolCall("Write", `{"filePath": "test.md", "content": "test"}`),
+		}
+		result := validateAndFilterToolCalls(toolCalls)
+		assert.Len(t, result, 0, "camelCase filePath should be filtered (we require file_path)")
+	})
+}
+
 // TestExtractSearchTerm tests search term extraction
 func TestExtractSearchTerm(t *testing.T) {
 	tests := []struct {
