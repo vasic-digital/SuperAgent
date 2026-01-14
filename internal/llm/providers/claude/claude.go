@@ -214,12 +214,9 @@ func (p *ClaudeProvider) getAuthHeader() (string, string, error) {
 		if err != nil {
 			return "", "", fmt.Errorf("failed to get OAuth token: %w", err)
 		}
-		// Claude OAuth tokens (sk-ant-oat01-*) from Claude Code CLI
-		// NOTE: These tokens are designed for Claude Code infrastructure, not the public API.
-		// The public api.anthropic.com does not accept OAuth tokens.
-		// We use x-api-key header for compatibility, but this may fail for OAuth tokens.
-		// When OAuth fails, the system falls back to other verified providers.
-		return "x-api-key", token, nil
+		// Claude OAuth tokens (sk-ant-oat01-*) use Bearer authentication
+		// Required headers: Authorization: Bearer <token>, anthropic-beta: oauth-2025-04-20
+		return "Authorization", "Bearer " + token, nil
 	default:
 		// Regular API keys use x-api-key header
 		return "x-api-key", p.apiKey, nil
@@ -576,6 +573,12 @@ func (p *ClaudeProvider) makeAPICallWithAuthRetry(ctx context.Context, req Claud
 		httpReq.Header.Set("anthropic-version", "2023-06-01")
 		httpReq.Header.Set("User-Agent", "HelixAgent/1.0")
 
+		// Add OAuth-specific headers for Claude Code OAuth tokens
+		if p.authType == AuthTypeOAuth {
+			httpReq.Header.Set("anthropic-beta", "oauth-2025-04-20")
+			httpReq.Header.Set("anthropic-product", "claude-code")
+		}
+
 		// Make request
 		resp, err := p.httpClient.Do(httpReq)
 		if err != nil {
@@ -745,6 +748,12 @@ func (p *ClaudeProvider) HealthCheck() error {
 	req.Header.Set(authHeaderName, authHeaderValue)
 	req.Header.Set("anthropic-version", "2023-06-01")
 
+	// Add OAuth-specific headers for Claude Code OAuth tokens
+	if p.authType == AuthTypeOAuth {
+		req.Header.Set("anthropic-beta", "oauth-2025-04-20")
+		req.Header.Set("anthropic-product", "claude-code")
+	}
+
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("health check request failed: %w", err)
@@ -753,6 +762,10 @@ func (p *ClaudeProvider) HealthCheck() error {
 
 	// Claude API returns 400 for GET requests to messages endpoint (expected)
 	// We just check that the API is reachable and returns a response
+	// For OAuth tokens, 401 means the token is invalid/expired
+	if resp.StatusCode == http.StatusUnauthorized {
+		return fmt.Errorf("health check failed: unauthorized (token may be expired or invalid)")
+	}
 	if resp.StatusCode >= 500 {
 		return fmt.Errorf("health check failed with server error: %d", resp.StatusCode)
 	}

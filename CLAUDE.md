@@ -255,11 +255,26 @@ Environment variables in `.env.example`:
 - OAuth2: `CLAUDE_CODE_USE_OAUTH_CREDENTIALS`, `QWEN_CODE_USE_OAUTH_CREDENTIALS`
 - Cognee: `COGNEE_AUTH_EMAIL`, `COGNEE_AUTH_PASSWORD` (form-encoded OAuth2 auth)
 
-### OAuth2 Authentication
+### OAuth2 Authentication (Limitations)
 
-Claude and Qwen support OAuth2 via their CLI tools:
-- Claude: `claude auth login` creates `~/.claude/.credentials.json`
-- Qwen: creates `~/.qwen/oauth_creds.json`
+**IMPORTANT: OAuth tokens from CLI tools are product-restricted and cannot be used for general API calls.**
+
+| Provider | Token Source | API Access |
+|----------|--------------|------------|
+| **Claude** | `~/.claude/.credentials.json` (from `claude auth login`) | ❌ **Restricted to Claude Code only** - cannot use for general API |
+| **Qwen** | `~/.qwen/oauth_creds.json` (from Qwen CLI login) | ❌ **For Qwen Portal only** - DashScope API requires separate API key |
+
+**What works:**
+- HelixAgent successfully reads OAuth tokens from both credential files
+- Tokens are valid and non-expired
+
+**What doesn't work:**
+- Using Claude OAuth tokens for general API requests returns: _"This credential is only authorized for use with Claude Code and cannot be used for other API requests."_
+- Using Qwen OAuth tokens for DashScope API returns: _"invalid_api_key"_ (tokens are for `portal.qwen.ai`)
+
+**Solution:**
+- **Claude**: Get an API key from https://console.anthropic.com/
+- **Qwen**: Get a DashScope API key from https://dashscope.aliyuncs.com/
 
 Key files: `internal/auth/oauth_credentials/`
 

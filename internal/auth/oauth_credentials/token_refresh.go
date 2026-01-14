@@ -21,10 +21,13 @@ const (
 	RefreshThreshold = 10 * time.Minute
 
 	// Claude OAuth endpoints
-	ClaudeTokenEndpoint = "https://claude.ai/api/auth/oauth/token"
+	ClaudeTokenEndpoint = "https://console.anthropic.com/v1/oauth/token"
 
-	// Qwen OAuth endpoints (Alibaba Cloud)
-	QwenTokenEndpoint = "https://oauth.aliyun.com/v1/token"
+	// Qwen OAuth endpoints (Qwen Code / Tongyi Lingma)
+	QwenTokenEndpoint = "https://chat.qwen.ai/api/v1/oauth2/token"
+
+	// Qwen OAuth client ID (public client, used with PKCE)
+	QwenOAuthClientID = "f0304373b74a44d2b584a3fb70ca9e56"
 
 	// HTTP client timeout for token refresh
 	RefreshTimeout = 30 * time.Second
@@ -149,19 +152,15 @@ func (tr *TokenRefresher) RefreshQwenToken(refreshToken string, resourceURL stri
 		return nil, fmt.Errorf("no refresh token available")
 	}
 
-	// Determine token endpoint
+	// Use the standard Qwen OAuth endpoint
+	// Note: resourceURL is used by Qwen for the DashScope API, not for token refresh
 	tokenEndpoint := QwenTokenEndpoint
-	if resourceURL != "" {
-		// Use resource-specific endpoint if available
-		if u, err := url.Parse(resourceURL); err == nil {
-			tokenEndpoint = fmt.Sprintf("%s://%s/oauth/token", u.Scheme, u.Host)
-		}
-	}
 
-	// Prepare refresh request
+	// Prepare refresh request - Qwen requires client_id for token refresh
 	data := url.Values{}
 	data.Set("grant_type", "refresh_token")
 	data.Set("refresh_token", refreshToken)
+	data.Set("client_id", QwenOAuthClientID)
 
 	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(data.Encode()))
 	if err != nil {
@@ -180,6 +179,11 @@ func (tr *TokenRefresher) RefreshQwenToken(refreshToken string, resourceURL stri
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read refresh response: %w", err)
+	}
+
+	// Handle HTTP 400 specifically - indicates refresh token is expired/invalid
+	if resp.StatusCode == http.StatusBadRequest {
+		return nil, fmt.Errorf("refresh token expired or invalid (HTTP 400): re-authentication required via Qwen Code CLI")
 	}
 
 	if resp.StatusCode != http.StatusOK {
