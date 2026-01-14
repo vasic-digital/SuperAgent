@@ -182,16 +182,17 @@ var OpenRouterFreeModels = struct {
 
 // ZenModels defines OpenCode Zen free models (no API key required)
 // These are high-quality models available through OpenCode's Zen API gateway
+// NOTE: Zen API requires model names WITHOUT "opencode/" prefix
 var ZenModels = struct {
 	BigPickle     string // Stealth model
 	GrokCodeFast  string // xAI Grok code model (default)
 	GLM47Free     string // GLM 4.7 free tier
 	GPT5Nano      string // GPT 5 Nano free tier
 }{
-	BigPickle:    "opencode/big-pickle",
-	GrokCodeFast: "opencode/grok-code",
-	GLM47Free:    "opencode/glm-4.7-free",
-	GPT5Nano:     "opencode/gpt-5-nano",
+	BigPickle:    "big-pickle",
+	GrokCodeFast: "grok-code",
+	GLM47Free:    "glm-4.7-free",
+	GPT5Nano:     "gpt-5-nano",
 }
 
 // VerifiedLLM represents a verified LLM from LLMsVerifier
