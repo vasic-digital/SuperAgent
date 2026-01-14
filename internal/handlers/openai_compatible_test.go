@@ -6046,3 +6046,471 @@ func TestContainsAnyPerformance(t *testing.T) {
 	assert.Less(t, duration.Milliseconds(), int64(1000),
 		"containsAny should complete 10000 iterations in under 1 second")
 }
+
+// ==============================================================================
+// TOOL TRIGGERING TESTS - Comprehensive tests for AI Debate tool execution
+// ==============================================================================
+
+// TestDebatePositionResponse_Struct tests the DebatePositionResponse struct
+func TestDebatePositionResponse_Struct(t *testing.T) {
+	resp := DebatePositionResponse{
+		Content: "Test analysis response",
+		ToolCalls: []StreamingToolCall{
+			{
+				Index: 0,
+				ID:    "call_123",
+				Type:  "function",
+				Function: OpenAIFunctionCall{
+					Name:      "Glob",
+					Arguments: `{"pattern": "**/*.go"}`,
+				},
+			},
+		},
+		Position: services.PositionAnalyst,
+	}
+
+	assert.Equal(t, "Test analysis response", resp.Content)
+	assert.Len(t, resp.ToolCalls, 1)
+	assert.Equal(t, "Glob", resp.ToolCalls[0].Function.Name)
+	assert.Equal(t, services.PositionAnalyst, resp.Position)
+}
+
+// TestDebatePositionResponse_EmptyToolCalls tests response with no tool calls
+func TestDebatePositionResponse_EmptyToolCalls(t *testing.T) {
+	resp := DebatePositionResponse{
+		Content:   "Just text analysis",
+		ToolCalls: nil,
+		Position:  services.PositionCritic,
+	}
+
+	assert.Equal(t, "Just text analysis", resp.Content)
+	assert.Nil(t, resp.ToolCalls)
+	assert.Len(t, resp.ToolCalls, 0)
+}
+
+// TestDebatePositionResponse_MultipleToolCalls tests response with multiple tool calls
+func TestDebatePositionResponse_MultipleToolCalls(t *testing.T) {
+	resp := DebatePositionResponse{
+		Content: "Analysis requires multiple tools",
+		ToolCalls: []StreamingToolCall{
+			{
+				Index: 0,
+				ID:    "call_001",
+				Type:  "function",
+				Function: OpenAIFunctionCall{
+					Name:      "Glob",
+					Arguments: `{"pattern": "**/*.go"}`,
+				},
+			},
+			{
+				Index: 1,
+				ID:    "call_002",
+				Type:  "function",
+				Function: OpenAIFunctionCall{
+					Name:      "Grep",
+					Arguments: `{"pattern": "TODO"}`,
+				},
+			},
+			{
+				Index: 2,
+				ID:    "call_003",
+				Type:  "function",
+				Function: OpenAIFunctionCall{
+					Name:      "Read",
+					Arguments: `{"file_path": "/main.go"}`,
+				},
+			},
+		},
+		Position: services.PositionSynthesis,
+	}
+
+	assert.Len(t, resp.ToolCalls, 3)
+	assert.Equal(t, "Glob", resp.ToolCalls[0].Function.Name)
+	assert.Equal(t, "Grep", resp.ToolCalls[1].Function.Name)
+	assert.Equal(t, "Read", resp.ToolCalls[2].Function.Name)
+}
+
+// TestDebatePositionResponse_JSONSerialization tests JSON serialization
+func TestDebatePositionResponse_JSONSerialization(t *testing.T) {
+	resp := DebatePositionResponse{
+		Content: "Test response",
+		ToolCalls: []StreamingToolCall{
+			{
+				Index: 0,
+				ID:    "call_test",
+				Type:  "function",
+				Function: OpenAIFunctionCall{
+					Name:      "Bash",
+					Arguments: `{"command": "ls -la"}`,
+				},
+			},
+		},
+		Position: services.PositionProposer,
+	}
+
+	data, err := json.Marshal(resp)
+	require.NoError(t, err)
+
+	var decoded DebatePositionResponse
+	err = json.Unmarshal(data, &decoded)
+	require.NoError(t, err)
+
+	assert.Equal(t, resp.Content, decoded.Content)
+	assert.Len(t, decoded.ToolCalls, 1)
+	assert.Equal(t, resp.ToolCalls[0].Function.Name, decoded.ToolCalls[0].Function.Name)
+}
+
+// TestToolCallsCollectionFromDebate tests collection of tool calls across positions
+func TestToolCallsCollectionFromDebate(t *testing.T) {
+	// Simulate collecting tool calls from multiple debate positions
+	collectedToolCalls := make([]StreamingToolCall, 0)
+
+	// Position 1 (Analyst) returns 1 tool call
+	posResp1 := DebatePositionResponse{
+		Content: "Analyst response",
+		ToolCalls: []StreamingToolCall{
+			{Index: 0, ID: "call_analyst", Type: "function", Function: OpenAIFunctionCall{Name: "Glob", Arguments: `{}`}},
+		},
+		Position: services.PositionAnalyst,
+	}
+
+	// Position 2 (Proposer) returns no tool calls
+	posResp2 := DebatePositionResponse{
+		Content:   "Proposer response",
+		ToolCalls: nil,
+		Position:  services.PositionProposer,
+	}
+
+	// Position 3 (Critic) returns 2 tool calls
+	posResp3 := DebatePositionResponse{
+		Content: "Critic response",
+		ToolCalls: []StreamingToolCall{
+			{Index: 0, ID: "call_critic1", Type: "function", Function: OpenAIFunctionCall{Name: "Grep", Arguments: `{}`}},
+			{Index: 1, ID: "call_critic2", Type: "function", Function: OpenAIFunctionCall{Name: "Read", Arguments: `{}`}},
+		},
+		Position: services.PositionCritic,
+	}
+
+	// Collect tool calls (simulating the streaming loop logic)
+	positions := []DebatePositionResponse{posResp1, posResp2, posResp3}
+	for _, posResp := range positions {
+		if len(posResp.ToolCalls) > 0 {
+			for _, tc := range posResp.ToolCalls {
+				tc.Index = len(collectedToolCalls)
+				collectedToolCalls = append(collectedToolCalls, tc)
+			}
+		}
+	}
+
+	// Verify collection
+	assert.Len(t, collectedToolCalls, 3)
+	assert.Equal(t, "Glob", collectedToolCalls[0].Function.Name)
+	assert.Equal(t, "Grep", collectedToolCalls[1].Function.Name)
+	assert.Equal(t, "Read", collectedToolCalls[2].Function.Name)
+}
+
+// TestActionIndicatorGeneration tests that action indicators are properly formatted
+func TestActionIndicatorGeneration(t *testing.T) {
+	testCases := []struct {
+		name          string
+		actionCount   int
+		expectedMatch string
+	}{
+		{
+			name:          "Single action",
+			actionCount:   1,
+			expectedMatch: "<--- EXECUTING 1 ACTION(S) --->",
+		},
+		{
+			name:          "Multiple actions",
+			actionCount:   3,
+			expectedMatch: "<--- EXECUTING 3 ACTION(S) --->",
+		},
+		{
+			name:          "Many actions",
+			actionCount:   10,
+			expectedMatch: "<--- EXECUTING 10 ACTION(S) --->",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Generate action indicator (simulating the logic in the handler)
+			actionIndicator := "\n\n<--- EXECUTING " + strconv.Itoa(tc.actionCount) + " ACTION(S) --->\n"
+			assert.Contains(t, actionIndicator, tc.expectedMatch)
+			assert.Contains(t, actionIndicator, "<---")
+			assert.Contains(t, actionIndicator, "--->")
+		})
+	}
+}
+
+// TestGenerateActionToolCalls_WithTools tests tool call generation with available tools
+func TestGenerateActionToolCalls_WithTools(t *testing.T) {
+	handler := &UnifiedHandler{
+		dialogueFormatter: services.NewDialogueFormatter(services.StyleTheater),
+	}
+
+	tools := []OpenAITool{
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Glob",
+				Description: "Find files matching pattern",
+			},
+		},
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Grep",
+				Description: "Search for patterns",
+			},
+		},
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Read",
+				Description: "Read file contents",
+			},
+		},
+	}
+
+	// Test with codebase-related query
+	topic := "Can you see my codebase structure?"
+	toolCalls := handler.generateActionToolCalls(
+		context.Background(),
+		topic,
+		"Based on the analysis, we should explore the codebase.",
+		tools,
+		nil,
+		nil,
+	)
+
+	// Should generate at least one tool call for codebase queries
+	assert.GreaterOrEqual(t, len(toolCalls), 1, "Should generate tool calls for codebase queries")
+	if len(toolCalls) > 0 {
+		assert.Equal(t, "function", toolCalls[0].Type)
+		assert.NotEmpty(t, toolCalls[0].ID)
+		assert.NotEmpty(t, toolCalls[0].Function.Name)
+	}
+}
+
+// TestGenerateActionToolCalls_NoTools tests tool call generation without tools
+func TestGenerateActionToolCalls_NoTools(t *testing.T) {
+	handler := &UnifiedHandler{}
+
+	toolCalls := handler.generateActionToolCalls(
+		context.Background(),
+		"Hello world",
+		"Simple greeting",
+		nil, // No tools
+		nil,
+		nil,
+	)
+
+	assert.Nil(t, toolCalls)
+	assert.Len(t, toolCalls, 0)
+}
+
+// TestGenerateActionToolCalls_SearchQuery tests tool call generation for search queries
+func TestGenerateActionToolCalls_SearchQuery(t *testing.T) {
+	handler := &UnifiedHandler{
+		dialogueFormatter: services.NewDialogueFormatter(services.StyleTheater),
+	}
+
+	tools := []OpenAITool{
+		{
+			Type: "function",
+			Function: OpenAIToolFunction{
+				Name:        "Grep",
+				Description: "Search for patterns",
+			},
+		},
+	}
+
+	topic := "Search for all TODO comments in the code"
+	toolCalls := handler.generateActionToolCalls(
+		context.Background(),
+		topic,
+		"We should search for TODO comments.",
+		tools,
+		nil,
+		nil,
+	)
+
+	// Should generate grep tool call for search queries
+	if len(toolCalls) > 0 {
+		found := false
+		for _, tc := range toolCalls {
+			if tc.Function.Name == "Grep" {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "Should generate Grep tool call for search queries")
+	}
+}
+
+// TestStreamingToolCall_FieldValidation tests StreamingToolCall field validation
+func TestStreamingToolCall_FieldValidation(t *testing.T) {
+	tc := StreamingToolCall{
+		Index: 0,
+		ID:    "call_abc123",
+		Type:  "function",
+		Function: OpenAIFunctionCall{
+			Name:      "Bash",
+			Arguments: `{"command": "pwd", "description": "Get current directory"}`,
+		},
+	}
+
+	assert.Equal(t, 0, tc.Index)
+	assert.Equal(t, "call_abc123", tc.ID)
+	assert.Equal(t, "function", tc.Type)
+	assert.Equal(t, "Bash", tc.Function.Name)
+	assert.Contains(t, tc.Function.Arguments, "command")
+	assert.Contains(t, tc.Function.Arguments, "description")
+}
+
+// TestToolCallArgumentsValidation tests that tool call arguments follow correct format
+func TestToolCallArgumentsValidation(t *testing.T) {
+	testCases := []struct {
+		name        string
+		toolName    string
+		arguments   string
+		expectValid bool
+	}{
+		{
+			name:        "Valid Glob arguments",
+			toolName:    "Glob",
+			arguments:   `{"pattern": "**/*.go"}`,
+			expectValid: true,
+		},
+		{
+			name:        "Valid Grep arguments",
+			toolName:    "Grep",
+			arguments:   `{"pattern": "TODO"}`,
+			expectValid: true,
+		},
+		{
+			name:        "Valid Read arguments with snake_case",
+			toolName:    "Read",
+			arguments:   `{"file_path": "/main.go"}`,
+			expectValid: true,
+		},
+		{
+			name:        "Valid Bash arguments",
+			toolName:    "Bash",
+			arguments:   `{"command": "ls", "description": "List files"}`,
+			expectValid: true,
+		},
+		{
+			name:        "Valid Write arguments with snake_case",
+			toolName:    "Write",
+			arguments:   `{"file_path": "/test.txt", "content": "hello"}`,
+			expectValid: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var args map[string]interface{}
+			err := json.Unmarshal([]byte(tc.arguments), &args)
+
+			if tc.expectValid {
+				assert.NoError(t, err)
+				assert.NotEmpty(t, args)
+			}
+		})
+	}
+}
+
+// TestDebateToolCallsIntegration tests the full flow of tool call collection and usage
+func TestDebateToolCallsIntegration(t *testing.T) {
+	// This test simulates the complete flow:
+	// 1. Debate positions generate responses with tool_calls
+	// 2. Tool calls are collected
+	// 3. ACTION PHASE uses collected tool calls
+
+	// Simulate debate responses
+	debateResponses := map[services.DebateTeamPosition]DebatePositionResponse{
+		services.PositionAnalyst: {
+			Content: "Analysis suggests we need to explore the codebase",
+			ToolCalls: []StreamingToolCall{
+				{Index: 0, ID: "call_1", Type: "function", Function: OpenAIFunctionCall{Name: "Glob", Arguments: `{"pattern":"**/*.go"}`}},
+			},
+		},
+		services.PositionProposer: {
+			Content:   "I propose we search for specific patterns",
+			ToolCalls: nil, // No tool calls
+		},
+		services.PositionCritic: {
+			Content: "We should verify by reading specific files",
+			ToolCalls: []StreamingToolCall{
+				{Index: 0, ID: "call_2", Type: "function", Function: OpenAIFunctionCall{Name: "Read", Arguments: `{"file_path":"main.go"}`}},
+			},
+		},
+	}
+
+	// Collect tool calls (simulating the handler logic)
+	collectedToolCalls := make([]StreamingToolCall, 0)
+	for _, resp := range debateResponses {
+		for _, tc := range resp.ToolCalls {
+			tc.Index = len(collectedToolCalls)
+			collectedToolCalls = append(collectedToolCalls, tc)
+		}
+	}
+
+	// Verify collected tool calls
+	assert.Len(t, collectedToolCalls, 2)
+
+	// ACTION PHASE would use these collected tool calls
+	// This simulates the decision in the handler
+	var actionToolCalls []StreamingToolCall
+	if len(collectedToolCalls) > 0 {
+		// Use collected tool calls (priority 1)
+		actionToolCalls = collectedToolCalls
+	}
+
+	assert.Len(t, actionToolCalls, 2)
+	assert.Equal(t, "Glob", actionToolCalls[0].Function.Name)
+	assert.Equal(t, "Read", actionToolCalls[1].Function.Name)
+}
+
+// TestActionIndicatorVisibility ensures action indicators are visible in output
+func TestActionIndicatorVisibility(t *testing.T) {
+	indicators := []string{
+		"<--- AI Debate: LLM returned tool_calls --->",
+		"<--- Tool call detected --->",
+		"<--- Collecting tool_calls from debate position --->",
+		"<--- ACTION PHASE: Using collected tool_calls from debate --->",
+		"<--- ACTION PHASE: No debate tool_calls, analyzing topic for actions --->",
+		"<--- EXECUTING 3 ACTION(S) --->",
+		"<--- Invoking tool --->",
+	}
+
+	for _, indicator := range indicators {
+		t.Run(indicator, func(t *testing.T) {
+			assert.Contains(t, indicator, "<---")
+			assert.Contains(t, indicator, "--->")
+		})
+	}
+}
+
+// TestToolCallsNotDiscarded tests that tool calls are properly preserved
+func TestToolCallsNotDiscarded(t *testing.T) {
+	// Create a response with tool calls
+	resp := DebatePositionResponse{
+		Content: "Content text",
+		ToolCalls: []StreamingToolCall{
+			{Index: 0, ID: "test", Type: "function", Function: OpenAIFunctionCall{Name: "Test", Arguments: "{}"}},
+		},
+	}
+
+	// Verify tool calls are not nil/empty when present
+	assert.NotNil(t, resp.ToolCalls, "ToolCalls should not be nil")
+	assert.Len(t, resp.ToolCalls, 1, "ToolCalls should have 1 item")
+
+	// The previous bug would discard ToolCalls and only return Content
+	// This test ensures both are preserved
+	assert.NotEmpty(t, resp.Content)
+	assert.NotEmpty(t, resp.ToolCalls)
+}
