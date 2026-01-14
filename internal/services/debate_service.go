@@ -23,6 +23,8 @@ type DebateService struct {
 	cogneeService    *CogneeService
 	logRepository    DebateLogRepository // Optional: for persistent logging
 	teamConfig       *DebateTeamConfig   // Team configuration with Claude/Qwen roles
+	mu               sync.Mutex          // Protects intentCache
+	intentCache      map[string]*IntentClassificationResult // Cache for intent classification
 }
 
 // DebateLogRepository interface for logging debate activities
@@ -547,6 +549,95 @@ func (ds *DebateService) buildSystemPrompt(participant ParticipantConfig) string
 	)
 }
 
+// classifyUserIntent uses LLM-based semantic analysis to understand user intent
+// ZERO HARDCODING - Pure AI semantic understanding
+// Uses caching to avoid repeated LLM calls for the same topic
+func (ds *DebateService) classifyUserIntent(topic string, hasContext bool) *IntentClassificationResult {
+	// Check cache first to avoid repeated LLM calls (cache by topic only)
+	ds.mu.Lock()
+	if ds.intentCache == nil {
+		ds.intentCache = make(map[string]*IntentClassificationResult)
+	}
+	if cached, ok := ds.intentCache[topic]; ok {
+		ds.mu.Unlock()
+		return cached
+	}
+	ds.mu.Unlock()
+
+	var result *IntentClassificationResult
+
+	// Try LLM-based classification first (ZERO hardcoding)
+	if ds.providerRegistry != nil {
+		llmClassifier := NewLLMIntentClassifier(ds.providerRegistry, ds.logger)
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		contextStr := ""
+		if hasContext {
+			contextStr = "previous recommendations exist"
+		}
+
+		llmResult, err := llmClassifier.ClassifyIntentWithLLM(ctx, topic, contextStr)
+		if err == nil {
+			ds.logger.WithFields(logrus.Fields{
+				"intent":     llmResult.Intent,
+				"confidence": llmResult.Confidence,
+				"method":     "llm",
+			}).Debug("User intent classified by LLM")
+			result = llmResult
+		} else {
+			ds.logger.WithError(err).Debug("LLM classification failed, using fallback")
+		}
+	}
+
+	// Fallback to pattern-based only if LLM unavailable
+	if result == nil {
+		classifier := NewIntentClassifier()
+		result = classifier.EnhancedClassifyIntent(topic, hasContext)
+	}
+
+	// Cache the result by topic
+	ds.mu.Lock()
+	ds.intentCache[topic] = result
+	ds.mu.Unlock()
+
+	return result
+}
+
+// isUserConfirmation detects if the user message is confirming an action plan
+// Uses semantic intent classification instead of hardcoded patterns
+func (ds *DebateService) isUserConfirmation(topic string) bool {
+	// Use semantic classifier - no hardcoded patterns
+	result := ds.classifyUserIntent(topic, true) // Assume context exists in debate
+	return result.IsConfirmation() || result.ShouldProceed()
+}
+
+// isUserRefusal detects if the user is refusing/declining an action
+func (ds *DebateService) isUserRefusal(topic string) bool {
+	result := ds.classifyUserIntent(topic, true)
+	return result.IsRefusal()
+}
+
+// getUserIntentDescription returns a human-readable description of the detected intent
+func (ds *DebateService) getUserIntentDescription(topic string) string {
+	result := ds.classifyUserIntent(topic, true)
+
+	switch result.Intent {
+	case IntentConfirmation:
+		return "User has CONFIRMED the action plan"
+	case IntentRefusal:
+		return "User has DECLINED the action plan"
+	case IntentQuestion:
+		return "User is asking a question"
+	case IntentRequest:
+		return "User is making a new request"
+	case IntentClarification:
+		return "User needs clarification"
+	default:
+		return "User intent is unclear"
+	}
+}
+
 // buildDebatePrompt builds the prompt for a debate round
 func (ds *DebateService) buildDebatePrompt(
 	topic string,
@@ -556,9 +647,46 @@ func (ds *DebateService) buildDebatePrompt(
 ) string {
 	var sb strings.Builder
 
+	// CRITICAL: Use semantic intent classification (no hardcoded patterns)
+	hasContext := len(previousResponses) > 0
+	intentResult := ds.classifyUserIntent(topic, hasContext)
+
 	sb.WriteString(fmt.Sprintf("DEBATE TOPIC: %s\n\n", topic))
 	sb.WriteString(fmt.Sprintf("ROUND: %d\n", round))
 	sb.WriteString(fmt.Sprintf("YOUR ROLE: %s (%s)\n\n", participant.Name, participant.Role))
+
+	// Handle different user intents semantically
+	if intentResult.IsConfirmation() || intentResult.ShouldProceed() {
+		sb.WriteString("═══════════════════════════════════════════════════════════════════\n")
+		sb.WriteString("⚡ USER CONFIRMATION DETECTED - EXECUTE IMMEDIATELY ⚡\n")
+		sb.WriteString("═══════════════════════════════════════════════════════════════════\n")
+		sb.WriteString(fmt.Sprintf("Intent Classification: %s (confidence: %.0f%%)\n", intentResult.Intent, intentResult.Confidence*100))
+		sb.WriteString(fmt.Sprintf("Signals detected: %v\n\n", intentResult.Signals))
+		sb.WriteString("The user has semantically CONFIRMED the action plan. DO NOT ask for clarification.\n")
+		sb.WriteString("The user's intent is clear - they want you to proceed with ALL work.\n")
+		sb.WriteString("IMMEDIATELY BEGIN EXECUTING the plan with concrete actions:\n")
+		sb.WriteString("1. Use tools (Bash, Read, Write, Edit, Glob, Grep) to start work\n")
+		sb.WriteString("2. Show actual progress, not just explanations\n")
+		sb.WriteString("3. Execute commands, create files, make changes\n")
+		sb.WriteString("4. Report results as you complete each step\n")
+		sb.WriteString("═══════════════════════════════════════════════════════════════════\n\n")
+	} else if intentResult.IsRefusal() {
+		sb.WriteString("═══════════════════════════════════════════════════════════════════\n")
+		sb.WriteString("⛔ USER REFUSAL DETECTED - DO NOT PROCEED ⛔\n")
+		sb.WriteString("═══════════════════════════════════════════════════════════════════\n")
+		sb.WriteString(fmt.Sprintf("Intent Classification: %s (confidence: %.0f%%)\n", intentResult.Intent, intentResult.Confidence*100))
+		sb.WriteString("The user has indicated they do NOT want to proceed.\n")
+		sb.WriteString("Acknowledge their decision and ask how you can help instead.\n")
+		sb.WriteString("═══════════════════════════════════════════════════════════════════\n\n")
+	} else if intentResult.RequiresClarification {
+		sb.WriteString("═══════════════════════════════════════════════════════════════════\n")
+		sb.WriteString("❓ CLARIFICATION MAY BE NEEDED ❓\n")
+		sb.WriteString("═══════════════════════════════════════════════════════════════════\n")
+		sb.WriteString(fmt.Sprintf("Intent Classification: %s (confidence: %.0f%%)\n", intentResult.Intent, intentResult.Confidence*100))
+		sb.WriteString("The user's intent is not entirely clear. Ask for clarification if needed,\n")
+		sb.WriteString("but if they seem to be asking for help, provide helpful guidance.\n")
+		sb.WriteString("═══════════════════════════════════════════════════════════════════\n\n")
+	}
 
 	if len(previousResponses) > 0 {
 		sb.WriteString("PREVIOUS RESPONSES:\n")
@@ -568,10 +696,24 @@ func (ds *DebateService) buildDebatePrompt(
 				resp.ParticipantName, resp.Role, resp.Round, resp.Content))
 		}
 		sb.WriteString("-------------------\n\n")
-		sb.WriteString("Based on the previous responses, provide your perspective on the topic. ")
-		sb.WriteString("Address points raised by others and advance the discussion.\n")
+
+		if intentResult.IsConfirmation() || intentResult.ShouldProceed() {
+			sb.WriteString("The user has APPROVED the plan. Execute it NOW using available tools.\n")
+			sb.WriteString("Show concrete progress - run commands, modify files, produce results.\n")
+		} else if intentResult.IsRefusal() {
+			sb.WriteString("The user has declined. Respect their decision and offer alternatives.\n")
+		} else {
+			sb.WriteString("Based on the previous responses, provide your perspective on the topic. ")
+			sb.WriteString("Address points raised by others and advance the discussion.\n")
+		}
 	} else {
-		sb.WriteString("This is the opening round. Present your initial position on the topic.\n")
+		if intentResult.IsConfirmation() || intentResult.ShouldProceed() {
+			sb.WriteString("User is confirming work. Start executing immediately with tools.\n")
+		} else if intentResult.IsRefusal() {
+			sb.WriteString("User has declined. Acknowledge and ask how else you can help.\n")
+		} else {
+			sb.WriteString("This is the opening round. Present your initial position on the topic.\n")
+		}
 	}
 
 	sb.WriteString("\nYour response:")

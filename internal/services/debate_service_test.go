@@ -2130,3 +2130,86 @@ func TestDebateService_FallbackChain_FallbackMetadata(t *testing.T) {
 	assert.Contains(t, response.Content, "deepseek/deepseek-chat unavailable", "Should show original provider/model")
 	assert.Contains(t, response.Content, "mistral/mistral-large", "Should show fallback provider/model")
 }
+
+// =============================================================================
+// User Confirmation Detection Tests
+// =============================================================================
+
+func TestDebateService_IsUserConfirmation_PositiveCases(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	confirmationMessages := []string{
+		"Let's do all of these points you have offered! Start all work now!",
+		"Yes, proceed with all recommendations",
+		"Go ahead and implement everything",
+		"Start implementing the plan now",
+		"Execute all the changes",
+		"I confirm, do it all",
+		"Let's start working on all points",
+		"Approved! Begin work immediately",
+		"Let's proceed with the action plan",
+		"Work on all suggestions",
+		"Make it happen!",
+		"Do all of these",
+		"Tackle all the recommendations",
+		"Yes do it now",
+	}
+
+	for _, msg := range confirmationMessages {
+		t.Run(msg, func(t *testing.T) {
+			result := ds.isUserConfirmation(msg)
+			assert.True(t, result, "Should detect confirmation in: %s", msg)
+		})
+	}
+}
+
+func TestDebateService_IsUserConfirmation_NegativeCases(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	nonConfirmationMessages := []string{
+		"What do you think about this code?",
+		"Can you analyze my codebase?",
+		"Show me the file structure",
+		"Explain how this works",
+		"What are the potential issues?",
+		"How should I approach this problem?",
+		"Give me recommendations",
+		"List the files in this directory",
+	}
+
+	for _, msg := range nonConfirmationMessages {
+		t.Run(msg, func(t *testing.T) {
+			result := ds.isUserConfirmation(msg)
+			assert.False(t, result, "Should NOT detect confirmation in: %s", msg)
+		})
+	}
+}
+
+func TestDebateService_BuildDebatePrompt_IncludesConfirmationDirective(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	participant := ParticipantConfig{
+		ParticipantID: "p1",
+		Name:          "Agent 1",
+		Role:          "analyst",
+	}
+
+	// Test with confirmation message
+	confirmationTopic := "Let's do all of these points! Start work now!"
+	prompt := ds.buildDebatePrompt(confirmationTopic, participant, 1, nil)
+
+	assert.Contains(t, prompt, "USER CONFIRMATION DETECTED", "Should include confirmation directive")
+	assert.Contains(t, prompt, "EXECUTE IMMEDIATELY", "Should include execute directive")
+	assert.Contains(t, prompt, "DO NOT ask for clarification", "Should tell LLM not to ask for clarification")
+	assert.Contains(t, prompt, "proceed with ALL work", "Should mention user wants all points")
+
+	// Test with normal question - should NOT include confirmation directive
+	normalTopic := "What do you think about this code?"
+	normalPrompt := ds.buildDebatePrompt(normalTopic, participant, 1, nil)
+
+	assert.NotContains(t, normalPrompt, "USER CONFIRMATION DETECTED", "Should NOT include confirmation directive for normal questions")
+	assert.NotContains(t, normalPrompt, "EXECUTE IMMEDIATELY", "Should NOT include execute directive for normal questions")
+}

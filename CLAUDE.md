@@ -81,7 +81,10 @@ make install-deps     # Install dev dependencies
 - `llm/` - LLM provider abstractions and ensemble orchestration
   - `providers/` - Individual implementations (claude, deepseek, gemini, ollama, qwen, zai, openrouter, zen, mistral, cerebras)
   - `ensemble.go` - Ensemble orchestration logic
-- `services/` - Business logic (provider_registry, ensemble, context_manager, mcp_client, lsp_manager, plugin_system, debate_*)
+- `services/` - Business logic
+  - Core: provider_registry, ensemble, context_manager, mcp_client, lsp_manager, plugin_system
+  - Debate: debate_service, debate_team_config, debate_dialogue, debate_support_types
+  - Intent: llm_intent_classifier (LLM-based), intent_classifier (fallback)
 - `handlers/` - HTTP handlers & API endpoints
 - `background/` - Background command execution (task queue, worker pool, resource monitor, stuck detector)
 - `notifications/` - Real-time notifications (SSE, WebSocket, Webhooks, Polling)
@@ -162,6 +165,41 @@ Key files:
 - `internal/services/debate_team_config.go` - Team configuration
 - `internal/services/debate_dialogue.go` - Dialogue formatter
 
+### Semantic Intent Detection (ZERO Hardcoding)
+
+HelixAgent uses **LLM-based semantic intent classification** to understand user messages. When a user confirms, refuses, or asks questions, the system uses AI to understand the semantic meaning - not pattern matching.
+
+**Architecture:**
+1. **Primary**: LLM-based classification (`llm_intent_classifier.go`) - Uses AI debate team members to semantically understand user intent
+2. **Fallback**: Pattern-based classifier (`intent_classifier.go`) - Only used when LLM unavailable
+
+**Intent Types:**
+| Intent | Description | Examples |
+|--------|-------------|----------|
+| `confirmation` | User approves/confirms action | "Yes", "Go ahead", "Let's do all points!" |
+| `refusal` | User declines/refuses action | "No", "Stop", "Cancel that" |
+| `question` | User asks for information | "What do you mean?", "How does this work?" |
+| `request` | User makes a new request | "Help me with X" |
+| `clarification` | User needs more info | "I'm confused about this" |
+| `unclear` | Cannot determine intent | Ambiguous messages |
+
+**Key Principles (NO HARDCODING):**
+- User intent detected by semantic meaning, not exact string matching
+- Short positive responses with context = likely confirmation
+- LLM classifies with JSON structured output (intent, confidence, is_actionable, should_proceed)
+- Fallback uses semantic roots and word stems, not exact patterns
+
+**Key Files:**
+- `internal/services/llm_intent_classifier.go` - LLM-based classification (primary)
+- `internal/services/intent_classifier.go` - Pattern-based fallback
+- `internal/services/intent_classifier_test.go` - Comprehensive test suite (100+ test cases)
+- `internal/services/debate_service.go` - Integration with `classifyUserIntent()`
+
+**Challenge Validation:**
+```bash
+./challenges/scripts/semantic_intent_challenge.sh  # 19 tests - validates zero hardcoding
+```
+
 ## Configuration
 
 Environment variables in `.env.example`:
@@ -228,6 +266,8 @@ Registry in `internal/agents/registry.go` supports: OpenCode, Crush, HelixCode, 
 ./challenges/scripts/unified_verification_challenge.sh           # 15 tests - startup pipeline
 ./challenges/scripts/debate_team_dynamic_selection_challenge.sh  # 12 tests - team selection
 ./challenges/scripts/free_provider_fallback_challenge.sh         # 8 tests - Zen/free models
+./challenges/scripts/semantic_intent_challenge.sh                # 19 tests - intent detection (ZERO hardcoding)
+./challenges/scripts/fallback_mechanism_challenge.sh             # 17 tests - fallback chain for empty responses
 ```
 
 Key concepts:
