@@ -25,12 +25,16 @@ type DebateHandler struct {
 }
 
 type debateState struct {
-	Config    *services.DebateConfig `json:"config"`
-	Status    string                 `json:"status"`
-	Result    *services.DebateResult `json:"result,omitempty"`
-	Error     string                 `json:"error,omitempty"`
-	StartTime time.Time              `json:"start_time"`
-	EndTime   *time.Time             `json:"end_time,omitempty"`
+	Config                    *services.DebateConfig      `json:"config"`
+	ValidationConfig          *services.ValidationConfig  `json:"validation_config,omitempty"`
+	EnableMultiPassValidation bool                        `json:"enable_multi_pass_validation"`
+	Status                    string                      `json:"status"`
+	CurrentPhase              string                      `json:"current_phase,omitempty"`
+	Result                    *services.DebateResult      `json:"result,omitempty"`
+	MultiPassResult           *services.MultiPassResult   `json:"multi_pass_result,omitempty"`
+	Error                     string                      `json:"error,omitempty"`
+	StartTime                 time.Time                   `json:"start_time"`
+	EndTime                   *time.Time                  `json:"end_time,omitempty"`
 }
 
 // NewDebateHandler creates a new debate handler
@@ -45,14 +49,27 @@ func NewDebateHandler(debateService *services.DebateService, advancedDebate *ser
 
 // CreateDebateRequest represents the request to create a debate
 type CreateDebateRequest struct {
-	DebateID     string                       `json:"debate_id,omitempty"`
-	Topic        string                       `json:"topic" binding:"required"`
-	Participants []ParticipantConfigRequest   `json:"participants" binding:"required,min=2"`
-	MaxRounds    int                          `json:"max_rounds,omitempty"`
-	Timeout      int                          `json:"timeout,omitempty"` // seconds
-	Strategy     string                       `json:"strategy,omitempty"`
-	EnableCognee bool                         `json:"enable_cognee,omitempty"`
-	Metadata     map[string]any               `json:"metadata,omitempty"`
+	DebateID                  string                       `json:"debate_id,omitempty"`
+	Topic                     string                       `json:"topic" binding:"required"`
+	Participants              []ParticipantConfigRequest   `json:"participants" binding:"required,min=2"`
+	MaxRounds                 int                          `json:"max_rounds,omitempty"`
+	Timeout                   int                          `json:"timeout,omitempty"` // seconds
+	Strategy                  string                       `json:"strategy,omitempty"`
+	EnableCognee              bool                         `json:"enable_cognee,omitempty"`
+	EnableMultiPassValidation bool                         `json:"enable_multi_pass_validation,omitempty"`
+	ValidationConfig          *ValidationConfigRequest     `json:"validation_config,omitempty"`
+	Metadata                  map[string]any               `json:"metadata,omitempty"`
+}
+
+// ValidationConfigRequest configures multi-pass validation
+type ValidationConfigRequest struct {
+	EnableValidation    bool    `json:"enable_validation"`
+	EnablePolish        bool    `json:"enable_polish"`
+	ValidationTimeout   int     `json:"validation_timeout,omitempty"`   // seconds
+	PolishTimeout       int     `json:"polish_timeout,omitempty"`       // seconds
+	MinConfidenceToSkip float64 `json:"min_confidence_to_skip,omitempty"`
+	MaxValidationRounds int     `json:"max_validation_rounds,omitempty"`
+	ShowPhaseIndicators bool    `json:"show_phase_indicators,omitempty"`
 }
 
 // ParticipantConfigRequest represents a participant in the request
@@ -159,17 +176,42 @@ func (h *DebateHandler) CreateDebate(c *gin.Context) {
 		Metadata:     req.Metadata,
 	}
 
+	// Build validation config if multi-pass validation is enabled
+	var validationConfig *services.ValidationConfig
+	if req.EnableMultiPassValidation {
+		validationConfig = services.DefaultValidationConfig()
+		if req.ValidationConfig != nil {
+			validationConfig.EnableValidation = req.ValidationConfig.EnableValidation
+			validationConfig.EnablePolish = req.ValidationConfig.EnablePolish
+			if req.ValidationConfig.ValidationTimeout > 0 {
+				validationConfig.ValidationTimeout = time.Duration(req.ValidationConfig.ValidationTimeout) * time.Second
+			}
+			if req.ValidationConfig.PolishTimeout > 0 {
+				validationConfig.PolishTimeout = time.Duration(req.ValidationConfig.PolishTimeout) * time.Second
+			}
+			if req.ValidationConfig.MinConfidenceToSkip > 0 {
+				validationConfig.MinConfidenceToSkip = req.ValidationConfig.MinConfidenceToSkip
+			}
+			if req.ValidationConfig.MaxValidationRounds > 0 {
+				validationConfig.MaxValidationRounds = req.ValidationConfig.MaxValidationRounds
+			}
+			validationConfig.ShowPhaseIndicators = req.ValidationConfig.ShowPhaseIndicators
+		}
+	}
+
 	// Store debate state
 	h.mu.Lock()
 	h.activeDebates[debateID] = &debateState{
-		Config:    config,
-		Status:    "pending",
-		StartTime: time.Now(),
+		Config:                    config,
+		ValidationConfig:          validationConfig,
+		EnableMultiPassValidation: req.EnableMultiPassValidation,
+		Status:                    "pending",
+		StartTime:                 time.Now(),
 	}
 	h.mu.Unlock()
 
 	// Start debate asynchronously
-	go h.runDebate(debateID, config)
+	go h.runDebate(debateID, config, validationConfig)
 
 	c.JSON(http.StatusAccepted, gin.H{
 		"debate_id":  debateID,
@@ -184,18 +226,38 @@ func (h *DebateHandler) CreateDebate(c *gin.Context) {
 }
 
 // runDebate executes the debate asynchronously
-func (h *DebateHandler) runDebate(debateID string, config *services.DebateConfig) {
+func (h *DebateHandler) runDebate(debateID string, config *services.DebateConfig, validationConfig *services.ValidationConfig) {
 	h.mu.Lock()
 	if state, exists := h.activeDebates[debateID]; exists {
 		state.Status = "running"
+		if validationConfig != nil {
+			state.CurrentPhase = string(services.PhaseInitialResponse)
+		}
 	}
 	h.mu.Unlock()
 
 	// Conduct the debate
 	var result *services.DebateResult
+	var multiPassResult *services.MultiPassResult
 	var err error
 
-	if h.advancedDebate != nil {
+	if validationConfig != nil && h.debateService != nil {
+		// Use multi-pass validation
+		h.logger.WithField("debate_id", debateID).Info("Running debate with multi-pass validation")
+		multiPassResult, err = h.debateService.ConductDebateWithMultiPassValidation(
+			context.Background(),
+			config,
+			validationConfig,
+		)
+		if multiPassResult != nil && len(multiPassResult.Phases) > 0 {
+			// Update current phase as we progress
+			h.mu.Lock()
+			if state, exists := h.activeDebates[debateID]; exists {
+				state.CurrentPhase = string(multiPassResult.Phases[len(multiPassResult.Phases)-1].Phase)
+			}
+			h.mu.Unlock()
+		}
+	} else if h.advancedDebate != nil {
 		result, err = h.advancedDebate.ConductAdvancedDebate(context.Background(), config)
 	} else if h.debateService != nil {
 		result, err = h.debateService.ConductDebate(context.Background(), config)
@@ -217,7 +279,18 @@ func (h *DebateHandler) runDebate(debateID string, config *services.DebateConfig
 		} else {
 			state.Status = "completed"
 			state.Result = result
-			h.logger.WithField("debate_id", debateID).Info("Debate completed successfully")
+			state.MultiPassResult = multiPassResult
+			if multiPassResult != nil {
+				state.CurrentPhase = string(services.PhaseFinalConclusion)
+				h.logger.WithFields(logrus.Fields{
+					"debate_id":           debateID,
+					"phases_completed":    len(multiPassResult.Phases),
+					"overall_confidence":  multiPassResult.OverallConfidence,
+					"quality_improvement": multiPassResult.QualityImprovement,
+				}).Info("Multi-pass debate completed successfully")
+			} else {
+				h.logger.WithField("debate_id", debateID).Info("Debate completed successfully")
+			}
 		}
 	}
 }
@@ -254,6 +327,11 @@ func (h *DebateHandler) GetDebate(c *gin.Context) {
 		"topic":      state.Config.Topic,
 		"max_rounds": state.Config.MaxRounds,
 		"start_time": state.StartTime.Unix(),
+		"enable_multi_pass_validation": state.EnableMultiPassValidation,
+	}
+
+	if state.CurrentPhase != "" {
+		response["current_phase"] = state.CurrentPhase
 	}
 
 	if state.EndTime != nil {
@@ -267,6 +345,16 @@ func (h *DebateHandler) GetDebate(c *gin.Context) {
 
 	if state.Result != nil {
 		response["result"] = state.Result
+	}
+
+	if state.MultiPassResult != nil {
+		response["multi_pass_result"] = gin.H{
+			"phases_completed":    len(state.MultiPassResult.Phases),
+			"final_response":      state.MultiPassResult.FinalResponse,
+			"overall_confidence":  state.MultiPassResult.OverallConfidence,
+			"quality_improvement": state.MultiPassResult.QualityImprovement,
+			"phases":              state.MultiPassResult.Phases,
+		}
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -291,9 +379,14 @@ func (h *DebateHandler) GetDebateStatus(c *gin.Context) {
 	}
 
 	status := gin.H{
-		"debate_id":  debateID,
-		"status":     state.Status,
-		"start_time": state.StartTime.Unix(),
+		"debate_id":                    debateID,
+		"status":                       state.Status,
+		"start_time":                   state.StartTime.Unix(),
+		"enable_multi_pass_validation": state.EnableMultiPassValidation,
+	}
+
+	if state.CurrentPhase != "" {
+		status["current_phase"] = state.CurrentPhase
 	}
 
 	if state.EndTime != nil {
@@ -309,6 +402,21 @@ func (h *DebateHandler) GetDebateStatus(c *gin.Context) {
 	if state.Status == "running" && state.Config != nil {
 		status["max_rounds"] = state.Config.MaxRounds
 		status["timeout_seconds"] = state.Config.Timeout.Seconds()
+		if state.EnableMultiPassValidation {
+			status["validation_phases"] = []string{
+				string(services.PhaseInitialResponse),
+				string(services.PhaseValidation),
+				string(services.PhasePolishImprove),
+				string(services.PhaseFinalConclusion),
+			}
+		}
+	}
+
+	// Add multi-pass validation summary if completed
+	if state.MultiPassResult != nil {
+		status["overall_confidence"] = state.MultiPassResult.OverallConfidence
+		status["quality_improvement"] = state.MultiPassResult.QualityImprovement
+		status["phases_completed"] = len(state.MultiPassResult.Phases)
 	}
 
 	c.JSON(http.StatusOK, status)

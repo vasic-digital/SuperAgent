@@ -769,3 +769,348 @@ func TestDebateWithMockService(t *testing.T) {
 	// Should return 202 Accepted (debate created but may fail later)
 	assert.Equal(t, http.StatusAccepted, w.Code)
 }
+
+// TestCreateDebateWithMultiPassValidation tests debate creation with multi-pass validation enabled
+func TestCreateDebateWithMultiPassValidation(t *testing.T) {
+	router, _ := setupDebateTestRouter()
+
+	tests := []struct {
+		name           string
+		request        CreateDebateRequest
+		expectedStatus int
+		checkResponse  func(t *testing.T, body map[string]interface{})
+	}{
+		{
+			name: "multi-pass validation enabled with default config",
+			request: CreateDebateRequest{
+				Topic: "Should AI have consciousness?",
+				Participants: []ParticipantConfigRequest{
+					{Name: "Philosopher", Role: "analyst"},
+					{Name: "Engineer", Role: "proposer"},
+				},
+				EnableMultiPassValidation: true,
+			},
+			expectedStatus: http.StatusAccepted,
+			checkResponse: func(t *testing.T, body map[string]interface{}) {
+				assert.Contains(t, body, "debate_id")
+				assert.Equal(t, "pending", body["status"])
+			},
+		},
+		{
+			name: "multi-pass validation enabled with custom config",
+			request: CreateDebateRequest{
+				Topic: "Is quantum computing practical?",
+				Participants: []ParticipantConfigRequest{
+					{Name: "Researcher"},
+					{Name: "Skeptic"},
+				},
+				EnableMultiPassValidation: true,
+				ValidationConfig: &ValidationConfigRequest{
+					EnableValidation:    true,
+					EnablePolish:        true,
+					ValidationTimeout:   120,
+					PolishTimeout:       60,
+					MinConfidenceToSkip: 0.9,
+					MaxValidationRounds: 3,
+					ShowPhaseIndicators: true,
+				},
+			},
+			expectedStatus: http.StatusAccepted,
+			checkResponse: func(t *testing.T, body map[string]interface{}) {
+				assert.Contains(t, body, "debate_id")
+				assert.Equal(t, "pending", body["status"])
+			},
+		},
+		{
+			name: "multi-pass validation disabled explicitly",
+			request: CreateDebateRequest{
+				Topic: "Standard debate",
+				Participants: []ParticipantConfigRequest{
+					{Name: "Pro"},
+					{Name: "Con"},
+				},
+				EnableMultiPassValidation: false,
+			},
+			expectedStatus: http.StatusAccepted,
+			checkResponse: func(t *testing.T, body map[string]interface{}) {
+				assert.Contains(t, body, "debate_id")
+				assert.Equal(t, "pending", body["status"])
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body, _ := json.Marshal(tt.request)
+			req := httptest.NewRequest(http.MethodPost, "/v1/debates", bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+
+			if tt.checkResponse != nil {
+				var response map[string]interface{}
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				require.NoError(t, err)
+				tt.checkResponse(t, response)
+			}
+		})
+	}
+}
+
+// TestGetDebateWithMultiPassValidation tests retrieval of debates with multi-pass validation
+func TestGetDebateWithMultiPassValidation(t *testing.T) {
+	router, handler := setupDebateTestRouter()
+
+	now := time.Now()
+	endTime := now.Add(2 * time.Minute)
+
+	// Pre-populate a debate with multi-pass validation enabled
+	handler.mu.Lock()
+	handler.activeDebates["multipass-debate-1"] = &debateState{
+		Config: &services.DebateConfig{
+			DebateID:  "multipass-debate-1",
+			Topic:     "Multi-pass validation test",
+			MaxRounds: 3,
+		},
+		ValidationConfig: &services.ValidationConfig{
+			EnableValidation:    true,
+			EnablePolish:        true,
+			ShowPhaseIndicators: true,
+		},
+		EnableMultiPassValidation: true,
+		Status:                    "running",
+		CurrentPhase:              "validation",
+		StartTime:                 now,
+	}
+	handler.activeDebates["multipass-completed"] = &debateState{
+		Config: &services.DebateConfig{
+			DebateID:  "multipass-completed",
+			Topic:     "Completed multi-pass debate",
+			MaxRounds: 3,
+		},
+		ValidationConfig: &services.ValidationConfig{
+			EnableValidation:    true,
+			EnablePolish:        true,
+			ShowPhaseIndicators: true,
+		},
+		EnableMultiPassValidation: true,
+		Status:                    "completed",
+		CurrentPhase:              "final_conclusion",
+		StartTime:                 now,
+		EndTime:                   &endTime,
+		MultiPassResult: &services.MultiPassResult{
+			FinalResponse:      "The consensus is that...",
+			OverallConfidence:  0.85,
+			QualityImprovement: 0.15,
+			Phases: []*services.PhaseResult{
+				{
+					Phase:        services.PhaseInitialResponse,
+					Duration:     30 * time.Second,
+					PhaseScore:   0.75,
+					PhaseSummary: "Initial perspectives gathered",
+				},
+				{
+					Phase:        services.PhaseValidation,
+					Duration:     45 * time.Second,
+					PhaseScore:   0.82,
+					PhaseSummary: "Cross-validation complete",
+				},
+				{
+					Phase:        services.PhasePolishImprove,
+					Duration:     30 * time.Second,
+					PhaseScore:   0.88,
+					PhaseSummary: "Responses polished",
+				},
+				{
+					Phase:        services.PhaseFinalConclusion,
+					Duration:     15 * time.Second,
+					PhaseScore:   0.85,
+					PhaseSummary: "Final consensus reached",
+				},
+			},
+		},
+	}
+	handler.mu.Unlock()
+
+	tests := []struct {
+		name           string
+		debateID       string
+		expectedStatus int
+		checkResponse  func(t *testing.T, body map[string]interface{})
+	}{
+		{
+			name:           "running debate with current phase",
+			debateID:       "multipass-debate-1",
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, body map[string]interface{}) {
+				assert.Equal(t, "multipass-debate-1", body["debate_id"])
+				assert.Equal(t, "running", body["status"])
+				assert.Equal(t, true, body["enable_multi_pass_validation"])
+				assert.Equal(t, "validation", body["current_phase"])
+			},
+		},
+		{
+			name:           "completed debate with multi-pass results",
+			debateID:       "multipass-completed",
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, body map[string]interface{}) {
+				assert.Equal(t, "multipass-completed", body["debate_id"])
+				assert.Equal(t, "completed", body["status"])
+				assert.Equal(t, true, body["enable_multi_pass_validation"])
+				assert.Equal(t, "final_conclusion", body["current_phase"])
+
+				// Check multi-pass result
+				multiPassResult, ok := body["multi_pass_result"].(map[string]interface{})
+				require.True(t, ok, "multi_pass_result should be a map")
+				assert.Equal(t, float64(4), multiPassResult["phases_completed"])
+				assert.Equal(t, 0.85, multiPassResult["overall_confidence"])
+				assert.Equal(t, 0.15, multiPassResult["quality_improvement"])
+				assert.Equal(t, "The consensus is that...", multiPassResult["final_response"])
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/v1/debates/"+tt.debateID, nil)
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+
+			if tt.checkResponse != nil {
+				var response map[string]interface{}
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				require.NoError(t, err)
+				tt.checkResponse(t, response)
+			}
+		})
+	}
+}
+
+// TestGetDebateStatusWithMultiPassValidation tests status endpoint with multi-pass validation
+func TestGetDebateStatusWithMultiPassValidation(t *testing.T) {
+	router, handler := setupDebateTestRouter()
+
+	now := time.Now()
+	endTime := now.Add(2 * time.Minute)
+
+	handler.mu.Lock()
+	handler.activeDebates["running-multipass"] = &debateState{
+		Config: &services.DebateConfig{
+			DebateID:  "running-multipass",
+			Topic:     "Running multi-pass debate",
+			MaxRounds: 5,
+			Timeout:   10 * time.Minute,
+		},
+		EnableMultiPassValidation: true,
+		Status:                    "running",
+		CurrentPhase:              "polish_improve",
+		StartTime:                 now,
+	}
+	handler.activeDebates["completed-multipass"] = &debateState{
+		Config: &services.DebateConfig{
+			DebateID:  "completed-multipass",
+			Topic:     "Completed multi-pass debate",
+			MaxRounds: 3,
+		},
+		EnableMultiPassValidation: true,
+		Status:                    "completed",
+		CurrentPhase:              "final_conclusion",
+		StartTime:                 now,
+		EndTime:                   &endTime,
+		MultiPassResult: &services.MultiPassResult{
+			OverallConfidence:  0.92,
+			QualityImprovement: 0.18,
+			Phases: []*services.PhaseResult{
+				{Phase: services.PhaseInitialResponse},
+				{Phase: services.PhaseValidation},
+				{Phase: services.PhasePolishImprove},
+				{Phase: services.PhaseFinalConclusion},
+			},
+		},
+	}
+	handler.mu.Unlock()
+
+	tests := []struct {
+		name           string
+		debateID       string
+		expectedStatus int
+		checkResponse  func(t *testing.T, body map[string]interface{})
+	}{
+		{
+			name:           "running multi-pass with validation phases",
+			debateID:       "running-multipass",
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, body map[string]interface{}) {
+				assert.Equal(t, "running", body["status"])
+				assert.Equal(t, true, body["enable_multi_pass_validation"])
+				assert.Equal(t, "polish_improve", body["current_phase"])
+
+				// Check validation phases are listed
+				phases, ok := body["validation_phases"].([]interface{})
+				require.True(t, ok, "validation_phases should be an array")
+				assert.Len(t, phases, 4)
+				assert.Contains(t, phases, "initial_response")
+				assert.Contains(t, phases, "validation")
+				assert.Contains(t, phases, "polish_improve")
+				assert.Contains(t, phases, "final_conclusion")
+			},
+		},
+		{
+			name:           "completed multi-pass with summary",
+			debateID:       "completed-multipass",
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, body map[string]interface{}) {
+				assert.Equal(t, "completed", body["status"])
+				assert.Equal(t, true, body["enable_multi_pass_validation"])
+				assert.Equal(t, 0.92, body["overall_confidence"])
+				assert.Equal(t, 0.18, body["quality_improvement"])
+				assert.Equal(t, float64(4), body["phases_completed"])
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/v1/debates/"+tt.debateID+"/status", nil)
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+
+			if tt.checkResponse != nil {
+				var response map[string]interface{}
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				require.NoError(t, err)
+				tt.checkResponse(t, response)
+			}
+		})
+	}
+}
+
+// TestValidationConfigRequest tests ValidationConfigRequest struct
+func TestValidationConfigRequest(t *testing.T) {
+	config := ValidationConfigRequest{
+		EnableValidation:    true,
+		EnablePolish:        true,
+		ValidationTimeout:   120,
+		PolishTimeout:       60,
+		MinConfidenceToSkip: 0.85,
+		MaxValidationRounds: 3,
+		ShowPhaseIndicators: true,
+	}
+
+	assert.True(t, config.EnableValidation)
+	assert.True(t, config.EnablePolish)
+	assert.Equal(t, 120, config.ValidationTimeout)
+	assert.Equal(t, 60, config.PolishTimeout)
+	assert.Equal(t, 0.85, config.MinConfidenceToSkip)
+	assert.Equal(t, 3, config.MaxValidationRounds)
+	assert.True(t, config.ShowPhaseIndicators)
+}
