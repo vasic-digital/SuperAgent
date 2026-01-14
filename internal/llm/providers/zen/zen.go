@@ -25,10 +25,17 @@ const (
 	ZenModelsURL = "https://opencode.ai/zen/v1/models"
 
 	// Default free models - available WITHOUT API key
-	ModelBigPickle     = "opencode/big-pickle"
-	ModelGrokCodeFast  = "opencode/grok-code"
-	ModelGLM47Free     = "opencode/glm-4.7-free"
-	ModelGPT5Nano      = "opencode/gpt-5-nano"
+	// NOTE: Zen API requires model names WITHOUT "opencode/" prefix
+	ModelBigPickle     = "big-pickle"
+	ModelGrokCodeFast  = "grok-code"
+	ModelGLM47Free     = "glm-4.7-free"
+	ModelGPT5Nano      = "gpt-5-nano"
+
+	// Legacy model IDs with prefix (for backward compatibility in configs)
+	ModelBigPickleFull     = "opencode/big-pickle"
+	ModelGrokCodeFastFull  = "opencode/grok-code"
+	ModelGLM47FreeFull     = "opencode/glm-4.7-free"
+	ModelGPT5NanoFull      = "opencode/gpt-5-nano"
 
 	// Default model for Zen provider
 	DefaultZenModel = ModelGrokCodeFast
@@ -510,8 +517,8 @@ func (p *ZenProvider) convertRequest(req *models.LLMRequest) ZenRequest {
 
 	// Determine which model to use
 	model := p.model
-	if req.ModelParams.Model != "" && strings.HasPrefix(req.ModelParams.Model, "opencode/") {
-		model = req.ModelParams.Model
+	if req.ModelParams.Model != "" {
+		model = normalizeModelID(req.ModelParams.Model)
 	}
 
 	return ZenRequest{
@@ -567,13 +574,28 @@ func (p *ZenProvider) convertResponse(req *models.LLMRequest, zenResp *ZenRespon
 
 // isFreeModel checks if a model is in the free tier
 func isFreeModel(model string) bool {
+	normalizedModel := normalizeModelID(model)
 	freeModels := FreeModels()
 	for _, m := range freeModels {
-		if m == model || strings.HasSuffix(model, strings.TrimPrefix(m, "opencode/")) {
+		if m == normalizedModel {
 			return true
 		}
 	}
 	return false
+}
+
+// normalizeModelID strips the "opencode/" prefix if present
+// Zen API requires model names WITHOUT the prefix (e.g., "grok-code" not "opencode/grok-code")
+func normalizeModelID(modelID string) string {
+	// Strip "opencode/" prefix if present
+	if strings.HasPrefix(modelID, "opencode/") {
+		return strings.TrimPrefix(modelID, "opencode/")
+	}
+	// Strip "opencode-" prefix if present (alternate format)
+	if strings.HasPrefix(modelID, "opencode-") {
+		return strings.TrimPrefix(modelID, "opencode-")
+	}
+	return modelID
 }
 
 // calculateConfidence calculates confidence score based on response

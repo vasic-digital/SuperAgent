@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -584,4 +585,136 @@ func (s *ScoringService) computeWeightedScore(components ScoreComponents) float6
 		components.CostScore*s.weights.CostEffectiveness +
 		components.CapabilityScore*s.weights.Capability +
 		components.RecencyScore*s.weights.Recency
+}
+
+// ResponseQualityResult represents the result of a response quality check
+type ResponseQualityResult struct {
+	IsValid   bool    `json:"is_valid"`
+	ErrorType string  `json:"error_type,omitempty"`
+	Penalty   float64 `json:"penalty"`
+	Content   string  `json:"content,omitempty"`
+}
+
+// ValidateResponseQuality checks if a response is valid and meaningful
+// Returns a penalty score (0.0 = no penalty, higher = worse)
+func ValidateResponseQuality(content string) *ResponseQualityResult {
+	// Check for empty response
+	trimmed := strings.TrimSpace(content)
+	if trimmed == "" {
+		return &ResponseQualityResult{
+			IsValid:   false,
+			ErrorType: "empty_response",
+			Penalty:   10.0, // Maximum penalty for empty responses
+			Content:   content,
+		}
+	}
+
+	// Check for common error patterns
+	errorPatterns := map[string]float64{
+		"unable to provide":    8.0,
+		"i cannot":             5.0,
+		"error:":               7.0,
+		"model not supported":  10.0,
+		"token counting":       9.0,
+		"backend error":        8.0,
+		"rate limit":           3.0, // Lower penalty, might be temporary
+		"timeout":              3.0,
+		"service unavailable":  5.0,
+	}
+
+	lowerContent := strings.ToLower(content)
+	for pattern, penalty := range errorPatterns {
+		if strings.Contains(lowerContent, pattern) {
+			return &ResponseQualityResult{
+				IsValid:   false,
+				ErrorType: "error_message",
+				Penalty:   penalty,
+				Content:   content,
+			}
+		}
+	}
+
+	// Check for extremely short responses (might indicate issues)
+	if len(trimmed) < 5 {
+		return &ResponseQualityResult{
+			IsValid:   true,
+			ErrorType: "very_short",
+			Penalty:   1.0, // Minor penalty
+			Content:   content,
+		}
+	}
+
+	// Valid response, no penalty
+	return &ResponseQualityResult{
+		IsValid:   true,
+		ErrorType: "",
+		Penalty:   0.0,
+		Content:   content,
+	}
+}
+
+// ApplyResponseQualityPenalty applies a penalty to a model's score based on response quality
+func (s *ScoringService) ApplyResponseQualityPenalty(ctx context.Context, modelID string, qualityResult *ResponseQualityResult) (*ScoringResult, error) {
+	// Get current score
+	currentScore, err := s.GetModelScore(ctx, modelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current score: %w", err)
+	}
+
+	// Calculate penalty
+	penalizedScore := currentScore.OverallScore - qualityResult.Penalty
+	if penalizedScore < 0 {
+		penalizedScore = 0
+	}
+
+	// Create penalized result
+	penalizedResult := &ScoringResult{
+		ModelID:      currentScore.ModelID,
+		ModelName:    currentScore.ModelName,
+		OverallScore: penalizedScore,
+		ScoreSuffix:  fmt.Sprintf("(SC:%.1f-P:%.1f)", currentScore.OverallScore, qualityResult.Penalty),
+		Components:   currentScore.Components,
+		CalculatedAt: time.Now(),
+		DataSource:   "penalized",
+	}
+
+	// Update cache with penalized score
+	s.cacheMu.Lock()
+	s.cache[modelID] = penalizedResult
+	s.cacheMu.Unlock()
+
+	return penalizedResult, nil
+}
+
+// BatchValidateAndPenalize validates multiple models and applies penalties
+func (s *ScoringService) BatchValidateAndPenalize(ctx context.Context, validations map[string]string) ([]*ScoringResult, error) {
+	results := make([]*ScoringResult, 0, len(validations))
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	for modelID, responseContent := range validations {
+		wg.Add(1)
+		go func(id, content string) {
+			defer wg.Done()
+
+			qualityResult := ValidateResponseQuality(content)
+			if !qualityResult.IsValid || qualityResult.Penalty > 0 {
+				result, err := s.ApplyResponseQualityPenalty(ctx, id, qualityResult)
+				if err == nil {
+					mu.Lock()
+					results = append(results, result)
+					mu.Unlock()
+				}
+			}
+		}(modelID, responseContent)
+	}
+
+	wg.Wait()
+
+	// Sort by score
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].OverallScore > results[j].OverallScore
+	})
+
+	return results, nil
 }

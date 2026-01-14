@@ -351,10 +351,14 @@ func TestGetModelDisplayName_Known(t *testing.T) {
 		modelID  string
 		expected string
 	}{
-		{"opencode/big-pickle", "Big Pickle (Stealth)"},
-		{"opencode/grok-code", "Grok Code Fast"},
-		{"opencode/glm-4.7-free", "GLM 4.7 Free"},
-		{"opencode/gpt-5-nano", "GPT 5 Nano"},
+		// New model IDs (without opencode/ prefix)
+		{"big-pickle", "Big Pickle (Stealth)"},
+		{"grok-code", "Grok Code Fast"},
+		{"glm-4.7-free", "GLM 4.7 Free"},
+		{"gpt-5-nano", "GPT 5 Nano"},
+		// Legacy model IDs (with opencode/ prefix) - also tested for backward compat
+		{"opencode/big-pickle", "big-pickle"},
+		{"opencode/grok-code", "grok-code"},
 	}
 
 	for _, tt := range tests {
