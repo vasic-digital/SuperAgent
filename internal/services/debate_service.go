@@ -23,6 +23,7 @@ type DebateService struct {
 	cogneeService    *CogneeService
 	logRepository    DebateLogRepository // Optional: for persistent logging
 	teamConfig       *DebateTeamConfig   // Team configuration with Claude/Qwen roles
+	commLogger       *DebateCommLogger   // Retrofit-like communication logger
 	mu               sync.Mutex          // Protects intentCache
 	intentCache      map[string]*IntentClassificationResult // Cache for intent classification
 }
@@ -38,7 +39,8 @@ type DebateLogEntry = database.DebateLogEntry
 // NewDebateService creates a new debate service
 func NewDebateService(logger *logrus.Logger) *DebateService {
 	return &DebateService{
-		logger: logger,
+		logger:     logger,
+		commLogger: NewDebateCommLogger(logger),
 	}
 }
 
@@ -52,6 +54,7 @@ func NewDebateServiceWithDeps(
 		logger:           logger,
 		providerRegistry: providerRegistry,
 		cogneeService:    cogneeService,
+		commLogger:       NewDebateCommLogger(logger),
 	}
 }
 
@@ -78,6 +81,26 @@ func (ds *DebateService) SetTeamConfig(config *DebateTeamConfig) {
 // GetTeamConfig returns the debate team configuration
 func (ds *DebateService) GetTeamConfig() *DebateTeamConfig {
 	return ds.teamConfig
+}
+
+// SetCommLogger sets the communication logger for Retrofit-like logging
+func (ds *DebateService) SetCommLogger(commLogger *DebateCommLogger) {
+	ds.commLogger = commLogger
+}
+
+// GetCommLogger returns the communication logger
+func (ds *DebateService) GetCommLogger() *DebateCommLogger {
+	return ds.commLogger
+}
+
+// SetCLIAgent sets the CLI agent for communication logging color support
+func (ds *DebateService) SetCLIAgent(agent string) {
+	if ds.commLogger != nil {
+		ds.commLogger.SetCLIAgent(agent)
+		// Enable colors based on CLI agent capability
+		colorConfig := CLIAgentColors(agent)
+		ds.commLogger.SetColorsEnabled(colorConfig["colors"])
+	}
 }
 
 // logDebateEntry logs a debate entry to the repository if configured
@@ -263,9 +286,17 @@ func (ds *DebateService) executeRound(
 	round int,
 	previousResponses []ParticipantResponse,
 ) ([]ParticipantResponse, error) {
+	roundStartTime := time.Now()
 	responses := make([]ParticipantResponse, 0, len(config.Participants))
 	responseChan := make(chan ParticipantResponse, len(config.Participants))
 	errorChan := make(chan error, len(config.Participants))
+	fallbacksUsed := 0
+	var fallbackMu sync.Mutex
+
+	// Log debate phase start (Retrofit-like)
+	if ds.commLogger != nil {
+		ds.commLogger.LogDebatePhase("Getting participant responses", round)
+	}
 
 	var wg sync.WaitGroup
 	for _, participant := range config.Participants {
@@ -273,12 +304,25 @@ func (ds *DebateService) executeRound(
 		go func(p ParticipantConfig) {
 			defer wg.Done()
 
+			// Track fallback chain for logging
+			fallbackChain := []FallbackChainEntry{{
+				Provider: p.LLMProvider,
+				Model:    p.LLMModel,
+				Success:  false,
+			}}
+			participantStartTime := time.Now()
+
 			// Try primary provider first
 			resp, err := ds.getParticipantResponse(ctx, config, p, round, previousResponses)
 			if err == nil {
+				fallbackChain[0].Success = true
+				fallbackChain[0].Duration = time.Since(participantStartTime)
 				responseChan <- resp
 				return
 			}
+
+			// Record primary failure
+			fallbackChain[0].Error = err
 
 			// Primary failed - log and try fallbacks
 			ds.logger.WithFields(logrus.Fields{
@@ -290,12 +334,25 @@ func (ds *DebateService) executeRound(
 				"fallbacks":     len(p.Fallbacks),
 			}).Warn("Primary LLM failed, attempting fallback chain")
 
+			// Log primary error (Retrofit-like)
+			if ds.commLogger != nil {
+				ds.commLogger.LogError(p.Role, p.LLMProvider, p.LLMModel, err)
+			}
+
 			// Try each fallback in order
 			for i, fallback := range p.Fallbacks {
+				fallbackStartTime := time.Now()
 				fallbackParticipant := p // Copy original config
 				fallbackParticipant.LLMProvider = fallback.Provider
 				fallbackParticipant.LLMModel = fallback.Model
 				fallbackParticipant.Name = fmt.Sprintf("%s (fallback-%d: %s)", p.Role, i+1, fallback.Provider)
+
+				// Add to fallback chain
+				chainEntry := FallbackChainEntry{
+					Provider: fallback.Provider,
+					Model:    fallback.Model,
+					Success:  false,
+				}
 
 				ds.logger.WithFields(logrus.Fields{
 					"participant":       p.Name,
@@ -305,9 +362,18 @@ func (ds *DebateService) executeRound(
 					"fallback_model":    fallback.Model,
 				}).Info("Trying fallback LLM")
 
+				// Log fallback attempt (Retrofit-like)
+				if ds.commLogger != nil {
+					ds.commLogger.LogFallbackAttempt(p.Role, p.LLMProvider, p.LLMModel, fallback.Provider, fallback.Model, i+1)
+				}
+
 				resp, err = ds.getParticipantResponse(ctx, config, fallbackParticipant, round, previousResponses)
 				if err == nil {
 					// Fallback succeeded!
+					chainEntry.Success = true
+					chainEntry.Duration = time.Since(fallbackStartTime)
+					fallbackChain = append(fallbackChain, chainEntry)
+
 					resp.Metadata["fallback_used"] = true
 					resp.Metadata["fallback_index"] = i + 1
 					resp.Metadata["original_provider"] = p.LLMProvider
@@ -327,9 +393,25 @@ func (ds *DebateService) executeRound(
 						"fallback_provider": fallback.Provider,
 						"fallback_model":    fallback.Model,
 					}).Info("Fallback LLM succeeded!")
+
+					// Log fallback success (Retrofit-like)
+					if ds.commLogger != nil {
+						ds.commLogger.LogFallbackSuccess(p.Role, p.LLMProvider, p.LLMModel, fallback.Provider, fallback.Model, i+1, chainEntry.Duration)
+						ds.commLogger.LogFallbackChain(p.Role, fallbackChain, resp.Content, time.Since(participantStartTime))
+					}
+
+					fallbackMu.Lock()
+					fallbacksUsed++
+					fallbackMu.Unlock()
+
 					responseChan <- resp
 					return
 				}
+
+				// Record fallback failure
+				chainEntry.Error = err
+				chainEntry.Duration = time.Since(fallbackStartTime)
+				fallbackChain = append(fallbackChain, chainEntry)
 
 				ds.logger.WithFields(logrus.Fields{
 					"participant":       p.Name,
@@ -337,9 +419,17 @@ func (ds *DebateService) executeRound(
 					"fallback_provider": fallback.Provider,
 					"error":             err.Error(),
 				}).Warn("Fallback LLM also failed, trying next")
+
+				// Log fallback error (Retrofit-like)
+				if ds.commLogger != nil {
+					ds.commLogger.LogError(p.Role, fallback.Provider, fallback.Model, err)
+				}
 			}
 
 			// All fallbacks exhausted
+			if ds.commLogger != nil {
+				ds.commLogger.LogAllFallbacksExhausted(p.Role, p.LLMProvider, p.LLMModel, len(p.Fallbacks))
+			}
 			errorChan <- fmt.Errorf("participant %s failed: primary and all %d fallbacks exhausted: %w", p.Name, len(p.Fallbacks), err)
 		}(participant)
 	}
@@ -360,6 +450,16 @@ func (ds *DebateService) executeRound(
 	var errs []error
 	for err := range errorChan {
 		errs = append(errs, err)
+	}
+
+	// Log round summary (Retrofit-like)
+	if ds.commLogger != nil && len(responses) > 0 {
+		avgQuality := 0.0
+		for _, resp := range responses {
+			avgQuality += resp.QualityScore
+		}
+		avgQuality /= float64(len(responses))
+		ds.commLogger.LogDebateSummary(round, len(responses), time.Since(roundStartTime), avgQuality, fallbacksUsed)
 	}
 
 	if len(errs) > 0 && len(responses) == 0 {
@@ -433,6 +533,11 @@ func (ds *DebateService) getParticipantResponse(
 		},
 	}
 
+	// Log request (Retrofit-like): [A: Claude Opus 4.5] <--- Sending request...
+	if ds.commLogger != nil {
+		ds.commLogger.LogRequest(participant.Role, participant.LLMProvider, participant.LLMModel, len(prompt), round)
+	}
+
 	// Make the actual LLM call
 	llmResponse, err := provider.Complete(ctx, llmRequest)
 	if err != nil {
@@ -446,6 +551,12 @@ func (ds *DebateService) getParticipantResponse(
 			"debate_id":        config.DebateID,
 			"error":            err.Error(),
 		}).Error("Debate participant LLM call failed")
+
+		// Log error (Retrofit-like)
+		if ds.commLogger != nil {
+			ds.commLogger.LogError(participant.Role, participant.LLMProvider, participant.LLMModel, err)
+		}
+
 		return ParticipantResponse{}, fmt.Errorf("[%s] LLM call failed: %w", participantIdentifier, err)
 	}
 
@@ -464,11 +575,24 @@ func (ds *DebateService) getParticipantResponse(
 			"debate_id":        config.DebateID,
 			"response_time_ms": responseTime.Milliseconds(),
 		}).Warn("Debate participant returned EMPTY response - triggering fallback")
+
+		// Log empty response error (Retrofit-like)
+		if ds.commLogger != nil {
+			ds.commLogger.LogError(participant.Role, participant.LLMProvider, participant.LLMModel, fmt.Errorf("empty response"))
+		}
+
 		return ParticipantResponse{}, fmt.Errorf("[%s] empty response from LLM - fallback required", participantIdentifier)
 	}
 
 	// Calculate quality score for this response
 	qualityScore := ds.calculateResponseQuality(llmResponse)
+
+	// Log response (Retrofit-like): [A: Claude Opus 4.5] ---> Received 2048 bytes in 1.23s
+	if ds.commLogger != nil {
+		ds.commLogger.LogResponse(participant.Role, participant.LLMProvider, participant.LLMModel, len(llmResponse.Content), responseTime, qualityScore)
+		// Also log a preview of the response
+		ds.commLogger.LogResponsePreview(participant.Role, participant.LLMProvider, participant.LLMModel, llmResponse.Content, 100)
+	}
 
 	// Log successful response with participant identification
 	ds.logger.WithFields(logrus.Fields{
@@ -1969,6 +2093,11 @@ func (ds *DebateService) getSingleProviderParticipantResponse(
 		},
 	}
 
+	// Log request (Retrofit-like): [A: Model Name] <--- Sending request...
+	if ds.commLogger != nil {
+		ds.commLogger.LogRequest(participant.Role, participant.LLMProvider, participant.LLMModel, len(prompt), round)
+	}
+
 	llmResponse, err := provider.Complete(ctx, llmRequest)
 	if err != nil {
 		ds.logger.WithFields(logrus.Fields{
@@ -1980,6 +2109,11 @@ func (ds *DebateService) getSingleProviderParticipantResponse(
 			"debate_id":        config.DebateID,
 			"error":            err.Error(),
 		}).Errorf("[%s] Single-provider participant response failed", participantIdentifier)
+
+		// Log error (Retrofit-like)
+		if ds.commLogger != nil {
+			ds.commLogger.LogError(participant.Role, participant.LLMProvider, participant.LLMModel, err)
+		}
 
 		// Log error to repository
 		ds.logDebateEntry(ctx, &DebateLogEntry{
@@ -2000,6 +2134,12 @@ func (ds *DebateService) getSingleProviderParticipantResponse(
 
 	responseTime := time.Since(startTime)
 	qualityScore := ds.calculateResponseQuality(llmResponse)
+
+	// Log response (Retrofit-like): [A: Model Name] ---> Received X bytes in Y.Zs
+	if ds.commLogger != nil {
+		ds.commLogger.LogResponse(participant.Role, participant.LLMProvider, participant.LLMModel, len(llmResponse.Content), responseTime, qualityScore)
+		ds.commLogger.LogResponsePreview(participant.Role, participant.LLMProvider, participant.LLMModel, llmResponse.Content, 100)
+	}
 
 	// Log successful response with participant identification
 	ds.logger.WithFields(logrus.Fields{
