@@ -2259,3 +2259,144 @@ func (ds *DebateService) AutoConductDebate(
 	// Use standard multi-provider debate
 	return ds.ConductDebate(ctx, config)
 }
+
+// ConductDebateWithMultiPassValidation conducts a debate with multi-pass validation
+// This method performs the standard debate followed by validation, polish, and final synthesis phases
+func (ds *DebateService) ConductDebateWithMultiPassValidation(
+	ctx context.Context,
+	config *DebateConfig,
+	validationConfig *ValidationConfig,
+) (*MultiPassResult, error) {
+	ds.logger.WithFields(logrus.Fields{
+		"debate_id":         config.DebateID,
+		"topic":             config.Topic,
+		"enable_validation": validationConfig != nil && validationConfig.EnableValidation,
+		"enable_polish":     validationConfig != nil && validationConfig.EnablePolish,
+	}).Info("Starting debate with multi-pass validation")
+
+	// Use default validation config if not provided
+	if validationConfig == nil {
+		validationConfig = DefaultValidationConfig()
+	}
+
+	// Conduct the standard debate first
+	debateResult, err := ds.AutoConductDebate(ctx, config)
+	if err != nil {
+		return nil, fmt.Errorf("debate failed: %w", err)
+	}
+
+	// Create multi-pass validator and run validation
+	validator := NewMultiPassValidator(ds, ds.logger)
+	validator.SetConfig(validationConfig)
+
+	// Run multi-pass validation
+	multiPassResult, err := validator.ValidateAndImprove(ctx, debateResult)
+	if err != nil {
+		ds.logger.WithError(err).Warn("Multi-pass validation failed, returning original debate result")
+		// Return a minimal multi-pass result with the original debate
+		return &MultiPassResult{
+			DebateID:          debateResult.DebateID,
+			Topic:             debateResult.Topic,
+			Config:            validationConfig,
+			Phases:            []*PhaseResult{{Phase: PhaseInitialResponse, Responses: debateResult.AllResponses}},
+			FinalConsensus:    debateResult.Consensus,
+			FinalResponse:     ds.getBestResponseContent(debateResult),
+			TotalDuration:     debateResult.Duration,
+			OverallConfidence: debateResult.QualityScore,
+			Metadata:          map[string]interface{}{"validation_failed": true},
+		}, nil
+	}
+
+	return multiPassResult, nil
+}
+
+// getBestResponseContent returns the content of the best response
+func (ds *DebateService) getBestResponseContent(result *DebateResult) string {
+	if result.BestResponse != nil {
+		return result.BestResponse.Content
+	}
+	if len(result.AllResponses) > 0 {
+		return result.AllResponses[0].Content
+	}
+	return ""
+}
+
+// StreamDebateWithMultiPassValidation conducts a streaming debate with multi-pass validation
+// Each phase is streamed as it completes, allowing for real-time progress updates
+func (ds *DebateService) StreamDebateWithMultiPassValidation(
+	ctx context.Context,
+	config *DebateConfig,
+	validationConfig *ValidationConfig,
+	streamHandler func(phase ValidationPhase, content string, isComplete bool),
+) (*MultiPassResult, error) {
+	ds.logger.Info("Starting streaming debate with multi-pass validation")
+
+	// Use default validation config if not provided
+	if validationConfig == nil {
+		validationConfig = DefaultValidationConfig()
+	}
+
+	// Stream Phase 1: Initial Response (from debate)
+	if streamHandler != nil {
+		phaseHeader := FormatPhaseHeader(PhaseInitialResponse, validationConfig.VerbosePhaseHeaders)
+		streamHandler(PhaseInitialResponse, phaseHeader, false)
+	}
+
+	// Conduct the standard debate
+	debateResult, err := ds.AutoConductDebate(ctx, config)
+	if err != nil {
+		return nil, fmt.Errorf("debate failed: %w", err)
+	}
+
+	// Stream initial responses
+	if streamHandler != nil {
+		for _, resp := range debateResult.AllResponses {
+			content := fmt.Sprintf("[%s] %s:\n%s\n\n",
+				strings.ToUpper(resp.Role[:1]), resp.ParticipantName, resp.Content)
+			streamHandler(PhaseInitialResponse, content, false)
+		}
+		streamHandler(PhaseInitialResponse, "", true) // Mark phase complete
+	}
+
+	// Create validator with streaming callbacks
+	validator := NewMultiPassValidator(ds, ds.logger)
+	validator.SetConfig(validationConfig)
+
+	// Set up streaming callbacks for each phase
+	if streamHandler != nil {
+		validator.SetPhaseCallback(PhaseValidation, func(result *PhaseResult) {
+			header := FormatPhaseHeader(PhaseValidation, validationConfig.VerbosePhaseHeaders)
+			streamHandler(PhaseValidation, header, false)
+			for _, v := range result.Validations {
+				content := fmt.Sprintf("  ✓ Validated %s: Score %.2f\n", v.ParticipantID, v.ValidationScore)
+				streamHandler(PhaseValidation, content, false)
+			}
+			footer := FormatPhaseFooter(PhaseValidation, result, validationConfig.VerbosePhaseHeaders)
+			streamHandler(PhaseValidation, footer, true)
+		})
+
+		validator.SetPhaseCallback(PhasePolishImprove, func(result *PhaseResult) {
+			header := FormatPhaseHeader(PhasePolishImprove, validationConfig.VerbosePhaseHeaders)
+			streamHandler(PhasePolishImprove, header, false)
+			for _, p := range result.Polishes {
+				content := fmt.Sprintf("  ✨ Improved %s: +%.0f%%\n", p.ParticipantID, p.ImprovementScore*100)
+				streamHandler(PhasePolishImprove, content, false)
+			}
+			footer := FormatPhaseFooter(PhasePolishImprove, result, validationConfig.VerbosePhaseHeaders)
+			streamHandler(PhasePolishImprove, footer, true)
+		})
+
+		validator.SetPhaseCallback(PhaseFinalConclusion, func(result *PhaseResult) {
+			header := FormatPhaseHeader(PhaseFinalConclusion, validationConfig.VerbosePhaseHeaders)
+			streamHandler(PhaseFinalConclusion, header, false)
+			if len(result.Responses) > 0 {
+				streamHandler(PhaseFinalConclusion, result.Responses[0].Content, false)
+			}
+			footer := FormatPhaseFooter(PhaseFinalConclusion, result, validationConfig.VerbosePhaseHeaders)
+			streamHandler(PhaseFinalConclusion, footer, true)
+		})
+	}
+
+	// Run multi-pass validation
+	return validator.ValidateAndImprove(ctx, debateResult)
+}
