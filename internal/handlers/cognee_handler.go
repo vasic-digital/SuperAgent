@@ -371,7 +371,7 @@ func (h *CogneeAPIHandler) DeleteDataset(c *gin.Context) {
 // =====================================================
 
 // VisualizeGraph retrieves graph visualization data
-// GET /v1/cognee/graph/visualize
+// GET /v1/cognee/visualize
 func (h *CogneeAPIHandler) VisualizeGraph(c *gin.Context) {
 	dataset := c.Query("dataset")
 	format := c.Query("format")
@@ -499,7 +499,7 @@ func (h *CogneeAPIHandler) RegisterRoutes(router *gin.RouterGroup) {
 		// Insights & Graph
 		cognee.POST("/insights", h.GetInsights)
 		cognee.POST("/graph/complete", h.GetGraphCompletion)
-		cognee.GET("/graph/visualize", h.VisualizeGraph)
+		cognee.GET("/visualize", h.VisualizeGraph)
 
 		// Code Intelligence
 		cognee.POST("/code", h.ProcessCode)

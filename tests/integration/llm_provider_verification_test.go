@@ -236,6 +236,17 @@ func TestHelixAgent_Endpoint(t *testing.T) {
 		helixagentURL = "http://localhost:7061"
 	}
 
+	// Check if server is available
+	healthClient := &http.Client{Timeout: 2 * time.Second}
+	healthResp, err := healthClient.Get(helixagentURL + "/health")
+	if err != nil {
+		t.Skip("Skipping: HelixAgent server not available at " + helixagentURL)
+	}
+	healthResp.Body.Close()
+	if healthResp.StatusCode != http.StatusOK {
+		t.Skip("Skipping: HelixAgent server unhealthy at " + helixagentURL)
+	}
+
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"

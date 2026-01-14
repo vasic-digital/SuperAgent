@@ -312,7 +312,11 @@ func (h *ProtocolSSEHandler) handleInitialize(c *gin.Context, protocol string, m
 		ProtocolVersion: MCPProtocolVersion,
 	}
 
-	capabilities := h.getCapabilitiesForProtocol(protocol)
+	capabilities, err := h.getCapabilitiesForProtocol(protocol)
+	if err != nil {
+		h.sendJSONRPCError(c, msg.ID, -32600, "Invalid protocol", err.Error())
+		return
+	}
 
 	result := map[string]interface{}{
 		"protocolVersion": MCPProtocolVersion,
@@ -332,7 +336,11 @@ func (h *ProtocolSSEHandler) handleInitialized(c *gin.Context, protocol string, 
 
 // handleToolsList handles the tools/list method
 func (h *ProtocolSSEHandler) handleToolsList(c *gin.Context, protocol string, msg *JSONRPCMessage) {
-	tools := h.getToolsForProtocol(protocol)
+	tools, err := h.getToolsForProtocol(protocol)
+	if err != nil {
+		h.sendJSONRPCError(c, msg.ID, -32600, "Invalid protocol", err.Error())
+		return
+	}
 
 	result := map[string]interface{}{
 		"tools": tools,
@@ -416,42 +424,42 @@ func (h *ProtocolSSEHandler) sendJSONRPCError(c *gin.Context, id interface{}, co
 }
 
 // getCapabilitiesForProtocol returns capabilities for a protocol
-func (h *ProtocolSSEHandler) getCapabilitiesForProtocol(protocol string) *MCPCapabilities {
+func (h *ProtocolSSEHandler) getCapabilitiesForProtocol(protocol string) (*MCPCapabilities, error) {
 	switch protocol {
 	case "mcp":
-		return h.getMCPCapabilities()
+		return h.getMCPCapabilities(), nil
 	case "acp":
-		return h.getACPCapabilities()
+		return h.getACPCapabilities(), nil
 	case "lsp":
-		return h.getLSPCapabilities()
+		return h.getLSPCapabilities(), nil
 	case "embeddings":
-		return h.getEmbeddingsCapabilities()
+		return h.getEmbeddingsCapabilities(), nil
 	case "vision":
-		return h.getVisionCapabilities()
+		return h.getVisionCapabilities(), nil
 	case "cognee":
-		return h.getCogneeCapabilities()
+		return h.getCogneeCapabilities(), nil
 	default:
-		return &MCPCapabilities{}
+		return nil, fmt.Errorf("unknown protocol: %s", protocol)
 	}
 }
 
 // getToolsForProtocol returns tools for a protocol
-func (h *ProtocolSSEHandler) getToolsForProtocol(protocol string) []MCPTool {
+func (h *ProtocolSSEHandler) getToolsForProtocol(protocol string) ([]MCPTool, error) {
 	switch protocol {
 	case "mcp":
-		return h.getMCPTools()
+		return h.getMCPTools(), nil
 	case "acp":
-		return h.getACPTools()
+		return h.getACPTools(), nil
 	case "lsp":
-		return h.getLSPTools()
+		return h.getLSPTools(), nil
 	case "embeddings":
-		return h.getEmbeddingsTools()
+		return h.getEmbeddingsTools(), nil
 	case "vision":
-		return h.getVisionTools()
+		return h.getVisionTools(), nil
 	case "cognee":
-		return h.getCogneeTools()
+		return h.getCogneeTools(), nil
 	default:
-		return []MCPTool{}
+		return nil, fmt.Errorf("unknown protocol: %s", protocol)
 	}
 }
 

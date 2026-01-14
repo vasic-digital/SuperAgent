@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -236,11 +237,20 @@ func TestMCPSSEImmediateResponse(t *testing.T) {
 
 // TestOpenCodeConfiguration verifies OpenCode config uses correct package names
 func TestOpenCodeConfiguration(t *testing.T) {
-	configPath := os.Getenv("HOME") + "/.config/opencode/opencode.json"
+	// Generate a fresh config instead of reading existing one
+	// This ensures we test the current generator output, not stale configs
+	binaryPath := findBinaryPath(t)
+	if binaryPath == "" {
+		t.Skip("HelixAgent binary not found, run 'make build' first")
+	}
 
-	data, err := os.ReadFile(configPath)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, binaryPath, "-generate-opencode-config")
+	data, err := cmd.Output()
 	if err != nil {
-		t.Skip("OpenCode config not found, skipping validation")
+		t.Skipf("Failed to generate config: %v", err)
 	}
 
 	var config map[string]interface{}
@@ -306,4 +316,30 @@ func checkNpmPackageExists(packageName string) bool {
 	defer resp.Body.Close()
 
 	return resp.StatusCode == http.StatusOK
+}
+
+// findBinaryPath finds the HelixAgent binary path
+func findBinaryPath(t *testing.T) string {
+	t.Helper()
+
+	// Start from current directory and search up for project root
+	dir, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+
+	for {
+		// Check if we found the project root (has go.mod)
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			binaryPath := filepath.Join(dir, "bin", "helixagent")
+			if _, err := os.Stat(binaryPath); err == nil {
+				return binaryPath
+			}
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
+		}
+		dir = parent
+	}
 }

@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 18+ LLM providers with **dynamic provider selection** based on LLMsVerifier verification scores. Main providers: Claude, DeepSeek, Gemini, Qwen, ZAI, OpenRouter, Mistral, Cerebras, **OpenCode Zen** (free models), and more.
+HelixAgent is an AI-powered ensemble LLM service written in Go that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 18+ LLM providers with **dynamic provider selection** based on LLMsVerifier verification scores. Main providers: Claude, DeepSeek, Gemini, Qwen, ZAI, OpenRouter, Mistral, Cerebras, **OpenCode Zen** (free models), and more.
+
+**Module**: `dev.helix.agent` (Go 1.24+, toolchain go1.24.11)
 
 The project also includes:
 - **Toolkit** (`Toolkit/`): A standalone Go library for building AI applications with multi-provider support
@@ -38,6 +40,17 @@ make test-race             # Race condition detection
 
 Run a single test:
 ```bash
+go test -v -run TestName ./path/to/package
+```
+
+Run a single test with infrastructure (PostgreSQL/Redis):
+```bash
+# Start infrastructure first
+make test-infra-start
+
+# Run test with env vars
+DB_HOST=localhost DB_PORT=15432 DB_USER=helixagent DB_PASSWORD=helixagent123 DB_NAME=helixagent_db \
+REDIS_HOST=localhost REDIS_PORT=16379 REDIS_PASSWORD=helixagent123 \
 go test -v -run TestName ./path/to/package
 ```
 
@@ -135,42 +148,7 @@ The AI Debate Team uses a dynamic selection algorithm:
 | **LLMsVerifier** | DeepSeek, Gemini, Mistral, Groq, Cerebras | 5 |
 | **Total Available** | | **20** |
 
-**Model Definitions:**
-
-```go
-// Claude OAuth2 Models (prioritized by generation)
-// Claude 4.5 (Latest - November 2025)
-ClaudeModels.Opus45   = "claude-opus-4-5-20251101"   // Score: 10.0 - Most capable
-ClaudeModels.Sonnet45 = "claude-sonnet-4-5-20250929" // Score: 9.8 - Balanced
-ClaudeModels.Haiku45  = "claude-haiku-4-5-20251001"  // Score: 9.5 - Fast, efficient
-
-// Claude 4.x (May 2025)
-ClaudeModels.Opus4   = "claude-opus-4-20250514"   // Score: 9.5
-ClaudeModels.Sonnet4 = "claude-sonnet-4-20250514" // Score: 9.3
-
-// Claude 3.5 (Legacy fallbacks)
-ClaudeModels.Sonnet35 = "claude-3-5-sonnet-20241022" // Score: 9.0
-ClaudeModels.Haiku35  = "claude-3-5-haiku-20241022"  // Score: 8.5
-
-// Claude 3 (Legacy fallbacks)
-ClaudeModels.Opus3   = "claude-3-opus-20240229"   // Score: 8.5
-ClaudeModels.Sonnet3 = "claude-3-sonnet-20240229" // Score: 8.0
-ClaudeModels.Haiku3  = "claude-3-haiku-20240307"  // Score: 7.5
-
-// Qwen OAuth2 Models
-QwenModels.Max   = "qwen-max"          // Score: 8.0
-QwenModels.Plus  = "qwen-plus"         // Score: 7.8
-QwenModels.Turbo = "qwen-turbo"        // Score: 7.5
-QwenModels.Coder = "qwen-coder-turbo"  // Score: 7.5
-QwenModels.Long  = "qwen-long"         // Score: 7.5
-
-// LLMsVerifier Scored Providers (fill remaining positions)
-LLMsVerifierModels.DeepSeek = "deepseek-chat"           // Score: 8.5
-LLMsVerifierModels.Gemini   = "gemini-2.0-flash"        // Score: 9.0
-LLMsVerifierModels.Mistral  = "mistral-large-latest"    // Score: 8.5
-LLMsVerifierModels.Groq     = "llama-3.1-70b-versatile" // Score: 8.0
-LLMsVerifierModels.Cerebras = "llama3.1-70b"            // Score: 7.5
-```
+**Model Definitions**: See `internal/services/debate_team_config.go` for current model IDs and scores. Models are dynamically scored by LLMsVerifier.
 
 **Key Constants:**
 ```go

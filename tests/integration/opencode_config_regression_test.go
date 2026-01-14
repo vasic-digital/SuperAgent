@@ -25,16 +25,16 @@ import (
 
 // OpenCodeConfigFull represents the full OpenCode configuration structure
 type OpenCodeConfigFull struct {
-	Schema   string                         `json:"$schema"`
-	Provider map[string]OpenCodeProviderFull `json:"provider"`
-	Agent    *OpenCodeAgentFull             `json:"agent,omitempty"`
+	Schema   string                               `json:"$schema"`
+	Provider map[string]OpenCodeProviderFull      `json:"provider"`
+	Agent    map[string]OpenCodeAgentConfigFull   `json:"agent,omitempty"`
 }
 
 // OpenCodeProviderFull represents a provider definition with all fields
 type OpenCodeProviderFull struct {
-	NPM     string                     `json:"npm,omitempty"`
-	Name    string                     `json:"name"`
-	Options map[string]interface{}     `json:"options"`
+	NPM     string                       `json:"npm,omitempty"`
+	Name    string                       `json:"name"`
+	Options map[string]interface{}       `json:"options"`
 	Models  map[string]OpenCodeModelFull `json:"models,omitempty"`
 }
 
@@ -45,7 +45,16 @@ type OpenCodeModelFull struct {
 	Reasoning   bool   `json:"reasoning,omitempty"`
 }
 
-// OpenCodeAgentFull represents agent configuration
+// OpenCodeAgentConfigFull represents a full agent configuration
+type OpenCodeAgentConfigFull struct {
+	Model       string          `json:"model,omitempty"`
+	Temperature *float64        `json:"temperature,omitempty"`
+	Prompt      string          `json:"prompt,omitempty"`
+	Description string          `json:"description,omitempty"`
+	Tools       map[string]bool `json:"tools,omitempty"`
+}
+
+// OpenCodeAgentFull represents agent configuration (legacy format)
 type OpenCodeAgentFull struct {
 	Model *OpenCodeModelRefFull `json:"model"`
 }
@@ -162,13 +171,17 @@ func TestOpenCodeConfigOnlyShowsHelixAgentModel(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NotNil(t, openCodeConfig.Agent, "Agent configuration must exist")
-		require.NotNil(t, openCodeConfig.Agent.Model, "Agent model reference must exist")
 
-		// CRITICAL: Agent must use "helixagent" provider, not "openai"
-		assert.Equal(t, "helixagent", openCodeConfig.Agent.Model.Provider,
-			"Agent MUST use 'helixagent' provider, NOT 'openai'")
-		assert.Equal(t, "helixagent-debate", openCodeConfig.Agent.Model.Model,
-			"Agent MUST use 'helixagent-debate' model")
+		// Agent is now a map of agent configurations
+		defaultAgent, hasDefault := openCodeConfig.Agent["default"]
+		require.True(t, hasDefault, "Agent config must have 'default' agent")
+
+		// CRITICAL: Agent model must reference helixagent provider
+		// Model format is "provider/model" or just "model" with provider context
+		assert.Contains(t, defaultAgent.Model, "helixagent",
+			"Agent model MUST reference 'helixagent' provider")
+		assert.NotEmpty(t, defaultAgent.Description,
+			"Agent must have a description")
 	})
 
 	t.Run("ConfigDoesNotContainOpenAIString", func(t *testing.T) {

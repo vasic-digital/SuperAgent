@@ -1054,7 +1054,7 @@ func buildMCPServerConfig(host, port, apiKey, homeDir string) map[string]MCPServ
 			{"memory", "@modelcontextprotocol/server-memory", "dist/index.js"},
 			{"fetch", "mcp-fetch", "dist/stdio.js"},
 			{"puppeteer", "@modelcontextprotocol/server-puppeteer", "dist/index.js"},
-			{"sqlite", "mcp-server-sqlite", "dist/index.js"},
+			{"sqlite", "mcp-sqlite", "dist/index.js"},
 		}
 
 		for _, srv := range localServers {

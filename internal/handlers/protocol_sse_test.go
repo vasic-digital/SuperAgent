@@ -927,12 +927,19 @@ func TestProtocolSSEHandler_GetCapabilitiesForProtocol(t *testing.T) {
 	logger := logrus.New()
 	handler := NewProtocolSSEHandler(nil, nil, nil, nil, logger)
 
-	protocols := []string{"mcp", "acp", "lsp", "embeddings", "vision", "cognee", "unknown"}
-
-	for _, protocol := range protocols {
-		caps := handler.getCapabilitiesForProtocol(protocol)
+	// Test valid protocols
+	validProtocols := []string{"mcp", "acp", "lsp", "embeddings", "vision", "cognee"}
+	for _, protocol := range validProtocols {
+		caps, err := handler.getCapabilitiesForProtocol(protocol)
+		assert.NoError(t, err, "Valid protocol %s should not return error", protocol)
 		assert.NotNil(t, caps, "Capabilities for %s should not be nil", protocol)
 	}
+
+	// Test unknown protocol returns error
+	caps, err := handler.getCapabilitiesForProtocol("unknown")
+	assert.Error(t, err, "Unknown protocol should return error")
+	assert.Nil(t, caps, "Unknown protocol should return nil capabilities")
+	assert.Contains(t, err.Error(), "unknown protocol")
 }
 
 // TestProtocolSSEHandler_GetToolsForProtocol tests tools retrieval for all protocols
@@ -941,8 +948,8 @@ func TestProtocolSSEHandler_GetToolsForProtocol(t *testing.T) {
 	handler := NewProtocolSSEHandler(nil, nil, nil, nil, logger)
 
 	testCases := []struct {
-		protocol     string
-		expectedMin  int
+		protocol    string
+		expectedMin int
 	}{
 		{"mcp", 3},
 		{"acp", 2},
@@ -950,13 +957,19 @@ func TestProtocolSSEHandler_GetToolsForProtocol(t *testing.T) {
 		{"embeddings", 2},
 		{"vision", 2},
 		{"cognee", 3},
-		{"unknown", 0},
 	}
 
 	for _, tc := range testCases {
-		tools := handler.getToolsForProtocol(tc.protocol)
+		tools, err := handler.getToolsForProtocol(tc.protocol)
+		assert.NoError(t, err, "Valid protocol %s should not return error", tc.protocol)
 		assert.GreaterOrEqual(t, len(tools), tc.expectedMin, "Tools for %s should have at least %d tools", tc.protocol, tc.expectedMin)
 	}
+
+	// Test unknown protocol returns error
+	tools, err := handler.getToolsForProtocol("unknown")
+	assert.Error(t, err, "Unknown protocol should return error")
+	assert.Nil(t, tools, "Unknown protocol should return nil tools")
+	assert.Contains(t, err.Error(), "unknown protocol")
 }
 
 // TestJSONRPCMessage_Serialization tests JSON-RPC message serialization

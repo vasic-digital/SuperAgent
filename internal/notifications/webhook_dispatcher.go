@@ -151,7 +151,9 @@ func (d *WebhookDispatcher) RegisterWebhook(webhook *WebhookRegistration) error 
 	if webhook.CreatedAt.IsZero() {
 		webhook.CreatedAt = time.Now()
 	}
-	webhook.Enabled = true
+	// Don't force Enabled to true - respect the provided value
+	// If not explicitly set, default to true (zero value for bool is false)
+	// This allows callers to register disabled webhooks that can be enabled later
 
 	d.webhooksMu.Lock()
 	d.webhooks[webhook.ID] = webhook

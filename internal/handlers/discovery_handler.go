@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -220,7 +221,7 @@ func (h *DiscoveryHandler) GetEnsembleModels(c *gin.Context) {
 			VoteWeight:    m.VoteWeight,
 			VoteWeightPct: formatPercent(weightPct),
 			CodeVisible:   m.CodeVisible,
-			RecommendedFor: getRecommendations(m.OverallScore),
+			RecommendedFor: getRecommendationsForModel(m.ModelID, m.Provider, m.OverallScore, m.CodeVisible),
 		}
 	}
 
@@ -292,16 +293,86 @@ func formatPercent(p float64) string {
 	return fmt.Sprintf("%.2f%%", p)
 }
 
-func getRecommendations(score float64) []string {
+// getRecommendationsForModel generates dynamic recommendations based on model characteristics
+func getRecommendationsForModel(modelID, provider string, score float64, codeVisible bool) []string {
+	recommendations := make([]string, 0, 6)
+
+	// Provider-specific recommendations
+	providerLower := strings.ToLower(provider)
+	switch providerLower {
+	case "claude", "anthropic":
+		recommendations = append(recommendations, "complex reasoning", "nuanced analysis")
+		if codeVisible {
+			recommendations = append(recommendations, "code review with explanations")
+		}
+	case "deepseek":
+		recommendations = append(recommendations, "code generation", "technical analysis")
+		if codeVisible {
+			recommendations = append(recommendations, "algorithm design")
+		}
+	case "gemini", "google":
+		recommendations = append(recommendations, "multimodal tasks", "research synthesis")
+	case "qwen", "alibaba":
+		recommendations = append(recommendations, "multilingual tasks", "translation")
+	case "openrouter":
+		recommendations = append(recommendations, "versatile tasks", "model routing")
+	case "mistral":
+		recommendations = append(recommendations, "European language tasks", "efficient inference")
+	case "ollama":
+		recommendations = append(recommendations, "local inference", "privacy-sensitive tasks")
+	case "cerebras":
+		recommendations = append(recommendations, "high-speed inference", "batch processing")
+	case "zen", "opencode":
+		recommendations = append(recommendations, "cost-effective tasks", "high-volume requests")
+	default:
+		recommendations = append(recommendations, "general tasks")
+	}
+
+	// Score-based additions
 	if score >= 9.0 {
-		return []string{"complex reasoning", "code generation", "creative writing", "analysis"}
+		recommendations = append(recommendations, "complex multi-step reasoning")
+		if codeVisible {
+			recommendations = append(recommendations, "architectural decisions")
+		}
+	} else if score >= 8.0 {
+		recommendations = append(recommendations, "detailed analysis")
+		if codeVisible {
+			recommendations = append(recommendations, "code optimization")
+		}
+	} else if score >= 7.0 {
+		recommendations = append(recommendations, "summarization", "Q&A")
+	} else {
+		recommendations = append(recommendations, "fallback scenarios", "simple queries")
 	}
-	if score >= 8.0 {
-		return []string{"general tasks", "summarization", "Q&A", "code review"}
+
+	// Model-specific additions based on model ID patterns
+	modelIDLower := strings.ToLower(modelID)
+	if strings.Contains(modelIDLower, "opus") {
+		recommendations = append(recommendations, "long-form content")
 	}
-	if score >= 7.0 {
-		return []string{"simple tasks", "quick responses", "basic Q&A"}
+	if strings.Contains(modelIDLower, "sonnet") {
+		recommendations = append(recommendations, "balanced performance")
 	}
-	return []string{"fallback", "high-volume tasks"}
+	if strings.Contains(modelIDLower, "haiku") {
+		recommendations = append(recommendations, "quick responses")
+	}
+	if strings.Contains(modelIDLower, "coder") || strings.Contains(modelIDLower, "code") {
+		recommendations = append(recommendations, "code-specific tasks")
+	}
+	if strings.Contains(modelIDLower, "flash") || strings.Contains(modelIDLower, "turbo") {
+		recommendations = append(recommendations, "low-latency tasks")
+	}
+
+	// Ensure uniqueness and limit to 6 recommendations
+	seen := make(map[string]bool)
+	unique := make([]string, 0, 6)
+	for _, r := range recommendations {
+		if !seen[r] && len(unique) < 6 {
+			seen[r] = true
+			unique = append(unique, r)
+		}
+	}
+
+	return unique
 }
 
