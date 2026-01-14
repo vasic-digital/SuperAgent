@@ -34,7 +34,7 @@ check_api_health() {
 
 # Test 1: Create a background task
 test_create_task() {
-    log_info "Test 1: Creating a background task..."
+    log_info "Test 1: Creating a background task..." >&2
 
     local response
     response=$(curl -s -X POST "${API_BASE}/v1/tasks" \
@@ -54,11 +54,11 @@ test_create_task() {
     task_id=$(echo "$response" | jq -r '.id // empty')
 
     if [[ -z "$task_id" ]]; then
-        log_error "Failed to create task: $response"
+        log_error "Failed to create task: $response" >&2
         return 1
     fi
 
-    log_success "Created task: $task_id"
+    log_success "Created task: $task_id" >&2
     echo "$task_id"
 }
 
