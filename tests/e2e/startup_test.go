@@ -2,13 +2,13 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"dev.helix.agent/internal/cache"
 	"dev.helix.agent/internal/concurrency"
@@ -130,11 +130,10 @@ func TestE2E_SystemUnderLoad(t *testing.T) {
 	defer bus.Close()
 
 	pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
-		MinWorkers: 8,
-		MaxWorkers: 64,
-		QueueSize:  10000,
+		Workers:   32,
+		QueueSize: 10000,
 	})
-	require.NoError(t, pool.Start())
+	pool.Start()
 	defer pool.Shutdown(30 * time.Second)
 
 	cacheConfig := &cache.TieredCacheConfig{
@@ -177,40 +176,37 @@ func TestE2E_SystemUnderLoad(t *testing.T) {
 
 			for i := 0; i < tasksPerWorker; i++ {
 				taskID := workerID*tasksPerWorker + i
+				localTaskID := taskID // Capture for closure
 
-				task := concurrency.TaskFunc(func(taskCtx context.Context) (interface{}, error) {
-					// Simulate work with cache access
-					key := "task:" + string(rune('a'+taskID%26))
-					var result int
+				task := concurrency.NewTaskFunc(
+					fmt.Sprintf("task-%d", taskID),
+					func(taskCtx context.Context) (interface{}, error) {
+						// Simulate work with cache access
+						key := "task:" + string(rune('a'+localTaskID%26))
+						var result int
 
-					found, _ := tc.Get(ctx, key, &result)
-					if !found {
-						tc.Set(ctx, key, taskID, time.Minute)
-					}
-					atomic.AddInt64(&cacheOps, 1)
+						found, _ := tc.Get(ctx, key, &result)
+						if !found {
+							tc.Set(ctx, key, localTaskID, time.Minute)
+						}
+						atomic.AddInt64(&cacheOps, 1)
 
-					// Publish completion event
-					bus.Publish(events.NewEvent(
-						events.EventRequestCompleted,
-						"worker",
-						map[string]interface{}{"task_id": taskID},
-					))
+						// Publish completion event
+						bus.Publish(events.NewEvent(
+							events.EventRequestCompleted,
+							"worker",
+							map[string]interface{}{"task_id": localTaskID},
+						))
 
-					atomic.AddInt64(&completedTasks, 1)
-					return taskID, nil
-				})
+						atomic.AddInt64(&completedTasks, 1)
+						return localTaskID, nil
+					},
+				)
 
-				result, err := pool.Submit(task)
+				err := pool.Submit(task)
 				if err != nil {
 					t.Logf("Task submission error: %v", err)
 					continue
-				}
-
-				// Wait for result
-				select {
-				case <-result.Done:
-				case <-time.After(10 * time.Second):
-					t.Logf("Task timeout: %d", taskID)
 				}
 			}
 		}(w)
@@ -255,11 +251,10 @@ func TestE2E_GracefulShutdown(t *testing.T) {
 
 	bus := events.NewEventBus(nil)
 	pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
-		MinWorkers: 4,
-		MaxWorkers: 16,
-		QueueSize:  100,
+		Workers:   8,
+		QueueSize: 100,
 	})
-	require.NoError(t, pool.Start())
+	pool.Start()
 
 	tc := cache.NewTieredCache(nil, &cache.TieredCacheConfig{
 		L1MaxSize: 1000,
@@ -271,11 +266,15 @@ func TestE2E_GracefulShutdown(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := 0; i < 50; i++ {
 		wg.Add(1)
-		task := concurrency.TaskFunc(func(ctx context.Context) (interface{}, error) {
-			defer wg.Done()
-			time.Sleep(50 * time.Millisecond)
-			return nil, nil
-		})
+		localI := i
+		task := concurrency.NewTaskFunc(
+			fmt.Sprintf("shutdown-task-%d", localI),
+			func(ctx context.Context) (interface{}, error) {
+				defer wg.Done()
+				time.Sleep(50 * time.Millisecond)
+				return nil, nil
+			},
+		)
 		pool.Submit(task)
 	}
 
@@ -314,9 +313,8 @@ func TestE2E_ResourceCleanup(t *testing.T) {
 		})
 
 		pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
-			MinWorkers: 2,
-			MaxWorkers: 8,
-			QueueSize:  100,
+			Workers:   4,
+			QueueSize: 100,
 		})
 		pool.Start()
 
@@ -335,11 +333,14 @@ func TestE2E_ResourceCleanup(t *testing.T) {
 			bus.Publish(events.NewEvent(events.EventCacheHit, "test", i))
 			bus.Unsubscribe(ch)
 
-			task := concurrency.TaskFunc(func(ctx context.Context) (interface{}, error) {
-				return nil, nil
-			})
-			result, _ := pool.Submit(task)
-			<-result.Done
+			localI := i
+			task := concurrency.NewTaskFunc(
+				fmt.Sprintf("cleanup-task-%d-%d", iteration, localI),
+				func(ctx context.Context) (interface{}, error) {
+					return nil, nil
+				},
+			)
+			pool.Submit(task)
 		}
 
 		// Cleanup
@@ -449,10 +450,7 @@ func TestE2E_ConcurrentStartupShutdown(t *testing.T) {
 
 			bus := events.NewEventBus(nil)
 			pool := concurrency.NewWorkerPool(nil)
-
-			if err := pool.Start(); err != nil {
-				return
-			}
+			pool.Start()
 
 			tc := cache.NewTieredCache(nil, &cache.TieredCacheConfig{
 				L1MaxSize: 100,
@@ -464,11 +462,13 @@ func TestE2E_ConcurrentStartupShutdown(t *testing.T) {
 			ctx := context.Background()
 			tc.Set(ctx, "test", "value", time.Minute)
 
-			task := concurrency.TaskFunc(func(ctx context.Context) (interface{}, error) {
-				return nil, nil
-			})
-			result, _ := pool.Submit(task)
-			<-result.Done
+			task := concurrency.NewTaskFunc(
+				"cycle-task",
+				func(ctx context.Context) (interface{}, error) {
+					return nil, nil
+				},
+			)
+			pool.Submit(task)
 
 			// Shutdown
 			tc.Close()
@@ -493,9 +493,8 @@ func BenchmarkE2E_FullWorkflow(b *testing.B) {
 	defer bus.Close()
 
 	pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
-		MinWorkers: 8,
-		MaxWorkers: 32,
-		QueueSize:  10000,
+		Workers:   32,
+		QueueSize: 10000,
 	})
 	pool.Start()
 	defer pool.Shutdown(10 * time.Second)
@@ -522,16 +521,20 @@ func BenchmarkE2E_FullWorkflow(b *testing.B) {
 			wg.Add(1)
 
 			key := "bench-" + string(rune('a'+i%26))
-			task := concurrency.TaskFunc(func(taskCtx context.Context) (interface{}, error) {
-				defer wg.Done()
+			localI := i
+			task := concurrency.NewTaskFunc(
+				fmt.Sprintf("bench-task-%d", localI),
+				func(taskCtx context.Context) (interface{}, error) {
+					defer wg.Done()
 
-				var result int
-				tc.Get(ctx, key, &result)
+					var result int
+					tc.Get(ctx, key, &result)
 
-				bus.PublishAsync(events.NewEvent(events.EventCacheHit, "bench", i))
+					bus.PublishAsync(events.NewEvent(events.EventCacheHit, "bench", localI))
 
-				return result, nil
-			})
+					return result, nil
+				},
+			)
 
 			pool.Submit(task)
 			wg.Wait()

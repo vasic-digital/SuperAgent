@@ -501,58 +501,67 @@ func TestFormatPercent(t *testing.T) {
 	}
 }
 
-func TestGetRecommendations(t *testing.T) {
+func TestGetRecommendationsForModel(t *testing.T) {
 	tests := []struct {
+		modelID          string
+		provider         string
 		score            float64
+		codeVisible      bool
 		expectedContains string
 	}{
-		{9.5, "complex reasoning"},
-		{9.0, "complex reasoning"},
-		{8.5, "general tasks"},
-		{8.0, "general tasks"},
-		{7.5, "simple tasks"},
-		{7.0, "simple tasks"},
-		{6.5, "fallback"},
-		{5.0, "fallback"},
+		{"claude-opus-4", "claude", 9.5, true, "complex reasoning"},
+		{"claude-sonnet-4", "anthropic", 9.0, true, "nuanced analysis"},
+		{"deepseek-coder", "deepseek", 8.5, true, "code generation"},
+		{"gemini-2.0-flash", "gemini", 8.0, false, "multimodal tasks"},
+		{"qwen-max", "qwen", 7.5, false, "multilingual tasks"},
+		{"llama-3.1-70b", "ollama", 6.5, false, "fallback scenarios"},
 	}
 
 	for _, tt := range tests {
-		result := getRecommendations(tt.score)
-		assert.Contains(t, result, tt.expectedContains, "getRecommendations(%v) should contain %s", tt.score, tt.expectedContains)
+		result := getRecommendationsForModel(tt.modelID, tt.provider, tt.score, tt.codeVisible)
+		assert.Contains(t, result, tt.expectedContains, "getRecommendationsForModel(%s, %s, %v, %v) should contain %s",
+			tt.modelID, tt.provider, tt.score, tt.codeVisible, tt.expectedContains)
 	}
 }
 
-func TestGetRecommendations_HighScore(t *testing.T) {
-	result := getRecommendations(9.5)
+func TestGetRecommendationsForModel_HighScore(t *testing.T) {
+	result := getRecommendationsForModel("claude-opus-4", "claude", 9.5, true)
 
 	assert.Contains(t, result, "complex reasoning")
-	assert.Contains(t, result, "code generation")
-	assert.Contains(t, result, "creative writing")
-	assert.Contains(t, result, "analysis")
+	assert.Contains(t, result, "complex multi-step reasoning")
+	assert.Contains(t, result, "architectural decisions")
 }
 
-func TestGetRecommendations_MediumScore(t *testing.T) {
-	result := getRecommendations(8.5)
+func TestGetRecommendationsForModel_CodeVisible(t *testing.T) {
+	result := getRecommendationsForModel("deepseek-coder", "deepseek", 8.5, true)
+
+	assert.Contains(t, result, "code generation")
+	assert.Contains(t, result, "algorithm design")
+}
+
+func TestGetRecommendationsForModel_LowScore(t *testing.T) {
+	result := getRecommendationsForModel("generic-model", "unknown", 6.5, false)
 
 	assert.Contains(t, result, "general tasks")
-	assert.Contains(t, result, "summarization")
-	assert.Contains(t, result, "Q&A")
-	assert.Contains(t, result, "code review")
+	assert.Contains(t, result, "fallback scenarios")
 }
 
-func TestGetRecommendations_LowScore(t *testing.T) {
-	result := getRecommendations(7.5)
+func TestGetRecommendationsForModel_ModelPatterns(t *testing.T) {
+	// Test opus model pattern
+	result := getRecommendationsForModel("claude-opus-4", "claude", 9.0, true)
+	assert.Contains(t, result, "long-form content")
 
-	assert.Contains(t, result, "simple tasks")
+	// Test sonnet model pattern
+	result = getRecommendationsForModel("claude-sonnet-4", "claude", 9.0, true)
+	assert.Contains(t, result, "balanced performance")
+
+	// Test haiku model pattern
+	result = getRecommendationsForModel("claude-haiku-4", "claude", 8.0, false)
 	assert.Contains(t, result, "quick responses")
-	assert.Contains(t, result, "basic Q&A")
-}
 
-func TestGetRecommendations_VeryLowScore(t *testing.T) {
-	result := getRecommendations(5.0)
-
-	assert.Contains(t, result, "fallback")
-	assert.Contains(t, result, "high-volume tasks")
+	// Test coder model pattern
+	result = getRecommendationsForModel("deepseek-coder", "deepseek", 8.5, true)
+	assert.Contains(t, result, "code-specific tasks")
 }
 
 func TestGetDiscoveredModels_ContentType(t *testing.T) {

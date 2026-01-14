@@ -78,11 +78,20 @@ func getTestAPIKey() string {
 	return key
 }
 
+// skipIfServerUnavailable skips the test if HelixAgent is not running
+func skipIfServerUnavailable(t *testing.T) {
+	t.Helper()
+	if !checkServerAvailable(getTestURL(), 2*time.Second) {
+		t.Skip("Skipping: HelixAgent server not available at " + getTestURL())
+	}
+}
+
 // TestOpenCode_HealthCheck verifies HelixAgent is ready for OpenCode
 func TestOpenCode_HealthCheck(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping OpenCode simulation in short mode")
 	}
+	skipIfServerUnavailable(t)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(getTestURL() + "/health")
@@ -177,6 +186,7 @@ func TestOpenCode_DocumentationRequest(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping OpenCode simulation in short mode")
 	}
+	skipIfServerUnavailable(t)
 
 	request := OpenCodeRequest{
 		Model: "helixagent-debate",
@@ -216,6 +226,7 @@ func TestOpenCode_ConcurrentRequests(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping OpenCode simulation in short mode")
 	}
+	skipIfServerUnavailable(t)
 
 	requests := []OpenCodeRequest{
 		{
@@ -327,6 +338,7 @@ func TestOpenCode_NoEndlessLoop(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping OpenCode simulation in short mode")
 	}
+	skipIfServerUnavailable(t)
 
 	request := OpenCodeRequest{
 		Model: "helixagent-debate",
@@ -389,6 +401,7 @@ func TestOpenCode_SequentialRequests(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping OpenCode simulation in short mode")
 	}
+	skipIfServerUnavailable(t)
 
 	// Simulate OpenCode's typical request sequence
 	requests := []struct {

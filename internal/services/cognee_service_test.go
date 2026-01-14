@@ -1473,7 +1473,8 @@ func TestCogneeSearchTypes_SearchRequestFormat(t *testing.T) {
 			if r.URL.Path == "/api/v1/search" && r.Method == "POST" {
 				var reqBody map[string]interface{}
 				json.NewDecoder(r.Body).Decode(&reqBody)
-				if st, ok := reqBody["searchType"].(string); ok {
+				// Service uses snake_case search_type
+				if st, ok := reqBody["search_type"].(string); ok {
 					receivedSearchType = st
 				}
 				w.WriteHeader(http.StatusOK)

@@ -3413,7 +3413,13 @@ func generateAgentsMDContent(synthesis, topic string) string {
 func generateReadmeMDContent(synthesis, topic string) string {
 	var content strings.Builder
 
-	content.WriteString("# Project\n\n")
+	// Use topic for title if available, otherwise use generic title
+	title := "Project"
+	if topic != "" {
+		title = extractTitleFromTopic(topic)
+	}
+
+	content.WriteString(fmt.Sprintf("# %s\n\n", title))
 	content.WriteString("## Description\n\n")
 
 	if synthesis != "" {
@@ -3422,15 +3428,73 @@ func generateReadmeMDContent(synthesis, topic string) string {
 			content.WriteString(cleaned)
 			content.WriteString("\n\n")
 		}
+	} else if topic != "" {
+		content.WriteString(fmt.Sprintf("This project addresses: %s\n\n", topic))
 	}
 
 	content.WriteString("## Getting Started\n\n")
-	content.WriteString("TODO: Add installation and usage instructions\n\n")
+	content.WriteString("### Prerequisites\n\n")
+	content.WriteString("Ensure you have the required dependencies installed for your development environment.\n\n")
+	content.WriteString("### Installation\n\n")
+	content.WriteString("1. Clone the repository\n")
+	content.WriteString("2. Install dependencies\n")
+	content.WriteString("3. Configure your environment\n")
+	content.WriteString("4. Run the application\n\n")
+
+	content.WriteString("### Usage\n\n")
+	if topic != "" {
+		content.WriteString(fmt.Sprintf("This project can be used to %s.\n\n", strings.ToLower(topic)))
+	} else {
+		content.WriteString("Refer to the documentation for usage instructions.\n\n")
+	}
 
 	content.WriteString("## Contributing\n\n")
-	content.WriteString("TODO: Add contribution guidelines\n\n")
+	content.WriteString("Contributions are welcome. Please follow these guidelines:\n\n")
+	content.WriteString("1. Fork the repository\n")
+	content.WriteString("2. Create a feature branch\n")
+	content.WriteString("3. Make your changes\n")
+	content.WriteString("4. Submit a pull request\n\n")
+
+	content.WriteString("## License\n\n")
+	content.WriteString("See LICENSE file for details.\n")
 
 	return content.String()
+}
+
+// extractTitleFromTopic extracts a clean title from the topic string
+func extractTitleFromTopic(topic string) string {
+	// Remove common prefixes
+	result := strings.ToLower(topic)
+	result = strings.TrimPrefix(result, "create ")
+	result = strings.TrimPrefix(result, "write ")
+	result = strings.TrimPrefix(result, "generate ")
+	result = strings.TrimPrefix(result, "make ")
+
+	// Remove file references
+	result = strings.TrimSuffix(result, " readme")
+	result = strings.TrimSuffix(result, " readme.md")
+	result = strings.TrimSuffix(result, ".md")
+
+	// Capitalize first letter of each word
+	words := strings.Fields(result)
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(string(word[0])) + word[1:]
+		}
+	}
+	result = strings.Join(words, " ")
+
+	// If still empty or too short, use default
+	if len(result) < 3 {
+		return "Project"
+	}
+
+	// Truncate if too long
+	if len(result) > 50 {
+		result = result[:50] + "..."
+	}
+
+	return result
 }
 
 // cleanSynthesisForFile cleans synthesis text for use as file content

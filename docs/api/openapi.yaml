@@ -643,7 +643,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /debates:
+  /v1/debates:
     post:
       summary: Create a new debate
       description: Initiates a new AI debate with specified participants and configuration
@@ -676,7 +676,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /debates/{debateId}:
+  /v1/debates/{debateId}:
     get:
       summary: Get debate details
       description: Retrieves comprehensive information about a specific debate
@@ -1251,6 +1251,273 @@ paths:
       responses:
         '200':
           description: Feedback received
+
+  # CLI Agent Registry endpoints
+  /v1/agents:
+    get:
+      summary: List all CLI agents
+      description: Returns list of all 18 supported CLI agents with their capabilities
+      operationId: listAgents
+      tags:
+        - Agents
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentListResponse'
+
+  /v1/agents/{name}:
+    get:
+      summary: Get agent details
+      description: Returns detailed information about a specific CLI agent
+      operationId: getAgent
+      tags:
+        - Agents
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent name (e.g., OpenCode, ClaudeCode, KiloCode)
+      responses:
+        '200':
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '404':
+          description: Agent not found
+
+  /v1/agents/protocol/{protocol}:
+    get:
+      summary: List agents by protocol
+      description: Returns agents that support a specific protocol
+      operationId: listAgentsByProtocol
+      tags:
+        - Agents
+      parameters:
+        - name: protocol
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [OpenAI, Anthropic, MCP, AWS, Ollama]
+      responses:
+        '200':
+          description: List of agents supporting the protocol
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentListResponse'
+
+  /v1/agents/tool/{tool}:
+    get:
+      summary: List agents by tool
+      description: Returns agents that support a specific tool
+      operationId: listAgentsByTool
+      tags:
+        - Agents
+      parameters:
+        - name: tool
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [Bash, Read, Write, Edit, Glob, Grep, Git, Diff, Test, Lint, TreeView, FileInfo, Symbols, References, Definition, PR, Issue, Workflow, WebFetch, WebSearch, Task]
+      responses:
+        '200':
+          description: List of agents supporting the tool
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentListResponse'
+
+  # Provider verification and discovery endpoints
+  /v1/providers/verification:
+    get:
+      summary: Get all providers verification status
+      description: Returns verification status for all registered providers
+      operationId: getAllProvidersVerification
+      tags:
+        - Providers
+      responses:
+        '200':
+          description: Verification status for all providers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderVerificationResponse'
+
+  /v1/providers/verify:
+    post:
+      summary: Verify all providers
+      description: Triggers verification of all registered providers
+      operationId: verifyAllProviders
+      tags:
+        - Providers
+      responses:
+        '200':
+          description: Verification initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderVerificationResponse'
+
+  /v1/providers/discovery:
+    get:
+      summary: Get provider discovery summary
+      description: Returns summary of auto-discovered providers from environment
+      operationId: getDiscoverySummary
+      tags:
+        - Providers
+      responses:
+        '200':
+          description: Discovery summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderDiscoveryResponse'
+
+  /v1/providers/discover:
+    post:
+      summary: Discover and verify providers
+      description: Auto-discovers providers from environment and verifies them
+      operationId: discoverAndVerifyProviders
+      tags:
+        - Providers
+      responses:
+        '200':
+          description: Discovery and verification completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderDiscoveryResponse'
+
+  /v1/providers/rediscover:
+    post:
+      summary: Re-discover providers
+      description: Re-runs provider discovery from environment
+      operationId: reDiscoverProviders
+      tags:
+        - Providers
+      responses:
+        '200':
+          description: Re-discovery completed
+
+  /v1/providers/best:
+    get:
+      summary: Get best providers
+      description: Returns the highest-scoring providers based on LLMsVerifier scores
+      operationId: getBestProviders
+      tags:
+        - Providers
+      responses:
+        '200':
+          description: Best providers ranked by score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BestProvidersResponse'
+
+  /v1/providers/{id}/verification:
+    get:
+      summary: Get provider verification status
+      description: Returns verification status for a specific provider
+      operationId: getProviderVerification
+      tags:
+        - Providers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Provider verification status
+
+  /v1/providers/{id}/verify:
+    post:
+      summary: Verify specific provider
+      description: Triggers verification for a specific provider
+      operationId: verifyProvider
+      tags:
+        - Providers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Provider verification completed
+
+  # Debate team configuration
+  /v1/debates/team:
+    get:
+      summary: Get debate team configuration
+      description: Returns the current AI debate team configuration with all 15 LLMs
+      operationId: getDebateTeam
+      tags:
+        - Debates
+      responses:
+        '200':
+          description: Debate team configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebateTeamResponse'
+
+  # Protocol SSE endpoints for CLI agents
+  /v1/mcp:
+    get:
+      summary: MCP SSE endpoint
+      description: Server-Sent Events endpoint for MCP protocol (CLI agents)
+      operationId: mcpSSE
+      tags:
+        - Protocols
+      responses:
+        '200':
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /v1/acp:
+    get:
+      summary: ACP SSE endpoint
+      description: Server-Sent Events endpoint for ACP protocol (CLI agents)
+      operationId: acpSSE
+      tags:
+        - Protocols
+      responses:
+        '200':
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /v1/vision:
+    get:
+      summary: Vision SSE endpoint
+      description: Server-Sent Events endpoint for Vision protocol (CLI agents)
+      operationId: visionSSE
+      tags:
+        - Protocols
+      responses:
+        '200':
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
 
   /v1/providers/{id}:
     get:
@@ -2030,6 +2297,173 @@ components:
           type: string
           format: date-time
 
+    # CLI Agent schemas
+    Agent:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Agent name
+          example: OpenCode
+        language:
+          type: string
+          description: Implementation language
+          example: Go
+        configFormat:
+          type: string
+          description: Configuration format
+          enum: [JSON, YAML, TOML, ENV, Proto]
+        apiPattern:
+          type: string
+          description: API pattern used
+          enum: [OpenAI, Anthropic, Multi, DeepSeek, Google, AWS, Ollama, Mistral, Qwen]
+        protocols:
+          type: array
+          items:
+            type: string
+          description: Supported protocols
+        tools:
+          type: array
+          items:
+            type: string
+          description: Supported tools (21 total)
+        features:
+          type: array
+          items:
+            type: string
+          description: Key features
+        description:
+          type: string
+          description: Agent description
+
+    AgentListResponse:
+      type: object
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Agent'
+        count:
+          type: integer
+          description: Total number of agents
+
+    # Provider verification and discovery schemas
+    ProviderVerificationResponse:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              verified:
+                type: boolean
+              score:
+                type: number
+              status:
+                type: string
+                enum: [healthy, unhealthy, auth_failed, timeout]
+              lastVerified:
+                type: string
+                format: date-time
+        totalProviders:
+          type: integer
+        verifiedCount:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    ProviderDiscoveryResponse:
+      type: object
+      properties:
+        discovered:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+              envVar:
+                type: string
+              verified:
+                type: boolean
+              score:
+                type: number
+        totalDiscovered:
+          type: integer
+        oauthProviders:
+          type: integer
+        apiKeyProviders:
+          type: integer
+
+    BestProvidersResponse:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              score:
+                type: number
+              rank:
+                type: integer
+              isOAuth:
+                type: boolean
+              models:
+                type: array
+                items:
+                  type: string
+
+    DebateTeamResponse:
+      type: object
+      properties:
+        positions:
+          type: array
+          items:
+            type: object
+            properties:
+              position:
+                type: integer
+              role:
+                type: string
+              primary:
+                type: object
+                properties:
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  score:
+                    type: number
+              fallbacks:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    provider:
+                      type: string
+                    model:
+                      type: string
+                    score:
+                      type: number
+        totalLLMs:
+          type: integer
+          description: Total LLMs in team (15)
+        oauthCount:
+          type: integer
+          description: OAuth providers count
+        verifierCount:
+          type: integer
+          description: LLMsVerifier providers count
+
     ErrorResponse:
       type: object
       required:
@@ -2069,6 +2503,10 @@ tags:
     description: Cognee AI enhancement
   - name: Debates
     description: AI debate operations
+  - name: Agents
+    description: CLI agent registry and capabilities (18 supported agents with 21 tools)
+  - name: Protocols
+    description: Protocol SSE endpoints (MCP, ACP, Vision) for CLI agent integration
   - name: Admin
     description: Administrative operations
 
