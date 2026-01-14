@@ -36,6 +36,7 @@ type ProviderRegistry struct {
 	memory           *MemoryService
 	discovery        *ProviderDiscovery          // Auto-discovery service for environment-based provider detection
 	scoreAdapter     *LLMsVerifierScoreAdapter   // LLMsVerifier score adapter for dynamic provider ordering
+	startupVerifier  *verifier.StartupVerifier   // Unified startup verification (optional)
 	mu               sync.RWMutex
 	drainTimeout     time.Duration // Timeout for graceful shutdown request draining
 	autoDiscovery    bool          // Whether auto-discovery is enabled
@@ -414,6 +415,133 @@ func (r *ProviderRegistry) SetAutoDiscovery(enabled bool) {
 	r.mu.Lock()
 	r.autoDiscovery = enabled
 	r.mu.Unlock()
+}
+
+// SetStartupVerifier sets the unified startup verifier
+// When set, provider operations will delegate to the StartupVerifier
+func (r *ProviderRegistry) SetStartupVerifier(sv *verifier.StartupVerifier) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.startupVerifier = sv
+}
+
+// GetStartupVerifier returns the startup verifier if set
+func (r *ProviderRegistry) GetStartupVerifier() *verifier.StartupVerifier {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.startupVerifier
+}
+
+// InitializeFromStartupVerifier registers providers from the StartupVerifier's verified results
+// This should be called after VerifyAllProviders completes on the StartupVerifier
+func (r *ProviderRegistry) InitializeFromStartupVerifier() error {
+	if r.startupVerifier == nil {
+		return fmt.Errorf("startup verifier not set")
+	}
+
+	logger := logrus.New()
+	rankedProviders := r.startupVerifier.GetRankedProviders()
+
+	registeredCount := 0
+	for _, provider := range rankedProviders {
+		if !provider.Verified || provider.Instance == nil {
+			continue
+		}
+
+		// Register the provider
+		if err := r.RegisterProvider(provider.Name, provider.Instance); err != nil {
+			logger.WithFields(logrus.Fields{
+				"provider": provider.Name,
+				"error":    err.Error(),
+			}).Warn("Failed to register provider from StartupVerifier")
+			continue
+		}
+
+		// Update provider health status
+		status := ProviderStatusHealthy
+		if provider.Status == verifier.StatusDegraded {
+			status = ProviderStatusUnhealthy
+		} else if provider.Status == verifier.StatusRateLimited {
+			status = ProviderStatusRateLimited
+		} else if provider.Status == verifier.StatusAuthFailed {
+			status = ProviderStatusAuthFailed
+		}
+
+		r.mu.Lock()
+		r.providerHealth[provider.Name] = &ProviderVerificationResult{
+			Provider:     provider.Name,
+			Name:         provider.Name,
+			Status:       status,
+			Verified:     provider.Verified,
+			Score:        provider.Score,
+			ResponseTime: 0, // Not tracked in unified provider
+			TestedAt:     provider.VerifiedAt,
+			VerifiedAt:   provider.VerifiedAt,
+		}
+		r.mu.Unlock()
+
+		// Update LLMsVerifier score if score adapter is available
+		if r.scoreAdapter != nil {
+			r.scoreAdapter.UpdateScore(provider.Name, provider.DefaultModel, provider.Score)
+		}
+
+		registeredCount++
+		logger.WithFields(logrus.Fields{
+			"provider": provider.Name,
+			"score":    provider.Score,
+			"verified": provider.Verified,
+			"auth":     provider.AuthType,
+		}).Debug("Registered provider from StartupVerifier")
+	}
+
+	logger.WithFields(logrus.Fields{
+		"total_providers": len(rankedProviders),
+		"registered":      registeredCount,
+	}).Info("Providers initialized from StartupVerifier")
+
+	return nil
+}
+
+// GetVerifiedProvidersSummary returns a summary of all verified providers
+// Uses StartupVerifier if available, otherwise falls back to discovery
+func (r *ProviderRegistry) GetVerifiedProvidersSummary() map[string]interface{} {
+	r.mu.RLock()
+	sv := r.startupVerifier
+	r.mu.RUnlock()
+
+	if sv != nil {
+		rankedProviders := sv.GetRankedProviders()
+		providers := make([]map[string]interface{}, 0, len(rankedProviders))
+
+		for _, p := range rankedProviders {
+			providers = append(providers, map[string]interface{}{
+				"name":      p.Name,
+				"type":      p.Type,
+				"auth_type": p.AuthType,
+				"verified":  p.Verified,
+				"score":     p.Score,
+				"status":    p.Status,
+				"models":    len(p.Models),
+			})
+		}
+
+		return map[string]interface{}{
+			"source":           "startup_verifier",
+			"total_providers":  len(rankedProviders),
+			"providers":        providers,
+		}
+	}
+
+	// Fall back to discovery
+	if r.discovery != nil {
+		return r.discovery.Summary()
+	}
+
+	return map[string]interface{}{
+		"source":          "registry",
+		"total_providers": len(r.ListProviders()),
+		"providers":       r.ListProviders(),
+	}
 }
 
 func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
