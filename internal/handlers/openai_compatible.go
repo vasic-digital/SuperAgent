@@ -241,6 +241,15 @@ type StreamingToolCall struct {
 	Function OpenAIFunctionCall `json:"function"`
 }
 
+// DebatePositionResponse holds both content and tool_calls from a debate position
+// This enables the AI Debate system to collect tool calls during debate rounds
+// and execute them in the ACTION PHASE with proper indicators
+type DebatePositionResponse struct {
+	Content   string              `json:"content"`
+	ToolCalls []StreamingToolCall `json:"tool_calls,omitempty"`
+	Position  services.DebateTeamPosition `json:"position"`
+}
+
 // OpenAIChatResponse represents OpenAI chat completion response
 type OpenAIChatResponse struct {
 	ID                string         `json:"id"`
@@ -667,6 +676,8 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			services.PositionMediator,
 		}
 		previousResponses := make(map[services.DebateTeamPosition]string)
+		// CRITICAL: Collect tool_calls from ALL debate positions for ACTION PHASE
+		collectedToolCalls := make([]StreamingToolCall, 0)
 
 		for _, pos := range positions {
 			// First, stream the header (character name and role)
@@ -697,11 +708,26 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 
 			// Now get the REAL response from the LLM for this position
 			// CRITICAL: Pass tools so LLM knows about available coding assistant capabilities
-			realResponse, err := h.generateRealDebateResponse(ctx, pos, topic, previousResponses, req.Tools)
+			debateResp, err := h.generateRealDebateResponse(ctx, pos, topic, previousResponses, req.Tools)
+			var realResponse string
 			if err != nil {
 				// Log error but continue with fallback message
 				logrus.WithError(err).WithField("position", pos).Warn("Failed to get real debate response, using fallback")
 				realResponse = "Unable to provide analysis at this time."
+			} else {
+				realResponse = debateResp.Content
+				// CRITICAL: Collect tool_calls from this position for ACTION PHASE
+				if len(debateResp.ToolCalls) > 0 {
+					logrus.WithFields(logrus.Fields{
+						"position":   pos,
+						"tool_count": len(debateResp.ToolCalls),
+					}).Info("<--- Collecting tool_calls from debate position --->")
+					// Re-index tool calls to avoid conflicts
+					for _, tc := range debateResp.ToolCalls {
+						tc.Index = len(collectedToolCalls)
+						collectedToolCalls = append(collectedToolCalls, tc)
+					}
+				}
 			}
 
 			// Store for context in subsequent positions
@@ -795,13 +821,56 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			chunksSent++
 		}
 
-		// ACTION PHASE: If tools are available, make one final call that can return actual tool_calls
+		// ACTION PHASE: If tools are available, execute tool_calls from debate OR generate new ones
 		// This allows the AI coding assistant to actually USE the tools, not just talk about them
+		// PRIORITY: 1) Use collected tool_calls from debate positions, 2) Generate via LLM analysis
 		if len(req.Tools) > 0 {
-			actionToolCalls := h.generateActionToolCalls(ctx, topic, synthesisResponse, req.Tools, previousResponses, req.Messages)
+			// CRITICAL FIX: Use collected tool_calls from debate positions if available
+			var actionToolCalls []StreamingToolCall
+			if len(collectedToolCalls) > 0 {
+				logrus.WithFields(logrus.Fields{
+					"collected_count": len(collectedToolCalls),
+				}).Info("<--- ACTION PHASE: Using collected tool_calls from debate --->")
+				actionToolCalls = collectedToolCalls
+			} else {
+				// Fallback: Generate tool_calls based on topic analysis
+				logrus.Info("<--- ACTION PHASE: No debate tool_calls, analyzing topic for actions --->")
+				actionToolCalls = h.generateActionToolCalls(ctx, topic, synthesisResponse, req.Tools, previousResponses, req.Messages)
+			}
+
 			if len(actionToolCalls) > 0 {
+				// Stream action indicator to show tools are being invoked
+				actionIndicator := fmt.Sprintf("\n\n<--- EXECUTING %d ACTION(S) --->\n", len(actionToolCalls))
+				indicatorChunk := map[string]any{
+					"id":                 streamID,
+					"object":             "chat.completion.chunk",
+					"created":            time.Now().Unix(),
+					"model":              "helixagent-ensemble",
+					"system_fingerprint": "fp_helixagent_v1",
+					"choices": []map[string]any{
+						{
+							"index":         0,
+							"delta":         map[string]any{"content": actionIndicator},
+							"logprobs":      nil,
+							"finish_reason": nil,
+						},
+					},
+				}
+				if indicatorData, err := json.Marshal(indicatorChunk); err == nil {
+					c.Writer.Write([]byte("data: "))
+					c.Writer.Write(indicatorData)
+					c.Writer.Write([]byte("\n\n"))
+					flusher.Flush()
+				}
+
 				// Stream the tool calls to the client
 				for _, toolCall := range actionToolCalls {
+					// Log each tool being invoked with indicators
+					logrus.WithFields(logrus.Fields{
+						"tool_name": toolCall.Function.Name,
+						"tool_id":   toolCall.ID,
+					}).Info("<--- Invoking tool --->")
+
 					toolCallChunk := map[string]any{
 						"id":                 streamID,
 						"object":             "chat.completion.chunk",
@@ -1827,15 +1896,16 @@ func (h *UnifiedHandler) generateDebateDialogueResponse(position services.Debate
 // generateRealDebateResponse calls the actual LLM for a position and returns the real response
 // It tries the primary provider first, then automatically falls back to fallback providers if primary fails
 // The tools parameter is passed to inform the LLM about available coding assistant capabilities
-func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, position services.DebateTeamPosition, topic string, previousResponses map[services.DebateTeamPosition]string, tools []OpenAITool) (string, error) {
+// CRITICAL: Now returns *DebatePositionResponse to include tool_calls from LLM, not just content
+func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, position services.DebateTeamPosition, topic string, previousResponses map[services.DebateTeamPosition]string, tools []OpenAITool) (*DebatePositionResponse, error) {
 	if h.providerRegistry == nil || h.debateTeamConfig == nil {
-		return "", fmt.Errorf("provider registry or debate team config not available")
+		return nil, fmt.Errorf("provider registry or debate team config not available")
 	}
 
 	// Get the team member assigned to this position
 	member := h.debateTeamConfig.GetTeamMember(position)
 	if member == nil {
-		return "", fmt.Errorf("no LLM assigned to position %d", position)
+		return nil, fmt.Errorf("no LLM assigned to position %d", position)
 	}
 
 	// Build a role-specific system prompt with tool awareness (same for all attempts)
@@ -1940,6 +2010,34 @@ func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, positio
 		content := strings.TrimSpace(resp.Content)
 		content = strings.Trim(content, "\"")
 
+		// CRITICAL: Convert LLM tool_calls to StreamingToolCall format
+		// This enables the AI Debate system to actually USE tools, not just discuss them
+		var toolCalls []StreamingToolCall
+		if len(resp.ToolCalls) > 0 {
+			logrus.WithFields(logrus.Fields{
+				"position":        position,
+				"tool_call_count": len(resp.ToolCalls),
+				"provider":        currentMember.ProviderName,
+			}).Info("<--- AI Debate: LLM returned tool_calls --->")
+
+			for i, tc := range resp.ToolCalls {
+				toolCalls = append(toolCalls, StreamingToolCall{
+					Index: i,
+					ID:    tc.ID,
+					Type:  tc.Type,
+					Function: OpenAIFunctionCall{
+						Name:      tc.Function.Name,
+						Arguments: tc.Function.Arguments,
+					},
+				})
+				logrus.WithFields(logrus.Fields{
+					"position":  position,
+					"tool_name": tc.Function.Name,
+					"tool_id":   tc.ID,
+				}).Info("<--- Tool call detected --->")
+			}
+		}
+
 		if attemptNum > 1 {
 			logrus.WithFields(logrus.Fields{
 				"position": position,
@@ -1949,11 +2047,15 @@ func (h *UnifiedHandler) generateRealDebateResponse(ctx context.Context, positio
 			}).Info("Debate response succeeded with fallback provider")
 		}
 
-		return content, nil
+		return &DebatePositionResponse{
+			Content:   content,
+			ToolCalls: toolCalls,
+			Position:  position,
+		}, nil
 	}
 
 	// All attempts failed
-	return "", fmt.Errorf("all providers failed for position %d after %d attempts, last error: %w", position, attemptNum, lastErr)
+	return nil, fmt.Errorf("all providers failed for position %d after %d attempts, last error: %w", position, attemptNum, lastErr)
 }
 
 // getProviderForMember retrieves the LLM provider for a debate team member
