@@ -165,6 +165,51 @@ Key files:
 - `internal/services/debate_team_config.go` - Team configuration
 - `internal/services/debate_dialogue.go` - Dialogue formatter
 
+### Multi-Pass Validation System
+
+The AI Debate system includes a **multi-pass validation** mechanism that re-evaluates, polishes, and improves debate responses before delivering the final consensus:
+
+**Validation Phases:**
+| Phase | Icon | Description |
+|-------|------|-------------|
+| 1. INITIAL RESPONSE | 🔍 | Each AI participant provides their initial perspective |
+| 2. VALIDATION | ✓ | Cross-validation of responses for accuracy and completeness |
+| 3. POLISH & IMPROVE | ✨ | Refinement and improvement based on validation feedback |
+| 4. FINAL CONCLUSION | 📜 | Synthesized consensus with confidence scores |
+
+**API Integration:**
+```json
+POST /v1/debates
+{
+  "topic": "Should AI have consciousness?",
+  "participants": [...],
+  "enable_multi_pass_validation": true,
+  "validation_config": {
+    "enable_validation": true,
+    "enable_polish": true,
+    "validation_timeout": 120,
+    "polish_timeout": 60,
+    "min_confidence_to_skip": 0.9,
+    "max_validation_rounds": 3,
+    "show_phase_indicators": true
+  }
+}
+```
+
+**Response includes:**
+- `current_phase` - Current validation phase (when running)
+- `multi_pass_result` - Detailed results including:
+  - `phases_completed` - Number of completed phases
+  - `overall_confidence` - Final confidence score (0-1)
+  - `quality_improvement` - Quality improvement from initial to final
+  - `final_response` - The polished, validated consensus
+
+**Key Files:**
+- `internal/services/debate_multipass_validation.go` - Core multi-pass validation system
+- `internal/services/debate_multipass_validation_test.go` - Unit tests
+- `internal/handlers/debate_handler.go` - API integration
+- `challenges/scripts/multipass_validation_challenge.sh` - 66-test validation
+
 ### Semantic Intent Detection (ZERO Hardcoding)
 
 HelixAgent uses **LLM-based semantic intent classification** to understand user messages. When a user confirms, refuses, or asks questions, the system uses AI to understand the semantic meaning - not pattern matching.
