@@ -78,6 +78,15 @@ func (s *Service) Initialize(ctx context.Context) error {
 	return nil
 }
 
+// Start starts the service without loading skills from disk.
+// Useful for testing or when skills are registered manually.
+func (s *Service) Start() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.running = true
+	s.log.Info("Skill service started (manual mode)")
+}
+
 // Shutdown stops the service.
 func (s *Service) Shutdown() error {
 	s.mu.Lock()
