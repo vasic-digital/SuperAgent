@@ -1,0 +1,62 @@
+name: Ingest PostgreSQL Docs
+run-name: Ingest PostgreSQL ${{ inputs.version }} Docs
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'PostgreSQL version to ingest (e.g. 14, 15, etc.)'
+        required: true
+        default: '17'
+
+jobs:
+  ingest-dev:
+    name: Ingest PostgreSQL docs for Dev
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PGHOST: ${{ secrets.PGHOST }}
+      PGPORT: ${{ secrets.PGPORT }}
+      PGDATABASE: ${{ secrets.PGDATABASE }}
+      PGUSER: ${{ secrets.PGUSER }}
+      PGPASSWORD: ${{ secrets.PGPASSWORD }}
+    steps: &ingest-steps
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ./ingest/.python-version
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install python dependencies
+        run: uv sync
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docbook-xml docbook-xsl libxml2-utils xsltproc fop
+
+      - name: Ingest PostgreSQL ${{ github.event.inputs.version }} docs for dev
+        run: uv run python postgres_docs.py ${{ github.event.inputs.version }}
+
+  ingest-prod:
+    name: Ingest PostgreSQL docs for Prod
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PGHOST: ${{ secrets.PROD_PGHOST }}
+      PGPORT: ${{ secrets.PROD_PGPORT }}
+      PGDATABASE: ${{ secrets.PROD_PGDATABASE }}
+      PGUSER: ${{ secrets.PROD_PGUSER }}
+      PGPASSWORD: ${{ secrets.PROD_PGPASSWORD }}
+    steps: *ingest-steps
