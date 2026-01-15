@@ -160,10 +160,10 @@ func TestDefaultQueueOptions(t *testing.T) {
 	assert.Nil(t, opts.Args)
 	assert.Empty(t, opts.DeadLetterExchange)
 	assert.Empty(t, opts.DeadLetterRoutingKey)
-	assert.Equal(t, int64(0), opts.MessageTTL)
+	assert.Equal(t, time.Duration(0), opts.MessageTTL)
 	assert.Equal(t, int64(0), opts.MaxLength)
 	assert.Equal(t, int64(0), opts.MaxLengthBytes)
-	assert.Nil(t, opts.MaxPriority)
+	assert.Equal(t, 0, opts.MaxPriority)
 }
 
 func TestApplyQueueOptions(t *testing.T) {
@@ -187,11 +187,10 @@ func TestApplyQueueOptions(t *testing.T) {
 	assert.True(t, opts.NoWait)
 	assert.Equal(t, "dlx", opts.DeadLetterExchange)
 	assert.Equal(t, "dlx.key", opts.DeadLetterRoutingKey)
-	assert.Equal(t, int64(3600000), opts.MessageTTL)
+	assert.Equal(t, 1*time.Hour, opts.MessageTTL)
 	assert.Equal(t, int64(1000), opts.MaxLength)
 	assert.Equal(t, int64(1024*1024), opts.MaxLengthBytes)
-	assert.NotNil(t, opts.MaxPriority)
-	assert.Equal(t, maxPriority, *opts.MaxPriority)
+	assert.Equal(t, maxPriority, opts.MaxPriority)
 }
 
 func TestDefaultStreamOptions(t *testing.T) {

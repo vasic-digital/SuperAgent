@@ -265,6 +265,16 @@ func SerializationError(cause error) *BrokerError {
 	return NewBrokerError(ErrCodeSerializationFailed, "serialization failed", cause)
 }
 
+// DeserializationError creates a deserialization error.
+func DeserializationError(cause error) *BrokerError {
+	return NewBrokerError(ErrCodeSerializationFailed, "deserialization failed", cause)
+}
+
+// ValidationError creates a validation error.
+func ValidationError(message string) *BrokerError {
+	return NewBrokerError(ErrCodeMessageInvalid, message, nil)
+}
+
 // ConfigError creates a configuration error.
 func ConfigError(message string) *BrokerError {
 	return NewBrokerError(ErrCodeInvalidConfig, message, nil)

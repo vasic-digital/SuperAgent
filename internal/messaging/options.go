@@ -228,6 +228,8 @@ type SubscribeOptions struct {
 	MaxRetries int
 	// RetryDelay is the delay between retries.
 	RetryDelay time.Duration
+	// Timeout is the message handler timeout.
+	Timeout time.Duration
 }
 
 // OffsetReset specifies the offset reset policy for Kafka.
@@ -428,14 +430,14 @@ type QueueOptions struct {
 	DeadLetterExchange string
 	// DeadLetterRoutingKey is the routing key for dead-lettered messages.
 	DeadLetterRoutingKey string
-	// MessageTTL is the default message TTL in milliseconds.
-	MessageTTL int64
+	// MessageTTL is the default message TTL.
+	MessageTTL time.Duration
 	// MaxLength is the maximum queue length.
 	MaxLength int64
 	// MaxLengthBytes is the maximum queue size in bytes.
 	MaxLengthBytes int64
 	// MaxPriority enables priority queue (0-255).
-	MaxPriority *int
+	MaxPriority int
 }
 
 // QueueOption is a function that modifies QueueOptions.
@@ -454,7 +456,7 @@ func DefaultQueueOptions() *QueueOptions {
 		MessageTTL:           0,
 		MaxLength:            0,
 		MaxLengthBytes:       0,
-		MaxPriority:          nil,
+		MaxPriority:          0,
 	}
 }
 
@@ -512,7 +514,7 @@ func WithDeadLetterRoutingKey(key string) QueueOption {
 // WithMessageTTL sets the message TTL.
 func WithMessageTTL(ttl time.Duration) QueueOption {
 	return func(o *QueueOptions) {
-		o.MessageTTL = int64(ttl.Milliseconds())
+		o.MessageTTL = ttl
 	}
 }
 
@@ -533,7 +535,14 @@ func WithMaxLengthBytes(max int64) QueueOption {
 // WithMaxPriority enables priority queue.
 func WithMaxPriority(max int) QueueOption {
 	return func(o *QueueOptions) {
-		o.MaxPriority = &max
+		o.MaxPriority = max
+	}
+}
+
+// WithHandlerTimeout sets the message handler timeout.
+func WithHandlerTimeout(timeout time.Duration) SubscribeOption {
+	return func(o *SubscribeOptions) {
+		o.Timeout = timeout
 	}
 }
 
