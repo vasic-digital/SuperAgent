@@ -24,6 +24,8 @@ import (
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/mcp"
+	"dev.helix.agent/internal/messaging"
+	"dev.helix.agent/internal/messaging/inmemory"
 	"dev.helix.agent/internal/router"
 	"dev.helix.agent/internal/verifier"
 )
@@ -863,6 +865,23 @@ func run(appCfg *AppConfig) error {
 	// Store startup verifier for router access
 	_ = startupVerifier // Used by router.SetupRouterWithVerifier if available
 
+	// Initialize messaging system with in-memory fallback
+	// This provides RabbitMQ-style task queuing and Kafka-style event streaming
+	logger.Info("Initializing messaging system...")
+	msgCtx, msgCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	msgSystem, err := messaging.InitializeGlobalMessagingSystem(msgCtx, logger, func() messaging.MessageBroker {
+		return inmemory.NewBroker(nil)
+	})
+	msgCancel()
+	if err != nil {
+		logger.WithError(err).Warn("Failed to initialize messaging system, continuing without messaging")
+	} else {
+		logger.WithFields(logrus.Fields{
+			"initialized":   msgSystem.IsInitialized(),
+			"fallback_mode": msgSystem.Config.FallbackToInMemory,
+		}).Info("Messaging system initialized")
+	}
+
 	r := router.SetupRouter(cfg)
 
 	// Start background MCP package pre-installation (unless skipped)
@@ -919,6 +938,16 @@ func run(appCfg *AppConfig) error {
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
+
+	// Shutdown messaging system
+	if msgSystem != nil && msgSystem.IsInitialized() {
+		logger.Info("Shutting down messaging system...")
+		if err := msgSystem.Close(shutdownCtx); err != nil {
+			logger.WithError(err).Warn("Error shutting down messaging system")
+		} else {
+			logger.Info("Messaging system shutdown complete")
+		}
+	}
 
 	// Use r variable to avoid unused import
 	_ = r
