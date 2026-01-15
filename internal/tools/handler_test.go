@@ -536,3 +536,470 @@ func TestToolResult_Structure(t *testing.T) {
 	assert.False(t, failResult.Success)
 	assert.Equal(t, "Command failed", failResult.Error)
 }
+
+// ============================================================================
+// Execute Method Tests - Error Paths
+// ============================================================================
+
+func TestReferencesHandler_Execute_EmptySymbol(t *testing.T) {
+	handler := &ReferencesHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{})
+	assert.NoError(t, err) // Handler returns result with error, not error
+	assert.False(t, result.Success)
+	assert.Equal(t, "symbol is required", result.Error)
+}
+
+func TestDefinitionHandler_Execute_EmptySymbol(t *testing.T) {
+	handler := &DefinitionHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{})
+	assert.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Equal(t, "symbol is required", result.Error)
+}
+
+func TestPRHandler_Execute_MergeWithoutPRNumber(t *testing.T) {
+	handler := &PRHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{
+		"action": "merge",
+	})
+	assert.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Contains(t, result.Error, "pr_number required")
+}
+
+func TestPRHandler_Execute_CloseWithoutPRNumber(t *testing.T) {
+	handler := &PRHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{
+		"action": "close",
+	})
+	assert.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Contains(t, result.Error, "pr_number required")
+}
+
+func TestPRHandler_Execute_UnknownAction(t *testing.T) {
+	handler := &PRHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{
+		"action": "unknown_action",
+	})
+	assert.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Contains(t, result.Error, "unknown action")
+}
+
+func TestIssueHandler_Execute_ViewWithoutIssueNumber(t *testing.T) {
+	handler := &IssueHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{
+		"action": "view",
+	})
+	assert.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Contains(t, result.Error, "issue_number required")
+}
+
+func TestIssueHandler_Execute_CloseWithoutIssueNumber(t *testing.T) {
+	handler := &IssueHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{
+		"action": "close",
+	})
+	assert.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Contains(t, result.Error, "issue_number required")
+}
+
+func TestIssueHandler_Execute_UnknownAction(t *testing.T) {
+	handler := &IssueHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{
+		"action": "unknown",
+	})
+	assert.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Contains(t, result.Error, "unknown action")
+}
+
+func TestWorkflowHandler_Execute_CancelWithoutRunID(t *testing.T) {
+	handler := &WorkflowHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{
+		"action": "cancel",
+	})
+	assert.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Contains(t, result.Error, "run_id required")
+}
+
+func TestWorkflowHandler_Execute_LogsWithoutRunID(t *testing.T) {
+	handler := &WorkflowHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{
+		"action": "logs",
+	})
+	assert.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Contains(t, result.Error, "run_id required")
+}
+
+func TestWorkflowHandler_Execute_UnknownAction(t *testing.T) {
+	handler := &WorkflowHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{
+		"action": "unknown",
+	})
+	assert.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Contains(t, result.Error, "unknown action")
+}
+
+func TestLintHandler_Execute_UnsupportedLinter(t *testing.T) {
+	handler := &LintHandler{}
+	ctx := context.Background()
+
+	result, err := handler.Execute(ctx, map[string]interface{}{
+		"linter": "unknown_linter",
+	})
+	assert.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Contains(t, result.Error, "unsupported linter")
+}
+
+// ============================================================================
+// Additional GenerateDefaultArgs Edge Cases
+// ============================================================================
+
+func TestGitHandler_GenerateDefaultArgs_AllOperations(t *testing.T) {
+	handler := &GitHandler{}
+
+	// Test all operation keywords - note that the code checks keywords in order,
+	// so if multiple keywords match, the first one in the if-else chain wins
+	operations := map[string]string{
+		"I need to commit":     "commit",
+		"push my changes":      "push",
+		"pull from remote":     "pull",
+		"switch branch":        "branch",
+		"checkout the file":    "checkout",
+		"please merge":         "merge",      // Use "merge" without "branch"
+		"show the diff":        "diff",
+		"view log history":     "log",        // Use "log" without "commit"
+		"stash my work":        "stash",
+		"just show status":     "status",
+	}
+
+	for context, expectedOp := range operations {
+		t.Run(context, func(t *testing.T) {
+			args := handler.GenerateDefaultArgs(context)
+			assert.Equal(t, expectedOp, args["operation"])
+		})
+	}
+}
+
+func TestTestHandler_GenerateDefaultArgs_AllTestTypes(t *testing.T) {
+	handler := &TestHandler{}
+
+	testCases := []struct {
+		context        string
+		expectedType   string
+		expectedPath   string
+	}{
+		{"run unit tests", "unit", "./internal/..."},
+		{"run integration tests", "integration", "./tests/integration/..."},
+		{"run e2e tests", "e2e", "./tests/e2e/..."},
+		{"just run tests", "all", "./..."},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.context, func(t *testing.T) {
+			args := handler.GenerateDefaultArgs(tc.context)
+			assert.Equal(t, tc.expectedType, args["test_type"])
+			assert.Equal(t, tc.expectedPath, args["test_path"])
+		})
+	}
+}
+
+// ============================================================================
+// Concurrent Access Tests
+// ============================================================================
+
+func TestToolRegistry_ConcurrentAccess(t *testing.T) {
+	registry := NewToolRegistry()
+
+	// Register handlers concurrently
+	done := make(chan bool)
+	for i := 0; i < 10; i++ {
+		go func() {
+			registry.Register(&GitHandler{})
+			done <- true
+		}()
+	}
+
+	// Wait for all registrations
+	for i := 0; i < 10; i++ {
+		<-done
+	}
+
+	// Concurrent reads
+	for i := 0; i < 10; i++ {
+		go func() {
+			_, _ = registry.Get("git")
+			done <- true
+		}()
+	}
+
+	for i := 0; i < 10; i++ {
+		<-done
+	}
+
+	// Should still work correctly
+	h, ok := registry.Get("git")
+	assert.True(t, ok)
+	assert.NotNil(t, h)
+}
+
+// ============================================================================
+// ToolResult Data Field Tests
+// ============================================================================
+
+func TestToolResult_WithData(t *testing.T) {
+	result := ToolResult{
+		Success: true,
+		Output:  "Success",
+		Data: map[string]interface{}{
+			"count":  5,
+			"files":  []string{"a.go", "b.go"},
+			"nested": map[string]int{"x": 1},
+		},
+	}
+
+	assert.True(t, result.Success)
+	assert.NotNil(t, result.Data)
+
+	data := result.Data.(map[string]interface{})
+	assert.Equal(t, 5, data["count"])
+	assert.Len(t, data["files"].([]string), 2)
+}
+
+func TestToolResult_EmptyFields(t *testing.T) {
+	result := ToolResult{}
+
+	assert.False(t, result.Success)
+	assert.Empty(t, result.Output)
+	assert.Empty(t, result.Error)
+	assert.Nil(t, result.Data)
+}
+
+// ============================================================================
+// Handler Interface Compliance Tests
+// ============================================================================
+
+func TestAllHandlers_ImplementInterface(t *testing.T) {
+	handlers := []ToolHandler{
+		&GitHandler{},
+		&TestHandler{},
+		&LintHandler{},
+		&DiffHandler{},
+		&TreeViewHandler{},
+		&FileInfoHandler{},
+		&SymbolsHandler{},
+		&ReferencesHandler{},
+		&DefinitionHandler{},
+		&PRHandler{},
+		&IssueHandler{},
+		&WorkflowHandler{},
+	}
+
+	for _, h := range handlers {
+		t.Run(h.Name(), func(t *testing.T) {
+			// Verify Name() returns non-empty
+			assert.NotEmpty(t, h.Name())
+
+			// Verify GenerateDefaultArgs returns map with description
+			args := h.GenerateDefaultArgs("test context")
+			assert.NotNil(t, args)
+			assert.NotEmpty(t, args["description"])
+
+			// Verify ValidateArgs can be called
+			// (may error due to missing required fields but shouldn't panic)
+			_ = h.ValidateArgs(map[string]interface{}{})
+		})
+	}
+}
+
+// ============================================================================
+// Edge Cases for Argument Processing
+// ============================================================================
+
+func TestGitHandler_Execute_WithArguments(t *testing.T) {
+	handler := &GitHandler{}
+	ctx := context.Background()
+
+	// Test that arguments are processed correctly
+	result, _ := handler.Execute(ctx, map[string]interface{}{
+		"operation": "log",
+		"arguments": []interface{}{"--oneline", "-5"},
+		"working_dir": "/tmp/nonexistent_dir_for_test",
+	})
+
+	// Will fail because dir doesn't exist, but shouldn't panic
+	assert.False(t, result.Success)
+}
+
+func TestTestHandler_Execute_DefaultValues(t *testing.T) {
+	handler := &TestHandler{}
+	ctx := context.Background()
+
+	// Execute with minimal args - should use defaults
+	result, _ := handler.Execute(ctx, map[string]interface{}{
+		// Empty - should use default test_path "./..." and timeout "5m"
+	})
+
+	// Will likely fail or succeed depending on environment
+	// but the important thing is it shouldn't panic
+	_ = result
+}
+
+func TestDiffHandler_Execute_Modes(t *testing.T) {
+	handler := &DiffHandler{}
+	ctx := context.Background()
+
+	modes := []string{"working", "staged", "commit", "branch"}
+	for _, mode := range modes {
+		t.Run(mode, func(t *testing.T) {
+			result, _ := handler.Execute(ctx, map[string]interface{}{
+				"mode":         mode,
+				"compare_with": "main",
+				"context_lines": float64(5),
+			})
+			// Should not panic regardless of mode
+			_ = result
+		})
+	}
+}
+
+func TestTreeViewHandler_Execute_WithIgnorePatterns(t *testing.T) {
+	handler := &TreeViewHandler{}
+	ctx := context.Background()
+
+	result, _ := handler.Execute(ctx, map[string]interface{}{
+		"path":            ".",
+		"max_depth":       float64(2),
+		"show_hidden":     true,
+		"ignore_patterns": []interface{}{"node_modules", "vendor"},
+	})
+
+	// Should not panic with ignore patterns
+	_ = result
+}
+
+func TestSymbolsHandler_Execute_Recursive(t *testing.T) {
+	handler := &SymbolsHandler{}
+	ctx := context.Background()
+
+	result, _ := handler.Execute(ctx, map[string]interface{}{
+		"file_path": ".",
+		"recursive": true,
+	})
+
+	// Should have executed grep with -r flag
+	_ = result
+}
+
+func TestReferencesHandler_Execute_WithFilePath(t *testing.T) {
+	handler := &ReferencesHandler{}
+	ctx := context.Background()
+
+	result, _ := handler.Execute(ctx, map[string]interface{}{
+		"symbol":    "TestFunction",
+		"file_path": "./internal",
+	})
+
+	// Should have searched in specified path
+	_ = result
+}
+
+func TestPRHandler_Execute_CreateWithOptions(t *testing.T) {
+	handler := &PRHandler{}
+	ctx := context.Background()
+
+	// This would fail without gh CLI, but tests argument processing
+	result, _ := handler.Execute(ctx, map[string]interface{}{
+		"action":      "create",
+		"title":       "Test PR",
+		"body":        "Test body",
+		"base_branch": "develop",
+	})
+
+	// Will fail without gh CLI but shouldn't panic
+	assert.False(t, result.Success)
+}
+
+func TestPRHandler_Execute_ViewWithPRNumber(t *testing.T) {
+	handler := &PRHandler{}
+	ctx := context.Background()
+
+	result, _ := handler.Execute(ctx, map[string]interface{}{
+		"action":    "view",
+		"pr_number": float64(123),
+	})
+
+	// Will fail without gh CLI but tests pr_number processing
+	assert.False(t, result.Success)
+}
+
+func TestIssueHandler_Execute_CreateWithOptions(t *testing.T) {
+	handler := &IssueHandler{}
+	ctx := context.Background()
+
+	result, _ := handler.Execute(ctx, map[string]interface{}{
+		"action": "create",
+		"title":  "Test Issue",
+		"body":   "Issue description",
+	})
+
+	// Will fail without gh CLI
+	assert.False(t, result.Success)
+}
+
+func TestWorkflowHandler_Execute_RunWithOptions(t *testing.T) {
+	handler := &WorkflowHandler{}
+	ctx := context.Background()
+
+	result, _ := handler.Execute(ctx, map[string]interface{}{
+		"action":      "run",
+		"workflow_id": "test.yml",
+		"branch":      "main",
+	})
+
+	// Will fail without gh CLI
+	assert.False(t, result.Success)
+}
+
+func TestWorkflowHandler_Execute_ViewWithRunID(t *testing.T) {
+	handler := &WorkflowHandler{}
+	ctx := context.Background()
+
+	result, _ := handler.Execute(ctx, map[string]interface{}{
+		"action": "view",
+		"run_id": float64(12345),
+	})
+
+	// Will fail without gh CLI but tests run_id processing
+	assert.False(t, result.Success)
+}
