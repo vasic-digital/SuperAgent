@@ -1,0 +1,53 @@
+name: Ingest Tiger Docs
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+jobs:
+  ingest-dev:
+    name: Ingest Tiger docs for Dev
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PGHOST: ${{ secrets.PGHOST }}
+      PGPORT: ${{ secrets.PGPORT }}
+      PGDATABASE: ${{ secrets.PGDATABASE }}
+      PGUSER: ${{ secrets.PGUSER }}
+      PGPASSWORD: ${{ secrets.PGPASSWORD }}
+    steps: &ingest-steps
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ./ingest/.python-version
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install python dependencies
+        run: uv sync
+
+      - name: Ingest Tiger docs
+        run: uv run python tiger_docs.py
+
+  ingest-prod:
+    name: Ingest Tiger docs for Prod
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PGHOST: ${{ secrets.PROD_PGHOST }}
+      PGPORT: ${{ secrets.PROD_PGPORT }}
+      PGDATABASE: ${{ secrets.PROD_PGDATABASE }}
+      PGUSER: ${{ secrets.PROD_PGUSER }}
+      PGPASSWORD: ${{ secrets.PROD_PGPASSWORD }}
+    steps: *ingest-steps
