@@ -527,3 +527,171 @@ func TestProviderAdapterRegistry_ConcurrentAccess(t *testing.T) {
 		<-done
 	}
 }
+
+// ============================================================================
+// extractContent Tests (via Complete with different response formats)
+// ============================================================================
+
+func TestProviderAdapter_Complete_AnthropicFormat(t *testing.T) {
+	// Create mock server that returns Anthropic-compatible response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"content":[{"type":"text","text":"Hello from Anthropic!"}]}`))
+	}))
+	defer server.Close()
+
+	// Provider name must match switch case: "claude" or "anthropic"
+	adapter, _ := NewProviderAdapter("anthropic", "anthropic", "test-key", server.URL, nil)
+	response, err := adapter.Complete(context.Background(), "claude-3", "Hello", nil)
+	if err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+	if response != "Hello from Anthropic!" {
+		t.Errorf("expected 'Hello from Anthropic!', got '%s'", response)
+	}
+}
+
+func TestProviderAdapter_Complete_GeminiFormat(t *testing.T) {
+	// Create mock server that returns Gemini-compatible response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"candidates":[{"content":{"parts":[{"text":"Hello from Gemini!"}]}}]}`))
+	}))
+	defer server.Close()
+
+	// Provider name must match switch case: "gemini" or "google"
+	adapter, _ := NewProviderAdapter("gemini", "gemini", "test-key", server.URL, nil)
+	response, err := adapter.Complete(context.Background(), "gemini-pro", "Hello", nil)
+	if err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+	if response != "Hello from Gemini!" {
+		t.Errorf("expected 'Hello from Gemini!', got '%s'", response)
+	}
+}
+
+func TestProviderAdapter_Complete_OllamaFormat(t *testing.T) {
+	// Create mock server that returns Ollama-compatible response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"response":"Hello from Ollama!"}`))
+	}))
+	defer server.Close()
+
+	// Provider name must match switch case: "ollama"
+	adapter, _ := NewProviderAdapter("ollama", "ollama", "test-key", server.URL, nil)
+	response, err := adapter.Complete(context.Background(), "llama2", "Hello", nil)
+	if err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+	if response != "Hello from Ollama!" {
+		t.Errorf("expected 'Hello from Ollama!', got '%s'", response)
+	}
+}
+
+func TestProviderAdapter_Complete_DeepSeekFormat(t *testing.T) {
+	// DeepSeek uses OpenAI-compatible format
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"choices":[{"message":{"content":"Hello from DeepSeek!"}}]}`))
+	}))
+	defer server.Close()
+
+	adapter, _ := NewProviderAdapter("deepseek", "DeepSeek", "key", server.URL, nil)
+	response, err := adapter.Complete(context.Background(), "deepseek-chat", "Hello", nil)
+	if err != nil {
+		t.Fatalf("Complete failed: %v", err)
+	}
+	if response != "Hello from DeepSeek!" {
+		t.Errorf("expected 'Hello from DeepSeek!', got '%s'", response)
+	}
+}
+
+func TestProviderAdapter_Complete_InvalidFormat(t *testing.T) {
+	// Create mock server that returns invalid response format
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"invalid":"response"}`))
+	}))
+	defer server.Close()
+
+	adapter, _ := NewProviderAdapter("test", "Test", "key", server.URL, nil)
+	_, err := adapter.Complete(context.Background(), "model", "Hello", nil)
+	if err == nil {
+		t.Error("expected error for invalid response format")
+	}
+}
+
+func TestProviderAdapter_Complete_EmptyChoices(t *testing.T) {
+	// Create mock server that returns empty choices array
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"choices":[]}`))
+	}))
+	defer server.Close()
+
+	adapter, _ := NewProviderAdapter("openai", "OpenAI", "key", server.URL, nil)
+	_, err := adapter.Complete(context.Background(), "gpt-4", "Hello", nil)
+	if err == nil {
+		t.Error("expected error for empty choices")
+	}
+}
+
+func TestProviderAdapter_Complete_EmptyContent(t *testing.T) {
+	// Anthropic format with empty content array
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"content":[]}`))
+	}))
+	defer server.Close()
+
+	adapter, _ := NewProviderAdapter("anthropic", "Anthropic", "key", server.URL, nil)
+	_, err := adapter.Complete(context.Background(), "claude", "Hello", nil)
+	if err == nil {
+		t.Error("expected error for empty content")
+	}
+}
+
+func TestProviderAdapter_Complete_MalformedJSON(t *testing.T) {
+	// Create mock server that returns malformed JSON
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{invalid json}`))
+	}))
+	defer server.Close()
+
+	adapter, _ := NewProviderAdapter("openai", "OpenAI", "key", server.URL, nil)
+	_, err := adapter.Complete(context.Background(), "gpt-4", "Hello", nil)
+	if err == nil {
+		t.Error("expected error for malformed JSON")
+	}
+}
+
+func TestProviderAdapter_Complete_ServerError(t *testing.T) {
+	// Create mock server that returns 500 error
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"internal server error"}`))
+	}))
+	defer server.Close()
+
+	adapter, _ := NewProviderAdapter("openai", "OpenAI", "key", server.URL, nil)
+	_, err := adapter.Complete(context.Background(), "gpt-4", "Hello", nil)
+	if err == nil {
+		t.Error("expected error for server error response")
+	}
+
+	// Check that failure was recorded
+	metrics := adapter.GetMetrics()
+	if metrics.FailedRequests != 1 {
+		t.Errorf("expected 1 failed request, got %d", metrics.FailedRequests)
+	}
+}
