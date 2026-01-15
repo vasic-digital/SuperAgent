@@ -1,0 +1,197 @@
+# Messaging Configuration for HelixAgent
+# This file configures RabbitMQ and Apache Kafka integration
+
+messaging:
+  # Enable/disable messaging features
+  enabled: true
+
+  # Primary broker type: "rabbitmq" or "kafka"
+  # RabbitMQ is used for task queuing (low-latency)
+  # Kafka is used for event streaming (high-throughput)
+  task_queue_broker: rabbitmq
+  event_stream_broker: kafka
+
+  # Publishing options
+  publish_timeout: 30s
+  retry_on_error: true
+  max_retries: 3
+  retry_delay: 1s
+  async_publish: true
+  buffer_size: 1000
+
+rabbitmq:
+  # Connection settings
+  host: ${RABBITMQ_HOST:-localhost}
+  port: ${RABBITMQ_PORT:-5672}
+  username: ${RABBITMQ_USER:-helixagent}
+  password: ${RABBITMQ_PASSWORD:-helixagent123}
+  virtual_host: ${RABBITMQ_VHOST:-/}
+
+  # TLS settings
+  tls: false
+  tls_insecure: false
+
+  # Connection options
+  connect_timeout: 30s
+  reconnect_interval: 5s
+  max_reconnect_attempts: 0  # 0 = unlimited
+  heartbeat: 60s
+
+  # Publisher settings
+  publisher_confirm: true
+  publisher_confirm_timeout: 30s
+
+  # Consumer settings
+  prefetch_count: 10
+
+  # Queue defaults
+  default_queue_durable: true
+  default_queue_auto_delete: false
+  default_exchange_type: direct
+  default_exchange_durable: true
+
+kafka:
+  # Connection settings
+  brokers:
+    - ${KAFKA_BROKER:-localhost:9092}
+  client_id: ${KAFKA_CLIENT_ID:-helixagent}
+  group_id: ${KAFKA_GROUP_ID:-helixagent-group}
+
+  # TLS settings
+  tls: false
+  tls_insecure: false
+
+  # SASL Authentication
+  sasl_enabled: false
+  sasl_mechanism: PLAIN  # PLAIN, SCRAM-SHA-256, SCRAM-SHA-512
+  sasl_username: ${KAFKA_SASL_USERNAME:-}
+  sasl_password: ${KAFKA_SASL_PASSWORD:-}
+
+  # Timeouts
+  dial_timeout: 10s
+  read_timeout: 30s
+  write_timeout: 30s
+
+  # Producer settings
+  required_acks: all  # none, leader, all
+  compression: lz4    # none, gzip, snappy, lz4, zstd
+  batch_size: 100
+  batch_bytes: 1048576  # 1MB
+  batch_timeout: 10ms
+  max_attempts: 3
+  enable_idempotent: true
+
+  # Consumer settings
+  min_bytes: 1
+  max_bytes: 10485760  # 10MB
+  max_wait: 500ms
+  commit_interval: 5s
+  start_offset: -1  # -1 = latest, -2 = earliest
+  session_timeout: 30s
+  heartbeat_interval: 3s
+  rebalance_timeout: 30s
+  partition_watch_interval: 5s
+  watch_partition_changes: false
+
+  # Topic defaults
+  auto_create_topics: false
+  default_partitions: 3
+  default_replication: 1
+  default_retention_ms: 604800000  # 7 days
+  default_segment_bytes: 1073741824  # 1GB
+
+# Topic/Queue definitions
+topics:
+  # LLMsVerifier events
+  - name: llmsverifier.events.verification
+    partitions: 3
+    replication: 1
+  - name: llmsverifier.events.provider
+    partitions: 3
+    replication: 1
+  - name: llmsverifier.events.model
+    partitions: 3
+    replication: 1
+  - name: llmsverifier.events.team
+    partitions: 3
+    replication: 1
+  - name: llmsverifier.events.system
+    partitions: 3
+    replication: 1
+
+  # HelixAgent events
+  - name: helixagent.events.llm.responses
+    partitions: 6
+    replication: 1
+  - name: helixagent.events.debate.rounds
+    partitions: 6
+    replication: 1
+  - name: helixagent.events.verification.results
+    partitions: 3
+    replication: 1
+  - name: helixagent.events.provider.health
+    partitions: 3
+    replication: 1
+  - name: helixagent.events.audit
+    partitions: 6
+    replication: 1
+    retention_ms: 2592000000  # 30 days
+  - name: helixagent.events.metrics
+    partitions: 3
+    replication: 1
+  - name: helixagent.events.errors
+    partitions: 3
+    replication: 1
+
+  # Streaming topics (high-throughput)
+  - name: helixagent.stream.tokens
+    partitions: 12
+    replication: 1
+  - name: helixagent.stream.sse
+    partitions: 6
+    replication: 1
+  - name: helixagent.stream.websocket
+    partitions: 6
+    replication: 1
+
+queues:
+  # Task queues (RabbitMQ)
+  - name: helixagent.tasks.background
+    durable: true
+    dead_letter_exchange: helixagent.dlx
+  - name: helixagent.tasks.llm
+    durable: true
+    dead_letter_exchange: helixagent.dlx
+    max_priority: 10
+  - name: helixagent.tasks.debate
+    durable: true
+    dead_letter_exchange: helixagent.dlx
+  - name: helixagent.tasks.verification
+    durable: true
+    dead_letter_exchange: helixagent.dlx
+  - name: helixagent.tasks.notifications
+    durable: true
+    dead_letter_exchange: helixagent.dlx
+
+  # Dead letter queues
+  - name: helixagent.dlq
+    durable: true
+    message_ttl: 604800000  # 7 days
+  - name: helixagent.retry
+    durable: true
+    message_ttl: 60000      # 60 seconds
+
+exchanges:
+  # Task exchanges (RabbitMQ)
+  - name: helixagent.tasks
+    type: direct
+    durable: true
+  - name: helixagent.events
+    type: topic
+    durable: true
+  - name: helixagent.notifications
+    type: fanout
+    durable: true
+  - name: helixagent.dlx
+    type: direct
+    durable: true

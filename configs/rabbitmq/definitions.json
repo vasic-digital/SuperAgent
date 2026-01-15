@@ -1,0 +1,207 @@
+{
+  "rabbit_version": "3.12.0",
+  "users": [
+    {
+      "name": "helixagent",
+      "password_hash": "WrI0WrI0=",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "helixagent",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "topic_permissions": [],
+  "parameters": [],
+  "global_parameters": [
+    {
+      "name": "cluster_name",
+      "value": "helixagent-rabbitmq"
+    }
+  ],
+  "policies": [
+    {
+      "vhost": "/",
+      "name": "ha-all",
+      "pattern": ".*",
+      "apply-to": "all",
+      "definition": {
+        "ha-mode": "all",
+        "ha-sync-mode": "automatic"
+      },
+      "priority": 0
+    }
+  ],
+  "queues": [
+    {
+      "name": "helixagent.tasks.background",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "helixagent.dlx",
+        "x-dead-letter-routing-key": "dlq"
+      }
+    },
+    {
+      "name": "helixagent.tasks.llm",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "helixagent.dlx",
+        "x-dead-letter-routing-key": "dlq",
+        "x-max-priority": 10
+      }
+    },
+    {
+      "name": "helixagent.tasks.debate",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "helixagent.dlx",
+        "x-dead-letter-routing-key": "dlq"
+      }
+    },
+    {
+      "name": "helixagent.tasks.verification",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "helixagent.dlx",
+        "x-dead-letter-routing-key": "dlq"
+      }
+    },
+    {
+      "name": "helixagent.tasks.notifications",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "helixagent.dlx",
+        "x-dead-letter-routing-key": "dlq"
+      }
+    },
+    {
+      "name": "helixagent.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 604800000
+      }
+    },
+    {
+      "name": "helixagent.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 60000,
+        "x-dead-letter-exchange": "helixagent.tasks",
+        "x-dead-letter-routing-key": "#"
+      }
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "helixagent.tasks",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "helixagent.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "helixagent.notifications",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "helixagent.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "helixagent.tasks",
+      "vhost": "/",
+      "destination": "helixagent.tasks.background",
+      "destination_type": "queue",
+      "routing_key": "background",
+      "arguments": {}
+    },
+    {
+      "source": "helixagent.tasks",
+      "vhost": "/",
+      "destination": "helixagent.tasks.llm",
+      "destination_type": "queue",
+      "routing_key": "llm",
+      "arguments": {}
+    },
+    {
+      "source": "helixagent.tasks",
+      "vhost": "/",
+      "destination": "helixagent.tasks.debate",
+      "destination_type": "queue",
+      "routing_key": "debate",
+      "arguments": {}
+    },
+    {
+      "source": "helixagent.tasks",
+      "vhost": "/",
+      "destination": "helixagent.tasks.verification",
+      "destination_type": "queue",
+      "routing_key": "verification",
+      "arguments": {}
+    },
+    {
+      "source": "helixagent.tasks",
+      "vhost": "/",
+      "destination": "helixagent.tasks.notifications",
+      "destination_type": "queue",
+      "routing_key": "notifications",
+      "arguments": {}
+    },
+    {
+      "source": "helixagent.dlx",
+      "vhost": "/",
+      "destination": "helixagent.dlq",
+      "destination_type": "queue",
+      "routing_key": "dlq",
+      "arguments": {}
+    }
+  ]
+}
