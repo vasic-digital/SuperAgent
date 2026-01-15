@@ -340,19 +340,39 @@ func (u *UnifiedProtocolManager) GetMetrics(ctx context.Context) (map[string]int
 func (u *UnifiedProtocolManager) RefreshAll(ctx context.Context) error {
 	u.log.Info("Refreshing all protocol servers")
 
+	var errs []error
+
 	// Refresh MCP servers
-	_ = u.mcpManager.SyncMCPServer(ctx, "all")
+	if err := u.mcpManager.SyncMCPServer(ctx, "all"); err != nil {
+		u.log.WithError(err).Warn("Failed to refresh MCP servers")
+		errs = append(errs, fmt.Errorf("MCP refresh: %w", err))
+	}
 
 	// Refresh LSP servers
-	_ = u.lspManager.RefreshAllLSPServers(ctx)
+	if err := u.lspManager.RefreshAllLSPServers(ctx); err != nil {
+		u.log.WithError(err).Warn("Failed to refresh LSP servers")
+		errs = append(errs, fmt.Errorf("LSP refresh: %w", err))
+	}
 
 	// Refresh ACP servers
-	_ = u.acpManager.SyncACPServer(ctx, "all")
+	if err := u.acpManager.SyncACPServer(ctx, "all"); err != nil {
+		u.log.WithError(err).Warn("Failed to refresh ACP servers")
+		errs = append(errs, fmt.Errorf("ACP refresh: %w", err))
+	}
 
 	// Refresh embeddings provider
-	_ = u.embeddingManager.RefreshAllEmbeddings(ctx)
+	if err := u.embeddingManager.RefreshAllEmbeddings(ctx); err != nil {
+		u.log.WithError(err).Warn("Failed to refresh embedding providers")
+		errs = append(errs, fmt.Errorf("embedding refresh: %w", err))
+	}
 
-	u.log.Info("All protocol servers refreshed")
+	if len(errs) > 0 {
+		u.log.WithField("error_count", len(errs)).Warn("Some protocol servers failed to refresh")
+		// Return first error but log all
+		return errs[0]
+	}
+
+	u.log.Info("All protocol servers refreshed successfully")
 	return nil
 }
 

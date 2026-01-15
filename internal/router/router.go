@@ -249,6 +249,15 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			authGroup.POST("/login", func(c *gin.Context) {
 				c.JSON(503, gin.H{"error": "Authentication disabled in standalone mode"})
 			})
+			authGroup.POST("/refresh", func(c *gin.Context) {
+				c.JSON(503, gin.H{"error": "Authentication disabled in standalone mode"})
+			})
+			authGroup.POST("/logout", func(c *gin.Context) {
+				c.JSON(503, gin.H{"error": "Authentication disabled in standalone mode"})
+			})
+			authGroup.GET("/me", func(c *gin.Context) {
+				c.JSON(503, gin.H{"error": "Authentication disabled in standalone mode"})
+			})
 		}
 	}
 

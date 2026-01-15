@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,6 +16,8 @@ type MemoryDB struct {
 	mu      sync.RWMutex
 	data    map[string][]map[string]any
 	enabled bool
+	// rowData stores the last inserted/updated row for QueryRow operations
+	rowData map[string]map[string][]any
 }
 
 // memoryRow implements Row interface for in-memory queries
@@ -57,6 +60,7 @@ func NewMemoryDB() *MemoryDB {
 	log.Println("Using in-memory database (standalone mode)")
 	return &MemoryDB{
 		data:    make(map[string][]map[string]any),
+		rowData: make(map[string]map[string][]any),
 		enabled: true,
 	}
 }
@@ -95,7 +99,61 @@ func (m *MemoryDB) Query(query string, args ...any) ([]any, error) {
 }
 
 func (m *MemoryDB) QueryRow(query string, args ...any) Row {
-	return &memoryRow{values: nil, err: fmt.Errorf("not implemented in memory mode")}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	// Parse simple queries to extract table and key
+	// Supports: SELECT ... FROM table WHERE id = ?
+	// This is a simplified implementation for standalone mode
+	table := extractTableFromQuery(query)
+	if table == "" {
+		return &memoryRow{values: nil, err: fmt.Errorf("unable to parse query: %s", query)}
+	}
+
+	// Check if we have data for this table
+	if tableData, ok := m.rowData[table]; ok {
+		// Try to find a matching row based on args
+		if len(args) > 0 {
+			key := fmt.Sprintf("%v", args[0])
+			if row, found := tableData[key]; found {
+				return &memoryRow{values: row, err: nil}
+			}
+		}
+		// Return first row if no specific key requested
+		for _, row := range tableData {
+			return &memoryRow{values: row, err: nil}
+		}
+	}
+
+	return &memoryRow{values: nil, err: fmt.Errorf("no rows found")}
+}
+
+// StoreRow stores a row in the in-memory database for later retrieval
+func (m *MemoryDB) StoreRow(table string, key string, values []any) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.rowData[table] == nil {
+		m.rowData[table] = make(map[string][]any)
+	}
+	m.rowData[table][key] = values
+}
+
+// extractTableFromQuery extracts the table name from a SQL query
+func extractTableFromQuery(query string) string {
+	// Simple extraction - look for "FROM table" pattern
+	query = strings.ToLower(query)
+	if idx := strings.Index(query, "from "); idx >= 0 {
+		rest := query[idx+5:]
+		// Get the table name (first word after FROM)
+		parts := strings.Fields(rest)
+		if len(parts) > 0 {
+			// Remove any trailing WHERE, ORDER, etc.
+			table := strings.TrimSuffix(parts[0], ",")
+			return table
+		}
+	}
+	return ""
 }
 
 func (m *MemoryDB) Close() error {
