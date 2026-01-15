@@ -928,3 +928,384 @@ func TestInMemoryTaskQueue_ConcurrentDequeue(t *testing.T) {
 
 	assert.Equal(t, numTasks, len(dequeued))
 }
+
+// Test isIOStarved function
+func TestDefaultStuckDetector_IsIOStarved_InsufficientSnapshots(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 0.5, IOReadBytes: 1000, IOWriteBytes: 500},
+		{CPUPercent: 0.5, IOReadBytes: 1000, IOWriteBytes: 500},
+	}
+
+	starved := detector.isIOStarved(snapshots)
+	assert.False(t, starved)
+}
+
+func TestDefaultStuckDetector_IsIOStarved_NotStarved(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	// Snapshots with IO activity
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 10.0, IOReadBytes: 2000, IOWriteBytes: 1500},
+		{CPUPercent: 10.0, IOReadBytes: 1500, IOWriteBytes: 1200},
+		{CPUPercent: 10.0, IOReadBytes: 1000, IOWriteBytes: 1000},
+		{CPUPercent: 10.0, IOReadBytes: 500, IOWriteBytes: 500},
+	}
+
+	starved := detector.isIOStarved(snapshots)
+	assert.False(t, starved)
+}
+
+func TestDefaultStuckDetector_IsIOStarved_Starved(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	// CPU active but no IO activity (same values across snapshots)
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 0.5, IOReadBytes: 1000, IOWriteBytes: 500},
+		{CPUPercent: 0.5, IOReadBytes: 1000, IOWriteBytes: 500},
+		{CPUPercent: 0.5, IOReadBytes: 1000, IOWriteBytes: 500},
+		{CPUPercent: 0.5, IOReadBytes: 1000, IOWriteBytes: 500},
+	}
+
+	starved := detector.isIOStarved(snapshots)
+	assert.True(t, starved)
+}
+
+func TestDefaultStuckDetector_IsIOStarved_HighCPU(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	// High CPU usage - not considered starved even without IO
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 50.0, IOReadBytes: 1000, IOWriteBytes: 500},
+		{CPUPercent: 45.0, IOReadBytes: 1000, IOWriteBytes: 500},
+		{CPUPercent: 48.0, IOReadBytes: 1000, IOWriteBytes: 500},
+		{CPUPercent: 42.0, IOReadBytes: 1000, IOWriteBytes: 500},
+	}
+
+	starved := detector.isIOStarved(snapshots)
+	assert.False(t, starved)
+}
+
+// Test isNetworkHung function
+func TestDefaultStuckDetector_IsNetworkHung_InsufficientSnapshots(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 0.5, NetConnections: 10},
+		{CPUPercent: 0.5, NetConnections: 10},
+	}
+
+	hung := detector.isNetworkHung(snapshots)
+	assert.False(t, hung)
+}
+
+func TestDefaultStuckDetector_IsNetworkHung_NoConnections(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 0.5, NetConnections: 0, NetBytesSent: 1000, NetBytesRecv: 2000},
+		{CPUPercent: 0.5, NetConnections: 0, NetBytesSent: 1000, NetBytesRecv: 2000},
+		{CPUPercent: 0.5, NetConnections: 0, NetBytesSent: 1000, NetBytesRecv: 2000},
+		{CPUPercent: 0.5, NetConnections: 0, NetBytesSent: 1000, NetBytesRecv: 2000},
+	}
+
+	hung := detector.isNetworkHung(snapshots)
+	assert.False(t, hung) // No connections, so can't be network hung
+}
+
+func TestDefaultStuckDetector_IsNetworkHung_Hung(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	// Active connections but no data transfer
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 0.5, NetConnections: 10, NetBytesSent: 1000, NetBytesRecv: 2000},
+		{CPUPercent: 0.5, NetConnections: 10, NetBytesSent: 1000, NetBytesRecv: 2000},
+		{CPUPercent: 0.5, NetConnections: 10, NetBytesSent: 1000, NetBytesRecv: 2000},
+		{CPUPercent: 0.5, NetConnections: 10, NetBytesSent: 1000, NetBytesRecv: 2000},
+	}
+
+	hung := detector.isNetworkHung(snapshots)
+	assert.True(t, hung)
+}
+
+func TestDefaultStuckDetector_IsNetworkHung_NotHung(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	// Active connections with data transfer
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 0.5, NetConnections: 10, NetBytesSent: 5000, NetBytesRecv: 10000},
+		{CPUPercent: 0.5, NetConnections: 10, NetBytesSent: 4000, NetBytesRecv: 8000},
+		{CPUPercent: 0.5, NetConnections: 10, NetBytesSent: 3000, NetBytesRecv: 6000},
+		{CPUPercent: 0.5, NetConnections: 10, NetBytesSent: 2000, NetBytesRecv: 4000},
+	}
+
+	hung := detector.isNetworkHung(snapshots)
+	assert.False(t, hung)
+}
+
+// Test hasMemoryLeak function
+func TestDefaultStuckDetector_HasMemoryLeak_InsufficientSnapshots(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	snapshots := []*models.ResourceSnapshot{
+		{MemoryRSSBytes: 200000000},
+		{MemoryRSSBytes: 150000000},
+		{MemoryRSSBytes: 100000000},
+		{MemoryRSSBytes: 50000000},
+	}
+
+	hasLeak := detector.hasMemoryLeak(snapshots)
+	assert.False(t, hasLeak) // Need 5+ snapshots
+}
+
+func TestDefaultStuckDetector_HasMemoryLeak_NotMonotonicallyIncreasing(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	// Memory goes up and down
+	snapshots := []*models.ResourceSnapshot{
+		{MemoryRSSBytes: 150000000},
+		{MemoryRSSBytes: 200000000}, // Decrease
+		{MemoryRSSBytes: 180000000}, // Increase
+		{MemoryRSSBytes: 220000000}, // Decrease
+		{MemoryRSSBytes: 100000000},
+	}
+
+	hasLeak := detector.hasMemoryLeak(snapshots)
+	assert.False(t, hasLeak)
+}
+
+func TestDefaultStuckDetector_HasMemoryLeak_SmallGrowthRate(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	// Memory increases but less than 50%
+	snapshots := []*models.ResourceSnapshot{
+		{MemoryRSSBytes: 110000000}, // Latest - 110MB
+		{MemoryRSSBytes: 108000000},
+		{MemoryRSSBytes: 106000000},
+		{MemoryRSSBytes: 104000000},
+		{MemoryRSSBytes: 102000000},
+		{MemoryRSSBytes: 100000000}, // Oldest - 100MB (only 10% growth)
+	}
+
+	hasLeak := detector.hasMemoryLeak(snapshots)
+	assert.False(t, hasLeak) // Growth rate too small
+}
+
+func TestDefaultStuckDetector_HasMemoryLeak_Detected(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	// Memory monotonically increasing with >50% growth
+	snapshots := []*models.ResourceSnapshot{
+		{MemoryRSSBytes: 200000000}, // Latest - 200MB
+		{MemoryRSSBytes: 180000000},
+		{MemoryRSSBytes: 160000000},
+		{MemoryRSSBytes: 140000000},
+		{MemoryRSSBytes: 120000000}, // Oldest - 120MB (67% growth)
+	}
+
+	hasLeak := detector.hasMemoryLeak(snapshots)
+	assert.True(t, hasLeak)
+}
+
+func TestDefaultStuckDetector_HasMemoryLeak_ZeroOldestMemory(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	// Edge case - oldest memory is 0
+	snapshots := []*models.ResourceSnapshot{
+		{MemoryRSSBytes: 200000000},
+		{MemoryRSSBytes: 180000000},
+		{MemoryRSSBytes: 160000000},
+		{MemoryRSSBytes: 140000000},
+		{MemoryRSSBytes: 0}, // Oldest - 0
+	}
+
+	hasLeak := detector.hasMemoryLeak(snapshots)
+	assert.False(t, hasLeak) // Can't calculate growth with 0 base
+}
+
+// Test isEndlessTaskStuck with more scenarios
+func TestDefaultStuckDetector_IsEndlessTaskStuck_NoSnapshots(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	task := &models.BackgroundTask{
+		ID:       "test-endless-nosnapshots",
+		TaskType: "endless",
+		Config:   models.TaskConfig{Endless: true},
+	}
+
+	isStuck, reason := detector.isEndlessTaskStuck(task, nil)
+	assert.False(t, isStuck)
+	assert.Empty(t, reason)
+}
+
+func TestDefaultStuckDetector_IsEndlessTaskStuck_CriticalMemory(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	task := &models.BackgroundTask{
+		ID:       "test-endless-mem",
+		TaskType: "endless",
+		Config:   models.TaskConfig{Endless: true},
+	}
+
+	snapshots := []*models.ResourceSnapshot{
+		{MemoryPercent: 99.0},
+	}
+
+	isStuck, reason := detector.isEndlessTaskStuck(task, snapshots)
+	assert.True(t, isStuck)
+	assert.Contains(t, reason, "critical memory")
+}
+
+func TestDefaultStuckDetector_IsEndlessTaskStuck_NoActivity(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	task := &models.BackgroundTask{
+		ID:       "test-endless-noact",
+		TaskType: "endless",
+		Config:   models.TaskConfig{Endless: true},
+	}
+
+	// 5 snapshots with no activity
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 0, IOReadBytes: 100, IOWriteBytes: 50},
+		{CPUPercent: 0, IOReadBytes: 100, IOWriteBytes: 50},
+		{CPUPercent: 0, IOReadBytes: 100, IOWriteBytes: 50},
+		{CPUPercent: 0, IOReadBytes: 100, IOWriteBytes: 50},
+		{CPUPercent: 0, IOReadBytes: 100, IOWriteBytes: 50},
+	}
+
+	isStuck, reason := detector.isEndlessTaskStuck(task, snapshots)
+	assert.True(t, isStuck)
+	assert.Contains(t, reason, "no activity")
+}
+
+func TestDefaultStuckDetector_IsEndlessTaskStuck_WithIOActivity(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	task := &models.BackgroundTask{
+		ID:       "test-endless-ioact",
+		TaskType: "endless",
+		Config:   models.TaskConfig{Endless: true},
+	}
+
+	// 5 snapshots with IO activity (different read bytes)
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 0, IOReadBytes: 500, IOWriteBytes: 50},
+		{CPUPercent: 0, IOReadBytes: 400, IOWriteBytes: 50},
+		{CPUPercent: 0, IOReadBytes: 300, IOWriteBytes: 50},
+		{CPUPercent: 0, IOReadBytes: 200, IOWriteBytes: 50},
+		{CPUPercent: 0, IOReadBytes: 100, IOWriteBytes: 50},
+	}
+
+	isStuck, reason := detector.isEndlessTaskStuck(task, snapshots)
+	assert.False(t, isStuck)
+	assert.Empty(t, reason)
+}
+
+func TestDefaultStuckDetector_IsEndlessTaskStuck_WithWriteActivity(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	task := &models.BackgroundTask{
+		ID:       "test-endless-writeact",
+		TaskType: "endless",
+		Config:   models.TaskConfig{Endless: true},
+	}
+
+	// 5 snapshots with write activity (different write bytes)
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 0, IOReadBytes: 100, IOWriteBytes: 250},
+		{CPUPercent: 0, IOReadBytes: 100, IOWriteBytes: 200},
+		{CPUPercent: 0, IOReadBytes: 100, IOWriteBytes: 150},
+		{CPUPercent: 0, IOReadBytes: 100, IOWriteBytes: 100},
+		{CPUPercent: 0, IOReadBytes: 100, IOWriteBytes: 50},
+	}
+
+	isStuck, reason := detector.isEndlessTaskStuck(task, snapshots)
+	assert.False(t, isStuck)
+	assert.Empty(t, reason)
+}
+
+// Test checkResourceExhaustion with empty snapshots
+func TestDefaultStuckDetector_CheckResourceExhaustion_EmptySnapshots(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	reason := detector.checkResourceExhaustion(nil)
+	assert.Empty(t, reason)
+
+	reason = detector.checkResourceExhaustion([]*models.ResourceSnapshot{})
+	assert.Empty(t, reason)
+}
+
+// Test isProcessFrozen with CPU time increasing
+func TestDefaultStuckDetector_IsProcessFrozen_CPUTimeIncreasing(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	// CPU percent is 0 but CPU time is increasing
+	snapshots := []*models.ResourceSnapshot{
+		{CPUPercent: 0.0, CPUUserTime: 1.0, CPUSystemTime: 0.5},
+		{CPUPercent: 0.0, CPUUserTime: 0.9, CPUSystemTime: 0.4},
+		{CPUPercent: 0.0, CPUUserTime: 0.8, CPUSystemTime: 0.3},
+		{CPUPercent: 0.0, CPUUserTime: 0.7, CPUSystemTime: 0.2},
+		{CPUPercent: 0.0, CPUUserTime: 0.6, CPUSystemTime: 0.1},
+	}
+
+	frozen := detector.isProcessFrozen(snapshots)
+	assert.False(t, frozen) // Not frozen because CPU time is increasing
+}
+
+// Test checkHeartbeatTimeout with custom threshold
+func TestDefaultStuckDetector_CheckHeartbeatTimeout_CustomThreshold(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	staleTime := time.Now().Add(-30 * time.Second)
+	task := &models.BackgroundTask{
+		ID:            "test-custom-threshold",
+		TaskType:      "command",
+		LastHeartbeat: &staleTime,
+		Config: models.TaskConfig{
+			StuckThresholdSecs: 10, // 10 second threshold
+		},
+	}
+
+	reason := detector.checkHeartbeatTimeout(task)
+	assert.Contains(t, reason, "no heartbeat for")
+}
+
+// Test checkHeartbeatTimeout with endless task
+func TestDefaultStuckDetector_CheckHeartbeatTimeout_EndlessTask(t *testing.T) {
+	logger := logrus.New()
+	detector := NewDefaultStuckDetector(logger)
+
+	staleTime := time.Now().Add(-1 * time.Hour)
+	task := &models.BackgroundTask{
+		ID:            "test-endless-timeout",
+		TaskType:      "endless",
+		LastHeartbeat: &staleTime,
+		Config:        models.TaskConfig{},
+	}
+
+	reason := detector.checkHeartbeatTimeout(task)
+	assert.Empty(t, reason) // Endless tasks have 0 threshold
+}
