@@ -2,6 +2,7 @@ package background
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -1308,4 +1309,240 @@ func TestDefaultStuckDetector_CheckHeartbeatTimeout_EndlessTask(t *testing.T) {
 
 	reason := detector.checkHeartbeatTimeout(task)
 	assert.Empty(t, reason) // Endless tasks have 0 threshold
+}
+
+// ============================================================================
+// ProcessResourceMonitor Tests
+// ============================================================================
+
+func TestNewProcessResourceMonitor(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	assert.NotNil(t, monitor)
+	assert.NotNil(t, monitor.monitors)
+	assert.Equal(t, 2*time.Second, monitor.cacheTTL)
+}
+
+func TestProcessResourceMonitor_GetSystemResources(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	resources, err := monitor.GetSystemResources()
+	require.NoError(t, err)
+	require.NotNil(t, resources)
+
+	// Validate system resources are reasonable
+	assert.Greater(t, resources.TotalCPUCores, 0)
+	assert.GreaterOrEqual(t, resources.AvailableCPUCores, float64(0))
+	assert.Greater(t, resources.TotalMemoryMB, int64(0))
+	assert.GreaterOrEqual(t, resources.AvailableMemoryMB, int64(0))
+	assert.GreaterOrEqual(t, resources.CPULoadPercent, float64(0))
+	assert.LessOrEqual(t, resources.CPULoadPercent, float64(100))
+	assert.GreaterOrEqual(t, resources.MemoryUsedPercent, float64(0))
+	assert.LessOrEqual(t, resources.MemoryUsedPercent, float64(100))
+}
+
+func TestProcessResourceMonitor_GetSystemResources_Caching(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	// First call - populates cache
+	resources1, err := monitor.GetSystemResources()
+	require.NoError(t, err)
+	require.NotNil(t, resources1)
+
+	// Second call - should return cached value
+	resources2, err := monitor.GetSystemResources()
+	require.NoError(t, err)
+	require.NotNil(t, resources2)
+
+	// Values should be the same (from cache)
+	assert.Equal(t, resources1.TotalCPUCores, resources2.TotalCPUCores)
+	assert.Equal(t, resources1.TotalMemoryMB, resources2.TotalMemoryMB)
+}
+
+func TestProcessResourceMonitor_GetProcessResources(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	// Use current process PID
+	pid := os.Getpid()
+
+	snapshot, err := monitor.GetProcessResources(pid)
+	require.NoError(t, err)
+	require.NotNil(t, snapshot)
+
+	// Validate snapshot fields
+	assert.GreaterOrEqual(t, snapshot.CPUPercent, float64(0))
+	assert.GreaterOrEqual(t, snapshot.MemoryRSSBytes, int64(0))
+	assert.GreaterOrEqual(t, snapshot.MemoryPercent, float64(0))
+	assert.NotZero(t, snapshot.SampledAt)
+}
+
+func TestProcessResourceMonitor_GetProcessResources_InvalidPID(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	// Use invalid PID
+	_, err := monitor.GetProcessResources(999999999)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "process not found")
+}
+
+func TestProcessResourceMonitor_StartStopMonitoring(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	taskID := "test-task-monitor"
+	pid := os.Getpid()
+
+	// Start monitoring
+	err := monitor.StartMonitoring(taskID, pid, 50*time.Millisecond)
+	require.NoError(t, err)
+
+	// Verify monitoring started
+	monitor.mu.RLock()
+	_, exists := monitor.monitors[taskID]
+	monitor.mu.RUnlock()
+	assert.True(t, exists)
+
+	// Wait for at least one snapshot
+	time.Sleep(100 * time.Millisecond)
+
+	// Stop monitoring
+	err = monitor.StopMonitoring(taskID)
+	require.NoError(t, err)
+
+	// Verify monitoring stopped
+	monitor.mu.RLock()
+	_, exists = monitor.monitors[taskID]
+	monitor.mu.RUnlock()
+	assert.False(t, exists)
+}
+
+func TestProcessResourceMonitor_StartMonitoring_AlreadyMonitoring(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	taskID := "test-task-duplicate"
+	pid := os.Getpid()
+
+	// Start monitoring first time
+	err := monitor.StartMonitoring(taskID, pid, 100*time.Millisecond)
+	require.NoError(t, err)
+	defer monitor.StopMonitoring(taskID)
+
+	// Try to start monitoring again
+	err = monitor.StartMonitoring(taskID, pid, 100*time.Millisecond)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "monitoring already started")
+}
+
+func TestProcessResourceMonitor_StopMonitoring_NotMonitoring(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	// Stop monitoring a task that was never started
+	err := monitor.StopMonitoring("nonexistent-task")
+	assert.NoError(t, err) // Should not error
+}
+
+func TestProcessResourceMonitor_GetLatestSnapshot(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	taskID := "test-task-snapshot"
+	pid := os.Getpid()
+
+	// Start monitoring
+	err := monitor.StartMonitoring(taskID, pid, 50*time.Millisecond)
+	require.NoError(t, err)
+	defer monitor.StopMonitoring(taskID)
+
+	// Wait for snapshot to be taken
+	time.Sleep(100 * time.Millisecond)
+
+	// Get latest snapshot
+	snapshot, err := monitor.GetLatestSnapshot(taskID)
+	require.NoError(t, err)
+	require.NotNil(t, snapshot)
+
+	assert.Equal(t, taskID, snapshot.TaskID)
+	assert.GreaterOrEqual(t, snapshot.CPUPercent, float64(0))
+}
+
+func TestProcessResourceMonitor_GetLatestSnapshot_NotMonitoring(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	_, err := monitor.GetLatestSnapshot("nonexistent-task")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no monitoring active")
+}
+
+func TestProcessResourceMonitor_GetLatestSnapshot_NoSnapshot(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	taskID := "test-task-no-snapshot"
+	pid := os.Getpid()
+
+	// Start monitoring but don't wait
+	err := monitor.StartMonitoring(taskID, pid, 10*time.Second) // Long interval
+	require.NoError(t, err)
+	defer monitor.StopMonitoring(taskID)
+
+	// Try to get snapshot immediately (before first tick)
+	_, err = monitor.GetLatestSnapshot(taskID)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no snapshot available")
+}
+
+func TestProcessResourceMonitor_IsResourceAvailable(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	// Test with zero requirements (should always be available)
+	available := monitor.IsResourceAvailable(ResourceRequirements{})
+	assert.True(t, available)
+}
+
+func TestProcessResourceMonitor_IsResourceAvailable_WithRequirements(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	// Get current resources to understand limits
+	resources, err := monitor.GetSystemResources()
+	require.NoError(t, err)
+
+	// Test with achievable requirements
+	available := monitor.IsResourceAvailable(ResourceRequirements{
+		CPUCores: 1,
+		MemoryMB: 100,
+	})
+	// Should likely be true on most systems
+	assert.True(t, available || resources.CPULoadPercent > 90 || resources.MemoryUsedPercent > 90)
+}
+
+func TestProcessResourceMonitor_IsResourceAvailable_ExcessiveCPU(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	// Test with excessive CPU requirements
+	available := monitor.IsResourceAvailable(ResourceRequirements{
+		CPUCores: 10000, // Excessive
+	})
+	assert.False(t, available)
+}
+
+func TestProcessResourceMonitor_IsResourceAvailable_ExcessiveMemory(t *testing.T) {
+	logger := logrus.New()
+	monitor := NewProcessResourceMonitor(nil, logger)
+
+	// Test with excessive memory requirements
+	available := monitor.IsResourceAvailable(ResourceRequirements{
+		MemoryMB: 1000000000, // 1 petabyte
+	})
+	assert.False(t, available)
 }
