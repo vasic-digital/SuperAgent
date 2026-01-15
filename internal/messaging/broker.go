@@ -110,6 +110,8 @@ type Message struct {
 	Error string `json:"error,omitempty"`
 	// DeliveryTag is used for acknowledgment (broker-specific).
 	DeliveryTag uint64 `json:"-"`
+	// Redelivered indicates if the message was previously delivered.
+	Redelivered bool `json:"redelivered,omitempty"`
 	// Partition is the Kafka partition (if applicable).
 	Partition int32 `json:"partition,omitempty"`
 	// Offset is the Kafka offset (if applicable).
@@ -240,6 +242,7 @@ func (m *Message) Clone() *Message {
 		State:         m.State,
 		Error:         m.Error,
 		DeliveryTag:   m.DeliveryTag,
+		Redelivered:   m.Redelivered,
 		Partition:     m.Partition,
 		Offset:        m.Offset,
 	}

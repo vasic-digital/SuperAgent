@@ -24,13 +24,17 @@ type BrokerMetrics struct {
 	BytesPublished        atomic.Int64 `json:"bytes_published"`
 	BatchesPublished      atomic.Int64 `json:"batches_published"`
 
-	// Subscribe metrics
+	// Subscribe/Consume metrics
 	MessagesReceived     atomic.Int64 `json:"messages_received"`
+	MessagesConsumed     atomic.Int64 `json:"messages_consumed"`
 	MessagesProcessed    atomic.Int64 `json:"messages_processed"`
 	MessagesFailed       atomic.Int64 `json:"messages_failed"`
 	MessagesRetried      atomic.Int64 `json:"messages_retried"`
 	MessagesDeadLettered atomic.Int64 `json:"messages_dead_lettered"`
+	MessagesAcked        atomic.Int64 `json:"messages_acked"`
+	MessagesNacked       atomic.Int64 `json:"messages_nacked"`
 	BytesReceived        atomic.Int64 `json:"bytes_received"`
+	BytesConsumed        atomic.Int64 `json:"bytes_consumed"`
 	ActiveSubscriptions  atomic.Int64 `json:"active_subscriptions"`
 
 	// Latency metrics (stored as nanoseconds)
@@ -157,6 +161,29 @@ func (m *BrokerMetrics) RecordReceive(bytes int64, latency time.Duration) {
 	m.mu.Lock()
 	m.LastReceiveTime = time.Now().UTC()
 	m.mu.Unlock()
+}
+
+// RecordConsume records a message consume operation.
+func (m *BrokerMetrics) RecordConsume(bytes int64, latency time.Duration, success bool) {
+	m.MessagesConsumed.Add(1)
+	if success {
+		m.BytesConsumed.Add(bytes)
+	}
+	m.SubscribeLatencyTotal.Add(int64(latency))
+	m.SubscribeLatencyCount.Add(1)
+	m.mu.Lock()
+	m.LastReceiveTime = time.Now().UTC()
+	m.mu.Unlock()
+}
+
+// RecordAck records a message acknowledgment.
+func (m *BrokerMetrics) RecordAck() {
+	m.MessagesAcked.Add(1)
+}
+
+// RecordNack records a message negative acknowledgment.
+func (m *BrokerMetrics) RecordNack() {
+	m.MessagesNacked.Add(1)
 }
 
 // RecordProcessed records a successfully processed message.
@@ -295,11 +322,15 @@ func (m *BrokerMetrics) Reset() {
 	m.BytesPublished.Store(0)
 	m.BatchesPublished.Store(0)
 	m.MessagesReceived.Store(0)
+	m.MessagesConsumed.Store(0)
 	m.MessagesProcessed.Store(0)
 	m.MessagesFailed.Store(0)
 	m.MessagesRetried.Store(0)
 	m.MessagesDeadLettered.Store(0)
+	m.MessagesAcked.Store(0)
+	m.MessagesNacked.Store(0)
 	m.BytesReceived.Store(0)
+	m.BytesConsumed.Store(0)
 	m.ActiveSubscriptions.Store(0)
 	m.PublishLatencyTotal.Store(0)
 	m.PublishLatencyCount.Store(0)
@@ -346,11 +377,15 @@ func (m *BrokerMetrics) Clone() *BrokerMetrics {
 	clone.BytesPublished.Store(m.BytesPublished.Load())
 	clone.BatchesPublished.Store(m.BatchesPublished.Load())
 	clone.MessagesReceived.Store(m.MessagesReceived.Load())
+	clone.MessagesConsumed.Store(m.MessagesConsumed.Load())
 	clone.MessagesProcessed.Store(m.MessagesProcessed.Load())
 	clone.MessagesFailed.Store(m.MessagesFailed.Load())
 	clone.MessagesRetried.Store(m.MessagesRetried.Load())
 	clone.MessagesDeadLettered.Store(m.MessagesDeadLettered.Load())
+	clone.MessagesAcked.Store(m.MessagesAcked.Load())
+	clone.MessagesNacked.Store(m.MessagesNacked.Load())
 	clone.BytesReceived.Store(m.BytesReceived.Load())
+	clone.BytesConsumed.Store(m.BytesConsumed.Load())
 	clone.ActiveSubscriptions.Store(m.ActiveSubscriptions.Load())
 	clone.PublishLatencyTotal.Store(m.PublishLatencyTotal.Load())
 	clone.PublishLatencyCount.Store(m.PublishLatencyCount.Load())
