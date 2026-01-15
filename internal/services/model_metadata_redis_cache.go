@@ -79,9 +79,47 @@ func (c *ModelMetadataRedisCache) Delete(ctx context.Context, modelID string) er
 
 // Clear removes all model metadata from Redis cache (with the prefix)
 func (c *ModelMetadataRedisCache) Clear(ctx context.Context) error {
-	// Note: This is a simplified implementation
-	// In production, you might want to use SCAN or maintain a set of keys
-	c.log.Info("Clearing Redis cache is not fully implemented - use Delete for individual models")
+	var cursor uint64
+	var totalDeleted int
+	keysPattern := c.prefix + "*"
+	batchSize := int64(100)
+
+	c.log.WithField("pattern", keysPattern).Info("Clearing Redis cache")
+
+	for {
+		// Use SCAN to find keys matching the prefix pattern
+		keys, newCursor, err := c.redisClient.Client().Scan(ctx, cursor, keysPattern, batchSize).Result()
+		if err != nil {
+			c.log.WithError(err).Error("Failed to scan Redis keys during clear")
+			return fmt.Errorf("failed to scan Redis keys: %w", err)
+		}
+
+		// Delete the found keys in batch
+		if len(keys) > 0 {
+			deleted, err := c.redisClient.Client().Del(ctx, keys...).Result()
+			if err != nil {
+				c.log.WithError(err).Warn("Failed to delete batch of keys")
+				// Continue trying other batches instead of failing completely
+			} else {
+				totalDeleted += int(deleted)
+			}
+		}
+
+		cursor = newCursor
+
+		// SCAN is complete when cursor returns to 0
+		if cursor == 0 {
+			break
+		}
+
+		// Safety limit to prevent infinite operations
+		if totalDeleted > 100000 {
+			c.log.Warn("Clear operation stopped at 100000 keys for safety")
+			break
+		}
+	}
+
+	c.log.WithField("deleted_count", totalDeleted).Info("Redis cache cleared")
 	return nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -6513,4 +6514,355 @@ func TestToolCallsNotDiscarded(t *testing.T) {
 	// This test ensures both are preserved
 	assert.NotEmpty(t, resp.Content)
 	assert.NotEmpty(t, resp.ToolCalls)
+}
+
+// ============================================================================
+// Tests for executeGrepFunction - CRIT-005 fix verification
+// ============================================================================
+
+// TestExecuteGrepFunction_ValidPattern tests grep with a valid regex pattern
+func TestExecuteGrepFunction_ValidPattern(t *testing.T) {
+	handler := &UnifiedHandler{}
+	ctx := context.Background()
+
+	// Create a temp directory with test files
+	tempDir := t.TempDir()
+	testFile := tempDir + "/test.go"
+	testContent := `package main
+
+func main() {
+	fmt.Println("Hello World")
+}
+
+func helper() {
+	fmt.Println("Helper function")
+}
+`
+	err := os.WriteFile(testFile, []byte(testContent), 0644)
+	require.NoError(t, err)
+
+	call := EmbeddedFunctionCall{
+		Name: "grep",
+		Parameters: map[string]string{
+			"pattern": "func.*\\(",
+			"path":    tempDir,
+		},
+	}
+
+	result, err := handler.executeGrepFunction(ctx, call)
+	require.NoError(t, err)
+	assert.NotEmpty(t, result)
+	assert.Contains(t, result, "func main()")
+	assert.Contains(t, result, "func helper()")
+	assert.Contains(t, result, "test.go")
+}
+
+// TestExecuteGrepFunction_MissingPattern tests grep without a pattern
+func TestExecuteGrepFunction_MissingPattern(t *testing.T) {
+	handler := &UnifiedHandler{}
+	ctx := context.Background()
+
+	call := EmbeddedFunctionCall{
+		Name:       "grep",
+		Parameters: map[string]string{},
+	}
+
+	_, err := handler.executeGrepFunction(ctx, call)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "missing pattern")
+}
+
+// TestExecuteGrepFunction_InvalidRegex tests grep with invalid regex
+func TestExecuteGrepFunction_InvalidRegex(t *testing.T) {
+	handler := &UnifiedHandler{}
+	ctx := context.Background()
+
+	call := EmbeddedFunctionCall{
+		Name: "grep",
+		Parameters: map[string]string{
+			"pattern": "[invalid regex((",
+		},
+	}
+
+	_, err := handler.executeGrepFunction(ctx, call)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid regex pattern")
+}
+
+// TestExecuteGrepFunction_NoMatches tests grep when no matches found
+func TestExecuteGrepFunction_NoMatches(t *testing.T) {
+	handler := &UnifiedHandler{}
+	ctx := context.Background()
+
+	// Create a temp directory with test files
+	tempDir := t.TempDir()
+	testFile := tempDir + "/test.txt"
+	testContent := "Hello World\nGoodbye World\n"
+	err := os.WriteFile(testFile, []byte(testContent), 0644)
+	require.NoError(t, err)
+
+	call := EmbeddedFunctionCall{
+		Name: "grep",
+		Parameters: map[string]string{
+			"pattern": "ThisPatternDoesNotExist12345",
+			"path":    tempDir,
+		},
+	}
+
+	result, err := handler.executeGrepFunction(ctx, call)
+	require.NoError(t, err)
+	assert.Contains(t, result, "No matches found")
+}
+
+// TestExecuteGrepFunction_AlternativeParamNames tests grep with alternative parameter names
+func TestExecuteGrepFunction_AlternativeParamNames(t *testing.T) {
+	handler := &UnifiedHandler{}
+	ctx := context.Background()
+
+	tempDir := t.TempDir()
+	testFile := tempDir + "/test.go"
+	err := os.WriteFile(testFile, []byte("func TestFunction() {}"), 0644)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name   string
+		params map[string]string
+	}{
+		{"search param", map[string]string{"search": "TestFunction", "directory": tempDir}},
+		{"query param", map[string]string{"query": "TestFunction", "dir": tempDir}},
+		{"regex param", map[string]string{"regex": "TestFunction", "folder": tempDir}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			call := EmbeddedFunctionCall{
+				Name:       "grep",
+				Parameters: tt.params,
+			}
+
+			result, err := handler.executeGrepFunction(ctx, call)
+			require.NoError(t, err)
+			assert.Contains(t, result, "TestFunction")
+		})
+	}
+}
+
+// TestExecuteGrepFunction_SkipsNonTextFiles tests that grep skips binary/non-text files
+func TestExecuteGrepFunction_SkipsNonTextFiles(t *testing.T) {
+	handler := &UnifiedHandler{}
+	ctx := context.Background()
+
+	tempDir := t.TempDir()
+	// Create a text file
+	textFile := tempDir + "/test.go"
+	err := os.WriteFile(textFile, []byte("findme in text"), 0644)
+	require.NoError(t, err)
+
+	// Create a non-text file extension
+	binFile := tempDir + "/test.exe"
+	err = os.WriteFile(binFile, []byte("findme in binary"), 0644)
+	require.NoError(t, err)
+
+	call := EmbeddedFunctionCall{
+		Name: "grep",
+		Parameters: map[string]string{
+			"pattern": "findme",
+			"path":    tempDir,
+		},
+	}
+
+	result, err := handler.executeGrepFunction(ctx, call)
+	require.NoError(t, err)
+	assert.Contains(t, result, "test.go")
+	assert.NotContains(t, result, "test.exe") // Binary files should be skipped
+}
+
+// TestExecuteGrepFunction_SkipsGitDirectory tests that .git directory is skipped
+func TestExecuteGrepFunction_SkipsGitDirectory(t *testing.T) {
+	handler := &UnifiedHandler{}
+	ctx := context.Background()
+
+	tempDir := t.TempDir()
+	// Create .git directory with a file
+	gitDir := tempDir + "/.git"
+	err := os.Mkdir(gitDir, 0755)
+	require.NoError(t, err)
+	gitFile := gitDir + "/config.txt"
+	err = os.WriteFile(gitFile, []byte("secret_pattern_in_git"), 0644)
+	require.NoError(t, err)
+
+	// Create a regular file
+	regularFile := tempDir + "/main.go"
+	err = os.WriteFile(regularFile, []byte("secret_pattern_in_main"), 0644)
+	require.NoError(t, err)
+
+	call := EmbeddedFunctionCall{
+		Name: "grep",
+		Parameters: map[string]string{
+			"pattern": "secret_pattern",
+			"path":    tempDir,
+		},
+	}
+
+	result, err := handler.executeGrepFunction(ctx, call)
+	require.NoError(t, err)
+	assert.Contains(t, result, "main.go")
+	assert.NotContains(t, result, ".git") // .git directory should be skipped
+}
+
+// TestExecuteGrepFunction_ResultLimit tests that grep respects max results limit
+func TestExecuteGrepFunction_ResultLimit(t *testing.T) {
+	handler := &UnifiedHandler{}
+	ctx := context.Background()
+
+	tempDir := t.TempDir()
+	// Create a file with many matching lines
+	var content strings.Builder
+	for i := 0; i < 200; i++ {
+		content.WriteString("matchingline" + strconv.Itoa(i) + "\n")
+	}
+	testFile := tempDir + "/many_lines.txt"
+	err := os.WriteFile(testFile, []byte(content.String()), 0644)
+	require.NoError(t, err)
+
+	call := EmbeddedFunctionCall{
+		Name: "grep",
+		Parameters: map[string]string{
+			"pattern": "matchingline",
+			"path":    tempDir,
+		},
+	}
+
+	result, err := handler.executeGrepFunction(ctx, call)
+	require.NoError(t, err)
+
+	// Count the number of result lines - should be capped at around 100
+	lines := strings.Split(result, "\n")
+	// Filter empty lines
+	var matchLines []string
+	for _, line := range lines {
+		if strings.Contains(line, "matchingline") {
+			matchLines = append(matchLines, line)
+		}
+	}
+	// Should be limited to approximately maxResults (100) - allow small variance
+	// The implementation checks limit after adding, so could be 100 or 101
+	assert.LessOrEqual(t, len(matchLines), 101, "Results should be limited to approximately 100")
+	// Also verify we're actually limiting - should be significantly less than 200
+	assert.Less(t, len(matchLines), 150, "Results should be limited, not all 200 lines")
+}
+
+// TestExecuteGrepFunction_LongLinesTruncated tests that long lines are truncated
+func TestExecuteGrepFunction_LongLinesTruncated(t *testing.T) {
+	handler := &UnifiedHandler{}
+	ctx := context.Background()
+
+	tempDir := t.TempDir()
+	// Create a file with a very long line
+	longLine := "pattern_to_find" + strings.Repeat("x", 300)
+	testFile := tempDir + "/long_line.txt"
+	err := os.WriteFile(testFile, []byte(longLine), 0644)
+	require.NoError(t, err)
+
+	call := EmbeddedFunctionCall{
+		Name: "grep",
+		Parameters: map[string]string{
+			"pattern": "pattern_to_find",
+			"path":    tempDir,
+		},
+	}
+
+	result, err := handler.executeGrepFunction(ctx, call)
+	require.NoError(t, err)
+	assert.Contains(t, result, "pattern_to_find")
+	// Result should be truncated and end with "..."
+	assert.Contains(t, result, "...")
+}
+
+// TestGetParam_GrepHelper tests the getParam helper function for grep
+func TestGetParam_GrepHelper(t *testing.T) {
+	tests := []struct {
+		name     string
+		params   map[string]string
+		keys     []string
+		expected string
+	}{
+		{
+			name:     "first key matches",
+			params:   map[string]string{"pattern": "foo", "search": "bar"},
+			keys:     []string{"pattern", "search"},
+			expected: "foo",
+		},
+		{
+			name:     "second key matches",
+			params:   map[string]string{"search": "bar"},
+			keys:     []string{"pattern", "search"},
+			expected: "bar",
+		},
+		{
+			name:     "no keys match",
+			params:   map[string]string{"other": "value"},
+			keys:     []string{"pattern", "search"},
+			expected: "",
+		},
+		{
+			name:     "empty value is skipped",
+			params:   map[string]string{"pattern": "", "search": "bar"},
+			keys:     []string{"pattern", "search"},
+			expected: "bar",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getParam(tt.params, tt.keys...)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestExecuteGrepFunction_MultipleFileTypes tests grep searches all supported text file types
+func TestExecuteGrepFunction_MultipleFileTypes(t *testing.T) {
+	handler := &UnifiedHandler{}
+	ctx := context.Background()
+
+	tempDir := t.TempDir()
+
+	// Create files with different extensions
+	files := map[string]string{
+		"test.go":   "unique_search_pattern_go",
+		"test.py":   "unique_search_pattern_py",
+		"test.js":   "unique_search_pattern_js",
+		"test.ts":   "unique_search_pattern_ts",
+		"test.md":   "unique_search_pattern_md",
+		"test.json": `{"key": "unique_search_pattern_json"}`,
+		"test.yaml": "key: unique_search_pattern_yaml",
+		"test.sql":  "SELECT unique_search_pattern_sql FROM table",
+	}
+
+	for filename, content := range files {
+		err := os.WriteFile(tempDir+"/"+filename, []byte(content), 0644)
+		require.NoError(t, err)
+	}
+
+	call := EmbeddedFunctionCall{
+		Name: "grep",
+		Parameters: map[string]string{
+			"pattern": "unique_search_pattern",
+			"path":    tempDir,
+		},
+	}
+
+	result, err := handler.executeGrepFunction(ctx, call)
+	require.NoError(t, err)
+
+	// Verify all file types were searched
+	assert.Contains(t, result, "test.go")
+	assert.Contains(t, result, "test.py")
+	assert.Contains(t, result, "test.js")
+	assert.Contains(t, result, "test.ts")
+	assert.Contains(t, result, "test.md")
+	assert.Contains(t, result, "test.json")
+	assert.Contains(t, result, "test.yaml")
+	assert.Contains(t, result, "test.sql")
 }

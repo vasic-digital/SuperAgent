@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"math/rand"
 	"net/http"
 	"os"
@@ -5217,7 +5218,95 @@ func (h *UnifiedHandler) executeGrepFunction(ctx context.Context, call EmbeddedF
 		return "", fmt.Errorf("missing pattern parameter")
 	}
 
-	return fmt.Sprintf("Search pattern registered: %s (grep not fully implemented for embedded calls)", pattern), nil
+	// Get optional path parameter
+	searchPath := getParam(call.Parameters, "path", "directory", "dir", "folder")
+	if searchPath == "" {
+		searchPath = "." // Default to current directory
+	}
+
+	// Compile regex pattern
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return "", fmt.Errorf("invalid regex pattern: %w", err)
+	}
+
+	var results []string
+	maxResults := 100 // Limit results to prevent overwhelming responses
+
+	// Walk the directory and search files
+	err = filepath.WalkDir(searchPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil // Skip files we can't access
+		}
+
+		// Skip directories and non-regular files
+		if d.IsDir() {
+			// Skip common non-source directories
+			name := d.Name()
+			if name == ".git" || name == "node_modules" || name == "vendor" || name == "__pycache__" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// Only search text-like files
+		ext := strings.ToLower(filepath.Ext(path))
+		textExtensions := map[string]bool{
+			".go": true, ".py": true, ".js": true, ".ts": true, ".jsx": true, ".tsx": true,
+			".java": true, ".c": true, ".cpp": true, ".h": true, ".hpp": true,
+			".rs": true, ".rb": true, ".php": true, ".swift": true, ".kt": true,
+			".md": true, ".txt": true, ".json": true, ".yaml": true, ".yml": true,
+			".xml": true, ".html": true, ".css": true, ".sql": true, ".sh": true,
+		}
+		if !textExtensions[ext] {
+			return nil
+		}
+
+		// Read file content
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return nil // Skip files we can't read
+		}
+
+		// Search for pattern
+		lines := strings.Split(string(content), "\n")
+		for lineNum, line := range lines {
+			if len(results) >= maxResults {
+				break
+			}
+			if re.MatchString(line) {
+				// Format: file:line:content
+				result := fmt.Sprintf("%s:%d: %s", path, lineNum+1, strings.TrimSpace(line))
+				if len(result) > 200 {
+					result = result[:200] + "..."
+				}
+				results = append(results, result)
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("search failed: %w", err)
+	}
+
+	if len(results) == 0 {
+		return fmt.Sprintf("No matches found for pattern: %s", pattern), nil
+	}
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("Found %d matches for pattern '%s':\n\n", len(results), pattern))
+	for _, r := range results {
+		sb.WriteString(r)
+		sb.WriteString("\n")
+	}
+
+	if len(results) >= maxResults {
+		sb.WriteString(fmt.Sprintf("\n... (showing first %d results)", maxResults))
+	}
+
+	return sb.String(), nil
 }
 
 // executeBashFunction executes a shell command (with safety restrictions)
