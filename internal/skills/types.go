@@ -18,8 +18,8 @@ type Skill struct {
 	Author        string   `json:"author" yaml:"author"`
 
 	// Additional metadata
-	Category      string   `json:"category"`
-	Tags          []string `json:"tags"`
+	Category      string   `json:"category" yaml:"category"`
+	Tags          []string `json:"tags" yaml:"tags"`
 	TriggerPhrases []string `json:"trigger_phrases"`
 
 	// Content sections

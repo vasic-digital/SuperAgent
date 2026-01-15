@@ -63,8 +63,10 @@ func (p *Parser) Parse(content string, filePath string) (*Skill, error) {
 	// Parse content sections
 	p.parseContentSections(skill, body)
 
-	// Extract category from file path
-	skill.Category = p.extractCategory(filePath)
+	// Extract category from file path if not set in frontmatter
+	if skill.Category == "" {
+		skill.Category = p.extractCategory(filePath)
+	}
 
 	// Extract tags from related skills section
 	skill.Tags = p.extractTags(body)
