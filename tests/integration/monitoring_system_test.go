@@ -393,7 +393,7 @@ func TestMonitoringFinalization(t *testing.T) {
 	projectRoot := getProjectRoot(t)
 
 	testScript := `#!/bin/bash
-set -e
+# Don't use set -e because mon_analyze_all_logs returns error count as exit code
 source "` + filepath.Join(projectRoot, "challenges/monitoring/lib/monitoring_lib.sh") + `" 2>/dev/null
 mon_init "finalize_test" 2>/dev/null
 
@@ -405,14 +405,15 @@ mon_log "ERROR" "Test error"
 # Sample resources
 mon_sample_resources
 
-# Finalize
-mon_finalize 0
+# Finalize (ignore return code as it returns error count from analysis)
+mon_finalize 0 || true
 
 # Check summary was created
 if [ -f "$MON_LOG_DIR/session_summary.json" ]; then
     echo "SUMMARY_CREATED=true"
     cat "$MON_LOG_DIR/session_summary.json"
 fi
+exit 0
 `
 
 	tmpFile := filepath.Join(t.TempDir(), "test_finalize.sh")
