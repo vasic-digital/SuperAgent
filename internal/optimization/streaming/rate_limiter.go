@@ -2,11 +2,13 @@ package streaming
 
 import (
 	"context"
+	"sync"
 	"time"
 )
 
 // RateLimiter limits the rate of token/chunk output.
 type RateLimiter struct {
+	mu              sync.Mutex
 	tokensPerSecond float64
 	delay           time.Duration
 	lastEmit        time.Time
@@ -44,7 +46,9 @@ func (r *RateLimiter) Limit(ctx context.Context, in <-chan string) <-chan string
 
 				select {
 				case out <- token:
+					r.mu.Lock()
 					r.lastEmit = time.Now()
+					r.mu.Unlock()
 				case <-ctx.Done():
 					return
 				}
@@ -75,7 +79,9 @@ func (r *RateLimiter) LimitChunks(ctx context.Context, in <-chan *StreamChunk) <
 
 				select {
 				case out <- chunk:
+					r.mu.Lock()
 					r.lastEmit = time.Now()
+					r.mu.Unlock()
 				case <-ctx.Done():
 					return
 				}
@@ -91,28 +97,37 @@ func (r *RateLimiter) LimitChunks(ctx context.Context, in <-chan *StreamChunk) <
 }
 
 func (r *RateLimiter) wait(ctx context.Context) {
+	r.mu.Lock()
 	if r.lastEmit.IsZero() {
 		r.lastEmit = time.Now()
+		r.mu.Unlock()
 		return
 	}
 
 	elapsed := time.Since(r.lastEmit)
-	if elapsed < r.delay {
+	delay := r.delay
+	r.mu.Unlock()
+
+	if elapsed < delay {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(r.delay - elapsed):
+		case <-time.After(delay - elapsed):
 		}
 	}
 }
 
 // Reset resets the rate limiter state.
 func (r *RateLimiter) Reset() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.lastEmit = time.Time{}
 }
 
 // SetRate updates the rate limit.
 func (r *RateLimiter) SetRate(tokensPerSecond float64) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if tokensPerSecond <= 0 {
 		tokensPerSecond = 100
 	}
@@ -122,6 +137,7 @@ func (r *RateLimiter) SetRate(tokensPerSecond float64) {
 
 // BurstRateLimiter allows bursts followed by rate limiting.
 type BurstRateLimiter struct {
+	mu              sync.Mutex
 	tokensPerSecond float64
 	burstSize       int
 	tokens          int
@@ -176,6 +192,7 @@ func (r *BurstRateLimiter) Limit(ctx context.Context, in <-chan string) <-chan s
 }
 
 func (r *BurstRateLimiter) waitForToken(ctx context.Context) {
+	r.mu.Lock()
 	// Refill tokens based on elapsed time
 	now := time.Now()
 	elapsed := now.Sub(r.lastRefill).Seconds()
@@ -192,20 +209,25 @@ func (r *BurstRateLimiter) waitForToken(ctx context.Context) {
 	// Wait if no tokens available
 	for r.tokens <= 0 {
 		waitTime := time.Duration(float64(time.Second) / r.tokensPerSecond)
+		r.mu.Unlock()
 		select {
 		case <-ctx.Done():
 			return
 		case <-time.After(waitTime):
-			r.tokens++
-			r.lastRefill = time.Now()
 		}
+		r.mu.Lock()
+		r.tokens++
+		r.lastRefill = time.Now()
 	}
 
 	r.tokens--
+	r.mu.Unlock()
 }
 
 // Reset resets the rate limiter.
 func (r *BurstRateLimiter) Reset() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.tokens = r.burstSize
 	r.lastRefill = time.Now()
 }

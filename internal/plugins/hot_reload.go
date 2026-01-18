@@ -209,6 +209,7 @@ func (h *HotReloadManager) GetPluginInfo(name string) (map[string]interface{}, e
 // watchLoop monitors file system changes
 func (h *HotReloadManager) watchLoop(ctx context.Context) {
 	debounce := make(map[string]*time.Timer)
+	var debounceMu sync.Mutex
 	const debounceDuration = 500 * time.Millisecond
 
 	for {
@@ -228,14 +229,19 @@ func (h *HotReloadManager) watchLoop(ctx context.Context) {
 			}
 
 			// Debounce events to avoid multiple reloads
+			debounceMu.Lock()
 			if timer, exists := debounce[event.Name]; exists {
 				timer.Stop()
 			}
 
-			debounce[event.Name] = time.AfterFunc(debounceDuration, func() {
-				delete(debounce, event.Name)
+			eventName := event.Name // Capture for closure
+			debounce[eventName] = time.AfterFunc(debounceDuration, func() {
+				debounceMu.Lock()
+				delete(debounce, eventName)
+				debounceMu.Unlock()
 				h.handleFileEvent(event)
 			})
+			debounceMu.Unlock()
 
 		case err, ok := <-h.watcher.Errors:
 			if !ok {

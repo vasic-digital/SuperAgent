@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -53,6 +54,7 @@ func (w *Watcher) Stop() {
 
 func (w *Watcher) watchLoop() {
 	debounce := make(map[string]*time.Timer)
+	var debounceMu sync.Mutex
 
 	for {
 		select {
@@ -69,14 +71,19 @@ func (w *Watcher) watchLoop() {
 			}
 
 			// Debounce events
+			debounceMu.Lock()
 			if timer, exists := debounce[event.Name]; exists {
 				timer.Stop()
 			}
 
-			debounce[event.Name] = time.AfterFunc(500*time.Millisecond, func() {
-				delete(debounce, event.Name)
+			eventName := event.Name // Capture for closure
+			debounce[eventName] = time.AfterFunc(500*time.Millisecond, func() {
+				debounceMu.Lock()
+				delete(debounce, eventName)
+				debounceMu.Unlock()
 				w.handleEvent(event)
 			})
+			debounceMu.Unlock()
 
 		case err, ok := <-w.watcher.Errors:
 			if !ok {

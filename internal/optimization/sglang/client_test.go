@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -266,9 +267,9 @@ func TestClient_WarmPrefix(t *testing.T) {
 }
 
 func TestClient_WarmPrefixes(t *testing.T) {
-	callCount := 0
+	var callCount atomic.Int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		callCount++
+		callCount.Add(1)
 		resp := &CompletionResponse{
 			Choices: []CompletionChoice{
 				{Message: Message{Role: "assistant", Content: ""}},
@@ -288,7 +289,7 @@ func TestClient_WarmPrefixes(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, 3, callCount)
+	assert.Equal(t, int64(3), callCount.Load())
 }
 
 func TestClient_CleanupSessions(t *testing.T) {

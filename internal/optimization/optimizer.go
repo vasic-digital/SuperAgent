@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"dev.helix.agent/internal/optimization/gptcache"
@@ -155,10 +156,10 @@ func (s *Service) OptimizeRequest(ctx context.Context, prompt string, embedding 
 		if err == nil && hit != nil && hit.Entry != nil {
 			result.CacheHit = true
 			result.CachedResponse = hit.Entry.Response
-			s.cacheHits++
+			atomic.AddInt64(&s.cacheHits, 1)
 			return result, nil
 		}
-		s.cacheMisses++
+		atomic.AddInt64(&s.cacheMisses, 1)
 	}
 
 	// Retrieve relevant context if LlamaIndex is available
@@ -350,8 +351,8 @@ func (s *Service) ContinueSession(ctx context.Context, sessionID, message string
 func (s *Service) GetCacheStats() map[string]interface{} {
 	stats := map[string]interface{}{
 		"enabled": s.semanticCache != nil,
-		"hits":    s.cacheHits,
-		"misses":  s.cacheMisses,
+		"hits":    atomic.LoadInt64(&s.cacheHits),
+		"misses":  atomic.LoadInt64(&s.cacheMisses),
 	}
 
 	if s.semanticCache != nil {
