@@ -208,9 +208,14 @@ func (b *EventBus) Publish(event *Event) {
 		return
 	}
 
-	// Get subscribers for this event type
-	subs := b.subscribers[event.Type]
-	allSubs := b.allSubs
+	// Get subscribers for this event type - make defensive copies to avoid races
+	// with concurrent Unsubscribe calls that modify the underlying slices
+	origSubs := b.subscribers[event.Type]
+	subs := make([]*Subscriber, len(origSubs))
+	copy(subs, origSubs)
+
+	allSubs := make([]*Subscriber, len(b.allSubs))
+	copy(allSubs, b.allSubs)
 	b.mu.RUnlock()
 
 	atomic.AddInt64(&b.metrics.EventsPublished, 1)

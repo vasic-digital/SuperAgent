@@ -3,7 +3,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
-	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -59,12 +59,9 @@ func TestMessaging_InMemoryBroker_MultipleSubscribers(t *testing.T) {
 	defer broker.Close(ctx)
 
 	// Create multiple subscribers - at least one should receive the message
-	var mu sync.Mutex
-	count := 0
+	var count atomic.Int64
 	handler := func(ctx context.Context, msg *messaging.Message) error {
-		mu.Lock()
-		count++
-		mu.Unlock()
+		count.Add(1)
 		return nil
 	}
 
@@ -87,7 +84,7 @@ func TestMessaging_InMemoryBroker_MultipleSubscribers(t *testing.T) {
 	// At least one subscriber should receive the message
 	// Note: In-memory broker may use queue semantics (one consumer per message)
 	// rather than pub/sub (all consumers). Both are valid patterns.
-	assert.GreaterOrEqual(t, count, 1)
+	assert.GreaterOrEqual(t, count.Load(), int64(1))
 }
 
 // TestMessaging_InMemoryBroker_BatchPublish tests batch publishing
@@ -100,9 +97,9 @@ func TestMessaging_InMemoryBroker_BatchPublish(t *testing.T) {
 	defer broker.Close(ctx)
 
 	// Subscribe
-	receivedCount := 0
+	var receivedCount atomic.Int64
 	handler := func(ctx context.Context, msg *messaging.Message) error {
-		receivedCount++
+		receivedCount.Add(1)
 		return nil
 	}
 
@@ -122,7 +119,7 @@ func TestMessaging_InMemoryBroker_BatchPublish(t *testing.T) {
 	// Wait for processing
 	time.Sleep(200 * time.Millisecond)
 
-	assert.Equal(t, 10, receivedCount)
+	assert.Equal(t, int64(10), receivedCount.Load())
 }
 
 // TestMessaging_InMemoryBroker_HealthCheck tests health check
@@ -155,9 +152,9 @@ func TestMessaging_InMemoryBroker_Unsubscribe(t *testing.T) {
 	defer broker.Close(ctx)
 
 	// Subscribe
-	received := 0
+	var received atomic.Int64
 	handler := func(ctx context.Context, msg *messaging.Message) error {
-		received++
+		received.Add(1)
 		return nil
 	}
 
@@ -169,7 +166,7 @@ func TestMessaging_InMemoryBroker_Unsubscribe(t *testing.T) {
 	err = broker.Publish(ctx, "unsub.topic", msg)
 	require.NoError(t, err)
 	time.Sleep(50 * time.Millisecond)
-	assert.Equal(t, 1, received)
+	assert.Equal(t, int64(1), received.Load())
 
 	// Unsubscribe
 	err = sub.Unsubscribe()
@@ -182,7 +179,7 @@ func TestMessaging_InMemoryBroker_Unsubscribe(t *testing.T) {
 	err = broker.Publish(ctx, "unsub.topic", msg)
 	require.NoError(t, err)
 	time.Sleep(50 * time.Millisecond)
-	assert.Equal(t, 1, received) // Still 1, no new message received
+	assert.Equal(t, int64(1), received.Load()) // Still 1, no new message received
 }
 
 // TestMessaging_MessageCreation tests message creation and manipulation
