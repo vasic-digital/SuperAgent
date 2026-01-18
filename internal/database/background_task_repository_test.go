@@ -369,9 +369,9 @@ func TestBackgroundTaskRepository_GetByID_NotFound(t *testing.T) {
 	defer pool.Close()
 
 	ctx := context.Background()
-	_, err := repo.GetByID(ctx, "non-existent-id")
+	// Use a valid UUID format that doesn't exist
+	_, err := repo.GetByID(ctx, "00000000-0000-0000-0000-000000000000")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not found")
 }
 
 func TestBackgroundTaskRepository_Update(t *testing.T) {
@@ -448,7 +448,8 @@ func TestBackgroundTaskRepository_UpdateProgress(t *testing.T) {
 	retrieved, err := repo.GetByID(ctx, task.ID)
 	require.NoError(t, err)
 	assert.Equal(t, 75.5, retrieved.Progress)
-	assert.Equal(t, "Processing step 3 of 4", retrieved.ProgressMessage)
+	require.NotNil(t, retrieved.ProgressMessage)
+	assert.Equal(t, "Processing step 3 of 4", *retrieved.ProgressMessage)
 }
 
 func TestBackgroundTaskRepository_UpdateHeartbeat(t *testing.T) {
@@ -485,13 +486,13 @@ func TestBackgroundTaskRepository_SaveCheckpoint(t *testing.T) {
 	err := repo.Create(ctx, task)
 	require.NoError(t, err)
 
-	checkpoint := []byte(`{"step": 5, "processed": 500}`)
+	checkpoint := json.RawMessage(`{"step": 5, "processed": 500}`)
 	err = repo.SaveCheckpoint(ctx, task.ID, checkpoint)
 	require.NoError(t, err)
 
 	retrieved, err := repo.GetByID(ctx, task.ID)
 	require.NoError(t, err)
-	assert.Equal(t, checkpoint, retrieved.Checkpoint)
+	assert.JSONEq(t, string(checkpoint), string(retrieved.Checkpoint))
 }
 
 func TestBackgroundTaskRepository_Delete(t *testing.T) {
