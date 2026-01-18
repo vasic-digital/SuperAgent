@@ -36,6 +36,20 @@ func setupVectorDocumentTestDB(t *testing.T) (*pgxpool.Pool, *VectorDocumentRepo
 		return nil, nil
 	}
 
+	// Check if the vector_documents table exists
+	var exists bool
+	err = pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT FROM information_schema.tables
+			WHERE table_name = 'vector_documents'
+		)
+	`).Scan(&exists)
+	if err != nil || !exists {
+		t.Skipf("Skipping test: vector_documents table not available")
+		pool.Close()
+		return nil, nil
+	}
+
 	return pool, repo
 }
 

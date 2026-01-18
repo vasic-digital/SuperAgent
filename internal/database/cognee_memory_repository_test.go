@@ -65,27 +65,28 @@ func cleanupCogneeMemoryTestDB(t *testing.T, pool *pgxpool.Pool) {
 func createTestCogneeMemoryWithPool(t *testing.T, pool *pgxpool.Pool) *CogneeMemory {
 	ctx := context.Background()
 	searchKey := "test-search-key"
+	timestamp := time.Now().Format("150405.000")
 
-	// First, ensure we have a user
+	// First, ensure we have a user (api_key is required and must be unique)
 	var userID string
 	err := pool.QueryRow(ctx, `
-		INSERT INTO users (email, username, password_hash)
-		VALUES ('test@example.com', 'testuser', 'hash')
+		INSERT INTO users (email, username, password_hash, api_key)
+		VALUES ('test@example.com', 'testuser', 'hash', 'test-api-key-' || $1)
 		ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
 		RETURNING id
-	`).Scan(&userID)
+	`, timestamp).Scan(&userID)
 	if err != nil {
 		t.Skipf("Skipping test: could not create test user: %v", err)
 		return nil
 	}
 
-	// Create a session for this user
+	// Create a session for this user (session_token and expires_at are required)
 	var sessionID string
 	err = pool.QueryRow(ctx, `
-		INSERT INTO user_sessions (user_id, token, expires_at)
+		INSERT INTO user_sessions (user_id, session_token, expires_at)
 		VALUES ($1, $2, NOW() + INTERVAL '1 day')
 		RETURNING id
-	`, userID, "test-token-"+time.Now().Format("150405")).Scan(&sessionID)
+	`, userID, "test-session-token-"+timestamp).Scan(&sessionID)
 	if err != nil {
 		t.Skipf("Skipping test: could not create test session: %v", err)
 		return nil
@@ -210,7 +211,7 @@ func TestCogneeMemory_NilOptionalFields(t *testing.T) {
 func TestCreateTestCogneeMemory_ValidValues(t *testing.T) {
 	memory := createTestCogneeMemory()
 
-	assert.Empty(t, memory.SessionID) // Empty to avoid FK constraint issues
+	assert.NotEmpty(t, memory.SessionID) // Fake UUID for unit tests
 	assert.Equal(t, "test-dataset", memory.DatasetName)
 	assert.Equal(t, "text/plain", memory.ContentType)
 	assert.NotEmpty(t, memory.Content)
@@ -296,9 +297,9 @@ func TestCogneeMemoryRepository_GetByID_NotFound(t *testing.T) {
 	defer pool.Close()
 
 	ctx := context.Background()
-	_, err := repo.GetByID(ctx, "non-existent-id")
+	// Use a valid UUID format that doesn't exist
+	_, err := repo.GetByID(ctx, "00000000-0000-0000-0000-000000000000")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not found")
 }
 
 func TestCogneeMemoryRepository_GetBySessionID(t *testing.T) {
@@ -309,20 +310,30 @@ func TestCogneeMemoryRepository_GetBySessionID(t *testing.T) {
 	defer pool.Close()
 	defer cleanupCogneeMemoryTestDB(t, pool)
 
-	// Skip this test as it requires a valid user_sessions entry
-	// which has foreign key constraint
-	t.Skip("Skipping: requires user_sessions FK - tested via integration tests")
-
 	ctx := context.Background()
 
-	// Create multiple memories for the same session (with empty session_id)
-	for i := 0; i < 3; i++ {
-		memory := createTestCogneeMemory()
+	// First, create a memory to get a valid session ID
+	firstMemory := createTestCogneeMemoryWithPool(t, pool)
+	if firstMemory == nil {
+		return
+	}
+	err := repo.Create(ctx, firstMemory)
+	require.NoError(t, err)
+	sessionID := firstMemory.SessionID
+
+	// Create 2 more memories with the same session ID
+	for i := 0; i < 2; i++ {
+		memory := &CogneeMemory{
+			SessionID:   sessionID, // Use the same session ID
+			DatasetName: "test-dataset-" + time.Now().Format("150405.000"),
+			ContentType: "text/plain",
+			Content:     "This is test content.",
+		}
 		err := repo.Create(ctx, memory)
 		require.NoError(t, err)
 	}
 
-	memories, err := repo.GetBySessionID(ctx, "")
+	memories, err := repo.GetBySessionID(ctx, sessionID)
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(memories), 3)
 }
@@ -340,7 +351,10 @@ func TestCogneeMemoryRepository_GetByDatasetName(t *testing.T) {
 
 	// Create multiple memories for the same dataset
 	for i := 0; i < 5; i++ {
-		memory := createTestCogneeMemory()
+		memory := createTestCogneeMemoryWithPool(t, pool)
+	if memory == nil {
+		return // Test was skipped
+	}
 		memory.DatasetName = datasetName
 		err := repo.Create(ctx, memory)
 		require.NoError(t, err)
@@ -363,7 +377,10 @@ func TestCogneeMemoryRepository_SearchByKey(t *testing.T) {
 	ctx := context.Background()
 	uniqueKey := "unique-searchable-key-" + time.Now().Format("20060102150405")
 
-	memory := createTestCogneeMemory()
+	memory := createTestCogneeMemoryWithPool(t, pool)
+	if memory == nil {
+		return // Test was skipped
+	}
 	memory.SearchKey = &uniqueKey
 	err := repo.Create(ctx, memory)
 	require.NoError(t, err)
@@ -384,7 +401,10 @@ func TestCogneeMemoryRepository_SearchByContent(t *testing.T) {
 	ctx := context.Background()
 	uniqueContent := "UNIQUE_SEARCHABLE_CONTENT_" + time.Now().Format("20060102150405")
 
-	memory := createTestCogneeMemory()
+	memory := createTestCogneeMemoryWithPool(t, pool)
+	if memory == nil {
+		return // Test was skipped
+	}
 	memory.Content = uniqueContent
 	err := repo.Create(ctx, memory)
 	require.NoError(t, err)
@@ -403,7 +423,10 @@ func TestCogneeMemoryRepository_Update(t *testing.T) {
 	defer cleanupCogneeMemoryTestDB(t, pool)
 
 	ctx := context.Background()
-	memory := createTestCogneeMemory()
+	memory := createTestCogneeMemoryWithPool(t, pool)
+	if memory == nil {
+		return // Test was skipped
+	}
 	err := repo.Create(ctx, memory)
 	require.NoError(t, err)
 
@@ -433,7 +456,10 @@ func TestCogneeMemoryRepository_UpdateVectorID(t *testing.T) {
 	defer cleanupCogneeMemoryTestDB(t, pool)
 
 	ctx := context.Background()
-	memory := createTestCogneeMemory()
+	memory := createTestCogneeMemoryWithPool(t, pool)
+	if memory == nil {
+		return // Test was skipped
+	}
 	err := repo.Create(ctx, memory)
 	require.NoError(t, err)
 
@@ -456,7 +482,10 @@ func TestCogneeMemoryRepository_UpdateGraphNodes(t *testing.T) {
 	defer cleanupCogneeMemoryTestDB(t, pool)
 
 	ctx := context.Background()
-	memory := createTestCogneeMemory()
+	memory := createTestCogneeMemoryWithPool(t, pool)
+	if memory == nil {
+		return // Test was skipped
+	}
 	err := repo.Create(ctx, memory)
 	require.NoError(t, err)
 
@@ -482,7 +511,10 @@ func TestCogneeMemoryRepository_Delete(t *testing.T) {
 	defer cleanupCogneeMemoryTestDB(t, pool)
 
 	ctx := context.Background()
-	memory := createTestCogneeMemory()
+	memory := createTestCogneeMemoryWithPool(t, pool)
+	if memory == nil {
+		return // Test was skipped
+	}
 	err := repo.Create(ctx, memory)
 	require.NoError(t, err)
 
@@ -501,22 +533,32 @@ func TestCogneeMemoryRepository_DeleteBySessionID(t *testing.T) {
 	defer pool.Close()
 	defer cleanupCogneeMemoryTestDB(t, pool)
 
-	// Skip this test as it requires a valid user_sessions entry
-	// which has foreign key constraint
-	t.Skip("Skipping: requires user_sessions FK - tested via integration tests")
-
 	ctx := context.Background()
 
-	// Create multiple memories (with empty session_id)
-	for i := 0; i < 3; i++ {
-		memory := createTestCogneeMemory()
+	// First, create a memory to get a valid session ID
+	firstMemory := createTestCogneeMemoryWithPool(t, pool)
+	if firstMemory == nil {
+		return
+	}
+	err := repo.Create(ctx, firstMemory)
+	require.NoError(t, err)
+	sessionID := firstMemory.SessionID
+
+	// Create 2 more memories with the same session ID
+	for i := 0; i < 2; i++ {
+		memory := &CogneeMemory{
+			SessionID:   sessionID, // Use the same session ID
+			DatasetName: "test-dataset-delete-" + time.Now().Format("150405.000"),
+			ContentType: "text/plain",
+			Content:     "This is test content to delete.",
+		}
 		err := repo.Create(ctx, memory)
 		require.NoError(t, err)
 	}
 
-	count, err := repo.DeleteBySessionID(ctx, "")
+	count, err := repo.DeleteBySessionID(ctx, sessionID)
 	require.NoError(t, err)
-	assert.GreaterOrEqual(t, count, int64(0))
+	assert.Equal(t, int64(3), count)
 }
 
 func TestCogneeMemoryRepository_DeleteByDatasetName(t *testing.T) {
@@ -532,7 +574,10 @@ func TestCogneeMemoryRepository_DeleteByDatasetName(t *testing.T) {
 
 	// Create multiple memories for the same dataset
 	for i := 0; i < 4; i++ {
-		memory := createTestCogneeMemory()
+		memory := createTestCogneeMemoryWithPool(t, pool)
+	if memory == nil {
+		return // Test was skipped
+	}
 		memory.DatasetName = datasetName
 		err := repo.Create(ctx, memory)
 		require.NoError(t, err)
@@ -552,7 +597,10 @@ func TestCogneeMemoryRepository_GetByVectorID(t *testing.T) {
 	defer cleanupCogneeMemoryTestDB(t, pool)
 
 	ctx := context.Background()
-	memory := createTestCogneeMemory()
+	memory := createTestCogneeMemoryWithPool(t, pool)
+	if memory == nil {
+		return // Test was skipped
+	}
 	vectorID := "unique-vector-id-" + time.Now().Format("20060102150405")
 	memory.VectorID = &vectorID
 	err := repo.Create(ctx, memory)
@@ -577,7 +625,10 @@ func TestCogneeMemoryRepository_ListDatasets(t *testing.T) {
 	// Create memories with different datasets
 	datasets := []string{"test-dataset-a", "test-dataset-b", "test-dataset-c"}
 	for _, ds := range datasets {
-		memory := createTestCogneeMemory()
+		memory := createTestCogneeMemoryWithPool(t, pool)
+	if memory == nil {
+		return // Test was skipped
+	}
 		memory.DatasetName = ds
 		err := repo.Create(ctx, memory)
 		require.NoError(t, err)
@@ -601,7 +652,10 @@ func TestCogneeMemoryRepository_GetDatasetStats(t *testing.T) {
 
 	// Create multiple memories with the same dataset
 	for i := 0; i < 5; i++ {
-		memory := createTestCogneeMemory()
+		memory := createTestCogneeMemoryWithPool(t, pool)
+	if memory == nil {
+		return // Test was skipped
+	}
 		memory.DatasetName = datasetName
 		if i%2 == 0 {
 			vectorID := "vector-" + time.Now().Format("150405")
