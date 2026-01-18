@@ -487,6 +487,215 @@ func (r *ModelMetadataRepository) GetBenchmarks(ctx context.Context, modelID str
 	return benchmarks, nil
 }
 
+// GetBenchmarkByID retrieves a benchmark by its ID
+func (r *ModelMetadataRepository) GetBenchmarkByID(ctx context.Context, id string) (*ModelBenchmark, error) {
+	query := `
+		SELECT
+			id, model_id, benchmark_name, benchmark_type, score, rank,
+			normalized_score, benchmark_date, metadata, created_at
+		FROM model_benchmarks
+		WHERE id = $1
+	`
+
+	benchmark := &ModelBenchmark{}
+	var metadataJSON []byte
+
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&benchmark.ID, &benchmark.ModelID, &benchmark.BenchmarkName,
+		&benchmark.BenchmarkType, &benchmark.Score, &benchmark.Rank,
+		&benchmark.NormalizedScore, &benchmark.BenchmarkDate, &metadataJSON, &benchmark.CreatedAt,
+	)
+
+	if err == pgx.ErrNoRows {
+		return nil, fmt.Errorf("benchmark not found: %s", id)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get benchmark: %w", err)
+	}
+
+	if err := json.Unmarshal(metadataJSON, &benchmark.Metadata); err != nil && len(metadataJSON) > 0 {
+		benchmark.Metadata = make(map[string]interface{})
+	}
+
+	return benchmark, nil
+}
+
+// UpdateBenchmark updates an existing benchmark
+func (r *ModelMetadataRepository) UpdateBenchmark(ctx context.Context, benchmark *ModelBenchmark) error {
+	query := `
+		UPDATE model_benchmarks
+		SET benchmark_type = $2, score = $3, rank = $4, normalized_score = $5,
+		    benchmark_date = $6, metadata = $7
+		WHERE id = $1
+	`
+
+	metadataJSON, _ := json.Marshal(benchmark.Metadata)
+
+	result, err := r.pool.Exec(ctx, query,
+		benchmark.ID, benchmark.BenchmarkType, benchmark.Score, benchmark.Rank,
+		benchmark.NormalizedScore, benchmark.BenchmarkDate, metadataJSON,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update benchmark: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("benchmark not found: %s", benchmark.ID)
+	}
+
+	return nil
+}
+
+// DeleteBenchmark deletes a benchmark by ID
+func (r *ModelMetadataRepository) DeleteBenchmark(ctx context.Context, id string) error {
+	result, err := r.pool.Exec(ctx, "DELETE FROM model_benchmarks WHERE id = $1", id)
+	if err != nil {
+		return fmt.Errorf("failed to delete benchmark: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("benchmark not found: %s", id)
+	}
+
+	return nil
+}
+
+// DeleteBenchmarksByModelID deletes all benchmarks for a specific model
+func (r *ModelMetadataRepository) DeleteBenchmarksByModelID(ctx context.Context, modelID string) (int64, error) {
+	result, err := r.pool.Exec(ctx, "DELETE FROM model_benchmarks WHERE model_id = $1", modelID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete benchmarks for model: %w", err)
+	}
+
+	return result.RowsAffected(), nil
+}
+
+// ListAllBenchmarks retrieves all benchmarks with optional filtering
+func (r *ModelMetadataRepository) ListAllBenchmarks(ctx context.Context, benchmarkType string, limit int, offset int) ([]*ModelBenchmark, int, error) {
+	query := `
+		SELECT
+			id, model_id, benchmark_name, benchmark_type, score, rank,
+			normalized_score, benchmark_date, metadata, created_at
+		FROM model_benchmarks
+		WHERE 1=1
+	`
+	countQuery := "SELECT COUNT(*) FROM model_benchmarks WHERE 1=1"
+
+	args := []interface{}{}
+	argIdx := 1
+
+	if benchmarkType != "" {
+		query += fmt.Sprintf(" AND benchmark_type = $%d", argIdx)
+		countQuery += fmt.Sprintf(" AND benchmark_type = $%d", argIdx)
+		args = append(args, benchmarkType)
+		argIdx++
+	}
+
+	query += " ORDER BY score DESC NULLS LAST"
+
+	countArgs := args
+
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT $%d", argIdx)
+		args = append(args, limit)
+		argIdx++
+	}
+
+	if offset > 0 {
+		query += fmt.Sprintf(" OFFSET $%d", argIdx)
+		args = append(args, offset)
+	}
+
+	var total int
+	err := r.pool.QueryRow(ctx, countQuery, countArgs...).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count benchmarks: %w", err)
+	}
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to list benchmarks: %w", err)
+	}
+	defer rows.Close()
+
+	benchmarks := []*ModelBenchmark{}
+	for rows.Next() {
+		benchmark := &ModelBenchmark{}
+		var metadataJSON []byte
+
+		err := rows.Scan(
+			&benchmark.ID, &benchmark.ModelID, &benchmark.BenchmarkName,
+			&benchmark.BenchmarkType, &benchmark.Score, &benchmark.Rank,
+			&benchmark.NormalizedScore, &benchmark.BenchmarkDate, &metadataJSON, &benchmark.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan benchmark row: %w", err)
+		}
+
+		if err := json.Unmarshal(metadataJSON, &benchmark.Metadata); err != nil && len(metadataJSON) > 0 {
+			benchmark.Metadata = make(map[string]interface{})
+		}
+		benchmarks = append(benchmarks, benchmark)
+	}
+
+	return benchmarks, total, nil
+}
+
+// GetTopBenchmarksByName retrieves the top N benchmarks for a specific benchmark name
+func (r *ModelMetadataRepository) GetTopBenchmarksByName(ctx context.Context, benchmarkName string, limit int) ([]*ModelBenchmark, error) {
+	query := `
+		SELECT
+			id, model_id, benchmark_name, benchmark_type, score, rank,
+			normalized_score, benchmark_date, metadata, created_at
+		FROM model_benchmarks
+		WHERE benchmark_name = $1
+		ORDER BY score DESC NULLS LAST
+		LIMIT $2
+	`
+
+	rows, err := r.pool.Query(ctx, query, benchmarkName, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get top benchmarks: %w", err)
+	}
+	defer rows.Close()
+
+	benchmarks := []*ModelBenchmark{}
+	for rows.Next() {
+		benchmark := &ModelBenchmark{}
+		var metadataJSON []byte
+
+		err := rows.Scan(
+			&benchmark.ID, &benchmark.ModelID, &benchmark.BenchmarkName,
+			&benchmark.BenchmarkType, &benchmark.Score, &benchmark.Rank,
+			&benchmark.NormalizedScore, &benchmark.BenchmarkDate, &metadataJSON, &benchmark.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan benchmark row: %w", err)
+		}
+
+		if err := json.Unmarshal(metadataJSON, &benchmark.Metadata); err != nil && len(metadataJSON) > 0 {
+			benchmark.Metadata = make(map[string]interface{})
+		}
+		benchmarks = append(benchmarks, benchmark)
+	}
+
+	return benchmarks, nil
+}
+
+// CountBenchmarks returns the total count of benchmarks
+func (r *ModelMetadataRepository) CountBenchmarks(ctx context.Context) (int64, error) {
+	var count int64
+	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM model_benchmarks").Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count benchmarks: %w", err)
+	}
+	return count, nil
+}
+
 func (r *ModelMetadataRepository) CreateRefreshHistory(ctx context.Context, history *ModelsRefreshHistory) error {
 	query := `
 		INSERT INTO models_refresh_history (
