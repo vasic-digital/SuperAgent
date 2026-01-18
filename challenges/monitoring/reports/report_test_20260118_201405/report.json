@@ -1,0 +1,69 @@
+{
+    "report_version": "1.0.0",
+    "generated_at": "2026-01-18T20:14:05+03:00",
+    "session": {
+        "id": "report_test_20260118_201405",
+        "start_time": "2026-01-18T20:14:05+03:00",
+        "end_time": "2026-01-18T20:14:05+03:00",
+        "duration_seconds": 10,
+        "exit_code": 0
+    },
+    "summary": {
+        "total_issues": 3,
+        "errors": 1,
+        "warnings": 1,
+        "fixes_applied": 1,
+        "status": "FAIL"
+    },
+    "issues": {
+        "errors": [
+  "[2026-01-18 20:14:05.209] Test error message"
+],
+        "warnings": [
+  "[2026-01-18 20:14:05.208] Test warning message"
+],
+        "fixes": [
+  "[2026-01-18 20:14:05.210] Test fix applied"
+]
+    },
+    "memory_analysis": {},
+    "resource_samples": [
+  {
+    "event": "resource_sample",
+    "timestamp": "2026-01-18T20:14:05+03:00",
+    "memory": {
+      "total": 64086,
+      "used": 6023,
+      "free": 50378,
+      "available": 58063
+    },
+    "cpu": {
+      "usage": 0,
+      "load": [
+        3.47,
+        3.33,
+        3.12
+      ]
+    },
+    "disk": {
+      "reads": 0,
+      "writes": 0
+    },
+    "network": {
+      "rx": 0,
+      "tx": 0
+    },
+    "processes": [
+      {
+        "name": "helixagent",
+        "pid": 14813,
+        "mem_mb": 2,
+        "cpu": 0.0,
+        "fd_count": 18
+      }
+    ]
+  }
+],
+    "component_analysis": [],
+    "challenge_results": []
+}
