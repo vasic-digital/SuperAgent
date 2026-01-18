@@ -102,6 +102,7 @@ func (r *Reloader) WatchForConfigChanges(ctx context.Context, configDir string) 
 
 	// Debounce mechanism
 	debounceTimers := make(map[string]*time.Timer)
+	var debounceMu sync.Mutex
 	debounceDelay := 2 * time.Second
 
 	for {
@@ -129,27 +130,33 @@ func (r *Reloader) WatchForConfigChanges(ctx context.Context, configDir string) 
 			pluginName := strings.TrimSuffix(filename, filepath.Ext(filename))
 
 			// Debounce: cancel previous timer if exists
+			debounceMu.Lock()
 			if timer, exists := debounceTimers[pluginName]; exists {
 				timer.Stop()
 			}
 
+			// Capture for closure
+			capturedPluginName := pluginName
+			capturedEventName := event.Name
+
 			// Create new debounce timer
-			debounceTimers[pluginName] = time.AfterFunc(debounceDelay, func() {
-				r.mu.Lock()
-				delete(debounceTimers, pluginName)
-				r.mu.Unlock()
+			debounceTimers[capturedPluginName] = time.AfterFunc(debounceDelay, func() {
+				debounceMu.Lock()
+				delete(debounceTimers, capturedPluginName)
+				debounceMu.Unlock()
 
 				// Check if file still exists
-				if _, err := os.Stat(event.Name); os.IsNotExist(err) {
-					utils.GetLogger().Debugf("Config file no longer exists: %s", event.Name)
+				if _, err := os.Stat(capturedEventName); os.IsNotExist(err) {
+					utils.GetLogger().Debugf("Config file no longer exists: %s", capturedEventName)
 					return
 				}
 
-				utils.GetLogger().Infof("Config file changed: %s, reloading plugin: %s", event.Name, pluginName)
-				if err := r.ReloadPluginConfig(ctx, pluginName); err != nil {
-					utils.GetLogger().Warnf("Failed to reload plugin %s: %v", pluginName, err)
+				utils.GetLogger().Infof("Config file changed: %s, reloading plugin: %s", capturedEventName, capturedPluginName)
+				if err := r.ReloadPluginConfig(ctx, capturedPluginName); err != nil {
+					utils.GetLogger().Warnf("Failed to reload plugin %s: %v", capturedPluginName, err)
 				}
 			})
+			debounceMu.Unlock()
 
 		case err, ok := <-watcher.Errors:
 			if !ok {

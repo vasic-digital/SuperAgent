@@ -403,8 +403,11 @@ func TestWebhookDispatcher_Signature(t *testing.T) {
 	logger := testLogger()
 
 	var receivedSignature string
+	var mu sync.Mutex
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
 		receivedSignature = r.Header.Get("X-HelixAgent-Signature")
+		mu.Unlock()
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -433,8 +436,11 @@ func TestWebhookDispatcher_Signature(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	// Signature should be present and start with sha256=
-	assert.True(t, len(receivedSignature) > 0)
-	assert.Contains(t, receivedSignature, "sha256=")
+	mu.Lock()
+	sig := receivedSignature
+	mu.Unlock()
+	assert.True(t, len(sig) > 0)
+	assert.Contains(t, sig, "sha256=")
 }
 
 // Tests for webhook custom headers
@@ -442,8 +448,11 @@ func TestWebhookDispatcher_CustomHeaders(t *testing.T) {
 	logger := testLogger()
 
 	var receivedHeaders http.Header
+	var mu sync.Mutex
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
 		receivedHeaders = r.Header.Clone()
+		mu.Unlock()
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -474,8 +483,11 @@ func TestWebhookDispatcher_CustomHeaders(t *testing.T) {
 
 	time.Sleep(200 * time.Millisecond)
 
-	assert.Equal(t, "custom-value", receivedHeaders.Get("X-Custom-Header"))
-	assert.Equal(t, "Bearer token123", receivedHeaders.Get("Authorization"))
+	mu.Lock()
+	headers := receivedHeaders
+	mu.Unlock()
+	assert.Equal(t, "custom-value", headers.Get("X-Custom-Header"))
+	assert.Equal(t, "Bearer token123", headers.Get("Authorization"))
 }
 
 // Tests for webhook payload
@@ -483,9 +495,12 @@ func TestWebhookDispatcher_Payload(t *testing.T) {
 	logger := testLogger()
 
 	var receivedPayload map[string]interface{}
+	var mu sync.Mutex
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
+		mu.Lock()
 		json.Unmarshal(body, &receivedPayload)
+		mu.Unlock()
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -519,11 +534,15 @@ func TestWebhookDispatcher_Payload(t *testing.T) {
 
 	time.Sleep(200 * time.Millisecond)
 
-	assert.Equal(t, "task.progress", receivedPayload["event"])
-	assert.Equal(t, "task-123", receivedPayload["task_id"])
-	assert.NotNil(t, receivedPayload["timestamp"])
+	mu.Lock()
+	payload := receivedPayload
+	mu.Unlock()
 
-	taskData, ok := receivedPayload["task"].(map[string]interface{})
+	assert.Equal(t, "task.progress", payload["event"])
+	assert.Equal(t, "task-123", payload["task_id"])
+	assert.NotNil(t, payload["timestamp"])
+
+	taskData, ok := payload["task"].(map[string]interface{})
 	require.True(t, ok)
 	assert.Equal(t, "task-123", taskData["id"])
 	assert.Equal(t, "compute", taskData["type"])

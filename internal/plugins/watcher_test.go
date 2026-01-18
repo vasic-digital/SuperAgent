@@ -3,6 +3,7 @@ package plugins
 import (
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -137,10 +138,10 @@ func TestWatcher_IgnoreNonPluginFiles(t *testing.T) {
 
 func TestWatcher_Debounce(t *testing.T) {
 	tmpDir := t.TempDir()
-	eventCount := 0
+	var eventCount atomic.Int64
 
 	onChange := func(path string) {
-		eventCount++
+		eventCount.Add(1)
 	}
 
 	watcher, err := NewWatcher([]string{tmpDir}, onChange)
@@ -169,7 +170,7 @@ func TestWatcher_Debounce(t *testing.T) {
 
 	// Due to debouncing, should have fewer events than writes
 	// (exact count depends on timing, but should be less than 6)
-	t.Logf("Event count after debouncing: %d", eventCount)
+	t.Logf("Event count after debouncing: %d", eventCount.Load())
 }
 
 func TestWatcher_HandleEventCreate(t *testing.T) {
@@ -223,7 +224,6 @@ func TestWatcher_MultiplePaths(t *testing.T) {
 	require.NoError(t, err)
 
 	watcher.Start()
-	defer watcher.Stop()
 
 	// Give watcher time to start
 	time.Sleep(100 * time.Millisecond)
@@ -241,11 +241,19 @@ func TestWatcher_MultiplePaths(t *testing.T) {
 	// Wait for events (with timeout)
 	time.Sleep(2 * time.Second)
 
-	// Close channel to count events
-	close(eventsReceived)
+	// Stop watcher first to prevent any more events
+	watcher.Stop()
+
+	// Count events by draining the buffered channel (non-blocking)
 	count := 0
-	for range eventsReceived {
-		count++
+drainLoop:
+	for {
+		select {
+		case <-eventsReceived:
+			count++
+		default:
+			break drainLoop
+		}
 	}
 
 	t.Logf("Received %d events from multiple paths", count)

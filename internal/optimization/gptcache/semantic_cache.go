@@ -140,8 +140,8 @@ func (c *SemanticCache) GetWithThreshold(ctx context.Context, embedding []float6
 		return nil, ErrInvalidEmbedding
 	}
 
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	if len(c.embeddings) == 0 {
 		c.misses++

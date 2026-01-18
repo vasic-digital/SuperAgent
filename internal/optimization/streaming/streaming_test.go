@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -815,9 +816,9 @@ func TestEnhancedStreamerStreamEnhanced(t *testing.T) {
 	in <- &StreamChunk{Content: "", Index: 1, Done: true}
 	close(in)
 
-	var progressCalled bool
+	var progressCalled atomic.Bool
 	progressCallback := func(p *StreamProgress) {
-		progressCalled = true
+		progressCalled.Store(true)
 	}
 
 	out, getResult := streamer.StreamEnhanced(ctx, in, progressCallback)
@@ -832,7 +833,7 @@ func TestEnhancedStreamerStreamEnhanced(t *testing.T) {
 	// Get aggregated result
 	result := getResult()
 	assert.NotNil(t, result)
-	assert.True(t, progressCalled)
+	assert.True(t, progressCalled.Load())
 }
 
 func TestEnhancedStreamerStreamEnhancedNoProgress(t *testing.T) {

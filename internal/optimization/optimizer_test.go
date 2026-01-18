@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -798,9 +799,9 @@ func TestServiceStreamEnhanced_WithProgressCallback(t *testing.T) {
 	in <- &streaming.StreamChunk{Content: "", Index: 2, Done: true}
 	close(in)
 
-	var progressCalled bool
+	var progressCalled atomic.Bool
 	progressCallback := func(p *streaming.StreamProgress) {
-		progressCalled = true
+		progressCalled.Store(true)
 	}
 
 	out, getResult := svc.StreamEnhanced(ctx, in, progressCallback)
@@ -812,7 +813,7 @@ func TestServiceStreamEnhanced_WithProgressCallback(t *testing.T) {
 	result := getResult()
 	assert.NotNil(t, result)
 	// Progress callback may or may not be called depending on timing
-	_ = progressCalled
+	_ = progressCalled.Load()
 }
 
 func TestServiceOptimizeRequest_WithMockedLlamaIndex(t *testing.T) {
