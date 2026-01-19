@@ -150,9 +150,14 @@ func TestMemoryService_CacheOperations(t *testing.T) {
 
 func TestMemoryService_GetStats(t *testing.T) {
 	t.Run("Stats for disabled service", func(t *testing.T) {
-		// GetStats might panic when client is nil, so we'll skip this test
-		// or handle it differently
-		t.Skip("GetStats has nil pointer issue when client is nil")
+		// GetStats handles nil client gracefully (returns empty cognee_url)
+		service := services.NewMemoryService(nil)
+		stats := service.GetStats()
+
+		assert.NotNil(t, stats)
+		assert.Equal(t, false, stats["enabled"])
+		// When disabled, client is nil but GetStats handles it
+		assert.Equal(t, "", stats["cognee_url"])
 	})
 
 	t.Run("Stats for enabled service", func(t *testing.T) {

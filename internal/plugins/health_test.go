@@ -303,7 +303,10 @@ func (m *SlowMockPlugin) SetSecurityContext(ctx *PluginSecurityContext) error {
 }
 
 func TestHealthMonitor_CheckPlugin_DegradedStatus(t *testing.T) {
-	t.Skip("Skipping slow test - requires >5s delay to trigger degraded status")
+	// This test requires >5s to run because the degraded threshold is hardcoded at 5 seconds
+	if testing.Short() {
+		t.Skip("Skipping slow test in short mode - requires >5s delay to trigger degraded status")
+	}
 
 	registry := NewRegistry()
 	// Use longer timeout to allow slow response to complete
