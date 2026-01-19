@@ -998,3 +998,236 @@ func TestClaudeProvider_ToolChoice_AllFormats(t *testing.T) {
 		})
 	}
 }
+
+// ==============================================================================
+// AUTH TYPE AND HEALTH CHECK TESTS
+// ==============================================================================
+
+func TestClaudeProvider_GetAuthType(t *testing.T) {
+	t.Run("default is API key", func(t *testing.T) {
+		provider := NewClaudeProvider("test-key", "", "")
+		assert.Equal(t, AuthTypeAPIKey, provider.GetAuthType())
+	})
+
+	t.Run("explicit API key auth type", func(t *testing.T) {
+		provider := &ClaudeProvider{
+			apiKey:   "test-key",
+			authType: AuthTypeAPIKey,
+		}
+		assert.Equal(t, AuthTypeAPIKey, provider.GetAuthType())
+	})
+
+	t.Run("OAuth auth type", func(t *testing.T) {
+		provider := &ClaudeProvider{
+			authType: AuthTypeOAuth,
+		}
+		assert.Equal(t, AuthTypeOAuth, provider.GetAuthType())
+	})
+}
+
+func TestClaudeProvider_getAuthHeader_APIKey(t *testing.T) {
+	provider := &ClaudeProvider{
+		apiKey:   "sk-test-key",
+		authType: AuthTypeAPIKey,
+	}
+
+	headerName, headerValue, err := provider.getAuthHeader()
+	require.NoError(t, err)
+	assert.Equal(t, "x-api-key", headerName)
+	assert.Equal(t, "sk-test-key", headerValue)
+}
+
+func TestClaudeProvider_getAuthHeader_OAuthNoReader(t *testing.T) {
+	provider := &ClaudeProvider{
+		authType:        AuthTypeOAuth,
+		oauthCredReader: nil, // No credential reader
+	}
+
+	_, _, err := provider.getAuthHeader()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "OAuth credential reader not initialized")
+}
+
+// mockRoundTripper implements http.RoundTripper for testing
+type mockRoundTripper struct {
+	response *http.Response
+	err      error
+}
+
+func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return m.response, m.err
+}
+
+func TestClaudeProvider_HealthCheck_WithMockTransport(t *testing.T) {
+	t.Run("success - API returns response", func(t *testing.T) {
+		mockResp := &http.Response{
+			StatusCode: http.StatusBadRequest, // Expected for GET to messages endpoint
+			Body:       http.NoBody,
+			Header:     make(http.Header),
+		}
+
+		provider := &ClaudeProvider{
+			apiKey:     "test-key",
+			baseURL:    ClaudeAPIURL,
+			model:      ClaudeModel,
+			authType:   AuthTypeAPIKey,
+			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
+		}
+
+		err := provider.HealthCheck()
+		assert.NoError(t, err)
+	})
+
+	t.Run("failure - unauthorized", func(t *testing.T) {
+		mockResp := &http.Response{
+			StatusCode: http.StatusUnauthorized,
+			Body:       http.NoBody,
+			Header:     make(http.Header),
+		}
+
+		provider := &ClaudeProvider{
+			apiKey:     "invalid-key",
+			baseURL:    ClaudeAPIURL,
+			model:      ClaudeModel,
+			authType:   AuthTypeAPIKey,
+			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
+		}
+
+		err := provider.HealthCheck()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "unauthorized")
+	})
+
+	t.Run("failure - network error", func(t *testing.T) {
+		provider := &ClaudeProvider{
+			apiKey:   "test-key",
+			baseURL:  ClaudeAPIURL,
+			model:    ClaudeModel,
+			authType: AuthTypeAPIKey,
+			httpClient: &http.Client{
+				Transport: &mockRoundTripper{
+					err: http.ErrHandlerTimeout,
+				},
+			},
+		}
+
+		err := provider.HealthCheck()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "health check request failed")
+	})
+}
+
+func TestIsAuthRetryableStatus(t *testing.T) {
+	tests := []struct {
+		statusCode int
+		retryable  bool
+	}{
+		{http.StatusUnauthorized, true},  // 401 - should retry
+		{http.StatusOK, false},           // 200 - not retryable
+		{http.StatusBadRequest, false},   // 400 - not retryable
+		{http.StatusForbidden, false},    // 403 - not retryable
+		{http.StatusNotFound, false},     // 404 - not retryable
+	}
+
+	for _, tt := range tests {
+		t.Run(http.StatusText(tt.statusCode), func(t *testing.T) {
+			assert.Equal(t, tt.retryable, isAuthRetryableStatus(tt.statusCode))
+		})
+	}
+}
+
+func TestClaudeProvider_WaitWithJitter(t *testing.T) {
+	provider := NewClaudeProvider("test-key", "", "")
+
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	baseDelay := 100 * time.Millisecond
+	provider.waitWithJitter(ctx, baseDelay)
+	elapsed := time.Since(start)
+
+	// Should wait at least the base delay
+	assert.GreaterOrEqual(t, elapsed, baseDelay)
+	// Should not exceed base delay + 10% jitter + buffer
+	assert.LessOrEqual(t, elapsed, 150*time.Millisecond)
+}
+
+func TestClaudeProvider_WaitWithJitter_ContextCancelled(t *testing.T) {
+	provider := NewClaudeProvider("test-key", "", "")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	start := time.Now()
+	provider.waitWithJitter(ctx, 1*time.Second)
+	elapsed := time.Since(start)
+
+	// Should return immediately due to cancelled context
+	assert.Less(t, elapsed, 100*time.Millisecond)
+}
+
+func TestClaudeProvider_ConvertResponse_WithToolUse(t *testing.T) {
+	provider := NewClaudeProvider("test-key", "", "")
+	req := &models.LLMRequest{ID: "req-123"}
+
+	stopReason := "tool_use"
+	claudeResp := &ClaudeResponse{
+		ID:         "msg-456",
+		Type:       "message",
+		Role:       "assistant",
+		Model:      "claude-3-sonnet-20240229",
+		StopReason: &stopReason,
+		Content: []ClaudeContent{
+			{Type: "text", Text: "I'll use the calculator tool."},
+			{
+				Type:  "tool_use",
+				ID:    "tool-123",
+				Name:  "calculator",
+				Input: map[string]interface{}{"operation": "add", "a": 1, "b": 2},
+			},
+		},
+		Usage: ClaudeUsage{
+			InputTokens:  15,
+			OutputTokens: 8,
+		},
+	}
+
+	startTime := time.Now().Add(-50 * time.Millisecond)
+	resp := provider.convertResponse(req, claudeResp, startTime)
+
+	assert.Equal(t, "msg-456", resp.ID)
+	// When tool_use is present, finish reason is normalized to "tool_calls"
+	assert.Equal(t, "tool_calls", resp.FinishReason)
+	assert.Contains(t, resp.Content, "calculator tool")
+	assert.GreaterOrEqual(t, resp.ResponseTime, int64(50))
+}
+
+func TestClaudeProvider_ConvertResponse_MultipleTextBlocks(t *testing.T) {
+	provider := NewClaudeProvider("test-key", "", "")
+	req := &models.LLMRequest{ID: "req-123"}
+
+	stopReason := "end_turn"
+	claudeResp := &ClaudeResponse{
+		ID:         "msg-456",
+		Type:       "message",
+		Role:       "assistant",
+		Model:      "claude-3-sonnet-20240229",
+		StopReason: &stopReason,
+		Content: []ClaudeContent{
+			{Type: "text", Text: "First part. "},
+			{Type: "text", Text: "Second part."},
+		},
+		Usage: ClaudeUsage{
+			InputTokens:  10,
+			OutputTokens: 6,
+		},
+	}
+
+	startTime := time.Now()
+	resp := provider.convertResponse(req, claudeResp, startTime)
+
+	// Should concatenate all text blocks
+	assert.Contains(t, resp.Content, "First part")
+	assert.Contains(t, resp.Content, "Second part")
+}
