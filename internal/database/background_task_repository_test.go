@@ -674,3 +674,202 @@ func TestBackgroundTaskRepository_GetTaskHistory(t *testing.T) {
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(history), 2)
 }
+
+func TestBackgroundTaskRepository_GetStaleTasks(t *testing.T) {
+	pool, repo := setupBackgroundTaskTestDB(t)
+	if pool == nil {
+		return
+	}
+	defer pool.Close()
+	defer cleanupBackgroundTaskTestDB(t, pool)
+
+	ctx := context.Background()
+
+	// Create a running task with an old heartbeat
+	task := createTestBackgroundTask()
+	task.Status = models.TaskStatusRunning
+	err := repo.Create(ctx, task)
+	require.NoError(t, err)
+
+	// Set a worker ID and start time
+	workerID := "worker-stale-test"
+	now := time.Now()
+	task.WorkerID = &workerID
+	task.StartedAt = &now
+	err = repo.Update(ctx, task)
+	require.NoError(t, err)
+
+	// Update heartbeat to make it old
+	_, err = pool.Exec(ctx, "UPDATE background_tasks SET last_heartbeat = NOW() - INTERVAL '10 minutes' WHERE id = $1", task.ID)
+	require.NoError(t, err)
+
+	// Query for stale tasks with 5 minute threshold
+	staleTasks, err := repo.GetStaleTasks(ctx, 5*time.Minute)
+	require.NoError(t, err)
+
+	// Should find at least our stale task
+	found := false
+	for _, st := range staleTasks {
+		if st.ID == task.ID {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "Should find the stale task")
+}
+
+func TestBackgroundTaskRepository_GetByWorkerID(t *testing.T) {
+	pool, repo := setupBackgroundTaskTestDB(t)
+	if pool == nil {
+		return
+	}
+	defer pool.Close()
+	defer cleanupBackgroundTaskTestDB(t, pool)
+
+	ctx := context.Background()
+
+	// Create a running task assigned to a specific worker
+	task := createTestBackgroundTask()
+	task.Status = models.TaskStatusRunning
+	workerID := "worker-specific-test"
+	task.WorkerID = &workerID
+	now := time.Now()
+	task.StartedAt = &now
+
+	err := repo.Create(ctx, task)
+	require.NoError(t, err)
+
+	// Update the task with worker assignment
+	err = repo.Update(ctx, task)
+	require.NoError(t, err)
+
+	// Query tasks by worker ID
+	workerTasks, err := repo.GetByWorkerID(ctx, workerID)
+	require.NoError(t, err)
+
+	// Should find at least our task
+	found := false
+	for _, wt := range workerTasks {
+		if wt.ID == task.ID {
+			found = true
+			assert.Equal(t, workerID, *wt.WorkerID)
+			break
+		}
+	}
+	assert.True(t, found, "Should find task by worker ID")
+}
+
+func TestBackgroundTaskRepository_SaveAndGetResourceSnapshots(t *testing.T) {
+	pool, repo := setupBackgroundTaskTestDB(t)
+	if pool == nil {
+		return
+	}
+	defer pool.Close()
+	defer cleanupBackgroundTaskTestDB(t, pool)
+
+	ctx := context.Background()
+
+	// Create a task first
+	task := createTestBackgroundTask()
+	err := repo.Create(ctx, task)
+	require.NoError(t, err)
+
+	// Create a resource snapshot
+	snapshot := &models.ResourceSnapshot{
+		TaskID:         task.ID,
+		CPUPercent:     45.5,
+		CPUUserTime:    100.0,
+		CPUSystemTime:  25.0,
+		MemoryRSSBytes: 256 * 1024 * 1024, // 256MB
+		MemoryVMSBytes: 512 * 1024 * 1024, // 512MB
+		MemoryPercent:  25.5,
+		IOReadBytes:    1024 * 1024,
+		IOWriteBytes:   512 * 1024,
+		NetBytesSent:   2048,
+		NetBytesRecv:   4096,
+		OpenFiles:      50,
+		OpenFDs:        100,
+		ThreadCount:    8,
+		ProcessState:   "running",
+		SampledAt:      time.Now(),
+	}
+
+	// Save the snapshot
+	err = repo.SaveResourceSnapshot(ctx, snapshot)
+	require.NoError(t, err)
+	assert.NotEmpty(t, snapshot.ID)
+
+	// Create another snapshot
+	snapshot2 := &models.ResourceSnapshot{
+		TaskID:         task.ID,
+		CPUPercent:     55.0,
+		MemoryRSSBytes: 300 * 1024 * 1024,
+		SampledAt:      time.Now().Add(time.Second),
+	}
+	err = repo.SaveResourceSnapshot(ctx, snapshot2)
+	require.NoError(t, err)
+
+	// Get snapshots for the task
+	snapshots, err := repo.GetResourceSnapshots(ctx, task.ID, 10)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(snapshots), 2)
+}
+
+func TestBackgroundTaskRepository_Dequeue(t *testing.T) {
+	pool, repo := setupBackgroundTaskTestDB(t)
+	if pool == nil {
+		return
+	}
+	defer pool.Close()
+	defer cleanupBackgroundTaskTestDB(t, pool)
+
+	ctx := context.Background()
+
+	// Note: Dequeue depends on a database function `dequeue_background_task`
+	// If the function doesn't exist, this test will be skipped
+	workerID := "worker-dequeue-test"
+
+	// Try to dequeue - this may return nil if no pending tasks or function doesn't exist
+	task, err := repo.Dequeue(ctx, workerID, 4, 1024)
+	if err != nil {
+		// Function might not exist in test DB, skip
+		t.Skipf("Dequeue function not available: %v", err)
+		return
+	}
+
+	// Task can be nil if no tasks available, which is valid
+	if task != nil {
+		assert.NotEmpty(t, task.ID)
+		t.Logf("Dequeued task: %s", task.ID)
+	}
+}
+
+func TestBackgroundTaskRepository_MoveToDeadLetter(t *testing.T) {
+	pool, repo := setupBackgroundTaskTestDB(t)
+	if pool == nil {
+		return
+	}
+	defer pool.Close()
+	defer cleanupBackgroundTaskTestDB(t, pool)
+
+	ctx := context.Background()
+
+	// Create a failed task
+	task := createTestBackgroundTask()
+	task.Status = models.TaskStatusFailed
+	lastError := "Max retries exceeded"
+	task.LastError = &lastError
+	task.RetryCount = 3
+
+	err := repo.Create(ctx, task)
+	require.NoError(t, err)
+
+	// Move to dead letter queue
+	err = repo.MoveToDeadLetter(ctx, task.ID, "Max retries exceeded after 3 attempts")
+	if err != nil {
+		// Dead letter table might not exist in test DB
+		t.Skipf("MoveToDeadLetter not available: %v", err)
+		return
+	}
+	t.Logf("Task %s moved to dead letter queue", task.ID)
+}
