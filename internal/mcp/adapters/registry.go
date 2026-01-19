@@ -48,8 +48,8 @@ type MCPAdapter interface {
 type AdapterCategory string
 
 const (
-	CategoryDatabase    AdapterCategory = "database"
-	CategoryStorage     AdapterCategory = "storage"
+	CategoryDatabase       AdapterCategory = "database"
+	CategoryStorage        AdapterCategory = "storage"
 	CategoryVersionControl AdapterCategory = "version_control"
 	CategoryProductivity   AdapterCategory = "productivity"
 	CategoryCommunication  AdapterCategory = "communication"
@@ -59,6 +59,8 @@ const (
 	CategoryAnalytics      AdapterCategory = "analytics"
 	CategoryAI             AdapterCategory = "ai"
 	CategoryUtility        AdapterCategory = "utility"
+	CategoryDesign         AdapterCategory = "design"
+	CategoryCollaboration  AdapterCategory = "collaboration"
 )
 
 // AdapterMetadata contains metadata about an adapter.
@@ -229,6 +231,14 @@ var AvailableAdapters = []AdapterMetadata{
 
 	// Maps & Location
 	{Name: "google-maps", Category: CategoryUtility, Description: "Google Maps and Places", AuthType: "api_key", DocsURL: "https://developers.google.com/maps", Official: true, Supported: true},
+
+	// Design & UI
+	{Name: "figma", Category: CategoryDesign, Description: "Figma design integration for reading and modifying design files", AuthType: "token", DocsURL: "https://www.figma.com/developers/api", Official: false, Supported: true},
+	{Name: "svgmaker", Category: CategoryDesign, Description: "AI-powered SVG generation, editing, and optimization", AuthType: "api_key", DocsURL: "https://svgmaker.io/docs", Official: false, Supported: true},
+	{Name: "stable-diffusion", Category: CategoryAI, Description: "Stable Diffusion WebUI integration for AI image generation", AuthType: "none", DocsURL: "https://github.com/AUTOMATIC1111/stable-diffusion-webui", Official: false, Supported: true},
+
+	// Collaboration
+	{Name: "miro", Category: CategoryCollaboration, Description: "Miro whiteboard collaboration for visual planning", AuthType: "oauth2", DocsURL: "https://developers.miro.com/docs", Official: false, Supported: true},
 }
 
 // DefaultRegistry is the default adapter registry.

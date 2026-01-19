@@ -877,7 +877,10 @@ func TestRun_ServerStartAndShutdown(t *testing.T) {
 	// - The router setup uses config.Load() internally
 	//
 	// To run this test, use: make test-with-infra
-	t.Skip("Requires full infrastructure (database, JWT_SECRET) - run with make test-with-infra")
+	// Skip if infrastructure is not available
+	if os.Getenv("DB_HOST") == "" || os.Getenv("JWT_SECRET") == "" {
+		t.Skip("Requires full infrastructure (database, JWT_SECRET) - run with make test-with-infra")
+	}
 
 	// Create a shutdown signal channel
 	shutdownSignal := make(chan os.Signal, 1)
@@ -916,7 +919,10 @@ func TestRun_ServerStartAndShutdown(t *testing.T) {
 
 func TestRun_NilLogger(t *testing.T) {
 	// This test requires a full environment setup
-	t.Skip("Requires full infrastructure (database, JWT_SECRET) - run with make test-with-infra")
+	// Skip if infrastructure is not available
+	if os.Getenv("DB_HOST") == "" || os.Getenv("JWT_SECRET") == "" {
+		t.Skip("Requires full infrastructure (database, JWT_SECRET) - run with make test-with-infra")
+	}
 
 	shutdownSignal := make(chan os.Signal, 1)
 
@@ -953,7 +959,10 @@ func TestRun_NilLogger(t *testing.T) {
 
 func TestRun_PortInUse(t *testing.T) {
 	// This test requires a full environment setup
-	t.Skip("Requires full infrastructure (database, JWT_SECRET) - run with make test-with-infra")
+	// Skip if infrastructure is not available
+	if os.Getenv("DB_HOST") == "" || os.Getenv("JWT_SECRET") == "" {
+		t.Skip("Requires full infrastructure (database, JWT_SECRET) - run with make test-with-infra")
+	}
 
 	// Start a server on a specific port
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
