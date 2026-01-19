@@ -97,8 +97,14 @@ func TestClientClose(t *testing.T) {
 }
 
 func TestClientHealthCheck(t *testing.T) {
-	t.Run("not connected", func(t *testing.T) {
-		client, _ := NewClient(nil, nil)
+	t.Run("not connected - server unavailable", func(t *testing.T) {
+		// Use a port where Qdrant is not running to test connection failure
+		config := DefaultConfig()
+		config.Host = "localhost"
+		config.HTTPPort = 59998 // Port where nothing is running
+		config.Timeout = 100 * time.Millisecond
+
+		client, _ := NewClient(config, nil)
 		err := client.HealthCheck(context.Background())
 		require.Error(t, err)
 		// HealthCheck attempts connection, so will fail with request error when server unavailable
