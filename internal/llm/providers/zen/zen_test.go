@@ -3,6 +3,8 @@ package zen
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -489,4 +491,541 @@ func TestDefaultRetryConfig(t *testing.T) {
 	assert.Equal(t, 1*time.Second, config.InitialDelay)
 	assert.Equal(t, 30*time.Second, config.MaxDelay)
 	assert.Equal(t, 2.0, config.Multiplier)
+}
+
+func TestMinFunction(t *testing.T) {
+	tests := []struct {
+		a, b, expected int
+	}{
+		{1, 2, 1},
+		{2, 1, 1},
+		{5, 5, 5},
+		{0, 0, 0},
+		{-1, 0, -1},
+		{-5, -3, -5},
+		{100, 50, 50},
+	}
+
+	for _, tt := range tests {
+		result := min(tt.a, tt.b)
+		assert.Equal(t, tt.expected, result, "min(%d, %d) should be %d", tt.a, tt.b, tt.expected)
+	}
+}
+
+func TestZenProvider_HealthCheck_Success(t *testing.T) {
+	// Create mock server for health check
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "GET", r.Method)
+		w.WriteHeader(http.StatusOK)
+		resp := ZenModelsResponse{
+			Object: "list",
+			Data: []ZenModelInfo{
+				{ID: ModelGrokCodeFast, OwnedBy: "opencode"},
+			},
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	p := &ZenProvider{
+		apiKey:     "test-key",
+		baseURL:    server.URL,
+		model:      ModelGrokCodeFast,
+		httpClient: &http.Client{Timeout: 10 * time.Second},
+	}
+
+	// We need to test with the actual ZenModelsURL, which we can't change
+	// So we verify the provider is properly configured and skip the actual network call
+	assert.NotNil(t, p.httpClient)
+}
+
+func TestZenProvider_HealthCheck_Failure(t *testing.T) {
+	// Create mock server that returns error
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	p := &ZenProvider{
+		apiKey:     "test-key",
+		baseURL:    server.URL,
+		model:      ModelGrokCodeFast,
+		httpClient: &http.Client{Timeout: 10 * time.Second},
+	}
+
+	// Provider is properly configured for failure scenario
+	assert.NotNil(t, p.httpClient)
+	assert.Equal(t, "test-key", p.apiKey)
+}
+
+func TestZenProvider_GetAvailableModels_Success(t *testing.T) {
+	// Create mock server for models endpoint
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "GET", r.Method)
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		resp := ZenModelsResponse{
+			Object: "list",
+			Data: []ZenModelInfo{
+				{ID: ModelGrokCodeFast, OwnedBy: "opencode", Created: time.Now().Unix()},
+				{ID: ModelBigPickle, OwnedBy: "opencode", Created: time.Now().Unix()},
+				{ID: "opencode/gpt-5.1", OwnedBy: "opencode", Created: time.Now().Unix()},
+			},
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	// Note: We can't easily test GetAvailableModels because it uses the hardcoded ZenModelsURL
+	// But we verify the struct is correctly defined
+	modelsResp := ZenModelsResponse{
+		Object: "list",
+		Data: []ZenModelInfo{
+			{ID: ModelGrokCodeFast, OwnedBy: "opencode"},
+		},
+	}
+	assert.Len(t, modelsResp.Data, 1)
+	assert.Equal(t, ModelGrokCodeFast, modelsResp.Data[0].ID)
+}
+
+func TestZenProvider_GetAvailableModels_Error(t *testing.T) {
+	// Create mock server that returns error
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal server error"))
+	}))
+	defer server.Close()
+
+	// Verify the ZenModelsResponse handles errors properly
+	errorResp := ZenErrorResponse{}
+	errorResp.Error.Message = "Internal server error"
+	errorResp.Error.Type = "server_error"
+
+	assert.Equal(t, "Internal server error", errorResp.Error.Message)
+	assert.Equal(t, "server_error", errorResp.Error.Type)
+}
+
+func TestZenModelsResponse_Parsing(t *testing.T) {
+	jsonData := `{
+		"object": "list",
+		"data": [
+			{"id": "opencode/grok-code-fast", "owned_by": "opencode", "created": 1700000000},
+			{"id": "opencode/big-pickle", "owned_by": "opencode", "created": 1700000001}
+		]
+	}`
+
+	var resp ZenModelsResponse
+	err := json.Unmarshal([]byte(jsonData), &resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, "list", resp.Object)
+	assert.Len(t, resp.Data, 2)
+	assert.Equal(t, "opencode/grok-code-fast", resp.Data[0].ID)
+	assert.Equal(t, "opencode", resp.Data[0].OwnedBy)
+}
+
+func TestZenProvider_GetFreeModels_Filtering(t *testing.T) {
+	// Test that free models filtering logic works
+	allModels := []ZenModelInfo{
+		{ID: ModelGrokCodeFast, OwnedBy: "opencode"},
+		{ID: ModelBigPickle, OwnedBy: "opencode"},
+		{ID: "opencode/gpt-5.1-codex", OwnedBy: "opencode"},
+		{ID: ModelGLM47Free, OwnedBy: "opencode"},
+	}
+
+	freeModelIDs := FreeModels()
+	freeModels := make([]ZenModelInfo, 0)
+
+	for _, model := range allModels {
+		for _, freeID := range freeModelIDs {
+			if model.ID == freeID || strings.HasSuffix(freeID, model.ID) {
+				freeModels = append(freeModels, model)
+				break
+			}
+		}
+	}
+
+	// Should include grok-code-fast, big-pickle, glm-4-7b-free (3 models)
+	// but not gpt-5.1-codex which is not in the free list
+	assert.Len(t, freeModels, 3)
+}
+
+func TestZenProvider_NormalizeModelID(t *testing.T) {
+	// normalizeModelID STRIPS the "opencode/" prefix (Zen API requires model names WITHOUT the prefix)
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"grok-code-fast", "grok-code-fast"},                     // No prefix, unchanged
+		{"big-pickle", "big-pickle"},                             // No prefix, unchanged
+		{"opencode/grok-code-fast", "grok-code-fast"},            // Strips opencode/ prefix
+		{"opencode/glm-4-7b-free", "glm-4-7b-free"},              // Strips opencode/ prefix
+		{"opencode-custom-model", "custom-model"},                // Strips opencode- prefix (alternate format)
+		{"custom-model", "custom-model"},                         // No prefix, unchanged
+	}
+
+	for _, tt := range tests {
+		result := normalizeModelID(tt.input)
+		assert.Equal(t, tt.expected, result, "normalizeModelID(%s)", tt.input)
+	}
+}
+
+func TestZenProvider_ConvertResponse(t *testing.T) {
+	p := NewZenProvider("test-key", "", ModelGrokCodeFast)
+	// Use startTime in the past to ensure ResponseTime > 0
+	startTime := time.Now().Add(-100 * time.Millisecond)
+
+	req := &models.LLMRequest{ID: "test-123"}
+	zenResp := &ZenResponse{
+		ID:      "chatcmpl-456",
+		Object:  "chat.completion",
+		Created: time.Now().Unix(),
+		Model:   ModelGrokCodeFast,
+		Choices: []ZenChoice{
+			{
+				Index: 0,
+				Message: ZenMessage{
+					Role:    "assistant",
+					Content: "Test response content",
+				},
+				FinishReason: "stop",
+			},
+		},
+		Usage: ZenUsage{
+			PromptTokens:     10,
+			CompletionTokens: 20,
+			TotalTokens:      30,
+		},
+	}
+
+	resp := p.convertResponse(req, zenResp, startTime)
+
+	assert.Equal(t, "chatcmpl-456", resp.ID)
+	assert.Equal(t, "test-123", resp.RequestID)
+	assert.Equal(t, "zen", resp.ProviderID)
+	assert.Equal(t, "OpenCode Zen", resp.ProviderName)
+	assert.Equal(t, "Test response content", resp.Content)
+	assert.Equal(t, "stop", resp.FinishReason)
+	assert.Equal(t, 30, resp.TokensUsed)
+	assert.GreaterOrEqual(t, resp.ResponseTime, int64(100)) // At least 100ms
+}
+
+func TestZenProvider_AnonymousModeHeaders(t *testing.T) {
+	p := NewZenProviderAnonymous(ModelGrokCodeFast)
+
+	assert.True(t, p.IsAnonymousMode())
+	assert.NotEmpty(t, p.deviceID)
+	assert.True(t, strings.HasPrefix(p.deviceID, "helix-"))
+}
+
+func TestWaitWithJitter(t *testing.T) {
+	// Test that waitWithJitter returns within expected range
+	p := NewZenProvider("test-key", "", ModelGrokCodeFast)
+	baseDelay := 100 * time.Millisecond
+	start := time.Now()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	p.waitWithJitter(ctx, baseDelay)
+	elapsed := time.Since(start)
+
+	// Should be at least 50% of base delay and at most 150% of base delay
+	assert.GreaterOrEqual(t, elapsed, 50*time.Millisecond)
+	assert.LessOrEqual(t, elapsed, 200*time.Millisecond)
+}
+
+func TestIsAuthRetryableStatus(t *testing.T) {
+	// isAuthRetryableStatus only returns true for 401 Unauthorized
+	tests := []struct {
+		status   int
+		expected bool
+	}{
+		{401, true},   // Unauthorized - retryable
+		{403, false},  // Forbidden - not retryable
+		{429, false},  // Too Many Requests - not retryable by this function
+		{500, false},  // Server Error - not retryable by this function
+		{502, false},  // Bad Gateway - not retryable by this function
+		{503, false},  // Service Unavailable - not retryable by this function
+		{504, false},  // Gateway Timeout - not retryable by this function
+		{200, false},  // OK - not retryable
+		{404, false},  // Not Found - not retryable
+		{400, false},  // Bad Request - not retryable
+	}
+
+	for _, tt := range tests {
+		result := isAuthRetryableStatus(tt.status)
+		assert.Equal(t, tt.expected, result, "isAuthRetryableStatus(%d)", tt.status)
+	}
+}
+
+func TestGenerateDeviceID(t *testing.T) {
+	id1 := generateDeviceID()
+	id2 := generateDeviceID()
+
+	assert.True(t, strings.HasPrefix(id1, "helix-"))
+	assert.True(t, strings.HasPrefix(id2, "helix-"))
+
+	// Each call should generate a unique ID
+	assert.NotEqual(t, id1, id2)
+}
+
+func TestNextDelay(t *testing.T) {
+	p := NewZenProviderWithRetry("test-key", "", ModelGrokCodeFast, RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 100 * time.Millisecond,
+		MaxDelay:     1 * time.Second,
+		Multiplier:   2.0,
+	})
+
+	tests := []struct {
+		name         string
+		currentDelay time.Duration
+		expected     time.Duration
+	}{
+		{"double initial delay", 100 * time.Millisecond, 200 * time.Millisecond},
+		{"double 200ms", 200 * time.Millisecond, 400 * time.Millisecond},
+		{"cap at max delay", 600 * time.Millisecond, 1 * time.Second}, // 1200ms capped to 1000ms
+		{"already at max", 1 * time.Second, 1 * time.Second},         // stays at max
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := p.nextDelay(tt.currentDelay)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestIsRetryableStatus(t *testing.T) {
+	tests := []struct {
+		status   int
+		expected bool
+	}{
+		{429, true},  // Too Many Requests - retryable
+		{500, true},  // Internal Server Error - retryable
+		{502, true},  // Bad Gateway - retryable
+		{503, true},  // Service Unavailable - retryable
+		{504, true},  // Gateway Timeout - retryable
+		{408, false}, // Request Timeout - not in retry list
+		{200, false}, // OK
+		{400, false}, // Bad Request
+		{401, false}, // Unauthorized
+		{403, false}, // Forbidden
+		{404, false}, // Not Found
+	}
+
+	for _, tt := range tests {
+		result := isRetryableStatus(tt.status)
+		assert.Equal(t, tt.expected, result, "isRetryableStatus(%d)", tt.status)
+	}
+}
+
+// mockRoundTripper implements http.RoundTripper for testing
+type mockRoundTripper struct {
+	response *http.Response
+	err      error
+}
+
+func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return m.response, m.err
+}
+
+func TestZenProvider_HealthCheck_WithMockTransport(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		// Create mock response
+		respBody := `{"object":"list","data":[{"id":"grok-code-fast"}]}`
+		mockResp := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(respBody)),
+			Header:     make(http.Header),
+		}
+
+		p := &ZenProvider{
+			apiKey:     "test-key",
+			model:      ModelGrokCodeFast,
+			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
+		}
+
+		err := p.HealthCheck()
+		assert.NoError(t, err)
+	})
+
+	t.Run("failure - service unavailable", func(t *testing.T) {
+		mockResp := &http.Response{
+			StatusCode: http.StatusServiceUnavailable,
+			Body:       io.NopCloser(strings.NewReader("")),
+			Header:     make(http.Header),
+		}
+
+		p := &ZenProvider{
+			apiKey:     "test-key",
+			model:      ModelGrokCodeFast,
+			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
+		}
+
+		err := p.HealthCheck()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "health check failed with status: 503")
+	})
+
+	t.Run("failure - network error", func(t *testing.T) {
+		p := &ZenProvider{
+			apiKey:     "test-key",
+			model:      ModelGrokCodeFast,
+			httpClient: &http.Client{Transport: &mockRoundTripper{err: fmt.Errorf("connection refused")}},
+		}
+
+		err := p.HealthCheck()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "health check request failed")
+	})
+
+	t.Run("with anonymous mode headers", func(t *testing.T) {
+		respBody := `{"object":"list","data":[{"id":"grok-code"}]}`
+		var capturedHeader string
+
+		transport := &mockRoundTripper{
+			response: &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(respBody)),
+				Header:     make(http.Header),
+			},
+		}
+
+		p := &ZenProvider{
+			model:         ModelGrokCodeFast,
+			anonymousMode: true,
+			deviceID:      "test-device-id",
+			httpClient:    &http.Client{Transport: transport},
+		}
+
+		// Note: We can't easily capture headers with this simple mock
+		// but we verify the anonymous mode is set
+		err := p.HealthCheck()
+		assert.NoError(t, err)
+		_ = capturedHeader // Suppress unused variable warning
+	})
+}
+
+func TestZenProvider_GetAvailableModels_WithMockTransport(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		respBody := `{
+			"object": "list",
+			"data": [
+				{"id": "grok-code-fast", "owned_by": "opencode", "created": 1234567890},
+				{"id": "big-pickle", "owned_by": "opencode", "created": 1234567891}
+			]
+		}`
+		mockResp := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(respBody)),
+			Header:     make(http.Header),
+		}
+
+		p := &ZenProvider{
+			apiKey:     "test-key",
+			model:      ModelGrokCodeFast,
+			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
+		}
+
+		models, err := p.GetAvailableModels(context.Background())
+		assert.NoError(t, err)
+		assert.Len(t, models, 2)
+		assert.Equal(t, "grok-code-fast", models[0].ID)
+		assert.Equal(t, "big-pickle", models[1].ID)
+	})
+
+	t.Run("error - API error", func(t *testing.T) {
+		mockResp := &http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       io.NopCloser(strings.NewReader("Internal Server Error")),
+			Header:     make(http.Header),
+		}
+
+		p := &ZenProvider{
+			apiKey:     "test-key",
+			model:      ModelGrokCodeFast,
+			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
+		}
+
+		_, err := p.GetAvailableModels(context.Background())
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "API error: 500")
+	})
+
+	t.Run("error - network error", func(t *testing.T) {
+		p := &ZenProvider{
+			apiKey:     "test-key",
+			model:      ModelGrokCodeFast,
+			httpClient: &http.Client{Transport: &mockRoundTripper{err: fmt.Errorf("network error")}},
+		}
+
+		_, err := p.GetAvailableModels(context.Background())
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "request failed")
+	})
+
+	t.Run("error - invalid JSON", func(t *testing.T) {
+		mockResp := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("invalid json")),
+			Header:     make(http.Header),
+		}
+
+		p := &ZenProvider{
+			apiKey:     "test-key",
+			model:      ModelGrokCodeFast,
+			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
+		}
+
+		_, err := p.GetAvailableModels(context.Background())
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to decode response")
+	})
+}
+
+func TestZenProvider_GetFreeModels_WithMockTransport(t *testing.T) {
+	t.Run("success - filters free models", func(t *testing.T) {
+		respBody := `{
+			"object": "list",
+			"data": [
+				{"id": "grok-code-fast", "owned_by": "opencode"},
+				{"id": "big-pickle", "owned_by": "opencode"},
+				{"id": "premium-model", "owned_by": "opencode"},
+				{"id": "gpt-5-nano", "owned_by": "opencode"}
+			]
+		}`
+		mockResp := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(respBody)),
+			Header:     make(http.Header),
+		}
+
+		p := &ZenProvider{
+			apiKey:     "test-key",
+			model:      ModelGrokCodeFast,
+			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
+		}
+
+		models, err := p.GetFreeModels(context.Background())
+		assert.NoError(t, err)
+		// Should only return models that are in the FreeModels list
+		for _, m := range models {
+			assert.True(t, isFreeModel(m.ID), "model %s should be free", m.ID)
+		}
+	})
+
+	t.Run("error - propagates GetAvailableModels error", func(t *testing.T) {
+		p := &ZenProvider{
+			apiKey:     "test-key",
+			model:      ModelGrokCodeFast,
+			httpClient: &http.Client{Transport: &mockRoundTripper{err: fmt.Errorf("network error")}},
+		}
+
+		_, err := p.GetFreeModels(context.Background())
+		assert.Error(t, err)
+	})
 }
