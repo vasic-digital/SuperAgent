@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -468,8 +469,66 @@ func (s *PatternBasedScanner) Scan(ctx context.Context, code string, language st
 
 // ScanFile scans a file for vulnerabilities
 func (s *PatternBasedScanner) ScanFile(ctx context.Context, path string) ([]*Vulnerability, error) {
-	// Would read file content here
-	return nil, fmt.Errorf("file scanning not implemented")
+	// Read file content
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
+	}
+
+	// Detect language from file extension
+	language := detectLanguageFromPath(path)
+
+	// Scan the content
+	vulns, err := s.Scan(ctx, string(content), language)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan file %s: %w", path, err)
+	}
+
+	// Update vulnerability file paths
+	for _, vuln := range vulns {
+		vuln.File = path
+	}
+
+	return vulns, nil
+}
+
+// detectLanguageFromPath detects the programming language from file extension
+func detectLanguageFromPath(path string) string {
+	path = strings.ToLower(path)
+	switch {
+	case strings.HasSuffix(path, ".go"):
+		return "go"
+	case strings.HasSuffix(path, ".py"):
+		return "python"
+	case strings.HasSuffix(path, ".js"):
+		return "javascript"
+	case strings.HasSuffix(path, ".ts"):
+		return "typescript"
+	case strings.HasSuffix(path, ".java"):
+		return "java"
+	case strings.HasSuffix(path, ".rs"):
+		return "rust"
+	case strings.HasSuffix(path, ".rb"):
+		return "ruby"
+	case strings.HasSuffix(path, ".php"):
+		return "php"
+	case strings.HasSuffix(path, ".c") || strings.HasSuffix(path, ".h"):
+		return "c"
+	case strings.HasSuffix(path, ".cpp") || strings.HasSuffix(path, ".hpp"):
+		return "cpp"
+	case strings.HasSuffix(path, ".cs"):
+		return "csharp"
+	case strings.HasSuffix(path, ".swift"):
+		return "swift"
+	case strings.HasSuffix(path, ".kt"):
+		return "kotlin"
+	case strings.HasSuffix(path, ".sql"):
+		return "sql"
+	case strings.HasSuffix(path, ".sh") || strings.HasSuffix(path, ".bash"):
+		return "shell"
+	default:
+		return "unknown"
+	}
 }
 
 // getLineNumber gets line number from byte offset
