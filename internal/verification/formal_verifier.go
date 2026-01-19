@@ -636,8 +636,24 @@ func (v *VeriPlan) modelCheck(plan string, formula *LTLFormula) bool {
 		parts := strings.Split(formulaLower, "never")
 		if len(parts) > 1 {
 			forbidden := strings.TrimSpace(parts[1])
+			// First try exact substring match
 			if strings.Contains(planLower, forbidden) {
 				return false
+			}
+			// Also check if key terms from the forbidden phrase appear in the plan
+			// This catches cases like "access production database directly" matching "access production directly"
+			forbiddenWords := strings.Fields(forbidden)
+			if len(forbiddenWords) >= 2 {
+				matchCount := 0
+				for _, word := range forbiddenWords {
+					if len(word) > 3 && strings.Contains(planLower, word) { // Skip short words like "a", "the"
+						matchCount++
+					}
+				}
+				// If most key terms are present, consider it a violation
+				if matchCount >= len(forbiddenWords)-1 && matchCount > 1 {
+					return false
+				}
 			}
 		}
 	}

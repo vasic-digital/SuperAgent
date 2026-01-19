@@ -877,13 +877,35 @@ func (lb *LessonBank) enforceMaxLessons(ctx context.Context) error {
 		}
 	}
 
-	// Sort by success rate (lowest first)
+	// If not enough candidates, add all remaining lessons to candidates
+	excess := len(lb.lessons) - lb.config.MaxLessons
+	if len(candidates) < excess {
+		// Add all non-candidate lessons to the list
+		for _, lesson := range lb.lessons {
+			found := false
+			for _, c := range candidates {
+				if c.ID == lesson.ID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				candidates = append(candidates, lesson)
+			}
+		}
+	}
+
+	// Sort by success rate (lowest first), then by age (oldest first)
 	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].Statistics.SuccessRate() < candidates[j].Statistics.SuccessRate()
+		rateI := candidates[i].Statistics.SuccessRate()
+		rateJ := candidates[j].Statistics.SuccessRate()
+		if rateI != rateJ {
+			return rateI < rateJ
+		}
+		return candidates[i].CreatedAt.Before(candidates[j].CreatedAt)
 	})
 
 	// Delete excess
-	excess := len(lb.lessons) - lb.config.MaxLessons
 	for i := 0; i < excess && i < len(candidates); i++ {
 		delete(lb.lessons, candidates[i].ID)
 		lb.removeFromCategoryIndex(candidates[i])

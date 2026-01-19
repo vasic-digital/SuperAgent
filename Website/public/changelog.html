@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Changelog - HelixAgent</title>
+    <meta name="description" content="HelixAgent release history and changelog. Stay up to date with the latest features and improvements.">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+    <style>
+        .changelog-entry { margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 1px solid #e5e7eb; }
+        .changelog-entry:last-child { border-bottom: none; }
+        .version-badge { display: inline-block; background: #2563eb; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; margin-right: 0.5rem; }
+        .date-badge { color: #6b7280; font-size: 0.875rem; }
+        .change-type { font-weight: 600; margin-top: 1rem; color: #374151; }
+        .change-type.added { color: #059669; }
+        .change-type.fixed { color: #dc2626; }
+        .change-type.improved { color: #2563eb; }
+        .change-type.security { color: #7c3aed; }
+        .changes-list { list-style: disc; padding-left: 1.5rem; margin-top: 0.5rem; }
+        .changes-list li { margin-bottom: 0.25rem; }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <nav class="nav-container">
+            <a href="/" class="logo">HelixAgent</a>
+            <div class="nav-links">
+                <a href="/features.html">Features</a>
+                <a href="/docs/">Docs</a>
+                <a href="/pricing.html">Pricing</a>
+                <a href="/changelog.html" class="active">Changelog</a>
+                <a href="https://github.com/helixagent/helixagent" target="_blank">GitHub</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
+        <h1>Changelog</h1>
+        <p class="lead">All notable changes to HelixAgent are documented here.</p>
+
+        <div class="changelog-entry">
+            <h2><span class="version-badge">v1.0.0</span> <span class="date-badge">January 2026</span></h2>
+            <p>Initial stable release of HelixAgent with comprehensive AI orchestration capabilities.</p>
+
+            <div class="change-type added">Added</div>
+            <ul class="changes-list">
+                <li>Multi-provider LLM orchestration with 10+ providers (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama)</li>
+                <li>AI Debate System with multi-pass validation for consensus-driven responses</li>
+                <li>Dynamic provider selection based on LLMsVerifier scoring</li>
+                <li>Semantic intent detection with zero hardcoding</li>
+                <li>Protocol support: MCP, LSP, ACP, OpenAI-compatible API</li>
+                <li>45+ MCP server adapters (databases, design tools, AI services)</li>
+                <li>Comprehensive test framework with 6 test types</li>
+                <li>Toolkit library for building AI applications</li>
+                <li>Background task system with progress tracking</li>
+                <li>Real-time notifications (SSE, WebSocket, Webhooks)</li>
+            </ul>
+
+            <div class="change-type improved">Improved</div>
+            <ul class="changes-list">
+                <li>Enhanced streaming support with chunked responses</li>
+                <li>Optimized connection pooling for MCP servers</li>
+                <li>Improved error handling and fallback mechanisms</li>
+            </ul>
+
+            <div class="change-type security">Security</div>
+            <ul class="changes-list">
+                <li>Pattern-based security scanner for vulnerability detection</li>
+                <li>Secure credential management for OAuth providers</li>
+                <li>Rate limiting and request validation middleware</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h2><span class="version-badge">v0.9.0</span> <span class="date-badge">December 2025</span></h2>
+            <p>Beta release with core functionality.</p>
+
+            <div class="change-type added">Added</div>
+            <ul class="changes-list">
+                <li>Core LLM provider framework</li>
+                <li>Basic AI debate system</li>
+                <li>OpenAI-compatible API endpoints</li>
+                <li>Docker and Kubernetes deployment support</li>
+            </ul>
+
+            <div class="change-type fixed">Fixed</div>
+            <ul class="changes-list">
+                <li>Connection timeout issues with slow providers</li>
+                <li>Memory leak in streaming responses</li>
+                <li>Race condition in concurrent requests</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h2><span class="version-badge">v0.8.0</span> <span class="date-badge">November 2025</span></h2>
+            <p>Alpha release for early testing.</p>
+
+            <div class="change-type added">Added</div>
+            <ul class="changes-list">
+                <li>Initial project structure</li>
+                <li>Provider interface design</li>
+                <li>Basic API implementation</li>
+                <li>Configuration system</li>
+            </ul>
+        </div>
+
+        <div class="cta-box" style="margin-top: 3rem; padding: 2rem; background: #f3f4f6; border-radius: 0.5rem; text-align: center;">
+            <h3>Stay Updated</h3>
+            <p>Watch the repository on GitHub to get notified about new releases.</p>
+            <a href="https://github.com/helixagent/helixagent/releases" class="btn" style="display: inline-block; padding: 0.75rem 1.5rem; background: #2563eb; color: white; text-decoration: none; border-radius: 0.375rem;">View All Releases</a>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h4>HelixAgent</h4>
+                <p>AI-Powered Multi-Provider LLM Orchestration Platform</p>
+            </div>
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="/docs/">Documentation</a></li>
+                    <li><a href="/docs/api.html">API Reference</a></li>
+                    <li><a href="/changelog.html">Changelog</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="/privacy.html">Privacy Policy</a></li>
+                    <li><a href="/terms.html">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <p class="footer-copyright">&copy; 2024 HelixAgent. All rights reserved.</p>
+    </footer>
+
+    <script src="/scripts/main.js"></script>
+</body>
+</html>

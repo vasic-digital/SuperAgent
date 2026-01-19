@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Start Guide - HelixAgent Documentation</title>
+    <meta name="description" content="Get started with HelixAgent in minutes. Learn how to install, configure, and run your first AI ensemble query.">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+</head>
+<body>
+    <header class="docs-header">
+        <nav class="nav-container">
+            <a href="/" class="logo">HelixAgent</a>
+            <div class="nav-links">
+                <a href="/docs/">Docs</a>
+                <a href="/docs/api.html">API</a>
+                <a href="/pricing.html">Pricing</a>
+                <a href="https://github.com/helixagent/helixagent" target="_blank">GitHub</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="docs-container">
+        <aside class="docs-sidebar">
+            <h3>Quick Start</h3>
+            <ul>
+                <li><a href="#installation">Installation</a></li>
+                <li><a href="#configuration">Configuration</a></li>
+                <li><a href="#first-query">First Query</a></li>
+                <li><a href="#ai-debate">AI Debate</a></li>
+                <li><a href="#next-steps">Next Steps</a></li>
+            </ul>
+        </aside>
+
+        <article class="docs-content">
+            <h1>Quick Start Guide</h1>
+            <p class="lead">Get HelixAgent running in under 5 minutes.</p>
+
+            <section id="installation">
+                <h2>Installation</h2>
+
+                <h3>Option 1: Binary Download</h3>
+                <pre><code># Download latest release
+curl -L https://github.com/helixagent/helixagent/releases/latest/download/helixagent-linux-amd64 -o helixagent
+chmod +x helixagent
+./helixagent --version</code></pre>
+
+                <h3>Option 2: Docker</h3>
+                <pre><code># Pull and run with Docker
+docker pull helixagent/helixagent:latest
+docker run -d -p 8080:8080 --name helixagent helixagent/helixagent:latest</code></pre>
+
+                <h3>Option 3: Build from Source</h3>
+                <pre><code># Clone and build
+git clone https://github.com/helixagent/helixagent.git
+cd helixagent
+make build
+./bin/helixagent --version</code></pre>
+            </section>
+
+            <section id="configuration">
+                <h2>Configuration</h2>
+                <p>Create a <code>.env</code> file with your API keys:</p>
+                <pre><code># Server Configuration
+PORT=8080
+GIN_MODE=release
+
+# LLM Provider API Keys (add at least one)
+CLAUDE_API_KEY=your-claude-api-key
+DEEPSEEK_API_KEY=your-deepseek-api-key
+GEMINI_API_KEY=your-gemini-api-key
+
+# Optional: Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=helixagent
+
+# Optional: Redis Cache
+REDIS_HOST=localhost
+REDIS_PORT=6379</code></pre>
+            </section>
+
+            <section id="first-query">
+                <h2>Your First Query</h2>
+                <p>Start the server and make a request:</p>
+                <pre><code># Start the server
+./helixagent serve
+
+# In another terminal, make a request
+curl -X POST http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "helixagent",
+    "messages": [
+      {"role": "user", "content": "Explain quantum computing in simple terms"}
+    ]
+  }'</code></pre>
+
+                <p>HelixAgent will route your query through the AI Debate system, combining responses from multiple providers for the best answer.</p>
+            </section>
+
+            <section id="ai-debate">
+                <h2>AI Debate System</h2>
+                <p>The AI Debate is HelixAgent's core feature. Multiple AI providers debate to reach consensus:</p>
+                <pre><code># Trigger an AI debate
+curl -X POST http://localhost:8080/v1/debates \
+  -H "Content-Type: application/json" \
+  -d '{
+    "topic": "Best practices for error handling in Go",
+    "rounds": 3,
+    "enable_multi_pass_validation": true
+  }'</code></pre>
+
+                <h3>How It Works</h3>
+                <ol>
+                    <li><strong>Initial Response:</strong> Each AI provides their perspective</li>
+                    <li><strong>Validation:</strong> Cross-validation for accuracy</li>
+                    <li><strong>Polish:</strong> Refinement based on feedback</li>
+                    <li><strong>Consensus:</strong> Final synthesized answer</li>
+                </ol>
+            </section>
+
+            <section id="next-steps">
+                <h2>Next Steps</h2>
+                <ul>
+                    <li><a href="/docs/api.html">API Reference</a> - Complete API documentation</li>
+                    <li><a href="/docs/ai-debate.html">AI Debate Deep Dive</a> - Advanced debate configuration</li>
+                    <li><a href="/docs/deployment.html">Production Deployment</a> - Deploy to production</li>
+                    <li><a href="/docs/protocols.html">Protocol Support</a> - MCP, LSP, and ACP</li>
+                </ul>
+
+                <h3>Example Use Cases</h3>
+                <ul>
+                    <li>Code review with multiple AI perspectives</li>
+                    <li>Complex problem solving through debate</li>
+                    <li>Content generation with quality assurance</li>
+                    <li>Technical documentation writing</li>
+                </ul>
+            </section>
+
+            <div class="cta-box">
+                <h3>Need Help?</h3>
+                <p>Join our community or contact support:</p>
+                <a href="https://github.com/helixagent/helixagent/discussions" class="btn">GitHub Discussions</a>
+                <a href="/contact.html" class="btn btn-secondary">Contact Support</a>
+            </div>
+        </article>
+    </main>
+
+    <footer class="docs-footer">
+        <p>&copy; 2024 HelixAgent. All rights reserved.</p>
+        <div class="footer-links">
+            <a href="/privacy.html">Privacy</a>
+            <a href="/terms.html">Terms</a>
+            <a href="https://github.com/helixagent/helixagent">GitHub</a>
+        </div>
+    </footer>
+
+    <script src="/scripts/main.js"></script>
+</body>
+</html>
