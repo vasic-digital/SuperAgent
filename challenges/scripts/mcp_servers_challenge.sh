@@ -127,7 +127,49 @@ run_test "SVGMaker Bar Chart" "go test -v -run TestSVGMakerAdapter_CreateBarChar
 run_test "SVGMaker MCP Tools" "go test -v -run TestSVGMakerAdapter_GetMCPTools ./internal/mcp/servers/..."
 
 echo ""
-echo "5. LSP Server Registry"
+echo "5. Database MCP Servers (PostgreSQL, SQLite)"
+echo "---------------------------------------------"
+
+# PostgreSQL
+run_test "PostgreSQL Adapter Creation" "go test -v -run TestNewPostgresAdapter ./internal/mcp/servers/..."
+run_test "PostgreSQL Schema Check" "go test -v -run TestPostgresAdapter_IsSchemaAllowed ./internal/mcp/servers/..."
+run_test "PostgreSQL Query Check" "go test -v -run TestPostgresAdapter_IsReadOnlyQuery ./internal/mcp/servers/..."
+run_test "PostgreSQL MCP Tools" "go test -v -run TestPostgresAdapter_GetMCPTools ./internal/mcp/servers/..."
+
+# SQLite
+run_test "SQLite Adapter Creation" "go test -v -run TestNewSQLiteAdapter ./internal/mcp/servers/..."
+run_test "SQLite Initialize InMemory" "go test -v -run TestSQLiteAdapter_Initialize_InMemory ./internal/mcp/servers/..."
+run_test "SQLite Query" "go test -v -run TestSQLiteAdapter_Query ./internal/mcp/servers/..."
+run_test "SQLite MCP Tools" "go test -v -run TestSQLiteAdapter_GetMCPTools ./internal/mcp/servers/..."
+
+echo ""
+echo "6. API Integration MCP Servers (GitHub, Fetch)"
+echo "-----------------------------------------------"
+
+# GitHub
+run_test "GitHub Adapter Creation" "go test -v -run TestNewGitHubAdapter ./internal/mcp/servers/..."
+run_test "GitHub Get User" "go test -v -run TestGitHubAdapter_GetUser_WithMockServer ./internal/mcp/servers/..."
+run_test "GitHub List Repos" "go test -v -run TestGitHubAdapter_ListRepositories_WithMockServer ./internal/mcp/servers/..."
+run_test "GitHub MCP Tools" "go test -v -run TestGitHubAdapter_GetMCPTools ./internal/mcp/servers/..."
+
+# Fetch
+run_test "Fetch Adapter Creation" "go test -v -run TestNewFetchAdapter ./internal/mcp/servers/..."
+run_test "Fetch URL" "go test -v -run TestFetchAdapter_Fetch_WithMockServer ./internal/mcp/servers/..."
+run_test "Fetch Extract Links" "go test -v -run TestFetchAdapter_ExtractLinks ./internal/mcp/servers/..."
+run_test "Fetch MCP Tools" "go test -v -run TestFetchAdapter_GetMCPTools ./internal/mcp/servers/..."
+
+echo ""
+echo "7. Cache MCP Servers (Redis)"
+echo "----------------------------"
+
+# Redis
+run_test "Redis Adapter Creation" "go test -v -run TestNewRedisAdapter ./internal/mcp/servers/..."
+run_test "Redis Key Prefix" "go test -v -run TestRedisAdapter_prefixKey ./internal/mcp/servers/..."
+run_test "Redis MCP Tools" "go test -v -run TestRedisAdapter_GetMCPTools ./internal/mcp/servers/..."
+run_test "Redis Capabilities" "go test -v -run TestRedisAdapter_GetCapabilities ./internal/mcp/servers/..."
+
+echo ""
+echo "8. LSP Server Registry"
 echo "-----------------------"
 
 run_test "LSP Registry Creation" "go test -v -run TestNewLSPServerRegistry ./internal/lsp/servers/..."
@@ -136,7 +178,7 @@ run_test "LSP Completion" "go test -v -run TestLSPServerRegistry_Completion ./in
 run_test "LSP Diagnostics" "go test -v -run TestLSPServerRegistry_Diagnostics ./internal/lsp/servers/..."
 
 echo ""
-echo "5. Embedding Model Registry"
+echo "9. Embedding Model Registry"
 echo "----------------------------"
 
 run_test "Embedding Registry Creation" "go test -v -run TestNewEmbeddingModelRegistry ./internal/embeddings/models/..."
