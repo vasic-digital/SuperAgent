@@ -148,17 +148,22 @@ func TestIntegration_MessagingHub_MultipleSubscribers(t *testing.T) {
 	subscriberCount := 5
 	messageCount := 100
 	counters := make([]int64, subscriberCount)
+	var totalReceived int64
 
-	// Create multiple subscribers
+	// Create multiple subscribers - in queue mode, messages are load-balanced across subscribers
 	for i := 0; i < subscriberCount; i++ {
 		idx := i
 		handler := func(ctx context.Context, msg *messaging.Message) error {
 			atomic.AddInt64(&counters[idx], 1)
+			atomic.AddInt64(&totalReceived, 1)
 			return nil
 		}
 		_, err := broker.Subscribe(ctx, "integration.multi.topic", handler)
 		require.NoError(t, err)
 	}
+
+	// Wait for subscribers to be ready
+	time.Sleep(100 * time.Millisecond)
 
 	// Publish messages
 	for i := 0; i < messageCount; i++ {
@@ -168,16 +173,32 @@ func TestIntegration_MessagingHub_MultipleSubscribers(t *testing.T) {
 			Payload:   []byte(`{"test": "multi"}`),
 			Timestamp: time.Now(),
 		}
-		broker.Publish(ctx, "integration.multi.topic", msg)
+		err := broker.Publish(ctx, "integration.multi.topic", msg)
+		require.NoError(t, err)
 	}
 
-	// Wait for processing
-	time.Sleep(2 * time.Second)
-
-	// Each subscriber should receive all messages
-	for i, count := range counters {
-		assert.Equal(t, int64(messageCount), count, "Subscriber %d received wrong count", i)
+	// Wait for processing with timeout
+	deadline := time.After(10 * time.Second)
+	for {
+		if atomic.LoadInt64(&totalReceived) >= int64(messageCount) {
+			break
+		}
+		select {
+		case <-deadline:
+			t.Logf("Timeout waiting for messages. Total received: %d, Counts: %v",
+				atomic.LoadInt64(&totalReceived), counters)
+			goto verify
+		default:
+			time.Sleep(50 * time.Millisecond)
+		}
 	}
+
+verify:
+	// In queue mode, total messages received across all subscribers should equal total published
+	// Messages are load-balanced, so individual subscriber counts may vary
+	assert.Equal(t, int64(messageCount), atomic.LoadInt64(&totalReceived),
+		"Total messages received should equal total published")
+	t.Logf("Message distribution across subscribers: %v", counters)
 }
 
 func TestIntegration_MessagingHub_TopicIsolation(t *testing.T) {

@@ -270,6 +270,9 @@ func (p *Processor) processMessage(ctx context.Context, msg *messaging.Message) 
 		dlqMsg.NextRetry = time.Now().Add(delay)
 		dlqMsg.LastFailure = time.Now()
 		dlqMsg.Status = StatusPending
+		if dlqMsg.FailureDetails == nil {
+			dlqMsg.FailureDetails = make(map[string]interface{})
+		}
 		dlqMsg.FailureDetails["last_error"] = err.Error()
 
 		p.logger.Warn("Retry failed, scheduling next attempt",

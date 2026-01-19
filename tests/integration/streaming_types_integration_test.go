@@ -577,7 +577,7 @@ func TestMpscStream_ProducerClosing(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			producer <- &streaming.StreamChunk{Content: "P0", Index: i}
 		}
-		close(mpsc.inputs[0])
+		mpsc.CloseProducer(0)
 	}()
 
 	// Producer 2 sends and closes
@@ -586,7 +586,7 @@ func TestMpscStream_ProducerClosing(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			producer <- &streaming.StreamChunk{Content: "P1", Index: i}
 		}
-		close(mpsc.inputs[1])
+		mpsc.CloseProducer(1)
 	}()
 
 	// Consumer should receive all and then channel closes
