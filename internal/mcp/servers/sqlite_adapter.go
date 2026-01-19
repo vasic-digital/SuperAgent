@@ -434,34 +434,37 @@ func (s *SQLiteAdapter) ListIndexes(ctx context.Context, tableName string) ([]SQ
 	if err != nil {
 		return nil, fmt.Errorf("failed to list indexes: %w", err)
 	}
-	defer rows.Close()
 
+	// First collect all basic index info to avoid nested query deadlock
 	var indexes []SQLiteIndexInfo
 	for rows.Next() {
 		var idx SQLiteIndexInfo
 		var sqlStr sql.NullString
 		if err := rows.Scan(&idx.Name, &idx.Table, &sqlStr); err != nil {
+			rows.Close()
 			return nil, fmt.Errorf("failed to scan index: %w", err)
 		}
 		if sqlStr.Valid {
 			idx.SQL = sqlStr.String
 			idx.Unique = strings.Contains(strings.ToUpper(idx.SQL), "UNIQUE")
 		}
+		indexes = append(indexes, idx)
+	}
+	rows.Close()
 
-		// Get index columns
-		colRows, err := s.db.QueryContext(ctx, fmt.Sprintf("PRAGMA index_info(%s)", idx.Name))
+	// Now get column info for each index (separate queries to avoid deadlock)
+	for i := range indexes {
+		colRows, err := s.db.QueryContext(ctx, fmt.Sprintf("PRAGMA index_info(%s)", indexes[i].Name))
 		if err == nil {
 			for colRows.Next() {
 				var seqno, cid int
 				var name string
 				if err := colRows.Scan(&seqno, &cid, &name); err == nil {
-					idx.Columns = append(idx.Columns, name)
+					indexes[i].Columns = append(indexes[i].Columns, name)
 				}
 			}
 			colRows.Close()
 		}
-
-		indexes = append(indexes, idx)
 	}
 
 	return indexes, nil
