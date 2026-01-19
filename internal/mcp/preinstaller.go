@@ -15,10 +15,13 @@ import (
 
 // MCPPackage represents an MCP npm package to be pre-installed
 type MCPPackage struct {
-	Name        string // Short name for identification
-	NPM         string // NPM package name (e.g., "@modelcontextprotocol/server-filesystem")
-	Binary      string // Binary name after installation (optional, defaults to "index.js")
-	Description string // Package description
+	Name        string             // Short name for identification
+	NPM         string             // NPM package name (e.g., "@modelcontextprotocol/server-filesystem")
+	Binary      string             // Binary name after installation (optional, defaults to "index.js")
+	Description string             // Package description
+	Category    MCPPackageCategory // Package category (core, vectordb, design, image, dev, search, cloud)
+	RequiresEnv []string           // Environment variables required for this package
+	Optional    bool               // Whether this package is optional (won't fail if install fails)
 }
 
 // StandardMCPPackages defines the standard MCP packages to pre-install
