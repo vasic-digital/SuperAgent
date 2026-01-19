@@ -1,6 +1,8 @@
 // Package mcp provides extended MCP server package definitions.
 package mcp
 
+import "os"
+
 // ExtendedMCPPackages defines all MCP packages including new integrations.
 // These extend the StandardMCPPackages with additional servers for:
 // - Vector databases (Chroma, Qdrant)

@@ -99,7 +99,35 @@ run_test "SD Get Models" "go test -v -run TestStableDiffusionAdapter_GetModels .
 run_test "SD MCP Tools" "go test -v -run TestStableDiffusionAdapter_GetMCPTools ./internal/mcp/servers/..."
 
 echo ""
-echo "4. LSP Server Registry"
+echo "4. Core MCP Servers (Filesystem, Git, Memory, SVGMaker)"
+echo "--------------------------------------------------------"
+
+# Filesystem
+run_test "Filesystem Adapter Creation" "go test -v -run TestNewFilesystemAdapter ./internal/mcp/servers/..."
+run_test "Filesystem Read File" "go test -v -run TestFilesystemAdapter_ReadFile ./internal/mcp/servers/..."
+run_test "Filesystem Write File" "go test -v -run TestFilesystemAdapter_WriteFile ./internal/mcp/servers/..."
+run_test "Filesystem MCP Tools" "go test -v -run TestFilesystemAdapter_GetMCPTools ./internal/mcp/servers/..."
+
+# Git
+run_test "Git Adapter Creation" "go test -v -run TestNewGitAdapter ./internal/mcp/servers/..."
+run_test "Git Status" "go test -v -run TestGitAdapter_Status ./internal/mcp/servers/..."
+run_test "Git Commit" "go test -v -run TestGitAdapter_Commit ./internal/mcp/servers/..."
+run_test "Git MCP Tools" "go test -v -run TestGitAdapter_GetMCPTools ./internal/mcp/servers/..."
+
+# Memory
+run_test "Memory Adapter Creation" "go test -v -run TestNewMemoryAdapter ./internal/mcp/servers/..."
+run_test "Memory Create Entity" "go test -v -run TestMemoryAdapter_CreateEntity ./internal/mcp/servers/..."
+run_test "Memory Create Relation" "go test -v -run TestMemoryAdapter_CreateRelation ./internal/mcp/servers/..."
+run_test "Memory MCP Tools" "go test -v -run TestMemoryAdapter_GetMCPTools ./internal/mcp/servers/..."
+
+# SVGMaker
+run_test "SVGMaker Adapter Creation" "go test -v -run TestNewSVGMakerAdapter ./internal/mcp/servers/..."
+run_test "SVGMaker Create SVG" "go test -v -run TestSVGMakerAdapter_CreateSVG ./internal/mcp/servers/..."
+run_test "SVGMaker Bar Chart" "go test -v -run TestSVGMakerAdapter_CreateBarChart ./internal/mcp/servers/..."
+run_test "SVGMaker MCP Tools" "go test -v -run TestSVGMakerAdapter_GetMCPTools ./internal/mcp/servers/..."
+
+echo ""
+echo "5. LSP Server Registry"
 echo "-----------------------"
 
 run_test "LSP Registry Creation" "go test -v -run TestNewLSPServerRegistry ./internal/lsp/servers/..."
