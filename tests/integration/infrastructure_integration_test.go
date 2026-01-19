@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -411,20 +412,6 @@ func TestIntegration_Kafka_Connection(t *testing.T) {
 	kafkaBrokers := infraGetEnvOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 	t.Logf("Testing Kafka connection to %s", kafkaBrokers)
 	t.Log("Kafka connection test - infrastructure available")
-}
-
-// =============================================================================
-// RABBITMQ INTEGRATION TESTS
-// =============================================================================
-
-func TestIntegration_RabbitMQ_Connection(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	rabbitURL := infraGetEnvOrDefault("RABBITMQ_URL", "amqp://helixagent:helixagent123@localhost:5672/")
-	t.Logf("Testing RabbitMQ connection to %s", rabbitURL[:20]+"***")
-	t.Log("RabbitMQ connection test - infrastructure available")
 }
 
 // =============================================================================
@@ -896,6 +883,258 @@ func TestIntegration_Qdrant_BatchSearch(t *testing.T) {
 	assert.Equal(t, p2ID, batchResults[1][0].ID)
 
 	t.Log("Qdrant batch search successful")
+}
+
+// =============================================================================
+// RABBITMQ INTEGRATION TESTS
+// =============================================================================
+
+func TestIntegration_RabbitMQ_Connection(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// Get RabbitMQ connection URL
+	host := infraGetEnvOrDefault("RABBITMQ_HOST", "localhost")
+	port := infraGetEnvOrDefault("RABBITMQ_PORT", "5672")
+	user := infraGetEnvOrDefault("RABBITMQ_USER", "helixagent")
+	pass := infraGetEnvOrDefault("RABBITMQ_PASSWORD", "helixagent123")
+
+	amqpURL := fmt.Sprintf("amqp://%s:%s@%s:%s/", user, pass, host, port)
+
+	// Try to connect using amqp library directly
+	conn, err := amqp.Dial(amqpURL)
+	if err != nil {
+		t.Skipf("RabbitMQ not available at %s:%s: %v", host, port, err)
+		return
+	}
+	defer conn.Close()
+
+	// Verify connection is working
+	require.False(t, conn.IsClosed())
+
+	// Open a channel
+	ch, err := conn.Channel()
+	require.NoError(t, err)
+	defer ch.Close()
+
+	t.Logf("RabbitMQ connection successful to %s:%s", host, port)
+}
+
+func TestIntegration_RabbitMQ_QueueOperations(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	_ = ctx
+
+	host := infraGetEnvOrDefault("RABBITMQ_HOST", "localhost")
+	port := infraGetEnvOrDefault("RABBITMQ_PORT", "5672")
+	user := infraGetEnvOrDefault("RABBITMQ_USER", "helixagent")
+	pass := infraGetEnvOrDefault("RABBITMQ_PASSWORD", "helixagent123")
+
+	amqpURL := fmt.Sprintf("amqp://%s:%s@%s:%s/", user, pass, host, port)
+
+	conn, err := amqp.Dial(amqpURL)
+	if err != nil {
+		t.Skipf("RabbitMQ not available: %v", err)
+		return
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	require.NoError(t, err)
+	defer ch.Close()
+
+	// Declare a test queue
+	queueName := "integration_test_queue_" + time.Now().Format("20060102150405")
+	q, err := ch.QueueDeclare(
+		queueName,
+		false, // durable
+		true,  // auto-delete
+		false, // exclusive
+		false, // no-wait
+		nil,   // args
+	)
+	require.NoError(t, err)
+	assert.Equal(t, queueName, q.Name)
+
+	// Publish a message
+	testMessage := []byte(`{"test": "integration", "timestamp": "` + time.Now().Format(time.RFC3339) + `"}`)
+	err = ch.Publish(
+		"",        // exchange
+		queueName, // routing key
+		false,     // mandatory
+		false,     // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        testMessage,
+		},
+	)
+	require.NoError(t, err)
+
+	// Consume the message
+	msgs, err := ch.Consume(
+		queueName,
+		"",    // consumer
+		true,  // auto-ack
+		false, // exclusive
+		false, // no-local
+		false, // no-wait
+		nil,   // args
+	)
+	require.NoError(t, err)
+
+	// Wait for message with timeout
+	select {
+	case msg := <-msgs:
+		assert.Equal(t, testMessage, msg.Body)
+		t.Logf("Received message: %s", string(msg.Body))
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timeout waiting for message")
+	}
+
+	// Delete the queue
+	_, err = ch.QueueDelete(queueName, false, false, false)
+	require.NoError(t, err)
+
+	t.Log("RabbitMQ queue operations successful")
+}
+
+func TestIntegration_RabbitMQ_ExchangeOperations(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	host := infraGetEnvOrDefault("RABBITMQ_HOST", "localhost")
+	port := infraGetEnvOrDefault("RABBITMQ_PORT", "5672")
+	user := infraGetEnvOrDefault("RABBITMQ_USER", "helixagent")
+	pass := infraGetEnvOrDefault("RABBITMQ_PASSWORD", "helixagent123")
+
+	amqpURL := fmt.Sprintf("amqp://%s:%s@%s:%s/", user, pass, host, port)
+
+	conn, err := amqp.Dial(amqpURL)
+	if err != nil {
+		t.Skipf("RabbitMQ not available: %v", err)
+		return
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	require.NoError(t, err)
+	defer ch.Close()
+
+	// Declare a test exchange
+	exchangeName := "integration_test_exchange_" + time.Now().Format("20060102150405")
+	err = ch.ExchangeDeclare(
+		exchangeName,
+		"topic", // type
+		false,   // durable
+		true,    // auto-delete
+		false,   // internal
+		false,   // no-wait
+		nil,     // args
+	)
+	require.NoError(t, err)
+
+	// Declare a queue and bind to exchange
+	queueName := "integration_test_bound_queue_" + time.Now().Format("20060102150405")
+	q, err := ch.QueueDeclare(queueName, false, true, false, false, nil)
+	require.NoError(t, err)
+
+	routingKey := "test.routing.key"
+	err = ch.QueueBind(q.Name, routingKey, exchangeName, false, nil)
+	require.NoError(t, err)
+
+	// Publish to exchange
+	testMessage := []byte(`{"event": "test_event"}`)
+	err = ch.Publish(
+		exchangeName,
+		routingKey,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        testMessage,
+		},
+	)
+	require.NoError(t, err)
+
+	// Consume from queue
+	msgs, err := ch.Consume(queueName, "", true, false, false, false, nil)
+	require.NoError(t, err)
+
+	select {
+	case msg := <-msgs:
+		assert.Equal(t, testMessage, msg.Body)
+		t.Logf("Received via exchange: %s", string(msg.Body))
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timeout waiting for message from exchange")
+	}
+
+	// Cleanup
+	ch.QueueDelete(queueName, false, false, false)
+	ch.ExchangeDelete(exchangeName, false, false)
+
+	t.Log("RabbitMQ exchange operations successful")
+}
+
+func TestIntegration_RabbitMQ_PublishConfirm(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	host := infraGetEnvOrDefault("RABBITMQ_HOST", "localhost")
+	port := infraGetEnvOrDefault("RABBITMQ_PORT", "5672")
+	user := infraGetEnvOrDefault("RABBITMQ_USER", "helixagent")
+	pass := infraGetEnvOrDefault("RABBITMQ_PASSWORD", "helixagent123")
+
+	amqpURL := fmt.Sprintf("amqp://%s:%s@%s:%s/", user, pass, host, port)
+
+	conn, err := amqp.Dial(amqpURL)
+	if err != nil {
+		t.Skipf("RabbitMQ not available: %v", err)
+		return
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	require.NoError(t, err)
+	defer ch.Close()
+
+	// Enable publish confirms
+	err = ch.Confirm(false)
+	require.NoError(t, err)
+
+	confirms := ch.NotifyPublish(make(chan amqp.Confirmation, 1))
+
+	// Declare queue
+	queueName := "integration_test_confirm_queue_" + time.Now().Format("20060102150405")
+	_, err = ch.QueueDeclare(queueName, false, true, false, false, nil)
+	require.NoError(t, err)
+
+	// Publish with confirmation
+	err = ch.Publish("", queueName, false, false, amqp.Publishing{
+		ContentType: "text/plain",
+		Body:        []byte("confirmed message"),
+	})
+	require.NoError(t, err)
+
+	// Wait for confirmation
+	select {
+	case confirm := <-confirms:
+		assert.True(t, confirm.Ack)
+		t.Logf("Message confirmed with delivery tag: %d", confirm.DeliveryTag)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timeout waiting for publish confirmation")
+	}
+
+	// Cleanup
+	ch.QueueDelete(queueName, false, false, false)
+
+	t.Log("RabbitMQ publish confirm successful")
 }
 
 // =============================================================================
