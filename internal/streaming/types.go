@@ -349,19 +349,38 @@ func (g *AsyncGenerator) YieldContent(content string, index int) error {
 
 // Next returns the next value from the generator
 func (g *AsyncGenerator) Next(ctx context.Context) (*StreamChunk, error) {
+	// Check context first - if cancelled, return immediately
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	case <-g.done:
-		g.mu.RLock()
-		err := g.err
-		g.mu.RUnlock()
-		return nil, err
+	default:
+	}
+
+	// Wait for items, context cancellation, or generator close
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	case chunk, ok := <-g.output:
 		if !ok {
 			return nil, io.EOF
 		}
 		return chunk, nil
+	case <-g.done:
+		// Generator is closed, drain remaining items from output
+		select {
+		case chunk, ok := <-g.output:
+			if ok {
+				return chunk, nil
+			}
+		default:
+		}
+		g.mu.RLock()
+		err := g.err
+		g.mu.RUnlock()
+		if err == nil {
+			return nil, io.EOF // Return EOF when generator is closed normally
+		}
+		return nil, err
 	}
 }
 
@@ -569,6 +588,13 @@ func (m *MpscStream) Start(ctx context.Context) {
 // Consumer returns the consumer channel
 func (m *MpscStream) Consumer() <-chan *StreamChunk {
 	return m.output
+}
+
+// CloseProducer closes a specific producer channel by index
+func (m *MpscStream) CloseProducer(index int) {
+	if index >= 0 && index < len(m.inputs) {
+		close(m.inputs[index])
+	}
 }
 
 // Close closes the stream

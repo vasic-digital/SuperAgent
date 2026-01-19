@@ -82,7 +82,9 @@ func (c *Client) HealthCheck(ctx context.Context) error {
 }
 
 func (c *Client) healthCheckLocked(ctx context.Context) error {
-	url := fmt.Sprintf("%s/health", c.config.GetHTTPURL())
+	// Use root endpoint for health check (works with all Qdrant versions)
+	// Newer versions (1.16+) don't have a /health endpoint
+	url := c.config.GetHTTPURL()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -482,18 +484,28 @@ func (c *Client) SearchBatch(ctx context.Context, collection string, vectors [][
 		return nil, fmt.Errorf("failed to batch search: %w", err)
 	}
 
-	var response struct {
+	// Try new format first (Qdrant 1.16+): result is array of arrays
+	var newResponse struct {
+		Result [][]ScoredPoint `json:"result"`
+	}
+
+	if err := json.Unmarshal(respBody, &newResponse); err == nil && len(newResponse.Result) > 0 {
+		return newResponse.Result, nil
+	}
+
+	// Fall back to old format: result is array of objects with result field
+	var oldResponse struct {
 		Result []struct {
 			Result []ScoredPoint `json:"result"`
 		} `json:"result"`
 	}
 
-	if err := json.Unmarshal(respBody, &response); err != nil {
+	if err := json.Unmarshal(respBody, &oldResponse); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	results := make([][]ScoredPoint, len(response.Result))
-	for i, r := range response.Result {
+	results := make([][]ScoredPoint, len(oldResponse.Result))
+	for i, r := range oldResponse.Result {
 		results[i] = r.Result
 	}
 
