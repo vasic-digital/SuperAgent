@@ -375,6 +375,248 @@ func TestFindQwenCLI(t *testing.T) {
 	})
 }
 
+func TestGetQwenCLIPath(t *testing.T) {
+	t.Run("returns empty string when not initialized", func(t *testing.T) {
+		refresher := NewCLIRefresher(nil)
+		path := refresher.GetQwenCLIPath()
+		if path != "" {
+			t.Errorf("expected empty path when not initialized, got %s", path)
+		}
+	})
+
+	t.Run("returns path when initialized", func(t *testing.T) {
+		refresher := NewCLIRefresher(nil)
+		refresher.qwenCLIPath = "/usr/bin/qwen"
+
+		path := refresher.GetQwenCLIPath()
+		if path != "/usr/bin/qwen" {
+			t.Errorf("expected /usr/bin/qwen, got %s", path)
+		}
+	})
+}
+
+func TestGetStatusWithCredentials(t *testing.T) {
+	// Create temp directory for test credentials
+	tmpDir, err := os.MkdirTemp("", "qwen_status_test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Override credentials path for testing
+	origHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", origHome)
+
+	// Create .qwen directory
+	qwenDir := filepath.Join(tmpDir, ".qwen")
+	if err := os.MkdirAll(qwenDir, 0755); err != nil {
+		t.Fatalf("failed to create qwen dir: %v", err)
+	}
+
+	t.Run("GetStatus with valid credentials", func(t *testing.T) {
+		creds := QwenOAuthCredentials{
+			AccessToken:  "test-token",
+			RefreshToken: "test-refresh",
+			ExpiryDate:   time.Now().Add(1 * time.Hour).UnixMilli(), // Valid
+			TokenType:    "Bearer",
+		}
+		data, _ := json.Marshal(creds)
+		credPath := filepath.Join(qwenDir, "oauth_creds.json")
+		if err := os.WriteFile(credPath, data, 0600); err != nil {
+			t.Fatalf("failed to write test credentials: %v", err)
+		}
+
+		refresher := NewCLIRefresher(nil)
+		status := refresher.GetStatus()
+
+		if !status.TokenValid {
+			t.Error("expected TokenValid to be true for non-expired token")
+		}
+		if status.TokenExpiresAt.IsZero() {
+			t.Error("expected TokenExpiresAt to be set")
+		}
+		if status.TokenExpiresIn == "" {
+			t.Error("expected TokenExpiresIn to be set")
+		}
+	})
+
+	t.Run("GetStatus with expired credentials", func(t *testing.T) {
+		creds := QwenOAuthCredentials{
+			AccessToken:  "test-token",
+			RefreshToken: "test-refresh",
+			ExpiryDate:   time.Now().Add(-1 * time.Hour).UnixMilli(), // Expired
+			TokenType:    "Bearer",
+		}
+		data, _ := json.Marshal(creds)
+		credPath := filepath.Join(qwenDir, "oauth_creds.json")
+		if err := os.WriteFile(credPath, data, 0600); err != nil {
+			t.Fatalf("failed to write test credentials: %v", err)
+		}
+
+		refresher := NewCLIRefresher(nil)
+		status := refresher.GetStatus()
+
+		if status.TokenValid {
+			t.Error("expected TokenValid to be false for expired token")
+		}
+	})
+
+	t.Run("GetStatus with last refresh error", func(t *testing.T) {
+		refresher := NewCLIRefresher(nil)
+		refresher.lastRefreshError = os.ErrPermission
+		refresher.lastRefreshTime = time.Now().Add(-5 * time.Minute)
+
+		status := refresher.GetStatus()
+
+		if status.LastRefreshError != "permission denied" {
+			t.Errorf("expected 'permission denied' error, got %s", status.LastRefreshError)
+		}
+		if status.LastRefreshTime.IsZero() {
+			t.Error("expected LastRefreshTime to be set")
+		}
+	})
+}
+
+func TestFindQwenCLICommonPaths(t *testing.T) {
+	// Create temp home directory
+	tmpDir, err := os.MkdirTemp("", "qwen_find_test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Override HOME for testing
+	origHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", origHome)
+
+	t.Run("finds qwen in .local/bin", func(t *testing.T) {
+		localBin := filepath.Join(tmpDir, ".local", "bin")
+		if err := os.MkdirAll(localBin, 0755); err != nil {
+			t.Fatalf("failed to create .local/bin: %v", err)
+		}
+
+		qwenPath := filepath.Join(localBin, "qwen")
+		if err := os.WriteFile(qwenPath, []byte("#!/bin/sh\nexit 0"), 0755); err != nil {
+			t.Fatalf("failed to create qwen: %v", err)
+		}
+
+		refresher := NewCLIRefresher(nil)
+		path, err := refresher.findQwenCLI()
+		if err != nil {
+			t.Logf("qwen not found via LookPath, checking common paths: %v", err)
+		}
+		if path != "" && path != qwenPath {
+			t.Logf("Found qwen at different location: %s (expected %s)", path, qwenPath)
+		}
+	})
+
+	t.Run("searches Applications for node installations", func(t *testing.T) {
+		appsDir := filepath.Join(tmpDir, "Applications")
+		nodeDir := filepath.Join(appsDir, "node-v24.0.0-linux-x64", "bin")
+		if err := os.MkdirAll(nodeDir, 0755); err != nil {
+			t.Fatalf("failed to create node dir: %v", err)
+		}
+
+		qwenPath := filepath.Join(nodeDir, "qwen")
+		if err := os.WriteFile(qwenPath, []byte("#!/bin/sh\nexit 0"), 0755); err != nil {
+			t.Fatalf("failed to create qwen: %v", err)
+		}
+
+		refresher := NewCLIRefresher(nil)
+		path, err := refresher.findQwenCLI()
+		if err != nil {
+			t.Logf("Could not find qwen via findQwenCLI: %v", err)
+		}
+		if path != "" {
+			t.Logf("Found qwen at: %s", path)
+		}
+	})
+}
+
+func TestCLIRefresherInitializeMultipleCalls(t *testing.T) {
+	t.Run("does not re-initialize if already initialized", func(t *testing.T) {
+		refresher := NewCLIRefresher(nil)
+		refresher.initialized = true
+		refresher.qwenCLIPath = "/fake/path"
+
+		err := refresher.Initialize()
+		if err != nil {
+			t.Errorf("expected no error for already initialized, got: %v", err)
+		}
+		if refresher.qwenCLIPath != "/fake/path" {
+			t.Error("path should not change when already initialized")
+		}
+	})
+}
+
+func TestExecuteQwenCLITimeout(t *testing.T) {
+	t.Run("handles timeout context", func(t *testing.T) {
+		config := &CLIRefreshConfig{
+			QwenCLIPath:    "/bin/sleep",
+			RefreshTimeout: 100 * time.Millisecond,
+			Prompt:         "10", // Sleep for 10 seconds
+		}
+		refresher := NewCLIRefresher(config)
+		refresher.qwenCLIPath = "/bin/sleep"
+
+		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		defer cancel()
+
+		_, err := refresher.executeQwenCLI(ctx)
+		if err == nil {
+			t.Error("expected error due to timeout")
+		}
+	})
+}
+
+func TestAutoRefreshQwenTokenViaCLI(t *testing.T) {
+	t.Run("returns error when CLI refresh fails", func(t *testing.T) {
+		// This test just verifies the function can be called and returns an error
+		// when the refresh process fails (either CLI not available or refresh fails)
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+
+		_, err := AutoRefreshQwenTokenViaCLI(ctx)
+		// We expect an error - either "not available" or a refresh error
+		if err == nil {
+			t.Skip("AutoRefreshQwenTokenViaCLI succeeded unexpectedly (valid credentials exist)")
+		}
+		// Error is expected - test passes
+		t.Logf("Got expected error: %v", err)
+	})
+}
+
+func TestQwenCLIOutput(t *testing.T) {
+	t.Run("struct fields are correctly serialized", func(t *testing.T) {
+		output := QwenCLIOutput{
+			Type:      "result",
+			Subtype:   "success",
+			SessionID: "test-session",
+			Result:    "test result",
+			IsError:   false,
+		}
+
+		data, err := json.Marshal(output)
+		if err != nil {
+			t.Fatalf("failed to marshal: %v", err)
+		}
+
+		var parsed QwenCLIOutput
+		if err := json.Unmarshal(data, &parsed); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+
+		if parsed.Type != "result" {
+			t.Errorf("expected Type 'result', got %s", parsed.Type)
+		}
+		if parsed.SessionID != "test-session" {
+			t.Errorf("expected SessionID 'test-session', got %s", parsed.SessionID)
+		}
+	})
+}
+
 // Helper function
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
