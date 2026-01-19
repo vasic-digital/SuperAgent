@@ -66,8 +66,26 @@ run_test "Tokenization" "go test -v -run TestTokenize ./internal/rag/..."
 run_test "Sentence Splitting" "go test -v -run TestSplitIntoSentences ./internal/rag/..."
 run_test "String Similarity" "go test -v -run TestSimilarity ./internal/rag/..."
 
+# Test HyDE
+run_test "HyDE Config" "go test -v -run TestDefaultHyDEConfig ./internal/rag/..."
+run_test "HyDE Generator Creation" "go test -v -run TestNewHyDEGenerator ./internal/rag/..."
+run_test "HyDE Expand Query" "go test -v -run TestHyDEGenerator_ExpandQuery ./internal/rag/..."
+run_test "HyDE Aggregation Methods" "go test -v -run TestHyDEGenerator_AggregationMethods ./internal/rag/..."
+
 echo ""
-echo "2. Running RAG Integration Tests"
+echo "2. Running RAG API Handler Tests"
+echo "---------------------------------"
+
+run_test "RAG Handler Creation" "go test -v -run TestNewRAGHandler ./internal/handlers/..."
+run_test "RAG Handler Health" "go test -v -run TestRAGHandler_Health ./internal/handlers/..."
+run_test "RAG Handler ChunkDocument" "go test -v -run TestRAGHandler_ChunkDocument ./internal/handlers/..."
+run_test "RAG Handler ExpandQuery" "go test -v -run TestRAGHandler_ExpandQuery ./internal/handlers/..."
+run_test "RAG Handler Search" "go test -v -run TestRAGHandler_Search ./internal/handlers/..."
+run_test "RAG Handler ReRank" "go test -v -run TestRAGHandler_ReRank ./internal/handlers/..."
+run_test "RAG Handler Compress" "go test -v -run TestRAGHandler_CompressContext ./internal/handlers/..."
+
+echo ""
+echo "3. Running RAG Integration Tests"
 echo "---------------------------------"
 
 run_test "Pipeline Integration" "go test -v -run TestRAGPipeline_Integration ./tests/integration/rag_integration_test.go"
@@ -77,7 +95,7 @@ run_test "End-to-End RAG" "go test -v -run TestRAGWithAdvancedRAG_EndToEnd ./tes
 run_test "Concurrent Operations" "go test -v -run TestConcurrentRAGOperations ./tests/integration/rag_integration_test.go"
 
 echo ""
-echo "3. Running Vector Database Adapter Tests"
+echo "4. Running Vector Database Adapter Tests"
 echo "-----------------------------------------"
 
 run_test "ChromaDB Adapter" "go test -v -run TestChromaAdapter ./internal/mcp/servers/..."
@@ -85,7 +103,7 @@ run_test "Qdrant Adapter" "go test -v -run TestQdrantAdapter ./internal/mcp/serv
 run_test "Weaviate Adapter" "go test -v -run TestWeaviateAdapter ./internal/mcp/servers/..."
 
 echo ""
-echo "4. Running Embedding Model Tests"
+echo "5. Running Embedding Model Tests"
 echo "---------------------------------"
 
 run_test "Embedding Registry Creation" "go test -v -run TestNewEmbeddingModelRegistry ./internal/embeddings/models/..."
