@@ -240,12 +240,7 @@ func (lb *LessonBank) AddLesson(ctx context.Context, lesson *Lesson) error {
 		lesson.ID = lb.generateLessonID(lesson)
 	}
 
-	// Check for duplicates
-	if lb.isDuplicate(ctx, lesson) {
-		return fmt.Errorf("duplicate lesson detected")
-	}
-
-	// Generate embedding if enabled
+	// Generate embedding if enabled (do this BEFORE acquiring lock to avoid blocking)
 	if lb.config.EnableSemanticSearch && lb.embedder != nil {
 		embedding, err := lb.embedder.Embed(ctx, lb.lessonText(lesson))
 		if err == nil {
@@ -264,8 +259,16 @@ func (lb *LessonBank) AddLesson(ctx context.Context, lesson *Lesson) error {
 		lesson.ExpiresAt = &expires
 	}
 
-	// Store lesson
+	// Acquire lock BEFORE checking for duplicates to prevent race condition
 	lb.mu.Lock()
+
+	// Check for duplicates (now protected by lock)
+	if lb.isDuplicateLocked(ctx, lesson) {
+		lb.mu.Unlock()
+		return fmt.Errorf("duplicate lesson detected")
+	}
+
+	// Store lesson (still holding lock)
 	lb.indexLesson(lesson)
 	lb.mu.Unlock()
 
@@ -696,7 +699,17 @@ func (lb *LessonBank) removeFromTagIndex(lesson *Lesson) {
 	}
 }
 
+// isDuplicate checks if a lesson is a duplicate (thread-safe version).
+// This method acquires the lock internally for safe standalone use.
 func (lb *LessonBank) isDuplicate(ctx context.Context, lesson *Lesson) bool {
+	lb.mu.RLock()
+	defer lb.mu.RUnlock()
+	return lb.isDuplicateLocked(ctx, lesson)
+}
+
+// isDuplicateLocked checks if a lesson is a duplicate.
+// IMPORTANT: Caller MUST hold lb.mu lock (read or write) before calling.
+func (lb *LessonBank) isDuplicateLocked(ctx context.Context, lesson *Lesson) bool {
 	// Check by ID
 	if _, exists := lb.lessons[lesson.ID]; exists {
 		return true

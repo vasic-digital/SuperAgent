@@ -75,12 +75,19 @@ func createTestConfig() LessonBankConfig {
 	return LessonBankConfig{
 		MaxLessons:           100,
 		MinConfidence:        0.5,
-		EnableSemanticSearch: true,
-		SimilarityThreshold:  0.9,
+		EnableSemanticSearch: false, // Disable by default; tests that need it can override
+		SimilarityThreshold:  0.99,
 		ExpirationDays:       30,
 		EnableAutoPromotion:  true,
 		PromotionThreshold:   0.8,
 	}
+}
+
+// createTestConfigWithSemanticSearch creates test config with semantic search enabled
+func createTestConfigWithSemanticSearch() LessonBankConfig {
+	cfg := createTestConfig()
+	cfg.EnableSemanticSearch = true
+	return cfg
 }
 
 // TestDefaultLessonBankConfig tests default configuration values

@@ -364,6 +364,14 @@ test-security:
 	@echo "🔒 Running security tests..."
 	go test -v ./tests/security
 
+test-pentest:
+	@echo "🔓 Running penetration tests..."
+	go test -v -tags pentest ./tests/pentest/...
+
+test-performance-full:
+	@echo "📊 Running performance benchmarks and load tests..."
+	go test -v -tags performance -bench=. -benchmem ./tests/performance/...
+
 test-stress:
 	@echo "⚡ Running stress tests..."
 	go test -v ./tests/stress
@@ -1019,4 +1027,4 @@ verifier-benchmark:
 # =============================================================================
 # PHONY TARGETS
 # =============================================================================
-.PHONY: all build build-debug build-all run run-dev test test-coverage test-unit test-integration test-bench test-race test-all test-with-infra test-infra-start test-infra-stop test-infra-clean test-infra-logs test-infra-status fmt vet lint security-scan docker-build docker-build-prod docker-run docker-stop docker-logs docker-clean docker-clean-all docker-test docker-dev docker-prod docker-full docker-monitoring docker-ai install-deps install uninstall clean clean-all check-deps update-deps generate docs docs-api setup-dev setup-prod help verifier-init verifier-update verifier-build verifier-test verifier-test-unit verifier-test-integration verifier-test-e2e verifier-test-security verifier-test-stress verifier-test-chaos verifier-test-all verifier-test-coverage verifier-test-coverage-100 verifier-run verifier-health verifier-verify verifier-score verifier-providers verifier-metrics verifier-db-migrate verifier-db-sync verifier-clean verifier-docker-build verifier-docker-run verifier-docker-stop verifier-sdk-go verifier-sdk-python verifier-sdk-js verifier-sdk-all verifier-docs verifier-benchmark
+.PHONY: all build build-debug build-all run run-dev test test-coverage test-unit test-integration test-bench test-race test-all test-with-infra test-infra-start test-infra-stop test-infra-clean test-infra-logs test-infra-status fmt vet lint security-scan docker-build docker-build-prod docker-run docker-stop docker-logs docker-clean docker-clean-all docker-test docker-dev docker-prod docker-full docker-monitoring docker-ai install-deps install uninstall clean clean-all check-deps update-deps generate docs docs-api setup-dev setup-prod help test-pentest test-security test-stress test-chaos test-e2e verifier-init verifier-update verifier-build verifier-test verifier-test-unit verifier-test-integration verifier-test-e2e verifier-test-security verifier-test-stress verifier-test-chaos verifier-test-all verifier-test-coverage verifier-test-coverage-100 verifier-run verifier-health verifier-verify verifier-score verifier-providers verifier-metrics verifier-db-migrate verifier-db-sync verifier-clean verifier-docker-build verifier-docker-run verifier-docker-stop verifier-sdk-go verifier-sdk-python verifier-sdk-js verifier-sdk-all verifier-docs verifier-benchmark
