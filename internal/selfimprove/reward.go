@@ -12,25 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// LLMProvider interface for reward model LLM calls
-type LLMProvider interface {
-	Complete(ctx context.Context, prompt string, systemPrompt string) (string, error)
-}
-
-// DebateService interface for debate-based evaluation
-type DebateService interface {
-	RunDebate(ctx context.Context, topic string, participants []string) (*DebateResult, error)
-}
-
-// DebateResult represents the result of a debate
-type DebateResult struct {
-	ID           string            `json:"id"`
-	Consensus    string            `json:"consensus"`
-	Confidence   float64           `json:"confidence"`
-	Participants map[string]string `json:"participants"` // participant -> response
-	Votes        map[string]float64 `json:"votes"`
-}
-
 // AIRewardModel implements RewardModel using LLM-based evaluation
 type AIRewardModel struct {
 	provider       LLMProvider

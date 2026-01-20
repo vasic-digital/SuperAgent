@@ -245,12 +245,10 @@ func (r *InMemoryPromptRegistry) Render(ctx context.Context, name, version strin
 	for _, v := range prompt.Variables {
 		value, ok := vars[v.Name]
 		if !ok {
-			if v.Required {
-				if v.Default != nil {
-					value = v.Default
-				} else {
-					return "", fmt.Errorf("missing required variable: %s", v.Name)
-				}
+			if v.Default != nil {
+				value = v.Default
+			} else if v.Required {
+				return "", fmt.Errorf("missing required variable: %s", v.Name)
 			} else {
 				continue
 			}
