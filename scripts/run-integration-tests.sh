@@ -99,12 +99,16 @@ log_error() {
 }
 
 cleanup() {
-    # Determine docker compose command if not set (for trap context)
+    # Determine compose command if not set (for trap context)
     if [ -z "$DOCKER_COMPOSE" ]; then
         if docker compose version &> /dev/null; then
             DOCKER_COMPOSE="docker compose"
-        else
+        elif command -v docker-compose &> /dev/null; then
             DOCKER_COMPOSE="docker-compose"
+        elif command -v podman-compose &> /dev/null; then
+            DOCKER_COMPOSE="podman-compose"
+        elif podman compose version &> /dev/null 2>&1; then
+            DOCKER_COMPOSE="podman compose"
         fi
     fi
 
@@ -323,23 +327,47 @@ echo "  HelixAgent Integration Test Runner"
 echo "=============================================="
 echo ""
 
-# Check if Docker is running
-if ! docker info > /dev/null 2>&1; then
-    log_error "Docker is not running. Please start Docker and try again."
+# Check if Docker or Podman is available
+CONTAINER_RUNTIME=""
+DOCKER_COMPOSE=""
+
+if docker info > /dev/null 2>&1; then
+    CONTAINER_RUNTIME="docker"
+    log_info "Using Docker as container runtime"
+elif podman info > /dev/null 2>&1; then
+    CONTAINER_RUNTIME="podman"
+    # Set DOCKER_HOST for Docker compatibility
+    export DOCKER_HOST="unix:///run/user/$(id -u)/podman/podman.sock"
+    log_info "Using Podman as container runtime (Docker compatibility mode)"
+else
+    log_error "Neither Docker nor Podman is running. Please start one and try again."
     exit 1
 fi
 
-# Check if docker compose is available (v2 or v1)
-DOCKER_COMPOSE=""
-if docker compose version &> /dev/null; then
-    DOCKER_COMPOSE="docker compose"
-    log_info "Using Docker Compose v2"
-elif command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE="docker-compose"
-    log_info "Using Docker Compose v1"
+# Check if compose is available
+if [ "$CONTAINER_RUNTIME" = "docker" ]; then
+    if docker compose version &> /dev/null; then
+        DOCKER_COMPOSE="docker compose"
+        log_info "Using Docker Compose v2"
+    elif command -v docker-compose &> /dev/null; then
+        DOCKER_COMPOSE="docker-compose"
+        log_info "Using Docker Compose v1"
+    else
+        log_error "Docker Compose is not installed. Please install it and try again."
+        exit 1
+    fi
 else
-    log_error "Docker Compose is not installed. Please install it and try again."
-    exit 1
+    # Podman
+    if command -v podman-compose &> /dev/null; then
+        DOCKER_COMPOSE="podman-compose"
+        log_info "Using podman-compose"
+    elif podman compose version &> /dev/null 2>&1; then
+        DOCKER_COMPOSE="podman compose"
+        log_info "Using podman compose plugin"
+    else
+        log_error "podman-compose is not installed. Please install it with: pip install podman-compose"
+        exit 1
+    fi
 fi
 
 # Stop any existing containers from previous runs

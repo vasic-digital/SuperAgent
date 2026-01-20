@@ -36,7 +36,9 @@ type AgentListResponse struct {
 
 // TestListAllCLIAgents tests the /v1/agents endpoint
 func TestListAllCLIAgents(t *testing.T) {
-	skipIfServerNotRunning(t)
+	if !serverAvailable(t) {
+		return
+	}
 	baseURL := getTestBaseURL()
 
 	client := &http.Client{Timeout: 30 * time.Second}
@@ -79,7 +81,9 @@ func TestListAllCLIAgents(t *testing.T) {
 
 // TestGetSpecificCLIAgent tests getting a specific agent
 func TestGetSpecificCLIAgent(t *testing.T) {
-	skipIfServerNotRunning(t)
+	if !serverAvailable(t) {
+		return
+	}
 	baseURL := getTestBaseURL()
 
 	agentsToTest := []string{"OpenCode", "ClaudeCode", "Aider", "KiloCode", "AmazonQ"}
@@ -115,7 +119,9 @@ func TestGetSpecificCLIAgent(t *testing.T) {
 
 // TestGetAgentsByProtocol tests filtering agents by protocol
 func TestGetAgentsByProtocol(t *testing.T) {
-	skipIfServerNotRunning(t)
+	if !serverAvailable(t) {
+		return
+	}
 	baseURL := getTestBaseURL()
 
 	protocols := []struct {
@@ -155,7 +161,9 @@ func TestGetAgentsByProtocol(t *testing.T) {
 
 // TestGetAgentsByTool tests filtering agents by tool
 func TestGetAgentsByTool(t *testing.T) {
-	skipIfServerNotRunning(t)
+	if !serverAvailable(t) {
+		return
+	}
 	baseURL := getTestBaseURL()
 
 	tools := []struct {
@@ -197,7 +205,9 @@ func TestGetAgentsByTool(t *testing.T) {
 
 // TestAllCLIAgentStyles tests that each CLI agent style works with the API
 func TestAllCLIAgentStyles(t *testing.T) {
-	skipIfServerNotRunning(t)
+	if !serverAvailable(t) {
+		return
+	}
 	baseURL := getTestBaseURL()
 
 	// Define all 18 agent styles with their system prompts
@@ -272,7 +282,9 @@ func TestAllCLIAgentStyles(t *testing.T) {
 
 // TestCLIAgentToolSupport tests tool support for different agent styles
 func TestCLIAgentToolSupport(t *testing.T) {
-	skipIfServerNotRunning(t)
+	if !serverAvailable(t) {
+		return
+	}
 	baseURL := getTestBaseURL()
 
 	// KiloCode supports all 21 tools - test with full toolset
@@ -343,7 +355,9 @@ func TestCLIAgentToolSupport(t *testing.T) {
 
 // TestCLIAgentStreaming tests streaming for CLI agents
 func TestCLIAgentStreaming(t *testing.T) {
-	skipIfServerNotRunning(t)
+	if !serverAvailable(t) {
+		return
+	}
 	baseURL := getTestBaseURL()
 
 	reqBody := map[string]interface{}{
@@ -382,7 +396,9 @@ func TestCLIAgentStreaming(t *testing.T) {
 
 // TestCLIAgentLongContext tests long context handling
 func TestCLIAgentLongContext(t *testing.T) {
-	skipIfServerNotRunning(t)
+	if !serverAvailable(t) {
+		return
+	}
 	baseURL := getTestBaseURL()
 
 	// Generate a longer context
