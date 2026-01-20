@@ -12,6 +12,7 @@ import (
 	"dev.helix.agent/internal/cache"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/database"
+	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/features"
 	"dev.helix.agent/internal/handlers"
 	"dev.helix.agent/internal/middleware"
@@ -615,6 +616,12 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		debateService := services.NewDebateServiceWithDeps(logger, providerRegistry, cogneeService)
 		debateService.SetTeamConfig(debateTeamConfig) // Set the team configuration
 		debateHandler := handlers.NewDebateHandler(debateService, nil, logger)
+
+		// Wire up the new debate orchestrator framework (optional, feature-flagged)
+		orchestratorIntegration := orchestrator.CreateIntegration(providerRegistry, logger)
+		debateHandler.SetOrchestratorIntegration(orchestratorIntegration)
+		logger.Info("New debate orchestrator framework enabled")
+
 		debateHandler.RegisterRoutes(protected)
 
 		// Add debate team configuration endpoint
