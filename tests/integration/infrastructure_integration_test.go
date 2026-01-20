@@ -825,6 +825,10 @@ func TestIntegration_Qdrant_BatchSearch(t *testing.T) {
 	collectionName := "integration_test_batch"
 	collectionConfig := qdrant.DefaultCollectionConfig(collectionName, 4)
 
+	// Clean up any existing collection from previous test runs
+	_ = client.DeleteCollection(ctx, collectionName)
+	time.Sleep(100 * time.Millisecond)
+
 	err = client.CreateCollection(ctx, collectionConfig)
 	require.NoError(t, err)
 	defer client.DeleteCollection(ctx, collectionName)
