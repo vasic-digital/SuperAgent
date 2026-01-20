@@ -29,12 +29,6 @@ type SelfImprovementSystem struct {
 	mu                 sync.Mutex
 }
 
-// ProviderVerifier interface for verifier integration
-type ProviderVerifier interface {
-	GetProviderScore(name string) float64
-	IsProviderHealthy(name string) bool
-}
-
 // DebateServiceAdapter adapts the debate service for self-improvement
 type DebateServiceAdapter struct {
 	service     DebateService
@@ -83,7 +77,7 @@ Rate: accuracy, helpfulness, safety, clarity. Return JSON: {"score": X, "dimensi
 
 	// Use votes as dimension proxies
 	for participant, vote := range result.Votes {
-		if provider, ok := a.providerMap[participant]; ok {
+		if _, ok := a.providerMap[participant]; ok {
 			// Could map to specific dimensions based on provider strengths
 			eval.Dimensions[DimensionAccuracy] = (eval.Dimensions[DimensionAccuracy] + vote) / 2
 		} else {

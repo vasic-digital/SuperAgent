@@ -360,7 +360,7 @@ func (m *InMemoryExperimentManager) GetResults(ctx context.Context, experimentID
 }
 
 func (m *InMemoryExperimentManager) validateTrafficSplit(exp *Experiment) error {
-	if exp.TrafficSplit == nil {
+	if exp.TrafficSplit == nil || len(exp.TrafficSplit) == 0 {
 		// Default: equal split
 		exp.TrafficSplit = make(map[string]float64)
 		split := 1.0 / float64(len(exp.Variants))

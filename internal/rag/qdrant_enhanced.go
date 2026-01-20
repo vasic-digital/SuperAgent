@@ -1,94 +1,104 @@
+// Package rag provides enhanced Qdrant retriever with hybrid search and debate evaluation.
 package rag
 
 import (
 	"context"
-	"fmt"
+	"math"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/sirupsen/logrus"
-	"dev.helix.agent/internal/vectordb/qdrant"
 )
 
-// EnhancedQdrantRetriever combines dense retrieval with BM25 sparse retrieval
-type EnhancedQdrantRetriever struct {
-	denseRetriever  *QdrantDenseRetriever
-	sparseIndex     *BM25Index
+// QdrantEnhancedRetriever combines dense Qdrant retrieval with BM25 sparse retrieval
+// and optional AI debate-based relevance evaluation.
+type QdrantEnhancedRetriever struct {
+	denseRetriever  Retriever
+	sparseIndex     *EnhancedBM25Index
 	reranker        Reranker
-	fusionMethod    FusionMethod
-	fusionWeights   *FusionWeights
+	debateEvaluator QdrantDebateEvaluator
+	config          *QdrantEnhancedConfig
 	logger          *logrus.Logger
-	debateEvaluator DebateEvaluator
+	mu              sync.RWMutex
 }
 
-// DebateEvaluator interface for debate-based relevance evaluation
-type DebateEvaluator interface {
+// QdrantDebateEvaluator uses AI debate to evaluate document relevance
+type QdrantDebateEvaluator interface {
 	EvaluateRelevance(ctx context.Context, query, document string) (float64, error)
 }
 
-// NewEnhancedQdrantRetriever creates a new enhanced Qdrant retriever
-func NewEnhancedQdrantRetriever(
-	client *qdrant.Client,
-	collection string,
-	embedder Embedder,
+// QdrantEnhancedConfig configuration for enhanced retriever
+type QdrantEnhancedConfig struct {
+	DenseWeight        float64      `json:"dense_weight"`
+	SparseWeight       float64      `json:"sparse_weight"`
+	UseDebateEvaluation bool        `json:"use_debate_evaluation"`
+	DebateTopK         int          `json:"debate_top_k"`
+	FusionMethod       FusionMethod `json:"fusion_method"`
+	RRFK               float64      `json:"rrf_k"`
+}
+
+// DefaultQdrantEnhancedConfig returns default configuration
+func DefaultQdrantEnhancedConfig() *QdrantEnhancedConfig {
+	return &QdrantEnhancedConfig{
+		DenseWeight:        0.6,
+		SparseWeight:       0.4,
+		UseDebateEvaluation: false,
+		DebateTopK:         5,
+		FusionMethod:       FusionRRF,
+		RRFK:               60.0,
+	}
+}
+
+// NewQdrantEnhancedRetriever creates a new enhanced Qdrant retriever
+func NewQdrantEnhancedRetriever(
+	denseRetriever Retriever,
 	reranker Reranker,
+	config *QdrantEnhancedConfig,
 	logger *logrus.Logger,
-) *EnhancedQdrantRetriever {
+) *QdrantEnhancedRetriever {
+	if config == nil {
+		config = DefaultQdrantEnhancedConfig()
+	}
 	if logger == nil {
 		logger = logrus.New()
 	}
 
-	return &EnhancedQdrantRetriever{
-		denseRetriever: NewQdrantDenseRetriever(client, collection, embedder, logger),
-		sparseIndex:    NewBM25Index(),
+	return &QdrantEnhancedRetriever{
+		denseRetriever: denseRetriever,
+		sparseIndex:    NewEnhancedBM25Index(),
 		reranker:       reranker,
-		fusionMethod:   FusionRRF,
-		fusionWeights: &FusionWeights{
-			DenseWeight:  0.6,
-			SparseWeight: 0.4,
-		},
-		logger: logger,
+		config:         config,
+		logger:         logger,
 	}
-}
-
-// SetFusionMethod sets the fusion method for hybrid retrieval
-func (r *EnhancedQdrantRetriever) SetFusionMethod(method FusionMethod) {
-	r.fusionMethod = method
-}
-
-// SetFusionWeights sets custom weights for weighted fusion
-func (r *EnhancedQdrantRetriever) SetFusionWeights(weights *FusionWeights) {
-	r.fusionWeights = weights
 }
 
 // SetDebateEvaluator sets the debate evaluator for AI-based relevance
-func (r *EnhancedQdrantRetriever) SetDebateEvaluator(evaluator DebateEvaluator) {
+func (r *QdrantEnhancedRetriever) SetDebateEvaluator(evaluator QdrantDebateEvaluator) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.debateEvaluator = evaluator
+	r.config.UseDebateEvaluation = evaluator != nil
 }
 
-// IndexDocuments indexes documents for sparse retrieval
-func (r *EnhancedQdrantRetriever) IndexDocuments(ctx context.Context, docs []*Document) error {
-	for _, doc := range docs {
-		r.sparseIndex.AddDocument(doc.ID, doc.Content)
-	}
-	r.logger.WithField("count", len(docs)).Debug("Documents indexed for sparse retrieval")
-	return nil
-}
-
-// HybridRetrieve performs hybrid dense + sparse retrieval
-func (r *EnhancedQdrantRetriever) HybridRetrieve(ctx context.Context, query string, opts *SearchOptions) ([]*SearchResult, error) {
+// Retrieve implements Retriever interface with hybrid search
+func (r *QdrantEnhancedRetriever) Retrieve(ctx context.Context, query string, opts *SearchOptions) ([]*SearchResult, error) {
 	if opts == nil {
-		opts = &SearchOptions{TopK: 10}
+		opts = DefaultSearchOptions()
 	}
 
-	// Get more results than needed for fusion
+	// Expand retrieval to get more candidates
 	expandedOpts := &SearchOptions{
-		TopK:     opts.TopK * 3,
-		MinScore: opts.MinScore,
-		Filters:  opts.Filters,
+		TopK:            opts.TopK * 3,
+		MinScore:        opts.MinScore,
+		Filter:          opts.Filter,
+		EnableReranking: false, // We'll rerank later
+		HybridAlpha:     opts.HybridAlpha,
+		IncludeMetadata: opts.IncludeMetadata,
+		Namespace:       opts.Namespace,
 	}
 
-	// Dense retrieval from Qdrant
+	// Dense retrieval
 	denseResults, err := r.denseRetriever.Retrieve(ctx, query, expandedOpts)
 	if err != nil {
 		r.logger.WithError(err).Warn("Dense retrieval failed, using sparse only")
@@ -106,9 +116,9 @@ func (r *EnhancedQdrantRetriever) HybridRetrieve(ctx context.Context, query stri
 		fusedResults = fusedResults[:opts.TopK]
 	}
 
-	// Rerank if reranker is available
-	if r.reranker != nil {
-		reranked, err := r.reranker.Rerank(ctx, query, fusedResults, &RerankOptions{TopK: opts.TopK})
+	// Rerank if enabled and reranker available
+	if opts.EnableReranking && r.reranker != nil {
+		reranked, err := r.reranker.Rerank(ctx, query, fusedResults, opts.TopK)
 		if err != nil {
 			r.logger.WithError(err).Warn("Reranking failed, using fused results")
 		} else {
@@ -116,13 +126,19 @@ func (r *EnhancedQdrantRetriever) HybridRetrieve(ctx context.Context, query stri
 		}
 	}
 
-	// Use debate-based evaluation if available for top results
-	if r.debateEvaluator != nil && len(fusedResults) > 0 {
-		fusedResults = r.evaluateWithDebate(ctx, query, fusedResults)
+	// Use debate-based evaluation if enabled
+	r.mu.RLock()
+	useDebate := r.config.UseDebateEvaluation && r.debateEvaluator != nil
+	debateEval := r.debateEvaluator
+	debateTopK := r.config.DebateTopK
+	r.mu.RUnlock()
+
+	if useDebate && len(fusedResults) > 0 {
+		fusedResults = r.evaluateWithDebate(ctx, query, fusedResults, debateEval, debateTopK)
 	}
 
 	r.logger.WithFields(logrus.Fields{
-		"query":        truncate(query, 50),
+		"query":        truncateText(query, 50),
 		"dense_count":  len(denseResults),
 		"sparse_count": len(sparseResults),
 		"fused_count":  len(fusedResults),
@@ -131,37 +147,60 @@ func (r *EnhancedQdrantRetriever) HybridRetrieve(ctx context.Context, query stri
 	return fusedResults, nil
 }
 
-// Retrieve implements DenseRetriever interface (delegates to hybrid)
-func (r *EnhancedQdrantRetriever) Retrieve(ctx context.Context, query string, opts *SearchOptions) ([]*SearchResult, error) {
-	return r.HybridRetrieve(ctx, query, opts)
+// Index implements Retriever interface
+func (r *QdrantEnhancedRetriever) Index(ctx context.Context, docs []*Document) error {
+	// Index in dense retriever
+	if err := r.denseRetriever.Index(ctx, docs); err != nil {
+		return err
+	}
+
+	// Index in sparse BM25 index
+	for _, doc := range docs {
+		r.sparseIndex.AddDocument(doc.ID, doc.Content)
+	}
+
+	r.logger.WithField("count", len(docs)).Debug("Documents indexed for hybrid search")
+	return nil
 }
 
-// GetName returns the retriever name
-func (r *EnhancedQdrantRetriever) GetName() string {
-	return "enhanced_qdrant_hybrid"
+// Delete implements Retriever interface
+func (r *QdrantEnhancedRetriever) Delete(ctx context.Context, ids []string) error {
+	// Delete from dense retriever
+	if err := r.denseRetriever.Delete(ctx, ids); err != nil {
+		return err
+	}
+
+	// Delete from sparse index
+	for _, id := range ids {
+		r.sparseIndex.RemoveDocument(id)
+	}
+
+	return nil
 }
 
-func (r *EnhancedQdrantRetriever) fuseResults(denseResults, sparseResults []*SearchResult) []*SearchResult {
-	switch r.fusionMethod {
+func (r *QdrantEnhancedRetriever) fuseResults(denseResults, sparseResults []*SearchResult) []*SearchResult {
+	switch r.config.FusionMethod {
 	case FusionRRF:
-		return r.reciprocalRankFusion(denseResults, sparseResults)
+		return r.rrfFusion(denseResults, sparseResults)
 	case FusionWeighted:
 		return r.weightedFusion(denseResults, sparseResults)
 	default:
-		return r.reciprocalRankFusion(denseResults, sparseResults)
+		return r.rrfFusion(denseResults, sparseResults)
 	}
 }
 
-func (r *EnhancedQdrantRetriever) reciprocalRankFusion(denseResults, sparseResults []*SearchResult) []*SearchResult {
-	const k = 60.0 // RRF constant
-
+func (r *QdrantEnhancedRetriever) rrfFusion(denseResults, sparseResults []*SearchResult) []*SearchResult {
+	k := r.config.RRFK
 	scores := make(map[string]float64)
 	docs := make(map[string]*SearchResult)
 
 	// Score dense results
 	for rank, result := range denseResults {
+		if result.Document == nil {
+			continue
+		}
 		id := result.Document.ID
-		scores[id] += 1.0 / (k + float64(rank+1))
+		scores[id] += r.config.DenseWeight / (k + float64(rank+1))
 		if _, exists := docs[id]; !exists {
 			docs[id] = result
 		}
@@ -169,8 +208,11 @@ func (r *EnhancedQdrantRetriever) reciprocalRankFusion(denseResults, sparseResul
 
 	// Score sparse results
 	for rank, result := range sparseResults {
+		if result.Document == nil {
+			continue
+		}
 		id := result.Document.ID
-		scores[id] += 1.0 / (k + float64(rank+1))
+		scores[id] += r.config.SparseWeight / (k + float64(rank+1))
 		if _, exists := docs[id]; !exists {
 			docs[id] = result
 		}
@@ -181,14 +223,13 @@ func (r *EnhancedQdrantRetriever) reciprocalRankFusion(denseResults, sparseResul
 	for id, score := range scores {
 		if doc, ok := docs[id]; ok {
 			fused = append(fused, &SearchResult{
-				Document: doc.Document,
-				Score:    score,
-				Metadata: doc.Metadata,
+				Document:  doc.Document,
+				Score:     score,
+				MatchType: MatchTypeHybrid,
 			})
 		}
 	}
 
-	// Sort by score descending
 	sort.Slice(fused, func(i, j int) bool {
 		return fused[i].Score > fused[j].Score
 	})
@@ -196,15 +237,7 @@ func (r *EnhancedQdrantRetriever) reciprocalRankFusion(denseResults, sparseResul
 	return fused
 }
 
-func (r *EnhancedQdrantRetriever) weightedFusion(denseResults, sparseResults []*SearchResult) []*SearchResult {
-	denseWeight := r.fusionWeights.DenseWeight
-	sparseWeight := r.fusionWeights.SparseWeight
-
-	// Normalize weights
-	total := denseWeight + sparseWeight
-	denseWeight /= total
-	sparseWeight /= total
-
+func (r *QdrantEnhancedRetriever) weightedFusion(denseResults, sparseResults []*SearchResult) []*SearchResult {
 	scores := make(map[string]float64)
 	docs := make(map[string]*SearchResult)
 
@@ -217,8 +250,11 @@ func (r *EnhancedQdrantRetriever) weightedFusion(denseResults, sparseResults []*
 	}
 	if maxDense > 0 {
 		for _, result := range denseResults {
+			if result.Document == nil {
+				continue
+			}
 			id := result.Document.ID
-			scores[id] += (result.Score / maxDense) * denseWeight
+			scores[id] += (result.Score / maxDense) * r.config.DenseWeight
 			if _, exists := docs[id]; !exists {
 				docs[id] = result
 			}
@@ -234,22 +270,24 @@ func (r *EnhancedQdrantRetriever) weightedFusion(denseResults, sparseResults []*
 	}
 	if maxSparse > 0 {
 		for _, result := range sparseResults {
+			if result.Document == nil {
+				continue
+			}
 			id := result.Document.ID
-			scores[id] += (result.Score / maxSparse) * sparseWeight
+			scores[id] += (result.Score / maxSparse) * r.config.SparseWeight
 			if _, exists := docs[id]; !exists {
 				docs[id] = result
 			}
 		}
 	}
 
-	// Create fused results
 	var fused []*SearchResult
 	for id, score := range scores {
 		if doc, ok := docs[id]; ok {
 			fused = append(fused, &SearchResult{
-				Document: doc.Document,
-				Score:    score,
-				Metadata: doc.Metadata,
+				Document:  doc.Document,
+				Score:     score,
+				MatchType: MatchTypeHybrid,
 			})
 		}
 	}
@@ -261,16 +299,24 @@ func (r *EnhancedQdrantRetriever) weightedFusion(denseResults, sparseResults []*
 	return fused
 }
 
-func (r *EnhancedQdrantRetriever) evaluateWithDebate(ctx context.Context, query string, results []*SearchResult) []*SearchResult {
-	// Only evaluate top N results with debate (expensive operation)
-	maxEval := 5
-	if len(results) < maxEval {
+func (r *QdrantEnhancedRetriever) evaluateWithDebate(
+	ctx context.Context,
+	query string,
+	results []*SearchResult,
+	evaluator QdrantDebateEvaluator,
+	maxEval int,
+) []*SearchResult {
+	if maxEval > len(results) {
 		maxEval = len(results)
 	}
 
 	for i := 0; i < maxEval; i++ {
 		result := results[i]
-		relevance, err := r.debateEvaluator.EvaluateRelevance(ctx, query, result.Document.Content)
+		if result.Document == nil {
+			continue
+		}
+
+		relevance, err := evaluator.EvaluateRelevance(ctx, query, result.Document.Content)
 		if err != nil {
 			r.logger.WithError(err).Warn("Debate evaluation failed")
 			continue
@@ -278,10 +324,7 @@ func (r *EnhancedQdrantRetriever) evaluateWithDebate(ctx context.Context, query 
 
 		// Combine original score with debate relevance
 		result.Score = result.Score*0.6 + relevance*0.4
-		if result.Metadata == nil {
-			result.Metadata = make(map[string]interface{})
-		}
-		result.Metadata["debate_relevance"] = relevance
+		result.RerankedScore = relevance
 	}
 
 	// Re-sort after debate evaluation
@@ -292,21 +335,22 @@ func (r *EnhancedQdrantRetriever) evaluateWithDebate(ctx context.Context, query 
 	return results
 }
 
-// BM25Index provides BM25 sparse retrieval
-type BM25Index struct {
+// EnhancedBM25Index provides BM25 sparse retrieval for hybrid search
+type EnhancedBM25Index struct {
 	documents   map[string]string
-	termFreqs   map[string]map[string]int // docID -> term -> freq
-	docFreqs    map[string]int            // term -> doc count
+	termFreqs   map[string]map[string]int
+	docFreqs    map[string]int
 	docLengths  map[string]int
 	avgDocLen   float64
 	totalDocs   int
 	k1          float64
 	b           float64
+	mu          sync.RWMutex
 }
 
-// NewBM25Index creates a new BM25 index
-func NewBM25Index() *BM25Index {
-	return &BM25Index{
+// NewEnhancedBM25Index creates a new BM25 index for enhanced retrieval
+func NewEnhancedBM25Index() *EnhancedBM25Index {
+	return &EnhancedBM25Index{
 		documents:  make(map[string]string),
 		termFreqs:  make(map[string]map[string]int),
 		docFreqs:   make(map[string]int),
@@ -316,9 +360,12 @@ func NewBM25Index() *BM25Index {
 	}
 }
 
-// AddDocument adds a document to the index
-func (idx *BM25Index) AddDocument(id, content string) {
-	terms := tokenize(content)
+// AddDocument adds a document to the BM25 index
+func (idx *EnhancedBM25Index) AddDocument(id, content string) {
+	idx.mu.Lock()
+	defer idx.mu.Unlock()
+
+	terms := enhancedTokenize(content)
 
 	idx.documents[id] = content
 	idx.termFreqs[id] = make(map[string]int)
@@ -337,10 +384,36 @@ func (idx *BM25Index) AddDocument(id, content string) {
 	idx.recalculateAvgDocLen()
 }
 
-// Search performs BM25 search
-func (idx *BM25Index) Search(query string, topK int) []*SearchResult {
-	queryTerms := tokenize(query)
+// RemoveDocument removes a document from the index
+func (idx *EnhancedBM25Index) RemoveDocument(id string) {
+	idx.mu.Lock()
+	defer idx.mu.Unlock()
 
+	if _, exists := idx.documents[id]; !exists {
+		return
+	}
+
+	// Decrement doc frequencies
+	for term := range idx.termFreqs[id] {
+		idx.docFreqs[term]--
+		if idx.docFreqs[term] <= 0 {
+			delete(idx.docFreqs, term)
+		}
+	}
+
+	delete(idx.documents, id)
+	delete(idx.termFreqs, id)
+	delete(idx.docLengths, id)
+	idx.totalDocs--
+	idx.recalculateAvgDocLen()
+}
+
+// Search performs BM25 search
+func (idx *EnhancedBM25Index) Search(query string, topK int) []*SearchResult {
+	idx.mu.RLock()
+	defer idx.mu.RUnlock()
+
+	queryTerms := enhancedTokenize(query)
 	scores := make(map[string]float64)
 
 	for _, term := range queryTerms {
@@ -371,11 +444,11 @@ func (idx *BM25Index) Search(query string, topK int) []*SearchResult {
 				ID:      docID,
 				Content: idx.documents[docID],
 			},
-			Score: score,
+			Score:     score,
+			MatchType: MatchTypeSparse,
 		})
 	}
 
-	// Sort by score descending
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].Score > results[j].Score
 	})
@@ -387,16 +460,16 @@ func (idx *BM25Index) Search(query string, topK int) []*SearchResult {
 	return results
 }
 
-func (idx *BM25Index) calculateIDF(df int) float64 {
+func (idx *EnhancedBM25Index) calculateIDF(df int) float64 {
 	n := float64(idx.totalDocs)
-	return logN((n-float64(df)+0.5)/(float64(df)+0.5) + 1)
+	return math.Log((n-float64(df)+0.5)/(float64(df)+0.5) + 1)
 }
 
-func (idx *BM25Index) calculateTF(tf, docLen float64) float64 {
+func (idx *EnhancedBM25Index) calculateTF(tf, docLen float64) float64 {
 	return (tf * (idx.k1 + 1)) / (tf + idx.k1*(1-idx.b+idx.b*(docLen/idx.avgDocLen)))
 }
 
-func (idx *BM25Index) recalculateAvgDocLen() {
+func (idx *EnhancedBM25Index) recalculateAvgDocLen() {
 	total := 0
 	for _, length := range idx.docLengths {
 		total += length
@@ -406,12 +479,11 @@ func (idx *BM25Index) recalculateAvgDocLen() {
 	}
 }
 
-func tokenize(text string) []string {
-	// Simple whitespace tokenization with lowercase
+// enhancedTokenize tokenizes text for BM25 (renamed to avoid conflict with existing tokenize)
+func enhancedTokenize(text string) []string {
 	text = strings.ToLower(text)
 	words := strings.Fields(text)
 
-	// Remove punctuation
 	var tokens []string
 	for _, word := range words {
 		cleaned := strings.Trim(word, ".,!?;:\"'()[]{}#$%&*+-/<>=@\\^_`|~")
@@ -423,164 +495,10 @@ func tokenize(text string) []string {
 	return tokens
 }
 
-func logN(x float64) float64 {
-	// Natural log with protection against log(0)
-	if x <= 0 {
-		return 0
+// truncateText truncates text to a maximum length
+func truncateText(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
 	}
-	// Using approximation for simplicity
-	result := 0.0
-	for x > 2 {
-		x /= 2
-		result += 0.693147 // ln(2)
-	}
-	// Taylor series for ln(x) around x=1
-	y := x - 1
-	for i := 1; i <= 10; i++ {
-		if i%2 == 1 {
-			result += pow(y, i) / float64(i)
-		} else {
-			result -= pow(y, i) / float64(i)
-		}
-	}
-	return result
-}
-
-func pow(base float64, exp int) float64 {
-	result := 1.0
-	for i := 0; i < exp; i++ {
-		result *= base
-	}
-	return result
-}
-
-// QdrantRAGPipeline provides a complete RAG pipeline using Qdrant
-type QdrantRAGPipeline struct {
-	retriever       *EnhancedQdrantRetriever
-	documentStore   *QdrantDocumentStore
-	contextBuilder  ContextBuilder
-	logger          *logrus.Logger
-}
-
-// ContextBuilder builds context from retrieved documents
-type ContextBuilder interface {
-	Build(ctx context.Context, query string, results []*SearchResult) (string, error)
-}
-
-// SimpleContextBuilder implements basic context building
-type SimpleContextBuilder struct {
-	maxTokens   int
-	separator   string
-	includeMetadata bool
-}
-
-// NewSimpleContextBuilder creates a new simple context builder
-func NewSimpleContextBuilder(maxTokens int) *SimpleContextBuilder {
-	return &SimpleContextBuilder{
-		maxTokens:       maxTokens,
-		separator:       "\n\n---\n\n",
-		includeMetadata: true,
-	}
-}
-
-// Build implements ContextBuilder
-func (b *SimpleContextBuilder) Build(ctx context.Context, query string, results []*SearchResult) (string, error) {
-	var parts []string
-	tokenCount := 0
-
-	for _, result := range results {
-		docContent := result.Document.Content
-		docTokens := len(docContent) / 4 // Rough token estimate
-
-		if tokenCount+docTokens > b.maxTokens {
-			break
-		}
-
-		part := docContent
-		if b.includeMetadata {
-			if result.Document.Title != "" {
-				part = fmt.Sprintf("Title: %s\n\n%s", result.Document.Title, part)
-			}
-			if result.Document.Source != "" {
-				part = fmt.Sprintf("%s\n\nSource: %s", part, result.Document.Source)
-			}
-		}
-
-		parts = append(parts, part)
-		tokenCount += docTokens
-	}
-
-	return strings.Join(parts, b.separator), nil
-}
-
-// NewQdrantRAGPipeline creates a new RAG pipeline
-func NewQdrantRAGPipeline(
-	client *qdrant.Client,
-	collection string,
-	embedder Embedder,
-	reranker Reranker,
-	logger *logrus.Logger,
-) *QdrantRAGPipeline {
-	if logger == nil {
-		logger = logrus.New()
-	}
-
-	return &QdrantRAGPipeline{
-		retriever:      NewEnhancedQdrantRetriever(client, collection, embedder, reranker, logger),
-		documentStore:  NewQdrantDocumentStore(client, collection, embedder, logger),
-		contextBuilder: NewSimpleContextBuilder(4000),
-		logger:         logger,
-	}
-}
-
-// SetContextBuilder sets a custom context builder
-func (p *QdrantRAGPipeline) SetContextBuilder(builder ContextBuilder) {
-	p.contextBuilder = builder
-}
-
-// SetDebateEvaluator sets the debate evaluator for the retriever
-func (p *QdrantRAGPipeline) SetDebateEvaluator(evaluator DebateEvaluator) {
-	p.retriever.SetDebateEvaluator(evaluator)
-}
-
-// AddDocuments adds documents to the pipeline
-func (p *QdrantRAGPipeline) AddDocuments(ctx context.Context, docs []*Document) error {
-	// Add to vector store
-	if err := p.documentStore.AddDocuments(ctx, docs); err != nil {
-		return fmt.Errorf("failed to add to vector store: %w", err)
-	}
-
-	// Index for sparse retrieval
-	if err := p.retriever.IndexDocuments(ctx, docs); err != nil {
-		return fmt.Errorf("failed to index documents: %w", err)
-	}
-
-	return nil
-}
-
-// Query performs retrieval and builds context
-func (p *QdrantRAGPipeline) Query(ctx context.Context, query string, opts *SearchOptions) (string, []*SearchResult, error) {
-	// Retrieve relevant documents
-	results, err := p.retriever.HybridRetrieve(ctx, query, opts)
-	if err != nil {
-		return "", nil, fmt.Errorf("retrieval failed: %w", err)
-	}
-
-	// Build context from results
-	context, err := p.contextBuilder.Build(ctx, query, results)
-	if err != nil {
-		return "", results, fmt.Errorf("context building failed: %w", err)
-	}
-
-	return context, results, nil
-}
-
-// GetRetriever returns the underlying retriever
-func (p *QdrantRAGPipeline) GetRetriever() *EnhancedQdrantRetriever {
-	return p.retriever
-}
-
-// GetDocumentStore returns the underlying document store
-func (p *QdrantRAGPipeline) GetDocumentStore() *QdrantDocumentStore {
-	return p.documentStore
+	return s[:maxLen] + "..."
 }

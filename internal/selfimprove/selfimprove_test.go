@@ -295,5 +295,5 @@ func TestPreferencePair(t *testing.T) {
 	}
 
 	assert.Greater(t, pair.ChosenScore, pair.RejectedScore)
-	assert.Equal(t, pair.Margin, pair.ChosenScore-pair.RejectedScore)
+	assert.InDelta(t, pair.Margin, pair.ChosenScore-pair.RejectedScore, 0.001)
 }

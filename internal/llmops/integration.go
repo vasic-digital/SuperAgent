@@ -278,6 +278,9 @@ type InMemoryAlertManager struct {
 
 // NewInMemoryAlertManager creates a new alert manager
 func NewInMemoryAlertManager(logger *logrus.Logger) *InMemoryAlertManager {
+	if logger == nil {
+		logger = logrus.New()
+	}
 	return &InMemoryAlertManager{
 		alerts:    make([]*Alert, 0),
 		callbacks: make([]AlertCallback, 0),
