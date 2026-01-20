@@ -24,6 +24,7 @@ type StartupVerifier struct {
 	config          *StartupConfig
 	verifierSvc     *VerificationService
 	scoringSvc      *ScoringService
+	enhancedScoring *EnhancedScoringService // Phase 1: 7-component scoring
 	healthSvc       *HealthService
 
 	// Provider creation functions (dependency injection)
@@ -75,13 +76,17 @@ func NewStartupVerifier(cfg *StartupConfig, log *logrus.Logger) *StartupVerifier
 		scoringSvc = nil
 	}
 
+	// Initialize enhanced scoring service (Phase 1)
+	enhancedScoring := NewEnhancedScoringService(scoringSvc)
+
 	return &StartupVerifier{
-		config:      cfg,
-		verifierSvc: verifierSvc,
-		scoringSvc:  scoringSvc,
-		providers:   make(map[string]*UnifiedProvider),
-		oauthReader: oauth_credentials.NewOAuthCredentialReader(),
-		log:         log,
+		config:          cfg,
+		verifierSvc:     verifierSvc,
+		scoringSvc:      scoringSvc,
+		enhancedScoring: enhancedScoring,
+		providers:       make(map[string]*UnifiedProvider),
+		oauthReader:     oauth_credentials.NewOAuthCredentialReader(),
+		log:             log,
 	}
 }
 
@@ -649,13 +654,49 @@ func (sv *StartupVerifier) verifyAPIKeyProvider(ctx context.Context, provider *U
 }
 
 // scoreProviders calculates scores for all providers using LLMsVerifier
+// Phase 1: Uses enhanced 7-component scoring algorithm
 func (sv *StartupVerifier) scoreProviders(ctx context.Context, providers []*UnifiedProvider) []*UnifiedProvider {
 	for _, p := range providers {
-		// Score is already set during verification
-		// Apply additional scoring logic here if needed
-		if p.Verified && p.Status == StatusHealthy {
-			// Bonus for verified healthy providers
-			p.Score += 0.5
+		// Use enhanced scoring for each model if enhanced scoring is available
+		if sv.enhancedScoring != nil {
+			for i := range p.Models {
+				model := &p.Models[i]
+				enhancedResult, err := sv.enhancedScoring.CalculateEnhancedScore(ctx, model, p)
+				if err == nil {
+					// Update model with enhanced score
+					model.Score = enhancedResult.OverallScore
+					model.ScoreSuffix = enhancedResult.ScoreSuffix
+					if model.Metadata == nil {
+						model.Metadata = make(map[string]interface{})
+					}
+					model.Metadata["confidence_score"] = enhancedResult.ConfidenceScore
+					model.Metadata["diversity_bonus"] = enhancedResult.DiversityBonus
+					model.Metadata["specialization"] = enhancedResult.SpecializationTag
+					model.Metadata["scoring_components"] = enhancedResult.Components
+
+					sv.log.WithFields(logrus.Fields{
+						"provider":       p.ID,
+						"model":          model.ID,
+						"score":          enhancedResult.OverallScore,
+						"specialization": enhancedResult.SpecializationTag,
+						"confidence":     enhancedResult.ConfidenceScore,
+					}).Debug("Enhanced scoring calculated for model")
+				}
+			}
+
+			// Update provider score to be the average of its models
+			if len(p.Models) > 0 {
+				var totalScore float64
+				for _, m := range p.Models {
+					totalScore += m.Score
+				}
+				p.Score = totalScore / float64(len(p.Models))
+			}
+		} else {
+			// Fallback to basic scoring
+			if p.Verified && p.Status == StatusHealthy {
+				p.Score += 0.5
+			}
 		}
 
 		// Cap score at 10.0
