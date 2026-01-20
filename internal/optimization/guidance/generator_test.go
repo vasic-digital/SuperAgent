@@ -160,8 +160,9 @@ func TestGenerationResult(t *testing.T) {
 }
 
 func TestTemplatedGenerator_GenerateFromTemplate(t *testing.T) {
+	// Note: Placeholders are sorted alphabetically, so "age" comes before "name"
 	backend := &MockLLMBackend{
-		responses: []string{"John", "30"},
+		responses: []string{"30", "John"},
 	}
 
 	generator := NewConstrainedGenerator(backend, &GeneratorConfig{

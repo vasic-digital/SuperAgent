@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -220,7 +221,15 @@ func (g *TemplatedGenerator) GenerateFromTemplate(ctx context.Context, template 
 		Valid:          true,
 	}
 
-	for placeholder, constraint := range template.Placeholders {
+	// Sort placeholder keys for deterministic iteration order
+	placeholderKeys := make([]string, 0, len(template.Placeholders))
+	for k := range template.Placeholders {
+		placeholderKeys = append(placeholderKeys, k)
+	}
+	sort.Strings(placeholderKeys)
+
+	for _, placeholder := range placeholderKeys {
+		constraint := template.Placeholders[placeholder]
 		prompt := fmt.Sprintf("Generate a value for '%s'", placeholder)
 
 		genResult, err := g.generator.Generate(ctx, prompt, constraint)
