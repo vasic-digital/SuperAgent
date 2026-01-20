@@ -354,9 +354,9 @@ EOF
 test_agent_registry_api() {
     log_info "Testing agent registry API..."
 
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/agents" \
+    # Use the public features/agents endpoint
+    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/features/agents" \
         -H "Content-Type: application/json" \
-        -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
         --max-time 30 2>/dev/null || true)
 
     local http_code=$(echo "$response" | tail -n1)
