@@ -135,6 +135,10 @@ func (f *OrchestratorFactory) CreateOrchestratorWithDefaults() *Orchestrator {
 
 // registerVerifiedProviders registers all verified providers from the registry.
 func (f *OrchestratorFactory) registerVerifiedProviders(orch *Orchestrator) {
+	if f.providerRegistry == nil {
+		return
+	}
+
 	providers := f.providerRegistry.ListProvidersOrderedByScore()
 
 	for _, name := range providers {

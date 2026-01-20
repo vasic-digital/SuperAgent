@@ -10,16 +10,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/skills"
 )
 
 // DebateHandler handles debate API endpoints
 type DebateHandler struct {
-	debateService     *services.DebateService
-	advancedDebate    *services.AdvancedDebateService
-	skillsIntegration *skills.Integration
-	logger            *logrus.Logger
+	debateService        *services.DebateService
+	advancedDebate       *services.AdvancedDebateService
+	skillsIntegration    *skills.Integration
+	orchestratorIntegration *orchestrator.ServiceIntegration
+	logger               *logrus.Logger
 
 	// In-memory storage for active debates (in production, use database)
 	activeDebates map[string]*debateState
@@ -65,6 +67,11 @@ func NewDebateHandlerWithSkills(debateService *services.DebateService, advancedD
 // SetSkillsIntegration sets the Skills integration for the handler
 func (h *DebateHandler) SetSkillsIntegration(integration *skills.Integration) {
 	h.skillsIntegration = integration
+}
+
+// SetOrchestratorIntegration sets the new debate framework integration
+func (h *DebateHandler) SetOrchestratorIntegration(integration *orchestrator.ServiceIntegration) {
+	h.orchestratorIntegration = integration
 }
 
 // CreateDebateRequest represents the request to create a debate
@@ -272,28 +279,44 @@ func (h *DebateHandler) runDebate(debateID string, config *services.DebateConfig
 	var multiPassResult *services.MultiPassResult
 	var err error
 
-	if validationConfig != nil && h.debateService != nil {
-		// Use multi-pass validation
-		h.logger.WithField("debate_id", debateID).Info("Running debate with multi-pass validation")
-		multiPassResult, err = h.debateService.ConductDebateWithMultiPassValidation(
-			context.Background(),
-			config,
-			validationConfig,
-		)
-		if multiPassResult != nil && len(multiPassResult.Phases) > 0 {
-			// Update current phase as we progress
-			h.mu.Lock()
-			if state, exists := h.activeDebates[debateID]; exists {
-				state.CurrentPhase = string(multiPassResult.Phases[len(multiPassResult.Phases)-1].Phase)
-			}
-			h.mu.Unlock()
+	// Try to use the new debate framework if available and appropriate
+	useNewFramework := h.orchestratorIntegration != nil && h.orchestratorIntegration.ShouldUseNewFramework(config)
+
+	if useNewFramework {
+		h.logger.WithField("debate_id", debateID).Info("Running debate with new orchestrator framework")
+		result, err = h.orchestratorIntegration.ConductDebate(context.Background(), config)
+		if err != nil {
+			// Fall back to legacy if configured
+			h.logger.WithError(err).WithField("debate_id", debateID).Warn("New framework failed, falling back to legacy")
+			err = nil // Reset error for fallback
+			useNewFramework = false
 		}
-	} else if h.advancedDebate != nil {
-		result, err = h.advancedDebate.ConductAdvancedDebate(context.Background(), config)
-	} else if h.debateService != nil {
-		result, err = h.debateService.ConductDebate(context.Background(), config)
-	} else {
-		err = &debateError{message: "no debate service configured"}
+	}
+
+	if !useNewFramework {
+		if validationConfig != nil && h.debateService != nil {
+			// Use multi-pass validation
+			h.logger.WithField("debate_id", debateID).Info("Running debate with multi-pass validation")
+			multiPassResult, err = h.debateService.ConductDebateWithMultiPassValidation(
+				context.Background(),
+				config,
+				validationConfig,
+			)
+			if multiPassResult != nil && len(multiPassResult.Phases) > 0 {
+				// Update current phase as we progress
+				h.mu.Lock()
+				if state, exists := h.activeDebates[debateID]; exists {
+					state.CurrentPhase = string(multiPassResult.Phases[len(multiPassResult.Phases)-1].Phase)
+				}
+				h.mu.Unlock()
+			}
+		} else if h.advancedDebate != nil {
+			result, err = h.advancedDebate.ConductAdvancedDebate(context.Background(), config)
+		} else if h.debateService != nil {
+			result, err = h.debateService.ConductDebate(context.Background(), config)
+		} else {
+			err = &debateError{message: "no debate service configured"}
+		}
 	}
 
 	h.mu.Lock()
