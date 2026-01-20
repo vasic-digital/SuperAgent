@@ -96,6 +96,17 @@ make install-deps     # Install dev dependencies
 - `tools/` - Tool schema registry (21 tools)
 - `agents/` - CLI agent registry (18 agents)
 - `optimization/` - LLM optimization (gptcache, outlines, streaming, sglang, llamaindex, langchain, guidance, lmql)
+- `observability/` - OpenTelemetry tracing, metrics, and exporters (Jaeger, Zipkin, Langfuse)
+- `rag/` - Hybrid retrieval (dense + sparse), reranking, Qdrant integration
+- `memory/` - Mem0-style memory management with entity graphs
+- `routing/semantic/` - Semantic routing with embedding similarity
+- `agentic/` - Graph-based workflow orchestration with checkpointing
+- `security/` - Red team framework (40+ attacks), guardrails, PII detection, audit logging
+- `structured/` - Constrained output generation (XGrammar-style)
+- `testing/llm/` - DeepEval-style LLM testing framework with RAGAS metrics
+- `selfimprove/` - RLAIF and Constitutional AI integration
+- `llmops/` - Prompt versioning, A/B testing, continuous evaluation
+- `benchmark/` - SWE-Bench, HumanEval, MMLU, GSM8K benchmark runners
 
 ### Key Interfaces
 - `LLMProvider` - Provider implementation contract
@@ -398,6 +409,26 @@ Key concepts:
 - HelixAgent presents as a single LLM provider with one virtual model (AI Debate Ensemble)
 - ALL verification data comes from REAL API calls (no stubs)
 - Infrastructure auto-starts when needed
+
+### Go Test Suites
+
+| Test Suite | Location | Purpose |
+|------------|----------|---------|
+| Security Penetration | `tests/security/penetration_test.go` | LLM security testing (prompt injection, jailbreaking, data exfiltration) |
+| AI Debate Challenge | `tests/challenge/ai_debate_maximal_challenge_test.go` | AI debate system comprehensive validation |
+| LLM+Cognee Integration | `tests/integration/llm_cognee_verification_test.go` | All 10 LLM providers + Cognee integration |
+| Semantic Router | `internal/routing/semantic/semantic_test.go` | Embedding similarity routing (96.2% coverage) |
+| LLM Testing Framework | `internal/testing/llm/llm_test.go` | DeepEval-style LLM testing (96.2% coverage) |
+| Workflow Orchestration | `internal/agentic/workflow_test.go` | Graph-based workflow tests |
+| Memory Management | `internal/memory/memory_test.go` | Mem0-style memory tests |
+| Observability | `internal/observability/observability_test.go` | Tracing and metrics tests |
+
+Run specific test suites:
+```bash
+go test -v ./tests/security/...     # Security penetration tests
+go test -v ./tests/challenge/...    # AI debate challenge tests
+go test -v ./tests/integration/...  # Integration tests
+```
 
 ## LLMsVerifier Integration
 

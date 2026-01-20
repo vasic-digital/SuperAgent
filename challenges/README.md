@@ -48,24 +48,42 @@ make build
 cat challenges/master_results/latest_summary.md
 ```
 
-## All 39 Challenges
+## All 43+ Challenges
 
-The system includes 39 comprehensive challenges:
+The system includes 43+ comprehensive challenges:
 
 | Category | Challenges | Count |
 |----------|------------|-------|
 | Infrastructure | health_monitoring, caching_layer, database_operations, configuration_loading, plugin_system, session_management, graceful_shutdown | 7 |
-| Providers | provider_claude, provider_deepseek, provider_gemini, provider_ollama, provider_openrouter, provider_qwen, provider_zai | 7 |
+| Providers | provider_claude, provider_deepseek, provider_gemini, provider_ollama, provider_openrouter, provider_qwen, provider_zai, provider_mistral, provider_cerebras, provider_zen | 10 |
 | Protocols | mcp_protocol, lsp_protocol, acp_protocol | 3 |
-| Security | authentication, rate_limiting, input_validation | 3 |
+| Security | authentication, rate_limiting, input_validation, llm_penetration_testing | 4 |
 | Core | provider_verification, ensemble_voting, ai_debate_formation, ai_debate_workflow, embeddings_service, streaming_responses, model_metadata, api_quality_test | 8 |
 | Cloud | cloud_aws_bedrock, cloud_gcp_vertex, cloud_azure_openai | 3 |
 | Optimization | optimization_semantic_cache, optimization_structured_output | 2 |
-| Integration | cognee_integration | 1 |
+| Integration | cognee_integration, llm_cognee_verification | 2 |
 | Resilience | circuit_breaker, error_handling, concurrent_access | 3 |
 | API | openai_compatibility, grpc_api | 2 |
+| Testing | ai_debate_maximal_challenge | 1 |
 
-**Total: 39 challenges - ALL must pass**
+**Total: 43+ challenges - ALL must pass**
+
+## Go Test Challenges
+
+In addition to shell-based challenges, comprehensive Go test suites are available:
+
+| Test Suite | Location | Purpose |
+|------------|----------|---------|
+| Security Penetration | `tests/security/penetration_test.go` | LLM security testing (prompt injection, jailbreaking, data exfiltration) |
+| AI Debate Challenge | `tests/challenge/ai_debate_maximal_challenge_test.go` | AI debate system comprehensive validation |
+| LLM+Cognee Integration | `tests/integration/llm_cognee_verification_test.go` | All 10 LLM providers + Cognee integration |
+
+Run Go test challenges:
+```bash
+go test -v ./tests/security/...     # Security penetration tests
+go test -v ./tests/challenge/...    # AI debate challenge tests
+go test -v ./tests/integration/...  # Integration tests
+```
 
 ## Directory Structure
 

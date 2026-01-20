@@ -1,6 +1,6 @@
 # HelixAgent: AI-Powered Ensemble LLM Service
 
-[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD1E?style=flat-square&logo=go)](https://golang.org)
+[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD1E?style=flat-square&logo=go)](https://golang.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=flat-square&logo=docker)](https://www.docker.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen?style=flat-square)](https://dev.helix.agent/actions/workflows/tests)
@@ -11,7 +11,7 @@ HelixAgent is a production-ready, AI-powered ensemble LLM service that intellige
 
 ### Prerequisites
 - Docker & Docker Compose
-- Go 1.21+ (for local development)
+- Go 1.24+ (for local development)
 - Git
 
 ### Using Docker (Recommended)
@@ -46,9 +46,11 @@ make run-dev
 ## 📋 Features
 
 ### 🧠 AI Ensemble System
-- **Multi-Provider Support**: Claude, DeepSeek, Gemini, Qwen, ZAI, Ollama
+- **Multi-Provider Support**: 10 LLM providers (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama)
+- **Dynamic Provider Selection**: Real-time verification scores via LLMsVerifier integration
+- **AI Debate System**: Multi-round debate between providers for consensus (5 positions x 3 LLMs = 15 total)
 - **Intelligent Routing**: Confidence-weighted, majority vote, custom strategies
-- **Graceful Fallbacks**: Automatic fallback to best performing provider
+- **Graceful Fallbacks**: Automatic fallback to best performing provider based on verification scores
 - **Streaming Support**: Real-time streaming responses
 
 ### 🔧 Production Features
@@ -67,20 +69,29 @@ make run-dev
 ## 🏗 Architecture
 
 ```
+┌─────────────────────────────────────────────────────────────────┐
+│                         HelixAgent                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────┐ │
+│  │   Web API   │  │  AI Debate   │  │   LLMsVerifier        │ │
+│  │    (Gin)    │  │  Orchestrator │  │   (Dynamic Scoring)   │ │
+│  └──────┬───────┘  └───────┬──────┘  └──────────┬─────────────┘ │
+│         │                  │                     │               │
+│         └──────────────────┼─────────────────────┘               │
+└───────────────────────────┬┬─────────────────────────────────────┘
+                            ││
+         ┌──────────────────┼┼──────────────────┐
+         ▼                  ▼▼                  ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   HelixAgent   │    │   PostgreSQL   │    │     Redis      │
-│                │    │                │    │                │
-│ ┌─────────────┐│    │                │    │                │
-│ │   Web API  │◄───┼────────────────┼───►│                │
-│ │   (Gin)    │    │                │    │                │
-│ └─────────────┘│    │                │    │                │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                           │
-         ▼                           ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Ollama      │    │    Claude       │    │   DeepSeek     │
-│   (Free LLM)   │    │   (Paid)       │    │   (Paid)       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+│   PostgreSQL   │    │     Redis      │    │  10 LLM Providers│
+│                │    │                │    │  ┌─────────────┐ │
+│   - Sessions   │    │   - Caching   │    │  │Claude│DeepSeek│
+│   - Analytics  │    │   - Queues    │    │  │Gemini│Mistral │
+│                │    │               │    │  │Qwen  │ZAI    │
+└─────────────────┘    └─────────────────┘    │  │Zen  │Cerebras│
+                                              │  │OpenRouter   │
+                                              │  │Ollama(local)│
+                                              │  └─────────────┘ │
+                                              └─────────────────┘
 ```
 
 ## 📊 Monitoring Stack
@@ -377,14 +388,37 @@ optimized, _ := svc.OptimizeRequest(ctx, prompt, embedding)
 ### Test Coverage
 - **Unit Tests**: 95%+ coverage for core logic
 - **Integration Tests**: End-to-end API testing
+- **Security Tests**: LLM penetration testing (prompt injection, jailbreaking, data exfiltration)
+- **Challenge Tests**: AI debate maximal challenge validation
 - **Benchmark Tests**: Performance regression detection
 - **Race Tests**: Concurrency safety validation
+- **Chaos Tests**: Resilience and fault tolerance testing
+
+### Test Categories
+```bash
+make test                  # Run all tests (auto-detects infrastructure)
+make test-unit             # Unit tests only (./internal/... -short)
+make test-integration      # Integration tests (./tests/integration)
+make test-e2e              # End-to-end tests (./tests/e2e)
+make test-security         # Security tests (./tests/security)
+make test-stress           # Stress tests (./tests/stress)
+make test-chaos            # Chaos/challenge tests (./tests/challenge)
+make test-bench            # Benchmark tests
+make test-race             # Race condition detection
+```
 
 ### Test Environments
-- **Mock Providers**: Isolated unit testing
+- **Mock Providers**: Isolated unit testing with HTTP mock servers
 - **Docker Compose**: Full integration testing
-- **Free LLM Testing**: Ollama-based testing without API keys
+- **Free LLM Testing**: Ollama/Zen-based testing without API keys
 - **CI/CD Pipeline**: Automated testing on every push
+
+### Security Testing
+The security test suite validates LLM security including:
+- **Prompt Injection**: System prompt extraction, role manipulation
+- **Jailbreaking**: Multi-language attacks, hypothetical scenarios
+- **Data Exfiltration**: PII extraction, credential probing
+- **Indirect Injection**: Markdown/HTML injection, encoded payloads
 
 ## 📈 Monitoring & Observability
 

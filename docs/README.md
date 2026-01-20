@@ -64,6 +64,15 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 - [AI Debate Test Report](reports/AI_DEBATE_TEST_REPORT.md) - Debate system tests
 - [Comprehensive Audit](reports/COMPREHENSIVE_AUDIT_REPORT.md)
 
+### Testing & Security
+- **Security Penetration Tests**: `tests/security/penetration_test.go`
+  - Prompt injection (system prompt extraction, role manipulation)
+  - Jailbreaking (multi-language attacks, hypothetical scenarios)
+  - Data exfiltration (PII extraction, credential probing)
+  - Indirect injection (markdown/HTML injection, encoded payloads)
+- **AI Debate Challenge Tests**: `tests/challenge/ai_debate_maximal_challenge_test.go`
+- **LLM+Cognee Integration Tests**: `tests/integration/llm_cognee_verification_test.go`
+
 ### Additional Resources
 - [Specifications](specs/) - Project specifications
 - [Toolkit Documentation](toolkit/) - Provider implementations
@@ -84,11 +93,13 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 
 ## Key Features
 
-- **Multi-Provider Support**: Claude, DeepSeek, Gemini, Qwen, Zai, Ollama, OpenRouter
+- **Multi-Provider Support**: 10 LLM providers (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama)
+- **Dynamic Provider Selection**: Real-time LLMsVerifier scores for optimal provider routing
 - **Cognee Integration**: AI Memory Engine with knowledge graphs and semantic search
-- **AI Debate System**: Advanced multi-agent debate orchestration
+- **AI Debate System**: Advanced multi-agent debate orchestration (5 positions x 3 LLMs = 15 total)
 - **Enterprise Monitoring**: Comprehensive metrics and observability
 - **Protocol Support**: MCP, LSP, and ACP integration
+- **Security Testing**: LLM penetration testing framework
 - **Extensible**: Plugin architecture for custom integrations
 
 ## Quick Links
@@ -98,4 +109,4 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 
 ---
 
-*Last updated: January 2026*
+*Last updated: January 21, 2026*
