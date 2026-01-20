@@ -299,31 +299,42 @@ type PromptInjectionGuardrail struct {
 func NewPromptInjectionGuardrail() *PromptInjectionGuardrail {
 	return &PromptInjectionGuardrail{
 		patterns: []*regexp.Regexp{
-			regexp.MustCompile(`(?i)ignore\s+(all\s+)?(previous|prior|above)\s+(instructions|rules|prompts)`),
-			regexp.MustCompile(`(?i)disregard\s+(all\s+)?(previous|prior|above)\s+(instructions|rules|prompts)`),
-			regexp.MustCompile(`(?i)forget\s+(all\s+)?(previous|prior|above)\s+(instructions|rules|prompts)`),
+			// Ignore/disregard patterns - more flexible matching
+			regexp.MustCompile(`(?i)ignore\s+(all\s+)?(previous|prior|above)`),
+			regexp.MustCompile(`(?i)disregard\s+(all\s+)?(previous|prior|above)`),
+			regexp.MustCompile(`(?i)forget\s+(all\s+)?(previous|prior|above)`),
+			regexp.MustCompile(`(?i)ignore\s+.*instructions`),
 			regexp.MustCompile(`(?i)new\s+instruction[s]?\s*:`),
+			// System tag injection patterns
 			regexp.MustCompile(`(?i)\bsystem\s*:\s*\b`),
 			regexp.MustCompile(`(?i)\[system\]`),
 			regexp.MustCompile(`(?i)</?(system|user|assistant)>`),
+			regexp.MustCompile(`(?i)</?system>`),
+			// Role-play injection patterns
 			regexp.MustCompile(`(?i)you\s+are\s+now\s+\w+`),
 			regexp.MustCompile(`(?i)pretend\s+(to\s+be|you\s+are)`),
 			regexp.MustCompile(`(?i)act\s+as\s+(if\s+)?(you\s+are)?`),
+			// Mode bypass patterns
 			regexp.MustCompile(`(?i)developer\s+mode`),
 			regexp.MustCompile(`(?i)admin\s+mode`),
+			regexp.MustCompile(`(?i)bypass\s+(restrictions|filter)`),
+			// Jailbreak patterns
 			regexp.MustCompile(`(?i)jailbreak`),
 			regexp.MustCompile(`(?i)\bDAN\b`),
 			regexp.MustCompile(`(?i)do\s+anything\s+now`),
 		},
 		keywords: []string{
 			"ignore previous",
+			"ignore all",
 			"disregard instructions",
 			"override system",
 			"bypass filter",
 			"remove restrictions",
 			"unlock capabilities",
+			"tell me your secrets",
+			"hidden prompt",
 		},
-		threshold: 0.6,
+		threshold: 0.5, // Lower threshold since any match is significant
 	}
 }
 
@@ -353,7 +364,13 @@ func (g *PromptInjectionGuardrail) Check(ctx context.Context, content string, me
 		}
 	}
 
-	confidence := float64(matches) / float64(len(g.patterns)+len(g.keywords))
+	// Calculate confidence - if any pattern matches, that's significant
+	// We use a binary approach: any match with dangerous patterns = high confidence
+	confidence := 0.0
+	if matches > 0 {
+		// Scale confidence based on number of matches, with minimum of 0.5 for any match
+		confidence = 0.5 + (float64(matches) / float64(len(g.patterns)+len(g.keywords)) * 0.5)
+	}
 	triggered := confidence >= g.threshold
 
 	result := &GuardrailResult{

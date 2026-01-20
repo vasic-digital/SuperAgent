@@ -105,7 +105,7 @@ func TestRAGPipeline_Integration(t *testing.T) {
 
 		pipeline := rag.NewPipeline(config, registry)
 
-		doc := &rag.Document{
+		doc := &rag.PipelineDocument{
 			ID:      "doc1",
 			Content: "This is the first paragraph.\n\nThis is the second paragraph.\n\nThis is the third paragraph.",
 			Metadata: map[string]interface{}{
@@ -171,17 +171,17 @@ func TestAdvancedRAG_Integration(t *testing.T) {
 	})
 
 	t.Run("ReRanking", func(t *testing.T) {
-		results := []rag.SearchResult{
+		results := []rag.PipelineSearchResult{
 			{
-				Chunk: rag.Chunk{ID: "1", Content: "Functions are important for code organization."},
+				Chunk: rag.PipelineChunk{ID: "1", Content: "Functions are important for code organization."},
 				Score: 0.8,
 			},
 			{
-				Chunk: rag.Chunk{ID: "2", Content: "Random text about weather."},
+				Chunk: rag.PipelineChunk{ID: "2", Content: "Random text about weather."},
 				Score: 0.9,
 			},
 			{
-				Chunk: rag.Chunk{ID: "3", Content: "Creating functions in Go is straightforward."},
+				Chunk: rag.PipelineChunk{ID: "3", Content: "Creating functions in Go is straightforward."},
 				Score: 0.7,
 			},
 		}
@@ -197,16 +197,16 @@ func TestAdvancedRAG_Integration(t *testing.T) {
 	})
 
 	t.Run("ContextCompression", func(t *testing.T) {
-		results := []rag.SearchResult{
+		results := []rag.PipelineSearchResult{
 			{
-				Chunk: rag.Chunk{
+				Chunk: rag.PipelineChunk{
 					ID:      "1",
 					Content: "This is a long document about creating functions. Functions help organize code. They make code reusable.",
 				},
 				Score: 0.9,
 			},
 			{
-				Chunk: rag.Chunk{
+				Chunk: rag.PipelineChunk{
 					ID:      "2",
 					Content: "Another document about database queries. Queries retrieve data efficiently from databases.",
 				},
@@ -315,7 +315,7 @@ func TestRAGWithAdvancedRAG_EndToEnd(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test document creation
-	doc := &rag.Document{
+	doc := &rag.PipelineDocument{
 		ID:      "test_doc_1",
 		Content: "Go is a statically typed, compiled programming language designed at Google. It is syntactically similar to C but with memory safety and garbage collection.",
 		Metadata: map[string]interface{}{
@@ -336,9 +336,9 @@ func TestRAGWithAdvancedRAG_EndToEnd(t *testing.T) {
 	assert.NotEmpty(t, expansions)
 
 	// Test re-ranking with mock results
-	mockResults := []rag.SearchResult{
+	mockResults := []rag.PipelineSearchResult{
 		{
-			Chunk: rag.Chunk{
+			Chunk: rag.PipelineChunk{
 				ID:      "chunk1",
 				DocID:   "doc1",
 				Content: "Go programming language is efficient and easy to learn. It supports concurrent programming with goroutines. The language was created at Google.",
@@ -346,7 +346,7 @@ func TestRAGWithAdvancedRAG_EndToEnd(t *testing.T) {
 			Score: 0.85,
 		},
 		{
-			Chunk: rag.Chunk{
+			Chunk: rag.PipelineChunk{
 				ID:      "chunk2",
 				DocID:   "doc2",
 				Content: "Unrelated content about cooking recipes. This document has nothing to do with programming languages. It covers different types of cuisine.",
@@ -360,7 +360,7 @@ func TestRAGWithAdvancedRAG_EndToEnd(t *testing.T) {
 	assert.NotEmpty(t, reranked)
 
 	// The chunk about programming should be ranked higher after re-ranking
-	assert.Equal(t, "chunk1", reranked[0].SearchResult.Chunk.ID)
+	assert.Equal(t, "chunk1", reranked[0].Chunk.ID)
 
 	// Test compression
 	compressed, err := advancedRAG.CompressContext(ctx, "programming language", mockResults)
@@ -408,8 +408,8 @@ func TestConcurrentRAGOperations(t *testing.T) {
 			}
 
 			// Re-ranking
-			results := []rag.SearchResult{
-				{Chunk: rag.Chunk{ID: "1", Content: "test content"}, Score: 0.8},
+			results := []rag.PipelineSearchResult{
+				{Chunk: rag.PipelineChunk{ID: "1", Content: "test content"}, Score: 0.8},
 			}
 			_, err := advancedRAG.ReRank(ctx, "test", results)
 			if err != nil {

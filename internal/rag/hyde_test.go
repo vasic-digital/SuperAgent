@@ -369,7 +369,7 @@ func TestHyDEGenerator_HyDESearch(t *testing.T) {
 
 	assert.Equal(t, "test query", result.OriginalQuery)
 	assert.Len(t, result.Results, 2)
-	assert.Equal(t, float32(0.9), result.Results[0].Score)
+	assert.Equal(t, 0.9, result.Results[0].Score)
 	assert.Equal(t, 2, result.TopK)
 }
 
