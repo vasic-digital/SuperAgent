@@ -4,7 +4,7 @@ This document provides guidance for AI agents working on the HelixAgent project.
 
 ## Project Overview
 
-HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 7 LLM providers (Claude, DeepSeek, Gemini, Qwen, ZAI, Ollama, OpenRouter).
+HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports **10 LLM providers** (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama) with **dynamic provider selection** based on LLMsVerifier verification scores.
 
 ## Quick Start
 
@@ -54,9 +54,14 @@ Always run `make fmt vet lint` before committing.
 ### Specialized Test Suites
 - `make test-integration` – Integration tests with Docker dependencies
 - `make test-e2e` – End-to-end tests
-- `make test-security` – Security tests
+- `make test-security` – Security tests (LLM penetration testing)
 - `make test-stress` – Stress tests
-- `make test-chaos` – Chaos/challenge tests
+- `make test-chaos` – Chaos/challenge tests (AI debate validation)
+
+### Go Test Suites
+- `tests/security/penetration_test.go` – LLM security testing (prompt injection, jailbreaking, data exfiltration)
+- `tests/challenge/ai_debate_maximal_challenge_test.go` – AI debate system comprehensive validation
+- `tests/integration/llm_cognee_verification_test.go` – All 10 LLM providers + Cognee integration
 
 ### Test Infrastructure Management
 - `make test-infra-start` – Start PostgreSQL, Redis, Mock LLM containers
