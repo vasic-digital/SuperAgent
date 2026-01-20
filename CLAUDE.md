@@ -210,6 +210,70 @@ POST /v1/debates
 - `internal/handlers/debate_handler.go` - API integration
 - `challenges/scripts/multipass_validation_challenge.sh` - 66-test validation
 
+### AI Debate Orchestrator Framework (New)
+
+HelixAgent includes a new **AI Debate Orchestrator Framework** that provides advanced multi-agent debate capabilities with learning and knowledge management.
+
+**Architecture:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     DebateHandler                            │
+│  ┌─────────────────┐  ┌──────────────────────────────────┐ │
+│  │ Legacy Services │  │ ServiceIntegration (new)         │ │
+│  │  DebateService  │  │  ├─ orchestrator                 │ │
+│  │  AdvancedDebate │  │  ├─ providerRegistry            │ │
+│  └────────┬────────┘  │  └─ config (feature flags)      │ │
+│           ↓           └─────────────┬────────────────────┘ │
+│      Fallback                       ↓                       │
+└───────────────────────┬─────────────┴───────────────────────┘
+                        │
+┌───────────────────────▼─────────────────────────────────────┐
+│                    Orchestrator                              │
+│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────────┐ │
+│  │Agent Pool │ │Team Build │ │ Protocol  │ │  Knowledge  │ │
+│  └───────────┘ └───────────┘ └───────────┘ └─────────────┘ │
+│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────────┐ │
+│  │ Topology  │ │  Voting   │ │ Cognitive │ │  Learning   │ │
+│  └───────────┘ └───────────┘ └───────────┘ └─────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Components (8 packages, ~16,650 lines, 500+ tests):**
+| Package | Description |
+|---------|-------------|
+| `debate` | Core types and interfaces |
+| `debate/agents` | Agent factory, pool, templates, specialization |
+| `debate/topology` | Graph mesh, star, chain topologies |
+| `debate/protocol` | Phase-based debate execution |
+| `debate/voting` | Weighted confidence voting |
+| `debate/cognitive` | Reasoning and analysis patterns |
+| `debate/knowledge` | Repository, lessons, patterns |
+| `debate/orchestrator` | Main orchestrator and integration |
+
+**Features:**
+- **Multi-topology support**: Mesh (parallel), Star (hub-spoke), Chain (sequential)
+- **Phase-based protocol**: Proposal → Critique → Review → Synthesis
+- **Learning system**: Extracts lessons and patterns from debates
+- **Cross-debate learning**: Applies learnings across debates
+- **Automatic fallback**: Falls back to legacy services on failure
+
+**Configuration:**
+```go
+config := orchestrator.DefaultServiceIntegrationConfig()
+config.EnableNewFramework = true       // Enable new system
+config.FallbackToLegacy = true         // Fall back on failure
+config.EnableLearning = true           // Enable learning
+config.MinAgentsForNewFramework = 3    // Minimum agents required
+```
+
+**Key Files:**
+- `internal/debate/orchestrator/orchestrator.go` - Main orchestrator
+- `internal/debate/orchestrator/service_integration.go` - Services bridge
+- `internal/debate/agents/factory.go` - Agent creation and pooling
+- `internal/debate/knowledge/repository.go` - Knowledge management
+- `internal/debate/protocol/protocol.go` - Debate protocol execution
+- `internal/router/router.go:617` - Handler wiring
+
 ### Semantic Intent Detection (ZERO Hardcoding)
 
 HelixAgent uses **LLM-based semantic intent classification** to understand user messages. When a user confirms, refuses, or asks questions, the system uses AI to understand the semantic meaning - not pattern matching.
