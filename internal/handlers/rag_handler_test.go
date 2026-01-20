@@ -368,8 +368,8 @@ func TestRAGHandler_ReRank(t *testing.T) {
 
 	requestBody := ReRankRequest{
 		Query: "test query",
-		Results: []rag.SearchResult{
-			{Chunk: rag.Chunk{ID: "1", Content: "Test content"}, Score: 0.8},
+		Results: []rag.PipelineSearchResult{
+			{Chunk: rag.PipelineChunk{ID: "1", Content: "Test content"}, Score: 0.8},
 		},
 	}
 
@@ -395,9 +395,9 @@ func TestRAGHandler_CompressContext(t *testing.T) {
 
 	requestBody := CompressRequest{
 		Query: "test query",
-		Results: []rag.SearchResult{
+		Results: []rag.PipelineSearchResult{
 			{
-				Chunk: rag.Chunk{
+				Chunk: rag.PipelineChunk{
 					ID:      "1",
 					Content: "This is test content that will be compressed. It has multiple sentences for testing.",
 				},

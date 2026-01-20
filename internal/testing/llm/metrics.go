@@ -142,14 +142,14 @@ func (m *ContextPrecisionMetric) Evaluate(ctx context.Context, input *MetricInpu
 	}
 
 	relevantCount := 0
-	for _, ctx := range input.Context {
+	for _, ctxItem := range input.Context {
 		prompt := fmt.Sprintf(`Determine if the following context is relevant to answering the question.
 
 Question: %s
 
 Context: %s
 
-Respond with: {"relevant": true/false}`, input.Input, ctx)
+Respond with: {"relevant": true/false}`, input.Input, ctxItem)
 
 		response, err := m.evaluator.Evaluate(ctx, prompt)
 		if err != nil {

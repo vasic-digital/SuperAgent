@@ -52,11 +52,11 @@ func TestPatternBasedScanner_Scan(t *testing.T) {
 
 func TestVulnerability_Severity(t *testing.T) {
 	severities := []VulnerabilitySeverity{
-		SeverityInfo,
-		SeverityLow,
-		SeverityMedium,
-		SeverityHigh,
-		SeverityCritical,
+		VulnSeverityInfo,
+		VulnSeverityLow,
+		VulnSeverityMedium,
+		VulnSeverityHigh,
+		VulnSeverityCritical,
 	}
 
 	for _, sev := range severities {
@@ -278,7 +278,7 @@ func TestSecureFixAgent_RegisterScanner(t *testing.T) {
 func TestSecureFixAgent_ShouldReport(t *testing.T) {
 	// Test severity threshold filtering
 	config := DefaultSecureFixAgentConfig()
-	config.SeverityThreshold = SeverityHigh // Only report high and above
+	config.SeverityThreshold = VulnSeverityHigh // Only report high and above
 	logger := logrus.New()
 	agent := NewSecureFixAgent(config, nil, nil, logger)
 	scanner := NewPatternBasedScanner(logger)
@@ -502,7 +502,7 @@ func TestLLMFixGenerator_GenerateFix(t *testing.T) {
 	vuln := &Vulnerability{
 		ID:          "vuln-1",
 		Category:    CategoryInjection,
-		Severity:    SeverityCritical,
+		Severity:    VulnSeverityCritical,
 		Title:       "SQL Injection",
 		Description: "String concatenation in SQL query",
 		Code:        `db.Query("SELECT * FROM users WHERE id = " + input)`,
@@ -677,7 +677,7 @@ func TestVulnerability_Fields(t *testing.T) {
 	vuln := &Vulnerability{
 		ID:          "vuln-123",
 		Category:    CategoryInjection,
-		Severity:    SeverityCritical,
+		Severity:    VulnSeverityCritical,
 		Title:       "SQL Injection",
 		Description: "Found SQL injection vulnerability",
 		File:        "/path/to/file.go",
@@ -693,7 +693,7 @@ func TestVulnerability_Fields(t *testing.T) {
 
 	assert.Equal(t, "vuln-123", vuln.ID)
 	assert.Equal(t, CategoryInjection, vuln.Category)
-	assert.Equal(t, SeverityCritical, vuln.Severity)
+	assert.Equal(t, VulnSeverityCritical, vuln.Severity)
 	assert.Equal(t, 42, vuln.Line)
 	assert.Equal(t, 10, vuln.Column)
 	assert.Equal(t, 9.8, vuln.CVSS)
@@ -721,7 +721,7 @@ func TestSecureFixAgentConfig_Fields(t *testing.T) {
 		EnableAutoFix:            true,
 		RequireValidation:        true,
 		MaxConcurrentScans:       8,
-		SeverityThreshold:        SeverityMedium,
+		SeverityThreshold:        VulnSeverityMedium,
 		EnableDependencyScanning: true,
 		Timeout:                  5 * time.Minute,
 	}
@@ -729,7 +729,7 @@ func TestSecureFixAgentConfig_Fields(t *testing.T) {
 	assert.True(t, config.EnableAutoFix)
 	assert.True(t, config.RequireValidation)
 	assert.Equal(t, 8, config.MaxConcurrentScans)
-	assert.Equal(t, SeverityMedium, config.SeverityThreshold)
+	assert.Equal(t, VulnSeverityMedium, config.SeverityThreshold)
 	assert.True(t, config.EnableDependencyScanning)
 	assert.Equal(t, 5*time.Minute, config.Timeout)
 }

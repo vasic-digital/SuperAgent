@@ -39,26 +39,23 @@ func (r *QdrantDenseRetriever) Retrieve(ctx context.Context, query string, opts 
 		opts = &SearchOptions{TopK: 10}
 	}
 
-	// Generate query embedding
-	embedding, err := r.embedder.Embed(ctx, query)
+	// Generate query embedding using EmbedQuery for single query
+	vector, err := r.embedder.EmbedQuery(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to embed query: %w", err)
 	}
-
-	// Convert to float32 if needed
-	vector := toFloat32(embedding)
 
 	// Search Qdrant
 	qdrantOpts := &qdrant.SearchOptions{
 		Limit:          opts.TopK,
 		ScoreThreshold: float32(opts.MinScore),
 		WithPayload:    true,
-		WithVector:     false,
+		WithVectors:    false,
 	}
 
 	// Add filters if specified
-	if len(opts.Filters) > 0 {
-		qdrantOpts.Filter = convertFiltersToQdrant(opts.Filters)
+	if opts.Filter != nil && len(opts.Filter) > 0 {
+		qdrantOpts.Filter = opts.Filter
 	}
 
 	results, err := r.client.Search(ctx, r.collection, vector, qdrantOpts)
@@ -70,9 +67,9 @@ func (r *QdrantDenseRetriever) Retrieve(ctx context.Context, query string, opts 
 	searchResults := make([]*SearchResult, 0, len(results))
 	for _, point := range results {
 		result := &SearchResult{
-			Document: pointToDocument(point),
-			Score:    float64(point.Score),
-			Metadata: extractMetadata(point.Payload),
+			Document:  pointToDocument(point),
+			Score:     float64(point.Score),
+			MatchType: MatchTypeDense,
 		}
 		searchResults = append(searchResults, result)
 	}
@@ -104,9 +101,9 @@ func pointToDocument(point qdrant.ScoredPoint) *Document {
 		doc.Content = text
 	}
 
-	// Extract title
+	// Extract title into metadata
 	if title, ok := point.Payload["title"].(string); ok {
-		doc.Title = title
+		doc.Metadata["title"] = title
 	}
 
 	// Extract source
@@ -131,26 +128,8 @@ func extractMetadata(payload map[string]interface{}) map[string]interface{} {
 	return payload
 }
 
-func convertFiltersToQdrant(filters map[string]interface{}) *qdrant.Filter {
-	if len(filters) == 0 {
-		return nil
-	}
-
-	// Convert simple key-value filters to Qdrant filter format
-	conditions := make([]qdrant.Condition, 0, len(filters))
-	for key, value := range filters {
-		conditions = append(conditions, qdrant.Condition{
-			Field: key,
-			Match: &qdrant.MatchValue{Value: value},
-		})
-	}
-
-	return &qdrant.Filter{
-		Must: conditions,
-	}
-}
-
-func toFloat32(embedding []float64) []float32 {
+// toFloat32Slice converts float64 slice to float32 slice for embeddings
+func toFloat32Slice(embedding []float64) []float32 {
 	result := make([]float32, len(embedding))
 	for i, v := range embedding {
 		result[i] = float32(v)
@@ -192,19 +171,27 @@ func (s *QdrantDocumentStore) AddDocument(ctx context.Context, doc *Document) er
 		return fmt.Errorf("Qdrant client not initialized")
 	}
 
-	// Generate embedding
-	embedding, err := s.embedder.Embed(ctx, doc.Content)
+	// Generate embedding using Embed with single-item slice
+	embeddings, err := s.embedder.Embed(ctx, []string{doc.Content})
 	if err != nil {
 		return fmt.Errorf("failed to embed document: %w", err)
 	}
+	if len(embeddings) == 0 {
+		return fmt.Errorf("no embedding returned")
+	}
 
-	// Create point
-	point := &qdrant.Point{
+	// Create point - get title from metadata if present
+	title := ""
+	if t, ok := doc.Metadata["title"].(string); ok {
+		title = t
+	}
+
+	point := qdrant.Point{
 		ID:     doc.ID,
-		Vector: toFloat32(embedding),
+		Vector: embeddings[0],
 		Payload: map[string]interface{}{
 			"content": doc.Content,
-			"title":   doc.Title,
+			"title":   title,
 			"source":  doc.Source,
 		},
 	}
@@ -215,7 +202,7 @@ func (s *QdrantDocumentStore) AddDocument(ctx context.Context, doc *Document) er
 	}
 
 	// Upsert to Qdrant
-	if err := s.client.Upsert(ctx, s.collection, []*qdrant.Point{point}); err != nil {
+	if err := s.client.UpsertPoints(ctx, s.collection, []qdrant.Point{point}); err != nil {
 		return fmt.Errorf("failed to upsert document: %w", err)
 	}
 
@@ -229,26 +216,32 @@ func (s *QdrantDocumentStore) AddDocuments(ctx context.Context, docs []*Document
 		return nil
 	}
 
-	// Generate embeddings for all documents
+	// Generate embeddings for all documents using Embed (which is batch)
 	contents := make([]string, len(docs))
 	for i, doc := range docs {
 		contents[i] = doc.Content
 	}
 
-	embeddings, err := s.embedder.EmbedBatch(ctx, contents)
+	embeddings, err := s.embedder.Embed(ctx, contents)
 	if err != nil {
 		return fmt.Errorf("failed to embed documents: %w", err)
 	}
 
 	// Create points
-	points := make([]*qdrant.Point, len(docs))
+	points := make([]qdrant.Point, len(docs))
 	for i, doc := range docs {
-		points[i] = &qdrant.Point{
+		// Get title from metadata if present
+		title := ""
+		if t, ok := doc.Metadata["title"].(string); ok {
+			title = t
+		}
+
+		points[i] = qdrant.Point{
 			ID:     doc.ID,
-			Vector: toFloat32(embeddings[i]),
+			Vector: embeddings[i],
 			Payload: map[string]interface{}{
 				"content": doc.Content,
-				"title":   doc.Title,
+				"title":   title,
 				"source":  doc.Source,
 			},
 		}
@@ -258,7 +251,7 @@ func (s *QdrantDocumentStore) AddDocuments(ctx context.Context, docs []*Document
 	}
 
 	// Upsert to Qdrant
-	if err := s.client.Upsert(ctx, s.collection, points); err != nil {
+	if err := s.client.UpsertPoints(ctx, s.collection, points); err != nil {
 		return fmt.Errorf("failed to upsert documents: %w", err)
 	}
 
@@ -268,7 +261,7 @@ func (s *QdrantDocumentStore) AddDocuments(ctx context.Context, docs []*Document
 
 // DeleteDocument deletes a document from the store
 func (s *QdrantDocumentStore) DeleteDocument(ctx context.Context, id string) error {
-	if err := s.client.Delete(ctx, s.collection, []string{id}); err != nil {
+	if err := s.client.DeletePoints(ctx, s.collection, []string{id}); err != nil {
 		return fmt.Errorf("failed to delete document: %w", err)
 	}
 	return nil
@@ -276,7 +269,7 @@ func (s *QdrantDocumentStore) DeleteDocument(ctx context.Context, id string) err
 
 // GetDocument retrieves a document by ID
 func (s *QdrantDocumentStore) GetDocument(ctx context.Context, id string) (*Document, error) {
-	points, err := s.client.Get(ctx, s.collection, []string{id})
+	points, err := s.client.GetPoints(ctx, s.collection, []string{id})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get document: %w", err)
 	}
@@ -297,8 +290,9 @@ func payloadToDocument(id string, payload map[string]interface{}) *Document {
 	if content, ok := payload["content"].(string); ok {
 		doc.Content = content
 	}
+	// Store title in metadata since Document doesn't have a Title field
 	if title, ok := payload["title"].(string); ok {
-		doc.Title = title
+		doc.Metadata["title"] = title
 	}
 	if source, ok := payload["source"].(string); ok {
 		doc.Source = source
@@ -321,10 +315,12 @@ func (s *QdrantDocumentStore) EnsureCollection(ctx context.Context, vectorSize i
 	}
 
 	if !exists {
-		if err := s.client.CreateCollection(ctx, s.collection, &qdrant.CollectionConfig{
+		config := &qdrant.CollectionConfig{
+			Name:       s.collection,
 			VectorSize: vectorSize,
 			Distance:   qdrant.DistanceCosine,
-		}); err != nil {
+		}
+		if err := s.client.CreateCollection(ctx, config); err != nil {
 			return fmt.Errorf("failed to create collection: %w", err)
 		}
 		s.logger.WithField("collection", s.collection).Info("Created Qdrant collection")

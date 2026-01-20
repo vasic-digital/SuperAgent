@@ -165,10 +165,10 @@ func (r *CrossEncoderReranker) scoreBatch(ctx context.Context, pairs [][2]string
 // fallbackRerank uses a simple heuristic when no API is available
 func (r *CrossEncoderReranker) fallbackRerank(query string, results []*SearchResult, topK int) ([]*SearchResult, error) {
 	// Simple keyword overlap scoring as fallback
-	queryWords := tokenize(query)
+	queryWords := tokenizeToFrequencyMap(query)
 
 	for _, result := range results {
-		docWords := tokenize(result.Document.Content)
+		docWords := tokenizeToFrequencyMap(result.Document.Content)
 		overlap := computeOverlap(queryWords, docWords)
 		// Combine original score with overlap
 		result.RerankedScore = result.Score*0.7 + overlap*0.3
@@ -280,7 +280,7 @@ func (r *CohereReranker) Rerank(ctx context.Context, query string, results []*Se
 
 // Helper functions
 
-func tokenize(text string) map[string]int {
+func tokenizeToFrequencyMap(text string) map[string]int {
 	words := make(map[string]int)
 	word := ""
 	for _, r := range text {
