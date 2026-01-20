@@ -55,8 +55,8 @@ func NewRegexPIIDetector() *RegexPIIDetector {
 	detector.patterns[PIITypeBankAccount] = regexp.MustCompile(`\b\d{8,17}\b`)
 	detector.enabled[PIITypeBankAccount] = false // Disabled by default due to false positives
 
-	// API keys (common patterns)
-	detector.patterns[PIITypeAPIKey] = regexp.MustCompile(`(?i)(sk|pk|api)[_-]?[a-z0-9]{20,}`)
+	// API keys (common patterns - sk_*, pk_*, api_* with any suffix containing alphanumerics)
+	detector.patterns[PIITypeAPIKey] = regexp.MustCompile(`(?i)\b(sk|pk|api)[_-][a-z0-9_-]{8,}\b`)
 	detector.enabled[PIITypeAPIKey] = true
 
 	// Passwords in common formats
