@@ -3,7 +3,6 @@
 package oauth_credentials
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -490,27 +489,9 @@ func StartBackgroundRefresh(stopChan <-chan struct{}) {
 	}()
 }
 
-// MockHTTPClient is used for testing
-type MockHTTPClient struct {
-	DoFunc func(req *http.Request) (*http.Response, error)
-}
-
-func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	return m.DoFunc(req)
-}
-
 // SetHTTPClient allows setting a custom HTTP client (useful for testing)
 func (tr *TokenRefresher) SetHTTPClient(client *http.Client) {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
 	tr.httpClient = client
-}
-
-// NewMockResponse creates a mock HTTP response for testing
-func NewMockResponse(statusCode int, body string) *http.Response {
-	return &http.Response{
-		StatusCode: statusCode,
-		Body:       io.NopCloser(bytes.NewBufferString(body)),
-		Header:     make(http.Header),
-	}
 }

@@ -1,7 +1,9 @@
 package oauth_credentials
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -9,6 +11,25 @@ import (
 	"testing"
 	"time"
 )
+
+// MockHTTPClient is used for testing HTTP requests
+type MockHTTPClient struct {
+	DoFunc func(req *http.Request) (*http.Response, error)
+}
+
+// Do executes the mock HTTP request
+func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	return m.DoFunc(req)
+}
+
+// NewMockResponse creates a mock HTTP response for testing
+func NewMockResponse(statusCode int, body string) *http.Response {
+	return &http.Response{
+		StatusCode: statusCode,
+		Body:       io.NopCloser(bytes.NewBufferString(body)),
+		Header:     make(http.Header),
+	}
+}
 
 func TestNeedsRefresh(t *testing.T) {
 	tests := []struct {

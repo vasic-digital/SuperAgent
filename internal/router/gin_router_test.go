@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -470,4 +471,476 @@ func TestGinRouter_StartTLS_AndShutdown(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("StartTLS did not return error in time")
 	}
+}
+
+func TestGinRouter_ConcurrentAccess(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	router.engine.GET("/concurrent-test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	var wg sync.WaitGroup
+	numRequests := 100
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			req := httptest.NewRequest(http.MethodGet, "/concurrent-test", nil)
+			w := httptest.NewRecorder()
+			router.engine.ServeHTTP(w, req)
+		}()
+	}
+
+	wg.Wait()
+
+	stats := router.GetStats()
+	assert.Equal(t, int64(numRequests), stats.RequestCount, "All requests should be counted")
+}
+
+func TestGinRouter_ConcurrentStatsAccess(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	var wg sync.WaitGroup
+	numGoroutines := 50
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 10; j++ {
+				_ = router.GetStats()
+				_ = router.IsRunning()
+			}
+		}()
+	}
+
+	wg.Wait()
+	// If we get here without deadlock or panic, the test passes
+}
+
+func TestGinRouter_MultipleMiddleware(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	executionOrder := []string{}
+	var mu sync.Mutex
+
+	router.AddMiddleware(func(c *gin.Context) {
+		mu.Lock()
+		executionOrder = append(executionOrder, "first")
+		mu.Unlock()
+		c.Next()
+	})
+
+	router.AddMiddleware(func(c *gin.Context) {
+		mu.Lock()
+		executionOrder = append(executionOrder, "second")
+		mu.Unlock()
+		c.Next()
+	})
+
+	router.engine.GET("/multi-middleware", func(c *gin.Context) {
+		mu.Lock()
+		executionOrder = append(executionOrder, "handler")
+		mu.Unlock()
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/multi-middleware", nil)
+	router.engine.ServeHTTP(w, req)
+
+	assert.Equal(t, []string{"first", "second", "handler"}, executionOrder,
+		"Middleware should execute in order")
+}
+
+func TestGinRouter_NotFound(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/nonexistent-route", nil)
+	router.engine.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code, "Should return 404 for unknown routes")
+}
+
+func TestGinRouter_MethodNotAllowed(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	router.engine.GET("/get-only", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/get-only", nil)
+	router.engine.ServeHTTP(w, req)
+
+	// Gin returns 404 by default for method not allowed
+	// unless HandleMethodNotAllowed is set to true
+	assert.True(t, w.Code == http.StatusNotFound || w.Code == http.StatusMethodNotAllowed,
+		"Should return 404 or 405 for wrong method")
+}
+
+func TestGinRouter_Panic_Recovery(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	router.engine.GET("/panic", func(c *gin.Context) {
+		panic("test panic")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/panic", nil)
+
+	// Should not panic - Gin has built-in recovery
+	require.NotPanics(t, func() {
+		router.engine.ServeHTTP(w, req)
+	})
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code, "Should return 500 on panic")
+}
+
+func TestGinRouter_LargeRequestCount(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	router.engine.GET("/stress", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	var wg sync.WaitGroup
+	numRequests := 1000
+
+	for i := 0; i < numRequests; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			req := httptest.NewRequest(http.MethodGet, "/stress", nil)
+			w := httptest.NewRecorder()
+			router.engine.ServeHTTP(w, req)
+		}()
+	}
+
+	wg.Wait()
+
+	stats := router.GetStats()
+	assert.Equal(t, int64(numRequests), stats.RequestCount,
+		"All %d requests should be counted", numRequests)
+}
+
+func TestGinRouter_UptimeCalculation(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	startTime := time.Now().Add(-1 * time.Hour) // Started 1 hour ago
+
+	router.mu.Lock()
+	router.running = true
+	router.startedAt = startTime
+	router.mu.Unlock()
+
+	stats := router.GetStats()
+
+	// Uptime should be approximately 1 hour
+	assert.True(t, stats.Uptime >= 59*time.Minute, "Uptime should be at least 59 minutes")
+	assert.True(t, stats.Uptime <= 61*time.Minute, "Uptime should be at most 61 minutes")
+
+	// Cleanup
+	router.mu.Lock()
+	router.running = false
+	router.mu.Unlock()
+}
+
+func TestGinRouter_HTTPMethods(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	// Register routes for different HTTP methods
+	router.engine.GET("/api", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"method": "GET"})
+	})
+	router.engine.POST("/api", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"method": "POST"})
+	})
+	router.engine.PUT("/api", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"method": "PUT"})
+	})
+	router.engine.DELETE("/api", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"method": "DELETE"})
+	})
+	router.engine.PATCH("/api", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"method": "PATCH"})
+	})
+
+	methods := []string{"GET", "POST", "PUT", "DELETE", "PATCH"}
+	for _, method := range methods {
+		t.Run(method, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest(method, "/api", nil)
+			router.engine.ServeHTTP(w, req)
+			assert.Equal(t, http.StatusOK, w.Code)
+			assert.Contains(t, w.Body.String(), method)
+		})
+	}
+}
+
+func TestGinRouter_QueryParams(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	router.engine.GET("/search", func(c *gin.Context) {
+		query := c.Query("q")
+		page := c.DefaultQuery("page", "1")
+		c.JSON(http.StatusOK, gin.H{"query": query, "page": page})
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/search?q=test&page=2", nil)
+	router.engine.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "test")
+	assert.Contains(t, w.Body.String(), "2")
+}
+
+func TestGinRouter_PathParams(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	router.engine.GET("/users/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		c.JSON(http.StatusOK, gin.H{"user_id": id})
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/users/123", nil)
+	router.engine.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "123")
+}
+
+func TestGinRouter_HeadersHandling(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	router.engine.GET("/headers", func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		c.JSON(http.StatusOK, gin.H{"auth": authHeader})
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/headers", nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	router.engine.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "test-token")
+}
+
+func TestGinRouter_ResponseHeaders(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	router.engine.GET("/custom-headers", func(c *gin.Context) {
+		c.Header("X-Custom-Header", "custom-value")
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/custom-headers", nil)
+	router.engine.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "custom-value", w.Header().Get("X-Custom-Header"))
+}
+
+func TestGinRouter_StatusCodes(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	statusCodes := map[string]int{
+		"/ok":           http.StatusOK,
+		"/created":      http.StatusCreated,
+		"/no-content":   http.StatusNoContent,
+		"/bad-request":  http.StatusBadRequest,
+		"/unauthorized": http.StatusUnauthorized,
+		"/forbidden":    http.StatusForbidden,
+		"/internal":     http.StatusInternalServerError,
+	}
+
+	for path, code := range statusCodes {
+		statusCode := code // capture for closure
+		router.engine.GET(path, func(c *gin.Context) {
+			c.Status(statusCode)
+		})
+	}
+
+	for path, expectedCode := range statusCodes {
+		t.Run(path, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest("GET", path, nil)
+			router.engine.ServeHTTP(w, req)
+			assert.Equal(t, expectedCode, w.Code)
+		})
+	}
+}
+
+func TestGinRouter_GroupRoutes(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+
+	v1 := router.engine.Group("/v1")
+	{
+		v1.GET("/users", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"version": "v1", "resource": "users"})
+		})
+	}
+
+	v2 := router.engine.Group("/v2")
+	{
+		v2.GET("/users", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"version": "v2", "resource": "users"})
+		})
+	}
+
+	t.Run("v1 users", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/v1/users", nil)
+		router.engine.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), "v1")
+	})
+
+	t.Run("v2 users", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/v2/users", nil)
+		router.engine.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), "v2")
+	})
+}
+
+func TestGinRouter_AbortMiddleware(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			JWTSecret: "test-secret-key-1234567890",
+		},
+	}
+
+	router := createTestGinRouter(cfg)
+	handlerCalled := false
+
+	router.AddMiddleware(func(c *gin.Context) {
+		if c.GetHeader("X-Block") == "true" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "blocked"})
+			return
+		}
+		c.Next()
+	})
+
+	router.engine.GET("/protected", func(c *gin.Context) {
+		handlerCalled = true
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	t.Run("blocked request", func(t *testing.T) {
+		handlerCalled = false
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/protected", nil)
+		req.Header.Set("X-Block", "true")
+		router.engine.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusForbidden, w.Code)
+		assert.False(t, handlerCalled, "Handler should not be called when middleware aborts")
+	})
+
+	t.Run("allowed request", func(t *testing.T) {
+		handlerCalled = false
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/protected", nil)
+		router.engine.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.True(t, handlerCalled, "Handler should be called when middleware passes")
+	})
 }
