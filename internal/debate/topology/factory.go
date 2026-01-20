@@ -3,6 +3,7 @@ package topology
 
 import (
 	"fmt"
+	"time"
 )
 
 // NewTopology creates a topology based on the specified type.
@@ -94,7 +95,7 @@ func CreateTopologyConfig(topologyType TopologyType, req TopologyRequirements) T
 	if req.MaxLatency > 0 {
 		// Derive message timeout from latency requirement
 		// Give 3x latency for message timeout to account for processing
-		config.MessageTimeout = config.MessageTimeout // Keep default for now
+		config.MessageTimeout = time.Duration(req.MaxLatency*3) * time.Millisecond
 	}
 
 	return config
