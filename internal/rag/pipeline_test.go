@@ -153,7 +153,7 @@ func TestPipeline_ChunkDocument(t *testing.T) {
 				ChunkingConfig: tt.config,
 			}, registry)
 
-			doc := &Document{
+			doc := &PipelineDocument{
 				ID:      "test_doc",
 				Content: tt.docContent,
 			}
@@ -195,7 +195,7 @@ func TestPipeline_ChunkDocument_LongContent(t *testing.T) {
 		builder.WriteString(". It contains some text.\n\n")
 	}
 
-	doc := &Document{
+	doc := &PipelineDocument{
 		ID:      "long_doc",
 		Content: builder.String(),
 	}
@@ -278,7 +278,7 @@ func TestPipeline_IngestDocument_NotConnected(t *testing.T) {
 		VectorDBType: VectorDBChroma,
 	}, registry)
 
-	doc := &Document{
+	doc := &PipelineDocument{
 		ID:      "test_doc",
 		Content: "Test content",
 	}
@@ -401,8 +401,8 @@ func TestDocument_Struct(t *testing.T) {
 	assert.Equal(t, "test_source", doc.Source)
 }
 
-func TestChunk_Struct(t *testing.T) {
-	chunk := Chunk{
+func TestPipelineChunk_Struct(t *testing.T) {
+	chunk := PipelineChunk{
 		ID:        "chunk_id",
 		Content:   "chunk content",
 		Embedding: []float32{0.1, 0.2, 0.3},
@@ -420,9 +420,9 @@ func TestChunk_Struct(t *testing.T) {
 	assert.Equal(t, "doc_id", chunk.DocID)
 }
 
-func TestSearchResult_Struct(t *testing.T) {
-	result := SearchResult{
-		Chunk: Chunk{
+func TestPipelineSearchResult_Struct(t *testing.T) {
+	result := PipelineSearchResult{
+		Chunk: PipelineChunk{
 			ID:      "chunk_id",
 			Content: "content",
 		},
@@ -478,7 +478,7 @@ func TestPipeline_IngestDocuments(t *testing.T) {
 		VectorDBType: VectorDBChroma,
 	}, registry)
 
-	docs := []*Document{
+	docs := []*PipelineDocument{
 		{ID: "doc1", Content: "Content 1"},
 		{ID: "doc2", Content: "Content 2"},
 	}
@@ -566,7 +566,7 @@ func TestPipeline_ChunkDocument_EmptyContent(t *testing.T) {
 		},
 	}, registry)
 
-	doc := &Document{
+	doc := &PipelineDocument{
 		ID:      "empty_doc",
 		Content: "",
 	}
@@ -592,7 +592,7 @@ func TestPipeline_ChunkDocument_WithMetadata(t *testing.T) {
 		"category": "test",
 	}
 
-	doc := &Document{
+	doc := &PipelineDocument{
 		ID:       "meta_doc",
 		Content:  "First paragraph.\n\nSecond paragraph.",
 		Metadata: metadata,

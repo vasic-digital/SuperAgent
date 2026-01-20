@@ -377,10 +377,3 @@ func (h *HybridRetriever) Delete(ctx context.Context, ids []string) error {
 
 	return nil
 }
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

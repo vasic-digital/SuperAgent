@@ -173,17 +173,17 @@ func TestAdvancedRAG_ReRank(t *testing.T) {
 	_ = rag.Initialize(ctx)
 
 	t.Run("EmptyResults", func(t *testing.T) {
-		results, err := rag.ReRank(ctx, "test query", []SearchResult{})
+		results, err := rag.ReRank(ctx, "test query", []PipelineSearchResult{})
 
 		assert.NoError(t, err)
 		assert.Empty(t, results)
 	})
 
 	t.Run("ReRankWithRelevantContent", func(t *testing.T) {
-		results := []SearchResult{
-			{Chunk: Chunk{ID: "1", Content: "This is about function implementation"}, Score: 0.8},
-			{Chunk: Chunk{ID: "2", Content: "Random unrelated content here"}, Score: 0.9},
-			{Chunk: Chunk{ID: "3", Content: "Function and method definition guide"}, Score: 0.7},
+		results := []PipelineSearchResult{
+			{Chunk: PipelineChunk{ID: "1", Content: "This is about function implementation"}, Score: 0.8},
+			{Chunk: PipelineChunk{ID: "2", Content: "Random unrelated content here"}, Score: 0.9},
+			{Chunk: PipelineChunk{ID: "3", Content: "Function and method definition guide"}, Score: 0.7},
 		}
 
 		reranked, err := rag.ReRank(ctx, "function implementation", results)
@@ -192,15 +192,15 @@ func TestAdvancedRAG_ReRank(t *testing.T) {
 		assert.NotEmpty(t, reranked)
 
 		// Result with "function implementation" should be higher
-		assert.Equal(t, "1", reranked[0].SearchResult.Chunk.ID)
+		assert.Equal(t, "1", reranked[0].Chunk.ID)
 		assert.Equal(t, 1, reranked[0].ReRankPosition)
 	})
 
 	t.Run("PositionsAreCorrect", func(t *testing.T) {
-		results := []SearchResult{
-			{Chunk: Chunk{ID: "1", Content: "Content A"}, Score: 0.8},
-			{Chunk: Chunk{ID: "2", Content: "Content B"}, Score: 0.7},
-			{Chunk: Chunk{ID: "3", Content: "Content C"}, Score: 0.6},
+		results := []PipelineSearchResult{
+			{Chunk: PipelineChunk{ID: "1", Content: "Content A"}, Score: 0.8},
+			{Chunk: PipelineChunk{ID: "2", Content: "Content B"}, Score: 0.7},
+			{Chunk: PipelineChunk{ID: "3", Content: "Content C"}, Score: 0.6},
 		}
 
 		reranked, err := rag.ReRank(ctx, "query", results)
@@ -217,8 +217,8 @@ func TestAdvancedRAG_ReRank(t *testing.T) {
 		highThresholdRag := NewAdvancedRAG(highThresholdConfig, &Pipeline{})
 		_ = highThresholdRag.Initialize(ctx)
 
-		results := []SearchResult{
-			{Chunk: Chunk{ID: "1", Content: "Low relevance content"}, Score: 0.8},
+		results := []PipelineSearchResult{
+			{Chunk: PipelineChunk{ID: "1", Content: "Low relevance content"}, Score: 0.8},
 		}
 
 		reranked, err := highThresholdRag.ReRank(ctx, "something else entirely", results)
@@ -235,11 +235,11 @@ func TestAdvancedRAG_ReRank(t *testing.T) {
 		limitRag := NewAdvancedRAG(limitConfig, &Pipeline{})
 		_ = limitRag.Initialize(ctx)
 
-		results := []SearchResult{
-			{Chunk: Chunk{ID: "1", Content: "A"}, Score: 0.8},
-			{Chunk: Chunk{ID: "2", Content: "B"}, Score: 0.7},
-			{Chunk: Chunk{ID: "3", Content: "C"}, Score: 0.6},
-			{Chunk: Chunk{ID: "4", Content: "D"}, Score: 0.5},
+		results := []PipelineSearchResult{
+			{Chunk: PipelineChunk{ID: "1", Content: "A"}, Score: 0.8},
+			{Chunk: PipelineChunk{ID: "2", Content: "B"}, Score: 0.7},
+			{Chunk: PipelineChunk{ID: "3", Content: "C"}, Score: 0.6},
+			{Chunk: PipelineChunk{ID: "4", Content: "D"}, Score: 0.5},
 		}
 
 		reranked, err := limitRag.ReRank(ctx, "query", results)
@@ -256,7 +256,7 @@ func TestAdvancedRAG_CompressContext(t *testing.T) {
 	_ = rag.Initialize(ctx)
 
 	t.Run("EmptyResults", func(t *testing.T) {
-		compressed, err := rag.CompressContext(ctx, "query", []SearchResult{})
+		compressed, err := rag.CompressContext(ctx, "query", []PipelineSearchResult{})
 
 		assert.NoError(t, err)
 		assert.NotNil(t, compressed)
@@ -264,9 +264,9 @@ func TestAdvancedRAG_CompressContext(t *testing.T) {
 	})
 
 	t.Run("BasicCompression", func(t *testing.T) {
-		results := []SearchResult{
-			{Chunk: Chunk{ID: "1", Content: "This is the first sentence about functions. This is another sentence about variables. And this is about errors."}},
-			{Chunk: Chunk{ID: "2", Content: "More content here about database operations. Query handling is important."}},
+		results := []PipelineSearchResult{
+			{Chunk: PipelineChunk{ID: "1", Content: "This is the first sentence about functions. This is another sentence about variables. And this is about errors."}},
+			{Chunk: PipelineChunk{ID: "2", Content: "More content here about database operations. Query handling is important."}},
 		}
 
 		compressed, err := rag.CompressContext(ctx, "function variable", results)
@@ -279,8 +279,8 @@ func TestAdvancedRAG_CompressContext(t *testing.T) {
 	})
 
 	t.Run("KeyPhrasesExtraction", func(t *testing.T) {
-		results := []SearchResult{
-			{Chunk: Chunk{ID: "1", Content: "The function definition is important. Function parameters should be validated. The function returns a value."}},
+		results := []PipelineSearchResult{
+			{Chunk: PipelineChunk{ID: "1", Content: "The function definition is important. Function parameters should be validated. The function returns a value."}},
 		}
 
 		compressed, err := rag.CompressContext(ctx, "function definition", results)
@@ -307,8 +307,8 @@ func TestAdvancedRAG_CompressContext(t *testing.T) {
 		shortRag := NewAdvancedRAG(shortConfig, &Pipeline{})
 		_ = shortRag.Initialize(ctx)
 
-		results := []SearchResult{
-			{Chunk: Chunk{ID: "1", Content: "This is a very long content that exceeds the maximum context length limit and should be truncated to fit within the specified bounds."}},
+		results := []PipelineSearchResult{
+			{Chunk: PipelineChunk{ID: "1", Content: "This is a very long content that exceeds the maximum context length limit and should be truncated to fit within the specified bounds."}},
 		}
 
 		compressed, err := shortRag.CompressContext(ctx, "query", results)
@@ -324,8 +324,8 @@ func TestAdvancedRAG_CompressContext(t *testing.T) {
 		noSentRag := NewAdvancedRAG(noSentConfig, &Pipeline{})
 		_ = noSentRag.Initialize(ctx)
 
-		results := []SearchResult{
-			{Chunk: Chunk{ID: "1", Content: "First sentence here. Second sentence here. Third sentence here."}},
+		results := []PipelineSearchResult{
+			{Chunk: PipelineChunk{ID: "1", Content: "First sentence here. Second sentence here. Third sentence here."}},
 		}
 
 		compressed, err := noSentRag.CompressContext(ctx, "query", results)
@@ -657,9 +657,9 @@ func TestAdvancedRAG_FullWorkflow(t *testing.T) {
 	assert.Equal(t, 1.0, expansions[0].Weight)
 
 	// Test compression with mock results
-	mockResults := []SearchResult{
+	mockResults := []PipelineSearchResult{
 		{
-			Chunk: Chunk{
+			Chunk: PipelineChunk{
 				ID:      "1",
 				DocID:   "doc1",
 				Content: "This is about creating database functions. Functions in databases are very useful. They help with data processing.",
@@ -667,7 +667,7 @@ func TestAdvancedRAG_FullWorkflow(t *testing.T) {
 			Score: 0.9,
 		},
 		{
-			Chunk: Chunk{
+			Chunk: PipelineChunk{
 				ID:      "2",
 				DocID:   "doc2",
 				Content: "Database operations require careful planning. Creating efficient queries is important.",
@@ -687,5 +687,5 @@ func TestAdvancedRAG_FullWorkflow(t *testing.T) {
 	assert.NotEmpty(t, reranked)
 
 	// First result should have content about "creating database functions"
-	assert.Equal(t, "1", reranked[0].SearchResult.Chunk.ID)
+	assert.Equal(t, "1", reranked[0].Chunk.ID)
 }

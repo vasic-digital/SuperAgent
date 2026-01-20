@@ -19,11 +19,11 @@ import (
 type VulnerabilitySeverity string
 
 const (
-	SeverityCritical VulnerabilitySeverity = "critical"
-	SeverityHigh     VulnerabilitySeverity = "high"
-	SeverityMedium   VulnerabilitySeverity = "medium"
-	SeverityLow      VulnerabilitySeverity = "low"
-	SeverityInfo     VulnerabilitySeverity = "info"
+	VulnSeverityCritical VulnerabilitySeverity = "critical"
+	VulnSeverityHigh     VulnerabilitySeverity = "high"
+	VulnSeverityMedium   VulnerabilitySeverity = "medium"
+	VulnSeverityLow      VulnerabilitySeverity = "low"
+	VulnSeverityInfo     VulnerabilitySeverity = "info"
 )
 
 // VulnerabilityCategory represents the category of vulnerability
@@ -113,7 +113,7 @@ func DefaultSecureFixAgentConfig() SecureFixAgentConfig {
 		EnableAutoFix:            true,
 		RequireValidation:        true,
 		MaxConcurrentScans:       4,
-		SeverityThreshold:        SeverityLow,
+		SeverityThreshold:        VulnSeverityLow,
 		EnableDependencyScanning: true,
 		Timeout:                  10 * time.Minute,
 	}
@@ -247,11 +247,11 @@ func (a *SecureFixAgent) DetectRepairValidate(ctx context.Context, code string, 
 // shouldReport checks if a vulnerability should be reported
 func (a *SecureFixAgent) shouldReport(vuln *Vulnerability) bool {
 	severityOrder := map[VulnerabilitySeverity]int{
-		SeverityCritical: 5,
-		SeverityHigh:     4,
-		SeverityMedium:   3,
-		SeverityLow:      2,
-		SeverityInfo:     1,
+		VulnSeverityCritical: 5,
+		VulnSeverityHigh:     4,
+		VulnSeverityMedium:   3,
+		VulnSeverityLow:      2,
+		VulnSeverityInfo:     1,
 	}
 
 	threshold := severityOrder[a.config.SeverityThreshold]
@@ -345,7 +345,7 @@ func (s *PatternBasedScanner) registerDefaultPatterns() {
 		{
 			Pattern:     regexp.MustCompile(`(?i)(?:execute|query|exec)\s*\(\s*["'].*\+.*["']`),
 			Category:    CategoryInjection,
-			Severity:    SeverityCritical,
+			Severity:    VulnSeverityCritical,
 			Title:       "SQL Injection",
 			Description: "String concatenation in SQL query may lead to SQL injection",
 			CWE:         "CWE-89",
@@ -354,7 +354,7 @@ func (s *PatternBasedScanner) registerDefaultPatterns() {
 		{
 			Pattern:     regexp.MustCompile(`(?i)fmt\.Sprintf\s*\(\s*["'].*(?:SELECT|INSERT|UPDATE|DELETE|WHERE).*%[sv]`),
 			Category:    CategoryInjection,
-			Severity:    SeverityCritical,
+			Severity:    VulnSeverityCritical,
 			Title:       "SQL Injection via fmt.Sprintf",
 			Description: "Using fmt.Sprintf for SQL queries can lead to SQL injection",
 			CWE:         "CWE-89",
@@ -367,7 +367,7 @@ func (s *PatternBasedScanner) registerDefaultPatterns() {
 		{
 			Pattern:     regexp.MustCompile(`(?i)innerHTML\s*=\s*[^"']+`),
 			Category:    CategoryXSS,
-			Severity:    SeverityHigh,
+			Severity:    VulnSeverityHigh,
 			Title:       "Cross-Site Scripting (XSS)",
 			Description: "Direct assignment to innerHTML may lead to XSS",
 			CWE:         "CWE-79",
@@ -376,7 +376,7 @@ func (s *PatternBasedScanner) registerDefaultPatterns() {
 		{
 			Pattern:     regexp.MustCompile(`(?i)document\.write\s*\(`),
 			Category:    CategoryXSS,
-			Severity:    SeverityHigh,
+			Severity:    VulnSeverityHigh,
 			Title:       "DOM-based XSS via document.write",
 			Description: "document.write can be exploited for XSS attacks",
 			CWE:         "CWE-79",
@@ -389,7 +389,7 @@ func (s *PatternBasedScanner) registerDefaultPatterns() {
 		{
 			Pattern:     regexp.MustCompile(`(?i)(?:password|secret|api_key|apikey|token)\s*[:=]\s*["'][^"']+["']`),
 			Category:    CategorySensitiveData,
-			Severity:    SeverityHigh,
+			Severity:    VulnSeverityHigh,
 			Title:       "Hardcoded Credentials",
 			Description: "Sensitive credentials should not be hardcoded in source code",
 			CWE:         "CWE-798",
@@ -402,7 +402,7 @@ func (s *PatternBasedScanner) registerDefaultPatterns() {
 		{
 			Pattern:     regexp.MustCompile(`(?i)(?:md5|sha1)\s*\(`),
 			Category:    CategoryCryptographic,
-			Severity:    SeverityMedium,
+			Severity:    VulnSeverityMedium,
 			Title:       "Weak Cryptographic Hash",
 			Description: "MD5 and SHA1 are considered cryptographically weak",
 			CWE:         "CWE-328",
@@ -411,7 +411,7 @@ func (s *PatternBasedScanner) registerDefaultPatterns() {
 		{
 			Pattern:     regexp.MustCompile(`(?i)(?:DES|3DES|RC4)\b`),
 			Category:    CategoryCryptographic,
-			Severity:    SeverityHigh,
+			Severity:    VulnSeverityHigh,
 			Title:       "Weak Encryption Algorithm",
 			Description: "DES, 3DES, and RC4 are deprecated encryption algorithms",
 			CWE:         "CWE-327",
@@ -424,7 +424,7 @@ func (s *PatternBasedScanner) registerDefaultPatterns() {
 		{
 			Pattern:     regexp.MustCompile(`(?i)go\s+func\s*\([^)]*\)\s*\{[^}]*(?:map|slice)\[[^]]+\]`),
 			Category:    CategoryRaceCondition,
-			Severity:    SeverityMedium,
+			Severity:    VulnSeverityMedium,
 			Title:       "Potential Race Condition",
 			Description: "Concurrent access to shared data structure without synchronization",
 			CWE:         "CWE-362",

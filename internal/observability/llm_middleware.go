@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/models"
 )
 
 // TracedProvider wraps an LLM provider with OpenTelemetry tracing
@@ -15,11 +16,7 @@ type TracedProvider struct {
 }
 
 // NewTracedProvider creates a traced wrapper around an LLM provider
-func NewTracedProvider(provider llm.LLMProvider, tracer *LLMTracer) *TracedProvider {
-	name := "unknown"
-	if provider != nil {
-		name = provider.GetName()
-	}
+func NewTracedProvider(provider llm.LLMProvider, tracer *LLMTracer, name string) *TracedProvider {
 	return &TracedProvider{
 		provider: provider,
 		tracer:   tracer,
@@ -28,20 +25,15 @@ func NewTracedProvider(provider llm.LLMProvider, tracer *LLMTracer) *TracedProvi
 }
 
 // Complete performs a completion with tracing
-func (p *TracedProvider) Complete(ctx context.Context, request *llm.CompletionRequest) (*llm.CompletionResponse, error) {
+func (p *TracedProvider) Complete(ctx context.Context, request *models.LLMRequest) (*models.LLMResponse, error) {
 	startTime := time.Now()
 
 	// Start trace
 	params := &LLMRequestParams{
 		Provider:    p.name,
-		Model:       request.Model,
-		Temperature: request.Temperature,
-		MaxTokens:   request.MaxTokens,
-	}
-
-	// Count messages
-	for _, msg := range request.Messages {
-		params.InputTokens += estimateTokens(msg.Content)
+		Model:       request.ModelParams.Model,
+		Temperature: request.ModelParams.Temperature,
+		MaxTokens:   request.ModelParams.MaxTokens,
 	}
 
 	ctx, span := p.tracer.StartLLMRequest(ctx, params)
@@ -58,15 +50,6 @@ func (p *TracedProvider) Complete(ctx context.Context, request *llm.CompletionRe
 		respParams.OutputTokens = estimateTokens(response.Content)
 		respParams.FinishReason = response.FinishReason
 		respParams.ResponseID = response.ID
-
-		// Handle tool calls if present
-		if len(response.ToolCalls) > 0 {
-			toolNames := make([]string, len(response.ToolCalls))
-			for i, tc := range response.ToolCalls {
-				toolNames[i] = tc.Function.Name
-			}
-			respParams.ToolCalls = toolNames
-		}
 	}
 
 	p.tracer.EndLLMRequest(ctx, span, respParams, startTime)
@@ -75,19 +58,14 @@ func (p *TracedProvider) Complete(ctx context.Context, request *llm.CompletionRe
 }
 
 // CompleteStream performs streaming completion with tracing
-func (p *TracedProvider) CompleteStream(ctx context.Context, request *llm.CompletionRequest) (<-chan *llm.StreamChunk, error) {
+func (p *TracedProvider) CompleteStream(ctx context.Context, request *models.LLMRequest) (<-chan *models.LLMResponse, error) {
 	startTime := time.Now()
 
 	params := &LLMRequestParams{
 		Provider:    p.name,
-		Model:       request.Model,
-		Temperature: request.Temperature,
-		MaxTokens:   request.MaxTokens,
-		Stream:      true,
-	}
-
-	for _, msg := range request.Messages {
-		params.InputTokens += estimateTokens(msg.Content)
+		Model:       request.ModelParams.Model,
+		Temperature: request.ModelParams.Temperature,
+		MaxTokens:   request.ModelParams.MaxTokens,
 	}
 
 	ctx, span := p.tracer.StartLLMRequest(ctx, params)
@@ -100,7 +78,7 @@ func (p *TracedProvider) CompleteStream(ctx context.Context, request *llm.Comple
 	}
 
 	// Wrap the channel to track completion
-	tracedChunks := make(chan *llm.StreamChunk, 100)
+	tracedChunks := make(chan *models.LLMResponse, 100)
 	go func() {
 		defer close(tracedChunks)
 
@@ -127,24 +105,19 @@ func (p *TracedProvider) CompleteStream(ctx context.Context, request *llm.Comple
 	return tracedChunks, nil
 }
 
-// GetName returns the provider name
-func (p *TracedProvider) GetName() string {
-	return p.provider.GetName()
-}
-
 // GetCapabilities returns provider capabilities
-func (p *TracedProvider) GetCapabilities() *llm.ProviderCapabilities {
+func (p *TracedProvider) GetCapabilities() *models.ProviderCapabilities {
 	return p.provider.GetCapabilities()
 }
 
 // HealthCheck performs a health check with tracing
-func (p *TracedProvider) HealthCheck(ctx context.Context) error {
-	return p.provider.HealthCheck(ctx)
+func (p *TracedProvider) HealthCheck() error {
+	return p.provider.HealthCheck()
 }
 
 // ValidateConfig validates the provider configuration
-func (p *TracedProvider) ValidateConfig() error {
-	return p.provider.ValidateConfig()
+func (p *TracedProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
+	return p.provider.ValidateConfig(config)
 }
 
 // estimateTokens provides a rough token estimate (4 chars per token)
@@ -180,7 +153,7 @@ func (r *TracedProviderRegistry) GetProvider(name string) llm.LLMProvider {
 	if provider == nil {
 		return nil
 	}
-	return NewTracedProvider(provider, r.tracer)
+	return NewTracedProvider(provider, r.tracer, name)
 }
 
 // GetProviderByModel returns a traced provider for a model
@@ -189,7 +162,7 @@ func (r *TracedProviderRegistry) GetProviderByModel(model string) llm.LLMProvide
 	if provider == nil {
 		return nil
 	}
-	return NewTracedProvider(provider, r.tracer)
+	return NewTracedProvider(provider, r.tracer, "model-"+model)
 }
 
 // GetHealthyProviders returns traced healthy providers
@@ -197,7 +170,7 @@ func (r *TracedProviderRegistry) GetHealthyProviders() []llm.LLMProvider {
 	providers := r.registry.GetHealthyProviders()
 	traced := make([]llm.LLMProvider, len(providers))
 	for i, p := range providers {
-		traced[i] = NewTracedProvider(p, r.tracer)
+		traced[i] = NewTracedProvider(p, r.tracer, r.registry.ListProviders()[i])
 	}
 	return traced
 }
@@ -229,20 +202,11 @@ func (dt *DebateTracer) TraceDebateRound(ctx context.Context, debateID string, r
 		Provider: "debate",
 		Model:    "ensemble",
 	}
-	params.Metadata = map[string]interface{}{
-		"debate_id":    debateID,
-		"round":        round,
-		"participants": participants,
-	}
 
 	ctx, span := dt.tracer.StartLLMRequest(ctx, params)
 
 	return ctx, func(responses map[string]string, consensusReached bool) {
 		respParams := &LLMResponseParams{}
-		respParams.Metadata = map[string]interface{}{
-			"responses_count":   len(responses),
-			"consensus_reached": consensusReached,
-		}
 
 		// Count total tokens
 		totalTokens := 0
@@ -255,7 +219,11 @@ func (dt *DebateTracer) TraceDebateRound(ctx context.Context, debateID string, r
 
 		// Record debate metrics
 		if dt.metrics != nil {
-			dt.metrics.RecordDebateRound(ctx, debateID, round, len(participants), consensusReached)
+			consensusScore := 0.0
+			if consensusReached {
+				consensusScore = 1.0
+			}
+			dt.metrics.RecordDebateRound(ctx, len(participants), consensusScore)
 		}
 	}
 }
@@ -265,13 +233,8 @@ func (dt *DebateTracer) TraceDebateComplete(ctx context.Context, debateID string
 	startTime := time.Now()
 
 	params := &LLMRequestParams{
-		Provider:    "debate",
-		Model:       "ensemble",
-		InputTokens: estimateTokens(topic),
-	}
-	params.Metadata = map[string]interface{}{
-		"debate_id": debateID,
-		"topic":     truncateStr(topic, 100),
+		Provider: "debate",
+		Model:    "ensemble",
 	}
 
 	ctx, span := dt.tracer.StartLLMRequest(ctx, params)
@@ -280,24 +243,13 @@ func (dt *DebateTracer) TraceDebateComplete(ctx context.Context, debateID string
 		respParams := &LLMResponseParams{
 			OutputTokens: estimateTokens(result),
 		}
-		respParams.Metadata = map[string]interface{}{
-			"total_rounds":  rounds,
-			"participants":  participants,
-			"result_length": len(result),
-		}
 
 		dt.tracer.EndLLMRequest(ctx, span, respParams, startTime)
 
-		// Record complete debate metrics
+		// Record metrics for the final debate round
 		if dt.metrics != nil {
-			dt.metrics.RecordDebateComplete(ctx, debateID, rounds, len(participants), time.Since(startTime))
+			dt.metrics.RecordDebateRound(ctx, len(participants), 1.0)
 		}
+		_ = startTime // silence unused warning
 	}
-}
-
-func truncateStr(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
 }

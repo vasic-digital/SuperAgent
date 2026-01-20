@@ -192,7 +192,7 @@ func (a *AdvancedRAG) Initialize(ctx context.Context) error {
 
 // HybridSearchResult represents a result from hybrid search
 type HybridSearchResult struct {
-	SearchResult
+	PipelineSearchResult
 	VectorScore   float32 `json:"vector_score"`
 	KeywordScore  float32 `json:"keyword_score"`
 	CombinedScore float32 `json:"combined_score"`
@@ -218,9 +218,9 @@ func (a *AdvancedRAG) HybridSearch(ctx context.Context, query string, topK int) 
 	for _, vr := range vectorResults {
 		key := vr.Chunk.ID
 		resultMap[key] = &HybridSearchResult{
-			SearchResult: vr,
-			VectorScore:  vr.Score,
-			KeywordScore: 0,
+			PipelineSearchResult: vr,
+			VectorScore:          vr.Score,
+			KeywordScore:         0,
 		}
 	}
 
@@ -255,7 +255,7 @@ func (a *AdvancedRAG) HybridSearch(ctx context.Context, query string, topK int) 
 }
 
 // keywordSearch performs keyword-based scoring on results
-func (a *AdvancedRAG) keywordSearch(query string, results []SearchResult) map[string]float32 {
+func (a *AdvancedRAG) keywordSearch(query string, results []PipelineSearchResult) map[string]float32 {
 	scores := make(map[string]float32)
 	queryTerms := tokenize(query)
 	config := a.config.HybridSearch
@@ -346,11 +346,11 @@ type ExpandedQuery struct {
 }
 
 // SearchWithExpansion searches using query expansion
-func (a *AdvancedRAG) SearchWithExpansion(ctx context.Context, query string, topK int) ([]SearchResult, error) {
+func (a *AdvancedRAG) SearchWithExpansion(ctx context.Context, query string, topK int) ([]PipelineSearchResult, error) {
 	expansions := a.ExpandQuery(ctx, query)
 
 	// Collect all results
-	allResults := make(map[string]*SearchResult)
+	allResults := make(map[string]*PipelineSearchResult)
 	resultScores := make(map[string]float32)
 
 	for _, expansion := range expansions {
@@ -382,7 +382,7 @@ func (a *AdvancedRAG) SearchWithExpansion(ctx context.Context, query string, top
 	}
 
 	// Convert to slice and sort
-	results := make([]SearchResult, 0, len(allResults))
+	results := make([]PipelineSearchResult, 0, len(allResults))
 	for _, result := range allResults {
 		results = append(results, *result)
 	}
@@ -400,14 +400,14 @@ func (a *AdvancedRAG) SearchWithExpansion(ctx context.Context, query string, top
 
 // ReRankedResult represents a result after re-ranking
 type ReRankedResult struct {
-	SearchResult
+	PipelineSearchResult
 	OriginalScore  float32 `json:"original_score"`
 	ReRankedScore  float32 `json:"reranked_score"`
 	ReRankPosition int     `json:"rerank_position"`
 }
 
 // ReRank re-ranks search results using cross-encoder scoring
-func (a *AdvancedRAG) ReRank(ctx context.Context, query string, results []SearchResult) ([]ReRankedResult, error) {
+func (a *AdvancedRAG) ReRank(ctx context.Context, query string, results []PipelineSearchResult) ([]ReRankedResult, error) {
 	a.mu.RLock()
 	config := a.config.ReRanker
 	a.mu.RUnlock()
@@ -430,9 +430,9 @@ func (a *AdvancedRAG) ReRank(ctx context.Context, query string, results []Search
 		relevanceScore := a.calculateRelevanceScore(query, result.Chunk.Content)
 
 		reranked[i] = ReRankedResult{
-			SearchResult:  result,
-			OriginalScore: result.Score,
-			ReRankedScore: relevanceScore,
+			PipelineSearchResult: result,
+			OriginalScore:        result.Score,
+			ReRankedScore:        relevanceScore,
 		}
 	}
 
@@ -508,7 +508,7 @@ type CompressedContext struct {
 }
 
 // CompressContext compresses search results into a condensed context
-func (a *AdvancedRAG) CompressContext(ctx context.Context, query string, results []SearchResult) (*CompressedContext, error) {
+func (a *AdvancedRAG) CompressContext(ctx context.Context, query string, results []PipelineSearchResult) (*CompressedContext, error) {
 	a.mu.RLock()
 	config := a.config.ContextualCompression
 	a.mu.RUnlock()

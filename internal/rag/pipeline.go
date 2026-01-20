@@ -23,19 +23,19 @@ const (
 	VectorDBWeaviate VectorDBType = "weaviate"
 )
 
-// Document represents a document for RAG processing.
-type Document struct {
+// PipelineDocument represents a document for RAG pipeline processing.
+type PipelineDocument struct {
 	ID        string                 `json:"id"`
 	Content   string                 `json:"content"`
 	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 	Source    string                 `json:"source,omitempty"`
-	Chunks    []Chunk                `json:"chunks,omitempty"`
+	Chunks    []PipelineChunk        `json:"chunks,omitempty"`
 	CreatedAt time.Time              `json:"created_at"`
 	UpdatedAt time.Time              `json:"updated_at"`
 }
 
-// Chunk represents a chunk of a document.
-type Chunk struct {
+// PipelineChunk represents a chunk of a document in the pipeline.
+type PipelineChunk struct {
 	ID        string                 `json:"id"`
 	Content   string                 `json:"content"`
 	Embedding []float32              `json:"embedding,omitempty"`
@@ -45,9 +45,9 @@ type Chunk struct {
 	DocID     string                 `json:"doc_id"`
 }
 
-// SearchResult represents a search result.
-type SearchResult struct {
-	Chunk    Chunk                  `json:"chunk"`
+// PipelineSearchResult represents a search result from the pipeline.
+type PipelineSearchResult struct {
+	Chunk    PipelineChunk          `json:"chunk"`
 	Score    float32                `json:"score"`
 	Distance float32                `json:"distance"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
@@ -270,14 +270,14 @@ func (p *Pipeline) Health(ctx context.Context) error {
 }
 
 // ChunkDocument chunks a document into smaller pieces.
-func (p *Pipeline) ChunkDocument(doc *Document) []Chunk {
+func (p *Pipeline) ChunkDocument(doc *PipelineDocument) []PipelineChunk {
 	cfg := p.config.ChunkingConfig
 	content := doc.Content
-	chunks := []Chunk{}
+	chunks := []PipelineChunk{}
 
 	if len(content) <= cfg.ChunkSize {
 		// Single chunk
-		chunks = append(chunks, Chunk{
+		chunks = append(chunks, PipelineChunk{
 			ID:       generateChunkID(doc.ID, 0),
 			Content:  content,
 			StartIdx: 0,
@@ -299,7 +299,7 @@ func (p *Pipeline) ChunkDocument(doc *Document) []Chunk {
 		if len(currentChunk)+len(part)+len(cfg.Separator) > cfg.ChunkSize {
 			// Save current chunk
 			if currentChunk != "" {
-				chunks = append(chunks, Chunk{
+				chunks = append(chunks, PipelineChunk{
 					ID:       generateChunkID(doc.ID, chunkIdx),
 					Content:  strings.TrimSpace(currentChunk),
 					StartIdx: startIdx,
@@ -330,7 +330,7 @@ func (p *Pipeline) ChunkDocument(doc *Document) []Chunk {
 
 	// Add remaining content
 	if currentChunk != "" {
-		chunks = append(chunks, Chunk{
+		chunks = append(chunks, PipelineChunk{
 			ID:       generateChunkID(doc.ID, chunkIdx),
 			Content:  strings.TrimSpace(currentChunk),
 			StartIdx: startIdx,
@@ -344,7 +344,7 @@ func (p *Pipeline) ChunkDocument(doc *Document) []Chunk {
 }
 
 // IngestDocument ingests a document into the pipeline.
-func (p *Pipeline) IngestDocument(ctx context.Context, doc *Document) error {
+func (p *Pipeline) IngestDocument(ctx context.Context, doc *PipelineDocument) error {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -383,7 +383,7 @@ func (p *Pipeline) IngestDocument(ctx context.Context, doc *Document) error {
 }
 
 // storeChunks stores chunks in the vector database.
-func (p *Pipeline) storeChunks(ctx context.Context, chunks []Chunk) error {
+func (p *Pipeline) storeChunks(ctx context.Context, chunks []PipelineChunk) error {
 	switch p.config.VectorDBType {
 	case VectorDBChroma:
 		return p.storeChunksChroma(ctx, chunks)
@@ -395,7 +395,7 @@ func (p *Pipeline) storeChunks(ctx context.Context, chunks []Chunk) error {
 	return nil
 }
 
-func (p *Pipeline) storeChunksChroma(ctx context.Context, chunks []Chunk) error {
+func (p *Pipeline) storeChunksChroma(ctx context.Context, chunks []PipelineChunk) error {
 	docs := make([]servers.ChromaDocument, len(chunks))
 
 	for i, chunk := range chunks {
@@ -418,7 +418,7 @@ func (p *Pipeline) storeChunksChroma(ctx context.Context, chunks []Chunk) error 
 	return p.chromaAdapter.AddDocuments(ctx, p.config.CollectionName, docs)
 }
 
-func (p *Pipeline) storeChunksQdrant(ctx context.Context, chunks []Chunk) error {
+func (p *Pipeline) storeChunksQdrant(ctx context.Context, chunks []PipelineChunk) error {
 	points := make([]servers.QdrantPoint, len(chunks))
 
 	for i, chunk := range chunks {
@@ -442,7 +442,7 @@ func (p *Pipeline) storeChunksQdrant(ctx context.Context, chunks []Chunk) error 
 	return p.qdrantAdapter.UpsertPoints(ctx, p.config.CollectionName, points)
 }
 
-func (p *Pipeline) storeChunksWeaviate(ctx context.Context, chunks []Chunk) error {
+func (p *Pipeline) storeChunksWeaviate(ctx context.Context, chunks []PipelineChunk) error {
 	objects := make([]servers.WeaviateObject, len(chunks))
 
 	for i, chunk := range chunks {
@@ -468,7 +468,7 @@ func (p *Pipeline) storeChunksWeaviate(ctx context.Context, chunks []Chunk) erro
 }
 
 // IngestDocuments ingests multiple documents.
-func (p *Pipeline) IngestDocuments(ctx context.Context, docs []*Document) error {
+func (p *Pipeline) IngestDocuments(ctx context.Context, docs []*PipelineDocument) error {
 	for _, doc := range docs {
 		if err := p.IngestDocument(ctx, doc); err != nil {
 			return fmt.Errorf("failed to ingest document %s: %w", doc.ID, err)
@@ -478,7 +478,7 @@ func (p *Pipeline) IngestDocuments(ctx context.Context, docs []*Document) error 
 }
 
 // Search performs semantic search.
-func (p *Pipeline) Search(ctx context.Context, query string, topK int) ([]SearchResult, error) {
+func (p *Pipeline) Search(ctx context.Context, query string, topK int) ([]PipelineSearchResult, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -514,13 +514,13 @@ func (p *Pipeline) Search(ctx context.Context, query string, topK int) ([]Search
 	return nil, fmt.Errorf("unsupported vector database type")
 }
 
-func (p *Pipeline) searchChroma(ctx context.Context, queryEmbedding []float32, topK int) ([]SearchResult, error) {
+func (p *Pipeline) searchChroma(ctx context.Context, queryEmbedding []float32, topK int) ([]PipelineSearchResult, error) {
 	result, err := p.chromaAdapter.Query(ctx, p.config.CollectionName, [][]float32{queryEmbedding}, topK, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	searchResults := make([]SearchResult, 0)
+	searchResults := make([]PipelineSearchResult, 0)
 	if result != nil && len(result.IDs) > 0 && len(result.IDs[0]) > 0 {
 		for i, id := range result.IDs[0] {
 			var content string
@@ -537,7 +537,7 @@ func (p *Pipeline) searchChroma(ctx context.Context, queryEmbedding []float32, t
 				distance = result.Distances[0][i]
 			}
 
-			chunk := Chunk{
+			chunk := PipelineChunk{
 				ID:       id,
 				Content:  content,
 				Metadata: metadata,
@@ -552,7 +552,7 @@ func (p *Pipeline) searchChroma(ctx context.Context, queryEmbedding []float32, t
 				chunk.EndIdx = int(endIdx)
 			}
 
-			searchResults = append(searchResults, SearchResult{
+			searchResults = append(searchResults, PipelineSearchResult{
 				Chunk:    chunk,
 				Score:    1.0 - distance,
 				Distance: distance,
@@ -564,13 +564,13 @@ func (p *Pipeline) searchChroma(ctx context.Context, queryEmbedding []float32, t
 	return searchResults, nil
 }
 
-func (p *Pipeline) searchQdrant(ctx context.Context, queryEmbedding []float32, topK int) ([]SearchResult, error) {
+func (p *Pipeline) searchQdrant(ctx context.Context, queryEmbedding []float32, topK int) ([]PipelineSearchResult, error) {
 	results, err := p.qdrantAdapter.Search(ctx, p.config.CollectionName, queryEmbedding, topK, nil, true, false)
 	if err != nil {
 		return nil, err
 	}
 
-	searchResults := make([]SearchResult, 0, len(results))
+	searchResults := make([]PipelineSearchResult, 0, len(results))
 	for _, result := range results {
 		content, _ := result.Payload["content"].(string)
 		docID, _ := result.Payload["doc_id"].(string)
@@ -585,7 +585,7 @@ func (p *Pipeline) searchQdrant(ctx context.Context, queryEmbedding []float32, t
 			id = fmt.Sprintf("%.0f", v)
 		}
 
-		chunk := Chunk{
+		chunk := PipelineChunk{
 			ID:       id,
 			Content:  content,
 			DocID:    docID,
@@ -594,7 +594,7 @@ func (p *Pipeline) searchQdrant(ctx context.Context, queryEmbedding []float32, t
 			Metadata: result.Payload,
 		}
 
-		searchResults = append(searchResults, SearchResult{
+		searchResults = append(searchResults, PipelineSearchResult{
 			Chunk:    chunk,
 			Score:    result.Score,
 			Distance: 1.0 - result.Score,
@@ -605,13 +605,13 @@ func (p *Pipeline) searchQdrant(ctx context.Context, queryEmbedding []float32, t
 	return searchResults, nil
 }
 
-func (p *Pipeline) searchWeaviate(ctx context.Context, queryEmbedding []float32, topK int) ([]SearchResult, error) {
+func (p *Pipeline) searchWeaviate(ctx context.Context, queryEmbedding []float32, topK int) ([]PipelineSearchResult, error) {
 	results, err := p.weaviateAdapter.VectorSearch(ctx, p.config.CollectionName, queryEmbedding, topK, 0.0, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	searchResults := make([]SearchResult, 0, len(results))
+	searchResults := make([]PipelineSearchResult, 0, len(results))
 	for _, result := range results {
 		content, _ := result.Properties["content"].(string)
 		docID, _ := result.Properties["doc_id"].(string)
@@ -619,7 +619,7 @@ func (p *Pipeline) searchWeaviate(ctx context.Context, queryEmbedding []float32,
 		startIdx, _ := result.Properties["start_idx"].(float64)
 		endIdx, _ := result.Properties["end_idx"].(float64)
 
-		chunk := Chunk{
+		chunk := PipelineChunk{
 			ID:       chunkID,
 			Content:  content,
 			DocID:    docID,
@@ -628,7 +628,7 @@ func (p *Pipeline) searchWeaviate(ctx context.Context, queryEmbedding []float32,
 			Metadata: result.Properties,
 		}
 
-		searchResults = append(searchResults, SearchResult{
+		searchResults = append(searchResults, PipelineSearchResult{
 			Chunk:    chunk,
 			Score:    result.Certainty,
 			Distance: result.Distance,
@@ -640,7 +640,7 @@ func (p *Pipeline) searchWeaviate(ctx context.Context, queryEmbedding []float32,
 }
 
 // SearchWithFilter performs semantic search with metadata filtering.
-func (p *Pipeline) SearchWithFilter(ctx context.Context, query string, topK int, filter map[string]interface{}) ([]SearchResult, error) {
+func (p *Pipeline) SearchWithFilter(ctx context.Context, query string, topK int, filter map[string]interface{}) ([]PipelineSearchResult, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -684,8 +684,8 @@ func (p *Pipeline) SearchWithFilter(ctx context.Context, query string, topK int,
 	return nil, fmt.Errorf("unsupported vector database type")
 }
 
-func (p *Pipeline) convertChromaResults(result *servers.ChromaQueryResult) []SearchResult {
-	searchResults := make([]SearchResult, 0)
+func (p *Pipeline) convertChromaResults(result *servers.ChromaQueryResult) []PipelineSearchResult {
+	searchResults := make([]PipelineSearchResult, 0)
 	if result != nil && len(result.IDs) > 0 && len(result.IDs[0]) > 0 {
 		for i, id := range result.IDs[0] {
 			var content string
@@ -702,12 +702,12 @@ func (p *Pipeline) convertChromaResults(result *servers.ChromaQueryResult) []Sea
 				distance = result.Distances[0][i]
 			}
 
-			chunk := Chunk{
+			chunk := PipelineChunk{
 				ID:       id,
 				Content:  content,
 				Metadata: metadata,
 			}
-			searchResults = append(searchResults, SearchResult{
+			searchResults = append(searchResults, PipelineSearchResult{
 				Chunk:    chunk,
 				Score:    1.0 - distance,
 				Distance: distance,
@@ -718,8 +718,8 @@ func (p *Pipeline) convertChromaResults(result *servers.ChromaQueryResult) []Sea
 	return searchResults
 }
 
-func (p *Pipeline) convertQdrantResults(results []servers.QdrantSearchResult) []SearchResult {
-	searchResults := make([]SearchResult, 0, len(results))
+func (p *Pipeline) convertQdrantResults(results []servers.QdrantSearchResult) []PipelineSearchResult {
+	searchResults := make([]PipelineSearchResult, 0, len(results))
 	for _, result := range results {
 		content, _ := result.Payload["content"].(string)
 		var id string
@@ -729,12 +729,12 @@ func (p *Pipeline) convertQdrantResults(results []servers.QdrantSearchResult) []
 		case float64:
 			id = fmt.Sprintf("%.0f", v)
 		}
-		chunk := Chunk{
+		chunk := PipelineChunk{
 			ID:       id,
 			Content:  content,
 			Metadata: result.Payload,
 		}
-		searchResults = append(searchResults, SearchResult{
+		searchResults = append(searchResults, PipelineSearchResult{
 			Chunk:    chunk,
 			Score:    result.Score,
 			Distance: 1.0 - result.Score,
@@ -744,16 +744,16 @@ func (p *Pipeline) convertQdrantResults(results []servers.QdrantSearchResult) []
 	return searchResults
 }
 
-func (p *Pipeline) convertWeaviateResults(results []servers.WeaviateSearchResult) []SearchResult {
-	searchResults := make([]SearchResult, 0, len(results))
+func (p *Pipeline) convertWeaviateResults(results []servers.WeaviateSearchResult) []PipelineSearchResult {
+	searchResults := make([]PipelineSearchResult, 0, len(results))
 	for _, result := range results {
 		content, _ := result.Properties["content"].(string)
-		chunk := Chunk{
+		chunk := PipelineChunk{
 			ID:       result.ID,
 			Content:  content,
 			Metadata: result.Properties,
 		}
-		searchResults = append(searchResults, SearchResult{
+		searchResults = append(searchResults, PipelineSearchResult{
 			Chunk:    chunk,
 			Score:    result.Certainty,
 			Distance: result.Distance,

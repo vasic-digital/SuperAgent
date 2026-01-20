@@ -121,7 +121,7 @@ func (h *RAGHandler) IngestDocument(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	doc := &rag.Document{
+	doc := &rag.PipelineDocument{
 		ID:        req.ID,
 		Content:   req.Content,
 		Metadata:  req.Metadata,
@@ -164,9 +164,9 @@ func (h *RAGHandler) IngestDocuments(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	docs := make([]*rag.Document, len(req.Documents))
+	docs := make([]*rag.PipelineDocument, len(req.Documents))
 	for i, d := range req.Documents {
-		docs[i] = &rag.Document{
+		docs[i] = &rag.PipelineDocument{
 			ID:        d.ID,
 			Content:   d.Content,
 			Metadata:  d.Metadata,
@@ -253,7 +253,7 @@ func (h *RAGHandler) Search(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	var results []rag.SearchResult
+	var results []rag.PipelineSearchResult
 	var err error
 
 	if len(req.Filters) > 0 {
@@ -384,8 +384,8 @@ func (h *RAGHandler) SearchWithExpansion(c *gin.Context) {
 
 // ReRankRequest represents a re-ranking request
 type ReRankRequest struct {
-	Query   string             `json:"query" binding:"required"`
-	Results []rag.SearchResult `json:"results" binding:"required"`
+	Query   string                    `json:"query" binding:"required"`
+	Results []rag.PipelineSearchResult `json:"results" binding:"required"`
 }
 
 // ReRank re-ranks search results
@@ -427,8 +427,8 @@ func (h *RAGHandler) ReRank(c *gin.Context) {
 
 // CompressRequest represents a context compression request
 type CompressRequest struct {
-	Query   string             `json:"query" binding:"required"`
-	Results []rag.SearchResult `json:"results" binding:"required"`
+	Query   string                    `json:"query" binding:"required"`
+	Results []rag.PipelineSearchResult `json:"results" binding:"required"`
 }
 
 // CompressContext compresses search results into condensed context
@@ -529,7 +529,7 @@ func (h *RAGHandler) ChunkDocument(c *gin.Context) {
 		return
 	}
 
-	doc := &rag.Document{
+	doc := &rag.PipelineDocument{
 		Content:  req.Content,
 		Metadata: req.Metadata,
 	}

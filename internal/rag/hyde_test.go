@@ -357,8 +357,8 @@ func TestHyDEGenerator_HyDESearch(t *testing.T) {
 	}
 	vectorDB := &MockVectorDBForHyDE{
 		results: []SearchResult{
-			{Chunk: Chunk{ID: "1", Content: "Result 1"}, Score: 0.9},
-			{Chunk: Chunk{ID: "2", Content: "Result 2"}, Score: 0.8},
+			{Document: &Document{ID: "1", Content: "Result 1"}, Score: 0.9},
+			{Document: &Document{ID: "2", Content: "Result 2"}, Score: 0.8},
 		},
 	}
 
