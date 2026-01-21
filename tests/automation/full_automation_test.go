@@ -848,17 +848,29 @@ func TestPhase5_ToolExecution(t *testing.T) {
 		lspClient := services.NewLSPClient(suite.logger)
 		toolRegistry := services.NewToolRegistry(mcpManager, lspClient)
 
-		// Register multiple mock tools
-		mockTools := []*MockTool{
-			{name: "code-analysis-mock", description: "Analyze code", parameters: map[string]interface{}{"code": map[string]interface{}{"type": "string"}}},
-			{name: "security-scan-mock", description: "Scan for security issues", parameters: map[string]interface{}{"target": map[string]interface{}{"type": "string"}}},
-			{name: "refactor-mock", description: "Refactor code", parameters: map[string]interface{}{"code": map[string]interface{}{"type": "string"}}},
+		// Register multiple mock tools with matching parameter names
+		mockTools := []struct {
+			tool   *MockTool
+			params map[string]interface{}
+		}{
+			{
+				tool:   &MockTool{name: "code-analysis-mock", description: "Analyze code", parameters: map[string]interface{}{"code": map[string]interface{}{"type": "string"}}},
+				params: map[string]interface{}{"code": "function test() {}"},
+			},
+			{
+				tool:   &MockTool{name: "security-scan-mock", description: "Scan for security issues", parameters: map[string]interface{}{"target": map[string]interface{}{"type": "string"}}},
+				params: map[string]interface{}{"target": "/tmp/test"},
+			},
+			{
+				tool:   &MockTool{name: "refactor-mock", description: "Refactor code", parameters: map[string]interface{}{"code": map[string]interface{}{"type": "string"}}},
+				params: map[string]interface{}{"code": "oldFunction()"},
+			},
 		}
 
 		registeredCount := 0
 		executedCount := 0
-		for _, tool := range mockTools {
-			err := toolRegistry.RegisterCustomTool(tool)
+		for _, item := range mockTools {
+			err := toolRegistry.RegisterCustomTool(item.tool)
 			if err == nil {
 				registeredCount++
 			} else {
@@ -866,9 +878,7 @@ func TestPhase5_ToolExecution(t *testing.T) {
 			}
 
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			execResult, err := toolRegistry.ExecuteTool(ctx, tool.name, map[string]interface{}{
-				"toolName": tool.name,
-			})
+			execResult, err := toolRegistry.ExecuteTool(ctx, item.tool.name, item.params)
 			cancel()
 
 			if err == nil && execResult != nil {
