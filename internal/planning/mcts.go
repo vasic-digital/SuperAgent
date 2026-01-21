@@ -123,6 +123,7 @@ type MCTSRolloutPolicy interface {
 }
 
 // MCTS implements Monte Carlo Tree Search
+// Note: Uses math/rand for algorithmic randomness in tree exploration - this doesn't require cryptographic security
 type MCTS struct {
 	config        MCTSConfig
 	actionGen     MCTSActionGenerator
@@ -132,7 +133,7 @@ type MCTS struct {
 	iterations    int
 	mu            sync.RWMutex
 	logger        *logrus.Logger
-	rng           *rand.Rand
+	rng           *rand.Rand // #nosec G404 - MCTS exploration doesn't require cryptographic randomness
 }
 
 // NewMCTS creates a new MCTS instance
@@ -148,7 +149,7 @@ func NewMCTS(config MCTSConfig, actionGen MCTSActionGenerator, rewardFunc MCTSRe
 		rewardFunc:    rewardFunc,
 		rolloutPolicy: rolloutPolicy,
 		logger:        logger,
-		rng:           rand.New(rand.NewSource(time.Now().UnixNano())),
+		rng:           rand.New(rand.NewSource(time.Now().UnixNano())), // #nosec G404 - MCTS uses non-cryptographic randomness for exploration
 	}
 }
 
@@ -613,10 +614,11 @@ func (f *CodeRewardFunction) IsTerminal(ctx context.Context, state interface{}) 
 }
 
 // DefaultRolloutPolicy implements a simple rollout policy
+// Note: Uses math/rand for simulation randomness - this doesn't require cryptographic security
 type DefaultRolloutPolicy struct {
 	actionGen  MCTSActionGenerator
 	rewardFunc MCTSRewardFunction
-	rng        *rand.Rand
+	rng        *rand.Rand // #nosec G404 - MCTS rollout doesn't require cryptographic randomness
 }
 
 // NewDefaultRolloutPolicy creates a new default rollout policy
@@ -624,7 +626,7 @@ func NewDefaultRolloutPolicy(actionGen MCTSActionGenerator, rewardFunc MCTSRewar
 	return &DefaultRolloutPolicy{
 		actionGen:  actionGen,
 		rewardFunc: rewardFunc,
-		rng:        rand.New(rand.NewSource(time.Now().UnixNano())),
+		rng:        rand.New(rand.NewSource(time.Now().UnixNano())), // #nosec G404 - MCTS rollout uses non-cryptographic randomness
 	}
 }
 

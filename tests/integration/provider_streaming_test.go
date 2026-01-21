@@ -217,8 +217,7 @@ func TestGeminiNativeStreaming(t *testing.T) {
 
 	apiKey := getAPIKey("GEMINI_API_KEY")
 	if apiKey == "" {
-		t.Logf("GEMINI_API_KEY not set (acceptable)"); return
-		return
+		t.Skip("GEMINI_API_KEY not set")
 	}
 
 	testGeminiStreaming(t, apiKey, "gemini-2.0-flash")
@@ -230,8 +229,7 @@ func TestGeminiNativeNonStreaming(t *testing.T) {
 
 	apiKey := getAPIKey("GEMINI_API_KEY")
 	if apiKey == "" {
-		t.Logf("GEMINI_API_KEY not set (acceptable)"); return
-		return
+		t.Skip("GEMINI_API_KEY not set")
 	}
 
 	testGeminiNonStreaming(t, apiKey, "gemini-2.0-flash")
@@ -244,13 +242,11 @@ func TestHelixAgentEnsembleStreaming(t *testing.T) {
 	// Check if HelixAgent is running
 	resp, err := http.Get("http://localhost:7061/health")
 	if err != nil {
-		t.Logf("HelixAgent server not running (acceptable)"); return
-		return
+		t.Skip("HelixAgent server not running")
 	}
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		t.Logf("HelixAgent server not healthy (acceptable)"); return
-		return
+		t.Skip("HelixAgent server not healthy")
 	}
 
 	testHelixAgentStreaming(t)
@@ -263,13 +259,11 @@ func TestHelixAgentEnsembleNonStreaming(t *testing.T) {
 	// Check if HelixAgent is running
 	resp, err := http.Get("http://localhost:7061/health")
 	if err != nil {
-		t.Logf("HelixAgent server not running (acceptable)"); return
-		return
+		t.Skip("HelixAgent server not running")
 	}
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		t.Logf("HelixAgent server not healthy (acceptable)"); return
-		return
+		t.Skip("HelixAgent server not healthy")
 	}
 
 	testHelixAgentNonStreaming(t)
@@ -535,8 +529,7 @@ func testGeminiStreaming(t *testing.T, apiKey, model string) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusTooManyRequests {
-		t.Logf("Gemini rate limited (acceptable)"); return
-		return
+		t.Skip("Gemini rate limited")
 	}
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK, got %d", resp.StatusCode)
@@ -619,8 +612,7 @@ func testGeminiNonStreaming(t *testing.T, apiKey, model string) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusTooManyRequests {
-		t.Logf("Gemini rate limited (acceptable)"); return
-		return
+		t.Skip("Gemini rate limited")
 	}
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK, got %d", resp.StatusCode)
@@ -689,7 +681,7 @@ func testHelixAgentStreaming(t *testing.T) {
 
 	// Skip on auth errors or server errors
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		t.Logf("Auth error - API key may be missing or invalid (acceptable)"); return
+		t.Skip("Auth error - API key may be missing or invalid")
 	}
 	if resp.StatusCode >= 500 {
 		body, _ := io.ReadAll(resp.Body)
@@ -773,7 +765,7 @@ func testHelixAgentNonStreaming(t *testing.T) {
 
 	// Skip on auth errors or server errors
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		t.Logf("Auth error - API key may be missing or invalid (acceptable)"); return
+		t.Skip("Auth error - API key may be missing or invalid")
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -1018,8 +1010,7 @@ func TestStreamingTimeout(t *testing.T) {
 
 	apiKey := getAPIKey("DEEPSEEK_API_KEY")
 	if apiKey == "" {
-		t.Logf("DEEPSEEK_API_KEY not set (acceptable)"); return
-		return
+		t.Skip("DEEPSEEK_API_KEY not set")
 	}
 
 	// Use a very short timeout

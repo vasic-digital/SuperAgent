@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
-	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,10 +14,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/utils"
 )
 
 // UnifiedHandler provides 100% OpenAI-compatible API with automatic ensemble support
@@ -1869,14 +1870,14 @@ func (h *UnifiedHandler) expandFollowUpResponse(userMessage string, messages []O
 	return "" // No context to expand with
 }
 
-// generateID generates a random ID for OpenAI compatibility
+// generateID generates a cryptographically secure random ID for OpenAI compatibility
 func generateID() string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, 29)
-	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
+	id, err := utils.SecureRandomString(29)
+	if err != nil {
+		// Fallback to SecureRandomID if SecureRandomString fails
+		return utils.SecureRandomID("chatcmpl")
 	}
-	return string(b)
+	return id
 }
 
 // generateDebateDialogueIntroduction creates the AI debate team conversation introduction
@@ -3188,10 +3189,9 @@ func validateAndFilterToolCalls(toolCalls []StreamingToolCall) []StreamingToolCa
 	return validToolCalls
 }
 
-// generateToolCallID generates a unique ID for a tool call
+// generateToolCallID generates a cryptographically secure unique ID for a tool call
 func generateToolCallID() string {
-	// Generate a random ID using timestamp and random number
-	return fmt.Sprintf("%d%04d", time.Now().UnixNano()%1000000, rand.Intn(10000))
+	return utils.SecureRandomID("call")
 }
 
 // escapeJSONString escapes a string for safe inclusion in JSON

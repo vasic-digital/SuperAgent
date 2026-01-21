@@ -15,7 +15,7 @@ const (
 	EventTypeLLMRequestStarted   EventType = "llm.request.started"
 	EventTypeLLMRequestCompleted EventType = "llm.request.completed"
 	EventTypeLLMRequestFailed    EventType = "llm.request.failed"
-	EventTypeLLMStreamToken      EventType = "llm.stream.token"
+	EventTypeLLMStreamToken EventType = "llm.stream.token" // #nosec G101 - event type name, not credentials
 	EventTypeLLMStreamEnd        EventType = "llm.stream.end"
 
 	// Debate events
@@ -391,8 +391,8 @@ const (
 	TopicMetrics = "helixagent.events.metrics"
 	// TopicErrors is for error events.
 	TopicErrors = "helixagent.events.errors"
-	// TopicTokenStream is for token streaming events.
-	TopicTokenStream = "helixagent.stream.tokens"
+	// TopicTokenStream is for token streaming events - topic name, not credentials
+	TopicTokenStream = "helixagent.stream.tokens" // #nosec G101 - topic name, not credentials
 	// TopicSSEEvents is for SSE events.
 	TopicSSEEvents = "helixagent.stream.sse"
 	// TopicWebSocketMessages is for WebSocket messages.

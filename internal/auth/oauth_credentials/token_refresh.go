@@ -19,11 +19,11 @@ const (
 	// RefreshThreshold is the time before expiration when we proactively refresh
 	RefreshThreshold = 10 * time.Minute
 
-	// Claude OAuth endpoints
-	ClaudeTokenEndpoint = "https://console.anthropic.com/v1/oauth/token"
+	// Claude OAuth endpoints - public endpoint URLs, not credentials
+	ClaudeTokenEndpoint = "https://console.anthropic.com/v1/oauth/token" // #nosec G101 - public OAuth endpoint URL
 
-	// Qwen OAuth endpoints (Qwen Code / Tongyi Lingma)
-	QwenTokenEndpoint = "https://chat.qwen.ai/api/v1/oauth2/token"
+	// Qwen OAuth endpoints (Qwen Code / Tongyi Lingma) - public endpoint URLs, not credentials
+	QwenTokenEndpoint = "https://chat.qwen.ai/api/v1/oauth2/token" // #nosec G101 - public OAuth endpoint URL
 
 	// Qwen OAuth client ID (public client, used with PKCE)
 	QwenOAuthClientID = "f0304373b74a44d2b584a3fb70ca9e56"

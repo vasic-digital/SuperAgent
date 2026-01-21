@@ -7,13 +7,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
+	"math/rand" // Used for non-security operations (jitter)
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
+
 	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/utils"
 )
 
 var log = logrus.New()
@@ -54,15 +56,9 @@ func FreeModels() []string {
 	}
 }
 
-// generateDeviceID generates a unique device identifier for anonymous access
+// generateDeviceID generates a cryptographically secure unique device identifier for anonymous access
 func generateDeviceID() string {
-	// Generate a pseudo-random device ID for anonymous access
-	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, 32)
-	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
-	}
-	return fmt.Sprintf("helix-%s", string(b))
+	return utils.SecureRandomID("helix")
 }
 
 // IsAnonymousAccessAllowed checks if a model can be used without API key
@@ -742,8 +738,8 @@ func isAuthRetryableStatus(statusCode int) bool {
 
 // waitWithJitter waits for the specified duration plus random jitter
 func (p *ZenProvider) waitWithJitter(ctx context.Context, delay time.Duration) {
-	// Add 10% jitter
-	jitter := time.Duration(rand.Float64() * 0.1 * float64(delay))
+	// Add 10% jitter - using math/rand is acceptable for non-security jitter
+	jitter := time.Duration(rand.Float64() * 0.1 * float64(delay)) // #nosec G404 - jitter doesn't require cryptographic randomness
 	select {
 	case <-ctx.Done():
 	case <-time.After(delay + jitter):

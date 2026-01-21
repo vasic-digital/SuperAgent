@@ -175,7 +175,7 @@ func NewMigrationManager(cfg *MigrationConfig, logger *zap.Logger) *MigrationMan
 		logger:      logger,
 		errorWindow: make([]time.Time, 0),
 	}
-	m.metrics.CurrentMode.Store(int32(cfg.Mode))
+	m.metrics.CurrentMode.Store(int32(cfg.Mode)) // #nosec G115 - mode enum fits in int32
 	return m
 }
 
@@ -220,7 +220,7 @@ func (m *MigrationManager) SetMode(mode MigrationMode) error {
 		return err
 	}
 
-	m.metrics.CurrentMode.Store(int32(mode))
+	m.metrics.CurrentMode.Store(int32(mode)) // #nosec G115 - mode enum fits in int32
 	m.config.Mode = mode
 
 	m.logger.Info("migration mode changed",

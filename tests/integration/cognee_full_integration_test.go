@@ -715,8 +715,7 @@ func TestCogneeRealAPIIntegration(t *testing.T) {
 // TestAllCogneeEndpoints validates all Cognee endpoints are registered
 func TestAllCogneeEndpoints(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping endpoint test (acceptable)"); return
-		return
+		t.Skip("Short mode - skipping endpoint test")
 	}
 
 	// First check if HelixAgent is running with Cognee enabled
@@ -736,8 +735,7 @@ func TestAllCogneeEndpoints(t *testing.T) {
 	}
 	if cogneeHealthResp.StatusCode == 404 {
 		cogneeHealthResp.Body.Close()
-		t.Logf("Cognee routes not registered in HelixAgent (acceptable)"); return
-		return
+		t.Skip("Cognee routes not registered in HelixAgent")
 	}
 	cogneeHealthResp.Body.Close()
 

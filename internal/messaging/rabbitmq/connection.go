@@ -110,8 +110,9 @@ func (c *Connection) dial(ctx context.Context) (*amqp.Connection, error) {
 	if c.config.TLSEnabled {
 		tlsConfig := c.config.TLSConfig
 		if tlsConfig == nil {
+			// User can configure TLSSkipVerify for internal services with self-signed certs
 			tlsConfig = &tls.Config{
-				InsecureSkipVerify: c.config.TLSSkipVerify,
+				InsecureSkipVerify: c.config.TLSSkipVerify, // #nosec G402 - intentional config option
 			}
 		}
 		amqpConfig.TLSClientConfig = tlsConfig

@@ -1,0 +1,76 @@
+{
+  "stats": {
+    "files": 640,
+    "lines": 304668,
+    "nosec": 90,
+    "found": 699
+  },
+  "issues_by_rule": [
+    {
+      "rule": "G104",
+      "count": 486
+    },
+    {
+      "rule": "G304",
+      "count": 56
+    },
+    {
+      "rule": "G306",
+      "count": 51
+    },
+    {
+      "rule": "G204",
+      "count": 33
+    },
+    {
+      "rule": "G301",
+      "count": 32
+    },
+    {
+      "rule": "G103",
+      "count": 16
+    },
+    {
+      "rule": "G302",
+      "count": 7
+    },
+    {
+      "rule": "G201",
+      "count": 5
+    },
+    {
+      "rule": "G401",
+      "count": 4
+    },
+    {
+      "rule": "G501",
+      "count": 4
+    },
+    {
+      "rule": "G114",
+      "count": 3
+    },
+    {
+      "rule": "G102",
+      "count": 1
+    },
+    {
+      "rule": "G602",
+      "count": 1
+    }
+  ],
+  "issues_by_severity": [
+    {
+      "severity": "HIGH",
+      "count": 0
+    },
+    {
+      "severity": "LOW",
+      "count": 503
+    },
+    {
+      "severity": "MEDIUM",
+      "count": 196
+    }
+  ]
+}

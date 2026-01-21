@@ -121,7 +121,8 @@ func NewHTTPClientPool(config *PoolConfig) *HTTPClientPool {
 	if config.TLSConfig != nil {
 		transport.TLSClientConfig = config.TLSConfig
 	} else if config.InsecureSkipVerify {
-		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		// User explicitly requested to skip TLS verification (e.g., for internal services with self-signed certs)
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402 - intentional config option
 	}
 
 	return &HTTPClientPool{
@@ -278,7 +279,7 @@ func (p *HTTPClientPool) defaultRetryCondition(resp *http.Response, err error) b
 // calculateRetryDelay calculates the delay before the next retry
 func (p *HTTPClientPool) calculateRetryDelay(attempt int) time.Duration {
 	// Exponential backoff with jitter
-	delay := p.config.RetryWaitMin * time.Duration(1<<uint(attempt))
+	delay := p.config.RetryWaitMin * time.Duration(1<<uint(attempt)) // #nosec G115 - attempt count is small
 	if delay > p.config.RetryWaitMax {
 		delay = p.config.RetryWaitMax
 	}

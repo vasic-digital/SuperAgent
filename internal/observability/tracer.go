@@ -22,14 +22,14 @@ const (
 	AttrLLMProvider      = "gen_ai.request.model"
 	AttrLLMModel         = "gen_ai.request.model"
 	AttrLLMTemperature   = "gen_ai.request.temperature"
-	AttrLLMMaxTokens     = "gen_ai.request.max_tokens"
+	AttrLLMMaxTokens = "gen_ai.request.max_tokens" // #nosec G101 - OpenTelemetry attribute name, not credentials
 	AttrLLMTopP          = "gen_ai.request.top_p"
 	AttrLLMStopSequences = "gen_ai.request.stop_sequences"
 
-	// Token usage
-	AttrLLMInputTokens  = "gen_ai.usage.input_tokens"
-	AttrLLMOutputTokens = "gen_ai.usage.output_tokens"
-	AttrLLMTotalTokens  = "gen_ai.usage.total_tokens"
+	// Token usage - OpenTelemetry attribute names for token counting metrics, not credentials
+	AttrLLMInputTokens  = "gen_ai.usage.input_tokens"  // #nosec G101
+	AttrLLMOutputTokens = "gen_ai.usage.output_tokens" // #nosec G101
+	AttrLLMTotalTokens  = "gen_ai.usage.total_tokens"  // #nosec G101
 
 	// Response attributes
 	AttrLLMFinishReason = "gen_ai.response.finish_reason"

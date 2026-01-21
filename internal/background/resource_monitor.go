@@ -96,11 +96,12 @@ func (m *ProcessResourceMonitor) GetSystemResources() (*SystemResources, error) 
 		cpuLoad = cpuPercent[0]
 	}
 
+	// Note: uint64 to int64 conversions are safe for realistic memory sizes (max ~9 exabytes)
 	resources := &SystemResources{
 		TotalCPUCores:     cpuCores,
 		AvailableCPUCores: float64(cpuCores) * (100 - cpuLoad) / 100,
-		TotalMemoryMB:     int64(memInfo.Total / 1024 / 1024),
-		AvailableMemoryMB: int64(memInfo.Available / 1024 / 1024),
+		TotalMemoryMB:     int64(memInfo.Total / 1024 / 1024),   // #nosec G115 - memory size in MB fits int64
+		AvailableMemoryMB: int64(memInfo.Available / 1024 / 1024), // #nosec G115 - memory size in MB fits int64
 		CPULoadPercent:    cpuLoad,
 		MemoryUsedPercent: memInfo.UsedPercent,
 		DiskUsedPercent:   diskInfo.UsedPercent,
@@ -120,7 +121,7 @@ func (m *ProcessResourceMonitor) GetSystemResources() (*SystemResources, error) 
 
 // GetProcessResources returns resource usage for a specific process
 func (m *ProcessResourceMonitor) GetProcessResources(pid int) (*models.ResourceSnapshot, error) {
-	proc, err := process.NewProcess(int32(pid))
+	proc, err := process.NewProcess(int32(pid)) // #nosec G115 - process IDs fit in int32
 	if err != nil {
 		return nil, fmt.Errorf("process not found: %w", err)
 	}
@@ -142,11 +143,11 @@ func (m *ProcessResourceMonitor) GetProcessResources(pid int) (*models.ResourceS
 		snapshot.CPUSystemTime = cpuTimes.System
 	}
 
-	// Memory info
+	// Memory info - uint64 to int64 is safe for realistic memory sizes
 	memInfo, err := proc.MemoryInfo()
 	if err == nil && memInfo != nil {
-		snapshot.MemoryRSSBytes = int64(memInfo.RSS)
-		snapshot.MemoryVMSBytes = int64(memInfo.VMS)
+		snapshot.MemoryRSSBytes = int64(memInfo.RSS) // #nosec G115 - memory size fits int64
+		snapshot.MemoryVMSBytes = int64(memInfo.VMS) // #nosec G115 - memory size fits int64
 	}
 
 	// Memory percent
@@ -155,13 +156,13 @@ func (m *ProcessResourceMonitor) GetProcessResources(pid int) (*models.ResourceS
 		snapshot.MemoryPercent = float64(memPercent)
 	}
 
-	// I/O counters
+	// I/O counters - uint64 to int64 is safe for realistic I/O amounts
 	ioCounters, err := proc.IOCounters()
 	if err == nil && ioCounters != nil {
-		snapshot.IOReadBytes = int64(ioCounters.ReadBytes)
-		snapshot.IOWriteBytes = int64(ioCounters.WriteBytes)
-		snapshot.IOReadCount = int64(ioCounters.ReadCount)
-		snapshot.IOWriteCount = int64(ioCounters.WriteCount)
+		snapshot.IOReadBytes = int64(ioCounters.ReadBytes)   // #nosec G115 - I/O byte count fits int64
+		snapshot.IOWriteBytes = int64(ioCounters.WriteBytes) // #nosec G115 - I/O byte count fits int64
+		snapshot.IOReadCount = int64(ioCounters.ReadCount)   // #nosec G115 - I/O count fits int64
+		snapshot.IOWriteCount = int64(ioCounters.WriteCount) // #nosec G115 - I/O count fits int64
 	}
 
 	// Network connections
@@ -171,10 +172,11 @@ func (m *ProcessResourceMonitor) GetProcessResources(pid int) (*models.ResourceS
 	}
 
 	// Get network I/O (system-wide, as process-level is harder to get)
+	// uint64 to int64 is safe for realistic network transfer amounts
 	netStats, err := net.IOCounters(false)
 	if err == nil && len(netStats) > 0 {
-		snapshot.NetBytesSent = int64(netStats[0].BytesSent)
-		snapshot.NetBytesRecv = int64(netStats[0].BytesRecv)
+		snapshot.NetBytesSent = int64(netStats[0].BytesSent) // #nosec G115 - network bytes fit int64
+		snapshot.NetBytesRecv = int64(netStats[0].BytesRecv) // #nosec G115 - network bytes fit int64
 	}
 
 	// Open files

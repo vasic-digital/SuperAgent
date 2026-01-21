@@ -460,7 +460,8 @@ func (s *WeightedStrategy) SelectProvider(providers map[string]LLMProvider, req 
 	}
 
 	// Select based on weighted random selection
-	random := rand.Float64() * totalWeight
+	// Note: Using math/rand for load balancing is acceptable - it doesn't require cryptographic randomness
+	random := rand.Float64() * totalWeight // #nosec G404 - load balancing doesn't require cryptographic randomness
 	current := 0.0
 
 	for name, weight := range weights {
@@ -539,8 +540,8 @@ func (s *HealthBasedStrategy) SelectProvider(providers map[string]LLMProvider, r
 
 	// Fall back to half-open providers if no fully healthy ones
 	if len(halfOpenProviders) > 0 {
-		// Select randomly among recovering providers
-		return halfOpenProviders[rand.Intn(len(halfOpenProviders))], nil
+		// Select randomly among recovering providers - using math/rand is acceptable for load balancing
+		return halfOpenProviders[rand.Intn(len(halfOpenProviders))], nil // #nosec G404 - load balancing doesn't require cryptographic randomness
 	}
 
 	return "", fmt.Errorf("no healthy providers available")
@@ -593,22 +594,24 @@ func (s *LatencyBasedStrategy) SelectProvider(providers map[string]LLMProvider, 
 	}
 
 	// If we found a provider with the lowest latency, use it (with some randomization to allow exploration)
+	// Note: Using math/rand for load balancing exploration is acceptable - it doesn't require cryptographic randomness
 	if bestProvider != "" {
 		// 10% of the time, pick a random provider to allow exploration
+		// #nosec G404 - load balancing doesn't require cryptographic randomness
 		if rand.Float64() < 0.1 {
 			// Pick from all providers for exploration
 			names := make([]string, 0, len(providers))
 			for name := range providers {
 				names = append(names, name)
 			}
-			return names[rand.Intn(len(names))], nil
+			return names[rand.Intn(len(names))], nil // #nosec G404 - load balancing doesn't require cryptographic randomness
 		}
 		return bestProvider, nil
 	}
 
 	// No providers with latency data yet, prefer those without metrics to build up data
 	if len(providersWithoutMetrics) > 0 {
-		return providersWithoutMetrics[rand.Intn(len(providersWithoutMetrics))], nil
+		return providersWithoutMetrics[rand.Intn(len(providersWithoutMetrics))], nil // #nosec G404 - load balancing doesn't require cryptographic randomness
 	}
 
 	// Fallback: select randomly from all providers
@@ -616,10 +619,11 @@ func (s *LatencyBasedStrategy) SelectProvider(providers map[string]LLMProvider, 
 	for name := range providers {
 		names = append(names, name)
 	}
-	return names[rand.Intn(len(names))], nil
+	return names[rand.Intn(len(names))], nil // #nosec G404 - load balancing doesn't require cryptographic randomness
 }
 
 // RandomStrategy
+// Note: Using math/rand for load balancing is acceptable - it doesn't require cryptographic randomness
 func (s *RandomStrategy) SelectProvider(providers map[string]LLMProvider, req *models.LLMRequest) (string, error) {
 	if len(providers) == 0 {
 		return "", fmt.Errorf("no providers available")
@@ -634,7 +638,7 @@ func (s *RandomStrategy) SelectProvider(providers map[string]LLMProvider, req *m
 		return "", fmt.Errorf("no providers available")
 	}
 
-	selected := names[rand.Intn(len(names))]
+	selected := names[rand.Intn(len(names))] // #nosec G404 - load balancing doesn't require cryptographic randomness
 	return selected, nil
 }
 

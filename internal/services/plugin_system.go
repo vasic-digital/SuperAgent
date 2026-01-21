@@ -937,12 +937,13 @@ type WeightedRoundRobinLoadBalancer struct {
 type RandomLoadBalancer struct{}
 
 // SelectInstance selects a random instance
+// Note: Using math/rand for load balancing is acceptable - it doesn't require cryptographic randomness
 func (rl *RandomLoadBalancer) SelectInstance(protocol string, instances []*ServiceInstance) *ServiceInstance {
 	if len(instances) == 0 {
 		return nil
 	}
 
-	return instances[rand.Intn(len(instances))]
+	return instances[rand.Intn(len(instances))] // #nosec G404 - load balancing doesn't require cryptographic randomness
 }
 
 // UpdateLoad updates load information (no-op for random)

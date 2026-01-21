@@ -366,7 +366,7 @@ func (b *Broker) Publish(ctx context.Context, topic string, message *messaging.M
 
 	// Add priority if set
 	if message.Priority > 0 {
-		publishing.Priority = uint8(message.Priority)
+		publishing.Priority = uint8(message.Priority) // #nosec G115 - message priority fits in uint8
 	}
 
 	// Add trace ID

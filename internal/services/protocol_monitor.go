@@ -668,9 +668,9 @@ func collectDiskUsage() float64 {
 		return 0.0
 	}
 
-	// Calculate used space in MB
-	totalBytes := stat.Blocks * uint64(stat.Bsize)
-	freeBytes := stat.Bfree * uint64(stat.Bsize)
+	// Calculate used space in MB - block size is positive and fits in uint64
+	totalBytes := stat.Blocks * uint64(stat.Bsize) // #nosec G115
+	freeBytes := stat.Bfree * uint64(stat.Bsize)   // #nosec G115
 	usedBytes := totalBytes - freeBytes
 
 	return float64(usedBytes) / (1024 * 1024)

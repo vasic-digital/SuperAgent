@@ -683,7 +683,7 @@ func (m *LocalHashModel) generateHashEmbedding(text string) []float32 {
 	for i := 0; i < m.config.Dimensions; i++ {
 		// Create a deterministic value from hash
 		idx := i % len(hash)
-		seed := uint32(hash[idx]) + uint32(i)
+		seed := uint32(hash[idx]) + uint32(i) // #nosec G115 - byte (0-255) and dimension index fit in uint32
 
 		// Convert to float32 in range [-1, 1]
 		seedBytes := make([]byte, 4)

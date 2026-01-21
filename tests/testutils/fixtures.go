@@ -136,10 +136,10 @@ func NewTestLoginRequest() map[string]interface{} {
 	}
 }
 
-// Token fixtures
+// Token fixtures - intentionally fake test tokens, not real credentials
 const (
-	TestValidToken   = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxOTk5OTk5OTk5fQ.test"
-	TestExpiredToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxMDAwMDAwMDAwfQ.test"
+	TestValidToken   = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxOTk5OTk5OTk5fQ.test"      // #nosec G101 - test fixture, not real credentials
+	TestExpiredToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxMDAwMDAwMDAwfQ.test" // #nosec G101 - test fixture, not real credentials
 	TestInvalidToken = "invalid-token"
 	TestAPIKey       = "test-api-key-12345"
 )

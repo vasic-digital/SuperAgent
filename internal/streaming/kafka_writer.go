@@ -12,9 +12,9 @@ import (
 	"dev.helix.agent/internal/messaging"
 )
 
-// KafkaStreamTopic constants for streaming events.
+// KafkaStreamTopic constants for streaming events - topic names, not credentials
 const (
-	TopicTokenStream       = "helixagent.stream.tokens"
+	TopicTokenStream = "helixagent.stream.tokens" // #nosec G101 - Kafka topic name, not credentials
 	TopicSSEEvents         = "helixagent.stream.sse"
 	TopicWebSocketMessages = "helixagent.stream.websocket"
 	TopicStreamEvents      = "helixagent.stream.events"

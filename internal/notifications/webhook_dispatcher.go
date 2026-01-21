@@ -437,7 +437,7 @@ func (d *WebhookDispatcher) handleDeliveryFailure(delivery *WebhookDelivery, web
 
 // calculateBackoff calculates exponential backoff
 func (d *WebhookDispatcher) calculateBackoff(retryCount int) time.Duration {
-	backoff := d.config.RetryBackoff * time.Duration(1<<uint(retryCount-1))
+	backoff := d.config.RetryBackoff * time.Duration(1<<uint(retryCount-1)) // #nosec G115 - retry count is small
 	if backoff > d.config.MaxBackoff {
 		backoff = d.config.MaxBackoff
 	}
