@@ -91,6 +91,10 @@ type Processor struct {
 	handlers map[string]RetryHandler
 	mu       sync.RWMutex
 
+	// In-memory store for DLQ messages (for listing/reprocessing/discarding)
+	messages   map[string]*DeadLetterMessage
+	messagesMu sync.RWMutex
+
 	running   atomic.Bool
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -107,6 +111,7 @@ func NewProcessor(broker messaging.MessageBroker, config ProcessorConfig, logger
 		broker:   broker,
 		logger:   logger,
 		handlers: make(map[string]RetryHandler),
+		messages: make(map[string]*DeadLetterMessage),
 	}
 }
 
@@ -319,10 +324,23 @@ func (p *Processor) calculateRetryDelay(retryCount int) time.Duration {
 	return delay
 }
 
-// updateDLQMessage updates a DLQ message (e.g., to track status)
+// updateDLQMessage updates a DLQ message in the in-memory store
 func (p *Processor) updateDLQMessage(ctx context.Context, dlqMsg *DeadLetterMessage) error {
-	// In a real implementation, this would update a persistent store
-	// For now, we just log the update
+	p.messagesMu.Lock()
+	defer p.messagesMu.Unlock()
+
+	// Store or update the message
+	p.messages[dlqMsg.ID] = dlqMsg
+
+	// Update queue depth metric
+	pendingCount := int64(0)
+	for _, msg := range p.messages {
+		if msg.Status == StatusPending || msg.Status == StatusRetrying {
+			pendingCount++
+		}
+	}
+	atomic.StoreInt64(&p.metrics.CurrentQueueDepth, pendingCount)
+
 	p.logger.Debug("DLQ message updated",
 		zap.String("message_id", dlqMsg.ID),
 		zap.String("status", string(dlqMsg.Status)),
@@ -345,8 +363,70 @@ func (p *Processor) GetMetrics() ProcessorMetrics {
 // ReprocessMessage manually triggers reprocessing of a specific DLQ message
 func (p *Processor) ReprocessMessage(ctx context.Context, messageID string) error {
 	p.logger.Info("Manual reprocess requested", zap.String("message_id", messageID))
-	// In a real implementation, this would fetch and reprocess a specific message
-	return nil
+
+	// Fetch the message from the store
+	p.messagesMu.RLock()
+	dlqMsg, exists := p.messages[messageID]
+	p.messagesMu.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("message not found: %s", messageID)
+	}
+
+	// Check if message can be reprocessed
+	if dlqMsg.Status == StatusProcessed || dlqMsg.Status == StatusDiscarded {
+		return fmt.Errorf("message %s is already %s and cannot be reprocessed", messageID, dlqMsg.Status)
+	}
+
+	// Reset retry count for manual reprocess and set to retrying
+	p.messagesMu.Lock()
+	dlqMsg.Status = StatusRetrying
+	dlqMsg.NextRetry = time.Time{} // Clear next retry to process immediately
+	p.messagesMu.Unlock()
+
+	// Find handler for message type
+	p.mu.RLock()
+	handler, ok := p.handlers[dlqMsg.OriginalMessage.Type]
+	p.mu.RUnlock()
+
+	if !ok {
+		handler = p.defaultRetryHandler
+	}
+
+	// Execute retry with timeout
+	retryCtx, retryCancel := context.WithTimeout(ctx, p.config.ProcessingTimeout)
+	defer retryCancel()
+
+	if err := handler(retryCtx, dlqMsg); err != nil {
+		// Retry failed
+		p.messagesMu.Lock()
+		dlqMsg.RetryCount++
+		dlqMsg.LastFailure = time.Now()
+		dlqMsg.Status = StatusPending
+		delay := p.calculateRetryDelay(dlqMsg.RetryCount)
+		dlqMsg.NextRetry = time.Now().Add(delay)
+		if dlqMsg.FailureDetails == nil {
+			dlqMsg.FailureDetails = make(map[string]interface{})
+		}
+		dlqMsg.FailureDetails["last_error"] = err.Error()
+		dlqMsg.FailureDetails["manual_reprocess"] = true
+		p.messagesMu.Unlock()
+
+		atomic.AddInt64(&p.metrics.MessagesRetried, 1)
+		p.logger.Warn("Manual reprocess failed",
+			zap.String("message_id", messageID),
+			zap.Error(err))
+		return p.updateDLQMessage(ctx, dlqMsg)
+	}
+
+	// Success
+	p.messagesMu.Lock()
+	dlqMsg.Status = StatusProcessed
+	p.messagesMu.Unlock()
+
+	atomic.AddInt64(&p.metrics.MessagesProcessed, 1)
+	p.logger.Info("Manual reprocess succeeded", zap.String("message_id", messageID))
+	return p.updateDLQMessage(ctx, dlqMsg)
 }
 
 // DiscardMessage permanently discards a DLQ message
@@ -354,12 +434,187 @@ func (p *Processor) DiscardMessage(ctx context.Context, messageID string, reason
 	p.logger.Info("Manual discard requested",
 		zap.String("message_id", messageID),
 		zap.String("reason", reason))
+
+	p.messagesMu.Lock()
+	defer p.messagesMu.Unlock()
+
+	dlqMsg, exists := p.messages[messageID]
+	if !exists {
+		return fmt.Errorf("message not found: %s", messageID)
+	}
+
+	// Check if already discarded
+	if dlqMsg.Status == StatusDiscarded {
+		return fmt.Errorf("message %s is already discarded", messageID)
+	}
+
+	// Update status
+	dlqMsg.Status = StatusDiscarded
+	if dlqMsg.FailureDetails == nil {
+		dlqMsg.FailureDetails = make(map[string]interface{})
+	}
+	dlqMsg.FailureDetails["discard_reason"] = reason
+	dlqMsg.FailureDetails["discarded_at"] = time.Now().Format(time.RFC3339)
+
 	atomic.AddInt64(&p.metrics.MessagesDiscarded, 1)
+
+	// Update queue depth
+	pendingCount := int64(0)
+	for _, msg := range p.messages {
+		if msg.Status == StatusPending || msg.Status == StatusRetrying {
+			pendingCount++
+		}
+	}
+	atomic.StoreInt64(&p.metrics.CurrentQueueDepth, pendingCount)
+
+	p.logger.Info("Message discarded",
+		zap.String("message_id", messageID),
+		zap.String("reason", reason))
 	return nil
 }
 
 // ListMessages returns a list of messages currently in the DLQ
 func (p *Processor) ListMessages(ctx context.Context, limit, offset int) ([]*DeadLetterMessage, error) {
-	// In a real implementation, this would query a persistent store
-	return nil, nil
+	p.messagesMu.RLock()
+	defer p.messagesMu.RUnlock()
+
+	// Collect all messages into a slice for sorting
+	allMessages := make([]*DeadLetterMessage, 0, len(p.messages))
+	for _, msg := range p.messages {
+		allMessages = append(allMessages, msg)
+	}
+
+	// Sort by last failure time (most recent first)
+	for i := 0; i < len(allMessages)-1; i++ {
+		for j := i + 1; j < len(allMessages); j++ {
+			if allMessages[j].LastFailure.After(allMessages[i].LastFailure) {
+				allMessages[i], allMessages[j] = allMessages[j], allMessages[i]
+			}
+		}
+	}
+
+	// Apply offset
+	if offset > 0 {
+		if offset >= len(allMessages) {
+			return []*DeadLetterMessage{}, nil
+		}
+		allMessages = allMessages[offset:]
+	}
+
+	// Apply limit
+	if limit > 0 && limit < len(allMessages) {
+		allMessages = allMessages[:limit]
+	}
+
+	// Return copies to avoid external modifications
+	result := make([]*DeadLetterMessage, len(allMessages))
+	for i, msg := range allMessages {
+		msgCopy := *msg
+		result[i] = &msgCopy
+	}
+
+	return result, nil
+}
+
+// GetMessage retrieves a specific message by ID
+func (p *Processor) GetMessage(ctx context.Context, messageID string) (*DeadLetterMessage, error) {
+	p.messagesMu.RLock()
+	defer p.messagesMu.RUnlock()
+
+	msg, exists := p.messages[messageID]
+	if !exists {
+		return nil, fmt.Errorf("message not found: %s", messageID)
+	}
+
+	// Return a copy
+	msgCopy := *msg
+	return &msgCopy, nil
+}
+
+// AddMessage adds a new message to the DLQ (used when messages fail in other systems)
+func (p *Processor) AddMessage(ctx context.Context, dlqMsg *DeadLetterMessage) error {
+	if dlqMsg.ID == "" {
+		return fmt.Errorf("message ID is required")
+	}
+
+	p.messagesMu.Lock()
+	defer p.messagesMu.Unlock()
+
+	// Check if message already exists
+	if _, exists := p.messages[dlqMsg.ID]; exists {
+		return fmt.Errorf("message %s already exists in DLQ", dlqMsg.ID)
+	}
+
+	// Initialize timestamps
+	now := time.Now()
+	if dlqMsg.FirstFailure.IsZero() {
+		dlqMsg.FirstFailure = now
+	}
+	dlqMsg.LastFailure = now
+
+	// Set initial status
+	if dlqMsg.Status == "" {
+		dlqMsg.Status = StatusPending
+	}
+
+	// Calculate next retry time
+	if dlqMsg.NextRetry.IsZero() {
+		delay := p.calculateRetryDelay(dlqMsg.RetryCount + 1)
+		dlqMsg.NextRetry = now.Add(delay)
+	}
+
+	p.messages[dlqMsg.ID] = dlqMsg
+
+	// Update queue depth
+	atomic.AddInt64(&p.metrics.CurrentQueueDepth, 1)
+
+	p.logger.Info("Message added to DLQ",
+		zap.String("message_id", dlqMsg.ID),
+		zap.String("original_topic", dlqMsg.OriginalTopic),
+		zap.String("failure_reason", dlqMsg.FailureReason))
+
+	return nil
+}
+
+// GetMessageCount returns the total number of messages in the DLQ
+func (p *Processor) GetMessageCount(ctx context.Context) int {
+	p.messagesMu.RLock()
+	defer p.messagesMu.RUnlock()
+	return len(p.messages)
+}
+
+// GetMessagesByStatus returns messages filtered by status
+func (p *Processor) GetMessagesByStatus(ctx context.Context, status DLQStatus, limit int) ([]*DeadLetterMessage, error) {
+	p.messagesMu.RLock()
+	defer p.messagesMu.RUnlock()
+
+	result := make([]*DeadLetterMessage, 0)
+	for _, msg := range p.messages {
+		if msg.Status == status {
+			msgCopy := *msg
+			result = append(result, &msgCopy)
+			if limit > 0 && len(result) >= limit {
+				break
+			}
+		}
+	}
+
+	return result, nil
+}
+
+// PurgeProcessed removes all processed messages from the store
+func (p *Processor) PurgeProcessed(ctx context.Context) (int, error) {
+	p.messagesMu.Lock()
+	defer p.messagesMu.Unlock()
+
+	count := 0
+	for id, msg := range p.messages {
+		if msg.Status == StatusProcessed || msg.Status == StatusDiscarded {
+			delete(p.messages, id)
+			count++
+		}
+	}
+
+	p.logger.Info("Purged processed messages", zap.Int("count", count))
+	return count, nil
 }
