@@ -351,11 +351,13 @@ func TestTeamBuilder_BuildTeamTopologyAgents(t *testing.T) {
 	factory := NewAgentFactory()
 	pool := NewAgentPool(factory)
 
-	// Add enough agents
+	// Add agents for all required domains (including those needed for DefaultTeamConfig)
+	// DefaultTeamConfig requires: Code, Security, General, Optimization, Reasoning
+	domains := []Domain{DomainCode, DomainSecurity, DomainGeneral, DomainOptimization, DomainReasoning}
 	for i := 0; i < 10; i++ {
-		domain := []Domain{DomainCode, DomainSecurity, DomainArchitecture}[i%3]
+		domain := domains[i%len(domains)]
 		agent := NewSpecializedAgent("Agent", "test", "model", domain)
-		agent.Score = float64(9 - i%3)
+		agent.Score = float64(9 - i%len(domains))
 		pool.Add(agent)
 	}
 
