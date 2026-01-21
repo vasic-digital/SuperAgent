@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -259,9 +260,12 @@ func (phm *ProviderHealthMonitor) checkProvider(ctx context.Context, providerID 
 
 // updateStatus updates the health status of a provider
 func (phm *ProviderHealthMonitor) updateStatus(providerID string, healthy bool, errMsg string, responseTime time.Duration) {
-	phm.mu.Lock()
-	defer phm.mu.Unlock()
+	var shouldAlert bool
+	var alertData ProviderHealthAlert
+	var consecutiveFails int
 
+	// Update status under lock
+	phm.mu.Lock()
 	status, exists := phm.healthStatus[providerID]
 	if !exists {
 		status = &MonitoredProviderHealth{
@@ -287,24 +291,32 @@ func (phm *ProviderHealthMonitor) updateStatus(providerID string, healthy bool, 
 		status.FailCount++
 		phmHealthCheckGauge.WithLabelValues(providerID).Set(0)
 
-		// Send alert after threshold
+		// Prepare alert after threshold (will send after releasing lock)
 		if status.ConsecutiveFails == 3 {
-			phm.sendAlert(ProviderHealthAlert{
+			shouldAlert = true
+			alertData = ProviderHealthAlert{
 				Type:             "provider_unhealthy",
 				ProviderID:       providerID,
-				Message:          "Provider has failed " + string(rune(status.ConsecutiveFails)) + " consecutive health checks",
+				Message:          fmt.Sprintf("Provider has failed %d consecutive health checks", status.ConsecutiveFails),
 				Timestamp:        time.Now(),
 				ConsecutiveFails: status.ConsecutiveFails,
 				LastError:        errMsg,
-			})
+			}
 		}
+	}
+	consecutiveFails = status.ConsecutiveFails
+	phm.mu.Unlock()
+
+	// Send alert outside of lock to prevent deadlock
+	if shouldAlert {
+		phm.sendAlert(alertData)
 	}
 
 	phm.logger.WithFields(logrus.Fields{
 		"provider":          providerID,
 		"healthy":           healthy,
 		"response_time_ms":  responseTime.Milliseconds(),
-		"consecutive_fails": status.ConsecutiveFails,
+		"consecutive_fails": consecutiveFails,
 		"error":             errMsg,
 	}).Debug("Provider health status updated")
 }
