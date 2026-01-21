@@ -421,6 +421,18 @@ test-race:
 	@echo "🏃 Running race condition tests..."
 	go test -race ./...
 
+test-automation:
+	@echo "🤖 Running full automation test suite..."
+	go test -v -timeout 600s ./tests/automation/...
+
+test-automation-verbose:
+	@echo "🤖 Running full automation test suite (verbose)..."
+	./scripts/run_full_automation.sh --verbose
+
+test-automation-coverage:
+	@echo "🤖 Running full automation test suite with coverage..."
+	./scripts/run_full_automation.sh --verbose --coverage
+
 # =============================================================================
 # CODE QUALITY TARGETS
 # =============================================================================
