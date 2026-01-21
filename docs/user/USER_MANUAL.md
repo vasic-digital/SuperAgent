@@ -18,7 +18,10 @@ Comprehensive guide for using HelixAgent - the intelligent ensemble LLM service.
 12. [Performance Optimization](#performance-optimization)
 13. [Monitoring and Observability](#monitoring-and-observability)
 14. [Troubleshooting](#troubleshooting)
-15. [Glossary](#glossary)
+15. [Administration](#administration)
+16. [Security](#security)
+17. [Protocol Details](#protocol-details)
+18. [Glossary](#glossary)
 
 ---
 
@@ -1238,6 +1241,575 @@ logging:
 - GitHub Issues: https://dev.helix.agent/issues
 - Documentation: https://helixagent.ai/docs
 - Discord: https://discord.gg/helixagent
+
+---
+
+## Administration
+
+This section covers system administration tasks for HelixAgent in production environments.
+
+### Backup and Recovery
+
+#### Database Backup
+
+```bash
+# Manual backup
+pg_dump -h localhost -U helixagent -d helixagent -F c -f backup.dump
+
+# Automated daily backup (add to crontab)
+0 2 * * * pg_dump -h localhost -U helixagent -d helixagent -F c -f /backups/helixagent_$(date +\%Y\%m\%d).dump
+
+# Restore from backup
+pg_restore -h localhost -U helixagent -d helixagent -c backup.dump
+```
+
+#### Redis Backup
+
+```bash
+# Create RDB snapshot
+redis-cli BGSAVE
+
+# Copy RDB file
+cp /var/lib/redis/dump.rdb /backups/redis_$(date +%Y%m%d).rdb
+
+# Restore (stop Redis, replace dump.rdb, restart)
+systemctl stop redis
+cp /backups/redis_backup.rdb /var/lib/redis/dump.rdb
+systemctl start redis
+```
+
+#### Configuration Backup
+
+```bash
+# Backup all configuration
+tar -czf helixagent_config_$(date +%Y%m%d).tar.gz \
+    .env \
+    configs/ \
+    docker-compose.yml
+
+# Restore
+tar -xzf helixagent_config_backup.tar.gz
+```
+
+### Scaling
+
+#### Horizontal Scaling
+
+```yaml
+# docker-compose.override.yml
+services:
+  helixagent:
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+```
+
+#### Load Balancer Configuration
+
+```nginx
+# nginx.conf
+upstream helixagent_backend {
+    least_conn;
+    server helixagent1:7061;
+    server helixagent2:7061;
+    server helixagent3:7061;
+}
+
+server {
+    listen 80;
+    location / {
+        proxy_pass http://helixagent_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+#### Kubernetes Scaling
+
+```yaml
+# HorizontalPodAutoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: helixagent-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: helixagent
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+```
+
+### Upgrades
+
+#### Version Upgrade Procedure
+
+```bash
+# 1. Backup current installation
+./scripts/backup.sh
+
+# 2. Pull new version
+git fetch origin
+git checkout v1.4.0
+
+# 3. Review changelog
+cat CHANGELOG.md
+
+# 4. Update dependencies
+go mod download
+
+# 5. Run database migrations
+make db-migrate
+
+# 6. Build new version
+make build
+
+# 7. Rolling restart (zero-downtime)
+docker-compose up -d --no-deps --build helixagent
+```
+
+#### Docker Upgrade
+
+```bash
+# Pull new images
+docker-compose pull
+
+# Recreate containers
+docker-compose up -d --force-recreate
+
+# Verify health
+curl http://localhost:7061/health
+```
+
+### User Management
+
+```bash
+# Create API key
+curl -X POST http://localhost:7061/admin/api-keys \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"name": "Production Key", "permissions": ["read", "write"]}'
+
+# List API keys
+curl http://localhost:7061/admin/api-keys \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Revoke API key
+curl -X DELETE http://localhost:7061/admin/api-keys/{key_id} \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+### Audit Logging
+
+```bash
+# View audit logs
+curl http://localhost:7061/admin/audit-logs \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Filter by date
+curl "http://localhost:7061/admin/audit-logs?from=2026-01-01&to=2026-01-31"
+
+# Filter by action
+curl "http://localhost:7061/admin/audit-logs?action=api_key_created"
+```
+
+### Maintenance Mode
+
+```bash
+# Enable maintenance mode
+curl -X POST http://localhost:7061/admin/maintenance/enable \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"message": "Scheduled maintenance until 3:00 AM UTC"}'
+
+# Disable maintenance mode
+curl -X POST http://localhost:7061/admin/maintenance/disable \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+---
+
+## Security
+
+### Authentication
+
+#### JWT Configuration
+
+```yaml
+security:
+  jwt:
+    enabled: true
+    secret: ${JWT_SECRET}
+    expiration: 24h
+    refresh_enabled: true
+    refresh_expiration: 168h  # 7 days
+```
+
+#### API Key Authentication
+
+```bash
+# Request with API key
+curl http://localhost:7061/v1/chat/completions \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-4", "messages": [...]}'
+```
+
+#### OAuth2 Integration
+
+```yaml
+security:
+  oauth2:
+    enabled: true
+    providers:
+      google:
+        client_id: ${GOOGLE_CLIENT_ID}
+        client_secret: ${GOOGLE_CLIENT_SECRET}
+        redirect_uri: https://yourdomain.com/auth/callback/google
+      github:
+        client_id: ${GITHUB_CLIENT_ID}
+        client_secret: ${GITHUB_CLIENT_SECRET}
+```
+
+### CORS Configuration
+
+```yaml
+security:
+  cors:
+    enabled: true
+    allowed_origins:
+      - https://yourdomain.com
+      - https://app.yourdomain.com
+    allowed_methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed_headers:
+      - Authorization
+      - Content-Type
+      - X-Request-ID
+    expose_headers:
+      - X-Request-ID
+      - X-RateLimit-Remaining
+    max_age: 3600
+    allow_credentials: true
+```
+
+### TLS/SSL Configuration
+
+```yaml
+server:
+  tls:
+    enabled: true
+    cert_file: /etc/ssl/certs/helixagent.crt
+    key_file: /etc/ssl/private/helixagent.key
+    min_version: TLS1.2
+```
+
+### Rate Limiting
+
+```yaml
+security:
+  rate_limit:
+    enabled: true
+    # Global limits
+    global:
+      requests_per_minute: 1000
+      burst: 100
+    # Per-user limits
+    per_user:
+      requests_per_minute: 60
+      burst: 10
+    # Per-IP limits (for unauthenticated requests)
+    per_ip:
+      requests_per_minute: 30
+      burst: 5
+```
+
+### Input Validation
+
+```yaml
+security:
+  validation:
+    max_request_size: 10MB
+    max_message_length: 100000  # characters
+    max_messages: 100
+    sanitize_html: true
+    block_injections: true
+```
+
+### Security Headers
+
+```yaml
+security:
+  headers:
+    x_frame_options: DENY
+    x_content_type_options: nosniff
+    x_xss_protection: "1; mode=block"
+    strict_transport_security: "max-age=31536000; includeSubDomains"
+    content_security_policy: "default-src 'self'"
+```
+
+### Secrets Management
+
+```bash
+# Using environment variables
+export ANTHROPIC_API_KEY="sk-ant-..."
+export JWT_SECRET="your-secure-secret"
+
+# Using Docker secrets
+docker secret create anthropic_api_key ./secrets/anthropic.txt
+docker secret create jwt_secret ./secrets/jwt.txt
+
+# Using HashiCorp Vault
+vault kv put secret/helixagent/api-keys \
+  anthropic="sk-ant-..." \
+  openai="sk-..."
+```
+
+---
+
+## Protocol Details
+
+### MCP (Model Context Protocol)
+
+MCP enables AI models to access external tools, resources, and context.
+
+#### Available Methods
+
+| Method | Description |
+|--------|-------------|
+| `resources/list` | List available resources |
+| `resources/read` | Read a resource |
+| `tools/list` | List available tools |
+| `tools/call` | Execute a tool |
+| `prompts/list` | List available prompts |
+| `prompts/get` | Get a specific prompt |
+
+#### Resource Example
+
+```bash
+# List resources
+curl -X POST http://localhost:7061/v1/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "resources/list",
+    "params": {}
+  }'
+
+# Response
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "resources": [
+      {
+        "uri": "file:///project/src/main.go",
+        "name": "main.go",
+        "mimeType": "text/x-go"
+      }
+    ]
+  }
+}
+```
+
+#### Tool Execution
+
+```bash
+# List tools
+curl -X POST http://localhost:7061/v1/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/list",
+    "params": {}
+  }'
+
+# Call tool
+curl -X POST http://localhost:7061/v1/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+      "name": "file_search",
+      "arguments": {
+        "query": "authentication",
+        "directory": "/project"
+      }
+    }
+  }'
+```
+
+### LSP (Language Server Protocol)
+
+LSP provides IDE-like features for code intelligence.
+
+#### Supported Methods
+
+| Method | Description |
+|--------|-------------|
+| `initialize` | Initialize LSP connection |
+| `textDocument/completion` | Get code completions |
+| `textDocument/hover` | Get hover information |
+| `textDocument/definition` | Go to definition |
+| `textDocument/references` | Find references |
+| `textDocument/rename` | Rename symbol |
+| `textDocument/formatting` | Format document |
+
+#### Code Completion Example
+
+```bash
+curl -X POST http://localhost:7061/v1/lsp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {"uri": "file:///project/src/main.go"},
+      "position": {"line": 10, "character": 5}
+    }
+  }'
+
+# Response
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "items": [
+      {
+        "label": "fmt.Println",
+        "kind": 3,
+        "detail": "func(a ...interface{}) (n int, err error)",
+        "insertText": "fmt.Println($1)"
+      }
+    ]
+  }
+}
+```
+
+#### Hover Information
+
+```bash
+curl -X POST http://localhost:7061/v1/lsp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {"uri": "file:///project/src/main.go"},
+      "position": {"line": 15, "character": 10}
+    }
+  }'
+```
+
+### ACP (Agent Communication Protocol)
+
+ACP enables communication between AI agents.
+
+#### Message Types
+
+| Type | Description |
+|------|-------------|
+| `request` | Agent request for action |
+| `response` | Response to a request |
+| `notification` | One-way notification |
+| `broadcast` | Broadcast to all agents |
+
+#### Agent Communication Example
+
+```bash
+# Send message to agent
+curl -X POST http://localhost:7061/v1/acp/messages \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "request",
+    "from": "orchestrator",
+    "to": "code-reviewer",
+    "payload": {
+      "action": "review",
+      "code": "func main() { ... }",
+      "context": {"language": "go"}
+    }
+  }'
+
+# List active agents
+curl http://localhost:7061/v1/acp/agents
+
+# Get agent status
+curl http://localhost:7061/v1/acp/agents/code-reviewer/status
+```
+
+### Embeddings API
+
+Generate vector embeddings for semantic search.
+
+```bash
+curl -X POST http://localhost:7061/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "text-embedding-ada-002",
+    "input": "What is machine learning?"
+  }'
+
+# Response
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "index": 0,
+      "embedding": [0.0023064255, -0.009327292, ...]
+    }
+  ],
+  "model": "text-embedding-ada-002",
+  "usage": {
+    "prompt_tokens": 5,
+    "total_tokens": 5
+  }
+}
+```
+
+### Vision API
+
+Analyze images with multimodal models.
+
+```bash
+curl -X POST http://localhost:7061/v1/vision/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4-vision-preview",
+    "image_url": "https://example.com/image.png",
+    "prompt": "Describe what you see in this image"
+  }'
+
+# Or with base64 image
+curl -X POST http://localhost:7061/v1/vision/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4-vision-preview",
+    "image_base64": "iVBORw0KGgoAAAANSUhEUgAA...",
+    "prompt": "What code is shown in this screenshot?"
+  }'
+```
 
 ---
 
