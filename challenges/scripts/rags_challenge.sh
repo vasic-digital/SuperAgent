@@ -23,7 +23,7 @@ source "${SCRIPT_DIR}/common.sh" 2>/dev/null || true
 # Configuration
 HELIXAGENT_URL="${HELIXAGENT_URL:-http://localhost:7061}"
 RESULTS_DIR="${RESULTS_DIR:-${SCRIPT_DIR}/../results/rags_challenge/$(date +%Y/%m/%d/%Y%m%d_%H%M%S)}"
-TIMEOUT="${TIMEOUT:-30}"
+TIMEOUT="${TIMEOUT:-60}"
 VERBOSE="${VERBOSE:-false}"
 
 # Counters

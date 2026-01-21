@@ -1270,11 +1270,19 @@ func (s *CogneeService) ListDatasets(ctx context.Context) ([]map[string]interfac
 		return nil, err
 	}
 
+	// Cognee API can return either an array directly or an object with datasets field
+	// Try array first (direct response from Cognee)
+	var datasets []map[string]interface{}
+	if err := json.Unmarshal(resp, &datasets); err == nil {
+		return datasets, nil
+	}
+
+	// Fallback to object format
 	var result struct {
 		Datasets []map[string]interface{} `json:"datasets"`
 	}
 	if err := json.Unmarshal(resp, &result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse datasets response: %w", err)
 	}
 
 	return result.Datasets, nil
