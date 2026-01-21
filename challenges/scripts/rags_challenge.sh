@@ -231,18 +231,41 @@ EOF
     rm -f "${temp_file}"
 
     if [[ "$response_code" == "200" ]]; then
-        # Check if response contains evidence of RAG usage
-        if echo "$response_body" | grep -qi "retrieval\|context\|knowledge\|memory\|embedding"; then
+        # STRICT REAL-RESULT VALIDATION
+        # 1. Check response has choices array
+        local has_choices=$(echo "$response_body" | grep -q '"choices"' && echo "yes" || echo "no")
+        # 2. Check response has actual content
+        local content=$(echo "$response_body" | jq -r '.choices[0].message.content // ""' 2>/dev/null || echo "")
+        local content_length=${#content}
+        # 3. Check if response contains evidence of RAG usage
+        local has_rag_evidence=$(echo "$response_body" | grep -qi "retrieval\|context\|knowledge\|memory\|embedding\|search\|document\|vector" && echo "yes" || echo "no")
+        # 4. Verify content is not error message
+        local is_real_content="no"
+        if [[ "$content_length" -gt 20 ]] && [[ ! "$content" =~ ^(Error|error:|Failed|null|undefined) ]]; then
+            is_real_content="yes"
+        fi
+
+        if [[ "$has_choices" == "yes" ]] && [[ "$is_real_content" == "yes" ]]; then
+            if [[ "$has_rag_evidence" == "yes" ]]; then
+                TESTS_PASSED=$((TESTS_PASSED + 1))
+                log_success "PASSED (REAL+RAG): RAG ${expected_rag} triggered via ${agent} (${content_length} chars)"
+                echo "PASS|${agent}|chat_rag_trigger|POST|${response_code}|RAG evidence: ${content_length} chars" >> "${RESULTS_DIR}/test_results.csv"
+            else
+                TESTS_PASSED=$((TESTS_PASSED + 1))
+                log_success "PASSED (REAL): Chat completion via ${agent} (${content_length} chars, RAG may be internal)"
+                echo "PASS|${agent}|chat_rag_trigger|POST|${response_code}|Real response: ${content_length} chars" >> "${RESULTS_DIR}/test_results.csv"
+            fi
+            return 0
+        elif [[ "$has_choices" == "yes" ]] && [[ "$content_length" -gt 10 ]]; then
             TESTS_PASSED=$((TESTS_PASSED + 1))
-            log_success "PASSED: RAG ${expected_rag} triggered via ${agent}"
-            echo "PASS|${agent}|chat_rag_trigger|POST|${response_code}|RAG ${expected_rag} triggered" >> "${RESULTS_DIR}/test_results.csv"
+            log_success "PASSED: Chat completion successful via ${agent} (minimal response)"
+            echo "PASS|${agent}|chat_rag_trigger|POST|${response_code}|Minimal response" >> "${RESULTS_DIR}/test_results.csv"
             return 0
         else
-            # RAG might be used internally even if not explicitly mentioned
-            TESTS_PASSED=$((TESTS_PASSED + 1))
-            log_success "PASSED: Chat completion successful via ${agent} (RAG may be internal)"
-            echo "PASS|${agent}|chat_rag_trigger|POST|${response_code}|Chat successful" >> "${RESULTS_DIR}/test_results.csv"
-            return 0
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+            log_error "FAILED (FALSE SUCCESS): RAG test via ${agent} - HTTP 200 but no real content"
+            echo "FAIL|${agent}|chat_rag_trigger|POST|${response_code}|FALSE SUCCESS: No real content" >> "${RESULTS_DIR}/test_results.csv"
+            return 1
         fi
     else
         TESTS_FAILED=$((TESTS_FAILED + 1))
