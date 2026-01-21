@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -16,6 +17,40 @@ import (
 
 func init() {
 	gin.SetMode(gin.TestMode)
+}
+
+// clearDBEnvVars temporarily clears database environment variables to force standalone mode
+// Returns a function to restore the original values
+func clearDBEnvVars() func() {
+	origHost := os.Getenv("DB_HOST")
+	origPort := os.Getenv("DB_PORT")
+	origUser := os.Getenv("DB_USER")
+	origPassword := os.Getenv("DB_PASSWORD")
+	origName := os.Getenv("DB_NAME")
+
+	os.Unsetenv("DB_HOST")
+	os.Unsetenv("DB_PORT")
+	os.Unsetenv("DB_USER")
+	os.Unsetenv("DB_PASSWORD")
+	os.Unsetenv("DB_NAME")
+
+	return func() {
+		if origHost != "" {
+			os.Setenv("DB_HOST", origHost)
+		}
+		if origPort != "" {
+			os.Setenv("DB_PORT", origPort)
+		}
+		if origUser != "" {
+			os.Setenv("DB_USER", origUser)
+		}
+		if origPassword != "" {
+			os.Setenv("DB_PASSWORD", origPassword)
+		}
+		if origName != "" {
+			os.Setenv("DB_NAME", origName)
+		}
+	}
 }
 
 // getMinimalConfig returns a minimal configuration for testing SetupRouter
@@ -364,6 +399,10 @@ func TestSetupRouter_TasksEndpoints(t *testing.T) {
 
 // TestSetupRouter_EnsembleEndpoint tests the ensemble completion endpoint
 func TestSetupRouter_EnsembleEndpoint(t *testing.T) {
+	// Clear DB env vars to force standalone mode (no auth)
+	restore := clearDBEnvVars()
+	defer restore()
+
 	cfg := getMinimalConfig()
 	router := SetupRouter(cfg)
 	require.NotNil(t, router)
@@ -396,6 +435,10 @@ func TestSetupRouter_EnsembleEndpoint(t *testing.T) {
 
 // TestSetupRouter_SessionsEndpoints tests session management endpoints
 func TestSetupRouter_SessionsEndpoints(t *testing.T) {
+	// Clear DB env vars to force standalone mode (no auth)
+	restore := clearDBEnvVars()
+	defer restore()
+
 	cfg := getMinimalConfig()
 	router := SetupRouter(cfg)
 	require.NotNil(t, router)
@@ -448,6 +491,10 @@ func TestSetupRouter_SessionsEndpoints(t *testing.T) {
 
 // TestSetupRouter_AgentsEndpoints tests CLI agent registry endpoints
 func TestSetupRouter_AgentsEndpoints(t *testing.T) {
+	// Clear DB env vars to force standalone mode (no auth)
+	restore := clearDBEnvVars()
+	defer restore()
+
 	cfg := getMinimalConfig()
 	router := SetupRouter(cfg)
 	require.NotNil(t, router)
@@ -493,6 +540,10 @@ func TestSetupRouter_AgentsEndpoints(t *testing.T) {
 
 // TestSetupRouter_LSPEndpoints tests LSP-related endpoints
 func TestSetupRouter_LSPEndpoints(t *testing.T) {
+	// Clear DB env vars to force standalone mode (no auth)
+	restore := clearDBEnvVars()
+	defer restore()
+
 	cfg := getMinimalConfig()
 	router := SetupRouter(cfg)
 	require.NotNil(t, router)
@@ -595,6 +646,10 @@ func TestSetupRouter_MCPEndpoints(t *testing.T) {
 
 // TestSetupRouter_ProtocolEndpoints tests protocol-related endpoints
 func TestSetupRouter_ProtocolEndpoints(t *testing.T) {
+	// Clear DB env vars to force standalone mode (no auth)
+	restore := clearDBEnvVars()
+	defer restore()
+
 	cfg := getMinimalConfig()
 	router := SetupRouter(cfg)
 	require.NotNil(t, router)
@@ -654,6 +709,10 @@ func TestSetupRouter_ProtocolEndpoints(t *testing.T) {
 
 // TestSetupRouter_EmbeddingsEndpoints tests embedding-related endpoints
 func TestSetupRouter_EmbeddingsEndpoints(t *testing.T) {
+	// Clear DB env vars to force standalone mode (no auth)
+	restore := clearDBEnvVars()
+	defer restore()
+
 	cfg := getMinimalConfig()
 	router := SetupRouter(cfg)
 	require.NotNil(t, router)
@@ -729,6 +788,10 @@ func TestSetupRouter_EmbeddingsEndpoints(t *testing.T) {
 
 // TestSetupRouter_DebatesEndpoints tests debate-related endpoints
 func TestSetupRouter_DebatesEndpoints(t *testing.T) {
+	// Clear DB env vars to force standalone mode (no auth)
+	restore := clearDBEnvVars()
+	defer restore()
+
 	cfg := getMinimalConfig()
 	router := SetupRouter(cfg)
 	require.NotNil(t, router)

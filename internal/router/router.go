@@ -698,6 +698,35 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			embeddingGroup.GET("/providers", embeddingHandler.ListEmbeddingProviders)
 		}
 
+		// RAG (Retrieval Augmented Generation) endpoints
+		ragHandler := handlers.NewRAGHandler(handlers.RAGHandlerConfig{
+			Pipeline: nil, // Pipeline initialized lazily on first use
+			Logger:   logger,
+		})
+		ragGroup := protected.Group("/rag")
+		{
+			// Health and Stats
+			ragGroup.GET("/health", ragHandler.Health)
+			ragGroup.GET("/stats", ragHandler.Stats)
+
+			// Document operations
+			ragGroup.POST("/documents", ragHandler.IngestDocument)
+			ragGroup.POST("/documents/batch", ragHandler.IngestDocuments)
+			ragGroup.DELETE("/documents/:id", ragHandler.DeleteDocument)
+
+			// Search operations
+			ragGroup.POST("/search", ragHandler.Search)
+			ragGroup.POST("/search/hybrid", ragHandler.HybridSearch)
+			ragGroup.POST("/search/expanded", ragHandler.SearchWithExpansion)
+
+			// Advanced RAG features
+			ragGroup.POST("/rerank", ragHandler.ReRank)
+			ragGroup.POST("/compress", ragHandler.CompressContext)
+			ragGroup.POST("/expand", ragHandler.ExpandQuery)
+			ragGroup.POST("/chunk", ragHandler.ChunkDocument)
+		}
+		logger.Info("RAG endpoints registered at /v1/rag/*")
+
 		// Register Protocol SSE endpoints for MCP/ACP/LSP/Embeddings/Vision/Cognee
 		// These endpoints handle SSE connections for CLI agent protocols (OpenCode, Crush, HelixCode)
 		protocolSSEHandler.RegisterSSERoutes(protected)
