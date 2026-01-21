@@ -754,7 +754,7 @@ func TestAllCogneeEndpoints(t *testing.T) {
 		{"/v1/cognee/cognify", "POST"},
 		{"/v1/cognee/insights", "POST"},
 		{"/v1/cognee/graph/complete", "POST"},
-		{"/v1/cognee/graph/visualize", "GET"},
+		{"/v1/cognee/visualize", "GET"},
 		{"/v1/cognee/code", "POST"},
 		{"/v1/cognee/datasets", "GET"},
 		{"/v1/cognee/feedback", "POST"},

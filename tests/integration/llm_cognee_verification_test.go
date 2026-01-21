@@ -181,7 +181,7 @@ func TestLLMProviderVerification_AllProviders(t *testing.T) {
 		}))
 		defer server.Close()
 
-		provider := gemini.NewGeminiProvider("test-api-key", server.URL, "gemini-pro")
+		provider := gemini.NewGeminiProvider("test-api-key", server.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 
 		caps := provider.GetCapabilities()
 		assert.True(t, caps.SupportsVision)
@@ -510,18 +510,8 @@ func TestLLMProviderVerification_AllProviders(t *testing.T) {
 			resp := map[string]interface{}{
 				"model":      "llama3.2",
 				"created_at": time.Now().Format(time.RFC3339),
-				"message": map[string]interface{}{
-					"role":    "assistant",
-					"content": "Hello! I'm running on Ollama.",
-				},
-				"done":                 true,
-				"done_reason":          "stop",
-				"total_duration":       1000000000,
-				"load_duration":        100000000,
-				"prompt_eval_count":    10,
-				"prompt_eval_duration": 200000000,
-				"eval_count":           12,
-				"eval_duration":        700000000,
+				"response":   "Hello! I'm running on Ollama.",
+				"done":       true,
 			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(resp)
@@ -1030,7 +1020,7 @@ func TestEndToEndLLMWorkflow(t *testing.T) {
 
 		claudeProvider := claude.NewClaudeProvider("test-key", claudeServer.URL, "claude-3-sonnet")
 		deepseekProvider := deepseek.NewDeepSeekProvider("test-key", deepseekServer.URL, "deepseek-chat")
-		geminiProvider := gemini.NewGeminiProvider("test-key", geminiServer.URL, "gemini-pro")
+		geminiProvider := gemini.NewGeminiProvider("test-key", geminiServer.URL+"/v1beta/models/%s:generateContent", "gemini-pro")
 
 		req := &models.LLMRequest{
 			ID: "e2e-test",
