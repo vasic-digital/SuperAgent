@@ -180,19 +180,33 @@ EOF
     rm -f "${temp_file}"
 
     if [[ "$response_code" == "200" ]]; then
-        # Check if response contains meaningful content
-        local content_length=$(echo "$response_body" | jq -r '.choices[0].message.content // ""' 2>/dev/null | wc -c)
+        # STRICT REAL-RESULT VALIDATION
+        # 1. Check response has choices array
+        local has_choices=$(echo "$response_body" | grep -q '"choices"' && echo "yes" || echo "no")
+        # 2. Check response has actual content
+        local content=$(echo "$response_body" | jq -r '.choices[0].message.content // ""' 2>/dev/null || echo "")
+        local content_length=${#content}
+        # 3. Verify content is not error message or empty placeholder
+        local is_real_content="no"
+        if [[ "$content_length" -gt 50 ]] && [[ ! "$content" =~ ^(Error|error:|Failed|null|undefined) ]]; then
+            is_real_content="yes"
+        fi
 
-        if [[ "$content_length" -gt 50 ]]; then
+        if [[ "$has_choices" == "yes" ]] && [[ "$is_real_content" == "yes" ]]; then
             TESTS_PASSED=$((TESTS_PASSED + 1))
-            log_success "PASSED: Skill ${skill_name} triggered via ${agent}"
-            echo "PASS|${agent}|${skill_name}|${response_code}|Response received" >> "${RESULTS_DIR}/test_results.csv"
+            log_success "PASSED (REAL): Skill ${skill_name} triggered via ${agent} (${content_length} chars)"
+            echo "PASS|${agent}|${skill_name}|${response_code}|Real content: ${content_length} chars" >> "${RESULTS_DIR}/test_results.csv"
             return 0
-        else
+        elif [[ "$has_choices" == "yes" ]] && [[ "$content_length" -gt 10 ]]; then
             TESTS_PASSED=$((TESTS_PASSED + 1))
             log_success "PASSED: Skill ${skill_name} triggered via ${agent} (minimal response)"
             echo "PASS|${agent}|${skill_name}|${response_code}|Minimal response" >> "${RESULTS_DIR}/test_results.csv"
             return 0
+        else
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+            log_error "FAILED (FALSE SUCCESS): Skill ${skill_name} via ${agent} - HTTP 200 but no real content"
+            echo "FAIL|${agent}|${skill_name}|${response_code}|FALSE SUCCESS: No real content" >> "${RESULTS_DIR}/test_results.csv"
+            return 1
         fi
     else
         TESTS_FAILED=$((TESTS_FAILED + 1))
