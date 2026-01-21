@@ -1085,3 +1085,158 @@ func TestContextManager_detectContentConflict(t *testing.T) {
 		assert.Nil(t, conflict)
 	})
 }
+
+// =============================================================================
+// Additional Tests for Uncovered Branches
+// =============================================================================
+
+func TestContextManager_AddEntry_CompressionTriggered(t *testing.T) {
+	cm := NewContextManager(5)
+
+	// Create entry with very large content that triggers compression
+	largeContent := make([]byte, 2048)
+	for i := range largeContent {
+		largeContent[i] = 'x'
+	}
+
+	entry := &ContextEntry{
+		ID:      "large-entry",
+		Content: string(largeContent),
+		Type:    "test",
+	}
+
+	// This should succeed since compression works
+	err := cm.AddEntry(entry)
+	assert.NoError(t, err)
+}
+
+func TestContextManager_AddEntry_EvictionNeeded(t *testing.T) {
+	// Create a small manager that will need eviction
+	cm := NewContextManager(2)
+
+	// Add entries to fill up
+	for i := 0; i < 3; i++ {
+		entry := &ContextEntry{
+			ID:       fmt.Sprintf("entry-%d", i),
+			Content:  fmt.Sprintf("content %d", i),
+			Type:     "test",
+			Priority: i, // Increasing priority
+		}
+		err := cm.AddEntry(entry)
+		assert.NoError(t, err)
+	}
+
+	// Should have evicted low priority entry
+	assert.LessOrEqual(t, len(cm.entries), 2)
+}
+
+func TestContextManager_CompressEntry_Branches(t *testing.T) {
+	cm := NewContextManager(10)
+
+	t.Run("compress small entry", func(t *testing.T) {
+		entry := &ContextEntry{
+			ID:      "small",
+			Content: "small content",
+		}
+		err := cm.compressEntry(entry)
+		assert.NoError(t, err)
+		assert.True(t, entry.Compressed)
+	})
+
+	t.Run("compress already compressed", func(t *testing.T) {
+		entry := &ContextEntry{
+			ID:         "already-compressed",
+			Content:    "content",
+			Compressed: true,
+		}
+		// Should handle gracefully
+		err := cm.compressEntry(entry)
+		assert.NoError(t, err)
+	})
+}
+
+func TestContextManager_ExtractSubject_AllBranches(t *testing.T) {
+	cm := NewContextManager(10)
+
+	tests := []struct {
+		name     string
+		entry    *ContextEntry
+		expected bool
+	}{
+		{
+			name: "with subject metadata",
+			entry: &ContextEntry{
+				ID:       "test-1",
+				Content:  "some content",
+				Metadata: map[string]interface{}{"subject": "test-subject"},
+			},
+			expected: true,
+		},
+		{
+			name: "with file metadata",
+			entry: &ContextEntry{
+				ID:       "test-2",
+				Content:  "some content",
+				Metadata: map[string]interface{}{"file": "/path/to/file.go"},
+			},
+			expected: true,
+		},
+		{
+			name: "with source field",
+			entry: &ContextEntry{
+				ID:      "test-3",
+				Content: "some content",
+				Source:  "source-value",
+			},
+			expected: true,
+		},
+		{
+			name: "with type field only",
+			entry: &ContextEntry{
+				ID:      "test-4",
+				Content: "some content",
+				Type:    "mcp",
+			},
+			expected: false, // Type alone doesn't provide a subject
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			subject := cm.extractSubject(tc.entry)
+			if tc.expected {
+				assert.NotEmpty(t, subject)
+			} else {
+				assert.Empty(t, subject)
+			}
+		})
+	}
+}
+
+func TestContextManager_BuildContext_WithCompressedEntries(t *testing.T) {
+	cm := NewContextManager(10)
+
+	// Add a compressed entry
+	entry := &ContextEntry{
+		ID:       "compressed-1",
+		Content:  "This is a test content that will be compressed",
+		Type:     "test",
+		Priority: 5,
+	}
+	err := cm.compressEntry(entry)
+	require.NoError(t, err)
+	cm.entries[entry.ID] = entry
+
+	// Add a normal entry
+	cm.entries["normal-1"] = &ContextEntry{
+		ID:       "normal-1",
+		Content:  "Normal content",
+		Type:     "test",
+		Priority: 5,
+	}
+
+	// Build context should decompress entries
+	ctx, buildErr := cm.BuildContext("test", 1000)
+	assert.NoError(t, buildErr)
+	assert.NotEmpty(t, ctx)
+}

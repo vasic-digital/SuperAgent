@@ -1,7 +1,10 @@
 package services
 
 import (
+	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -674,4 +677,145 @@ func TestIntentClassifier_Robustness_VeryLongMessages(t *testing.T) {
 	assert.True(t, result.IsConfirmation() || result.ShouldProceed(),
 		"Long message with confirmation should be detected (intent=%s, conf=%.2f)",
 		result.Intent, result.Confidence)
+}
+
+// =============================================================================
+// LLM Intent Classifier Tests (for llm_intent_classifier.go)
+// =============================================================================
+
+func TestNewLLMIntentClassifier(t *testing.T) {
+	log := newTestLogger()
+	lic := NewLLMIntentClassifier(nil, log)
+
+	assert.NotNil(t, lic)
+	assert.NotNil(t, lic.fallbackClassifier)
+	assert.Nil(t, lic.providerRegistry)
+}
+
+func TestLLMIntentClassifier_WithProviderRegistry(t *testing.T) {
+	log := newTestLogger()
+	// Create a mock registry
+	cfg := &RegistryConfig{
+		DefaultTimeout: 10 * time.Second,
+		Providers:      make(map[string]*ProviderConfig),
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	lic := NewLLMIntentClassifier(registry, log)
+
+	assert.NotNil(t, lic)
+	assert.Equal(t, registry, lic.providerRegistry)
+}
+
+func TestLLMIntentClassifier_QuickClassify_ShortMessage(t *testing.T) {
+	log := newTestLogger()
+	lic := NewLLMIntentClassifier(nil, log)
+
+	// Short message should fall back to pattern-based because no provider is available
+	result := lic.QuickClassify(context.Background(), "Yes!", true)
+
+	assert.NotNil(t, result)
+	assert.True(t, result.IsConfirmation() || result.ShouldProceed())
+}
+
+func TestLLMIntentClassifier_QuickClassify_LongerMessage(t *testing.T) {
+	log := newTestLogger()
+	lic := NewLLMIntentClassifier(nil, log)
+
+	// Longer message should use pattern-based fallback
+	result := lic.QuickClassify(context.Background(),
+		"This is a longer message that should definitely use pattern-based classification because it exceeds the fifty character limit.",
+		false)
+
+	assert.NotNil(t, result)
+}
+
+// =============================================================================
+// Intent Classification Cache Tests
+// =============================================================================
+
+func TestNewIntentClassificationCache(t *testing.T) {
+	cache := NewIntentClassificationCache(100, 5*time.Minute)
+
+	assert.NotNil(t, cache)
+	assert.Equal(t, 100, cache.maxSize)
+	assert.Equal(t, 5*time.Minute, cache.ttl)
+}
+
+func TestIntentClassificationCache_SetAndGet(t *testing.T) {
+	cache := NewIntentClassificationCache(10, 5*time.Minute)
+
+	result := &IntentClassificationResult{
+		Intent:     IntentConfirmation,
+		Confidence: 0.95,
+	}
+
+	cache.Set("test message", result)
+
+	retrieved, found := cache.Get("test message")
+	assert.True(t, found)
+	assert.Equal(t, IntentConfirmation, retrieved.Intent)
+	assert.Equal(t, 0.95, retrieved.Confidence)
+}
+
+func TestIntentClassificationCache_CaseInsensitive(t *testing.T) {
+	cache := NewIntentClassificationCache(10, 5*time.Minute)
+
+	result := &IntentClassificationResult{
+		Intent:     IntentConfirmation,
+		Confidence: 0.9,
+	}
+
+	cache.Set("Test Message", result)
+
+	// Should find with different case
+	retrieved, found := cache.Get("test message")
+	assert.True(t, found)
+	assert.Equal(t, IntentConfirmation, retrieved.Intent)
+}
+
+func TestIntentClassificationCache_TTLExpiration(t *testing.T) {
+	cache := NewIntentClassificationCache(10, 1*time.Millisecond)
+
+	result := &IntentClassificationResult{
+		Intent: IntentConfirmation,
+	}
+
+	cache.Set("test", result)
+
+	// Wait for TTL to expire
+	time.Sleep(5 * time.Millisecond)
+
+	_, found := cache.Get("test")
+	assert.False(t, found, "Expired entry should not be found")
+}
+
+func TestIntentClassificationCache_MaxSizeEviction(t *testing.T) {
+	cache := NewIntentClassificationCache(3, 5*time.Minute)
+
+	// Add 3 entries
+	for i := 0; i < 3; i++ {
+		cache.Set(fmt.Sprintf("message-%d", i), &IntentClassificationResult{
+			Intent: IntentConfirmation,
+		})
+	}
+
+	// Add 4th entry - should evict oldest
+	cache.Set("message-new", &IntentClassificationResult{
+		Intent: IntentQuestion,
+	})
+
+	// Verify cache size
+	assert.Equal(t, 3, len(cache.cache))
+
+	// New entry should be present
+	_, found := cache.Get("message-new")
+	assert.True(t, found)
+}
+
+func TestIntentClassificationCache_GetNonExistent(t *testing.T) {
+	cache := NewIntentClassificationCache(10, 5*time.Minute)
+
+	_, found := cache.Get("nonexistent")
+	assert.False(t, found)
 }

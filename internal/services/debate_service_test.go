@@ -2213,3 +2213,600 @@ func TestDebateService_BuildDebatePrompt_IncludesConfirmationDirective(t *testin
 	assert.NotContains(t, normalPrompt, "USER CONFIRMATION DETECTED", "Should NOT include confirmation directive for normal questions")
 	assert.NotContains(t, normalPrompt, "EXECUTE IMMEDIATELY", "Should NOT include execute directive for normal questions")
 }
+
+// =============================================================================
+// Setter/Getter Tests (Coverage for lines 72-104)
+// =============================================================================
+
+// mockDebateLogRepository implements DebateLogRepository for testing
+type mockDebateLogRepository struct {
+	insertCalled bool
+	insertErr    error
+	entries      []*DebateLogEntry
+	mu           sync.Mutex
+}
+
+func (m *mockDebateLogRepository) Insert(ctx context.Context, entry *DebateLogEntry) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.insertCalled = true
+	if m.insertErr != nil {
+		return m.insertErr
+	}
+	m.entries = append(m.entries, entry)
+	return nil
+}
+
+func TestDebateService_SetLogRepository(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	repo := &mockDebateLogRepository{}
+	ds.SetLogRepository(repo)
+
+	assert.NotNil(t, ds.logRepository)
+}
+
+func TestDebateService_SetTeamConfig(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	teamConfig := NewDebateTeamConfig(nil, nil, logger)
+	ds.SetTeamConfig(teamConfig)
+
+	assert.NotNil(t, ds.teamConfig)
+}
+
+func TestDebateService_GetTeamConfig(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	// Initially nil
+	assert.Nil(t, ds.GetTeamConfig())
+
+	// Set and get
+	teamConfig := NewDebateTeamConfig(nil, nil, logger)
+	ds.SetTeamConfig(teamConfig)
+	result := ds.GetTeamConfig()
+
+	assert.NotNil(t, result)
+}
+
+func TestDebateService_SetCommLogger(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	commLogger := NewDebateCommLogger(logger)
+	ds.SetCommLogger(commLogger)
+
+	assert.NotNil(t, ds.commLogger)
+	assert.Equal(t, commLogger, ds.GetCommLogger())
+}
+
+func TestDebateService_GetCommLogger(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	// Default comm logger is created in constructor
+	assert.NotNil(t, ds.GetCommLogger())
+}
+
+func TestDebateService_SetCLIAgent(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	// Test with nil commLogger - should not panic
+	ds.commLogger = nil
+	ds.SetCLIAgent("opencode")
+
+	// Test with valid commLogger
+	ds.commLogger = NewDebateCommLogger(logger)
+	ds.SetCLIAgent("claudecode")
+	// Just ensure no panic occurs
+}
+
+func TestDebateService_LogDebateEntry(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	// Test without repository - should not panic
+	ctx := context.Background()
+	entry := &DebateLogEntry{
+		ParticipantIdentifier: "test-participant",
+		Action:                "test-action",
+	}
+	ds.logDebateEntry(ctx, entry) // Should not panic
+
+	// Test with repository
+	repo := &mockDebateLogRepository{}
+	ds.SetLogRepository(repo)
+	ds.logDebateEntry(ctx, entry)
+	assert.True(t, repo.insertCalled)
+	assert.Len(t, repo.entries, 1)
+
+	// Test with repository error
+	repo2 := &mockDebateLogRepository{
+		insertErr: errors.New("db error"),
+	}
+	ds.SetLogRepository(repo2)
+	ds.logDebateEntry(ctx, entry) // Should log warning but not panic
+}
+
+// =============================================================================
+// User Intent Tests (isUserRefusal, getUserIntentDescription)
+// =============================================================================
+
+func TestDebateService_IsUserRefusal(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	// Use strong refusal messages that the semantic classifier will detect
+	refusalMessages := []string{
+		"No, don't do that",
+		"Stop, I don't want this",
+		"No, stop everything",
+		"Absolutely not, I refuse",
+	}
+
+	for _, msg := range refusalMessages {
+		t.Run(msg, func(t *testing.T) {
+			result := ds.isUserRefusal(msg)
+			assert.True(t, result, "Should detect refusal in: %s", msg)
+		})
+	}
+
+	nonRefusalMessages := []string{
+		"Yes, let's do it",
+		"Go ahead and proceed",
+		"I confirm the plan",
+	}
+
+	for _, msg := range nonRefusalMessages {
+		t.Run(msg, func(t *testing.T) {
+			result := ds.isUserRefusal(msg)
+			assert.False(t, result, "Should NOT detect refusal in: %s", msg)
+		})
+	}
+}
+
+func TestDebateService_GetUserIntentDescription(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	tests := []struct {
+		name     string
+		input    string
+		contains string
+	}{
+		{
+			name:     "confirmation intent",
+			input:    "Yes, let's do all points!",
+			contains: "CONFIRMED",
+		},
+		{
+			name:     "refusal intent",
+			input:    "No, stop everything",
+			contains: "DECLINED",
+		},
+		{
+			name:     "question intent",
+			input:    "What do you mean by that?",
+			contains: "question",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			description := ds.getUserIntentDescription(tt.input)
+			assert.Contains(t, description, tt.contains)
+		})
+	}
+}
+
+// =============================================================================
+// Single Provider Mode Tests
+// =============================================================================
+
+func TestDebateService_IsSingleProviderMode(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+
+	t.Run("nil provider registry", func(t *testing.T) {
+		ds := NewDebateService(logger)
+
+		config := &DebateConfig{
+			Participants: []ParticipantConfig{
+				{LLMProvider: "provider1"},
+			},
+		}
+
+		isSingle, spc := ds.IsSingleProviderMode(config)
+		assert.False(t, isSingle)
+		assert.Nil(t, spc)
+	})
+
+	t.Run("single provider available", func(t *testing.T) {
+		provider := newDebateMockProvider("deepseek", &models.LLMResponse{
+			Content: "test",
+		})
+
+		registry := createTestProviderRegistry(map[string]*debateMockLLMProvider{
+			"deepseek": provider,
+		})
+
+		ds := NewDebateServiceWithDeps(logger, registry, nil)
+
+		config := &DebateConfig{
+			Participants: []ParticipantConfig{
+				{LLMProvider: "deepseek"},
+				{LLMProvider: "deepseek"},
+			},
+		}
+
+		isSingle, spc := ds.IsSingleProviderMode(config)
+		assert.True(t, isSingle)
+		assert.NotNil(t, spc)
+		assert.Equal(t, "deepseek", spc.ProviderName)
+	})
+
+	t.Run("multiple providers available", func(t *testing.T) {
+		provider1 := newDebateMockProvider("deepseek", &models.LLMResponse{Content: "test"})
+		provider2 := newDebateMockProvider("gemini", &models.LLMResponse{Content: "test"})
+
+		registry := createTestProviderRegistry(map[string]*debateMockLLMProvider{
+			"deepseek": provider1,
+			"gemini":   provider2,
+		})
+
+		ds := NewDebateServiceWithDeps(logger, registry, nil)
+
+		config := &DebateConfig{
+			Participants: []ParticipantConfig{
+				{LLMProvider: "deepseek"},
+				{LLMProvider: "gemini"},
+			},
+		}
+
+		isSingle, spc := ds.IsSingleProviderMode(config)
+		assert.False(t, isSingle)
+		assert.Nil(t, spc)
+	})
+
+	t.Run("no providers available", func(t *testing.T) {
+		registry := createTestProviderRegistry(map[string]*debateMockLLMProvider{})
+
+		ds := NewDebateServiceWithDeps(logger, registry, nil)
+
+		config := &DebateConfig{
+			Participants: []ParticipantConfig{
+				{LLMProvider: "nonexistent"},
+			},
+		}
+
+		isSingle, spc := ds.IsSingleProviderMode(config)
+		assert.False(t, isSingle)
+		assert.Nil(t, spc)
+	})
+}
+
+func TestDebateService_GetAvailableModelsForProvider(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	t.Run("known providers", func(t *testing.T) {
+		models := ds.GetAvailableModelsForProvider("deepseek")
+		assert.NotEmpty(t, models)
+		assert.Contains(t, models, "deepseek-chat")
+
+		models = ds.GetAvailableModelsForProvider("claude")
+		assert.NotEmpty(t, models)
+
+		models = ds.GetAvailableModelsForProvider("gemini")
+		assert.NotEmpty(t, models)
+
+		models = ds.GetAvailableModelsForProvider("qwen")
+		assert.NotEmpty(t, models)
+		assert.Contains(t, models, "qwen-max")
+	})
+
+	t.Run("unknown provider without registry", func(t *testing.T) {
+		models := ds.GetAvailableModelsForProvider("unknown-provider")
+		assert.Equal(t, []string{"default"}, models)
+	})
+
+	t.Run("unknown provider with registry", func(t *testing.T) {
+		provider := &debateMockLLMProvider{
+			name: "custom",
+			capabilities: &models.ProviderCapabilities{
+				SupportedModels: []string{"custom-model-1", "custom-model-2"},
+			},
+		}
+
+		registry := createTestProviderRegistry(map[string]*debateMockLLMProvider{
+			"custom": provider,
+		})
+
+		ds := NewDebateServiceWithDeps(logger, registry, nil)
+
+		modelsResult := ds.GetAvailableModelsForProvider("custom")
+		assert.Contains(t, modelsResult, "custom-model-1")
+		assert.Contains(t, modelsResult, "custom-model-2")
+	})
+}
+
+func TestDebateService_CreateSingleProviderParticipants(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	spc := &SingleProviderConfig{
+		ProviderName:      "deepseek",
+		AvailableModels:   []string{"deepseek-chat", "deepseek-coder"},
+		NumParticipants:   4,
+		UseModelDiversity: true,
+		UseTempDiversity:  true,
+	}
+
+	participants := ds.CreateSingleProviderParticipants(spc, "Test Topic")
+
+	assert.Len(t, participants, 4)
+
+	// Verify all have the same provider
+	for _, p := range participants {
+		assert.Equal(t, "deepseek", p.LLMProvider)
+	}
+
+	// Verify model diversity
+	modelsUsed := make(map[string]bool)
+	for _, p := range participants {
+		modelsUsed[p.LLMModel] = true
+	}
+	assert.True(t, len(modelsUsed) >= 1)
+
+	// Verify temperature diversity
+	temps := make(map[float64]bool)
+	for _, p := range participants {
+		temps[p.Temperature] = true
+	}
+	assert.True(t, len(temps) >= 1)
+}
+
+func TestDebateService_CreateSingleProviderParticipants_NoModels(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	spc := &SingleProviderConfig{
+		ProviderName:      "unknown",
+		AvailableModels:   []string{}, // Empty models
+		NumParticipants:   2,
+		UseModelDiversity: true,
+	}
+
+	participants := ds.CreateSingleProviderParticipants(spc, "Test")
+
+	assert.Len(t, participants, 2)
+	// Should use default model
+	for _, p := range participants {
+		assert.Equal(t, "default", p.LLMModel)
+	}
+}
+
+func TestDebateService_BuildSingleProviderSystemPrompt(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	prompt := ds.buildSingleProviderSystemPrompt("Analytical Thinker", "Focus on data and evidence", 1, 5)
+
+	assert.Contains(t, prompt, "Analytical Thinker")
+	assert.Contains(t, prompt, "participant 1 of 5")
+	assert.Contains(t, prompt, "Focus on data and evidence")
+	assert.Contains(t, prompt, "IMPORTANT GUIDELINES")
+}
+
+func TestDebateService_ConductSingleProviderDebate(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+
+	provider := newDebateMockProvider("deepseek", &models.LLMResponse{
+		Content:      "Response from single provider debate instance with meaningful content.",
+		Confidence:   0.85,
+		TokensUsed:   50,
+		FinishReason: "stop",
+	})
+
+	registry := createTestProviderRegistry(map[string]*debateMockLLMProvider{
+		"deepseek": provider,
+	})
+
+	ds := NewDebateServiceWithDeps(logger, registry, nil)
+
+	config := &DebateConfig{
+		DebateID:  "single-provider-test",
+		Topic:     "Test Single Provider Debate",
+		MaxRounds: 2,
+		Timeout:   30 * time.Second,
+		Participants: []ParticipantConfig{
+			{ParticipantID: "p1", Name: "Agent1", Role: "proposer", LLMProvider: "deepseek"},
+			{ParticipantID: "p2", Name: "Agent2", Role: "critic", LLMProvider: "deepseek"},
+		},
+	}
+
+	spc := &SingleProviderConfig{
+		ProviderName:      "deepseek",
+		AvailableModels:   []string{"deepseek-chat", "deepseek-coder"},
+		NumParticipants:   2,
+		UseModelDiversity: true,
+		UseTempDiversity:  true,
+	}
+
+	result, err := ds.ConductSingleProviderDebate(context.Background(), config, spc)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.True(t, result.Success)
+	assert.NotEmpty(t, result.AllResponses)
+}
+
+// =============================================================================
+// Diversity and Model Tracking Tests
+// =============================================================================
+
+func TestDebateService_CalculateEffectiveDiversity(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	t.Run("less than 2 responses", func(t *testing.T) {
+		diversity := ds.calculateEffectiveDiversity([]ParticipantResponse{
+			{Content: "Single response"},
+		})
+		assert.Equal(t, 0.0, diversity)
+	})
+
+	t.Run("identical responses", func(t *testing.T) {
+		diversity := ds.calculateEffectiveDiversity([]ParticipantResponse{
+			{Content: "Identical content here"},
+			{Content: "Identical content here"},
+		})
+		assert.Less(t, diversity, 0.1, "Identical responses should have low diversity")
+	})
+
+	t.Run("diverse responses", func(t *testing.T) {
+		diversity := ds.calculateEffectiveDiversity([]ParticipantResponse{
+			{Content: "Apple banana cherry fruit"},
+			{Content: "Computer keyboard mouse hardware"},
+		})
+		assert.Greater(t, diversity, 0.5, "Different responses should have high diversity")
+	})
+}
+
+func TestDebateService_GetModelsUsed(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	responses := []ParticipantResponse{
+		{LLMModel: "gpt-4"},
+		{LLMModel: "claude-3"},
+		{LLMModel: "gpt-4"}, // Duplicate
+		{LLMModel: "gemini-pro"},
+	}
+
+	modelsUsed := ds.getModelsUsed(responses)
+
+	assert.Len(t, modelsUsed, 3) // Should be unique
+	assert.Contains(t, modelsUsed, "gpt-4")
+	assert.Contains(t, modelsUsed, "claude-3")
+	assert.Contains(t, modelsUsed, "gemini-pro")
+}
+
+// =============================================================================
+// AutoConductDebate Tests
+// =============================================================================
+
+func TestDebateService_AutoConductDebate_SingleProvider(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+
+	provider := newDebateMockProvider("deepseek", &models.LLMResponse{
+		Content:      "Auto-selected single provider response with analysis.",
+		Confidence:   0.88,
+		TokensUsed:   60,
+		FinishReason: "stop",
+	})
+
+	registry := createTestProviderRegistry(map[string]*debateMockLLMProvider{
+		"deepseek": provider,
+	})
+
+	ds := NewDebateServiceWithDeps(logger, registry, nil)
+
+	config := &DebateConfig{
+		DebateID:  "auto-single",
+		Topic:     "Auto Conduct Single Provider",
+		MaxRounds: 1,
+		Timeout:   15 * time.Second,
+		Participants: []ParticipantConfig{
+			{ParticipantID: "p1", LLMProvider: "deepseek"},
+			{ParticipantID: "p2", LLMProvider: "deepseek"},
+		},
+	}
+
+	result, err := ds.AutoConductDebate(context.Background(), config)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.True(t, result.Success)
+}
+
+func TestDebateService_AutoConductDebate_MultiProvider(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+
+	provider1 := newDebateMockProvider("deepseek", &models.LLMResponse{
+		Content:      "Response from deepseek provider.",
+		Confidence:   0.85,
+		TokensUsed:   50,
+		FinishReason: "stop",
+	})
+
+	provider2 := newDebateMockProvider("gemini", &models.LLMResponse{
+		Content:      "Response from gemini provider.",
+		Confidence:   0.87,
+		TokensUsed:   55,
+		FinishReason: "stop",
+	})
+
+	registry := createTestProviderRegistry(map[string]*debateMockLLMProvider{
+		"deepseek": provider1,
+		"gemini":   provider2,
+	})
+
+	ds := NewDebateServiceWithDeps(logger, registry, nil)
+
+	config := &DebateConfig{
+		DebateID:  "auto-multi",
+		Topic:     "Auto Conduct Multi Provider",
+		MaxRounds: 1,
+		Timeout:   15 * time.Second,
+		Participants: []ParticipantConfig{
+			{ParticipantID: "p1", LLMProvider: "deepseek"},
+			{ParticipantID: "p2", LLMProvider: "gemini"},
+		},
+	}
+
+	result, err := ds.AutoConductDebate(context.Background(), config)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.True(t, result.Success)
+}
+
+// =============================================================================
+// GetBestResponseContent Tests
+// =============================================================================
+
+func TestDebateService_GetBestResponseContent(t *testing.T) {
+	logger := newDebateSvcTestLogger()
+	ds := NewDebateService(logger)
+
+	t.Run("with best response", func(t *testing.T) {
+		result := &DebateResult{
+			BestResponse: &ParticipantResponse{
+				Content: "This is the best response",
+			},
+		}
+		content := ds.getBestResponseContent(result)
+		assert.Equal(t, "This is the best response", content)
+	})
+
+	t.Run("without best response but with all responses", func(t *testing.T) {
+		result := &DebateResult{
+			AllResponses: []ParticipantResponse{
+				{Content: "First response content"},
+				{Content: "Second response content"},
+			},
+		}
+		content := ds.getBestResponseContent(result)
+		assert.Equal(t, "First response content", content)
+	})
+
+	t.Run("empty result", func(t *testing.T) {
+		result := &DebateResult{}
+		content := ds.getBestResponseContent(result)
+		assert.Empty(t, content)
+	})
+}

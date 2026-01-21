@@ -937,3 +937,33 @@ func TestReliableProvidersScoreRange(t *testing.T) {
 		}
 	})
 }
+
+// =============================================================================
+// Additional Tests for Uncovered Functions
+// =============================================================================
+
+func TestDebateTeamConfig_SetStartupVerifier(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.PanicLevel)
+
+	config := NewDebateTeamConfig(nil, nil, logger)
+
+	// Test setting nil verifier
+	config.SetStartupVerifier(nil)
+	assert.Nil(t, config.startupVerifier)
+}
+
+func TestDebateTeamConfig_GetProviderForPosition(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.PanicLevel)
+
+	config := NewDebateTeamConfig(nil, nil, logger)
+
+	// Without provider registry, we can't get actual providers
+	// Test the error case for non-existent position
+
+	t.Run("returns error for non-existent position without registry", func(t *testing.T) {
+		_, _, err := config.GetProviderForPosition(PositionCritic)
+		assert.Error(t, err)
+	})
+}

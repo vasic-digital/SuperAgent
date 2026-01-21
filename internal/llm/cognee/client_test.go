@@ -911,3 +911,681 @@ func BenchmarkSearchMemory(b *testing.B) {
 		_, _ = client.SearchMemory(req)
 	}
 }
+
+// ==============================================================================
+// ADDITIONAL COMPREHENSIVE TESTS FOR COGNEE CLIENT
+// ==============================================================================
+
+func TestAddMemory_NetworkError(t *testing.T) {
+	client := &Client{
+		baseURL: "http://localhost:9999", // Non-existent server
+		apiKey:  "test-key",
+		client:  &http.Client{Timeout: 100 * time.Millisecond},
+	}
+
+	resp, err := client.AddMemory(&MemoryRequest{Content: "test"})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestAddMemory_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		apiKey:  "test-key",
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.AddMemory(&MemoryRequest{Content: "test"})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestSearchMemory_NetworkError(t *testing.T) {
+	client := &Client{
+		baseURL: "http://localhost:9999",
+		client:  &http.Client{Timeout: 100 * time.Millisecond},
+	}
+
+	resp, err := client.SearchMemory(&SearchRequest{Query: "test"})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestSearchMemory_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("not valid json"))
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.SearchMemory(&SearchRequest{Query: "test"})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestCognify_NetworkError(t *testing.T) {
+	client := &Client{
+		baseURL: "http://localhost:9999",
+		client:  &http.Client{Timeout: 100 * time.Millisecond},
+	}
+
+	resp, err := client.Cognify(&CognifyRequest{})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestCognify_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("{invalid"))
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.Cognify(&CognifyRequest{})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestSearchInsights_NetworkError(t *testing.T) {
+	client := &Client{
+		baseURL: "http://localhost:9999",
+		client:  &http.Client{Timeout: 100 * time.Millisecond},
+	}
+
+	resp, err := client.SearchInsights(&InsightsRequest{Query: "test"})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestSearchInsights_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("broken json"))
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.SearchInsights(&InsightsRequest{Query: "test"})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestSearchGraphCompletion_NetworkError(t *testing.T) {
+	client := &Client{
+		baseURL: "http://localhost:9999",
+		client:  &http.Client{Timeout: 100 * time.Millisecond},
+	}
+
+	resp, err := client.SearchGraphCompletion("query", nil, 10)
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestSearchGraphCompletion_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("<not json>"))
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.SearchGraphCompletion("query", nil, 10)
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestProcessCodePipeline_NetworkError(t *testing.T) {
+	client := &Client{
+		baseURL: "http://localhost:9999",
+		client:  &http.Client{Timeout: 100 * time.Millisecond},
+	}
+
+	resp, err := client.ProcessCodePipeline(&CodePipelineRequest{Code: "test"})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestProcessCodePipeline_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("{invalid json syntax"))
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.ProcessCodePipeline(&CodePipelineRequest{Code: "test"})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestCreateDataset_NetworkError(t *testing.T) {
+	client := &Client{
+		baseURL: "http://localhost:9999",
+		client:  &http.Client{Timeout: 100 * time.Millisecond},
+	}
+
+	resp, err := client.CreateDataset(&DatasetRequest{Name: "test"})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestCreateDataset_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte("not json response"))
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.CreateDataset(&DatasetRequest{Name: "test"})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestListDatasets_NetworkError(t *testing.T) {
+	client := &Client{
+		baseURL: "http://localhost:9999",
+		client:  &http.Client{Timeout: 100 * time.Millisecond},
+	}
+
+	resp, err := client.ListDatasets()
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestListDatasets_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("[broken]"))
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.ListDatasets()
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestVisualizeGraph_NetworkError(t *testing.T) {
+	client := &Client{
+		baseURL: "http://localhost:9999",
+		client:  &http.Client{Timeout: 100 * time.Millisecond},
+	}
+
+	resp, err := client.VisualizeGraph(&VisualizeRequest{})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestVisualizeGraph_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("{invalid json"))
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.VisualizeGraph(&VisualizeRequest{})
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestDeleteData_NetworkError(t *testing.T) {
+	client := &Client{
+		baseURL: "http://localhost:9999",
+		client:  &http.Client{Timeout: 100 * time.Millisecond},
+	}
+
+	err := client.DeleteData("test-ds", []string{"id1"})
+	assert.Error(t, err)
+}
+
+func TestAddMemory_VerifyHeaders(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/memory", r.URL.Path)
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		assert.Equal(t, "Bearer my-api-key", r.Header.Get("Authorization"))
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(MemoryResponse{VectorID: "vec-1"})
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		apiKey:  "my-api-key",
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.AddMemory(&MemoryRequest{
+		Content:     "test content",
+		DatasetName: "ds",
+		ContentType: "text/plain",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "vec-1", resp.VectorID)
+}
+
+func TestSearchMemory_VerifyRequestBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req SearchRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+
+		assert.Equal(t, "search query", req.Query)
+		assert.Equal(t, "my-dataset", req.DatasetName)
+		assert.Equal(t, 25, req.Limit)
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(SearchResponse{
+			Results: []models.MemorySource{
+				{Content: "found", RelevanceScore: 0.9},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		apiKey:  "key",
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.SearchMemory(&SearchRequest{
+		Query:       "search query",
+		DatasetName: "my-dataset",
+		Limit:       25,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, "found", resp.Results[0].Content)
+}
+
+func TestCognify_WithMultipleDatasets(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req CognifyRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+
+		assert.ElementsMatch(t, []string{"ds1", "ds2", "ds3"}, req.Datasets)
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(CognifyResponse{Status: "processing"})
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.Cognify(&CognifyRequest{
+		Datasets: []string{"ds1", "ds2", "ds3"},
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "processing", resp.Status)
+}
+
+func TestSearchInsights_RequestFormat(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req map[string]interface{}
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+
+		assert.Equal(t, "INSIGHTS", req["search_type"])
+		assert.Equal(t, "insight query", req["query"])
+		assert.Equal(t, float64(10), req["limit"])
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(InsightsResponse{
+			Insights: []map[string]interface{}{
+				{"insight": "result1"},
+				{"insight": "result2"},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		apiKey:  "key",
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.SearchInsights(&InsightsRequest{
+		Query:    "insight query",
+		Datasets: []string{"ds1"},
+		Limit:    10,
+	})
+
+	require.NoError(t, err)
+	assert.Len(t, resp.Insights, 2)
+}
+
+func TestSearchGraphCompletion_RequestFormat(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req map[string]interface{}
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+
+		assert.Equal(t, "GRAPH_COMPLETION", req["search_type"])
+		assert.Equal(t, "completion query", req["query"])
+		assert.Equal(t, float64(5), req["limit"])
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(SearchResponse{
+			Results: []models.MemorySource{{Content: "completed"}},
+		})
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.SearchGraphCompletion("completion query", []string{"ds"}, 5)
+
+	require.NoError(t, err)
+	require.Len(t, resp.Results, 1)
+	assert.Equal(t, "completed", resp.Results[0].Content)
+}
+
+func TestProcessCodePipeline_WithLanguage(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/code-pipeline/index", r.URL.Path)
+
+		var req CodePipelineRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+
+		assert.Equal(t, "func test() {}", req.Code)
+		assert.Equal(t, "code-ds", req.DatasetName)
+		assert.Equal(t, "go", req.Language)
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(CodePipelineResponse{
+			Processed: true,
+			Results: map[string]interface{}{
+				"functions": 1,
+				"lines":     3,
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		apiKey:  "key",
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.ProcessCodePipeline(&CodePipelineRequest{
+		Code:        "func test() {}",
+		DatasetName: "code-ds",
+		Language:    "go",
+	})
+
+	require.NoError(t, err)
+	assert.True(t, resp.Processed)
+	assert.Contains(t, resp.Results, "functions")
+}
+
+func TestCreateDataset_WithMetadata(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req DatasetRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+
+		assert.Equal(t, "new-dataset", req.Name)
+		assert.Equal(t, "A description", req.Description)
+		assert.Equal(t, "value1", req.Metadata["key1"])
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(DatasetResponse{
+			ID:          "ds-new",
+			Name:        req.Name,
+			Description: req.Description,
+			CreatedAt:   "2024-01-01T00:00:00Z",
+			Metadata:    req.Metadata,
+		})
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		apiKey:  "key",
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.CreateDataset(&DatasetRequest{
+		Name:        "new-dataset",
+		Description: "A description",
+		Metadata:    map[string]interface{}{"key1": "value1"},
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "ds-new", resp.ID)
+	assert.Equal(t, "A description", resp.Description)
+}
+
+func TestVisualizeGraph_WithFormat(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/visualize", r.URL.Path)
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(VisualizeResponse{
+			Graph: map[string]interface{}{
+				"nodes": []interface{}{
+					map[string]interface{}{"id": "n1", "label": "Node 1"},
+					map[string]interface{}{"id": "n2", "label": "Node 2"},
+				},
+				"edges": []interface{}{
+					map[string]interface{}{"from": "n1", "to": "n2"},
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		apiKey:  "key",
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	resp, err := client.VisualizeGraph(&VisualizeRequest{
+		DatasetName: "graph-ds",
+		Format:      "json",
+	})
+
+	require.NoError(t, err)
+	assert.Contains(t, resp.Graph, "nodes")
+	assert.Contains(t, resp.Graph, "edges")
+}
+
+func TestDeleteData_WithMultipleIDs(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/delete", r.URL.Path)
+		assert.Equal(t, "DELETE", r.Method)
+
+		var req map[string]interface{}
+		err := json.NewDecoder(r.Body).Decode(&req)
+		require.NoError(t, err)
+
+		assert.Equal(t, "target-ds", req["dataset_name"])
+		dataIDs := req["data_ids"].([]interface{})
+		assert.Len(t, dataIDs, 3)
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		apiKey:  "key",
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	err := client.DeleteData("target-ds", []string{"id1", "id2", "id3"})
+	require.NoError(t, err)
+}
+
+// Test response types
+func TestSearchResponseFields(t *testing.T) {
+	resp := &SearchResponse{
+		Results: []models.MemorySource{
+			{
+				DatasetName:    "ds1",
+				Content:        "content",
+				RelevanceScore: 0.95,
+				SourceType:     "text",
+			},
+		},
+	}
+
+	assert.Len(t, resp.Results, 1)
+	assert.Equal(t, "ds1", resp.Results[0].DatasetName)
+	assert.Equal(t, 0.95, resp.Results[0].RelevanceScore)
+}
+
+func TestCognifyResponseFields(t *testing.T) {
+	resp := &CognifyResponse{
+		Status: "completed",
+	}
+
+	assert.Equal(t, "completed", resp.Status)
+}
+
+func TestInsightsResponseFields(t *testing.T) {
+	resp := &InsightsResponse{
+		Insights: []map[string]interface{}{
+			{"key1": "value1"},
+			{"key2": "value2"},
+		},
+	}
+
+	assert.Len(t, resp.Insights, 2)
+	assert.Equal(t, "value1", resp.Insights[0]["key1"])
+}
+
+func TestCodePipelineResponseFields(t *testing.T) {
+	resp := &CodePipelineResponse{
+		Processed: true,
+		Results: map[string]interface{}{
+			"analysis": "complete",
+		},
+	}
+
+	assert.True(t, resp.Processed)
+	assert.Equal(t, "complete", resp.Results["analysis"])
+}
+
+func TestDatasetsResponseFields(t *testing.T) {
+	resp := &DatasetsResponse{
+		Datasets: []DatasetResponse{
+			{ID: "ds1", Name: "Dataset 1"},
+			{ID: "ds2", Name: "Dataset 2"},
+		},
+		Total: 2,
+	}
+
+	assert.Equal(t, 2, resp.Total)
+	assert.Len(t, resp.Datasets, 2)
+}
+
+func TestVisualizeResponseFields(t *testing.T) {
+	resp := &VisualizeResponse{
+		Graph: map[string]interface{}{
+			"format": "json",
+			"data":   "graph_data",
+		},
+	}
+
+	assert.Equal(t, "json", resp.Graph["format"])
+}
+
+// Benchmarks
+func BenchmarkCognify(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(CognifyResponse{Status: "ok"})
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	req := &CognifyRequest{Datasets: []string{"ds1"}}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = client.Cognify(req)
+	}
+}
+
+func BenchmarkSearchInsights(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(InsightsResponse{})
+	}))
+	defer server.Close()
+
+	client := &Client{
+		baseURL: server.URL,
+		client:  &http.Client{Timeout: 5 * time.Second},
+	}
+
+	req := &InsightsRequest{Query: "test", Limit: 10}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = client.SearchInsights(req)
+	}
+}

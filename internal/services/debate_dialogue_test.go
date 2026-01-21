@@ -906,3 +906,60 @@ func TestDialogueStyles(t *testing.T) {
 		})
 	}
 }
+
+// =============================================================================
+// Additional Tests for Uncovered Functions
+// =============================================================================
+
+func TestDialogueFormatter_GetCharacter(t *testing.T) {
+	df := NewDialogueFormatter(StyleTheater)
+
+	// Register a character
+	df.RegisterCharacter(&DebateTeamMember{
+		Position:     PositionAnalyst,
+		Role:         RoleAnalyst,
+		ProviderName: "claude",
+	})
+
+	t.Run("returns character for registered position", func(t *testing.T) {
+		char := df.GetCharacter(PositionAnalyst)
+		assert.NotNil(t, char)
+		assert.Contains(t, char.Name, "ANALYST")
+	})
+
+	t.Run("returns nil for unregistered position", func(t *testing.T) {
+		char := df.GetCharacter(PositionCritic)
+		assert.Nil(t, char)
+	})
+
+	t.Run("returns nil when characters map is nil", func(t *testing.T) {
+		dfEmpty := &DialogueFormatter{}
+		char := dfEmpty.GetCharacter(PositionAnalyst)
+		assert.Nil(t, char)
+	})
+}
+
+func TestDialogueFormatter_GetAllCharacters(t *testing.T) {
+	df := NewDialogueFormatter(StyleTheater)
+
+	t.Run("returns empty for no characters", func(t *testing.T) {
+		chars := df.GetAllCharacters()
+		assert.Empty(t, chars)
+	})
+
+	t.Run("returns all registered characters", func(t *testing.T) {
+		df.RegisterCharacter(&DebateTeamMember{
+			Position:     PositionAnalyst,
+			Role:         RoleAnalyst,
+			ProviderName: "claude",
+		})
+		df.RegisterCharacter(&DebateTeamMember{
+			Position:     PositionProposer,
+			Role:         RoleProposer,
+			ProviderName: "gemini",
+		})
+
+		chars := df.GetAllCharacters()
+		assert.Len(t, chars, 2)
+	})
+}

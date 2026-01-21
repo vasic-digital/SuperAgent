@@ -560,6 +560,119 @@ func TestFallbackAttemptStruct(t *testing.T) {
 	})
 }
 
+// TestFormatPhaseHeader tests phase header formatting for all phases
+func TestFormatPhaseHeader(t *testing.T) {
+	phases := []struct {
+		phase    services.ValidationPhase
+		expected string
+	}{
+		{services.PhaseInitialResponse, "INITIAL RESPONSE"},
+		{services.PhaseValidation, "VALIDATION"},
+		{services.PhasePolishImprove, "POLISH & IMPROVE"},
+		{services.PhaseFinalConclusion, "FINAL CONCLUSION"},
+	}
+
+	for _, tt := range phases {
+		t.Run(string(tt.phase), func(t *testing.T) {
+			result := FormatPhaseHeader(tt.phase, 1)
+			assert.Contains(t, result, "PHASE 1")
+			assert.Contains(t, result, tt.expected)
+			assert.Contains(t, result, ANSIReset)
+		})
+	}
+}
+
+// TestFormatPhaseHeader_UnknownPhase tests phase header with unknown phase
+func TestFormatPhaseHeader_UnknownPhase(t *testing.T) {
+	result := FormatPhaseHeader(services.ValidationPhase("unknown"), 5)
+	assert.Contains(t, result, "PHASE 5")
+	assert.Contains(t, result, "unknown")
+}
+
+// TestGetPhaseDisplayName_Extended tests phase display name mapping
+func TestGetPhaseDisplayName_Extended(t *testing.T) {
+	tests := []struct {
+		phase    services.ValidationPhase
+		expected string
+	}{
+		{services.PhaseInitialResponse, "INITIAL RESPONSE"},
+		{services.PhaseValidation, "VALIDATION"},
+		{services.PhasePolishImprove, "POLISH & IMPROVE"},
+		{services.PhaseFinalConclusion, "FINAL CONCLUSION"},
+		{services.ValidationPhase("custom"), "custom"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.phase), func(t *testing.T) {
+			result := getPhaseDisplayName(tt.phase)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestGetPositionAvatar tests all position avatars
+func TestGetPositionAvatar(t *testing.T) {
+	tests := []struct {
+		position services.DebateTeamPosition
+		expected string
+	}{
+		{services.PositionAnalyst, "A"},
+		{services.PositionProposer, "P"},
+		{services.PositionCritic, "C"},
+		{services.PositionSynthesis, "S"},
+		{services.PositionMediator, "M"},
+		{services.DebateTeamPosition(999), "?"}, // Unknown position returns "?"
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.expected, func(t *testing.T) {
+			result := getPositionAvatar(tt.position)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestGetRoleName_Extended tests all role names
+func TestGetRoleName_Extended(t *testing.T) {
+	tests := []struct {
+		role     services.DebateRole
+		expected string
+	}{
+		{services.RoleAnalyst, "Analyst"},
+		{services.RoleProposer, "Proposer"},
+		{services.RoleCritic, "Critic"},
+		{services.RoleSynthesis, "Synthesis"},
+		{services.RoleMediator, "Mediator"},
+		{services.DebateRole("custom_role"), "custom_role"},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.role), func(t *testing.T) {
+			result := getRoleName(tt.role)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestPhaseIndicators_Extended tests that all phase indicators are defined correctly
+func TestPhaseIndicators_Extended(t *testing.T) {
+	phases := []services.ValidationPhase{
+		services.PhaseInitialResponse,
+		services.PhaseValidation,
+		services.PhasePolishImprove,
+		services.PhaseFinalConclusion,
+	}
+
+	for _, phase := range phases {
+		t.Run(string(phase), func(t *testing.T) {
+			indicator, ok := PhaseIndicators[phase]
+			assert.True(t, ok, "Phase indicator should exist")
+			assert.NotEmpty(t, indicator.Icon)
+			assert.NotEmpty(t, indicator.Color)
+		})
+	}
+}
+
 // TestComplexFallbackScenarios tests complex real-world fallback scenarios
 func TestComplexFallbackScenarios(t *testing.T) {
 	t.Run("All providers fail except last", func(t *testing.T) {

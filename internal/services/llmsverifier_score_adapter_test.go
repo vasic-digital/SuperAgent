@@ -337,3 +337,30 @@ func TestProviderOrderingIsDynamic(t *testing.T) {
 func TestLLMsVerifierScoreAdapterInterface(t *testing.T) {
 	var _ LLMsVerifierScoreProvider = (*LLMsVerifierScoreAdapter)(nil)
 }
+
+// =============================================================================
+// Additional Tests for Uncovered Functions
+// =============================================================================
+
+func TestLLMsVerifierScoreAdapter_GetVerificationService(t *testing.T) {
+	adapter := NewLLMsVerifierScoreAdapter(nil, nil, nil)
+
+	// Without verification service, should return nil
+	svc := adapter.GetVerificationService()
+	assert.Nil(t, svc)
+}
+
+func TestLLMsVerifierScoreAdapter_GetScoringService(t *testing.T) {
+	adapter := NewLLMsVerifierScoreAdapter(nil, nil, nil)
+
+	// Without scoring service, should return nil
+	svc := adapter.GetScoringService()
+	assert.Nil(t, svc)
+}
+
+func TestLLMsVerifierScoreAdapter_IsInitialized(t *testing.T) {
+	t.Run("not initialized without services", func(t *testing.T) {
+		adapter := NewLLMsVerifierScoreAdapter(nil, nil, nil)
+		assert.False(t, adapter.IsInitialized())
+	})
+}

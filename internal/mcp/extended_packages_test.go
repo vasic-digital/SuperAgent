@@ -1,0 +1,562 @@
+package mcp
+
+import (
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+// ============================================================================
+// ExtendedMCPPackages Tests
+// ============================================================================
+
+func TestExtendedMCPPackages(t *testing.T) {
+	t.Run("ExtendedMCPPackages is not empty", func(t *testing.T) {
+		assert.NotEmpty(t, ExtendedMCPPackages)
+		assert.GreaterOrEqual(t, len(ExtendedMCPPackages), 30, "Should have at least 30 packages")
+	})
+
+	t.Run("All packages have required fields", func(t *testing.T) {
+		for _, pkg := range ExtendedMCPPackages {
+			assert.NotEmpty(t, pkg.Name, "Package name should not be empty")
+			assert.NotEmpty(t, pkg.NPM, "NPM field should not be empty")
+			assert.NotEmpty(t, pkg.Description, "Description should not be empty")
+			assert.NotEmpty(t, pkg.Category, "Category should not be empty")
+		}
+	})
+
+	t.Run("Package categories are valid", func(t *testing.T) {
+		validCategories := map[MCPPackageCategory]bool{
+			CategoryCore:     true,
+			CategoryVectorDB: true,
+			CategoryDesign:   true,
+			CategoryImage:    true,
+			CategoryDev:      true,
+			CategorySearch:   true,
+			CategoryCloud:    true,
+		}
+
+		for _, pkg := range ExtendedMCPPackages {
+			assert.True(t, validCategories[pkg.Category],
+				"Package %s has invalid category: %s", pkg.Name, pkg.Category)
+		}
+	})
+}
+
+// ============================================================================
+// GetPackagesByCategory Tests
+// ============================================================================
+
+func TestGetPackagesByCategory(t *testing.T) {
+	t.Run("Returns core packages", func(t *testing.T) {
+		packages := GetPackagesByCategory(CategoryCore)
+		assert.NotEmpty(t, packages)
+
+		for _, pkg := range packages {
+			assert.Equal(t, CategoryCore, pkg.Category)
+		}
+	})
+
+	t.Run("Returns vectordb packages", func(t *testing.T) {
+		packages := GetPackagesByCategory(CategoryVectorDB)
+		assert.NotEmpty(t, packages)
+
+		for _, pkg := range packages {
+			assert.Equal(t, CategoryVectorDB, pkg.Category)
+		}
+
+		// Check for specific packages
+		names := make(map[string]bool)
+		for _, pkg := range packages {
+			names[pkg.Name] = true
+		}
+		assert.True(t, names["chroma"], "Should include chroma")
+		assert.True(t, names["qdrant"], "Should include qdrant")
+	})
+
+	t.Run("Returns design packages", func(t *testing.T) {
+		packages := GetPackagesByCategory(CategoryDesign)
+		assert.NotEmpty(t, packages)
+
+		for _, pkg := range packages {
+			assert.Equal(t, CategoryDesign, pkg.Category)
+		}
+
+		// Check for specific packages
+		names := make(map[string]bool)
+		for _, pkg := range packages {
+			names[pkg.Name] = true
+		}
+		assert.True(t, names["figma"], "Should include figma")
+		assert.True(t, names["miro"], "Should include miro")
+	})
+
+	t.Run("Returns image packages", func(t *testing.T) {
+		packages := GetPackagesByCategory(CategoryImage)
+		assert.NotEmpty(t, packages)
+
+		for _, pkg := range packages {
+			assert.Equal(t, CategoryImage, pkg.Category)
+		}
+	})
+
+	t.Run("Returns dev packages", func(t *testing.T) {
+		packages := GetPackagesByCategory(CategoryDev)
+		assert.NotEmpty(t, packages)
+
+		for _, pkg := range packages {
+			assert.Equal(t, CategoryDev, pkg.Category)
+		}
+
+		// Check for specific packages
+		names := make(map[string]bool)
+		for _, pkg := range packages {
+			names[pkg.Name] = true
+		}
+		assert.True(t, names["postgres"], "Should include postgres")
+		assert.True(t, names["redis"], "Should include redis")
+	})
+
+	t.Run("Returns search packages", func(t *testing.T) {
+		packages := GetPackagesByCategory(CategorySearch)
+		assert.NotEmpty(t, packages)
+
+		for _, pkg := range packages {
+			assert.Equal(t, CategorySearch, pkg.Category)
+		}
+	})
+
+	t.Run("Returns cloud packages", func(t *testing.T) {
+		packages := GetPackagesByCategory(CategoryCloud)
+		assert.NotEmpty(t, packages)
+
+		for _, pkg := range packages {
+			assert.Equal(t, CategoryCloud, pkg.Category)
+		}
+	})
+
+	t.Run("Returns empty for invalid category", func(t *testing.T) {
+		packages := GetPackagesByCategory(MCPPackageCategory("invalid"))
+		assert.Empty(t, packages)
+	})
+}
+
+// ============================================================================
+// Convenience Functions Tests
+// ============================================================================
+
+func TestGetCorePackages(t *testing.T) {
+	t.Run("Returns only core packages", func(t *testing.T) {
+		packages := GetCorePackages()
+		assert.NotEmpty(t, packages)
+
+		for _, pkg := range packages {
+			assert.Equal(t, CategoryCore, pkg.Category)
+		}
+	})
+
+	t.Run("Contains essential packages", func(t *testing.T) {
+		packages := GetCorePackages()
+		names := make(map[string]bool)
+		for _, pkg := range packages {
+			names[pkg.Name] = true
+		}
+
+		essentialPackages := []string{"filesystem", "github", "memory", "fetch", "puppeteer", "sqlite", "git"}
+		for _, name := range essentialPackages {
+			assert.True(t, names[name], "Core packages should include %s", name)
+		}
+	})
+}
+
+func TestGetVectorDBPackages(t *testing.T) {
+	t.Run("Returns only vectordb packages", func(t *testing.T) {
+		packages := GetVectorDBPackages()
+		assert.NotEmpty(t, packages)
+
+		for _, pkg := range packages {
+			assert.Equal(t, CategoryVectorDB, pkg.Category)
+		}
+	})
+
+	t.Run("Contains expected vector databases", func(t *testing.T) {
+		packages := GetVectorDBPackages()
+		names := make(map[string]bool)
+		for _, pkg := range packages {
+			names[pkg.Name] = true
+		}
+
+		assert.True(t, names["chroma"], "Should include chroma")
+		assert.True(t, names["qdrant"], "Should include qdrant")
+		assert.True(t, names["weaviate"], "Should include weaviate")
+	})
+}
+
+func TestGetDesignPackages(t *testing.T) {
+	t.Run("Returns only design packages", func(t *testing.T) {
+		packages := GetDesignPackages()
+		assert.NotEmpty(t, packages)
+
+		for _, pkg := range packages {
+			assert.Equal(t, CategoryDesign, pkg.Category)
+		}
+	})
+
+	t.Run("Contains expected design tools", func(t *testing.T) {
+		packages := GetDesignPackages()
+		names := make(map[string]bool)
+		for _, pkg := range packages {
+			names[pkg.Name] = true
+		}
+
+		assert.True(t, names["figma"], "Should include figma")
+		assert.True(t, names["miro"], "Should include miro")
+	})
+}
+
+func TestGetImagePackages(t *testing.T) {
+	t.Run("Returns only image packages", func(t *testing.T) {
+		packages := GetImagePackages()
+		assert.NotEmpty(t, packages)
+
+		for _, pkg := range packages {
+			assert.Equal(t, CategoryImage, pkg.Category)
+		}
+	})
+
+	t.Run("Contains expected image tools", func(t *testing.T) {
+		packages := GetImagePackages()
+		names := make(map[string]bool)
+		for _, pkg := range packages {
+			names[pkg.Name] = true
+		}
+
+		assert.True(t, names["replicate"], "Should include replicate")
+		assert.True(t, names["stable-diffusion"], "Should include stable-diffusion")
+	})
+}
+
+func TestGetAllExtendedPackages(t *testing.T) {
+	t.Run("Returns all packages", func(t *testing.T) {
+		packages := GetAllExtendedPackages()
+		assert.Equal(t, ExtendedMCPPackages, packages)
+	})
+
+	t.Run("Contains packages from all categories", func(t *testing.T) {
+		packages := GetAllExtendedPackages()
+		categories := make(map[MCPPackageCategory]bool)
+
+		for _, pkg := range packages {
+			categories[pkg.Category] = true
+		}
+
+		assert.True(t, categories[CategoryCore])
+		assert.True(t, categories[CategoryVectorDB])
+		assert.True(t, categories[CategoryDesign])
+		assert.True(t, categories[CategoryImage])
+		assert.True(t, categories[CategoryDev])
+		assert.True(t, categories[CategorySearch])
+		assert.True(t, categories[CategoryCloud])
+	})
+}
+
+// ============================================================================
+// FilterAvailablePackages Tests
+// ============================================================================
+
+func TestFilterAvailablePackages(t *testing.T) {
+	t.Run("Returns packages with no env requirements", func(t *testing.T) {
+		// Ensure no env vars are set for this test
+		os.Unsetenv("CHROMA_URL")
+		os.Unsetenv("QDRANT_URL")
+		os.Unsetenv("FIGMA_ACCESS_TOKEN")
+
+		packages := FilterAvailablePackages(ExtendedMCPPackages)
+
+		// All packages without RequiresEnv should be included
+		for _, pkg := range packages {
+			assert.Empty(t, pkg.RequiresEnv,
+				"Package %s should have no env requirements or all required vars set", pkg.Name)
+		}
+	})
+
+	t.Run("Returns packages when env vars are set", func(t *testing.T) {
+		// Set an env var for a package that requires it
+		t.Setenv("CHROMA_URL", "http://localhost:8000")
+
+		packages := FilterAvailablePackages(ExtendedMCPPackages)
+
+		// Find chroma package
+		var chromaFound bool
+		for _, pkg := range packages {
+			if pkg.Name == "chroma" {
+				chromaFound = true
+				break
+			}
+		}
+		assert.True(t, chromaFound, "Chroma should be available when CHROMA_URL is set")
+	})
+
+	t.Run("Excludes packages with missing env vars", func(t *testing.T) {
+		// Make sure the env var is NOT set
+		os.Unsetenv("FIGMA_ACCESS_TOKEN")
+
+		packages := FilterAvailablePackages(ExtendedMCPPackages)
+
+		// Check that figma is NOT in the list (unless we already set it elsewhere)
+		var figmaFound bool
+		for _, pkg := range packages {
+			if pkg.Name == "figma" {
+				figmaFound = true
+				break
+			}
+		}
+		assert.False(t, figmaFound, "Figma should not be available when FIGMA_ACCESS_TOKEN is not set")
+	})
+
+	t.Run("Handles packages with multiple required env vars", func(t *testing.T) {
+		// S3 requires both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+		os.Unsetenv("AWS_ACCESS_KEY_ID")
+		os.Unsetenv("AWS_SECRET_ACCESS_KEY")
+
+		packages := FilterAvailablePackages(ExtendedMCPPackages)
+
+		var s3Found bool
+		for _, pkg := range packages {
+			if pkg.Name == "s3" {
+				s3Found = true
+				break
+			}
+		}
+		assert.False(t, s3Found, "S3 should not be available when both AWS env vars are not set")
+
+		// Set only one
+		t.Setenv("AWS_ACCESS_KEY_ID", "test")
+		packages = FilterAvailablePackages(ExtendedMCPPackages)
+
+		s3Found = false
+		for _, pkg := range packages {
+			if pkg.Name == "s3" {
+				s3Found = true
+				break
+			}
+		}
+		assert.False(t, s3Found, "S3 should not be available when only one AWS env var is set")
+
+		// Set both
+		t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+		packages = FilterAvailablePackages(ExtendedMCPPackages)
+
+		s3Found = false
+		for _, pkg := range packages {
+			if pkg.Name == "s3" {
+				s3Found = true
+				break
+			}
+		}
+		assert.True(t, s3Found, "S3 should be available when both AWS env vars are set")
+	})
+
+	t.Run("Returns empty list for empty input", func(t *testing.T) {
+		packages := FilterAvailablePackages([]MCPPackage{})
+		assert.Empty(t, packages)
+	})
+
+	t.Run("Returns nil for nil input", func(t *testing.T) {
+		packages := FilterAvailablePackages(nil)
+		assert.Nil(t, packages)
+	})
+
+	t.Run("Works with custom packages", func(t *testing.T) {
+		customPackages := []MCPPackage{
+			{Name: "no-env", NPM: "pkg1", Description: "No env", Category: CategoryCore},
+			{Name: "with-env", NPM: "pkg2", Description: "With env", Category: CategoryCore, RequiresEnv: []string{"CUSTOM_VAR"}},
+		}
+
+		os.Unsetenv("CUSTOM_VAR")
+		packages := FilterAvailablePackages(customPackages)
+		assert.Len(t, packages, 1)
+		assert.Equal(t, "no-env", packages[0].Name)
+
+		t.Setenv("CUSTOM_VAR", "value")
+		packages = FilterAvailablePackages(customPackages)
+		assert.Len(t, packages, 2)
+	})
+}
+
+// ============================================================================
+// MCPPackageCategory Tests
+// ============================================================================
+
+func TestMCPPackageCategory(t *testing.T) {
+	t.Run("Category constants are defined correctly", func(t *testing.T) {
+		assert.Equal(t, MCPPackageCategory("core"), CategoryCore)
+		assert.Equal(t, MCPPackageCategory("vectordb"), CategoryVectorDB)
+		assert.Equal(t, MCPPackageCategory("design"), CategoryDesign)
+		assert.Equal(t, MCPPackageCategory("image"), CategoryImage)
+		assert.Equal(t, MCPPackageCategory("dev"), CategoryDev)
+		assert.Equal(t, MCPPackageCategory("search"), CategorySearch)
+		assert.Equal(t, MCPPackageCategory("cloud"), CategoryCloud)
+	})
+}
+
+// ============================================================================
+// MCPPackageExtended Tests
+// ============================================================================
+
+func TestMCPPackageExtended(t *testing.T) {
+	t.Run("Struct fields work correctly", func(t *testing.T) {
+		extended := MCPPackageExtended{
+			MCPPackage: MCPPackage{
+				Name:        "test",
+				NPM:         "test-pkg",
+				Description: "Test package",
+			},
+			Category:    CategoryCore,
+			RequiresEnv: []string{"TEST_VAR"},
+			Optional:    true,
+		}
+
+		assert.Equal(t, "test", extended.Name)
+		assert.Equal(t, "test-pkg", extended.NPM)
+		assert.Equal(t, CategoryCore, extended.Category)
+		assert.Equal(t, []string{"TEST_VAR"}, extended.RequiresEnv)
+		assert.True(t, extended.Optional)
+	})
+}
+
+// ============================================================================
+// Package RequiresEnv Tests
+// ============================================================================
+
+func TestPackageRequiresEnv(t *testing.T) {
+	t.Run("VectorDB packages require env vars", func(t *testing.T) {
+		packages := GetVectorDBPackages()
+		for _, pkg := range packages {
+			assert.NotEmpty(t, pkg.RequiresEnv,
+				"VectorDB package %s should require env vars", pkg.Name)
+		}
+	})
+
+	t.Run("Design packages require env vars", func(t *testing.T) {
+		packages := GetDesignPackages()
+		for _, pkg := range packages {
+			if pkg.Name != "imagesorcery" { // Local tool
+				assert.NotEmpty(t, pkg.RequiresEnv,
+					"Design package %s should require env vars", pkg.Name)
+			}
+		}
+	})
+
+	t.Run("Some core packages have no env requirements", func(t *testing.T) {
+		packages := GetCorePackages()
+		var noEnvCount int
+		for _, pkg := range packages {
+			if len(pkg.RequiresEnv) == 0 {
+				noEnvCount++
+			}
+		}
+		assert.Greater(t, noEnvCount, 0, "Some core packages should work without env vars")
+	})
+}
+
+// ============================================================================
+// Specific Package Tests
+// ============================================================================
+
+func TestSpecificPackages(t *testing.T) {
+	t.Run("Filesystem package exists", func(t *testing.T) {
+		packages := GetCorePackages()
+		var found bool
+		for _, pkg := range packages {
+			if pkg.Name == "filesystem" {
+				found = true
+				assert.Equal(t, "@modelcontextprotocol/server-filesystem", pkg.NPM)
+				assert.Equal(t, CategoryCore, pkg.Category)
+				assert.Empty(t, pkg.RequiresEnv)
+				break
+			}
+		}
+		assert.True(t, found, "Filesystem package should exist")
+	})
+
+	t.Run("GitHub package exists", func(t *testing.T) {
+		packages := GetCorePackages()
+		var found bool
+		for _, pkg := range packages {
+			if pkg.Name == "github" {
+				found = true
+				assert.Equal(t, "@modelcontextprotocol/server-github", pkg.NPM)
+				break
+			}
+		}
+		assert.True(t, found, "GitHub package should exist")
+	})
+
+	t.Run("Chroma package has correct URL env var", func(t *testing.T) {
+		packages := GetVectorDBPackages()
+		for _, pkg := range packages {
+			if pkg.Name == "chroma" {
+				assert.Contains(t, pkg.RequiresEnv, "CHROMA_URL")
+				break
+			}
+		}
+	})
+
+	t.Run("Qdrant package has correct URL env var", func(t *testing.T) {
+		packages := GetVectorDBPackages()
+		for _, pkg := range packages {
+			if pkg.Name == "qdrant" {
+				assert.Contains(t, pkg.RequiresEnv, "QDRANT_URL")
+				break
+			}
+		}
+	})
+
+	t.Run("Figma package requires access token", func(t *testing.T) {
+		packages := GetDesignPackages()
+		for _, pkg := range packages {
+			if pkg.Name == "figma" {
+				assert.Contains(t, pkg.RequiresEnv, "FIGMA_ACCESS_TOKEN")
+				break
+			}
+		}
+	})
+
+	t.Run("Brave search requires API key", func(t *testing.T) {
+		packages := GetPackagesByCategory(CategorySearch)
+		for _, pkg := range packages {
+			if pkg.Name == "brave-search" {
+				assert.Contains(t, pkg.RequiresEnv, "BRAVE_API_KEY")
+				break
+			}
+		}
+	})
+}
+
+// ============================================================================
+// Benchmark Tests
+// ============================================================================
+
+func BenchmarkGetPackagesByCategory(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		GetPackagesByCategory(CategoryCore)
+	}
+}
+
+func BenchmarkGetAllExtendedPackages(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		GetAllExtendedPackages()
+	}
+}
+
+func BenchmarkFilterAvailablePackages(b *testing.B) {
+	packages := GetAllExtendedPackages()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		FilterAvailablePackages(packages)
+	}
+}
