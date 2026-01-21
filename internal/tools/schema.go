@@ -504,3 +504,276 @@ func (s *ToolSchema) ToJSON() (string, error) {
 	}
 	return string(bytes), nil
 }
+
+// ToolSearchResult represents a search result with relevance score
+type ToolSearchResult struct {
+	Tool      *ToolSchema `json:"tool"`
+	Score     float64     `json:"score"`
+	MatchType string      `json:"match_type"` // "name", "description", "parameter", "alias", "category"
+}
+
+// SearchOptions configures the search behavior
+type SearchOptions struct {
+	Query           string   `json:"query"`
+	Categories      []string `json:"categories,omitempty"`
+	IncludeParams   bool     `json:"include_params,omitempty"`
+	FuzzyMatch      bool     `json:"fuzzy_match,omitempty"`
+	MaxResults      int      `json:"max_results,omitempty"`
+	MinScore        float64  `json:"min_score,omitempty"`
+}
+
+// SearchTools searches the tool registry with the given options
+func SearchTools(opts SearchOptions) []ToolSearchResult {
+	if opts.MaxResults <= 0 {
+		opts.MaxResults = 50
+	}
+	if opts.MinScore <= 0 {
+		opts.MinScore = 0.1
+	}
+
+	query := strings.ToLower(opts.Query)
+	var results []ToolSearchResult
+
+	for _, schema := range ToolSchemaRegistry {
+		// Filter by category if specified
+		if len(opts.Categories) > 0 {
+			found := false
+			for _, cat := range opts.Categories {
+				if strings.EqualFold(schema.Category, cat) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+
+		score, matchType := calculateToolScore(schema, query, opts)
+		if score >= opts.MinScore {
+			results = append(results, ToolSearchResult{
+				Tool:      schema,
+				Score:     score,
+				MatchType: matchType,
+			})
+		}
+	}
+
+	// Sort by score descending
+	sortToolResults(results)
+
+	// Limit results
+	if len(results) > opts.MaxResults {
+		results = results[:opts.MaxResults]
+	}
+
+	return results
+}
+
+// calculateToolScore calculates relevance score for a tool
+func calculateToolScore(schema *ToolSchema, query string, opts SearchOptions) (float64, string) {
+	var maxScore float64
+	var matchType string
+
+	// Exact name match (highest priority)
+	if strings.EqualFold(schema.Name, query) {
+		return 1.0, "name"
+	}
+
+	// Name contains query
+	nameLower := strings.ToLower(schema.Name)
+	if strings.Contains(nameLower, query) {
+		score := 0.9 * (float64(len(query)) / float64(len(nameLower)))
+		if score > maxScore {
+			maxScore = score
+			matchType = "name"
+		}
+	}
+
+	// Alias match
+	for _, alias := range schema.Aliases {
+		aliasLower := strings.ToLower(alias)
+		if strings.EqualFold(alias, query) {
+			return 0.95, "alias"
+		}
+		if strings.Contains(aliasLower, query) {
+			score := 0.85 * (float64(len(query)) / float64(len(aliasLower)))
+			if score > maxScore {
+				maxScore = score
+				matchType = "alias"
+			}
+		}
+	}
+
+	// Description match
+	descLower := strings.ToLower(schema.Description)
+	if strings.Contains(descLower, query) {
+		// Weight by how much of the description the query covers
+		words := strings.Fields(query)
+		matchedWords := 0
+		for _, word := range words {
+			if strings.Contains(descLower, word) {
+				matchedWords++
+			}
+		}
+		score := 0.7 * (float64(matchedWords) / float64(len(words)))
+		if score > maxScore {
+			maxScore = score
+			matchType = "description"
+		}
+	}
+
+	// Category match
+	if strings.Contains(strings.ToLower(schema.Category), query) {
+		score := 0.6
+		if score > maxScore {
+			maxScore = score
+			matchType = "category"
+		}
+	}
+
+	// Parameter match (if enabled)
+	if opts.IncludeParams {
+		for paramName, param := range schema.Parameters {
+			paramLower := strings.ToLower(paramName)
+			if strings.Contains(paramLower, query) {
+				score := 0.5
+				if score > maxScore {
+					maxScore = score
+					matchType = "parameter"
+				}
+			}
+			if strings.Contains(strings.ToLower(param.Description), query) {
+				score := 0.4
+				if score > maxScore {
+					maxScore = score
+					matchType = "parameter"
+				}
+			}
+		}
+	}
+
+	// Fuzzy match (if enabled and no good match found)
+	if opts.FuzzyMatch && maxScore < 0.3 {
+		fuzzyScore := fuzzyMatch(nameLower, query)
+		if fuzzyScore > maxScore {
+			maxScore = fuzzyScore
+			matchType = "fuzzy"
+		}
+	}
+
+	return maxScore, matchType
+}
+
+// fuzzyMatch calculates a fuzzy match score using Levenshtein-like similarity
+func fuzzyMatch(s1, s2 string) float64 {
+	if len(s1) == 0 || len(s2) == 0 {
+		return 0
+	}
+
+	// Simple character overlap score
+	shorter, longer := s1, s2
+	if len(s1) > len(s2) {
+		shorter, longer = s2, s1
+	}
+
+	matches := 0
+	for _, c := range shorter {
+		if strings.ContainsRune(longer, c) {
+			matches++
+		}
+	}
+
+	return 0.5 * (float64(matches) / float64(len(longer)))
+}
+
+// sortToolResults sorts results by score descending
+func sortToolResults(results []ToolSearchResult) {
+	for i := 0; i < len(results)-1; i++ {
+		for j := i + 1; j < len(results); j++ {
+			if results[j].Score > results[i].Score {
+				results[i], results[j] = results[j], results[i]
+			}
+		}
+	}
+}
+
+// SearchByKeywords searches tools by multiple keywords (AND logic)
+func SearchByKeywords(keywords []string, categories []string) []ToolSearchResult {
+	if len(keywords) == 0 {
+		return nil
+	}
+
+	var results []ToolSearchResult
+
+	for _, schema := range ToolSchemaRegistry {
+		// Filter by category if specified
+		if len(categories) > 0 {
+			found := false
+			for _, cat := range categories {
+				if strings.EqualFold(schema.Category, cat) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+
+		// Check if all keywords match
+		matchCount := 0
+		searchText := strings.ToLower(schema.Name + " " + schema.Description + " " + strings.Join(schema.Aliases, " "))
+
+		for _, keyword := range keywords {
+			if strings.Contains(searchText, strings.ToLower(keyword)) {
+				matchCount++
+			}
+		}
+
+		if matchCount == len(keywords) {
+			score := float64(matchCount) / float64(len(keywords))
+			results = append(results, ToolSearchResult{
+				Tool:      schema,
+				Score:     score,
+				MatchType: "keywords",
+			})
+		}
+	}
+
+	sortToolResults(results)
+	return results
+}
+
+// GetToolSuggestions returns tool suggestions based on partial input
+func GetToolSuggestions(prefix string, maxSuggestions int) []*ToolSchema {
+	if maxSuggestions <= 0 {
+		maxSuggestions = 10
+	}
+
+	prefixLower := strings.ToLower(prefix)
+	var suggestions []*ToolSchema
+
+	for _, schema := range ToolSchemaRegistry {
+		if strings.HasPrefix(strings.ToLower(schema.Name), prefixLower) {
+			suggestions = append(suggestions, schema)
+			if len(suggestions) >= maxSuggestions {
+				break
+			}
+			continue
+		}
+
+		// Check aliases
+		for _, alias := range schema.Aliases {
+			if strings.HasPrefix(strings.ToLower(alias), prefixLower) {
+				suggestions = append(suggestions, schema)
+				if len(suggestions) >= maxSuggestions {
+					break
+				}
+				break
+			}
+		}
+	}
+
+	return suggestions
+}

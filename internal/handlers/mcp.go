@@ -3,11 +3,15 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/mcp/adapters"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/tools"
 )
 
 // MCPHandler handles Model Context Protocol (MCP) endpoints
@@ -237,4 +241,293 @@ func findUnderscoreIndex(s string) int {
 		}
 	}
 	return -1
+}
+
+// MCPToolSearchRequest represents a tool search request
+type MCPToolSearchRequest struct {
+	Query         string   `json:"query" binding:"required"`
+	Categories    []string `json:"categories,omitempty"`
+	IncludeParams bool     `json:"include_params,omitempty"`
+	FuzzyMatch    bool     `json:"fuzzy_match,omitempty"`
+	MaxResults    int      `json:"max_results,omitempty"`
+}
+
+// MCPToolSearch searches for tools by query
+func (h *MCPHandler) MCPToolSearch(c *gin.Context) {
+	if !h.config.Enabled {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "MCP is not enabled",
+		})
+		return
+	}
+
+	// Support both GET with query params and POST with JSON body
+	var req MCPToolSearchRequest
+	if c.Request.Method == "GET" {
+		req.Query = c.Query("q")
+		if req.Query == "" {
+			req.Query = c.Query("query")
+		}
+		if categories := c.Query("categories"); categories != "" {
+			req.Categories = strings.Split(categories, ",")
+		}
+		req.IncludeParams = c.Query("include_params") == "true"
+		req.FuzzyMatch = c.Query("fuzzy") == "true"
+		if maxStr := c.Query("max_results"); maxStr != "" {
+			if max, err := strconv.Atoi(maxStr); err == nil {
+				req.MaxResults = max
+			}
+		}
+	} else {
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid request: " + err.Error(),
+			})
+			return
+		}
+	}
+
+	if req.Query == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Query parameter is required",
+		})
+		return
+	}
+
+	// Search tools
+	opts := tools.SearchOptions{
+		Query:         req.Query,
+		Categories:    req.Categories,
+		IncludeParams: req.IncludeParams,
+		FuzzyMatch:    req.FuzzyMatch,
+		MaxResults:    req.MaxResults,
+	}
+
+	results := tools.SearchTools(opts)
+
+	// Format response
+	toolResults := make([]map[string]interface{}, len(results))
+	for i, result := range results {
+		toolResults[i] = map[string]interface{}{
+			"name":        result.Tool.Name,
+			"description": result.Tool.Description,
+			"category":    result.Tool.Category,
+			"score":       result.Score,
+			"match_type":  result.MatchType,
+			"parameters":  result.Tool.Parameters,
+			"required":    result.Tool.RequiredFields,
+			"aliases":     result.Tool.Aliases,
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"query":   req.Query,
+		"count":   len(results),
+		"results": toolResults,
+	})
+}
+
+// MCPAdapterSearchRequest represents an adapter search request
+type MCPAdapterSearchRequest struct {
+	Query      string   `json:"query"`
+	Categories []string `json:"categories,omitempty"`
+	AuthTypes  []string `json:"auth_types,omitempty"`
+	Official   *bool    `json:"official,omitempty"`
+	Supported  *bool    `json:"supported,omitempty"`
+	MaxResults int      `json:"max_results,omitempty"`
+}
+
+// MCPAdapterSearch searches for MCP adapters
+func (h *MCPHandler) MCPAdapterSearch(c *gin.Context) {
+	if !h.config.Enabled {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "MCP is not enabled",
+		})
+		return
+	}
+
+	// Support both GET with query params and POST with JSON body
+	var req MCPAdapterSearchRequest
+	if c.Request.Method == "GET" {
+		req.Query = c.Query("q")
+		if req.Query == "" {
+			req.Query = c.Query("query")
+		}
+		if categories := c.Query("categories"); categories != "" {
+			req.Categories = strings.Split(categories, ",")
+		}
+		if authTypes := c.Query("auth_types"); authTypes != "" {
+			req.AuthTypes = strings.Split(authTypes, ",")
+		}
+		if official := c.Query("official"); official != "" {
+			val := official == "true"
+			req.Official = &val
+		}
+		if supported := c.Query("supported"); supported != "" {
+			val := supported == "true"
+			req.Supported = &val
+		}
+		if maxStr := c.Query("max_results"); maxStr != "" {
+			if max, err := strconv.Atoi(maxStr); err == nil {
+				req.MaxResults = max
+			}
+		}
+	} else {
+		if err := c.ShouldBindJSON(&req); err != nil && c.Request.ContentLength > 0 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid request: " + err.Error(),
+			})
+			return
+		}
+	}
+
+	// Convert category strings to AdapterCategory
+	var categories []adapters.AdapterCategory
+	for _, cat := range req.Categories {
+		categories = append(categories, adapters.AdapterCategory(cat))
+	}
+
+	// Search adapters
+	opts := adapters.AdapterSearchOptions{
+		Query:      req.Query,
+		Categories: categories,
+		AuthTypes:  req.AuthTypes,
+		Official:   req.Official,
+		Supported:  req.Supported,
+		MaxResults: req.MaxResults,
+	}
+
+	results := adapters.DefaultRegistry.Search(opts)
+
+	// Format response
+	adapterResults := make([]map[string]interface{}, len(results))
+	for i, result := range results {
+		adapterResults[i] = map[string]interface{}{
+			"name":        result.Adapter.Name,
+			"description": result.Adapter.Description,
+			"category":    result.Adapter.Category,
+			"auth_type":   result.Adapter.AuthType,
+			"official":    result.Adapter.Official,
+			"supported":   result.Adapter.Supported,
+			"docs_url":    result.Adapter.DocsURL,
+			"score":       result.Score,
+			"match_type":  result.MatchType,
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"query":   req.Query,
+		"count":   len(results),
+		"results": adapterResults,
+	})
+}
+
+// MCPToolSuggestions returns tool suggestions for autocomplete
+func (h *MCPHandler) MCPToolSuggestions(c *gin.Context) {
+	if !h.config.Enabled {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "MCP is not enabled",
+		})
+		return
+	}
+
+	prefix := c.Query("prefix")
+	if prefix == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Prefix parameter is required",
+		})
+		return
+	}
+
+	maxSuggestions := 10
+	if maxStr := c.Query("max"); maxStr != "" {
+		if max, err := strconv.Atoi(maxStr); err == nil {
+			maxSuggestions = max
+		}
+	}
+
+	suggestions := tools.GetToolSuggestions(prefix, maxSuggestions)
+
+	result := make([]map[string]interface{}, len(suggestions))
+	for i, tool := range suggestions {
+		result[i] = map[string]interface{}{
+			"name":        tool.Name,
+			"description": tool.Description,
+			"category":    tool.Category,
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"prefix":      prefix,
+		"count":       len(suggestions),
+		"suggestions": result,
+	})
+}
+
+// MCPCategories returns available tool categories
+func (h *MCPHandler) MCPCategories(c *gin.Context) {
+	if !h.config.Enabled {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "MCP is not enabled",
+		})
+		return
+	}
+
+	// Tool categories
+	toolCategories := []string{
+		tools.CategoryCore,
+		tools.CategoryFileSystem,
+		tools.CategoryVersionControl,
+		tools.CategoryCodeIntel,
+		tools.CategoryWorkflow,
+		tools.CategoryWeb,
+	}
+
+	// Adapter categories
+	adapterCategories := adapters.GetAllCategories()
+	adapterCatStrings := make([]string, len(adapterCategories))
+	for i, cat := range adapterCategories {
+		adapterCatStrings[i] = string(cat)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tool_categories":    toolCategories,
+		"adapter_categories": adapterCatStrings,
+		"auth_types":         adapters.GetAllAuthTypes(),
+	})
+}
+
+// MCPStats returns MCP statistics
+func (h *MCPHandler) MCPStats(c *gin.Context) {
+	if !h.config.Enabled {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "MCP is not enabled",
+		})
+		return
+	}
+
+	// Count tools by category
+	toolsByCategory := make(map[string]int)
+	for _, tool := range tools.ToolSchemaRegistry {
+		toolsByCategory[tool.Category]++
+	}
+
+	// Count adapters by category
+	adaptersByCategory := make(map[string]int)
+	for _, adapter := range adapters.AvailableAdapters {
+		adaptersByCategory[string(adapter.Category)]++
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tools": map[string]interface{}{
+			"total":       len(tools.ToolSchemaRegistry),
+			"by_category": toolsByCategory,
+		},
+		"adapters": map[string]interface{}{
+			"total":       len(adapters.AvailableAdapters),
+			"by_category": adaptersByCategory,
+			"official":    len(adapters.GetOfficialAdapters()),
+			"supported":   len(adapters.GetSupportedAdapters()),
+		},
+	})
 }

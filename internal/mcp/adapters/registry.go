@@ -5,6 +5,7 @@ package adapters
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -280,4 +281,252 @@ func GetOfficialAdapters() []AdapterMetadata {
 
 func init() {
 	InitializeDefaultRegistry()
+}
+
+// AdapterSearchResult represents a search result with relevance score
+type AdapterSearchResult struct {
+	Adapter   AdapterMetadata `json:"adapter"`
+	Score     float64         `json:"score"`
+	MatchType string          `json:"match_type"` // "name", "description", "category"
+}
+
+// AdapterSearchOptions configures the adapter search behavior
+type AdapterSearchOptions struct {
+	Query      string            `json:"query"`
+	Categories []AdapterCategory `json:"categories,omitempty"`
+	AuthTypes  []string          `json:"auth_types,omitempty"`
+	Official   *bool             `json:"official,omitempty"`
+	Supported  *bool             `json:"supported,omitempty"`
+	MaxResults int               `json:"max_results,omitempty"`
+	MinScore   float64           `json:"min_score,omitempty"`
+}
+
+// Search searches adapters with the given options
+func (r *AdapterRegistry) Search(opts AdapterSearchOptions) []AdapterSearchResult {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if opts.MaxResults <= 0 {
+		opts.MaxResults = 50
+	}
+	if opts.MinScore <= 0 {
+		opts.MinScore = 0.1
+	}
+
+	query := strings.ToLower(opts.Query)
+	var results []AdapterSearchResult
+
+	for _, meta := range AvailableAdapters {
+		// Apply filters
+		if !matchesAdapterFilters(meta, opts) {
+			continue
+		}
+
+		score, matchType := calculateAdapterScore(meta, query)
+		if score >= opts.MinScore {
+			results = append(results, AdapterSearchResult{
+				Adapter:   meta,
+				Score:     score,
+				MatchType: matchType,
+			})
+		}
+	}
+
+	// Sort by score descending
+	sortAdapterResults(results)
+
+	// Limit results
+	if len(results) > opts.MaxResults {
+		results = results[:opts.MaxResults]
+	}
+
+	return results
+}
+
+// matchesAdapterFilters checks if adapter matches filter criteria
+func matchesAdapterFilters(meta AdapterMetadata, opts AdapterSearchOptions) bool {
+	// Filter by category
+	if len(opts.Categories) > 0 {
+		found := false
+		for _, cat := range opts.Categories {
+			if meta.Category == cat {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	// Filter by auth type
+	if len(opts.AuthTypes) > 0 {
+		found := false
+		for _, authType := range opts.AuthTypes {
+			if strings.EqualFold(meta.AuthType, authType) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	// Filter by official status
+	if opts.Official != nil && meta.Official != *opts.Official {
+		return false
+	}
+
+	// Filter by supported status
+	if opts.Supported != nil && meta.Supported != *opts.Supported {
+		return false
+	}
+
+	return true
+}
+
+// calculateAdapterScore calculates relevance score for an adapter
+func calculateAdapterScore(meta AdapterMetadata, query string) (float64, string) {
+	if query == "" {
+		return 1.0, "all"
+	}
+
+	var maxScore float64
+	var matchType string
+
+	// Exact name match
+	if strings.EqualFold(meta.Name, query) {
+		return 1.0, "name"
+	}
+
+	// Name contains query
+	nameLower := strings.ToLower(meta.Name)
+	if strings.Contains(nameLower, query) {
+		score := 0.9 * (float64(len(query)) / float64(len(nameLower)))
+		if score > maxScore {
+			maxScore = score
+			matchType = "name"
+		}
+	}
+
+	// Description match
+	descLower := strings.ToLower(meta.Description)
+	if strings.Contains(descLower, query) {
+		words := strings.Fields(query)
+		matchedWords := 0
+		for _, word := range words {
+			if strings.Contains(descLower, word) {
+				matchedWords++
+			}
+		}
+		score := 0.7 * (float64(matchedWords) / float64(len(words)))
+		if score > maxScore {
+			maxScore = score
+			matchType = "description"
+		}
+	}
+
+	// Category match
+	if strings.Contains(strings.ToLower(string(meta.Category)), query) {
+		score := 0.6
+		if score > maxScore {
+			maxScore = score
+			matchType = "category"
+		}
+	}
+
+	return maxScore, matchType
+}
+
+// sortAdapterResults sorts results by score descending
+func sortAdapterResults(results []AdapterSearchResult) {
+	for i := 0; i < len(results)-1; i++ {
+		for j := i + 1; j < len(results); j++ {
+			if results[j].Score > results[i].Score {
+				results[i], results[j] = results[j], results[i]
+			}
+		}
+	}
+}
+
+// SearchByCapability searches adapters by capability keywords
+func (r *AdapterRegistry) SearchByCapability(capability string) []AdapterMetadata {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	capLower := strings.ToLower(capability)
+	var results []AdapterMetadata
+
+	for _, meta := range AvailableAdapters {
+		// Check description for capability keywords
+		if strings.Contains(strings.ToLower(meta.Description), capLower) {
+			results = append(results, meta)
+			continue
+		}
+
+		// Check category name
+		if strings.Contains(strings.ToLower(string(meta.Category)), capLower) {
+			results = append(results, meta)
+		}
+	}
+
+	return results
+}
+
+// GetAdapterSuggestions returns adapter suggestions based on partial input
+func (r *AdapterRegistry) GetAdapterSuggestions(prefix string, maxSuggestions int) []AdapterMetadata {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if maxSuggestions <= 0 {
+		maxSuggestions = 10
+	}
+
+	prefixLower := strings.ToLower(prefix)
+	var suggestions []AdapterMetadata
+
+	for _, meta := range AvailableAdapters {
+		if strings.HasPrefix(strings.ToLower(meta.Name), prefixLower) {
+			suggestions = append(suggestions, meta)
+			if len(suggestions) >= maxSuggestions {
+				break
+			}
+		}
+	}
+
+	return suggestions
+}
+
+// GetAllCategories returns all unique adapter categories
+func GetAllCategories() []AdapterCategory {
+	return []AdapterCategory{
+		CategoryDatabase,
+		CategoryStorage,
+		CategoryVersionControl,
+		CategoryProductivity,
+		CategoryCommunication,
+		CategorySearch,
+		CategoryAutomation,
+		CategoryInfrastructure,
+		CategoryAnalytics,
+		CategoryAI,
+		CategoryUtility,
+		CategoryDesign,
+		CategoryCollaboration,
+	}
+}
+
+// GetAllAuthTypes returns all unique auth types
+func GetAllAuthTypes() []string {
+	authTypes := make(map[string]bool)
+	for _, meta := range AvailableAdapters {
+		authTypes[meta.AuthType] = true
+	}
+
+	var result []string
+	for authType := range authTypes {
+		result = append(result, authType)
+	}
+	return result
 }

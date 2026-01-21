@@ -665,7 +665,17 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			mcpGroup.POST("/tools/call", mcpHandler.MCPToolsCall)
 			mcpGroup.GET("/prompts", mcpHandler.MCPPrompts)
 			mcpGroup.GET("/resources", mcpHandler.MCPResources)
+
+			// MCP Tool Search endpoints
+			mcpGroup.GET("/tools/search", mcpHandler.MCPToolSearch)
+			mcpGroup.POST("/tools/search", mcpHandler.MCPToolSearch)
+			mcpGroup.GET("/tools/suggestions", mcpHandler.MCPToolSuggestions)
+			mcpGroup.GET("/adapters/search", mcpHandler.MCPAdapterSearch)
+			mcpGroup.POST("/adapters/search", mcpHandler.MCPAdapterSearch)
+			mcpGroup.GET("/categories", mcpHandler.MCPCategories)
+			mcpGroup.GET("/stats", mcpHandler.MCPStats)
 		}
+		logger.Info("MCP Tool Search endpoints registered at /v1/mcp/tools/search, /v1/mcp/adapters/search")
 
 		// Protocol endpoints
 		protocolGroup := protected.Group("/protocols")
