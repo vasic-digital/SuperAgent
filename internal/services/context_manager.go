@@ -692,6 +692,7 @@ func (cm *ContextManager) detectSourceConflicts(source string, entries []*Contex
 
 	contentMap := make(map[string][]*ContextEntry)
 	for _, entry := range entries {
+		// #nosec G401 -- MD5 is used for content deduplication in conflict detection, not for security purposes
 		hash := fmt.Sprintf("%x", md5.Sum([]byte(entry.Content)))
 		contentMap[hash] = append(contentMap[hash], entry)
 	}

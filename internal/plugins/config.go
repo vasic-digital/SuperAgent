@@ -68,7 +68,8 @@ func (c *ConfigManager) SavePluginConfig(pluginName string, config map[string]in
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	// Use 0600 permissions as plugin configs may contain sensitive data like API keys
+	if err := os.WriteFile(configPath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 

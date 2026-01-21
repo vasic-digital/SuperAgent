@@ -269,7 +269,9 @@ func (p *MCPPreinstaller) installPackage(ctx context.Context, pkg MCPPackage) er
 	}
 
 	// Create package.json if not exists
+	// Path is constructed from installDir (config-provided, defaults to ~/.helixagent/mcp-servers) + pkg.Name (hardcoded in StandardMCPPackages)
 	packageJSON := filepath.Join(pkgDir, "package.json")
+	// #nosec G304 - packageJSON path is internally constructed from trusted installDir + hardcoded package names, not user input
 	if _, err := os.Stat(packageJSON); os.IsNotExist(err) {
 		content := fmt.Sprintf(`{
   "name": "helixagent-mcp-%s",
@@ -277,6 +279,8 @@ func (p *MCPPreinstaller) installPackage(ctx context.Context, pkg MCPPackage) er
   "private": true,
   "dependencies": {}
 }`, pkg.Name)
+		// #nosec G306 - package.json is a non-sensitive npm config file that must be world-readable for npm to function
+		// #nosec G304 - packageJSON path is internally constructed from trusted installDir + hardcoded package names, not user input
 		if err := os.WriteFile(packageJSON, []byte(content), 0644); err != nil {
 			p.updateStatus(pkg.Name, StatusFailed, "", fmt.Errorf("failed to create package.json: %w", err))
 			return err
@@ -335,6 +339,8 @@ func (p *MCPPreinstaller) installPackage(ctx context.Context, pkg MCPPackage) er
 func (p *MCPPreinstaller) isPackageInstalled(pkgDir string, npmPkg string) bool {
 	// Get the package name from the NPM package identifier
 	// Handle scoped packages like @modelcontextprotocol/server-filesystem
+	// Note: pkgDir comes from installDir (config-provided) + pkg.Name (hardcoded)
+	// Note: npmPkg comes from StandardMCPPackages (hardcoded NPM package names)
 	var checkPath string
 	if npmPkg[0] == '@' {
 		checkPath = filepath.Join(pkgDir, "node_modules", npmPkg)
@@ -344,6 +350,7 @@ func (p *MCPPreinstaller) isPackageInstalled(pkgDir string, npmPkg string) bool 
 
 	// Check if package.json exists in the package directory
 	packageJSON := filepath.Join(checkPath, "package.json")
+	// #nosec G304 - packageJSON path is internally constructed from trusted installDir + hardcoded package names, not user input
 	if _, err := os.Stat(packageJSON); err == nil {
 		return true
 	}
@@ -488,7 +495,10 @@ func (p *MCPPreinstaller) GetPackageCommand(name string) ([]string, error) {
 	pkg := status.Package
 
 	// Try to find the main entry point
+	// Note: status.InstallPath is set internally from installDir + hardcoded pkg.Name
+	// Note: pkg.NPM comes from hardcoded StandardMCPPackages
 	pkgJSON := filepath.Join(status.InstallPath, pkg.NPM, "package.json")
+	// #nosec G304 - pkgJSON path is internally constructed from trusted installDir + hardcoded package names, not user input
 	if data, err := os.ReadFile(pkgJSON); err == nil {
 		// Parse to find "bin" or "main"
 		var pkgInfo struct {
@@ -521,9 +531,12 @@ func (p *MCPPreinstaller) GetPackageCommand(name string) ([]string, error) {
 	}
 
 	// Check if the script exists
+	// Note: mainScript is constructed from status.InstallPath (internal) + package.json "main"/"bin" fields or hardcoded fallbacks
+	// #nosec G304 - mainScript path is internally constructed from trusted installDir + package metadata, not user input
 	if _, err := os.Stat(mainScript); err != nil {
 		// Try dist/index.js
 		distScript := filepath.Join(status.InstallPath, pkg.NPM, "dist", "index.js")
+		// #nosec G304 - distScript path is internally constructed from trusted installDir + hardcoded package names, not user input
 		if _, err := os.Stat(distScript); err == nil {
 			mainScript = distScript
 		} else {

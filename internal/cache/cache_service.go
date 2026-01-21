@@ -458,8 +458,9 @@ func (c *CacheService) generateCacheKey(req *models.LLMRequest) string {
 	return fmt.Sprintf("llm:%s", hash)
 }
 
-// hashString creates an MD5 hash of a string
+// hashString creates an MD5 hash of a string for cache key generation
 func (c *CacheService) hashString(s string) string {
+	// #nosec G401 -- MD5 is used for cache key generation, not for security purposes
 	return fmt.Sprintf("%x", md5.Sum([]byte(s)))
 }
 

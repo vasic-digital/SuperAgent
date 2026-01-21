@@ -5108,6 +5108,11 @@ func (h *UnifiedHandler) executeWriteFunction(ctx context.Context, call Embedded
 		return "", fmt.Errorf("missing file path parameter")
 	}
 
+	// Validate path for traversal attacks (G304 security fix)
+	if !utils.ValidatePath(filePath) {
+		return "", fmt.Errorf("invalid file path: contains path traversal or dangerous characters")
+	}
+
 	// Get content
 	content := getParam(call.Parameters, "content", "data", "text", "body")
 	if content == "" {
@@ -5124,6 +5129,11 @@ func (h *UnifiedHandler) executeWriteFunction(ctx context.Context, call Embedded
 		filePath = filepath.Join(cwd, filePath)
 	}
 
+	// Validate the resolved path again (G304 security fix - belt and suspenders)
+	if !utils.ValidatePath(filePath) {
+		return "", fmt.Errorf("invalid resolved file path: contains path traversal or dangerous characters")
+	}
+
 	// Create parent directories if needed
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -5131,6 +5141,7 @@ func (h *UnifiedHandler) executeWriteFunction(ctx context.Context, call Embedded
 	}
 
 	// Write the file
+	// #nosec G304 - filePath is validated by utils.ValidatePath for path traversal and dangerous characters
 	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 		return "", fmt.Errorf("failed to write file %s: %w", filePath, err)
 	}
@@ -5146,6 +5157,11 @@ func (h *UnifiedHandler) executeEditFunction(ctx context.Context, call EmbeddedF
 		return "", fmt.Errorf("missing file path parameter")
 	}
 
+	// Validate path for traversal attacks (G304 security fix)
+	if !utils.ValidatePath(filePath) {
+		return "", fmt.Errorf("invalid file path: contains path traversal or dangerous characters")
+	}
+
 	oldString := getParam(call.Parameters, "old_string", "old", "search", "find")
 	newString := getParam(call.Parameters, "new_string", "new", "replace", "replacement")
 
@@ -5159,7 +5175,13 @@ func (h *UnifiedHandler) executeEditFunction(ctx context.Context, call EmbeddedF
 		filePath = filepath.Join(cwd, filePath)
 	}
 
+	// Validate the resolved path again (G304 security fix - belt and suspenders)
+	if !utils.ValidatePath(filePath) {
+		return "", fmt.Errorf("invalid resolved file path: contains path traversal or dangerous characters")
+	}
+
 	// Read existing content
+	// #nosec G304 - filePath is validated by utils.ValidatePath for path traversal and dangerous characters
 	existingContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
@@ -5169,6 +5191,7 @@ func (h *UnifiedHandler) executeEditFunction(ctx context.Context, call EmbeddedF
 	newContent := strings.Replace(string(existingContent), oldString, newString, -1)
 
 	// Write back
+	// #nosec G304 - filePath is validated by utils.ValidatePath for path traversal and dangerous characters
 	if err := os.WriteFile(filePath, []byte(newContent), 0644); err != nil {
 		return "", fmt.Errorf("failed to write file %s: %w", filePath, err)
 	}
@@ -5183,11 +5206,22 @@ func (h *UnifiedHandler) executeReadFunction(ctx context.Context, call EmbeddedF
 		return "", fmt.Errorf("missing file path parameter")
 	}
 
+	// Validate path for traversal attacks (G304 security fix)
+	if !utils.ValidatePath(filePath) {
+		return "", fmt.Errorf("invalid file path: contains path traversal or dangerous characters")
+	}
+
 	if !filepath.IsAbs(filePath) {
 		cwd, _ := os.Getwd()
 		filePath = filepath.Join(cwd, filePath)
 	}
 
+	// Validate the resolved path again (G304 security fix - belt and suspenders)
+	if !utils.ValidatePath(filePath) {
+		return "", fmt.Errorf("invalid resolved file path: contains path traversal or dangerous characters")
+	}
+
+	// #nosec G304 - filePath is validated by utils.ValidatePath for path traversal and dangerous characters
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
@@ -5222,6 +5256,11 @@ func (h *UnifiedHandler) executeGrepFunction(ctx context.Context, call EmbeddedF
 	searchPath := getParam(call.Parameters, "path", "directory", "dir", "folder")
 	if searchPath == "" {
 		searchPath = "." // Default to current directory
+	}
+
+	// Validate search path for traversal attacks (G304 security fix)
+	if !utils.ValidatePath(searchPath) {
+		return "", fmt.Errorf("invalid search path: contains path traversal or dangerous characters")
 	}
 
 	// Compile regex pattern
@@ -5263,6 +5302,10 @@ func (h *UnifiedHandler) executeGrepFunction(ctx context.Context, call EmbeddedF
 		}
 
 		// Read file content
+		// Note: path comes from filepath.WalkDir which walks from a user-provided searchPath
+		// The searchPath is already validated at function entry, and WalkDir only returns
+		// paths within the search tree, so this is safe from path traversal
+		// #nosec G304 - path is constrained to searchPath tree via filepath.WalkDir
 		content, err := os.ReadFile(path)
 		if err != nil {
 			return nil // Skip files we can't read

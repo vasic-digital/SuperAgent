@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"dev.helix.agent/internal/utils"
 )
 
 // FilesystemAdapterConfig holds configuration for the Filesystem adapter
@@ -135,10 +137,21 @@ func (a *FilesystemAdapter) Close() error {
 }
 
 // isPathAllowed checks if a path is allowed based on configuration
+// Uses utils.ValidatePath to prevent path traversal attacks (G304)
 func (a *FilesystemAdapter) isPathAllowed(path string) error {
+	// Validate path for traversal attacks and dangerous characters
+	if !utils.ValidatePath(path) {
+		return fmt.Errorf("invalid path: contains path traversal or dangerous characters: %s", path)
+	}
+
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return fmt.Errorf("invalid path: %w", err)
+	}
+
+	// Double-check the absolute path for traversal (belt and suspenders)
+	if !utils.ValidatePath(absPath) {
+		return fmt.Errorf("invalid path after normalization: contains path traversal: %s", path)
 	}
 
 	// Check denied paths first
@@ -164,6 +177,7 @@ func (a *FilesystemAdapter) isPathAllowed(path string) error {
 
 	// Check for symlinks if not allowed
 	if !a.config.FollowSymlinks {
+		// #nosec G304 - path is validated by isPathAllowed with utils.ValidatePath
 		info, err := os.Lstat(absPath)
 		if err == nil && info.Mode()&os.ModeSymlink != 0 {
 			return fmt.Errorf("symlinks are not allowed: %s", path)
@@ -186,6 +200,7 @@ func (a *FilesystemAdapter) ReadFile(ctx context.Context, path string) (*FileCon
 		return nil, err
 	}
 
+	// #nosec G304 - path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to stat file: %w", err)
@@ -199,6 +214,7 @@ func (a *FilesystemAdapter) ReadFile(ctx context.Context, path string) (*FileCon
 		return nil, fmt.Errorf("file size %d exceeds maximum %d", info.Size(), a.config.MaxFileSize)
 	}
 
+	// #nosec G304 - path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
@@ -234,6 +250,7 @@ func (a *FilesystemAdapter) WriteFile(ctx context.Context, path string, content 
 	}
 
 	// #nosec G306 - file permissions 0644 are appropriate for user-created files
+	// #nosec G304 - path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
@@ -259,11 +276,14 @@ func (a *FilesystemAdapter) AppendFile(ctx context.Context, path string, content
 	}
 
 	// Check existing file size
+	// #nosec G304 - path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	info, err := os.Stat(path)
 	if err == nil && info.Size()+int64(len(content)) > a.config.MaxFileSize {
 		return fmt.Errorf("appending would exceed maximum file size")
 	}
 
+	// #nosec G306 - file permissions 0644 are appropriate for user-created files
+	// #nosec G304 - path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open file for append: %w", err)
@@ -294,6 +314,7 @@ func (a *FilesystemAdapter) DeleteFile(ctx context.Context, path string) error {
 		return err
 	}
 
+	// #nosec G304 - path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	info, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("failed to stat file: %w", err)
@@ -323,6 +344,7 @@ func (a *FilesystemAdapter) ListDirectory(ctx context.Context, path string) (*Di
 		return nil, err
 	}
 
+	// #nosec G304 - path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read directory: %w", err)
@@ -405,6 +427,7 @@ func (a *FilesystemAdapter) DeleteDirectory(ctx context.Context, path string, re
 		return err
 	}
 
+	// #nosec G304 - path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	info, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("failed to stat path: %w", err)
@@ -440,6 +463,7 @@ func (a *FilesystemAdapter) GetFileInfo(ctx context.Context, path string) (*File
 		return nil, err
 	}
 
+	// #nosec G304 - path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to stat path: %w", err)
@@ -486,6 +510,7 @@ func (a *FilesystemAdapter) CopyFile(ctx context.Context, src, dst string) error
 		return err
 	}
 
+	// #nosec G304 - src path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	srcInfo, err := os.Stat(src)
 	if err != nil {
 		return fmt.Errorf("failed to stat source: %w", err)
@@ -499,12 +524,14 @@ func (a *FilesystemAdapter) CopyFile(ctx context.Context, src, dst string) error
 		return fmt.Errorf("file size exceeds maximum")
 	}
 
+	// #nosec G304 - src path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("failed to open source: %w", err)
 	}
 	defer srcFile.Close()
 
+	// #nosec G304 - dst path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return fmt.Errorf("failed to create destination: %w", err)
