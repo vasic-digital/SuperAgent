@@ -1,0 +1,87 @@
+# Alertmanager Configuration for HelixAgent
+# Routes alerts to appropriate receivers
+
+global:
+  resolve_timeout: 5m
+  # SMTP settings (configure for email notifications)
+  # smtp_smarthost: 'smtp.example.com:587'
+  # smtp_from: 'alertmanager@helixagent.ai'
+  # smtp_auth_username: 'alertmanager@helixagent.ai'
+  # smtp_auth_password: 'password'
+
+# Alert routing
+route:
+  group_by: ['alertname', 'severity', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'default-receiver'
+
+  routes:
+    # Critical alerts go to critical receiver
+    - match:
+        severity: critical
+      receiver: 'critical-receiver'
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # Warning alerts
+    - match:
+        severity: warning
+      receiver: 'warning-receiver'
+      group_wait: 1m
+      repeat_interval: 4h
+
+    # Info alerts (lower priority)
+    - match:
+        severity: info
+      receiver: 'info-receiver'
+      group_wait: 5m
+      repeat_interval: 12h
+
+# Notification receivers
+receivers:
+  - name: 'default-receiver'
+    # Default: Log to console and webhook
+    webhook_configs:
+      - url: 'http://helixagent:8080/v1/webhooks/alerts'
+        send_resolved: true
+
+  - name: 'critical-receiver'
+    webhook_configs:
+      - url: 'http://helixagent:8080/v1/webhooks/alerts/critical'
+        send_resolved: true
+    # Uncomment for email notifications
+    # email_configs:
+    #   - to: 'oncall@helixagent.ai'
+    #     send_resolved: true
+
+  - name: 'warning-receiver'
+    webhook_configs:
+      - url: 'http://helixagent:8080/v1/webhooks/alerts/warning'
+        send_resolved: true
+
+  - name: 'info-receiver'
+    webhook_configs:
+      - url: 'http://helixagent:8080/v1/webhooks/alerts/info'
+        send_resolved: true
+
+# Inhibition rules to suppress duplicate alerts
+inhibit_rules:
+  # If critical alert fires, suppress warning for same alertname
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service']
+
+  # If HelixAgent is down, suppress all other HelixAgent alerts
+  - source_match:
+      alertname: 'HelixAgentDown'
+    target_match_re:
+      alertname: 'HelixAgent.*'
+    equal: ['service']
+
+# Template configuration
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'

@@ -1,0 +1,156 @@
+# Prometheus Alert Rules for HelixAgent
+# Monitor critical conditions and trigger alerts
+
+groups:
+  - name: helixagent_availability
+    interval: 30s
+    rules:
+      - alert: HelixAgentDown
+        expr: up{job="helixagent"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HelixAgent is down"
+          description: "HelixAgent has been down for more than 1 minute."
+
+      - alert: HealthCheckFailing
+        expr: helixagent_health_status == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HelixAgent health check failing"
+          description: "HelixAgent health check has been failing for more than 2 minutes."
+
+  - name: helixagent_performance
+    interval: 30s
+    rules:
+      - alert: HighLatency
+        expr: histogram_quantile(0.99, rate(helixagent_llm_request_duration_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High LLM request latency"
+          description: "99th percentile latency is above 30 seconds for 5 minutes. Current: {{ $value }}s"
+
+      - alert: HighErrorRate
+        expr: sum(rate(helixagent_llm_request_errors_total[5m])) / sum(rate(helixagent_llm_request_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 10% for 5 minutes. Current: {{ $value | humanizePercentage }}"
+
+      - alert: CriticalErrorRate
+        expr: sum(rate(helixagent_llm_request_errors_total[5m])) / sum(rate(helixagent_llm_request_total[5m])) > 0.25
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical error rate detected"
+          description: "Error rate is above 25% for 2 minutes. Current: {{ $value | humanizePercentage }}"
+
+  - name: helixagent_providers
+    interval: 30s
+    rules:
+      - alert: ProviderDown
+        expr: helixagent_provider_health{status="unhealthy"} == 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "LLM Provider unhealthy"
+          description: "Provider {{ $labels.provider }} has been unhealthy for more than 2 minutes."
+
+      - alert: AllProvidersDown
+        expr: count(helixagent_provider_health{status="healthy"}) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "All LLM providers are down"
+          description: "No healthy LLM providers available for more than 1 minute."
+
+      - alert: ProviderHighRateLimit
+        expr: sum(rate(helixagent_rate_limit_hits_total[5m])) by (provider) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High rate limit hits"
+          description: "Provider {{ $labels.provider }} is hitting rate limits frequently."
+
+  - name: helixagent_resources
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 / 1024 > 4
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 4GB for 5 minutes. Current: {{ $value | humanize }}GB"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 80% for 5 minutes."
+
+      - alert: TooManyOpenConnections
+        expr: helixagent_active_connections > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Too many open connections"
+          description: "Active connections exceeds 1000 for 5 minutes."
+
+  - name: helixagent_debate
+    interval: 30s
+    rules:
+      - alert: LowDebateConsensus
+        expr: avg(helixagent_debate_consensus_score) < 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low debate consensus"
+          description: "Average debate consensus is below 50% for 10 minutes."
+
+      - alert: DebateTimeout
+        expr: sum(rate(helixagent_debate_timeout_total[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Frequent debate timeouts"
+          description: "More than 5 debate timeouts in the last 5 minutes."
+
+  - name: helixagent_cost
+    interval: 60s
+    rules:
+      - alert: HighCostPerHour
+        expr: sum(rate(helixagent_llm_cost_total_usd[1h])) * 3600 > 10
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High LLM cost rate"
+          description: "LLM costs are exceeding $10/hour for 30 minutes."
+
+      - alert: TokenBudgetExceeded
+        expr: sum(helixagent_token_usage_total) > 1000000
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: "Token budget threshold reached"
+          description: "Total token usage has exceeded 1 million tokens in the last hour."
