@@ -690,6 +690,457 @@ type DebateConfig struct {
 - `ValidationError`: Input validation errors
 - `NetworkError`: Network connectivity issues
 
+## Embeddings API
+
+### Generate Embeddings
+
+```go
+embeddings, err := client.Embeddings.Create(context.Background(), &helixagent.EmbeddingsRequest{
+    Model: "text-embedding-3-small",
+    Input: []string{
+        "The quick brown fox jumps over the lazy dog",
+        "Machine learning is a subset of artificial intelligence",
+    },
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+for i, embedding := range embeddings.Data {
+    fmt.Printf("Embedding %d: dimensions=%d\n", i, len(embedding.Embedding))
+}
+```
+
+### Semantic Search with Embeddings
+
+```go
+// Create embeddings for search
+queryEmbed, err := client.Embeddings.Create(ctx, &helixagent.EmbeddingsRequest{
+    Model: "text-embedding-3-small",
+    Input: []string{"How does authentication work?"},
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+// Compare with document embeddings using cosine similarity
+similarity := helixagent.CosineSimilarity(
+    queryEmbed.Data[0].Embedding,
+    documentEmbed.Data[0].Embedding,
+)
+fmt.Printf("Similarity: %.4f\n", similarity)
+```
+
+## Vision API
+
+### Image Analysis
+
+```go
+resp, err := client.Vision.Analyze(context.Background(), &helixagent.VisionRequest{
+    Model: "gpt-4-vision-preview",
+    Messages: []helixagent.ChatMessage{
+        {
+            Role: "user",
+            Content: []helixagent.ContentPart{
+                {Type: "text", Text: "What's in this image?"},
+                {
+                    Type: "image_url",
+                    ImageURL: &helixagent.ImageURL{
+                        URL: "https://example.com/image.jpg",
+                    },
+                },
+            },
+        },
+    },
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(resp.Choices[0].Message.Content)
+```
+
+### Base64 Image Upload
+
+```go
+imageData, _ := os.ReadFile("image.png")
+base64Image := base64.StdEncoding.EncodeToString(imageData)
+
+resp, err := client.Vision.Analyze(ctx, &helixagent.VisionRequest{
+    Model: "claude-3-5-sonnet-20241022",
+    Messages: []helixagent.ChatMessage{
+        {
+            Role: "user",
+            Content: []helixagent.ContentPart{
+                {Type: "text", Text: "Describe this diagram"},
+                {
+                    Type: "image_url",
+                    ImageURL: &helixagent.ImageURL{
+                        URL: "data:image/png;base64," + base64Image,
+                    },
+                },
+            },
+        },
+    },
+})
+```
+
+### OCR (Optical Character Recognition)
+
+```go
+resp, err := client.Vision.OCR(ctx, &helixagent.OCRRequest{
+    ImageURL: "https://example.com/document.png",
+    Languages: []string{"en", "de"},
+    OutputFormat: "markdown",
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Extracted text:\n%s\n", resp.Text)
+fmt.Printf("Confidence: %.2f\n", resp.Confidence)
+```
+
+## Background Tasks API
+
+### Create Background Task
+
+```go
+task, err := client.Tasks.Create(context.Background(), &helixagent.TaskRequest{
+    Type: "llm_completion",
+    Payload: map[string]interface{}{
+        "model": "claude-3-5-sonnet-20241022",
+        "messages": []map[string]string{
+            {"role": "user", "content": "Analyze this large codebase..."},
+        },
+        "max_tokens": 10000,
+    },
+    Priority: helixagent.PriorityHigh,
+    Timeout:  10 * time.Minute,
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Task created: %s\n", task.ID)
+```
+
+### Poll Task Status
+
+```go
+for {
+    status, err := client.Tasks.GetStatus(ctx, task.ID)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Printf("Status: %s, Progress: %d%%\n", status.Status, status.Progress)
+
+    if status.Status == "completed" {
+        result, _ := client.Tasks.GetResult(ctx, task.ID)
+        fmt.Printf("Result: %v\n", result.Output)
+        break
+    } else if status.Status == "failed" {
+        fmt.Printf("Task failed: %s\n", status.Error)
+        break
+    }
+
+    time.Sleep(2 * time.Second)
+}
+```
+
+### Server-Sent Events (SSE) Streaming
+
+```go
+eventStream, err := client.Tasks.StreamEvents(ctx, task.ID)
+if err != nil {
+    log.Fatal(err)
+}
+defer eventStream.Close()
+
+for eventStream.Next() {
+    event := eventStream.Current()
+    switch event.Type {
+    case "progress":
+        fmt.Printf("Progress: %d%%\n", event.Progress)
+    case "output":
+        fmt.Printf("Output: %s\n", event.Data)
+    case "completed":
+        fmt.Println("Task completed!")
+        return
+    case "error":
+        fmt.Printf("Error: %s\n", event.Error)
+        return
+    }
+}
+```
+
+### WebSocket Real-Time Updates
+
+```go
+ws, err := client.Tasks.WebSocket(ctx, task.ID)
+if err != nil {
+    log.Fatal(err)
+}
+defer ws.Close()
+
+for {
+    var event helixagent.TaskEvent
+    if err := ws.ReadJSON(&event); err != nil {
+        break
+    }
+
+    fmt.Printf("[%s] %s\n", event.Type, event.Message)
+
+    if event.Type == "completed" || event.Type == "failed" {
+        break
+    }
+}
+```
+
+## Webhooks
+
+### Configure Webhook
+
+```go
+webhook, err := client.Webhooks.Create(ctx, &helixagent.WebhookConfig{
+    URL:    "https://your-server.com/webhooks/helixagent",
+    Events: []string{"task.completed", "task.failed", "debate.finished"},
+    Secret: "your-webhook-secret",
+    Headers: map[string]string{
+        "X-Custom-Header": "value",
+    },
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Webhook created: %s\n", webhook.ID)
+```
+
+### Verify Webhook Signature
+
+```go
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+    body, _ := io.ReadAll(r.Body)
+    signature := r.Header.Get("X-HelixAgent-Signature")
+
+    if !helixagent.VerifyWebhookSignature(body, signature, "your-webhook-secret") {
+        http.Error(w, "Invalid signature", http.StatusUnauthorized)
+        return
+    }
+
+    var event helixagent.WebhookEvent
+    json.Unmarshal(body, &event)
+
+    switch event.Type {
+    case "task.completed":
+        handleTaskCompleted(event)
+    case "debate.finished":
+        handleDebateFinished(event)
+    }
+
+    w.WriteHeader(http.StatusOK)
+}
+```
+
+## Async Operations
+
+### Concurrent Requests with errgroup
+
+```go
+import "golang.org/x/sync/errgroup"
+
+func batchProcess(ctx context.Context, prompts []string) ([]string, error) {
+    g, ctx := errgroup.WithContext(ctx)
+    results := make([]string, len(prompts))
+
+    // Limit concurrency
+    sem := make(chan struct{}, 5)
+
+    for i, prompt := range prompts {
+        i, prompt := i, prompt // Capture loop variables
+        g.Go(func() error {
+            sem <- struct{}{}
+            defer func() { <-sem }()
+
+            resp, err := client.Chat.Completions.Create(ctx, &helixagent.ChatCompletionRequest{
+                Model: "helixagent-ensemble",
+                Messages: []helixagent.ChatMessage{
+                    {Role: "user", Content: prompt},
+                },
+            })
+            if err != nil {
+                return err
+            }
+
+            results[i] = resp.Choices[0].Message.Content
+            return nil
+        })
+    }
+
+    if err := g.Wait(); err != nil {
+        return nil, err
+    }
+
+    return results, nil
+}
+```
+
+### Circuit Breaker Pattern
+
+```go
+import "github.com/sony/gobreaker"
+
+var cb *gobreaker.CircuitBreaker
+
+func init() {
+    cb = gobreaker.NewCircuitBreaker(gobreaker.Settings{
+        Name:        "helixagent",
+        MaxRequests: 5,
+        Interval:    10 * time.Second,
+        Timeout:     30 * time.Second,
+        ReadyToTrip: func(counts gobreaker.Counts) bool {
+            failureRatio := float64(counts.TotalFailures) / float64(counts.Requests)
+            return counts.Requests >= 3 && failureRatio >= 0.6
+        },
+    })
+}
+
+func safeRequest(ctx context.Context, req *helixagent.ChatCompletionRequest) (*helixagent.ChatCompletionResponse, error) {
+    result, err := cb.Execute(func() (interface{}, error) {
+        return client.Chat.Completions.Create(ctx, req)
+    })
+    if err != nil {
+        return nil, err
+    }
+    return result.(*helixagent.ChatCompletionResponse), nil
+}
+```
+
+## Retry Strategies
+
+### Exponential Backoff
+
+```go
+func withRetry(ctx context.Context, maxRetries int, fn func() error) error {
+    var lastErr error
+
+    for attempt := 0; attempt < maxRetries; attempt++ {
+        if err := fn(); err != nil {
+            lastErr = err
+
+            // Check if retryable
+            var rateLimitErr *errors.RateLimitError
+            if errors.As(err, &rateLimitErr) {
+                waitTime := time.Duration(math.Pow(2, float64(attempt))) * time.Second
+                select {
+                case <-time.After(waitTime):
+                    continue
+                case <-ctx.Done():
+                    return ctx.Err()
+                }
+            }
+
+            // Non-retryable error
+            return err
+        }
+        return nil
+    }
+
+    return fmt.Errorf("max retries exceeded: %w", lastErr)
+}
+```
+
+## Testing Utilities
+
+### Mock Client
+
+```go
+import "dev.helix.agent-go/mock"
+
+func TestMyFeature(t *testing.T) {
+    // Create mock client
+    mockClient := mock.NewClient()
+
+    // Set up expected responses
+    mockClient.Chat.Completions.OnCreate(func(req *helixagent.ChatCompletionRequest) (*helixagent.ChatCompletionResponse, error) {
+        return &helixagent.ChatCompletionResponse{
+            Choices: []helixagent.Choice{
+                {Message: helixagent.ChatMessage{Content: "Mock response"}},
+            },
+        }, nil
+    })
+
+    // Use mock client in tests
+    result, err := myFeature(mockClient)
+    assert.NoError(t, err)
+    assert.Equal(t, "Mock response", result)
+}
+```
+
+### Recording and Playback
+
+```go
+// Record mode - captures real API responses
+recorder := helixagent.NewRecorder("testdata/fixtures")
+client := helixagent.NewClient(config, helixagent.WithRecorder(recorder))
+
+// Run tests with real API
+resp, _ := client.Chat.Completions.Create(ctx, req)
+recorder.Save() // Saves responses to testdata/fixtures/
+
+// Playback mode - uses recorded responses
+player := helixagent.NewPlayer("testdata/fixtures")
+testClient := helixagent.NewClient(config, helixagent.WithPlayer(player))
+
+// Tests run against recorded data without network calls
+```
+
+## Observability
+
+### OpenTelemetry Integration
+
+```go
+import (
+    "go.opentelemetry.io/otel"
+    "go.opentelemetry.io/otel/trace"
+)
+
+// Configure tracer
+tracer := otel.Tracer("helixagent-client")
+
+client := helixagent.NewClient(&helixagent.Config{
+    APIKey: "your-api-key",
+    Tracer: tracer,
+})
+
+// Traces are automatically created for each API call
+ctx, span := tracer.Start(ctx, "my-operation")
+defer span.End()
+
+resp, err := client.Chat.Completions.Create(ctx, req)
+// Span includes: request details, response time, token usage, errors
+```
+
+### Prometheus Metrics
+
+```go
+import "github.com/prometheus/client_golang/prometheus"
+
+// SDK automatically exports metrics
+// helixagent_requests_total{method="chat.completions.create", status="success"}
+// helixagent_request_duration_seconds{method="chat.completions.create"}
+// helixagent_tokens_used_total{type="input"}
+// helixagent_tokens_used_total{type="output"}
+
+client := helixagent.NewClient(&helixagent.Config{
+    APIKey:        "your-api-key",
+    EnableMetrics: true,
+    MetricsPrefix: "myapp_helixagent",
+})
+```
+
 ## Requirements
 
 - Go 1.19+

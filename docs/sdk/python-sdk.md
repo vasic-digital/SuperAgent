@@ -466,6 +466,515 @@ print(f"Success rate: {usage.success_rate}%")
 - `ValidationError`: Input validation errors
 - `NetworkError`: Network connectivity issues
 
+## Embeddings API
+
+### Generate Embeddings
+
+```python
+embeddings = client.embeddings.create(
+    model="text-embedding-3-small",
+    input=[
+        "The quick brown fox jumps over the lazy dog",
+        "Machine learning is a subset of artificial intelligence"
+    ]
+)
+
+for i, embedding in enumerate(embeddings.data):
+    print(f"Embedding {i}: dimensions={len(embedding.embedding)}")
+```
+
+### Semantic Search with Embeddings
+
+```python
+import numpy as np
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+# Create embeddings for search
+query_embed = client.embeddings.create(
+    model="text-embedding-3-small",
+    input=["How does authentication work?"]
+)
+
+# Compare with document embeddings
+similarity = cosine_similarity(
+    query_embed.data[0].embedding,
+    document_embed.data[0].embedding
+)
+print(f"Similarity: {similarity:.4f}")
+```
+
+## Vision API
+
+### Image Analysis
+
+```python
+response = client.vision.analyze(
+    model="gpt-4-vision-preview",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "What's in this image?"},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://example.com/image.jpg"}
+                }
+            ]
+        }
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+### Base64 Image Upload
+
+```python
+import base64
+
+with open("image.png", "rb") as f:
+    base64_image = base64.b64encode(f.read()).decode()
+
+response = client.vision.analyze(
+    model="claude-3-5-sonnet-20241022",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Describe this diagram"},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/png;base64,{base64_image}"}
+                }
+            ]
+        }
+    ]
+)
+```
+
+### OCR (Optical Character Recognition)
+
+```python
+response = client.vision.ocr(
+    image_url="https://example.com/document.png",
+    languages=["en", "de"],
+    output_format="markdown"
+)
+
+print(f"Extracted text:\n{response.text}")
+print(f"Confidence: {response.confidence:.2f}")
+```
+
+## Background Tasks API
+
+### Create Background Task
+
+```python
+task = client.tasks.create(
+    type="llm_completion",
+    payload={
+        "model": "claude-3-5-sonnet-20241022",
+        "messages": [
+            {"role": "user", "content": "Analyze this large codebase..."}
+        ],
+        "max_tokens": 10000
+    },
+    priority="high",
+    timeout=600  # 10 minutes
+)
+
+print(f"Task created: {task.id}")
+```
+
+### Poll Task Status
+
+```python
+import time
+
+while True:
+    status = client.tasks.get_status(task.id)
+    print(f"Status: {status.status}, Progress: {status.progress}%")
+
+    if status.status == "completed":
+        result = client.tasks.get_result(task.id)
+        print(f"Result: {result.output}")
+        break
+    elif status.status == "failed":
+        print(f"Task failed: {status.error}")
+        break
+
+    time.sleep(2)
+```
+
+### Server-Sent Events (SSE) Streaming
+
+```python
+for event in client.tasks.stream_events(task.id):
+    if event.type == "progress":
+        print(f"Progress: {event.progress}%")
+    elif event.type == "output":
+        print(f"Output: {event.data}")
+    elif event.type == "completed":
+        print("Task completed!")
+        break
+    elif event.type == "error":
+        print(f"Error: {event.error}")
+        break
+```
+
+### WebSocket Real-Time Updates
+
+```python
+import asyncio
+import websockets
+
+async def monitor_task(task_id):
+    async with client.tasks.websocket(task_id) as ws:
+        async for message in ws:
+            event = json.loads(message)
+            print(f"[{event['type']}] {event.get('message', '')}")
+
+            if event["type"] in ("completed", "failed"):
+                break
+
+asyncio.run(monitor_task(task.id))
+```
+
+## Webhooks
+
+### Configure Webhook
+
+```python
+webhook = client.webhooks.create(
+    url="https://your-server.com/webhooks/helixagent",
+    events=["task.completed", "task.failed", "debate.finished"],
+    secret="your-webhook-secret",
+    headers={"X-Custom-Header": "value"}
+)
+
+print(f"Webhook created: {webhook.id}")
+```
+
+### Verify Webhook Signature (Flask Example)
+
+```python
+from flask import Flask, request
+from helixagent import verify_webhook_signature
+
+app = Flask(__name__)
+
+@app.route("/webhooks/helixagent", methods=["POST"])
+def webhook_handler():
+    body = request.get_data()
+    signature = request.headers.get("X-HelixAgent-Signature")
+
+    if not verify_webhook_signature(body, signature, "your-webhook-secret"):
+        return "Invalid signature", 401
+
+    event = request.get_json()
+
+    if event["type"] == "task.completed":
+        handle_task_completed(event)
+    elif event["type"] == "debate.finished":
+        handle_debate_finished(event)
+
+    return "OK", 200
+```
+
+## Async Operations
+
+### Full Async Client
+
+```python
+import asyncio
+from helixagent import AsyncHelixAgent
+
+async def main():
+    client = AsyncHelixAgent(api_key="your-api-key")
+
+    # Async chat completion
+    response = await client.chat.completions.create(
+        model="helixagent-ensemble",
+        messages=[{"role": "user", "content": "Hello"}]
+    )
+    print(response.choices[0].message.content)
+
+    await client.close()
+
+asyncio.run(main())
+```
+
+### Concurrent Requests with asyncio.gather
+
+```python
+async def batch_process(prompts: list[str]) -> list[str]:
+    async with AsyncHelixAgent(api_key="your-api-key") as client:
+        # Limit concurrency with semaphore
+        semaphore = asyncio.Semaphore(5)
+
+        async def process_one(prompt: str) -> str:
+            async with semaphore:
+                response = await client.chat.completions.create(
+                    model="helixagent-ensemble",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                return response.choices[0].message.content
+
+        results = await asyncio.gather(*[process_one(p) for p in prompts])
+        return results
+
+results = asyncio.run(batch_process(["Prompt 1", "Prompt 2", "Prompt 3"]))
+```
+
+### Streaming with Async Generators
+
+```python
+async def stream_response(prompt: str):
+    async with AsyncHelixAgent(api_key="your-api-key") as client:
+        response = await client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": prompt}],
+            stream=True
+        )
+
+        async for chunk in response:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+
+async def main():
+    async for text in stream_response("Tell me a story"):
+        print(text, end="", flush=True)
+
+asyncio.run(main())
+```
+
+## Retry Strategies
+
+### Exponential Backoff with tenacity
+
+```python
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type
+)
+from helixagent.exceptions import RateLimitError, ProviderError
+
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=4, max=60),
+    retry=retry_if_exception_type((RateLimitError, ProviderError))
+)
+def reliable_completion(model: str, messages: list) -> str:
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages
+    )
+    return response.choices[0].message.content
+```
+
+### Circuit Breaker Pattern
+
+```python
+from circuitbreaker import circuit
+
+@circuit(failure_threshold=3, recovery_timeout=30)
+def safe_request(model: str, messages: list):
+    return client.chat.completions.create(
+        model=model,
+        messages=messages
+    )
+
+try:
+    response = safe_request("helixagent-ensemble", messages)
+except CircuitBreakerError:
+    # Circuit is open, use fallback
+    response = fallback_response()
+```
+
+## Testing Utilities
+
+### Mock Client
+
+```python
+from unittest.mock import MagicMock, patch
+from helixagent import HelixAgent
+from helixagent.types import ChatCompletionResponse, Choice, Message
+
+def test_my_feature():
+    # Create mock response
+    mock_response = ChatCompletionResponse(
+        id="test",
+        choices=[Choice(message=Message(content="Mock response"))],
+        usage={"total_tokens": 10}
+    )
+
+    with patch.object(HelixAgent, 'chat') as mock_chat:
+        mock_chat.completions.create.return_value = mock_response
+
+        client = HelixAgent(api_key="test-key")
+        result = my_feature(client)
+
+        assert result == "Mock response"
+        mock_chat.completions.create.assert_called_once()
+```
+
+### Recording and Playback with VCR
+
+```python
+import vcr
+
+@vcr.use_cassette('fixtures/chat_completion.yaml')
+def test_chat_completion():
+    client = HelixAgent(api_key="test-key")
+
+    # First run: records actual API response
+    # Subsequent runs: replays recorded response
+    response = client.chat.completions.create(
+        model="helixagent-ensemble",
+        messages=[{"role": "user", "content": "Hello"}]
+    )
+
+    assert response.choices[0].message.content is not None
+```
+
+### Pytest Fixtures
+
+```python
+import pytest
+from helixagent import HelixAgent
+
+@pytest.fixture
+def client():
+    return HelixAgent(
+        api_key="test-key",
+        base_url="http://localhost:7061"
+    )
+
+@pytest.fixture
+def mock_client(mocker):
+    client = HelixAgent(api_key="test-key")
+    mocker.patch.object(client.chat.completions, 'create')
+    return client
+
+def test_feature(mock_client):
+    mock_client.chat.completions.create.return_value = mock_response
+    # Test your feature
+```
+
+## Observability
+
+### OpenTelemetry Integration
+
+```python
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from helixagent import HelixAgent
+
+# Configure tracer
+trace.set_tracer_provider(TracerProvider())
+tracer = trace.get_tracer("helixagent-client")
+
+client = HelixAgent(
+    api_key="your-api-key",
+    tracer=tracer
+)
+
+# Traces are automatically created for each API call
+with tracer.start_as_current_span("my-operation") as span:
+    response = client.chat.completions.create(
+        model="helixagent-ensemble",
+        messages=[{"role": "user", "content": "Hello"}]
+    )
+    # Span includes: request details, response time, token usage, errors
+```
+
+### Structured Logging
+
+```python
+import structlog
+
+structlog.configure(
+    processors=[
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.JSONRenderer()
+    ],
+    logger_factory=structlog.stdlib.LoggerFactory(),
+)
+
+client = HelixAgent(
+    api_key="your-api-key",
+    logger=structlog.get_logger()
+)
+
+# Logs include structured data:
+# {"event": "api_request", "method": "chat.completions.create", "model": "helixagent-ensemble"}
+# {"event": "api_response", "status": 200, "tokens": 150, "latency_ms": 234}
+```
+
+### Prometheus Metrics
+
+```python
+from prometheus_client import Counter, Histogram
+
+# SDK automatically exports metrics if prometheus_client is installed
+# helixagent_requests_total{method="chat.completions.create", status="success"}
+# helixagent_request_duration_seconds{method="chat.completions.create"}
+# helixagent_tokens_used_total{type="input"}
+# helixagent_tokens_used_total{type="output"}
+
+client = HelixAgent(
+    api_key="your-api-key",
+    enable_metrics=True,
+    metrics_prefix="myapp_helixagent"
+)
+```
+
+## CLI Integration
+
+### Command-Line Usage
+
+```python
+# helixagent-cli.py
+import click
+from helixagent import HelixAgent
+
+@click.group()
+@click.option('--api-key', envvar='HELIXAGENT_API_KEY')
+@click.pass_context
+def cli(ctx, api_key):
+    ctx.obj = HelixAgent(api_key=api_key)
+
+@cli.command()
+@click.argument('prompt')
+@click.option('--model', default='helixagent-ensemble')
+@click.pass_obj
+def chat(client, prompt, model):
+    """Send a chat completion request."""
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    click.echo(response.choices[0].message.content)
+
+@cli.command()
+@click.argument('topic')
+@click.pass_obj
+def debate(client, topic):
+    """Start an AI debate on a topic."""
+    debate = client.debates.create({"topic": topic})
+    click.echo(f"Debate started: {debate.debateId}")
+
+if __name__ == '__main__':
+    cli()
+```
+
 ## Requirements
 
 - Python 3.8+
