@@ -11,6 +11,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"dev.helix.agent/internal/database"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/models"
@@ -128,7 +131,8 @@ type roundResult struct {
 // formatParticipantIdentifier creates a readable identifier like "DeepSeek-1" or "Gemini-2"
 func formatParticipantIdentifier(provider, participantID string, instanceNum int) string {
 	// Capitalize first letter of provider
-	providerName := strings.Title(strings.ToLower(provider))
+	caser := cases.Title(language.English)
+	providerName := caser.String(strings.ToLower(provider))
 	if instanceNum > 0 {
 		return fmt.Sprintf("%s-%d", providerName, instanceNum)
 	}

@@ -33,9 +33,7 @@ type GraphMeshTopology struct {
 	groupMu        sync.RWMutex
 
 	// Message routing
-	messageQueue   chan *Message
-	responseQueues map[string]chan *Message // Per-message response channels
-	responseMu     sync.RWMutex
+	messageQueue chan *Message
 
 	// Leader selection
 	currentLeader  *Agent
@@ -75,7 +73,6 @@ func NewGraphMeshTopology(config TopologyConfig) *GraphMeshTopology {
 		phaseHistory:   make([]PhaseTransition, 0),
 		parallelGroups: make(map[DebatePhase][][]*Agent),
 		messageQueue:   make(chan *Message, 1000),
-		responseQueues: make(map[string]chan *Message),
 	}
 
 	return gm

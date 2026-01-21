@@ -76,7 +76,6 @@ type ProviderAdapter struct {
 	baseURL      string
 	config       *ProviderAdapterConfig
 	metrics      *ProviderMetrics
-	mu           sync.RWMutex
 }
 
 // ProviderAdapterConfig represents adapter configuration
