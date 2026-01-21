@@ -37,7 +37,7 @@ type PoolConfigOptions struct {
 
 // DefaultPoolOptions returns optimized default pool options
 func DefaultPoolOptions() *PoolConfigOptions {
-	cpuCount := int32(runtime.NumCPU())
+	cpuCount := int32(runtime.NumCPU()) // #nosec G115 - CPU count fits in int32
 	// Rule of thumb: (2 * CPU cores) + effective spindle count (1 for SSD)
 	maxConns := cpuCount*2 + 1
 	if maxConns < 10 {
@@ -63,7 +63,7 @@ func DefaultPoolOptions() *PoolConfigOptions {
 
 // HighPerformancePoolOptions returns options optimized for high throughput
 func HighPerformancePoolOptions() *PoolConfigOptions {
-	cpuCount := int32(runtime.NumCPU())
+	cpuCount := int32(runtime.NumCPU()) // #nosec G115 - CPU count fits in int32
 	maxConns := cpuCount * 4
 	if maxConns < 20 {
 		maxConns = 20
@@ -88,7 +88,7 @@ func HighPerformancePoolOptions() *PoolConfigOptions {
 
 // LowLatencyPoolOptions returns options optimized for low latency
 func LowLatencyPoolOptions() *PoolConfigOptions {
-	cpuCount := int32(runtime.NumCPU())
+	cpuCount := int32(runtime.NumCPU()) // #nosec G115 - CPU count fits in int32
 
 	return &PoolConfigOptions{
 		MaxConns:               cpuCount * 2,

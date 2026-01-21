@@ -644,8 +644,8 @@ func isRetryableStatus(statusCode int) bool {
 
 // waitWithJitter waits for the specified duration plus random jitter
 func (z *ZAIProvider) waitWithJitter(ctx context.Context, delay time.Duration) {
-	// Add 10% jitter
-	jitter := time.Duration(rand.Float64() * 0.1 * float64(delay))
+	// Add 10% jitter - using math/rand is acceptable for non-security jitter
+	jitter := time.Duration(rand.Float64() * 0.1 * float64(delay)) // #nosec G404 - jitter doesn't require cryptographic randomness
 	select {
 	case <-ctx.Done():
 	case <-time.After(delay + jitter):

@@ -256,7 +256,7 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string, r
 	}
 
 	putOpts := minio.PutObjectOptions{
-		PartSize: uint64(c.config.PartSize),
+		PartSize: uint64(c.config.PartSize), // #nosec G115 - part size is positive and fits in uint64
 	}
 
 	for _, opt := range opts {

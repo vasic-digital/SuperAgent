@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand" // Used for non-security scoring variance - doesn't require cryptographic randomness
 	"sort"
 	"strings"
 	"sync"
@@ -138,6 +138,7 @@ func (s *ScoringService) calculateBasicScore(ctx context.Context, modelID string
 
 // inferModelClassScore dynamically infers score based on model naming conventions
 // DYNAMIC: Uses pattern matching on model class indicators, not hardcoded model names
+// Note: rand.Float64() is used to add variance to scores - this doesn't require cryptographic randomness
 func (s *ScoringService) inferModelClassScore(modelID string) float64 {
 	// Class-based scoring tiers (inferred from naming conventions)
 	// These represent model capability classes, not specific models
@@ -147,7 +148,7 @@ func (s *ScoringService) inferModelClassScore(modelID string) float64 {
 		containsIgnoreCase(modelID, "ultra") ||
 		containsIgnoreCase(modelID, "4o") ||
 		containsIgnoreCase(modelID, "pro-max") {
-		return 9.0 + rand.Float64()*0.5 // 9.0-9.5 range
+		return 9.0 + rand.Float64()*0.5 // #nosec G404 - score variance doesn't require cryptographic randomness
 	}
 
 	// Pro/Sonnet class indicators (professional grade)
@@ -157,7 +158,7 @@ func (s *ScoringService) inferModelClassScore(modelID string) float64 {
 		containsIgnoreCase(modelID, "4-turbo") ||
 		containsIgnoreCase(modelID, "3.5") ||
 		containsIgnoreCase(modelID, "2.0") {
-		return 8.0 + rand.Float64()*1.0 // 8.0-9.0 range
+		return 8.0 + rand.Float64()*1.0 // #nosec G404 - score variance doesn't require cryptographic randomness
 	}
 
 	// Standard/Medium class indicators
@@ -166,7 +167,7 @@ func (s *ScoringService) inferModelClassScore(modelID string) float64 {
 		containsIgnoreCase(modelID, "chat") ||
 		containsIgnoreCase(modelID, "turbo") ||
 		containsIgnoreCase(modelID, "1.5") {
-		return 7.0 + rand.Float64()*1.0 // 7.0-8.0 range
+		return 7.0 + rand.Float64()*1.0 // #nosec G404 - score variance doesn't require cryptographic randomness
 	}
 
 	// Fast/Haiku class indicators (optimized for speed)
@@ -175,29 +176,29 @@ func (s *ScoringService) inferModelClassScore(modelID string) float64 {
 		containsIgnoreCase(modelID, "instant") ||
 		containsIgnoreCase(modelID, "mini") ||
 		containsIgnoreCase(modelID, "small") {
-		return 6.5 + rand.Float64()*1.0 // 6.5-7.5 range
+		return 6.5 + rand.Float64()*1.0 // #nosec G404 - score variance doesn't require cryptographic randomness
 	}
 
 	// Coder/Specialized class indicators
 	if containsIgnoreCase(modelID, "coder") ||
 		containsIgnoreCase(modelID, "code") ||
 		containsIgnoreCase(modelID, "instruct") {
-		return 7.0 + rand.Float64()*1.5 // 7.0-8.5 range
+		return 7.0 + rand.Float64()*1.5 // #nosec G404 - score variance doesn't require cryptographic randomness
 	}
 
 	// Version number inference (higher = newer = potentially better)
 	if containsIgnoreCase(modelID, "-4") || containsIgnoreCase(modelID, "v4") {
-		return 8.0 + rand.Float64()*1.0
+		return 8.0 + rand.Float64()*1.0 // #nosec G404 - score variance doesn't require cryptographic randomness
 	}
 	if containsIgnoreCase(modelID, "-3") || containsIgnoreCase(modelID, "v3") {
-		return 7.0 + rand.Float64()*1.0
+		return 7.0 + rand.Float64()*1.0 // #nosec G404 - score variance doesn't require cryptographic randomness
 	}
 	if containsIgnoreCase(modelID, "-2") || containsIgnoreCase(modelID, "v2") {
-		return 6.0 + rand.Float64()*1.0
+		return 6.0 + rand.Float64()*1.0 // #nosec G404 - score variance doesn't require cryptographic randomness
 	}
 
 	// Default neutral score for unknown patterns
-	return 5.0 + rand.Float64()*2.0 // 5.0-7.0 range
+	return 5.0 + rand.Float64()*2.0 // #nosec G404 - score variance doesn't require cryptographic randomness
 }
 
 // BatchCalculateScores calculates scores for multiple models
@@ -391,18 +392,18 @@ func (s *ScoringService) calculateSpeedScore(modelID string) float64 {
 
 	for pattern, score := range fastModels {
 		if containsIgnoreCase(modelID, pattern) {
-			return math.Min(10, score+rand.Float64())
+			return math.Min(10, score+rand.Float64()) // #nosec G404 - score variance doesn't require cryptographic randomness
 		}
 	}
 
 	for pattern, score := range standardModels {
 		if containsIgnoreCase(modelID, pattern) {
-			return math.Min(10, score+rand.Float64()*0.5)
+			return math.Min(10, score+rand.Float64()*0.5) // #nosec G404 - score variance doesn't require cryptographic randomness
 		}
 	}
 
 	// Default score for unknown models
-	return 5.0 + rand.Float64()*2
+	return 5.0 + rand.Float64()*2 // #nosec G404 - score variance doesn't require cryptographic randomness
 }
 
 // calculateEfficiencyScore calculates efficiency score based on model characteristics
@@ -417,12 +418,12 @@ func (s *ScoringService) calculateEfficiencyScore(modelID string) float64 {
 
 	for pattern, score := range efficientModels {
 		if containsIgnoreCase(modelID, pattern) {
-			return math.Min(10, score+rand.Float64()*0.5)
+			return math.Min(10, score+rand.Float64()*0.5) // #nosec G404 - score variance doesn't require cryptographic randomness
 		}
 	}
 
 	// Default efficiency
-	return 5.0 + rand.Float64()*3
+	return 5.0 + rand.Float64()*3 // #nosec G404 - score variance doesn't require cryptographic randomness
 }
 
 // calculateCostScore calculates cost score (higher = cheaper)
@@ -444,18 +445,18 @@ func (s *ScoringService) calculateCostScore(modelID string) float64 {
 
 	for pattern, score := range cheapModels {
 		if containsIgnoreCase(modelID, pattern) {
-			return math.Min(10, score+rand.Float64()*0.5)
+			return math.Min(10, score+rand.Float64()*0.5) // #nosec G404 - score variance doesn't require cryptographic randomness
 		}
 	}
 
 	for pattern, score := range expensiveModels {
 		if containsIgnoreCase(modelID, pattern) {
-			return math.Max(0, score+rand.Float64()*1.5)
+			return math.Max(0, score+rand.Float64()*1.5) // #nosec G404 - score variance doesn't require cryptographic randomness
 		}
 	}
 
 	// Default cost score
-	return 5.0 + rand.Float64()*2
+	return 5.0 + rand.Float64()*2 // #nosec G404 - score variance doesn't require cryptographic randomness
 }
 
 // calculateCapabilityScore calculates capability score based on model characteristics
@@ -479,18 +480,18 @@ func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
 
 	for pattern, score := range highCapModels {
 		if containsIgnoreCase(modelID, pattern) {
-			return math.Min(10, score+rand.Float64()*0.5)
+			return math.Min(10, score+rand.Float64()*0.5) // #nosec G404 - score variance doesn't require cryptographic randomness
 		}
 	}
 
 	for pattern, score := range medCapModels {
 		if containsIgnoreCase(modelID, pattern) {
-			return math.Min(10, score+rand.Float64()*0.5)
+			return math.Min(10, score+rand.Float64()*0.5) // #nosec G404 - score variance doesn't require cryptographic randomness
 		}
 	}
 
 	// Default capability
-	return 5.0 + rand.Float64()*2
+	return 5.0 + rand.Float64()*2 // #nosec G404 - score variance doesn't require cryptographic randomness
 }
 
 // calculateRecencyScore calculates recency score based on model release date
@@ -513,18 +514,18 @@ func (s *ScoringService) calculateRecencyScore(modelID string) float64 {
 
 	for pattern, score := range recentModels {
 		if containsIgnoreCase(modelID, pattern) {
-			return math.Min(10, score+rand.Float64()*0.5)
+			return math.Min(10, score+rand.Float64()*0.5) // #nosec G404 - score variance doesn't require cryptographic randomness
 		}
 	}
 
 	for pattern, score := range olderModels {
 		if containsIgnoreCase(modelID, pattern) {
-			return math.Min(10, score+rand.Float64()*0.5)
+			return math.Min(10, score+rand.Float64()*0.5) // #nosec G404 - score variance doesn't require cryptographic randomness
 		}
 	}
 
 	// Default recency
-	return 5.0 + rand.Float64()*2
+	return 5.0 + rand.Float64()*2 // #nosec G404 - score variance doesn't require cryptographic randomness
 }
 
 // GetModelScore retrieves a cached score or calculates a new one

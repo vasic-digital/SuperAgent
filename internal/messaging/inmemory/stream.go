@@ -63,7 +63,7 @@ func (t *Topic) Publish(msg *messaging.Message) error {
 		return err
 	}
 
-	msg.Partition = int32(partitionID)
+	msg.Partition = int32(partitionID) // #nosec G115 - partition ID fits in int32
 	msg.Offset = offset
 
 	// Notify subscribers
@@ -210,7 +210,7 @@ func (p *Partition) Append(msg *messaging.Message) (int64, error) {
 
 	offset := p.highWatermark
 	msg.Offset = offset
-	msg.Partition = int32(p.id)
+	msg.Partition = int32(p.id) // #nosec G115 - partition ID fits in int32
 	p.messages = append(p.messages, msg)
 	p.highWatermark++
 
@@ -497,7 +497,7 @@ func (b *StreamBroker) GetTopicMetadata(ctx context.Context, topicName string) (
 	partitionInfo := make([]messaging.PartitionInfo, topic.PartitionCount())
 	for i := 0; i < topic.PartitionCount(); i++ {
 		partitionInfo[i] = messaging.PartitionInfo{
-			ID:            int32(i),
+			ID:            int32(i), // #nosec G115 - partition index fits in int32
 			Leader:        0,
 			Replicas:      []int32{0},
 			ISR:           []int32{0},

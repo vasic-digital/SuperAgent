@@ -151,6 +151,7 @@ func ExecuteWithRetry(ctx context.Context, config RetryConfig, fn RetryableFunc)
 }
 
 // addJitter adds randomness to a duration
+// Note: Using math/rand for jitter is acceptable - it doesn't require cryptographic randomness
 func addJitter(d time.Duration, factor float64) time.Duration {
 	if factor <= 0 {
 		return d
@@ -160,7 +161,7 @@ func addJitter(d time.Duration, factor float64) time.Duration {
 	jitterRange := float64(d) * factor
 
 	// Add random jitter (can be positive or negative)
-	jitter := (rand.Float64() - 0.5) * 2 * jitterRange
+	jitter := (rand.Float64() - 0.5) * 2 * jitterRange // #nosec G404 - jitter doesn't require cryptographic randomness
 
 	result := time.Duration(float64(d) + jitter)
 	if result < 0 {

@@ -1,22 +1,105 @@
 package integration
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/router"
 )
 
+// checkDatabaseAvailable checks if the database is available for testing
+func checkDatabaseAvailable(t *testing.T) bool {
+	host := os.Getenv("DB_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("DB_PORT")
+	if port == "" {
+		port = "5432"
+	}
+	user := os.Getenv("DB_USER")
+	if user == "" {
+		user = "helixagent"
+	}
+	password := os.Getenv("DB_PASSWORD")
+	if password == "" {
+		password = "helixagent123"
+	}
+	dbname := os.Getenv("DB_NAME")
+	if dbname == "" {
+		dbname = "helixagent_db"
+	}
+
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=5",
+		host, port, user, password, dbname)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	conn, err := pgx.Connect(ctx, connStr)
+	if err != nil {
+		t.Logf("Database connection failed: %v", err)
+		return false
+	}
+	defer conn.Close(ctx)
+
+	err = conn.Ping(ctx)
+	if err != nil {
+		t.Logf("Database ping failed: %v", err)
+		return false
+	}
+
+	return true
+}
+
+// checkModelsDevRoutesAvailable checks if Models.dev routes are registered
+func checkModelsDevRoutesAvailable(r *gin.Engine) bool {
+	req, _ := http.NewRequest("GET", "/v1/models/metadata?page=1&limit=10", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	// Routes are available if we get something other than 404
+	return w.Code != http.StatusNotFound
+}
+
 func setupTestRouter(t *testing.T) (*gin.Engine, func()) {
 	gin.SetMode(gin.TestMode)
+
+	host := os.Getenv("DB_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("DB_PORT")
+	if port == "" {
+		port = "5432"
+	}
+	user := os.Getenv("DB_USER")
+	if user == "" {
+		user = "helixagent"
+	}
+	password := os.Getenv("DB_PASSWORD")
+	if password == "" {
+		password = "helixagent123"
+	}
+	dbname := os.Getenv("DB_NAME")
+	if dbname == "" {
+		dbname = "helixagent_db"
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "test-jwt-secret-for-integration-tests"
+	}
 
 	cfg := &config.Config{
 		Server: config.ServerConfig{
@@ -24,13 +107,14 @@ func setupTestRouter(t *testing.T) (*gin.Engine, func()) {
 			Mode:         gin.TestMode,
 			EnableCORS:   false,
 			DebugEnabled: false,
+			JWTSecret:    jwtSecret,
 		},
 		Database: config.DatabaseConfig{
-			Host:           "localhost",
-			Port:           "5432",
-			User:           "helixagent",
-			Password:       "secret",
-			Name:           "helixagent_db",
+			Host:           host,
+			Port:           port,
+			User:           user,
+			Password:       password,
+			Name:           dbname,
 			SSLMode:        "disable",
 			MaxConnections: 10,
 			PoolSize:       5,
@@ -54,7 +138,9 @@ func setupTestRouter(t *testing.T) (*gin.Engine, func()) {
 }
 
 func TestModelsDevIntegration_APIEndpoints(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
@@ -85,10 +171,17 @@ func TestModelsDevIntegration_APIEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ModelMetadataEndpoints(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	// Check if Models.dev routes are available (feature may be disabled)
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	t.Run("ListModelsEndpoint", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/v1/models/metadata?page=1&limit=20", nil)
@@ -137,10 +230,16 @@ func TestModelsDevIntegration_ModelMetadataEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ModelComparison(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	t.Run("CompareModelsSuccess", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/v1/models/metadata/compare?ids=model-1,model-2,model-3", nil)
@@ -186,10 +285,16 @@ func TestModelsDevIntegration_ModelComparison(t *testing.T) {
 }
 
 func TestModelsDevIntegration_CapabilityEndpoints(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	capabilities := []string{"vision", "function_calling", "streaming", "json_mode", "image_generation", "audio", "code_generation", "reasoning"}
 
@@ -225,10 +330,16 @@ func TestModelsDevIntegration_CapabilityEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ProviderEndpoints(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	t.Run("GetProviderModels", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/v1/providers/anthropic/models/metadata", nil)
@@ -261,10 +372,16 @@ func TestModelsDevIntegration_ProviderEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_BenchmarkEndpoints(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	t.Run("GetModelBenchmarks", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/v1/models/metadata/claude-3-sonnet-20240229/benchmarks", nil)
@@ -296,10 +413,16 @@ func TestModelsDevIntegration_BenchmarkEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_AdminEndpoints(t *testing.T) {
-	t.Logf("Requires authentication (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	t.Run("RefreshModels_AuthRequired", func(t *testing.T) {
 		req, _ := http.NewRequest("POST", "/v1/admin/models/metadata/refresh", nil)
@@ -319,10 +442,16 @@ func TestModelsDevIntegration_AdminEndpoints(t *testing.T) {
 }
 
 func TestModelsDevIntegration_CacheBehavior(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	modelID := "cache-test-model"
 
@@ -350,10 +479,16 @@ func TestModelsDevIntegration_CacheBehavior(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ResponseFormats(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	t.Run("JSONContentType", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/v1/models/metadata?page=1&limit=20", nil)
@@ -378,10 +513,16 @@ func TestModelsDevIntegration_ResponseFormats(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ErrorHandling(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	t.Run("InvalidModelID", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/v1/models/metadata/invalid/model/id", nil)
@@ -414,10 +555,16 @@ func TestModelsDevIntegration_ErrorHandling(t *testing.T) {
 }
 
 func TestModelsDevIntegration_EndToEndWorkflow(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	t.Run("CompleteWorkflow", func(t *testing.T) {
 		models := make([]string, 0)
@@ -469,10 +616,16 @@ func TestModelsDevIntegration_EndToEndWorkflow(t *testing.T) {
 }
 
 func TestModelsDevIntegration_Performance(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	t.Run("ResponseTime", func(t *testing.T) {
 		iterations := 100
@@ -519,10 +672,16 @@ func TestModelsDevIntegration_Performance(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ConcurrentRequests(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	t.Run("ConcurrentReads", func(t *testing.T) {
 		concurrency := 50
@@ -567,10 +726,16 @@ func TestModelsDevIntegration_ConcurrentRequests(t *testing.T) {
 }
 
 func TestModelsDevIntegration_DataIntegrity(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	if !checkModelsDevRoutesAvailable(r) {
+		t.Skip("Models.dev routes not available - feature is disabled")
+	}
 
 	t.Run("ConsistentResponses", func(t *testing.T) {
 		var responses []map[string]interface{}
@@ -618,10 +783,15 @@ func TestModelsDevIntegration_DataIntegrity(t *testing.T) {
 }
 
 func TestModelsDevIntegration_ServiceAvailability(t *testing.T) {
-	t.Logf("Requires database connection (acceptable)"); return
+	if !checkDatabaseAvailable(t) {
+		t.Skip("Database not available - run with test infrastructure")
+	}
 
 	r, cleanup := setupTestRouter(t)
 	defer cleanup()
+
+	// This test checks both health endpoints (always available) and Models.dev routes
+	// Health endpoints should work regardless of Models.dev status
 
 	endpoints := []struct {
 		method string
