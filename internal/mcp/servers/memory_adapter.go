@@ -174,8 +174,9 @@ func (m *MemoryAdapter) saveToDisk() error {
 	}
 
 	// Write to temp file first, then rename for atomicity
+	// Use 0600 permissions for user's private knowledge graph data
 	tempFile := graphFile + ".tmp"
-	if err := os.WriteFile(tempFile, data, 0644); err != nil {
+	if err := os.WriteFile(tempFile, data, 0600); err != nil {
 		return fmt.Errorf("failed to write temp file: %w", err)
 	}
 

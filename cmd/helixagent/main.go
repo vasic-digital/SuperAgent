@@ -27,6 +27,7 @@ import (
 	"dev.helix.agent/internal/messaging"
 	"dev.helix.agent/internal/messaging/inmemory"
 	"dev.helix.agent/internal/router"
+	"dev.helix.agent/internal/utils"
 	"dev.helix.agent/internal/verifier"
 )
 
@@ -1029,10 +1030,17 @@ func handleGenerateAPIKey(appCfg *AppConfig) error {
 
 // writeAPIKeyToEnvFile writes or updates the HELIXAGENT_API_KEY in the specified .env file
 func writeAPIKeyToEnvFile(filePath, apiKey string) error {
+	// Validate path for traversal attacks (G304 security fix)
+	// Note: This is a CLI-provided path from the admin user
+	if !utils.ValidatePath(filePath) {
+		return fmt.Errorf("invalid file path: contains path traversal or dangerous characters")
+	}
+
 	// Read existing file contents if it exists
 	existingContent := make(map[string]string)
 	var lineOrder []string
 
+	// #nosec G304 - filePath is validated by utils.ValidatePath and provided via CLI by admin
 	if file, err := os.Open(filePath); err == nil {
 		defer file.Close()
 		scanner := bufio.NewScanner(file)
@@ -1071,6 +1079,7 @@ func writeAPIKeyToEnvFile(filePath, apiKey string) error {
 	}
 
 	// Write back to file
+	// #nosec G304 - filePath is validated by utils.ValidatePath at function entry and provided via CLI by admin
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create env file: %w", err)
@@ -1369,6 +1378,12 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 
 	// Output to file or stdout
 	if appCfg.OpenCodeOutput != "" {
+		// Validate path for traversal attacks (G304 security fix)
+		// Note: This is a CLI-provided path from the admin user
+		if !utils.ValidatePath(appCfg.OpenCodeOutput) {
+			return fmt.Errorf("invalid output path: contains path traversal or dangerous characters")
+		}
+		// #nosec G304 - OpenCodeOutput is validated by utils.ValidatePath and provided via CLI by admin
 		if err := os.WriteFile(appCfg.OpenCodeOutput, jsonData, 0644); err != nil {
 			return fmt.Errorf("failed to write OpenCode config to file: %w", err)
 		}
@@ -1527,7 +1542,14 @@ func handleValidateOpenCode(appCfg *AppConfig) error {
 
 	filePath := appCfg.ValidateOpenCode
 
+	// Validate path for traversal attacks (G304 security fix)
+	// Note: This is a CLI-provided path from the admin user
+	if !utils.ValidatePath(filePath) {
+		return fmt.Errorf("invalid config file path: contains path traversal or dangerous characters")
+	}
+
 	// Read the config file
+	// #nosec G304 - filePath is validated by utils.ValidatePath and provided via CLI by admin
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
