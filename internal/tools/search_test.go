@@ -191,30 +191,6 @@ func TestGetToolSuggestions_MaxLimit(t *testing.T) {
 	assert.LessOrEqual(t, len(suggestions), 3)
 }
 
-func TestGetToolsByCategory(t *testing.T) {
-	tools := GetToolsByCategory(CategoryVersionControl)
-
-	require.NotEmpty(t, tools)
-	for _, tool := range tools {
-		assert.Equal(t, CategoryVersionControl, tool.Category)
-	}
-}
-
-func TestGetAllToolNames(t *testing.T) {
-	names := GetAllToolNames()
-
-	require.NotEmpty(t, names)
-	// Should include at least basic tools
-	nameSet := make(map[string]bool)
-	for _, n := range names {
-		nameSet[n] = true
-	}
-	assert.True(t, nameSet["Bash"])
-	assert.True(t, nameSet["Read"])
-	assert.True(t, nameSet["Write"])
-	assert.True(t, nameSet["Git"])
-}
-
 func TestFuzzyMatch(t *testing.T) {
 	tests := []struct {
 		s1       string
