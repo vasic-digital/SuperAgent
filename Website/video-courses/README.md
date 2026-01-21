@@ -342,6 +342,91 @@ Implement comprehensive security for HelixAgent deployments.
 
 ---
 
+### Course 11: Challenge Validation System (3 hours)
+**Advanced level**
+
+Master the HelixAgent challenge validation system for quality assurance.
+
+#### Modules:
+1. Challenge System Overview (45 min)
+   - Challenge architecture
+   - Test categories
+   - CI/CD integration
+
+2. RAGS Challenge Deep Dive (60 min)
+   - RAG system testing
+   - Cognee integration tests
+   - Qdrant vector tests
+   - 147 test cases
+
+3. MCPS Challenge Mastery (45 min)
+   - MCP server validation
+   - Tool search testing
+   - Section 9 validation
+
+4. Custom Challenge Development (50 min)
+   - Creating custom challenges
+   - Test result validation
+   - Automation scripts
+
+---
+
+### Course 12: Hybrid RAG System (3.5 hours)
+**Advanced level**
+
+Build and optimize hybrid retrieval systems with dense + sparse search.
+
+#### Modules:
+1. RAG Architecture (60 min)
+   - Dense vs sparse retrieval
+   - Hybrid approach benefits
+   - Qdrant integration
+
+2. Embedding Strategies (55 min)
+   - Embedding model selection
+   - Chunking strategies
+   - Vector optimization
+
+3. Reranking and Filtering (70 min)
+   - Cross-encoder reranking
+   - Metadata filtering
+   - Score normalization
+
+4. Production RAG Deployment (60 min)
+   - Performance tuning
+   - Caching strategies
+   - Monitoring and debugging
+
+---
+
+### Course 13: Multi-Pass Validation (2.5 hours)
+**Advanced level**
+
+Implement multi-pass validation for higher quality AI debate responses.
+
+#### Modules:
+1. Validation Pipeline (45 min)
+   - 4-phase validation
+   - Quality metrics
+   - Confidence scoring
+
+2. Implementation Deep Dive (55 min)
+   - API integration
+   - Configuration options
+   - Phase indicators
+
+3. Optimization Strategies (45 min)
+   - Performance tuning
+   - Timeout configuration
+   - Quality vs speed tradeoffs
+
+4. Testing and Monitoring (35 min)
+   - 66 validation tests
+   - Quality tracking
+   - Alerting setup
+
+---
+
 ## Learning Paths
 
 ### For Beginners

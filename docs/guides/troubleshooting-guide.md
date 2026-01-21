@@ -371,6 +371,69 @@ kubectl get ingress -n helixagent
 kubectl describe ingress helixagent -n helixagent
 ```
 
+### 8. **Challenge System Issues**
+
+#### Symptoms:
+- Challenge tests failing
+- RAGS challenge timeout
+- MCP tool search empty results
+- Multi-pass validation timeout
+
+#### Solutions:
+
+**Challenge Tests Failing:**
+```bash
+# Run RAGS challenge with verbose output
+./challenges/scripts/rags_challenge.sh 2>&1 | tee /tmp/rags_debug.log
+
+# Check test results CSV
+cat /tmp/rags_test_results.csv
+
+# Verify challenge prerequisites
+make test-infra-start
+```
+
+**RAGS Challenge Timeout:**
+```bash
+# Timeout was increased to 60s in v1.0.1
+# If still timing out, check Cognee service:
+curl http://localhost:8000/api/v1/health
+
+# Check Qdrant vector database
+curl http://localhost:6333/health
+
+# Verify memory storage
+curl -X GET "http://localhost:8000/api/v1/datasets"
+```
+
+**MCP Tool Search Empty:**
+```bash
+# List available MCP adapters
+curl http://localhost:7061/v1/mcp/adapters
+
+# Check specific adapter tools
+curl http://localhost:7061/v1/mcp/adapters/database/tools
+
+# Verify adapter configuration
+cat configs/mcp-adapters.yaml
+```
+
+**Multi-Pass Validation Timeout:**
+```bash
+# Adjust validation timeouts in request:
+curl -X POST http://localhost:7061/v1/debates \
+  -d '{
+    "validation_config": {
+      "validation_timeout": 120,
+      "polish_timeout": 60,
+      "max_validation_rounds": 3
+    }
+  }'
+
+# Check debate service logs
+docker-compose logs helixagent | grep -i validation
+```
+
 ---
 
 ## 🛠️ Diagnostic Tools

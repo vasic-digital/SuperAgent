@@ -3,9 +3,9 @@
 ## Course Overview
 
 **Title**: "Mastering HelixAgent: Multi-Provider AI Orchestration"
-**Duration**: 10+ hours across 11 comprehensive modules
+**Duration**: 14+ hours across 14 comprehensive modules
 **Target Audience**: Developers, DevOps engineers, AI engineers, and technical decision-makers
-**Prerequisites**: Basic programming knowledge, familiarity with REST APIs, Go 1.23+ for development modules
+**Prerequisites**: Basic programming knowledge, familiarity with REST APIs, Go 1.24+ for development modules
 **Skill Level**: Beginner to Advanced
 
 ---
@@ -16,14 +16,18 @@ Upon completion of this course, participants will be able to:
 
 1. Understand the architecture and design principles of HelixAgent
 2. Install, configure, and deploy HelixAgent in various environments
-3. Integrate multiple LLM providers (Claude, Gemini, DeepSeek, Qwen, Ollama, OpenRouter, ZAI)
+3. Integrate 10 LLM providers (Claude, Gemini, DeepSeek, Qwen, Ollama, OpenRouter, ZAI, Zen, Mistral, Cerebras)
 4. Implement ensemble voting strategies for improved AI responses
-5. Configure and utilize the AI Debate System for complex problem-solving
+5. Configure and utilize the AI Debate System with 15 LLMs for complex problem-solving
 6. Develop custom plugins for extended functionality
-7. Integrate MCP/LSP protocols for enhanced capabilities
+7. Integrate MCP/LSP/ACP protocols for enhanced capabilities
 8. Apply LLM optimization techniques for better performance
 9. Implement security best practices for production deployments
 10. Set up comprehensive testing and CI/CD pipelines
+11. **NEW**: Run and interpret RAGS, MCPS, and SKILLS challenges
+12. **NEW**: Implement MCP Tool Search and discovery
+13. **NEW**: Configure multi-pass validation for AI debates
+14. **NEW**: Integrate with 20+ CLI agents
 
 ---
 
@@ -571,6 +575,240 @@ Upon completion of this course, participants will be able to:
 
 ---
 
+## Module 12: Challenge System and Validation (90 minutes)
+
+### Learning Objectives
+- Master the HelixAgent Challenge System
+- Run RAGS, MCPS, and SKILLS challenges
+- Understand strict real-result validation
+- Validate system integration across 20+ CLI agents
+
+### Videos
+
+#### 12.1 Challenge System Architecture (20 min)
+- What is the Challenge System?
+- Challenge types:
+  - RAGS Challenge (RAG Integration)
+  - MCPS Challenge (MCP Server Integration)
+  - SKILLS Challenge (Skills Integration)
+- Challenge execution flow
+- Results directory structure
+- 100% test pass rate methodology
+
+#### 12.2 RAGS Challenge - RAG Integration (20 min)
+- RAG systems tested:
+  - Cognee (Knowledge Graph + Memory)
+  - Qdrant (Vector Database)
+  - RAG Pipeline (Hybrid Search, Reranking, HyDE)
+  - Embeddings Service
+- 6 test sections:
+  - RAG Endpoint Availability
+  - CLI Agents RAG Access
+  - RAG Trigger via AI Debate
+  - Cognee Integration Depth
+  - Qdrant/Vector DB Integration
+  - RAG Pipeline Advanced Features
+- Running the RAGS challenge:
+  ```bash
+  ./challenges/scripts/rags_challenge.sh
+  ```
+
+#### 12.3 MCPS Challenge - MCP Server Integration (20 min)
+- 22 MCP servers tested:
+  - Core: filesystem, memory, fetch, git, github, gitlab
+  - Database: postgres, sqlite, redis, mongodb
+  - Cloud: docker, kubernetes, aws-s3, google-drive
+  - Communication: slack, notion
+  - Search: brave-search
+  - Vector: chroma, qdrant, weaviate
+- MCP Tool Search integration
+- Protocol endpoints (MCP, LSP, ACP)
+- Running the MCPS challenge:
+  ```bash
+  ./challenges/scripts/mcps_challenge.sh
+  ```
+
+#### 12.4 SKILLS Challenge - Skills Integration (15 min)
+- 21 skills across 8 categories:
+  - Code (generate, refactor, optimize)
+  - Debug (trace, profile, analyze)
+  - Search (find, grep, semantic-search)
+  - Git (commit, branch, merge)
+  - Deploy (build, deploy)
+  - Docs (document, explain, readme)
+  - Test (unit-test, integration-test)
+  - Review (lint, security-scan)
+- Running the SKILLS challenge:
+  ```bash
+  ./challenges/scripts/skills_challenge.sh
+  ```
+
+#### 12.5 Strict Real-Result Validation (15 min)
+- What is strict validation?
+- FALSE SUCCESS detection:
+  - HTTP 200 with no real content
+  - Empty choices array
+  - Error messages in responses
+- Content length validation
+- RAG evidence detection
+- Real vs mock response differentiation
+- Validation code walkthrough
+
+### Hands-On Lab
+- Run all three challenges (RAGS, MCPS, SKILLS)
+- Analyze challenge reports
+- Review test_results.csv outputs
+- Interpret pass rates and failures
+- Debug a failing challenge test
+
+---
+
+## Module 13: MCP Tool Search and Discovery (60 minutes)
+
+### Learning Objectives
+- Master MCP Tool Search functionality
+- Implement semantic tool discovery
+- Configure tool suggestions for prompts
+
+### Videos
+
+#### 13.1 MCP Tool Search Overview (15 min)
+- What is MCP Tool Search?
+- Search endpoints:
+  - `/v1/mcp/tools/search` - Tool search by query
+  - `/v1/mcp/tools/suggestions` - AI-powered suggestions
+  - `/v1/mcp/adapters/search` - Adapter search
+  - `/v1/mcp/categories` - Tool categories
+  - `/v1/mcp/stats` - Usage statistics
+- Search result structure
+
+#### 13.2 Tool Search Implementation (20 min)
+- GET and POST search methods
+- Query parameters:
+  - `q` - Search query
+  - `limit` - Result limit
+  - `category` - Filter by category
+- Search result validation
+- Real-time tool discovery
+- Example searches:
+  ```bash
+  # Search for file tools
+  curl "${HELIXAGENT_URL}/v1/mcp/tools/search?q=file"
+
+  # Search for git tools
+  curl "${HELIXAGENT_URL}/v1/mcp/tools/search?q=git"
+
+  # POST search with options
+  curl -X POST "${HELIXAGENT_URL}/v1/mcp/tools/search" \
+    -d '{"query": "file operations", "limit": 10}'
+  ```
+
+#### 13.3 Tool Suggestions (15 min)
+- AI-powered tool suggestions
+- Prompt-based recommendation
+- Suggestion endpoints:
+  ```bash
+  curl "${HELIXAGENT_URL}/v1/mcp/tools/suggestions?prompt=list%20files"
+  ```
+- Integration with chat completions
+- Automatic tool selection
+
+#### 13.4 Adapter Search (10 min)
+- MCP adapter discovery
+- Pre-built adapters:
+  - GitHub, GitLab
+  - PostgreSQL, MongoDB
+  - Slack, Notion
+  - Filesystem, Git
+- Finding adapters for your use case
+
+### Hands-On Lab
+- Search for tools using different queries
+- Test tool suggestions with various prompts
+- Explore adapter search functionality
+- Build a custom tool discovery workflow
+
+---
+
+## Module 14: AI Debate System Advanced (90 minutes)
+
+### Learning Objectives
+- Configure the 15 LLM AI Debate Ensemble
+- Implement multi-pass validation
+- Integrate with LLMsVerifier scoring
+
+### Videos
+
+#### 14.1 AI Debate with 15 LLMs (25 min)
+- Debate team configuration:
+  - 5 positions (Analyst, Proposer, Critic, Synthesizer, Mediator)
+  - 3 LLMs per position (1 primary + 2 fallbacks)
+  - Total: 15 LLMs in the ensemble
+- Dynamic selection via LLMsVerifier scores
+- OAuth providers priority (Claude, Qwen)
+- Scoring algorithm (5 weighted components):
+  - ResponseSpeed (25%)
+  - ModelEfficiency (20%)
+  - CostEffectiveness (25%)
+  - Capability (20%)
+  - Recency (10%)
+
+#### 14.2 Multi-Pass Validation System (25 min)
+- Validation phases:
+  1. INITIAL RESPONSE - Initial perspectives
+  2. VALIDATION - Cross-validation for accuracy
+  3. POLISH & IMPROVE - Refinement based on feedback
+  4. FINAL CONCLUSION - Synthesized consensus
+- Configuration:
+  ```json
+  {
+    "enable_multi_pass_validation": true,
+    "validation_config": {
+      "enable_validation": true,
+      "enable_polish": true,
+      "validation_timeout": 120,
+      "polish_timeout": 60,
+      "min_confidence_to_skip": 0.9,
+      "max_validation_rounds": 3
+    }
+  }
+  ```
+- Quality improvement metrics
+- Confidence scoring
+
+#### 14.3 Debate Orchestrator Framework (25 min)
+- New framework architecture:
+  - Agent Pool
+  - Team Building
+  - Protocol Manager
+  - Knowledge Repository
+- Topologies:
+  - Mesh (parallel)
+  - Star (hub-spoke)
+  - Chain (sequential)
+- Phase-based protocol:
+  - Proposal -> Critique -> Review -> Synthesis
+- Learning system and cross-debate knowledge
+
+#### 14.4 Integration with 20+ CLI Agents (15 min)
+- CLI agent registry (20 agents):
+  - OpenCode, Crush, HelixCode, Kiro
+  - Aider, ClaudeCode, Cline, CodenameGoose
+  - DeepSeekCLI, Forge, GeminiCLI, GPTEngineer
+  - KiloCode, MistralCode, OllamaCode, Plandex
+  - QwenCode, AmazonQ, CursorAI, Windsurf
+- Agent-specific configurations
+- X-CLI-Agent header support
+- User-Agent pattern matching
+
+### Hands-On Lab
+- Configure a 15 LLM debate team
+- Enable multi-pass validation
+- Test different topologies
+- Verify agent integration
+
+---
+
 ## Bonus Content
 
 ### Appendix A: Cloud Integrations
@@ -620,6 +858,16 @@ Upon completion of this course, participants will be able to:
 - Security and CI/CD mastery
 - Assessment: Full production deployment review
 
+### Level 5: Challenge Expert (NEW)
+- Modules 12-14
+- Challenge system mastery and advanced AI debate
+- Assessment: 100% pass rate on all challenge scripts
+- Requirements:
+  - Run RAGS, MCPS, and SKILLS challenges successfully
+  - Configure 15 LLM debate team
+  - Demonstrate MCP Tool Search integration
+  - Document strict validation methodology
+
 ---
 
 ## Course Resources
@@ -639,6 +887,7 @@ Upon completion of this course, participants will be able to:
 
 ---
 
-*Course Version: 2.0.0*
+*Course Version: 3.0.0*
 *Last Updated: January 2026*
-*Total Duration: 10+ hours*
+*Total Duration: 14+ hours*
+*Modules: 14 (including 3 new challenge and advanced modules)*
