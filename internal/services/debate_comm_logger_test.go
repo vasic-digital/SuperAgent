@@ -760,3 +760,99 @@ func BenchmarkLogRequest(b *testing.B) {
 		commLogger.LogRequest("analyst", "claude", "claude-opus-4-5-20251101", 1024, 1)
 	}
 }
+
+// =============================================================================
+// Additional Tests for Stream Functions to Improve Coverage
+// =============================================================================
+
+func TestDebateCommLogger_LogStreamStart_ColorBranches(t *testing.T) {
+	var buf bytes.Buffer
+	logger := logrus.New()
+	logger.SetOutput(&buf)
+	logger.SetLevel(logrus.InfoLevel)
+
+	t.Run("with colors enabled", func(t *testing.T) {
+		buf.Reset()
+		dcl := NewDebateCommLogger(logger)
+		dcl.SetColorsEnabled(true)
+
+		dcl.LogStreamStart("analyst", "claude", "claude-opus-4-5-20251101")
+
+		output := buf.String()
+		assert.Contains(t, output, "STREAM START")
+	})
+
+	t.Run("with colors disabled", func(t *testing.T) {
+		buf.Reset()
+		dcl := NewDebateCommLogger(logger)
+		dcl.SetColorsEnabled(false)
+
+		dcl.LogStreamStart("analyst", "claude", "claude-opus-4-5-20251101")
+
+		output := buf.String()
+		assert.Contains(t, output, "STREAM START")
+		assert.Contains(t, output, "--->")
+	})
+}
+
+func TestDebateCommLogger_LogStreamChunk_ColorBranches(t *testing.T) {
+	var buf bytes.Buffer
+	logger := logrus.New()
+	logger.SetOutput(&buf)
+	logger.SetLevel(logrus.DebugLevel)
+
+	t.Run("with colors enabled", func(t *testing.T) {
+		buf.Reset()
+		dcl := NewDebateCommLogger(logger)
+		dcl.SetColorsEnabled(true)
+
+		dcl.LogStreamChunk("analyst", "claude", "claude-opus-4-5-20251101", 128, 256)
+
+		output := buf.String()
+		assert.Contains(t, output, "CHUNK")
+		assert.Contains(t, output, "128 bytes")
+	})
+
+	t.Run("with colors disabled", func(t *testing.T) {
+		buf.Reset()
+		dcl := NewDebateCommLogger(logger)
+		dcl.SetColorsEnabled(false)
+
+		dcl.LogStreamChunk("analyst", "claude", "claude-opus-4-5-20251101", 128, 256)
+
+		output := buf.String()
+		assert.Contains(t, output, "CHUNK")
+		assert.Contains(t, output, "--->")
+	})
+}
+
+func TestDebateCommLogger_LogStreamEnd_ColorBranches(t *testing.T) {
+	var buf bytes.Buffer
+	logger := logrus.New()
+	logger.SetOutput(&buf)
+	logger.SetLevel(logrus.InfoLevel)
+
+	t.Run("with colors enabled", func(t *testing.T) {
+		buf.Reset()
+		dcl := NewDebateCommLogger(logger)
+		dcl.SetColorsEnabled(true)
+
+		dcl.LogStreamEnd("analyst", "claude", "claude-opus-4-5-20251101", 2048, 1500*time.Millisecond)
+
+		output := buf.String()
+		assert.Contains(t, output, "STREAM END")
+		assert.Contains(t, output, "2048 bytes")
+	})
+
+	t.Run("with colors disabled", func(t *testing.T) {
+		buf.Reset()
+		dcl := NewDebateCommLogger(logger)
+		dcl.SetColorsEnabled(false)
+
+		dcl.LogStreamEnd("analyst", "claude", "claude-opus-4-5-20251101", 2048, 1500*time.Millisecond)
+
+		output := buf.String()
+		assert.Contains(t, output, "STREAM END")
+		assert.Contains(t, output, "--->")
+	})
+}

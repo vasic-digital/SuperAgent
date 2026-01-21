@@ -2754,3 +2754,578 @@ func godotenvLoad() error {
 	return nil
 }
 
+// =============================================================================
+// API Key Generation Tests
+// =============================================================================
+
+func TestGenerateSecureAPIKey(t *testing.T) {
+	t.Run("generates valid API key", func(t *testing.T) {
+		key, err := generateSecureAPIKey()
+
+		require.NoError(t, err)
+		assert.NotEmpty(t, key)
+		assert.True(t, strings.HasPrefix(key, "sk-"))
+		// 32 bytes = 64 hex chars + "sk-" prefix
+		assert.Equal(t, 67, len(key))
+	})
+
+	t.Run("generates unique keys", func(t *testing.T) {
+		keys := make(map[string]bool)
+		for i := 0; i < 100; i++ {
+			key, err := generateSecureAPIKey()
+			require.NoError(t, err)
+			assert.False(t, keys[key], "Generated duplicate key")
+			keys[key] = true
+		}
+	})
+}
+
+func TestHandleGenerateAPIKey(t *testing.T) {
+	t.Run("generates and prints API key", func(t *testing.T) {
+		// Capture stdout
+		old := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		appCfg := &AppConfig{
+			GenerateAPIKey: true,
+			Logger:         createTestLogger(),
+		}
+
+		err := handleGenerateAPIKey(appCfg)
+
+		w.Close()
+		os.Stdout = old
+
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		output := strings.TrimSpace(buf.String())
+
+		require.NoError(t, err)
+		assert.True(t, strings.HasPrefix(output, "sk-"))
+	})
+
+	t.Run("writes API key to env file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		envFile := tmpDir + "/.env"
+
+		appCfg := &AppConfig{
+			GenerateAPIKey: true,
+			APIKeyEnvFile:  envFile,
+			Logger:         createTestLogger(),
+		}
+
+		// Capture stdout (we don't care about its content)
+		old := os.Stdout
+		_, w, _ := os.Pipe()
+		os.Stdout = w
+
+		err := handleGenerateAPIKey(appCfg)
+
+		w.Close()
+		os.Stdout = old
+
+		require.NoError(t, err)
+
+		// Verify file was written
+		content, err := os.ReadFile(envFile)
+		require.NoError(t, err)
+		assert.Contains(t, string(content), "HELIXAGENT_API_KEY=sk-")
+	})
+
+	t.Run("handles nil logger", func(t *testing.T) {
+		appCfg := &AppConfig{
+			GenerateAPIKey: true,
+			Logger:         nil,
+		}
+
+		// Capture stdout
+		old := os.Stdout
+		_, w, _ := os.Pipe()
+		os.Stdout = w
+
+		err := handleGenerateAPIKey(appCfg)
+
+		w.Close()
+		os.Stdout = old
+
+		require.NoError(t, err)
+	})
+}
+
+func TestWriteAPIKeyToEnvFile(t *testing.T) {
+	t.Run("creates new file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		envFile := tmpDir + "/.env"
+
+		err := writeAPIKeyToEnvFile(envFile, "sk-test-key-123")
+
+		require.NoError(t, err)
+
+		content, err := os.ReadFile(envFile)
+		require.NoError(t, err)
+		assert.Contains(t, string(content), "HELIXAGENT_API_KEY=sk-test-key-123")
+	})
+
+	t.Run("updates existing file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		envFile := tmpDir + "/.env"
+
+		// Create initial file with content
+		initialContent := `# Comment line
+OTHER_KEY=some_value
+HELIXAGENT_API_KEY=old-key
+
+ANOTHER_KEY=another_value`
+		err := os.WriteFile(envFile, []byte(initialContent), 0644)
+		require.NoError(t, err)
+
+		err = writeAPIKeyToEnvFile(envFile, "sk-new-key-456")
+		require.NoError(t, err)
+
+		content, err := os.ReadFile(envFile)
+		require.NoError(t, err)
+
+		contentStr := string(content)
+		assert.Contains(t, contentStr, "HELIXAGENT_API_KEY=sk-new-key-456")
+		assert.Contains(t, contentStr, "OTHER_KEY=some_value")
+		assert.Contains(t, contentStr, "ANOTHER_KEY=another_value")
+		assert.Contains(t, contentStr, "# Comment line")
+		// Old key should be replaced
+		assert.NotContains(t, contentStr, "old-key")
+	})
+
+	t.Run("preserves comments and empty lines", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		envFile := tmpDir + "/.env"
+
+		initialContent := `# First comment
+KEY1=value1
+
+# Second comment
+
+KEY2=value2`
+		err := os.WriteFile(envFile, []byte(initialContent), 0644)
+		require.NoError(t, err)
+
+		err = writeAPIKeyToEnvFile(envFile, "sk-new")
+		require.NoError(t, err)
+
+		content, err := os.ReadFile(envFile)
+		require.NoError(t, err)
+
+		contentStr := string(content)
+		assert.Contains(t, contentStr, "# First comment")
+		assert.Contains(t, contentStr, "# Second comment")
+	})
+}
+
+// =============================================================================
+// OpenCode Config Tests
+// =============================================================================
+
+func TestBuildMCPServerConfig(t *testing.T) {
+	t.Run("builds config with all remote servers", func(t *testing.T) {
+		config := buildMCPServerConfig("localhost", "7061", "sk-test", "/home/user")
+
+		assert.NotNil(t, config)
+		// Should have at least the 6 HelixAgent remote endpoints
+		assert.Contains(t, config, "helixagent-mcp")
+		assert.Contains(t, config, "helixagent-acp")
+		assert.Contains(t, config, "helixagent-lsp")
+		assert.Contains(t, config, "helixagent-embeddings")
+		assert.Contains(t, config, "helixagent-vision")
+		assert.Contains(t, config, "helixagent-cognee")
+
+		// Check remote server properties
+		mcpServer := config["helixagent-mcp"]
+		assert.Equal(t, "remote", mcpServer.Type)
+		assert.Contains(t, mcpServer.URL, "localhost:7061")
+		assert.Equal(t, "Bearer sk-test", mcpServer.Headers["Authorization"])
+	})
+
+	t.Run("builds config with different host and port", func(t *testing.T) {
+		config := buildMCPServerConfig("example.com", "8080", "sk-custom", "/home/test")
+
+		mcpServer := config["helixagent-mcp"]
+		assert.Contains(t, mcpServer.URL, "example.com:8080")
+		assert.Equal(t, "Bearer sk-custom", mcpServer.Headers["Authorization"])
+	})
+}
+
+func TestHandleGenerateOpenCode(t *testing.T) {
+	t.Run("generates OpenCode config to stdout", func(t *testing.T) {
+		// Capture stdout
+		old := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		appCfg := &AppConfig{
+			GenerateOpenCode: true,
+			Logger:           createTestLogger(),
+		}
+
+		err := handleGenerateOpenCode(appCfg)
+
+		w.Close()
+		os.Stdout = old
+
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		output := buf.String()
+
+		require.NoError(t, err)
+		assert.Contains(t, output, "$schema")
+		assert.Contains(t, output, "provider")
+		assert.Contains(t, output, "helixagent")
+	})
+
+	t.Run("writes OpenCode config to file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		configFile := tmpDir + "/opencode.json"
+
+		appCfg := &AppConfig{
+			GenerateOpenCode: true,
+			OpenCodeOutput:   configFile,
+			Logger:           createTestLogger(),
+		}
+
+		// Capture stdout (suppress it)
+		old := os.Stdout
+		_, w, _ := os.Pipe()
+		os.Stdout = w
+
+		err := handleGenerateOpenCode(appCfg)
+
+		w.Close()
+		os.Stdout = old
+
+		require.NoError(t, err)
+
+		// Verify file was written
+		content, err := os.ReadFile(configFile)
+		require.NoError(t, err)
+		assert.Contains(t, string(content), "$schema")
+	})
+
+	t.Run("uses existing API key from env", func(t *testing.T) {
+		// Set env var
+		os.Setenv("HELIXAGENT_API_KEY", "sk-env-test-key")
+		defer os.Unsetenv("HELIXAGENT_API_KEY")
+
+		// Capture stdout
+		old := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		appCfg := &AppConfig{
+			GenerateOpenCode: true,
+			Logger:           createTestLogger(),
+		}
+
+		err := handleGenerateOpenCode(appCfg)
+
+		w.Close()
+		os.Stdout = old
+
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		output := buf.String()
+
+		require.NoError(t, err)
+		assert.Contains(t, output, "sk-env-test-key")
+	})
+}
+
+func TestHandleValidateOpenCode(t *testing.T) {
+	t.Run("validates valid config file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		configFile := tmpDir + "/opencode.json"
+
+		validConfig := `{
+			"$schema": "https://opencode.ai/config.json",
+			"provider": {
+				"test": {
+					"options": {
+						"apiKey": "test"
+					}
+				}
+			}
+		}`
+		err := os.WriteFile(configFile, []byte(validConfig), 0644)
+		require.NoError(t, err)
+
+		// Capture stdout
+		old := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		appCfg := &AppConfig{
+			ValidateOpenCode: configFile,
+			Logger:           createTestLogger(),
+		}
+
+		err = handleValidateOpenCode(appCfg)
+
+		w.Close()
+		os.Stdout = old
+
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		output := buf.String()
+
+		require.NoError(t, err)
+		assert.Contains(t, output, "VALID")
+	})
+
+	t.Run("rejects invalid JSON", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		configFile := tmpDir + "/invalid.json"
+
+		invalidConfig := `{invalid json`
+		err := os.WriteFile(configFile, []byte(invalidConfig), 0644)
+		require.NoError(t, err)
+
+		// Capture stdout
+		old := os.Stdout
+		_, w, _ := os.Pipe()
+		os.Stdout = w
+
+		appCfg := &AppConfig{
+			ValidateOpenCode: configFile,
+			Logger:           createTestLogger(),
+		}
+
+		err = handleValidateOpenCode(appCfg)
+
+		w.Close()
+		os.Stdout = old
+
+		require.Error(t, err)
+	})
+
+	t.Run("returns error for non-existent file", func(t *testing.T) {
+		appCfg := &AppConfig{
+			ValidateOpenCode: "/nonexistent/path/config.json",
+			Logger:           createTestLogger(),
+		}
+
+		err := handleValidateOpenCode(appCfg)
+
+		require.Error(t, err)
+	})
+}
+
+// =============================================================================
+// Mandatory Dependencies Tests
+// =============================================================================
+
+func TestGetMandatoryDependencies(t *testing.T) {
+	deps := GetMandatoryDependencies()
+
+	assert.NotEmpty(t, deps)
+	assert.Len(t, deps, 4)
+
+	// Check all expected dependencies are present
+	names := make(map[string]bool)
+	for _, dep := range deps {
+		names[dep.Name] = true
+		assert.NotEmpty(t, dep.Name)
+		assert.NotEmpty(t, dep.Description)
+		assert.NotNil(t, dep.CheckFunc)
+		assert.True(t, dep.Required)
+	}
+
+	assert.True(t, names["PostgreSQL"])
+	assert.True(t, names["Redis"])
+	assert.True(t, names["Cognee"])
+	assert.True(t, names["ChromaDB"])
+}
+
+func TestVerifyAllMandatoryDependencies_AllFail(t *testing.T) {
+	// Save original checkers
+	originalPostgresChecker := postgresHealthChecker
+	originalRedisChecker := redisHealthChecker
+	defer func() {
+		postgresHealthChecker = originalPostgresChecker
+		redisHealthChecker = originalRedisChecker
+	}()
+
+	// Mock all health checks to fail
+	postgresHealthChecker = func() error {
+		return errors.New("postgres unavailable")
+	}
+	redisHealthChecker = func() error {
+		return errors.New("redis unavailable")
+	}
+
+	// Mock Cognee and ChromaDB to fail
+	oldContainerConfig := containerConfig
+	containerConfig = &ContainerConfig{
+		CogneeURL:   "http://localhost:99999/health",
+		ChromaDBURL: "http://localhost:99998/api/v1/heartbeat",
+		HealthChecker: &MockHealthChecker{
+			CheckHealthFunc: func(url string) error {
+				return errors.New("service unavailable")
+			},
+		},
+	}
+	defer func() { containerConfig = oldContainerConfig }()
+
+	logger := createTestLogger()
+	err := verifyAllMandatoryDependencies(logger)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "BOOT BLOCKED")
+	assert.Contains(t, err.Error(), "mandatory dependencies failed")
+}
+
+// =============================================================================
+// Run Function Additional Tests
+// =============================================================================
+
+func TestRun_GenerateAPIKey(t *testing.T) {
+	// Capture stdout
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	appCfg := &AppConfig{
+		GenerateAPIKey: true,
+		Logger:         createTestLogger(),
+	}
+
+	err := run(appCfg)
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	output := strings.TrimSpace(buf.String())
+
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(output, "sk-"))
+}
+
+func TestRun_GenerateOpenCode(t *testing.T) {
+	// Capture stdout
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	appCfg := &AppConfig{
+		GenerateOpenCode: true,
+		Logger:           createTestLogger(),
+	}
+
+	err := run(appCfg)
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	output := buf.String()
+
+	require.NoError(t, err)
+	assert.Contains(t, output, "provider")
+	assert.Contains(t, output, "helixagent")
+}
+
+func TestRun_ValidateOpenCode_FromRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	configFile := tmpDir + "/opencode.json"
+
+	validConfig := `{
+		"$schema": "https://opencode.ai/config.json",
+		"provider": {
+			"test": {
+				"options": {"apiKey": "test"}
+			}
+		}
+	}`
+	err := os.WriteFile(configFile, []byte(validConfig), 0644)
+	require.NoError(t, err)
+
+	// Capture stdout
+	old := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+
+	appCfg := &AppConfig{
+		ValidateOpenCode: configFile,
+		Logger:           createTestLogger(),
+	}
+
+	err = run(appCfg)
+
+	w.Close()
+	os.Stdout = old
+
+	require.NoError(t, err)
+}
+
+// =============================================================================
+// DetectComposeCommand Tests
+// =============================================================================
+
+func TestDetectComposeCommand_Docker(t *testing.T) {
+	// Skip if docker is not available
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skip("Docker not available")
+	}
+
+	cmd, args, err := DetectComposeCommand(RuntimeDocker)
+
+	if err != nil {
+		// May fail if neither docker compose nor docker-compose is available
+		t.Logf("DetectComposeCommand returned error: %v", err)
+	} else {
+		assert.NotEmpty(t, cmd)
+		// cmd should be either "docker" or "docker-compose"
+		assert.True(t, cmd == "docker" || strings.Contains(cmd, "docker-compose"))
+		_ = args // args may be nil or contain "compose"
+	}
+}
+
+func TestDetectComposeCommand_Podman(t *testing.T) {
+	// Skip if podman is not available
+	if _, err := exec.LookPath("podman"); err != nil {
+		t.Skip("Podman not available")
+	}
+
+	cmd, args, err := DetectComposeCommand(RuntimePodman)
+
+	if err != nil {
+		// May fail if podman-compose is not available
+		t.Logf("DetectComposeCommand returned error: %v", err)
+	} else {
+		assert.NotEmpty(t, cmd)
+	}
+	_ = args
+}
+
+func TestDetectComposeCommand_Unknown(t *testing.T) {
+	_, _, err := DetectComposeCommand(RuntimeNone)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown container runtime")
+}
+
+// =============================================================================
+// Strict Dependencies Tests
+// =============================================================================
+
+func TestDefaultAppConfig_StrictDependencies(t *testing.T) {
+	cfg := DefaultAppConfig()
+
+	// StrictDependencies should be true by default (mandatory mode)
+	assert.True(t, cfg.StrictDependencies)
+}
+
+func TestAppConfig_StrictDependenciesFlag(t *testing.T) {
+	// Verify strictDependencies flag is defined
+	assert.NotNil(t, strictDependencies)
+}
+

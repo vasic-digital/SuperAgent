@@ -1643,3 +1643,188 @@ func TestStreamingUsesScoreBasedOrdering(t *testing.T) {
 		}
 	})
 }
+
+// =============================================================================
+// Additional Provider Registry Tests for Uncovered Functions
+// =============================================================================
+
+func TestProviderRegistry_GetDiscovery(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 10 * time.Second,
+		Providers:      make(map[string]*ProviderConfig),
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	// Without discovery, should return nil
+	discovery := registry.GetDiscovery()
+	assert.Nil(t, discovery)
+}
+
+func TestProviderRegistry_GetBestProvidersForDebate(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 10 * time.Second,
+		Providers:      make(map[string]*ProviderConfig),
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	// Without discovery, should fall back to healthy providers
+	providers := registry.GetBestProvidersForDebate(3, 5)
+	assert.NotNil(t, providers)
+}
+
+func TestProviderRegistry_SetAutoDiscovery(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 10 * time.Second,
+		Providers:      make(map[string]*ProviderConfig),
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	registry.SetAutoDiscovery(true)
+	assert.True(t, registry.autoDiscovery)
+
+	registry.SetAutoDiscovery(false)
+	assert.False(t, registry.autoDiscovery)
+}
+
+func TestProviderRegistry_SetGetStartupVerifier(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 10 * time.Second,
+		Providers:      make(map[string]*ProviderConfig),
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	// Initially nil
+	sv := registry.GetStartupVerifier()
+	assert.Nil(t, sv)
+
+	// Cannot set a real verifier without proper initialization
+	// Just test setting nil
+	registry.SetStartupVerifier(nil)
+	assert.Nil(t, registry.GetStartupVerifier())
+}
+
+func TestProviderRegistry_InitializeFromStartupVerifier_NoVerifier(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 10 * time.Second,
+		Providers:      make(map[string]*ProviderConfig),
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	// Without startup verifier, should error
+	err := registry.InitializeFromStartupVerifier()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "startup verifier not set")
+}
+
+func TestProviderRegistry_GetVerifiedProvidersSummary(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 10 * time.Second,
+		Providers:      make(map[string]*ProviderConfig),
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	// Without startup verifier, uses discovery (which is also nil)
+	summary := registry.GetVerifiedProvidersSummary()
+	assert.NotNil(t, summary)
+}
+
+func TestProviderRegistry_GetProviderHealth(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 10 * time.Second,
+		Providers:      make(map[string]*ProviderConfig),
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	// Register and set health for a provider
+	provider := &MockLLMProviderForRegistry{name: "test-provider"}
+	registry.RegisterProvider("test-provider", provider)
+
+	// Set health status
+	registry.mu.Lock()
+	registry.providerHealth["test-provider"] = &ProviderVerificationResult{
+		Provider: "test-provider",
+		Status:   ProviderStatusHealthy,
+		Verified: true,
+	}
+	registry.mu.Unlock()
+
+	health := registry.GetProviderHealth("test-provider")
+	assert.NotNil(t, health)
+	assert.Equal(t, "test-provider", health.Provider)
+	assert.Equal(t, ProviderStatusHealthy, health.Status)
+
+	// Non-existent provider
+	health = registry.GetProviderHealth("nonexistent")
+	assert.Nil(t, health)
+}
+
+func TestProviderRegistry_GetAllProviderHealth(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 10 * time.Second,
+		Providers:      make(map[string]*ProviderConfig),
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	// Set health for multiple providers
+	registry.mu.Lock()
+	registry.providerHealth["provider1"] = &ProviderVerificationResult{
+		Provider: "provider1",
+		Status:   ProviderStatusHealthy,
+	}
+	registry.providerHealth["provider2"] = &ProviderVerificationResult{
+		Provider: "provider2",
+		Status:   ProviderStatusUnhealthy,
+	}
+	registry.mu.Unlock()
+
+	healthMap := registry.GetAllProviderHealth()
+	assert.Len(t, healthMap, 2)
+	assert.Contains(t, healthMap, "provider1")
+	assert.Contains(t, healthMap, "provider2")
+}
+
+func TestProviderRegistry_IsProviderHealthy(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 10 * time.Second,
+		Providers:      make(map[string]*ProviderConfig),
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	// Set health for providers (must set both Status and Verified)
+	registry.mu.Lock()
+	registry.providerHealth["healthy-provider"] = &ProviderVerificationResult{
+		Provider: "healthy-provider",
+		Status:   ProviderStatusHealthy,
+		Verified: true,
+	}
+	registry.providerHealth["unhealthy-provider"] = &ProviderVerificationResult{
+		Provider: "unhealthy-provider",
+		Status:   ProviderStatusUnhealthy,
+		Verified: true,
+	}
+	registry.mu.Unlock()
+
+	assert.True(t, registry.IsProviderHealthy("healthy-provider"))
+	assert.False(t, registry.IsProviderHealthy("unhealthy-provider"))
+	assert.False(t, registry.IsProviderHealthy("nonexistent"))
+}
+
+func TestProviderRegistry_GetKnownProviderTypes(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout: 10 * time.Second,
+		Providers:      make(map[string]*ProviderConfig),
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	types := registry.GetKnownProviderTypes()
+	assert.NotEmpty(t, types)
+	// Should contain common provider types
+	hasCommonType := false
+	for _, providerType := range types {
+		if providerType == "deepseek" || providerType == "gemini" || providerType == "claude" || providerType == "mistral" || providerType == "openai" {
+			hasCommonType = true
+			break
+		}
+	}
+	assert.True(t, hasCommonType, "Should contain at least one common provider type")
+}
