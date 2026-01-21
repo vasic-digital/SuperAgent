@@ -40,6 +40,35 @@
         <p class="lead">All notable changes to HelixAgent are documented here.</p>
 
         <div class="changelog-entry">
+            <h2><span class="version-badge">v1.0.1</span> <span class="date-badge">January 2026</span></h2>
+            <p>Bug fixes and documentation updates for improved stability and developer experience.</p>
+
+            <div class="change-type fixed">Fixed</div>
+            <ul class="changes-list">
+                <li>RAGS Challenge timeout increased from 30s to 60s for complex retrieval operations</li>
+                <li>CogneeService ListDatasets JSON parsing to handle both array and object responses</li>
+                <li>ProviderHealthMonitor mutex deadlock in updateStatus/sendAlert</li>
+                <li>All 147 RAGS tests now passing (100%)</li>
+            </ul>
+
+            <div class="change-type added">Added</div>
+            <ul class="changes-list">
+                <li>MCPS Challenge Section 9 for MCP Tool Search validation</li>
+                <li>SKILLS Challenge with strict real-result validation</li>
+                <li>Comprehensive documentation updates across all manuals</li>
+                <li>New video course labs (Labs 6-8)</li>
+            </ul>
+
+            <div class="change-type improved">Improved</div>
+            <ul class="changes-list">
+                <li>Documentation coverage for challenge system</li>
+                <li>API reference with MCP Tool Search endpoints</li>
+                <li>Provider configuration guide with timeout settings</li>
+                <li>Video courses with 3 new hands-on labs</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
             <h2><span class="version-badge">v1.0.0</span> <span class="date-badge">January 2026</span></h2>
             <p>Initial stable release of HelixAgent with comprehensive AI orchestration capabilities.</p>
 

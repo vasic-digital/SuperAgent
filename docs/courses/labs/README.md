@@ -4,13 +4,16 @@ Hands-on lab exercises for the HelixAgent training course.
 
 ## Lab Overview
 
-| Lab | Module | Duration | Difficulty |
-|-----|--------|----------|------------|
-| [Lab 1: Getting Started](LAB_01_GETTING_STARTED.md) | 1-2 | 45 min | Beginner |
-| [Lab 2: Provider Setup](LAB_02_PROVIDER_SETUP.md) | 4 | 60 min | Intermediate |
-| [Lab 3: AI Debate](LAB_03_AI_DEBATE.md) | 6 | 75 min | Intermediate |
-| Lab 4: MCP Integration | 8 | 60 min | Intermediate |
-| Lab 5: Production Deployment | 10-11 | 120 min | Advanced |
+| Lab | Module | Duration | Difficulty | NEW |
+|-----|--------|----------|------------|-----|
+| [Lab 1: Getting Started](LAB_01_GETTING_STARTED.md) | 1-2 | 45 min | Beginner | |
+| [Lab 2: Provider Setup](LAB_02_PROVIDER_SETUP.md) | 4 | 60 min | Intermediate | |
+| [Lab 3: AI Debate](LAB_03_AI_DEBATE.md) | 6 | 75 min | Intermediate | |
+| [Lab 4: MCP Integration](LAB_04_MCP_INTEGRATION.md) | 8 | 60 min | Intermediate | |
+| [Lab 5: Production Deployment](LAB_05_PRODUCTION_DEPLOYMENT.md) | 10-11 | 120 min | Advanced | |
+| [Lab 6: Challenge Scripts](LAB_06_CHALLENGE_SCRIPTS.md) | 12 | 90 min | Intermediate | NEW |
+| [Lab 7: MCP Tool Search](LAB_07_MCP_TOOL_SEARCH.md) | 13 | 60 min | Intermediate | NEW |
+| [Lab 8: Multi-Pass Validation](LAB_08_MULTIPASS_VALIDATION.md) | 14 | 75 min | Advanced | NEW |
 
 ## Prerequisites
 
@@ -70,6 +73,24 @@ Track your progress through the labs:
   - [ ] Monitoring configured
   - [ ] Security hardened
 
+- [ ] Lab 6: Challenge Scripts (NEW)
+  - [ ] RAGS challenge passed (100%)
+  - [ ] MCPS challenge passed (100%)
+  - [ ] SKILLS challenge passed (100%)
+  - [ ] Understood strict validation
+
+- [ ] Lab 7: MCP Tool Search (NEW)
+  - [ ] Tool search working
+  - [ ] Suggestions tested
+  - [ ] Adapter search working
+  - [ ] Discovery workflow created
+
+- [ ] Lab 8: Multi-Pass Validation (NEW)
+  - [ ] 4-phase debate completed
+  - [ ] Phase indicators observed
+  - [ ] Confidence >0.8 achieved
+  - [ ] Configuration tuned
+
 ## Lab Files
 
 Each lab contains:
@@ -87,7 +108,15 @@ Each lab contains:
 | Level 1: Fundamentals | Lab 1 |
 | Level 2: Provider Expert | Labs 1-3 |
 | Level 3: Advanced | Labs 1-4 |
-| Level 4: Master | All labs |
+| Level 4: Master | Labs 1-5 |
+| Level 5: Challenge Expert | All labs (1-8) |
+
+### Level 5 Special Requirements
+- 100% pass rate on RAGS challenge
+- 100% pass rate on MCPS challenge
+- 100% pass rate on SKILLS challenge
+- MCP Tool Search integration demonstration
+- Multi-pass validation debate with >0.8 confidence
 
 ## Support
 
@@ -109,5 +138,6 @@ To improve the labs:
 
 ---
 
-*Labs Version: 1.0.0*
+*Labs Version: 2.0.0*
 *Last Updated: January 2026*
+*New Labs: 6 (Challenge Scripts), 7 (MCP Tool Search), 8 (Multi-Pass Validation)*

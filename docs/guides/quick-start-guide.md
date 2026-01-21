@@ -241,12 +241,63 @@ docker-compose logs postgres
 
 ---
 
+## 🧪 Run Validation Challenges
+
+Verify your installation with the challenge system:
+
+```bash
+# Run all challenges (45+ validation tests)
+./challenges/scripts/run_all_challenges.sh
+
+# Run specific challenges
+./challenges/scripts/rags_challenge.sh           # 147 RAG system tests
+./challenges/scripts/mcps_challenge.sh           # 9 MCP integration sections
+./challenges/scripts/skills_challenge.sh         # Skills validation
+./challenges/scripts/semantic_intent_challenge.sh # Intent detection
+
+# Expected result: 100% pass rate
+```
+
+### Test 5: MCP Tool Search
+```bash
+# Search for tools across MCP adapters
+curl -X POST http://localhost:7061/v1/mcp/tools/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "database query",
+    "limit": 5
+  }'
+```
+
+### Test 6: AI Debate with Multi-Pass Validation
+```bash
+curl -X POST http://localhost:7061/v1/debates \
+  -H "Content-Type: application/json" \
+  -d '{
+    "topic": "Is AI beneficial for society?",
+    "participants": [
+      {"participantId": "pro", "role": "proponent", "llmProvider": "claude"},
+      {"participantId": "con", "role": "opponent", "llmProvider": "deepseek"}
+    ],
+    "enable_multi_pass_validation": true,
+    "validation_config": {
+      "enable_validation": true,
+      "enable_polish": true,
+      "show_phase_indicators": true
+    }
+  }'
+```
+
+---
+
 ## 📚 Learn More
 
 - **API Documentation**: See `/docs/api-documentation.md`
 - **API Examples**: See `/docs/api-reference-examples.md`
 - **Multi-Provider Setup**: See `/docs/MULTI_PROVIDER_SETUP.md`
 - **Architecture**: See `/docs/architecture.md`
+- **Challenge System**: See `/docs/manuals/04_ADVANCED_FEATURES.md`
+- **MCP Tool Search**: See `/docs/manuals/02_API_REFERENCE.md`
 
 ---
 

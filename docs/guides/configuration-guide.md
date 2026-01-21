@@ -694,6 +694,146 @@ health:
 
 ---
 
+## 🧪 Challenge System Configuration
+
+Configure the challenge validation system for testing:
+
+```yaml
+# configs/challenges.yaml
+challenges:
+  timeout: 60  # Default timeout for challenge tests (seconds)
+  parallel_workers: 4  # Number of parallel test workers
+
+  rags:
+    enabled: true
+    timeout: 60  # RAGS tests may need longer timeout
+    cognee_url: "http://localhost:8000"
+    qdrant_url: "http://localhost:6333"
+
+  mcps:
+    enabled: true
+    timeout: 30
+    adapters:
+      - database
+      - design
+      - ai-services
+
+  skills:
+    enabled: true
+    strict_validation: true  # Require real results, not just HTTP 200
+
+# Running challenges
+# ./challenges/scripts/run_all_challenges.sh
+# ./challenges/scripts/rags_challenge.sh  # 147 tests
+# ./challenges/scripts/mcps_challenge.sh  # 9 sections
+```
+
+---
+
+## 🔍 MCP Tool Search Configuration
+
+Configure MCP tool search for cross-adapter discovery:
+
+```yaml
+# configs/mcp.yaml
+mcp:
+  tool_search:
+    enabled: true
+    index_on_startup: true
+    cache_ttl: 3600  # Cache search results for 1 hour
+
+  adapters:
+    database:
+      enabled: true
+      tools: ["query", "insert", "update", "delete"]
+
+    design:
+      enabled: true
+      tools: ["figma_export", "sketch_convert"]
+
+    ai_services:
+      enabled: true
+      tools: ["translate", "summarize", "classify"]
+
+  search:
+    algorithm: "semantic"  # semantic, keyword, hybrid
+    max_results: 10
+    min_score: 0.5
+```
+
+---
+
+## ✨ Multi-Pass Validation Configuration
+
+Configure multi-pass validation for AI debates:
+
+```yaml
+# configs/debate.yaml
+debate:
+  multi_pass_validation:
+    enabled: true
+    default_validation_timeout: 120  # seconds
+    default_polish_timeout: 60
+    max_validation_rounds: 3
+    min_confidence_to_skip: 0.9
+    show_phase_indicators: true
+
+  phases:
+    - name: "INITIAL RESPONSE"
+      icon: "🔍"
+      timeout: 60
+    - name: "VALIDATION"
+      icon: "✓"
+      timeout: 60
+    - name: "POLISH & IMPROVE"
+      icon: "✨"
+      timeout: 45
+    - name: "FINAL CONCLUSION"
+      icon: "📜"
+      timeout: 30
+```
+
+---
+
+## 📚 RAG System Configuration
+
+Configure the hybrid RAG system:
+
+```yaml
+# configs/rag.yaml
+rag:
+  enabled: true
+
+  retrieval:
+    type: "hybrid"  # dense, sparse, hybrid
+    top_k: 10
+    rerank: true
+
+  dense:
+    model: "sentence-transformers/all-MiniLM-L6-v2"
+    dimension: 384
+
+  sparse:
+    algorithm: "bm25"
+    k1: 1.5
+    b: 0.75
+
+  reranker:
+    model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    top_k: 5
+
+  qdrant:
+    url: "${QDRANT_URL:-http://localhost:6333}"
+    collection: "helixagent_docs"
+
+  cognee:
+    url: "${COGNEE_URL:-http://localhost:8000}"
+    auth_email: "${COGNEE_AUTH_EMAIL}"
+    auth_password: "${COGNEE_AUTH_PASSWORD}"
+```
+
+---
+
 ## 📝 Configuration Best Practices
 
 1. **Use Environment Variables** for secrets

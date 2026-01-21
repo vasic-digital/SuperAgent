@@ -47,6 +47,33 @@ Welcome to the HelixAgent user manual collection. These guides will help you get
 - Security configuration
 - Backup and recovery
 
+### 7. Protocols Guide
+- MCP (Model Context Protocol)
+- LSP (Language Server Protocol)
+- ACP (Agent Communication Protocol)
+- MCP Tool Search
+
+### 8. Troubleshooting Guide
+- Common issues and solutions
+- Provider authentication errors
+- Timeout configuration
+- Consensus troubleshooting
+- Rate limit handling
+
+### 9. Challenge System Guide (NEW)
+- Running validation challenges
+- RAGS Challenge (147 tests)
+- MCPS Challenge (9 sections)
+- SKILLS Challenge
+- CI/CD integration
+
+### 10. Advanced Features Guide (NEW)
+- Multi-pass validation
+- AI Debate Orchestrator
+- Semantic intent detection
+- Hybrid RAG system
+- Cross-debate learning
+
 ## Quick Links
 
 - [API Documentation](/docs/api)

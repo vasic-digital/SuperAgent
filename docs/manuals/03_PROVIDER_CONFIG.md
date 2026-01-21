@@ -293,6 +293,108 @@ export AZURE_OPENAI_API_KEY="your-key"
 export AZURE_OPENAI_API_VERSION="2024-02-01"
 ```
 
+## Timeout Configuration
+
+HelixAgent provides comprehensive timeout configuration at multiple levels.
+
+### Provider Timeouts
+
+Configure timeouts per provider in `configs/development.yaml` or `configs/production.yaml`:
+
+```yaml
+providers:
+  claude:
+    timeout: "120s"        # Development: generous timeout
+  deepseek:
+    timeout: "120s"
+  gemini:
+    timeout: "120s"
+  qwen:
+    timeout: "120s"
+  openrouter:
+    timeout: "120s"
+```
+
+**Recommended timeout values:**
+
+| Environment | Provider Timeout | Notes |
+|-------------|------------------|-------|
+| Development | 120s | Generous for debugging |
+| Production | 60s | Balance between reliability and speed |
+| Testing | 30s | Quick failure detection |
+
+### Server Timeouts
+
+Configure HTTP server timeouts:
+
+```yaml
+server:
+  graceful_shutdown_timeout: "15s"   # Time to finish in-flight requests
+  request_timeout: "180s"            # Overall request timeout
+  idle_timeout: "300s"               # Keep-alive connection timeout
+  read_timeout: "180s"               # Time to read full request
+  write_timeout: "180s"              # Time to write response
+```
+
+### AI Debate Timeouts
+
+Configure debate-specific timeouts in `configs/ai-debate-example.yaml`:
+
+```yaml
+debate_timeout: 300000              # 5 minutes total debate timeout (ms)
+
+positions:
+  analyst:
+    response_timeout: 30000         # 30 seconds per position response (ms)
+    providers:
+      - name: claude
+        timeout: 30000              # Individual provider timeout (ms)
+        request_timeout: 35000      # Request with overhead (ms)
+```
+
+### Ensemble Timeouts
+
+Configure ensemble decision timeouts:
+
+```yaml
+ensemble:
+  timeout: 60s                      # Maximum time for ensemble decision
+```
+
+### Verification Timeouts
+
+Configure LLMsVerifier timeouts:
+
+```yaml
+verifier:
+  verification_timeout: 60s         # Time for provider verification
+  circuit_breaker:
+    timeout: 10s                    # Circuit breaker timeout
+    half_open_timeout: 60s          # Time before retry after failure
+```
+
+### Challenge/Test Timeouts
+
+For challenge scripts, timeouts are set via environment variables:
+
+```bash
+# Set timeout for RAGS challenge (default: 60s)
+TIMEOUT=60 ./challenges/scripts/rags_challenge.sh
+
+# Set timeout for MCPS challenge (default: 30s)
+TIMEOUT=30 ./challenges/scripts/mcps_challenge.sh
+```
+
+**Important**: The RAGS challenge timeout was increased from 30s to 60s to accommodate RAG pipeline initialization delays.
+
+### Timeout Best Practices
+
+1. **Development**: Use generous timeouts (120s) to avoid false failures during debugging
+2. **Production**: Use moderate timeouts (30-60s) with circuit breakers for resilience
+3. **Testing**: Use shorter timeouts (5-30s) for quick feedback
+4. **AI Debate**: Allow 30s per position, 5 minutes total debate time
+5. **RAG Operations**: Allow 60s+ for complex retrieval operations
+
 ## Troubleshooting
 
 ### Common Issues
@@ -310,8 +412,15 @@ export AZURE_OPENAI_API_VERSION="2024-02-01"
    - Use multiple providers
 
 4. **Timeout**
-   - Increase timeout setting
+   - Increase timeout setting in config
    - Check network connectivity
+   - For RAG operations, use 60s+ timeout
+   - For AI Debate, ensure debate_timeout is sufficient
+
+5. **Circuit Breaker Open**
+   - Provider has failed too many times
+   - Wait for half_open_timeout before retry
+   - Check provider health: `curl http://localhost:7061/v1/providers/health`
 
 ### Debug Mode
 
@@ -319,4 +428,16 @@ export AZURE_OPENAI_API_VERSION="2024-02-01"
 # Enable provider debug logging
 export HELIXAGENT_DEBUG=true
 ./bin/helixagent
+```
+
+### Timeout Debugging
+
+```bash
+# Check provider response times
+curl http://localhost:7061/v1/providers/health
+
+# Test specific provider with timeout
+curl --max-time 30 "http://localhost:7061/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "helixagent-debate", "messages": [{"role": "user", "content": "test"}]}'
 ```

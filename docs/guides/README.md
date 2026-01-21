@@ -19,20 +19,24 @@
 
 HelixAgent is a comprehensive AI debate platform that enables intelligent discussions between multiple AI participants using different LLM providers. It features:
 
-- **Multi-Provider Support**: Claude, DeepSeek, Gemini, Qwen, Zai, and Ollama
+- **Multi-Provider Support**: Claude, DeepSeek, Gemini, Qwen, Zai, Mistral, OpenRouter, Zen, Cerebras, and Ollama (10 providers)
 - **Cognee AI Enhancement**: Advanced semantic analysis and insights
 - **Real-time Monitoring**: Live debate tracking and analytics
 - **Consensus Building**: Intelligent agreement detection
 - **Performance Optimization**: Efficient resource utilization
 - **Security & Compliance**: Enterprise-grade security features
+- **Comprehensive Challenge System**: 45 validation challenges with 100% pass rate
+- **RAG System**: Hybrid retrieval with dense + sparse search (147/147 tests passing)
+- **MCP Integration**: Model Context Protocol with tool search validation
 
 ### System Requirements
 
-- **Go**: 1.23 or higher
+- **Go**: 1.24 or higher (toolchain go1.24.11)
 - **Memory**: Minimum 2GB RAM
 - **Storage**: 1GB available space
 - **Network**: Internet access for LLM providers
-- **Database**: PostgreSQL 12+ (optional for history)
+- **Database**: PostgreSQL 15+ (optional for history)
+- **Cache**: Redis 7+ (optional for distributed caching)
 
 ### Installation
 
@@ -850,6 +854,44 @@ print(json.dumps(health, indent=2))
 - **Examples**: `/docs/examples`
 - **Community**: https://community.helixagent.ai
 - **Support**: support@helixagent.ai
+
+---
+
+## Challenge System
+
+HelixAgent includes a comprehensive challenge validation system with **45 challenges** achieving **100% pass rate**:
+
+### Challenge Categories
+
+| Category | Tests | Status |
+|----------|-------|--------|
+| RAGS Challenge | 147/147 | 100% Pass |
+| MCPS Challenge | 9 sections | 100% Pass |
+| SKILLS Challenge | Full validation | 100% Pass |
+| AI Debate Challenge | Complete | 100% Pass |
+| Semantic Intent Challenge | 19 tests | 100% Pass |
+| Unified Verification | 15 tests | 100% Pass |
+
+### Running Challenges
+
+```bash
+# Run all challenges
+./challenges/scripts/run_all_challenges.sh
+
+# Run specific challenges
+./challenges/scripts/rags_challenge.sh           # RAG system tests
+./challenges/scripts/mcps_challenge.sh           # MCP integration tests
+./challenges/scripts/skills_challenge.sh         # Skills validation
+./challenges/scripts/semantic_intent_challenge.sh # Intent detection
+```
+
+### Recent Improvements
+
+1. **RAGS Challenge**: Increased timeout from 30s to 60s for complex retrieval operations
+2. **MCPS Challenge**: Added Section 9 for MCP Tool Search validation
+3. **SKILLS Challenge**: Enhanced with strict real-result validation
+4. **ProviderHealthMonitor**: Fixed mutex deadlock issue
+5. **CogneeService**: Fixed ListDatasets JSON parsing
 
 ---
 

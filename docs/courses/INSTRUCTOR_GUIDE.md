@@ -7,15 +7,15 @@ This guide provides instructors with everything needed to deliver the HelixAgent
 ## Course Structure
 
 ### Duration
-- Total: 10+ hours
-- 11 modules
-- 5 lab exercises
-- 4 certification levels
+- Total: 14+ hours
+- 14 modules (including 3 new advanced modules)
+- 8 lab exercises (including 3 new challenge labs)
+- 5 certification levels
 
 ### Delivery Options
 1. **Self-paced online**: Video modules + labs
 2. **Instructor-led virtual**: Live sessions + guided labs
-3. **In-person workshop**: 2-day intensive
+3. **In-person workshop**: 3-day intensive (extended for new content)
 
 ---
 
@@ -283,6 +283,132 @@ make test-integration
 
 ---
 
+### Module 12: Challenge System and Validation (90 min)
+
+**This is a NEW flagship module - demonstrates 100% test pass rate methodology**
+
+**Preparation**:
+- Have HelixAgent running and healthy
+- Ensure all API keys are configured
+- Prepare challenge scripts directory
+- Have sample challenge results ready
+
+**Key Teaching Points**:
+1. Challenge System Architecture
+   - RAGS (RAG Integration Validation)
+   - MCPS (MCP Server Integration Validation)
+   - SKILLS (Skills Integration Validation)
+2. Strict Real-Result Validation (no FALSE SUCCESSES)
+3. 20+ CLI Agent testing across all endpoints
+
+**Demo Script**:
+```bash
+# Run the RAGS challenge
+./challenges/scripts/rags_challenge.sh
+
+# Run the MCPS challenge
+./challenges/scripts/mcps_challenge.sh
+
+# Run the SKILLS challenge
+./challenges/scripts/skills_challenge.sh
+
+# Run all challenges at once
+./challenges/scripts/run_all_challenges.sh
+```
+
+**Key Concepts to Emphasize**:
+1. **Strict Validation**: HTTP 200 is NOT enough - must verify actual content
+2. **FALSE SUCCESS Detection**: Check for empty responses, error messages
+3. **Real Content Verification**: Content length > 50 chars, valid choices array
+4. **CLI Agent Headers**: X-CLI-Agent header for agent identification
+
+**Discussion Topics**:
+- Why strict validation matters for production systems
+- How to debug failing challenges
+- Interpreting challenge reports and CSV results
+
+---
+
+### Module 13: MCP Tool Search and Discovery (60 min)
+
+**Preparation**:
+- Have MCP servers configured
+- Prepare search query examples
+- Understand tool registry structure
+
+**Demo Script**:
+```bash
+# Search for file-related tools
+curl http://localhost:7061/v1/mcp/tools/search?q=file | jq
+
+# Search for git tools
+curl http://localhost:7061/v1/mcp/tools/search?q=git | jq
+
+# Get tool suggestions for a prompt
+curl "http://localhost:7061/v1/mcp/tools/suggestions?prompt=list%20files" | jq
+
+# Search for adapters
+curl http://localhost:7061/v1/mcp/adapters/search?q=github | jq
+
+# Get tool categories
+curl http://localhost:7061/v1/mcp/categories | jq
+
+# Get MCP statistics
+curl http://localhost:7061/v1/mcp/stats | jq
+```
+
+**Key Teaching Points**:
+1. Tool search vs adapter search
+2. AI-powered tool suggestions
+3. Category-based filtering
+4. Real-time tool discovery during chat
+
+---
+
+### Module 14: AI Debate System Advanced (90 min)
+
+**This is an ADVANCED module - extends Module 6**
+
+**Preparation**:
+- Have all 10 LLM providers configured
+- Understand LLMsVerifier scoring
+- Prepare multi-pass validation examples
+
+**Demo Script**:
+```bash
+# Create a debate with multi-pass validation
+curl -X POST http://localhost:7061/v1/debates \
+  -H "Content-Type: application/json" \
+  -d '{
+    "topic": "Should AI development be open source?",
+    "rounds": 3,
+    "style": "theater",
+    "enable_multi_pass_validation": true,
+    "validation_config": {
+      "enable_validation": true,
+      "enable_polish": true,
+      "validation_timeout": 120,
+      "polish_timeout": 60,
+      "min_confidence_to_skip": 0.9,
+      "max_validation_rounds": 3,
+      "show_phase_indicators": true
+    }
+  }' | jq
+```
+
+**Key Teaching Points**:
+1. **15 LLM Team**: 5 positions x 3 LLMs (primary + 2 fallbacks)
+2. **Multi-Pass Validation**: 4 phases for quality improvement
+3. **LLMsVerifier Scoring**: 5-component weighted algorithm
+4. **OAuth Priority**: Claude and Qwen get selection priority
+
+**Whiteboard Exercises**:
+1. Draw the 15 LLM team configuration
+2. Map the 4 validation phases
+3. Calculate weighted scores for providers
+
+---
+
 ## Lab Supervision Guide
 
 ### Lab 1: Getting Started
@@ -309,6 +435,45 @@ make test-integration
 - **Duration**: 120 min
 - **Key Checkpoint**: Docker stack running
 - **Common Issue**: Resource constraints
+
+### Lab 6: Running Challenge Scripts (NEW)
+- **Duration**: 90 min
+- **Key Checkpoint**: All three challenges pass (RAGS, MCPS, SKILLS)
+- **Common Issues**:
+  - HelixAgent not running
+  - Missing API keys
+  - Timeout issues with large test suites
+- **Success Criteria**: 100% pass rate on all challenges
+
+**Troubleshooting Guide**:
+```bash
+# If challenges fail to start
+curl http://localhost:7061/health
+
+# If timeout errors occur
+TIMEOUT=120 ./challenges/scripts/rags_challenge.sh
+
+# Check challenge results
+ls -la challenges/results/*/
+cat challenges/results/*/test_results.csv
+```
+
+### Lab 7: MCP Tool Search Integration (NEW)
+- **Duration**: 60 min
+- **Key Checkpoint**: Tool search returns real results
+- **Common Issues**:
+  - Empty search results (check tool registry)
+  - Adapter search not finding expected adapters
+- **Success Criteria**: Search queries return valid tool matches
+
+### Lab 8: Multi-Pass Validation Debate (NEW)
+- **Duration**: 75 min
+- **Key Checkpoint**: 4-phase validation completes successfully
+- **Common Issues**:
+  - Validation timeout
+  - Low confidence scores
+  - Provider fallback issues
+- **Success Criteria**: Overall confidence > 0.8
 
 ---
 
@@ -373,6 +538,9 @@ docker-compose logs helixagent
 | 9 | 28 | ~2.5 min | 75 min |
 | 10 | 28 | ~2 min | 60 min |
 | 11 | 28 | ~2.5 min | 75 min |
+| 12 | 35 | ~2.5 min | 90 min |
+| 13 | 24 | ~2.5 min | 60 min |
+| 14 | 35 | ~2.5 min | 90 min |
 
 ---
 
@@ -413,6 +581,16 @@ docker-compose logs helixagent
 - Lab 5 completion
 - Production deployment review
 
+### Level 5: Challenge Expert (NEW)
+- Quiz Modules 12-14 (80%+)
+- Labs 6-8 completion
+- **Special Requirements**:
+  - 100% pass rate on RAGS challenge
+  - 100% pass rate on MCPS challenge
+  - 100% pass rate on SKILLS challenge
+  - Demonstration of MCP Tool Search integration
+  - Multi-pass validation debate with >0.8 confidence
+
 ---
 
 ## Feedback Collection
@@ -436,5 +614,6 @@ Use Google Forms or similar for collection.
 
 ---
 
-*Instructor Guide Version: 1.0.0*
+*Instructor Guide Version: 2.0.0*
 *Last Updated: January 2026*
+*New Content: Modules 12-14 (Challenge System, MCP Tool Search, Advanced AI Debate)*

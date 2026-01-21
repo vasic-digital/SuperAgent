@@ -299,6 +299,30 @@ func (h *ToolHandler) HandleNewTool(ctx context.Context, params map[string]inter
     /--------\
    /          \  Unit Tests (many)
   /------------\
+        +
+   Challenge Tests (45 challenges, 100% pass rate)
+```
+
+### Test Commands
+
+```bash
+# Standard test commands
+make test                  # Run all tests
+make test-coverage         # Tests with coverage report
+make test-unit             # Unit tests only
+make test-integration      # Integration tests
+make test-e2e              # End-to-end tests
+make test-security         # Security penetration tests
+make test-stress           # Stress/load tests
+make test-chaos            # Chaos/challenge tests
+
+# Challenge validation (45 challenges)
+./challenges/scripts/run_all_challenges.sh
+
+# Specific challenge categories
+./challenges/scripts/rags_challenge.sh      # 147/147 tests
+./challenges/scripts/mcps_challenge.sh      # 9 sections
+./challenges/scripts/skills_challenge.sh    # Full suite
 ```
 
 ### Unit Tests
@@ -332,6 +356,46 @@ func TestDatabaseIntegration(t *testing.T) {
 }
 ```
 
+### Challenge Tests
+
+Challenge tests are bash scripts that validate system behavior:
+
+```bash
+#!/bin/bash
+# Example challenge test structure
+
+# Test with strict result validation
+result=$(curl -s http://localhost:7061/v1/endpoint)
+
+# Validate non-empty response (strict validation)
+if [[ -z "$result" ]]; then
+    echo "FAIL: Empty response (FALSE SUCCESS detected)"
+    exit 1
+fi
+
+# Validate expected content
+if [[ "$result" != *"expected_field"* ]]; then
+    echo "FAIL: Missing expected field"
+    exit 1
+fi
+
+echo "PASS: Test completed"
+```
+
+### Test Infrastructure
+
+```bash
+# Start test containers (PostgreSQL, Redis, Mock LLM)
+make test-infra-start
+
+# Run tests with infrastructure
+DB_HOST=localhost DB_PORT=15432 go test ./...
+
+# Stop and clean up
+make test-infra-stop
+make test-infra-clean
+```
+
 ### Mocking
 
 Use interfaces for mockability:
@@ -352,6 +416,16 @@ func (m *MockLLMClient) Complete(ctx context.Context, req *Request) (*Response, 
     return args.Get(0).(*Response), args.Error(1)
 }
 ```
+
+### Test Coverage Targets
+
+| Priority | Coverage Target | Packages |
+|----------|----------------|----------|
+| Critical | 80%+ | core, handlers, services |
+| High | 75%+ | providers, middleware |
+| Normal | 70%+ | utilities, tools |
+
+Current status: 50 packages at 80%+, 49 packages below target.
 
 ---
 
@@ -538,9 +612,146 @@ Swagger UI available at `/swagger/index.html` when running in development mode.
 
 ---
 
+## Challenge System
+
+HelixAgent includes a comprehensive challenge validation system with **45 challenges** achieving **100% pass rate**.
+
+### Running Challenges
+
+```bash
+# Run all 45 challenges
+./challenges/scripts/run_all_challenges.sh
+
+# Run specific challenge categories
+./challenges/scripts/rags_challenge.sh               # RAG system (147/147 tests)
+./challenges/scripts/mcps_challenge.sh               # MCP integration (9 sections)
+./challenges/scripts/skills_challenge.sh             # Skills validation
+./challenges/scripts/semantic_intent_challenge.sh    # Intent detection (19 tests)
+./challenges/scripts/unified_verification_challenge.sh
+./challenges/scripts/debate_team_dynamic_selection_challenge.sh
+```
+
+### Challenge Categories
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| RAGS | 147 | RAG hybrid retrieval, reranking, Qdrant |
+| MCPS | 9 sections | MCP protocol, tool search, adapters |
+| SKILLS | Full suite | Skill execution with real-result validation |
+| Semantic Intent | 19 | Zero-hardcoding intent detection |
+| AI Debate | Various | Multi-LLM consensus building |
+| Security | Various | Penetration testing, input validation |
+
+### Writing New Challenges
+
+1. Create challenge script in `challenges/scripts/`:
+
+```bash
+#!/bin/bash
+# challenges/scripts/my_challenge.sh
+
+set -e
+
+echo "Running My Challenge..."
+
+# Test 1
+result=$(curl -s http://localhost:7061/v1/my-endpoint)
+if [[ "$result" != *"expected"* ]]; then
+    echo "FAIL: Test 1"
+    exit 1
+fi
+echo "PASS: Test 1"
+
+# Continue with more tests...
+
+echo "All tests passed!"
+```
+
+2. Add to `run_all_challenges.sh`
+
+3. Document in `challenges/README.md`
+
+### Challenge Best Practices
+
+- Use strict result validation (no empty responses)
+- Set appropriate timeouts (60s for complex operations)
+- Include error messages for debugging
+- Test both success and failure cases
+- Validate response schemas
+
+---
+
+## Troubleshooting
+
+### Common Development Issues
+
+#### ProviderHealthMonitor Mutex Deadlock
+
+**Symptom**: Application hangs when checking provider health.
+
+**Cause**: Lock held during external HTTP calls.
+
+**Solution**: The fix has been applied. If you see similar patterns:
+- Reduce lock scope
+- Copy data before releasing lock
+- Use RWMutex for read-heavy operations
+
+#### CogneeService JSON Parsing
+
+**Symptom**: `json: cannot unmarshal object into Go value of type []Dataset`
+
+**Cause**: API response format varies between Cognee versions.
+
+**Solution**: The fix has been applied. Use flexible JSON parsing:
+```go
+var result interface{}
+json.Unmarshal(body, &result)
+// Handle both array and object responses
+```
+
+#### Challenge Timeout
+
+**Symptom**: `context deadline exceeded` during challenge execution.
+
+**Solution**: Increase timeout:
+```bash
+# For RAGS challenge (now defaults to 60s)
+RAGS_TIMEOUT=120 ./challenges/scripts/rags_challenge.sh
+```
+
+#### Test Infrastructure Not Running
+
+**Symptom**: Database or Redis connection failures in tests.
+
+**Solution**:
+```bash
+# Start test infrastructure
+make test-infra-start
+
+# Run tests with infrastructure
+DB_HOST=localhost DB_PORT=15432 go test ./...
+```
+
+### Debug Logging
+
+```bash
+# Enable debug logging
+GIN_MODE=debug LOG_LEVEL=debug make run-dev
+
+# Enable provider debug logging
+PROVIDER_DEBUG=true make run-dev
+
+# Enable challenge verbose mode
+VERBOSE=true ./challenges/scripts/run_all_challenges.sh
+```
+
+---
+
 ## Resources
 
 - [Go Documentation](https://golang.org/doc/)
 - [Effective Go](https://golang.org/doc/effective_go.html)
 - [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 - [HelixAgent API Reference](./api/)
+- [Comprehensive Completion Report](./COMPREHENSIVE_COMPLETION_REPORT.md)
+- [Challenge Scripts](../challenges/scripts/)
