@@ -233,6 +233,7 @@ func (a *FilesystemAdapter) WriteFile(ctx context.Context, path string, content 
 		return fmt.Errorf("content size %d exceeds maximum %d", len(content), a.config.MaxFileSize)
 	}
 
+	// #nosec G306 - file permissions 0644 are appropriate for user-created files
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}

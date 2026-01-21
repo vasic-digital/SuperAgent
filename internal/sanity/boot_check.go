@@ -427,6 +427,7 @@ func (bc *BootChecker) checkDiskSpace() {
 
 	// Basic check - we just verify we can write to the current directory
 	tempFile := ".sanity_check_temp"
+	// #nosec G306 - temp file for sanity check, 0644 is appropriate
 	if err := os.WriteFile(tempFile, []byte("test"), 0644); err != nil {
 		result.Status = StatusWarning
 		result.Message = "Unable to write to disk"

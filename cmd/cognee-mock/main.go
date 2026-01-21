@@ -230,7 +230,14 @@ func (s *CogneeMockServer) Run() error {
 	log.Printf("[COGNEE-MOCK] Starting server on %s", addr)
 	log.Printf("[COGNEE-MOCK] Endpoints: /health, /api/v1/add, /api/v1/search, /api/v1/cognify, /api/v1/graph, /api/v1/insights")
 
-	return http.ListenAndServe(addr, mux)
+	server := &http.Server{
+		Addr:         addr,
+		Handler:      mux,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+	return server.ListenAndServe()
 }
 
 func main() {
