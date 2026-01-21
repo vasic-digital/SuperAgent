@@ -22,10 +22,6 @@ type StarTopology struct {
 	moderator   *Agent
 	moderatorMu sync.RWMutex
 
-	// Phase management
-	currentPhase DebatePhase
-	phaseMu      sync.RWMutex
-
 	// Message queue through moderator
 	incomingQueue chan *Message
 	outgoingQueue chan *Message
@@ -37,7 +33,6 @@ func NewStarTopology(config TopologyConfig) *StarTopology {
 
 	st := &StarTopology{
 		BaseTopology:  NewBaseTopology(config),
-		currentPhase:  PhaseProposal,
 		incomingQueue: make(chan *Message, 500),
 		outgoingQueue: make(chan *Message, 500),
 	}

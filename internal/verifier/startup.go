@@ -25,7 +25,6 @@ type StartupVerifier struct {
 	verifierSvc     *VerificationService
 	scoringSvc      *ScoringService
 	enhancedScoring *EnhancedScoringService // Phase 1: 7-component scoring
-	healthSvc       *HealthService
 
 	// Provider creation functions (dependency injection)
 	providerFactory ProviderFactory

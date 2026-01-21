@@ -26,10 +26,6 @@ type ChainTopology struct {
 	currentPos int
 	posMu      sync.RWMutex
 
-	// Phase management
-	currentPhase DebatePhase
-	phaseMu      sync.RWMutex
-
 	// Message queue
 	messageQueue chan *Message
 }
@@ -39,10 +35,9 @@ func NewChainTopology(config TopologyConfig) *ChainTopology {
 	config.Type = TopologyChain
 
 	ct := &ChainTopology{
-		BaseTopology:  NewBaseTopology(config),
-		chain:         make([]*Agent, 0),
-		currentPhase:  PhaseProposal,
-		messageQueue:  make(chan *Message, 100),
+		BaseTopology: NewBaseTopology(config),
+		chain:        make([]*Agent, 0),
+		messageQueue: make(chan *Message, 100),
 	}
 
 	return ct

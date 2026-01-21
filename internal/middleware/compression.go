@@ -76,11 +76,10 @@ var (
 // compressionWriter wraps gin.ResponseWriter with compression support
 type compressionWriter struct {
 	gin.ResponseWriter
-	compressor   io.WriteCloser
-	encoding     string
-	config       *CompressionConfig
-	written      bool
-	headerCopied bool
+	compressor io.WriteCloser
+	encoding   string
+	config     *CompressionConfig
+	written    bool
 }
 
 // Write implements io.Writer
