@@ -1,9 +1,35 @@
 apiVersion: 1
 
 datasources:
+  # Prometheus - Metrics
   - name: Prometheus
     type: prometheus
     access: proxy
     url: http://prometheus:9090
     isDefault: true
     editable: true
+    jsonData:
+      timeInterval: "5s"
+
+  # Loki - Logs
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - datasourceUid: Prometheus
+          matcherRegex: "request_id=(\\w+)"
+          name: RequestID
+          url: '$${__value.raw}'
+
+  # Alertmanager - Alerts
+  - name: Alertmanager
+    type: alertmanager
+    access: proxy
+    url: http://alertmanager:9093
+    editable: true
+    jsonData:
+      implementation: prometheus
