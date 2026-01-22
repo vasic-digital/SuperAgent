@@ -1,0 +1,22 @@
+{
+    "name": "verifier-client",
+    "version": "1.0.0",
+    "description": "LLMsVerifier integration for bridle",
+    "author": "HelixAgent Team",
+    "license": "MIT",
+    "agent": "bridle",
+    "entry_point": "verifier_client.go",
+    "dependencies": [],
+    "config_schema": {
+        "verifier_url": {
+            "type": "string",
+            "default": "http://localhost:8081",
+            "description": "LLMsVerifier server URL"
+        },
+        "verify_on_startup": {
+            "type": "boolean",
+            "default": true,
+            "description": "Verify providers on startup"
+        }
+    }
+}

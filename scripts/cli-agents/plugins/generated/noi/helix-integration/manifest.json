@@ -1,0 +1,27 @@
+{
+    "name": "helix-integration",
+    "version": "1.0.0",
+    "description": "Core HelixAgent API integration for noi",
+    "author": "HelixAgent Team",
+    "license": "MIT",
+    "agent": "noi",
+    "entry_point": "helix_integration.go",
+    "dependencies": [],
+    "config_schema": {
+        "helix_agent_url": {
+            "type": "string",
+            "default": "http://localhost:8080",
+            "description": "HelixAgent server URL"
+        },
+        "api_key": {
+            "type": "string",
+            "default": "",
+            "description": "API key for authentication"
+        },
+        "timeout": {
+            "type": "integer",
+            "default": 120000,
+            "description": "Request timeout in milliseconds"
+        }
+    }
+}

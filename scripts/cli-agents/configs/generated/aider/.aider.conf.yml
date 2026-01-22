@@ -1,0 +1,39 @@
+# Aider configuration for HelixAgent integration
+# Generated: 2026-01-22T23:47:46+03:00
+
+# Model configuration
+model: ai-debate-ensemble
+openai-api-base: http://localhost:8080/v1
+openai-api-key: 
+
+# HelixAgent specific
+helix:
+  enabled: true
+  verifier_url: http://localhost:8081
+  ai_debate: true
+  multi_pass_validation: true
+
+# Git integration
+auto-commits: true
+dirty-commits: false
+attribute-author: true
+attribute-committer: true
+
+# Features
+stream: true
+pretty: true
+dark-mode: true
+
+# Voice (if available)
+voice-language: en
+
+# Map tokens
+map-tokens: 1024
+
+# Auto-lint
+auto-lint: true
+lint-cmd: "golangci-lint run"
+
+# Testing
+auto-test: true
+test-cmd: "go test ./..."
