@@ -46,8 +46,10 @@ make run-dev
 ## 📋 Features
 
 ### 🧠 AI Ensemble System
-- **Multi-Provider Support**: 10 LLM providers (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama)
+- **Multi-Provider Support**: 10 LLM providers (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama*)
 - **Dynamic Provider Selection**: Real-time verification scores via LLMsVerifier integration
+
+> \* **Note**: Ollama is deprecated for production use (verification score: 5.0) and only serves as a fallback for local development/testing. Recommended production providers: Claude, DeepSeek, Gemini.
 - **AI Debate System**: Multi-round debate between providers for consensus (5 positions x 3 LLMs = 15 total)
 - **Intelligent Routing**: Confidence-weighted, majority vote, custom strategies
 - **Graceful Fallbacks**: Automatic fallback to best performing provider based on verification scores
@@ -131,18 +133,21 @@ DB_USER=helixagent
 DB_PASSWORD=your-password
 DB_NAME=helixagent_db
 
-# LLM Providers (Optional - can use Ollama for free)
+# LLM Providers (Ollama is deprecated - use as fallback only)
+# See docs/providers/ollama.md for deprecation notice
 OLLAMA_ENABLED=true
 OLLAMA_BASE_URL=http://ollama:11434
 OLLAMA_MODEL=llama2
 
-# Optional Paid Providers
+# Recommended Production Providers
 CLAUDE_API_KEY=sk-your-claude-key
 DEEPSEEK_API_KEY=sk-your-deepseek-key
 GEMINI_API_KEY=your-gemini-key
 ```
 
-### Free Testing with Ollama
+### Free Testing with Ollama (Development Only)
+> ⚠️ **Ollama is deprecated for production** - use it only for local development and testing. For production, use API key-based providers like Claude, DeepSeek, or Gemini.
+
 ```bash
 # Ollama requires no API keys and works locally
 docker run -p 11434:11434 ollama/ollama
