@@ -34,6 +34,7 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 - [Implementation Guide Phase 2](development/DETAILED_IMPLEMENTATION_GUIDE_PHASE2.md)
 
 ### Features
+- **[Comprehensive Features Reference](FEATURES.md)** - Complete list of all providers, protocols, and capabilities
 - [AI Debate Configuration](features/ai-debate-configuration.md) - Debate system setup
 - [Advanced Features Summary](features/ADVANCED_FEATURES_SUMMARY.md)
 - [AI Agent Orchestration](features/PHASE_8_AI_AGENT_ORCHESTRATION.md)
@@ -93,11 +94,16 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 
 ## Key Features
 
-- **Multi-Provider Support**: 10 LLM providers (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama)
+- **Multi-Provider Support**: 21 LLM providers including Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, xAI/Grok, Cohere, Perplexity, Groq, and more
+- **Embedding Providers**: 13 embedding providers with 40+ models (OpenAI, Cohere, Voyage, Jina, Google, Bedrock, etc.)
+- **Protocol Support**: 35 MCP implementations (19 adapters + 16 servers), 10 LSP servers, ACP integration
 - **Dynamic Provider Selection**: Real-time LLMsVerifier scores for optimal provider routing
 - **Cognee Integration**: AI Memory Engine with knowledge graphs and semantic search
 - **AI Debate System**: Advanced multi-agent debate orchestration (5 positions x 3 LLMs = 15 total)
+- **Power Features**: RAG, Memory Management, Semantic Routing, Agentic Workflows, Security Framework, and more
 - **Enterprise Monitoring**: Comprehensive metrics and observability
+
+> See **[FEATURES.md](FEATURES.md)** for the complete reference with all 24+ power features.
 - **Protocol Support**: MCP, LSP, and ACP integration
 - **Security Testing**: LLM penetration testing framework
 - **Extensible**: Plugin architecture for custom integrations
