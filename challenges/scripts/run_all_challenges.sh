@@ -219,6 +219,7 @@ CHALLENGES=(
 
     # Core verification
     "provider_verification"
+    "provider_reliability"
 
     # Protocols (no dependencies)
     "mcp_protocol"
