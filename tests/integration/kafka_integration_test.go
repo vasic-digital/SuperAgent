@@ -217,7 +217,7 @@ func TestKafka_PublishWithKey(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	err = broker.Publish(ctx, topic, msg, messaging.WithKey([]byte("user-123")))
+	err = broker.Publish(ctx, topic, msg, messaging.WithMessageKey([]byte("user-123")))
 	require.NoError(t, err)
 
 	select {
