@@ -450,3 +450,69 @@ func TestGzipReader_ReadAndClose(t *testing.T) {
 type nopCloser struct{}
 
 func (n *nopCloser) Close() error { return nil }
+
+func TestCompressionMiddleware_NonCompressibleType(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	config := DefaultCompressionConfig()
+	config.MinSize = 10
+
+	router := gin.New()
+	router.Use(CompressionMiddleware(config))
+	router.GET("/test", func(c *gin.Context) {
+		c.Header("Content-Type", "image/png") // Not in compressible types
+		c.String(http.StatusOK, strings.Repeat("Test data ", 200))
+	})
+
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Accept-Encoding", "br, gzip")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	// Should not have Content-Encoding for non-compressible type
+	assert.Empty(t, w.Header().Get("Content-Encoding"))
+}
+
+func TestCompressionConfig_DisabledCompression(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	config := DefaultCompressionConfig()
+	config.EnableBrotli = false
+	config.EnableGzip = false
+
+	router := gin.New()
+	router.Use(CompressionMiddleware(config))
+	router.GET("/test", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		c.String(http.StatusOK, strings.Repeat(`{"test":"data"}`, 100))
+	})
+
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Accept-Encoding", "br, gzip")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	// Should not have Content-Encoding when compression disabled
+	assert.Empty(t, w.Header().Get("Content-Encoding"))
+}
+
+func TestCompressData_GzipErrors(t *testing.T) {
+	// Test gzip with invalid level
+	data := []byte("Test data")
+
+	// Level 0-9 are valid for gzip, -1 for default
+	// Testing with extreme levels
+	_, err := CompressData(data, "gzip", 5)
+	assert.NoError(t, err)
+}
+
+func TestDecompressData_InvalidBrotli(t *testing.T) {
+	invalidData := []byte("not valid brotli data")
+
+	_, err := DecompressData(invalidData, "br")
+	assert.Error(t, err)
+}

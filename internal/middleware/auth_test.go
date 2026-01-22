@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -899,6 +900,121 @@ func TestAuthMiddleware_Refresh(t *testing.T) {
 
 		if w.Code != http.StatusOK {
 			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+	})
+}
+
+func TestAuthMiddleware_Login(t *testing.T) {
+	config := AuthConfig{
+		SecretKey:   "test-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	// Create middleware without user service (nil)
+	middleware, _ := NewAuthMiddleware(config, nil)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.POST("/login", middleware.Login)
+
+	t.Run("InvalidRequestFormat", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/login", strings.NewReader("invalid json"))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("Expected status 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("InvalidCredentials_NoUserService", func(t *testing.T) {
+		body := `{"username": "testuser", "password": "testpass"}`
+		req := httptest.NewRequest("POST", "/login", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		// Should return 401 since no user service is configured
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status 401, got %d", w.Code)
+		}
+	})
+
+	t.Run("EmptyUsername", func(t *testing.T) {
+		body := `{"username": "", "password": "testpass"}`
+		req := httptest.NewRequest("POST", "/login", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("Expected status 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("EmptyPassword", func(t *testing.T) {
+		body := `{"username": "testuser", "password": ""}`
+		req := httptest.NewRequest("POST", "/login", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("Expected status 400, got %d", w.Code)
+		}
+	})
+}
+
+func TestAuthMiddleware_Register(t *testing.T) {
+	config := AuthConfig{
+		SecretKey:   "test-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	// Create middleware without user service (nil)
+	middleware, _ := NewAuthMiddleware(config, nil)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.POST("/register", middleware.Register)
+
+	t.Run("InvalidRequestFormat", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/register", strings.NewReader("invalid json"))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("Expected status 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("MissingRequiredFields", func(t *testing.T) {
+		body := `{"username": "testuser"}`
+		req := httptest.NewRequest("POST", "/register", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("Expected status 400, got %d", w.Code)
+		}
+	})
+}
+
+func TestAuthMiddleware_AuthenticateUser(t *testing.T) {
+	config := AuthConfig{
+		SecretKey:   "test-secret-key",
+		TokenExpiry: time.Hour,
+	}
+	middleware, _ := NewAuthMiddleware(config, nil)
+
+	t.Run("NoUserServiceConfigured", func(t *testing.T) {
+		_, err := middleware.authenticateUser("testuser", "testpass")
+		if err == nil {
+			t.Error("Expected error when user service is not configured")
+		}
+		if err.Error() != "user service not configured" {
+			t.Errorf("Expected 'user service not configured' error, got: %v", err)
 		}
 	})
 }
