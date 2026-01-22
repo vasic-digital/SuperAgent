@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	_ "modernc.org/sqlite"
 	"github.com/sirupsen/logrus"
+	_ "modernc.org/sqlite"
 )
 
 // SQLiteAdapterConfig holds configuration for SQLite MCP adapter
@@ -302,9 +302,9 @@ func (s *SQLiteAdapter) Execute(ctx context.Context, query string, args ...inter
 
 // SQLiteTableInfo represents information about a table
 type SQLiteTableInfo struct {
-	Name    string            `json:"name"`
-	Type    string            `json:"type"`
-	SQL     string            `json:"sql,omitempty"`
+	Name    string             `json:"name"`
+	Type    string             `json:"type"`
+	SQL     string             `json:"sql,omitempty"`
 	Columns []SQLiteColumnInfo `json:"columns,omitempty"`
 }
 
@@ -472,9 +472,9 @@ func (s *SQLiteAdapter) ListIndexes(ctx context.Context, tableName string) ([]SQ
 
 // SQLiteDatabaseStats represents database statistics
 type SQLiteDatabaseStats struct {
-	PageSize     int64  `json:"page_size"`
-	PageCount    int64  `json:"page_count"`
-	DatabaseSize int64  `json:"database_size"`
+	PageSize      int64 `json:"page_size"`
+	PageCount     int64 `json:"page_count"`
+	DatabaseSize  int64 `json:"database_size"`
 	FreelistCount int64 `json:"freelist_count"`
 	SchemaVersion int64 `json:"schema_version"`
 	UserVersion   int64 `json:"user_version"`

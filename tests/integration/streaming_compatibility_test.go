@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/config"
 )
 
 // StreamingChunk represents an OpenAI-compatible streaming chunk
@@ -57,7 +57,8 @@ func skipIfNotRunning(t *testing.T) {
 // compatible with OpenCode's requirements
 func TestStreamingFormat_OpenCodeCompatibility(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping streaming compatibility test (acceptable)"); return
+		t.Logf("Short mode - skipping streaming compatibility test (acceptable)")
+		return
 	}
 	skipIfNotRunning(t)
 
@@ -216,7 +217,8 @@ func TestStreamingFormat_OpenCodeCompatibility(t *testing.T) {
 // compatible with Crush's requirements
 func TestStreamingFormat_CrushCompatibility(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping streaming compatibility test (acceptable)"); return
+		t.Logf("Short mode - skipping streaming compatibility test (acceptable)")
+		return
 	}
 	skipIfNotRunning(t)
 
@@ -293,7 +295,8 @@ func TestStreamingFormat_CrushCompatibility(t *testing.T) {
 // compatible with HelixCode's requirements
 func TestStreamingFormat_HelixCodeCompatibility(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping streaming compatibility test (acceptable)"); return
+		t.Logf("Short mode - skipping streaming compatibility test (acceptable)")
+		return
 	}
 	skipIfNotRunning(t)
 
@@ -444,7 +447,8 @@ func TestConfigGenerator_AllAgents(t *testing.T) {
 // (Renamed from TestStreamingTimeout to avoid conflict with provider_streaming_test.go)
 func TestAgentStreamingTimeout(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping streaming timeout test (acceptable)"); return
+		t.Logf("Short mode - skipping streaming timeout test (acceptable)")
+		return
 	}
 	skipIfNotRunning(t)
 
@@ -489,7 +493,8 @@ func TestAgentStreamingTimeout(t *testing.T) {
 // TestNonStreamingCompatibility tests that non-streaming requests still work
 func TestNonStreamingCompatibility(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping non-streaming compatibility test (acceptable)"); return
+		t.Logf("Short mode - skipping non-streaming compatibility test (acceptable)")
+		return
 	}
 	skipIfNotRunning(t)
 
@@ -517,7 +522,8 @@ func TestNonStreamingCompatibility(t *testing.T) {
 
 	// Handle transient provider errors (server working but providers unavailable)
 	if resp.StatusCode == 502 || resp.StatusCode == 503 || resp.StatusCode == 504 {
-		t.Logf("LLM providers temporarily unavailable (acceptable)"); return
+		t.Logf("LLM providers temporarily unavailable (acceptable)")
+		return
 	}
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)

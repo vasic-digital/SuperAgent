@@ -14,14 +14,14 @@ import (
 
 // ServerConfig represents the server.json configuration.
 type ServerConfig struct {
-	Schema      string        `json:"$schema"`
-	Name        string        `json:"name"`
-	Title       string        `json:"title"`
-	Description string        `json:"description"`
-	Version     string        `json:"version"`
-	Repository  *Repository   `json:"repository,omitempty"`
-	Packages    []Package     `json:"packages"`
-	Meta        *ServerMeta   `json:"_meta,omitempty"`
+	Schema      string      `json:"$schema"`
+	Name        string      `json:"name"`
+	Title       string      `json:"title"`
+	Description string      `json:"description"`
+	Version     string      `json:"version"`
+	Repository  *Repository `json:"repository,omitempty"`
+	Packages    []Package   `json:"packages"`
+	Meta        *ServerMeta `json:"_meta,omitempty"`
 }
 
 // Repository represents the source repository.
@@ -58,11 +58,11 @@ type MarketplaceMeta struct {
 
 // MCPServer represents a registered MCP server.
 type MCPServer struct {
-	Config     *ServerConfig `json:"config"`
-	Path       string        `json:"path"`
-	Enabled    bool          `json:"enabled"`
-	Status     ServerStatus  `json:"status"`
-	RegisteredAt time.Time   `json:"registered_at"`
+	Config       *ServerConfig `json:"config"`
+	Path         string        `json:"path"`
+	Enabled      bool          `json:"enabled"`
+	Status       ServerStatus  `json:"status"`
+	RegisteredAt time.Time     `json:"registered_at"`
 }
 
 // ServerStatus represents the status of an MCP server.
@@ -301,10 +301,10 @@ func (r *ServerRegistry) Count() int {
 
 // Stats returns registry statistics.
 type RegistryStats struct {
-	TotalServers   int                   `json:"total_servers"`
-	EnabledCount   int                   `json:"enabled_count"`
-	StatusCounts   map[ServerStatus]int  `json:"status_counts"`
-	ServerList     []ServerInfo          `json:"server_list"`
+	TotalServers int                  `json:"total_servers"`
+	EnabledCount int                  `json:"enabled_count"`
+	StatusCounts map[ServerStatus]int `json:"status_counts"`
+	ServerList   []ServerInfo         `json:"server_list"`
 }
 
 // ServerInfo provides basic info about a server.

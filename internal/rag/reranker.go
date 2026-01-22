@@ -225,10 +225,10 @@ func (r *CohereReranker) Rerank(ctx context.Context, query string, results []*Se
 	}
 
 	reqBody := map[string]interface{}{
-		"model":           r.model,
-		"query":           query,
-		"documents":       documents,
-		"top_n":           topK,
+		"model":            r.model,
+		"query":            query,
+		"documents":        documents,
+		"top_n":            topK,
 		"return_documents": false,
 	}
 

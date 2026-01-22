@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"dev.helix.agent/internal/config"
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisClient struct {

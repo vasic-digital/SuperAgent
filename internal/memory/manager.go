@@ -139,8 +139,8 @@ func (m *Manager) AddFromMessages(ctx context.Context, messages []Message, userI
 	}
 
 	m.logger.WithFields(logrus.Fields{
-		"user_id":     userID,
-		"session_id":  sessionID,
+		"user_id":      userID,
+		"session_id":   sessionID,
 		"memory_count": len(memories),
 	}).Debug("Memories added from messages")
 

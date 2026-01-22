@@ -345,8 +345,8 @@ func TestMarkdownRendering(t *testing.T) {
 // TestScriptingLanguageTagStripping tests stripping of all scripting language tags
 func TestScriptingLanguageTagStripping(t *testing.T) {
 	languages := []struct {
-		tag     string
-		code    string
+		tag  string
+		code string
 	}{
 		{"python", "print('hello')"},
 		{"ruby", "puts 'hello'"},

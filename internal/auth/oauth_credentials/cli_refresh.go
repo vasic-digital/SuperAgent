@@ -269,9 +269,9 @@ func (cr *CLIRefresher) executeQwenCLI(ctx context.Context) (string, error) {
 
 	// Set up environment
 	cmd.Env = append(os.Environ(),
-		"TERM=dumb",            // Disable terminal features
-		"NO_COLOR=1",           // Disable colors
-		"QWEN_NO_TELEMETRY=1",  // Disable telemetry
+		"TERM=dumb",           // Disable terminal features
+		"NO_COLOR=1",          // Disable colors
+		"QWEN_NO_TELEMETRY=1", // Disable telemetry
 	)
 
 	// Capture output

@@ -9,47 +9,47 @@ import (
 
 // Tracker tracks skill usage across requests and sessions.
 type Tracker struct {
-	mu            sync.RWMutex
-	activeUsages  map[string]*SkillUsage // requestID -> usage
-	history       []SkillUsage           // Historical usage records
-	historyLimit  int
-	stats         *UsageStats
-	log           *logrus.Logger
+	mu           sync.RWMutex
+	activeUsages map[string]*SkillUsage // requestID -> usage
+	history      []SkillUsage           // Historical usage records
+	historyLimit int
+	stats        *UsageStats
+	log          *logrus.Logger
 }
 
 // UsageStats provides aggregate usage statistics.
 type UsageStats struct {
-	TotalInvocations    int64                     `json:"total_invocations"`
-	SuccessfulCount     int64                     `json:"successful_count"`
-	FailedCount         int64                     `json:"failed_count"`
-	BySkill             map[string]*SkillStats    `json:"by_skill"`
-	ByCategory          map[string]*CategoryStats `json:"by_category"`
-	ByMatchType         map[MatchType]int64       `json:"by_match_type"`
-	AverageConfidence   float64                   `json:"average_confidence"`
-	AverageDuration     time.Duration             `json:"average_duration"`
-	LastUpdated         time.Time                 `json:"last_updated"`
+	TotalInvocations  int64                     `json:"total_invocations"`
+	SuccessfulCount   int64                     `json:"successful_count"`
+	FailedCount       int64                     `json:"failed_count"`
+	BySkill           map[string]*SkillStats    `json:"by_skill"`
+	ByCategory        map[string]*CategoryStats `json:"by_category"`
+	ByMatchType       map[MatchType]int64       `json:"by_match_type"`
+	AverageConfidence float64                   `json:"average_confidence"`
+	AverageDuration   time.Duration             `json:"average_duration"`
+	LastUpdated       time.Time                 `json:"last_updated"`
 }
 
 // SkillStats provides per-skill statistics.
 type SkillStats struct {
-	Name             string        `json:"name"`
-	Category         string        `json:"category"`
-	InvocationCount  int64         `json:"invocation_count"`
-	SuccessCount     int64         `json:"success_count"`
-	FailureCount     int64         `json:"failure_count"`
-	AverageConfidence float64      `json:"average_confidence"`
-	AverageDuration  time.Duration `json:"average_duration"`
-	TotalDuration    time.Duration `json:"total_duration"`
-	LastUsed         time.Time     `json:"last_used"`
-	TriggersCounted  map[string]int64 `json:"triggers_counted"`
+	Name              string           `json:"name"`
+	Category          string           `json:"category"`
+	InvocationCount   int64            `json:"invocation_count"`
+	SuccessCount      int64            `json:"success_count"`
+	FailureCount      int64            `json:"failure_count"`
+	AverageConfidence float64          `json:"average_confidence"`
+	AverageDuration   time.Duration    `json:"average_duration"`
+	TotalDuration     time.Duration    `json:"total_duration"`
+	LastUsed          time.Time        `json:"last_used"`
+	TriggersCounted   map[string]int64 `json:"triggers_counted"`
 }
 
 // CategoryStats provides per-category statistics.
 type CategoryStats struct {
-	Category        string        `json:"category"`
-	InvocationCount int64         `json:"invocation_count"`
-	SuccessCount    int64         `json:"success_count"`
-	UniqueSkills    int           `json:"unique_skills"`
+	Category        string `json:"category"`
+	InvocationCount int64  `json:"invocation_count"`
+	SuccessCount    int64  `json:"success_count"`
+	UniqueSkills    int    `json:"unique_skills"`
 }
 
 // NewTracker creates a new skill usage tracker.

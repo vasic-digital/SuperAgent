@@ -115,10 +115,10 @@ func (a *StreamAggregator) Aggregate(ctx context.Context, in <-chan string) (<-c
 
 // StreamChunk represents a chunk in a stream.
 type StreamChunk struct {
-	Content  string `json:"content"`
-	Index    int    `json:"index"`
-	Done     bool   `json:"done"`
-	Error    error  `json:"-"`
+	Content string `json:"content"`
+	Index   int    `json:"index"`
+	Done    bool   `json:"done"`
+	Error   error  `json:"-"`
 }
 
 // ChunkAggregator aggregates StreamChunk objects.

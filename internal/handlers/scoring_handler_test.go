@@ -91,19 +91,19 @@ func TestGetModelScore_KnownModels(t *testing.T) {
 		maxScore float64 // Maximum valid score (10.0 is the max)
 	}{
 		// Premium tier models (may match "opus", "ultra", "4o" patterns -> 9.0-9.5 range)
-		{"gpt-4", 7.0, 10.0},    // Score depends on LLMsVerifier results
-		{"gpt-4o", 7.0, 10.0},   // Score depends on LLMsVerifier results
-		{"claude-3", 7.0, 10.0}, // Score depends on LLMsVerifier results
+		{"gpt-4", 7.0, 10.0},      // Score depends on LLMsVerifier results
+		{"gpt-4o", 7.0, 10.0},     // Score depends on LLMsVerifier results
+		{"claude-3", 7.0, 10.0},   // Score depends on LLMsVerifier results
 		{"claude-3.5", 7.0, 10.0}, // Score depends on LLMsVerifier results
 
 		// Pro tier models
-		{"gemini-pro", 7.0, 10.0}, // "pro" pattern matches
+		{"gemini-pro", 7.0, 10.0},    // "pro" pattern matches
 		{"mistral-large", 7.0, 10.0}, // "large" pattern matches
 
 		// Standard tier models
-		{"llama-3", 5.0, 10.0}, // Version pattern matches
+		{"llama-3", 5.0, 10.0},        // Version pattern matches
 		{"deepseek-coder", 5.0, 10.0}, // "coder" pattern matches
-		{"qwen", 5.0, 10.0}, // May match "qwen" or fall to default
+		{"qwen", 5.0, 10.0},           // May match "qwen" or fall to default
 	}
 
 	for _, tt := range tests {

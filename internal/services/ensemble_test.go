@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/models"
 )
 
 // MockLLMProvider implements LLMProvider for testing

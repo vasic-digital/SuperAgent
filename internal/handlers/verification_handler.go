@@ -43,16 +43,16 @@ type VerifyModelRequest struct {
 
 // VerifyModelResponse represents a model verification response
 type VerifyModelResponse struct {
-	ModelID           string          `json:"model_id"`
-	Provider          string          `json:"provider"`
-	Verified          bool            `json:"verified"`
-	Score             float64         `json:"score"`
-	OverallScore      float64         `json:"overall_score"`
-	ScoreSuffix       string          `json:"score_suffix"`
-	CodeVisible       bool            `json:"code_visible"`
-	Tests             map[string]bool `json:"tests"`
-	VerificationTime  int64           `json:"verification_time_ms"`
-	Message           string          `json:"message,omitempty"`
+	ModelID          string          `json:"model_id"`
+	Provider         string          `json:"provider"`
+	Verified         bool            `json:"verified"`
+	Score            float64         `json:"score"`
+	OverallScore     float64         `json:"overall_score"`
+	ScoreSuffix      string          `json:"score_suffix"`
+	CodeVisible      bool            `json:"code_visible"`
+	Tests            map[string]bool `json:"tests"`
+	VerificationTime int64           `json:"verification_time_ms"`
+	Message          string          `json:"message,omitempty"`
 }
 
 // VerifyModel godoc
@@ -280,12 +280,12 @@ type TestCodeVisibilityRequest struct {
 
 // TestCodeVisibilityResponse represents a code visibility test response
 type TestCodeVisibilityResponse struct {
-	ModelID     string `json:"model_id"`
-	Provider    string `json:"provider"`
-	CodeVisible bool   `json:"code_visible"`
-	Language    string `json:"language"`
-	Prompt      string `json:"prompt"`
-	Response    string `json:"response"`
+	ModelID     string  `json:"model_id"`
+	Provider    string  `json:"provider"`
+	CodeVisible bool    `json:"code_visible"`
+	Language    string  `json:"language"`
+	Prompt      string  `json:"prompt"`
+	Response    string  `json:"response"`
 	Confidence  float64 `json:"confidence"`
 }
 

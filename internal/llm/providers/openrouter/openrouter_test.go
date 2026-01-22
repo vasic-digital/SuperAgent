@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/models"
 )
 
 func TestNewSimpleOpenRouterProvider(t *testing.T) {
@@ -826,8 +826,8 @@ func TestSimpleOpenRouterProvider_Complete_NilContext(t *testing.T) {
 // Test Complete with max tokens capping
 func TestSimpleOpenRouterProvider_Complete_MaxTokensCapping(t *testing.T) {
 	tests := []struct {
-		name             string
-		inputMaxTokens   int
+		name              string
+		inputMaxTokens    int
 		expectedMaxTokens int
 	}{
 		{"zero defaults to 4096", 0, 4096},

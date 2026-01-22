@@ -33,15 +33,15 @@ func (s CircuitState) String() string {
 
 // CircuitBreaker implements the circuit breaker pattern
 type CircuitBreaker struct {
-	name           string
-	state          CircuitState
-	failureCount   int
-	successCount   int
-	threshold      int
-	resetTimeout   time.Duration
-	lastFailure    time.Time
+	name            string
+	state           CircuitState
+	failureCount    int
+	successCount    int
+	threshold       int
+	resetTimeout    time.Duration
+	lastFailure     time.Time
 	lastStateChange time.Time
-	mu             sync.RWMutex
+	mu              sync.RWMutex
 }
 
 // NewCircuitBreaker creates a new circuit breaker

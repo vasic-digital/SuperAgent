@@ -544,8 +544,8 @@ func TestMemoryAdapter_ExecuteTool(t *testing.T) {
 
 	// Create entity via tool
 	result, err := adapter.ExecuteTool(context.Background(), "memory_create_entity", map[string]interface{}{
-		"name":        "TestEntity",
-		"entity_type": "test",
+		"name":         "TestEntity",
+		"entity_type":  "test",
 		"observations": []interface{}{"obs1", "obs2"},
 	})
 	require.NoError(t, err)

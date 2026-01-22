@@ -12,10 +12,10 @@ import (
 
 // PerformanceRecord holds a recorded performance entry
 type PerformanceRecord struct {
-	ID        string             `json:"id"`
-	DebateID  string             `json:"debate_id"`
+	ID        string              `json:"id"`
+	DebateID  string              `json:"debate_id"`
 	Metrics   *PerformanceMetrics `json:"metrics"`
-	CreatedAt time.Time          `json:"created_at"`
+	CreatedAt time.Time           `json:"created_at"`
 }
 
 // PerformanceAggregation holds aggregated performance data

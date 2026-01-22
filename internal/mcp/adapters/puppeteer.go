@@ -12,12 +12,12 @@ import (
 
 // PuppeteerConfig configures the Puppeteer adapter.
 type PuppeteerConfig struct {
-	Headless        bool          `json:"headless"`
-	DefaultTimeout  time.Duration `json:"default_timeout"`
-	ViewportWidth   int           `json:"viewport_width"`
-	ViewportHeight  int           `json:"viewport_height"`
-	UserAgent       string        `json:"user_agent,omitempty"`
-	ProxyServer     string        `json:"proxy_server,omitempty"`
+	Headless       bool          `json:"headless"`
+	DefaultTimeout time.Duration `json:"default_timeout"`
+	ViewportWidth  int           `json:"viewport_width"`
+	ViewportHeight int           `json:"viewport_height"`
+	UserAgent      string        `json:"user_agent,omitempty"`
+	ProxyServer    string        `json:"proxy_server,omitempty"`
 }
 
 // DefaultPuppeteerConfig returns default configuration.
@@ -71,14 +71,14 @@ type ScreenshotOptions struct {
 
 // PDFOptions represents PDF generation options.
 type PDFOptions struct {
-	Format          string `json:"format,omitempty"` // "A4", "Letter", etc.
-	PrintBackground bool   `json:"print_background"`
-	Landscape       bool   `json:"landscape"`
+	Format          string  `json:"format,omitempty"` // "A4", "Letter", etc.
+	PrintBackground bool    `json:"print_background"`
+	Landscape       bool    `json:"landscape"`
 	Scale           float64 `json:"scale,omitempty"`
-	MarginTop       string `json:"margin_top,omitempty"`
-	MarginBottom    string `json:"margin_bottom,omitempty"`
-	MarginLeft      string `json:"margin_left,omitempty"`
-	MarginRight     string `json:"margin_right,omitempty"`
+	MarginTop       string  `json:"margin_top,omitempty"`
+	MarginBottom    string  `json:"margin_bottom,omitempty"`
+	MarginLeft      string  `json:"margin_left,omitempty"`
+	MarginRight     string  `json:"margin_right,omitempty"`
 }
 
 // Clip represents a rectangular area.

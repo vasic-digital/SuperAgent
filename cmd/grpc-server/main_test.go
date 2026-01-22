@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	pb "dev.helix.agent/pkg/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	pb "dev.helix.agent/pkg/api"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -612,10 +612,10 @@ func TestLLMFacadeServer_UpdateProvider(t *testing.T) {
 
 	// First add a provider
 	addReq := &pb.AddProviderRequest{
-		Name:    "provider-to-update",
-		Type:    "mistral",
-		Model:   "mistral-large",
-		Weight:  0.5,
+		Name:   "provider-to-update",
+		Type:   "mistral",
+		Model:  "mistral-large",
+		Weight: 0.5,
 	}
 	addResp, err := server.AddProvider(ctx, addReq)
 	require.NoError(t, err)

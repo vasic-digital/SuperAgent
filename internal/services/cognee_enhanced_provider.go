@@ -7,22 +7,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/models"
+	"github.com/sirupsen/logrus"
 )
 
 // CogneeEnhancedProvider wraps any LLM provider with Cognee capabilities
 type CogneeEnhancedProvider struct {
-	provider           llm.LLMProvider
-	cogneeService      *CogneeService
-	logger             *logrus.Logger
-	config             *CogneeProviderConfig
-	name               string
-	mu                 sync.RWMutex
-	stats              *CogneeProviderStats
-	lastCogneeWarning  time.Time // Rate limit Cognee health warnings
-	lastStoreWarning   time.Time // Rate limit Cognee store warnings
+	provider          llm.LLMProvider
+	cogneeService     *CogneeService
+	logger            *logrus.Logger
+	config            *CogneeProviderConfig
+	name              string
+	mu                sync.RWMutex
+	stats             *CogneeProviderStats
+	lastCogneeWarning time.Time // Rate limit Cognee health warnings
+	lastStoreWarning  time.Time // Rate limit Cognee store warnings
 }
 
 // CogneeProviderConfig configures the enhanced provider behavior

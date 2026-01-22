@@ -46,17 +46,17 @@ type ReplicateModelVersion struct {
 
 // ReplicatePrediction represents a prediction (generation) request/result.
 type ReplicatePrediction struct {
-	ID          string                 `json:"id"`
-	Version     string                 `json:"version"`
-	Status      string                 `json:"status"`
-	Input       map[string]interface{} `json:"input"`
-	Output      interface{}            `json:"output,omitempty"`
-	Error       string                 `json:"error,omitempty"`
-	Logs        string                 `json:"logs,omitempty"`
-	Metrics     *ReplicateMetrics      `json:"metrics,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	StartedAt   *time.Time             `json:"started_at,omitempty"`
-	CompletedAt *time.Time             `json:"completed_at,omitempty"`
+	ID          string                   `json:"id"`
+	Version     string                   `json:"version"`
+	Status      string                   `json:"status"`
+	Input       map[string]interface{}   `json:"input"`
+	Output      interface{}              `json:"output,omitempty"`
+	Error       string                   `json:"error,omitempty"`
+	Logs        string                   `json:"logs,omitempty"`
+	Metrics     *ReplicateMetrics        `json:"metrics,omitempty"`
+	CreatedAt   time.Time                `json:"created_at"`
+	StartedAt   *time.Time               `json:"started_at,omitempty"`
+	CompletedAt *time.Time               `json:"completed_at,omitempty"`
 	URLs        *ReplicatePredictionURLs `json:"urls,omitempty"`
 }
 

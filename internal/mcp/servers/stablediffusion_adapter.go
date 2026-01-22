@@ -23,62 +23,62 @@ type StableDiffusionConfig struct {
 
 // SDTxt2ImgRequest represents a text-to-image request.
 type SDTxt2ImgRequest struct {
-	Prompt            string   `json:"prompt"`
-	NegativePrompt    string   `json:"negative_prompt,omitempty"`
-	Styles            []string `json:"styles,omitempty"`
-	Seed              int64    `json:"seed,omitempty"`
-	Subseed           int64    `json:"subseed,omitempty"`
-	SubseedStrength   float64  `json:"subseed_strength,omitempty"`
-	SeedResizeFromH   int      `json:"seed_resize_from_h,omitempty"`
-	SeedResizeFromW   int      `json:"seed_resize_from_w,omitempty"`
-	SamplerName       string   `json:"sampler_name,omitempty"`
-	BatchSize         int      `json:"batch_size,omitempty"`
-	NIter             int      `json:"n_iter,omitempty"`
-	Steps             int      `json:"steps,omitempty"`
-	CFGScale          float64  `json:"cfg_scale,omitempty"`
-	Width             int      `json:"width,omitempty"`
-	Height            int      `json:"height,omitempty"`
-	RestoreFaces      bool     `json:"restore_faces,omitempty"`
-	Tiling            bool     `json:"tiling,omitempty"`
-	DoNotSaveSamples  bool     `json:"do_not_save_samples,omitempty"`
-	DoNotSaveGrid     bool     `json:"do_not_save_grid,omitempty"`
-	DenoisingStrength float64  `json:"denoising_strength,omitempty"`
-	EnableHR          bool     `json:"enable_hr,omitempty"`
-	HRScale           float64  `json:"hr_scale,omitempty"`
-	HRUpscaler        string   `json:"hr_upscaler,omitempty"`
-	HRSecondPassSteps int      `json:"hr_second_pass_steps,omitempty"`
-	HRResizeX         int      `json:"hr_resize_x,omitempty"`
-	HRResizeY         int      `json:"hr_resize_y,omitempty"`
+	Prompt            string                 `json:"prompt"`
+	NegativePrompt    string                 `json:"negative_prompt,omitempty"`
+	Styles            []string               `json:"styles,omitempty"`
+	Seed              int64                  `json:"seed,omitempty"`
+	Subseed           int64                  `json:"subseed,omitempty"`
+	SubseedStrength   float64                `json:"subseed_strength,omitempty"`
+	SeedResizeFromH   int                    `json:"seed_resize_from_h,omitempty"`
+	SeedResizeFromW   int                    `json:"seed_resize_from_w,omitempty"`
+	SamplerName       string                 `json:"sampler_name,omitempty"`
+	BatchSize         int                    `json:"batch_size,omitempty"`
+	NIter             int                    `json:"n_iter,omitempty"`
+	Steps             int                    `json:"steps,omitempty"`
+	CFGScale          float64                `json:"cfg_scale,omitempty"`
+	Width             int                    `json:"width,omitempty"`
+	Height            int                    `json:"height,omitempty"`
+	RestoreFaces      bool                   `json:"restore_faces,omitempty"`
+	Tiling            bool                   `json:"tiling,omitempty"`
+	DoNotSaveSamples  bool                   `json:"do_not_save_samples,omitempty"`
+	DoNotSaveGrid     bool                   `json:"do_not_save_grid,omitempty"`
+	DenoisingStrength float64                `json:"denoising_strength,omitempty"`
+	EnableHR          bool                   `json:"enable_hr,omitempty"`
+	HRScale           float64                `json:"hr_scale,omitempty"`
+	HRUpscaler        string                 `json:"hr_upscaler,omitempty"`
+	HRSecondPassSteps int                    `json:"hr_second_pass_steps,omitempty"`
+	HRResizeX         int                    `json:"hr_resize_x,omitempty"`
+	HRResizeY         int                    `json:"hr_resize_y,omitempty"`
 	OverrideSettings  map[string]interface{} `json:"override_settings,omitempty"`
 	AlwaysonScripts   map[string]interface{} `json:"alwayson_scripts,omitempty"`
 }
 
 // SDImg2ImgRequest represents an image-to-image request.
 type SDImg2ImgRequest struct {
-	InitImages        []string `json:"init_images"`
-	Prompt            string   `json:"prompt"`
-	NegativePrompt    string   `json:"negative_prompt,omitempty"`
-	Styles            []string `json:"styles,omitempty"`
-	Seed              int64    `json:"seed,omitempty"`
-	SamplerName       string   `json:"sampler_name,omitempty"`
-	BatchSize         int      `json:"batch_size,omitempty"`
-	NIter             int      `json:"n_iter,omitempty"`
-	Steps             int      `json:"steps,omitempty"`
-	CFGScale          float64  `json:"cfg_scale,omitempty"`
-	Width             int      `json:"width,omitempty"`
-	Height            int      `json:"height,omitempty"`
-	RestoreFaces      bool     `json:"restore_faces,omitempty"`
-	Tiling            bool     `json:"tiling,omitempty"`
-	DenoisingStrength float64  `json:"denoising_strength,omitempty"`
-	Mask              string   `json:"mask,omitempty"`
-	MaskBlur          int      `json:"mask_blur,omitempty"`
-	InpaintingFill    int      `json:"inpainting_fill,omitempty"`
-	InpaintFullRes    bool     `json:"inpaint_full_res,omitempty"`
-	InpaintFullResPadding int  `json:"inpaint_full_res_padding,omitempty"`
-	InpaintingMaskInvert int   `json:"inpainting_mask_invert,omitempty"`
-	ResizeMode        int      `json:"resize_mode,omitempty"`
-	OverrideSettings  map[string]interface{} `json:"override_settings,omitempty"`
-	AlwaysonScripts   map[string]interface{} `json:"alwayson_scripts,omitempty"`
+	InitImages            []string               `json:"init_images"`
+	Prompt                string                 `json:"prompt"`
+	NegativePrompt        string                 `json:"negative_prompt,omitempty"`
+	Styles                []string               `json:"styles,omitempty"`
+	Seed                  int64                  `json:"seed,omitempty"`
+	SamplerName           string                 `json:"sampler_name,omitempty"`
+	BatchSize             int                    `json:"batch_size,omitempty"`
+	NIter                 int                    `json:"n_iter,omitempty"`
+	Steps                 int                    `json:"steps,omitempty"`
+	CFGScale              float64                `json:"cfg_scale,omitempty"`
+	Width                 int                    `json:"width,omitempty"`
+	Height                int                    `json:"height,omitempty"`
+	RestoreFaces          bool                   `json:"restore_faces,omitempty"`
+	Tiling                bool                   `json:"tiling,omitempty"`
+	DenoisingStrength     float64                `json:"denoising_strength,omitempty"`
+	Mask                  string                 `json:"mask,omitempty"`
+	MaskBlur              int                    `json:"mask_blur,omitempty"`
+	InpaintingFill        int                    `json:"inpainting_fill,omitempty"`
+	InpaintFullRes        bool                   `json:"inpaint_full_res,omitempty"`
+	InpaintFullResPadding int                    `json:"inpaint_full_res_padding,omitempty"`
+	InpaintingMaskInvert  int                    `json:"inpainting_mask_invert,omitempty"`
+	ResizeMode            int                    `json:"resize_mode,omitempty"`
+	OverrideSettings      map[string]interface{} `json:"override_settings,omitempty"`
+	AlwaysonScripts       map[string]interface{} `json:"alwayson_scripts,omitempty"`
 }
 
 // SDGenerationResponse represents an image generation response.
@@ -90,19 +90,19 @@ type SDGenerationResponse struct {
 
 // SDUpscaleRequest represents an upscaling request.
 type SDUpscaleRequest struct {
-	ResizeMode         int     `json:"resize_mode"`
-	ShowExtrasResults  bool    `json:"show_extras_results"`
-	GFPGANVisibility   float64 `json:"gfpgan_visibility"`
+	ResizeMode           int     `json:"resize_mode"`
+	ShowExtrasResults    bool    `json:"show_extras_results"`
+	GFPGANVisibility     float64 `json:"gfpgan_visibility"`
 	CodeformerVisibility float64 `json:"codeformer_visibility"`
-	CodeformerWeight   float64 `json:"codeformer_weight"`
-	UpscalingResize    float64 `json:"upscaling_resize"`
-	UpscalingResizeW   int     `json:"upscaling_resize_w"`
-	UpscalingResizeH   int     `json:"upscaling_resize_h"`
-	UpscalingCrop      bool    `json:"upscaling_crop"`
-	Upscaler1          string  `json:"upscaler_1"`
-	Upscaler2          string  `json:"upscaler_2"`
-	Upscaler2Visibility float64 `json:"upscaler_2_visibility"`
-	Image              string  `json:"image"`
+	CodeformerWeight     float64 `json:"codeformer_weight"`
+	UpscalingResize      float64 `json:"upscaling_resize"`
+	UpscalingResizeW     int     `json:"upscaling_resize_w"`
+	UpscalingResizeH     int     `json:"upscaling_resize_h"`
+	UpscalingCrop        bool    `json:"upscaling_crop"`
+	Upscaler1            string  `json:"upscaler_1"`
+	Upscaler2            string  `json:"upscaler_2"`
+	Upscaler2Visibility  float64 `json:"upscaler_2_visibility"`
+	Image                string  `json:"image"`
 }
 
 // SDUpscaleResponse represents an upscaling response.
@@ -123,42 +123,42 @@ type SDModel struct {
 
 // SDSampler represents a sampler.
 type SDSampler struct {
-	Name    string   `json:"name"`
-	Aliases []string `json:"aliases"`
+	Name    string                 `json:"name"`
+	Aliases []string               `json:"aliases"`
 	Options map[string]interface{} `json:"options"`
 }
 
 // SDUpscaler represents an upscaler.
 type SDUpscaler struct {
-	Name       string  `json:"name"`
-	ModelName  string  `json:"model_name,omitempty"`
-	ModelPath  string  `json:"model_path,omitempty"`
-	ModelURL   string  `json:"model_url,omitempty"`
-	Scale      float64 `json:"scale,omitempty"`
+	Name      string  `json:"name"`
+	ModelName string  `json:"model_name,omitempty"`
+	ModelPath string  `json:"model_path,omitempty"`
+	ModelURL  string  `json:"model_url,omitempty"`
+	Scale     float64 `json:"scale,omitempty"`
 }
 
 // SDLora represents a LoRA model.
 type SDLora struct {
-	Name    string            `json:"name"`
-	Alias   string            `json:"alias,omitempty"`
-	Path    string            `json:"path"`
+	Name     string            `json:"name"`
+	Alias    string            `json:"alias,omitempty"`
+	Path     string            `json:"path"`
 	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // SDProgress represents generation progress.
 type SDProgress struct {
-	Progress    float64                `json:"progress"`
-	ETARelative float64                `json:"eta_relative"`
-	State       map[string]interface{} `json:"state"`
-	CurrentImage string                `json:"current_image,omitempty"`
-	TextInfo    string                 `json:"textinfo,omitempty"`
+	Progress     float64                `json:"progress"`
+	ETARelative  float64                `json:"eta_relative"`
+	State        map[string]interface{} `json:"state"`
+	CurrentImage string                 `json:"current_image,omitempty"`
+	TextInfo     string                 `json:"textinfo,omitempty"`
 }
 
 // SDOptions represents WebUI options.
 type SDOptions struct {
-	SDModelCheckpoint string `json:"sd_model_checkpoint,omitempty"`
-	SDVae             string `json:"sd_vae,omitempty"`
-	CLIPStopAtLastLayers int `json:"CLIP_stop_at_last_layers,omitempty"`
+	SDModelCheckpoint    string `json:"sd_model_checkpoint,omitempty"`
+	SDVae                string `json:"sd_vae,omitempty"`
+	CLIPStopAtLastLayers int    `json:"CLIP_stop_at_last_layers,omitempty"`
 	// Add more options as needed
 }
 

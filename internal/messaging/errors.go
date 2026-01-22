@@ -10,10 +10,10 @@ type ErrorCode string
 
 const (
 	// Connection errors
-	ErrCodeConnectionFailed    ErrorCode = "CONNECTION_FAILED"
-	ErrCodeConnectionClosed    ErrorCode = "CONNECTION_CLOSED"
-	ErrCodeConnectionTimeout   ErrorCode = "CONNECTION_TIMEOUT"
-	ErrCodeReconnectionFailed  ErrorCode = "RECONNECTION_FAILED"
+	ErrCodeConnectionFailed     ErrorCode = "CONNECTION_FAILED"
+	ErrCodeConnectionClosed     ErrorCode = "CONNECTION_CLOSED"
+	ErrCodeConnectionTimeout    ErrorCode = "CONNECTION_TIMEOUT"
+	ErrCodeReconnectionFailed   ErrorCode = "RECONNECTION_FAILED"
 	ErrCodeAuthenticationFailed ErrorCode = "AUTHENTICATION_FAILED"
 
 	// Publish errors
@@ -24,24 +24,24 @@ const (
 	ErrCodeSerializationFailed ErrorCode = "SERIALIZATION_FAILED"
 
 	// Subscribe errors
-	ErrCodeSubscribeFailed ErrorCode = "SUBSCRIBE_FAILED"
+	ErrCodeSubscribeFailed  ErrorCode = "SUBSCRIBE_FAILED"
 	ErrCodeConsumerCanceled ErrorCode = "CONSUMER_CANCELED"
-	ErrCodeHandlerError    ErrorCode = "HANDLER_ERROR"
+	ErrCodeHandlerError     ErrorCode = "HANDLER_ERROR"
 
 	// Queue/Topic errors
-	ErrCodeQueueNotFound       ErrorCode = "QUEUE_NOT_FOUND"
-	ErrCodeQueueDeclareFailed  ErrorCode = "QUEUE_DECLARE_FAILED"
-	ErrCodeTopicNotFound       ErrorCode = "TOPIC_NOT_FOUND"
-	ErrCodeTopicCreateFailed   ErrorCode = "TOPIC_CREATE_FAILED"
-	ErrCodeExchangeNotFound    ErrorCode = "EXCHANGE_NOT_FOUND"
+	ErrCodeQueueNotFound      ErrorCode = "QUEUE_NOT_FOUND"
+	ErrCodeQueueDeclareFailed ErrorCode = "QUEUE_DECLARE_FAILED"
+	ErrCodeTopicNotFound      ErrorCode = "TOPIC_NOT_FOUND"
+	ErrCodeTopicCreateFailed  ErrorCode = "TOPIC_CREATE_FAILED"
+	ErrCodeExchangeNotFound   ErrorCode = "EXCHANGE_NOT_FOUND"
 
 	// Message errors
-	ErrCodeMessageTooLarge    ErrorCode = "MESSAGE_TOO_LARGE"
-	ErrCodeMessageExpired     ErrorCode = "MESSAGE_EXPIRED"
-	ErrCodeMessageInvalid     ErrorCode = "MESSAGE_INVALID"
-	ErrCodeAckFailed          ErrorCode = "ACK_FAILED"
-	ErrCodeNackFailed         ErrorCode = "NACK_FAILED"
-	ErrCodeDeadLetterFailed   ErrorCode = "DEAD_LETTER_FAILED"
+	ErrCodeMessageTooLarge  ErrorCode = "MESSAGE_TOO_LARGE"
+	ErrCodeMessageExpired   ErrorCode = "MESSAGE_EXPIRED"
+	ErrCodeMessageInvalid   ErrorCode = "MESSAGE_INVALID"
+	ErrCodeAckFailed        ErrorCode = "ACK_FAILED"
+	ErrCodeNackFailed       ErrorCode = "NACK_FAILED"
+	ErrCodeDeadLetterFailed ErrorCode = "DEAD_LETTER_FAILED"
 
 	// Configuration errors
 	ErrCodeInvalidConfig ErrorCode = "INVALID_CONFIG"
@@ -76,11 +76,11 @@ var (
 	ErrHandlerError     = errors.New("message handler error")
 
 	// Queue/Topic errors
-	ErrQueueNotFound       = errors.New("queue not found")
-	ErrQueueDeclareFailed  = errors.New("queue declaration failed")
-	ErrTopicNotFound       = errors.New("topic not found")
-	ErrTopicCreateFailed   = errors.New("topic creation failed")
-	ErrExchangeNotFound    = errors.New("exchange not found")
+	ErrQueueNotFound      = errors.New("queue not found")
+	ErrQueueDeclareFailed = errors.New("queue declaration failed")
+	ErrTopicNotFound      = errors.New("topic not found")
+	ErrTopicCreateFailed  = errors.New("topic creation failed")
+	ErrExchangeNotFound   = errors.New("exchange not found")
 
 	// Message errors
 	ErrMessageTooLarge  = errors.New("message too large")

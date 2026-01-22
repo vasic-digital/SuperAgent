@@ -17,11 +17,11 @@ import (
 
 // DebateHandler handles debate API endpoints
 type DebateHandler struct {
-	debateService        *services.DebateService
-	advancedDebate       *services.AdvancedDebateService
-	skillsIntegration    *skills.Integration
+	debateService           *services.DebateService
+	advancedDebate          *services.AdvancedDebateService
+	skillsIntegration       *skills.Integration
 	orchestratorIntegration *orchestrator.ServiceIntegration
-	logger               *logrus.Logger
+	logger                  *logrus.Logger
 
 	// In-memory storage for active debates (in production, use database)
 	activeDebates map[string]*debateState
@@ -29,18 +29,18 @@ type DebateHandler struct {
 }
 
 type debateState struct {
-	Config                    *services.DebateConfig       `json:"config"`
-	ValidationConfig          *services.ValidationConfig   `json:"validation_config,omitempty"`
-	EnableMultiPassValidation bool                         `json:"enable_multi_pass_validation"`
-	Status                    string                       `json:"status"`
-	CurrentPhase              string                       `json:"current_phase,omitempty"`
-	Result                    *services.DebateResult       `json:"result,omitempty"`
-	MultiPassResult           *services.MultiPassResult    `json:"multi_pass_result,omitempty"`
-	Error                     string                       `json:"error,omitempty"`
-	StartTime                 time.Time                    `json:"start_time"`
-	EndTime                   *time.Time                   `json:"end_time,omitempty"`
-	SkillsUsed                *skills.SkillsUsedMetadata   `json:"skills_used,omitempty"`
-	skillsContext             *skills.RequestContext       // Internal, not JSON-serialized
+	Config                    *services.DebateConfig     `json:"config"`
+	ValidationConfig          *services.ValidationConfig `json:"validation_config,omitempty"`
+	EnableMultiPassValidation bool                       `json:"enable_multi_pass_validation"`
+	Status                    string                     `json:"status"`
+	CurrentPhase              string                     `json:"current_phase,omitempty"`
+	Result                    *services.DebateResult     `json:"result,omitempty"`
+	MultiPassResult           *services.MultiPassResult  `json:"multi_pass_result,omitempty"`
+	Error                     string                     `json:"error,omitempty"`
+	StartTime                 time.Time                  `json:"start_time"`
+	EndTime                   *time.Time                 `json:"end_time,omitempty"`
+	SkillsUsed                *skills.SkillsUsedMetadata `json:"skills_used,omitempty"`
+	skillsContext             *skills.RequestContext     // Internal, not JSON-serialized
 }
 
 // NewDebateHandler creates a new debate handler
@@ -76,24 +76,24 @@ func (h *DebateHandler) SetOrchestratorIntegration(integration *orchestrator.Ser
 
 // CreateDebateRequest represents the request to create a debate
 type CreateDebateRequest struct {
-	DebateID                  string                       `json:"debate_id,omitempty"`
-	Topic                     string                       `json:"topic" binding:"required"`
-	Participants              []ParticipantConfigRequest   `json:"participants" binding:"required,min=2"`
-	MaxRounds                 int                          `json:"max_rounds,omitempty"`
-	Timeout                   int                          `json:"timeout,omitempty"` // seconds
-	Strategy                  string                       `json:"strategy,omitempty"`
-	EnableCognee              bool                         `json:"enable_cognee,omitempty"`
-	EnableMultiPassValidation bool                         `json:"enable_multi_pass_validation,omitempty"`
-	ValidationConfig          *ValidationConfigRequest     `json:"validation_config,omitempty"`
-	Metadata                  map[string]any               `json:"metadata,omitempty"`
+	DebateID                  string                     `json:"debate_id,omitempty"`
+	Topic                     string                     `json:"topic" binding:"required"`
+	Participants              []ParticipantConfigRequest `json:"participants" binding:"required,min=2"`
+	MaxRounds                 int                        `json:"max_rounds,omitempty"`
+	Timeout                   int                        `json:"timeout,omitempty"` // seconds
+	Strategy                  string                     `json:"strategy,omitempty"`
+	EnableCognee              bool                       `json:"enable_cognee,omitempty"`
+	EnableMultiPassValidation bool                       `json:"enable_multi_pass_validation,omitempty"`
+	ValidationConfig          *ValidationConfigRequest   `json:"validation_config,omitempty"`
+	Metadata                  map[string]any             `json:"metadata,omitempty"`
 }
 
 // ValidationConfigRequest configures multi-pass validation
 type ValidationConfigRequest struct {
 	EnableValidation    bool    `json:"enable_validation"`
 	EnablePolish        bool    `json:"enable_polish"`
-	ValidationTimeout   int     `json:"validation_timeout,omitempty"`   // seconds
-	PolishTimeout       int     `json:"polish_timeout,omitempty"`       // seconds
+	ValidationTimeout   int     `json:"validation_timeout,omitempty"` // seconds
+	PolishTimeout       int     `json:"polish_timeout,omitempty"`     // seconds
 	MinConfidenceToSkip float64 `json:"min_confidence_to_skip,omitempty"`
 	MaxValidationRounds int     `json:"max_validation_rounds,omitempty"`
 	ShowPhaseIndicators bool    `json:"show_phase_indicators,omitempty"`
@@ -252,14 +252,14 @@ func (h *DebateHandler) CreateDebate(c *gin.Context) {
 	go h.runDebate(debateID, config, validationConfig)
 
 	c.JSON(http.StatusAccepted, gin.H{
-		"debate_id":  debateID,
-		"status":     "pending",
-		"topic":      req.Topic,
-		"max_rounds": maxRounds,
-		"timeout":    timeout.Seconds(),
+		"debate_id":    debateID,
+		"status":       "pending",
+		"topic":        req.Topic,
+		"max_rounds":   maxRounds,
+		"timeout":      timeout.Seconds(),
 		"participants": len(participants),
-		"created_at": time.Now().Unix(),
-		"message":    "Debate started. Use GET /v1/debates/" + debateID + " to check status.",
+		"created_at":   time.Now().Unix(),
+		"message":      "Debate started. Use GET /v1/debates/" + debateID + " to check status.",
 	})
 }
 
@@ -381,7 +381,7 @@ func (h *DebateHandler) GetDebate(c *gin.Context) {
 	if !exists {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{
-				"message": "Debate not found",
+				"message":   "Debate not found",
 				"debate_id": debateID,
 			},
 		})
@@ -389,11 +389,11 @@ func (h *DebateHandler) GetDebate(c *gin.Context) {
 	}
 
 	response := gin.H{
-		"debate_id":  debateID,
-		"status":     state.Status,
-		"topic":      state.Config.Topic,
-		"max_rounds": state.Config.MaxRounds,
-		"start_time": state.StartTime.Unix(),
+		"debate_id":                    debateID,
+		"status":                       state.Status,
+		"topic":                        state.Config.Topic,
+		"max_rounds":                   state.Config.MaxRounds,
+		"start_time":                   state.StartTime.Unix(),
 		"enable_multi_pass_validation": state.EnableMultiPassValidation,
 	}
 
@@ -443,7 +443,7 @@ func (h *DebateHandler) GetDebateStatus(c *gin.Context) {
 	if !exists {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{
-				"message": "Debate not found",
+				"message":   "Debate not found",
 				"debate_id": debateID,
 			},
 		})
@@ -505,7 +505,7 @@ func (h *DebateHandler) GetDebateResults(c *gin.Context) {
 	if !exists {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{
-				"message": "Debate not found",
+				"message":   "Debate not found",
 				"debate_id": debateID,
 			},
 		})
@@ -577,7 +577,7 @@ func (h *DebateHandler) DeleteDebate(c *gin.Context) {
 	if _, exists := h.activeDebates[debateID]; !exists {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": gin.H{
-				"message": "Debate not found",
+				"message":   "Debate not found",
 				"debate_id": debateID,
 			},
 		})

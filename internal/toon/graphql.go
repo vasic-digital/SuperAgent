@@ -156,7 +156,7 @@ func (c *GraphQLConverter) EncodeProviderScoresNative(scores []gqltypes.Provider
 
 // GraphQLResponse represents a standard GraphQL response.
 type GraphQLResponse struct {
-	Data   interface{} `json:"data,omitempty"`
+	Data   interface{}    `json:"data,omitempty"`
 	Errors []GraphQLError `json:"errors,omitempty"`
 }
 
@@ -247,7 +247,7 @@ func EstimateTokenSavings(jsonResponse []byte) (float64, error) {
 		return 0, err
 	}
 
-	jsonTokens := len(jsonResponse) / 4  // Rough estimate
+	jsonTokens := len(jsonResponse) / 4 // Rough estimate
 	toonTokens := len(toonResponse) / 4
 
 	if jsonTokens == 0 {
@@ -264,7 +264,7 @@ func EstimateNativeTokenSavings(jsonResponse []byte) (float64, error) {
 		return 0, err
 	}
 
-	jsonTokens := len(jsonResponse) / 4  // Rough estimate
+	jsonTokens := len(jsonResponse) / 4 // Rough estimate
 	toonTokens := len(toonResponse) / 4
 
 	if jsonTokens == 0 {

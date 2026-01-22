@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/optimization"
 	"dev.helix.agent/internal/optimization/outlines"
 	"dev.helix.agent/internal/optimization/streaming"
+	"github.com/sirupsen/logrus"
 )
 
 // OptimizedRequestService wraps RequestService with optimization capabilities.
@@ -225,8 +225,8 @@ func (s *OptimizedRequestService) ProcessRequestStream(ctx context.Context, req 
 				ProviderName: "semantic_cache",
 				FinishReason: "stop",
 				Metadata: map[string]interface{}{
-					"cached":       true,
-					"stream_done":  true,
+					"cached":      true,
+					"stream_done": true,
 				},
 			}
 		}()

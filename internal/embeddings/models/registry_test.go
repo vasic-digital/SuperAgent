@@ -124,16 +124,16 @@ func (c *MockEmbeddingCache) Delete(key string) {
 
 func TestNewEmbeddingModelRegistry(t *testing.T) {
 	tests := []struct {
-		name               string
-		config             RegistryConfig
-		expectedDefault    string
-		expectedFallback   []string
+		name             string
+		config           RegistryConfig
+		expectedDefault  string
+		expectedFallback []string
 	}{
 		{
-			name:               "default configuration",
-			config:             RegistryConfig{},
-			expectedDefault:    "openai-3-small", // First in default fallback chain
-			expectedFallback:   []string{"openai-3-small", "bge-m3", "all-mpnet-base-v2", "local-fallback"},
+			name:             "default configuration",
+			config:           RegistryConfig{},
+			expectedDefault:  "openai-3-small", // First in default fallback chain
+			expectedFallback: []string{"openai-3-small", "bge-m3", "all-mpnet-base-v2", "local-fallback"},
 		},
 		{
 			name: "custom configuration",
@@ -141,8 +141,8 @@ func TestNewEmbeddingModelRegistry(t *testing.T) {
 				DefaultModel:  "custom-model",
 				FallbackChain: []string{"model-a", "model-b"},
 			},
-			expectedDefault:    "custom-model",
-			expectedFallback:   []string{"model-a", "model-b"},
+			expectedDefault:  "custom-model",
+			expectedFallback: []string{"model-a", "model-b"},
 		},
 		{
 			name: "with logger",

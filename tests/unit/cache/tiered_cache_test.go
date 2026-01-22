@@ -171,8 +171,8 @@ func TestTieredCache_Metrics(t *testing.T) {
 
 	var result string
 	for i := 0; i < 5; i++ {
-		tc.Get(ctx, "key", &result)      // hit
-		tc.Get(ctx, "missing", &result)   // miss
+		tc.Get(ctx, "key", &result)     // hit
+		tc.Get(ctx, "missing", &result) // miss
 	}
 
 	metrics := tc.Metrics()

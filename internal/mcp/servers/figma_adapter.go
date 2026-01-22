@@ -29,36 +29,36 @@ type FigmaAdapterConfig struct {
 
 // FigmaFile represents a Figma file.
 type FigmaFile struct {
-	Name          string          `json:"name"`
-	LastModified  string          `json:"lastModified"`
-	ThumbnailURL  string          `json:"thumbnailUrl"`
-	Version       string          `json:"version"`
-	Document      *FigmaDocument  `json:"document,omitempty"`
+	Name          string                    `json:"name"`
+	LastModified  string                    `json:"lastModified"`
+	ThumbnailURL  string                    `json:"thumbnailUrl"`
+	Version       string                    `json:"version"`
+	Document      *FigmaDocument            `json:"document,omitempty"`
 	Components    map[string]FigmaComponent `json:"components,omitempty"`
-	SchemaVersion int             `json:"schemaVersion"`
+	SchemaVersion int                       `json:"schemaVersion"`
 }
 
 // FigmaDocument represents the document structure.
 type FigmaDocument struct {
-	ID       string       `json:"id"`
-	Name     string       `json:"name"`
-	Type     string       `json:"type"`
-	Children []FigmaNode  `json:"children,omitempty"`
+	ID       string      `json:"id"`
+	Name     string      `json:"name"`
+	Type     string      `json:"type"`
+	Children []FigmaNode `json:"children,omitempty"`
 }
 
 // FigmaNode represents a node in the Figma document tree.
 type FigmaNode struct {
-	ID               string                 `json:"id"`
-	Name             string                 `json:"name"`
-	Type             string                 `json:"type"`
-	Children         []FigmaNode            `json:"children,omitempty"`
-	AbsoluteBoundingBox *FigmaRect          `json:"absoluteBoundingBox,omitempty"`
-	Fills            []FigmaPaint           `json:"fills,omitempty"`
-	Strokes          []FigmaPaint           `json:"strokes,omitempty"`
-	StrokeWeight     float64                `json:"strokeWeight,omitempty"`
-	CornerRadius     float64                `json:"cornerRadius,omitempty"`
-	Characters       string                 `json:"characters,omitempty"`
-	Style            map[string]interface{} `json:"style,omitempty"`
+	ID                  string                 `json:"id"`
+	Name                string                 `json:"name"`
+	Type                string                 `json:"type"`
+	Children            []FigmaNode            `json:"children,omitempty"`
+	AbsoluteBoundingBox *FigmaRect             `json:"absoluteBoundingBox,omitempty"`
+	Fills               []FigmaPaint           `json:"fills,omitempty"`
+	Strokes             []FigmaPaint           `json:"strokes,omitempty"`
+	StrokeWeight        float64                `json:"strokeWeight,omitempty"`
+	CornerRadius        float64                `json:"cornerRadius,omitempty"`
+	Characters          string                 `json:"characters,omitempty"`
+	Style               map[string]interface{} `json:"style,omitempty"`
 }
 
 // FigmaRect represents a bounding box.
@@ -71,11 +71,11 @@ type FigmaRect struct {
 
 // FigmaPaint represents a fill or stroke.
 type FigmaPaint struct {
-	Type      string     `json:"type"`
-	Visible   bool       `json:"visible"`
-	Opacity   float64    `json:"opacity"`
+	Type      string      `json:"type"`
+	Visible   bool        `json:"visible"`
+	Opacity   float64     `json:"opacity"`
 	Color     *FigmaColor `json:"color,omitempty"`
-	BlendMode string     `json:"blendMode,omitempty"`
+	BlendMode string      `json:"blendMode,omitempty"`
 }
 
 // FigmaColor represents a color.
@@ -95,13 +95,13 @@ type FigmaComponent struct {
 
 // FigmaComment represents a comment on a file.
 type FigmaComment struct {
-	ID           string    `json:"id"`
-	Message      string    `json:"message"`
-	FileKey      string    `json:"file_key"`
-	ClientMeta   interface{} `json:"client_meta,omitempty"`
-	CreatedAt    string    `json:"created_at"`
-	ResolvedAt   string    `json:"resolved_at,omitempty"`
-	User         FigmaUser `json:"user"`
+	ID         string      `json:"id"`
+	Message    string      `json:"message"`
+	FileKey    string      `json:"file_key"`
+	ClientMeta interface{} `json:"client_meta,omitempty"`
+	CreatedAt  string      `json:"created_at"`
+	ResolvedAt string      `json:"resolved_at,omitempty"`
+	User       FigmaUser   `json:"user"`
 }
 
 // FigmaUser represents a Figma user.

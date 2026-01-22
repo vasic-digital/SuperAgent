@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/models"
+	"github.com/sirupsen/logrus"
 )
 
 // CogneeService provides comprehensive Cognee integration for LLM enhancement
@@ -1227,9 +1227,9 @@ func (s *CogneeService) EnsureDefaultDataset(ctx context.Context) error {
 	// Create default dataset
 	s.logger.WithField("dataset", datasetName).Info("Creating default dataset for Cognee")
 	err = s.CreateDataset(ctx, datasetName, "Default dataset for HelixAgent Cognee integration", map[string]interface{}{
-		"created_by": "helixagent",
+		"created_by":   "helixagent",
 		"auto_created": true,
-		"created_at": time.Now().Format(time.RFC3339),
+		"created_at":   time.Now().Format(time.RFC3339),
 	})
 	if err != nil {
 		// Check if it's a "already exists" type error

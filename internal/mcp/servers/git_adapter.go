@@ -185,17 +185,17 @@ func (g *GitAdapter) runGitCommand(ctx context.Context, dir string, args ...stri
 
 // GitStatus represents the status of a repository
 type GitStatus struct {
-	Branch        string            `json:"branch"`
-	Ahead         int               `json:"ahead"`
-	Behind        int               `json:"behind"`
-	Staged        []string          `json:"staged"`
-	Modified      []string          `json:"modified"`
-	Untracked     []string          `json:"untracked"`
-	Deleted       []string          `json:"deleted"`
-	Renamed       map[string]string `json:"renamed"`
-	HasConflicts  bool              `json:"has_conflicts"`
-	IsClean       bool              `json:"is_clean"`
-	RemoteTracking string           `json:"remote_tracking,omitempty"`
+	Branch         string            `json:"branch"`
+	Ahead          int               `json:"ahead"`
+	Behind         int               `json:"behind"`
+	Staged         []string          `json:"staged"`
+	Modified       []string          `json:"modified"`
+	Untracked      []string          `json:"untracked"`
+	Deleted        []string          `json:"deleted"`
+	Renamed        map[string]string `json:"renamed"`
+	HasConflicts   bool              `json:"has_conflicts"`
+	IsClean        bool              `json:"is_clean"`
+	RemoteTracking string            `json:"remote_tracking,omitempty"`
 }
 
 // Status returns the status of a repository
@@ -307,13 +307,13 @@ func (g *GitAdapter) Status(ctx context.Context, repoPath string) (*GitStatus, e
 
 // GitLog represents a commit log entry
 type GitLog struct {
-	Hash       string    `json:"hash"`
-	ShortHash  string    `json:"short_hash"`
-	Author     string    `json:"author"`
-	AuthorEmail string   `json:"author_email"`
-	Date       time.Time `json:"date"`
-	Subject    string    `json:"subject"`
-	Body       string    `json:"body,omitempty"`
+	Hash        string    `json:"hash"`
+	ShortHash   string    `json:"short_hash"`
+	Author      string    `json:"author"`
+	AuthorEmail string    `json:"author_email"`
+	Date        time.Time `json:"date"`
+	Subject     string    `json:"subject"`
+	Body        string    `json:"body,omitempty"`
 }
 
 // Log returns commit history
@@ -1384,12 +1384,12 @@ func (g *GitAdapter) ExecuteTool(ctx context.Context, toolName string, params ma
 // GetCapabilities returns adapter capabilities
 func (g *GitAdapter) GetCapabilities() map[string]interface{} {
 	return map[string]interface{}{
-		"name":                   "git",
-		"version":                g.gitVersion,
-		"allow_push":             g.config.AllowPush,
-		"allow_force":            g.config.AllowForce,
+		"name":                    "git",
+		"version":                 g.gitVersion,
+		"allow_push":              g.config.AllowPush,
+		"allow_force":             g.config.AllowForce,
 		"allow_remote_operations": g.config.AllowRemoteOperations,
-		"tools":                  len(g.GetMCPTools()),
+		"tools":                   len(g.GetMCPTools()),
 	}
 }
 

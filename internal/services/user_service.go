@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"dev.helix.agent/internal/database"
 	"dev.helix.agent/internal/models"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/argon2"
 )
 

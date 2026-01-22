@@ -10,9 +10,9 @@ import (
 
 // MonitoringHandler handles monitoring API endpoints
 type MonitoringHandler struct {
-	circuitBreakerMonitor *services.CircuitBreakerMonitor
-	oauthTokenMonitor     *services.OAuthTokenMonitor
-	providerHealthMonitor *services.ProviderHealthMonitor
+	circuitBreakerMonitor  *services.CircuitBreakerMonitor
+	oauthTokenMonitor      *services.OAuthTokenMonitor
+	providerHealthMonitor  *services.ProviderHealthMonitor
 	fallbackChainValidator *services.FallbackChainValidator
 }
 
@@ -24,9 +24,9 @@ func NewMonitoringHandler(
 	fcv *services.FallbackChainValidator,
 ) *MonitoringHandler {
 	return &MonitoringHandler{
-		circuitBreakerMonitor: cbm,
-		oauthTokenMonitor:     otm,
-		providerHealthMonitor: phm,
+		circuitBreakerMonitor:  cbm,
+		oauthTokenMonitor:      otm,
+		providerHealthMonitor:  phm,
 		fallbackChainValidator: fcv,
 	}
 }
@@ -60,11 +60,11 @@ func (h *MonitoringHandler) RegisterRoutes(router *gin.RouterGroup) {
 
 // OverallMonitoringStatus represents the overall system monitoring status
 type OverallMonitoringStatus struct {
-	Healthy           bool                               `json:"healthy"`
-	CircuitBreakers   *services.CircuitBreakerStatus     `json:"circuit_breakers,omitempty"`
-	OAuthTokens       *services.OAuthTokenStatus         `json:"oauth_tokens,omitempty"`
-	ProviderHealth    *services.ProviderHealthOverallStatus `json:"provider_health,omitempty"`
-	FallbackChain     *services.FallbackChainStatus      `json:"fallback_chain,omitempty"`
+	Healthy         bool                                  `json:"healthy"`
+	CircuitBreakers *services.CircuitBreakerStatus        `json:"circuit_breakers,omitempty"`
+	OAuthTokens     *services.OAuthTokenStatus            `json:"oauth_tokens,omitempty"`
+	ProviderHealth  *services.ProviderHealthOverallStatus `json:"provider_health,omitempty"`
+	FallbackChain   *services.FallbackChainStatus         `json:"fallback_chain,omitempty"`
 }
 
 // GetOverallStatus returns the overall monitoring status

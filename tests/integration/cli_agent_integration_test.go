@@ -15,13 +15,13 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/agents"
+	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/tools"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/agents"
-	"dev.helix.agent/internal/services"
-	"dev.helix.agent/internal/tools"
 )
 
 // =============================================================================
@@ -39,10 +39,10 @@ var expectedAgents = []string{
 
 // ProtocolTestCase defines a test case for protocol support
 type ProtocolTestCase struct {
-	Name            string
-	Protocol        string
-	ExpectedAgents  int
-	SampleAgents    []string
+	Name           string
+	Protocol       string
+	ExpectedAgents int
+	SampleAgents   []string
 }
 
 // ToolTestCase defines a test case for tool support

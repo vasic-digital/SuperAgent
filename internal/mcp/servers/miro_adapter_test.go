@@ -63,10 +63,10 @@ func TestNewMiroAdapter(t *testing.T) {
 
 func TestMiroAdapter_Connect(t *testing.T) {
 	tests := []struct {
-		name       string
-		statusCode int
-		response   interface{}
-		wantErr    bool
+		name        string
+		statusCode  int
+		response    interface{}
+		wantErr     bool
 		errContains string
 	}{
 		{
@@ -79,17 +79,17 @@ func TestMiroAdapter_Connect(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "authentication_failure",
-			statusCode: http.StatusUnauthorized,
-			response:   map[string]string{"error": "invalid_token"},
-			wantErr:    true,
+			name:        "authentication_failure",
+			statusCode:  http.StatusUnauthorized,
+			response:    map[string]string{"error": "invalid_token"},
+			wantErr:     true,
 			errContains: "authentication failed",
 		},
 		{
-			name:       "server_error",
-			statusCode: http.StatusInternalServerError,
-			response:   map[string]string{"error": "internal error"},
-			wantErr:    true,
+			name:        "server_error",
+			statusCode:  http.StatusInternalServerError,
+			response:    map[string]string{"error": "internal error"},
+			wantErr:     true,
 			errContains: "failed to authenticate",
 		},
 	}
@@ -177,15 +177,15 @@ func TestMiroAdapter_Health(t *testing.T) {
 
 func TestMiroAdapter_ListBoards(t *testing.T) {
 	tests := []struct {
-		name        string
-		teamID      string
-		limit       int
-		cursor      string
-		statusCode  int
-		response    interface{}
-		wantBoards  int
-		wantCursor  string
-		wantErr     bool
+		name       string
+		teamID     string
+		limit      int
+		cursor     string
+		statusCode int
+		response   interface{}
+		wantBoards int
+		wantCursor string
+		wantErr    bool
 	}{
 		{
 			name:       "successful_list",
@@ -255,11 +255,11 @@ func TestMiroAdapter_ListBoards(t *testing.T) {
 
 func TestMiroAdapter_GetBoard(t *testing.T) {
 	tests := []struct {
-		name       string
-		boardID    string
-		statusCode int
-		response   interface{}
-		wantErr    bool
+		name        string
+		boardID     string
+		statusCode  int
+		response    interface{}
+		wantErr     bool
 		errContains string
 	}{
 		{
@@ -274,11 +274,11 @@ func TestMiroAdapter_GetBoard(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "board_not_found",
-			boardID:    "nonexistent",
-			statusCode: http.StatusNotFound,
-			response:   map[string]string{"error": "not found"},
-			wantErr:    true,
+			name:        "board_not_found",
+			boardID:     "nonexistent",
+			statusCode:  http.StatusNotFound,
+			response:    map[string]string{"error": "not found"},
+			wantErr:     true,
 			errContains: "board not found",
 		},
 	}
@@ -391,13 +391,13 @@ func TestMiroAdapter_CreateBoard(t *testing.T) {
 
 func TestMiroAdapter_UpdateBoard(t *testing.T) {
 	tests := []struct {
-		name        string
-		boardID     string
-		newName     string
-		newDesc     string
-		statusCode  int
-		response    interface{}
-		wantErr     bool
+		name       string
+		boardID    string
+		newName    string
+		newDesc    string
+		statusCode int
+		response   interface{}
+		wantErr    bool
 	}{
 		{
 			name:       "successful_update",
@@ -581,12 +581,12 @@ func TestMiroAdapter_GetBoardItems(t *testing.T) {
 
 func TestMiroAdapter_GetItem(t *testing.T) {
 	tests := []struct {
-		name       string
-		boardID    string
-		itemID     string
-		statusCode int
-		response   interface{}
-		wantErr    bool
+		name        string
+		boardID     string
+		itemID      string
+		statusCode  int
+		response    interface{}
+		wantErr     bool
 		errContains string
 	}{
 		{
@@ -601,12 +601,12 @@ func TestMiroAdapter_GetItem(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "item_not_found",
-			boardID:    "board123",
-			itemID:     "nonexistent",
-			statusCode: http.StatusNotFound,
-			response:   map[string]string{"error": "not found"},
-			wantErr:    true,
+			name:        "item_not_found",
+			boardID:     "board123",
+			itemID:      "nonexistent",
+			statusCode:  http.StatusNotFound,
+			response:    map[string]string{"error": "not found"},
+			wantErr:     true,
 			errContains: "item not found",
 		},
 	}
@@ -890,11 +890,11 @@ func TestMiroAdapter_CreateFrame(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:     "create_with_geometry",
-			boardID:  "board123",
-			title:    "Sized Frame",
-			position: &MiroPosition{X: 0, Y: 0},
-			geometry: &MiroGeometry{Width: 1000, Height: 800},
+			name:       "create_with_geometry",
+			boardID:    "board123",
+			title:      "Sized Frame",
+			position:   &MiroPosition{X: 0, Y: 0},
+			geometry:   &MiroGeometry{Width: 1000, Height: 800},
 			statusCode: http.StatusOK,
 			response: map[string]interface{}{
 				"id":   "frame2",

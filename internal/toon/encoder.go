@@ -75,14 +75,14 @@ func DefaultKeyMapping() map[string]string {
 		"model_name":    "mn",
 
 		// Score fields
-		"score":             "sc",
-		"overall_score":     "os",
-		"response_speed":    "rs",
-		"model_efficiency":  "me",
+		"score":              "sc",
+		"overall_score":      "os",
+		"response_speed":     "rs",
+		"model_efficiency":   "me",
 		"cost_effectiveness": "ce",
-		"capability":        "cp",
-		"recency":           "rc",
-		"confidence":        "cf",
+		"capability":         "cp",
+		"recency":            "rc",
+		"confidence":         "cf",
 
 		// Debate fields
 		"debate_id":      "di",
@@ -109,18 +109,18 @@ func DefaultKeyMapping() map[string]string {
 		"error_message": "em",
 
 		// Capability fields
-		"context_window":    "cw",
-		"max_tokens":        "mt",
-		"supports_tools":    "st",
-		"supports_vision":   "sv",
+		"context_window":     "cw",
+		"max_tokens":         "mt",
+		"supports_tools":     "st",
+		"supports_vision":    "sv",
 		"supports_streaming": "ss",
-		"function_calling":  "fc",
-		"embeddings":        "eb",
-		"completions":       "cm",
-		"chat":              "ch",
-		"vision":            "vs",
-		"tool_use":          "tu",
-		"streaming":         "sm",
+		"function_calling":   "fc",
+		"embeddings":         "eb",
+		"completions":        "cm",
+		"chat":               "ch",
+		"vision":             "vs",
+		"tool_use":           "tu",
+		"streaming":          "sm",
 
 		// Verification fields
 		"total_providers":    "tpr",

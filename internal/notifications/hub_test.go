@@ -16,13 +16,13 @@ import (
 
 // MockSubscriber implements the Subscriber interface for testing
 type MockSubscriber struct {
-	id           string
-	notifyType   NotificationType
-	active       bool
+	id            string
+	notifyType    NotificationType
+	active        bool
 	notifications []*TaskNotification
-	mu           sync.Mutex
-	notifyErr    error
-	closed       bool
+	mu            sync.Mutex
+	notifyErr     error
+	closed        bool
 }
 
 func NewMockSubscriber(id string, notifyType NotificationType) *MockSubscriber {
@@ -437,8 +437,8 @@ func TestNotificationHub_EventChannelOverflow(t *testing.T) {
 
 	// Create hub with small buffer
 	config := &HubConfig{
-		EventBufferSize: 1,
-		WorkerCount:     1,
+		EventBufferSize:     1,
+		WorkerCount:         1,
 		NotificationTimeout: time.Second,
 	}
 

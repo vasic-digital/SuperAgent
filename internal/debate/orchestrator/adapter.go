@@ -16,24 +16,24 @@ import (
 
 // LegacyDebateConfig represents the existing debate configuration format.
 type LegacyDebateConfig struct {
-	DebateID     string                  `json:"debate_id"`
-	Topic        string                  `json:"topic"`
-	MaxRounds    int                     `json:"max_rounds"`
-	Timeout      int                     `json:"timeout"` // seconds
-	Participants []LegacyParticipant     `json:"participants"`
-	EnableCognee bool                    `json:"enable_cognee"`
-	Metadata     map[string]interface{}  `json:"metadata,omitempty"`
+	DebateID     string                 `json:"debate_id"`
+	Topic        string                 `json:"topic"`
+	MaxRounds    int                    `json:"max_rounds"`
+	Timeout      int                    `json:"timeout"` // seconds
+	Participants []LegacyParticipant    `json:"participants"`
+	EnableCognee bool                   `json:"enable_cognee"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // LegacyParticipant represents the existing participant format.
 type LegacyParticipant struct {
-	Name         string                  `json:"name"`
-	Role         string                  `json:"role"` // "proposer", "critic", "debater"
-	LLMProvider  string                  `json:"llm_provider"`
-	LLMModel     string                  `json:"llm_model"`
-	Temperature  float64                 `json:"temperature,omitempty"`
-	SystemPrompt string                  `json:"system_prompt,omitempty"`
-	Fallbacks    []LegacyFallback        `json:"fallbacks,omitempty"`
+	Name         string           `json:"name"`
+	Role         string           `json:"role"` // "proposer", "critic", "debater"
+	LLMProvider  string           `json:"llm_provider"`
+	LLMModel     string           `json:"llm_model"`
+	Temperature  float64          `json:"temperature,omitempty"`
+	SystemPrompt string           `json:"system_prompt,omitempty"`
+	Fallbacks    []LegacyFallback `json:"fallbacks,omitempty"`
 }
 
 // LegacyFallback represents a fallback provider configuration.
@@ -72,11 +72,11 @@ type LegacyParticipantResponse struct {
 
 // LegacyConsensus represents the existing consensus format.
 type LegacyConsensus struct {
-	Reached       bool     `json:"reached"`
-	AgreementLevel float64 `json:"agreement_level"`
-	FinalPosition string   `json:"final_position"`
-	KeyPoints     []string `json:"key_points"`
-	Disagreements []string `json:"disagreements,omitempty"`
+	Reached        bool     `json:"reached"`
+	AgreementLevel float64  `json:"agreement_level"`
+	FinalPosition  string   `json:"final_position"`
+	KeyPoints      []string `json:"key_points"`
+	Disagreements  []string `json:"disagreements,omitempty"`
 }
 
 // =============================================================================
@@ -137,11 +137,11 @@ func ConvertToLegacyResult(response *DebateResponse, startTime time.Time) *Legac
 	// Convert consensus
 	if response.Consensus != nil {
 		result.Consensus = &LegacyConsensus{
-			Reached:       response.Success,
+			Reached:        response.Success,
 			AgreementLevel: response.Consensus.Confidence,
-			FinalPosition: response.Consensus.Summary,
-			KeyPoints:     response.Consensus.KeyPoints,
-			Disagreements: response.Consensus.Dissents,
+			FinalPosition:  response.Consensus.Summary,
+			KeyPoints:      response.Consensus.KeyPoints,
+			Disagreements:  response.Consensus.Dissents,
 		}
 	}
 

@@ -30,10 +30,10 @@ type InMemoryContinuousEvaluator struct {
 }
 
 type schedule struct {
-	run      *EvaluationRun
-	cron     string
-	lastRun  time.Time
-	stopCh   chan struct{}
+	run     *EvaluationRun
+	cron    string
+	lastRun time.Time
+	stopCh  chan struct{}
 }
 
 // NewInMemoryContinuousEvaluator creates a new continuous evaluator

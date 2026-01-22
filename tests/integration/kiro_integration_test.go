@@ -14,7 +14,9 @@ import (
 
 // TestKiroToolSupport tests that Kiro can use all 21 tools
 func TestKiroToolSupport(t *testing.T) {
-	if !serverAvailable(t) { return }
+	if !serverAvailable(t) {
+		return
+	}
 	baseURL := getTestBaseURL()
 
 	// Define all 21 tools for Kiro
@@ -135,7 +137,9 @@ func TestKiroToolSupport(t *testing.T) {
 
 // TestKiroCodeGeneration tests Kiro code generation capabilities
 func TestKiroCodeGeneration(t *testing.T) {
-	if !serverAvailable(t) { return }
+	if !serverAvailable(t) {
+		return
+	}
 	baseURL := getTestBaseURL()
 
 	reqBody := map[string]interface{}{

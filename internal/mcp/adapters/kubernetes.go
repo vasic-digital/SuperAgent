@@ -11,11 +11,11 @@ import (
 
 // KubernetesConfig configures the Kubernetes adapter.
 type KubernetesConfig struct {
-	Kubeconfig   string        `json:"kubeconfig,omitempty"`
-	Context      string        `json:"context,omitempty"`
-	Namespace    string        `json:"namespace"`
-	Timeout      time.Duration `json:"timeout"`
-	InCluster    bool          `json:"in_cluster"`
+	Kubeconfig string        `json:"kubeconfig,omitempty"`
+	Context    string        `json:"context,omitempty"`
+	Namespace  string        `json:"namespace"`
+	Timeout    time.Duration `json:"timeout"`
+	InCluster  bool          `json:"in_cluster"`
 }
 
 // DefaultKubernetesConfig returns default configuration.
@@ -66,16 +66,16 @@ type KubernetesClient interface {
 
 // Pod represents a Kubernetes pod.
 type Pod struct {
-	Name        string            `json:"name"`
-	Namespace   string            `json:"namespace"`
-	Status      string            `json:"status"`
-	Phase       string            `json:"phase"`
-	IP          string            `json:"ip"`
-	Node        string            `json:"node"`
-	Containers  []ContainerStatus `json:"containers"`
-	Labels      map[string]string `json:"labels"`
-	CreatedAt   time.Time         `json:"createdAt"`
-	RestartCount int              `json:"restartCount"`
+	Name         string            `json:"name"`
+	Namespace    string            `json:"namespace"`
+	Status       string            `json:"status"`
+	Phase        string            `json:"phase"`
+	IP           string            `json:"ip"`
+	Node         string            `json:"node"`
+	Containers   []ContainerStatus `json:"containers"`
+	Labels       map[string]string `json:"labels"`
+	CreatedAt    time.Time         `json:"createdAt"`
+	RestartCount int               `json:"restartCount"`
 }
 
 // ContainerStatus represents container status.
@@ -129,10 +129,10 @@ type ConfigMap struct {
 
 // Secret represents a Kubernetes Secret.
 type Secret struct {
-	Name      string   `json:"name"`
-	Namespace string   `json:"namespace"`
-	Type      string   `json:"type"`
-	Keys      []string `json:"keys"`
+	Name      string    `json:"name"`
+	Namespace string    `json:"namespace"`
+	Type      string    `json:"type"`
+	Keys      []string  `json:"keys"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
@@ -146,16 +146,16 @@ type Namespace struct {
 
 // Node represents a Kubernetes node.
 type Node struct {
-	Name             string            `json:"name"`
-	Status           string            `json:"status"`
-	Roles            []string          `json:"roles"`
-	Version          string            `json:"version"`
-	InternalIP       string            `json:"internalIP"`
-	OS               string            `json:"os"`
-	Architecture     string            `json:"architecture"`
-	CPUCapacity      string            `json:"cpuCapacity"`
-	MemoryCapacity   string            `json:"memoryCapacity"`
-	Labels           map[string]string `json:"labels"`
+	Name           string            `json:"name"`
+	Status         string            `json:"status"`
+	Roles          []string          `json:"roles"`
+	Version        string            `json:"version"`
+	InternalIP     string            `json:"internalIP"`
+	OS             string            `json:"os"`
+	Architecture   string            `json:"architecture"`
+	CPUCapacity    string            `json:"cpuCapacity"`
+	MemoryCapacity string            `json:"memoryCapacity"`
+	Labels         map[string]string `json:"labels"`
 }
 
 // Event represents a Kubernetes event.

@@ -34,7 +34,7 @@ type Orchestrator struct {
 	teamBuilder  *agents.TeamBuilder
 
 	// Knowledge management
-	knowledgeRepo     knowledge.Repository
+	knowledgeRepo       knowledge.Repository
 	learningIntegration *knowledge.DebateLearningIntegration
 	crossDebateLearner  *knowledge.CrossDebateLearner
 
@@ -58,24 +58,24 @@ type ProviderRegistry interface {
 // OrchestratorConfig configures the debate orchestrator.
 type OrchestratorConfig struct {
 	// Default debate settings
-	DefaultMaxRounds       int           `json:"default_max_rounds"`
-	DefaultTimeout         time.Duration `json:"default_timeout"`
-	DefaultTopology        topology.TopologyType `json:"default_topology"`
-	DefaultMinConsensus    float64       `json:"default_min_consensus"`
+	DefaultMaxRounds    int                   `json:"default_max_rounds"`
+	DefaultTimeout      time.Duration         `json:"default_timeout"`
+	DefaultTopology     topology.TopologyType `json:"default_topology"`
+	DefaultMinConsensus float64               `json:"default_min_consensus"`
 
 	// Agent settings
-	MinAgentsPerDebate     int           `json:"min_agents_per_debate"`
-	MaxAgentsPerDebate     int           `json:"max_agents_per_debate"`
-	EnableAgentDiversity   bool          `json:"enable_agent_diversity"`
+	MinAgentsPerDebate   int  `json:"min_agents_per_debate"`
+	MaxAgentsPerDebate   int  `json:"max_agents_per_debate"`
+	EnableAgentDiversity bool `json:"enable_agent_diversity"`
 
 	// Learning settings
-	EnableLearning         bool          `json:"enable_learning"`
-	EnableCrossDebateLearning bool       `json:"enable_cross_debate_learning"`
-	MinConsensusForLesson  float64       `json:"min_consensus_for_lesson"`
+	EnableLearning            bool    `json:"enable_learning"`
+	EnableCrossDebateLearning bool    `json:"enable_cross_debate_learning"`
+	MinConsensusForLesson     float64 `json:"min_consensus_for_lesson"`
 
 	// Voting settings
-	VotingMethod           voting.VotingMethod `json:"voting_method"`
-	EnableConfidenceWeighting bool        `json:"enable_confidence_weighting"`
+	VotingMethod              voting.VotingMethod `json:"voting_method"`
+	EnableConfidenceWeighting bool                `json:"enable_confidence_weighting"`
 }
 
 // DefaultOrchestratorConfig returns sensible defaults.
@@ -151,17 +151,17 @@ func NewOrchestrator(
 	votingSystem := voting.NewWeightedVotingSystem(votingConfig)
 
 	return &Orchestrator{
-		providerRegistry:     providerRegistry,
-		verifierScores:       make(map[string]float64),
-		agentFactory:         agentFactory,
-		agentPool:            agentPool,
-		teamBuilder:          teamBuilder,
-		knowledgeRepo:        knowledgeRepo,
-		learningIntegration:  learningIntegration,
-		crossDebateLearner:   crossDebateLearner,
-		votingSystem:         votingSystem,
-		config:               config,
-		activeDebates:        make(map[string]*ActiveDebate),
+		providerRegistry:    providerRegistry,
+		verifierScores:      make(map[string]float64),
+		agentFactory:        agentFactory,
+		agentPool:           agentPool,
+		teamBuilder:         teamBuilder,
+		knowledgeRepo:       knowledgeRepo,
+		learningIntegration: learningIntegration,
+		crossDebateLearner:  crossDebateLearner,
+		votingSystem:        votingSystem,
+		config:              config,
+		activeDebates:       make(map[string]*ActiveDebate),
 	}
 }
 
@@ -227,70 +227,70 @@ type DebateRequest struct {
 
 // DebateResponse represents the result of a debate.
 type DebateResponse struct {
-	ID                string                 `json:"id"`
-	Topic             string                 `json:"topic"`
-	Success           bool                   `json:"success"`
-	Consensus         *ConsensusResponse     `json:"consensus,omitempty"`
-	Phases            []*PhaseResponse       `json:"phases"`
-	Participants      []*ParticipantInfo     `json:"participants"`
-	LessonsLearned    int                    `json:"lessons_learned"`
-	PatternsDetected  int                    `json:"patterns_detected"`
-	Duration          time.Duration          `json:"duration"`
-	Metrics           *DebateMetrics         `json:"metrics"`
-	Metadata          map[string]interface{} `json:"metadata,omitempty"`
+	ID               string                 `json:"id"`
+	Topic            string                 `json:"topic"`
+	Success          bool                   `json:"success"`
+	Consensus        *ConsensusResponse     `json:"consensus,omitempty"`
+	Phases           []*PhaseResponse       `json:"phases"`
+	Participants     []*ParticipantInfo     `json:"participants"`
+	LessonsLearned   int                    `json:"lessons_learned"`
+	PatternsDetected int                    `json:"patterns_detected"`
+	Duration         time.Duration          `json:"duration"`
+	Metrics          *DebateMetrics         `json:"metrics"`
+	Metadata         map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // ConsensusResponse represents the consensus from a debate.
 type ConsensusResponse struct {
-	Summary        string             `json:"summary"`
-	Confidence     float64            `json:"confidence"`
-	KeyPoints      []string           `json:"key_points"`
-	Dissents       []string           `json:"dissents,omitempty"`
-	VoteBreakdown  map[string]int     `json:"vote_breakdown"`
-	WinningVote    string             `json:"winning_vote"`
-	Method         string             `json:"method"`
+	Summary       string         `json:"summary"`
+	Confidence    float64        `json:"confidence"`
+	KeyPoints     []string       `json:"key_points"`
+	Dissents      []string       `json:"dissents,omitempty"`
+	VoteBreakdown map[string]int `json:"vote_breakdown"`
+	WinningVote   string         `json:"winning_vote"`
+	Method        string         `json:"method"`
 }
 
 // PhaseResponse represents a phase in the debate.
 type PhaseResponse struct {
-	Phase          string               `json:"phase"`
-	Round          int                  `json:"round"`
-	Responses      []*AgentResponse     `json:"responses"`
-	ConsensusLevel float64              `json:"consensus_level"`
-	KeyInsights    []string             `json:"key_insights"`
-	Duration       time.Duration        `json:"duration"`
+	Phase          string           `json:"phase"`
+	Round          int              `json:"round"`
+	Responses      []*AgentResponse `json:"responses"`
+	ConsensusLevel float64          `json:"consensus_level"`
+	KeyInsights    []string         `json:"key_insights"`
+	Duration       time.Duration    `json:"duration"`
 }
 
 // AgentResponse represents a response from an agent.
 type AgentResponse struct {
-	AgentID        string    `json:"agent_id"`
-	Provider       string    `json:"provider"`
-	Model          string    `json:"model"`
-	Role           string    `json:"role"`
-	Content        string    `json:"content"`
-	Confidence     float64   `json:"confidence"`
-	Score          float64   `json:"score"`
-	Latency        time.Duration `json:"latency"`
+	AgentID    string        `json:"agent_id"`
+	Provider   string        `json:"provider"`
+	Model      string        `json:"model"`
+	Role       string        `json:"role"`
+	Content    string        `json:"content"`
+	Confidence float64       `json:"confidence"`
+	Score      float64       `json:"score"`
+	Latency    time.Duration `json:"latency"`
 }
 
 // ParticipantInfo describes a debate participant.
 type ParticipantInfo struct {
-	AgentID        string          `json:"agent_id"`
-	Name           string          `json:"name"`
-	Provider       string          `json:"provider"`
-	Model          string          `json:"model"`
-	Role           string          `json:"role"`
-	Domain         agents.Domain   `json:"domain"`
-	Score          float64         `json:"score"`
+	AgentID  string        `json:"agent_id"`
+	Name     string        `json:"name"`
+	Provider string        `json:"provider"`
+	Model    string        `json:"model"`
+	Role     string        `json:"role"`
+	Domain   agents.Domain `json:"domain"`
+	Score    float64       `json:"score"`
 }
 
 // DebateMetrics provides metrics about the debate.
 type DebateMetrics struct {
-	TotalResponses    int           `json:"total_responses"`
-	AvgLatency        time.Duration `json:"avg_latency"`
-	AvgConfidence     float64       `json:"avg_confidence"`
-	ConsensusScore    float64       `json:"consensus_score"`
-	QualityScore      float64       `json:"quality_score"`
+	TotalResponses    int            `json:"total_responses"`
+	AvgLatency        time.Duration  `json:"avg_latency"`
+	AvgConfidence     float64        `json:"avg_confidence"`
+	ConsensusScore    float64        `json:"consensus_score"`
+	QualityScore      float64        `json:"quality_score"`
 	ProviderBreakdown map[string]int `json:"provider_breakdown"`
 }
 
@@ -339,17 +339,17 @@ func (o *Orchestrator) ConductDebate(ctx context.Context, request *DebateRequest
 
 	// 4. Create protocol
 	protocolConfig := protocol.DebateConfig{
-		ID:                request.ID,
-		Topic:             request.Topic,
-		Context:           request.Context,
-		Requirements:      request.Requirements,
-		MaxRounds:         request.MaxRounds,
-		Timeout:           request.Timeout,
-		TopologyType:      request.TopologyType,
-		MinConsensusScore: request.MinConsensus,
-		EnableEarlyExit:   true,
+		ID:                  request.ID,
+		Topic:               request.Topic,
+		Context:             request.Context,
+		Requirements:        request.Requirements,
+		MaxRounds:           request.MaxRounds,
+		Timeout:             request.Timeout,
+		TopologyType:        request.TopologyType,
+		MinConsensusScore:   request.MinConsensus,
+		EnableEarlyExit:     true,
 		EnableCognitiveLoop: true,
-		Metadata:          request.Metadata,
+		Metadata:            request.Metadata,
 	}
 	debateProtocol := protocol.NewProtocol(protocolConfig, topo, invoker)
 

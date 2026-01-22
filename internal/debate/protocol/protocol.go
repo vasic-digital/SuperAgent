@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"dev.helix.agent/internal/debate/topology"
+	"github.com/google/uuid"
 )
 
 // DebateConfig configures a debate session.
@@ -57,98 +57,98 @@ type PhaseConfig struct {
 
 // ValidationRule defines a rule for validating phase outputs.
 type ValidationRule struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
+	Name        string                             `json:"name"`
+	Description string                             `json:"description"`
+	Required    bool                               `json:"required"`
 	Validator   func(response *PhaseResponse) bool `json:"-"`
 }
 
 // PhaseResponse represents a response from an agent in a phase.
 type PhaseResponse struct {
-	AgentID        string                 `json:"agent_id"`
-	Role           topology.AgentRole     `json:"role"`
-	Provider       string                 `json:"provider"`
-	Model          string                 `json:"model"`
-	Content        string                 `json:"content"`
-	Confidence     float64                `json:"confidence"`
-	Arguments      []string               `json:"arguments,omitempty"`
-	Criticisms     []string               `json:"criticisms,omitempty"`
-	Suggestions    []string               `json:"suggestions,omitempty"`
-	Vote           string                 `json:"vote,omitempty"` // For convergence
-	Score          float64                `json:"score"`
-	Latency        time.Duration          `json:"latency"`
-	Timestamp      time.Time              `json:"timestamp"`
-	Metadata       map[string]interface{} `json:"metadata,omitempty"`
+	AgentID     string                 `json:"agent_id"`
+	Role        topology.AgentRole     `json:"role"`
+	Provider    string                 `json:"provider"`
+	Model       string                 `json:"model"`
+	Content     string                 `json:"content"`
+	Confidence  float64                `json:"confidence"`
+	Arguments   []string               `json:"arguments,omitempty"`
+	Criticisms  []string               `json:"criticisms,omitempty"`
+	Suggestions []string               `json:"suggestions,omitempty"`
+	Vote        string                 `json:"vote,omitempty"` // For convergence
+	Score       float64                `json:"score"`
+	Latency     time.Duration          `json:"latency"`
+	Timestamp   time.Time              `json:"timestamp"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // PhaseResult represents the result of a single phase.
 type PhaseResult struct {
-	Phase           topology.DebatePhase `json:"phase"`
-	Round           int                  `json:"round"`
-	Responses       []*PhaseResponse     `json:"responses"`
-	LeaderResponse  *PhaseResponse       `json:"leader_response,omitempty"`
-	ConsensusLevel  float64              `json:"consensus_level"`
-	KeyInsights     []string             `json:"key_insights"`
-	Disagreements   []string             `json:"disagreements,omitempty"`
-	StartTime       time.Time            `json:"start_time"`
-	EndTime         time.Time            `json:"end_time"`
-	Duration        time.Duration        `json:"duration"`
+	Phase          topology.DebatePhase `json:"phase"`
+	Round          int                  `json:"round"`
+	Responses      []*PhaseResponse     `json:"responses"`
+	LeaderResponse *PhaseResponse       `json:"leader_response,omitempty"`
+	ConsensusLevel float64              `json:"consensus_level"`
+	KeyInsights    []string             `json:"key_insights"`
+	Disagreements  []string             `json:"disagreements,omitempty"`
+	StartTime      time.Time            `json:"start_time"`
+	EndTime        time.Time            `json:"end_time"`
+	Duration       time.Duration        `json:"duration"`
 }
 
 // DebateResult represents the complete result of a debate.
 type DebateResult struct {
-	ID                string                 `json:"id"`
-	Topic             string                 `json:"topic"`
-	Phases            []*PhaseResult         `json:"phases"`
-	FinalConsensus    *ConsensusResult       `json:"final_consensus"`
-	BestResponse      *PhaseResponse         `json:"best_response"`
-	ParticipantCount  int                    `json:"participant_count"`
-	TotalRounds       int                    `json:"total_rounds"`
-	RoundsCompleted   int                    `json:"rounds_completed"`
-	Success           bool                   `json:"success"`
-	EarlyExit         bool                   `json:"early_exit"`
-	EarlyExitReason   string                 `json:"early_exit_reason,omitempty"`
-	StartTime         time.Time              `json:"start_time"`
-	EndTime           time.Time              `json:"end_time"`
-	Duration          time.Duration          `json:"duration"`
-	TopologyUsed      topology.TopologyType  `json:"topology_used"`
-	Metrics           *DebateMetrics         `json:"metrics"`
-	Metadata          map[string]interface{} `json:"metadata,omitempty"`
+	ID               string                 `json:"id"`
+	Topic            string                 `json:"topic"`
+	Phases           []*PhaseResult         `json:"phases"`
+	FinalConsensus   *ConsensusResult       `json:"final_consensus"`
+	BestResponse     *PhaseResponse         `json:"best_response"`
+	ParticipantCount int                    `json:"participant_count"`
+	TotalRounds      int                    `json:"total_rounds"`
+	RoundsCompleted  int                    `json:"rounds_completed"`
+	Success          bool                   `json:"success"`
+	EarlyExit        bool                   `json:"early_exit"`
+	EarlyExitReason  string                 `json:"early_exit_reason,omitempty"`
+	StartTime        time.Time              `json:"start_time"`
+	EndTime          time.Time              `json:"end_time"`
+	Duration         time.Duration          `json:"duration"`
+	TopologyUsed     topology.TopologyType  `json:"topology_used"`
+	Metrics          *DebateMetrics         `json:"metrics"`
+	Metadata         map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // ConsensusResult represents the final consensus from a debate.
 type ConsensusResult struct {
-	Summary        string            `json:"summary"`
-	Confidence     float64           `json:"confidence"`
-	KeyPoints      []string          `json:"key_points"`
-	Dissents       []string          `json:"dissents,omitempty"`
-	VoteBreakdown  map[string]int    `json:"vote_breakdown"`
-	WinningVote    string            `json:"winning_vote"`
-	Contributors   []string          `json:"contributors"`
-	Method         ConsensusMethod   `json:"method"`
+	Summary       string          `json:"summary"`
+	Confidence    float64         `json:"confidence"`
+	KeyPoints     []string        `json:"key_points"`
+	Dissents      []string        `json:"dissents,omitempty"`
+	VoteBreakdown map[string]int  `json:"vote_breakdown"`
+	WinningVote   string          `json:"winning_vote"`
+	Contributors  []string        `json:"contributors"`
+	Method        ConsensusMethod `json:"method"`
 }
 
 // ConsensusMethod identifies how consensus was reached.
 type ConsensusMethod string
 
 const (
-	ConsensusMethodUnanimous       ConsensusMethod = "unanimous"
-	ConsensusMethodMajority        ConsensusMethod = "majority"
-	ConsensusMethodWeightedVoting  ConsensusMethod = "weighted_voting"
-	ConsensusMethodLeaderDecision  ConsensusMethod = "leader_decision"
-	ConsensusMethodNoConsensus     ConsensusMethod = "no_consensus"
+	ConsensusMethodUnanimous      ConsensusMethod = "unanimous"
+	ConsensusMethodMajority       ConsensusMethod = "majority"
+	ConsensusMethodWeightedVoting ConsensusMethod = "weighted_voting"
+	ConsensusMethodLeaderDecision ConsensusMethod = "leader_decision"
+	ConsensusMethodNoConsensus    ConsensusMethod = "no_consensus"
 )
 
 // DebateMetrics holds metrics for a debate.
 type DebateMetrics struct {
-	TotalResponses       int           `json:"total_responses"`
-	TotalTokens          int           `json:"total_tokens"`
-	AvgLatency           time.Duration `json:"avg_latency"`
-	AvgConfidence        float64       `json:"avg_confidence"`
-	ConsensusScore       float64       `json:"consensus_score"`
-	PhaseMetrics         map[topology.DebatePhase]*PhaseMetrics `json:"phase_metrics"`
-	AgentParticipation   map[string]int `json:"agent_participation"`
-	RoleContributions    map[topology.AgentRole]int `json:"role_contributions"`
+	TotalResponses     int                                    `json:"total_responses"`
+	TotalTokens        int                                    `json:"total_tokens"`
+	AvgLatency         time.Duration                          `json:"avg_latency"`
+	AvgConfidence      float64                                `json:"avg_confidence"`
+	ConsensusScore     float64                                `json:"consensus_score"`
+	PhaseMetrics       map[topology.DebatePhase]*PhaseMetrics `json:"phase_metrics"`
+	AgentParticipation map[string]int                         `json:"agent_participation"`
+	RoleContributions  map[topology.AgentRole]int             `json:"role_contributions"`
 }
 
 // PhaseMetrics holds metrics for a single phase.
@@ -167,31 +167,31 @@ type AgentInvoker interface {
 
 // DebateContext provides context for agent invocations.
 type DebateContext struct {
-	DebateID      string                 `json:"debate_id"`
-	Topic         string                 `json:"topic"`
-	Context       string                 `json:"context"`
-	CurrentPhase  topology.DebatePhase   `json:"current_phase"`
-	Round         int                    `json:"round"`
-	PreviousPhases []*PhaseResult        `json:"previous_phases,omitempty"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	DebateID       string                 `json:"debate_id"`
+	Topic          string                 `json:"topic"`
+	Context        string                 `json:"context"`
+	CurrentPhase   topology.DebatePhase   `json:"current_phase"`
+	Round          int                    `json:"round"`
+	PreviousPhases []*PhaseResult         `json:"previous_phases,omitempty"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // Protocol orchestrates the 5-phase debate flow.
 type Protocol struct {
-	config         DebateConfig
-	topology       topology.Topology
-	invoker        AgentInvoker
-	phaseConfigs   map[topology.DebatePhase]*PhaseConfig
+	config       DebateConfig
+	topology     topology.Topology
+	invoker      AgentInvoker
+	phaseConfigs map[topology.DebatePhase]*PhaseConfig
 
 	// State
-	currentPhase   topology.DebatePhase
-	currentRound   int
-	phaseResults   []*PhaseResult
-	metrics        *DebateMetrics
+	currentPhase topology.DebatePhase
+	currentRound int
+	phaseResults []*PhaseResult
+	metrics      *DebateMetrics
 
-	mu             sync.RWMutex
-	started        bool
-	stopped        bool
+	mu      sync.RWMutex
+	started bool
+	stopped bool
 }
 
 // NewProtocol creates a new debate protocol.

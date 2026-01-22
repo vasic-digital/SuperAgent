@@ -11,10 +11,10 @@ import (
 
 // SlackConfig configures the Slack adapter.
 type SlackConfig struct {
-	BotToken     string        `json:"bot_token"`
-	AppToken     string        `json:"app_token,omitempty"`
-	Timeout      time.Duration `json:"timeout"`
-	TeamID       string        `json:"team_id,omitempty"`
+	BotToken string        `json:"bot_token"`
+	AppToken string        `json:"app_token,omitempty"`
+	Timeout  time.Duration `json:"timeout"`
+	TeamID   string        `json:"team_id,omitempty"`
 }
 
 // DefaultSlackConfig returns default configuration.
@@ -54,11 +54,11 @@ type SlackClient interface {
 
 // MessageOptions represents message options.
 type MessageOptions struct {
-	ThreadTS    string       `json:"thread_ts,omitempty"`
-	ReplyBroadcast bool     `json:"reply_broadcast,omitempty"`
-	Blocks      []Block      `json:"blocks,omitempty"`
-	Attachments []Attachment `json:"attachments,omitempty"`
-	Unfurl      bool         `json:"unfurl,omitempty"`
+	ThreadTS       string       `json:"thread_ts,omitempty"`
+	ReplyBroadcast bool         `json:"reply_broadcast,omitempty"`
+	Blocks         []Block      `json:"blocks,omitempty"`
+	Attachments    []Attachment `json:"attachments,omitempty"`
+	Unfurl         bool         `json:"unfurl,omitempty"`
 }
 
 // Block represents a Slack block.
@@ -75,19 +75,19 @@ type TextObject struct {
 
 // Attachment represents a Slack attachment.
 type Attachment struct {
-	Color      string `json:"color,omitempty"`
-	Title      string `json:"title,omitempty"`
-	Text       string `json:"text,omitempty"`
-	Footer     string `json:"footer,omitempty"`
+	Color  string `json:"color,omitempty"`
+	Title  string `json:"title,omitempty"`
+	Text   string `json:"text,omitempty"`
+	Footer string `json:"footer,omitempty"`
 }
 
 // SlackMessage represents a Slack message.
 type SlackMessage struct {
-	TS        string `json:"ts"`
-	Text      string `json:"text"`
-	User      string `json:"user"`
-	Channel   string `json:"channel"`
-	ThreadTS  string `json:"thread_ts,omitempty"`
+	TS        string     `json:"ts"`
+	Text      string     `json:"text"`
+	User      string     `json:"user"`
+	Channel   string     `json:"channel"`
+	ThreadTS  string     `json:"thread_ts,omitempty"`
 	Reactions []Reaction `json:"reactions,omitempty"`
 }
 
@@ -123,11 +123,11 @@ type SlackUser struct {
 
 // SlackFile represents an uploaded file.
 type SlackFile struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	URL       string `json:"url_private"`
-	Size      int    `json:"size"`
-	Mimetype  string `json:"mimetype"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	URL      string `json:"url_private"`
+	Size     int    `json:"size"`
+	Mimetype string `json:"mimetype"`
 }
 
 // NewSlackAdapter creates a new Slack adapter.

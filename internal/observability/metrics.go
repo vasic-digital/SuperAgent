@@ -16,38 +16,38 @@ type LLMMetrics struct {
 	mu    sync.RWMutex
 
 	// Request metrics
-	RequestsTotal     metric.Int64Counter
-	RequestsInFlight  metric.Int64UpDownCounter
-	RequestDuration   metric.Float64Histogram
-	RequestSize       metric.Int64Histogram
+	RequestsTotal    metric.Int64Counter
+	RequestsInFlight metric.Int64UpDownCounter
+	RequestDuration  metric.Float64Histogram
+	RequestSize      metric.Int64Histogram
 
 	// Token metrics
-	InputTokens       metric.Int64Counter
-	OutputTokens      metric.Int64Counter
-	TotalTokens       metric.Int64Counter
+	InputTokens  metric.Int64Counter
+	OutputTokens metric.Int64Counter
+	TotalTokens  metric.Int64Counter
 
 	// Cost metrics
-	TotalCost         metric.Float64Counter
-	CostPerRequest    metric.Float64Histogram
+	TotalCost      metric.Float64Counter
+	CostPerRequest metric.Float64Histogram
 
 	// Error metrics
-	ErrorsTotal       metric.Int64Counter
-	TimeoutsTotal     metric.Int64Counter
-	RateLimitsTotal   metric.Int64Counter
+	ErrorsTotal     metric.Int64Counter
+	TimeoutsTotal   metric.Int64Counter
+	RateLimitsTotal metric.Int64Counter
 
 	// Cache metrics
-	CacheHits         metric.Int64Counter
-	CacheMisses       metric.Int64Counter
-	CacheLatency      metric.Float64Histogram
+	CacheHits    metric.Int64Counter
+	CacheMisses  metric.Int64Counter
+	CacheLatency metric.Float64Histogram
 
 	// Provider metrics
-	ProviderHealth    metric.Int64Gauge
-	ProviderScore     metric.Float64Gauge
-	ProviderLatency   metric.Float64Histogram
+	ProviderHealth  metric.Int64Gauge
+	ProviderScore   metric.Float64Gauge
+	ProviderLatency metric.Float64Histogram
 
 	// Debate metrics
-	DebateRounds      metric.Int64Counter
-	DebateConsensus   metric.Float64Histogram
+	DebateRounds       metric.Int64Counter
+	DebateConsensus    metric.Float64Histogram
 	DebateParticipants metric.Int64Histogram
 
 	// RAG metrics

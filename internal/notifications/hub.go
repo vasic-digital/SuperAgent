@@ -32,23 +32,23 @@ type TaskNotification struct {
 
 // NotificationHub is the central event distribution system
 type NotificationHub struct {
-	sseManager       *SSEManager
-	wsServer         *WebSocketServer
+	sseManager        *SSEManager
+	wsServer          *WebSocketServer
 	webhookDispatcher *WebhookDispatcher
-	pollingStore     *PollingStore
+	pollingStore      *PollingStore
 
 	// Subscribers for task-specific events
-	subscribers     map[string][]Subscriber
-	subscribersMu   sync.RWMutex
+	subscribers   map[string][]Subscriber
+	subscribersMu sync.RWMutex
 
 	// Global event subscribers
-	globalSubs      []Subscriber
-	globalSubsMu    sync.RWMutex
+	globalSubs   []Subscriber
+	globalSubsMu sync.RWMutex
 
-	logger    *logrus.Logger
-	ctx       context.Context
-	cancel    context.CancelFunc
-	wg        sync.WaitGroup
+	logger *logrus.Logger
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 
 	// Event channel for async processing
 	eventChan chan *TaskNotification
@@ -74,12 +74,12 @@ type Subscriber interface {
 
 // HubConfig holds configuration for the notification hub
 type HubConfig struct {
-	EventBufferSize      int           `yaml:"event_buffer_size"`
-	WorkerCount          int           `yaml:"worker_count"`
-	NotificationTimeout  time.Duration `yaml:"notification_timeout"`
-	RetryEnabled         bool          `yaml:"retry_enabled"`
-	MaxRetries           int           `yaml:"max_retries"`
-	RetryBackoff         time.Duration `yaml:"retry_backoff"`
+	EventBufferSize     int           `yaml:"event_buffer_size"`
+	WorkerCount         int           `yaml:"worker_count"`
+	NotificationTimeout time.Duration `yaml:"notification_timeout"`
+	RetryEnabled        bool          `yaml:"retry_enabled"`
+	MaxRetries          int           `yaml:"max_retries"`
+	RetryBackoff        time.Duration `yaml:"retry_backoff"`
 }
 
 // DefaultHubConfig returns sensible defaults
@@ -110,16 +110,16 @@ func NewNotificationHub(
 	ctx, cancel := context.WithCancel(context.Background())
 
 	hub := &NotificationHub{
-		sseManager:       sseManager,
-		wsServer:         wsServer,
+		sseManager:        sseManager,
+		wsServer:          wsServer,
 		webhookDispatcher: webhookDispatcher,
-		pollingStore:     pollingStore,
-		subscribers:      make(map[string][]Subscriber),
-		globalSubs:       make([]Subscriber, 0),
-		logger:           logger,
-		ctx:              ctx,
-		cancel:           cancel,
-		eventChan:        make(chan *TaskNotification, config.EventBufferSize),
+		pollingStore:      pollingStore,
+		subscribers:       make(map[string][]Subscriber),
+		globalSubs:        make([]Subscriber, 0),
+		logger:            logger,
+		ctx:               ctx,
+		cancel:            cancel,
+		eventChan:         make(chan *TaskNotification, config.EventBufferSize),
 	}
 
 	// Start event processing workers

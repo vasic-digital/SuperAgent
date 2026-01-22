@@ -28,19 +28,19 @@ type PoolConfig struct {
 	ExpectContinueTimeout time.Duration
 
 	// Keep-alive
-	DisableKeepAlives   bool
-	DisableCompression  bool
-	KeepAliveInterval   time.Duration
+	DisableKeepAlives  bool
+	DisableCompression bool
+	KeepAliveInterval  time.Duration
 
 	// TLS
-	TLSConfig           *tls.Config
-	InsecureSkipVerify  bool
+	TLSConfig          *tls.Config
+	InsecureSkipVerify bool
 
 	// Retry
-	RetryCount          int
-	RetryWaitMin        time.Duration
-	RetryWaitMax        time.Duration
-	RetryCondition      func(*http.Response, error) bool
+	RetryCount     int
+	RetryWaitMin   time.Duration
+	RetryWaitMax   time.Duration
+	RetryCondition func(*http.Response, error) bool
 }
 
 // DefaultPoolConfig returns default pool configuration
@@ -65,13 +65,13 @@ func DefaultPoolConfig() *PoolConfig {
 
 // PoolMetrics tracks HTTP client pool statistics
 type PoolMetrics struct {
-	TotalRequests    int64
-	SuccessRequests  int64
-	FailedRequests   int64
-	RetryCount       int64
-	TotalLatencyUs   int64
-	RequestCount     int64
-	ActiveRequests   int64
+	TotalRequests     int64
+	SuccessRequests   int64
+	FailedRequests    int64
+	RetryCount        int64
+	TotalLatencyUs    int64
+	RequestCount      int64
+	ActiveRequests    int64
 	ConnectionsReused int64
 }
 
@@ -87,10 +87,10 @@ func (m *PoolMetrics) AverageLatency() time.Duration {
 
 // HTTPClientPool manages reusable HTTP clients per host
 type HTTPClientPool struct {
-	clients  map[string]*http.Client
-	mu       sync.RWMutex
-	config   *PoolConfig
-	metrics  *PoolMetrics
+	clients   map[string]*http.Client
+	mu        sync.RWMutex
+	config    *PoolConfig
+	metrics   *PoolMetrics
 	transport *http.Transport
 }
 
@@ -375,11 +375,11 @@ func PostJSON(ctx context.Context, url string, body io.Reader) (*http.Response, 
 
 // HostClient provides a client pre-configured for a specific host
 type HostClient struct {
-	pool     *HTTPClientPool
-	host     string
-	baseURL  string
-	headers  map[string]string
-	mu       sync.RWMutex
+	pool    *HTTPClientPool
+	host    string
+	baseURL string
+	headers map[string]string
+	mu      sync.RWMutex
 }
 
 // NewHostClient creates a client for a specific host

@@ -544,9 +544,9 @@ func TestAbbreviateKey(t *testing.T) {
 		{"created_at", "ca"},
 		{"updated_at", "ua"},
 		{"description", "d"},
-		{"unknown", "unk"},       // unknown is > 5 chars so gets abbreviated to first 3
+		{"unknown", "unk"}, // unknown is > 5 chars so gets abbreviated to first 3
 		{"very_long_key_name", "ver"},
-		{"short", "short"},       // short is exactly 5 chars so stays unchanged
+		{"short", "short"}, // short is exactly 5 chars so stays unchanged
 	}
 
 	for _, tt := range tests {

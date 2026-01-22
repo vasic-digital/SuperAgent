@@ -366,7 +366,7 @@ func TestCache_Stats(t *testing.T) {
 	assert.Equal(t, 1, stats.ProviderCount)
 
 	// Generate hits and misses
-	cache.GetModel(ctx, "model-1")    // hit
+	cache.GetModel(ctx, "model-1")     // hit
 	cache.GetModel(ctx, "nonexistent") // miss
 
 	stats = cache.Stats()

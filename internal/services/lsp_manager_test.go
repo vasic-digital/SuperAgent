@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/database"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/database"
 )
 
 func newLSPTestLogger() *logrus.Logger {
@@ -1884,9 +1884,9 @@ func TestLSPManager_GracefulDegradation(t *testing.T) {
 	ctx := context.Background()
 
 	testCases := []struct {
-		name     string
-		method   func() (interface{}, error)
-		checkFn  func(t *testing.T, result interface{})
+		name    string
+		method  func() (interface{}, error)
+		checkFn func(t *testing.T, result interface{})
 	}{
 		{
 			name: "GetDiagnostics",

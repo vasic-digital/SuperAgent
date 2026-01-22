@@ -130,10 +130,10 @@ type TaskRepository interface {
 
 // ResourceRequirements specifies resource needs for a task
 type ResourceRequirements struct {
-	CPUCores int              `json:"cpu_cores"`
-	MemoryMB int              `json:"memory_mb"`
-	DiskMB   int              `json:"disk_mb"`
-	GPUCount int              `json:"gpu_count"`
+	CPUCores int                 `json:"cpu_cores"`
+	MemoryMB int                 `json:"memory_mb"`
+	DiskMB   int                 `json:"disk_mb"`
+	GPUCount int                 `json:"gpu_count"`
 	Priority models.TaskPriority `json:"priority"`
 }
 
@@ -240,14 +240,14 @@ type WorkerPool interface {
 
 // WorkerStatus represents the status of a worker
 type WorkerStatus struct {
-	ID              string               `json:"id"`
-	Status          string               `json:"status"` // idle, busy, stopping, stopped
+	ID              string                 `json:"id"`
+	Status          string                 `json:"status"` // idle, busy, stopping, stopped
 	CurrentTask     *models.BackgroundTask `json:"current_task,omitempty"`
-	StartedAt       time.Time            `json:"started_at"`
-	LastActivity    time.Time            `json:"last_activity"`
-	TasksCompleted  int64                `json:"tasks_completed"`
-	TasksFailed     int64                `json:"tasks_failed"`
-	AvgTaskDuration time.Duration        `json:"avg_task_duration"`
+	StartedAt       time.Time              `json:"started_at"`
+	LastActivity    time.Time              `json:"last_activity"`
+	TasksCompleted  int64                  `json:"tasks_completed"`
+	TasksFailed     int64                  `json:"tasks_failed"`
+	AvgTaskDuration time.Duration          `json:"avg_task_duration"`
 }
 
 // TaskEvent represents a task lifecycle event
@@ -261,11 +261,11 @@ type TaskEvent struct {
 
 // ExecutionResult represents the result of task execution
 type ExecutionResult struct {
-	TaskID          string        `json:"task_id"`
-	Status          models.TaskStatus `json:"status"`
-	Output          []byte        `json:"output,omitempty"`
-	Error           string        `json:"error,omitempty"`
-	Duration        time.Duration `json:"duration"`
-	RetryCount      int           `json:"retry_count"`
+	TaskID          string                   `json:"task_id"`
+	Status          models.TaskStatus        `json:"status"`
+	Output          []byte                   `json:"output,omitempty"`
+	Error           string                   `json:"error,omitempty"`
+	Duration        time.Duration            `json:"duration"`
+	RetryCount      int                      `json:"retry_count"`
 	ResourceMetrics *models.ResourceSnapshot `json:"resource_metrics,omitempty"`
 }

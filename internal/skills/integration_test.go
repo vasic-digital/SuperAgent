@@ -210,11 +210,11 @@ func TestResponseEnhancer(t *testing.T) {
 
 	usages := []SkillUsage{
 		{
-			SkillName:   "docker-deploy",
-			Category:    "devops",
-			MatchType:   MatchTypeExact,
-			Confidence:  0.95,
-			Success:     true,
+			SkillName:  "docker-deploy",
+			Category:   "devops",
+			MatchType:  MatchTypeExact,
+			Confidence: 0.95,
+			Success:    true,
 		},
 	}
 

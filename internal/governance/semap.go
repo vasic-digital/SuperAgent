@@ -80,15 +80,15 @@ type Contract struct {
 
 // Condition represents a condition to be evaluated.
 type Condition struct {
-	ID          string            `json:"id"`
-	Expression  string            `json:"expression"`
-	Evaluator   ConditionType     `json:"evaluator"`
+	ID          string                 `json:"id"`
+	Expression  string                 `json:"expression"`
+	Evaluator   ConditionType          `json:"evaluator"`
 	Parameters  map[string]interface{} `json:"parameters,omitempty"`
-	Message     string            `json:"message"`
-	FailMessage string            `json:"fail_message,omitempty"`
+	Message     string                 `json:"message"`
+	FailMessage string                 `json:"fail_message,omitempty"`
 	// Negate inverts the condition result (true becomes false and vice versa)
 	// Used for blocklist patterns where matching = violation
-	Negate      bool              `json:"negate,omitempty"`
+	Negate bool `json:"negate,omitempty"`
 }
 
 // ConditionType represents the type of condition evaluator.
@@ -125,44 +125,44 @@ const (
 
 // ContractMetadata contains metadata about a contract.
 type ContractMetadata struct {
-	Author      string   `json:"author"`
-	Version     string   `json:"version"`
-	Tags        []string `json:"tags,omitempty"`
-	Category    string   `json:"category,omitempty"`
-	References  []string `json:"references,omitempty"`
-	Deprecated  bool     `json:"deprecated,omitempty"`
-	Priority    int      `json:"priority"`
+	Author     string   `json:"author"`
+	Version    string   `json:"version"`
+	Tags       []string `json:"tags,omitempty"`
+	Category   string   `json:"category,omitempty"`
+	References []string `json:"references,omitempty"`
+	Deprecated bool     `json:"deprecated,omitempty"`
+	Priority   int      `json:"priority"`
 }
 
 // AgentCapability represents a capability that an agent can have.
 type AgentCapability string
 
 const (
-	CapabilityRead          AgentCapability = "read"
-	CapabilityWrite         AgentCapability = "write"
-	CapabilityExecute       AgentCapability = "execute"
-	CapabilityNetwork       AgentCapability = "network"
-	CapabilityFileSystem    AgentCapability = "filesystem"
-	CapabilityProcess       AgentCapability = "process"
-	CapabilityDatabase      AgentCapability = "database"
-	CapabilitySecrets       AgentCapability = "secrets"
-	CapabilityAuthenticate  AgentCapability = "authenticate"
-	CapabilityAuthorize     AgentCapability = "authorize"
+	CapabilityRead         AgentCapability = "read"
+	CapabilityWrite        AgentCapability = "write"
+	CapabilityExecute      AgentCapability = "execute"
+	CapabilityNetwork      AgentCapability = "network"
+	CapabilityFileSystem   AgentCapability = "filesystem"
+	CapabilityProcess      AgentCapability = "process"
+	CapabilityDatabase     AgentCapability = "database"
+	CapabilitySecrets      AgentCapability = "secrets"
+	CapabilityAuthenticate AgentCapability = "authenticate"
+	CapabilityAuthorize    AgentCapability = "authorize"
 )
 
 // AgentProfile defines the permissions and constraints for an agent.
 type AgentProfile struct {
-	ID             string              `json:"id"`
-	Name           string              `json:"name"`
-	Description    string              `json:"description"`
-	Capabilities   []AgentCapability   `json:"capabilities"`
-	Constraints    []Constraint        `json:"constraints"`
-	RateLimits     []RateLimit         `json:"rate_limits,omitempty"`
-	ResourceLimits *ResourceLimits     `json:"resource_limits,omitempty"`
-	Policies       []string            `json:"policies"` // Policy IDs
-	TrustLevel     TrustLevel          `json:"trust_level"`
-	CreatedAt      time.Time           `json:"created_at"`
-	ExpiresAt      *time.Time          `json:"expires_at,omitempty"`
+	ID             string            `json:"id"`
+	Name           string            `json:"name"`
+	Description    string            `json:"description"`
+	Capabilities   []AgentCapability `json:"capabilities"`
+	Constraints    []Constraint      `json:"constraints"`
+	RateLimits     []RateLimit       `json:"rate_limits,omitempty"`
+	ResourceLimits *ResourceLimits   `json:"resource_limits,omitempty"`
+	Policies       []string          `json:"policies"` // Policy IDs
+	TrustLevel     TrustLevel        `json:"trust_level"`
+	CreatedAt      time.Time         `json:"created_at"`
+	ExpiresAt      *time.Time        `json:"expires_at,omitempty"`
 }
 
 // Constraint defines a constraint on agent behavior.
@@ -178,21 +178,21 @@ type Constraint struct {
 type ConstraintType string
 
 const (
-	ConstraintTypePathPattern  ConstraintType = "path_pattern"
-	ConstraintTypeCommandWhitelist ConstraintType = "command_whitelist"
-	ConstraintTypeCommandBlacklist ConstraintType = "command_blacklist"
-	ConstraintTypeResourceQuota    ConstraintType = "resource_quota"
-	ConstraintTypeTimeWindow       ConstraintType = "time_window"
-	ConstraintTypeIPRange          ConstraintType = "ip_range"
+	ConstraintTypePathPattern        ConstraintType = "path_pattern"
+	ConstraintTypeCommandWhitelist   ConstraintType = "command_whitelist"
+	ConstraintTypeCommandBlacklist   ConstraintType = "command_blacklist"
+	ConstraintTypeResourceQuota      ConstraintType = "resource_quota"
+	ConstraintTypeTimeWindow         ConstraintType = "time_window"
+	ConstraintTypeIPRange            ConstraintType = "ip_range"
 	ConstraintTypeDataClassification ConstraintType = "data_classification"
 )
 
 // RateLimit defines rate limiting for an agent.
 type RateLimit struct {
-	Resource    string        `json:"resource"`
-	Limit       int           `json:"limit"`
-	Window      time.Duration `json:"window"`
-	BurstLimit  int           `json:"burst_limit,omitempty"`
+	Resource   string        `json:"resource"`
+	Limit      int           `json:"limit"`
+	Window     time.Duration `json:"window"`
+	BurstLimit int           `json:"burst_limit,omitempty"`
 }
 
 // ResourceLimits defines resource limits for an agent.
@@ -217,21 +217,21 @@ const (
 
 // Policy represents a governance policy.
 type Policy struct {
-	ID          string     `json:"id"`
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	Contracts   []string   `json:"contracts"` // Contract IDs
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Contracts   []string    `json:"contracts"` // Contract IDs
 	Scope       PolicyScope `json:"scope"`
-	Priority    int        `json:"priority"`
-	Enabled     bool       `json:"enabled"`
-	EnforcedAt  time.Time  `json:"enforced_at"`
+	Priority    int         `json:"priority"`
+	Enabled     bool        `json:"enabled"`
+	EnforcedAt  time.Time   `json:"enforced_at"`
 }
 
 // PolicyScope defines the scope of a policy.
 type PolicyScope struct {
-	Agents      []string `json:"agents,omitempty"`      // Agent IDs or patterns
-	Actions     []string `json:"actions,omitempty"`     // Action types
-	Resources   []string `json:"resources,omitempty"`   // Resource patterns
+	Agents       []string `json:"agents,omitempty"`       // Agent IDs or patterns
+	Actions      []string `json:"actions,omitempty"`      // Action types
+	Resources    []string `json:"resources,omitempty"`    // Resource patterns
 	Environments []string `json:"environments,omitempty"` // Environment names
 }
 
@@ -271,15 +271,15 @@ type Remediation struct {
 
 // SEMAP is the main SEMAP Protocol implementation.
 type SEMAP struct {
-	config       SEMAPConfig
-	contracts    map[string]*Contract
-	policies     map[string]*Policy
-	profiles     map[string]*AgentProfile
-	violations   []*Violation
-	evaluators   map[ConditionType]ConditionEvaluator
-	actions      map[ActionType]ActionHandler
-	auditLog     *AuditLog
-	mu           sync.RWMutex
+	config     SEMAPConfig
+	contracts  map[string]*Contract
+	policies   map[string]*Policy
+	profiles   map[string]*AgentProfile
+	violations []*Violation
+	evaluators map[ConditionType]ConditionEvaluator
+	actions    map[ActionType]ActionHandler
+	auditLog   *AuditLog
+	mu         sync.RWMutex
 }
 
 // ConditionEvaluator evaluates a condition.
@@ -332,9 +332,9 @@ func (s *SEMAP) RegisterContract(contract *Contract) error {
 
 	if s.auditLog != nil {
 		s.auditLog.Log(AuditEntry{
-			Type:      "contract_registered",
+			Type:       "contract_registered",
 			ContractID: contract.ID,
-			Timestamp: time.Now(),
+			Timestamp:  time.Now(),
 		})
 	}
 
@@ -391,12 +391,12 @@ func (s *SEMAP) CheckGuardRails(ctx context.Context, agentID string, action stri
 
 // CheckResult represents the result of a contract check.
 type CheckResult struct {
-	Passed       bool         `json:"passed"`
-	Violations   []*Violation `json:"violations,omitempty"`
-	Warnings     []*Violation `json:"warnings,omitempty"`
-	CheckedAt    time.Time    `json:"checked_at"`
-	Duration     time.Duration `json:"duration"`
-	ContractsChecked int      `json:"contracts_checked"`
+	Passed           bool          `json:"passed"`
+	Violations       []*Violation  `json:"violations,omitempty"`
+	Warnings         []*Violation  `json:"warnings,omitempty"`
+	CheckedAt        time.Time     `json:"checked_at"`
+	Duration         time.Duration `json:"duration"`
+	ContractsChecked int           `json:"contracts_checked"`
 }
 
 func (s *SEMAP) checkContracts(ctx context.Context, agentID string, action string, input interface{}, output interface{}, contractType ContractType) (*CheckResult, error) {
@@ -772,10 +772,10 @@ func (s *SEMAP) GetStatistics() *SEMAPStatistics {
 	defer s.mu.RUnlock()
 
 	stats := &SEMAPStatistics{
-		TotalContracts:   len(s.contracts),
-		TotalPolicies:    len(s.policies),
-		TotalProfiles:    len(s.profiles),
-		TotalViolations:  len(s.violations),
+		TotalContracts:       len(s.contracts),
+		TotalPolicies:        len(s.policies),
+		TotalProfiles:        len(s.profiles),
+		TotalViolations:      len(s.violations),
 		ViolationsBySeverity: make(map[ViolationSeverity]int),
 		ViolationsByType:     make(map[ContractType]int),
 	}
@@ -793,13 +793,13 @@ func (s *SEMAP) GetStatistics() *SEMAPStatistics {
 
 // SEMAPStatistics represents statistics about the SEMAP system.
 type SEMAPStatistics struct {
-	TotalContracts       int                          `json:"total_contracts"`
-	TotalPolicies        int                          `json:"total_policies"`
-	TotalProfiles        int                          `json:"total_profiles"`
-	TotalViolations      int                          `json:"total_violations"`
-	UnresolvedViolations int                          `json:"unresolved_violations"`
-	ViolationsBySeverity map[ViolationSeverity]int    `json:"violations_by_severity"`
-	ViolationsByType     map[ContractType]int         `json:"violations_by_type"`
+	TotalContracts       int                       `json:"total_contracts"`
+	TotalPolicies        int                       `json:"total_policies"`
+	TotalProfiles        int                       `json:"total_profiles"`
+	TotalViolations      int                       `json:"total_violations"`
+	UnresolvedViolations int                       `json:"unresolved_violations"`
+	ViolationsBySeverity map[ViolationSeverity]int `json:"violations_by_severity"`
+	ViolationsByType     map[ContractType]int      `json:"violations_by_type"`
 }
 
 // AuditLog logs audit entries.

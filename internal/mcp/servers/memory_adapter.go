@@ -44,24 +44,24 @@ func DefaultMemoryAdapterConfig() MemoryAdapterConfig {
 
 // Entity represents an entity in the knowledge graph
 type Entity struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	EntityType  string                 `json:"entity_type"`
-	Observations []string              `json:"observations,omitempty"`
-	Properties  map[string]interface{} `json:"properties,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
+	ID           string                 `json:"id"`
+	Name         string                 `json:"name"`
+	EntityType   string                 `json:"entity_type"`
+	Observations []string               `json:"observations,omitempty"`
+	Properties   map[string]interface{} `json:"properties,omitempty"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
 }
 
 // Relation represents a relation between entities
 type Relation struct {
-	ID         string                 `json:"id"`
-	FromEntity string                 `json:"from_entity"`
-	ToEntity   string                 `json:"to_entity"`
-	RelationType string               `json:"relation_type"`
-	Properties map[string]interface{} `json:"properties,omitempty"`
-	Strength   float32                `json:"strength"`
-	CreatedAt  time.Time              `json:"created_at"`
+	ID           string                 `json:"id"`
+	FromEntity   string                 `json:"from_entity"`
+	ToEntity     string                 `json:"to_entity"`
+	RelationType string                 `json:"relation_type"`
+	Properties   map[string]interface{} `json:"properties,omitempty"`
+	Strength     float32                `json:"strength"`
+	CreatedAt    time.Time              `json:"created_at"`
 }
 
 // KnowledgeGraph represents the in-memory knowledge graph
@@ -530,13 +530,13 @@ func (m *MemoryAdapter) DeleteRelation(ctx context.Context, id string) error {
 
 // GraphStatistics contains statistics about the knowledge graph
 type GraphStatistics struct {
-	TotalEntities   int            `json:"total_entities"`
-	TotalRelations  int            `json:"total_relations"`
-	EntityTypes     map[string]int `json:"entity_types"`
-	RelationTypes   map[string]int `json:"relation_types"`
-	Version         int            `json:"version"`
-	LastUpdated     time.Time      `json:"last_updated"`
-	StorageSize     int64          `json:"storage_size_bytes,omitempty"`
+	TotalEntities  int            `json:"total_entities"`
+	TotalRelations int            `json:"total_relations"`
+	EntityTypes    map[string]int `json:"entity_types"`
+	RelationTypes  map[string]int `json:"relation_types"`
+	Version        int            `json:"version"`
+	LastUpdated    time.Time      `json:"last_updated"`
+	StorageSize    int64          `json:"storage_size_bytes,omitempty"`
 }
 
 // GetStatistics returns statistics about the knowledge graph
@@ -709,9 +709,9 @@ func (m *MemoryAdapter) Clear(ctx context.Context) error {
 
 // SearchResult represents a search result with relevance score
 type MemorySearchResult struct {
-	Entity    *Entity   `json:"entity"`
-	Score     float32   `json:"score"`
-	MatchedIn []string  `json:"matched_in"`
+	Entity    *Entity  `json:"entity"`
+	Score     float32  `json:"score"`
+	MatchedIn []string `json:"matched_in"`
 }
 
 // SearchWithRelevance searches with relevance scoring

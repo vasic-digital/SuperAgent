@@ -65,8 +65,8 @@ type JSONRPCError struct {
 
 // MCPServerInfo represents MCP server information
 type MCPServerInfo struct {
-	Name         string `json:"name"`
-	Version      string `json:"version"`
+	Name            string `json:"name"`
+	Version         string `json:"version"`
 	ProtocolVersion string `json:"protocolVersion"`
 }
 

@@ -785,9 +785,9 @@ func TestApplyTextEdit(t *testing.T) {
 // TestLSPAIResult tests the result structure
 func TestLSPAIResult(t *testing.T) {
 	result := &LSPAIResult{
-		Success: true,
-		Message: "Operation completed",
-		Data:    map[string]string{"key": "value"},
+		Success:  true,
+		Message:  "Operation completed",
+		Data:     map[string]string{"key": "value"},
 		Duration: 100 * time.Millisecond,
 	}
 

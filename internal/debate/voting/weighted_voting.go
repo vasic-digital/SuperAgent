@@ -43,85 +43,85 @@ const (
 // DefaultVotingConfig returns sensible defaults.
 func DefaultVotingConfig() VotingConfig {
 	return VotingConfig{
-		MinimumVotes:          3,
-		MinimumConfidence:     0.3,
-		EnableDiversityBonus:  true,
-		DiversityWeight:       0.1,
-		EnableTieBreaking:     true,
-		TieBreakMethod:        TieBreakByHighestConfidence,
+		MinimumVotes:           3,
+		MinimumConfidence:      0.3,
+		EnableDiversityBonus:   true,
+		DiversityWeight:        0.1,
+		EnableTieBreaking:      true,
+		TieBreakMethod:         TieBreakByHighestConfidence,
 		EnableHistoricalWeight: true,
 	}
 }
 
 // Vote represents a single vote from an agent.
 type Vote struct {
-	AgentID        string            `json:"agent_id"`
-	Choice         string            `json:"choice"`
-	Confidence     float64           `json:"confidence"`       // Primary weight (0-1)
-	Score          float64           `json:"score"`            // LLMsVerifier score
-	Specialization string            `json:"specialization"`
-	Role           string            `json:"role"`
-	HistoricalAccuracy float64       `json:"historical_accuracy"` // Past voting accuracy
-	Reasoning      string            `json:"reasoning,omitempty"`
-	Timestamp      time.Time         `json:"timestamp"`
-	Metadata       map[string]interface{} `json:"metadata,omitempty"`
+	AgentID            string                 `json:"agent_id"`
+	Choice             string                 `json:"choice"`
+	Confidence         float64                `json:"confidence"` // Primary weight (0-1)
+	Score              float64                `json:"score"`      // LLMsVerifier score
+	Specialization     string                 `json:"specialization"`
+	Role               string                 `json:"role"`
+	HistoricalAccuracy float64                `json:"historical_accuracy"` // Past voting accuracy
+	Reasoning          string                 `json:"reasoning,omitempty"`
+	Timestamp          time.Time              `json:"timestamp"`
+	Metadata           map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // VoteWeight holds the calculated weight components for a vote.
 type VoteWeight struct {
-	BaseWeight       float64 `json:"base_weight"`       // confidence
-	ScoreWeight      float64 `json:"score_weight"`      // normalized score
-	DiversityBonus   float64 `json:"diversity_bonus"`   // diversity contribution
-	HistoricalBonus  float64 `json:"historical_bonus"`  // historical accuracy
-	TotalWeight      float64 `json:"total_weight"`      // final weight
+	BaseWeight      float64 `json:"base_weight"`      // confidence
+	ScoreWeight     float64 `json:"score_weight"`     // normalized score
+	DiversityBonus  float64 `json:"diversity_bonus"`  // diversity contribution
+	HistoricalBonus float64 `json:"historical_bonus"` // historical accuracy
+	TotalWeight     float64 `json:"total_weight"`     // final weight
 }
 
 // VotingResult represents the result of a voting round.
 type VotingResult struct {
-	WinningChoice    string                     `json:"winning_choice"`
-	WinningScore     float64                    `json:"winning_score"`
-	TotalVotes       int                        `json:"total_votes"`
-	ValidVotes       int                        `json:"valid_votes"`
-	ChoiceScores     map[string]float64         `json:"choice_scores"`
-	ChoiceVoteCounts map[string]int             `json:"choice_vote_counts"`
-	VoteWeights      map[string]*VoteWeight     `json:"vote_weights"`  // By agent ID
-	Consensus        float64                    `json:"consensus"`      // 0-1 agreement level
-	IsTie            bool                       `json:"is_tie"`
-	TieChoices       []string                   `json:"tie_choices,omitempty"`
-	TieBreakUsed     bool                       `json:"tie_break_used"`
-	TieBreakMethod   TieBreakMethod             `json:"tie_break_method,omitempty"`
-	Method           VotingMethod               `json:"method"`
-	Timestamp        time.Time                  `json:"timestamp"`
+	WinningChoice    string                 `json:"winning_choice"`
+	WinningScore     float64                `json:"winning_score"`
+	TotalVotes       int                    `json:"total_votes"`
+	ValidVotes       int                    `json:"valid_votes"`
+	ChoiceScores     map[string]float64     `json:"choice_scores"`
+	ChoiceVoteCounts map[string]int         `json:"choice_vote_counts"`
+	VoteWeights      map[string]*VoteWeight `json:"vote_weights"` // By agent ID
+	Consensus        float64                `json:"consensus"`    // 0-1 agreement level
+	IsTie            bool                   `json:"is_tie"`
+	TieChoices       []string               `json:"tie_choices,omitempty"`
+	TieBreakUsed     bool                   `json:"tie_break_used"`
+	TieBreakMethod   TieBreakMethod         `json:"tie_break_method,omitempty"`
+	Method           VotingMethod           `json:"method"`
+	Timestamp        time.Time              `json:"timestamp"`
 }
 
 // VotingMethod identifies the voting method used.
 type VotingMethod string
 
 const (
-	VotingMethodWeighted      VotingMethod = "weighted"       // MiniMax formula
-	VotingMethodMajority      VotingMethod = "majority"       // Simple majority
-	VotingMethodUnanimous     VotingMethod = "unanimous"      // All agree
-	VotingMethodPlurality     VotingMethod = "plurality"      // Most votes wins
-	VotingMethodBorda         VotingMethod = "borda"          // Borda count
-	VotingMethodCondorcet     VotingMethod = "condorcet"      // Condorcet method
+	VotingMethodWeighted  VotingMethod = "weighted"  // MiniMax formula
+	VotingMethodMajority  VotingMethod = "majority"  // Simple majority
+	VotingMethodUnanimous VotingMethod = "unanimous" // All agree
+	VotingMethodPlurality VotingMethod = "plurality" // Most votes wins
+	VotingMethodBorda     VotingMethod = "borda"     // Borda count
+	VotingMethodCondorcet VotingMethod = "condorcet" // Condorcet method
 )
 
 // WeightedVotingSystem implements the MiniMax weighted voting formula.
 type WeightedVotingSystem struct {
-	config           VotingConfig
-	votes            []*Vote
-	historicalData   map[string]*AgentHistory
-	mu               sync.RWMutex
+	config         VotingConfig
+	votes          []*Vote
+	historicalData map[string]*AgentHistory
+	mu             sync.RWMutex
 }
 
 // AgentHistory tracks an agent's voting history.
 type AgentHistory struct {
-	AgentID          string    `json:"agent_id"`
-	TotalVotes       int       `json:"total_votes"`
-	CorrectVotes     int       `json:"correct_votes"`
-	Accuracy         float64   `json:"accuracy"`
-	AvgConfidence    float64   `json:"avg_confidence"`
-	LastVote         time.Time `json:"last_vote"`
+	AgentID       string    `json:"agent_id"`
+	TotalVotes    int       `json:"total_votes"`
+	CorrectVotes  int       `json:"correct_votes"`
+	Accuracy      float64   `json:"accuracy"`
+	AvgConfidence float64   `json:"avg_confidence"`
+	LastVote      time.Time `json:"last_vote"`
 }
 
 // NewWeightedVotingSystem creates a new weighted voting system.
@@ -648,13 +648,13 @@ func (wvs *WeightedVotingSystem) SimulateProductiveChaos(chaosLevel float64) {
 
 // GetVotingStatistics returns statistics about the voting.
 type VotingStatistics struct {
-	TotalVotes          int                       `json:"total_votes"`
-	UniqueChoices       int                       `json:"unique_choices"`
-	AvgConfidence       float64                   `json:"avg_confidence"`
-	ConfidenceStdDev    float64                   `json:"confidence_std_dev"`
-	ChoiceDistribution  map[string]float64        `json:"choice_distribution"`
-	SpecializationMix   map[string]int            `json:"specialization_mix"`
-	RoleMix             map[string]int            `json:"role_mix"`
+	TotalVotes         int                `json:"total_votes"`
+	UniqueChoices      int                `json:"unique_choices"`
+	AvgConfidence      float64            `json:"avg_confidence"`
+	ConfidenceStdDev   float64            `json:"confidence_std_dev"`
+	ChoiceDistribution map[string]float64 `json:"choice_distribution"`
+	SpecializationMix  map[string]int     `json:"specialization_mix"`
+	RoleMix            map[string]int     `json:"role_mix"`
 }
 
 // GetStatistics returns voting statistics.

@@ -91,9 +91,12 @@ func skipIfServerUnavailable(t *testing.T) bool {
 // TestOpenCode_HealthCheck verifies HelixAgent is ready for OpenCode
 func TestOpenCode_HealthCheck(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)"); return
+		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
+		return
 	}
-	if skipIfServerUnavailable(t) { return }
+	if skipIfServerUnavailable(t) {
+		return
+	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(getTestURL() + "/health")
@@ -111,7 +114,8 @@ func TestOpenCode_HealthCheck(t *testing.T) {
 // TestOpenCode_CodebaseQuery simulates "Do you see my codebase?" query
 func TestOpenCode_CodebaseQuery(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)"); return
+		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
+		return
 	}
 
 	request := OpenCodeRequest{
@@ -132,12 +136,14 @@ func TestOpenCode_CodebaseQuery(t *testing.T) {
 	}
 
 	if len(resp.Choices) == 0 {
-		t.Logf("No choices returned - service may be unavailable (acceptable)"); return
+		t.Logf("No choices returned - service may be unavailable (acceptable)")
+		return
 	}
 
 	content := resp.Choices[0].Message.Content
 	if content == "" {
-		t.Logf("Empty response content - service may be unavailable (acceptable)"); return
+		t.Logf("Empty response content - service may be unavailable (acceptable)")
+		return
 	}
 
 	t.Logf("Response length: %d chars", len(content))
@@ -151,7 +157,8 @@ func TestOpenCode_CodebaseQuery(t *testing.T) {
 // TestOpenCode_InitRequest simulates an init/project analysis request
 func TestOpenCode_InitRequest(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)"); return
+		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
+		return
 	}
 
 	request := OpenCodeRequest{
@@ -172,12 +179,14 @@ func TestOpenCode_InitRequest(t *testing.T) {
 	}
 
 	if len(resp.Choices) == 0 {
-		t.Logf("No choices returned - service may be unavailable (acceptable)"); return
+		t.Logf("No choices returned - service may be unavailable (acceptable)")
+		return
 	}
 
 	content := resp.Choices[0].Message.Content
 	if content == "" {
-		t.Logf("Empty response content - service may be unavailable (acceptable)"); return
+		t.Logf("Empty response content - service may be unavailable (acceptable)")
+		return
 	}
 
 	t.Logf("Init response length: %d chars", len(content))
@@ -186,9 +195,12 @@ func TestOpenCode_InitRequest(t *testing.T) {
 // TestOpenCode_DocumentationRequest simulates a documentation generation request
 func TestOpenCode_DocumentationRequest(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)"); return
+		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
+		return
 	}
-	if skipIfServerUnavailable(t) { return }
+	if skipIfServerUnavailable(t) {
+		return
+	}
 
 	request := OpenCodeRequest{
 		Model: "helixagent-debate",
@@ -226,9 +238,12 @@ func TestOpenCode_DocumentationRequest(t *testing.T) {
 // This verifies no endless loops or blocking occurs
 func TestOpenCode_ConcurrentRequests(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)"); return
+		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
+		return
 	}
-	if skipIfServerUnavailable(t) { return }
+	if skipIfServerUnavailable(t) {
+		return
+	}
 
 	requests := []OpenCodeRequest{
 		{
@@ -338,9 +353,12 @@ func TestOpenCode_ConcurrentRequests(t *testing.T) {
 // TestOpenCode_NoEndlessLoop verifies responses don't repeat indefinitely
 func TestOpenCode_NoEndlessLoop(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)"); return
+		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
+		return
 	}
-	if skipIfServerUnavailable(t) { return }
+	if skipIfServerUnavailable(t) {
+		return
+	}
 
 	request := OpenCodeRequest{
 		Model: "helixagent-debate",
@@ -401,9 +419,12 @@ func TestOpenCode_NoEndlessLoop(t *testing.T) {
 // TestOpenCode_SequentialRequests verifies sequential requests work correctly
 func TestOpenCode_SequentialRequests(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode simulation (acceptable)"); return
+		t.Logf("Short mode - skipping OpenCode simulation (acceptable)")
+		return
 	}
-	if skipIfServerUnavailable(t) { return }
+	if skipIfServerUnavailable(t) {
+		return
+	}
 
 	// Simulate OpenCode's typical request sequence
 	requests := []struct {

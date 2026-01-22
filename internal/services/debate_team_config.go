@@ -7,11 +7,11 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/mistral"
 	"dev.helix.agent/internal/verifier"
+	"github.com/sirupsen/logrus"
 )
 
 // TotalDebatePositions is the total number of positions in the AI debate team
@@ -124,16 +124,16 @@ var OpenRouterFreeModels = struct {
 	Llama3370B     string
 
 	// DeepSeek models (reasoning)
-	DeepSeekR1      string
-	DeepSeekR1Zero  string
-	DeepSeekChatV3  string
-	DeepSeekR1Llama string
+	DeepSeekR1       string
+	DeepSeekR1Zero   string
+	DeepSeekChatV3   string
+	DeepSeekR1Llama  string
 	DeepSeekR1Qwen32 string
 	DeepSeekR1Qwen14 string
 
 	// Qwen models
-	QwenQwQ32B  string
-	QwenVL3B    string
+	QwenQwQ32B string
+	QwenVL3B   string
 
 	// Google models
 	Gemini25ProExp   string
@@ -187,10 +187,10 @@ var OpenRouterFreeModels = struct {
 // These are high-quality models available through OpenCode's Zen API gateway
 // NOTE: Zen API requires model names WITHOUT "opencode/" prefix
 var ZenModels = struct {
-	BigPickle     string // Stealth model
-	GrokCodeFast  string // xAI Grok code model (default)
-	GLM47Free     string // GLM 4.7 free tier
-	GPT5Nano      string // GPT 5 Nano free tier
+	BigPickle    string // Stealth model
+	GrokCodeFast string // xAI Grok code model (default)
+	GLM47Free    string // GLM 4.7 free tier
+	GPT5Nano     string // GPT 5 Nano free tier
 }{
 	BigPickle:    "opencode/big-pickle",
 	GrokCodeFast: "opencode/grok-code",
@@ -358,8 +358,8 @@ func (dtc *DebateTeamConfig) collectVerifiedLLMs(ctx context.Context) {
 	dtc.collectLLMsVerifierProviders()
 
 	dtc.logger.WithFields(logrus.Fields{
-		"total_verified":   len(dtc.verifiedLLMs),
-		"oauth_count":      dtc.countOAuthLLMs(),
+		"total_verified":    len(dtc.verifiedLLMs),
+		"oauth_count":       dtc.countOAuthLLMs(),
 		"free_models_count": dtc.countFreeModels(),
 	}).Info("Verified LLMs collected")
 }
@@ -918,10 +918,10 @@ func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel strin
 			if !llm.IsOAuth && (llm.ProviderName != primaryProvider || llm.ModelName != primaryModel) {
 				fallbacks = append(fallbacks, llm)
 				dtc.logger.WithFields(logrus.Fields{
-					"primary_provider": primaryProvider,
+					"primary_provider":  primaryProvider,
 					"fallback_provider": llm.ProviderName,
-					"fallback_model":   llm.ModelName,
-					"reason":           "non-oauth fallback for oauth primary",
+					"fallback_model":    llm.ModelName,
+					"reason":            "non-oauth fallback for oauth primary",
 				}).Debug("Selected non-OAuth fallback for OAuth primary")
 			}
 		}
@@ -1111,15 +1111,15 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"team_name":             "HelixAgent AI Debate Team",
-		"total_positions":       TotalDebatePositions,
-		"total_llms":            totalLLMs,
-		"expected_llms":         TotalDebateLLMs,
-		"oauth_llms":            oauthCount,
-		"llmsverifier_llms":     verifierCount,
-		"active_positions":      len(dtc.GetActiveMembers()),
-		"positions":             positions,
-		"verified_llms_count":   len(dtc.verifiedLLMs),
+		"team_name":           "HelixAgent AI Debate Team",
+		"total_positions":     TotalDebatePositions,
+		"total_llms":          totalLLMs,
+		"expected_llms":       TotalDebateLLMs,
+		"oauth_llms":          oauthCount,
+		"llmsverifier_llms":   verifierCount,
+		"active_positions":    len(dtc.GetActiveMembers()),
+		"positions":           positions,
+		"verified_llms_count": len(dtc.verifiedLLMs),
 		"claude_models": map[string]string{
 			// Claude 4.5 (Latest)
 			"opus_45":   ClaudeModels.Opus45,

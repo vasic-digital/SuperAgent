@@ -30,23 +30,23 @@ type QdrantDebateEvaluator interface {
 
 // QdrantEnhancedConfig configuration for enhanced retriever
 type QdrantEnhancedConfig struct {
-	DenseWeight        float64      `json:"dense_weight"`
-	SparseWeight       float64      `json:"sparse_weight"`
-	UseDebateEvaluation bool        `json:"use_debate_evaluation"`
-	DebateTopK         int          `json:"debate_top_k"`
-	FusionMethod       FusionMethod `json:"fusion_method"`
-	RRFK               float64      `json:"rrf_k"`
+	DenseWeight         float64      `json:"dense_weight"`
+	SparseWeight        float64      `json:"sparse_weight"`
+	UseDebateEvaluation bool         `json:"use_debate_evaluation"`
+	DebateTopK          int          `json:"debate_top_k"`
+	FusionMethod        FusionMethod `json:"fusion_method"`
+	RRFK                float64      `json:"rrf_k"`
 }
 
 // DefaultQdrantEnhancedConfig returns default configuration
 func DefaultQdrantEnhancedConfig() *QdrantEnhancedConfig {
 	return &QdrantEnhancedConfig{
-		DenseWeight:        0.6,
-		SparseWeight:       0.4,
+		DenseWeight:         0.6,
+		SparseWeight:        0.4,
 		UseDebateEvaluation: false,
-		DebateTopK:         5,
-		FusionMethod:       FusionRRF,
-		RRFK:               60.0,
+		DebateTopK:          5,
+		FusionMethod:        FusionRRF,
+		RRFK:                60.0,
 	}
 }
 
@@ -337,15 +337,15 @@ func (r *QdrantEnhancedRetriever) evaluateWithDebate(
 
 // EnhancedBM25Index provides BM25 sparse retrieval for hybrid search
 type EnhancedBM25Index struct {
-	documents   map[string]string
-	termFreqs   map[string]map[string]int
-	docFreqs    map[string]int
-	docLengths  map[string]int
-	avgDocLen   float64
-	totalDocs   int
-	k1          float64
-	b           float64
-	mu          sync.RWMutex
+	documents  map[string]string
+	termFreqs  map[string]map[string]int
+	docFreqs   map[string]int
+	docLengths map[string]int
+	avgDocLen  float64
+	totalDocs  int
+	k1         float64
+	b          float64
+	mu         sync.RWMutex
 }
 
 // NewEnhancedBM25Index creates a new BM25 index for enhanced retrieval

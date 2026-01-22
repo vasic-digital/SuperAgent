@@ -274,15 +274,15 @@ func TestNotificationType_Values(t *testing.T) {
 
 // mockSubscriber is a test implementation of Subscriber
 type mockSubscriber struct {
-	id           string
-	active       bool
+	id            string
+	active        bool
 	notifications []*notifications.TaskNotification
 }
 
 func newMockSubscriber(id string) *mockSubscriber {
 	return &mockSubscriber{
-		id:           id,
-		active:       true,
+		id:            id,
+		active:        true,
 		notifications: make([]*notifications.TaskNotification, 0),
 	}
 }

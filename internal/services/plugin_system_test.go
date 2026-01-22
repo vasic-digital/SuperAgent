@@ -1421,4 +1421,3 @@ func TestRandomLoadBalancer_UpdateLoad(t *testing.T) {
 	lb.UpdateLoad("instance-2", 100)
 	lb.UpdateLoad("", 0) // edge case: empty instance ID
 }
-

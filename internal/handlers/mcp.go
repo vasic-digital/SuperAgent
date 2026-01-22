@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/mcp/adapters"
 	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/tools"
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 // MCPHandler handles Model Context Protocol (MCP) endpoints

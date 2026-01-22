@@ -587,7 +587,7 @@ func TestMCPCacheMetrics_Fields(t *testing.T) {
 
 	// Generate activity
 	mc.SetToolResult(ctx, "server", "tool", nil, "data")
-	mc.GetToolResult(ctx, "server", "tool", nil) // Hit
+	mc.GetToolResult(ctx, "server", "tool", nil)  // Hit
 	mc.GetToolResult(ctx, "server", "other", nil) // Miss
 
 	metrics := mc.Metrics()
@@ -614,7 +614,7 @@ func TestProviderCacheMetrics_Fields(t *testing.T) {
 
 	// Generate activity
 	pc.Set(ctx, req, resp, "provider")
-	pc.Get(ctx, req, "provider") // Hit
+	pc.Get(ctx, req, "provider")                                                                                      // Hit
 	pc.Get(ctx, &models.LLMRequest{Prompt: "other", ModelParams: models.ModelParameters{Model: "model"}}, "provider") // Miss
 
 	metrics := pc.Metrics()

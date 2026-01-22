@@ -280,8 +280,8 @@ func TestNativeEncoder_Encode_NestedStructures(t *testing.T) {
 
 	t.Run("struct with slice", func(t *testing.T) {
 		type Person struct {
-			Name   string   `json:"name"`
-			Scores []int    `json:"scores"`
+			Name   string `json:"name"`
+			Scores []int  `json:"scores"`
 		}
 		p := Person{
 			Name:   "John",

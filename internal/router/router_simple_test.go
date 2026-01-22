@@ -3,8 +3,8 @@ package router
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"dev.helix.agent/internal/config"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRouterPackage(t *testing.T) {

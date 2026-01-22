@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/services"
+	"github.com/sirupsen/logrus"
 )
 
 // DemoApplication demonstrates the advanced HelixAgent protocol capabilities

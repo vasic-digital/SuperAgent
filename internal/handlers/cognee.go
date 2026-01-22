@@ -3,9 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"dev.helix.agent/internal/config"
 	llm "dev.helix.agent/internal/llm/cognee"
+	"github.com/gin-gonic/gin"
 )
 
 // CogneeHandler handles Cognee-related requests

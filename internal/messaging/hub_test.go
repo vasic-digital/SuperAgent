@@ -417,17 +417,17 @@ func TestGlobalHub(t *testing.T) {
 
 // hubTestMockBroker implements MessageBroker for hub testing
 type hubTestMockBroker struct {
-	mu              sync.Mutex
-	connected       bool
-	connectError    error
-	closeError      error
-	publishError    error
-	subscribeError  error
-	healthCheckErr  error
-	publishedMsgs   []*Message
-	subscriptions   map[string]*hubTestMockSubscription
-	metrics         *BrokerMetrics
-	bType           BrokerType
+	mu             sync.Mutex
+	connected      bool
+	connectError   error
+	closeError     error
+	publishError   error
+	subscribeError error
+	healthCheckErr error
+	publishedMsgs  []*Message
+	subscriptions  map[string]*hubTestMockSubscription
+	metrics        *BrokerMetrics
+	bType          BrokerType
 }
 
 func newHubTestMockBroker() *hubTestMockBroker {
@@ -1384,7 +1384,7 @@ func TestMessagingHub_ConcurrentEnqueueTask(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			task := NewTask("test.task", []byte(`{"index":` + string(rune('0'+idx%10)) + `}`))
+			task := NewTask("test.task", []byte(`{"index":`+string(rune('0'+idx%10))+`}`))
 			_ = hub.EnqueueTask(ctx, "test-queue", task)
 		}(i)
 	}
@@ -1409,7 +1409,7 @@ func TestMessagingHub_ConcurrentPublishEvent(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			event := NewEvent(EventTypeLLMRequestStarted, "test", []byte(`{"index":` + string(rune('0'+idx%10)) + `}`))
+			event := NewEvent(EventTypeLLMRequestStarted, "test", []byte(`{"index":`+string(rune('0'+idx%10))+`}`))
 			_ = hub.PublishEvent(ctx, "test-topic", event)
 		}(i)
 	}

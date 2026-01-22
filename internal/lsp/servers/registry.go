@@ -15,17 +15,17 @@ import (
 
 // LSPServerDefinition defines an LSP server configuration.
 type LSPServerDefinition struct {
-	ID           string            `json:"id"`
-	Name         string            `json:"name"`
-	Language     string            `json:"language"`
-	FilePatterns []string          `json:"file_patterns"` // *.go, *.rs, *.py, etc.
-	Command      string            `json:"command"`
-	Args         []string          `json:"args"`
+	ID           string                 `json:"id"`
+	Name         string                 `json:"name"`
+	Language     string                 `json:"language"`
+	FilePatterns []string               `json:"file_patterns"` // *.go, *.rs, *.py, etc.
+	Command      string                 `json:"command"`
+	Args         []string               `json:"args"`
 	InitOptions  map[string]interface{} `json:"init_options,omitempty"`
-	Capabilities LSPCapabilities   `json:"capabilities"`
-	Priority     int               `json:"priority"` // Higher priority is preferred
-	Enabled      bool              `json:"enabled"`
-	Binary       string            `json:"binary,omitempty"` // Path to binary if found
+	Capabilities LSPCapabilities        `json:"capabilities"`
+	Priority     int                    `json:"priority"` // Higher priority is preferred
+	Enabled      bool                   `json:"enabled"`
+	Binary       string                 `json:"binary,omitempty"` // Path to binary if found
 }
 
 // LSPCapabilities defines the capabilities of an LSP server.
@@ -43,11 +43,11 @@ type LSPCapabilities struct {
 
 // LSPServerRegistry manages LSP server configurations.
 type LSPServerRegistry struct {
-	servers      map[string]*LSPServerDefinition
-	byLanguage   map[string][]*LSPServerDefinition
-	mu           sync.RWMutex
-	logger       *logrus.Logger
-	searchPaths  []string
+	servers     map[string]*LSPServerDefinition
+	byLanguage  map[string][]*LSPServerDefinition
+	mu          sync.RWMutex
+	logger      *logrus.Logger
+	searchPaths []string
 }
 
 // RegistryConfig holds configuration for the LSP registry.
@@ -326,14 +326,14 @@ func (r *LSPServerRegistry) loadDefaultServers() {
 			Command:      "haskell-language-server-wrapper",
 			Args:         []string{"--lsp"},
 			Capabilities: LSPCapabilities{
-				Completion:    true,
-				Hover:         true,
-				Definition:    true,
-				References:    true,
-				Diagnostics:   true,
-				Rename:        true,
-				CodeAction:    true,
-				Formatting:    true,
+				Completion:  true,
+				Hover:       true,
+				Definition:  true,
+				References:  true,
+				Diagnostics: true,
+				Rename:      true,
+				CodeAction:  true,
+				Formatting:  true,
 			},
 			Priority: 100,
 			Enabled:  true,

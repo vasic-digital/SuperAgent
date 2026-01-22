@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/skills"
+	"github.com/gin-gonic/gin"
 )
 
 // CompletionHandler handles LLM completion requests
@@ -37,13 +37,13 @@ type CompletionRequest struct {
 
 // CompletionResponse represents the API response for completion
 type CompletionResponse struct {
-	ID                string                    `json:"id"`
-	Object            string                    `json:"object"`
-	Created           int64                     `json:"created"`
-	Model             string                    `json:"model"`
-	Choices           []CompletionChoice        `json:"choices"`
-	Usage             *CompletionUsage          `json:"usage,omitempty"`
-	SystemFingerprint string                    `json:"system_fingerprint"`
+	ID                string                     `json:"id"`
+	Object            string                     `json:"object"`
+	Created           int64                      `json:"created"`
+	Model             string                     `json:"model"`
+	Choices           []CompletionChoice         `json:"choices"`
+	Usage             *CompletionUsage           `json:"usage,omitempty"`
+	SystemFingerprint string                     `json:"system_fingerprint"`
 	SkillsUsed        *skills.SkillsUsedMetadata `json:"skills_used,omitempty"`
 }
 

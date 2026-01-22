@@ -15,7 +15,7 @@ const (
 	EventTypeLLMRequestStarted   EventType = "llm.request.started"
 	EventTypeLLMRequestCompleted EventType = "llm.request.completed"
 	EventTypeLLMRequestFailed    EventType = "llm.request.failed"
-	EventTypeLLMStreamToken EventType = "llm.stream.token" // #nosec G101 - event type name, not credentials
+	EventTypeLLMStreamToken      EventType = "llm.stream.token" // #nosec G101 - event type name, not credentials
 	EventTypeLLMStreamEnd        EventType = "llm.stream.end"
 
 	// Debate events

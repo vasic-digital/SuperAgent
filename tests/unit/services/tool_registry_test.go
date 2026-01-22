@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"dev.helix.agent/internal/services"
+	"github.com/stretchr/testify/assert"
 )
 
 // MockTool implements the Tool interface for testing

@@ -84,8 +84,8 @@ type HyDEResponse struct {
 
 // DecomposeQueryRequest represents a query decomposition request.
 type DecomposeQueryRequest struct {
-	Query        string `json:"query"`
-	MaxSubqueries int   `json:"max_subqueries,omitempty"`
+	Query         string `json:"query"`
+	MaxSubqueries int    `json:"max_subqueries,omitempty"`
 }
 
 // DecomposeQueryResponse represents the query decomposition result.
@@ -123,10 +123,10 @@ type QueryFusionResponse struct {
 
 // HealthResponse represents the health check response.
 type HealthResponse struct {
-	Status             string `json:"status"`
-	Version            string `json:"version"`
-	CogneeAvailable    bool   `json:"cognee_available"`
-	HelixagentAvailable bool  `json:"helixagent_available"`
+	Status              string `json:"status"`
+	Version             string `json:"version"`
+	CogneeAvailable     bool   `json:"cognee_available"`
+	HelixagentAvailable bool   `json:"helixagent_available"`
 }
 
 // Health checks the service health.

@@ -61,9 +61,9 @@ type Relationship struct {
 
 // Message represents a conversation message
 type Message struct {
-	Role      string    `json:"role"` // user, assistant, system
-	Content   string    `json:"content"`
-	Timestamp time.Time `json:"timestamp"`
+	Role      string                 `json:"role"` // user, assistant, system
+	Content   string                 `json:"content"`
+	Timestamp time.Time              `json:"timestamp"`
 	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -146,15 +146,15 @@ type MemorySummarizer interface {
 // MemoryConfig configures the memory manager
 type MemoryConfig struct {
 	// Storage backend
-	StorageType        string        `json:"storage_type"` // memory, postgres, redis, qdrant
-	VectorDBEndpoint   string        `json:"vectordb_endpoint"`
-	VectorDBAPIKey     string        `json:"vectordb_api_key"`
-	VectorDBCollection string        `json:"vectordb_collection"`
+	StorageType        string `json:"storage_type"` // memory, postgres, redis, qdrant
+	VectorDBEndpoint   string `json:"vectordb_endpoint"`
+	VectorDBAPIKey     string `json:"vectordb_api_key"`
+	VectorDBCollection string `json:"vectordb_collection"`
 
 	// Embedding configuration
-	EmbeddingModel    string `json:"embedding_model"`
-	EmbeddingEndpoint string `json:"embedding_endpoint"`
-	EmbeddingDimension int   `json:"embedding_dimension"`
+	EmbeddingModel     string `json:"embedding_model"`
+	EmbeddingEndpoint  string `json:"embedding_endpoint"`
+	EmbeddingDimension int    `json:"embedding_dimension"`
 
 	// Memory settings
 	MaxMemoriesPerUser int           `json:"max_memories_per_user"`

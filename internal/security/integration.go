@@ -420,9 +420,9 @@ func (a *DebateSecurityAdapter) EvaluateContent(ctx context.Context, content str
 	// This would call the actual debate service
 	// For now, return a placeholder evaluation
 	return &ContentEvaluation{
-		IsSafe:       true,
-		Confidence:   0.5,
-		Reasoning:    "Debate evaluation not yet connected to debate service",
+		IsSafe:     true,
+		Confidence: 0.5,
+		Reasoning:  "Debate evaluation not yet connected to debate service",
 	}, nil
 }
 

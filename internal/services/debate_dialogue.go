@@ -52,15 +52,15 @@ type DialogueAct struct {
 
 // DebateDialogue represents the complete debate as theatrical dialogue
 type DebateDialogue struct {
-	Title       string              `json:"title"`
-	Subtitle    string              `json:"subtitle"`
+	Title       string               `json:"title"`
+	Subtitle    string               `json:"subtitle"`
 	Characters  []*DialogueCharacter `json:"characters"`
-	Acts        []*DialogueAct      `json:"acts"`
-	Prologue    string              `json:"prologue"`
-	Epilogue    string              `json:"epilogue"`
-	Style       DialogueStyle       `json:"style"`
-	CreatedAt   time.Time           `json:"created_at"`
-	TotalRounds int                 `json:"total_rounds"`
+	Acts        []*DialogueAct       `json:"acts"`
+	Prologue    string               `json:"prologue"`
+	Epilogue    string               `json:"epilogue"`
+	Style       DialogueStyle        `json:"style"`
+	CreatedAt   time.Time            `json:"created_at"`
+	TotalRounds int                  `json:"total_rounds"`
 }
 
 // DialogueFormatter formats debate conversations as professional dialogue
@@ -471,10 +471,10 @@ func (df *DialogueFormatter) truncateString(s string, maxLen int) string {
 
 // DebateRound represents a single round of debate (for dialogue creation)
 type DebateRound struct {
-	RoundNumber int               `json:"round_number"`
-	Responses   []DebateResponse  `json:"responses"`
-	StartTime   time.Time         `json:"start_time"`
-	EndTime     time.Time         `json:"end_time"`
+	RoundNumber int              `json:"round_number"`
+	Responses   []DebateResponse `json:"responses"`
+	StartTime   time.Time        `json:"start_time"`
+	EndTime     time.Time        `json:"end_time"`
 }
 
 // DebateResponse represents a single response in a debate round
@@ -512,11 +512,11 @@ func DefaultStreamingConfig() *StreamingDialogueConfig {
 
 // DialogueEvent represents an event in the streaming dialogue
 type DialogueEvent struct {
-	Type      DialogueEventType `json:"type"`
-	Content   string            `json:"content"`
+	Type      DialogueEventType  `json:"type"`
+	Content   string             `json:"content"`
 	Character *DialogueCharacter `json:"character,omitempty"`
-	ActNumber int               `json:"act_number,omitempty"`
-	Timestamp time.Time         `json:"timestamp"`
+	ActNumber int                `json:"act_number,omitempty"`
+	Timestamp time.Time          `json:"timestamp"`
 }
 
 // DialogueEventType represents the type of dialogue event

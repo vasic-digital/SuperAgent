@@ -897,10 +897,10 @@ func TestTruncate_Extended(t *testing.T) {
 }
 
 func TestContainsAny_EdgeCases_Extended(t *testing.T) {
-	assert.True(t, containsAny("SECURITY", "security"))   // Case insensitive
-	assert.False(t, containsAny("", "security"))          // Empty string
-	assert.False(t, containsAny("hello", "foo", "bar"))   // No match
-	assert.True(t, containsAny("hello world", "world"))   // Partial match
+	assert.True(t, containsAny("SECURITY", "security")) // Case insensitive
+	assert.False(t, containsAny("", "security"))        // Empty string
+	assert.False(t, containsAny("hello", "foo", "bar")) // No match
+	assert.True(t, containsAny("hello world", "world")) // Partial match
 }
 
 func TestMin_Extended(t *testing.T) {

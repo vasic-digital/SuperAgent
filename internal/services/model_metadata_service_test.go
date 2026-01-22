@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/database"
+	"dev.helix.agent/internal/modelsdev"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/database"
-	"dev.helix.agent/internal/modelsdev"
 )
 
 // Test helper functions
@@ -24,9 +24,9 @@ func newModelMetadataTestLogger() *logrus.Logger {
 
 // MockModelsDevClient mocks the modelsdev.Client
 type MockModelsDevClient struct {
-	listProvidersFunc        func(ctx context.Context) (*modelsdev.ProvidersListResponse, error)
-	listModelsFunc           func(ctx context.Context, opts *modelsdev.ListModelsOptions) (*modelsdev.ModelsListResponse, error)
-	listProviderModelsFunc   func(ctx context.Context, providerID string, opts *modelsdev.ListModelsOptions) (*modelsdev.ModelsListResponse, error)
+	listProvidersFunc      func(ctx context.Context) (*modelsdev.ProvidersListResponse, error)
+	listModelsFunc         func(ctx context.Context, opts *modelsdev.ListModelsOptions) (*modelsdev.ModelsListResponse, error)
+	listProviderModelsFunc func(ctx context.Context, providerID string, opts *modelsdev.ListModelsOptions) (*modelsdev.ModelsListResponse, error)
 }
 
 func (m *MockModelsDevClient) ListProviders(ctx context.Context) (*modelsdev.ProvidersListResponse, error) {
@@ -45,14 +45,14 @@ func (m *MockModelsDevClient) ListModels(ctx context.Context, opts *modelsdev.Li
 
 // MockModelMetadataRepository mocks database.ModelMetadataRepository
 type MockModelMetadataRepository struct {
-	getModelMetadataFunc       func(ctx context.Context, modelID string) (*database.ModelMetadata, error)
-	listModelsFunc             func(ctx context.Context, providerID, modelType string, limit, offset int) ([]*database.ModelMetadata, int, error)
-	searchModelsFunc           func(ctx context.Context, query string, limit, offset int) ([]*database.ModelMetadata, int, error)
-	createModelMetadataFunc    func(ctx context.Context, metadata *database.ModelMetadata) error
-	createRefreshHistoryFunc   func(ctx context.Context, history *database.ModelsRefreshHistory) error
+	getModelMetadataFunc        func(ctx context.Context, modelID string) (*database.ModelMetadata, error)
+	listModelsFunc              func(ctx context.Context, providerID, modelType string, limit, offset int) ([]*database.ModelMetadata, int, error)
+	searchModelsFunc            func(ctx context.Context, query string, limit, offset int) ([]*database.ModelMetadata, int, error)
+	createModelMetadataFunc     func(ctx context.Context, metadata *database.ModelMetadata) error
+	createRefreshHistoryFunc    func(ctx context.Context, history *database.ModelsRefreshHistory) error
 	getLatestRefreshHistoryFunc func(ctx context.Context, limit int) ([]*database.ModelsRefreshHistory, error)
-	updateProviderSyncInfoFunc func(ctx context.Context, providerID string, totalModels, syncedModels int) error
-	createBenchmarkFunc        func(ctx context.Context, benchmark *database.ModelBenchmark) error
+	updateProviderSyncInfoFunc  func(ctx context.Context, providerID string, totalModels, syncedModels int) error
+	createBenchmarkFunc         func(ctx context.Context, benchmark *database.ModelBenchmark) error
 }
 
 func (m *MockModelMetadataRepository) GetModelMetadata(ctx context.Context, modelID string) (*database.ModelMetadata, error) {
@@ -1077,9 +1077,9 @@ func TestModelMetadataService_ConvertModelInfoToMetadata_NilPricing(t *testing.T
 	}
 
 	info := modelsdev.ModelInfo{
-		ID:       "simple-model",
-		Name:     "Simple Model",
-		Pricing:  nil,
+		ID:          "simple-model",
+		Name:        "Simple Model",
+		Pricing:     nil,
 		Performance: nil,
 	}
 
@@ -1158,9 +1158,9 @@ func BenchmarkInMemoryCache_GetBulk(b *testing.B) {
 
 func TestModelMetadataService_ListModels_TableDriven(t *testing.T) {
 	tests := []struct {
-		name          string
-		page          int
-		limit         int
+		name           string
+		page           int
+		limit          int
 		expectedOffset int
 	}{
 		{"page 0", 0, 10, 0},

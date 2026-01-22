@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package integration
@@ -41,7 +42,8 @@ func infraGetEnvOrDefault(key, defaultValue string) string {
 
 func TestIntegration_PostgreSQL_Connection(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := &config.Config{
@@ -77,7 +79,8 @@ func TestIntegration_PostgreSQL_Connection(t *testing.T) {
 
 func TestIntegration_PostgreSQL_CRUD(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := &config.Config{
@@ -149,7 +152,8 @@ func TestIntegration_PostgreSQL_CRUD(t *testing.T) {
 
 func TestIntegration_PostgreSQL_Transactions(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := &config.Config{
@@ -226,7 +230,8 @@ func TestIntegration_PostgreSQL_Transactions(t *testing.T) {
 
 func TestIntegration_Redis_Connection(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := &config.Config{
@@ -254,7 +259,8 @@ func TestIntegration_Redis_Connection(t *testing.T) {
 
 func TestIntegration_Redis_CRUD(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := &config.Config{
@@ -305,7 +311,8 @@ func TestIntegration_Redis_CRUD(t *testing.T) {
 
 func TestIntegration_Redis_Expiration(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := &config.Config{
@@ -349,7 +356,8 @@ func TestIntegration_Redis_Expiration(t *testing.T) {
 
 func TestIntegration_Redis_Pipeline(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := &config.Config{
@@ -407,19 +415,20 @@ func TestIntegration_Redis_Pipeline(t *testing.T) {
 
 func TestIntegration_MinIO_Connection(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := &minio.Config{
-		Endpoint:       infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
-		AccessKey:      infraGetEnvOrDefault("MINIO_ACCESS_KEY", "minioadmin"),
-		SecretKey:      infraGetEnvOrDefault("MINIO_SECRET_KEY", "minioadmin"),
-		UseSSL:         false,
-		Region:         "us-east-1",
-		ConnectTimeout: 30 * time.Second,
-		RequestTimeout: 60 * time.Second,
-		MaxRetries:     3,
-		PartSize:       16 * 1024 * 1024,
+		Endpoint:          infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
+		AccessKey:         infraGetEnvOrDefault("MINIO_ACCESS_KEY", "minioadmin"),
+		SecretKey:         infraGetEnvOrDefault("MINIO_SECRET_KEY", "minioadmin"),
+		UseSSL:            false,
+		Region:            "us-east-1",
+		ConnectTimeout:    30 * time.Second,
+		RequestTimeout:    60 * time.Second,
+		MaxRetries:        3,
+		PartSize:          16 * 1024 * 1024,
 		ConcurrentUploads: 4,
 	}
 
@@ -443,19 +452,20 @@ func TestIntegration_MinIO_Connection(t *testing.T) {
 
 func TestIntegration_MinIO_BucketOperations(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := &minio.Config{
-		Endpoint:       infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
-		AccessKey:      infraGetEnvOrDefault("MINIO_ACCESS_KEY", "minioadmin"),
-		SecretKey:      infraGetEnvOrDefault("MINIO_SECRET_KEY", "minioadmin"),
-		UseSSL:         false,
-		Region:         "us-east-1",
-		ConnectTimeout: 30 * time.Second,
-		RequestTimeout: 60 * time.Second,
-		MaxRetries:     3,
-		PartSize:       16 * 1024 * 1024,
+		Endpoint:          infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
+		AccessKey:         infraGetEnvOrDefault("MINIO_ACCESS_KEY", "minioadmin"),
+		SecretKey:         infraGetEnvOrDefault("MINIO_SECRET_KEY", "minioadmin"),
+		UseSSL:            false,
+		Region:            "us-east-1",
+		ConnectTimeout:    30 * time.Second,
+		RequestTimeout:    60 * time.Second,
+		MaxRetries:        3,
+		PartSize:          16 * 1024 * 1024,
 		ConcurrentUploads: 4,
 	}
 
@@ -496,19 +506,20 @@ func TestIntegration_MinIO_BucketOperations(t *testing.T) {
 
 func TestIntegration_MinIO_ObjectOperations(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := &minio.Config{
-		Endpoint:       infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
-		AccessKey:      infraGetEnvOrDefault("MINIO_ACCESS_KEY", "minioadmin"),
-		SecretKey:      infraGetEnvOrDefault("MINIO_SECRET_KEY", "minioadmin"),
-		UseSSL:         false,
-		Region:         "us-east-1",
-		ConnectTimeout: 30 * time.Second,
-		RequestTimeout: 60 * time.Second,
-		MaxRetries:     3,
-		PartSize:       16 * 1024 * 1024,
+		Endpoint:          infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
+		AccessKey:         infraGetEnvOrDefault("MINIO_ACCESS_KEY", "minioadmin"),
+		SecretKey:         infraGetEnvOrDefault("MINIO_SECRET_KEY", "minioadmin"),
+		UseSSL:            false,
+		Region:            "us-east-1",
+		ConnectTimeout:    30 * time.Second,
+		RequestTimeout:    60 * time.Second,
+		MaxRetries:        3,
+		PartSize:          16 * 1024 * 1024,
 		ConcurrentUploads: 4,
 	}
 
@@ -568,19 +579,20 @@ func TestIntegration_MinIO_ObjectOperations(t *testing.T) {
 
 func TestIntegration_MinIO_PresignedURLs(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := &minio.Config{
-		Endpoint:       infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
-		AccessKey:      infraGetEnvOrDefault("MINIO_ACCESS_KEY", "minioadmin"),
-		SecretKey:      infraGetEnvOrDefault("MINIO_SECRET_KEY", "minioadmin"),
-		UseSSL:         false,
-		Region:         "us-east-1",
-		ConnectTimeout: 30 * time.Second,
-		RequestTimeout: 60 * time.Second,
-		MaxRetries:     3,
-		PartSize:       16 * 1024 * 1024,
+		Endpoint:          infraGetEnvOrDefault("MINIO_ENDPOINT", "localhost:9000"),
+		AccessKey:         infraGetEnvOrDefault("MINIO_ACCESS_KEY", "minioadmin"),
+		SecretKey:         infraGetEnvOrDefault("MINIO_SECRET_KEY", "minioadmin"),
+		UseSSL:            false,
+		Region:            "us-east-1",
+		ConnectTimeout:    30 * time.Second,
+		RequestTimeout:    60 * time.Second,
+		MaxRetries:        3,
+		PartSize:          16 * 1024 * 1024,
 		ConcurrentUploads: 4,
 	}
 
@@ -630,7 +642,8 @@ func TestIntegration_MinIO_PresignedURLs(t *testing.T) {
 
 func TestIntegration_Qdrant_Connection(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := qdrant.DefaultConfig()
@@ -656,7 +669,8 @@ func TestIntegration_Qdrant_Connection(t *testing.T) {
 
 func TestIntegration_Qdrant_CollectionOperations(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := qdrant.DefaultConfig()
@@ -704,7 +718,8 @@ func TestIntegration_Qdrant_CollectionOperations(t *testing.T) {
 
 func TestIntegration_Qdrant_VectorOperations(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := qdrant.DefaultConfig()
@@ -804,7 +819,8 @@ func TestIntegration_Qdrant_VectorOperations(t *testing.T) {
 
 func TestIntegration_Qdrant_BatchSearch(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	cfg := qdrant.DefaultConfig()
@@ -882,7 +898,8 @@ func TestIntegration_Qdrant_BatchSearch(t *testing.T) {
 
 func TestIntegration_Kafka_Connection(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	brokers := infraGetEnvOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
@@ -905,7 +922,8 @@ func TestIntegration_Kafka_Connection(t *testing.T) {
 
 func TestIntegration_Kafka_TopicOperations(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	brokers := infraGetEnvOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
@@ -953,7 +971,8 @@ func TestIntegration_Kafka_TopicOperations(t *testing.T) {
 
 func TestIntegration_Kafka_ProduceConsume(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	brokers := infraGetEnvOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
@@ -1039,7 +1058,8 @@ func TestIntegration_Kafka_ProduceConsume(t *testing.T) {
 
 func TestIntegration_Kafka_ConsumerGroup(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	brokers := infraGetEnvOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
@@ -1130,7 +1150,8 @@ func TestIntegration_Kafka_ConsumerGroup(t *testing.T) {
 
 func TestIntegration_RabbitMQ_Connection(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	// Get RabbitMQ connection URL
@@ -1162,7 +1183,8 @@ func TestIntegration_RabbitMQ_Connection(t *testing.T) {
 
 func TestIntegration_RabbitMQ_QueueOperations(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -1244,7 +1266,8 @@ func TestIntegration_RabbitMQ_QueueOperations(t *testing.T) {
 
 func TestIntegration_RabbitMQ_ExchangeOperations(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	host := infraGetEnvOrDefault("RABBITMQ_HOST", "localhost")
@@ -1322,7 +1345,8 @@ func TestIntegration_RabbitMQ_ExchangeOperations(t *testing.T) {
 
 func TestIntegration_RabbitMQ_PublishConfirm(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	host := infraGetEnvOrDefault("RABBITMQ_HOST", "localhost")
@@ -1382,7 +1406,8 @@ func TestIntegration_RabbitMQ_PublishConfirm(t *testing.T) {
 
 func TestIntegration_AllInfrastructure_HealthCheck(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	services := map[string]string{

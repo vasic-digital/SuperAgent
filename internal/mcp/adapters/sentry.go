@@ -686,7 +686,7 @@ type SentryIssue struct {
 // SentryIssueDetail represents detailed issue information.
 type SentryIssueDetail struct {
 	SentryIssue
-	Platform string              `json:"platform"`
+	Platform string               `json:"platform"`
 	Metadata *SentryIssueMetadata `json:"metadata"`
 }
 

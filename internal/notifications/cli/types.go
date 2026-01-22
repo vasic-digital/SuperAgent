@@ -42,9 +42,9 @@ const (
 type ColorScheme string
 
 const (
-	ColorSchemeNone   ColorScheme = "none"   // No colors
-	ColorScheme8      ColorScheme = "8"      // 8 basic colors
-	ColorScheme256    ColorScheme = "256"    // 256 colors
+	ColorSchemeNone      ColorScheme = "none" // No colors
+	ColorScheme8         ColorScheme = "8"    // 8 basic colors
+	ColorScheme256       ColorScheme = "256"  // 256 colors
 	ColorSchemeTrueColor ColorScheme = "true" // 24-bit true color
 )
 
@@ -78,50 +78,50 @@ func DefaultRenderConfig() *RenderConfig {
 
 // ProgressBarContent represents progress bar data
 type ProgressBarContent struct {
-	TaskID      string    `json:"task_id"`
-	TaskName    string    `json:"task_name"`
-	TaskType    string    `json:"task_type"`
-	Progress    float64   `json:"progress"`     // 0-100
-	Message     string    `json:"message"`
-	Status      string    `json:"status"`
-	StartedAt   time.Time `json:"started_at"`
+	TaskID      string         `json:"task_id"`
+	TaskName    string         `json:"task_name"`
+	TaskType    string         `json:"task_type"`
+	Progress    float64        `json:"progress"` // 0-100
+	Message     string         `json:"message"`
+	Status      string         `json:"status"`
+	StartedAt   time.Time      `json:"started_at"`
 	ETA         *time.Duration `json:"eta,omitempty"`
-	CurrentStep int       `json:"current_step,omitempty"`
-	TotalSteps  int       `json:"total_steps,omitempty"`
+	CurrentStep int            `json:"current_step,omitempty"`
+	TotalSteps  int            `json:"total_steps,omitempty"`
 }
 
 // StatusTableContent represents status table data
 type StatusTableContent struct {
-	Tasks       []TaskStatusRow `json:"tasks"`
-	TotalCount  int             `json:"total_count"`
-	Timestamp   time.Time       `json:"timestamp"`
+	Tasks      []TaskStatusRow `json:"tasks"`
+	TotalCount int             `json:"total_count"`
+	Timestamp  time.Time       `json:"timestamp"`
 }
 
 // TaskStatusRow represents a row in the status table
 type TaskStatusRow struct {
-	ID          string        `json:"id"`
-	Name        string        `json:"name"`
-	Type        string        `json:"type"`
-	Status      string        `json:"status"`
-	Progress    float64       `json:"progress"`
-	Duration    time.Duration `json:"duration"`
-	WorkerID    string        `json:"worker_id,omitempty"`
-	Message     string        `json:"message,omitempty"`
+	ID       string        `json:"id"`
+	Name     string        `json:"name"`
+	Type     string        `json:"type"`
+	Status   string        `json:"status"`
+	Progress float64       `json:"progress"`
+	Duration time.Duration `json:"duration"`
+	WorkerID string        `json:"worker_id,omitempty"`
+	Message  string        `json:"message,omitempty"`
 }
 
 // ResourceGaugeContent represents resource usage gauges
 type ResourceGaugeContent struct {
-	TaskID         string  `json:"task_id"`
-	CPUPercent     float64 `json:"cpu_percent"`
-	MemoryPercent  float64 `json:"memory_percent"`
-	MemoryBytes    int64   `json:"memory_bytes"`
-	MemoryMax      int64   `json:"memory_max,omitempty"`
-	IOReadBytes    int64   `json:"io_read_bytes"`
-	IOWriteBytes   int64   `json:"io_write_bytes"`
-	NetBytesSent   int64   `json:"net_bytes_sent"`
-	NetBytesRecv   int64   `json:"net_bytes_recv"`
-	OpenFDs        int     `json:"open_fds"`
-	ThreadCount    int     `json:"thread_count"`
+	TaskID        string  `json:"task_id"`
+	CPUPercent    float64 `json:"cpu_percent"`
+	MemoryPercent float64 `json:"memory_percent"`
+	MemoryBytes   int64   `json:"memory_bytes"`
+	MemoryMax     int64   `json:"memory_max,omitempty"`
+	IOReadBytes   int64   `json:"io_read_bytes"`
+	IOWriteBytes  int64   `json:"io_write_bytes"`
+	NetBytesSent  int64   `json:"net_bytes_sent"`
+	NetBytesRecv  int64   `json:"net_bytes_recv"`
+	OpenFDs       int     `json:"open_fds"`
+	ThreadCount   int     `json:"thread_count"`
 }
 
 // LogLineContent represents a log line
@@ -134,21 +134,21 @@ type LogLineContent struct {
 
 // TaskPanelContent represents a complete task panel
 type TaskPanelContent struct {
-	Task       *models.BackgroundTask `json:"task"`
-	Progress   *ProgressBarContent    `json:"progress"`
-	Resources  *ResourceGaugeContent  `json:"resources,omitempty"`
-	Logs       []LogLineContent       `json:"logs,omitempty"`
-	ETA        *time.Duration         `json:"eta,omitempty"`
+	Task      *models.BackgroundTask `json:"task"`
+	Progress  *ProgressBarContent    `json:"progress"`
+	Resources *ResourceGaugeContent  `json:"resources,omitempty"`
+	Logs      []LogLineContent       `json:"logs,omitempty"`
+	ETA       *time.Duration         `json:"eta,omitempty"`
 }
 
 // DashboardContent represents the full dashboard
 type DashboardContent struct {
-	Title       string                 `json:"title"`
-	Timestamp   time.Time              `json:"timestamp"`
-	WorkerStats WorkerStatsContent     `json:"worker_stats"`
-	QueueStats  QueueStatsContent      `json:"queue_stats"`
-	Tasks       []TaskPanelContent     `json:"tasks"`
-	SystemInfo  *SystemInfoContent     `json:"system_info,omitempty"`
+	Title       string             `json:"title"`
+	Timestamp   time.Time          `json:"timestamp"`
+	WorkerStats WorkerStatsContent `json:"worker_stats"`
+	QueueStats  QueueStatsContent  `json:"queue_stats"`
+	Tasks       []TaskPanelContent `json:"tasks"`
+	SystemInfo  *SystemInfoContent `json:"system_info,omitempty"`
 }
 
 // WorkerStatsContent represents worker pool statistics
@@ -162,10 +162,10 @@ type WorkerStatsContent struct {
 
 // QueueStatsContent represents queue statistics
 type QueueStatsContent struct {
-	PendingCount   int64             `json:"pending_count"`
-	RunningCount   int64             `json:"running_count"`
-	ByPriority     map[string]int64  `json:"by_priority,omitempty"`
-	ByStatus       map[string]int64  `json:"by_status,omitempty"`
+	PendingCount int64            `json:"pending_count"`
+	RunningCount int64            `json:"running_count"`
+	ByPriority   map[string]int64 `json:"by_priority,omitempty"`
+	ByStatus     map[string]int64 `json:"by_status,omitempty"`
 }
 
 // SystemInfoContent represents system resource info
@@ -182,10 +182,10 @@ type SystemInfoContent struct {
 
 // ANSIColor constants
 const (
-	ColorReset   = "\033[0m"
-	ColorBold    = "\033[1m"
-	ColorDim     = "\033[2m"
-	ColorItalic  = "\033[3m"
+	ColorReset     = "\033[0m"
+	ColorBold      = "\033[1m"
+	ColorDim       = "\033[2m"
+	ColorItalic    = "\033[3m"
 	ColorUnderline = "\033[4m"
 
 	ColorBlack   = "\033[30m"
@@ -219,39 +219,39 @@ const (
 
 // Unicode box drawing characters
 const (
-	BoxHorizontal = "─"
-	BoxVertical   = "│"
-	BoxTopLeft    = "┌"
-	BoxTopRight   = "┐"
-	BoxBottomLeft = "└"
+	BoxHorizontal  = "─"
+	BoxVertical    = "│"
+	BoxTopLeft     = "┌"
+	BoxTopRight    = "┐"
+	BoxBottomLeft  = "└"
 	BoxBottomRight = "┘"
-	BoxTeeLeft    = "├"
-	BoxTeeRight   = "┤"
-	BoxTeeTop     = "┬"
-	BoxTeeBottom  = "┴"
-	BoxCross      = "┼"
+	BoxTeeLeft     = "├"
+	BoxTeeRight    = "┤"
+	BoxTeeTop      = "┬"
+	BoxTeeBottom   = "┴"
+	BoxCross       = "┼"
 
-	BoxDoubleHorizontal = "═"
-	BoxDoubleVertical   = "║"
-	BoxDoubleTopLeft    = "╔"
-	BoxDoubleTopRight   = "╗"
-	BoxDoubleBottomLeft = "╚"
+	BoxDoubleHorizontal  = "═"
+	BoxDoubleVertical    = "║"
+	BoxDoubleTopLeft     = "╔"
+	BoxDoubleTopRight    = "╗"
+	BoxDoubleBottomLeft  = "╚"
 	BoxDoubleBottomRight = "╝"
-	BoxDoubleTeeLeft    = "╠"
-	BoxDoubleTeeRight   = "╣"
+	BoxDoubleTeeLeft     = "╠"
+	BoxDoubleTeeRight    = "╣"
 )
 
 // Progress bar characters
 const (
-	ProgressFilled     = "█"
-	ProgressEmpty      = "░"
-	ProgressPartial1   = "▏"
-	ProgressPartial2   = "▎"
-	ProgressPartial3   = "▍"
-	ProgressPartial4   = "▌"
-	ProgressPartial5   = "▋"
-	ProgressPartial6   = "▊"
-	ProgressPartial7   = "▉"
+	ProgressFilled      = "█"
+	ProgressEmpty       = "░"
+	ProgressPartial1    = "▏"
+	ProgressPartial2    = "▎"
+	ProgressPartial3    = "▍"
+	ProgressPartial4    = "▌"
+	ProgressPartial5    = "▋"
+	ProgressPartial6    = "▊"
+	ProgressPartial7    = "▉"
 	ProgressASCIIFilled = "="
 	ProgressASCIIEmpty  = " "
 	ProgressASCIITip    = ">"

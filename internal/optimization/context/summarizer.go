@@ -426,13 +426,13 @@ func (s *ConversationSummarizer) Summarize(ctx context.Context, turns []Turn) (*
 
 // IncrementalSummarizer summarizes incrementally as content grows.
 type IncrementalSummarizer struct {
-	mu              sync.Mutex
-	backend         LLMBackend
-	config          *IncrementalConfig
-	currentSummary  string
-	newContent      strings.Builder
-	contentCount    int
-	summarizeAfter  int
+	mu             sync.Mutex
+	backend        LLMBackend
+	config         *IncrementalConfig
+	currentSummary string
+	newContent     strings.Builder
+	contentCount   int
+	summarizeAfter int
 }
 
 // IncrementalConfig holds configuration for incremental summarization.

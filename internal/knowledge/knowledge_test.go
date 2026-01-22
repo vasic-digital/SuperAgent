@@ -58,10 +58,10 @@ func TestCodeGraph_AddNode(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	node := &CodeNode{
-		ID:        "node1",
-		Type:      NodeTypeFunction,
-		Name:      "TestFunction",
-		Path:      "/test/file.go",
+		ID:   "node1",
+		Type: NodeTypeFunction,
+		Name: "TestFunction",
+		Path: "/test/file.go",
 		Metadata: map[string]interface{}{
 			"language": "go",
 			"lines":    10,
@@ -207,22 +207,22 @@ func TestGraphRAG_Retrieve(t *testing.T) {
 
 	// Add some test nodes
 	codeGraph.AddNode(&CodeNode{
-		ID:       "func1",
-		Type:     NodeTypeFunction,
-		Name:     "calculateSum",
+		ID:        "func1",
+		Type:      NodeTypeFunction,
+		Name:      "calculateSum",
 		Docstring: "Calculate the sum of two numbers",
-		Path:     "/math/sum.go",
+		Path:      "/math/sum.go",
 		Metadata: map[string]interface{}{
 			"language": "go",
 		},
 	})
 
 	codeGraph.AddNode(&CodeNode{
-		ID:       "func2",
-		Type:     NodeTypeFunction,
-		Name:     "multiply",
+		ID:        "func2",
+		Type:      NodeTypeFunction,
+		Name:      "multiply",
 		Docstring: "Multiply two numbers",
-		Path:     "/math/multiply.go",
+		Path:      "/math/multiply.go",
 		Metadata: map[string]interface{}{
 			"language": "go",
 		},
@@ -244,11 +244,11 @@ func TestGraphRAG_BuildContext(t *testing.T) {
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
 	codeGraph.AddNode(&CodeNode{
-		ID:       "node1",
-		Type:     NodeTypeFunction,
-		Name:     "TestFunc",
+		ID:        "node1",
+		Type:      NodeTypeFunction,
+		Name:      "TestFunc",
 		Docstring: "A test function",
-		Path:     "/test.go",
+		Path:      "/test.go",
 	})
 
 	graphRAG := NewGraphRAG(config, codeGraph, nil, logrus.New())

@@ -81,14 +81,14 @@ type MCPConnectionPool struct {
 
 // MCPPoolConfig holds configuration for the connection pool
 type MCPPoolConfig struct {
-	MaxConnections     int
-	ConnectionTimeout  time.Duration
-	IdleTimeout        time.Duration
-	HealthCheckPeriod  time.Duration
-	RetryAttempts      int
-	RetryDelay         time.Duration
-	WarmUpOnStart      bool
-	WarmUpServers      []string
+	MaxConnections    int
+	ConnectionTimeout time.Duration
+	IdleTimeout       time.Duration
+	HealthCheckPeriod time.Duration
+	RetryAttempts     int
+	RetryDelay        time.Duration
+	WarmUpOnStart     bool
+	WarmUpServers     []string
 }
 
 // PoolMetrics tracks connection pool metrics

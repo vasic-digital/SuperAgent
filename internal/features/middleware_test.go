@@ -136,9 +136,9 @@ func TestMiddlewareCompactFeatureHeader(t *testing.T) {
 			graphqlEnabled: true,
 		},
 		{
-			name:           "disable_sse",
-			header:         "!sse",
-			sseEnabled:     false,
+			name:       "disable_sse",
+			header:     "!sse",
+			sseEnabled: false,
 		},
 		{
 			name:           "mixed",
@@ -393,8 +393,8 @@ func TestParseBoolValue(t *testing.T) {
 		{"no", false},
 		{"off", false},
 		{"disabled", false},
-		{"", true},         // Empty defaults to true
-		{"invalid", true},  // Unknown defaults to true
+		{"", true},        // Empty defaults to true
+		{"invalid", true}, // Unknown defaults to true
 	}
 
 	for _, tt := range tests {

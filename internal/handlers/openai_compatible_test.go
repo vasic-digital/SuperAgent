@@ -15,12 +15,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // stringPtr returns a pointer to the given string
@@ -1057,7 +1057,7 @@ func TestUnifiedHandler_AllParameters(t *testing.T) {
 		"logit_bias":        map[string]float64{"123": 0.5},
 		"user":              "test-user",
 		"ensemble_config": map[string]interface{}{
-			"strategy":     "weighted_voting",
+			"strategy":      "weighted_voting",
 			"min_providers": 2,
 		},
 	}
@@ -2099,13 +2099,13 @@ func TestUnifiedHandler_FullDebateDialogueFlow(t *testing.T) {
 
 	// Verify all major sections are present
 	sections := []string{
-		"╔",                          // Header box
-		"HELIXAGENT AI DEBATE",       // Main title
-		"Five AI minds",              // Description
-		"📋 TOPIC:",                  // Topic marker
-		"═══",                        // Section dividers
-		"DRAMATIS PERSONAE",          // Characters section
-		"THE DELIBERATION",           // Deliberation section
+		"╔",                    // Header box
+		"HELIXAGENT AI DEBATE", // Main title
+		"Five AI minds",        // Description
+		"📋 TOPIC:",             // Topic marker
+		"═══",                  // Section dividers
+		"DRAMATIS PERSONAE",    // Characters section
+		"THE DELIBERATION",     // Deliberation section
 	}
 
 	for _, section := range sections {
@@ -2821,7 +2821,7 @@ func TestToolsPassedToLLMRequest(t *testing.T) {
 			{Type: "function", Function: OpenAIToolFunction{Name: "Glob"}},
 			{Type: "function", Function: OpenAIToolFunction{Name: "Read"}},
 		},
-		ToolChoice: "auto",
+		ToolChoice:        "auto",
 		ParallelToolCalls: func() *bool { b := true; return &b }(),
 	}
 
@@ -3032,8 +3032,8 @@ func TestGenerateActionToolCalls(t *testing.T) {
 // TestGenerateLLMBasedToolCalls tests the LLM-based tool call generation
 func TestGenerateLLMBasedToolCalls(t *testing.T) {
 	handler := &UnifiedHandler{
-		providerRegistry:  nil, // Will cause early return
-		debateTeamConfig:  nil,
+		providerRegistry: nil, // Will cause early return
+		debateTeamConfig: nil,
 	}
 
 	ctx := context.Background()
@@ -3078,8 +3078,8 @@ func TestGenerateLLMBasedToolCalls(t *testing.T) {
 
 	t.Run("returns_empty_when_no_debate_config", func(t *testing.T) {
 		handlerWithRegistry := &UnifiedHandler{
-			providerRegistry:  nil,
-			debateTeamConfig:  nil,
+			providerRegistry: nil,
+			debateTeamConfig: nil,
 		}
 		result := handlerWithRegistry.generateLLMBasedToolCalls(ctx, messages, tools, synthesis)
 		assert.Empty(t, result, "Should return empty when debate config is nil")
@@ -3405,10 +3405,10 @@ func TestValidateAndFilterToolCalls(t *testing.T) {
 
 	t.Run("mixed_valid_invalid_filters_correctly", func(t *testing.T) {
 		toolCalls := []StreamingToolCall{
-			createToolCall("Read", `{"file_path": "valid.md"}`),       // Valid
-			createToolCall("Write", `{"content": "missing path"}`),    // Invalid
-			createToolCall("Glob", `{"pattern": "**/*.go"}`),          // Valid
-			createToolCall("Bash", `{"command": "ls"}`),               // Invalid (missing description)
+			createToolCall("Read", `{"file_path": "valid.md"}`),    // Valid
+			createToolCall("Write", `{"content": "missing path"}`), // Invalid
+			createToolCall("Glob", `{"pattern": "**/*.go"}`),       // Valid
+			createToolCall("Bash", `{"command": "ls"}`),            // Invalid (missing description)
 		}
 		result := validateAndFilterToolCalls(toolCalls)
 		assert.Len(t, result, 2, "Should filter out 2 invalid tool calls")
@@ -3447,7 +3447,7 @@ func TestValidateAndFilterToolCalls(t *testing.T) {
 	t.Run("all_tools_have_validation_rules", func(t *testing.T) {
 		// Test that all known tools have proper validation
 		toolsToTest := []struct {
-			name     string
+			name        string
 			validArgs   string
 			invalidArgs string
 		}{

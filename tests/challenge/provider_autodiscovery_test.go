@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/services"
+	"github.com/sirupsen/logrus"
 )
 
 // TestProviderAutoDiscovery tests the provider auto-discovery system

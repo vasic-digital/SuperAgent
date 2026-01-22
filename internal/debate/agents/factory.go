@@ -171,11 +171,11 @@ func (f *AgentFactory) CreateDebateTeam(providers []ProviderSpec) ([]*Specialize
 
 // AgentPool manages a pool of specialized agents.
 type AgentPool struct {
-	agents     map[string]*SpecializedAgent
-	byRole     map[topology.AgentRole][]*SpecializedAgent
-	byDomain   map[Domain][]*SpecializedAgent
-	factory    *AgentFactory
-	mu         sync.RWMutex
+	agents   map[string]*SpecializedAgent
+	byRole   map[topology.AgentRole][]*SpecializedAgent
+	byDomain map[Domain][]*SpecializedAgent
+	factory  *AgentFactory
+	mu       sync.RWMutex
 }
 
 // NewAgentPool creates a new agent pool.
@@ -356,10 +356,10 @@ func NewTeamBuilder(pool *AgentPool) *TeamBuilder {
 
 // TeamConfig configures team building.
 type TeamConfig struct {
-	RequiredRoles     []topology.AgentRole // Roles that must be filled
-	PreferredDomains  map[topology.AgentRole]Domain // Preferred domain per role
-	MinAgentsPerRole  int  // Minimum agents per role (for fallback)
-	AllowRoleSharing  bool // Allow same agent for multiple roles
+	RequiredRoles    []topology.AgentRole          // Roles that must be filled
+	PreferredDomains map[topology.AgentRole]Domain // Preferred domain per role
+	MinAgentsPerRole int                           // Minimum agents per role (for fallback)
+	AllowRoleSharing bool                          // Allow same agent for multiple roles
 }
 
 // DefaultTeamConfig returns a sensible default configuration.
@@ -387,9 +387,9 @@ func DefaultTeamConfig() *TeamConfig {
 
 // TeamAssignment represents an agent assigned to a role.
 type TeamAssignment struct {
-	Agent    *SpecializedAgent
-	Role     topology.AgentRole
-	Score    *AgentScore
+	Agent     *SpecializedAgent
+	Role      topology.AgentRole
+	Score     *AgentScore
 	IsPrimary bool
 }
 

@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestCompletionHandler_Complete_Success tests successful completion request

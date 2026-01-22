@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/models"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/config"
-	"dev.helix.agent/internal/models"
 )
 
 // newTestLogger is defined in cache_factory_test.go
@@ -926,9 +926,9 @@ func TestCogneeService_calculateRelevanceScore(t *testing.T) {
 			TotalResults: 4,
 			VectorResults: []MemoryEntry{
 				{Relevance: 0.6},
-				{Relevance: 0},   // Should be ignored
+				{Relevance: 0}, // Should be ignored
 				{Relevance: 0.8},
-				{Relevance: 0},   // Should be ignored
+				{Relevance: 0}, // Should be ignored
 			},
 		}
 
@@ -955,7 +955,7 @@ func TestCogneeService_GetGraphCompletion(t *testing.T) {
 
 	t.Run("returns error when disabled", func(t *testing.T) {
 		config := &CogneeServiceConfig{
-			Enabled:             false,
+			Enabled:              false,
 			EnableGraphReasoning: false,
 		}
 		service := NewCogneeServiceWithConfig(config, logger)
@@ -970,7 +970,7 @@ func TestCogneeService_GetGraphCompletion(t *testing.T) {
 
 	t.Run("returns error when graph reasoning disabled", func(t *testing.T) {
 		config := &CogneeServiceConfig{
-			Enabled:             true,
+			Enabled:              true,
 			EnableGraphReasoning: false,
 		}
 		service := NewCogneeServiceWithConfig(config, logger)
@@ -1000,10 +1000,10 @@ func TestCogneeService_GetGraphCompletion(t *testing.T) {
 		defer server.Close()
 
 		config := &CogneeServiceConfig{
-			Enabled:             true,
+			Enabled:              true,
 			EnableGraphReasoning: true,
-			BaseURL:             server.URL,
-			DefaultDataset:      "test-dataset",
+			BaseURL:              server.URL,
+			DefaultDataset:       "test-dataset",
 		}
 		service := NewCogneeServiceWithConfig(config, logger)
 		service.isReady = true
@@ -1028,9 +1028,9 @@ func TestCogneeService_GetGraphCompletion(t *testing.T) {
 		defer server.Close()
 
 		config := &CogneeServiceConfig{
-			Enabled:             true,
+			Enabled:              true,
 			EnableGraphReasoning: true,
-			BaseURL:             server.URL,
+			BaseURL:              server.URL,
 		}
 		service := NewCogneeServiceWithConfig(config, logger)
 		service.isReady = true
@@ -1049,9 +1049,9 @@ func TestCogneeService_GetGraphCompletion(t *testing.T) {
 		defer server.Close()
 
 		config := &CogneeServiceConfig{
-			Enabled:             true,
+			Enabled:              true,
 			EnableGraphReasoning: true,
-			BaseURL:             server.URL,
+			BaseURL:              server.URL,
 		}
 		service := NewCogneeServiceWithConfig(config, logger)
 		service.isReady = true

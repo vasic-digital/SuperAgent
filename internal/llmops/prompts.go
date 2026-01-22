@@ -16,7 +16,7 @@ import (
 // InMemoryPromptRegistry implements PromptRegistry with in-memory storage
 type InMemoryPromptRegistry struct {
 	prompts map[string]map[string]*PromptVersion // name -> version -> prompt
-	active  map[string]string                     // name -> active version
+	active  map[string]string                    // name -> active version
 	mu      sync.RWMutex
 	logger  *logrus.Logger
 }
@@ -317,12 +317,12 @@ func NewPromptVersionComparator(registry PromptRegistry, logger *logrus.Logger) 
 
 // PromptDiff represents differences between versions
 type PromptDiff struct {
-	OldVersion    string   `json:"old_version"`
-	NewVersion    string   `json:"new_version"`
-	ContentDiff   string   `json:"content_diff"`
-	AddedVars     []string `json:"added_vars,omitempty"`
-	RemovedVars   []string `json:"removed_vars,omitempty"`
-	ChangedVars   []string `json:"changed_vars,omitempty"`
+	OldVersion  string   `json:"old_version"`
+	NewVersion  string   `json:"new_version"`
+	ContentDiff string   `json:"content_diff"`
+	AddedVars   []string `json:"added_vars,omitempty"`
+	RemovedVars []string `json:"removed_vars,omitempty"`
+	ChangedVars []string `json:"changed_vars,omitempty"`
 }
 
 // Compare compares two prompt versions

@@ -561,12 +561,12 @@ func TestLLMProvider_Fields(t *testing.T) {
 	t.Run("ConfigMapTypes", func(t *testing.T) {
 		provider := &LLMProvider{
 			Config: map[string]interface{}{
-				"string_val":  "test",
-				"int_val":     100,
-				"float_val":   0.7,
-				"bool_val":    true,
-				"nested_val":  map[string]interface{}{"key": "value"},
-				"array_val":   []interface{}{"a", "b"},
+				"string_val": "test",
+				"int_val":    100,
+				"float_val":  0.7,
+				"bool_val":   true,
+				"nested_val": map[string]interface{}{"key": "value"},
+				"array_val":  []interface{}{"a", "b"},
 			},
 		}
 		assert.Equal(t, "test", provider.Config["string_val"])

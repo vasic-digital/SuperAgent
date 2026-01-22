@@ -223,9 +223,9 @@ func TestInputValidation_EmailFormat(t *testing.T) {
 	client := &http.Client{}
 
 	testCases := []struct {
-		name         string
-		email        string
-		expectValid  bool
+		name        string
+		email       string
+		expectValid bool
 	}{
 		{"ValidEmail", "user@example.com", true},
 		{"ValidEmailWithSubaddress", "user+tag@example.com", true}, // subaddressing is valid
@@ -271,9 +271,9 @@ func TestInputValidation_OutputSanitization(t *testing.T) {
 	client := &http.Client{}
 
 	testCases := []struct {
-		name            string
-		input           string
-		notExpected     []string
+		name        string
+		input       string
+		notExpected []string
 	}{
 		{
 			name:        "ScriptTag",

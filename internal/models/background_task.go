@@ -71,11 +71,11 @@ func (p TaskPriority) Weight() int {
 
 // BackgroundTask represents a background task in the system
 type BackgroundTask struct {
-	ID            string          `json:"id" db:"id"`
-	TaskType      string          `json:"task_type" db:"task_type"`
-	TaskName      string          `json:"task_name" db:"task_name"`
-	CorrelationID *string         `json:"correlation_id,omitempty" db:"correlation_id"`
-	ParentTaskID  *string         `json:"parent_task_id,omitempty" db:"parent_task_id"`
+	ID            string  `json:"id" db:"id"`
+	TaskType      string  `json:"task_type" db:"task_type"`
+	TaskName      string  `json:"task_name" db:"task_name"`
+	CorrelationID *string `json:"correlation_id,omitempty" db:"correlation_id"`
+	ParentTaskID  *string `json:"parent_task_id,omitempty" db:"parent_task_id"`
 
 	// Task configuration
 	Payload  json.RawMessage `json:"payload" db:"payload"`
@@ -296,15 +296,15 @@ type TaskLogEntry struct {
 
 // TaskProgressUpdate represents a progress update from a task
 type TaskProgressUpdate struct {
-	TaskID            string  `json:"task_id"`
-	Progress          float64 `json:"progress"` // 0-100
-	Message           string  `json:"message,omitempty"`
-	CurrentStep       string  `json:"current_step,omitempty"`
-	TotalSteps        int     `json:"total_steps,omitempty"`
-	CurrentStepNumber int     `json:"current_step_number,omitempty"`
-	TokensGenerated   int     `json:"tokens_generated,omitempty"`
-	TokensPerSecond   float64 `json:"tokens_per_second,omitempty"`
-	EstimatedRemaining int64  `json:"estimated_remaining_ms,omitempty"`
+	TaskID             string  `json:"task_id"`
+	Progress           float64 `json:"progress"` // 0-100
+	Message            string  `json:"message,omitempty"`
+	CurrentStep        string  `json:"current_step,omitempty"`
+	TotalSteps         int     `json:"total_steps,omitempty"`
+	CurrentStepNumber  int     `json:"current_step_number,omitempty"`
+	TokensGenerated    int     `json:"tokens_generated,omitempty"`
+	TokensPerSecond    float64 `json:"tokens_per_second,omitempty"`
+	EstimatedRemaining int64   `json:"estimated_remaining_ms,omitempty"`
 }
 
 // NewBackgroundTask creates a new BackgroundTask with default values

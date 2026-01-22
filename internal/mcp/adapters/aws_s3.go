@@ -65,13 +65,13 @@ type S3Object struct {
 
 // S3ObjectMetadata represents S3 object metadata.
 type S3ObjectMetadata struct {
-	ContentType     string            `json:"content_type"`
-	ContentLength   int64             `json:"content_length"`
-	LastModified    time.Time         `json:"last_modified"`
-	ETag            string            `json:"etag"`
-	Metadata        map[string]string `json:"metadata"`
-	StorageClass    string            `json:"storage_class"`
-	VersionID       string            `json:"version_id,omitempty"`
+	ContentType   string            `json:"content_type"`
+	ContentLength int64             `json:"content_length"`
+	LastModified  time.Time         `json:"last_modified"`
+	ETag          string            `json:"etag"`
+	Metadata      map[string]string `json:"metadata"`
+	StorageClass  string            `json:"storage_class"`
+	VersionID     string            `json:"version_id,omitempty"`
 }
 
 // NewAWSS3Adapter creates a new AWS S3 adapter.

@@ -13,9 +13,9 @@ import (
 
 // GitLabConfig configures the GitLab adapter.
 type GitLabConfig struct {
-	BaseURL     string        `json:"base_url"`
-	Token       string        `json:"token"`
-	Timeout     time.Duration `json:"timeout"`
+	BaseURL string        `json:"base_url"`
+	Token   string        `json:"token"`
+	Timeout time.Duration `json:"timeout"`
 }
 
 // DefaultGitLabConfig returns default configuration.

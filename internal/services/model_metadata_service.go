@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/database"
 	"dev.helix.agent/internal/modelsdev"
+	"github.com/sirupsen/logrus"
 )
 
 // ModelMetadataRepositoryInterface defines the interface for model metadata persistence

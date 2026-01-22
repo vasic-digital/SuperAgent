@@ -150,9 +150,9 @@ func NewSelfImprovementSystem(config *SelfImprovementConfig, logger *logrus.Logg
 	}
 
 	return &SelfImprovementSystem{
-		config:  config,
-		logger:  logger,
-		stopCh:  make(chan struct{}),
+		config: config,
+		logger: logger,
+		stopCh: make(chan struct{}),
 	}
 }
 

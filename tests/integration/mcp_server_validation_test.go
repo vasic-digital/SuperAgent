@@ -28,7 +28,8 @@ type MCPServerConfig struct {
 // TestMCPPackageExistence verifies all MCP packages exist in npm registry
 func TestMCPPackageExistence(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping MCP package existence test (acceptable)"); return
+		t.Logf("Short mode - skipping MCP package existence test (acceptable)")
+		return
 	}
 
 	packages := []struct {
@@ -70,12 +71,14 @@ func TestMCPPackageExistence(t *testing.T) {
 // TestMCPLocalServerStartup verifies local MCP servers can start
 func TestMCPLocalServerStartup(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping MCP local server startup test (acceptable)"); return
+		t.Logf("Short mode - skipping MCP local server startup test (acceptable)")
+		return
 	}
 
 	// Skip if npx is not available
 	if _, err := exec.LookPath("npx"); err != nil {
-		t.Logf("npx not found - skipping local MCP server tests (acceptable)"); return
+		t.Logf("npx not found - skipping local MCP server tests (acceptable)")
+		return
 	}
 
 	servers := []struct {
@@ -132,7 +135,8 @@ func TestHelixAgentMCPEndpoints(t *testing.T) {
 	// Check if HelixAgent is running
 	resp, err := http.Get(baseURL + "/health")
 	if err != nil {
-		t.Logf("HelixAgent not running - skipping endpoint tests (acceptable)"); return
+		t.Logf("HelixAgent not running - skipping endpoint tests (acceptable)")
+		return
 	}
 	resp.Body.Close()
 
@@ -208,7 +212,8 @@ func TestMCPSSEImmediateResponse(t *testing.T) {
 	// Check if HelixAgent is running
 	resp, err := http.Get(baseURL + "/health")
 	if err != nil {
-		t.Logf("HelixAgent not running - skipping SSE timing tests (acceptable)"); return
+		t.Logf("HelixAgent not running - skipping SSE timing tests (acceptable)")
+		return
 	}
 	resp.Body.Close()
 
@@ -241,7 +246,8 @@ func TestOpenCodeConfiguration(t *testing.T) {
 	// This ensures we test the current generator output, not stale configs
 	binaryPath := findBinaryPath(t)
 	if binaryPath == "" {
-		t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+		t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

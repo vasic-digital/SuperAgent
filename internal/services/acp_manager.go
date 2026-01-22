@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/database"
+	"github.com/gorilla/websocket"
+	"github.com/sirupsen/logrus"
 )
 
 // ACPManager handles ACP (Agent Client Protocol) operations
@@ -65,13 +65,13 @@ type ACPResponse struct {
 
 // ACPClient handles HTTP and WebSocket communication with ACP servers
 type ACPClient struct {
-	httpClient   *http.Client
-	wsDialer     *websocket.Dialer
-	wsConns      map[string]*websocket.Conn
-	wsConnsMu    sync.RWMutex
-	timeout      time.Duration
-	maxRetries   int
-	log          *logrus.Logger
+	httpClient *http.Client
+	wsDialer   *websocket.Dialer
+	wsConns    map[string]*websocket.Conn
+	wsConnsMu  sync.RWMutex
+	timeout    time.Duration
+	maxRetries int
+	log        *logrus.Logger
 }
 
 // ACPProtocolRequest represents the ACP protocol request format
@@ -84,10 +84,10 @@ type ACPProtocolRequest struct {
 
 // ACPProtocolResponse represents the ACP protocol response format
 type ACPProtocolResponse struct {
-	JSONRPC string        `json:"jsonrpc"`
-	ID      interface{}   `json:"id,omitempty"`
-	Result  interface{}   `json:"result,omitempty"`
-	Error   *ACPRPCError  `json:"error,omitempty"`
+	JSONRPC string       `json:"jsonrpc"`
+	ID      interface{}  `json:"id,omitempty"`
+	Result  interface{}  `json:"result,omitempty"`
+	Error   *ACPRPCError `json:"error,omitempty"`
 }
 
 // ACPRPCError represents an ACP RPC error
@@ -506,8 +506,8 @@ func (m *ACPManager) SyncACPServer(ctx context.Context, serverID string) error {
 	}
 
 	m.log.WithFields(logrus.Fields{
-		"serverId": serverID,
-		"version":  info.Version,
+		"serverId":     serverID,
+		"version":      info.Version,
 		"capabilities": len(info.Capabilities),
 	}).Info("ACP server synchronization completed")
 

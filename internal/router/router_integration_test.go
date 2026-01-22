@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/handlers"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"dev.helix.agent/internal/handlers"
 )
 
 // TestRouterIntegration tests the router with mocked dependencies

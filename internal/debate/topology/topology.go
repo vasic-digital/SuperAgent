@@ -24,31 +24,31 @@ const (
 type AgentRole string
 
 const (
-	RoleProposer   AgentRole = "proposer"   // Generates initial solutions
-	RoleCritic     AgentRole = "critic"     // Identifies weaknesses
-	RoleReviewer   AgentRole = "reviewer"   // Evaluates quality
-	RoleOptimizer  AgentRole = "optimizer"  // Improves solutions
-	RoleModerator  AgentRole = "moderator"  // Facilitates discussion
-	RoleArchitect  AgentRole = "architect"  // Designs structure
-	RoleSecurity   AgentRole = "security"   // Security analysis
-	RoleTestAgent  AgentRole = "test_agent" // Test generation
-	RoleRedTeam    AgentRole = "red_team"   // Adversarial testing
-	RoleBlueTeam   AgentRole = "blue_team"  // Defensive validation
-	RoleValidator  AgentRole = "validator"  // Final validation
-	RoleTeacher    AgentRole = "teacher"    // Knowledge transfer
+	RoleProposer  AgentRole = "proposer"   // Generates initial solutions
+	RoleCritic    AgentRole = "critic"     // Identifies weaknesses
+	RoleReviewer  AgentRole = "reviewer"   // Evaluates quality
+	RoleOptimizer AgentRole = "optimizer"  // Improves solutions
+	RoleModerator AgentRole = "moderator"  // Facilitates discussion
+	RoleArchitect AgentRole = "architect"  // Designs structure
+	RoleSecurity  AgentRole = "security"   // Security analysis
+	RoleTestAgent AgentRole = "test_agent" // Test generation
+	RoleRedTeam   AgentRole = "red_team"   // Adversarial testing
+	RoleBlueTeam  AgentRole = "blue_team"  // Defensive validation
+	RoleValidator AgentRole = "validator"  // Final validation
+	RoleTeacher   AgentRole = "teacher"    // Knowledge transfer
 )
 
 // Agent represents a participant in the debate topology.
 type Agent struct {
-	ID              string            `json:"id"`
-	Role            AgentRole         `json:"role"`
-	Provider        string            `json:"provider"`
-	Model           string            `json:"model"`
-	Score           float64           `json:"score"`         // LLMsVerifier score
-	Confidence      float64           `json:"confidence"`    // Current confidence level
-	Specialization  string            `json:"specialization"` // code, reasoning, vision, etc.
-	Capabilities    []string          `json:"capabilities"`
-	Metadata        map[string]interface{} `json:"metadata,omitempty"`
+	ID             string                 `json:"id"`
+	Role           AgentRole              `json:"role"`
+	Provider       string                 `json:"provider"`
+	Model          string                 `json:"model"`
+	Score          float64                `json:"score"`          // LLMsVerifier score
+	Confidence     float64                `json:"confidence"`     // Current confidence level
+	Specialization string                 `json:"specialization"` // code, reasoning, vision, etc.
+	Capabilities   []string               `json:"capabilities"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 
 	// Dynamic state
 	lastActive      time.Time
@@ -96,7 +96,7 @@ type AgentMetrics struct {
 type Message struct {
 	ID          string                 `json:"id"`
 	FromAgent   string                 `json:"from_agent"`
-	ToAgents    []string               `json:"to_agents"`   // Empty = broadcast
+	ToAgents    []string               `json:"to_agents"` // Empty = broadcast
 	Content     string                 `json:"content"`
 	MessageType MessageType            `json:"message_type"`
 	Phase       DebatePhase            `json:"phase"`
@@ -111,16 +111,16 @@ type Message struct {
 type MessageType string
 
 const (
-	MessageTypeProposal      MessageType = "proposal"
-	MessageTypeCritique      MessageType = "critique"
-	MessageTypeReview        MessageType = "review"
-	MessageTypeOptimization  MessageType = "optimization"
-	MessageTypeConvergence   MessageType = "convergence"
-	MessageTypeQuestion      MessageType = "question"
-	MessageTypeAnswer        MessageType = "answer"
-	MessageTypeAcknowledge   MessageType = "acknowledge"
-	MessageTypeValidation    MessageType = "validation"
-	MessageTypeRefinement    MessageType = "refinement"
+	MessageTypeProposal     MessageType = "proposal"
+	MessageTypeCritique     MessageType = "critique"
+	MessageTypeReview       MessageType = "review"
+	MessageTypeOptimization MessageType = "optimization"
+	MessageTypeConvergence  MessageType = "convergence"
+	MessageTypeQuestion     MessageType = "question"
+	MessageTypeAnswer       MessageType = "answer"
+	MessageTypeAcknowledge  MessageType = "acknowledge"
+	MessageTypeValidation   MessageType = "validation"
+	MessageTypeRefinement   MessageType = "refinement"
 )
 
 // DebatePhase represents the current phase of the debate.
@@ -136,10 +136,10 @@ const (
 
 // CommunicationChannel represents a communication pathway between agents.
 type CommunicationChannel struct {
-	FromAgent   string
-	ToAgent     string
+	FromAgent     string
+	ToAgent       string
 	Bidirectional bool
-	Weight      float64 // Channel priority/bandwidth
+	Weight        float64 // Channel priority/bandwidth
 }
 
 // Topology defines the interface for debate coordination topologies.
@@ -198,13 +198,13 @@ type Topology interface {
 
 // TopologyMetrics holds topology performance metrics.
 type TopologyMetrics struct {
-	TotalMessages      int64                  `json:"total_messages"`
-	BroadcastCount     int64                  `json:"broadcast_count"`
-	DirectMessageCount int64                  `json:"direct_message_count"`
-	AvgMessageLatency  time.Duration          `json:"avg_message_latency"`
+	TotalMessages      int64                   `json:"total_messages"`
+	BroadcastCount     int64                   `json:"broadcast_count"`
+	DirectMessageCount int64                   `json:"direct_message_count"`
+	AvgMessageLatency  time.Duration           `json:"avg_message_latency"`
 	AgentMetrics       map[string]AgentMetrics `json:"agent_metrics"`
-	PhaseTransitions   int                    `json:"phase_transitions"`
-	ChannelUtilization map[string]float64     `json:"channel_utilization"`
+	PhaseTransitions   int                     `json:"phase_transitions"`
+	ChannelUtilization map[string]float64      `json:"channel_utilization"`
 }
 
 // TopologyConfig configures a topology instance.
@@ -233,16 +233,16 @@ func DefaultTopologyConfig(topologyType TopologyType) TopologyConfig {
 
 // BaseTopology provides common functionality for all topologies.
 type BaseTopology struct {
-	config      TopologyConfig
-	agents      map[string]*Agent
+	config       TopologyConfig
+	agents       map[string]*Agent
 	agentsByRole map[AgentRole][]*Agent
-	channels    []CommunicationChannel
-	metrics     TopologyMetrics
-	msgChan     chan *Message
+	channels     []CommunicationChannel
+	metrics      TopologyMetrics
+	msgChan      chan *Message
 
-	mu          sync.RWMutex
-	metricsMu   sync.RWMutex
-	closed      bool
+	mu        sync.RWMutex
+	metricsMu sync.RWMutex
+	closed    bool
 }
 
 // NewBaseTopology creates a new base topology.
@@ -436,11 +436,11 @@ func (bt *BaseTopology) GetNextPhase(currentPhase DebatePhase) DebatePhase {
 
 // Errors for topology operations.
 var (
-	ErrAgentNotFound    = TopologyError{Code: "AGENT_NOT_FOUND", Message: "agent not found in topology"}
-	ErrChannelNotFound  = TopologyError{Code: "CHANNEL_NOT_FOUND", Message: "communication channel not found"}
-	ErrTopologyClosed   = TopologyError{Code: "TOPOLOGY_CLOSED", Message: "topology has been closed"}
-	ErrInvalidMessage   = TopologyError{Code: "INVALID_MESSAGE", Message: "invalid message format"}
-	ErrRoutingFailed    = TopologyError{Code: "ROUTING_FAILED", Message: "message routing failed"}
+	ErrAgentNotFound   = TopologyError{Code: "AGENT_NOT_FOUND", Message: "agent not found in topology"}
+	ErrChannelNotFound = TopologyError{Code: "CHANNEL_NOT_FOUND", Message: "communication channel not found"}
+	ErrTopologyClosed  = TopologyError{Code: "TOPOLOGY_CLOSED", Message: "topology has been closed"}
+	ErrInvalidMessage  = TopologyError{Code: "INVALID_MESSAGE", Message: "invalid message format"}
+	ErrRoutingFailed   = TopologyError{Code: "ROUTING_FAILED", Message: "message routing failed"}
 )
 
 // TopologyError represents a topology-specific error.

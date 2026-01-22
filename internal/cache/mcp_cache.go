@@ -27,20 +27,20 @@ func DefaultMCPCacheConfig() *MCPCacheConfig {
 		DefaultTTL: 5 * time.Minute,
 		TTLByTool: map[string]time.Duration{
 			// Filesystem tools - files can change
-			"filesystem.read_file":     5 * time.Minute,
-			"filesystem.list_dir":      2 * time.Minute,
-			"filesystem.search":        5 * time.Minute,
+			"filesystem.read_file": 5 * time.Minute,
+			"filesystem.list_dir":  2 * time.Minute,
+			"filesystem.search":    5 * time.Minute,
 			// GitHub tools - repos change less frequently
 			"github.get_repo":          1 * time.Hour,
 			"github.list_repos":        30 * time.Minute,
 			"github.get_file_contents": 15 * time.Minute,
 			"github.search_repos":      30 * time.Minute,
 			// Fetch tools - web content changes
-			"fetch.fetch":              10 * time.Minute,
+			"fetch.fetch": 10 * time.Minute,
 			// SQLite tools - data can change
-			"sqlite.query":             2 * time.Minute,
+			"sqlite.query": 2 * time.Minute,
 			// Puppeteer - screenshots are point-in-time
-			"puppeteer.screenshot":     1 * time.Minute,
+			"puppeteer.screenshot": 1 * time.Minute,
 		},
 		NeverCacheTools: []string{
 			// Memory tools should never be cached
@@ -71,14 +71,14 @@ type MCPServerCache struct {
 
 // MCPCacheMetrics tracks MCP cache statistics
 type MCPCacheMetrics struct {
-	Hits             int64
-	Misses           int64
-	Sets             int64
-	Invalidations    int64
+	Hits              int64
+	Misses            int64
+	Sets              int64
+	Invalidations     int64
 	SkippedNeverCache int64
-	SkippedLarge     int64
-	ByServer         map[string]*mcpServerStats
-	ByTool           map[string]*mcpToolStats
+	SkippedLarge      int64
+	ByServer          map[string]*mcpServerStats
+	ByTool            map[string]*mcpToolStats
 }
 
 type mcpServerStats struct {

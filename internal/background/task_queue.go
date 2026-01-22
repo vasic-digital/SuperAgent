@@ -19,9 +19,9 @@ type PostgresTaskQueue struct {
 	mu         sync.RWMutex
 
 	// In-memory cache for queue depth (updated periodically)
-	cachedDepth     map[models.TaskPriority]int64
-	depthCacheTime  time.Time
-	depthCacheTTL   time.Duration
+	cachedDepth    map[models.TaskPriority]int64
+	depthCacheTime time.Time
+	depthCacheTTL  time.Duration
 }
 
 // NewPostgresTaskQueue creates a new PostgreSQL-backed task queue
@@ -252,10 +252,10 @@ func (q *PostgresTaskQueue) invalidateCache() {
 
 // TaskQueueStats holds queue statistics
 type TaskQueueStats struct {
-	PendingCount  int64                         `json:"pending_count"`
-	RunningCount  int64                         `json:"running_count"`
+	PendingCount    int64                         `json:"pending_count"`
+	RunningCount    int64                         `json:"running_count"`
 	DepthByPriority map[models.TaskPriority]int64 `json:"depth_by_priority"`
-	StatusCounts  map[models.TaskStatus]int64   `json:"status_counts"`
+	StatusCounts    map[models.TaskStatus]int64   `json:"status_counts"`
 }
 
 // GetStats returns queue statistics
@@ -280,10 +280,10 @@ func (q *PostgresTaskQueue) GetStats(ctx context.Context) (*TaskQueueStats, erro
 
 // InMemoryTaskQueue provides an in-memory queue implementation for testing
 type InMemoryTaskQueue struct {
-	tasks   map[string]*models.BackgroundTask
-	queue   []*models.BackgroundTask
-	mu      sync.RWMutex
-	logger  *logrus.Logger
+	tasks  map[string]*models.BackgroundTask
+	queue  []*models.BackgroundTask
+	mu     sync.RWMutex
+	logger *logrus.Logger
 }
 
 // NewInMemoryTaskQueue creates a new in-memory task queue

@@ -118,19 +118,19 @@ func (s *SVGMakerAdapter) Close() error {
 
 // SVGDocument represents an SVG document
 type SVGDocument struct {
-	Width      int           `json:"width"`
-	Height     int           `json:"height"`
-	ViewBox    string        `json:"viewbox,omitempty"`
-	Background string        `json:"background,omitempty"`
-	Elements   []SVGElement  `json:"elements"`
-	Defs       []SVGDef      `json:"defs,omitempty"`
+	Width      int          `json:"width"`
+	Height     int          `json:"height"`
+	ViewBox    string       `json:"viewbox,omitempty"`
+	Background string       `json:"background,omitempty"`
+	Elements   []SVGElement `json:"elements"`
+	Defs       []SVGDef     `json:"defs,omitempty"`
 }
 
 // SVGElement represents an SVG element
 type SVGElement struct {
 	Type       string                 `json:"type"` // rect, circle, ellipse, line, polyline, polygon, path, text, group, image
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
-	Content    string                 `json:"content,omitempty"` // For text elements
+	Content    string                 `json:"content,omitempty"`  // For text elements
 	Children   []SVGElement           `json:"children,omitempty"` // For groups
 }
 
@@ -144,8 +144,8 @@ type SVGDef struct {
 
 // GradientStop represents a gradient stop
 type GradientStop struct {
-	Offset  string `json:"offset"`
-	Color   string `json:"color"`
+	Offset  string  `json:"offset"`
+	Color   string  `json:"color"`
 	Opacity float64 `json:"opacity,omitempty"`
 }
 
@@ -496,10 +496,10 @@ func (s *SVGMakerAdapter) CreatePath(ctx context.Context, d, fill, stroke string
 
 // ChartData represents data for chart generation
 type ChartData struct {
-	Labels []string    `json:"labels"`
-	Values []float64   `json:"values"`
-	Colors []string    `json:"colors,omitempty"`
-	Title  string      `json:"title,omitempty"`
+	Labels []string  `json:"labels"`
+	Values []float64 `json:"values"`
+	Colors []string  `json:"colors,omitempty"`
+	Title  string    `json:"title,omitempty"`
 }
 
 // CreateBarChart creates a bar chart SVG
@@ -688,9 +688,9 @@ func (s *SVGMakerAdapter) CreatePieChart(ctx context.Context, data *ChartData, w
 		elements = append(elements, SVGElement{
 			Type: "path",
 			Attributes: map[string]interface{}{
-				"d":      d,
-				"fill":   color,
-				"stroke": "#fff",
+				"d":            d,
+				"fill":         color,
+				"stroke":       "#fff",
 				"stroke-width": 2,
 			},
 		})
@@ -784,7 +784,7 @@ func (s *SVGMakerAdapter) ValidateSVG(ctx context.Context, svg string) (bool, []
 	for tag, count := range openCount {
 		if closeCount[tag] != count {
 			// Check if self-closing
-			selfClosing := regexp.MustCompile(`<` + tag + `[^>]*/>`).FindAllString(svg, -1)
+			selfClosing := regexp.MustCompile(`<`+tag+`[^>]*/>`).FindAllString(svg, -1)
 			if closeCount[tag]+len(selfClosing) != count {
 				errors = append(errors, fmt.Sprintf("unbalanced <%s> tags", tag))
 			}

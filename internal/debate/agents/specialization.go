@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"dev.helix.agent/internal/debate/topology"
+	"github.com/google/uuid"
 )
 
 // Domain represents an agent's primary area of expertise.
@@ -32,12 +32,12 @@ type CapabilityType string
 
 const (
 	// Code capabilities
-	CapCodeAnalysis     CapabilityType = "code_analysis"
-	CapCodeGeneration   CapabilityType = "code_generation"
-	CapCodeCompletion   CapabilityType = "code_completion"
-	CapCodeRefactoring  CapabilityType = "code_refactoring"
-	CapTestGeneration   CapabilityType = "test_generation"
-	CapCodeReview       CapabilityType = "code_review"
+	CapCodeAnalysis    CapabilityType = "code_analysis"
+	CapCodeGeneration  CapabilityType = "code_generation"
+	CapCodeCompletion  CapabilityType = "code_completion"
+	CapCodeRefactoring CapabilityType = "code_refactoring"
+	CapTestGeneration  CapabilityType = "test_generation"
+	CapCodeReview      CapabilityType = "code_review"
 
 	// Security capabilities
 	CapVulnerabilityDetection CapabilityType = "vulnerability_detection"
@@ -46,35 +46,35 @@ const (
 	CapPenetrationTesting     CapabilityType = "penetration_testing"
 
 	// Architecture capabilities
-	CapSystemDesign      CapabilityType = "system_design"
-	CapScalabilityDesign CapabilityType = "scalability_design"
+	CapSystemDesign       CapabilityType = "system_design"
+	CapScalabilityDesign  CapabilityType = "scalability_design"
 	CapPatternRecognition CapabilityType = "pattern_recognition"
-	CapAPIDesign         CapabilityType = "api_design"
-	CapDatabaseDesign    CapabilityType = "database_design"
+	CapAPIDesign          CapabilityType = "api_design"
+	CapDatabaseDesign     CapabilityType = "database_design"
 
 	// Debug capabilities
-	CapErrorDiagnosis    CapabilityType = "error_diagnosis"
+	CapErrorDiagnosis     CapabilityType = "error_diagnosis"
 	CapStackTraceAnalysis CapabilityType = "stack_trace_analysis"
-	CapLogAnalysis       CapabilityType = "log_analysis"
-	CapRootCauseAnalysis CapabilityType = "root_cause_analysis"
+	CapLogAnalysis        CapabilityType = "log_analysis"
+	CapRootCauseAnalysis  CapabilityType = "root_cause_analysis"
 
 	// Optimization capabilities
-	CapPerformanceAnalysis CapabilityType = "performance_analysis"
-	CapBenchmarking        CapabilityType = "benchmarking"
+	CapPerformanceAnalysis  CapabilityType = "performance_analysis"
+	CapBenchmarking         CapabilityType = "benchmarking"
 	CapResourceOptimization CapabilityType = "resource_optimization"
-	CapMemoryOptimization  CapabilityType = "memory_optimization"
+	CapMemoryOptimization   CapabilityType = "memory_optimization"
 
 	// Reasoning capabilities
-	CapLogicalReasoning  CapabilityType = "logical_reasoning"
-	CapMathematicalProof CapabilityType = "mathematical_proof"
+	CapLogicalReasoning     CapabilityType = "logical_reasoning"
+	CapMathematicalProof    CapabilityType = "mathematical_proof"
 	CapProblemDecomposition CapabilityType = "problem_decomposition"
-	CapCreativeThinking  CapabilityType = "creative_thinking"
+	CapCreativeThinking     CapabilityType = "creative_thinking"
 
 	// General capabilities
-	CapTextGeneration   CapabilityType = "text_generation"
-	CapSummarization    CapabilityType = "summarization"
-	CapTranslation      CapabilityType = "translation"
-	CapConversation     CapabilityType = "conversation"
+	CapTextGeneration CapabilityType = "text_generation"
+	CapSummarization  CapabilityType = "summarization"
+	CapTranslation    CapabilityType = "translation"
+	CapConversation   CapabilityType = "conversation"
 )
 
 // Capability represents a single capability with its proficiency level.
@@ -196,11 +196,11 @@ func getDomainCapabilities(domain Domain) []CapabilityType {
 
 // Specialization defines an agent's area of expertise.
 type Specialization struct {
-	PrimaryDomain   Domain   `json:"primary_domain"`
+	PrimaryDomain    Domain   `json:"primary_domain"`
 	SecondaryDomains []Domain `json:"secondary_domains,omitempty"`
-	ExpertiseLevel  float64  `json:"expertise_level"` // 0-1 overall expertise
-	Focus           string   `json:"focus,omitempty"` // Specific focus area
-	Description     string   `json:"description,omitempty"`
+	ExpertiseLevel   float64  `json:"expertise_level"` // 0-1 overall expertise
+	Focus            string   `json:"focus,omitempty"` // Specific focus area
+	Description      string   `json:"description,omitempty"`
 }
 
 // RoleAffinity defines how well-suited an agent is for a debate role.
@@ -219,23 +219,23 @@ type SpecializedAgent struct {
 	Version     string `json:"version"`
 
 	// Provider information
-	Provider    string  `json:"provider"`
-	Model       string  `json:"model"`
-	Score       float64 `json:"score"` // LLMsVerifier score
+	Provider string  `json:"provider"`
+	Model    string  `json:"model"`
+	Score    float64 `json:"score"` // LLMsVerifier score
 
 	// Specialization
 	Specialization *Specialization `json:"specialization"`
 	Capabilities   *CapabilitySet  `json:"capabilities"`
 
 	// Role mapping
-	RoleAffinities []RoleAffinity `json:"role_affinities"`
+	RoleAffinities []RoleAffinity     `json:"role_affinities"`
 	PrimaryRole    topology.AgentRole `json:"primary_role"`
 
 	// Runtime state
-	SystemPrompt   string                 `json:"system_prompt,omitempty"`
-	Metadata       map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt      time.Time              `json:"created_at"`
-	LastActive     time.Time              `json:"last_active"`
+	SystemPrompt string                 `json:"system_prompt,omitempty"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	CreatedAt    time.Time              `json:"created_at"`
+	LastActive   time.Time              `json:"last_active"`
 
 	mu sync.RWMutex
 }
@@ -326,10 +326,10 @@ func getDomainRoleAffinities(domain Domain) map[topology.AgentRole]float64 {
 	switch domain {
 	case DomainCode:
 		return map[topology.AgentRole]float64{
-			topology.RoleProposer:  0.9,  // Generate code solutions
-			topology.RoleReviewer:  0.8,  // Code review
-			topology.RoleOptimizer: 0.7,  // Code optimization
-			topology.RoleCritic:    0.6,  // Find code issues
+			topology.RoleProposer:  0.9, // Generate code solutions
+			topology.RoleReviewer:  0.8, // Code review
+			topology.RoleOptimizer: 0.7, // Code optimization
+			topology.RoleCritic:    0.6, // Find code issues
 			topology.RoleModerator: 0.4,
 			topology.RoleValidator: 0.5,
 		}
@@ -344,21 +344,21 @@ func getDomainRoleAffinities(domain Domain) map[topology.AgentRole]float64 {
 		}
 	case DomainArchitecture:
 		return map[topology.AgentRole]float64{
-			topology.RoleArchitect:  0.95, // System design
-			topology.RoleModerator:  0.8,  // Guide discussions
-			topology.RoleReviewer:   0.75, // Architecture review
-			topology.RoleProposer:   0.7,  // Propose designs
-			topology.RoleOptimizer:  0.6,  // Optimize architecture
-			topology.RoleValidator:  0.5,
+			topology.RoleArchitect: 0.95, // System design
+			topology.RoleModerator: 0.8,  // Guide discussions
+			topology.RoleReviewer:  0.75, // Architecture review
+			topology.RoleProposer:  0.7,  // Propose designs
+			topology.RoleOptimizer: 0.6,  // Optimize architecture
+			topology.RoleValidator: 0.5,
 		}
 	case DomainDebug:
 		return map[topology.AgentRole]float64{
-			topology.RoleCritic:     0.9,  // Find issues
-			topology.RoleReviewer:   0.85, // Analyze code
-			topology.RoleTestAgent:  0.8,  // Test scenarios
-			topology.RoleValidator:  0.7,  // Validate fixes
-			topology.RoleOptimizer:  0.5,
-			topology.RoleModerator:  0.3,
+			topology.RoleCritic:    0.9,  // Find issues
+			topology.RoleReviewer:  0.85, // Analyze code
+			topology.RoleTestAgent: 0.8,  // Test scenarios
+			topology.RoleValidator: 0.7,  // Validate fixes
+			topology.RoleOptimizer: 0.5,
+			topology.RoleModerator: 0.3,
 		}
 	case DomainOptimization:
 		return map[topology.AgentRole]float64{
@@ -463,9 +463,9 @@ func (sa *SpecializedAgent) ToTopologyAgent() *topology.Agent {
 		Specialization: string(sa.Specialization.PrimaryDomain),
 		Capabilities:   capabilities,
 		Metadata: map[string]interface{}{
-			"specialization":    sa.Specialization,
-			"role_affinities":   sa.RoleAffinities,
-			"system_prompt":     sa.SystemPrompt,
+			"specialization":  sa.Specialization,
+			"role_affinities": sa.RoleAffinities,
+			"system_prompt":   sa.SystemPrompt,
 		},
 	}
 }
@@ -510,11 +510,11 @@ type CapabilityDiscoverer interface {
 
 // AgentScore represents the composite score for agent selection.
 type AgentScore struct {
-	AgentID         string  `json:"agent_id"`
-	VerifierScore   float64 `json:"verifier_score"`     // LLMsVerifier score
-	DomainScore     float64 `json:"domain_score"`       // Domain expertise
-	RoleAffinity    float64 `json:"role_affinity"`      // Role fit
-	CompositeScore  float64 `json:"composite_score"`    // Weighted total
+	AgentID        string  `json:"agent_id"`
+	VerifierScore  float64 `json:"verifier_score"`  // LLMsVerifier score
+	DomainScore    float64 `json:"domain_score"`    // Domain expertise
+	RoleAffinity   float64 `json:"role_affinity"`   // Role fit
+	CompositeScore float64 `json:"composite_score"` // Weighted total
 }
 
 // CalculateCompositeScore calculates the weighted composite score for selection.

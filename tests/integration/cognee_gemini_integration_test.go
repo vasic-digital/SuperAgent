@@ -36,7 +36,8 @@ const (
 // TestCogneeGeminiIntegration_AuthenticationFormEncoded verifies Cognee uses form-encoded login
 func TestCogneeGeminiIntegration_AuthenticationFormEncoded(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
@@ -95,7 +96,8 @@ func TestCogneeGeminiIntegration_AuthenticationFormEncoded(t *testing.T) {
 // TestCogneeGeminiIntegration_GeminiAsPrimaryLLM verifies Gemini is the primary LLM
 func TestCogneeGeminiIntegration_GeminiAsPrimaryLLM(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	// Test 1: Verify GEMINI_API_KEY is set
@@ -147,7 +149,8 @@ func TestCogneeGeminiIntegration_GeminiAsPrimaryLLM(t *testing.T) {
 // TestCogneeGeminiIntegration_NoOllamaDependency verifies no Ollama dependency
 func TestCogneeGeminiIntegration_NoOllamaDependency(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -218,7 +221,8 @@ func TestCogneeGeminiIntegration_NoOllamaDependency(t *testing.T) {
 // TestCogneeGeminiIntegration_AuthenticatedAPICalls verifies authenticated API calls work
 func TestCogneeGeminiIntegration_AuthenticatedAPICalls(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
@@ -226,7 +230,8 @@ func TestCogneeGeminiIntegration_AuthenticatedAPICalls(t *testing.T) {
 	// Get auth token first
 	token := getAuthToken(t, client)
 	if token == "" {
-		t.Logf("Could not obtain auth token (acceptable)"); return
+		t.Logf("Could not obtain auth token (acceptable)")
+		return
 	}
 
 	// Test 1: Authenticated search works
@@ -284,7 +289,8 @@ func TestCogneeGeminiIntegration_AuthenticatedAPICalls(t *testing.T) {
 // TestCogneeGeminiIntegration_LLMVerifierScore verifies Gemini has the highest score
 func TestCogneeGeminiIntegration_LLMVerifierScore(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	// Test: Verify Gemini is documented as the highest-scoring LLM
@@ -311,7 +317,8 @@ func TestCogneeGeminiIntegration_LLMVerifierScore(t *testing.T) {
 // TestCogneeGeminiIntegration_HealthcheckConfiguration verifies healthcheck is correct
 func TestCogneeGeminiIntegration_HealthcheckConfiguration(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -354,7 +361,8 @@ func TestCogneeGeminiIntegration_HealthcheckConfiguration(t *testing.T) {
 // TestCogneeGeminiIntegration_CogneeServiceConfig verifies Cognee service configuration
 func TestCogneeGeminiIntegration_CogneeServiceConfig(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}

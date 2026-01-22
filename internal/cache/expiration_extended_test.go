@@ -185,7 +185,7 @@ func TestExpirationManager_ValidateEntry_WithMultipleValidators(t *testing.T) {
 	// Register multiple validators
 	em.RegisterValidator("provider:*", ProviderHealthValidator(time.Minute))
 	em.RegisterValidator("session:*", SessionValidator(time.Hour))
-	em.RegisterValidator("llm:*", LLMResponseValidator(6 * time.Hour))
+	em.RegisterValidator("llm:*", LLMResponseValidator(6*time.Hour))
 
 	// Provider entry older than 1 minute should be invalid
 	valid := em.ValidateEntry("provider:openai", "data", 2*time.Minute)

@@ -50,9 +50,9 @@ func NewConnection(config *Config, logger *zap.Logger) *Connection {
 	}
 
 	c := &Connection{
-		config:   config,
-		logger:   logger,
-		closeCh:  make(chan struct{}),
+		config:  config,
+		logger:  logger,
+		closeCh: make(chan struct{}),
 	}
 	c.state.Store(int32(StateDisconnected))
 	return c

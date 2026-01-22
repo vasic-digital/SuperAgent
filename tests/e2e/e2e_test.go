@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/services"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/services"
 )
 
 // TestE2EUserWorkflow tests complete user workflows

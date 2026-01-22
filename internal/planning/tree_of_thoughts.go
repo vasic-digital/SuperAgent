@@ -200,13 +200,13 @@ func (t *TreeOfThoughts) Solve(ctx context.Context, problem string) (*ToTResult,
 
 	// Build result
 	result := &ToTResult{
-		Problem:      problem,
-		Solution:     solution,
-		BestScore:    t.bestScore,
-		Iterations:   t.iterations,
-		Duration:     time.Since(startTime),
-		Strategy:     t.config.SearchStrategy,
-		TreeDepth:    t.getMaxDepth(t.root),
+		Problem:       problem,
+		Solution:      solution,
+		BestScore:     t.bestScore,
+		Iterations:    t.iterations,
+		Duration:      time.Since(startTime),
+		Strategy:      t.config.SearchStrategy,
+		TreeDepth:     t.getMaxDepth(t.root),
 		NodesExplored: t.countNodes(t.root),
 	}
 
@@ -610,17 +610,17 @@ Format each approach on a new line starting with a number.`, problem, count)
 
 // LLMThoughtEvaluator implements ThoughtEvaluator using an LLM
 type LLMThoughtEvaluator struct {
-	evaluateFunc    func(ctx context.Context, prompt string) (string, error)
+	evaluateFunc     func(ctx context.Context, prompt string) (string, error)
 	terminalKeywords []string
-	logger          *logrus.Logger
+	logger           *logrus.Logger
 }
 
 // NewLLMThoughtEvaluator creates a new LLM-based thought evaluator
 func NewLLMThoughtEvaluator(evaluateFunc func(ctx context.Context, prompt string) (string, error), logger *logrus.Logger) *LLMThoughtEvaluator {
 	return &LLMThoughtEvaluator{
-		evaluateFunc: evaluateFunc,
+		evaluateFunc:     evaluateFunc,
 		terminalKeywords: []string{"solution", "answer", "result", "conclusion", "final"},
-		logger:       logger,
+		logger:           logger,
 	}
 }
 

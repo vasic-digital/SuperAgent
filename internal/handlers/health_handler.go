@@ -86,10 +86,10 @@ type GetAllProvidersHealthResponse struct {
 
 // HealthSummary represents health summary
 type HealthSummary struct {
-	OverallHealthy        bool    `json:"overall_healthy"`
-	AverageResponseMs     int64   `json:"average_response_ms"`
-	AverageUptimePercent  float64 `json:"average_uptime_percent"`
-	ProvidersWithOpenCircuit int  `json:"providers_with_open_circuit"`
+	OverallHealthy           bool    `json:"overall_healthy"`
+	AverageResponseMs        int64   `json:"average_response_ms"`
+	AverageUptimePercent     float64 `json:"average_uptime_percent"`
+	ProvidersWithOpenCircuit int     `json:"providers_with_open_circuit"`
 }
 
 // GetAllProvidersHealth godoc
@@ -387,13 +387,13 @@ func (h *HealthHandler) IsProviderAvailable(c *gin.Context) {
 
 // LatencyStatsResponse represents latency statistics response
 type LatencyStatsResponse struct {
-	ProviderID    string  `json:"provider_id"`
-	AvgLatencyMs  int64   `json:"avg_latency_ms"`
-	MinLatencyMs  int64   `json:"min_latency_ms"`
-	MaxLatencyMs  int64   `json:"max_latency_ms"`
-	P50LatencyMs  int64   `json:"p50_latency_ms"`
-	P95LatencyMs  int64   `json:"p95_latency_ms"`
-	P99LatencyMs  int64   `json:"p99_latency_ms"`
+	ProviderID   string `json:"provider_id"`
+	AvgLatencyMs int64  `json:"avg_latency_ms"`
+	MinLatencyMs int64  `json:"min_latency_ms"`
+	MaxLatencyMs int64  `json:"max_latency_ms"`
+	P50LatencyMs int64  `json:"p50_latency_ms"`
+	P95LatencyMs int64  `json:"p95_latency_ms"`
+	P99LatencyMs int64  `json:"p99_latency_ms"`
 }
 
 // GetProviderLatency godoc

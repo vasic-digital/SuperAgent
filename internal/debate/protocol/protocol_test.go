@@ -6,17 +6,17 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/debate/topology"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/debate/topology"
 )
 
 // MockAgentInvoker is a mock implementation of AgentInvoker for testing.
 type MockAgentInvoker struct {
-	responses      map[string]*PhaseResponse
-	invokeCount    int
-	invokeDelay    time.Duration
-	mu             sync.Mutex
+	responses   map[string]*PhaseResponse
+	invokeCount int
+	invokeDelay time.Duration
+	mu          sync.Mutex
 }
 
 func NewMockAgentInvoker() *MockAgentInvoker {
@@ -295,7 +295,7 @@ func TestProtocol_Execute_EarlyExit(t *testing.T) {
 			AgentID:    agent.ID,
 			Role:       agent.Role,
 			Content:    "Agreed response",
-			Confidence: 0.95, // High confidence
+			Confidence: 0.95,         // High confidence
 			Vote:       "solution_a", // Same vote
 			Score:      8.5,
 			Timestamp:  time.Now(),

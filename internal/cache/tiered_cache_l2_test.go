@@ -544,8 +544,8 @@ func TestTieredCache_BothCaches_Consistency(t *testing.T) {
 	assert.True(t, found)
 
 	m = tc.Metrics()
-	assert.Equal(t, int64(1), m.L1Hits)  // Still 1 (no new L1 hit)
-	assert.Equal(t, int64(1), m.L2Hits)  // Now 1 L2 hit
+	assert.Equal(t, int64(1), m.L1Hits) // Still 1 (no new L1 hit)
+	assert.Equal(t, int64(1), m.L2Hits) // Now 1 L2 hit
 	// L1 misses can vary because there's an initial miss before L2 hit and promotion
 	assert.GreaterOrEqual(t, m.L1Misses, int64(1))
 }

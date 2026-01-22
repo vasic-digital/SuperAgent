@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/llm"
@@ -21,25 +20,26 @@ import (
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/verifier"
+	"github.com/sirupsen/logrus"
 )
 
 // ProviderRegistry manages LLM provider registration and configuration
 type ProviderRegistry struct {
-	providers        map[string]llm.LLMProvider
-	circuitBreakers  map[string]*CircuitBreaker
-	providerConfigs  map[string]*ProviderConfig             // Stores provider configurations
-	providerHealth   map[string]*ProviderVerificationResult // Stores provider health verification results
-	activeRequests   map[string]*int64                      // Atomic counters for active requests per provider
-	config           *RegistryConfig
-	ensemble         *EnsembleService
-	requestService   *RequestService
-	memory           *MemoryService
-	discovery        *ProviderDiscovery          // Auto-discovery service for environment-based provider detection
-	scoreAdapter     *LLMsVerifierScoreAdapter   // LLMsVerifier score adapter for dynamic provider ordering
-	startupVerifier  *verifier.StartupVerifier   // Unified startup verification (optional)
-	mu               sync.RWMutex
-	drainTimeout     time.Duration // Timeout for graceful shutdown request draining
-	autoDiscovery    bool          // Whether auto-discovery is enabled
+	providers       map[string]llm.LLMProvider
+	circuitBreakers map[string]*CircuitBreaker
+	providerConfigs map[string]*ProviderConfig             // Stores provider configurations
+	providerHealth  map[string]*ProviderVerificationResult // Stores provider health verification results
+	activeRequests  map[string]*int64                      // Atomic counters for active requests per provider
+	config          *RegistryConfig
+	ensemble        *EnsembleService
+	requestService  *RequestService
+	memory          *MemoryService
+	discovery       *ProviderDiscovery        // Auto-discovery service for environment-based provider detection
+	scoreAdapter    *LLMsVerifierScoreAdapter // LLMsVerifier score adapter for dynamic provider ordering
+	startupVerifier *verifier.StartupVerifier // Unified startup verification (optional)
+	mu              sync.RWMutex
+	drainTimeout    time.Duration // Timeout for graceful shutdown request draining
+	autoDiscovery   bool          // Whether auto-discovery is enabled
 }
 
 // ProviderConfig holds configuration for an LLM provider
@@ -73,14 +73,14 @@ const (
 // ProviderVerificationResult contains the result of verifying a provider
 type ProviderVerificationResult struct {
 	Provider     string               `json:"provider"`
-	Name         string               `json:"name"`                   // Alias for Provider for compatibility
+	Name         string               `json:"name"` // Alias for Provider for compatibility
 	Status       ProviderHealthStatus `json:"status"`
 	Verified     bool                 `json:"verified"`
-	Score        float64              `json:"score"`                  // LLMsVerifier score (0-10)
+	Score        float64              `json:"score"` // LLMsVerifier score (0-10)
 	ResponseTime time.Duration        `json:"response_time_ms"`
 	Error        string               `json:"error,omitempty"`
 	TestedAt     time.Time            `json:"tested_at"`
-	VerifiedAt   time.Time            `json:"verified_at,omitempty"`  // Alias for TestedAt
+	VerifiedAt   time.Time            `json:"verified_at,omitempty"` // Alias for TestedAt
 }
 
 // ModelConfig holds configuration for a specific model
@@ -526,9 +526,9 @@ func (r *ProviderRegistry) GetVerifiedProvidersSummary() map[string]interface{} 
 		}
 
 		return map[string]interface{}{
-			"source":           "startup_verifier",
-			"total_providers":  len(rankedProviders),
-			"providers":        providers,
+			"source":          "startup_verifier",
+			"total_providers": len(rankedProviders),
+			"providers":       providers,
 		}
 	}
 

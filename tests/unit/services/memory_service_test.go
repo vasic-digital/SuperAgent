@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMemoryService_NewMemoryService(t *testing.T) {

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"dev.helix.agent/internal/utils"
+	"github.com/fsnotify/fsnotify"
 )
 
 // Reloader handles hot-reloading of plugin configurations without service interruption

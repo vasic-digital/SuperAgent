@@ -63,11 +63,11 @@ type DeadLetterMessage struct {
 type DLQStatus string
 
 const (
-	StatusPending    DLQStatus = "pending"
-	StatusRetrying   DLQStatus = "retrying"
-	StatusProcessed  DLQStatus = "processed"
-	StatusDiscarded  DLQStatus = "discarded"
-	StatusExpired    DLQStatus = "expired"
+	StatusPending   DLQStatus = "pending"
+	StatusRetrying  DLQStatus = "retrying"
+	StatusProcessed DLQStatus = "processed"
+	StatusDiscarded DLQStatus = "discarded"
+	StatusExpired   DLQStatus = "expired"
 )
 
 // ProcessorMetrics tracks DLQ processor metrics
@@ -95,10 +95,10 @@ type Processor struct {
 	messages   map[string]*DeadLetterMessage
 	messagesMu sync.RWMutex
 
-	running   atomic.Bool
-	ctx       context.Context
-	cancel    context.CancelFunc
-	wg        sync.WaitGroup
+	running atomic.Bool
+	ctx     context.Context
+	cancel  context.CancelFunc
+	wg      sync.WaitGroup
 }
 
 // RetryHandler handles retry logic for specific message types
@@ -351,12 +351,12 @@ func (p *Processor) updateDLQMessage(ctx context.Context, dlqMsg *DeadLetterMess
 // GetMetrics returns current processor metrics
 func (p *Processor) GetMetrics() ProcessorMetrics {
 	return ProcessorMetrics{
-		MessagesProcessed:  atomic.LoadInt64(&p.metrics.MessagesProcessed),
-		MessagesRetried:    atomic.LoadInt64(&p.metrics.MessagesRetried),
-		MessagesDiscarded:  atomic.LoadInt64(&p.metrics.MessagesDiscarded),
-		MessagesExpired:    atomic.LoadInt64(&p.metrics.MessagesExpired),
-		ProcessingErrors:   atomic.LoadInt64(&p.metrics.ProcessingErrors),
-		CurrentQueueDepth:  atomic.LoadInt64(&p.metrics.CurrentQueueDepth),
+		MessagesProcessed: atomic.LoadInt64(&p.metrics.MessagesProcessed),
+		MessagesRetried:   atomic.LoadInt64(&p.metrics.MessagesRetried),
+		MessagesDiscarded: atomic.LoadInt64(&p.metrics.MessagesDiscarded),
+		MessagesExpired:   atomic.LoadInt64(&p.metrics.MessagesExpired),
+		ProcessingErrors:  atomic.LoadInt64(&p.metrics.ProcessingErrors),
+		CurrentQueueDepth: atomic.LoadInt64(&p.metrics.CurrentQueueDepth),
 	}
 }
 

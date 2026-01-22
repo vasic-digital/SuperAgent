@@ -15,14 +15,14 @@ import (
 
 // ParticipantReport holds report data for a participant
 type ParticipantReport struct {
-	ID               string        `json:"id"`
-	Name             string        `json:"name"`
-	ResponseCount    int           `json:"response_count"`
-	AverageConfidence float64      `json:"average_confidence"`
-	TotalTokens      int           `json:"total_tokens"`
-	AverageLatency   time.Duration `json:"average_latency"`
-	ErrorCount       int           `json:"error_count"`
-	TopContributions []string      `json:"top_contributions,omitempty"`
+	ID                string        `json:"id"`
+	Name              string        `json:"name"`
+	ResponseCount     int           `json:"response_count"`
+	AverageConfidence float64       `json:"average_confidence"`
+	TotalTokens       int           `json:"total_tokens"`
+	AverageLatency    time.Duration `json:"average_latency"`
+	ErrorCount        int           `json:"error_count"`
+	TopContributions  []string      `json:"top_contributions,omitempty"`
 }
 
 // ConsensusReport holds consensus analysis data
@@ -36,12 +36,12 @@ type ConsensusReport struct {
 
 // QualityReport holds quality analysis data
 type QualityReport struct {
-	OverallScore      float64 `json:"overall_score"`
-	CoherenceScore    float64 `json:"coherence_score"`
-	RelevanceScore    float64 `json:"relevance_score"`
-	DepthScore        float64 `json:"depth_score"`
-	FactualityScore   float64 `json:"factuality_score"`
-	NoveltyScore      float64 `json:"novelty_score"`
+	OverallScore    float64 `json:"overall_score"`
+	CoherenceScore  float64 `json:"coherence_score"`
+	RelevanceScore  float64 `json:"relevance_score"`
+	DepthScore      float64 `json:"depth_score"`
+	FactualityScore float64 `json:"factuality_score"`
+	NoveltyScore    float64 `json:"novelty_score"`
 }
 
 // ExtendedDebateReport extends the base DebateReport with additional fields
@@ -393,10 +393,10 @@ func (drs *DebateReportingService) generateQualityReport(result *DebateResult) *
 	}
 
 	return &QualityReport{
-		OverallScore:   result.QualityMetrics.OverallScore,
-		CoherenceScore: result.QualityMetrics.Coherence,
-		RelevanceScore: result.QualityMetrics.Relevance,
-		DepthScore:     result.QualityMetrics.Completeness, // Use Completeness as proxy for depth
+		OverallScore:    result.QualityMetrics.OverallScore,
+		CoherenceScore:  result.QualityMetrics.Coherence,
+		RelevanceScore:  result.QualityMetrics.Relevance,
+		DepthScore:      result.QualityMetrics.Completeness, // Use Completeness as proxy for depth
 		FactualityScore: result.QualityMetrics.Accuracy,
 	}
 }

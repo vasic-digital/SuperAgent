@@ -721,9 +721,9 @@ func TestDebateTracer_TraceDebateRound(t *testing.T) {
 	assert.NotNil(t, endFn)
 
 	responses := map[string]string{
-		"gpt-4":   "Response from GPT-4",
+		"gpt-4":    "Response from GPT-4",
 		"claude-3": "Response from Claude",
-		"gemini":  "Response from Gemini",
+		"gemini":   "Response from Gemini",
 	}
 
 	endFn(responses, true)

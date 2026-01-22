@@ -110,13 +110,13 @@ func TestRegistryGetDefaultValue(t *testing.T) {
 		feature  Feature
 		expected bool
 	}{
-		{FeatureHTTP2, true},         // HTTP/2 enabled by default
-		{FeatureSSE, true},           // SSE enabled by default
-		{FeatureGzip, true},          // Gzip enabled by default
-		{FeatureGraphQL, false},      // GraphQL disabled by default
-		{FeatureTOON, false},         // TOON disabled by default
-		{FeatureHTTP3, false},        // HTTP/3 disabled by default
-		{FeatureBrotli, false},       // Brotli disabled by default
+		{FeatureHTTP2, true},    // HTTP/2 enabled by default
+		{FeatureSSE, true},      // SSE enabled by default
+		{FeatureGzip, true},     // Gzip enabled by default
+		{FeatureGraphQL, false}, // GraphQL disabled by default
+		{FeatureTOON, false},    // TOON disabled by default
+		{FeatureHTTP3, false},   // HTTP/3 disabled by default
+		{FeatureBrotli, false},  // Brotli disabled by default
 	}
 
 	for _, tt := range tests {
@@ -195,9 +195,9 @@ func TestRegistryValidateFeatureCombination(t *testing.T) {
 		{
 			name: "valid_combination",
 			features: map[Feature]bool{
-				FeatureHTTP2:     true,
-				FeatureSSE:       true,
-				FeatureGzip:      true,
+				FeatureHTTP2: true,
+				FeatureSSE:   true,
+				FeatureGzip:  true,
 			},
 			valid: true,
 		},

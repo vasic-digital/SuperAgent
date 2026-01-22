@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"dev.helix.agent/internal/database"
 	"dev.helix.agent/internal/services"
+	"github.com/gin-gonic/gin"
 )
 
 type ModelMetadataHandler struct {

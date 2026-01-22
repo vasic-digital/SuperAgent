@@ -10,14 +10,14 @@ import (
 
 // ToolSchema defines the schema for a tool including required and optional fields
 type ToolSchema struct {
-	Name           string            `json:"name"`
-	Description    string            `json:"description"`
-	RequiredFields []string          `json:"required_fields"`
-	OptionalFields []string          `json:"optional_fields,omitempty"`
-	Aliases        []string          `json:"aliases,omitempty"`
-	Category       string            `json:"category"`
-	Examples       []ToolExample     `json:"examples,omitempty"`
-	Parameters     map[string]Param  `json:"parameters"`
+	Name           string           `json:"name"`
+	Description    string           `json:"description"`
+	RequiredFields []string         `json:"required_fields"`
+	OptionalFields []string         `json:"optional_fields,omitempty"`
+	Aliases        []string         `json:"aliases,omitempty"`
+	Category       string           `json:"category"`
+	Examples       []ToolExample    `json:"examples,omitempty"`
+	Parameters     map[string]Param `json:"parameters"`
 }
 
 // Param defines a parameter for a tool
@@ -514,12 +514,12 @@ type ToolSearchResult struct {
 
 // SearchOptions configures the search behavior
 type SearchOptions struct {
-	Query           string   `json:"query"`
-	Categories      []string `json:"categories,omitempty"`
-	IncludeParams   bool     `json:"include_params,omitempty"`
-	FuzzyMatch      bool     `json:"fuzzy_match,omitempty"`
-	MaxResults      int      `json:"max_results,omitempty"`
-	MinScore        float64  `json:"min_score,omitempty"`
+	Query         string   `json:"query"`
+	Categories    []string `json:"categories,omitempty"`
+	IncludeParams bool     `json:"include_params,omitempty"`
+	FuzzyMatch    bool     `json:"fuzzy_match,omitempty"`
+	MaxResults    int      `json:"max_results,omitempty"`
+	MinScore      float64  `json:"min_score,omitempty"`
 }
 
 // SearchTools searches the tool registry with the given options

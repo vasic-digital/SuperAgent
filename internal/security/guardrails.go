@@ -290,9 +290,9 @@ func (p *StandardGuardrailPipeline) GetStats() *GuardrailStats {
 
 // PromptInjectionGuardrail detects prompt injection attempts
 type PromptInjectionGuardrail struct {
-	patterns   []*regexp.Regexp
-	keywords   []string
-	threshold  float64
+	patterns  []*regexp.Regexp
+	keywords  []string
+	threshold float64
 }
 
 // NewPromptInjectionGuardrail creates a prompt injection guardrail

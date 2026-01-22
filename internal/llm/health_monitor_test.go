@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"dev.helix.agent/internal/models"
+	"github.com/stretchr/testify/assert"
 )
 
 // mockProvider is a mock LLM provider for testing

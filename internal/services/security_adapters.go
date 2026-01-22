@@ -9,11 +9,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/security"
 	"dev.helix.agent/internal/verifier"
+	"github.com/sirupsen/logrus"
 )
 
 // DebateSecurityEvaluatorAdapter adapts DebateService for security evaluation

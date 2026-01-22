@@ -20,18 +20,18 @@ import (
 
 // BackgroundTaskHandler handles background task API endpoints
 type BackgroundTaskHandler struct {
-	repository       background.TaskRepository
-	queue            background.TaskQueue
-	workerPool       background.WorkerPool
-	resourceMonitor  background.ResourceMonitor
-	stuckDetector    background.StuckDetector
-	notificationHub  *notifications.NotificationHub
-	sseManager       *notifications.SSEManager
-	wsServer         *notifications.WebSocketServer
+	repository        background.TaskRepository
+	queue             background.TaskQueue
+	workerPool        background.WorkerPool
+	resourceMonitor   background.ResourceMonitor
+	stuckDetector     background.StuckDetector
+	notificationHub   *notifications.NotificationHub
+	sseManager        *notifications.SSEManager
+	wsServer          *notifications.WebSocketServer
 	webhookDispatcher *notifications.WebhookDispatcher
-	pollingStore     *notifications.PollingStore
-	cliRenderer      *cli.Renderer
-	logger           *logrus.Logger
+	pollingStore      *notifications.PollingStore
+	cliRenderer       *cli.Renderer
+	logger            *logrus.Logger
 }
 
 // NewBackgroundTaskHandler creates a new background task handler
@@ -66,39 +66,39 @@ func NewBackgroundTaskHandler(
 
 // CreateTaskRequest represents the request to create a task
 type CreateTaskRequest struct {
-	TaskType           string                         `json:"task_type" binding:"required"`
-	TaskName           string                         `json:"task_name" binding:"required"`
-	CorrelationID      string                         `json:"correlation_id,omitempty"`
-	ParentTaskID       string                         `json:"parent_task_id,omitempty"`
-	Payload            map[string]interface{}         `json:"payload,omitempty"`
-	Config             *TaskConfigRequest             `json:"config,omitempty"`
-	Priority           string                         `json:"priority,omitempty"`
-	ScheduledAt        *time.Time                     `json:"scheduled_at,omitempty"`
-	Deadline           *time.Time                     `json:"deadline,omitempty"`
-	RequiredCPUCores   int                            `json:"required_cpu_cores,omitempty"`
-	RequiredMemoryMB   int                            `json:"required_memory_mb,omitempty"`
-	NotificationConfig *NotificationConfigRequest     `json:"notification_config,omitempty"`
+	TaskType           string                     `json:"task_type" binding:"required"`
+	TaskName           string                     `json:"task_name" binding:"required"`
+	CorrelationID      string                     `json:"correlation_id,omitempty"`
+	ParentTaskID       string                     `json:"parent_task_id,omitempty"`
+	Payload            map[string]interface{}     `json:"payload,omitempty"`
+	Config             *TaskConfigRequest         `json:"config,omitempty"`
+	Priority           string                     `json:"priority,omitempty"`
+	ScheduledAt        *time.Time                 `json:"scheduled_at,omitempty"`
+	Deadline           *time.Time                 `json:"deadline,omitempty"`
+	RequiredCPUCores   int                        `json:"required_cpu_cores,omitempty"`
+	RequiredMemoryMB   int                        `json:"required_memory_mb,omitempty"`
+	NotificationConfig *NotificationConfigRequest `json:"notification_config,omitempty"`
 }
 
 // TaskConfigRequest holds task configuration options
 type TaskConfigRequest struct {
-	TimeoutSeconds      int      `json:"timeout_seconds,omitempty"`
-	MaxRetries          int      `json:"max_retries,omitempty"`
-	RetryDelaySeconds   int      `json:"retry_delay_seconds,omitempty"`
-	Endless             bool     `json:"endless,omitempty"`
-	AllowPause          bool     `json:"allow_pause,omitempty"`
-	AllowCancel         bool     `json:"allow_cancel,omitempty"`
-	StuckThresholdSecs  int      `json:"stuck_threshold_secs,omitempty"`
-	HeartbeatIntervalSecs int    `json:"heartbeat_interval_secs,omitempty"`
-	Tags                []string `json:"tags,omitempty"`
+	TimeoutSeconds        int      `json:"timeout_seconds,omitempty"`
+	MaxRetries            int      `json:"max_retries,omitempty"`
+	RetryDelaySeconds     int      `json:"retry_delay_seconds,omitempty"`
+	Endless               bool     `json:"endless,omitempty"`
+	AllowPause            bool     `json:"allow_pause,omitempty"`
+	AllowCancel           bool     `json:"allow_cancel,omitempty"`
+	StuckThresholdSecs    int      `json:"stuck_threshold_secs,omitempty"`
+	HeartbeatIntervalSecs int      `json:"heartbeat_interval_secs,omitempty"`
+	Tags                  []string `json:"tags,omitempty"`
 }
 
 // NotificationConfigRequest holds notification settings
 type NotificationConfigRequest struct {
-	EnableSSE       bool                    `json:"enable_sse,omitempty"`
-	EnableWebSocket bool                    `json:"enable_websocket,omitempty"`
-	EnablePolling   bool                    `json:"enable_polling,omitempty"`
-	Webhooks        []WebhookConfigRequest  `json:"webhooks,omitempty"`
+	EnableSSE       bool                   `json:"enable_sse,omitempty"`
+	EnableWebSocket bool                   `json:"enable_websocket,omitempty"`
+	EnablePolling   bool                   `json:"enable_polling,omitempty"`
+	Webhooks        []WebhookConfigRequest `json:"webhooks,omitempty"`
 }
 
 // WebhookConfigRequest holds webhook configuration
@@ -363,17 +363,17 @@ func (h *BackgroundTaskHandler) GetTaskResources(c *gin.Context) {
 	resources := make([]gin.H, 0, len(snapshots))
 	for _, s := range snapshots {
 		resources = append(resources, gin.H{
-			"cpu_percent":       s.CPUPercent,
-			"memory_rss_bytes":  s.MemoryRSSBytes,
-			"memory_percent":    s.MemoryPercent,
-			"io_read_bytes":     s.IOReadBytes,
-			"io_write_bytes":    s.IOWriteBytes,
-			"net_bytes_sent":    s.NetBytesSent,
-			"net_bytes_recv":    s.NetBytesRecv,
-			"open_fds":          s.OpenFDs,
-			"thread_count":      s.ThreadCount,
-			"process_state":     s.ProcessState,
-			"sampled_at":        s.SampledAt.Unix(),
+			"cpu_percent":      s.CPUPercent,
+			"memory_rss_bytes": s.MemoryRSSBytes,
+			"memory_percent":   s.MemoryPercent,
+			"io_read_bytes":    s.IOReadBytes,
+			"io_write_bytes":   s.IOWriteBytes,
+			"net_bytes_sent":   s.NetBytesSent,
+			"net_bytes_recv":   s.NetBytesRecv,
+			"open_fds":         s.OpenFDs,
+			"thread_count":     s.ThreadCount,
+			"process_state":    s.ProcessState,
+			"sampled_at":       s.SampledAt.Unix(),
 		})
 	}
 
@@ -664,10 +664,10 @@ func (h *BackgroundTaskHandler) ListTasks(c *gin.Context) {
 	counts, _ := h.repository.CountByStatus(c.Request.Context())
 
 	c.JSON(http.StatusOK, gin.H{
-		"tasks":  taskList,
-		"count":  len(taskList),
-		"limit":  limit,
-		"offset": offset,
+		"tasks":         taskList,
+		"count":         len(taskList),
+		"limit":         limit,
+		"offset":        offset,
 		"status_counts": counts,
 	})
 }

@@ -8,9 +8,9 @@ import (
 // WorkerPoolMetrics holds Prometheus metrics for the worker pool
 type WorkerPoolMetrics struct {
 	// Worker metrics
-	WorkersActive  prometheus.Gauge
-	WorkersTotal   prometheus.Gauge
-	ScalingEvents  *prometheus.CounterVec
+	WorkersActive prometheus.Gauge
+	WorkersTotal  prometheus.Gauge
+	ScalingEvents *prometheus.CounterVec
 
 	// Task metrics
 	TasksTotal      *prometheus.CounterVec
@@ -21,12 +21,12 @@ type WorkerPoolMetrics struct {
 	DeadLetterTasks prometheus.Counter
 
 	// Resource metrics
-	TaskCPUPercent    *prometheus.GaugeVec
-	TaskMemoryBytes   *prometheus.GaugeVec
-	TaskIOReadBytes   *prometheus.GaugeVec
-	TaskIOWriteBytes  *prometheus.GaugeVec
-	TaskNetBytesSent  *prometheus.GaugeVec
-	TaskNetBytesRecv  *prometheus.GaugeVec
+	TaskCPUPercent   *prometheus.GaugeVec
+	TaskMemoryBytes  *prometheus.GaugeVec
+	TaskIOReadBytes  *prometheus.GaugeVec
+	TaskIOWriteBytes *prometheus.GaugeVec
+	TaskNetBytesSent *prometheus.GaugeVec
+	TaskNetBytesRecv *prometheus.GaugeVec
 
 	// Notification metrics
 	NotificationsSent   *prometheus.CounterVec
@@ -34,9 +34,9 @@ type WorkerPoolMetrics struct {
 	NotificationLatency *prometheus.HistogramVec
 
 	// Queue metrics
-	QueueDepth      *prometheus.GaugeVec
-	DequeueLatency  prometheus.Histogram
-	EnqueueLatency  prometheus.Histogram
+	QueueDepth     *prometheus.GaugeVec
+	DequeueLatency prometheus.Histogram
+	EnqueueLatency prometheus.Histogram
 }
 
 // NewWorkerPoolMetrics creates a new WorkerPoolMetrics with registered metrics

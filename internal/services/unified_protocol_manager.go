@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/database"
+	"github.com/sirupsen/logrus"
 )
 
 // ProtocolManagerInterface defines the interface for protocol managers

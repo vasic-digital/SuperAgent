@@ -14,15 +14,15 @@ import (
 
 // MockQdrantClient implements a mock for the Qdrant client
 type MockQdrantClient struct {
-	searchResults  []qdrant.ScoredPoint
-	getResults     []qdrant.Point
-	searchErr      error
-	upsertErr      error
-	deleteErr      error
-	getErr         error
-	collExists     bool
-	collExistsErr  error
-	createCollErr  error
+	searchResults []qdrant.ScoredPoint
+	getResults    []qdrant.Point
+	searchErr     error
+	upsertErr     error
+	deleteErr     error
+	getErr        error
+	collExists    bool
+	collExistsErr error
+	createCollErr error
 }
 
 func (m *MockQdrantClient) Search(ctx context.Context, collection string, vector []float32, opts *qdrant.SearchOptions) ([]qdrant.ScoredPoint, error) {
@@ -57,12 +57,12 @@ func (m *MockQdrantClient) CreateCollection(ctx context.Context, config *qdrant.
 
 // MockEmbedderForRetriever implements Embedder for testing
 type MockEmbedderForRetriever struct {
-	embeddings  [][]float32
-	queryEmbed  []float32
-	embedErr    error
-	queryErr    error
-	dimension   int
-	modelName   string
+	embeddings [][]float32
+	queryEmbed []float32
+	embedErr   error
+	queryErr   error
+	dimension  int
+	modelName  string
 }
 
 func (m *MockEmbedderForRetriever) Embed(ctx context.Context, texts []string) ([][]float32, error) {

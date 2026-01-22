@@ -49,9 +49,9 @@ func TestDebateHistoryService_New(t *testing.T) {
 
 func TestNewDebateHistoryServiceWithMaxEntries(t *testing.T) {
 	tests := []struct {
-		name          string
-		maxEntries    int
-		expectedMax   int
+		name        string
+		maxEntries  int
+		expectedMax int
 	}{
 		{"positive value", 100, 100},
 		{"zero value", 0, 10000},
@@ -368,7 +368,7 @@ func TestDebateHistoryService_CleanupOldEntries(t *testing.T) {
 	// Entries B, C, D, E are 2, 3, 4, 5 days old - at or older than 2 day cutoff
 	removed, err := svc.CleanupOldEntries(ctx, 2*24*time.Hour)
 	assert.NoError(t, err)
-	assert.Equal(t, 4, removed) // 4 entries are at or older than 2 days
+	assert.Equal(t, 4, removed)        // 4 entries are at or older than 2 days
 	assert.Equal(t, 4, svc.GetCount()) // 1 old entry (A) + 3 new entries remain
 }
 

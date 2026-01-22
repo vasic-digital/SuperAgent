@@ -56,14 +56,14 @@ func DefaultQUICConfig() *QUICConfig {
 
 // QUICMetrics tracks QUIC client statistics
 type QUICMetrics struct {
-	TotalRequests      int64
-	SuccessRequests    int64
-	FailedRequests     int64
-	H3Requests         int64
-	FallbackRequests   int64
-	TotalLatencyUs     int64
-	RequestCount       int64
-	ActiveConnections  int64
+	TotalRequests     int64
+	SuccessRequests   int64
+	FailedRequests    int64
+	H3Requests        int64
+	FallbackRequests  int64
+	TotalLatencyUs    int64
+	RequestCount      int64
+	ActiveConnections int64
 }
 
 // AverageLatency returns the average request latency
@@ -110,7 +110,7 @@ func NewQUICClient(config *QUICConfig) (*QUICClient, error) {
 	var h2Client *http.Client
 	if config.EnableH2Fallback {
 		h2Transport := &http.Transport{
-			TLSClientConfig: config.TLSConfig,
+			TLSClientConfig:   config.TLSConfig,
 			ForceAttemptHTTP2: true,
 		}
 		h2Client = &http.Client{

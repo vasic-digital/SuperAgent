@@ -260,9 +260,9 @@ func TestDelayedQueue_ProcessDelayed(t *testing.T) {
 	// Process delayed messages
 	count := q.ProcessDelayed(now)
 
-	assert.Equal(t, 2, count) // past and now should be moved
+	assert.Equal(t, 2, count)            // past and now should be moved
 	assert.Equal(t, 1, q.DelayedCount()) // future still delayed
-	assert.Equal(t, 2, q.Len()) // Two in main queue
+	assert.Equal(t, 2, q.Len())          // Two in main queue
 }
 
 // Priority queue interface tests

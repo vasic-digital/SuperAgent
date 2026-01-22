@@ -160,14 +160,14 @@ type OptimizedPool struct {
 
 // PoolMetrics tracks connection pool statistics
 type PoolMetrics struct {
-	AcquireCount        int64
-	AcquireErrors       int64
-	TotalAcquireTimeUs  int64
-	MaxConcurrent       int64
-	CurrentConcurrent   int64
-	IdleConns           int64
-	TotalConns          int64
-	WaitCount           int64
+	AcquireCount       int64
+	AcquireErrors      int64
+	TotalAcquireTimeUs int64
+	MaxConcurrent      int64
+	CurrentConcurrent  int64
+	IdleConns          int64
+	TotalConns         int64
+	WaitCount          int64
 }
 
 // NewOptimizedPool creates an optimized connection pool
@@ -312,20 +312,20 @@ func (p *OptimizedPool) Pool() *pgxpool.Pool {
 
 // LazyPool provides lazy initialization of database connection pool
 type LazyPool struct {
-	pool      *OptimizedPool
-	connStr   string
-	opts      *PoolConfigOptions
-	initErr   error
-	initOnce  int32
-	initMu    chan struct{}
+	pool     *OptimizedPool
+	connStr  string
+	opts     *PoolConfigOptions
+	initErr  error
+	initOnce int32
+	initMu   chan struct{}
 }
 
 // NewLazyPool creates a new lazy-initialized pool
 func NewLazyPool(connString string, opts *PoolConfigOptions) *LazyPool {
 	return &LazyPool{
-		connStr:  connString,
-		opts:     opts,
-		initMu:   make(chan struct{}, 1),
+		connStr: connString,
+		opts:    opts,
+		initMu:  make(chan struct{}, 1),
 	}
 }
 

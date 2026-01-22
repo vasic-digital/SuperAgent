@@ -6,9 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/cache"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/database"
@@ -19,6 +16,9 @@ import (
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/modelsdev"
 	"dev.helix.agent/internal/services"
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
 )
 
 // SetupRouter creates and configures the main HTTP router.
@@ -366,10 +366,10 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		protected = r.Group("/v1", auth.Middleware([]string{
 			"/health", "/v1/health", "/metrics",
 			"/v1/models/metadata", "/v1/providers",
-			"/v1/tasks", // Background task queue - public for challenge tests
-			"/v1/models", // Model list - public for challenge tests
+			"/v1/tasks",            // Background task queue - public for challenge tests
+			"/v1/models",           // Model list - public for challenge tests
 			"/v1/chat/completions", // Chat - required for challenges
-			"/v1/completions", // Completions - required for challenges
+			"/v1/completions",      // Completions - required for challenges
 		}))
 	} else {
 		// Standalone mode: no auth middleware

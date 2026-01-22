@@ -100,11 +100,11 @@ type OpenAIModel struct {
 
 // OpenAIChatRequest represents a chat completion request
 type OpenAIChatRequest struct {
-	Model       string           `json:"model"`
-	Messages    []OpenAIMessage  `json:"messages"`
-	MaxTokens   int              `json:"max_tokens,omitempty"`
-	Temperature float64          `json:"temperature,omitempty"`
-	Stream      bool             `json:"stream,omitempty"`
+	Model       string          `json:"model"`
+	Messages    []OpenAIMessage `json:"messages"`
+	MaxTokens   int             `json:"max_tokens,omitempty"`
+	Temperature float64         `json:"temperature,omitempty"`
+	Stream      bool            `json:"stream,omitempty"`
 }
 
 // OpenAIMessage represents a message
@@ -139,18 +139,18 @@ type OpenAIUsage struct {
 
 // OpenAIStreamChunk represents a streaming chunk
 type OpenAIStreamChunk struct {
-	ID      string                `json:"id"`
-	Object  string                `json:"object"`
-	Created int64                 `json:"created"`
-	Model   string                `json:"model"`
-	Choices []OpenAIStreamChoice  `json:"choices"`
+	ID      string               `json:"id"`
+	Object  string               `json:"object"`
+	Created int64                `json:"created"`
+	Model   string               `json:"model"`
+	Choices []OpenAIStreamChoice `json:"choices"`
 }
 
 // OpenAIStreamChoice represents a streaming choice
 type OpenAIStreamChoice struct {
-	Index        int                   `json:"index"`
-	Delta        OpenAIStreamDelta     `json:"delta"`
-	FinishReason *string               `json:"finish_reason"`
+	Index        int               `json:"index"`
+	Delta        OpenAIStreamDelta `json:"delta"`
+	FinishReason *string           `json:"finish_reason"`
 }
 
 // OpenAIStreamDelta represents delta content
@@ -233,7 +233,8 @@ func TestGenerateAPIKeyCommand(t *testing.T) {
 
 	t.Run("GenerateAPIKeyToStdout", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+			t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+			return
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), CommandTimeout)
@@ -253,7 +254,8 @@ func TestGenerateAPIKeyCommand(t *testing.T) {
 
 	t.Run("GenerateAPIKeyToEnvFile", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+			t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+			return
 		}
 
 		envFilePath := filepath.Join(config.TempDir, ".env.test")
@@ -279,7 +281,8 @@ func TestGenerateAPIKeyCommand(t *testing.T) {
 
 	t.Run("GenerateAPIKeyPreservesExistingEnv", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+			t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+			return
 		}
 
 		envFilePath := filepath.Join(config.TempDir, ".env.preserve")
@@ -311,7 +314,8 @@ func TestGenerateAPIKeyCommand(t *testing.T) {
 
 	t.Run("GenerateMultipleUniqueKeys", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+			t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+			return
 		}
 
 		keys := make(map[string]bool)
@@ -340,7 +344,8 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 
 	t.Run("GenerateConfigToStdout", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+			t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+			return
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), CommandTimeout)
@@ -370,7 +375,8 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 
 	t.Run("GenerateConfigToFile", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+			t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+			return
 		}
 
 		configPath := filepath.Join(config.TempDir, "opencode.json")
@@ -397,7 +403,8 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 
 	t.Run("GenerateConfigWithEnvAPIKey", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+			t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+			return
 		}
 
 		// Set a specific API key in environment
@@ -421,7 +428,8 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 
 	t.Run("GenerateConfigWithCustomHostPort", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+			t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+			return
 		}
 
 		os.Setenv("HELIXAGENT_HOST", "custom-host.example.com")
@@ -453,7 +461,8 @@ func TestHelpCommand(t *testing.T) {
 	defer cleanupTestConfig(t, config)
 
 	if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-		t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+		t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), CommandTimeout)
@@ -486,7 +495,8 @@ func skipIfNoServer(t *testing.T, config *TestConfig) {
 	resp.Body.Close()
 
 	if resp.StatusCode == http.StatusUnauthorized && config.HelixAgentAPIKey == "" {
-		t.Logf("HELIXAGENT_API_KEY not set (acceptable)"); return
+		t.Logf("HELIXAGENT_API_KEY not set (acceptable)")
+		return
 	}
 }
 
@@ -558,7 +568,8 @@ func TestModelsEndpoint(t *testing.T) {
 // TestChatCompletionsEndpoint tests POST /v1/chat/completions (non-streaming)
 func TestChatCompletionsEndpoint(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping chat completions test (acceptable)"); return
+		t.Logf("Short mode - skipping chat completions test (acceptable)")
+		return
 	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
@@ -764,7 +775,8 @@ func TestChatCompletionsEndpoint(t *testing.T) {
 // TestChatCompletionsStreamingEndpoint tests POST /v1/chat/completions with streaming
 func TestChatCompletionsStreamingEndpoint(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping streaming chat completions test (acceptable)"); return
+		t.Logf("Short mode - skipping streaming chat completions test (acceptable)")
+		return
 	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
@@ -952,7 +964,8 @@ func TestChatCompletionsStreamingEndpoint(t *testing.T) {
 // TestConcurrentRequests tests multiple simultaneous requests
 func TestConcurrentRequests(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping concurrent requests test (acceptable)"); return
+		t.Logf("Short mode - skipping concurrent requests test (acceptable)")
+		return
 	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
@@ -1498,14 +1511,16 @@ func TestErrorHandling(t *testing.T) {
 // TestEndToEndWorkflow tests complete OpenCode integration workflow
 func TestEndToEndWorkflow(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping end-to-end workflow test (acceptable)"); return
+		t.Logf("Short mode - skipping end-to-end workflow test (acceptable)")
+		return
 	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 
 	t.Run("GenerateConfigAndTestAPI", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+			t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+			return
 		}
 
 		// Step 1: Generate OpenCode config
@@ -1557,7 +1572,8 @@ func TestEndToEndWorkflow(t *testing.T) {
 
 	t.Run("FullConfigGenerationWithEnvFile", func(t *testing.T) {
 		if _, err := os.Stat(config.BinaryPath); os.IsNotExist(err) {
-			t.Logf("HelixAgent binary not found - run make build first (acceptable)"); return
+			t.Logf("HelixAgent binary not found - run make build first (acceptable)")
+			return
 		}
 
 		envPath := filepath.Join(config.TempDir, ".env")

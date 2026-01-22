@@ -62,15 +62,15 @@ type ChunkingConfig struct {
 
 // PipelineConfig contains configuration for the RAG pipeline.
 type PipelineConfig struct {
-	VectorDBType     VectorDBType                   `json:"vector_db_type"`
-	CollectionName   string                         `json:"collection_name"`
-	EmbeddingModel   string                         `json:"embedding_model"`
-	ChunkingConfig   ChunkingConfig                 `json:"chunking_config"`
-	ChromaConfig     *servers.ChromaAdapterConfig   `json:"chroma_config,omitempty"`
-	QdrantConfig     *servers.QdrantAdapterConfig   `json:"qdrant_config,omitempty"`
-	WeaviateConfig   *servers.WeaviateAdapterConfig `json:"weaviate_config,omitempty"`
-	EnableCache      bool                           `json:"enable_cache"`
-	CacheTTL         time.Duration                  `json:"cache_ttl"`
+	VectorDBType   VectorDBType                   `json:"vector_db_type"`
+	CollectionName string                         `json:"collection_name"`
+	EmbeddingModel string                         `json:"embedding_model"`
+	ChunkingConfig ChunkingConfig                 `json:"chunking_config"`
+	ChromaConfig   *servers.ChromaAdapterConfig   `json:"chroma_config,omitempty"`
+	QdrantConfig   *servers.QdrantAdapterConfig   `json:"qdrant_config,omitempty"`
+	WeaviateConfig *servers.WeaviateAdapterConfig `json:"weaviate_config,omitempty"`
+	EnableCache    bool                           `json:"enable_cache"`
+	CacheTTL       time.Duration                  `json:"cache_ttl"`
 }
 
 // DefaultChunkingConfig returns default chunking configuration.

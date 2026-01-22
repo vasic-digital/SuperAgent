@@ -26,8 +26,8 @@ import (
 
 // MockCommandExecutor is a mock implementation of CommandExecutor for testing
 type MockCommandExecutor struct {
-	LookPathFunc         func(file string) (string, error)
-	RunCommandFunc       func(name string, args ...string) ([]byte, error)
+	LookPathFunc          func(file string) (string, error)
+	RunCommandFunc        func(name string, args ...string) ([]byte, error)
 	RunCommandWithDirFunc func(dir string, name string, args ...string) ([]byte, error)
 }
 
@@ -1551,10 +1551,10 @@ func TestVerifyServicesHealth_CombinedServices(t *testing.T) {
 	// Test that the function doesn't panic and returns expected behavior
 	// based on whether services are actually running
 	tests := []struct {
-		name             string
-		services         []string
-		mustError        bool // error is required regardless of running state
-		neverError       bool // should not error if services are available
+		name       string
+		services   []string
+		mustError  bool // error is required regardless of running state
+		neverError bool // should not error if services are available
 	}{
 		{
 			name:       "Only postgres",
@@ -2550,7 +2550,7 @@ func TestRun_ValidateOpenCode_BeforeHelp(t *testing.T) {
 	os.Stdout = w
 
 	appCfg := &AppConfig{
-		ShowHelp:         true,         // Help is requested
+		ShowHelp:         true,           // Help is requested
 		ValidateOpenCode: tmpFile.Name(), // But validation takes precedence
 		Logger:           createTestLogger(),
 	}
@@ -3328,4 +3328,3 @@ func TestAppConfig_StrictDependenciesFlag(t *testing.T) {
 	// Verify strictDependencies flag is defined
 	assert.NotNil(t, strictDependencies)
 }
-

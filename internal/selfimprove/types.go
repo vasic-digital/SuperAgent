@@ -80,7 +80,7 @@ type TrainingExample struct {
 type PreferencePair struct {
 	ID            string                 `json:"id"`
 	Prompt        string                 `json:"prompt"`
-	Chosen        string                 `json:"chosen"`  // Preferred response
+	Chosen        string                 `json:"chosen"`   // Preferred response
 	Rejected      string                 `json:"rejected"` // Less preferred response
 	ChosenScore   float64                `json:"chosen_score"`
 	RejectedScore float64                `json:"rejected_score"`
@@ -125,14 +125,14 @@ type FeedbackFilter struct {
 
 // AggregatedFeedback represents aggregated feedback stats
 type AggregatedFeedback struct {
-	TotalCount         int                              `json:"total_count"`
-	AverageScore       float64                          `json:"average_score"`
-	ScoreDistribution  map[string]int                   `json:"score_distribution"`
-	TypeDistribution   map[FeedbackType]int             `json:"type_distribution"`
-	SourceDistribution map[FeedbackSource]int           `json:"source_distribution"`
-	DimensionAverages  map[DimensionType]float64        `json:"dimension_averages"`
+	TotalCount         int                               `json:"total_count"`
+	AverageScore       float64                           `json:"average_score"`
+	ScoreDistribution  map[string]int                    `json:"score_distribution"`
+	TypeDistribution   map[FeedbackType]int              `json:"type_distribution"`
+	SourceDistribution map[FeedbackSource]int            `json:"source_distribution"`
+	DimensionAverages  map[DimensionType]float64         `json:"dimension_averages"`
 	ProviderStats      map[string]*ProviderFeedbackStats `json:"provider_stats"`
-	TrendData          []*TrendPoint                    `json:"trend_data,omitempty"`
+	TrendData          []*TrendPoint                     `json:"trend_data,omitempty"`
 }
 
 // ProviderFeedbackStats represents feedback stats for a provider
@@ -262,12 +262,12 @@ type DebateRewardEvaluator interface {
 
 // DebateComparison represents debate-based comparison result
 type DebateComparison struct {
-	PreferredIndex   int               `json:"preferred_index"` // 0 or 1
-	Margin           float64           `json:"margin"`
-	Reasoning        string            `json:"reasoning"`
-	DebateID         string            `json:"debate_id"`
-	ParticipantPrefs map[string]int    `json:"participant_prefs"` // Who preferred what
-	Confidence       float64           `json:"confidence"`
+	PreferredIndex   int            `json:"preferred_index"` // 0 or 1
+	Margin           float64        `json:"margin"`
+	Reasoning        string         `json:"reasoning"`
+	DebateID         string         `json:"debate_id"`
+	ParticipantPrefs map[string]int `json:"participant_prefs"` // Who preferred what
+	Confidence       float64        `json:"confidence"`
 }
 
 // LLMProvider interface for LLM providers

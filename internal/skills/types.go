@@ -11,36 +11,36 @@ import (
 // Skill represents a parsed SKILL.md file with all its metadata and content.
 type Skill struct {
 	// Metadata from YAML frontmatter
-	Name          string   `json:"name" yaml:"name"`
-	Description   string   `json:"description" yaml:"description"`
-	AllowedTools  string   `json:"allowed_tools" yaml:"allowed-tools"`
-	Version       string   `json:"version" yaml:"version"`
-	License       string   `json:"license" yaml:"license"`
-	Author        string   `json:"author" yaml:"author"`
+	Name         string `json:"name" yaml:"name"`
+	Description  string `json:"description" yaml:"description"`
+	AllowedTools string `json:"allowed_tools" yaml:"allowed-tools"`
+	Version      string `json:"version" yaml:"version"`
+	License      string `json:"license" yaml:"license"`
+	Author       string `json:"author" yaml:"author"`
 
 	// Additional metadata
-	Category      string   `json:"category" yaml:"category"`
-	Tags          []string `json:"tags" yaml:"tags"`
+	Category       string   `json:"category" yaml:"category"`
+	Tags           []string `json:"tags" yaml:"tags"`
 	TriggerPhrases []string `json:"trigger_phrases"`
 
 	// Content sections
-	Overview      string            `json:"overview"`
-	WhenToUse     string            `json:"when_to_use"`
-	Instructions  string            `json:"instructions"`
-	Examples      []SkillExample    `json:"examples"`
-	Prerequisites []string          `json:"prerequisites"`
-	Outputs       []string          `json:"outputs"`
-	ErrorHandling []SkillError      `json:"error_handling"`
-	Resources     []string          `json:"resources"`
-	RelatedSkills []string          `json:"related_skills"`
+	Overview      string         `json:"overview"`
+	WhenToUse     string         `json:"when_to_use"`
+	Instructions  string         `json:"instructions"`
+	Examples      []SkillExample `json:"examples"`
+	Prerequisites []string       `json:"prerequisites"`
+	Outputs       []string       `json:"outputs"`
+	ErrorHandling []SkillError   `json:"error_handling"`
+	Resources     []string       `json:"resources"`
+	RelatedSkills []string       `json:"related_skills"`
 
 	// Raw content
-	RawContent    string            `json:"raw_content"`
-	FilePath      string            `json:"file_path"`
+	RawContent string `json:"raw_content"`
+	FilePath   string `json:"file_path"`
 
 	// Timestamps
-	LoadedAt      time.Time         `json:"loaded_at"`
-	UpdatedAt     time.Time         `json:"updated_at"`
+	LoadedAt  time.Time `json:"loaded_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // SkillExample represents a usage example within a skill.
@@ -68,10 +68,10 @@ type SkillCategory struct {
 
 // SkillMatch represents a potential skill match from user input.
 type SkillMatch struct {
-	Skill       *Skill  `json:"skill"`
-	Confidence  float64 `json:"confidence"`
-	MatchedTrigger string `json:"matched_trigger"`
-	MatchType   MatchType `json:"match_type"`
+	Skill          *Skill    `json:"skill"`
+	Confidence     float64   `json:"confidence"`
+	MatchedTrigger string    `json:"matched_trigger"`
+	MatchType      MatchType `json:"match_type"`
 }
 
 // MatchType indicates how a skill was matched.

@@ -140,8 +140,8 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 
 // CatalogConfig represents the catalog configuration
 type CatalogConfig struct {
-	Defaults   map[string]string `json:"defaults"`
-	Overrides  map[string]string `json:"overrides"`
+	Defaults  map[string]string `json:"defaults"`
+	Overrides map[string]string `json:"overrides"`
 }
 
 // GetCatalogConfig returns the catalog configuration
@@ -279,36 +279,36 @@ type TableIdentifier struct {
 
 // TableMetadata represents Iceberg table metadata
 type TableMetadata struct {
-	FormatVersion    int               `json:"format-version"`
-	TableUUID        string            `json:"table-uuid"`
-	Location         string            `json:"location"`
-	LastUpdatedMs    int64             `json:"last-updated-ms"`
-	LastColumnID     int               `json:"last-column-id"`
-	Schema           *Schema           `json:"schema"`
-	CurrentSchemaID  int               `json:"current-schema-id"`
-	Schemas          []Schema          `json:"schemas"`
-	PartitionSpec    []PartitionField  `json:"partition-spec"`
-	DefaultSpecID    int               `json:"default-spec-id"`
-	PartitionSpecs   []interface{}     `json:"partition-specs"`
-	LastPartitionID  int               `json:"last-partition-id"`
-	DefaultSortOrderID int             `json:"default-sort-order-id"`
-	SortOrders       []interface{}     `json:"sort-orders"`
-	Properties       map[string]string `json:"properties"`
-	CurrentSnapshotID *int64           `json:"current-snapshot-id"`
-	Snapshots        []Snapshot        `json:"snapshots"`
-	SnapshotLog      []SnapshotLogEntry `json:"snapshot-log"`
-	MetadataLog      []MetadataLogEntry `json:"metadata-log"`
+	FormatVersion      int                `json:"format-version"`
+	TableUUID          string             `json:"table-uuid"`
+	Location           string             `json:"location"`
+	LastUpdatedMs      int64              `json:"last-updated-ms"`
+	LastColumnID       int                `json:"last-column-id"`
+	Schema             *Schema            `json:"schema"`
+	CurrentSchemaID    int                `json:"current-schema-id"`
+	Schemas            []Schema           `json:"schemas"`
+	PartitionSpec      []PartitionField   `json:"partition-spec"`
+	DefaultSpecID      int                `json:"default-spec-id"`
+	PartitionSpecs     []interface{}      `json:"partition-specs"`
+	LastPartitionID    int                `json:"last-partition-id"`
+	DefaultSortOrderID int                `json:"default-sort-order-id"`
+	SortOrders         []interface{}      `json:"sort-orders"`
+	Properties         map[string]string  `json:"properties"`
+	CurrentSnapshotID  *int64             `json:"current-snapshot-id"`
+	Snapshots          []Snapshot         `json:"snapshots"`
+	SnapshotLog        []SnapshotLogEntry `json:"snapshot-log"`
+	MetadataLog        []MetadataLogEntry `json:"metadata-log"`
 }
 
 // Snapshot represents an Iceberg snapshot
 type Snapshot struct {
-	SnapshotID        int64             `json:"snapshot-id"`
-	ParentSnapshotID  *int64            `json:"parent-snapshot-id,omitempty"`
-	SequenceNumber    int64             `json:"sequence-number"`
-	TimestampMs       int64             `json:"timestamp-ms"`
-	ManifestList      string            `json:"manifest-list"`
-	Summary           map[string]string `json:"summary"`
-	SchemaID          *int              `json:"schema-id,omitempty"`
+	SnapshotID       int64             `json:"snapshot-id"`
+	ParentSnapshotID *int64            `json:"parent-snapshot-id,omitempty"`
+	SequenceNumber   int64             `json:"sequence-number"`
+	TimestampMs      int64             `json:"timestamp-ms"`
+	ManifestList     string            `json:"manifest-list"`
+	Summary          map[string]string `json:"summary"`
+	SchemaID         *int              `json:"schema-id,omitempty"`
 }
 
 // SnapshotLogEntry represents a snapshot log entry
@@ -319,8 +319,8 @@ type SnapshotLogEntry struct {
 
 // MetadataLogEntry represents a metadata log entry
 type MetadataLogEntry struct {
-	TimestampMs     int64  `json:"timestamp-ms"`
-	MetadataFile    string `json:"metadata-file"`
+	TimestampMs  int64  `json:"timestamp-ms"`
+	MetadataFile string `json:"metadata-file"`
 }
 
 // CreateTable creates a new table

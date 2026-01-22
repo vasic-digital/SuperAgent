@@ -15,11 +15,11 @@ import (
 // Based on research documents 001-004 for comprehensive debate team selection
 type EnhancedScoreComponents struct {
 	// Original 5 components
-	ResponseSpeed     float64 `json:"response_speed"`      // 20% - API latency measurement
-	ModelEfficiency   float64 `json:"model_efficiency"`    // 15% - Token efficiency
-	CostEffectiveness float64 `json:"cost_effectiveness"`  // 20% - Cost per 1K tokens (higher = cheaper)
-	Capability        float64 `json:"capability"`          // 15% - Model capability tier
-	Recency           float64 `json:"recency"`             // 5% - Model release date
+	ResponseSpeed     float64 `json:"response_speed"`     // 20% - API latency measurement
+	ModelEfficiency   float64 `json:"model_efficiency"`   // 15% - Token efficiency
+	CostEffectiveness float64 `json:"cost_effectiveness"` // 20% - Cost per 1K tokens (higher = cheaper)
+	Capability        float64 `json:"capability"`         // 15% - Model capability tier
+	Recency           float64 `json:"recency"`            // 5% - Model release date
 
 	// New components from research (Phase 1)
 	CodeQuality    float64 `json:"code_quality"`    // 15% - Code generation benchmarks
@@ -60,11 +60,11 @@ type EnhancedScoringResult struct {
 
 // EnhancedScoringService provides advanced scoring for debate team selection
 type EnhancedScoringService struct {
-	weights     *EnhancedScoreWeights
-	cache       map[string]*EnhancedScoringResult
-	cacheMu     sync.RWMutex
-	cacheTTL    time.Duration
-	baseSvc     *ScoringService
+	weights  *EnhancedScoreWeights
+	cache    map[string]*EnhancedScoringResult
+	cacheMu  sync.RWMutex
+	cacheTTL time.Duration
+	baseSvc  *ScoringService
 
 	// Provider-level aggregations
 	providerScores   map[string]float64

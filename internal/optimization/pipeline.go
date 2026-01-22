@@ -16,23 +16,23 @@ import (
 type PipelineStage string
 
 const (
-	StageCacheCheck      PipelineStage = "cache_check"
-	StageContextRetrieval PipelineStage = "context_retrieval"
+	StageCacheCheck        PipelineStage = "cache_check"
+	StageContextRetrieval  PipelineStage = "context_retrieval"
 	StageTaskDecomposition PipelineStage = "task_decomposition"
-	StagePrefixWarm      PipelineStage = "prefix_warm"
-	StageValidation      PipelineStage = "validation"
-	StageCacheStore      PipelineStage = "cache_store"
+	StagePrefixWarm        PipelineStage = "prefix_warm"
+	StageValidation        PipelineStage = "validation"
+	StageCacheStore        PipelineStage = "cache_store"
 )
 
 // PipelineResult contains the result of running through the optimization pipeline.
 type PipelineResult struct {
 	// Request optimization results
-	CacheHit         bool                `json:"cache_hit"`
-	CachedResponse   string              `json:"cached_response,omitempty"`
-	RetrievedContext []string            `json:"retrieved_context,omitempty"`
-	DecomposedTasks  []string            `json:"decomposed_tasks,omitempty"`
-	PrefixWarmed     bool                `json:"prefix_warmed"`
-	OptimizedPrompt  string              `json:"optimized_prompt"`
+	CacheHit         bool     `json:"cache_hit"`
+	CachedResponse   string   `json:"cached_response,omitempty"`
+	RetrievedContext []string `json:"retrieved_context,omitempty"`
+	DecomposedTasks  []string `json:"decomposed_tasks,omitempty"`
+	PrefixWarmed     bool     `json:"prefix_warmed"`
+	OptimizedPrompt  string   `json:"optimized_prompt"`
 
 	// Response optimization results
 	ValidationResult *outlines.ValidationResult `json:"validation_result,omitempty"`
@@ -56,20 +56,20 @@ type Pipeline struct {
 // PipelineConfig configures the optimization pipeline behavior.
 type PipelineConfig struct {
 	// Enable/disable stages
-	EnableCacheCheck       bool `yaml:"enable_cache_check" json:"enable_cache_check"`
-	EnableContextRetrieval bool `yaml:"enable_context_retrieval" json:"enable_context_retrieval"`
+	EnableCacheCheck        bool `yaml:"enable_cache_check" json:"enable_cache_check"`
+	EnableContextRetrieval  bool `yaml:"enable_context_retrieval" json:"enable_context_retrieval"`
 	EnableTaskDecomposition bool `yaml:"enable_task_decomposition" json:"enable_task_decomposition"`
-	EnablePrefixWarm       bool `yaml:"enable_prefix_warm" json:"enable_prefix_warm"`
-	EnableValidation       bool `yaml:"enable_validation" json:"enable_validation"`
-	EnableCacheStore       bool `yaml:"enable_cache_store" json:"enable_cache_store"`
+	EnablePrefixWarm        bool `yaml:"enable_prefix_warm" json:"enable_prefix_warm"`
+	EnableValidation        bool `yaml:"enable_validation" json:"enable_validation"`
+	EnableCacheStore        bool `yaml:"enable_cache_store" json:"enable_cache_store"`
 
 	// Stage timeouts
-	CacheCheckTimeout       time.Duration `yaml:"cache_check_timeout" json:"cache_check_timeout"`
-	ContextRetrievalTimeout time.Duration `yaml:"context_retrieval_timeout" json:"context_retrieval_timeout"`
+	CacheCheckTimeout        time.Duration `yaml:"cache_check_timeout" json:"cache_check_timeout"`
+	ContextRetrievalTimeout  time.Duration `yaml:"context_retrieval_timeout" json:"context_retrieval_timeout"`
 	TaskDecompositionTimeout time.Duration `yaml:"task_decomposition_timeout" json:"task_decomposition_timeout"`
 
 	// Thresholds
-	MinPromptLengthForContext     int `yaml:"min_prompt_length_for_context" json:"min_prompt_length_for_context"`
+	MinPromptLengthForContext       int `yaml:"min_prompt_length_for_context" json:"min_prompt_length_for_context"`
 	MinPromptLengthForDecomposition int `yaml:"min_prompt_length_for_decomposition" json:"min_prompt_length_for_decomposition"`
 
 	// Parallelization
@@ -79,18 +79,18 @@ type PipelineConfig struct {
 // DefaultPipelineConfig returns the default pipeline configuration.
 func DefaultPipelineConfig() *PipelineConfig {
 	return &PipelineConfig{
-		EnableCacheCheck:       true,
-		EnableContextRetrieval: true,
+		EnableCacheCheck:        true,
+		EnableContextRetrieval:  true,
 		EnableTaskDecomposition: true,
-		EnablePrefixWarm:       true,
-		EnableValidation:       true,
-		EnableCacheStore:       true,
+		EnablePrefixWarm:        true,
+		EnableValidation:        true,
+		EnableCacheStore:        true,
 
 		CacheCheckTimeout:        100 * time.Millisecond,
 		ContextRetrievalTimeout:  2 * time.Second,
 		TaskDecompositionTimeout: 3 * time.Second,
 
-		MinPromptLengthForContext:     50,
+		MinPromptLengthForContext:       50,
 		MinPromptLengthForDecomposition: 100,
 
 		ParallelStages: true,
@@ -403,4 +403,3 @@ func (p *Pipeline) SetConfig(config *PipelineConfig) {
 	defer p.mu.Unlock()
 	p.config = config
 }
-

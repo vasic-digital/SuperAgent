@@ -1096,10 +1096,10 @@ func TestProtocolSSEHandler_AllProtocols_ToolsCallExecution(t *testing.T) {
 	handler := NewProtocolSSEHandler(nil, nil, nil, nil, logger)
 
 	testCases := []struct {
-		protocol   string
-		handlerFn  func(*gin.Context)
-		tool       string
-		args       map[string]interface{}
+		protocol  string
+		handlerFn func(*gin.Context)
+		tool      string
+		args      map[string]interface{}
 	}{
 		{"mcp", handler.HandleMCPMessage, "mcp_get_capabilities", nil},
 		{"acp", handler.HandleACPMessage, "acp_list_agents", nil},

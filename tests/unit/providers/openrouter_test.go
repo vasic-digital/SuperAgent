@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"dev.helix.agent/internal/llm/providers/openrouter"
 	"dev.helix.agent/internal/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOpenRouterProvider_Basic(t *testing.T) {

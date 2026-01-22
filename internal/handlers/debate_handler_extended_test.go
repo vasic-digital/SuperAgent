@@ -585,7 +585,7 @@ func TestCreateDebateRequest_Struct(t *testing.T) {
 		MaxRounds:                 5,
 		Timeout:                   300,
 		Strategy:                  "consensus",
-		EnableCognee:             true,
+		EnableCognee:              true,
 		EnableMultiPassValidation: true,
 		Metadata: map[string]any{
 			"key": "value",

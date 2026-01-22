@@ -176,13 +176,13 @@ func (m *mockTaskRepository) MoveToDeadLetter(ctx context.Context, taskID, reaso
 
 // mockTaskQueue is a test implementation of TaskQueue
 type mockTaskQueue struct {
-	tasks          []*models.BackgroundTask
-	enqueueError   error
-	dequeueError   error
-	requeueError   error
-	pendingCount   int64
-	runningCount   int64
-	queueDepth     map[models.TaskPriority]int64
+	tasks        []*models.BackgroundTask
+	enqueueError error
+	dequeueError error
+	requeueError error
+	pendingCount int64
+	runningCount int64
+	queueDepth   map[models.TaskPriority]int64
 }
 
 func newMockTaskQueue() *mockTaskQueue {
@@ -254,13 +254,13 @@ func newMockWorkerPool() *mockWorkerPool {
 	}
 }
 
-func (m *mockWorkerPool) Start(ctx context.Context) error { return nil }
-func (m *mockWorkerPool) Stop(gracePeriod time.Duration) error { return nil }
+func (m *mockWorkerPool) Start(ctx context.Context) error                                    { return nil }
+func (m *mockWorkerPool) Stop(gracePeriod time.Duration) error                               { return nil }
 func (m *mockWorkerPool) RegisterExecutor(taskType string, executor background.TaskExecutor) {}
-func (m *mockWorkerPool) GetWorkerCount() int { return m.workerCount }
-func (m *mockWorkerPool) GetActiveTaskCount() int { return m.activeTaskCount }
-func (m *mockWorkerPool) GetWorkerStatus() []background.WorkerStatus { return m.workerStatus }
-func (m *mockWorkerPool) Scale(targetCount int) error { return nil }
+func (m *mockWorkerPool) GetWorkerCount() int                                                { return m.workerCount }
+func (m *mockWorkerPool) GetActiveTaskCount() int                                            { return m.activeTaskCount }
+func (m *mockWorkerPool) GetWorkerStatus() []background.WorkerStatus                         { return m.workerStatus }
+func (m *mockWorkerPool) Scale(targetCount int) error                                        { return nil }
 
 // mockResourceMonitor is a test implementation of ResourceMonitor
 type mockResourceMonitor struct {
@@ -283,16 +283,24 @@ func newMockResourceMonitor() *mockResourceMonitor {
 func (m *mockResourceMonitor) GetSystemResources() (*background.SystemResources, error) {
 	return m.resources, nil
 }
-func (m *mockResourceMonitor) GetProcessResources(pid int) (*models.ResourceSnapshot, error) { return nil, nil }
-func (m *mockResourceMonitor) StartMonitoring(taskID string, pid int, interval time.Duration) error { return nil }
+func (m *mockResourceMonitor) GetProcessResources(pid int) (*models.ResourceSnapshot, error) {
+	return nil, nil
+}
+func (m *mockResourceMonitor) StartMonitoring(taskID string, pid int, interval time.Duration) error {
+	return nil
+}
 func (m *mockResourceMonitor) StopMonitoring(taskID string) error { return nil }
-func (m *mockResourceMonitor) GetLatestSnapshot(taskID string) (*models.ResourceSnapshot, error) { return nil, nil }
-func (m *mockResourceMonitor) IsResourceAvailable(requirements background.ResourceRequirements) bool { return true }
+func (m *mockResourceMonitor) GetLatestSnapshot(taskID string) (*models.ResourceSnapshot, error) {
+	return nil, nil
+}
+func (m *mockResourceMonitor) IsResourceAvailable(requirements background.ResourceRequirements) bool {
+	return true
+}
 
 // mockStuckDetector is a test implementation of StuckDetector
 type mockStuckDetector struct {
-	isStuck  bool
-	reason   string
+	isStuck bool
+	reason  string
 }
 
 func newMockStuckDetector() *mockStuckDetector {
@@ -697,9 +705,9 @@ func TestPauseTask(t *testing.T) {
 		handler, repo, _ := setupTestHandler()
 
 		task := &models.BackgroundTask{
-			ID:       "test-task-id",
-			Status:   models.TaskStatusRunning,
-			Config:   models.TaskConfig{AllowPause: true},
+			ID:     "test-task-id",
+			Status: models.TaskStatusRunning,
+			Config: models.TaskConfig{AllowPause: true},
 		}
 		repo.tasks[task.ID] = task
 

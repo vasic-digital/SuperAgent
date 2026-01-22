@@ -15,29 +15,29 @@ import (
 
 // Broker implements the messaging.MessageBroker interface for RabbitMQ
 type Broker struct {
-	config       *Config
-	logger       *zap.Logger
-	conn         *Connection
-	pubChannel   *amqp.Channel
-	mu           sync.RWMutex
+	config        *Config
+	logger        *zap.Logger
+	conn          *Connection
+	pubChannel    *amqp.Channel
+	mu            sync.RWMutex
 	subscriptions map[string]*rabbitSubscription
-	exchanges    map[string]bool
-	queues       map[string]bool
-	metrics      *messaging.BrokerMetrics
-	closed       atomic.Bool
-	subCounter   atomic.Int64
+	exchanges     map[string]bool
+	queues        map[string]bool
+	metrics       *messaging.BrokerMetrics
+	closed        atomic.Bool
+	subCounter    atomic.Int64
 }
 
 // rabbitSubscription holds subscription state
 type rabbitSubscription struct {
-	id        string
-	topic     string
-	queue     string
-	handler   messaging.MessageHandler
-	channel   *amqp.Channel
-	consumer  string
-	cancelCh  chan struct{}
-	active    atomic.Bool
+	id       string
+	topic    string
+	queue    string
+	handler  messaging.MessageHandler
+	channel  *amqp.Channel
+	consumer string
+	cancelCh chan struct{}
+	active   atomic.Bool
 }
 
 // Subscription interface implementation
@@ -328,7 +328,7 @@ func (b *Broker) IsConnected() bool {
 // Publish publishes a message to a topic
 func (b *Broker) Publish(ctx context.Context, topic string, message *messaging.Message, opts ...messaging.PublishOption) error {
 	startTime := time.Now()
-	
+
 	b.mu.RLock()
 	ch := b.pubChannel
 	b.mu.RUnlock()

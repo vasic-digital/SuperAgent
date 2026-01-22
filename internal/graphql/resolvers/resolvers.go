@@ -125,12 +125,12 @@ type VerificationInfo struct {
 
 // ResolverContext holds resolver dependencies.
 type ResolverContext struct {
-	Services     ServiceRegistry
-	DebateSvc    DebateServiceInterface
-	TaskSvc      TaskServiceInterface
-	TaskRepo     background.TaskRepository
-	Logger       *logrus.Logger
-	mu           sync.RWMutex
+	Services  ServiceRegistry
+	DebateSvc DebateServiceInterface
+	TaskSvc   TaskServiceInterface
+	TaskRepo  background.TaskRepository
+	Logger    *logrus.Logger
+	mu        sync.RWMutex
 }
 
 // NewResolverContext creates a new resolver context.

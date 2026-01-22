@@ -559,9 +559,9 @@ func TestRedisClient_EdgeCases(t *testing.T) {
 		_, client := setupMiniRedis(t)
 
 		type DataWithNull struct {
-			Name    string  `json:"name"`
-			OptInt  *int    `json:"opt_int,omitempty"`
-			OptStr  *string `json:"opt_str,omitempty"`
+			Name   string  `json:"name"`
+			OptInt *int    `json:"opt_int,omitempty"`
+			OptStr *string `json:"opt_str,omitempty"`
 		}
 
 		ctx := context.Background()

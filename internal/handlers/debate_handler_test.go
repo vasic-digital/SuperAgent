@@ -614,9 +614,9 @@ func TestParticipantDefaults(t *testing.T) {
 	request := CreateDebateRequest{
 		Topic: "Test defaults",
 		Participants: []ParticipantConfigRequest{
-			{Name: "First"},      // Should get role: proposer
-			{Name: "Second"},     // Should get role: critic
-			{Name: "Third"},      // Should get role: debater
+			{Name: "First"},  // Should get role: proposer
+			{Name: "Second"}, // Should get role: critic
+			{Name: "Third"},  // Should get role: debater
 		},
 	}
 

@@ -130,11 +130,11 @@ type LifecycleRule struct {
 // DefaultLifecycleRule returns a default lifecycle rule
 func DefaultLifecycleRule(id string, expirationDays int) *LifecycleRule {
 	return &LifecycleRule{
-		ID:             id,
-		Prefix:         "",
-		Enabled:        true,
-		ExpirationDays: expirationDays,
-		NoncurrentDays: 0,
+		ID:                 id,
+		Prefix:             "",
+		Enabled:            true,
+		ExpirationDays:     expirationDays,
+		NoncurrentDays:     0,
 		DeleteMarkerExpiry: false,
 	}
 }

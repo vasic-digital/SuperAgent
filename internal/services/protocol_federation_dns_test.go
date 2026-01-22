@@ -14,15 +14,15 @@ import (
 
 // MockDNSResolver implements DNSResolver for testing
 type MockDNSResolver struct {
-	srvRecords    map[string][]*net.SRV
-	hostRecords   map[string][]string
-	txtRecords    map[string][]string
-	srvErrors     map[string]error
-	hostErrors    map[string]error
-	txtErrors     map[string]error
-	lookupSRVCall int
+	srvRecords     map[string][]*net.SRV
+	hostRecords    map[string][]string
+	txtRecords     map[string][]string
+	srvErrors      map[string]error
+	hostErrors     map[string]error
+	txtErrors      map[string]error
+	lookupSRVCall  int
 	lookupHostCall int
-	lookupTXTCall int
+	lookupTXTCall  int
 }
 
 // NewMockDNSResolver creates a new mock resolver

@@ -28,8 +28,8 @@ func NewTaskFunc(id string, fn func(ctx context.Context) (interface{}, error)) *
 	return &TaskFunc{id: id, fn: fn}
 }
 
-func (t *TaskFunc) ID() string                                         { return t.id }
-func (t *TaskFunc) Execute(ctx context.Context) (interface{}, error)   { return t.fn(ctx) }
+func (t *TaskFunc) ID() string                                       { return t.id }
+func (t *TaskFunc) Execute(ctx context.Context) (interface{}, error) { return t.fn(ctx) }
 
 // Result represents the outcome of a task execution
 type Result struct {
@@ -42,10 +42,10 @@ type Result struct {
 
 // PoolConfig holds configuration for the worker pool
 type PoolConfig struct {
-	Workers       int           // Number of concurrent workers
-	QueueSize     int           // Size of the task queue
-	TaskTimeout   time.Duration // Maximum time for a single task
-	ShutdownGrace time.Duration // Grace period during shutdown
+	Workers       int                            // Number of concurrent workers
+	QueueSize     int                            // Size of the task queue
+	TaskTimeout   time.Duration                  // Maximum time for a single task
+	ShutdownGrace time.Duration                  // Grace period during shutdown
 	OnError       func(taskID string, err error) // Error callback
 	OnComplete    func(result Result)            // Completion callback
 }
@@ -62,12 +62,12 @@ func DefaultPoolConfig() *PoolConfig {
 
 // PoolMetrics tracks worker pool statistics
 type PoolMetrics struct {
-	ActiveWorkers   int64
-	QueuedTasks     int64
-	CompletedTasks  int64
-	FailedTasks     int64
-	TotalLatencyUs  int64 // Total latency in microseconds
-	TaskCount       int64 // For calculating average
+	ActiveWorkers  int64
+	QueuedTasks    int64
+	CompletedTasks int64
+	FailedTasks    int64
+	TotalLatencyUs int64 // Total latency in microseconds
+	TaskCount      int64 // For calculating average
 }
 
 // AverageLatency returns the average task latency
@@ -82,17 +82,17 @@ func (m *PoolMetrics) AverageLatency() time.Duration {
 
 // WorkerPool provides bounded concurrency with configurable workers
 type WorkerPool struct {
-	config   *PoolConfig
-	tasks    chan Task
-	results  chan Result
-	sem      chan struct{}
-	metrics  *PoolMetrics
-	ctx      context.Context
-	cancel   context.CancelFunc
-	wg       sync.WaitGroup
-	started  bool
-	closed   bool
-	mu       sync.Mutex
+	config  *PoolConfig
+	tasks   chan Task
+	results chan Result
+	sem     chan struct{}
+	metrics *PoolMetrics
+	ctx     context.Context
+	cancel  context.CancelFunc
+	wg      sync.WaitGroup
+	started bool
+	closed  bool
+	mu      sync.Mutex
 }
 
 // NewWorkerPool creates a new worker pool with the given configuration

@@ -41,11 +41,11 @@ func (i *Integration) ProcessRequest(ctx context.Context, requestID, userInput s
 	}
 
 	reqCtx := &RequestContext{
-		RequestID:      requestID,
-		MatchedSkills:  matches,
-		SkillsToApply:  make([]*Skill, 0),
-		Instructions:   make([]string, 0),
-		ActiveUsages:   make([]*SkillUsage, 0),
+		RequestID:     requestID,
+		MatchedSkills: matches,
+		SkillsToApply: make([]*Skill, 0),
+		Instructions:  make([]string, 0),
+		ActiveUsages:  make([]*SkillUsage, 0),
 	}
 
 	// Filter by confidence threshold
@@ -148,11 +148,11 @@ func (i *Integration) GetService() *Service {
 
 // RequestContext holds context for a request with skill matching.
 type RequestContext struct {
-	RequestID      string
-	MatchedSkills  []SkillMatch
-	SkillsToApply  []*Skill
-	Instructions   []string
-	ActiveUsages   []*SkillUsage
+	RequestID     string
+	MatchedSkills []SkillMatch
+	SkillsToApply []*Skill
+	Instructions  []string
+	ActiveUsages  []*SkillUsage
 }
 
 // SkillsUsedMetadata represents metadata about skills used in a response.

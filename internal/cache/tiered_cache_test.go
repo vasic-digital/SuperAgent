@@ -400,8 +400,8 @@ func TestTieredCache_HitRate(t *testing.T) {
 
 	// 2 hits, 1 miss = 66.67% hit rate
 	var result string
-	tc.Get(ctx, "key1", &result)  // hit
-	tc.Get(ctx, "key1", &result)  // hit
+	tc.Get(ctx, "key1", &result)    // hit
+	tc.Get(ctx, "key1", &result)    // hit
 	tc.Get(ctx, "missing", &result) // miss
 
 	hitRate := tc.HitRate()

@@ -108,8 +108,8 @@ func TestCerebrasProvider_CalculateConfidence(t *testing.T) {
 	provider := NewCerebrasProvider("key", "", "")
 
 	tests := []struct {
-		content      string
-		finishReason string
+		content       string
+		finishReason  string
 		minConfidence float64
 		maxConfidence float64
 	}{
@@ -152,10 +152,10 @@ func TestCerebrasProvider_ValidateConfig(t *testing.T) {
 		errLen  int
 	}{
 		{"key", "url", "model", true, 0},
-		{"", "url", "model", false, 1},      // Only apiKey error (baseURL and model use defaults if empty)
-		{"key", "", "model", true, 0},       // Empty baseURL gets default
-		{"key", "url", "", true, 0},         // Empty model gets default
-		{"", "", "", false, 1},              // Only apiKey error (others get defaults)
+		{"", "url", "model", false, 1}, // Only apiKey error (baseURL and model use defaults if empty)
+		{"key", "", "model", true, 0},  // Empty baseURL gets default
+		{"key", "url", "", true, 0},    // Empty model gets default
+		{"", "", "", false, 1},         // Only apiKey error (others get defaults)
 	}
 
 	for _, tc := range tests {

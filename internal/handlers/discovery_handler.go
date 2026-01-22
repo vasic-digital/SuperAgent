@@ -24,15 +24,15 @@ func NewDiscoveryHandler(ds *verifier.ModelDiscoveryService) *DiscoveryHandler {
 
 // DiscoveredModelResponse represents a discovered model response
 type DiscoveredModelResponse struct {
-	ModelID       string   `json:"model_id"`
-	ModelName     string   `json:"model_name"`
-	Provider      string   `json:"provider"`
-	Verified      bool     `json:"verified"`
-	CodeVisible   bool     `json:"code_visible"`
-	OverallScore  float64  `json:"overall_score"`
-	ScoreSuffix   string   `json:"score_suffix"`
-	DiscoveredAt  string   `json:"discovered_at"`
-	Capabilities  []string `json:"capabilities,omitempty"`
+	ModelID      string   `json:"model_id"`
+	ModelName    string   `json:"model_name"`
+	Provider     string   `json:"provider"`
+	Verified     bool     `json:"verified"`
+	CodeVisible  bool     `json:"code_visible"`
+	OverallScore float64  `json:"overall_score"`
+	ScoreSuffix  string   `json:"score_suffix"`
+	DiscoveredAt string   `json:"discovered_at"`
+	Capabilities []string `json:"capabilities,omitempty"`
 }
 
 // GetDiscoveredModels godoc
@@ -191,14 +191,14 @@ func (h *DiscoveryHandler) GetEnsembleModels(c *gin.Context) {
 	models := h.discoveryService.GetSelectedModels()
 
 	type EnsembleModel struct {
-		ModelID          string  `json:"model_id"`
-		DisplayName      string  `json:"display_name"`
-		Provider         string  `json:"provider"`
-		Score            float64 `json:"score"`
-		VoteWeight       float64 `json:"vote_weight"`
-		VoteWeightPct    string  `json:"vote_weight_pct"`
-		CodeVisible      bool    `json:"code_visible"`
-		RecommendedFor   []string `json:"recommended_for"`
+		ModelID        string   `json:"model_id"`
+		DisplayName    string   `json:"display_name"`
+		Provider       string   `json:"provider"`
+		Score          float64  `json:"score"`
+		VoteWeight     float64  `json:"vote_weight"`
+		VoteWeightPct  string   `json:"vote_weight_pct"`
+		CodeVisible    bool     `json:"code_visible"`
+		RecommendedFor []string `json:"recommended_for"`
 	}
 
 	var totalWeight float64
@@ -214,22 +214,22 @@ func (h *DiscoveryHandler) GetEnsembleModels(c *gin.Context) {
 		}
 
 		ensemble[i] = EnsembleModel{
-			ModelID:       m.ModelID,
-			DisplayName:   m.ModelName + " " + m.ScoreSuffix,
-			Provider:      m.Provider,
-			Score:         m.OverallScore,
-			VoteWeight:    m.VoteWeight,
-			VoteWeightPct: formatPercent(weightPct),
-			CodeVisible:   m.CodeVisible,
+			ModelID:        m.ModelID,
+			DisplayName:    m.ModelName + " " + m.ScoreSuffix,
+			Provider:       m.Provider,
+			Score:          m.OverallScore,
+			VoteWeight:     m.VoteWeight,
+			VoteWeightPct:  formatPercent(weightPct),
+			CodeVisible:    m.CodeVisible,
 			RecommendedFor: getRecommendationsForModel(m.ModelID, m.Provider, m.OverallScore, m.CodeVisible),
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"ensemble": ensemble,
-		"total_models": len(ensemble),
+		"ensemble":          ensemble,
+		"total_models":      len(ensemble),
 		"total_vote_weight": totalWeight,
-		"description": "These models participate in AI debate. Votes are weighted by verification score.",
+		"description":       "These models participate in AI debate. Votes are weighted by verification score.",
 		"how_it_works": []string{
 			"1. User query is sent to all ensemble models",
 			"2. Models provide initial responses",
@@ -375,4 +375,3 @@ func getRecommendationsForModel(modelID, provider string, score float64, codeVis
 
 	return unique
 }
-

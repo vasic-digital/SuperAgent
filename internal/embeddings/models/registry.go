@@ -62,13 +62,13 @@ type EmbeddingModelConfig struct {
 
 // EmbeddingModelRegistry manages multiple embedding models.
 type EmbeddingModelRegistry struct {
-	models       map[string]EmbeddingModel
-	configs      map[string]EmbeddingModelConfig
-	defaultModel string
+	models        map[string]EmbeddingModel
+	configs       map[string]EmbeddingModelConfig
+	defaultModel  string
 	fallbackChain []string
-	mu           sync.RWMutex
-	logger       *logrus.Logger
-	cache        EmbeddingCache
+	mu            sync.RWMutex
+	logger        *logrus.Logger
+	cache         EmbeddingCache
 }
 
 // EmbeddingCache provides caching for embeddings.
@@ -391,11 +391,11 @@ func NewOpenAIEmbeddingModel(config EmbeddingModelConfig) *OpenAIEmbeddingModel 
 	}
 }
 
-func (m *OpenAIEmbeddingModel) Name() string       { return m.config.Name }
-func (m *OpenAIEmbeddingModel) Dimensions() int    { return m.config.Dimensions }
-func (m *OpenAIEmbeddingModel) MaxTokens() int     { return m.config.MaxTokens }
-func (m *OpenAIEmbeddingModel) Provider() string   { return "openai" }
-func (m *OpenAIEmbeddingModel) Close() error       { return nil }
+func (m *OpenAIEmbeddingModel) Name() string     { return m.config.Name }
+func (m *OpenAIEmbeddingModel) Dimensions() int  { return m.config.Dimensions }
+func (m *OpenAIEmbeddingModel) MaxTokens() int   { return m.config.MaxTokens }
+func (m *OpenAIEmbeddingModel) Provider() string { return "openai" }
+func (m *OpenAIEmbeddingModel) Close() error     { return nil }
 
 func (m *OpenAIEmbeddingModel) Health(ctx context.Context) error {
 	_, err := m.EncodeSingle(ctx, "health check")
@@ -482,11 +482,11 @@ func NewOllamaEmbeddingModel(config EmbeddingModelConfig) *OllamaEmbeddingModel 
 	}
 }
 
-func (m *OllamaEmbeddingModel) Name() string       { return m.config.Name }
-func (m *OllamaEmbeddingModel) Dimensions() int    { return m.config.Dimensions }
-func (m *OllamaEmbeddingModel) MaxTokens() int     { return m.config.MaxTokens }
-func (m *OllamaEmbeddingModel) Provider() string   { return "ollama" }
-func (m *OllamaEmbeddingModel) Close() error       { return nil }
+func (m *OllamaEmbeddingModel) Name() string     { return m.config.Name }
+func (m *OllamaEmbeddingModel) Dimensions() int  { return m.config.Dimensions }
+func (m *OllamaEmbeddingModel) MaxTokens() int   { return m.config.MaxTokens }
+func (m *OllamaEmbeddingModel) Provider() string { return "ollama" }
+func (m *OllamaEmbeddingModel) Close() error     { return nil }
 
 func (m *OllamaEmbeddingModel) Health(ctx context.Context) error {
 	_, err := m.EncodeSingle(ctx, "health check")
@@ -565,11 +565,11 @@ func NewSentenceTransformersModel(config EmbeddingModelConfig) *SentenceTransfor
 	}
 }
 
-func (m *SentenceTransformersModel) Name() string       { return m.config.Name }
-func (m *SentenceTransformersModel) Dimensions() int    { return m.config.Dimensions }
-func (m *SentenceTransformersModel) MaxTokens() int     { return m.config.MaxTokens }
-func (m *SentenceTransformersModel) Provider() string   { return "sentence-transformers" }
-func (m *SentenceTransformersModel) Close() error       { return nil }
+func (m *SentenceTransformersModel) Name() string     { return m.config.Name }
+func (m *SentenceTransformersModel) Dimensions() int  { return m.config.Dimensions }
+func (m *SentenceTransformersModel) MaxTokens() int   { return m.config.MaxTokens }
+func (m *SentenceTransformersModel) Provider() string { return "sentence-transformers" }
+func (m *SentenceTransformersModel) Close() error     { return nil }
 
 func (m *SentenceTransformersModel) Health(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", m.config.BaseURL+"/health", nil)
@@ -652,11 +652,11 @@ func NewLocalHashModel(config EmbeddingModelConfig) *LocalHashModel {
 	return &LocalHashModel{config: config}
 }
 
-func (m *LocalHashModel) Name() string       { return m.config.Name }
-func (m *LocalHashModel) Dimensions() int    { return m.config.Dimensions }
-func (m *LocalHashModel) MaxTokens() int     { return m.config.MaxTokens }
-func (m *LocalHashModel) Provider() string   { return "local" }
-func (m *LocalHashModel) Close() error       { return nil }
+func (m *LocalHashModel) Name() string     { return m.config.Name }
+func (m *LocalHashModel) Dimensions() int  { return m.config.Dimensions }
+func (m *LocalHashModel) MaxTokens() int   { return m.config.MaxTokens }
+func (m *LocalHashModel) Provider() string { return "local" }
+func (m *LocalHashModel) Close() error     { return nil }
 
 func (m *LocalHashModel) Health(ctx context.Context) error {
 	return nil // Always healthy

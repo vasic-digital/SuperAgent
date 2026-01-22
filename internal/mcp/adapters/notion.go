@@ -73,9 +73,9 @@ type NotionPropertyDef struct {
 
 // NotionBlock represents a content block.
 type NotionBlock struct {
-	ID       string      `json:"id,omitempty"`
-	Type     string      `json:"type"`
-	Content  interface{} `json:"content"`
+	ID       string        `json:"id,omitempty"`
+	Type     string        `json:"type"`
+	Content  interface{}   `json:"content"`
 	Children []NotionBlock `json:"children,omitempty"`
 }
 

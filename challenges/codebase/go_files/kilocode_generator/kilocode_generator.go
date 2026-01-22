@@ -12,78 +12,78 @@ import (
 // KiloCodeConfig represents the Kilo Code configuration format
 // Kilo Code is a VS Code-based AI coding assistant with custom provider support
 type KiloCodeConfig struct {
-	Schema      string                     `json:"$schema,omitempty"`
-	Version     string                     `json:"version,omitempty"`
-	Providers   map[string]KiloProvider    `json:"providers"`
-	Agents      map[string]KiloAgent       `json:"agents,omitempty"`
-	MCP         map[string]KiloMCP         `json:"mcp,omitempty"`
-	Tools       map[string]bool            `json:"tools,omitempty"`
-	Settings    KiloSettings               `json:"settings,omitempty"`
-	Permissions KiloPermissions            `json:"permissions,omitempty"`
-	Shortcuts   map[string]string          `json:"shortcuts,omitempty"`
+	Schema      string                  `json:"$schema,omitempty"`
+	Version     string                  `json:"version,omitempty"`
+	Providers   map[string]KiloProvider `json:"providers"`
+	Agents      map[string]KiloAgent    `json:"agents,omitempty"`
+	MCP         map[string]KiloMCP      `json:"mcp,omitempty"`
+	Tools       map[string]bool         `json:"tools,omitempty"`
+	Settings    KiloSettings            `json:"settings,omitempty"`
+	Permissions KiloPermissions         `json:"permissions,omitempty"`
+	Shortcuts   map[string]string       `json:"shortcuts,omitempty"`
 }
 
 // KiloProvider represents a provider configuration in Kilo Code
 type KiloProvider struct {
-	Type        string            `json:"type"` // openai-compatible, anthropic, azure, google
-	Name        string            `json:"name,omitempty"`
-	BaseURL     string            `json:"baseUrl,omitempty"`
-	APIKey      string            `json:"apiKey,omitempty"`
-	Models      []KiloModel       `json:"models,omitempty"`
-	Headers     map[string]string `json:"headers,omitempty"`
-	Timeout     int               `json:"timeout,omitempty"`
-	MaxRetries  int               `json:"maxRetries,omitempty"`
+	Type       string            `json:"type"` // openai-compatible, anthropic, azure, google
+	Name       string            `json:"name,omitempty"`
+	BaseURL    string            `json:"baseUrl,omitempty"`
+	APIKey     string            `json:"apiKey,omitempty"`
+	Models     []KiloModel       `json:"models,omitempty"`
+	Headers    map[string]string `json:"headers,omitempty"`
+	Timeout    int               `json:"timeout,omitempty"`
+	MaxRetries int               `json:"maxRetries,omitempty"`
 }
 
 // KiloModel represents a model in Kilo Code configuration
 type KiloModel struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name,omitempty"`
-	Description     string            `json:"description,omitempty"`
-	MaxTokens       int               `json:"maxTokens,omitempty"`
-	ContextWindow   int               `json:"contextWindow,omitempty"`
+	ID            string `json:"id"`
+	Name          string `json:"name,omitempty"`
+	Description   string `json:"description,omitempty"`
+	MaxTokens     int    `json:"maxTokens,omitempty"`
+	ContextWindow int    `json:"contextWindow,omitempty"`
 	// Pricing
-	CostPer1MIn     float64           `json:"costPer1MIn,omitempty"`
-	CostPer1MOut    float64           `json:"costPer1MOut,omitempty"`
+	CostPer1MIn  float64 `json:"costPer1MIn,omitempty"`
+	CostPer1MOut float64 `json:"costPer1MOut,omitempty"`
 	// Capabilities
-	Capabilities    KiloCapabilities  `json:"capabilities,omitempty"`
+	Capabilities KiloCapabilities `json:"capabilities,omitempty"`
 	// Fallbacks
-	Fallbacks       []string          `json:"fallbacks,omitempty"`
+	Fallbacks []string `json:"fallbacks,omitempty"`
 }
 
 // KiloCapabilities represents model capabilities
 type KiloCapabilities struct {
-	Vision          bool `json:"vision,omitempty"`
-	ImageInput      bool `json:"imageInput,omitempty"`
-	ImageOutput     bool `json:"imageOutput,omitempty"`
-	OCR             bool `json:"ocr,omitempty"`
-	PDF             bool `json:"pdf,omitempty"`
-	Audio           bool `json:"audio,omitempty"`
-	Video           bool `json:"video,omitempty"`
-	Streaming       bool `json:"streaming,omitempty"`
-	FunctionCalls   bool `json:"functionCalls,omitempty"`
-	ToolUse         bool `json:"toolUse,omitempty"`
-	Embeddings      bool `json:"embeddings,omitempty"`
-	CodeExecution   bool `json:"codeExecution,omitempty"`
-	FileUpload      bool `json:"fileUpload,omitempty"`
-	Reasoning       bool `json:"reasoning,omitempty"`
+	Vision        bool `json:"vision,omitempty"`
+	ImageInput    bool `json:"imageInput,omitempty"`
+	ImageOutput   bool `json:"imageOutput,omitempty"`
+	OCR           bool `json:"ocr,omitempty"`
+	PDF           bool `json:"pdf,omitempty"`
+	Audio         bool `json:"audio,omitempty"`
+	Video         bool `json:"video,omitempty"`
+	Streaming     bool `json:"streaming,omitempty"`
+	FunctionCalls bool `json:"functionCalls,omitempty"`
+	ToolUse       bool `json:"toolUse,omitempty"`
+	Embeddings    bool `json:"embeddings,omitempty"`
+	CodeExecution bool `json:"codeExecution,omitempty"`
+	FileUpload    bool `json:"fileUpload,omitempty"`
+	Reasoning     bool `json:"reasoning,omitempty"`
 	// Protocols
-	MCP             bool `json:"mcp,omitempty"`
-	ACP             bool `json:"acp,omitempty"`
-	LSP             bool `json:"lsp,omitempty"`
+	MCP bool `json:"mcp,omitempty"`
+	ACP bool `json:"acp,omitempty"`
+	LSP bool `json:"lsp,omitempty"`
 }
 
 // KiloAgent represents an agent configuration in Kilo Code
 type KiloAgent struct {
-	Model           string          `json:"model"`
-	Provider        string          `json:"provider,omitempty"`
-	SystemPrompt    string          `json:"systemPrompt,omitempty"`
-	Description     string          `json:"description,omitempty"`
-	Temperature     float64         `json:"temperature,omitempty"`
-	MaxTokens       int             `json:"maxTokens,omitempty"`
-	Tools           map[string]bool `json:"tools,omitempty"`
-	Mode            string          `json:"mode,omitempty"` // code, chat, review
-	Color           string          `json:"color,omitempty"`
+	Model        string          `json:"model"`
+	Provider     string          `json:"provider,omitempty"`
+	SystemPrompt string          `json:"systemPrompt,omitempty"`
+	Description  string          `json:"description,omitempty"`
+	Temperature  float64         `json:"temperature,omitempty"`
+	MaxTokens    int             `json:"maxTokens,omitempty"`
+	Tools        map[string]bool `json:"tools,omitempty"`
+	Mode         string          `json:"mode,omitempty"` // code, chat, review
+	Color        string          `json:"color,omitempty"`
 }
 
 // KiloMCP represents MCP server configuration in Kilo Code
@@ -99,26 +99,26 @@ type KiloMCP struct {
 
 // KiloSettings represents global settings for Kilo Code
 type KiloSettings struct {
-	DefaultProvider     string `json:"defaultProvider,omitempty"`
-	DefaultModel        string `json:"defaultModel,omitempty"`
-	DefaultAgent        string `json:"defaultAgent,omitempty"`
-	StreamingEnabled    bool   `json:"streamingEnabled,omitempty"`
-	AutoSave            bool   `json:"autoSave,omitempty"`
-	CompactionEnabled   bool   `json:"compactionEnabled,omitempty"`
-	PruneEnabled        bool   `json:"pruneEnabled,omitempty"`
-	Theme               string `json:"theme,omitempty"`
-	Language            string `json:"language,omitempty"`
-	TelemetryEnabled    bool   `json:"telemetryEnabled,omitempty"`
+	DefaultProvider   string `json:"defaultProvider,omitempty"`
+	DefaultModel      string `json:"defaultModel,omitempty"`
+	DefaultAgent      string `json:"defaultAgent,omitempty"`
+	StreamingEnabled  bool   `json:"streamingEnabled,omitempty"`
+	AutoSave          bool   `json:"autoSave,omitempty"`
+	CompactionEnabled bool   `json:"compactionEnabled,omitempty"`
+	PruneEnabled      bool   `json:"pruneEnabled,omitempty"`
+	Theme             string `json:"theme,omitempty"`
+	Language          string `json:"language,omitempty"`
+	TelemetryEnabled  bool   `json:"telemetryEnabled,omitempty"`
 }
 
 // KiloPermissions represents permission settings
 type KiloPermissions struct {
-	Read      string `json:"read,omitempty"`      // allow, ask, deny
-	Write     string `json:"write,omitempty"`
-	Edit      string `json:"edit,omitempty"`
-	Bash      string `json:"bash,omitempty"`
-	WebFetch  string `json:"webFetch,omitempty"`
-	MCP       string `json:"mcp,omitempty"`
+	Read     string `json:"read,omitempty"` // allow, ask, deny
+	Write    string `json:"write,omitempty"`
+	Edit     string `json:"edit,omitempty"`
+	Bash     string `json:"bash,omitempty"`
+	WebFetch string `json:"webFetch,omitempty"`
+	MCP      string `json:"mcp,omitempty"`
 }
 
 // DebateGroupMember represents a member of the AI debate group
@@ -157,11 +157,11 @@ func GenerateHelixAgentKiloConfig(host string, port int, debateMembers []DebateG
 		Version: "1.0",
 		Providers: map[string]KiloProvider{
 			"helixagent": {
-				Type:    "openai-compatible",
-				Name:    "HelixAgent AI Debate Ensemble",
-				BaseURL: baseURL,
-				APIKey:  os.Getenv("HELIXAGENT_API_KEY"),
-				Timeout: 600000,
+				Type:       "openai-compatible",
+				Name:       "HelixAgent AI Debate Ensemble",
+				BaseURL:    baseURL,
+				APIKey:     os.Getenv("HELIXAGENT_API_KEY"),
+				Timeout:    600000,
 				MaxRetries: 3,
 				Models: []KiloModel{
 					{

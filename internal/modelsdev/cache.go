@@ -9,21 +9,21 @@ import (
 
 // Cache provides in-memory caching for Models.dev data
 type Cache struct {
-	models          map[string]*CachedModel
-	providers       map[string]*CachedProvider
+	models           map[string]*CachedModel
+	providers        map[string]*CachedProvider
 	modelsByProvider map[string][]string // provider ID -> model IDs
 
-	mu              sync.RWMutex
-	config          CacheConfig
+	mu     sync.RWMutex
+	config CacheConfig
 
 	// Statistics
-	hits            int64
-	misses          int64
-	lastRefresh     time.Time
+	hits        int64
+	misses      int64
+	lastRefresh time.Time
 
 	// Cleanup management
-	stopCleanup     chan struct{}
-	cleanupDone     chan struct{}
+	stopCleanup chan struct{}
+	cleanupDone chan struct{}
 }
 
 // NewCache creates a new cache instance

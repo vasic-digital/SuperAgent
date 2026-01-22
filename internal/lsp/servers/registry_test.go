@@ -16,14 +16,14 @@ import (
 
 func TestNewLSPServerRegistry(t *testing.T) {
 	tests := []struct {
-		name               string
-		config             RegistryConfig
-		expectedPathsLen   int
+		name             string
+		config           RegistryConfig
+		expectedPathsLen int
 	}{
 		{
-			name:               "default configuration",
-			config:             RegistryConfig{},
-			expectedPathsLen:   4, // Default search paths
+			name:             "default configuration",
+			config:           RegistryConfig{},
+			expectedPathsLen: 4, // Default search paths
 		},
 		{
 			name: "custom logger",

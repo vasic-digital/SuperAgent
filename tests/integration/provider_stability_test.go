@@ -76,32 +76,33 @@ type StabilityError struct {
 // TestProviderStability_AllProviders tests all configured LLM providers
 func TestProviderStability_AllProviders(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping provider stability tests (acceptable)"); return
+		t.Logf("Short mode - skipping provider stability tests (acceptable)")
+		return
 	}
 
 	providers := []ProviderStabilityConfig{
 		{
-			Name:         "DeepSeek",
-			APIEndpoint:  "https://api.deepseek.com/v1/chat/completions",
-			Model:        "deepseek-chat",
-			APIKeyEnvVar: "DEEPSEEK_API_KEY",
-			Timeout:      60 * time.Second,
+			Name:           "DeepSeek",
+			APIEndpoint:    "https://api.deepseek.com/v1/chat/completions",
+			Model:          "deepseek-chat",
+			APIKeyEnvVar:   "DEEPSEEK_API_KEY",
+			Timeout:        60 * time.Second,
 			ExpectedFields: []string{"id", "choices", "model"},
 		},
 		{
-			Name:         "Mistral",
-			APIEndpoint:  "https://api.mistral.ai/v1/chat/completions",
-			Model:        "mistral-large-latest",
-			APIKeyEnvVar: "MISTRAL_API_KEY",
-			Timeout:      60 * time.Second,
+			Name:           "Mistral",
+			APIEndpoint:    "https://api.mistral.ai/v1/chat/completions",
+			Model:          "mistral-large-latest",
+			APIKeyEnvVar:   "MISTRAL_API_KEY",
+			Timeout:        60 * time.Second,
 			ExpectedFields: []string{"id", "choices", "model"},
 		},
 		{
-			Name:         "Cerebras",
-			APIEndpoint:  "https://api.cerebras.ai/v1/chat/completions",
-			Model:        "llama-3.3-70b",
-			APIKeyEnvVar: "CEREBRAS_API_KEY",
-			Timeout:      60 * time.Second,
+			Name:           "Cerebras",
+			APIEndpoint:    "https://api.cerebras.ai/v1/chat/completions",
+			Model:          "llama-3.3-70b",
+			APIKeyEnvVar:   "CEREBRAS_API_KEY",
+			Timeout:        60 * time.Second,
 			ExpectedFields: []string{"id", "choices", "model"},
 		},
 		// Gemini uses a different API format - skip in direct tests
@@ -180,7 +181,8 @@ func testProviderStability(t *testing.T, provider ProviderStabilityConfig) {
 // TestProviderStability_ErrorHandling tests error handling for providers
 func TestProviderStability_ErrorHandling(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping error handling tests (acceptable)"); return
+		t.Logf("Short mode - skipping error handling tests (acceptable)")
+		return
 	}
 
 	providers := []ProviderStabilityConfig{
@@ -203,7 +205,8 @@ func TestProviderStability_ErrorHandling(t *testing.T) {
 // TestProviderStability_Concurrent tests concurrent requests to providers
 func TestProviderStability_Concurrent(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping concurrent tests (acceptable)"); return
+		t.Logf("Short mode - skipping concurrent tests (acceptable)")
+		return
 	}
 
 	providers := []ProviderStabilityConfig{
@@ -272,7 +275,8 @@ func TestProviderStability_Concurrent(t *testing.T) {
 // TestProviderStability_ResponseTime tests response time for providers
 func TestProviderStability_ResponseTime(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping response time tests (acceptable)"); return
+		t.Logf("Short mode - skipping response time tests (acceptable)")
+		return
 	}
 
 	providers := []ProviderStabilityConfig{
@@ -310,7 +314,8 @@ func TestProviderStability_ResponseTime(t *testing.T) {
 // TestHelixAgent_ProviderIntegration tests HelixAgent's integration with providers
 func TestHelixAgent_ProviderIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping HelixAgent integration test (acceptable)"); return
+		t.Logf("Short mode - skipping HelixAgent integration test (acceptable)")
+		return
 	}
 
 	helixagentURL := os.Getenv("HELIXAGENT_URL")
@@ -379,7 +384,8 @@ func TestHelixAgent_ProviderIntegration(t *testing.T) {
 		}
 
 		if len(chatResp.Choices) == 0 {
-			t.Logf("HelixAgent returned no choices - service may be unavailable (acceptable)"); return
+			t.Logf("HelixAgent returned no choices - service may be unavailable (acceptable)")
+			return
 		}
 
 		t.Logf("HelixAgent responded in %v: %s", elapsed, truncateString(chatResp.Choices[0].Message.Content, 100))

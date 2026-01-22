@@ -541,13 +541,13 @@ func (p *PostgresAdapter) ListIndexes(ctx context.Context, schema, table string)
 
 // DatabaseStats represents database statistics
 type DatabaseStats struct {
-	DatabaseName    string    `json:"database_name"`
-	Size            string    `json:"size"`
-	Connections     int       `json:"connections"`
-	ActiveQueries   int       `json:"active_queries"`
-	TransactionID   int64     `json:"transaction_id"`
-	LastVacuum      time.Time `json:"last_vacuum,omitempty"`
-	LastAutoVacuum  time.Time `json:"last_auto_vacuum,omitempty"`
+	DatabaseName   string    `json:"database_name"`
+	Size           string    `json:"size"`
+	Connections    int       `json:"connections"`
+	ActiveQueries  int       `json:"active_queries"`
+	TransactionID  int64     `json:"transaction_id"`
+	LastVacuum     time.Time `json:"last_vacuum,omitempty"`
+	LastAutoVacuum time.Time `json:"last_auto_vacuum,omitempty"`
 }
 
 // GetStats returns database statistics

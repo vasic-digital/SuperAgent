@@ -7,23 +7,23 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/models"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/llm"
-	"dev.helix.agent/internal/models"
 )
 
 // debateMockLLMProvider implements llm.LLMProvider for testing
 type debateMockLLMProvider struct {
-	name           string
-	response       *models.LLMResponse
-	err            error
-	delay          time.Duration
-	callCount      int
-	mu             sync.Mutex
-	completeFunc   func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error)
-	capabilities   *models.ProviderCapabilities
+	name         string
+	response     *models.LLMResponse
+	err          error
+	delay        time.Duration
+	callCount    int
+	mu           sync.Mutex
+	completeFunc func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error)
+	capabilities *models.ProviderCapabilities
 }
 
 func newDebateMockProvider(name string, response *models.LLMResponse) *debateMockLLMProvider {

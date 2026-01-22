@@ -22,18 +22,18 @@ type MiroConfig struct {
 
 // MiroBoard represents a Miro board.
 type MiroBoard struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Description     string            `json:"description"`
-	CreatedAt       time.Time         `json:"createdAt"`
-	ModifiedAt      time.Time         `json:"modifiedAt"`
-	ViewLink        string            `json:"viewLink"`
-	AccessLink      string            `json:"accessLink"`
-	Picture         *MiroPicture      `json:"picture,omitempty"`
-	Team            *MiroTeam         `json:"team,omitempty"`
-	Owner           *MiroUser         `json:"owner,omitempty"`
-	CurrentUserRole string            `json:"currentUserMembership,omitempty"`
-	Policy          *MiroBoardPolicy  `json:"policy,omitempty"`
+	ID              string             `json:"id"`
+	Name            string             `json:"name"`
+	Description     string             `json:"description"`
+	CreatedAt       time.Time          `json:"createdAt"`
+	ModifiedAt      time.Time          `json:"modifiedAt"`
+	ViewLink        string             `json:"viewLink"`
+	AccessLink      string             `json:"accessLink"`
+	Picture         *MiroPicture       `json:"picture,omitempty"`
+	Team            *MiroTeam          `json:"team,omitempty"`
+	Owner           *MiroUser          `json:"owner,omitempty"`
+	CurrentUserRole string             `json:"currentUserMembership,omitempty"`
+	Policy          *MiroBoardPolicy   `json:"policy,omitempty"`
 	SharingPolicy   *MiroSharingPolicy `json:"sharingPolicy,omitempty"`
 }
 
@@ -186,15 +186,15 @@ type MiroConnectorEnd struct {
 
 // MiroConnectorStyle contains connector styling.
 type MiroConnectorStyle struct {
-	Color       string  `json:"color,omitempty"`
-	EndStrokeCap string `json:"endStrokeCap,omitempty"`
-	FontFamily  string  `json:"fontFamily,omitempty"`
-	FontSize    int     `json:"fontSize,omitempty"`
-	StartStrokeCap string `json:"startStrokeCap,omitempty"`
-	StrokeColor string  `json:"strokeColor,omitempty"`
-	StrokeStyle string  `json:"strokeStyle,omitempty"`
-	StrokeWidth float64 `json:"strokeWidth,omitempty"`
-	TextOrientation string `json:"textOrientation,omitempty"`
+	Color           string  `json:"color,omitempty"`
+	EndStrokeCap    string  `json:"endStrokeCap,omitempty"`
+	FontFamily      string  `json:"fontFamily,omitempty"`
+	FontSize        int     `json:"fontSize,omitempty"`
+	StartStrokeCap  string  `json:"startStrokeCap,omitempty"`
+	StrokeColor     string  `json:"strokeColor,omitempty"`
+	StrokeStyle     string  `json:"strokeStyle,omitempty"`
+	StrokeWidth     float64 `json:"strokeWidth,omitempty"`
+	TextOrientation string  `json:"textOrientation,omitempty"`
 }
 
 // MiroCaption represents a caption on a connector.
@@ -243,21 +243,21 @@ type MiroTextData struct {
 
 // MiroTextStyle contains text styling.
 type MiroTextStyle struct {
-	Color      string `json:"color,omitempty"`
-	FillColor  string `json:"fillColor,omitempty"`
+	Color       string  `json:"color,omitempty"`
+	FillColor   string  `json:"fillColor,omitempty"`
 	FillOpacity float64 `json:"fillOpacity,omitempty"`
-	FontFamily string `json:"fontFamily,omitempty"`
-	FontSize   int    `json:"fontSize,omitempty"`
-	TextAlign  string `json:"textAlign,omitempty"`
+	FontFamily  string  `json:"fontFamily,omitempty"`
+	FontSize    int     `json:"fontSize,omitempty"`
+	TextAlign   string  `json:"textAlign,omitempty"`
 }
 
 // MiroImage represents an image item.
 type MiroImage struct {
-	ID       string          `json:"id"`
-	Type     string          `json:"type"`
-	Data     *MiroImageData  `json:"data"`
-	Position *MiroPosition   `json:"position,omitempty"`
-	Geometry *MiroGeometry   `json:"geometry,omitempty"`
+	ID       string         `json:"id"`
+	Type     string         `json:"type"`
+	Data     *MiroImageData `json:"data"`
+	Position *MiroPosition  `json:"position,omitempty"`
+	Geometry *MiroGeometry  `json:"geometry,omitempty"`
 }
 
 // MiroImageData contains image metadata.
@@ -291,11 +291,11 @@ type MiroCardStyle struct {
 
 // MiroAdapter implements ServerAdapter for Miro API.
 type MiroAdapter struct {
-	mu          sync.RWMutex
-	config      MiroConfig
-	client      *http.Client
-	connected   bool
-	baseURL     string
+	mu        sync.RWMutex
+	config    MiroConfig
+	client    *http.Client
+	connected bool
+	baseURL   string
 }
 
 // NewMiroAdapter creates a new Miro adapter.

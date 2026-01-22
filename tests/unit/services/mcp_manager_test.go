@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"dev.helix.agent/internal/services"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"dev.helix.agent/internal/services"
 )
 
 func TestMCPManager_Basic(t *testing.T) {

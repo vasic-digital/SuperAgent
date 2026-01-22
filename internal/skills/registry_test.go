@@ -186,8 +186,8 @@ func TestRegistry_Concurrent(t *testing.T) {
 	// Pre-populate
 	for i := 0; i < 100; i++ {
 		skill := createTestSkill(
-			"skill-" + string(rune('a'+i%26)),
-			"category-" + string(rune('a'+i%5)),
+			"skill-"+string(rune('a'+i%26)),
+			"category-"+string(rune('a'+i%5)),
 			[]string{"trigger-" + string(rune('a'+i%26))},
 		)
 		registry.RegisterSkill(skill)
@@ -217,7 +217,7 @@ func TestRegistry_Concurrent(t *testing.T) {
 					return
 				default:
 					skill := createTestSkill(
-						"concurrent-skill-" + string(rune('0'+id)) + "-" + string(rune('0'+j)),
+						"concurrent-skill-"+string(rune('0'+id))+"-"+string(rune('0'+j)),
 						"concurrent-category",
 						[]string{"concurrent-trigger"},
 					)

@@ -384,7 +384,7 @@ func (h *RAGHandler) SearchWithExpansion(c *gin.Context) {
 
 // ReRankRequest represents a re-ranking request
 type ReRankRequest struct {
-	Query   string                    `json:"query" binding:"required"`
+	Query   string                     `json:"query" binding:"required"`
 	Results []rag.PipelineSearchResult `json:"results" binding:"required"`
 }
 
@@ -427,7 +427,7 @@ func (h *RAGHandler) ReRank(c *gin.Context) {
 
 // CompressRequest represents a context compression request
 type CompressRequest struct {
-	Query   string                    `json:"query" binding:"required"`
+	Query   string                     `json:"query" binding:"required"`
 	Results []rag.PipelineSearchResult `json:"results" binding:"required"`
 }
 

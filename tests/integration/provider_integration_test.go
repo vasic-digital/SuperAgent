@@ -27,19 +27,19 @@ import (
 // MockLLMProvider is a mock implementation of llm.LLMProvider for testing
 type MockLLMProvider struct {
 	mock.Mock
-	name               string
-	healthCheckError   error
-	completeResponse   *models.LLMResponse
-	completeError      error
-	capabilities       *models.ProviderCapabilities
-	configValid        bool
-	configErrors       []string
-	completeCalls      int64
-	streamCalls        int64
-	healthCheckCalls   int64
-	mu                 sync.Mutex
-	responseDelay      time.Duration
-	streamResponses    []*models.LLMResponse
+	name             string
+	healthCheckError error
+	completeResponse *models.LLMResponse
+	completeError    error
+	capabilities     *models.ProviderCapabilities
+	configValid      bool
+	configErrors     []string
+	completeCalls    int64
+	streamCalls      int64
+	healthCheckCalls int64
+	mu               sync.Mutex
+	responseDelay    time.Duration
+	streamResponses  []*models.LLMResponse
 }
 
 // NewMockLLMProvider creates a new mock provider with the given name
@@ -292,8 +292,8 @@ func TestProviderRegistry_AllProvidersImplementInterface(t *testing.T) {
 	// Verify all interface methods work
 	ctx := context.Background()
 	req := &models.LLMRequest{
-		ID:      "test-req",
-		Prompt:  "Hello",
+		ID:       "test-req",
+		Prompt:   "Hello",
 		Messages: []models.Message{{Role: "user", Content: "Hello"}},
 	}
 

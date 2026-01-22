@@ -38,9 +38,9 @@ const (
 	ANSIBrightWhite   = "\033[97m"
 
 	// Dim/Gray for debate phase content
-	ANSIDim      = "\033[2m"
-	ANSIBold     = "\033[1m"
-	ANSIItalic   = "\033[3m"
+	ANSIDim       = "\033[2m"
+	ANSIBold      = "\033[1m"
+	ANSIItalic    = "\033[3m"
 	ANSIUnderline = "\033[4m"
 
 	// Background Colors
@@ -115,14 +115,14 @@ func FormatRequestIndicator(position services.DebateTeamPosition, role services.
 	roleName := getRoleName(role)
 
 	return fmt.Sprintf("%s%s[%s: %s]%s %s<---%s Request sent to %s%s%s (%s)\n",
-		ANSIDim,                    // Dim for phase content
-		roleColor,                  // Role color
-		avatar,                     // [A], [P], [C], [S], [M]
-		roleName,                   // Analyst, Proposer, etc.
+		ANSIDim,   // Dim for phase content
+		roleColor, // Role color
+		avatar,    // [A], [P], [C], [S], [M]
+		roleName,  // Analyst, Proposer, etc.
 		ANSIReset,
-		ANSIBrightBlack,           // Gray arrow
+		ANSIBrightBlack, // Gray arrow
 		ANSIReset,
-		ANSIBold,                   // Bold provider name
+		ANSIBold, // Bold provider name
 		provider,
 		ANSIReset,
 		model,
@@ -138,15 +138,15 @@ func FormatResponseIndicator(position services.DebateTeamPosition, role services
 	timeStr := formatDuration(responseTime)
 
 	return fmt.Sprintf("%s%s[%s: %s]%s %s--->%s %s(%s)%s ",
-		ANSIDim,                    // Dim for phase content
-		roleColor,                  // Role color
-		avatar,                     // [A], [P], [C], [S], [M]
-		roleName,                   // Analyst, Proposer, etc.
+		ANSIDim,   // Dim for phase content
+		roleColor, // Role color
+		avatar,    // [A], [P], [C], [S], [M]
+		roleName,  // Analyst, Proposer, etc.
 		ANSIReset,
-		ANSIBrightBlack,           // Gray arrow
+		ANSIBrightBlack, // Gray arrow
 		ANSIReset,
-		ANSIDim+ANSIBrightBlack,   // Darker shade for timing
-		timeStr,                    // e.g., "450 ms" or "1.2 s"
+		ANSIDim+ANSIBrightBlack, // Darker shade for timing
+		timeStr,                 // e.g., "450 ms" or "1.2 s"
 		ANSIReset,
 	)
 }
@@ -160,19 +160,19 @@ func FormatFallbackIndicator(position services.DebateTeamPosition, role services
 	timeStr := formatDuration(responseTime)
 
 	return fmt.Sprintf("%s%s[%s: %s]%s %s--->%s [%sFallback: %s%s] %s--->%s %s(%s)%s ",
-		ANSIDim,                    // Dim for phase content
-		roleColor,                  // Role color
-		avatar,                     // [A], [P], [C], [S], [M]
-		roleName,                   // Analyst, Proposer, etc.
+		ANSIDim,   // Dim for phase content
+		roleColor, // Role color
+		avatar,    // [A], [P], [C], [S], [M]
+		roleName,  // Analyst, Proposer, etc.
 		ANSIReset,
-		ANSIBrightBlack,           // Gray arrow
+		ANSIBrightBlack, // Gray arrow
 		ANSIReset,
-		ANSIYellow,                // Yellow for fallback
+		ANSIYellow, // Yellow for fallback
 		fallbackProvider,
 		ANSIReset,
-		ANSIBrightBlack,           // Gray arrow
+		ANSIBrightBlack, // Gray arrow
 		ANSIReset,
-		ANSIDim+ANSIBrightBlack,   // Darker shade for timing
+		ANSIDim+ANSIBrightBlack, // Darker shade for timing
 		timeStr,
 		ANSIReset,
 	)

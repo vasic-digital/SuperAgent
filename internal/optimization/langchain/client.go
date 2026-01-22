@@ -53,10 +53,10 @@ type DecomposeRequest struct {
 
 // Subtask represents a decomposed subtask.
 type Subtask struct {
-	ID           int      `json:"id"`
-	Description  string   `json:"description"`
-	Dependencies []int    `json:"dependencies"`
-	Complexity   string   `json:"complexity"`
+	ID           int    `json:"id"`
+	Description  string `json:"description"`
+	Dependencies []int  `json:"dependencies"`
+	Complexity   string `json:"complexity"`
 }
 
 // DecomposeResponse represents the decomposition result.

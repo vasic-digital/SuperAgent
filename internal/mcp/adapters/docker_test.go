@@ -223,13 +223,13 @@ func (m *MockDockerClient) SystemInfo(ctx context.Context) (*SystemInfo, error) 
 		return nil, assert.AnError
 	}
 	return &SystemInfo{
-		Containers:      5,
+		Containers:        5,
 		ContainersRunning: 3,
-		Images:          10,
-		ServerVersion:   "24.0.0",
-		OperatingSystem: "Docker Desktop",
-		NCPU:            8,
-		MemTotal:        16000000000,
+		Images:            10,
+		ServerVersion:     "24.0.0",
+		OperatingSystem:   "Docker Desktop",
+		NCPU:              8,
+		MemTotal:          16000000000,
 	}, nil
 }
 
@@ -436,13 +436,13 @@ func TestDockerAdapter_ErrorHandling(t *testing.T) {
 
 func TestContainerTypes(t *testing.T) {
 	container := Container{
-		ID:      "abc123def456789012345678901234567890123456789012345678901234",
-		Names:   []string{"/web-app"},
-		Image:   "nginx:latest",
-		State:   "running",
-		Status:  "Up 2 hours",
-		Ports:   []Port{{PrivatePort: 80, PublicPort: 8080, Type: "tcp"}},
-		Labels:  map[string]string{"env": "production"},
+		ID:     "abc123def456789012345678901234567890123456789012345678901234",
+		Names:  []string{"/web-app"},
+		Image:  "nginx:latest",
+		State:  "running",
+		Status: "Up 2 hours",
+		Ports:  []Port{{PrivatePort: 80, PublicPort: 8080, Type: "tcp"}},
+		Labels: map[string]string{"env": "production"},
 	}
 
 	assert.Equal(t, "abc123def456789012345678901234567890123456789012345678901234", container.ID)

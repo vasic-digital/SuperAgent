@@ -9,28 +9,28 @@ import (
 
 // TestCase represents an LLM test case
 type TestCase struct {
-	ID            string                 `json:"id"`
-	Name          string                 `json:"name"`
-	Description   string                 `json:"description,omitempty"`
-	Input         string                 `json:"input"`
-	ExpectedOutput string                `json:"expected_output,omitempty"`
-	Context       []string               `json:"context,omitempty"`
-	GroundTruth   string                 `json:"ground_truth,omitempty"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-	Tags          []string               `json:"tags,omitempty"`
+	ID             string                 `json:"id"`
+	Name           string                 `json:"name"`
+	Description    string                 `json:"description,omitempty"`
+	Input          string                 `json:"input"`
+	ExpectedOutput string                 `json:"expected_output,omitempty"`
+	Context        []string               `json:"context,omitempty"`
+	GroundTruth    string                 `json:"ground_truth,omitempty"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty"`
+	Tags           []string               `json:"tags,omitempty"`
 }
 
 // TestResult contains the result of running a test case
 type TestResult struct {
-	TestCase      *TestCase         `json:"test_case"`
-	ActualOutput  string            `json:"actual_output"`
-	Passed        bool              `json:"passed"`
-	Score         float64           `json:"score"`
-	MetricScores  map[string]float64 `json:"metric_scores"`
-	Errors        []string          `json:"errors,omitempty"`
-	Duration      time.Duration     `json:"duration"`
-	Timestamp     time.Time         `json:"timestamp"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	TestCase     *TestCase              `json:"test_case"`
+	ActualOutput string                 `json:"actual_output"`
+	Passed       bool                   `json:"passed"`
+	Score        float64                `json:"score"`
+	MetricScores map[string]float64     `json:"metric_scores"`
+	Errors       []string               `json:"errors,omitempty"`
+	Duration     time.Duration          `json:"duration"`
+	Timestamp    time.Time              `json:"timestamp"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // TestSuite contains a collection of test cases
@@ -70,15 +70,15 @@ func DefaultTestConfig() *TestConfig {
 
 // TestReport contains the results of running a test suite
 type TestReport struct {
-	Suite         *TestSuite    `json:"suite"`
-	Results       []*TestResult `json:"results"`
-	TotalTests    int           `json:"total_tests"`
-	PassedTests   int           `json:"passed_tests"`
-	FailedTests   int           `json:"failed_tests"`
-	AverageScore  float64       `json:"average_score"`
+	Suite          *TestSuite         `json:"suite"`
+	Results        []*TestResult      `json:"results"`
+	TotalTests     int                `json:"total_tests"`
+	PassedTests    int                `json:"passed_tests"`
+	FailedTests    int                `json:"failed_tests"`
+	AverageScore   float64            `json:"average_score"`
 	MetricAverages map[string]float64 `json:"metric_averages"`
-	Duration      time.Duration `json:"duration"`
-	Timestamp     time.Time     `json:"timestamp"`
+	Duration       time.Duration      `json:"duration"`
+	Timestamp      time.Time          `json:"timestamp"`
 }
 
 // MetricType represents the type of evaluation metric
@@ -92,28 +92,28 @@ const (
 	MetricAnswerConsistency  MetricType = "answer_consistency"
 
 	// RAG Metrics
-	MetricContextPrecision   MetricType = "context_precision"
-	MetricContextRecall      MetricType = "context_recall"
-	MetricContextRelevancy   MetricType = "context_relevancy"
-	MetricFaithfulness       MetricType = "faithfulness"
+	MetricContextPrecision MetricType = "context_precision"
+	MetricContextRecall    MetricType = "context_recall"
+	MetricContextRelevancy MetricType = "context_relevancy"
+	MetricFaithfulness     MetricType = "faithfulness"
 
 	// Safety Metrics
-	MetricToxicity           MetricType = "toxicity"
-	MetricBias               MetricType = "bias"
-	MetricHarmfulness        MetricType = "harmfulness"
+	MetricToxicity    MetricType = "toxicity"
+	MetricBias        MetricType = "bias"
+	MetricHarmfulness MetricType = "harmfulness"
 
 	// Quality Metrics
-	MetricFluency            MetricType = "fluency"
-	MetricCoherence          MetricType = "coherence"
-	MetricConciseness        MetricType = "conciseness"
+	MetricFluency     MetricType = "fluency"
+	MetricCoherence   MetricType = "coherence"
+	MetricConciseness MetricType = "conciseness"
 
 	// Task-Specific Metrics
-	MetricSummarization      MetricType = "summarization"
-	MetricHallucination      MetricType = "hallucination"
-	MetricFactualAccuracy    MetricType = "factual_accuracy"
+	MetricSummarization   MetricType = "summarization"
+	MetricHallucination   MetricType = "hallucination"
+	MetricFactualAccuracy MetricType = "factual_accuracy"
 
 	// Custom
-	MetricCustom             MetricType = "custom"
+	MetricCustom MetricType = "custom"
 )
 
 // Metric evaluates LLM output
@@ -139,9 +139,9 @@ type MetricInput struct {
 
 // MetricOutput contains the result of metric evaluation
 type MetricOutput struct {
-	Score       float64                `json:"score"`
-	Reason      string                 `json:"reason,omitempty"`
-	Details     map[string]interface{} `json:"details,omitempty"`
+	Score   float64                `json:"score"`
+	Reason  string                 `json:"reason,omitempty"`
+	Details map[string]interface{} `json:"details,omitempty"`
 }
 
 // LLMEvaluator uses LLMs to evaluate responses
@@ -221,40 +221,40 @@ type BenchmarkConfig struct {
 
 // BenchmarkResult contains benchmark results
 type BenchmarkResult struct {
-	Name           string                 `json:"name"`
-	Iterations     int                    `json:"iterations"`
-	MeanLatency    time.Duration          `json:"mean_latency"`
-	P50Latency     time.Duration          `json:"p50_latency"`
-	P90Latency     time.Duration          `json:"p90_latency"`
-	P99Latency     time.Duration          `json:"p99_latency"`
-	TotalTokens    int                    `json:"total_tokens"`
-	TokensPerSecond float64               `json:"tokens_per_second"`
-	TotalCost      float64                `json:"total_cost"`
-	Errors         int                    `json:"errors"`
-	Metadata       map[string]interface{} `json:"metadata,omitempty"`
+	Name            string                 `json:"name"`
+	Iterations      int                    `json:"iterations"`
+	MeanLatency     time.Duration          `json:"mean_latency"`
+	P50Latency      time.Duration          `json:"p50_latency"`
+	P90Latency      time.Duration          `json:"p90_latency"`
+	P99Latency      time.Duration          `json:"p99_latency"`
+	TotalTokens     int                    `json:"total_tokens"`
+	TokensPerSecond float64                `json:"tokens_per_second"`
+	TotalCost       float64                `json:"total_cost"`
+	Errors          int                    `json:"errors"`
+	Metadata        map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // ConversationTest represents a multi-turn conversation test
 type ConversationTest struct {
-	ID          string                  `json:"id"`
-	Name        string                  `json:"name"`
-	Turns       []*ConversationTurn     `json:"turns"`
-	Assertions  []*ConversationAssertion `json:"assertions"`
+	ID         string                   `json:"id"`
+	Name       string                   `json:"name"`
+	Turns      []*ConversationTurn      `json:"turns"`
+	Assertions []*ConversationAssertion `json:"assertions"`
 }
 
 // ConversationTurn represents a single turn in a conversation
 type ConversationTurn struct {
-	Role      string `json:"role"` // user, assistant
-	Content   string `json:"content"`
-	Expected  string `json:"expected,omitempty"`
+	Role     string `json:"role"` // user, assistant
+	Content  string `json:"content"`
+	Expected string `json:"expected,omitempty"`
 }
 
 // ConversationAssertion asserts something about the conversation
 type ConversationAssertion struct {
-	Type       string `json:"type"` // contains, not_contains, regex, custom
-	TurnIndex  int    `json:"turn_index"`
-	Value      string `json:"value"`
-	Message    string `json:"message,omitempty"`
+	Type      string `json:"type"` // contains, not_contains, regex, custom
+	TurnIndex int    `json:"turn_index"`
+	Value     string `json:"value"`
+	Message   string `json:"message,omitempty"`
 }
 
 // A/B Test Types
@@ -281,11 +281,11 @@ type ABVariant struct {
 
 // ABTestResult contains A/B test results
 type ABTestResult struct {
-	Config       *ABTestConfig              `json:"config"`
+	Config         *ABTestConfig             `json:"config"`
 	VariantResults map[string]*VariantResult `json:"variant_results"`
-	Winner       string                     `json:"winner,omitempty"`
-	Significant  bool                       `json:"significant"`
-	PValue       float64                    `json:"p_value"`
+	Winner         string                    `json:"winner,omitempty"`
+	Significant    bool                      `json:"significant"`
+	PValue         float64                   `json:"p_value"`
 }
 
 // VariantResult contains results for a single variant

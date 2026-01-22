@@ -7,16 +7,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/models"
+	"github.com/sirupsen/logrus"
 )
 
 // LLMIntentClassifier uses actual LLMs to classify user intent
 // NO HARDCODING - Pure AI semantic understanding
 type LLMIntentClassifier struct {
-	providerRegistry *ProviderRegistry
-	logger           *logrus.Logger
+	providerRegistry   *ProviderRegistry
+	logger             *logrus.Logger
 	fallbackClassifier *IntentClassifier // Fallback if LLM unavailable
 }
 
@@ -31,11 +31,11 @@ func NewLLMIntentClassifier(registry *ProviderRegistry, logger *logrus.Logger) *
 
 // LLMIntentResponse is the structured response from the LLM
 type LLMIntentResponse struct {
-	Intent           string  `json:"intent"`           // "confirmation", "refusal", "question", "request", "clarification", "unclear"
-	Confidence       float64 `json:"confidence"`       // 0.0 to 1.0
-	IsActionable     bool    `json:"is_actionable"`    // Should we proceed with action?
-	ShouldProceed    bool    `json:"should_proceed"`   // Clear signal to execute
-	Reasoning        string  `json:"reasoning"`        // Explanation of classification
+	Intent           string   `json:"intent"`            // "confirmation", "refusal", "question", "request", "clarification", "unclear"
+	Confidence       float64  `json:"confidence"`        // 0.0 to 1.0
+	IsActionable     bool     `json:"is_actionable"`     // Should we proceed with action?
+	ShouldProceed    bool     `json:"should_proceed"`    // Clear signal to execute
+	Reasoning        string   `json:"reasoning"`         // Explanation of classification
 	DetectedElements []string `json:"detected_elements"` // What semantic elements were found
 }
 
@@ -103,11 +103,11 @@ func (lic *LLMIntentClassifier) getClassificationProvider() (llm.LLMProvider, er
 
 	// Try fast providers first (in order of preference for classification)
 	preferredProviders := []string{
-		"cerebras",   // Very fast
-		"mistral",    // Fast
-		"deepseek",   // Fast
-		"zen",        // Free
-		"claude",     // Reliable
+		"cerebras", // Very fast
+		"mistral",  // Fast
+		"deepseek", // Fast
+		"zen",      // Free
+		"claude",   // Reliable
 	}
 
 	for _, name := range preferredProviders {
@@ -299,9 +299,9 @@ type CachedClassification struct {
 
 // IntentClassificationCache provides caching for intent classification
 type IntentClassificationCache struct {
-	cache    map[string]*CachedClassification
-	maxSize  int
-	ttl      time.Duration
+	cache   map[string]*CachedClassification
+	maxSize int
+	ttl     time.Duration
 }
 
 // NewIntentClassificationCache creates a new cache

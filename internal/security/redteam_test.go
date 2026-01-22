@@ -529,8 +529,8 @@ func TestDeepTeamRedTeamer_GenerateMitigations(t *testing.T) {
 	rt := NewDeepTeamRedTeamer(nil, nil)
 
 	testCases := []struct {
-		attackType     AttackType
-		expectedCount  int
+		attackType    AttackType
+		expectedCount int
 	}{
 		{AttackTypeDirectPromptInjection, 4},
 		{AttackTypeJailbreak, 4},
@@ -584,7 +584,7 @@ func TestRedTeamReport_Scores(t *testing.T) {
 
 	t.Run("calculate scores with no attacks", func(t *testing.T) {
 		report := &RedTeamReport{
-			TotalAttacks: 0,
+			TotalAttacks:  0,
 			OWASPCoverage: make(map[OWASPCategory]*CategoryScore),
 		}
 		rt.calculateScores(report)

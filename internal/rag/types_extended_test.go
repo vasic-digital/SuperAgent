@@ -242,12 +242,12 @@ func TestHybridConfig_AllFields(t *testing.T) {
 
 func TestQdrantEnhancedConfig_AllFields(t *testing.T) {
 	config := &QdrantEnhancedConfig{
-		DenseWeight:        0.7,
-		SparseWeight:       0.3,
+		DenseWeight:         0.7,
+		SparseWeight:        0.3,
 		UseDebateEvaluation: true,
-		DebateTopK:         10,
-		FusionMethod:       FusionWeighted,
-		RRFK:               50.0,
+		DebateTopK:          10,
+		FusionMethod:        FusionWeighted,
+		RRFK:                50.0,
 	}
 
 	assert.Equal(t, 0.7, config.DenseWeight)

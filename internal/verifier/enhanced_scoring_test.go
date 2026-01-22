@@ -124,10 +124,10 @@ func TestEnhancedScoringService_CalculateCodeQualityScore(t *testing.T) {
 	svc := NewEnhancedScoringService(nil)
 
 	tests := []struct {
-		name          string
-		modelID       string
-		testResults   map[string]bool
-		minExpected   float64
+		name        string
+		modelID     string
+		testResults map[string]bool
+		minExpected float64
 	}{
 		{"coder model", "deepseek-coder", nil, 9.0},
 		{"codestral model", "codestral-latest", nil, 9.0},
@@ -298,21 +298,21 @@ func TestEnhancedScoringService_GetTopScoringModels(t *testing.T) {
 
 	// Add some cached results
 	svc.cache["provider-a:model-1"] = &EnhancedScoringResult{
-		ModelID:       "model-1",
-		Provider:      "provider-a",
-		OverallScore:  8.5,
+		ModelID:        "model-1",
+		Provider:       "provider-a",
+		OverallScore:   8.5,
 		DiversityBonus: 0.2,
 	}
 	svc.cache["provider-b:model-2"] = &EnhancedScoringResult{
-		ModelID:       "model-2",
-		Provider:      "provider-b",
-		OverallScore:  9.0,
+		ModelID:        "model-2",
+		Provider:       "provider-b",
+		OverallScore:   9.0,
 		DiversityBonus: 0.5,
 	}
 	svc.cache["provider-c:model-3"] = &EnhancedScoringResult{
-		ModelID:       "model-3",
-		Provider:      "provider-c",
-		OverallScore:  7.5,
+		ModelID:        "model-3",
+		Provider:       "provider-c",
+		OverallScore:   7.5,
 		DiversityBonus: 0.5,
 	}
 

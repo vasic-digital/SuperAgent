@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"dev.helix.agent/internal/config"
-	"dev.helix.agent/internal/services"
 )
 
 // TestMCPHandler_MCPCapabilities_Disabled tests MCP capabilities when disabled

@@ -89,22 +89,22 @@ func getAvailableProviders(t *testing.T) []EnsembleProviderConfig {
 
 // EnsembleConfig represents HelixAgent ensemble configuration
 type EnsembleConfig struct {
-	Strategy         string   `json:"strategy,omitempty"`
-	Providers        []string `json:"providers,omitempty"`
-	ConsensusThreshold float64 `json:"consensus_threshold,omitempty"`
-	MaxProviders     int      `json:"max_providers,omitempty"`
-	Timeout          int      `json:"timeout_ms,omitempty"`
+	Strategy           string   `json:"strategy,omitempty"`
+	Providers          []string `json:"providers,omitempty"`
+	ConsensusThreshold float64  `json:"consensus_threshold,omitempty"`
+	MaxProviders       int      `json:"max_providers,omitempty"`
+	Timeout            int      `json:"timeout_ms,omitempty"`
 }
 
 // ChatRequestWithEnsemble extends the chat request with ensemble config
 type ChatRequestWithEnsemble struct {
-	Model          string           `json:"model"`
-	Messages       []OpenAIMessage  `json:"messages"`
-	MaxTokens      int              `json:"max_tokens,omitempty"`
-	Temperature    float64          `json:"temperature,omitempty"`
-	Stream         bool             `json:"stream,omitempty"`
-	EnsembleConfig *EnsembleConfig  `json:"ensemble_config,omitempty"`
-	ForceProvider  string           `json:"force_provider,omitempty"`
+	Model          string          `json:"model"`
+	Messages       []OpenAIMessage `json:"messages"`
+	MaxTokens      int             `json:"max_tokens,omitempty"`
+	Temperature    float64         `json:"temperature,omitempty"`
+	Stream         bool            `json:"stream,omitempty"`
+	EnsembleConfig *EnsembleConfig `json:"ensemble_config,omitempty"`
+	ForceProvider  string          `json:"force_provider,omitempty"`
 }
 
 // TestEnsembleStrategies tests different ensemble voting strategies
@@ -198,7 +198,8 @@ func TestProviderCombinations(t *testing.T) {
 	}
 
 	if len(availableProviders) < 2 {
-		t.Logf("Need at least 2 providers configured for combination tests (acceptable)"); return
+		t.Logf("Need at least 2 providers configured for combination tests (acceptable)")
+		return
 	}
 
 	// Test pairs of providers
@@ -381,7 +382,8 @@ func TestEnsembleStreaming(t *testing.T) {
 		}
 
 		if availableProvider == nil {
-			t.Logf("No providers available (acceptable)"); return
+			t.Logf("No providers available (acceptable)")
+			return
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -636,7 +638,8 @@ func TestRateLimitHandling(t *testing.T) {
 			success, rateLimited, providerUnavailable, serverError, other)
 		// If all providers are unavailable, that's a valid test outcome
 		if providerUnavailable == numRequests || serverError == numRequests {
-			t.Logf("All providers unavailable or errors (acceptable)"); return
+			t.Logf("All providers unavailable or errors (acceptable)")
+			return
 		}
 		// Accept any reasonable outcome - the test verifies the server doesn't crash
 		assert.True(t, success > 0 || providerUnavailable > 0 || serverError > 0,
@@ -704,7 +707,8 @@ func TestModelDiscovery(t *testing.T) {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			t.Logf("Could not get models list (acceptable)"); return
+			t.Logf("Could not get models list (acceptable)")
+			return
 		}
 
 		var modelsResp OpenAIModelsResponse
@@ -815,7 +819,8 @@ func TestProviderHealthChecks(t *testing.T) {
 // TestDeepSeekSpecific tests DeepSeek-specific features
 func TestDeepSeekSpecific(t *testing.T) {
 	if os.Getenv("DEEPSEEK_API_KEY") == "" {
-		t.Logf("DEEPSEEK_API_KEY not set (acceptable)"); return
+		t.Logf("DEEPSEEK_API_KEY not set (acceptable)")
+		return
 	}
 
 	config := loadTestConfig(t)
@@ -857,7 +862,8 @@ func TestDeepSeekSpecific(t *testing.T) {
 // TestGeminiSpecific tests Gemini-specific features
 func TestGeminiSpecific(t *testing.T) {
 	if os.Getenv("GEMINI_API_KEY") == "" {
-		t.Logf("GEMINI_API_KEY not set (acceptable)"); return
+		t.Logf("GEMINI_API_KEY not set (acceptable)")
+		return
 	}
 
 	config := loadTestConfig(t)
@@ -899,7 +905,8 @@ func TestGeminiSpecific(t *testing.T) {
 // TestOpenRouterSpecific tests OpenRouter-specific features
 func TestOpenRouterSpecific(t *testing.T) {
 	if os.Getenv("OPENROUTER_API_KEY") == "" {
-		t.Logf("OPENROUTER_API_KEY not set (acceptable)"); return
+		t.Logf("OPENROUTER_API_KEY not set (acceptable)")
+		return
 	}
 
 	config := loadTestConfig(t)

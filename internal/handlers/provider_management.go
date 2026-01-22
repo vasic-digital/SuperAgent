@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"time"
 
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"dev.helix.agent/internal/models"
-	"dev.helix.agent/internal/services"
 )
 
 // ProviderManagementHandler handles provider CRUD operations
@@ -359,11 +359,11 @@ func (h *ProviderManagementHandler) VerifyAllProviders(c *gin.Context) {
 	ensembleOperational := healthy > 0
 
 	h.log.WithFields(logrus.Fields{
-		"total":               len(results),
-		"healthy":             healthy,
-		"rate_limited":        rateLimited,
-		"auth_failed":         authFailed,
-		"unhealthy":           unhealthy,
+		"total":                len(results),
+		"healthy":              healthy,
+		"rate_limited":         rateLimited,
+		"auth_failed":          authFailed,
+		"unhealthy":            unhealthy,
 		"ensemble_operational": ensembleOperational,
 	}).Info("All providers verification completed")
 

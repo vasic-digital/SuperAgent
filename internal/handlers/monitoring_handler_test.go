@@ -325,9 +325,9 @@ func TestMonitoringHandler_EmptyProviderParam(t *testing.T) {
 	handler := NewMonitoringHandler(nil, nil, nil, nil)
 
 	tests := []struct {
-		name       string
-		method     func(c *gin.Context)
-		path       string
+		name   string
+		method func(c *gin.Context)
+		path   string
 	}{
 		{
 			name:   "ResetCircuitBreaker",

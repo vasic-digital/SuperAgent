@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/services"
 )
 
 // testConfig holds configuration for error handling tests

@@ -20,8 +20,8 @@ type GraphMeshTopology struct {
 	*BaseTopology
 
 	// Message handlers
-	handlers     map[MessageType][]MessageHandler
-	handlerMu    sync.RWMutex
+	handlers  map[MessageType][]MessageHandler
+	handlerMu sync.RWMutex
 
 	// Phase management
 	currentPhase DebatePhase
@@ -36,9 +36,9 @@ type GraphMeshTopology struct {
 	messageQueue chan *Message
 
 	// Leader selection
-	currentLeader  *Agent
-	leaderHistory  []LeaderSelection
-	leaderMu       sync.RWMutex
+	currentLeader *Agent
+	leaderHistory []LeaderSelection
+	leaderMu      sync.RWMutex
 }
 
 // MessageHandler handles incoming messages.
@@ -691,8 +691,8 @@ func (gm *GraphMeshTopology) DynamicRoleReassignment(ctx context.Context) error 
 
 	// Analyze agent performance
 	type agentPerformance struct {
-		agent       *Agent
-		score       float64
+		agent        *Agent
+		score        float64
 		responseTime time.Duration
 		messageCount int
 	}

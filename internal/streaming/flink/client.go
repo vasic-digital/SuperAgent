@@ -85,15 +85,15 @@ func (c *Client) HealthCheck(ctx context.Context) error {
 
 // ClusterOverview represents the Flink cluster overview
 type ClusterOverview struct {
-	FlinkVersion     string `json:"flink-version"`
-	FlinkCommit      string `json:"flink-commit"`
-	TaskManagers     int    `json:"taskmanagers"`
-	SlotsTotal       int    `json:"slots-total"`
-	SlotsAvailable   int    `json:"slots-available"`
-	JobsRunning      int    `json:"jobs-running"`
-	JobsFinished     int    `json:"jobs-finished"`
-	JobsCancelled    int    `json:"jobs-cancelled"`
-	JobsFailed       int    `json:"jobs-failed"`
+	FlinkVersion   string `json:"flink-version"`
+	FlinkCommit    string `json:"flink-commit"`
+	TaskManagers   int    `json:"taskmanagers"`
+	SlotsTotal     int    `json:"slots-total"`
+	SlotsAvailable int    `json:"slots-available"`
+	JobsRunning    int    `json:"jobs-running"`
+	JobsFinished   int    `json:"jobs-finished"`
+	JobsCancelled  int    `json:"jobs-cancelled"`
+	JobsFailed     int    `json:"jobs-failed"`
 }
 
 // GetOverview returns the cluster overview
@@ -166,17 +166,17 @@ func (c *Client) GetConfig(ctx context.Context) ([]ClusterConfig, error) {
 
 // TaskManager represents a Flink TaskManager
 type TaskManager struct {
-	ID            string `json:"id"`
-	Path          string `json:"path"`
-	DataPort      int    `json:"dataPort"`
-	TimeSinceLastHeartbeat int64 `json:"timeSinceLastHeartbeat"`
-	SlotsNumber   int    `json:"slotsNumber"`
-	FreeSlots     int    `json:"freeSlots"`
-	Hardware      struct {
-		CPUCores            int   `json:"cpuCores"`
-		PhysicalMemory      int64 `json:"physicalMemory"`
-		FreeMemory          int64 `json:"freeMemory"`
-		ManagedMemory       int64 `json:"managedMemory"`
+	ID                     string `json:"id"`
+	Path                   string `json:"path"`
+	DataPort               int    `json:"dataPort"`
+	TimeSinceLastHeartbeat int64  `json:"timeSinceLastHeartbeat"`
+	SlotsNumber            int    `json:"slotsNumber"`
+	FreeSlots              int    `json:"freeSlots"`
+	Hardware               struct {
+		CPUCores       int   `json:"cpuCores"`
+		PhysicalMemory int64 `json:"physicalMemory"`
+		FreeMemory     int64 `json:"freeMemory"`
+		ManagedMemory  int64 `json:"managedMemory"`
 	} `json:"hardware"`
 }
 
@@ -274,43 +274,43 @@ func (c *Client) GetRunningJobs(ctx context.Context) ([]Job, error) {
 
 // JobDetails represents detailed information about a job
 type JobDetails struct {
-	JID              string            `json:"jid"`
-	Name             string            `json:"name"`
-	IsStoppable      bool              `json:"isStoppable"`
-	State            string            `json:"state"`
-	StartTime        int64             `json:"start-time"`
-	EndTime          int64             `json:"end-time"`
-	Duration         int64             `json:"duration"`
-	Now              int64             `json:"now"`
-	Timestamps       map[string]int64  `json:"timestamps"`
-	Vertices         []JobVertex       `json:"vertices"`
-	StatusCounts     map[string]int    `json:"status-counts"`
-	Plan             JobPlan           `json:"plan"`
+	JID          string           `json:"jid"`
+	Name         string           `json:"name"`
+	IsStoppable  bool             `json:"isStoppable"`
+	State        string           `json:"state"`
+	StartTime    int64            `json:"start-time"`
+	EndTime      int64            `json:"end-time"`
+	Duration     int64            `json:"duration"`
+	Now          int64            `json:"now"`
+	Timestamps   map[string]int64 `json:"timestamps"`
+	Vertices     []JobVertex      `json:"vertices"`
+	StatusCounts map[string]int   `json:"status-counts"`
+	Plan         JobPlan          `json:"plan"`
 }
 
 // JobVertex represents a vertex in a job
 type JobVertex struct {
-	ID          string          `json:"id"`
-	Name        string          `json:"name"`
-	Parallelism int             `json:"parallelism"`
-	Status      string          `json:"status"`
-	StartTime   int64           `json:"start-time"`
-	EndTime     int64           `json:"end-time"`
-	Duration    int64           `json:"duration"`
-	Tasks       map[string]int  `json:"tasks"`
+	ID          string           `json:"id"`
+	Name        string           `json:"name"`
+	Parallelism int              `json:"parallelism"`
+	Status      string           `json:"status"`
+	StartTime   int64            `json:"start-time"`
+	EndTime     int64            `json:"end-time"`
+	Duration    int64            `json:"duration"`
+	Tasks       map[string]int   `json:"tasks"`
 	Metrics     JobVertexMetrics `json:"metrics"`
 }
 
 // JobVertexMetrics represents metrics for a job vertex
 type JobVertexMetrics struct {
-	ReadBytes        int64 `json:"read-bytes"`
-	ReadBytesComplete bool `json:"read-bytes-complete"`
-	WriteBytes       int64 `json:"write-bytes"`
-	WriteBytesComplete bool `json:"write-bytes-complete"`
-	ReadRecords      int64 `json:"read-records"`
-	ReadRecordsComplete bool `json:"read-records-complete"`
-	WriteRecords     int64 `json:"write-records"`
-	WriteRecordsComplete bool `json:"write-records-complete"`
+	ReadBytes            int64 `json:"read-bytes"`
+	ReadBytesComplete    bool  `json:"read-bytes-complete"`
+	WriteBytes           int64 `json:"write-bytes"`
+	WriteBytesComplete   bool  `json:"write-bytes-complete"`
+	ReadRecords          int64 `json:"read-records"`
+	ReadRecordsComplete  bool  `json:"read-records-complete"`
+	WriteRecords         int64 `json:"write-records"`
+	WriteRecordsComplete bool  `json:"write-records-complete"`
 }
 
 // JobPlan represents the execution plan of a job
@@ -322,20 +322,20 @@ type JobPlan struct {
 
 // PlanNode represents a node in the job plan
 type PlanNode struct {
-	ID          string   `json:"id"`
-	Parallelism int      `json:"parallelism"`
-	Operator    string   `json:"operator"`
-	OperatorStrategy string `json:"operator_strategy"`
-	Description string   `json:"description"`
-	Inputs      []PlanInput `json:"inputs"`
+	ID               string      `json:"id"`
+	Parallelism      int         `json:"parallelism"`
+	Operator         string      `json:"operator"`
+	OperatorStrategy string      `json:"operator_strategy"`
+	Description      string      `json:"description"`
+	Inputs           []PlanInput `json:"inputs"`
 }
 
 // PlanInput represents an input to a plan node
 type PlanInput struct {
-	Num        int    `json:"num"`
-	ID         string `json:"id"`
+	Num          int    `json:"num"`
+	ID           string `json:"id"`
 	ShipStrategy string `json:"ship_strategy"`
-	Exchange   string `json:"exchange"`
+	Exchange     string `json:"exchange"`
 }
 
 // GetJob returns details for a specific job
@@ -372,10 +372,10 @@ func (c *Client) GetJob(ctx context.Context, jobID string) (*JobDetails, error) 
 
 // JarInfo represents information about an uploaded JAR
 type JarInfo struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Uploaded int64 `json:"uploaded"`
-	Entry []JarEntry `json:"entry"`
+	ID       string     `json:"id"`
+	Name     string     `json:"name"`
+	Uploaded int64      `json:"uploaded"`
+	Entry    []JarEntry `json:"entry"`
 }
 
 // JarEntry represents an entry class in a JAR
@@ -501,11 +501,11 @@ func (c *Client) DeleteJar(ctx context.Context, jarID string) error {
 
 // SubmitJobRequest represents a request to submit a job
 type SubmitJobRequest struct {
-	EntryClass           string   `json:"entryClass,omitempty"`
-	Parallelism          int      `json:"parallelism,omitempty"`
-	ProgramArgs          string   `json:"programArgs,omitempty"`
-	SavepointPath        string   `json:"savepointPath,omitempty"`
-	AllowNonRestoredState bool    `json:"allowNonRestoredState,omitempty"`
+	EntryClass            string `json:"entryClass,omitempty"`
+	Parallelism           int    `json:"parallelism,omitempty"`
+	ProgramArgs           string `json:"programArgs,omitempty"`
+	SavepointPath         string `json:"savepointPath,omitempty"`
+	AllowNonRestoredState bool   `json:"allowNonRestoredState,omitempty"`
 }
 
 // SubmitJobResponse represents the response from submitting a job
@@ -516,7 +516,7 @@ type SubmitJobResponse struct {
 // SubmitJob submits a job from an uploaded JAR
 func (c *Client) SubmitJob(ctx context.Context, jarID string, config *JobConfig) (string, error) {
 	submitReq := SubmitJobRequest{
-		Parallelism: config.Parallelism,
+		Parallelism:           config.Parallelism,
 		AllowNonRestoredState: config.AllowNonRestoredState,
 	}
 

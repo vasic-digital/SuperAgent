@@ -20,20 +20,20 @@ type DefaultStuckDetector struct {
 
 // StuckDetectorConfig holds configuration for stuck detection
 type StuckDetectorConfig struct {
-	DefaultThreshold       time.Duration `yaml:"default_threshold"`
-	CPUActivityThreshold   float64       `yaml:"cpu_activity_threshold"`
-	MemoryGrowthThreshold  float64       `yaml:"memory_growth_threshold"`
-	IOActivityThreshold    int64         `yaml:"io_activity_threshold"`
-	MinSnapshotsForAnalysis int          `yaml:"min_snapshots_for_analysis"`
+	DefaultThreshold        time.Duration `yaml:"default_threshold"`
+	CPUActivityThreshold    float64       `yaml:"cpu_activity_threshold"`
+	MemoryGrowthThreshold   float64       `yaml:"memory_growth_threshold"`
+	IOActivityThreshold     int64         `yaml:"io_activity_threshold"`
+	MinSnapshotsForAnalysis int           `yaml:"min_snapshots_for_analysis"`
 }
 
 // DefaultStuckDetectorConfig returns default configuration
 func DefaultStuckDetectorConfig() *StuckDetectorConfig {
 	return &StuckDetectorConfig{
-		DefaultThreshold:       5 * time.Minute,
-		CPUActivityThreshold:   0.1, // 0.1% CPU
-		MemoryGrowthThreshold:  0.5, // 50% growth rate
-		IOActivityThreshold:    1024, // 1KB
+		DefaultThreshold:        5 * time.Minute,
+		CPUActivityThreshold:    0.1,  // 0.1% CPU
+		MemoryGrowthThreshold:   0.5,  // 50% growth rate
+		IOActivityThreshold:     1024, // 1KB
 		MinSnapshotsForAnalysis: 3,
 	}
 }
@@ -319,37 +319,37 @@ func (d *DefaultStuckDetector) isEndlessTaskStuck(task *models.BackgroundTask, s
 
 // StuckAnalysis provides detailed analysis of why a task might be stuck
 type StuckAnalysis struct {
-	IsStuck           bool                       `json:"is_stuck"`
-	Reason            string                     `json:"reason,omitempty"`
-	HeartbeatStatus   HeartbeatStatus            `json:"heartbeat_status"`
-	ResourceStatus    ResourceStatus             `json:"resource_status"`
-	ActivityStatus    ActivityStatus             `json:"activity_status"`
-	Recommendations   []string                   `json:"recommendations,omitempty"`
+	IsStuck         bool            `json:"is_stuck"`
+	Reason          string          `json:"reason,omitempty"`
+	HeartbeatStatus HeartbeatStatus `json:"heartbeat_status"`
+	ResourceStatus  ResourceStatus  `json:"resource_status"`
+	ActivityStatus  ActivityStatus  `json:"activity_status"`
+	Recommendations []string        `json:"recommendations,omitempty"`
 }
 
 type HeartbeatStatus struct {
-	LastHeartbeat   *time.Time     `json:"last_heartbeat,omitempty"`
+	LastHeartbeat      *time.Time    `json:"last_heartbeat,omitempty"`
 	TimeSinceHeartbeat time.Duration `json:"time_since_heartbeat,omitempty"`
-	Threshold       time.Duration  `json:"threshold"`
-	IsStale         bool           `json:"is_stale"`
+	Threshold          time.Duration `json:"threshold"`
+	IsStale            bool          `json:"is_stale"`
 }
 
 type ResourceStatus struct {
-	CPUPercent      float64 `json:"cpu_percent"`
-	MemoryPercent   float64 `json:"memory_percent"`
-	MemoryBytes     int64   `json:"memory_bytes"`
-	OpenFDs         int     `json:"open_fds"`
-	ThreadCount     int     `json:"thread_count"`
-	IsExhausted     bool    `json:"is_exhausted"`
+	CPUPercent    float64 `json:"cpu_percent"`
+	MemoryPercent float64 `json:"memory_percent"`
+	MemoryBytes   int64   `json:"memory_bytes"`
+	OpenFDs       int     `json:"open_fds"`
+	ThreadCount   int     `json:"thread_count"`
+	IsExhausted   bool    `json:"is_exhausted"`
 }
 
 type ActivityStatus struct {
-	HasCPUActivity  bool  `json:"has_cpu_activity"`
-	HasIOActivity   bool  `json:"has_io_activity"`
-	HasNetActivity  bool  `json:"has_net_activity"`
-	IOReadBytes     int64 `json:"io_read_bytes"`
-	IOWriteBytes    int64 `json:"io_write_bytes"`
-	NetConnections  int   `json:"net_connections"`
+	HasCPUActivity bool  `json:"has_cpu_activity"`
+	HasIOActivity  bool  `json:"has_io_activity"`
+	HasNetActivity bool  `json:"has_net_activity"`
+	IOReadBytes    int64 `json:"io_read_bytes"`
+	IOWriteBytes   int64 `json:"io_write_bytes"`
+	NetConnections int   `json:"net_connections"`
 }
 
 // AnalyzeTask performs detailed stuck analysis on a task

@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	llm "dev.helix.agent/internal/llm"
 	models "dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
 	pb "dev.helix.agent/pkg/api"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -265,7 +265,7 @@ func (s *LLMFacadeServer) Chat(req *pb.ChatRequest, stream grpc.ServerStreamingS
 			end = len(content)
 		}
 
-		isComplete := (i/chunkSize) == totalChunks-1
+		isComplete := (i / chunkSize) == totalChunks-1
 
 		chunk := &pb.ChatResponse{
 			ResponseId:   uuid.New().String(),

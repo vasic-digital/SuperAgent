@@ -84,11 +84,11 @@ type ProviderVerificationRequest struct {
 
 // OpenAICompletionRequest is the standard OpenAI-compatible request format
 type OpenAICompletionRequest struct {
-	Model       string                   `json:"model"`
-	Messages    []OpenAIMessage          `json:"messages"`
-	MaxTokens   int                      `json:"max_tokens,omitempty"`
-	Temperature float64                  `json:"temperature,omitempty"`
-	Stream      bool                     `json:"stream,omitempty"`
+	Model       string          `json:"model"`
+	Messages    []OpenAIMessage `json:"messages"`
+	MaxTokens   int             `json:"max_tokens,omitempty"`
+	Temperature float64         `json:"temperature,omitempty"`
+	Stream      bool            `json:"stream,omitempty"`
 }
 
 // OpenAIMessage represents a message in the OpenAI format
@@ -104,9 +104,9 @@ type OpenAICompletionResponse struct {
 	Created int64  `json:"created"`
 	Model   string `json:"model"`
 	Choices []struct {
-		Index        int         `json:"index"`
+		Index        int           `json:"index"`
 		Message      OpenAIMessage `json:"message"`
-		FinishReason string      `json:"finish_reason"`
+		FinishReason string        `json:"finish_reason"`
 	} `json:"choices"`
 	Usage struct {
 		PromptTokens     int `json:"prompt_tokens"`
@@ -117,10 +117,10 @@ type OpenAICompletionResponse struct {
 
 // CohereRequest is the Cohere-specific request format
 type CohereRequest struct {
-	Model      string `json:"model"`
-	Message    string `json:"message"`
-	MaxTokens  int    `json:"max_tokens,omitempty"`
-	Preamble   string `json:"preamble,omitempty"`
+	Model     string `json:"model"`
+	Message   string `json:"message"`
+	MaxTokens int    `json:"max_tokens,omitempty"`
+	Preamble  string `json:"preamble,omitempty"`
 }
 
 // CohereResponse is the Cohere-specific response format
@@ -282,13 +282,13 @@ func (epa *ExtendedProvidersAdapter) verifyModel(ctx context.Context, req *Provi
 	score := epa.calculateModelScore(latency, testResults, req)
 
 	model := &verifier.UnifiedModel{
-		ID:          modelID,
-		Name:        getModelDisplayNameExt(modelID),
-		Provider:    req.ProviderID,
-		Verified:    verified,
-		Score:       score,
-		Latency:     latency,
-		TestResults: testResults,
+		ID:           modelID,
+		Name:         getModelDisplayNameExt(modelID),
+		Provider:     req.ProviderID,
+		Verified:     verified,
+		Score:        score,
+		Latency:      latency,
+		TestResults:  testResults,
 		Capabilities: epa.inferCapabilities(req.ProviderID, modelID),
 		Metadata: map[string]interface{}{
 			"verification_time_ms": time.Since(startTime).Milliseconds(),

@@ -110,43 +110,43 @@ type TopologyComparison struct {
 
 // TopologyCharacteristics describes a topology's characteristics.
 type TopologyCharacteristics struct {
-	Type               TopologyType `json:"type"`
-	MaxParallelism     string       `json:"max_parallelism"`     // "full", "limited", "none"
-	MessageOrdering    string       `json:"message_ordering"`    // "none", "partial", "strict"
-	Bottleneck         string       `json:"bottleneck"`          // "none", "moderator", "sequential"
-	Complexity         string       `json:"complexity"`          // "low", "medium", "high"
-	BestFor            []string     `json:"best_for"`
-	ResearchPerformance string      `json:"research_performance"` // ACL 2025 ranking
+	Type                TopologyType `json:"type"`
+	MaxParallelism      string       `json:"max_parallelism"`  // "full", "limited", "none"
+	MessageOrdering     string       `json:"message_ordering"` // "none", "partial", "strict"
+	Bottleneck          string       `json:"bottleneck"`       // "none", "moderator", "sequential"
+	Complexity          string       `json:"complexity"`       // "low", "medium", "high"
+	BestFor             []string     `json:"best_for"`
+	ResearchPerformance string       `json:"research_performance"` // ACL 2025 ranking
 }
 
 // GetTopologyComparison returns a comparison of topology options.
 func GetTopologyComparison() TopologyComparison {
 	return TopologyComparison{
 		GraphMesh: TopologyCharacteristics{
-			Type:               TopologyGraphMesh,
-			MaxParallelism:     "full",
-			MessageOrdering:    "none",
-			Bottleneck:         "none",
-			Complexity:         "high",
-			BestFor:            []string{"large teams", "complex debates", "maximum throughput"},
+			Type:                TopologyGraphMesh,
+			MaxParallelism:      "full",
+			MessageOrdering:     "none",
+			Bottleneck:          "none",
+			Complexity:          "high",
+			BestFor:             []string{"large teams", "complex debates", "maximum throughput"},
 			ResearchPerformance: "#1 - Best performance per ACL 2025",
 		},
 		Star: TopologyCharacteristics{
-			Type:               TopologyStar,
-			MaxParallelism:     "limited",
-			MessageOrdering:    "partial",
-			Bottleneck:         "moderator",
-			Complexity:         "medium",
-			BestFor:            []string{"centralized control", "simple coordination", "moderate teams"},
+			Type:                TopologyStar,
+			MaxParallelism:      "limited",
+			MessageOrdering:     "partial",
+			Bottleneck:          "moderator",
+			Complexity:          "medium",
+			BestFor:             []string{"centralized control", "simple coordination", "moderate teams"},
 			ResearchPerformance: "#2 - Good for controlled scenarios",
 		},
 		Chain: TopologyCharacteristics{
-			Type:               TopologyChain,
-			MaxParallelism:     "none",
-			MessageOrdering:    "strict",
-			Bottleneck:         "sequential",
-			Complexity:         "low",
-			BestFor:            []string{"deterministic workflows", "audit trails", "small teams"},
+			Type:                TopologyChain,
+			MaxParallelism:      "none",
+			MessageOrdering:     "strict",
+			Bottleneck:          "sequential",
+			Complexity:          "low",
+			BestFor:             []string{"deterministic workflows", "audit trails", "small teams"},
 			ResearchPerformance: "#3 - Slowest but most predictable",
 		},
 	}
@@ -154,9 +154,9 @@ func GetTopologyComparison() TopologyComparison {
 
 // AgentRoleAssignments provides recommended role assignments for debate teams.
 type AgentRoleAssignments struct {
-	MinimumTeam    map[AgentRole]int `json:"minimum_team"`    // 5 agents
-	StandardTeam   map[AgentRole]int `json:"standard_team"`   // 12 agents
-	MaximumTeam    map[AgentRole]int `json:"maximum_team"`    // 20+ agents
+	MinimumTeam  map[AgentRole]int `json:"minimum_team"`  // 5 agents
+	StandardTeam map[AgentRole]int `json:"standard_team"` // 12 agents
+	MaximumTeam  map[AgentRole]int `json:"maximum_team"`  // 20+ agents
 }
 
 // GetRecommendedRoleAssignments returns recommended role distributions.

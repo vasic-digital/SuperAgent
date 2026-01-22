@@ -15,11 +15,11 @@ import (
 
 // ensembleMockProvider is a test implementation of LLMProvider
 type ensembleMockProvider struct {
-	name       string
-	response   *models.LLMResponse
-	err        error
-	delay      time.Duration
-	callCount  int32
+	name      string
+	response  *models.LLMResponse
+	err       error
+	delay     time.Duration
+	callCount int32
 }
 
 func (m *ensembleMockProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {

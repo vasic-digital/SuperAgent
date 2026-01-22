@@ -13,11 +13,11 @@ import (
 
 // Package-level metrics (registered once)
 var (
-	phmMetricsOnce            sync.Once
-	phmHealthCheckGauge       *prometheus.GaugeVec
-	phmHealthCheckDuration    *prometheus.HistogramVec
+	phmMetricsOnce             sync.Once
+	phmHealthCheckGauge        *prometheus.GaugeVec
+	phmHealthCheckDuration     *prometheus.HistogramVec
 	phmUnhealthyProvidersGauge prometheus.Gauge
-	phmHealthAlertsTotal      prometheus.Counter
+	phmHealthAlertsTotal       prometheus.Counter
 )
 
 func initPHMMetrics() {
@@ -57,14 +57,14 @@ func initPHMMetrics() {
 
 // ProviderHealthMonitor performs periodic health checks on all providers
 type ProviderHealthMonitor struct {
-	mu              sync.RWMutex
-	registry        *ProviderRegistry
-	logger          *logrus.Logger
-	checkInterval   time.Duration
-	healthTimeout   time.Duration
-	listeners       []ProviderHealthAlertListener
-	stopCh          chan struct{}
-	running         bool
+	mu            sync.RWMutex
+	registry      *ProviderRegistry
+	logger        *logrus.Logger
+	checkInterval time.Duration
+	healthTimeout time.Duration
+	listeners     []ProviderHealthAlertListener
+	stopCh        chan struct{}
+	running       bool
 
 	// Health status cache
 	healthStatus map[string]*MonitoredProviderHealth
@@ -75,12 +75,12 @@ type ProviderHealthAlertListener func(alert ProviderHealthAlert)
 
 // ProviderHealthAlert represents a health alert
 type ProviderHealthAlert struct {
-	Type          string    `json:"type"`
-	ProviderID    string    `json:"provider_id"`
-	Message       string    `json:"message"`
-	Timestamp     time.Time `json:"timestamp"`
-	ConsecutiveFails int    `json:"consecutive_fails,omitempty"`
-	LastError     string    `json:"last_error,omitempty"`
+	Type             string    `json:"type"`
+	ProviderID       string    `json:"provider_id"`
+	Message          string    `json:"message"`
+	Timestamp        time.Time `json:"timestamp"`
+	ConsecutiveFails int       `json:"consecutive_fails,omitempty"`
+	LastError        string    `json:"last_error,omitempty"`
 }
 
 // MonitoredProviderHealth represents the health status of a provider from the monitor
@@ -98,8 +98,8 @@ type MonitoredProviderHealth struct {
 
 // ProviderHealthMonitorConfig configures the monitor
 type ProviderHealthMonitorConfig struct {
-	CheckInterval time.Duration
-	HealthTimeout time.Duration
+	CheckInterval   time.Duration
+	HealthTimeout   time.Duration
 	AlertAfterFails int // Alert after this many consecutive failures
 }
 
@@ -372,12 +372,12 @@ func (phm *ProviderHealthMonitor) GetStatus() ProviderHealthOverallStatus {
 
 // ProviderHealthOverallStatus represents the overall health status
 type ProviderHealthOverallStatus struct {
-	Healthy        bool                            `json:"healthy"`
-	HealthyCount   int                             `json:"healthy_count"`
-	UnhealthyCount int                             `json:"unhealthy_count"`
-	TotalCount     int                             `json:"total_count"`
+	Healthy        bool                                `json:"healthy"`
+	HealthyCount   int                                 `json:"healthy_count"`
+	UnhealthyCount int                                 `json:"unhealthy_count"`
+	TotalCount     int                                 `json:"total_count"`
 	Providers      map[string]*MonitoredProviderHealth `json:"providers"`
-	CheckedAt      time.Time                       `json:"checked_at"`
+	CheckedAt      time.Time                           `json:"checked_at"`
 }
 
 // GetProviderStatus returns the health status of a specific provider

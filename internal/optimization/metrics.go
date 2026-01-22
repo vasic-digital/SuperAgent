@@ -11,10 +11,10 @@ import (
 // Metrics holds all Prometheus metrics for the optimization service.
 type Metrics struct {
 	// Cache metrics
-	CacheHits      prometheus.Counter
-	CacheMisses    prometheus.Counter
-	CacheSize      prometheus.Gauge
-	CacheEvictions prometheus.Counter
+	CacheHits           prometheus.Counter
+	CacheMisses         prometheus.Counter
+	CacheSize           prometheus.Gauge
+	CacheEvictions      prometheus.Counter
 	CacheLookupDuration prometheus.Histogram
 
 	// Structured output metrics
@@ -32,10 +32,10 @@ type Metrics struct {
 	TokensPerSecond  prometheus.Histogram
 
 	// External service metrics
-	ServiceRequests   *prometheus.CounterVec
-	ServiceErrors     *prometheus.CounterVec
-	ServiceLatency    *prometheus.HistogramVec
-	ServiceAvailable  *prometheus.GaugeVec
+	ServiceRequests  *prometheus.CounterVec
+	ServiceErrors    *prometheus.CounterVec
+	ServiceLatency   *prometheus.HistogramVec
+	ServiceAvailable *prometheus.GaugeVec
 
 	// Pipeline metrics
 	RequestsOptimized    prometheus.Counter

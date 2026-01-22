@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/optimization"
 	"dev.helix.agent/internal/optimization/outlines"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewOptimizedRequestService(t *testing.T) {

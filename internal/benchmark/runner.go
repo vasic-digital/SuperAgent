@@ -14,14 +14,14 @@ import (
 
 // StandardBenchmarkRunner implements BenchmarkRunner
 type StandardBenchmarkRunner struct {
-	benchmarks     map[string]*Benchmark
-	tasks          map[string][]*BenchmarkTask // benchmark ID -> tasks
-	runs           map[string]*BenchmarkRun
-	provider       LLMProvider
-	codeExecutor   CodeExecutor
-	debateEval     DebateEvaluator
-	mu             sync.RWMutex
-	logger         *logrus.Logger
+	benchmarks   map[string]*Benchmark
+	tasks        map[string][]*BenchmarkTask // benchmark ID -> tasks
+	runs         map[string]*BenchmarkRun
+	provider     LLMProvider
+	codeExecutor CodeExecutor
+	debateEval   DebateEvaluator
+	mu           sync.RWMutex
+	logger       *logrus.Logger
 }
 
 // NewStandardBenchmarkRunner creates a new benchmark runner

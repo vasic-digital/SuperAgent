@@ -17,12 +17,12 @@ import (
 
 // MockLLMProvider implements llm.LLMProvider for testing
 type MockLLMProvider struct {
-	Name              string
-	CompleteFunc      func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error)
-	StreamFunc        func(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error)
-	HealthCheckFunc   func() error
-	GetCapsFunc       func() *models.ProviderCapabilities
-	ValidateFunc      func(config map[string]interface{}) (bool, []string)
+	Name            string
+	CompleteFunc    func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error)
+	StreamFunc      func(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error)
+	HealthCheckFunc func() error
+	GetCapsFunc     func() *models.ProviderCapabilities
+	ValidateFunc    func(config map[string]interface{}) (bool, []string)
 }
 
 func (m *MockLLMProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {

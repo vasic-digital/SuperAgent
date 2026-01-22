@@ -601,9 +601,9 @@ func TestQdrantAdapter_Search(t *testing.T) {
 
 func TestQdrantAdapter_SearchBatch(t *testing.T) {
 	tests := []struct {
-		name          string
-		collection    string
-		searches      []struct {
+		name       string
+		collection string
+		searches   []struct {
 			Vector      []float32
 			Limit       int
 			Filter      map[string]interface{}

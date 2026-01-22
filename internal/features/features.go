@@ -15,39 +15,39 @@ type Feature string
 // Feature constants define all available features
 const (
 	// Transport Features
-	FeatureGraphQL       Feature = "graphql"       // GraphQL API endpoint
-	FeatureTOON          Feature = "toon"          // Token-Optimized Object Notation
-	FeatureHTTP2         Feature = "http2"         // HTTP/2 support
-	FeatureHTTP3         Feature = "http3"         // HTTP/3 QUIC support
-	FeatureWebSocket     Feature = "websocket"     // WebSocket streaming
-	FeatureSSE           Feature = "sse"           // Server-Sent Events streaming
-	FeatureJSONL         Feature = "jsonl"         // JSON Lines streaming
+	FeatureGraphQL   Feature = "graphql"   // GraphQL API endpoint
+	FeatureTOON      Feature = "toon"      // Token-Optimized Object Notation
+	FeatureHTTP2     Feature = "http2"     // HTTP/2 support
+	FeatureHTTP3     Feature = "http3"     // HTTP/3 QUIC support
+	FeatureWebSocket Feature = "websocket" // WebSocket streaming
+	FeatureSSE       Feature = "sse"       // Server-Sent Events streaming
+	FeatureJSONL     Feature = "jsonl"     // JSON Lines streaming
 
 	// Compression Features
-	FeatureBrotli        Feature = "brotli"        // Brotli compression
-	FeatureGzip          Feature = "gzip"          // Gzip compression
-	FeatureZstd          Feature = "zstd"          // Zstandard compression
+	FeatureBrotli Feature = "brotli" // Brotli compression
+	FeatureGzip   Feature = "gzip"   // Gzip compression
+	FeatureZstd   Feature = "zstd"   // Zstandard compression
 
 	// Protocol Features
-	FeatureMCP           Feature = "mcp"           // Model Context Protocol
-	FeatureACP           Feature = "acp"           // Agent Communication Protocol
-	FeatureLSP           Feature = "lsp"           // Language Server Protocol
-	FeatureGRPC          Feature = "grpc"          // gRPC protocol
+	FeatureMCP  Feature = "mcp"  // Model Context Protocol
+	FeatureACP  Feature = "acp"  // Agent Communication Protocol
+	FeatureLSP  Feature = "lsp"  // Language Server Protocol
+	FeatureGRPC Feature = "grpc" // gRPC protocol
 
 	// API Features
-	FeatureEmbeddings    Feature = "embeddings"    // Vector embeddings API
-	FeatureVision        Feature = "vision"        // Vision/image analysis API
-	FeatureCognee        Feature = "cognee"        // Cognee knowledge graph
-	FeatureDebate        Feature = "debate"        // AI Debate system
-	FeatureBatchRequests Feature = "batch"         // Batch request support
-	FeatureToolCalling   Feature = "tool_calling"  // Tool/function calling
+	FeatureEmbeddings    Feature = "embeddings"   // Vector embeddings API
+	FeatureVision        Feature = "vision"       // Vision/image analysis API
+	FeatureCognee        Feature = "cognee"       // Cognee knowledge graph
+	FeatureDebate        Feature = "debate"       // AI Debate system
+	FeatureBatchRequests Feature = "batch"        // Batch request support
+	FeatureToolCalling   Feature = "tool_calling" // Tool/function calling
 
 	// Advanced Features
-	FeatureMultiPass     Feature = "multipass"     // Multi-pass validation
-	FeatureCaching       Feature = "caching"       // Response caching
-	FeatureRateLimiting  Feature = "rate_limiting" // Rate limiting
-	FeatureMetrics       Feature = "metrics"       // Prometheus metrics
-	FeatureTracing       Feature = "tracing"       // Distributed tracing
+	FeatureMultiPass    Feature = "multipass"     // Multi-pass validation
+	FeatureCaching      Feature = "caching"       // Response caching
+	FeatureRateLimiting Feature = "rate_limiting" // Rate limiting
+	FeatureMetrics      Feature = "metrics"       // Prometheus metrics
+	FeatureTracing      Feature = "tracing"       // Distributed tracing
 )
 
 // FeatureCategory groups related features
@@ -109,14 +109,14 @@ var featureRegistry = map[Feature]*FeatureInfo{
 		QueryParam:   "http2",
 	},
 	FeatureHTTP3: {
-		Name:           FeatureHTTP3,
-		DisplayName:    "HTTP/3 QUIC",
-		Description:    "HTTP/3 with QUIC transport for improved latency",
-		Category:       CategoryTransport,
-		DefaultValue:   false, // Default off - limited client support
-		ConflictsWith:  []Feature{FeatureHTTP2},
-		HeaderName:     "X-Feature-HTTP3",
-		QueryParam:     "http3",
+		Name:          FeatureHTTP3,
+		DisplayName:   "HTTP/3 QUIC",
+		Description:   "HTTP/3 with QUIC transport for improved latency",
+		Category:      CategoryTransport,
+		DefaultValue:  false, // Default off - limited client support
+		ConflictsWith: []Feature{FeatureHTTP2},
+		HeaderName:    "X-Feature-HTTP3",
+		QueryParam:    "http3",
 	},
 	FeatureWebSocket: {
 		Name:         FeatureWebSocket,

@@ -50,13 +50,13 @@ type ExpirationManager struct {
 
 // ExpirationMetrics tracks expiration manager statistics
 type ExpirationMetrics struct {
-	ExpiredByTTL      int64
+	ExpiredByTTL        int64
 	ExpiredByValidation int64
-	ForceExpired      int64
-	ValidationRuns    int64
-	ValidationErrors  int64
-	CleanupRuns       int64
-	CleanupDuration   int64 // microseconds
+	ForceExpired        int64
+	ValidationRuns      int64
+	ValidationErrors    int64
+	CleanupRuns         int64
+	CleanupDuration     int64 // microseconds
 }
 
 // NewExpirationManager creates a new expiration manager

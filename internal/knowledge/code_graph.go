@@ -37,47 +37,47 @@ const (
 type EdgeType string
 
 const (
-	EdgeTypeContains          EdgeType = "contains"
-	EdgeTypeImports           EdgeType = "imports"
-	EdgeTypeExtends           EdgeType = "extends"
-	EdgeTypeImplements        EdgeType = "implements"
-	EdgeTypeCalls             EdgeType = "calls"
-	EdgeTypeCalledBy          EdgeType = "called_by"
-	EdgeTypeReferences        EdgeType = "references"
-	EdgeTypeReferencedBy      EdgeType = "referenced_by"
-	EdgeTypeOverrides         EdgeType = "overrides"
-	EdgeTypeUses              EdgeType = "uses"
-	EdgeTypeModifies          EdgeType = "modifies"
-	EdgeTypeReturns           EdgeType = "returns"
+	EdgeTypeContains            EdgeType = "contains"
+	EdgeTypeImports             EdgeType = "imports"
+	EdgeTypeExtends             EdgeType = "extends"
+	EdgeTypeImplements          EdgeType = "implements"
+	EdgeTypeCalls               EdgeType = "calls"
+	EdgeTypeCalledBy            EdgeType = "called_by"
+	EdgeTypeReferences          EdgeType = "references"
+	EdgeTypeReferencedBy        EdgeType = "referenced_by"
+	EdgeTypeOverrides           EdgeType = "overrides"
+	EdgeTypeUses                EdgeType = "uses"
+	EdgeTypeModifies            EdgeType = "modifies"
+	EdgeTypeReturns             EdgeType = "returns"
 	EdgeTypeSemanticallySimilar EdgeType = "semantically_similar"
-	EdgeTypeDependsOn         EdgeType = "depends_on"
+	EdgeTypeDependsOn           EdgeType = "depends_on"
 )
 
 // CodeNode represents a node in the code knowledge graph
 type CodeNode struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	Type        NodeType               `json:"type"`
-	Path        string                 `json:"path"`
-	StartLine   int                    `json:"start_line,omitempty"`
-	EndLine     int                    `json:"end_line,omitempty"`
-	Signature   string                 `json:"signature,omitempty"`
-	Docstring   string                 `json:"docstring,omitempty"`
-	Embedding   []float64              `json:"embedding,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
+	ID        string                 `json:"id"`
+	Name      string                 `json:"name"`
+	Type      NodeType               `json:"type"`
+	Path      string                 `json:"path"`
+	StartLine int                    `json:"start_line,omitempty"`
+	EndLine   int                    `json:"end_line,omitempty"`
+	Signature string                 `json:"signature,omitempty"`
+	Docstring string                 `json:"docstring,omitempty"`
+	Embedding []float64              `json:"embedding,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	CreatedAt time.Time              `json:"created_at"`
+	UpdatedAt time.Time              `json:"updated_at"`
 }
 
 // CodeEdge represents an edge in the code knowledge graph
 type CodeEdge struct {
-	ID         string                 `json:"id"`
-	SourceID   string                 `json:"source_id"`
-	TargetID   string                 `json:"target_id"`
-	Type       EdgeType               `json:"type"`
-	Weight     float64                `json:"weight"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt  time.Time              `json:"created_at"`
+	ID        string                 `json:"id"`
+	SourceID  string                 `json:"source_id"`
+	TargetID  string                 `json:"target_id"`
+	Type      EdgeType               `json:"type"`
+	Weight    float64                `json:"weight"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	CreatedAt time.Time              `json:"created_at"`
 }
 
 // CodeGraphConfig holds configuration for the code graph
@@ -101,10 +101,10 @@ type CodeGraphConfig struct {
 // DefaultCodeGraphConfig returns default configuration
 func DefaultCodeGraphConfig() CodeGraphConfig {
 	return CodeGraphConfig{
-		MaxNodes:           100000,
-		MaxEdgesPerNode:    100,
-		EnableEmbeddings:   true,
-		EmbeddingDimension: 768,
+		MaxNodes:            100000,
+		MaxEdgesPerNode:     100,
+		EnableEmbeddings:    true,
+		EmbeddingDimension:  768,
 		SimilarityThreshold: 0.8,
 		IndexLanguages: []string{
 			"go", "python", "javascript", "typescript", "java",
@@ -122,15 +122,15 @@ func DefaultCodeGraphConfig() CodeGraphConfig {
 
 // CodeGraph implements the code knowledge graph
 type CodeGraph struct {
-	config       CodeGraphConfig
-	nodes        map[string]*CodeNode
-	edges        map[string]*CodeEdge
-	nodesByType  map[NodeType][]*CodeNode
+	config        CodeGraphConfig
+	nodes         map[string]*CodeNode
+	edges         map[string]*CodeEdge
+	nodesByType   map[NodeType][]*CodeNode
 	edgesBySource map[string][]*CodeEdge
 	edgesByTarget map[string][]*CodeEdge
-	embedder     EmbeddingGenerator
-	mu           sync.RWMutex
-	logger       *logrus.Logger
+	embedder      EmbeddingGenerator
+	mu            sync.RWMutex
+	logger        *logrus.Logger
 }
 
 // EmbeddingGenerator generates embeddings for code

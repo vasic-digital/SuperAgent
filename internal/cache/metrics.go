@@ -8,10 +8,10 @@ import (
 // CacheMetrics provides unified cache performance metrics
 type CacheMetrics struct {
 	// Global metrics
-	TotalHits        int64
-	TotalMisses      int64
-	TotalSets        int64
-	TotalDeletes     int64
+	TotalHits          int64
+	TotalMisses        int64
+	TotalSets          int64
+	TotalDeletes       int64
 	TotalInvalidations int64
 
 	// Performance metrics
@@ -29,10 +29,10 @@ type CacheMetrics struct {
 	SetErrors int64
 
 	// Tiered cache specific
-	L1Hits    int64
-	L1Misses  int64
-	L2Hits    int64
-	L2Misses  int64
+	L1Hits   int64
+	L1Misses int64
+	L2Hits   int64
+	L2Misses int64
 
 	// Compression metrics
 	CompressionSaved int64

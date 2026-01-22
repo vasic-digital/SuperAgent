@@ -46,12 +46,12 @@ func AllStreamingTypes() []StreamingType {
 
 // StreamChunk represents a chunk of streaming data
 type StreamChunk struct {
-	ID        string    `json:"id,omitempty"`
-	Content   string    `json:"content"`
-	Index     int       `json:"index"`
-	Done      bool      `json:"done"`
-	Error     error     `json:"-"`
-	Timestamp time.Time `json:"timestamp"`
+	ID        string                 `json:"id,omitempty"`
+	Content   string                 `json:"content"`
+	Index     int                    `json:"index"`
+	Done      bool                   `json:"done"`
+	Error     error                  `json:"-"`
+	Timestamp time.Time              `json:"timestamp"`
 	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -456,9 +456,9 @@ func (e *EventStreamWriter) WriteEvent(eventType string, payload []byte) error {
 	// [prelude (8 bytes)] [headers] [payload] [message CRC (4 bytes)]
 	msg := EventStreamMessage{
 		Headers: map[string]string{
-			":event-type":    eventType,
-			":content-type":  "application/json",
-			":message-type":  "event",
+			":event-type":   eventType,
+			":content-type": "application/json",
+			":message-type": "event",
 		},
 		Payload: payload,
 	}

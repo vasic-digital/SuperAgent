@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/config"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/config"
 )
 
 func TestNewPostgresDB(t *testing.T) {
@@ -855,11 +855,11 @@ func TestErrorMessages(t *testing.T) {
 
 // MockDB implements the DB interface for testing
 type MockDB struct {
-	PingFn       func() error
-	ExecFn       func(query string, args ...any) error
-	QueryFn      func(query string, args ...any) ([]any, error)
-	QueryRowFn   func(query string, args ...any) Row
-	CloseFn      func() error
+	PingFn        func() error
+	ExecFn        func(query string, args ...any) error
+	QueryFn       func(query string, args ...any) ([]any, error)
+	QueryRowFn    func(query string, args ...any) Row
+	CloseFn       func() error
 	HealthCheckFn func() error
 }
 
@@ -1259,7 +1259,7 @@ func TestMockDBAllMethods(t *testing.T) {
 				queryRowCalls++
 				return &MockRowImpl{Values: []any{"value"}}
 			},
-			CloseFn: func() error { return nil },
+			CloseFn:       func() error { return nil },
 			HealthCheckFn: func() error { return nil },
 		}
 
@@ -1683,10 +1683,10 @@ func TestLegacyDBInterface(t *testing.T) {
 // MockLegacyDB implements LegacyDB interface for testing
 type MockLegacyDB struct{}
 
-func (m *MockLegacyDB) Ping() error                              { return nil }
-func (m *MockLegacyDB) Exec(query string, args ...any) error     { return nil }
+func (m *MockLegacyDB) Ping() error                                    { return nil }
+func (m *MockLegacyDB) Exec(query string, args ...any) error           { return nil }
 func (m *MockLegacyDB) Query(query string, args ...any) ([]any, error) { return nil, nil }
-func (m *MockLegacyDB) Close() error                             { return nil }
+func (m *MockLegacyDB) Close() error                                   { return nil }
 
 func TestMockLegacyDB(t *testing.T) {
 	t.Run("ImplementsLegacyDBInterface", func(t *testing.T) {

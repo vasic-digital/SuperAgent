@@ -74,20 +74,20 @@ func (m *mockAgentInvoker) Invoke(ctx context.Context, agent *topology.Agent, pr
 	}
 
 	return &protocol.PhaseResponse{
-		AgentID:    agent.ID,
-		Role:       agent.Role,
-		Provider:   agent.Provider,
-		Model:      agent.Model,
-		Content:    content,
-		Confidence: m.defaultConf + (agent.Score-7.0)/20, // Vary based on score
-		Arguments:  []string{"arg1", "arg2"},
-		Criticisms: []string{"critique1"},
+		AgentID:     agent.ID,
+		Role:        agent.Role,
+		Provider:    agent.Provider,
+		Model:       agent.Model,
+		Content:     content,
+		Confidence:  m.defaultConf + (agent.Score-7.0)/20, // Vary based on score
+		Arguments:   []string{"arg1", "arg2"},
+		Criticisms:  []string{"critique1"},
 		Suggestions: []string{"suggestion1"},
-		Vote:       vote,
-		Score:      agent.Score,
-		Latency:    m.latency,
-		Timestamp:  time.Now(),
-		Metadata:   make(map[string]interface{}),
+		Vote:        vote,
+		Score:       agent.Score,
+		Latency:     m.latency,
+		Timestamp:   time.Now(),
+		Metadata:    make(map[string]interface{}),
 	}, nil
 }
 
@@ -726,13 +726,13 @@ func TestIntegration_FullDebateFlow(t *testing.T) {
 	for _, resp := range convergencePhase.Responses {
 		if resp.Vote != "" {
 			err := votingSystem.AddVote(&voting.Vote{
-				AgentID:        resp.AgentID,
-				Choice:         resp.Vote,
-				Confidence:     resp.Confidence,
-				Score:          resp.Score,
-				Role:           string(resp.Role),
-				Reasoning:      resp.Content,
-				Timestamp:      resp.Timestamp,
+				AgentID:    resp.AgentID,
+				Choice:     resp.Vote,
+				Confidence: resp.Confidence,
+				Score:      resp.Score,
+				Role:       string(resp.Role),
+				Reasoning:  resp.Content,
+				Timestamp:  resp.Timestamp,
 			})
 			assert.NoError(t, err)
 		}

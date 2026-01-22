@@ -16,16 +16,16 @@ import (
 
 // mockTaskRepository is a test implementation of TaskRepository
 type mockTaskRepository struct {
-	tasks         map[string]*models.BackgroundTask
-	history       map[string][]*models.TaskExecutionHistory
-	mu            sync.RWMutex
-	createErr     error
-	getByIDErr    error
-	updateErr     error
-	deleteErr     error
-	dequeueErr    error
-	countErr      error
-	statusCounts  map[models.TaskStatus]int64
+	tasks        map[string]*models.BackgroundTask
+	history      map[string][]*models.TaskExecutionHistory
+	mu           sync.RWMutex
+	createErr    error
+	getByIDErr   error
+	updateErr    error
+	deleteErr    error
+	dequeueErr   error
+	countErr     error
+	statusCounts map[models.TaskStatus]int64
 }
 
 func newMockTaskRepository() *mockTaskRepository {

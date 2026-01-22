@@ -146,10 +146,10 @@ func TestQdrantEnhancedRetriever_Retrieve(t *testing.T) {
 		denseRetriever := &MockRetrieverForEnhanced{results: denseResults}
 
 		config := &QdrantEnhancedConfig{
-			DenseWeight:        0.6,
-			SparseWeight:       0.4,
-			FusionMethod:       FusionRRF,
-			RRFK:               60.0,
+			DenseWeight:         0.6,
+			SparseWeight:        0.4,
+			FusionMethod:        FusionRRF,
+			RRFK:                60.0,
 			UseDebateEvaluation: false,
 		}
 
@@ -221,11 +221,11 @@ func TestQdrantEnhancedRetriever_Retrieve(t *testing.T) {
 		denseRetriever := &MockRetrieverForEnhanced{results: denseResults}
 
 		config := &QdrantEnhancedConfig{
-			DenseWeight:        0.6,
-			SparseWeight:       0.4,
-			FusionMethod:       FusionRRF,
+			DenseWeight:         0.6,
+			SparseWeight:        0.4,
+			FusionMethod:        FusionRRF,
 			UseDebateEvaluation: true,
-			DebateTopK:         5,
+			DebateTopK:          5,
 		}
 
 		retriever := NewQdrantEnhancedRetriever(denseRetriever, nil, config, logger)
@@ -252,10 +252,10 @@ func TestQdrantEnhancedRetriever_Retrieve(t *testing.T) {
 		denseRetriever := &MockRetrieverForEnhanced{results: denseResults}
 
 		config := &QdrantEnhancedConfig{
-			DenseWeight:        0.6,
-			SparseWeight:       0.4,
+			DenseWeight:         0.6,
+			SparseWeight:        0.4,
 			UseDebateEvaluation: true,
-			DebateTopK:         5,
+			DebateTopK:          5,
 		}
 
 		retriever := NewQdrantEnhancedRetriever(denseRetriever, nil, config, logger)
