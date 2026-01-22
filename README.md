@@ -45,8 +45,10 @@ make run-dev
 
 ## 📋 Features
 
+> **Comprehensive Reference**: See **[docs/FEATURES.md](docs/FEATURES.md)** for complete documentation of all 21 LLM providers, 13 embedding providers, 35 MCP implementations, 10 LSP servers, and 24+ power features.
+
 ### 🧠 AI Ensemble System
-- **Multi-Provider Support**: 10 LLM providers (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama*)
+- **Multi-Provider Support**: 21 LLM providers including Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, xAI/Grok, Cohere, Perplexity, Groq, and more
 - **Dynamic Provider Selection**: Real-time verification scores via LLMsVerifier integration
 
 > \* **Note**: Ollama is deprecated for production use (verification score: 5.0) and only serves as a fallback for local development/testing. Recommended production providers: Claude, DeepSeek, Gemini.
@@ -538,6 +540,7 @@ export REQUEST_LOGGING=true
 
 ### Documentation
 - **[Full Documentation](./docs/README.md)**: Complete documentation index
+- **[Features Reference](./docs/FEATURES.md)**: Comprehensive list of all providers, protocols, and features
 - **API Reference**: http://localhost:7061/docs
 - **[Architecture Guide](./docs/architecture/architecture.md)**: System architecture
 - **[Deployment Guide](./docs/deployment/DEPLOYMENT_GUIDE.md)**: Production deployment
