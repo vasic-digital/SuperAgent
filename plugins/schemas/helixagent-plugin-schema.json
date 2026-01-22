@@ -1,0 +1,368 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.helixagent.ai/plugin/v1.json",
+  "title": "HelixAgent Plugin Configuration Schema",
+  "description": "Universal configuration schema for HelixAgent CLI agent plugins",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Schema reference URL"
+    },
+    "endpoint": {
+      "type": "string",
+      "format": "uri",
+      "default": "https://localhost:7061",
+      "description": "HelixAgent server endpoint URL"
+    },
+    "transport": {
+      "type": "object",
+      "description": "Transport layer configuration",
+      "properties": {
+        "preferHTTP3": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prefer HTTP/3 (QUIC) transport when available"
+        },
+        "enableTOON": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable TOON protocol encoding for token optimization"
+        },
+        "enableBrotli": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Brotli compression for bandwidth reduction"
+        },
+        "fallbackChain": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["http3", "http2", "http1.1"]
+          },
+          "default": ["http3", "http2", "http1.1"],
+          "description": "Protocol fallback chain in order of preference"
+        },
+        "contentFallback": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["toon", "json"]
+          },
+          "default": ["toon", "json"],
+          "description": "Content type fallback chain"
+        },
+        "compressionFallback": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["brotli", "gzip", "none"]
+          },
+          "default": ["brotli", "gzip", "none"],
+          "description": "Compression method fallback chain"
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 300000,
+          "default": 30000,
+          "description": "Request timeout in milliseconds"
+        },
+        "retryAttempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3,
+          "description": "Number of retry attempts on failure"
+        },
+        "retryDelay": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 30000,
+          "default": 1000,
+          "description": "Delay between retries in milliseconds"
+        }
+      },
+      "additionalProperties": false
+    },
+    "events": {
+      "type": "object",
+      "description": "Real-time event subscription configuration",
+      "properties": {
+        "transport": {
+          "type": "string",
+          "enum": ["sse", "websocket", "webhook"],
+          "default": "sse",
+          "description": "Event transport mechanism"
+        },
+        "subscribeToDebates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Subscribe to AI debate events"
+        },
+        "subscribeToTasks": {
+          "type": "boolean",
+          "default": true,
+          "description": "Subscribe to background task events"
+        },
+        "reconnectInterval": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 60000,
+          "default": 5000,
+          "description": "Reconnection interval in milliseconds"
+        },
+        "maxReconnectAttempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 10,
+          "description": "Maximum reconnection attempts"
+        },
+        "heartbeatInterval": {
+          "type": "integer",
+          "minimum": 5000,
+          "maximum": 120000,
+          "default": 30000,
+          "description": "Heartbeat interval in milliseconds"
+        },
+        "filterTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Event types to subscribe to (empty for all)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ui": {
+      "type": "object",
+      "description": "UI/UX rendering configuration",
+      "properties": {
+        "renderStyle": {
+          "type": "string",
+          "enum": ["theater", "novel", "screenplay", "minimal", "plain"],
+          "default": "theater",
+          "description": "Debate rendering style"
+        },
+        "progressStyle": {
+          "type": "string",
+          "enum": ["ascii", "unicode", "block", "dots"],
+          "default": "unicode",
+          "description": "Progress bar style"
+        },
+        "colorScheme": {
+          "type": "string",
+          "enum": ["256", "truecolor", "none"],
+          "default": "256",
+          "description": "Terminal color scheme"
+        },
+        "showResources": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show resource usage gauges"
+        },
+        "animate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable animations"
+        },
+        "maxContentWidth": {
+          "type": "integer",
+          "minimum": 40,
+          "maximum": 200,
+          "default": 80,
+          "description": "Maximum content width for text wrapping"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debate": {
+      "type": "object",
+      "description": "AI debate system configuration",
+      "properties": {
+        "showPhaseIndicators": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show validation phase indicators"
+        },
+        "showConfidenceScores": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show confidence scores in output"
+        },
+        "showValidationPhase": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show validation phase details"
+        },
+        "showProviderInfo": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show provider and model information"
+        },
+        "defaultRounds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 3,
+          "description": "Default number of debate rounds"
+        },
+        "enableMultiPassValidation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable multi-pass validation by default"
+        }
+      },
+      "additionalProperties": false
+    },
+    "notifications": {
+      "type": "object",
+      "description": "Notification preferences",
+      "properties": {
+        "debateStarted": {
+          "type": "boolean",
+          "default": true,
+          "description": "Notify when a debate starts"
+        },
+        "debateCompleted": {
+          "type": "boolean",
+          "default": true,
+          "description": "Notify when a debate completes"
+        },
+        "roundCompleted": {
+          "type": "boolean",
+          "default": false,
+          "description": "Notify when each round completes"
+        },
+        "taskProgress": {
+          "type": "boolean",
+          "default": true,
+          "description": "Notify on task progress updates"
+        },
+        "taskCompleted": {
+          "type": "boolean",
+          "default": true,
+          "description": "Notify when tasks complete"
+        },
+        "errors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Notify on errors"
+        },
+        "warnings": {
+          "type": "boolean",
+          "default": true,
+          "description": "Notify on warnings"
+        }
+      },
+      "additionalProperties": false
+    },
+    "auth": {
+      "type": "object",
+      "description": "Authentication configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["none", "api_key", "oauth2", "bearer"],
+          "default": "none",
+          "description": "Authentication type"
+        },
+        "apiKey": {
+          "type": "string",
+          "description": "API key for authentication"
+        },
+        "bearerToken": {
+          "type": "string",
+          "description": "Bearer token for authentication"
+        },
+        "oauth2": {
+          "type": "object",
+          "properties": {
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "tokenUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "scopes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "tools": {
+      "type": "object",
+      "description": "Tool-specific configuration",
+      "properties": {
+        "enabled": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "helixagent_debate",
+              "helixagent_ensemble",
+              "helixagent_task",
+              "helixagent_rag",
+              "helixagent_memory",
+              "helixagent_providers"
+            ]
+          },
+          "default": [
+            "helixagent_debate",
+            "helixagent_ensemble",
+            "helixagent_task",
+            "helixagent_rag",
+            "helixagent_memory",
+            "helixagent_providers"
+          ],
+          "description": "List of enabled tools"
+        },
+        "aliases": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Tool name aliases (e.g., {'debate': 'helixagent_debate'})"
+        }
+      },
+      "additionalProperties": false
+    },
+    "logging": {
+      "type": "object",
+      "description": "Logging configuration",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"],
+          "default": "info",
+          "description": "Logging level"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["json", "text", "pretty"],
+          "default": "text",
+          "description": "Log output format"
+        },
+        "includeTimestamps": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include timestamps in logs"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

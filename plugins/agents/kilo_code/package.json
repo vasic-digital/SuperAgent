@@ -1,0 +1,66 @@
+{
+  "name": "@helixagent/kilo-code",
+  "version": "1.0.0",
+  "description": "HelixAgent integration for Kilo-Code with HTTP/3, TOON protocol, and AI debate visualization",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist/"
+  },
+  "dependencies": {
+    "ws": "^8.14.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/ws": "^8.5.0",
+    "typescript": "^5.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./transport": {
+      "import": "./dist/transport/index.js",
+      "require": "./dist/transport/index.js",
+      "types": "./dist/transport/index.d.ts"
+    },
+    "./events": {
+      "import": "./dist/events/index.js",
+      "require": "./dist/events/index.js",
+      "types": "./dist/events/index.d.ts"
+    },
+    "./ui": {
+      "import": "./dist/ui/index.js",
+      "require": "./dist/ui/index.js",
+      "types": "./dist/ui/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "keywords": [
+    "helixagent",
+    "kilo-code",
+    "ai-debate",
+    "ensemble",
+    "http3",
+    "toon"
+  ],
+  "author": "HelixAgent Team",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/helixagent/plugins.git",
+    "directory": "packages/kilo-code"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

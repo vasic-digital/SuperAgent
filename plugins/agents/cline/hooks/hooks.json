@@ -1,0 +1,69 @@
+{
+  "$schema": "https://schema.cline.ai/hooks/v1.json",
+  "name": "helixagent-cline",
+  "version": "1.0.0",
+  "description": "HelixAgent integration for Cline with HTTP/3, TOON, and AI debate visualization",
+  "hooks": {
+    "TaskStart": {
+      "command": "node",
+      "args": ["hooks/task_lifecycle.js", "start"],
+      "timeout": 5000,
+      "description": "Initialize HelixAgent connection when a task starts"
+    },
+    "TaskResume": {
+      "command": "node",
+      "args": ["hooks/task_lifecycle.js", "resume"],
+      "timeout": 3000,
+      "description": "Restore HelixAgent session when resuming a task"
+    },
+    "TaskCancel": {
+      "command": "node",
+      "args": ["hooks/task_lifecycle.js", "cancel"],
+      "timeout": 3000,
+      "description": "Cleanup HelixAgent connection when task is cancelled"
+    },
+    "TaskComplete": {
+      "command": "node",
+      "args": ["hooks/task_lifecycle.js", "complete"],
+      "timeout": 3000,
+      "description": "Final render and cleanup when task completes"
+    },
+    "UserPromptSubmit": {
+      "command": "node",
+      "args": ["hooks/prompt_handler.js"],
+      "timeout": 2000,
+      "description": "Intercept user prompts for TOON encoding"
+    },
+    "PreToolUse": {
+      "command": "node",
+      "args": ["hooks/tool_handler.js", "pre"],
+      "timeout": 2000,
+      "description": "Transform helix_* tool calls before execution"
+    },
+    "PostToolUse": {
+      "command": "node",
+      "args": ["hooks/tool_handler.js", "post"],
+      "timeout": 5000,
+      "description": "Render AI debate results after tool execution"
+    },
+    "PreCompact": {
+      "command": "node",
+      "args": ["hooks/context_handler.js"],
+      "timeout": 3000,
+      "description": "Save context before compaction"
+    }
+  },
+  "configuration": {
+    "helixagent": {
+      "endpoint": "https://localhost:7061",
+      "preferHTTP3": true,
+      "enableTOON": true,
+      "enableBrotli": true,
+      "debateRenderStyle": "theater",
+      "showPhaseIndicators": true,
+      "showConfidenceScores": true,
+      "subscribeToDebates": true,
+      "subscribeToTasks": true
+    }
+  }
+}
