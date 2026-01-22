@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/minio/minio-go/v7"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -286,4 +287,222 @@ func TestMockReader(t *testing.T) {
 	n, err = reader.Read(buf)
 	assert.Equal(t, io.EOF, err)
 	assert.Equal(t, 0, n)
+}
+
+// Additional comprehensive tests for improved coverage
+
+func TestPutOptions_Applied(t *testing.T) {
+	t.Run("WithContentType applies correctly", func(t *testing.T) {
+		opt := WithContentType("application/json")
+		var opts minio.PutObjectOptions
+		opt(&opts)
+		assert.Equal(t, "application/json", opts.ContentType)
+	})
+
+	t.Run("WithMetadata applies correctly", func(t *testing.T) {
+		metadata := map[string]string{
+			"key1": "value1",
+			"key2": "value2",
+		}
+		opt := WithMetadata(metadata)
+		var opts minio.PutObjectOptions
+		opt(&opts)
+		assert.Equal(t, "value1", opts.UserMetadata["key1"])
+		assert.Equal(t, "value2", opts.UserMetadata["key2"])
+	})
+
+	t.Run("multiple options combined", func(t *testing.T) {
+		options := []PutOption{
+			WithContentType("text/plain"),
+			WithMetadata(map[string]string{"author": "test"}),
+		}
+
+		var opts minio.PutObjectOptions
+		for _, opt := range options {
+			opt(&opts)
+		}
+
+		assert.Equal(t, "text/plain", opts.ContentType)
+		assert.Equal(t, "test", opts.UserMetadata["author"])
+	})
+}
+
+func TestNewClient_ValidationErrors(t *testing.T) {
+	t.Run("empty secret key", func(t *testing.T) {
+		config := &Config{
+			Endpoint:  "localhost:9000",
+			AccessKey: "access",
+			SecretKey: "",
+		}
+		client, err := NewClient(config, nil)
+		require.Error(t, err)
+		assert.Nil(t, client)
+		assert.Contains(t, err.Error(), "invalid config")
+	})
+
+	t.Run("invalid connect timeout", func(t *testing.T) {
+		config := &Config{
+			Endpoint:       "localhost:9000",
+			AccessKey:      "access",
+			SecretKey:      "secret",
+			ConnectTimeout: 0,
+		}
+		client, err := NewClient(config, nil)
+		require.Error(t, err)
+		assert.Nil(t, client)
+	})
+
+	t.Run("valid config creates client", func(t *testing.T) {
+		config := DefaultConfig()
+		client, err := NewClient(config, logrus.New())
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+		assert.False(t, client.IsConnected())
+	})
+}
+
+func TestClientConcurrency(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+
+	// Test concurrent IsConnected calls
+	done := make(chan bool, 10)
+	for i := 0; i < 10; i++ {
+		go func() {
+			_ = client.IsConnected()
+			done <- true
+		}()
+	}
+
+	// Wait for all goroutines
+	for i := 0; i < 10; i++ {
+		<-done
+	}
+
+	// Test concurrent Close calls
+	for i := 0; i < 10; i++ {
+		go func() {
+			_ = client.Close()
+			done <- true
+		}()
+	}
+
+	for i := 0; i < 10; i++ {
+		<-done
+	}
+}
+
+func TestClient_CloseIdempotent(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+
+	// Close should be idempotent
+	err1 := client.Close()
+	err2 := client.Close()
+	err3 := client.Close()
+
+	assert.NoError(t, err1)
+	assert.NoError(t, err2)
+	assert.NoError(t, err3)
+	assert.False(t, client.IsConnected())
+}
+
+func TestObjectInfo_Fields(t *testing.T) {
+	now := time.Now()
+	info := &ObjectInfo{
+		Key:          "path/to/file.txt",
+		Size:         2048,
+		LastModified: now,
+		ContentType:  "application/octet-stream",
+		ETag:         "etag123",
+		Metadata:     map[string]string{"x-amz-meta-custom": "value"},
+	}
+
+	assert.Equal(t, "path/to/file.txt", info.Key)
+	assert.Equal(t, int64(2048), info.Size)
+	assert.Equal(t, now, info.LastModified)
+	assert.Equal(t, "application/octet-stream", info.ContentType)
+	assert.Equal(t, "etag123", info.ETag)
+	assert.Equal(t, "value", info.Metadata["x-amz-meta-custom"])
+}
+
+func TestBucketInfo_Fields(t *testing.T) {
+	now := time.Now()
+	info := &BucketInfo{
+		Name:         "my-bucket",
+		CreationDate: now,
+	}
+
+	assert.Equal(t, "my-bucket", info.Name)
+	assert.Equal(t, now, info.CreationDate)
+}
+
+func TestClient_AllOperationsWhenNotConnected(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	// All these should return "not connected" errors
+	tests := []struct {
+		name string
+		fn   func() error
+	}{
+		{"HealthCheck", func() error { return client.HealthCheck(ctx) }},
+		{"CreateBucket", func() error { return client.CreateBucket(ctx, DefaultBucketConfig("test")) }},
+		{"DeleteBucket", func() error { return client.DeleteBucket(ctx, "test") }},
+		{"PutObject", func() error { return client.PutObject(ctx, "bucket", "key", bytes.NewReader([]byte("data")), 4) }},
+		{"DeleteObject", func() error { return client.DeleteObject(ctx, "bucket", "key") }},
+		{"CopyObject", func() error { return client.CopyObject(ctx, "src", "key", "dst", "key") }},
+		{"SetLifecycleRule", func() error { return client.SetLifecycleRule(ctx, "bucket", DefaultLifecycleRule("id", 30)) }},
+		{"RemoveLifecycleRule", func() error { return client.RemoveLifecycleRule(ctx, "bucket", "id") }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.fn()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "not connected")
+		})
+	}
+
+	// Test functions that return values
+	t.Run("ListBuckets", func(t *testing.T) {
+		buckets, err := client.ListBuckets(ctx)
+		require.Error(t, err)
+		assert.Nil(t, buckets)
+		assert.Contains(t, err.Error(), "not connected")
+	})
+
+	t.Run("BucketExists", func(t *testing.T) {
+		exists, err := client.BucketExists(ctx, "test")
+		require.Error(t, err)
+		assert.False(t, exists)
+	})
+
+	t.Run("GetObject", func(t *testing.T) {
+		obj, err := client.GetObject(ctx, "bucket", "key")
+		require.Error(t, err)
+		assert.Nil(t, obj)
+	})
+
+	t.Run("ListObjects", func(t *testing.T) {
+		objects, err := client.ListObjects(ctx, "bucket", "prefix")
+		require.Error(t, err)
+		assert.Nil(t, objects)
+	})
+
+	t.Run("StatObject", func(t *testing.T) {
+		info, err := client.StatObject(ctx, "bucket", "key")
+		require.Error(t, err)
+		assert.Nil(t, info)
+	})
+
+	t.Run("GetPresignedURL", func(t *testing.T) {
+		url, err := client.GetPresignedURL(ctx, "bucket", "key", time.Hour)
+		require.Error(t, err)
+		assert.Empty(t, url)
+	})
+
+	t.Run("GetPresignedPutURL", func(t *testing.T) {
+		url, err := client.GetPresignedPutURL(ctx, "bucket", "key", time.Hour)
+		require.Error(t, err)
+		assert.Empty(t, url)
+	})
 }

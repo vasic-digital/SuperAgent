@@ -193,14 +193,15 @@ func (b *Broker) getOrCreateWriter(topic string) *kafka.Writer {
 	}
 
 	writer := &kafka.Writer{
-		Addr:         kafka.TCP(b.config.Brokers...),
-		Topic:        topic,
-		Balancer:     &kafka.LeastBytes{},
-		BatchSize:    b.config.BatchSize,
-		BatchTimeout: b.config.BatchTimeout,
-		MaxAttempts:  b.config.MaxRetries,
-		RequiredAcks: kafka.RequiredAcks(b.config.RequiredAcks),
-		Async:        false,
+		Addr:                   kafka.TCP(b.config.Brokers...),
+		Topic:                  topic,
+		Balancer:               &kafka.LeastBytes{},
+		BatchSize:              b.config.BatchSize,
+		BatchTimeout:           b.config.BatchTimeout,
+		MaxAttempts:            b.config.MaxRetries,
+		RequiredAcks:           kafka.RequiredAcks(b.config.RequiredAcks),
+		Async:                  false,
+		AllowAutoTopicCreation: true,
 	}
 
 	b.writers[topic] = writer
@@ -214,6 +215,10 @@ func (b *Broker) Publish(ctx context.Context, topic string, message *messaging.M
 	if !b.connected.Load() {
 		b.metrics.RecordPublish(0, time.Since(startTime), false)
 		return fmt.Errorf("not connected to Kafka")
+	}
+
+	if message == nil {
+		return fmt.Errorf("message is nil")
 	}
 
 	// Apply options
@@ -279,6 +284,10 @@ func (b *Broker) PublishBatch(ctx context.Context, topic string, messages []*mes
 		return fmt.Errorf("not connected to Kafka")
 	}
 
+	if len(messages) == 0 {
+		return fmt.Errorf("no messages to publish")
+	}
+
 	var totalBytes int64
 	kafkaMessages := make([]kafka.Message, len(messages))
 	for i, msg := range messages {
@@ -319,6 +328,14 @@ func (b *Broker) PublishBatch(ctx context.Context, topic string, messages []*mes
 
 // Subscribe subscribes to a topic
 func (b *Broker) Subscribe(ctx context.Context, topic string, handler messaging.MessageHandler, opts ...messaging.SubscribeOption) (messaging.Subscription, error) {
+	if topic == "" {
+		return nil, fmt.Errorf("topic is required")
+	}
+
+	if handler == nil {
+		return nil, fmt.Errorf("handler is required")
+	}
+
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -450,6 +467,10 @@ func (b *Broker) consumeMessages(ctx context.Context, sub *kafkaSubscription) {
 
 // CreateTopic creates a Kafka topic
 func (b *Broker) CreateTopic(ctx context.Context, config *TopicConfig) error {
+	if !b.connected.Load() {
+		return fmt.Errorf("not connected to Kafka")
+	}
+
 	conn, err := kafka.DialContext(ctx, "tcp", b.config.Brokers[0])
 	if err != nil {
 		return fmt.Errorf("failed to connect: %w", err)
@@ -491,6 +512,10 @@ func (b *Broker) CreateTopic(ctx context.Context, config *TopicConfig) error {
 
 // DeleteTopic deletes a Kafka topic
 func (b *Broker) DeleteTopic(ctx context.Context, topic string) error {
+	if !b.connected.Load() {
+		return fmt.Errorf("not connected to Kafka")
+	}
+
 	conn, err := kafka.DialContext(ctx, "tcp", b.config.Brokers[0])
 	if err != nil {
 		return fmt.Errorf("failed to connect: %w", err)
@@ -519,6 +544,10 @@ func (b *Broker) DeleteTopic(ctx context.Context, topic string) error {
 
 // GetTopicMetadata returns topic metadata
 func (b *Broker) GetTopicMetadata(ctx context.Context, topic string) (*TopicMetadata, error) {
+	if !b.connected.Load() {
+		return nil, fmt.Errorf("not connected to Kafka")
+	}
+
 	conn, err := kafka.DialContext(ctx, "tcp", b.config.Brokers[0])
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect: %w", err)

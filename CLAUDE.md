@@ -100,6 +100,9 @@ make install-deps     # Install dev dependencies
 - `rag/` - Hybrid retrieval (dense + sparse), reranking, Qdrant integration
 - `memory/` - Mem0-style memory management with entity graphs
 - `routing/semantic/` - Semantic routing with embedding similarity
+- `embedding/` - Embedding providers (OpenAI, Cohere, Voyage, Jina, Google, AWS Bedrock)
+- `vectordb/` - Vector store clients (Qdrant, Pinecone, Milvus, pgvector)
+- `mcp/adapters/` - MCP server adapters (Slack, GitHub, Linear, Asana, Jira, and 45+ more)
 - `agentic/` - Graph-based workflow orchestration with checkpointing
 - `security/` - Red team framework (40+ attacks), guardrails, PII detection, audit logging
 - `structured/` - Constrained output generation (XGrammar-style)
@@ -403,6 +406,7 @@ Registry in `internal/agents/registry.go` supports: OpenCode, Crush, HelixCode, 
 ./challenges/scripts/free_provider_fallback_challenge.sh         # 8 tests - Zen/free models
 ./challenges/scripts/semantic_intent_challenge.sh                # 19 tests - intent detection (ZERO hardcoding)
 ./challenges/scripts/fallback_mechanism_challenge.sh             # 17 tests - fallback chain for empty responses
+./challenges/scripts/integration_providers_challenge.sh          # 47 tests - embedding/vector/MCP integrations
 ```
 
 Key concepts:
@@ -453,6 +457,51 @@ Dynamic provider selection based on real-time verification scores. Ollama is DEP
 | Cognee | `/v1/cognee` | Knowledge graph & RAG |
 
 Fallback mechanism: Routes to strongest LLM by LLMsVerifier score, falls back to next on failure.
+
+## Embedding Providers
+
+HelixAgent supports multiple embedding providers for semantic search and RAG applications.
+
+| Provider | Models | Dimensions | Key Files |
+|----------|--------|------------|-----------|
+| **OpenAI** | text-embedding-3-small, text-embedding-3-large, text-embedding-ada-002 | 512-3072 | `internal/embedding/models.go` |
+| **Cohere** | embed-english-v3.0, embed-multilingual-v3.0, embed-english-light-v3.0 | 384-4096 | `internal/embedding/providers.go` |
+| **Voyage** | voyage-3, voyage-3-lite, voyage-code-3, voyage-finance-2, voyage-law-2 | 512-1536 | `internal/embedding/providers.go` |
+| **Jina** | jina-embeddings-v3, jina-embeddings-v2-base-en, jina-clip-v1, jina-colbert-v2 | 128-1024 | `internal/embedding/providers.go` |
+| **Google** | text-embedding-005, text-multilingual-embedding-002, textembedding-gecko@003 | 768 | `internal/embedding/providers.go` |
+| **AWS Bedrock** | amazon.titan-embed-text-v1/v2, cohere.embed-english-v3, cohere.embed-multilingual-v3 | 1024-1536 | `internal/embedding/providers.go` |
+
+All providers support caching, batch embedding, and the standard `Embed()`, `EmbedBatch()`, `Close()` interface.
+
+## Vector Stores
+
+HelixAgent supports multiple vector databases for similarity search.
+
+| Vector Store | Features | Key Files |
+|--------------|----------|-----------|
+| **Qdrant** | Full-featured, gRPC/HTTP, filtering, payload storage | `internal/vectordb/qdrant/` |
+| **Pinecone** | Serverless, managed service, namespace support | `internal/vectordb/pinecone/` |
+| **Milvus** | High-performance, distributed, multiple index types | `internal/vectordb/milvus/` |
+| **pgvector** | PostgreSQL extension, HNSW/IVFFlat indexes, L2/IP/Cosine distance | `internal/vectordb/pgvector/` |
+
+All vector stores implement: `Connect()`, `Close()`, `HealthCheck()`, `Upsert()`, `Search()`, `Delete()`, `Get()`.
+
+## MCP Adapters
+
+HelixAgent provides MCP (Model Context Protocol) adapters for external service integration.
+
+| Category | Adapters | Description |
+|----------|----------|-------------|
+| **Productivity** | Linear, Asana, Jira, Notion, Todoist, Trello | Issue tracking, project management |
+| **Communication** | Slack, Discord, Gmail, Microsoft Teams | Messaging and notifications |
+| **Development** | GitHub, GitLab, Sentry, Brave Search | Code management, error tracking, search |
+| **Data** | PostgreSQL, Google Drive, Qdrant, Browserbase | Databases, files, vector search |
+
+Key files:
+- `internal/mcp/adapters/linear.go` - Linear issue tracking (14 tools)
+- `internal/mcp/adapters/asana.go` - Asana project management (20 tools)
+- `internal/mcp/adapters/jira.go` - Jira issue tracking (20 tools)
+- `internal/mcp/adapters/registry.go` - Adapter registry (45+ adapters)
 
 ## Background Task System
 

@@ -858,3 +858,110 @@ func TestBroker_LoggerWithDevelopment(t *testing.T) {
 	broker := NewBroker(nil, logger)
 	assert.NotNil(t, broker.logger)
 }
+
+// =============================================================================
+// Additional Error Path Tests (10 tests)
+// =============================================================================
+
+func TestBroker_Publish_NilMessage(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true) // Pretend we're connected
+	ctx := context.Background()
+
+	err := broker.Publish(ctx, "test-topic", nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "message is nil")
+}
+
+func TestBroker_PublishBatch_EmptyMessages(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true)
+	ctx := context.Background()
+
+	err := broker.PublishBatch(ctx, "test-topic", []*messaging.Message{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no messages to publish")
+}
+
+func TestBroker_PublishBatch_NilMessages(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true)
+	ctx := context.Background()
+
+	err := broker.PublishBatch(ctx, "test-topic", nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no messages to publish")
+}
+
+func TestBroker_CreateTopic_WhenNotConnected(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	cfg := DefaultTopicConfig("test-topic")
+	err := broker.CreateTopic(ctx, cfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestBroker_DeleteTopic_WhenNotConnected(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	err := broker.DeleteTopic(ctx, "test-topic")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestBroker_GetTopicMetadata_WhenNotConnected(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	_, err := broker.GetTopicMetadata(ctx, "test-topic")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestBroker_Subscribe_EmptyTopic(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true)
+	ctx := context.Background()
+
+	sub, err := broker.Subscribe(ctx, "", func(ctx context.Context, msg *messaging.Message) error {
+		return nil
+	})
+
+	assert.Error(t, err)
+	assert.Nil(t, sub)
+	assert.Contains(t, err.Error(), "topic is required")
+}
+
+func TestBroker_Subscribe_NilHandler(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true)
+	ctx := context.Background()
+
+	sub, err := broker.Subscribe(ctx, "test-topic", nil)
+
+	assert.Error(t, err)
+	assert.Nil(t, sub)
+	assert.Contains(t, err.Error(), "handler is required")
+}
+
+func TestBroker_Connect_AlreadyConnected(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true)
+	ctx := context.Background()
+
+	err := broker.Connect(ctx)
+	assert.NoError(t, err) // Should return nil when already connected
+}
+
+func TestBroker_Close_NoWritersOrReaders(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true)
+	ctx := context.Background()
+
+	err := broker.Close(ctx)
+	assert.NoError(t, err)
+	assert.False(t, broker.IsConnected())
+}

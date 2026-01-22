@@ -302,6 +302,69 @@ test-infra-status:
 	@echo "📊 Test infrastructure status:"
 	@docker compose -f docker-compose.test.yml ps
 
+# =============================================================================
+# FULL TEST INFRASTRUCTURE (includes Kafka, RabbitMQ, MinIO, Iceberg, Qdrant)
+# =============================================================================
+
+test-infra-full-start:
+	@echo "🐳 Starting FULL test infrastructure (all services)..."
+	@./scripts/start-full-test-infra.sh all
+
+test-infra-full-start-basic:
+	@echo "🐳 Starting basic test infrastructure (PostgreSQL, Redis, Mock LLM)..."
+	@./scripts/start-full-test-infra.sh basic
+
+test-infra-full-start-messaging:
+	@echo "🐳 Starting messaging test infrastructure (+ Kafka, RabbitMQ)..."
+	@./scripts/start-full-test-infra.sh messaging
+
+test-infra-full-start-bigdata:
+	@echo "🐳 Starting bigdata test infrastructure (+ MinIO, Iceberg, Qdrant)..."
+	@./scripts/start-full-test-infra.sh bigdata
+
+test-infra-full-stop:
+	@echo "🐳 Stopping FULL test infrastructure..."
+	@./scripts/stop-full-test-infra.sh
+
+test-with-full-infra:
+	@echo "🧪 Running tests with FULL infrastructure..."
+	@$(MAKE) test-infra-full-start
+	@echo ""
+	@echo "⏳ Waiting for all services to stabilize..."
+	@sleep 5
+	@source .env.test 2>/dev/null || true && \
+		DB_HOST=localhost DB_PORT=$${POSTGRES_PORT:-15432} DB_USER=helixagent DB_PASSWORD=helixagent123 DB_NAME=helixagent_db \
+		DATABASE_URL="postgres://helixagent:helixagent123@localhost:$${POSTGRES_PORT:-15432}/helixagent_db?sslmode=disable" \
+		REDIS_HOST=localhost REDIS_PORT=$${REDIS_PORT:-16379} REDIS_PASSWORD=helixagent123 \
+		REDIS_URL="redis://:helixagent123@localhost:$${REDIS_PORT:-16379}" \
+		KAFKA_BROKERS=localhost:9092 KAFKA_BROKER=localhost:9092 \
+		RABBITMQ_HOST=localhost RABBITMQ_PORT=5672 RABBITMQ_USER=helixagent RABBITMQ_PASSWORD=helixagent123 \
+		RABBITMQ_URL="amqp://helixagent:helixagent123@localhost:5672/" \
+		MINIO_ENDPOINT=localhost:9000 MINIO_ACCESS_KEY=minioadmin MINIO_SECRET_KEY=minioadmin123 MINIO_USE_SSL=false \
+		ICEBERG_CATALOG_URI=http://localhost:8181 \
+		QDRANT_HOST=localhost QDRANT_PORT=6333 \
+		MOCK_LLM_URL=http://localhost:$${MOCK_LLM_PORT:-18081} MOCK_LLM_ENABLED=true \
+		CLAUDE_API_KEY=mock-api-key CLAUDE_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
+		DEEPSEEK_API_KEY=mock-api-key DEEPSEEK_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
+		GEMINI_API_KEY=mock-api-key GEMINI_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
+		QWEN_API_KEY=mock-api-key QWEN_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
+		ZAI_API_KEY=mock-api-key ZAI_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081}/v1 \
+		OLLAMA_BASE_URL=http://localhost:$${MOCK_LLM_PORT:-18081} \
+		JWT_SECRET=test-jwt-secret-key-for-testing \
+		CI=true FULL_TEST_MODE=true \
+		go test -v ./... -timeout 600s -cover
+	@echo ""
+	@echo "✅ Tests completed with FULL infrastructure!"
+
+test-integration-full:
+	@echo "🧪 Running integration tests with FULL infrastructure..."
+	@$(MAKE) test-infra-full-start
+	@echo ""
+	@source .env.test 2>/dev/null || true && \
+		go test -v ./tests/integration/... -timeout 600s
+	@echo ""
+	@echo "✅ Integration tests completed!"
+
 test-with-infra:
 	@echo "🧪 Running tests with infrastructure..."
 	@$(MAKE) test-infra-start

@@ -281,8 +281,10 @@ func (b *Broker) Close(ctx context.Context) error {
 
 	// Cancel all subscriptions
 	for _, sub := range b.subscriptions {
-		sub.active.Store(false)
-		close(sub.cancelCh)
+		// Only close if not already unsubscribed (Unsubscribe closes cancelCh)
+		if sub.active.Swap(false) {
+			close(sub.cancelCh)
+		}
 		if sub.channel != nil {
 			sub.channel.Close()
 		}
@@ -441,6 +443,10 @@ func (b *Broker) PublishBatch(ctx context.Context, topic string, messages []*mes
 func (b *Broker) Subscribe(ctx context.Context, topic string, handler messaging.MessageHandler, opts ...messaging.SubscribeOption) (messaging.Subscription, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+
+	if b.conn == nil || !b.conn.IsConnected() {
+		return nil, fmt.Errorf("not connected to RabbitMQ")
+	}
 
 	// Apply options
 	options := messaging.ApplySubscribeOptions(opts...)

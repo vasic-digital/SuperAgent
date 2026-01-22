@@ -38,14 +38,18 @@ func skipIfNoRabbitMQ(t *testing.T) *rabbitmq.Broker {
 	}
 
 	cfg := &rabbitmq.Config{
-		Host:           host,
-		Port:           5672,
-		Username:       user,
-		Password:       password,
-		VHost:          "/",
-		PrefetchCount:  10,
-		ReconnectDelay: 5 * time.Second,
-		PublishTimeout: 10 * time.Second,
+		Host:                   host,
+		Port:                   5672,
+		Username:               user,
+		Password:               password,
+		VHost:                  "/",
+		PrefetchCount:          10,
+		ConnectionTimeout:      10 * time.Second,
+		ReconnectDelay:         5 * time.Second,
+		PublishTimeout:         10 * time.Second,
+		DefaultExchangeType:    "topic",
+		DefaultExchangeDurable: true,
+		DefaultQueueDurable:    true,
 	}
 
 	logger := zap.NewNop()
