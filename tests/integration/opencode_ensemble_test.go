@@ -109,6 +109,9 @@ type ChatRequestWithEnsemble struct {
 
 // TestEnsembleStrategies tests different ensemble voting strategies
 func TestEnsembleStrategies(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping ensemble strategies test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -185,6 +188,9 @@ func TestEnsembleStrategies(t *testing.T) {
 
 // TestProviderCombinations tests different provider combinations
 func TestProviderCombinations(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping provider combinations test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -249,6 +255,9 @@ func TestProviderCombinations(t *testing.T) {
 
 // TestForceProvider tests forcing requests to specific providers
 func TestForceProvider(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping force provider test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -302,6 +311,9 @@ func TestForceProvider(t *testing.T) {
 
 // TestEnsembleStreaming tests streaming with ensemble configuration
 func TestEnsembleStreaming(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping ensemble streaming test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -427,6 +439,9 @@ func TestEnsembleStreaming(t *testing.T) {
 
 // TestProviderFallback tests fallback behavior when primary provider fails
 func TestProviderFallback(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping provider fallback test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -474,6 +489,9 @@ func TestProviderFallback(t *testing.T) {
 
 // TestTimeoutHandling tests timeout handling with slow providers
 func TestTimeoutHandling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping timeout handling test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -565,6 +583,9 @@ func TestTimeoutHandling(t *testing.T) {
 
 // TestRateLimitHandling tests rate limit handling
 func TestRateLimitHandling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping rate limit handling test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -653,6 +674,9 @@ func TestRateLimitHandling(t *testing.T) {
 
 // TestModelDiscovery tests model discovery and listing
 func TestModelDiscovery(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping model discovery test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -761,6 +785,9 @@ func TestModelDiscovery(t *testing.T) {
 
 // TestProviderHealthChecks tests health checks for all providers
 func TestProviderHealthChecks(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping provider health checks test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -818,6 +845,9 @@ func TestProviderHealthChecks(t *testing.T) {
 
 // TestDeepSeekSpecific tests DeepSeek-specific features
 func TestDeepSeekSpecific(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping DeepSeek specific test in short mode")
+	}
 	if os.Getenv("DEEPSEEK_API_KEY") == "" {
 		t.Logf("DEEPSEEK_API_KEY not set (acceptable)")
 		return
@@ -861,6 +891,9 @@ func TestDeepSeekSpecific(t *testing.T) {
 
 // TestGeminiSpecific tests Gemini-specific features
 func TestGeminiSpecific(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Gemini specific test in short mode")
+	}
 	if os.Getenv("GEMINI_API_KEY") == "" {
 		t.Logf("GEMINI_API_KEY not set (acceptable)")
 		return
@@ -904,6 +937,9 @@ func TestGeminiSpecific(t *testing.T) {
 
 // TestOpenRouterSpecific tests OpenRouter-specific features
 func TestOpenRouterSpecific(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping OpenRouter specific test in short mode")
+	}
 	if os.Getenv("OPENROUTER_API_KEY") == "" {
 		t.Logf("OPENROUTER_API_KEY not set (acceptable)")
 		return

@@ -292,8 +292,9 @@ section5_request_response_testing() {
         -d "$stream_request" 2>/dev/null)
 
     if [[ -n "$stream_response" ]] && echo "$stream_response" | grep -q 'data:'; then
-        run_test "Streaming returns SSE data" \
-            "echo '$stream_response' | grep -q 'data:'"
+        # Streaming is working - record success directly
+        log_success "PASS: Streaming returns SSE data"
+        record_assertion "streaming" "sse_data_received" "true" "Streaming returns SSE data"
     else
         # Streaming may timeout or return empty - not a critical failure
         skip_test "Streaming response" "No SSE data received (timeout or provider issue)"

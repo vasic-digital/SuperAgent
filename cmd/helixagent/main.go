@@ -41,6 +41,9 @@ var (
 	generateOpenCode   = flag.Bool("generate-opencode-config", false, "Generate OpenCode configuration JSON")
 	validateOpenCode   = flag.String("validate-opencode-config", "", "Path to OpenCode config file to validate")
 	openCodeOutput     = flag.String("opencode-output", "", "Output path for OpenCode config (default: stdout)")
+	generateCrush      = flag.Bool("generate-crush-config", false, "Generate Crush configuration JSON")
+	validateCrush      = flag.String("validate-crush-config", "", "Path to Crush config file to validate")
+	crushOutput        = flag.String("crush-output", "", "Output path for Crush config (default: stdout)")
 	apiKeyEnvFile      = flag.String("api-key-env-file", "", "Path to .env file to write the generated API key")
 	preinstallMCP      = flag.Bool("preinstall-mcp", false, "Pre-install standard MCP server npm packages")
 	skipMCPPreinstall  = flag.Bool("skip-mcp-preinstall", false, "Skip automatic MCP package pre-installation at startup")
@@ -737,6 +740,9 @@ type AppConfig struct {
 	GenerateOpenCode   bool
 	ValidateOpenCode   string
 	OpenCodeOutput     string
+	GenerateCrush      bool
+	ValidateCrush      string
+	CrushOutput        string
 	APIKeyEnvFile      string
 	PreinstallMCP      bool // Run MCP package pre-installation and exit
 	SkipMCPPreinstall  bool // Skip automatic MCP pre-installation at startup
@@ -792,6 +798,16 @@ func run(appCfg *AppConfig) error {
 	// Handle OpenCode config generation command
 	if appCfg.GenerateOpenCode {
 		return handleGenerateOpenCode(appCfg)
+	}
+
+	// Handle Crush config validation command
+	if appCfg.ValidateCrush != "" {
+		return handleValidateCrush(appCfg)
+	}
+
+	// Handle Crush config generation command
+	if appCfg.GenerateCrush {
+		return handleGenerateCrush(appCfg)
 	}
 
 	// Handle MCP pre-installation command
@@ -984,6 +1000,9 @@ func main() {
 	appCfg.GenerateOpenCode = *generateOpenCode
 	appCfg.ValidateOpenCode = *validateOpenCode
 	appCfg.OpenCodeOutput = *openCodeOutput
+	appCfg.GenerateCrush = *generateCrush
+	appCfg.ValidateCrush = *validateCrush
+	appCfg.CrushOutput = *crushOutput
 	appCfg.APIKeyEnvFile = *apiKeyEnvFile
 	appCfg.PreinstallMCP = *preinstallMCP
 	appCfg.SkipMCPPreinstall = *skipMCPPreinstall
@@ -1746,6 +1765,393 @@ func validateOpenCodeConfig(data []byte) *OpenCodeValidationResult {
 	return result
 }
 
+// CrushConfig represents the Crush CLI configuration structure
+type CrushConfig struct {
+	Schema    string                    `json:"$schema,omitempty"`
+	Providers map[string]CrushProvider  `json:"providers,omitempty"`
+	Lsp       map[string]CrushLspConfig `json:"lsp,omitempty"`
+	Options   *CrushOptions             `json:"options,omitempty"`
+}
+
+// CrushProvider represents a provider configuration for Crush
+type CrushProvider struct {
+	Name    string       `json:"name"`
+	Type    string       `json:"type"`
+	BaseURL string       `json:"base_url"`
+	APIKey  string       `json:"api_key,omitempty"`
+	Models  []CrushModel `json:"models"`
+}
+
+// CrushModel represents a model configuration for Crush
+type CrushModel struct {
+	ID                   string                 `json:"id"`
+	Name                 string                 `json:"name"`
+	CostPer1MIn          float64                `json:"cost_per_1m_in"`
+	CostPer1MOut         float64                `json:"cost_per_1m_out"`
+	CostPer1MInCached    float64                `json:"cost_per_1m_in_cached,omitempty"`
+	CostPer1MOutCached   float64                `json:"cost_per_1m_out_cached,omitempty"`
+	ContextWindow        int                    `json:"context_window"`
+	DefaultMaxTokens     int                    `json:"default_max_tokens"`
+	CanReason            bool                   `json:"can_reason"`
+	SupportsAttachments  bool                   `json:"supports_attachments"`
+	Streaming            bool                   `json:"streaming"`
+	SupportsBrotli       bool                   `json:"supports_brotli,omitempty"`
+	Options              map[string]interface{} `json:"options,omitempty"`
+}
+
+// CrushLspConfig represents Language Server Protocol configuration for Crush
+type CrushLspConfig struct {
+	Command string   `json:"command"`
+	Args    []string `json:"args,omitempty"`
+	Enabled bool     `json:"enabled"`
+}
+
+// CrushOptions represents global configuration options for Crush
+type CrushOptions struct {
+	DisableProviderAutoUpdate bool `json:"disable_provider_auto_update,omitempty"`
+}
+
+// handleGenerateCrush handles the --generate-crush-config command
+func handleGenerateCrush(appCfg *AppConfig) error {
+	logger := appCfg.Logger
+	if logger == nil {
+		logger = logrus.New()
+	}
+
+	// Get configuration values
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey == "" {
+		// If no API key in env, check if we should generate one
+		var err error
+		apiKey, err = generateSecureAPIKey()
+		if err != nil {
+			return fmt.Errorf("failed to generate API key: %w", err)
+		}
+		logger.Warn("No HELIXAGENT_API_KEY found in environment, generated a new one")
+
+		// If env file is specified, write the generated key
+		if appCfg.APIKeyEnvFile != "" {
+			if err := writeAPIKeyToEnvFile(appCfg.APIKeyEnvFile, apiKey); err != nil {
+				logger.WithError(err).Warn("Failed to write generated API key to env file")
+			}
+		}
+	}
+
+	// Get host and port
+	host := os.Getenv("HELIXAGENT_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "7061"
+	}
+
+	baseURL := fmt.Sprintf("http://%s:%s/v1", host, port)
+
+	// Build the Crush configuration
+	// Crush uses a different structure than OpenCode - providers with models array
+	config := CrushConfig{
+		Schema: "https://charm.land/crush.json",
+		Providers: map[string]CrushProvider{
+			"helixagent": {
+				Name:    "HelixAgent AI Debate Ensemble",
+				Type:    "openai",
+				BaseURL: baseURL,
+				APIKey:  apiKey,
+				Models: []CrushModel{
+					{
+						ID:                   "helixagent-debate",
+						Name:                 "HelixAgent Debate Ensemble",
+						CostPer1MIn:          0.0, // Local deployment, no cost
+						CostPer1MOut:         0.0,
+						CostPer1MInCached:    0.0,
+						CostPer1MOutCached:   0.0,
+						ContextWindow:        128000,
+						DefaultMaxTokens:     8192,
+						CanReason:            true,
+						SupportsAttachments:  true,
+						Streaming:            true,
+						SupportsBrotli:       true,
+						Options: map[string]interface{}{
+							"vision":        true,
+							"image_input":   true,
+							"image_output":  true,
+							"ocr":           true,
+							"pdf":           true,
+							"function_calls": true,
+							"tool_use":      true,
+							"embeddings":    true,
+						},
+					},
+				},
+			},
+		},
+		Lsp: map[string]CrushLspConfig{
+			"helixagent-lsp": {
+				Command: fmt.Sprintf("curl -X POST %s/lsp", baseURL),
+				Args:    []string{"-H", "Authorization: Bearer " + apiKey},
+				Enabled: true,
+			},
+		},
+		Options: &CrushOptions{
+			DisableProviderAutoUpdate: false,
+		},
+	}
+
+	// Marshal to JSON with indentation
+	jsonData, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal Crush config: %w", err)
+	}
+
+	// Output to file or stdout
+	if appCfg.CrushOutput != "" {
+		// Validate path for traversal attacks (G304 security fix)
+		if !utils.ValidatePath(appCfg.CrushOutput) {
+			return fmt.Errorf("invalid output path: contains path traversal or dangerous characters")
+		}
+		// #nosec G304 - CrushOutput is validated by utils.ValidatePath and provided via CLI by admin
+		if err := os.WriteFile(appCfg.CrushOutput, jsonData, 0644); err != nil {
+			return fmt.Errorf("failed to write Crush config to file: %w", err)
+		}
+		logger.WithField("file", appCfg.CrushOutput).Info("Crush configuration written to file")
+	} else {
+		fmt.Println(string(jsonData))
+	}
+
+	return nil
+}
+
+// CrushValidationResult holds the validation results for Crush config
+type CrushValidationResult struct {
+	Valid    bool                      `json:"valid"`
+	Errors   []OpenCodeValidationError `json:"errors"`
+	Warnings []string                  `json:"warnings"`
+	Stats    *CrushValidationStats     `json:"stats,omitempty"`
+}
+
+// CrushValidationStats contains statistics about the validated Crush config
+type CrushValidationStats struct {
+	Providers  int `json:"providers"`
+	Models     int `json:"models"`
+	LspConfigs int `json:"lsp_configs"`
+}
+
+// handleValidateCrush handles the --validate-crush-config command
+func handleValidateCrush(appCfg *AppConfig) error {
+	logger := appCfg.Logger
+	if logger == nil {
+		logger = logrus.New()
+	}
+
+	filePath := appCfg.ValidateCrush
+
+	// Validate path for traversal attacks (G304 security fix)
+	if !utils.ValidatePath(filePath) {
+		return fmt.Errorf("invalid config file path: contains path traversal or dangerous characters")
+	}
+
+	// Read the config file
+	// #nosec G304 - filePath is validated by utils.ValidatePath and provided via CLI by admin
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	// Perform validation
+	result := validateCrushConfig(data)
+
+	// Output header
+	fmt.Println("======================================================================")
+	fmt.Println("HELIXAGENT CRUSH CONFIGURATION VALIDATION")
+	fmt.Println("Using LLMsVerifier schema compliance rules")
+	fmt.Println("======================================================================")
+	fmt.Println()
+	fmt.Printf("File: %s\n", filePath)
+	fmt.Println()
+
+	if result.Valid {
+		fmt.Println("✅ CONFIGURATION IS VALID")
+		fmt.Println()
+		if result.Stats != nil {
+			fmt.Printf("Configuration contains:\n")
+			fmt.Printf("  - Providers: %d\n", result.Stats.Providers)
+			fmt.Printf("  - Models: %d\n", result.Stats.Models)
+			fmt.Printf("  - LSP configs: %d\n", result.Stats.LspConfigs)
+		}
+	} else {
+		fmt.Println("❌ CONFIGURATION HAS ERRORS:")
+		fmt.Println()
+		for _, e := range result.Errors {
+			if e.Field != "" {
+				fmt.Printf("  - [%s] %s\n", e.Field, e.Message)
+			} else {
+				fmt.Printf("  - %s\n", e.Message)
+			}
+		}
+	}
+
+	if len(result.Warnings) > 0 {
+		fmt.Println()
+		fmt.Println("⚠️  WARNINGS:")
+		for _, w := range result.Warnings {
+			fmt.Printf("  - %s\n", w)
+		}
+	}
+
+	fmt.Println()
+	fmt.Println("======================================================================")
+
+	if !result.Valid {
+		return fmt.Errorf("validation failed with %d errors", len(result.Errors))
+	}
+
+	return nil
+}
+
+// ValidCrushTopLevelKeys contains the valid top-level keys per Crush schema
+var ValidCrushTopLevelKeys = map[string]bool{
+	"$schema":   true,
+	"providers": true,
+	"lsp":       true,
+	"options":   true,
+}
+
+// validateCrushConfig performs comprehensive validation of a Crush config
+func validateCrushConfig(data []byte) *CrushValidationResult {
+	result := &CrushValidationResult{
+		Valid:    true,
+		Errors:   []OpenCodeValidationError{},
+		Warnings: []string{},
+		Stats:    &CrushValidationStats{},
+	}
+
+	// Parse as generic map to check top-level keys
+	var rawConfig map[string]interface{}
+	if err := json.Unmarshal(data, &rawConfig); err != nil {
+		result.Valid = false
+		result.Errors = append(result.Errors, OpenCodeValidationError{
+			Field:   "",
+			Message: fmt.Sprintf("invalid JSON: %v", err),
+		})
+		return result
+	}
+
+	// Check for invalid top-level keys
+	var invalidKeys []string
+	for key := range rawConfig {
+		if !ValidCrushTopLevelKeys[key] {
+			invalidKeys = append(invalidKeys, key)
+		}
+	}
+	if len(invalidKeys) > 0 {
+		result.Valid = false
+		result.Errors = append(result.Errors, OpenCodeValidationError{
+			Field:   "",
+			Message: fmt.Sprintf("invalid top-level keys: %v (valid keys: $schema, providers, lsp, options)", invalidKeys),
+		})
+	}
+
+	// Parse and validate providers
+	totalModels := 0
+	if providers, ok := rawConfig["providers"].(map[string]interface{}); ok {
+		result.Stats.Providers = len(providers)
+		for name, providerData := range providers {
+			if provider, ok := providerData.(map[string]interface{}); ok {
+				// Provider must have name
+				if _, hasName := provider["name"]; !hasName {
+					result.Valid = false
+					result.Errors = append(result.Errors, OpenCodeValidationError{
+						Field:   fmt.Sprintf("providers.%s.name", name),
+						Message: "provider must have a name",
+					})
+				}
+
+				// Provider must have type
+				if _, hasType := provider["type"]; !hasType {
+					result.Valid = false
+					result.Errors = append(result.Errors, OpenCodeValidationError{
+						Field:   fmt.Sprintf("providers.%s.type", name),
+						Message: "provider must have a type",
+					})
+				}
+
+				// Provider must have base_url
+				if _, hasBaseURL := provider["base_url"]; !hasBaseURL {
+					result.Valid = false
+					result.Errors = append(result.Errors, OpenCodeValidationError{
+						Field:   fmt.Sprintf("providers.%s.base_url", name),
+						Message: "provider must have a base_url",
+					})
+				}
+
+				// Provider must have models
+				if models, hasModels := provider["models"].([]interface{}); hasModels {
+					totalModels += len(models)
+					for i, modelData := range models {
+						if model, ok := modelData.(map[string]interface{}); ok {
+							// Model must have id
+							if _, hasID := model["id"]; !hasID {
+								result.Valid = false
+								result.Errors = append(result.Errors, OpenCodeValidationError{
+									Field:   fmt.Sprintf("providers.%s.models[%d].id", name, i),
+									Message: "model must have an id",
+								})
+							}
+							// Model must have name
+							if _, hasName := model["name"]; !hasName {
+								result.Valid = false
+								result.Errors = append(result.Errors, OpenCodeValidationError{
+									Field:   fmt.Sprintf("providers.%s.models[%d].name", name, i),
+									Message: "model must have a name",
+								})
+							}
+						}
+					}
+				} else {
+					result.Valid = false
+					result.Errors = append(result.Errors, OpenCodeValidationError{
+						Field:   fmt.Sprintf("providers.%s.models", name),
+						Message: "provider must have at least one model",
+					})
+				}
+			}
+		}
+	} else if rawConfig["providers"] == nil {
+		result.Valid = false
+		result.Errors = append(result.Errors, OpenCodeValidationError{
+			Field:   "providers",
+			Message: "at least one provider must be configured",
+		})
+	}
+	result.Stats.Models = totalModels
+
+	// Parse and validate LSP configs
+	if lspConfigs, ok := rawConfig["lsp"].(map[string]interface{}); ok {
+		result.Stats.LspConfigs = len(lspConfigs)
+		for name, lspData := range lspConfigs {
+			if lsp, ok := lspData.(map[string]interface{}); ok {
+				// LSP must have command
+				if _, hasCommand := lsp["command"]; !hasCommand {
+					result.Valid = false
+					result.Errors = append(result.Errors, OpenCodeValidationError{
+						Field:   fmt.Sprintf("lsp.%s.command", name),
+						Message: "LSP config must have a command",
+					})
+				}
+			}
+		}
+	}
+
+	// Add warnings for missing recommended fields
+	if _, hasSchema := rawConfig["$schema"]; !hasSchema {
+		result.Warnings = append(result.Warnings, "$schema field is recommended for validation")
+	}
+
+	return result
+}
+
 func showHelp() {
 	fmt.Printf(`HelixAgent - Advanced LLM Gateway with Cognee Integration
 
@@ -1772,8 +2178,18 @@ Options:
         Validate an existing OpenCode configuration file (uses LLMsVerifier schema rules)
   -opencode-output string
         Output path for OpenCode config (default: stdout)
+  -generate-crush-config
+        Generate Crush CLI configuration JSON (uses HELIXAGENT_API_KEY env or generates new)
+  -validate-crush-config string
+        Validate an existing Crush configuration file (uses LLMsVerifier schema rules)
+  -crush-output string
+        Output path for Crush config (default: stdout)
   -api-key-env-file string
         Path to .env file to write the generated API key
+  -preinstall-mcp
+        Pre-install standard MCP server npm packages for faster startup
+  -skip-mcp-preinstall
+        Skip automatic MCP package pre-installation at startup
   -version
         Show version information
   -help
@@ -1808,13 +2224,20 @@ API Key & Configuration Commands:
   # Validate an existing OpenCode configuration file
   helixagent -validate-opencode-config ~/.config/opencode/opencode.json
 
-  # Validate a generated config
-  helixagent -validate-opencode-config ~/Downloads/opencode-helix-agent.json
+  # Generate Crush CLI configuration
+  helixagent -generate-crush-config
+
+  # Generate Crush config and save to file
+  helixagent -generate-crush-config -crush-output crush.json
+
+  # Validate an existing Crush configuration file
+  helixagent -validate-crush-config ~/.config/crush/crush.json
 
 Examples:
   helixagent
   helixagent -auto-start-docker=false
   helixagent -config /path/to/config.yaml
+  helixagent -generate-crush-config -crush-output /tmp/crush.json
   helixagent -version
 
 For more information, visit: https://dev.helix.agent
