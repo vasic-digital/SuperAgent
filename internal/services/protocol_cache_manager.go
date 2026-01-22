@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/database"
+	"github.com/sirupsen/logrus"
 )
 
 // ProtocolCacheManager handles caching for MCP, LSP, ACP, and Embedding protocols

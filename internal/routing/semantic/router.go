@@ -14,24 +14,24 @@ import (
 
 // Router provides semantic routing for queries to appropriate handlers
 type Router struct {
-	routes    []*Route
-	encoder   Encoder
-	cache     *SemanticCache
-	config    *RouterConfig
-	logger    *logrus.Logger
-	mu        sync.RWMutex
+	routes  []*Route
+	encoder Encoder
+	cache   *SemanticCache
+	config  *RouterConfig
+	logger  *logrus.Logger
+	mu      sync.RWMutex
 }
 
 // Route defines a semantic route
 type Route struct {
-	Name        string       `json:"name"`
-	Description string       `json:"description"`
-	Utterances  []string     `json:"utterances"`  // Example phrases for this route
-	Handler     RouteHandler `json:"-"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Utterances  []string               `json:"utterances"` // Example phrases for this route
+	Handler     RouteHandler           `json:"-"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	ModelTier   ModelTier    `json:"model_tier"`
-	Embedding   []float32    `json:"-"` // Averaged embedding of utterances
-	Score       float64      `json:"-"` // Match score (set during routing)
+	ModelTier   ModelTier              `json:"model_tier"`
+	Embedding   []float32              `json:"-"` // Averaged embedding of utterances
+	Score       float64                `json:"-"` // Match score (set during routing)
 }
 
 // RouteHandler handles matched routes
@@ -39,11 +39,11 @@ type RouteHandler func(ctx context.Context, query string) (*RouteResult, error)
 
 // RouteResult contains the result of route handling
 type RouteResult struct {
-	Content     string                 `json:"content"`
-	Model       string                 `json:"model,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	CacheKey    string                 `json:"cache_key,omitempty"`
-	Latency     time.Duration          `json:"latency"`
+	Content  string                 `json:"content"`
+	Model    string                 `json:"model,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	CacheKey string                 `json:"cache_key,omitempty"`
+	Latency  time.Duration          `json:"latency"`
 }
 
 // ModelTier indicates the complexity/cost tier for a route

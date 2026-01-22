@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"dev.helix.agent/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"dev.helix.agent/internal/config"
 )
 
 // GinRouter provides a wrapper around the Gin router with lifecycle management

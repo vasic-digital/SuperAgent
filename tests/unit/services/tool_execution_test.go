@@ -85,11 +85,11 @@ var toolSchemas = map[string]ToolCallSchema{
 // TestToolCallArgumentsValidation verifies that tool call arguments have required fields
 func TestToolCallArgumentsValidation(t *testing.T) {
 	tests := []struct {
-		name           string
-		toolName       string
-		argumentsJSON  string
-		shouldBeValid  bool
-		expectedError  string
+		name          string
+		toolName      string
+		argumentsJSON string
+		shouldBeValid bool
+		expectedError string
 	}{
 		// Bash tool tests
 		{
@@ -284,7 +284,7 @@ func TestBashDescriptionGenerationCoverage(t *testing.T) {
 	}{
 		// Git commands - should NOT fallback to "Run tests" even with test in message
 		{"git commit -m 'test commit'", "commit", "Run tests"},
-		{"git add test.go", "stage", "Run tests"},  // "Stage files for commit" contains "stage"
+		{"git add test.go", "stage", "Run tests"}, // "Stage files for commit" contains "stage"
 		{"git checkout test-branch", "branch", "Run tests"},
 		{"git merge test-feature", "merge", "Run tests"},
 		{"git status", "status", "Run tests"},
@@ -305,7 +305,7 @@ func TestBashDescriptionGenerationCoverage(t *testing.T) {
 
 		// Make commands - note: "make lint" contains "lint" so gets linter description
 		{"make build", "make", ""},
-		{"make lint", "lint", ""},  // "lint" is checked first, gets "Run linter"
+		{"make lint", "lint", ""}, // "lint" is checked first, gets "Run linter"
 
 		// Linting
 		{"golangci-lint run", "lint", ""},
@@ -443,9 +443,9 @@ func TestToolCallJSONEscaping(t *testing.T) {
 func TestToolCallArgumentsNeverEmpty(t *testing.T) {
 	// Generate sample tool calls for various scenarios
 	scenarios := []struct {
-		scenario   string
-		toolName   string
-		genArgs    func() string
+		scenario string
+		toolName string
+		genArgs  func() string
 	}{
 		{
 			scenario: "test command",

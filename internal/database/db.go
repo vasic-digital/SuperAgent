@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
+	"dev.helix.agent/internal/config"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"dev.helix.agent/internal/config"
 )
 
 // Row interface for row scanning

@@ -55,8 +55,8 @@ type DeepSeekMessage struct {
 
 // DeepSeekTool represents a tool definition for DeepSeek API
 type DeepSeekTool struct {
-	Type     string             `json:"type"`
-	Function DeepSeekToolFunc   `json:"function"`
+	Type     string           `json:"type"`
+	Function DeepSeekToolFunc `json:"function"`
 }
 
 // DeepSeekToolFunc represents a function definition

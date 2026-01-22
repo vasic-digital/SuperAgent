@@ -13,12 +13,12 @@ import (
 
 // InMemoryFeedbackCollector implements FeedbackCollector with in-memory storage
 type InMemoryFeedbackCollector struct {
-	feedback   []*Feedback
-	bySession  map[string][]*Feedback
-	byPrompt   map[string][]*Feedback
-	mu         sync.RWMutex
-	logger     *logrus.Logger
-	maxSize    int
+	feedback    []*Feedback
+	bySession   map[string][]*Feedback
+	byPrompt    map[string][]*Feedback
+	mu          sync.RWMutex
+	logger      *logrus.Logger
+	maxSize     int
 	rewardModel RewardModel
 }
 

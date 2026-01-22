@@ -24,9 +24,9 @@ type Service struct {
 	config *Config
 
 	// Native Go components
-	semanticCache     *gptcache.SemanticCache
-	structuredGen     *outlines.StructuredGenerator
-	enhancedStreamer  *streaming.EnhancedStreamer
+	semanticCache    *gptcache.SemanticCache
+	structuredGen    *outlines.StructuredGenerator
+	enhancedStreamer *streaming.EnhancedStreamer
 
 	// External service clients
 	sglangClient     *sglang.Client
@@ -36,10 +36,10 @@ type Service struct {
 	lmqlClient       *lmql.Client
 
 	// Service availability tracking
-	mu                sync.RWMutex
-	serviceStatus     map[string]bool
-	lastHealthCheck   map[string]time.Time
-	unavailableUntil  map[string]time.Time
+	mu               sync.RWMutex
+	serviceStatus    map[string]bool
+	lastHealthCheck  map[string]time.Time
+	unavailableUntil map[string]time.Time
 
 	// Metrics
 	cacheHits   int64
@@ -125,22 +125,22 @@ func NewService(config *Config) (*Service, error) {
 
 // OptimizedRequest represents an optimized LLM request.
 type OptimizedRequest struct {
-	OriginalPrompt    string
-	OptimizedPrompt   string
-	CacheHit          bool
-	CachedResponse    string
-	RetrievedContext  []string
-	DecomposedTasks   []string
-	WarmPrefix        bool
+	OriginalPrompt   string
+	OptimizedPrompt  string
+	CacheHit         bool
+	CachedResponse   string
+	RetrievedContext []string
+	DecomposedTasks  []string
+	WarmPrefix       bool
 }
 
 // OptimizedResponse represents an optimized LLM response.
 type OptimizedResponse struct {
-	Content           string
-	Cached            bool
-	StructuredOutput  interface{}
-	ValidationResult  *outlines.ValidationResult
-	StreamingMetrics  *streaming.AggregatedStream
+	Content          string
+	Cached           bool
+	StructuredOutput interface{}
+	ValidationResult *outlines.ValidationResult
+	StreamingMetrics *streaming.AggregatedStream
 }
 
 // OptimizeRequest prepares a request for optimal LLM processing.

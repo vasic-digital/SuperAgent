@@ -15,10 +15,10 @@ import (
 
 // InMemoryAuditLogger provides an in-memory audit log implementation
 type InMemoryAuditLogger struct {
-	events []*AuditEvent
+	events    []*AuditEvent
 	maxEvents int
-	logger *logrus.Logger
-	mu     sync.RWMutex
+	logger    *logrus.Logger
+	mu        sync.RWMutex
 }
 
 // NewInMemoryAuditLogger creates a new in-memory audit logger

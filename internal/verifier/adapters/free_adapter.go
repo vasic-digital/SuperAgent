@@ -73,10 +73,10 @@ type FreeProviderAdapter struct {
 	zenProvider *zen.ZenProvider
 
 	// Cached verification results
-	mu              sync.RWMutex
-	verifiedModels  map[string]*verifier.UnifiedModel
-	lastVerified    map[string]time.Time
-	healthStatus    map[string]bool
+	mu             sync.RWMutex
+	verifiedModels map[string]*verifier.UnifiedModel
+	lastVerified   map[string]time.Time
+	healthStatus   map[string]bool
 }
 
 // NewFreeProviderAdapter creates a new free provider adapter
@@ -86,8 +86,8 @@ func NewFreeProviderAdapter(verifierSvc *verifier.VerificationService, config *F
 	}
 
 	return &FreeProviderAdapter{
-		verifierSvc:    verifierSvc,
-		config:         config,
+		verifierSvc: verifierSvc,
+		config:      config,
 		httpClient: &http.Client{
 			Timeout: config.VerificationTimeout,
 		},
@@ -252,12 +252,12 @@ func (fa *FreeProviderAdapter) verifyZenModel(ctx context.Context, modelID strin
 		Latency:      latency,
 		Capabilities: convertCapabilities(caps),
 		Metadata: map[string]interface{}{
-			"free_model":            true,
-			"verification_time_ms":  time.Since(startTime).Milliseconds(),
-			"latency_ms":            latency.Milliseconds(),
-			"anonymous_access":      true,
-			"max_tokens":            caps.Limits.MaxTokens,
-			"context_window":        caps.Limits.MaxInputLength,
+			"free_model":           true,
+			"verification_time_ms": time.Since(startTime).Milliseconds(),
+			"latency_ms":           latency.Milliseconds(),
+			"anonymous_access":     true,
+			"max_tokens":           caps.Limits.MaxTokens,
+			"context_window":       caps.Limits.MaxInputLength,
 		},
 	}
 
@@ -511,9 +511,9 @@ func (fa *FreeProviderAdapter) verifyOpenRouterFreeModel(ctx context.Context, mo
 			"streaming",
 		},
 		Metadata: map[string]interface{}{
-			"free_model":            true,
-			"verification_time_ms":  time.Since(startTime).Milliseconds(),
-			"latency_ms":            latency.Milliseconds(),
+			"free_model":           true,
+			"verification_time_ms": time.Since(startTime).Milliseconds(),
+			"latency_ms":           latency.Milliseconds(),
 		},
 	}
 

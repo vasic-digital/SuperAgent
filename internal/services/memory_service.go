@@ -30,17 +30,17 @@ type CleanupStats struct {
 
 // MemoryService provides memory enhancement capabilities using Cognee
 type MemoryService struct {
-	client          *llm.Client
-	enabled         bool
-	dataset         string
-	cache           map[string]*memoryCacheEntry
-	cacheMu         sync.RWMutex
-	ttl             time.Duration
-	cleanupInterval time.Duration
-	lastCleanup     time.Time
+	client           *llm.Client
+	enabled          bool
+	dataset          string
+	cache            map[string]*memoryCacheEntry
+	cacheMu          sync.RWMutex
+	ttl              time.Duration
+	cleanupInterval  time.Duration
+	lastCleanup      time.Time
 	lastCleanupStats *CleanupStats
-	stopCh          chan struct{}
-	stopped         bool
+	stopCh           chan struct{}
+	stopped          bool
 }
 
 // DefaultCleanupInterval is the default interval for cache cleanup

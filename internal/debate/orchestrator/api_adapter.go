@@ -31,16 +31,16 @@ func NewAPIAdapter(orchestrator *Orchestrator) *APIAdapter {
 
 // APICreateDebateRequest matches the handlers.CreateDebateRequest structure.
 type APICreateDebateRequest struct {
-	DebateID                  string                     `json:"debate_id,omitempty"`
-	Topic                     string                     `json:"topic"`
-	Participants              []APIParticipantConfig     `json:"participants"`
-	MaxRounds                 int                        `json:"max_rounds,omitempty"`
-	Timeout                   int                        `json:"timeout,omitempty"` // seconds
-	Strategy                  string                     `json:"strategy,omitempty"`
-	EnableCognee              bool                       `json:"enable_cognee,omitempty"`
-	EnableMultiPassValidation bool                       `json:"enable_multi_pass_validation,omitempty"`
-	ValidationConfig          *APIValidationConfig       `json:"validation_config,omitempty"`
-	Metadata                  map[string]interface{}     `json:"metadata,omitempty"`
+	DebateID                  string                 `json:"debate_id,omitempty"`
+	Topic                     string                 `json:"topic"`
+	Participants              []APIParticipantConfig `json:"participants"`
+	MaxRounds                 int                    `json:"max_rounds,omitempty"`
+	Timeout                   int                    `json:"timeout,omitempty"` // seconds
+	Strategy                  string                 `json:"strategy,omitempty"`
+	EnableCognee              bool                   `json:"enable_cognee,omitempty"`
+	EnableMultiPassValidation bool                   `json:"enable_multi_pass_validation,omitempty"`
+	ValidationConfig          *APIValidationConfig   `json:"validation_config,omitempty"`
+	Metadata                  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // APIParticipantConfig matches handlers.ParticipantConfigRequest.
@@ -69,18 +69,18 @@ type APIValidationConfig struct {
 
 // APIDebateResponse matches the expected API response structure.
 type APIDebateResponse struct {
-	DebateID         string                     `json:"debate_id"`
-	Topic            string                     `json:"topic"`
-	Status           string                     `json:"status"`
-	Success          bool                       `json:"success"`
-	AllResponses     []APIParticipantResponse   `json:"all_responses"`
-	Consensus        *APIConsensusResult        `json:"consensus,omitempty"`
-	QualityScore     float64                    `json:"quality_score"`
-	FinalScore       float64                    `json:"final_score"`
-	LessonsLearned   int                        `json:"lessons_learned"`
-	PatternsDetected int                        `json:"patterns_detected"`
-	Duration         string                     `json:"duration"`
-	Metadata         map[string]interface{}     `json:"metadata,omitempty"`
+	DebateID         string                   `json:"debate_id"`
+	Topic            string                   `json:"topic"`
+	Status           string                   `json:"status"`
+	Success          bool                     `json:"success"`
+	AllResponses     []APIParticipantResponse `json:"all_responses"`
+	Consensus        *APIConsensusResult      `json:"consensus,omitempty"`
+	QualityScore     float64                  `json:"quality_score"`
+	FinalScore       float64                  `json:"final_score"`
+	LessonsLearned   int                      `json:"lessons_learned"`
+	PatternsDetected int                      `json:"patterns_detected"`
+	Duration         string                   `json:"duration"`
+	Metadata         map[string]interface{}   `json:"metadata,omitempty"`
 }
 
 // APIParticipantResponse represents a participant's response in API format.
@@ -101,13 +101,13 @@ type APIParticipantResponse struct {
 
 // APIConsensusResult represents the consensus in API format.
 type APIConsensusResult struct {
-	Reached        bool              `json:"reached"`
-	AgreementLevel float64           `json:"agreement_level"`
-	FinalPosition  string            `json:"final_position"`
-	KeyPoints      []string          `json:"key_points"`
-	Disagreements  []string          `json:"disagreements,omitempty"`
-	VoteBreakdown  map[string]int    `json:"vote_breakdown,omitempty"`
-	Method         string            `json:"method"`
+	Reached        bool           `json:"reached"`
+	AgreementLevel float64        `json:"agreement_level"`
+	FinalPosition  string         `json:"final_position"`
+	KeyPoints      []string       `json:"key_points"`
+	Disagreements  []string       `json:"disagreements,omitempty"`
+	VoteBreakdown  map[string]int `json:"vote_breakdown,omitempty"`
+	Method         string         `json:"method"`
 }
 
 // =============================================================================

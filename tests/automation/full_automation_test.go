@@ -47,21 +47,21 @@ import (
 
 // AutomationConfig holds configuration for automation tests
 type AutomationConfig struct {
-	BaseURL          string
-	MockLLMURL       string
-	Timeout          time.Duration
-	Concurrency      int
+	BaseURL           string
+	MockLLMURL        string
+	Timeout           time.Duration
+	Concurrency       int
 	CoverageThreshold float64
 }
 
 // AutomationResult holds results from automation tests
 type AutomationResult struct {
-	Phase           string
-	TestName        string
-	Success         bool
-	Duration        time.Duration
-	Message         string
-	Details         map[string]interface{}
+	Phase    string
+	TestName string
+	Success  bool
+	Duration time.Duration
+	Message  string
+	Details  map[string]interface{}
 }
 
 // AutomationSuite holds the test suite state

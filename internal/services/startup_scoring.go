@@ -38,17 +38,17 @@ func DefaultStartupScoringConfig() StartupScoringConfig {
 
 // StartupScoringResult contains results of the startup scoring process
 type StartupScoringResult struct {
-	StartTime        time.Time              `json:"start_time"`
-	EndTime          time.Time              `json:"end_time"`
-	Duration         time.Duration          `json:"duration"`
-	TotalProviders   int                    `json:"total_providers"`
-	ScoredProviders  int                    `json:"scored_providers"`
-	FailedProviders  int                    `json:"failed_providers"`
-	SkippedProviders int                    `json:"skipped_providers"`
-	ProviderScores   map[string]float64     `json:"provider_scores"`
-	ProviderStatus   map[string]string      `json:"provider_status"`
-	Errors           []string               `json:"errors,omitempty"`
-	Success          bool                   `json:"success"`
+	StartTime        time.Time          `json:"start_time"`
+	EndTime          time.Time          `json:"end_time"`
+	Duration         time.Duration      `json:"duration"`
+	TotalProviders   int                `json:"total_providers"`
+	ScoredProviders  int                `json:"scored_providers"`
+	FailedProviders  int                `json:"failed_providers"`
+	SkippedProviders int                `json:"skipped_providers"`
+	ProviderScores   map[string]float64 `json:"provider_scores"`
+	ProviderStatus   map[string]string  `json:"provider_status"`
+	Errors           []string           `json:"errors,omitempty"`
+	Success          bool               `json:"success"`
 }
 
 // StartupScoringService handles automatic provider scoring at system startup
@@ -185,11 +185,11 @@ func (s *StartupScoringService) runScoring(ctx context.Context) *StartupScoringR
 	close(s.completedChan)
 
 	s.logger.WithFields(logrus.Fields{
-		"duration":   result.Duration,
-		"total":      result.TotalProviders,
-		"scored":     result.ScoredProviders,
-		"failed":     result.FailedProviders,
-		"success":    result.Success,
+		"duration": result.Duration,
+		"total":    result.TotalProviders,
+		"scored":   result.ScoredProviders,
+		"failed":   result.FailedProviders,
+		"success":  result.Success,
 	}).Info("Startup scoring completed")
 
 	return result

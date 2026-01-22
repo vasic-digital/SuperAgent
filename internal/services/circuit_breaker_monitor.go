@@ -14,11 +14,11 @@ import (
 
 // Package-level metrics (registered once)
 var (
-	cbmMetricsOnce           sync.Once
-	cbmCircuitStateGauge     *prometheus.GaugeVec
-	cbmCircuitFailuresTotal  *prometheus.CounterVec
-	cbmOpenCircuitsGauge     prometheus.Gauge
-	cbmAlertsTotal           prometheus.Counter
+	cbmMetricsOnce          sync.Once
+	cbmCircuitStateGauge    *prometheus.GaugeVec
+	cbmCircuitFailuresTotal *prometheus.CounterVec
+	cbmOpenCircuitsGauge    prometheus.Gauge
+	cbmAlertsTotal          prometheus.Counter
 )
 
 func initCBMMetrics() {
@@ -57,14 +57,14 @@ func initCBMMetrics() {
 
 // CircuitBreakerMonitor monitors circuit breaker states and provides alerts
 type CircuitBreakerMonitor struct {
-	mu              sync.RWMutex
-	manager         *llm.CircuitBreakerManager
-	logger          *logrus.Logger
-	checkInterval   time.Duration
-	alertThreshold  int // Number of open circuits to trigger alert
-	listeners       []CircuitBreakerAlertListener
-	stopCh          chan struct{}
-	running         bool
+	mu             sync.RWMutex
+	manager        *llm.CircuitBreakerManager
+	logger         *logrus.Logger
+	checkInterval  time.Duration
+	alertThreshold int // Number of open circuits to trigger alert
+	listeners      []CircuitBreakerAlertListener
+	stopCh         chan struct{}
+	running        bool
 }
 
 // CircuitBreakerAlertListener is called when circuit breaker alerts occur
@@ -72,14 +72,14 @@ type CircuitBreakerAlertListener func(alert CircuitBreakerAlert)
 
 // CircuitBreakerAlert represents an alert from the monitor
 type CircuitBreakerAlert struct {
-	Type        string                        `json:"type"`
-	ProviderID  string                        `json:"provider_id,omitempty"`
-	OldState    llm.CircuitState              `json:"old_state,omitempty"`
-	NewState    llm.CircuitState              `json:"new_state,omitempty"`
-	Message     string                        `json:"message"`
-	Timestamp   time.Time                     `json:"timestamp"`
-	OpenCount   int                           `json:"open_count,omitempty"`
-	AllStats    map[string]llm.CircuitBreakerStats `json:"all_stats,omitempty"`
+	Type       string                             `json:"type"`
+	ProviderID string                             `json:"provider_id,omitempty"`
+	OldState   llm.CircuitState                   `json:"old_state,omitempty"`
+	NewState   llm.CircuitState                   `json:"new_state,omitempty"`
+	Message    string                             `json:"message"`
+	Timestamp  time.Time                          `json:"timestamp"`
+	OpenCount  int                                `json:"open_count,omitempty"`
+	AllStats   map[string]llm.CircuitBreakerStats `json:"all_stats,omitempty"`
 }
 
 // CircuitBreakerMonitorConfig configures the monitor
@@ -293,13 +293,13 @@ func (cbm *CircuitBreakerMonitor) GetStatus() CircuitBreakerStatus {
 
 // CircuitBreakerStatus represents the overall status
 type CircuitBreakerStatus struct {
-	Healthy       bool                                   `json:"healthy"`
-	OpenCount     int                                    `json:"open_count"`
-	HalfOpenCount int                                    `json:"half_open_count"`
-	ClosedCount   int                                    `json:"closed_count"`
-	TotalCount    int                                    `json:"total_count"`
+	Healthy       bool                                    `json:"healthy"`
+	OpenCount     int                                     `json:"open_count"`
+	HalfOpenCount int                                     `json:"half_open_count"`
+	ClosedCount   int                                     `json:"closed_count"`
+	TotalCount    int                                     `json:"total_count"`
 	Providers     map[string]CircuitBreakerProviderStatus `json:"providers"`
-	CheckedAt     time.Time                              `json:"checked_at"`
+	CheckedAt     time.Time                               `json:"checked_at"`
 }
 
 // CircuitBreakerProviderStatus represents a single provider's status

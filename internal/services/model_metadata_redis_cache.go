@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/cache"
 	"dev.helix.agent/internal/database"
+	"github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
 )
 
 // ModelMetadataRedisCache implements Redis-based caching for model metadata

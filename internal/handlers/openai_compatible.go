@@ -24,10 +24,10 @@ import (
 
 // UnifiedHandler provides 100% OpenAI-compatible API with automatic ensemble support
 type UnifiedHandler struct {
-	providerRegistry  *services.ProviderRegistry
-	config            *config.Config
-	dialogueFormatter *services.DialogueFormatter
-	debateTeamConfig  *services.DebateTeamConfig
+	providerRegistry   *services.ProviderRegistry
+	config             *config.Config
+	dialogueFormatter  *services.DialogueFormatter
+	debateTeamConfig   *services.DebateTeamConfig
 	showDebateDialogue bool
 }
 
@@ -175,7 +175,7 @@ type OpenAIModelPermission struct {
 // OpenAITool represents a tool definition in OpenAI format
 // CRITICAL: This enables AI coding assistants (OpenCode, Claude Code, Qwen Code) to access codebases
 type OpenAITool struct {
-	Type     string           `json:"type"` // "function"
+	Type     string             `json:"type"` // "function"
 	Function OpenAIToolFunction `json:"function"`
 }
 
@@ -429,7 +429,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	// Track streaming state for OpenCode/Crush/HelixCode compatibility
 	chunksSent := 0
 	isFirstChunk := true
-	sentFinalChunk := false // Track if we've already sent a finish_reason chunk
+	sentFinalChunk := false                                       // Track if we've already sent a finish_reason chunk
 	streamID := fmt.Sprintf("chatcmpl-%d", time.Now().UnixNano()) // Consistent ID across all chunks
 
 	// Client disconnect detection - safely get CloseNotify channel
@@ -591,8 +591,8 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		if expandedTopic != "" {
 			topic = expandedTopic
 			logrus.WithFields(logrus.Fields{
-				"original":  lastUserMessage,
-				"expanded":  topic[:min(100, len(topic))] + "...",
+				"original": lastUserMessage,
+				"expanded": topic[:min(100, len(topic))] + "...",
 			}).Info("Expanded follow-up response with conversation context")
 		} else {
 			topic = lastUserMessage
@@ -1220,7 +1220,7 @@ func (h *UnifiedHandler) ChatCompletionsStream(c *gin.Context) {
 
 	// Track streaming state for OpenCode/Crush/HelixCode compatibility
 	isFirstChunk := true
-	sentFinalChunk := false // Track if we've already sent a finish_reason chunk
+	sentFinalChunk := false                                       // Track if we've already sent a finish_reason chunk
 	streamID := fmt.Sprintf("chatcmpl-%d", time.Now().UnixNano()) // Consistent ID across all chunks
 
 	// Client disconnect detection - safely get CloseNotify channel
@@ -2546,7 +2546,7 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 	// Case 6: Create/Write file - use Write tool
 	// CRITICAL: This enables the AI to actually CREATE files like AGENTS.md
 	if containsAny(topicLower, []string{"create ", "write ", "generate ", "make ", "add "}) &&
-	   containsAny(topicLower, []string{".md", ".txt", ".json", ".yaml", ".yml", ".go", ".py", ".js", ".ts", "file", "document"}) {
+		containsAny(topicLower, []string{".md", ".txt", ".json", ".yaml", ".yml", ".go", ".py", ".js", ".ts", "file", "document"}) {
 		// Extract the file path from the topic
 		filePath := extractCreateFilePath(topic)
 		if filePath != "" {
@@ -2981,9 +2981,9 @@ func (h *UnifiedHandler) generateActionToolCalls(ctx context.Context, topic stri
 	for toolName, tool := range availableTools {
 		toolNameLower := strings.ToLower(toolName)
 		if strings.Contains(synthesisLower, "use "+toolNameLower) ||
-		   strings.Contains(synthesisLower, "call "+toolNameLower) ||
-		   strings.Contains(synthesisLower, "invoke "+toolNameLower) ||
-		   strings.Contains(synthesisLower, toolNameLower+" tool") {
+			strings.Contains(synthesisLower, "call "+toolNameLower) ||
+			strings.Contains(synthesisLower, "invoke "+toolNameLower) ||
+			strings.Contains(synthesisLower, toolNameLower+" tool") {
 			// Check if we haven't already added this tool
 			alreadyAdded := false
 			for _, tc := range toolCalls {
@@ -3073,16 +3073,16 @@ func validateAndFilterToolCalls(toolCalls []StreamingToolCall) []StreamingToolCa
 	// Define required fields for each tool type (using snake_case as per schema)
 	toolRequiredFields := map[string][]string{
 		// Filesystem tools
-		"read":   {"file_path"},
-		"Read":   {"file_path"},
-		"write":  {"file_path", "content"},
-		"Write":  {"file_path", "content"},
-		"edit":   {"file_path", "old_string", "new_string"},
-		"Edit":   {"file_path", "old_string", "new_string"},
-		"glob":   {"pattern"},
-		"Glob":   {"pattern"},
-		"grep":   {"pattern"},
-		"Grep":   {"pattern"},
+		"read":  {"file_path"},
+		"Read":  {"file_path"},
+		"write": {"file_path", "content"},
+		"Write": {"file_path", "content"},
+		"edit":  {"file_path", "old_string", "new_string"},
+		"Edit":  {"file_path", "old_string", "new_string"},
+		"glob":  {"pattern"},
+		"Glob":  {"pattern"},
+		"grep":  {"pattern"},
+		"Grep":  {"pattern"},
 		// Core tools
 		"bash":  {"command", "description"},
 		"Bash":  {"command", "description"},
@@ -3118,10 +3118,10 @@ func validateAndFilterToolCalls(toolCalls []StreamingToolCall) []StreamingToolCa
 		"workflow": {"action", "description"},
 		"Workflow": {"action", "description"},
 		// Web tools
-		"webfetch":   {"url", "prompt"},
-		"WebFetch":   {"url", "prompt"},
-		"websearch":  {"query"},
-		"WebSearch":  {"query"},
+		"webfetch":  {"url", "prompt"},
+		"WebFetch":  {"url", "prompt"},
+		"websearch": {"query"},
+		"WebSearch": {"query"},
 	}
 
 	var validToolCalls []StreamingToolCall
@@ -4034,9 +4034,9 @@ func extractActionsFromSynthesis(synthesis string, availableTools map[string]Ope
 
 	// Pattern matchers for common actions mentioned in synthesis
 	actionPatterns := []struct {
-		keywords  []string
-		toolName  string
-		argsFunc  func(string) string
+		keywords []string
+		toolName string
+		argsFunc func(string) string
 	}{
 		// File reading patterns
 		{
@@ -4210,8 +4210,8 @@ func extractActionsFromSynthesis(synthesis string, availableTools map[string]Ope
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"synthesis_len":  len(synthesis),
-		"tool_calls":     len(toolCalls),
+		"synthesis_len":   len(synthesis),
+		"tool_calls":      len(toolCalls),
 		"available_tools": len(availableTools),
 	}).Debug("Extracted actions from synthesis")
 

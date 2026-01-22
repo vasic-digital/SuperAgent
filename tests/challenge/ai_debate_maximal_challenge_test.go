@@ -786,9 +786,9 @@ func TestAIDebateStressChallenge(t *testing.T) {
 	t.Log("Starting AI Debate Stress Challenge...")
 
 	const (
-		numRequests     = 20
-		maxConcurrent   = 5
-		timeoutSeconds  = 120
+		numRequests    = 20
+		maxConcurrent  = 5
+		timeoutSeconds = 120
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutSeconds*time.Second)

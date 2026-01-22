@@ -1118,9 +1118,9 @@ func TestSemanticCache_SimilarityThresholdBoundary(t *testing.T) {
 
 	// Test with embeddings at different similarity levels
 	tests := []struct {
-		name        string
-		embedding   []float64
-		expectHit   bool
+		name      string
+		embedding []float64
+		expectHit bool
 	}{
 		{"exact_match", []float64{1, 0, 0}, true},
 		{"high_similarity", []float64{0.99, 0.01, 0}, true},
@@ -1326,7 +1326,7 @@ func TestSemanticCache_QueryHashUniqueness(t *testing.T) {
 
 	queries := []string{
 		"What is the weather?",
-		"what is the weather?", // Different case
+		"what is the weather?",    // Different case
 		"What  is  the  weather?", // Extra spaces
 	}
 

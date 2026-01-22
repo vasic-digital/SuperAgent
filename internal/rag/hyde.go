@@ -90,12 +90,12 @@ func DefaultHyDETemplates() map[string]HyDEPromptTemplate {
 
 // HyDEGenerator generates hypothetical documents for query expansion
 type HyDEGenerator struct {
-	config          HyDEConfig
-	embeddingModel  models.EmbeddingModel
-	documentGen     DocumentGenerator
-	templates       map[string]HyDEPromptTemplate
-	mu              sync.RWMutex
-	logger          *logrus.Logger
+	config         HyDEConfig
+	embeddingModel models.EmbeddingModel
+	documentGen    DocumentGenerator
+	templates      map[string]HyDEPromptTemplate
+	mu             sync.RWMutex
+	logger         *logrus.Logger
 }
 
 // DocumentGenerator interface for generating hypothetical documents

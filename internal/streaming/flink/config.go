@@ -28,13 +28,13 @@ type Config struct {
 	SavepointDir string `json:"savepoint_dir" yaml:"savepoint_dir"`
 
 	// State backend
-	StateBackend             string `json:"state_backend" yaml:"state_backend"` // hashmap, rocksdb
-	IncrementalCheckpoints   bool   `json:"incremental_checkpoints" yaml:"incremental_checkpoints"`
+	StateBackend           string `json:"state_backend" yaml:"state_backend"` // hashmap, rocksdb
+	IncrementalCheckpoints bool   `json:"incremental_checkpoints" yaml:"incremental_checkpoints"`
 
 	// Restart strategy
-	RestartStrategy       string        `json:"restart_strategy" yaml:"restart_strategy"` // none, fixed-delay, failure-rate, exponential-delay
-	RestartAttempts       int           `json:"restart_attempts" yaml:"restart_attempts"`
-	RestartDelay          time.Duration `json:"restart_delay" yaml:"restart_delay"`
+	RestartStrategy string        `json:"restart_strategy" yaml:"restart_strategy"` // none, fixed-delay, failure-rate, exponential-delay
+	RestartAttempts int           `json:"restart_attempts" yaml:"restart_attempts"`
+	RestartDelay    time.Duration `json:"restart_delay" yaml:"restart_delay"`
 
 	// Kafka integration
 	KafkaBootstrapServers string        `json:"kafka_bootstrap_servers" yaml:"kafka_bootstrap_servers"`
@@ -45,8 +45,8 @@ type Config struct {
 	DefaultParallelism int `json:"default_parallelism" yaml:"default_parallelism"`
 
 	// Metrics
-	MetricsEnabled bool   `json:"metrics_enabled" yaml:"metrics_enabled"`
-	MetricsPort    int    `json:"metrics_port" yaml:"metrics_port"`
+	MetricsEnabled bool `json:"metrics_enabled" yaml:"metrics_enabled"`
+	MetricsPort    int  `json:"metrics_port" yaml:"metrics_port"`
 }
 
 // DefaultConfig returns a Config with sensible defaults
@@ -129,24 +129,24 @@ func (c *Config) GetRESTURL() string {
 
 // JobConfig holds configuration for a specific Flink job
 type JobConfig struct {
-	Name           string            `json:"name" yaml:"name"`
-	JarPath        string            `json:"jar_path" yaml:"jar_path"`
-	EntryClass     string            `json:"entry_class" yaml:"entry_class"`
-	Parallelism    int               `json:"parallelism" yaml:"parallelism"`
-	ProgramArgs    []string          `json:"program_args" yaml:"program_args"`
-	AllowNonRestoredState bool       `json:"allow_non_restored_state" yaml:"allow_non_restored_state"`
-	SavepointPath  string            `json:"savepoint_path" yaml:"savepoint_path"`
-	Properties     map[string]string `json:"properties" yaml:"properties"`
+	Name                  string            `json:"name" yaml:"name"`
+	JarPath               string            `json:"jar_path" yaml:"jar_path"`
+	EntryClass            string            `json:"entry_class" yaml:"entry_class"`
+	Parallelism           int               `json:"parallelism" yaml:"parallelism"`
+	ProgramArgs           []string          `json:"program_args" yaml:"program_args"`
+	AllowNonRestoredState bool              `json:"allow_non_restored_state" yaml:"allow_non_restored_state"`
+	SavepointPath         string            `json:"savepoint_path" yaml:"savepoint_path"`
+	Properties            map[string]string `json:"properties" yaml:"properties"`
 }
 
 // DefaultJobConfig returns a JobConfig with defaults
 func DefaultJobConfig(name string) *JobConfig {
 	return &JobConfig{
-		Name:        name,
-		Parallelism: 4,
-		ProgramArgs: []string{},
+		Name:                  name,
+		Parallelism:           4,
+		ProgramArgs:           []string{},
 		AllowNonRestoredState: false,
-		Properties:  make(map[string]string),
+		Properties:            make(map[string]string),
 	}
 }
 

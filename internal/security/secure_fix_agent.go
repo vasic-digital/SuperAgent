@@ -143,14 +143,14 @@ type FixValidator interface {
 
 // SecureFixAgent implements autonomous security hardening
 type SecureFixAgent struct {
-	config      SecureFixAgentConfig
-	scanners    []VulnerabilityScanner
-	generator   FixGenerator
-	validator   FixValidator
+	config          SecureFixAgentConfig
+	scanners        []VulnerabilityScanner
+	generator       FixGenerator
+	validator       FixValidator
 	vulnerabilities map[string]*Vulnerability
-	fixes       map[string]*SecurityFix
-	mu          sync.RWMutex
-	logger      *logrus.Logger
+	fixes           map[string]*SecurityFix
+	mu              sync.RWMutex
+	logger          *logrus.Logger
 }
 
 // NewSecureFixAgent creates a new SecureFixAgent
@@ -656,7 +656,7 @@ func (d *FiveRingDefense) AddRing(ring DefenseRing) {
 // Defend runs input through all defense rings
 func (d *FiveRingDefense) Defend(ctx context.Context, input string) (*DefenseResult, error) {
 	result := &DefenseResult{
-		Passed:     true,
+		Passed:      true,
 		RingResults: make([]RingResult, 0),
 	}
 

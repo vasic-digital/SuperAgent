@@ -12,11 +12,11 @@ import (
 
 // MongoDBConfig configures the MongoDB adapter.
 type MongoDBConfig struct {
-	URI             string        `json:"uri"`
-	Database        string        `json:"database"`
-	Timeout         time.Duration `json:"timeout"`
-	MaxPoolSize     int           `json:"max_pool_size"`
-	EnableTLS       bool          `json:"enable_tls"`
+	URI         string        `json:"uri"`
+	Database    string        `json:"database"`
+	Timeout     time.Duration `json:"timeout"`
+	MaxPoolSize int           `json:"max_pool_size"`
+	EnableTLS   bool          `json:"enable_tls"`
 }
 
 // DefaultMongoDBConfig returns default configuration.

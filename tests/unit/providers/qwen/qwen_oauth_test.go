@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestQwenOAuth_APIEndpointSelection tests that the correct API endpoint is selected

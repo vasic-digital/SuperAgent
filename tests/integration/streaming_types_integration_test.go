@@ -48,7 +48,7 @@ func TestSSE_FullHTTPIntegration(t *testing.T) {
 		// Send 5 data events
 		for i := 0; i < 5; i++ {
 			sse.WriteJSON(map[string]interface{}{
-				"chunk": i,
+				"chunk":   i,
 				"content": "Hello",
 			})
 			time.Sleep(10 * time.Millisecond)

@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"dev.helix.agent/internal/config"
 	llm "dev.helix.agent/internal/llm/cognee"
 	"dev.helix.agent/internal/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // makeCacheEntry creates a cache entry with the given sources and TTL

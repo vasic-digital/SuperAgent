@@ -15,44 +15,44 @@ func TestVerificationService_VerifyModel(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name          string
-		modelID       string
-		provider      string
-		mockResponse  string
+		name           string
+		modelID        string
+		provider       string
+		mockResponse   string
 		expectVerified bool
-		expectError   bool
+		expectError    bool
 	}{
 		{
-			name:          "successful verification with code visible",
-			modelID:       "gpt-4",
-			provider:      "openai",
-			mockResponse:  "Yes, I can see your Python code. It defines a function called 'calculate_sum'.",
+			name:           "successful verification with code visible",
+			modelID:        "gpt-4",
+			provider:       "openai",
+			mockResponse:   "Yes, I can see your Python code. It defines a function called 'calculate_sum'.",
 			expectVerified: true,
-			expectError:   false,
+			expectError:    false,
 		},
 		{
-			name:          "verification with code not visible",
-			modelID:       "gpt-3.5-turbo",
-			provider:      "openai",
-			mockResponse:  "I don't see any code in our conversation.",
+			name:           "verification with code not visible",
+			modelID:        "gpt-3.5-turbo",
+			provider:       "openai",
+			mockResponse:   "I don't see any code in our conversation.",
 			expectVerified: true,
-			expectError:   false,
+			expectError:    false,
 		},
 		{
-			name:          "empty model ID",
-			modelID:       "",
-			provider:      "openai",
-			mockResponse:  "I see your code.",
+			name:           "empty model ID",
+			modelID:        "",
+			provider:       "openai",
+			mockResponse:   "I see your code.",
 			expectVerified: true, // Implementation doesn't reject empty model ID
-			expectError:   false,
+			expectError:    false,
 		},
 		{
-			name:          "empty provider",
-			modelID:       "gpt-4",
-			provider:      "",
-			mockResponse:  "I see your code.",
+			name:           "empty provider",
+			modelID:        "gpt-4",
+			provider:       "",
+			mockResponse:   "I see your code.",
 			expectVerified: true, // Implementation doesn't reject empty provider
-			expectError:   false,
+			expectError:    false,
 		},
 	}
 
@@ -118,9 +118,9 @@ func TestVerificationService_CodeVisibility(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name           string
-		response       string
-		expectVisible  bool
+		name          string
+		response      string
+		expectVisible bool
 	}{
 		{
 			name:          "explicit yes",

@@ -19,7 +19,7 @@ import (
 
 // CrossDebateLearner learns patterns and strategies across multiple debates.
 type CrossDebateLearner struct {
-	repository   Repository
+	repository Repository
 
 	// Pattern analysis
 	patternAnalyzer *PatternAnalyzer
@@ -30,8 +30,8 @@ type CrossDebateLearner struct {
 	// Knowledge graph
 	knowledgeGraph *KnowledgeGraph
 
-	config       LearningConfig
-	mu           sync.RWMutex
+	config LearningConfig
+	mu     sync.RWMutex
 }
 
 // LearningConfig configures cross-debate learning.
@@ -87,12 +87,12 @@ func (cdl *CrossDebateLearner) LearnFromDebate(ctx context.Context, result *prot
 	defer cdl.mu.Unlock()
 
 	outcome := &LearningOutcome{
-		DebateID:    result.ID,
-		LearnedAt:   time.Now(),
-		NewPatterns: make([]*DebatePattern, 0),
+		DebateID:        result.ID,
+		LearnedAt:       time.Now(),
+		NewPatterns:     make([]*DebatePattern, 0),
 		UpdatedPatterns: make([]string, 0),
-		NewStrategies: make([]*Strategy, 0),
-		KnowledgeNodes: make([]string, 0),
+		NewStrategies:   make([]*Strategy, 0),
+		KnowledgeNodes:  make([]string, 0),
 	}
 
 	// Analyze for patterns
@@ -177,9 +177,9 @@ func (cdl *CrossDebateLearner) GetRecommendations(ctx context.Context, topic str
 
 	// Get relevant patterns
 	patterns, err := cdl.repository.GetPatterns(ctx, PatternFilter{
-		Domain:      domain,
+		Domain:       domain,
 		MinFrequency: cdl.config.MinDebatesForPattern,
-		MinSuccess:  0.6,
+		MinSuccess:   0.6,
 	})
 	if err == nil {
 		for _, pattern := range patterns {
@@ -218,15 +218,15 @@ func (cdl *CrossDebateLearner) GetRecommendations(ctx context.Context, topic str
 
 // DebateRecommendations provides learning-based recommendations.
 type DebateRecommendations struct {
-	Topic              string                           `json:"topic"`
-	Domain             agents.Domain                    `json:"domain"`
-	GeneratedAt        time.Time                        `json:"generated_at"`
+	Topic               string                          `json:"topic"`
+	Domain              agents.Domain                   `json:"domain"`
+	GeneratedAt         time.Time                       `json:"generated_at"`
 	RecommendedStrategy *Strategy                       `json:"recommended_strategy,omitempty"`
-	TopologyAdvice     []string                         `json:"topology_advice"`
-	RoleAdvice         map[topology.AgentRole][]string  `json:"role_advice"`
-	PatternWarnings    []string                         `json:"pattern_warnings"`
-	SuggestedActions   []string                         `json:"suggested_actions"`
-	RelevantLessons    []*LessonMatch                   `json:"relevant_lessons,omitempty"`
+	TopologyAdvice      []string                        `json:"topology_advice"`
+	RoleAdvice          map[topology.AgentRole][]string `json:"role_advice"`
+	PatternWarnings     []string                        `json:"pattern_warnings"`
+	SuggestedActions    []string                        `json:"suggested_actions"`
+	RelevantLessons     []*LessonMatch                  `json:"relevant_lessons,omitempty"`
 }
 
 // ApplyDecay applies time-based decay to learnings.
@@ -389,7 +389,7 @@ func (d *ExpertisePatternDetector) Detect(result *protocol.DebateResult) []*Deba
 				SuccessRate: 0.9,
 				Confidence:  0.8,
 				Metadata: map[string]interface{}{
-					"contributor": contributor,
+					"contributor":   contributor,
 					"contributions": count,
 				},
 			})
@@ -522,9 +522,9 @@ func (ss *StrategySynthesizer) Synthesize(result *protocol.DebateResult) *Strate
 	// Extract phase strategies
 	for _, phase := range result.Phases {
 		phaseStrategy := PhaseStrategy{
-			Phase:           phase.Phase,
-			FocusAreas:      phase.KeyInsights,
-			MinConfidence:   phase.ConsensusLevel,
+			Phase:            phase.Phase,
+			FocusAreas:       phase.KeyInsights,
+			MinConfidence:    phase.ConsensusLevel,
 			ExpectedInsights: len(phase.KeyInsights),
 		}
 		strategy.Phases = append(strategy.Phases, phaseStrategy)
@@ -560,32 +560,32 @@ type KnowledgeNode struct {
 type NodeType string
 
 const (
-	NodeTypeTopic    NodeType = "topic"
-	NodeTypeConcept  NodeType = "concept"
-	NodeTypePattern  NodeType = "pattern"
-	NodeTypeLesson   NodeType = "lesson"
-	NodeTypeAgent    NodeType = "agent"
-	NodeTypeOutcome  NodeType = "outcome"
+	NodeTypeTopic   NodeType = "topic"
+	NodeTypeConcept NodeType = "concept"
+	NodeTypePattern NodeType = "pattern"
+	NodeTypeLesson  NodeType = "lesson"
+	NodeTypeAgent   NodeType = "agent"
+	NodeTypeOutcome NodeType = "outcome"
 )
 
 // KnowledgeEdge represents a relationship between nodes.
 type KnowledgeEdge struct {
-	FromID   string    `json:"from_id"`
-	ToID     string    `json:"to_id"`
-	Type     EdgeType  `json:"type"`
-	Weight   float64   `json:"weight"`
-	Created  time.Time `json:"created"`
+	FromID  string    `json:"from_id"`
+	ToID    string    `json:"to_id"`
+	Type    EdgeType  `json:"type"`
+	Weight  float64   `json:"weight"`
+	Created time.Time `json:"created"`
 }
 
 // EdgeType categorizes knowledge edges.
 type EdgeType string
 
 const (
-	EdgeTypeRelatedTo     EdgeType = "related_to"
-	EdgeTypeLeadsTo       EdgeType = "leads_to"
-	EdgeTypeDerivedFrom   EdgeType = "derived_from"
-	EdgeTypeContributes   EdgeType = "contributes"
-	EdgeTypeConflicts     EdgeType = "conflicts"
+	EdgeTypeRelatedTo   EdgeType = "related_to"
+	EdgeTypeLeadsTo     EdgeType = "leads_to"
+	EdgeTypeDerivedFrom EdgeType = "derived_from"
+	EdgeTypeContributes EdgeType = "contributes"
+	EdgeTypeConflicts   EdgeType = "conflicts"
 )
 
 // NewKnowledgeGraph creates a new knowledge graph.
@@ -617,8 +617,8 @@ func (kg *KnowledgeGraph) AddDebate(result *protocol.DebateResult, lessons []*de
 
 	// Add outcome node
 	outcomeNode := &KnowledgeNode{
-		ID:   "outcome:" + result.ID,
-		Type: NodeTypeOutcome,
+		ID:    "outcome:" + result.ID,
+		Type:  NodeTypeOutcome,
 		Label: map[bool]string{true: "success", false: "failure"}[result.Success],
 		Weight: func() float64 {
 			if result.FinalConsensus != nil {

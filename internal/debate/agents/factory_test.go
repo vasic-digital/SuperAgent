@@ -389,9 +389,9 @@ func TestTeamBuilder_BuildTeam_AllowRoleSharing(t *testing.T) {
 		RequiredRoles: []topology.AgentRole{
 			topology.RoleProposer, topology.RoleCritic,
 		},
-		PreferredDomains:  map[topology.AgentRole]Domain{},
-		MinAgentsPerRole:  1,
-		AllowRoleSharing:  true, // Allow same agent for multiple roles
+		PreferredDomains: map[topology.AgentRole]Domain{},
+		MinAgentsPerRole: 1,
+		AllowRoleSharing: true, // Allow same agent for multiple roles
 	}
 
 	assignments, err := builder.BuildTeam(config)

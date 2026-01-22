@@ -24,8 +24,8 @@ type Config struct {
 	MaxRetries int           `json:"max_retries" yaml:"max_retries"`
 
 	// Table defaults
-	DefaultWriteFormat  string `json:"default_write_format" yaml:"default_write_format"`   // parquet, avro, orc
-	DefaultCompression  string `json:"default_compression" yaml:"default_compression"`     // zstd, gzip, snappy, lz4
+	DefaultWriteFormat  string `json:"default_write_format" yaml:"default_write_format"` // parquet, avro, orc
+	DefaultCompression  string `json:"default_compression" yaml:"default_compression"`   // zstd, gzip, snappy, lz4
 	TargetFileSizeBytes int64  `json:"target_file_size_bytes" yaml:"target_file_size_bytes"`
 }
 
@@ -80,24 +80,24 @@ type NamespaceConfig struct {
 
 // TableConfig holds configuration for an Iceberg table
 type TableConfig struct {
-	Namespace         string            `json:"namespace" yaml:"namespace"`
-	Name              string            `json:"name" yaml:"name"`
-	Schema            *Schema           `json:"schema" yaml:"schema"`
-	PartitionSpec     []PartitionField  `json:"partition_spec" yaml:"partition_spec"`
-	SortOrder         []SortField       `json:"sort_order" yaml:"sort_order"`
-	WriteFormat       string            `json:"write_format" yaml:"write_format"`
-	Compression       string            `json:"compression" yaml:"compression"`
-	Properties        map[string]string `json:"properties" yaml:"properties"`
+	Namespace     string            `json:"namespace" yaml:"namespace"`
+	Name          string            `json:"name" yaml:"name"`
+	Schema        *Schema           `json:"schema" yaml:"schema"`
+	PartitionSpec []PartitionField  `json:"partition_spec" yaml:"partition_spec"`
+	SortOrder     []SortField       `json:"sort_order" yaml:"sort_order"`
+	WriteFormat   string            `json:"write_format" yaml:"write_format"`
+	Compression   string            `json:"compression" yaml:"compression"`
+	Properties    map[string]string `json:"properties" yaml:"properties"`
 }
 
 // DefaultTableConfig returns a TableConfig with defaults
 func DefaultTableConfig(namespace, name string) *TableConfig {
 	return &TableConfig{
-		Namespace:     namespace,
-		Name:          name,
-		WriteFormat:   "parquet",
-		Compression:   "zstd",
-		Properties:    make(map[string]string),
+		Namespace:   namespace,
+		Name:        name,
+		WriteFormat: "parquet",
+		Compression: "zstd",
+		Properties:  make(map[string]string),
 	}
 }
 
@@ -183,13 +183,13 @@ func (s *Schema) AddFieldWithDoc(id int, name, fieldType string, required bool, 
 type PartitionTransform string
 
 const (
-	TransformIdentity  PartitionTransform = "identity"
-	TransformYear      PartitionTransform = "year"
-	TransformMonth     PartitionTransform = "month"
-	TransformDay       PartitionTransform = "day"
-	TransformHour      PartitionTransform = "hour"
-	TransformBucket    PartitionTransform = "bucket"
-	TransformTruncate  PartitionTransform = "truncate"
+	TransformIdentity PartitionTransform = "identity"
+	TransformYear     PartitionTransform = "year"
+	TransformMonth    PartitionTransform = "month"
+	TransformDay      PartitionTransform = "day"
+	TransformHour     PartitionTransform = "hour"
+	TransformBucket   PartitionTransform = "bucket"
+	TransformTruncate PartitionTransform = "truncate"
 )
 
 // PartitionField represents a partition field
@@ -234,10 +234,10 @@ const (
 
 // SortField represents a sort field
 type SortField struct {
-	SourceID   int           `json:"source-id"`
-	Transform  string        `json:"transform"` // identity or other transforms
-	Direction  SortDirection `json:"direction"`
-	NullOrder  NullOrder     `json:"null-order"`
+	SourceID  int           `json:"source-id"`
+	Transform string        `json:"transform"` // identity or other transforms
+	Direction SortDirection `json:"direction"`
+	NullOrder NullOrder     `json:"null-order"`
 }
 
 // NewSortField creates a new sort field
@@ -262,10 +262,10 @@ func (sf SortField) WithNullOrder(order NullOrder) SortField {
 
 // SnapshotConfig holds configuration for snapshot operations
 type SnapshotConfig struct {
-	OlderThanDays     int  `json:"older_than_days" yaml:"older_than_days"`
-	RetainLast        int  `json:"retain_last" yaml:"retain_last"`
-	MaxConcurrentOps  int  `json:"max_concurrent_ops" yaml:"max_concurrent_ops"`
-	DryRun            bool `json:"dry_run" yaml:"dry_run"`
+	OlderThanDays    int  `json:"older_than_days" yaml:"older_than_days"`
+	RetainLast       int  `json:"retain_last" yaml:"retain_last"`
+	MaxConcurrentOps int  `json:"max_concurrent_ops" yaml:"max_concurrent_ops"`
+	DryRun           bool `json:"dry_run" yaml:"dry_run"`
 }
 
 // DefaultSnapshotConfig returns default snapshot configuration
@@ -280,10 +280,10 @@ func DefaultSnapshotConfig() *SnapshotConfig {
 
 // CompactionConfig holds configuration for data compaction
 type CompactionConfig struct {
-	TargetFileSizeBytes  int64  `json:"target_file_size_bytes" yaml:"target_file_size_bytes"`
-	MinInputFiles        int    `json:"min_input_files" yaml:"min_input_files"`
-	MaxConcurrentOps     int    `json:"max_concurrent_ops" yaml:"max_concurrent_ops"`
-	PartialProgressEnabled bool `json:"partial_progress_enabled" yaml:"partial_progress_enabled"`
+	TargetFileSizeBytes    int64 `json:"target_file_size_bytes" yaml:"target_file_size_bytes"`
+	MinInputFiles          int   `json:"min_input_files" yaml:"min_input_files"`
+	MaxConcurrentOps       int   `json:"max_concurrent_ops" yaml:"max_concurrent_ops"`
+	PartialProgressEnabled bool  `json:"partial_progress_enabled" yaml:"partial_progress_enabled"`
 }
 
 // DefaultCompactionConfig returns default compaction configuration

@@ -28,7 +28,8 @@ const (
 // TestCogneeInfrastructure verifies Cognee containers are running
 func TestCogneeInfrastructure(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping infrastructure test (acceptable)"); return
+		t.Logf("Short mode - skipping infrastructure test (acceptable)")
+		return
 	}
 
 	t.Run("ContainersRunning", func(t *testing.T) {
@@ -59,7 +60,8 @@ func TestCogneeInfrastructure(t *testing.T) {
 		resp, err := client.Get(cogneeBaseURL + "/health")
 		if err != nil {
 			t.Logf("Cannot connect to Cognee at %s: %v (may not be running)", cogneeBaseURL, err)
-			t.Logf("Cognee not accessible (acceptable)"); return
+			t.Logf("Cognee not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -71,7 +73,8 @@ func TestCogneeInfrastructure(t *testing.T) {
 // TestCogneeHealthEndpoint verifies Cognee health check functionality
 func TestCogneeHealthEndpoint(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping health test (acceptable)"); return
+		t.Logf("Short mode - skipping health test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 60 * time.Second}
@@ -80,7 +83,8 @@ func TestCogneeHealthEndpoint(t *testing.T) {
 		resp, err := client.Get(cogneeBaseURL + "/health")
 		if err != nil {
 			t.Logf("Direct Cognee health check failed: %v", err)
-			t.Logf("Cognee not accessible (acceptable)"); return
+			t.Logf("Cognee not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -111,7 +115,8 @@ func TestCogneeHealthEndpoint(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("HelixAgent Cognee health check failed: %v", err)
-			t.Logf("HelixAgent not accessible (acceptable)"); return
+			t.Logf("HelixAgent not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -136,7 +141,8 @@ func TestCogneeHealthEndpoint(t *testing.T) {
 // TestCogneeFeatureConfiguration verifies all Cognee features are properly configured
 func TestCogneeFeatureConfiguration(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping feature configuration test (acceptable)"); return
+		t.Logf("Short mode - skipping feature configuration test (acceptable)")
+		return
 	}
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
@@ -152,7 +158,8 @@ func TestCogneeFeatureConfiguration(t *testing.T) {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Logf("HelixAgent not accessible (acceptable)"); return
+			t.Logf("HelixAgent not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -210,7 +217,8 @@ func TestCogneeFeatureConfiguration(t *testing.T) {
 // TestCogneeMemoryOperations tests Cognee memory add/search functionality
 func TestCogneeMemoryOperations(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping memory operations test (acceptable)"); return
+		t.Logf("Short mode - skipping memory operations test (acceptable)")
+		return
 	}
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
@@ -241,7 +249,8 @@ func TestCogneeMemoryOperations(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Add memory failed: %v", err)
-			t.Logf("Cognee memory API not accessible (acceptable)"); return
+			t.Logf("Cognee memory API not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -272,7 +281,8 @@ func TestCogneeMemoryOperations(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Search memory failed: %v", err)
-			t.Logf("Cognee search API not accessible (acceptable)"); return
+			t.Logf("Cognee search API not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -291,7 +301,8 @@ func TestCogneeMemoryOperations(t *testing.T) {
 // TestCogneeKnowledgeGraph tests Cognee knowledge graph operations
 func TestCogneeKnowledgeGraph(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping knowledge graph test (acceptable)"); return
+		t.Logf("Short mode - skipping knowledge graph test (acceptable)")
+		return
 	}
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
@@ -314,7 +325,8 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Cognify failed: %v", err)
-			t.Logf("Cognee cognify API not accessible (acceptable)"); return
+			t.Logf("Cognee cognify API not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -336,7 +348,8 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Graph completion failed: %v", err)
-			t.Logf("Cognee graph API not accessible (acceptable)"); return
+			t.Logf("Cognee graph API not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -358,7 +371,8 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Get insights failed: %v", err)
-			t.Logf("Cognee insights API not accessible (acceptable)"); return
+			t.Logf("Cognee insights API not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -370,7 +384,8 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 // TestCogneeCodeIntelligence tests Cognee code analysis features
 func TestCogneeCodeIntelligence(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping code intelligence test (acceptable)"); return
+		t.Logf("Short mode - skipping code intelligence test (acceptable)")
+		return
 	}
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
@@ -404,7 +419,8 @@ func main() {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Process code failed: %v", err)
-			t.Logf("Cognee code API not accessible (acceptable)"); return
+			t.Logf("Cognee code API not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -429,7 +445,8 @@ func main() {
 // TestCogneeDatasetManagement tests Cognee dataset CRUD operations
 func TestCogneeDatasetManagement(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping dataset management test (acceptable)"); return
+		t.Logf("Short mode - skipping dataset management test (acceptable)")
+		return
 	}
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
@@ -454,7 +471,8 @@ func TestCogneeDatasetManagement(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Create dataset failed: %v", err)
-			t.Logf("Cognee dataset API not accessible (acceptable)"); return
+			t.Logf("Cognee dataset API not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -469,7 +487,8 @@ func TestCogneeDatasetManagement(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("List datasets failed: %v", err)
-			t.Logf("Cognee dataset API not accessible (acceptable)"); return
+			t.Logf("Cognee dataset API not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -496,7 +515,8 @@ func TestCogneeDatasetManagement(t *testing.T) {
 // TestCogneeFeedback tests Cognee feedback loop functionality
 func TestCogneeFeedback(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping feedback test (acceptable)"); return
+		t.Logf("Short mode - skipping feedback test (acceptable)")
+		return
 	}
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
@@ -522,7 +542,8 @@ func TestCogneeFeedback(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Provide feedback failed: %v", err)
-			t.Logf("Cognee feedback API not accessible (acceptable)"); return
+			t.Logf("Cognee feedback API not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -534,7 +555,8 @@ func TestCogneeFeedback(t *testing.T) {
 // TestCogneeGracefulDegradation tests that system works when Cognee is unavailable
 func TestCogneeGracefulDegradation(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping graceful degradation test (acceptable)"); return
+		t.Logf("Short mode - skipping graceful degradation test (acceptable)")
+		return
 	}
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
@@ -550,7 +572,8 @@ func TestCogneeGracefulDegradation(t *testing.T) {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Logf("HelixAgent not accessible (acceptable)"); return
+			t.Logf("HelixAgent not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -566,7 +589,8 @@ func TestCogneeGracefulDegradation(t *testing.T) {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Logf("HelixAgent not accessible (acceptable)"); return
+			t.Logf("HelixAgent not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -582,7 +606,8 @@ func TestCogneeGracefulDegradation(t *testing.T) {
 // TestCogneeLLMIntegration tests that Cognee properly uses LLM providers
 func TestCogneeLLMIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping LLM integration test (acceptable)"); return
+		t.Logf("Short mode - skipping LLM integration test (acceptable)")
+		return
 	}
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
@@ -594,7 +619,8 @@ func TestCogneeLLMIntegration(t *testing.T) {
 	healthClient := &http.Client{Timeout: 5 * time.Second}
 	healthResp, err := healthClient.Get(helixagentBaseURL + "/health")
 	if err != nil {
-		t.Logf("HelixAgent not accessible (acceptable)"); return
+		t.Logf("HelixAgent not accessible (acceptable)")
+		return
 	}
 	healthResp.Body.Close()
 
@@ -604,7 +630,8 @@ func TestCogneeLLMIntegration(t *testing.T) {
 		if cogneeHealthResp != nil {
 			cogneeHealthResp.Body.Close()
 		}
-		t.Logf("Cognee service not available (acceptable)"); return
+		t.Logf("Cognee service not available (acceptable)")
+		return
 	}
 	cogneeHealthResp.Body.Close()
 
@@ -647,7 +674,8 @@ func TestCogneeLLMIntegration(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Chat completion failed: %v", err)
-			t.Logf("Chat API not accessible (acceptable)"); return
+			t.Logf("Chat API not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -659,7 +687,8 @@ func TestCogneeLLMIntegration(t *testing.T) {
 // TestCogneeContainerAutoStart tests that containers auto-start when needed
 func TestCogneeContainerAutoStart(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping container auto-start test (acceptable)"); return
+		t.Logf("Short mode - skipping container auto-start test (acceptable)")
+		return
 	}
 
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
@@ -676,7 +705,8 @@ func TestCogneeContainerAutoStart(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Start Cognee API failed: %v", err)
-			t.Logf("Cognee start API not accessible (acceptable)"); return
+			t.Logf("Cognee start API not accessible (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 
@@ -688,7 +718,8 @@ func TestCogneeContainerAutoStart(t *testing.T) {
 // TestCogneeRealAPIIntegration tests actual Cognee API responses
 func TestCogneeRealAPIIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping real API test (acceptable)"); return
+		t.Logf("Short mode - skipping real API test (acceptable)")
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -703,7 +734,8 @@ func TestCogneeRealAPIIntegration(t *testing.T) {
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Direct Cognee API not accessible: %v", err)
-			t.Logf("Cognee not running (acceptable)"); return
+			t.Logf("Cognee not running (acceptable)")
+			return
 		}
 		defer resp.Body.Close()
 

@@ -63,8 +63,8 @@ func TestEncoder_Encode_WithKeyCompression(t *testing.T) {
 	var decoded map[string]interface{}
 	err = json.Unmarshal(encoded, &decoded)
 	assert.NoError(t, err)
-	assert.Equal(t, "123", decoded["i"])       // id -> i
-	assert.Equal(t, "test", decoded["n"])      // name -> n
+	assert.Equal(t, "123", decoded["i"])         // id -> i
+	assert.Equal(t, "test", decoded["n"])        // name -> n
 	assert.Equal(t, "2024-01-01", decoded["ca"]) // created_at -> ca
 }
 

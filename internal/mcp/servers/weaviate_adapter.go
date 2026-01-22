@@ -30,10 +30,10 @@ type WeaviateAdapterConfig struct {
 
 // WeaviateClass represents a Weaviate class (collection).
 type WeaviateClass struct {
-	Class       string              `json:"class"`
-	Description string              `json:"description,omitempty"`
-	Properties  []WeaviateProperty  `json:"properties,omitempty"`
-	Vectorizer  string              `json:"vectorizer,omitempty"`
+	Class        string                 `json:"class"`
+	Description  string                 `json:"description,omitempty"`
+	Properties   []WeaviateProperty     `json:"properties,omitempty"`
+	Vectorizer   string                 `json:"vectorizer,omitempty"`
 	ModuleConfig map[string]interface{} `json:"moduleConfig,omitempty"`
 }
 

@@ -36,7 +36,8 @@ var LLMProviderScores = map[string]float64{
 // TestLLMProviderConfiguration_GeminiIsPrimary verifies Gemini is the primary LLM
 func TestLLMProviderConfiguration_GeminiIsPrimary(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	// Test 1: Verify Gemini API key is configured
@@ -97,7 +98,8 @@ func TestLLMProviderConfiguration_GeminiIsPrimary(t *testing.T) {
 // TestLLMProviderConfiguration_OllamaDeprecated verifies Ollama is deprecated
 func TestLLMProviderConfiguration_OllamaDeprecated(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -141,7 +143,8 @@ func TestLLMProviderConfiguration_OllamaDeprecated(t *testing.T) {
 		// 200 = healthy, 503 = service unavailable, 500 = internal error
 		// We just need to verify the endpoint responds (doesn't require Ollama)
 		if resp.StatusCode == 503 || resp.StatusCode == 500 {
-			t.Logf("Cognee service temporarily unavailable (acceptable)"); return
+			t.Logf("Cognee service temporarily unavailable (acceptable)")
+			return
 		}
 
 		var health struct {
@@ -158,7 +161,8 @@ func TestLLMProviderConfiguration_OllamaDeprecated(t *testing.T) {
 // TestLLMProviderConfiguration_EnsembleUsesVerifiedProviders verifies ensemble uses verified providers
 func TestLLMProviderConfiguration_EnsembleUsesVerifiedProviders(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 60 * time.Second}
@@ -203,7 +207,8 @@ func TestLLMProviderConfiguration_EnsembleUsesVerifiedProviders(t *testing.T) {
 		assert.Equal(t, "helixagent-ensemble", result.Model, "Should use ensemble model")
 		assert.Equal(t, "fp_helixagent_ensemble", result.SystemFingerprint, "Should have ensemble fingerprint")
 		if len(result.Choices) == 0 {
-			t.Logf("No choices returned - providers may be temporarily unavailable (acceptable)"); return
+			t.Logf("No choices returned - providers may be temporarily unavailable (acceptable)")
+			return
 		}
 		assert.Contains(t, result.Choices[0].Message.Content, "4", "Should correctly answer 2+2=4")
 	})
@@ -238,7 +243,8 @@ func TestLLMProviderConfiguration_EnsembleUsesVerifiedProviders(t *testing.T) {
 // TestLLMProviderConfiguration_CogneeUsesGemini verifies Cognee uses Gemini
 func TestLLMProviderConfiguration_CogneeUsesGemini(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	// Test 1: Verify Cognee LLM environment variables
@@ -277,7 +283,8 @@ func TestLLMProviderConfiguration_CogneeUsesGemini(t *testing.T) {
 
 		// If Cognee is enabled but not yet healthy (container starting), skip
 		if health.Config.Enabled && !health.Healthy {
-			t.Logf("Cognee container is still starting up (acceptable)"); return
+			t.Logf("Cognee container is still starting up (acceptable)")
+			return
 		}
 
 		// These features require a powerful LLM like Gemini
@@ -290,7 +297,8 @@ func TestLLMProviderConfiguration_CogneeUsesGemini(t *testing.T) {
 // TestLLMProviderConfiguration_ProviderFallback verifies provider fallback works
 func TestLLMProviderConfiguration_ProviderFallback(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
@@ -335,7 +343,8 @@ func TestLLMProviderConfiguration_ProviderFallback(t *testing.T) {
 // TestLLMProviderConfiguration_VerifierScoresAccurate verifies LLMsVerifier scores are accurate
 func TestLLMProviderConfiguration_VerifierScoresAccurate(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	// Test: Verify the score ordering matches our configuration

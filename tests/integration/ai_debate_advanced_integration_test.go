@@ -6,17 +6,18 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/services"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/config"
-	"dev.helix.agent/internal/services"
 )
 
 // TestAdvancedAIDebateIntegration tests the complete advanced AI debate system
 func TestAdvancedAIDebateIntegration(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping advanced integration test (acceptable)"); return
+		t.Logf("Short mode - skipping advanced integration test (acceptable)")
+		return
 	}
 
 	// Setup test configuration
@@ -121,7 +122,8 @@ func testCompleteAdvancedWorkflow(t *testing.T, ctx context.Context, advancedSer
 	// Conduct advanced debate
 	result, err := advancedService.ConductAdvancedDebate(ctx, debateConfig)
 	if err != nil && strings.Contains(err.Error(), "provider registry") {
-		t.Logf("Provider registry not configured - requires full infrastructure (acceptable)"); return
+		t.Logf("Provider registry not configured - requires full infrastructure (acceptable)")
+		return
 	}
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -172,7 +174,8 @@ func testAdvancedStrategiesAndConsensus(t *testing.T, ctx context.Context, advan
 
 		result, err := advancedService.ConductAdvancedDebate(ctx, debateConfig)
 		if err != nil && strings.Contains(err.Error(), "provider registry") {
-			t.Logf("Provider registry not configured - requires full infrastructure (acceptable)"); return
+			t.Logf("Provider registry not configured - requires full infrastructure (acceptable)")
+			return
 		}
 		require.NoError(t, err)
 		assert.True(t, result.Success)
@@ -185,7 +188,8 @@ func testRealTimeMonitoringAndAnalytics(t *testing.T, ctx context.Context, monit
 	debateID := "integration-monitoring-001"
 	status, err := monitoringService.GetStatus(ctx, debateID)
 	if err != nil && strings.Contains(err.Error(), "no monitoring session found") {
-		t.Logf("No monitoring session available - requires running debate (acceptable)"); return
+		t.Logf("No monitoring session available - requires running debate (acceptable)")
+		return
 	}
 	require.NoError(t, err)
 	assert.NotNil(t, status)

@@ -54,63 +54,63 @@ type Expectation struct {
 
 // Comparison represents the comparison between expected and actual results.
 type Comparison struct {
-	Phase                 topology.DebatePhase `json:"phase"`
-	Round                 int                  `json:"round"`
+	Phase topology.DebatePhase `json:"phase"`
+	Round int                  `json:"round"`
 
 	// Deltas (actual - expected)
-	ConfidenceDelta       float64              `json:"confidence_delta"`
-	ConsensusDelta        float64              `json:"consensus_delta"`
-	InsightsDelta         int                  `json:"insights_delta"`
-	LatencyDelta          time.Duration        `json:"latency_delta"`
+	ConfidenceDelta float64       `json:"confidence_delta"`
+	ConsensusDelta  float64       `json:"consensus_delta"`
+	InsightsDelta   int           `json:"insights_delta"`
+	LatencyDelta    time.Duration `json:"latency_delta"`
 
 	// Scores
-	OverallScore          float64              `json:"overall_score"`       // 0-1, 1 = exceeded expectations
-	GoalsAchieved         []string             `json:"goals_achieved"`
-	GoalsMissed           []string             `json:"goals_missed"`
-	RisksRealized         []string             `json:"risks_realized"`
-	UnexpectedOutcomes    []string             `json:"unexpected_outcomes"`
+	OverallScore       float64  `json:"overall_score"` // 0-1, 1 = exceeded expectations
+	GoalsAchieved      []string `json:"goals_achieved"`
+	GoalsMissed        []string `json:"goals_missed"`
+	RisksRealized      []string `json:"risks_realized"`
+	UnexpectedOutcomes []string `json:"unexpected_outcomes"`
 
-	Timestamp             time.Time            `json:"timestamp"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // Refinement represents strategy adjustments based on comparisons.
 type Refinement struct {
-	Phase                topology.DebatePhase   `json:"phase"`
-	Round                int                    `json:"round"`
+	Phase topology.DebatePhase `json:"phase"`
+	Round int                  `json:"round"`
 
 	// Adjustments
-	ConfidenceAdjustment float64               `json:"confidence_adjustment"`
-	AgentPriorities      map[string]float64    `json:"agent_priorities"`
+	ConfidenceAdjustment float64                        `json:"confidence_adjustment"`
+	AgentPriorities      map[string]float64             `json:"agent_priorities"`
 	RoleEmphasis         map[topology.AgentRole]float64 `json:"role_emphasis"`
-	NewGoals             []string              `json:"new_goals"`
-	MitigationStrategies []string              `json:"mitigation_strategies"`
+	NewGoals             []string                       `json:"new_goals"`
+	MitigationStrategies []string                       `json:"mitigation_strategies"`
 
 	// Learning
-	Insights             []LearningInsight     `json:"insights"`
-	SuccessPatterns      []string              `json:"success_patterns"`
-	FailurePatterns      []string              `json:"failure_patterns"`
+	Insights        []LearningInsight `json:"insights"`
+	SuccessPatterns []string          `json:"success_patterns"`
+	FailurePatterns []string          `json:"failure_patterns"`
 
-	AppliedAt            time.Time             `json:"applied_at"`
+	AppliedAt time.Time `json:"applied_at"`
 }
 
 // LearningInsight represents a learned pattern.
 type LearningInsight struct {
-	Pattern     string    `json:"pattern"`
-	Confidence  float64   `json:"confidence"`
-	Frequency   int       `json:"frequency"`
-	Impact      float64   `json:"impact"`      // Positive = helpful
-	Source      string    `json:"source"`      // Which comparison generated this
-	LastSeen    time.Time `json:"last_seen"`
+	Pattern    string    `json:"pattern"`
+	Confidence float64   `json:"confidence"`
+	Frequency  int       `json:"frequency"`
+	Impact     float64   `json:"impact"` // Positive = helpful
+	Source     string    `json:"source"` // Which comparison generated this
+	LastSeen   time.Time `json:"last_seen"`
 }
 
 // CognitivePlanner implements the expectation-comparison-refinement loop.
 type CognitivePlanner struct {
-	config          PlanningConfig
+	config PlanningConfig
 
 	// State
-	expectations    map[topology.DebatePhase]*Expectation
-	comparisons     []*Comparison
-	refinements     []*Refinement
+	expectations map[topology.DebatePhase]*Expectation
+	comparisons  []*Comparison
+	refinements  []*Refinement
 
 	// Learning
 	learningHistory []LearningInsight
@@ -119,29 +119,29 @@ type CognitivePlanner struct {
 	// Meta-cognition
 	planningMetrics *PlanningMetrics
 
-	mu              sync.RWMutex
+	mu sync.RWMutex
 }
 
 // PhaseBaseline represents baseline expectations for a phase based on history.
 type PhaseBaseline struct {
-	Phase            topology.DebatePhase
-	AvgConfidence    float64
-	AvgConsensus     float64
-	AvgInsights      float64
-	AvgLatency       time.Duration
-	SampleCount      int
-	LastUpdated      time.Time
+	Phase         topology.DebatePhase
+	AvgConfidence float64
+	AvgConsensus  float64
+	AvgInsights   float64
+	AvgLatency    time.Duration
+	SampleCount   int
+	LastUpdated   time.Time
 }
 
 // PlanningMetrics tracks the effectiveness of the planning system.
 type PlanningMetrics struct {
-	TotalExpectations    int       `json:"total_expectations"`
-	TotalComparisons     int       `json:"total_comparisons"`
-	TotalRefinements     int       `json:"total_refinements"`
-	AccuracyRate         float64   `json:"accuracy_rate"`         // How often expectations were met
-	ImprovementRate      float64   `json:"improvement_rate"`      // Improvement from refinements
-	LearningEfficiency   float64   `json:"learning_efficiency"`   // Insights per comparison
-	LastUpdated          time.Time `json:"last_updated"`
+	TotalExpectations  int       `json:"total_expectations"`
+	TotalComparisons   int       `json:"total_comparisons"`
+	TotalRefinements   int       `json:"total_refinements"`
+	AccuracyRate       float64   `json:"accuracy_rate"`       // How often expectations were met
+	ImprovementRate    float64   `json:"improvement_rate"`    // Improvement from refinements
+	LearningEfficiency float64   `json:"learning_efficiency"` // Insights per comparison
+	LastUpdated        time.Time `json:"last_updated"`
 }
 
 // NewCognitivePlanner creates a new cognitive planner.
@@ -175,8 +175,8 @@ func (cp *CognitivePlanner) SetExpectation(ctx context.Context, phase topology.D
 	expectation := &Expectation{
 		Phase:              phase,
 		Round:              round,
-		ExpectedConfidence: math.Min(1.0, baseline.AvgConfidence + scoreAdjustment + learningAdjustment),
-		ExpectedConsensus:  math.Min(1.0, baseline.AvgConsensus + scoreAdjustment*0.5),
+		ExpectedConfidence: math.Min(1.0, baseline.AvgConfidence+scoreAdjustment+learningAdjustment),
+		ExpectedConsensus:  math.Min(1.0, baseline.AvgConsensus+scoreAdjustment*0.5),
 		ExpectedInsights:   int(baseline.AvgInsights * (1 + scoreAdjustment)),
 		ExpectedLatency:    baseline.AvgLatency,
 		KeyGoals:           cp.generateGoals(phase, round),

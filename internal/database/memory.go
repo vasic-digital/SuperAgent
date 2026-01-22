@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"dev.helix.agent/internal/config"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // MemoryDB implements DB interface using in-memory storage

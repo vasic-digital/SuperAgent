@@ -17,14 +17,14 @@ import (
 
 // CheckResult represents the result of a sanity check
 type CheckResult struct {
-	Name        string        `json:"name"`
-	Category    string        `json:"category"`
-	Status      CheckStatus   `json:"status"`
-	Message     string        `json:"message,omitempty"`
-	Details     string        `json:"details,omitempty"`
-	Duration    time.Duration `json:"duration"`
-	Critical    bool          `json:"critical"`
-	Timestamp   time.Time     `json:"timestamp"`
+	Name      string        `json:"name"`
+	Category  string        `json:"category"`
+	Status    CheckStatus   `json:"status"`
+	Message   string        `json:"message,omitempty"`
+	Details   string        `json:"details,omitempty"`
+	Duration  time.Duration `json:"duration"`
+	Critical  bool          `json:"critical"`
+	Timestamp time.Time     `json:"timestamp"`
 }
 
 // CheckStatus represents the status of a check
@@ -39,16 +39,16 @@ const (
 
 // BootCheckReport represents the full sanity check report
 type BootCheckReport struct {
-	Timestamp       time.Time      `json:"timestamp"`
-	Duration        time.Duration  `json:"duration"`
-	TotalChecks     int            `json:"total_checks"`
-	PassedChecks    int            `json:"passed_checks"`
-	FailedChecks    int            `json:"failed_checks"`
-	WarningChecks   int            `json:"warning_checks"`
-	SkippedChecks   int            `json:"skipped_checks"`
-	CriticalFailure bool           `json:"critical_failure"`
-	Results         []CheckResult  `json:"results"`
-	ReadyToStart    bool           `json:"ready_to_start"`
+	Timestamp       time.Time     `json:"timestamp"`
+	Duration        time.Duration `json:"duration"`
+	TotalChecks     int           `json:"total_checks"`
+	PassedChecks    int           `json:"passed_checks"`
+	FailedChecks    int           `json:"failed_checks"`
+	WarningChecks   int           `json:"warning_checks"`
+	SkippedChecks   int           `json:"skipped_checks"`
+	CriticalFailure bool          `json:"critical_failure"`
+	Results         []CheckResult `json:"results"`
+	ReadyToStart    bool          `json:"ready_to_start"`
 }
 
 // BootChecker performs sanity checks at system boot

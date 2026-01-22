@@ -18,14 +18,16 @@ import (
 func TestQwenCLIRefreshIntegration(t *testing.T) {
 	// Skip if SKIP_QWEN_INTEGRATION is set (for CI environments without qwen)
 	if os.Getenv("SKIP_QWEN_INTEGRATION") != "" {
-		t.Logf("Skipping Qwen integration test - SKIP_QWEN_INTEGRATION set (acceptable)"); return
+		t.Logf("Skipping Qwen integration test - SKIP_QWEN_INTEGRATION set (acceptable)")
+		return
 	}
 
 	refresher := oauth_credentials.NewCLIRefresher(nil)
 
 	t.Run("CLI is available", func(t *testing.T) {
 		if !refresher.IsAvailable() {
-			t.Logf("qwen CLI not available - skipping integration tests (acceptable)"); return
+			t.Logf("qwen CLI not available - skipping integration tests (acceptable)")
+			return
 		}
 		t.Logf("qwen CLI found at: %s", refresher.GetQwenCLIPath())
 	})
@@ -64,7 +66,8 @@ func TestQwenCLIRefreshIntegration(t *testing.T) {
 func TestQwenCLIRefreshExecution(t *testing.T) {
 	// Only run if explicitly enabled
 	if os.Getenv("TEST_QWEN_CLI_REFRESH") == "" {
-		t.Logf("Skipping actual CLI refresh test - set TEST_QWEN_CLI_REFRESH=1 to enable (acceptable)"); return
+		t.Logf("Skipping actual CLI refresh test - set TEST_QWEN_CLI_REFRESH=1 to enable (acceptable)")
+		return
 	}
 
 	refresher := oauth_credentials.NewCLIRefresher(&oauth_credentials.CLIRefreshConfig{
@@ -75,7 +78,8 @@ func TestQwenCLIRefreshExecution(t *testing.T) {
 	})
 
 	if !refresher.IsAvailable() {
-		t.Logf("qwen CLI not available (acceptable)"); return
+		t.Logf("qwen CLI not available (acceptable)")
+		return
 	}
 
 	// Reset rate limit for test
@@ -132,7 +136,8 @@ func TestQwenCLIRefreshExecution(t *testing.T) {
 // TestQwenCLIRefreshWithFallback tests the fallback mechanism
 func TestQwenCLIRefreshWithFallback(t *testing.T) {
 	if os.Getenv("SKIP_QWEN_INTEGRATION") != "" {
-		t.Logf("Skipping Qwen integration test - SKIP_QWEN_INTEGRATION set (acceptable)"); return
+		t.Logf("Skipping Qwen integration test - SKIP_QWEN_INTEGRATION set (acceptable)")
+		return
 	}
 
 	reader := oauth_credentials.GetGlobalReader()

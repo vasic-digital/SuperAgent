@@ -71,27 +71,27 @@ const (
 
 // PackageStatus tracks the installation status of a package
 type PackageStatus struct {
-	Package      MCPPackage
-	Status       InstallStatus
-	InstallPath  string
-	InstalledAt  time.Time
-	Error        error
-	Duration     time.Duration
+	Package     MCPPackage
+	Status      InstallStatus
+	InstallPath string
+	InstalledAt time.Time
+	Error       error
+	Duration    time.Duration
 }
 
 // MCPPreinstaller handles pre-installation of MCP npm packages
 type MCPPreinstaller struct {
-	packages     []MCPPackage
-	installDir   string
-	logger       *logrus.Logger
-	statuses     map[string]*PackageStatus
-	mu           sync.RWMutex
-	npxPath      string
-	nodePath     string
-	npmPath      string
-	concurrency  int
-	timeout      time.Duration
-	onProgress   func(pkg string, status InstallStatus, progress float64)
+	packages    []MCPPackage
+	installDir  string
+	logger      *logrus.Logger
+	statuses    map[string]*PackageStatus
+	mu          sync.RWMutex
+	npxPath     string
+	nodePath    string
+	npmPath     string
+	concurrency int
+	timeout     time.Duration
+	onProgress  func(pkg string, status InstallStatus, progress float64)
 }
 
 // PreinstallerConfig holds configuration for the preinstaller
@@ -502,8 +502,8 @@ func (p *MCPPreinstaller) GetPackageCommand(name string) ([]string, error) {
 	if data, err := os.ReadFile(pkgJSON); err == nil {
 		// Parse to find "bin" or "main"
 		var pkgInfo struct {
-			Main string            `json:"main"`
-			Bin  interface{}       `json:"bin"`
+			Main string      `json:"main"`
+			Bin  interface{} `json:"bin"`
 		}
 		if err := jsonUnmarshal(data, &pkgInfo); err == nil {
 			if pkgInfo.Main != "" {

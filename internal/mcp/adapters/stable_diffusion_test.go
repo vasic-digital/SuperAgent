@@ -345,9 +345,9 @@ func TestStableDiffusionAdapter_ControlNet(t *testing.T) {
 	})
 
 	result, err := adapter.CallTool(context.Background(), "sd_controlnet", map[string]interface{}{
-		"prompt":           "a person standing",
-		"control_image":    "base64poseimage",
-		"controlnet_model": "openpose",
+		"prompt":            "a person standing",
+		"control_image":     "base64poseimage",
+		"controlnet_model":  "openpose",
 		"controlnet_weight": 1.0,
 	})
 

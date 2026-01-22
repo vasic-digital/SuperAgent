@@ -13,12 +13,12 @@ import (
 
 // Renderer handles CLI output rendering
 type Renderer struct {
-	config    *RenderConfig
-	client    CLIClient
-	writer    io.Writer
-	isTTY     bool
+	config     *RenderConfig
+	client     CLIClient
+	writer     io.Writer
+	isTTY      bool
 	spinnerIdx int
-	mu        sync.Mutex
+	mu         sync.Mutex
 }
 
 // NewRenderer creates a new CLI renderer

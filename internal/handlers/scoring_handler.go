@@ -265,10 +265,10 @@ func (h *ScoringHandler) GetModelsByScoreRange(c *gin.Context) {
 
 // ScoringWeightsResponse represents scoring weights response
 type ScoringWeightsResponse struct {
-	Weights       ScoringWeightsDetail `json:"weights"`
-	Total         float64              `json:"total"`
-	IsValid       bool                 `json:"is_valid"`
-	Description   string               `json:"description"`
+	Weights     ScoringWeightsDetail `json:"weights"`
+	Total       float64              `json:"total"`
+	IsValid     bool                 `json:"is_valid"`
+	Description string               `json:"description"`
 }
 
 // ScoringWeightsDetail represents detailed scoring weights
@@ -301,8 +301,8 @@ func (h *ScoringHandler) GetScoringWeights(c *gin.Context) {
 			Capability:        weights.Capability,
 			Recency:           weights.Recency,
 		},
-		Total:   total,
-		IsValid: total >= 0.99 && total <= 1.01,
+		Total:       total,
+		IsValid:     total >= 0.99 && total <= 1.01,
 		Description: "Score = (Speed × 25%) + (Efficiency × 20%) + (Cost × 25%) + (Capability × 20%) + (Recency × 10%)",
 	})
 }
@@ -357,8 +357,8 @@ func (h *ScoringHandler) UpdateScoringWeights(c *gin.Context) {
 			Capability:        weights.Capability,
 			Recency:           weights.Recency,
 		},
-		Total:   total,
-		IsValid: true,
+		Total:       total,
+		IsValid:     true,
 		Description: "Weights updated successfully",
 	})
 }

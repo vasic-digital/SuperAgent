@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"dev.helix.agent/internal/optimization/outlines"
 	"dev.helix.agent/internal/optimization/streaming"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDefaultPipelineConfig(t *testing.T) {
@@ -47,7 +47,7 @@ func TestNewPipeline(t *testing.T) {
 			config: nil,
 		},
 		{
-			name:   "with custom config",
+			name: "with custom config",
 			config: &PipelineConfig{
 				EnableCacheCheck:       false,
 				EnableContextRetrieval: true,
@@ -129,11 +129,11 @@ func TestPipeline_OptimizeRequest_NoServices(t *testing.T) {
 	require.NoError(t, err)
 
 	pipelineConfig := &PipelineConfig{
-		EnableCacheCheck:       false,
-		EnableContextRetrieval: false,
+		EnableCacheCheck:        false,
+		EnableContextRetrieval:  false,
 		EnableTaskDecomposition: false,
-		EnablePrefixWarm:       false,
-		ParallelStages:         false,
+		EnablePrefixWarm:        false,
+		ParallelStages:          false,
 	}
 
 	pipeline := NewPipeline(service, pipelineConfig)
@@ -166,11 +166,11 @@ func TestPipeline_OptimizeRequest_ParallelStages(t *testing.T) {
 	require.NoError(t, err)
 
 	pipelineConfig := &PipelineConfig{
-		EnableCacheCheck:       false,
-		EnableContextRetrieval: false,
+		EnableCacheCheck:        false,
+		EnableContextRetrieval:  false,
 		EnableTaskDecomposition: false,
-		EnablePrefixWarm:       false,
-		ParallelStages:         true, // Enable parallel
+		EnablePrefixWarm:        false,
+		ParallelStages:          true, // Enable parallel
 	}
 
 	pipeline := NewPipeline(service, pipelineConfig)
@@ -197,11 +197,11 @@ func TestPipeline_OptimizeRequest_SequentialStages(t *testing.T) {
 	require.NoError(t, err)
 
 	pipelineConfig := &PipelineConfig{
-		EnableCacheCheck:       false,
-		EnableContextRetrieval: false,
+		EnableCacheCheck:        false,
+		EnableContextRetrieval:  false,
 		EnableTaskDecomposition: false,
-		EnablePrefixWarm:       false,
-		ParallelStages:         false, // Sequential
+		EnablePrefixWarm:        false,
+		ParallelStages:          false, // Sequential
 	}
 
 	pipeline := NewPipeline(service, pipelineConfig)
@@ -302,18 +302,18 @@ func TestPipelineStage_Constants(t *testing.T) {
 
 func TestPipelineConfig_AllFields(t *testing.T) {
 	config := &PipelineConfig{
-		EnableCacheCheck:             true,
-		EnableContextRetrieval:       true,
-		EnableTaskDecomposition:      true,
-		EnablePrefixWarm:             true,
-		EnableValidation:             true,
-		EnableCacheStore:             true,
-		CacheCheckTimeout:            100 * time.Millisecond,
-		ContextRetrievalTimeout:      2 * time.Second,
-		TaskDecompositionTimeout:     3 * time.Second,
-		MinPromptLengthForContext:    50,
+		EnableCacheCheck:                true,
+		EnableContextRetrieval:          true,
+		EnableTaskDecomposition:         true,
+		EnablePrefixWarm:                true,
+		EnableValidation:                true,
+		EnableCacheStore:                true,
+		CacheCheckTimeout:               100 * time.Millisecond,
+		ContextRetrievalTimeout:         2 * time.Second,
+		TaskDecompositionTimeout:        3 * time.Second,
+		MinPromptLengthForContext:       50,
 		MinPromptLengthForDecomposition: 100,
-		ParallelStages:               true,
+		ParallelStages:                  true,
 	}
 
 	assert.True(t, config.EnableCacheCheck)
@@ -597,12 +597,12 @@ func TestPipeline_ParallelStages_WithShortPrompt(t *testing.T) {
 	require.NoError(t, err)
 
 	pipelineConfig := &PipelineConfig{
-		EnableCacheCheck:               false,
-		EnableContextRetrieval:         true,
-		EnableTaskDecomposition:        true,
-		EnablePrefixWarm:               false,
-		ParallelStages:                 true,
-		MinPromptLengthForContext:      1000, // High threshold
+		EnableCacheCheck:                false,
+		EnableContextRetrieval:          true,
+		EnableTaskDecomposition:         true,
+		EnablePrefixWarm:                false,
+		ParallelStages:                  true,
+		MinPromptLengthForContext:       1000, // High threshold
 		MinPromptLengthForDecomposition: 1000, // High threshold
 	}
 
@@ -632,12 +632,12 @@ func TestPipeline_SequentialStages_WithShortPrompt(t *testing.T) {
 	require.NoError(t, err)
 
 	pipelineConfig := &PipelineConfig{
-		EnableCacheCheck:               false,
-		EnableContextRetrieval:         true,
-		EnableTaskDecomposition:        true,
-		EnablePrefixWarm:               false,
-		ParallelStages:                 false, // Sequential
-		MinPromptLengthForContext:      1000,
+		EnableCacheCheck:                false,
+		EnableContextRetrieval:          true,
+		EnableTaskDecomposition:         true,
+		EnablePrefixWarm:                false,
+		ParallelStages:                  false, // Sequential
+		MinPromptLengthForContext:       1000,
 		MinPromptLengthForDecomposition: 1000,
 	}
 
@@ -899,13 +899,13 @@ func TestPipeline_ParallelStages_WithMockLlamaIndex(t *testing.T) {
 	require.NoError(t, err)
 
 	pipelineConfig := &PipelineConfig{
-		EnableCacheCheck:               false,
-		EnableContextRetrieval:         true,
-		EnableTaskDecomposition:        false,
-		EnablePrefixWarm:               false,
-		ParallelStages:                 true, // Parallel
-		MinPromptLengthForContext:      10,   // Low threshold
-		ContextRetrievalTimeout:        5 * time.Second,
+		EnableCacheCheck:          false,
+		EnableContextRetrieval:    true,
+		EnableTaskDecomposition:   false,
+		EnablePrefixWarm:          false,
+		ParallelStages:            true, // Parallel
+		MinPromptLengthForContext: 10,   // Low threshold
+		ContextRetrievalTimeout:   5 * time.Second,
 	}
 
 	pipeline := NewPipeline(service, pipelineConfig)
@@ -952,13 +952,13 @@ func TestPipeline_SequentialStages_WithMockLlamaIndex(t *testing.T) {
 	require.NoError(t, err)
 
 	pipelineConfig := &PipelineConfig{
-		EnableCacheCheck:               false,
-		EnableContextRetrieval:         true,
-		EnableTaskDecomposition:        false,
-		EnablePrefixWarm:               false,
-		ParallelStages:                 false, // Sequential
-		MinPromptLengthForContext:      10,
-		ContextRetrievalTimeout:        5 * time.Second,
+		EnableCacheCheck:          false,
+		EnableContextRetrieval:    true,
+		EnableTaskDecomposition:   false,
+		EnablePrefixWarm:          false,
+		ParallelStages:            false, // Sequential
+		MinPromptLengthForContext: 10,
+		ContextRetrievalTimeout:   5 * time.Second,
 	}
 
 	pipeline := NewPipeline(service, pipelineConfig)
@@ -1004,13 +1004,13 @@ func TestPipeline_ParallelStages_WithMockLangChain(t *testing.T) {
 	require.NoError(t, err)
 
 	pipelineConfig := &PipelineConfig{
-		EnableCacheCheck:               false,
-		EnableContextRetrieval:         false,
-		EnableTaskDecomposition:        true,
-		EnablePrefixWarm:               false,
-		ParallelStages:                 true,
+		EnableCacheCheck:                false,
+		EnableContextRetrieval:          false,
+		EnableTaskDecomposition:         true,
+		EnablePrefixWarm:                false,
+		ParallelStages:                  true,
 		MinPromptLengthForDecomposition: 50,
-		TaskDecompositionTimeout:       5 * time.Second,
+		TaskDecompositionTimeout:        5 * time.Second,
 	}
 
 	pipeline := NewPipeline(service, pipelineConfig)
@@ -1057,13 +1057,13 @@ func TestPipeline_SequentialStages_WithMockLangChain(t *testing.T) {
 	require.NoError(t, err)
 
 	pipelineConfig := &PipelineConfig{
-		EnableCacheCheck:               false,
-		EnableContextRetrieval:         false,
-		EnableTaskDecomposition:        true,
-		EnablePrefixWarm:               false,
-		ParallelStages:                 false, // Sequential
+		EnableCacheCheck:                false,
+		EnableContextRetrieval:          false,
+		EnableTaskDecomposition:         true,
+		EnablePrefixWarm:                false,
+		ParallelStages:                  false, // Sequential
 		MinPromptLengthForDecomposition: 50,
-		TaskDecompositionTimeout:       5 * time.Second,
+		TaskDecompositionTimeout:        5 * time.Second,
 	}
 
 	pipeline := NewPipeline(service, pipelineConfig)
@@ -1224,15 +1224,15 @@ func TestPipeline_ParallelStages_AllServicesEnabled(t *testing.T) {
 	require.NoError(t, err)
 
 	pipelineConfig := &PipelineConfig{
-		EnableCacheCheck:               false,
-		EnableContextRetrieval:         true,
-		EnableTaskDecomposition:        true,
-		EnablePrefixWarm:               true,
-		ParallelStages:                 true,
-		MinPromptLengthForContext:      10,
+		EnableCacheCheck:                false,
+		EnableContextRetrieval:          true,
+		EnableTaskDecomposition:         true,
+		EnablePrefixWarm:                true,
+		ParallelStages:                  true,
+		MinPromptLengthForContext:       10,
 		MinPromptLengthForDecomposition: 50,
-		ContextRetrievalTimeout:        5 * time.Second,
-		TaskDecompositionTimeout:       5 * time.Second,
+		ContextRetrievalTimeout:         5 * time.Second,
+		TaskDecompositionTimeout:        5 * time.Second,
 	}
 
 	pipeline := NewPipeline(service, pipelineConfig)

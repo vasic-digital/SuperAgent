@@ -64,62 +64,62 @@ const (
 // This is the single source of truth for provider information
 type UnifiedProvider struct {
 	// Identity
-	ID           string           `json:"id"`
-	Name         string           `json:"name"`
-	DisplayName  string           `json:"display_name,omitempty"`
-	Type         string           `json:"type"`
-	AuthType     ProviderAuthType `json:"auth_type"`
+	ID          string           `json:"id"`
+	Name        string           `json:"name"`
+	DisplayName string           `json:"display_name,omitempty"`
+	Type        string           `json:"type"`
+	AuthType    ProviderAuthType `json:"auth_type"`
 
 	// Verification Results
-	Verified     bool             `json:"verified"`
-	VerifiedAt   time.Time        `json:"verified_at,omitempty"`
-	Score        float64          `json:"score"`
-	ScoreSuffix  string           `json:"score_suffix,omitempty"`
-	TestResults  map[string]bool  `json:"test_results,omitempty"`
-	CodeVisible  bool             `json:"code_visible"`
+	Verified    bool            `json:"verified"`
+	VerifiedAt  time.Time       `json:"verified_at,omitempty"`
+	Score       float64         `json:"score"`
+	ScoreSuffix string          `json:"score_suffix,omitempty"`
+	TestResults map[string]bool `json:"test_results,omitempty"`
+	CodeVisible bool            `json:"code_visible"`
 
 	// Models Available
-	Models       []UnifiedModel   `json:"models"`
-	DefaultModel string           `json:"default_model"`
-	PrimaryModel *UnifiedModel    `json:"primary_model,omitempty"`
+	Models       []UnifiedModel `json:"models"`
+	DefaultModel string         `json:"default_model"`
+	PrimaryModel *UnifiedModel  `json:"primary_model,omitempty"`
 
 	// Health Status
-	Status       ProviderStatus   `json:"status"`
-	LastHealthCheck time.Time    `json:"last_health_check,omitempty"`
-	HealthCheckError string      `json:"health_check_error,omitempty"`
+	Status           ProviderStatus `json:"status"`
+	LastHealthCheck  time.Time      `json:"last_health_check,omitempty"`
+	HealthCheckError string         `json:"health_check_error,omitempty"`
 
 	// OAuth-specific (only for AuthTypeOAuth)
-	OAuthTokenExpiry  time.Time   `json:"oauth_token_expiry,omitempty"`
-	OAuthAutoRefresh  bool        `json:"oauth_auto_refresh,omitempty"`
+	OAuthTokenExpiry time.Time `json:"oauth_token_expiry,omitempty"`
+	OAuthAutoRefresh bool      `json:"oauth_auto_refresh,omitempty"`
 
 	// Configuration
-	BaseURL      string           `json:"base_url,omitempty"`
-	APIKey       string           `json:"-"` // Not serialized for security
-	Tier         int              `json:"tier"`
-	Priority     int              `json:"priority"`
+	BaseURL  string `json:"base_url,omitempty"`
+	APIKey   string `json:"-"` // Not serialized for security
+	Tier     int    `json:"tier"`
+	Priority int    `json:"priority"`
 
 	// Provider Instance (not serialized)
-	Instance     llm.LLMProvider  `json:"-"`
+	Instance llm.LLMProvider `json:"-"`
 
 	// Error tracking
-	ErrorMessage     string       `json:"error_message,omitempty"`
-	ConsecutiveFails int          `json:"consecutive_fails,omitempty"`
-	ErrorCount       int          `json:"error_count,omitempty"`
+	ErrorMessage     string `json:"error_message,omitempty"`
+	ConsecutiveFails int    `json:"consecutive_fails,omitempty"`
+	ErrorCount       int    `json:"error_count,omitempty"`
 
 	// Health tracking (aliases for compatibility)
-	LastHealthAt     time.Time    `json:"last_health_at,omitempty"`
+	LastHealthAt time.Time `json:"last_health_at,omitempty"`
 
 	// Metadata for additional information
-	Metadata         map[string]interface{} `json:"metadata,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // UnifiedModel represents a model with its verification score
 type UnifiedModel struct {
 	// Identity
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	DisplayName string  `json:"display_name,omitempty"`
-	Provider    string  `json:"provider"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name,omitempty"`
+	Provider    string `json:"provider"`
 
 	// Verification
 	Score       float64       `json:"score"`
@@ -151,53 +151,53 @@ type UnifiedModel struct {
 // StartupResult contains the results of the startup verification pipeline
 type StartupResult struct {
 	// Counts
-	TotalProviders   int `json:"total_providers"`
-	VerifiedCount    int `json:"verified_count"`
-	FailedCount      int `json:"failed_count"`
-	SkippedCount     int `json:"skipped_count"`
+	TotalProviders int `json:"total_providers"`
+	VerifiedCount  int `json:"verified_count"`
+	FailedCount    int `json:"failed_count"`
+	SkippedCount   int `json:"skipped_count"`
 
 	// Provider breakdown by auth type
-	APIKeyProviders  int `json:"api_key_providers"`
-	OAuthProviders   int `json:"oauth_providers"`
-	FreeProviders    int `json:"free_providers"`
+	APIKeyProviders int `json:"api_key_providers"`
+	OAuthProviders  int `json:"oauth_providers"`
+	FreeProviders   int `json:"free_providers"`
 
 	// Timing
-	StartedAt        time.Time     `json:"started_at"`
-	CompletedAt      time.Time     `json:"completed_at"`
-	DurationMs       int64         `json:"duration_ms"`
+	StartedAt   time.Time `json:"started_at"`
+	CompletedAt time.Time `json:"completed_at"`
+	DurationMs  int64     `json:"duration_ms"`
 
 	// Results
-	Providers        []*UnifiedProvider `json:"providers"`
-	RankedProviders  []*UnifiedProvider `json:"ranked_providers"`
+	Providers       []*UnifiedProvider `json:"providers"`
+	RankedProviders []*UnifiedProvider `json:"ranked_providers"`
 
 	// Debate Team (15 LLMs)
-	DebateTeam       *DebateTeamResult `json:"debate_team,omitempty"`
+	DebateTeam *DebateTeamResult `json:"debate_team,omitempty"`
 
 	// Errors
-	Errors           []StartupError `json:"errors,omitempty"`
+	Errors []StartupError `json:"errors,omitempty"`
 }
 
 // DebateTeamResult contains the selected 15 LLMs for the AI debate team
 type DebateTeamResult struct {
 	// Team composition (5 positions x 3 LLMs)
-	Positions    []*DebatePosition `json:"positions"`
-	TotalLLMs    int               `json:"total_llms"`
+	Positions []*DebatePosition `json:"positions"`
+	TotalLLMs int               `json:"total_llms"`
 
 	// Selection criteria
-	MinScore     float64           `json:"min_score"`
-	OAuthFirst   bool              `json:"oauth_first"`
+	MinScore   float64 `json:"min_score"`
+	OAuthFirst bool    `json:"oauth_first"`
 
 	// Timing
-	SelectedAt   time.Time         `json:"selected_at"`
+	SelectedAt time.Time `json:"selected_at"`
 }
 
 // DebatePosition represents a position in the AI debate team
 type DebatePosition struct {
-	Position     int              `json:"position"`
-	Role         string           `json:"role"`
-	Primary      *DebateLLM       `json:"primary"`
-	Fallback1    *DebateLLM       `json:"fallback_1,omitempty"`
-	Fallback2    *DebateLLM       `json:"fallback_2,omitempty"`
+	Position  int        `json:"position"`
+	Role      string     `json:"role"`
+	Primary   *DebateLLM `json:"primary"`
+	Fallback1 *DebateLLM `json:"fallback_1,omitempty"`
+	Fallback2 *DebateLLM `json:"fallback_2,omitempty"`
 }
 
 // DebateLLM represents an LLM selected for the debate team
@@ -227,7 +227,7 @@ type ProviderDiscoveryResult struct {
 	Type        string           `json:"type"`
 	AuthType    ProviderAuthType `json:"auth_type"`
 	Discovered  bool             `json:"discovered"`
-	Source      string           `json:"source"` // "env", "oauth", "auto"
+	Source      string           `json:"source"`                // "env", "oauth", "auto"
 	Credentials string           `json:"credentials,omitempty"` // Redacted
 	BaseURL     string           `json:"base_url,omitempty"`
 	Models      []string         `json:"models,omitempty"`
@@ -236,28 +236,28 @@ type ProviderDiscoveryResult struct {
 // StartupConfig holds configuration for the startup verification pipeline
 type StartupConfig struct {
 	// Verification settings
-	ParallelVerification  bool          `yaml:"parallel_verification" json:"parallel_verification"`
-	MaxConcurrency        int           `yaml:"max_concurrency" json:"max_concurrency"`
-	VerificationTimeout   time.Duration `yaml:"verification_timeout" json:"verification_timeout"`
-	HealthCheckTimeout    time.Duration `yaml:"health_check_timeout" json:"health_check_timeout"`
+	ParallelVerification bool          `yaml:"parallel_verification" json:"parallel_verification"`
+	MaxConcurrency       int           `yaml:"max_concurrency" json:"max_concurrency"`
+	VerificationTimeout  time.Duration `yaml:"verification_timeout" json:"verification_timeout"`
+	HealthCheckTimeout   time.Duration `yaml:"health_check_timeout" json:"health_check_timeout"`
 
 	// Score thresholds
-	MinScore              float64       `yaml:"min_score" json:"min_score"`
-	RequireCodeVisibility bool          `yaml:"require_code_visibility" json:"require_code_visibility"`
+	MinScore              float64 `yaml:"min_score" json:"min_score"`
+	RequireCodeVisibility bool    `yaml:"require_code_visibility" json:"require_code_visibility"`
 
 	// Debate team settings
-	DebateTeamSize        int           `yaml:"debate_team_size" json:"debate_team_size"`
-	PositionCount         int           `yaml:"position_count" json:"position_count"`
-	FallbacksPerPosition  int           `yaml:"fallbacks_per_position" json:"fallbacks_per_position"`
+	DebateTeamSize       int `yaml:"debate_team_size" json:"debate_team_size"`
+	PositionCount        int `yaml:"position_count" json:"position_count"`
+	FallbacksPerPosition int `yaml:"fallbacks_per_position" json:"fallbacks_per_position"`
 
 	// OAuth settings
-	OAuthPriorityBoost    float64       `yaml:"oauth_priority_boost" json:"oauth_priority_boost"`
-	TrustOAuthOnFailure   bool          `yaml:"trust_oauth_on_failure" json:"trust_oauth_on_failure"`
-	OAuthTokenRefreshMins int           `yaml:"oauth_token_refresh_mins" json:"oauth_token_refresh_mins"`
+	OAuthPriorityBoost    float64 `yaml:"oauth_priority_boost" json:"oauth_priority_boost"`
+	TrustOAuthOnFailure   bool    `yaml:"trust_oauth_on_failure" json:"trust_oauth_on_failure"`
+	OAuthTokenRefreshMins int     `yaml:"oauth_token_refresh_mins" json:"oauth_token_refresh_mins"`
 
 	// Free provider settings
-	FreeProviderBaseScore float64       `yaml:"free_provider_base_score" json:"free_provider_base_score"`
-	EnableFreeProviders   bool          `yaml:"enable_free_providers" json:"enable_free_providers"`
+	FreeProviderBaseScore float64 `yaml:"free_provider_base_score" json:"free_provider_base_score"`
+	EnableFreeProviders   bool    `yaml:"enable_free_providers" json:"enable_free_providers"`
 
 	// Fallback strategy
 	OAuthPrimaryNonOAuthFallback bool `yaml:"oauth_primary_non_oauth_fallback" json:"oauth_primary_non_oauth_fallback"`

@@ -39,10 +39,10 @@ type CacheHit struct {
 
 // CacheStats contains cache statistics.
 type CacheStats struct {
-	TotalEntries int     `json:"total_entries"`
-	Hits         int64   `json:"hits"`
-	Misses       int64   `json:"misses"`
-	HitRate      float64 `json:"hit_rate"`
+	TotalEntries  int     `json:"total_entries"`
+	Hits          int64   `json:"hits"`
+	Misses        int64   `json:"misses"`
+	HitRate       float64 `json:"hit_rate"`
 	AvgSimilarity float64 `json:"avg_similarity"`
 }
 
@@ -62,10 +62,10 @@ type SemanticCache struct {
 	config *Config
 
 	// Statistics
-	hits          int64
-	misses        int64
+	hits            int64
+	misses          int64
 	totalSimilarity float64
-	hitCount      int64
+	hitCount        int64
 
 	// Callbacks
 	onEvict func(entry *CacheEntry)

@@ -42,10 +42,10 @@ type SemanticCacheConfig struct {
 
 // StructuredOutputConfig holds structured output settings.
 type StructuredOutputConfig struct {
-	Enabled       bool `yaml:"enabled" json:"enabled"`
-	StrictMode    bool `yaml:"strict_mode" json:"strict_mode"`
-	RetryOnFail   bool `yaml:"retry_on_failure" json:"retry_on_failure"`
-	MaxRetries    int  `yaml:"max_retries" json:"max_retries"`
+	Enabled     bool `yaml:"enabled" json:"enabled"`
+	StrictMode  bool `yaml:"strict_mode" json:"strict_mode"`
+	RetryOnFail bool `yaml:"retry_on_failure" json:"retry_on_failure"`
+	MaxRetries  int  `yaml:"max_retries" json:"max_retries"`
 }
 
 // StreamingConfig holds streaming settings.
@@ -58,18 +58,18 @@ type StreamingConfig struct {
 
 // SGLangConfig holds SGLang service settings.
 type SGLangConfig struct {
-	Enabled              bool          `yaml:"enabled" json:"enabled"`
-	Endpoint             string        `yaml:"endpoint" json:"endpoint"`
-	Timeout              time.Duration `yaml:"timeout" json:"timeout"`
-	FallbackOnUnavailable bool         `yaml:"fallback_on_unavailable" json:"fallback_on_unavailable"`
+	Enabled               bool          `yaml:"enabled" json:"enabled"`
+	Endpoint              string        `yaml:"endpoint" json:"endpoint"`
+	Timeout               time.Duration `yaml:"timeout" json:"timeout"`
+	FallbackOnUnavailable bool          `yaml:"fallback_on_unavailable" json:"fallback_on_unavailable"`
 }
 
 // LlamaIndexConfig holds LlamaIndex service settings.
 type LlamaIndexConfig struct {
-	Enabled       bool          `yaml:"enabled" json:"enabled"`
-	Endpoint      string        `yaml:"endpoint" json:"endpoint"`
-	Timeout       time.Duration `yaml:"timeout" json:"timeout"`
-	UseCogneeIndex bool         `yaml:"use_cognee_index" json:"use_cognee_index"`
+	Enabled        bool          `yaml:"enabled" json:"enabled"`
+	Endpoint       string        `yaml:"endpoint" json:"endpoint"`
+	Timeout        time.Duration `yaml:"timeout" json:"timeout"`
+	UseCogneeIndex bool          `yaml:"use_cognee_index" json:"use_cognee_index"`
 }
 
 // LangChainConfig holds LangChain service settings.
@@ -132,9 +132,9 @@ func DefaultConfig() *Config {
 		},
 
 		SGLang: SGLangConfig{
-			Enabled:              true,
-			Endpoint:             "http://localhost:30000",
-			Timeout:              120 * time.Second,
+			Enabled:               true,
+			Endpoint:              "http://localhost:30000",
+			Timeout:               120 * time.Second,
 			FallbackOnUnavailable: true,
 		},
 

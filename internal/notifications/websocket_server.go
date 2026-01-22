@@ -24,8 +24,8 @@ type WebSocketClientInterface interface {
 // WebSocketServer manages WebSocket connections
 type WebSocketServer struct {
 	// Task-specific clients
-	clients     map[string]map[string]WebSocketClientInterface
-	clientsMu   sync.RWMutex
+	clients   map[string]map[string]WebSocketClientInterface
+	clientsMu sync.RWMutex
 
 	// Global clients
 	globalClients   map[string]WebSocketClientInterface
@@ -369,8 +369,8 @@ func (s *WebSocketServer) GetTotalClientCount() int {
 
 // WebSocketMessage represents an incoming WebSocket message
 type WebSocketMessage struct {
-	Type   string `json:"type"`
-	TaskID string `json:"task_id,omitempty"`
+	Type   string      `json:"type"`
+	TaskID string      `json:"task_id,omitempty"`
 	Data   interface{} `json:"data,omitempty"`
 }
 

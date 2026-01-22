@@ -379,14 +379,14 @@ func TestPhaseLearning_Structure(t *testing.T) {
 
 func TestDebateLearningResult_Structure(t *testing.T) {
 	result := &DebateLearningResult{
-		DebateID:            "debate-1",
-		SessionDuration:     5 * time.Minute,
-		AppliedLessons:      3,
-		ExtractedLessons:    2,
-		DetectedPatterns:    4,
+		DebateID:             "debate-1",
+		SessionDuration:      5 * time.Minute,
+		AppliedLessons:       3,
+		ExtractedLessons:     2,
+		DetectedPatterns:     4,
 		CognitiveRefinements: 5,
-		ImprovementRate:     0.15,
-		Lessons:             []*debate.Lesson{},
+		ImprovementRate:      0.15,
+		Lessons:              []*debate.Lesson{},
 	}
 
 	assert.Equal(t, "debate-1", result.DebateID)

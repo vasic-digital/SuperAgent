@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"dev.helix.agent/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"dev.helix.agent/internal/services"
 )
 
 // CogneeAPIHandler handles all Cognee API endpoints

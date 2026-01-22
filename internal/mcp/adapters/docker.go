@@ -12,11 +12,11 @@ import (
 
 // DockerConfig configures the Docker adapter.
 type DockerConfig struct {
-	Host          string        `json:"host"`
-	APIVersion    string        `json:"api_version"`
-	TLSVerify     bool          `json:"tls_verify"`
-	CertPath      string        `json:"cert_path,omitempty"`
-	Timeout       time.Duration `json:"timeout"`
+	Host       string        `json:"host"`
+	APIVersion string        `json:"api_version"`
+	TLSVerify  bool          `json:"tls_verify"`
+	CertPath   string        `json:"cert_path,omitempty"`
+	Timeout    time.Duration `json:"timeout"`
 }
 
 // DefaultDockerConfig returns default configuration.
@@ -61,37 +61,37 @@ type DockerClient interface {
 
 // Container represents a Docker container.
 type Container struct {
-	ID         string            `json:"id"`
-	Names      []string          `json:"names"`
-	Image      string            `json:"image"`
-	ImageID    string            `json:"imageId"`
-	Command    string            `json:"command"`
-	Created    time.Time         `json:"created"`
-	State      string            `json:"state"`
-	Status     string            `json:"status"`
-	Ports      []Port            `json:"ports"`
-	Labels     map[string]string `json:"labels"`
+	ID      string            `json:"id"`
+	Names   []string          `json:"names"`
+	Image   string            `json:"image"`
+	ImageID string            `json:"imageId"`
+	Command string            `json:"command"`
+	Created time.Time         `json:"created"`
+	State   string            `json:"state"`
+	Status  string            `json:"status"`
+	Ports   []Port            `json:"ports"`
+	Labels  map[string]string `json:"labels"`
 }
 
 // ContainerDetails represents detailed container information.
 type ContainerDetails struct {
 	Container
-	Config      ContainerConfig `json:"config"`
+	Config          ContainerConfig `json:"config"`
 	NetworkSettings NetworkSettings `json:"networkSettings"`
-	Mounts      []Mount         `json:"mounts"`
+	Mounts          []Mount         `json:"mounts"`
 }
 
 // ContainerConfig represents container configuration.
 type ContainerConfig struct {
-	Image        string            `json:"image"`
-	Cmd          []string          `json:"cmd,omitempty"`
-	Env          []string          `json:"env,omitempty"`
-	WorkingDir   string            `json:"workingDir,omitempty"`
+	Image        string              `json:"image"`
+	Cmd          []string            `json:"cmd,omitempty"`
+	Env          []string            `json:"env,omitempty"`
+	WorkingDir   string              `json:"workingDir,omitempty"`
 	ExposedPorts map[string]struct{} `json:"exposedPorts,omitempty"`
 	Volumes      map[string]struct{} `json:"volumes,omitempty"`
-	Labels       map[string]string `json:"labels,omitempty"`
-	Hostname     string            `json:"hostname,omitempty"`
-	User         string            `json:"user,omitempty"`
+	Labels       map[string]string   `json:"labels,omitempty"`
+	Hostname     string              `json:"hostname,omitempty"`
+	User         string              `json:"user,omitempty"`
 }
 
 // Port represents a container port.
@@ -104,7 +104,7 @@ type Port struct {
 
 // NetworkSettings represents container network settings.
 type NetworkSettings struct {
-	IPAddress string            `json:"ipAddress"`
+	IPAddress string                      `json:"ipAddress"`
 	Networks  map[string]EndpointSettings `json:"networks"`
 }
 

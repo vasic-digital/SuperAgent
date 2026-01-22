@@ -14,13 +14,13 @@ import (
 
 // AIRewardModel implements RewardModel using LLM-based evaluation
 type AIRewardModel struct {
-	provider       LLMProvider
-	debateService  DebateService
-	config         *SelfImprovementConfig
-	logger         *logrus.Logger
-	cache          map[string]*cachedScore
-	cacheMu        sync.RWMutex
-	cacheExpiry    time.Duration
+	provider      LLMProvider
+	debateService DebateService
+	config        *SelfImprovementConfig
+	logger        *logrus.Logger
+	cache         map[string]*cachedScore
+	cacheMu       sync.RWMutex
+	cacheExpiry   time.Duration
 }
 
 type cachedScore struct {
@@ -342,11 +342,11 @@ func (rm *AIRewardModel) parseComparisonFromConsensus(prompt, response1, respons
 	}
 
 	pair := &PreferencePair{
-		ID:       uuid.New().String(),
-		Prompt:   prompt,
-		Margin:   parsed.Margin,
-		Source:   FeedbackSourceDebate,
-		Metadata: map[string]interface{}{"debate_id": result.ID, "reasoning": parsed.Reasoning},
+		ID:        uuid.New().String(),
+		Prompt:    prompt,
+		Margin:    parsed.Margin,
+		Source:    FeedbackSourceDebate,
+		Metadata:  map[string]interface{}{"debate_id": result.ID, "reasoning": parsed.Reasoning},
 		CreatedAt: time.Now(),
 	}
 

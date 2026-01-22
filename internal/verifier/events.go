@@ -26,15 +26,15 @@ const (
 type VerificationEventType string
 
 const (
-	VerificationEventStarted       VerificationEventType = "verification.started"
-	VerificationEventDiscovered    VerificationEventType = "verification.provider.discovered"
-	VerificationEventVerified      VerificationEventType = "verification.provider.verified"
-	VerificationEventFailed        VerificationEventType = "verification.provider.failed"
-	VerificationEventScored        VerificationEventType = "verification.provider.scored"
-	VerificationEventRanked        VerificationEventType = "verification.provider.ranked"
-	VerificationEventHealthCheck   VerificationEventType = "verification.provider.health"
-	VerificationEventTeamSelected  VerificationEventType = "verification.debate_team.selected"
-	VerificationEventCompleted     VerificationEventType = "verification.completed"
+	VerificationEventStarted      VerificationEventType = "verification.started"
+	VerificationEventDiscovered   VerificationEventType = "verification.provider.discovered"
+	VerificationEventVerified     VerificationEventType = "verification.provider.verified"
+	VerificationEventFailed       VerificationEventType = "verification.provider.failed"
+	VerificationEventScored       VerificationEventType = "verification.provider.scored"
+	VerificationEventRanked       VerificationEventType = "verification.provider.ranked"
+	VerificationEventHealthCheck  VerificationEventType = "verification.provider.health"
+	VerificationEventTeamSelected VerificationEventType = "verification.debate_team.selected"
+	VerificationEventCompleted    VerificationEventType = "verification.completed"
 )
 
 // String returns the string representation of the event type.

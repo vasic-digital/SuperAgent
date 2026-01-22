@@ -20,7 +20,8 @@ import (
 // This verifies that responses are complete, non-generic, and all providers participate
 func TestOpenCodeComprehensiveRequest(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping OpenCode comprehensive test (acceptable)"); return
+		t.Logf("Short mode - skipping OpenCode comprehensive test (acceptable)")
+		return
 	}
 	skipIfNotRunning(t)
 
@@ -305,7 +306,8 @@ func TestOpenCodeComprehensiveRequest(t *testing.T) {
 // TestOpenCodeConcurrentRequests tests handling of concurrent requests
 func TestOpenCodeConcurrentRequests(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping concurrent requests test (acceptable)"); return
+		t.Logf("Short mode - skipping concurrent requests test (acceptable)")
+		return
 	}
 	skipIfNotRunning(t)
 
@@ -390,7 +392,8 @@ func TestOpenCodeConcurrentRequests(t *testing.T) {
 // TestOpenCodeEdgeCases tests edge cases and error handling
 func TestOpenCodeEdgeCases(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping edge cases test (acceptable)"); return
+		t.Logf("Short mode - skipping edge cases test (acceptable)")
+		return
 	}
 	skipIfNotRunning(t)
 
@@ -511,7 +514,8 @@ func TestOpenCodeEdgeCases(t *testing.T) {
 // TestFallbackMechanismValidation tests that fallback providers are invoked when primary fails
 func TestFallbackMechanismValidation(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping fallback mechanism test (acceptable)"); return
+		t.Logf("Short mode - skipping fallback mechanism test (acceptable)")
+		return
 	}
 	skipIfNotRunning(t)
 
@@ -657,7 +661,8 @@ func TestFallbackMechanismValidation(t *testing.T) {
 // TestContentValidation tests that content is valid and complete
 func TestContentValidation(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping content validation test (acceptable)"); return
+		t.Logf("Short mode - skipping content validation test (acceptable)")
+		return
 	}
 	skipIfNotRunning(t)
 

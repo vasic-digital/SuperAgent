@@ -468,9 +468,9 @@ func TestIntentClassifier_EdgeCases_MixedSignals(t *testing.T) {
 
 	// Messages with mixed signals
 	mixed := []struct {
-		msg            string
-		shouldConfirm  bool
-		description    string
+		msg           string
+		shouldConfirm bool
+		description   string
 	}{
 		{"Yes, but with some changes", true, "qualified yes"},
 		{"OK, let's try it", true, "tentative approval"},

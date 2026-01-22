@@ -84,12 +84,12 @@ type RetrievedNode struct {
 
 // RetrievalResult holds the result of a retrieval operation
 type RetrievalResult struct {
-	Query        string           `json:"query"`
-	Nodes        []*RetrievedNode `json:"nodes"`
-	TotalFound   int              `json:"total_found"`
-	Duration     time.Duration    `json:"duration"`
-	Mode         RetrievalMode    `json:"mode"`
-	TokenCount   int              `json:"token_count,omitempty"`
+	Query      string           `json:"query"`
+	Nodes      []*RetrievedNode `json:"nodes"`
+	TotalFound int              `json:"total_found"`
+	Duration   time.Duration    `json:"duration"`
+	Mode       RetrievalMode    `json:"mode"`
+	TokenCount int              `json:"token_count,omitempty"`
 }
 
 // MarshalJSON implements custom JSON marshaling
@@ -526,11 +526,11 @@ func (r *LLMReranker) Rerank(ctx context.Context, query string, nodes []*Retriev
 
 // SelectiveRetriever implements the Repoformer selective retrieval policy
 type SelectiveRetriever struct {
-	config       GraphRAGConfig
-	graph        *CodeGraph
-	policyModel  RetrievalPolicyModel
-	graphRAG     *GraphRAG
-	logger       *logrus.Logger
+	config      GraphRAGConfig
+	graph       *CodeGraph
+	policyModel RetrievalPolicyModel
+	graphRAG    *GraphRAG
+	logger      *logrus.Logger
 }
 
 // RetrievalPolicyModel decides whether to retrieve context

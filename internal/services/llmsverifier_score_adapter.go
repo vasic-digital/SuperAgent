@@ -7,21 +7,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/verifier"
+	"github.com/sirupsen/logrus"
 )
 
 // LLMsVerifierScoreAdapter implements LLMsVerifierScoreProvider interface
 // It connects ProviderDiscovery to the actual LLMsVerifier scoring system
 type LLMsVerifierScoreAdapter struct {
-	scoringService     *verifier.ScoringService
-	verificationSvc    *verifier.VerificationService
-	providerScores     map[string]float64 // Cached provider scores
-	modelScores        map[string]float64 // Cached model scores
-	mu                 sync.RWMutex
-	log                *logrus.Logger
-	lastRefresh        time.Time
-	refreshInterval    time.Duration
+	scoringService  *verifier.ScoringService
+	verificationSvc *verifier.VerificationService
+	providerScores  map[string]float64 // Cached provider scores
+	modelScores     map[string]float64 // Cached model scores
+	mu              sync.RWMutex
+	log             *logrus.Logger
+	lastRefresh     time.Time
+	refreshInterval time.Duration
 }
 
 // NewLLMsVerifierScoreAdapter creates a new adapter for LLMsVerifier scores

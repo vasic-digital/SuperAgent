@@ -265,8 +265,8 @@ func TestSchemaValidator_NestedObject(t *testing.T) {
 
 func TestSchemaValidator_Formats(t *testing.T) {
 	tests := []struct {
-		format string
-		valid  string
+		format  string
+		valid   string
 		invalid string
 	}{
 		{"email", `"test@example.com"`, `"not-an-email"`},
@@ -404,9 +404,9 @@ func TestStructuredGenerator_RetryOnInvalid(t *testing.T) {
 
 	provider := &mockProvider{
 		responses: []string{
-			`{"name": "John"}`,                    // Missing age
-			`{"name": "John", "age": "thirty"}`,   // Wrong type
-			`{"name": "John", "age": 30}`,         // Valid
+			`{"name": "John"}`,                  // Missing age
+			`{"name": "John", "age": "thirty"}`, // Wrong type
+			`{"name": "John", "age": 30}`,       // Valid
 		},
 	}
 

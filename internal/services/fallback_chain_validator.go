@@ -12,10 +12,10 @@ import (
 
 // Package-level metrics (registered once)
 var (
-	fcvMetricsOnce            sync.Once
-	fcvValidationResultGauge  prometheus.Gauge
-	fcvDiversityScoreGauge    prometheus.Gauge
-	fcvValidationAlertsTotal  prometheus.Counter
+	fcvMetricsOnce           sync.Once
+	fcvValidationResultGauge prometheus.Gauge
+	fcvDiversityScoreGauge   prometheus.Gauge
+	fcvValidationAlertsTotal prometheus.Counter
 )
 
 func initFCVMetrics() {

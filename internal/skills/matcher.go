@@ -11,10 +11,10 @@ import (
 
 // Matcher handles matching user input to appropriate skills.
 type Matcher struct {
-	registry          *Registry
-	config            *SkillConfig
-	semanticMatcher   SemanticMatcher
-	log               *logrus.Logger
+	registry        *Registry
+	config          *SkillConfig
+	semanticMatcher SemanticMatcher
+	log             *logrus.Logger
 }
 
 // SemanticMatcher is an interface for semantic matching (implemented by LLM).
@@ -86,8 +86,8 @@ func (m *Matcher) Match(ctx context.Context, input string) ([]SkillMatch, error)
 	}
 
 	m.log.WithFields(logrus.Fields{
-		"input":           input,
-		"total_matches":   len(matches),
+		"input":            input,
+		"total_matches":    len(matches),
 		"filtered_matches": len(filteredMatches),
 	}).Debug("Skill matching completed")
 

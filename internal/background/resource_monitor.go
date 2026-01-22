@@ -26,19 +26,19 @@ type ProcessResourceMonitor struct {
 	mu       sync.RWMutex
 
 	// Cache for system resources
-	cachedResources     *SystemResources
-	cacheTime           time.Time
-	cacheTTL            time.Duration
-	systemResourceMu    sync.RWMutex
+	cachedResources  *SystemResources
+	cacheTime        time.Time
+	cacheTTL         time.Duration
+	systemResourceMu sync.RWMutex
 }
 
 type processMonitor struct {
-	taskID        string
-	pid           int
-	interval      time.Duration
-	stopChan      chan struct{}
-	lastSnapshot  *models.ResourceSnapshot
-	snapshotMu    sync.RWMutex
+	taskID       string
+	pid          int
+	interval     time.Duration
+	stopChan     chan struct{}
+	lastSnapshot *models.ResourceSnapshot
+	snapshotMu   sync.RWMutex
 }
 
 // NewProcessResourceMonitor creates a new process resource monitor
@@ -100,7 +100,7 @@ func (m *ProcessResourceMonitor) GetSystemResources() (*SystemResources, error) 
 	resources := &SystemResources{
 		TotalCPUCores:     cpuCores,
 		AvailableCPUCores: float64(cpuCores) * (100 - cpuLoad) / 100,
-		TotalMemoryMB:     int64(memInfo.Total / 1024 / 1024),   // #nosec G115 - memory size in MB fits int64
+		TotalMemoryMB:     int64(memInfo.Total / 1024 / 1024),     // #nosec G115 - memory size in MB fits int64
 		AvailableMemoryMB: int64(memInfo.Available / 1024 / 1024), // #nosec G115 - memory size in MB fits int64
 		CPULoadPercent:    cpuLoad,
 		MemoryUsedPercent: memInfo.UsedPercent,

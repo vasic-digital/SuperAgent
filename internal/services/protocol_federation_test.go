@@ -642,11 +642,11 @@ func TestProtocolDiscovery_ConcurrentDiscovery(t *testing.T) {
 
 // MockDiscoveryMethod implements DiscoveryMethod for testing
 type MockDiscoveryMethod struct {
-	name     string
-	servers  []*DiscoveredServer
-	err      error
-	started  bool
-	stopped  bool
+	name    string
+	servers []*DiscoveredServer
+	err     error
+	started bool
+	stopped bool
 }
 
 func (m *MockDiscoveryMethod) Name() string {
@@ -799,16 +799,16 @@ func TestProtocolDiscovery_GetServersByProtocol_TableDriven(t *testing.T) {
 	log := newFederationTestLogger()
 
 	tests := []struct {
-		name         string
-		servers      map[string]*DiscoveredServer
-		protocol     string
-		expectedLen  int
+		name        string
+		servers     map[string]*DiscoveredServer
+		protocol    string
+		expectedLen int
 	}{
 		{
-			name:         "empty servers",
-			servers:      map[string]*DiscoveredServer{},
-			protocol:     "mcp",
-			expectedLen:  0,
+			name:        "empty servers",
+			servers:     map[string]*DiscoveredServer{},
+			protocol:    "mcp",
+			expectedLen: 0,
 		},
 		{
 			name: "single matching server",

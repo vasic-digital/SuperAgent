@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"dev.helix.agent/internal/utils"
+	"github.com/fsnotify/fsnotify"
 )
 
 // Watcher monitors plugin directories for changes and triggers reloads

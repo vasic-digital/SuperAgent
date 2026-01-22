@@ -47,12 +47,12 @@ type Node struct {
 type NodeType string
 
 const (
-	NodeTypeAgent      NodeType = "agent"      // LLM-based agent
-	NodeTypeTool       NodeType = "tool"       // Tool execution
-	NodeTypeCondition  NodeType = "condition"  // Conditional branching
-	NodeTypeParallel   NodeType = "parallel"   // Parallel execution
-	NodeTypeHuman      NodeType = "human"      // Human-in-the-loop
-	NodeTypeSubgraph   NodeType = "subgraph"   // Nested workflow
+	NodeTypeAgent     NodeType = "agent"     // LLM-based agent
+	NodeTypeTool      NodeType = "tool"      // Tool execution
+	NodeTypeCondition NodeType = "condition" // Conditional branching
+	NodeTypeParallel  NodeType = "parallel"  // Parallel execution
+	NodeTypeHuman     NodeType = "human"     // Human-in-the-loop
+	NodeTypeSubgraph  NodeType = "subgraph"  // Nested workflow
 )
 
 // Edge represents a directed edge in the workflow
@@ -71,22 +71,22 @@ type ConditionFunc func(state *WorkflowState) bool
 
 // NodeInput contains input for a node
 type NodeInput struct {
-	Query      string
-	Messages   []Message
-	Tools      []Tool
-	Context    map[string]interface{}
-	Previous   *NodeOutput
+	Query    string
+	Messages []Message
+	Tools    []Tool
+	Context  map[string]interface{}
+	Previous *NodeOutput
 }
 
 // NodeOutput contains output from a node
 type NodeOutput struct {
-	Result      interface{}
-	Messages    []Message
-	ToolCalls   []ToolCall
-	NextNode    string // Override next node
-	ShouldEnd   bool
-	Error       error
-	Metadata    map[string]interface{}
+	Result    interface{}
+	Messages  []Message
+	ToolCalls []ToolCall
+	NextNode  string // Override next node
+	ShouldEnd bool
+	Error     error
+	Metadata  map[string]interface{}
 }
 
 // Message represents a conversation message
@@ -118,18 +118,18 @@ type ToolHandler func(ctx context.Context, args map[string]interface{}) (interfa
 
 // WorkflowState maintains state across the workflow
 type WorkflowState struct {
-	ID           string
-	WorkflowID   string
-	CurrentNode  string
-	Messages     []Message
-	Variables    map[string]interface{}
-	History      []NodeExecution
-	Checkpoints  []Checkpoint
-	Status       WorkflowStatus
-	StartTime    time.Time
-	EndTime      *time.Time
-	Error        error
-	mu           sync.RWMutex
+	ID          string
+	WorkflowID  string
+	CurrentNode string
+	Messages    []Message
+	Variables   map[string]interface{}
+	History     []NodeExecution
+	Checkpoints []Checkpoint
+	Status      WorkflowStatus
+	StartTime   time.Time
+	EndTime     *time.Time
+	Error       error
+	mu          sync.RWMutex
 }
 
 // NodeExecution records a node execution
@@ -164,13 +164,13 @@ const (
 
 // WorkflowConfig configures workflow execution
 type WorkflowConfig struct {
-	MaxIterations       int
-	Timeout             time.Duration
-	EnableCheckpoints   bool
-	CheckpointInterval  int
+	MaxIterations        int
+	Timeout              time.Duration
+	EnableCheckpoints    bool
+	CheckpointInterval   int
 	EnableSelfCorrection bool
-	MaxRetries          int
-	RetryDelay          time.Duration
+	MaxRetries           int
+	RetryDelay           time.Duration
 }
 
 // RetryPolicy defines retry behavior for a node
@@ -183,13 +183,13 @@ type RetryPolicy struct {
 // DefaultWorkflowConfig returns default configuration
 func DefaultWorkflowConfig() *WorkflowConfig {
 	return &WorkflowConfig{
-		MaxIterations:       100,
-		Timeout:             30 * time.Minute,
-		EnableCheckpoints:   true,
-		CheckpointInterval:  5,
+		MaxIterations:        100,
+		Timeout:              30 * time.Minute,
+		EnableCheckpoints:    true,
+		CheckpointInterval:   5,
 		EnableSelfCorrection: true,
-		MaxRetries:          3,
-		RetryDelay:          1 * time.Second,
+		MaxRetries:           3,
+		RetryDelay:           1 * time.Second,
 	}
 }
 

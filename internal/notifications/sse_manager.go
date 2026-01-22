@@ -13,8 +13,8 @@ import (
 // SSEManager manages Server-Sent Events connections
 type SSEManager struct {
 	// Task-specific clients
-	clients     map[string]map[chan<- []byte]struct{}
-	clientsMu   sync.RWMutex
+	clients   map[string]map[chan<- []byte]struct{}
+	clientsMu sync.RWMutex
 
 	// Global event clients (for all task events)
 	globalClients   map[chan<- []byte]struct{}
@@ -114,7 +114,7 @@ func (m *SSEManager) RegisterClient(taskID string, client chan<- []byte) error {
 	m.clients[taskID][client] = struct{}{}
 
 	m.logger.WithFields(logrus.Fields{
-		"task_id":      taskID,
+		"task_id":       taskID,
 		"total_clients": len(m.clients[taskID]),
 	}).Debug("SSE client registered")
 

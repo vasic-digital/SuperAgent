@@ -15,10 +15,10 @@ import (
 
 func TestNewChromaAdapter(t *testing.T) {
 	tests := []struct {
-		name           string
-		config         ChromaAdapterConfig
-		expectedURL    string
-		expectedToken  string
+		name          string
+		config        ChromaAdapterConfig
+		expectedURL   string
+		expectedToken string
 	}{
 		{
 			name: "with custom config",

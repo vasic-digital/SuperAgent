@@ -22,12 +22,12 @@ func TestNewClient(t *testing.T) {
 
 	t.Run("with custom config", func(t *testing.T) {
 		config := &Config{
-			Endpoint:         "minio.example.com:9000",
-			AccessKey:        "access",
-			SecretKey:        "secret",
-			ConnectTimeout:   60 * time.Second,
-			RequestTimeout:   120 * time.Second,
-			PartSize:         16 * 1024 * 1024,
+			Endpoint:          "minio.example.com:9000",
+			AccessKey:         "access",
+			SecretKey:         "secret",
+			ConnectTimeout:    60 * time.Second,
+			RequestTimeout:    120 * time.Second,
+			PartSize:          16 * 1024 * 1024,
 			ConcurrentUploads: 4,
 		}
 		client, err := NewClient(config, logrus.New())

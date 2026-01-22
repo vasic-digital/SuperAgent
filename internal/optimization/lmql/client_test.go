@@ -537,10 +537,10 @@ func TestClient_SelectBestCompletion(t *testing.T) {
 		resp := &ScoreResponse{
 			Prompt: "What is 2+2?",
 			Scores: map[string]float64{
-				"4":     0.98,
-				"5":     0.01,
-				"3":     0.01,
-				"22":    0.0,
+				"4":  0.98,
+				"5":  0.01,
+				"3":  0.01,
+				"22": 0.0,
 			},
 		}
 

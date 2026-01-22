@@ -23,12 +23,12 @@ type PromptVersion struct {
 
 // PromptVariable represents a variable in a prompt template
 type PromptVariable struct {
-	Name         string      `json:"name"`
-	Type         string      `json:"type"` // string, int, float, bool, array
-	Required     bool        `json:"required"`
-	Default      interface{} `json:"default,omitempty"`
-	Description  string      `json:"description,omitempty"`
-	Validation   string      `json:"validation,omitempty"` // Regex or validation rule
+	Name        string      `json:"name"`
+	Type        string      `json:"type"` // string, int, float, bool, array
+	Required    bool        `json:"required"`
+	Default     interface{} `json:"default,omitempty"`
+	Description string      `json:"description,omitempty"`
+	Validation  string      `json:"validation,omitempty"` // Regex or validation rule
 }
 
 // PromptRegistry manages prompt versions
@@ -101,34 +101,34 @@ type Variant struct {
 
 // ExperimentResult represents experiment analytics
 type ExperimentResult struct {
-	ExperimentID   string                      `json:"experiment_id"`
-	VariantResults map[string]*VariantResult   `json:"variant_results"`
-	TotalSamples   int                         `json:"total_samples"`
-	StartTime      time.Time                   `json:"start_time"`
-	EndTime        time.Time                   `json:"end_time"`
-	Winner         string                      `json:"winner,omitempty"`
-	Significance   float64                     `json:"significance"`       // Statistical significance
-	Confidence     float64                     `json:"confidence"`         // Confidence level
-	Recommendation string                      `json:"recommendation"`
+	ExperimentID   string                    `json:"experiment_id"`
+	VariantResults map[string]*VariantResult `json:"variant_results"`
+	TotalSamples   int                       `json:"total_samples"`
+	StartTime      time.Time                 `json:"start_time"`
+	EndTime        time.Time                 `json:"end_time"`
+	Winner         string                    `json:"winner,omitempty"`
+	Significance   float64                   `json:"significance"` // Statistical significance
+	Confidence     float64                   `json:"confidence"`   // Confidence level
+	Recommendation string                    `json:"recommendation"`
 }
 
 // VariantResult represents results for a single variant
 type VariantResult struct {
-	VariantID     string                    `json:"variant_id"`
-	SampleCount   int                       `json:"sample_count"`
-	MetricValues  map[string]*MetricValue   `json:"metric_values"`
-	ConversionRate float64                  `json:"conversion_rate,omitempty"`
-	Improvement   float64                   `json:"improvement,omitempty"` // vs control
+	VariantID      string                  `json:"variant_id"`
+	SampleCount    int                     `json:"sample_count"`
+	MetricValues   map[string]*MetricValue `json:"metric_values"`
+	ConversionRate float64                 `json:"conversion_rate,omitempty"`
+	Improvement    float64                 `json:"improvement,omitempty"` // vs control
 }
 
 // MetricValue represents a metric measurement
 type MetricValue struct {
-	Name     string  `json:"name"`
-	Value    float64 `json:"value"`
-	StdDev   float64 `json:"std_dev"`
-	Min      float64 `json:"min"`
-	Max      float64 `json:"max"`
-	Count    int     `json:"count"`
+	Name   string  `json:"name"`
+	Value  float64 `json:"value"`
+	StdDev float64 `json:"std_dev"`
+	Min    float64 `json:"min"`
+	Max    float64 `json:"max"`
+	Count  int     `json:"count"`
 }
 
 // ExperimentManager manages A/B testing
@@ -169,7 +169,7 @@ type EvaluationRun struct {
 	ID            string                 `json:"id"`
 	Name          string                 `json:"name"`
 	Description   string                 `json:"description,omitempty"`
-	Dataset       string                 `json:"dataset"`         // Dataset identifier
+	Dataset       string                 `json:"dataset"` // Dataset identifier
 	PromptName    string                 `json:"prompt_name"`
 	PromptVersion string                 `json:"prompt_version"`
 	ModelName     string                 `json:"model_name"`
@@ -194,26 +194,26 @@ const (
 
 // EvaluationResults represents evaluation results
 type EvaluationResults struct {
-	TotalSamples    int                   `json:"total_samples"`
-	PassedSamples   int                   `json:"passed_samples"`
-	FailedSamples   int                   `json:"failed_samples"`
-	PassRate        float64               `json:"pass_rate"`
-	MetricScores    map[string]float64    `json:"metric_scores"`
-	MetricDetails   map[string]*MetricValue `json:"metric_details,omitempty"`
-	FailureReasons  map[string]int        `json:"failure_reasons,omitempty"`
-	SampleResults   []*SampleResult       `json:"sample_results,omitempty"`
+	TotalSamples   int                     `json:"total_samples"`
+	PassedSamples  int                     `json:"passed_samples"`
+	FailedSamples  int                     `json:"failed_samples"`
+	PassRate       float64                 `json:"pass_rate"`
+	MetricScores   map[string]float64      `json:"metric_scores"`
+	MetricDetails  map[string]*MetricValue `json:"metric_details,omitempty"`
+	FailureReasons map[string]int          `json:"failure_reasons,omitempty"`
+	SampleResults  []*SampleResult         `json:"sample_results,omitempty"`
 }
 
 // SampleResult represents result for a single evaluation sample
 type SampleResult struct {
-	ID          string             `json:"id"`
-	Input       string             `json:"input"`
-	Expected    string             `json:"expected,omitempty"`
-	Actual      string             `json:"actual"`
-	Passed      bool               `json:"passed"`
-	Scores      map[string]float64 `json:"scores"`
-	Latency     time.Duration      `json:"latency"`
-	Error       string             `json:"error,omitempty"`
+	ID       string             `json:"id"`
+	Input    string             `json:"input"`
+	Expected string             `json:"expected,omitempty"`
+	Actual   string             `json:"actual"`
+	Passed   bool               `json:"passed"`
+	Scores   map[string]float64 `json:"scores"`
+	Latency  time.Duration      `json:"latency"`
+	Error    string             `json:"error,omitempty"`
 }
 
 // ContinuousEvaluator manages continuous evaluation
@@ -239,12 +239,12 @@ type ContinuousEvaluator interface {
 
 // EvaluationFilter for filtering evaluation runs
 type EvaluationFilter struct {
-	PromptName    string           `json:"prompt_name,omitempty"`
-	ModelName     string           `json:"model_name,omitempty"`
-	Status        EvaluationStatus `json:"status,omitempty"`
-	StartTime     *time.Time       `json:"start_time,omitempty"`
-	EndTime       *time.Time       `json:"end_time,omitempty"`
-	Limit         int              `json:"limit,omitempty"`
+	PromptName string           `json:"prompt_name,omitempty"`
+	ModelName  string           `json:"model_name,omitempty"`
+	Status     EvaluationStatus `json:"status,omitempty"`
+	StartTime  *time.Time       `json:"start_time,omitempty"`
+	EndTime    *time.Time       `json:"end_time,omitempty"`
+	Limit      int              `json:"limit,omitempty"`
 }
 
 // RunComparison represents comparison between two runs
@@ -292,10 +292,10 @@ type Dataset struct {
 type DatasetType string
 
 const (
-	DatasetTypeGolden    DatasetType = "golden"     // Golden test set
+	DatasetTypeGolden     DatasetType = "golden"     // Golden test set
 	DatasetTypeRegression DatasetType = "regression" // Regression tests
-	DatasetTypeBenchmark DatasetType = "benchmark"  // Benchmark set
-	DatasetTypeUser      DatasetType = "user"       // User-generated
+	DatasetTypeBenchmark  DatasetType = "benchmark"  // Benchmark set
+	DatasetTypeUser       DatasetType = "user"       // User-generated
 )
 
 // DatasetSample represents a sample in a dataset
@@ -327,10 +327,10 @@ type Alert struct {
 type AlertType string
 
 const (
-	AlertTypeRegression    AlertType = "regression"     // Performance regression
-	AlertTypeThreshold     AlertType = "threshold"      // Threshold breach
-	AlertTypeAnomaly       AlertType = "anomaly"        // Anomaly detected
-	AlertTypeExperiment    AlertType = "experiment"     // Experiment result
+	AlertTypeRegression AlertType = "regression" // Performance regression
+	AlertTypeThreshold  AlertType = "threshold"  // Threshold breach
+	AlertTypeAnomaly    AlertType = "anomaly"    // Anomaly detected
+	AlertTypeExperiment AlertType = "experiment" // Experiment result
 )
 
 // AlertSeverity represents alert severity

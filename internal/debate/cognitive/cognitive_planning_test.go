@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"dev.helix.agent/internal/debate/topology"
+	"github.com/stretchr/testify/assert"
 )
 
 // Helper to create test agents
@@ -163,9 +163,9 @@ func TestCompare(t *testing.T) {
 		ctx,
 		topology.PhaseProposal,
 		1,
-		0.8,  // actualConfidence
-		0.7,  // actualConsensus
-		5,    // actualInsights
+		0.8,            // actualConfidence
+		0.7,            // actualConsensus
+		5,              // actualInsights
 		25*time.Second, // actualLatency
 		[]string{"Generate creative solutions"},
 		[]string{"Unexpected finding"},
@@ -193,9 +193,9 @@ func TestCompare_CalculatesDeltas(t *testing.T) {
 		ctx,
 		topology.PhaseProposal,
 		1,
-		exp.ExpectedConfidence+0.1, // Exceed confidence
-		exp.ExpectedConsensus+0.1,  // Exceed consensus
-		exp.ExpectedInsights+2,     // More insights
+		exp.ExpectedConfidence+0.1,        // Exceed confidence
+		exp.ExpectedConsensus+0.1,         // Exceed consensus
+		exp.ExpectedInsights+2,            // More insights
 		exp.ExpectedLatency-5*time.Second, // Faster
 		nil, nil,
 	)
@@ -312,11 +312,11 @@ func TestRefine_GeneratesMitigationStrategies(t *testing.T) {
 	planner.SetExpectation(ctx, topology.PhaseProposal, 1, agents)
 
 	comparison := &Comparison{
-		Phase:          topology.PhaseProposal,
-		Round:          1,
-		OverallScore:   0.4,
-		GoalsMissed:    []string{"Goal A", "Goal B"},
-		RisksRealized:  []string{"Risk 1"},
+		Phase:         topology.PhaseProposal,
+		Round:         1,
+		OverallScore:  0.4,
+		GoalsMissed:   []string{"Goal A", "Goal B"},
+		RisksRealized: []string{"Risk 1"},
 	}
 
 	refinement := planner.Refine(ctx, comparison, agents)

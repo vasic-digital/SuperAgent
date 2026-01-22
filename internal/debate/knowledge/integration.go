@@ -17,13 +17,13 @@ import (
 
 // DebateLearningIntegration provides integration between debates and the learning system.
 type DebateLearningIntegration struct {
-	repository      Repository
+	repository Repository
 
 	// Active debate tracking
-	activeDebates   map[string]*DebateLearningSession
+	activeDebates map[string]*DebateLearningSession
 
-	config          IntegrationConfig
-	mu              sync.RWMutex
+	config IntegrationConfig
+	mu     sync.RWMutex
 }
 
 // IntegrationConfig configures the learning integration.
@@ -59,15 +59,15 @@ func DefaultIntegrationConfig() IntegrationConfig {
 
 // DebateLearningSession tracks learning within a single debate.
 type DebateLearningSession struct {
-	DebateID        string               `json:"debate_id"`
-	Topic           string               `json:"topic"`
-	Domain          agents.Domain        `json:"domain"`
-	StartTime       time.Time            `json:"start_time"`
-	AppliedLessons  []*LessonApplication `json:"applied_lessons"`
-	PhaseLearning   []*PhaseLearning     `json:"phase_learning"`
-	DetectedPatterns []*DebatePattern    `json:"detected_patterns"`
-	AgentKnowledge  map[string]*AgentKnowledge `json:"agent_knowledge"`
-	CognitiveState  *CognitiveState      `json:"cognitive_state,omitempty"`
+	DebateID         string                     `json:"debate_id"`
+	Topic            string                     `json:"topic"`
+	Domain           agents.Domain              `json:"domain"`
+	StartTime        time.Time                  `json:"start_time"`
+	AppliedLessons   []*LessonApplication       `json:"applied_lessons"`
+	PhaseLearning    []*PhaseLearning           `json:"phase_learning"`
+	DetectedPatterns []*DebatePattern           `json:"detected_patterns"`
+	AgentKnowledge   map[string]*AgentKnowledge `json:"agent_knowledge"`
+	CognitiveState   *CognitiveState            `json:"cognitive_state,omitempty"`
 }
 
 // PhaseLearning tracks learning during a specific phase.
@@ -82,9 +82,9 @@ type PhaseLearning struct {
 
 // CognitiveState tracks cognitive planning state during debate.
 type CognitiveState struct {
-	RefinementCount     int        `json:"refinement_count"`
-	LastRefinement      *time.Time `json:"last_refinement,omitempty"`
-	ImprovementRate     float64    `json:"improvement_rate"`
+	RefinementCount int        `json:"refinement_count"`
+	LastRefinement  *time.Time `json:"last_refinement,omitempty"`
+	ImprovementRate float64    `json:"improvement_rate"`
 }
 
 // NewDebateLearningIntegration creates a new integration.
@@ -102,14 +102,14 @@ func (dli *DebateLearningIntegration) StartDebateLearning(ctx context.Context, d
 	domain := dli.inferDomain(topic)
 
 	session := &DebateLearningSession{
-		DebateID:       debateID,
-		Topic:          topic,
-		Domain:         domain,
-		StartTime:      time.Now(),
-		AppliedLessons: make([]*LessonApplication, 0),
-		PhaseLearning:  make([]*PhaseLearning, 0),
+		DebateID:         debateID,
+		Topic:            topic,
+		Domain:           domain,
+		StartTime:        time.Now(),
+		AppliedLessons:   make([]*LessonApplication, 0),
+		PhaseLearning:    make([]*PhaseLearning, 0),
 		DetectedPatterns: make([]*DebatePattern, 0),
-		AgentKnowledge: make(map[string]*AgentKnowledge),
+		AgentKnowledge:   make(map[string]*AgentKnowledge),
 	}
 
 	// Auto-apply lessons if enabled
@@ -255,14 +255,14 @@ func (dli *DebateLearningIntegration) OnDebateComplete(ctx context.Context, resu
 
 // DebateLearningResult summarizes learning from a debate.
 type DebateLearningResult struct {
-	DebateID            string           `json:"debate_id"`
-	SessionDuration     time.Duration    `json:"session_duration"`
-	AppliedLessons      int              `json:"applied_lessons"`
-	ExtractedLessons    int              `json:"extracted_lessons"`
-	DetectedPatterns    int              `json:"detected_patterns"`
-	CognitiveRefinements int             `json:"cognitive_refinements"`
-	ImprovementRate     float64          `json:"improvement_rate"`
-	Lessons             []*debate.Lesson `json:"lessons,omitempty"`
+	DebateID             string           `json:"debate_id"`
+	SessionDuration      time.Duration    `json:"session_duration"`
+	AppliedLessons       int              `json:"applied_lessons"`
+	ExtractedLessons     int              `json:"extracted_lessons"`
+	DetectedPatterns     int              `json:"detected_patterns"`
+	CognitiveRefinements int              `json:"cognitive_refinements"`
+	ImprovementRate      float64          `json:"improvement_rate"`
+	Lessons              []*debate.Lesson `json:"lessons,omitempty"`
 }
 
 // GetAgentKnowledge retrieves knowledge for an agent in an active debate.

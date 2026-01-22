@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"dev.helix.agent/internal/models"
 )
 
 // MockLLMPlugin implements LLMPlugin for testing

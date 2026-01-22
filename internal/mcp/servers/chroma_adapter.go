@@ -45,11 +45,11 @@ type ChromaDocument struct {
 
 // ChromaQueryResult represents a query result from ChromaDB.
 type ChromaQueryResult struct {
-	IDs        [][]string                   `json:"ids"`
-	Documents  [][]string                   `json:"documents,omitempty"`
-	Embeddings [][][]float32                `json:"embeddings,omitempty"`
-	Metadatas  [][]map[string]interface{}   `json:"metadatas,omitempty"`
-	Distances  [][]float32                  `json:"distances,omitempty"`
+	IDs        [][]string                 `json:"ids"`
+	Documents  [][]string                 `json:"documents,omitempty"`
+	Embeddings [][][]float32              `json:"embeddings,omitempty"`
+	Metadatas  [][]map[string]interface{} `json:"metadatas,omitempty"`
+	Distances  [][]float32                `json:"distances,omitempty"`
 }
 
 // NewChromaAdapter creates a new ChromaDB adapter.

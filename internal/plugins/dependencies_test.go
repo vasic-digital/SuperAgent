@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"dev.helix.agent/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/models"
 )
 
 func TestNewDependencyResolver(t *testing.T) {
@@ -610,10 +610,10 @@ func (m *mockPluginForDeps) Capabilities() *models.ProviderCapabilities {
 	}
 	return m.caps
 }
-func (m *mockPluginForDeps) Init(config map[string]any) error                     { return nil }
-func (m *mockPluginForDeps) Shutdown(ctx context.Context) error                   { return nil }
-func (m *mockPluginForDeps) HealthCheck(ctx context.Context) error                { return nil }
-func (m *mockPluginForDeps) SetSecurityContext(ctx *PluginSecurityContext) error  { return nil }
+func (m *mockPluginForDeps) Init(config map[string]any) error                    { return nil }
+func (m *mockPluginForDeps) Shutdown(ctx context.Context) error                  { return nil }
+func (m *mockPluginForDeps) HealthCheck(ctx context.Context) error               { return nil }
+func (m *mockPluginForDeps) SetSecurityContext(ctx *PluginSecurityContext) error { return nil }
 func (m *mockPluginForDeps) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	return nil, nil
 }

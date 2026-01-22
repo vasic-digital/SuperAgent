@@ -326,9 +326,9 @@ func (g *PIIGuardrail) Check(ctx context.Context, content string, metadata map[s
 		Reason:     "PII detected in content",
 		Confidence: maxConfidence,
 		Metadata: map[string]interface{}{
-			"pii_count":      len(filtered),
-			"pii_types":      piiTypesFound,
-			"detections":     filtered,
+			"pii_count":  len(filtered),
+			"pii_types":  piiTypesFound,
+			"detections": filtered,
 		},
 	}
 

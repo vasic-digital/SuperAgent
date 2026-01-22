@@ -278,8 +278,8 @@ func TestNewRenderer(t *testing.T) {
 
 	// With custom config
 	config := &RenderConfig{
-		Style:     RenderStyleMinimal,
-		Width:     120,
+		Style:       RenderStyleMinimal,
+		Width:       120,
 		ColorScheme: ColorSchemeNone,
 	}
 	r = NewRenderer(config, CLIClientCrush)
@@ -850,8 +850,8 @@ func TestGetTerminalSize(t *testing.T) {
 	os.Unsetenv("COLUMNS")
 	os.Unsetenv("LINES")
 	w, h = getTerminalSize()
-	assert.Equal(t, 80, w)  // default
-	assert.Equal(t, 24, h)  // default
+	assert.Equal(t, 80, w) // default
+	assert.Equal(t, 24, h) // default
 }
 
 func TestGetRenderConfigForClient_OpenCode(t *testing.T) {

@@ -177,14 +177,14 @@ func (e *BackgroundTaskEvent) ToMessagingEvent() *messaging.Event {
 
 // TaskEventPublisher publishes task lifecycle events to the messaging system.
 type TaskEventPublisher struct {
-	hub         *messaging.MessagingHub
-	logger      *logrus.Logger
-	enabled     bool
+	hub          *messaging.MessagingHub
+	logger       *logrus.Logger
+	enabled      bool
 	asyncPublish bool
-	publishCh   chan *BackgroundTaskEvent
-	stopCh      chan struct{}
-	wg          sync.WaitGroup
-	mu          sync.RWMutex
+	publishCh    chan *BackgroundTaskEvent
+	stopCh       chan struct{}
+	wg           sync.WaitGroup
+	mu           sync.RWMutex
 }
 
 // TaskEventPublisherConfig holds configuration for the event publisher.

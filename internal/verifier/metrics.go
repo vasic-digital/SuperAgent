@@ -8,38 +8,38 @@ import (
 // VerifierMetrics contains all Prometheus metrics for the verifier
 type VerifierMetrics struct {
 	// Verification metrics
-	VerificationTotal        *prometheus.CounterVec
-	VerificationDuration     *prometheus.HistogramVec
-	VerificationErrors       *prometheus.CounterVec
-	VerifiedModels           prometheus.Gauge
-	CodeVisibilityTests      *prometheus.CounterVec
+	VerificationTotal    *prometheus.CounterVec
+	VerificationDuration *prometheus.HistogramVec
+	VerificationErrors   *prometheus.CounterVec
+	VerifiedModels       prometheus.Gauge
+	CodeVisibilityTests  *prometheus.CounterVec
 
 	// Scoring metrics
-	ScoreCalculations        *prometheus.CounterVec
-	ScoreCacheHits           prometheus.Counter
-	ScoreCacheMisses         prometheus.Counter
-	ModelScores              *prometheus.GaugeVec
-	ScoringDuration          *prometheus.HistogramVec
+	ScoreCalculations *prometheus.CounterVec
+	ScoreCacheHits    prometheus.Counter
+	ScoreCacheMisses  prometheus.Counter
+	ModelScores       *prometheus.GaugeVec
+	ScoringDuration   *prometheus.HistogramVec
 
 	// Health metrics
-	ProviderHealthChecks     *prometheus.CounterVec
-	ProviderHealthStatus     *prometheus.GaugeVec
-	CircuitBreakerState      *prometheus.GaugeVec
-	ProviderLatency          *prometheus.HistogramVec
-	FailoverAttempts         *prometheus.CounterVec
-	FailoverSuccess          *prometheus.CounterVec
+	ProviderHealthChecks *prometheus.CounterVec
+	ProviderHealthStatus *prometheus.GaugeVec
+	CircuitBreakerState  *prometheus.GaugeVec
+	ProviderLatency      *prometheus.HistogramVec
+	FailoverAttempts     *prometheus.CounterVec
+	FailoverSuccess      *prometheus.CounterVec
 
 	// Provider metrics
-	ProviderRequests         *prometheus.CounterVec
-	ProviderErrors           *prometheus.CounterVec
-	ProviderResponseTime     *prometheus.HistogramVec
-	ActiveProviders          prometheus.Gauge
+	ProviderRequests     *prometheus.CounterVec
+	ProviderErrors       *prometheus.CounterVec
+	ProviderResponseTime *prometheus.HistogramVec
+	ActiveProviders      prometheus.Gauge
 
 	// Database metrics
-	DatabaseOperations       *prometheus.CounterVec
-	DatabaseErrors           *prometheus.CounterVec
-	DatabaseLatency          *prometheus.HistogramVec
-	SyncOperations           *prometheus.CounterVec
+	DatabaseOperations *prometheus.CounterVec
+	DatabaseErrors     *prometheus.CounterVec
+	DatabaseLatency    *prometheus.HistogramVec
+	SyncOperations     *prometheus.CounterVec
 }
 
 // NewVerifierMetrics creates new verifier metrics

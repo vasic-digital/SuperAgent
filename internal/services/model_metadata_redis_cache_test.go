@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/cache"
+	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/database"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/cache"
-	"dev.helix.agent/internal/config"
-	"dev.helix.agent/internal/database"
 )
 
 // ============================================================================

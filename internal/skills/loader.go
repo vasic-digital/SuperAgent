@@ -222,8 +222,8 @@ func (l *SkillLoader) ReloadSkill(name string) error {
 
 // SkillInventory provides an inventory of all available skills.
 type SkillInventory struct {
-	TotalSkills    int                     `json:"total_skills"`
-	Categories     []string                `json:"categories"`
+	TotalSkills      int                    `json:"total_skills"`
+	Categories       []string               `json:"categories"`
 	SkillsByCategory map[string][]SkillInfo `json:"skills_by_category"`
 }
 

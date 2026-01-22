@@ -20,10 +20,10 @@ type Config struct {
 	RetryDelay time.Duration `json:"retry_delay" yaml:"retry_delay"`
 
 	// Search defaults
-	DefaultLimit      int     `json:"default_limit" yaml:"default_limit"`
-	ScoreThreshold    float32 `json:"score_threshold" yaml:"score_threshold"`
-	WithPayload       bool    `json:"with_payload" yaml:"with_payload"`
-	WithVectors       bool    `json:"with_vectors" yaml:"with_vectors"`
+	DefaultLimit   int     `json:"default_limit" yaml:"default_limit"`
+	ScoreThreshold float32 `json:"score_threshold" yaml:"score_threshold"`
+	WithPayload    bool    `json:"with_payload" yaml:"with_payload"`
+	WithVectors    bool    `json:"with_vectors" yaml:"with_vectors"`
 }
 
 // DefaultConfig returns a Config with sensible defaults

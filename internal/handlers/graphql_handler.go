@@ -16,11 +16,11 @@ import (
 
 // GraphQLHandler handles GraphQL requests.
 type GraphQLHandler struct {
-	logger        *logrus.Logger
-	toonEncoder   *toon.Encoder
-	toonDecoder   *toon.Decoder
-	enableTOON    bool
-	initialized   bool
+	logger      *logrus.Logger
+	toonEncoder *toon.Encoder
+	toonDecoder *toon.Decoder
+	enableTOON  bool
+	initialized bool
 }
 
 // GraphQLRequest represents a GraphQL request.
@@ -32,7 +32,7 @@ type GraphQLRequest struct {
 
 // GraphQLResponse represents a GraphQL response.
 type GraphQLResponse struct {
-	Data   interface{} `json:"data,omitempty"`
+	Data   interface{}    `json:"data,omitempty"`
 	Errors []GraphQLError `json:"errors,omitempty"`
 }
 

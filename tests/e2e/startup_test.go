@@ -158,9 +158,9 @@ func TestE2E_SystemUnderLoad(t *testing.T) {
 
 	// Simulate realistic load pattern
 	const (
-		numWorkers   = 100
+		numWorkers     = 100
 		tasksPerWorker = 100
-		totalTasks   = numWorkers * tasksPerWorker
+		totalTasks     = numWorkers * tasksPerWorker
 	)
 
 	var wg sync.WaitGroup

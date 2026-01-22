@@ -5,16 +5,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestServiceInteractions tests interactions between different services
 func TestServiceInteractions(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	t.Run("RequestService with ProviderRegistry integration", func(t *testing.T) {

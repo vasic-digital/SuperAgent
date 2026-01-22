@@ -24,20 +24,20 @@ type LoadTestConfig struct {
 
 // LoadTestResult contains load test metrics
 type LoadTestResult struct {
-	TotalPublished   int64
-	TotalReceived    int64
-	AvgLatency       time.Duration
-	P50Latency       time.Duration
-	P95Latency       time.Duration
-	P99Latency       time.Duration
-	MaxLatency       time.Duration
-	MinLatency       time.Duration
-	Throughput       float64
-	DeliveryRate     float64
-	ErrorCount       int64
-	DroppedMessages  int64
-	StartTime        time.Time
-	EndTime          time.Time
+	TotalPublished  int64
+	TotalReceived   int64
+	AvgLatency      time.Duration
+	P50Latency      time.Duration
+	P95Latency      time.Duration
+	P99Latency      time.Duration
+	MaxLatency      time.Duration
+	MinLatency      time.Duration
+	Throughput      float64
+	DeliveryRate    float64
+	ErrorCount      int64
+	DroppedMessages int64
+	StartTime       time.Time
+	EndTime         time.Time
 }
 
 // TestLoadHighThroughput tests high message throughput scenarios

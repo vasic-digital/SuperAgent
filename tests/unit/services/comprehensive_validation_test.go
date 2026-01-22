@@ -61,14 +61,14 @@ func TestCogneeSearchParameterNames(t *testing.T) {
 // TestCogneeMemifyParameterNames validates that memify requests use correct parameter names
 func TestCogneeMemifyParameterNames(t *testing.T) {
 	testCases := []struct {
-		name           string
-		expectedKeys   []string
-		invalidKeys    []string
+		name         string
+		expectedKeys []string
+		invalidKeys  []string
 	}{
 		{
-			name:           "memify_uses_camelCase_parameters",
-			expectedKeys:   []string{"data", "datasetName"},
-			invalidKeys:    []string{"dataset_name"},
+			name:         "memify_uses_camelCase_parameters",
+			expectedKeys: []string{"data", "datasetName"},
+			invalidKeys:  []string{"dataset_name"},
 		},
 	}
 
@@ -102,10 +102,10 @@ func TestCogneeMemifyParameterNames(t *testing.T) {
 // TestToolArgumentsUseCamelCase validates that tool arguments use camelCase
 func TestToolArgumentsUseCamelCase(t *testing.T) {
 	testCases := []struct {
-		name            string
-		toolName        string
-		expectedKeys    []string
-		invalidKeys     []string
+		name         string
+		toolName     string
+		expectedKeys []string
+		invalidKeys  []string
 	}{
 		{
 			name:         "Read_tool_uses_filePath",
@@ -245,10 +245,10 @@ func TestWarningRateLimiting(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name           string
-		interval       time.Duration
-		callCount      int
-		expectedLogs   int
+		name         string
+		interval     time.Duration
+		callCount    int
+		expectedLogs int
 	}{
 		{
 			name:         "rate_limit_30_seconds",

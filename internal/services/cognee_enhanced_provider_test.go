@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/models"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/llm"
-	"dev.helix.agent/internal/models"
 )
 
 // CogneeMockProvider implements llm.LLMProvider for Cognee testing

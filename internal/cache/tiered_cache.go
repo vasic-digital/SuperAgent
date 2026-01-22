@@ -17,19 +17,19 @@ import (
 // TieredCacheConfig holds configuration for the tiered cache
 type TieredCacheConfig struct {
 	// L1 (in-memory) settings
-	L1MaxSize      int           // Maximum items in memory
-	L1TTL          time.Duration // Memory cache TTL
+	L1MaxSize         int           // Maximum items in memory
+	L1TTL             time.Duration // Memory cache TTL
 	L1CleanupInterval time.Duration // Cleanup interval for expired entries
 
 	// L2 (Redis) settings
-	L2TTL          time.Duration // Redis cache TTL
-	L2Compression  bool          // Enable compression for L2 values
-	L2KeyPrefix    string        // Prefix for all L2 keys
+	L2TTL         time.Duration // Redis cache TTL
+	L2Compression bool          // Enable compression for L2 values
+	L2KeyPrefix   string        // Prefix for all L2 keys
 
 	// General settings
-	NegativeTTL    time.Duration // Cache negative results (not found)
-	EnableL1       bool          // Enable L1 cache
-	EnableL2       bool          // Enable L2 cache
+	NegativeTTL time.Duration // Cache negative results (not found)
+	EnableL1    bool          // Enable L1 cache
+	EnableL2    bool          // Enable L2 cache
 }
 
 // DefaultTieredCacheConfig returns default configuration
@@ -49,13 +49,13 @@ func DefaultTieredCacheConfig() *TieredCacheConfig {
 
 // TieredCache provides L1 (memory) + L2 (Redis) caching with compression
 type TieredCache struct {
-	l1      *l1Cache
-	l2      *redis.Client
-	config  *TieredCacheConfig
-	metrics *TieredCacheMetrics
+	l1       *l1Cache
+	l2       *redis.Client
+	config   *TieredCacheConfig
+	metrics  *TieredCacheMetrics
 	tagIndex *tagIndex
-	ctx     context.Context
-	cancel  context.CancelFunc
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 // TieredCacheMetrics tracks cache performance

@@ -23,7 +23,7 @@ func TestNewExtendedProvidersAdapter(t *testing.T) {
 
 	t.Run("creates adapter with custom config", func(t *testing.T) {
 		config := &ExtendedProviderConfig{
-			VerificationTimeout: 60 * time.Second,
+			VerificationTimeout:        60 * time.Second,
 			MaxConcurrentVerifications: 10,
 		}
 		adapter := NewExtendedProvidersAdapter(config)

@@ -11,18 +11,18 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/models"
 )
 
 func TestNewZenProvider(t *testing.T) {
 	tests := []struct {
-		name     string
-		apiKey   string
-		baseURL  string
-		model    string
-		wantURL  string
+		name      string
+		apiKey    string
+		baseURL   string
+		model     string
+		wantURL   string
 		wantModel string
 	}{
 		{
@@ -658,12 +658,12 @@ func TestZenProvider_NormalizeModelID(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"grok-code-fast", "grok-code-fast"},                     // No prefix, unchanged
-		{"big-pickle", "big-pickle"},                             // No prefix, unchanged
-		{"opencode/grok-code-fast", "grok-code-fast"},            // Strips opencode/ prefix
-		{"opencode/glm-4-7b-free", "glm-4-7b-free"},              // Strips opencode/ prefix
-		{"opencode-custom-model", "custom-model"},                // Strips opencode- prefix (alternate format)
-		{"custom-model", "custom-model"},                         // No prefix, unchanged
+		{"grok-code-fast", "grok-code-fast"},          // No prefix, unchanged
+		{"big-pickle", "big-pickle"},                  // No prefix, unchanged
+		{"opencode/grok-code-fast", "grok-code-fast"}, // Strips opencode/ prefix
+		{"opencode/glm-4-7b-free", "glm-4-7b-free"},   // Strips opencode/ prefix
+		{"opencode-custom-model", "custom-model"},     // Strips opencode- prefix (alternate format)
+		{"custom-model", "custom-model"},              // No prefix, unchanged
 	}
 
 	for _, tt := range tests {
@@ -743,16 +743,16 @@ func TestIsAuthRetryableStatus(t *testing.T) {
 		status   int
 		expected bool
 	}{
-		{401, true},   // Unauthorized - retryable
-		{403, false},  // Forbidden - not retryable
-		{429, false},  // Too Many Requests - not retryable by this function
-		{500, false},  // Server Error - not retryable by this function
-		{502, false},  // Bad Gateway - not retryable by this function
-		{503, false},  // Service Unavailable - not retryable by this function
-		{504, false},  // Gateway Timeout - not retryable by this function
-		{200, false},  // OK - not retryable
-		{404, false},  // Not Found - not retryable
-		{400, false},  // Bad Request - not retryable
+		{401, true},  // Unauthorized - retryable
+		{403, false}, // Forbidden - not retryable
+		{429, false}, // Too Many Requests - not retryable by this function
+		{500, false}, // Server Error - not retryable by this function
+		{502, false}, // Bad Gateway - not retryable by this function
+		{503, false}, // Service Unavailable - not retryable by this function
+		{504, false}, // Gateway Timeout - not retryable by this function
+		{200, false}, // OK - not retryable
+		{404, false}, // Not Found - not retryable
+		{400, false}, // Bad Request - not retryable
 	}
 
 	for _, tt := range tests {
@@ -788,7 +788,7 @@ func TestNextDelay(t *testing.T) {
 		{"double initial delay", 100 * time.Millisecond, 200 * time.Millisecond},
 		{"double 200ms", 200 * time.Millisecond, 400 * time.Millisecond},
 		{"cap at max delay", 600 * time.Millisecond, 1 * time.Second}, // 1200ms capped to 1000ms
-		{"already at max", 1 * time.Second, 1 * time.Second},         // stays at max
+		{"already at max", 1 * time.Second, 1 * time.Second},          // stays at max
 	}
 
 	for _, tt := range tests {

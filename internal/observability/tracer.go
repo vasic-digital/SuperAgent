@@ -22,7 +22,7 @@ const (
 	AttrLLMProvider      = "gen_ai.request.model"
 	AttrLLMModel         = "gen_ai.request.model"
 	AttrLLMTemperature   = "gen_ai.request.temperature"
-	AttrLLMMaxTokens = "gen_ai.request.max_tokens" // #nosec G101 - OpenTelemetry attribute name, not credentials
+	AttrLLMMaxTokens     = "gen_ai.request.max_tokens" // #nosec G101 - OpenTelemetry attribute name, not credentials
 	AttrLLMTopP          = "gen_ai.request.top_p"
 	AttrLLMStopSequences = "gen_ai.request.stop_sequences"
 
@@ -41,12 +41,12 @@ const (
 	AttrLLMAssistant    = "gen_ai.completion"
 
 	// HelixAgent-specific
-	AttrHelixRequestID   = "helix.request.id"
-	AttrHelixSessionID   = "helix.session.id"
-	AttrHelixUserID      = "helix.user.id"
-	AttrHelixEnsemble    = "helix.ensemble.enabled"
-	AttrHelixDebate      = "helix.debate.enabled"
-	AttrHelixCacheHit    = "helix.cache.hit"
+	AttrHelixRequestID     = "helix.request.id"
+	AttrHelixSessionID     = "helix.session.id"
+	AttrHelixUserID        = "helix.user.id"
+	AttrHelixEnsemble      = "helix.ensemble.enabled"
+	AttrHelixDebate        = "helix.debate.enabled"
+	AttrHelixCacheHit      = "helix.cache.hit"
 	AttrHelixProviderScore = "helix.provider.score"
 )
 
@@ -93,12 +93,12 @@ type LLMTracer struct {
 	initialized bool
 
 	// Metrics
-	requestCounter    metric.Int64Counter
-	tokenCounter      metric.Int64Counter
-	latencyHistogram  metric.Float64Histogram
-	errorCounter      metric.Int64Counter
-	cacheHitCounter   metric.Int64Counter
-	costCounter       metric.Float64Counter
+	requestCounter   metric.Int64Counter
+	tokenCounter     metric.Int64Counter
+	latencyHistogram metric.Float64Histogram
+	errorCounter     metric.Int64Counter
+	cacheHitCounter  metric.Int64Counter
+	costCounter      metric.Float64Counter
 }
 
 // NewLLMTracer creates a new LLM tracer

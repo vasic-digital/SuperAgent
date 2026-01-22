@@ -30,13 +30,13 @@ const (
 )
 
 type ClaudeProvider struct {
-	apiKey           string
-	baseURL          string
-	model            string
-	httpClient       *http.Client
-	retryConfig      RetryConfig
-	authType         AuthType
-	oauthCredReader  *oauth_credentials.OAuthCredentialReader
+	apiKey          string
+	baseURL         string
+	model           string
+	httpClient      *http.Client
+	retryConfig     RetryConfig
+	authType        AuthType
+	oauthCredReader *oauth_credentials.OAuthCredentialReader
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -169,9 +169,9 @@ func NewClaudeProviderWithOAuthAndRetry(baseURL, model string, retryConfig Retry
 	}
 
 	return &ClaudeProvider{
-		apiKey:          "", // Will use OAuth token instead
-		baseURL:         baseURL,
-		model:           model,
+		apiKey:  "", // Will use OAuth token instead
+		baseURL: baseURL,
+		model:   model,
 		httpClient: &http.Client{
 			Timeout: 60 * time.Second,
 		},

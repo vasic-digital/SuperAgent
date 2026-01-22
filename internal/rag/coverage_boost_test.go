@@ -429,7 +429,7 @@ func TestQdrantEnhancedRetriever_EvaluateWithDebate_MoreCases(t *testing.T) {
 	t.Run("with maxEval less than results", func(t *testing.T) {
 		config := &QdrantEnhancedConfig{
 			UseDebateEvaluation: true,
-			DebateTopK:         2,
+			DebateTopK:          2,
 		}
 
 		denseRetriever := &MockRetrieverForEnhanced{
@@ -637,4 +637,3 @@ func TestHyDEGenerator_Generate_EdgeCases(t *testing.T) {
 		}
 	})
 }
-

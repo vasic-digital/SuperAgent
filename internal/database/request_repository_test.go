@@ -597,9 +597,9 @@ func TestLLMRequest_ModelParamsFormats(t *testing.T) {
 	t.Run("StandardParams", func(t *testing.T) {
 		request := &LLMRequest{
 			ModelParams: map[string]interface{}{
-				"temperature":      0.7,
-				"max_tokens":       1000,
-				"top_p":            0.9,
+				"temperature":       0.7,
+				"max_tokens":        1000,
+				"top_p":             0.9,
 				"frequency_penalty": 0.0,
 				"presence_penalty":  0.0,
 			},
@@ -638,9 +638,9 @@ func TestLLMRequest_EnsembleConfigFormats(t *testing.T) {
 	t.Run("VotingStrategy", func(t *testing.T) {
 		request := &LLMRequest{
 			EnsembleConfig: map[string]interface{}{
-				"strategy":       "voting",
-				"min_agreement":  2,
-				"timeout_ms":     5000,
+				"strategy":      "voting",
+				"min_agreement": 2,
+				"timeout_ms":    5000,
 			},
 		}
 		assert.Equal(t, "voting", request.EnsembleConfig["strategy"])

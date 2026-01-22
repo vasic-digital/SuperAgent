@@ -17,12 +17,12 @@ import (
 )
 
 var (
-	testLogger     *logrus.Logger
-	testQueue      background.TaskQueue
-	testPool       *background.AdaptiveWorkerPool
-	testPoolOnce   sync.Once
-	testPoolConfig *background.WorkerPoolConfig
-	testPoolMu     sync.Mutex
+	testLogger      *logrus.Logger
+	testQueue       background.TaskQueue
+	testPool        *background.AdaptiveWorkerPool
+	testPoolOnce    sync.Once
+	testPoolConfig  *background.WorkerPoolConfig
+	testPoolMu      sync.Mutex
 	testPoolStarted bool
 )
 

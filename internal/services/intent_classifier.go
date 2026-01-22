@@ -10,21 +10,21 @@ import (
 type UserIntent string
 
 const (
-	IntentConfirmation UserIntent = "confirmation"    // User approves/confirms action
-	IntentRefusal      UserIntent = "refusal"         // User declines/refuses action
-	IntentQuestion     UserIntent = "question"        // User is asking a question
-	IntentRequest      UserIntent = "request"         // User is making a new request
+	IntentConfirmation  UserIntent = "confirmation"  // User approves/confirms action
+	IntentRefusal       UserIntent = "refusal"       // User declines/refuses action
+	IntentQuestion      UserIntent = "question"      // User is asking a question
+	IntentRequest       UserIntent = "request"       // User is making a new request
 	IntentClarification UserIntent = "clarification" // User needs more information
-	IntentUnclear      UserIntent = "unclear"         // Intent cannot be determined
+	IntentUnclear       UserIntent = "unclear"       // Intent cannot be determined
 )
 
 // IntentClassificationResult contains the classification result with confidence
 type IntentClassificationResult struct {
-	Intent         UserIntent `json:"intent"`
-	Confidence     float64    `json:"confidence"`
-	IsActionable   bool       `json:"is_actionable"`   // Should we proceed with action?
-	RequiresClarification bool `json:"requires_clarification"`
-	Signals        []string   `json:"signals"`         // Signals that led to this classification
+	Intent                UserIntent `json:"intent"`
+	Confidence            float64    `json:"confidence"`
+	IsActionable          bool       `json:"is_actionable"` // Should we proceed with action?
+	RequiresClarification bool       `json:"requires_clarification"`
+	Signals               []string   `json:"signals"` // Signals that led to this classification
 }
 
 // IntentClassifier provides semantic intent classification for user messages

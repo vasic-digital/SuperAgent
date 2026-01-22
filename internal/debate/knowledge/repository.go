@@ -43,12 +43,12 @@ type Repository interface {
 
 // SearchOptions configures lesson search.
 type SearchOptions struct {
-	Categories []debate.LessonCategory `json:"categories,omitempty"`
-	Domain     agents.Domain           `json:"domain,omitempty"`
-	MinTier    *debate.LessonTier      `json:"min_tier,omitempty"`
-	MinScore   float64                 `json:"min_score"`
-	Limit      int                     `json:"limit"`
-	IncludeExpired bool                `json:"include_expired"`
+	Categories     []debate.LessonCategory `json:"categories,omitempty"`
+	Domain         agents.Domain           `json:"domain,omitempty"`
+	MinTier        *debate.LessonTier      `json:"min_tier,omitempty"`
+	MinScore       float64                 `json:"min_score"`
+	Limit          int                     `json:"limit"`
+	IncludeExpired bool                    `json:"include_expired"`
 }
 
 // DefaultSearchOptions returns sensible default search options.
@@ -77,46 +77,46 @@ type Relevance struct {
 
 // LessonApplication tracks the application of a lesson to a debate.
 type LessonApplication struct {
-	ID           string    `json:"id"`
-	LessonID     string    `json:"lesson_id"`
-	DebateID     string    `json:"debate_id"`
-	AppliedAt    time.Time `json:"applied_at"`
-	AppliedBy    string    `json:"applied_by"` // Agent ID
-	Context      string    `json:"context"`
-	Outcome      *ApplicationOutcome `json:"outcome,omitempty"`
+	ID        string              `json:"id"`
+	LessonID  string              `json:"lesson_id"`
+	DebateID  string              `json:"debate_id"`
+	AppliedAt time.Time           `json:"applied_at"`
+	AppliedBy string              `json:"applied_by"` // Agent ID
+	Context   string              `json:"context"`
+	Outcome   *ApplicationOutcome `json:"outcome,omitempty"`
 }
 
 // ApplicationOutcome records the result of applying a lesson.
 type ApplicationOutcome struct {
-	Success   bool      `json:"success"`
-	Feedback  string    `json:"feedback"`
-	Impact    float64   `json:"impact"` // -1.0 to 1.0
+	Success    bool      `json:"success"`
+	Feedback   string    `json:"feedback"`
+	Impact     float64   `json:"impact"` // -1.0 to 1.0
 	RecordedAt time.Time `json:"recorded_at"`
 }
 
 // DebatePattern represents a recurring pattern across debates.
 type DebatePattern struct {
-	ID              string                 `json:"id"`
-	Name            string                 `json:"name"`
-	Description     string                 `json:"description"`
-	PatternType     PatternType            `json:"pattern_type"`
-	Domain          agents.Domain          `json:"domain"`
-	Frequency       int                    `json:"frequency"`
-	SuccessRate     float64                `json:"success_rate"`
-	Triggers        []string               `json:"triggers"`
-	Indicators      []PatternIndicator     `json:"indicators"`
-	Responses       []PatternResponse      `json:"responses"`
-	FirstObserved   time.Time              `json:"first_observed"`
-	LastObserved    time.Time              `json:"last_observed"`
-	Confidence      float64                `json:"confidence"`
-	Metadata        map[string]interface{} `json:"metadata,omitempty"`
+	ID            string                 `json:"id"`
+	Name          string                 `json:"name"`
+	Description   string                 `json:"description"`
+	PatternType   PatternType            `json:"pattern_type"`
+	Domain        agents.Domain          `json:"domain"`
+	Frequency     int                    `json:"frequency"`
+	SuccessRate   float64                `json:"success_rate"`
+	Triggers      []string               `json:"triggers"`
+	Indicators    []PatternIndicator     `json:"indicators"`
+	Responses     []PatternResponse      `json:"responses"`
+	FirstObserved time.Time              `json:"first_observed"`
+	LastObserved  time.Time              `json:"last_observed"`
+	Confidence    float64                `json:"confidence"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // PatternType categorizes debate patterns.
 type PatternType string
 
 const (
-	PatternTypeConsensusBuilding PatternType = "consensus_building"
+	PatternTypeConsensusBuilding  PatternType = "consensus_building"
 	PatternTypeConflictResolution PatternType = "conflict_resolution"
 	PatternTypeKnowledgeGap       PatternType = "knowledge_gap"
 	PatternTypeExpertise          PatternType = "expertise"
@@ -126,69 +126,69 @@ const (
 
 // PatternIndicator describes what indicates a pattern.
 type PatternIndicator struct {
-	Type       string  `json:"type"`
-	Threshold  float64 `json:"threshold"`
-	Weight     float64 `json:"weight"`
+	Type      string  `json:"type"`
+	Threshold float64 `json:"threshold"`
+	Weight    float64 `json:"weight"`
 }
 
 // PatternResponse describes how to respond to a pattern.
 type PatternResponse struct {
-	Action      string            `json:"action"`
-	Priority    int               `json:"priority"`
-	Conditions  []string          `json:"conditions,omitempty"`
-	Parameters  map[string]string `json:"parameters,omitempty"`
+	Action     string            `json:"action"`
+	Priority   int               `json:"priority"`
+	Conditions []string          `json:"conditions,omitempty"`
+	Parameters map[string]string `json:"parameters,omitempty"`
 }
 
 // PatternFilter filters patterns by criteria.
 type PatternFilter struct {
-	Types       []PatternType `json:"types,omitempty"`
-	Domain      agents.Domain `json:"domain,omitempty"`
-	MinFrequency int          `json:"min_frequency"`
-	MinSuccess  float64       `json:"min_success"`
-	Since       *time.Time    `json:"since,omitempty"`
+	Types        []PatternType `json:"types,omitempty"`
+	Domain       agents.Domain `json:"domain,omitempty"`
+	MinFrequency int           `json:"min_frequency"`
+	MinSuccess   float64       `json:"min_success"`
+	Since        *time.Time    `json:"since,omitempty"`
 }
 
 // Strategy represents a successful debate strategy.
 type Strategy struct {
-	ID            string               `json:"id"`
-	Name          string               `json:"name"`
-	Description   string               `json:"description"`
-	Domain        agents.Domain        `json:"domain"`
-	TopologyType  topology.TopologyType `json:"topology_type"`
-	RoleConfig    []RoleConfiguration  `json:"role_config"`
-	Phases        []PhaseStrategy      `json:"phases"`
-	SuccessRate   float64              `json:"success_rate"`
-	Applications  int                  `json:"applications"`
-	AvgConsensus  float64              `json:"avg_consensus"`
-	AvgDuration   time.Duration        `json:"avg_duration"`
+	ID           string                `json:"id"`
+	Name         string                `json:"name"`
+	Description  string                `json:"description"`
+	Domain       agents.Domain         `json:"domain"`
+	TopologyType topology.TopologyType `json:"topology_type"`
+	RoleConfig   []RoleConfiguration   `json:"role_config"`
+	Phases       []PhaseStrategy       `json:"phases"`
+	SuccessRate  float64               `json:"success_rate"`
+	Applications int                   `json:"applications"`
+	AvgConsensus float64               `json:"avg_consensus"`
+	AvgDuration  time.Duration         `json:"avg_duration"`
 }
 
 // RoleConfiguration describes role assignment in a strategy.
 type RoleConfiguration struct {
-	Role           topology.AgentRole `json:"role"`
-	PreferredDomain agents.Domain     `json:"preferred_domain"`
-	MinScore       float64            `json:"min_score"`
-	Count          int                `json:"count"`
+	Role            topology.AgentRole `json:"role"`
+	PreferredDomain agents.Domain      `json:"preferred_domain"`
+	MinScore        float64            `json:"min_score"`
+	Count           int                `json:"count"`
 }
 
 // PhaseStrategy describes phase-specific strategy.
 type PhaseStrategy struct {
-	Phase           topology.DebatePhase `json:"phase"`
-	FocusAreas      []string             `json:"focus_areas"`
-	PromptHints     []string             `json:"prompt_hints"`
-	MinConfidence   float64              `json:"min_confidence"`
-	ExpectedInsights int                 `json:"expected_insights"`
+	Phase            topology.DebatePhase `json:"phase"`
+	FocusAreas       []string             `json:"focus_areas"`
+	PromptHints      []string             `json:"prompt_hints"`
+	MinConfidence    float64              `json:"min_confidence"`
+	ExpectedInsights int                  `json:"expected_insights"`
 }
 
 // AgentKnowledge represents curated knowledge for an agent.
 type AgentKnowledge struct {
-	AgentID          string            `json:"agent_id"`
-	RelevantLessons  []*LessonMatch    `json:"relevant_lessons"`
+	AgentID            string           `json:"agent_id"`
+	RelevantLessons    []*LessonMatch   `json:"relevant_lessons"`
 	ApplicablePatterns []*DebatePattern `json:"applicable_patterns"`
-	DomainInsights   []string          `json:"domain_insights"`
-	RoleGuidance     []string          `json:"role_guidance"`
-	HistoricalContext []string         `json:"historical_context"`
-	GeneratedAt      time.Time         `json:"generated_at"`
+	DomainInsights     []string         `json:"domain_insights"`
+	RoleGuidance       []string         `json:"role_guidance"`
+	HistoricalContext  []string         `json:"historical_context"`
+	GeneratedAt        time.Time        `json:"generated_at"`
 }
 
 // DebateHistoryEntry represents a historical debate record.
@@ -208,25 +208,25 @@ type DebateHistoryEntry struct {
 
 // HistoryFilter filters debate history.
 type HistoryFilter struct {
-	Domain     agents.Domain `json:"domain,omitempty"`
-	SuccessOnly bool         `json:"success_only"`
-	MinConsensus float64     `json:"min_consensus"`
-	Since      *time.Time    `json:"since,omitempty"`
-	Limit      int           `json:"limit"`
+	Domain       agents.Domain `json:"domain,omitempty"`
+	SuccessOnly  bool          `json:"success_only"`
+	MinConsensus float64       `json:"min_consensus"`
+	Since        *time.Time    `json:"since,omitempty"`
+	Limit        int           `json:"limit"`
 }
 
 // RepositoryStatistics provides statistics about the knowledge repository.
 type RepositoryStatistics struct {
-	TotalLessons           int                            `json:"total_lessons"`
-	TotalPatterns          int                            `json:"total_patterns"`
-	TotalStrategies        int                            `json:"total_strategies"`
-	TotalDebates           int                            `json:"total_debates"`
-	LessonsByDomain        map[agents.Domain]int          `json:"lessons_by_domain"`
-	PatternsByType         map[PatternType]int            `json:"patterns_by_type"`
-	OverallSuccessRate     float64                        `json:"overall_success_rate"`
-	AvgLessonsPerDebate    float64                        `json:"avg_lessons_per_debate"`
-	TopCategories          []debate.LessonCategory        `json:"top_categories"`
-	LastUpdated            time.Time                      `json:"last_updated"`
+	TotalLessons        int                     `json:"total_lessons"`
+	TotalPatterns       int                     `json:"total_patterns"`
+	TotalStrategies     int                     `json:"total_strategies"`
+	TotalDebates        int                     `json:"total_debates"`
+	LessonsByDomain     map[agents.Domain]int   `json:"lessons_by_domain"`
+	PatternsByType      map[PatternType]int     `json:"patterns_by_type"`
+	OverallSuccessRate  float64                 `json:"overall_success_rate"`
+	AvgLessonsPerDebate float64                 `json:"avg_lessons_per_debate"`
+	TopCategories       []debate.LessonCategory `json:"top_categories"`
+	LastUpdated         time.Time               `json:"last_updated"`
 }
 
 // =============================================================================
@@ -235,25 +235,25 @@ type RepositoryStatistics struct {
 
 // DefaultRepository provides the default implementation of the Repository interface.
 type DefaultRepository struct {
-	lessonBank      *debate.LessonBank
-	patterns        map[string]*DebatePattern
-	strategies      map[string]*Strategy
-	history         []*DebateHistoryEntry
-	applications    map[string]*LessonApplication
-	domainLessons   map[agents.Domain][]*debate.Lesson
+	lessonBank    *debate.LessonBank
+	patterns      map[string]*DebatePattern
+	strategies    map[string]*Strategy
+	history       []*DebateHistoryEntry
+	applications  map[string]*LessonApplication
+	domainLessons map[agents.Domain][]*debate.Lesson
 
-	config          RepositoryConfig
-	mu              sync.RWMutex
+	config RepositoryConfig
+	mu     sync.RWMutex
 }
 
 // RepositoryConfig configures the default repository.
 type RepositoryConfig struct {
-	MaxPatterns        int           `json:"max_patterns"`
-	MaxStrategies      int           `json:"max_strategies"`
-	MaxHistoryEntries  int           `json:"max_history_entries"`
-	PatternThreshold   float64       `json:"pattern_threshold"`
-	StrategyThreshold  float64       `json:"strategy_threshold"`
-	CleanupInterval    time.Duration `json:"cleanup_interval"`
+	MaxPatterns       int           `json:"max_patterns"`
+	MaxStrategies     int           `json:"max_strategies"`
+	MaxHistoryEntries int           `json:"max_history_entries"`
+	PatternThreshold  float64       `json:"pattern_threshold"`
+	StrategyThreshold float64       `json:"strategy_threshold"`
+	CleanupInterval   time.Duration `json:"cleanup_interval"`
 }
 
 // DefaultRepositoryConfig returns sensible defaults.
@@ -720,9 +720,9 @@ func (r *DefaultRepository) GetKnowledgeForAgent(ctx context.Context, agent *age
 
 	// Get applicable patterns
 	patterns, err := r.GetPatterns(ctx, PatternFilter{
-		Domain:      domain,
+		Domain:       domain,
 		MinFrequency: 2,
-		MinSuccess:  0.6,
+		MinSuccess:   0.6,
 	})
 	if err != nil {
 		return nil, err
@@ -738,13 +738,13 @@ func (r *DefaultRepository) GetKnowledgeForAgent(ctx context.Context, agent *age
 	history := r.getHistoricalContext(topic, domain)
 
 	return &AgentKnowledge{
-		AgentID:          agent.ID,
-		RelevantLessons:  lessons,
+		AgentID:            agent.ID,
+		RelevantLessons:    lessons,
 		ApplicablePatterns: patterns,
-		DomainInsights:   insights,
-		RoleGuidance:     guidance,
-		HistoricalContext: history,
-		GeneratedAt:      time.Now(),
+		DomainInsights:     insights,
+		RoleGuidance:       guidance,
+		HistoricalContext:  history,
+		GeneratedAt:        time.Now(),
 	}, nil
 }
 

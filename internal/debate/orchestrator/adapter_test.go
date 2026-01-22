@@ -454,11 +454,11 @@ func TestLegacyDebateConfig_Structure(t *testing.T) {
 		Timeout:   180,
 		Participants: []LegacyParticipant{
 			{
-				Name:        "Agent 1",
-				Role:        "proposer",
-				LLMProvider: "claude",
-				LLMModel:    "claude-3",
-				Temperature: 0.7,
+				Name:         "Agent 1",
+				Role:         "proposer",
+				LLMProvider:  "claude",
+				LLMModel:     "claude-3",
+				Temperature:  0.7,
 				SystemPrompt: "Be creative",
 				Fallbacks: []LegacyFallback{
 					{LLMProvider: "deepseek", LLMModel: "deepseek-v2"},
@@ -479,10 +479,10 @@ func TestLegacyDebateConfig_Structure(t *testing.T) {
 
 func TestLegacyDebateResult_Structure(t *testing.T) {
 	result := LegacyDebateResult{
-		DebateID:     "result-1",
-		Topic:        "Result Topic",
-		StartTime:    time.Now().Add(-10 * time.Minute),
-		EndTime:      time.Now(),
+		DebateID:  "result-1",
+		Topic:     "Result Topic",
+		StartTime: time.Now().Add(-10 * time.Minute),
+		EndTime:   time.Now(),
 		AllResponses: []LegacyParticipantResponse{
 			{
 				ParticipantName: "Agent 1",

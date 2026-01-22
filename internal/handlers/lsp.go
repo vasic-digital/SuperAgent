@@ -3,9 +3,9 @@ package handlers
 import (
 	"net/http"
 
+	"dev.helix.agent/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"dev.helix.agent/internal/services"
 )
 
 // LSPHandler handles LSP (Language Server Protocol) requests

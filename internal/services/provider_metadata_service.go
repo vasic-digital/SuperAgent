@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/database"
+	"github.com/sirupsen/logrus"
 )
 
 // ModelMetadataServiceInterface defines the interface for model metadata service

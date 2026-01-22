@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/vectordb/qdrant"
+	"github.com/sirupsen/logrus"
 )
 
 // QdrantDenseRetriever implements DenseRetriever using the existing Qdrant client

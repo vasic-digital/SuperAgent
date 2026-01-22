@@ -11,16 +11,16 @@ import (
 
 // Registry manages the collection of available skills.
 type Registry struct {
-	mu            sync.RWMutex
-	skills        map[string]*Skill        // name -> skill
-	byCategory    map[string][]*Skill      // category -> skills
-	byTrigger     map[string][]*Skill      // trigger -> skills
-	categories    map[string]*SkillCategory
-	parser        *Parser
-	config        *SkillConfig
-	stats         *RegistryStats
-	watcher       *DirectoryWatcher
-	log           *logrus.Logger
+	mu         sync.RWMutex
+	skills     map[string]*Skill   // name -> skill
+	byCategory map[string][]*Skill // category -> skills
+	byTrigger  map[string][]*Skill // trigger -> skills
+	categories map[string]*SkillCategory
+	parser     *Parser
+	config     *SkillConfig
+	stats      *RegistryStats
+	watcher    *DirectoryWatcher
+	log        *logrus.Logger
 }
 
 // DirectoryWatcher watches for skill file changes.

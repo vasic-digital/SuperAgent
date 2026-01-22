@@ -22,32 +22,32 @@ type CrushConfig struct {
 
 // CrushProvider represents a provider configuration in Crush
 type CrushProvider struct {
-	Name     string            `json:"name,omitempty"`
-	Type     string            `json:"type"` // openai, openai-compat, anthropic
-	BaseURL  string            `json:"base_url,omitempty"`
-	APIKey   string            `json:"api_key,omitempty"`
-	Models   []CrushModel      `json:"models,omitempty"`
-	Headers  map[string]string `json:"headers,omitempty"`
-	Timeout  int               `json:"timeout,omitempty"`
+	Name    string            `json:"name,omitempty"`
+	Type    string            `json:"type"` // openai, openai-compat, anthropic
+	BaseURL string            `json:"base_url,omitempty"`
+	APIKey  string            `json:"api_key,omitempty"`
+	Models  []CrushModel      `json:"models,omitempty"`
+	Headers map[string]string `json:"headers,omitempty"`
+	Timeout int               `json:"timeout,omitempty"`
 }
 
 // CrushModel represents a model in Crush configuration
 type CrushModel struct {
-	ID                  string   `json:"id"`
-	Name                string   `json:"name,omitempty"`
-	ContextWindow       int      `json:"context_window,omitempty"`
-	DefaultMaxTokens    int      `json:"default_max_tokens,omitempty"`
-	CostPer1MIn         float64  `json:"cost_per_1m_in,omitempty"`
-	CostPer1MOut        float64  `json:"cost_per_1m_out,omitempty"`
-	CostPer1MInCached   float64  `json:"cost_per_1m_in_cached,omitempty"`
-	CostPer1MOutCached  float64  `json:"cost_per_1m_out_cached,omitempty"`
+	ID                 string  `json:"id"`
+	Name               string  `json:"name,omitempty"`
+	ContextWindow      int     `json:"context_window,omitempty"`
+	DefaultMaxTokens   int     `json:"default_max_tokens,omitempty"`
+	CostPer1MIn        float64 `json:"cost_per_1m_in,omitempty"`
+	CostPer1MOut       float64 `json:"cost_per_1m_out,omitempty"`
+	CostPer1MInCached  float64 `json:"cost_per_1m_in_cached,omitempty"`
+	CostPer1MOutCached float64 `json:"cost_per_1m_out_cached,omitempty"`
 	// Capabilities
-	SupportsVision      bool     `json:"supports_vision,omitempty"`
-	SupportsAttachments bool     `json:"supports_attachments,omitempty"`
-	SupportsFunctions   bool     `json:"supports_functions,omitempty"`
-	SupportsStreaming   bool     `json:"supports_streaming,omitempty"`
+	SupportsVision      bool `json:"supports_vision,omitempty"`
+	SupportsAttachments bool `json:"supports_attachments,omitempty"`
+	SupportsFunctions   bool `json:"supports_functions,omitempty"`
+	SupportsStreaming   bool `json:"supports_streaming,omitempty"`
 	// Fallbacks
-	Fallbacks           []string `json:"fallbacks,omitempty"`
+	Fallbacks []string `json:"fallbacks,omitempty"`
 }
 
 // CrushMCP represents MCP server configuration in Crush
@@ -245,13 +245,13 @@ func GenerateHelixAgentCrushConfig(host string, port int, debateMembers []Debate
 			Theme:                     "default",
 		},
 		Keybinds: map[string]string{
-			"submit":    "ctrl+enter",
-			"cancel":    "escape",
-			"clear":     "ctrl+l",
-			"newline":   "shift+enter",
-			"copy":      "ctrl+c",
-			"paste":     "ctrl+v",
-			"undo":      "ctrl+z",
+			"submit":  "ctrl+enter",
+			"cancel":  "escape",
+			"clear":   "ctrl+l",
+			"newline": "shift+enter",
+			"copy":    "ctrl+c",
+			"paste":   "ctrl+v",
+			"undo":    "ctrl+z",
 		},
 	}
 

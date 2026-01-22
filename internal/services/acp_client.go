@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/models"
+	"github.com/sirupsen/logrus"
 )
 
 // LSPClient implements a real Language Server Protocol client
@@ -27,12 +27,12 @@ type LSPClient struct {
 
 // ACPDiagnostic represents a diagnostic from the LSP/ACP server (extends LSPDiagnostic)
 type ACPDiagnostic struct {
-	Range              Range                        `json:"range"`
-	Severity           int                          `json:"severity,omitempty"`
-	Code               string                       `json:"code,omitempty"`
-	Source             string                       `json:"source,omitempty"`
-	Message            string                       `json:"message"`
-	RelatedInformation []ACPRelatedDiagnosticInfo   `json:"relatedInformation,omitempty"`
+	Range              Range                      `json:"range"`
+	Severity           int                        `json:"severity,omitempty"`
+	Code               string                     `json:"code,omitempty"`
+	Source             string                     `json:"source,omitempty"`
+	Message            string                     `json:"message"`
+	RelatedInformation []ACPRelatedDiagnosticInfo `json:"relatedInformation,omitempty"`
 }
 
 // ACPRelatedDiagnosticInfo represents related diagnostic information

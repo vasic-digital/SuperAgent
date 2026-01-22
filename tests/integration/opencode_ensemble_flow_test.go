@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/models"
-	"dev.helix.agent/internal/services"
 )
 
 // =============================================================================
@@ -61,8 +61,8 @@ func TestEnsembleFlowVerification(t *testing.T) {
 
 		// Execute ensemble request
 		req := &models.LLMRequest{
-			ID:      "test-request-1",
-			Prompt:  "Test prompt",
+			ID:     "test-request-1",
+			Prompt: "Test prompt",
 			Messages: []models.Message{
 				{Role: "user", Content: "Test message"},
 			},
@@ -352,11 +352,13 @@ func TestOpenCodeAPIIntegration(t *testing.T) {
 	client := &http.Client{Timeout: 60 * time.Second}
 	healthResp, err := client.Get(serverURL + "/health")
 	if err != nil {
-		t.Logf("HelixAgent server not available (acceptable)"); return
+		t.Logf("HelixAgent server not available (acceptable)")
+		return
 	}
 	healthResp.Body.Close()
 	if healthResp.StatusCode != http.StatusOK {
-		t.Logf("HelixAgent server not healthy (acceptable)"); return
+		t.Logf("HelixAgent server not healthy (acceptable)")
+		return
 	}
 
 	t.Run("ChatCompletions returns ensemble response", func(t *testing.T) {
@@ -379,7 +381,8 @@ func TestOpenCodeAPIIntegration(t *testing.T) {
 
 		body, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode == 502 {
-			t.Logf("Providers temporarily unavailable - 502 (acceptable)"); return
+			t.Logf("Providers temporarily unavailable - 502 (acceptable)")
+			return
 		}
 		require.Equal(t, http.StatusOK, resp.StatusCode, "Response: %s", string(body))
 
@@ -462,7 +465,8 @@ func TestOpenCodeAPIIntegration(t *testing.T) {
 		}
 		// At least 1 should succeed to verify API works; skip if server is overwhelmed
 		if successCount == 0 {
-			t.Logf("No requests succeeded - server may be overloaded or unavailable (acceptable)"); return
+			t.Logf("No requests succeeded - server may be overloaded or unavailable (acceptable)")
+			return
 		}
 		t.Logf("Multiple requests test: %d/5 succeeded through ensemble", successCount)
 	})

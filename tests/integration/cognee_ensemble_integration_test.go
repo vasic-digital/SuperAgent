@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // =============================================================================
@@ -438,7 +438,8 @@ func TestCogneeLiveIntegration(t *testing.T) {
 
 		// If all failed due to provider issues, skip the test
 		if providerFailCount == 5 {
-			t.Logf("All requests failed due to provider unavailability (acceptable)"); return
+			t.Logf("All requests failed due to provider unavailability (acceptable)")
+			return
 		}
 
 		// At least 3 out of 5 should succeed (60% tolerance for server load)

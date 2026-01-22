@@ -9,15 +9,15 @@ import (
 type BenchmarkType string
 
 const (
-	BenchmarkTypeSWEBench    BenchmarkType = "swe-bench"
-	BenchmarkTypeHumanEval   BenchmarkType = "humaneval"
-	BenchmarkTypeMBPP        BenchmarkType = "mbpp"
-	BenchmarkTypeLMSYS       BenchmarkType = "lmsys"
-	BenchmarkTypeHellaSwag   BenchmarkType = "hellaswag"
-	BenchmarkTypeMMLU        BenchmarkType = "mmlu"
-	BenchmarkTypeGSM8K       BenchmarkType = "gsm8k"
-	BenchmarkTypeMATH        BenchmarkType = "math"
-	BenchmarkTypeCustom      BenchmarkType = "custom"
+	BenchmarkTypeSWEBench  BenchmarkType = "swe-bench"
+	BenchmarkTypeHumanEval BenchmarkType = "humaneval"
+	BenchmarkTypeMBPP      BenchmarkType = "mbpp"
+	BenchmarkTypeLMSYS     BenchmarkType = "lmsys"
+	BenchmarkTypeHellaSwag BenchmarkType = "hellaswag"
+	BenchmarkTypeMMLU      BenchmarkType = "mmlu"
+	BenchmarkTypeGSM8K     BenchmarkType = "gsm8k"
+	BenchmarkTypeMATH      BenchmarkType = "math"
+	BenchmarkTypeCustom    BenchmarkType = "custom"
 )
 
 // DifficultyLevel represents task difficulty
@@ -31,19 +31,19 @@ const (
 
 // BenchmarkTask represents a single benchmark task
 type BenchmarkTask struct {
-	ID           string                 `json:"id"`
-	BenchmarkID  string                 `json:"benchmark_id"`
-	Type         BenchmarkType          `json:"type"`
-	Name         string                 `json:"name"`
-	Description  string                 `json:"description"`
-	Prompt       string                 `json:"prompt"`
-	Context      string                 `json:"context,omitempty"`      // Additional context (code, docs)
-	Expected     string                 `json:"expected,omitempty"`     // Expected output/solution
-	TestCases    []*TestCase            `json:"test_cases,omitempty"`   // For code tasks
-	Difficulty   DifficultyLevel        `json:"difficulty,omitempty"`
-	Tags         []string               `json:"tags,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
-	TimeLimit    time.Duration          `json:"time_limit,omitempty"`
+	ID          string                 `json:"id"`
+	BenchmarkID string                 `json:"benchmark_id"`
+	Type        BenchmarkType          `json:"type"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Prompt      string                 `json:"prompt"`
+	Context     string                 `json:"context,omitempty"`    // Additional context (code, docs)
+	Expected    string                 `json:"expected,omitempty"`   // Expected output/solution
+	TestCases   []*TestCase            `json:"test_cases,omitempty"` // For code tasks
+	Difficulty  DifficultyLevel        `json:"difficulty,omitempty"`
+	Tags        []string               `json:"tags,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	TimeLimit   time.Duration          `json:"time_limit,omitempty"`
 }
 
 // TestCase represents a test case for code benchmarks
@@ -62,7 +62,7 @@ type BenchmarkResult struct {
 	ModelName    string                 `json:"model_name"`
 	Response     string                 `json:"response"`
 	Passed       bool                   `json:"passed"`
-	Score        float64                `json:"score"`        // 0.0 to 1.0
+	Score        float64                `json:"score"` // 0.0 to 1.0
 	Latency      time.Duration          `json:"latency"`
 	TokensUsed   int                    `json:"tokens_used"`
 	TestResults  []*TestCaseResult      `json:"test_results,omitempty"`
@@ -82,19 +82,19 @@ type TestCaseResult struct {
 
 // BenchmarkRun represents a complete benchmark run
 type BenchmarkRun struct {
-	ID           string                   `json:"id"`
-	Name         string                   `json:"name"`
-	Description  string                   `json:"description,omitempty"`
-	BenchmarkType BenchmarkType           `json:"benchmark_type"`
-	ProviderName string                   `json:"provider_name"`
-	ModelName    string                   `json:"model_name"`
-	Status       BenchmarkStatus          `json:"status"`
-	Config       *BenchmarkConfig         `json:"config"`
-	Results      []*BenchmarkResult       `json:"results,omitempty"`
-	Summary      *BenchmarkSummary        `json:"summary,omitempty"`
-	StartTime    *time.Time               `json:"start_time,omitempty"`
-	EndTime      *time.Time               `json:"end_time,omitempty"`
-	CreatedAt    time.Time                `json:"created_at"`
+	ID            string             `json:"id"`
+	Name          string             `json:"name"`
+	Description   string             `json:"description,omitempty"`
+	BenchmarkType BenchmarkType      `json:"benchmark_type"`
+	ProviderName  string             `json:"provider_name"`
+	ModelName     string             `json:"model_name"`
+	Status        BenchmarkStatus    `json:"status"`
+	Config        *BenchmarkConfig   `json:"config"`
+	Results       []*BenchmarkResult `json:"results,omitempty"`
+	Summary       *BenchmarkSummary  `json:"summary,omitempty"`
+	StartTime     *time.Time         `json:"start_time,omitempty"`
+	EndTime       *time.Time         `json:"end_time,omitempty"`
+	CreatedAt     time.Time          `json:"created_at"`
 }
 
 // BenchmarkStatus represents run status
@@ -110,17 +110,17 @@ const (
 
 // BenchmarkConfig configuration for benchmark runs
 type BenchmarkConfig struct {
-	MaxTasks        int             `json:"max_tasks,omitempty"`         // Limit number of tasks
-	Timeout         time.Duration   `json:"timeout,omitempty"`           // Per-task timeout
-	Concurrency     int             `json:"concurrency,omitempty"`       // Parallel execution
-	Retries         int             `json:"retries,omitempty"`           // Retry failed tasks
-	Temperature     float64         `json:"temperature,omitempty"`       // Model temperature
-	MaxTokens       int             `json:"max_tokens,omitempty"`
-	SystemPrompt    string          `json:"system_prompt,omitempty"`
-	Difficulties    []DifficultyLevel `json:"difficulties,omitempty"`    // Filter by difficulty
-	Tags            []string        `json:"tags,omitempty"`              // Filter by tags
-	SaveResponses   bool            `json:"save_responses"`              // Save full responses
-	UseDebateForEval bool           `json:"use_debate_for_eval"`         // Use AI debate for evaluation
+	MaxTasks         int               `json:"max_tasks,omitempty"`   // Limit number of tasks
+	Timeout          time.Duration     `json:"timeout,omitempty"`     // Per-task timeout
+	Concurrency      int               `json:"concurrency,omitempty"` // Parallel execution
+	Retries          int               `json:"retries,omitempty"`     // Retry failed tasks
+	Temperature      float64           `json:"temperature,omitempty"` // Model temperature
+	MaxTokens        int               `json:"max_tokens,omitempty"`
+	SystemPrompt     string            `json:"system_prompt,omitempty"`
+	Difficulties     []DifficultyLevel `json:"difficulties,omitempty"` // Filter by difficulty
+	Tags             []string          `json:"tags,omitempty"`         // Filter by tags
+	SaveResponses    bool              `json:"save_responses"`         // Save full responses
+	UseDebateForEval bool              `json:"use_debate_for_eval"`    // Use AI debate for evaluation
 }
 
 // DefaultBenchmarkConfig returns default configuration
@@ -138,22 +138,22 @@ func DefaultBenchmarkConfig() *BenchmarkConfig {
 
 // BenchmarkSummary summarizes benchmark results
 type BenchmarkSummary struct {
-	TotalTasks     int                       `json:"total_tasks"`
-	PassedTasks    int                       `json:"passed_tasks"`
-	FailedTasks    int                       `json:"failed_tasks"`
-	ErrorTasks     int                       `json:"error_tasks"`
-	PassRate       float64                   `json:"pass_rate"`
-	AverageScore   float64                   `json:"average_score"`
-	AverageLatency time.Duration             `json:"average_latency"`
-	TotalTokens    int                       `json:"total_tokens"`
+	TotalTasks     int                                    `json:"total_tasks"`
+	PassedTasks    int                                    `json:"passed_tasks"`
+	FailedTasks    int                                    `json:"failed_tasks"`
+	ErrorTasks     int                                    `json:"error_tasks"`
+	PassRate       float64                                `json:"pass_rate"`
+	AverageScore   float64                                `json:"average_score"`
+	AverageLatency time.Duration                          `json:"average_latency"`
+	TotalTokens    int                                    `json:"total_tokens"`
 	ByDifficulty   map[DifficultyLevel]*DifficultySummary `json:"by_difficulty,omitempty"`
-	ByTag          map[string]*TagSummary    `json:"by_tag,omitempty"`
+	ByTag          map[string]*TagSummary                 `json:"by_tag,omitempty"`
 }
 
 // DifficultySummary summary by difficulty level
 type DifficultySummary struct {
-	Total   int     `json:"total"`
-	Passed  int     `json:"passed"`
+	Total    int     `json:"total"`
+	Passed   int     `json:"passed"`
 	PassRate float64 `json:"pass_rate"`
 }
 
@@ -219,14 +219,14 @@ type RunFilter struct {
 
 // RunComparison compares two benchmark runs
 type RunComparison struct {
-	Run1ID        string                 `json:"run1_id"`
-	Run2ID        string                 `json:"run2_id"`
-	PassRateChange float64               `json:"pass_rate_change"`
-	ScoreChange   float64                `json:"score_change"`
-	LatencyChange time.Duration          `json:"latency_change"`
-	Regressions   []string               `json:"regressions,omitempty"`   // Tasks that regressed
-	Improvements  []string               `json:"improvements,omitempty"`  // Tasks that improved
-	Summary       string                 `json:"summary"`
+	Run1ID         string        `json:"run1_id"`
+	Run2ID         string        `json:"run2_id"`
+	PassRateChange float64       `json:"pass_rate_change"`
+	ScoreChange    float64       `json:"score_change"`
+	LatencyChange  time.Duration `json:"latency_change"`
+	Regressions    []string      `json:"regressions,omitempty"`  // Tasks that regressed
+	Improvements   []string      `json:"improvements,omitempty"` // Tasks that improved
+	Summary        string        `json:"summary"`
 }
 
 // LLMProvider interface for benchmark execution

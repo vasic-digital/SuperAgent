@@ -8,12 +8,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/database"
 	"dev.helix.agent/internal/handlers"
 	"dev.helix.agent/internal/services"
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 func TestMultiProviderIntegration(t *testing.T) {

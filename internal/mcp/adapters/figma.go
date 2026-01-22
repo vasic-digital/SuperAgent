@@ -605,12 +605,12 @@ func getFloatArg(args map[string]interface{}, key string, defaultVal float64) fl
 
 // FigmaFileResponse represents a Figma file response.
 type FigmaFileResponse struct {
-	Name         string                  `json:"name"`
-	LastModified string                  `json:"lastModified"`
-	Version      string                  `json:"version"`
-	ThumbnailURL string                  `json:"thumbnailUrl"`
-	Document     FigmaNode               `json:"document"`
-	Components   map[string]FigmaCompDef `json:"components"`
+	Name         string                   `json:"name"`
+	LastModified string                   `json:"lastModified"`
+	Version      string                   `json:"version"`
+	ThumbnailURL string                   `json:"thumbnailUrl"`
+	Document     FigmaNode                `json:"document"`
+	Components   map[string]FigmaCompDef  `json:"components"`
 	Styles       map[string]FigmaStyleDef `json:"styles"`
 }
 
@@ -675,10 +675,10 @@ type FigmaCommentsResponse struct {
 
 // FigmaComment represents a comment.
 type FigmaComment struct {
-	ID        string     `json:"id"`
-	Message   string     `json:"message"`
-	CreatedAt string     `json:"created_at"`
-	User      FigmaUser  `json:"user"`
+	ID        string    `json:"id"`
+	Message   string    `json:"message"`
+	CreatedAt string    `json:"created_at"`
+	User      FigmaUser `json:"user"`
 }
 
 // FigmaUser represents a Figma user.

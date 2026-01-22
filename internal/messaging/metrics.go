@@ -16,13 +16,13 @@ type BrokerMetrics struct {
 	CurrentConnections   atomic.Int64 `json:"current_connections"`
 
 	// Publish metrics
-	MessagesPublished     atomic.Int64 `json:"messages_published"`
-	PublishSuccesses      atomic.Int64 `json:"publish_successes"`
-	PublishFailures       atomic.Int64 `json:"publish_failures"`
-	PublishConfirmations  atomic.Int64 `json:"publish_confirmations"`
-	PublishTimeouts       atomic.Int64 `json:"publish_timeouts"`
-	BytesPublished        atomic.Int64 `json:"bytes_published"`
-	BatchesPublished      atomic.Int64 `json:"batches_published"`
+	MessagesPublished    atomic.Int64 `json:"messages_published"`
+	PublishSuccesses     atomic.Int64 `json:"publish_successes"`
+	PublishFailures      atomic.Int64 `json:"publish_failures"`
+	PublishConfirmations atomic.Int64 `json:"publish_confirmations"`
+	PublishTimeouts      atomic.Int64 `json:"publish_timeouts"`
+	BytesPublished       atomic.Int64 `json:"bytes_published"`
+	BatchesPublished     atomic.Int64 `json:"batches_published"`
 
 	// Subscribe/Consume metrics
 	MessagesReceived     atomic.Int64 `json:"messages_received"`
@@ -460,11 +460,11 @@ type PartitionInfo struct {
 
 // MetricsSnapshot represents a point-in-time snapshot of metrics.
 type MetricsSnapshot struct {
-	BrokerType   BrokerType     `json:"broker_type"`
-	Metrics      *BrokerMetrics `json:"metrics"`
-	QueueStats   []QueueStats   `json:"queue_stats,omitempty"`
-	TopicStats   []TopicMetadata `json:"topic_stats,omitempty"`
-	CollectedAt  time.Time      `json:"collected_at"`
+	BrokerType  BrokerType      `json:"broker_type"`
+	Metrics     *BrokerMetrics  `json:"metrics"`
+	QueueStats  []QueueStats    `json:"queue_stats,omitempty"`
+	TopicStats  []TopicMetadata `json:"topic_stats,omitempty"`
+	CollectedAt time.Time       `json:"collected_at"`
 }
 
 // NewMetricsSnapshot creates a new metrics snapshot.

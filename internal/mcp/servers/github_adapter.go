@@ -164,20 +164,20 @@ func (g *GitHubAdapter) doRequest(ctx context.Context, method, path string, body
 
 // GitHubUser represents a GitHub user
 type GitHubUser struct {
-	Login     string `json:"login"`
-	ID        int64  `json:"id"`
-	Type      string `json:"type"`
-	Name      string `json:"name,omitempty"`
-	Email     string `json:"email,omitempty"`
-	Bio       string `json:"bio,omitempty"`
-	Company   string `json:"company,omitempty"`
-	Location  string `json:"location,omitempty"`
-	AvatarURL string `json:"avatar_url,omitempty"`
-	HTMLURL   string `json:"html_url,omitempty"`
-	Followers int    `json:"followers,omitempty"`
-	Following int    `json:"following,omitempty"`
-	PublicRepos int  `json:"public_repos,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
+	Login       string `json:"login"`
+	ID          int64  `json:"id"`
+	Type        string `json:"type"`
+	Name        string `json:"name,omitempty"`
+	Email       string `json:"email,omitempty"`
+	Bio         string `json:"bio,omitempty"`
+	Company     string `json:"company,omitempty"`
+	Location    string `json:"location,omitempty"`
+	AvatarURL   string `json:"avatar_url,omitempty"`
+	HTMLURL     string `json:"html_url,omitempty"`
+	Followers   int    `json:"followers,omitempty"`
+	Following   int    `json:"following,omitempty"`
+	PublicRepos int    `json:"public_repos,omitempty"`
+	CreatedAt   string `json:"created_at,omitempty"`
 }
 
 // GetUser gets user information
@@ -307,18 +307,18 @@ func (g *GitHubAdapter) GetRepository(ctx context.Context, owner, repo string) (
 
 // GitHubIssue represents a GitHub issue
 type GitHubIssue struct {
-	ID        int64        `json:"id"`
-	Number    int          `json:"number"`
-	Title     string       `json:"title"`
-	State     string       `json:"state"`
-	Body      string       `json:"body,omitempty"`
-	HTMLURL   string       `json:"html_url"`
-	User      *GitHubUser  `json:"user,omitempty"`
+	ID        int64         `json:"id"`
+	Number    int           `json:"number"`
+	Title     string        `json:"title"`
+	State     string        `json:"state"`
+	Body      string        `json:"body,omitempty"`
+	HTMLURL   string        `json:"html_url"`
+	User      *GitHubUser   `json:"user,omitempty"`
 	Labels    []GitHubLabel `json:"labels,omitempty"`
-	Assignees []GitHubUser `json:"assignees,omitempty"`
-	CreatedAt string       `json:"created_at"`
-	UpdatedAt string       `json:"updated_at"`
-	ClosedAt  string       `json:"closed_at,omitempty"`
+	Assignees []GitHubUser  `json:"assignees,omitempty"`
+	CreatedAt string        `json:"created_at"`
+	UpdatedAt string        `json:"updated_at"`
+	ClosedAt  string        `json:"closed_at,omitempty"`
 }
 
 // GitHubLabel represents a GitHub label
@@ -420,8 +420,8 @@ type GitHubPullRequest struct {
 
 // GitHubRef represents a Git reference
 type GitHubRef struct {
-	Ref  string `json:"ref"`
-	SHA  string `json:"sha"`
+	Ref  string            `json:"ref"`
+	SHA  string            `json:"sha"`
 	Repo *GitHubRepository `json:"repo,omitempty"`
 }
 
@@ -565,22 +565,22 @@ func (g *GitHubAdapter) GetContent(ctx context.Context, owner, repo, path, ref s
 
 // GitHubSearchResult represents search results
 type GitHubSearchResult struct {
-	TotalCount int                 `json:"total_count"`
-	Items      []GitHubRepository  `json:"items,omitempty"`
+	TotalCount int                `json:"total_count"`
+	Items      []GitHubRepository `json:"items,omitempty"`
 }
 
 // GitHubCodeSearchResult represents code search results
 type GitHubCodeSearchResult struct {
-	TotalCount int                `json:"total_count"`
-	Items      []GitHubCodeMatch  `json:"items,omitempty"`
+	TotalCount int               `json:"total_count"`
+	Items      []GitHubCodeMatch `json:"items,omitempty"`
 }
 
 // GitHubCodeMatch represents a code search match
 type GitHubCodeMatch struct {
-	Name       string           `json:"name"`
-	Path       string           `json:"path"`
-	SHA        string           `json:"sha"`
-	HTMLURL    string           `json:"html_url"`
+	Name       string            `json:"name"`
+	Path       string            `json:"path"`
+	SHA        string            `json:"sha"`
+	HTMLURL    string            `json:"html_url"`
 	Repository *GitHubRepository `json:"repository,omitempty"`
 }
 
@@ -1038,11 +1038,11 @@ func (g *GitHubAdapter) GetCapabilities() map[string]interface{} {
 	defer g.mu.RUnlock()
 
 	return map[string]interface{}{
-		"name":         "github",
-		"base_url":     g.config.BaseURL,
+		"name":          "github",
+		"base_url":      g.config.BaseURL,
 		"authenticated": g.config.Token != "",
-		"tools":        len(g.GetMCPTools()),
-		"initialized":  g.initialized,
+		"tools":         len(g.GetMCPTools()),
+		"initialized":   g.initialized,
 	}
 }
 

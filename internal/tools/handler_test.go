@@ -691,16 +691,16 @@ func TestGitHandler_GenerateDefaultArgs_AllOperations(t *testing.T) {
 	// Test all operation keywords - note that the code checks keywords in order,
 	// so if multiple keywords match, the first one in the if-else chain wins
 	operations := map[string]string{
-		"I need to commit":     "commit",
-		"push my changes":      "push",
-		"pull from remote":     "pull",
-		"switch branch":        "branch",
-		"checkout the file":    "checkout",
-		"please merge":         "merge",      // Use "merge" without "branch"
-		"show the diff":        "diff",
-		"view log history":     "log",        // Use "log" without "commit"
-		"stash my work":        "stash",
-		"just show status":     "status",
+		"I need to commit":  "commit",
+		"push my changes":   "push",
+		"pull from remote":  "pull",
+		"switch branch":     "branch",
+		"checkout the file": "checkout",
+		"please merge":      "merge", // Use "merge" without "branch"
+		"show the diff":     "diff",
+		"view log history":  "log", // Use "log" without "commit"
+		"stash my work":     "stash",
+		"just show status":  "status",
 	}
 
 	for context, expectedOp := range operations {
@@ -715,9 +715,9 @@ func TestTestHandler_GenerateDefaultArgs_AllTestTypes(t *testing.T) {
 	handler := &TestHandler{}
 
 	testCases := []struct {
-		context        string
-		expectedType   string
-		expectedPath   string
+		context      string
+		expectedType string
+		expectedPath string
 	}{
 		{"run unit tests", "unit", "./internal/..."},
 		{"run integration tests", "integration", "./tests/integration/..."},
@@ -852,8 +852,8 @@ func TestGitHandler_Execute_WithArguments(t *testing.T) {
 
 	// Test that arguments are processed correctly
 	result, _ := handler.Execute(ctx, map[string]interface{}{
-		"operation": "log",
-		"arguments": []interface{}{"--oneline", "-5"},
+		"operation":   "log",
+		"arguments":   []interface{}{"--oneline", "-5"},
 		"working_dir": "/tmp/nonexistent_dir_for_test",
 	})
 
@@ -883,8 +883,8 @@ func TestDiffHandler_Execute_Modes(t *testing.T) {
 	for _, mode := range modes {
 		t.Run(mode, func(t *testing.T) {
 			result, _ := handler.Execute(ctx, map[string]interface{}{
-				"mode":         mode,
-				"compare_with": "main",
+				"mode":          mode,
+				"compare_with":  "main",
 				"context_lines": float64(5),
 			})
 			// Should not panic regardless of mode

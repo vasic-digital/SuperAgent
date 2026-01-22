@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"time"
 
+	"dev.helix.agent/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"dev.helix.agent/internal/models"
 )
 
 // SessionHandler handles session management endpoints

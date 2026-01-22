@@ -143,13 +143,13 @@ type HierarchicalPlan struct {
 
 // HiPlan implements Hierarchical Planning
 type HiPlan struct {
-	config          HiPlanConfig
-	generator       MilestoneGenerator
-	executor        StepExecutor
-	currentPlan     *HierarchicalPlan
+	config           HiPlanConfig
+	generator        MilestoneGenerator
+	executor         StepExecutor
+	currentPlan      *HierarchicalPlan
 	milestoneLibrary map[string]*Milestone
-	mu              sync.RWMutex
-	logger          *logrus.Logger
+	mu               sync.RWMutex
+	logger           *logrus.Logger
 }
 
 // NewHiPlan creates a new HiPlan instance
@@ -160,11 +160,11 @@ func NewHiPlan(config HiPlanConfig, generator MilestoneGenerator, executor StepE
 	}
 
 	return &HiPlan{
-		config:          config,
-		generator:       generator,
-		executor:        executor,
+		config:           config,
+		generator:        generator,
+		executor:         executor,
 		milestoneLibrary: make(map[string]*Milestone),
-		logger:          logger,
+		logger:           logger,
 	}
 }
 

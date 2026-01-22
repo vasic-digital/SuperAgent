@@ -8,17 +8,18 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/handlers"
+	"dev.helix.agent/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/handlers"
-	"dev.helix.agent/internal/services"
 )
 
 // TestAPIEndToEndScenarios tests complete API workflows
 func TestAPIEndToEndScenarios(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping API integration test (acceptable)"); return
+		t.Logf("Short mode - skipping API integration test (acceptable)")
+		return
 	}
 
 	// Setup test server

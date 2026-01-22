@@ -236,7 +236,7 @@ func TestCompositeConstraint_All(t *testing.T) {
 
 	assert.Equal(t, ConstraintTypeComposite, composite.Type())
 	assert.NoError(t, composite.Validate("hello world"))
-	assert.Error(t, composite.Validate("hi")) // Too short and not a choice
+	assert.Error(t, composite.Validate("hi"))            // Too short and not a choice
 	assert.Error(t, composite.Validate("unknown value")) // Not a choice
 }
 
@@ -274,8 +274,8 @@ func TestConstraintBuilder(t *testing.T) {
 
 	assert.NotNil(t, constraint)
 	assert.NoError(t, constraint.Validate(`{"test": "value"}`)) // 17 chars, valid JSON
-	assert.Error(t, constraint.Validate(`{"a":1}`))            // 7 chars, too short (min 10)
-	assert.Error(t, constraint.Validate(`invalid json`))       // Not valid JSON
+	assert.Error(t, constraint.Validate(`{"a":1}`))             // 7 chars, too short (min 10)
+	assert.Error(t, constraint.Validate(`invalid json`))        // Not valid JSON
 }
 
 func TestConstraintBuilder_BuildAny(t *testing.T) {

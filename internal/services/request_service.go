@@ -155,7 +155,7 @@ type WeightedStrategy struct {
 
 // HealthBasedStrategy implements health-based routing
 type HealthBasedStrategy struct {
-	circuitBreakers *CircuitBreakerPattern
+	circuitBreakers  *CircuitBreakerPattern
 	providerRegistry interface {
 		GetCircuitBreaker(name string) *CircuitBreaker
 	}

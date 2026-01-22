@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/models"
 	"github.com/fsnotify/fsnotify"
 	"github.com/stretchr/testify/assert"
-	"dev.helix.agent/internal/models"
 )
 
 func TestHotReloadConfig_Struct(t *testing.T) {

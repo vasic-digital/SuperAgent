@@ -496,9 +496,9 @@ func (a *StableDiffusionAdapter) upscale(ctx context.Context, args map[string]in
 	scale := getFloatArg(args, "scale", 2.0)
 
 	payload := map[string]interface{}{
-		"image":              image,
-		"upscaler_1":         upscaler,
-		"upscaling_resize":   scale,
+		"image":            image,
+		"upscaler_1":       upscaler,
+		"upscaling_resize": scale,
 	}
 
 	resp, err := a.makeRequest(ctx, http.MethodPost, "/sdapi/v1/extra-single-image", payload)
@@ -685,13 +685,13 @@ type SDImageResponse struct {
 
 // SDInfo represents generation info.
 type SDInfo struct {
-	Seed       int64   `json:"seed"`
-	Prompt     string  `json:"prompt"`
-	Width      int     `json:"width"`
-	Height     int     `json:"height"`
-	Steps      int     `json:"steps"`
-	CFGScale   float64 `json:"cfg_scale"`
-	SamplerName string `json:"sampler_name"`
+	Seed        int64   `json:"seed"`
+	Prompt      string  `json:"prompt"`
+	Width       int     `json:"width"`
+	Height      int     `json:"height"`
+	Steps       int     `json:"steps"`
+	CFGScale    float64 `json:"cfg_scale"`
+	SamplerName string  `json:"sampler_name"`
 }
 
 // SDUpscaleResponse represents an upscale response.

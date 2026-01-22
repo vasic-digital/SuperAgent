@@ -19,9 +19,9 @@ func TestInMemoryTaskQueue_Enqueue(t *testing.T) {
 	queue := NewInMemoryTaskQueue(logger)
 
 	task := &models.BackgroundTask{
-		TaskType:  "test_task",
-		TaskName:  "Test Task",
-		Priority:  models.TaskPriorityNormal,
+		TaskType: "test_task",
+		TaskName: "Test Task",
+		Priority: models.TaskPriorityNormal,
 	}
 
 	err := queue.Enqueue(context.Background(), task)
@@ -37,10 +37,10 @@ func TestInMemoryTaskQueue_EnqueueWithID(t *testing.T) {
 	queue := NewInMemoryTaskQueue(logger)
 
 	task := &models.BackgroundTask{
-		ID:        "custom-id-123",
-		TaskType:  "test_task",
-		TaskName:  "Test Task",
-		Priority:  models.TaskPriorityHigh,
+		ID:       "custom-id-123",
+		TaskType: "test_task",
+		TaskName: "Test Task",
+		Priority: models.TaskPriorityHigh,
 	}
 
 	err := queue.Enqueue(context.Background(), task)

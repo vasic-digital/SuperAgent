@@ -228,9 +228,9 @@ func TestClient_Health(t *testing.T) {
 		assert.Equal(t, "GET", r.Method)
 
 		resp := &HealthResponse{
-			Status:             "healthy",
-			Version:            "1.0.0",
-			CogneeAvailable:    true,
+			Status:              "healthy",
+			Version:             "1.0.0",
+			CogneeAvailable:     true,
 			HelixagentAvailable: true,
 		}
 

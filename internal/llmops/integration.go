@@ -25,11 +25,11 @@ type LLMOpsSystem struct {
 
 // LLMOpsConfig configuration for LLMOps
 type LLMOpsConfig struct {
-	EnableAutoEvaluation   bool          `json:"enable_auto_evaluation"`
-	EvaluationInterval     time.Duration `json:"evaluation_interval"`
-	MinSamplesForSignif    int           `json:"min_samples_for_significance"`
+	EnableAutoEvaluation   bool               `json:"enable_auto_evaluation"`
+	EvaluationInterval     time.Duration      `json:"evaluation_interval"`
+	MinSamplesForSignif    int                `json:"min_samples_for_significance"`
 	AlertThresholds        map[string]float64 `json:"alert_thresholds"`
-	EnableDebateEvaluation bool          `json:"enable_debate_evaluation"`
+	EnableDebateEvaluation bool               `json:"enable_debate_evaluation"`
 }
 
 // DefaultLLMOpsConfig returns default configuration
@@ -53,9 +53,9 @@ type DebateLLMEvaluator interface {
 
 // VerifierIntegration integrates with LLMsVerifier
 type VerifierIntegration struct {
-	getProviderScore    func(name string) float64
-	isProviderHealthy   func(name string) bool
-	logger              *logrus.Logger
+	getProviderScore  func(name string) float64
+	isProviderHealthy func(name string) bool
+	logger            *logrus.Logger
 }
 
 // NewVerifierIntegration creates verifier integration

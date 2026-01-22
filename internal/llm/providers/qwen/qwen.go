@@ -204,9 +204,9 @@ func NewQwenProviderWithOAuthAndRetry(baseURL, model string, retryConfig RetryCo
 	}
 
 	return &QwenProvider{
-		apiKey:          "", // Will use OAuth token instead
-		baseURL:         baseURL,
-		model:           model,
+		apiKey:  "", // Will use OAuth token instead
+		baseURL: baseURL,
+		model:   model,
 		httpClient: &http.Client{
 			Timeout: 60 * time.Second,
 		},

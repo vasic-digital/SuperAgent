@@ -415,10 +415,10 @@ func TestModelDiscoveryService_calculateVoteWeight(t *testing.T) {
 	svc := NewModelDiscoveryService(nil, nil, nil, nil)
 
 	tests := []struct {
-		name        string
-		model       *DiscoveredModel
-		minWeight   float64
-		maxWeight   float64
+		name      string
+		model     *DiscoveredModel
+		minWeight float64
+		maxWeight float64
 	}{
 		{
 			name: "high score with code visibility",

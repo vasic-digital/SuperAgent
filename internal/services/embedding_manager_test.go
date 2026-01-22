@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/database"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/database"
 )
 
 func newEmbeddingTestLogger() *logrus.Logger {
@@ -266,7 +266,7 @@ func TestEmbeddingManager_VectorSearch(t *testing.T) {
 
 	t.Run("returns error when no query or vector provided", func(t *testing.T) {
 		req := VectorSearchRequest{
-			Query:  "", // Empty query
+			Query:  "",  // Empty query
 			Vector: nil, // No vector
 		}
 		response, err := manager.VectorSearch(ctx, req)
@@ -278,8 +278,8 @@ func TestEmbeddingManager_VectorSearch(t *testing.T) {
 	t.Run("uses default limit and threshold", func(t *testing.T) {
 		req := VectorSearchRequest{
 			Vector:    []float64{0.1, 0.2, 0.3},
-			Limit:     0,  // Should default to 10
-			Threshold: 0,  // Should default to 0.7
+			Limit:     0, // Should default to 10
+			Threshold: 0, // Should default to 0.7
 		}
 		response, err := manager.VectorSearch(ctx, req)
 		require.NoError(t, err)

@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/claude"
 	"dev.helix.agent/internal/llm/providers/deepseek"
@@ -18,6 +16,8 @@ import (
 	"dev.helix.agent/internal/llm/providers/mistral"
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestAuthRetry_MistralProvider tests that Mistral provider retries on 401
@@ -122,8 +122,8 @@ func TestAuthRetry_ClaudeProvider(t *testing.T) {
 					"text": "Test response from Claude",
 				},
 			},
-			"model":        "claude-3-sonnet-20240229",
-			"stop_reason":  "end_turn",
+			"model":         "claude-3-sonnet-20240229",
+			"stop_reason":   "end_turn",
 			"stop_sequence": nil,
 			"usage": map[string]any{
 				"input_tokens":  10,

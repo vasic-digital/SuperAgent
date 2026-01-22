@@ -98,12 +98,12 @@ var agentCapabilities = map[string]*AgentCapability{
 			FeatureWebSocket, FeatureMCP, FeatureACP, FeatureDebate,
 			FeatureMultiPass, FeatureTracing,
 		},
-		UnsupportedFeatures: []Feature{},
-		TransportProtocol:   "http3",
-		CompressionSupport:  []string{"brotli", "gzip", "zstd"},
-		StreamingSupport:    []string{"websocket", "sse", "jsonl"},
+		UnsupportedFeatures:   []Feature{},
+		TransportProtocol:     "http3",
+		CompressionSupport:    []string{"brotli", "gzip", "zstd"},
+		StreamingSupport:      []string{"websocket", "sse", "jsonl"},
 		MaxConcurrentRequests: 50,
-		Notes: "Full-featured HelixCode supports all advanced features including HTTP/3 QUIC",
+		Notes:                 "Full-featured HelixCode supports all advanced features including HTTP/3 QUIC",
 	},
 
 	// Kiro - Python AI agent with steering files

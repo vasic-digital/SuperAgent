@@ -150,11 +150,11 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 
 // CollectionInfo represents information about a collection
 type CollectionInfo struct {
-	Name         string `json:"name"`
-	Status       string `json:"status"`
-	VectorCount  int64  `json:"vectors_count"`
-	PointsCount  int64  `json:"points_count"`
-	SegmentsCount int   `json:"segments_count"`
+	Name          string `json:"name"`
+	Status        string `json:"status"`
+	VectorCount   int64  `json:"vectors_count"`
+	PointsCount   int64  `json:"points_count"`
+	SegmentsCount int    `json:"segments_count"`
 }
 
 // CreateCollection creates a new vector collection
@@ -294,10 +294,10 @@ func (c *Client) GetCollectionInfo(ctx context.Context, name string) (*Collectio
 
 	var response struct {
 		Result struct {
-			Status         string `json:"status"`
-			VectorsCount   int64  `json:"vectors_count"`
-			PointsCount    int64  `json:"points_count"`
-			SegmentsCount  int    `json:"segments_count"`
+			Status        string `json:"status"`
+			VectorsCount  int64  `json:"vectors_count"`
+			PointsCount   int64  `json:"points_count"`
+			SegmentsCount int    `json:"segments_count"`
 		} `json:"result"`
 	}
 

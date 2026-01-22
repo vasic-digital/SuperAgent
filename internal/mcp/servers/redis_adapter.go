@@ -423,11 +423,11 @@ func (r *RedisAdapter) Decr(ctx context.Context, key string) (int64, error) {
 
 // RedisInfo represents Redis server info
 type RedisInfo struct {
-	Server      map[string]string `json:"server"`
-	Clients     map[string]string `json:"clients"`
-	Memory      map[string]string `json:"memory"`
-	Stats       map[string]string `json:"stats"`
-	Keyspace    map[string]string `json:"keyspace"`
+	Server   map[string]string `json:"server"`
+	Clients  map[string]string `json:"clients"`
+	Memory   map[string]string `json:"memory"`
+	Stats    map[string]string `json:"stats"`
+	Keyspace map[string]string `json:"keyspace"`
 }
 
 // Info returns Redis server information

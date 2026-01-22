@@ -379,8 +379,8 @@ func TestEvaluationRun_Status(t *testing.T) {
 
 func TestExperimentStatus_Transitions(t *testing.T) {
 	tests := []struct {
-		from ExperimentStatus
-		to   ExperimentStatus
+		from  ExperimentStatus
+		to    ExperimentStatus
 		valid bool
 	}{
 		{ExperimentStatusDraft, ExperimentStatusRunning, true},

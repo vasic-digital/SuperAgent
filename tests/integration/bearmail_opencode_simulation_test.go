@@ -244,10 +244,10 @@ If there's already an AGENTS.md, improve it if it's located in /run/media/milosv
 
 		// Check for common cutoff indicators (incomplete sentences)
 		cutoffIndicators := []string{
-			"Ktlint (if configured):",  // Known cutoff point from user's conversation
-			"testFeatureUnderTest_",    // Another cutoff point
-			"(check for",               // Incomplete parenthetical
-			"...",                       // Trailing ellipsis suggesting more content
+			"Ktlint (if configured):", // Known cutoff point from user's conversation
+			"testFeatureUnderTest_",   // Another cutoff point
+			"(check for",              // Incomplete parenthetical
+			"...",                     // Trailing ellipsis suggesting more content
 		}
 
 		for _, indicator := range cutoffIndicators {
@@ -1217,9 +1217,9 @@ func TestOpenCodeToolCallFormat(t *testing.T) {
 
 		// Check for incomplete tags (sign of cutoff)
 		incompletePatterns := []string{
-			"<bash", // Missing closing >
+			"<bash",  // Missing closing >
 			"<write", // Missing closing >
-			"</bas", // Incomplete closing tag
+			"</bas",  // Incomplete closing tag
 			"</writ", // Incomplete closing tag
 		}
 

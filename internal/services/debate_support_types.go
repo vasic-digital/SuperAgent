@@ -97,11 +97,11 @@ type ParticipantConfig struct {
 	Timeout       time.Duration `json:"timeout"`
 	Weight        float64       `json:"weight"`
 	// Single-provider multi-instance support
-	Temperature   float64       `json:"temperature,omitempty"`  // Custom temperature for diversity
-	SystemPrompt  string        `json:"system_prompt,omitempty"` // Custom system prompt for unique perspective
-	Priority      int           `json:"priority,omitempty"`      // Participant priority in debate order
+	Temperature  float64 `json:"temperature,omitempty"`   // Custom temperature for diversity
+	SystemPrompt string  `json:"system_prompt,omitempty"` // Custom system prompt for unique perspective
+	Priority     int     `json:"priority,omitempty"`      // Participant priority in debate order
 	// Fallback chain - when primary LLM fails or returns empty, try these in order
-	Fallbacks     []FallbackConfig `json:"fallbacks,omitempty"`
+	Fallbacks []FallbackConfig `json:"fallbacks,omitempty"`
 }
 
 // FallbackConfig defines a fallback provider for when the primary fails

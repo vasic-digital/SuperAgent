@@ -926,10 +926,10 @@ type DDHostsResponse struct {
 
 // DDHost represents a host.
 type DDHost struct {
-	ID   int64    `json:"id"`
-	Name string   `json:"name"`
-	Apps []string `json:"apps"`
-	IsUp bool     `json:"is_up"`
+	ID   int64       `json:"id"`
+	Name string      `json:"name"`
+	Apps []string    `json:"apps"`
+	IsUp bool        `json:"is_up"`
 	Meta *DDHostMeta `json:"meta"`
 }
 

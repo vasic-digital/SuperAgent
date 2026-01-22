@@ -428,4 +428,3 @@ func TestSmartChunker_DefaultStrategy(t *testing.T) {
 	// Should fallback to semantic strategy
 	assert.True(t, len(chunks) >= 1)
 }
-

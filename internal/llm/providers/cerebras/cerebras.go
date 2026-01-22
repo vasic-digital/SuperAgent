@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/models"
+	"github.com/sirupsen/logrus"
 )
 
 var log = logrus.New()
@@ -74,10 +74,10 @@ type CerebrasUsage struct {
 }
 
 type CerebrasStreamResponse struct {
-	ID      string                `json:"id"`
-	Object  string                `json:"object"`
-	Created int64                 `json:"created"`
-	Model   string                `json:"model"`
+	ID      string                 `json:"id"`
+	Object  string                 `json:"object"`
+	Created int64                  `json:"created"`
+	Model   string                 `json:"model"`
 	Choices []CerebrasStreamChoice `json:"choices"`
 }
 
@@ -227,11 +227,11 @@ func (p *CerebrasProvider) Complete(ctx context.Context, req *models.LLMRequest)
 
 	duration := time.Since(startTime)
 	log.WithFields(logrus.Fields{
-		"provider":     "cerebras",
-		"request_id":   requestID,
-		"duration":     duration.String(),
-		"tokens_used":  cerebrasResp.Usage.TotalTokens,
-		"content_len":  len(cerebrasResp.Choices[0].Message.Content),
+		"provider":      "cerebras",
+		"request_id":    requestID,
+		"duration":      duration.String(),
+		"tokens_used":   cerebrasResp.Usage.TotalTokens,
+		"content_len":   len(cerebrasResp.Choices[0].Message.Content),
 		"finish_reason": cerebrasResp.Choices[0].FinishReason,
 	}).Info("Cerebras API call completed successfully")
 

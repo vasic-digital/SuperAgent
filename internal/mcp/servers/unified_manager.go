@@ -33,7 +33,7 @@ type UnifiedServerManager struct {
 
 // ServerAdapterConfig holds configuration for a server adapter.
 type ServerAdapterConfig struct {
-	Type      string            // "chroma", "qdrant", "weaviate", etc.
+	Type      string // "chroma", "qdrant", "weaviate", etc.
 	BaseURL   string
 	APIKey    string
 	AuthToken string

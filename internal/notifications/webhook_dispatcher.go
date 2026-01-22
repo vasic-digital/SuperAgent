@@ -47,24 +47,24 @@ type WebhookDispatcher struct {
 
 // WebhookConfig holds webhook configuration
 type WebhookConfig struct {
-	MaxRetries     int           `yaml:"max_retries"`
-	RetryBackoff   time.Duration `yaml:"retry_backoff"`
-	MaxBackoff     time.Duration `yaml:"max_backoff"`
-	Timeout        time.Duration `yaml:"timeout"`
-	WorkerCount    int           `yaml:"worker_count"`
-	QueueSize      int           `yaml:"queue_size"`
-	SignatureHeader string       `yaml:"signature_header"`
+	MaxRetries      int           `yaml:"max_retries"`
+	RetryBackoff    time.Duration `yaml:"retry_backoff"`
+	MaxBackoff      time.Duration `yaml:"max_backoff"`
+	Timeout         time.Duration `yaml:"timeout"`
+	WorkerCount     int           `yaml:"worker_count"`
+	QueueSize       int           `yaml:"queue_size"`
+	SignatureHeader string        `yaml:"signature_header"`
 }
 
 // DefaultWebhookConfig returns default webhook configuration
 func DefaultWebhookConfig() *WebhookConfig {
 	return &WebhookConfig{
-		MaxRetries:     5,
-		RetryBackoff:   time.Second,
-		MaxBackoff:     5 * time.Minute,
-		Timeout:        30 * time.Second,
-		WorkerCount:    5,
-		QueueSize:      1000,
+		MaxRetries:      5,
+		RetryBackoff:    time.Second,
+		MaxBackoff:      5 * time.Minute,
+		Timeout:         30 * time.Second,
+		WorkerCount:     5,
+		QueueSize:       1000,
 		SignatureHeader: "X-HelixAgent-Signature",
 	}
 }
@@ -74,8 +74,8 @@ type WebhookRegistration struct {
 	ID          string            `json:"id"`
 	URL         string            `json:"url"`
 	Secret      string            `json:"secret,omitempty"`
-	Events      []string          `json:"events,omitempty"`      // Empty = all events
-	TaskTypes   []string          `json:"task_types,omitempty"`  // Empty = all task types
+	Events      []string          `json:"events,omitempty"`     // Empty = all events
+	TaskTypes   []string          `json:"task_types,omitempty"` // Empty = all task types
 	Headers     map[string]string `json:"headers,omitempty"`
 	Enabled     bool              `json:"enabled"`
 	CreatedAt   time.Time         `json:"created_at"`

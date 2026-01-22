@@ -488,7 +488,7 @@ func TestFormatPercent(t *testing.T) {
 		expected string
 	}{
 		{10.0, "10.0%"},
-		{25.55, "25.6%"},   // Rounds to 25.6%
+		{25.55, "25.6%"}, // Rounds to 25.6%
 		{99.9, "99.9%"},
 		{9.5, "9.50%"},
 		{5.123, "5.12%"},

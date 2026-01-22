@@ -18,10 +18,10 @@ const (
 	AttackTypeRoleplay                AttackType = "roleplay_injection"
 
 	// Data Extraction Attacks
-	AttackTypeDataLeakage          AttackType = "data_leakage"
-	AttackTypeSystemPromptLeakage  AttackType = "system_prompt_leakage"
-	AttackTypePIIExtraction        AttackType = "pii_extraction"
-	AttackTypeModelExtraction      AttackType = "model_extraction"
+	AttackTypeDataLeakage         AttackType = "data_leakage"
+	AttackTypeSystemPromptLeakage AttackType = "system_prompt_leakage"
+	AttackTypePIIExtraction       AttackType = "pii_extraction"
+	AttackTypeModelExtraction     AttackType = "model_extraction"
 
 	// Denial of Service Attacks
 	AttackTypeResourceExhaustion AttackType = "resource_exhaustion"
@@ -36,10 +36,10 @@ const (
 	AttackTypeIllegalActivities AttackType = "illegal_activities"
 
 	// Social Engineering
-	AttackTypeManipulation     AttackType = "manipulation"
-	AttackTypeDeception        AttackType = "deception"
-	AttackTypeImpersonation    AttackType = "impersonation"
-	AttackTypeAuthorityAbuse   AttackType = "authority_abuse"
+	AttackTypeManipulation   AttackType = "manipulation"
+	AttackTypeDeception      AttackType = "deception"
+	AttackTypeImpersonation  AttackType = "impersonation"
+	AttackTypeAuthorityAbuse AttackType = "authority_abuse"
 
 	// Code Injection
 	AttackTypeCodeInjection    AttackType = "code_injection"
@@ -48,9 +48,9 @@ const (
 	AttackTypeXSS              AttackType = "xss"
 
 	// Bias and Fairness
-	AttackTypeBiasExploitation      AttackType = "bias_exploitation"
-	AttackTypeStereotyping          AttackType = "stereotyping"
-	AttackTypeDiscrimination        AttackType = "discrimination"
+	AttackTypeBiasExploitation AttackType = "bias_exploitation"
+	AttackTypeStereotyping     AttackType = "stereotyping"
+	AttackTypeDiscrimination   AttackType = "discrimination"
 
 	// Hallucination Attacks
 	AttackTypeHallucinationInduction AttackType = "hallucination_induction"
@@ -58,15 +58,15 @@ const (
 	AttackTypeFalseCitation          AttackType = "false_citation"
 
 	// Supply Chain
-	AttackTypeModelPoisoning    AttackType = "model_poisoning"
-	AttackTypeDataPoisoning     AttackType = "data_poisoning"
-	AttackTypeDependencyAttack  AttackType = "dependency_attack"
+	AttackTypeModelPoisoning   AttackType = "model_poisoning"
+	AttackTypeDataPoisoning    AttackType = "data_poisoning"
+	AttackTypeDependencyAttack AttackType = "dependency_attack"
 
 	// Evasion
-	AttackTypeEncoding         AttackType = "encoding_evasion"
-	AttackTypeObfuscation      AttackType = "obfuscation"
-	AttackTypeFragmentation    AttackType = "fragmentation"
-	AttackTypeMultilingual     AttackType = "multilingual_evasion"
+	AttackTypeEncoding      AttackType = "encoding_evasion"
+	AttackTypeObfuscation   AttackType = "obfuscation"
+	AttackTypeFragmentation AttackType = "fragmentation"
+	AttackTypeMultilingual  AttackType = "multilingual_evasion"
 )
 
 // OWASPCategory represents OWASP LLM Top 10 2025 categories
@@ -111,18 +111,18 @@ type Attack struct {
 
 // AttackResult contains the result of running an attack
 type AttackResult struct {
-	AttackID      string        `json:"attack_id"`
-	AttackType    AttackType    `json:"attack_type"`
-	Success       bool          `json:"success"` // True if attack succeeded (vulnerability found)
-	Blocked       bool          `json:"blocked"` // True if attack was blocked
-	Response      string        `json:"response,omitempty"`
-	Score         float64       `json:"score"` // 0-1, higher = more vulnerable
-	Confidence    float64       `json:"confidence"`
-	Severity      Severity      `json:"severity"`
-	Details       string        `json:"details,omitempty"`
-	Duration      time.Duration `json:"duration"`
-	Timestamp     time.Time     `json:"timestamp"`
-	Mitigations   []string      `json:"mitigations,omitempty"`
+	AttackID    string        `json:"attack_id"`
+	AttackType  AttackType    `json:"attack_type"`
+	Success     bool          `json:"success"` // True if attack succeeded (vulnerability found)
+	Blocked     bool          `json:"blocked"` // True if attack was blocked
+	Response    string        `json:"response,omitempty"`
+	Score       float64       `json:"score"` // 0-1, higher = more vulnerable
+	Confidence  float64       `json:"confidence"`
+	Severity    Severity      `json:"severity"`
+	Details     string        `json:"details,omitempty"`
+	Duration    time.Duration `json:"duration"`
+	Timestamp   time.Time     `json:"timestamp"`
+	Mitigations []string      `json:"mitigations,omitempty"`
 }
 
 // RedTeamConfig configures the red team testing
@@ -186,40 +186,40 @@ type Target interface {
 
 // RedTeamReport contains the results of a red team session
 type RedTeamReport struct {
-	ID               string          `json:"id"`
-	StartTime        time.Time       `json:"start_time"`
-	EndTime          time.Time       `json:"end_time"`
-	TotalAttacks     int             `json:"total_attacks"`
-	SuccessfulAttacks int            `json:"successful_attacks"`
-	BlockedAttacks   int             `json:"blocked_attacks"`
-	FailedAttacks    int             `json:"failed_attacks"`
-	OverallScore     float64         `json:"overall_score"` // 0-1, lower = more secure
-	Results          []*AttackResult `json:"results"`
-	OWASPCoverage    map[OWASPCategory]*CategoryScore `json:"owasp_coverage"`
-	Recommendations  []string        `json:"recommendations"`
-	Summary          string          `json:"summary"`
+	ID                string                           `json:"id"`
+	StartTime         time.Time                        `json:"start_time"`
+	EndTime           time.Time                        `json:"end_time"`
+	TotalAttacks      int                              `json:"total_attacks"`
+	SuccessfulAttacks int                              `json:"successful_attacks"`
+	BlockedAttacks    int                              `json:"blocked_attacks"`
+	FailedAttacks     int                              `json:"failed_attacks"`
+	OverallScore      float64                          `json:"overall_score"` // 0-1, lower = more secure
+	Results           []*AttackResult                  `json:"results"`
+	OWASPCoverage     map[OWASPCategory]*CategoryScore `json:"owasp_coverage"`
+	Recommendations   []string                         `json:"recommendations"`
+	Summary           string                           `json:"summary"`
 }
 
 // CategoryScore tracks score per OWASP category
 type CategoryScore struct {
-	Category       OWASPCategory `json:"category"`
-	AttacksRun     int           `json:"attacks_run"`
-	Vulnerabilities int          `json:"vulnerabilities"`
-	Score          float64       `json:"score"`
-	Findings       []string      `json:"findings"`
+	Category        OWASPCategory `json:"category"`
+	AttacksRun      int           `json:"attacks_run"`
+	Vulnerabilities int           `json:"vulnerabilities"`
+	Score           float64       `json:"score"`
+	Findings        []string      `json:"findings"`
 }
 
 // GuardrailType indicates the type of guardrail
 type GuardrailType string
 
 const (
-	GuardrailTypeInput        GuardrailType = "input"
-	GuardrailTypeOutput       GuardrailType = "output"
+	GuardrailTypeInput         GuardrailType = "input"
+	GuardrailTypeOutput        GuardrailType = "output"
 	GuardrailTypeContentSafety GuardrailType = "content_safety"
-	GuardrailTypePII          GuardrailType = "pii"
-	GuardrailTypeTopicBlock   GuardrailType = "topic_block"
-	GuardrailTypeRateLimit    GuardrailType = "rate_limit"
-	GuardrailTypeTokenLimit   GuardrailType = "token_limit"
+	GuardrailTypePII           GuardrailType = "pii"
+	GuardrailTypeTopicBlock    GuardrailType = "topic_block"
+	GuardrailTypeRateLimit     GuardrailType = "rate_limit"
+	GuardrailTypeTokenLimit    GuardrailType = "token_limit"
 )
 
 // GuardrailAction indicates the action to take when guardrail triggers
@@ -235,13 +235,13 @@ const (
 
 // GuardrailResult contains the result of a guardrail check
 type GuardrailResult struct {
-	Triggered   bool            `json:"triggered"`
-	Action      GuardrailAction `json:"action"`
-	Guardrail   string          `json:"guardrail"`
-	Reason      string          `json:"reason,omitempty"`
-	Confidence  float64         `json:"confidence"`
-	ModifiedContent string      `json:"modified_content,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	Triggered       bool                   `json:"triggered"`
+	Action          GuardrailAction        `json:"action"`
+	Guardrail       string                 `json:"guardrail"`
+	Reason          string                 `json:"reason,omitempty"`
+	Confidence      float64                `json:"confidence"`
+	ModifiedContent string                 `json:"modified_content,omitempty"`
+	Metadata        map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // Guardrail defines a security guardrail
@@ -268,11 +268,11 @@ type GuardrailPipeline interface {
 
 // GuardrailStats contains guardrail statistics
 type GuardrailStats struct {
-	TotalChecks      int64                    `json:"total_checks"`
-	TotalBlocks      int64                    `json:"total_blocks"`
-	TotalWarnings    int64                    `json:"total_warnings"`
-	ByGuardrail      map[string]*GuardrailStat `json:"by_guardrail"`
-	LastTriggered    *time.Time               `json:"last_triggered,omitempty"`
+	TotalChecks   int64                     `json:"total_checks"`
+	TotalBlocks   int64                     `json:"total_blocks"`
+	TotalWarnings int64                     `json:"total_warnings"`
+	ByGuardrail   map[string]*GuardrailStat `json:"by_guardrail"`
+	LastTriggered *time.Time                `json:"last_triggered,omitempty"`
 }
 
 // GuardrailStat contains stats for a single guardrail
@@ -288,19 +288,19 @@ type GuardrailStat struct {
 type PIIType string
 
 const (
-	PIITypeEmail        PIIType = "email"
-	PIITypePhone        PIIType = "phone"
-	PIITypeSSN          PIIType = "ssn"
-	PIITypeCreditCard   PIIType = "credit_card"
-	PIITypeName         PIIType = "name"
-	PIITypeAddress      PIIType = "address"
-	PIITypeDateOfBirth  PIIType = "date_of_birth"
-	PIITypeIPAddress    PIIType = "ip_address"
-	PIITypePassport     PIIType = "passport"
+	PIITypeEmail         PIIType = "email"
+	PIITypePhone         PIIType = "phone"
+	PIITypeSSN           PIIType = "ssn"
+	PIITypeCreditCard    PIIType = "credit_card"
+	PIITypeName          PIIType = "name"
+	PIITypeAddress       PIIType = "address"
+	PIITypeDateOfBirth   PIIType = "date_of_birth"
+	PIITypeIPAddress     PIIType = "ip_address"
+	PIITypePassport      PIIType = "passport"
 	PIITypeDriverLicense PIIType = "driver_license"
-	PIITypeBankAccount  PIIType = "bank_account"
-	PIITypeAPIKey       PIIType = "api_key"
-	PIITypePassword     PIIType = "password"
+	PIITypeBankAccount   PIIType = "bank_account"
+	PIITypeAPIKey        PIIType = "api_key"
+	PIITypePassword      PIIType = "password"
 )
 
 // PIIDetection represents detected PII
@@ -345,10 +345,10 @@ type MCPSecurityConfig struct {
 type PermissionLevel string
 
 const (
-	PermissionDeny      PermissionLevel = "deny"
-	PermissionReadOnly  PermissionLevel = "read_only"
+	PermissionDeny       PermissionLevel = "deny"
+	PermissionReadOnly   PermissionLevel = "read_only"
 	PermissionRestricted PermissionLevel = "restricted"
-	PermissionFull      PermissionLevel = "full"
+	PermissionFull       PermissionLevel = "full"
 )
 
 // SandboxConfig configures sandboxing for tool execution
@@ -369,10 +369,10 @@ type SandboxConfig struct {
 type NetworkPolicy string
 
 const (
-	NetworkPolicyNone     NetworkPolicy = "none"
-	NetworkPolicyLocal    NetworkPolicy = "local"
+	NetworkPolicyNone       NetworkPolicy = "none"
+	NetworkPolicyLocal      NetworkPolicy = "local"
 	NetworkPolicyRestricted NetworkPolicy = "restricted"
-	NetworkPolicyFull     NetworkPolicy = "full"
+	NetworkPolicyFull       NetworkPolicy = "full"
 )
 
 // FilesystemPolicy defines filesystem access rules
@@ -453,17 +453,17 @@ type AuditFilter struct {
 
 // AuditStats contains audit statistics
 type AuditStats struct {
-	TotalEvents      int64                         `json:"total_events"`
-	EventsByType     map[AuditEventType]int64      `json:"events_by_type"`
-	EventsByRisk     map[Severity]int64            `json:"events_by_risk"`
-	TopUsers         []UserAuditStat               `json:"top_users"`
-	TrendingThreats  []string                      `json:"trending_threats"`
+	TotalEvents     int64                    `json:"total_events"`
+	EventsByType    map[AuditEventType]int64 `json:"events_by_type"`
+	EventsByRisk    map[Severity]int64       `json:"events_by_risk"`
+	TopUsers        []UserAuditStat          `json:"top_users"`
+	TrendingThreats []string                 `json:"trending_threats"`
 }
 
 // UserAuditStat contains audit stats for a user
 type UserAuditStat struct {
-	UserID   string `json:"user_id"`
-	Events   int64  `json:"events"`
-	Blocks   int64  `json:"blocks"`
+	UserID    string  `json:"user_id"`
+	Events    int64   `json:"events"`
+	Blocks    int64   `json:"blocks"`
 	RiskScore float64 `json:"risk_score"`
 }

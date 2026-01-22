@@ -13,13 +13,13 @@ import (
 // It coordinates the registry, matcher, and tracker to provide
 // comprehensive skill management.
 type Service struct {
-	registry  *Registry
-	matcher   *Matcher
-	tracker   *Tracker
-	config    *SkillConfig
-	log       *logrus.Logger
-	mu        sync.RWMutex
-	running   bool
+	registry *Registry
+	matcher  *Matcher
+	tracker  *Tracker
+	config   *SkillConfig
+	log      *logrus.Logger
+	mu       sync.RWMutex
+	running  bool
 }
 
 // NewService creates a new skill service.
@@ -255,11 +255,11 @@ func (s *Service) HealthCheck(ctx context.Context) error {
 
 // SkillExecutionContext holds context for skill execution.
 type SkillExecutionContext struct {
-	RequestID     string
-	Skill         *Skill
-	Match         *SkillMatch
-	StartTime     time.Time
-	Service       *Service
+	RequestID string
+	Skill     *Skill
+	Match     *SkillMatch
+	StartTime time.Time
+	Service   *Service
 }
 
 // ExecuteWithTracking executes a function with skill tracking.

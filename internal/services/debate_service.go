@@ -24,10 +24,10 @@ type DebateService struct {
 	logger           *logrus.Logger
 	providerRegistry *ProviderRegistry
 	cogneeService    *CogneeService
-	logRepository    DebateLogRepository // Optional: for persistent logging
-	teamConfig       *DebateTeamConfig   // Team configuration with Claude/Qwen roles
-	commLogger       *DebateCommLogger   // Retrofit-like communication logger
-	mu               sync.Mutex          // Protects intentCache
+	logRepository    DebateLogRepository                    // Optional: for persistent logging
+	teamConfig       *DebateTeamConfig                      // Team configuration with Claude/Qwen roles
+	commLogger       *DebateCommLogger                      // Retrofit-like communication logger
+	mu               sync.Mutex                             // Protects intentCache
 	intentCache      map[string]*IntentClassificationResult // Cache for intent classification
 }
 
@@ -631,10 +631,10 @@ func (ds *DebateService) getParticipantResponse(
 		LLMName:         participant.LLMModel,
 		Timestamp:       startTime,
 		Metadata: map[string]any{
-			"tokens_used":    llmResponse.TokensUsed,
-			"finish_reason":  llmResponse.FinishReason,
-			"provider_id":    llmResponse.ProviderID,
-			"response_time":  llmResponse.ResponseTime,
+			"tokens_used":   llmResponse.TokensUsed,
+			"finish_reason": llmResponse.FinishReason,
+			"provider_id":   llmResponse.ProviderID,
+			"response_time": llmResponse.ResponseTime,
 		},
 	}
 
@@ -1687,12 +1687,12 @@ const (
 
 // SingleProviderDebateResult holds results specific to single-provider debate
 type SingleProviderDebateResult struct {
-	Mode                DebateMode             `json:"mode"`
-	ProviderUsed        string                 `json:"provider_used"`
-	ModelsUsed          []string               `json:"models_used"`
-	InstanceCount       int                    `json:"instance_count"`
-	DiversityStrategy   string                 `json:"diversity_strategy"`
-	EffectiveDiversity  float64                `json:"effective_diversity"`
+	Mode               DebateMode `json:"mode"`
+	ProviderUsed       string     `json:"provider_used"`
+	ModelsUsed         []string   `json:"models_used"`
+	InstanceCount      int        `json:"instance_count"`
+	DiversityStrategy  string     `json:"diversity_strategy"`
+	EffectiveDiversity float64    `json:"effective_diversity"`
 }
 
 // IsSingleProviderMode detects if the debate should run in single-provider mode
@@ -1875,10 +1875,10 @@ func (ds *DebateService) ConductSingleProviderDebate(
 	sessionID := fmt.Sprintf("single-provider-%s-%s", config.DebateID, uuid.New().String()[:8])
 
 	ds.logger.WithFields(logrus.Fields{
-		"debate_id":     config.DebateID,
-		"provider":      spc.ProviderName,
-		"models":        spc.AvailableModels,
-		"participants":  spc.NumParticipants,
+		"debate_id":       config.DebateID,
+		"provider":        spc.ProviderName,
+		"models":          spc.AvailableModels,
+		"participants":    spc.NumParticipants,
 		"model_diversity": spc.UseModelDiversity,
 	}).Info("Starting single-provider multi-instance debate")
 
@@ -2252,8 +2252,8 @@ func (ds *DebateService) AutoConductDebate(
 
 	if isSingle && spc != nil {
 		ds.logger.WithFields(logrus.Fields{
-			"provider":    spc.ProviderName,
-			"num_models":  len(spc.AvailableModels),
+			"provider":     spc.ProviderName,
+			"num_models":   len(spc.AvailableModels),
 			"participants": spc.NumParticipants,
 		}).Info("Detected single-provider mode, using multi-instance debate")
 

@@ -22,12 +22,12 @@ const (
 
 // ProtocolSkillAdapter adapts skills for use with various protocols.
 type ProtocolSkillAdapter struct {
-	service      *Service
-	mcpTools     map[string]*MCPSkillTool
-	acpActions   map[string]*ACPSkillAction
-	lspCommands  map[string]*LSPSkillCommand
-	mu           sync.RWMutex
-	log          *logrus.Logger
+	service     *Service
+	mcpTools    map[string]*MCPSkillTool
+	acpActions  map[string]*ACPSkillAction
+	lspCommands map[string]*LSPSkillCommand
+	mu          sync.RWMutex
+	log         *logrus.Logger
 }
 
 // MCPSkillTool wraps a skill as an MCP tool.
@@ -48,19 +48,19 @@ type ACPSkillAction struct {
 
 // LSPSkillCommand wraps a skill as an LSP command.
 type LSPSkillCommand struct {
-	Command     string   `json:"command"`
-	Title       string   `json:"title"`
-	Arguments   []string `json:"arguments,omitempty"`
-	Skill       *Skill   `json:"-"`
+	Command   string   `json:"command"`
+	Title     string   `json:"title"`
+	Arguments []string `json:"arguments,omitempty"`
+	Skill     *Skill   `json:"-"`
 }
 
 // SkillToolCall represents a skill invocation via a protocol.
 type SkillToolCall struct {
-	Protocol   ProtocolType           `json:"protocol"`
-	SkillName  string                 `json:"skill_name"`
-	Arguments  map[string]interface{} `json:"arguments"`
-	RequestID  string                 `json:"request_id"`
-	InvokedAt  time.Time              `json:"invoked_at"`
+	Protocol  ProtocolType           `json:"protocol"`
+	SkillName string                 `json:"skill_name"`
+	Arguments map[string]interface{} `json:"arguments"`
+	RequestID string                 `json:"request_id"`
+	InvokedAt time.Time              `json:"invoked_at"`
 }
 
 // SkillToolResult represents the result of a skill invocation.
@@ -77,11 +77,11 @@ type SkillToolResult struct {
 // NewProtocolSkillAdapter creates a new protocol adapter.
 func NewProtocolSkillAdapter(service *Service) *ProtocolSkillAdapter {
 	return &ProtocolSkillAdapter{
-		service:    service,
-		mcpTools:   make(map[string]*MCPSkillTool),
-		acpActions: make(map[string]*ACPSkillAction),
+		service:     service,
+		mcpTools:    make(map[string]*MCPSkillTool),
+		acpActions:  make(map[string]*ACPSkillAction),
 		lspCommands: make(map[string]*LSPSkillCommand),
-		log:        logrus.New(),
+		log:         logrus.New(),
 	}
 }
 
@@ -305,11 +305,11 @@ func (a *ProtocolSkillAdapter) executeSkillLogic(ctx context.Context, skill *Ski
 
 	response := fmt.Sprintf(
 		"[Skill: %s]\n"+
-		"Category: %s\n"+
-		"Query: %s\n\n"+
-		"Instructions:\n%s\n\n"+
-		"This skill was invoked via protocol. "+
-		"Full implementation would execute the skill's workflow.",
+			"Category: %s\n"+
+			"Query: %s\n\n"+
+			"Instructions:\n%s\n\n"+
+			"This skill was invoked via protocol. "+
+			"Full implementation would execute the skill's workflow.",
 		skill.Name,
 		skill.Category,
 		query,

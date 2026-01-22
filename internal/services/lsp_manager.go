@@ -13,8 +13,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/database"
+	"github.com/sirupsen/logrus"
 )
 
 // LSPManager handles LSP (Language Server Protocol) operations
@@ -105,12 +105,12 @@ type LSPConnection struct {
 
 // LSPServerCapabilities represents the capabilities of an LSP server
 type LSPServerCapabilities struct {
-	CompletionProvider     bool `json:"completionProvider"`
-	HoverProvider          bool `json:"hoverProvider"`
-	DefinitionProvider     bool `json:"definitionProvider"`
-	ReferencesProvider     bool `json:"referencesProvider"`
-	DiagnosticProvider     bool `json:"diagnosticProvider"`
-	CodeActionProvider     bool `json:"codeActionProvider"`
+	CompletionProvider         bool `json:"completionProvider"`
+	HoverProvider              bool `json:"hoverProvider"`
+	DefinitionProvider         bool `json:"definitionProvider"`
+	ReferencesProvider         bool `json:"referencesProvider"`
+	DiagnosticProvider         bool `json:"diagnosticProvider"`
+	CodeActionProvider         bool `json:"codeActionProvider"`
 	DocumentFormattingProvider bool `json:"documentFormattingProvider"`
 }
 
@@ -193,11 +193,11 @@ type LSPJSONRPCNotification struct {
 
 // LSP initialize params
 type LSPInitializeParams struct {
-	ProcessID             int                      `json:"processId"`
-	RootURI               string                   `json:"rootUri"`
-	Capabilities          LSPClientCapabilities    `json:"capabilities"`
-	InitializationOptions map[string]interface{}   `json:"initializationOptions,omitempty"`
-	WorkspaceFolders      []LSPWorkspaceFolder     `json:"workspaceFolders,omitempty"`
+	ProcessID             int                    `json:"processId"`
+	RootURI               string                 `json:"rootUri"`
+	Capabilities          LSPClientCapabilities  `json:"capabilities"`
+	InitializationOptions map[string]interface{} `json:"initializationOptions,omitempty"`
+	WorkspaceFolders      []LSPWorkspaceFolder   `json:"workspaceFolders,omitempty"`
 }
 
 // LSPClientCapabilities represents client capabilities
@@ -208,24 +208,24 @@ type LSPClientCapabilities struct {
 
 // LSPTextDocumentClientCapabilities represents text document capabilities
 type LSPTextDocumentClientCapabilities struct {
-	Completion    *LSPCompletionClientCapabilities    `json:"completion,omitempty"`
-	Hover         *LSPHoverClientCapabilities         `json:"hover,omitempty"`
-	Definition    *LSPDefinitionClientCapabilities    `json:"definition,omitempty"`
-	References    *LSPReferencesClientCapabilities    `json:"references,omitempty"`
-	CodeAction    *LSPCodeActionClientCapabilities    `json:"codeAction,omitempty"`
-	Diagnostics   *LSPDiagnosticsClientCapabilities   `json:"diagnostics,omitempty"`
+	Completion  *LSPCompletionClientCapabilities  `json:"completion,omitempty"`
+	Hover       *LSPHoverClientCapabilities       `json:"hover,omitempty"`
+	Definition  *LSPDefinitionClientCapabilities  `json:"definition,omitempty"`
+	References  *LSPReferencesClientCapabilities  `json:"references,omitempty"`
+	CodeAction  *LSPCodeActionClientCapabilities  `json:"codeAction,omitempty"`
+	Diagnostics *LSPDiagnosticsClientCapabilities `json:"diagnostics,omitempty"`
 }
 
 // LSPCompletionClientCapabilities represents completion capabilities
 type LSPCompletionClientCapabilities struct {
-	DynamicRegistration bool `json:"dynamicRegistration,omitempty"`
+	DynamicRegistration bool                           `json:"dynamicRegistration,omitempty"`
 	CompletionItem      *LSPCompletionItemCapabilities `json:"completionItem,omitempty"`
 }
 
 // LSPCompletionItemCapabilities represents completion item capabilities
 type LSPCompletionItemCapabilities struct {
-	SnippetSupport          bool `json:"snippetSupport,omitempty"`
-	CommitCharactersSupport bool `json:"commitCharactersSupport,omitempty"`
+	SnippetSupport          bool     `json:"snippetSupport,omitempty"`
+	CommitCharactersSupport bool     `json:"commitCharactersSupport,omitempty"`
 	DocumentationFormat     []string `json:"documentationFormat,omitempty"`
 }
 
@@ -258,9 +258,9 @@ type LSPDiagnosticsClientCapabilities struct {
 
 // LSPWorkspaceClientCapabilities represents workspace capabilities
 type LSPWorkspaceClientCapabilities struct {
-	ApplyEdit              bool `json:"applyEdit,omitempty"`
-	WorkspaceFolders       bool `json:"workspaceFolders,omitempty"`
-	Configuration          bool `json:"configuration,omitempty"`
+	ApplyEdit        bool `json:"applyEdit,omitempty"`
+	WorkspaceFolders bool `json:"workspaceFolders,omitempty"`
+	Configuration    bool `json:"configuration,omitempty"`
 }
 
 // LSPWorkspaceFolder represents a workspace folder
@@ -277,14 +277,14 @@ type LSPInitializeResult struct {
 
 // LSPServerCapabilitiesResult represents server capabilities from initialize
 type LSPServerCapabilitiesResult struct {
-	CompletionProvider          interface{} `json:"completionProvider,omitempty"`
-	HoverProvider               interface{} `json:"hoverProvider,omitempty"`
-	DefinitionProvider          interface{} `json:"definitionProvider,omitempty"`
-	ReferencesProvider          interface{} `json:"referencesProvider,omitempty"`
-	DiagnosticProvider          interface{} `json:"diagnosticProvider,omitempty"`
-	CodeActionProvider          interface{} `json:"codeActionProvider,omitempty"`
-	DocumentFormattingProvider  interface{} `json:"documentFormattingProvider,omitempty"`
-	TextDocumentSync            interface{} `json:"textDocumentSync,omitempty"`
+	CompletionProvider         interface{} `json:"completionProvider,omitempty"`
+	HoverProvider              interface{} `json:"hoverProvider,omitempty"`
+	DefinitionProvider         interface{} `json:"definitionProvider,omitempty"`
+	ReferencesProvider         interface{} `json:"referencesProvider,omitempty"`
+	DiagnosticProvider         interface{} `json:"diagnosticProvider,omitempty"`
+	CodeActionProvider         interface{} `json:"codeActionProvider,omitempty"`
+	DocumentFormattingProvider interface{} `json:"documentFormattingProvider,omitempty"`
+	TextDocumentSync           interface{} `json:"textDocumentSync,omitempty"`
 }
 
 // LSPServerInfo represents server info from initialize

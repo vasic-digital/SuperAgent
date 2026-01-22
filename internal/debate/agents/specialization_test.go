@@ -325,8 +325,8 @@ func TestGetDomainCapabilities(t *testing.T) {
 
 func TestGetDomainRoleAffinities(t *testing.T) {
 	testCases := []struct {
-		domain   Domain
-		topRole  topology.AgentRole
+		domain  Domain
+		topRole topology.AgentRole
 	}{
 		{DomainCode, topology.RoleProposer},
 		{DomainSecurity, topology.RoleCritic},

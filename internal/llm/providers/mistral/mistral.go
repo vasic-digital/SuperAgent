@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/models"
+	"github.com/sirupsen/logrus"
 )
 
 var log = logrus.New()
@@ -58,8 +58,8 @@ type MistralMessage struct {
 
 // MistralTool represents a tool definition for Mistral API
 type MistralTool struct {
-	Type     string           `json:"type"`
-	Function MistralToolFunc  `json:"function"`
+	Type     string          `json:"type"`
+	Function MistralToolFunc `json:"function"`
 }
 
 // MistralToolFunc represents a function definition
@@ -104,10 +104,10 @@ type MistralUsage struct {
 }
 
 type MistralStreamResponse struct {
-	ID      string               `json:"id"`
-	Object  string               `json:"object"`
-	Created int64                `json:"created"`
-	Model   string               `json:"model"`
+	ID      string                `json:"id"`
+	Object  string                `json:"object"`
+	Created int64                 `json:"created"`
+	Model   string                `json:"model"`
 	Choices []MistralStreamChoice `json:"choices"`
 }
 
@@ -118,11 +118,11 @@ type MistralStreamChoice struct {
 }
 
 type MistralErrorResponse struct {
-	Object  string       `json:"object,omitempty"`
-	Message string       `json:"message,omitempty"`
-	Type    string       `json:"type,omitempty"`
-	Param   *string      `json:"param,omitempty"`
-	Code    *string      `json:"code,omitempty"`
+	Object  string  `json:"object,omitempty"`
+	Message string  `json:"message,omitempty"`
+	Type    string  `json:"type,omitempty"`
+	Param   *string `json:"param,omitempty"`
+	Code    *string `json:"code,omitempty"`
 }
 
 // DefaultRetryConfig returns sensible defaults for Mistral API retry behavior
@@ -257,11 +257,11 @@ func (p *MistralProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 
 	duration := time.Since(startTime)
 	log.WithFields(logrus.Fields{
-		"provider":     "mistral",
-		"request_id":   requestID,
-		"duration":     duration.String(),
-		"tokens_used":  mistralResp.Usage.TotalTokens,
-		"content_len":  len(mistralResp.Choices[0].Message.Content),
+		"provider":      "mistral",
+		"request_id":    requestID,
+		"duration":      duration.String(),
+		"tokens_used":   mistralResp.Usage.TotalTokens,
+		"content_len":   len(mistralResp.Choices[0].Message.Content),
 		"finish_reason": mistralResp.Choices[0].FinishReason,
 	}).Info("Mistral API call completed successfully")
 

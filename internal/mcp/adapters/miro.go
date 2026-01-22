@@ -706,7 +706,7 @@ func (a *MiroAdapter) createConnector(ctx context.Context, args map[string]inter
 			"id": endItemID,
 		},
 		"style": map[string]interface{}{
-			"strokeStyle": style,
+			"strokeStyle":    style,
 			"startStrokeCap": startCap,
 			"endStrokeCap":   endCap,
 		},
@@ -925,13 +925,13 @@ type MiroBoardsResponse struct {
 
 // MiroBoard represents a Miro board.
 type MiroBoard struct {
-	ID          string     `json:"id"`
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	CreatedAt   string     `json:"createdAt"`
-	ModifiedAt  string     `json:"modifiedAt"`
-	ViewLink    string     `json:"viewLink"`
-	Owner       *MiroUser  `json:"owner"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CreatedAt   string    `json:"createdAt"`
+	ModifiedAt  string    `json:"modifiedAt"`
+	ViewLink    string    `json:"viewLink"`
+	Owner       *MiroUser `json:"owner"`
 }
 
 // MiroUser represents a Miro user.

@@ -16,15 +16,15 @@ import (
 
 // SecurityConfig holds security configuration
 type SecurityConfig struct {
-	MaxPromptLength       int
-	MaxResponseLength     int
-	BlockedPatterns       []string
-	SensitivePatterns     []string
-	RateLimitRequests     int
-	RateLimitWindow       time.Duration
-	AuditEnabled          bool
-	ContentFilterEnabled  bool
-	PIIDetectionEnabled   bool
+	MaxPromptLength      int
+	MaxResponseLength    int
+	BlockedPatterns      []string
+	SensitivePatterns    []string
+	RateLimitRequests    int
+	RateLimitWindow      time.Duration
+	AuditEnabled         bool
+	ContentFilterEnabled bool
+	PIIDetectionEnabled  bool
 }
 
 // DefaultSecurityConfig returns default security configuration
@@ -45,7 +45,7 @@ func DefaultSecurityConfig() *SecurityConfig {
 // SecurityViolation represents a detected security issue
 type SecurityViolation struct {
 	ID          string    `json:"id"`
-	Type        string    `json:"type"` // validation, content, pii, rate_limit
+	Type        string    `json:"type"`     // validation, content, pii, rate_limit
 	Severity    string    `json:"severity"` // low, medium, high, critical
 	Description string    `json:"description"`
 	DebateID    string    `json:"debate_id,omitempty"`
@@ -66,22 +66,22 @@ type AuditEntry struct {
 
 // RateLimitEntry tracks rate limiting
 type RateLimitEntry struct {
-	Key       string
-	Count     int
+	Key         string
+	Count       int
 	WindowStart time.Time
 }
 
 // DebateSecurityService provides security capabilities
 type DebateSecurityService struct {
-	logger          *logrus.Logger
-	config          *SecurityConfig
-	violations      []SecurityViolation
-	violationsMu    sync.RWMutex
-	auditLog        []AuditEntry
-	auditMu         sync.RWMutex
-	rateLimiter     map[string]*RateLimitEntry
-	rateLimiterMu   sync.RWMutex
-	blockedPatterns []*regexp.Regexp
+	logger            *logrus.Logger
+	config            *SecurityConfig
+	violations        []SecurityViolation
+	violationsMu      sync.RWMutex
+	auditLog          []AuditEntry
+	auditMu           sync.RWMutex
+	rateLimiter       map[string]*RateLimitEntry
+	rateLimiterMu     sync.RWMutex
+	blockedPatterns   []*regexp.Regexp
 	sensitivePatterns []*regexp.Regexp
 }
 
@@ -460,11 +460,11 @@ func (dss *DebateSecurityService) GetStats() map[string]interface{} {
 	dss.violationsMu.RUnlock()
 
 	return map[string]interface{}{
-		"total_violations":    violationCount,
-		"audit_entries":       auditCount,
+		"total_violations":       violationCount,
+		"audit_entries":          auditCount,
 		"violations_by_severity": severityCounts,
-		"audit_enabled":       dss.config.AuditEnabled,
-		"content_filter":      dss.config.ContentFilterEnabled,
-		"pii_detection":       dss.config.PIIDetectionEnabled,
+		"audit_enabled":          dss.config.AuditEnabled,
+		"content_filter":         dss.config.ContentFilterEnabled,
+		"pii_detection":          dss.config.PIIDetectionEnabled,
 	}
 }

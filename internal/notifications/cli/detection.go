@@ -73,12 +73,12 @@ func detectFromUserAgent(userAgent string) CLIClient {
 
 // CLIClientInfo holds information about a CLI client
 type CLIClientInfo struct {
-	Client         CLIClient
-	Version        string
-	SupportsColor  bool
+	Client          CLIClient
+	Version         string
+	SupportsColor   bool
 	SupportsUnicode bool
-	TerminalWidth  int
-	TerminalHeight int
+	TerminalWidth   int
+	TerminalHeight  int
 }
 
 // DetectCLIClientInfo detects detailed client information

@@ -291,10 +291,10 @@ func TestRepository_GetSuccessfulStrategies(t *testing.T) {
 	// Add a strategy manually for testing
 	repo.mu.Lock()
 	repo.strategies["test-strategy"] = &Strategy{
-		ID:          "test-strategy",
-		Name:        "Test Strategy",
-		Domain:      agents.DomainCode,
-		SuccessRate: 0.9,
+		ID:           "test-strategy",
+		Name:         "Test Strategy",
+		Domain:       agents.DomainCode,
+		SuccessRate:  0.9,
 		Applications: 10,
 	}
 	repo.mu.Unlock()

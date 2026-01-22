@@ -14,11 +14,11 @@ import (
 // StandardTestRunner runs LLM test suites
 // Integrates with HelixAgent's AI debate system for evaluation
 type StandardTestRunner struct {
-	generator  LLMGenerator
-	evaluator  LLMEvaluator
-	metrics    map[MetricType]Metric
-	config     *TestConfig
-	logger     *logrus.Logger
+	generator LLMGenerator
+	evaluator LLMEvaluator
+	metrics   map[MetricType]Metric
+	config    *TestConfig
+	logger    *logrus.Logger
 }
 
 // LLMGenerator generates responses from an LLM
@@ -138,12 +138,12 @@ func (r *StandardTestRunner) Run(ctx context.Context, suite *TestSuite) (*TestRe
 	report.Duration = time.Since(startTime)
 
 	r.logger.WithFields(logrus.Fields{
-		"suite":    suite.Name,
-		"total":    report.TotalTests,
-		"passed":   report.PassedTests,
-		"failed":   report.FailedTests,
+		"suite":     suite.Name,
+		"total":     report.TotalTests,
+		"passed":    report.PassedTests,
+		"failed":    report.FailedTests,
 		"avg_score": report.AverageScore,
-		"duration": report.Duration,
+		"duration":  report.Duration,
 	}).Info("Test suite completed")
 
 	return report, nil

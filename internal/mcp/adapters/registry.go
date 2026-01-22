@@ -69,10 +69,10 @@ type AdapterMetadata struct {
 	Name        string          `json:"name"`
 	Category    AdapterCategory `json:"category"`
 	Description string          `json:"description"`
-	AuthType    string          `json:"authType"`    // "api_key", "oauth2", "none", "token"
+	AuthType    string          `json:"authType"` // "api_key", "oauth2", "none", "token"
 	DocsURL     string          `json:"docsUrl"`
-	Official    bool            `json:"official"`    // Official MCP server
-	Supported   bool            `json:"supported"`   // Fully supported by HelixAgent
+	Official    bool            `json:"official"`  // Official MCP server
+	Supported   bool            `json:"supported"` // Fully supported by HelixAgent
 }
 
 // AdapterRegistry manages MCP adapters.

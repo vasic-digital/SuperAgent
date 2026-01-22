@@ -268,31 +268,31 @@ func (p *Partition) Len() int {
 
 // StreamBroker is an in-memory event stream broker implementation.
 type StreamBroker struct {
-	topics     map[string]*Topic
-	metrics    *messaging.BrokerMetrics
-	connected  bool
-	mu         sync.RWMutex
-	stopCh     chan struct{}
-	config     *StreamConfig
-	offsets    map[string]map[int32]int64 // groupID -> partition -> offset
-	offsetsMu  sync.RWMutex
+	topics    map[string]*Topic
+	metrics   *messaging.BrokerMetrics
+	connected bool
+	mu        sync.RWMutex
+	stopCh    chan struct{}
+	config    *StreamConfig
+	offsets   map[string]map[int32]int64 // groupID -> partition -> offset
+	offsetsMu sync.RWMutex
 }
 
 // StreamConfig holds configuration for the stream broker.
 type StreamConfig struct {
-	DefaultPartitions  int
-	DefaultRetention   time.Duration
-	MaxMessageSize     int
-	EnableCompression  bool
+	DefaultPartitions int
+	DefaultRetention  time.Duration
+	MaxMessageSize    int
+	EnableCompression bool
 }
 
 // DefaultStreamConfig returns the default configuration.
 func DefaultStreamConfig() *StreamConfig {
 	return &StreamConfig{
-		DefaultPartitions:  3,
-		DefaultRetention:   7 * 24 * time.Hour,
-		MaxMessageSize:     1024 * 1024,
-		EnableCompression:  false,
+		DefaultPartitions: 3,
+		DefaultRetention:  7 * 24 * time.Hour,
+		MaxMessageSize:    1024 * 1024,
+		EnableCompression: false,
 	}
 }
 
@@ -302,11 +302,11 @@ func NewStreamBroker(config *StreamConfig) *StreamBroker {
 		config = DefaultStreamConfig()
 	}
 	return &StreamBroker{
-		topics:    make(map[string]*Topic),
-		metrics:   messaging.NewBrokerMetrics(),
-		config:    config,
-		stopCh:    make(chan struct{}),
-		offsets:   make(map[string]map[int32]int64),
+		topics:  make(map[string]*Topic),
+		metrics: messaging.NewBrokerMetrics(),
+		config:  config,
+		stopCh:  make(chan struct{}),
+		offsets: make(map[string]map[int32]int64),
 	}
 }
 

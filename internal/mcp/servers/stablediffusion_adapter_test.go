@@ -628,7 +628,7 @@ func TestStableDiffusionAdapter_GetOptions(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"sd_model_checkpoint":       "v1-5-pruned.safetensors",
+			"sd_model_checkpoint":      "v1-5-pruned.safetensors",
 			"CLIP_stop_at_last_layers": 1,
 		})
 	}))

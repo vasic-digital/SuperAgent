@@ -85,13 +85,13 @@ func NewProviderCache(cache *TieredCache, config *ProviderCacheConfig) *Provider
 func (c *ProviderCache) CacheKey(req *models.LLMRequest, provider string) string {
 	// Build deterministic key components
 	keyData := struct {
-		Prompt      string             `json:"prompt"`
-		Messages    []models.Message   `json:"messages"`
-		Model       string             `json:"model"`
-		Temperature float64            `json:"temperature"`
-		MaxTokens   int                `json:"max_tokens"`
-		TopP        float64            `json:"top_p"`
-		Provider    string             `json:"provider"`
+		Prompt      string           `json:"prompt"`
+		Messages    []models.Message `json:"messages"`
+		Model       string           `json:"model"`
+		Temperature float64          `json:"temperature"`
+		MaxTokens   int              `json:"max_tokens"`
+		TopP        float64          `json:"top_p"`
+		Provider    string           `json:"provider"`
 	}{
 		Prompt:      req.Prompt,
 		Messages:    req.Messages,

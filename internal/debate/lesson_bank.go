@@ -73,40 +73,40 @@ const (
 
 // Lesson represents a reusable piece of knowledge from debates.
 type Lesson struct {
-	ID            string            `json:"id"`
-	Title         string            `json:"title"`
-	Description   string            `json:"description"`
-	Category      LessonCategory    `json:"category"`
-	Tier          LessonTier        `json:"tier"`
-	Tags          []string          `json:"tags"`
-	Context       LessonContext     `json:"context"`
-	Content       LessonContent     `json:"content"`
-	Provenance    LessonProvenance  `json:"provenance"`
-	Statistics    LessonStatistics  `json:"statistics"`
-	Embedding     []float64         `json:"embedding,omitempty"`
-	CreatedAt     time.Time         `json:"created_at"`
-	UpdatedAt     time.Time         `json:"updated_at"`
-	ExpiresAt     *time.Time        `json:"expires_at,omitempty"`
+	ID          string           `json:"id"`
+	Title       string           `json:"title"`
+	Description string           `json:"description"`
+	Category    LessonCategory   `json:"category"`
+	Tier        LessonTier       `json:"tier"`
+	Tags        []string         `json:"tags"`
+	Context     LessonContext    `json:"context"`
+	Content     LessonContent    `json:"content"`
+	Provenance  LessonProvenance `json:"provenance"`
+	Statistics  LessonStatistics `json:"statistics"`
+	Embedding   []float64        `json:"embedding,omitempty"`
+	CreatedAt   time.Time        `json:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at"`
+	ExpiresAt   *time.Time       `json:"expires_at,omitempty"`
 }
 
 // LessonContext describes when a lesson is applicable.
 type LessonContext struct {
-	Languages      []string `json:"languages,omitempty"`      // Applicable programming languages
-	Frameworks     []string `json:"frameworks,omitempty"`     // Applicable frameworks
-	ProblemDomains []string `json:"problem_domains,omitempty"` // Problem domains
-	Preconditions  []string `json:"preconditions,omitempty"`  // Required preconditions
+	Languages         []string `json:"languages,omitempty"`         // Applicable programming languages
+	Frameworks        []string `json:"frameworks,omitempty"`        // Applicable frameworks
+	ProblemDomains    []string `json:"problem_domains,omitempty"`   // Problem domains
+	Preconditions     []string `json:"preconditions,omitempty"`     // Required preconditions
 	Contraindications []string `json:"contraindications,omitempty"` // When NOT to apply
 }
 
 // LessonContent contains the actual lesson knowledge.
 type LessonContent struct {
-	Problem      string             `json:"problem"`      // The problem being addressed
-	Solution     string             `json:"solution"`     // The solution approach
-	Rationale    string             `json:"rationale"`    // Why this solution works
-	CodeExamples []CodeExample      `json:"code_examples,omitempty"`
-	TradeOffs    []TradeOff         `json:"trade_offs,omitempty"`
-	References   []string           `json:"references,omitempty"`
-	RelatedLessons []string         `json:"related_lessons,omitempty"`
+	Problem        string        `json:"problem"`   // The problem being addressed
+	Solution       string        `json:"solution"`  // The solution approach
+	Rationale      string        `json:"rationale"` // Why this solution works
+	CodeExamples   []CodeExample `json:"code_examples,omitempty"`
+	TradeOffs      []TradeOff    `json:"trade_offs,omitempty"`
+	References     []string      `json:"references,omitempty"`
+	RelatedLessons []string      `json:"related_lessons,omitempty"`
 }
 
 // CodeExample represents a code example within a lesson.
@@ -120,31 +120,31 @@ type CodeExample struct {
 
 // TradeOff represents a trade-off consideration.
 type TradeOff struct {
-	Aspect  string `json:"aspect"`  // What aspect is being traded off
-	Pros    []string `json:"pros"`  // Advantages
-	Cons    []string `json:"cons"`  // Disadvantages
+	Aspect string   `json:"aspect"` // What aspect is being traded off
+	Pros   []string `json:"pros"`   // Advantages
+	Cons   []string `json:"cons"`   // Disadvantages
 }
 
 // LessonProvenance tracks the origin of a lesson.
 type LessonProvenance struct {
-	SourceDebateID   string    `json:"source_debate_id"`
-	SourceType       string    `json:"source_type"`       // "debate", "manual", "import"
-	Contributors     []string  `json:"contributors"`      // LLMs/humans that contributed
-	ConsensusLevel   float64   `json:"consensus_level"`   // How much agreement there was
-	ExtractedAt      time.Time `json:"extracted_at"`
-	VerifiedBy       []string  `json:"verified_by,omitempty"`
+	SourceDebateID string    `json:"source_debate_id"`
+	SourceType     string    `json:"source_type"`     // "debate", "manual", "import"
+	Contributors   []string  `json:"contributors"`    // LLMs/humans that contributed
+	ConsensusLevel float64   `json:"consensus_level"` // How much agreement there was
+	ExtractedAt    time.Time `json:"extracted_at"`
+	VerifiedBy     []string  `json:"verified_by,omitempty"`
 }
 
 // LessonStatistics tracks lesson usage statistics.
 type LessonStatistics struct {
-	ViewCount       int       `json:"view_count"`
-	ApplyCount      int       `json:"apply_count"`       // Times applied
-	SuccessCount    int       `json:"success_count"`     // Successful applications
-	FailureCount    int       `json:"failure_count"`     // Failed applications
-	FeedbackScore   float64   `json:"feedback_score"`    // Average user feedback
-	FeedbackCount   int       `json:"feedback_count"`
-	LastApplied     *time.Time `json:"last_applied,omitempty"`
-	LastViewed      *time.Time `json:"last_viewed,omitempty"`
+	ViewCount     int        `json:"view_count"`
+	ApplyCount    int        `json:"apply_count"`    // Times applied
+	SuccessCount  int        `json:"success_count"`  // Successful applications
+	FailureCount  int        `json:"failure_count"`  // Failed applications
+	FeedbackScore float64    `json:"feedback_score"` // Average user feedback
+	FeedbackCount int        `json:"feedback_count"`
+	LastApplied   *time.Time `json:"last_applied,omitempty"`
+	LastViewed    *time.Time `json:"last_viewed,omitempty"`
 }
 
 // SuccessRate calculates the success rate of the lesson.
@@ -158,13 +158,13 @@ func (s *LessonStatistics) SuccessRate() float64 {
 
 // LessonBank manages the storage and retrieval of lessons.
 type LessonBank struct {
-	config           LessonBankConfig
-	lessons          map[string]*Lesson
+	config            LessonBankConfig
+	lessons           map[string]*Lesson
 	lessonsByCategory map[LessonCategory][]*Lesson
-	lessonsByTag     map[string][]*Lesson
-	embedder         LessonEmbedder
-	storage          LessonStorage
-	mu               sync.RWMutex
+	lessonsByTag      map[string][]*Lesson
+	embedder          LessonEmbedder
+	storage           LessonStorage
+	mu                sync.RWMutex
 }
 
 // LessonEmbedder generates embeddings for lessons.
@@ -360,10 +360,10 @@ type SearchOptions struct {
 
 // LessonSearchResult represents a search result.
 type LessonSearchResult struct {
-	Lesson      *Lesson `json:"lesson"`
-	Score       float64 `json:"score"`
-	MatchType   string  `json:"match_type"` // "semantic", "keyword", "tag"
-	Highlights  []string `json:"highlights,omitempty"`
+	Lesson     *Lesson  `json:"lesson"`
+	Score      float64  `json:"score"`
+	MatchType  string   `json:"match_type"` // "semantic", "keyword", "tag"
+	Highlights []string `json:"highlights,omitempty"`
 }
 
 // ApplyLesson records a lesson application.
@@ -395,31 +395,31 @@ func (lb *LessonBank) ApplyLesson(ctx context.Context, lessonID string, context 
 
 // LessonApplication represents an application of a lesson.
 type LessonApplication struct {
-	ID         string             `json:"id"`
-	LessonID   string             `json:"lesson_id"`
-	Context    string             `json:"context"`
-	AppliedAt  time.Time          `json:"applied_at"`
-	Status     ApplicationStatus  `json:"status"`
-	Outcome    *ApplicationOutcome `json:"outcome,omitempty"`
+	ID        string              `json:"id"`
+	LessonID  string              `json:"lesson_id"`
+	Context   string              `json:"context"`
+	AppliedAt time.Time           `json:"applied_at"`
+	Status    ApplicationStatus   `json:"status"`
+	Outcome   *ApplicationOutcome `json:"outcome,omitempty"`
 }
 
 // ApplicationStatus represents the status of a lesson application.
 type ApplicationStatus string
 
 const (
-	ApplicationStatusPending   ApplicationStatus = "pending"
-	ApplicationStatusSuccess   ApplicationStatus = "success"
-	ApplicationStatusFailure   ApplicationStatus = "failure"
-	ApplicationStatusPartial   ApplicationStatus = "partial"
+	ApplicationStatusPending ApplicationStatus = "pending"
+	ApplicationStatusSuccess ApplicationStatus = "success"
+	ApplicationStatusFailure ApplicationStatus = "failure"
+	ApplicationStatusPartial ApplicationStatus = "partial"
 )
 
 // ApplicationOutcome represents the outcome of applying a lesson.
 type ApplicationOutcome struct {
-	Success     bool      `json:"success"`
-	Feedback    string    `json:"feedback"`
-	Score       float64   `json:"score"`
-	Improvements []string `json:"improvements,omitempty"`
-	CompletedAt time.Time `json:"completed_at"`
+	Success      bool      `json:"success"`
+	Feedback     string    `json:"feedback"`
+	Score        float64   `json:"score"`
+	Improvements []string  `json:"improvements,omitempty"`
+	CompletedAt  time.Time `json:"completed_at"`
 }
 
 // RecordOutcome records the outcome of a lesson application.
@@ -504,21 +504,21 @@ func (lb *LessonBank) ExtractLessonsFromDebate(ctx context.Context, debate *Deba
 
 // DebateResult represents the result of an AI debate (imported type).
 type DebateResult struct {
-	ID         string          `json:"id"`
-	Topic      string          `json:"topic"`
-	Rounds     []DebateRound   `json:"rounds"`
-	Consensus  *DebateConsensus `json:"consensus,omitempty"`
-	Participants []string      `json:"participants"`
-	StartedAt  time.Time       `json:"started_at"`
-	EndedAt    time.Time       `json:"ended_at"`
+	ID           string           `json:"id"`
+	Topic        string           `json:"topic"`
+	Rounds       []DebateRound    `json:"rounds"`
+	Consensus    *DebateConsensus `json:"consensus,omitempty"`
+	Participants []string         `json:"participants"`
+	StartedAt    time.Time        `json:"started_at"`
+	EndedAt      time.Time        `json:"ended_at"`
 }
 
 // DebateRound represents a round in a debate.
 type DebateRound struct {
-	Number      int               `json:"number"`
-	Responses   []DebateResponse  `json:"responses"`
-	Summary     string            `json:"summary,omitempty"`
-	KeyInsights []string          `json:"key_insights,omitempty"`
+	Number      int              `json:"number"`
+	Responses   []DebateResponse `json:"responses"`
+	Summary     string           `json:"summary,omitempty"`
+	KeyInsights []string         `json:"key_insights,omitempty"`
 }
 
 // DebateResponse represents a response in a debate round.
@@ -531,10 +531,10 @@ type DebateResponse struct {
 
 // DebateConsensus represents the consensus from a debate.
 type DebateConsensus struct {
-	Summary     string    `json:"summary"`
-	Confidence  float64   `json:"confidence"`
-	KeyPoints   []string  `json:"key_points"`
-	Dissents    []string  `json:"dissents,omitempty"`
+	Summary    string   `json:"summary"`
+	Confidence float64  `json:"confidence"`
+	KeyPoints  []string `json:"key_points"`
+	Dissents   []string `json:"dissents,omitempty"`
 }
 
 // GetLessonsByCategory returns lessons in a category.
@@ -615,10 +615,10 @@ func (lb *LessonBank) GetStatistics() *LessonBankStatistics {
 	defer lb.mu.RUnlock()
 
 	stats := &LessonBankStatistics{
-		TotalLessons:     len(lb.lessons),
-		LessonsByCategory: make(map[LessonCategory]int),
-		LessonsByTier:    make(map[LessonTier]int),
-		TotalApplications: 0,
+		TotalLessons:           len(lb.lessons),
+		LessonsByCategory:      make(map[LessonCategory]int),
+		LessonsByTier:          make(map[LessonTier]int),
+		TotalApplications:      0,
 		SuccessfulApplications: 0,
 	}
 
@@ -638,12 +638,12 @@ func (lb *LessonBank) GetStatistics() *LessonBankStatistics {
 
 // LessonBankStatistics represents statistics about the lesson bank.
 type LessonBankStatistics struct {
-	TotalLessons           int                       `json:"total_lessons"`
-	LessonsByCategory      map[LessonCategory]int    `json:"lessons_by_category"`
-	LessonsByTier          map[LessonTier]int        `json:"lessons_by_tier"`
-	TotalApplications      int                       `json:"total_applications"`
-	SuccessfulApplications int                       `json:"successful_applications"`
-	OverallSuccessRate     float64                   `json:"overall_success_rate"`
+	TotalLessons           int                    `json:"total_lessons"`
+	LessonsByCategory      map[LessonCategory]int `json:"lessons_by_category"`
+	LessonsByTier          map[LessonTier]int     `json:"lessons_by_tier"`
+	TotalApplications      int                    `json:"total_applications"`
+	SuccessfulApplications int                    `json:"successful_applications"`
+	OverallSuccessRate     float64                `json:"overall_success_rate"`
 }
 
 // Helper methods

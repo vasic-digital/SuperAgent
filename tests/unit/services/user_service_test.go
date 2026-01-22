@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"dev.helix.agent/internal/services"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestNewUserService tests the UserService constructor

@@ -16,10 +16,10 @@ type EventType string
 // Standard event types
 const (
 	// Provider events
-	EventProviderRegistered     EventType = "provider.registered"
-	EventProviderUnregistered   EventType = "provider.unregistered"
-	EventProviderHealthChanged  EventType = "provider.health.changed"
-	EventProviderScoreUpdated   EventType = "provider.score.updated"
+	EventProviderRegistered    EventType = "provider.registered"
+	EventProviderUnregistered  EventType = "provider.unregistered"
+	EventProviderHealthChanged EventType = "provider.health.changed"
+	EventProviderScoreUpdated  EventType = "provider.score.updated"
 
 	// MCP events
 	EventMCPServerConnected     EventType = "mcp.server.connected"
@@ -29,28 +29,28 @@ const (
 	EventMCPToolFailed          EventType = "mcp.tool.failed"
 
 	// Debate events
-	EventDebateStarted          EventType = "debate.started"
-	EventDebateRoundStarted     EventType = "debate.round.started"
-	EventDebateRoundCompleted   EventType = "debate.round.completed"
-	EventDebateCompleted        EventType = "debate.completed"
-	EventDebateFailed           EventType = "debate.failed"
+	EventDebateStarted        EventType = "debate.started"
+	EventDebateRoundStarted   EventType = "debate.round.started"
+	EventDebateRoundCompleted EventType = "debate.round.completed"
+	EventDebateCompleted      EventType = "debate.completed"
+	EventDebateFailed         EventType = "debate.failed"
 
 	// Cache events
-	EventCacheHit               EventType = "cache.hit"
-	EventCacheMiss              EventType = "cache.miss"
-	EventCacheInvalidated       EventType = "cache.invalidated"
-	EventCacheExpired           EventType = "cache.expired"
+	EventCacheHit         EventType = "cache.hit"
+	EventCacheMiss        EventType = "cache.miss"
+	EventCacheInvalidated EventType = "cache.invalidated"
+	EventCacheExpired     EventType = "cache.expired"
 
 	// System events
-	EventSystemStartup          EventType = "system.startup"
-	EventSystemShutdown         EventType = "system.shutdown"
-	EventSystemHealthCheck      EventType = "system.health.check"
-	EventSystemError            EventType = "system.error"
+	EventSystemStartup     EventType = "system.startup"
+	EventSystemShutdown    EventType = "system.shutdown"
+	EventSystemHealthCheck EventType = "system.health.check"
+	EventSystemError       EventType = "system.error"
 
 	// Request events
-	EventRequestReceived        EventType = "request.received"
-	EventRequestCompleted       EventType = "request.completed"
-	EventRequestFailed          EventType = "request.failed"
+	EventRequestReceived  EventType = "request.received"
+	EventRequestCompleted EventType = "request.completed"
+	EventRequestFailed    EventType = "request.failed"
 )
 
 // Event represents a system event
@@ -94,12 +94,12 @@ func (e *Event) WithMetadata(key, value string) *Event {
 
 // Subscriber represents an event subscriber
 type Subscriber struct {
-	ID       string
-	Channel  chan *Event
-	Filter   func(*Event) bool
-	Types    []EventType
-	Closed   bool
-	mu       sync.RWMutex
+	ID      string
+	Channel chan *Event
+	Filter  func(*Event) bool
+	Types   []EventType
+	Closed  bool
+	mu      sync.RWMutex
 }
 
 // Close closes the subscriber channel
@@ -154,11 +154,11 @@ func DefaultBusConfig() *BusConfig {
 
 // BusMetrics tracks event bus statistics
 type BusMetrics struct {
-	EventsPublished    int64
-	EventsDelivered    int64
-	EventsDropped      int64
-	SubscribersActive  int64
-	SubscribersTotal   int64
+	EventsPublished   int64
+	EventsDelivered   int64
+	EventsDropped     int64
+	SubscribersActive int64
+	SubscribersTotal  int64
 }
 
 // EventBus provides pub/sub for system events

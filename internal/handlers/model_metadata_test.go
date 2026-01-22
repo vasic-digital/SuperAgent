@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"testing"
 
+	"dev.helix.agent/internal/database"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"dev.helix.agent/internal/database"
 )
 
 type MockMetadataService struct{}

@@ -18,23 +18,23 @@ import (
 type SpecificationType string
 
 const (
-	SpecTypeJML         SpecificationType = "jml"
-	SpecTypeDafny       SpecificationType = "dafny"
-	SpecTypeLTL         SpecificationType = "ltl"
-	SpecTypeInvariant   SpecificationType = "invariant"
+	SpecTypeJML           SpecificationType = "jml"
+	SpecTypeDafny         SpecificationType = "dafny"
+	SpecTypeLTL           SpecificationType = "ltl"
+	SpecTypeInvariant     SpecificationType = "invariant"
 	SpecTypePrecondition  SpecificationType = "precondition"
 	SpecTypePostcondition SpecificationType = "postcondition"
 )
 
 // VerificationResult represents the result of a verification
 type VerificationResult struct {
-	Verified      bool                   `json:"verified"`
-	Specification *Specification         `json:"specification"`
-	Errors        []VerificationError    `json:"errors,omitempty"`
-	Counterexample *Counterexample       `json:"counterexample,omitempty"`
-	Duration      time.Duration          `json:"duration"`
-	Prover        string                 `json:"prover"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	Verified       bool                   `json:"verified"`
+	Specification  *Specification         `json:"specification"`
+	Errors         []VerificationError    `json:"errors,omitempty"`
+	Counterexample *Counterexample        `json:"counterexample,omitempty"`
+	Duration       time.Duration          `json:"duration"`
+	Prover         string                 `json:"prover"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // MarshalJSON implements custom JSON marshaling
@@ -66,15 +66,15 @@ type Counterexample struct {
 
 // Specification represents a formal specification
 type Specification struct {
-	ID            string            `json:"id"`
-	Type          SpecificationType `json:"type"`
-	Target        string            `json:"target"`
-	Preconditions []string          `json:"preconditions,omitempty"`
-	Postconditions []string         `json:"postconditions,omitempty"`
-	Invariants    []string          `json:"invariants,omitempty"`
-	Assertions    []string          `json:"assertions,omitempty"`
-	RawSpec       string            `json:"raw_spec,omitempty"`
-	CreatedAt     time.Time         `json:"created_at"`
+	ID             string            `json:"id"`
+	Type           SpecificationType `json:"type"`
+	Target         string            `json:"target"`
+	Preconditions  []string          `json:"preconditions,omitempty"`
+	Postconditions []string          `json:"postconditions,omitempty"`
+	Invariants     []string          `json:"invariants,omitempty"`
+	Assertions     []string          `json:"assertions,omitempty"`
+	RawSpec        string            `json:"raw_spec,omitempty"`
+	CreatedAt      time.Time         `json:"created_at"`
 }
 
 // FormalVerifierConfig holds configuration for formal verification
@@ -126,12 +126,12 @@ type TheoremProver interface {
 
 // FormalVerifier implements formal verification
 type FormalVerifier struct {
-	config       FormalVerifierConfig
-	specGen      SpecGenerator
-	provers      map[string]TheoremProver
-	specs        map[string]*Specification
-	mu           sync.RWMutex
-	logger       *logrus.Logger
+	config  FormalVerifierConfig
+	specGen SpecGenerator
+	provers map[string]TheoremProver
+	specs   map[string]*Specification
+	mu      sync.RWMutex
+	logger  *logrus.Logger
 }
 
 // NewFormalVerifier creates a new formal verifier
@@ -553,18 +553,18 @@ func NewVeriPlan(logger *logrus.Logger) *VeriPlan {
 
 // LTLFormula represents an LTL formula
 type LTLFormula struct {
-	Formula    string `json:"formula"`
-	Type       string `json:"type"` // safety, liveness, fairness
-	Natural    string `json:"natural"`
+	Formula string `json:"formula"`
+	Type    string `json:"type"` // safety, liveness, fairness
+	Natural string `json:"natural"`
 }
 
 // PlanVerificationResult represents plan verification result
 type PlanVerificationResult struct {
-	Valid           bool          `json:"valid"`
-	Formulas        []*LTLFormula `json:"formulas"`
-	Violations      []string      `json:"violations,omitempty"`
-	StateSpaceSize  int           `json:"state_space_size"`
-	Duration        time.Duration `json:"duration"`
+	Valid          bool          `json:"valid"`
+	Formulas       []*LTLFormula `json:"formulas"`
+	Violations     []string      `json:"violations,omitempty"`
+	StateSpaceSize int           `json:"state_space_size"`
+	Duration       time.Duration `json:"duration"`
 }
 
 // VerifyPlan verifies a plan against LTL safety properties

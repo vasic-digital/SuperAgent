@@ -1351,11 +1351,11 @@ func TestCogneeMemory_GraphNodesComplexStructure(t *testing.T) {
 		GraphNodes: map[string]interface{}{
 			"entities": []string{"entity1", "entity2"},
 			"relations": map[string]interface{}{
-				"type": "association",
+				"type":   "association",
 				"weight": 0.85,
 			},
 			"metadata": map[string]interface{}{
-				"source": "test",
+				"source":    "test",
 				"timestamp": time.Now().Unix(),
 			},
 		},

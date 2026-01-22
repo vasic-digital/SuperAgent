@@ -15,15 +15,15 @@ import (
 
 // Broker implements the messaging.MessageBroker interface for Kafka
 type Broker struct {
-	config        *Config
-	logger        *zap.Logger
-	writers       map[string]*kafka.Writer
-	readers       map[string]*kafkaSubscription
-	mu            sync.RWMutex
-	metrics       *messaging.BrokerMetrics
-	closed        atomic.Bool
-	connected     atomic.Bool
-	subCounter    atomic.Int64
+	config     *Config
+	logger     *zap.Logger
+	writers    map[string]*kafka.Writer
+	readers    map[string]*kafkaSubscription
+	mu         sync.RWMutex
+	metrics    *messaging.BrokerMetrics
+	closed     atomic.Bool
+	connected  atomic.Bool
+	subCounter atomic.Int64
 }
 
 // kafkaSubscription holds subscription state
@@ -111,7 +111,7 @@ func (b *Broker) Connect(ctx context.Context) error {
 
 	b.connected.Store(true)
 	b.metrics.RecordConnectionSuccess()
-	
+
 	b.logger.Info("Connected to Kafka",
 		zap.Strings("brokers", b.config.Brokers))
 
@@ -210,7 +210,7 @@ func (b *Broker) getOrCreateWriter(topic string) *kafka.Writer {
 // Publish publishes a message to a topic
 func (b *Broker) Publish(ctx context.Context, topic string, message *messaging.Message, opts ...messaging.PublishOption) error {
 	startTime := time.Now()
-	
+
 	if !b.connected.Load() {
 		b.metrics.RecordPublish(0, time.Since(startTime), false)
 		return fmt.Errorf("not connected to Kafka")
@@ -274,7 +274,7 @@ func (b *Broker) Publish(ctx context.Context, topic string, message *messaging.M
 // PublishBatch publishes multiple messages
 func (b *Broker) PublishBatch(ctx context.Context, topic string, messages []*messaging.Message, opts ...messaging.PublishOption) error {
 	startTime := time.Now()
-	
+
 	if !b.connected.Load() {
 		return fmt.Errorf("not connected to Kafka")
 	}

@@ -44,8 +44,8 @@ func (m *mockEmbedder) EmbedQuery(ctx context.Context, query string) ([]float32,
 }
 
 type mockExtractor struct {
-	extractFunc             func(ctx context.Context, messages []Message, userID string) ([]*Memory, error)
-	extractEntitiesFunc     func(ctx context.Context, text string) ([]*Entity, error)
+	extractFunc              func(ctx context.Context, messages []Message, userID string) ([]*Memory, error)
+	extractEntitiesFunc      func(ctx context.Context, text string) ([]*Entity, error)
 	extractRelationshipsFunc func(ctx context.Context, text string, entities []*Entity) ([]*Relationship, error)
 }
 
@@ -205,12 +205,12 @@ func TestMessageStruct(t *testing.T) {
 func TestSearchOptions(t *testing.T) {
 	now := time.Now()
 	opts := &SearchOptions{
-		UserID:    "user1",
-		SessionID: "session1",
-		Type:      MemoryTypeSemantic,
-		Category:  "test",
-		TopK:      5,
-		MinScore:  0.7,
+		UserID:       "user1",
+		SessionID:    "session1",
+		Type:         MemoryTypeSemantic,
+		Category:     "test",
+		TopK:         5,
+		MinScore:     0.7,
 		IncludeGraph: true,
 		TimeRange: &TimeRange{
 			Start: now.Add(-time.Hour),

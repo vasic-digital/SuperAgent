@@ -7,32 +7,32 @@ import (
 
 // Provider represents an LLM provider.
 type Provider struct {
-	ID           string         `json:"id"`
-	Name         string         `json:"name"`
-	Type         string         `json:"type"` // api_key, oauth, free
-	Status       string         `json:"status"` // active, inactive, degraded
-	Score        float64        `json:"score"`
-	Models       []Model        `json:"models"`
-	HealthStatus *HealthStatus  `json:"health_status"`
-	Capabilities *Capabilities  `json:"capabilities"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	Type         string        `json:"type"`   // api_key, oauth, free
+	Status       string        `json:"status"` // active, inactive, degraded
+	Score        float64       `json:"score"`
+	Models       []Model       `json:"models"`
+	HealthStatus *HealthStatus `json:"health_status"`
+	Capabilities *Capabilities `json:"capabilities"`
+	CreatedAt    time.Time     `json:"created_at"`
+	UpdatedAt    time.Time     `json:"updated_at"`
 }
 
 // Model represents an LLM model.
 type Model struct {
-	ID              string     `json:"id"`
-	Name            string     `json:"name"`
-	ProviderID      string     `json:"provider_id"`
-	Version         string     `json:"version"`
-	ContextWindow   int        `json:"context_window"`
-	MaxTokens       int        `json:"max_tokens"`
-	SupportsTools   bool       `json:"supports_tools"`
-	SupportsVision  bool       `json:"supports_vision"`
-	SupportsStreaming bool     `json:"supports_streaming"`
-	Score           float64    `json:"score"`
-	Rank            int        `json:"rank"`
-	CreatedAt       time.Time  `json:"created_at"`
+	ID                string    `json:"id"`
+	Name              string    `json:"name"`
+	ProviderID        string    `json:"provider_id"`
+	Version           string    `json:"version"`
+	ContextWindow     int       `json:"context_window"`
+	MaxTokens         int       `json:"max_tokens"`
+	SupportsTools     bool      `json:"supports_tools"`
+	SupportsVision    bool      `json:"supports_vision"`
+	SupportsStreaming bool      `json:"supports_streaming"`
+	Score             float64   `json:"score"`
+	Rank              int       `json:"rank"`
+	CreatedAt         time.Time `json:"created_at"`
 }
 
 // HealthStatus represents the health status of a provider.
@@ -114,12 +114,12 @@ type Task struct {
 
 // VerificationResults represents the verification results.
 type VerificationResults struct {
-	TotalProviders   int       `json:"total_providers"`
-	VerifiedProviders int      `json:"verified_providers"`
-	TotalModels      int       `json:"total_models"`
-	VerifiedModels   int       `json:"verified_models"`
-	OverallScore     float64   `json:"overall_score"`
-	LastVerified     time.Time `json:"last_verified"`
+	TotalProviders    int       `json:"total_providers"`
+	VerifiedProviders int       `json:"verified_providers"`
+	TotalModels       int       `json:"total_models"`
+	VerifiedModels    int       `json:"verified_models"`
+	OverallScore      float64   `json:"overall_score"`
+	LastVerified      time.Time `json:"last_verified"`
 }
 
 // ProviderScore represents a provider's score breakdown.
@@ -159,10 +159,10 @@ type PageInfo struct {
 
 // ProviderFilter represents filter options for providers.
 type ProviderFilter struct {
-	Status    *string  `json:"status,omitempty"`
-	Type      *string  `json:"type,omitempty"`
-	MinScore  *float64 `json:"min_score,omitempty"`
-	MaxScore  *float64 `json:"max_score,omitempty"`
+	Status   *string  `json:"status,omitempty"`
+	Type     *string  `json:"type,omitempty"`
+	MinScore *float64 `json:"min_score,omitempty"`
+	MaxScore *float64 `json:"max_score,omitempty"`
 }
 
 // DebateFilter represents filter options for debates.
@@ -226,9 +226,9 @@ type ProviderHealthUpdate struct {
 
 // TokenStreamEvent represents a token streaming event.
 type TokenStreamEvent struct {
-	RequestID   string    `json:"request_id"`
-	Token       string    `json:"token"`
-	IsComplete  bool      `json:"is_complete"`
-	TokenCount  int       `json:"token_count"`
-	Timestamp   time.Time `json:"timestamp"`
+	RequestID  string    `json:"request_id"`
+	Token      string    `json:"token"`
+	IsComplete bool      `json:"is_complete"`
+	TokenCount int       `json:"token_count"`
+	Timestamp  time.Time `json:"timestamp"`
 }

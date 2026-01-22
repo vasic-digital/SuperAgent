@@ -21,29 +21,29 @@ type Config struct {
 	TLSSkipVerify bool        `json:"tls_skip_verify" yaml:"tls_skip_verify"`
 
 	// Connection pool settings
-	MaxConnections     int           `json:"max_connections" yaml:"max_connections"`
-	MaxChannels        int           `json:"max_channels" yaml:"max_channels"`
-	ConnectionTimeout  time.Duration `json:"connection_timeout" yaml:"connection_timeout"`
-	HeartbeatInterval  time.Duration `json:"heartbeat_interval" yaml:"heartbeat_interval"`
-	ReconnectDelay     time.Duration `json:"reconnect_delay" yaml:"reconnect_delay"`
-	MaxReconnectDelay  time.Duration `json:"max_reconnect_delay" yaml:"max_reconnect_delay"`
-	ReconnectBackoff   float64       `json:"reconnect_backoff" yaml:"reconnect_backoff"`
-	MaxReconnectCount  int           `json:"max_reconnect_count" yaml:"max_reconnect_count"`
+	MaxConnections    int           `json:"max_connections" yaml:"max_connections"`
+	MaxChannels       int           `json:"max_channels" yaml:"max_channels"`
+	ConnectionTimeout time.Duration `json:"connection_timeout" yaml:"connection_timeout"`
+	HeartbeatInterval time.Duration `json:"heartbeat_interval" yaml:"heartbeat_interval"`
+	ReconnectDelay    time.Duration `json:"reconnect_delay" yaml:"reconnect_delay"`
+	MaxReconnectDelay time.Duration `json:"max_reconnect_delay" yaml:"max_reconnect_delay"`
+	ReconnectBackoff  float64       `json:"reconnect_backoff" yaml:"reconnect_backoff"`
+	MaxReconnectCount int           `json:"max_reconnect_count" yaml:"max_reconnect_count"`
 
 	// Publisher settings
-	PublishConfirm     bool          `json:"publish_confirm" yaml:"publish_confirm"`
-	PublishTimeout     time.Duration `json:"publish_timeout" yaml:"publish_timeout"`
-	MandatoryPublish   bool          `json:"mandatory_publish" yaml:"mandatory_publish"`
-	ImmediatePublish   bool          `json:"immediate_publish" yaml:"immediate_publish"`
+	PublishConfirm   bool          `json:"publish_confirm" yaml:"publish_confirm"`
+	PublishTimeout   time.Duration `json:"publish_timeout" yaml:"publish_timeout"`
+	MandatoryPublish bool          `json:"mandatory_publish" yaml:"mandatory_publish"`
+	ImmediatePublish bool          `json:"immediate_publish" yaml:"immediate_publish"`
 
 	// Consumer settings
-	PrefetchCount      int           `json:"prefetch_count" yaml:"prefetch_count"`
-	PrefetchSize       int           `json:"prefetch_size" yaml:"prefetch_size"`
-	ConsumerTag        string        `json:"consumer_tag" yaml:"consumer_tag"`
-	AutoAck            bool          `json:"auto_ack" yaml:"auto_ack"`
-	Exclusive          bool          `json:"exclusive" yaml:"exclusive"`
-	NoLocal            bool          `json:"no_local" yaml:"no_local"`
-	NoWait             bool          `json:"no_wait" yaml:"no_wait"`
+	PrefetchCount int    `json:"prefetch_count" yaml:"prefetch_count"`
+	PrefetchSize  int    `json:"prefetch_size" yaml:"prefetch_size"`
+	ConsumerTag   string `json:"consumer_tag" yaml:"consumer_tag"`
+	AutoAck       bool   `json:"auto_ack" yaml:"auto_ack"`
+	Exclusive     bool   `json:"exclusive" yaml:"exclusive"`
+	NoLocal       bool   `json:"no_local" yaml:"no_local"`
+	NoWait        bool   `json:"no_wait" yaml:"no_wait"`
 
 	// Queue defaults
 	DefaultQueueDurable    bool `json:"default_queue_durable" yaml:"default_queue_durable"`
@@ -55,11 +55,11 @@ type Config struct {
 	DefaultExchangeDurable bool   `json:"default_exchange_durable" yaml:"default_exchange_durable"`
 
 	// Dead letter queue
-	EnableDLQ       bool   `json:"enable_dlq" yaml:"enable_dlq"`
-	DLQExchange     string `json:"dlq_exchange" yaml:"dlq_exchange"`
-	DLQRoutingKey   string `json:"dlq_routing_key" yaml:"dlq_routing_key"`
-	DLQMessageTTL   int    `json:"dlq_message_ttl" yaml:"dlq_message_ttl"`
-	DLQMaxLength    int    `json:"dlq_max_length" yaml:"dlq_max_length"`
+	EnableDLQ     bool   `json:"enable_dlq" yaml:"enable_dlq"`
+	DLQExchange   string `json:"dlq_exchange" yaml:"dlq_exchange"`
+	DLQRoutingKey string `json:"dlq_routing_key" yaml:"dlq_routing_key"`
+	DLQMessageTTL int    `json:"dlq_message_ttl" yaml:"dlq_message_ttl"`
+	DLQMaxLength  int    `json:"dlq_max_length" yaml:"dlq_max_length"`
 
 	// Metrics and tracing
 	EnableMetrics bool   `json:"enable_metrics" yaml:"enable_metrics"`
@@ -69,32 +69,32 @@ type Config struct {
 // DefaultConfig returns a Config with sensible defaults
 func DefaultConfig() *Config {
 	return &Config{
-		Host:               "localhost",
-		Port:               5672,
-		Username:           "guest",
-		Password:           "guest",
-		VHost:              "/",
-		TLSEnabled:         false,
-		TLSSkipVerify:      false,
-		MaxConnections:     10,
-		MaxChannels:        100,
-		ConnectionTimeout:  30 * time.Second,
-		HeartbeatInterval:  10 * time.Second,
-		ReconnectDelay:     1 * time.Second,
-		MaxReconnectDelay:  60 * time.Second,
-		ReconnectBackoff:   2.0,
-		MaxReconnectCount:  0, // 0 = unlimited
-		PublishConfirm:     true,
-		PublishTimeout:     30 * time.Second,
-		MandatoryPublish:   false,
-		ImmediatePublish:   false,
-		PrefetchCount:      10,
-		PrefetchSize:       0,
-		ConsumerTag:        "",
-		AutoAck:            false,
-		Exclusive:          false,
-		NoLocal:            false,
-		NoWait:             false,
+		Host:                   "localhost",
+		Port:                   5672,
+		Username:               "guest",
+		Password:               "guest",
+		VHost:                  "/",
+		TLSEnabled:             false,
+		TLSSkipVerify:          false,
+		MaxConnections:         10,
+		MaxChannels:            100,
+		ConnectionTimeout:      30 * time.Second,
+		HeartbeatInterval:      10 * time.Second,
+		ReconnectDelay:         1 * time.Second,
+		MaxReconnectDelay:      60 * time.Second,
+		ReconnectBackoff:       2.0,
+		MaxReconnectCount:      0, // 0 = unlimited
+		PublishConfirm:         true,
+		PublishTimeout:         30 * time.Second,
+		MandatoryPublish:       false,
+		ImmediatePublish:       false,
+		PrefetchCount:          10,
+		PrefetchSize:           0,
+		ConsumerTag:            "",
+		AutoAck:                false,
+		Exclusive:              false,
+		NoLocal:                false,
+		NoWait:                 false,
 		DefaultQueueDurable:    true,
 		DefaultQueueAutoDelete: false,
 		DefaultQueueExclusive:  false,

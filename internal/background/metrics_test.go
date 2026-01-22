@@ -53,12 +53,12 @@ func TestWorkerPoolMetrics_RecordResourceSnapshot(t *testing.T) {
 	// Record snapshot - should not panic
 	metrics.RecordResourceSnapshot(
 		"task-123",
-		25.5,   // cpuPercent
-		1024,   // memoryBytes
-		100,    // ioReadBytes
-		50,     // ioWriteBytes
-		200,    // netBytesSent
-		300,    // netBytesRecv
+		25.5, // cpuPercent
+		1024, // memoryBytes
+		100,  // ioReadBytes
+		50,   // ioWriteBytes
+		200,  // netBytesSent
+		300,  // netBytesRecv
 	)
 
 	// Verify we can set values (Prometheus will track them)

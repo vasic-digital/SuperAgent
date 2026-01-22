@@ -93,9 +93,9 @@ func TestFiveRingDefense_Defend(t *testing.T) {
 	ctx := context.Background()
 
 	testCases := []struct {
-		name        string
-		input       string
-		expectPass  bool
+		name       string
+		input      string
+		expectPass bool
 	}{
 		{
 			name:       "Valid Input",
@@ -668,7 +668,7 @@ func TestFiveRingDefense_DefendWithError(t *testing.T) {
 
 	ctx := context.Background()
 	result, err := defense.Defend(ctx, "test input")
-	require.NoError(t, err) // Should not return error, just log warning
+	require.NoError(t, err)       // Should not return error, just log warning
 	assert.True(t, result.Passed) // Should still pass since error is logged but not blocking
 }
 

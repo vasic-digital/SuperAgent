@@ -248,12 +248,12 @@ func (w *MCPToolWrapper) Source() string {
 
 // UnifiedSearchOptions configures unified tool search
 type UnifiedSearchOptions struct {
-	Query       string   `json:"query"`
-	Sources     []string `json:"sources,omitempty"`     // "mcp", "lsp", "custom", "schema"
-	Categories  []string `json:"categories,omitempty"`
-	MaxResults  int      `json:"max_results,omitempty"`
-	MinScore    float64  `json:"min_score,omitempty"`
-	FuzzyMatch  bool     `json:"fuzzy_match,omitempty"`
+	Query      string   `json:"query"`
+	Sources    []string `json:"sources,omitempty"` // "mcp", "lsp", "custom", "schema"
+	Categories []string `json:"categories,omitempty"`
+	MaxResults int      `json:"max_results,omitempty"`
+	MinScore   float64  `json:"min_score,omitempty"`
+	FuzzyMatch bool     `json:"fuzzy_match,omitempty"`
 }
 
 // UnifiedSearchResult represents a unified search result
@@ -469,9 +469,9 @@ func (tr *ToolRegistry) GetToolStats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"total_tools":   len(tr.tools),
-		"by_source":     sourceCounts,
-		"last_refresh":  tr.lastRefresh,
-		"custom_count":  len(tr.customTools),
+		"total_tools":  len(tr.tools),
+		"by_source":    sourceCounts,
+		"last_refresh": tr.lastRefresh,
+		"custom_count": len(tr.customTools),
 	}
 }

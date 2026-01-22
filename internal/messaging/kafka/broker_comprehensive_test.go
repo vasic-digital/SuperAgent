@@ -119,10 +119,10 @@ func TestNewBroker_NilLogger_UsesNop(t *testing.T) {
 
 func TestNewBroker_CustomConfig(t *testing.T) {
 	cfg := &Config{
-		Brokers:          []string{"custom:9092"},
-		ClientID:         "custom-client",
-		BatchSize:        100,
-		DefaultPartitions: 5,
+		Brokers:            []string{"custom:9092"},
+		ClientID:           "custom-client",
+		BatchSize:          100,
+		DefaultPartitions:  5,
 		DefaultReplication: 3,
 	}
 	broker := NewBroker(cfg, nil)
@@ -205,7 +205,7 @@ func TestTopicConfig_Defaults(t *testing.T) {
 func TestTopicConfig_WithRetention_CustomValues(t *testing.T) {
 	cfg := DefaultTopicConfig("test")
 	cfg.WithRetention(86400000, 536870912)
-	assert.Equal(t, int64(86400000), cfg.RetentionMs)   // 1 day
+	assert.Equal(t, int64(86400000), cfg.RetentionMs)     // 1 day
 	assert.Equal(t, int64(536870912), cfg.RetentionBytes) // 512MB
 }
 

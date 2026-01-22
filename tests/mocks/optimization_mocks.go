@@ -232,8 +232,8 @@ func (m *MockSGLangServer) handler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		resp := map[string]interface{}{
-			"text":         "Generated response from SGLang",
-			"meta_info":    map[string]interface{}{"tokens_used": 150},
+			"text":          "Generated response from SGLang",
+			"meta_info":     map[string]interface{}{"tokens_used": 150},
 			"finish_reason": "stop",
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -280,12 +280,12 @@ func (m *MockSGLangServer) Reset() {
 
 // MockGuidanceServer creates a mock Guidance HTTP server for testing.
 type MockGuidanceServer struct {
-	Server       *httptest.Server
-	ExecuteCount int
-	HealthCount  int
-	ShouldFail   bool
+	Server        *httptest.Server
+	ExecuteCount  int
+	HealthCount   int
+	ShouldFail    bool
 	ResponseDelay time.Duration
-	mu           sync.Mutex
+	mu            sync.Mutex
 }
 
 // NewMockGuidanceServer creates and starts a new mock Guidance server.
@@ -357,12 +357,12 @@ func (m *MockGuidanceServer) Reset() {
 
 // MockLMQLServer creates a mock LMQL HTTP server for testing.
 type MockLMQLServer struct {
-	Server       *httptest.Server
-	QueryCount   int
-	HealthCount  int
-	ShouldFail   bool
+	Server        *httptest.Server
+	QueryCount    int
+	HealthCount   int
+	ShouldFail    bool
 	ResponseDelay time.Duration
-	mu           sync.Mutex
+	mu            sync.Mutex
 }
 
 // NewMockLMQLServer creates and starts a new mock LMQL server.
@@ -435,14 +435,14 @@ func (m *MockLMQLServer) Reset() {
 
 // MockSemanticCacheServer creates a mock semantic cache HTTP server for testing.
 type MockSemanticCacheServer struct {
-	Server      *httptest.Server
-	GetCount    int
-	SetCount    int
-	HealthCount int
-	CacheData   map[string]interface{}
-	ShouldFail  bool
+	Server        *httptest.Server
+	GetCount      int
+	SetCount      int
+	HealthCount   int
+	CacheData     map[string]interface{}
+	ShouldFail    bool
 	ResponseDelay time.Duration
-	mu          sync.Mutex
+	mu            sync.Mutex
 }
 
 // NewMockSemanticCacheServer creates and starts a new mock semantic cache server.

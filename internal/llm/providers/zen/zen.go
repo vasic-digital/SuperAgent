@@ -28,16 +28,16 @@ const (
 
 	// Default free models - available WITHOUT API key
 	// NOTE: Zen API requires model names WITHOUT "opencode/" prefix
-	ModelBigPickle     = "big-pickle"
-	ModelGrokCodeFast  = "grok-code"
-	ModelGLM47Free     = "glm-4.7-free"
-	ModelGPT5Nano      = "gpt-5-nano"
+	ModelBigPickle    = "big-pickle"
+	ModelGrokCodeFast = "grok-code"
+	ModelGLM47Free    = "glm-4.7-free"
+	ModelGPT5Nano     = "gpt-5-nano"
 
 	// Legacy model IDs with prefix (for backward compatibility in configs)
-	ModelBigPickleFull     = "opencode/big-pickle"
-	ModelGrokCodeFastFull  = "opencode/grok-code"
-	ModelGLM47FreeFull     = "opencode/glm-4.7-free"
-	ModelGPT5NanoFull      = "opencode/gpt-5-nano"
+	ModelBigPickleFull    = "opencode/big-pickle"
+	ModelGrokCodeFastFull = "opencode/grok-code"
+	ModelGLM47FreeFull    = "opencode/glm-4.7-free"
+	ModelGPT5NanoFull     = "opencode/gpt-5-nano"
 
 	// Default model for Zen provider
 	DefaultZenModel = ModelGrokCodeFast
@@ -69,13 +69,13 @@ func IsAnonymousAccessAllowed(model string) bool {
 // ZenProvider implements the LLM provider interface for OpenCode Zen
 // Supports both authenticated (API key) and anonymous (free models only) access
 type ZenProvider struct {
-	apiKey       string
-	baseURL      string
-	model        string
-	httpClient   *http.Client
-	retryConfig  RetryConfig
-	deviceID     string // For anonymous access to free models
-	anonymousMode bool  // True when using free models without API key
+	apiKey        string
+	baseURL       string
+	model         string
+	httpClient    *http.Client
+	retryConfig   RetryConfig
+	deviceID      string // For anonymous access to free models
+	anonymousMode bool   // True when using free models without API key
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -153,13 +153,13 @@ type ZenErrorResponse struct {
 
 // ZenModelInfo represents model information from the models endpoint
 type ZenModelInfo struct {
-	ID            string `json:"id"`
-	Object        string `json:"object"`
-	OwnedBy       string `json:"owned_by"`
-	Created       int64  `json:"created"`
-	ContextWindow int    `json:"context_window"`
-	MaxOutputTokens int  `json:"max_output_tokens"`
-	Pricing       struct {
+	ID              string `json:"id"`
+	Object          string `json:"object"`
+	OwnedBy         string `json:"owned_by"`
+	Created         int64  `json:"created"`
+	ContextWindow   int    `json:"context_window"`
+	MaxOutputTokens int    `json:"max_output_tokens"`
+	Pricing         struct {
 		Input       float64 `json:"input"`
 		Output      float64 `json:"output"`
 		CachedRead  float64 `json:"cached_read"`
@@ -212,9 +212,9 @@ func NewZenProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCon
 	}
 
 	return &ZenProvider{
-		apiKey:        apiKey,
-		baseURL:       baseURL,
-		model:         model,
+		apiKey:  apiKey,
+		baseURL: baseURL,
+		model:   model,
 		httpClient: &http.Client{
 			Timeout: 120 * time.Second,
 		},

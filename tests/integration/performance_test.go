@@ -428,7 +428,7 @@ func TestCacheMetricsCollection(t *testing.T) {
 
 	var result int
 	for i := 0; i < 20; i++ {
-		tc.Get(ctx, "key-"+string(rune('0'+i%10)), &result) // Some hits
+		tc.Get(ctx, "key-"+string(rune('0'+i%10)), &result)  // Some hits
 		tc.Get(ctx, "missing-"+string(rune('0'+i)), &result) // Some misses
 	}
 

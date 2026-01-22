@@ -347,12 +347,12 @@ func TestFreeProviderAdapter_HelperFunctions(t *testing.T) {
 
 	t.Run("convertCapabilities with features", func(t *testing.T) {
 		caps := &models.ProviderCapabilities{
-			SupportedFeatures:    []string{"text", "code"},
-			SupportsStreaming:    true,
+			SupportedFeatures:       []string{"text", "code"},
+			SupportsStreaming:       true,
 			SupportsFunctionCalling: true,
-			SupportsVision:       false,
-			SupportsTools:        true,
-			SupportsReasoning:    false,
+			SupportsVision:          false,
+			SupportsTools:           true,
+			SupportsReasoning:       false,
 		}
 
 		result := convertCapabilities(caps)

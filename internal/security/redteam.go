@@ -14,16 +14,16 @@ import (
 // DeepTeamRedTeamer implements comprehensive red team testing
 // Integrates with HelixAgent's AI debate system and LLMsVerifier
 type DeepTeamRedTeamer struct {
-	attacks       map[AttackType][]*Attack
-	config        *RedTeamConfig
-	logger        *logrus.Logger
-	auditLogger   AuditLogger
+	attacks     map[AttackType][]*Attack
+	config      *RedTeamConfig
+	logger      *logrus.Logger
+	auditLogger AuditLogger
 
 	// Integration with existing systems
-	debateTarget  DebateTarget // Use AI debate for attack evaluation
-	verifier      ProviderVerifier // Use LLMsVerifier for provider health
+	debateTarget DebateTarget     // Use AI debate for attack evaluation
+	verifier     ProviderVerifier // Use LLMsVerifier for provider health
 
-	mu            sync.RWMutex
+	mu sync.RWMutex
 }
 
 // DebateTarget represents the AI debate system as a target for evaluation

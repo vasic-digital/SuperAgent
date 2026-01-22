@@ -21,7 +21,8 @@ import (
 // This is critical for OpenCode compatibility.
 func TestStreaming_OpenCode_DoneMarker(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 120 * time.Second}
@@ -92,7 +93,8 @@ func TestStreaming_OpenCode_DoneMarker(t *testing.T) {
 // properly formatted according to OpenAI's SSE specification.
 func TestStreaming_OpenCode_ChunkFormat(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 60 * time.Second}
@@ -167,7 +169,8 @@ func TestStreaming_OpenCode_ChunkFormat(t *testing.T) {
 // terminates and doesn't loop infinitely (the bug that was reported).
 func TestStreaming_OpenCode_NoInfiniteLoop(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 90 * time.Second}
@@ -254,7 +257,8 @@ func TestStreaming_OpenCode_NoInfiniteLoop(t *testing.T) {
 // SSE headers for proper client handling.
 func TestStreaming_OpenCode_Headers(t *testing.T) {
 	if testing.Short() {
-		t.Logf("Short mode - skipping integration test (acceptable)"); return
+		t.Logf("Short mode - skipping integration test (acceptable)")
+		return
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}

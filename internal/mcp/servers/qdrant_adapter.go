@@ -414,8 +414,8 @@ func (a *QdrantAdapter) Scroll(ctx context.Context, collectionName string, offse
 
 	var response struct {
 		Result struct {
-			Points     []QdrantPoint `json:"points"`
-			NextPageOffset interface{} `json:"next_page_offset"`
+			Points         []QdrantPoint `json:"points"`
+			NextPageOffset interface{}   `json:"next_page_offset"`
 		} `json:"result"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {

@@ -585,12 +585,12 @@ func TestLearningOutcome_Structure(t *testing.T) {
 
 func TestDebateRecommendations_Structure(t *testing.T) {
 	recommendations := &DebateRecommendations{
-		Topic:           "Test Topic",
-		Domain:          agents.DomainCode,
-		GeneratedAt:     time.Now(),
-		TopologyAdvice:  []string{"Use graph mesh"},
-		RoleAdvice:      map[topology.AgentRole][]string{topology.RoleProposer: {"Be creative"}},
-		PatternWarnings: []string{"Warning 1"},
+		Topic:            "Test Topic",
+		Domain:           agents.DomainCode,
+		GeneratedAt:      time.Now(),
+		TopologyAdvice:   []string{"Use graph mesh"},
+		RoleAdvice:       map[topology.AgentRole][]string{topology.RoleProposer: {"Be creative"}},
+		PatternWarnings:  []string{"Warning 1"},
 		SuggestedActions: []string{"Action 1"},
 	}
 

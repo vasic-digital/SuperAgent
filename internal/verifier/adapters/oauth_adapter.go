@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/verifier"
+	"github.com/sirupsen/logrus"
 )
 
 // OAuthAdapter handles verification for OAuth-based providers (Claude, Qwen)
@@ -19,34 +19,34 @@ type OAuthAdapter struct {
 	config      *OAuthAdapterConfig
 
 	// Cached credentials
-	claudeToken    string
-	claudeExpiry   time.Time
-	qwenToken      string
-	qwenExpiry     time.Time
+	claudeToken  string
+	claudeExpiry time.Time
+	qwenToken    string
+	qwenExpiry   time.Time
 
-	mu             sync.RWMutex
-	log            *logrus.Logger
+	mu  sync.RWMutex
+	log *logrus.Logger
 }
 
 // OAuthAdapterConfig contains configuration for OAuth adapter
 type OAuthAdapterConfig struct {
 	// Refresh thresholds
-	RefreshThresholdMins int           `yaml:"refresh_threshold_mins" json:"refresh_threshold_mins"`
+	RefreshThresholdMins int `yaml:"refresh_threshold_mins" json:"refresh_threshold_mins"`
 
 	// Trust settings
 	TrustOnVerificationFailure bool    `yaml:"trust_on_verification_failure" json:"trust_on_verification_failure"`
 	DefaultScoreOnFailure      float64 `yaml:"default_score_on_failure" json:"default_score_on_failure"`
 
 	// OAuth priority boost
-	OAuthPriorityBoost float64        `yaml:"oauth_priority_boost" json:"oauth_priority_boost"`
+	OAuthPriorityBoost float64 `yaml:"oauth_priority_boost" json:"oauth_priority_boost"`
 
 	// Timeouts
 	VerificationTimeout time.Duration `yaml:"verification_timeout" json:"verification_timeout"`
 	RefreshTimeout      time.Duration `yaml:"refresh_timeout" json:"refresh_timeout"`
 
 	// CLI refresh settings (for Qwen)
-	EnableCLIRefresh    bool          `yaml:"enable_cli_refresh" json:"enable_cli_refresh"`
-	CLIRefreshRetries   int           `yaml:"cli_refresh_retries" json:"cli_refresh_retries"`
+	EnableCLIRefresh  bool `yaml:"enable_cli_refresh" json:"enable_cli_refresh"`
+	CLIRefreshRetries int  `yaml:"cli_refresh_retries" json:"cli_refresh_retries"`
 }
 
 // DefaultOAuthAdapterConfig returns sensible defaults

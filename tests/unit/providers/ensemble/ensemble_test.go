@@ -3,9 +3,9 @@ package ensemble_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/models"
+	"github.com/stretchr/testify/assert"
 )
 
 // testEnsembleResponse is a helper to test ensemble responses in test environment

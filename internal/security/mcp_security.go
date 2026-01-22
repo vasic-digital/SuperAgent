@@ -15,13 +15,13 @@ import (
 // MCPSecurityManager provides security features for MCP protocol
 // Integrates with HelixAgent's existing MCP client and server infrastructure
 type MCPSecurityManager struct {
-	config        *MCPSecurityConfig
+	config         *MCPSecurityConfig
 	trustedServers map[string]*TrustedServer
-	toolRegistry  map[string]*ToolPermission
-	callStack     []string // Track call depth
-	auditLogger   AuditLogger
-	logger        *logrus.Logger
-	mu            sync.RWMutex
+	toolRegistry   map[string]*ToolPermission
+	callStack      []string // Track call depth
+	auditLogger    AuditLogger
+	logger         *logrus.Logger
+	mu             sync.RWMutex
 }
 
 // TrustedServer represents a verified MCP server
@@ -58,20 +58,20 @@ type ToolRateLimit struct {
 
 // ToolCallRequest represents a request to call a tool
 type ToolCallRequest struct {
-	ToolName   string                 `json:"tool_name"`
-	ServerID   string                 `json:"server_id"`
-	Arguments  map[string]interface{} `json:"arguments"`
-	UserID     string                 `json:"user_id,omitempty"`
-	SessionID  string                 `json:"session_id,omitempty"`
-	Signature  string                 `json:"signature,omitempty"`
+	ToolName  string                 `json:"tool_name"`
+	ServerID  string                 `json:"server_id"`
+	Arguments map[string]interface{} `json:"arguments"`
+	UserID    string                 `json:"user_id,omitempty"`
+	SessionID string                 `json:"session_id,omitempty"`
+	Signature string                 `json:"signature,omitempty"`
 }
 
 // ToolCallResponse contains the security check result
 type ToolCallResponse struct {
-	Allowed     bool                   `json:"allowed"`
-	Reason      string                 `json:"reason,omitempty"`
-	ModifiedArgs map[string]interface{} `json:"modified_args,omitempty"`
-	RequireApproval bool               `json:"require_approval"`
+	Allowed         bool                   `json:"allowed"`
+	Reason          string                 `json:"reason,omitempty"`
+	ModifiedArgs    map[string]interface{} `json:"modified_args,omitempty"`
+	RequireApproval bool                   `json:"require_approval"`
 }
 
 // NewMCPSecurityManager creates a new MCP security manager
@@ -517,8 +517,8 @@ func (m *MCPSecurityManager) logAuditEvent(ctx context.Context, request *ToolCal
 
 // SandboxedToolExecutor wraps tool execution with sandboxing
 type SandboxedToolExecutor struct {
-	config  *SandboxConfig
-	logger  *logrus.Logger
+	config *SandboxConfig
+	logger *logrus.Logger
 }
 
 // NewSandboxedToolExecutor creates a new sandboxed executor

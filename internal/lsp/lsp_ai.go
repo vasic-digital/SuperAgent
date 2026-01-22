@@ -122,19 +122,19 @@ const (
 
 // CompletionItem represents a completion suggestion.
 type CompletionItem struct {
-	Label            string               `json:"label"`
-	Kind             CompletionItemKind   `json:"kind"`
-	Detail           string               `json:"detail,omitempty"`
-	Documentation    string               `json:"documentation,omitempty"`
-	SortText         string               `json:"sortText,omitempty"`
-	FilterText       string               `json:"filterText,omitempty"`
-	InsertText       string               `json:"insertText,omitempty"`
-	InsertTextFormat InsertTextFormat     `json:"insertTextFormat,omitempty"`
-	TextEdit         *TextEdit            `json:"textEdit,omitempty"`
-	AdditionalEdits  []TextEdit           `json:"additionalTextEdits,omitempty"`
-	Confidence       float64              `json:"confidence,omitempty"`
-	Source           CompletionSource     `json:"source,omitempty"`
-	Context          *CompletionContext   `json:"context,omitempty"`
+	Label            string             `json:"label"`
+	Kind             CompletionItemKind `json:"kind"`
+	Detail           string             `json:"detail,omitempty"`
+	Documentation    string             `json:"documentation,omitempty"`
+	SortText         string             `json:"sortText,omitempty"`
+	FilterText       string             `json:"filterText,omitempty"`
+	InsertText       string             `json:"insertText,omitempty"`
+	InsertTextFormat InsertTextFormat   `json:"insertTextFormat,omitempty"`
+	TextEdit         *TextEdit          `json:"textEdit,omitempty"`
+	AdditionalEdits  []TextEdit         `json:"additionalTextEdits,omitempty"`
+	Confidence       float64            `json:"confidence,omitempty"`
+	Source           CompletionSource   `json:"source,omitempty"`
+	Context          *CompletionContext `json:"context,omitempty"`
 }
 
 // CompletionItemKind represents the kind of a completion item.
@@ -180,12 +180,12 @@ const (
 type CompletionSource string
 
 const (
-	CompletionSourceLSP        CompletionSource = "lsp"
-	CompletionSourceAI         CompletionSource = "ai"
-	CompletionSourceFIM        CompletionSource = "fim"
-	CompletionSourceSemantic   CompletionSource = "semantic"
-	CompletionSourceSnippet    CompletionSource = "snippet"
-	CompletionSourceHistory    CompletionSource = "history"
+	CompletionSourceLSP      CompletionSource = "lsp"
+	CompletionSourceAI       CompletionSource = "ai"
+	CompletionSourceFIM      CompletionSource = "fim"
+	CompletionSourceSemantic CompletionSource = "semantic"
+	CompletionSourceSnippet  CompletionSource = "snippet"
+	CompletionSourceHistory  CompletionSource = "history"
 )
 
 // CompletionContext provides context for a completion request.
@@ -203,22 +203,22 @@ type CompletionContext struct {
 type CompletionTriggerKind int
 
 const (
-	CompletionTriggerInvoked          CompletionTriggerKind = 1
-	CompletionTriggerCharacter        CompletionTriggerKind = 2
-	CompletionTriggerIncomplete       CompletionTriggerKind = 3
+	CompletionTriggerInvoked    CompletionTriggerKind = 1
+	CompletionTriggerCharacter  CompletionTriggerKind = 2
+	CompletionTriggerIncomplete CompletionTriggerKind = 3
 )
 
 // Diagnostic represents a diagnostic message.
 type Diagnostic struct {
-	Range           Range            `json:"range"`
-	Severity        DiagnosticSeverity `json:"severity"`
-	Code            string           `json:"code,omitempty"`
-	Source          string           `json:"source,omitempty"`
-	Message         string           `json:"message"`
-	RelatedInfo     []DiagnosticRelatedInfo `json:"relatedInformation,omitempty"`
-	Tags            []DiagnosticTag  `json:"tags,omitempty"`
-	AIExplanation   string           `json:"aiExplanation,omitempty"`
-	SuggestedFix    *TextEdit        `json:"suggestedFix,omitempty"`
+	Range         Range                   `json:"range"`
+	Severity      DiagnosticSeverity      `json:"severity"`
+	Code          string                  `json:"code,omitempty"`
+	Source        string                  `json:"source,omitempty"`
+	Message       string                  `json:"message"`
+	RelatedInfo   []DiagnosticRelatedInfo `json:"relatedInformation,omitempty"`
+	Tags          []DiagnosticTag         `json:"tags,omitempty"`
+	AIExplanation string                  `json:"aiExplanation,omitempty"`
+	SuggestedFix  *TextEdit               `json:"suggestedFix,omitempty"`
 }
 
 // DiagnosticSeverity represents the severity of a diagnostic.
@@ -247,14 +247,14 @@ type DiagnosticRelatedInfo struct {
 
 // CodeAction represents a code action (quick fix, refactoring, etc.).
 type CodeAction struct {
-	Title       string            `json:"title"`
-	Kind        CodeActionKind    `json:"kind"`
-	Diagnostics []Diagnostic      `json:"diagnostics,omitempty"`
-	Edit        *WorkspaceEdit    `json:"edit,omitempty"`
-	Command     *Command          `json:"command,omitempty"`
-	IsPreferred bool              `json:"isPreferred,omitempty"`
-	AIGenerated bool              `json:"aiGenerated,omitempty"`
-	Confidence  float64           `json:"confidence,omitempty"`
+	Title       string         `json:"title"`
+	Kind        CodeActionKind `json:"kind"`
+	Diagnostics []Diagnostic   `json:"diagnostics,omitempty"`
+	Edit        *WorkspaceEdit `json:"edit,omitempty"`
+	Command     *Command       `json:"command,omitempty"`
+	IsPreferred bool           `json:"isPreferred,omitempty"`
+	AIGenerated bool           `json:"aiGenerated,omitempty"`
+	Confidence  float64        `json:"confidence,omitempty"`
 }
 
 // CodeActionKind represents the kind of a code action.
@@ -330,34 +330,34 @@ type AICompletionProvider interface {
 
 // AICompletionRequest represents a request for AI completions.
 type AICompletionRequest struct {
-	URI         string            `json:"uri"`
-	Position    Position          `json:"position"`
-	Prefix      string            `json:"prefix"`
-	Suffix      string            `json:"suffix"`
-	Language    string            `json:"language"`
+	URI         string             `json:"uri"`
+	Position    Position           `json:"position"`
+	Prefix      string             `json:"prefix"`
+	Suffix      string             `json:"suffix"`
+	Language    string             `json:"language"`
 	Context     *CompletionContext `json:"context,omitempty"`
-	MaxTokens   int               `json:"maxTokens,omitempty"`
-	Temperature float64           `json:"temperature,omitempty"`
+	MaxTokens   int                `json:"maxTokens,omitempty"`
+	Temperature float64            `json:"temperature,omitempty"`
 }
 
 // DiagnosticAnalysis represents AI analysis of a diagnostic.
 type DiagnosticAnalysis struct {
-	Explanation   string       `json:"explanation"`
-	RootCause     string       `json:"rootCause,omitempty"`
-	SuggestedFix  *TextEdit    `json:"suggestedFix,omitempty"`
-	RelatedDocs   []string     `json:"relatedDocs,omitempty"`
-	Confidence    float64      `json:"confidence"`
+	Explanation  string    `json:"explanation"`
+	RootCause    string    `json:"rootCause,omitempty"`
+	SuggestedFix *TextEdit `json:"suggestedFix,omitempty"`
+	RelatedDocs  []string  `json:"relatedDocs,omitempty"`
+	Confidence   float64   `json:"confidence"`
 }
 
 // LSPAI integrates AI capabilities with LSP.
 type LSPAI struct {
-	config              LSPAIConfig
-	aiProvider          AICompletionProvider
-	documentStore       *DocumentStore
-	symbolIndex         *SymbolIndex
-	completionCache     *CompletionCache
-	diagnosticsCache    map[string][]Diagnostic
-	mu                  sync.RWMutex
+	config           LSPAIConfig
+	aiProvider       AICompletionProvider
+	documentStore    *DocumentStore
+	symbolIndex      *SymbolIndex
+	completionCache  *CompletionCache
+	diagnosticsCache map[string][]Diagnostic
+	mu               sync.RWMutex
 }
 
 // NewLSPAI creates a new LSP-AI integration.
@@ -1124,9 +1124,9 @@ func (s *DocumentStore) Get(uri string) *Document {
 
 // SymbolIndex indexes document symbols.
 type SymbolIndex struct {
-	symbolsByURI map[string][]DocumentSymbol
+	symbolsByURI  map[string][]DocumentSymbol
 	symbolsByName map[string][]SymbolEntry
-	mu           sync.RWMutex
+	mu            sync.RWMutex
 }
 
 // SymbolEntry represents a symbol entry in the index.
@@ -1259,10 +1259,10 @@ func positionInRange(pos Position, r Range) bool {
 
 // CompletionCache caches completion results.
 type CompletionCache struct {
-	items    map[string]cacheEntry
-	maxSize  int
-	ttl      time.Duration
-	mu       sync.RWMutex
+	items   map[string]cacheEntry
+	maxSize int
+	ttl     time.Duration
+	mu      sync.RWMutex
 }
 
 type cacheEntry struct {
@@ -1342,10 +1342,10 @@ func (c *CompletionCache) evictOldest() {
 
 // LSPAIResult represents the result of an LSP-AI operation.
 type LSPAIResult struct {
-	Success     bool        `json:"success"`
-	Message     string      `json:"message,omitempty"`
-	Data        interface{} `json:"data,omitempty"`
-	Diagnostics []Diagnostic `json:"diagnostics,omitempty"`
+	Success     bool          `json:"success"`
+	Message     string        `json:"message,omitempty"`
+	Data        interface{}   `json:"data,omitempty"`
+	Diagnostics []Diagnostic  `json:"diagnostics,omitempty"`
 	Duration    time.Duration `json:"duration,omitempty"`
 }
 

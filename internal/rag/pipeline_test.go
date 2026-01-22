@@ -38,12 +38,12 @@ func (m *MockEmbeddingModelForRAG) EncodeSingle(ctx context.Context, text string
 	return embeddings[0], nil
 }
 
-func (m *MockEmbeddingModelForRAG) Name() string       { return "mock" }
-func (m *MockEmbeddingModelForRAG) Dimensions() int    { return m.dim }
-func (m *MockEmbeddingModelForRAG) MaxTokens() int     { return 8192 }
-func (m *MockEmbeddingModelForRAG) Provider() string   { return "mock" }
+func (m *MockEmbeddingModelForRAG) Name() string                     { return "mock" }
+func (m *MockEmbeddingModelForRAG) Dimensions() int                  { return m.dim }
+func (m *MockEmbeddingModelForRAG) MaxTokens() int                   { return 8192 }
+func (m *MockEmbeddingModelForRAG) Provider() string                 { return "mock" }
 func (m *MockEmbeddingModelForRAG) Health(ctx context.Context) error { return nil }
-func (m *MockEmbeddingModelForRAG) Close() error       { return nil }
+func (m *MockEmbeddingModelForRAG) Close() error                     { return nil }
 
 // Create a minimal mock embedding registry for testing
 func createTestEmbeddingRegistry() *models.EmbeddingModelRegistry {

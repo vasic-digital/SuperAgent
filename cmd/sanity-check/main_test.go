@@ -147,12 +147,12 @@ func TestFailedCheck(t *testing.T) {
 
 func TestReportSerialization(t *testing.T) {
 	report := &sanity.BootCheckReport{
-		ReadyToStart:  false,
-		Timestamp:     time.Now(),
-		TotalChecks:   2,
-		FailedChecks:  1,
-		PassedChecks:  1,
-		Duration:      2 * time.Second,
+		ReadyToStart: false,
+		Timestamp:    time.Now(),
+		TotalChecks:  2,
+		FailedChecks: 1,
+		PassedChecks: 1,
+		Duration:     2 * time.Second,
 		Results: []sanity.CheckResult{
 			{
 				Name:     "database",

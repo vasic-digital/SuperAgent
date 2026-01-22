@@ -352,9 +352,9 @@ func TestCogneeMemoryRepository_GetByDatasetName(t *testing.T) {
 	// Create multiple memories for the same dataset
 	for i := 0; i < 5; i++ {
 		memory := createTestCogneeMemoryWithPool(t, pool)
-	if memory == nil {
-		return // Test was skipped
-	}
+		if memory == nil {
+			return // Test was skipped
+		}
 		memory.DatasetName = datasetName
 		err := repo.Create(ctx, memory)
 		require.NoError(t, err)
@@ -575,9 +575,9 @@ func TestCogneeMemoryRepository_DeleteByDatasetName(t *testing.T) {
 	// Create multiple memories for the same dataset
 	for i := 0; i < 4; i++ {
 		memory := createTestCogneeMemoryWithPool(t, pool)
-	if memory == nil {
-		return // Test was skipped
-	}
+		if memory == nil {
+			return // Test was skipped
+		}
 		memory.DatasetName = datasetName
 		err := repo.Create(ctx, memory)
 		require.NoError(t, err)
@@ -626,9 +626,9 @@ func TestCogneeMemoryRepository_ListDatasets(t *testing.T) {
 	datasets := []string{"test-dataset-a", "test-dataset-b", "test-dataset-c"}
 	for _, ds := range datasets {
 		memory := createTestCogneeMemoryWithPool(t, pool)
-	if memory == nil {
-		return // Test was skipped
-	}
+		if memory == nil {
+			return // Test was skipped
+		}
 		memory.DatasetName = ds
 		err := repo.Create(ctx, memory)
 		require.NoError(t, err)
@@ -653,9 +653,9 @@ func TestCogneeMemoryRepository_GetDatasetStats(t *testing.T) {
 	// Create multiple memories with the same dataset
 	for i := 0; i < 5; i++ {
 		memory := createTestCogneeMemoryWithPool(t, pool)
-	if memory == nil {
-		return // Test was skipped
-	}
+		if memory == nil {
+			return // Test was skipped
+		}
 		memory.DatasetName = datasetName
 		if i%2 == 0 {
 			vectorID := "vector-" + time.Now().Format("150405")

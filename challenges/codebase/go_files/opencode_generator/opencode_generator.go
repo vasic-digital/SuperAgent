@@ -65,35 +65,35 @@ type ProviderConfig struct {
 }
 
 type ModelConfig struct {
-	Name           string   `json:"name,omitempty"`
-	MaxTokens      int      `json:"maxTokens,omitempty"`
-	CostPer1MIn    float64  `json:"cost_per_1m_in,omitempty"`
-	CostPer1MOut   float64  `json:"cost_per_1m_out,omitempty"`
-	SupportsBrotli bool     `json:"supports_brotli,omitempty"`
+	Name           string  `json:"name,omitempty"`
+	MaxTokens      int     `json:"maxTokens,omitempty"`
+	CostPer1MIn    float64 `json:"cost_per_1m_in,omitempty"`
+	CostPer1MOut   float64 `json:"cost_per_1m_out,omitempty"`
+	SupportsBrotli bool    `json:"supports_brotli,omitempty"`
 	// Enhanced capabilities
-	Attachments    bool     `json:"attachments,omitempty"`
-	Reasoning      bool     `json:"reasoning,omitempty"`
-	Vision         bool     `json:"vision,omitempty"`
-	ImageInput     bool     `json:"imageInput,omitempty"`
-	ImageOutput    bool     `json:"imageOutput,omitempty"`
-	OCR            bool     `json:"ocr,omitempty"`
-	PDF            bool     `json:"pdf,omitempty"`
-	Audio          bool     `json:"audio,omitempty"`
-	Video          bool     `json:"video,omitempty"`
-	Streaming      bool     `json:"streaming,omitempty"`
-	FunctionCalls  bool     `json:"functionCalls,omitempty"`
-	ToolUse        bool     `json:"toolUse,omitempty"`
-	Embeddings     bool     `json:"embeddings,omitempty"`
-	CodeExecution  bool     `json:"codeExecution,omitempty"`
-	WebBrowsing    bool     `json:"webBrowsing,omitempty"`
-	FileUpload     bool     `json:"fileUpload,omitempty"`
-	NoFileLimit    bool     `json:"noFileLimit,omitempty"`
+	Attachments   bool `json:"attachments,omitempty"`
+	Reasoning     bool `json:"reasoning,omitempty"`
+	Vision        bool `json:"vision,omitempty"`
+	ImageInput    bool `json:"imageInput,omitempty"`
+	ImageOutput   bool `json:"imageOutput,omitempty"`
+	OCR           bool `json:"ocr,omitempty"`
+	PDF           bool `json:"pdf,omitempty"`
+	Audio         bool `json:"audio,omitempty"`
+	Video         bool `json:"video,omitempty"`
+	Streaming     bool `json:"streaming,omitempty"`
+	FunctionCalls bool `json:"functionCalls,omitempty"`
+	ToolUse       bool `json:"toolUse,omitempty"`
+	Embeddings    bool `json:"embeddings,omitempty"`
+	CodeExecution bool `json:"codeExecution,omitempty"`
+	WebBrowsing   bool `json:"webBrowsing,omitempty"`
+	FileUpload    bool `json:"fileUpload,omitempty"`
+	NoFileLimit   bool `json:"noFileLimit,omitempty"`
 	// Protocol support
-	MCP            bool     `json:"mcp,omitempty"`
-	ACP            bool     `json:"acp,omitempty"`
-	LSP            bool     `json:"lsp,omitempty"`
+	MCP bool `json:"mcp,omitempty"`
+	ACP bool `json:"acp,omitempty"`
+	LSP bool `json:"lsp,omitempty"`
 	// Fallback configuration
-	Fallbacks      []string `json:"fallbacks,omitempty"`
+	Fallbacks []string `json:"fallbacks,omitempty"`
 }
 
 type McpConfig struct {
@@ -127,8 +127,8 @@ type CommandConfig struct {
 }
 
 type KeybindsConfig struct {
-	Leader   string `json:"leader,omitempty"`
-	AppExit  string `json:"app_exit,omitempty"`
+	Leader  string `json:"leader,omitempty"`
+	AppExit string `json:"app_exit,omitempty"`
 }
 
 type CompactionConfig struct {
@@ -196,8 +196,8 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 				},
 				Models: map[string]ModelConfig{
 					"helixagent-debate": {
-						Name:          "HelixAgent Debate Ensemble",
-						MaxTokens:     128000,
+						Name:      "HelixAgent Debate Ensemble",
+						MaxTokens: 128000,
 						// Full capabilities - combined from all 15 LLMs in debate team
 						Attachments:   true,
 						Reasoning:     true,
@@ -217,11 +217,11 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 						FileUpload:    true,
 						NoFileLimit:   true,
 						// Protocol support
-						MCP:           true,
-						ACP:           true,
-						LSP:           true,
+						MCP: true,
+						ACP: true,
+						LSP: true,
 						// Fallback chain (sorted by LLMsVerifier score)
-						Fallbacks:     fallbacks,
+						Fallbacks: fallbacks,
 					},
 				},
 			},

@@ -134,10 +134,10 @@ func (c *SemanticCache) removeExpired() {
 
 // Stats returns cache statistics
 type CacheStats struct {
-	Size         int           `json:"size"`
-	OldestEntry  *time.Time    `json:"oldest_entry,omitempty"`
-	NewestEntry  *time.Time    `json:"newest_entry,omitempty"`
-	TTL          time.Duration `json:"ttl"`
+	Size        int           `json:"size"`
+	OldestEntry *time.Time    `json:"oldest_entry,omitempty"`
+	NewestEntry *time.Time    `json:"newest_entry,omitempty"`
+	TTL         time.Duration `json:"ttl"`
 }
 
 // GetStats returns cache statistics

@@ -32,18 +32,18 @@ import (
 )
 
 var (
-	configFile           = flag.String("config", "", "Path to configuration file (YAML)")
-	version              = flag.Bool("version", false, "Show version information")
-	help                 = flag.Bool("help", false, "Show help message")
-	autoStartDocker      = flag.Bool("auto-start-docker", true, "Automatically start required Docker containers")
-	strictDependencies   = flag.Bool("strict-dependencies", true, "MANDATORY: Fail if any integration dependency (Cognee, DB, Redis) is unavailable")
-	generateAPIKey       = flag.Bool("generate-api-key", false, "Generate a new HelixAgent API key and output it")
-	generateOpenCode     = flag.Bool("generate-opencode-config", false, "Generate OpenCode configuration JSON")
-	validateOpenCode     = flag.String("validate-opencode-config", "", "Path to OpenCode config file to validate")
-	openCodeOutput       = flag.String("opencode-output", "", "Output path for OpenCode config (default: stdout)")
-	apiKeyEnvFile        = flag.String("api-key-env-file", "", "Path to .env file to write the generated API key")
-	preinstallMCP        = flag.Bool("preinstall-mcp", false, "Pre-install standard MCP server npm packages")
-	skipMCPPreinstall    = flag.Bool("skip-mcp-preinstall", false, "Skip automatic MCP package pre-installation at startup")
+	configFile         = flag.String("config", "", "Path to configuration file (YAML)")
+	version            = flag.Bool("version", false, "Show version information")
+	help               = flag.Bool("help", false, "Show help message")
+	autoStartDocker    = flag.Bool("auto-start-docker", true, "Automatically start required Docker containers")
+	strictDependencies = flag.Bool("strict-dependencies", true, "MANDATORY: Fail if any integration dependency (Cognee, DB, Redis) is unavailable")
+	generateAPIKey     = flag.Bool("generate-api-key", false, "Generate a new HelixAgent API key and output it")
+	generateOpenCode   = flag.Bool("generate-opencode-config", false, "Generate OpenCode configuration JSON")
+	validateOpenCode   = flag.String("validate-opencode-config", "", "Path to OpenCode config file to validate")
+	openCodeOutput     = flag.String("opencode-output", "", "Output path for OpenCode config (default: stdout)")
+	apiKeyEnvFile      = flag.String("api-key-env-file", "", "Path to .env file to write the generated API key")
+	preinstallMCP      = flag.Bool("preinstall-mcp", false, "Pre-install standard MCP server npm packages")
+	skipMCPPreinstall  = flag.Bool("skip-mcp-preinstall", false, "Skip automatic MCP package pre-installation at startup")
 )
 
 // ValidOpenCodeTopLevelKeys contains the valid top-level keys per OpenCode.ai official schema
@@ -599,9 +599,9 @@ func verifyAllMandatoryDependencies(logger *logrus.Logger) error {
 
 	logger.Info("────────────────────────────────────────────────────────────────────")
 	logger.WithFields(logrus.Fields{
-		"total":    len(dependencies),
-		"passed":   len(successDeps),
-		"failed":   len(failedDeps),
+		"total":  len(dependencies),
+		"passed": len(successDeps),
+		"failed": len(failedDeps),
 	}).Info("Dependency verification summary")
 
 	if len(failedDeps) > 0 {
@@ -665,10 +665,10 @@ func runStartupVerification(logger *logrus.Logger) (*verifier.StartupResult, *ve
 	// Log verification summary
 	logger.Info("────────────────────────────────────────────────────────────────────")
 	logger.WithFields(logrus.Fields{
-		"total_providers":  result.TotalProviders,
-		"verified":         result.VerifiedCount,
-		"failed":           result.FailedCount,
-		"skipped":          result.SkippedCount,
+		"total_providers":   result.TotalProviders,
+		"verified":          result.VerifiedCount,
+		"failed":            result.FailedCount,
+		"skipped":           result.SkippedCount,
 		"api_key_providers": result.APIKeyProviders,
 		"oauth_providers":   result.OAuthProviders,
 		"free_providers":    result.FreeProviders,
@@ -729,21 +729,21 @@ func runStartupVerification(logger *logrus.Logger) (*verifier.StartupResult, *ve
 
 // AppConfig holds application configuration for testing
 type AppConfig struct {
-	ShowHelp             bool
-	ShowVersion          bool
-	AutoStartDocker      bool
-	StrictDependencies   bool   // MANDATORY: If true, fail boot when ANY dependency is unavailable
-	GenerateAPIKey       bool
-	GenerateOpenCode     bool
-	ValidateOpenCode     string
-	OpenCodeOutput       string
-	APIKeyEnvFile        string
-	PreinstallMCP        bool   // Run MCP package pre-installation and exit
-	SkipMCPPreinstall    bool   // Skip automatic MCP pre-installation at startup
-	ServerHost           string
-	ServerPort           string
-	Logger               *logrus.Logger
-	ShutdownSignal       chan os.Signal
+	ShowHelp           bool
+	ShowVersion        bool
+	AutoStartDocker    bool
+	StrictDependencies bool // MANDATORY: If true, fail boot when ANY dependency is unavailable
+	GenerateAPIKey     bool
+	GenerateOpenCode   bool
+	ValidateOpenCode   string
+	OpenCodeOutput     string
+	APIKeyEnvFile      string
+	PreinstallMCP      bool // Run MCP package pre-installation and exit
+	SkipMCPPreinstall  bool // Skip automatic MCP pre-installation at startup
+	ServerHost         string
+	ServerPort         string
+	Logger             *logrus.Logger
+	ShutdownSignal     chan os.Signal
 }
 
 // DefaultAppConfig returns the default application configuration
@@ -846,19 +846,19 @@ func run(appCfg *AppConfig) error {
 	startupResult, startupVerifier := runStartupVerification(logger)
 	if startupResult != nil {
 		logger.WithFields(logrus.Fields{
-			"total_providers":   startupResult.TotalProviders,
-			"verified_count":    startupResult.VerifiedCount,
-			"failed_count":      startupResult.FailedCount,
-			"oauth_providers":   startupResult.OAuthProviders,
-			"free_providers":    startupResult.FreeProviders,
-			"duration_ms":       startupResult.DurationMs,
+			"total_providers": startupResult.TotalProviders,
+			"verified_count":  startupResult.VerifiedCount,
+			"failed_count":    startupResult.FailedCount,
+			"oauth_providers": startupResult.OAuthProviders,
+			"free_providers":  startupResult.FreeProviders,
+			"duration_ms":     startupResult.DurationMs,
 		}).Info("Startup verification completed")
 
 		if startupResult.DebateTeam != nil {
 			logger.WithFields(logrus.Fields{
-				"debate_team_llms":   startupResult.DebateTeam.TotalLLMs,
-				"debate_positions":   len(startupResult.DebateTeam.Positions),
-				"oauth_first":        startupResult.DebateTeam.OAuthFirst,
+				"debate_team_llms": startupResult.DebateTeam.TotalLLMs,
+				"debate_positions": len(startupResult.DebateTeam.Positions),
+				"oauth_first":      startupResult.DebateTeam.OAuthFirst,
 			}).Info("AI Debate Team configured (15 LLMs)")
 		}
 	}
@@ -1101,37 +1101,37 @@ func writeAPIKeyToEnvFile(filePath, apiKey string) error {
 
 // OpenCodeConfig represents the OpenCode configuration structure
 type OpenCodeConfig struct {
-	Schema   string                      `json:"$schema"`
-	Provider map[string]ProviderDef      `json:"provider"`
-	MCP      map[string]MCPServerDef     `json:"mcp,omitempty"`
-	Agent    map[string]AgentConfigDef   `json:"agent,omitempty"`
+	Schema   string                    `json:"$schema"`
+	Provider map[string]ProviderDef    `json:"provider"`
+	MCP      map[string]MCPServerDef   `json:"mcp,omitempty"`
+	Agent    map[string]AgentConfigDef `json:"agent,omitempty"`
 }
 
 // ProviderDef represents a provider definition in OpenCode config
 type ProviderDef struct {
-	NPM     string                    `json:"npm,omitempty"`
-	Name    string                    `json:"name"`
-	Options map[string]interface{}    `json:"options"`
-	Models  map[string]ModelDef       `json:"models,omitempty"`
+	NPM     string                 `json:"npm,omitempty"`
+	Name    string                 `json:"name"`
+	Options map[string]interface{} `json:"options"`
+	Models  map[string]ModelDef    `json:"models,omitempty"`
 }
 
 // ModelDef represents a model definition with its capabilities
 type ModelDef struct {
-	Name         string `json:"name"`
-	Attachments  bool   `json:"attachments,omitempty"`
-	Reasoning    bool   `json:"reasoning,omitempty"`
-	MaxTokens    int    `json:"maxTokens,omitempty"`
-	Vision       bool   `json:"vision,omitempty"`
-	ImageInput   bool   `json:"imageInput,omitempty"`
-	ImageOutput  bool   `json:"imageOutput,omitempty"`
-	OCR          bool   `json:"ocr,omitempty"`
-	PDF          bool   `json:"pdf,omitempty"`
-	Streaming    bool   `json:"streaming,omitempty"`
-	FunctionCalls bool  `json:"functionCalls,omitempty"`
-	ToolUse      bool   `json:"toolUse,omitempty"`
-	Embeddings   bool   `json:"embeddings,omitempty"`
-	FileUpload   bool   `json:"fileUpload,omitempty"`
-	NoFileLimit  bool   `json:"noFileLimit,omitempty"`
+	Name          string `json:"name"`
+	Attachments   bool   `json:"attachments,omitempty"`
+	Reasoning     bool   `json:"reasoning,omitempty"`
+	MaxTokens     int    `json:"maxTokens,omitempty"`
+	Vision        bool   `json:"vision,omitempty"`
+	ImageInput    bool   `json:"imageInput,omitempty"`
+	ImageOutput   bool   `json:"imageOutput,omitempty"`
+	OCR           bool   `json:"ocr,omitempty"`
+	PDF           bool   `json:"pdf,omitempty"`
+	Streaming     bool   `json:"streaming,omitempty"`
+	FunctionCalls bool   `json:"functionCalls,omitempty"`
+	ToolUse       bool   `json:"toolUse,omitempty"`
+	Embeddings    bool   `json:"embeddings,omitempty"`
+	FileUpload    bool   `json:"fileUpload,omitempty"`
+	NoFileLimit   bool   `json:"noFileLimit,omitempty"`
 }
 
 // MCPServerDef represents an MCP server definition
@@ -1238,8 +1238,8 @@ func buildMCPServerConfig(host, port, apiKey, homeDir string) map[string]MCPServ
 				Type:    "local",
 				Command: []string{nodePath, entryPath},
 				Environment: map[string]string{
-					"HOME":       homeDir,
-					"NODE_ENV":   "production",
+					"HOME":         homeDir,
+					"NODE_ENV":     "production",
 					"GITHUB_TOKEN": os.Getenv("GITHUB_TOKEN"),
 				},
 			}
@@ -1527,10 +1527,10 @@ type OpenCodeValidationResult struct {
 
 // OpenCodeValidationStats contains statistics about the validated config
 type OpenCodeValidationStats struct {
-	Providers int `json:"providers"`
+	Providers  int `json:"providers"`
 	MCPServers int `json:"mcp_servers"`
-	Agents    int `json:"agents"`
-	Commands  int `json:"commands"`
+	Agents     int `json:"agents"`
+	Commands   int `json:"commands"`
 }
 
 // handleValidateOpenCode handles the --validate-opencode-config command

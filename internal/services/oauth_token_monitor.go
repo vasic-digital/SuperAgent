@@ -77,13 +77,13 @@ type OAuthTokenAlertListener func(alert OAuthTokenAlert)
 
 // OAuthTokenAlert represents an alert from the monitor
 type OAuthTokenAlert struct {
-	Type        string    `json:"type"`
-	Provider    string    `json:"provider"`
-	Message     string    `json:"message"`
-	ExpiresAt   time.Time `json:"expires_at,omitempty"`
-	ExpiresIn   string    `json:"expires_in,omitempty"`
-	Timestamp   time.Time `json:"timestamp"`
-	Severity    string    `json:"severity"` // warning, critical, expired
+	Type      string    `json:"type"`
+	Provider  string    `json:"provider"`
+	Message   string    `json:"message"`
+	ExpiresAt time.Time `json:"expires_at,omitempty"`
+	ExpiresIn string    `json:"expires_in,omitempty"`
+	Timestamp time.Time `json:"timestamp"`
+	Severity  string    `json:"severity"` // warning, critical, expired
 }
 
 // TokenStatus represents the status of a token

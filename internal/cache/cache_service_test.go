@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewCacheService_WithRedisConnectionFailure(t *testing.T) {
@@ -1454,8 +1454,8 @@ func TestCacheService_EnabledGetLLMResponse(t *testing.T) {
 	// Create enabled cache service with Redis client that will fail
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1486,8 +1486,8 @@ func TestCacheService_EnabledGetLLMResponse(t *testing.T) {
 func TestCacheService_EnabledSetLLMResponse(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1525,8 +1525,8 @@ func TestCacheService_EnabledSetLLMResponse(t *testing.T) {
 func TestCacheService_EnabledGetMemorySources(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1548,8 +1548,8 @@ func TestCacheService_EnabledGetMemorySources(t *testing.T) {
 func TestCacheService_EnabledSetMemorySources(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1578,8 +1578,8 @@ func TestCacheService_EnabledSetMemorySources(t *testing.T) {
 func TestCacheService_EnabledGetProviderHealth(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1601,8 +1601,8 @@ func TestCacheService_EnabledGetProviderHealth(t *testing.T) {
 func TestCacheService_EnabledSetProviderHealth(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1631,8 +1631,8 @@ func TestCacheService_EnabledSetProviderHealth(t *testing.T) {
 func TestCacheService_EnabledGetUserSession(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1654,8 +1654,8 @@ func TestCacheService_EnabledGetUserSession(t *testing.T) {
 func TestCacheService_EnabledSetUserSession(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1698,8 +1698,8 @@ func TestCacheService_EnabledSetUserSession(t *testing.T) {
 func TestCacheService_EnabledGetAPIKey(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1721,8 +1721,8 @@ func TestCacheService_EnabledGetAPIKey(t *testing.T) {
 func TestCacheService_EnabledSetAPIKey(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1751,8 +1751,8 @@ func TestCacheService_EnabledSetAPIKey(t *testing.T) {
 func TestCacheService_EnabledInvalidateUserCache(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1789,8 +1789,8 @@ func TestCacheService_EnabledInvalidateUserCache(t *testing.T) {
 func TestCacheService_EnabledInvalidateUserCacheWithEmptyKeySet(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1812,8 +1812,8 @@ func TestCacheService_EnabledInvalidateUserCacheWithEmptyKeySet(t *testing.T) {
 func TestCacheService_EnabledSetUserData(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1848,8 +1848,8 @@ func TestCacheService_EnabledSetUserData(t *testing.T) {
 func TestCacheService_EnabledGetUserData(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1877,8 +1877,8 @@ func TestCacheService_EnabledGetUserData(t *testing.T) {
 func TestCacheService_EnabledDeleteUserData(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1915,8 +1915,8 @@ func TestCacheService_EnabledDeleteUserData(t *testing.T) {
 func TestCacheService_EnabledClearExpired(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1938,8 +1938,8 @@ func TestCacheService_EnabledClearExpired(t *testing.T) {
 func TestCacheService_EnabledGetHitCount(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1961,8 +1961,8 @@ func TestCacheService_EnabledGetHitCount(t *testing.T) {
 func TestCacheService_EnabledGetStats(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -1987,8 +1987,8 @@ func TestCacheService_EnabledGetStats(t *testing.T) {
 func TestCacheService_EnabledClose(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -2020,8 +2020,8 @@ func TestCacheService_CloseWithNilClient(t *testing.T) {
 func TestCacheService_DeleteByPatternWithRedisClient(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -2044,8 +2044,8 @@ func TestCacheService_DeleteByPatternWithRedisClient(t *testing.T) {
 func TestCacheService_IncrementHitCountDirect(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -2197,8 +2197,8 @@ func TestCacheService_GetUserKeyCountThreadSafety(t *testing.T) {
 func TestCacheService_InvalidateUserCacheDeletesTrackedKeys(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)
@@ -2229,8 +2229,8 @@ func TestCacheService_InvalidateUserCacheDeletesTrackedKeys(t *testing.T) {
 func TestCacheService_MultipleTTLDefaults(t *testing.T) {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
-			Host: "127.0.0.1",  // Use localhost to avoid DNS timeout
-			Port: "63790",      // Invalid port for connection failure test
+			Host: "127.0.0.1", // Use localhost to avoid DNS timeout
+			Port: "63790",     // Invalid port for connection failure test
 		},
 	}
 	redisClient := NewRedisClient(cfg)

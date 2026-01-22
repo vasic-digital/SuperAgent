@@ -32,12 +32,12 @@ type DatabaseConfig struct {
 
 // VerificationConfig represents verification settings
 type VerificationConfig struct {
-	MandatoryCodeCheck    bool          `yaml:"mandatory_code_check"`
-	CodeVisibilityPrompt  string        `yaml:"code_visibility_prompt"`
-	VerificationTimeout   time.Duration `yaml:"verification_timeout"`
-	RetryCount            int           `yaml:"retry_count"`
-	RetryDelay            time.Duration `yaml:"retry_delay"`
-	Tests                 []string      `yaml:"tests"`
+	MandatoryCodeCheck   bool          `yaml:"mandatory_code_check"`
+	CodeVisibilityPrompt string        `yaml:"code_visibility_prompt"`
+	VerificationTimeout  time.Duration `yaml:"verification_timeout"`
+	RetryCount           int           `yaml:"retry_count"`
+	RetryDelay           time.Duration `yaml:"retry_delay"`
+	Tests                []string      `yaml:"tests"`
 }
 
 // ScoringConfig represents scoring configuration
@@ -59,10 +59,10 @@ type ScoringWeightsConfig struct {
 
 // HealthConfig represents health checking configuration
 type HealthConfig struct {
-	CheckInterval     time.Duration       `yaml:"check_interval"`
-	Timeout           time.Duration       `yaml:"timeout"`
-	FailureThreshold  int                 `yaml:"failure_threshold"`
-	RecoveryThreshold int                 `yaml:"recovery_threshold"`
+	CheckInterval     time.Duration        `yaml:"check_interval"`
+	Timeout           time.Duration        `yaml:"timeout"`
+	FailureThreshold  int                  `yaml:"failure_threshold"`
+	RecoveryThreshold int                  `yaml:"recovery_threshold"`
 	CircuitBreaker    CircuitBreakerConfig `yaml:"circuit_breaker"`
 }
 
@@ -156,8 +156,8 @@ type ChallengesConfig struct {
 
 // SchedulingConfig represents scheduling configuration
 type SchedulingConfig struct {
-	ReVerification      ScheduleConfig `yaml:"re_verification"`
-	ScoreRecalculation  ScheduleConfig `yaml:"score_recalculation"`
+	ReVerification     ScheduleConfig `yaml:"re_verification"`
+	ScoreRecalculation ScheduleConfig `yaml:"score_recalculation"`
 }
 
 // ScheduleConfig represents a schedule configuration

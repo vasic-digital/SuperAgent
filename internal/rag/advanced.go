@@ -30,11 +30,11 @@ type HybridSearchConfig struct {
 // DefaultHybridSearchConfig returns sensible defaults
 func DefaultHybridSearchConfig() HybridSearchConfig {
 	return HybridSearchConfig{
-		VectorWeight:    0.7,
-		KeywordWeight:   0.3,
-		MinKeywordScore: 0.1,
+		VectorWeight:     0.7,
+		KeywordWeight:    0.3,
+		MinKeywordScore:  0.1,
 		EnableFuzzyMatch: true,
-		FuzzyThreshold:  0.8,
+		FuzzyThreshold:   0.8,
 	}
 }
 
@@ -163,26 +163,26 @@ func (a *AdvancedRAG) Initialize(ctx context.Context) error {
 
 	// Initialize synonym dictionary with common programming terms
 	a.synonyms = map[string][]string{
-		"function":    {"func", "method", "procedure", "subroutine"},
-		"variable":    {"var", "parameter", "argument", "field"},
-		"class":       {"type", "struct", "object", "interface"},
-		"error":       {"exception", "fault", "bug", "issue"},
-		"create":      {"make", "new", "build", "construct", "generate"},
-		"delete":      {"remove", "destroy", "drop", "erase"},
-		"update":      {"modify", "change", "edit", "alter"},
-		"read":        {"get", "fetch", "retrieve", "load"},
-		"write":       {"put", "store", "save", "persist"},
-		"api":         {"endpoint", "interface", "service"},
-		"database":    {"db", "datastore", "storage"},
-		"test":        {"spec", "check", "verify", "validate"},
-		"config":      {"configuration", "settings", "options"},
-		"async":       {"asynchronous", "concurrent", "parallel"},
-		"sync":        {"synchronous", "blocking", "sequential"},
-		"cache":       {"memoize", "buffer", "store"},
-		"query":       {"search", "find", "lookup", "retrieve"},
-		"index":       {"key", "lookup", "pointer"},
-		"schema":      {"model", "structure", "definition"},
-		"vector":      {"embedding", "representation", "array"},
+		"function": {"func", "method", "procedure", "subroutine"},
+		"variable": {"var", "parameter", "argument", "field"},
+		"class":    {"type", "struct", "object", "interface"},
+		"error":    {"exception", "fault", "bug", "issue"},
+		"create":   {"make", "new", "build", "construct", "generate"},
+		"delete":   {"remove", "destroy", "drop", "erase"},
+		"update":   {"modify", "change", "edit", "alter"},
+		"read":     {"get", "fetch", "retrieve", "load"},
+		"write":    {"put", "store", "save", "persist"},
+		"api":      {"endpoint", "interface", "service"},
+		"database": {"db", "datastore", "storage"},
+		"test":     {"spec", "check", "verify", "validate"},
+		"config":   {"configuration", "settings", "options"},
+		"async":    {"asynchronous", "concurrent", "parallel"},
+		"sync":     {"synchronous", "blocking", "sequential"},
+		"cache":    {"memoize", "buffer", "store"},
+		"query":    {"search", "find", "lookup", "retrieve"},
+		"index":    {"key", "lookup", "pointer"},
+		"schema":   {"model", "structure", "definition"},
+		"vector":   {"embedding", "representation", "array"},
 	}
 
 	a.initialized = true

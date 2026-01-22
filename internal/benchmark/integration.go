@@ -14,13 +14,13 @@ import (
 
 // BenchmarkSystem is the main orchestrator for benchmarking
 type BenchmarkSystem struct {
-	runner            BenchmarkRunner
-	debateAdapter     *DebateAdapterForBenchmark
-	verifierAdapter   *VerifierAdapterForBenchmark
-	providerAdapter   *ProviderAdapterForBenchmark
-	config            *BenchmarkSystemConfig
-	logger            *logrus.Logger
-	mu                sync.RWMutex
+	runner          BenchmarkRunner
+	debateAdapter   *DebateAdapterForBenchmark
+	verifierAdapter *VerifierAdapterForBenchmark
+	providerAdapter *ProviderAdapterForBenchmark
+	config          *BenchmarkSystemConfig
+	logger          *logrus.Logger
+	mu              sync.RWMutex
 }
 
 // BenchmarkSystemConfig configuration for benchmark system

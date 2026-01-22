@@ -40,13 +40,13 @@ func DefaultReplayConfig() ReplayConfig {
 
 // ReplayRequest represents a request to replay messages
 type ReplayRequest struct {
-	ID          string            `json:"id"`
-	Topic       string            `json:"topic"`
-	FromTime    time.Time         `json:"from_time"`
-	ToTime      time.Time         `json:"to_time,omitempty"`
-	TargetTopic string            `json:"target_topic,omitempty"`
-	Filter      *ReplayFilter     `json:"filter,omitempty"`
-	Options     *ReplayOptions    `json:"options,omitempty"`
+	ID          string         `json:"id"`
+	Topic       string         `json:"topic"`
+	FromTime    time.Time      `json:"from_time"`
+	ToTime      time.Time      `json:"to_time,omitempty"`
+	TargetTopic string         `json:"target_topic,omitempty"`
+	Filter      *ReplayFilter  `json:"filter,omitempty"`
+	Options     *ReplayOptions `json:"options,omitempty"`
 }
 
 // ReplayFilter allows filtering which messages to replay
@@ -78,25 +78,25 @@ const (
 
 // ReplayProgress tracks the progress of a replay operation
 type ReplayProgress struct {
-	RequestID       string        `json:"request_id"`
-	Status          ReplayStatus  `json:"status"`
-	TotalMessages   int64         `json:"total_messages"`
-	ReplayedCount   int64         `json:"replayed_count"`
-	SkippedCount    int64         `json:"skipped_count"`
-	FailedCount     int64         `json:"failed_count"`
-	StartTime       time.Time     `json:"start_time,omitempty"`
-	EndTime         time.Time     `json:"end_time,omitempty"`
-	CurrentOffset   int64         `json:"current_offset"`
-	ErrorMessage    string        `json:"error_message,omitempty"`
-	LastProcessedID string        `json:"last_processed_id,omitempty"`
-	Rate            float64       `json:"rate_per_second"`
+	RequestID       string       `json:"request_id"`
+	Status          ReplayStatus `json:"status"`
+	TotalMessages   int64        `json:"total_messages"`
+	ReplayedCount   int64        `json:"replayed_count"`
+	SkippedCount    int64        `json:"skipped_count"`
+	FailedCount     int64        `json:"failed_count"`
+	StartTime       time.Time    `json:"start_time,omitempty"`
+	EndTime         time.Time    `json:"end_time,omitempty"`
+	CurrentOffset   int64        `json:"current_offset"`
+	ErrorMessage    string       `json:"error_message,omitempty"`
+	LastProcessedID string       `json:"last_processed_id,omitempty"`
+	Rate            float64      `json:"rate_per_second"`
 }
 
 // Handler handles message replay operations
 type Handler struct {
-	config  ReplayConfig
-	broker  messaging.MessageBroker
-	logger  *zap.Logger
+	config ReplayConfig
+	broker messaging.MessageBroker
+	logger *zap.Logger
 
 	activeReplays map[string]*ReplayProgress
 	mu            sync.RWMutex
@@ -443,11 +443,11 @@ func NewReplayHTTPHandler(handler *Handler, logger *zap.Logger) *ReplayHTTPHandl
 
 // StartReplayRequest is the request body for starting a replay
 type StartReplayRequest struct {
-	Topic       string        `json:"topic" binding:"required"`
-	FromTime    string        `json:"from_time" binding:"required"`
-	ToTime      string        `json:"to_time,omitempty"`
-	TargetTopic string        `json:"target_topic,omitempty"`
-	Filter      *ReplayFilter `json:"filter,omitempty"`
+	Topic       string         `json:"topic" binding:"required"`
+	FromTime    string         `json:"from_time" binding:"required"`
+	ToTime      string         `json:"to_time,omitempty"`
+	TargetTopic string         `json:"target_topic,omitempty"`
+	Filter      *ReplayFilter  `json:"filter,omitempty"`
 	Options     *ReplayOptions `json:"options,omitempty"`
 }
 

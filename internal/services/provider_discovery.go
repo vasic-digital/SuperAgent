@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/llm/providers/cerebras"
@@ -22,6 +21,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/llm/providers/zen"
 	"dev.helix.agent/internal/models"
+	"github.com/sirupsen/logrus"
 )
 
 // LLMsVerifierScoreProvider interface for getting dynamic scores from LLMsVerifier
@@ -36,31 +36,31 @@ type LLMsVerifierScoreProvider interface {
 
 // ProviderDiscovery handles automatic detection of LLM providers from environment variables
 type ProviderDiscovery struct {
-	providers          map[string]*DiscoveredProvider
-	scores             map[string]*ProviderScore
-	mu                 sync.RWMutex
-	log                *logrus.Logger
-	verifyOnStartup    bool
-	verifierScores     LLMsVerifierScoreProvider // Dynamic LLMsVerifier score provider
-	useDynamicScoring  bool                       // Use LLMsVerifier scores instead of hardcoded
+	providers         map[string]*DiscoveredProvider
+	scores            map[string]*ProviderScore
+	mu                sync.RWMutex
+	log               *logrus.Logger
+	verifyOnStartup   bool
+	verifierScores    LLMsVerifierScoreProvider // Dynamic LLMsVerifier score provider
+	useDynamicScoring bool                      // Use LLMsVerifier scores instead of hardcoded
 }
 
 // DiscoveredProvider represents a provider discovered from environment
 type DiscoveredProvider struct {
-	Name            string                   `json:"name"`
-	Type            string                   `json:"type"`
-	APIKeyEnvVar    string                   `json:"api_key_env_var"`
-	APIKey          string                   `json:"-"` // Hidden in JSON
-	BaseURL         string                   `json:"base_url"`
-	DefaultModel    string                   `json:"default_model"`
-	Provider        llm.LLMProvider          `json:"-"`
-	Status          ProviderHealthStatus     `json:"status"`
-	Score           float64                  `json:"score"`
-	Verified        bool                     `json:"verified"`
-	VerifiedAt      time.Time                `json:"verified_at,omitempty"`
-	Error           string                   `json:"error,omitempty"`
-	Capabilities    *models.ProviderCapabilities `json:"capabilities,omitempty"`
-	SupportsModels  []string                 `json:"supported_models,omitempty"`
+	Name           string                       `json:"name"`
+	Type           string                       `json:"type"`
+	APIKeyEnvVar   string                       `json:"api_key_env_var"`
+	APIKey         string                       `json:"-"` // Hidden in JSON
+	BaseURL        string                       `json:"base_url"`
+	DefaultModel   string                       `json:"default_model"`
+	Provider       llm.LLMProvider              `json:"-"`
+	Status         ProviderHealthStatus         `json:"status"`
+	Score          float64                      `json:"score"`
+	Verified       bool                         `json:"verified"`
+	VerifiedAt     time.Time                    `json:"verified_at,omitempty"`
+	Error          string                       `json:"error,omitempty"`
+	Capabilities   *models.ProviderCapabilities `json:"capabilities,omitempty"`
+	SupportsModels []string                     `json:"supported_models,omitempty"`
 }
 
 // ProviderScore represents scoring metrics for a provider
@@ -457,8 +457,8 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 
 	// For providers without native implementations, use OpenRouter as a proxy
 	case "groq", "fireworks", "together", "hyperbolic",
-		 "sambanova", "replicate", "siliconflow", "cloudflare", "nvidia",
-		 "kimi", "huggingface", "novita", "upstage", "chutes", "openai":
+		"sambanova", "replicate", "siliconflow", "cloudflare", "nvidia",
+		"kimi", "huggingface", "novita", "upstage", "chutes", "openai":
 		// Create OpenRouter-compatible provider
 		return pd.createOpenAICompatibleProvider(mapping, apiKey)
 

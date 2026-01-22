@@ -65,11 +65,11 @@ func TestTaskEventType_Topic(t *testing.T) {
 
 func TestNewBackgroundTaskEvent(t *testing.T) {
 	task := &models.BackgroundTask{
-		ID:        "test-task-1",
-		TaskType:  "test_type",
-		TaskName:  "Test Task",
-		Status:    models.TaskStatusRunning,
-		Progress:  50.0,
+		ID:       "test-task-1",
+		TaskType: "test_type",
+		TaskName: "Test Task",
+		Status:   models.TaskStatusRunning,
+		Progress: 50.0,
 	}
 
 	workerID := "worker-1"

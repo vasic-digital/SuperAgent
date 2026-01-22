@@ -14,12 +14,12 @@ import (
 // QueryOptimizer provides optimized query execution with prepared statements,
 // query caching, and batch operations
 type QueryOptimizer struct {
-	pool            *pgxpool.Pool
-	preparedStmts   map[string]*pgxpool.Conn
-	stmtMu          sync.RWMutex
-	queryCache      *QueryCache
-	metrics         *QueryMetrics
-	config          *OptimizerConfig
+	pool          *pgxpool.Pool
+	preparedStmts map[string]*pgxpool.Conn
+	stmtMu        sync.RWMutex
+	queryCache    *QueryCache
+	metrics       *QueryMetrics
+	config        *OptimizerConfig
 }
 
 // OptimizerConfig holds configuration for the query optimizer
@@ -61,9 +61,9 @@ type QueryMetrics struct {
 
 // QueryCache provides simple query result caching
 type QueryCache struct {
-	cache  map[string]*cacheEntry
-	mu     sync.RWMutex
-	ttl    time.Duration
+	cache   map[string]*cacheEntry
+	mu      sync.RWMutex
+	ttl     time.Duration
 	maxSize int
 }
 

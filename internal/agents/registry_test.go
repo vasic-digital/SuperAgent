@@ -206,9 +206,9 @@ func TestAgentProtocols(t *testing.T) {
 // TestGetAgentsByProtocol tests filtering agents by protocol
 func TestGetAgentsByProtocol(t *testing.T) {
 	tests := []struct {
-		protocol       string
-		minExpected    int
-		shouldContain  []string
+		protocol      string
+		minExpected   int
+		shouldContain []string
 	}{
 		{"OpenAI", 10, []string{"OpenCode", "Crush", "HelixCode", "Kiro", "Plandex"}},
 		{"Anthropic", 5, []string{"ClaudeCode", "CodenameGoose", "Forge", "Aider", "KiloCode"}},
@@ -252,9 +252,9 @@ func TestGetAgentsByProtocolCaseInsensitive(t *testing.T) {
 // TestGetAgentsByTool tests filtering agents by tool
 func TestGetAgentsByTool(t *testing.T) {
 	tests := []struct {
-		tool           string
-		minExpected    int
-		shouldContain  []string
+		tool          string
+		minExpected   int
+		shouldContain []string
 	}{
 		{"Bash", 18, []string{"OpenCode", "Crush", "HelixCode", "Kiro", "Aider"}},
 		{"Read", 18, []string{"OpenCode", "Crush", "HelixCode", "Kiro", "ClaudeCode"}},

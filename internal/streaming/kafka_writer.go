@@ -14,7 +14,7 @@ import (
 
 // KafkaStreamTopic constants for streaming events - topic names, not credentials
 const (
-	TopicTokenStream = "helixagent.stream.tokens" // #nosec G101 - Kafka topic name, not credentials
+	TopicTokenStream       = "helixagent.stream.tokens" // #nosec G101 - Kafka topic name, not credentials
 	TopicSSEEvents         = "helixagent.stream.sse"
 	TopicWebSocketMessages = "helixagent.stream.websocket"
 	TopicStreamEvents      = "helixagent.stream.events"
@@ -69,16 +69,16 @@ func DefaultKafkaStreamWriterConfig() *KafkaStreamWriterConfig {
 
 // KafkaStreamWriter writes stream events to Kafka for persistence and replay.
 type KafkaStreamWriter struct {
-	hub       *messaging.MessagingHub
-	config    *KafkaStreamWriterConfig
-	logger    *logrus.Logger
-	streamID  string
-	index     int
-	eventCh   chan *StreamEvent
-	stopCh    chan struct{}
-	wg        sync.WaitGroup
-	mu        sync.Mutex
-	started   bool
+	hub      *messaging.MessagingHub
+	config   *KafkaStreamWriterConfig
+	logger   *logrus.Logger
+	streamID string
+	index    int
+	eventCh  chan *StreamEvent
+	stopCh   chan struct{}
+	wg       sync.WaitGroup
+	mu       sync.Mutex
+	started  bool
 }
 
 // NewKafkaStreamWriter creates a new Kafka stream writer.
@@ -263,18 +263,18 @@ func (w *KafkaStreamWriter) doPublish(ctx context.Context, event *StreamEvent) e
 	}
 
 	msgEvent := &messaging.Event{
-		ID:        event.ID,
-		Type:      messaging.EventType("stream." + event.Type),
-		Source:    "helixagent.streaming",
-		Subject:   event.StreamID,
-		Data:      data,
+		ID:         event.ID,
+		Type:       messaging.EventType("stream." + event.Type),
+		Source:     "helixagent.streaming",
+		Subject:    event.StreamID,
+		Data:       data,
 		DataSchema: "application/json",
-		Timestamp: event.Timestamp,
+		Timestamp:  event.Timestamp,
 	}
 
 	if err := w.hub.PublishEvent(ctx, w.config.Topic, msgEvent); err != nil {
 		w.logger.WithError(err).WithFields(logrus.Fields{
-			"stream_id": event.StreamID,
+			"stream_id":  event.StreamID,
 			"event_type": event.Type,
 			"index":      event.Index,
 		}).Error("Failed to publish stream event")
@@ -282,7 +282,7 @@ func (w *KafkaStreamWriter) doPublish(ctx context.Context, event *StreamEvent) e
 	}
 
 	w.logger.WithFields(logrus.Fields{
-		"stream_id": event.StreamID,
+		"stream_id":  event.StreamID,
 		"event_type": event.Type,
 		"index":      event.Index,
 	}).Debug("Published stream event")

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/database"
+	"github.com/sirupsen/logrus"
 )
 
 // MCPTool represents an MCP tool

@@ -423,12 +423,12 @@ func TestConvertCapabilities_Empty(t *testing.T) {
 
 func TestConvertCapabilities_WithFeatures(t *testing.T) {
 	caps := convertCapabilities(&models.ProviderCapabilities{
-		SupportedFeatures:      []string{"chat", "completion"},
-		SupportsStreaming:      true,
+		SupportedFeatures:       []string{"chat", "completion"},
+		SupportsStreaming:       true,
 		SupportsFunctionCalling: true,
-		SupportsVision:         true,
-		SupportsTools:          true,
-		SupportsReasoning:      true,
+		SupportsVision:          true,
+		SupportsTools:           true,
+		SupportsReasoning:       true,
 	})
 
 	assert.Contains(t, caps, "chat")

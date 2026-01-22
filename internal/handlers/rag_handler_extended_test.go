@@ -502,10 +502,10 @@ func TestRAGHandler_AllEndpoints_InvalidJSON(t *testing.T) {
 	handler := NewRAGHandler(RAGHandlerConfig{})
 
 	endpoints := []struct {
-		name    string
-		method  func(c *gin.Context)
+		name       string
+		method     func(c *gin.Context)
 		httpMethod string
-		path    string
+		path       string
 	}{
 		{"IngestDocument", handler.IngestDocument, "POST", "/v1/rag/documents"},
 		{"IngestDocuments", handler.IngestDocuments, "POST", "/v1/rag/documents/batch"},

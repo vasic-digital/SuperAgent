@@ -20,10 +20,10 @@ func TestSEMAP_RegisterContract(t *testing.T) {
 		Type:        ContractTypePrecondition,
 		Severity:    ViolationSeverityError,
 		Conditions: []Condition{{
-			ID:        "cond1",
-			Evaluator: ConditionTypeRegex,
+			ID:         "cond1",
+			Evaluator:  ConditionTypeRegex,
 			Expression: "^[a-zA-Z]+$",
-			Message:   "Must contain only letters",
+			Message:    "Must contain only letters",
 		}},
 		Enabled: true,
 	}
@@ -43,10 +43,10 @@ func TestSEMAP_CheckPreconditions(t *testing.T) {
 
 	// Register a contract
 	contract := &Contract{
-		ID:          "test-contract",
-		Name:        "Input Validation",
-		Type:        ContractTypePrecondition,
-		Severity:    ViolationSeverityError,
+		ID:       "test-contract",
+		Name:     "Input Validation",
+		Type:     ContractTypePrecondition,
+		Severity: ViolationSeverityError,
 		Conditions: []Condition{{
 			ID:         "length-check",
 			Evaluator:  ConditionTypeRegex,
@@ -123,9 +123,9 @@ func TestSEMAP_RegisterPolicy(t *testing.T) {
 
 	// Register a contract first
 	contract := &Contract{
-		ID:   "policy-contract",
-		Name: "Policy Contract",
-		Type: ContractTypePrecondition,
+		ID:      "policy-contract",
+		Name:    "Policy Contract",
+		Type:    ContractTypePrecondition,
 		Enabled: true,
 	}
 	semap.RegisterContract(contract)
@@ -156,10 +156,10 @@ func TestSEMAP_GetViolations(t *testing.T) {
 
 	// Register a contract that will be violated
 	contract := &Contract{
-		ID:          "strict-contract",
-		Name:        "Strict Contract",
-		Type:        ContractTypePrecondition,
-		Severity:    ViolationSeverityError,
+		ID:       "strict-contract",
+		Name:     "Strict Contract",
+		Type:     ContractTypePrecondition,
+		Severity: ViolationSeverityError,
 		Conditions: []Condition{{
 			ID:          "must-not-be-empty",
 			Evaluator:   ConditionTypeRegex,
@@ -408,19 +408,19 @@ func TestAuditLog(t *testing.T) {
 
 	// Add entries
 	log.Log(AuditEntry{
-		Type:       "test_action",
-		AgentID:    "agent1",
-		Action:     "test",
-		Result:     true,
-		Timestamp:  time.Now(),
+		Type:      "test_action",
+		AgentID:   "agent1",
+		Action:    "test",
+		Result:    true,
+		Timestamp: time.Now(),
 	})
 
 	log.Log(AuditEntry{
-		Type:       "test_action",
-		AgentID:    "agent2",
-		Action:     "test2",
-		Result:     false,
-		Timestamp:  time.Now(),
+		Type:      "test_action",
+		AgentID:   "agent2",
+		Action:    "test2",
+		Result:    false,
+		Timestamp: time.Now(),
 	})
 
 	// Get entries

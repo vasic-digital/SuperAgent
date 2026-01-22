@@ -277,10 +277,10 @@ type OutputFormatter struct {
 
 // FormatterConfig configures output formatting
 type FormatterConfig struct {
-	IndentJSON     bool   `json:"indent_json"`
-	IndentSize     int    `json:"indent_size"`
-	SortKeys       bool   `json:"sort_keys"`
-	EscapeHTML     bool   `json:"escape_html"`
+	IndentJSON bool `json:"indent_json"`
+	IndentSize int  `json:"indent_size"`
+	SortKeys   bool `json:"sort_keys"`
+	EscapeHTML bool `json:"escape_html"`
 }
 
 // DefaultFormatterConfig returns default formatter config

@@ -25,18 +25,18 @@ const (
 
 // MCTSNode represents a node in the MCTS tree
 type MCTSNode struct {
-	ID            string                 `json:"id"`
-	ParentID      string                 `json:"parent_id,omitempty"`
-	State         interface{}            `json:"state"`
-	Action        string                 `json:"action,omitempty"`
-	Visits        int                    `json:"visits"`
-	TotalReward   float64                `json:"total_reward"`
-	Children      []*MCTSNode            `json:"children,omitempty"`
-	NodeState     MCTSNodeState          `json:"node_state"`
-	Depth         int                    `json:"depth"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt     time.Time              `json:"created_at"`
-	mu            sync.RWMutex
+	ID          string                 `json:"id"`
+	ParentID    string                 `json:"parent_id,omitempty"`
+	State       interface{}            `json:"state"`
+	Action      string                 `json:"action,omitempty"`
+	Visits      int                    `json:"visits"`
+	TotalReward float64                `json:"total_reward"`
+	Children    []*MCTSNode            `json:"children,omitempty"`
+	NodeState   MCTSNodeState          `json:"node_state"`
+	Depth       int                    `json:"depth"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	CreatedAt   time.Time              `json:"created_at"`
+	mu          sync.RWMutex
 }
 
 // AverageReward returns the average reward for this node
@@ -218,12 +218,12 @@ func (m *MCTS) Search(ctx context.Context, initialState interface{}) (*MCTSResul
 	}
 
 	result := &MCTSResult{
-		BestActions:   bestActions,
-		BestPath:      bestPath,
+		BestActions:     bestActions,
+		BestPath:        bestPath,
 		TotalIterations: m.iterations,
-		Duration:      time.Since(startTime),
-		RootVisits:   m.root.Visits,
-		TreeSize:     m.countNodes(m.root),
+		Duration:        time.Since(startTime),
+		RootVisits:      m.root.Visits,
+		TreeSize:        m.countNodes(m.root),
 	}
 
 	if len(bestPath) > 0 {

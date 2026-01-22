@@ -176,9 +176,9 @@ func (m *mockTaskQueue) SetPendingCount(count int64) {
 
 // mockStuckDetector implements StuckDetector interface for testing
 type mockStuckDetector struct {
-	isStuck    bool
+	isStuck     bool
 	stuckReason string
-	thresholds map[string]time.Duration
+	thresholds  map[string]time.Duration
 }
 
 func newMockStuckDetector() *mockStuckDetector {
@@ -209,11 +209,11 @@ func (m *mockStuckDetector) SetStuck(isStuck bool, reason string) {
 
 // mockNotificationService implements NotificationService interface for testing
 type mockNotificationService struct {
-	mu            sync.Mutex
-	events        []notificationEvent
-	notifyErr     error
-	sseClients    map[string][]chan<- []byte
-	wsClients     map[string][]WebSocketClient
+	mu         sync.Mutex
+	events     []notificationEvent
+	notifyErr  error
+	sseClients map[string][]chan<- []byte
+	wsClients  map[string][]WebSocketClient
 }
 
 type notificationEvent struct {
@@ -691,7 +691,7 @@ func TestAdaptiveWorkerPool_calculateWorkerRequirements(t *testing.T) {
 
 		req := pool.calculateWorkerRequirements()
 
-		assert.Equal(t, 2, req.CPUCores)   // 8 / 4
+		assert.Equal(t, 2, req.CPUCores)    // 8 / 4
 		assert.Equal(t, 4000, req.MemoryMB) // 16000 / 4
 	})
 
@@ -1110,9 +1110,9 @@ func TestAdaptiveWorkerPool_WaitForMultiple(t *testing.T) {
 func TestAdaptiveWorkerPool_checkAndScale(t *testing.T) {
 	t.Run("Does nothing without resource monitor", func(t *testing.T) {
 		config := &WorkerPoolConfig{
-			MinWorkers:        2,
-			MaxWorkers:        4,
-			ScaleUpThreshold:  0.7,
+			MinWorkers:         2,
+			MaxWorkers:         4,
+			ScaleUpThreshold:   0.7,
 			ScaleDownThreshold: 0.3,
 		}
 		pool := newTestWorkerPool(config, newMockTaskQueue(), newMockTaskRepository(), nil, nil, nil, newTestLogger())
@@ -1126,9 +1126,9 @@ func TestAdaptiveWorkerPool_checkAndScale(t *testing.T) {
 
 	t.Run("Prevents concurrent scaling", func(t *testing.T) {
 		config := &WorkerPoolConfig{
-			MinWorkers:        2,
-			MaxWorkers:        4,
-			ScaleUpThreshold:  0.7,
+			MinWorkers:         2,
+			MaxWorkers:         4,
+			ScaleUpThreshold:   0.7,
 			ScaleDownThreshold: 0.3,
 		}
 		resourceMonitor := NewMockResourceMonitor()
@@ -1269,15 +1269,15 @@ func TestMin_AllCombinations(t *testing.T) {
 		a, b, c  int
 		expected int
 	}{
-		{1, 2, 3, 1}, // a is min
-		{2, 1, 3, 1}, // b is min
-		{3, 2, 1, 1}, // c is min
-		{1, 1, 3, 1}, // a = b < c
-		{1, 3, 1, 1}, // a = c < b
-		{3, 1, 1, 1}, // b = c < a
-		{1, 1, 1, 1}, // all equal
-		{0, 0, 0, 0}, // all zero
-		{-1, 0, 1, -1}, // negative
+		{1, 2, 3, 1},     // a is min
+		{2, 1, 3, 1},     // b is min
+		{3, 2, 1, 1},     // c is min
+		{1, 1, 3, 1},     // a = b < c
+		{1, 3, 1, 1},     // a = c < b
+		{3, 1, 1, 1},     // b = c < a
+		{1, 1, 1, 1},     // all equal
+		{0, 0, 0, 0},     // all zero
+		{-1, 0, 1, -1},   // negative
 		{-5, -3, -1, -5}, // all negative
 	}
 

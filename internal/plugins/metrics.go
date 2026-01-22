@@ -3,9 +3,9 @@ package plugins
 import (
 	"time"
 
+	"dev.helix.agent/internal/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"dev.helix.agent/internal/utils"
 )
 
 var (

@@ -34,14 +34,14 @@ const (
 
 // CLIAgentTestResponse represents a parsed streaming response
 type CLIAgentTestResponse struct {
-	Content         string
-	ChunkCount      int
-	HasDoneMarker   bool
-	HasFinishReason bool
-	StreamID        string
-	Errors          []string
+	Content              string
+	ChunkCount           int
+	HasDoneMarker        bool
+	HasFinishReason      bool
+	StreamID             string
+	Errors               []string
 	InterleavingDetected bool
-	CutoffDetected  bool
+	CutoffDetected       bool
 }
 
 // cliAgentGetBaseURL returns the HelixAgent base URL for testing

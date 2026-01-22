@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/models"
 )
 
 func TestNewQwenProvider(t *testing.T) {
@@ -1528,12 +1528,12 @@ func TestQwenProvider_WaitWithJitter(t *testing.T) {
 
 func TestParseSSELine(t *testing.T) {
 	tests := []struct {
-		name         string
-		line         string
-		wantChunk    bool
-		wantDone     bool
-		wantError    bool
-		wantContent  string
+		name        string
+		line        string
+		wantChunk   bool
+		wantDone    bool
+		wantError   bool
+		wantContent string
 	}{
 		{
 			name:      "empty line",
@@ -1570,9 +1570,9 @@ func TestParseSSELine(t *testing.T) {
 			wantDone: true,
 		},
 		{
-			name:      "valid chunk",
-			line:      `data: {"id":"test","choices":[{"delta":{"content":"hello"}}]}`,
-			wantChunk: true,
+			name:        "valid chunk",
+			line:        `data: {"id":"test","choices":[{"delta":{"content":"hello"}}]}`,
+			wantChunk:   true,
 			wantContent: "hello",
 		},
 		{

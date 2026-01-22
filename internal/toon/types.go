@@ -4,11 +4,11 @@
 //
 // This package provides two encoding approaches:
 //
-// 1. JSON-based compression (Encoder/Decoder): Uses JSON with key/value abbreviation
-//    and optional gzip compression. Best for compatibility with existing JSON parsers.
+//  1. JSON-based compression (Encoder/Decoder): Uses JSON with key/value abbreviation
+//     and optional gzip compression. Best for compatibility with existing JSON parsers.
 //
-// 2. Native TOON format (NativeEncoder/NativeDecoder): Uses a custom text format with
-//    minimal delimiters for maximum token savings.
+//  2. Native TOON format (NativeEncoder/NativeDecoder): Uses a custom text format with
+//     minimal delimiters for maximum token savings.
 //
 // Native TOON Format Specification:
 //   - Objects use | as field delimiter: key1:value1|key2:value2

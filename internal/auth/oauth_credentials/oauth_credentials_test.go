@@ -55,10 +55,10 @@ func TestIsClaudeOAuthEnabled(t *testing.T) {
 	}()
 
 	tests := []struct {
-		name      string
-		envVar    string
-		envValue  string
-		expected  bool
+		name     string
+		envVar   string
+		envValue string
+		expected bool
 	}{
 		{"true value", "CLAUDE_CODE_USE_OAUTH_CREDENTIALS", "true", true},
 		{"1 value", "CLAUDE_CODE_USE_OAUTH_CREDENTIALS", "1", true},
@@ -93,10 +93,10 @@ func TestIsQwenOAuthEnabled(t *testing.T) {
 	}()
 
 	tests := []struct {
-		name      string
-		envVar    string
-		envValue  string
-		expected  bool
+		name     string
+		envVar   string
+		envValue string
+		expected bool
 	}{
 		{"true value", "QWEN_CODE_USE_OAUTH_CREDENTIALS", "true", true},
 		{"1 value", "QWEN_CODE_USE_OAUTH_CREDENTIALS", "1", true},

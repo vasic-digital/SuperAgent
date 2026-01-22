@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/models"
+	"github.com/sirupsen/logrus"
 )
 
 // ============================================================================
@@ -90,47 +90,47 @@ func GetPhaseInfo(phase ValidationPhase) *PhaseInfo {
 
 // ValidationConfig configures the multi-pass validation process
 type ValidationConfig struct {
-	EnableValidation     bool          `json:"enable_validation"`
-	EnablePolish         bool          `json:"enable_polish"`
-	ValidationTimeout    time.Duration `json:"validation_timeout"`
-	PolishTimeout        time.Duration `json:"polish_timeout"`
-	MinConfidenceToSkip  float64       `json:"min_confidence_to_skip"` // Skip polish if initial confidence is high
-	MaxValidationRounds  int           `json:"max_validation_rounds"`
-	ParallelValidation   bool          `json:"parallel_validation"`
-	ShowPhaseIndicators  bool          `json:"show_phase_indicators"`
-	VerbosePhaseHeaders  bool          `json:"verbose_phase_headers"`
+	EnableValidation    bool          `json:"enable_validation"`
+	EnablePolish        bool          `json:"enable_polish"`
+	ValidationTimeout   time.Duration `json:"validation_timeout"`
+	PolishTimeout       time.Duration `json:"polish_timeout"`
+	MinConfidenceToSkip float64       `json:"min_confidence_to_skip"` // Skip polish if initial confidence is high
+	MaxValidationRounds int           `json:"max_validation_rounds"`
+	ParallelValidation  bool          `json:"parallel_validation"`
+	ShowPhaseIndicators bool          `json:"show_phase_indicators"`
+	VerbosePhaseHeaders bool          `json:"verbose_phase_headers"`
 }
 
 // DefaultValidationConfig returns default validation configuration
 func DefaultValidationConfig() *ValidationConfig {
 	return &ValidationConfig{
-		EnableValidation:     true,
-		EnablePolish:         true,
-		ValidationTimeout:    30 * time.Second,
-		PolishTimeout:        20 * time.Second,
-		MinConfidenceToSkip:  0.95,
-		MaxValidationRounds:  2,
-		ParallelValidation:   true,
-		ShowPhaseIndicators:  true,
-		VerbosePhaseHeaders:  true,
+		EnableValidation:    true,
+		EnablePolish:        true,
+		ValidationTimeout:   30 * time.Second,
+		PolishTimeout:       20 * time.Second,
+		MinConfidenceToSkip: 0.95,
+		MaxValidationRounds: 2,
+		ParallelValidation:  true,
+		ShowPhaseIndicators: true,
+		VerbosePhaseHeaders: true,
 	}
 }
 
 // ValidationResult represents the result of validating a response
 type ValidationResult struct {
-	ParticipantID     string              `json:"participant_id"`
-	OriginalResponse  string              `json:"original_response"`
-	ValidationScore   float64             `json:"validation_score"`
-	FactualAccuracy   float64             `json:"factual_accuracy"`
-	Completeness      float64             `json:"completeness"`
-	Coherence         float64             `json:"coherence"`
-	Issues            []ValidationIssue   `json:"issues"`
-	Suggestions       []string            `json:"suggestions"`
-	ValidatorID       string              `json:"validator_id"`
-	ValidatorProvider string              `json:"validator_provider"`
-	ValidatorModel    string              `json:"validator_model"`
-	Timestamp         time.Time           `json:"timestamp"`
-	Duration          time.Duration       `json:"duration"`
+	ParticipantID     string            `json:"participant_id"`
+	OriginalResponse  string            `json:"original_response"`
+	ValidationScore   float64           `json:"validation_score"`
+	FactualAccuracy   float64           `json:"factual_accuracy"`
+	Completeness      float64           `json:"completeness"`
+	Coherence         float64           `json:"coherence"`
+	Issues            []ValidationIssue `json:"issues"`
+	Suggestions       []string          `json:"suggestions"`
+	ValidatorID       string            `json:"validator_id"`
+	ValidatorProvider string            `json:"validator_provider"`
+	ValidatorModel    string            `json:"validator_model"`
+	Timestamp         time.Time         `json:"timestamp"`
+	Duration          time.Duration     `json:"duration"`
 }
 
 // ValidationIssue represents an issue found during validation
@@ -167,17 +167,17 @@ const (
 
 // PolishResult represents the result of polishing a response
 type PolishResult struct {
-	ParticipantID     string            `json:"participant_id"`
-	OriginalResponse  string            `json:"original_response"`
-	PolishedResponse  string            `json:"polished_response"`
-	ImprovementScore  float64           `json:"improvement_score"`
-	ChangesSummary    []string          `json:"changes_summary"`
-	PolisherID        string            `json:"polisher_id"`
-	PolisherProvider  string            `json:"polisher_provider"`
-	PolisherModel     string            `json:"polisher_model"`
-	ValidationIssues  []ValidationIssue `json:"validation_issues_addressed"`
-	Timestamp         time.Time         `json:"timestamp"`
-	Duration          time.Duration     `json:"duration"`
+	ParticipantID    string            `json:"participant_id"`
+	OriginalResponse string            `json:"original_response"`
+	PolishedResponse string            `json:"polished_response"`
+	ImprovementScore float64           `json:"improvement_score"`
+	ChangesSummary   []string          `json:"changes_summary"`
+	PolisherID       string            `json:"polisher_id"`
+	PolisherProvider string            `json:"polisher_provider"`
+	PolisherModel    string            `json:"polisher_model"`
+	ValidationIssues []ValidationIssue `json:"validation_issues_addressed"`
+	Timestamp        time.Time         `json:"timestamp"`
+	Duration         time.Duration     `json:"duration"`
 }
 
 // PhaseResult represents the result of a complete validation phase
@@ -195,25 +195,25 @@ type PhaseResult struct {
 
 // MultiPassResult represents the complete multi-pass validation result
 type MultiPassResult struct {
-	DebateID          string                  `json:"debate_id"`
-	Topic             string                  `json:"topic"`
-	Config            *ValidationConfig       `json:"config"`
-	Phases            []*PhaseResult          `json:"phases"`
-	FinalConsensus    *ConsensusResult        `json:"final_consensus"`
-	FinalResponse     string                  `json:"final_response"`
-	TotalDuration     time.Duration           `json:"total_duration"`
-	OverallConfidence float64                 `json:"overall_confidence"`
+	DebateID           string                 `json:"debate_id"`
+	Topic              string                 `json:"topic"`
+	Config             *ValidationConfig      `json:"config"`
+	Phases             []*PhaseResult         `json:"phases"`
+	FinalConsensus     *ConsensusResult       `json:"final_consensus"`
+	FinalResponse      string                 `json:"final_response"`
+	TotalDuration      time.Duration          `json:"total_duration"`
+	OverallConfidence  float64                `json:"overall_confidence"`
 	QualityImprovement float64                `json:"quality_improvement"`
-	Metadata          map[string]interface{}  `json:"metadata,omitempty"`
+	Metadata           map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // MultiPassValidator provides multi-pass validation for debate responses
 type MultiPassValidator struct {
-	debateService    *DebateService
-	logger           *logrus.Logger
-	config           *ValidationConfig
-	phaseCallbacks   map[ValidationPhase]func(*PhaseResult)
-	mu               sync.RWMutex
+	debateService  *DebateService
+	logger         *logrus.Logger
+	config         *ValidationConfig
+	phaseCallbacks map[ValidationPhase]func(*PhaseResult)
+	mu             sync.RWMutex
 }
 
 // NewMultiPassValidator creates a new multi-pass validator
@@ -273,11 +273,11 @@ func (mpv *MultiPassValidator) ValidateAndImprove(
 	}).Info("Starting multi-pass validation")
 
 	result := &MultiPassResult{
-		DebateID:  debateResult.DebateID,
-		Topic:     debateResult.Topic,
-		Config:    mpv.config,
-		Phases:    make([]*PhaseResult, 0, 4),
-		Metadata:  make(map[string]interface{}),
+		DebateID: debateResult.DebateID,
+		Topic:    debateResult.Topic,
+		Config:   mpv.config,
+		Phases:   make([]*PhaseResult, 0, 4),
+		Metadata: make(map[string]interface{}),
 	}
 
 	// Phase 1: Initial Response (already collected from debate)
@@ -357,8 +357,8 @@ func (mpv *MultiPassValidator) ValidateAndImprove(
 	result.Metadata["total_phases"] = len(result.Phases)
 
 	mpv.logger.WithFields(logrus.Fields{
-		"debate_id":          debateResult.DebateID,
-		"total_duration":     result.TotalDuration,
+		"debate_id":           debateResult.DebateID,
+		"total_duration":      result.TotalDuration,
 		"quality_improvement": result.QualityImprovement,
 		"overall_confidence":  result.OverallConfidence,
 		"phases_completed":    len(result.Phases),

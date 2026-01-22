@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"dev.helix.agent/internal/services"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"dev.helix.agent/internal/services"
 )
 
 // TestSingleProviderMultiInstanceDebate tests the core single-provider multi-instance functionality
@@ -730,4 +730,3 @@ func TestSingleProviderDebateReport(t *testing.T) {
 		assert.GreaterOrEqual(t, len(result.AllResponses), 5, "Should have at least 5 responses")
 	})
 }
-

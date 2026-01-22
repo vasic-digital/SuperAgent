@@ -405,10 +405,10 @@ type DeduplicationStore interface {
 
 // InMemoryDeduplicationStore is an in-memory implementation of DeduplicationStore.
 type InMemoryDeduplicationStore struct {
-	ids     map[string]time.Time
-	ttl     time.Duration
-	mu      sync.RWMutex
-	stopCh  chan struct{}
+	ids    map[string]time.Time
+	ttl    time.Duration
+	mu     sync.RWMutex
+	stopCh chan struct{}
 }
 
 // NewInMemoryDeduplicationStore creates a new in-memory deduplication store.

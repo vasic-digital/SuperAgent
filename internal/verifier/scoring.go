@@ -377,17 +377,17 @@ func DefaultWeights() *ScoreWeights {
 func (s *ScoringService) calculateSpeedScore(modelID string) float64 {
 	// Fast models known for speed
 	fastModels := map[string]float64{
-		"groq":      9.0,
-		"gpt-3.5":   8.0,
+		"groq":           9.0,
+		"gpt-3.5":        8.0,
 		"claude-3-haiku": 8.5,
-		"gemini-flash": 8.5,
+		"gemini-flash":   8.5,
 	}
 
 	// Standard speed models
 	standardModels := map[string]float64{
-		"gpt-4":     7.5,
-		"claude-3":  7.5,
-		"gemini":    7.0,
+		"gpt-4":    7.5,
+		"claude-3": 7.5,
+		"gemini":   7.0,
 	}
 
 	for pattern, score := range fastModels {
@@ -410,10 +410,10 @@ func (s *ScoringService) calculateSpeedScore(modelID string) float64 {
 func (s *ScoringService) calculateEfficiencyScore(modelID string) float64 {
 	// Efficient models
 	efficientModels := map[string]float64{
-		"gpt-4o":    9.0,
+		"gpt-4o":     9.0,
 		"claude-3.5": 9.0,
 		"gemini-pro": 8.0,
-		"llama":     7.5,
+		"llama":      7.5,
 	}
 
 	for pattern, score := range efficientModels {
@@ -430,17 +430,17 @@ func (s *ScoringService) calculateEfficiencyScore(modelID string) float64 {
 func (s *ScoringService) calculateCostScore(modelID string) float64 {
 	// Free/cheap models
 	cheapModels := map[string]float64{
-		"llama":     9.0,
-		"ollama":    10.0,
-		"gpt-3.5":   8.0,
+		"llama":          9.0,
+		"ollama":         10.0,
+		"gpt-3.5":        8.0,
 		"claude-3-haiku": 8.0,
 	}
 
 	// Expensive models
 	expensiveModels := map[string]float64{
-		"gpt-4":     5.0,
+		"gpt-4":         5.0,
 		"claude-3-opus": 4.0,
-		"gemini-ultra": 4.5,
+		"gemini-ultra":  4.5,
 	}
 
 	for pattern, score := range cheapModels {
@@ -472,10 +472,10 @@ func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
 
 	// Medium capability models
 	medCapModels := map[string]float64{
-		"gpt-3.5":       7.0,
+		"gpt-3.5":         7.0,
 		"claude-3-sonnet": 8.0,
-		"gemini-pro":    8.0,
-		"llama-3":       7.5,
+		"gemini-pro":      8.0,
+		"llama-3":         7.5,
 	}
 
 	for pattern, score := range highCapModels {
@@ -498,18 +498,18 @@ func (s *ScoringService) calculateCapabilityScore(modelID string) float64 {
 func (s *ScoringService) calculateRecencyScore(modelID string) float64 {
 	// Recent models
 	recentModels := map[string]float64{
-		"gpt-4o":        9.5,
-		"gpt-4-turbo":   9.0,
-		"claude-3.5":    9.0,
-		"gemini-1.5":    9.0,
+		"gpt-4o":      9.5,
+		"gpt-4-turbo": 9.0,
+		"claude-3.5":  9.0,
+		"gemini-1.5":  9.0,
 	}
 
 	// Older models
 	olderModels := map[string]float64{
-		"gpt-3.5":       6.0,
-		"gpt-4":         7.5,
-		"claude-3":      8.0,
-		"text-davinci":  4.0,
+		"gpt-3.5":      6.0,
+		"gpt-4":        7.5,
+		"claude-3":     8.0,
+		"text-davinci": 4.0,
 	}
 
 	for pattern, score := range recentModels {
@@ -612,15 +612,15 @@ func ValidateResponseQuality(content string) *ResponseQualityResult {
 
 	// Check for common error patterns
 	errorPatterns := map[string]float64{
-		"unable to provide":    8.0,
-		"i cannot":             5.0,
-		"error:":               7.0,
-		"model not supported":  10.0,
-		"token counting":       9.0,
-		"backend error":        8.0,
-		"rate limit":           3.0, // Lower penalty, might be temporary
-		"timeout":              3.0,
-		"service unavailable":  5.0,
+		"unable to provide":   8.0,
+		"i cannot":            5.0,
+		"error:":              7.0,
+		"model not supported": 10.0,
+		"token counting":      9.0,
+		"backend error":       8.0,
+		"rate limit":          3.0, // Lower penalty, might be temporary
+		"timeout":             3.0,
+		"service unavailable": 5.0,
 	}
 
 	lowerContent := strings.ToLower(content)

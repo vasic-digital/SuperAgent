@@ -819,7 +819,7 @@ func TestFallbackChainIncludesWorkingProviders(t *testing.T) {
 		reliableCount := 0
 		for _, fb := range fallbacks {
 			if fb.ProviderName == "cerebras" || fb.ProviderName == "mistral" ||
-			   fb.ProviderName == "deepseek" || fb.ProviderName == "gemini" {
+				fb.ProviderName == "deepseek" || fb.ProviderName == "gemini" {
 				reliableCount++
 			}
 		}

@@ -157,17 +157,17 @@ func (f *FetchAdapter) isDomainAllowed(domain string) bool {
 
 // FetchResult represents the result of a fetch operation
 type FetchResult struct {
-	URL            string              `json:"url"`
-	FinalURL       string              `json:"final_url,omitempty"`
-	StatusCode     int                 `json:"status_code"`
-	Status         string              `json:"status"`
-	Headers        map[string][]string `json:"headers"`
-	ContentType    string              `json:"content_type"`
-	ContentLength  int64               `json:"content_length"`
-	Content        string              `json:"content,omitempty"`
-	Duration       time.Duration       `json:"duration"`
-	Redirects      int                 `json:"redirects,omitempty"`
-	Error          string              `json:"error,omitempty"`
+	URL           string              `json:"url"`
+	FinalURL      string              `json:"final_url,omitempty"`
+	StatusCode    int                 `json:"status_code"`
+	Status        string              `json:"status"`
+	Headers       map[string][]string `json:"headers"`
+	ContentType   string              `json:"content_type"`
+	ContentLength int64               `json:"content_length"`
+	Content       string              `json:"content,omitempty"`
+	Duration      time.Duration       `json:"duration"`
+	Redirects     int                 `json:"redirects,omitempty"`
+	Error         string              `json:"error,omitempty"`
 }
 
 // Fetch fetches content from a URL

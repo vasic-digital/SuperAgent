@@ -24,26 +24,26 @@ const (
 
 // Schema represents a JSON Schema for structured output
 type Schema struct {
-	Type        string              `json:"type"`
-	Properties  map[string]*Schema  `json:"properties,omitempty"`
-	Required    []string            `json:"required,omitempty"`
-	Items       *Schema             `json:"items,omitempty"`
-	Enum        []interface{}       `json:"enum,omitempty"`
-	Pattern     string              `json:"pattern,omitempty"`
-	MinLength   *int                `json:"minLength,omitempty"`
-	MaxLength   *int                `json:"maxLength,omitempty"`
-	Minimum     *float64            `json:"minimum,omitempty"`
-	Maximum     *float64            `json:"maximum,omitempty"`
-	MinItems    *int                `json:"minItems,omitempty"`
-	MaxItems    *int                `json:"maxItems,omitempty"`
-	Description string              `json:"description,omitempty"`
-	Default     interface{}         `json:"default,omitempty"`
-	Format      string              `json:"format,omitempty"`
-	Ref         string              `json:"$ref,omitempty"`
-	OneOf       []*Schema           `json:"oneOf,omitempty"`
-	AnyOf       []*Schema           `json:"anyOf,omitempty"`
-	AllOf       []*Schema           `json:"allOf,omitempty"`
-	Definitions map[string]*Schema  `json:"definitions,omitempty"`
+	Type        string             `json:"type"`
+	Properties  map[string]*Schema `json:"properties,omitempty"`
+	Required    []string           `json:"required,omitempty"`
+	Items       *Schema            `json:"items,omitempty"`
+	Enum        []interface{}      `json:"enum,omitempty"`
+	Pattern     string             `json:"pattern,omitempty"`
+	MinLength   *int               `json:"minLength,omitempty"`
+	MaxLength   *int               `json:"maxLength,omitempty"`
+	Minimum     *float64           `json:"minimum,omitempty"`
+	Maximum     *float64           `json:"maximum,omitempty"`
+	MinItems    *int               `json:"minItems,omitempty"`
+	MaxItems    *int               `json:"maxItems,omitempty"`
+	Description string             `json:"description,omitempty"`
+	Default     interface{}        `json:"default,omitempty"`
+	Format      string             `json:"format,omitempty"`
+	Ref         string             `json:"$ref,omitempty"`
+	OneOf       []*Schema          `json:"oneOf,omitempty"`
+	AnyOf       []*Schema          `json:"anyOf,omitempty"`
+	AllOf       []*Schema          `json:"allOf,omitempty"`
+	Definitions map[string]*Schema `json:"definitions,omitempty"`
 }
 
 // SchemaFromType generates a JSON Schema from a Go type
@@ -158,10 +158,10 @@ type Grammar struct {
 
 // GrammarRule represents a rule in the grammar
 type GrammarRule struct {
-	Name        string        `json:"name"`
-	Alternatives [][]string   `json:"alternatives"`
-	Terminal    bool          `json:"terminal"`
-	Pattern     string        `json:"pattern,omitempty"`
+	Name         string     `json:"name"`
+	Alternatives [][]string `json:"alternatives"`
+	Terminal     bool       `json:"terminal"`
+	Pattern      string     `json:"pattern,omitempty"`
 }
 
 // NewGrammar creates a new grammar with basic rules
@@ -329,10 +329,10 @@ func (g *Grammar) ruleFromSchema(name string, schema *Schema) (*GrammarRule, err
 
 // ValidationResult contains the result of output validation
 type ValidationResult struct {
-	Valid    bool                `json:"valid"`
-	Errors   []ValidationError   `json:"errors,omitempty"`
-	Warnings []string            `json:"warnings,omitempty"`
-	Data     interface{}         `json:"data,omitempty"`
+	Valid    bool              `json:"valid"`
+	Errors   []ValidationError `json:"errors,omitempty"`
+	Warnings []string          `json:"warnings,omitempty"`
+	Data     interface{}       `json:"data,omitempty"`
 }
 
 // ValidationError represents a validation error

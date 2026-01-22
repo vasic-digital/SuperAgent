@@ -1123,11 +1123,11 @@ func TestIsAuthRetryableStatus(t *testing.T) {
 		statusCode int
 		retryable  bool
 	}{
-		{http.StatusUnauthorized, true},  // 401 - should retry
-		{http.StatusOK, false},           // 200 - not retryable
-		{http.StatusBadRequest, false},   // 400 - not retryable
-		{http.StatusForbidden, false},    // 403 - not retryable
-		{http.StatusNotFound, false},     // 404 - not retryable
+		{http.StatusUnauthorized, true}, // 401 - should retry
+		{http.StatusOK, false},          // 200 - not retryable
+		{http.StatusBadRequest, false},  // 400 - not retryable
+		{http.StatusForbidden, false},   // 403 - not retryable
+		{http.StatusNotFound, false},    // 404 - not retryable
 	}
 
 	for _, tt := range tests {

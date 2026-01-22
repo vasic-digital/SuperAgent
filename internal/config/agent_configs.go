@@ -20,13 +20,13 @@ const (
 
 // AgentConfig holds configuration for HelixAgent to work with different AI agents
 type AgentConfig struct {
-	BaseURL    string            `json:"base_url"`
-	APIKey     string            `json:"api_key,omitempty"`
-	Model      string            `json:"model"`
-	Headers    map[string]string `json:"headers,omitempty"`
-	Timeout    int               `json:"timeout,omitempty"` // in seconds
-	MaxTokens  int               `json:"max_tokens,omitempty"`
-	AgentType  AgentType         `json:"agent_type"`
+	BaseURL   string            `json:"base_url"`
+	APIKey    string            `json:"api_key,omitempty"`
+	Model     string            `json:"model"`
+	Headers   map[string]string `json:"headers,omitempty"`
+	Timeout   int               `json:"timeout,omitempty"` // in seconds
+	MaxTokens int               `json:"max_tokens,omitempty"`
+	AgentType AgentType         `json:"agent_type"`
 }
 
 // OpenCodeConfig represents configuration for OpenCode
@@ -40,10 +40,10 @@ type OpenCodeConfig struct {
 
 // OpenCodeProvider represents a provider configuration in OpenCode
 type OpenCodeProvider struct {
-	NPM     string                      `json:"npm,omitempty"`
-	Name    string                      `json:"name,omitempty"`
-	Options OpenCodeProviderOptions     `json:"options"`
-	Models  map[string]OpenCodeModel    `json:"models,omitempty"`
+	NPM     string                   `json:"npm,omitempty"`
+	Name    string                   `json:"name,omitempty"`
+	Options OpenCodeProviderOptions  `json:"options"`
+	Models  map[string]OpenCodeModel `json:"models,omitempty"`
 }
 
 // OpenCodeProviderOptions represents provider options in OpenCode
@@ -55,11 +55,11 @@ type OpenCodeProviderOptions struct {
 
 // OpenCodeModel represents a model configuration in OpenCode provider
 type OpenCodeModel struct {
-	Name       string          `json:"name,omitempty"`
-	Attachment bool            `json:"attachment,omitempty"`
-	Reasoning  bool            `json:"reasoning,omitempty"`
-	ToolCall   bool            `json:"tool_call,omitempty"`
-	Limit      *OpenCodeLimit  `json:"limit,omitempty"`
+	Name       string         `json:"name,omitempty"`
+	Attachment bool           `json:"attachment,omitempty"`
+	Reasoning  bool           `json:"reasoning,omitempty"`
+	ToolCall   bool           `json:"tool_call,omitempty"`
+	Limit      *OpenCodeLimit `json:"limit,omitempty"`
 }
 
 // OpenCodeLimit represents token limits for a model
@@ -86,26 +86,26 @@ type OpenCodeMCP struct {
 // CrushConfig represents configuration for Crush
 // Schema: https://charm.land/crush.json
 type CrushConfig struct {
-	Schema    string                  `json:"$schema,omitempty"`
+	Schema    string                   `json:"$schema,omitempty"`
 	Providers map[string]CrushProvider `json:"providers"`
-	MCP       map[string]CrushMCP     `json:"mcp,omitempty"`
+	MCP       map[string]CrushMCP      `json:"mcp,omitempty"`
 }
 
 // CrushProvider represents a provider configuration in Crush
 type CrushProvider struct {
-	Type     string       `json:"type"` // openai, openai-compat, anthropic
-	BaseURL  string       `json:"base_url,omitempty"`
-	APIKey   string       `json:"api_key,omitempty"`
-	Models   []CrushModel `json:"models,omitempty"`
-	Headers  map[string]string `json:"headers,omitempty"`
+	Type    string            `json:"type"` // openai, openai-compat, anthropic
+	BaseURL string            `json:"base_url,omitempty"`
+	APIKey  string            `json:"api_key,omitempty"`
+	Models  []CrushModel      `json:"models,omitempty"`
+	Headers map[string]string `json:"headers,omitempty"`
 }
 
 // CrushModel represents a model in Crush configuration
 type CrushModel struct {
-	ID              string `json:"id"`
-	Name            string `json:"name,omitempty"`
-	ContextWindow   int    `json:"context_window,omitempty"`
-	DefaultMaxTokens int   `json:"default_max_tokens,omitempty"`
+	ID               string `json:"id"`
+	Name             string `json:"name,omitempty"`
+	ContextWindow    int    `json:"context_window,omitempty"`
+	DefaultMaxTokens int    `json:"default_max_tokens,omitempty"`
 }
 
 // CrushMCP represents MCP server configuration in Crush
@@ -121,9 +121,9 @@ type CrushMCP struct {
 
 // HelixCodeConfig represents configuration for HelixCode
 type HelixCodeConfig struct {
-	Schema    string                     `json:"$schema,omitempty"`
+	Schema    string                       `json:"$schema,omitempty"`
 	Providers map[string]HelixCodeProvider `json:"providers"`
-	Settings  HelixCodeSettings          `json:"settings,omitempty"`
+	Settings  HelixCodeSettings            `json:"settings,omitempty"`
 }
 
 // HelixCodeProvider represents a provider configuration in HelixCode
@@ -139,9 +139,9 @@ type HelixCodeProvider struct {
 
 // HelixCodeSettings represents global settings for HelixCode
 type HelixCodeSettings struct {
-	DefaultProvider string `json:"default_provider,omitempty"`
-	StreamingEnabled bool  `json:"streaming_enabled,omitempty"`
-	AutoSave        bool   `json:"auto_save,omitempty"`
+	DefaultProvider  string `json:"default_provider,omitempty"`
+	StreamingEnabled bool   `json:"streaming_enabled,omitempty"`
+	AutoSave         bool   `json:"auto_save,omitempty"`
 }
 
 // ConfigGenerator generates configurations for different AI agents
@@ -233,9 +233,9 @@ func (g *ConfigGenerator) GenerateCrushConfig() (*CrushConfig, error) {
 				APIKey:  g.apiKey,
 				Models: []CrushModel{
 					{
-						ID:              g.model,
-						Name:            "HelixAgent AI Debate Ensemble",
-						ContextWindow:   128000,
+						ID:               g.model,
+						Name:             "HelixAgent AI Debate Ensemble",
+						ContextWindow:    128000,
 						DefaultMaxTokens: g.maxTokens,
 					},
 				},

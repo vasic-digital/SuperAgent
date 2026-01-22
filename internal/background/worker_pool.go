@@ -75,14 +75,14 @@ type AdaptiveWorkerPool struct {
 
 // Worker represents a single worker in the pool
 type Worker struct {
-	ID              string
-	Status          workerState
-	CurrentTask     *models.BackgroundTask
-	StartedAt       time.Time
-	LastActivity    time.Time
-	TasksCompleted  int64
-	TasksFailed     int64
-	TotalDuration   time.Duration
+	ID             string
+	Status         workerState
+	CurrentTask    *models.BackgroundTask
+	StartedAt      time.Time
+	LastActivity   time.Time
+	TasksCompleted int64
+	TasksFailed    int64
+	TotalDuration  time.Duration
 
 	pool     *AdaptiveWorkerPool
 	ctx      context.Context

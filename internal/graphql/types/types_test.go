@@ -360,9 +360,9 @@ func TestCreateTaskInput_Fields(t *testing.T) {
 func TestDebateUpdate_Fields(t *testing.T) {
 	now := time.Now()
 	update := DebateUpdate{
-		DebateID:   "debate-1",
-		Type:       "round_started",
-		Timestamp:  now,
+		DebateID:  "debate-1",
+		Type:      "round_started",
+		Timestamp: now,
 	}
 
 	assert.Equal(t, "debate-1", update.DebateID)

@@ -531,14 +531,14 @@ func TestSetupMessagingForWorkerPool(t *testing.T) {
 
 // mockProgressReporter is a mock implementation of ProgressReporter for testing.
 type mockProgressReporter struct {
-	lastPercent    float64
-	lastMessage    string
+	lastPercent     float64
+	lastMessage     string
 	heartbeatCalled bool
-	lastCheckpoint []byte
-	lastMetrics    map[string]interface{}
-	lastLogLevel   string
-	lastLogMessage string
-	lastLogFields  map[string]interface{}
+	lastCheckpoint  []byte
+	lastMetrics     map[string]interface{}
+	lastLogLevel    string
+	lastLogMessage  string
+	lastLogFields   map[string]interface{}
 }
 
 func (m *mockProgressReporter) ReportProgress(percent float64, message string) error {

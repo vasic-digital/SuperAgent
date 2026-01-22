@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/llm"
+	"github.com/sirupsen/logrus"
 )
 
 // StartupVerifier orchestrates the complete startup verification pipeline
@@ -30,7 +30,7 @@ type StartupVerifier struct {
 	providerFactory ProviderFactory
 
 	// OAuth credential reader
-	oauthReader     *oauth_credentials.OAuthCredentialReader
+	oauthReader *oauth_credentials.OAuthCredentialReader
 
 	// Results
 	providers       map[string]*UnifiedProvider
@@ -38,11 +38,11 @@ type StartupVerifier struct {
 	debateTeam      *DebateTeamResult
 
 	// State
-	initialized     bool
-	lastVerifyAt    time.Time
-	mu              sync.RWMutex
+	initialized  bool
+	lastVerifyAt time.Time
+	mu           sync.RWMutex
 
-	log             *logrus.Logger
+	log *logrus.Logger
 }
 
 // ProviderFactory is a function that creates LLM providers
@@ -181,13 +181,13 @@ func (sv *StartupVerifier) VerifyAllProviders(ctx context.Context) (*StartupResu
 	sv.lastVerifyAt = time.Now()
 
 	sv.log.WithFields(logrus.Fields{
-		"total":     result.TotalProviders,
-		"verified":  result.VerifiedCount,
-		"failed":    result.FailedCount,
-		"oauth":     result.OAuthProviders,
-		"api_key":   result.APIKeyProviders,
-		"free":      result.FreeProviders,
-		"duration":  fmt.Sprintf("%dms", result.DurationMs),
+		"total":    result.TotalProviders,
+		"verified": result.VerifiedCount,
+		"failed":   result.FailedCount,
+		"oauth":    result.OAuthProviders,
+		"api_key":  result.APIKeyProviders,
+		"free":     result.FreeProviders,
+		"duration": fmt.Sprintf("%dms", result.DurationMs),
 	}).Info("Startup verification pipeline completed")
 
 	return result, nil
@@ -466,13 +466,13 @@ func (sv *StartupVerifier) verifyProvider(ctx context.Context, disc *ProviderDis
 	defer cancel()
 
 	provider := &UnifiedProvider{
-		ID:          disc.ID,
-		Name:        disc.Type,
-		Type:        disc.Type,
-		AuthType:    disc.AuthType,
-		BaseURL:     disc.BaseURL,
-		Status:      StatusUnknown,
-		Models:      make([]UnifiedModel, 0),
+		ID:       disc.ID,
+		Name:     disc.Type,
+		Type:     disc.Type,
+		AuthType: disc.AuthType,
+		BaseURL:  disc.BaseURL,
+		Status:   StatusUnknown,
+		Models:   make([]UnifiedModel, 0),
 	}
 
 	// Set default model

@@ -17,10 +17,10 @@ import (
 
 // MockLLMProviderWithErrors supports error simulation
 type MockLLMProviderWithErrors struct {
-	responses     map[string]string
-	shouldError   bool
-	errorMessage  string
-	callCount     int
+	responses    map[string]string
+	shouldError  bool
+	errorMessage string
+	callCount    int
 }
 
 func NewMockLLMProviderWithErrors() *MockLLMProviderWithErrors {
@@ -813,7 +813,7 @@ func TestAutoFeedbackCollector_CollectAuto_FeedbackTypes(t *testing.T) {
 }
 
 func floatToString(f float64) string {
-	return string(rune(int('0') + int(f*10)/10)) + "." + string(rune(int('0')+int(f*10)%10))
+	return string(rune(int('0')+int(f*10)/10)) + "." + string(rune(int('0')+int(f*10)%10))
 }
 
 // =====================================
@@ -1394,7 +1394,6 @@ func TestDebateServiceAdapter_CompareWithDebate_Error(t *testing.T) {
 	assert.Nil(t, comparison)
 }
 
-
 func TestContainsIgnoreCase(t *testing.T) {
 	// Test the containsIgnoreCase function from integration.go
 	assert.True(t, containsIgnoreCase("Hello", "H"))
@@ -1423,7 +1422,7 @@ func TestAIRewardModel_ParseScoreFromResponse_EdgeCases(t *testing.T) {
 		{`Some text {"score": 0.8} more text`, 0.8, false},
 		{`no json here`, 0.5, true},
 		{`{"invalid": "json"`, 0.5, true},
-		{`{"score": 1.5}`, 1.0, false}, // Should normalize
+		{`{"score": 1.5}`, 1.0, false},  // Should normalize
 		{`{"score": -0.5}`, 0.0, false}, // Should normalize
 	}
 
