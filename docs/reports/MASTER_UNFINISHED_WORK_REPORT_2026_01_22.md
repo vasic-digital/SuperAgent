@@ -22,7 +22,7 @@ This document provides a complete inventory of ALL unfinished, incomplete, undoc
 | **Code Formatting** | ✅ 0 files | 0 | 0% | COMPLETE (2026-01-22) |
 | **TODO/FIXME Comments** | 1 real | 0 | 1 | LOW |
 | **Documentation Completeness** | 85% | 100% | 15% | IMPROVED |
-| **Package README Files** | 67/102 nested | 102/102 | 35 missing | IMPROVED (+12) |
+| **Package README Files** | 70/102 nested | 102/102 | 32 missing | IMPROVED (+15) |
 | **Provider Docs** | 7/10 | 10/10 | 3 missing | NEEDS WORK |
 | **User Manuals** | 75% | 100% | 25% | NEEDS WORK |
 | **Video Courses** | Scripts ready | Recorded | Production needed | NEEDS WORK |
@@ -231,15 +231,15 @@ internal/testing/llm/  - DeepEval-style LLM testing framework
 | `internal/optimization/sglang/` | ✅ COMPLETE |
 | `internal/optimization/streaming/` | ✅ COMPLETE |
 
-#### Other (11 missing - 3 COMPLETE 2026-01-22)
+#### Other (8 missing - 6 COMPLETE 2026-01-22)
 
 - `internal/verifier/adapters/`
-- `internal/verifier/models/`
-- `internal/services/common/`
+- `internal/verifier/models/` (empty directory)
+- `internal/services/common/` ✅ COMPLETE (2026-01-22)
 - `internal/auth/oauth_credentials/` ✅ COMPLETE (2026-01-22)
-- `internal/database/migrations/`
-- `internal/notifications/cli/`
-- `internal/llm/cognee/`
+- `internal/database/migrations/` (empty directory)
+- `internal/notifications/cli/` ✅ COMPLETE (2026-01-22)
+- `internal/llm/cognee/` ✅ COMPLETE (2026-01-22)
 - `internal/routing/semantic/` ✅ COMPLETE (2026-01-22)
 - `internal/testing/llm/` ✅ COMPLETE (2026-01-22)
 - `cmd/helixagent/`
