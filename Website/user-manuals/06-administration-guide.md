@@ -367,13 +367,375 @@ make build
 systemctl restart helixagent
 ```
 
+## Role-Based Access Control (RBAC)
+
+### Role Definitions
+
+| Role | Description | Permissions |
+|------|-------------|-------------|
+| `admin` | Full system access | All operations |
+| `operator` | Operations management | Provider management, monitoring |
+| `developer` | API access | Completions, debates, embeddings |
+| `viewer` | Read-only access | View models, health checks |
+
+### Creating Roles
+
+```yaml
+# configs/rbac.yaml
+roles:
+  custom_analyst:
+    description: "Data analysis role"
+    permissions:
+      - "completions:read"
+      - "completions:write"
+      - "debates:read"
+      - "debates:write"
+      - "embeddings:read"
+      - "embeddings:write"
+    denied:
+      - "admin:*"
+      - "providers:write"
+```
+
+### Assigning Roles to Users
+
+```bash
+# Assign role to user
+curl -X POST http://localhost:7061/admin/users/{user_id}/roles \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"role": "developer"}'
+
+# List user roles
+curl http://localhost:7061/admin/users/{user_id}/roles \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Remove role
+curl -X DELETE http://localhost:7061/admin/users/{user_id}/roles/developer \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+### Permission Inheritance
+
+```yaml
+rbac:
+  inheritance:
+    admin:
+      inherits: [operator, developer, viewer]
+    operator:
+      inherits: [viewer]
+    developer:
+      inherits: [viewer]
+```
+
+## Audit Logging
+
+### Configuration
+
+```yaml
+audit:
+  enabled: true
+  log_path: /var/log/helixagent/audit.log
+  format: json
+  events:
+    - authentication
+    - authorization
+    - api_calls
+    - admin_actions
+    - provider_changes
+  retention_days: 90
+  include_request_body: false  # Privacy consideration
+  include_response: false
+```
+
+### Audit Log Format
+
+```json
+{
+  "timestamp": "2026-01-22T10:30:00Z",
+  "event_type": "api_call",
+  "user_id": "user-123",
+  "action": "POST /v1/completions",
+  "ip_address": "192.168.1.100",
+  "user_agent": "curl/7.68.0",
+  "result": "success",
+  "duration_ms": 1250,
+  "provider_used": "claude",
+  "tokens_in": 100,
+  "tokens_out": 500
+}
+```
+
+### Querying Audit Logs
+
+```bash
+# View recent authentication events
+curl "http://localhost:7061/admin/audit?event_type=authentication&limit=100" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Filter by user
+curl "http://localhost:7061/admin/audit?user_id=user-123&since=2026-01-01" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Export audit log
+curl "http://localhost:7061/admin/audit/export?format=csv&from=2026-01-01&to=2026-01-31" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" > audit_january.csv
+```
+
+### Audit Log Retention
+
+```bash
+# Archive old logs
+./scripts/archive-audit-logs.sh --older-than 90d --compress
+
+# Verify log integrity
+./scripts/verify-audit-logs.sh --from 2026-01-01 --to 2026-01-31
+```
+
+## API Key Rotation
+
+### Rotation Procedure
+
+```bash
+# 1. Generate new key with same permissions
+NEW_KEY=$(curl -X POST http://localhost:7061/admin/api-keys \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"name": "production-app-v2", "permissions": ["read", "write"]}' | jq -r '.key')
+
+# 2. Update applications with new key (grace period)
+# Allow both old and new keys to work
+
+# 3. Monitor for old key usage
+curl "http://localhost:7061/admin/api-keys/{old_key_id}/usage" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# 4. Revoke old key after migration complete
+curl -X DELETE http://localhost:7061/admin/api-keys/{old_key_id} \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+### Automated Key Rotation
+
+```yaml
+# configs/key-rotation.yaml
+key_rotation:
+  enabled: true
+  schedule: "0 0 1 * *"  # Monthly
+  grace_period: 7d
+  notify_before: 14d
+  notifications:
+    slack: https://hooks.slack.com/services/xxx
+    email: admin@company.com
+```
+
+### Key Expiration Policies
+
+```yaml
+api_keys:
+  policies:
+    default:
+      max_age: 90d
+      require_rotation: true
+    service_account:
+      max_age: 365d
+      require_rotation: true
+    temporary:
+      max_age: 24h
+      require_rotation: false
+```
+
+## Disaster Recovery
+
+### Recovery Point Objective (RPO)
+
+| Data Type | RPO | Backup Frequency |
+|-----------|-----|------------------|
+| Database | 1 hour | Hourly snapshots |
+| Configuration | 24 hours | Daily |
+| Audit Logs | 24 hours | Daily |
+| Redis Cache | N/A | Ephemeral |
+
+### Recovery Time Objective (RTO)
+
+| Scenario | RTO | Procedure |
+|----------|-----|-----------|
+| Single node failure | 5 minutes | Auto-failover |
+| Database corruption | 30 minutes | Restore from snapshot |
+| Complete site failure | 4 hours | DR site activation |
+
+### Disaster Recovery Procedure
+
+```bash
+# 1. Assess damage
+./scripts/dr-assess.sh
+
+# 2. Activate DR site (if needed)
+./scripts/dr-activate.sh --site us-west-2
+
+# 3. Restore database
+./scripts/db-restore.sh --snapshot latest --verify
+
+# 4. Restore configuration
+./scripts/config-restore.sh --backup configs_backup_latest.tar.gpg
+
+# 5. Verify services
+./scripts/health-check.sh --all
+
+# 6. Update DNS (if site switch)
+./scripts/dns-failover.sh --activate dr-site
+```
+
+### DR Testing Schedule
+
+```yaml
+disaster_recovery:
+  testing:
+    database_restore: monthly
+    config_restore: monthly
+    full_dr_drill: quarterly
+    document_review: annually
+```
+
+## Security Hardening
+
+### Network Security
+
+```yaml
+# configs/security.yaml
+network:
+  bind_address: "127.0.0.1"  # Bind to localhost, use reverse proxy
+  allowed_ips:
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+  blocked_ips: []
+  rate_limit:
+    enabled: true
+    per_ip: 100/minute
+    per_user: 1000/minute
+```
+
+### API Security
+
+```yaml
+security:
+  api:
+    require_https: true
+    min_tls_version: "1.2"
+    hsts:
+      enabled: true
+      max_age: 31536000
+      include_subdomains: true
+    content_security_policy: "default-src 'self'"
+    x_frame_options: "DENY"
+    x_content_type_options: "nosniff"
+```
+
+### Secret Management
+
+```yaml
+secrets:
+  provider: "vault"  # or "aws-secrets-manager", "env"
+  vault:
+    address: "https://vault.internal:8200"
+    auth_method: "kubernetes"
+    secret_path: "secret/data/helixagent"
+  refresh_interval: 5m
+```
+
+### Security Scanning
+
+```bash
+# Run security scan
+make security-scan
+
+# Check for vulnerabilities
+govulncheck ./...
+
+# Scan container image
+trivy image helixagent:latest
+
+# Static analysis
+gosec ./...
+```
+
+### Hardening Checklist
+
+- [ ] Disable debug mode in production
+- [ ] Use strong JWT secrets (256+ bits)
+- [ ] Enable TLS for all connections
+- [ ] Configure firewall rules
+- [ ] Set up intrusion detection
+- [ ] Enable audit logging
+- [ ] Implement rate limiting
+- [ ] Use read-only filesystems where possible
+- [ ] Run as non-root user
+- [ ] Keep dependencies updated
+
+## Compliance
+
+### SOC 2 Requirements
+
+| Control | Implementation | Evidence |
+|---------|----------------|----------|
+| Access Control | RBAC with audit logging | Audit logs, role configs |
+| Data Encryption | TLS 1.2+, AES-256 at rest | TLS configs, encryption settings |
+| Monitoring | Prometheus metrics, alerting | Dashboards, alert rules |
+| Incident Response | Documented procedures | Runbooks, incident reports |
+| Change Management | Git-based config management | Git history, PR reviews |
+
+### GDPR Compliance
+
+```yaml
+gdpr:
+  data_retention:
+    request_logs: 30d
+    user_data: "until_deletion_request"
+    audit_logs: 90d
+  data_subject_rights:
+    export_endpoint: /api/v1/users/{id}/export
+    delete_endpoint: /api/v1/users/{id}/delete
+  consent_management:
+    enabled: true
+    purposes:
+      - service_provision
+      - analytics
+      - marketing
+```
+
+### Data Subject Requests
+
+```bash
+# Export user data (GDPR Article 20)
+curl -X POST http://localhost:7061/admin/gdpr/export \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"user_id": "user-123", "format": "json"}'
+
+# Delete user data (GDPR Article 17)
+curl -X POST http://localhost:7061/admin/gdpr/delete \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"user_id": "user-123", "confirm": true}'
+```
+
+### Compliance Reporting
+
+```bash
+# Generate compliance report
+curl -X POST http://localhost:7061/admin/compliance/report \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"type": "soc2", "period": "2026-Q1"}' > soc2_q1_2026.pdf
+
+# List compliance status
+curl http://localhost:7061/admin/compliance/status \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
 ## Support
 
 - **Documentation**: https://helixagent.ai/docs
 - **GitHub Issues**: https://github.com/helixagent/helixagent/issues
 - **Email Support**: support@helixagent.ai
+- **Security Issues**: security@helixagent.ai
 
 ---
 
-*Administration Guide Version: 1.0.0*
+*Administration Guide Version: 2.0.0*
 *Last Updated: January 2026*
