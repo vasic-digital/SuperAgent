@@ -29,6 +29,56 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   http://localhost:7061/v1/models
 ```
 
+## OAuth2 Limitations
+
+> **Important: OAuth tokens from CLI tools are product-restricted and cannot be used for general API calls.**
+
+HelixAgent supports OAuth2 authentication for certain providers, but there are important limitations to understand:
+
+### Claude OAuth Tokens
+
+| Token Source | API Access |
+|--------------|------------|
+| `~/.claude/.credentials.json` (from `claude auth login`) | **Restricted to Claude Code only** |
+
+**What works:**
+- HelixAgent can read OAuth tokens from the credentials file
+- Tokens are valid and non-expired
+
+**What doesn't work:**
+- Using Claude OAuth tokens for general API requests returns: *"This credential is only authorized for use with Claude Code and cannot be used for other API requests."*
+
+**Solution:** Get an API key from https://console.anthropic.com/
+
+### Qwen OAuth Tokens
+
+| Token Source | API Access |
+|--------------|------------|
+| `~/.qwen/oauth_creds.json` (from Qwen CLI login) | **For Qwen Portal only** |
+
+**What works:**
+- HelixAgent can read OAuth tokens from the credentials file
+- Tokens are valid for `portal.qwen.ai`
+
+**What doesn't work:**
+- Using Qwen OAuth tokens for DashScope API returns: *"invalid_api_key"* (tokens are for portal use only)
+
+**Solution:** Get a DashScope API key from https://dashscope.aliyuncs.com/
+
+### Configuration
+
+To use OAuth2 credentials (with above limitations), set:
+
+```bash
+# Enable OAuth credential reading for Claude
+CLAUDE_CODE_USE_OAUTH_CREDENTIALS=true
+
+# Enable OAuth credential reading for Qwen
+QWEN_CODE_USE_OAUTH_CREDENTIALS=true
+```
+
+For production deployments, we recommend using API keys from provider consoles instead of OAuth tokens.
+
 ## API Endpoint Summary
 
 | Endpoint | Method | Authentication | Description |

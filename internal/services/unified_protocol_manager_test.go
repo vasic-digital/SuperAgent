@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -577,4 +578,119 @@ func TestUnifiedProtocolManager_GetACP_Extended(t *testing.T) {
 
 	acp := manager.GetACP()
 	assert.NotNil(t, acp)
+}
+
+// --- MultiError Tests ---
+
+// TestMultiError_SingleError tests MultiError with a single error
+func TestMultiError_SingleError(t *testing.T) {
+	err := NewMultiError([]error{fmt.Errorf("single error")})
+	assert.Equal(t, "single error", err.Error())
+	assert.Equal(t, "single error", err.Unwrap().Error())
+}
+
+// TestMultiError_MultipleErrors tests MultiError with multiple errors
+func TestMultiError_MultipleErrors(t *testing.T) {
+	errs := []error{
+		fmt.Errorf("error 1"),
+		fmt.Errorf("error 2"),
+		fmt.Errorf("error 3"),
+	}
+	multiErr := NewMultiError(errs)
+
+	errStr := multiErr.Error()
+
+	// Should contain count
+	assert.Contains(t, errStr, "3 errors occurred")
+
+	// Should contain all error messages
+	assert.Contains(t, errStr, "error 1")
+	assert.Contains(t, errStr, "error 2")
+	assert.Contains(t, errStr, "error 3")
+
+	// Should contain numbered format
+	assert.Contains(t, errStr, "[1]")
+	assert.Contains(t, errStr, "[2]")
+	assert.Contains(t, errStr, "[3]")
+}
+
+// TestMultiError_EmptyErrors tests MultiError with no errors
+func TestMultiError_EmptyErrors(t *testing.T) {
+	err := NewMultiError([]error{})
+	assert.Equal(t, "", err.Error())
+	assert.Nil(t, err.Unwrap())
+}
+
+// TestMultiError_Unwrap tests that Unwrap returns the first error
+func TestMultiError_Unwrap(t *testing.T) {
+	firstErr := fmt.Errorf("first error")
+	secondErr := fmt.Errorf("second error")
+
+	multiErr := NewMultiError([]error{firstErr, secondErr})
+
+	// Unwrap should return the first error for errors.Is/As compatibility
+	assert.Equal(t, firstErr, multiErr.Unwrap())
+}
+
+// TestMultiError_ErrorsIsCompatibility tests errors.Is compatibility via Unwrap
+func TestMultiError_ErrorsIsCompatibility(t *testing.T) {
+	targetErr := fmt.Errorf("target error")
+	otherErr := fmt.Errorf("other error")
+
+	multiErr := NewMultiError([]error{targetErr, otherErr})
+
+	// Since Unwrap returns the first error, errors.Is should work for the first error
+	unwrapped := multiErr.Unwrap()
+	assert.Equal(t, targetErr, unwrapped)
+}
+
+// TestRefreshAll_ReturnsAllErrors tests that RefreshAll returns all errors via MultiError
+func TestRefreshAll_ReturnsAllErrors(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.PanicLevel)
+	manager := NewUnifiedProtocolManager(nil, nil, logger)
+
+	// Call RefreshAll - with no servers configured, it may return errors
+	// from the sub-managers attempting to refresh
+	err := manager.RefreshAll(context.Background())
+
+	if err != nil {
+		// Check if it's a MultiError (when multiple protocol refreshes fail)
+		multiErr, ok := err.(*MultiError)
+		if ok {
+			// Verify MultiError has the expected structure
+			assert.Greater(t, len(multiErr.Errors), 0, "MultiError should contain at least one error")
+
+			// Each error should indicate which protocol failed
+			for _, e := range multiErr.Errors {
+				errStr := e.Error()
+				protocolMentioned := contains(errStr, "MCP") ||
+					contains(errStr, "LSP") ||
+					contains(errStr, "ACP") ||
+					contains(errStr, "embedding")
+				assert.True(t, protocolMentioned,
+					"Each error should mention the protocol that failed: %s", errStr)
+			}
+		} else {
+			// If it's a single error case, it should still mention a protocol
+			errStr := err.Error()
+			assert.True(t,
+				contains(errStr, "MCP") ||
+					contains(errStr, "LSP") ||
+					contains(errStr, "ACP") ||
+					contains(errStr, "embedding") ||
+					contains(errStr, "refresh"),
+				"Error should indicate what failed: %s", errStr)
+		}
+	}
+}
+
+// TestNewMultiError tests the NewMultiError constructor
+func TestNewMultiError(t *testing.T) {
+	errs := []error{fmt.Errorf("test error")}
+	multiErr := NewMultiError(errs)
+
+	assert.NotNil(t, multiErr)
+	assert.Equal(t, 1, len(multiErr.Errors))
+	assert.Equal(t, "test error", multiErr.Errors[0].Error())
 }
