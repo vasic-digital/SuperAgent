@@ -184,6 +184,8 @@ var AvailableAdapters = []AdapterMetadata{
 	// Productivity
 	{Name: "notion", Category: CategoryProductivity, Description: "Notion workspace management", AuthType: "api_key", DocsURL: "https://developers.notion.com/", Official: false, Supported: true},
 	{Name: "linear", Category: CategoryProductivity, Description: "Linear issue tracking", AuthType: "api_key", DocsURL: "https://developers.linear.app/", Official: false, Supported: true},
+	{Name: "asana", Category: CategoryProductivity, Description: "Asana project and task management", AuthType: "token", DocsURL: "https://developers.asana.com/", Official: false, Supported: true},
+	{Name: "jira", Category: CategoryProductivity, Description: "Jira issue tracking and project management", AuthType: "api_key", DocsURL: "https://developer.atlassian.com/cloud/jira/platform/rest/v3/", Official: false, Supported: true},
 	{Name: "todoist", Category: CategoryProductivity, Description: "Todoist task management", AuthType: "api_key", DocsURL: "https://developer.todoist.com/", Official: false, Supported: true},
 	{Name: "obsidian", Category: CategoryProductivity, Description: "Obsidian note-taking", AuthType: "local", DocsURL: "https://obsidian.md/", Official: false, Supported: true},
 

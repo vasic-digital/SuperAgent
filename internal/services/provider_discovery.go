@@ -11,14 +11,25 @@ import (
 
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/llm/providers/ai21"
+	"dev.helix.agent/internal/llm/providers/anthropic"
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/cohere"
 	"dev.helix.agent/internal/llm/providers/deepseek"
+	"dev.helix.agent/internal/llm/providers/fireworks"
 	"dev.helix.agent/internal/llm/providers/gemini"
+	"dev.helix.agent/internal/llm/providers/groq"
+	"dev.helix.agent/internal/llm/providers/huggingface"
 	"dev.helix.agent/internal/llm/providers/mistral"
 	"dev.helix.agent/internal/llm/providers/ollama"
+	"dev.helix.agent/internal/llm/providers/openai"
 	"dev.helix.agent/internal/llm/providers/openrouter"
+	"dev.helix.agent/internal/llm/providers/perplexity"
 	"dev.helix.agent/internal/llm/providers/qwen"
+	"dev.helix.agent/internal/llm/providers/replicate"
+	"dev.helix.agent/internal/llm/providers/together"
+	"dev.helix.agent/internal/llm/providers/xai"
 	"dev.helix.agent/internal/llm/providers/zen"
 	"dev.helix.agent/internal/models"
 	"github.com/sirupsen/logrus"
@@ -101,6 +112,13 @@ var providerMappings = []ProviderMapping{
 	{EnvVar: "MISTRAL_API_KEY", ProviderType: "mistral", ProviderName: "mistral", BaseURL: "https://api.mistral.ai/v1", DefaultModel: "mistral-large-latest", Priority: 3},
 	{EnvVar: "CODESTRAL_API_KEY", ProviderType: "mistral", ProviderName: "codestral", BaseURL: "https://codestral.mistral.ai/v1", DefaultModel: "codestral-latest", Priority: 3},
 	{EnvVar: "QWEN_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-max", Priority: 4},
+	{EnvVar: "XAI_API_KEY", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
+	{EnvVar: "GROK_API_KEY", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
+	{EnvVar: "COHERE_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
+	{EnvVar: "CO_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
+	{EnvVar: "PERPLEXITY_API_KEY", ProviderType: "perplexity", ProviderName: "perplexity", BaseURL: "https://api.perplexity.ai", DefaultModel: "llama-3.1-sonar-large-128k-online", Priority: 4},
+	{EnvVar: "PPLX_API_KEY", ProviderType: "perplexity", ProviderName: "perplexity", BaseURL: "https://api.perplexity.ai", DefaultModel: "llama-3.1-sonar-large-128k-online", Priority: 4},
+	{EnvVar: "AI21_API_KEY", ProviderType: "ai21", ProviderName: "ai21", BaseURL: "https://api.ai21.com/studio/v1", DefaultModel: "jamba-1.5-large", Priority: 5},
 
 	// Tier 3: Fast inference providers
 	{EnvVar: "GROQ_API_KEY", ProviderType: "groq", ProviderName: "groq", BaseURL: "https://api.groq.com/openai/v1", DefaultModel: "llama-3.1-70b-versatile", Priority: 5},
@@ -455,10 +473,97 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 		}
 		return zen.NewZenProvider(apiKey, baseURL, mapping.DefaultModel), nil
 
+	case "openai":
+		// Use native OpenAI provider for direct API access
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.openai.com/v1"
+		}
+		return openai.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "xai":
+		// Use native xAI provider for Grok models
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.x.ai/v1"
+		}
+		return xai.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "groq":
+		// Use native Groq provider for fast inference
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.groq.com/openai/v1"
+		}
+		return groq.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "cohere":
+		// Use native Cohere provider for Command models
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.cohere.com/v2"
+		}
+		return cohere.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "together":
+		// Use native Together AI provider
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.together.xyz/v1"
+		}
+		return together.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "perplexity":
+		// Use native Perplexity provider for search-focused LLM
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.perplexity.ai"
+		}
+		return perplexity.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "ai21":
+		// Use native AI21 provider for Jamba models
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.ai21.com/studio/v1"
+		}
+		return ai21.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "fireworks":
+		// Use native Fireworks AI provider for fast inference
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.fireworks.ai/inference/v1"
+		}
+		return fireworks.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "anthropic":
+		// Use native Anthropic provider for direct Claude API access
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.anthropic.com/v1"
+		}
+		return anthropic.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "replicate":
+		// Use native Replicate provider for async predictions
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.replicate.com/v1/predictions"
+		}
+		return replicate.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "huggingface":
+		// Use native HuggingFace provider for Inference API
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api-inference.huggingface.co/models"
+		}
+		return huggingface.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
 	// For providers without native implementations, use OpenRouter as a proxy
-	case "groq", "fireworks", "together", "hyperbolic",
-		"sambanova", "replicate", "siliconflow", "cloudflare", "nvidia",
-		"kimi", "huggingface", "novita", "upstage", "chutes", "openai":
+	case "hyperbolic", "sambanova", "siliconflow", "cloudflare", "nvidia",
+		"kimi", "novita", "upstage", "chutes":
 		// Create OpenRouter-compatible provider
 		return pd.createOpenAICompatibleProvider(mapping, apiKey)
 

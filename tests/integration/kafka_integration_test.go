@@ -60,6 +60,36 @@ func skipIfNoKafka(t *testing.T) *kafka.Broker {
 	return broker
 }
 
+// ensureTopicExists creates a topic if it doesn't exist
+// This is needed because Kafka auto-create topics is disabled in test configuration
+func ensureTopicExists(t *testing.T, broker *kafka.Broker, topic string) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Try to create the topic - it will fail silently if it already exists
+	config := &kafka.TopicConfig{
+		Name:              topic,
+		Partitions:        1,
+		ReplicationFactor: 1,
+	}
+
+	// Retry topic creation up to 3 times with backoff
+	var err error
+	for i := 0; i < 3; i++ {
+		err = broker.CreateTopic(ctx, config)
+		if err == nil {
+			break
+		}
+		t.Logf("Note: CreateTopic attempt %d returned: %v", i+1, err)
+		time.Sleep(time.Duration(i+1) * time.Second)
+	}
+
+	// Give Kafka time to propagate the topic metadata
+	// This is important when auto-create is disabled
+	time.Sleep(2 * time.Second)
+}
+
 // TestKafka_Connect_Success tests successful connection to Kafka
 func TestKafka_Connect_Success(t *testing.T) {
 	broker := skipIfNoKafka(t)
@@ -99,6 +129,9 @@ func TestKafka_BasicPubSub(t *testing.T) {
 	defer cancel()
 
 	topic := "test.basic.pubsub." + time.Now().Format("20060102150405")
+
+	// Ensure topic exists first (required when auto-create is disabled)
+	ensureTopicExists(t, broker, topic)
 
 	// Subscribe first
 	received := make(chan *messaging.Message, 1)
@@ -146,6 +179,9 @@ func TestKafka_PublishWithHeaders(t *testing.T) {
 	defer cancel()
 
 	topic := "test.headers." + time.Now().Format("20060102150405")
+
+	// Ensure topic exists first
+	ensureTopicExists(t, broker, topic)
 
 	// Subscribe
 	received := make(chan *messaging.Message, 1)
@@ -196,6 +232,9 @@ func TestKafka_PublishWithKey(t *testing.T) {
 
 	topic := "test.keys." + time.Now().Format("20060102150405")
 
+	// Ensure topic exists first
+	ensureTopicExists(t, broker, topic)
+
 	// Subscribe
 	received := make(chan *messaging.Message, 1)
 	handler := func(ctx context.Context, msg *messaging.Message) error {
@@ -237,6 +276,9 @@ func TestKafka_BatchPublish(t *testing.T) {
 	defer cancel()
 
 	topic := "test.batch." + time.Now().Format("20060102150405")
+
+	// Ensure topic exists first
+	ensureTopicExists(t, broker, topic)
 
 	// Subscribe
 	var receivedCount atomic.Int64
@@ -295,6 +337,9 @@ func TestKafka_SubscribeWithGroupID(t *testing.T) {
 	topic := "test.groupid." + time.Now().Format("20060102150405")
 	customGroup := "custom-group-" + time.Now().Format("20060102150405")
 
+	// Ensure topic exists first
+	ensureTopicExists(t, broker, topic)
+
 	// Subscribe with custom group ID
 	received := make(chan *messaging.Message, 1)
 	handler := func(ctx context.Context, msg *messaging.Message) error {
@@ -337,6 +382,9 @@ func TestKafka_SubscribeWithOffsetReset(t *testing.T) {
 
 	topic := "test.offset." + time.Now().Format("20060102150405")
 
+	// Ensure topic exists first
+	ensureTopicExists(t, broker, topic)
+
 	// First publish a message before subscribing
 	msg := &messaging.Message{
 		ID:        "test-offset-" + time.Now().Format("20060102150405"),
@@ -377,6 +425,10 @@ func TestKafka_Close_WithActiveSubscriptions(t *testing.T) {
 	ctx := context.Background()
 	topic := "test.close." + time.Now().Format("20060102150405")
 
+	// Ensure topics exist first
+	ensureTopicExists(t, broker, topic)
+	ensureTopicExists(t, broker, topic+".2")
+
 	// Create multiple subscriptions
 	handler := func(ctx context.Context, msg *messaging.Message) error {
 		return nil
@@ -405,6 +457,9 @@ func TestKafka_Unsubscribe(t *testing.T) {
 
 	ctx := context.Background()
 	topic := "test.unsub." + time.Now().Format("20060102150405")
+
+	// Ensure topic exists first
+	ensureTopicExists(t, broker, topic)
 
 	var received atomic.Int64
 	handler := func(ctx context.Context, msg *messaging.Message) error {
@@ -455,6 +510,9 @@ func TestKafka_Metrics(t *testing.T) {
 	ctx := context.Background()
 	topic := "test.metrics." + time.Now().Format("20060102150405")
 
+	// Ensure topic exists first
+	ensureTopicExists(t, broker, topic)
+
 	// Publish some messages
 	for i := 0; i < 5; i++ {
 		msg := &messaging.Message{
@@ -481,6 +539,9 @@ func TestKafka_HandlerError(t *testing.T) {
 	defer cancel()
 
 	topic := "test.error." + time.Now().Format("20060102150405")
+
+	// Ensure topic exists first
+	ensureTopicExists(t, broker, topic)
 
 	var processCount atomic.Int64
 	handler := func(ctx context.Context, msg *messaging.Message) error {
@@ -522,6 +583,9 @@ func TestKafka_LargeMessage(t *testing.T) {
 	defer cancel()
 
 	topic := "test.large." + time.Now().Format("20060102150405")
+
+	// Ensure topic exists first
+	ensureTopicExists(t, broker, topic)
 
 	// Create a large payload (500KB)
 	largeData := make([]byte, 500*1024)
@@ -573,6 +637,9 @@ func TestKafka_ConcurrentPublish(t *testing.T) {
 
 	ctx := context.Background()
 	topic := "test.concurrent." + time.Now().Format("20060102150405")
+
+	// Ensure topic exists first
+	ensureTopicExists(t, broker, topic)
 
 	// Concurrent publishers
 	numPublishers := 5

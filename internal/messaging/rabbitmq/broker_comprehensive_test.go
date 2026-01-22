@@ -958,3 +958,96 @@ func TestBroker_IntegrationPlaceholder_Reconnection(t *testing.T) {
 	// This test would verify reconnection after disconnect
 	t.Skip("Requires RabbitMQ infrastructure")
 }
+
+// =============================================================================
+// Additional Error Path Tests
+// =============================================================================
+
+func TestBroker_Publish_WhenChannelNil(t *testing.T) {
+	cfg := DefaultConfig()
+	broker := NewBroker(cfg, nil)
+	ctx := context.Background()
+
+	msg := &messaging.Message{
+		ID:        "test-msg",
+		Type:      "test",
+		Payload:   []byte(`{"test": true}`),
+		Timestamp: time.Now(),
+	}
+
+	err := broker.Publish(ctx, "test-topic", msg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "channel not available")
+}
+
+func TestBroker_Subscribe_WhenNotConnected(t *testing.T) {
+	cfg := DefaultConfig()
+	broker := NewBroker(cfg, nil)
+	ctx := context.Background()
+
+	sub, err := broker.Subscribe(ctx, "test-topic", func(ctx context.Context, msg *messaging.Message) error {
+		return nil
+	})
+
+	assert.Error(t, err)
+	assert.Nil(t, sub)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestBroker_IsConnected_WhenNilConnection(t *testing.T) {
+	cfg := DefaultConfig()
+	broker := NewBroker(cfg, nil)
+
+	assert.False(t, broker.IsConnected())
+}
+
+func TestBroker_PublishBatch_Empty(t *testing.T) {
+	cfg := DefaultConfig()
+	broker := NewBroker(cfg, nil)
+	ctx := context.Background()
+
+	err := broker.PublishBatch(ctx, "test-topic", []*messaging.Message{})
+	assert.NoError(t, err) // Empty batch should succeed
+}
+
+func TestBroker_PublishBatch_Nil(t *testing.T) {
+	cfg := DefaultConfig()
+	broker := NewBroker(cfg, nil)
+	ctx := context.Background()
+
+	err := broker.PublishBatch(ctx, "test-topic", nil)
+	assert.NoError(t, err) // Nil batch should succeed
+}
+
+func TestBroker_Close_WhenAlreadyClosed(t *testing.T) {
+	cfg := DefaultConfig()
+	broker := NewBroker(cfg, nil)
+	ctx := context.Background()
+
+	// First close should succeed
+	err := broker.Close(ctx)
+	assert.NoError(t, err)
+
+	// Second close should also succeed (idempotent)
+	err = broker.Close(ctx)
+	assert.NoError(t, err)
+}
+
+func TestBroker_Metrics_AfterPublishFailure(t *testing.T) {
+	cfg := DefaultConfig()
+	broker := NewBroker(cfg, nil)
+	ctx := context.Background()
+
+	msg := &messaging.Message{
+		ID:        "test-msg",
+		Type:      "test",
+		Payload:   []byte(`{}`),
+		Timestamp: time.Now(),
+	}
+
+	// Publish should fail because not connected
+	_ = broker.Publish(ctx, "test", msg)
+
+	metrics := broker.GetMetrics()
+	assert.NotNil(t, metrics)
+}
