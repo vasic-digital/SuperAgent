@@ -31,6 +31,9 @@ const (
 
 // TestCogneeFullCapacity_InfrastructureRunning verifies all required containers are running
 func TestCogneeFullCapacity_InfrastructureRunning(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled via SKIP_CAPACITY_TESTS")
 	}
@@ -62,6 +65,9 @@ func TestCogneeFullCapacity_InfrastructureRunning(t *testing.T) {
 
 // TestCogneeFullCapacity_ServiceHealthy verifies Cognee health endpoint returns healthy status
 func TestCogneeFullCapacity_ServiceHealthy(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -130,6 +136,9 @@ func TestCogneeFullCapacity_ServiceHealthy(t *testing.T) {
 
 // TestCogneeFullCapacity_AllFeaturesEnabled verifies all Cognee features are enabled
 func TestCogneeFullCapacity_AllFeaturesEnabled(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -182,6 +191,9 @@ func TestCogneeFullCapacity_AllFeaturesEnabled(t *testing.T) {
 
 // TestCogneeFullCapacity_VectorDatabaseConnected verifies ChromaDB connection
 func TestCogneeFullCapacity_VectorDatabaseConnected(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -199,6 +211,9 @@ func TestCogneeFullCapacity_VectorDatabaseConnected(t *testing.T) {
 
 // TestCogneeFullCapacity_RelationalDatabaseConnected verifies PostgreSQL connection
 func TestCogneeFullCapacity_RelationalDatabaseConnected(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -220,6 +235,9 @@ func TestCogneeFullCapacity_RelationalDatabaseConnected(t *testing.T) {
 
 // TestCogneeFullCapacity_CacheConnected verifies Redis connection
 func TestCogneeFullCapacity_CacheConnected(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -243,6 +261,9 @@ func TestCogneeFullCapacity_CacheConnected(t *testing.T) {
 
 // TestCogneeFullCapacity_MemoryOperations verifies memory add/search works
 func TestCogneeFullCapacity_MemoryOperations(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -314,6 +335,9 @@ func TestCogneeFullCapacity_MemoryOperations(t *testing.T) {
 
 // TestCogneeFullCapacity_DatasetOperations verifies dataset CRUD works
 func TestCogneeFullCapacity_DatasetOperations(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -338,6 +362,9 @@ func TestCogneeFullCapacity_DatasetOperations(t *testing.T) {
 
 // TestCogneeFullCapacity_CognifyOperation verifies cognify (knowledge graph building) works
 func TestCogneeFullCapacity_CognifyOperation(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -373,6 +400,9 @@ func TestCogneeFullCapacity_CognifyOperation(t *testing.T) {
 
 // TestCogneeFullCapacity_StatsEndpoint verifies stats endpoint returns valid data
 func TestCogneeFullCapacity_StatsEndpoint(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -397,6 +427,9 @@ func TestCogneeFullCapacity_StatsEndpoint(t *testing.T) {
 
 // TestCogneeFullCapacity_AllEndpointsAccessible verifies all Cognee endpoints are registered
 func TestCogneeFullCapacity_AllEndpointsAccessible(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -432,6 +465,9 @@ func TestCogneeFullCapacity_AllEndpointsAccessible(t *testing.T) {
 
 // TestCogneeFullCapacity_LLMProviderConfigured verifies LLM provider (Gemini) is configured
 func TestCogneeFullCapacity_LLMProviderConfigured(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -467,6 +503,9 @@ func TestCogneeFullCapacity_LLMProviderConfigured(t *testing.T) {
 
 // TestCogneeFullCapacity_EmbeddingProviderConfigured verifies embedding provider is configured
 func TestCogneeFullCapacity_EmbeddingProviderConfigured(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -486,6 +525,9 @@ func TestCogneeFullCapacity_EmbeddingProviderConfigured(t *testing.T) {
 
 // TestCogneeFullCapacity_NoErrorsInLogs checks Cognee logs for critical errors
 func TestCogneeFullCapacity_NoErrorsInLogs(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -528,6 +570,9 @@ func TestCogneeFullCapacity_NoErrorsInLogs(t *testing.T) {
 
 // TestCogneeFullCapacity_ResponseTime verifies response times are acceptable
 func TestCogneeFullCapacity_ResponseTime(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}
@@ -564,6 +609,9 @@ func getTestAPIKey() string {
 // =============================================================================
 
 func TestCogneeFullCapacity_Summary(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Cognee capacity test in short mode")
+	}
 	if os.Getenv("SKIP_CAPACITY_TESTS") == "true" {
 		t.Skip("Capacity tests disabled")
 	}

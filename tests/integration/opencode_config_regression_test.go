@@ -212,6 +212,9 @@ func TestOpenCodeConfigOnlyShowsHelixAgentModel(t *testing.T) {
 // TestModelsEndpointOnlyReturnsHelixAgentModel verifies the /v1/models
 // endpoint only returns HelixAgent models
 func TestModelsEndpointOnlyReturnsHelixAgentModel(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping models endpoint test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
@@ -442,6 +445,9 @@ func TestOpenCodeConfigAPIKeyHandling(t *testing.T) {
 // TestOpenCodeChatCompletionWithHelixAgentModel tests that chat completions
 // work correctly with the helixagent-debate model
 func TestOpenCodeChatCompletionWithHelixAgentModel(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping chat completion test in short mode")
+	}
 	config := loadTestConfig(t)
 	defer cleanupTestConfig(t, config)
 	skipIfNoServer(t, config)
