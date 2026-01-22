@@ -58,7 +58,9 @@ challenges/scripts/mcp_server_integration_challenge.sh  # 60 tests
 - **Status**: Running
 - **HelixAgent**: Running on port 7061
 - **Containers**: All 8 core containers healthy
-- **Challenges completed**: 100+ result files generated
+- **Challenge results generated**: 106+
+- **Current**: CLI agent style testing (cline, claudecode, codenamegoose, etc.)
+- **All CLI agent tests passing**: crush, helixcode, kiro, aider, claudecode, cline ✓
 
 ### New Challenges Created This Session
 1. **cli_agent_plugin_e2e_challenge.sh** - End-to-end CLI agent plugin verification
