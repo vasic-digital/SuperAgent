@@ -1,0 +1,17 @@
+{
+    "name": "event-handler",
+    "version": "1.0.0",
+    "description": "Event subscription and handling for claude_code",
+    "author": "HelixAgent Team",
+    "license": "MIT",
+    "agent": "claude_code",
+    "entry_point": "event_handler.go",
+    "dependencies": ["helix-integration"],
+    "config_schema": {
+        "subscriptions": {
+            "type": "array",
+            "default": ["debate.*", "warning.*", "error.*"],
+            "description": "Event patterns to subscribe to"
+        }
+    }
+}

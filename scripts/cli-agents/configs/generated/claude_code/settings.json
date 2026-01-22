@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "providers": {
+    "helix": {
+      "type": "openai-compatible",
+      "baseUrl": "http://localhost:8080/v1",
+      "apiKey": "",
+      "model": "ai-debate-ensemble",
+      "features": {
+        "streaming": true,
+        "tools": true
+      }
+    }
+  },
+  "defaultProvider": "helix",
+  "features": {
+    "aiDebate": true,
+    "multiPassValidation": true,
+    "verifier": {
+      "enabled": true,
+      "url": "http://localhost:8081"
+    }
+  },
+  "plugins": {
+    "enabled": true,
+    "autoLoad": ["helix-integration", "debate-ui", "event-handler"]
+  },
+  "hooks": {
+    "preRequest": [],
+    "postResponse": ["helix-event-processor"]
+  }
+}

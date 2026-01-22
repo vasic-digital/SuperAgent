@@ -1,0 +1,22 @@
+{
+    "name": "streaming-adapter",
+    "version": "1.0.0",
+    "description": "Streaming response adapter for ollama_code",
+    "author": "HelixAgent Team",
+    "license": "MIT",
+    "agent": "ollama_code",
+    "entry_point": "streaming_adapter.go",
+    "dependencies": ["helix-integration"],
+    "config_schema": {
+        "buffer_size": {
+            "type": "integer",
+            "default": 4096,
+            "description": "Streaming buffer size"
+        },
+        "chunk_timeout": {
+            "type": "integer",
+            "default": 30000,
+            "description": "Chunk timeout in milliseconds"
+        }
+    }
+}

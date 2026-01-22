@@ -93,6 +93,52 @@ This document tracks the progress of the comprehensive audit, testing, and remed
 
 Tests now skip gracefully in `-short` mode when infrastructure is unavailable.
 
+### 7. CLI Agent Integration Scripts
+
+**Created comprehensive automation for 47+ CLI agents** to integrate with HelixAgent and LLMsVerifier.
+
+#### Scripts Created
+
+| Script | Location | Purpose |
+|--------|----------|---------|
+| `generate-all-configs.sh` | `scripts/cli-agents/` | Generates configuration files for all 47+ CLI agents |
+| `install-plugins.sh` | `scripts/cli-agents/` | Installs 6 core integration plugins for each agent |
+| `cli-agent-integration-test.sh` | `scripts/cli-agents/tests/` | Integration test suite |
+| `cli_agent_integration_challenge.sh` | `challenges/scripts/` | 116-test verification challenge |
+
+#### Supported CLI Agents (45 agents)
+
+**Tier 1 - Primary Support (10):**
+Claude Code, Aider, Cline, OpenCode, Kilo Code, Gemini CLI, Qwen Code, DeepSeek CLI, Forge, Codename Goose
+
+**Tier 2 - Secondary Support (15):**
+Amazon Q, Kiro, GPT Engineer, Mistral Code, Ollama Code, Plandex, Codex, VTCode, Nanocoder, GitMCP, TaskWeaver, Octogen, FauxPilot, Bridle, Agent Deck
+
+**Tier 3 - Extended Support (20):**
+Claude Squad, Codai, Emdash, Get Shit Done, GitHub Copilot CLI, GitHub Spec Kit, GPTme, Mobile Agent, Multiagent Coding, Noi, OpenHands, Postgres MCP, Shai, SnowCLI, Superset, Warp, Cheshire Cat, Conduit, Crush, HelixCode
+
+#### Generated Plugins (6 core plugins)
+
+| Plugin | Description |
+|--------|-------------|
+| helix-integration | Core HelixAgent API integration |
+| event-handler | Event subscription and handling |
+| verifier-client | LLMsVerifier integration |
+| debate-ui | AI Debate visualization |
+| streaming-adapter | Streaming response adapter |
+| mcp-bridge | MCP protocol bridge |
+
+#### Configuration Features
+
+All generated configs include:
+- HelixAgent endpoint configuration
+- LLMsVerifier integration
+- AI Debate ensemble model (`ai-debate-ensemble`)
+- Streaming support (SSE)
+- Retry configuration
+- Plugin auto-loading
+- Event subscriptions
+
 ---
 
 ## Test Results Summary
@@ -109,7 +155,8 @@ go test -short ./internal/... - ALL PASSED
 | Skills Comprehensive | 184 | 184 | 0 |
 | RAG Comprehensive | 82 | 82 | 0 |
 | MCP Comprehensive | 133 | 133 | 0 |
-| **Total** | **399** | **399** | **0** |
+| CLI Agent Integration | 116 | 116 | 0 |
+| **Total** | **515** | **515** | **0** |
 
 ---
 
@@ -156,10 +203,12 @@ KAFKA_ENABLED=true
 
 ## Next Steps
 
-1. **Run remaining challenge scripts** with infrastructure running
-2. **Create CLI agent plugins development plan**
-3. **Extend tests for 35+ MCP verification**
-4. **Containerize MCP, LSP, ACP, Embedding services**
+1. ~~**Create CLI agent plugins development plan**~~ - COMPLETED
+2. ~~**Create CLI agent configuration and plugin scripts**~~ - COMPLETED
+3. **Run remaining challenge scripts** with infrastructure running
+4. **Extend tests for 35+ MCP verification**
+5. **Containerize MCP, LSP, ACP, Embedding services**
+6. **Test plugin installation with actual CLI agents**
 
 ---
 
@@ -179,3 +228,8 @@ KAFKA_ENABLED=true
 | `challenges/scripts/skills_comprehensive_challenge.sh` | Modified | Fixed record_assertion |
 | `challenges/scripts/rag_comprehensive_challenge.sh` | Modified | Fixed record_assertion |
 | `challenges/scripts/mcp_comprehensive_challenge.sh` | Modified | Fixed record_assertion, tool names |
+| `scripts/cli-agents/generate-all-configs.sh` | Created | Config generator for 47+ CLI agents |
+| `scripts/cli-agents/install-plugins.sh` | Created | Plugin installer for all CLI agents |
+| `scripts/cli-agents/tests/cli-agent-integration-test.sh` | Created | Integration test suite |
+| `scripts/cli-agents/README.md` | Created | Comprehensive documentation |
+| `challenges/scripts/cli_agent_integration_challenge.sh` | Created | 116-test verification challenge |

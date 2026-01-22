@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "provider": {
+    "type": "openai-compatible",
+    "base_url": "http://localhost:8080/v1",
+    "api_key": "",
+    "model": "ai-debate-ensemble"
+  },
+  "helix": {
+    "enabled": true,
+    "verifier_url": "http://localhost:8081",
+    "features": {
+      "ai_debate": true,
+      "multi_pass_validation": true,
+      "streaming": true,
+      "mcp": true
+    }
+  },
+  "tools": {
+    "enabled": true,
+    "allowed": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Git"]
+  },
+  "ui": {
+    "theme": "dark",
+    "show_tokens": true,
+    "show_cost": true
+  }
+}

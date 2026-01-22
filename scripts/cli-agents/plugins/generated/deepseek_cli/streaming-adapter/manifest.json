@@ -1,0 +1,22 @@
+{
+    "name": "streaming-adapter",
+    "version": "1.0.0",
+    "description": "Streaming response adapter for deepseek_cli",
+    "author": "HelixAgent Team",
+    "license": "MIT",
+    "agent": "deepseek_cli",
+    "entry_point": "streaming_adapter.go",
+    "dependencies": ["helix-integration"],
+    "config_schema": {
+        "buffer_size": {
+            "type": "integer",
+            "default": 4096,
+            "description": "Streaming buffer size"
+        },
+        "chunk_timeout": {
+            "type": "integer",
+            "default": 30000,
+            "description": "Chunk timeout in milliseconds"
+        }
+    }
+}

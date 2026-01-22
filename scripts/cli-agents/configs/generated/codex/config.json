@@ -1,0 +1,62 @@
+{
+  "version": "1.0.0",
+  "agent": "codex",
+  "generated_at": "2026-01-22T23:47:46+03:00",
+  "helix_agent": {
+    "enabled": true,
+    "url": "http://localhost:8080",
+    "api_key": "",
+    "timeout": 120000,
+    "retry": {
+      "max_attempts": 3,
+      "backoff_ms": 1000
+    }
+  },
+  "llms_verifier": {
+    "enabled": true,
+    "url": "http://localhost:8081",
+    "verify_on_startup": true
+  },
+  "provider": {
+    "type": "helix_ensemble",
+    "model": "ai-debate-ensemble",
+    "fallback_providers": ["deepseek", "gemini", "mistral"]
+  },
+  "features": {
+    "ai_debate": true,
+    "multi_pass_validation": true,
+    "streaming": true,
+    "tool_use": true,
+    "mcp_support": true
+  },
+  "streaming": {
+    "enabled": true,
+    "mode": "sse",
+    "buffer_size": 4096
+  },
+  "compression": {
+    "enabled": true,
+    "algorithm": "brotli",
+    "level": 6
+  },
+  "events": {
+    "subscribe": [
+      "debate.started",
+      "debate.response",
+      "debate.validation",
+      "debate.conclusion",
+      "warning.*",
+      "error.*",
+      "background.*"
+    ]
+  },
+  "plugins": {
+    "enabled": true,
+    "auto_load": true,
+    "directory": "~/.helix-plugins/codex"
+  },
+  "logging": {
+    "level": "info",
+    "file": "~/.helix-logs/codex.log"
+  }
+}

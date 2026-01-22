@@ -1,0 +1,22 @@
+{
+  "apiProvider": "openai-compatible",
+  "openAiBaseUrl": "http://localhost:8080/v1",
+  "openAiApiKey": "",
+  "openAiModelId": "ai-debate-ensemble",
+  "helix": {
+    "enabled": true,
+    "verifierUrl": "http://localhost:8081",
+    "aiDebate": true,
+    "multiPassValidation": true,
+    "streaming": true
+  },
+  "customInstructions": "You are integrated with HelixAgent AI Debate ensemble. Use multi-pass validation for important decisions.",
+  "alwaysAllowReadOnly": true,
+  "alwaysAllowWrite": false,
+  "alwaysAllowExecute": false,
+  "browserEnabled": true,
+  "mcpEnabled": true,
+  "soundEnabled": true,
+  "diffEnabled": true,
+  "checkpointsEnabled": true
+}

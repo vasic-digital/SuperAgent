@@ -1,0 +1,22 @@
+{
+    "name": "debate-ui",
+    "version": "1.0.0",
+    "description": "AI Debate visualization for agent_deck",
+    "author": "HelixAgent Team",
+    "license": "MIT",
+    "agent": "agent_deck",
+    "entry_point": "debate_ui.go",
+    "dependencies": ["helix-integration"],
+    "config_schema": {
+        "show_progress": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show debate progress"
+        },
+        "show_participants": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show participant list"
+        }
+    }
+}

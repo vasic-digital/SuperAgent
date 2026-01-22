@@ -1,0 +1,17 @@
+{
+    "name": "mcp-bridge",
+    "version": "1.0.0",
+    "description": "MCP protocol bridge for github_spec_kit",
+    "author": "HelixAgent Team",
+    "license": "MIT",
+    "agent": "github_spec_kit",
+    "entry_point": "mcp_bridge.go",
+    "dependencies": ["helix-integration"],
+    "config_schema": {
+        "timeout": {
+            "type": "integer",
+            "default": 60000,
+            "description": "MCP request timeout in milliseconds"
+        }
+    }
+}

@@ -1,0 +1,6 @@
+{
+    "agent": "taskweaver",
+    "plugins": ["helix-integration", "event-handler"],
+    "generated_at": "2026-01-22T23:47:46+03:00",
+    "version": "1.0.0"
+}
