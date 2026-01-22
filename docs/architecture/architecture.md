@@ -65,6 +65,42 @@ HelixAgent is a multi-provider LLM orchestration platform that provides unified 
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+## Entry Points
+
+HelixAgent has multiple entry points for different use cases:
+
+| Entry Point | Location | Purpose | Production Ready |
+|-------------|----------|---------|------------------|
+| **Main Server** | `cmd/helixagent/main.go` | Production server with full AI Debate ensemble, LLMsVerifier integration, all protocols | Yes |
+| **gRPC Server** | `cmd/grpc-server/main.go` | High-performance gRPC API server | Yes |
+| **Demo API** | `cmd/api/main.go` | **DEMO ONLY** - Returns mock/hardcoded responses for API exploration | No |
+
+### Production Entry Point
+
+```bash
+# Run the main production server
+go run cmd/helixagent/main.go
+
+# Or build and run
+make build
+./helixagent
+```
+
+The main server (`cmd/helixagent/main.go`) provides:
+- Full AI Debate ensemble with 15 LLMs
+- LLMsVerifier startup verification pipeline
+- All protocol support (MCP, LSP, ACP, Embeddings)
+- Real provider integrations (Claude, DeepSeek, Gemini, etc.)
+- Production-ready error handling and observability
+
+### Demo Server (Not for Production)
+
+The `cmd/api/main.go` server is a **demonstration only** implementation that:
+- Returns hardcoded/mock responses
+- Does NOT connect to real LLM backends
+- Is useful for API structure exploration and client development
+- Should NEVER be deployed in production
+
 ## Component Details
 
 ### API Layer
