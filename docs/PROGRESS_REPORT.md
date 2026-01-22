@@ -205,10 +205,13 @@ KAFKA_ENABLED=true
 
 1. ~~**Create CLI agent plugins development plan**~~ - COMPLETED
 2. ~~**Create CLI agent configuration and plugin scripts**~~ - COMPLETED
-3. **Run remaining challenge scripts** with infrastructure running
-4. **Extend tests for 35+ MCP verification**
-5. **Containerize MCP, LSP, ACP, Embedding services**
-6. **Test plugin installation with actual CLI agents**
+3. ~~**Fix Protocol Manager error aggregation (ISSUE-001)**~~ - ALREADY FIXED (MultiError implemented)
+4. ~~**Label Demo API server (ISSUE-002)**~~ - ALREADY FIXED (header added)
+5. ~~**Update architecture documentation**~~ - COMPLETED (Entry Points section added)
+6. **Run remaining challenge scripts** with infrastructure running
+7. **Extend tests for 35+ MCP verification**
+8. **Containerize MCP, LSP, ACP, Embedding services**
+9. **Test plugin installation with actual CLI agents**
 
 ---
 
@@ -233,3 +236,16 @@ KAFKA_ENABLED=true
 | `scripts/cli-agents/tests/cli-agent-integration-test.sh` | Created | Integration test suite |
 | `scripts/cli-agents/README.md` | Created | Comprehensive documentation |
 | `challenges/scripts/cli_agent_integration_challenge.sh` | Created | 116-test verification challenge |
+| `docs/architecture/architecture.md` | Modified | Added Entry Points section |
+
+### 8. Critical Issues Resolution
+
+**ISSUE-001: Protocol Manager Error Aggregation** - ALREADY FIXED
+- `MultiError` struct properly implemented in `internal/services/unified_protocol_manager.go`
+- `Error()`, `Unwrap()`, `NewMultiError()` all implemented
+- `RefreshAll()` returns aggregated errors via `NewMultiError(errs)`
+- Comprehensive tests exist in `unified_protocol_manager_test.go`
+
+**ISSUE-002: Demo API Server Labeling** - ALREADY FIXED
+- `cmd/api/main.go` already has clear "DEMO IMPLEMENTATION - NOT FOR PRODUCTION USE" header
+- Documentation updated with Entry Points section clarifying demo vs production
