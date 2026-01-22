@@ -18,7 +18,7 @@ load_env
 test_mcp_endpoint() {
     log_info "Testing MCP protocol endpoint..."
 
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/mcp" \
+    local response=$(curl -s -m 5 -w "\n%{http_code}" "$BASE_URL/v1/mcp" \
         -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" 2>/dev/null || true)
     local http_code=$(echo "$response" | tail -n1)
     local body=$(echo "$response" | head -n -1)
@@ -35,7 +35,7 @@ test_mcp_endpoint() {
 test_acp_endpoint() {
     log_info "Testing ACP protocol endpoint..."
 
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/acp" \
+    local response=$(curl -s -m 5 -w "\n%{http_code}" "$BASE_URL/v1/acp" \
         -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" 2>/dev/null || true)
     local http_code=$(echo "$response" | tail -n1)
 
@@ -51,7 +51,7 @@ test_acp_endpoint() {
 test_lsp_endpoint() {
     log_info "Testing LSP protocol endpoint..."
 
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/lsp" \
+    local response=$(curl -s -m 5 -w "\n%{http_code}" "$BASE_URL/v1/lsp" \
         -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" 2>/dev/null || true)
     local http_code=$(echo "$response" | tail -n1)
 
@@ -72,7 +72,7 @@ test_embeddings_endpoint() {
         "model": "text-embedding-ada-002"
     }'
 
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/embeddings" \
+    local response=$(curl -s -m 30 -w "\n%{http_code}" "$BASE_URL/v1/embeddings" \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
         -d "$request" 2>/dev/null || true)
@@ -100,7 +100,7 @@ test_embeddings_endpoint() {
 test_vision_endpoint() {
     log_info "Testing Vision endpoint..."
 
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/vision" \
+    local response=$(curl -s -m 5 -w "\n%{http_code}" "$BASE_URL/v1/vision" \
         -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" 2>/dev/null || true)
     local http_code=$(echo "$response" | tail -n1)
 
@@ -116,7 +116,7 @@ test_vision_endpoint() {
 test_cognee_endpoint() {
     log_info "Testing Cognee endpoint..."
 
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/cognee" \
+    local response=$(curl -s -m 5 -w "\n%{http_code}" "$BASE_URL/v1/cognee" \
         -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" 2>/dev/null || true)
     local http_code=$(echo "$response" | tail -n1)
 
@@ -199,7 +199,7 @@ test_streaming_with_protocols() {
 test_models_protocol_capabilities() {
     log_info "Testing models endpoint for protocol capabilities..."
 
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/models" \
+    local response=$(curl -s -m 10 -w "\n%{http_code}" "$BASE_URL/v1/models" \
         -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" 2>/dev/null || true)
     local http_code=$(echo "$response" | tail -n1)
     local body=$(echo "$response" | head -n -1)
