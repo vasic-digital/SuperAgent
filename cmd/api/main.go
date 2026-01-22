@@ -1,5 +1,23 @@
-// HelixAgent Protocol Enhancement REST API Server
-// This server provides REST API endpoints for all protocol operations
+// ===========================================================================
+// DEMO IMPLEMENTATION - NOT FOR PRODUCTION USE
+// ===========================================================================
+//
+// HelixAgent Protocol Enhancement REST API Server (DEMO)
+//
+// This is a DEMONSTRATION server that showcases the protocol API structure.
+// It returns HARDCODED/MOCK responses and does NOT connect to real backends.
+//
+// For production use, see:
+//   - cmd/helixagent/main.go - Main production entry point
+//   - internal/router/router.go - Production API router with real implementations
+//
+// This demo server is useful for:
+//   - API structure exploration
+//   - Client development and testing
+//   - Documentation examples
+//
+// DO NOT deploy this server in production environments.
+// ===========================================================================
 
 package main
 

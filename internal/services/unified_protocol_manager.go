@@ -3,11 +3,48 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"dev.helix.agent/internal/database"
 	"github.com/sirupsen/logrus"
 )
+
+// MultiError aggregates multiple errors into a single error
+// This ensures no errors are swallowed when multiple operations fail
+type MultiError struct {
+	Errors []error
+}
+
+// Error implements the error interface for MultiError
+func (m *MultiError) Error() string {
+	if len(m.Errors) == 0 {
+		return ""
+	}
+	if len(m.Errors) == 1 {
+		return m.Errors[0].Error()
+	}
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("%d errors occurred:\n", len(m.Errors)))
+	for i, err := range m.Errors {
+		sb.WriteString(fmt.Sprintf("  [%d] %s\n", i+1, err.Error()))
+	}
+	return sb.String()
+}
+
+// Unwrap returns the first error for compatibility with errors.Is/As
+func (m *MultiError) Unwrap() error {
+	if len(m.Errors) == 0 {
+		return nil
+	}
+	return m.Errors[0]
+}
+
+// NewMultiError creates a new MultiError from a slice of errors
+func NewMultiError(errs []error) *MultiError {
+	return &MultiError{Errors: errs}
+}
 
 // ProtocolManagerInterface defines the interface for protocol managers
 type ProtocolManagerInterface interface {
@@ -368,8 +405,8 @@ func (u *UnifiedProtocolManager) RefreshAll(ctx context.Context) error {
 
 	if len(errs) > 0 {
 		u.log.WithField("error_count", len(errs)).Warn("Some protocol servers failed to refresh")
-		// Return first error but log all
-		return errs[0]
+		// Return all errors aggregated into a MultiError
+		return NewMultiError(errs)
 	}
 
 	u.log.Info("All protocol servers refreshed successfully")

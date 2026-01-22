@@ -1,5 +1,24 @@
 # Ollama Provider Setup Guide
 
+> **⚠️ DEPRECATION NOTICE**
+>
+> **Ollama is DEPRECATED in HelixAgent and marked as a low-priority fallback provider (verification score: 5.0).**
+>
+> Ollama will only be used as a last resort when all other LLM providers are unavailable.
+>
+> **Recommended Alternatives:**
+> - **Claude** (via API key or OAuth) - Best quality responses
+> - **DeepSeek** - Excellent for coding tasks
+> - **Gemini** - Fast and capable
+> - **Mistral** - Strong open-weight alternative
+> - **OpenRouter** - Access to multiple providers
+>
+> Ollama remains functional for local development and testing, but is not recommended for production AI debate ensembles due to:
+> - Inconsistent response quality
+> - Limited context window compared to cloud providers
+> - Single request processing (no batching)
+> - Hardware-dependent performance
+
 ## Overview
 
 Ollama is an open-source platform for running large language models locally on your own hardware. HelixAgent integrates with Ollama to provide access to a wide variety of open-source models without requiring cloud API keys.
