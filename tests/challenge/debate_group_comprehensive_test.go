@@ -17,6 +17,9 @@ import (
 //
 // Run with: go test -v ./tests/challenge -run TestDebateGroupComprehensive
 func TestDebateGroupComprehensive(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping debate group comprehensive test in short mode")
+	}
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
@@ -620,6 +623,9 @@ func truncate(s string, maxLen int) string {
 // TestDebateGroupWithMockedProviders tests debate group behavior with simulated provider states
 // This test uses the verification API to determine actual provider status
 func TestDebateGroupWithMockedProviders(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping debate group with mocked providers test in short mode")
+	}
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
@@ -704,6 +710,9 @@ func TestDebateGroupWithMockedProviders(t *testing.T) {
 
 // TestDebateGroupEdgeCases tests edge cases and boundary conditions
 func TestDebateGroupEdgeCases(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping debate group edge cases test in short mode")
+	}
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
@@ -790,6 +799,9 @@ func TestDebateGroupEdgeCases(t *testing.T) {
 
 // TestDebateGroupPerformance tests performance characteristics of debate groups
 func TestDebateGroupPerformance(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping debate group performance test in short mode")
+	}
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
@@ -876,6 +888,9 @@ func TestDebateGroupPerformance(t *testing.T) {
 
 // TestDebateGroupRecovery tests recovery after failures
 func TestDebateGroupRecovery(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping debate group recovery test in short mode")
+	}
 	baseURL := getBaseURL()
 
 	if !serverHealthy(baseURL) {
