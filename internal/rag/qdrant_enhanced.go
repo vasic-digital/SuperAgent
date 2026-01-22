@@ -502,3 +502,161 @@ func truncateText(s string, maxLen int) string {
 	}
 	return s[:maxLen] + "..."
 }
+
+// HierarchicalDocument represents a document with parent-child relationships
+type HierarchicalDocument struct {
+	*Document
+	ParentID    string   `json:"parent_id,omitempty"`
+	ChildIDs    []string `json:"child_ids,omitempty"`
+	Level       int      `json:"level"`
+	HierarchyPath []string `json:"hierarchy_path,omitempty"`
+}
+
+// TemporalDocument represents a document with time-based metadata
+type TemporalDocument struct {
+	*Document
+	Timestamp     int64  `json:"timestamp"`
+	CreatedDate   string `json:"created_date,omitempty"`
+	UpdatedDate   string `json:"updated_date,omitempty"`
+	TemporalWeight float64 `json:"temporal_weight"`
+}
+
+// HierarchicalRetriever adds hierarchical document retrieval capabilities
+type HierarchicalRetriever struct {
+	baseRetriever Retriever
+	hierarchyMap  map[string]*HierarchicalDocument
+	mu            sync.RWMutex
+}
+
+// NewHierarchicalRetriever creates a retriever with parent-child document relationships
+func NewHierarchicalRetriever(base Retriever) *HierarchicalRetriever {
+	return &HierarchicalRetriever{
+		baseRetriever: base,
+		hierarchyMap:  make(map[string]*HierarchicalDocument),
+	}
+}
+
+// IndexHierarchical indexes documents with their parent-child relationships
+func (h *HierarchicalRetriever) IndexHierarchical(ctx context.Context, docs []*HierarchicalDocument) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	baseDocs := make([]*Document, len(docs))
+	for i, doc := range docs {
+		h.hierarchyMap[doc.ID] = doc
+		baseDocs[i] = doc.Document
+	}
+
+	return h.baseRetriever.Index(ctx, baseDocs)
+}
+
+// RetrieveWithChildren retrieves a document and its child documents
+func (h *HierarchicalRetriever) RetrieveWithChildren(ctx context.Context, parentID string, opts *SearchOptions) ([]*SearchResult, error) {
+	h.mu.RLock()
+	parent, exists := h.hierarchyMap[parentID]
+	h.mu.RUnlock()
+
+	if !exists {
+		return nil, nil
+	}
+
+	var results []*SearchResult
+
+	// Include parent
+	results = append(results, &SearchResult{
+		Document:  parent.Document,
+		Score:     1.0,
+		MatchType: MatchTypeDense,
+	})
+
+	// Include children
+	for _, childID := range parent.ChildIDs {
+		if child, ok := h.hierarchyMap[childID]; ok {
+			results = append(results, &SearchResult{
+				Document:  child.Document,
+				Score:     0.9,
+				MatchType: MatchTypeDense,
+			})
+		}
+	}
+
+	return results, nil
+}
+
+// TemporalRetriever adds time-aware retrieval capabilities
+type TemporalRetriever struct {
+	baseRetriever Retriever
+	documents     map[string]*TemporalDocument
+	timeDecay     float64 // Decay factor for older documents
+	mu            sync.RWMutex
+}
+
+// NewTemporalRetriever creates a retriever with time-aware scoring
+func NewTemporalRetriever(base Retriever, timeDecay float64) *TemporalRetriever {
+	return &TemporalRetriever{
+		baseRetriever: base,
+		documents:     make(map[string]*TemporalDocument),
+		timeDecay:     timeDecay,
+	}
+}
+
+// IndexTemporal indexes documents with temporal metadata
+func (t *TemporalRetriever) IndexTemporal(ctx context.Context, docs []*TemporalDocument) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	baseDocs := make([]*Document, len(docs))
+	for i, doc := range docs {
+		t.documents[doc.ID] = doc
+		baseDocs[i] = doc.Document
+	}
+
+	return t.baseRetriever.Index(ctx, baseDocs)
+}
+
+// RetrieveByDateRange retrieves documents within a time range
+func (t *TemporalRetriever) RetrieveByDateRange(ctx context.Context, startTime, endTime int64, opts *SearchOptions) ([]*SearchResult, error) {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	var results []*SearchResult
+
+	for _, doc := range t.documents {
+		if doc.Timestamp >= startTime && doc.Timestamp <= endTime {
+			// Apply temporal weighting - more recent documents score higher
+			temporalScore := t.calculateTemporalScore(doc.Timestamp, endTime)
+			results = append(results, &SearchResult{
+				Document:      doc.Document,
+				Score:         temporalScore,
+				MatchType:     MatchTypeDense,
+			})
+		}
+	}
+
+	// Sort by score (most recent/relevant first)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Score > results[j].Score
+	})
+
+	if opts != nil && opts.TopK > 0 && len(results) > opts.TopK {
+		results = results[:opts.TopK]
+	}
+
+	return results, nil
+}
+
+// calculateTemporalScore applies time decay to document scores
+func (t *TemporalRetriever) calculateTemporalScore(docTime, referenceTime int64) float64 {
+	if t.timeDecay == 0 {
+		return 1.0
+	}
+
+	// Time difference in hours
+	diffHours := float64(referenceTime-docTime) / 3600
+	if diffHours < 0 {
+		diffHours = 0
+	}
+
+	// Exponential decay
+	return math.Exp(-t.timeDecay * diffHours)
+}

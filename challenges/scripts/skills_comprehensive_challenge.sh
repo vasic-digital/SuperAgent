@@ -27,12 +27,12 @@ run_test() {
     if eval "$test_cmd" >> "$LOG_FILE" 2>&1; then
         log_success "PASS: $test_name"
         TESTS_PASSED=$((TESTS_PASSED + 1))
-        record_assertion "$test_name" "passed" ""
+        record_assertion "test" "$test_name" "true" ""
         return 0
     else
         log_error "FAIL: $test_name"
         TESTS_FAILED=$((TESTS_FAILED + 1))
-        record_assertion "$test_name" "failed" "Test command failed"
+        record_assertion "test" "$test_name" "false" "Test command failed"
         return 1
     fi
 }

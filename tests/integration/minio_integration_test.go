@@ -35,6 +35,16 @@ var (
 func skipMinIOIfUnavailable(t *testing.T) *minio.Client {
 	t.Helper()
 
+	// Skip in short mode - these tests require external MinIO infrastructure
+	if testing.Short() {
+		t.Skip("Skipping MinIO integration test in short mode")
+	}
+
+	// Skip if MINIO_ENABLED env var is explicitly set to false
+	if os.Getenv("MINIO_ENABLED") == "false" {
+		t.Skip("Skipping MinIO integration test - MINIO_ENABLED=false")
+	}
+
 	config := &minio.Config{
 		Endpoint:          minioEndpoint,
 		AccessKey:         minioAccessKey,

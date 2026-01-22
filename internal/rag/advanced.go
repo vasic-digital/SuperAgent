@@ -804,3 +804,405 @@ func min(values ...int) int {
 	}
 	return m
 }
+
+// MultiHopConfig configures multi-hop retrieval behavior
+type MultiHopConfig struct {
+	// MaxHops is the maximum number of hops to follow
+	MaxHops int `json:"max_hops"`
+	// MinRelevanceScore is the minimum score for a hop to be followed
+	MinRelevanceScore float64 `json:"min_relevance_score"`
+	// MaxResultsPerHop limits results collected at each hop
+	MaxResultsPerHop int `json:"max_results_per_hop"`
+	// DecayFactor reduces scores for results found in later hops
+	DecayFactor float64 `json:"decay_factor"`
+	// EnableBacklinks follows references pointing back to source documents
+	EnableBacklinks bool `json:"enable_backlinks"`
+}
+
+// DefaultMultiHopConfig returns sensible defaults for multi-hop retrieval
+func DefaultMultiHopConfig() MultiHopConfig {
+	return MultiHopConfig{
+		MaxHops:           3,
+		MinRelevanceScore: 0.3,
+		MaxResultsPerHop:  10,
+		DecayFactor:       0.8,
+		EnableBacklinks:   true,
+	}
+}
+
+// MultiHopResult represents a result from multi-hop retrieval
+type MultiHopResult struct {
+	PipelineSearchResult
+	HopLevel    int      `json:"hop_level"`
+	HopPath     []string `json:"hop_path"`
+	SourceDocID string   `json:"source_doc_id,omitempty"`
+}
+
+// MultiHopSearch performs multi-hop retrieval following document relationships
+func (a *AdvancedRAG) MultiHopSearch(ctx context.Context, query string, topK int, config *MultiHopConfig) ([]MultiHopResult, error) {
+	if config == nil {
+		defaultConfig := DefaultMultiHopConfig()
+		config = &defaultConfig
+	}
+
+	// Track visited documents to avoid cycles
+	visited := make(map[string]bool)
+	allResults := make([]MultiHopResult, 0)
+
+	// Initial search (hop 0)
+	initialResults, err := a.pipeline.Search(ctx, query, config.MaxResultsPerHop)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add initial results
+	for _, result := range initialResults {
+		if result.Score < float32(config.MinRelevanceScore) {
+			continue
+		}
+		visited[result.Chunk.ID] = true
+		allResults = append(allResults, MultiHopResult{
+			PipelineSearchResult: result,
+			HopLevel:             0,
+			HopPath:              []string{result.Chunk.ID},
+		})
+	}
+
+	// Perform subsequent hops
+	currentHopResults := initialResults
+	for hop := 1; hop <= config.MaxHops; hop++ {
+		if len(currentHopResults) == 0 {
+			break
+		}
+
+		nextHopResults := make([]PipelineSearchResult, 0)
+		decayMultiplier := math.Pow(config.DecayFactor, float64(hop))
+
+		for _, sourceResult := range currentHopResults {
+			// Extract related terms/concepts from source document for next hop query
+			relatedQuery := a.extractRelatedTerms(query, sourceResult.Chunk.Content)
+			if relatedQuery == "" {
+				continue
+			}
+
+			// Search for related documents
+			hopResults, err := a.pipeline.Search(ctx, relatedQuery, config.MaxResultsPerHop)
+			if err != nil {
+				continue
+			}
+
+			for _, hopResult := range hopResults {
+				// Skip already visited documents
+				if visited[hopResult.Chunk.ID] {
+					continue
+				}
+
+				// Apply minimum score threshold with decay
+				adjustedScore := float64(hopResult.Score) * decayMultiplier
+				if adjustedScore < config.MinRelevanceScore {
+					continue
+				}
+
+				visited[hopResult.Chunk.ID] = true
+				hopResult.Score = float32(adjustedScore)
+
+				// Build hop path
+				var parentPath []string
+				for _, existing := range allResults {
+					if existing.Chunk.ID == sourceResult.Chunk.ID {
+						parentPath = existing.HopPath
+						break
+					}
+				}
+				hopPath := append(append([]string{}, parentPath...), hopResult.Chunk.ID)
+
+				allResults = append(allResults, MultiHopResult{
+					PipelineSearchResult: hopResult,
+					HopLevel:             hop,
+					HopPath:              hopPath,
+					SourceDocID:          sourceResult.Chunk.ID,
+				})
+				nextHopResults = append(nextHopResults, hopResult)
+			}
+		}
+
+		currentHopResults = nextHopResults
+	}
+
+	// Sort by score and limit to topK
+	sort.Slice(allResults, func(i, j int) bool {
+		return allResults[i].Score > allResults[j].Score
+	})
+
+	if len(allResults) > topK {
+		allResults = allResults[:topK]
+	}
+
+	return allResults, nil
+}
+
+// extractRelatedTerms extracts key terms from content to use for hop queries
+func (a *AdvancedRAG) extractRelatedTerms(originalQuery, content string) string {
+	// Tokenize content
+	contentTerms := tokenize(content)
+	if len(contentTerms) == 0 {
+		return ""
+	}
+
+	// Get original query terms to avoid duplication
+	queryTermsSet := make(map[string]bool)
+	for _, t := range tokenize(originalQuery) {
+		queryTermsSet[strings.ToLower(t)] = true
+	}
+
+	// Count term frequencies in content
+	termFreq := make(map[string]int)
+	for _, term := range contentTerms {
+		termLower := strings.ToLower(term)
+		// Skip very short terms and original query terms
+		if len(termLower) < 3 || queryTermsSet[termLower] {
+			continue
+		}
+		termFreq[termLower]++
+	}
+
+	// Select top frequent terms
+	type termCount struct {
+		term  string
+		count int
+	}
+	sortedTerms := make([]termCount, 0, len(termFreq))
+	for term, count := range termFreq {
+		sortedTerms = append(sortedTerms, termCount{term, count})
+	}
+	sort.Slice(sortedTerms, func(i, j int) bool {
+		return sortedTerms[i].count > sortedTerms[j].count
+	})
+
+	// Build related query from top terms
+	var relatedTerms []string
+	for i, tc := range sortedTerms {
+		if i >= 5 { // Take top 5 new terms
+			break
+		}
+		relatedTerms = append(relatedTerms, tc.term)
+	}
+
+	if len(relatedTerms) == 0 {
+		return ""
+	}
+
+	// Combine original query with related terms
+	return originalQuery + " " + strings.Join(relatedTerms, " ")
+}
+
+// IterativeRetrievalConfig configures iterative retrieval behavior
+type IterativeRetrievalConfig struct {
+	// MaxIterations is the maximum number of retrieval iterations
+	MaxIterations int `json:"max_iterations"`
+	// ConvergenceThreshold stops iteration when improvement is below this
+	ConvergenceThreshold float64 `json:"convergence_threshold"`
+	// ResultsPerIteration is the number of results to fetch each iteration
+	ResultsPerIteration int `json:"results_per_iteration"`
+	// FeedbackWeight controls how much feedback affects subsequent queries
+	FeedbackWeight float64 `json:"feedback_weight"`
+	// EnableQueryRefinement enables automatic query refinement between iterations
+	EnableQueryRefinement bool `json:"enable_query_refinement"`
+}
+
+// DefaultIterativeRetrievalConfig returns sensible defaults
+func DefaultIterativeRetrievalConfig() IterativeRetrievalConfig {
+	return IterativeRetrievalConfig{
+		MaxIterations:        5,
+		ConvergenceThreshold: 0.05,
+		ResultsPerIteration:  20,
+		FeedbackWeight:       0.3,
+		EnableQueryRefinement: true,
+	}
+}
+
+// IterativeResult represents a result from iterative retrieval
+type IterativeResult struct {
+	PipelineSearchResult
+	Iteration       int     `json:"iteration"`
+	ImprovementGain float64 `json:"improvement_gain"`
+}
+
+// IterativeRetrievalMetrics tracks iteration progress
+type IterativeRetrievalMetrics struct {
+	Iterations     int       `json:"iterations"`
+	QueriesUsed    []string  `json:"queries_used"`
+	ScoreHistory   []float64 `json:"score_history"`
+	Converged      bool      `json:"converged"`
+	FinalAvgScore  float64   `json:"final_avg_score"`
+}
+
+// IterativeSearch performs iterative retrieval with query refinement
+func (a *AdvancedRAG) IterativeSearch(ctx context.Context, query string, topK int, config *IterativeRetrievalConfig) ([]IterativeResult, *IterativeRetrievalMetrics, error) {
+	if config == nil {
+		defaultConfig := DefaultIterativeRetrievalConfig()
+		config = &defaultConfig
+	}
+
+	metrics := &IterativeRetrievalMetrics{
+		QueriesUsed:  []string{query},
+		ScoreHistory: make([]float64, 0),
+	}
+
+	// Track all results across iterations
+	allResultsMap := make(map[string]*IterativeResult)
+	currentQuery := query
+	previousAvgScore := 0.0
+
+	for iteration := 0; iteration < config.MaxIterations; iteration++ {
+		// Perform search with current query
+		results, err := a.pipeline.Search(ctx, currentQuery, config.ResultsPerIteration)
+		if err != nil {
+			return nil, metrics, err
+		}
+
+		if len(results) == 0 {
+			break
+		}
+
+		// Calculate average score for this iteration
+		totalScore := 0.0
+		for _, result := range results {
+			totalScore += float64(result.Score)
+
+			// Update or add result
+			if existing, ok := allResultsMap[result.Chunk.ID]; ok {
+				// Keep the better score
+				if result.Score > existing.Score {
+					existing.Score = result.Score
+					existing.Iteration = iteration
+				}
+			} else {
+				allResultsMap[result.Chunk.ID] = &IterativeResult{
+					PipelineSearchResult: result,
+					Iteration:            iteration,
+				}
+			}
+		}
+
+		currentAvgScore := totalScore / float64(len(results))
+		metrics.ScoreHistory = append(metrics.ScoreHistory, currentAvgScore)
+
+		// Check for convergence
+		improvement := currentAvgScore - previousAvgScore
+		if iteration > 0 && improvement < config.ConvergenceThreshold {
+			metrics.Converged = true
+			break
+		}
+
+		// Refine query for next iteration using top results
+		if config.EnableQueryRefinement && iteration < config.MaxIterations-1 {
+			currentQuery = a.refineQuery(query, results, config.FeedbackWeight)
+			metrics.QueriesUsed = append(metrics.QueriesUsed, currentQuery)
+		}
+
+		previousAvgScore = currentAvgScore
+		metrics.Iterations = iteration + 1
+	}
+
+	// Convert map to slice and calculate improvement gains
+	allResults := make([]IterativeResult, 0, len(allResultsMap))
+	for _, result := range allResultsMap {
+		// Calculate improvement gain based on when found
+		if len(metrics.ScoreHistory) > result.Iteration {
+			baseScore := metrics.ScoreHistory[0]
+			if baseScore > 0 {
+				result.ImprovementGain = (float64(result.Score) - baseScore) / baseScore
+			}
+		}
+		allResults = append(allResults, *result)
+	}
+
+	// Sort by score
+	sort.Slice(allResults, func(i, j int) bool {
+		return allResults[i].Score > allResults[j].Score
+	})
+
+	// Limit to topK
+	if len(allResults) > topK {
+		allResults = allResults[:topK]
+	}
+
+	// Calculate final average score
+	if len(allResults) > 0 {
+		total := 0.0
+		for _, r := range allResults {
+			total += float64(r.Score)
+		}
+		metrics.FinalAvgScore = total / float64(len(allResults))
+	}
+
+	return allResults, metrics, nil
+}
+
+// refineQuery refines the query based on top results
+func (a *AdvancedRAG) refineQuery(originalQuery string, results []PipelineSearchResult, feedbackWeight float64) string {
+	if len(results) == 0 || feedbackWeight <= 0 {
+		return originalQuery
+	}
+
+	// Extract frequent terms from top results
+	termFreq := make(map[string]float64)
+	originalTerms := make(map[string]bool)
+	for _, t := range tokenize(originalQuery) {
+		originalTerms[strings.ToLower(t)] = true
+	}
+
+	// Weight terms by their document's score
+	for _, result := range results {
+		terms := tokenize(result.Chunk.Content)
+		docWeight := float64(result.Score)
+
+		for _, term := range terms {
+			termLower := strings.ToLower(term)
+			if len(termLower) >= 3 && !originalTerms[termLower] {
+				termFreq[termLower] += docWeight
+			}
+		}
+	}
+
+	// Select top expansion terms
+	type weightedTerm struct {
+		term   string
+		weight float64
+	}
+	sortedTerms := make([]weightedTerm, 0, len(termFreq))
+	for term, weight := range termFreq {
+		sortedTerms = append(sortedTerms, weightedTerm{term, weight})
+	}
+	sort.Slice(sortedTerms, func(i, j int) bool {
+		return sortedTerms[i].weight > sortedTerms[j].weight
+	})
+
+	// Add top terms to query
+	var expansionTerms []string
+	for i, wt := range sortedTerms {
+		if i >= 3 { // Add up to 3 expansion terms
+			break
+		}
+		expansionTerms = append(expansionTerms, wt.term)
+	}
+
+	if len(expansionTerms) == 0 {
+		return originalQuery
+	}
+
+	return originalQuery + " " + strings.Join(expansionTerms, " ")
+}
+
+// RecursiveSearch performs recursive retrieval for deep document exploration
+func (a *AdvancedRAG) RecursiveSearch(ctx context.Context, query string, topK int, maxDepth int) ([]MultiHopResult, error) {
+	config := &MultiHopConfig{
+		MaxHops:           maxDepth,
+		MinRelevanceScore: 0.25,
+		MaxResultsPerHop:  15,
+		DecayFactor:       0.85,
+		EnableBacklinks:   true,
+	}
+	return a.MultiHopSearch(ctx, query, topK, config)
+}
