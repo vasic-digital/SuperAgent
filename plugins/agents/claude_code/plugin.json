@@ -1,0 +1,94 @@
+{
+  "$schema": "https://schema.claude.ai/plugin/v1.json",
+  "name": "helixagent-integration",
+  "version": "1.0.0",
+  "description": "HelixAgent integration with HTTP/3, TOON protocol, and AI debate visualization",
+  "author": "HelixAgent Team",
+  "license": "Apache-2.0",
+  "repository": "https://github.com/helixagent/plugins",
+  "keywords": [
+    "helixagent",
+    "ai-debate",
+    "ensemble",
+    "mcp",
+    "http3",
+    "toon"
+  ],
+  "engines": {
+    "claude-code": ">=1.0.0"
+  },
+  "hooks": [
+    "SessionStart",
+    "SessionEnd",
+    "PreToolUse",
+    "PostToolUse"
+  ],
+  "capabilities": {
+    "streaming": true,
+    "mcp": true,
+    "http3": true,
+    "toon": true,
+    "brotli": true,
+    "debateVisualization": true,
+    "progressTracking": true,
+    "notifications": true
+  },
+  "configuration": {
+    "endpoint": {
+      "type": "string",
+      "default": "https://localhost:7061",
+      "description": "HelixAgent server endpoint"
+    },
+    "preferHTTP3": {
+      "type": "boolean",
+      "default": true,
+      "description": "Prefer HTTP/3 (QUIC) transport"
+    },
+    "enableTOON": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable TOON protocol encoding"
+    },
+    "enableBrotli": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable Brotli compression"
+    },
+    "debateRenderStyle": {
+      "type": "string",
+      "enum": ["theater", "novel", "screenplay", "minimal", "plain"],
+      "default": "theater",
+      "description": "Style for rendering AI debate output"
+    },
+    "showPhaseIndicators": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show validation phase indicators in debate output"
+    },
+    "showConfidenceScores": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show confidence scores in debate output"
+    },
+    "progressBarStyle": {
+      "type": "string",
+      "enum": ["ascii", "unicode", "block", "dots"],
+      "default": "unicode",
+      "description": "Style for progress bars"
+    },
+    "subscribeToDebates": {
+      "type": "boolean",
+      "default": true,
+      "description": "Subscribe to real-time debate events"
+    },
+    "subscribeToTasks": {
+      "type": "boolean",
+      "default": true,
+      "description": "Subscribe to background task events"
+    }
+  },
+  "files": {
+    "hooks": "hooks/hooks.json",
+    "lib": "lib/"
+  }
+}

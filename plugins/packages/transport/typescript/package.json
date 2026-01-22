@@ -1,0 +1,22 @@
+{
+  "name": "@helixagent/transport",
+  "version": "1.0.0",
+  "description": "HelixAgent transport library with HTTP/3, TOON protocol, and Brotli compression",
+  "main": "dist/transport.js",
+  "types": "dist/transport.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist/"
+  },
+  "keywords": ["helixagent", "http3", "toon", "brotli", "transport"],
+  "author": "HelixAgent Team",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

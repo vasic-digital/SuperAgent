@@ -1,0 +1,22 @@
+{
+  "name": "@helixagent/events",
+  "version": "1.0.0",
+  "description": "HelixAgent event subscription library with SSE and WebSocket support",
+  "main": "dist/event_client.js",
+  "types": "dist/event_client.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist/"
+  },
+  "keywords": ["helixagent", "events", "sse", "websocket"],
+  "author": "HelixAgent Team",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

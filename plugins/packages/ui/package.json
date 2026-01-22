@@ -1,0 +1,22 @@
+{
+  "name": "@helixagent/ui",
+  "version": "1.0.0",
+  "description": "HelixAgent UI library for debate visualization and progress rendering",
+  "main": "dist/debate_renderer.js",
+  "types": "dist/debate_renderer.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist/"
+  },
+  "keywords": ["helixagent", "ui", "debate", "progress", "visualization"],
+  "author": "HelixAgent Team",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

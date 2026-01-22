@@ -1462,6 +1462,187 @@ Detailed health check.
 
 Prometheus metrics endpoint.
 
+### GET /v1/monitoring/status
+
+Get overall monitoring status combining all components.
+
+**Response:**
+```json
+{
+  "healthy": true,
+  "circuit_breakers": {
+    "healthy": true,
+    "total": 10,
+    "open": 0,
+    "providers": {...}
+  },
+  "oauth_tokens": {
+    "healthy": true,
+    "tokens": {...}
+  },
+  "provider_health": {
+    "healthy": true,
+    "providers": {...}
+  },
+  "fallback_chain": {
+    "validated": true,
+    "valid": true
+  }
+}
+```
+
+### GET /v1/monitoring/circuit-breakers
+
+Get status of all circuit breakers.
+
+**Response:**
+```json
+{
+  "healthy": true,
+  "total": 10,
+  "open": 0,
+  "half_open": 1,
+  "closed": 9,
+  "providers": {
+    "claude": {"state": "closed", "failures": 0, "successes": 150},
+    "deepseek": {"state": "closed", "failures": 2, "successes": 98}
+  }
+}
+```
+
+### POST /v1/monitoring/circuit-breakers/:provider/reset
+
+Reset a specific provider's circuit breaker.
+
+**Response:**
+```json
+{
+  "message": "Circuit breaker reset for provider: claude"
+}
+```
+
+### POST /v1/monitoring/circuit-breakers/reset-all
+
+Reset all circuit breakers.
+
+**Response:**
+```json
+{
+  "message": "All circuit breakers reset",
+  "count": 10
+}
+```
+
+### GET /v1/monitoring/oauth-tokens
+
+Get OAuth token status for all providers.
+
+**Response:**
+```json
+{
+  "healthy": true,
+  "tokens": {
+    "claude": {
+      "valid": true,
+      "expires_at": "2025-01-15T10:30:00Z",
+      "expires_in": "23h45m"
+    },
+    "qwen": {
+      "valid": true,
+      "expires_at": "2025-01-14T18:00:00Z",
+      "expires_in": "7h30m"
+    }
+  }
+}
+```
+
+### POST /v1/monitoring/oauth-tokens/:provider/refresh
+
+Refresh OAuth token for a specific provider.
+
+**Response:**
+```json
+{
+  "message": "OAuth token refreshed for provider: claude",
+  "expires_at": "2025-01-15T10:30:00Z"
+}
+```
+
+### GET /v1/monitoring/provider-health
+
+Get health status of all providers.
+
+**Response:**
+```json
+{
+  "healthy": true,
+  "total_providers": 10,
+  "healthy_providers": 9,
+  "unhealthy_providers": 1,
+  "providers": {
+    "claude": {"healthy": true, "latency_ms": 245, "last_check": "2025-01-14T10:30:00Z"},
+    "deepseek": {"healthy": true, "latency_ms": 180, "last_check": "2025-01-14T10:30:00Z"}
+  }
+}
+```
+
+### POST /v1/monitoring/provider-health/check
+
+Force health check for all providers.
+
+**Response:**
+```json
+{
+  "message": "Health check initiated for all providers",
+  "providers_checked": 10
+}
+```
+
+### POST /v1/monitoring/provider-health/:provider/check
+
+Force health check for a specific provider.
+
+**Response:**
+```json
+{
+  "provider": "claude",
+  "healthy": true,
+  "latency_ms": 245,
+  "checked_at": "2025-01-14T10:35:00Z"
+}
+```
+
+### GET /v1/monitoring/fallback-chain
+
+Get fallback chain status.
+
+**Response:**
+```json
+{
+  "validated": true,
+  "valid": true,
+  "chain": [
+    {"position": 1, "provider": "claude", "score": 9.2},
+    {"position": 2, "provider": "deepseek", "score": 8.8},
+    {"position": 3, "provider": "gemini", "score": 8.5}
+  ],
+  "last_validated": "2025-01-14T10:00:00Z"
+}
+```
+
+### POST /v1/monitoring/fallback-chain/validate
+
+Validate the current fallback chain configuration.
+
+**Response:**
+```json
+{
+  "valid": true,
+  "message": "Fallback chain validated successfully",
+  "warnings": []
+}
+```
+
 ---
 
 ## Debates Team API

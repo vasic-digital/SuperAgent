@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.claude.ai/hooks/v1.json",
+  "hooks": {
+    "SessionStart": {
+      "command": "node",
+      "args": ["hooks/session_start.js"],
+      "timeout": 5000,
+      "description": "Initialize HelixAgent connection with HTTP/3 and TOON protocol"
+    },
+    "SessionEnd": {
+      "command": "node",
+      "args": ["hooks/session_end.js"],
+      "timeout": 3000,
+      "description": "Cleanup HelixAgent connection and unsubscribe from events"
+    },
+    "PreToolUse": {
+      "command": "node",
+      "args": ["hooks/pre_tool.js"],
+      "timeout": 2000,
+      "description": "Transform tool calls to TOON format for bandwidth optimization"
+    },
+    "PostToolUse": {
+      "command": "node",
+      "args": ["hooks/post_tool.js"],
+      "timeout": 5000,
+      "description": "Render AI debate results and task progress"
+    }
+  },
+  "configuration": {
+    "helixagent": {
+      "endpoint": "https://localhost:7061",
+      "preferHTTP3": true,
+      "enableTOON": true,
+      "enableBrotli": true,
+      "debateRenderStyle": "theater",
+      "subscribeToDebates": true,
+      "subscribeToTasks": true
+    }
+  }
+}

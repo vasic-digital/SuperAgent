@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.helixagent.ai/plugin/v1.json",
+  "name": "helixagent-kiro",
+  "description": "HelixAgent integration for Kiro",
+  "endpoint": "https://localhost:7061",
+  "transport": {
+    "preferHTTP3": true,
+    "enableTOON": true,
+    "enableBrotli": true,
+    "timeout": 30000
+  },
+  "events": {
+    "transport": "sse",
+    "subscribeToDebates": true,
+    "subscribeToTasks": true,
+    "reconnectInterval": 5000
+  },
+  "ui": {
+    "renderStyle": "theater",
+    "progressStyle": "unicode",
+    "colorScheme": "256"
+  },
+  "debate": {
+    "showPhaseIndicators": true,
+    "showConfidenceScores": true,
+    "enableMultiPassValidation": true
+  },
+  "mcpServer": {
+    "command": "npx",
+    "args": ["@helixagent/mcp-server", "--endpoint", "https://localhost:7061"],
+    "transport": "stdio"
+  }
+}
