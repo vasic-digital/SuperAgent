@@ -20,6 +20,16 @@ import (
 func skipIfNoRabbitMQ(t *testing.T) *rabbitmq.Broker {
 	t.Helper()
 
+	// Skip in short mode - these tests require external RabbitMQ infrastructure
+	if testing.Short() {
+		t.Skip("Skipping RabbitMQ integration test in short mode")
+	}
+
+	// Skip if RABBITMQ_ENABLED env var is explicitly set to false
+	if os.Getenv("RABBITMQ_ENABLED") == "false" {
+		t.Skip("Skipping RabbitMQ integration test - RABBITMQ_ENABLED=false")
+	}
+
 	host := os.Getenv("RABBITMQ_HOST")
 	if host == "" {
 		host = "localhost"

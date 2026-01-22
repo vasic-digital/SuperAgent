@@ -21,8 +21,38 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// RouterContext wraps the router with cleanup capabilities for background services
+type RouterContext struct {
+	Engine          *gin.Engine
+	protocolManager *services.UnifiedProtocolManager
+	oauthMonitor    *services.OAuthTokenMonitor
+	healthMonitor   *services.ProviderHealthMonitor
+}
+
+// Shutdown stops all background services started by the router
+func (rc *RouterContext) Shutdown() {
+	if rc.protocolManager != nil {
+		rc.protocolManager.Stop()
+	}
+	if rc.oauthMonitor != nil {
+		rc.oauthMonitor.Stop()
+	}
+	if rc.healthMonitor != nil {
+		rc.healthMonitor.Stop()
+	}
+}
+
 // SetupRouter creates and configures the main HTTP router.
+// Note: Use SetupRouterWithContext for tests to ensure proper cleanup.
 func SetupRouter(cfg *config.Config) *gin.Engine {
+	ctx := SetupRouterWithContext(cfg)
+	return ctx.Engine
+}
+
+// SetupRouterWithContext creates and configures the main HTTP router with cleanup support.
+// Call Shutdown() on the returned RouterContext when done to stop background services.
+func SetupRouterWithContext(cfg *config.Config) *RouterContext {
+	rc := &RouterContext{}
 	r := gin.New()
 
 	// Middleware
@@ -175,6 +205,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	// Initialize Protocol handler (UnifiedProtocolManager implements ProtocolManagerInterface)
 	protocolManager := services.NewUnifiedProtocolManager(modelMetadataRepo, sharedCache, logger)
+	rc.protocolManager = protocolManager
 	protocolHandler := handlers.NewProtocolHandler(protocolManager, logger)
 
 	// Initialize Protocol SSE handler for MCP/ACP/LSP/Embeddings/Vision/Cognee
@@ -634,6 +665,10 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		providerHealthMonitor := services.NewProviderHealthMonitor(providerRegistry, logger, services.DefaultProviderHealthMonitorConfig())
 		fallbackChainValidator := services.NewFallbackChainValidator(logger, debateTeamConfig)
 
+		// Store monitors in RouterContext for cleanup
+		rc.oauthMonitor = oauthTokenMonitor
+		rc.healthMonitor = providerHealthMonitor
+
 		// Start monitoring services in background
 		go oauthTokenMonitor.Start(context.Background())
 		go providerHealthMonitor.Start(context.Background())
@@ -793,5 +828,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		}
 	}
 
-	return r
+	rc.Engine = r
+	return rc
 }

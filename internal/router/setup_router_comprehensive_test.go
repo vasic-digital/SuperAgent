@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -17,6 +18,42 @@ import (
 
 func init() {
 	gin.SetMode(gin.TestMode)
+}
+
+// sharedRouterContext provides a shared router with cleanup for tests
+// This avoids creating many background goroutines
+var (
+	sharedRouterCtx     *RouterContext
+	sharedRouterOnce    sync.Once
+	sharedRouterCleanup func()
+)
+
+// getSharedRouter returns a shared router context for tests that don't need isolated routers
+// Call cleanup() when done (typically via defer in TestMain)
+func getSharedRouter() (*RouterContext, func()) {
+	sharedRouterOnce.Do(func() {
+		cfg := getMinimalConfig()
+		sharedRouterCtx = SetupRouterWithContext(cfg)
+		sharedRouterCleanup = func() {
+			if sharedRouterCtx != nil {
+				sharedRouterCtx.Shutdown()
+			}
+		}
+	})
+	return sharedRouterCtx, sharedRouterCleanup
+}
+
+// TestMain handles setup and cleanup for all tests in this package
+func TestMain(m *testing.M) {
+	// Run tests
+	code := m.Run()
+
+	// Cleanup shared router if it was created
+	if sharedRouterCleanup != nil {
+		sharedRouterCleanup()
+	}
+
+	os.Exit(code)
 }
 
 // clearDBEnvVars temporarily clears database environment variables to force standalone mode
@@ -101,18 +138,16 @@ func getMinimalConfig() *config.Config {
 // TestSetupRouter_StandaloneMode tests SetupRouter when running in standalone mode
 // (no database connection available)
 func TestSetupRouter_StandaloneMode(t *testing.T) {
-	cfg := getMinimalConfig()
-
 	t.Run("creates router in standalone mode", func(t *testing.T) {
-		router := SetupRouter(cfg)
-		require.NotNil(t, router, "SetupRouter should return a non-nil router")
+		rc, _ := getSharedRouter()
+		require.NotNil(t, rc.Engine, "SetupRouter should return a non-nil router")
 	})
 }
 
 // TestSetupRouter_HealthEndpoints tests health check endpoints
 func TestSetupRouter_HealthEndpoints(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("GET /health returns healthy", func(t *testing.T) {
@@ -151,8 +186,8 @@ func TestSetupRouter_HealthEndpoints(t *testing.T) {
 
 // TestSetupRouter_MetricsEndpoint tests the Prometheus metrics endpoint
 func TestSetupRouter_MetricsEndpoint(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("GET /metrics returns prometheus metrics", func(t *testing.T) {
@@ -169,8 +204,8 @@ func TestSetupRouter_MetricsEndpoint(t *testing.T) {
 
 // TestSetupRouter_FeaturesEndpoints tests feature flags endpoints
 func TestSetupRouter_FeaturesEndpoints(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("GET /v1/features returns feature status", func(t *testing.T) {
@@ -218,8 +253,8 @@ func TestSetupRouter_FeaturesEndpoints(t *testing.T) {
 
 // TestSetupRouter_AuthEndpoints tests auth endpoints
 func TestSetupRouter_AuthEndpoints(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	// Auth endpoints in standalone mode may return:
@@ -284,8 +319,8 @@ func TestSetupRouter_AuthEndpoints(t *testing.T) {
 
 // TestSetupRouter_ProvidersEndpoint tests the providers endpoint
 func TestSetupRouter_ProvidersEndpoint(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("GET /v1/providers returns provider list", func(t *testing.T) {
@@ -305,8 +340,8 @@ func TestSetupRouter_ProvidersEndpoint(t *testing.T) {
 
 // TestSetupRouter_ModelsEndpoint tests the models endpoint
 func TestSetupRouter_ModelsEndpoint(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("GET /v1/models returns model list", func(t *testing.T) {
@@ -332,8 +367,8 @@ func TestSetupRouter_ModelsEndpoint(t *testing.T) {
 
 // TestSetupRouter_TasksEndpoints tests the background task endpoints
 func TestSetupRouter_TasksEndpoints(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("POST /v1/tasks creates a task", func(t *testing.T) {
@@ -403,8 +438,8 @@ func TestSetupRouter_EnsembleEndpoint(t *testing.T) {
 	restore := clearDBEnvVars()
 	defer restore()
 
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("POST /v1/ensemble/completions with invalid JSON returns 400", func(t *testing.T) {
@@ -439,8 +474,8 @@ func TestSetupRouter_SessionsEndpoints(t *testing.T) {
 	restore := clearDBEnvVars()
 	defer restore()
 
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("POST /v1/sessions creates a session", func(t *testing.T) {
@@ -495,8 +530,8 @@ func TestSetupRouter_AgentsEndpoints(t *testing.T) {
 	restore := clearDBEnvVars()
 	defer restore()
 
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("GET /v1/agents returns agent list", func(t *testing.T) {
@@ -544,8 +579,8 @@ func TestSetupRouter_LSPEndpoints(t *testing.T) {
 	restore := clearDBEnvVars()
 	defer restore()
 
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("GET /v1/lsp/servers returns LSP servers", func(t *testing.T) {
@@ -590,8 +625,8 @@ func TestSetupRouter_LSPEndpoints(t *testing.T) {
 
 // TestSetupRouter_MCPEndpoints tests MCP-related endpoints
 func TestSetupRouter_MCPEndpoints(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("GET /v1/mcp/capabilities responds", func(t *testing.T) {
@@ -650,8 +685,8 @@ func TestSetupRouter_ProtocolEndpoints(t *testing.T) {
 	restore := clearDBEnvVars()
 	defer restore()
 
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("POST /v1/protocols/execute executes protocol request", func(t *testing.T) {
@@ -713,8 +748,8 @@ func TestSetupRouter_EmbeddingsEndpoints(t *testing.T) {
 	restore := clearDBEnvVars()
 	defer restore()
 
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("POST /v1/embeddings/generate generates embeddings", func(t *testing.T) {
@@ -792,8 +827,8 @@ func TestSetupRouter_DebatesEndpoints(t *testing.T) {
 	restore := clearDBEnvVars()
 	defer restore()
 
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("GET /v1/debates/team returns debate team config", func(t *testing.T) {
@@ -807,8 +842,8 @@ func TestSetupRouter_DebatesEndpoints(t *testing.T) {
 
 // TestSetupRouter_ProviderHealthEndpoint tests provider-specific health endpoint
 func TestSetupRouter_ProviderHealthEndpoint(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("GET /v1/providers/:id/health returns provider health", func(t *testing.T) {
@@ -825,8 +860,8 @@ func TestSetupRouter_ProviderHealthEndpoint(t *testing.T) {
 
 // TestSetupRouter_ProviderVerificationEndpoints tests provider verification endpoints
 func TestSetupRouter_ProviderVerificationEndpoints(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("GET /v1/providers/verification returns all providers verification", func(t *testing.T) {
@@ -886,8 +921,8 @@ func TestSetupRouter_ProviderVerificationEndpoints(t *testing.T) {
 
 // TestSetupRouter_ProviderCRUDEndpoints tests provider CRUD endpoints
 func TestSetupRouter_ProviderCRUDEndpoints(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("POST /v1/providers creates a provider", func(t *testing.T) {
@@ -960,8 +995,8 @@ func TestSetupRouter_ProviderCRUDEndpoints(t *testing.T) {
 
 // TestSetupRouter_NotFoundRoutes tests 404 handling for non-existent routes
 func TestSetupRouter_NotFoundRoutes(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("returns 404 for non-existent route", func(t *testing.T) {
@@ -975,8 +1010,8 @@ func TestSetupRouter_NotFoundRoutes(t *testing.T) {
 
 // TestSetupRouter_Completions tests the completions endpoints
 func TestSetupRouter_Completions(t *testing.T) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, _ := getSharedRouter()
+	router := rc.Engine
 	require.NotNil(t, router)
 
 	t.Run("POST /v1/completions accepts valid request", func(t *testing.T) {
@@ -1049,8 +1084,9 @@ func TestNewGinRouter_WithSetupRouter(t *testing.T) {
 
 // BenchmarkSetupRouter_Health benchmarks the health endpoint
 func BenchmarkSetupRouter_Health(b *testing.B) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, cleanup := getSharedRouter()
+	defer cleanup()
+	router := rc.Engine
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -1062,8 +1098,9 @@ func BenchmarkSetupRouter_Health(b *testing.B) {
 
 // BenchmarkSetupRouter_V1Health benchmarks the v1 health endpoint
 func BenchmarkSetupRouter_V1Health(b *testing.B) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, cleanup := getSharedRouter()
+	defer cleanup()
+	router := rc.Engine
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -1075,8 +1112,9 @@ func BenchmarkSetupRouter_V1Health(b *testing.B) {
 
 // BenchmarkSetupRouter_Providers benchmarks the providers endpoint
 func BenchmarkSetupRouter_Providers(b *testing.B) {
-	cfg := getMinimalConfig()
-	router := SetupRouter(cfg)
+	rc, cleanup := getSharedRouter()
+	defer cleanup()
+	router := rc.Engine
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

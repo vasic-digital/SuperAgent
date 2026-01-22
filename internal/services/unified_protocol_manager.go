@@ -444,6 +444,13 @@ func (u *UnifiedProtocolManager) GetACP() *ACPManager {
 	return u.acpManager
 }
 
+// Stop stops the protocol monitor and cleans up resources
+func (u *UnifiedProtocolManager) Stop() {
+	if u.monitor != nil {
+		u.monitor.Stop()
+	}
+}
+
 // Private methods
 
 func (u *UnifiedProtocolManager) recordMetrics(protocol string, duration time.Duration, success bool) {

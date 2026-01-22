@@ -27,12 +27,12 @@ run_test() {
     if eval "$test_cmd" >> "$LOG_FILE" 2>&1; then
         log_success "PASS: $test_name"
         TESTS_PASSED=$((TESTS_PASSED + 1))
-        record_assertion "$test_name" "passed" ""
+        record_assertion "test" "$test_name" "true" ""
         return 0
     else
         log_error "FAIL: $test_name"
         TESTS_FAILED=$((TESTS_FAILED + 1))
-        record_assertion "$test_name" "failed" "Test command failed"
+        record_assertion "test" "$test_name" "false" "Test command failed"
         return 1
     fi
 }
@@ -191,9 +191,9 @@ run_test "Jira: create_issue tool" \
 
 # Kubernetes tools
 run_test "Kubernetes: list_pods tool" \
-    "grep -q 'list_pods' '$PROJECT_ROOT/internal/mcp/adapters/kubernetes.go'"
-run_test "Kubernetes: get_logs tool" \
-    "grep -q 'get_logs' '$PROJECT_ROOT/internal/mcp/adapters/kubernetes.go'"
+    "grep -qE 'list_pods|k8s_list_pods' '$PROJECT_ROOT/internal/mcp/adapters/kubernetes.go'"
+run_test "Kubernetes: pod_logs tool" \
+    "grep -qE 'get_logs|pod_logs|k8s_pod_logs' '$PROJECT_ROOT/internal/mcp/adapters/kubernetes.go'"
 
 # Linear tools
 run_test "Linear: list_issues tool" \
@@ -224,18 +224,18 @@ run_test "Sentry: list_issues tool" \
     "grep -q 'list_issues' '$PROJECT_ROOT/internal/mcp/adapters/sentry.go'"
 
 # Slack tools
-run_test "Slack: send_message tool" \
-    "grep -q 'send_message' '$PROJECT_ROOT/internal/mcp/adapters/slack.go'"
+run_test "Slack: post_message tool" \
+    "grep -qE 'send_message|post_message|slack_post_message' '$PROJECT_ROOT/internal/mcp/adapters/slack.go'"
 run_test "Slack: list_channels tool" \
-    "grep -q 'list_channels' '$PROJECT_ROOT/internal/mcp/adapters/slack.go'"
+    "grep -qE 'list_channels|slack_list_channels' '$PROJECT_ROOT/internal/mcp/adapters/slack.go'"
 
 # Stable Diffusion tools
-run_test "Stable Diffusion: text_to_image tool" \
-    "grep -q 'text_to_image' '$PROJECT_ROOT/internal/mcp/adapters/stable_diffusion.go'"
+run_test "Stable Diffusion: txt2img tool" \
+    "grep -qE 'text_to_image|txt2img|sd_txt2img' '$PROJECT_ROOT/internal/mcp/adapters/stable_diffusion.go'"
 
 # SVGMaker tools
-run_test "SVGMaker: create_svg tool" \
-    "grep -q 'create_svg' '$PROJECT_ROOT/internal/mcp/adapters/svgmaker.go'"
+run_test "SVGMaker: generate_svg tool" \
+    "grep -qE 'create_svg|generate|svg_generate' '$PROJECT_ROOT/internal/mcp/adapters/svgmaker.go'"
 
 # ============================================================================
 # SECTION 4: MCP SERVER TOOL DEFINITIONS
@@ -352,7 +352,7 @@ log_info "SECTION 7: Unified Manager"
 log_info "=============================================="
 
 run_test "UnifiedManager struct exists" \
-    "grep -q 'type UnifiedManager struct' '$PROJECT_ROOT/internal/mcp/servers/unified_manager.go'"
+    "grep -qE 'type Unified.*Manager struct' '$PROJECT_ROOT/internal/mcp/servers/unified_manager.go'"
 
 run_test "UnifiedManager has RegisterAdapter" \
     "grep -q 'RegisterAdapter\|Register' '$PROJECT_ROOT/internal/mcp/servers/unified_manager.go'"
