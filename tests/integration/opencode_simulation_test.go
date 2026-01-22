@@ -70,7 +70,7 @@ func getTestURL() string {
 	return url
 }
 
-func getTestAPIKey() string {
+func getTestAPIKeyForOpencode() string {
 	key := os.Getenv("HELIXAGENT_API_KEY")
 	if key == "" {
 		key = "sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"
@@ -495,7 +495,7 @@ func sendOpenCodeRequest(request OpenCodeRequest) (*OpenCodeResponse, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+getTestAPIKey())
+	req.Header.Set("Authorization", "Bearer "+getTestAPIKeyForOpencode())
 
 	client := &http.Client{Timeout: 120 * time.Second}
 	resp, err := client.Do(req)
