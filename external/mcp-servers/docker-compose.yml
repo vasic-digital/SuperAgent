@@ -1,0 +1,78 @@
+# MCP Servers Docker Compose Configuration
+# This file can be used standalone or included in the main HelixAgent docker-compose
+version: '3.8'
+
+services:
+  mcp-servers:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: helixagent-mcp-servers
+    restart: unless-stopped
+    ports:
+      # Active servers
+      - "3001:3001"  # fetch
+      - "3002:3002"  # filesystem
+      - "3003:3003"  # git
+      - "3004:3004"  # memory
+      - "3005:3005"  # time
+      - "3006:3006"  # sequential-thinking
+      - "3007:3007"  # everything
+      # Archived servers
+      - "3008:3008"  # postgres
+      - "3009:3009"  # sqlite
+      - "3010:3010"  # slack
+      - "3011:3011"  # github
+      - "3012:3012"  # gitlab
+      - "3013:3013"  # google-maps
+      - "3014:3014"  # brave-search
+      - "3015:3015"  # puppeteer
+      - "3016:3016"  # redis
+      - "3017:3017"  # sentry
+      - "3018:3018"  # gdrive
+      - "3019:3019"  # everart
+      - "3020:3020"  # aws-kb-retrieval
+    environment:
+      # API keys (pass from host environment)
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GITLAB_TOKEN=${GITLAB_TOKEN:-}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - SLACK_TEAM_ID=${SLACK_TEAM_ID:-}
+      - BRAVE_API_KEY=${BRAVE_API_KEY:-}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
+      - SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:-}
+      - SENTRY_ORG=${SENTRY_ORG:-}
+      - GOOGLE_CREDENTIALS_PATH=${GOOGLE_CREDENTIALS_PATH:-}
+      - EVERART_API_KEY=${EVERART_API_KEY:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      # Database connections
+      - POSTGRES_URL=${POSTGRES_URL:-postgresql://helixagent:helixagent123@helixagent-postgres:5432/helixagent_db}
+      - REDIS_URL=${REDIS_URL:-redis://:helixagent123@helixagent-redis:6379}
+    volumes:
+      # Mount home directory for filesystem server
+      - ${HOME}:/mnt/home:ro
+      # Mount current working directory
+      - ${PWD}:/mnt/workspace:ro
+      # Persistent data
+      - mcp-data:/var/lib/mcp
+      - mcp-logs:/var/log/mcp-servers
+    networks:
+      - helixagent-network
+    healthcheck:
+      test: ["/app/scripts/health-check.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - helixagent-postgres
+      - helixagent-redis
+
+volumes:
+  mcp-data:
+  mcp-logs:
+
+networks:
+  helixagent-network:
+    external: true

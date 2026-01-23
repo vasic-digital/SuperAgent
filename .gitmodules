@@ -10,3 +10,9 @@
 [submodule "LLMsVerifier"]
 	path = LLMsVerifier
 	url = https://github.com/vasic-digital/LLMsVerifier.git
+[submodule "external/mcp-servers/servers"]
+	path = external/mcp-servers/servers
+	url = https://github.com/modelcontextprotocol/servers.git
+[submodule "external/mcp-servers/servers-archived"]
+	path = external/mcp-servers/servers-archived
+	url = https://github.com/modelcontextprotocol/servers-archived.git
