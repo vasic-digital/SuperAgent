@@ -56,6 +56,23 @@ Unit tests cover all validation, error paths, and mockable code. Higher coverage
 - [x] Created `challenges/scripts/all_agents_e2e_challenge.sh` (102 tests)
 - [x] **All 102 tests passed** (48 generate + 48 validate + 5 meta + 1 build)
 
+#### Comprehensive CLI Agents Documentation ✅
+- [x] Created complete documentation suite in `docs/cli-agents/` (14 files)
+- [x] **README.md** - Index and quick links
+- [x] **01-overview.md** - Introduction, architecture, agent tiers
+- [x] **02-quick-start.md** - 5-minute setup guide
+- [x] **03-agent-reference.md** - All 48 agents with properties
+- [x] **04-configuration-guide.md** - Configuration formats, MCP servers
+- [x] **05-plugin-architecture.md** - Transport layer, event system, UI
+- [x] **06-tier1-plugins.md** - Claude Code, OpenCode, Cline, Kilo-Code plugins
+- [x] **07-tier2-tier3-integration.md** - Generic MCP server approach
+- [x] **08-transport-layer.md** - HTTP/3, QUIC, TOON, Brotli details
+- [x] **09-event-system.md** - SSE, WebSocket, Webhooks reference
+- [x] **10-ui-extensions.md** - Debate visualization, progress bars
+- [x] **11-development-guide.md** - Step-by-step plugin development
+- [x] **12-troubleshooting.md** - Common issues and solutions
+- [x] **13-api-reference.md** - Complete REST/MCP/TOON API reference
+
 ### ✅ PREVIOUSLY COMPLETED (Earlier Sessions)
 
 #### Phase 8-15: CLI Agent Plugin Development ✅
@@ -115,6 +132,22 @@ go test ./LLMsVerifier/llm-verifier/pkg/cliagents/... # Generator tests
 10. `challenges/scripts/all_agents_e2e_challenge.sh` - New challenge (102 tests)
 11. `CLAUDE.md` - Updated agent count and CLI documentation
 12. `PROGRESS_MARKER.md` - This file
+
+### Documentation Files Created (14 files)
+13. `docs/cli-agents/README.md` - Index and quick links
+14. `docs/cli-agents/01-overview.md` - Introduction and architecture
+15. `docs/cli-agents/02-quick-start.md` - 5-minute setup guide
+16. `docs/cli-agents/03-agent-reference.md` - All 48 agents reference
+17. `docs/cli-agents/04-configuration-guide.md` - Configuration formats
+18. `docs/cli-agents/05-plugin-architecture.md` - Plugin architecture
+19. `docs/cli-agents/06-tier1-plugins.md` - Tier 1 plugin development
+20. `docs/cli-agents/07-tier2-tier3-integration.md` - Tier 2-3 integration
+21. `docs/cli-agents/08-transport-layer.md` - HTTP/3, TOON, Brotli
+22. `docs/cli-agents/09-event-system.md` - SSE, WebSocket, Webhooks
+23. `docs/cli-agents/10-ui-extensions.md` - UI components
+24. `docs/cli-agents/11-development-guide.md` - Plugin development
+25. `docs/cli-agents/12-troubleshooting.md` - Troubleshooting guide
+26. `docs/cli-agents/13-api-reference.md` - Complete API reference
 
 ---
 
