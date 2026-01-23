@@ -431,6 +431,7 @@ All configuration generation is powered by LLMsVerifier's unified generator (`pk
 ./challenges/scripts/fallback_mechanism_challenge.sh             # 17 tests - fallback chain for empty responses
 ./challenges/scripts/integration_providers_challenge.sh          # 47 tests - embedding/vector/MCP integrations
 ./challenges/scripts/all_agents_e2e_challenge.sh                 # 102 tests - all 48 CLI agents
+./challenges/scripts/cli_agent_mcp_challenge.sh                  # 26 tests - CLI agent MCP validation (37 MCPs)
 ```
 
 Key concepts:
@@ -526,6 +527,23 @@ Key files:
 - `internal/mcp/adapters/asana.go` - Asana project management (20 tools)
 - `internal/mcp/adapters/jira.go` - Jira issue tracking (20 tools)
 - `internal/mcp/adapters/registry.go` - Adapter registry (45+ adapters)
+
+### CLI Agent MCP Configuration (37 MCPs)
+
+CLI agents (OpenCode, Crush, etc.) are configured with **37 MCPs** across three categories:
+
+| Category | MCPs |
+|----------|------|
+| **Anthropic Official** | filesystem, fetch, memory, time, git, sqlite, postgres, puppeteer, brave-search, google-maps, slack, sequential-thinking, everart, exa, linear, sentry, notion, figma, aws-kb-retrieval, gitlab |
+| **HelixAgent Custom** | helixagent, helixagent-debate, helixagent-rag, helixagent-memory |
+| **Community/Infrastructure** | docker, kubernetes, redis, mongodb, elasticsearch, qdrant, chroma, jira, asana, google-drive, aws-s3, datadog |
+
+Verify MCP configuration:
+```bash
+./scripts/cli-agents/tests/verify-opencode-mcps.sh   # 15 tests for OpenCode
+./scripts/cli-agents/tests/verify-crush-mcps.sh      # 10 tests for Crush
+./challenges/scripts/cli_agent_mcp_challenge.sh      # 26 tests for all CLI agents
+```
 
 ## Background Task System
 
