@@ -421,3 +421,150 @@ func TestExternalMCPServersInOpenCodeConfig(t *testing.T) {
 		})
 	}
 }
+
+// TestMCPContainerBuildNetworkConnectivity verifies that network connectivity
+// is available for container builds (needed for Alpine apk, npm, pip)
+func TestMCPContainerBuildNetworkConnectivity(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping network connectivity test in short mode")
+	}
+
+	// Test host-level network connectivity to Alpine repo
+	t.Run("AlpineRepository", func(t *testing.T) {
+		client := &http.Client{Timeout: 10 * time.Second}
+		resp, err := client.Head("https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/APKINDEX.tar.gz")
+		if err != nil {
+			t.Logf("Warning: Cannot reach Alpine repository: %v", err)
+			t.Logf("Container builds may fail. Check network configuration.")
+		} else {
+			resp.Body.Close()
+			assert.Equal(t, http.StatusOK, resp.StatusCode, "Alpine repo should be reachable")
+		}
+	})
+
+	// Test host-level network connectivity to npm registry
+	t.Run("NpmRegistry", func(t *testing.T) {
+		client := &http.Client{Timeout: 10 * time.Second}
+		resp, err := client.Head("https://registry.npmjs.org/")
+		if err != nil {
+			t.Logf("Warning: Cannot reach npm registry: %v", err)
+		} else {
+			resp.Body.Close()
+			assert.Equal(t, http.StatusOK, resp.StatusCode, "npm registry should be reachable")
+		}
+	})
+
+	// Test host-level network connectivity to PyPI
+	t.Run("PyPIRepository", func(t *testing.T) {
+		client := &http.Client{Timeout: 10 * time.Second}
+		resp, err := client.Head("https://pypi.org/simple/")
+		if err != nil {
+			t.Logf("Warning: Cannot reach PyPI: %v", err)
+		} else {
+			resp.Body.Close()
+			// PyPI returns 200 for simple/ endpoint
+			assert.True(t, resp.StatusCode >= 200 && resp.StatusCode < 400, "PyPI should be reachable")
+		}
+	})
+}
+
+// TestMCPContainerNetworkDNSResolution verifies that container DNS resolution works
+func TestMCPContainerNetworkDNSResolution(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping container DNS test in short mode")
+	}
+
+	runtime := detectContainerRuntime()
+	if runtime == "" {
+		t.Skip("No container runtime available")
+	}
+
+	// Test DNS resolution inside a container using --network=host
+	// This is the workaround for podman DNS issues
+	t.Run("HostNetworkDNS", func(t *testing.T) {
+		cmd := exec.Command(runtime, "run", "--rm", "--network=host",
+			"alpine:latest", "sh", "-c",
+			"apk update > /dev/null 2>&1 && echo 'DNS_OK'")
+		output, err := cmd.CombinedOutput()
+
+		if err != nil {
+			t.Logf("Container DNS with host network failed: %v", err)
+			t.Logf("Output: %s", string(output))
+			t.FailNow()
+		}
+
+		assert.Contains(t, string(output), "DNS_OK",
+			"Container should be able to resolve DNS with --network=host")
+	})
+
+	// Test that default network might have issues (informational)
+	t.Run("DefaultNetworkDNS", func(t *testing.T) {
+		cmd := exec.Command(runtime, "run", "--rm",
+			"alpine:latest", "sh", "-c",
+			"apk update > /dev/null 2>&1 && echo 'DNS_OK' || echo 'DNS_FAIL'")
+		output, _ := cmd.CombinedOutput()
+
+		if strings.Contains(string(output), "DNS_FAIL") {
+			t.Logf("INFO: Default container network has DNS issues")
+			t.Logf("Build script uses --network=host as workaround")
+		}
+	})
+}
+
+// TestMCPContainerBuildScript verifies that the build script exists and is executable
+func TestMCPContainerBuildScript(t *testing.T) {
+	projectRoot := getExternalMCPProjectRoot()
+	require.NotEmpty(t, projectRoot, "Could not find project root")
+
+	buildScriptPath := filepath.Join(projectRoot, "external/mcp-servers/scripts/build.sh")
+
+	t.Run("BuildScriptExists", func(t *testing.T) {
+		info, err := os.Stat(buildScriptPath)
+		require.NoError(t, err, "Build script should exist")
+		assert.False(t, info.IsDir(), "Should be a file")
+	})
+
+	t.Run("BuildScriptExecutable", func(t *testing.T) {
+		info, err := os.Stat(buildScriptPath)
+		require.NoError(t, err)
+		mode := info.Mode()
+		assert.True(t, mode&0111 != 0, "Build script should be executable")
+	})
+
+	t.Run("BuildScriptHasNetworkCheck", func(t *testing.T) {
+		content, err := os.ReadFile(buildScriptPath)
+		require.NoError(t, err)
+
+		// Verify build script includes network pre-flight checks
+		assert.Contains(t, string(content), "network",
+			"Build script should contain network handling")
+		assert.Contains(t, string(content), "--network=host",
+			"Build script should use --network=host for builds")
+	})
+}
+
+// TestMCPDockerfileHasCorrectShell verifies that Dockerfile scripts use /bin/sh (not /bin/bash)
+func TestMCPDockerfileHasCorrectShell(t *testing.T) {
+	projectRoot := getExternalMCPProjectRoot()
+	require.NotEmpty(t, projectRoot, "Could not find project root")
+
+	scripts := []string{
+		"external/mcp-servers/scripts/start-all.sh",
+		"external/mcp-servers/scripts/health-check.sh",
+	}
+
+	for _, script := range scripts {
+		scriptPath := filepath.Join(projectRoot, script)
+		t.Run(filepath.Base(script), func(t *testing.T) {
+			content, err := os.ReadFile(scriptPath)
+			if err != nil {
+				t.Skipf("Script not found: %s", scriptPath)
+				return
+			}
+
+			firstLine := strings.Split(string(content), "\n")[0]
+			assert.Equal(t, "#!/bin/sh", firstLine,
+				"Script should use /bin/sh (not /bin/bash) for Alpine compatibility")
+		})
+	}
+}

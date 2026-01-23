@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 # Start all MCP servers for HelixAgent
 # Each server runs on a dedicated port in SSE mode
+# Handles both Node.js and Python-based MCP servers
 
 set -e
 
@@ -9,22 +10,48 @@ mkdir -p "$LOG_DIR"
 
 echo "Starting MCP servers..."
 
-# Function to start a server
-start_server() {
-    local name=$1
-    local port=$2
-    local dir=$3
-    local script=${4:-"index.js"}
+# Function to start a Node.js server
+start_node_server() {
+    name=$1
+    port=$2
+    dir=$3
 
-    echo "Starting $name on port $port..."
+    echo "Starting $name (Node.js) on port $port..."
     cd "$dir"
 
-    if [ -f "dist/$script" ]; then
-        MCP_PORT=$port node "dist/$script" >> "$LOG_DIR/$name.log" 2>&1 &
-    elif [ -f "$script" ]; then
-        MCP_PORT=$port node "$script" >> "$LOG_DIR/$name.log" 2>&1 &
+    if [ -f "dist/index.js" ]; then
+        MCP_PORT=$port node "dist/index.js" >> "$LOG_DIR/$name.log" 2>&1 &
+    elif [ -f "build/index.js" ]; then
+        MCP_PORT=$port node "build/index.js" >> "$LOG_DIR/$name.log" 2>&1 &
+    elif [ -f "index.js" ]; then
+        MCP_PORT=$port node "index.js" >> "$LOG_DIR/$name.log" 2>&1 &
     else
-        echo "Warning: Could not find entry point for $name"
+        echo "Warning: Could not find Node.js entry point for $name"
+        return 1
+    fi
+
+    echo "$!" > "/var/run/mcp-$name.pid"
+    echo "$name started with PID $(cat /var/run/mcp-$name.pid)"
+}
+
+# Function to start a Python server
+start_python_server() {
+    name=$1
+    port=$2
+    dir=$3
+    module=$4
+
+    echo "Starting $name (Python) on port $port..."
+    cd "$dir"
+
+    if [ -n "$module" ]; then
+        MCP_PORT=$port python3 -m "$module" >> "$LOG_DIR/$name.log" 2>&1 &
+    elif [ -f "src/__main__.py" ]; then
+        MCP_PORT=$port python3 -m src >> "$LOG_DIR/$name.log" 2>&1 &
+    elif [ -f "__main__.py" ]; then
+        MCP_PORT=$port python3 . >> "$LOG_DIR/$name.log" 2>&1 &
+    else
+        echo "Warning: Could not find Python entry point for $name"
         return 1
     fi
 
@@ -33,28 +60,34 @@ start_server() {
 }
 
 # Start active servers (from servers repo)
-start_server "fetch" 3001 "/app/servers/src/fetch"
-start_server "filesystem" 3002 "/app/servers/src/filesystem"
-start_server "git" 3003 "/app/servers/src/git"
-start_server "memory" 3004 "/app/servers/src/memory"
-start_server "time" 3005 "/app/servers/src/time"
-start_server "sequential-thinking" 3006 "/app/servers/src/sequentialthinking"
-start_server "everything" 3007 "/app/servers/src/everything"
+# Node.js servers
+start_node_server "everything" 3007 "/app/servers/src/everything"
+start_node_server "filesystem" 3002 "/app/servers/src/filesystem"
+start_node_server "memory" 3004 "/app/servers/src/memory"
+start_node_server "sequential-thinking" 3006 "/app/servers/src/sequentialthinking"
 
-# Start archived servers (from servers-archived repo)
-start_server "postgres" 3008 "/app/servers-archived/postgres"
-start_server "sqlite" 3009 "/app/servers-archived/sqlite"
-start_server "slack" 3010 "/app/servers-archived/slack"
-start_server "github" 3011 "/app/servers-archived/github"
-start_server "gitlab" 3012 "/app/servers-archived/gitlab"
-start_server "google-maps" 3013 "/app/servers-archived/google-maps"
-start_server "brave-search" 3014 "/app/servers-archived/brave-search"
-start_server "puppeteer" 3015 "/app/servers-archived/puppeteer"
-start_server "redis" 3016 "/app/servers-archived/redis"
-start_server "sentry" 3017 "/app/servers-archived/sentry"
-start_server "gdrive" 3018 "/app/servers-archived/gdrive"
-start_server "everart" 3019 "/app/servers-archived/everart"
-start_server "aws-kb-retrieval" 3020 "/app/servers-archived/aws-kb-retrieval-server"
+# Python servers
+start_python_server "fetch" 3001 "/app/servers/src/fetch" "mcp_server_fetch"
+start_python_server "git" 3003 "/app/servers/src/git" "mcp_server_git"
+start_python_server "time" 3005 "/app/servers/src/time" "mcp_server_time"
+
+# Start archived servers (from servers-archived repo - they're in src/ subdirectory)
+# Node.js servers
+start_node_server "postgres" 3008 "/app/servers-archived/src/postgres"
+start_node_server "slack" 3010 "/app/servers-archived/src/slack"
+start_node_server "github" 3011 "/app/servers-archived/src/github"
+start_node_server "gitlab" 3012 "/app/servers-archived/src/gitlab"
+start_node_server "google-maps" 3013 "/app/servers-archived/src/google-maps"
+start_node_server "brave-search" 3014 "/app/servers-archived/src/brave-search"
+start_node_server "puppeteer" 3015 "/app/servers-archived/src/puppeteer"
+start_node_server "redis" 3016 "/app/servers-archived/src/redis"
+start_node_server "gdrive" 3018 "/app/servers-archived/src/gdrive"
+start_node_server "everart" 3019 "/app/servers-archived/src/everart"
+start_node_server "aws-kb-retrieval" 3020 "/app/servers-archived/src/aws-kb-retrieval-server"
+
+# Python servers
+start_python_server "sqlite" 3009 "/app/servers-archived/src/sqlite" "mcp_server_sqlite"
+start_python_server "sentry" 3017 "/app/servers-archived/src/sentry" "mcp_server_sentry"
 
 echo ""
 echo "All MCP servers started. Monitoring..."

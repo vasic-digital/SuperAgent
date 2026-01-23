@@ -8,6 +8,11 @@ The servers are included as git submodules from the official MCP repositories.
 MCP (Model Context Protocol) servers provide tools and capabilities that can be used by AI assistants.
 HelixAgent integrates these servers to provide comprehensive functionality to CLI agents like OpenCode.
 
+**Important**: MCP servers communicate via **stdio** (Standard Input/Output) using JSON-RPC, not HTTP.
+They are designed to be launched by MCP clients (like OpenCode) on demand, not run as persistent services.
+The container infrastructure provided here builds and installs all dependencies, making the servers ready
+for use by MCP clients.
+
 ## Git Submodules
 
 ### Active Servers
@@ -161,34 +166,39 @@ go test -v ./tests/integration/... -run "MCP"
 external/mcp-servers/
 ├── servers/                    # Active MCP servers (git submodule)
 │   └── src/
-│       ├── fetch/
-│       ├── filesystem/
-│       ├── git/
-│       ├── memory/
-│       ├── time/
-│       ├── sequentialthinking/
-│       └── everything/
+│       ├── fetch/              # Python (mcp_server_fetch)
+│       ├── filesystem/         # Node.js
+│       ├── git/                # Python (mcp_server_git)
+│       ├── memory/             # Node.js
+│       ├── time/               # Python (mcp_server_time)
+│       ├── sequentialthinking/ # Node.js
+│       └── everything/         # Node.js
 ├── servers-archived/           # Archived MCP servers (git submodule)
-│   ├── postgres/
-│   ├── sqlite/
-│   ├── slack/
-│   ├── github/
-│   ├── gitlab/
-│   ├── google-maps/
-│   ├── brave-search/
-│   ├── puppeteer/
-│   ├── redis/
-│   ├── sentry/
-│   ├── gdrive/
-│   ├── everart/
-│   └── aws-kb-retrieval-server/
+│   └── src/
+│       ├── postgres/           # Node.js
+│       ├── sqlite/             # Python (mcp_server_sqlite)
+│       ├── slack/              # Node.js
+│       ├── github/             # Node.js
+│       ├── gitlab/             # Node.js
+│       ├── google-maps/        # Node.js
+│       ├── brave-search/       # Node.js
+│       ├── puppeteer/          # Node.js
+│       ├── redis/              # Node.js
+│       ├── sentry/             # Python (mcp_server_sentry)
+│       ├── gdrive/             # Node.js
+│       ├── everart/            # Node.js
+│       └── aws-kb-retrieval-server/  # Node.js
 ├── scripts/
+│   ├── build.sh               # Build script with network handling
 │   ├── start-all.sh           # Startup script for all servers
 │   └── health-check.sh        # Health check script
 ├── Dockerfile                  # Container build configuration
 ├── docker-compose.yml          # Container orchestration
 └── README.md                   # This file
 ```
+
+**Note**: The MCP servers are a mix of Node.js and Python implementations.
+The Dockerfile installs both runtimes and the startup scripts handle both types.
 
 ## Updating Submodules
 
@@ -203,6 +213,54 @@ git submodule update --remote external/mcp-servers/servers
 ```
 
 ## Troubleshooting
+
+### Container Build Fails with Alpine Package Errors
+
+**Symptom**: Build fails with errors like:
+```
+WARNING: fetching https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/APKINDEX.tar.gz: I/O error
+ERROR: unable to select packages: git (no such package)
+```
+
+**Cause**: Container DNS resolution issues, especially common with Podman.
+
+**Solution**: Use the build script which includes `--network=host`:
+```bash
+# Use the build script (recommended)
+./scripts/build.sh
+
+# Or manually with --network=host
+podman build --network=host -t helixagent-mcp-servers:latest .
+docker build --network=host -t helixagent-mcp-servers:latest .
+```
+
+### Container DNS Resolution Issues
+
+**Symptom**: Container can't reach external URLs during build or runtime.
+
+**Diagnosis**:
+```bash
+# Test DNS inside container with default network
+podman run --rm alpine:latest sh -c "apk update"
+
+# Test with host network (should work)
+podman run --rm --network=host alpine:latest sh -c "apk update"
+```
+
+**Solution**: The Dockerfile and docker-compose.yml are configured to use host network for builds.
+If running manually, always use `--network=host` for the build step.
+
+### Scripts Fail with "not found" Error
+
+**Symptom**: Container starts but immediately exits with:
+```
+/usr/local/bin/docker-entrypoint.sh: exec: line 11: /app/scripts/start-all.sh: not found
+```
+
+**Cause**: Scripts use `#!/bin/bash` but Alpine Linux doesn't have bash by default.
+
+**Solution**: All scripts in this project use `#!/bin/sh` for Alpine compatibility.
+If you've modified scripts, ensure they use `/bin/sh` not `/bin/bash`.
 
 ### Server not starting
 
@@ -221,6 +279,20 @@ git submodule update --remote external/mcp-servers/servers
 1. Verify API keys are correct and not expired
 2. Check that tokens have the required permissions
 3. Ensure environment variables are properly passed to the container
+
+### Network Pre-flight Checks
+
+Before building, ensure these URLs are reachable from your host:
+```bash
+# Alpine package repository
+curl -I https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/APKINDEX.tar.gz
+
+# npm registry
+curl -I https://registry.npmjs.org/
+
+# PyPI (for Python servers)
+curl -I https://pypi.org/simple/
+```
 
 ## Contributing
 

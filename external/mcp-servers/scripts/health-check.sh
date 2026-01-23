@@ -1,37 +1,15 @@
-#!/bin/bash
+#!/bin/sh
 # Health check script for MCP servers
 
 HEALTHY=true
 
-# Define expected servers and their ports
-declare -A SERVERS=(
-    ["fetch"]=3001
-    ["filesystem"]=3002
-    ["git"]=3003
-    ["memory"]=3004
-    ["time"]=3005
-    ["sequential-thinking"]=3006
-    ["everything"]=3007
-    ["postgres"]=3008
-    ["sqlite"]=3009
-    ["slack"]=3010
-    ["github"]=3011
-    ["gitlab"]=3012
-    ["google-maps"]=3013
-    ["brave-search"]=3014
-    ["puppeteer"]=3015
-    ["redis"]=3016
-    ["sentry"]=3017
-    ["gdrive"]=3018
-    ["everart"]=3019
-    ["aws-kb-retrieval"]=3020
-)
-
 echo "MCP Servers Health Check"
 echo "========================"
 
-for name in "${!SERVERS[@]}"; do
-    port=${SERVERS[$name]}
+# Check each server by its PID file
+check_server() {
+    name=$1
+    port=$2
     pid_file="/var/run/mcp-$name.pid"
 
     if [ -f "$pid_file" ]; then
@@ -46,7 +24,31 @@ for name in "${!SERVERS[@]}"; do
         echo "[FAIL] $name - PID file not found"
         HEALTHY=false
     fi
-done
+}
+
+# Active servers
+check_server "fetch" 3001
+check_server "filesystem" 3002
+check_server "git" 3003
+check_server "memory" 3004
+check_server "time" 3005
+check_server "sequential-thinking" 3006
+check_server "everything" 3007
+
+# Archived servers
+check_server "postgres" 3008
+check_server "sqlite" 3009
+check_server "slack" 3010
+check_server "github" 3011
+check_server "gitlab" 3012
+check_server "google-maps" 3013
+check_server "brave-search" 3014
+check_server "puppeteer" 3015
+check_server "redis" 3016
+check_server "sentry" 3017
+check_server "gdrive" 3018
+check_server "everart" 3019
+check_server "aws-kb-retrieval" 3020
 
 echo ""
 if [ "$HEALTHY" = true ]; then
