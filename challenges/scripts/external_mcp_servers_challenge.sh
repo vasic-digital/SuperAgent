@@ -161,16 +161,85 @@ else
     fail "3.4 MCP servers health check script missing"
 fi
 
+# Test 3.5: Build script exists
+if [ -f "external/mcp-servers/scripts/build.sh" ]; then
+    pass "3.5 MCP servers build script exists"
+else
+    fail "3.5 MCP servers build script missing"
+fi
+
+# Test 3.6: Scripts use /bin/sh (not /bin/bash) for Alpine compatibility
+for script in "external/mcp-servers/scripts/start-all.sh" "external/mcp-servers/scripts/health-check.sh"; do
+    if [ -f "$script" ]; then
+        SHEBANG=$(head -1 "$script")
+        if [ "$SHEBANG" = "#!/bin/sh" ]; then
+            pass "3.S.$(basename $script) Uses /bin/sh for Alpine"
+        else
+            fail "3.S.$(basename $script) Should use /bin/sh (found: $SHEBANG)"
+        fi
+    fi
+done
+
 # ==========================================
-# SECTION 4: Documentation
+# SECTION 4: Network Pre-flight Checks
 # ==========================================
 echo ""
-echo "=== Section 4: Documentation ==="
+echo "=== Section 4: Network Pre-flight Checks ==="
 echo ""
 
-# Test 4.1: MCP servers README exists
+# Test 4.1: Alpine repository reachable
+if curl -s --connect-timeout 5 -I https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/APKINDEX.tar.gz > /dev/null 2>&1; then
+    pass "4.1 Alpine repository reachable"
+else
+    fail "4.1 Alpine repository NOT reachable (builds will fail)"
+fi
+
+# Test 4.2: npm registry reachable
+if curl -s --connect-timeout 5 -I https://registry.npmjs.org/ > /dev/null 2>&1; then
+    pass "4.2 npm registry reachable"
+else
+    fail "4.2 npm registry NOT reachable (Node.js builds will fail)"
+fi
+
+# Test 4.3: PyPI reachable
+if curl -s --connect-timeout 5 -I https://pypi.org/simple/ > /dev/null 2>&1; then
+    pass "4.3 PyPI repository reachable"
+else
+    fail "4.3 PyPI repository NOT reachable (Python builds may fail)"
+fi
+
+# Test 4.4: Container DNS resolution (if runtime available)
+if [ -n "$RUNTIME" ]; then
+    if $RUNTIME run --rm --network=host alpine:latest sh -c "apk update > /dev/null 2>&1" 2>/dev/null; then
+        pass "4.4 Container DNS works with --network=host"
+    else
+        fail "4.4 Container DNS failed even with --network=host"
+    fi
+else
+    skip "4.4 Container DNS test (no runtime)"
+fi
+
+# Test 4.5: Build script has network handling
+if [ -f "external/mcp-servers/scripts/build.sh" ]; then
+    if grep -q "\-\-network=host" "external/mcp-servers/scripts/build.sh"; then
+        pass "4.5 Build script uses --network=host workaround"
+    else
+        fail "4.5 Build script missing --network=host workaround"
+    fi
+else
+    skip "4.5 Build script network handling (script missing)"
+fi
+
+# ==========================================
+# SECTION 5: Documentation
+# ==========================================
+echo ""
+echo "=== Section 5: Documentation ==="
+echo ""
+
+# Test 5.1: MCP servers README exists
 if [ -f "external/mcp-servers/README.md" ]; then
-    pass "4.1 MCP servers README.md exists"
+    pass "5.1 MCP servers README.md exists"
 
     # Check if all servers are documented
     README_CONTENT=$(cat external/mcp-servers/README.md)
@@ -178,59 +247,73 @@ if [ -f "external/mcp-servers/README.md" ]; then
 
     for server in $ALL_SERVERS; do
         if echo "$README_CONTENT" | grep -qi "$server"; then
-            pass "4.D.$server Server documented in README"
+            pass "5.D.$server Server documented in README"
         else
-            fail "4.D.$server Server NOT documented in README"
+            fail "5.D.$server Server NOT documented in README"
         fi
     done
 else
-    fail "4.1 MCP servers README.md missing"
+    fail "5.1 MCP servers README.md missing"
 fi
 
 # ==========================================
-# SECTION 5: OpenCode Configuration
+# SECTION 6: OpenCode Configuration
 # ==========================================
 echo ""
-echo "=== Section 5: OpenCode Configuration ==="
+echo "=== Section 6: OpenCode Configuration ==="
 echo ""
 
-# Test 5.1: Generate config
+# Test 6.1: Generate config
 if [ -x "./bin/helixagent" ]; then
     CONFIG=$(LOCAL_ENDPOINT=http://localhost:7061 ./bin/helixagent --generate-opencode-config 2>/dev/null | grep -v "^time=" | grep -v "^IMPORTANT")
 
     # Check if config is valid JSON
     if echo "$CONFIG" | jq . &>/dev/null; then
-        pass "5.1 OpenCode config is valid JSON"
+        pass "6.1 OpenCode config is valid JSON"
 
         # Check for each MCP server in config
         MCP_SERVERS="fetch filesystem git memory time sequential-thinking everything postgres sqlite slack github gitlab google-maps brave-search puppeteer redis sentry gdrive everart aws-kb-retrieval helixagent"
 
         for server in $MCP_SERVERS; do
             if echo "$CONFIG" | jq -e ".mcp[\"$server\"]" &>/dev/null; then
-                pass "5.C.$server Server in OpenCode config"
+                pass "6.C.$server Server in OpenCode config"
             else
-                fail "5.C.$server Server NOT in OpenCode config"
+                fail "6.C.$server Server NOT in OpenCode config"
             fi
         done
     else
-        fail "5.1 OpenCode config is NOT valid JSON"
+        fail "6.1 OpenCode config is NOT valid JSON"
     fi
 else
-    skip "5.1 HelixAgent binary not found"
+    skip "6.1 HelixAgent binary not found"
 fi
 
 # ==========================================
-# SECTION 6: Integration Tests
+# SECTION 7: Integration Tests
 # ==========================================
 echo ""
-echo "=== Section 6: Integration Tests ==="
+echo "=== Section 7: Integration Tests ==="
 echo ""
 
-# Test 6.1: Integration test file exists
+# Test 7.1: Integration test file exists
 if [ -f "tests/integration/mcp_servers_test.go" ]; then
-    pass "6.1 MCP servers integration test file exists"
+    pass "7.1 MCP servers integration test file exists"
 else
-    fail "6.1 MCP servers integration test file missing"
+    fail "7.1 MCP servers integration test file missing"
+fi
+
+# Test 7.2: Integration tests have network validation
+if grep -q "TestMCPContainerBuildNetworkConnectivity" tests/integration/mcp_servers_test.go 2>/dev/null; then
+    pass "7.2 Network connectivity integration tests exist"
+else
+    fail "7.2 Network connectivity integration tests missing"
+fi
+
+# Test 7.3: Integration tests have DNS validation
+if grep -q "TestMCPContainerNetworkDNSResolution" tests/integration/mcp_servers_test.go 2>/dev/null; then
+    pass "7.3 DNS resolution integration tests exist"
+else
+    fail "7.3 DNS resolution integration tests missing"
 fi
 
 # ==========================================
