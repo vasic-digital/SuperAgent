@@ -1,0 +1,209 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "helixagent": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "HelixAgent AI Debate Ensemble",
+      "options": {
+        "apiKey": "sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a",
+        "baseURL": "http://localhost:7061/v1"
+      },
+      "models": {
+        "helixagent-debate": {
+          "name": "HelixAgent Debate Ensemble",
+          "attachments": true,
+          "reasoning": true,
+          "maxTokens": 128000,
+          "vision": true,
+          "imageInput": true,
+          "imageOutput": true,
+          "ocr": true,
+          "pdf": true,
+          "streaming": true,
+          "functionCalls": true,
+          "toolUse": true,
+          "embeddings": true,
+          "fileUpload": true,
+          "noFileLimit": true
+        }
+      }
+    }
+  },
+  "mcp": {
+    "fetch": {
+      "type": "local",
+      "command": [
+        "/home/milosvasic/Applications/node-v24.12.0-linux-x64/bin/node",
+        "/home/milosvasic/.helixagent/mcp-servers/fetch/node_modules/mcp-fetch/dist/stdio.js"
+      ],
+      "environment": {
+        "GITHUB_TOKEN": "",
+        "HOME": "/home/milosvasic",
+        "NODE_ENV": "production"
+      }
+    },
+    "filesystem": {
+      "type": "local",
+      "command": [
+        "/home/milosvasic/Applications/node-v24.12.0-linux-x64/bin/node",
+        "/home/milosvasic/.helixagent/mcp-servers/filesystem/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js"
+      ],
+      "environment": {
+        "GITHUB_TOKEN": "",
+        "HOME": "/home/milosvasic",
+        "NODE_ENV": "production"
+      }
+    },
+    "github": {
+      "type": "local",
+      "command": [
+        "/home/milosvasic/Applications/node-v24.12.0-linux-x64/bin/node",
+        "/home/milosvasic/.helixagent/mcp-servers/github/node_modules/@modelcontextprotocol/server-github/dist/index.js"
+      ],
+      "environment": {
+        "GITHUB_TOKEN": "",
+        "HOME": "/home/milosvasic",
+        "NODE_ENV": "production"
+      }
+    },
+    "helixagent-acp": {
+      "type": "remote",
+      "url": "http://localhost:7061/v1/acp",
+      "headers": {
+        "Authorization": "Bearer sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"
+      }
+    },
+    "helixagent-cognee": {
+      "type": "remote",
+      "url": "http://localhost:7061/v1/cognee",
+      "headers": {
+        "Authorization": "Bearer sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"
+      }
+    },
+    "helixagent-embeddings": {
+      "type": "remote",
+      "url": "http://localhost:7061/v1/embeddings",
+      "headers": {
+        "Authorization": "Bearer sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"
+      }
+    },
+    "helixagent-lsp": {
+      "type": "remote",
+      "url": "http://localhost:7061/v1/lsp",
+      "headers": {
+        "Authorization": "Bearer sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"
+      }
+    },
+    "helixagent-mcp": {
+      "type": "remote",
+      "url": "http://localhost:7061/v1/mcp",
+      "headers": {
+        "Authorization": "Bearer sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"
+      }
+    },
+    "helixagent-vision": {
+      "type": "remote",
+      "url": "http://localhost:7061/v1/vision",
+      "headers": {
+        "Authorization": "Bearer sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"
+      }
+    },
+    "memory": {
+      "type": "local",
+      "command": [
+        "/home/milosvasic/Applications/node-v24.12.0-linux-x64/bin/node",
+        "/home/milosvasic/.helixagent/mcp-servers/memory/node_modules/@modelcontextprotocol/server-memory/dist/index.js"
+      ],
+      "environment": {
+        "GITHUB_TOKEN": "",
+        "HOME": "/home/milosvasic",
+        "NODE_ENV": "production"
+      }
+    },
+    "puppeteer": {
+      "type": "local",
+      "command": [
+        "/home/milosvasic/Applications/node-v24.12.0-linux-x64/bin/node",
+        "/home/milosvasic/.helixagent/mcp-servers/puppeteer/node_modules/@modelcontextprotocol/server-puppeteer/dist/index.js"
+      ],
+      "environment": {
+        "GITHUB_TOKEN": "",
+        "HOME": "/home/milosvasic",
+        "NODE_ENV": "production"
+      }
+    },
+    "sqlite": {
+      "type": "local",
+      "command": [
+        "/home/milosvasic/Applications/node-v24.12.0-linux-x64/bin/node",
+        "/home/milosvasic/.helixagent/mcp-servers/sqlite/node_modules/mcp-sqlite/dist/index.js"
+      ],
+      "environment": {
+        "GITHUB_TOKEN": "",
+        "HOME": "/home/milosvasic",
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "agent": {
+    "code-reviewer": {
+      "model": "helixagent/helixagent-debate",
+      "prompt": "You are a code reviewer with access to LSP protocol for code intelligence. Analyze code for bugs, security issues, and improvements.",
+      "description": "Code review agent with LSP support",
+      "tools": {
+        "bash": false,
+        "lsp": true,
+        "read": true,
+        "write": false
+      }
+    },
+    "default": {
+      "model": "helixagent/helixagent-debate",
+      "prompt": "You are HelixAgent, an AI ensemble that combines the intelligence of multiple top-performing LLMs through debate and consensus. You have full access to MCP, ACP, LSP protocols, embeddings, vision/OCR, and all generative capabilities.",
+      "description": "HelixAgent AI Debate Ensemble - 15 verified LLMs with protocol support and fallback chain",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "embeddings": true,
+        "glob": true,
+        "grep": true,
+        "mcp": true,
+        "read": true,
+        "vision": true,
+        "webfetch": true,
+        "write": true
+      }
+    },
+    "embeddings-agent": {
+      "model": "helixagent/helixagent-debate",
+      "prompt": "You are an embeddings specialist. Generate and work with vector embeddings for semantic search and similarity.",
+      "description": "Embeddings specialist agent",
+      "tools": {
+        "embeddings": true,
+        "read": true
+      }
+    },
+    "vision-agent": {
+      "model": "helixagent/helixagent-debate",
+      "prompt": "You are a vision specialist. Analyze images, perform OCR, and understand visual content.",
+      "description": "Vision and OCR specialist agent",
+      "tools": {
+        "ocr": true,
+        "read": true,
+        "vision": true
+      }
+    },
+    "zen-agent": {
+      "model": "zen/opencode-grok-code",
+      "prompt": "You are an OpenCode Zen agent using free models (Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano). You are specialized in fast code assistance.",
+      "description": "OpenCode Zen free models agent - fast code assistance",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "read": true,
+        "write": true
+      }
+    }
+  }
+}

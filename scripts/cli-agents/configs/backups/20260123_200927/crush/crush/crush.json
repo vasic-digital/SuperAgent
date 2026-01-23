@@ -1,0 +1,46 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "providers": {
+    "helixagent": {
+      "name": "HelixAgent AI Debate Ensemble",
+      "type": "openai",
+      "base_url": "http://localhost:7061/v1",
+      "api_key": "sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a",
+      "models": [
+        {
+          "id": "helixagent-debate",
+          "name": "HelixAgent Debate Ensemble",
+          "cost_per_1m_in": 0,
+          "cost_per_1m_out": 0,
+          "context_window": 128000,
+          "default_max_tokens": 8192,
+          "can_reason": true,
+          "supports_attachments": true,
+          "streaming": true,
+          "supports_brotli": true,
+          "options": {
+            "embeddings": true,
+            "function_calls": true,
+            "image_input": true,
+            "image_output": true,
+            "ocr": true,
+            "pdf": true,
+            "tool_use": true,
+            "vision": true
+          }
+        }
+      ]
+    }
+  },
+  "lsp": {
+    "helixagent-lsp": {
+      "command": "curl -X POST http://localhost:7061/v1/lsp",
+      "args": [
+        "-H",
+        "Authorization: Bearer sk-bd15ed2af3d6cd8c0bdf57e221bbf7771fa06bda93cc8866807cc85211f58d1a"
+      ],
+      "enabled": true
+    }
+  },
+  "options": {}
+}

@@ -5,7 +5,7 @@ This project uses HelixAgent as the AI backend provider.
 ## Configuration
 
 - **Provider**: HelixAgent Ensemble (AI Debate)
-- **URL**: http://localhost:8080
+- **URL**: http://localhost:7061
 - **Features**: Multi-pass validation, streaming, tool use
 
 ## Available Models
