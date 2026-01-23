@@ -427,6 +427,158 @@ Implement multi-pass validation for higher quality AI debate responses.
 
 ---
 
+### Course 14: MCP Mastery (3.5 hours)
+**Intermediate to Advanced**
+
+Master the Model Context Protocol for external service integration.
+
+#### Modules:
+1. MCP Fundamentals (30 min)
+   - Protocol overview
+   - Architecture
+   - Adapter types
+
+2. Productivity Adapters (40 min)
+   - Linear, Jira, Asana
+   - Notion, Todoist
+   - Tool chaining
+
+3. Communication Adapters (35 min)
+   - Slack, Discord
+   - Gmail, Teams
+
+4. Development Adapters (40 min)
+   - GitHub, GitLab
+   - Sentry integration
+
+5. Data Adapters (40 min)
+   - PostgreSQL, Qdrant
+   - Cloud storage
+
+6. Custom Adapter Development (45 min)
+   - Building adapters
+   - Testing and deployment
+
+---
+
+### Course 15: Advanced Agentic Workflows (4 hours)
+**Advanced level**
+
+Build complex multi-step AI workflows with checkpointing and recovery.
+
+#### Modules:
+1. Workflow Foundations (30 min)
+   - Concepts
+   - Node types
+   - First workflow
+
+2. Advanced Node Types (45 min)
+   - Decision nodes
+   - Parallel execution
+   - Loop nodes
+
+3. State Management (40 min)
+   - Data flow
+   - External data
+
+4. Checkpointing & Recovery (35 min)
+   - Checkpoints
+   - Self-healing
+
+5. Human-in-the-Loop (40 min)
+   - Approval gates
+   - Escalation
+
+6. Tool Integration (35 min)
+   - Built-in tools
+   - Custom tools
+
+7. Observability (35 min)
+   - Tracing
+   - Monitoring
+
+8. Production Deployment (40 min)
+   - Scaling
+   - Security
+
+---
+
+### Course 16: Enterprise Deployment (3 hours)
+**Advanced level**
+
+Deploy HelixAgent in enterprise environments.
+
+#### Modules:
+1. Enterprise Architecture (30 min)
+   - Patterns
+   - Requirements
+
+2. Kubernetes Deployment (45 min)
+   - Helm charts
+   - Networking
+
+3. High Availability (40 min)
+   - Database HA
+   - Application HA
+
+4. Security Hardening (40 min)
+   - Network security
+   - IAM
+
+5. Monitoring (35 min)
+   - Metrics
+   - Tracing
+
+6. Multi-Tenancy (35 min)
+   - Isolation
+   - Customization
+
+7. Disaster Recovery (30 min)
+   - Backup
+   - DR planning
+
+---
+
+### Course 17: Certification Preparation (2.5 hours)
+**All levels**
+
+Prepare for HelixAgent certification exams.
+
+#### Modules:
+1. Certification Overview (20 min)
+   - Levels
+   - Exam format
+
+2. Core Concepts Review (30 min)
+   - Architecture
+   - Providers
+
+3. API & Protocols Review (25 min)
+   - REST API
+   - MCP/ACP/LSP
+
+4. Configuration Review (25 min)
+   - Setup
+   - Operations
+
+5. Security Review (20 min)
+   - Auth
+   - Guardrails
+
+6. Advanced Topics Review (25 min)
+   - Workflows
+   - Memory
+
+7. Practical Assessment Prep (30 min)
+   - Hands-on tasks
+   - Practice scenarios
+
+8. Exam Strategies (15 min)
+   - Tips
+   - Time management
+
+---
+
 ## Learning Paths
 
 ### For Beginners
@@ -438,15 +590,18 @@ Implement multi-pass validation for higher quality AI debate responses.
 1. Course 4: Custom Integration
 2. Course 6: Testing Strategies
 3. Course 8: Plugin Development Deep Dive
+4. Course 14: MCP Mastery
+5. Course 15: Advanced Agentic Workflows
 
 ### For DevOps/SRE
 1. Course 3: Production Deployment
 2. Course 7: Advanced Provider Configuration
 3. Course 9: Production Operations
 4. Course 10: Security Best Practices
+5. Course 16: Enterprise Deployment
 
 ### Complete Certification Path
-Complete all 10 courses in order for comprehensive HelixAgent expertise.
+Complete all 17 courses in order for comprehensive HelixAgent expertise. Use Course 17 (Certification Preparation) to prepare for official certification exams.
 
 ---
 
@@ -484,8 +639,12 @@ Complete all 10 courses in order for comprehensive HelixAgent expertise.
 
 Complete all courses and pass the final assessments to earn certifications:
 
-- **HelixAgent Developer** - Courses 1, 2, 4, 6, 8
-- **HelixAgent Operator** - Courses 1, 3, 7, 9, 10
-- **HelixAgent Professional** - All 10 courses
+- **HelixAgent Associate** - Courses 1, 2, 5
+- **HelixAgent Developer** - Courses 1, 2, 4, 6, 8, 14, 15
+- **HelixAgent Operator** - Courses 1, 3, 7, 9, 10, 16
+- **HelixAgent Professional** - All 17 courses
+- **HelixAgent Expert** - All courses + practical portfolio
+
+Use Course 17 (Certification Preparation) to prepare for exams.
 
 Contact us at [certification@helixagent.ai](mailto:certification@helixagent.ai) for more information.

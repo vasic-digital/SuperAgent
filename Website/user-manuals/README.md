@@ -74,6 +74,33 @@ Welcome to the HelixAgent user manual collection. These guides will help you get
 - Hybrid RAG system
 - Cross-debate learning
 
+### 11. MCP Integration Guide (NEW)
+- MCP adapter configuration
+- Built-in adapters (45+)
+- Tool chaining workflows
+- Custom adapter development
+- Security best practices
+
+### 12. Security Hardening Guide (NEW)
+- Authentication methods (JWT, API Key, OAuth)
+- Authorization (RBAC, scopes)
+- Network security (TLS, rate limiting)
+- Input/output protection
+- Audit logging
+
+### 13. Performance Tuning Guide (NEW)
+- Caching strategies (L1/L2)
+- Connection pooling
+- Batch processing
+- Parallel execution
+- Monitoring and optimization
+
+### 14. Plugin Development Guide (NEW)
+- Plugin architecture
+- Plugin types (extension, hook, provider, tool)
+- Lifecycle management
+- Testing and distribution
+
 ## Quick Links
 
 - [API Documentation](/docs/api)
