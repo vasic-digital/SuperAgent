@@ -398,6 +398,10 @@ type DebateSecurityAdapter struct {
 
 // NewDebateSecurityAdapter creates a new debate security adapter
 func NewDebateSecurityAdapter(logger *logrus.Logger) *DebateSecurityAdapter {
+	if logger == nil {
+		logger = logrus.New()
+		logger.SetLevel(logrus.InfoLevel)
+	}
 	return &DebateSecurityAdapter{
 		healthy: true,
 		logger:  logger,

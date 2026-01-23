@@ -776,7 +776,7 @@ func TestDebateSecurityAdapter_EvaluateAttack(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.False(t, result.IsVulnerable)
-	assert.Equal(t, "placeholder", result.ConsensusType)
+	assert.Equal(t, "security_analysis", result.ConsensusType)
 }
 
 func TestDebateSecurityAdapter_EvaluateContent(t *testing.T) {
