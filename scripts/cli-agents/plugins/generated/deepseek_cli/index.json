@@ -1,6 +1,6 @@
 {
     "agent": "deepseek_cli",
     "plugins": ["helix-integration", "streaming-adapter"],
-    "generated_at": "2026-01-22T23:47:46+03:00",
+    "generated_at": "2026-01-24T01:15:52+03:00",
     "version": "1.0.0"
 }
