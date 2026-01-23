@@ -1398,22 +1398,7 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 					Prompt: "Generate embeddings for semantic search and similarity matching.",
 				},
 			},
-			Tools: &OpenCodeToolsDefOld{
-				Browser:    true,
-				Embeddings: true,
-				File:       true,
-				LSP:        true,
-				MCP:        true,
-				Search:     true,
-				Terminal:   true,
-				Vision:     true,
-			},
-			Permission: &OpenCodePermissionDefOld{
-				AllowRead:  true,
-				AllowWrite: true,
-				AllowExec:  true,
-				AllowNet:   true,
-			},
+			// Note: tools and permission fields removed - not valid in OpenCode strict validator
 		}
 		jsonData, err = json.MarshalIndent(config, "", "  ")
 	} else {
