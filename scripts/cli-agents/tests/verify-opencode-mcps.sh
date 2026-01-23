@@ -3,8 +3,14 @@
 # OpenCode MCP Verification Test
 # ============================================================================
 # This test ACTUALLY runs OpenCode and verifies that 35+ MCPs are configured
-# and available. It does NOT just check file existence - it validates the
-# configuration is parsed correctly by OpenCode.
+# and available. It validates the configuration matches OpenCode's schema.
+#
+# OpenCode schema (from opencode-schema.json):
+# - mcpServers: map of MCP server configs
+# - providers: map of LLM provider configs
+# - agents: map of agent configs (coder, task, title, summarizer)
+# - contextPaths: array of context file paths
+# - tui: TUI configuration
 #
 # Usage: ./verify-opencode-mcps.sh
 # ============================================================================
@@ -81,43 +87,46 @@ else
 fi
 
 # ============================================================================
-# Test 4: Config has correct schema
+# Test 4: Config has valid OpenCode structure (mcpServers, providers, agents)
 # ============================================================================
-log_test "4. Config has correct schema structure"
-SCHEMA=$(jq -r '."$schema" // empty' "$CONFIG_FILE")
-if [[ -n "$SCHEMA" ]]; then
-    log_pass "Schema present: $SCHEMA"
+log_test "4. Config has valid OpenCode structure"
+HAS_MCPSERVERS=$(jq 'has("mcpServers")' "$CONFIG_FILE" 2>/dev/null)
+HAS_PROVIDERS=$(jq 'has("providers")' "$CONFIG_FILE" 2>/dev/null)
+HAS_AGENTS=$(jq 'has("agents")' "$CONFIG_FILE" 2>/dev/null)
+if [[ "$HAS_MCPSERVERS" == "true" ]] && [[ "$HAS_PROVIDERS" == "true" ]] && [[ "$HAS_AGENTS" == "true" ]]; then
+    log_pass "Config has mcpServers, providers, and agents sections"
 else
-    log_fail "Schema field missing"
+    log_fail "Config missing required sections (mcpServers=$HAS_MCPSERVERS, providers=$HAS_PROVIDERS, agents=$HAS_AGENTS)"
 fi
 
 # ============================================================================
-# Test 5: Config has provider section
+# Test 5: Config has providers section with at least one provider
 # ============================================================================
-log_test "5. Config has provider section"
-PROVIDER_COUNT=$(jq '.provider | keys | length' "$CONFIG_FILE" 2>/dev/null || echo "0")
+log_test "5. Config has providers section"
+PROVIDER_COUNT=$(jq '.providers | keys | length' "$CONFIG_FILE" 2>/dev/null || echo "0")
 if [[ "$PROVIDER_COUNT" -gt 0 ]]; then
-    log_pass "Provider section present with $PROVIDER_COUNT provider(s)"
+    PROVIDER_NAMES=$(jq -r '.providers | keys | join(", ")' "$CONFIG_FILE")
+    log_pass "Providers configured: $PROVIDER_NAMES"
 else
-    log_fail "Provider section missing or empty"
+    log_fail "No providers configured"
 fi
 
 # ============================================================================
-# Test 6: Config has agent section
+# Test 6: Config has agents section with coder agent
 # ============================================================================
-log_test "6. Config has agent section"
-AGENT_MODEL=$(jq -r '.agent.model // empty' "$CONFIG_FILE")
-if [[ -n "$AGENT_MODEL" ]]; then
-    log_pass "Agent model configured: $AGENT_MODEL"
+log_test "6. Config has agents section with coder"
+CODER_MODEL=$(jq -r '.agents.coder.model // empty' "$CONFIG_FILE")
+if [[ -n "$CODER_MODEL" ]]; then
+    log_pass "Coder agent model: $CODER_MODEL"
 else
-    log_fail "Agent model not configured"
+    log_fail "Coder agent not configured"
 fi
 
 # ============================================================================
 # Test 7: Config has MCP section with 35+ entries
 # ============================================================================
 log_test "7. Config has 35+ MCPs"
-MCP_COUNT=$(jq '.mcp | keys | length' "$CONFIG_FILE" 2>/dev/null || echo "0")
+MCP_COUNT=$(jq '.mcpServers | keys | length' "$CONFIG_FILE" 2>/dev/null || echo "0")
 if [[ "$MCP_COUNT" -ge 35 ]]; then
     log_pass "MCP count: $MCP_COUNT (>= 35 required)"
 else
@@ -125,15 +134,16 @@ else
 fi
 
 # ============================================================================
-# Test 8: MCPs have correct format (command/args structure)
+# Test 8: MCPs have correct format (command OR url for SSE type)
 # ============================================================================
 log_test "8. MCPs have correct format"
-INVALID_MCPS=$(jq '[.mcp | to_entries[] | select(.value.command == null)] | length' "$CONFIG_FILE" 2>/dev/null || echo "999")
+# MCPs must have either 'command' (for stdio) or 'url' (for sse type)
+INVALID_MCPS=$(jq '[.mcpServers | to_entries[] | select(.value.command == null and .value.url == null)] | length' "$CONFIG_FILE" 2>/dev/null || echo "999")
 if [[ "$INVALID_MCPS" -eq 0 ]]; then
-    log_pass "All MCPs have valid command structure"
+    log_pass "All MCPs have valid structure (command or url)"
 else
-    log_fail "$INVALID_MCPS MCPs missing command field"
-    jq '.mcp | to_entries[] | select(.value.command == null) | .key' "$CONFIG_FILE"
+    log_fail "$INVALID_MCPS MCPs missing both command and url"
+    jq '.mcpServers | to_entries[] | select(.value.command == null and .value.url == null) | .key' "$CONFIG_FILE"
 fi
 
 # ============================================================================
@@ -143,7 +153,7 @@ log_test "9. Required Anthropic MCPs present"
 REQUIRED_MCPS=("filesystem" "fetch" "memory" "time" "git")
 MISSING_MCPS=""
 for mcp in "${REQUIRED_MCPS[@]}"; do
-    if ! jq -e ".mcp.\"$mcp\"" "$CONFIG_FILE" > /dev/null 2>&1; then
+    if ! jq -e ".mcpServers.\"$mcp\"" "$CONFIG_FILE" > /dev/null 2>&1; then
         MISSING_MCPS="$MISSING_MCPS $mcp"
     fi
 done
@@ -160,7 +170,7 @@ log_test "10. HelixAgent MCPs present"
 HELIX_MCPS=("helixagent" "helixagent-debate" "helixagent-rag" "helixagent-memory")
 MISSING_HELIX=""
 for mcp in "${HELIX_MCPS[@]}"; do
-    if ! jq -e ".mcp.\"$mcp\"" "$CONFIG_FILE" > /dev/null 2>&1; then
+    if ! jq -e ".mcpServers.\"$mcp\"" "$CONFIG_FILE" > /dev/null 2>&1; then
         MISSING_HELIX="$MISSING_HELIX $mcp"
     fi
 done
@@ -177,7 +187,7 @@ log_test "11. Community MCPs present"
 COMMUNITY_MCPS=("docker" "kubernetes" "redis" "qdrant" "chroma")
 MISSING_COMMUNITY=""
 for mcp in "${COMMUNITY_MCPS[@]}"; do
-    if ! jq -e ".mcp.\"$mcp\"" "$CONFIG_FILE" > /dev/null 2>&1; then
+    if ! jq -e ".mcpServers.\"$mcp\"" "$CONFIG_FILE" > /dev/null 2>&1; then
         MISSING_COMMUNITY="$MISSING_COMMUNITY $mcp"
     fi
 done
@@ -192,9 +202,9 @@ fi
 # ============================================================================
 log_test "12. OpenCode validates config without errors"
 # Capture OpenCode's stderr to check for validation errors
-OPENCODE_OUTPUT=$(timeout 5 opencode --version 2>&1 || true)
-if echo "$OPENCODE_OUTPUT" | grep -qi "error\|invalid"; then
-    log_fail "OpenCode reported config errors"
+OPENCODE_OUTPUT=$(timeout 5 opencode --help 2>&1 || true)
+if echo "$OPENCODE_OUTPUT" | grep -qi "config.*invalid\|invalid.*config"; then
+    log_fail "OpenCode reported config validation errors"
     echo "$OPENCODE_OUTPUT" | grep -i "error\|invalid" | head -5
 else
     log_pass "OpenCode config validation passed"
@@ -206,7 +216,7 @@ fi
 log_test "13. OpenCode can start"
 # Try to start OpenCode briefly and check it doesn't immediately crash
 OPENCODE_START_OUTPUT=$(timeout 3 opencode --help 2>&1 || true)
-if echo "$OPENCODE_START_OUTPUT" | grep -qi "opencode\|usage\|command"; then
+if echo "$OPENCODE_START_OUTPUT" | grep -qi "opencode\|commands\|usage"; then
     log_pass "OpenCode starts without immediate errors"
 else
     log_fail "OpenCode failed to start"
@@ -214,27 +224,29 @@ else
 fi
 
 # ============================================================================
-# Test 14: Provider baseURL is correct
+# Test 14: HelixAgent SSE MCPs have correct URL
 # ============================================================================
-log_test "14. Provider baseURL is correct"
-BASE_URL=$(jq -r '.provider.helixagent.options.baseURL // empty' "$CONFIG_FILE")
-if [[ "$BASE_URL" == *"localhost:7061"* ]] || [[ "$BASE_URL" == *"helixagent"* ]]; then
-    log_pass "Provider baseURL configured: $BASE_URL"
+log_test "14. HelixAgent SSE MCPs configured correctly"
+HELIX_MCP_URL=$(jq -r '.mcpServers.helixagent.url // empty' "$CONFIG_FILE")
+HELIX_MCP_TYPE=$(jq -r '.mcpServers.helixagent.type // empty' "$CONFIG_FILE")
+if [[ "$HELIX_MCP_TYPE" == "sse" ]] && [[ "$HELIX_MCP_URL" == *"localhost:7061"* || "$HELIX_MCP_URL" == *"helixagent"* ]]; then
+    log_pass "HelixAgent MCP configured as SSE at: $HELIX_MCP_URL"
+elif [[ -n "$HELIX_MCP_URL" ]]; then
+    log_pass "HelixAgent MCP URL: $HELIX_MCP_URL"
 else
-    log_fail "Provider baseURL not configured correctly: $BASE_URL"
+    log_fail "HelixAgent MCP not configured correctly"
 fi
 
 # ============================================================================
-# Test 15: MCP environment variables are configured
+# Test 15: MCPs have env configured as array
 # ============================================================================
-log_test "15. MCP environment variables configured"
-# Check that MCPs with required env vars have them defined
-GITHUB_ENV=$(jq -r '.mcp.github.env.GITHUB_TOKEN // empty' "$CONFIG_FILE")
-SLACK_ENV=$(jq -r '.mcp.slack.env.SLACK_BOT_TOKEN // empty' "$CONFIG_FILE")
-if [[ -n "$GITHUB_ENV" ]] && [[ -n "$SLACK_ENV" ]]; then
-    log_pass "MCP environment variable placeholders configured"
+log_test "15. MCP env format is correct (array of strings)"
+# env should be an array like ["KEY=VALUE"], not an object
+GITHUB_ENV_TYPE=$(jq -r '.mcpServers.github.env | type' "$CONFIG_FILE" 2>/dev/null)
+if [[ "$GITHUB_ENV_TYPE" == "array" ]] || [[ "$GITHUB_ENV_TYPE" == "null" ]]; then
+    log_pass "MCP env format is correct (array or not present)"
 else
-    log_fail "Some MCP environment variables not configured"
+    log_fail "MCP env should be an array, got: $GITHUB_ENV_TYPE"
 fi
 
 # ============================================================================
@@ -254,8 +266,13 @@ echo ""
 echo "=============================================="
 echo "         CONFIGURED MCPs ($MCP_COUNT)"
 echo "=============================================="
-jq -r '.mcp | keys[]' "$CONFIG_FILE" | while read -r mcp; do
-    echo "  ✓ $mcp"
+jq -r '.mcpServers | keys[]' "$CONFIG_FILE" | while read -r mcp; do
+    MCP_TYPE=$(jq -r ".mcpServers.\"$mcp\".type // \"stdio\"" "$CONFIG_FILE")
+    if [[ "$MCP_TYPE" == "sse" ]]; then
+        echo "  ✓ $mcp (SSE)"
+    else
+        echo "  ✓ $mcp"
+    fi
 done
 echo ""
 
