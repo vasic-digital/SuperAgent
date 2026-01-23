@@ -66,7 +66,8 @@ fi
 # Test 2: Verify OpenCode config file exists
 # ============================================================================
 log_test "2. OpenCode config file exists"
-CONFIG_FILE="$HOME/.config/opencode/opencode.json"
+# OpenCode expects config to be named .opencode.json (with leading dot)
+CONFIG_FILE="$HOME/.config/opencode/.opencode.json"
 if [[ -f "$CONFIG_FILE" ]]; then
     log_pass "Config file found: $CONFIG_FILE"
 else
