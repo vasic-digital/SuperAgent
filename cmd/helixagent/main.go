@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -1166,7 +1167,7 @@ func writeAPIKeyToEnvFile(filePath, apiKey string) error {
 }
 
 // OpenCodeConfig represents the OpenCode configuration structure (v1.1.30+ schema)
-// IMPORTANT: OpenCode expects config file to be named .opencode.json (with leading dot)
+// For .opencode.json files (with leading dot)
 // Uses LOCAL_ENDPOINT env var for the "local" provider base URL
 type OpenCodeConfig struct {
 	Providers    map[string]OpenCodeProviderDef   `json:"providers,omitempty"`
@@ -1174,6 +1175,89 @@ type OpenCodeConfig struct {
 	MCPServers   map[string]OpenCodeMCPServerDef  `json:"mcpServers,omitempty"`
 	ContextPaths []string                         `json:"contextPaths,omitempty"`
 	TUI          *OpenCodeTUIDef                  `json:"tui,omitempty"`
+}
+
+// OpenCodeConfigOld represents the OLD OpenCode configuration structure
+// For opencode.json files (without leading dot) - uses legacy key names
+// This format is validated by OpenCode's strict validator
+type OpenCodeConfigOld struct {
+	Schema     string                              `json:"$schema,omitempty"`
+	Provider   map[string]OpenCodeProviderDefOld   `json:"provider,omitempty"`
+	MCP        map[string]OpenCodeMCPServerDefOld  `json:"mcp,omitempty"`
+	Agent      map[string]OpenCodeAgentDefOld      `json:"agent,omitempty"`
+	Tools      *OpenCodeToolsDefOld                `json:"tools,omitempty"`
+	Permission *OpenCodePermissionDefOld           `json:"permission,omitempty"`
+}
+
+// OpenCodeProviderDefOld represents a provider in OLD OpenCode config
+type OpenCodeProviderDefOld struct {
+	Options *OpenCodeProviderOptionsOld `json:"options,omitempty"`
+}
+
+// OpenCodeProviderOptionsOld represents provider options in OLD OpenCode config
+type OpenCodeProviderOptionsOld struct {
+	BaseURL      string                `json:"baseURL,omitempty"`
+	APIKeyEnvVar string                `json:"apiKeyEnvVar,omitempty"`
+	Models       []OpenCodeModelDefOld `json:"models,omitempty"`
+}
+
+// OpenCodeModelDefOld represents a model in OLD OpenCode config
+type OpenCodeModelDefOld struct {
+	ID           string                         `json:"id"`
+	Name         string                         `json:"name"`
+	MaxTokens    int64                          `json:"maxTokens,omitempty"`
+	Capabilities *OpenCodeModelCapabilitiesOld  `json:"capabilities,omitempty"`
+}
+
+// OpenCodeModelCapabilitiesOld represents model capabilities
+type OpenCodeModelCapabilitiesOld struct {
+	Vision        bool `json:"vision,omitempty"`
+	ImageInput    bool `json:"imageInput,omitempty"`
+	ImageOutput   bool `json:"imageOutput,omitempty"`
+	OCR           bool `json:"ocr,omitempty"`
+	PDF           bool `json:"pdf,omitempty"`
+	Streaming     bool `json:"streaming,omitempty"`
+	FunctionCalls bool `json:"functionCalls,omitempty"`
+	ToolUse       bool `json:"toolUse,omitempty"`
+	Embeddings    bool `json:"embeddings,omitempty"`
+	FileUpload    bool `json:"fileUpload,omitempty"`
+	NoFileLimit   bool `json:"noFileLimit,omitempty"`
+	MCP           bool `json:"mcp,omitempty"`
+	ACP           bool `json:"acp,omitempty"`
+	LSP           bool `json:"lsp,omitempty"`
+}
+
+// OpenCodeMCPServerDefOld represents an MCP server in OLD OpenCode config
+type OpenCodeMCPServerDefOld struct {
+	Type    string   `json:"type"`              // "local" or "remote"
+	Command []string `json:"command,omitempty"` // For local type - array format
+	URL     string   `json:"url,omitempty"`     // For remote type
+}
+
+// OpenCodeAgentDefOld represents an agent in OLD OpenCode config
+type OpenCodeAgentDefOld struct {
+	Model  string `json:"model"`
+	Prompt string `json:"prompt,omitempty"`
+}
+
+// OpenCodeToolsDefOld represents tools configuration
+type OpenCodeToolsDefOld struct {
+	Browser    bool `json:"browser,omitempty"`
+	Embeddings bool `json:"embeddings,omitempty"`
+	File       bool `json:"file,omitempty"`
+	LSP        bool `json:"lsp,omitempty"`
+	MCP        bool `json:"mcp,omitempty"`
+	Search     bool `json:"search,omitempty"`
+	Terminal   bool `json:"terminal,omitempty"`
+	Vision     bool `json:"vision,omitempty"`
+}
+
+// OpenCodePermissionDefOld represents permissions
+type OpenCodePermissionDefOld struct {
+	AllowRead  bool `json:"allowRead,omitempty"`
+	AllowWrite bool `json:"allowWrite,omitempty"`
+	AllowExec  bool `json:"allowExec,omitempty"`
+	AllowNet   bool `json:"allowNet,omitempty"`
 }
 
 // OpenCodeProviderDef represents a provider in OpenCode config
@@ -1248,40 +1332,125 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 
 	baseURL := fmt.Sprintf("http://%s:%s", host, port)
 
-	// Build the OpenCode configuration (v1.1.30+ schema)
-	// Uses "local" provider which reads LOCAL_ENDPOINT env var
-	// Model format is "local.{model-name}" where model-name comes from /v1/models endpoint
-	config := OpenCodeConfig{
-		Providers: map[string]OpenCodeProviderDef{
-			"local": {
-				APIKey: apiKey, // Can be any value for local provider
-			},
-		},
-		Agents: map[string]OpenCodeAgentDef{
-			"coder": {
-				Model:     "local.helixagent-debate",
-				MaxTokens: 8192,
-			},
-			"task": {
-				Model:     "local.helixagent-debate",
-				MaxTokens: 4096,
-			},
-			"title": {
-				Model:     "local.helixagent-debate",
-				MaxTokens: 80,
-			},
-			"summarizer": {
-				Model:     "local.helixagent-debate",
-				MaxTokens: 4096,
-			},
-		},
-		MCPServers:   buildOpenCodeMCPServers(baseURL),
-		ContextPaths: []string{"CLAUDE.md", "CLAUDE.local.md", "opencode.md", ".github/copilot-instructions.md"},
-		TUI:          &OpenCodeTUIDef{Theme: "opencode"},
+	// Determine which format to use based on output filename
+	// If filename is "opencode.json" (no dot prefix) -> use OLD format for strict validator
+	// If filename is ".opencode.json" (with dot prefix) -> use NEW v1.1.30+ format
+	useOldFormat := false
+	if appCfg.OpenCodeOutput != "" {
+		basename := filepath.Base(appCfg.OpenCodeOutput)
+		useOldFormat = basename == "opencode.json"
 	}
 
-	// Marshal to JSON with indentation
-	jsonData, err := json.MarshalIndent(config, "", "  ")
+	var jsonData []byte
+	var err error
+
+	if useOldFormat {
+		// Build OLD format config for opencode.json (strict validator compatible)
+		config := OpenCodeConfigOld{
+			Schema: "https://opencode.ai/config.json",
+			Provider: map[string]OpenCodeProviderDefOld{
+				"helixagent": {
+					Options: &OpenCodeProviderOptionsOld{
+						BaseURL:      baseURL + "/v1",
+						APIKeyEnvVar: "HELIXAGENT_API_KEY",
+						Models: []OpenCodeModelDefOld{
+							{
+								ID:        "helixagent-debate",
+								Name:      "HelixAgent AI Debate Ensemble",
+								MaxTokens: 128000,
+								Capabilities: &OpenCodeModelCapabilitiesOld{
+									Vision:        true,
+									ImageInput:    true,
+									ImageOutput:   true,
+									OCR:           true,
+									PDF:           true,
+									Streaming:     true,
+									FunctionCalls: true,
+									ToolUse:       true,
+									Embeddings:    true,
+									FileUpload:    true,
+									NoFileLimit:   true,
+									MCP:           true,
+									ACP:           true,
+									LSP:           true,
+								},
+							},
+						},
+					},
+				},
+			},
+			MCP: buildOpenCodeMCPServersOld(baseURL),
+			Agent: map[string]OpenCodeAgentDefOld{
+				"default": {
+					Model:  "helixagent-debate",
+					Prompt: "You are a helpful AI coding assistant powered by HelixAgent AI Debate Ensemble.",
+				},
+				"code-reviewer": {
+					Model:  "helixagent-debate",
+					Prompt: "You are an expert code reviewer. Analyze code for bugs, security issues, and improvements.",
+				},
+				"vision": {
+					Model:  "helixagent-debate",
+					Prompt: "Analyze images and visual content with detailed descriptions.",
+				},
+				"embeddings": {
+					Model:  "helixagent-debate",
+					Prompt: "Generate embeddings for semantic search and similarity matching.",
+				},
+			},
+			Tools: &OpenCodeToolsDefOld{
+				Browser:    true,
+				Embeddings: true,
+				File:       true,
+				LSP:        true,
+				MCP:        true,
+				Search:     true,
+				Terminal:   true,
+				Vision:     true,
+			},
+			Permission: &OpenCodePermissionDefOld{
+				AllowRead:  true,
+				AllowWrite: true,
+				AllowExec:  true,
+				AllowNet:   true,
+			},
+		}
+		jsonData, err = json.MarshalIndent(config, "", "  ")
+	} else {
+		// Build NEW v1.1.30+ format config for .opencode.json
+		// Uses "local" provider which reads LOCAL_ENDPOINT env var
+		// Model format is "local.{model-name}" where model-name comes from /v1/models endpoint
+		config := OpenCodeConfig{
+			Providers: map[string]OpenCodeProviderDef{
+				"local": {
+					APIKey: apiKey, // Can be any value for local provider
+				},
+			},
+			Agents: map[string]OpenCodeAgentDef{
+				"coder": {
+					Model:     "local.helixagent-debate",
+					MaxTokens: 8192,
+				},
+				"task": {
+					Model:     "local.helixagent-debate",
+					MaxTokens: 4096,
+				},
+				"title": {
+					Model:     "local.helixagent-debate",
+					MaxTokens: 80,
+				},
+				"summarizer": {
+					Model:     "local.helixagent-debate",
+					MaxTokens: 4096,
+				},
+			},
+			MCPServers:   buildOpenCodeMCPServers(baseURL),
+			ContextPaths: []string{"CLAUDE.md", "CLAUDE.local.md", "opencode.md", ".github/copilot-instructions.md"},
+			TUI:          &OpenCodeTUIDef{Theme: "opencode"},
+		}
+		jsonData, err = json.MarshalIndent(config, "", "  ")
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to marshal OpenCode config: %w", err)
 	}
@@ -1298,8 +1467,12 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 			return fmt.Errorf("failed to write OpenCode config to file: %w", err)
 		}
 		logger.WithField("file", appCfg.OpenCodeOutput).Info("OpenCode configuration written to file")
-		logger.Info("IMPORTANT: Save as .opencode.json (with leading dot) in ~/.config/opencode/")
-		logger.Infof("IMPORTANT: Set LOCAL_ENDPOINT=%s before running opencode", baseURL)
+		if useOldFormat {
+			logger.Info("Generated OLD format config for opencode.json (strict validator compatible)")
+		} else {
+			logger.Info("Generated v1.1.30+ format config for .opencode.json")
+			logger.Infof("IMPORTANT: Set LOCAL_ENDPOINT=%s before running opencode", baseURL)
+		}
 	} else {
 		fmt.Println(string(jsonData))
 		fmt.Fprintln(os.Stderr, "")
@@ -1311,6 +1484,54 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 }
 
 // buildOpenCodeMCPServers creates the MCP server configurations for OpenCode v1.1.30+
+// buildOpenCodeMCPServersOld builds MCP servers in OLD format for opencode.json
+// OLD format uses "type": "local"/"remote" with "command" as array
+func buildOpenCodeMCPServersOld(baseURL string) map[string]OpenCodeMCPServerDefOld {
+	return map[string]OpenCodeMCPServerDefOld{
+		// Anthropic Official MCPs
+		"filesystem":          {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "/home"}},
+		"fetch":               {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"}},
+		"memory":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
+		"time":                {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}},
+		"git":                 {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}},
+		"sqlite":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"}},
+		"postgres":            {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/helixagent"}},
+		"puppeteer":           {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}},
+		"brave-search":        {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-brave-search"}},
+		"google-maps":         {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-google-maps"}},
+		"slack":               {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-slack"}},
+		"github":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-github"}},
+		"gitlab":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-gitlab"}},
+		"sequential-thinking": {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sequential-thinking"}},
+		"everart":             {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-everart"}},
+		"exa":                 {Type: "local", Command: []string{"npx", "-y", "exa-mcp-server"}},
+		"linear":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-linear"}},
+		"sentry":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sentry"}},
+		"notion":              {Type: "local", Command: []string{"npx", "-y", "@notionhq/notion-mcp-server"}},
+		"figma":               {Type: "local", Command: []string{"npx", "-y", "figma-developer-mcp"}},
+		"aws-kb-retrieval":    {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-aws-kb-retrieval"}},
+		// HelixAgent Remote MCPs
+		"helixagent":        {Type: "remote", URL: baseURL + "/v1/mcp/sse"},
+		"helixagent-debate": {Type: "remote", URL: baseURL + "/v1/mcp/debate/sse"},
+		"helixagent-rag":    {Type: "remote", URL: baseURL + "/v1/mcp/rag/sse"},
+		"helixagent-memory": {Type: "remote", URL: baseURL + "/v1/mcp/memory/sse"},
+		// Community/Infrastructure MCPs
+		"docker":        {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-docker"}},
+		"kubernetes":    {Type: "local", Command: []string{"npx", "-y", "mcp-server-kubernetes"}},
+		"redis":         {Type: "local", Command: []string{"npx", "-y", "mcp-server-redis"}},
+		"mongodb":       {Type: "local", Command: []string{"npx", "-y", "mcp-server-mongodb"}},
+		"elasticsearch": {Type: "local", Command: []string{"npx", "-y", "mcp-server-elasticsearch"}},
+		"qdrant":        {Type: "local", Command: []string{"npx", "-y", "mcp-server-qdrant"}},
+		"chroma":        {Type: "local", Command: []string{"npx", "-y", "mcp-server-chroma"}},
+		// Productivity MCPs
+		"jira":         {Type: "local", Command: []string{"npx", "-y", "mcp-server-atlassian"}},
+		"asana":        {Type: "local", Command: []string{"npx", "-y", "mcp-server-asana"}},
+		"google-drive": {Type: "local", Command: []string{"npx", "-y", "@anthropic/mcp-server-gdrive"}},
+		"aws-s3":       {Type: "local", Command: []string{"npx", "-y", "mcp-server-s3"}},
+		"datadog":      {Type: "local", Command: []string{"npx", "-y", "mcp-server-datadog"}},
+	}
+}
+
 func buildOpenCodeMCPServers(baseURL string) map[string]OpenCodeMCPServerDef {
 	return map[string]OpenCodeMCPServerDef{
 		// Anthropic Official MCPs
