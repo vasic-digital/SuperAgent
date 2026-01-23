@@ -3000,9 +3000,9 @@ func TestHandleGenerateOpenCode(t *testing.T) {
 		assert.Contains(t, output, "helixagent")
 	})
 
-	t.Run("writes OpenCode config to file", func(t *testing.T) {
+	t.Run("writes OLD format config when filename is opencode.json", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		configFile := tmpDir + "/opencode.json"
+		configFile := tmpDir + "/opencode.json" // No dot prefix = OLD format
 
 		appCfg := &AppConfig{
 			GenerateOpenCode: true,
@@ -3022,11 +3022,46 @@ func TestHandleGenerateOpenCode(t *testing.T) {
 
 		require.NoError(t, err)
 
-		// Verify file was written with v1.1.30+ schema
+		// Verify file was written with OLD schema (opencode.json uses strict validator)
 		content, err := os.ReadFile(configFile)
 		require.NoError(t, err)
+		// OLD format uses singular keys
+		assert.Contains(t, string(content), "\"provider\"")
+		assert.Contains(t, string(content), "\"agent\"")
+		assert.Contains(t, string(content), "\"mcp\"")
+		assert.Contains(t, string(content), "$schema")
+	})
+
+	t.Run("writes NEW v1.1.30 format config when filename is .opencode.json", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		configFile := tmpDir + "/.opencode.json" // With dot prefix = NEW v1.1.30+ format
+
+		appCfg := &AppConfig{
+			GenerateOpenCode: true,
+			OpenCodeOutput:   configFile,
+			Logger:           createTestLogger(),
+		}
+
+		// Capture stdout (suppress it)
+		old := os.Stdout
+		_, w, _ := os.Pipe()
+		os.Stdout = w
+
+		err := handleGenerateOpenCode(appCfg)
+
+		w.Close()
+		os.Stdout = old
+
+		require.NoError(t, err)
+
+		// Verify file was written with v1.1.30+ schema (.opencode.json uses Viper)
+		content, err := os.ReadFile(configFile)
+		require.NoError(t, err)
+		// NEW v1.1.30+ format uses plural keys
 		assert.Contains(t, string(content), "providers")
 		assert.Contains(t, string(content), "agents")
+		assert.Contains(t, string(content), "mcpServers")
+		assert.Contains(t, string(content), "local.helixagent-debate")
 	})
 
 	t.Run("uses existing API key from env", func(t *testing.T) {
