@@ -102,7 +102,8 @@ fi
 # ============================================================================
 log_header "Phase 2: OpenCode Configuration"
 
-OPENCODE_CONFIG="$HOME/.config/opencode/opencode.json"
+# OpenCode expects config to be named .opencode.json (with leading dot)
+OPENCODE_CONFIG="$HOME/.config/opencode/.opencode.json"
 
 log_test "P2.1: OpenCode config exists"
 if [[ -f "$OPENCODE_CONFIG" ]]; then
@@ -319,7 +320,7 @@ fi
 log_header "Phase 5: Configuration Consistency"
 
 log_test "P5.1: Generated config matches installed (OpenCode)"
-GENERATED="$PROJECT_ROOT/scripts/cli-agents/configs/generated/opencode/opencode.json"
+GENERATED="$PROJECT_ROOT/scripts/cli-agents/configs/generated/opencode/.opencode.json"
 if [[ -f "$GENERATED" ]] && diff -q "$GENERATED" "$OPENCODE_CONFIG" > /dev/null 2>&1; then
     log_pass "Generated matches installed"
 else
