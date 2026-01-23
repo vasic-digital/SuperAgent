@@ -1216,12 +1216,17 @@ type OpenCodeAgentDefNew struct {
 }
 
 // OpenCodeMCPServerDefNew represents an MCP server in OpenCode config (correct schema)
+// Based on: https://opencode.ai/docs/mcp-servers
+// Local servers: type="local", command=["npx", "-y", "package"]
+// Remote servers: type="remote", url="https://..."
 type OpenCodeMCPServerDefNew struct {
-	Command string            `json:"command,omitempty"` // Command to run
-	Args    []string          `json:"args,omitempty"`    // Command arguments
-	Env     map[string]string `json:"env,omitempty"`     // Environment variables (map format)
-	Type    string            `json:"type,omitempty"`    // "stdio" or "sse"
-	URL     string            `json:"url,omitempty"`     // For SSE type
+	Type        string            `json:"type"`                   // REQUIRED: "local" or "remote"
+	Command     []string          `json:"command,omitempty"`      // For local: command as ARRAY (e.g., ["npx", "-y", "pkg"])
+	URL         string            `json:"url,omitempty"`          // For remote: URL endpoint
+	Environment map[string]string `json:"environment,omitempty"`  // Environment variables (NOT "env")
+	Enabled     *bool             `json:"enabled,omitempty"`      // Optional: enable/disable server
+	Timeout     int               `json:"timeout,omitempty"`      // Optional: timeout in ms (default 5000)
+	Headers     map[string]string `json:"headers,omitempty"`      // For remote: HTTP headers
 }
 
 // OpenCodeConfigOld represents the OLD OpenCode configuration structure
@@ -1470,51 +1475,53 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 }
 
 // buildOpenCodeMCPServersNew creates MCP server configurations using the correct OpenCode schema
-// Based on: https://opencode.ai/docs/config/
+// Based on: https://opencode.ai/docs/mcp-servers
+// Local servers: type="local", command=["npx", "-y", "package"]
+// Remote servers: type="remote", url="https://..."
 func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefNew {
 	return map[string]OpenCodeMCPServerDefNew{
-		// Anthropic Official MCPs
-		"filesystem": {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-filesystem", "/home"}},
-		"fetch":      {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-fetch"}},
-		"memory":     {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-memory"}},
-		"time":       {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-time"}},
-		"git":        {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-git"}},
-		"sqlite":     {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"}},
-		"postgres":   {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/helixagent"}},
-		"puppeteer":  {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-puppeteer"}},
+		// Anthropic Official MCPs (local)
+		"filesystem": {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "/home"}},
+		"fetch":      {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"}},
+		"memory":     {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
+		"time":       {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}},
+		"git":        {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}},
+		"sqlite":     {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"}},
+		"postgres":   {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/helixagent"}},
+		"puppeteer":  {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}},
 		"brave-search": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-brave-search"},
-			Env:     map[string]string{"BRAVE_API_KEY": "{env:BRAVE_API_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-brave-search"},
+			Environment: map[string]string{"BRAVE_API_KEY": "{env:BRAVE_API_KEY}"},
 		},
 		"google-maps": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-google-maps"},
-			Env:     map[string]string{"GOOGLE_MAPS_API_KEY": "{env:GOOGLE_MAPS_API_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-google-maps"},
+			Environment: map[string]string{"GOOGLE_MAPS_API_KEY": "{env:GOOGLE_MAPS_API_KEY}"},
 		},
 		"slack": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-slack"},
-			Env:     map[string]string{"SLACK_BOT_TOKEN": "{env:SLACK_BOT_TOKEN}", "SLACK_TEAM_ID": "{env:SLACK_TEAM_ID}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-slack"},
+			Environment: map[string]string{"SLACK_BOT_TOKEN": "{env:SLACK_BOT_TOKEN}", "SLACK_TEAM_ID": "{env:SLACK_TEAM_ID}"},
 		},
 		"github": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-github"},
-			Env:     map[string]string{"GITHUB_TOKEN": "{env:GITHUB_TOKEN}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-github"},
+			Environment: map[string]string{"GITHUB_TOKEN": "{env:GITHUB_TOKEN}"},
 		},
 		"gitlab": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-gitlab"},
-			Env:     map[string]string{"GITLAB_TOKEN": "{env:GITLAB_TOKEN}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-gitlab"},
+			Environment: map[string]string{"GITLAB_TOKEN": "{env:GITLAB_TOKEN}"},
 		},
-		"sequential-thinking": {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-sequential-thinking"}},
-		// HelixAgent SSE MCPs
-		"helixagent":        {Type: "sse", URL: baseURL + "/v1/mcp/sse"},
-		"helixagent-debate": {Type: "sse", URL: baseURL + "/v1/mcp/debate/sse"},
-		"helixagent-rag":    {Type: "sse", URL: baseURL + "/v1/mcp/rag/sse"},
-		"helixagent-memory": {Type: "sse", URL: baseURL + "/v1/mcp/memory/sse"},
-		// Community/Infrastructure MCPs
-		"docker": {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-docker"}},
+		"sequential-thinking": {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sequential-thinking"}},
+		// HelixAgent Remote MCPs (SSE)
+		"helixagent":        {Type: "remote", URL: baseURL + "/v1/mcp/sse"},
+		"helixagent-debate": {Type: "remote", URL: baseURL + "/v1/mcp/debate/sse"},
+		"helixagent-rag":    {Type: "remote", URL: baseURL + "/v1/mcp/rag/sse"},
+		"helixagent-memory": {Type: "remote", URL: baseURL + "/v1/mcp/memory/sse"},
+		// Community/Infrastructure MCPs (local)
+		"docker": {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-docker"}},
 	}
 }
 
@@ -1568,110 +1575,110 @@ func buildOpenCodeMCPServersOld(baseURL string) map[string]OpenCodeMCPServerDefO
 
 func buildOpenCodeMCPServers(baseURL string) map[string]OpenCodeMCPServerDef {
 	return map[string]OpenCodeMCPServerDef{
-		// Anthropic Official MCPs
-		"filesystem": {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-filesystem", "/home"}},
-		"fetch":      {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-fetch"}},
-		"memory":     {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-memory"}},
-		"time":       {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-time"}},
-		"git":        {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-git"}},
-		"sqlite":     {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"}},
-		"postgres":   {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/helixagent"}},
-		"puppeteer":  {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-puppeteer"}},
+		// Anthropic Official MCPs (local)
+		"filesystem": {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "/home"}},
+		"fetch":      {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"}},
+		"memory":     {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
+		"time":       {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}},
+		"git":        {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}},
+		"sqlite":     {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"}},
+		"postgres":   {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/helixagent"}},
+		"puppeteer":  {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}},
 		"brave-search": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-brave-search"},
-			Env:     map[string]string{"BRAVE_API_KEY": "${BRAVE_API_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-brave-search"},
+			Environment: map[string]string{"BRAVE_API_KEY": "${BRAVE_API_KEY}"},
 		},
 		"google-maps": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-google-maps"},
-			Env:     map[string]string{"GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-google-maps"},
+			Environment: map[string]string{"GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}"},
 		},
 		"slack": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-slack"},
-			Env:     map[string]string{"SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}", "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-slack"},
+			Environment: map[string]string{"SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}", "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"},
 		},
 		"github": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-github"},
-			Env:     map[string]string{"GITHUB_TOKEN": "${GITHUB_TOKEN}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-github"},
+			Environment: map[string]string{"GITHUB_TOKEN": "${GITHUB_TOKEN}"},
 		},
 		"gitlab": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-gitlab"},
-			Env:     map[string]string{"GITLAB_TOKEN": "${GITLAB_TOKEN}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-gitlab"},
+			Environment: map[string]string{"GITLAB_TOKEN": "${GITLAB_TOKEN}"},
 		},
-		"sequential-thinking": {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-sequential-thinking"}},
+		"sequential-thinking": {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sequential-thinking"}},
 		"everart": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-everart"},
-			Env:     map[string]string{"EVERART_API_KEY": "${EVERART_API_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-everart"},
+			Environment: map[string]string{"EVERART_API_KEY": "${EVERART_API_KEY}"},
 		},
 		"exa": {
-			Command: "npx",
-			Args:    []string{"-y", "exa-mcp-server"},
-			Env:     map[string]string{"EXA_API_KEY": "${EXA_API_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "exa-mcp-server"},
+			Environment: map[string]string{"EXA_API_KEY": "${EXA_API_KEY}"},
 		},
 		"linear": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-linear"},
-			Env:     map[string]string{"LINEAR_API_KEY": "${LINEAR_API_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-linear"},
+			Environment: map[string]string{"LINEAR_API_KEY": "${LINEAR_API_KEY}"},
 		},
 		"sentry": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-sentry"},
-			Env:     map[string]string{"SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}", "SENTRY_ORG": "${SENTRY_ORG}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-sentry"},
+			Environment: map[string]string{"SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}", "SENTRY_ORG": "${SENTRY_ORG}"},
 		},
 		"notion": {
-			Command: "npx",
-			Args:    []string{"-y", "@notionhq/notion-mcp-server"},
-			Env:     map[string]string{"OPENAI_API_KEY": "${OPENAI_API_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@notionhq/notion-mcp-server"},
+			Environment: map[string]string{"OPENAI_API_KEY": "${OPENAI_API_KEY}"},
 		},
 		"figma": {
-			Command: "npx",
-			Args:    []string{"-y", "figma-developer-mcp"},
-			Env:     map[string]string{"FIGMA_API_KEY": "${FIGMA_API_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "figma-developer-mcp"},
+			Environment: map[string]string{"FIGMA_API_KEY": "${FIGMA_API_KEY}"},
 		},
 		"aws-kb-retrieval": {
-			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-aws-kb-retrieval"},
-			Env:     map[string]string{"AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-aws-kb-retrieval"},
+			Environment: map[string]string{"AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}"},
 		},
-		// HelixAgent SSE MCPs
-		"helixagent":        {Type: "sse", URL: baseURL + "/v1/mcp/sse"},
-		"helixagent-debate": {Type: "sse", URL: baseURL + "/v1/mcp/debate/sse"},
-		"helixagent-rag":    {Type: "sse", URL: baseURL + "/v1/mcp/rag/sse"},
-		"helixagent-memory": {Type: "sse", URL: baseURL + "/v1/mcp/memory/sse"},
-		// Community/Infrastructure MCPs
-		"docker":     {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-docker"}},
-		"kubernetes": {Command: "npx", Args: []string{"-y", "mcp-server-kubernetes"}, Env: map[string]string{"KUBECONFIG": "${KUBECONFIG}"}},
-		"redis":      {Command: "npx", Args: []string{"-y", "mcp-server-redis"}, Env: map[string]string{"REDIS_URL": "redis://localhost:6379"}},
-		"mongodb":    {Command: "npx", Args: []string{"-y", "mcp-server-mongodb"}, Env: map[string]string{"MONGODB_URI": "mongodb://localhost:27017"}},
+		// HelixAgent Remote MCPs (SSE)
+		"helixagent":        {Type: "remote", URL: baseURL + "/v1/mcp/sse"},
+		"helixagent-debate": {Type: "remote", URL: baseURL + "/v1/mcp/debate/sse"},
+		"helixagent-rag":    {Type: "remote", URL: baseURL + "/v1/mcp/rag/sse"},
+		"helixagent-memory": {Type: "remote", URL: baseURL + "/v1/mcp/memory/sse"},
+		// Community/Infrastructure MCPs (local)
+		"docker":     {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-docker"}},
+		"kubernetes": {Type: "local", Command: []string{"npx", "-y", "mcp-server-kubernetes"}, Environment: map[string]string{"KUBECONFIG": "${KUBECONFIG}"}},
+		"redis":      {Type: "local", Command: []string{"npx", "-y", "mcp-server-redis"}, Environment: map[string]string{"REDIS_URL": "redis://localhost:6379"}},
+		"mongodb":    {Type: "local", Command: []string{"npx", "-y", "mcp-server-mongodb"}, Environment: map[string]string{"MONGODB_URI": "mongodb://localhost:27017"}},
 		"elasticsearch": {
-			Command: "npx",
-			Args:    []string{"-y", "mcp-server-elasticsearch"},
-			Env:     map[string]string{"ELASTICSEARCH_URL": "http://localhost:9200"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-elasticsearch"},
+			Environment: map[string]string{"ELASTICSEARCH_URL": "http://localhost:9200"},
 		},
-		"qdrant": {Command: "npx", Args: []string{"-y", "mcp-server-qdrant"}, Env: map[string]string{"QDRANT_URL": "http://localhost:6333"}},
-		"chroma": {Command: "npx", Args: []string{"-y", "mcp-server-chroma"}, Env: map[string]string{"CHROMA_URL": "http://localhost:8001"}},
-		// Productivity MCPs
+		"qdrant": {Type: "local", Command: []string{"npx", "-y", "mcp-server-qdrant"}, Environment: map[string]string{"QDRANT_URL": "http://localhost:6333"}},
+		"chroma": {Type: "local", Command: []string{"npx", "-y", "mcp-server-chroma"}, Environment: map[string]string{"CHROMA_URL": "http://localhost:8001"}},
+		// Productivity MCPs (local)
 		"jira": {
-			Command: "npx",
-			Args:    []string{"-y", "mcp-server-atlassian"},
-			Env:     map[string]string{"JIRA_URL": "${JIRA_URL}", "JIRA_EMAIL": "${JIRA_EMAIL}", "JIRA_API_TOKEN": "${JIRA_API_TOKEN}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-atlassian"},
+			Environment: map[string]string{"JIRA_URL": "${JIRA_URL}", "JIRA_EMAIL": "${JIRA_EMAIL}", "JIRA_API_TOKEN": "${JIRA_API_TOKEN}"},
 		},
-		"asana":        {Command: "npx", Args: []string{"-y", "mcp-server-asana"}, Env: map[string]string{"ASANA_ACCESS_TOKEN": "${ASANA_ACCESS_TOKEN}"}},
-		"google-drive": {Command: "npx", Args: []string{"-y", "@anthropic/mcp-server-gdrive"}, Env: map[string]string{"GOOGLE_CREDENTIALS_PATH": "${GOOGLE_CREDENTIALS_PATH}"}},
+		"asana":        {Type: "local", Command: []string{"npx", "-y", "mcp-server-asana"}, Environment: map[string]string{"ASANA_ACCESS_TOKEN": "${ASANA_ACCESS_TOKEN}"}},
+		"google-drive": {Type: "local", Command: []string{"npx", "-y", "@anthropic/mcp-server-gdrive"}, Environment: map[string]string{"GOOGLE_CREDENTIALS_PATH": "${GOOGLE_CREDENTIALS_PATH}"}},
 		"aws-s3": {
-			Command: "npx",
-			Args:    []string{"-y", "mcp-server-s3"},
-			Env:     map[string]string{"AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-s3"},
+			Environment: map[string]string{"AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}"},
 		},
 		"datadog": {
-			Command: "npx",
-			Args:    []string{"-y", "mcp-server-datadog"},
-			Env:     map[string]string{"DD_API_KEY": "${DD_API_KEY}", "DD_APP_KEY": "${DD_APP_KEY}"},
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-datadog"},
+			Environment: map[string]string{"DD_API_KEY": "${DD_API_KEY}", "DD_APP_KEY": "${DD_APP_KEY}"},
 		},
 	}
 }
