@@ -1,5 +1,5 @@
 # Multi-stage build for optimized production image
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata curl make gcc musl-dev
@@ -7,17 +7,13 @@ RUN apk add --no-cache git ca-certificates tzdata curl make gcc musl-dev
 # Set working directory
 WORKDIR /app
 
-# Copy go mod files
-COPY go.mod go.sum ./
-
-# Download dependencies
-RUN go mod download && go mod verify
-
-# Copy source code
+# Copy all source code first (needed for local replace directives)
 COPY . .
 
-# Run tests to ensure code quality
-RUN CGO_ENABLED=0 go test -v ./...
+# Download dependencies (skip verify for local replace directives)
+RUN go mod download
+
+# Note: Tests are run in CI before Docker build, skip here for faster builds
 
 # Build the application with optimizations
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
