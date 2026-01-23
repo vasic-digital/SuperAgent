@@ -1236,3 +1236,451 @@ func TestPartitionInfo_Fields(t *testing.T) {
 	assert.Equal(t, int64(1000), info.HighWatermark)
 	assert.Equal(t, int64(100), info.LowWatermark)
 }
+
+// ============================================================================
+// Additional Coverage Tests - Error Paths and Edge Cases (Part 2)
+// ============================================================================
+
+func TestBroker_SubCounter_Increments(t *testing.T) {
+	broker := NewBroker(nil, nil)
+
+	assert.Equal(t, int64(0), broker.subCounter.Load())
+
+	v1 := broker.subCounter.Add(1)
+	v2 := broker.subCounter.Add(1)
+	v3 := broker.subCounter.Add(1)
+
+	assert.Equal(t, int64(1), v1)
+	assert.Equal(t, int64(2), v2)
+	assert.Equal(t, int64(3), v3)
+	assert.Equal(t, int64(3), broker.subCounter.Load())
+}
+
+
+func TestRabbitSubscription_AllFields(t *testing.T) {
+	handler := func(ctx context.Context, msg *messaging.Message) error {
+		return nil
+	}
+
+	sub := &rabbitSubscription{
+		id:       "sub-123",
+		topic:    "orders.created",
+		queue:    "orders-consumer-queue",
+		handler:  handler,
+		channel:  nil,
+		consumer: "consumer-tag-123",
+		cancelCh: make(chan struct{}),
+	}
+	sub.active.Store(true)
+
+	assert.Equal(t, "sub-123", sub.ID())
+	assert.Equal(t, "orders.created", sub.Topic())
+	assert.Equal(t, "orders-consumer-queue", sub.queue)
+	assert.NotNil(t, sub.handler)
+	assert.Equal(t, "consumer-tag-123", sub.consumer)
+	assert.True(t, sub.IsActive())
+}
+
+func TestRabbitSubscription_Unsubscribe_WhenInactive(t *testing.T) {
+	sub := &rabbitSubscription{
+		id:       "sub-1",
+		topic:    "test.topic",
+		cancelCh: make(chan struct{}),
+	}
+	sub.active.Store(false) // Already inactive
+
+	// Should return immediately without error
+	err := sub.Unsubscribe()
+	assert.NoError(t, err)
+}
+
+func TestRabbitSubscription_ConcurrentUnsubscribe(t *testing.T) {
+	sub := &rabbitSubscription{
+		id:       "sub-1",
+		topic:    "test.topic",
+		cancelCh: make(chan struct{}),
+	}
+	sub.active.Store(true)
+
+	var wg sync.WaitGroup
+	errors := make(chan error, 10)
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := sub.Unsubscribe()
+			errors <- err
+		}()
+	}
+
+	wg.Wait()
+	close(errors)
+
+	// All should succeed
+	for err := range errors {
+		assert.NoError(t, err)
+	}
+
+	assert.False(t, sub.IsActive())
+}
+
+func TestBroker_PublishBatch_EmptySlice(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	err := broker.PublishBatch(ctx, "test.topic", []*messaging.Message{})
+	// Should succeed with empty slice (no messages to publish)
+	assert.NoError(t, err)
+}
+
+func TestBroker_Publish_MessageWithPriority(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	msg := messaging.NewMessage("test.type", []byte(`{"key": "value"}`))
+	msg.Priority = 5
+
+	err := broker.Publish(ctx, "test.topic", msg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "publisher channel not available")
+}
+
+func TestBroker_Publish_MessageWithTraceID(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	msg := messaging.NewMessage("test.type", []byte(`{"key": "value"}`))
+	msg.TraceID = "trace-abc-123"
+
+	err := broker.Publish(ctx, "test.topic", msg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "publisher channel not available")
+}
+
+func TestBroker_Publish_MessageWithHeaders(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	msg := messaging.NewMessage("test.type", []byte(`{"key": "value"}`))
+	msg.Headers = map[string]string{
+		"header1": "value1",
+		"header2": "value2",
+	}
+
+	err := broker.Publish(ctx, "test.topic", msg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "publisher channel not available")
+}
+
+func TestConfig_AllSettingsCustom(t *testing.T) {
+	cfg := &Config{
+		Host:                    "rabbitmq.example.com",
+		Port:                    5673,
+		Username:                "myuser",
+		Password:                "mypassword",
+		VHost:                   "/production",
+		TLSEnabled:              true,
+		TLSSkipVerify:           true,
+		ConnectionTimeout:       60 * time.Second,
+		ReconnectDelay:          5 * time.Second,
+		MaxReconnectCount:       10,
+		PublishConfirm:          true,
+		PublishTimeout:          30 * time.Second,
+		PrefetchCount:           20,
+		PrefetchSize:            1048576,
+		DefaultQueueDurable:     true,
+		DefaultQueueAutoDelete:  false,
+		DefaultQueueExclusive:   false,
+		DefaultExchangeType:     "direct",
+		DefaultExchangeDurable:  true,
+		AutoAck:                 false,
+		Exclusive:               false,
+		NoLocal:                 false,
+		NoWait:                  false,
+		MandatoryPublish:        true,
+		ImmediatePublish:        false,
+		EnableDLQ:               true,
+		DLQExchange:             "custom.dlq",
+		DLQRoutingKey:           "custom.key",
+		DLQMessageTTL:           7200000,
+		DLQMaxLength:            50000,
+		MaxConnections:          10,
+		MaxChannels:             100,
+		HeartbeatInterval:       30 * time.Second,
+		EnableMetrics:           true,
+		MetricsPrefix:           "rabbitmq",
+	}
+
+	assert.Equal(t, "rabbitmq.example.com", cfg.Host)
+	assert.Equal(t, 5673, cfg.Port)
+	assert.Equal(t, "myuser", cfg.Username)
+	assert.Equal(t, "mypassword", cfg.Password)
+	assert.Equal(t, "/production", cfg.VHost)
+	assert.True(t, cfg.TLSEnabled)
+	assert.True(t, cfg.TLSSkipVerify)
+	assert.Equal(t, 60*time.Second, cfg.ConnectionTimeout)
+	assert.Equal(t, 5*time.Second, cfg.ReconnectDelay)
+	assert.Equal(t, 10, cfg.MaxReconnectCount)
+	assert.True(t, cfg.PublishConfirm)
+	assert.Equal(t, 30*time.Second, cfg.PublishTimeout)
+	assert.Equal(t, 20, cfg.PrefetchCount)
+	assert.Equal(t, 1048576, cfg.PrefetchSize)
+	assert.True(t, cfg.DefaultQueueDurable)
+	assert.False(t, cfg.DefaultQueueAutoDelete)
+	assert.False(t, cfg.DefaultQueueExclusive)
+	assert.Equal(t, "direct", cfg.DefaultExchangeType)
+	assert.True(t, cfg.DefaultExchangeDurable)
+	assert.False(t, cfg.AutoAck)
+	assert.False(t, cfg.Exclusive)
+	assert.False(t, cfg.NoLocal)
+	assert.False(t, cfg.NoWait)
+	assert.True(t, cfg.MandatoryPublish)
+	assert.False(t, cfg.ImmediatePublish)
+	assert.True(t, cfg.EnableDLQ)
+	assert.Equal(t, "custom.dlq", cfg.DLQExchange)
+	assert.Equal(t, "custom.key", cfg.DLQRoutingKey)
+	assert.Equal(t, 7200000, cfg.DLQMessageTTL)
+	assert.Equal(t, 50000, cfg.DLQMaxLength)
+	assert.Equal(t, 10, cfg.MaxConnections)
+	assert.Equal(t, 100, cfg.MaxChannels)
+	assert.Equal(t, 30*time.Second, cfg.HeartbeatInterval)
+	assert.True(t, cfg.EnableMetrics)
+	assert.Equal(t, "rabbitmq", cfg.MetricsPrefix)
+}
+
+
+func TestExchangeConfig_AllFields(t *testing.T) {
+	cfg := &ExchangeConfig{
+		Name:       "test.exchange",
+		Type:       "fanout",
+		Durable:    true,
+		AutoDelete: false,
+		Internal:   true,
+		NoWait:     false,
+		Args:       map[string]interface{}{"custom": "arg"},
+	}
+
+	assert.Equal(t, "test.exchange", cfg.Name)
+	assert.Equal(t, "fanout", cfg.Type)
+	assert.True(t, cfg.Durable)
+	assert.False(t, cfg.AutoDelete)
+	assert.True(t, cfg.Internal)
+	assert.False(t, cfg.NoWait)
+	assert.Equal(t, "arg", cfg.Args["custom"])
+}
+
+
+func TestQueueConfig_AllFields(t *testing.T) {
+	cfg := &QueueConfig{
+		Name:                  "test.queue",
+		Durable:               true,
+		AutoDelete:            false,
+		Exclusive:             true,
+		NoWait:                false,
+		DeadLetterExchange:    "dlx.exchange",
+		DeadLetterRoutingKey:  "dlx.key",
+		MessageTTL:            3600000,
+		MaxLength:             10000,
+		MaxPriority:           10,
+		Args:                  map[string]interface{}{},
+	}
+
+	assert.Equal(t, "test.queue", cfg.Name)
+	assert.True(t, cfg.Durable)
+	assert.False(t, cfg.AutoDelete)
+	assert.True(t, cfg.Exclusive)
+	assert.False(t, cfg.NoWait)
+	assert.Equal(t, "dlx.exchange", cfg.DeadLetterExchange)
+	assert.Equal(t, "dlx.key", cfg.DeadLetterRoutingKey)
+	assert.Equal(t, 3600000, cfg.MessageTTL)
+	assert.Equal(t, 10000, cfg.MaxLength)
+	assert.Equal(t, 10, cfg.MaxPriority)
+}
+
+func TestQueueConfig_ChainedMethods(t *testing.T) {
+	cfg := DefaultQueueConfig("test.queue").
+		WithDLQ("dlx.exchange", "dlx.key").
+		WithTTL(7200000).
+		WithMaxLength(50000).
+		WithPriority(5)
+
+	assert.Equal(t, "test.queue", cfg.Name)
+	assert.Equal(t, "dlx.exchange", cfg.DeadLetterExchange)
+	assert.Equal(t, "dlx.key", cfg.DeadLetterRoutingKey)
+	assert.Equal(t, 7200000, cfg.MessageTTL)
+	assert.Equal(t, 50000, cfg.MaxLength)
+	assert.Equal(t, 5, cfg.MaxPriority)
+}
+
+func TestBroker_Close_WithMultipleSubscriptions(t *testing.T) {
+	broker := NewBroker(nil, nil)
+
+	// Add multiple subscriptions
+	for i := 0; i < 5; i++ {
+		sub := &rabbitSubscription{
+			id:       "sub-" + string(rune('0'+i)),
+			topic:    "topic." + string(rune('0'+i)),
+			cancelCh: make(chan struct{}),
+		}
+		sub.active.Store(true)
+		broker.subscriptions["topic."+string(rune('0'+i))] = sub
+	}
+
+	assert.Len(t, broker.subscriptions, 5)
+
+	ctx := context.Background()
+	err := broker.Close(ctx)
+	assert.NoError(t, err)
+
+	// All subscriptions should be deactivated
+	for _, sub := range broker.subscriptions {
+		assert.False(t, sub.active.Load())
+	}
+}
+
+func TestConnection_MultipleCallbacks(t *testing.T) {
+	conn := NewConnection(nil, nil)
+
+	connectCalls := 0
+	disconnectCalls := 0
+	reconnectCalls := 0
+
+	conn.OnConnect(func() { connectCalls++ })
+	conn.OnConnect(func() { connectCalls++ })
+	conn.OnDisconnect(func(err error) { disconnectCalls++ })
+	conn.OnDisconnect(func(err error) { disconnectCalls++ })
+	conn.OnReconnect(func() { reconnectCalls++ })
+	conn.OnReconnect(func() { reconnectCalls++ })
+
+	// Simulate callbacks
+	for _, cb := range conn.onConnect {
+		cb()
+	}
+	for _, cb := range conn.onDisconnect {
+		cb(nil)
+	}
+	for _, cb := range conn.onReconnect {
+		cb()
+	}
+
+	assert.Equal(t, 2, connectCalls)
+	assert.Equal(t, 2, disconnectCalls)
+	assert.Equal(t, 2, reconnectCalls)
+}
+
+func TestBroker_MetricsRecording_AllTypes(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	metrics := broker.GetMetrics()
+
+	// Record various operations
+	metrics.RecordConnectionAttempt()
+	metrics.RecordConnectionSuccess()
+	metrics.RecordPublish(100, 10*time.Millisecond, true)
+	metrics.RecordPublish(0, 5*time.Millisecond, false)
+	metrics.RecordReceive(200, 20*time.Millisecond)
+	metrics.RecordSubscription()
+	metrics.RecordUnsubscription()
+	metrics.RecordQueueDeclared()
+	metrics.RecordProcessed()
+	metrics.RecordFailed()
+	metrics.RecordAck()
+	metrics.RecordNack()
+	metrics.RecordRetry()
+	metrics.RecordDeadLettered()
+	metrics.RecordPublishConfirmation()
+	metrics.RecordPublishTimeout()
+
+	// Verify all metrics were recorded
+	assert.Equal(t, int64(1), metrics.ConnectionAttempts.Load())
+	assert.Equal(t, int64(1), metrics.ConnectionSuccesses.Load())
+	assert.Equal(t, int64(2), metrics.MessagesPublished.Load())
+	assert.Equal(t, int64(1), metrics.PublishSuccesses.Load())
+	assert.Equal(t, int64(1), metrics.PublishFailures.Load())
+	assert.Equal(t, int64(1), metrics.MessagesReceived.Load())
+	assert.Equal(t, int64(0), metrics.ActiveSubscriptions.Load()) // +1 -1
+	assert.Equal(t, int64(1), metrics.QueuesDeclared.Load())
+	assert.Equal(t, int64(1), metrics.MessagesProcessed.Load())
+	assert.Equal(t, int64(1), metrics.MessagesFailed.Load())
+	assert.Equal(t, int64(1), metrics.MessagesAcked.Load())
+	assert.Equal(t, int64(1), metrics.MessagesNacked.Load())
+	assert.Equal(t, int64(1), metrics.MessagesRetried.Load())
+	assert.Equal(t, int64(1), metrics.MessagesDeadLettered.Load())
+	assert.Equal(t, int64(1), metrics.PublishConfirmations.Load())
+	assert.Equal(t, int64(1), metrics.PublishTimeouts.Load())
+}
+
+func TestMetrics_AveragePublishLatency(t *testing.T) {
+	metrics := messaging.NewBrokerMetrics()
+
+	// No latency recorded yet
+	assert.Equal(t, time.Duration(0), metrics.GetAveragePublishLatency())
+
+	// Record some latency
+	metrics.PublishLatencyTotal.Store(int64(600 * time.Millisecond))
+	metrics.PublishLatencyCount.Store(3)
+
+	avg := metrics.GetAveragePublishLatency()
+	assert.Equal(t, 200*time.Millisecond, avg)
+}
+
+func TestMetrics_GetPublishSuccessRate(t *testing.T) {
+	metrics := messaging.NewBrokerMetrics()
+
+	// No messages published yet - should return 1.0
+	assert.Equal(t, 1.0, metrics.GetPublishSuccessRate())
+
+	// Record some publishes
+	metrics.MessagesPublished.Store(100)
+	metrics.PublishSuccesses.Store(90)
+
+	rate := metrics.GetPublishSuccessRate()
+	assert.Equal(t, 0.9, rate)
+}
+
+func TestMetrics_GetLastPublishTime(t *testing.T) {
+	metrics := messaging.NewBrokerMetrics()
+
+	// Initially zero
+	lastPublish := metrics.GetLastPublishTime()
+	assert.True(t, lastPublish.IsZero())
+
+	// Record a publish
+	metrics.RecordPublish(100, time.Millisecond, true)
+
+	lastPublish = metrics.GetLastPublishTime()
+	assert.False(t, lastPublish.IsZero())
+}
+
+func TestBroker_IsConnected_Concurrent(t *testing.T) {
+	broker := NewBroker(nil, nil)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = broker.IsConnected()
+		}()
+	}
+	wg.Wait()
+}
+
+func TestBroker_BrokerType_ReturnsRabbitMQ(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	brokerType := broker.BrokerType()
+
+	assert.Equal(t, messaging.BrokerTypeRabbitMQ, brokerType)
+	assert.Equal(t, "rabbitmq", brokerType.String())
+}
+
+func TestConnection_Connect_WhenAlreadyConnected(t *testing.T) {
+	conn := NewConnection(nil, nil)
+	conn.state.Store(int32(StateConnected))
+
+	ctx := context.Background()
+	err := conn.Connect(ctx)
+
+	// Should return nil when already connected
+	assert.NoError(t, err)
+}

@@ -29,6 +29,7 @@ import (
 	"dev.helix.agent/internal/router"
 	"dev.helix.agent/internal/utils"
 	"dev.helix.agent/internal/verifier"
+	"llm-verifier/pkg/cliagents"
 )
 
 var (
@@ -47,6 +48,13 @@ var (
 	apiKeyEnvFile      = flag.String("api-key-env-file", "", "Path to .env file to write the generated API key")
 	preinstallMCP      = flag.Bool("preinstall-mcp", false, "Pre-install standard MCP server npm packages")
 	skipMCPPreinstall  = flag.Bool("skip-mcp-preinstall", false, "Skip automatic MCP package pre-installation at startup")
+	// Unified CLI agent configuration flags (all 48 agents)
+	generateAgentConfig = flag.String("generate-agent-config", "", "Generate config for specified CLI agent (use --list-agents to see all)")
+	validateAgentConfig = flag.String("validate-agent-config", "", "Validate config file for agent (format: agent:path)")
+	agentConfigOutput   = flag.String("agent-config-output", "", "Output path for generated agent config (default: stdout)")
+	listAgents          = flag.Bool("list-agents", false, "List all 48 supported CLI agents")
+	generateAllAgents   = flag.Bool("generate-all-agents", false, "Generate configurations for all 48 CLI agents")
+	allAgentsOutputDir  = flag.String("all-agents-output-dir", "", "Output directory for all agent configs (required with --generate-all-agents)")
 )
 
 // ValidOpenCodeTopLevelKeys contains the valid top-level keys per OpenCode.ai official schema
@@ -746,10 +754,17 @@ type AppConfig struct {
 	APIKeyEnvFile      string
 	PreinstallMCP      bool // Run MCP package pre-installation and exit
 	SkipMCPPreinstall  bool // Skip automatic MCP pre-installation at startup
-	ServerHost         string
-	ServerPort         string
-	Logger             *logrus.Logger
-	ShutdownSignal     chan os.Signal
+	// Unified CLI agent configuration (all 48 agents)
+	GenerateAgentConfig string // Agent type to generate config for
+	ValidateAgentConfig string // Agent:path for validation
+	AgentConfigOutput   string // Output path for generated config
+	ListAgents          bool   // List all supported agents
+	GenerateAllAgents   bool   // Generate configs for all agents
+	AllAgentsOutputDir  string // Output directory for all agent configs
+	ServerHost          string
+	ServerPort          string
+	Logger              *logrus.Logger
+	ShutdownSignal      chan os.Signal
 }
 
 // DefaultAppConfig returns the default application configuration
@@ -808,6 +823,23 @@ func run(appCfg *AppConfig) error {
 	// Handle Crush config generation command
 	if appCfg.GenerateCrush {
 		return handleGenerateCrush(appCfg)
+	}
+
+	// Handle unified CLI agent commands (all 48 agents)
+	if appCfg.ListAgents {
+		return handleListAgents(appCfg)
+	}
+
+	if appCfg.GenerateAllAgents {
+		return handleGenerateAllAgents(appCfg)
+	}
+
+	if appCfg.GenerateAgentConfig != "" {
+		return handleGenerateAgentConfig(appCfg)
+	}
+
+	if appCfg.ValidateAgentConfig != "" {
+		return handleValidateAgentConfig(appCfg)
 	}
 
 	// Handle MCP pre-installation command
@@ -1006,6 +1038,13 @@ func main() {
 	appCfg.APIKeyEnvFile = *apiKeyEnvFile
 	appCfg.PreinstallMCP = *preinstallMCP
 	appCfg.SkipMCPPreinstall = *skipMCPPreinstall
+	// Unified CLI agent configuration flags
+	appCfg.GenerateAgentConfig = *generateAgentConfig
+	appCfg.ValidateAgentConfig = *validateAgentConfig
+	appCfg.AgentConfigOutput = *agentConfigOutput
+	appCfg.ListAgents = *listAgents
+	appCfg.GenerateAllAgents = *generateAllAgents
+	appCfg.AllAgentsOutputDir = *allAgentsOutputDir
 
 	if err := run(appCfg); err != nil {
 		appCfg.Logger.WithError(err).Fatal("Application failed")
@@ -2152,6 +2191,261 @@ func validateCrushConfig(data []byte) *CrushValidationResult {
 	return result
 }
 
+// ============================================================================
+// Unified CLI Agent Handlers (All 48 Agents)
+// ============================================================================
+
+// handleListAgents lists all 48 supported CLI agents
+func handleListAgents(appCfg *AppConfig) error {
+	fmt.Println("HelixAgent - Supported CLI Agents (48 total)")
+	fmt.Println("=============================================")
+	fmt.Println()
+
+	generator := cliagents.NewUnifiedGenerator(nil)
+	schemas := generator.GetAllSchemas()
+
+	// Group by category
+	original18 := []cliagents.AgentType{
+		cliagents.AgentOpenCode, cliagents.AgentCrush, cliagents.AgentHelixCode,
+		cliagents.AgentKiro, cliagents.AgentAider, cliagents.AgentClaudeCode,
+		cliagents.AgentCline, cliagents.AgentCodenameGoose, cliagents.AgentDeepSeekCLI,
+		cliagents.AgentForge, cliagents.AgentGeminiCLI, cliagents.AgentGPTEngineer,
+		cliagents.AgentKiloCode, cliagents.AgentMistralCode, cliagents.AgentOllamaCode,
+		cliagents.AgentPlandex, cliagents.AgentQwenCode, cliagents.AgentAmazonQ,
+	}
+
+	new30 := []cliagents.AgentType{
+		cliagents.AgentAgentDeck, cliagents.AgentBridle, cliagents.AgentCheshireCat,
+		cliagents.AgentClaudePlugins, cliagents.AgentClaudeSquad, cliagents.AgentCodai,
+		cliagents.AgentCodex, cliagents.AgentCodexSkills, cliagents.AgentConduit,
+		cliagents.AgentContinue, cliagents.AgentEmdash, cliagents.AgentFauxPilot,
+		cliagents.AgentGetShitDone, cliagents.AgentGitHubCopilotCLI, cliagents.AgentGitHubSpecKit,
+		cliagents.AgentGitMCP, cliagents.AgentGPTME, cliagents.AgentMobileAgent,
+		cliagents.AgentMultiagentCoding, cliagents.AgentNanocoder, cliagents.AgentNoi,
+		cliagents.AgentOctogen, cliagents.AgentOpenHands, cliagents.AgentPostgresMCP,
+		cliagents.AgentShai, cliagents.AgentSnowCLI, cliagents.AgentTaskWeaver,
+		cliagents.AgentUIUXProMax, cliagents.AgentVTCode, cliagents.AgentWarp,
+	}
+
+	fmt.Println("Original 18 Agents:")
+	fmt.Println("-------------------")
+	for _, agent := range original18 {
+		if schema, ok := schemas[agent]; ok {
+			fmt.Printf("  %-20s  %s\n", agent, schema.Description)
+		}
+	}
+
+	fmt.Println()
+	fmt.Println("New 30 Agents:")
+	fmt.Println("--------------")
+	for _, agent := range new30 {
+		if schema, ok := schemas[agent]; ok {
+			fmt.Printf("  %-20s  %s\n", agent, schema.Description)
+		}
+	}
+
+	fmt.Println()
+	fmt.Println("Usage:")
+	fmt.Println("  helixagent --generate-agent-config=<agent-name>")
+	fmt.Println("  helixagent --generate-agent-config=<agent-name> --agent-config-output=<path>")
+	fmt.Println("  helixagent --validate-agent-config=<agent-name>:<config-path>")
+	fmt.Println("  helixagent --generate-all-agents --all-agents-output-dir=<directory>")
+
+	return nil
+}
+
+// handleGenerateAgentConfig generates configuration for a specific CLI agent
+func handleGenerateAgentConfig(appCfg *AppConfig) error {
+	logger := appCfg.Logger
+	if logger == nil {
+		logger = logrus.New()
+	}
+
+	agentType := cliagents.AgentType(appCfg.GenerateAgentConfig)
+
+	// Create generator with HelixAgent settings
+	config := &cliagents.GeneratorConfig{
+		HelixAgentHost: "localhost",
+		HelixAgentPort: 7061,
+		MCPServers:     cliagents.DefaultMCPServers(),
+		IncludeScores:  true,
+	}
+	generator := cliagents.NewUnifiedGenerator(config)
+
+	ctx := context.Background()
+	result, err := generator.Generate(ctx, agentType)
+	if err != nil {
+		return fmt.Errorf("failed to generate config for %s: %w", agentType, err)
+	}
+
+	if !result.Success {
+		return fmt.Errorf("config generation failed for %s: %v", agentType, result.Errors)
+	}
+
+	// Marshal to JSON
+	jsonData, err := json.MarshalIndent(result.Config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	// Output to file or stdout
+	if appCfg.AgentConfigOutput != "" {
+		if !utils.ValidatePath(appCfg.AgentConfigOutput) {
+			return fmt.Errorf("invalid output path: %s", appCfg.AgentConfigOutput)
+		}
+		if err := os.WriteFile(appCfg.AgentConfigOutput, jsonData, 0644); err != nil {
+			return fmt.Errorf("failed to write config file: %w", err)
+		}
+		logger.Infof("Generated %s config written to: %s", agentType, appCfg.AgentConfigOutput)
+	} else {
+		fmt.Println(string(jsonData))
+	}
+
+	return nil
+}
+
+// handleValidateAgentConfig validates a configuration file for a specific CLI agent
+func handleValidateAgentConfig(appCfg *AppConfig) error {
+	logger := appCfg.Logger
+	if logger == nil {
+		logger = logrus.New()
+	}
+
+	// Parse agent:path format
+	parts := strings.SplitN(appCfg.ValidateAgentConfig, ":", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid format for --validate-agent-config, expected: agent-name:config-path")
+	}
+
+	agentType := cliagents.AgentType(parts[0])
+	configPath := parts[1]
+
+	// Validate path
+	if !utils.ValidatePath(configPath) {
+		return fmt.Errorf("invalid config path: %s", configPath)
+	}
+
+	// Read config file
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	// Parse as JSON
+	var config map[string]interface{}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return fmt.Errorf("failed to parse config JSON: %w", err)
+	}
+
+	// Validate using LLMsVerifier
+	generator := cliagents.NewUnifiedGenerator(nil)
+	result, err := generator.Validate(agentType, config)
+	if err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+
+	// Output results
+	if result.Valid {
+		fmt.Printf("✓ Config file is valid for %s\n", agentType)
+		if len(result.Warnings) > 0 {
+			fmt.Println("\nWarnings:")
+			for _, warning := range result.Warnings {
+				fmt.Printf("  - %s\n", warning)
+			}
+		}
+	} else {
+		fmt.Printf("✗ Config file is invalid for %s\n", agentType)
+		fmt.Println("\nErrors:")
+		for _, e := range result.Errors {
+			fmt.Printf("  - %s\n", e)
+		}
+		return fmt.Errorf("validation failed with %d errors", len(result.Errors))
+	}
+
+	return nil
+}
+
+// handleGenerateAllAgents generates configurations for all 48 CLI agents
+func handleGenerateAllAgents(appCfg *AppConfig) error {
+	logger := appCfg.Logger
+	if logger == nil {
+		logger = logrus.New()
+	}
+
+	if appCfg.AllAgentsOutputDir == "" {
+		return fmt.Errorf("--all-agents-output-dir is required when using --generate-all-agents")
+	}
+
+	if !utils.ValidatePath(appCfg.AllAgentsOutputDir) {
+		return fmt.Errorf("invalid output directory: %s", appCfg.AllAgentsOutputDir)
+	}
+	outputDir := appCfg.AllAgentsOutputDir
+
+	// Create output directory if it doesn't exist
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Create generator with HelixAgent settings
+	config := &cliagents.GeneratorConfig{
+		HelixAgentHost: "localhost",
+		HelixAgentPort: 7061,
+		OutputDir:      outputDir,
+		MCPServers:     cliagents.DefaultMCPServers(),
+		IncludeScores:  true,
+	}
+	generator := cliagents.NewUnifiedGenerator(config)
+
+	ctx := context.Background()
+	results, err := generator.GenerateAll(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to generate all configs: %w", err)
+	}
+
+	// Save each config and report results
+	successCount := 0
+	failCount := 0
+
+	fmt.Printf("Generating configurations for 48 CLI agents in: %s\n\n", outputDir)
+
+	for _, result := range results {
+		if result.Success {
+			// Get schema for filename
+			schema, _ := generator.GetSchema(result.AgentType)
+			outputPath := fmt.Sprintf("%s/%s", outputDir, schema.ConfigFileName)
+
+			jsonData, err := json.MarshalIndent(result.Config, "", "  ")
+			if err != nil {
+				fmt.Printf("✗ %-20s  Failed to marshal: %v\n", result.AgentType, err)
+				failCount++
+				continue
+			}
+
+			if err := os.WriteFile(outputPath, jsonData, 0644); err != nil {
+				fmt.Printf("✗ %-20s  Failed to write: %v\n", result.AgentType, err)
+				failCount++
+				continue
+			}
+
+			fmt.Printf("✓ %-20s  %s\n", result.AgentType, schema.ConfigFileName)
+			successCount++
+		} else {
+			fmt.Printf("✗ %-20s  %v\n", result.AgentType, result.Errors)
+			failCount++
+		}
+	}
+
+	fmt.Printf("\n")
+	fmt.Printf("Summary: %d succeeded, %d failed\n", successCount, failCount)
+
+	if failCount > 0 {
+		return fmt.Errorf("%d configurations failed to generate", failCount)
+	}
+
+	logger.Infof("All 48 agent configurations generated in: %s", outputDir)
+	return nil
+}
+
 func showHelp() {
 	fmt.Printf(`HelixAgent - Advanced LLM Gateway with Cognee Integration
 
@@ -2190,6 +2484,21 @@ Options:
         Pre-install standard MCP server npm packages for faster startup
   -skip-mcp-preinstall
         Skip automatic MCP package pre-installation at startup
+
+Unified CLI Agent Configuration (48 agents):
+  -list-agents
+        List all 48 supported CLI agents with descriptions
+  -generate-agent-config string
+        Generate config for specified CLI agent (e.g., codex, openhands, claude-squad)
+  -agent-config-output string
+        Output path for generated agent config (default: stdout)
+  -validate-agent-config string
+        Validate config file for agent (format: agent-name:config-path)
+  -generate-all-agents
+        Generate configurations for all 48 CLI agents
+  -all-agents-output-dir string
+        Output directory for all agent configs (required with --generate-all-agents)
+
   -version
         Show version information
   -help

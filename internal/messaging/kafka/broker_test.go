@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"crypto/tls"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -1401,4 +1402,576 @@ func TestExtractBrokerIDs_LargeSlice(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		assert.Equal(t, i, ids[i])
 	}
+}
+
+// =============================================================================
+// Additional Coverage Tests - Error Paths and Edge Cases
+// =============================================================================
+
+func TestKafkaBroker_Publish_NilMessage(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true) // Simulate connected state
+	ctx := context.Background()
+
+	err := broker.Publish(ctx, "test-topic", nil)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "message is nil")
+}
+
+func TestKafkaBroker_Subscribe_EmptyTopic(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true) // Simulate connected state
+	ctx := context.Background()
+
+	handler := func(ctx context.Context, msg *messaging.Message) error {
+		return nil
+	}
+
+	sub, err := broker.Subscribe(ctx, "", handler)
+
+	assert.Error(t, err)
+	assert.Nil(t, sub)
+	assert.Contains(t, err.Error(), "topic is required")
+}
+
+func TestKafkaBroker_Subscribe_NilHandler(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true) // Simulate connected state
+	ctx := context.Background()
+
+	sub, err := broker.Subscribe(ctx, "test-topic", nil)
+
+	assert.Error(t, err)
+	assert.Nil(t, sub)
+	assert.Contains(t, err.Error(), "handler is required")
+}
+
+func TestKafkaBroker_CreateTopic_WhenNotConnected(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	topicConfig := &TopicConfig{
+		Name:              "test-topic",
+		Partitions:        3,
+		ReplicationFactor: 1,
+	}
+
+	err := broker.CreateTopic(ctx, topicConfig)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestKafkaBroker_DeleteTopic_WhenNotConnected(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	err := broker.DeleteTopic(ctx, "test-topic")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestKafkaBroker_GetTopicMetadata_WhenNotConnected(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	metadata, err := broker.GetTopicMetadata(ctx, "test-topic")
+
+	assert.Error(t, err)
+	assert.Nil(t, metadata)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestKafkaBroker_Connect_WhenAlreadyConnected(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true) // Simulate already connected state
+	ctx := context.Background()
+
+	err := broker.Connect(ctx)
+
+	assert.NoError(t, err) // Should return nil when already connected
+}
+
+func TestKafkaBroker_PublishBatch_EmptyMessages_WhenConnected(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true) // Simulate connected state
+	ctx := context.Background()
+
+	err := broker.PublishBatch(ctx, "test-topic", []*messaging.Message{})
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no messages to publish")
+}
+
+func TestKafkaBroker_PublishBatch_NilSlice(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	broker.connected.Store(true) // Simulate connected state
+	ctx := context.Background()
+
+	err := broker.PublishBatch(ctx, "test-topic", nil)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no messages to publish")
+}
+
+func TestKafkaBroker_Subscribe_OffsetResetLatest(t *testing.T) {
+	// Test that offset reset option is parsed correctly
+	broker := NewBroker(nil, nil)
+	// Can't fully test without Kafka, but verify option parsing by checking
+	// the subscribe fails at connection, not at option parsing
+	ctx := context.Background()
+
+	handler := func(ctx context.Context, msg *messaging.Message) error {
+		return nil
+	}
+
+	_, err := broker.Subscribe(ctx, "test-topic", handler, messaging.WithOffsetReset(messaging.OffsetResetLatest))
+
+	// Should fail with "not connected" error, not option error
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestKafkaBroker_Subscribe_CustomGroupID(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	handler := func(ctx context.Context, msg *messaging.Message) error {
+		return nil
+	}
+
+	_, err := broker.Subscribe(ctx, "test-topic", handler, messaging.WithGroupID("custom-group"))
+
+	// Should fail with "not connected" error
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestKafkaBroker_Publish_WithPartitionKey(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	msg := &messaging.Message{
+		ID:        "test-msg-1",
+		Type:      "test.event",
+		Payload:   []byte(`{"key": "value"}`),
+		Timestamp: time.Now(),
+	}
+
+	err := broker.Publish(ctx, "test-topic", msg, messaging.WithMessageKey([]byte("partition-key")))
+
+	// Should fail with "not connected" error
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestKafkaBroker_Close_SubscriptionCancelFnCalled(t *testing.T) {
+	// Test that Close() properly handles subscription cancel functions
+	// without actually having a reader (tests the cancel path)
+	cancelCalled := false
+	sub := &kafkaSubscription{
+		id:       "sub-1",
+		topic:    "test-topic",
+		cancelFn: func() { cancelCalled = true },
+		reader:   nil, // nil reader to avoid needing Kafka
+	}
+	sub.active.Store(true)
+
+	// The broker's Close method reads from the readers map
+	// and calls cancel on each subscription, then closes the reader
+	// Since we can't easily mock the reader, we test the subscription's
+	// own behavior separately via the broker lifecycle tests
+
+	// When close is called on the subscription directly
+	_ = sub.Unsubscribe()
+	assert.True(t, cancelCalled)
+	assert.False(t, sub.active.Load())
+}
+
+func TestKafkaBroker_Publish_ContextCancelled(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	msg := &messaging.Message{
+		ID:        "test-msg-1",
+		Type:      "test.event",
+		Payload:   []byte(`{}`),
+		Timestamp: time.Now(),
+	}
+
+	err := broker.Publish(ctx, "test-topic", msg)
+
+	// Should fail with "not connected" error (context cancellation is checked later)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestKafkaBroker_HealthCheck_ContextTimeout(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
+	defer cancel()
+
+	time.Sleep(10 * time.Millisecond) // Let timeout expire
+
+	err := broker.HealthCheck(ctx)
+
+	// Should fail with "not connected" (checked before trying to dial)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestKafkaBroker_Close_SetsClosedBeforeProcessing(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	// First call to Close should set closed flag
+	err := broker.Close(ctx)
+	assert.NoError(t, err)
+	assert.True(t, broker.closed.Load())
+
+	// Second call should return immediately because closed is already true
+	err = broker.Close(ctx)
+	assert.NoError(t, err)
+}
+
+func TestKafkaBroker_MetricsRecording_ConnectionFailure(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	metrics := broker.GetMetrics()
+
+	metrics.RecordConnectionAttempt()
+	metrics.RecordConnectionFailure()
+
+	assert.Equal(t, int64(1), metrics.ConnectionAttempts.Load())
+	assert.Equal(t, int64(1), metrics.ConnectionFailures.Load())
+	assert.Equal(t, int64(0), metrics.ConnectionSuccesses.Load())
+}
+
+func TestKafkaBroker_MetricsRecording_MultipleFailures(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	metrics := broker.GetMetrics()
+
+	for i := 0; i < 5; i++ {
+		metrics.RecordConnectionAttempt()
+		metrics.RecordConnectionFailure()
+	}
+
+	assert.Equal(t, int64(5), metrics.ConnectionAttempts.Load())
+	assert.Equal(t, int64(5), metrics.ConnectionFailures.Load())
+}
+
+func TestConfig_AutoOffsetReset_Latest(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.AutoOffsetReset = "latest"
+
+	assert.Equal(t, "latest", cfg.AutoOffsetReset)
+	err := cfg.Validate()
+	assert.NoError(t, err)
+}
+
+func TestConfig_AutoOffsetReset_Earliest(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.AutoOffsetReset = "earliest"
+
+	assert.Equal(t, "earliest", cfg.AutoOffsetReset)
+	err := cfg.Validate()
+	assert.NoError(t, err)
+}
+
+func TestConsumerGroupConfig_AllFields(t *testing.T) {
+	cfg := &ConsumerGroupConfig{
+		GroupID:            "test-group",
+		Topics:             []string{"topic1", "topic2", "topic3"},
+		StartFromBeginning: false,
+		MaxConcurrency:     20,
+		CommitInterval:     10 * time.Second,
+		RebalanceTimeout:   120 * time.Second,
+		RetryOnError:       false,
+		MaxRetries:         5,
+		RetryBackoff:       2 * time.Second,
+	}
+
+	assert.Equal(t, "test-group", cfg.GroupID)
+	assert.Len(t, cfg.Topics, 3)
+	assert.False(t, cfg.StartFromBeginning)
+	assert.Equal(t, 20, cfg.MaxConcurrency)
+	assert.Equal(t, 10*time.Second, cfg.CommitInterval)
+	assert.Equal(t, 120*time.Second, cfg.RebalanceTimeout)
+	assert.False(t, cfg.RetryOnError)
+	assert.Equal(t, 5, cfg.MaxRetries)
+	assert.Equal(t, 2*time.Second, cfg.RetryBackoff)
+}
+
+func TestTopicConfig_WithMultipleRetentionValues(t *testing.T) {
+	cfg := DefaultTopicConfig("test")
+	cfg.WithRetention(3600000, 536870912) // 1 hour, 512MB
+
+	assert.Equal(t, int64(3600000), cfg.RetentionMs)
+	assert.Equal(t, int64(536870912), cfg.RetentionBytes)
+}
+
+func TestTopicConfig_MinInsyncReplicas(t *testing.T) {
+	cfg := DefaultTopicConfig("test")
+	cfg.MinInsyncReplicas = 2
+
+	assert.Equal(t, 2, cfg.MinInsyncReplicas)
+}
+
+func TestKafkaBroker_WriterBalancer(t *testing.T) {
+	broker := NewBroker(nil, nil)
+
+	writer := broker.getOrCreateWriter("test-topic")
+
+	// Verify the writer uses LeastBytes balancer
+	assert.NotNil(t, writer.Balancer)
+	_, ok := writer.Balancer.(*kafka.LeastBytes)
+	assert.True(t, ok, "Expected LeastBytes balancer")
+}
+
+func TestKafkaBroker_WriterRequiredAcks(t *testing.T) {
+	cfg := &Config{
+		Brokers:      []string{"localhost:9092"},
+		ClientID:     "test",
+		RequiredAcks: 1, // Wait for leader ack only
+		BatchSize:    1000,
+	}
+	broker := NewBroker(cfg, nil)
+
+	writer := broker.getOrCreateWriter("test-topic")
+
+	assert.Equal(t, kafka.RequiredAcks(1), writer.RequiredAcks)
+}
+
+func TestKafkaBroker_WriterAllowAutoTopicCreation(t *testing.T) {
+	broker := NewBroker(nil, nil)
+
+	writer := broker.getOrCreateWriter("test-topic")
+
+	assert.True(t, writer.AllowAutoTopicCreation)
+}
+
+func TestKafkaBroker_WriterAsync(t *testing.T) {
+	broker := NewBroker(nil, nil)
+
+	writer := broker.getOrCreateWriter("test-topic")
+
+	// Writer should be synchronous by default
+	assert.False(t, writer.Async)
+}
+
+func TestKafkaSubscription_AllFieldsSet(t *testing.T) {
+	handler := func(ctx context.Context, msg *messaging.Message) error {
+		return nil
+	}
+	cancelFn := func() {}
+
+	sub := &kafkaSubscription{
+		id:       "sub-123",
+		topic:    "events.user.created",
+		groupID:  "my-consumer-group",
+		handler:  handler,
+		reader:   nil, // Would normally be a kafka.Reader
+		cancelFn: cancelFn,
+	}
+	sub.active.Store(true)
+
+	assert.Equal(t, "sub-123", sub.ID())
+	assert.Equal(t, "events.user.created", sub.Topic())
+	assert.Equal(t, "my-consumer-group", sub.groupID)
+	assert.NotNil(t, sub.handler)
+	assert.NotNil(t, sub.cancelFn)
+	assert.True(t, sub.IsActive())
+}
+
+func TestKafkaBroker_ConcurrentPublishAndClose(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	var wg sync.WaitGroup
+
+	// Start goroutines trying to publish
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			msg := &messaging.Message{
+				ID:        "msg-" + string(rune('0'+idx%10)),
+				Type:      "test",
+				Payload:   []byte(`{}`),
+				Timestamp: time.Now(),
+			}
+			_ = broker.Publish(ctx, "test-topic", msg)
+		}(i)
+	}
+
+	// Concurrently close the broker
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		time.Sleep(1 * time.Millisecond)
+		_ = broker.Close(ctx)
+	}()
+
+	wg.Wait()
+
+	assert.True(t, broker.closed.Load())
+}
+
+func TestKafkaBroker_MetricsRecording_ProcessedAndFailed(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	metrics := broker.GetMetrics()
+
+	// Simulate message processing
+	for i := 0; i < 100; i++ {
+		if i%10 == 0 {
+			metrics.RecordFailed()
+		} else {
+			metrics.RecordProcessed()
+		}
+	}
+
+	assert.Equal(t, int64(90), metrics.MessagesProcessed.Load())
+	assert.Equal(t, int64(10), metrics.MessagesFailed.Load())
+}
+
+func TestKafkaBroker_MetricsRecording_Unsubscription(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	metrics := broker.GetMetrics()
+
+	// Subscribe and unsubscribe multiple times
+	for i := 0; i < 5; i++ {
+		metrics.RecordSubscription()
+	}
+	assert.Equal(t, int64(5), metrics.ActiveSubscriptions.Load())
+
+	for i := 0; i < 3; i++ {
+		metrics.RecordUnsubscription()
+	}
+	assert.Equal(t, int64(2), metrics.ActiveSubscriptions.Load())
+}
+
+func TestKafkaBroker_PublishBatch_MessageWithHeaders(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	messages := []*messaging.Message{
+		{
+			ID:        "msg-1",
+			Type:      "test",
+			Payload:   []byte(`{"data": 1}`),
+			Timestamp: time.Now(),
+			Headers:   map[string]string{"header1": "value1", "header2": "value2"},
+		},
+		{
+			ID:        "msg-2",
+			Type:      "test",
+			Payload:   []byte(`{"data": 2}`),
+			Timestamp: time.Now(),
+			Headers:   map[string]string{"header3": "value3"},
+		},
+	}
+
+	err := broker.PublishBatch(ctx, "test-topic", messages)
+
+	// Should fail with "not connected" error
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestConfig_TLSSettings(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.TLSEnabled = true
+	cfg.TLSSkipVerify = true
+	cfg.TLSConfig = &tls.Config{
+		InsecureSkipVerify: true,
+		MinVersion:         tls.VersionTLS12,
+	}
+
+	assert.True(t, cfg.TLSEnabled)
+	assert.True(t, cfg.TLSSkipVerify)
+	assert.NotNil(t, cfg.TLSConfig)
+	assert.True(t, cfg.TLSConfig.InsecureSkipVerify)
+	assert.Equal(t, uint16(tls.VersionTLS12), cfg.TLSConfig.MinVersion)
+}
+
+func TestConfig_SASLSettings(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.SASLEnabled = true
+	cfg.SASLMechanism = "SCRAM-SHA-512"
+	cfg.SASLUsername = "user"
+	cfg.SASLPassword = "password"
+
+	assert.True(t, cfg.SASLEnabled)
+	assert.Equal(t, "SCRAM-SHA-512", cfg.SASLMechanism)
+	assert.Equal(t, "user", cfg.SASLUsername)
+	assert.Equal(t, "password", cfg.SASLPassword)
+
+	err := cfg.Validate()
+	assert.NoError(t, err)
+}
+
+func TestConfig_SASLMechanismPlain(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.SASLEnabled = true
+	cfg.SASLMechanism = "PLAIN"
+	cfg.SASLUsername = "user"
+	cfg.SASLPassword = "password"
+
+	err := cfg.Validate()
+	assert.NoError(t, err)
+}
+
+func TestTopicConfig_Configs_CustomValues(t *testing.T) {
+	cfg := DefaultTopicConfig("test")
+	cfg.Configs["max.message.bytes"] = "10485760"
+	cfg.Configs["compression.type"] = "lz4"
+	cfg.Configs["segment.ms"] = "3600000"
+
+	assert.Equal(t, "10485760", cfg.Configs["max.message.bytes"])
+	assert.Equal(t, "lz4", cfg.Configs["compression.type"])
+	assert.Equal(t, "3600000", cfg.Configs["segment.ms"])
+}
+
+func TestKafkaBroker_Publish_EmptyPayload(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	msg := &messaging.Message{
+		ID:        "test-msg-1",
+		Type:      "test.event",
+		Payload:   []byte{}, // Empty payload
+		Timestamp: time.Now(),
+	}
+
+	err := broker.Publish(ctx, "test-topic", msg)
+
+	// Should fail with "not connected" error, not payload error
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestKafkaBroker_Publish_LargePayload(t *testing.T) {
+	broker := NewBroker(nil, nil)
+	ctx := context.Background()
+
+	// Create a large payload (1MB)
+	largePayload := make([]byte, 1024*1024)
+	for i := range largePayload {
+		largePayload[i] = byte(i % 256)
+	}
+
+	msg := &messaging.Message{
+		ID:        "test-msg-1",
+		Type:      "test.event",
+		Payload:   largePayload,
+		Timestamp: time.Now(),
+	}
+
+	err := broker.Publish(ctx, "test-topic", msg)
+
+	// Should fail with "not connected" error
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
 }
