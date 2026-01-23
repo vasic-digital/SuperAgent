@@ -1478,50 +1478,110 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 // Based on: https://opencode.ai/docs/mcp-servers
 // Local servers: type="local", command=["npx", "-y", "package"]
 // Remote servers: type="remote", url="https://..."
+// MCP servers are available from:
+// - npm packages (when available)
+// - HelixAgent MCP container (external/mcp-servers)
 func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefNew {
+	// MCP container host - defaults to localhost, can be overridden
+	mcpHost := os.Getenv("MCP_HOST")
+	if mcpHost == "" {
+		mcpHost = "localhost"
+	}
+
 	return map[string]OpenCodeMCPServerDefNew{
-		// Anthropic Official MCPs (local)
-		"filesystem": {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "/home"}},
-		"fetch":      {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"}},
-		"memory":     {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
-		"time":       {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}},
-		"git":        {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}},
-		"sqlite":     {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"}},
-		"postgres":   {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/helixagent"}},
-		"puppeteer":  {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}},
-		"brave-search": {
-			Type:        "local",
-			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-brave-search"},
-			Environment: map[string]string{"BRAVE_API_KEY": "{env:BRAVE_API_KEY}"},
+		// === Active MCP Servers (from modelcontextprotocol/servers) ===
+		// These run in the helixagent-mcp-servers container on ports 3001-3007
+		"fetch": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3001", mcpHost),
 		},
-		"google-maps": {
-			Type:        "local",
-			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-google-maps"},
-			Environment: map[string]string{"GOOGLE_MAPS_API_KEY": "{env:GOOGLE_MAPS_API_KEY}"},
+		"filesystem": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3002", mcpHost),
+		},
+		"git": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3003", mcpHost),
+		},
+		"memory": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3004", mcpHost),
+		},
+		"time": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3005", mcpHost),
+		},
+		"sequential-thinking": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3006", mcpHost),
+		},
+		"everything": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3007", mcpHost),
+		},
+
+		// === Archived MCP Servers (from modelcontextprotocol/servers-archived) ===
+		// These run in the helixagent-mcp-servers container on ports 3008-3020
+		"postgres": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3008", mcpHost),
+		},
+		"sqlite": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3009", mcpHost),
 		},
 		"slack": {
-			Type:        "local",
-			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-slack"},
-			Environment: map[string]string{"SLACK_BOT_TOKEN": "{env:SLACK_BOT_TOKEN}", "SLACK_TEAM_ID": "{env:SLACK_TEAM_ID}"},
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3010", mcpHost),
 		},
 		"github": {
-			Type:        "local",
-			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-github"},
-			Environment: map[string]string{"GITHUB_TOKEN": "{env:GITHUB_TOKEN}"},
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3011", mcpHost),
 		},
 		"gitlab": {
-			Type:        "local",
-			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-gitlab"},
-			Environment: map[string]string{"GITLAB_TOKEN": "{env:GITLAB_TOKEN}"},
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3012", mcpHost),
 		},
-		"sequential-thinking": {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sequential-thinking"}},
-		// HelixAgent Remote MCPs (SSE)
-		"helixagent":        {Type: "remote", URL: baseURL + "/v1/mcp/sse"},
-		"helixagent-debate": {Type: "remote", URL: baseURL + "/v1/mcp/debate/sse"},
-		"helixagent-rag":    {Type: "remote", URL: baseURL + "/v1/mcp/rag/sse"},
-		"helixagent-memory": {Type: "remote", URL: baseURL + "/v1/mcp/memory/sse"},
-		// Community/Infrastructure MCPs (local)
-		"docker": {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-docker"}},
+		"google-maps": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3013", mcpHost),
+		},
+		"brave-search": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3014", mcpHost),
+		},
+		"puppeteer": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3015", mcpHost),
+		},
+		"redis": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3016", mcpHost),
+		},
+		"sentry": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3017", mcpHost),
+		},
+		"gdrive": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3018", mcpHost),
+		},
+		"everart": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3019", mcpHost),
+		},
+		"aws-kb-retrieval": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3020", mcpHost),
+		},
+
+		// === HelixAgent Remote MCP ===
+		// Main HelixAgent MCP endpoint at /v1/mcp
+		"helixagent": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/mcp",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
 	}
 }
 
@@ -1551,11 +1611,8 @@ func buildOpenCodeMCPServersOld(baseURL string) map[string]OpenCodeMCPServerDefO
 		"notion":              {Type: "local", Command: []string{"npx", "-y", "@notionhq/notion-mcp-server"}},
 		"figma":               {Type: "local", Command: []string{"npx", "-y", "figma-developer-mcp"}},
 		"aws-kb-retrieval":    {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-aws-kb-retrieval"}},
-		// HelixAgent Remote MCPs
-		"helixagent":        {Type: "remote", URL: baseURL + "/v1/mcp/sse"},
-		"helixagent-debate": {Type: "remote", URL: baseURL + "/v1/mcp/debate/sse"},
-		"helixagent-rag":    {Type: "remote", URL: baseURL + "/v1/mcp/rag/sse"},
-		"helixagent-memory": {Type: "remote", URL: baseURL + "/v1/mcp/memory/sse"},
+		// HelixAgent Remote MCP - endpoint is /v1/mcp
+		"helixagent": {Type: "remote", URL: baseURL + "/v1/mcp"},  // Note: OLD format doesn't support headers
 		// Community/Infrastructure MCPs
 		"docker":        {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-docker"}},
 		"kubernetes":    {Type: "local", Command: []string{"npx", "-y", "mcp-server-kubernetes"}},
@@ -1645,11 +1702,12 @@ func buildOpenCodeMCPServers(baseURL string) map[string]OpenCodeMCPServerDef {
 			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-aws-kb-retrieval"},
 			Environment: map[string]string{"AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}"},
 		},
-		// HelixAgent Remote MCPs (SSE)
-		"helixagent":        {Type: "remote", URL: baseURL + "/v1/mcp/sse"},
-		"helixagent-debate": {Type: "remote", URL: baseURL + "/v1/mcp/debate/sse"},
-		"helixagent-rag":    {Type: "remote", URL: baseURL + "/v1/mcp/rag/sse"},
-		"helixagent-memory": {Type: "remote", URL: baseURL + "/v1/mcp/memory/sse"},
+		// HelixAgent Remote MCP - endpoint is /v1/mcp
+		"helixagent": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/mcp",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
 		// Community/Infrastructure MCPs (local)
 		"docker":     {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-docker"}},
 		"kubernetes": {Type: "local", Command: []string{"npx", "-y", "mcp-server-kubernetes"}, Environment: map[string]string{"KUBECONFIG": "${KUBECONFIG}"}},
