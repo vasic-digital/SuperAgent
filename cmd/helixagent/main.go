@@ -1166,15 +1166,62 @@ func writeAPIKeyToEnvFile(filePath, apiKey string) error {
 	return nil
 }
 
-// OpenCodeConfig represents the OpenCode configuration structure (v1.1.30+ schema)
-// For .opencode.json files (with leading dot)
-// Uses LOCAL_ENDPOINT env var for the "local" provider base URL
+// OpenCodeConfig represents the CORRECT OpenCode configuration structure
+// Based on official documentation: https://opencode.ai/docs/config/
+// Uses @ai-sdk/openai-compatible for custom providers
 type OpenCodeConfig struct {
-	Providers    map[string]OpenCodeProviderDef   `json:"providers,omitempty"`
-	Agents       map[string]OpenCodeAgentDef      `json:"agents,omitempty"`
-	MCPServers   map[string]OpenCodeMCPServerDef  `json:"mcpServers,omitempty"`
-	ContextPaths []string                         `json:"contextPaths,omitempty"`
-	TUI          *OpenCodeTUIDef                  `json:"tui,omitempty"`
+	Schema       string                               `json:"$schema,omitempty"`
+	Provider     map[string]OpenCodeProviderDefNew    `json:"provider,omitempty"`     // Note: singular "provider"
+	Model        string                               `json:"model,omitempty"`        // Default model: "provider-id/model-id"
+	SmallModel   string                               `json:"small_model,omitempty"`  // Model for small tasks
+	Agent        map[string]OpenCodeAgentDefNew       `json:"agent,omitempty"`        // Note: singular "agent"
+	MCP          map[string]OpenCodeMCPServerDefNew   `json:"mcp,omitempty"`          // Note: "mcp" not "mcpServers"
+	Instructions []string                             `json:"instructions,omitempty"` // Rule files
+	TUI          *OpenCodeTUIDef                      `json:"tui,omitempty"`
+}
+
+// OpenCodeProviderDefNew represents a provider in OpenCode config (correct schema)
+type OpenCodeProviderDefNew struct {
+	NPM     string                        `json:"npm,omitempty"`     // e.g., "@ai-sdk/openai-compatible"
+	Name    string                        `json:"name,omitempty"`    // Display name
+	Options *OpenCodeProviderOptionsNew   `json:"options,omitempty"` // Provider options
+	Models  map[string]OpenCodeModelDefNew `json:"models,omitempty"` // Model definitions (map, not array)
+}
+
+// OpenCodeProviderOptionsNew represents provider options
+type OpenCodeProviderOptionsNew struct {
+	BaseURL string            `json:"baseURL,omitempty"`
+	Headers map[string]string `json:"headers,omitempty"`
+	APIKey  string            `json:"apiKey,omitempty"` // Can use {env:VAR_NAME} syntax
+}
+
+// OpenCodeModelDefNew represents a model definition
+type OpenCodeModelDefNew struct {
+	Name    string               `json:"name,omitempty"`    // Display name
+	Limit   *OpenCodeModelLimit  `json:"limit,omitempty"`   // Token limits
+	Options map[string]any       `json:"options,omitempty"` // Model-specific options
+}
+
+// OpenCodeModelLimit represents token limits for a model
+type OpenCodeModelLimit struct {
+	Context int64 `json:"context,omitempty"` // Context window size
+	Output  int64 `json:"output,omitempty"`  // Max output tokens
+}
+
+// OpenCodeAgentDefNew represents an agent in OpenCode config (correct schema)
+type OpenCodeAgentDefNew struct {
+	Model           string `json:"model,omitempty"`           // Format: provider-id/model-id
+	MaxTokens       int64  `json:"maxTokens,omitempty"`       // Max output tokens
+	ReasoningEffort string `json:"reasoningEffort,omitempty"` // low, medium, high
+}
+
+// OpenCodeMCPServerDefNew represents an MCP server in OpenCode config (correct schema)
+type OpenCodeMCPServerDefNew struct {
+	Command string            `json:"command,omitempty"` // Command to run
+	Args    []string          `json:"args,omitempty"`    // Command arguments
+	Env     map[string]string `json:"env,omitempty"`     // Environment variables (map format)
+	Type    string            `json:"type,omitempty"`    // "stdio" or "sse"
+	URL     string            `json:"url,omitempty"`     // For SSE type
 }
 
 // OpenCodeConfigOld represents the OLD OpenCode configuration structure
@@ -1260,31 +1307,17 @@ type OpenCodePermissionDefOld struct {
 	AllowNet   bool `json:"allowNet,omitempty"`
 }
 
-// OpenCodeProviderDef represents a provider in OpenCode config
-// Valid providers: local, anthropic, openai, gemini, groq, openrouter, xai, bedrock, azure, vertexai, copilot
-type OpenCodeProviderDef struct {
-	APIKey   string `json:"apiKey,omitempty"`
-	Disabled bool   `json:"disabled,omitempty"`
-}
+// OpenCodeProviderDef is DEPRECATED - use OpenCodeProviderDefNew instead
+// Kept for backward compatibility with tests
+type OpenCodeProviderDef = OpenCodeProviderDefNew
 
-// OpenCodeAgentDef represents an agent configuration in OpenCode
-// Valid agent names: coder, task, title, summarizer
-type OpenCodeAgentDef struct {
-	Model           string `json:"model"`                     // Format: provider.model-name (e.g., local.helixagent-debate)
-	MaxTokens       int64  `json:"maxTokens,omitempty"`       // Maximum output tokens
-	ReasoningEffort string `json:"reasoningEffort,omitempty"` // low, medium, high (for reasoning models)
-}
+// OpenCodeAgentDef is DEPRECATED - use OpenCodeAgentDefNew instead
+// Kept for backward compatibility with tests
+type OpenCodeAgentDef = OpenCodeAgentDefNew
 
-// OpenCodeMCPServerDef represents an MCP server configuration
-// Type can be "stdio" (default) or "sse"
-type OpenCodeMCPServerDef struct {
-	Command string            `json:"command,omitempty"` // Required for stdio type
-	Args    []string          `json:"args,omitempty"`
-	Env     []string          `json:"env,omitempty"` // Array of "KEY=VALUE" strings, NOT a map
-	Type    string            `json:"type,omitempty"` // "stdio" or "sse"
-	URL     string            `json:"url,omitempty"`  // Required for sse type
-	Headers map[string]string `json:"headers,omitempty"`
-}
+// OpenCodeMCPServerDef is DEPRECATED - use OpenCodeMCPServerDefNew instead
+// Kept for backward compatibility with tests
+type OpenCodeMCPServerDef = OpenCodeMCPServerDefNew
 
 // OpenCodeTUIDef represents TUI configuration
 type OpenCodeTUIDef struct {
@@ -1344,96 +1377,64 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 	var jsonData []byte
 	var err error
 
-	if useOldFormat {
-		// Build OLD format config for opencode.json (strict validator compatible)
-		config := OpenCodeConfigOld{
-			Schema: "https://opencode.ai/config.json",
-			Provider: map[string]OpenCodeProviderDefOld{
-				"helixagent": {
-					Options: &OpenCodeProviderOptionsOld{
-						BaseURL:      baseURL + "/v1",
-						APIKeyEnvVar: "HELIXAGENT_API_KEY",
-						Models: []OpenCodeModelDefOld{
-							{
-								ID:        "helixagent-debate",
-								Name:      "HelixAgent AI Debate Ensemble",
-								MaxTokens: 128000,
-								Capabilities: &OpenCodeModelCapabilitiesOld{
-									Vision:        true,
-									ImageInput:    true,
-									ImageOutput:   true,
-									OCR:           true,
-									PDF:           true,
-									Streaming:     true,
-									FunctionCalls: true,
-									ToolUse:       true,
-									Embeddings:    true,
-									FileUpload:    true,
-									NoFileLimit:   true,
-									MCP:           true,
-									ACP:           true,
-									LSP:           true,
-								},
-							},
+	// Build CORRECT OpenCode configuration based on official documentation
+	// https://opencode.ai/docs/config/ and https://opencode.ai/docs/providers/
+	// Both formats use the same correct schema now
+	config := OpenCodeConfig{
+		Schema: "https://opencode.ai/config.json",
+		Provider: map[string]OpenCodeProviderDefNew{
+			// HelixAgent as OpenAI-compatible provider
+			"helixagent": {
+				NPM:  "@ai-sdk/openai-compatible",
+				Name: "HelixAgent",
+				Options: &OpenCodeProviderOptionsNew{
+					BaseURL: baseURL + "/v1",
+					APIKey:  "{env:HELIXAGENT_API_KEY}", // Use environment variable syntax
+				},
+				Models: map[string]OpenCodeModelDefNew{
+					"helixagent-debate": {
+						Name: "HelixAgent AI Debate Ensemble",
+						Limit: &OpenCodeModelLimit{
+							Context: 128000,
+							Output:  8192,
 						},
 					},
 				},
 			},
-			MCP: buildOpenCodeMCPServersOld(baseURL),
-			Agent: map[string]OpenCodeAgentDefOld{
-				"default": {
-					Model:  "helixagent-debate",
-					Prompt: "You are a helpful AI coding assistant powered by HelixAgent AI Debate Ensemble.",
-				},
-				"code-reviewer": {
-					Model:  "helixagent-debate",
-					Prompt: "You are an expert code reviewer. Analyze code for bugs, security issues, and improvements.",
-				},
-				"vision": {
-					Model:  "helixagent-debate",
-					Prompt: "Analyze images and visual content with detailed descriptions.",
-				},
-				"embeddings": {
-					Model:  "helixagent-debate",
-					Prompt: "Generate embeddings for semantic search and similarity matching.",
-				},
+		},
+		// Default model in format: provider-id/model-id
+		Model:      "helixagent/helixagent-debate",
+		SmallModel: "helixagent/helixagent-debate",
+		// Agent configuration - uses provider-id/model-id format
+		Agent: map[string]OpenCodeAgentDefNew{
+			"coder": {
+				Model:     "helixagent/helixagent-debate",
+				MaxTokens: 8192,
 			},
-			// Note: tools and permission fields removed - not valid in OpenCode strict validator
-		}
-		jsonData, err = json.MarshalIndent(config, "", "  ")
+			"task": {
+				Model:     "helixagent/helixagent-debate",
+				MaxTokens: 4096,
+			},
+			"title": {
+				Model:     "helixagent/helixagent-debate",
+				MaxTokens: 80,
+			},
+			"summarizer": {
+				Model:     "helixagent/helixagent-debate",
+				MaxTokens: 4096,
+			},
+		},
+		MCP:          buildOpenCodeMCPServersNew(baseURL),
+		Instructions: []string{"CLAUDE.md", "opencode.md"},
+		TUI:          &OpenCodeTUIDef{Theme: "opencode"},
+	}
+	jsonData, err = json.MarshalIndent(config, "", "  ")
+
+	// Log which format we're generating (for debugging)
+	if useOldFormat {
+		logger.Info("Generated OpenCode config (opencode.json)")
 	} else {
-		// Build NEW v1.1.30+ format config for .opencode.json
-		// Uses "local" provider which reads LOCAL_ENDPOINT env var
-		// Model format is "local.{model-name}" where model-name comes from /v1/models endpoint
-		config := OpenCodeConfig{
-			Providers: map[string]OpenCodeProviderDef{
-				"local": {
-					APIKey: apiKey, // Can be any value for local provider
-				},
-			},
-			Agents: map[string]OpenCodeAgentDef{
-				"coder": {
-					Model:     "local.helixagent-debate",
-					MaxTokens: 8192,
-				},
-				"task": {
-					Model:     "local.helixagent-debate",
-					MaxTokens: 4096,
-				},
-				"title": {
-					Model:     "local.helixagent-debate",
-					MaxTokens: 80,
-				},
-				"summarizer": {
-					Model:     "local.helixagent-debate",
-					MaxTokens: 4096,
-				},
-			},
-			MCPServers:   buildOpenCodeMCPServers(baseURL),
-			ContextPaths: []string{"CLAUDE.md", "CLAUDE.local.md", "opencode.md", ".github/copilot-instructions.md"},
-			TUI:          &OpenCodeTUIDef{Theme: "opencode"},
-		}
-		jsonData, err = json.MarshalIndent(config, "", "  ")
+		logger.Info("Generated OpenCode config (.opencode.json)")
 	}
 
 	if err != nil {
@@ -1468,7 +1469,55 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 	return nil
 }
 
-// buildOpenCodeMCPServers creates the MCP server configurations for OpenCode v1.1.30+
+// buildOpenCodeMCPServersNew creates MCP server configurations using the correct OpenCode schema
+// Based on: https://opencode.ai/docs/config/
+func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefNew {
+	return map[string]OpenCodeMCPServerDefNew{
+		// Anthropic Official MCPs
+		"filesystem": {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-filesystem", "/home"}},
+		"fetch":      {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-fetch"}},
+		"memory":     {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-memory"}},
+		"time":       {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-time"}},
+		"git":        {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-git"}},
+		"sqlite":     {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"}},
+		"postgres":   {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/helixagent"}},
+		"puppeteer":  {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-puppeteer"}},
+		"brave-search": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-brave-search"},
+			Env:     map[string]string{"BRAVE_API_KEY": "{env:BRAVE_API_KEY}"},
+		},
+		"google-maps": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-google-maps"},
+			Env:     map[string]string{"GOOGLE_MAPS_API_KEY": "{env:GOOGLE_MAPS_API_KEY}"},
+		},
+		"slack": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-slack"},
+			Env:     map[string]string{"SLACK_BOT_TOKEN": "{env:SLACK_BOT_TOKEN}", "SLACK_TEAM_ID": "{env:SLACK_TEAM_ID}"},
+		},
+		"github": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-github"},
+			Env:     map[string]string{"GITHUB_TOKEN": "{env:GITHUB_TOKEN}"},
+		},
+		"gitlab": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-gitlab"},
+			Env:     map[string]string{"GITLAB_TOKEN": "{env:GITLAB_TOKEN}"},
+		},
+		"sequential-thinking": {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-sequential-thinking"}},
+		// HelixAgent SSE MCPs
+		"helixagent":        {Type: "sse", URL: baseURL + "/v1/mcp/sse"},
+		"helixagent-debate": {Type: "sse", URL: baseURL + "/v1/mcp/debate/sse"},
+		"helixagent-rag":    {Type: "sse", URL: baseURL + "/v1/mcp/rag/sse"},
+		"helixagent-memory": {Type: "sse", URL: baseURL + "/v1/mcp/memory/sse"},
+		// Community/Infrastructure MCPs
+		"docker": {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-docker"}},
+	}
+}
+
 // buildOpenCodeMCPServersOld builds MCP servers in OLD format for opencode.json
 // OLD format uses "type": "local"/"remote" with "command" as array
 func buildOpenCodeMCPServersOld(baseURL string) map[string]OpenCodeMCPServerDefOld {
@@ -1531,63 +1580,63 @@ func buildOpenCodeMCPServers(baseURL string) map[string]OpenCodeMCPServerDef {
 		"brave-search": {
 			Command: "npx",
 			Args:    []string{"-y", "@modelcontextprotocol/server-brave-search"},
-			Env:     []string{"BRAVE_API_KEY=${BRAVE_API_KEY}"},
+			Env:     map[string]string{"BRAVE_API_KEY": "${BRAVE_API_KEY}"},
 		},
 		"google-maps": {
 			Command: "npx",
 			Args:    []string{"-y", "@modelcontextprotocol/server-google-maps"},
-			Env:     []string{"GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}"},
+			Env:     map[string]string{"GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}"},
 		},
 		"slack": {
 			Command: "npx",
 			Args:    []string{"-y", "@modelcontextprotocol/server-slack"},
-			Env:     []string{"SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}", "SLACK_TEAM_ID=${SLACK_TEAM_ID}"},
+			Env:     map[string]string{"SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}", "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"},
 		},
 		"github": {
 			Command: "npx",
 			Args:    []string{"-y", "@modelcontextprotocol/server-github"},
-			Env:     []string{"GITHUB_TOKEN=${GITHUB_TOKEN}"},
+			Env:     map[string]string{"GITHUB_TOKEN": "${GITHUB_TOKEN}"},
 		},
 		"gitlab": {
 			Command: "npx",
 			Args:    []string{"-y", "@modelcontextprotocol/server-gitlab"},
-			Env:     []string{"GITLAB_TOKEN=${GITLAB_TOKEN}"},
+			Env:     map[string]string{"GITLAB_TOKEN": "${GITLAB_TOKEN}"},
 		},
 		"sequential-thinking": {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-sequential-thinking"}},
 		"everart": {
 			Command: "npx",
 			Args:    []string{"-y", "@modelcontextprotocol/server-everart"},
-			Env:     []string{"EVERART_API_KEY=${EVERART_API_KEY}"},
+			Env:     map[string]string{"EVERART_API_KEY": "${EVERART_API_KEY}"},
 		},
 		"exa": {
 			Command: "npx",
 			Args:    []string{"-y", "exa-mcp-server"},
-			Env:     []string{"EXA_API_KEY=${EXA_API_KEY}"},
+			Env:     map[string]string{"EXA_API_KEY": "${EXA_API_KEY}"},
 		},
 		"linear": {
 			Command: "npx",
 			Args:    []string{"-y", "@modelcontextprotocol/server-linear"},
-			Env:     []string{"LINEAR_API_KEY=${LINEAR_API_KEY}"},
+			Env:     map[string]string{"LINEAR_API_KEY": "${LINEAR_API_KEY}"},
 		},
 		"sentry": {
 			Command: "npx",
 			Args:    []string{"-y", "@modelcontextprotocol/server-sentry"},
-			Env:     []string{"SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}", "SENTRY_ORG=${SENTRY_ORG}"},
+			Env:     map[string]string{"SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}", "SENTRY_ORG": "${SENTRY_ORG}"},
 		},
 		"notion": {
 			Command: "npx",
 			Args:    []string{"-y", "@notionhq/notion-mcp-server"},
-			Env:     []string{"OPENAI_API_KEY=${OPENAI_API_KEY}"},
+			Env:     map[string]string{"OPENAI_API_KEY": "${OPENAI_API_KEY}"},
 		},
 		"figma": {
 			Command: "npx",
 			Args:    []string{"-y", "figma-developer-mcp"},
-			Env:     []string{"FIGMA_API_KEY=${FIGMA_API_KEY}"},
+			Env:     map[string]string{"FIGMA_API_KEY": "${FIGMA_API_KEY}"},
 		},
 		"aws-kb-retrieval": {
 			Command: "npx",
 			Args:    []string{"-y", "@modelcontextprotocol/server-aws-kb-retrieval"},
-			Env:     []string{"AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}"},
+			Env:     map[string]string{"AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}"},
 		},
 		// HelixAgent SSE MCPs
 		"helixagent":        {Type: "sse", URL: baseURL + "/v1/mcp/sse"},
@@ -1596,33 +1645,33 @@ func buildOpenCodeMCPServers(baseURL string) map[string]OpenCodeMCPServerDef {
 		"helixagent-memory": {Type: "sse", URL: baseURL + "/v1/mcp/memory/sse"},
 		// Community/Infrastructure MCPs
 		"docker":     {Command: "npx", Args: []string{"-y", "@modelcontextprotocol/server-docker"}},
-		"kubernetes": {Command: "npx", Args: []string{"-y", "mcp-server-kubernetes"}, Env: []string{"KUBECONFIG=${KUBECONFIG}"}},
-		"redis":      {Command: "npx", Args: []string{"-y", "mcp-server-redis"}, Env: []string{"REDIS_URL=redis://localhost:6379"}},
-		"mongodb":    {Command: "npx", Args: []string{"-y", "mcp-server-mongodb"}, Env: []string{"MONGODB_URI=mongodb://localhost:27017"}},
+		"kubernetes": {Command: "npx", Args: []string{"-y", "mcp-server-kubernetes"}, Env: map[string]string{"KUBECONFIG": "${KUBECONFIG}"}},
+		"redis":      {Command: "npx", Args: []string{"-y", "mcp-server-redis"}, Env: map[string]string{"REDIS_URL": "redis://localhost:6379"}},
+		"mongodb":    {Command: "npx", Args: []string{"-y", "mcp-server-mongodb"}, Env: map[string]string{"MONGODB_URI": "mongodb://localhost:27017"}},
 		"elasticsearch": {
 			Command: "npx",
 			Args:    []string{"-y", "mcp-server-elasticsearch"},
-			Env:     []string{"ELASTICSEARCH_URL=http://localhost:9200"},
+			Env:     map[string]string{"ELASTICSEARCH_URL": "http://localhost:9200"},
 		},
-		"qdrant": {Command: "npx", Args: []string{"-y", "mcp-server-qdrant"}, Env: []string{"QDRANT_URL=http://localhost:6333"}},
-		"chroma": {Command: "npx", Args: []string{"-y", "mcp-server-chroma"}, Env: []string{"CHROMA_URL=http://localhost:8001"}},
+		"qdrant": {Command: "npx", Args: []string{"-y", "mcp-server-qdrant"}, Env: map[string]string{"QDRANT_URL": "http://localhost:6333"}},
+		"chroma": {Command: "npx", Args: []string{"-y", "mcp-server-chroma"}, Env: map[string]string{"CHROMA_URL": "http://localhost:8001"}},
 		// Productivity MCPs
 		"jira": {
 			Command: "npx",
 			Args:    []string{"-y", "mcp-server-atlassian"},
-			Env:     []string{"JIRA_URL=${JIRA_URL}", "JIRA_EMAIL=${JIRA_EMAIL}", "JIRA_API_TOKEN=${JIRA_API_TOKEN}"},
+			Env:     map[string]string{"JIRA_URL": "${JIRA_URL}", "JIRA_EMAIL": "${JIRA_EMAIL}", "JIRA_API_TOKEN": "${JIRA_API_TOKEN}"},
 		},
-		"asana":        {Command: "npx", Args: []string{"-y", "mcp-server-asana"}, Env: []string{"ASANA_ACCESS_TOKEN=${ASANA_ACCESS_TOKEN}"}},
-		"google-drive": {Command: "npx", Args: []string{"-y", "@anthropic/mcp-server-gdrive"}, Env: []string{"GOOGLE_CREDENTIALS_PATH=${GOOGLE_CREDENTIALS_PATH}"}},
+		"asana":        {Command: "npx", Args: []string{"-y", "mcp-server-asana"}, Env: map[string]string{"ASANA_ACCESS_TOKEN": "${ASANA_ACCESS_TOKEN}"}},
+		"google-drive": {Command: "npx", Args: []string{"-y", "@anthropic/mcp-server-gdrive"}, Env: map[string]string{"GOOGLE_CREDENTIALS_PATH": "${GOOGLE_CREDENTIALS_PATH}"}},
 		"aws-s3": {
 			Command: "npx",
 			Args:    []string{"-y", "mcp-server-s3"},
-			Env:     []string{"AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}"},
+			Env:     map[string]string{"AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}"},
 		},
 		"datadog": {
 			Command: "npx",
 			Args:    []string{"-y", "mcp-server-datadog"},
-			Env:     []string{"DD_API_KEY=${DD_API_KEY}", "DD_APP_KEY=${DD_APP_KEY}"},
+			Env:     map[string]string{"DD_API_KEY": "${DD_API_KEY}", "DD_APP_KEY": "${DD_APP_KEY}"},
 		},
 	}
 }
