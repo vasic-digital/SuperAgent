@@ -29,58 +29,51 @@ type AgentConfig struct {
 	AgentType AgentType         `json:"agent_type"`
 }
 
-// OpenCodeConfig represents configuration for OpenCode
-// Schema: https://opencode.ai/config.json
+// OpenCodeConfig represents configuration for OpenCode (v1.1.30+)
+// Based on actual OpenCode source: internal/config/config.go
+// Key differences from old schema:
+// - "providers" (not "provider") - map of provider configs
+// - "agents" (not "agent") - map with keys: coder, task, title, summarizer
+// - "mcpServers" (not "mcp") - map of MCP server configs
+// - Config file must be named .opencode.json (with leading dot)
+// - Uses LOCAL_ENDPOINT env var for local provider base URL
 type OpenCodeConfig struct {
-	Schema   string                      `json:"$schema,omitempty"`
-	Provider map[string]OpenCodeProvider `json:"provider"`
-	Agent    map[string]OpenCodeAgent    `json:"agent,omitempty"`
-	MCP      map[string]OpenCodeMCP      `json:"mcp,omitempty"`
+	Providers    map[string]OpenCodeProvider   `json:"providers,omitempty"`
+	Agents       map[string]OpenCodeAgent      `json:"agents,omitempty"`
+	MCPServers   map[string]OpenCodeMCPServer  `json:"mcpServers,omitempty"`
+	ContextPaths []string                      `json:"contextPaths,omitempty"`
+	TUI          *OpenCodeTUI                  `json:"tui,omitempty"`
 }
 
 // OpenCodeProvider represents a provider configuration in OpenCode
+// Supported providers: local, anthropic, openai, gemini, groq, openrouter, xai, bedrock, azure, vertexai, copilot
 type OpenCodeProvider struct {
-	NPM     string                   `json:"npm,omitempty"`
-	Name    string                   `json:"name,omitempty"`
-	Options OpenCodeProviderOptions  `json:"options"`
-	Models  map[string]OpenCodeModel `json:"models,omitempty"`
-}
-
-// OpenCodeProviderOptions represents provider options in OpenCode
-type OpenCodeProviderOptions struct {
-	BaseURL string `json:"baseURL"`
-	APIKey  string `json:"apiKey,omitempty"`
-	Timeout int    `json:"timeout,omitempty"` // in milliseconds
-}
-
-// OpenCodeModel represents a model configuration in OpenCode provider
-type OpenCodeModel struct {
-	Name       string         `json:"name,omitempty"`
-	Attachment bool           `json:"attachment,omitempty"`
-	Reasoning  bool           `json:"reasoning,omitempty"`
-	ToolCall   bool           `json:"tool_call,omitempty"`
-	Limit      *OpenCodeLimit `json:"limit,omitempty"`
-}
-
-// OpenCodeLimit represents token limits for a model
-type OpenCodeLimit struct {
-	Context int `json:"context"`
-	Output  int `json:"output"`
+	APIKey   string `json:"apiKey,omitempty"`
+	Disabled bool   `json:"disabled,omitempty"`
 }
 
 // OpenCodeAgent represents an agent configuration in OpenCode
-// Note: Agent section requires named sub-objects (e.g., "default"), NOT direct model property
+// Valid agent names: coder, task, title, summarizer
 type OpenCodeAgent struct {
-	Model string `json:"model"`
+	Model           string `json:"model"`                     // Format: provider.model-name (e.g., local.helixagent-debate)
+	MaxTokens       int64  `json:"maxTokens,omitempty"`       // Maximum output tokens
+	ReasoningEffort string `json:"reasoningEffort,omitempty"` // low, medium, high (for models that support reasoning)
 }
 
-// OpenCodeMCP represents MCP server configuration in OpenCode
-type OpenCodeMCP struct {
-	Type    string            `json:"type"` // local or remote
-	Command string            `json:"command,omitempty"`
+// OpenCodeMCPServer represents MCP server configuration in OpenCode
+// Type can be "stdio" (default) or "sse"
+type OpenCodeMCPServer struct {
+	Command string            `json:"command,omitempty"` // Required for stdio type
 	Args    []string          `json:"args,omitempty"`
-	URL     string            `json:"url,omitempty"`
+	Env     []string          `json:"env,omitempty"` // Array of "KEY=VALUE" strings, NOT a map
+	Type    string            `json:"type,omitempty"` // "stdio" or "sse"
+	URL     string            `json:"url,omitempty"`  // Required for sse type
 	Headers map[string]string `json:"headers,omitempty"`
+}
+
+// OpenCodeTUI represents TUI configuration
+type OpenCodeTUI struct {
+	Theme string `json:"theme,omitempty"` // opencode, catppuccin, dracula, etc.
 }
 
 // CrushConfig represents configuration for Crush
@@ -176,46 +169,243 @@ func (g *ConfigGenerator) SetMaxTokens(tokens int) *ConfigGenerator {
 	return g
 }
 
-// GenerateOpenCodeConfig generates OpenCode configuration
+// GenerateOpenCodeConfig generates OpenCode configuration (v1.1.30+ schema)
+// IMPORTANT: OpenCode uses LOCAL_ENDPOINT env var for the "local" provider
+// User must set: LOCAL_ENDPOINT=http://localhost:7061 (or their HelixAgent URL)
+// Config file must be named .opencode.json (with leading dot)
 func (g *ConfigGenerator) GenerateOpenCodeConfig() (*OpenCodeConfig, error) {
 	if err := g.validate(); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
+	// Use "local" provider which reads LOCAL_ENDPOINT env var
+	// Model format is "local.{model-name}" where model-name comes from /v1/models
+	modelID := fmt.Sprintf("local.%s", g.model)
+
 	config := &OpenCodeConfig{
-		Schema: "https://opencode.ai/config.json",
-		Provider: map[string]OpenCodeProvider{
-			"helixagent": {
-				NPM:  "@ai-sdk/openai-compatible",
-				Name: "HelixAgent AI Debate Ensemble",
-				Options: OpenCodeProviderOptions{
-					BaseURL: g.baseURL,
-					APIKey:  g.apiKey,
-					Timeout: g.timeout * 1000, // Convert to milliseconds
-				},
-				Models: map[string]OpenCodeModel{
-					g.model: {
-						Name:       "HelixAgent Debate Ensemble",
-						Attachment: true,
-						Reasoning:  true,
-						ToolCall:   true,
-						Limit: &OpenCodeLimit{
-							Context: 128000,
-							Output:  g.maxTokens,
-						},
-					},
-				},
+		Providers: map[string]OpenCodeProvider{
+			"local": {
+				APIKey: g.apiKey, // Can be any value for local provider
 			},
 		},
-		// Agent section requires named sub-objects like "default", NOT direct model property
-		Agent: map[string]OpenCodeAgent{
-			"default": {
-				Model: fmt.Sprintf("helixagent/%s", g.model),
+		Agents: map[string]OpenCodeAgent{
+			"coder": {
+				Model:     modelID,
+				MaxTokens: int64(g.maxTokens),
 			},
+			"task": {
+				Model:     modelID,
+				MaxTokens: int64(g.maxTokens / 2),
+			},
+			"title": {
+				Model:     modelID,
+				MaxTokens: 80,
+			},
+			"summarizer": {
+				Model:     modelID,
+				MaxTokens: int64(g.maxTokens / 2),
+			},
+		},
+		MCPServers: g.generateMCPServers(),
+		ContextPaths: []string{
+			"CLAUDE.md",
+			"CLAUDE.local.md",
+			"opencode.md",
+			".github/copilot-instructions.md",
+		},
+		TUI: &OpenCodeTUI{
+			Theme: "opencode",
 		},
 	}
 
 	return config, nil
+}
+
+// generateMCPServers creates the MCP server configurations for OpenCode
+func (g *ConfigGenerator) generateMCPServers() map[string]OpenCodeMCPServer {
+	// Parse base URL to get host for SSE MCPs
+	baseURL := g.baseURL
+	if baseURL == "" {
+		baseURL = "http://localhost:7061"
+	}
+
+	return map[string]OpenCodeMCPServer{
+		// Anthropic Official MCPs
+		"filesystem": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-filesystem", "/home"},
+		},
+		"fetch": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-fetch"},
+		},
+		"memory": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-memory"},
+		},
+		"time": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-time"},
+		},
+		"git": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-git"},
+		},
+		"sqlite": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"},
+		},
+		"postgres": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/helixagent"},
+		},
+		"puppeteer": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-puppeteer"},
+		},
+		"brave-search": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-brave-search"},
+			Env:     []string{"BRAVE_API_KEY=${BRAVE_API_KEY}"},
+		},
+		"google-maps": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-google-maps"},
+			Env:     []string{"GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}"},
+		},
+		"slack": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-slack"},
+			Env:     []string{"SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}", "SLACK_TEAM_ID=${SLACK_TEAM_ID}"},
+		},
+		"github": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-github"},
+			Env:     []string{"GITHUB_TOKEN=${GITHUB_TOKEN}"},
+		},
+		"gitlab": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-gitlab"},
+			Env:     []string{"GITLAB_TOKEN=${GITLAB_TOKEN}"},
+		},
+		"sequential-thinking": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-sequential-thinking"},
+		},
+		"everart": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-everart"},
+			Env:     []string{"EVERART_API_KEY=${EVERART_API_KEY}"},
+		},
+		"exa": {
+			Command: "npx",
+			Args:    []string{"-y", "exa-mcp-server"},
+			Env:     []string{"EXA_API_KEY=${EXA_API_KEY}"},
+		},
+		"linear": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-linear"},
+			Env:     []string{"LINEAR_API_KEY=${LINEAR_API_KEY}"},
+		},
+		"sentry": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-sentry"},
+			Env:     []string{"SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}", "SENTRY_ORG=${SENTRY_ORG}"},
+		},
+		"notion": {
+			Command: "npx",
+			Args:    []string{"-y", "@notionhq/notion-mcp-server"},
+			Env:     []string{"OPENAI_API_KEY=${OPENAI_API_KEY}"},
+		},
+		"figma": {
+			Command: "npx",
+			Args:    []string{"-y", "figma-developer-mcp"},
+			Env:     []string{"FIGMA_API_KEY=${FIGMA_API_KEY}"},
+		},
+		"aws-kb-retrieval": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-aws-kb-retrieval"},
+			Env:     []string{"AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}"},
+		},
+		// HelixAgent SSE MCPs
+		"helixagent": {
+			Type: "sse",
+			URL:  baseURL + "/v1/mcp/sse",
+		},
+		"helixagent-debate": {
+			Type: "sse",
+			URL:  baseURL + "/v1/mcp/debate/sse",
+		},
+		"helixagent-rag": {
+			Type: "sse",
+			URL:  baseURL + "/v1/mcp/rag/sse",
+		},
+		"helixagent-memory": {
+			Type: "sse",
+			URL:  baseURL + "/v1/mcp/memory/sse",
+		},
+		// Community/Infrastructure MCPs
+		"docker": {
+			Command: "npx",
+			Args:    []string{"-y", "@modelcontextprotocol/server-docker"},
+		},
+		"kubernetes": {
+			Command: "npx",
+			Args:    []string{"-y", "mcp-server-kubernetes"},
+			Env:     []string{"KUBECONFIG=${KUBECONFIG}"},
+		},
+		"redis": {
+			Command: "npx",
+			Args:    []string{"-y", "mcp-server-redis"},
+			Env:     []string{"REDIS_URL=redis://localhost:6379"},
+		},
+		"mongodb": {
+			Command: "npx",
+			Args:    []string{"-y", "mcp-server-mongodb"},
+			Env:     []string{"MONGODB_URI=mongodb://localhost:27017"},
+		},
+		"elasticsearch": {
+			Command: "npx",
+			Args:    []string{"-y", "mcp-server-elasticsearch"},
+			Env:     []string{"ELASTICSEARCH_URL=http://localhost:9200"},
+		},
+		"qdrant": {
+			Command: "npx",
+			Args:    []string{"-y", "mcp-server-qdrant"},
+			Env:     []string{"QDRANT_URL=http://localhost:6333"},
+		},
+		"chroma": {
+			Command: "npx",
+			Args:    []string{"-y", "mcp-server-chroma"},
+			Env:     []string{"CHROMA_URL=http://localhost:8001"},
+		},
+		// Productivity MCPs
+		"jira": {
+			Command: "npx",
+			Args:    []string{"-y", "mcp-server-atlassian"},
+			Env:     []string{"JIRA_URL=${JIRA_URL}", "JIRA_EMAIL=${JIRA_EMAIL}", "JIRA_API_TOKEN=${JIRA_API_TOKEN}"},
+		},
+		"asana": {
+			Command: "npx",
+			Args:    []string{"-y", "mcp-server-asana"},
+			Env:     []string{"ASANA_ACCESS_TOKEN=${ASANA_ACCESS_TOKEN}"},
+		},
+		"google-drive": {
+			Command: "npx",
+			Args:    []string{"-y", "@anthropic/mcp-server-gdrive"},
+			Env:     []string{"GOOGLE_CREDENTIALS_PATH=${GOOGLE_CREDENTIALS_PATH}"},
+		},
+		"aws-s3": {
+			Command: "npx",
+			Args:    []string{"-y", "mcp-server-s3"},
+			Env:     []string{"AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}"},
+		},
+		"datadog": {
+			Command: "npx",
+			Args:    []string{"-y", "mcp-server-datadog"},
+			Env:     []string{"DD_API_KEY=${DD_API_KEY}", "DD_APP_KEY=${DD_APP_KEY}"},
+		},
+	}
 }
 
 // GenerateCrushConfig generates Crush configuration
@@ -330,67 +520,70 @@ type ValidationResult struct {
 	Warnings []string `json:"warnings,omitempty"`
 }
 
-// ValidateOpenCodeConfig validates OpenCode configuration
+// ValidateOpenCodeConfig validates OpenCode configuration (v1.1.30+ schema)
 func (v *ConfigValidator) ValidateOpenCodeConfig(config *OpenCodeConfig) *ValidationResult {
 	result := &ValidationResult{Valid: true}
 
-	// Check required fields
-	if len(config.Provider) == 0 {
-		result.addError("provider section is required")
+	// Check providers section
+	if len(config.Providers) == 0 {
+		result.addError("providers section is required")
 	}
 
-	for name, provider := range config.Provider {
-		if provider.Options.BaseURL == "" {
-			result.addError(fmt.Sprintf("provider '%s': baseURL is required", name))
-		} else {
-			// Validate URL
-			if _, err := url.Parse(provider.Options.BaseURL); err != nil {
-				result.addError(fmt.Sprintf("provider '%s': invalid baseURL: %v", name, err))
-			}
-		}
-
-		// Check for recommended fields
-		if provider.Options.Timeout == 0 {
-			result.addWarning(fmt.Sprintf("provider '%s': timeout not set, using default", name))
-		}
-
-		// Validate models if present
-		for modelName, model := range provider.Models {
-			if model.Limit != nil {
-				if model.Limit.Context <= 0 {
-					result.addWarning(fmt.Sprintf("provider '%s' model '%s': context limit should be positive", name, modelName))
-				}
-				if model.Limit.Output <= 0 {
-					result.addWarning(fmt.Sprintf("provider '%s' model '%s': output limit should be positive", name, modelName))
-				}
-			}
+	// Validate providers - note: for "local" provider, API key can be any value
+	// and baseURL comes from LOCAL_ENDPOINT env var
+	validProviders := map[string]bool{
+		"local": true, "anthropic": true, "openai": true, "gemini": true,
+		"groq": true, "openrouter": true, "xai": true, "bedrock": true,
+		"azure": true, "vertexai": true, "copilot": true,
+	}
+	for name := range config.Providers {
+		if !validProviders[name] {
+			result.addWarning(fmt.Sprintf("provider '%s': unknown provider type", name))
 		}
 	}
 
-	// Validate Agent section - must use named sub-objects like "default"
-	for agentName, agent := range config.Agent {
+	// Validate agents section
+	validAgentNames := map[string]bool{"coder": true, "task": true, "title": true, "summarizer": true}
+	for agentName, agent := range config.Agents {
+		if !validAgentNames[agentName] {
+			result.addWarning(fmt.Sprintf("agent '%s': unknown agent name (valid: coder, task, title, summarizer)", agentName))
+		}
 		if agent.Model == "" {
 			result.addError(fmt.Sprintf("agent '%s': model is required", agentName))
 		} else {
-			// Validate model format (should be provider/model)
-			if !strings.Contains(agent.Model, "/") {
-				result.addWarning(fmt.Sprintf("agent '%s': model should be in format 'provider/model'", agentName))
+			// Validate model format (should be provider.model)
+			if !strings.Contains(agent.Model, ".") {
+				result.addWarning(fmt.Sprintf("agent '%s': model should be in format 'provider.model-name'", agentName))
 			}
+		}
+		if agent.MaxTokens <= 0 {
+			result.addWarning(fmt.Sprintf("agent '%s': maxTokens should be positive", agentName))
 		}
 	}
 
 	// Validate MCP servers
-	for name, mcp := range config.MCP {
-		if mcp.Type != "local" && mcp.Type != "remote" {
-			result.addError(fmt.Sprintf("mcp '%s': type must be 'local' or 'remote'", name))
+	for name, mcp := range config.MCPServers {
+		mcpType := mcp.Type
+		if mcpType == "" {
+			mcpType = "stdio" // Default type
 		}
 
-		if mcp.Type == "local" && mcp.Command == "" {
-			result.addError(fmt.Sprintf("mcp '%s': command is required for local type", name))
+		if mcpType != "stdio" && mcpType != "sse" {
+			result.addError(fmt.Sprintf("mcpServers '%s': type must be 'stdio' or 'sse'", name))
 		}
 
-		if mcp.Type == "remote" && mcp.URL == "" {
-			result.addError(fmt.Sprintf("mcp '%s': url is required for remote type", name))
+		if mcpType == "stdio" && mcp.Command == "" {
+			result.addError(fmt.Sprintf("mcpServers '%s': command is required for stdio type", name))
+		}
+
+		if mcpType == "sse" && mcp.URL == "" {
+			result.addError(fmt.Sprintf("mcpServers '%s': url is required for sse type", name))
+		}
+
+		if mcpType == "sse" && mcp.URL != "" {
+			if _, err := url.Parse(mcp.URL); err != nil {
+				result.addError(fmt.Sprintf("mcpServers '%s': invalid url: %v", name, err))
+			}
 		}
 	}
 

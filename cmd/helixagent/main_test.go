@@ -1850,25 +1850,31 @@ func TestFullWorkflow_PartialFailure(t *testing.T) {
 
 // TestValidOpenCodeTopLevelKeys verifies all expected keys are present
 func TestValidOpenCodeTopLevelKeys(t *testing.T) {
-	expectedKeys := []string{
+	// v1.0.x schema keys
+	v1Keys := []string{
 		"$schema", "plugin", "enterprise", "instructions", "provider",
 		"mcp", "tools", "agent", "command", "keybinds", "username",
 		"share", "permission", "compaction", "sse", "mode", "autoshare",
 	}
+	// v1.1.30+ schema keys (Viper-based)
+	v1130Keys := []string{
+		"providers", "mcpServers", "agents", "contextPaths", "tui",
+	}
+	expectedKeys := append(v1Keys, v1130Keys...)
 
 	for _, key := range expectedKeys {
 		assert.True(t, ValidOpenCodeTopLevelKeys[key], "Expected key %q to be valid", key)
 	}
 
-	// Verify the total count
-	assert.Equal(t, len(expectedKeys), len(ValidOpenCodeTopLevelKeys))
+	// Verify the total count (17 v1.0.x keys + 5 v1.1.30+ keys = 22)
+	assert.Equal(t, 22, len(ValidOpenCodeTopLevelKeys))
 }
 
 // TestValidOpenCodeTopLevelKeys_InvalidKeys verifies invalid keys are rejected
 func TestValidOpenCodeTopLevelKeys_InvalidKeys(t *testing.T) {
 	invalidKeys := []string{
 		"foo", "bar", "invalid", "config", "settings",
-		"providers", "agents", "mcps", "schemas",
+		"mcps", "schemas", "models", "endpoints",
 	}
 
 	for _, key := range invalidKeys {
@@ -2924,37 +2930,48 @@ KEY2=value2`
 // OpenCode Config Tests
 // =============================================================================
 
-func TestBuildMCPServerConfig(t *testing.T) {
-	t.Run("builds config with all remote servers", func(t *testing.T) {
-		config := buildMCPServerConfig("localhost", "7061", "sk-test", "/home/user")
+func TestBuildOpenCodeMCPServers(t *testing.T) {
+	t.Run("builds config with v1.1.30+ schema SSE servers", func(t *testing.T) {
+		config := buildOpenCodeMCPServers("http://localhost:7061")
 
 		assert.NotNil(t, config)
-		// Should have at least the 6 HelixAgent remote endpoints
-		assert.Contains(t, config, "helixagent-mcp")
-		assert.Contains(t, config, "helixagent-acp")
-		assert.Contains(t, config, "helixagent-lsp")
-		assert.Contains(t, config, "helixagent-embeddings")
-		assert.Contains(t, config, "helixagent-vision")
-		assert.Contains(t, config, "helixagent-cognee")
+		// Should have HelixAgent SSE endpoints
+		assert.Contains(t, config, "helixagent")
+		assert.Contains(t, config, "helixagent-debate")
+		assert.Contains(t, config, "helixagent-rag")
+		assert.Contains(t, config, "helixagent-memory")
 
-		// Check remote server properties
-		mcpServer := config["helixagent-mcp"]
-		assert.Equal(t, "remote", mcpServer.Type)
-		assert.Contains(t, mcpServer.URL, "localhost:7061")
-		assert.Equal(t, "Bearer sk-test", mcpServer.Headers["Authorization"])
+		// Check SSE server properties (v1.1.30+ format)
+		helixServer := config["helixagent"]
+		assert.Equal(t, "sse", helixServer.Type)
+		assert.Contains(t, helixServer.URL, "localhost:7061")
 	})
 
-	t.Run("builds config with different host and port", func(t *testing.T) {
-		config := buildMCPServerConfig("example.com", "8080", "sk-custom", "/home/test")
+	t.Run("builds config with different base URL", func(t *testing.T) {
+		config := buildOpenCodeMCPServers("http://example.com:8080")
 
-		mcpServer := config["helixagent-mcp"]
-		assert.Contains(t, mcpServer.URL, "example.com:8080")
-		assert.Equal(t, "Bearer sk-custom", mcpServer.Headers["Authorization"])
+		helixServer := config["helixagent"]
+		assert.Contains(t, helixServer.URL, "example.com:8080")
+	})
+
+	t.Run("includes standard MCP servers", func(t *testing.T) {
+		config := buildOpenCodeMCPServers("http://localhost:7061")
+
+		// Check standard MCP servers
+		assert.Contains(t, config, "filesystem")
+		assert.Contains(t, config, "fetch")
+		assert.Contains(t, config, "github")
+		assert.Contains(t, config, "memory")
+
+		// Check stdio server format
+		fsServer := config["filesystem"]
+		assert.Equal(t, "npx", fsServer.Command)
+		assert.Contains(t, fsServer.Args, "@modelcontextprotocol/server-filesystem")
 	})
 }
 
 func TestHandleGenerateOpenCode(t *testing.T) {
-	t.Run("generates OpenCode config to stdout", func(t *testing.T) {
+	t.Run("generates OpenCode v1.1.30+ config to stdout", func(t *testing.T) {
 		// Capture stdout
 		old := os.Stdout
 		r, w, _ := os.Pipe()
@@ -2975,8 +2992,11 @@ func TestHandleGenerateOpenCode(t *testing.T) {
 		output := buf.String()
 
 		require.NoError(t, err)
-		assert.Contains(t, output, "$schema")
-		assert.Contains(t, output, "provider")
+		// v1.1.30+ schema uses plural keys
+		assert.Contains(t, output, "providers")
+		assert.Contains(t, output, "agents")
+		assert.Contains(t, output, "mcpServers")
+		assert.Contains(t, output, "local.helixagent-debate")
 		assert.Contains(t, output, "helixagent")
 	})
 
@@ -3002,10 +3022,11 @@ func TestHandleGenerateOpenCode(t *testing.T) {
 
 		require.NoError(t, err)
 
-		// Verify file was written
+		// Verify file was written with v1.1.30+ schema
 		content, err := os.ReadFile(configFile)
 		require.NoError(t, err)
-		assert.Contains(t, string(content), "$schema")
+		assert.Contains(t, string(content), "providers")
+		assert.Contains(t, string(content), "agents")
 	})
 
 	t.Run("uses existing API key from env", func(t *testing.T) {
