@@ -94,7 +94,7 @@ make install-deps     # Install dev dependencies
 - `models/` - Data models, enums, protocol types
 - `plugins/` - Hot-reloadable plugin system
 - `tools/` - Tool schema registry (21 tools)
-- `agents/` - CLI agent registry (18 agents)
+- `agents/` - CLI agent registry (48 agents)
 - `optimization/` - LLM optimization (gptcache, outlines, streaming, sglang, llamaindex, langchain, guidance, lmql)
 - `observability/` - OpenTelemetry tracing, metrics, and exporters (Jaeger, Zipkin, Langfuse)
 - `rag/` - Hybrid retrieval (dense + sparse), reranking, Qdrant integration
@@ -392,9 +392,32 @@ Required fields per tool:
 - WebSearch: `query`
 - Git: `operation`, `description`
 
-## CLI Agent Registry (18 Agents)
+## CLI Agent Registry (48 Agents)
 
-Registry in `internal/agents/registry.go` supports: OpenCode, Crush, HelixCode, Kiro, Aider, ClaudeCode, Cline, CodenameGoose, DeepSeekCLI, Forge, GeminiCLI, GPTEngineer, KiloCode, MistralCode, OllamaCode, Plandex, QwenCode, AmazonQ.
+Registry in `internal/agents/registry.go` supports 48 CLI agents:
+
+**Original (18)**: OpenCode, Crush, HelixCode, Kiro, Aider, ClaudeCode, Cline, CodenameGoose, DeepSeekCLI, Forge, GeminiCLI, GPTEngineer, KiloCode, MistralCode, OllamaCode, Plandex, QwenCode, AmazonQ
+
+**Extended (30)**: AgentDeck, Bridle, CheshireCat, ClaudePlugins, ClaudeSquad, Codai, Codex, CodexSkills, Conduit, Emdash, FauxPilot, GetShitDone, GitHubCopilotCLI, GitHubSpecKit, GitMCP, GPTME, MobileAgent, MultiagentCoding, Nanocoder, Noi, Octogen, OpenHands, PostgresMCP, Shai, SnowCLI, TaskWeaver, UIUXProMax, VTCode, Warp, Continue
+
+### CLI Agent Configuration Commands
+
+```bash
+# List all 48 supported agents
+./bin/helixagent --list-agents
+
+# Generate config for a specific agent
+./bin/helixagent --generate-agent-config=codex
+./bin/helixagent --generate-agent-config=openhands --agent-config-output=~/openhands.toml
+
+# Validate an agent config file
+./bin/helixagent --validate-agent-config=codex:/path/to/codex.json
+
+# Generate configs for all 48 agents
+./bin/helixagent --generate-all-agents --all-agents-output-dir=~/agent-configs/
+```
+
+All configuration generation is powered by LLMsVerifier's unified generator (`pkg/cliagents/`).
 
 ## Challenges System
 
@@ -407,6 +430,7 @@ Registry in `internal/agents/registry.go` supports: OpenCode, Crush, HelixCode, 
 ./challenges/scripts/semantic_intent_challenge.sh                # 19 tests - intent detection (ZERO hardcoding)
 ./challenges/scripts/fallback_mechanism_challenge.sh             # 17 tests - fallback chain for empty responses
 ./challenges/scripts/integration_providers_challenge.sh          # 47 tests - embedding/vector/MCP integrations
+./challenges/scripts/all_agents_e2e_challenge.sh                 # 102 tests - all 48 CLI agents
 ```
 
 Key concepts:

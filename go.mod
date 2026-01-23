@@ -35,9 +35,11 @@ require (
 	go.opentelemetry.io/otel/trace v1.39.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.47.0
-	google.golang.org/grpc v1.77.0
+	golang.org/x/text v0.33.0
+	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v3 v3.0.1
+	llm-verifier v0.0.0-00010101000000-000000000000
 	modernc.org/sqlite v1.44.2
 )
 
@@ -83,7 +85,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
-	github.com/pashagolub/pgxmock/v4 v4.9.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
@@ -114,8 +115,6 @@ require (
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
-	golang.org/x/text v0.33.0 // indirect
-	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	modernc.org/libc v1.67.6 // indirect
