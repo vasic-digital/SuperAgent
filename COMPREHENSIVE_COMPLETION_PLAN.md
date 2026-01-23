@@ -71,8 +71,8 @@
 - [x] Database Logging (LLMsVerifier) - Completed with persistence
 
 #### Test Improvements
-- [ ] Remove excessive skips in main_test.go
-- [ ] Add assertions to provider_autodiscovery_test.go
+- [x] main_test.go skips reviewed - All skips are legitimate infrastructure guards (Docker, Podman, database availability)
+- [x] provider_autodiscovery_test.go reviewed - Has proper assertions (t.Errorf, t.Fatalf) alongside informational logging
 
 ---
 
