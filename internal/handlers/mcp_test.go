@@ -784,3 +784,465 @@ func TestMCPHandler_MCPToolsCall_MissingNameWithRegistry(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, response["error"], "Tool name is required")
 }
+
+// TestMCPHandler_MCPToolSearch_Disabled tests tool search when MCP is disabled
+func TestMCPHandler_MCPToolSearch_Disabled(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: false,
+	}
+
+	handler := &MCPHandler{
+		config: cfg,
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/tools/search?q=test", nil)
+
+	handler.MCPToolSearch(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "MCP is not enabled")
+}
+
+// TestMCPHandler_MCPToolSearch_GET tests tool search with GET request
+func TestMCPHandler_MCPToolSearch_GET(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/tools/search?q=read&include_params=true&fuzzy=true&max_results=5", nil)
+
+	handler.MCPToolSearch(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "read", response["query"])
+	assert.Contains(t, response, "count")
+	assert.Contains(t, response, "results")
+}
+
+// TestMCPHandler_MCPToolSearch_POST tests tool search with POST request
+func TestMCPHandler_MCPToolSearch_POST(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	requestBody := MCPToolSearchRequest{
+		Query:         "write",
+		Categories:    []string{"file_system"},
+		IncludeParams: true,
+		FuzzyMatch:    false,
+		MaxResults:    10,
+	}
+
+	reqBytes, _ := json.Marshal(requestBody)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/mcp/tools/search", bytes.NewBuffer(reqBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.MCPToolSearch(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "write", response["query"])
+}
+
+// TestMCPHandler_MCPToolSearch_MissingQuery tests tool search without query
+func TestMCPHandler_MCPToolSearch_MissingQuery(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/tools/search", nil)
+
+	handler.MCPToolSearch(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "Query parameter is required")
+}
+
+// TestMCPHandler_MCPToolSearch_InvalidJSON tests tool search with invalid JSON
+func TestMCPHandler_MCPToolSearch_InvalidJSON(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/mcp/tools/search", bytes.NewBuffer([]byte("invalid json")))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.MCPToolSearch(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "Invalid request")
+}
+
+// TestMCPHandler_MCPAdapterSearch_Disabled tests adapter search when MCP is disabled
+func TestMCPHandler_MCPAdapterSearch_Disabled(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: false,
+	}
+
+	handler := &MCPHandler{
+		config: cfg,
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/adapters/search?q=test", nil)
+
+	handler.MCPAdapterSearch(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "MCP is not enabled")
+}
+
+// TestMCPHandler_MCPAdapterSearch_GET tests adapter search with GET request
+func TestMCPHandler_MCPAdapterSearch_GET(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/adapters/search?q=slack&max_results=5", nil)
+
+	handler.MCPAdapterSearch(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "slack", response["query"])
+	assert.Contains(t, response, "count")
+	assert.Contains(t, response, "results")
+}
+
+// TestMCPHandler_MCPAdapterSearch_POST tests adapter search with POST request
+func TestMCPHandler_MCPAdapterSearch_POST(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	requestBody := MCPAdapterSearchRequest{
+		Query:      "github",
+		Categories: []string{"development"},
+		MaxResults: 10,
+	}
+
+	reqBytes, _ := json.Marshal(requestBody)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/mcp/adapters/search", bytes.NewBuffer(reqBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.MCPAdapterSearch(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "github", response["query"])
+}
+
+// TestMCPHandler_MCPAdapterSearch_EmptyQuery tests adapter search with empty query returns all adapters
+func TestMCPHandler_MCPAdapterSearch_EmptyQuery(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/adapters/search", nil)
+
+	handler.MCPAdapterSearch(c)
+
+	// Empty query returns all adapters
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "", response["query"])
+	// Should return all adapters
+	count := int(response["count"].(float64))
+	assert.Greater(t, count, 0)
+}
+
+// TestMCPHandler_MCPToolSuggestions_Disabled tests tool suggestions when MCP is disabled
+func TestMCPHandler_MCPToolSuggestions_Disabled(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: false,
+	}
+
+	handler := &MCPHandler{
+		config: cfg,
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/tools/suggest?prefix=re", nil)
+
+	handler.MCPToolSuggestions(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "MCP is not enabled")
+}
+
+// TestMCPHandler_MCPToolSuggestions tests tool suggestions endpoint
+func TestMCPHandler_MCPToolSuggestions(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/tools/suggest?prefix=re&limit=5", nil)
+
+	handler.MCPToolSuggestions(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "re", response["prefix"])
+	assert.Contains(t, response, "count")
+	assert.Contains(t, response, "suggestions")
+}
+
+// TestMCPHandler_MCPToolSuggestions_EmptyPrefix tests tool suggestions with empty prefix returns error
+func TestMCPHandler_MCPToolSuggestions_EmptyPrefix(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/tools/suggest", nil)
+
+	handler.MCPToolSuggestions(c)
+
+	// Empty prefix requires at least 1 character
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	body := w.Body.String()
+	assert.Contains(t, body, "Prefix parameter is required")
+}
+
+// TestMCPHandler_MCPCategories_Disabled tests categories when MCP is disabled
+func TestMCPHandler_MCPCategories_Disabled(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: false,
+	}
+
+	handler := &MCPHandler{
+		config: cfg,
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/categories", nil)
+
+	handler.MCPCategories(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "MCP is not enabled")
+}
+
+// TestMCPHandler_MCPCategories tests categories endpoint
+func TestMCPHandler_MCPCategories(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/categories", nil)
+
+	handler.MCPCategories(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Contains(t, response, "tool_categories")
+	assert.Contains(t, response, "adapter_categories")
+	assert.Contains(t, response, "auth_types")
+
+	// Verify tool categories
+	toolCategories := response["tool_categories"].([]interface{})
+	assert.GreaterOrEqual(t, len(toolCategories), 1)
+
+	// Verify adapter categories
+	adapterCategories := response["adapter_categories"].([]interface{})
+	assert.GreaterOrEqual(t, len(adapterCategories), 1)
+}
+
+// TestMCPHandler_MCPStats_Disabled tests stats when MCP is disabled
+func TestMCPHandler_MCPStats_Disabled(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: false,
+	}
+
+	handler := &MCPHandler{
+		config: cfg,
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/stats", nil)
+
+	handler.MCPStats(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "MCP is not enabled")
+}
+
+// TestMCPHandler_MCPStats tests stats endpoint
+func TestMCPHandler_MCPStats(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/stats", nil)
+
+	handler.MCPStats(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+
+	// Verify tools stats
+	tools := response["tools"].(map[string]interface{})
+	assert.Contains(t, tools, "total")
+	assert.Contains(t, tools, "by_category")
+
+	// Verify adapters stats
+	adaptersStats := response["adapters"].(map[string]interface{})
+	assert.Contains(t, adaptersStats, "total")
+	assert.Contains(t, adaptersStats, "by_category")
+	assert.Contains(t, adaptersStats, "official")
+	assert.Contains(t, adaptersStats, "supported")
+}
+
+// TestMCPHandler_MCPToolSearch_WithCategories tests tool search with category filter
+func TestMCPHandler_MCPToolSearch_WithCategories(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/tools/search?q=file&categories=file_system,core", nil)
+
+	handler.MCPToolSearch(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "file", response["query"])
+}
+
+// TestMCPHandler_MCPAdapterSearch_WithFilters tests adapter search with multiple filters
+func TestMCPHandler_MCPAdapterSearch_WithFilters(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	official := true
+	requestBody := MCPAdapterSearchRequest{
+		Query:    "api",
+		Official: &official,
+	}
+
+	reqBytes, _ := json.Marshal(requestBody)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/mcp/adapters/search", bytes.NewBuffer(reqBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.MCPAdapterSearch(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+// TestMCPHandler_MCPToolSearch_AlternateQueryParam tests tool search with "query" param instead of "q"
+func TestMCPHandler_MCPToolSearch_AlternateQueryParam(t *testing.T) {
+	cfg := &config.MCPConfig{
+		Enabled: true,
+	}
+
+	handler := NewMCPHandler(nil, cfg)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/mcp/tools/search?query=bash", nil)
+
+	handler.MCPToolSearch(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "bash", response["query"])
+}
