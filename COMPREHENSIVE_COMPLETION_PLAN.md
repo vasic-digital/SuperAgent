@@ -20,6 +20,7 @@
 - [x] **Alert Manager Email** (`LLMsVerifier/llm-verifier/scoring/alert_manager.go`) - Implemented SMTP email sending with TLS/STARTTLS support
 - [x] **Database Logging** (`LLMsVerifier/llm-verifier/logging/logging.go`) - Implemented database persistence with query support
 - [x] **LLMsVerifier Provider Import** (`LLMsVerifier/llm-verifier/cmd/main.go`) - Implemented provider import with CreateProvider client method
+- [x] **Score Extraction** (`LLMsVerifier/llm-verifier/enhanced/validation/schema.go`) - Enhanced with multi-key and nested structure support
 
 #### Package Documentation (16 doc.go files)
 - [x] `internal/llm/doc.go` - LLM provider abstractions
