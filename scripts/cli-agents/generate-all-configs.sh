@@ -449,28 +449,29 @@ generate_opencode_config() {
     # Generate config with correct OpenCode schema (mcpServers, providers, agents)
     # env is an array of strings like ["KEY=VALUE"], NOT an object
     # IMPORTANT: OpenCode expects the config to be named .opencode.json (with leading dot)
+    # IMPORTANT: Uses "local" provider which reads LOCAL_ENDPOINT env var for HelixAgent URL
     cat > "$output_dir/.opencode.json" << 'OPENCODE_EOF'
 {
   "providers": {
-    "openrouter": {
-      "apiKey": "HELIX_API_KEY_PLACEHOLDER"
+    "local": {
+      "apiKey": "helixagent-local"
     }
   },
   "agents": {
     "coder": {
-      "model": "openrouter.claude-3.7-sonnet",
+      "model": "local.helixagent-debate",
       "maxTokens": 8192
     },
     "task": {
-      "model": "openrouter.claude-3.7-sonnet",
+      "model": "local.helixagent-debate",
       "maxTokens": 4096
     },
     "title": {
-      "model": "openrouter.claude-3.5-haiku",
+      "model": "local.helixagent-debate",
       "maxTokens": 80
     },
     "summarizer": {
-      "model": "openrouter.claude-3.7-sonnet",
+      "model": "local.helixagent-debate",
       "maxTokens": 4096
     }
   },
