@@ -21,6 +21,7 @@
 - [x] **Database Logging** (`LLMsVerifier/llm-verifier/logging/logging.go`) - Implemented database persistence with query support
 - [x] **LLMsVerifier Provider Import** (`LLMsVerifier/llm-verifier/cmd/main.go`) - Implemented provider import with CreateProvider client method
 - [x] **Score Extraction** (`LLMsVerifier/llm-verifier/enhanced/validation/schema.go`) - Enhanced with multi-key and nested structure support
+- [x] **Reporter Start Time** (`LLMsVerifier/llm-verifier/llmverifier/reporter.go`) - Added timing tracking with StartTiming/EndTiming methods
 
 #### Package Documentation (16 doc.go files)
 - [x] `internal/llm/doc.go` - LLM provider abstractions
