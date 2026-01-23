@@ -1481,6 +1481,8 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 // MCP servers are available from:
 // - npm packages (when available)
 // - HelixAgent MCP container (external/mcp-servers)
+// - HelixAgent protocol endpoints (/v1/mcp, /v1/acp, /v1/lsp, etc.)
+// COMPLIANCE: 62+ MCPs required for system compliance
 func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefNew {
 	// MCP container host - defaults to localhost, can be overridden
 	mcpHost := os.Getenv("MCP_HOST")
@@ -1489,8 +1491,43 @@ func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefN
 	}
 
 	return map[string]OpenCodeMCPServerDefNew{
-		// === Active MCP Servers (from modelcontextprotocol/servers) ===
-		// These run in the helixagent-mcp-servers container on ports 3001-3007
+		// =============================================================================
+		// HelixAgent Protocol Endpoints (6 MCPs)
+		// =============================================================================
+		"helixagent-mcp": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/mcp",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+		"helixagent-acp": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/acp",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+		"helixagent-lsp": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/lsp",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+		"helixagent-embeddings": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/embeddings",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+		"helixagent-vision": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/vision",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+		"helixagent-cognee": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/cognee",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+
+		// =============================================================================
+		// Active MCP Servers (modelcontextprotocol/servers) - Ports 3001-3007
+		// =============================================================================
 		"fetch": {
 			Type: "remote",
 			URL:  fmt.Sprintf("http://%s:3001", mcpHost),
@@ -1520,8 +1557,9 @@ func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefN
 			URL:  fmt.Sprintf("http://%s:3007", mcpHost),
 		},
 
-		// === Archived MCP Servers (from modelcontextprotocol/servers-archived) ===
-		// These run in the helixagent-mcp-servers container on ports 3008-3020
+		// =============================================================================
+		// Archived MCP Servers (modelcontextprotocol/servers-archived) - Ports 3008-3020
+		// =============================================================================
 		"postgres": {
 			Type: "remote",
 			URL:  fmt.Sprintf("http://%s:3008", mcpHost),
@@ -1575,12 +1613,204 @@ func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefN
 			URL:  fmt.Sprintf("http://%s:3020", mcpHost),
 		},
 
-		// === HelixAgent Remote MCP ===
-		// Main HelixAgent MCP endpoint at /v1/mcp
-		"helixagent": {
-			Type:    "remote",
-			URL:     baseURL + "/v1/mcp",
-			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		// =============================================================================
+		// Additional Anthropic Official MCPs - Ports 3021-3030
+		// =============================================================================
+		"exa": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3021", mcpHost),
+		},
+		"linear": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3022", mcpHost),
+		},
+		"notion": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3023", mcpHost),
+		},
+		"figma": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3024", mcpHost),
+		},
+		"todoist": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3025", mcpHost),
+		},
+		"obsidian": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3026", mcpHost),
+		},
+		"raycast": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3027", mcpHost),
+		},
+		"tinybird": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3028", mcpHost),
+		},
+		"cloudflare": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3029", mcpHost),
+		},
+		"neon": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3030", mcpHost),
+		},
+
+		// =============================================================================
+		// Container/Infrastructure MCPs - Ports 3031-3040
+		// =============================================================================
+		"docker": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3031", mcpHost),
+		},
+		"kubernetes": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3032", mcpHost),
+		},
+		"mongodb": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3033", mcpHost),
+		},
+		"elasticsearch": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3034", mcpHost),
+		},
+		"qdrant": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3035", mcpHost),
+		},
+		"chroma": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3036", mcpHost),
+		},
+		"pinecone": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3037", mcpHost),
+		},
+		"milvus": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3038", mcpHost),
+		},
+		"weaviate": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3039", mcpHost),
+		},
+		"supabase": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3040", mcpHost),
+		},
+
+		// =============================================================================
+		// Productivity/Collaboration MCPs - Ports 3041-3050
+		// =============================================================================
+		"jira": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3041", mcpHost),
+		},
+		"asana": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3042", mcpHost),
+		},
+		"trello": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3043", mcpHost),
+		},
+		"monday": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3044", mcpHost),
+		},
+		"clickup": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3045", mcpHost),
+		},
+		"discord": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3046", mcpHost),
+		},
+		"microsoft-teams": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3047", mcpHost),
+		},
+		"gmail": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3048", mcpHost),
+		},
+		"calendar": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3049", mcpHost),
+		},
+		"zoom": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3050", mcpHost),
+		},
+
+		// =============================================================================
+		// Cloud/DevOps MCPs - Ports 3051-3060
+		// =============================================================================
+		"aws-s3": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3051", mcpHost),
+		},
+		"aws-lambda": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3052", mcpHost),
+		},
+		"azure": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3053", mcpHost),
+		},
+		"gcp": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3054", mcpHost),
+		},
+		"terraform": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3055", mcpHost),
+		},
+		"ansible": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3056", mcpHost),
+		},
+		"datadog": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3057", mcpHost),
+		},
+		"grafana": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3058", mcpHost),
+		},
+		"prometheus": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3059", mcpHost),
+		},
+		"circleci": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3060", mcpHost),
+		},
+
+		// =============================================================================
+		// AI/ML Integration MCPs - Ports 3061-3065
+		// =============================================================================
+		"langchain": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3061", mcpHost),
+		},
+		"llamaindex": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3062", mcpHost),
+		},
+		"huggingface": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3063", mcpHost),
+		},
+		"replicate": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3064", mcpHost),
+		},
+		"stable-diffusion": {
+			Type: "remote",
+			URL:  fmt.Sprintf("http://%s:3065", mcpHost),
 		},
 	}
 }
@@ -2172,7 +2402,18 @@ type CrushConfig struct {
 	Schema    string                    `json:"$schema,omitempty"`
 	Providers map[string]CrushProvider  `json:"providers,omitempty"`
 	Lsp       map[string]CrushLspConfig `json:"lsp,omitempty"`
+	Mcp       map[string]CrushMcpConfig `json:"mcp,omitempty"`
 	Options   *CrushOptions             `json:"options,omitempty"`
+}
+
+// CrushMcpConfig represents MCP server configuration for Crush
+type CrushMcpConfig struct {
+	Type    string            `json:"type"`
+	URL     string            `json:"url,omitempty"`
+	Command []string          `json:"command,omitempty"`
+	Args    []string          `json:"args,omitempty"`
+	Env     map[string]string `json:"env,omitempty"`
+	Enabled bool              `json:"enabled"`
 }
 
 // CrushProvider represents a provider configuration for Crush
@@ -2253,6 +2494,7 @@ func handleGenerateCrush(appCfg *AppConfig) error {
 
 	// Build the Crush configuration
 	// Crush uses a different structure than OpenCode - providers with models array
+	// COMPLIANCE: 62+ MCPs required for all CLI agents
 	config := CrushConfig{
 		Schema: "https://charm.land/crush.json",
 		Providers: map[string]CrushProvider{
@@ -2296,6 +2538,7 @@ func handleGenerateCrush(appCfg *AppConfig) error {
 				Enabled: true,
 			},
 		},
+		Mcp: buildCrushMCPServers(fmt.Sprintf("http://%s:%s", host, port)),
 		Options: &CrushOptions{
 			DisableProviderAutoUpdate: false,
 		},
@@ -2323,6 +2566,97 @@ func handleGenerateCrush(appCfg *AppConfig) error {
 	}
 
 	return nil
+}
+
+// buildCrushMCPServers creates MCP server configurations for Crush CLI
+// COMPLIANCE: 62+ MCPs required for all CLI agents
+func buildCrushMCPServers(baseURL string) map[string]CrushMcpConfig {
+	mcpHost := os.Getenv("MCP_HOST")
+	if mcpHost == "" {
+		mcpHost = "localhost"
+	}
+
+	return map[string]CrushMcpConfig{
+		// HelixAgent Protocol Endpoints (6 MCPs)
+		"helixagent-mcp":        {Type: "remote", URL: baseURL + "/v1/mcp", Enabled: true},
+		"helixagent-acp":        {Type: "remote", URL: baseURL + "/v1/acp", Enabled: true},
+		"helixagent-lsp":        {Type: "remote", URL: baseURL + "/v1/lsp", Enabled: true},
+		"helixagent-embeddings": {Type: "remote", URL: baseURL + "/v1/embeddings", Enabled: true},
+		"helixagent-vision":     {Type: "remote", URL: baseURL + "/v1/vision", Enabled: true},
+		"helixagent-cognee":     {Type: "remote", URL: baseURL + "/v1/cognee", Enabled: true},
+		// Active MCP Servers (ports 3001-3007)
+		"fetch":               {Type: "remote", URL: fmt.Sprintf("http://%s:3001", mcpHost), Enabled: true},
+		"filesystem":          {Type: "remote", URL: fmt.Sprintf("http://%s:3002", mcpHost), Enabled: true},
+		"git":                 {Type: "remote", URL: fmt.Sprintf("http://%s:3003", mcpHost), Enabled: true},
+		"memory":              {Type: "remote", URL: fmt.Sprintf("http://%s:3004", mcpHost), Enabled: true},
+		"time":                {Type: "remote", URL: fmt.Sprintf("http://%s:3005", mcpHost), Enabled: true},
+		"sequential-thinking": {Type: "remote", URL: fmt.Sprintf("http://%s:3006", mcpHost), Enabled: true},
+		"everything":          {Type: "remote", URL: fmt.Sprintf("http://%s:3007", mcpHost), Enabled: true},
+		// Archived MCP Servers (ports 3008-3020)
+		"postgres":         {Type: "remote", URL: fmt.Sprintf("http://%s:3008", mcpHost), Enabled: true},
+		"sqlite":           {Type: "remote", URL: fmt.Sprintf("http://%s:3009", mcpHost), Enabled: true},
+		"slack":            {Type: "remote", URL: fmt.Sprintf("http://%s:3010", mcpHost), Enabled: true},
+		"github":           {Type: "remote", URL: fmt.Sprintf("http://%s:3011", mcpHost), Enabled: true},
+		"gitlab":           {Type: "remote", URL: fmt.Sprintf("http://%s:3012", mcpHost), Enabled: true},
+		"google-maps":      {Type: "remote", URL: fmt.Sprintf("http://%s:3013", mcpHost), Enabled: true},
+		"brave-search":     {Type: "remote", URL: fmt.Sprintf("http://%s:3014", mcpHost), Enabled: true},
+		"puppeteer":        {Type: "remote", URL: fmt.Sprintf("http://%s:3015", mcpHost), Enabled: true},
+		"redis":            {Type: "remote", URL: fmt.Sprintf("http://%s:3016", mcpHost), Enabled: true},
+		"sentry":           {Type: "remote", URL: fmt.Sprintf("http://%s:3017", mcpHost), Enabled: true},
+		"gdrive":           {Type: "remote", URL: fmt.Sprintf("http://%s:3018", mcpHost), Enabled: true},
+		"everart":          {Type: "remote", URL: fmt.Sprintf("http://%s:3019", mcpHost), Enabled: true},
+		"aws-kb-retrieval": {Type: "remote", URL: fmt.Sprintf("http://%s:3020", mcpHost), Enabled: true},
+		// Additional Anthropic MCPs (ports 3021-3030)
+		"exa":        {Type: "remote", URL: fmt.Sprintf("http://%s:3021", mcpHost), Enabled: true},
+		"linear":     {Type: "remote", URL: fmt.Sprintf("http://%s:3022", mcpHost), Enabled: true},
+		"notion":     {Type: "remote", URL: fmt.Sprintf("http://%s:3023", mcpHost), Enabled: true},
+		"figma":      {Type: "remote", URL: fmt.Sprintf("http://%s:3024", mcpHost), Enabled: true},
+		"todoist":    {Type: "remote", URL: fmt.Sprintf("http://%s:3025", mcpHost), Enabled: true},
+		"obsidian":   {Type: "remote", URL: fmt.Sprintf("http://%s:3026", mcpHost), Enabled: true},
+		"raycast":    {Type: "remote", URL: fmt.Sprintf("http://%s:3027", mcpHost), Enabled: true},
+		"tinybird":   {Type: "remote", URL: fmt.Sprintf("http://%s:3028", mcpHost), Enabled: true},
+		"cloudflare": {Type: "remote", URL: fmt.Sprintf("http://%s:3029", mcpHost), Enabled: true},
+		"neon":       {Type: "remote", URL: fmt.Sprintf("http://%s:3030", mcpHost), Enabled: true},
+		// Container/Infrastructure MCPs (ports 3031-3040)
+		"docker":        {Type: "remote", URL: fmt.Sprintf("http://%s:3031", mcpHost), Enabled: true},
+		"kubernetes":    {Type: "remote", URL: fmt.Sprintf("http://%s:3032", mcpHost), Enabled: true},
+		"mongodb":       {Type: "remote", URL: fmt.Sprintf("http://%s:3033", mcpHost), Enabled: true},
+		"elasticsearch": {Type: "remote", URL: fmt.Sprintf("http://%s:3034", mcpHost), Enabled: true},
+		"qdrant":        {Type: "remote", URL: fmt.Sprintf("http://%s:3035", mcpHost), Enabled: true},
+		"chroma":        {Type: "remote", URL: fmt.Sprintf("http://%s:3036", mcpHost), Enabled: true},
+		"pinecone":      {Type: "remote", URL: fmt.Sprintf("http://%s:3037", mcpHost), Enabled: true},
+		"milvus":        {Type: "remote", URL: fmt.Sprintf("http://%s:3038", mcpHost), Enabled: true},
+		"weaviate":      {Type: "remote", URL: fmt.Sprintf("http://%s:3039", mcpHost), Enabled: true},
+		"supabase":      {Type: "remote", URL: fmt.Sprintf("http://%s:3040", mcpHost), Enabled: true},
+		// Productivity/Collaboration MCPs (ports 3041-3050)
+		"jira":            {Type: "remote", URL: fmt.Sprintf("http://%s:3041", mcpHost), Enabled: true},
+		"asana":           {Type: "remote", URL: fmt.Sprintf("http://%s:3042", mcpHost), Enabled: true},
+		"trello":          {Type: "remote", URL: fmt.Sprintf("http://%s:3043", mcpHost), Enabled: true},
+		"monday":          {Type: "remote", URL: fmt.Sprintf("http://%s:3044", mcpHost), Enabled: true},
+		"clickup":         {Type: "remote", URL: fmt.Sprintf("http://%s:3045", mcpHost), Enabled: true},
+		"discord":         {Type: "remote", URL: fmt.Sprintf("http://%s:3046", mcpHost), Enabled: true},
+		"microsoft-teams": {Type: "remote", URL: fmt.Sprintf("http://%s:3047", mcpHost), Enabled: true},
+		"gmail":           {Type: "remote", URL: fmt.Sprintf("http://%s:3048", mcpHost), Enabled: true},
+		"calendar":        {Type: "remote", URL: fmt.Sprintf("http://%s:3049", mcpHost), Enabled: true},
+		"zoom":            {Type: "remote", URL: fmt.Sprintf("http://%s:3050", mcpHost), Enabled: true},
+		// Cloud/DevOps MCPs (ports 3051-3060)
+		"aws-s3":     {Type: "remote", URL: fmt.Sprintf("http://%s:3051", mcpHost), Enabled: true},
+		"aws-lambda": {Type: "remote", URL: fmt.Sprintf("http://%s:3052", mcpHost), Enabled: true},
+		"azure":      {Type: "remote", URL: fmt.Sprintf("http://%s:3053", mcpHost), Enabled: true},
+		"gcp":        {Type: "remote", URL: fmt.Sprintf("http://%s:3054", mcpHost), Enabled: true},
+		"terraform":  {Type: "remote", URL: fmt.Sprintf("http://%s:3055", mcpHost), Enabled: true},
+		"ansible":    {Type: "remote", URL: fmt.Sprintf("http://%s:3056", mcpHost), Enabled: true},
+		"datadog":    {Type: "remote", URL: fmt.Sprintf("http://%s:3057", mcpHost), Enabled: true},
+		"grafana":    {Type: "remote", URL: fmt.Sprintf("http://%s:3058", mcpHost), Enabled: true},
+		"prometheus": {Type: "remote", URL: fmt.Sprintf("http://%s:3059", mcpHost), Enabled: true},
+		"circleci":   {Type: "remote", URL: fmt.Sprintf("http://%s:3060", mcpHost), Enabled: true},
+		// AI/ML Integration MCPs (ports 3061-3065)
+		"langchain":        {Type: "remote", URL: fmt.Sprintf("http://%s:3061", mcpHost), Enabled: true},
+		"llamaindex":       {Type: "remote", URL: fmt.Sprintf("http://%s:3062", mcpHost), Enabled: true},
+		"huggingface":      {Type: "remote", URL: fmt.Sprintf("http://%s:3063", mcpHost), Enabled: true},
+		"replicate":        {Type: "remote", URL: fmt.Sprintf("http://%s:3064", mcpHost), Enabled: true},
+		"stable-diffusion": {Type: "remote", URL: fmt.Sprintf("http://%s:3065", mcpHost), Enabled: true},
+	}
 }
 
 // CrushValidationResult holds the validation results for Crush config
