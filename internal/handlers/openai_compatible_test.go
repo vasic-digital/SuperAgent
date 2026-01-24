@@ -1969,7 +1969,7 @@ func TestUnifiedHandler_DebateDialogueIntroduction_HasContent(t *testing.T) {
 
 	// Generate debate dialogue introduction
 	topic := "Test topic for debate"
-	intro := handler.generateDebateDialogueIntroduction(topic)
+	intro := handler.generateDebateDialogueIntroduction(topic, OutputFormatANSI)
 
 	// Verify critical sections exist
 	assert.Contains(t, intro, "HELIXAGENT AI DEBATE ENSEMBLE",
@@ -2035,7 +2035,7 @@ func TestUnifiedHandler_DebateDialogueConclusion_HasContent(t *testing.T) {
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
-	conclusion := handler.generateDebateDialogueConclusion()
+	conclusion := handler.generateDebateDialogueConclusion(OutputFormatANSI)
 
 	// Verify conclusion contains required elements
 	assert.Contains(t, conclusion, "CONSENSUS REACHED",
@@ -2092,7 +2092,7 @@ func TestUnifiedHandler_FullDebateDialogueFlow(t *testing.T) {
 
 	// Test topic processing
 	longTopic := strings.Repeat("This is a very long topic ", 10)
-	intro := handler.generateDebateDialogueIntroduction(longTopic)
+	intro := handler.generateDebateDialogueIntroduction(longTopic, OutputFormatANSI)
 
 	// Verify topic truncation works (max 70 chars + "...")
 	assert.Contains(t, intro, "...", "Long topics should be truncated with ellipsis")
@@ -2498,7 +2498,7 @@ func TestGenerateFinalSynthesis_NotEmpty(t *testing.T) {
 func TestDebateDialogueConclusionNotEmpty(t *testing.T) {
 	handler := &UnifiedHandler{}
 
-	conclusion := handler.generateDebateDialogueConclusion()
+	conclusion := handler.generateDebateDialogueConclusion(OutputFormatANSI)
 
 	// CRITICAL: Conclusion header MUST be present
 	assert.NotEmpty(t, conclusion, "Conclusion header must not be empty")
@@ -2526,7 +2526,7 @@ func TestDebateDialogueIntroductionFormat(t *testing.T) {
 	}
 
 	// Without a full config, the introduction will be empty (defensive programming)
-	intro := handler.generateDebateDialogueIntroduction("Test topic")
+	intro := handler.generateDebateDialogueIntroduction("Test topic", OutputFormatANSI)
 
 	// When config is not set, intro should be empty (expected behavior)
 	// This test validates the function doesn't panic and returns safely
@@ -2536,7 +2536,7 @@ func TestDebateDialogueIntroductionFormat(t *testing.T) {
 	handler.dialogueFormatter = services.NewDialogueFormatter(services.StyleTheater)
 
 	// Still empty without debate team config - this is expected
-	intro2 := handler.generateDebateDialogueIntroduction("Test topic")
+	intro2 := handler.generateDebateDialogueIntroduction("Test topic", OutputFormatANSI)
 	assert.Equal(t, "", intro2, "Intro should still be empty without debate team config")
 }
 
