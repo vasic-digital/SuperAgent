@@ -403,6 +403,13 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	// Maximum 420 seconds (7 min) to allow for multiple provider fallbacks during tool result processing
 	// With 6 providers at 60 seconds each, we need at least 360 seconds plus buffer
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 420*time.Second)
+
+	// Detect output format based on client hints (User-Agent, Accept header, explicit format hint)
+	// This ensures API clients (OpenCode, Crush, etc.) get clean Markdown without ANSI escape codes
+	userAgent := c.GetHeader("User-Agent")
+	acceptHeader := c.GetHeader("Accept")
+	formatHint := c.GetHeader("X-Output-Format") // Allow explicit format override
+	outputFormat := DetectOutputFormat(acceptHeader, userAgent, formatHint)
 	defer cancel()
 
 	// Process with ensemble streaming
@@ -631,7 +638,8 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		}
 
 		// Generate and stream debate dialogue introduction
-		dialogueIntro := h.generateDebateDialogueIntroduction(topic)
+		// Use format-aware introduction based on detected client type
+		dialogueIntro := h.generateDebateDialogueIntroduction(topic, outputFormat)
 		if dialogueIntro != "" {
 			// Stream introduction in chunks for better rendering
 			for _, line := range strings.Split(dialogueIntro, "\n") {
@@ -695,7 +703,8 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			}
 
 			// Stream REQUEST indicator: [A: Analyst] <--- Request sent to DeepSeek (deepseek-chat)
-			requestIndicator := FormatRequestIndicator(pos, memberRole, memberProvider, memberModel)
+			// Uses format-aware indicator based on client type (ANSI for terminal, Markdown for API clients)
+			requestIndicator := FormatRequestIndicatorForFormat(outputFormat, pos, memberRole, memberProvider, memberModel)
 			if requestIndicator != "" {
 				reqChunk := map[string]any{
 					"id":                 streamID,
@@ -730,18 +739,18 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				// Log error but continue with fallback message
 				logrus.WithError(err).WithField("position", pos).Warn("Failed to get real debate response, using fallback")
 				realResponse = "Unable to provide analysis at this time."
-				// Format error response indicator
-				responseIndicator = FormatResponseIndicator(pos, memberRole, 0)
+				// Format error response indicator using format-aware version
+				responseIndicator = FormatResponseIndicatorForFormat(outputFormat, pos, memberRole, 0)
 			} else {
 				realResponse = debateResp.Content
 
 				// Format response indicator based on whether fallback was used
 				if debateResp.UsedFallback {
 					// Show fallback chain: [A: Analyst] ---> [Fallback: Claude] ---> (650 ms)
-					responseIndicator = FormatFallbackIndicator(pos, memberRole, debateResp.ActualProvider, debateResp.ActualModel, debateResp.ResponseTime)
+					responseIndicator = FormatFallbackIndicatorForFormat(outputFormat, pos, memberRole, debateResp.ActualProvider, debateResp.ActualModel, debateResp.ResponseTime)
 				} else {
 					// Normal response: [A: Analyst] ---> (450 ms)
-					responseIndicator = FormatResponseIndicator(pos, memberRole, debateResp.ResponseTime)
+					responseIndicator = FormatResponseIndicatorForFormat(outputFormat, pos, memberRole, debateResp.ResponseTime)
 				}
 
 				// CRITICAL: Collect tool_calls from this position for ACTION PHASE
@@ -813,8 +822,8 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			chunksSent++
 		}
 
-		// Stream conclusion
-		conclusion := h.generateDebateDialogueConclusion()
+		// Stream conclusion with format-aware styling
+		conclusion := h.generateDebateDialogueConclusion(outputFormat)
 		if conclusion != "" {
 			conclusionChunk := map[string]any{
 				"id":                 streamID,
@@ -849,11 +858,12 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 		}
 
 		// Stream the synthesis response as the consensus content
-		// IMPORTANT: Final synthesis uses bright white (FormatFinalResponse) - no dimming
-		// This is the actual answer the user sees, so it should stand out from debate phase content
+		// IMPORTANT: Final synthesis formatting adapts to client type:
+		// - Terminal clients get ANSI bright white for visibility
+		// - API clients (OpenCode, Crush) get clean Markdown without escape codes
 		if synthesisResponse != "" {
-			// Format with bright white for final answer visibility
-			formattedSynthesis := FormatFinalResponse(synthesisResponse) + "\n"
+			// Format with client-appropriate styling for final answer visibility
+			formattedSynthesis := FormatFinalResponseForFormat(outputFormat, synthesisResponse) + "\n"
 			synthesisChunk := map[string]any{
 				"id":                 streamID,
 				"object":             "chat.completion.chunk",
@@ -1882,15 +1892,15 @@ func generateID() string {
 
 // generateDebateDialogueIntroduction creates the AI debate team conversation introduction
 // This is displayed before the final response to show how the AI debate ensemble works
-// Uses ANSI colors for enhanced terminal visualization
-func (h *UnifiedHandler) generateDebateDialogueIntroduction(topic string) string {
+// Uses ANSI colors for terminal clients, clean Markdown for API clients
+func (h *UnifiedHandler) generateDebateDialogueIntroduction(topic string, format OutputFormat) string {
 	if h.dialogueFormatter == nil || h.debateTeamConfig == nil {
 		return ""
 	}
 
-	// Use the enhanced colored introduction from debate_visualization.go
+	// Use format-aware introduction that adapts to the client type
 	members := h.debateTeamConfig.GetAllLLMs()
-	return FormatDebateTeamIntroduction(topic, members)
+	return FormatDebateTeamIntroductionForFormat(format, topic, members)
 }
 
 // generateDebateDialogueResponse creates a debate response header for a position
@@ -2204,10 +2214,10 @@ You are participating in an AI debate ensemble. Provide a concise, focused respo
 }
 
 // generateDebateDialogueConclusion creates the conclusion section after debate
-// Uses ANSI colors for enhanced terminal visualization - consensus header in bright white/yellow
-func (h *UnifiedHandler) generateDebateDialogueConclusion() string {
-	// Use the enhanced colored consensus header from debate_visualization.go
-	return FormatConsensusHeader()
+// Uses format-aware styling based on client type (ANSI for terminal, Markdown for API clients)
+func (h *UnifiedHandler) generateDebateDialogueConclusion(format OutputFormat) string {
+	// Use the format-aware consensus header
+	return FormatConsensusHeaderForFormat(format)
 }
 
 // generateFinalSynthesis creates the final synthesized response based on all debate contributions
