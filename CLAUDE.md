@@ -528,15 +528,34 @@ Key files:
 - `internal/mcp/adapters/jira.go` - Jira issue tracking (20 tools)
 - `internal/mcp/adapters/registry.go` - Adapter registry (45+ adapters)
 
-### CLI Agent MCP Configuration (37 MCPs)
+### CLI Agent MCP Configuration (43 MCPs)
 
-CLI agents (OpenCode, Crush, etc.) are configured with **37 MCPs** across three categories:
+CLI agents (OpenCode, Crush, etc.) are configured with **43 MCPs** across four categories:
 
 | Category | MCPs |
 |----------|------|
-| **Anthropic Official** | filesystem, fetch, memory, time, git, sqlite, postgres, puppeteer, brave-search, google-maps, slack, sequential-thinking, everart, exa, linear, sentry, notion, figma, aws-kb-retrieval, gitlab |
-| **HelixAgent Custom** | helixagent, helixagent-debate, helixagent-rag, helixagent-memory |
-| **Community/Infrastructure** | docker, kubernetes, redis, mongodb, elasticsearch, qdrant, chroma, jira, asana, google-drive, aws-s3, datadog |
+| **Official MCP** | filesystem, memory, postgres, puppeteer, sequential-thinking, everything |
+| **Databases & Storage** | sqlite, mongodb, mysql, qdrant, chroma, elasticsearch |
+| **DevOps & Infrastructure** | docker, kubernetes, git, aws, gcp, vercel, cloudflare |
+| **Productivity & PM** | github, gitlab, slack, discord, telegram, linear, notion, jira, trello |
+| **Search & AI** | brave-search, google, youtube, twitter, openai, time |
+| **HelixAgent Remote** | helixagent-mcp, helixagent-acp, helixagent-lsp, helixagent-embeddings, helixagent-vision, helixagent-cognee, helixagent-tools-search, helixagent-adapters-search, helixagent-tools-suggestions |
+
+**Requirements:** Many MCPs require API keys/tokens. See [MCP Configuration Requirements](docs/mcp/MCP_CONFIGURATION_REQUIREMENTS.md) for complete setup instructions.
+
+**Quick Setup:**
+```bash
+# Copy and edit environment variables
+cp .env.mcps.example .env.mcps
+# Edit .env.mcps with your API keys
+source .env.mcps
+```
+
+**MCPs by Configuration Status:**
+- **No Config Required (14):** filesystem, memory, sequential-thinking, everything, puppeteer, docker, kubernetes, git, time, sqlite, qdrant, chroma, youtube, google
+- **API Key Required (14):** github, gitlab, slack, discord, telegram, linear, notion, jira, trello, brave-search, openai, twitter, vercel, cloudflare
+- **Local Service Required (6):** postgres, mongodb, mysql, elasticsearch, qdrant, chroma
+- **HelixAgent Required (9):** All helixagent-* MCPs
 
 Verify MCP configuration:
 ```bash
