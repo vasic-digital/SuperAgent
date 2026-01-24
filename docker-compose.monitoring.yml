@@ -29,9 +29,18 @@ services:
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
+      - "host.docker.internal:host-gateway"
     networks:
       - monitoring
+      - helixagent-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Grafana - Visualization and Dashboards
   grafana:
@@ -48,7 +57,7 @@ services:
     volumes:
       - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
       - ./monitoring/grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
-      - ./docs/monitoring/grafana-dashboard.json:/var/lib/grafana/dashboards/helixagent.json:ro
+      - ./monitoring/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     networks:
       - monitoring
@@ -56,6 +65,11 @@ services:
       - prometheus
       - loki
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Loki - Log Aggregation
   loki:
@@ -70,6 +84,11 @@ services:
     networks:
       - monitoring
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Promtail - Log Collection Agent
   promtail:
@@ -78,7 +97,8 @@ services:
     volumes:
       - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/log:/var/log:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /tmp:/tmp/host:ro
+      - /run/user/1000/podman/podman.sock:/var/run/docker.sock:ro
     command: -config.file=/etc/promtail/config.yml
     networks:
       - monitoring
@@ -131,7 +151,7 @@ services:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
+      - /var/lib/containers:/var/lib/containers:ro
       - /dev/disk/:/dev/disk:ro
     privileged: true
     devices:
@@ -147,8 +167,10 @@ services:
     ports:
       - "${REDIS_EXPORTER_PORT:-9121}:9121"
     environment:
-      REDIS_ADDR: "redis:6379"
-      REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+      REDIS_ADDR: "host.containers.internal:6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-helixagent123}"
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
     networks:
       - monitoring
     restart: unless-stopped
@@ -160,15 +182,58 @@ services:
     ports:
       - "${POSTGRES_EXPORTER_PORT:-9187}:9187"
     environment:
-      DATA_SOURCE_NAME: "postgresql://${DB_USER:-helixagent}:${DB_PASSWORD:-helixagent123}@postgres:5432/${DB_NAME:-helixagent_db}?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://${DB_USER:-helixagent}:${DB_PASSWORD:-helixagent123}@host.containers.internal:5432/${DB_NAME:-helixagent}?sslmode=disable"
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
     networks:
       - monitoring
     restart: unless-stopped
+
+  # Blackbox Exporter - HTTP/TCP/ICMP Probing
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.24.0
+    container_name: helixagent-blackbox-exporter
+    ports:
+      - "${BLACKBOX_EXPORTER_PORT:-9115}:9115"
+    volumes:
+      - ./monitoring/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # Custom HelixAgent Service Exporter
+  helixagent-exporter:
+    image: python:3.11-slim
+    container_name: helixagent-service-exporter
+    ports:
+      - "${HELIXAGENT_EXPORTER_PORT:-9200}:9200"
+    volumes:
+      - ./monitoring/helixagent-exporter.py:/app/exporter.py:ro
+    command: ["python", "/app/exporter.py"]
+    environment:
+      HELIXAGENT_URL: "http://host.containers.internal:7061"
+      CHROMADB_URL: "http://host.containers.internal:8001"
+      COGNEE_URL: "http://host.containers.internal:8000"
+      EXPORTER_PORT: "9200"
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    depends_on:
+      - prometheus
 
 networks:
   monitoring:
     driver: bridge
     name: helixagent-monitoring
+  helixagent-network:
+    external: true
+    name: helixagent_default
 
 volumes:
   prometheus_data:

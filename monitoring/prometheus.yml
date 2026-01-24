@@ -1,6 +1,9 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    monitor: 'helixagent-monitor'
+    environment: 'development'
 
 # Alert rules
 rule_files:
@@ -14,51 +17,192 @@ alerting:
           - alertmanager:9093
 
 scrape_configs:
-  # HelixAgent application metrics
+  # ========================================
+  # HELIXAGENT CORE SERVICES
+  # ========================================
+
+  # HelixAgent API Server (main application)
   - job_name: 'helixagent'
     static_configs:
-      - targets: ['helixagent:8080']
+      - targets: ['host.containers.internal:7061']
+        labels:
+          service: 'helixagent'
+          component: 'api'
     metrics_path: '/metrics'
-    scrape_interval: 5s
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # HelixAgent Provider Health
+  - job_name: 'helixagent-providers'
+    static_configs:
+      - targets: ['host.containers.internal:7061']
+        labels:
+          service: 'helixagent'
+          component: 'providers'
+    metrics_path: '/v1/providers'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: '.*'
+        action: keep
+
+  # HelixAgent MCP Tools
+  - job_name: 'helixagent-mcp'
+    static_configs:
+      - targets: ['host.containers.internal:7061']
+        labels:
+          service: 'helixagent'
+          component: 'mcp'
+    metrics_path: '/v1/mcp'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # ========================================
+  # LLMSVERIFIER SERVICES
+  # ========================================
+
+  # LLMsVerifier metrics (if running separately)
+  - job_name: 'llmsverifier'
+    static_configs:
+      - targets: ['host.containers.internal:8180']
+        labels:
+          service: 'llmsverifier'
+          component: 'verifier'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    # Optional: only scrape if service is available
+    honor_labels: true
+
+  # ========================================
+  # DATABASE SERVICES
+  # ========================================
 
   # PostgreSQL metrics (via postgres_exporter)
   - job_name: 'postgres'
     static_configs:
       - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'database'
+          component: 'postgres'
     scrape_interval: 10s
 
   # Redis metrics (via redis_exporter)
   - job_name: 'redis'
     static_configs:
       - targets: ['redis-exporter:9121']
+        labels:
+          service: 'cache'
+          component: 'redis'
     scrape_interval: 10s
+
+  # ========================================
+  # VECTOR & AI SERVICES
+  # ========================================
+
+  # ChromaDB health check (blackbox probe)
+  - job_name: 'chromadb'
+    static_configs:
+      - targets: ['host.containers.internal:8001']
+        labels:
+          service: 'vectordb'
+          component: 'chromadb'
+    metrics_path: '/api/v1/heartbeat'
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'up|probe_.*'
+        action: keep
+
+  # Cognee health check
+  - job_name: 'cognee'
+    static_configs:
+      - targets: ['host.containers.internal:8000']
+        labels:
+          service: 'knowledge'
+          component: 'cognee'
+    metrics_path: '/health'
+    scrape_interval: 15s
+    scrape_timeout: 5s
+
+  # ========================================
+  # MONITORING INFRASTRUCTURE
+  # ========================================
 
   # Loki metrics
   - job_name: 'loki'
     static_configs:
       - targets: ['loki:3100']
+        labels:
+          service: 'logging'
+          component: 'loki'
     scrape_interval: 15s
 
   # Prometheus self-metrics
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+        labels:
+          service: 'monitoring'
+          component: 'prometheus'
     scrape_interval: 15s
 
-  # Node metrics (if node_exporter is deployed)
+  # Node metrics (system resources)
   - job_name: 'node'
     static_configs:
       - targets: ['node-exporter:9100']
+        labels:
+          service: 'infrastructure'
+          component: 'node'
     scrape_interval: 15s
 
-  # Docker metrics (via cAdvisor)
+  # Container metrics (via cAdvisor)
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
+        labels:
+          service: 'infrastructure'
+          component: 'containers'
     scrape_interval: 15s
 
-# TSDB storage configuration
-storage:
-  tsdb:
-    retention.time: 200h
-    retention.size: 50GB
+  # Alertmanager metrics
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+        labels:
+          service: 'monitoring'
+          component: 'alertmanager'
+    scrape_interval: 15s
+
+  # ========================================
+  # BLACKBOX PROBER (HTTP checks)
+  # ========================================
+
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://host.containers.internal:7061/health
+          - http://host.containers.internal:8001/api/v1/heartbeat
+          - http://host.containers.internal:8000/health
+        labels:
+          probe_type: 'http'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+# Remote write for long-term storage (optional)
+# remote_write:
+#   - url: "http://mimir:9009/api/v1/push"
+
+# Note: TSDB storage configuration is handled via Prometheus command line arguments:
+# --storage.tsdb.retention.time=200h
+# --storage.tsdb.retention.size=50GB
