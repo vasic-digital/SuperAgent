@@ -1476,23 +1476,22 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 
 // buildOpenCodeMCPServersNew creates MCP server configurations using the correct OpenCode schema
 // Based on: https://opencode.ai/docs/mcp-servers
-// Local servers: type="local", command=["npx", "-y", "package"]
-// Remote servers: type="remote", url="https://..."
+// Local servers: type="local", command=["npx", "-y", "package"] - started on demand by OpenCode
+// Remote servers: type="remote", url="https://..." - must be pre-running
 // MCP servers are available from:
-// - npm packages (when available)
-// - HelixAgent MCP container (external/mcp-servers)
-// - HelixAgent protocol endpoints (/v1/mcp, /v1/acp, /v1/lsp, etc.)
+// - npm packages (local - started on demand via npx)
+// - HelixAgent protocol endpoints (/v1/mcp, /v1/acp, /v1/lsp, etc. - remote)
 // COMPLIANCE: 62+ MCPs required for system compliance
 func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefNew {
-	// MCP container host - defaults to localhost, can be overridden
-	mcpHost := os.Getenv("MCP_HOST")
-	if mcpHost == "" {
-		mcpHost = "localhost"
+	// Get user home directory for paths
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		homeDir = "/home"
 	}
 
 	return map[string]OpenCodeMCPServerDefNew{
 		// =============================================================================
-		// HelixAgent Protocol Endpoints (6 MCPs)
+		// HelixAgent Protocol Endpoints (6 MCPs) - REMOTE (running at port 7061)
 		// =============================================================================
 		"helixagent-mcp": {
 			Type:    "remote",
@@ -1526,291 +1525,340 @@ func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefN
 		},
 
 		// =============================================================================
-		// Active MCP Servers (modelcontextprotocol/servers) - Ports 3001-3007
+		// Anthropic Official MCPs - LOCAL (started on demand via npx)
+		// From: https://github.com/modelcontextprotocol/servers
 		// =============================================================================
-		"fetch": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3001", mcpHost),
-		},
 		"filesystem": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3002", mcpHost),
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", homeDir},
 		},
-		"git": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3003", mcpHost),
+		"fetch": {
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"},
 		},
 		"memory": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3004", mcpHost),
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"},
 		},
 		"time": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3005", mcpHost),
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"},
 		},
-		"sequential-thinking": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3006", mcpHost),
-		},
-		"everything": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3007", mcpHost),
-		},
-
-		// =============================================================================
-		// Archived MCP Servers (modelcontextprotocol/servers-archived) - Ports 3008-3020
-		// =============================================================================
-		"postgres": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3008", mcpHost),
+		"git": {
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"},
 		},
 		"sqlite": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3009", mcpHost),
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"},
 		},
-		"slack": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3010", mcpHost),
-		},
-		"github": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3011", mcpHost),
-		},
-		"gitlab": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3012", mcpHost),
-		},
-		"google-maps": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3013", mcpHost),
-		},
-		"brave-search": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3014", mcpHost),
+		"postgres": {
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-postgres"},
+			Environment: map[string]string{"POSTGRES_URL": "postgresql://helixagent:helixagent123@localhost:5432/helixagent_db"},
 		},
 		"puppeteer": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3015", mcpHost),
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"},
 		},
-		"redis": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3016", mcpHost),
+		"sequential-thinking": {
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-sequential-thinking"},
+		},
+		"everything": {
+			Type:    "local",
+			Command: []string{"npx", "-y", "@anthropic-ai/mcp-server-everything"},
+		},
+		"brave-search": {
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-brave-search"},
+			Environment: map[string]string{"BRAVE_API_KEY": "{env:BRAVE_API_KEY}"},
+		},
+		"google-maps": {
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-google-maps"},
+			Environment: map[string]string{"GOOGLE_MAPS_API_KEY": "{env:GOOGLE_MAPS_API_KEY}"},
+		},
+		"slack": {
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-slack"},
+			Environment: map[string]string{"SLACK_BOT_TOKEN": "{env:SLACK_BOT_TOKEN}", "SLACK_TEAM_ID": "{env:SLACK_TEAM_ID}"},
+		},
+		"github": {
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-github"},
+			Environment: map[string]string{"GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_TOKEN}"},
+		},
+		"gitlab": {
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-gitlab"},
+			Environment: map[string]string{"GITLAB_PERSONAL_ACCESS_TOKEN": "{env:GITLAB_TOKEN}"},
 		},
 		"sentry": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3017", mcpHost),
-		},
-		"gdrive": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3018", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-sentry"},
+			Environment: map[string]string{"SENTRY_AUTH_TOKEN": "{env:SENTRY_AUTH_TOKEN}", "SENTRY_ORG": "{env:SENTRY_ORG}"},
 		},
 		"everart": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3019", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-everart"},
+			Environment: map[string]string{"EVERART_API_KEY": "{env:EVERART_API_KEY}"},
 		},
 		"aws-kb-retrieval": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3020", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-aws-kb-retrieval"},
+			Environment: map[string]string{"AWS_ACCESS_KEY_ID": "{env:AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY": "{env:AWS_SECRET_ACCESS_KEY}"},
 		},
 
 		// =============================================================================
-		// Additional Anthropic Official MCPs - Ports 3021-3030
+		// Additional Anthropic & Community MCPs - LOCAL
 		// =============================================================================
 		"exa": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3021", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "exa-mcp-server"},
+			Environment: map[string]string{"EXA_API_KEY": "{env:EXA_API_KEY}"},
 		},
 		"linear": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3022", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-linear"},
+			Environment: map[string]string{"LINEAR_API_KEY": "{env:LINEAR_API_KEY}"},
 		},
 		"notion": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3023", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@notionhq/notion-mcp-server"},
+			Environment: map[string]string{"NOTION_API_KEY": "{env:NOTION_API_KEY}"},
 		},
 		"figma": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3024", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "figma-developer-mcp"},
+			Environment: map[string]string{"FIGMA_API_KEY": "{env:FIGMA_API_KEY}"},
 		},
 		"todoist": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3025", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@modelcontextprotocol/server-todoist"},
+			Environment: map[string]string{"TODOIST_API_TOKEN": "{env:TODOIST_API_TOKEN}"},
 		},
 		"obsidian": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3026", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-obsidian"},
+			Environment: map[string]string{"OBSIDIAN_VAULT_PATH": "{env:OBSIDIAN_VAULT_PATH}"},
 		},
 		"raycast": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3027", mcpHost),
+			Type:    "local",
+			Command: []string{"npx", "-y", "@anthropic-ai/mcp-server-raycast"},
 		},
 		"tinybird": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3028", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-tinybird"},
+			Environment: map[string]string{"TINYBIRD_TOKEN": "{env:TINYBIRD_TOKEN}"},
 		},
 		"cloudflare": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3029", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@cloudflare/mcp-server-cloudflare"},
+			Environment: map[string]string{"CLOUDFLARE_API_TOKEN": "{env:CLOUDFLARE_API_TOKEN}"},
 		},
 		"neon": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3030", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@neondatabase/mcp-server-neon"},
+			Environment: map[string]string{"NEON_API_KEY": "{env:NEON_API_KEY}"},
+		},
+		"gdrive": {
+			Type:        "local",
+			Command:     []string{"npx", "-y", "@anthropic/mcp-server-gdrive"},
+			Environment: map[string]string{"GOOGLE_CREDENTIALS_PATH": "{env:GOOGLE_CREDENTIALS_PATH}"},
 		},
 
 		// =============================================================================
-		// Container/Infrastructure MCPs - Ports 3031-3040
+		// Container/Infrastructure MCPs - LOCAL
 		// =============================================================================
 		"docker": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3031", mcpHost),
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-docker"},
 		},
 		"kubernetes": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3032", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-kubernetes"},
+			Environment: map[string]string{"KUBECONFIG": "{env:KUBECONFIG}"},
+		},
+		"redis": {
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-redis"},
+			Environment: map[string]string{"REDIS_URL": "redis://localhost:6379"},
 		},
 		"mongodb": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3033", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-mongodb"},
+			Environment: map[string]string{"MONGODB_URI": "mongodb://localhost:27017"},
 		},
 		"elasticsearch": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3034", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-elasticsearch"},
+			Environment: map[string]string{"ELASTICSEARCH_URL": "http://localhost:9200"},
 		},
 		"qdrant": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3035", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-qdrant"},
+			Environment: map[string]string{"QDRANT_URL": "http://localhost:6333"},
 		},
 		"chroma": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3036", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-chroma"},
+			Environment: map[string]string{"CHROMA_URL": "http://localhost:8001"},
 		},
 		"pinecone": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3037", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-pinecone"},
+			Environment: map[string]string{"PINECONE_API_KEY": "{env:PINECONE_API_KEY}"},
 		},
 		"milvus": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3038", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-milvus"},
+			Environment: map[string]string{"MILVUS_HOST": "localhost", "MILVUS_PORT": "19530"},
 		},
 		"weaviate": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3039", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-weaviate"},
+			Environment: map[string]string{"WEAVIATE_URL": "http://localhost:8080"},
 		},
 		"supabase": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3040", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-supabase"},
+			Environment: map[string]string{"SUPABASE_URL": "{env:SUPABASE_URL}", "SUPABASE_KEY": "{env:SUPABASE_KEY}"},
 		},
 
 		// =============================================================================
-		// Productivity/Collaboration MCPs - Ports 3041-3050
+		// Productivity/Collaboration MCPs - LOCAL
 		// =============================================================================
 		"jira": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3041", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-atlassian"},
+			Environment: map[string]string{"JIRA_URL": "{env:JIRA_URL}", "JIRA_EMAIL": "{env:JIRA_EMAIL}", "JIRA_API_TOKEN": "{env:JIRA_API_TOKEN}"},
 		},
 		"asana": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3042", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-asana"},
+			Environment: map[string]string{"ASANA_ACCESS_TOKEN": "{env:ASANA_ACCESS_TOKEN}"},
 		},
 		"trello": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3043", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-trello"},
+			Environment: map[string]string{"TRELLO_API_KEY": "{env:TRELLO_API_KEY}", "TRELLO_TOKEN": "{env:TRELLO_TOKEN}"},
 		},
 		"monday": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3044", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-monday"},
+			Environment: map[string]string{"MONDAY_API_KEY": "{env:MONDAY_API_KEY}"},
 		},
 		"clickup": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3045", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-clickup"},
+			Environment: map[string]string{"CLICKUP_API_KEY": "{env:CLICKUP_API_KEY}"},
 		},
 		"discord": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3046", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-discord"},
+			Environment: map[string]string{"DISCORD_BOT_TOKEN": "{env:DISCORD_BOT_TOKEN}"},
 		},
 		"microsoft-teams": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3047", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-teams"},
+			Environment: map[string]string{"TEAMS_CLIENT_ID": "{env:TEAMS_CLIENT_ID}", "TEAMS_CLIENT_SECRET": "{env:TEAMS_CLIENT_SECRET}"},
 		},
 		"gmail": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3048", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-gmail"},
+			Environment: map[string]string{"GOOGLE_CREDENTIALS_PATH": "{env:GOOGLE_CREDENTIALS_PATH}"},
 		},
 		"calendar": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3049", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-google-calendar"},
+			Environment: map[string]string{"GOOGLE_CREDENTIALS_PATH": "{env:GOOGLE_CREDENTIALS_PATH}"},
 		},
 		"zoom": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3050", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-zoom"},
+			Environment: map[string]string{"ZOOM_CLIENT_ID": "{env:ZOOM_CLIENT_ID}", "ZOOM_CLIENT_SECRET": "{env:ZOOM_CLIENT_SECRET}"},
 		},
 
 		// =============================================================================
-		// Cloud/DevOps MCPs - Ports 3051-3060
+		// Cloud/DevOps MCPs - LOCAL
 		// =============================================================================
 		"aws-s3": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3051", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-s3"},
+			Environment: map[string]string{"AWS_ACCESS_KEY_ID": "{env:AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY": "{env:AWS_SECRET_ACCESS_KEY}"},
 		},
 		"aws-lambda": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3052", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-aws-lambda"},
+			Environment: map[string]string{"AWS_ACCESS_KEY_ID": "{env:AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY": "{env:AWS_SECRET_ACCESS_KEY}"},
 		},
 		"azure": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3053", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-azure"},
+			Environment: map[string]string{"AZURE_SUBSCRIPTION_ID": "{env:AZURE_SUBSCRIPTION_ID}", "AZURE_TENANT_ID": "{env:AZURE_TENANT_ID}"},
 		},
 		"gcp": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3054", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-gcp"},
+			Environment: map[string]string{"GOOGLE_APPLICATION_CREDENTIALS": "{env:GOOGLE_APPLICATION_CREDENTIALS}"},
 		},
 		"terraform": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3055", mcpHost),
+			Type:    "local",
+			Command: []string{"npx", "-y", "mcp-server-terraform"},
 		},
 		"ansible": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3056", mcpHost),
+			Type:    "local",
+			Command: []string{"npx", "-y", "mcp-server-ansible"},
 		},
 		"datadog": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3057", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-datadog"},
+			Environment: map[string]string{"DD_API_KEY": "{env:DD_API_KEY}", "DD_APP_KEY": "{env:DD_APP_KEY}"},
 		},
 		"grafana": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3058", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-grafana"},
+			Environment: map[string]string{"GRAFANA_URL": "{env:GRAFANA_URL}", "GRAFANA_API_KEY": "{env:GRAFANA_API_KEY}"},
 		},
 		"prometheus": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3059", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-prometheus"},
+			Environment: map[string]string{"PROMETHEUS_URL": "{env:PROMETHEUS_URL}"},
 		},
 		"circleci": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3060", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-circleci"},
+			Environment: map[string]string{"CIRCLECI_TOKEN": "{env:CIRCLECI_TOKEN}"},
 		},
 
 		// =============================================================================
-		// AI/ML Integration MCPs - Ports 3061-3065
+		// AI/ML Integration MCPs - LOCAL
 		// =============================================================================
 		"langchain": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3061", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-langchain"},
+			Environment: map[string]string{"OPENAI_API_KEY": "{env:OPENAI_API_KEY}"},
 		},
 		"llamaindex": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3062", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-llamaindex"},
+			Environment: map[string]string{"OPENAI_API_KEY": "{env:OPENAI_API_KEY}"},
 		},
 		"huggingface": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3063", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-huggingface"},
+			Environment: map[string]string{"HUGGINGFACE_API_KEY": "{env:HUGGINGFACE_API_KEY}"},
 		},
 		"replicate": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3064", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-replicate"},
+			Environment: map[string]string{"REPLICATE_API_TOKEN": "{env:REPLICATE_API_TOKEN}"},
 		},
 		"stable-diffusion": {
-			Type: "remote",
-			URL:  fmt.Sprintf("http://%s:3065", mcpHost),
+			Type:        "local",
+			Command:     []string{"npx", "-y", "mcp-server-stable-diffusion"},
+			Environment: map[string]string{"STABILITY_API_KEY": "{env:STABILITY_API_KEY}"},
 		},
 	}
 }
@@ -2569,93 +2617,99 @@ func handleGenerateCrush(appCfg *AppConfig) error {
 }
 
 // buildCrushMCPServers creates MCP server configurations for Crush CLI
+// Local servers are started on demand via npx - no remote servers needed
 // COMPLIANCE: 62+ MCPs required for all CLI agents
 func buildCrushMCPServers(baseURL string) map[string]CrushMcpConfig {
-	mcpHost := os.Getenv("MCP_HOST")
-	if mcpHost == "" {
-		mcpHost = "localhost"
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		homeDir = "/home"
 	}
 
 	return map[string]CrushMcpConfig{
-		// HelixAgent Protocol Endpoints (6 MCPs)
+		// HelixAgent Protocol Endpoints (6 MCPs) - REMOTE (running at port 7061)
 		"helixagent-mcp":        {Type: "remote", URL: baseURL + "/v1/mcp", Enabled: true},
 		"helixagent-acp":        {Type: "remote", URL: baseURL + "/v1/acp", Enabled: true},
 		"helixagent-lsp":        {Type: "remote", URL: baseURL + "/v1/lsp", Enabled: true},
 		"helixagent-embeddings": {Type: "remote", URL: baseURL + "/v1/embeddings", Enabled: true},
 		"helixagent-vision":     {Type: "remote", URL: baseURL + "/v1/vision", Enabled: true},
 		"helixagent-cognee":     {Type: "remote", URL: baseURL + "/v1/cognee", Enabled: true},
-		// Active MCP Servers (ports 3001-3007)
-		"fetch":               {Type: "remote", URL: fmt.Sprintf("http://%s:3001", mcpHost), Enabled: true},
-		"filesystem":          {Type: "remote", URL: fmt.Sprintf("http://%s:3002", mcpHost), Enabled: true},
-		"git":                 {Type: "remote", URL: fmt.Sprintf("http://%s:3003", mcpHost), Enabled: true},
-		"memory":              {Type: "remote", URL: fmt.Sprintf("http://%s:3004", mcpHost), Enabled: true},
-		"time":                {Type: "remote", URL: fmt.Sprintf("http://%s:3005", mcpHost), Enabled: true},
-		"sequential-thinking": {Type: "remote", URL: fmt.Sprintf("http://%s:3006", mcpHost), Enabled: true},
-		"everything":          {Type: "remote", URL: fmt.Sprintf("http://%s:3007", mcpHost), Enabled: true},
-		// Archived MCP Servers (ports 3008-3020)
-		"postgres":         {Type: "remote", URL: fmt.Sprintf("http://%s:3008", mcpHost), Enabled: true},
-		"sqlite":           {Type: "remote", URL: fmt.Sprintf("http://%s:3009", mcpHost), Enabled: true},
-		"slack":            {Type: "remote", URL: fmt.Sprintf("http://%s:3010", mcpHost), Enabled: true},
-		"github":           {Type: "remote", URL: fmt.Sprintf("http://%s:3011", mcpHost), Enabled: true},
-		"gitlab":           {Type: "remote", URL: fmt.Sprintf("http://%s:3012", mcpHost), Enabled: true},
-		"google-maps":      {Type: "remote", URL: fmt.Sprintf("http://%s:3013", mcpHost), Enabled: true},
-		"brave-search":     {Type: "remote", URL: fmt.Sprintf("http://%s:3014", mcpHost), Enabled: true},
-		"puppeteer":        {Type: "remote", URL: fmt.Sprintf("http://%s:3015", mcpHost), Enabled: true},
-		"redis":            {Type: "remote", URL: fmt.Sprintf("http://%s:3016", mcpHost), Enabled: true},
-		"sentry":           {Type: "remote", URL: fmt.Sprintf("http://%s:3017", mcpHost), Enabled: true},
-		"gdrive":           {Type: "remote", URL: fmt.Sprintf("http://%s:3018", mcpHost), Enabled: true},
-		"everart":          {Type: "remote", URL: fmt.Sprintf("http://%s:3019", mcpHost), Enabled: true},
-		"aws-kb-retrieval": {Type: "remote", URL: fmt.Sprintf("http://%s:3020", mcpHost), Enabled: true},
-		// Additional Anthropic MCPs (ports 3021-3030)
-		"exa":        {Type: "remote", URL: fmt.Sprintf("http://%s:3021", mcpHost), Enabled: true},
-		"linear":     {Type: "remote", URL: fmt.Sprintf("http://%s:3022", mcpHost), Enabled: true},
-		"notion":     {Type: "remote", URL: fmt.Sprintf("http://%s:3023", mcpHost), Enabled: true},
-		"figma":      {Type: "remote", URL: fmt.Sprintf("http://%s:3024", mcpHost), Enabled: true},
-		"todoist":    {Type: "remote", URL: fmt.Sprintf("http://%s:3025", mcpHost), Enabled: true},
-		"obsidian":   {Type: "remote", URL: fmt.Sprintf("http://%s:3026", mcpHost), Enabled: true},
-		"raycast":    {Type: "remote", URL: fmt.Sprintf("http://%s:3027", mcpHost), Enabled: true},
-		"tinybird":   {Type: "remote", URL: fmt.Sprintf("http://%s:3028", mcpHost), Enabled: true},
-		"cloudflare": {Type: "remote", URL: fmt.Sprintf("http://%s:3029", mcpHost), Enabled: true},
-		"neon":       {Type: "remote", URL: fmt.Sprintf("http://%s:3030", mcpHost), Enabled: true},
-		// Container/Infrastructure MCPs (ports 3031-3040)
-		"docker":        {Type: "remote", URL: fmt.Sprintf("http://%s:3031", mcpHost), Enabled: true},
-		"kubernetes":    {Type: "remote", URL: fmt.Sprintf("http://%s:3032", mcpHost), Enabled: true},
-		"mongodb":       {Type: "remote", URL: fmt.Sprintf("http://%s:3033", mcpHost), Enabled: true},
-		"elasticsearch": {Type: "remote", URL: fmt.Sprintf("http://%s:3034", mcpHost), Enabled: true},
-		"qdrant":        {Type: "remote", URL: fmt.Sprintf("http://%s:3035", mcpHost), Enabled: true},
-		"chroma":        {Type: "remote", URL: fmt.Sprintf("http://%s:3036", mcpHost), Enabled: true},
-		"pinecone":      {Type: "remote", URL: fmt.Sprintf("http://%s:3037", mcpHost), Enabled: true},
-		"milvus":        {Type: "remote", URL: fmt.Sprintf("http://%s:3038", mcpHost), Enabled: true},
-		"weaviate":      {Type: "remote", URL: fmt.Sprintf("http://%s:3039", mcpHost), Enabled: true},
-		"supabase":      {Type: "remote", URL: fmt.Sprintf("http://%s:3040", mcpHost), Enabled: true},
-		// Productivity/Collaboration MCPs (ports 3041-3050)
-		"jira":            {Type: "remote", URL: fmt.Sprintf("http://%s:3041", mcpHost), Enabled: true},
-		"asana":           {Type: "remote", URL: fmt.Sprintf("http://%s:3042", mcpHost), Enabled: true},
-		"trello":          {Type: "remote", URL: fmt.Sprintf("http://%s:3043", mcpHost), Enabled: true},
-		"monday":          {Type: "remote", URL: fmt.Sprintf("http://%s:3044", mcpHost), Enabled: true},
-		"clickup":         {Type: "remote", URL: fmt.Sprintf("http://%s:3045", mcpHost), Enabled: true},
-		"discord":         {Type: "remote", URL: fmt.Sprintf("http://%s:3046", mcpHost), Enabled: true},
-		"microsoft-teams": {Type: "remote", URL: fmt.Sprintf("http://%s:3047", mcpHost), Enabled: true},
-		"gmail":           {Type: "remote", URL: fmt.Sprintf("http://%s:3048", mcpHost), Enabled: true},
-		"calendar":        {Type: "remote", URL: fmt.Sprintf("http://%s:3049", mcpHost), Enabled: true},
-		"zoom":            {Type: "remote", URL: fmt.Sprintf("http://%s:3050", mcpHost), Enabled: true},
-		// Cloud/DevOps MCPs (ports 3051-3060)
-		"aws-s3":     {Type: "remote", URL: fmt.Sprintf("http://%s:3051", mcpHost), Enabled: true},
-		"aws-lambda": {Type: "remote", URL: fmt.Sprintf("http://%s:3052", mcpHost), Enabled: true},
-		"azure":      {Type: "remote", URL: fmt.Sprintf("http://%s:3053", mcpHost), Enabled: true},
-		"gcp":        {Type: "remote", URL: fmt.Sprintf("http://%s:3054", mcpHost), Enabled: true},
-		"terraform":  {Type: "remote", URL: fmt.Sprintf("http://%s:3055", mcpHost), Enabled: true},
-		"ansible":    {Type: "remote", URL: fmt.Sprintf("http://%s:3056", mcpHost), Enabled: true},
-		"datadog":    {Type: "remote", URL: fmt.Sprintf("http://%s:3057", mcpHost), Enabled: true},
-		"grafana":    {Type: "remote", URL: fmt.Sprintf("http://%s:3058", mcpHost), Enabled: true},
-		"prometheus": {Type: "remote", URL: fmt.Sprintf("http://%s:3059", mcpHost), Enabled: true},
-		"circleci":   {Type: "remote", URL: fmt.Sprintf("http://%s:3060", mcpHost), Enabled: true},
-		// AI/ML Integration MCPs (ports 3061-3065)
-		"langchain":        {Type: "remote", URL: fmt.Sprintf("http://%s:3061", mcpHost), Enabled: true},
-		"llamaindex":       {Type: "remote", URL: fmt.Sprintf("http://%s:3062", mcpHost), Enabled: true},
-		"huggingface":      {Type: "remote", URL: fmt.Sprintf("http://%s:3063", mcpHost), Enabled: true},
-		"replicate":        {Type: "remote", URL: fmt.Sprintf("http://%s:3064", mcpHost), Enabled: true},
-		"stable-diffusion": {Type: "remote", URL: fmt.Sprintf("http://%s:3065", mcpHost), Enabled: true},
+
+		// Anthropic Official MCPs - LOCAL (started on demand via npx)
+		"filesystem":          {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", homeDir}, Enabled: true},
+		"fetch":               {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"}, Enabled: true},
+		"memory":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}, Enabled: true},
+		"time":                {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}, Enabled: true},
+		"git":                 {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}, Enabled: true},
+		"sqlite":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"}, Enabled: true},
+		"postgres":            {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres"}, Env: map[string]string{"POSTGRES_URL": "postgresql://helixagent:helixagent123@localhost:5432/helixagent_db"}, Enabled: true},
+		"puppeteer":           {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}, Enabled: true},
+		"sequential-thinking": {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sequential-thinking"}, Enabled: true},
+		"everything":          {Type: "local", Command: []string{"npx", "-y", "@anthropic-ai/mcp-server-everything"}, Enabled: true},
+		"brave-search":        {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-brave-search"}, Env: map[string]string{"BRAVE_API_KEY": "{env:BRAVE_API_KEY}"}, Enabled: true},
+		"google-maps":         {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-google-maps"}, Env: map[string]string{"GOOGLE_MAPS_API_KEY": "{env:GOOGLE_MAPS_API_KEY}"}, Enabled: true},
+		"slack":               {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-slack"}, Env: map[string]string{"SLACK_BOT_TOKEN": "{env:SLACK_BOT_TOKEN}"}, Enabled: true},
+		"github":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-github"}, Env: map[string]string{"GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_TOKEN}"}, Enabled: true},
+		"gitlab":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-gitlab"}, Env: map[string]string{"GITLAB_PERSONAL_ACCESS_TOKEN": "{env:GITLAB_TOKEN}"}, Enabled: true},
+		"sentry":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sentry"}, Env: map[string]string{"SENTRY_AUTH_TOKEN": "{env:SENTRY_AUTH_TOKEN}"}, Enabled: true},
+		"everart":             {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-everart"}, Env: map[string]string{"EVERART_API_KEY": "{env:EVERART_API_KEY}"}, Enabled: true},
+		"aws-kb-retrieval":    {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-aws-kb-retrieval"}, Env: map[string]string{"AWS_ACCESS_KEY_ID": "{env:AWS_ACCESS_KEY_ID}"}, Enabled: true},
+		"gdrive":              {Type: "local", Command: []string{"npx", "-y", "@anthropic/mcp-server-gdrive"}, Env: map[string]string{"GOOGLE_CREDENTIALS_PATH": "{env:GOOGLE_CREDENTIALS_PATH}"}, Enabled: true},
+
+		// Additional Anthropic & Community MCPs - LOCAL
+		"exa":        {Type: "local", Command: []string{"npx", "-y", "exa-mcp-server"}, Env: map[string]string{"EXA_API_KEY": "{env:EXA_API_KEY}"}, Enabled: true},
+		"linear":     {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-linear"}, Env: map[string]string{"LINEAR_API_KEY": "{env:LINEAR_API_KEY}"}, Enabled: true},
+		"notion":     {Type: "local", Command: []string{"npx", "-y", "@notionhq/notion-mcp-server"}, Env: map[string]string{"NOTION_API_KEY": "{env:NOTION_API_KEY}"}, Enabled: true},
+		"figma":      {Type: "local", Command: []string{"npx", "-y", "figma-developer-mcp"}, Env: map[string]string{"FIGMA_API_KEY": "{env:FIGMA_API_KEY}"}, Enabled: true},
+		"todoist":    {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-todoist"}, Env: map[string]string{"TODOIST_API_TOKEN": "{env:TODOIST_API_TOKEN}"}, Enabled: true},
+		"obsidian":   {Type: "local", Command: []string{"npx", "-y", "mcp-obsidian"}, Env: map[string]string{"OBSIDIAN_VAULT_PATH": "{env:OBSIDIAN_VAULT_PATH}"}, Enabled: true},
+		"raycast":    {Type: "local", Command: []string{"npx", "-y", "@anthropic-ai/mcp-server-raycast"}, Enabled: true},
+		"tinybird":   {Type: "local", Command: []string{"npx", "-y", "mcp-tinybird"}, Env: map[string]string{"TINYBIRD_TOKEN": "{env:TINYBIRD_TOKEN}"}, Enabled: true},
+		"cloudflare": {Type: "local", Command: []string{"npx", "-y", "@cloudflare/mcp-server-cloudflare"}, Env: map[string]string{"CLOUDFLARE_API_TOKEN": "{env:CLOUDFLARE_API_TOKEN}"}, Enabled: true},
+		"neon":       {Type: "local", Command: []string{"npx", "-y", "@neondatabase/mcp-server-neon"}, Env: map[string]string{"NEON_API_KEY": "{env:NEON_API_KEY}"}, Enabled: true},
+
+		// Container/Infrastructure MCPs - LOCAL
+		"docker":        {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-docker"}, Enabled: true},
+		"kubernetes":    {Type: "local", Command: []string{"npx", "-y", "mcp-server-kubernetes"}, Env: map[string]string{"KUBECONFIG": "{env:KUBECONFIG}"}, Enabled: true},
+		"redis":         {Type: "local", Command: []string{"npx", "-y", "mcp-server-redis"}, Env: map[string]string{"REDIS_URL": "redis://localhost:6379"}, Enabled: true},
+		"mongodb":       {Type: "local", Command: []string{"npx", "-y", "mcp-server-mongodb"}, Env: map[string]string{"MONGODB_URI": "mongodb://localhost:27017"}, Enabled: true},
+		"elasticsearch": {Type: "local", Command: []string{"npx", "-y", "mcp-server-elasticsearch"}, Env: map[string]string{"ELASTICSEARCH_URL": "http://localhost:9200"}, Enabled: true},
+		"qdrant":        {Type: "local", Command: []string{"npx", "-y", "mcp-server-qdrant"}, Env: map[string]string{"QDRANT_URL": "http://localhost:6333"}, Enabled: true},
+		"chroma":        {Type: "local", Command: []string{"npx", "-y", "mcp-server-chroma"}, Env: map[string]string{"CHROMA_URL": "http://localhost:8001"}, Enabled: true},
+		"pinecone":      {Type: "local", Command: []string{"npx", "-y", "mcp-server-pinecone"}, Env: map[string]string{"PINECONE_API_KEY": "{env:PINECONE_API_KEY}"}, Enabled: true},
+		"milvus":        {Type: "local", Command: []string{"npx", "-y", "mcp-server-milvus"}, Env: map[string]string{"MILVUS_HOST": "localhost"}, Enabled: true},
+		"weaviate":      {Type: "local", Command: []string{"npx", "-y", "mcp-server-weaviate"}, Env: map[string]string{"WEAVIATE_URL": "http://localhost:8080"}, Enabled: true},
+		"supabase":      {Type: "local", Command: []string{"npx", "-y", "mcp-server-supabase"}, Env: map[string]string{"SUPABASE_URL": "{env:SUPABASE_URL}"}, Enabled: true},
+
+		// Productivity/Collaboration MCPs - LOCAL
+		"jira":            {Type: "local", Command: []string{"npx", "-y", "mcp-server-atlassian"}, Env: map[string]string{"JIRA_URL": "{env:JIRA_URL}"}, Enabled: true},
+		"asana":           {Type: "local", Command: []string{"npx", "-y", "mcp-server-asana"}, Env: map[string]string{"ASANA_ACCESS_TOKEN": "{env:ASANA_ACCESS_TOKEN}"}, Enabled: true},
+		"trello":          {Type: "local", Command: []string{"npx", "-y", "mcp-server-trello"}, Env: map[string]string{"TRELLO_API_KEY": "{env:TRELLO_API_KEY}"}, Enabled: true},
+		"monday":          {Type: "local", Command: []string{"npx", "-y", "mcp-server-monday"}, Env: map[string]string{"MONDAY_API_KEY": "{env:MONDAY_API_KEY}"}, Enabled: true},
+		"clickup":         {Type: "local", Command: []string{"npx", "-y", "mcp-server-clickup"}, Env: map[string]string{"CLICKUP_API_KEY": "{env:CLICKUP_API_KEY}"}, Enabled: true},
+		"discord":         {Type: "local", Command: []string{"npx", "-y", "mcp-server-discord"}, Env: map[string]string{"DISCORD_BOT_TOKEN": "{env:DISCORD_BOT_TOKEN}"}, Enabled: true},
+		"microsoft-teams": {Type: "local", Command: []string{"npx", "-y", "mcp-server-teams"}, Env: map[string]string{"TEAMS_CLIENT_ID": "{env:TEAMS_CLIENT_ID}"}, Enabled: true},
+		"gmail":           {Type: "local", Command: []string{"npx", "-y", "mcp-server-gmail"}, Env: map[string]string{"GOOGLE_CREDENTIALS_PATH": "{env:GOOGLE_CREDENTIALS_PATH}"}, Enabled: true},
+		"calendar":        {Type: "local", Command: []string{"npx", "-y", "mcp-server-google-calendar"}, Env: map[string]string{"GOOGLE_CREDENTIALS_PATH": "{env:GOOGLE_CREDENTIALS_PATH}"}, Enabled: true},
+		"zoom":            {Type: "local", Command: []string{"npx", "-y", "mcp-server-zoom"}, Env: map[string]string{"ZOOM_CLIENT_ID": "{env:ZOOM_CLIENT_ID}"}, Enabled: true},
+
+		// Cloud/DevOps MCPs - LOCAL
+		"aws-s3":     {Type: "local", Command: []string{"npx", "-y", "mcp-server-s3"}, Env: map[string]string{"AWS_ACCESS_KEY_ID": "{env:AWS_ACCESS_KEY_ID}"}, Enabled: true},
+		"aws-lambda": {Type: "local", Command: []string{"npx", "-y", "mcp-server-aws-lambda"}, Env: map[string]string{"AWS_ACCESS_KEY_ID": "{env:AWS_ACCESS_KEY_ID}"}, Enabled: true},
+		"azure":      {Type: "local", Command: []string{"npx", "-y", "mcp-server-azure"}, Env: map[string]string{"AZURE_SUBSCRIPTION_ID": "{env:AZURE_SUBSCRIPTION_ID}"}, Enabled: true},
+		"gcp":        {Type: "local", Command: []string{"npx", "-y", "mcp-server-gcp"}, Env: map[string]string{"GOOGLE_APPLICATION_CREDENTIALS": "{env:GOOGLE_APPLICATION_CREDENTIALS}"}, Enabled: true},
+		"terraform":  {Type: "local", Command: []string{"npx", "-y", "mcp-server-terraform"}, Enabled: true},
+		"ansible":    {Type: "local", Command: []string{"npx", "-y", "mcp-server-ansible"}, Enabled: true},
+		"datadog":    {Type: "local", Command: []string{"npx", "-y", "mcp-server-datadog"}, Env: map[string]string{"DD_API_KEY": "{env:DD_API_KEY}"}, Enabled: true},
+		"grafana":    {Type: "local", Command: []string{"npx", "-y", "mcp-server-grafana"}, Env: map[string]string{"GRAFANA_URL": "{env:GRAFANA_URL}"}, Enabled: true},
+		"prometheus": {Type: "local", Command: []string{"npx", "-y", "mcp-server-prometheus"}, Env: map[string]string{"PROMETHEUS_URL": "{env:PROMETHEUS_URL}"}, Enabled: true},
+		"circleci":   {Type: "local", Command: []string{"npx", "-y", "mcp-server-circleci"}, Env: map[string]string{"CIRCLECI_TOKEN": "{env:CIRCLECI_TOKEN}"}, Enabled: true},
+
+		// AI/ML Integration MCPs - LOCAL
+		"langchain":        {Type: "local", Command: []string{"npx", "-y", "mcp-server-langchain"}, Env: map[string]string{"OPENAI_API_KEY": "{env:OPENAI_API_KEY}"}, Enabled: true},
+		"llamaindex":       {Type: "local", Command: []string{"npx", "-y", "mcp-server-llamaindex"}, Env: map[string]string{"OPENAI_API_KEY": "{env:OPENAI_API_KEY}"}, Enabled: true},
+		"huggingface":      {Type: "local", Command: []string{"npx", "-y", "mcp-server-huggingface"}, Env: map[string]string{"HUGGINGFACE_API_KEY": "{env:HUGGINGFACE_API_KEY}"}, Enabled: true},
+		"replicate":        {Type: "local", Command: []string{"npx", "-y", "mcp-server-replicate"}, Env: map[string]string{"REPLICATE_API_TOKEN": "{env:REPLICATE_API_TOKEN}"}, Enabled: true},
+		"stable-diffusion": {Type: "local", Command: []string{"npx", "-y", "mcp-server-stable-diffusion"}, Env: map[string]string{"STABILITY_API_KEY": "{env:STABILITY_API_KEY}"}, Enabled: true},
 	}
 }
 
