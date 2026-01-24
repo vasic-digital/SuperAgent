@@ -795,9 +795,10 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				}
 			}
 
-			// Stream the actual LLM response content (in dim/gray for debate phase)
-			// The content is wrapped in dim color for phase content
-			responseContent := FormatPhaseContent(realResponse) + "\n\n"
+			// Stream the actual LLM response content
+			// For terminal clients: dim/gray ANSI formatting for debate phase content
+			// For API clients: clean Markdown quote block formatting
+			responseContent := FormatPhaseContentForFormat(outputFormat, realResponse) + "\n\n"
 			responseChunk := map[string]any{
 				"id":                 streamID,
 				"object":             "chat.completion.chunk",

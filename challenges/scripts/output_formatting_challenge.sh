@@ -172,9 +172,10 @@ test_api_response_clean() {
     if curl -s "$api_url/health" > /dev/null 2>&1; then
         pass "HelixAgent API is running"
 
-        # Test chat completion endpoint
+        # Test chat completion endpoint - use User-Agent to trigger Markdown formatting
         local response=$(curl -s -X POST "$api_url/v1/chat/completions" \
             -H "Content-Type: application/json" \
+            -H "User-Agent: OpenCode/1.0" \
             -d '{
                 "model": "helixagent-debate",
                 "messages": [{"role": "user", "content": "Say hello"}],
@@ -212,9 +213,10 @@ test_streaming_response_clean() {
     local api_url="http://localhost:7061"
 
     if curl -s "$api_url/health" > /dev/null 2>&1; then
-        # Test streaming endpoint
+        # Test streaming endpoint - use User-Agent to trigger Markdown formatting
         local stream_response=$(curl -s -N -X POST "$api_url/v1/chat/completions" \
             -H "Content-Type: application/json" \
+            -H "User-Agent: OpenCode/1.0" \
             -d '{
                 "model": "helixagent-debate",
                 "messages": [{"role": "user", "content": "Count to 3"}],
