@@ -437,6 +437,21 @@ func FormatFallbackIndicatorSimpleMarkdown(role services.DebateRole, fallbackPro
 	return fmt.Sprintf("**[%s]** _Fallback to %s (%s)_ - %s\n", roleName, fallbackProvider, fallbackModel, formatDuration(responseTime))
 }
 
+// FormatPhaseContentForFormat formats debate phase content for the specified format
+func FormatPhaseContentForFormat(format OutputFormat, content string) string {
+	switch format {
+	case OutputFormatANSI:
+		return FormatPhaseContent(content)
+	case OutputFormatMarkdown:
+		// For Markdown, use a quote block for visual separation (no ANSI codes)
+		return FormatPhaseContentMarkdown(content)
+	case OutputFormatPlain:
+		return content // Plain text - no formatting
+	default:
+		return FormatPhaseContentMarkdown(content)
+	}
+}
+
 // FormatFallbackIndicatorForFormat formats a fallback indicator for the specified format
 func FormatFallbackIndicatorForFormat(format OutputFormat, position services.DebateTeamPosition, role services.DebateRole, fallbackProvider, fallbackModel string, responseTime time.Duration) string {
 	switch format {
