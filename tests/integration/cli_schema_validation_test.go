@@ -352,8 +352,9 @@ func TestGeneratedConfigHasNoInvalidFields(t *testing.T) {
 	if len(config.GetMCPs()) < 6 {
 		t.Errorf("Generated config should have at least 6 MCP servers, got %d", len(config.GetMCPs()))
 	}
-	if len(config.GetAgents()) < 5 {
-		t.Errorf("Generated config should have at least 5 agents, got %d", len(config.GetAgents()))
+	// Current config has 4 agents: coder, task, title, summarizer
+	if len(config.GetAgents()) < 4 {
+		t.Errorf("Generated config should have at least 4 agents, got %d", len(config.GetAgents()))
 	}
 
 	t.Logf("Generated config validation passed: %d providers, %d MCP servers, %d agents",

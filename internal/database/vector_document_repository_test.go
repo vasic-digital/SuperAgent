@@ -3,6 +3,8 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -44,10 +46,34 @@ func setupVectorDocumentTestDB(t *testing.T) (*pgxpool.Pool, *VectorDocumentRepo
 			WHERE table_name = 'vector_documents'
 		)
 	`).Scan(&exists)
-	if err != nil || !exists {
-		t.Skipf("Skipping test: vector_documents table not available")
+
+	if err != nil {
+		t.Skipf("Skipping test: failed to check table existence: %v", err)
 		pool.Close()
 		return nil, nil
+	}
+
+	if !exists {
+		// Try to create the table without vector columns (for basic CRUD testing)
+		// Vector columns require pgvector extension which may not be available
+		_, createErr := pool.Exec(ctx, `
+			CREATE TABLE IF NOT EXISTS vector_documents (
+				id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+				title TEXT NOT NULL,
+				content TEXT NOT NULL,
+				metadata JSONB DEFAULT '{}'::jsonb,
+				embedding_id UUID,
+				created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+				embedding_provider VARCHAR(50) DEFAULT 'pgvector'
+			)
+		`)
+		if createErr != nil {
+			t.Skipf("Skipping test: vector_documents table not available and could not be created: %v", createErr)
+			pool.Close()
+			return nil, nil
+		}
+		t.Log("Created vector_documents table for testing (without vector columns)")
 	}
 
 	return pool, repo
@@ -62,7 +88,27 @@ func cleanupVectorDocumentTestDB(t *testing.T, pool *pgxpool.Pool) {
 }
 
 func getTestDBConnString() string {
-	return "postgres://helixagent:helixagent123@localhost:5432/helixagent_db?sslmode=disable"
+	host := os.Getenv("DB_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("DB_PORT")
+	if port == "" {
+		port = "5432"
+	}
+	user := os.Getenv("DB_USER")
+	if user == "" {
+		user = "helixagent"
+	}
+	password := os.Getenv("DB_PASSWORD")
+	if password == "" {
+		password = "helixagent123"
+	}
+	dbname := os.Getenv("DB_NAME")
+	if dbname == "" {
+		dbname = "helixagent_db"
+	}
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
 }
 
 func createTestVectorDocument() *VectorDocument {
