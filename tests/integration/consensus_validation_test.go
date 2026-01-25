@@ -19,7 +19,8 @@ import (
 // These tests MUST FAIL if the debate ensemble consensus section is empty
 // ===============================================================================================
 
-const helixAgentURL = "http://localhost:7061"
+// consensusHelixAgentURL is the HelixAgent server URL for consensus tests
+const consensusHelixAgentURL = "http://localhost:7061"
 
 // consensusServerAvailable checks if HelixAgent server is available and responding properly
 func consensusServerAvailable(t *testing.T) bool {
@@ -29,14 +30,14 @@ func consensusServerAvailable(t *testing.T) bool {
 		return false
 	}
 	client := &http.Client{Timeout: 3 * time.Second}
-	resp, err := client.Get(helixAgentURL + "/health")
+	resp, err := client.Get(consensusHelixAgentURL + "/health")
 	if err != nil {
-		t.Logf("HelixAgent server not available at %s (acceptable)", helixAgentURL)
+		t.Logf("HelixAgent server not available at %s (acceptable)", consensusHelixAgentURL)
 		return false
 	}
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		t.Logf("HelixAgent server not healthy at %s (acceptable)", helixAgentURL)
+		t.Logf("HelixAgent server not healthy at %s (acceptable)", consensusHelixAgentURL)
 		return false
 	}
 	return true
@@ -76,7 +77,7 @@ func TestConsensusNotEmpty_EndToEnd(t *testing.T) {
 
 	// Make the request with a timeout
 	client = &http.Client{Timeout: 120 * time.Second}
-	req, err := http.NewRequest("POST", helixAgentURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequest("POST", consensusHelixAgentURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -200,7 +201,7 @@ func TestConsensusHasSubstantiveContent(t *testing.T) {
 	require.NoError(t, err)
 
 	client = &http.Client{Timeout: 120 * time.Second}
-	req, err := http.NewRequest("POST", helixAgentURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequest("POST", consensusHelixAgentURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -282,7 +283,7 @@ func TestAllDebatePositionsHaveRealResponses(t *testing.T) {
 	require.NoError(t, err)
 
 	client = &http.Client{Timeout: 120 * time.Second}
-	req, err := http.NewRequest("POST", helixAgentURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequest("POST", consensusHelixAgentURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 

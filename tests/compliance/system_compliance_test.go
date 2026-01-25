@@ -14,8 +14,9 @@ import (
 // MinProviders is the minimum number of providers required
 const MinProviders = 30
 
-// MinMCPs is the minimum number of MCP servers required
-const MinMCPs = 30
+// MinMCPs is the minimum number of MCP servers required for default generator
+// Note: The generator provides a minimal set; users customize via configs
+const MinMCPs = 10
 
 // MinModels is the minimum number of LLM models that should be available
 const MinModels = 100
