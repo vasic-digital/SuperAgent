@@ -278,6 +278,156 @@ const (
 	IconSpinner10 = "⠏"
 )
 
+// Fallback status icons - visual indicators for LLM fallback events
+const (
+	IconFallbackTriggered = "⚡" // Fallback triggered (lightning)
+	IconFallbackSuccess   = "🔄" // Fallback succeeded (cycle arrows)
+	IconFallbackFailed    = "⛔" // Fallback failed (no entry)
+	IconFallbackExhausted = "💀" // All fallbacks exhausted (skull)
+	IconFallbackChain     = "🔗" // Complete chain (chain link)
+
+	// Error category icons
+	IconErrorRateLimit   = "🚦" // Rate limit (traffic light)
+	IconErrorTimeout     = "⏱️"  // Timeout (timer)
+	IconErrorAuth        = "🔑" // Auth error (key)
+	IconErrorQuota       = "📊" // Quota exceeded (chart)
+	IconErrorConnection  = "🔌" // Connection error (plug)
+	IconErrorUnavailable = "🚫" // Service unavailable (no entry)
+	IconErrorOverloaded  = "🔥" // Service overloaded (fire)
+	IconErrorInvalid     = "⚠️"  // Invalid request (warning)
+	IconErrorEmpty       = "📭" // Empty response (empty mailbox)
+	IconErrorUnknown     = "❓" // Unknown error (question mark)
+)
+
+// FallbackIndicatorContent represents fallback event visual data for CLI rendering
+type FallbackIndicatorContent struct {
+	// Event type and identity
+	EventType     string `json:"event_type"`
+	DebateID      string `json:"debate_id"`
+	Position      int    `json:"position"`
+	Role          string `json:"role"`
+	AttemptNumber int    `json:"attempt_number"`
+	TotalAttempts int    `json:"total_attempts"`
+
+	// Provider info
+	PrimaryProvider  string `json:"primary_provider"`
+	PrimaryModel     string `json:"primary_model"`
+	FallbackProvider string `json:"fallback_provider,omitempty"`
+	FallbackModel    string `json:"fallback_model,omitempty"`
+
+	// Error info
+	ErrorCode     string `json:"error_code"`
+	ErrorMessage  string `json:"error_message"`
+	ErrorCategory string `json:"error_category"`
+
+	// Visual elements
+	Icon      string `json:"icon"`
+	Color     string `json:"color"`
+	Animation string `json:"animation,omitempty"`
+
+	// Timing
+	Duration  int64 `json:"duration_ms"`
+	Timestamp int64 `json:"timestamp"`
+}
+
+// GetFallbackEventIcon returns the icon for a fallback event type
+func GetFallbackEventIcon(eventType string) string {
+	switch eventType {
+	case "fallback.triggered":
+		return IconFallbackTriggered
+	case "fallback.success":
+		return IconFallbackSuccess
+	case "fallback.failed":
+		return IconFallbackFailed
+	case "fallback.exhausted":
+		return IconFallbackExhausted
+	case "fallback.chain":
+		return IconFallbackChain
+	default:
+		return IconStuck
+	}
+}
+
+// GetFallbackEventColor returns ANSI color for a fallback event type
+func GetFallbackEventColor(eventType string) string {
+	switch eventType {
+	case "fallback.triggered":
+		return ColorBrightYellow // Yellow for warning/attention
+	case "fallback.success":
+		return ColorBrightGreen // Green for success
+	case "fallback.failed":
+		return ColorBrightRed // Red for failure
+	case "fallback.exhausted":
+		return ColorRed + ColorBold // Bold red for critical
+	case "fallback.chain":
+		return ColorBrightCyan // Cyan for info
+	default:
+		return ColorYellow
+	}
+}
+
+// GetErrorCategoryIcon returns the icon for an error category
+func GetErrorCategoryIcon(category string) string {
+	switch category {
+	case "rate_limit":
+		return IconErrorRateLimit
+	case "timeout":
+		return IconErrorTimeout
+	case "auth":
+		return IconErrorAuth
+	case "quota":
+		return IconErrorQuota
+	case "connection":
+		return IconErrorConnection
+	case "unavailable":
+		return IconErrorUnavailable
+	case "overloaded":
+		return IconErrorOverloaded
+	case "invalid_request":
+		return IconErrorInvalid
+	case "empty_response":
+		return IconErrorEmpty
+	default:
+		return IconErrorUnknown
+	}
+}
+
+// FormatFallbackIndicator formats a fallback indicator for CLI display
+func FormatFallbackIndicator(content *FallbackIndicatorContent) string {
+	icon := GetFallbackEventIcon(content.EventType)
+	color := GetFallbackEventColor(content.EventType)
+	errIcon := GetErrorCategoryIcon(content.ErrorCategory)
+
+	// Build the formatted string
+	result := color + icon + " [" + content.Role + "] "
+
+	switch content.EventType {
+	case "fallback.triggered":
+		result += "Fallback triggered: " + content.PrimaryProvider + "/" + content.PrimaryModel + " failed"
+		if content.ErrorMessage != "" {
+			result += "\n   " + errIcon + " " + content.ErrorMessage
+		}
+		if content.FallbackProvider != "" {
+			result += "\n   → Trying: " + content.FallbackProvider + "/" + content.FallbackModel
+		}
+	case "fallback.success":
+		result += "Fallback succeeded: " + content.FallbackProvider + "/" + content.FallbackModel
+		result += " (attempt " + string(rune('0'+content.AttemptNumber)) + ")"
+	case "fallback.failed":
+		result += "Fallback failed: " + content.FallbackProvider + "/" + content.FallbackModel
+		if content.ErrorMessage != "" {
+			result += "\n   " + errIcon + " " + content.ErrorMessage
+		}
+	case "fallback.exhausted":
+		result += "ALL FALLBACKS EXHAUSTED - No response available"
+	case "fallback.chain":
+		result += "Fallback chain summary: " + string(rune('0'+content.AttemptNumber)) + " attempts"
+	}
+
+	result += ColorReset
+	return result
+}
+
 // SpinnerFrames for animated spinners
 var SpinnerFrames = []string{
 	IconSpinner1, IconSpinner2, IconSpinner3, IconSpinner4, IconSpinner5,

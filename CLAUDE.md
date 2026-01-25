@@ -288,6 +288,35 @@ config.MinAgentsForNewFramework = 3    // Minimum agents required
 - `internal/debate/protocol/protocol.go` - Debate protocol execution
 - `internal/router/router.go:617` - Handler wiring
 
+### Fallback Error Reporting
+
+When an LLM provider fails and the system falls back to an alternative, detailed error information is included in the streamed response. This allows CLI agent plugins to display exactly why the fallback occurred.
+
+**Error Categories:**
+| Category | Icon | Example Causes |
+|----------|------|----------------|
+| `rate_limit` | 🚦 | Too many requests |
+| `timeout` | ⏱️ | Request took too long |
+| `auth` | 🔑 | Invalid API key |
+| `connection` | 🔌 | Network failure |
+| `unavailable` | 🚫 | Service down (503) |
+| `overloaded` | 🔥 | Server at capacity |
+
+**Response Format (Markdown for API clients):**
+```markdown
+⚡ **[Analyst] Fallback Triggered**
+   Primary: openai/gpt-4 (500 ms)
+   🚦 **Error:** rate limit exceeded
+   → Trying: anthropic/claude-3
+```
+
+**Key Files:**
+- `internal/handlers/debate_format_markdown.go` - Format-aware error formatting
+- `internal/messaging/event_stream.go` - Fallback event types (`fallback.triggered`, etc.)
+- `internal/notifications/cli/types.go` - Visual indicators for CLI plugins
+
+**Challenge:** `./challenges/scripts/fallback_error_reporting_challenge.sh` (37 tests)
+
 ### Semantic Intent Detection (ZERO Hardcoding)
 
 HelixAgent uses **LLM-based semantic intent classification** to understand user messages. When a user confirms, refuses, or asks questions, the system uses AI to understand the semantic meaning - not pattern matching.
