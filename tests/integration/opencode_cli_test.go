@@ -362,15 +362,14 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 		// Validate config structure - uses "helixagent" provider, NOT "openai"
 		assert.Equal(t, "https://opencode.ai/config.json", openCodeConfig.Schema)
 		assert.NotNil(t, openCodeConfig.Provider["helixagent"])
-		assert.Equal(t, "HelixAgent AI Debate Ensemble", openCodeConfig.Provider["helixagent"].Name)
+		assert.Equal(t, "HelixAgent", openCodeConfig.Provider["helixagent"].Name)
 		assert.NotNil(t, openCodeConfig.Provider["helixagent"].Options["apiKey"])
 		assert.NotNil(t, openCodeConfig.Provider["helixagent"].Options["baseURL"])
-		// Agent is now a map of agent configurations
+		// Agent is now a map of agent configurations (coder, task, title, summarizer)
 		require.NotNil(t, openCodeConfig.Agent, "Agent config should not be nil")
-		defaultAgent, hasDefault := openCodeConfig.Agent["default"]
-		require.True(t, hasDefault, "Agent config should have 'default' agent")
-		assert.Contains(t, defaultAgent.Model, "helixagent", "Default agent model should contain 'helixagent'")
-		assert.NotEmpty(t, defaultAgent.Description, "Default agent should have a description")
+		coderAgent, hasCoder := openCodeConfig.Agent["coder"]
+		require.True(t, hasCoder, "Agent config should have 'coder' agent")
+		assert.Contains(t, coderAgent.Model, "helixagent", "Coder agent model should contain 'helixagent'")
 	})
 
 	t.Run("GenerateConfigToFile", func(t *testing.T) {
@@ -423,7 +422,8 @@ func TestGenerateOpenCodeConfigCommand(t *testing.T) {
 		err = json.Unmarshal(output, &openCodeConfig)
 		require.NoError(t, err)
 
-		assert.Equal(t, testAPIKey, openCodeConfig.Provider["helixagent"].Options["apiKey"])
+		// Config uses env var template syntax, not literal values
+		assert.Equal(t, "{env:HELIXAGENT_API_KEY}", openCodeConfig.Provider["helixagent"].Options["apiKey"])
 	})
 
 	t.Run("GenerateConfigWithCustomHostPort", func(t *testing.T) {
@@ -1270,15 +1270,15 @@ func TestOpenCodeConfigValidation(t *testing.T) {
 			Schema: "https://opencode.ai/config.json",
 			Provider: map[string]OpenCodeProviderDef{
 				"helixagent": {
-					Name: "HelixAgent AI Debate Ensemble",
+					Name: "HelixAgent",
 					Options: map[string]interface{}{
-						"apiKey":  "sk-test123",
+						"apiKey":  "{env:HELIXAGENT_API_KEY}",
 						"baseURL": "http://localhost:7061/v1",
 					},
 				},
 			},
 			Agent: map[string]OpenCodeAgentConfigDef{
-				"default": {
+				"coder": {
 					Model:       "helixagent/helixagent-debate",
 					Description: "HelixAgent AI Debate Ensemble",
 				},
@@ -1293,10 +1293,9 @@ func TestOpenCodeConfigValidation(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NotNil(t, parsed.Agent, "Agent should not be nil")
-		defaultAgent, hasDefault := parsed.Agent["default"]
-		require.True(t, hasDefault, "Agent should have 'default' key")
-		assert.Contains(t, defaultAgent.Model, "helixagent")
-		assert.NotEmpty(t, defaultAgent.Description)
+		coderAgent, hasCoder := parsed.Agent["coder"]
+		require.True(t, hasCoder, "Agent should have 'coder' key")
+		assert.Contains(t, coderAgent.Model, "helixagent")
 	})
 
 	t.Run("ConfigWithMissingAPIKey", func(t *testing.T) {

@@ -3,6 +3,8 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -18,7 +20,29 @@ import (
 
 func setupSessionTestDB(t *testing.T) (*pgxpool.Pool, *SessionRepository) {
 	ctx := context.Background()
-	connString := "postgres://helixagent:secret@localhost:5432/helixagent_db?sslmode=disable"
+
+	// Build connection string from environment variables
+	host := os.Getenv("DB_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("DB_PORT")
+	if port == "" {
+		port = "5432"
+	}
+	user := os.Getenv("DB_USER")
+	if user == "" {
+		user = "helixagent"
+	}
+	password := os.Getenv("DB_PASSWORD")
+	if password == "" {
+		password = "secret"
+	}
+	dbname := os.Getenv("DB_NAME")
+	if dbname == "" {
+		dbname = "helixagent_db"
+	}
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
 
 	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
@@ -39,24 +63,63 @@ func setupSessionTestDB(t *testing.T) (*pgxpool.Pool, *SessionRepository) {
 		return nil, nil
 	}
 
+	// Check if required tables exist
+	var tableExists bool
+	err = pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT FROM information_schema.tables
+			WHERE table_schema = 'public'
+			AND table_name = 'user_sessions'
+		)
+	`).Scan(&tableExists)
+	if err != nil || !tableExists {
+		t.Skipf("Skipping test: user_sessions table does not exist (run migrations first)")
+		pool.Close()
+		return nil, nil
+	}
+
 	return pool, repo
 }
 
-func cleanupSessionTestDB(t *testing.T, pool *pgxpool.Pool) {
+func cleanupSessionTestDB(t *testing.T, pool *pgxpool.Pool, testUserID string) {
 	ctx := context.Background()
-	_, err := pool.Exec(ctx, "DELETE FROM user_sessions WHERE user_id LIKE 'test-%'")
-	if err != nil {
-		t.Logf("Warning: Failed to cleanup user_sessions: %v", err)
+	// Delete sessions for the test user
+	if testUserID != "" {
+		_, err := pool.Exec(ctx, "DELETE FROM user_sessions WHERE user_id = $1", testUserID)
+		if err != nil {
+			t.Logf("Warning: Failed to cleanup user_sessions: %v", err)
+		}
+		// Delete the test user
+		_, err = pool.Exec(ctx, "DELETE FROM users WHERE id = $1", testUserID)
+		if err != nil {
+			t.Logf("Warning: Failed to cleanup users: %v", err)
+		}
 	}
 }
 
-func createTestUserSession() *UserSession {
-	memoryID := "memory-" + time.Now().Format("20060102150405")
+// createTestUserForSession creates a user record and returns the user ID
+func createTestUserForSession(t *testing.T, pool *pgxpool.Pool) string {
+	ctx := context.Background()
+	timestamp := time.Now().Format("20060102150405.000000")
+	var userID string
+	err := pool.QueryRow(ctx, `
+		INSERT INTO users (username, email, password_hash, api_key, role)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`, "test-session-user-"+timestamp, "test-session-"+timestamp+"@example.com",
+		"$2a$10$testHashedPassword12345678901234567890", "sk-test-session-"+timestamp, "user").Scan(&userID)
+	if err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+	return userID
+}
+
+func createTestUserSession(userID string) *UserSession {
 	return &UserSession{
-		UserID:       "test-user-" + time.Now().Format("20060102150405"),
+		UserID:       userID, // Use the provided valid user ID
 		SessionToken: "token-" + time.Now().Format("20060102150405.000000"),
 		Context:      map[string]interface{}{"theme": "dark", "language": "en"},
-		MemoryID:     &memoryID,
+		MemoryID:     nil, // Set to nil to avoid memory_id FK issues if any
 		Status:       "active",
 		RequestCount: 0,
 		ExpiresAt:    time.Now().Add(24 * time.Hour),
@@ -72,13 +135,15 @@ func TestSessionRepository_Create(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	// Create a test user first (required for FK constraint)
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		err := repo.Create(ctx, session)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, session.ID)
@@ -87,9 +152,8 @@ func TestSessionRepository_Create(t *testing.T) {
 	})
 
 	t.Run("WithNilMemoryID", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		session.MemoryID = nil
-		session.UserID = "test-nil-memory-" + time.Now().Format("20060102150405")
 		session.SessionToken = "token-nil-memory-" + time.Now().Format("20060102150405.000000")
 		err := repo.Create(ctx, session)
 		assert.NoError(t, err)
@@ -97,9 +161,8 @@ func TestSessionRepository_Create(t *testing.T) {
 	})
 
 	t.Run("WithNilContext", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		session.Context = nil
-		session.UserID = "test-nil-context-" + time.Now().Format("20060102150405")
 		session.SessionToken = "token-nil-context-" + time.Now().Format("20060102150405.000000")
 		err := repo.Create(ctx, session)
 		assert.NoError(t, err)
@@ -112,13 +175,14 @@ func TestSessionRepository_GetByID(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		err := repo.Create(ctx, session)
 		require.NoError(t, err)
 
@@ -132,7 +196,7 @@ func TestSessionRepository_GetByID(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		_, err := repo.GetByID(ctx, "non-existent-id")
+		_, err := repo.GetByID(ctx, "00000000-0000-0000-0000-000000000000")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})
@@ -143,13 +207,14 @@ func TestSessionRepository_GetByToken(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		err := repo.Create(ctx, session)
 		require.NoError(t, err)
 
@@ -160,7 +225,7 @@ func TestSessionRepository_GetByToken(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		_, err := repo.GetByToken(ctx, "non-existent-token")
+		_, err := repo.GetByToken(ctx, "non-existent-token-12345")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})
@@ -171,30 +236,28 @@ func TestSessionRepository_GetByUserID(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		userID := "test-user-multi-" + time.Now().Format("20060102150405")
-
-		// Create multiple sessions for the same user
+		// Create multiple sessions for the same test user
 		for i := 0; i < 3; i++ {
-			session := createTestUserSession()
-			session.UserID = userID
+			session := createTestUserSession(testUserID)
 			session.SessionToken = "token-multi-" + time.Now().Format("20060102150405.000000") + string(rune('a'+i))
 			err := repo.Create(ctx, session)
 			require.NoError(t, err)
 		}
 
-		sessions, err := repo.GetByUserID(ctx, userID)
+		sessions, err := repo.GetByUserID(ctx, testUserID)
 		assert.NoError(t, err)
 		assert.Len(t, sessions, 3)
 	})
 
 	t.Run("EmptyResult", func(t *testing.T) {
-		sessions, err := repo.GetByUserID(ctx, "non-existent-user")
+		sessions, err := repo.GetByUserID(ctx, "00000000-0000-0000-0000-000000000002")
 		assert.NoError(t, err)
 		assert.Len(t, sessions, 0)
 	})
@@ -205,17 +268,15 @@ func TestSessionRepository_GetActiveSessions(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		userID := "test-user-active-" + time.Now().Format("20060102150405")
-
 		// Create active session
-		activeSession := createTestUserSession()
-		activeSession.UserID = userID
+		activeSession := createTestUserSession(testUserID)
 		activeSession.SessionToken = "token-active-" + time.Now().Format("20060102150405.000")
 		activeSession.Status = "active"
 		activeSession.ExpiresAt = time.Now().Add(24 * time.Hour)
@@ -223,8 +284,7 @@ func TestSessionRepository_GetActiveSessions(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create terminated session
-		terminatedSession := createTestUserSession()
-		terminatedSession.UserID = userID
+		terminatedSession := createTestUserSession(testUserID)
 		terminatedSession.SessionToken = "token-terminated-" + time.Now().Format("20060102150405.001")
 		terminatedSession.Status = "terminated"
 		terminatedSession.ExpiresAt = time.Now().Add(24 * time.Hour)
@@ -232,15 +292,14 @@ func TestSessionRepository_GetActiveSessions(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create expired session
-		expiredSession := createTestUserSession()
-		expiredSession.UserID = userID
+		expiredSession := createTestUserSession(testUserID)
 		expiredSession.SessionToken = "token-expired-" + time.Now().Format("20060102150405.002")
 		expiredSession.Status = "active"
 		expiredSession.ExpiresAt = time.Now().Add(-24 * time.Hour)
 		err = repo.Create(ctx, expiredSession)
 		require.NoError(t, err)
 
-		sessions, err := repo.GetActiveSessions(ctx, userID)
+		sessions, err := repo.GetActiveSessions(ctx, testUserID)
 		assert.NoError(t, err)
 		assert.Len(t, sessions, 1)
 		assert.Equal(t, "active", sessions[0].Status)
@@ -252,20 +311,22 @@ func TestSessionRepository_Update(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		err := repo.Create(ctx, session)
 		require.NoError(t, err)
 
 		session.Context = map[string]interface{}{"theme": "light", "language": "fr"}
 		session.Status = "suspended"
 		session.RequestCount = 10
-		newMemoryID := "new-memory-id"
+		// MemoryID must be a valid UUID since the column is UUID type
+		newMemoryID := "11111111-1111-1111-1111-111111111111"
 		session.MemoryID = &newMemoryID
 		session.ExpiresAt = time.Now().Add(48 * time.Hour)
 
@@ -276,12 +337,12 @@ func TestSessionRepository_Update(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "suspended", fetched.Status)
 		assert.Equal(t, 10, fetched.RequestCount)
-		assert.Equal(t, "new-memory-id", *fetched.MemoryID)
+		assert.Equal(t, "11111111-1111-1111-1111-111111111111", *fetched.MemoryID)
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		session := createTestUserSession()
-		session.ID = "non-existent-id"
+		session := createTestUserSession(testUserID)
+		session.ID = "00000000-0000-0000-0000-000000000000"
 		err := repo.Update(ctx, session)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
@@ -293,13 +354,14 @@ func TestSessionRepository_UpdateActivity(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		session.RequestCount = 5
 		err := repo.Create(ctx, session)
 		require.NoError(t, err)
@@ -313,7 +375,7 @@ func TestSessionRepository_UpdateActivity(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		err := repo.UpdateActivity(ctx, "non-existent-id")
+		err := repo.UpdateActivity(ctx, "00000000-0000-0000-0000-000000000000")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})
@@ -324,13 +386,14 @@ func TestSessionRepository_UpdateContext(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		err := repo.Create(ctx, session)
 		require.NoError(t, err)
 
@@ -346,7 +409,7 @@ func TestSessionRepository_UpdateContext(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		err := repo.UpdateContext(ctx, "non-existent-id", map[string]interface{}{})
+		err := repo.UpdateContext(ctx, "00000000-0000-0000-0000-000000000000", map[string]interface{}{})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})
@@ -357,13 +420,14 @@ func TestSessionRepository_Terminate(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		session.Status = "active"
 		err := repo.Create(ctx, session)
 		require.NoError(t, err)
@@ -377,7 +441,7 @@ func TestSessionRepository_Terminate(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		err := repo.Terminate(ctx, "non-existent-id")
+		err := repo.Terminate(ctx, "00000000-0000-0000-0000-000000000000")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})
@@ -388,13 +452,14 @@ func TestSessionRepository_Delete(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		err := repo.Create(ctx, session)
 		require.NoError(t, err)
 
@@ -406,7 +471,7 @@ func TestSessionRepository_Delete(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		err := repo.Delete(ctx, "non-existent-id")
+		err := repo.Delete(ctx, "00000000-0000-0000-0000-000000000000")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})
@@ -417,21 +482,21 @@ func TestSessionRepository_DeleteExpired(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
 		// Create expired session
-		expiredSession := createTestUserSession()
+		expiredSession := createTestUserSession(testUserID)
 		expiredSession.ExpiresAt = time.Now().Add(-1 * time.Hour)
 		err := repo.Create(ctx, expiredSession)
 		require.NoError(t, err)
 
 		// Create non-expired session
-		activeSession := createTestUserSession()
-		activeSession.UserID = "test-non-expired-" + time.Now().Format("20060102150405")
+		activeSession := createTestUserSession(testUserID)
 		activeSession.SessionToken = "token-non-expired-" + time.Now().Format("20060102150405.000000")
 		activeSession.ExpiresAt = time.Now().Add(24 * time.Hour)
 		err = repo.Create(ctx, activeSession)
@@ -452,34 +517,32 @@ func TestSessionRepository_DeleteByUserID(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		userID := "test-user-delete-" + time.Now().Format("20060102150405")
-
-		// Create multiple sessions
+		// Create multiple sessions for the test user
 		for i := 0; i < 3; i++ {
-			session := createTestUserSession()
-			session.UserID = userID
+			session := createTestUserSession(testUserID)
 			session.SessionToken = "token-delete-" + time.Now().Format("20060102150405.000000") + string(rune('a'+i))
 			err := repo.Create(ctx, session)
 			require.NoError(t, err)
 		}
 
-		rowsAffected, err := repo.DeleteByUserID(ctx, userID)
+		rowsAffected, err := repo.DeleteByUserID(ctx, testUserID)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(3), rowsAffected)
 
-		sessions, err := repo.GetByUserID(ctx, userID)
+		sessions, err := repo.GetByUserID(ctx, testUserID)
 		assert.NoError(t, err)
 		assert.Len(t, sessions, 0)
 	})
 
 	t.Run("NoMatches", func(t *testing.T) {
-		rowsAffected, err := repo.DeleteByUserID(ctx, "non-existent-user")
+		rowsAffected, err := repo.DeleteByUserID(ctx, "00000000-0000-0000-0000-000000000002")
 		assert.NoError(t, err)
 		assert.Equal(t, int64(0), rowsAffected)
 	})
@@ -490,13 +553,14 @@ func TestSessionRepository_IsValid(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("ValidSession", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		session.Status = "active"
 		session.ExpiresAt = time.Now().Add(24 * time.Hour)
 		err := repo.Create(ctx, session)
@@ -508,8 +572,7 @@ func TestSessionRepository_IsValid(t *testing.T) {
 	})
 
 	t.Run("ExpiredSession", func(t *testing.T) {
-		session := createTestUserSession()
-		session.UserID = "test-expired-" + time.Now().Format("20060102150405")
+		session := createTestUserSession(testUserID)
 		session.SessionToken = "token-expired-valid-" + time.Now().Format("20060102150405.000000")
 		session.Status = "active"
 		session.ExpiresAt = time.Now().Add(-1 * time.Hour)
@@ -522,8 +585,7 @@ func TestSessionRepository_IsValid(t *testing.T) {
 	})
 
 	t.Run("TerminatedSession", func(t *testing.T) {
-		session := createTestUserSession()
-		session.UserID = "test-terminated-" + time.Now().Format("20060102150405")
+		session := createTestUserSession(testUserID)
 		session.SessionToken = "token-terminated-valid-" + time.Now().Format("20060102150405.000000")
 		session.Status = "terminated"
 		session.ExpiresAt = time.Now().Add(24 * time.Hour)
@@ -536,7 +598,7 @@ func TestSessionRepository_IsValid(t *testing.T) {
 	})
 
 	t.Run("NonExistentToken", func(t *testing.T) {
-		valid, err := repo.IsValid(ctx, "non-existent-token")
+		valid, err := repo.IsValid(ctx, "non-existent-token-12345")
 		assert.NoError(t, err)
 		assert.False(t, valid)
 	})
@@ -547,13 +609,14 @@ func TestSessionRepository_ExtendExpiration(t *testing.T) {
 	if pool == nil {
 		return
 	}
+	testUserID := createTestUserForSession(t, pool)
+	defer cleanupSessionTestDB(t, pool, testUserID)
 	defer pool.Close()
-	defer cleanupSessionTestDB(t, pool)
 
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		session := createTestUserSession()
+		session := createTestUserSession(testUserID)
 		session.ExpiresAt = time.Now().Add(1 * time.Hour)
 		err := repo.Create(ctx, session)
 		require.NoError(t, err)
@@ -569,7 +632,7 @@ func TestSessionRepository_ExtendExpiration(t *testing.T) {
 
 	t.Run("NotFound", func(t *testing.T) {
 		newExpiry := time.Now().Add(48 * time.Hour)
-		err := repo.ExtendExpiration(ctx, "non-existent-id", newExpiry)
+		err := repo.ExtendExpiration(ctx, "00000000-0000-0000-0000-000000000000", newExpiry)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})
@@ -838,17 +901,21 @@ func TestUserSession_JSONKeys(t *testing.T) {
 }
 
 func TestCreateTestUserSession_Helper(t *testing.T) {
-	session := createTestUserSession()
+	// Use a dummy userID for unit testing (no database required)
+	dummyUserID := "test-user-id-for-unit-tests"
+	session := createTestUserSession(dummyUserID)
 
 	t.Run("HasRequiredFields", func(t *testing.T) {
 		assert.NotEmpty(t, session.UserID)
+		assert.Equal(t, dummyUserID, session.UserID)
 		assert.NotEmpty(t, session.SessionToken)
 		assert.NotEmpty(t, session.Status)
 	})
 
 	t.Run("HasOptionalFields", func(t *testing.T) {
 		assert.NotNil(t, session.Context)
-		assert.NotNil(t, session.MemoryID)
+		// MemoryID is now nil by default to avoid FK constraints
+		assert.Nil(t, session.MemoryID)
 	})
 
 	t.Run("HasDefaultValues", func(t *testing.T) {

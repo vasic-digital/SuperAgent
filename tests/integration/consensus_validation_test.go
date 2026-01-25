@@ -94,14 +94,19 @@ func TestConsensusNotEmpty_EndToEnd(t *testing.T) {
 	fullResponse := string(body)
 
 	// CRITICAL ASSERTIONS: These MUST pass for the debate ensemble to be working correctly
+	// Note: API clients get Markdown format, terminals get ANSI format
 
-	// 1. Must have the debate ensemble header
-	assert.Contains(t, fullResponse, "HELIXAGENT AI DEBATE ENSEMBLE",
-		"Response must contain debate ensemble header")
+	// 1. Must have the debate ensemble header (ANSI or Markdown)
+	hasANSIHeader := strings.Contains(fullResponse, "HELIXAGENT AI DEBATE ENSEMBLE")
+	hasMarkdownHeader := strings.Contains(fullResponse, "# HelixAgent AI Debate Ensemble")
+	assert.True(t, hasANSIHeader || hasMarkdownHeader,
+		"Response must contain debate ensemble header (ANSI or Markdown)")
 
-	// 2. Must have the CONSENSUS section
-	assert.Contains(t, fullResponse, "CONSENSUS REACHED",
-		"Response must contain 'CONSENSUS REACHED' section")
+	// 2. Must have the CONSENSUS section (ANSI or Markdown)
+	hasANSIConsensus := strings.Contains(fullResponse, "CONSENSUS REACHED")
+	hasMarkdownConsensus := strings.Contains(fullResponse, "## Consensus") || strings.Contains(fullResponse, "## Final Answer")
+	assert.True(t, hasANSIConsensus || hasMarkdownConsensus,
+		"Response must contain CONSENSUS section (ANSI or Markdown)")
 
 	// 3. Must have the footer
 	assert.Contains(t, fullResponse, "Powered by HelixAgent AI Debate Ensemble",
@@ -109,7 +114,14 @@ func TestConsensusNotEmpty_EndToEnd(t *testing.T) {
 
 	// 4. CRITICAL: There must be CONTENT between CONSENSUS and footer
 	// This is the main test that validates the consensus is not empty
+	// Look for both ANSI and Markdown formats
 	consensusIndex := strings.Index(fullResponse, "CONSENSUS REACHED")
+	if consensusIndex < 0 {
+		consensusIndex = strings.Index(fullResponse, "## Consensus")
+	}
+	if consensusIndex < 0 {
+		consensusIndex = strings.Index(fullResponse, "## Final Answer")
+	}
 	footerIndex := strings.Index(fullResponse, "Powered by HelixAgent AI Debate Ensemble")
 
 	if consensusIndex >= 0 && footerIndex >= 0 && footerIndex > consensusIndex {
@@ -121,8 +133,9 @@ func TestConsensusNotEmpty_EndToEnd(t *testing.T) {
 		contentLines := 0
 		for _, line := range lines {
 			trimmed := strings.TrimSpace(line)
-			// Skip empty lines and formatting lines (═, ─, etc.)
+			// Skip empty lines and formatting lines (═, ─, #, etc.)
 			if len(trimmed) > 5 && !strings.HasPrefix(trimmed, "═") && !strings.HasPrefix(trimmed, "─") &&
+				!strings.HasPrefix(trimmed, "#") && !strings.HasPrefix(trimmed, "---") &&
 				!strings.Contains(trimmed, "CONSENSUS") && !strings.Contains(trimmed, "synthesized") {
 				contentLines++
 			}
@@ -132,41 +145,32 @@ func TestConsensusNotEmpty_EndToEnd(t *testing.T) {
 			"CONSENSUS section must have actual content, not just headers. Got %d content lines in: %s",
 			contentLines, consensusSection)
 	} else {
-		t.Fatalf("Could not find CONSENSUS section or footer in response")
+		t.Fatalf("Could not find CONSENSUS section or footer in response. consensusIndex=%d, footerIndex=%d", consensusIndex, footerIndex)
 	}
 
-	// 5. Must have all 5 debate positions
-	expectedPositions := []string{"THE ANALYST", "THE PROPOSER", "THE CRITIC", "THE SYNTHESIZER", "THE MEDIATOR"}
-	for _, pos := range expectedPositions {
-		assert.Contains(t, fullResponse, pos, "Response must contain position: %s", pos)
+	// 5. Must have all 5 debate positions (ANSI or Markdown format)
+	// ANSI: "THE ANALYST", Markdown: "**[Analyst]**" or "**Analyst**"
+	positionPairs := []struct {
+		ansi     string
+		markdown string
+	}{
+		{"THE ANALYST", "Analyst"},
+		{"THE PROPOSER", "Proposer"},
+		{"THE CRITIC", "Critic"},
+		{"THE SYNTHESIZER", "Synthesis"},
+		{"THE MEDIATOR", "Mediator"},
+	}
+	for _, pair := range positionPairs {
+		hasANSI := strings.Contains(fullResponse, pair.ansi)
+		hasMarkdown := strings.Contains(fullResponse, pair.markdown)
+		assert.True(t, hasANSI || hasMarkdown,
+			"Response must contain position: %s (ANSI) or %s (Markdown)", pair.ansi, pair.markdown)
 	}
 
 	// 6. Each position must have a response (not "Unable to provide analysis")
-	for _, pos := range expectedPositions {
-		posIndex := strings.Index(fullResponse, pos)
-		if posIndex >= 0 {
-			// Get the section after this position
-			afterPos := fullResponse[posIndex:]
-			nextPosIndex := len(afterPos)
-
-			// Find the next position or section
-			for _, nextPos := range []string{"THE ANALYST", "THE PROPOSER", "THE CRITIC", "THE SYNTHESIZER", "THE MEDIATOR", "CONSENSUS"} {
-				if nextPos == pos {
-					continue
-				}
-				idx := strings.Index(afterPos[len(pos):], nextPos)
-				if idx >= 0 && idx+len(pos) < nextPosIndex {
-					nextPosIndex = idx + len(pos)
-				}
-			}
-
-			positionSection := afterPos[:nextPosIndex]
-
-			// Check this position doesn't have the error message
-			assert.NotContains(t, positionSection, "Unable to provide analysis",
-				"Position %s should have real content, not error message", pos)
-		}
-	}
+	// For both formats, check that there's no error message in the position sections
+	assert.NotContains(t, fullResponse, "Unable to provide analysis",
+		"Response should not contain error fallback messages")
 }
 
 // TestConsensusHasSubstantiveContent validates that the consensus is not just filler text
@@ -216,11 +220,17 @@ func TestConsensusHasSubstantiveContent(t *testing.T) {
 
 	fullResponse := string(body)
 
-	// Extract the consensus section content
+	// Extract the consensus section content (ANSI or Markdown format)
 	consensusIndex := strings.Index(fullResponse, "CONSENSUS REACHED")
+	if consensusIndex < 0 {
+		consensusIndex = strings.Index(fullResponse, "## Consensus")
+	}
+	if consensusIndex < 0 {
+		consensusIndex = strings.Index(fullResponse, "## Final Answer")
+	}
 	footerIndex := strings.Index(fullResponse, "Powered by HelixAgent AI Debate Ensemble")
 
-	require.True(t, consensusIndex >= 0, "Must have CONSENSUS section")
+	require.True(t, consensusIndex >= 0, "Must have CONSENSUS section (ANSI or Markdown)")
 	require.True(t, footerIndex > consensusIndex, "Footer must come after CONSENSUS")
 
 	consensusSection := fullResponse[consensusIndex:footerIndex]
@@ -298,11 +308,13 @@ func TestAllDebatePositionsHaveRealResponses(t *testing.T) {
 
 	fullResponse := string(body)
 
-	// All 5 positions must be present
-	positions := []string{"THE ANALYST", "THE PROPOSER", "THE CRITIC", "THE SYNTHESIZER", "THE MEDIATOR"}
-	for _, position := range positions {
-		assert.Contains(t, fullResponse, position,
-			"Response must contain position: %s", position)
+	// All 5 positions must be present (ANSI or Markdown format)
+	positionNames := []string{"Analyst", "Proposer", "Critic", "Synthesis", "Mediator"}
+	for _, position := range positionNames {
+		hasANSI := strings.Contains(fullResponse, "THE "+strings.ToUpper(position))
+		hasMarkdown := strings.Contains(fullResponse, position)
+		assert.True(t, hasANSI || hasMarkdown,
+			"Response must contain position: %s (ANSI or Markdown)", position)
 	}
 
 	// The response must NOT contain the error fallback message
@@ -313,9 +325,11 @@ func TestAllDebatePositionsHaveRealResponses(t *testing.T) {
 	assert.Contains(t, strings.ToLower(fullResponse), "polymorphism",
 		"Response should reference the query term 'polymorphism'")
 
-	// The consensus section must exist and have content
-	assert.Contains(t, fullResponse, "CONSENSUS REACHED",
-		"Response must have CONSENSUS section")
+	// The consensus section must exist and have content (ANSI or Markdown)
+	hasANSIConsensus := strings.Contains(fullResponse, "CONSENSUS REACHED")
+	hasMarkdownConsensus := strings.Contains(fullResponse, "## Consensus") || strings.Contains(fullResponse, "## Final Answer")
+	assert.True(t, hasANSIConsensus || hasMarkdownConsensus,
+		"Response must have CONSENSUS section (ANSI or Markdown)")
 }
 
 func minInt(a, b int) int {

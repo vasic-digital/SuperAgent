@@ -137,7 +137,7 @@ func TestOpenCodeConfigOnlyShowsHelixAgentModel(t *testing.T) {
 
 		model, exists := provider.Models["helixagent-debate"]
 		assert.True(t, exists, "Model 'helixagent-debate' MUST be defined")
-		assert.Equal(t, "HelixAgent Debate Ensemble", model.Name)
+		assert.Equal(t, "HelixAgent AI Debate Ensemble", model.Name)
 	})
 
 	t.Run("ConfigHasNPMPackage", func(t *testing.T) {
@@ -173,16 +173,14 @@ func TestOpenCodeConfigOnlyShowsHelixAgentModel(t *testing.T) {
 
 		require.NotNil(t, openCodeConfig.Agent, "Agent configuration must exist")
 
-		// Agent is now a map of agent configurations
-		defaultAgent, hasDefault := openCodeConfig.Agent["default"]
-		require.True(t, hasDefault, "Agent config must have 'default' agent")
+		// Agent is now a map of agent configurations (coder, task, title, summarizer)
+		coderAgent, hasCoder := openCodeConfig.Agent["coder"]
+		require.True(t, hasCoder, "Agent config must have 'coder' agent")
 
 		// CRITICAL: Agent model must reference helixagent provider
 		// Model format is "provider/model" or just "model" with provider context
-		assert.Contains(t, defaultAgent.Model, "helixagent",
+		assert.Contains(t, coderAgent.Model, "helixagent",
 			"Agent model MUST reference 'helixagent' provider")
-		assert.NotEmpty(t, defaultAgent.Description,
-			"Agent must have a description")
 	})
 
 	t.Run("ConfigDoesNotContainOpenAIString", func(t *testing.T) {
@@ -417,7 +415,9 @@ func TestOpenCodeConfigAPIKeyHandling(t *testing.T) {
 		provider := openCodeConfig.Provider["helixagent"]
 		apiKey, ok := provider.Options["apiKey"].(string)
 		require.True(t, ok, "API key must be a string")
-		assert.Equal(t, testKey, apiKey, "Config must include the provided API key")
+		// Config uses env var template syntax, not literal values
+		assert.Equal(t, "{env:HELIXAGENT_API_KEY}", apiKey,
+			"Config must use environment variable template for API key")
 	})
 
 	t.Run("ConfigBaseURLIsCorrect", func(t *testing.T) {

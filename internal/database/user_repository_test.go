@@ -3,14 +3,20 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// Silence unused import warning for uuid
+var _ = uuid.New
 
 // =============================================================================
 // Test Helper Functions for User Repository
@@ -18,7 +24,29 @@ import (
 
 func setupUserTestDB(t *testing.T) (*pgxpool.Pool, *UserRepository) {
 	ctx := context.Background()
-	connString := "postgres://helixagent:secret@localhost:5432/helixagent_db?sslmode=disable"
+
+	// Build connection string from environment variables
+	host := os.Getenv("DB_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("DB_PORT")
+	if port == "" {
+		port = "5432"
+	}
+	user := os.Getenv("DB_USER")
+	if user == "" {
+		user = "helixagent"
+	}
+	password := os.Getenv("DB_PASSWORD")
+	if password == "" {
+		password = "secret"
+	}
+	dbname := os.Getenv("DB_NAME")
+	if dbname == "" {
+		dbname = "helixagent_db"
+	}
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
 
 	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
@@ -35,6 +63,21 @@ func setupUserTestDB(t *testing.T) (*pgxpool.Pool, *UserRepository) {
 
 	if err := pool.Ping(ctx); err != nil {
 		t.Skipf("Skipping test: database connection failed: %v", err)
+		pool.Close()
+		return nil, nil
+	}
+
+	// Check if required tables exist
+	var tableExists bool
+	err = pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT FROM information_schema.tables
+			WHERE table_schema = 'public'
+			AND table_name = 'users'
+		)
+	`).Scan(&tableExists)
+	if err != nil || !tableExists {
+		t.Skipf("Skipping test: users table does not exist (run migrations first)")
 		pool.Close()
 		return nil, nil
 	}
@@ -124,7 +167,7 @@ func TestUserRepository_GetByID(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		_, err := repo.GetByID(ctx, "non-existent-id")
+		_, err := repo.GetByID(ctx, "00000000-0000-0000-0000-000000000000")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})
@@ -245,7 +288,7 @@ func TestUserRepository_Update(t *testing.T) {
 
 	t.Run("NotFound", func(t *testing.T) {
 		user := createTestUser()
-		user.ID = "non-existent-id"
+		user.ID = "00000000-0000-0000-0000-000000000000"
 		err := repo.Update(ctx, user)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
@@ -275,7 +318,7 @@ func TestUserRepository_Delete(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		err := repo.Delete(ctx, "non-existent-id")
+		err := repo.Delete(ctx, "00000000-0000-0000-0000-000000000000")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})
@@ -339,7 +382,7 @@ func TestUserRepository_UpdatePassword(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		err := repo.UpdatePassword(ctx, "non-existent-id", "hash")
+		err := repo.UpdatePassword(ctx, "00000000-0000-0000-0000-000000000000", "hash")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})
@@ -370,7 +413,7 @@ func TestUserRepository_RegenerateAPIKey(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		err := repo.RegenerateAPIKey(ctx, "non-existent-id", "new-key")
+		err := repo.RegenerateAPIKey(ctx, "00000000-0000-0000-0000-000000000000", "new-key")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})

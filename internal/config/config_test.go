@@ -20,6 +20,7 @@ func TestLoad(t *testing.T) {
 		"RATE_LIMITING_ENABLED", "RATE_LIMIT_REQUESTS",
 		"PLUGIN_AUTO_RELOAD", "PLUGIN_HOT_RELOAD",
 		"MAX_CONCURRENT_REQUESTS", "REQUEST_TIMEOUT",
+		"GIN_MODE", // Also clear GIN_MODE to test default value
 	} {
 		originalEnv[key] = os.Getenv(key)
 		os.Unsetenv(key)

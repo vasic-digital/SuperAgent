@@ -3,6 +3,8 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -17,7 +19,29 @@ import (
 
 func setupProtocolTestDB(t *testing.T) (*pgxpool.Pool, *ProtocolRepository) {
 	ctx := context.Background()
-	connString := "postgres://helixagent:secret@localhost:5432/helixagent_db?sslmode=disable"
+
+	// Build connection string from environment variables
+	host := os.Getenv("DB_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("DB_PORT")
+	if port == "" {
+		port = "5432"
+	}
+	user := os.Getenv("DB_USER")
+	if user == "" {
+		user = "helixagent"
+	}
+	password := os.Getenv("DB_PASSWORD")
+	if password == "" {
+		password = "secret"
+	}
+	dbname := os.Getenv("DB_NAME")
+	if dbname == "" {
+		dbname = "helixagent_db"
+	}
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
 
 	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
@@ -32,6 +56,21 @@ func setupProtocolTestDB(t *testing.T) (*pgxpool.Pool, *ProtocolRepository) {
 
 	if err := pool.Ping(ctx); err != nil {
 		t.Skipf("Skipping test: database connection failed: %v", err)
+		pool.Close()
+		return nil, nil
+	}
+
+	// Check if required tables exist
+	var tableExists bool
+	err = pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT FROM information_schema.tables
+			WHERE table_schema = 'public'
+			AND table_name = 'mcp_servers'
+		)
+	`).Scan(&tableExists)
+	if err != nil || !tableExists {
+		t.Skipf("Skipping test: mcp_servers table does not exist (run migrations first)")
 		pool.Close()
 		return nil, nil
 	}

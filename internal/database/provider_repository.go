@@ -189,7 +189,7 @@ func (r *ProviderRepository) List(ctx context.Context, limit, offset int) ([]*LL
 	}
 
 	query := `
-		SELECT id, name, type, api_key, base_url, model, weight, enabled, config, health_status, response_time, created_at, updated_at
+		SELECT id, name, type, COALESCE(api_key, ''), COALESCE(base_url, ''), COALESCE(model, ''), weight, enabled, COALESCE(config, '{}'), COALESCE(health_status, ''), response_time, created_at, updated_at
 		FROM llm_providers
 		ORDER BY name ASC
 		LIMIT $1 OFFSET $2
@@ -230,7 +230,7 @@ func (r *ProviderRepository) List(ctx context.Context, limit, offset int) ([]*LL
 // ListEnabled retrieves all enabled providers
 func (r *ProviderRepository) ListEnabled(ctx context.Context) ([]*LLMProvider, error) {
 	query := `
-		SELECT id, name, type, api_key, base_url, model, weight, enabled, config, health_status, response_time, created_at, updated_at
+		SELECT id, name, type, COALESCE(api_key, ''), COALESCE(base_url, ''), COALESCE(model, ''), weight, enabled, COALESCE(config, '{}'), COALESCE(health_status, ''), response_time, created_at, updated_at
 		FROM llm_providers
 		WHERE enabled = true
 		ORDER BY weight DESC
