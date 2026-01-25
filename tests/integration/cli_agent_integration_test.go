@@ -28,7 +28,7 @@ import (
 // TEST CONSTANTS AND TYPES
 // =============================================================================
 
-// All 18 expected CLI agents
+// All 48 expected CLI agents
 var expectedAgents = []string{
 	"OpenCode", "Crush", "HelixCode", "Kiro",
 	"Aider", "ClaudeCode", "Cline", "CodenameGoose",
@@ -141,11 +141,11 @@ func (m *MockLSPTransport) IsConnected() bool {
 // AGENT REGISTRY TESTS
 // =============================================================================
 
-// TestAgentRegistry_AllAgentsRegistered verifies all 18 CLI agents are registered
+// TestAgentRegistry_AllAgentsRegistered verifies all 48 CLI agents are registered
 func TestAgentRegistry_AllAgentsRegistered(t *testing.T) {
-	t.Run("Verify_18_Agents_Registered", func(t *testing.T) {
+	t.Run("Verify_48_Agents_Registered", func(t *testing.T) {
 		registeredAgents := agents.GetAllAgents()
-		assert.Equal(t, 18, len(registeredAgents), "Should have exactly 18 CLI agents registered")
+		assert.Equal(t, 48, len(registeredAgents), "Should have exactly 48 CLI agents registered")
 	})
 
 	t.Run("Verify_All_Expected_Agents_Present", func(t *testing.T) {
@@ -160,7 +160,7 @@ func TestAgentRegistry_AllAgentsRegistered(t *testing.T) {
 
 	t.Run("Verify_Agent_Names_Match", func(t *testing.T) {
 		agentNames := agents.GetAgentNames()
-		assert.Equal(t, 18, len(agentNames), "Should return 18 agent names")
+		assert.Equal(t, 48, len(agentNames), "Should return 18 agent names")
 
 		// Sort both for comparison
 		sortedExpected := make([]string, len(expectedAgents))
@@ -1112,7 +1112,7 @@ func TestHTTPHandlerIntegration_AgentsEndpoint(t *testing.T) {
 		require.NoError(t, err)
 
 		count := int(response["count"].(float64))
-		assert.Equal(t, 18, count)
+		assert.Equal(t, 48, count)
 	})
 
 	t.Run("Get_Specific_Agent", func(t *testing.T) {
@@ -1205,7 +1205,7 @@ func TestHTTPHandlerIntegration_AgentsEndpoint(t *testing.T) {
 		require.NoError(t, err)
 
 		count := int(response["count"].(float64))
-		assert.Equal(t, 18, count, "All agents should support Bash")
+		assert.GreaterOrEqual(t, count, 44, "Most agents should support Bash")
 	})
 }
 

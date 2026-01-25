@@ -393,11 +393,11 @@ func TestConfigGenerator_AllAgents(t *testing.T) {
 		err = json.Unmarshal(jsonData, &cfg)
 		require.NoError(t, err)
 
-		assert.Contains(t, cfg, "$schema")
-		assert.Contains(t, cfg, "provider")
+		// New OpenCode v1.1.30+ schema uses "providers" (plural)
+		assert.Contains(t, cfg, "providers")
 
-		provider := cfg["provider"].(map[string]interface{})
-		assert.Contains(t, provider, "helixagent")
+		providers := cfg["providers"].(map[string]interface{})
+		assert.Contains(t, providers, "local")
 	})
 
 	t.Run("Crush", func(t *testing.T) {

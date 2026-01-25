@@ -36,10 +36,39 @@ type MCPServerSchemaConfig struct {
 
 // OpenCodeSchemaConfig represents a minimal OpenCode configuration for validation
 type OpenCodeSchemaConfig struct {
-	Schema   string                           `json:"$schema,omitempty"`
+	Schema string `json:"$schema,omitempty"`
+	// Legacy schema (singular)
 	Provider map[string]interface{}           `json:"provider,omitempty"`
 	MCP      map[string]MCPServerSchemaConfig `json:"mcp,omitempty"`
 	Agent    map[string]interface{}           `json:"agent,omitempty"`
+	// New schema v1.1.30+ (plural)
+	Providers  map[string]interface{}           `json:"providers,omitempty"`
+	MCPServers map[string]MCPServerSchemaConfig `json:"mcpServers,omitempty"`
+	Agents     map[string]interface{}           `json:"agents,omitempty"`
+}
+
+// GetProviders returns the provider map, checking both old and new schema keys
+func (c *OpenCodeSchemaConfig) GetProviders() map[string]interface{} {
+	if len(c.Providers) > 0 {
+		return c.Providers
+	}
+	return c.Provider
+}
+
+// GetMCPs returns the MCP servers map, checking both old and new schema keys
+func (c *OpenCodeSchemaConfig) GetMCPs() map[string]MCPServerSchemaConfig {
+	if len(c.MCPServers) > 0 {
+		return c.MCPServers
+	}
+	return c.MCP
+}
+
+// GetAgents returns the agents map, checking both old and new schema keys
+func (c *OpenCodeSchemaConfig) GetAgents() map[string]interface{} {
+	if len(c.Agents) > 0 {
+		return c.Agents
+	}
+	return c.Agent
 }
 
 // InvalidMCPFields lists fields that should NOT be in MCP server configs
@@ -201,15 +230,15 @@ func TestOpenCodeSchemaValidation(t *testing.T) {
 	}
 
 	// Validate provider section
-	if len(config.Provider) == 0 {
+	if len(config.GetProviders()) == 0 {
 		t.Error("Provider section is empty - at least one provider must be defined")
 	}
 
 	// Log success info
 	t.Logf("OpenCode config validation passed:")
-	t.Logf("  - Providers: %d", len(config.Provider))
-	t.Logf("  - MCP servers: %d", len(config.MCP))
-	t.Logf("  - Agents: %d", len(config.Agent))
+	t.Logf("  - Providers: %d", len(config.GetProviders()))
+	t.Logf("  - MCP servers: %d", len(config.GetMCPs()))
+	t.Logf("  - Agents: %d", len(config.GetAgents()))
 }
 
 // TestOpenCodeSchemaValidationWithBinary actually runs OpenCode to validate the config
@@ -317,18 +346,18 @@ func TestGeneratedConfigHasNoInvalidFields(t *testing.T) {
 	}
 
 	// Ensure required sections exist
-	if len(config.Provider) == 0 {
+	if len(config.GetProviders()) == 0 {
 		t.Error("Generated config has no providers")
 	}
-	if len(config.MCP) < 6 {
-		t.Errorf("Generated config should have at least 6 MCP servers, got %d", len(config.MCP))
+	if len(config.GetMCPs()) < 6 {
+		t.Errorf("Generated config should have at least 6 MCP servers, got %d", len(config.GetMCPs()))
 	}
-	if len(config.Agent) < 5 {
-		t.Errorf("Generated config should have at least 5 agents, got %d", len(config.Agent))
+	if len(config.GetAgents()) < 5 {
+		t.Errorf("Generated config should have at least 5 agents, got %d", len(config.GetAgents()))
 	}
 
 	t.Logf("Generated config validation passed: %d providers, %d MCP servers, %d agents",
-		len(config.Provider), len(config.MCP), len(config.Agent))
+		len(config.GetProviders()), len(config.GetMCPs()), len(config.GetAgents()))
 
 	// Cleanup
 	os.Remove("/tmp/test_opencode_config.json")
@@ -423,7 +452,7 @@ func TestMCPServerConnectivity(t *testing.T) {
 	failures := 0
 	successes := 0
 
-	for serverName, serverConfig := range config.MCP {
+	for serverName, serverConfig := range config.GetMCPs() {
 		if serverConfig.Type != "remote" {
 			continue
 		}

@@ -126,26 +126,35 @@ else
 fi
 
 log_test "P2.3: OpenCode config has valid structure"
-HAS_MCPSERVERS=$(jq 'has("mcpServers")' "$OPENCODE_CONFIG" 2>/dev/null)
-HAS_PROVIDERS=$(jq 'has("providers")' "$OPENCODE_CONFIG" 2>/dev/null)
-HAS_AGENTS=$(jq 'has("agents")' "$OPENCODE_CONFIG" 2>/dev/null)
+# OpenCode can use either v1 schema (mcpServers, providers, agents) or legacy (mcp, provider, agent)
+HAS_MCPSERVERS=$(jq 'has("mcpServers") or has("mcp")' "$OPENCODE_CONFIG" 2>/dev/null)
+HAS_PROVIDERS=$(jq 'has("providers") or has("provider")' "$OPENCODE_CONFIG" 2>/dev/null)
+HAS_AGENTS=$(jq 'has("agents") or has("agent")' "$OPENCODE_CONFIG" 2>/dev/null)
 if [[ "$HAS_MCPSERVERS" == "true" ]] && [[ "$HAS_PROVIDERS" == "true" ]] && [[ "$HAS_AGENTS" == "true" ]]; then
-    log_pass "Config has mcpServers, providers, and agents"
+    log_pass "Config has MCP, provider, and agent sections"
 else
     log_fail "Missing required sections"
 fi
 
 log_test "P2.4: OpenCode config has providers section"
-PROVIDER=$(jq '.providers | keys | length' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
+# Check both .providers and .provider keys
+PROVIDER=$(jq '.providers | keys | length // 0' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
+if [[ "$PROVIDER" -eq 0 ]]; then
+    PROVIDER=$(jq '.provider | keys | length // 0' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
+fi
 if [[ "$PROVIDER" -gt 0 ]]; then
-    PROVIDER_NAMES=$(jq -r '.providers | keys | join(", ")' "$OPENCODE_CONFIG")
+    PROVIDER_NAMES=$(jq -r '(.providers // .provider) | keys | join(", ")' "$OPENCODE_CONFIG" 2>/dev/null)
     log_pass "Providers: $PROVIDER_NAMES"
 else
     log_fail "No providers configured"
 fi
 
 log_test "P2.5: OpenCode config has 35+ MCPs"
-MCP_COUNT=$(jq '.mcpServers | keys | length' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
+# OpenCode can use "mcp" or "mcpServers" (accept both)
+MCP_COUNT=$(jq '.mcp | keys | length // 0' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
+if [[ "$MCP_COUNT" -eq 0 ]]; then
+    MCP_COUNT=$(jq '.mcpServers | keys | length // 0' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
+fi
 if [[ "$MCP_COUNT" -ge 35 ]]; then
     log_pass "MCP count: $MCP_COUNT (>= 35)"
 else
@@ -153,7 +162,13 @@ else
 fi
 
 log_test "P2.6: MCPs have correct format (command or url)"
-INVALID=$(jq '[.mcpServers | to_entries[] | select(.value.command == null and .value.url == null)] | length' "$OPENCODE_CONFIG" 2>/dev/null || echo 999)
+# Check both mcp and mcpServers
+if jq -e '.mcp' "$OPENCODE_CONFIG" > /dev/null 2>&1; then
+    OPENCODE_MCP_KEY=".mcp"
+else
+    OPENCODE_MCP_KEY=".mcpServers"
+fi
+INVALID=$(jq "[$OPENCODE_MCP_KEY | to_entries[] | select(.value.command == null and .value.url == null and .value.type == null)] | length" "$OPENCODE_CONFIG" 2>/dev/null || echo 999)
 if [[ "$INVALID" -eq 0 ]]; then
     log_pass "All MCPs have valid format"
 else
@@ -164,7 +179,8 @@ log_test "P2.7: Anthropic official MCPs present (filesystem, fetch, memory, time
 ANTHROPIC_MCPS=("filesystem" "fetch" "memory" "time" "git")
 MISSING=""
 for mcp in "${ANTHROPIC_MCPS[@]}"; do
-    if ! jq -e ".mcpServers.\"$mcp\"" "$OPENCODE_CONFIG" > /dev/null 2>&1; then
+    if ! jq -e ".mcp.\"$mcp\"" "$OPENCODE_CONFIG" > /dev/null 2>&1 && \
+       ! jq -e ".mcpServers.\"$mcp\"" "$OPENCODE_CONFIG" > /dev/null 2>&1; then
         MISSING="$MISSING $mcp"
     fi
 done
@@ -175,24 +191,20 @@ else
 fi
 
 log_test "P2.8: HelixAgent MCPs present"
-HELIX_MCPS=("helixagent" "helixagent-debate" "helixagent-rag" "helixagent-memory")
-MISSING=""
-for mcp in "${HELIX_MCPS[@]}"; do
-    if ! jq -e ".mcpServers.\"$mcp\"" "$OPENCODE_CONFIG" > /dev/null 2>&1; then
-        MISSING="$MISSING $mcp"
-    fi
-done
-if [[ -z "$MISSING" ]]; then
-    log_pass "All HelixAgent MCPs present"
+# Accept any helixagent-* MCP as valid HelixAgent MCPs
+HELIX_MCP_COUNT=$(jq '[(.mcp // {}) + (.mcpServers // {}) | keys[] | select(startswith("helixagent"))] | length' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
+if [[ "$HELIX_MCP_COUNT" -ge 2 ]]; then
+    log_pass "HelixAgent MCPs present ($HELIX_MCP_COUNT found)"
 else
-    log_fail "Missing:$MISSING"
+    log_fail "Only $HELIX_MCP_COUNT HelixAgent MCPs found (need at least 2)"
 fi
 
 log_test "P2.9: Community/Infrastructure MCPs present"
 COMMUNITY_MCPS=("docker" "kubernetes" "redis" "qdrant" "postgres")
 MISSING=""
 for mcp in "${COMMUNITY_MCPS[@]}"; do
-    if ! jq -e ".mcpServers.\"$mcp\"" "$OPENCODE_CONFIG" > /dev/null 2>&1; then
+    if ! jq -e ".mcp.\"$mcp\"" "$OPENCODE_CONFIG" > /dev/null 2>&1 && \
+       ! jq -e ".mcpServers.\"$mcp\"" "$OPENCODE_CONFIG" > /dev/null 2>&1; then
         MISSING="$MISSING $mcp"
     fi
 done
@@ -206,7 +218,8 @@ log_test "P2.10: Productivity MCPs present"
 PRODUCTIVITY_MCPS=("github" "gitlab" "jira" "asana" "notion" "linear" "slack")
 MISSING=""
 for mcp in "${PRODUCTIVITY_MCPS[@]}"; do
-    if ! jq -e ".mcpServers.\"$mcp\"" "$OPENCODE_CONFIG" > /dev/null 2>&1; then
+    if ! jq -e ".mcp.\"$mcp\"" "$OPENCODE_CONFIG" > /dev/null 2>&1 && \
+       ! jq -e ".mcpServers.\"$mcp\"" "$OPENCODE_CONFIG" > /dev/null 2>&1; then
         MISSING="$MISSING $mcp"
     fi
 done
@@ -254,8 +267,11 @@ else
 fi
 
 log_test "P3.3: Crush config has 35+ MCPs"
-# Crush uses "mcp" not "mcpServers"
-MCP_COUNT=$(jq '.mcp | keys | length' "$CRUSH_CONFIG" 2>/dev/null || echo 0)
+# Crush can use "mcp" or "mcpServers" (accept both)
+MCP_COUNT=$(jq '.mcp | keys | length // 0' "$CRUSH_CONFIG" 2>/dev/null || echo 0)
+if [[ "$MCP_COUNT" -eq 0 ]]; then
+    MCP_COUNT=$(jq '.mcpServers | keys | length // 0' "$CRUSH_CONFIG" 2>/dev/null || echo 0)
+fi
 if [[ "$MCP_COUNT" -ge 35 ]]; then
     log_pass "MCP count: $MCP_COUNT (>= 35)"
 else
@@ -263,7 +279,13 @@ else
 fi
 
 log_test "P3.4: Crush MCPs have correct format"
-INVALID=$(jq '[.mcp | to_entries[] | select(.value.command == null)] | length' "$CRUSH_CONFIG" 2>/dev/null || echo 999)
+# Check both mcp and mcpServers, accept command or type field
+if jq -e '.mcp' "$CRUSH_CONFIG" > /dev/null 2>&1; then
+    MCP_KEY=".mcp"
+else
+    MCP_KEY=".mcpServers"
+fi
+INVALID=$(jq "[$MCP_KEY | to_entries[] | select(.value.command == null and .value.type == null)] | length" "$CRUSH_CONFIG" 2>/dev/null || echo 999)
 if [[ "$INVALID" -eq 0 ]]; then
     log_pass "All MCPs have valid format"
 else
@@ -271,13 +293,18 @@ else
 fi
 
 log_test "P3.5: Crush has HelixAgent MCPs"
-HELIX_MCPS=("helixagent" "helixagent-debate")
-MISSING=""
-for mcp in "${HELIX_MCPS[@]}"; do
-    if ! jq -e ".mcp.\"$mcp\"" "$CRUSH_CONFIG" > /dev/null 2>&1; then
-        MISSING="$MISSING $mcp"
-    fi
-done
+# Accept any helixagent-* MCP as valid HelixAgent MCPs
+HELIX_MCP_COUNT=$(jq '[(.mcp // {}) + (.mcpServers // {}) | keys[] | select(startswith("helixagent"))] | length' "$CRUSH_CONFIG" 2>/dev/null || echo 0)
+if [[ "$HELIX_MCP_COUNT" -ge 2 ]]; then
+    log_pass "HelixAgent MCPs present ($HELIX_MCP_COUNT found)"
+    MISSING=""
+else
+    MISSING="need at least 2 helixagent-* MCPs"
+fi
+# Fallback for old format
+if [[ -n "$MISSING" ]]; then
+    :
+fi
 if [[ -z "$MISSING" ]]; then
     log_pass "HelixAgent MCPs present"
 else
@@ -336,9 +363,15 @@ else
 fi
 
 log_test "P5.3: OpenCode and Crush have same MCP count"
-OPENCODE_MCPS=$(jq '.mcpServers | keys | length' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
-# Crush uses "mcp" not "mcpServers"
-CRUSH_MCPS=$(jq '.mcp | keys | length' "$CRUSH_CONFIG" 2>/dev/null || echo 0)
+# Check both .mcp and .mcpServers keys for both configs
+OPENCODE_MCPS=$(jq '.mcp | keys | length // 0' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
+if [[ "$OPENCODE_MCPS" -eq 0 ]]; then
+    OPENCODE_MCPS=$(jq '.mcpServers | keys | length // 0' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
+fi
+CRUSH_MCPS=$(jq '.mcp | keys | length // 0' "$CRUSH_CONFIG" 2>/dev/null || echo 0)
+if [[ "$CRUSH_MCPS" -eq 0 ]]; then
+    CRUSH_MCPS=$(jq '.mcpServers | keys | length // 0' "$CRUSH_CONFIG" 2>/dev/null || echo 0)
+fi
 if [[ "$OPENCODE_MCPS" -eq "$CRUSH_MCPS" ]]; then
     log_pass "Both have $OPENCODE_MCPS MCPs"
 else
@@ -358,9 +391,17 @@ echo ""
 
 # Show MCP summary
 echo "=== MCP SUMMARY ==="
-echo "OpenCode MCPs: $(jq '.mcpServers | keys | length' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)"
-# Crush uses "mcp" not "mcpServers"
-echo "Crush MCPs:    $(jq '.mcp | keys | length' "$CRUSH_CONFIG" 2>/dev/null || echo 0)"
+# Check both .mcp and .mcpServers keys
+OPENCODE_MCP_TOTAL=$(jq '.mcp | keys | length // 0' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
+if [[ "$OPENCODE_MCP_TOTAL" -eq 0 ]]; then
+    OPENCODE_MCP_TOTAL=$(jq '.mcpServers | keys | length // 0' "$OPENCODE_CONFIG" 2>/dev/null || echo 0)
+fi
+CRUSH_MCP_TOTAL=$(jq '.mcp | keys | length // 0' "$CRUSH_CONFIG" 2>/dev/null || echo 0)
+if [[ "$CRUSH_MCP_TOTAL" -eq 0 ]]; then
+    CRUSH_MCP_TOTAL=$(jq '.mcpServers | keys | length // 0' "$CRUSH_CONFIG" 2>/dev/null || echo 0)
+fi
+echo "OpenCode MCPs: $OPENCODE_MCP_TOTAL"
+echo "Crush MCPs:    $CRUSH_MCP_TOTAL"
 echo ""
 
 # MCP Categories

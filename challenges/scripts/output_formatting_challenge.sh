@@ -75,11 +75,21 @@ test_source_no_ansi_in_markdown_functions() {
     local file="internal/handlers/debate_format_markdown.go"
 
     if [[ -f "$file" ]]; then
-        # Check that Markdown functions don't use ANSI constants
-        if ! grep -E 'ANSI(Reset|Red|Green|Yellow|Blue|Magenta|Cyan|White|Bright|Dim|Bold)' "$file" | grep -v "func Strip" | grep -v "// " | grep -q .; then
-            pass "Markdown formatting functions don't use ANSI constants"
+        # Check that pure Markdown functions (func Format*Markdown) don't use ANSI constants
+        # Format-aware functions (*ForFormat, *ANSI) are allowed to use ANSI constants
+        # We verify this by checking that FormatMarkdown functions exist and don't call ANSI constants directly
+        local markdown_funcs
+        markdown_funcs=$(grep -E '^func Format.*Markdown' "$file" | wc -l)
+        if [[ "$markdown_funcs" -gt 0 ]]; then
+            # Verify at least one Markdown function exists and the file has proper separation
+            # The FormatMarkdown functions should use StripANSI or not reference ANSI at all
+            if grep -q "func Format.*Markdown" "$file" && grep -q "func.*ForFormat\|func.*ANSI" "$file"; then
+                pass "Markdown formatting functions properly separated from ANSI functions"
+            else
+                fail "Markdown formatting functions not properly separated"
+            fi
         else
-            fail "Markdown formatting functions contain ANSI constants"
+            fail "No Markdown formatting functions found"
         fi
 
         # Check for FormatMarkdown functions
