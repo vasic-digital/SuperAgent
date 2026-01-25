@@ -501,15 +501,105 @@ logging:
   enable_response_logging: true
 ```
 
+## Fallback Error Reporting
+
+When an LLM provider fails and the system falls back to an alternative provider, detailed error information is now included in the response. This helps CLI agent plugins display exactly why the fallback occurred.
+
+### Error Categories
+
+The system automatically categorizes errors to help you quickly understand what went wrong:
+
+| Category | Icon | Common Causes |
+|----------|------|---------------|
+| `rate_limit` | `🚦` | Too many requests, rate limit exceeded |
+| `timeout` | `⏱️` | Request took too long, context deadline exceeded |
+| `auth` | `🔑` | Invalid API key, unauthorized access |
+| `quota` | `📊` | Usage quota exceeded |
+| `connection` | `🔌` | Network error, connection refused, dial failure |
+| `unavailable` | `🚫` | Service unavailable (503), server down |
+| `overloaded` | `🔥` | Server overloaded, capacity exceeded |
+| `invalid_request` | `⚠️` | Bad request (400), invalid parameters |
+| `empty_response` | `📭` | LLM returned empty response |
+| `unknown` | `❓` | Unrecognized error type |
+
+### Response Format
+
+When a fallback occurs, the streamed response includes detailed error information:
+
+**Markdown Format (for API clients like OpenCode):**
+```markdown
+⚡ **[Analyst] Fallback Triggered**
+   Primary: openai/gpt-4 (500 ms)
+   🚦 **Error:** rate limit exceeded
+   → Trying: anthropic/claude-3
+```
+
+**ANSI Format (for terminal clients):**
+The same information is displayed with color highlighting.
+
+**Plain Format (for simple clients):**
+```
+[Analyst] Fallback from openai/gpt-4 to anthropic/claude-3
+  Error: rate limit exceeded (rate_limit)
+```
+
+### Fallback Chain Visualization
+
+For complex fallback scenarios, you can see the complete chain of attempts:
+
+```markdown
+🔗 **Fallback Chain for Position 1:**
+   1. ❌ openai/gpt-4 (500 ms)
+      🚦 rate limit exceeded
+   2. ❌ anthropic/claude-3 (2.0 s)
+      ⏱️ timeout
+   3. ✅ google/gemini-pro (750 ms)
+```
+
+### Event Stream Integration
+
+CLI agent plugins can subscribe to fallback events:
+
+| Event Type | Description |
+|------------|-------------|
+| `fallback.triggered` | Primary provider failed, trying fallback |
+| `fallback.success` | Fallback provider succeeded |
+| `fallback.failed` | Fallback provider also failed |
+| `fallback.exhausted` | All fallbacks exhausted |
+| `fallback.chain` | Complete chain summary |
+
+Event data includes:
+- Position and role in debate
+- Primary and fallback provider/model
+- Error message and category
+- Duration of each attempt
+- Timestamp
+
+### Challenge Script
+
+To validate fallback error reporting is working correctly:
+
+```bash
+./challenges/scripts/fallback_error_reporting_challenge.sh
+```
+
+This challenge runs 37 tests covering:
+- Error category detection
+- Visual indicator mapping
+- Format-aware output (ANSI/Markdown/Plain)
+- Fallback chain visualization
+- Handler integration
+
 ## Best Practices
 
 1. **Use Environment Variables**: Store API keys and sensitive data in environment variables
 2. **Configure Timeouts Appropriately**: Set realistic timeouts based on your use case
 3. **Implement Fallback Chains**: Always configure multiple LLMs for reliability
-4. **Monitor Performance**: Use built-in metrics to monitor system performance
-5. **Test Configurations**: Thoroughly test configurations before production deployment
-6. **Regular Updates**: Keep LLM models and configurations updated
-7. **Security First**: Follow security best practices for API key management
+4. **Monitor Fallback Events**: Track fallback events to identify recurring provider issues
+5. **Monitor Performance**: Use built-in metrics to monitor system performance
+6. **Test Configurations**: Thoroughly test configurations before production deployment
+7. **Regular Updates**: Keep LLM models and configurations updated
+8. **Security First**: Follow security best practices for API key management
 
 ## Conclusion
 

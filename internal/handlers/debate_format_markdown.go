@@ -138,6 +138,44 @@ func FormatFallbackIndicatorMarkdown(fromProvider, fromModel, toProvider, toMode
 		fromProvider, fromModel, toProvider, toModel, reason)
 }
 
+// FormatFallbackTriggeredMarkdown formats a detailed fallback triggered indicator
+// Includes exact error cause and category icon for CLI agent plugins
+func FormatFallbackTriggeredMarkdown(role, primaryProvider, primaryModel, fallbackProvider, fallbackModel, errorMsg, errorCategory string, duration time.Duration) string {
+	var sb strings.Builder
+
+	// Error category icon
+	categoryIcon := getCategoryIcon(errorCategory)
+
+	sb.WriteString(fmt.Sprintf("\n⚡ **[%s] Fallback Triggered**\n", role))
+	sb.WriteString(fmt.Sprintf("   Primary: %s/%s (%s)\n", primaryProvider, primaryModel, formatDuration(duration)))
+	sb.WriteString(fmt.Sprintf("   %s **Error:** %s\n", categoryIcon, errorMsg))
+	sb.WriteString(fmt.Sprintf("   → Trying: %s/%s\n\n", fallbackProvider, fallbackModel))
+
+	return sb.String()
+}
+
+// FormatFallbackSuccessMarkdown formats a fallback success indicator
+func FormatFallbackSuccessMarkdown(role, fallbackProvider, fallbackModel string, attemptNum int, duration time.Duration) string {
+	return fmt.Sprintf("🔄 **[%s] Fallback Succeeded** - %s/%s (attempt %d, %s)\n\n",
+		role, fallbackProvider, fallbackModel, attemptNum, formatDuration(duration))
+}
+
+// FormatFallbackFailedMarkdown formats a fallback failed indicator
+func FormatFallbackFailedMarkdown(role, fallbackProvider, fallbackModel, errorMsg, errorCategory string, attemptNum int, duration time.Duration) string {
+	categoryIcon := getCategoryIcon(errorCategory)
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("⛔ **[%s] Fallback %d Failed** - %s/%s (%s)\n", role, attemptNum, fallbackProvider, fallbackModel, formatDuration(duration)))
+	sb.WriteString(fmt.Sprintf("   %s **Error:** %s\n\n", categoryIcon, errorMsg))
+
+	return sb.String()
+}
+
+// FormatFallbackExhaustedMarkdown formats an all-fallbacks-exhausted indicator
+func FormatFallbackExhaustedMarkdown(role string, totalAttempts int) string {
+	return fmt.Sprintf("💀 **[%s] ALL FALLBACKS EXHAUSTED** - %d attempts failed, no response available\n\n", role, totalAttempts)
+}
+
 // FormatFallbackChainMarkdown formats a complete fallback chain in Markdown
 func FormatFallbackChainMarkdown(position services.DebateTeamPosition, chain []FallbackAttempt) string {
 	if len(chain) == 0 {
@@ -145,21 +183,82 @@ func FormatFallbackChainMarkdown(position services.DebateTeamPosition, chain []F
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("\n**Fallback Chain for Position %d:**\n", position))
+	sb.WriteString(fmt.Sprintf("\n🔗 **Fallback Chain for Position %d:**\n", position))
 
 	for i, attempt := range chain {
 		status := "❌"
 		if attempt.Success {
 			status = "✅"
 		}
-		sb.WriteString(fmt.Sprintf("  %d. %s %s/%s (%s)\n",
+		sb.WriteString(fmt.Sprintf("   %d. %s %s/%s (%s)\n",
 			i+1, status, attempt.Provider, attempt.Model, formatDuration(attempt.Duration)))
 		if attempt.Error != "" {
-			sb.WriteString(fmt.Sprintf("     Error: %s\n", attempt.Error))
+			categoryIcon := getCategoryIcon(categorizeErrorString(attempt.Error))
+			sb.WriteString(fmt.Sprintf("      %s %s\n", categoryIcon, attempt.Error))
 		}
 	}
 	sb.WriteString("\n")
 	return sb.String()
+}
+
+// getCategoryIcon returns the appropriate icon for an error category
+func getCategoryIcon(category string) string {
+	switch category {
+	case "rate_limit":
+		return "🚦"
+	case "timeout":
+		return "⏱️"
+	case "auth":
+		return "🔑"
+	case "quota":
+		return "📊"
+	case "connection":
+		return "🔌"
+	case "unavailable":
+		return "🚫"
+	case "overloaded":
+		return "🔥"
+	case "invalid_request":
+		return "⚠️"
+	case "empty_response":
+		return "📭"
+	default:
+		return "❓"
+	}
+}
+
+// categorizeErrorString categorizes an error string into a category
+func categorizeErrorString(errorMsg string) string {
+	if errorMsg == "" {
+		return "unknown"
+	}
+
+	lowerErr := strings.ToLower(errorMsg)
+
+	switch {
+	case strings.Contains(lowerErr, "rate limit") || strings.Contains(lowerErr, "ratelimit"):
+		return "rate_limit"
+	case strings.Contains(lowerErr, "timeout") || strings.Contains(lowerErr, "timed out"):
+		return "timeout"
+	case strings.Contains(lowerErr, "auth") || strings.Contains(lowerErr, "unauthorized") ||
+		strings.Contains(lowerErr, "invalid api key") || strings.Contains(lowerErr, "401"):
+		return "auth"
+	case strings.Contains(lowerErr, "quota") || strings.Contains(lowerErr, "exceeded"):
+		return "quota"
+	case strings.Contains(lowerErr, "connection") || strings.Contains(lowerErr, "network") ||
+		strings.Contains(lowerErr, "dial") || strings.Contains(lowerErr, "refused"):
+		return "connection"
+	case strings.Contains(lowerErr, "unavailable") || strings.Contains(lowerErr, "503"):
+		return "unavailable"
+	case strings.Contains(lowerErr, "overloaded") || strings.Contains(lowerErr, "capacity"):
+		return "overloaded"
+	case strings.Contains(lowerErr, "invalid") || strings.Contains(lowerErr, "400"):
+		return "invalid_request"
+	case strings.Contains(lowerErr, "empty") || strings.Contains(lowerErr, "no content"):
+		return "empty_response"
+	default:
+		return "unknown"
+	}
 }
 
 // FormatPhaseFooterMarkdown formats a phase footer in Markdown
@@ -464,6 +563,79 @@ func FormatFallbackIndicatorForFormat(format OutputFormat, position services.Deb
 	default:
 		return FormatFallbackIndicatorSimpleMarkdown(role, fallbackProvider, fallbackModel, responseTime)
 	}
+}
+
+// FormatFallbackWithErrorForFormat formats a detailed fallback indicator with error cause
+// This is sent to CLI agent plugins to display the exact failure reason
+func FormatFallbackWithErrorForFormat(format OutputFormat, role services.DebateRole, primaryProvider, primaryModel, fallbackProvider, fallbackModel, errorMsg string, attemptNum int, duration time.Duration) string {
+	errorCategory := categorizeErrorString(errorMsg)
+	categoryIcon := getCategoryIcon(errorCategory)
+
+	switch format {
+	case OutputFormatANSI:
+		// ANSI format with colors for terminal
+		return formatFallbackWithErrorANSI(role, primaryProvider, primaryModel, fallbackProvider, fallbackModel, errorMsg, errorCategory, categoryIcon, attemptNum, duration)
+	case OutputFormatMarkdown:
+		// Clean Markdown for API clients
+		return FormatFallbackTriggeredMarkdown(getRoleName(role), primaryProvider, primaryModel, fallbackProvider, fallbackModel, errorMsg, errorCategory, duration)
+	case OutputFormatPlain:
+		// Plain text
+		return fmt.Sprintf("[%s] Fallback from %s/%s to %s/%s\n  Error: %s (%s)\n",
+			getRoleName(role), primaryProvider, primaryModel, fallbackProvider, fallbackModel, errorMsg, errorCategory)
+	default:
+		return FormatFallbackTriggeredMarkdown(getRoleName(role), primaryProvider, primaryModel, fallbackProvider, fallbackModel, errorMsg, errorCategory, duration)
+	}
+}
+
+// formatFallbackWithErrorANSI formats a fallback indicator with ANSI colors
+func formatFallbackWithErrorANSI(role services.DebateRole, primaryProvider, primaryModel, fallbackProvider, fallbackModel, errorMsg, errorCategory, categoryIcon string, attemptNum int, duration time.Duration) string {
+	roleColor := getRoleColor(role)
+	roleName := getRoleName(role)
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("\n%s⚡ [%s]%s Fallback triggered\n", ANSIBrightYellow, roleName, ANSIReset))
+	sb.WriteString(fmt.Sprintf("   %sPrimary:%s %s/%s (%s)\n", ANSIDim, ANSIReset, primaryProvider, primaryModel, formatDuration(duration)))
+	sb.WriteString(fmt.Sprintf("   %s%s Error:%s %s\n", ANSIBrightRed, categoryIcon, ANSIReset, errorMsg))
+	if fallbackProvider != "" {
+		sb.WriteString(fmt.Sprintf("   %s→ Trying:%s %s%s/%s%s\n", ANSIDim, ANSIReset, roleColor, fallbackProvider, fallbackModel, ANSIReset))
+	}
+	sb.WriteString("\n")
+	return sb.String()
+}
+
+// FormatFallbackChainWithErrorsForFormat formats a complete fallback chain with all error causes
+func FormatFallbackChainWithErrorsForFormat(format OutputFormat, position services.DebateTeamPosition, role services.DebateRole, chain []FallbackAttempt, totalTime time.Duration) string {
+	if len(chain) == 0 {
+		return ""
+	}
+
+	switch format {
+	case OutputFormatANSI:
+		return FormatFallbackChainIndicator(position, role, chain, totalTime)
+	case OutputFormatMarkdown:
+		return FormatFallbackChainMarkdown(position, chain)
+	case OutputFormatPlain:
+		return formatFallbackChainPlain(position, chain)
+	default:
+		return FormatFallbackChainMarkdown(position, chain)
+	}
+}
+
+// formatFallbackChainPlain formats a fallback chain in plain text
+func formatFallbackChainPlain(position services.DebateTeamPosition, chain []FallbackAttempt) string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("\nFallback Chain for Position %d:\n", position))
+	for i, attempt := range chain {
+		status := "FAILED"
+		if attempt.Success {
+			status = "OK"
+		}
+		sb.WriteString(fmt.Sprintf("  %d. [%s] %s/%s (%s)\n", i+1, status, attempt.Provider, attempt.Model, formatDuration(attempt.Duration)))
+		if attempt.Error != "" {
+			sb.WriteString(fmt.Sprintf("     Error: %s\n", attempt.Error))
+		}
+	}
+	return sb.String()
 }
 
 // IsTerminalClient checks if the user agent suggests a terminal client

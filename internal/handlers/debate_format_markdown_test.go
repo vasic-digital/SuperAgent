@@ -3,6 +3,7 @@ package handlers
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -630,5 +631,374 @@ func TestEmptyInputHandling(t *testing.T) {
 	t.Run("Empty content in FormatFinalResponseMarkdown", func(t *testing.T) {
 		result := FormatFinalResponseMarkdown("")
 		assert.Contains(t, result, "## Final Answer")
+	})
+}
+
+// ============================================================================
+// Fallback Error Formatting Tests
+// ============================================================================
+
+func TestCategorizeErrorString(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"Rate limit error", "rate limit exceeded", "rate_limit"},
+		{"Rate limit mixed case", "You've hit the Rate Limit", "rate_limit"},
+		{"Timeout error", "context deadline exceeded: timeout", "timeout"},
+		{"Timeout explicit", "request timed out after 30s", "timeout"},
+		{"Auth error 401", "HTTP 401 Unauthorized", "auth"},
+		{"Auth invalid key", "invalid api key provided", "auth"},
+		{"Quota exceeded", "quota exceeded for today", "quota"},
+		{"Connection refused", "connection refused by remote host", "connection"},
+		{"Network error", "network unreachable", "connection"},
+		{"Dial error", "dial tcp: connection refused", "connection"},
+		{"Service unavailable", "503 Service Unavailable", "unavailable"},
+		{"Overloaded", "server overloaded, try again later", "overloaded"},
+		{"Invalid request", "400 bad request: invalid parameters", "invalid_request"},
+		{"Empty response", "received empty response from server", "empty_response"},
+		{"Unknown error", "something weird happened", "unknown"},
+		{"Empty string", "", "unknown"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := categorizeErrorString(tc.input)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestGetCategoryIcon(t *testing.T) {
+	testCases := []struct {
+		category string
+		expected string
+	}{
+		{"rate_limit", "🚦"},
+		{"timeout", "⏱️"},
+		{"auth", "🔑"},
+		{"quota", "📊"},
+		{"connection", "🔌"},
+		{"unavailable", "🚫"},
+		{"overloaded", "🔥"},
+		{"invalid_request", "⚠️"},
+		{"empty_response", "📭"},
+		{"unknown", "❓"},
+		{"", "❓"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.category, func(t *testing.T) {
+			result := getCategoryIcon(tc.category)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestFormatFallbackTriggeredMarkdown(t *testing.T) {
+	t.Run("Contains all required information", func(t *testing.T) {
+		result := FormatFallbackTriggeredMarkdown(
+			"Analyst",
+			"openai", "gpt-4",
+			"anthropic", "claude-3",
+			"rate limit exceeded",
+			"rate_limit",
+			500*time.Millisecond,
+		)
+
+		assert.Contains(t, result, "**[Analyst] Fallback Triggered**")
+		assert.Contains(t, result, "Primary: openai/gpt-4")
+		assert.Contains(t, result, "🚦")
+		assert.Contains(t, result, "**Error:**")
+		assert.Contains(t, result, "rate limit exceeded")
+		assert.Contains(t, result, "→ Trying: anthropic/claude-3")
+		assert.Contains(t, result, "500 ms") // formatDuration adds space
+	})
+
+	t.Run("Contains no ANSI codes", func(t *testing.T) {
+		result := FormatFallbackTriggeredMarkdown(
+			"Analyst",
+			"openai", "gpt-4",
+			"anthropic", "claude-3",
+			"timeout",
+			"timeout",
+			1*time.Second,
+		)
+
+		assert.False(t, ContainsANSI(result), "Markdown output should not contain ANSI codes")
+	})
+}
+
+func TestFormatFallbackSuccessMarkdown(t *testing.T) {
+	t.Run("Shows success message", func(t *testing.T) {
+		result := FormatFallbackSuccessMarkdown(
+			"Proposer",
+			"anthropic", "claude-3",
+			2,
+			750*time.Millisecond,
+		)
+
+		assert.Contains(t, result, "**[Proposer] Fallback Succeeded**")
+		assert.Contains(t, result, "anthropic/claude-3")
+		assert.Contains(t, result, "attempt 2") // lowercase "attempt" in actual output
+		assert.Contains(t, result, "750 ms")    // formatDuration adds space
+	})
+}
+
+func TestFormatFallbackFailedMarkdown(t *testing.T) {
+	t.Run("Shows failure with error", func(t *testing.T) {
+		result := FormatFallbackFailedMarkdown(
+			"Critic",
+			"google", "gemini-pro",
+			"connection refused",
+			"connection",
+			2,
+			1*time.Second,
+		)
+
+		assert.Contains(t, result, "**[Critic] Fallback 2 Failed**") // Actual format includes attempt number
+		assert.Contains(t, result, "google/gemini-pro")
+		assert.Contains(t, result, "🔌")
+		assert.Contains(t, result, "connection refused")
+		// Attempt number is in the "Fallback 2 Failed" part, not separate
+	})
+}
+
+func TestFormatFallbackExhaustedMarkdown(t *testing.T) {
+	t.Run("Shows exhausted message", func(t *testing.T) {
+		result := FormatFallbackExhaustedMarkdown("Synthesis", 4)
+
+		assert.Contains(t, result, "**[Synthesis] ALL FALLBACKS EXHAUSTED**") // Uppercase
+		assert.Contains(t, result, "4 attempts failed")
+	})
+}
+
+func TestFormatFallbackWithErrorForFormat(t *testing.T) {
+	t.Run("ANSI format contains ANSI codes", func(t *testing.T) {
+		result := FormatFallbackWithErrorForFormat(
+			OutputFormatANSI,
+			services.RoleAnalyst,
+			"openai", "gpt-4",
+			"anthropic", "claude-3",
+			"rate limit exceeded",
+			1,
+			500*time.Millisecond,
+		)
+
+		assert.True(t, ContainsANSI(result), "ANSI format should contain ANSI codes")
+		assert.Contains(t, result, "Fallback")
+	})
+
+	t.Run("Markdown format is clean", func(t *testing.T) {
+		result := FormatFallbackWithErrorForFormat(
+			OutputFormatMarkdown,
+			services.RoleAnalyst,
+			"openai", "gpt-4",
+			"anthropic", "claude-3",
+			"rate limit exceeded",
+			1,
+			500*time.Millisecond,
+		)
+
+		assert.False(t, ContainsANSI(result), "Markdown format should not contain ANSI codes")
+		assert.Contains(t, result, "rate limit exceeded")
+		assert.Contains(t, result, "🚦")
+	})
+
+	t.Run("Plain format has no formatting", func(t *testing.T) {
+		result := FormatFallbackWithErrorForFormat(
+			OutputFormatPlain,
+			services.RoleAnalyst,
+			"openai", "gpt-4",
+			"anthropic", "claude-3",
+			"timeout",
+			1,
+			500*time.Millisecond,
+		)
+
+		assert.False(t, ContainsANSI(result))
+		assert.NotContains(t, result, "**")
+		assert.Contains(t, result, "Fallback")
+		assert.Contains(t, result, "timeout")
+	})
+}
+
+func TestFormatFallbackChainMarkdown(t *testing.T) {
+	t.Run("Shows complete chain", func(t *testing.T) {
+		chain := []FallbackAttempt{
+			{
+				Provider:   "openai",
+				Model:      "gpt-4",
+				Success:    false,
+				Error:      "rate limit exceeded",
+				Duration:   500 * time.Millisecond,
+				AttemptNum: 1,
+			},
+			{
+				Provider:   "anthropic",
+				Model:      "claude-3",
+				Success:    false,
+				Error:      "timeout",
+				Duration:   2 * time.Second,
+				AttemptNum: 2,
+			},
+			{
+				Provider:   "google",
+				Model:      "gemini-pro",
+				Success:    true,
+				Duration:   750 * time.Millisecond,
+				AttemptNum: 3,
+			},
+		}
+
+		result := FormatFallbackChainMarkdown(services.PositionAnalyst, chain)
+
+		assert.Contains(t, result, "Fallback Chain for Position 1")
+		assert.Contains(t, result, "❌")
+		assert.Contains(t, result, "✅")
+		assert.Contains(t, result, "openai/gpt-4")
+		assert.Contains(t, result, "anthropic/claude-3")
+		assert.Contains(t, result, "google/gemini-pro")
+		assert.Contains(t, result, "rate limit exceeded")
+		assert.Contains(t, result, "timeout")
+		assert.False(t, ContainsANSI(result))
+	})
+
+	t.Run("Empty chain returns empty string", func(t *testing.T) {
+		result := FormatFallbackChainMarkdown(services.PositionAnalyst, nil)
+		assert.Empty(t, result)
+	})
+}
+
+func TestFormatFallbackChainWithErrorsForFormat(t *testing.T) {
+	chain := []FallbackAttempt{
+		{
+			Provider:   "openai",
+			Model:      "gpt-4",
+			Success:    false,
+			Error:      "rate limit exceeded",
+			Duration:   500 * time.Millisecond,
+			AttemptNum: 1,
+		},
+		{
+			Provider:   "anthropic",
+			Model:      "claude-3",
+			Success:    true,
+			Duration:   750 * time.Millisecond,
+			AttemptNum: 2,
+		},
+	}
+
+	t.Run("ANSI format", func(t *testing.T) {
+		result := FormatFallbackChainWithErrorsForFormat(
+			OutputFormatANSI,
+			services.PositionAnalyst,
+			services.RoleAnalyst,
+			chain,
+			1250*time.Millisecond,
+		)
+
+		assert.True(t, ContainsANSI(result) || len(result) > 0)
+	})
+
+	t.Run("Markdown format", func(t *testing.T) {
+		result := FormatFallbackChainWithErrorsForFormat(
+			OutputFormatMarkdown,
+			services.PositionAnalyst,
+			services.RoleAnalyst,
+			chain,
+			1250*time.Millisecond,
+		)
+
+		assert.False(t, ContainsANSI(result))
+		assert.Contains(t, result, "openai/gpt-4")
+	})
+
+	t.Run("Plain format", func(t *testing.T) {
+		result := FormatFallbackChainWithErrorsForFormat(
+			OutputFormatPlain,
+			services.PositionAnalyst,
+			services.RoleAnalyst,
+			chain,
+			1250*time.Millisecond,
+		)
+
+		assert.False(t, ContainsANSI(result))
+		assert.NotContains(t, result, "**")
+		assert.Contains(t, result, "Fallback Chain")
+	})
+}
+
+// ============================================================================
+// Fallback Error Category Edge Cases
+// ============================================================================
+
+func TestErrorCategoryEdgeCases(t *testing.T) {
+	t.Run("Multiple keywords - first match wins", func(t *testing.T) {
+		// "invalid" appears after "timeout" so timeout should match
+		result := categorizeErrorString("request timeout: invalid response")
+		assert.Equal(t, "timeout", result)
+	})
+
+	t.Run("Case insensitivity", func(t *testing.T) {
+		assert.Equal(t, "rate_limit", categorizeErrorString("RATE LIMIT"))
+		assert.Equal(t, "timeout", categorizeErrorString("TIMEOUT"))
+		assert.Equal(t, "auth", categorizeErrorString("UNAUTHORIZED"))
+	})
+}
+
+// ============================================================================
+// Full Fallback Flow Integration Test
+// ============================================================================
+
+func TestFullFallbackErrorReportingFlow(t *testing.T) {
+	t.Run("Complete fallback sequence in Markdown", func(t *testing.T) {
+		var fullOutput strings.Builder
+
+		// Simulate a fallback sequence
+		fullOutput.WriteString(FormatFallbackTriggeredMarkdown(
+			"Analyst",
+			"openai", "gpt-4",
+			"anthropic", "claude-3",
+			"rate limit exceeded",
+			"rate_limit",
+			500*time.Millisecond,
+		))
+
+		fullOutput.WriteString(FormatFallbackFailedMarkdown(
+			"Analyst",
+			"anthropic", "claude-3",
+			"service unavailable",
+			"unavailable",
+			2,
+			1*time.Second,
+		))
+
+		fullOutput.WriteString(FormatFallbackSuccessMarkdown(
+			"Analyst",
+			"google", "gemini-pro",
+			3,
+			750*time.Millisecond,
+		))
+
+		result := fullOutput.String()
+
+		// Verify the complete flow is clean
+		assert.False(t, ContainsANSI(result))
+
+		// Verify all events are present
+		assert.Contains(t, result, "Fallback Triggered")
+		assert.Contains(t, result, "Failed") // "Fallback 2 Failed"
+		assert.Contains(t, result, "Fallback Succeeded")
+
+		// Verify error information is present
+		assert.Contains(t, result, "rate limit exceeded")
+		assert.Contains(t, result, "service unavailable")
+
+		// Verify icons are present
+		assert.Contains(t, result, "🚦") // rate limit
+		assert.Contains(t, result, "🚫") // unavailable
+		assert.Contains(t, result, "🔄") // success
 	})
 }

@@ -746,8 +746,47 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 
 				// Format response indicator based on whether fallback was used
 				if debateResp.UsedFallback {
-					// Show fallback chain: [A: Analyst] ---> [Fallback: Claude] ---> (650 ms)
-					responseIndicator = FormatFallbackIndicatorForFormat(outputFormat, pos, memberRole, debateResp.ActualProvider, debateResp.ActualModel, debateResp.ResponseTime)
+					// CRITICAL: Extract error information from the fallback chain
+					// to show the exact cause of the fallback in the response
+					var primaryError string
+					var primaryDuration time.Duration
+					if len(debateResp.FallbackChain) > 0 {
+						// Find the first failed attempt (primary provider failure)
+						for _, attempt := range debateResp.FallbackChain {
+							if !attempt.Success && attempt.Error != "" {
+								primaryError = attempt.Error
+								primaryDuration = attempt.Duration
+								break
+							}
+						}
+					}
+
+					// Show fallback indicator WITH detailed error cause
+					// This is the key improvement: CLI agents see WHY the fallback happened
+					if primaryError != "" {
+						// Use format-aware detailed error formatting
+						responseIndicator = FormatFallbackWithErrorForFormat(outputFormat, memberRole,
+							debateResp.PrimaryProvider, debateResp.PrimaryModel,
+							debateResp.ActualProvider, debateResp.ActualModel,
+							primaryError, 1, primaryDuration)
+
+						// Log fallback event for observability
+						logrus.WithFields(logrus.Fields{
+							"position":         pos,
+							"role":             memberRole,
+							"primary_provider": debateResp.PrimaryProvider,
+							"primary_model":    debateResp.PrimaryModel,
+							"actual_provider":  debateResp.ActualProvider,
+							"actual_model":     debateResp.ActualModel,
+							"error":            primaryError,
+							"error_category":   categorizeErrorString(primaryError),
+							"chain_length":     len(debateResp.FallbackChain),
+							"total_time":       debateResp.ResponseTime,
+						}).Warn("Fallback triggered - detailed error in response")
+					} else {
+						// Fallback without captured error (shouldn't happen but be defensive)
+						responseIndicator = FormatFallbackIndicatorForFormat(outputFormat, pos, memberRole, debateResp.ActualProvider, debateResp.ActualModel, debateResp.ResponseTime)
+					}
 				} else {
 					// Normal response: [A: Analyst] ---> (450 ms)
 					responseIndicator = FormatResponseIndicatorForFormat(outputFormat, pos, memberRole, debateResp.ResponseTime)

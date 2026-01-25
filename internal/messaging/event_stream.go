@@ -3,6 +3,7 @@ package messaging
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,13 @@ const (
 	EventTypeDebateRound     EventType = "debate.round"
 	EventTypeDebateCompleted EventType = "debate.completed"
 	EventTypeDebateFailed    EventType = "debate.failed"
+
+	// Fallback events - triggered when LLM provider fails and fallback is used
+	EventTypeFallbackTriggered  EventType = "fallback.triggered"   // Primary provider failed, trying fallback
+	EventTypeFallbackSuccess    EventType = "fallback.success"     // Fallback provider succeeded
+	EventTypeFallbackFailed     EventType = "fallback.failed"      // Fallback provider also failed
+	EventTypeFallbackExhausted  EventType = "fallback.exhausted"   // All fallbacks exhausted
+	EventTypeFallbackChain      EventType = "fallback.chain"       // Complete chain summary
 
 	// Verification events
 	EventTypeVerificationStarted   EventType = "verification.started"
@@ -542,4 +550,150 @@ func (b *EventBuffer) Start() {
 // Stop stops the background flusher.
 func (b *EventBuffer) Stop() {
 	close(b.stopCh)
+}
+
+// ============================================================================
+// Fallback Event Data Types
+// ============================================================================
+
+// FallbackEventData represents data for fallback events sent to CLI agents
+type FallbackEventData struct {
+	// Position is the debate team position (1-5)
+	Position int `json:"position"`
+	// Role is the debate role (analyst, proposer, critic, synthesizer, moderator)
+	Role string `json:"role"`
+	// PrimaryProvider is the original provider that failed
+	PrimaryProvider string `json:"primary_provider"`
+	// PrimaryModel is the original model that failed
+	PrimaryModel string `json:"primary_model"`
+	// FallbackProvider is the fallback provider being tried or that succeeded
+	FallbackProvider string `json:"fallback_provider,omitempty"`
+	// FallbackModel is the fallback model being tried or that succeeded
+	FallbackModel string `json:"fallback_model,omitempty"`
+	// AttemptNumber is which attempt this is (1 = primary, 2+ = fallbacks)
+	AttemptNumber int `json:"attempt_number"`
+	// TotalFallbacks is the total number of fallbacks available
+	TotalFallbacks int `json:"total_fallbacks"`
+	// ErrorCode is a machine-readable error code
+	ErrorCode string `json:"error_code"`
+	// ErrorMessage is the human-readable error message
+	ErrorMessage string `json:"error_message"`
+	// ErrorCategory is the error category (rate_limit, timeout, auth, quota, connection, etc.)
+	ErrorCategory string `json:"error_category"`
+	// Duration is how long the failed attempt took
+	Duration int64 `json:"duration_ms"`
+	// Timestamp is when the fallback was triggered
+	Timestamp int64 `json:"timestamp"`
+	// DebateID is the unique debate session identifier
+	DebateID string `json:"debate_id,omitempty"`
+	// Chain contains the complete fallback chain history (for chain event)
+	Chain []FallbackChainEntry `json:"chain,omitempty"`
+}
+
+// FallbackChainEntry represents a single entry in the fallback chain
+type FallbackChainEntry struct {
+	Provider  string `json:"provider"`
+	Model     string `json:"model"`
+	Success   bool   `json:"success"`
+	Error     string `json:"error,omitempty"`
+	ErrorCode string `json:"error_code,omitempty"`
+	Duration  int64  `json:"duration_ms"`
+}
+
+// FallbackErrorCategory categorizes common LLM provider errors
+type FallbackErrorCategory string
+
+const (
+	FallbackErrorRateLimit   FallbackErrorCategory = "rate_limit"
+	FallbackErrorTimeout     FallbackErrorCategory = "timeout"
+	FallbackErrorAuth        FallbackErrorCategory = "auth"
+	FallbackErrorQuota       FallbackErrorCategory = "quota"
+	FallbackErrorConnection  FallbackErrorCategory = "connection"
+	FallbackErrorUnavailable FallbackErrorCategory = "unavailable"
+	FallbackErrorOverloaded  FallbackErrorCategory = "overloaded"
+	FallbackErrorInvalid     FallbackErrorCategory = "invalid_request"
+	FallbackErrorEmpty       FallbackErrorCategory = "empty_response"
+	FallbackErrorUnknown     FallbackErrorCategory = "unknown"
+)
+
+// CategorizeError categorizes an error message into a FallbackErrorCategory
+func CategorizeError(errorMsg string) FallbackErrorCategory {
+	if errorMsg == "" {
+		return FallbackErrorUnknown
+	}
+
+	lowerErr := strings.ToLower(errorMsg)
+
+	switch {
+	case strings.Contains(lowerErr, "rate limit") || strings.Contains(lowerErr, "ratelimit"):
+		return FallbackErrorRateLimit
+	case strings.Contains(lowerErr, "timeout") || strings.Contains(lowerErr, "timed out"):
+		return FallbackErrorTimeout
+	case strings.Contains(lowerErr, "auth") || strings.Contains(lowerErr, "unauthorized") ||
+		strings.Contains(lowerErr, "invalid api key") || strings.Contains(lowerErr, "401"):
+		return FallbackErrorAuth
+	case strings.Contains(lowerErr, "quota") || strings.Contains(lowerErr, "exceeded"):
+		return FallbackErrorQuota
+	case strings.Contains(lowerErr, "connection") || strings.Contains(lowerErr, "network") ||
+		strings.Contains(lowerErr, "dial") || strings.Contains(lowerErr, "refused"):
+		return FallbackErrorConnection
+	case strings.Contains(lowerErr, "unavailable") || strings.Contains(lowerErr, "503") ||
+		strings.Contains(lowerErr, "service temporarily"):
+		return FallbackErrorUnavailable
+	case strings.Contains(lowerErr, "overloaded") || strings.Contains(lowerErr, "capacity") ||
+		strings.Contains(lowerErr, "busy"):
+		return FallbackErrorOverloaded
+	case strings.Contains(lowerErr, "invalid") || strings.Contains(lowerErr, "400") ||
+		strings.Contains(lowerErr, "bad request"):
+		return FallbackErrorInvalid
+	case strings.Contains(lowerErr, "empty") || strings.Contains(lowerErr, "no content") ||
+		strings.Contains(lowerErr, "no response"):
+		return FallbackErrorEmpty
+	default:
+		return FallbackErrorUnknown
+	}
+}
+
+// FallbackEventIcon returns an appropriate icon for the fallback event type
+func FallbackEventIcon(eventType EventType) string {
+	switch eventType {
+	case EventTypeFallbackTriggered:
+		return "⚡" // Lightning - fallback triggered
+	case EventTypeFallbackSuccess:
+		return "✅" // Check - fallback succeeded
+	case EventTypeFallbackFailed:
+		return "❌" // Cross - fallback failed
+	case EventTypeFallbackExhausted:
+		return "💀" // Skull - all fallbacks exhausted
+	case EventTypeFallbackChain:
+		return "🔗" // Chain - complete chain summary
+	default:
+		return "⚠️" // Warning - unknown
+	}
+}
+
+// FallbackCategoryIcon returns an icon for the error category
+func FallbackCategoryIcon(category FallbackErrorCategory) string {
+	switch category {
+	case FallbackErrorRateLimit:
+		return "🚦" // Traffic light - rate limit
+	case FallbackErrorTimeout:
+		return "⏱️" // Timer - timeout
+	case FallbackErrorAuth:
+		return "🔑" // Key - auth error
+	case FallbackErrorQuota:
+		return "📊" // Chart - quota exceeded
+	case FallbackErrorConnection:
+		return "🔌" // Plug - connection error
+	case FallbackErrorUnavailable:
+		return "🚫" // No entry - unavailable
+	case FallbackErrorOverloaded:
+		return "🔥" // Fire - overloaded
+	case FallbackErrorInvalid:
+		return "⚠️" // Warning - invalid request
+	case FallbackErrorEmpty:
+		return "📭" // Empty mailbox - empty response
+	default:
+		return "❓" // Question - unknown
+	}
 }
