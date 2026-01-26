@@ -49,6 +49,7 @@ var (
 	apiKeyEnvFile      = flag.String("api-key-env-file", "", "Path to .env file to write the generated API key")
 	preinstallMCP      = flag.Bool("preinstall-mcp", false, "Pre-install standard MCP server npm packages")
 	skipMCPPreinstall  = flag.Bool("skip-mcp-preinstall", false, "Skip automatic MCP package pre-installation at startup")
+	workingMCPsOnly    = flag.Bool("working-mcps-only", false, "Only include MCPs with all dependencies met (API keys, services)")
 	// Unified CLI agent configuration flags (all 48 agents)
 	generateAgentConfig = flag.String("generate-agent-config", "", "Generate config for specified CLI agent (use --list-agents to see all)")
 	validateAgentConfig = flag.String("validate-agent-config", "", "Validate config file for agent (format: agent:path)")
@@ -1427,7 +1428,7 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 				MaxTokens: 4096,
 			},
 		},
-		MCP:          buildOpenCodeMCPServersNew(baseURL),
+		MCP:          getMCPServers(baseURL, *workingMCPsOnly),
 		Instructions: []string{"CLAUDE.md", "opencode.md"},
 		TUI:          &OpenCodeTUIDef{Theme: "opencode"},
 	}
@@ -1480,7 +1481,29 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 // - npm packages (local - started on demand via npx)
 // - HelixAgent protocol endpoints (/v1/mcp, /v1/acp, /v1/lsp, etc. - remote)
 // COMPLIANCE: 62+ MCPs required for system compliance
+
+// getMCPServers returns MCP configurations based on the workingOnly flag
+// If workingOnly is true, only MCPs with all dependencies met are returned
+func getMCPServers(baseURL string, workingOnly bool) map[string]OpenCodeMCPServerDefNew {
+	if workingOnly {
+		return buildWorkingMCPsOnly(baseURL)
+	}
+	return buildOpenCodeMCPServersNew(baseURL)
+}
+
 func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefNew {
+	return buildOpenCodeMCPServersFiltered(baseURL, false)
+}
+
+// buildWorkingMCPsOnly builds MCP configurations for only those MCPs that have
+// all their dependencies met (API keys set, services running, etc.)
+func buildWorkingMCPsOnly(baseURL string) map[string]OpenCodeMCPServerDefNew {
+	return buildOpenCodeMCPServersFiltered(baseURL, true)
+}
+
+// buildOpenCodeMCPServersFiltered builds MCP configurations with optional filtering
+// When filterWorking is true, only MCPs with all dependencies met are included
+func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[string]OpenCodeMCPServerDefNew {
 	// Get user home directory for paths
 	homeDir := os.Getenv("HOME")
 	if homeDir == "" {
@@ -1493,7 +1516,7 @@ func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefN
 		helixHome = homeDir + "/.helixagent"
 	}
 
-	return map[string]OpenCodeMCPServerDefNew{
+	allMCPs := map[string]OpenCodeMCPServerDefNew{
 		// =============================================================================
 		// HelixAgent Protocol Endpoints (7 MCPs) - LOCAL + REMOTE
 		// =============================================================================
@@ -1871,6 +1894,131 @@ func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefN
 			Environment: map[string]string{"STABILITY_API_KEY": "{env:STABILITY_API_KEY}"},
 		},
 	}
+
+	// If not filtering, return all MCPs
+	if !filterWorking {
+		return allMCPs
+	}
+
+	// Filter to only working MCPs (those with all dependencies met)
+	return filterWorkingMCPs(allMCPs)
+}
+
+// filterWorkingMCPs filters MCP configurations to only include those with all dependencies met
+// This checks:
+// 1. Environment variables for API keys
+// 2. Local service connectivity (ports)
+func filterWorkingMCPs(allMCPs map[string]OpenCodeMCPServerDefNew) map[string]OpenCodeMCPServerDefNew {
+	workingMCPs := make(map[string]OpenCodeMCPServerDefNew)
+
+	// MCPs that always work (no external dependencies)
+	alwaysWorking := map[string]bool{
+		"helixagent":          true, // HelixAgent local plugin
+		"helixagent-mcp":      true, // HelixAgent remote endpoints
+		"helixagent-acp":      true,
+		"helixagent-lsp":      true,
+		"helixagent-embeddings": true,
+		"helixagent-vision":   true,
+		"helixagent-cognee":   true,
+		"filesystem":          true,
+		"fetch":               true,
+		"memory":              true,
+		"time":                true,
+		"git":                 true,
+		"sqlite":              true,
+		"puppeteer":           true,
+		"sequential-thinking": true,
+		"everything":          true,
+		"docker":              true,
+		"terraform":           true,
+		"ansible":             true,
+		"raycast":             true,
+	}
+
+	// Environment variable requirements for MCPs
+	envRequirements := map[string][]string{
+		"brave-search":      {"BRAVE_API_KEY"},
+		"google-maps":       {"GOOGLE_MAPS_API_KEY"},
+		"slack":             {"SLACK_BOT_TOKEN"},
+		"github":            {"GITHUB_TOKEN"},
+		"gitlab":            {"GITLAB_TOKEN"},
+		"sentry":            {"SENTRY_AUTH_TOKEN"},
+		"everart":           {"EVERART_API_KEY"},
+		"aws-kb-retrieval":  {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
+		"exa":               {"EXA_API_KEY"},
+		"linear":            {"LINEAR_API_KEY"},
+		"notion":            {"NOTION_API_KEY"},
+		"figma":             {"FIGMA_API_KEY"},
+		"todoist":           {"TODOIST_API_TOKEN"},
+		"obsidian":          {"OBSIDIAN_VAULT_PATH"},
+		"tinybird":          {"TINYBIRD_TOKEN"},
+		"cloudflare":        {"CLOUDFLARE_API_TOKEN"},
+		"neon":              {"NEON_API_KEY"},
+		"gdrive":            {"GOOGLE_CREDENTIALS_PATH"},
+		"kubernetes":        {"KUBECONFIG"},
+		"redis":             {"REDIS_URL"},
+		"mongodb":           {"MONGODB_URI"},
+		"postgres":          {"POSTGRES_URL"},
+		"elasticsearch":     {"ELASTICSEARCH_URL"},
+		"qdrant":            {"QDRANT_URL"},
+		"chroma":            {"CHROMA_URL"},
+		"pinecone":          {"PINECONE_API_KEY"},
+		"milvus":            {"MILVUS_HOST"},
+		"weaviate":          {"WEAVIATE_URL"},
+		"supabase":          {"SUPABASE_URL", "SUPABASE_KEY"},
+		"jira":              {"JIRA_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"},
+		"asana":             {"ASANA_ACCESS_TOKEN"},
+		"trello":            {"TRELLO_API_KEY"},
+		"monday":            {"MONDAY_API_KEY"},
+		"clickup":           {"CLICKUP_API_KEY"},
+		"discord":           {"DISCORD_BOT_TOKEN"},
+		"microsoft-teams":   {"TEAMS_CLIENT_ID"},
+		"gmail":             {"GOOGLE_CREDENTIALS_PATH"},
+		"calendar":          {"GOOGLE_CREDENTIALS_PATH"},
+		"zoom":              {"ZOOM_CLIENT_ID"},
+		"aws-s3":            {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
+		"aws-lambda":        {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
+		"azure":             {"AZURE_SUBSCRIPTION_ID"},
+		"gcp":               {"GOOGLE_APPLICATION_CREDENTIALS"},
+		"datadog":           {"DD_API_KEY"},
+		"grafana":           {"GRAFANA_URL", "GRAFANA_API_KEY"},
+		"prometheus":        {"PROMETHEUS_URL"},
+		"circleci":          {"CIRCLECI_TOKEN"},
+		"langchain":         {"OPENAI_API_KEY"},
+		"llamaindex":        {"OPENAI_API_KEY"},
+		"huggingface":       {"HUGGINGFACE_API_KEY"},
+		"replicate":         {"REPLICATE_API_TOKEN"},
+		"stable-diffusion":  {"STABILITY_API_KEY"},
+	}
+
+	for name, mcpConfig := range allMCPs {
+		// Always include MCPs without dependencies
+		if alwaysWorking[name] {
+			workingMCPs[name] = mcpConfig
+			continue
+		}
+
+		// Check environment variable requirements
+		if reqs, hasReqs := envRequirements[name]; hasReqs {
+			allMet := true
+			for _, envVar := range reqs {
+				if os.Getenv(envVar) == "" {
+					allMet = false
+					break
+				}
+			}
+			if allMet {
+				workingMCPs[name] = mcpConfig
+			}
+		} else {
+			// MCP not in requirements list - include if it has no Environment config
+			if len(mcpConfig.Environment) == 0 {
+				workingMCPs[name] = mcpConfig
+			}
+		}
+	}
+
+	return workingMCPs
 }
 
 // buildOpenCodeMCPServersOld builds MCP servers in OLD format for opencode.json
@@ -2596,7 +2744,7 @@ func handleGenerateCrush(appCfg *AppConfig) error {
 				Enabled: true,
 			},
 		},
-		Mcp: buildCrushMCPServers(fmt.Sprintf("http://%s:%s", host, port)),
+		Mcp: getCrushMCPServers(fmt.Sprintf("http://%s:%s", host, port), *workingMCPsOnly),
 		Options: &CrushOptions{
 			DisableProviderAutoUpdate: false,
 		},
@@ -2624,6 +2772,124 @@ func handleGenerateCrush(appCfg *AppConfig) error {
 	}
 
 	return nil
+}
+
+// getCrushMCPServers returns Crush MCP configurations based on the workingOnly flag
+func getCrushMCPServers(baseURL string, workingOnly bool) map[string]CrushMcpConfig {
+	allMCPs := buildCrushMCPServers(baseURL)
+	if !workingOnly {
+		return allMCPs
+	}
+	return filterWorkingCrushMCPs(allMCPs)
+}
+
+// filterWorkingCrushMCPs filters Crush MCP configurations to only include those with all dependencies met
+func filterWorkingCrushMCPs(allMCPs map[string]CrushMcpConfig) map[string]CrushMcpConfig {
+	workingMCPs := make(map[string]CrushMcpConfig)
+
+	// MCPs that always work (no external dependencies)
+	alwaysWorking := map[string]bool{
+		"helixagent":          true,
+		"helixagent-mcp":      true,
+		"helixagent-acp":      true,
+		"helixagent-lsp":      true,
+		"helixagent-embeddings": true,
+		"helixagent-vision":   true,
+		"helixagent-cognee":   true,
+		"filesystem":          true,
+		"fetch":               true,
+		"memory":              true,
+		"time":                true,
+		"git":                 true,
+		"sqlite":              true,
+		"puppeteer":           true,
+		"sequential-thinking": true,
+		"everything":          true,
+		"docker":              true,
+		"terraform":           true,
+		"ansible":             true,
+		"raycast":             true,
+	}
+
+	// Environment variable requirements (same as OpenCode)
+	envRequirements := map[string][]string{
+		"brave-search":      {"BRAVE_API_KEY"},
+		"google-maps":       {"GOOGLE_MAPS_API_KEY"},
+		"slack":             {"SLACK_BOT_TOKEN"},
+		"github":            {"GITHUB_TOKEN"},
+		"gitlab":            {"GITLAB_TOKEN"},
+		"sentry":            {"SENTRY_AUTH_TOKEN"},
+		"everart":           {"EVERART_API_KEY"},
+		"aws-kb-retrieval":  {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
+		"exa":               {"EXA_API_KEY"},
+		"linear":            {"LINEAR_API_KEY"},
+		"notion":            {"NOTION_API_KEY"},
+		"figma":             {"FIGMA_API_KEY"},
+		"todoist":           {"TODOIST_API_TOKEN"},
+		"obsidian":          {"OBSIDIAN_VAULT_PATH"},
+		"tinybird":          {"TINYBIRD_TOKEN"},
+		"cloudflare":        {"CLOUDFLARE_API_TOKEN"},
+		"neon":              {"NEON_API_KEY"},
+		"gdrive":            {"GOOGLE_CREDENTIALS_PATH"},
+		"kubernetes":        {"KUBECONFIG"},
+		"redis":             {"REDIS_URL"},
+		"mongodb":           {"MONGODB_URI"},
+		"postgres":          {"POSTGRES_URL"},
+		"elasticsearch":     {"ELASTICSEARCH_URL"},
+		"qdrant":            {"QDRANT_URL"},
+		"chroma":            {"CHROMA_URL"},
+		"pinecone":          {"PINECONE_API_KEY"},
+		"milvus":            {"MILVUS_HOST"},
+		"weaviate":          {"WEAVIATE_URL"},
+		"supabase":          {"SUPABASE_URL", "SUPABASE_KEY"},
+		"jira":              {"JIRA_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"},
+		"asana":             {"ASANA_ACCESS_TOKEN"},
+		"trello":            {"TRELLO_API_KEY"},
+		"monday":            {"MONDAY_API_KEY"},
+		"clickup":           {"CLICKUP_API_KEY"},
+		"discord":           {"DISCORD_BOT_TOKEN"},
+		"microsoft-teams":   {"TEAMS_CLIENT_ID"},
+		"gmail":             {"GOOGLE_CREDENTIALS_PATH"},
+		"calendar":          {"GOOGLE_CREDENTIALS_PATH"},
+		"zoom":              {"ZOOM_CLIENT_ID"},
+		"aws-s3":            {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
+		"aws-lambda":        {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
+		"azure":             {"AZURE_SUBSCRIPTION_ID"},
+		"gcp":               {"GOOGLE_APPLICATION_CREDENTIALS"},
+		"datadog":           {"DD_API_KEY"},
+		"grafana":           {"GRAFANA_URL", "GRAFANA_API_KEY"},
+		"prometheus":        {"PROMETHEUS_URL"},
+		"circleci":          {"CIRCLECI_TOKEN"},
+		"langchain":         {"OPENAI_API_KEY"},
+		"llamaindex":        {"OPENAI_API_KEY"},
+		"huggingface":       {"HUGGINGFACE_API_KEY"},
+		"replicate":         {"REPLICATE_API_TOKEN"},
+		"stable-diffusion":  {"STABILITY_API_KEY"},
+	}
+
+	for name, mcpConfig := range allMCPs {
+		if alwaysWorking[name] {
+			workingMCPs[name] = mcpConfig
+			continue
+		}
+
+		if reqs, hasReqs := envRequirements[name]; hasReqs {
+			allMet := true
+			for _, envVar := range reqs {
+				if os.Getenv(envVar) == "" {
+					allMet = false
+					break
+				}
+			}
+			if allMet {
+				workingMCPs[name] = mcpConfig
+			}
+		} else if len(mcpConfig.Env) == 0 {
+			workingMCPs[name] = mcpConfig
+		}
+	}
+
+	return workingMCPs
 }
 
 // buildCrushMCPServers creates MCP server configurations for Crush CLI
@@ -3302,6 +3568,9 @@ Options:
         Pre-install standard MCP server npm packages for faster startup
   -skip-mcp-preinstall
         Skip automatic MCP package pre-installation at startup
+  -working-mcps-only
+        Only include MCPs with all dependencies met (API keys set, services running)
+        Use with -generate-opencode-config or -generate-crush-config
 
 Unified CLI Agent Configuration (48 agents):
   -list-agents
