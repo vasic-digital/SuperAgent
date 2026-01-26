@@ -232,7 +232,7 @@ func TestCogneeFullCapacity_VectorDatabaseConnected(t *testing.T) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	// Check ChromaDB directly
-	resp, err := client.Get("http://localhost:8001/api/v1/heartbeat")
+	resp, err := client.Get("http://localhost:8001/api/v2/heartbeat")
 	require.NoError(t, err, "CRITICAL: Cannot reach ChromaDB - Vector database NOT connected")
 	defer resp.Body.Close()
 

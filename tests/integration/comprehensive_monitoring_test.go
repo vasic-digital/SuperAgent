@@ -107,7 +107,7 @@ func TestChromaDBHealth(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", chromaDBURL+"/api/v1/heartbeat", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", chromaDBURL+"/api/v2/heartbeat", nil)
 	require.NoError(t, err)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -392,7 +392,7 @@ func TestMonitoringEndpointsLatency(t *testing.T) {
 	}{
 		{"HelixAgent Health", helixAgentURL + "/health", 2 * time.Second},
 		{"HelixAgent Providers", helixAgentURL + "/v1/providers", 5 * time.Second},
-		{"ChromaDB Heartbeat", chromaDBURL + "/api/v1/heartbeat", 2 * time.Second},
+		{"ChromaDB Heartbeat", chromaDBURL + "/api/v2/heartbeat", 2 * time.Second},
 		{"Cognee Health", cogneeURL + "/health", 2 * time.Second},
 	}
 
