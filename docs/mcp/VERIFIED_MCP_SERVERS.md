@@ -1,11 +1,32 @@
 # Verified MCP Servers for HelixAgent
 
-This document lists all **57 verified MCP servers** that have been tested and confirmed to work with HelixAgent CLI agents (OpenCode, Crush, etc.).
+This document lists all **92 verified MCP servers** available for HelixAgent CLI agents (OpenCode, Crush, etc.).
 
-## MCP Server Categories
+## MCP Server Sources
 
-### Core (No Auth Required) - 14 Servers
-These servers work without any API keys or authentication:
+### Git Submodules (48 repositories)
+
+HelixAgent includes 48 MCP server repositories as git submodules under `MCP/submodules/`:
+
+| Category | Submodules |
+|----------|------------|
+| **Official** | github-mcp-server, notion-mcp-server, sentry-mcp, heroku-mcp |
+| **Databases** | redis-mcp, mongodb-mcp, qdrant-mcp, elasticsearch-mcp, supabase-mcp |
+| **Cloud** | aws-mcp, kubernetes-mcp, k8s-mcp-server, cloudflare-mcp, workers-mcp |
+| **Browser** | playwright-mcp, mcp-playwright-ea, browserbase-mcp |
+| **Productivity** | slack-mcp, telegram-mcp, atlassian-mcp, airtable-mcp, trello-mcp, obsidian-mcp, all-in-one-mcp |
+| **Search & AI** | brave-search, perplexity-mcp, context7-mcp, firecrawl-mcp, omnisearch-mcp |
+| **AI Frameworks** | langchain-mcp, llamaindex-mcp, docs-mcp |
+| **Microsoft** | microsoft-mcp |
+| **SDKs** | python-sdk, typescript-sdk, create-python-server, create-typescript-server |
+| **Registry** | registry, inspector |
+| **Awesome Lists** | awesome-mcp-servers, appcypher-awesome-mcp, habito-awesome-mcp, ever-works-awesome-mcp, awesome-devops-mcp |
+
+### npm Packages (57 packages)
+
+In addition to submodules, these npm packages are configured:
+
+#### Core (No Auth Required) - 16 Servers
 
 | Server | npm Package | Description |
 |--------|-------------|-------------|
@@ -26,7 +47,8 @@ These servers work without any API keys or authentication:
 | chrome-devtools | chrome-devtools-mcp | Chrome DevTools integration |
 | playwright | @playwright/mcp | Cross-browser automation |
 
-### Database & Storage - 8 Servers
+#### Database & Storage - 8 Servers
+
 | Server | npm Package | Required Env Vars |
 |--------|-------------|-------------------|
 | sqlite | @modelcontextprotocol/server-sqlite | (file path) |
@@ -38,7 +60,8 @@ These servers work without any API keys or authentication:
 | neon | mcp-server-neon | NEON_API_KEY |
 | aws-s3 | aws-s3-mcp | AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY |
 
-### Version Control & DevOps - 9 Servers
+#### Version Control & DevOps - 9 Servers
+
 | Server | npm Package | Required Env Vars |
 |--------|-------------|-------------------|
 | github | @modelcontextprotocol/server-github | GITHUB_TOKEN |
@@ -51,7 +74,8 @@ These servers work without any API keys or authentication:
 | datadog | datadog-mcp-server | DD_API_KEY, DD_APP_KEY |
 | dynatrace | @dynatrace-oss/dynatrace-mcp-server | DYNATRACE_URL, DYNATRACE_API_TOKEN |
 
-### Productivity & Communication - 11 Servers
+#### Productivity & Communication - 11 Servers
+
 | Server | npm Package | Required Env Vars |
 |--------|-------------|-------------------|
 | slack | @modelcontextprotocol/server-slack | SLACK_BOT_TOKEN |
@@ -66,7 +90,8 @@ These servers work without any API keys or authentication:
 | obsidian | @jianruidutong/obsidian-mcp | OBSIDIAN_VAULT_PATH |
 | figma | figma-mcp | FIGMA_ACCESS_TOKEN |
 
-### Search & AI - 8 Servers
+#### Search & AI - 8 Servers
+
 | Server | npm Package | Required Env Vars |
 |--------|-------------|-------------------|
 | brave-search | @brave/brave-search-mcp-server | BRAVE_API_KEY |
@@ -78,7 +103,8 @@ These servers work without any API keys or authentication:
 | mapbox | @mapbox/mcp-server | MAPBOX_ACCESS_TOKEN |
 | weather | mcp-server-weather | OPENWEATHER_API_KEY |
 
-### Social & Commerce - 7 Servers
+#### Social & Commerce - 5 Servers
+
 | Server | npm Package | Required Env Vars |
 |--------|-------------|-------------------|
 | youtube | mcp-server-youtube | YOUTUBE_API_KEY |
@@ -89,25 +115,51 @@ These servers work without any API keys or authentication:
 
 ## Installation
 
-### Prerequisites
-1. Node.js 18+ and npm
-2. Python 3.10+ and pip (for Python MCP servers)
-3. HelixAgent running on localhost:7061
+### Using Git Submodules (Recommended)
 
-### Install MCP Servers Submodule
 ```bash
+# Initialize all MCP submodules
 cd /path/to/HelixAgent
 git submodule update --init --recursive
-cd MCP-Servers
-npm install && npm run build
+
+# Update submodules to latest
+git submodule update --remote --merge
+```
+
+### Using Docker/Podman Compose
+
+```bash
+# Start all MCP servers via Docker Compose
+docker-compose -f MCP/docker-compose.yml up -d
+
+# Or using Podman
+podman-compose -f MCP/docker-compose.yml up -d
+
+# View logs
+docker-compose -f MCP/docker-compose.yml logs -f
+
+# Stop services
+docker-compose -f MCP/docker-compose.yml down
+```
+
+### Install npm MCP Servers
+
+```bash
+# For OpenCode/Crush via npx (automatic)
+npx -y @modelcontextprotocol/server-github
+
+# Or install globally
+npm install -g @modelcontextprotocol/server-github
 ```
 
 ### Install Python MCP Servers
+
 ```bash
 pip3 install mcp-server-fetch mcp-server-git mcp-server-time
 ```
 
 ### Install HelixAgent MCP Plugin
+
 ```bash
 cd plugins/mcp-server
 npm install && npm run build
@@ -116,13 +168,16 @@ npm install && npm run build
 ## Configuration
 
 ### OpenCode
+
 Copy the template and customize:
+
 ```bash
 cp scripts/cli-agents/configs/opencode.template.json ~/.config/opencode/opencode.json
 # Edit paths and add your API keys
 ```
 
 ### Crush
+
 ```bash
 cp scripts/cli-agents/configs/crush.template.json ~/.config/crush/crush.json
 # Edit paths and add your API keys
@@ -130,33 +185,62 @@ cp scripts/cli-agents/configs/crush.template.json ~/.config/crush/crush.json
 
 ## Environment Variables
 
-Create a `.env.mcps` file with your API keys:
+Create a `.env.mcp` file with your API keys:
+
 ```bash
+# Version Control
 export GITHUB_TOKEN="ghp_xxx"
-export OPENAI_API_KEY="sk-xxx"
+export GITLAB_TOKEN="glpat-xxx"
+
+# Communication
+export SLACK_BOT_TOKEN="xoxb-xxx"
+export NOTION_API_KEY="secret_xxx"
+
+# Search & AI
 export BRAVE_API_KEY="BSA_xxx"
+export OPENAI_API_KEY="sk-xxx"
+export ANTHROPIC_API_KEY="sk-ant-xxx"
+export PERPLEXITY_API_KEY="pplx-xxx"
+
+# Databases
+export REDIS_URL="redis://localhost:6379"
+export MONGODB_URI="mongodb://localhost:27017/helixagent"
+export QDRANT_URL="http://localhost:6333"
+
+# Cloud
+export AWS_ACCESS_KEY_ID="xxx"
+export AWS_SECRET_ACCESS_KEY="xxx"
+export CLOUDFLARE_API_TOKEN="xxx"
+
 # ... add other keys as needed
 ```
 
 Source before running CLI agents:
+
 ```bash
-source .env.mcps
+source .env.mcp
 ```
 
 ## Verification
 
-Run the MCP verification challenge:
+Run the MCP verification challenges:
+
 ```bash
+# MCP submodules challenge (48 tests)
+./challenges/scripts/mcp_submodules_challenge.sh
+
+# CLI agent MCP challenge (26 tests)
 ./challenges/scripts/cli_agent_mcp_challenge.sh
 ```
 
 ## Package Verification Status
 
-All 57 packages have been verified to exist on npm/pip as of 2026-01-26:
+All 57 npm/pip packages have been verified to exist as of 2026-01-26:
 - npm packages verified using `npm view <package> version`
 - Python packages verified using `pip3 show <package>`
 
 ### Packages NOT Available (Removed from Config)
+
 The following packages were found to NOT exist and have been removed:
 - @anthropic-ai/brave-search-mcp (use @brave/brave-search-mcp-server)
 - @anthropic-ai/sentry-mcp (use @sentry/mcp-server)
@@ -169,3 +253,27 @@ The following packages were found to NOT exist and have been removed:
 - mcp-server-confluence, miro, circleci, jenkins (no packages)
 - mcp-server-planetscale, supabase, dropbox (no packages)
 - mcp-server-newrelic, pagerduty (no packages)
+
+## Sources & Attribution
+
+MCP servers are sourced from:
+
+- [Model Context Protocol Official](https://github.com/modelcontextprotocol)
+- [GitHub MCP Server](https://github.com/github/github-mcp-server)
+- [Microsoft MCP Catalog](https://github.com/microsoft/mcp)
+- [AWS Labs MCP](https://github.com/awslabs/mcp)
+- [Cloudflare MCP](https://github.com/cloudflare/mcp-server-cloudflare)
+- [Heroku MCP](https://github.com/heroku/heroku-mcp-server)
+- [Redis MCP](https://github.com/redis/mcp-redis)
+- [MongoDB MCP](https://github.com/mongodb-js/mongodb-mcp-server)
+- [Qdrant MCP](https://github.com/qdrant/mcp-server-qdrant)
+- [Supabase MCP](https://github.com/supabase-community/supabase-mcp)
+- [Sentry MCP](https://github.com/getsentry/sentry-mcp)
+- [Elasticsearch MCP](https://github.com/elastic/mcp-server-elasticsearch)
+- [Playwright MCP](https://github.com/microsoft/playwright-mcp)
+- [Notion MCP](https://github.com/makenotion/notion-mcp-server)
+- [Brave Search MCP](https://github.com/brave/brave-search-mcp-server)
+- [Perplexity MCP](https://github.com/perplexityai/modelcontextprotocol)
+- [Context7 MCP](https://github.com/upstash/context7)
+- [LangChain MCP](https://github.com/langchain-ai/langchain-mcp-adapters)
+- [LlamaIndex MCP](https://github.com/run-llama/mcp-llamaindex-ai)
