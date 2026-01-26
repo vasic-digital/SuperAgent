@@ -50,6 +50,7 @@ var (
 	preinstallMCP      = flag.Bool("preinstall-mcp", false, "Pre-install standard MCP server npm packages")
 	skipMCPPreinstall  = flag.Bool("skip-mcp-preinstall", false, "Skip automatic MCP package pre-installation at startup")
 	workingMCPsOnly    = flag.Bool("working-mcps-only", false, "Only include MCPs with all dependencies met (API keys, services)")
+	useLocalMCPServers = flag.Bool("use-local-mcp-servers", false, "Use local Docker-based MCP servers instead of npx (requires running ./scripts/mcp/start-mcp-servers.sh)")
 	// Unified CLI agent configuration flags (all 48 agents)
 	generateAgentConfig = flag.String("generate-agent-config", "", "Generate config for specified CLI agent (use --list-agents to see all)")
 	validateAgentConfig = flag.String("validate-agent-config", "", "Validate config file for agent (format: agent:path)")
@@ -1482,13 +1483,137 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 // - HelixAgent protocol endpoints (/v1/mcp, /v1/acp, /v1/lsp, etc. - remote)
 // COMPLIANCE: 62+ MCPs required for system compliance
 
-// getMCPServers returns MCP configurations based on the workingOnly flag
+// getMCPServers returns MCP configurations based on flags
 // If workingOnly is true, only MCPs with all dependencies met are returned
+// If useLocalMCPServers is true, uses local Docker-based MCP servers on TCP ports
 func getMCPServers(baseURL string, workingOnly bool) map[string]OpenCodeMCPServerDefNew {
+	if *useLocalMCPServers {
+		return buildLocalDockerMCPServers(baseURL)
+	}
 	if workingOnly {
 		return buildWorkingMCPsOnly(baseURL)
 	}
 	return buildOpenCodeMCPServersNew(baseURL)
+}
+
+// buildLocalDockerMCPServers builds MCP configurations for local Docker-based servers
+// These servers run on TCP ports via socat, started by ./scripts/mcp/start-mcp-servers.sh
+func buildLocalDockerMCPServers(baseURL string) map[string]OpenCodeMCPServerDefNew {
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		homeDir = "/home"
+	}
+
+	helixHome := os.Getenv("HELIXAGENT_HOME")
+	if helixHome == "" {
+		helixHome = homeDir + "/.helixagent"
+	}
+
+	// MCP servers running on local TCP ports (from Docker containers)
+	// Started via: ./scripts/mcp/start-mcp-servers.sh --start
+	return map[string]OpenCodeMCPServerDefNew{
+		// HelixAgent endpoints (unchanged)
+		"helixagent": {
+			Type:    "local",
+			Command: []string{"node", helixHome + "/plugins/mcp-server/dist/index.js", "--endpoint", baseURL},
+		},
+		"helixagent-mcp": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/mcp",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+		"helixagent-acp": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/acp",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+		"helixagent-lsp": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/lsp",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+		"helixagent-embeddings": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/embeddings",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+		"helixagent-vision": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/vision",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+		"helixagent-cognee": {
+			Type:    "remote",
+			URL:     baseURL + "/v1/cognee",
+			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
+		},
+
+		// Core MCP servers (from local Docker containers on TCP ports)
+		"fetch": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9101",
+		},
+		"git": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9102",
+		},
+		"time": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9103",
+		},
+		"filesystem": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9104",
+		},
+		"memory": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9105",
+		},
+		"everything": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9106",
+		},
+		"sequential-thinking": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9107",
+		},
+
+		// Database MCP servers
+		"redis": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9201",
+		},
+		"mongodb": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9202",
+		},
+		"qdrant": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9301",
+		},
+
+		// DevOps MCP servers
+		"kubernetes": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9401",
+		},
+		"github": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9402",
+		},
+
+		// Browser MCP servers
+		"playwright": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9501",
+		},
+
+		// Communication MCP servers
+		"slack": {
+			Type:    "remote",
+			URL:     "tcp://localhost:9601",
+		},
+	}
 }
 
 func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefNew {
@@ -3449,6 +3574,10 @@ Options:
   -working-mcps-only
         Only include MCPs with all dependencies met (API keys set, services running)
         Use with -generate-opencode-config or -generate-crush-config
+  -use-local-mcp-servers
+        Use local Docker-based MCP servers instead of npx commands
+        Requires: ./scripts/mcp/start-mcp-servers.sh --start
+        MCP servers run on TCP ports 9101-9601 via socat
 
 Unified CLI Agent Configuration (48 agents):
   -list-agents

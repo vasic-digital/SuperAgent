@@ -1,0 +1,31 @@
+# Dockerfile for Playwright MCP server
+# Requires browser binaries and dependencies
+
+FROM mcr.microsoft.com/playwright:v1.40.0-jammy
+
+# Install socat for TCP wrapper
+RUN apt-get update && apt-get install -y socat netcat-openbsd && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy the submodule source
+COPY . .
+
+# Install dependencies and build
+RUN npm install && npm run build 2>/dev/null || true
+
+# Create entrypoint script
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'echo "Starting Playwright MCP server on port 9000"' >> /entrypoint.sh && \
+    echo 'ENTRY=""' >> /entrypoint.sh && \
+    echo 'if [ -f "dist/index.js" ]; then ENTRY="dist/index.js"' >> /entrypoint.sh && \
+    echo 'elif [ -f "build/index.js" ]; then ENTRY="build/index.js"' >> /entrypoint.sh && \
+    echo 'elif [ -f "index.js" ]; then ENTRY="index.js"' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'if [ -z "$ENTRY" ]; then echo "No entry point found!"; exit 1; fi' >> /entrypoint.sh && \
+    echo 'socat TCP-LISTEN:9000,reuseaddr,fork EXEC:"node $ENTRY",pty,stderr' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+EXPOSE 9000
+
+CMD ["/entrypoint.sh"]

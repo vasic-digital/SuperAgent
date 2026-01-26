@@ -1,0 +1,269 @@
+version: '3.8'
+
+# MCP Servers Docker Compose
+# Builds and runs MCP servers from local git submodules
+# These servers expose stdio-based MCP protocol over TCP using socat
+
+services:
+  # =============================================================================
+  # Core MCP Servers (from MCP-Servers submodule)
+  # =============================================================================
+
+  mcp-fetch:
+    build:
+      context: ../../MCP-Servers
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-server
+      args:
+        SERVER_NAME: fetch
+    container_name: helixagent-mcp-fetch
+    ports:
+      - "9101:9000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mcp-git:
+    build:
+      context: ../../MCP-Servers
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-server
+      args:
+        SERVER_NAME: git
+    container_name: helixagent-mcp-git
+    ports:
+      - "9102:9000"
+    volumes:
+      - ${HOME}:/home/user:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mcp-time:
+    build:
+      context: ../../MCP-Servers
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-server
+      args:
+        SERVER_NAME: time
+    container_name: helixagent-mcp-time
+    ports:
+      - "9103:9000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mcp-filesystem:
+    build:
+      context: ../../MCP-Servers
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-server
+      args:
+        SERVER_NAME: filesystem
+    container_name: helixagent-mcp-filesystem
+    ports:
+      - "9104:9000"
+    volumes:
+      - ${HOME}:/home/user
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mcp-memory:
+    build:
+      context: ../../MCP-Servers
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-server
+      args:
+        SERVER_NAME: memory
+    container_name: helixagent-mcp-memory
+    ports:
+      - "9105:9000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mcp-everything:
+    build:
+      context: ../../MCP-Servers
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-server
+      args:
+        SERVER_NAME: everything
+    container_name: helixagent-mcp-everything
+    ports:
+      - "9106:9000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mcp-sequentialthinking:
+    build:
+      context: ../../MCP-Servers
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-server
+      args:
+        SERVER_NAME: sequentialthinking
+    container_name: helixagent-mcp-sequentialthinking
+    ports:
+      - "9107:9000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # =============================================================================
+  # Database MCP Servers (from submodules)
+  # =============================================================================
+
+  mcp-redis:
+    build:
+      context: ../../MCP/submodules/redis-mcp
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-submodule
+    container_name: helixagent-mcp-redis-server
+    ports:
+      - "9201:9000"
+    environment:
+      - REDIS_URL=redis://:helixagent123@mcp-redis-backend:6379
+    depends_on:
+      - mcp-redis-backend
+    restart: unless-stopped
+
+  mcp-redis-backend:
+    image: redis:7-alpine
+    container_name: helixagent-mcp-redis-backend
+    ports:
+      - "16379:6379"
+    command: redis-server --requirepass helixagent123
+    volumes:
+      - mcp-redis-data:/data
+    restart: unless-stopped
+
+  mcp-mongodb:
+    build:
+      context: ../../MCP/submodules/mongodb-mcp
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-submodule
+    container_name: helixagent-mcp-mongodb-server
+    ports:
+      - "9202:9000"
+    environment:
+      - MONGODB_URI=mongodb://helixagent:helixagent123@mcp-mongodb-backend:27017/helixagent?authSource=admin
+    depends_on:
+      - mcp-mongodb-backend
+    restart: unless-stopped
+
+  mcp-mongodb-backend:
+    image: mongo:7
+    container_name: helixagent-mcp-mongodb-backend
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=helixagent
+      - MONGO_INITDB_ROOT_PASSWORD=helixagent123
+    volumes:
+      - mcp-mongodb-data:/data/db
+    restart: unless-stopped
+
+  # =============================================================================
+  # Vector Database MCP Servers
+  # =============================================================================
+
+  mcp-qdrant:
+    build:
+      context: ../../MCP/submodules/qdrant-mcp
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-submodule
+    container_name: helixagent-mcp-qdrant-server
+    ports:
+      - "9301:9000"
+    environment:
+      - QDRANT_URL=http://mcp-qdrant-backend:6333
+    depends_on:
+      - mcp-qdrant-backend
+    restart: unless-stopped
+
+  mcp-qdrant-backend:
+    image: qdrant/qdrant:latest
+    container_name: helixagent-mcp-qdrant-backend
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - mcp-qdrant-data:/qdrant/storage
+    restart: unless-stopped
+
+  # =============================================================================
+  # DevOps MCP Servers
+  # =============================================================================
+
+  mcp-kubernetes:
+    build:
+      context: ../../MCP/submodules/kubernetes-mcp
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-submodule
+    container_name: helixagent-mcp-kubernetes
+    ports:
+      - "9401:9000"
+    volumes:
+      - ${HOME}/.kube:/root/.kube:ro
+    restart: unless-stopped
+
+  mcp-github:
+    build:
+      context: ../../MCP/submodules/github-mcp-server
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-submodule
+    container_name: helixagent-mcp-github
+    ports:
+      - "9402:9000"
+    environment:
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN}
+    restart: unless-stopped
+
+  # =============================================================================
+  # Browser Automation MCP Servers
+  # =============================================================================
+
+  mcp-playwright:
+    build:
+      context: ../../MCP/submodules/playwright-mcp
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-playwright
+    container_name: helixagent-mcp-playwright
+    ports:
+      - "9501:9000"
+    restart: unless-stopped
+
+  # =============================================================================
+  # Communication MCP Servers
+  # =============================================================================
+
+  mcp-slack:
+    build:
+      context: ../../MCP/submodules/slack-mcp
+      dockerfile: ../../docker/mcp/Dockerfile.mcp-submodule
+    container_name: helixagent-mcp-slack
+    ports:
+      - "9601:9000"
+    environment:
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_TEAM_ID=${SLACK_TEAM_ID}
+    restart: unless-stopped
+
+volumes:
+  mcp-redis-data:
+  mcp-mongodb-data:
+  mcp-qdrant-data:
+
+networks:
+  default:
+    name: helixagent-mcp-network

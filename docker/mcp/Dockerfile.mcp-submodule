@@ -1,0 +1,38 @@
+# Dockerfile for MCP servers from git submodules
+# Generic builder that works with most TypeScript/Node.js MCP servers
+
+FROM node:20-alpine
+
+# Install build dependencies and socat for TCP wrapper
+RUN apk add --no-cache python3 make g++ socat netcat-openbsd git
+
+WORKDIR /app
+
+# Copy the submodule source
+COPY . .
+
+# Try different package managers and build approaches
+RUN if [ -f "package.json" ]; then \
+        npm install 2>/dev/null || yarn install 2>/dev/null || pnpm install 2>/dev/null || true; \
+        npm run build 2>/dev/null || yarn build 2>/dev/null || pnpm build 2>/dev/null || true; \
+    fi
+
+# Create entrypoint script
+# Tries different entry points: dist/index.js, build/index.js, index.js, src/index.js
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'echo "Starting MCP server on port 9000"' >> /entrypoint.sh && \
+    echo 'ENTRY=""' >> /entrypoint.sh && \
+    echo 'if [ -f "dist/index.js" ]; then ENTRY="dist/index.js"' >> /entrypoint.sh && \
+    echo 'elif [ -f "build/index.js" ]; then ENTRY="build/index.js"' >> /entrypoint.sh && \
+    echo 'elif [ -f "index.js" ]; then ENTRY="index.js"' >> /entrypoint.sh && \
+    echo 'elif [ -f "src/index.js" ]; then ENTRY="src/index.js"' >> /entrypoint.sh && \
+    echo 'elif [ -f "src/index.ts" ]; then ENTRY="src/index.ts"' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'if [ -z "$ENTRY" ]; then echo "No entry point found!"; exit 1; fi' >> /entrypoint.sh && \
+    echo 'echo "Using entry point: $ENTRY"' >> /entrypoint.sh && \
+    echo 'socat TCP-LISTEN:9000,reuseaddr,fork EXEC:"node $ENTRY",pty,stderr' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+EXPOSE 9000
+
+CMD ["/entrypoint.sh"]
