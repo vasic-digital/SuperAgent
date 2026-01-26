@@ -1,0 +1,331 @@
+// Package config provides MCP configuration generation for CLI agents
+package config
+
+import (
+	"os"
+	"strings"
+)
+
+// MCPServerConfig represents an MCP server configuration
+type MCPServerConfig struct {
+	Type        string            `json:"type"`
+	Command     []string          `json:"command,omitempty"`
+	URL         string            `json:"url,omitempty"`
+	Headers     map[string]string `json:"headers,omitempty"`
+	Environment map[string]string `json:"environment,omitempty"`
+	Enabled     bool              `json:"enabled"`
+}
+
+// MCPConfigGenerator generates validated MCP configurations
+type MCPConfigGenerator struct {
+	homeDir    string
+	helixHome  string
+	baseURL    string
+	envVars    map[string]string
+}
+
+// NewMCPConfigGenerator creates a new MCP config generator
+func NewMCPConfigGenerator(baseURL string) *MCPConfigGenerator {
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		homeDir = "/home"
+	}
+
+	helixHome := os.Getenv("HELIXAGENT_HOME")
+	if helixHome == "" {
+		helixHome = homeDir + "/.helixagent"
+	}
+
+	g := &MCPConfigGenerator{
+		homeDir:   homeDir,
+		helixHome: helixHome,
+		baseURL:   baseURL,
+		envVars:   make(map[string]string),
+	}
+
+	// Load environment variables
+	g.loadEnvVars()
+
+	return g
+}
+
+// loadEnvVars loads environment variables from .env and environment
+func (g *MCPConfigGenerator) loadEnvVars() {
+	// Load from .env file
+	if data, err := os.ReadFile(".env"); err == nil {
+		lines := strings.Split(string(data), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				value := strings.Trim(strings.TrimSpace(parts[1]), "\"'")
+				g.envVars[key] = value
+			}
+		}
+	}
+
+	// Also load from environment (overrides .env)
+	for _, env := range os.Environ() {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) == 2 {
+			g.envVars[parts[0]] = parts[1]
+		}
+	}
+}
+
+// hasEnvVar checks if an environment variable is set and non-empty
+func (g *MCPConfigGenerator) hasEnvVar(name string) bool {
+	val, ok := g.envVars[name]
+	return ok && val != ""
+}
+
+// GenerateOpenCodeMCPs generates MCP configurations for OpenCode
+// Only includes MCPs that have all required dependencies
+func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
+	mcps := make(map[string]MCPServerConfig)
+
+	// ==========================================================================
+	// Category 1: HelixAgent (Always enabled - core functionality)
+	// ==========================================================================
+	mcps["helixagent"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"node", g.helixHome + "/plugins/mcp-server/dist/index.js", "--endpoint", g.baseURL},
+		Enabled: true,
+	}
+
+	// ==========================================================================
+	// Category 2: Core MCPs (No API keys required - always work)
+	// ==========================================================================
+	mcps["filesystem"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", g.homeDir},
+		Enabled: true,
+	}
+	mcps["fetch"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"},
+		Enabled: true,
+	}
+	mcps["memory"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"},
+		Enabled: true,
+	}
+	mcps["time"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"},
+		Enabled: true,
+	}
+	mcps["git"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"},
+		Enabled: true,
+	}
+	mcps["sequential-thinking"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "@modelcontextprotocol/server-sequential-thinking"},
+		Enabled: true,
+	}
+	mcps["everything"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "@anthropic-ai/mcp-server-everything"},
+		Enabled: true,
+	}
+
+	// ==========================================================================
+	// Category 3: Database MCPs (Local services - enabled with defaults)
+	// ==========================================================================
+	mcps["sqlite"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"},
+		Enabled: true,
+	}
+	mcps["postgres"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres"},
+		Environment: map[string]string{
+			"POSTGRES_URL": "postgresql://helixagent:helixagent123@localhost:15432/helixagent_db",
+		},
+		Enabled: true,
+	}
+
+	// ==========================================================================
+	// Category 4: DevOps MCPs (Local tools)
+	// ==========================================================================
+	mcps["docker"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "mcp-server-docker"},
+		Enabled: true,
+	}
+	mcps["puppeteer"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"},
+		Enabled: true,
+	}
+
+	// ==========================================================================
+	// Category 5: Conditional MCPs (Only if API keys are available)
+	// ==========================================================================
+
+	// GitHub - enabled if GITHUB_TOKEN is set
+	if g.hasEnvVar("GITHUB_TOKEN") {
+		mcps["github"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-github"},
+			Environment: map[string]string{
+				"GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_TOKEN}",
+			},
+			Enabled: true,
+		}
+	}
+
+	// GitLab - enabled if GITLAB_TOKEN is set
+	if g.hasEnvVar("GITLAB_TOKEN") {
+		mcps["gitlab"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-gitlab"},
+			Environment: map[string]string{
+				"GITLAB_PERSONAL_ACCESS_TOKEN": "{env:GITLAB_TOKEN}",
+			},
+			Enabled: true,
+		}
+	}
+
+	// Brave Search - enabled if BRAVE_API_KEY is set
+	if g.hasEnvVar("BRAVE_API_KEY") {
+		mcps["brave-search"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-brave-search"},
+			Environment: map[string]string{
+				"BRAVE_API_KEY": "{env:BRAVE_API_KEY}",
+			},
+			Enabled: true,
+		}
+	}
+
+	// Slack - enabled if SLACK_BOT_TOKEN is set
+	if g.hasEnvVar("SLACK_BOT_TOKEN") {
+		mcps["slack"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-slack"},
+			Environment: map[string]string{
+				"SLACK_BOT_TOKEN": "{env:SLACK_BOT_TOKEN}",
+				"SLACK_TEAM_ID":   "{env:SLACK_TEAM_ID}",
+			},
+			Enabled: true,
+		}
+	}
+
+	// Notion - enabled if NOTION_API_KEY is set
+	if g.hasEnvVar("NOTION_API_KEY") {
+		mcps["notion"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "@notionhq/notion-mcp-server"},
+			Environment: map[string]string{
+				"NOTION_API_KEY": "{env:NOTION_API_KEY}",
+			},
+			Enabled: true,
+		}
+	}
+
+	// Linear - enabled if LINEAR_API_KEY is set
+	if g.hasEnvVar("LINEAR_API_KEY") {
+		mcps["linear"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-linear"},
+			Environment: map[string]string{
+				"LINEAR_API_KEY": "{env:LINEAR_API_KEY}",
+			},
+			Enabled: true,
+		}
+	}
+
+	// Sentry - enabled if SENTRY_AUTH_TOKEN is set
+	if g.hasEnvVar("SENTRY_AUTH_TOKEN") {
+		mcps["sentry"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-sentry"},
+			Environment: map[string]string{
+				"SENTRY_AUTH_TOKEN": "{env:SENTRY_AUTH_TOKEN}",
+				"SENTRY_ORG":        "{env:SENTRY_ORG}",
+			},
+			Enabled: true,
+		}
+	}
+
+	// Cloudflare - enabled if CLOUDFLARE_API_TOKEN is set
+	if g.hasEnvVar("CLOUDFLARE_API_TOKEN") {
+		mcps["cloudflare"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "@cloudflare/mcp-server-cloudflare"},
+			Environment: map[string]string{
+				"CLOUDFLARE_API_TOKEN": "{env:CLOUDFLARE_API_TOKEN}",
+			},
+			Enabled: true,
+		}
+	}
+
+	// Discord - enabled if DISCORD_TOKEN is set
+	if g.hasEnvVar("DISCORD_TOKEN") {
+		mcps["discord"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "mcp-server-discord"},
+			Environment: map[string]string{
+				"DISCORD_TOKEN": "{env:DISCORD_TOKEN}",
+			},
+			Enabled: true,
+		}
+	}
+
+	// Exa - enabled if EXA_API_KEY is set
+	if g.hasEnvVar("EXA_API_KEY") {
+		mcps["exa"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "exa-mcp-server"},
+			Environment: map[string]string{
+				"EXA_API_KEY": "{env:EXA_API_KEY}",
+			},
+			Enabled: true,
+		}
+	}
+
+	return mcps
+}
+
+// GetEnabledMCPCount returns the count of enabled MCPs
+func (g *MCPConfigGenerator) GetEnabledMCPCount() int {
+	mcps := g.GenerateOpenCodeMCPs()
+	count := 0
+	for _, mcp := range mcps {
+		if mcp.Enabled {
+			count++
+		}
+	}
+	return count
+}
+
+// GetMCPSummary returns a summary of enabled/disabled MCPs
+func (g *MCPConfigGenerator) GetMCPSummary() map[string]interface{} {
+	mcps := g.GenerateOpenCodeMCPs()
+
+	enabled := []string{}
+	for name, mcp := range mcps {
+		if mcp.Enabled {
+			enabled = append(enabled, name)
+		}
+	}
+
+	return map[string]interface{}{
+		"total_enabled": len(enabled),
+		"enabled_mcps":  enabled,
+		"categories": map[string]int{
+			"core":     8, // filesystem, fetch, memory, time, git, sequential-thinking, everything, helixagent
+			"database": 2, // sqlite, postgres
+			"devops":   2, // docker, puppeteer
+		},
+	}
+}
