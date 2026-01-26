@@ -17,3 +17,24 @@ coverage/
 .idea/
 .vscode/
 __pycache__/
+
+# MCP Servers (submodule build artifacts)
+MCP-Servers/node_modules/
+MCP-Servers/src/*/dist/
+MCP-Servers/src/*/node_modules/
+
+# MCP Plugin build artifacts
+plugins/mcp-server/node_modules/
+plugins/mcp-server/dist/
+
+# Local MCP server installations
+.helixagent/mcp-servers/*/node_modules/
+
+# MCP configuration files with secrets (user-specific)
+# Note: Template configs are tracked, user configs with real keys are not
+.env.mcps
+
+# SQLite database runtime files
+*.db-shm
+*.db-wal
+*.db-journal
