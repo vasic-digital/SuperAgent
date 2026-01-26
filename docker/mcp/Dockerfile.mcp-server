@@ -1,0 +1,30 @@
+# Dockerfile for MCP servers from the main MCP-Servers repository
+# Builds and runs a specific MCP server from src/{SERVER_NAME}
+
+FROM node:20-alpine
+
+ARG SERVER_NAME
+
+# Install build dependencies and socat for TCP wrapper
+RUN apk add --no-cache python3 make g++ socat netcat-openbsd git
+
+WORKDIR /app
+
+# Copy the entire MCP-Servers repo
+COPY . .
+
+# Install dependencies and build
+RUN npm install && npm run build
+
+# Set working directory to the specific server
+WORKDIR /app/src/${SERVER_NAME}
+
+# Create entrypoint script that wraps stdio MCP server with TCP
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'echo "Starting MCP server: '${SERVER_NAME}' on port 9000"' >> /entrypoint.sh && \
+    echo 'socat TCP-LISTEN:9000,reuseaddr,fork EXEC:"node dist/index.js",pty,stderr' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+EXPOSE 9000
+
+CMD ["/entrypoint.sh"]
