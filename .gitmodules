@@ -16,3 +16,6 @@
 [submodule "external/mcp-servers/servers-archived"]
 	path = external/mcp-servers/servers-archived
 	url = https://github.com/modelcontextprotocol/servers-archived.git
+[submodule "MCP-Servers"]
+	path = MCP-Servers
+	url = https://github.com/modelcontextprotocol/servers.git
