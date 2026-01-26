@@ -1,29 +1,52 @@
 # Dockerfile for MCP servers from the main MCP-Servers repository
 # Builds and runs a specific MCP server from src/{SERVER_NAME}
+# Supports both Python and TypeScript servers
 
 FROM node:20-alpine
 
 ARG SERVER_NAME
 ARG SOURCE_DIR=MCP-Servers
 
-# Install build dependencies and socat for TCP wrapper
-RUN apk add --no-cache python3 make g++ socat netcat-openbsd git
+# Install build dependencies, Python, and socat for TCP wrapper
+RUN apk add --no-cache python3 py3-pip make g++ socat netcat-openbsd git uv
 
 WORKDIR /app
 
 # Copy the entire MCP-Servers repo from the source directory
 COPY ${SOURCE_DIR} .
 
-# Install dependencies and build
-RUN npm install && npm run build
+# Install Node.js dependencies and build TypeScript servers
+RUN npm install && npm run build 2>/dev/null || true
 
 # Set working directory to the specific server
 WORKDIR /app/src/${SERVER_NAME}
 
-# Create entrypoint script that wraps stdio MCP server with TCP
+# Install Python dependencies if this is a Python server
+RUN if [ -f "pyproject.toml" ]; then \
+        uv venv && \
+        . .venv/bin/activate && \
+        uv pip install -e . 2>/dev/null || pip install -e . 2>/dev/null || true; \
+    fi
+
+# Create entrypoint script that detects server type and runs it
 RUN echo '#!/bin/sh' > /entrypoint.sh && \
     echo 'echo "Starting MCP server: '${SERVER_NAME}' on port 9000"' >> /entrypoint.sh && \
-    echo 'socat TCP-LISTEN:9000,reuseaddr,fork EXEC:"node dist/index.js",pty,stderr' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Detect server type and set command' >> /entrypoint.sh && \
+    echo 'if [ -f "dist/index.js" ]; then' >> /entrypoint.sh && \
+    echo '    CMD="node dist/index.js"' >> /entrypoint.sh && \
+    echo 'elif [ -f "pyproject.toml" ]; then' >> /entrypoint.sh && \
+    echo '    if [ -d ".venv" ]; then' >> /entrypoint.sh && \
+    echo '        . .venv/bin/activate' >> /entrypoint.sh && \
+    echo '    fi' >> /entrypoint.sh && \
+    echo '    CMD="python -m mcp_server_'${SERVER_NAME}'"' >> /entrypoint.sh && \
+    echo 'else' >> /entrypoint.sh && \
+    echo '    echo "No entry point found!"' >> /entrypoint.sh && \
+    echo '    exit 1' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo 'echo "Using command: $CMD"' >> /entrypoint.sh && \
+    echo 'socat TCP-LISTEN:9000,reuseaddr,fork EXEC:"$CMD",pty,stderr' >> /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 EXPOSE 9000
