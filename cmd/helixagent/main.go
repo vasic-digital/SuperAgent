@@ -1489,10 +1489,22 @@ func buildOpenCodeMCPServersNew(baseURL string) map[string]OpenCodeMCPServerDefN
 		homeDir = "/home"
 	}
 
+	// Get HELIXAGENT_HOME for local MCP plugin path
+	helixHome := os.Getenv("HELIXAGENT_HOME")
+	if helixHome == "" {
+		helixHome = homeDir + "/.helixagent"
+	}
+
 	return map[string]OpenCodeMCPServerDefNew{
 		// =============================================================================
-		// HelixAgent Protocol Endpoints (6 MCPs) - REMOTE (running at port 7061)
+		// HelixAgent Protocol Endpoints (7 MCPs) - LOCAL + REMOTE
 		// =============================================================================
+		// Local MCP plugin - runs the HelixAgent MCP server as a subprocess
+		"helixagent": {
+			Type:    "local",
+			Command: []string{"node", helixHome + "/plugins/mcp-server/dist/index.js", "--endpoint", baseURL},
+		},
+		// Remote protocol endpoints (running at port 7061)
 		"helixagent-mcp": {
 			Type:    "remote",
 			URL:     baseURL + "/v1/mcp",
@@ -2625,8 +2637,17 @@ func buildCrushMCPServers(baseURL string) map[string]CrushMcpConfig {
 		homeDir = "/home"
 	}
 
+	// Get HELIXAGENT_HOME for local MCP plugin path
+	helixHome := os.Getenv("HELIXAGENT_HOME")
+	if helixHome == "" {
+		helixHome = homeDir + "/.helixagent"
+	}
+
 	return map[string]CrushMcpConfig{
-		// HelixAgent Protocol Endpoints (6 MCPs) - REMOTE (running at port 7061)
+		// HelixAgent Protocol Endpoints (7 MCPs) - LOCAL + REMOTE
+		// Local MCP plugin - runs the HelixAgent MCP server as a subprocess
+		"helixagent": {Type: "local", Command: []string{"node", helixHome + "/plugins/mcp-server/dist/index.js", "--endpoint", baseURL}, Enabled: true},
+		// Remote protocol endpoints (running at port 7061)
 		"helixagent-mcp":        {Type: "remote", URL: baseURL + "/v1/mcp", Enabled: true},
 		"helixagent-acp":        {Type: "remote", URL: baseURL + "/v1/acp", Enabled: true},
 		"helixagent-lsp":        {Type: "remote", URL: baseURL + "/v1/lsp", Enabled: true},

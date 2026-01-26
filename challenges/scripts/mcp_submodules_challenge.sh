@@ -21,17 +21,17 @@ TESTS_SKIPPED=0
 
 log_pass() {
     echo -e "${GREEN}[PASS]${NC} $1"
-    ((TESTS_PASSED++))
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 }
 
 log_fail() {
     echo -e "${RED}[FAIL]${NC} $1"
-    ((TESTS_FAILED++))
+    TESTS_FAILED=$((TESTS_FAILED + 1))
 }
 
 log_skip() {
     echo -e "${YELLOW}[SKIP]${NC} $1"
-    ((TESTS_SKIPPED++))
+    TESTS_SKIPPED=$((TESTS_SKIPPED + 1))
 }
 
 log_info() {
@@ -236,7 +236,7 @@ BASE_DOCKERFILES=("Dockerfile.base-node" "Dockerfile.base-python")
 BASE_COUNT=0
 for base in "${BASE_DOCKERFILES[@]}"; do
     if [ -f "$MCP_DIR/dockerfiles/$base" ]; then
-        ((BASE_COUNT++))
+        BASE_COUNT=$((BASE_COUNT + 1))
     fi
 done
 if [ "$BASE_COUNT" -eq 2 ]; then
