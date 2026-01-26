@@ -83,6 +83,14 @@ func (g *MCPConfigGenerator) hasEnvVar(name string) bool {
 	return ok && val != ""
 }
 
+// getEnvOrDefault returns the environment variable value or a default
+func (g *MCPConfigGenerator) getEnvOrDefault(name, defaultVal string) string {
+	if val, ok := g.envVars[name]; ok && val != "" {
+		return val
+	}
+	return defaultVal
+}
+
 // GenerateOpenCodeMCPs generates MCP configurations for OpenCode
 // Only includes MCPs that have all required dependencies
 func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
@@ -137,24 +145,83 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 	}
 
 	// ==========================================================================
-	// Category 3: Database MCPs (Local services - enabled with defaults)
+	// Category 3: Database MCPs (Local services)
 	// ==========================================================================
 	mcps["sqlite"] = MCPServerConfig{
 		Type:    "local",
 		Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"},
 		Enabled: true,
 	}
+
+	// PostgreSQL - enabled if POSTGRES_URL is set or service is running
+	postgresURL := g.getEnvOrDefault("POSTGRES_URL", "postgresql://helixagent:helixagent123@localhost:15432/helixagent_db")
 	mcps["postgres"] = MCPServerConfig{
 		Type:    "local",
 		Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres"},
 		Environment: map[string]string{
-			"POSTGRES_URL": "postgresql://helixagent:helixagent123@localhost:15432/helixagent_db",
+			"POSTGRES_URL": postgresURL,
 		},
 		Enabled: true,
 	}
 
+	// Redis - enabled if REDIS_URL is set
+	if g.hasEnvVar("REDIS_URL") || g.hasEnvVar("REDIS_HOST") {
+		redisURL := g.getEnvOrDefault("REDIS_URL", "redis://:helixagent123@localhost:16379")
+		mcps["redis"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "mcp-server-redis"},
+			Environment: map[string]string{
+				"REDIS_URL": redisURL,
+			},
+			Enabled: true,
+		}
+	}
+
+	// MongoDB - enabled if MONGODB_URI is set
+	if g.hasEnvVar("MONGODB_URI") || g.hasEnvVar("MONGODB_HOST") {
+		mongoURI := g.getEnvOrDefault("MONGODB_URI", "mongodb://helixagent:helixagent123@localhost:27017/helixagent?authSource=admin")
+		mcps["mongodb"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "mcp-server-mongodb"},
+			Environment: map[string]string{
+				"MONGODB_URI": mongoURI,
+			},
+			Enabled: true,
+		}
+	}
+
 	// ==========================================================================
-	// Category 4: DevOps MCPs (Local tools)
+	// Category 4: Vector Database MCPs
+	// ==========================================================================
+
+	// Qdrant - enabled if QDRANT_URL is set
+	if g.hasEnvVar("QDRANT_URL") || g.hasEnvVar("QDRANT_HOST") {
+		qdrantURL := g.getEnvOrDefault("QDRANT_URL", "http://localhost:6333")
+		mcps["qdrant"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "mcp-server-qdrant"},
+			Environment: map[string]string{
+				"QDRANT_URL": qdrantURL,
+			},
+			Enabled: true,
+		}
+	}
+
+	// Chroma - enabled if CHROMA_URL is set
+	if g.hasEnvVar("CHROMA_URL") || g.hasEnvVar("CHROMA_HOST") {
+		chromaURL := g.getEnvOrDefault("CHROMA_URL", "http://localhost:8000")
+		mcps["chroma"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "mcp-server-chroma"},
+			Environment: map[string]string{
+				"CHROMA_URL": chromaURL,
+			},
+			Enabled: true,
+		}
+	}
+
+	// ==========================================================================
+	// Category 5: DevOps MCPs (Local tools)
 	// ==========================================================================
 	mcps["docker"] = MCPServerConfig{
 		Type:    "local",
@@ -165,6 +232,28 @@ func (g *MCPConfigGenerator) GenerateOpenCodeMCPs() map[string]MCPServerConfig {
 		Type:    "local",
 		Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"},
 		Enabled: true,
+	}
+	mcps["playwright"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "mcp-server-playwright"},
+		Enabled: true,
+	}
+	mcps["ansible"] = MCPServerConfig{
+		Type:    "local",
+		Command: []string{"npx", "-y", "mcp-server-ansible"},
+		Enabled: true,
+	}
+
+	// Kubernetes - enabled if KUBECONFIG is set
+	if g.hasEnvVar("KUBECONFIG") {
+		mcps["kubernetes"] = MCPServerConfig{
+			Type:    "local",
+			Command: []string{"npx", "-y", "mcp-server-kubernetes"},
+			Environment: map[string]string{
+				"KUBECONFIG": "{env:KUBECONFIG}",
+			},
+			Enabled: true,
+		}
 	}
 
 	// ==========================================================================
