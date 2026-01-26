@@ -38,15 +38,18 @@ WORKDIR /app
 COPY --from=builder /app/bin/ /app/bin/
 
 # Create entrypoint script
+# CRITICAL: MCP uses newline-delimited JSON (NDJSON) - must use raw pipes, NOT pty
 RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
     echo 'echo "Starting Go MCP server on port 9000"' >> /entrypoint.sh && \
     echo 'ENTRY=""' >> /entrypoint.sh && \
     echo 'for bin in /app/bin/*; do' >> /entrypoint.sh && \
     echo '  if [ -x "$bin" ]; then ENTRY="$bin"; break; fi' >> /entrypoint.sh && \
     echo 'done' >> /entrypoint.sh && \
-    echo 'if [ -z "$ENTRY" ]; then echo "No Go binary found!"; exit 1; fi' >> /entrypoint.sh && \
-    echo 'echo "Using entry point: $ENTRY"' >> /entrypoint.sh && \
-    echo 'socat TCP-LISTEN:9000,reuseaddr,fork EXEC:"$ENTRY",pty,stderr' >> /entrypoint.sh && \
+    echo 'if [ -z "$ENTRY" ]; then echo "ERROR: No Go binary found!"; exit 1; fi' >> /entrypoint.sh && \
+    echo 'echo "Entry point: $ENTRY"' >> /entrypoint.sh && \
+    echo 'echo "Listening on TCP port 9000..."' >> /entrypoint.sh && \
+    echo 'exec socat TCP-LISTEN:9000,reuseaddr,fork SYSTEM:"$ENTRY"' >> /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 EXPOSE 9000

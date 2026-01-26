@@ -29,24 +29,33 @@ RUN if [ -f "pyproject.toml" ]; then \
     fi
 
 # Create entrypoint script that detects server type and runs it
+# NOTE: MCP uses newline-delimited JSON (NDJSON) over stdio
+# We MUST NOT use PTY mode as it corrupts the protocol framing
 RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
     echo 'echo "Starting MCP server: '${SERVER_NAME}' on port 9000"' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
     echo '# Detect server type and set command' >> /entrypoint.sh && \
     echo 'if [ -f "dist/index.js" ]; then' >> /entrypoint.sh && \
     echo '    CMD="node dist/index.js"' >> /entrypoint.sh && \
+    echo '    echo "Detected: TypeScript server"' >> /entrypoint.sh && \
     echo 'elif [ -f "pyproject.toml" ]; then' >> /entrypoint.sh && \
     echo '    if [ -d ".venv" ]; then' >> /entrypoint.sh && \
     echo '        . .venv/bin/activate' >> /entrypoint.sh && \
     echo '    fi' >> /entrypoint.sh && \
     echo '    CMD="python -m mcp_server_'${SERVER_NAME}'"' >> /entrypoint.sh && \
+    echo '    echo "Detected: Python server"' >> /entrypoint.sh && \
     echo 'else' >> /entrypoint.sh && \
-    echo '    echo "No entry point found!"' >> /entrypoint.sh && \
+    echo '    echo "ERROR: No entry point found (no dist/index.js or pyproject.toml)"' >> /entrypoint.sh && \
     echo '    exit 1' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
-    echo 'echo "Using command: $CMD"' >> /entrypoint.sh && \
-    echo 'socat TCP-LISTEN:9000,reuseaddr,fork EXEC:"$CMD",pty,stderr' >> /entrypoint.sh && \
+    echo 'echo "Command: $CMD"' >> /entrypoint.sh && \
+    echo 'echo "Listening on TCP port 9000..."' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Use socat to expose stdio-based MCP server over TCP' >> /entrypoint.sh && \
+    echo '# CRITICAL: Use raw pipes, NOT pty - MCP uses NDJSON framing' >> /entrypoint.sh && \
+    echo 'exec socat TCP-LISTEN:9000,reuseaddr,fork SYSTEM:"$CMD"' >> /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 EXPOSE 9000

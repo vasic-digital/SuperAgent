@@ -24,7 +24,9 @@ RUN if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi && \
     if [ -f "setup.py" ]; then pip install -e .; fi
 
 # Create entrypoint script that wraps stdio MCP server with TCP
+# CRITICAL: MCP uses newline-delimited JSON (NDJSON) - must use raw pipes, NOT pty
 RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
     echo 'echo "Starting Python MCP server on port 9000"' >> /entrypoint.sh && \
     echo 'ENTRY=""' >> /entrypoint.sh && \
     echo 'if [ -f "src/main.py" ]; then ENTRY="python src/main.py"' >> /entrypoint.sh && \
@@ -33,9 +35,10 @@ RUN echo '#!/bin/sh' > /entrypoint.sh && \
     echo 'elif [ -f "src/server.py" ]; then ENTRY="python src/server.py"' >> /entrypoint.sh && \
     echo 'elif [ -f "src/__main__.py" ]; then ENTRY="python -m src"' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
-    echo 'if [ -z "$ENTRY" ]; then echo "No Python entry point found!"; exit 1; fi' >> /entrypoint.sh && \
-    echo 'echo "Using entry point: $ENTRY"' >> /entrypoint.sh && \
-    echo 'socat TCP-LISTEN:9000,reuseaddr,fork EXEC:"$ENTRY",pty,stderr' >> /entrypoint.sh && \
+    echo 'if [ -z "$ENTRY" ]; then echo "ERROR: No Python entry point found!"; exit 1; fi' >> /entrypoint.sh && \
+    echo 'echo "Entry point: $ENTRY"' >> /entrypoint.sh && \
+    echo 'echo "Listening on TCP port 9000..."' >> /entrypoint.sh && \
+    echo 'exec socat TCP-LISTEN:9000,reuseaddr,fork SYSTEM:"$ENTRY"' >> /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 EXPOSE 9000

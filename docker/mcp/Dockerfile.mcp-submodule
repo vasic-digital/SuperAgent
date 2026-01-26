@@ -21,7 +21,9 @@ RUN if [ -f "package.json" ]; then \
 
 # Create entrypoint script
 # Tries different entry points: dist/index.js, build/index.js, index.js, src/index.js
+# CRITICAL: MCP uses newline-delimited JSON (NDJSON) - must use raw pipes, NOT pty
 RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
     echo 'echo "Starting MCP server on port 9000"' >> /entrypoint.sh && \
     echo 'ENTRY=""' >> /entrypoint.sh && \
     echo 'if [ -f "dist/index.js" ]; then ENTRY="dist/index.js"' >> /entrypoint.sh && \
@@ -30,9 +32,10 @@ RUN echo '#!/bin/sh' > /entrypoint.sh && \
     echo 'elif [ -f "src/index.js" ]; then ENTRY="src/index.js"' >> /entrypoint.sh && \
     echo 'elif [ -f "src/index.ts" ]; then ENTRY="src/index.ts"' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
-    echo 'if [ -z "$ENTRY" ]; then echo "No entry point found!"; exit 1; fi' >> /entrypoint.sh && \
-    echo 'echo "Using entry point: $ENTRY"' >> /entrypoint.sh && \
-    echo 'socat TCP-LISTEN:9000,reuseaddr,fork EXEC:"node $ENTRY",pty,stderr' >> /entrypoint.sh && \
+    echo 'if [ -z "$ENTRY" ]; then echo "ERROR: No entry point found!"; exit 1; fi' >> /entrypoint.sh && \
+    echo 'echo "Entry point: $ENTRY"' >> /entrypoint.sh && \
+    echo 'echo "Listening on TCP port 9000..."' >> /entrypoint.sh && \
+    echo 'exec socat TCP-LISTEN:9000,reuseaddr,fork SYSTEM:"node $ENTRY"' >> /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 EXPOSE 9000
