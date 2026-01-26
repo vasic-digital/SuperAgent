@@ -461,6 +461,7 @@ All configuration generation is powered by LLMsVerifier's unified generator (`pk
 ./challenges/scripts/integration_providers_challenge.sh          # 47 tests - embedding/vector/MCP integrations
 ./challenges/scripts/all_agents_e2e_challenge.sh                 # 102 tests - all 48 CLI agents
 ./challenges/scripts/cli_agent_mcp_challenge.sh                  # 26 tests - CLI agent MCP validation (37 MCPs)
+./challenges/scripts/full_system_boot_challenge.sh               # 53 tests - full system infrastructure validation
 ```
 
 Key concepts:
