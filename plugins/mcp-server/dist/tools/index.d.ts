@@ -191,4 +191,178 @@ export declare class ProvidersTool implements MCPTool {
     constructor(transport: HelixAgentTransport);
     execute(args: Record<string, unknown>): Promise<unknown>;
 }
+/**
+ * ACP (Agent Communication Protocol) Tool
+ */
+export declare class ACPTool implements MCPTool {
+    private transport;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            action: {
+                type: string;
+                enum: string[];
+                description: string;
+            };
+            agent_id: {
+                type: string;
+                description: string;
+            };
+            message: {
+                type: string;
+                description: string;
+            };
+        };
+        required: string[];
+    };
+    constructor(transport: HelixAgentTransport);
+    execute(args: Record<string, unknown>): Promise<unknown>;
+}
+/**
+ * LSP (Language Server Protocol) Tool
+ */
+export declare class LSPTool implements MCPTool {
+    private transport;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            action: {
+                type: string;
+                enum: string[];
+                description: string;
+            };
+            file_path: {
+                type: string;
+                description: string;
+            };
+            line: {
+                type: string;
+                description: string;
+            };
+            character: {
+                type: string;
+                description: string;
+            };
+        };
+        required: string[];
+    };
+    constructor(transport: HelixAgentTransport);
+    execute(args: Record<string, unknown>): Promise<unknown>;
+}
+/**
+ * Embeddings Tool
+ */
+export declare class EmbeddingsTool implements MCPTool {
+    private transport;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            action: {
+                type: string;
+                enum: string[];
+                description: string;
+            };
+            text: {
+                type: string;
+                description: string;
+            };
+            texts: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            query: {
+                type: string;
+                description: string;
+            };
+            model: {
+                type: string;
+                description: string;
+            };
+            top_k: {
+                type: string;
+                description: string;
+                default: number;
+            };
+        };
+        required: string[];
+    };
+    constructor(transport: HelixAgentTransport);
+    execute(args: Record<string, unknown>): Promise<unknown>;
+}
+/**
+ * Vision Tool
+ */
+export declare class VisionTool implements MCPTool {
+    private transport;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            action: {
+                type: string;
+                enum: string[];
+                description: string;
+            };
+            image_url: {
+                type: string;
+                description: string;
+            };
+            image_base64: {
+                type: string;
+                description: string;
+            };
+            prompt: {
+                type: string;
+                description: string;
+            };
+        };
+        required: string[];
+    };
+    constructor(transport: HelixAgentTransport);
+    execute(args: Record<string, unknown>): Promise<unknown>;
+}
+/**
+ * Cognee (Knowledge Graph) Tool
+ */
+export declare class CogneeTool implements MCPTool {
+    private transport;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            action: {
+                type: string;
+                enum: string[];
+                description: string;
+            };
+            content: {
+                type: string;
+                description: string;
+            };
+            query: {
+                type: string;
+                description: string;
+            };
+            search_type: {
+                type: string;
+                enum: string[];
+                description: string;
+                default: string;
+            };
+            dataset: {
+                type: string;
+                description: string;
+            };
+        };
+        required: string[];
+    };
+    constructor(transport: HelixAgentTransport);
+    execute(args: Record<string, unknown>): Promise<unknown>;
+}
 //# sourceMappingURL=index.d.ts.map

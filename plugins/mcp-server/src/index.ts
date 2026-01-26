@@ -8,7 +8,7 @@
 
 import { createReadStream, createWriteStream } from 'fs';
 import { HelixAgentTransport } from './transport';
-import { DebateTool, EnsembleTool, TaskTool, RAGTool, MemoryTool, ProvidersTool } from './tools';
+import { DebateTool, EnsembleTool, TaskTool, RAGTool, MemoryTool, ProvidersTool, ACPTool, LSPTool, EmbeddingsTool, VisionTool, CogneeTool } from './tools';
 
 // Configuration
 export interface MCPServerConfig {
@@ -63,7 +63,7 @@ export class HelixAgentMCPServer {
       enableBrotli: this.config.enableBrotli,
     });
 
-    // Register tools
+    // Register tools - Core functionality
     this.tools = new Map();
     this.tools.set('helixagent_debate', new DebateTool(this.transport));
     this.tools.set('helixagent_ensemble', new EnsembleTool(this.transport));
@@ -71,6 +71,13 @@ export class HelixAgentMCPServer {
     this.tools.set('helixagent_rag', new RAGTool(this.transport));
     this.tools.set('helixagent_memory', new MemoryTool(this.transport));
     this.tools.set('helixagent_providers', new ProvidersTool(this.transport));
+
+    // Register tools - Protocol tools (ACP, LSP, Embeddings, Vision, Cognee)
+    this.tools.set('helixagent_acp', new ACPTool(this.transport));
+    this.tools.set('helixagent_lsp', new LSPTool(this.transport));
+    this.tools.set('helixagent_embeddings', new EmbeddingsTool(this.transport));
+    this.tools.set('helixagent_vision', new VisionTool(this.transport));
+    this.tools.set('helixagent_cognee', new CogneeTool(this.transport));
   }
 
   /**

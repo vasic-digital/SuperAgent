@@ -748,6 +748,135 @@ else
 fi
 
 # ============================================================================
+# Section 14: Protocol SSE Endpoints (MCP, ACP, LSP, Embeddings, Vision, Cognee)
+# ============================================================================
+
+log_info ""
+log_info "=============================================="
+log_info "Section 14: Protocol SSE Endpoints"
+log_info "=============================================="
+
+# Test 54: MCP SSE endpoint responds
+TOTAL=$((TOTAL + 1))
+log_info "Test 54: MCP SSE endpoint responds"
+RESP=$(curl -s -m 3 http://localhost:7061/v1/mcp 2>/dev/null | head -1 || echo "")
+if echo "$RESP" | grep -q "endpoint"; then
+    log_success "MCP SSE endpoint responds with endpoint event"
+    PASSED=$((PASSED + 1))
+else
+    log_error "MCP SSE endpoint did not return endpoint event!"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 55: ACP SSE endpoint responds
+TOTAL=$((TOTAL + 1))
+log_info "Test 55: ACP SSE endpoint responds"
+RESP=$(curl -s -m 3 http://localhost:7061/v1/acp 2>/dev/null | head -1 || echo "")
+if echo "$RESP" | grep -q "endpoint"; then
+    log_success "ACP SSE endpoint responds with endpoint event"
+    PASSED=$((PASSED + 1))
+else
+    log_error "ACP SSE endpoint did not return endpoint event!"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 56: LSP SSE endpoint responds
+TOTAL=$((TOTAL + 1))
+log_info "Test 56: LSP SSE endpoint responds"
+RESP=$(curl -s -m 3 http://localhost:7061/v1/lsp 2>/dev/null | head -1 || echo "")
+if echo "$RESP" | grep -q "endpoint"; then
+    log_success "LSP SSE endpoint responds with endpoint event"
+    PASSED=$((PASSED + 1))
+else
+    log_error "LSP SSE endpoint did not return endpoint event!"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 57: Embeddings SSE endpoint responds
+TOTAL=$((TOTAL + 1))
+log_info "Test 57: Embeddings SSE endpoint responds"
+RESP=$(curl -s -m 3 http://localhost:7061/v1/embeddings 2>/dev/null | head -1 || echo "")
+if echo "$RESP" | grep -q "endpoint"; then
+    log_success "Embeddings SSE endpoint responds with endpoint event"
+    PASSED=$((PASSED + 1))
+else
+    log_error "Embeddings SSE endpoint did not return endpoint event!"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 58: Vision SSE endpoint responds
+TOTAL=$((TOTAL + 1))
+log_info "Test 58: Vision SSE endpoint responds"
+RESP=$(curl -s -m 3 http://localhost:7061/v1/vision 2>/dev/null | head -1 || echo "")
+if echo "$RESP" | grep -q "endpoint"; then
+    log_success "Vision SSE endpoint responds with endpoint event"
+    PASSED=$((PASSED + 1))
+else
+    log_error "Vision SSE endpoint did not return endpoint event!"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 59: Cognee SSE endpoint responds
+TOTAL=$((TOTAL + 1))
+log_info "Test 59: Cognee SSE endpoint responds"
+RESP=$(curl -s -m 3 http://localhost:7061/v1/cognee 2>/dev/null | head -1 || echo "")
+if echo "$RESP" | grep -q "endpoint"; then
+    log_success "Cognee SSE endpoint responds with endpoint event"
+    PASSED=$((PASSED + 1))
+else
+    log_error "Cognee SSE endpoint did not return endpoint event!"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 60: MCP tools/list works
+TOTAL=$((TOTAL + 1))
+log_info "Test 60: MCP tools/list method works"
+RESP=$(curl -s -m 5 -X POST http://localhost:7061/v1/mcp \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' 2>/dev/null || echo "{}")
+if echo "$RESP" | grep -q "tools"; then
+    log_success "MCP tools/list returns tools array"
+    PASSED=$((PASSED + 1))
+else
+    log_error "MCP tools/list failed!"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 61: MCP server plugin exists
+TOTAL=$((TOTAL + 1))
+log_info "Test 61: MCP server plugin exists"
+if [ -f "$PROJECT_ROOT/plugins/mcp-server/dist/index.js" ]; then
+    log_success "MCP server plugin exists"
+    PASSED=$((PASSED + 1))
+else
+    log_error "MCP server plugin NOT found!"
+    FAILED=$((FAILED + 1))
+fi
+
+# Test 62: Protocol tools are compiled
+TOTAL=$((TOTAL + 1))
+log_info "Test 62: Protocol tools are compiled"
+TOOLS_FILE="$PROJECT_ROOT/plugins/mcp-server/dist/tools/index.js"
+if [ -f "$TOOLS_FILE" ]; then
+    TOOL_COUNT=0
+    for tool in "ACPTool" "LSPTool" "EmbeddingsTool" "VisionTool" "CogneeTool"; do
+        if grep -q "$tool" "$TOOLS_FILE" 2>/dev/null; then
+            TOOL_COUNT=$((TOOL_COUNT + 1))
+        fi
+    done
+    if [ "$TOOL_COUNT" -ge 5 ]; then
+        log_success "All 5 protocol tools are compiled"
+        PASSED=$((PASSED + 1))
+    else
+        log_error "Only $TOOL_COUNT/5 protocol tools found!"
+        FAILED=$((FAILED + 1))
+    fi
+else
+    log_error "Tools file NOT found!"
+    FAILED=$((FAILED + 1))
+fi
+
+# ============================================================================
 # Summary
 # ============================================================================
 
