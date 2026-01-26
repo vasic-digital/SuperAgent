@@ -1,0 +1,18 @@
+# Base Dockerfile for Node.js MCP Servers
+FROM node:20-alpine
+
+# Install build dependencies
+RUN apk add --no-cache git python3 make g++
+
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -S mcp && adduser -S mcp -G mcp
+
+# Default healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD node -e "console.log('healthy')" || exit 1
+
+EXPOSE 3000
+
+USER mcp

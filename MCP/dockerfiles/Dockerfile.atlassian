@@ -1,0 +1,17 @@
+# MCP Atlassian Server (Jira + Confluence)
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --no-cache-dir -e . 2>/dev/null || pip install --no-cache-dir mcp-atlassian
+
+ENV JIRA_URL=""
+ENV JIRA_EMAIL=""
+ENV JIRA_API_TOKEN=""
+ENV CONFLUENCE_URL=""
+
+EXPOSE 3000
+
+CMD ["python", "-m", "mcp_atlassian"]

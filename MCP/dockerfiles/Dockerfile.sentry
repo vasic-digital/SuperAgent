@@ -1,0 +1,15 @@
+# MCP Sentry Server - Error tracking
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY . .
+
+RUN npm install && npm run build 2>/dev/null || true
+
+ENV SENTRY_AUTH_TOKEN=""
+ENV SENTRY_ORG=""
+
+EXPOSE 3000
+
+CMD ["node", "dist/index.js"]

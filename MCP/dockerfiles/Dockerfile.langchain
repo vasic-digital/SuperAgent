@@ -1,0 +1,15 @@
+# MCP LangChain Adapters Server
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --no-cache-dir -e . 2>/dev/null || pip install --no-cache-dir langchain-mcp-adapters
+
+ENV OPENAI_API_KEY=""
+ENV ANTHROPIC_API_KEY=""
+
+EXPOSE 3000
+
+CMD ["python", "-m", "langchain_mcp_adapters"]

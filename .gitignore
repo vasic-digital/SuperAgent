@@ -23,6 +23,13 @@ MCP-Servers/node_modules/
 MCP-Servers/src/*/dist/
 MCP-Servers/src/*/node_modules/
 
+# MCP Submodules build artifacts
+MCP/submodules/*/node_modules/
+MCP/submodules/*/dist/
+MCP/submodules/*/.venv/
+MCP/submodules/*/__pycache__/
+MCP/submodules/*/*.egg-info/
+
 # MCP Plugin build artifacts
 plugins/mcp-server/node_modules/
 plugins/mcp-server/dist/
@@ -33,6 +40,7 @@ plugins/mcp-server/dist/
 # MCP configuration files with secrets (user-specific)
 # Note: Template configs are tracked, user configs with real keys are not
 .env.mcps
+.env.mcp
 
 # SQLite database runtime files
 *.db-shm
