@@ -1912,93 +1912,36 @@ func filterWorkingMCPs(allMCPs map[string]OpenCodeMCPServerDefNew) map[string]Op
 	workingMCPs := make(map[string]OpenCodeMCPServerDefNew)
 
 	// MCPs that always work (no external dependencies)
+	// NOTE: Only includes MCPs with VERIFIED npm packages on registry.npmjs.org
 	alwaysWorking := map[string]bool{
-		"helixagent":          true, // HelixAgent local plugin
-		"helixagent-mcp":      true, // HelixAgent remote endpoints
-		"helixagent-acp":      true,
-		"helixagent-lsp":      true,
+		"helixagent":            true, // HelixAgent local plugin
+		"helixagent-mcp":        true, // HelixAgent remote endpoints
+		"helixagent-acp":        true,
+		"helixagent-lsp":        true,
 		"helixagent-embeddings": true,
-		"helixagent-vision":   true,
-		"helixagent-cognee":   true,
-		"filesystem":          true,
-		"fetch":               true,
-		"memory":              true,
-		"time":                true,
-		"git":                 true,
-		"sqlite":              true,
-		"puppeteer":           true,
-		"sequential-thinking": true,
-		"everything":          true,
-		"docker":              true,
-		"terraform":           true,
-		"ansible":             true,
-		"raycast":             true,
+		"helixagent-vision":     true,
+		"helixagent-cognee":     true,
+		"filesystem":            true, // @modelcontextprotocol/server-filesystem - VERIFIED
+		"memory":                true, // @modelcontextprotocol/server-memory - VERIFIED
+		"sequential-thinking":   true, // @modelcontextprotocol/server-sequential-thinking - VERIFIED
+		"everything":            true, // @modelcontextprotocol/server-everything - VERIFIED
+		// These packages DON'T exist on npm and cause "Connection closed":
+		// "fetch", "git", "time", "puppeteer", "docker", "terraform", "ansible", "raycast", "sqlite"
 	}
 
-	// Environment variable requirements for MCPs
+	// Environment variable requirements for MCPs with VERIFIED npm packages
 	envRequirements := map[string][]string{
-		"brave-search":      {"BRAVE_API_KEY"},
-		"google-maps":       {"GOOGLE_MAPS_API_KEY"},
-		"slack":             {"SLACK_BOT_TOKEN"},
-		"github":            {"GITHUB_TOKEN"},
-		"gitlab":            {"GITLAB_TOKEN"},
-		"sentry":            {"SENTRY_AUTH_TOKEN"},
-		"everart":           {"EVERART_API_KEY"},
-		"aws-kb-retrieval":  {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
-		"exa":               {"EXA_API_KEY"},
-		"linear":            {"LINEAR_API_KEY"},
-		"notion":            {"NOTION_API_KEY"},
-		"figma":             {"FIGMA_API_KEY"},
-		"todoist":           {"TODOIST_API_TOKEN"},
-		"obsidian":          {"OBSIDIAN_VAULT_PATH"},
-		"tinybird":          {"TINYBIRD_TOKEN"},
-		"cloudflare":        {"CLOUDFLARE_API_TOKEN"},
-		"neon":              {"NEON_API_KEY"},
-		"gdrive":            {"GOOGLE_CREDENTIALS_PATH"},
-		"kubernetes":        {"KUBECONFIG"},
-		"redis":             {"REDIS_URL"},
-		"mongodb":           {"MONGODB_URI"},
-		"postgres":          {"POSTGRES_URL"},
-		"elasticsearch":     {"ELASTICSEARCH_URL"},
-		"qdrant":            {"QDRANT_URL"},
-		"chroma":            {"CHROMA_URL"},
-		"pinecone":          {"PINECONE_API_KEY"},
-		"milvus":            {"MILVUS_HOST"},
-		"weaviate":          {"WEAVIATE_URL"},
-		"supabase":          {"SUPABASE_URL", "SUPABASE_KEY"},
-		"jira":              {"JIRA_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"},
-		"asana":             {"ASANA_ACCESS_TOKEN"},
-		"trello":            {"TRELLO_API_KEY"},
-		"monday":            {"MONDAY_API_KEY"},
-		"clickup":           {"CLICKUP_API_KEY"},
-		"discord":           {"DISCORD_BOT_TOKEN"},
-		"microsoft-teams":   {"TEAMS_CLIENT_ID"},
-		"gmail":             {"GOOGLE_CREDENTIALS_PATH"},
-		"calendar":          {"GOOGLE_CREDENTIALS_PATH"},
-		"zoom":              {"ZOOM_CLIENT_ID"},
-		"aws-s3":            {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
-		"aws-lambda":        {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
-		"azure":             {"AZURE_SUBSCRIPTION_ID"},
-		"gcp":               {"GOOGLE_APPLICATION_CREDENTIALS"},
-		"datadog":           {"DD_API_KEY"},
-		"grafana":           {"GRAFANA_URL", "GRAFANA_API_KEY"},
-		"prometheus":        {"PROMETHEUS_URL"},
-		"circleci":          {"CIRCLECI_TOKEN"},
-		"langchain":         {"OPENAI_API_KEY"},
-		"llamaindex":        {"OPENAI_API_KEY"},
-		"huggingface":       {"HUGGINGFACE_API_KEY"},
-		"replicate":         {"REPLICATE_API_TOKEN"},
-		"stable-diffusion":  {"STABILITY_API_KEY"},
+		"github": {"GITHUB_TOKEN"}, // @modelcontextprotocol/server-github - VERIFIED on npm
 	}
 
 	for name, mcpConfig := range allMCPs {
-		// Always include MCPs without dependencies
+		// Always include MCPs without dependencies (verified packages only)
 		if alwaysWorking[name] {
 			workingMCPs[name] = mcpConfig
 			continue
 		}
 
-		// Check environment variable requirements
+		// Check environment variable requirements for verified packages
 		if reqs, hasReqs := envRequirements[name]; hasReqs {
 			allMet := true
 			for _, envVar := range reqs {
@@ -2010,12 +1953,8 @@ func filterWorkingMCPs(allMCPs map[string]OpenCodeMCPServerDefNew) map[string]Op
 			if allMet {
 				workingMCPs[name] = mcpConfig
 			}
-		} else {
-			// MCP not in requirements list - include if it has no Environment config
-			if len(mcpConfig.Environment) == 0 {
-				workingMCPs[name] = mcpConfig
-			}
 		}
+		// Note: We don't include other MCPs because their npm packages don't exist
 	}
 
 	return workingMCPs
@@ -2788,83 +2727,24 @@ func filterWorkingCrushMCPs(allMCPs map[string]CrushMcpConfig) map[string]CrushM
 	workingMCPs := make(map[string]CrushMcpConfig)
 
 	// MCPs that always work (no external dependencies)
+	// NOTE: Only includes MCPs with VERIFIED npm packages on registry.npmjs.org
 	alwaysWorking := map[string]bool{
-		"helixagent":          true,
-		"helixagent-mcp":      true,
-		"helixagent-acp":      true,
-		"helixagent-lsp":      true,
+		"helixagent":            true,
+		"helixagent-mcp":        true,
+		"helixagent-acp":        true,
+		"helixagent-lsp":        true,
 		"helixagent-embeddings": true,
-		"helixagent-vision":   true,
-		"helixagent-cognee":   true,
-		"filesystem":          true,
-		"fetch":               true,
-		"memory":              true,
-		"time":                true,
-		"git":                 true,
-		"sqlite":              true,
-		"puppeteer":           true,
-		"sequential-thinking": true,
-		"everything":          true,
-		"docker":              true,
-		"terraform":           true,
-		"ansible":             true,
-		"raycast":             true,
+		"helixagent-vision":     true,
+		"helixagent-cognee":     true,
+		"filesystem":            true, // @modelcontextprotocol/server-filesystem - VERIFIED
+		"memory":                true, // @modelcontextprotocol/server-memory - VERIFIED
+		"sequential-thinking":   true, // @modelcontextprotocol/server-sequential-thinking - VERIFIED
+		"everything":            true, // @modelcontextprotocol/server-everything - VERIFIED
 	}
 
 	// Environment variable requirements (same as OpenCode)
 	envRequirements := map[string][]string{
-		"brave-search":      {"BRAVE_API_KEY"},
-		"google-maps":       {"GOOGLE_MAPS_API_KEY"},
-		"slack":             {"SLACK_BOT_TOKEN"},
-		"github":            {"GITHUB_TOKEN"},
-		"gitlab":            {"GITLAB_TOKEN"},
-		"sentry":            {"SENTRY_AUTH_TOKEN"},
-		"everart":           {"EVERART_API_KEY"},
-		"aws-kb-retrieval":  {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
-		"exa":               {"EXA_API_KEY"},
-		"linear":            {"LINEAR_API_KEY"},
-		"notion":            {"NOTION_API_KEY"},
-		"figma":             {"FIGMA_API_KEY"},
-		"todoist":           {"TODOIST_API_TOKEN"},
-		"obsidian":          {"OBSIDIAN_VAULT_PATH"},
-		"tinybird":          {"TINYBIRD_TOKEN"},
-		"cloudflare":        {"CLOUDFLARE_API_TOKEN"},
-		"neon":              {"NEON_API_KEY"},
-		"gdrive":            {"GOOGLE_CREDENTIALS_PATH"},
-		"kubernetes":        {"KUBECONFIG"},
-		"redis":             {"REDIS_URL"},
-		"mongodb":           {"MONGODB_URI"},
-		"postgres":          {"POSTGRES_URL"},
-		"elasticsearch":     {"ELASTICSEARCH_URL"},
-		"qdrant":            {"QDRANT_URL"},
-		"chroma":            {"CHROMA_URL"},
-		"pinecone":          {"PINECONE_API_KEY"},
-		"milvus":            {"MILVUS_HOST"},
-		"weaviate":          {"WEAVIATE_URL"},
-		"supabase":          {"SUPABASE_URL", "SUPABASE_KEY"},
-		"jira":              {"JIRA_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"},
-		"asana":             {"ASANA_ACCESS_TOKEN"},
-		"trello":            {"TRELLO_API_KEY"},
-		"monday":            {"MONDAY_API_KEY"},
-		"clickup":           {"CLICKUP_API_KEY"},
-		"discord":           {"DISCORD_BOT_TOKEN"},
-		"microsoft-teams":   {"TEAMS_CLIENT_ID"},
-		"gmail":             {"GOOGLE_CREDENTIALS_PATH"},
-		"calendar":          {"GOOGLE_CREDENTIALS_PATH"},
-		"zoom":              {"ZOOM_CLIENT_ID"},
-		"aws-s3":            {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
-		"aws-lambda":        {"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"},
-		"azure":             {"AZURE_SUBSCRIPTION_ID"},
-		"gcp":               {"GOOGLE_APPLICATION_CREDENTIALS"},
-		"datadog":           {"DD_API_KEY"},
-		"grafana":           {"GRAFANA_URL", "GRAFANA_API_KEY"},
-		"prometheus":        {"PROMETHEUS_URL"},
-		"circleci":          {"CIRCLECI_TOKEN"},
-		"langchain":         {"OPENAI_API_KEY"},
-		"llamaindex":        {"OPENAI_API_KEY"},
-		"huggingface":       {"HUGGINGFACE_API_KEY"},
-		"replicate":         {"REPLICATE_API_TOKEN"},
-		"stable-diffusion":  {"STABILITY_API_KEY"},
+		"github": {"GITHUB_TOKEN"}, // @modelcontextprotocol/server-github - VERIFIED
 	}
 
 	for name, mcpConfig := range allMCPs {
@@ -2884,8 +2764,6 @@ func filterWorkingCrushMCPs(allMCPs map[string]CrushMcpConfig) map[string]CrushM
 			if allMet {
 				workingMCPs[name] = mcpConfig
 			}
-		} else if len(mcpConfig.Env) == 0 {
-			workingMCPs[name] = mcpConfig
 		}
 	}
 
