@@ -1,0 +1,14 @@
+# MCP LlamaIndex Server
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --no-cache-dir -e . 2>/dev/null || pip install --no-cache-dir llama-index
+
+ENV OPENAI_API_KEY=""
+
+EXPOSE 3000
+
+CMD ["python", "-m", "mcp_llamaindex"]

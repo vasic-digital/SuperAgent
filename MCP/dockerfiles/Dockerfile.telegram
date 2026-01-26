@@ -1,0 +1,15 @@
+# MCP Telegram Server
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --no-cache-dir -e . 2>/dev/null || pip install --no-cache-dir telethon
+
+ENV TELEGRAM_API_ID=""
+ENV TELEGRAM_API_HASH=""
+
+EXPOSE 3000
+
+CMD ["python", "-m", "telegram_mcp"]

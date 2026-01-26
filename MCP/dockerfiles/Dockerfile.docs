@@ -1,0 +1,12 @@
+# MCP Docs Server - Documentation retrieval
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --no-cache-dir -e . 2>/dev/null || pip install --no-cache-dir docs-mcp-server
+
+EXPOSE 3000
+
+CMD ["python", "-m", "docs_mcp_server"]

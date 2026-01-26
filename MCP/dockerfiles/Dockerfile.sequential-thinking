@@ -1,0 +1,14 @@
+# MCP Sequential Thinking Server
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy from MCP-Servers submodule
+COPY src/sequentialthinking ./
+
+# Install dependencies and build
+RUN npm install && npm run build 2>/dev/null || true
+
+EXPOSE 3000
+
+CMD ["node", "dist/index.js"]
