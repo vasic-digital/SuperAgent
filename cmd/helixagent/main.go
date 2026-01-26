@@ -1172,12 +1172,12 @@ func writeAPIKeyToEnvFile(filePath, apiKey string) error {
 type OpenCodeConfig struct {
 	Schema       string                               `json:"$schema,omitempty"`
 	Provider     map[string]OpenCodeProviderDefNew    `json:"provider,omitempty"`     // Note: singular "provider"
-	Model        string                               `json:"model,omitempty"`        // Default model: "provider-id/model-id"
-	SmallModel   string                               `json:"small_model,omitempty"`  // Model for small tasks
 	Agent        map[string]OpenCodeAgentDefNew       `json:"agent,omitempty"`        // Note: singular "agent"
 	MCP          map[string]OpenCodeMCPServerDefNew   `json:"mcp,omitempty"`          // Note: "mcp" not "mcpServers"
 	Instructions []string                             `json:"instructions,omitempty"` // Rule files
 	TUI          *OpenCodeTUIDef                      `json:"tui,omitempty"`
+	// NOTE: Model and SmallModel are NOT valid top-level keys in OpenCode config
+	// Use agent settings to specify models per agent instead
 }
 
 // OpenCodeProviderDefNew represents a provider in OpenCode config (correct schema)
@@ -1407,10 +1407,8 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 				},
 			},
 		},
-		// Default model in format: provider-id/model-id
-		Model:      "helixagent/helixagent-debate",
-		SmallModel: "helixagent/helixagent-debate",
 		// Agent configuration - uses provider-id/model-id format
+		// NOTE: Model selection is done per-agent, not at top level
 		Agent: map[string]OpenCodeAgentDefNew{
 			"coder": {
 				Model:     "helixagent/helixagent-debate",
