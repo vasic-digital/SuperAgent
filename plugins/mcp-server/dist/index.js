@@ -1,0 +1,407 @@
+#!/usr/bin/env node
+"use strict";
+/**
+ * HelixAgent Generic MCP Server
+ *
+ * Provides MCP protocol support for Tier 2-3 CLI agents that don't have
+ * rich plugin systems. Supports stdio and SSE transports.
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HelixAgentTransport = exports.HelixAgentMCPServer = void 0;
+const transport_1 = require("./transport");
+const tools_1 = require("./tools");
+const defaultConfig = {
+    endpoint: 'https://localhost:7061',
+    transport: 'stdio',
+    preferHTTP3: true,
+    enableTOON: true,
+    enableBrotli: true,
+};
+/**
+ * Generic MCP Server for HelixAgent
+ */
+class HelixAgentMCPServer {
+    config;
+    transport;
+    tools;
+    constructor(config) {
+        this.config = { ...defaultConfig, ...config };
+        this.transport = new transport_1.HelixAgentTransport(this.config.endpoint, {
+            preferHTTP3: this.config.preferHTTP3,
+            enableTOON: this.config.enableTOON,
+            enableBrotli: this.config.enableBrotli,
+        });
+        // Register tools
+        this.tools = new Map();
+        this.tools.set('helixagent_debate', new tools_1.DebateTool(this.transport));
+        this.tools.set('helixagent_ensemble', new tools_1.EnsembleTool(this.transport));
+        this.tools.set('helixagent_task', new tools_1.TaskTool(this.transport));
+        this.tools.set('helixagent_rag', new tools_1.RAGTool(this.transport));
+        this.tools.set('helixagent_memory', new tools_1.MemoryTool(this.transport));
+        this.tools.set('helixagent_providers', new tools_1.ProvidersTool(this.transport));
+    }
+    /**
+     * Start the MCP server
+     */
+    async start() {
+        // Connect to HelixAgent
+        await this.transport.connect();
+        if (this.config.transport === 'stdio') {
+            await this.runStdio();
+        }
+        else {
+            await this.runSSE();
+        }
+    }
+    /**
+     * Run in stdio mode
+     */
+    async runStdio() {
+        const readline = await import('readline');
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+            terminal: false,
+        });
+        rl.on('line', async (line) => {
+            if (!line.trim())
+                return;
+            try {
+                const request = JSON.parse(line);
+                const response = await this.handleRequest(request);
+                if (response) {
+                    process.stdout.write(JSON.stringify(response) + '\n');
+                }
+            }
+            catch (error) {
+                const errorResponse = {
+                    jsonrpc: '2.0',
+                    id: 0,
+                    error: {
+                        code: -32700,
+                        message: 'Parse error',
+                    },
+                };
+                process.stdout.write(JSON.stringify(errorResponse) + '\n');
+            }
+        });
+        rl.on('close', () => {
+            process.exit(0);
+        });
+    }
+    /**
+     * Run in SSE mode
+     */
+    async runSSE() {
+        const http = await import('http');
+        const port = this.config.port || 7062;
+        const server = http.createServer(async (req, res) => {
+            if (req.method === 'OPTIONS') {
+                res.writeHead(204, {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type',
+                });
+                res.end();
+                return;
+            }
+            if (req.url === '/health') {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ status: 'healthy' }));
+                return;
+            }
+            if (req.method === 'POST' && req.url === '/mcp') {
+                let body = '';
+                req.on('data', (chunk) => { body += chunk; });
+                req.on('end', async () => {
+                    try {
+                        const request = JSON.parse(body);
+                        const response = await this.handleRequest(request);
+                        res.writeHead(200, {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*',
+                        });
+                        res.end(JSON.stringify(response));
+                    }
+                    catch (error) {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({
+                            jsonrpc: '2.0',
+                            id: 0,
+                            error: { code: -32700, message: 'Parse error' },
+                        }));
+                    }
+                });
+                return;
+            }
+            res.writeHead(404);
+            res.end('Not found');
+        });
+        server.listen(port, () => {
+            console.error(`HelixAgent MCP Server running on http://localhost:${port}`);
+        });
+    }
+    /**
+     * Handle MCP request
+     */
+    async handleRequest(request) {
+        switch (request.method) {
+            case 'initialize':
+                return this.handleInitialize(request);
+            case 'notifications/initialized':
+                return null; // No response for notifications
+            case 'tools/list':
+                return this.handleListTools(request);
+            case 'tools/call':
+                return this.handleCallTool(request);
+            case 'resources/list':
+                return this.handleListResources(request);
+            case 'resources/read':
+                return this.handleReadResource(request);
+            default:
+                return {
+                    jsonrpc: '2.0',
+                    id: request.id,
+                    error: {
+                        code: -32601,
+                        message: `Method not found: ${request.method}`,
+                    },
+                };
+        }
+    }
+    /**
+     * Handle initialize
+     */
+    handleInitialize(request) {
+        return {
+            jsonrpc: '2.0',
+            id: request.id,
+            result: {
+                protocolVersion: '2024-11-05',
+                capabilities: {
+                    tools: { listChanged: true },
+                    resources: { subscribe: false, listChanged: false },
+                },
+                serverInfo: {
+                    name: 'helixagent-mcp-server',
+                    version: '1.0.0',
+                },
+            },
+        };
+    }
+    /**
+     * Handle tools/list
+     */
+    handleListTools(request) {
+        const tools = Array.from(this.tools.entries()).map(([name, tool]) => ({
+            name,
+            description: tool.description,
+            inputSchema: tool.inputSchema,
+        }));
+        return {
+            jsonrpc: '2.0',
+            id: request.id,
+            result: { tools },
+        };
+    }
+    /**
+     * Handle tools/call
+     */
+    async handleCallTool(request) {
+        const params = request.params;
+        const toolName = params?.name;
+        const toolArgs = params?.arguments || {};
+        const tool = this.tools.get(toolName);
+        if (!tool) {
+            return {
+                jsonrpc: '2.0',
+                id: request.id,
+                error: {
+                    code: -32602,
+                    message: `Unknown tool: ${toolName}`,
+                },
+            };
+        }
+        try {
+            const result = await tool.execute(toolArgs);
+            return {
+                jsonrpc: '2.0',
+                id: request.id,
+                result: {
+                    content: [
+                        {
+                            type: 'text',
+                            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+                        },
+                    ],
+                },
+            };
+        }
+        catch (error) {
+            return {
+                jsonrpc: '2.0',
+                id: request.id,
+                error: {
+                    code: -32000,
+                    message: error instanceof Error ? error.message : 'Tool execution failed',
+                },
+            };
+        }
+    }
+    /**
+     * Handle resources/list
+     */
+    handleListResources(request) {
+        return {
+            jsonrpc: '2.0',
+            id: request.id,
+            result: {
+                resources: [
+                    {
+                        uri: 'helixagent://providers',
+                        name: 'HelixAgent Providers',
+                        description: 'List of available LLM providers and their status',
+                        mimeType: 'application/json',
+                    },
+                    {
+                        uri: 'helixagent://debates',
+                        name: 'Active Debates',
+                        description: 'List of currently active AI debates',
+                        mimeType: 'application/json',
+                    },
+                    {
+                        uri: 'helixagent://tasks',
+                        name: 'Background Tasks',
+                        description: 'List of background tasks and their status',
+                        mimeType: 'application/json',
+                    },
+                ],
+            },
+        };
+    }
+    /**
+     * Handle resources/read
+     */
+    async handleReadResource(request) {
+        const params = request.params;
+        const uri = params?.uri;
+        try {
+            let content;
+            switch (uri) {
+                case 'helixagent://providers':
+                    content = await this.transport.request('GET', '/v1/providers');
+                    break;
+                case 'helixagent://debates':
+                    content = await this.transport.request('GET', '/v1/debates');
+                    break;
+                case 'helixagent://tasks':
+                    content = await this.transport.request('GET', '/v1/tasks');
+                    break;
+                default:
+                    return {
+                        jsonrpc: '2.0',
+                        id: request.id,
+                        error: {
+                            code: -32602,
+                            message: `Unknown resource: ${uri}`,
+                        },
+                    };
+            }
+            return {
+                jsonrpc: '2.0',
+                id: request.id,
+                result: {
+                    contents: [
+                        {
+                            uri,
+                            mimeType: 'application/json',
+                            text: JSON.stringify(content, null, 2),
+                        },
+                    ],
+                },
+            };
+        }
+        catch (error) {
+            return {
+                jsonrpc: '2.0',
+                id: request.id,
+                error: {
+                    code: -32000,
+                    message: error instanceof Error ? error.message : 'Resource read failed',
+                },
+            };
+        }
+    }
+}
+exports.HelixAgentMCPServer = HelixAgentMCPServer;
+// CLI entry point
+async function main() {
+    const args = process.argv.slice(2);
+    const config = {};
+    for (let i = 0; i < args.length; i++) {
+        switch (args[i]) {
+            case '--endpoint':
+                config.endpoint = args[++i];
+                break;
+            case '--port':
+                config.port = parseInt(args[++i], 10);
+                break;
+            case '--transport':
+                config.transport = args[++i];
+                break;
+            case '--no-http3':
+                config.preferHTTP3 = false;
+                break;
+            case '--no-toon':
+                config.enableTOON = false;
+                break;
+            case '--no-brotli':
+                config.enableBrotli = false;
+                break;
+            case '--help':
+                console.log(`
+HelixAgent MCP Server
+
+Usage: helixagent-mcp [options]
+
+Options:
+  --endpoint <url>     HelixAgent endpoint (default: https://localhost:7061)
+  --port <port>        SSE server port (default: 7062)
+  --transport <type>   Transport type: stdio or sse (default: stdio)
+  --no-http3           Disable HTTP/3 preference
+  --no-toon            Disable TOON protocol
+  --no-brotli          Disable Brotli compression
+  --help               Show this help message
+        `);
+                process.exit(0);
+        }
+    }
+    const server = new HelixAgentMCPServer(config);
+    await server.start();
+}
+// Export for programmatic use
+var transport_2 = require("./transport");
+Object.defineProperty(exports, "HelixAgentTransport", { enumerable: true, get: function () { return transport_2.HelixAgentTransport; } });
+__exportStar(require("./tools"), exports);
+// Run if invoked directly
+if (require.main === module) {
+    main().catch((error) => {
+        console.error('MCP Server error:', error);
+        process.exit(1);
+    });
+}
+//# sourceMappingURL=index.js.map
