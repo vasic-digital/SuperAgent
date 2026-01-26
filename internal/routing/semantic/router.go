@@ -204,8 +204,10 @@ func (r *Router) Route(ctx context.Context, query string) (*Route, error) {
 		if r.config.FallbackRoute != "" {
 			for _, route := range r.routes {
 				if route.Name == r.config.FallbackRoute {
-					route.Score = scores[0].score
-					return route, nil
+					// Return a copy with the score set to avoid race conditions
+					routeCopy := *route
+					routeCopy.Score = scores[0].score
+					return &routeCopy, nil
 				}
 			}
 		}
@@ -213,21 +215,22 @@ func (r *Router) Route(ctx context.Context, query string) (*Route, error) {
 			scores[0].score, r.config.ScoreThreshold)
 	}
 
-	bestRoute := scores[0].route
-	bestRoute.Score = scores[0].score
+	// Return a copy with the score set to avoid race conditions
+	bestRouteCopy := *scores[0].route
+	bestRouteCopy.Score = scores[0].score
 
 	// Cache the result
 	if r.cache != nil {
-		r.cache.Set(query, bestRoute)
+		r.cache.Set(query, &bestRouteCopy)
 	}
 
 	r.logger.WithFields(logrus.Fields{
 		"query": query[:min(50, len(query))],
-		"route": bestRoute.Name,
-		"score": bestRoute.Score,
+		"route": bestRouteCopy.Name,
+		"score": bestRouteCopy.Score,
 	}).Debug("Query routed")
 
-	return bestRoute, nil
+	return &bestRouteCopy, nil
 }
 
 // RouteWithCandidates returns top-K candidate routes
