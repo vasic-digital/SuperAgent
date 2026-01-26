@@ -58,6 +58,7 @@ type ProviderDiscovery struct {
 
 // DiscoveredProvider represents a provider discovered from environment
 type DiscoveredProvider struct {
+	mu             sync.RWMutex                 // Protects Status, Verified, VerifiedAt, Error, Score fields
 	Name           string                       `json:"name"`
 	Type           string                       `json:"type"`
 	APIKeyEnvVar   string                       `json:"api_key_env_var"`
@@ -618,8 +619,10 @@ func (pd *ProviderDiscovery) VerifyAllProviders(ctx context.Context) map[string]
 // verifyProvider verifies a single provider with an actual API call
 func (pd *ProviderDiscovery) verifyProvider(ctx context.Context, provider *DiscoveredProvider) {
 	if provider.Provider == nil {
+		provider.mu.Lock()
 		provider.Status = ProviderStatusUnhealthy
 		provider.Error = "provider not initialized"
+		provider.mu.Unlock()
 		return
 	}
 
@@ -644,22 +647,26 @@ func (pd *ProviderDiscovery) verifyProvider(ctx context.Context, provider *Disco
 
 			// Mark as healthy anyway for anonymous/free providers
 			// These are free models and we want them available even if health check fails
+			provider.mu.Lock()
 			provider.Status = ProviderStatusHealthy
 			provider.Verified = true
 			provider.Score = 6.5 // Lower score due to no health check confirmation
 			provider.Error = ""
 			provider.VerifiedAt = time.Now()
+			provider.mu.Unlock()
 		} else {
 			pd.log.WithFields(logrus.Fields{
 				"provider": provider.Name,
 				"duration": time.Since(start),
 			}).Info("Zen provider health check passed")
 
+			provider.mu.Lock()
 			provider.Status = ProviderStatusHealthy
 			provider.Verified = true
 			provider.Score = 7.5 // Good score for working free models
 			provider.Error = ""
 			provider.VerifiedAt = time.Now()
+			provider.mu.Unlock()
 		}
 		return
 	}
@@ -688,6 +695,10 @@ func (pd *ProviderDiscovery) verifyProvider(ctx context.Context, provider *Disco
 	// Make the actual API call
 	resp, err := provider.Provider.Complete(verifyCtx, testReq)
 	responseTime := time.Since(start)
+
+	// Lock the provider to protect concurrent writes to verification fields
+	provider.mu.Lock()
+	defer provider.mu.Unlock()
 
 	provider.VerifiedAt = time.Now()
 
@@ -860,24 +871,39 @@ func (pd *ProviderDiscovery) GetBestProviders(n int) []*DiscoveredProvider {
 	pd.mu.RLock()
 	defer pd.mu.RUnlock()
 
-	// Collect verified providers
-	verified := make([]*DiscoveredProvider, 0)
+	// Collect verified providers with their scores (thread-safe read)
+	type providerWithScore struct {
+		provider *DiscoveredProvider
+		score    float64
+	}
+	verified := make([]providerWithScore, 0)
 	for _, p := range pd.providers {
-		if p.Verified && p.Status == ProviderStatusHealthy {
-			verified = append(verified, p)
+		p.mu.RLock()
+		isVerified := p.Verified
+		isHealthy := p.Status == ProviderStatusHealthy
+		score := p.Score
+		p.mu.RUnlock()
+		if isVerified && isHealthy {
+			verified = append(verified, providerWithScore{provider: p, score: score})
 		}
 	}
 
 	// Sort by score (descending)
 	sort.Slice(verified, func(i, j int) bool {
-		return verified[i].Score > verified[j].Score
+		return verified[i].score > verified[j].score
 	})
 
-	// Return top N
-	if n <= 0 || n > len(verified) {
-		return verified
+	// Extract providers in sorted order
+	result := make([]*DiscoveredProvider, len(verified))
+	for i, v := range verified {
+		result[i] = v.provider
 	}
-	return verified[:n]
+
+	// Return top N
+	if n <= 0 || n > len(result) {
+		return result
+	}
+	return result[:n]
 }
 
 // GetAllProviders returns all discovered providers
@@ -885,15 +911,29 @@ func (pd *ProviderDiscovery) GetAllProviders() []*DiscoveredProvider {
 	pd.mu.RLock()
 	defer pd.mu.RUnlock()
 
-	result := make([]*DiscoveredProvider, 0, len(pd.providers))
+	// Collect providers with their scores (thread-safe read)
+	type providerWithScore struct {
+		provider *DiscoveredProvider
+		score    float64
+	}
+	items := make([]providerWithScore, 0, len(pd.providers))
 	for _, p := range pd.providers {
-		result = append(result, p)
+		p.mu.RLock()
+		score := p.Score
+		p.mu.RUnlock()
+		items = append(items, providerWithScore{provider: p, score: score})
 	}
 
 	// Sort by score
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Score > result[j].Score
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].score > items[j].score
 	})
+
+	// Extract providers in sorted order
+	result := make([]*DiscoveredProvider, len(items))
+	for i, item := range items {
+		result[i] = item.provider
+	}
 
 	return result
 }
@@ -934,10 +974,18 @@ func (pd *ProviderDiscovery) Summary() map[string]interface{} {
 	providerList := make([]map[string]interface{}, 0)
 
 	for _, p := range pd.providers {
-		switch p.Status {
+		// Lock provider for reading its verification fields
+		p.mu.RLock()
+		status := p.Status
+		score := p.Score
+		verified := p.Verified
+		errStr := p.Error
+		p.mu.RUnlock()
+
+		switch status {
 		case ProviderStatusHealthy:
 			healthy++
-			totalScore += p.Score
+			totalScore += score
 		case ProviderStatusRateLimited:
 			rateLimited++
 		case ProviderStatusAuthFailed:
@@ -951,10 +999,10 @@ func (pd *ProviderDiscovery) Summary() map[string]interface{} {
 		providerList = append(providerList, map[string]interface{}{
 			"name":     p.Name,
 			"type":     p.Type,
-			"status":   p.Status,
-			"score":    p.Score,
-			"verified": p.Verified,
-			"error":    p.Error,
+			"status":   status,
+			"score":    score,
+			"verified": verified,
+			"error":    errStr,
 		})
 	}
 

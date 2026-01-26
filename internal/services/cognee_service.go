@@ -909,10 +909,11 @@ func (s *CogneeService) ProcessResponse(ctx context.Context, req *models.LLMRequ
 		return err
 	}
 
-	// Auto-cognify if enabled
+	// Auto-cognify if enabled (with timeout to prevent hanging goroutines)
 	if s.config.AutoCognify {
 		go func() {
-			bgCtx := context.Background()
+			bgCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			defer cancel()
 			if err := s.Cognify(bgCtx, []string{s.config.DefaultDataset}); err != nil {
 				s.logger.WithError(err).Warn("Background cognify failed")
 			}

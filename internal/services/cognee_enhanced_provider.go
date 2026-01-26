@@ -159,9 +159,13 @@ func (p *CogneeEnhancedProvider) Complete(ctx context.Context, req *models.LLMRe
 		return nil, err
 	}
 
-	// Store the response in Cognee
+	// Store the response in Cognee (with timeout to prevent hanging goroutines)
 	if p.config.StoreAfterResponse && p.cogneeService != nil && p.cogneeService.IsReady() {
-		go p.storeResponse(context.Background(), req, resp)
+		go func() {
+			storeCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			p.storeResponse(storeCtx, req, resp)
+		}()
 	}
 
 	// Update stats
@@ -211,7 +215,7 @@ func (p *CogneeEnhancedProvider) CompleteStream(ctx context.Context, req *models
 			outputChan <- resp
 		}
 
-		// Store the complete response (only if Cognee is ready)
+		// Store the complete response (only if Cognee is ready, with timeout)
 		if p.config.StoreAfterResponse && lastResp != nil && p.cogneeService != nil && p.cogneeService.IsReady() {
 			completeResp := &models.LLMResponse{
 				ID:           lastResp.ID,
@@ -221,7 +225,11 @@ func (p *CogneeEnhancedProvider) CompleteStream(ctx context.Context, req *models
 				ResponseTime: lastResp.ResponseTime,
 				FinishReason: lastResp.FinishReason,
 			}
-			go p.storeResponse(context.Background(), req, completeResp)
+			go func() {
+				storeCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				p.storeResponse(storeCtx, req, completeResp)
+			}()
 		}
 	}()
 
@@ -308,8 +316,17 @@ func (p *CogneeEnhancedProvider) enhanceRequest(ctx context.Context, req *models
 	p.stats.AverageEnhancementTime = (p.stats.AverageEnhancementTime + time.Since(startTime)) / 2
 	p.stats.mu.Unlock()
 
-	// Create enhanced request
-	enhancedReq := *req // Copy
+	// Create enhanced request (shallow copy)
+	enhancedReq := *req
+
+	// Deep copy the Memory map to avoid concurrent map writes
+	// The shallow copy above shares the same map reference, causing race conditions
+	enhancedReq.Memory = make(map[string]string)
+	if req.Memory != nil {
+		for k, v := range req.Memory {
+			enhancedReq.Memory[k] = v
+		}
+	}
 
 	// Apply enhancement based on confidence
 	if enhanced.Confidence >= p.config.RelevanceThreshold {
@@ -321,10 +338,7 @@ func (p *CogneeEnhancedProvider) enhanceRequest(ctx context.Context, req *models
 		}
 	}
 
-	// Add Cognee metadata
-	if enhancedReq.Memory == nil {
-		enhancedReq.Memory = make(map[string]string)
-	}
+	// Add Cognee metadata (now safe - we have our own copy of the map)
 	enhancedReq.Memory["cognee_enhanced"] = "true"
 	enhancedReq.Memory["cognee_confidence"] = fmt.Sprintf("%.2f", enhanced.Confidence)
 
