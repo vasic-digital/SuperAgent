@@ -4,14 +4,15 @@
 FROM node:20-alpine
 
 ARG SERVER_NAME
+ARG SOURCE_DIR=MCP-Servers
 
 # Install build dependencies and socat for TCP wrapper
 RUN apk add --no-cache python3 make g++ socat netcat-openbsd git
 
 WORKDIR /app
 
-# Copy the entire MCP-Servers repo
-COPY . .
+# Copy the entire MCP-Servers repo from the source directory
+COPY ${SOURCE_DIR} .
 
 # Install dependencies and build
 RUN npm install && npm run build

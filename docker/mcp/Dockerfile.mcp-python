@@ -3,6 +3,8 @@
 
 FROM python:3.11-slim
 
+ARG SOURCE_DIR
+
 # Install system dependencies and socat for TCP wrapper
 RUN apt-get update && apt-get install -y \
     socat \
@@ -13,8 +15,8 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy the submodule source
-COPY . .
+# Copy the submodule source from the specified directory
+COPY ${SOURCE_DIR} .
 
 # Install Python dependencies
 RUN if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi && \
@@ -30,8 +32,6 @@ RUN echo '#!/bin/sh' > /entrypoint.sh && \
     echo 'elif [ -f "server.py" ]; then ENTRY="python server.py"' >> /entrypoint.sh && \
     echo 'elif [ -f "src/server.py" ]; then ENTRY="python src/server.py"' >> /entrypoint.sh && \
     echo 'elif [ -f "src/__main__.py" ]; then ENTRY="python -m src"' >> /entrypoint.sh && \
-    echo 'elif python -c "import pkg_resources; pkg_resources.get_distribution(\"$MCP_PACKAGE_NAME\")" 2>/dev/null; then' >> /entrypoint.sh && \
-    echo '  ENTRY="python -m $MCP_MODULE_NAME"' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
     echo 'if [ -z "$ENTRY" ]; then echo "No Python entry point found!"; exit 1; fi' >> /entrypoint.sh && \
     echo 'echo "Using entry point: $ENTRY"' >> /entrypoint.sh && \
