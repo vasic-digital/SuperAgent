@@ -45,7 +45,7 @@ class HelixAgentMCPServer {
             enableTOON: this.config.enableTOON,
             enableBrotli: this.config.enableBrotli,
         });
-        // Register tools
+        // Register tools - Core functionality
         this.tools = new Map();
         this.tools.set('helixagent_debate', new tools_1.DebateTool(this.transport));
         this.tools.set('helixagent_ensemble', new tools_1.EnsembleTool(this.transport));
@@ -53,6 +53,12 @@ class HelixAgentMCPServer {
         this.tools.set('helixagent_rag', new tools_1.RAGTool(this.transport));
         this.tools.set('helixagent_memory', new tools_1.MemoryTool(this.transport));
         this.tools.set('helixagent_providers', new tools_1.ProvidersTool(this.transport));
+        // Register tools - Protocol tools (ACP, LSP, Embeddings, Vision, Cognee)
+        this.tools.set('helixagent_acp', new tools_1.ACPTool(this.transport));
+        this.tools.set('helixagent_lsp', new tools_1.LSPTool(this.transport));
+        this.tools.set('helixagent_embeddings', new tools_1.EmbeddingsTool(this.transport));
+        this.tools.set('helixagent_vision', new tools_1.VisionTool(this.transport));
+        this.tools.set('helixagent_cognee', new tools_1.CogneeTool(this.transport));
     }
     /**
      * Start the MCP server
