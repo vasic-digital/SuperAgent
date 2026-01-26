@@ -1,0 +1,43 @@
+# Dockerfile for Python MCP servers from git submodules
+# Builds and runs Python-based MCP servers with TCP wrapper
+
+FROM python:3.11-slim
+
+# Install system dependencies and socat for TCP wrapper
+RUN apt-get update && apt-get install -y \
+    socat \
+    netcat-openbsd \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy the submodule source
+COPY . .
+
+# Install Python dependencies
+RUN if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi && \
+    if [ -f "pyproject.toml" ]; then pip install -e .; fi && \
+    if [ -f "setup.py" ]; then pip install -e .; fi
+
+# Create entrypoint script that wraps stdio MCP server with TCP
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'echo "Starting Python MCP server on port 9000"' >> /entrypoint.sh && \
+    echo 'ENTRY=""' >> /entrypoint.sh && \
+    echo 'if [ -f "src/main.py" ]; then ENTRY="python src/main.py"' >> /entrypoint.sh && \
+    echo 'elif [ -f "main.py" ]; then ENTRY="python main.py"' >> /entrypoint.sh && \
+    echo 'elif [ -f "server.py" ]; then ENTRY="python server.py"' >> /entrypoint.sh && \
+    echo 'elif [ -f "src/server.py" ]; then ENTRY="python src/server.py"' >> /entrypoint.sh && \
+    echo 'elif [ -f "src/__main__.py" ]; then ENTRY="python -m src"' >> /entrypoint.sh && \
+    echo 'elif python -c "import pkg_resources; pkg_resources.get_distribution(\"$MCP_PACKAGE_NAME\")" 2>/dev/null; then' >> /entrypoint.sh && \
+    echo '  ENTRY="python -m $MCP_MODULE_NAME"' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'if [ -z "$ENTRY" ]; then echo "No Python entry point found!"; exit 1; fi' >> /entrypoint.sh && \
+    echo 'echo "Using entry point: $ENTRY"' >> /entrypoint.sh && \
+    echo 'socat TCP-LISTEN:9000,reuseaddr,fork EXEC:"$ENTRY",pty,stderr' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+EXPOSE 9000
+
+CMD ["/entrypoint.sh"]

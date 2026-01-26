@@ -50,7 +50,8 @@ var (
 	preinstallMCP      = flag.Bool("preinstall-mcp", false, "Pre-install standard MCP server npm packages")
 	skipMCPPreinstall  = flag.Bool("skip-mcp-preinstall", false, "Skip automatic MCP package pre-installation at startup")
 	workingMCPsOnly    = flag.Bool("working-mcps-only", false, "Only include MCPs with all dependencies met (API keys, services)")
-	useLocalMCPServers = flag.Bool("use-local-mcp-servers", false, "Use local Docker-based MCP servers instead of npx (requires running ./scripts/mcp/start-mcp-servers.sh)")
+	useLocalMCPServers = flag.Bool("use-local-mcp-servers", true, "Use local Docker-based MCP servers (32 servers from git submodules, no npm/npx)")
+	autoStartMCP       = flag.Bool("auto-start-mcp", true, "Automatically start MCP Docker containers on HelixAgent startup")
 	// Unified CLI agent configuration flags (all 48 agents)
 	generateAgentConfig = flag.String("generate-agent-config", "", "Generate config for specified CLI agent (use --list-agents to see all)")
 	validateAgentConfig = flag.String("validate-agent-config", "", "Validate config file for agent (format: agent:path)")
@@ -327,6 +328,64 @@ func ensureRequiredContainersWithConfig(logger *logrus.Logger, cfg *ContainerCon
 	}
 
 	logger.Info("Container startup completed successfully")
+	return nil
+}
+
+// ensureMCPServers starts all MCP Docker containers from git submodules
+// Uses docker-compose.mcp-servers.yml to build and run 32 MCP servers
+// All servers use TCP ports (9101-9999) - no npm/npx dependencies
+func ensureMCPServers(logger *logrus.Logger) error {
+	// Get project directory
+	projectDir, err := filepath.Abs(".")
+	if err != nil {
+		return fmt.Errorf("failed to get project directory: %w", err)
+	}
+
+	// Check if MCP compose file exists
+	mcpComposeFile := filepath.Join(projectDir, "docker", "mcp", "docker-compose.mcp-servers.yml")
+	if _, err := os.Stat(mcpComposeFile); os.IsNotExist(err) {
+		logger.WithField("file", mcpComposeFile).Warn("MCP compose file not found, skipping MCP auto-start")
+		return nil
+	}
+
+	// Detect container runtime
+	runtime, _, err := DetectContainerRuntime()
+	if err != nil {
+		return fmt.Errorf("container runtime detection failed: %w", err)
+	}
+
+	// Detect compose command
+	composeCmd, composeArgs, err := DetectComposeCommand(runtime)
+	if err != nil {
+		return fmt.Errorf("compose command detection failed: %w", err)
+	}
+
+	logger.WithFields(logrus.Fields{
+		"runtime":    runtime,
+		"compose":    composeCmd,
+		"mcp_servers": 32,
+	}).Info("Starting MCP servers from git submodules (zero npm dependencies)")
+
+	// Build compose command: docker compose -f <file> up -d
+	var cmdArgs []string
+	if len(composeArgs) > 0 {
+		cmdArgs = append(cmdArgs, composeArgs...)
+	}
+	cmdArgs = append(cmdArgs, "-f", mcpComposeFile, "up", "-d")
+
+	cmd := exec.Command(composeCmd, cmdArgs...)
+	cmd.Dir = projectDir
+
+	// Run in background - don't wait for all builds
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		// Log warning but don't fail - MCP servers are optional
+		logger.WithError(err).WithField("output", string(output)).Warn("Failed to start some MCP servers, continuing")
+		return nil
+	}
+
+	logger.WithField("output", string(output)).Debug("MCP Compose output")
+	logger.Info("MCP servers starting in background (32 servers on ports 9101-9999)")
 	return nil
 }
 
@@ -765,6 +824,7 @@ type AppConfig struct {
 	APIKeyEnvFile      string
 	PreinstallMCP      bool // Run MCP package pre-installation and exit
 	SkipMCPPreinstall  bool // Skip automatic MCP pre-installation at startup
+	AutoStartMCP       bool // Automatically start MCP Docker containers on startup
 	// Unified CLI agent configuration (all 48 agents)
 	GenerateAgentConfig string // Agent type to generate config for
 	ValidateAgentConfig string // Agent:path for validation
@@ -790,6 +850,7 @@ func DefaultAppConfig() *AppConfig {
 		ShowHelp:           false,
 		ShowVersion:        false,
 		AutoStartDocker:    true,
+		AutoStartMCP:       true, // Auto-start all 32 MCP Docker containers
 		StrictDependencies: true, // MANDATORY: All dependencies must be available
 		ServerHost:         "0.0.0.0",
 		ServerPort:         "7061",
@@ -888,6 +949,14 @@ func run(appCfg *AppConfig) error {
 			logger.WithError(err).Warn("Failed to start some containers, continuing with application startup")
 		} else {
 			logger.Info("Docker containers are ready")
+		}
+	}
+
+	// Auto-start MCP servers from git submodules (32 servers, zero npm dependencies)
+	if appCfg.AutoStartMCP {
+		logger.Info("Starting MCP servers from git submodules...")
+		if err := ensureMCPServers(logger); err != nil {
+			logger.WithError(err).Warn("Failed to start MCP servers, continuing without them")
 		}
 	}
 
@@ -1049,6 +1118,7 @@ func main() {
 	appCfg.APIKeyEnvFile = *apiKeyEnvFile
 	appCfg.PreinstallMCP = *preinstallMCP
 	appCfg.SkipMCPPreinstall = *skipMCPPreinstall
+	appCfg.AutoStartMCP = *autoStartMCP
 	// Unified CLI agent configuration flags
 	appCfg.GenerateAgentConfig = *generateAgentConfig
 	appCfg.ValidateAgentConfig = *validateAgentConfig
@@ -1497,7 +1567,8 @@ func getMCPServers(baseURL string, workingOnly bool) map[string]OpenCodeMCPServe
 }
 
 // buildLocalDockerMCPServers builds MCP configurations for local Docker-based servers
-// These servers run on TCP ports via socat, started by ./scripts/mcp/start-mcp-servers.sh
+// These servers run on TCP ports via socat, auto-started by HelixAgent on boot
+// 32 MCP servers from git submodules - ZERO npm/npx dependencies
 func buildLocalDockerMCPServers(baseURL string) map[string]OpenCodeMCPServerDefNew {
 	homeDir := os.Getenv("HOME")
 	if homeDir == "" {
@@ -1509,10 +1580,12 @@ func buildLocalDockerMCPServers(baseURL string) map[string]OpenCodeMCPServerDefN
 		helixHome = homeDir + "/.helixagent"
 	}
 
-	// MCP servers running on local TCP ports (from Docker containers)
-	// Started via: ./scripts/mcp/start-mcp-servers.sh --start
+	// All 32 MCP servers running on local TCP ports (from Docker containers)
+	// Auto-started by HelixAgent on boot (--auto-start-mcp=true by default)
 	return map[string]OpenCodeMCPServerDefNew{
-		// HelixAgent endpoints (unchanged)
+		// =============================================================================
+		// HelixAgent Protocol Endpoints (7 MCPs)
+		// =============================================================================
 		"helixagent": {
 			Type:    "local",
 			Command: []string{"node", helixHome + "/plugins/mcp-server/dist/index.js", "--endpoint", baseURL},
@@ -1548,70 +1621,168 @@ func buildLocalDockerMCPServers(baseURL string) map[string]OpenCodeMCPServerDefN
 			Headers: map[string]string{"Authorization": "Bearer {env:HELIXAGENT_API_KEY}"},
 		},
 
-		// Core MCP servers (from local Docker containers on TCP ports)
+		// =============================================================================
+		// Core MCP Servers - Ports 9101-9107 (from MCP-Servers monorepo)
+		// =============================================================================
 		"fetch": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9101",
+			Type: "remote",
+			URL:  "tcp://localhost:9101",
 		},
 		"git": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9102",
+			Type: "remote",
+			URL:  "tcp://localhost:9102",
 		},
 		"time": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9103",
+			Type: "remote",
+			URL:  "tcp://localhost:9103",
 		},
 		"filesystem": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9104",
+			Type: "remote",
+			URL:  "tcp://localhost:9104",
 		},
 		"memory": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9105",
+			Type: "remote",
+			URL:  "tcp://localhost:9105",
 		},
 		"everything": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9106",
+			Type: "remote",
+			URL:  "tcp://localhost:9106",
 		},
 		"sequential-thinking": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9107",
+			Type: "remote",
+			URL:  "tcp://localhost:9107",
 		},
 
-		// Database MCP servers
+		// =============================================================================
+		// Database MCP Servers - Ports 9201-9299
+		// =============================================================================
 		"redis": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9201",
+			Type: "remote",
+			URL:  "tcp://localhost:9201",
 		},
 		"mongodb": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9202",
+			Type: "remote",
+			URL:  "tcp://localhost:9202",
 		},
-		"qdrant": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9301",
+		"supabase": {
+			Type: "remote",
+			URL:  "tcp://localhost:9203",
 		},
 
-		// DevOps MCP servers
+		// =============================================================================
+		// Vector Database MCP Servers - Ports 9301-9399
+		// =============================================================================
+		"qdrant": {
+			Type: "remote",
+			URL:  "tcp://localhost:9301",
+		},
+
+		// =============================================================================
+		// DevOps/Infrastructure MCP Servers - Ports 9401-9499
+		// =============================================================================
 		"kubernetes": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9401",
+			Type: "remote",
+			URL:  "tcp://localhost:9401",
 		},
 		"github": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9402",
+			Type: "remote",
+			URL:  "tcp://localhost:9402",
+		},
+		"cloudflare": {
+			Type: "remote",
+			URL:  "tcp://localhost:9403",
+		},
+		"heroku": {
+			Type: "remote",
+			URL:  "tcp://localhost:9404",
+		},
+		"sentry": {
+			Type: "remote",
+			URL:  "tcp://localhost:9405",
 		},
 
-		// Browser MCP servers
+		// =============================================================================
+		// Browser Automation MCP Servers - Ports 9501-9599
+		// =============================================================================
 		"playwright": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9501",
+			Type: "remote",
+			URL:  "tcp://localhost:9501",
+		},
+		"browserbase": {
+			Type: "remote",
+			URL:  "tcp://localhost:9502",
+		},
+		"firecrawl": {
+			Type: "remote",
+			URL:  "tcp://localhost:9503",
 		},
 
-		// Communication MCP servers
+		// =============================================================================
+		// Communication MCP Servers - Ports 9601-9699
+		// =============================================================================
 		"slack": {
-			Type:    "remote",
-			URL:     "tcp://localhost:9601",
+			Type: "remote",
+			URL:  "tcp://localhost:9601",
+		},
+		"telegram": {
+			Type: "remote",
+			URL:  "tcp://localhost:9602",
+		},
+
+		// =============================================================================
+		// Productivity MCP Servers - Ports 9701-9799
+		// =============================================================================
+		"notion": {
+			Type: "remote",
+			URL:  "tcp://localhost:9701",
+		},
+		"trello": {
+			Type: "remote",
+			URL:  "tcp://localhost:9702",
+		},
+		"airtable": {
+			Type: "remote",
+			URL:  "tcp://localhost:9703",
+		},
+		"obsidian": {
+			Type: "remote",
+			URL:  "tcp://localhost:9704",
+		},
+		"atlassian": {
+			Type: "remote",
+			URL:  "tcp://localhost:9705",
+		},
+
+		// =============================================================================
+		// Search/AI MCP Servers - Ports 9801-9899
+		// =============================================================================
+		"brave-search": {
+			Type: "remote",
+			URL:  "tcp://localhost:9801",
+		},
+		"perplexity": {
+			Type: "remote",
+			URL:  "tcp://localhost:9802",
+		},
+		"omnisearch": {
+			Type: "remote",
+			URL:  "tcp://localhost:9803",
+		},
+		"context7": {
+			Type: "remote",
+			URL:  "tcp://localhost:9804",
+		},
+		"llamaindex": {
+			Type: "remote",
+			URL:  "tcp://localhost:9805",
+		},
+
+		// =============================================================================
+		// Cloud Provider MCP Servers - Ports 9901-9999
+		// =============================================================================
+		"workers": {
+			Type: "remote",
+			URL:  "tcp://localhost:9901",
 		},
 	}
 }
