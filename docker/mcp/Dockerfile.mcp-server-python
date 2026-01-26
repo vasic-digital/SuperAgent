@@ -1,0 +1,60 @@
+# Dockerfile for Python MCP servers from the main MCP-Servers repository
+# Builds and runs a specific Python MCP server from src/{SERVER_NAME}
+# Uses proper Python base image with uv for fast package installation
+
+FROM python:3.12-slim-bookworm
+
+ARG SERVER_NAME
+ARG SOURCE_DIR=MCP-Servers
+
+# Install system dependencies and socat for TCP wrapper
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    socat \
+    netcat-openbsd \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv for fast Python package management
+RUN pip install --no-cache-dir uv
+
+WORKDIR /app
+
+# Copy the entire MCP-Servers repo from the source directory
+COPY ${SOURCE_DIR} .
+
+# Set working directory to the specific server
+WORKDIR /app/src/${SERVER_NAME}
+
+# Install Python dependencies using uv
+RUN if [ -f "pyproject.toml" ]; then \
+        uv venv .venv && \
+        . .venv/bin/activate && \
+        uv pip install -e . && \
+        echo "Python dependencies installed successfully"; \
+    else \
+        echo "Warning: No pyproject.toml found"; \
+    fi
+
+# Create entrypoint script
+# CRITICAL: MCP uses newline-delimited JSON (NDJSON) - must use raw pipes, NOT pty
+# NOTE: Use POSIX-compatible `. .venv/bin/activate` not bash `source`
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
+    echo 'echo "Starting MCP Python server: '${SERVER_NAME}' on port 9000"' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Activate virtual environment' >> /entrypoint.sh && \
+    echo 'if [ -d ".venv" ]; then' >> /entrypoint.sh && \
+    echo '    . .venv/bin/activate' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo 'echo "Listening on TCP port 9000..."' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Use socat to expose stdio-based MCP server over TCP' >> /entrypoint.sh && \
+    echo '# CRITICAL: Use raw SYSTEM mode, NOT pty - MCP uses NDJSON framing' >> /entrypoint.sh && \
+    echo 'exec socat TCP-LISTEN:9000,reuseaddr,fork SYSTEM:". .venv/bin/activate && python -m mcp_server_'${SERVER_NAME}'"' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+EXPOSE 9000
+
+CMD ["/entrypoint.sh"]
