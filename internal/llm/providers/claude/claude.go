@@ -17,8 +17,13 @@ import (
 
 const (
 	ClaudeAPIURL     = "https://api.anthropic.com/v1/messages"
-	ClaudeModel      = "claude-3-sonnet-20240229"
-	ClaudeOAuthModel = "claude-3-5-sonnet-20241022" // Default model for OAuth auth
+	ClaudeModel      = "claude-sonnet-4-20250514" // Current default model for API key auth
+	ClaudeOAuthModel = "claude-sonnet-4-20250514" // Default model for OAuth auth (Claude Code compatible)
+
+	// Alternative models
+	ClaudeOpusModel   = "claude-opus-4-20250514"
+	ClaudeHaikuModel  = "claude-haiku-4-20250514"
+	ClaudeSonnet35    = "claude-3-5-sonnet-20241022"
 )
 
 // AuthType represents the type of authentication used
@@ -672,11 +677,17 @@ func (p *ClaudeProvider) nextDelay(currentDelay time.Duration) time.Duration {
 func (p *ClaudeProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
 		SupportedModels: []string{
-			"claude-3-sonnet-20240229",
+			// Claude 4 models (2025)
+			"claude-opus-4-20250514",
+			"claude-sonnet-4-20250514",
+			"claude-haiku-4-20250514",
+			// Claude 3.5 models
+			"claude-3-5-sonnet-20241022",
+			"claude-3-5-haiku-20241022",
+			// Claude 3 models (legacy)
 			"claude-3-opus-20240229",
+			"claude-3-sonnet-20240229",
 			"claude-3-haiku-20240307",
-			"claude-2.1",
-			"claude-2.0",
 		},
 		SupportedFeatures: []string{
 			"text_completion",

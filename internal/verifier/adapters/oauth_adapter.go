@@ -122,7 +122,8 @@ func (oa *OAuthAdapter) VerifyClaudeOAuth(ctx context.Context) (*verifier.Unifie
 	oa.claudeExpiry = expiresAt
 	oa.mu.Unlock()
 
-	// Create provider
+	// Create provider with correct Anthropic API model names
+	// IMPORTANT: Model names MUST match exactly what the Anthropic API accepts
 	provider := &verifier.UnifiedProvider{
 		ID:               "claude",
 		Name:             "claude",
@@ -130,17 +131,19 @@ func (oa *OAuthAdapter) VerifyClaudeOAuth(ctx context.Context) (*verifier.Unifie
 		Type:             "claude",
 		AuthType:         verifier.AuthTypeOAuth,
 		BaseURL:          "https://api.anthropic.com/v1/messages",
-		DefaultModel:     "claude-sonnet-4-5-20250929",
+		DefaultModel:     "claude-3-5-sonnet-20241022", // Use verified working model
 		OAuthTokenExpiry: expiresAt,
 		OAuthAutoRefresh: true,
 		Tier:             1,
 		Priority:         1,
 		Models: []verifier.UnifiedModel{
-			{ID: "claude-opus-4-5-20251101", Name: "Claude Opus 4.5", Provider: "claude"},
-			{ID: "claude-sonnet-4-5-20250929", Name: "Claude Sonnet 4.5", Provider: "claude"},
-			{ID: "claude-haiku-4-5-20251001", Name: "Claude Haiku 4.5", Provider: "claude"},
-			{ID: "claude-opus-4-20250514", Name: "Claude Opus 4", Provider: "claude"},
-			{ID: "claude-sonnet-4-20250514", Name: "Claude Sonnet 4", Provider: "claude"},
+			// Claude 3.5 models (current production)
+			{ID: "claude-3-5-sonnet-20241022", Name: "Claude 3.5 Sonnet", Provider: "claude"},
+			{ID: "claude-3-5-haiku-20241022", Name: "Claude 3.5 Haiku", Provider: "claude"},
+			// Claude 3 models (legacy but still available)
+			{ID: "claude-3-opus-20240229", Name: "Claude 3 Opus", Provider: "claude"},
+			{ID: "claude-3-sonnet-20240229", Name: "Claude 3 Sonnet", Provider: "claude"},
+			{ID: "claude-3-haiku-20240307", Name: "Claude 3 Haiku", Provider: "claude"},
 		},
 	}
 
@@ -188,6 +191,7 @@ func (oa *OAuthAdapter) VerifyClaudeOAuth(ctx context.Context) (*verifier.Unifie
 }
 
 // createTrustedClaudeProvider creates a Claude provider that's trusted without full verification
+// IMPORTANT: Model names MUST match exactly what the Anthropic API accepts
 func (oa *OAuthAdapter) createTrustedClaudeProvider(creds *oauth_credentials.ClaudeOAuthCredentials) *verifier.UnifiedProvider {
 	expiresAt := time.UnixMilli(creds.ClaudeAiOauth.ExpiresAt)
 
@@ -201,7 +205,7 @@ func (oa *OAuthAdapter) createTrustedClaudeProvider(creds *oauth_credentials.Cla
 		VerifiedAt:       time.Now(),
 		Score:            oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost,
 		BaseURL:          "https://api.anthropic.com/v1/messages",
-		DefaultModel:     "claude-sonnet-4-5-20250929",
+		DefaultModel:     "claude-3-5-sonnet-20241022", // Use verified working model
 		Status:           verifier.StatusHealthy,
 		OAuthTokenExpiry: expiresAt,
 		OAuthAutoRefresh: true,
@@ -209,9 +213,9 @@ func (oa *OAuthAdapter) createTrustedClaudeProvider(creds *oauth_credentials.Cla
 		Priority:         1,
 		TestResults:      map[string]bool{"oauth_trusted": true},
 		Models: []verifier.UnifiedModel{
-			{ID: "claude-opus-4-5-20251101", Name: "Claude Opus 4.5", Provider: "claude", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
-			{ID: "claude-sonnet-4-5-20250929", Name: "Claude Sonnet 4.5", Provider: "claude", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
-			{ID: "claude-haiku-4-5-20251001", Name: "Claude Haiku 4.5", Provider: "claude", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
+			{ID: "claude-3-5-sonnet-20241022", Name: "Claude 3.5 Sonnet", Provider: "claude", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
+			{ID: "claude-3-5-haiku-20241022", Name: "Claude 3.5 Haiku", Provider: "claude", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
+			{ID: "claude-3-opus-20240229", Name: "Claude 3 Opus", Provider: "claude", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
 		},
 	}
 }
