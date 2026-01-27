@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -321,6 +322,26 @@ func (phm *ProviderHealthMonitor) updateStatus(providerID string, healthy bool, 
 	}).Debug("Provider health status updated")
 }
 
+// isUnconfiguredError checks if an error indicates the provider is not configured (vs actual failure)
+func isProviderUnconfiguredError(errMsg string) bool {
+	unconfiguredPhrases := []string{
+		"api key is required",
+		"api key not set",
+		"api key is invalid or expired",
+		"key not configured",
+		"credentials not found",
+		"unauthorized",
+		"401",
+	}
+	errLower := strings.ToLower(errMsg)
+	for _, phrase := range unconfiguredPhrases {
+		if strings.Contains(errLower, phrase) {
+			return true
+		}
+	}
+	return false
+}
+
 // sendAlert sends an alert to all listeners
 func (phm *ProviderHealthMonitor) sendAlert(alert ProviderHealthAlert) {
 	phmHealthAlertsTotal.Inc()
@@ -333,12 +354,20 @@ func (phm *ProviderHealthMonitor) sendAlert(alert ProviderHealthAlert) {
 		go listener(alert)
 	}
 
+	// Use appropriate log level based on error type
+	// Unconfigured providers are warnings, not errors
+	logLevel := logrus.ErrorLevel
+	if isProviderUnconfiguredError(alert.LastError) {
+		logLevel = logrus.WarnLevel
+		alert.Type = "provider_unconfigured"
+	}
+
 	phm.logger.WithFields(logrus.Fields{
 		"type":       alert.Type,
 		"provider":   alert.ProviderID,
 		"message":    alert.Message,
 		"last_error": alert.LastError,
-	}).Error("Provider health alert triggered")
+	}).Log(logLevel, "Provider health alert triggered")
 }
 
 // GetStatus returns the current health status of all providers

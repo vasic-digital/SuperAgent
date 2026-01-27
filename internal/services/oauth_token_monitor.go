@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -190,6 +191,24 @@ func (otm *OAuthTokenMonitor) checkTokens() {
 	}
 }
 
+// isNotConfiguredError checks if an error indicates OAuth is not configured (vs actual failure)
+func isNotConfiguredError(errMsg string) bool {
+	notConfiguredPhrases := []string{
+		"file not found",
+		"not logged in",
+		"no such file",
+		"credentials not found",
+		"user may not be logged in",
+	}
+	errLower := strings.ToLower(errMsg)
+	for _, phrase := range notConfiguredPhrases {
+		if strings.Contains(errLower, phrase) {
+			return true
+		}
+	}
+	return false
+}
+
 // checkClaudeToken checks the Claude OAuth token
 func (otm *OAuthTokenMonitor) checkClaudeToken() {
 	reader := oauth_credentials.NewOAuthCredentialReader()
@@ -204,12 +223,21 @@ func (otm *OAuthTokenMonitor) checkClaudeToken() {
 		status.Valid = false
 		status.Error = err.Error()
 		otmTokenValidGauge.WithLabelValues("claude").Set(0)
+
+		// Determine severity: "not configured" is informational, actual errors are warnings
+		severity := "info"
+		alertType := "token_not_configured"
+		if !isNotConfiguredError(err.Error()) {
+			severity = "warning"
+			alertType = "token_error"
+		}
+
 		otm.sendAlert(OAuthTokenAlert{
-			Type:      "token_error",
+			Type:      alertType,
 			Provider:  "claude",
 			Message:   "Failed to read Claude OAuth credentials: " + err.Error(),
 			Timestamp: time.Now(),
-			Severity:  "critical",
+			Severity:  severity,
 		})
 	} else if creds == nil || creds.ClaudeAiOauth == nil {
 		status.Valid = false
@@ -275,12 +303,21 @@ func (otm *OAuthTokenMonitor) checkQwenToken() {
 		status.Valid = false
 		status.Error = err.Error()
 		otmTokenValidGauge.WithLabelValues("qwen").Set(0)
+
+		// Determine severity: "not configured" is informational, actual errors are warnings
+		severity := "info"
+		alertType := "token_not_configured"
+		if !isNotConfiguredError(err.Error()) {
+			severity = "warning"
+			alertType = "token_error"
+		}
+
 		otm.sendAlert(OAuthTokenAlert{
-			Type:      "token_error",
+			Type:      alertType,
 			Provider:  "qwen",
 			Message:   "Failed to read Qwen OAuth credentials: " + err.Error(),
 			Timestamp: time.Now(),
-			Severity:  "critical",
+			Severity:  severity,
 		})
 	} else if creds == nil {
 		status.Valid = false
@@ -362,6 +399,8 @@ func (otm *OAuthTokenMonitor) sendAlert(alert OAuthTokenAlert) {
 	logLevel := logrus.WarnLevel
 	if alert.Severity == "critical" || alert.Severity == "expired" {
 		logLevel = logrus.ErrorLevel
+	} else if alert.Severity == "info" {
+		logLevel = logrus.InfoLevel
 	}
 
 	otm.logger.WithFields(logrus.Fields{
