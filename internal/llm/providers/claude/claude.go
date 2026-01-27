@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"dev.helix.agent/internal/auth/oauth_credentials"
@@ -24,6 +26,12 @@ const (
 	ClaudeOpusModel  = "claude-opus-4-20250514"
 	ClaudeHaikuModel = "claude-haiku-4-20250514"
 	ClaudeSonnet35   = "claude-3-5-sonnet-20241022"
+
+	// OAuth restriction error message from Anthropic
+	// IMPORTANT: OAuth tokens from Claude Code CLI are PRODUCT-RESTRICTED and can ONLY
+	// be used with Claude Code itself. They CANNOT be used for general API access.
+	// See: https://platform.claude.com/docs/en/api/overview
+	OAuthRestrictionError = "This credential is only authorized for use with Claude Code"
 )
 
 // AuthType represents the type of authentication used
@@ -248,7 +256,14 @@ func (p *ClaudeProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Claude API error: %d - %s", resp.StatusCode, string(body))
+		bodyStr := string(body)
+		// Check for OAuth restriction error
+		if strings.Contains(bodyStr, OAuthRestrictionError) {
+			return nil, &OAuthRestrictionErr{
+				Message: "OAuth tokens from Claude Code CLI are product-restricted and cannot be used for general API access. Use an API key from console.anthropic.com instead.",
+			}
+		}
+		return nil, fmt.Errorf("Claude API error: %d - %s", resp.StatusCode, bodyStr)
 	}
 
 	var claudeResp ClaudeResponse
@@ -782,8 +797,22 @@ func (p *ClaudeProvider) HealthCheck() error {
 	}
 	defer resp.Body.Close()
 
+	// Read response body for error detection
+	body, _ := io.ReadAll(resp.Body)
+	bodyStr := string(body)
+
 	// Claude API returns 400 for GET requests to messages endpoint (expected)
 	// We just check that the API is reachable and returns a response
+
+	// Check for OAuth restriction error first
+	// IMPORTANT: OAuth tokens from Claude Code CLI are PRODUCT-RESTRICTED
+	// They can ONLY be used with Claude Code itself, not the standard API
+	if strings.Contains(bodyStr, OAuthRestrictionError) {
+		return &OAuthRestrictionErr{
+			Message: "OAuth tokens from Claude Code CLI are product-restricted and cannot be used for general API access. Use an API key from console.anthropic.com instead.",
+		}
+	}
+
 	// For OAuth tokens, 401 means the token is invalid/expired
 	if resp.StatusCode == http.StatusUnauthorized {
 		return fmt.Errorf("health check failed: unauthorized (token may be expired or invalid)")
@@ -793,4 +822,20 @@ func (p *ClaudeProvider) HealthCheck() error {
 	}
 
 	return nil
+}
+
+// OAuthRestrictionErr indicates that an OAuth token cannot be used for general API access
+// This is NOT an error condition per se - it's expected behavior for Claude Code OAuth tokens
+type OAuthRestrictionErr struct {
+	Message string
+}
+
+func (e *OAuthRestrictionErr) Error() string {
+	return e.Message
+}
+
+// IsOAuthRestrictionError checks if an error is an OAuth restriction error
+func IsOAuthRestrictionError(err error) bool {
+	var oauthErr *OAuthRestrictionErr
+	return errors.As(err, &oauthErr)
 }

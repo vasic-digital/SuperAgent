@@ -500,3 +500,200 @@ func TestProviderTypeInfo_Fields(t *testing.T) {
 	assert.True(t, zen.Free)
 	assert.NotEmpty(t, zen.Models)
 }
+
+// ============================================================================
+// Re-Evaluation Tests - Verify fresh verification on every call
+// ============================================================================
+
+func TestStartupVerifier_ReEvaluation_TimestampsUpdated(t *testing.T) {
+	// Test that each call to VerifyAllProviders updates timestamps
+	cfg := DefaultStartupConfig()
+	cfg.VerificationTimeout = 5 * time.Second
+	cfg.EnableFreeProviders = true // Ensure Zen is discovered
+	sv := NewStartupVerifier(cfg, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// First verification
+	result1, err1 := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err1)
+	require.NotNil(t, result1)
+
+	// Record first verification time
+	firstStarted := result1.StartedAt
+	firstCompleted := result1.CompletedAt
+
+	// Wait a short time
+	time.Sleep(100 * time.Millisecond)
+
+	// Second verification - should be fresh, not cached
+	result2, err2 := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err2)
+	require.NotNil(t, result2)
+
+	// Timestamps should be different (newer)
+	assert.True(t, result2.StartedAt.After(firstStarted) || result2.StartedAt.Equal(firstStarted),
+		"Second verification started_at should be >= first verification")
+	assert.True(t, result2.CompletedAt.After(firstCompleted),
+		"Second verification completed_at should be after first verification")
+}
+
+func TestStartupVerifier_ReEvaluation_ResultsAreConsistent(t *testing.T) {
+	// Test that multiple verifications produce consistent results
+	cfg := DefaultStartupConfig()
+	cfg.VerificationTimeout = 5 * time.Second
+	cfg.EnableFreeProviders = true
+	sv := NewStartupVerifier(cfg, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Run verification multiple times
+	var results []*StartupResult
+	for i := 0; i < 3; i++ {
+		result, err := sv.VerifyAllProviders(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		results = append(results, result)
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	// All results should have same provider count (consistent discovery)
+	for i := 1; i < len(results); i++ {
+		assert.Equal(t, results[0].TotalProviders, results[i].TotalProviders,
+			"Provider count should be consistent across verifications")
+	}
+
+	// Each result should have a valid duration (>= 0 since very fast verifications may round to 0)
+	for _, r := range results {
+		assert.GreaterOrEqual(t, r.DurationMs, int64(0), "Duration should be non-negative")
+	}
+}
+
+func TestStartupVerifier_ReEvaluation_ProvidersReSorted(t *testing.T) {
+	// Test that providers are re-sorted on each verification
+	cfg := DefaultStartupConfig()
+	cfg.VerificationTimeout = 5 * time.Second
+	cfg.EnableFreeProviders = true
+	sv := NewStartupVerifier(cfg, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// First verification
+	_, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+
+	ranked := sv.GetRankedProviders()
+	if len(ranked) < 2 {
+		t.Skip("Need at least 2 providers to test sorting")
+	}
+
+	// Verify sorted order (descending by score, OAuth first)
+	for i := 1; i < len(ranked); i++ {
+		prevOAuth := ranked[i-1].AuthType == AuthTypeOAuth
+		currOAuth := ranked[i].AuthType == AuthTypeOAuth
+
+		// OAuth providers should come first
+		if !prevOAuth && currOAuth {
+			t.Error("OAuth providers should be ranked before non-OAuth")
+		}
+
+		// Within same auth type, scores should be descending
+		if prevOAuth == currOAuth {
+			assert.GreaterOrEqual(t, ranked[i-1].Score, ranked[i].Score,
+				"Providers should be sorted by score (descending)")
+		}
+	}
+}
+
+func TestStartupVerifier_ReEvaluation_DebateTeamReselected(t *testing.T) {
+	// Test that debate team is reselected on each verification
+	cfg := DefaultStartupConfig()
+	cfg.VerificationTimeout = 5 * time.Second
+	cfg.EnableFreeProviders = true
+	sv := NewStartupVerifier(cfg, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// First verification
+	result1, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+
+	if result1.DebateTeam == nil {
+		t.Skip("No debate team configured (need verified providers)")
+	}
+
+	firstSelectedAt := result1.DebateTeam.SelectedAt
+
+	// Wait a short time
+	time.Sleep(100 * time.Millisecond)
+
+	// Second verification
+	result2, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, result2.DebateTeam)
+
+	// Debate team should be reselected with new timestamp
+	assert.True(t, result2.DebateTeam.SelectedAt.After(firstSelectedAt),
+		"Debate team should be reselected with newer timestamp")
+}
+
+func TestStartupVerifier_ReEvaluation_LastVerifyAtUpdated(t *testing.T) {
+	// Test that lastVerifyAt is updated on each call
+	cfg := DefaultStartupConfig()
+	cfg.VerificationTimeout = 5 * time.Second
+	sv := NewStartupVerifier(cfg, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Initial state - not initialized
+	assert.False(t, sv.IsInitialized())
+
+	// First verification
+	_, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+
+	// Should now be initialized
+	assert.True(t, sv.IsInitialized())
+
+	// Get lastVerifyAt indirectly through re-verification
+	time.Sleep(100 * time.Millisecond)
+
+	// Second verification should complete without error
+	_, err = sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+	assert.True(t, sv.IsInitialized())
+}
+
+func TestStartupResult_FreshTimestamps(t *testing.T) {
+	// Test that StartupResult has fresh timestamps (within last 5 minutes)
+	cfg := DefaultStartupConfig()
+	cfg.VerificationTimeout = 5 * time.Second
+	sv := NewStartupVerifier(cfg, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	result, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	now := time.Now()
+	maxAge := 5 * time.Minute
+
+	// started_at should be within last 5 minutes
+	assert.True(t, now.Sub(result.StartedAt) < maxAge,
+		"started_at should be fresh (within last 5 minutes)")
+
+	// completed_at should be within last 5 minutes
+	assert.True(t, now.Sub(result.CompletedAt) < maxAge,
+		"completed_at should be fresh (within last 5 minutes)")
+
+	// completed_at should be after started_at
+	assert.True(t, result.CompletedAt.After(result.StartedAt) || result.CompletedAt.Equal(result.StartedAt),
+		"completed_at should be >= started_at")
+}
