@@ -454,6 +454,7 @@ All configuration generation is powered by LLMsVerifier's unified generator (`pk
 ./challenges/scripts/run_all_challenges.sh                       # Run all challenges
 ./challenges/scripts/main_challenge.sh                           # Main challenge (generates OpenCode config)
 ./challenges/scripts/unified_verification_challenge.sh           # 15 tests - startup pipeline
+./challenges/scripts/llms_reevaluation_challenge.sh              # 26 tests - provider re-evaluation on EVERY boot
 ./challenges/scripts/debate_team_dynamic_selection_challenge.sh  # 12 tests - team selection
 ./challenges/scripts/free_provider_fallback_challenge.sh         # 8 tests - Zen/free models
 ./challenges/scripts/semantic_intent_challenge.sh                # 19 tests - intent detection (ZERO hardcoding)
@@ -510,8 +511,37 @@ Dynamic provider selection based on real-time verification scores. Ollama is DEP
 | Embeddings | `/v1/embeddings` | Vector embeddings |
 | Vision | `/v1/vision` | Image analysis, OCR |
 | Cognee | `/v1/cognee` | Knowledge graph & RAG |
+| Startup | `/v1/startup/verification` | LLMsVerifier re-evaluation status |
 
 Fallback mechanism: Routes to strongest LLM by LLMsVerifier score, falls back to next on failure.
+
+### Startup Verification Endpoint
+
+The `/v1/startup/verification` endpoint exposes LLMsVerifier re-evaluation status for every boot:
+
+```json
+GET /v1/startup/verification
+{
+  "reevaluation_completed": true,
+  "started_at": "2026-01-27T19:00:00Z",
+  "completed_at": "2026-01-27T19:00:05Z",
+  "duration_ms": 5234,
+  "total_providers": 10,
+  "verified_count": 8,
+  "failed_count": 2,
+  "providers_sorted": true,
+  "ranked_providers": [
+    {"rank": 1, "provider": "claude", "score": 9.5, "verified": true},
+    {"rank": 2, "provider": "deepseek", "score": 8.7, "verified": true}
+  ],
+  "debate_team": {
+    "team_configured": true,
+    "total_llms": 15,
+    "positions": 5,
+    "selected_at": "2026-01-27T19:00:05Z"
+  }
+}
+```
 
 ## Embedding Providers
 

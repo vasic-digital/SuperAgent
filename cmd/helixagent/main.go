@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
@@ -1018,6 +1019,71 @@ func run(appCfg *AppConfig) error {
 	}
 
 	r := router.SetupRouter(cfg)
+
+	// Add startup verification status endpoint
+	// This endpoint exposes LLMsVerifier re-evaluation results for validation
+	r.GET("/v1/startup/verification", func(c *gin.Context) {
+		if startupResult == nil {
+			c.JSON(503, gin.H{
+				"error":   "startup verification not completed",
+				"message": "No startup verification result available",
+			})
+			return
+		}
+
+		response := gin.H{
+			"reevaluation_completed": true,
+			"started_at":             startupResult.StartedAt,
+			"completed_at":           startupResult.CompletedAt,
+			"duration_ms":            startupResult.DurationMs,
+			"total_providers":        startupResult.TotalProviders,
+			"verified_count":         startupResult.VerifiedCount,
+			"failed_count":           startupResult.FailedCount,
+			"skipped_count":          startupResult.SkippedCount,
+			"api_key_providers":      startupResult.APIKeyProviders,
+			"oauth_providers":        startupResult.OAuthProviders,
+			"free_providers":         startupResult.FreeProviders,
+			"errors_count":           len(startupResult.Errors),
+		}
+
+		// Add ranked providers with scores
+		if startupVerifier != nil {
+			rankedProviders := startupVerifier.GetRankedProviders()
+			providerScores := make([]gin.H, 0, len(rankedProviders))
+			for i, p := range rankedProviders {
+				providerScores = append(providerScores, gin.H{
+					"rank":        i + 1,
+					"provider":    p.Name,
+					"type":        p.Type,
+					"auth_type":   p.AuthType,
+					"score":       p.Score,
+					"verified":    p.Verified,
+					"verified_at": p.VerifiedAt,
+					"models":      len(p.Models),
+				})
+			}
+			response["ranked_providers"] = providerScores
+			response["providers_sorted"] = len(rankedProviders) > 0
+		}
+
+		// Add debate team info
+		if startupResult.DebateTeam != nil {
+			response["debate_team"] = gin.H{
+				"total_llms":       startupResult.DebateTeam.TotalLLMs,
+				"positions":        len(startupResult.DebateTeam.Positions),
+				"min_score":        startupResult.DebateTeam.MinScore,
+				"oauth_first":      startupResult.DebateTeam.OAuthFirst,
+				"selected_at":      startupResult.DebateTeam.SelectedAt,
+				"team_configured":  true,
+			}
+		} else {
+			response["debate_team"] = gin.H{
+				"team_configured": false,
+			}
+		}
+
+		c.JSON(200, response)
+	})
 
 	// Start background MCP package pre-installation (unless skipped)
 	if !appCfg.SkipMCPPreinstall {

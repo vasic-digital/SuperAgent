@@ -1,4 +1,34 @@
 // Package adapters provides provider adapters for LLMsVerifier integration
+//
+// # OAuth Token Limitations
+//
+// IMPORTANT: OAuth tokens from CLI tools have different access levels:
+//
+// ## Claude OAuth Tokens (from Claude Code CLI)
+//
+// OAuth tokens from Claude Code CLI (~/.claude/.credentials.json) are PRODUCT-RESTRICTED.
+// They can ONLY be used with Claude Code itself - NOT with the standard Anthropic API.
+// Attempting to use these tokens with api.anthropic.com will return:
+//
+//	"This credential is only authorized for use with Claude Code and cannot be used for other API requests."
+//
+// For general API access, use an API key from https://console.anthropic.com/
+//
+// ## Qwen OAuth Tokens (from Qwen Code CLI)
+//
+// OAuth tokens from Qwen Code CLI (~/.qwen/oauth_creds.json) are for the Qwen Portal only.
+// They cannot be used with the DashScope API.
+//
+// For general API access, use a DashScope API key from https://dashscope.aliyuncs.com/
+//
+// ## Verification Strategy
+//
+// Given these limitations, OAuth providers use "trust mode" verification:
+//   - Token presence and validity (expiration) is verified
+//   - API access cannot be verified due to product restrictions
+//   - Provider is marked as "trusted" with a default score when tokens are valid
+//
+// See: https://platform.claude.com/docs/en/api/overview
 package adapters
 
 import (
@@ -87,8 +117,17 @@ func NewOAuthAdapterWithConfig(verifierSvc *verifier.VerificationService, config
 }
 
 // VerifyClaudeOAuth verifies Claude provider using OAuth credentials
+//
+// IMPORTANT: Claude OAuth tokens from Claude Code CLI are PRODUCT-RESTRICTED.
+// They can ONLY be used with Claude Code - NOT with the standard Anthropic API.
+// Therefore, this method uses "trust mode" verification:
+//   - Verifies token presence and validity (expiration)
+//   - Does NOT attempt API calls (they would fail with product restriction error)
+//   - Creates a trusted provider with default score when tokens are valid
+//
+// For actual API access, use an API key from console.anthropic.com
 func (oa *OAuthAdapter) VerifyClaudeOAuth(ctx context.Context) (*verifier.UnifiedProvider, error) {
-	oa.log.Debug("Verifying Claude OAuth provider")
+	oa.log.Debug("Verifying Claude OAuth provider (trust mode - API calls restricted)")
 
 	// Read credentials from ~/.claude/.credentials.json
 	creds, err := oa.credReader.ReadClaudeCredentials()
@@ -122,72 +161,27 @@ func (oa *OAuthAdapter) VerifyClaudeOAuth(ctx context.Context) (*verifier.Unifie
 	oa.claudeExpiry = expiresAt
 	oa.mu.Unlock()
 
-	// Create provider with correct Anthropic API model names
-	// IMPORTANT: Model names MUST match exactly what the Anthropic API accepts
-	provider := &verifier.UnifiedProvider{
-		ID:               "claude",
-		Name:             "claude",
-		DisplayName:      "Claude (Anthropic)",
-		Type:             "claude",
-		AuthType:         verifier.AuthTypeOAuth,
-		BaseURL:          "https://api.anthropic.com/v1/messages",
-		DefaultModel:     "claude-3-5-sonnet-20241022", // Use verified working model
-		OAuthTokenExpiry: expiresAt,
-		OAuthAutoRefresh: true,
-		Tier:             1,
-		Priority:         1,
-		Models: []verifier.UnifiedModel{
-			// Claude 3.5 models (current production)
-			{ID: "claude-3-5-sonnet-20241022", Name: "Claude 3.5 Sonnet", Provider: "claude"},
-			{ID: "claude-3-5-haiku-20241022", Name: "Claude 3.5 Haiku", Provider: "claude"},
-			// Claude 3 models (legacy but still available)
-			{ID: "claude-3-opus-20240229", Name: "Claude 3 Opus", Provider: "claude"},
-			{ID: "claude-3-sonnet-20240229", Name: "Claude 3 Sonnet", Provider: "claude"},
-			{ID: "claude-3-haiku-20240307", Name: "Claude 3 Haiku", Provider: "claude"},
-		},
-	}
-
-	// Run verification through LLMsVerifier
-	verifyCtx, cancel := context.WithTimeout(ctx, oa.config.VerificationTimeout)
-	defer cancel()
-
-	result, err := oa.verifierSvc.VerifyModel(verifyCtx, provider.DefaultModel, "claude")
-	if err != nil {
-		oa.log.WithError(err).Warn("Claude OAuth verification failed")
-		if oa.config.TrustOnVerificationFailure {
-			return oa.createTrustedClaudeProvider(creds), nil
-		}
-		return nil, fmt.Errorf("Claude OAuth verification failed: %w", err)
-	}
-
-	provider.Verified = result.Verified
-	provider.VerifiedAt = time.Now()
-	provider.Score = result.OverallScore/10.0 + oa.config.OAuthPriorityBoost
-	provider.ScoreSuffix = result.ScoreSuffix
-	provider.CodeVisible = result.CodeVisible
-	provider.TestResults = result.TestsMap
-
-	if provider.Verified {
-		provider.Status = verifier.StatusHealthy
-	} else {
-		provider.Status = verifier.StatusUnhealthy
-		provider.ErrorMessage = result.ErrorMessage
-	}
-
-	// Update model scores
-	for i := range provider.Models {
-		provider.Models[i].Verified = provider.Verified
-		provider.Models[i].Score = provider.Score
-		provider.Models[i].VerifiedAt = provider.VerifiedAt
-	}
-
+	// IMPORTANT: Claude OAuth tokens from Claude Code CLI are PRODUCT-RESTRICTED
+	// They can ONLY be used with Claude Code itself, not the standard Anthropic API.
+	// API verification would fail with: "This credential is only authorized for use with Claude Code"
+	//
+	// Instead of attempting API verification (which would fail), we use "trust mode":
+	// - Token presence and validity has been verified above
+	// - We create a trusted provider without API verification
+	// - This is expected behavior, not a failure condition
+	//
+	// For actual API access, users should use an API key from console.anthropic.com
 	oa.log.WithFields(logrus.Fields{
-		"provider": "claude",
-		"verified": provider.Verified,
-		"score":    provider.Score,
-	}).Info("Claude OAuth verification completed")
+		"provider":    "claude",
+		"auth_type":   "oauth",
+		"trust_mode":  true,
+		"reason":      "product_restricted_token",
+		"token_valid": true,
+		"expires_at":  expiresAt.Format(time.RFC3339),
+	}).Info("Claude OAuth token verified (trust mode - API calls would be product-restricted)")
 
-	return provider, nil
+	// Use trust mode - create trusted provider without API verification
+	return oa.createTrustedClaudeProvider(creds), nil
 }
 
 // createTrustedClaudeProvider creates a Claude provider that's trusted without full verification
