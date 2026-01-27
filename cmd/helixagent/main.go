@@ -49,7 +49,7 @@ var (
 	apiKeyEnvFile      = flag.String("api-key-env-file", "", "Path to .env file to write the generated API key")
 	preinstallMCP      = flag.Bool("preinstall-mcp", false, "Pre-install standard MCP server npm packages")
 	skipMCPPreinstall  = flag.Bool("skip-mcp-preinstall", false, "Skip automatic MCP package pre-installation at startup")
-	workingMCPsOnly    = flag.Bool("working-mcps-only", false, "Only include MCPs with all dependencies met (API keys, services)")
+	workingMCPsOnly    = flag.Bool("working-mcps-only", true, "Only include MCPs that work without API keys (default: true)")
 	useLocalMCPServers = flag.Bool("use-local-mcp-servers", false, "Use local Docker-based MCP servers on TCP ports (requires running start-mcp-servers.sh)")
 	autoStartMCP       = flag.Bool("auto-start-mcp", true, "Automatically start MCP Docker containers on HelixAgent startup")
 	// Unified CLI agent configuration flags (all 48 agents)
@@ -2080,50 +2080,26 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 func filterWorkingMCPs(allMCPs map[string]OpenCodeMCPServerDefNew) map[string]OpenCodeMCPServerDefNew {
 	workingMCPs := make(map[string]OpenCodeMCPServerDefNew)
 
-	// MCPs that always work (no external dependencies)
-	// NOTE: Only includes MCPs with VERIFIED npm packages on registry.npmjs.org
+	// MCPs that work WITHOUT any API keys or external service dependencies
+	// VERIFIED: These npm packages exist and work out-of-the-box
 	alwaysWorking := map[string]bool{
-		"helixagent":            true, // HelixAgent local plugin
-		"helixagent-mcp":        true, // HelixAgent remote endpoints
+		// HelixAgent remote endpoints (connect to running HelixAgent)
+		"helixagent-mcp":        true,
 		"helixagent-acp":        true,
 		"helixagent-lsp":        true,
 		"helixagent-embeddings": true,
 		"helixagent-vision":     true,
 		"helixagent-cognee":     true,
-		"filesystem":            true, // @modelcontextprotocol/server-filesystem - VERIFIED
-		"memory":                true, // @modelcontextprotocol/server-memory - VERIFIED
-		"sequential-thinking":   true, // @modelcontextprotocol/server-sequential-thinking - VERIFIED
-		"everything":            true, // @modelcontextprotocol/server-everything - VERIFIED
-		// These packages DON'T exist on npm and cause "Connection closed":
-		// "fetch", "git", "time", "puppeteer", "docker", "terraform", "ansible", "raycast", "sqlite"
-	}
-
-	// Environment variable requirements for MCPs with VERIFIED npm packages
-	envRequirements := map[string][]string{
-		"github": {"GITHUB_TOKEN"}, // @modelcontextprotocol/server-github - VERIFIED on npm
+		// Official Anthropic MCP servers (npm verified, no API keys)
+		"filesystem":          true, // @modelcontextprotocol/server-filesystem
+		"memory":              true, // @modelcontextprotocol/server-memory
+		"sequential-thinking": true, // @modelcontextprotocol/server-sequential-thinking
 	}
 
 	for name, mcpConfig := range allMCPs {
-		// Always include MCPs without dependencies (verified packages only)
 		if alwaysWorking[name] {
 			workingMCPs[name] = mcpConfig
-			continue
 		}
-
-		// Check environment variable requirements for verified packages
-		if reqs, hasReqs := envRequirements[name]; hasReqs {
-			allMet := true
-			for _, envVar := range reqs {
-				if os.Getenv(envVar) == "" {
-					allMet = false
-					break
-				}
-			}
-			if allMet {
-				workingMCPs[name] = mcpConfig
-			}
-		}
-		// Note: We don't include other MCPs because their npm packages don't exist
 	}
 
 	return workingMCPs
