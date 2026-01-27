@@ -393,8 +393,9 @@ if [ -f "$RESULTS_FILE" ]; then
     RESULTS=$(jq -r '.test_results[] | .content' "$RESULTS_FILE" 2>/dev/null)
 
     while IFS= read -r content; do
-        if echo "$content" | grep -Eqi "mock|stub|placeholder|example\.com|test data|lorem ipsum|TODO|FIXME|NotImplemented"; then
-            ((FALSE_POSITIVE_COUNT++))
+        # Use same precise patterns as Section 2 to avoid false positives from legitimate content
+        if echo "$content" | grep -qiE "mock data|stub data|mocked response|stubbed response|example\.com|lorem ipsum|TODO:|FIXME:|NotImplemented|not yet implemented|fake response|test response only"; then
+            FALSE_POSITIVE_COUNT=$((FALSE_POSITIVE_COUNT + 1))
         fi
     done <<< "$RESULTS"
 
