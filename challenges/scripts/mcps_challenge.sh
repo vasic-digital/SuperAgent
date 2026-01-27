@@ -474,7 +474,7 @@ run_section_7() {
             section_failed=$((section_failed + 1))
         fi
 
-        if test_mcp_endpoint "/v1/lsp/status" "GET" "LSP status" "$agent"; then
+        if test_mcp_endpoint "/v1/lsp/stats" "GET" "LSP stats" "$agent"; then
             section_passed=$((section_passed + 1))
         else
             section_failed=$((section_failed + 1))
@@ -502,7 +502,7 @@ run_section_8() {
             section_failed=$((section_failed + 1))
         fi
 
-        if test_mcp_endpoint "/v1/acp/status" "GET" "ACP status" "$agent"; then
+        if test_mcp_endpoint "/v1/acp/health" "GET" "ACP health" "$agent"; then
             section_passed=$((section_passed + 1))
         else
             section_failed=$((section_failed + 1))
@@ -822,11 +822,11 @@ done)
 
 ### LSP Endpoints
 - /v1/lsp/servers - LSP servers
-- /v1/lsp/status - LSP status
+- /v1/lsp/stats - LSP stats
 
 ### ACP Endpoints
 - /v1/acp/agents - ACP agents
-- /v1/acp/status - ACP status
+- /v1/acp/health - ACP health
 
 ## Test Results
 

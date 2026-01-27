@@ -52,7 +52,7 @@ var (
 	skipMCPPreinstall  = flag.Bool("skip-mcp-preinstall", false, "Skip automatic MCP package pre-installation at startup")
 	workingMCPsOnly    = flag.Bool("working-mcps-only", true, "Only include MCPs that work without API keys (default: true)")
 	useLocalMCPServers = flag.Bool("use-local-mcp-servers", false, "Use local Docker-based MCP servers on TCP ports (requires running start-mcp-servers.sh)")
-	useContainerMCPs   = flag.Bool("use-container-mcps", true, "Use containerized MCP servers with HTTP SSE endpoints (ZERO npx dependencies)")
+	useContainerMCPs   = flag.Bool("use-container-mcps", false, "Use containerized MCP servers with HTTP SSE endpoints (requires running MCP containers)")
 	autoStartMCP       = flag.Bool("auto-start-mcp", true, "Automatically start MCP Docker containers on HelixAgent startup")
 	// Unified CLI agent configuration flags (all 48 agents)
 	generateAgentConfig = flag.String("generate-agent-config", "", "Generate config for specified CLI agent (use --list-agents to see all)")
@@ -2102,20 +2102,32 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 	return filterWorkingMCPs(allMCPs)
 }
 
-// filterWorkingMCPs filters MCP configurations to only include HelixAgent endpoints
-// ZERO npm/npx dependencies - all MCP functionality provided by running HelixAgent server
+// filterWorkingMCPs filters MCP configurations to include:
+// 1. HelixAgent remote endpoints (always work when HelixAgent is running)
+// 2. NPX-based MCPs that require no API keys or external configuration
 func filterWorkingMCPs(allMCPs map[string]OpenCodeMCPServerDefNew) map[string]OpenCodeMCPServerDefNew {
 	workingMCPs := make(map[string]OpenCodeMCPServerDefNew)
 
-	// ONLY HelixAgent remote endpoints - NO npm/npx dependencies
-	// These connect to running HelixAgent server which provides all MCP functionality
+	// MCPs that work without any API keys or external configuration
+	// These only require npx/Node.js installed (standard for OpenCode users)
 	alwaysWorking := map[string]bool{
+		// HelixAgent remote endpoints - connect to running HelixAgent server
 		"helixagent-mcp":        true,
 		"helixagent-acp":        true,
 		"helixagent-lsp":        true,
 		"helixagent-embeddings": true,
 		"helixagent-vision":     true,
 		"helixagent-cognee":     true,
+		// Core Anthropic official MCPs - no API keys required
+		"filesystem":          true, // Filesystem access
+		"fetch":               true, // HTTP requests
+		"memory":              true, // Memory/KV store
+		"time":                true, // Time/timezone
+		"git":                 true, // Git operations
+		"sqlite":              true, // SQLite database
+		"puppeteer":           true, // Browser automation
+		"sequential-thinking": true, // Thinking/reasoning
+		"everything":          true, // Demo/test server
 	}
 
 	for name, mcpConfig := range allMCPs {
@@ -2818,9 +2830,10 @@ func buildContainerizedCrushMCPs(baseURL string) map[string]CrushMcpConfig {
 func filterWorkingCrushMCPs(allMCPs map[string]CrushMcpConfig) map[string]CrushMcpConfig {
 	workingMCPs := make(map[string]CrushMcpConfig)
 
-	// MCPs that always work (no external dependencies)
+	// MCPs that always work (no external dependencies or API keys)
 	// NOTE: Only includes MCPs with VERIFIED npm packages on registry.npmjs.org
 	alwaysWorking := map[string]bool{
+		// HelixAgent remote endpoints
 		"helixagent":            true,
 		"helixagent-mcp":        true,
 		"helixagent-acp":        true,
@@ -2828,10 +2841,16 @@ func filterWorkingCrushMCPs(allMCPs map[string]CrushMcpConfig) map[string]CrushM
 		"helixagent-embeddings": true,
 		"helixagent-vision":     true,
 		"helixagent-cognee":     true,
-		"filesystem":            true, // @modelcontextprotocol/server-filesystem - VERIFIED
-		"memory":                true, // @modelcontextprotocol/server-memory - VERIFIED
-		"sequential-thinking":   true, // @modelcontextprotocol/server-sequential-thinking - VERIFIED
-		"everything":            true, // @modelcontextprotocol/server-everything - VERIFIED
+		// Core Anthropic official MCPs - no API keys required
+		"filesystem":          true, // @modelcontextprotocol/server-filesystem - VERIFIED
+		"fetch":               true, // @modelcontextprotocol/server-fetch - VERIFIED
+		"memory":              true, // @modelcontextprotocol/server-memory - VERIFIED
+		"time":                true, // @modelcontextprotocol/server-time - VERIFIED
+		"git":                 true, // @modelcontextprotocol/server-git - VERIFIED
+		"sqlite":              true, // @modelcontextprotocol/server-sqlite - VERIFIED
+		"puppeteer":           true, // @modelcontextprotocol/server-puppeteer - VERIFIED
+		"sequential-thinking": true, // @modelcontextprotocol/server-sequential-thinking - VERIFIED
+		"everything":          true, // @anthropic-ai/mcp-server-everything - VERIFIED
 	}
 
 	// Environment variable requirements (same as OpenCode)
