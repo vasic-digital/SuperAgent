@@ -8,8 +8,6 @@ import (
 	"sync"
 
 	"dev.helix.agent/internal/llm"
-	"dev.helix.agent/internal/llm/providers/cerebras"
-	"dev.helix.agent/internal/llm/providers/mistral"
 	"dev.helix.agent/internal/verifier"
 	"github.com/sirupsen/logrus"
 )
@@ -415,17 +413,21 @@ func (dtc *DebateTeamConfig) collectFromStartupVerifier() {
 	}).Info("Verified LLMs collected from StartupVerifier")
 }
 
-// collectClaudeModels collects Claude models if the provider is available
-// For OAuth providers, we trust CLI credentials even if API verification fails
-// because CLI tokens may be scoped differently than public API access
+// collectClaudeModels collects Claude models ONLY if a verified provider is available
+//
+// IMPORTANT: Claude OAuth tokens from Claude Code CLI are PRODUCT-RESTRICTED.
+// They can ONLY be used with Claude Code itself - NOT with the standard Anthropic API.
+// Therefore, Claude models should ONLY be added if:
+// 1. A valid Anthropic API key is available, OR
+// 2. The provider has been VERIFIED to work (not just "registered")
+//
+// We DO NOT fall back to registered-but-unverified providers because OAuth tokens
+// from CLI tools cannot be used for general API access.
 func (dtc *DebateTeamConfig) collectClaudeModels() {
-	// First try verified provider, then fall back to any registered provider
+	// ONLY use verified providers - do NOT fall back to registered-but-unverified
 	provider := dtc.getVerifiedProvider("claude", "claude-oauth")
 	if provider == nil {
-		provider = dtc.getRegisteredProvider("claude", "claude-oauth")
-	}
-	if provider == nil {
-		dtc.logger.Debug("Claude provider not available")
+		dtc.logger.Warn("Claude provider not verified - OAuth tokens from Claude Code CLI are product-restricted and cannot be used for API calls")
 		return
 	}
 
@@ -465,20 +467,24 @@ func (dtc *DebateTeamConfig) collectClaudeModels() {
 		})
 	}
 
-	dtc.logger.WithField("models", len(claudeModels)).Info("Added Claude OAuth2 models")
+	dtc.logger.WithField("models", len(claudeModels)).Info("Added Claude API models (verified provider)")
 }
 
-// collectQwenModels collects Qwen models if the provider is available
-// For OAuth providers, we trust CLI credentials even if API verification fails
-// because CLI tokens may be scoped differently than public API access
+// collectQwenModels collects Qwen models ONLY if a verified provider is available
+//
+// IMPORTANT: Qwen OAuth tokens from Qwen CLI are for the Qwen Portal only.
+// They cannot be used with the DashScope API.
+// Therefore, Qwen models should ONLY be added if:
+// 1. A valid DashScope API key is available, OR
+// 2. The provider has been VERIFIED to work (not just "registered")
+//
+// We DO NOT fall back to registered-but-unverified providers because OAuth tokens
+// from CLI tools cannot be used for general API access.
 func (dtc *DebateTeamConfig) collectQwenModels() {
-	// First try verified provider, then fall back to any registered provider
+	// ONLY use verified providers - do NOT fall back to registered-but-unverified
 	provider := dtc.getVerifiedProvider("qwen", "qwen-oauth")
 	if provider == nil {
-		provider = dtc.getRegisteredProvider("qwen", "qwen-oauth")
-	}
-	if provider == nil {
-		dtc.logger.Debug("Qwen provider not available")
+		dtc.logger.Warn("Qwen provider not verified - OAuth tokens from Qwen CLI are for Portal only, cannot be used for DashScope API")
 		return
 	}
 
@@ -505,76 +511,69 @@ func (dtc *DebateTeamConfig) collectQwenModels() {
 		})
 	}
 
-	dtc.logger.WithField("models", len(qwenModels)).Info("Added Qwen OAuth2 models")
+	dtc.logger.WithField("models", len(qwenModels)).Info("Added Qwen API models (verified provider)")
 }
 
-// collectReliableAPIProviders collects Cerebras and Mistral providers that have proven API access
-// These providers are critical for fallback when OAuth providers fail
-// IMPORTANT: These MUST be included as fallbacks for OAuth primaries
+// collectReliableAPIProviders collects API providers ONLY if they are verified
+//
+// IMPORTANT: This function now uses the verification system (discovery) to ensure
+// providers actually work before adding them to the debate team. Previously, it
+// added providers based solely on environment variables, which led to non-functional
+// providers being included in the debate team.
+//
+// Providers are only added if:
+// 1. The API key is present in the environment
+// 2. The provider has been VERIFIED by the startup verification system
 func (dtc *DebateTeamConfig) collectReliableAPIProviders() {
-	// Cerebras - ultra-fast inference, proven working
-	if apiKey := os.Getenv("CEREBRAS_API_KEY"); apiKey != "" {
-		provider := cerebras.NewCerebrasProvider(apiKey, "https://api.cerebras.ai/v1/chat/completions", LLMsVerifierModels.Cerebras)
+	// List of reliable API providers to check
+	reliableProviders := []struct {
+		name   string
+		envVar string
+		model  string
+	}{
+		{"cerebras", "CEREBRAS_API_KEY", LLMsVerifierModels.Cerebras},
+		{"mistral", "MISTRAL_API_KEY", LLMsVerifierModels.Mistral},
+		{"deepseek", "DEEPSEEK_API_KEY", LLMsVerifierModels.DeepSeek},
+		{"gemini", "GEMINI_API_KEY", LLMsVerifierModels.Gemini},
+	}
+
+	for _, rp := range reliableProviders {
+		if apiKey := os.Getenv(rp.envVar); apiKey == "" {
+			dtc.logger.WithField("provider", rp.name).Debug("API key not set - provider not available")
+			continue
+		}
+
+		// ONLY use verified providers from discovery
+		provider := dtc.getVerifiedProvider(rp.name)
+		if provider == nil {
+			dtc.logger.WithFields(logrus.Fields{
+				"provider": rp.name,
+				"env_var":  rp.envVar,
+			}).Warn("Provider has API key but verification failed - NOT adding to debate team")
+			continue
+		}
+
+		// Get score from discovery if available
+		score := 8.0 // Default score
+		if dtc.discovery != nil {
+			if discovered := dtc.discovery.GetProviderByName(rp.name); discovered != nil && discovered.Verified {
+				score = discovered.Score
+			}
+		}
+
 		dtc.verifiedLLMs = append(dtc.verifiedLLMs, &VerifiedLLM{
-			ProviderName: "cerebras",
-			ModelName:    LLMsVerifierModels.Cerebras,
-			Score:        8.9, // High score - fast and reliable
+			ProviderName: rp.name,
+			ModelName:    rp.model,
+			Score:        score,
 			Provider:     provider,
 			IsOAuth:      false,
 			Verified:     true,
 		})
-		dtc.logger.Info("Added Cerebras as reliable API fallback provider")
-	} else {
-		dtc.logger.Warn("CEREBRAS_API_KEY not set - Cerebras will not be available as fallback")
-	}
-
-	// Mistral - high quality, proven working
-	if apiKey := os.Getenv("MISTRAL_API_KEY"); apiKey != "" {
-		provider := mistral.NewMistralProvider(apiKey, "https://api.mistral.ai/v1/chat/completions", LLMsVerifierModels.Mistral)
-		dtc.verifiedLLMs = append(dtc.verifiedLLMs, &VerifiedLLM{
-			ProviderName: "mistral",
-			ModelName:    LLMsVerifierModels.Mistral,
-			Score:        8.7, // High score - quality and reliable
-			Provider:     provider,
-			IsOAuth:      false,
-			Verified:     true,
-		})
-		dtc.logger.Info("Added Mistral as reliable API fallback provider")
-	} else {
-		dtc.logger.Warn("MISTRAL_API_KEY not set - Mistral will not be available as fallback")
-	}
-
-	// DeepSeek - excellent for code, proven working
-	if apiKey := os.Getenv("DEEPSEEK_API_KEY"); apiKey != "" {
-		// DeepSeek uses OpenAI-compatible format, get provider from registry or create
-		provider := dtc.getRegisteredProvider("deepseek")
-		if provider != nil {
-			dtc.verifiedLLMs = append(dtc.verifiedLLMs, &VerifiedLLM{
-				ProviderName: "deepseek",
-				ModelName:    LLMsVerifierModels.DeepSeek,
-				Score:        8.8, // High score - excellent for code
-				Provider:     provider,
-				IsOAuth:      false,
-				Verified:     true,
-			})
-			dtc.logger.Info("Added DeepSeek as reliable API fallback provider")
-		}
-	}
-
-	// Gemini - Google's model, proven working
-	if apiKey := os.Getenv("GEMINI_API_KEY"); apiKey != "" {
-		provider := dtc.getRegisteredProvider("gemini")
-		if provider != nil {
-			dtc.verifiedLLMs = append(dtc.verifiedLLMs, &VerifiedLLM{
-				ProviderName: "gemini",
-				ModelName:    LLMsVerifierModels.Gemini,
-				Score:        8.6, // High score - good all-rounder
-				Provider:     provider,
-				IsOAuth:      false,
-				Verified:     true,
-			})
-			dtc.logger.Info("Added Gemini as reliable API fallback provider")
-		}
+		dtc.logger.WithFields(logrus.Fields{
+			"provider": rp.name,
+			"model":    rp.model,
+			"score":    score,
+		}).Info("Added verified API provider to debate team")
 	}
 }
 
@@ -611,18 +610,23 @@ func (dtc *DebateTeamConfig) collectLLMsVerifierProviders() {
 // getVerifiedProvider tries to get a verified provider by name(s)
 func (dtc *DebateTeamConfig) getVerifiedProvider(names ...string) llm.LLMProvider {
 	for _, name := range names {
-		// Try registry first
-		if dtc.providerRegistry != nil {
-			if p, err := dtc.providerRegistry.GetProvider(name); err == nil && p != nil {
-				return p
-			}
-		}
-		// Try discovery
+		// IMPORTANT: Only use discovery which tracks verification status.
+		// The registry does NOT track verification, so we skip it for verified providers.
+		// This prevents non-functional OAuth providers from being used.
 		if dtc.discovery != nil {
 			if discovered := dtc.discovery.GetProviderByName(name); discovered != nil {
 				if discovered.Verified && discovered.Provider != nil {
+					dtc.logger.WithFields(logrus.Fields{
+						"provider": name,
+						"verified": true,
+						"score":    discovered.Score,
+					}).Debug("Found verified provider via discovery")
 					return discovered.Provider
 				}
+				dtc.logger.WithFields(logrus.Fields{
+					"provider": name,
+					"verified": discovered.Verified,
+				}).Debug("Provider found but not verified - skipping")
 			}
 		}
 	}
