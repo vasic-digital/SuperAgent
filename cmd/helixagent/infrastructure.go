@@ -12,8 +12,8 @@ import (
 
 // Infrastructure startup flags
 var (
-	autoStartLSP = true  // Auto-start LSP servers
-	autoStartRAG = true  // Auto-start RAG services
+	autoStartLSP = true // Auto-start LSP servers
+	autoStartRAG = true // Auto-start RAG services
 )
 
 // ensureLSPServers starts all LSP Docker containers
@@ -196,10 +196,10 @@ func GetInfrastructureStatus(logger *logrus.Logger) *InfrastructureStatus {
 
 	// Check core services
 	coreServices := map[string]string{
-		"postgres":  "", // TCP check
-		"redis":     "", // TCP check
-		"chromadb":  "http://localhost:8001/api/v2/heartbeat",
-		"cognee":    "http://localhost:8000/",
+		"postgres": "", // TCP check
+		"redis":    "", // TCP check
+		"chromadb": "http://localhost:8001/api/v2/heartbeat",
+		"cognee":   "http://localhost:8000/",
 	}
 
 	for name, url := range coreServices {

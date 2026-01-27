@@ -27,9 +27,9 @@ type Client struct {
 // Config holds Pinecone configuration.
 type Config struct {
 	APIKey      string        `json:"api_key"`
-	Environment string        `json:"environment"`  // e.g., "us-west1-gcp"
-	ProjectID   string        `json:"project_id"`   // Optional for serverless
-	IndexHost   string        `json:"index_host"`   // Full index host URL
+	Environment string        `json:"environment"` // e.g., "us-west1-gcp"
+	ProjectID   string        `json:"project_id"`  // Optional for serverless
+	IndexHost   string        `json:"index_host"`  // Full index host URL
 	Timeout     time.Duration `json:"timeout"`
 }
 
@@ -347,10 +347,10 @@ func (c *Client) Fetch(ctx context.Context, ids []string, namespace string) (*Fe
 
 // DescribeIndexStatsResponse represents index stats.
 type DescribeIndexStatsResponse struct {
-	Namespaces map[string]NamespaceStats `json:"namespaces"`
-	Dimension  int                       `json:"dimension"`
-	IndexFullness float64               `json:"indexFullness"`
-	TotalVectorCount int64              `json:"totalVectorCount"`
+	Namespaces       map[string]NamespaceStats `json:"namespaces"`
+	Dimension        int                       `json:"dimension"`
+	IndexFullness    float64                   `json:"indexFullness"`
+	TotalVectorCount int64                     `json:"totalVectorCount"`
 }
 
 // NamespaceStats represents stats for a namespace.

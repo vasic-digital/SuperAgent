@@ -791,10 +791,10 @@ func (g *FullMCPConfigGenerator) GenerateSummary() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"total":         len(all),
-		"total_enabled": len(enabled),
+		"total":          len(all),
+		"total_enabled":  len(enabled),
 		"total_disabled": len(disabled),
-		"enabled_mcps":  enabled,
-		"disabled_mcps": disabled,
+		"enabled_mcps":   enabled,
+		"disabled_mcps":  disabled,
 	}
 }

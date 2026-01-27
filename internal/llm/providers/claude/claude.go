@@ -21,9 +21,9 @@ const (
 	ClaudeOAuthModel = "claude-sonnet-4-20250514" // Default model for OAuth auth (Claude Code compatible)
 
 	// Alternative models
-	ClaudeOpusModel   = "claude-opus-4-20250514"
-	ClaudeHaikuModel  = "claude-haiku-4-20250514"
-	ClaudeSonnet35    = "claude-3-5-sonnet-20241022"
+	ClaudeOpusModel  = "claude-opus-4-20250514"
+	ClaudeHaikuModel = "claude-haiku-4-20250514"
+	ClaudeSonnet35   = "claude-3-5-sonnet-20241022"
 )
 
 // AuthType represents the type of authentication used

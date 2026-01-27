@@ -201,10 +201,10 @@ const (
 
 // TableSchema defines a pgvector table schema.
 type TableSchema struct {
-	TableName     string
-	VectorColumn  string
-	Dimension     int
-	IDColumn      string
+	TableName       string
+	VectorColumn    string
+	Dimension       int
+	IDColumn        string
 	MetadataColumns []ColumnDef
 }
 
@@ -298,13 +298,13 @@ func (c *Client) TableExists(ctx context.Context, tableName string) (bool, error
 
 // CreateIndexRequest represents an index creation request.
 type CreateIndexRequest struct {
-	TableName    string
-	IndexName    string
-	VectorColumn string
-	IndexType    IndexType
-	Metric       DistanceMetric
-	Lists        int // For IVFFlat: number of inverted lists
-	M            int // For HNSW: max number of connections
+	TableName      string
+	IndexName      string
+	VectorColumn   string
+	IndexType      IndexType
+	Metric         DistanceMetric
+	Lists          int // For IVFFlat: number of inverted lists
+	M              int // For HNSW: max number of connections
 	EfConstruction int // For HNSW: size of dynamic candidate list during construction
 }
 
@@ -473,13 +473,13 @@ func (c *Client) Upsert(ctx context.Context, req *UpsertRequest) (int, error) {
 
 // SearchRequest represents a vector search request.
 type SearchRequest struct {
-	TableName    string
-	VectorColumn string
-	IDColumn     string
-	QueryVector  []float32
-	Limit        int
-	Metric       DistanceMetric
-	Filter       string
+	TableName     string
+	VectorColumn  string
+	IDColumn      string
+	QueryVector   []float32
+	Limit         int
+	Metric        DistanceMetric
+	Filter        string
 	OutputColumns []string
 }
 

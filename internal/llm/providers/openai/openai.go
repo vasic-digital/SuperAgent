@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	OpenAIAPIURL  = "https://api.openai.com/v1/chat/completions"
-	OpenAIModels  = "https://api.openai.com/v1/models"
-	DefaultModel  = "gpt-4o"
+	OpenAIAPIURL = "https://api.openai.com/v1/chat/completions"
+	OpenAIModels = "https://api.openai.com/v1/models"
+	DefaultModel = "gpt-4o"
 )
 
 // Provider implements the LLMProvider interface for OpenAI

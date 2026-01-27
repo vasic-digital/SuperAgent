@@ -157,7 +157,7 @@ func (h *ACPHandler) initializeAgents() {
 			},
 			Metadata: map[string]interface{}{
 				"vulnerability_databases": []string{"CVE", "NVD", "OWASP"},
-				"version":                  "1.0.0",
+				"version":                 "1.0.0",
 			},
 		},
 	}
@@ -265,10 +265,10 @@ func (h *ACPHandler) Execute(c *gin.Context) {
 		Result:   result,
 		Duration: duration,
 		Metadata: map[string]interface{}{
-			"agent_name":    agent.Name,
-			"task_type":     h.detectTaskType(req.Task),
-			"context_keys":  h.getContextKeys(req.Context),
-			"capabilities":  agent.Capabilities,
+			"agent_name":   agent.Name,
+			"task_type":    h.detectTaskType(req.Task),
+			"context_keys": h.getContextKeys(req.Context),
+			"capabilities": agent.Capabilities,
 		},
 		Timestamp: time.Now().Unix(),
 	}
@@ -320,21 +320,21 @@ func (h *ACPHandler) executeCodeReview(task, code, language string) (interface{}
 		"language": language,
 		"findings": []map[string]interface{}{
 			{
-				"severity":    "info",
-				"category":    "style",
-				"message":     "Code follows good practices",
-				"line":        1,
-				"suggestion":  "Consider adding documentation comments",
+				"severity":   "info",
+				"category":   "style",
+				"message":    "Code follows good practices",
+				"line":       1,
+				"suggestion": "Consider adding documentation comments",
 			},
 		},
 		"summary": map[string]interface{}{
-			"total_issues":  0,
-			"critical":      0,
-			"high":          0,
-			"medium":        0,
-			"low":           0,
-			"info":          1,
-			"code_quality":  "good",
+			"total_issues":    0,
+			"critical":        0,
+			"high":            0,
+			"medium":          0,
+			"low":             0,
+			"info":            1,
+			"code_quality":    "good",
 			"maintainability": 85,
 		},
 		"recommendations": []string{
@@ -348,8 +348,8 @@ func (h *ACPHandler) executeCodeReview(task, code, language string) (interface{}
 
 func (h *ACPHandler) executeBugFinder(task, code, language string) (interface{}, error) {
 	result := map[string]interface{}{
-		"type":     "bug_analysis",
-		"language": language,
+		"type":       "bug_analysis",
+		"language":   language,
 		"bugs_found": []map[string]interface{}{},
 		"potential_issues": []map[string]interface{}{
 			{
@@ -444,8 +444,8 @@ func (h *ACPHandler) executeTestGenerator(task, code, language string) (interfac
 
 func (h *ACPHandler) executeSecurityScanner(task, code, language string) (interface{}, error) {
 	result := map[string]interface{}{
-		"type":     "security_scan",
-		"language": language,
+		"type":            "security_scan",
+		"language":        language,
 		"vulnerabilities": []map[string]interface{}{},
 		"warnings": []map[string]interface{}{
 			{

@@ -43,18 +43,18 @@ type RetryConfig struct {
 
 // Request represents a Together AI chat completion request (OpenAI compatible)
 type Request struct {
-	Model            string          `json:"model"`
-	Messages         []Message       `json:"messages"`
-	Temperature      float64         `json:"temperature,omitempty"`
-	MaxTokens        int             `json:"max_tokens,omitempty"`
-	TopP             float64         `json:"top_p,omitempty"`
-	TopK             int             `json:"top_k,omitempty"`
-	Stream           bool            `json:"stream,omitempty"`
-	Stop             []string        `json:"stop,omitempty"`
-	RepetitionPenalty float64        `json:"repetition_penalty,omitempty"`
-	Tools            []Tool          `json:"tools,omitempty"`
-	ToolChoice       any             `json:"tool_choice,omitempty"`
-	ResponseFormat   *ResponseFormat `json:"response_format,omitempty"`
+	Model             string          `json:"model"`
+	Messages          []Message       `json:"messages"`
+	Temperature       float64         `json:"temperature,omitempty"`
+	MaxTokens         int             `json:"max_tokens,omitempty"`
+	TopP              float64         `json:"top_p,omitempty"`
+	TopK              int             `json:"top_k,omitempty"`
+	Stream            bool            `json:"stream,omitempty"`
+	Stop              []string        `json:"stop,omitempty"`
+	RepetitionPenalty float64         `json:"repetition_penalty,omitempty"`
+	Tools             []Tool          `json:"tools,omitempty"`
+	ToolChoice        any             `json:"tool_choice,omitempty"`
+	ResponseFormat    *ResponseFormat `json:"response_format,omitempty"`
 }
 
 // Message represents a chat message

@@ -707,10 +707,10 @@ func TestMinIOIntegration_SetLifecycleRule_WithNoncurrentExpiry(t *testing.T) {
 
 	// Set lifecycle rule with noncurrent expiry
 	rule := &minio.LifecycleRule{
-		ID:              "noncurrent-cleanup",
-		Enabled:         true,
-		NoncurrentDays:  7,
-		ExpirationDays:  90,
+		ID:             "noncurrent-cleanup",
+		Enabled:        true,
+		NoncurrentDays: 7,
+		ExpirationDays: 90,
 	}
 	err = client.SetLifecycleRule(ctx, bucketName, rule)
 	require.NoError(t, err)

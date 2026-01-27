@@ -506,18 +506,18 @@ func truncateText(s string, maxLen int) string {
 // HierarchicalDocument represents a document with parent-child relationships
 type HierarchicalDocument struct {
 	*Document
-	ParentID    string   `json:"parent_id,omitempty"`
-	ChildIDs    []string `json:"child_ids,omitempty"`
-	Level       int      `json:"level"`
+	ParentID      string   `json:"parent_id,omitempty"`
+	ChildIDs      []string `json:"child_ids,omitempty"`
+	Level         int      `json:"level"`
 	HierarchyPath []string `json:"hierarchy_path,omitempty"`
 }
 
 // TemporalDocument represents a document with time-based metadata
 type TemporalDocument struct {
 	*Document
-	Timestamp     int64  `json:"timestamp"`
-	CreatedDate   string `json:"created_date,omitempty"`
-	UpdatedDate   string `json:"updated_date,omitempty"`
+	Timestamp      int64   `json:"timestamp"`
+	CreatedDate    string  `json:"created_date,omitempty"`
+	UpdatedDate    string  `json:"updated_date,omitempty"`
 	TemporalWeight float64 `json:"temporal_weight"`
 }
 
@@ -626,9 +626,9 @@ func (t *TemporalRetriever) RetrieveByDateRange(ctx context.Context, startTime, 
 			// Apply temporal weighting - more recent documents score higher
 			temporalScore := t.calculateTemporalScore(doc.Timestamp, endTime)
 			results = append(results, &SearchResult{
-				Document:      doc.Document,
-				Score:         temporalScore,
-				MatchType:     MatchTypeDense,
+				Document:  doc.Document,
+				Score:     temporalScore,
+				MatchType: MatchTypeDense,
 			})
 		}
 	}

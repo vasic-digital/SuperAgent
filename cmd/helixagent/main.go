@@ -25,6 +25,7 @@ import (
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/mcp"
+	mcpconfig "dev.helix.agent/internal/mcp/config"
 	"dev.helix.agent/internal/messaging"
 	"dev.helix.agent/internal/messaging/inmemory"
 	"dev.helix.agent/internal/router"
@@ -51,6 +52,7 @@ var (
 	skipMCPPreinstall  = flag.Bool("skip-mcp-preinstall", false, "Skip automatic MCP package pre-installation at startup")
 	workingMCPsOnly    = flag.Bool("working-mcps-only", true, "Only include MCPs that work without API keys (default: true)")
 	useLocalMCPServers = flag.Bool("use-local-mcp-servers", false, "Use local Docker-based MCP servers on TCP ports (requires running start-mcp-servers.sh)")
+	useContainerMCPs   = flag.Bool("use-container-mcps", true, "Use containerized MCP servers with HTTP SSE endpoints (ZERO npx dependencies)")
 	autoStartMCP       = flag.Bool("auto-start-mcp", true, "Automatically start MCP Docker containers on HelixAgent startup")
 	// Unified CLI agent configuration flags (all 48 agents)
 	generateAgentConfig = flag.String("generate-agent-config", "", "Generate config for specified CLI agent (use --list-agents to see all)")
@@ -361,8 +363,8 @@ func ensureMCPServers(logger *logrus.Logger) error {
 	}
 
 	logger.WithFields(logrus.Fields{
-		"runtime":    runtime,
-		"compose":    composeCmd,
+		"runtime":     runtime,
+		"compose":     composeCmd,
 		"mcp_servers": 32,
 	}).Info("Starting MCP servers from git submodules (zero npm dependencies)")
 
@@ -1246,22 +1248,22 @@ func writeAPIKeyToEnvFile(filePath, apiKey string) error {
 // Based on actual working config and OpenCode documentation
 // Uses @ai-sdk/openai-compatible for custom providers
 type OpenCodeConfig struct {
-	Schema       string                               `json:"$schema,omitempty"`
-	Provider     map[string]OpenCodeProviderDefNew    `json:"provider,omitempty"`     // Note: singular "provider"
-	Agent        map[string]OpenCodeAgentDefNew       `json:"agent,omitempty"`        // Note: singular "agent"
-	MCP          map[string]OpenCodeMCPServerDefNew   `json:"mcp,omitempty"`          // OpenCode expects "mcp" key
-	Instructions []string                             `json:"instructions,omitempty"` // Rule files
-	TUI          *OpenCodeTUIDef                      `json:"tui,omitempty"`
+	Schema       string                             `json:"$schema,omitempty"`
+	Provider     map[string]OpenCodeProviderDefNew  `json:"provider,omitempty"`     // Note: singular "provider"
+	Agent        map[string]OpenCodeAgentDefNew     `json:"agent,omitempty"`        // Note: singular "agent"
+	MCP          map[string]OpenCodeMCPServerDefNew `json:"mcp,omitempty"`          // OpenCode expects "mcp" key
+	Instructions []string                           `json:"instructions,omitempty"` // Rule files
+	TUI          *OpenCodeTUIDef                    `json:"tui,omitempty"`
 	// NOTE: Model and SmallModel are NOT valid top-level keys in OpenCode config
 	// Use agent settings to specify models per agent instead
 }
 
 // OpenCodeProviderDefNew represents a provider in OpenCode config (correct schema)
 type OpenCodeProviderDefNew struct {
-	NPM     string                        `json:"npm,omitempty"`     // e.g., "@ai-sdk/openai-compatible"
-	Name    string                        `json:"name,omitempty"`    // Display name
-	Options *OpenCodeProviderOptionsNew   `json:"options,omitempty"` // Provider options
-	Models  map[string]OpenCodeModelDefNew `json:"models,omitempty"` // Model definitions (map, not array)
+	NPM     string                         `json:"npm,omitempty"`     // e.g., "@ai-sdk/openai-compatible"
+	Name    string                         `json:"name,omitempty"`    // Display name
+	Options *OpenCodeProviderOptionsNew    `json:"options,omitempty"` // Provider options
+	Models  map[string]OpenCodeModelDefNew `json:"models,omitempty"`  // Model definitions (map, not array)
 }
 
 // OpenCodeProviderOptionsNew represents provider options
@@ -1273,9 +1275,9 @@ type OpenCodeProviderOptionsNew struct {
 
 // OpenCodeModelDefNew represents a model definition
 type OpenCodeModelDefNew struct {
-	Name    string               `json:"name,omitempty"`    // Display name
-	Limit   *OpenCodeModelLimit  `json:"limit,omitempty"`   // Token limits
-	Options map[string]any       `json:"options,omitempty"` // Model-specific options
+	Name    string              `json:"name,omitempty"`    // Display name
+	Limit   *OpenCodeModelLimit `json:"limit,omitempty"`   // Token limits
+	Options map[string]any      `json:"options,omitempty"` // Model-specific options
 }
 
 // OpenCodeModelLimit represents token limits for a model
@@ -1317,12 +1319,12 @@ type OpenCodeMCPServerDefNew struct {
 // For opencode.json files (without leading dot) - uses legacy key names
 // This format is validated by OpenCode's strict validator
 type OpenCodeConfigOld struct {
-	Schema     string                              `json:"$schema,omitempty"`
-	Provider   map[string]OpenCodeProviderDefOld   `json:"provider,omitempty"`
-	MCP        map[string]OpenCodeMCPServerDefOld  `json:"mcp,omitempty"`
-	Agent      map[string]OpenCodeAgentDefOld      `json:"agent,omitempty"`
-	Tools      *OpenCodeToolsDefOld                `json:"tools,omitempty"`
-	Permission *OpenCodePermissionDefOld           `json:"permission,omitempty"`
+	Schema     string                             `json:"$schema,omitempty"`
+	Provider   map[string]OpenCodeProviderDefOld  `json:"provider,omitempty"`
+	MCP        map[string]OpenCodeMCPServerDefOld `json:"mcp,omitempty"`
+	Agent      map[string]OpenCodeAgentDefOld     `json:"agent,omitempty"`
+	Tools      *OpenCodeToolsDefOld               `json:"tools,omitempty"`
+	Permission *OpenCodePermissionDefOld          `json:"permission,omitempty"`
 }
 
 // OpenCodeProviderDefOld represents a provider in OLD OpenCode config
@@ -1339,10 +1341,10 @@ type OpenCodeProviderOptionsOld struct {
 
 // OpenCodeModelDefOld represents a model in OLD OpenCode config
 type OpenCodeModelDefOld struct {
-	ID           string                         `json:"id"`
-	Name         string                         `json:"name"`
-	MaxTokens    int64                          `json:"maxTokens,omitempty"`
-	Capabilities *OpenCodeModelCapabilitiesOld  `json:"capabilities,omitempty"`
+	ID           string                        `json:"id"`
+	Name         string                        `json:"name"`
+	MaxTokens    int64                         `json:"maxTokens,omitempty"`
+	Capabilities *OpenCodeModelCapabilitiesOld `json:"capabilities,omitempty"`
 }
 
 // OpenCodeModelCapabilitiesOld represents model capabilities
@@ -1566,9 +1568,13 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 // COMPLIANCE: 62+ MCPs required for system compliance
 
 // getMCPServers returns MCP configurations based on flags
-// If workingOnly is true, only MCPs with all dependencies met are returned
+// If useContainerMCPs is true, uses containerized MCP servers with HTTP SSE endpoints (ZERO npx)
 // If useLocalMCPServers is true, uses local Docker-based MCP servers on TCP ports
+// If workingOnly is true, only MCPs with all dependencies met are returned
 func getMCPServers(baseURL string, workingOnly bool) map[string]OpenCodeMCPServerDefNew {
+	if *useContainerMCPs {
+		return buildContainerizedMCPs(baseURL)
+	}
 	if *useLocalMCPServers {
 		return buildLocalDockerMCPServers(baseURL)
 	}
@@ -1576,6 +1582,29 @@ func getMCPServers(baseURL string, workingOnly bool) map[string]OpenCodeMCPServe
 		return buildWorkingMCPsOnly(baseURL)
 	}
 	return buildOpenCodeMCPServersNew(baseURL)
+}
+
+// buildContainerizedMCPs builds MCP configurations using HTTP SSE container endpoints
+// ZERO npx commands - all MCPs use containerized remote endpoints
+func buildContainerizedMCPs(baseURL string) map[string]OpenCodeMCPServerDefNew {
+	generator := mcpconfig.NewContainerMCPConfigGenerator(baseURL)
+	containerMCPs := generator.GenerateContainerMCPs()
+
+	result := make(map[string]OpenCodeMCPServerDefNew)
+
+	// Convert ContainerMCPServerConfig to OpenCodeMCPServerDefNew
+	for name, cfg := range containerMCPs {
+		// Only include enabled MCPs
+		if !cfg.Enabled {
+			continue
+		}
+		result[name] = OpenCodeMCPServerDefNew{
+			Type: cfg.Type,
+			URL:  cfg.URL,
+		}
+	}
+
+	return result
 }
 
 // buildLocalDockerMCPServers builds MCP configurations for local Docker-based servers
@@ -2125,7 +2154,7 @@ func buildOpenCodeMCPServersOld(baseURL string) map[string]OpenCodeMCPServerDefO
 		"figma":               {Type: "local", Command: []string{"npx", "-y", "figma-developer-mcp"}},
 		"aws-kb-retrieval":    {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-aws-kb-retrieval"}},
 		// HelixAgent Remote MCP - endpoint is /v1/mcp
-		"helixagent": {Type: "remote", URL: baseURL + "/v1/mcp"},  // Note: OLD format doesn't support headers
+		"helixagent": {Type: "remote", URL: baseURL + "/v1/mcp"}, // Note: OLD format doesn't support headers
 		// Community/Infrastructure MCPs
 		"docker":        {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-docker"}},
 		"kubernetes":    {Type: "local", Command: []string{"npx", "-y", "mcp-server-kubernetes"}},
@@ -2605,19 +2634,19 @@ type CrushProvider struct {
 
 // CrushModel represents a model configuration for Crush
 type CrushModel struct {
-	ID                   string                 `json:"id"`
-	Name                 string                 `json:"name"`
-	CostPer1MIn          float64                `json:"cost_per_1m_in"`
-	CostPer1MOut         float64                `json:"cost_per_1m_out"`
-	CostPer1MInCached    float64                `json:"cost_per_1m_in_cached,omitempty"`
-	CostPer1MOutCached   float64                `json:"cost_per_1m_out_cached,omitempty"`
-	ContextWindow        int                    `json:"context_window"`
-	DefaultMaxTokens     int                    `json:"default_max_tokens"`
-	CanReason            bool                   `json:"can_reason"`
-	SupportsAttachments  bool                   `json:"supports_attachments"`
-	Streaming            bool                   `json:"streaming"`
-	SupportsBrotli       bool                   `json:"supports_brotli,omitempty"`
-	Options              map[string]interface{} `json:"options,omitempty"`
+	ID                  string                 `json:"id"`
+	Name                string                 `json:"name"`
+	CostPer1MIn         float64                `json:"cost_per_1m_in"`
+	CostPer1MOut        float64                `json:"cost_per_1m_out"`
+	CostPer1MInCached   float64                `json:"cost_per_1m_in_cached,omitempty"`
+	CostPer1MOutCached  float64                `json:"cost_per_1m_out_cached,omitempty"`
+	ContextWindow       int                    `json:"context_window"`
+	DefaultMaxTokens    int                    `json:"default_max_tokens"`
+	CanReason           bool                   `json:"can_reason"`
+	SupportsAttachments bool                   `json:"supports_attachments"`
+	Streaming           bool                   `json:"streaming"`
+	SupportsBrotli      bool                   `json:"supports_brotli,omitempty"`
+	Options             map[string]interface{} `json:"options,omitempty"`
 }
 
 // CrushLspConfig represents Language Server Protocol configuration for Crush
@@ -2683,27 +2712,27 @@ func handleGenerateCrush(appCfg *AppConfig) error {
 				APIKey:  apiKey,
 				Models: []CrushModel{
 					{
-						ID:                   "helixagent-debate",
-						Name:                 "HelixAgent Debate Ensemble",
-						CostPer1MIn:          0.0, // Local deployment, no cost
-						CostPer1MOut:         0.0,
-						CostPer1MInCached:    0.0,
-						CostPer1MOutCached:   0.0,
-						ContextWindow:        128000,
-						DefaultMaxTokens:     8192,
-						CanReason:            true,
-						SupportsAttachments:  true,
-						Streaming:            true,
-						SupportsBrotli:       true,
+						ID:                  "helixagent-debate",
+						Name:                "HelixAgent Debate Ensemble",
+						CostPer1MIn:         0.0, // Local deployment, no cost
+						CostPer1MOut:        0.0,
+						CostPer1MInCached:   0.0,
+						CostPer1MOutCached:  0.0,
+						ContextWindow:       128000,
+						DefaultMaxTokens:    8192,
+						CanReason:           true,
+						SupportsAttachments: true,
+						Streaming:           true,
+						SupportsBrotli:      true,
 						Options: map[string]interface{}{
-							"vision":        true,
-							"image_input":   true,
-							"image_output":  true,
-							"ocr":           true,
-							"pdf":           true,
+							"vision":         true,
+							"image_input":    true,
+							"image_output":   true,
+							"ocr":            true,
+							"pdf":            true,
 							"function_calls": true,
-							"tool_use":      true,
-							"embeddings":    true,
+							"tool_use":       true,
+							"embeddings":     true,
 						},
 					},
 				},
@@ -2748,11 +2777,41 @@ func handleGenerateCrush(appCfg *AppConfig) error {
 
 // getCrushMCPServers returns Crush MCP configurations based on the workingOnly flag
 func getCrushMCPServers(baseURL string, workingOnly bool) map[string]CrushMcpConfig {
+	// Use containerized MCPs if flag is set (ZERO npx dependencies)
+	if *useContainerMCPs {
+		return buildContainerizedCrushMCPs(baseURL)
+	}
+
 	allMCPs := buildCrushMCPServers(baseURL)
 	if !workingOnly {
 		return allMCPs
 	}
 	return filterWorkingCrushMCPs(allMCPs)
+}
+
+// buildContainerizedCrushMCPs builds Crush MCP configurations using HTTP SSE container endpoints
+// ZERO npx commands - all MCPs use containerized remote endpoints
+func buildContainerizedCrushMCPs(baseURL string) map[string]CrushMcpConfig {
+	generator := mcpconfig.NewContainerMCPConfigGenerator(baseURL)
+	containerMCPs := generator.GenerateContainerMCPs()
+
+	result := make(map[string]CrushMcpConfig)
+
+	// Convert ContainerMCPServerConfig to CrushMcpConfig
+	for name, cfg := range containerMCPs {
+		// Only include enabled MCPs
+		if !cfg.Enabled {
+			continue
+		}
+		result[name] = CrushMcpConfig{
+			Type:    cfg.Type,
+			URL:     cfg.URL,
+			Env:     cfg.Env,
+			Enabled: cfg.Enabled,
+		}
+	}
+
+	return result
 }
 
 // filterWorkingCrushMCPs filters Crush MCP configurations to only include those with all dependencies met

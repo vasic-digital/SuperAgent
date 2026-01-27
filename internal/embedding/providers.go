@@ -48,12 +48,12 @@ type CohereEmbedRequest struct {
 
 // CohereEmbedResponse represents a Cohere embed API response.
 type CohereEmbedResponse struct {
-	ID             string                 `json:"id"`
-	Embeddings     [][]float64            `json:"embeddings"`
-	EmbeddingsObj  *CohereEmbeddingsObj   `json:"embeddings_by_type,omitempty"`
-	Texts          []string               `json:"texts"`
-	Meta           map[string]interface{} `json:"meta"`
-	ResponseType   string                 `json:"response_type,omitempty"`
+	ID            string                 `json:"id"`
+	Embeddings    [][]float64            `json:"embeddings"`
+	EmbeddingsObj *CohereEmbeddingsObj   `json:"embeddings_by_type,omitempty"`
+	Texts         []string               `json:"texts"`
+	Meta          map[string]interface{} `json:"meta"`
+	ResponseType  string                 `json:"response_type,omitempty"`
 }
 
 // CohereEmbeddingsObj represents typed embeddings.
@@ -204,11 +204,11 @@ type VoyageEmbedding struct {
 
 // VoyageEmbedRequest represents a Voyage embed API request.
 type VoyageEmbedRequest struct {
-	Input          []string `json:"input"`
-	Model          string   `json:"model"`
-	InputType      string   `json:"input_type,omitempty"`
-	Truncation     bool     `json:"truncation,omitempty"`
-	OutputDimension int     `json:"output_dimension,omitempty"`
+	Input           []string `json:"input"`
+	Model           string   `json:"model"`
+	InputType       string   `json:"input_type,omitempty"`
+	Truncation      bool     `json:"truncation,omitempty"`
+	OutputDimension int      `json:"output_dimension,omitempty"`
 }
 
 // VoyageEmbedResponse represents a Voyage embed API response.

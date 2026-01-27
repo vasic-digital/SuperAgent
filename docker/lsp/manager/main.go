@@ -13,12 +13,12 @@ import (
 
 // LSPServer represents an LSP server configuration
 type LSPServer struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Language string `json:"language"`
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Status   string `json:"status"`
+	ID       string    `json:"id"`
+	Name     string    `json:"name"`
+	Language string    `json:"language"`
+	Host     string    `json:"host"`
+	Port     int       `json:"port"`
+	Status   string    `json:"status"`
 	LastPing time.Time `json:"last_ping"`
 }
 
@@ -110,11 +110,11 @@ func (m *Manager) handleHealth(w http.ResponseWriter, r *http.Request) {
 	m.mu.RUnlock()
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"status":      "healthy",
-		"service":     "lsp-manager",
-		"servers":     len(m.servers),
-		"online":      online,
-		"timestamp":   time.Now().Unix(),
+		"status":    "healthy",
+		"service":   "lsp-manager",
+		"servers":   len(m.servers),
+		"online":    online,
+		"timestamp": time.Now().Unix(),
 	})
 }
 

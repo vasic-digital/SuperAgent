@@ -150,11 +150,11 @@ func TestMCPTimeServerFunctional(t *testing.T) {
 		resp, err := client.ListTools()
 		require.NoError(t, err, "ListTools must succeed")
 		require.Nil(t, resp.Error, "ListTools must not return error")
-		
+
 		var result map[string]interface{}
 		err = json.Unmarshal(resp.Result, &result)
 		require.NoError(t, err)
-		
+
 		tools, ok := result["tools"].([]interface{})
 		assert.True(t, ok, "Response must contain tools array")
 		assert.Greater(t, len(tools), 0, "Must have at least one tool")
@@ -166,15 +166,15 @@ func TestMCPTimeServerFunctional(t *testing.T) {
 			"timezone": "UTC",
 		})
 		require.NoError(t, err, "Tool call must succeed")
-		
+
 		if resp.Error != nil {
 			t.Fatalf("Tool returned error: %s (code: %d)", resp.Error.Message, resp.Error.Code)
 		}
-		
+
 		var result map[string]interface{}
 		err = json.Unmarshal(resp.Result, &result)
 		require.NoError(t, err)
-		
+
 		content, ok := result["content"]
 		assert.True(t, ok, "Response must contain content")
 		assert.NotEmpty(t, content, "Content must not be empty")
@@ -253,7 +253,7 @@ func TestMCPFilesystemServerFunctional(t *testing.T) {
 		if resp.Error != nil {
 			t.Fatalf("list_directory returned error: %s", resp.Error.Message)
 		}
-		
+
 		resultStr := string(resp.Result)
 		assert.NotEmpty(t, resultStr, "Directory listing must not be empty")
 		t.Logf("Directory listing (first 500 chars): %.500s", resultStr)
@@ -283,7 +283,7 @@ func TestMCPFetchServerFunctional(t *testing.T) {
 		if resp.Error != nil {
 			t.Fatalf("fetch returned error: %s", resp.Error.Message)
 		}
-		
+
 		resultStr := string(resp.Result)
 		assert.NotEmpty(t, resultStr, "Fetch result must not be empty")
 		assert.Contains(t, strings.ToLower(resultStr), "httpbin", "Response should contain httpbin data")

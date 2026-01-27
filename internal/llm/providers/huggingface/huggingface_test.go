@@ -86,8 +86,8 @@ func TestCompletePro(t *testing.T) {
 
 	provider := NewProvider("test-api-key", server.URL+"/v1/chat/completions", "meta-llama/Meta-Llama-3-8B-Instruct")
 	req := &models.LLMRequest{
-		ID:      "req-1",
-		Prompt:  "You are a helpful assistant.",
+		ID:     "req-1",
+		Prompt: "You are a helpful assistant.",
 		Messages: []models.Message{
 			{Role: "user", Content: "Hello!"},
 		},

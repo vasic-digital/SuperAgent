@@ -419,7 +419,7 @@ func TestMCPWithAIDebate(t *testing.T) {
 				"provider": "deepseek",
 			},
 		},
-		"mcp_servers": []string{"time", "memory"},
+		"mcp_servers":      []string{"time", "memory"},
 		"enable_mcp_tools": true,
 	}
 

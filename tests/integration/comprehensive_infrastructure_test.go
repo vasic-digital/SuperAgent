@@ -629,10 +629,10 @@ func TestAIDebate(t *testing.T) {
 
 	t.Run("Debate_Create", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"topic":       "Is AI beneficial for humanity?",
+			"topic":        "Is AI beneficial for humanity?",
 			"participants": []string{"supporter", "skeptic", "mediator"},
-			"max_rounds":  1,
-			"timeout":     30,
+			"max_rounds":   1,
+			"timeout":      30,
 		}
 		body, _ := json.Marshal(reqBody)
 

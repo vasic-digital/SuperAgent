@@ -15,46 +15,46 @@ import (
 
 // MCPRequirement defines what an MCP server needs to work
 type MCPRequirement struct {
-	Name           string            `json:"name"`
-	Type           string            `json:"type"` // "local" or "remote"
-	Package        string            `json:"package,omitempty"`
-	Command        []string          `json:"command,omitempty"`
-	URL            string            `json:"url,omitempty"`
-	RequiredEnvs   []string          `json:"required_envs,omitempty"`
-	OptionalEnvs   []string          `json:"optional_envs,omitempty"`
-	LocalServices  []string          `json:"local_services,omitempty"` // e.g., "postgresql", "redis"
-	Description    string            `json:"description"`
-	Category       string            `json:"category"`
-	CanWorkLocally bool              `json:"can_work_locally"` // Can work without external API
-	Enabled        bool              `json:"enabled"`
-	Priority       int               `json:"priority"` // Higher = more important
+	Name           string   `json:"name"`
+	Type           string   `json:"type"` // "local" or "remote"
+	Package        string   `json:"package,omitempty"`
+	Command        []string `json:"command,omitempty"`
+	URL            string   `json:"url,omitempty"`
+	RequiredEnvs   []string `json:"required_envs,omitempty"`
+	OptionalEnvs   []string `json:"optional_envs,omitempty"`
+	LocalServices  []string `json:"local_services,omitempty"` // e.g., "postgresql", "redis"
+	Description    string   `json:"description"`
+	Category       string   `json:"category"`
+	CanWorkLocally bool     `json:"can_work_locally"` // Can work without external API
+	Enabled        bool     `json:"enabled"`
+	Priority       int      `json:"priority"` // Higher = more important
 }
 
 // MCPValidationResult contains the result of validating an MCP server
 type MCPValidationResult struct {
-	Name              string            `json:"name"`
-	Status            string            `json:"status"` // "works", "disabled", "failed", "missing_deps"
-	CanEnable         bool              `json:"can_enable"`
-	MissingEnvVars    []string          `json:"missing_env_vars,omitempty"`
-	MissingServices   []string          `json:"missing_services,omitempty"`
-	ErrorMessage      string            `json:"error_message,omitempty"`
-	ResponseTimeMs    int64             `json:"response_time_ms,omitempty"`
-	TestedAt          time.Time         `json:"tested_at"`
-	Category          string            `json:"category"`
-	Reason            string            `json:"reason,omitempty"`
+	Name            string    `json:"name"`
+	Status          string    `json:"status"` // "works", "disabled", "failed", "missing_deps"
+	CanEnable       bool      `json:"can_enable"`
+	MissingEnvVars  []string  `json:"missing_env_vars,omitempty"`
+	MissingServices []string  `json:"missing_services,omitempty"`
+	ErrorMessage    string    `json:"error_message,omitempty"`
+	ResponseTimeMs  int64     `json:"response_time_ms,omitempty"`
+	TestedAt        time.Time `json:"tested_at"`
+	Category        string    `json:"category"`
+	Reason          string    `json:"reason,omitempty"`
 }
 
 // MCPValidationReport contains the full validation report
 type MCPValidationReport struct {
-	GeneratedAt     time.Time                      `json:"generated_at"`
-	TotalMCPs       int                            `json:"total_mcps"`
-	WorkingMCPs     int                            `json:"working_mcps"`
-	DisabledMCPs    int                            `json:"disabled_mcps"`
-	FailedMCPs      int                            `json:"failed_mcps"`
+	GeneratedAt     time.Time                       `json:"generated_at"`
+	TotalMCPs       int                             `json:"total_mcps"`
+	WorkingMCPs     int                             `json:"working_mcps"`
+	DisabledMCPs    int                             `json:"disabled_mcps"`
+	FailedMCPs      int                             `json:"failed_mcps"`
 	Results         map[string]*MCPValidationResult `json:"results"`
-	EnabledMCPList  []string                       `json:"enabled_mcp_list"`
-	DisabledMCPList []string                       `json:"disabled_mcp_list"`
-	Summary         string                         `json:"summary"`
+	EnabledMCPList  []string                        `json:"enabled_mcp_list"`
+	DisabledMCPList []string                        `json:"disabled_mcp_list"`
+	Summary         string                          `json:"summary"`
 }
 
 // MCPValidator validates MCP servers

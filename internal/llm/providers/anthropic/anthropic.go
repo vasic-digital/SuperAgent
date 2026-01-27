@@ -43,23 +43,23 @@ type RetryConfig struct {
 
 // Request represents an Anthropic messages request
 type Request struct {
-	Model       string        `json:"model"`
-	Messages    []Message     `json:"messages"`
-	MaxTokens   int           `json:"max_tokens"`
-	System      string        `json:"system,omitempty"`
-	Temperature float64       `json:"temperature,omitempty"`
-	TopP        float64       `json:"top_p,omitempty"`
-	TopK        int           `json:"top_k,omitempty"`
-	Stream      bool          `json:"stream,omitempty"`
-	StopSequences []string    `json:"stop_sequences,omitempty"`
-	Tools       []Tool        `json:"tools,omitempty"`
-	ToolChoice  *ToolChoice   `json:"tool_choice,omitempty"`
-	Metadata    *RequestMeta  `json:"metadata,omitempty"`
+	Model         string       `json:"model"`
+	Messages      []Message    `json:"messages"`
+	MaxTokens     int          `json:"max_tokens"`
+	System        string       `json:"system,omitempty"`
+	Temperature   float64      `json:"temperature,omitempty"`
+	TopP          float64      `json:"top_p,omitempty"`
+	TopK          int          `json:"top_k,omitempty"`
+	Stream        bool         `json:"stream,omitempty"`
+	StopSequences []string     `json:"stop_sequences,omitempty"`
+	Tools         []Tool       `json:"tools,omitempty"`
+	ToolChoice    *ToolChoice  `json:"tool_choice,omitempty"`
+	Metadata      *RequestMeta `json:"metadata,omitempty"`
 }
 
 // Message represents a chat message
 type Message struct {
-	Role    string        `json:"role"`
+	Role    string         `json:"role"`
 	Content []ContentBlock `json:"content,omitempty"`
 }
 
@@ -94,14 +94,14 @@ type RequestMeta struct {
 
 // Response represents an Anthropic messages response
 type Response struct {
-	ID           string        `json:"id"`
-	Type         string        `json:"type"`
-	Role         string        `json:"role"`
+	ID           string         `json:"id"`
+	Type         string         `json:"type"`
+	Role         string         `json:"role"`
 	Content      []ContentBlock `json:"content"`
-	Model        string        `json:"model"`
-	StopReason   string        `json:"stop_reason"`
-	StopSequence string        `json:"stop_sequence,omitempty"`
-	Usage        Usage         `json:"usage"`
+	Model        string         `json:"model"`
+	StopReason   string         `json:"stop_reason"`
+	StopSequence string         `json:"stop_sequence,omitempty"`
+	Usage        Usage          `json:"usage"`
 }
 
 // Usage represents token usage
@@ -112,20 +112,20 @@ type Usage struct {
 
 // StreamEvent represents a streaming event
 type StreamEvent struct {
-	Type         string         `json:"type"`
-	Index        int            `json:"index,omitempty"`
-	ContentBlock *ContentBlock  `json:"content_block,omitempty"`
-	Delta        *StreamDelta   `json:"delta,omitempty"`
-	Message      *Response      `json:"message,omitempty"`
-	Usage        *Usage         `json:"usage,omitempty"`
+	Type         string        `json:"type"`
+	Index        int           `json:"index,omitempty"`
+	ContentBlock *ContentBlock `json:"content_block,omitempty"`
+	Delta        *StreamDelta  `json:"delta,omitempty"`
+	Message      *Response     `json:"message,omitempty"`
+	Usage        *Usage        `json:"usage,omitempty"`
 }
 
 // StreamDelta represents streaming delta content
 type StreamDelta struct {
-	Type         string `json:"type,omitempty"`
-	Text         string `json:"text,omitempty"`
-	StopReason   string `json:"stop_reason,omitempty"`
-	PartialJSON  string `json:"partial_json,omitempty"`
+	Type        string `json:"type,omitempty"`
+	Text        string `json:"text,omitempty"`
+	StopReason  string `json:"stop_reason,omitempty"`
+	PartialJSON string `json:"partial_json,omitempty"`
 }
 
 // DefaultRetryConfig returns sensible defaults

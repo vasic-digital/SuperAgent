@@ -70,22 +70,22 @@ type LinearClient interface {
 
 // LinearIssue represents a Linear issue.
 type LinearIssue struct {
-	ID          string             `json:"id"`
-	Identifier  string             `json:"identifier"`
-	Title       string             `json:"title"`
-	Description string             `json:"description,omitempty"`
-	Priority    int                `json:"priority"`
+	ID          string               `json:"id"`
+	Identifier  string               `json:"identifier"`
+	Title       string               `json:"title"`
+	Description string               `json:"description,omitempty"`
+	Priority    int                  `json:"priority"`
 	State       *LinearWorkflowState `json:"state,omitempty"`
-	Assignee    *LinearUser        `json:"assignee,omitempty"`
-	Team        *LinearTeam        `json:"team,omitempty"`
-	Project     *LinearProject     `json:"project,omitempty"`
-	Cycle       *LinearCycle       `json:"cycle,omitempty"`
-	Labels      []LinearLabel      `json:"labels,omitempty"`
-	DueDate     string             `json:"dueDate,omitempty"`
-	Estimate    *float64           `json:"estimate,omitempty"`
-	URL         string             `json:"url"`
-	CreatedAt   time.Time          `json:"createdAt"`
-	UpdatedAt   time.Time          `json:"updatedAt"`
+	Assignee    *LinearUser          `json:"assignee,omitempty"`
+	Team        *LinearTeam          `json:"team,omitempty"`
+	Project     *LinearProject       `json:"project,omitempty"`
+	Cycle       *LinearCycle         `json:"cycle,omitempty"`
+	Labels      []LinearLabel        `json:"labels,omitempty"`
+	DueDate     string               `json:"dueDate,omitempty"`
+	Estimate    *float64             `json:"estimate,omitempty"`
+	URL         string               `json:"url"`
+	CreatedAt   time.Time            `json:"createdAt"`
+	UpdatedAt   time.Time            `json:"updatedAt"`
 }
 
 // LinearTeam represents a Linear team.
@@ -99,14 +99,14 @@ type LinearTeam struct {
 
 // LinearProject represents a Linear project.
 type LinearProject struct {
-	ID          string     `json:"id"`
-	Name        string     `json:"name"`
-	Description string     `json:"description,omitempty"`
-	State       string     `json:"state"`
-	Progress    float64    `json:"progress"`
-	StartDate   string     `json:"startDate,omitempty"`
-	TargetDate  string     `json:"targetDate,omitempty"`
-	URL         string     `json:"url"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	State       string  `json:"state"`
+	Progress    float64 `json:"progress"`
+	StartDate   string  `json:"startDate,omitempty"`
+	TargetDate  string  `json:"targetDate,omitempty"`
+	URL         string  `json:"url"`
 }
 
 // LinearCycle represents a Linear cycle (sprint).

@@ -13,21 +13,21 @@ import (
 
 // MockLinearClient implements LinearClient for testing.
 type MockLinearClient struct {
-	Issues        []LinearIssue
-	Teams         []LinearTeam
-	Projects      []LinearProject
-	Cycles        []LinearCycle
-	Labels        []LinearLabel
-	Users         []LinearUser
-	Comments      []LinearComment
-	States        []LinearWorkflowState
-	CurrentUser   *LinearUser
-	CreatedIssue  *LinearIssue
-	UpdatedIssue  *LinearIssue
+	Issues         []LinearIssue
+	Teams          []LinearTeam
+	Projects       []LinearProject
+	Cycles         []LinearCycle
+	Labels         []LinearLabel
+	Users          []LinearUser
+	Comments       []LinearComment
+	States         []LinearWorkflowState
+	CurrentUser    *LinearUser
+	CreatedIssue   *LinearIssue
+	UpdatedIssue   *LinearIssue
 	CreatedProject *LinearProject
 	CreatedComment *LinearComment
-	GetIssueErr   error
-	ListIssuesErr error
+	GetIssueErr    error
+	ListIssuesErr  error
 	CreateIssueErr error
 }
 

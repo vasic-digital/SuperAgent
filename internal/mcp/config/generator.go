@@ -18,10 +18,10 @@ type MCPServerConfig struct {
 
 // MCPConfigGenerator generates validated MCP configurations
 type MCPConfigGenerator struct {
-	homeDir    string
-	helixHome  string
-	baseURL    string
-	envVars    map[string]string
+	homeDir   string
+	helixHome string
+	baseURL   string
+	envVars   map[string]string
 }
 
 // NewMCPConfigGenerator creates a new MCP config generator

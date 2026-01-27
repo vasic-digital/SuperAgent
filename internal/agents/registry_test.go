@@ -346,21 +346,21 @@ func TestAgentConfigFormats(t *testing.T) {
 // TestAgentAPIPatterns verifies all agents have valid API patterns
 func TestAgentAPIPatterns(t *testing.T) {
 	validPatterns := map[string]bool{
-		"OpenAI-compatible":   true,
-		"Multi-provider":      true,
-		"Anthropic":           true,
-		"Google":              true,
-		"Mistral":             true,
-		"Ollama":              true,
-		"Qwen":                true,
-		"AWS":                 true,
-		"OpenAI":              true,
-		"DeepSeek/Ollama":     true,
-		"GitHub":              true,
-		"MCP":                 true,
-		"Copilot-compatible":  true,
-		"Warp":                true,
-		"Snowflake":           true,
+		"OpenAI-compatible":  true,
+		"Multi-provider":     true,
+		"Anthropic":          true,
+		"Google":             true,
+		"Mistral":            true,
+		"Ollama":             true,
+		"Qwen":               true,
+		"AWS":                true,
+		"OpenAI":             true,
+		"DeepSeek/Ollama":    true,
+		"GitHub":             true,
+		"MCP":                true,
+		"Copilot-compatible": true,
+		"Warp":               true,
+		"Snowflake":          true,
 	}
 
 	for name, agent := range CLIAgentRegistry {

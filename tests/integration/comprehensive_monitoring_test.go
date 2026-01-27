@@ -386,8 +386,8 @@ func TestMCPToolSearch(t *testing.T) {
 // TestMonitoringEndpointsLatency tests response times for monitoring endpoints
 func TestMonitoringEndpointsLatency(t *testing.T) {
 	endpoints := []struct {
-		name      string
-		url       string
+		name       string
+		url        string
 		maxLatency time.Duration
 	}{
 		{"HelixAgent Health", helixAgentURL + "/health", 2 * time.Second},

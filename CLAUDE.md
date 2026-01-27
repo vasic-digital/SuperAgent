@@ -594,6 +594,51 @@ Verify MCP configuration:
 ./challenges/scripts/cli_agent_mcp_challenge.sh      # 26 tests for all CLI agents
 ```
 
+### MCP Server Containerization (65+ MCPs)
+
+All MCP servers are available as Docker containers, eliminating npm/npx dependencies:
+
+**Architecture:**
+```
+CLI Agents → HelixAgent → ContainerMCPConfigGenerator → Docker Containers (ports 9101-9999)
+```
+
+**Port Allocation:**
+| Port Range | Category | Example MCPs |
+|------------|----------|--------------|
+| 9101-9120 | Core | fetch, git, time, filesystem, memory, sqlite, puppeteer |
+| 9201-9220 | Database | mongodb, redis, mysql, elasticsearch, supabase |
+| 9301-9320 | Vector | qdrant, chroma, pinecone, weaviate |
+| 9401-9440 | DevOps | github, gitlab, kubernetes, docker, aws, cloudflare |
+| 9501-9520 | Browser | playwright, browserbase, firecrawl |
+| 9601-9620 | Communication | slack, discord, telegram |
+| 9701-9740 | Productivity | notion, linear, jira, trello, asana, todoist |
+| 9801-9840 | Search/AI | brave-search, perplexity, llamaindex, langchain |
+| 9901-9999 | Google/Monitoring/Finance | google-drive, datadog, stripe, figma |
+
+**Quick Start:**
+```bash
+# Build and start all MCP containers
+docker-compose -f docker/mcp/docker-compose.mcp-full.yml build
+docker-compose -f docker/mcp/docker-compose.mcp-full.yml up -d
+
+# Validate containerization (65 tests)
+./challenges/scripts/mcp_containerized_challenge.sh
+```
+
+**Key Files:**
+- `internal/mcp/config/generator_container.go` - Container config generator (ZERO npx)
+- `docker/mcp/docker-compose.mcp-full.yml` - All 65+ MCP services
+- `docker/mcp/Dockerfile.mcp-*` - Dockerfile templates
+- `docs/mcp/CONTAINERIZATION.md` - Full documentation
+
+**Config Generator:**
+```go
+gen := config.NewContainerMCPConfigGenerator("http://localhost:8080")
+mcps := gen.GenerateContainerMCPs()   // 65+ MCPs with container URLs
+summary := gen.GenerateSummary()      // summary["npx_dependencies"] == 0
+```
+
 ## Background Task System
 
 API endpoints: `POST /v1/tasks`, `GET /v1/tasks/:id/status`, `GET /v1/tasks/:id/events` (SSE), `GET /v1/ws/tasks/:id` (WebSocket)

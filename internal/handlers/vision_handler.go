@@ -45,8 +45,8 @@ type VisionResponse struct {
 
 // Detection represents a detected object in an image
 type Detection struct {
-	Label      string    `json:"label"`
-	Confidence float64   `json:"confidence"`
+	Label       string    `json:"label"`
+	Confidence  float64   `json:"confidence"`
 	BoundingBox []float64 `json:"bounding_box,omitempty"`
 }
 
@@ -152,12 +152,12 @@ func (h *VisionHandler) RegisterRoutes(router *gin.RouterGroup) {
 // Health returns the health status of the vision service
 func (h *VisionHandler) Health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"status":           "healthy",
-		"service":          "vision",
-		"version":          "1.0.0",
-		"capabilities":     len(h.capabilities),
+		"status":            "healthy",
+		"service":           "vision",
+		"version":           "1.0.0",
+		"capabilities":      len(h.capabilities),
 		"supported_formats": []string{"png", "jpg", "jpeg", "gif", "webp", "bmp"},
-		"timestamp":        time.Now().Unix(),
+		"timestamp":         time.Now().Unix(),
 	})
 }
 
@@ -241,15 +241,15 @@ func (h *VisionHandler) Analyze(c *gin.Context) {
 
 	result := map[string]interface{}{
 		"analysis": map[string]interface{}{
-			"description": "Image analysis completed successfully",
+			"description":  "Image analysis completed successfully",
 			"content_type": imageInfo["content_type"],
 			"dimensions": map[string]interface{}{
 				"width":  imageInfo["width"],
 				"height": imageInfo["height"],
 			},
-			"features": []string{"color", "composition", "objects"},
+			"features":        []string{"color", "composition", "objects"},
 			"dominant_colors": []string{"#FF0000", "#00FF00", "#0000FF"},
-			"quality_score": 0.85,
+			"quality_score":   0.85,
 		},
 		"objects_detected": []map[string]interface{}{
 			{
@@ -296,8 +296,8 @@ func (h *VisionHandler) OCR(c *gin.Context) {
 		"confidence":     0.92,
 		"text_blocks": []map[string]interface{}{
 			{
-				"text":       ocrText,
-				"confidence": 0.92,
+				"text":         ocrText,
+				"confidence":   0.92,
 				"bounding_box": []float64{0, 0, 100, 20},
 			},
 		},
@@ -340,8 +340,8 @@ func (h *VisionHandler) Detect(c *gin.Context) {
 	}
 
 	result := map[string]interface{}{
-		"detections": detections,
-		"total_objects": len(detections),
+		"detections":         detections,
+		"total_objects":      len(detections),
 		"processing_time_ms": time.Since(startTime).Milliseconds(),
 	}
 
@@ -422,7 +422,7 @@ func (h *VisionHandler) Describe(c *gin.Context) {
 				"description": "Supporting visual context",
 			},
 		},
-		"tags": []string{"image", "visual", "content"},
+		"tags":       []string{"image", "visual", "content"},
 		"confidence": 0.85,
 	}
 
@@ -468,10 +468,10 @@ func (h *VisionHandler) Classify(c *gin.Context) {
 	}
 
 	result := map[string]interface{}{
-		"classifications":   classifications,
-		"primary_category":  "general",
-		"confidence":        0.90,
-		"all_categories":    []string{"general", "digital", "graphic"},
+		"classifications":  classifications,
+		"primary_category": "general",
+		"confidence":       0.90,
+		"all_categories":   []string{"general", "digital", "graphic"},
 	}
 
 	response := VisionResponse{

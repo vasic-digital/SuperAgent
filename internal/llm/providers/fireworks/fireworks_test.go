@@ -84,8 +84,8 @@ func TestComplete(t *testing.T) {
 
 	provider := NewProvider("test-api-key", server.URL, "accounts/fireworks/models/llama-v3p1-70b-instruct")
 	req := &models.LLMRequest{
-		ID:      "req-1",
-		Prompt:  "You are a helpful assistant.",
+		ID:     "req-1",
+		Prompt: "You are a helpful assistant.",
 		Messages: []models.Message{
 			{Role: "user", Content: "Hello!"},
 		},

@@ -11,11 +11,11 @@ import (
 
 // JiraConfig configures the Jira adapter.
 type JiraConfig struct {
-	BaseURL   string        `json:"base_url"` // e.g., "https://your-domain.atlassian.net"
-	Email     string        `json:"email"`
-	APIToken  string        `json:"api_token"`
-	Timeout   time.Duration `json:"timeout"`
-	ProjectKey string       `json:"project_key,omitempty"`
+	BaseURL    string        `json:"base_url"` // e.g., "https://your-domain.atlassian.net"
+	Email      string        `json:"email"`
+	APIToken   string        `json:"api_token"`
+	Timeout    time.Duration `json:"timeout"`
+	ProjectKey string        `json:"project_key,omitempty"`
 }
 
 // DefaultJiraConfig returns default configuration.
@@ -93,10 +93,10 @@ type JiraClient interface {
 
 // JiraIssue represents a Jira issue.
 type JiraIssue struct {
-	ID          string                 `json:"id"`
-	Key         string                 `json:"key"`
-	Self        string                 `json:"self"`
-	Fields      JiraIssueFields        `json:"fields"`
+	ID     string          `json:"id"`
+	Key    string          `json:"key"`
+	Self   string          `json:"self"`
+	Fields JiraIssueFields `json:"fields"`
 }
 
 // JiraIssueFields contains issue field data.
@@ -122,13 +122,13 @@ type JiraIssueFields struct {
 
 // JiraProject represents a Jira project.
 type JiraProject struct {
-	ID          string `json:"id"`
-	Key         string `json:"key"`
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
+	ID          string    `json:"id"`
+	Key         string    `json:"key"`
+	Name        string    `json:"name"`
+	Description string    `json:"description,omitempty"`
 	Lead        *JiraUser `json:"lead,omitempty"`
-	URL         string `json:"url,omitempty"`
-	ProjectType string `json:"projectTypeKey,omitempty"`
+	URL         string    `json:"url,omitempty"`
+	ProjectType string    `json:"projectTypeKey,omitempty"`
 }
 
 // JiraUser represents a Jira user.
@@ -142,9 +142,9 @@ type JiraUser struct {
 
 // JiraStatus represents an issue status.
 type JiraStatus struct {
-	ID          string          `json:"id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description,omitempty"`
+	ID          string              `json:"id"`
+	Name        string              `json:"name"`
+	Description string              `json:"description,omitempty"`
 	Category    *JiraStatusCategory `json:"statusCategory,omitempty"`
 }
 
@@ -223,12 +223,12 @@ type JiraComment struct {
 
 // JiraWorklog represents a worklog entry.
 type JiraWorklog struct {
-	ID             string    `json:"id"`
-	Author         *JiraUser `json:"author,omitempty"`
-	TimeSpent      string    `json:"timeSpent"`
-	TimeSpentSecs  int       `json:"timeSpentSeconds"`
-	Comment        string    `json:"comment,omitempty"`
-	Started        string    `json:"started"`
+	ID            string    `json:"id"`
+	Author        *JiraUser `json:"author,omitempty"`
+	TimeSpent     string    `json:"timeSpent"`
+	TimeSpentSecs int       `json:"timeSpentSeconds"`
+	Comment       string    `json:"comment,omitempty"`
+	Started       string    `json:"started"`
 }
 
 // JiraAttachment represents an attachment.
