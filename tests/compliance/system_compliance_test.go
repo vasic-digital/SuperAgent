@@ -5,9 +5,9 @@ package compliance
 import (
 	"testing"
 
+	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/mcp/adapters"
 	"dev.helix.agent/internal/verifier"
-	"dev.helix.agent/internal/debate/orchestrator"
 	"llm-verifier/pkg/cliagents"
 )
 

@@ -57,10 +57,10 @@ type DebateClient struct {
 
 // DebateRequest represents a debate request
 type DebateRequest struct {
-	Topic       string   `json:"topic"`
-	Mode        string   `json:"mode"`
-	Participants []string `json:"participants,omitempty"`
-	MCPContext  *MCPContext `json:"mcp_context,omitempty"`
+	Topic        string      `json:"topic"`
+	Mode         string      `json:"mode"`
+	Participants []string    `json:"participants,omitempty"`
+	MCPContext   *MCPContext `json:"mcp_context,omitempty"`
 }
 
 // MCPContext provides MCP tool results as context for debate
@@ -80,37 +80,37 @@ type ToolResult struct {
 
 // ServerInfo represents MCP server information
 type ServerInfo struct {
-	Name         string   `json:"name"`
-	Port         int      `json:"port"`
-	Tools        []string `json:"tools"`
-	Status       string   `json:"status"`
+	Name   string   `json:"name"`
+	Port   int      `json:"port"`
+	Tools  []string `json:"tools"`
+	Status string   `json:"status"`
 }
 
 // DebateResponse represents the debate API response
 type DebateResponse struct {
-	DebateID    string             `json:"debate_id"`
-	Topic       string             `json:"topic"`
-	Mode        string             `json:"mode"`
-	Rounds      []DebateRound      `json:"rounds"`
-	Consensus   string             `json:"consensus"`
-	Confidence  float64            `json:"confidence"`
-	Metadata    map[string]interface{} `json:"metadata"`
-	Error       string             `json:"error,omitempty"`
+	DebateID   string                 `json:"debate_id"`
+	Topic      string                 `json:"topic"`
+	Mode       string                 `json:"mode"`
+	Rounds     []DebateRound          `json:"rounds"`
+	Consensus  string                 `json:"consensus"`
+	Confidence float64                `json:"confidence"`
+	Metadata   map[string]interface{} `json:"metadata"`
+	Error      string                 `json:"error,omitempty"`
 }
 
 // DebateRound represents a single round of debate
 type DebateRound struct {
-	Round       int                `json:"round"`
-	Position    string             `json:"position"`
-	Arguments   []DebateArgument   `json:"arguments"`
+	Round     int              `json:"round"`
+	Position  string           `json:"position"`
+	Arguments []DebateArgument `json:"arguments"`
 }
 
 // DebateArgument represents an argument from a participant
 type DebateArgument struct {
-	Provider    string  `json:"provider"`
-	Model       string  `json:"model"`
-	Argument    string  `json:"argument"`
-	Confidence  float64 `json:"confidence"`
+	Provider   string  `json:"provider"`
+	Model      string  `json:"model"`
+	Argument   string  `json:"argument"`
+	Confidence float64 `json:"confidence"`
 }
 
 // MCPServerConfig represents MCP server configuration
@@ -369,9 +369,9 @@ func TestMCPToolExecution(t *testing.T) {
 			arguments: map[string]interface{}{"path": "/tmp"},
 		},
 		{
-			server:    "memory",
-			port:      9105,
-			tool:      "create_entities",
+			server: "memory",
+			port:   9105,
+			tool:   "create_entities",
 			arguments: map[string]interface{}{
 				"entities": []map[string]interface{}{
 					{"name": "test", "entityType": "concept", "observations": []string{"test observation"}},
@@ -453,8 +453,8 @@ func TestMCPDebateIntegration(t *testing.T) {
 	debateClient := NewDebateClient("http://localhost:8080")
 
 	debateReq := &DebateRequest{
-		Topic: "What is the current time and why is time measurement important?",
-		Mode:  "consensus",
+		Topic:      "What is the current time and why is time measurement important?",
+		Mode:       "consensus",
 		MCPContext: mcpContext,
 	}
 
@@ -541,8 +541,8 @@ func TestMCPContextualDebate(t *testing.T) {
 	debateClient := NewDebateClient("http://localhost:8080")
 
 	debateReq := &DebateRequest{
-		Topic: "Based on the file system information and current time, discuss how to organize temporary files effectively",
-		Mode:  "adversarial",
+		Topic:      "Based on the file system information and current time, discuss how to organize temporary files effectively",
+		Mode:       "adversarial",
 		MCPContext: mcpContext,
 	}
 

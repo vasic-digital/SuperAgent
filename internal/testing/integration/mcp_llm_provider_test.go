@@ -19,11 +19,11 @@ import (
 
 // LLMProviderConfig represents an LLM provider configuration
 type LLMProviderConfig struct {
-	Name     string
-	EnvKey   string
-	Model    string
-	IsOAuth  bool
-	IsFree   bool
+	Name    string
+	EnvKey  string
+	Model   string
+	IsOAuth bool
+	IsFree  bool
 }
 
 // SupportedLLMProviders defines all supported LLM providers
@@ -66,8 +66,8 @@ type Message struct {
 
 // Tool represents a tool definition
 type Tool struct {
-	Type     string       `json:"type"`
-	Function FunctionDef  `json:"function"`
+	Type     string      `json:"type"`
+	Function FunctionDef `json:"function"`
 }
 
 // FunctionDef represents a function definition
@@ -99,10 +99,10 @@ type MCPToolResult struct {
 
 // CompletionResponse represents an LLM completion response
 type CompletionResponse struct {
-	ID      string   `json:"id"`
-	Model   string   `json:"model"`
-	Choices []Choice `json:"choices"`
-	Usage   *Usage   `json:"usage,omitempty"`
+	ID      string    `json:"id"`
+	Model   string    `json:"model"`
+	Choices []Choice  `json:"choices"`
+	Usage   *Usage    `json:"usage,omitempty"`
 	Error   *APIError `json:"error,omitempty"`
 }
 

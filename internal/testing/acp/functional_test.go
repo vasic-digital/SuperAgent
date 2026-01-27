@@ -34,20 +34,20 @@ func NewACPClient(baseURL string) *ACPClient {
 
 // AgentRequest represents an ACP agent request
 type AgentRequest struct {
-	AgentID  string                 `json:"agent_id"`
-	Task     string                 `json:"task"`
-	Context  map[string]interface{} `json:"context,omitempty"`
-	Tools    []string               `json:"tools,omitempty"`
-	Timeout  int                    `json:"timeout,omitempty"`
+	AgentID string                 `json:"agent_id"`
+	Task    string                 `json:"task"`
+	Context map[string]interface{} `json:"context,omitempty"`
+	Tools   []string               `json:"tools,omitempty"`
+	Timeout int                    `json:"timeout,omitempty"`
 }
 
 // AgentResponse represents an ACP agent response
 type AgentResponse struct {
-	AgentID   string                 `json:"agent_id"`
-	Status    string                 `json:"status"`
-	Result    interface{}            `json:"result,omitempty"`
-	Error     string                 `json:"error,omitempty"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	AgentID  string                 `json:"agent_id"`
+	Status   string                 `json:"status"`
+	Result   interface{}            `json:"result,omitempty"`
+	Error    string                 `json:"error,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // ListAgents lists all available ACP agents

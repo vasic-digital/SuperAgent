@@ -43,23 +43,23 @@ type RetryConfig struct {
 
 // Request represents a Cohere chat request
 type Request struct {
-	Model            string            `json:"model"`
-	Messages         []Message         `json:"messages"`
-	Temperature      float64           `json:"temperature,omitempty"`
-	MaxTokens        int               `json:"max_tokens,omitempty"`
-	TopP             float64           `json:"p,omitempty"`
-	TopK             int               `json:"k,omitempty"`
-	Stream           bool              `json:"stream,omitempty"`
-	StopSequences    []string          `json:"stop_sequences,omitempty"`
-	Tools            []Tool            `json:"tools,omitempty"`
-	Documents        []Document        `json:"documents,omitempty"`
-	ResponseFormat   *ResponseFormat   `json:"response_format,omitempty"`
-	SafetyMode       string            `json:"safety_mode,omitempty"`
-	ConnectorIDs     []string          `json:"connector_ids,omitempty"`
-	SearchQueryOnly  bool              `json:"search_query_only,omitempty"`
-	Preamble         string            `json:"preamble,omitempty"`
-	PromptTruncation string            `json:"prompt_truncation,omitempty"`
-	CitationOptions  *CitationOptions  `json:"citation_options,omitempty"`
+	Model            string           `json:"model"`
+	Messages         []Message        `json:"messages"`
+	Temperature      float64          `json:"temperature,omitempty"`
+	MaxTokens        int              `json:"max_tokens,omitempty"`
+	TopP             float64          `json:"p,omitempty"`
+	TopK             int              `json:"k,omitempty"`
+	Stream           bool             `json:"stream,omitempty"`
+	StopSequences    []string         `json:"stop_sequences,omitempty"`
+	Tools            []Tool           `json:"tools,omitempty"`
+	Documents        []Document       `json:"documents,omitempty"`
+	ResponseFormat   *ResponseFormat  `json:"response_format,omitempty"`
+	SafetyMode       string           `json:"safety_mode,omitempty"`
+	ConnectorIDs     []string         `json:"connector_ids,omitempty"`
+	SearchQueryOnly  bool             `json:"search_query_only,omitempty"`
+	Preamble         string           `json:"preamble,omitempty"`
+	PromptTruncation string           `json:"prompt_truncation,omitempty"`
+	CitationOptions  *CitationOptions `json:"citation_options,omitempty"`
 }
 
 // Message represents a chat message
@@ -72,11 +72,11 @@ type Message struct {
 
 // Tool represents a tool definition
 type Tool struct {
-	Type        string           `json:"type"`
-	Function    *FunctionDef     `json:"function,omitempty"`
-	Name        string           `json:"name,omitempty"`
-	Description string           `json:"description,omitempty"`
-	Parameters  map[string]any   `json:"parameter_definitions,omitempty"`
+	Type        string         `json:"type"`
+	Function    *FunctionDef   `json:"function,omitempty"`
+	Name        string         `json:"name,omitempty"`
+	Description string         `json:"description,omitempty"`
+	Parameters  map[string]any `json:"parameter_definitions,omitempty"`
 }
 
 // FunctionDef represents a function definition
@@ -103,9 +103,9 @@ type FunctionCall struct {
 
 // Document represents a document for RAG
 type Document struct {
-	ID      string `json:"id"`
-	Text    string `json:"text"`
-	Title   string `json:"title,omitempty"`
+	ID    string `json:"id"`
+	Text  string `json:"text"`
+	Title string `json:"title,omitempty"`
 }
 
 // ResponseFormat specifies the response format
@@ -129,11 +129,11 @@ type Response struct {
 
 // MessageOutput represents the assistant message in response
 type MessageOutput struct {
-	Role       string       `json:"role"`
-	Content    []ContentPart `json:"content"`
-	ToolCalls  []ToolCall   `json:"tool_calls,omitempty"`
-	ToolPlan   string       `json:"tool_plan,omitempty"`
-	Citations  []Citation   `json:"citations,omitempty"`
+	Role      string        `json:"role"`
+	Content   []ContentPart `json:"content"`
+	ToolCalls []ToolCall    `json:"tool_calls,omitempty"`
+	ToolPlan  string        `json:"tool_plan,omitempty"`
+	Citations []Citation    `json:"citations,omitempty"`
 }
 
 // ContentPart represents a part of the message content
@@ -144,16 +144,16 @@ type ContentPart struct {
 
 // Citation represents a citation in the response
 type Citation struct {
-	Start      int      `json:"start"`
-	End        int      `json:"end"`
-	Text       string   `json:"text"`
+	Start       int      `json:"start"`
+	End         int      `json:"end"`
+	Text        string   `json:"text"`
 	DocumentIDs []string `json:"document_ids"`
 }
 
 // Usage represents token usage
 type Usage struct {
-	BilledUnits  BilledUnits  `json:"billed_units"`
-	Tokens       TokenUsage   `json:"tokens"`
+	BilledUnits BilledUnits `json:"billed_units"`
+	Tokens      TokenUsage  `json:"tokens"`
 }
 
 // BilledUnits represents billed token units
@@ -170,11 +170,11 @@ type TokenUsage struct {
 
 // StreamResponse represents a streaming response chunk
 type StreamResponse struct {
-	Type         string        `json:"type"`
-	ID           string        `json:"id,omitempty"`
-	Delta        *StreamDelta  `json:"delta,omitempty"`
-	FinishReason string        `json:"finish_reason,omitempty"`
-	Usage        *Usage        `json:"usage,omitempty"`
+	Type         string       `json:"type"`
+	ID           string       `json:"id,omitempty"`
+	Delta        *StreamDelta `json:"delta,omitempty"`
+	FinishReason string       `json:"finish_reason,omitempty"`
+	Usage        *Usage       `json:"usage,omitempty"`
 }
 
 // StreamDelta represents streaming delta content

@@ -153,11 +153,11 @@ func (rm *AIRewardModel) Train(ctx context.Context, examples []*TrainingExample)
 
 // trainingPatterns holds analyzed patterns from training examples
 type trainingPatterns struct {
-	positiveExamples     []*TrainingExample
-	negativeExamples     []*TrainingExample
+	positiveExamples      []*TrainingExample
+	negativeExamples      []*TrainingExample
 	dimensionCorrelations map[DimensionType]float64
-	avgPositiveScore     float64
-	avgNegativeScore     float64
+	avgPositiveScore      float64
+	avgNegativeScore      float64
 }
 
 // analyzeExamples extracts patterns from training examples

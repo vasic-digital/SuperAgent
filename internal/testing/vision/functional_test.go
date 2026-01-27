@@ -37,8 +37,8 @@ func NewVisionClient(baseURL string) *VisionClient {
 // VisionRequest represents a vision analysis request
 type VisionRequest struct {
 	Capability string `json:"capability"`
-	Image      string `json:"image"`      // Base64 encoded image
-	ImageURL   string `json:"image_url"`  // Or URL to image
+	Image      string `json:"image"`     // Base64 encoded image
+	ImageURL   string `json:"image_url"` // Or URL to image
 	Prompt     string `json:"prompt,omitempty"`
 	Provider   string `json:"provider,omitempty"`
 	Model      string `json:"model,omitempty"`
@@ -46,20 +46,20 @@ type VisionRequest struct {
 
 // VisionResponse represents a vision analysis response
 type VisionResponse struct {
-	Capability  string                 `json:"capability"`
-	Result      interface{}            `json:"result"`
-	Text        string                 `json:"text,omitempty"`
-	Detections  []Detection            `json:"detections,omitempty"`
-	OCRText     string                 `json:"ocr_text,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	Confidence  float64                `json:"confidence,omitempty"`
-	Error       string                 `json:"error,omitempty"`
+	Capability string                 `json:"capability"`
+	Result     interface{}            `json:"result"`
+	Text       string                 `json:"text,omitempty"`
+	Detections []Detection            `json:"detections,omitempty"`
+	OCRText    string                 `json:"ocr_text,omitempty"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty"`
+	Confidence float64                `json:"confidence,omitempty"`
+	Error      string                 `json:"error,omitempty"`
 }
 
 // Detection represents a detected object in an image
 type Detection struct {
-	Label      string    `json:"label"`
-	Confidence float64   `json:"confidence"`
+	Label       string    `json:"label"`
+	Confidence  float64   `json:"confidence"`
 	BoundingBox []float64 `json:"bounding_box,omitempty"`
 }
 

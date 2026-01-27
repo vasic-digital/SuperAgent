@@ -19,7 +19,7 @@ import (
 func TestProviderHealthMonitor_UnconfiguredProviders(t *testing.T) {
 	t.Run("unconfigured provider errors are classified correctly", func(t *testing.T) {
 		testCases := []struct {
-			errMsg        string
+			errMsg           string
 			shouldBeUnconfig bool
 		}{
 			{"OpenRouter API key is invalid or expired", true},
@@ -66,8 +66,8 @@ func isProviderUnconfiguredError(errMsg string) bool {
 func TestOAuthTokenMonitor_NotConfiguredHandling(t *testing.T) {
 	t.Run("missing credentials are classified as info not critical", func(t *testing.T) {
 		testCases := []struct {
-			errMsg        string
-			shouldBeInfo  bool
+			errMsg       string
+			shouldBeInfo bool
 		}{
 			{"credentials file not found at /home/user/.qwen/oauth_creds.json: user may not be logged in via OAuth", true},
 			{"Claude Code credentials file not found", true},

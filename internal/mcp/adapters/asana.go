@@ -139,10 +139,10 @@ type AsanaTeam struct {
 
 // AsanaUser represents an Asana user.
 type AsanaUser struct {
-	GID   string          `json:"gid"`
-	Name  string          `json:"name"`
-	Email string          `json:"email,omitempty"`
-	Photo *AsanaPhoto     `json:"photo,omitempty"`
+	GID        string           `json:"gid"`
+	Name       string           `json:"name"`
+	Email      string           `json:"email,omitempty"`
+	Photo      *AsanaPhoto      `json:"photo,omitempty"`
 	Workspaces []AsanaWorkspace `json:"workspaces,omitempty"`
 }
 
@@ -169,11 +169,11 @@ type AsanaStory struct {
 
 // AsanaTaskFilter filters tasks.
 type AsanaTaskFilter struct {
-	WorkspaceID string `json:"workspace,omitempty"`
-	ProjectID   string `json:"project,omitempty"`
-	SectionID   string `json:"section,omitempty"`
-	AssigneeID  string `json:"assignee,omitempty"`
-	Completed   *bool  `json:"completed,omitempty"`
+	WorkspaceID   string `json:"workspace,omitempty"`
+	ProjectID     string `json:"project,omitempty"`
+	SectionID     string `json:"section,omitempty"`
+	AssigneeID    string `json:"assignee,omitempty"`
+	Completed     *bool  `json:"completed,omitempty"`
 	ModifiedSince string `json:"modified_since,omitempty"`
 }
 

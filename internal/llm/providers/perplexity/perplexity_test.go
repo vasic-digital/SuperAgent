@@ -86,8 +86,8 @@ func TestComplete(t *testing.T) {
 
 	provider := NewProvider("test-api-key", server.URL, "llama-3.1-sonar-large-128k-online")
 	req := &models.LLMRequest{
-		ID:      "req-1",
-		Prompt:  "You are a helpful assistant.",
+		ID:     "req-1",
+		Prompt: "You are a helpful assistant.",
 		Messages: []models.Message{
 			{Role: "user", Content: "Search for the latest news about AI"},
 		},

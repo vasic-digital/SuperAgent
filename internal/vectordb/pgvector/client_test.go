@@ -455,9 +455,9 @@ func TestSearchResult(t *testing.T) {
 
 func TestCreateIndexRequest(t *testing.T) {
 	tests := []struct {
-		name    string
-		req     *CreateIndexRequest
-		wantM   int
+		name      string
+		req       *CreateIndexRequest
+		wantM     int
 		wantLists int
 	}{
 		{

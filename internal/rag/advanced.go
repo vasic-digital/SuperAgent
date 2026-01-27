@@ -1013,10 +1013,10 @@ type IterativeRetrievalConfig struct {
 // DefaultIterativeRetrievalConfig returns sensible defaults
 func DefaultIterativeRetrievalConfig() IterativeRetrievalConfig {
 	return IterativeRetrievalConfig{
-		MaxIterations:        5,
-		ConvergenceThreshold: 0.05,
-		ResultsPerIteration:  20,
-		FeedbackWeight:       0.3,
+		MaxIterations:         5,
+		ConvergenceThreshold:  0.05,
+		ResultsPerIteration:   20,
+		FeedbackWeight:        0.3,
 		EnableQueryRefinement: true,
 	}
 }
@@ -1030,11 +1030,11 @@ type IterativeResult struct {
 
 // IterativeRetrievalMetrics tracks iteration progress
 type IterativeRetrievalMetrics struct {
-	Iterations     int       `json:"iterations"`
-	QueriesUsed    []string  `json:"queries_used"`
-	ScoreHistory   []float64 `json:"score_history"`
-	Converged      bool      `json:"converged"`
-	FinalAvgScore  float64   `json:"final_avg_score"`
+	Iterations    int       `json:"iterations"`
+	QueriesUsed   []string  `json:"queries_used"`
+	ScoreHistory  []float64 `json:"score_history"`
+	Converged     bool      `json:"converged"`
+	FinalAvgScore float64   `json:"final_avg_score"`
 }
 
 // IterativeSearch performs iterative retrieval with query refinement

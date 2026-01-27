@@ -63,7 +63,7 @@ type InferenceParams struct {
 
 // InferenceOptions represents inference options
 type InferenceOptions struct {
-	UseCache    bool `json:"use_cache,omitempty"`
+	UseCache     bool `json:"use_cache,omitempty"`
 	WaitForModel bool `json:"wait_for_model,omitempty"`
 }
 

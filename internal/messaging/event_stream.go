@@ -26,11 +26,11 @@ const (
 	EventTypeDebateFailed    EventType = "debate.failed"
 
 	// Fallback events - triggered when LLM provider fails and fallback is used
-	EventTypeFallbackTriggered  EventType = "fallback.triggered"   // Primary provider failed, trying fallback
-	EventTypeFallbackSuccess    EventType = "fallback.success"     // Fallback provider succeeded
-	EventTypeFallbackFailed     EventType = "fallback.failed"      // Fallback provider also failed
-	EventTypeFallbackExhausted  EventType = "fallback.exhausted"   // All fallbacks exhausted
-	EventTypeFallbackChain      EventType = "fallback.chain"       // Complete chain summary
+	EventTypeFallbackTriggered EventType = "fallback.triggered" // Primary provider failed, trying fallback
+	EventTypeFallbackSuccess   EventType = "fallback.success"   // Fallback provider succeeded
+	EventTypeFallbackFailed    EventType = "fallback.failed"    // Fallback provider also failed
+	EventTypeFallbackExhausted EventType = "fallback.exhausted" // All fallbacks exhausted
+	EventTypeFallbackChain     EventType = "fallback.chain"     // Complete chain summary
 
 	// Verification events
 	EventTypeVerificationStarted   EventType = "verification.started"

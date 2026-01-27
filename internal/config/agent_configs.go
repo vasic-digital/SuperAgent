@@ -38,11 +38,11 @@ type AgentConfig struct {
 // - Config file must be named .opencode.json (with leading dot)
 // - Uses LOCAL_ENDPOINT env var for local provider base URL
 type OpenCodeConfig struct {
-	Providers    map[string]OpenCodeProvider   `json:"providers,omitempty"`
-	Agents       map[string]OpenCodeAgent      `json:"agents,omitempty"`
-	MCPServers   map[string]OpenCodeMCPServer  `json:"mcpServers,omitempty"`
-	ContextPaths []string                      `json:"contextPaths,omitempty"`
-	TUI          *OpenCodeTUI                  `json:"tui,omitempty"`
+	Providers    map[string]OpenCodeProvider  `json:"providers,omitempty"`
+	Agents       map[string]OpenCodeAgent     `json:"agents,omitempty"`
+	MCPServers   map[string]OpenCodeMCPServer `json:"mcpServers,omitempty"`
+	ContextPaths []string                     `json:"contextPaths,omitempty"`
+	TUI          *OpenCodeTUI                 `json:"tui,omitempty"`
 }
 
 // OpenCodeProvider represents a provider configuration in OpenCode
@@ -65,7 +65,7 @@ type OpenCodeAgent struct {
 type OpenCodeMCPServer struct {
 	Command string            `json:"command,omitempty"` // Required for stdio type
 	Args    []string          `json:"args,omitempty"`
-	Env     []string          `json:"env,omitempty"` // Array of "KEY=VALUE" strings, NOT a map
+	Env     []string          `json:"env,omitempty"`  // Array of "KEY=VALUE" strings, NOT a map
 	Type    string            `json:"type,omitempty"` // "stdio" or "sse"
 	URL     string            `json:"url,omitempty"`  // Required for sse type
 	Headers map[string]string `json:"headers,omitempty"`

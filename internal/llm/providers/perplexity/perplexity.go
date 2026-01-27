@@ -41,19 +41,19 @@ type RetryConfig struct {
 
 // Request represents a Perplexity chat completion request (OpenAI compatible)
 type Request struct {
-	Model             string    `json:"model"`
-	Messages          []Message `json:"messages"`
-	Temperature       float64   `json:"temperature,omitempty"`
-	MaxTokens         int       `json:"max_tokens,omitempty"`
-	TopP              float64   `json:"top_p,omitempty"`
-	TopK              int       `json:"top_k,omitempty"`
-	Stream            bool      `json:"stream,omitempty"`
-	FrequencyPenalty  float64   `json:"frequency_penalty,omitempty"`
-	PresencePenalty   float64   `json:"presence_penalty,omitempty"`
-	SearchDomainFilter []string `json:"search_domain_filter,omitempty"`
-	ReturnImages      bool      `json:"return_images,omitempty"`
-	ReturnRelatedQuestions bool `json:"return_related_questions,omitempty"`
-	SearchRecencyFilter string  `json:"search_recency_filter,omitempty"`
+	Model                  string    `json:"model"`
+	Messages               []Message `json:"messages"`
+	Temperature            float64   `json:"temperature,omitempty"`
+	MaxTokens              int       `json:"max_tokens,omitempty"`
+	TopP                   float64   `json:"top_p,omitempty"`
+	TopK                   int       `json:"top_k,omitempty"`
+	Stream                 bool      `json:"stream,omitempty"`
+	FrequencyPenalty       float64   `json:"frequency_penalty,omitempty"`
+	PresencePenalty        float64   `json:"presence_penalty,omitempty"`
+	SearchDomainFilter     []string  `json:"search_domain_filter,omitempty"`
+	ReturnImages           bool      `json:"return_images,omitempty"`
+	ReturnRelatedQuestions bool      `json:"return_related_questions,omitempty"`
+	SearchRecencyFilter    string    `json:"search_recency_filter,omitempty"`
 }
 
 // Message represents a chat message
@@ -64,12 +64,12 @@ type Message struct {
 
 // Response represents a Perplexity chat completion response
 type Response struct {
-	ID      string   `json:"id"`
-	Object  string   `json:"object"`
-	Created int64    `json:"created"`
-	Model   string   `json:"model"`
-	Choices []Choice `json:"choices"`
-	Usage   Usage    `json:"usage"`
+	ID        string   `json:"id"`
+	Object    string   `json:"object"`
+	Created   int64    `json:"created"`
+	Model     string   `json:"model"`
+	Choices   []Choice `json:"choices"`
+	Usage     Usage    `json:"usage"`
 	Citations []string `json:"citations,omitempty"`
 }
 
@@ -90,12 +90,12 @@ type Usage struct {
 
 // StreamResponse represents a streaming response chunk
 type StreamResponse struct {
-	ID      string         `json:"id"`
-	Object  string         `json:"object"`
-	Created int64          `json:"created"`
-	Model   string         `json:"model"`
-	Choices []StreamChoice `json:"choices"`
-	Citations []string     `json:"citations,omitempty"`
+	ID        string         `json:"id"`
+	Object    string         `json:"object"`
+	Created   int64          `json:"created"`
+	Model     string         `json:"model"`
+	Choices   []StreamChoice `json:"choices"`
+	Citations []string       `json:"citations,omitempty"`
 }
 
 // StreamChoice represents a streaming choice

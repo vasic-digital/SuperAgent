@@ -204,13 +204,13 @@ type FieldSchema struct {
 type DataType string
 
 const (
-	DataTypeInt64      DataType = "Int64"
-	DataTypeVarChar    DataType = "VarChar"
-	DataTypeFloat      DataType = "Float"
-	DataTypeDouble     DataType = "Double"
-	DataTypeBool       DataType = "Bool"
-	DataTypeJSON       DataType = "JSON"
-	DataTypeFloatVector DataType = "FloatVector"
+	DataTypeInt64        DataType = "Int64"
+	DataTypeVarChar      DataType = "VarChar"
+	DataTypeFloat        DataType = "Float"
+	DataTypeDouble       DataType = "Double"
+	DataTypeBool         DataType = "Bool"
+	DataTypeJSON         DataType = "JSON"
+	DataTypeFloatVector  DataType = "FloatVector"
 	DataTypeBinaryVector DataType = "BinaryVector"
 )
 
@@ -218,10 +218,10 @@ const (
 type IndexType string
 
 const (
-	IndexTypeIVFFlat  IndexType = "IVF_FLAT"
-	IndexTypeIVFSQ8   IndexType = "IVF_SQ8"
-	IndexTypeIVFPQ    IndexType = "IVF_PQ"
-	IndexTypeHNSW     IndexType = "HNSW"
+	IndexTypeIVFFlat   IndexType = "IVF_FLAT"
+	IndexTypeIVFSQ8    IndexType = "IVF_SQ8"
+	IndexTypeIVFPQ     IndexType = "IVF_PQ"
+	IndexTypeHNSW      IndexType = "HNSW"
 	IndexTypeAutoIndex IndexType = "AUTOINDEX"
 )
 
@@ -229,9 +229,9 @@ const (
 type MetricType string
 
 const (
-	MetricTypeL2         MetricType = "L2"
-	MetricTypeIP         MetricType = "IP"
-	MetricTypeCosine     MetricType = "COSINE"
+	MetricTypeL2     MetricType = "L2"
+	MetricTypeIP     MetricType = "IP"
+	MetricTypeCosine MetricType = "COSINE"
 )
 
 // CreateCollectionRequest represents a create collection request.
@@ -366,9 +366,9 @@ type CollectionInfo struct {
 
 // Entity represents a vector entity in Milvus.
 type Entity struct {
-	ID       interface{}            `json:"id,omitempty"`
-	Vector   []float32              `json:"vector,omitempty"`
-	Data     map[string]interface{} `json:"data,omitempty"`
+	ID     interface{}            `json:"id,omitempty"`
+	Vector []float32              `json:"vector,omitempty"`
+	Data   map[string]interface{} `json:"data,omitempty"`
 }
 
 // InsertRequest represents an insert request.

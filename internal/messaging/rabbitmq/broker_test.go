@@ -1256,7 +1256,6 @@ func TestBroker_SubCounter_Increments(t *testing.T) {
 	assert.Equal(t, int64(3), broker.subCounter.Load())
 }
 
-
 func TestRabbitSubscription_AllFields(t *testing.T) {
 	handler := func(ctx context.Context, msg *messaging.Message) error {
 		return nil
@@ -1375,41 +1374,41 @@ func TestBroker_Publish_MessageWithHeaders(t *testing.T) {
 
 func TestConfig_AllSettingsCustom(t *testing.T) {
 	cfg := &Config{
-		Host:                    "rabbitmq.example.com",
-		Port:                    5673,
-		Username:                "myuser",
-		Password:                "mypassword",
-		VHost:                   "/production",
-		TLSEnabled:              true,
-		TLSSkipVerify:           true,
-		ConnectionTimeout:       60 * time.Second,
-		ReconnectDelay:          5 * time.Second,
-		MaxReconnectCount:       10,
-		PublishConfirm:          true,
-		PublishTimeout:          30 * time.Second,
-		PrefetchCount:           20,
-		PrefetchSize:            1048576,
-		DefaultQueueDurable:     true,
-		DefaultQueueAutoDelete:  false,
-		DefaultQueueExclusive:   false,
-		DefaultExchangeType:     "direct",
-		DefaultExchangeDurable:  true,
-		AutoAck:                 false,
-		Exclusive:               false,
-		NoLocal:                 false,
-		NoWait:                  false,
-		MandatoryPublish:        true,
-		ImmediatePublish:        false,
-		EnableDLQ:               true,
-		DLQExchange:             "custom.dlq",
-		DLQRoutingKey:           "custom.key",
-		DLQMessageTTL:           7200000,
-		DLQMaxLength:            50000,
-		MaxConnections:          10,
-		MaxChannels:             100,
-		HeartbeatInterval:       30 * time.Second,
-		EnableMetrics:           true,
-		MetricsPrefix:           "rabbitmq",
+		Host:                   "rabbitmq.example.com",
+		Port:                   5673,
+		Username:               "myuser",
+		Password:               "mypassword",
+		VHost:                  "/production",
+		TLSEnabled:             true,
+		TLSSkipVerify:          true,
+		ConnectionTimeout:      60 * time.Second,
+		ReconnectDelay:         5 * time.Second,
+		MaxReconnectCount:      10,
+		PublishConfirm:         true,
+		PublishTimeout:         30 * time.Second,
+		PrefetchCount:          20,
+		PrefetchSize:           1048576,
+		DefaultQueueDurable:    true,
+		DefaultQueueAutoDelete: false,
+		DefaultQueueExclusive:  false,
+		DefaultExchangeType:    "direct",
+		DefaultExchangeDurable: true,
+		AutoAck:                false,
+		Exclusive:              false,
+		NoLocal:                false,
+		NoWait:                 false,
+		MandatoryPublish:       true,
+		ImmediatePublish:       false,
+		EnableDLQ:              true,
+		DLQExchange:            "custom.dlq",
+		DLQRoutingKey:          "custom.key",
+		DLQMessageTTL:          7200000,
+		DLQMaxLength:           50000,
+		MaxConnections:         10,
+		MaxChannels:            100,
+		HeartbeatInterval:      30 * time.Second,
+		EnableMetrics:          true,
+		MetricsPrefix:          "rabbitmq",
 	}
 
 	assert.Equal(t, "rabbitmq.example.com", cfg.Host)
@@ -1449,7 +1448,6 @@ func TestConfig_AllSettingsCustom(t *testing.T) {
 	assert.Equal(t, "rabbitmq", cfg.MetricsPrefix)
 }
 
-
 func TestExchangeConfig_AllFields(t *testing.T) {
 	cfg := &ExchangeConfig{
 		Name:       "test.exchange",
@@ -1470,20 +1468,19 @@ func TestExchangeConfig_AllFields(t *testing.T) {
 	assert.Equal(t, "arg", cfg.Args["custom"])
 }
 
-
 func TestQueueConfig_AllFields(t *testing.T) {
 	cfg := &QueueConfig{
-		Name:                  "test.queue",
-		Durable:               true,
-		AutoDelete:            false,
-		Exclusive:             true,
-		NoWait:                false,
-		DeadLetterExchange:    "dlx.exchange",
-		DeadLetterRoutingKey:  "dlx.key",
-		MessageTTL:            3600000,
-		MaxLength:             10000,
-		MaxPriority:           10,
-		Args:                  map[string]interface{}{},
+		Name:                 "test.queue",
+		Durable:              true,
+		AutoDelete:           false,
+		Exclusive:            true,
+		NoWait:               false,
+		DeadLetterExchange:   "dlx.exchange",
+		DeadLetterRoutingKey: "dlx.key",
+		MessageTTL:           3600000,
+		MaxLength:            10000,
+		MaxPriority:          10,
+		Args:                 map[string]interface{}{},
 	}
 
 	assert.Equal(t, "test.queue", cfg.Name)

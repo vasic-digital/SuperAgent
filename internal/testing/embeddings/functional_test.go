@@ -103,11 +103,11 @@ func (c *EmbeddingClient) ListProviders() ([]string, error) {
 
 // EmbeddingProviderConfig holds configuration for testing an embedding provider
 type EmbeddingProviderConfig struct {
-	Provider      string
-	Model         string
-	EnvKey        string
-	Dimension     int
-	RequiresAuth  bool
+	Provider     string
+	Model        string
+	EnvKey       string
+	Dimension    int
+	RequiresAuth bool
 }
 
 // Embedding providers to test

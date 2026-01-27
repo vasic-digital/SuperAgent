@@ -287,16 +287,16 @@ const (
 	IconFallbackChain     = "🔗" // Complete chain (chain link)
 
 	// Error category icons
-	IconErrorRateLimit   = "🚦" // Rate limit (traffic light)
-	IconErrorTimeout     = "⏱️"  // Timeout (timer)
-	IconErrorAuth        = "🔑" // Auth error (key)
-	IconErrorQuota       = "📊" // Quota exceeded (chart)
-	IconErrorConnection  = "🔌" // Connection error (plug)
-	IconErrorUnavailable = "🚫" // Service unavailable (no entry)
-	IconErrorOverloaded  = "🔥" // Service overloaded (fire)
-	IconErrorInvalid     = "⚠️"  // Invalid request (warning)
-	IconErrorEmpty       = "📭" // Empty response (empty mailbox)
-	IconErrorUnknown     = "❓" // Unknown error (question mark)
+	IconErrorRateLimit   = "🚦"  // Rate limit (traffic light)
+	IconErrorTimeout     = "⏱️" // Timeout (timer)
+	IconErrorAuth        = "🔑"  // Auth error (key)
+	IconErrorQuota       = "📊"  // Quota exceeded (chart)
+	IconErrorConnection  = "🔌"  // Connection error (plug)
+	IconErrorUnavailable = "🚫"  // Service unavailable (no entry)
+	IconErrorOverloaded  = "🔥"  // Service overloaded (fire)
+	IconErrorInvalid     = "⚠️" // Invalid request (warning)
+	IconErrorEmpty       = "📭"  // Empty response (empty mailbox)
+	IconErrorUnknown     = "❓"  // Unknown error (question mark)
 )
 
 // FallbackIndicatorContent represents fallback event visual data for CLI rendering

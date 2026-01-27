@@ -42,41 +42,41 @@ type RetryConfig struct {
 
 // PredictionRequest represents a Replicate prediction request
 type PredictionRequest struct {
-	Version string         `json:"version,omitempty"`
-	Model   string         `json:"model,omitempty"`
+	Version string          `json:"version,omitempty"`
+	Model   string          `json:"model,omitempty"`
 	Input   PredictionInput `json:"input"`
-	Stream  bool           `json:"stream,omitempty"`
-	Webhook string         `json:"webhook,omitempty"`
+	Stream  bool            `json:"stream,omitempty"`
+	Webhook string          `json:"webhook,omitempty"`
 }
 
 // PredictionInput represents input for a prediction
 type PredictionInput struct {
-	Prompt           string  `json:"prompt"`
-	SystemPrompt     string  `json:"system_prompt,omitempty"`
-	MaxNewTokens     int     `json:"max_new_tokens,omitempty"`
-	MaxTokens        int     `json:"max_tokens,omitempty"`
-	Temperature      float64 `json:"temperature,omitempty"`
-	TopP             float64 `json:"top_p,omitempty"`
-	TopK             int     `json:"top_k,omitempty"`
+	Prompt            string  `json:"prompt"`
+	SystemPrompt      string  `json:"system_prompt,omitempty"`
+	MaxNewTokens      int     `json:"max_new_tokens,omitempty"`
+	MaxTokens         int     `json:"max_tokens,omitempty"`
+	Temperature       float64 `json:"temperature,omitempty"`
+	TopP              float64 `json:"top_p,omitempty"`
+	TopK              int     `json:"top_k,omitempty"`
 	RepetitionPenalty float64 `json:"repetition_penalty,omitempty"`
-	StopSequences    string  `json:"stop_sequences,omitempty"`
+	StopSequences     string  `json:"stop_sequences,omitempty"`
 }
 
 // PredictionResponse represents a Replicate prediction response
 type PredictionResponse struct {
-	ID          string         `json:"id"`
-	Model       string         `json:"model"`
-	Version     string         `json:"version"`
-	Status      string         `json:"status"`
+	ID          string          `json:"id"`
+	Model       string          `json:"model"`
+	Version     string          `json:"version"`
+	Status      string          `json:"status"`
 	Input       PredictionInput `json:"input"`
-	Output      any            `json:"output"`
-	Error       string         `json:"error,omitempty"`
-	Logs        string         `json:"logs,omitempty"`
-	Metrics     *Metrics       `json:"metrics,omitempty"`
-	URLs        *URLs          `json:"urls,omitempty"`
-	CreatedAt   string         `json:"created_at"`
-	StartedAt   string         `json:"started_at,omitempty"`
-	CompletedAt string         `json:"completed_at,omitempty"`
+	Output      any             `json:"output"`
+	Error       string          `json:"error,omitempty"`
+	Logs        string          `json:"logs,omitempty"`
+	Metrics     *Metrics        `json:"metrics,omitempty"`
+	URLs        *URLs           `json:"urls,omitempty"`
+	CreatedAt   string          `json:"created_at"`
+	StartedAt   string          `json:"started_at,omitempty"`
+	CompletedAt string          `json:"completed_at,omitempty"`
 }
 
 // Metrics represents prediction metrics
