@@ -323,3 +323,170 @@ func TestProviderMappingsTier1HasLowestPriority(t *testing.T) {
 		}
 	}
 }
+
+// =============================================================================
+// ZAI and DeepSeek Provider Discovery Tests
+// =============================================================================
+
+// TestProviderMappingsHasZAI verifies ZAI provider is properly configured
+func TestProviderMappingsHasZAI(t *testing.T) {
+	zaiEnvVars := []string{"ZAI_API_KEY", "ApiKey_ZAI", "ZHIPU_API_KEY"}
+	foundVars := make(map[string]bool)
+
+	for _, mapping := range providerMappings {
+		if mapping.ProviderType == "zai" {
+			foundVars[mapping.EnvVar] = true
+			assert.Equal(t, "zai", mapping.ProviderName,
+				"ZAI mapping should have provider name 'zai'")
+			assert.Contains(t, mapping.BaseURL, "bigmodel.cn",
+				"ZAI should use Zhipu BigModel API")
+			assert.Contains(t, mapping.DefaultModel, "glm",
+				"ZAI should default to GLM model")
+			assert.Equal(t, 3, mapping.Priority,
+				"ZAI should be Tier 2 (priority 3)")
+		}
+	}
+
+	for _, envVar := range zaiEnvVars {
+		assert.True(t, foundVars[envVar],
+			"Missing ZAI mapping for env var: %s", envVar)
+	}
+}
+
+// TestProviderMappingsHasDeepSeekAlternatives verifies DeepSeek has multiple env var options
+func TestProviderMappingsHasDeepSeekAlternatives(t *testing.T) {
+	deepseekEnvVars := []string{"DEEPSEEK_API_KEY", "ApiKey_DeepSeek"}
+	foundVars := make(map[string]bool)
+
+	for _, mapping := range providerMappings {
+		if mapping.ProviderType == "deepseek" {
+			foundVars[mapping.EnvVar] = true
+			assert.Equal(t, "deepseek", mapping.ProviderName,
+				"DeepSeek mapping should have provider name 'deepseek'")
+			assert.Contains(t, mapping.BaseURL, "deepseek.com",
+				"DeepSeek should use DeepSeek API")
+		}
+	}
+
+	for _, envVar := range deepseekEnvVars {
+		assert.True(t, foundVars[envVar],
+			"Missing DeepSeek mapping for env var: %s", envVar)
+	}
+}
+
+// TestCreateProviderSupportsZAI verifies ZAI provider can be created
+func TestCreateProviderSupportsZAI(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	pd := NewProviderDiscovery(logger, false)
+
+	// Find ZAI mapping
+	var zaiMapping ProviderMapping
+	for _, m := range providerMappings {
+		if m.ProviderType == "zai" {
+			zaiMapping = m
+			break
+		}
+	}
+
+	// Create provider with test API key
+	provider, err := pd.createProvider(zaiMapping, "test-api-key")
+	assert.NoError(t, err, "Should be able to create ZAI provider")
+	assert.NotNil(t, provider, "ZAI provider should not be nil")
+}
+
+// TestCreateProviderSupportsDeepSeek verifies DeepSeek provider can be created
+func TestCreateProviderSupportsDeepSeek(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	pd := NewProviderDiscovery(logger, false)
+
+	// Find DeepSeek mapping
+	var deepseekMapping ProviderMapping
+	for _, m := range providerMappings {
+		if m.ProviderType == "deepseek" {
+			deepseekMapping = m
+			break
+		}
+	}
+
+	// Create provider with test API key
+	provider, err := pd.createProvider(deepseekMapping, "sk-test-api-key")
+	assert.NoError(t, err, "Should be able to create DeepSeek provider")
+	assert.NotNil(t, provider, "DeepSeek provider should not be nil")
+}
+
+// TestProviderDiscoveryFindsZAIFromEnv tests that ZAI is discovered from environment
+func TestProviderDiscoveryFindsZAIFromEnv(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	// Set test environment variable
+	t.Setenv("ApiKey_ZAI", "test-zhipu-api-key.testtoken")
+
+	pd := NewProviderDiscovery(logger, false)
+	providers, err := pd.DiscoverProviders()
+
+	assert.NoError(t, err)
+
+	// Find ZAI in discovered providers
+	var foundZAI bool
+	for _, p := range providers {
+		if p.Type == "zai" || p.Name == "zai" {
+			foundZAI = true
+			assert.Equal(t, "zai", p.Name)
+			assert.Equal(t, "zai", p.Type)
+			assert.Contains(t, p.BaseURL, "bigmodel.cn")
+			break
+		}
+	}
+
+	assert.True(t, foundZAI, "ZAI provider should be discovered from ApiKey_ZAI env var")
+}
+
+// TestProviderDiscoveryFindsDeepSeekFromAlternativeEnv tests DeepSeek discovery from ApiKey_DeepSeek
+func TestProviderDiscoveryFindsDeepSeekFromAlternativeEnv(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	// Set test environment variable using alternative naming
+	t.Setenv("ApiKey_DeepSeek", "sk-test-deepseek-key")
+
+	pd := NewProviderDiscovery(logger, false)
+	providers, err := pd.DiscoverProviders()
+
+	assert.NoError(t, err)
+
+	// Find DeepSeek in discovered providers
+	var foundDeepSeek bool
+	for _, p := range providers {
+		if p.Type == "deepseek" || p.Name == "deepseek" {
+			foundDeepSeek = true
+			assert.Equal(t, "deepseek", p.Name)
+			assert.Equal(t, "deepseek", p.Type)
+			assert.Contains(t, p.BaseURL, "deepseek.com")
+			break
+		}
+	}
+
+	assert.True(t, foundDeepSeek, "DeepSeek provider should be discovered from ApiKey_DeepSeek env var")
+}
+
+// TestAllTier2ProvidersHaveSamePriority verifies tier 2 providers are correctly prioritized
+func TestAllTier2ProvidersHaveSamePriority(t *testing.T) {
+	tier2Providers := []string{"deepseek", "mistral", "xai", "zai"}
+	expectedPriority := 3
+
+	for _, mapping := range providerMappings {
+		for _, t2p := range tier2Providers {
+			if mapping.ProviderName == t2p {
+				assert.Equal(t, expectedPriority, mapping.Priority,
+					"Tier 2 provider %s (env: %s) should have priority %d, got %d",
+					t2p, mapping.EnvVar, expectedPriority, mapping.Priority)
+				break
+			}
+		}
+	}
+}

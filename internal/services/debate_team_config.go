@@ -15,11 +15,12 @@ import (
 // TotalDebatePositions is the total number of positions in the AI debate team
 const TotalDebatePositions = 5
 
-// FallbacksPerPosition is the number of fallbacks per position
-const FallbacksPerPosition = 2
+// FallbacksPerPosition is the number of fallbacks per position (increased from 2 to 4)
+// Having more fallbacks ensures resilience when free models return canned errors
+const FallbacksPerPosition = 4
 
 // TotalDebateLLMs is the total number of LLMs used (positions * (1 primary + fallbacks))
-const TotalDebateLLMs = TotalDebatePositions * (1 + FallbacksPerPosition) // 15 LLMs
+const TotalDebateLLMs = TotalDebatePositions * (1 + FallbacksPerPosition) // 25 LLMs
 
 // DebateTeamPosition represents a position in the AI debate team
 type DebateTeamPosition int

@@ -39,6 +39,43 @@ type DebateLogRepository interface {
 // DebateLogEntry is an alias to database.DebateLogEntry for convenience
 type DebateLogEntry = database.DebateLogEntry
 
+// CannedErrorPatterns defines patterns that indicate a canned/error response from LLMs
+// These patterns trigger automatic fallback to alternative providers
+var CannedErrorPatterns = []string{
+	"unable to provide",
+	"unable to analyze",
+	"unable to process",
+	"cannot provide",
+	"cannot analyze",
+	"cannot process",
+	"i apologize, but i cannot",
+	"i'm sorry, but i cannot",
+	"error occurred",
+	"at this time",
+	"currently unable",
+	"not able to",
+	"failed to generate",
+	"no response generated",
+}
+
+// IsCannedErrorResponse checks if a response contains canned error patterns
+// Returns the matched pattern if found, empty string otherwise
+func IsCannedErrorResponse(content string) string {
+	lowered := strings.ToLower(content)
+	for _, pattern := range CannedErrorPatterns {
+		if strings.Contains(lowered, pattern) {
+			return pattern
+		}
+	}
+	return ""
+}
+
+// IsSuspiciouslyFastResponse checks if a response is suspiciously fast
+// (typically indicates cached error or non-genuine response)
+func IsSuspiciouslyFastResponse(responseTime time.Duration, contentLength int) bool {
+	return responseTime < 100*time.Millisecond && contentLength < 100
+}
+
 // NewDebateService creates a new debate service
 func NewDebateService(logger *logrus.Logger) *DebateService {
 	return &DebateService{
@@ -586,6 +623,51 @@ func (ds *DebateService) getParticipantResponse(
 		}
 
 		return ParticipantResponse{}, fmt.Errorf("[%s] empty response from LLM - fallback required", participantIdentifier)
+	}
+
+	// CRITICAL: Check for canned error responses - this triggers fallback
+	// Models that return error messages like "Unable to provide analysis" should trigger fallback
+	if matchedPattern := IsCannedErrorResponse(llmResponse.Content); matchedPattern != "" {
+		ds.logger.WithFields(logrus.Fields{
+			"participant":      participantIdentifier,
+			"participant_id":   participant.ParticipantID,
+			"participant_name": participant.Name,
+			"role":             participant.Role,
+			"provider":         participant.LLMProvider,
+			"model":            participant.LLMModel,
+			"round":            round,
+			"debate_id":        config.DebateID,
+			"response_time_ms": responseTime.Milliseconds(),
+			"canned_pattern":   matchedPattern,
+			"response_preview": llmResponse.Content[:min(len(llmResponse.Content), 100)],
+		}).Warn("Debate participant returned CANNED ERROR response - triggering fallback")
+
+		// Log canned error (Retrofit-like)
+		if ds.commLogger != nil {
+			ds.commLogger.LogError(participant.Role, participant.LLMProvider, participant.LLMModel,
+				fmt.Errorf("canned error response detected (pattern: %s): %s", matchedPattern, llmResponse.Content[:min(len(llmResponse.Content), 50)]))
+		}
+
+		return ParticipantResponse{}, fmt.Errorf("[%s] canned error response from LLM (pattern: %s) - fallback required", participantIdentifier, matchedPattern)
+	}
+
+	// CRITICAL: Check for suspiciously fast responses (< 100ms typically indicates cached error)
+	if IsSuspiciouslyFastResponse(responseTime, len(llmResponse.Content)) {
+		ds.logger.WithFields(logrus.Fields{
+			"participant":      participantIdentifier,
+			"provider":         participant.LLMProvider,
+			"model":            participant.LLMModel,
+			"response_time_ms": responseTime.Milliseconds(),
+			"content_length":   len(llmResponse.Content),
+			"response_preview": llmResponse.Content,
+		}).Warn("Suspiciously fast response detected - may be cached error, triggering fallback")
+
+		if ds.commLogger != nil {
+			ds.commLogger.LogError(participant.Role, participant.LLMProvider, participant.LLMModel,
+				fmt.Errorf("suspiciously fast response (%v, %d chars)", responseTime, len(llmResponse.Content)))
+		}
+
+		return ParticipantResponse{}, fmt.Errorf("[%s] suspiciously fast response (%v) - fallback required", participantIdentifier, responseTime)
 	}
 
 	// Calculate quality score for this response

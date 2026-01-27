@@ -30,6 +30,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/replicate"
 	"dev.helix.agent/internal/llm/providers/together"
 	"dev.helix.agent/internal/llm/providers/xai"
+	"dev.helix.agent/internal/llm/providers/zai"
 	"dev.helix.agent/internal/llm/providers/zen"
 	"dev.helix.agent/internal/models"
 	"github.com/sirupsen/logrus"
@@ -121,11 +122,15 @@ var providerMappings = []ProviderMapping{
 
 	// Tier 2: High-quality specialized providers
 	{EnvVar: "DEEPSEEK_API_KEY", ProviderType: "deepseek", ProviderName: "deepseek", BaseURL: "https://api.deepseek.com/v1/chat/completions", DefaultModel: "deepseek-chat", Priority: 3},
+	{EnvVar: "ApiKey_DeepSeek", ProviderType: "deepseek", ProviderName: "deepseek", BaseURL: "https://api.deepseek.com/v1/chat/completions", DefaultModel: "deepseek-chat", Priority: 3},
 	{EnvVar: "MISTRAL_API_KEY", ProviderType: "mistral", ProviderName: "mistral", BaseURL: "https://api.mistral.ai/v1", DefaultModel: "mistral-large-latest", Priority: 3},
 	{EnvVar: "CODESTRAL_API_KEY", ProviderType: "mistral", ProviderName: "codestral", BaseURL: "https://codestral.mistral.ai/v1", DefaultModel: "codestral-latest", Priority: 3},
 	{EnvVar: "QWEN_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-max", Priority: 4},
 	{EnvVar: "XAI_API_KEY", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
 	{EnvVar: "GROK_API_KEY", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
+	{EnvVar: "ZAI_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
+	{EnvVar: "ApiKey_ZAI", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
+	{EnvVar: "ZHIPU_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
 	{EnvVar: "COHERE_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
 	{EnvVar: "CO_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
 	{EnvVar: "PERPLEXITY_API_KEY", ProviderType: "perplexity", ProviderName: "perplexity", BaseURL: "https://api.perplexity.ai", DefaultModel: "llama-3.1-sonar-large-128k-online", Priority: 4},
@@ -288,92 +293,121 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 	oauthReader := oauth_credentials.GetGlobalReader()
 
 	// Discover Claude OAuth provider
+	// IMPORTANT: Claude OAuth tokens from Claude Code CLI are PRODUCT-RESTRICTED and cannot
+	// be used for direct API access. Instead, we forward requests to Claude Code CLI.
 	if !seen["claude"] && !seen["claude-oauth"] && oauth_credentials.IsClaudeOAuthEnabled() {
 		if oauthReader.HasValidClaudeCredentials() {
 			pd.log.WithFields(logrus.Fields{
 				"provider": "claude-oauth",
 				"type":     "claude",
 				"source":   "oauth_credentials",
-			}).Info("Discovered Claude provider from OAuth credentials (Claude Code CLI)")
+			}).Info("Discovered Claude OAuth credentials - checking if Claude Code CLI is available")
 
-			// Create Claude provider with OAuth token (reads token internally)
-			// Use full API URL for Claude Messages endpoint
-			provider, err := claude.NewClaudeProviderWithOAuth("https://api.anthropic.com/v1/messages", "claude-sonnet-4-20250514")
-			if err != nil {
-				pd.log.WithError(err).Warn("Failed to create Claude OAuth provider")
-			} else {
-				// Get token for reference (masked in logs)
-				accessToken, _ := oauthReader.GetClaudeAccessToken()
-				maskedToken := maskToken(accessToken)
+			// Check if Claude Code CLI is installed and authenticated
+			// OAuth tokens can ONLY be used through Claude Code CLI, not direct API
+			if claude.IsClaudeCodeInstalled() && claude.IsClaudeCodeAuthenticated() {
+				pd.log.Info("Claude Code CLI is installed and authenticated - using CLI facade for OAuth access")
 
-				dp := &DiscoveredProvider{
-					Name:         "claude-oauth",
-					Type:         "claude",
-					APIKeyEnvVar: "OAUTH:~/.claude/.credentials.json",
-					APIKey:       accessToken, // Store for internal use
-					BaseURL:      "https://api.anthropic.com/v1/messages",
-					DefaultModel: "claude-sonnet-4-20250514",
-					Provider:     provider,
-					Status:       ProviderStatusUnknown,
-					Score:        0,
-					Verified:     false,
-				}
+				// Create Claude CLI provider (forwards requests to claude command)
+				cliProvider := claude.NewClaudeCLIProviderWithModel("claude-sonnet-4-20250514")
 
-				if provider != nil {
-					dp.Capabilities = provider.GetCapabilities()
-					if dp.Capabilities != nil {
-						dp.SupportsModels = dp.Capabilities.SupportedModels
+				valid, errs := cliProvider.ValidateConfig(nil)
+				if !valid {
+					pd.log.WithField("errors", errs).Warn("Claude CLI provider validation failed")
+				} else {
+					dp := &DiscoveredProvider{
+						Name:         "claude-oauth",
+						Type:         "claude",
+						APIKeyEnvVar: "CLI:~/.claude/.credentials.json",
+						APIKey:       "via-claude-cli", // Not an actual key, indicates CLI usage
+						BaseURL:      "claude-cli",     // Indicates CLI-based access
+						DefaultModel: "claude-sonnet-4-20250514",
+						Provider:     cliProvider,
+						Status:       ProviderStatusUnknown,
+						Score:        0,
+						Verified:     false,
 					}
-				}
 
-				discovered = append(discovered, dp)
-				pd.log.WithField("token", maskedToken).Info("Claude OAuth provider discovered successfully")
+					if cliProvider != nil {
+						dp.Capabilities = cliProvider.GetCapabilities()
+						if dp.Capabilities != nil {
+							dp.SupportsModels = dp.Capabilities.SupportedModels
+						}
+					}
+
+					discovered = append(discovered, dp)
+					pd.log.Info("Claude OAuth provider discovered successfully (using Claude Code CLI facade)")
+				}
+			} else {
+				// Claude Code CLI not installed or not authenticated
+				reason := "not installed"
+				if claude.IsClaudeCodeInstalled() {
+					reason = "not authenticated"
+				}
+				pd.log.WithField("reason", reason).Warn(
+					"Claude OAuth credentials found but Claude Code CLI is not available. " +
+						"OAuth tokens are product-restricted and can only be used through Claude Code CLI. " +
+						"Install and authenticate Claude Code CLI to use OAuth access.")
 			}
 		}
 	}
 
 	// Discover Qwen OAuth provider
+	// NOTE: Qwen OAuth tokens from Qwen Code are product-restricted and cannot be used for general API calls.
+	// They are only valid for portal.qwen.ai, not for DashScope API.
+	// We use the Qwen Code CLI to forward requests, which handles authentication internally.
 	if !seen["qwen"] && !seen["qwen-oauth"] && oauth_credentials.IsQwenOAuthEnabled() {
 		if oauthReader.HasValidQwenCredentials() {
 			pd.log.WithFields(logrus.Fields{
 				"provider": "qwen-oauth",
 				"type":     "qwen",
 				"source":   "oauth_credentials",
-			}).Info("Discovered Qwen provider from OAuth credentials (Qwen Code CLI)")
+			}).Info("Discovered Qwen OAuth credentials, checking Qwen Code CLI availability")
 
-			// Create Qwen provider with OAuth token (reads token internally)
-			// OAuth uses compatible-mode endpoint which differs from regular API
-			// Use qwen-plus as default model (most widely available)
-			provider, err := qwen.NewQwenProviderWithOAuth("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-plus")
-			if err != nil {
-				pd.log.WithError(err).Warn("Failed to create Qwen OAuth provider")
-			} else {
-				// Get token for reference (masked in logs)
-				accessToken, _ := oauthReader.GetQwenAccessToken()
-				maskedToken := maskToken(accessToken)
+			// Qwen OAuth tokens are product-restricted and cannot be used for general API calls.
+			// We MUST use Qwen Code CLI to forward requests.
+			if qwen.IsQwenCodeInstalled() && qwen.IsQwenCodeAuthenticated() {
+				// Create CLI provider which forwards requests to qwen command
+				cliProvider := qwen.NewQwenCLIProviderWithModel("qwen-plus")
 
-				dp := &DiscoveredProvider{
-					Name:         "qwen-oauth",
-					Type:         "qwen",
-					APIKeyEnvVar: "OAUTH:~/.qwen/oauth_creds.json",
-					APIKey:       accessToken, // Store for internal use
-					BaseURL:      "https://dashscope.aliyuncs.com/compatible-mode/v1",
-					DefaultModel: "qwen-turbo",
-					Provider:     provider,
-					Status:       ProviderStatusUnknown,
-					Score:        0,
-					Verified:     false,
-				}
-
-				if provider != nil {
-					dp.Capabilities = provider.GetCapabilities()
-					if dp.Capabilities != nil {
-						dp.SupportsModels = dp.Capabilities.SupportedModels
+				// Validate CLI provider works
+				valid, errs := cliProvider.ValidateConfig(nil)
+				if !valid {
+					pd.log.WithField("errors", errs).Warn("Qwen CLI provider validation failed")
+				} else {
+					dp := &DiscoveredProvider{
+						Name:         "qwen-oauth",
+						Type:         "qwen",
+						APIKeyEnvVar: "CLI:~/.qwen/oauth_creds.json",
+						APIKey:       "qwen-cli", // Marker for CLI-based auth
+						BaseURL:      "qwen-cli://local",
+						DefaultModel: "qwen-plus",
+						Provider:     cliProvider,
+						Status:       ProviderStatusUnknown,
+						Score:        0,
+						Verified:     false,
 					}
-				}
 
-				discovered = append(discovered, dp)
-				pd.log.WithField("token", maskedToken).Info("Qwen OAuth provider discovered successfully")
+					if cliProvider != nil {
+						dp.Capabilities = cliProvider.GetCapabilities()
+						if dp.Capabilities != nil {
+							dp.SupportsModels = dp.Capabilities.SupportedModels
+						}
+					}
+
+					discovered = append(discovered, dp)
+					pd.log.Info("Qwen OAuth provider discovered via Qwen Code CLI")
+				}
+			} else {
+				// Qwen Code CLI not installed or not authenticated
+				reason := "not installed"
+				if qwen.IsQwenCodeInstalled() {
+					reason = "not authenticated"
+				}
+				pd.log.WithField("reason", reason).Warn(
+					"Qwen OAuth credentials found but Qwen Code CLI is not available. " +
+						"OAuth tokens are product-restricted and can only be used through Qwen Code CLI. " +
+						"Install and authenticate Qwen Code CLI to use OAuth access.")
 			}
 		}
 	}
@@ -500,6 +534,14 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 			baseURL = "https://api.x.ai/v1"
 		}
 		return xai.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
+	case "zai":
+		// Use native ZAI provider for Zhipu/GLM models
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+		}
+		return zai.NewZAIProvider(apiKey, baseURL, mapping.DefaultModel), nil
 
 	case "groq":
 		// Use native Groq provider for fast inference

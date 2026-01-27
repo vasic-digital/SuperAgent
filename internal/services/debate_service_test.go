@@ -270,21 +270,21 @@ func TestDebateService_ConductDebate_Basic(t *testing.T) {
 func TestDebateService_ConductDebate_WithParticipants(t *testing.T) {
 	logger := newDebateSvcTestLogger()
 
-	// Create mock providers for multi-participant debate
+	// Create mock providers for multi-participant debate (content must be >100 chars to avoid suspicious response detection)
 	mockProviderOpenAI := newDebateMockProvider("openai", &models.LLMResponse{
-		Content:      "First point from the proposer. I believe this is important because of several factors.",
+		Content:      "First point from the proposer. I believe this is important because of several factors that we must consider carefully in this detailed analysis.",
 		Confidence:   0.88,
 		TokensUsed:   80,
 		FinishReason: "stop",
 	})
 	mockProviderAnthropic := newDebateMockProvider("anthropic", &models.LLMResponse{
-		Content:      "Critical analysis shows both strengths and weaknesses. However, we must consider alternatives.",
+		Content:      "Critical analysis shows both strengths and weaknesses. However, we must consider alternatives and their long-term implications for our conclusions.",
 		Confidence:   0.85,
 		TokensUsed:   90,
 		FinishReason: "stop",
 	})
 	mockProviderOllama := newDebateMockProvider("ollama", &models.LLMResponse{
-		Content:      "As a mediator, I see valid points on both sides. Therefore, let me summarize the key aspects.",
+		Content:      "As a mediator, I see valid points on both sides. Therefore, let me summarize the key aspects and provide a balanced view of the discussion.",
 		Confidence:   0.82,
 		TokensUsed:   85,
 		FinishReason: "stop",
@@ -526,7 +526,8 @@ func TestDebateService_ConductRealDebate_MultipleRounds(t *testing.T) {
 		completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 			callCount++
 			return &models.LLMResponse{
-				Content:      "Round response with important key points. Furthermore, this is a comprehensive analysis.",
+				// Content must be >100 chars to avoid suspicious response detection
+				Content:      "Round response with important key points. Furthermore, this is a comprehensive analysis that covers multiple aspects of the topic in detail.",
 				Confidence:   0.9,
 				TokensUsed:   100,
 				FinishReason: "stop",
@@ -606,7 +607,9 @@ func TestDebateService_ConductRealDebate_MixedProviderSuccess(t *testing.T) {
 	logger := newDebateSvcTestLogger()
 
 	successProvider := newDebateMockProvider("success", &models.LLMResponse{
-		Content:      "This is a successful response with key insights. The main point is important.",
+		// Content must be >100 chars to avoid suspiciously fast response detection
+		// (mock providers return instantly, so response time is ~0ms)
+		Content:      "This is a comprehensive and successful response with many key insights about the topic. The main point is particularly important because it demonstrates deep understanding of the subject matter.",
 		Confidence:   0.85,
 		TokensUsed:   80,
 		FinishReason: "stop",
@@ -1539,11 +1542,12 @@ func TestDebateService_ConductRealDebate_ConcurrentProviders(t *testing.T) {
 	logger := newDebateSvcTestLogger()
 
 	// Create multiple providers that all respond successfully
+	// Content must be >100 chars to avoid suspiciously fast response detection
 	providers := make(map[string]*debateMockLLMProvider)
 	for i := 1; i <= 5; i++ {
 		name := "provider" + string(rune('0'+i))
 		providers[name] = newDebateMockProvider(name, &models.LLMResponse{
-			Content:      "Response from provider with important key points.",
+			Content:      "Response from provider with many important key points covering a wide range of considerations about the topic at hand. This provides comprehensive analysis.",
 			Confidence:   0.8,
 			TokensUsed:   50,
 			FinishReason: "stop",
@@ -1641,9 +1645,9 @@ func TestDebateService_FallbackChain_EmptyResponse(t *testing.T) {
 		FinishReason: "stop",
 	})
 
-	// Fallback provider returns valid response
+	// Fallback provider returns valid response (must be >100 chars to avoid suspicious response detection)
 	fallbackProvider := newDebateMockProvider("fallback", &models.LLMResponse{
-		Content:      "This is a valid response from the fallback provider. It contains meaningful content for the debate.",
+		Content:      "This is a valid response from the fallback provider. It contains meaningful and comprehensive content for the debate with detailed analysis.",
 		Confidence:   0.85,
 		TokensUsed:   50,
 		FinishReason: "stop",
@@ -1683,7 +1687,7 @@ func TestDebateService_FallbackChain_EmptyResponse(t *testing.T) {
 	// Verify fallback was used
 	assert.Len(t, result.AllResponses, 1)
 	response := result.AllResponses[0]
-	assert.Contains(t, response.Content, "valid response from the fallback")
+	assert.Contains(t, response.Content, "valid response from the fallback provider")
 
 	// CRITICAL: Verify fallback notice is highlighted in response content
 	assert.Contains(t, response.Content, "[FALLBACK ACTIVATED:", "Response should contain fallback notice")
@@ -1713,9 +1717,9 @@ func TestDebateService_FallbackChain_WhitespaceOnlyResponse(t *testing.T) {
 		FinishReason: "stop",
 	})
 
-	// Fallback provider returns valid response
+	// Fallback provider returns valid response (must be >100 chars to avoid suspicious response detection)
 	fallbackProvider := newDebateMockProvider("fallback", &models.LLMResponse{
-		Content:      "Valid content from fallback after whitespace-only primary response.",
+		Content:      "Valid content from fallback after whitespace-only primary response. This provides meaningful analysis with detailed insights about the topic.",
 		Confidence:   0.85,
 		TokensUsed:   50,
 		FinishReason: "stop",
@@ -1770,9 +1774,9 @@ func TestDebateService_FallbackChain_PrimaryError(t *testing.T) {
 		},
 	}
 
-	// Fallback provider works
+	// Fallback provider works (must be >100 chars to avoid suspicious response detection)
 	fallbackProvider := newDebateMockProvider("fallback", &models.LLMResponse{
-		Content:      "Response from fallback after primary error.",
+		Content:      "Response from fallback after primary error. This provides comprehensive analysis with detailed insights about the important topic.",
 		Confidence:   0.80,
 		TokensUsed:   40,
 		FinishReason: "stop",
@@ -1836,9 +1840,9 @@ func TestDebateService_FallbackChain_MultipleFallbacks(t *testing.T) {
 		},
 	}
 
-	// Second fallback succeeds
+	// Second fallback succeeds (must be >100 chars to avoid suspicious response detection)
 	fallback2Provider := newDebateMockProvider("fallback2", &models.LLMResponse{
-		Content:      "Response from second fallback after two failures.",
+		Content:      "Response from second fallback after two failures. This provides comprehensive and detailed analysis of the important topic at hand.",
 		Confidence:   0.75,
 		TokensUsed:   35,
 		FinishReason: "stop",
@@ -2000,9 +2004,9 @@ func TestDebateService_FallbackChain_NoFallbacksConfigured(t *testing.T) {
 func TestDebateService_FallbackChain_MultipleParticipants(t *testing.T) {
 	logger := newDebateSvcTestLogger()
 
-	// First participant's primary works
+	// First participant's primary works (must be >100 chars to avoid suspicious response detection)
 	provider1 := newDebateMockProvider("provider1", &models.LLMResponse{
-		Content:      "Valid response from first participant.",
+		Content:      "Valid response from first participant with comprehensive analysis covering multiple aspects of the important topic at hand.",
 		Confidence:   0.90,
 		TokensUsed:   30,
 		FinishReason: "stop",
@@ -2018,7 +2022,7 @@ func TestDebateService_FallbackChain_MultipleParticipants(t *testing.T) {
 	}
 
 	provider2Fallback := newDebateMockProvider("provider2fallback", &models.LLMResponse{
-		Content:      "Response from second participant's fallback.",
+		Content:      "Response from second participant's fallback with comprehensive analysis and detailed insights about the topic being discussed.",
 		Confidence:   0.85,
 		TokensUsed:   40,
 		FinishReason: "stop",
@@ -2078,8 +2082,9 @@ func TestDebateService_FallbackChain_FallbackMetadata(t *testing.T) {
 		FinishReason: "stop",
 	})
 
+	// Fallback provider (must be >100 chars to avoid suspicious response detection)
 	fallbackProvider := newDebateMockProvider("mistral", &models.LLMResponse{
-		Content:      "Fallback response with proper metadata tracking.",
+		Content:      "Fallback response with proper metadata tracking and comprehensive analysis of the topic providing detailed insights and conclusions.",
 		Confidence:   0.88,
 		TokensUsed:   45,
 		FinishReason: "stop",
@@ -2736,15 +2741,16 @@ func TestDebateService_AutoConductDebate_SingleProvider(t *testing.T) {
 func TestDebateService_AutoConductDebate_MultiProvider(t *testing.T) {
 	logger := newDebateSvcTestLogger()
 
+	// Content must be >100 chars to avoid suspicious response detection
 	provider1 := newDebateMockProvider("deepseek", &models.LLMResponse{
-		Content:      "Response from deepseek provider.",
+		Content:      "Response from deepseek provider with comprehensive analysis covering multiple aspects of the important topic being discussed.",
 		Confidence:   0.85,
 		TokensUsed:   50,
 		FinishReason: "stop",
 	})
 
 	provider2 := newDebateMockProvider("gemini", &models.LLMResponse{
-		Content:      "Response from gemini provider.",
+		Content:      "Response from gemini provider with detailed insights and thorough evaluation of the arguments presented in this debate.",
 		Confidence:   0.87,
 		TokensUsed:   55,
 		FinishReason: "stop",
@@ -2809,4 +2815,239 @@ func TestDebateService_GetBestResponseContent(t *testing.T) {
 		content := ds.getBestResponseContent(result)
 		assert.Empty(t, content)
 	})
+}
+
+// =============================================================================
+// Canned Response Detection Tests (Unit Tests)
+// =============================================================================
+
+// TestIsCannedErrorResponse tests the exported helper function directly
+func TestIsCannedErrorResponse(t *testing.T) {
+	testCases := []struct {
+		name           string
+		content        string
+		expectDetected bool
+		expectPattern  string
+	}{
+		// Positive cases - should detect canned errors
+		{
+			name:           "detects 'unable to provide'",
+			content:        "Unable to provide analysis at this time",
+			expectDetected: true,
+			expectPattern:  "unable to provide",
+		},
+		{
+			name:           "detects 'unable to process'",
+			content:        "I'm unable to process your request",
+			expectDetected: true,
+			expectPattern:  "unable to process",
+		},
+		{
+			name:           "detects 'cannot provide'",
+			content:        "Cannot provide the requested information",
+			expectDetected: true,
+			expectPattern:  "cannot provide",
+		},
+		{
+			name:           "detects apology pattern",
+			content:        "I apologize, but I cannot assist with that",
+			expectDetected: true,
+			expectPattern:  "i apologize, but i cannot",
+		},
+		{
+			name:           "detects sorry pattern",
+			content:        "I'm sorry, but I cannot complete this task",
+			expectDetected: true,
+			expectPattern:  "i'm sorry, but i cannot",
+		},
+		{
+			name:           "detects 'error occurred'",
+			content:        "An error occurred while processing your request",
+			expectDetected: true,
+			expectPattern:  "error occurred",
+		},
+		{
+			name:           "detects 'at this time'",
+			content:        "Service is not available at this time",
+			expectDetected: true,
+			expectPattern:  "at this time",
+		},
+		{
+			name:           "detects 'currently unable'",
+			content:        "I'm currently unable to help with that",
+			expectDetected: true,
+			expectPattern:  "currently unable",
+		},
+		{
+			name:           "detects 'not able to'",
+			content:        "I am not able to generate a proper response",
+			expectDetected: true,
+			expectPattern:  "not able to",
+		},
+		{
+			name:           "detects 'failed to generate'",
+			content:        "Failed to generate the requested content",
+			expectDetected: true,
+			expectPattern:  "failed to generate",
+		},
+		{
+			name:           "detects 'no response generated'",
+			content:        "No response generated for your query",
+			expectDetected: true,
+			expectPattern:  "no response generated",
+		},
+		{
+			name:           "case insensitive detection",
+			content:        "UNABLE TO PROVIDE any assistance",
+			expectDetected: true,
+			expectPattern:  "unable to provide",
+		},
+		// Negative cases - should NOT detect as canned error
+		{
+			name:           "valid response with analysis",
+			content:        "Here is my detailed analysis of the topic...",
+			expectDetected: false,
+			expectPattern:  "",
+		},
+		{
+			name:           "valid response with multiple paragraphs",
+			content:        "The issue you're facing can be solved by following these steps: First, check the configuration. Second, verify the credentials.",
+			expectDetected: false,
+			expectPattern:  "",
+		},
+		{
+			name:           "empty string",
+			content:        "",
+			expectDetected: false,
+			expectPattern:  "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := IsCannedErrorResponse(tc.content)
+			if tc.expectDetected {
+				assert.NotEmpty(t, result, "Expected to detect canned error pattern")
+				assert.Equal(t, tc.expectPattern, result, "Wrong pattern detected")
+			} else {
+				assert.Empty(t, result, "Should not detect canned error in valid response")
+			}
+		})
+	}
+}
+
+// TestIsSuspiciouslyFastResponse tests the fast response detection helper
+func TestIsSuspiciouslyFastResponse(t *testing.T) {
+	testCases := []struct {
+		name          string
+		responseTime  time.Duration
+		contentLength int
+		expectSuspect bool
+	}{
+		// Suspicious cases
+		{
+			name:          "0ms with short content",
+			responseTime:  0,
+			contentLength: 10,
+			expectSuspect: true,
+		},
+		{
+			name:          "50ms with short content",
+			responseTime:  50 * time.Millisecond,
+			contentLength: 50,
+			expectSuspect: true,
+		},
+		{
+			name:          "99ms with 99 chars",
+			responseTime:  99 * time.Millisecond,
+			contentLength: 99,
+			expectSuspect: true,
+		},
+		// Not suspicious cases
+		{
+			name:          "100ms with short content",
+			responseTime:  100 * time.Millisecond,
+			contentLength: 50,
+			expectSuspect: false,
+		},
+		{
+			name:          "50ms with 100+ chars",
+			responseTime:  50 * time.Millisecond,
+			contentLength: 100,
+			expectSuspect: false,
+		},
+		{
+			name:          "1s with long content",
+			responseTime:  1 * time.Second,
+			contentLength: 500,
+			expectSuspect: false,
+		},
+		{
+			name:          "0ms but long content (cached valid)",
+			responseTime:  0,
+			contentLength: 200,
+			expectSuspect: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := IsSuspiciouslyFastResponse(tc.responseTime, tc.contentLength)
+			assert.Equal(t, tc.expectSuspect, result)
+		})
+	}
+}
+
+// TestCannedErrorPatternsCompleteness ensures all expected patterns are in the list
+func TestCannedErrorPatternsCompleteness(t *testing.T) {
+	// These are the essential patterns that MUST be detected
+	requiredPatterns := []string{
+		"unable to provide",
+		"unable to analyze",
+		"unable to process",
+		"cannot provide",
+		"i apologize, but i cannot",
+		"i'm sorry, but i cannot",
+		"error occurred",
+		"at this time",
+		"currently unable",
+		"failed to generate",
+	}
+
+	for _, required := range requiredPatterns {
+		found := false
+		for _, pattern := range CannedErrorPatterns {
+			if pattern == required {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "Required pattern '%s' not found in CannedErrorPatterns", required)
+	}
+}
+
+// TestCannedErrorPatternsMinimumCount ensures we have enough patterns
+func TestCannedErrorPatternsMinimumCount(t *testing.T) {
+	// We should have at least 10 patterns to catch various canned responses
+	assert.GreaterOrEqual(t, len(CannedErrorPatterns), 10,
+		"Should have at least 10 canned error patterns")
+}
+
+// TestZenModelCannedPatterns tests specific patterns from Zen free models
+func TestZenModelCannedPatterns(t *testing.T) {
+	zenCannedResponses := []string{
+		"Unable to provide analysis at this time",
+		"Unable to provide a response at this time",
+		"Unable to provide the requested information",
+		"I'm unable to process your request at this time",
+		"Cannot process your request currently",
+	}
+
+	for _, response := range zenCannedResponses {
+		t.Run(response[:30], func(t *testing.T) {
+			pattern := IsCannedErrorResponse(response)
+			assert.NotEmpty(t, pattern,
+				"Zen canned response '%s' should be detected", response)
+		})
+	}
 }
