@@ -1,0 +1,100 @@
+# =============================================================================
+# MCP SSE Bridge Dockerfile
+# Multi-stage build for the Go-based SSE bridge that wraps MCP servers
+#
+# Features:
+# - Go 1.24 for building the bridge binary
+# - Node.js 20 for running npx-based MCP servers
+# - Alpine-based for small image size
+# - Non-root user for security
+# - Health check endpoint on /health
+# - Configurable via MCP_COMMAND environment variable
+#
+# Usage:
+#   docker build -f docker/mcp/Dockerfile.mcp-bridge -t mcp-bridge .
+#   docker run -e MCP_COMMAND="npx @modelcontextprotocol/server-filesystem /data" -p 9000:9000 mcp-bridge
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Stage 1: Build the Go bridge binary
+# -----------------------------------------------------------------------------
+FROM golang:1.24-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
+
+WORKDIR /app
+
+# Copy go.mod and go.sum first for better caching
+COPY go.mod go.sum ./
+
+# Copy replace directives dependencies
+COPY pkg/api ./pkg/api
+COPY LLMsVerifier/llm-verifier ./LLMsVerifier/llm-verifier
+
+# Download dependencies
+RUN go mod download
+
+# Copy only the necessary source files for the bridge
+COPY internal/mcp/bridge ./internal/mcp/bridge
+COPY cmd/mcp-bridge ./cmd/mcp-bridge
+
+# Build the bridge binary with optimizations
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s -extldflags '-static'" \
+    -o /app/mcp-bridge \
+    ./cmd/mcp-bridge
+
+# -----------------------------------------------------------------------------
+# Stage 2: Runtime image with Node.js for npx-based MCP servers
+# -----------------------------------------------------------------------------
+FROM node:20-alpine
+
+# Install runtime dependencies
+# - ca-certificates for HTTPS
+# - tini for proper signal handling
+# - netcat for health checks
+RUN apk add --no-cache \
+    ca-certificates \
+    tini \
+    netcat-openbsd \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user for security
+RUN addgroup -g 1000 mcpbridge && \
+    adduser -u 1000 -G mcpbridge -s /bin/sh -D mcpbridge
+
+# Create directories
+RUN mkdir -p /app /data /home/mcpbridge/.npm && \
+    chown -R mcpbridge:mcpbridge /app /data /home/mcpbridge
+
+WORKDIR /app
+
+# Copy the bridge binary from builder
+COPY --from=builder /app/mcp-bridge /app/mcp-bridge
+
+# Make binary executable
+RUN chmod +x /app/mcp-bridge
+
+# Set npm cache directory for non-root user
+ENV NPM_CONFIG_CACHE=/home/mcpbridge/.npm
+
+# Switch to non-root user
+USER mcpbridge
+
+# Environment variables with defaults
+ENV PORT=9000
+ENV MCP_COMMAND=""
+
+# Expose the SSE bridge port
+EXPOSE 9000
+
+# Health check using the /health endpoint
+HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget -q --spider http://localhost:9000/health || exit 1
+
+# Use tini as init system for proper signal handling
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Run the bridge
+CMD ["/app/mcp-bridge"]
