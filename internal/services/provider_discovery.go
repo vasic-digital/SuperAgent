@@ -56,6 +56,13 @@ type ProviderDiscovery struct {
 	useDynamicScoring bool                      // Use LLMsVerifier scores instead of hardcoded
 }
 
+// VerifiedModel represents a model that has passed verification testing
+type VerifiedModel struct {
+	Name     string  `json:"name"`
+	Score    float64 `json:"score"`
+	Verified bool    `json:"verified"`
+}
+
 // DiscoveredProvider represents a provider discovered from environment
 type DiscoveredProvider struct {
 	mu             sync.RWMutex                 // Protects Status, Verified, VerifiedAt, Error, Score fields
@@ -73,6 +80,10 @@ type DiscoveredProvider struct {
 	Error          string                       `json:"error,omitempty"`
 	Capabilities   *models.ProviderCapabilities `json:"capabilities,omitempty"`
 	SupportsModels []string                     `json:"supported_models,omitempty"`
+	// VerifiedModels contains models that passed individual verification testing.
+	// This is used for free providers (Zen, OpenRouter free tier) where each model
+	// is tested individually for proper functionality (not canned error responses).
+	VerifiedModels []VerifiedModel `json:"verified_models,omitempty"`
 }
 
 // ProviderScore represents scoring metrics for a provider
@@ -628,46 +639,150 @@ func (pd *ProviderDiscovery) verifyProvider(ctx context.Context, provider *Disco
 
 	start := time.Now()
 
-	// Special handling for Zen anonymous mode - use HealthCheck instead of Complete
-	// since free models API may not respond well to standard verification calls
+	// Special handling for Zen anonymous mode - STRICT verification required
+	// We MUST test actual model completion to detect canned error responses
 	if provider.Type == "zen" && provider.APIKey == "" {
 		pd.log.WithFields(logrus.Fields{
 			"provider": provider.Name,
 			"type":     provider.Type,
-		}).Info("Verifying Zen provider in anonymous mode (using HealthCheck)")
+		}).Info("Verifying Zen provider with strict model completion testing")
 
 		// Try the health check first
 		if err := provider.Provider.HealthCheck(); err != nil {
-			// Health check failed, but for free models we'll still mark as available
-			// with a lower confidence since the models might still work
 			pd.log.WithFields(logrus.Fields{
 				"provider": provider.Name,
 				"error":    err.Error(),
-			}).Warn("Zen health check failed, marking as available with reduced confidence")
+			}).Warn("Zen health check failed - provider will not be verified")
 
-			// Mark as healthy anyway for anonymous/free providers
-			// These are free models and we want them available even if health check fails
 			provider.mu.Lock()
-			provider.Status = ProviderStatusHealthy
-			provider.Verified = true
-			provider.Score = 6.5 // Lower score due to no health check confirmation
-			provider.Error = ""
+			provider.Status = ProviderStatusUnhealthy
+			provider.Verified = false
+			provider.Score = 0
+			provider.Error = "health check failed: " + err.Error()
 			provider.VerifiedAt = time.Now()
 			provider.mu.Unlock()
-		} else {
+			return
+		}
+
+		// CRITICAL: Do actual model completion test to detect canned error responses
+		pd.log.WithField("provider", provider.Name).Debug("Starting model completion test for Zen")
+
+		testReq := &models.LLMRequest{
+			ID:        fmt.Sprintf("verify_zen_%d", time.Now().UnixNano()),
+			SessionID: "verification",
+			Prompt:    "You are a helpful assistant. Reply concisely.",
+			Messages: []models.Message{
+				{Role: "user", Content: "What is 2 + 2? Reply with just the number."},
+			},
+			ModelParams: models.ModelParameters{
+				Model:       provider.DefaultModel,
+				MaxTokens:   10,
+				Temperature: 0.0,
+			},
+			Status:    "pending",
+			CreatedAt: time.Now(),
+		}
+
+		verifyCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		testStart := time.Now()
+		resp, err := provider.Provider.Complete(verifyCtx, testReq)
+		testLatency := time.Since(testStart)
+		cancel()
+
+		provider.mu.Lock()
+		defer provider.mu.Unlock()
+		provider.VerifiedAt = time.Now()
+
+		if err != nil {
 			pd.log.WithFields(logrus.Fields{
 				"provider": provider.Name,
-				"duration": time.Since(start),
-			}).Info("Zen provider health check passed")
+				"error":    err.Error(),
+			}).Warn("Zen model completion test failed")
 
-			provider.mu.Lock()
-			provider.Status = ProviderStatusHealthy
-			provider.Verified = true
-			provider.Score = 7.5 // Good score for working free models
-			provider.Error = ""
-			provider.VerifiedAt = time.Now()
-			provider.mu.Unlock()
+			provider.Status = ProviderStatusUnhealthy
+			provider.Verified = false
+			provider.Score = 0
+			provider.Error = "model completion test failed: " + err.Error()
+			return
 		}
+
+		// Check for canned error responses
+		if resp == nil || resp.Content == "" {
+			pd.log.WithField("provider", provider.Name).Warn("Zen returned empty response")
+			provider.Status = ProviderStatusUnhealthy
+			provider.Verified = false
+			provider.Score = 0
+			provider.Error = "empty response from model"
+			return
+		}
+
+		// Check for canned error patterns
+		cannedPatterns := []string{
+			"unable to provide", "unable to analyze", "at this time",
+			"cannot provide", "cannot analyze", "i apologize, but i cannot",
+			"error occurred", "service unavailable", "failed to generate",
+		}
+		loweredContent := strings.ToLower(resp.Content)
+		for _, pattern := range cannedPatterns {
+			if strings.Contains(loweredContent, pattern) {
+				pd.log.WithFields(logrus.Fields{
+					"provider": provider.Name,
+					"pattern":  pattern,
+					"response": resp.Content,
+				}).Warn("Zen returned canned error response - NOT VERIFIED")
+
+				provider.Status = ProviderStatusUnhealthy
+				provider.Verified = false
+				provider.Score = 0
+				provider.Error = fmt.Sprintf("canned error response: %s", pattern)
+				return
+			}
+		}
+
+		// Check for suspiciously fast response (< 100ms typically indicates cached error)
+		if testLatency < 100*time.Millisecond && len(resp.Content) < 20 {
+			pd.log.WithFields(logrus.Fields{
+				"provider": provider.Name,
+				"latency":  testLatency,
+				"response": resp.Content,
+			}).Warn("Suspiciously fast response from Zen - may be cached error")
+			// Don't fail, but log warning
+		}
+
+		// STRICT: Response must contain "4" for 2+2 test
+		if !strings.Contains(resp.Content, "4") {
+			pd.log.WithFields(logrus.Fields{
+				"provider": provider.Name,
+				"expected": "4",
+				"got":      resp.Content,
+			}).Warn("Zen failed basic math test - NOT VERIFIED")
+
+			provider.Status = ProviderStatusUnhealthy
+			provider.Verified = false
+			provider.Score = 0
+			provider.Error = fmt.Sprintf("failed basic math test: expected '4', got: %s", resp.Content)
+			return
+		}
+
+		// Model passed verification!
+		pd.log.WithFields(logrus.Fields{
+			"provider": provider.Name,
+			"response": resp.Content,
+			"latency":  testLatency,
+		}).Info("Zen model passed strict verification")
+
+		provider.Status = ProviderStatusHealthy
+		provider.Verified = true
+		provider.Score = 7.5 // Good score for verified free models
+		provider.Error = ""
+
+		// Populate VerifiedModels with the verified model
+		provider.VerifiedModels = append(provider.VerifiedModels, VerifiedModel{
+			Name:     provider.DefaultModel,
+			Score:    7.5,
+			Verified: true,
+		})
+
 		return
 	}
 
@@ -730,6 +845,37 @@ func (pd *ProviderDiscovery) verifyProvider(ctx context.Context, provider *Disco
 
 	// Check for valid response
 	if resp != nil && resp.Content != "" {
+		// Check for canned error patterns in response
+		cannedPatterns := []string{
+			"unable to provide", "unable to analyze", "at this time",
+			"cannot provide", "cannot analyze", "i apologize, but i cannot",
+			"error occurred", "service unavailable", "failed to generate",
+		}
+		loweredContent := strings.ToLower(resp.Content)
+		isCannedError := false
+		var cannedPattern string
+		for _, pattern := range cannedPatterns {
+			if strings.Contains(loweredContent, pattern) {
+				isCannedError = true
+				cannedPattern = pattern
+				break
+			}
+		}
+
+		if isCannedError {
+			pd.log.WithFields(logrus.Fields{
+				"provider": provider.Name,
+				"pattern":  cannedPattern,
+				"response": resp.Content,
+			}).Warn("Provider returned canned error response - NOT VERIFIED")
+
+			provider.Status = ProviderStatusUnhealthy
+			provider.Verified = false
+			provider.Score = 0
+			provider.Error = fmt.Sprintf("canned error response: %s", cannedPattern)
+			return
+		}
+
 		provider.Status = ProviderStatusHealthy
 		provider.Verified = true
 		provider.Error = ""

@@ -547,37 +547,105 @@ func (sv *StartupVerifier) verifyOAuthProvider(ctx context.Context, provider *Un
 }
 
 // verifyFreeProvider verifies a free/anonymous provider
+// IMPORTANT: Each model is individually tested with strict validation to detect
+// canned error responses like "Unable to provide analysis at this time".
+// Only models that pass actual completion tests are marked as verified.
 func (sv *StartupVerifier) verifyFreeProvider(ctx context.Context, provider *UnifiedProvider, disc *ProviderDiscoveryResult) (*UnifiedProvider, error) {
-	sv.log.WithField("provider", provider.Type).Debug("Verifying free provider")
+	sv.log.WithField("provider", provider.Type).Debug("Verifying free provider with strict model testing")
 
-	// Free providers get a reduced verification (health check only)
-	// They're always available but with lower scores
-	provider.Verified = true
-	provider.Status = StatusHealthy
+	// Initialize - we'll only mark as verified if at least one model passes
+	provider.Verified = false
+	provider.Status = StatusFailed
 	provider.Score = sv.config.FreeProviderBaseScore
 	provider.VerifiedAt = time.Now()
-	provider.TestResults = map[string]bool{"free_provider": true}
+	provider.TestResults = map[string]bool{}
 
-	// Try full verification if possible
-	if len(disc.Models) > 0 {
-		result, err := sv.verifierSvc.VerifyModel(ctx, disc.Models[0], provider.Type)
-		if err == nil && result.Verified {
-			provider.Score = result.OverallScore / 10.0
-			provider.CodeVisible = result.CodeVisible
-			provider.TestResults = result.TestsMap
-		}
-	}
+	verifiedModelCount := 0
+	totalModels := len(disc.Models)
 
-	// Build models list
+	// Verify each model individually with strict validation
 	for _, modelID := range disc.Models {
+		sv.log.WithFields(logrus.Fields{
+			"provider": provider.Type,
+			"model":    modelID,
+		}).Debug("Testing model for canned error responses")
+
+		// Try full verification with model completion test
+		result, err := sv.verifierSvc.VerifyModel(ctx, modelID, provider.Type)
+
+		modelVerified := false
+		modelScore := sv.config.FreeProviderBaseScore
+
+		if err != nil {
+			sv.log.WithFields(logrus.Fields{
+				"provider": provider.Type,
+				"model":    modelID,
+				"error":    err.Error(),
+			}).Debug("Model verification failed")
+		} else if result != nil {
+			// Check if model passes response quality validation
+			isCannedError, _ := IsCannedErrorResponse(result.LastResponse)
+			if result.Verified && !isCannedError {
+				modelVerified = true
+				modelScore = result.OverallScore / 10.0
+				if modelScore < sv.config.FreeProviderBaseScore {
+					modelScore = sv.config.FreeProviderBaseScore
+				}
+				verifiedModelCount++
+				provider.TestResults[modelID] = true
+				sv.log.WithFields(logrus.Fields{
+					"provider": provider.Type,
+					"model":    modelID,
+					"score":    modelScore,
+				}).Info("Model passed verification")
+			} else {
+				sv.log.WithFields(logrus.Fields{
+					"provider":     provider.Type,
+					"model":        modelID,
+					"verified":     result.Verified,
+					"lastResponse": result.LastResponse,
+				}).Warn("Model failed quality validation - possible canned error response")
+			}
+		}
+
+		// Add model to list with actual verification status
 		provider.Models = append(provider.Models, UnifiedModel{
 			ID:       modelID,
 			Name:     modelID,
 			Provider: provider.Type,
-			Verified: true,
-			Score:    provider.Score,
+			Verified: modelVerified,
+			Score:    modelScore,
 		})
 	}
+
+	// Provider is only verified if at least one model passes
+	if verifiedModelCount > 0 {
+		provider.Verified = true
+		provider.Status = StatusHealthy
+		// Calculate average score from verified models
+		var totalScore float64
+		var scoreCount int
+		for _, m := range provider.Models {
+			if m.Verified {
+				totalScore += m.Score
+				scoreCount++
+			}
+		}
+		if scoreCount > 0 {
+			provider.Score = totalScore / float64(scoreCount)
+		}
+	} else {
+		provider.Status = StatusFailed
+		provider.HealthCheckError = fmt.Sprintf("No models passed verification (0/%d)", totalModels)
+	}
+
+	sv.log.WithFields(logrus.Fields{
+		"provider":         provider.Type,
+		"verified":         provider.Verified,
+		"verified_models":  verifiedModelCount,
+		"total_models":     totalModels,
+		"score":            provider.Score,
+	}).Info("Free provider verification complete")
 
 	return provider, nil
 }

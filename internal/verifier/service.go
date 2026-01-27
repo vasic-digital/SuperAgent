@@ -10,6 +10,91 @@ import (
 	"time"
 )
 
+// CannedErrorPatterns contains patterns that indicate a model is returning
+// error/failure responses instead of actual completions. Models that return
+// these patterns should NOT be verified as working.
+var CannedErrorPatterns = []string{
+	"unable to provide",
+	"unable to analyze",
+	"unable to process",
+	"unable to assist",
+	"cannot provide",
+	"cannot analyze",
+	"cannot process",
+	"cannot assist",
+	"i apologize, but i cannot",
+	"i'm sorry, but i cannot",
+	"i am sorry, but i cannot",
+	"error occurred",
+	"service unavailable",
+	"rate limit",
+	"temporarily unavailable",
+	"model not available",
+	"failed to generate",
+	"no response generated",
+	"internal error",
+	"request failed",
+	"at this time",
+	"currently unable",
+	"not able to",
+}
+
+// IsCannedErrorResponse checks if a response contains known canned error patterns
+// that indicate the model isn't actually working. Returns true if the response
+// appears to be a canned error, along with the matching pattern.
+func IsCannedErrorResponse(content string) (bool, string) {
+	if content == "" {
+		return true, "empty response"
+	}
+
+	lowered := strings.ToLower(content)
+	for _, pattern := range CannedErrorPatterns {
+		if strings.Contains(lowered, pattern) {
+			return true, pattern
+		}
+	}
+	return false, ""
+}
+
+// IsSuspiciouslyFastResponse checks if a response was returned too quickly
+// to be a real LLM completion (typically < 100ms indicates cached error)
+func IsSuspiciouslyFastResponse(latency time.Duration) bool {
+	return latency < 100*time.Millisecond
+}
+
+// ValidateResponseQualityWithLatency performs comprehensive response validation including latency check
+// Returns an error if the response appears to be invalid/canned/error
+func ValidateResponseQualityWithLatency(content string, latency time.Duration) error {
+	// Check for empty response
+	if strings.TrimSpace(content) == "" {
+		return fmt.Errorf("empty response content")
+	}
+
+	// Check for canned error patterns
+	if isCanned, pattern := IsCannedErrorResponse(content); isCanned {
+		return fmt.Errorf("canned error response detected (pattern: %s): %s", pattern, truncateForLog(content))
+	}
+
+	// Check for suspiciously fast response
+	if IsSuspiciouslyFastResponse(latency) {
+		// Log warning but don't fail - some providers are just fast
+		// However, combined with short content, this is suspicious
+		if len(content) < 50 {
+			return fmt.Errorf("suspiciously fast response (%v) with short content (%d chars)", latency, len(content))
+		}
+	}
+
+	return nil
+}
+
+// truncateForLog truncates a string for logging purposes
+func truncateForLog(s string) string {
+	if len(s) > 100 {
+		return s[:100] + "..."
+	}
+	return s
+}
+
 // ServiceVerificationResult represents the result of a model verification
 // (named differently to avoid conflict with database.go's VerificationResult)
 type ServiceVerificationResult struct {
@@ -31,6 +116,9 @@ type ServiceVerificationResult struct {
 	VerificationTimeMs    int64           `json:"verification_time_ms"`
 	Message               string          `json:"message,omitempty"`
 	ErrorMessage          string          `json:"error_message,omitempty"`
+	// LastResponse stores the last response content from the model for quality validation.
+	// This is used to detect canned error responses during verification.
+	LastResponse string `json:"last_response,omitempty"`
 }
 
 // TestResult represents a single test result
@@ -39,6 +127,7 @@ type TestResult struct {
 	Passed      bool      `json:"passed"`
 	Score       float64   `json:"score"`
 	Details     []string  `json:"details,omitempty"`
+	Response    string    `json:"response,omitempty"` // The actual response from the model
 	StartedAt   time.Time `json:"started_at"`
 	CompletedAt time.Time `json:"completed_at"`
 }
@@ -110,6 +199,8 @@ func (s *VerificationService) VerifyModel(ctx context.Context, modelID string, p
 	// 2. Existence test
 	existenceResult := s.verifyExistence(ctx, modelID, provider)
 	result.Tests = append(result.Tests, *existenceResult)
+	// Capture the last response for quality validation
+	result.LastResponse = existenceResult.Response
 
 	// 3. Responsiveness test
 	responsivenessResult := s.verifyResponsiveness(ctx, modelID, provider)
@@ -316,22 +407,52 @@ func (s *VerificationService) verifyExistence(ctx context.Context, modelID, prov
 		StartedAt: time.Now(),
 	}
 
+	start := time.Now()
 	response, err := s.callModel(ctx, modelID, provider, "Hello, please respond with 'OK' if you can hear me.")
+	latency := time.Since(start)
+
+	// Store the response for quality inspection
+	result.Response = response
+
 	if err != nil {
 		result.Passed = false
 		result.Score = 0
 		result.Details = append(result.Details, fmt.Sprintf("error: %v", err))
-	} else if len(response) > 0 {
+		result.CompletedAt = time.Now()
+		return result
+	}
+
+	// Check for canned error responses - model must give real response
+	if isCanned, pattern := IsCannedErrorResponse(response); isCanned {
+		result.Passed = false
+		result.Score = 0
+		result.Details = append(result.Details, fmt.Sprintf("canned error detected (pattern: %s): %s", pattern, truncateForLog(response)))
+		result.CompletedAt = time.Now()
+		return result
+	}
+
+	// Check for suspiciously fast + short response
+	if IsSuspiciouslyFastResponse(latency) && len(response) < 50 {
+		result.Passed = false
+		result.Score = 0
+		result.Details = append(result.Details, fmt.Sprintf("suspicious response: %v latency, %d chars", latency, len(response)))
+		result.CompletedAt = time.Now()
+		return result
+	}
+
+	if len(response) > 0 {
 		result.Passed = true
 		result.Score = 100
 		result.Details = append(result.Details, "model responded successfully")
+		result.Details = append(result.Details, fmt.Sprintf("latency: %v", latency))
 	}
 
 	result.CompletedAt = time.Now()
 	return result
 }
 
-// verifyResponsiveness verifies model response time
+// verifyResponsiveness verifies model response time AND response quality
+// A model that returns canned error responses or empty content is NOT responsive
 func (s *VerificationService) verifyResponsiveness(ctx context.Context, modelID, provider string) *TestResult {
 	result := &TestResult{
 		Name:      "responsiveness",
@@ -339,30 +460,54 @@ func (s *VerificationService) verifyResponsiveness(ctx context.Context, modelID,
 	}
 
 	start := time.Now()
-	_, err := s.callModel(ctx, modelID, provider, "What is 2+2?")
+	response, err := s.callModel(ctx, modelID, provider, "What is 2+2? Reply with just the number.")
 	duration := time.Since(start)
 
 	if err != nil {
 		result.Passed = false
 		result.Score = 0
 		result.Details = append(result.Details, fmt.Sprintf("error: %v", err))
-	} else {
-		// TTFT should be < 10s, total < 60s
-		if duration < 10*time.Second {
-			result.Passed = true
-			result.Score = 100
-		} else if duration < 30*time.Second {
-			result.Passed = true
-			result.Score = 70
-		} else if duration < 60*time.Second {
-			result.Passed = true
-			result.Score = 50
-		} else {
-			result.Passed = false
-			result.Score = 0
-		}
-		result.Details = append(result.Details, fmt.Sprintf("response time: %v", duration))
+		result.CompletedAt = time.Now()
+		return result
 	}
+
+	// Validate response quality - check for canned errors
+	if qualityErr := ValidateResponseQualityWithLatency(response, duration); qualityErr != nil {
+		result.Passed = false
+		result.Score = 0
+		result.Details = append(result.Details, fmt.Sprintf("response quality failed: %v", qualityErr))
+		result.Details = append(result.Details, fmt.Sprintf("response time: %v", duration))
+		result.CompletedAt = time.Now()
+		return result
+	}
+
+	// Check if response contains expected answer (basic math test)
+	if !strings.Contains(response, "4") {
+		result.Passed = false
+		result.Score = 30 // Partial credit - responded but wrong
+		result.Details = append(result.Details, fmt.Sprintf("expected '4' in response, got: %s", truncateForLog(response)))
+		result.Details = append(result.Details, fmt.Sprintf("response time: %v", duration))
+		result.CompletedAt = time.Now()
+		return result
+	}
+
+	// Response quality is good, now check timing
+	// TTFT should be < 10s, total < 60s
+	if duration < 10*time.Second {
+		result.Passed = true
+		result.Score = 100
+	} else if duration < 30*time.Second {
+		result.Passed = true
+		result.Score = 70
+	} else if duration < 60*time.Second {
+		result.Passed = true
+		result.Score = 50
+	} else {
+		result.Passed = false
+		result.Score = 0
+	}
+	result.Details = append(result.Details, fmt.Sprintf("response time: %v", duration))
+	result.Details = append(result.Details, fmt.Sprintf("response validated: contains '4'"))
 
 	result.CompletedAt = time.Now()
 	return result

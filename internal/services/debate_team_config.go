@@ -654,119 +654,136 @@ func (dtc *DebateTeamConfig) getRegisteredProvider(names ...string) llm.LLMProvi
 }
 
 // collectOpenRouterFreeModels collects OpenRouter Zen free models (:free suffix)
-// These are high-quality models available for free through OpenRouter
-// IMPORTANT: Only add models if OpenRouter provider is healthy and verified
+// that have been VERIFIED through the FreeProviderAdapter verification pipeline.
+// IMPORTANT: Only models that passed verification (including canned error checks) are added.
+// DO NOT add hardcoded models with assumed Verified: true.
 func (dtc *DebateTeamConfig) collectOpenRouterFreeModels() {
-	// Check if OpenRouter provider is healthy through discovery
-	if dtc.discovery != nil {
-		discovered := dtc.discovery.GetProviderByName("openrouter")
-		if discovered != nil && !discovered.Verified {
+	// IMPORTANT: Only use discovery to get verified OpenRouter provider and models.
+	// DO NOT add hardcoded models - unverified models cannot be in the debate team.
+	if dtc.discovery == nil {
+		dtc.logger.Debug("Discovery not available - cannot collect OpenRouter free models")
+		return
+	}
+
+	discovered := dtc.discovery.GetProviderByName("openrouter")
+	if discovered == nil {
+		dtc.logger.Debug("OpenRouter provider not discovered")
+		return
+	}
+
+	// Provider must be verified (passed health checks)
+	if !discovered.Verified {
+		dtc.logger.WithFields(logrus.Fields{
+			"provider": "openrouter",
+			"status":   discovered.Status,
+			"error":    discovered.Error,
+		}).Warn("OpenRouter provider not verified - free models will not be included in debate team")
+		return
+	}
+
+	if discovered.Provider == nil {
+		dtc.logger.Warn("OpenRouter provider instance not available")
+		return
+	}
+
+	// Only add free models (:free suffix) that have been ACTUALLY VERIFIED
+	// through the verification pipeline (model completion test with canned error detection)
+	addedCount := 0
+	for _, model := range discovered.VerifiedModels {
+		// Only include free models (with :free suffix)
+		if len(model.Name) <= 5 || model.Name[len(model.Name)-5:] != ":free" {
+			continue
+		}
+
+		// CRITICAL: Only add models that passed verification
+		if !model.Verified {
 			dtc.logger.WithFields(logrus.Fields{
 				"provider": "openrouter",
-				"status":   discovered.Status,
-				"error":    discovered.Error,
-			}).Warn("OpenRouter provider not healthy - skipping free models")
-			return
+				"model":    model.Name,
+			}).Debug("Skipping unverified OpenRouter free model")
+			continue
 		}
-	}
 
-	// Get OpenRouter provider (only if verified/healthy)
-	provider := dtc.getVerifiedProvider("openrouter")
-	if provider == nil {
-		dtc.logger.Debug("OpenRouter provider not verified - skipping free models (unhealthy providers cannot provide reliable fallbacks)")
-		return
-	}
-
-	// Add top OpenRouter free models with scores
-	// Higher scores for more capable models
-	freeModels := []struct {
-		Name  string
-		Score float64
-	}{
-		// Llama 4 (highest priority - latest and most capable)
-		{OpenRouterFreeModels.Llama4Maverick, 8.8},
-		{OpenRouterFreeModels.Llama4Scout, 8.6},
-		{OpenRouterFreeModels.Llama3370B, 8.4},
-
-		// DeepSeek R1 (excellent reasoning capabilities)
-		{OpenRouterFreeModels.DeepSeekR1, 8.5},
-		{OpenRouterFreeModels.DeepSeekChatV3, 8.3},
-		{OpenRouterFreeModels.DeepSeekR1Llama, 8.2},
-
-		// Qwen (good general purpose)
-		{OpenRouterFreeModels.QwenQwQ32B, 8.0},
-
-		// Google Gemini (strong reasoning)
-		{OpenRouterFreeModels.Gemini25ProExp, 8.7},
-		{OpenRouterFreeModels.Gemini20Flash, 8.1},
-		{OpenRouterFreeModels.Gemma327B, 7.8},
-
-		// NVIDIA (large model)
-		{OpenRouterFreeModels.NvidiaLlama253B, 8.0},
-
-		// Microsoft Phi (efficient)
-		{OpenRouterFreeModels.Phi3Medium, 7.5},
-		{OpenRouterFreeModels.Phi3Mini, 7.2},
-
-		// Other open-source models
-		{OpenRouterFreeModels.Mistral7B, 7.3},
-		{OpenRouterFreeModels.Zephyr7B, 7.0},
-	}
-
-	for _, m := range freeModels {
 		dtc.verifiedLLMs = append(dtc.verifiedLLMs, &VerifiedLLM{
 			ProviderName: "openrouter",
-			ModelName:    m.Name,
-			Score:        m.Score,
-			Provider:     provider,
+			ModelName:    model.Name,
+			Score:        model.Score,
+			Provider:     discovered.Provider,
 			IsOAuth:      false,
-			Verified:     true, // Free models don't require API key verification
+			Verified:     true, // Model actually passed verification
 		})
+		addedCount++
 	}
 
-	dtc.logger.WithField("models", len(freeModels)).Info("Added OpenRouter Zen free models")
+	if addedCount == 0 {
+		dtc.logger.Warn("No OpenRouter free models passed verification - they will not be included in debate team")
+	} else {
+		dtc.logger.WithField("models", addedCount).Info("Added verified OpenRouter Zen free models")
+	}
 }
 
-// collectZenModels collects OpenCode Zen free models (no API key required)
-// These are available through the OpenCode Zen API gateway without authentication
-// Zen provider health is verified before adding models
+// collectZenModels collects OpenCode Zen free models that have been VERIFIED
+// through the FreeProviderAdapter verification pipeline.
+// IMPORTANT: Only models that passed verification (including canned error checks) are added.
+// DO NOT add hardcoded models with assumed Verified: true.
 func (dtc *DebateTeamConfig) collectZenModels() {
-	// Get Zen provider - it should be discovered with anonymous mode support
-	provider := dtc.getVerifiedProvider("zen")
-	if provider == nil {
-		provider = dtc.getRegisteredProvider("zen")
-	}
-	if provider == nil {
-		dtc.logger.Warn("Zen provider not available - OpenCode Zen free models will not be included in debate team")
-		// Note: Zen provider supports anonymous mode, but we need the provider registered
-		// If not registered, free models will still be collected if provider discovery runs later
+	// IMPORTANT: Only use discovery to get verified Zen provider and models.
+	// DO NOT fall back to registry - unverified providers cannot be in the debate team.
+	if dtc.discovery == nil {
+		dtc.logger.Debug("Discovery not available - cannot collect Zen models")
 		return
 	}
 
-	// Add OpenCode Zen free models with scores
-	// These models are available without API key through OpenCode's Zen gateway
-	zenModels := []struct {
-		Name  string
-		Score float64
-	}{
-		{ZenModels.GrokCodeFast, 8.2}, // xAI Grok code model - fast and capable
-		{ZenModels.BigPickle, 8.0},    // Stealth model - good general purpose
-		{ZenModels.GLM47Free, 7.8},    // GLM 4.7 - good Chinese/English multilingual
-		{ZenModels.GPT5Nano, 7.6},     // GPT 5 Nano - compact and efficient
+	discovered := dtc.discovery.GetProviderByName("zen")
+	if discovered == nil {
+		dtc.logger.Debug("Zen provider not discovered")
+		return
 	}
 
-	for _, m := range zenModels {
+	// Provider must be verified (passed health checks and model completion tests)
+	if !discovered.Verified {
+		dtc.logger.WithFields(logrus.Fields{
+			"provider": "zen",
+			"status":   discovered.Status,
+			"error":    discovered.Error,
+		}).Warn("Zen provider not verified - models will not be included in debate team")
+		return
+	}
+
+	if discovered.Provider == nil {
+		dtc.logger.Warn("Zen provider instance not available")
+		return
+	}
+
+	// Only add models that have been ACTUALLY VERIFIED through the verification pipeline
+	// This means they passed the model completion test including canned error detection
+	addedCount := 0
+	for _, model := range discovered.VerifiedModels {
+		// CRITICAL: Only add models that passed verification
+		if !model.Verified {
+			dtc.logger.WithFields(logrus.Fields{
+				"provider": "zen",
+				"model":    model.Name,
+			}).Debug("Skipping unverified Zen model")
+			continue
+		}
+
 		dtc.verifiedLLMs = append(dtc.verifiedLLMs, &VerifiedLLM{
 			ProviderName: "zen",
-			ModelName:    m.Name,
-			Score:        m.Score,
-			Provider:     provider,
+			ModelName:    model.Name,
+			Score:        model.Score,
+			Provider:     discovered.Provider,
 			IsOAuth:      false,
-			Verified:     true, // Zen free models work without API key (anonymous mode)
+			Verified:     true, // Model actually passed verification
 		})
+		addedCount++
 	}
 
-	dtc.logger.WithField("models", len(zenModels)).Info("Added OpenCode Zen free models")
+	if addedCount == 0 {
+		dtc.logger.Warn("No Zen models passed verification - they will not be included in debate team")
+	} else {
+		dtc.logger.WithField("models", addedCount).Info("Added verified OpenCode Zen free models")
+	}
 }
 
 // countOAuthLLMs counts the number of OAuth2 LLMs in the verified list
