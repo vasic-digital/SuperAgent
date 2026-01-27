@@ -46,3 +46,7 @@ plugins/mcp-server/dist/
 *.db-shm
 *.db-wal
 *.db-journal
+
+# Runtime logs
+logs/
+*.log
