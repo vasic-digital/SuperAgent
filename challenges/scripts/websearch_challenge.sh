@@ -36,14 +36,14 @@ NC='\033[0m'
 
 log_pass() {
     echo -e "${GREEN}[PASS]${NC} $1"
-    ((PASSED++))
-    ((TOTAL++))
+    PASSED=$((PASSED + 1))
+    TOTAL=$((TOTAL + 1))
 }
 
 log_fail() {
     echo -e "${RED}[FAIL]${NC} $1"
-    ((FAILED++))
-    ((TOTAL++))
+    FAILED=$((FAILED + 1))
+    TOTAL=$((TOTAL + 1))
 }
 
 log_info() {
@@ -320,8 +320,19 @@ fi
 
 log_section "Section 4: CLI Agent Search Capability Check"
 
-# Check that CLI agents have web search MCP configured
-AGENTS=("opencode" "crush" "claude-code" "cline" "aider")
+# Check that ALL 48 CLI agents have web search MCP configured
+AGENTS=(
+    # Original 18 agents
+    "opencode" "crush" "helixcode" "kiro" "aider" "claude-code" "cline"
+    "codename-goose" "deepseek-cli" "forge" "gemini-cli" "gpt-engineer"
+    "kilocode" "mistral-code" "ollama-code" "plandex" "qwen-code" "amazon-q"
+    # Extended 30 agents
+    "agent-deck" "bridle" "cheshire-cat" "claude-plugins" "claude-squad"
+    "codai" "codex" "codex-skills" "conduit" "continue" "emdash" "fauxpilot"
+    "get-shit-done" "github-copilot-cli" "github-spec-kit" "git-mcp" "gptme"
+    "mobile-agent" "multiagent-coding" "nanocoder" "noi" "octogen" "openhands"
+    "postgres-mcp" "shai" "snow-cli" "task-weaver" "ui-ux-pro-max" "vtcode" "warp"
+)
 
 for agent in "${AGENTS[@]}"; do
     log_info "Test: $agent has search capability..."
