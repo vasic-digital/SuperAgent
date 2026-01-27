@@ -83,7 +83,7 @@ type OAuthAdapterConfig struct {
 func DefaultOAuthAdapterConfig() *OAuthAdapterConfig {
 	return &OAuthAdapterConfig{
 		RefreshThresholdMins:       10,
-		TrustOnVerificationFailure: true,
+		TrustOnVerificationFailure: false, // IMPORTANT: Don't trust tokens that can't make API calls
 		DefaultScoreOnFailure:      7.5,
 		OAuthPriorityBoost:         0.5,
 		VerificationTimeout:        30 * time.Second,
@@ -120,14 +120,14 @@ func NewOAuthAdapterWithConfig(verifierSvc *verifier.VerificationService, config
 //
 // IMPORTANT: Claude OAuth tokens from Claude Code CLI are PRODUCT-RESTRICTED.
 // They can ONLY be used with Claude Code - NOT with the standard Anthropic API.
-// Therefore, this method uses "trust mode" verification:
-//   - Verifies token presence and validity (expiration)
-//   - Does NOT attempt API calls (they would fail with product restriction error)
-//   - Creates a trusted provider with default score when tokens are valid
+// Attempting to use these tokens with api.anthropic.com returns:
 //
+//	"This credential is only authorized for use with Claude Code and cannot be used for other API requests."
+//
+// Therefore, Claude OAuth providers are NOT verified and NOT included in the AI debate team.
 // For actual API access, use an API key from console.anthropic.com
 func (oa *OAuthAdapter) VerifyClaudeOAuth(ctx context.Context) (*verifier.UnifiedProvider, error) {
-	oa.log.Debug("Verifying Claude OAuth provider (trust mode - API calls restricted)")
+	oa.log.Debug("Checking Claude OAuth credentials (PRODUCT-RESTRICTED - cannot be used for API)")
 
 	// Read credentials from ~/.claude/.credentials.json
 	creds, err := oa.credReader.ReadClaudeCredentials()
@@ -140,76 +140,60 @@ func (oa *OAuthAdapter) VerifyClaudeOAuth(ctx context.Context) (*verifier.Unifie
 	}
 
 	// Check token expiration
-	expiresAt := time.UnixMilli(creds.ClaudeAiOauth.ExpiresAt)
-	if oauth_credentials.IsExpired(creds.ClaudeAiOauth.ExpiresAt) {
-		oa.log.Info("Claude token expired, attempting refresh")
-		refreshed, err := oauth_credentials.AutoRefreshClaudeToken(creds)
-		if err != nil {
-			oa.log.WithError(err).Warn("Claude token refresh failed")
-			if oa.config.TrustOnVerificationFailure {
-				return oa.createTrustedClaudeProvider(creds), nil
-			}
-			return nil, fmt.Errorf("Claude token expired and refresh failed: %w", err)
-		}
-		creds = refreshed
-		expiresAt = time.UnixMilli(creds.ClaudeAiOauth.ExpiresAt)
-	}
-
-	// Cache token
-	oa.mu.Lock()
-	oa.claudeToken = creds.ClaudeAiOauth.AccessToken
-	oa.claudeExpiry = expiresAt
-	oa.mu.Unlock()
+	tokenExpired := oauth_credentials.IsExpired(creds.ClaudeAiOauth.ExpiresAt)
 
 	// IMPORTANT: Claude OAuth tokens from Claude Code CLI are PRODUCT-RESTRICTED
 	// They can ONLY be used with Claude Code itself, not the standard Anthropic API.
-	// API verification would fail with: "This credential is only authorized for use with Claude Code"
+	// API calls would fail with: "This credential is only authorized for use with Claude Code"
 	//
-	// Instead of attempting API verification (which would fail), we use "trust mode":
-	// - Token presence and validity has been verified above
-	// - We create a trusted provider without API verification
-	// - This is expected behavior, not a failure condition
+	// Since these tokens CANNOT be used for API calls, Claude OAuth providers:
+	// - Are NOT marked as verified (Verified: false)
+	// - Are NOT included in the AI debate team
+	// - Are returned for informational purposes only
 	//
-	// For actual API access, users should use an API key from console.anthropic.com
+	// For actual API access, users must use an API key from console.anthropic.com
 	oa.log.WithFields(logrus.Fields{
-		"provider":    "claude",
-		"auth_type":   "oauth",
-		"trust_mode":  true,
-		"reason":      "product_restricted_token",
-		"token_valid": true,
-		"expires_at":  expiresAt.Format(time.RFC3339),
-	}).Info("Claude OAuth token verified (trust mode - API calls would be product-restricted)")
+		"provider":           "claude",
+		"auth_type":          "oauth",
+		"token_present":      true,
+		"token_expired":      tokenExpired,
+		"product_restricted": true,
+		"verified":           false,
+		"reason":             "OAuth tokens from Claude Code CLI cannot be used for API calls",
+	}).Warn("Claude OAuth token found but CANNOT be used for API calls - provider NOT verified")
 
-	// Use trust mode - create trusted provider without API verification
-	return oa.createTrustedClaudeProvider(creds), nil
+	// Return provider with Verified: false - it will be excluded from debate team
+	return oa.createUnverifiedClaudeProvider(creds), nil
 }
 
-// createTrustedClaudeProvider creates a Claude provider that's trusted without full verification
-// IMPORTANT: Model names MUST match exactly what the Anthropic API accepts
-func (oa *OAuthAdapter) createTrustedClaudeProvider(creds *oauth_credentials.ClaudeOAuthCredentials) *verifier.UnifiedProvider {
+// createUnverifiedClaudeProvider creates a Claude provider that is NOT verified
+// because OAuth tokens from Claude Code CLI are PRODUCT-RESTRICTED and cannot be used for API calls.
+// This provider is returned for informational purposes only - it will NOT be included in the debate team.
+func (oa *OAuthAdapter) createUnverifiedClaudeProvider(creds *oauth_credentials.ClaudeOAuthCredentials) *verifier.UnifiedProvider {
 	expiresAt := time.UnixMilli(creds.ClaudeAiOauth.ExpiresAt)
 
 	return &verifier.UnifiedProvider{
 		ID:               "claude",
 		Name:             "claude",
-		DisplayName:      "Claude (Anthropic)",
+		DisplayName:      "Claude (Anthropic) - OAuth RESTRICTED",
 		Type:             "claude",
 		AuthType:         verifier.AuthTypeOAuth,
-		Verified:         true, // Trust OAuth credentials
-		VerifiedAt:       time.Now(),
-		Score:            oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost,
+		Verified:         false, // NOT verified - OAuth tokens are product-restricted
+		VerifiedAt:       time.Time{},
+		Score:            0, // No score - not functional
 		BaseURL:          "https://api.anthropic.com/v1/messages",
-		DefaultModel:     "claude-3-5-sonnet-20241022", // Use verified working model
-		Status:           verifier.StatusHealthy,
+		DefaultModel:     "claude-3-5-sonnet-20241022",
+		Status:           verifier.StatusUnhealthy,
+		ErrorMessage:     "OAuth tokens from Claude Code CLI are product-restricted and cannot be used for API calls. Use an API key from console.anthropic.com instead.",
 		OAuthTokenExpiry: expiresAt,
-		OAuthAutoRefresh: true,
+		OAuthAutoRefresh: false,
 		Tier:             1,
 		Priority:         1,
-		TestResults:      map[string]bool{"oauth_trusted": true},
+		TestResults:      map[string]bool{"oauth_product_restricted": true, "api_functional": false},
 		Models: []verifier.UnifiedModel{
-			{ID: "claude-3-5-sonnet-20241022", Name: "Claude 3.5 Sonnet", Provider: "claude", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
-			{ID: "claude-3-5-haiku-20241022", Name: "Claude 3.5 Haiku", Provider: "claude", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
-			{ID: "claude-3-opus-20240229", Name: "Claude 3 Opus", Provider: "claude", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
+			{ID: "claude-3-5-sonnet-20241022", Name: "Claude 3.5 Sonnet", Provider: "claude", Verified: false, Score: 0},
+			{ID: "claude-3-5-haiku-20241022", Name: "Claude 3.5 Haiku", Provider: "claude", Verified: false, Score: 0},
+			{ID: "claude-3-opus-20240229", Name: "Claude 3 Opus", Provider: "claude", Verified: false, Score: 0},
 		},
 	}
 }
@@ -246,7 +230,7 @@ func (oa *OAuthAdapter) VerifyQwenOAuth(ctx context.Context) (*verifier.UnifiedP
 		if err != nil {
 			oa.log.WithError(err).Warn("Qwen token refresh failed")
 			if oa.config.TrustOnVerificationFailure {
-				return oa.createTrustedQwenProvider(creds), nil
+				return oa.createUnverifiedQwenProvider(creds), nil
 			}
 			return nil, fmt.Errorf("Qwen token expired and refresh failed: %w", err)
 		}
@@ -290,7 +274,7 @@ func (oa *OAuthAdapter) VerifyQwenOAuth(ctx context.Context) (*verifier.UnifiedP
 	if err != nil {
 		oa.log.WithError(err).Warn("Qwen OAuth verification failed")
 		if oa.config.TrustOnVerificationFailure {
-			return oa.createTrustedQwenProvider(creds), nil
+			return oa.createUnverifiedQwenProvider(creds), nil
 		}
 		return nil, fmt.Errorf("Qwen OAuth verification failed: %w", err)
 	}
@@ -325,31 +309,34 @@ func (oa *OAuthAdapter) VerifyQwenOAuth(ctx context.Context) (*verifier.UnifiedP
 	return provider, nil
 }
 
-// createTrustedQwenProvider creates a Qwen provider that's trusted without full verification
-func (oa *OAuthAdapter) createTrustedQwenProvider(creds *oauth_credentials.QwenOAuthCredentials) *verifier.UnifiedProvider {
+// createUnverifiedQwenProvider creates a Qwen provider that is NOT verified
+// because OAuth tokens from Qwen CLI are for the Qwen Portal only - NOT for DashScope API.
+// This provider is returned for informational purposes only - it will NOT be included in the debate team.
+func (oa *OAuthAdapter) createUnverifiedQwenProvider(creds *oauth_credentials.QwenOAuthCredentials) *verifier.UnifiedProvider {
 	expiresAt := time.UnixMilli(creds.ExpiryDate)
 
 	return &verifier.UnifiedProvider{
 		ID:               "qwen",
 		Name:             "qwen",
-		DisplayName:      "Qwen (Alibaba)",
+		DisplayName:      "Qwen (Alibaba) - OAuth RESTRICTED",
 		Type:             "qwen",
 		AuthType:         verifier.AuthTypeOAuth,
-		Verified:         true, // Trust OAuth credentials
-		VerifiedAt:       time.Now(),
-		Score:            oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost,
+		Verified:         false, // NOT verified - OAuth tokens are for Portal only
+		VerifiedAt:       time.Time{},
+		Score:            0, // No score - not functional
 		BaseURL:          "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
 		DefaultModel:     "qwen-max",
-		Status:           verifier.StatusHealthy,
+		Status:           verifier.StatusUnhealthy,
+		ErrorMessage:     "OAuth tokens from Qwen CLI are for the Qwen Portal only - cannot be used for DashScope API. Use a DashScope API key instead.",
 		OAuthTokenExpiry: expiresAt,
-		OAuthAutoRefresh: true,
+		OAuthAutoRefresh: false,
 		Tier:             2,
 		Priority:         3,
-		TestResults:      map[string]bool{"oauth_trusted": true},
+		TestResults:      map[string]bool{"oauth_portal_only": true, "api_functional": false},
 		Models: []verifier.UnifiedModel{
-			{ID: "qwen-max", Name: "Qwen Max", Provider: "qwen", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
-			{ID: "qwen-plus", Name: "Qwen Plus", Provider: "qwen", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
-			{ID: "qwen-turbo", Name: "Qwen Turbo", Provider: "qwen", Verified: true, Score: oa.config.DefaultScoreOnFailure + oa.config.OAuthPriorityBoost},
+			{ID: "qwen-max", Name: "Qwen Max", Provider: "qwen", Verified: false, Score: 0},
+			{ID: "qwen-plus", Name: "Qwen Plus", Provider: "qwen", Verified: false, Score: 0},
+			{ID: "qwen-turbo", Name: "Qwen Turbo", Provider: "qwen", Verified: false, Score: 0},
 		},
 	}
 }
