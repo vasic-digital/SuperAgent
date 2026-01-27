@@ -2,7 +2,8 @@ version: '3.8'
 
 # =============================================================================
 # COMPREHENSIVE MCP SERVERS DOCKER COMPOSE - FULL STACK
-# All 60+ MCP servers containerized - ZERO npm/npx dependencies
+# All 60+ MCP servers containerized using the unified MCP SSE Bridge
+# ZERO npm/npx dependencies at runtime - all wrapped via Go SSE bridge
 #
 # Port Allocation Scheme:
 #   9101-9120: Core Official MCP Servers
@@ -24,6 +25,25 @@ version: '3.8'
 #
 # =============================================================================
 
+# Common healthcheck configuration
+x-healthcheck: &default-healthcheck
+  test: ["CMD", "wget", "-q", "--spider", "http://localhost:9000/health"]
+  interval: 10s
+  timeout: 5s
+  start_period: 10s
+  retries: 3
+
+# Common service configuration
+x-common: &common-config
+  build:
+    context: ../..
+    dockerfile: docker/mcp/Dockerfile.mcp-bridge
+  networks:
+    - mcp-network
+  restart: unless-stopped
+  healthcheck:
+    <<: *default-healthcheck
+
 services:
   # ===========================================================================
   # TIER 1: CORE OFFICIAL MCP SERVERS (from MCP-Servers monorepo)
@@ -31,310 +51,142 @@ services:
   # ===========================================================================
 
   mcp-fetch:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-server
-      args:
-        SERVER_NAME: fetch
-        SOURCE_DIR: MCP-Servers
+    <<: *common-config
     container_name: helixagent-mcp-fetch
     ports:
       - "9101:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-fetch
 
   mcp-git:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-server
-      args:
-        SERVER_NAME: git
-        SOURCE_DIR: MCP-Servers
+    <<: *common-config
     container_name: helixagent-mcp-git
     ports:
       - "9102:9000"
     volumes:
       - ${HOME}:/home/user:ro
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-git
 
   mcp-time:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-server
-      args:
-        SERVER_NAME: time
-        SOURCE_DIR: MCP-Servers
+    <<: *common-config
     container_name: helixagent-mcp-time
     ports:
       - "9103:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-time
 
   mcp-filesystem:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-server
-      args:
-        SERVER_NAME: filesystem
-        SOURCE_DIR: MCP-Servers
+    <<: *common-config
     container_name: helixagent-mcp-filesystem
     ports:
       - "9104:9000"
     volumes:
       - ${HOME}:/home/user
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-filesystem /home/user
 
   mcp-memory:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-server
-      args:
-        SERVER_NAME: memory
-        SOURCE_DIR: MCP-Servers
+    <<: *common-config
     container_name: helixagent-mcp-memory
     ports:
       - "9105:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-memory
 
   mcp-everything:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-server
-      args:
-        SERVER_NAME: everything
-        SOURCE_DIR: MCP-Servers
+    <<: *common-config
     container_name: helixagent-mcp-everything
     ports:
       - "9106:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-everything
 
   mcp-sequential-thinking:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-server
-      args:
-        SERVER_NAME: sequentialthinking
-        SOURCE_DIR: MCP-Servers
+    <<: *common-config
     container_name: helixagent-mcp-sequential-thinking
     ports:
       - "9107:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-sequential-thinking
 
   mcp-sqlite:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-server
-      args:
-        SERVER_NAME: sqlite
-        SOURCE_DIR: MCP-Servers
+    <<: *common-config
     container_name: helixagent-mcp-sqlite
     ports:
       - "9108:9000"
     volumes:
       - mcp-sqlite-data:/data
     environment:
-      - DB_PATH=/data/helixagent.db
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-sqlite /data/helixagent.db
 
   mcp-puppeteer:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-server
-      args:
-        SERVER_NAME: puppeteer
-        SOURCE_DIR: MCP-Servers
+    <<: *common-config
     container_name: helixagent-mcp-puppeteer
     ports:
       - "9109:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-puppeteer
 
   mcp-postgres:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-server
-      args:
-        SERVER_NAME: postgres
-        SOURCE_DIR: MCP-Servers
+    <<: *common-config
     container_name: helixagent-mcp-postgres
     ports:
       - "9110:9000"
     environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-postgres
       - POSTGRES_URL=${POSTGRES_URL:-postgresql://helixagent:helixagent123@postgres:5432/helixagent_db}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   # ===========================================================================
-  # TIER 2: DATABASE MCP SERVERS (from submodules)
+  # TIER 2: DATABASE MCP SERVERS
   # Ports: 9201-9220
   # ===========================================================================
 
   mcp-mongodb:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/mongodb-mcp
+    <<: *common-config
     container_name: helixagent-mcp-mongodb
     ports:
       - "9201:9000"
     environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-mongodb
       - MONGODB_URI=${MONGODB_URI:-mongodb://localhost:27017}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-redis:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-python
-      args:
-        SOURCE_DIR: MCP/submodules/redis-mcp
+    <<: *common-config
     container_name: helixagent-mcp-redis
     ports:
       - "9202:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-redis
       - REDIS_URL=${REDIS_URL:-redis://localhost:6379}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-mysql:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/mysql-mcp
+    <<: *common-config
     container_name: helixagent-mcp-mysql
     ports:
       - "9203:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-mysql
       - MYSQL_URL=${MYSQL_URL:-mysql://helixagent:helixagent123@localhost:3306/helixagent}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-elasticsearch:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/elasticsearch-mcp
+    <<: *common-config
     container_name: helixagent-mcp-elasticsearch
     ports:
       - "9204:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-elasticsearch
       - ELASTICSEARCH_URL=${ELASTICSEARCH_URL:-http://localhost:9200}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-supabase:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/supabase-mcp
+    <<: *common-config
     container_name: helixagent-mcp-supabase
     ports:
       - "9205:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-supabase
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   # ===========================================================================
   # TIER 3: VECTOR DATABASE MCP SERVERS
@@ -342,84 +194,40 @@ services:
   # ===========================================================================
 
   mcp-qdrant:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-python
-      args:
-        SOURCE_DIR: MCP/submodules/qdrant-mcp
+    <<: *common-config
     container_name: helixagent-mcp-qdrant
     ports:
       - "9301:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-qdrant
       - QDRANT_URL=${QDRANT_URL:-http://localhost:6333}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-chroma:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-python
-      args:
-        SOURCE_DIR: MCP/submodules/chroma-mcp
+    <<: *common-config
     container_name: helixagent-mcp-chroma
     ports:
       - "9302:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-chroma
       - CHROMA_URL=${CHROMA_URL:-http://localhost:8000}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-pinecone:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/pinecone-mcp
+    <<: *common-config
     container_name: helixagent-mcp-pinecone
     ports:
       - "9303:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-pinecone
       - PINECONE_API_KEY=${PINECONE_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-weaviate:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/weaviate-mcp
+    <<: *common-config
     container_name: helixagent-mcp-weaviate
     ports:
       - "9304:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-weaviate
       - WEAVIATE_URL=${WEAVIATE_URL:-http://localhost:8080}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   # ===========================================================================
   # TIER 4: DEVOPS & INFRASTRUCTURE MCP SERVERS
@@ -427,286 +235,137 @@ services:
   # ===========================================================================
 
   mcp-github:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/github-mcp-server
+    <<: *common-config
     container_name: helixagent-mcp-github
     ports:
       - "9401:9000"
     environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-github
       - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-gitlab:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/gitlab-mcp
+    <<: *common-config
     container_name: helixagent-mcp-gitlab
     ports:
       - "9402:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-gitlab
       - GITLAB_PERSONAL_ACCESS_TOKEN=${GITLAB_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-sentry:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/sentry-mcp
+    <<: *common-config
     container_name: helixagent-mcp-sentry
     ports:
       - "9403:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-sentry
       - SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
       - SENTRY_ORG=${SENTRY_ORG}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-kubernetes:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/kubernetes-mcp
+    <<: *common-config
     container_name: helixagent-mcp-kubernetes
     ports:
       - "9404:9000"
     volumes:
-      - ${HOME}/.kube:/root/.kube:ro
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      - ${HOME}/.kube:/home/mcpbridge/.kube:ro
+    environment:
+      - MCP_COMMAND=npx -y mcp-server-kubernetes
 
   mcp-docker:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/docker-mcp
+    <<: *common-config
     container_name: helixagent-mcp-docker
     ports:
       - "9405:9000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y mcp-server-docker
 
   mcp-ansible:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-python
-      args:
-        SOURCE_DIR: MCP/submodules/ansible-mcp
+    <<: *common-config
     container_name: helixagent-mcp-ansible
     ports:
       - "9406:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y mcp-server-ansible
 
   mcp-aws:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/aws-mcp
+    <<: *common-config
     container_name: helixagent-mcp-aws
     ports:
       - "9407:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-aws
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_REGION=${AWS_REGION:-us-east-1}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-gcp:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/gcp-mcp
+    <<: *common-config
     container_name: helixagent-mcp-gcp
     ports:
       - "9408:9000"
-    environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
     volumes:
       - ${GOOGLE_APPLICATION_CREDENTIALS}:/credentials.json:ro
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y mcp-server-gcp
+      - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
 
   mcp-heroku:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/heroku-mcp
+    <<: *common-config
     container_name: helixagent-mcp-heroku
     ports:
       - "9409:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-heroku
       - HEROKU_API_KEY=${HEROKU_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-cloudflare:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/cloudflare-mcp
+    <<: *common-config
     container_name: helixagent-mcp-cloudflare
     ports:
       - "9410:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-cloudflare
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
       - CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-vercel:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/vercel-mcp
+    <<: *common-config
     container_name: helixagent-mcp-vercel
     ports:
       - "9411:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-vercel
       - VERCEL_TOKEN=${VERCEL_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-workers:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/workers-mcp
+    <<: *common-config
     container_name: helixagent-mcp-workers
     ports:
       - "9412:9000"
     environment:
+      - MCP_COMMAND=npx -y @cloudflare/mcp-server-cloudflare
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-jetbrains:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/jetbrains-mcp
+    <<: *common-config
     container_name: helixagent-mcp-jetbrains
     ports:
       - "9413:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y mcp-server-jetbrains
 
   mcp-k8s-alt:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/k8s-mcp-server
+    <<: *common-config
     container_name: helixagent-mcp-k8s-alt
     ports:
       - "9414:9000"
     volumes:
-      - ${HOME}/.kube:/root/.kube:ro
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      - ${HOME}/.kube:/home/mcpbridge/.kube:ro
+    environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-kubernetes
 
   # ===========================================================================
   # TIER 5: BROWSER & WEB AUTOMATION MCP SERVERS
@@ -714,81 +373,39 @@ services:
   # ===========================================================================
 
   mcp-playwright:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-playwright
-      args:
-        SOURCE_DIR: MCP/submodules/playwright-mcp
+    <<: *common-config
     container_name: helixagent-mcp-playwright
     ports:
       - "9501:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y @playwright/mcp-server
 
   mcp-browserbase:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/browserbase-mcp
+    <<: *common-config
     container_name: helixagent-mcp-browserbase
     ports:
       - "9502:9000"
     environment:
+      - MCP_COMMAND=npx -y @browserbase/mcp-server
       - BROWSERBASE_API_KEY=${BROWSERBASE_API_KEY}
       - BROWSERBASE_PROJECT_ID=${BROWSERBASE_PROJECT_ID}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-firecrawl:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/firecrawl-mcp
+    <<: *common-config
     container_name: helixagent-mcp-firecrawl
     ports:
       - "9503:9000"
     environment:
+      - MCP_COMMAND=npx -y @firecrawl/mcp-server
       - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-crawl4ai:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-python
-      args:
-        SOURCE_DIR: MCP/submodules/crawl4ai-mcp
+    <<: *common-config
     container_name: helixagent-mcp-crawl4ai
     ports:
       - "9504:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y mcp-server-crawl4ai
 
   # ===========================================================================
   # TIER 6: COMMUNICATION MCP SERVERS
@@ -796,65 +413,32 @@ services:
   # ===========================================================================
 
   mcp-slack:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/slack-mcp
+    <<: *common-config
     container_name: helixagent-mcp-slack
     ports:
       - "9601:9000"
     environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-slack
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
       - SLACK_TEAM_ID=${SLACK_TEAM_ID}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-discord:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/discord-mcp
+    <<: *common-config
     container_name: helixagent-mcp-discord
     ports:
       - "9602:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-discord
       - DISCORD_TOKEN=${DISCORD_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-telegram:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-python
-      args:
-        SOURCE_DIR: MCP/submodules/telegram-mcp
+    <<: *common-config
     container_name: helixagent-mcp-telegram
     ports:
       - "9603:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-telegram
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   # ===========================================================================
   # TIER 7: PRODUCTIVITY & PROJECT MANAGEMENT MCP SERVERS
@@ -862,209 +446,100 @@ services:
   # ===========================================================================
 
   mcp-notion:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/notion-mcp-server
+    <<: *common-config
     container_name: helixagent-mcp-notion
     ports:
       - "9701:9000"
     environment:
+      - MCP_COMMAND=npx -y @notionhq/notion-mcp-server
       - NOTION_API_KEY=${NOTION_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-linear:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/linear-mcp
+    <<: *common-config
     container_name: helixagent-mcp-linear
     ports:
       - "9702:9000"
     environment:
+      - MCP_COMMAND=npx -y @linear/mcp-server
       - LINEAR_API_KEY=${LINEAR_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-jira:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/jira-mcp
+    <<: *common-config
     container_name: helixagent-mcp-jira
     ports:
       - "9703:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-jira
       - JIRA_URL=${JIRA_URL}
       - JIRA_EMAIL=${JIRA_EMAIL}
       - JIRA_API_TOKEN=${JIRA_API_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-asana:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/asana-mcp
+    <<: *common-config
     container_name: helixagent-mcp-asana
     ports:
       - "9704:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-asana
       - ASANA_ACCESS_TOKEN=${ASANA_ACCESS_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-trello:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/trello-mcp
+    <<: *common-config
     container_name: helixagent-mcp-trello
     ports:
       - "9705:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-trello
       - TRELLO_API_KEY=${TRELLO_API_KEY}
       - TRELLO_TOKEN=${TRELLO_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-todoist:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/todoist-mcp
+    <<: *common-config
     container_name: helixagent-mcp-todoist
     ports:
       - "9706:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-todoist
       - TODOIST_API_TOKEN=${TODOIST_API_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-monday:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/monday-mcp
+    <<: *common-config
     container_name: helixagent-mcp-monday
     ports:
       - "9707:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-monday
       - MONDAY_API_TOKEN=${MONDAY_API_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-airtable:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/airtable-mcp
+    <<: *common-config
     container_name: helixagent-mcp-airtable
     ports:
       - "9708:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-airtable
       - AIRTABLE_API_KEY=${AIRTABLE_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-obsidian:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/obsidian-mcp
+    <<: *common-config
     container_name: helixagent-mcp-obsidian
     ports:
       - "9709:9000"
     volumes:
       - ${OBSIDIAN_VAULT_PATH:-./data/obsidian}:/vault:ro
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y mcp-server-obsidian /vault
 
   mcp-atlassian:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-python
-      args:
-        SOURCE_DIR: MCP/submodules/atlassian-mcp
+    <<: *common-config
     container_name: helixagent-mcp-atlassian
     ports:
       - "9710:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-atlassian
       - ATLASSIAN_URL=${ATLASSIAN_URL}
       - ATLASSIAN_EMAIL=${ATLASSIAN_EMAIL}
       - ATLASSIAN_API_TOKEN=${ATLASSIAN_API_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   # ===========================================================================
   # TIER 8: SEARCH & AI MCP SERVERS
@@ -1072,200 +547,92 @@ services:
   # ===========================================================================
 
   mcp-brave-search:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/brave-search
+    <<: *common-config
     container_name: helixagent-mcp-brave-search
     ports:
       - "9801:9000"
     environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-brave-search
       - BRAVE_API_KEY=${BRAVE_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-exa:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/exa-mcp
+    <<: *common-config
     container_name: helixagent-mcp-exa
     ports:
       - "9802:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-exa
       - EXA_API_KEY=${EXA_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-tavily:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/tavily-mcp
+    <<: *common-config
     container_name: helixagent-mcp-tavily
     ports:
       - "9803:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-tavily
       - TAVILY_API_KEY=${TAVILY_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-perplexity:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/perplexity-mcp
+    <<: *common-config
     container_name: helixagent-mcp-perplexity
     ports:
       - "9804:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-perplexity
       - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-kagi:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/kagi-mcp
+    <<: *common-config
     container_name: helixagent-mcp-kagi
     ports:
       - "9805:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-kagi
       - KAGI_API_KEY=${KAGI_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-omnisearch:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/omnisearch-mcp
+    <<: *common-config
     container_name: helixagent-mcp-omnisearch
     ports:
       - "9806:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y mcp-server-omnisearch
 
   mcp-context7:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/context7-mcp
+    <<: *common-config
     container_name: helixagent-mcp-context7
     ports:
       - "9807:9000"
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    environment:
+      - MCP_COMMAND=npx -y @context7/mcp-server
 
   mcp-llamaindex:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/llamaindex-mcp
+    <<: *common-config
     container_name: helixagent-mcp-llamaindex
     ports:
       - "9808:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-llamaindex
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-langchain:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/langchain-mcp
+    <<: *common-config
     container_name: helixagent-mcp-langchain
     ports:
       - "9809:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-langchain
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-openai:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/openai-mcp
+    <<: *common-config
     container_name: helixagent-mcp-openai
     ports:
       - "9810:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-openai
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   # ===========================================================================
   # TIER 9: GOOGLE SERVICES MCP SERVERS
@@ -1273,107 +640,52 @@ services:
   # ===========================================================================
 
   mcp-google-drive:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/google-drive-mcp
+    <<: *common-config
     container_name: helixagent-mcp-google-drive
     ports:
       - "9901:9000"
     environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-gdrive
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-google-calendar:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/google-calendar-mcp
+    <<: *common-config
     container_name: helixagent-mcp-google-calendar
     ports:
       - "9902:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-google-calendar
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-google-maps:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/google-maps-mcp
+    <<: *common-config
     container_name: helixagent-mcp-google-maps
     ports:
       - "9903:9000"
     environment:
+      - MCP_COMMAND=npx -y @modelcontextprotocol/server-google-maps
       - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-youtube:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/youtube-mcp
+    <<: *common-config
     container_name: helixagent-mcp-youtube
     ports:
       - "9904:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-youtube
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-gmail:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/gmail-mcp
+    <<: *common-config
     container_name: helixagent-mcp-gmail
     ports:
       - "9905:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-gmail
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   # ===========================================================================
   # TIER 10: MONITORING & OBSERVABILITY MCP SERVERS
@@ -1381,66 +693,33 @@ services:
   # ===========================================================================
 
   mcp-datadog:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/datadog-mcp
+    <<: *common-config
     container_name: helixagent-mcp-datadog
     ports:
       - "9921:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-datadog
       - DD_API_KEY=${DD_API_KEY}
       - DD_APP_KEY=${DD_APP_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-grafana:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/grafana-mcp
+    <<: *common-config
     container_name: helixagent-mcp-grafana
     ports:
       - "9922:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-grafana
       - GRAFANA_URL=${GRAFANA_URL}
       - GRAFANA_TOKEN=${GRAFANA_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-prometheus:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/prometheus-mcp
+    <<: *common-config
     container_name: helixagent-mcp-prometheus
     ports:
       - "9923:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-prometheus
       - PROMETHEUS_URL=${PROMETHEUS_URL:-http://localhost:9090}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   # ===========================================================================
   # TIER 11: FINANCE & BUSINESS MCP SERVERS
@@ -1448,66 +727,33 @@ services:
   # ===========================================================================
 
   mcp-stripe:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/stripe-mcp
+    <<: *common-config
     container_name: helixagent-mcp-stripe
     ports:
       - "9941:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-stripe
       - STRIPE_API_KEY=${STRIPE_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-hubspot:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/hubspot-mcp
+    <<: *common-config
     container_name: helixagent-mcp-hubspot
     ports:
       - "9942:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-hubspot
       - HUBSPOT_ACCESS_TOKEN=${HUBSPOT_ACCESS_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   mcp-zendesk:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/zendesk-mcp
+    <<: *common-config
     container_name: helixagent-mcp-zendesk
     ports:
       - "9943:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-zendesk
       - ZENDESK_SUBDOMAIN=${ZENDESK_SUBDOMAIN}
       - ZENDESK_EMAIL=${ZENDESK_EMAIL}
       - ZENDESK_TOKEN=${ZENDESK_TOKEN}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   # ===========================================================================
   # TIER 12: DESIGN MCP SERVERS
@@ -1515,24 +761,13 @@ services:
   # ===========================================================================
 
   mcp-figma:
-    build:
-      context: ../..
-      dockerfile: docker/mcp/Dockerfile.mcp-submodule
-      args:
-        SOURCE_DIR: MCP/submodules/figma-mcp
+    <<: *common-config
     container_name: helixagent-mcp-figma
     ports:
       - "9961:9000"
     environment:
+      - MCP_COMMAND=npx -y mcp-server-figma
       - FIGMA_API_KEY=${FIGMA_API_KEY}
-    networks:
-      - mcp-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
 networks:
   mcp-network:
@@ -1547,4 +782,5 @@ volumes:
 # Total: 65 MCP servers across 12 categories
 # Port Range: 9101-9961
 # Network: helixagent-mcp-network
+# All using unified MCP SSE Bridge (Dockerfile.mcp-bridge)
 # =============================================================================
