@@ -79,7 +79,7 @@ func createTestContainerConfig(executor *MockCommandExecutor, healthChecker *Moc
 		ProjectDir:       "/test/project",
 		RequiredServices: []string{"postgres", "redis", "cognee", "chromadb"},
 		CogneeURL:        "http://localhost:8000/health",
-		ChromaDBURL:      "http://localhost:8001/api/v1/heartbeat",
+		ChromaDBURL:      "http://localhost:8001/api/v2/heartbeat",
 		Executor:         executor,
 		HealthChecker:    healthChecker,
 	}
@@ -1833,7 +1833,7 @@ func TestFullWorkflow_PartialFailure(t *testing.T) {
 		ProjectDir:       "/test/project",
 		RequiredServices: []string{"postgres", "redis", "cognee", "chromadb"},
 		CogneeURL:        "http://localhost:8000/health",
-		ChromaDBURL:      "http://localhost:8001/api/v1/heartbeat",
+		ChromaDBURL:      "http://localhost:8001/api/v2/heartbeat",
 		Executor:         &MockCommandExecutor{},
 		HealthChecker:    healthChecker,
 	}

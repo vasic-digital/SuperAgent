@@ -236,7 +236,7 @@ func DefaultContainerConfig() *ContainerConfig {
 		ProjectDir:       projectDir,
 		RequiredServices: []string{"postgres", "redis", "cognee", "chromadb"},
 		CogneeURL:        "http://localhost:8000/",
-		ChromaDBURL:      "http://localhost:8001/api/v1/heartbeat",
+		ChromaDBURL:      "http://localhost:8001/api/v2/heartbeat",
 		Executor:         &RealCommandExecutor{},
 		HealthChecker:    NewHTTPHealthChecker(10 * time.Second),
 	}

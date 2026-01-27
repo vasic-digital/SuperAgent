@@ -29,10 +29,8 @@ services:
     volumes:
       - redis_data:/data
     network_mode: host
-    # Suppress memory overcommit warnings - these are informational only
-    # For production, set vm.overcommit_memory=1 in /etc/sysctl.conf
-    sysctls:
-      - net.core.somaxconn=1024
+    # Note: sysctls removed - incompatible with network_mode: host in Podman
+    # For production, set vm.overcommit_memory=1 and net.core.somaxconn=1024 in /etc/sysctl.conf
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-helixagent123}", "--no-auth-warning", "ping"]
       interval: 10s
