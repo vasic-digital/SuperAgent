@@ -186,8 +186,14 @@ EOF
         return 1
     fi
 
-    # Validate no mock/stub data
-    if echo "$CONTENT" | grep -qi "mock\|stub\|placeholder\|example.com\|test data\|lorem ipsum"; then
+    # Validate no mock/stub data (patterns that indicate fake/test responses)
+    # Note: We use specific patterns to avoid false positives from legitimate technical content
+    # - "mock data" / "stub data" / "mocked response" - actual mock/stub indicators
+    # - "example.com" - placeholder domain
+    # - "lorem ipsum" - placeholder text
+    # - "TODO:" / "FIXME:" - development placeholders
+    # - "NotImplemented" / "not implemented" - unimplemented stubs
+    if echo "$CONTENT" | grep -qiE "mock data|stub data|mocked response|stubbed response|example\.com|lorem ipsum|TODO:|FIXME:|NotImplemented|not yet implemented|fake response|test response only"; then
         log_fail "$TEST_NAME - Contains mock/stub data (FALSE POSITIVE)"
         echo "  Found mock data in response"
         return 1
