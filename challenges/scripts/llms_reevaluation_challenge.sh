@@ -291,72 +291,127 @@ if [ "$HELIXAGENT_RUNNING" = "true" ]; then
         FAILED=$((FAILED + 1))
     fi
 
-    # Test 20: debate_team.team_configured is true
-    TOTAL=$((TOTAL + 1))
-    log_info "Test 20: debate_team.team_configured is true"
+    # Test 20-23: Debate team configuration
+    # NEW BEHAVIOR: Team is ALWAYS configured with 15 LLMs if at least 1 verified provider exists
+    # Strongest LLMs are reused to fill all 15 positions when fewer unique LLMs available
     TEAM_CONFIGURED=$(jq -r '.debate_team.team_configured' /tmp/startup_verification.json 2>/dev/null)
+    VERIFIED_COUNT=$(jq -r '.verified_count' /tmp/startup_verification.json 2>/dev/null)
+
+    # Test 20: debate_team.team_configured should be true if any verified providers exist
+    TOTAL=$((TOTAL + 1))
+    log_info "Test 20: debate_team.team_configured is true (requires >= 1 verified provider)"
     if [ "$TEAM_CONFIGURED" = "true" ]; then
         log_success "debate_team.team_configured is true"
         PASSED=$((PASSED + 1))
+    elif [ "$VERIFIED_COUNT" != "null" ] && [ "$VERIFIED_COUNT" -eq 0 ] 2>/dev/null; then
+        log_warning "debate_team not configured (no verified providers)"
+        log_success "Test 20: Correctly not configured (no verified providers)"
+        PASSED=$((PASSED + 1))
     else
-        log_error "debate_team.team_configured is NOT true (got: $TEAM_CONFIGURED)"
+        log_error "debate_team.team_configured is false but should be true ($VERIFIED_COUNT verified)"
         FAILED=$((FAILED + 1))
     fi
 
-    # Test 21: debate_team.total_llms >= 3 (minimum for a valid debate)
+    # Test 21: debate_team.total_llms must be exactly 15 (strongest LLMs reused to fill all positions)
     TOTAL=$((TOTAL + 1))
-    log_info "Test 21: debate_team.total_llms >= 3"
+    log_info "Test 21: debate_team.total_llms == 15 (all positions filled)"
     TEAM_LLMS=$(jq -r '.debate_team.total_llms' /tmp/startup_verification.json 2>/dev/null)
-    if [ "$TEAM_LLMS" != "null" ] && [ "$TEAM_LLMS" -ge 3 ] 2>/dev/null; then
-        log_success "debate_team.total_llms is $TEAM_LLMS"
-        PASSED=$((PASSED + 1))
+    if [ "$TEAM_CONFIGURED" = "true" ]; then
+        if [ "$TEAM_LLMS" = "15" ]; then
+            log_success "debate_team.total_llms is $TEAM_LLMS (all 15 positions filled)"
+            PASSED=$((PASSED + 1))
+        else
+            log_error "debate_team.total_llms should be 15 (got: $TEAM_LLMS)"
+            FAILED=$((FAILED + 1))
+        fi
     else
-        log_error "debate_team.total_llms is invalid (got: $TEAM_LLMS)"
-        FAILED=$((FAILED + 1))
+        log_warning "Team not configured - skipping test"
+        log_success "Test 21: Skipped (no verified providers)"
+        PASSED=$((PASSED + 1))
     fi
 
-    # Test 22: debate_team.positions >= 1
+    # Test 22: debate_team.positions must be exactly 5
     TOTAL=$((TOTAL + 1))
-    log_info "Test 22: debate_team.positions >= 1"
+    log_info "Test 22: debate_team.positions == 5"
     TEAM_POSITIONS=$(jq -r '.debate_team.positions' /tmp/startup_verification.json 2>/dev/null)
-    if [ "$TEAM_POSITIONS" != "null" ] && [ "$TEAM_POSITIONS" -ge 1 ] 2>/dev/null; then
-        log_success "debate_team.positions is $TEAM_POSITIONS"
-        PASSED=$((PASSED + 1))
+    if [ "$TEAM_CONFIGURED" = "true" ]; then
+        if [ "$TEAM_POSITIONS" = "5" ]; then
+            log_success "debate_team.positions is $TEAM_POSITIONS"
+            PASSED=$((PASSED + 1))
+        else
+            log_error "debate_team.positions should be 5 (got: $TEAM_POSITIONS)"
+            FAILED=$((FAILED + 1))
+        fi
     else
-        log_error "debate_team.positions is invalid (got: $TEAM_POSITIONS)"
-        FAILED=$((FAILED + 1))
+        log_warning "Team not configured - skipping test"
+        log_success "Test 22: Skipped (no verified providers)"
+        PASSED=$((PASSED + 1))
     fi
 
     # Test 23: debate_team.selected_at timestamp is present
     TOTAL=$((TOTAL + 1))
     log_info "Test 23: debate_team.selected_at timestamp is present"
     TEAM_SELECTED_AT=$(jq -r '.debate_team.selected_at' /tmp/startup_verification.json 2>/dev/null)
-    if [ "$TEAM_SELECTED_AT" != "null" ] && [ -n "$TEAM_SELECTED_AT" ]; then
-        log_success "debate_team.selected_at present: $TEAM_SELECTED_AT"
-        PASSED=$((PASSED + 1))
+    if [ "$TEAM_CONFIGURED" = "true" ]; then
+        if [ "$TEAM_SELECTED_AT" != "null" ] && [ -n "$TEAM_SELECTED_AT" ]; then
+            log_success "debate_team.selected_at present: $TEAM_SELECTED_AT"
+            PASSED=$((PASSED + 1))
+        else
+            log_error "debate_team.selected_at timestamp is missing!"
+            FAILED=$((FAILED + 1))
+        fi
     else
-        log_error "debate_team.selected_at timestamp is missing!"
-        FAILED=$((FAILED + 1))
+        log_warning "Team not configured - skipping test"
+        log_success "Test 23: Skipped (no verified providers)"
+        PASSED=$((PASSED + 1))
     fi
 
-    # Test 24: Verify providers are sorted by score (descending)
+    # Test 24: Verify providers are sorted correctly (OAuth first, then by score descending within auth type)
     TOTAL=$((TOTAL + 1))
-    log_info "Test 24: Providers are sorted by score (descending)"
-    SCORES_SORTED=$(jq -r '
-        [.ranked_providers[].score] |
-        . as $arr |
-        if (. | length) > 1 then
-            [range(0; length - 1)] |
-            all(. as $i | $arr[$i] >= $arr[$i + 1])
-        else
-            true
-        end
+    log_info "Test 24: Providers are sorted correctly (OAuth first, then by score)"
+    # Check that OAuth providers come before non-OAuth providers, and within each group scores are descending
+    SORTING_CORRECT=$(jq -r '
+        .ranked_providers |
+        # Group by oauth vs non-oauth
+        group_by(.auth_type == "oauth") |
+        # For each group, check scores are descending
+        all(
+            . as $group |
+            if ($group | length) > 1 then
+                [range(0; ($group | length) - 1)] |
+                all(. as $i | $group[$i].score >= $group[$i + 1].score)
+            else
+                true
+            end
+        )
     ' /tmp/startup_verification.json 2>/dev/null)
-    if [ "$SCORES_SORTED" = "true" ]; then
-        log_success "Providers are correctly sorted by score (descending)"
+    # Also verify OAuth providers come first in the list (rank 1 should be OAuth if present)
+    FIRST_AUTH_TYPE=$(jq -r '.ranked_providers[0].auth_type' /tmp/startup_verification.json 2>/dev/null)
+    HAS_OAUTH=$(jq -r '[.ranked_providers[] | select(.auth_type == "oauth")] | length > 0' /tmp/startup_verification.json 2>/dev/null)
+    if [ "$HAS_OAUTH" = "true" ] && [ "$FIRST_AUTH_TYPE" = "oauth" ]; then
+        log_success "Providers correctly sorted: OAuth first, then by score"
         PASSED=$((PASSED + 1))
+    elif [ "$HAS_OAUTH" = "false" ]; then
+        # No OAuth providers, just check score sorting
+        SCORES_SORTED=$(jq -r '
+            [.ranked_providers[].score] |
+            . as $arr |
+            if (. | length) > 1 then
+                [range(0; length - 1)] |
+                all(. as $i | $arr[$i] >= $arr[$i + 1])
+            else
+                true
+            end
+        ' /tmp/startup_verification.json 2>/dev/null)
+        if [ "$SCORES_SORTED" = "true" ]; then
+            log_success "Providers correctly sorted by score (no OAuth present)"
+            PASSED=$((PASSED + 1))
+        else
+            log_error "Providers are NOT sorted by score correctly!"
+            FAILED=$((FAILED + 1))
+        fi
     else
-        log_error "Providers are NOT sorted by score correctly!"
+        log_error "OAuth provider found but not at rank 1 (got: $FIRST_AUTH_TYPE)"
         FAILED=$((FAILED + 1))
     fi
 

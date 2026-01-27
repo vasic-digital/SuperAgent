@@ -697,3 +697,381 @@ func TestStartupResult_FreshTimestamps(t *testing.T) {
 	assert.True(t, result.CompletedAt.After(result.StartedAt) || result.CompletedAt.Equal(result.StartedAt),
 		"completed_at should be >= started_at")
 }
+
+// ============================================================================
+// Debate Team Selection Tests - LLM Reuse Logic
+// ============================================================================
+
+func TestDebateTeamSelection_All15PositionsFilled(t *testing.T) {
+	// Test that all 15 positions are always filled regardless of unique LLM count
+	cfg := DefaultStartupConfig()
+	cfg.VerificationTimeout = 5 * time.Second
+	cfg.EnableFreeProviders = true
+	sv := NewStartupVerifier(cfg, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	result, err := sv.VerifyAllProviders(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	if result.DebateTeam == nil {
+		t.Skip("No debate team available (need at least 1 verified provider)")
+	}
+
+	// Must have exactly 5 positions
+	assert.Len(t, result.DebateTeam.Positions, 5, "Should have exactly 5 positions")
+
+	// All 15 positions must be filled
+	totalFilled := 0
+	for i, pos := range result.DebateTeam.Positions {
+		require.NotNil(t, pos, "Position %d should not be nil", i+1)
+		require.NotNil(t, pos.Primary, "Position %d primary should not be nil", i+1)
+		require.NotNil(t, pos.Fallback1, "Position %d fallback1 should not be nil", i+1)
+		require.NotNil(t, pos.Fallback2, "Position %d fallback2 should not be nil", i+1)
+		totalFilled += 3
+	}
+
+	assert.Equal(t, 15, totalFilled, "All 15 LLM positions must be filled")
+	assert.Equal(t, 15, result.DebateTeam.TotalLLMs, "TotalLLMs should be 15")
+}
+
+func TestDebateTeamSelection_LLMReuse(t *testing.T) {
+	// Test that strongest LLMs are reused when fewer than 15 unique LLMs available
+	cfg := DefaultStartupConfig()
+	sv := NewStartupVerifier(cfg, nil)
+
+	// Manually set up ranked providers with only 3 LLMs
+	sv.rankedProviders = []*UnifiedProvider{
+		{
+			ID:       "provider1",
+			Name:     "Provider1",
+			Type:     "provider1",
+			AuthType: AuthTypeAPIKey,
+			Verified: true,
+			Score:    9.0,
+			Models: []UnifiedModel{
+				{ID: "model-a", Name: "Model A", Score: 9.0},
+			},
+		},
+		{
+			ID:       "provider2",
+			Name:     "Provider2",
+			Type:     "provider2",
+			AuthType: AuthTypeFree,
+			Verified: true,
+			Score:    7.0,
+			Models: []UnifiedModel{
+				{ID: "model-b", Name: "Model B", Score: 7.0},
+				{ID: "model-c", Name: "Model C", Score: 7.0},
+			},
+		},
+	}
+
+	team, err := sv.selectDebateTeam()
+	require.NoError(t, err)
+	require.NotNil(t, team)
+
+	// All 15 positions should be filled via reuse
+	assert.Equal(t, 15, team.TotalLLMs, "All 15 positions must be filled even with reuse")
+	assert.Len(t, team.Positions, 5, "Should have 5 positions")
+
+	// Verify each position has all 3 slots filled
+	for i, pos := range team.Positions {
+		assert.NotNil(t, pos.Primary, "Position %d primary must be filled", i+1)
+		assert.NotNil(t, pos.Fallback1, "Position %d fallback1 must be filled", i+1)
+		assert.NotNil(t, pos.Fallback2, "Position %d fallback2 must be filled", i+1)
+	}
+}
+
+func TestDebateTeamSelection_SingleLLMReuse(t *testing.T) {
+	// Test with only 1 LLM - should reuse it for all 15 positions
+	cfg := DefaultStartupConfig()
+	sv := NewStartupVerifier(cfg, nil)
+
+	sv.rankedProviders = []*UnifiedProvider{
+		{
+			ID:       "zen",
+			Name:     "Zen",
+			Type:     "zen",
+			AuthType: AuthTypeFree,
+			Verified: true,
+			Score:    6.5,
+			Models: []UnifiedModel{
+				{ID: "opencode/grok-code", Name: "Grok Code", Score: 6.5},
+			},
+		},
+	}
+
+	team, err := sv.selectDebateTeam()
+	require.NoError(t, err)
+	require.NotNil(t, team)
+
+	// All 15 positions should be filled with the same LLM
+	assert.Equal(t, 15, team.TotalLLMs)
+
+	// All positions should use the same model (reused)
+	for i, pos := range team.Positions {
+		assert.Equal(t, "opencode/grok-code", pos.Primary.ModelID, "Position %d primary", i+1)
+		assert.Equal(t, "opencode/grok-code", pos.Fallback1.ModelID, "Position %d fallback1", i+1)
+		assert.Equal(t, "opencode/grok-code", pos.Fallback2.ModelID, "Position %d fallback2", i+1)
+	}
+}
+
+func TestDebateTeamSelection_OAuthFirst(t *testing.T) {
+	// Test that OAuth providers are prioritized (placed first in positions)
+	cfg := DefaultStartupConfig()
+	sv := NewStartupVerifier(cfg, nil)
+
+	sv.rankedProviders = []*UnifiedProvider{
+		{
+			ID:       "deepseek",
+			Name:     "DeepSeek",
+			Type:     "deepseek",
+			AuthType: AuthTypeAPIKey,
+			Verified: true,
+			Score:    9.0, // Higher score but API key
+			Models: []UnifiedModel{
+				{ID: "deepseek-chat", Name: "DeepSeek Chat", Score: 9.0},
+			},
+		},
+		{
+			ID:       "claude",
+			Name:     "Claude",
+			Type:     "claude",
+			AuthType: AuthTypeOAuth,
+			Verified: true,
+			Score:    8.0, // Lower score but OAuth
+			Models: []UnifiedModel{
+				{ID: "claude-opus-4-5", Name: "Claude Opus", Score: 8.0},
+			},
+		},
+	}
+
+	team, err := sv.selectDebateTeam()
+	require.NoError(t, err)
+	require.NotNil(t, team)
+
+	// First position's primary should be OAuth (Claude) despite lower score
+	assert.Equal(t, "claude", team.Positions[0].Primary.Provider,
+		"OAuth provider should be prioritized first")
+	assert.True(t, team.Positions[0].Primary.IsOAuth,
+		"First primary should be OAuth")
+}
+
+func TestDebateTeamSelection_SortedByScore(t *testing.T) {
+	// Test that LLMs are sorted by score within auth type groups
+	cfg := DefaultStartupConfig()
+	sv := NewStartupVerifier(cfg, nil)
+
+	sv.rankedProviders = []*UnifiedProvider{
+		{
+			ID:       "gemini",
+			Name:     "Gemini",
+			Type:     "gemini",
+			AuthType: AuthTypeAPIKey,
+			Verified: true,
+			Score:    9.0,
+			Models: []UnifiedModel{
+				{ID: "gemini-2.0", Name: "Gemini 2.0", Score: 9.0},
+			},
+		},
+		{
+			ID:       "deepseek",
+			Name:     "DeepSeek",
+			Type:     "deepseek",
+			AuthType: AuthTypeAPIKey,
+			Verified: true,
+			Score:    8.5,
+			Models: []UnifiedModel{
+				{ID: "deepseek-chat", Name: "DeepSeek Chat", Score: 8.5},
+			},
+		},
+		{
+			ID:       "mistral",
+			Name:     "Mistral",
+			Type:     "mistral",
+			AuthType: AuthTypeAPIKey,
+			Verified: true,
+			Score:    8.0,
+			Models: []UnifiedModel{
+				{ID: "mistral-large", Name: "Mistral Large", Score: 8.0},
+			},
+		},
+	}
+
+	team, err := sv.selectDebateTeam()
+	require.NoError(t, err)
+	require.NotNil(t, team)
+
+	// Positions should be filled in score order
+	assert.Equal(t, "gemini-2.0", team.Positions[0].Primary.ModelID)
+	assert.Equal(t, "deepseek-chat", team.Positions[0].Fallback1.ModelID)
+	assert.Equal(t, "mistral-large", team.Positions[0].Fallback2.ModelID)
+}
+
+func TestDebateTeamSelection_NoProviders(t *testing.T) {
+	// Test with no providers - should return error
+	cfg := DefaultStartupConfig()
+	sv := NewStartupVerifier(cfg, nil)
+
+	sv.rankedProviders = []*UnifiedProvider{} // Empty
+
+	team, err := sv.selectDebateTeam()
+	assert.Error(t, err)
+	assert.Nil(t, team)
+	assert.Contains(t, err.Error(), "no verified providers available")
+}
+
+func TestDebateTeamSelection_UnverifiedExcluded(t *testing.T) {
+	// Test that unverified providers are excluded from team
+	cfg := DefaultStartupConfig()
+	sv := NewStartupVerifier(cfg, nil)
+
+	sv.rankedProviders = []*UnifiedProvider{
+		{
+			ID:       "verified1",
+			Name:     "Verified1",
+			Type:     "verified1",
+			AuthType: AuthTypeAPIKey,
+			Verified: true,
+			Score:    8.0,
+			Models: []UnifiedModel{
+				{ID: "model-good", Name: "Model Good", Score: 8.0},
+			},
+		},
+		{
+			ID:       "unverified",
+			Name:     "Unverified",
+			Type:     "unverified",
+			AuthType: AuthTypeAPIKey,
+			Verified: false, // NOT verified
+			Score:    9.5,   // Higher score but unverified
+			Models: []UnifiedModel{
+				{ID: "model-bad", Name: "Model Bad", Score: 9.5},
+			},
+		},
+	}
+
+	team, err := sv.selectDebateTeam()
+	require.NoError(t, err)
+	require.NotNil(t, team)
+
+	// All positions should use only the verified model
+	for _, pos := range team.Positions {
+		assert.Equal(t, "model-good", pos.Primary.ModelID)
+		assert.Equal(t, "model-good", pos.Fallback1.ModelID)
+		assert.Equal(t, "model-good", pos.Fallback2.ModelID)
+	}
+}
+
+func TestDebateTeamSelection_BelowMinScoreExcluded(t *testing.T) {
+	// Test that providers below min score are excluded
+	cfg := DefaultStartupConfig()
+	cfg.MinScore = 5.0
+	sv := NewStartupVerifier(cfg, nil)
+
+	sv.rankedProviders = []*UnifiedProvider{
+		{
+			ID:       "good",
+			Name:     "Good",
+			Type:     "good",
+			AuthType: AuthTypeAPIKey,
+			Verified: true,
+			Score:    7.0, // Above min
+			Models: []UnifiedModel{
+				{ID: "model-good", Name: "Model Good", Score: 7.0},
+			},
+		},
+		{
+			ID:       "bad",
+			Name:     "Bad",
+			Type:     "bad",
+			AuthType: AuthTypeAPIKey,
+			Verified: true,
+			Score:    4.0, // Below min (5.0)
+			Models: []UnifiedModel{
+				{ID: "model-bad", Name: "Model Bad", Score: 4.0},
+			},
+		},
+	}
+
+	team, err := sv.selectDebateTeam()
+	require.NoError(t, err)
+	require.NotNil(t, team)
+
+	// Only the good model should be used
+	for _, pos := range team.Positions {
+		assert.Equal(t, "model-good", pos.Primary.ModelID)
+	}
+}
+
+func TestDebateTeamSelection_RolesAssigned(t *testing.T) {
+	// Test that all 5 positions have correct roles assigned
+	cfg := DefaultStartupConfig()
+	sv := NewStartupVerifier(cfg, nil)
+
+	sv.rankedProviders = []*UnifiedProvider{
+		{
+			ID:       "test",
+			Name:     "Test",
+			Type:     "test",
+			AuthType: AuthTypeAPIKey,
+			Verified: true,
+			Score:    7.0,
+			Models: []UnifiedModel{
+				{ID: "test-model", Name: "Test Model", Score: 7.0},
+			},
+		},
+	}
+
+	team, err := sv.selectDebateTeam()
+	require.NoError(t, err)
+	require.NotNil(t, team)
+
+	expectedRoles := []string{"analyst", "proposer", "critic", "synthesis", "mediator"}
+	for i, pos := range team.Positions {
+		assert.Equal(t, i+1, pos.Position, "Position number should match")
+		assert.Equal(t, expectedRoles[i], pos.Role, "Role should match for position %d", i+1)
+	}
+}
+
+func TestDebateTeamSelection_MultipleModelsPerProvider(t *testing.T) {
+	// Test that all models from a provider are considered
+	cfg := DefaultStartupConfig()
+	sv := NewStartupVerifier(cfg, nil)
+
+	sv.rankedProviders = []*UnifiedProvider{
+		{
+			ID:       "multi",
+			Name:     "Multi",
+			Type:     "multi",
+			AuthType: AuthTypeAPIKey,
+			Verified: true,
+			Score:    8.0,
+			Models: []UnifiedModel{
+				{ID: "model-1", Name: "Model 1", Score: 8.0},
+				{ID: "model-2", Name: "Model 2", Score: 8.0},
+				{ID: "model-3", Name: "Model 3", Score: 8.0},
+			},
+		},
+	}
+
+	team, err := sv.selectDebateTeam()
+	require.NoError(t, err)
+	require.NotNil(t, team)
+
+	// All 3 models should be used before wrapping
+	models := make(map[string]int)
+	for _, pos := range team.Positions {
+		models[pos.Primary.ModelID]++
+		models[pos.Fallback1.ModelID]++
+		models[pos.Fallback2.ModelID]++
+	}
+
+	// Each model should be used at least once
+	assert.Greater(t, models["model-1"], 0, "model-1 should be used")
+	assert.Greater(t, models["model-2"], 0, "model-2 should be used")
+	assert.Greater(t, models["model-3"], 0, "model-3 should be used")
+}
