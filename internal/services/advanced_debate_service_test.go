@@ -20,23 +20,23 @@ func newAdvancedDebateTestLogger() *logrus.Logger {
 
 // createAdvancedDebateTestDebateService creates a DebateService with mock providers for testing
 func createAdvancedDebateTestDebateService(logger *logrus.Logger) *DebateService {
-	// Create mock providers
+	// Create mock providers (content must be >100 chars to avoid suspicious response detection)
 	mockProvider1 := newDebateMockProvider("openai", &models.LLMResponse{
-		Content:      "This is my position on the topic. I present my arguments clearly and thoughtfully.",
+		Content:      "This is my position on the topic. I present my arguments clearly and thoughtfully, considering multiple aspects of the issue at hand.",
 		Confidence:   0.85,
 		TokensUsed:   100,
 		FinishReason: "stop",
 	})
 
 	mockProvider2 := newDebateMockProvider("anthropic", &models.LLMResponse{
-		Content:      "I offer a different perspective and challenge the previous arguments with new insights.",
+		Content:      "I offer a different perspective and challenge the previous arguments with new insights that deserve careful consideration in our analysis.",
 		Confidence:   0.90,
 		TokensUsed:   120,
 		FinishReason: "stop",
 	})
 
 	mockProvider3 := newDebateMockProvider("google", &models.LLMResponse{
-		Content:      "As a mediator, I synthesize both viewpoints and propose a balanced resolution.",
+		Content:      "As a mediator, I synthesize both viewpoints and propose a balanced resolution that addresses the key concerns from all perspectives.",
 		Confidence:   0.88,
 		TokensUsed:   110,
 		FinishReason: "stop",

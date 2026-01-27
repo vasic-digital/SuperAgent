@@ -16,12 +16,12 @@ func TestConstants(t *testing.T) {
 		assert.Equal(t, 5, TotalDebatePositions)
 	})
 
-	t.Run("Fallbacks per position is 2", func(t *testing.T) {
-		assert.Equal(t, 2, FallbacksPerPosition)
+	t.Run("Fallbacks per position is 4", func(t *testing.T) {
+		assert.Equal(t, 4, FallbacksPerPosition)
 	})
 
-	t.Run("Total debate LLMs is 15", func(t *testing.T) {
-		assert.Equal(t, 15, TotalDebateLLMs)
+	t.Run("Total debate LLMs is 25", func(t *testing.T) {
+		assert.Equal(t, 25, TotalDebateLLMs)
 		assert.Equal(t, TotalDebatePositions*(1+FallbacksPerPosition), TotalDebateLLMs)
 	})
 }
@@ -261,14 +261,14 @@ func TestDebateTeamMember(t *testing.T) {
 		assert.Equal(t, "qwen", primary.Fallback.Fallback.ProviderName)
 		assert.Nil(t, primary.Fallback.Fallback.Fallback)
 
-		// Count fallback depth
+		// Count fallback depth - this test creates a chain with 2 fallbacks
 		depth := 0
 		fb := primary.Fallback
 		for fb != nil {
 			depth++
 			fb = fb.Fallback
 		}
-		assert.Equal(t, FallbacksPerPosition, depth)
+		assert.Equal(t, 2, depth) // This test manually creates 2 fallbacks
 	})
 }
 
