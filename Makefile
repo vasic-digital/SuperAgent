@@ -643,6 +643,86 @@ podman-full:
 	podman-compose --profile full up -d
 
 # =============================================================================
+# COMPREHENSIVE INFRASTRUCTURE AUTO-START TARGETS
+# =============================================================================
+# These targets ensure ALL HelixAgent infrastructure boots automatically
+# Works with both Docker and Podman, auto-detects runtime
+
+infra-start:
+	@echo "🚀 Starting ALL HelixAgent infrastructure (auto-boot)..."
+	@./scripts/ensure-infrastructure.sh start
+	@echo "✅ All infrastructure started!"
+
+infra-stop:
+	@echo "⏹️ Stopping ALL HelixAgent infrastructure..."
+	@./scripts/ensure-infrastructure.sh stop
+	@echo "✅ All infrastructure stopped!"
+
+infra-restart:
+	@echo "🔄 Restarting ALL HelixAgent infrastructure..."
+	@./scripts/ensure-infrastructure.sh restart
+
+infra-status:
+	@echo "📊 Checking ALL infrastructure status..."
+	@./scripts/ensure-infrastructure.sh status
+
+infra-core:
+	@echo "🔧 Starting core services (PostgreSQL, Redis, ChromaDB, Cognee)..."
+	@./scripts/ensure-infrastructure.sh core
+
+infra-mcp:
+	@echo "🔌 Starting MCP servers..."
+	@./scripts/ensure-infrastructure.sh mcp
+
+infra-lsp:
+	@echo "📝 Starting LSP servers..."
+	@./scripts/ensure-infrastructure.sh lsp
+
+infra-rag:
+	@echo "🔍 Starting RAG services..."
+	@./scripts/ensure-infrastructure.sh rag
+
+# Run tests with full infrastructure auto-start
+test-with-full-auto:
+	@echo "🧪 Running tests with FULL auto-started infrastructure..."
+	@$(MAKE) infra-start
+	@echo ""
+	@echo "⏳ Waiting for all services to stabilize..."
+	@sleep 10
+	@DB_HOST=localhost DB_PORT=$${DB_PORT:-5432} DB_USER=$${DB_USER:-helixagent} DB_PASSWORD=$${DB_PASSWORD:-helixagent123} DB_NAME=$${DB_NAME:-helixagent_db} \
+		DATABASE_URL="postgres://$${DB_USER:-helixagent}:$${DB_PASSWORD:-helixagent123}@localhost:$${DB_PORT:-5432}/$${DB_NAME:-helixagent_db}?sslmode=disable" \
+		REDIS_HOST=localhost REDIS_PORT=$${REDIS_PORT:-6379} REDIS_PASSWORD=$${REDIS_PASSWORD:-helixagent123} \
+		COGNEE_URL=http://localhost:8000 CHROMADB_URL=http://localhost:8001 \
+		HELIXAGENT_URL=http://localhost:7061 \
+		CI=true FULL_TEST_MODE=true \
+		go test -v ./... -timeout 900s -cover
+	@echo ""
+	@echo "✅ Tests completed with full infrastructure!"
+
+# Run challenges with full infrastructure auto-start
+challenges-with-infra:
+	@echo "🏆 Running ALL challenges with full auto-started infrastructure..."
+	@$(MAKE) infra-start
+	@echo ""
+	@echo "⏳ Waiting for all services to stabilize..."
+	@sleep 10
+	@./challenges/scripts/run_all_challenges.sh
+	@echo ""
+	@echo "✅ All challenges completed!"
+
+# Comprehensive infrastructure challenge
+challenge-infra:
+	@echo "🏆 Running comprehensive infrastructure challenge..."
+	@./challenges/scripts/comprehensive_infrastructure_challenge.sh
+
+# All CLI agents E2E challenge
+challenge-cli-agents:
+	@echo "🏆 Running all CLI agents E2E challenge..."
+	@$(MAKE) infra-start
+	@sleep 10
+	@./challenges/scripts/all_agents_e2e_challenge.sh
+
+# =============================================================================
 # INSTALLATION TARGETS
 # =============================================================================
 
@@ -813,6 +893,20 @@ help:
 	@echo "  docker-full         Start full environment"
 	@echo "  docker-monitoring   Start monitoring stack"
 	@echo "  docker-ai           Start AI services"
+	@echo ""
+	@echo "🚀 Full Infrastructure Auto-Start (Docker/Podman):"
+	@echo "  infra-start         Start ALL infrastructure (auto-detects runtime)"
+	@echo "  infra-stop          Stop ALL infrastructure"
+	@echo "  infra-restart       Restart ALL infrastructure"
+	@echo "  infra-status        Check ALL infrastructure status"
+	@echo "  infra-core          Start core services (PostgreSQL, Redis, ChromaDB, Cognee)"
+	@echo "  infra-mcp           Start MCP servers"
+	@echo "  infra-lsp           Start LSP servers"
+	@echo "  infra-rag           Start RAG services"
+	@echo "  test-with-full-auto Run tests with full auto-started infrastructure"
+	@echo "  challenges-with-infra Run ALL challenges with full infrastructure"
+	@echo "  challenge-infra     Run comprehensive infrastructure challenge"
+	@echo "  challenge-cli-agents Run all CLI agents E2E challenge"
 	@echo ""
 	@echo "📦 Installation:"
 	@echo "  install-deps       Install development dependencies"
@@ -1102,4 +1196,4 @@ verifier-benchmark:
 # =============================================================================
 # PHONY TARGETS
 # =============================================================================
-.PHONY: all build build-debug build-all run run-dev test test-coverage test-unit test-integration test-bench test-race test-all test-with-infra test-infra-start test-infra-stop test-infra-clean test-infra-logs test-infra-status fmt vet lint security-scan docker-build docker-build-prod docker-run docker-stop docker-logs docker-clean docker-clean-all docker-test docker-dev docker-prod docker-full docker-monitoring docker-ai install-deps install uninstall clean clean-all check-deps update-deps generate docs docs-api setup-dev setup-prod help test-pentest test-security test-stress test-chaos test-e2e verifier-init verifier-update verifier-build verifier-test verifier-test-unit verifier-test-integration verifier-test-e2e verifier-test-security verifier-test-stress verifier-test-chaos verifier-test-all verifier-test-coverage verifier-test-coverage-100 verifier-run verifier-health verifier-verify verifier-score verifier-providers verifier-metrics verifier-db-migrate verifier-db-sync verifier-clean verifier-docker-build verifier-docker-run verifier-docker-stop verifier-sdk-go verifier-sdk-python verifier-sdk-js verifier-sdk-all verifier-docs verifier-benchmark
+.PHONY: all build build-debug build-all run run-dev test test-coverage test-unit test-integration test-bench test-race test-all test-with-infra test-infra-start test-infra-stop test-infra-clean test-infra-logs test-infra-status fmt vet lint security-scan docker-build docker-build-prod docker-run docker-stop docker-logs docker-clean docker-clean-all docker-test docker-dev docker-prod docker-full docker-monitoring docker-ai install-deps install uninstall clean clean-all check-deps update-deps generate docs docs-api setup-dev setup-prod help test-pentest test-security test-stress test-chaos test-e2e verifier-init verifier-update verifier-build verifier-test verifier-test-unit verifier-test-integration verifier-test-e2e verifier-test-security verifier-test-stress verifier-test-chaos verifier-test-all verifier-test-coverage verifier-test-coverage-100 verifier-run verifier-health verifier-verify verifier-score verifier-providers verifier-metrics verifier-db-migrate verifier-db-sync verifier-clean verifier-docker-build verifier-docker-run verifier-docker-stop verifier-sdk-go verifier-sdk-python verifier-sdk-js verifier-sdk-all verifier-docs verifier-benchmark infra-start infra-stop infra-restart infra-status infra-core infra-mcp infra-lsp infra-rag test-with-full-auto challenges-with-infra challenge-infra challenge-cli-agents

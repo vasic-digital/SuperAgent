@@ -960,6 +960,10 @@ func run(appCfg *AppConfig) error {
 		}
 	}
 
+	// Auto-start LSP and RAG services (non-blocking, runs in background)
+	logger.Info("Starting LSP and RAG infrastructure services...")
+	startAllInfrastructure(logger)
+
 	// MANDATORY: Verify ALL integration dependencies are healthy before starting server
 	if appCfg.StrictDependencies {
 		logger.Info("Verifying ALL integration dependencies (strict mode)...")

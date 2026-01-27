@@ -1,0 +1,117 @@
+# LSP Servers Configuration
+# Used by LSP Manager to track and orchestrate LSP servers
+
+version: "1.0"
+
+servers:
+  # Multi-language container
+  multi-language:
+    container: helixagent-lsp-multi
+    servers:
+      - id: gopls
+        name: "Go Language Server"
+        language: go
+        port: 5001
+        extensions: [".go"]
+
+      - id: rust-analyzer
+        name: "Rust Analyzer"
+        language: rust
+        port: 5002
+        extensions: [".rs"]
+
+      - id: pylsp
+        name: "Python Language Server"
+        language: python
+        port: 5003
+        extensions: [".py", ".pyw"]
+
+      - id: tsserver
+        name: "TypeScript Language Server"
+        language: typescript
+        port: 5004
+        extensions: [".ts", ".tsx", ".js", ".jsx"]
+
+      - id: clangd
+        name: "Clangd"
+        language: cpp
+        port: 5005
+        extensions: [".c", ".cpp", ".h", ".hpp", ".cc", ".cxx"]
+
+      - id: jdtls
+        name: "Eclipse JDT.LS"
+        language: java
+        port: 5006
+        extensions: [".java"]
+
+  # DevOps container
+  devops:
+    container: helixagent-lsp-devops
+    servers:
+      - id: bash-lsp
+        name: "Bash Language Server"
+        language: bash
+        port: 5020
+        extensions: [".sh", ".bash"]
+
+      - id: yaml-lsp
+        name: "YAML Language Server"
+        language: yaml
+        port: 5021
+        extensions: [".yaml", ".yml"]
+
+      - id: docker-lsp
+        name: "Dockerfile Language Server"
+        language: dockerfile
+        port: 5022
+        extensions: ["Dockerfile"]
+
+      - id: terraform-lsp
+        name: "Terraform Language Server"
+        language: terraform
+        port: 5023
+        extensions: [".tf", ".tfvars"]
+
+      - id: xml-lsp
+        name: "XML Language Server (Lemminx)"
+        language: xml
+        port: 5024
+        extensions: [".xml", ".xsd", ".xsl"]
+
+  # Standalone containers
+  standalone:
+    - id: lsp-ai
+      name: "LSP-AI"
+      container: helixagent-lsp-ai
+      port: 5000
+      description: "AI-powered code assistance"
+
+    - id: gopls-standalone
+      container: helixagent-lsp-gopls
+      port: 5011
+
+    - id: rust-analyzer-standalone
+      container: helixagent-lsp-rust-analyzer
+      port: 5012
+
+    - id: pylsp-standalone
+      container: helixagent-lsp-python
+      port: 5013
+
+    - id: tsserver-standalone
+      container: helixagent-lsp-typescript
+      port: 5014
+
+    - id: clangd-standalone
+      container: helixagent-lsp-clangd
+      port: 5015
+
+    - id: jdtls-standalone
+      container: helixagent-lsp-java
+      port: 5016
+
+# Health check configuration
+health:
+  interval: 30s
+  timeout: 10s
+  retries: 3
