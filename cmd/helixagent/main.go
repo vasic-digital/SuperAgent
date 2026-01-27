@@ -1765,7 +1765,7 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 		},
 		"fetch": {
 			Type:    "local",
-			Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"},
+			Command: []string{"uvx", "mcp-server-fetch"},
 		},
 		"memory": {
 			Type:    "local",
@@ -1773,15 +1773,15 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 		},
 		"time": {
 			Type:    "local",
-			Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"},
+			Command: []string{"uvx", "mcp-server-time"},
 		},
 		"git": {
 			Type:    "local",
-			Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"},
+			Command: []string{"uvx", "mcp-server-git"},
 		},
 		"sqlite": {
 			Type:    "local",
-			Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"},
+			Command: []string{"npx", "-y", "mcp-server-sqlite-npx", "/tmp/helixagent.db"},
 		},
 		"postgres": {
 			Type:        "local",
@@ -1798,7 +1798,7 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 		},
 		"everything": {
 			Type:    "local",
-			Command: []string{"npx", "-y", "@anthropic-ai/mcp-server-everything"},
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-everything"},
 		},
 		"brave-search": {
 			Type:        "local",
@@ -1876,7 +1876,7 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 		},
 		"raycast": {
 			Type:    "local",
-			Command: []string{"npx", "-y", "@anthropic-ai/mcp-server-raycast"},
+			Command: []string{"npx", "-y", "@raycast/mcp-server-raycast"},
 		},
 		"tinybird": {
 			Type:        "local",
@@ -2145,11 +2145,11 @@ func buildOpenCodeMCPServersOld(baseURL string) map[string]OpenCodeMCPServerDefO
 	return map[string]OpenCodeMCPServerDefOld{
 		// Anthropic Official MCPs
 		"filesystem":          {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "/home"}},
-		"fetch":               {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"}},
+		"fetch":               {Type: "local", Command: []string{"uvx", "mcp-server-fetch"}},
 		"memory":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
-		"time":                {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}},
-		"git":                 {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}},
-		"sqlite":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"}},
+		"time":                {Type: "local", Command: []string{"uvx", "mcp-server-time"}},
+		"git":                 {Type: "local", Command: []string{"uvx", "mcp-server-git"}},
+		"sqlite":              {Type: "local", Command: []string{"npx", "-y", "mcp-server-sqlite-npx", "/tmp/helixagent.db"}},
 		"postgres":            {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/helixagent"}},
 		"puppeteer":           {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}},
 		"brave-search":        {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-brave-search"}},
@@ -2843,14 +2843,14 @@ func filterWorkingCrushMCPs(allMCPs map[string]CrushMcpConfig) map[string]CrushM
 		"helixagent-cognee":     true,
 		// Core Anthropic official MCPs - no API keys required
 		"filesystem":          true, // @modelcontextprotocol/server-filesystem - VERIFIED
-		"fetch":               true, // @modelcontextprotocol/server-fetch - VERIFIED
+		"fetch":               true, // uvx mcp-server-fetch (Python) - VERIFIED
 		"memory":              true, // @modelcontextprotocol/server-memory - VERIFIED
-		"time":                true, // @modelcontextprotocol/server-time - VERIFIED
-		"git":                 true, // @modelcontextprotocol/server-git - VERIFIED
-		"sqlite":              true, // @modelcontextprotocol/server-sqlite - VERIFIED
+		"time":                true, // uvx mcp-server-time (Python) - VERIFIED
+		"git":                 true, // uvx mcp-server-git (Python) - VERIFIED
+		"sqlite":              true, // mcp-server-sqlite-npx (npm) - VERIFIED
 		"puppeteer":           true, // @modelcontextprotocol/server-puppeteer - VERIFIED
 		"sequential-thinking": true, // @modelcontextprotocol/server-sequential-thinking - VERIFIED
-		"everything":          true, // @anthropic-ai/mcp-server-everything - VERIFIED
+		"everything":          true, // @modelcontextprotocol/server-everything - VERIFIED
 	}
 
 	// Environment variable requirements (same as OpenCode)
@@ -2910,15 +2910,15 @@ func buildCrushMCPServers(baseURL string) map[string]CrushMcpConfig {
 
 		// Anthropic Official MCPs - LOCAL (started on demand via npx)
 		"filesystem":          {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", homeDir}, Enabled: true},
-		"fetch":               {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"}, Enabled: true},
+		"fetch":               {Type: "local", Command: []string{"uvx", "mcp-server-fetch"}, Enabled: true},
 		"memory":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}, Enabled: true},
-		"time":                {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}, Enabled: true},
-		"git":                 {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}, Enabled: true},
-		"sqlite":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/tmp/helixagent.db"}, Enabled: true},
+		"time":                {Type: "local", Command: []string{"uvx", "mcp-server-time"}, Enabled: true},
+		"git":                 {Type: "local", Command: []string{"uvx", "mcp-server-git"}, Enabled: true},
+		"sqlite":              {Type: "local", Command: []string{"npx", "-y", "mcp-server-sqlite-npx", "/tmp/helixagent.db"}, Enabled: true},
 		"postgres":            {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres"}, Env: map[string]string{"POSTGRES_URL": "postgresql://helixagent:helixagent123@localhost:5432/helixagent_db"}, Enabled: true},
 		"puppeteer":           {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}, Enabled: true},
 		"sequential-thinking": {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-sequential-thinking"}, Enabled: true},
-		"everything":          {Type: "local", Command: []string{"npx", "-y", "@anthropic-ai/mcp-server-everything"}, Enabled: true},
+		"everything":          {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-everything"}, Enabled: true},
 		"brave-search":        {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-brave-search"}, Env: map[string]string{"BRAVE_API_KEY": "{env:BRAVE_API_KEY}"}, Enabled: true},
 		"google-maps":         {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-google-maps"}, Env: map[string]string{"GOOGLE_MAPS_API_KEY": "{env:GOOGLE_MAPS_API_KEY}"}, Enabled: true},
 		"slack":               {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-slack"}, Env: map[string]string{"SLACK_BOT_TOKEN": "{env:SLACK_BOT_TOKEN}"}, Enabled: true},
@@ -2936,7 +2936,7 @@ func buildCrushMCPServers(baseURL string) map[string]CrushMcpConfig {
 		"figma":      {Type: "local", Command: []string{"npx", "-y", "figma-developer-mcp"}, Env: map[string]string{"FIGMA_API_KEY": "{env:FIGMA_API_KEY}"}, Enabled: true},
 		"todoist":    {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-todoist"}, Env: map[string]string{"TODOIST_API_TOKEN": "{env:TODOIST_API_TOKEN}"}, Enabled: true},
 		"obsidian":   {Type: "local", Command: []string{"npx", "-y", "mcp-obsidian"}, Env: map[string]string{"OBSIDIAN_VAULT_PATH": "{env:OBSIDIAN_VAULT_PATH}"}, Enabled: true},
-		"raycast":    {Type: "local", Command: []string{"npx", "-y", "@anthropic-ai/mcp-server-raycast"}, Enabled: true},
+		"raycast":    {Type: "local", Command: []string{"npx", "-y", "@raycast/mcp-server-raycast"}, Enabled: true},
 		"tinybird":   {Type: "local", Command: []string{"npx", "-y", "mcp-tinybird"}, Env: map[string]string{"TINYBIRD_TOKEN": "{env:TINYBIRD_TOKEN}"}, Enabled: true},
 		"cloudflare": {Type: "local", Command: []string{"npx", "-y", "@cloudflare/mcp-server-cloudflare"}, Env: map[string]string{"CLOUDFLARE_API_TOKEN": "{env:CLOUDFLARE_API_TOKEN}"}, Enabled: true},
 		"neon":       {Type: "local", Command: []string{"npx", "-y", "@neondatabase/mcp-server-neon"}, Env: map[string]string{"NEON_API_KEY": "{env:NEON_API_KEY}"}, Enabled: true},
