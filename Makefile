@@ -12,19 +12,19 @@ all: fmt vet lint test build
 
 build:
 	@echo "🔨 Building HelixAgent..."
-	go build -ldflags="-w -s" -o bin/helixagent ./cmd/helixagent
+	go build -mod=mod -ldflags="-w -s" -o bin/helixagent ./cmd/helixagent
 
 build-debug:
 	@echo "🐛 Building HelixAgent (debug)..."
-	go build -gcflags="all=-N -l" -o bin/helixagent-debug ./cmd/helixagent
+	go build -mod=mod -gcflags="all=-N -l" -o bin/helixagent-debug ./cmd/helixagent
 
 build-all:
 	@echo "🔨 Building all architectures..."
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o bin/helixagent-linux-amd64 ./cmd/helixagent
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-w -s" -o bin/helixagent-linux-arm64 ./cmd/helixagent
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-w -s" -o bin/helixagent-darwin-amd64 ./cmd/helixagent
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-w -s" -o bin/helixagent-darwin-arm64 ./cmd/helixagent
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-w -s" -o bin/helixagent-windows-amd64.exe ./cmd/helixagent
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=mod -ldflags="-w -s" -o bin/helixagent-linux-amd64 ./cmd/helixagent
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -mod=mod -ldflags="-w -s" -o bin/helixagent-linux-arm64 ./cmd/helixagent
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -mod=mod -ldflags="-w -s" -o bin/helixagent-darwin-amd64 ./cmd/helixagent
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -mod=mod -ldflags="-w -s" -o bin/helixagent-darwin-arm64 ./cmd/helixagent
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -mod=mod -ldflags="-w -s" -o bin/helixagent-windows-amd64.exe ./cmd/helixagent
 
 # =============================================================================
 # RUN TARGETS
