@@ -1,0 +1,95 @@
+# RAG Pipeline Configuration
+# Used by RAG Manager to orchestrate retrieval services
+
+version: "1.0"
+
+# Vector Database Configuration
+vector_databases:
+  qdrant:
+    enabled: true
+    url: ${QDRANT_URL:-http://qdrant:6333}
+    default: true
+
+  chromadb:
+    enabled: true
+    url: ${CHROMADB_URL:-http://chromadb:8000}
+
+  weaviate:
+    enabled: false
+    url: ${WEAVIATE_URL:-http://weaviate:8080}
+
+  pgvector:
+    enabled: true
+    url: ${PGVECTOR_URL}
+
+# Embedding Services
+embedding_services:
+  sentence-transformers:
+    enabled: true
+    url: ${ST_URL:-http://sentence-transformers:8016}
+    default: true
+    models:
+      - all-mpnet-base-v2
+      - all-MiniLM-L6-v2
+
+  bge-m3:
+    enabled: true
+    url: ${BGE_URL:-http://bge-m3:8017}
+    model: BAAI/bge-m3
+
+# Retrieval Enhancement
+retrieval:
+  hyde:
+    enabled: true
+    url: ${HYDE_URL:-http://hyde-service:8019}
+
+  multi-query:
+    enabled: true
+    url: ${MQ_URL:-http://multi-query:8020}
+    default_variations: 3
+
+  ragatouille:
+    enabled: true
+    url: ${RAGATOUILLE_URL:-http://ragatouille:8018}
+    model: colbert-ir/colbertv2.0
+
+# Reranking
+reranking:
+  enabled: true
+  url: ${RERANKER_URL:-http://reranker:8021}
+  default_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+  top_k: 10
+
+# Pipeline Configurations
+pipelines:
+  basic:
+    description: "Basic semantic search"
+    steps:
+      - embed: sentence-transformers
+      - search: qdrant
+
+  enhanced:
+    description: "Enhanced with multi-query expansion"
+    steps:
+      - expand: multi-query
+      - embed: sentence-transformers
+      - search: qdrant
+      - rerank: reranker
+
+  hyde:
+    description: "HyDE-enhanced retrieval"
+    steps:
+      - hyde: hyde
+      - search: qdrant
+      - rerank: reranker
+
+  colbert:
+    description: "ColBERT late interaction"
+    steps:
+      - search: ragatouille
+
+# Health check configuration
+health:
+  interval: 30s
+  timeout: 10s
+  retries: 3

@@ -226,7 +226,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			SecretKey:   cfg.Server.JWTSecret,
 			TokenExpiry: 24 * time.Hour,
 			Issuer:      "helixagent",
-			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register", "/v1/chat/completions", "/v1/completions", "/v1/models", "/v1/ensemble"},
+			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register", "/v1/chat/completions", "/v1/completions", "/v1/models", "/v1/ensemble", "/v1/acp", "/v1/vision"},
 			Required:    false,
 		}
 		auth, err = middleware.NewAuthMiddleware(authConfig, nil)
@@ -238,7 +238,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			SecretKey:   cfg.Server.JWTSecret,
 			TokenExpiry: 24 * time.Hour,
 			Issuer:      "helixagent",
-			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register"},
+			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register", "/v1/acp", "/v1/vision"},
 			Required:    true,
 		}
 		auth, err = middleware.NewAuthMiddleware(authConfig, userService)
@@ -401,6 +401,8 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			"/v1/models",           // Model list - public for challenge tests
 			"/v1/chat/completions", // Chat - required for challenges
 			"/v1/completions",      // Completions - required for challenges
+			"/v1/acp",              // ACP endpoints - public for protocol validation
+			"/v1/vision",           // Vision endpoints - public for protocol validation
 		}))
 	} else {
 		// Standalone mode: no auth middleware
@@ -761,6 +763,16 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			ragGroup.POST("/chunk", ragHandler.ChunkDocument)
 		}
 		logger.Info("RAG endpoints registered at /v1/rag/*")
+
+		// ACP (Agent Communication Protocol) endpoints
+		acpHandler := handlers.NewACPHandler(providerRegistry, logger)
+		acpHandler.RegisterRoutes(protected)
+		logger.Info("ACP endpoints registered at /v1/acp/*")
+
+		// Vision endpoints
+		visionHandler := handlers.NewVisionHandler(providerRegistry, logger)
+		visionHandler.RegisterRoutes(protected)
+		logger.Info("Vision endpoints registered at /v1/vision/*")
 
 		// Register Protocol SSE endpoints for MCP/ACP/LSP/Embeddings/Vision/Cognee
 		// These endpoints handle SSE connections for CLI agent protocols (OpenCode, Crush, HelixCode)
