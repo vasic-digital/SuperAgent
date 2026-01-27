@@ -1075,3 +1075,53 @@ func TestDebateTeamSelection_MultipleModelsPerProvider(t *testing.T) {
 	assert.Greater(t, models["model-2"], 0, "model-2 should be used")
 	assert.Greater(t, models["model-3"], 0, "model-3 should be used")
 }
+
+func TestDebateTeamSelection_ReusedLLMsAreSeparateInstances(t *testing.T) {
+	// Test that reused LLMs are SEPARATE UNIQUE INSTANCES, not the same pointer
+	cfg := DefaultStartupConfig()
+	sv := NewStartupVerifier(cfg, nil)
+
+	sv.rankedProviders = []*UnifiedProvider{
+		{
+			ID:       "only",
+			Name:     "Only Provider",
+			Type:     "only",
+			AuthType: AuthTypeAPIKey,
+			Verified: true,
+			Score:    8.0,
+			Models: []UnifiedModel{
+				{ID: "single-model", Name: "Single Model", Score: 8.0},
+			},
+		},
+	}
+
+	team, err := sv.selectDebateTeam()
+	require.NoError(t, err)
+	require.NotNil(t, team)
+
+	// Collect all LLM instances
+	var allInstances []*DebateLLM
+	for _, pos := range team.Positions {
+		allInstances = append(allInstances, pos.Primary)
+		if pos.Fallback1 != nil {
+			allInstances = append(allInstances, pos.Fallback1)
+		}
+		if pos.Fallback2 != nil {
+			allInstances = append(allInstances, pos.Fallback2)
+		}
+	}
+
+	// Verify all instances are separate (different pointers)
+	// Even though they have the same data, they should be different objects
+	for i := 0; i < len(allInstances); i++ {
+		for j := i + 1; j < len(allInstances); j++ {
+			assert.NotSame(t, allInstances[i], allInstances[j],
+				"Reused LLMs at positions %d and %d should be separate instances", i, j)
+		}
+	}
+
+	// Verify all have the same model ID (same LLM reused)
+	for _, instance := range allInstances {
+		assert.Equal(t, "single-model", instance.ModelID)
+	}
+}
