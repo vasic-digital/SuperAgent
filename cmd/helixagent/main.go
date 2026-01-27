@@ -2073,27 +2073,20 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 	return filterWorkingMCPs(allMCPs)
 }
 
-// filterWorkingMCPs filters MCP configurations to only include those with all dependencies met
-// This checks:
-// 1. Environment variables for API keys
-// 2. Local service connectivity (ports)
+// filterWorkingMCPs filters MCP configurations to only include HelixAgent endpoints
+// ZERO npm/npx dependencies - all MCP functionality provided by running HelixAgent server
 func filterWorkingMCPs(allMCPs map[string]OpenCodeMCPServerDefNew) map[string]OpenCodeMCPServerDefNew {
 	workingMCPs := make(map[string]OpenCodeMCPServerDefNew)
 
-	// MCPs that work WITHOUT any API keys or external service dependencies
-	// VERIFIED: These npm packages exist and work out-of-the-box
+	// ONLY HelixAgent remote endpoints - NO npm/npx dependencies
+	// These connect to running HelixAgent server which provides all MCP functionality
 	alwaysWorking := map[string]bool{
-		// HelixAgent remote endpoints (connect to running HelixAgent)
 		"helixagent-mcp":        true,
 		"helixagent-acp":        true,
 		"helixagent-lsp":        true,
 		"helixagent-embeddings": true,
 		"helixagent-vision":     true,
 		"helixagent-cognee":     true,
-		// Official Anthropic MCP servers (npm verified, no API keys)
-		"filesystem":          true, // @modelcontextprotocol/server-filesystem
-		"memory":              true, // @modelcontextprotocol/server-memory
-		"sequential-thinking": true, // @modelcontextprotocol/server-sequential-thinking
 	}
 
 	for name, mcpConfig := range allMCPs {
