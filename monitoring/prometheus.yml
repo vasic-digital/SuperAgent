@@ -81,7 +81,7 @@ scrape_configs:
   # PostgreSQL container (direct health check)
   - job_name: 'postgres'
     static_configs:
-      - targets: ['localhost:5432']
+      - targets: ['localhost:15432']
         labels:
           service: 'database'
           component: 'postgres'
@@ -91,10 +91,84 @@ scrape_configs:
   # Redis container (direct health check)
   - job_name: 'redis'
     static_configs:
-      - targets: ['localhost:6379']
+      - targets: ['localhost:16379']
         labels:
           service: 'cache'
           component: 'redis'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # ========================================
+  # MCP SERVERS
+  # ========================================
+
+  # MCP Fetch Server
+  - job_name: 'mcp-fetch'
+    static_configs:
+      - targets: ['localhost:9101']
+        labels:
+          service: 'mcp'
+          component: 'fetch'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # MCP Git Server
+  - job_name: 'mcp-git'
+    static_configs:
+      - targets: ['localhost:9102']
+        labels:
+          service: 'mcp'
+          component: 'git'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # MCP Time Server
+  - job_name: 'mcp-time'
+    static_configs:
+      - targets: ['localhost:9103']
+        labels:
+          service: 'mcp'
+          component: 'time'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # MCP Filesystem Server
+  - job_name: 'mcp-filesystem'
+    static_configs:
+      - targets: ['localhost:9104']
+        labels:
+          service: 'mcp'
+          component: 'filesystem'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # MCP Memory Server
+  - job_name: 'mcp-memory'
+    static_configs:
+      - targets: ['localhost:9105']
+        labels:
+          service: 'mcp'
+          component: 'memory'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # MCP Everything Server
+  - job_name: 'mcp-everything'
+    static_configs:
+      - targets: ['localhost:9106']
+        labels:
+          service: 'mcp'
+          component: 'everything'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # MCP Sequential Thinking Server
+  - job_name: 'mcp-sequential-thinking'
+    static_configs:
+      - targets: ['localhost:9107']
+        labels:
+          service: 'mcp'
+          component: 'sequential-thinking'
     scrape_interval: 30s
     scrape_timeout: 10s
 
