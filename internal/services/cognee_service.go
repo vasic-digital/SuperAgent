@@ -776,9 +776,13 @@ func (s *CogneeService) SearchMemory(ctx context.Context, query string, dataset 
 
 // performSearch executes a single search type with per-search timeout
 func (s *CogneeService) performSearch(ctx context.Context, query, dataset string, limit int, searchType string) ([]interface{}, error) {
-	// Apply per-search timeout (2 seconds) to prevent one slow search from blocking others
-	// Reduced from 5s to improve streaming responsiveness and avoid connection resets
-	searchTimeout := 2 * time.Second
+	// Apply per-search timeout to prevent one slow search from blocking others
+	// Use 5 seconds for normal operations, giving Cognee enough time to respond
+	// especially during cold starts or when the service is warming up
+	searchTimeout := 5 * time.Second
+	if s.config.Timeout > 0 && s.config.Timeout < searchTimeout {
+		searchTimeout = s.config.Timeout
+	}
 	searchCtx, cancel := context.WithTimeout(ctx, searchTimeout)
 	defer cancel()
 
