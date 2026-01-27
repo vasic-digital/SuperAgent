@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/llm/providers/openrouter"
 	"dev.helix.agent/internal/llm/providers/zen"
 	"dev.helix.agent/internal/models"
 	verifier "dev.helix.agent/internal/verifier"
@@ -264,8 +265,15 @@ func (fa *FreeProviderAdapter) verifyZenModel(ctx context.Context, modelID strin
 	return model, nil
 }
 
-// testModelCompletion performs a simple completion test
+// testModelCompletion performs a simple completion test with strict validation
+// This function MUST fail verification if:
+// 1. The model returns an empty response
+// 2. The model returns a canned error response
+// 3. The model doesn't answer the test question correctly
+// 4. The response time is suspiciously fast (< 100ms typically indicates cached error)
 func (fa *FreeProviderAdapter) testModelCompletion(ctx context.Context, provider llm.LLMProvider) error {
+	startTime := time.Now()
+
 	// Create a simple test request using the provider's Complete method
 	testReq := &models.LLMRequest{
 		ID:     fmt.Sprintf("free-test-%d", time.Now().UnixNano()),
@@ -284,6 +292,8 @@ func (fa *FreeProviderAdapter) testModelCompletion(ctx context.Context, provider
 
 	// Perform direct completion test
 	resp, err := provider.Complete(ctx, testReq)
+	latency := time.Since(startTime)
+
 	if err != nil {
 		return fmt.Errorf("completion failed: %w", err)
 	}
@@ -297,13 +307,153 @@ func (fa *FreeProviderAdapter) testModelCompletion(ctx context.Context, provider
 		return fmt.Errorf("empty content in response")
 	}
 
-	// Basic validation - response should contain "4"
+	// Check for suspicious response time (< 100ms usually indicates cached error response)
+	if latency < 100*time.Millisecond {
+		freeLog.WithFields(logrus.Fields{
+			"latency_ms": latency.Milliseconds(),
+			"content":    resp.Content,
+		}).Warn("Suspiciously fast response - may be cached error")
+	}
+
+	// Check for known canned error/failure responses that indicate the model isn't working
+	loweredContent := strings.ToLower(resp.Content)
+	cannedErrorPatterns := []string{
+		"unable to provide",
+		"unable to analyze",
+		"unable to process",
+		"cannot provide",
+		"cannot analyze",
+		"cannot process",
+		"i apologize, but i cannot",
+		"i'm sorry, but i cannot",
+		"error occurred",
+		"service unavailable",
+		"rate limit",
+		"temporarily unavailable",
+		"model not available",
+		"failed to generate",
+		"no response generated",
+		"internal error",
+		"at this time", // Catches "Unable to provide analysis at this time"
+	}
+
+	for _, pattern := range cannedErrorPatterns {
+		if strings.Contains(loweredContent, pattern) {
+			return fmt.Errorf("model returned canned error response: %s", resp.Content)
+		}
+	}
+
+	// STRICT validation - response MUST contain "4" for "2+2" test
+	// Models that can't answer basic math should NOT be verified
 	if !strings.Contains(resp.Content, "4") {
 		freeLog.WithFields(logrus.Fields{
-			"expected": "4",
-			"got":      resp.Content,
-		}).Debug("Unexpected response content, but provider is responsive")
+			"expected":   "4",
+			"got":        resp.Content,
+			"latency_ms": latency.Milliseconds(),
+		}).Warn("Model failed basic math test - marking as unverified")
+		return fmt.Errorf("model failed basic verification test: expected '4' in response, got: %s", resp.Content)
 	}
+
+	freeLog.WithFields(logrus.Fields{
+		"content":    resp.Content,
+		"latency_ms": latency.Milliseconds(),
+	}).Debug("Model passed verification test")
+
+	return nil
+}
+
+// testModelCompletionWithModel performs a completion test with a specific model ID.
+// This is used for providers like OpenRouter where the model is specified in the request.
+func (fa *FreeProviderAdapter) testModelCompletionWithModel(ctx context.Context, provider llm.LLMProvider, modelID string) error {
+	startTime := time.Now()
+
+	// Create a simple test request with the specific model
+	testReq := &models.LLMRequest{
+		ID:     fmt.Sprintf("free-test-%d", time.Now().UnixNano()),
+		Prompt: "You are a helpful assistant. Reply concisely.",
+		Messages: []models.Message{
+			{
+				Role:    "user",
+				Content: "What is 2 + 2? Reply with just the number.",
+			},
+		},
+		ModelParams: models.ModelParameters{
+			Model:       modelID, // Specify the model to test
+			MaxTokens:   10,
+			Temperature: 0.0,
+		},
+	}
+
+	// Perform direct completion test
+	resp, err := provider.Complete(ctx, testReq)
+	latency := time.Since(startTime)
+
+	if err != nil {
+		return fmt.Errorf("completion failed: %w", err)
+	}
+
+	// Validate response
+	if resp == nil {
+		return fmt.Errorf("empty response from provider")
+	}
+
+	if resp.Content == "" {
+		return fmt.Errorf("empty content in response")
+	}
+
+	// Check for suspicious response time (< 100ms usually indicates cached error response)
+	if latency < 100*time.Millisecond {
+		freeLog.WithFields(logrus.Fields{
+			"model":      modelID,
+			"latency_ms": latency.Milliseconds(),
+			"content":    resp.Content,
+		}).Warn("Suspiciously fast response - may be cached error")
+	}
+
+	// Check for known canned error/failure responses
+	loweredContent := strings.ToLower(resp.Content)
+	cannedErrorPatterns := []string{
+		"unable to provide",
+		"unable to analyze",
+		"unable to process",
+		"cannot provide",
+		"cannot analyze",
+		"cannot process",
+		"i apologize, but i cannot",
+		"i'm sorry, but i cannot",
+		"error occurred",
+		"service unavailable",
+		"rate limit",
+		"temporarily unavailable",
+		"model not available",
+		"failed to generate",
+		"no response generated",
+		"internal error",
+		"at this time",
+	}
+
+	for _, pattern := range cannedErrorPatterns {
+		if strings.Contains(loweredContent, pattern) {
+			return fmt.Errorf("model returned canned error response: %s", resp.Content)
+		}
+	}
+
+	// STRICT validation - response MUST contain "4" for "2+2" test
+	if !strings.Contains(resp.Content, "4") {
+		freeLog.WithFields(logrus.Fields{
+			"model":      modelID,
+			"expected":   "4",
+			"got":        resp.Content,
+			"latency_ms": latency.Milliseconds(),
+		}).Warn("Model failed basic math test - marking as unverified")
+		return fmt.Errorf("model failed basic verification test: expected '4' in response, got: %s", resp.Content)
+	}
+
+	freeLog.WithFields(logrus.Fields{
+		"model":      modelID,
+		"content":    resp.Content,
+		"latency_ms": latency.Milliseconds(),
+	}).Debug("Model passed verification test")
 
 	return nil
 }
@@ -470,39 +620,65 @@ func (fa *FreeProviderAdapter) VerifyOpenRouterFreeModels(ctx context.Context, o
 }
 
 // verifyOpenRouterFreeModel verifies a single OpenRouter free model
+// This now does PROPER model completion verification (not just health check)
+// to detect canned error responses and ensure the model actually works.
 func (fa *FreeProviderAdapter) verifyOpenRouterFreeModel(ctx context.Context, modelID, apiKey string) (*verifier.UnifiedModel, error) {
 	startTime := time.Now()
 
-	// OpenRouter health check for free model
-	healthURL := "https://openrouter.ai/api/v1/models"
-	req, err := http.NewRequestWithContext(ctx, "GET", healthURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+	// Create an OpenRouter provider
+	// OpenRouter free models can work without an API key for some models
+	modelProvider := openrouter.NewSimpleOpenRouterProvider(apiKey)
+
+	// Perform reduced verification (health check + simple completion)
+	var verificationErr error
+	var latency time.Duration
+	verified := false
+
+	for attempt := 0; attempt <= fa.config.RetryAttempts; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(fa.config.RetryDelay):
+			}
+		}
+
+		// Health check
+		if err := modelProvider.HealthCheck(); err != nil {
+			verificationErr = err
+			continue
+		}
+
+		// CRITICAL: Do actual model completion test with the specific model ID
+		// This tests the model for canned error responses and proper functionality
+		testStart := time.Now()
+		if err := fa.testModelCompletionWithModel(ctx, modelProvider, modelID); err != nil {
+			verificationErr = err
+			freeLog.WithFields(logrus.Fields{
+				"provider": "openrouter",
+				"model":    modelID,
+				"error":    err.Error(),
+				"attempt":  attempt + 1,
+			}).Debug("OpenRouter model completion test failed")
+			continue
+		}
+		latency = time.Since(testStart)
+		verified = true
+		break
 	}
 
-	if apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+apiKey)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := fa.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("health check failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("health check returned status %d", resp.StatusCode)
+	if !verified {
+		return nil, fmt.Errorf("verification failed after %d attempts: %v", fa.config.RetryAttempts+1, verificationErr)
 	}
 
-	latency := time.Since(startTime)
-	score := fa.calculateModelScore(latency, true)
+	// Calculate model score (free models score between 6.0-7.0)
+	score := fa.calculateModelScore(latency, verified)
 
 	model := &verifier.UnifiedModel{
 		ID:       modelID,
 		Name:     getOpenRouterModelName(modelID),
 		Provider: "openrouter",
-		Verified: true,
+		Verified: verified,
 		Score:    score,
 		Latency:  latency,
 		Capabilities: []string{
