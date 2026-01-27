@@ -29,7 +29,7 @@ services:
     ports:
       - "9102:9000"
     volumes:
-      - /home/user:/home/user:ro  # Mount home for git operations
+      - ${HOME}:/home/user:ro  # Mount home for git operations
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "9000"]
@@ -56,7 +56,7 @@ services:
     ports:
       - "9104:9000"
     volumes:
-      - /home/user:/home/user:rw  # Mount home for filesystem operations
+      - ${HOME}:/home/user:rw  # Mount home for filesystem operations
       - /tmp:/tmp:rw
     restart: unless-stopped
     healthcheck:

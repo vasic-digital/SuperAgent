@@ -407,6 +407,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			"/v1/lsp",              // LSP endpoints - public for CLI agents
 			"/v1/embeddings",       // Embeddings endpoints - public for CLI agents
 			"/v1/cognee",           // Cognee endpoints - public for CLI agents
+			"/v1/protocols",        // Protocol endpoints - public for CLI agents
 		}))
 	} else {
 		// Standalone mode: no auth middleware
