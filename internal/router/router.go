@@ -226,7 +226,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			SecretKey:   cfg.Server.JWTSecret,
 			TokenExpiry: 24 * time.Hour,
 			Issuer:      "helixagent",
-			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register", "/v1/chat/completions", "/v1/completions", "/v1/models", "/v1/ensemble", "/v1/acp", "/v1/vision"},
+			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register", "/v1/chat/completions", "/v1/completions", "/v1/models", "/v1/ensemble", "/v1/acp", "/v1/vision", "/v1/mcp", "/v1/lsp", "/v1/embeddings", "/v1/cognee"},
 			Required:    false,
 		}
 		auth, err = middleware.NewAuthMiddleware(authConfig, nil)
@@ -238,7 +238,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			SecretKey:   cfg.Server.JWTSecret,
 			TokenExpiry: 24 * time.Hour,
 			Issuer:      "helixagent",
-			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register", "/v1/acp", "/v1/vision"},
+			SkipPaths:   []string{"/health", "/v1/health", "/metrics", "/v1/auth/login", "/v1/auth/register", "/v1/acp", "/v1/vision", "/v1/mcp", "/v1/lsp", "/v1/embeddings", "/v1/cognee"},
 			Required:    true,
 		}
 		auth, err = middleware.NewAuthMiddleware(authConfig, userService)
@@ -401,8 +401,12 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			"/v1/models",           // Model list - public for challenge tests
 			"/v1/chat/completions", // Chat - required for challenges
 			"/v1/completions",      // Completions - required for challenges
-			"/v1/acp",              // ACP endpoints - public for protocol validation
-			"/v1/vision",           // Vision endpoints - public for protocol validation
+			"/v1/acp",              // ACP endpoints - public for CLI agents
+			"/v1/vision",           // Vision endpoints - public for CLI agents
+			"/v1/mcp",              // MCP endpoints - public for CLI agents (OpenCode, Crush, etc.)
+			"/v1/lsp",              // LSP endpoints - public for CLI agents
+			"/v1/embeddings",       // Embeddings endpoints - public for CLI agents
+			"/v1/cognee",           // Cognee endpoints - public for CLI agents
 		}))
 	} else {
 		// Standalone mode: no auth middleware
