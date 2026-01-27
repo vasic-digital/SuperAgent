@@ -806,7 +806,8 @@ func (sv *StartupVerifier) selectDebateTeam() (*DebateTeamResult, error) {
 		}
 	}
 
-	// Assign ALL 15 positions using strongest LLMs with reuse
+	// Assign ALL positions using strongest LLMs with reuse
+	// Each position has: 1 primary + FallbacksPerPosition fallbacks
 	llmIndex := 0
 	for i := 0; i < sv.config.PositionCount; i++ {
 		position := &DebatePosition{
@@ -818,13 +819,16 @@ func (sv *StartupVerifier) selectDebateTeam() (*DebateTeamResult, error) {
 		position.Primary = getLLMAtPosition(llmIndex)
 		llmIndex++
 
-		// Assign fallback1
-		position.Fallback1 = getLLMAtPosition(llmIndex)
-		llmIndex++
+		// Assign fallbacks based on config
+		if sv.config.FallbacksPerPosition >= 1 {
+			position.Fallback1 = getLLMAtPosition(llmIndex)
+			llmIndex++
+		}
 
-		// Assign fallback2
-		position.Fallback2 = getLLMAtPosition(llmIndex)
-		llmIndex++
+		if sv.config.FallbacksPerPosition >= 2 {
+			position.Fallback2 = getLLMAtPosition(llmIndex)
+			llmIndex++
+		}
 
 		team.Positions[i] = position
 	}

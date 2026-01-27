@@ -409,14 +409,26 @@ func TestStartupVerifier_selectDebateTeam(t *testing.T) {
 
 	sv := NewStartupVerifier(cfg, nil)
 
-	t.Run("insufficient providers", func(t *testing.T) {
+	t.Run("single provider with LLM reuse", func(t *testing.T) {
+		// NEW BEHAVIOR: With only 1 provider, we REUSE its LLM to fill all positions
+		// No error - we fill all 3 positions * (1 primary + 1 fallback) = 6 slots
 		sv.rankedProviders = []*UnifiedProvider{
 			{ID: "p1", Type: "claude", Score: 9.0, Verified: true, Models: []UnifiedModel{{ID: "m1", Name: "Model 1"}}},
 		}
 
 		team, err := sv.selectDebateTeam()
-		assert.Error(t, err)
-		assert.Nil(t, team)
+		require.NoError(t, err)
+		require.NotNil(t, team)
+		// All positions should be filled via reuse
+		assert.Equal(t, cfg.PositionCount, len(team.Positions))
+		// Each position has primary + 1 fallback = 2 per position = 6 total
+		expectedTotal := cfg.PositionCount * (1 + cfg.FallbacksPerPosition)
+		assert.Equal(t, expectedTotal, team.TotalLLMs)
+		// All positions use the same LLM (reused)
+		for _, pos := range team.Positions {
+			assert.Equal(t, "m1", pos.Primary.ModelID)
+			assert.Equal(t, "m1", pos.Fallback1.ModelID)
+		}
 	})
 
 	t.Run("sufficient providers", func(t *testing.T) {
