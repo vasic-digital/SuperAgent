@@ -427,7 +427,9 @@ func TestStartupVerifier_selectDebateTeam(t *testing.T) {
 		// All positions use the same LLM (reused)
 		for _, pos := range team.Positions {
 			assert.Equal(t, "m1", pos.Primary.ModelID)
-			assert.Equal(t, "m1", pos.Fallback1.ModelID)
+			for _, fb := range pos.Fallbacks {
+				assert.Equal(t, "m1", fb.ModelID)
+			}
 		}
 	})
 
@@ -675,23 +677,29 @@ func TestDebatePosition_Fields(t *testing.T) {
 		Position: 1,
 		Role:     "analyst",
 		Primary: &DebateLLM{
-			Provider: "claude",
-			ModelID:  "claude-sonnet-4-5",
+			Provider: "deepseek",
+			ModelID:  "deepseek-chat",
 			Score:    9.5,
 		},
-		Fallback1: &DebateLLM{
-			Provider: "gemini",
-			ModelID:  "gemini-2.0-flash",
-			Score:    8.5,
+		Fallbacks: []*DebateLLM{
+			{
+				Provider: "gemini",
+				ModelID:  "gemini-2.0-flash",
+				Score:    8.5,
+			},
+			{
+				Provider: "mistral",
+				ModelID:  "mistral-large",
+				Score:    8.0,
+			},
 		},
-		Fallback2: nil,
 	}
 
 	assert.Equal(t, 1, pos.Position)
 	assert.Equal(t, "analyst", pos.Role)
 	assert.NotNil(t, pos.Primary)
-	assert.NotNil(t, pos.Fallback1)
-	assert.Nil(t, pos.Fallback2)
+	assert.Len(t, pos.Fallbacks, 2, "Should have 2 fallbacks")
+	assert.Equal(t, "gemini", pos.Fallbacks[0].Provider)
 }
 
 func TestProviderTypeInfo_GetFunctions(t *testing.T) {

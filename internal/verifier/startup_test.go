@@ -79,16 +79,16 @@ func TestDefaultStartupConfig(t *testing.T) {
 	assert.NotNil(t, cfg)
 	assert.True(t, cfg.ParallelVerification)
 	assert.Equal(t, 10, cfg.MaxConcurrency)
-	assert.Equal(t, 30*time.Second, cfg.VerificationTimeout)
+	assert.Equal(t, 120*time.Second, cfg.VerificationTimeout) // 2 minutes for slow providers (Zen, ZAI)
 	assert.Equal(t, 10*time.Second, cfg.HealthCheckTimeout)
 	assert.Equal(t, 5.0, cfg.MinScore)
-	assert.Equal(t, 15, cfg.DebateTeamSize)
+	assert.Equal(t, 25, cfg.DebateTeamSize) // 5 positions × (1 primary + 4 fallbacks) = 25 max
 	assert.Equal(t, 5, cfg.PositionCount)
-	assert.Equal(t, 2, cfg.FallbacksPerPosition)
-	assert.Equal(t, 0.5, cfg.OAuthPriorityBoost)
+	assert.Equal(t, 4, cfg.FallbacksPerPosition) // 2-4 fallbacks per position
+	assert.Equal(t, 0.0, cfg.OAuthPriorityBoost) // NO OAuth priority - pure score-based
 	assert.True(t, cfg.TrustOAuthOnFailure)
 	assert.True(t, cfg.EnableFreeProviders)
-	assert.True(t, cfg.OAuthPrimaryNonOAuthFallback)
+	assert.False(t, cfg.OAuthPrimaryNonOAuthFallback) // NO special OAuth fallback treatment
 	assert.True(t, cfg.CacheVerificationResults)
 }
 
@@ -111,7 +111,7 @@ func TestNewStartupVerifierWithNilConfig(t *testing.T) {
 
 	assert.NotNil(t, sv)
 	assert.NotNil(t, sv.config)
-	assert.Equal(t, 15, sv.config.DebateTeamSize)
+	assert.Equal(t, 25, sv.config.DebateTeamSize) // 5 positions × (1 + 4 fallbacks) = 25
 }
 
 func TestNewStartupVerifierWithNilLogger(t *testing.T) {
@@ -385,21 +385,28 @@ func TestDebateTeamResult_Fields(t *testing.T) {
 					Verified:  true,
 					IsOAuth:   true,
 				},
+				Fallbacks: []*DebateLLM{
+					{Provider: "deepseek", ModelID: "deepseek-chat", Score: 8.5},
+					{Provider: "mistral", ModelID: "mistral-large", Score: 8.0},
+					{Provider: "cerebras", ModelID: "llama-3.3-70b", Score: 7.8},
+					{Provider: "gemini", ModelID: "gemini-2.0-flash", Score: 7.5},
+				},
 			},
 		},
-		TotalLLMs:  15,
-		MinScore:   5.0,
-		OAuthFirst: true,
-		SelectedAt: time.Now(),
+		TotalLLMs:     25,           // 5 positions × 5 LLMs each
+		MinScore:      5.0,
+		SortedByScore: true,         // NO OAuth priority - pure score-based
+		LLMReuseCount: 0,
+		SelectedAt:    time.Now(),
 	}
 
 	assert.Len(t, result.Positions, 1)
-	assert.Equal(t, 15, result.TotalLLMs)
+	assert.Equal(t, 25, result.TotalLLMs)
 	assert.Equal(t, 5.0, result.MinScore)
-	assert.True(t, result.OAuthFirst)
+	assert.True(t, result.SortedByScore, "Should be sorted by score only (no OAuth priority)")
 	assert.NotNil(t, result.Positions[0].Primary)
 	assert.Equal(t, "claude", result.Positions[0].Primary.Provider)
-	assert.True(t, result.Positions[0].Primary.IsOAuth)
+	assert.Len(t, result.Positions[0].Fallbacks, 4, "Should have 4 fallbacks")
 }
 
 func TestStartupError_Fields(t *testing.T) {
@@ -473,8 +480,8 @@ func TestStartupConfig_Validation(t *testing.T) {
 	assert.Greater(t, cfg.VerificationTimeout, time.Duration(0))
 	assert.Greater(t, cfg.HealthCheckTimeout, time.Duration(0))
 	assert.GreaterOrEqual(t, cfg.MinScore, 0.0)
-	assert.Equal(t, 15, cfg.DebateTeamSize)
-	assert.Equal(t, 5*3, cfg.DebateTeamSize) // 5 positions * 3 LLMs each
+	assert.Equal(t, 25, cfg.DebateTeamSize) // 5 positions × (1 primary + 4 fallbacks) = 25 max
+	assert.Equal(t, 5*5, cfg.DebateTeamSize) // 5 positions * 5 LLMs each (1 primary + 4 fallbacks)
 	assert.Equal(t, cfg.PositionCount*(1+cfg.FallbacksPerPosition), cfg.DebateTeamSize)
 }
 
@@ -572,7 +579,7 @@ func TestStartupVerifier_ReEvaluation_ResultsAreConsistent(t *testing.T) {
 }
 
 func TestStartupVerifier_ReEvaluation_ProvidersReSorted(t *testing.T) {
-	// Test that providers are re-sorted on each verification
+	// Test that providers are re-sorted on each verification (purely by score)
 	cfg := DefaultStartupConfig()
 	cfg.VerificationTimeout = 5 * time.Second
 	cfg.EnableFreeProviders = true
@@ -590,21 +597,11 @@ func TestStartupVerifier_ReEvaluation_ProvidersReSorted(t *testing.T) {
 		t.Skip("Need at least 2 providers to test sorting")
 	}
 
-	// Verify sorted order (descending by score, OAuth first)
+	// Verify sorted order (descending by score ONLY - NO OAuth priority)
 	for i := 1; i < len(ranked); i++ {
-		prevOAuth := ranked[i-1].AuthType == AuthTypeOAuth
-		currOAuth := ranked[i].AuthType == AuthTypeOAuth
-
-		// OAuth providers should come first
-		if !prevOAuth && currOAuth {
-			t.Error("OAuth providers should be ranked before non-OAuth")
-		}
-
-		// Within same auth type, scores should be descending
-		if prevOAuth == currOAuth {
-			assert.GreaterOrEqual(t, ranked[i-1].Score, ranked[i].Score,
-				"Providers should be sorted by score (descending)")
-		}
+		// Scores should be in descending order (highest first)
+		assert.GreaterOrEqual(t, ranked[i-1].Score, ranked[i].Score,
+			"Providers should be sorted by score (descending) - NO OAuth priority")
 	}
 }
 
@@ -702,8 +699,8 @@ func TestStartupResult_FreshTimestamps(t *testing.T) {
 // Debate Team Selection Tests - LLM Reuse Logic
 // ============================================================================
 
-func TestDebateTeamSelection_All15PositionsFilled(t *testing.T) {
-	// Test that all 15 positions are always filled regardless of unique LLM count
+func TestDebateTeamSelection_AllPositionsFilled(t *testing.T) {
+	// Test that all positions (up to 25 LLMs) are filled regardless of unique LLM count
 	cfg := DefaultStartupConfig()
 	cfg.VerificationTimeout = 5 * time.Second
 	cfg.EnableFreeProviders = true
@@ -723,22 +720,25 @@ func TestDebateTeamSelection_All15PositionsFilled(t *testing.T) {
 	// Must have exactly 5 positions
 	assert.Len(t, result.DebateTeam.Positions, 5, "Should have exactly 5 positions")
 
-	// All 15 positions must be filled
+	// All positions must be filled with primary and 2-4 fallbacks
 	totalFilled := 0
 	for i, pos := range result.DebateTeam.Positions {
 		require.NotNil(t, pos, "Position %d should not be nil", i+1)
 		require.NotNil(t, pos.Primary, "Position %d primary should not be nil", i+1)
-		require.NotNil(t, pos.Fallback1, "Position %d fallback1 should not be nil", i+1)
-		require.NotNil(t, pos.Fallback2, "Position %d fallback2 should not be nil", i+1)
-		totalFilled += 3
+		totalFilled++ // Primary
+		// Each position should have 2-4 fallbacks
+		assert.GreaterOrEqual(t, len(pos.Fallbacks), 2, "Position %d should have at least 2 fallbacks", i+1)
+		assert.LessOrEqual(t, len(pos.Fallbacks), 4, "Position %d should have at most 4 fallbacks", i+1)
+		totalFilled += len(pos.Fallbacks)
 	}
 
-	assert.Equal(t, 15, totalFilled, "All 15 LLM positions must be filled")
-	assert.Equal(t, 15, result.DebateTeam.TotalLLMs, "TotalLLMs should be 15")
+	// Total should be between 15 (5 positions × 3 LLMs) and 25 (5 positions × 5 LLMs)
+	assert.GreaterOrEqual(t, totalFilled, 15, "Should have at least 15 LLMs filled")
+	assert.LessOrEqual(t, totalFilled, 25, "Should have at most 25 LLMs filled")
 }
 
 func TestDebateTeamSelection_LLMReuse(t *testing.T) {
-	// Test that strongest LLMs are reused when fewer than 15 unique LLMs available
+	// Test that strongest LLMs are reused when fewer than 25 unique LLMs available
 	cfg := DefaultStartupConfig()
 	sv := NewStartupVerifier(cfg, nil)
 
@@ -773,20 +773,20 @@ func TestDebateTeamSelection_LLMReuse(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, team)
 
-	// All 15 positions should be filled via reuse
-	assert.Equal(t, 15, team.TotalLLMs, "All 15 positions must be filled even with reuse")
+	// All positions should be filled via reuse (up to 25)
+	assert.GreaterOrEqual(t, team.TotalLLMs, 15, "Should have at least 15 LLMs filled")
+	assert.LessOrEqual(t, team.TotalLLMs, 25, "Should have at most 25 LLMs filled")
 	assert.Len(t, team.Positions, 5, "Should have 5 positions")
 
-	// Verify each position has all 3 slots filled
+	// Verify each position has primary and at least 2 fallbacks
 	for i, pos := range team.Positions {
 		assert.NotNil(t, pos.Primary, "Position %d primary must be filled", i+1)
-		assert.NotNil(t, pos.Fallback1, "Position %d fallback1 must be filled", i+1)
-		assert.NotNil(t, pos.Fallback2, "Position %d fallback2 must be filled", i+1)
+		assert.GreaterOrEqual(t, len(pos.Fallbacks), 2, "Position %d must have at least 2 fallbacks", i+1)
 	}
 }
 
 func TestDebateTeamSelection_SingleLLMReuse(t *testing.T) {
-	// Test with only 1 LLM - should reuse it for all 15 positions
+	// Test with only 1 LLM - should reuse it for all positions
 	cfg := DefaultStartupConfig()
 	sv := NewStartupVerifier(cfg, nil)
 
@@ -799,7 +799,7 @@ func TestDebateTeamSelection_SingleLLMReuse(t *testing.T) {
 			Verified: true,
 			Score:    6.5,
 			Models: []UnifiedModel{
-				{ID: "opencode/grok-code", Name: "Grok Code", Score: 6.5},
+				{ID: "grok-code", Name: "Grok Code", Score: 6.5},
 			},
 		},
 	}
@@ -808,19 +808,20 @@ func TestDebateTeamSelection_SingleLLMReuse(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, team)
 
-	// All 15 positions should be filled with the same LLM
-	assert.Equal(t, 15, team.TotalLLMs)
+	// All positions should be filled with the same LLM (reused)
+	assert.GreaterOrEqual(t, team.TotalLLMs, 15, "Should have at least 15 positions filled")
 
 	// All positions should use the same model (reused)
 	for i, pos := range team.Positions {
-		assert.Equal(t, "opencode/grok-code", pos.Primary.ModelID, "Position %d primary", i+1)
-		assert.Equal(t, "opencode/grok-code", pos.Fallback1.ModelID, "Position %d fallback1", i+1)
-		assert.Equal(t, "opencode/grok-code", pos.Fallback2.ModelID, "Position %d fallback2", i+1)
+		assert.Equal(t, "grok-code", pos.Primary.ModelID, "Position %d primary", i+1)
+		for j, fb := range pos.Fallbacks {
+			assert.Equal(t, "grok-code", fb.ModelID, "Position %d fallback %d", i+1, j+1)
+		}
 	}
 }
 
-func TestDebateTeamSelection_OAuthFirst(t *testing.T) {
-	// Test that OAuth providers are prioritized (placed first in positions)
+func TestDebateTeamSelection_ScoreBasedOnly(t *testing.T) {
+	// Test that providers are sorted PURELY by score (NO OAuth priority)
 	cfg := DefaultStartupConfig()
 	sv := NewStartupVerifier(cfg, nil)
 
@@ -831,7 +832,7 @@ func TestDebateTeamSelection_OAuthFirst(t *testing.T) {
 			Type:     "deepseek",
 			AuthType: AuthTypeAPIKey,
 			Verified: true,
-			Score:    9.0, // Higher score but API key
+			Score:    9.0, // Higher score - should be first
 			Models: []UnifiedModel{
 				{ID: "deepseek-chat", Name: "DeepSeek Chat", Score: 9.0},
 			},
@@ -842,7 +843,7 @@ func TestDebateTeamSelection_OAuthFirst(t *testing.T) {
 			Type:     "claude",
 			AuthType: AuthTypeOAuth,
 			Verified: true,
-			Score:    8.0, // Lower score but OAuth
+			Score:    8.0, // Lower score - should be second
 			Models: []UnifiedModel{
 				{ID: "claude-opus-4-5", Name: "Claude Opus", Score: 8.0},
 			},
@@ -853,15 +854,16 @@ func TestDebateTeamSelection_OAuthFirst(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, team)
 
-	// First position's primary should be OAuth (Claude) despite lower score
-	assert.Equal(t, "claude", team.Positions[0].Primary.Provider,
-		"OAuth provider should be prioritized first")
-	assert.True(t, team.Positions[0].Primary.IsOAuth,
-		"First primary should be OAuth")
+	// First position's primary should be highest score (DeepSeek) regardless of auth type
+	// NO OAuth priority - pure score-based selection
+	assert.Equal(t, "deepseek", team.Positions[0].Primary.Provider,
+		"Highest score provider should be first (NO OAuth priority)")
+	assert.Equal(t, 9.0, team.Positions[0].Primary.Score,
+		"First primary should have highest score")
 }
 
 func TestDebateTeamSelection_SortedByScore(t *testing.T) {
-	// Test that LLMs are sorted by score within auth type groups
+	// Test that LLMs are sorted purely by score (NO auth type grouping)
 	cfg := DefaultStartupConfig()
 	sv := NewStartupVerifier(cfg, nil)
 
@@ -905,10 +907,12 @@ func TestDebateTeamSelection_SortedByScore(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, team)
 
-	// Positions should be filled in score order
+	// Primary should be highest score
 	assert.Equal(t, "gemini-2.0", team.Positions[0].Primary.ModelID)
-	assert.Equal(t, "deepseek-chat", team.Positions[0].Fallback1.ModelID)
-	assert.Equal(t, "mistral-large", team.Positions[0].Fallback2.ModelID)
+	// Fallbacks should follow in score order
+	require.GreaterOrEqual(t, len(team.Positions[0].Fallbacks), 2, "Should have at least 2 fallbacks")
+	assert.Equal(t, "deepseek-chat", team.Positions[0].Fallbacks[0].ModelID)
+	assert.Equal(t, "mistral-large", team.Positions[0].Fallbacks[1].ModelID)
 }
 
 func TestDebateTeamSelection_NoProviders(t *testing.T) {
@@ -958,11 +962,12 @@ func TestDebateTeamSelection_UnverifiedExcluded(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, team)
 
-	// All positions should use only the verified model
-	for _, pos := range team.Positions {
-		assert.Equal(t, "model-good", pos.Primary.ModelID)
-		assert.Equal(t, "model-good", pos.Fallback1.ModelID)
-		assert.Equal(t, "model-good", pos.Fallback2.ModelID)
+	// All positions should use only the verified model (unverified excluded)
+	for i, pos := range team.Positions {
+		assert.Equal(t, "model-good", pos.Primary.ModelID, "Position %d primary", i+1)
+		for j, fb := range pos.Fallbacks {
+			assert.Equal(t, "model-good", fb.ModelID, "Position %d fallback %d", i+1, j+1)
+		}
 	}
 }
 
@@ -1066,8 +1071,9 @@ func TestDebateTeamSelection_MultipleModelsPerProvider(t *testing.T) {
 	models := make(map[string]int)
 	for _, pos := range team.Positions {
 		models[pos.Primary.ModelID]++
-		models[pos.Fallback1.ModelID]++
-		models[pos.Fallback2.ModelID]++
+		for _, fb := range pos.Fallbacks {
+			models[fb.ModelID]++
+		}
 	}
 
 	// Each model should be used at least once
@@ -1103,11 +1109,8 @@ func TestDebateTeamSelection_ReusedLLMsAreSeparateInstances(t *testing.T) {
 	var allInstances []*DebateLLM
 	for _, pos := range team.Positions {
 		allInstances = append(allInstances, pos.Primary)
-		if pos.Fallback1 != nil {
-			allInstances = append(allInstances, pos.Fallback1)
-		}
-		if pos.Fallback2 != nil {
-			allInstances = append(allInstances, pos.Fallback2)
+		for _, fb := range pos.Fallbacks {
+			allInstances = append(allInstances, fb)
 		}
 	}
 
@@ -1176,9 +1179,9 @@ func TestVerifyOAuthProviderTrust(t *testing.T) {
 	// The provider should have models
 	assert.Len(t, verifiedProvider.Models, 3, "OAuth provider should have 3 models")
 
-	// The score should be the default trusted score (8.0 + OAuth priority boost)
-	expectedScore := 8.0 + cfg.OAuthPriorityBoost
-	assert.Equal(t, expectedScore, verifiedProvider.Score, "OAuth provider should have trusted default score")
+	// The score should be the default trusted score (8.0 - NO OAuth priority boost)
+	expectedScore := 8.0 // NO OAuthPriorityBoost (0.0) - pure score-based
+	assert.Equal(t, expectedScore, verifiedProvider.Score, "OAuth provider should have trusted default score (no priority boost)")
 
 	// Test results should show oauth_trusted
 	assert.True(t, verifiedProvider.TestResults["oauth_trusted"], "Should have oauth_trusted test result")

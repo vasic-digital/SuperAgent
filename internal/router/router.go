@@ -642,6 +642,16 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			logger,
 		)
 
+		// CRITICAL: Set the StartupVerifier so that DebateTeamConfig uses
+		// the unified verification pipeline instead of the legacy path.
+		// Without this, OAuth providers (Claude, Qwen) won't be included!
+		if sv := providerRegistry.GetStartupVerifier(); sv != nil {
+			debateTeamConfig.SetStartupVerifier(sv)
+			logger.Info("DebateTeamConfig configured with StartupVerifier (OAuth providers will be included)")
+		} else {
+			logger.Warn("StartupVerifier not available - using legacy provider discovery (OAuth may not work)")
+		}
+
 		// Initialize the debate team (Claude Sonnet/Opus for positions 1-2,
 		// LLMsVerifier-scored providers for 3-5, Qwen as fallbacks)
 		if err := debateTeamConfig.InitializeTeam(context.Background()); err != nil {

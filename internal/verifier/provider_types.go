@@ -177,15 +177,16 @@ type StartupResult struct {
 	Errors []StartupError `json:"errors,omitempty"`
 }
 
-// DebateTeamResult contains the selected 15 LLMs for the AI debate team
+// DebateTeamResult contains the selected LLMs for the AI debate team (up to 25)
 type DebateTeamResult struct {
-	// Team composition (5 positions x 3 LLMs)
+	// Team composition (5 positions × (1 primary + 2-4 fallbacks))
 	Positions []*DebatePosition `json:"positions"`
 	TotalLLMs int               `json:"total_llms"`
 
 	// Selection criteria
-	MinScore   float64 `json:"min_score"`
-	OAuthFirst bool    `json:"oauth_first"`
+	MinScore       float64 `json:"min_score"`
+	SortedByScore  bool    `json:"sorted_by_score"` // Always true - NO OAuth priority
+	LLMReuseCount  int     `json:"llm_reuse_count"` // Number of LLMs reused across positions
 
 	// Timing
 	SelectedAt time.Time `json:"selected_at"`
@@ -193,11 +194,10 @@ type DebateTeamResult struct {
 
 // DebatePosition represents a position in the AI debate team
 type DebatePosition struct {
-	Position  int        `json:"position"`
-	Role      string     `json:"role"`
-	Primary   *DebateLLM `json:"primary"`
-	Fallback1 *DebateLLM `json:"fallback_1,omitempty"`
-	Fallback2 *DebateLLM `json:"fallback_2,omitempty"`
+	Position  int          `json:"position"`
+	Role      string       `json:"role"`
+	Primary   *DebateLLM   `json:"primary"`
+	Fallbacks []*DebateLLM `json:"fallbacks,omitempty"` // 2-4 fallbacks per position
 }
 
 // DebateLLM represents an LLM selected for the debate team
@@ -272,19 +272,19 @@ func DefaultStartupConfig() *StartupConfig {
 	return &StartupConfig{
 		ParallelVerification:         true,
 		MaxConcurrency:               10,
-		VerificationTimeout:          30 * time.Second,
+		VerificationTimeout:          120 * time.Second, // 2 minutes - enough for slow providers like Zen, ZAI
 		HealthCheckTimeout:           10 * time.Second,
 		MinScore:                     5.0,
 		RequireCodeVisibility:        true,
-		DebateTeamSize:               15,
+		DebateTeamSize:               25, // 5 positions × (1 primary + 4 fallbacks) = 25 LLMs max
 		PositionCount:                5,
-		FallbacksPerPosition:         2,
-		OAuthPriorityBoost:           0.5,
+		FallbacksPerPosition:         4, // 2-4 fallbacks per position
+		OAuthPriorityBoost:           0.0, // NO OAuth priority - all providers sorted purely by score
 		TrustOAuthOnFailure:          true,
 		OAuthTokenRefreshMins:        10,
 		FreeProviderBaseScore:        6.5,
 		EnableFreeProviders:          true,
-		OAuthPrimaryNonOAuthFallback: true,
+		OAuthPrimaryNonOAuthFallback: false, // NO special fallback treatment - use score-based selection
 		CacheVerificationResults:     true,
 		CacheTTL:                     6 * time.Hour,
 	}
@@ -410,10 +410,49 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    4,
 		EnvVars:     []string{"OPENCODE_API_KEY", "ApiKey_OpenCode"}, // Optional
 		BaseURL:     "https://opencode.ai/zen/v1/chat/completions",
-		// Note: Zen models are dynamically discovered; these are known working free models
-		// Available: big-pickle, gpt-5-nano, glm-4.7, qwen3-coder, kimi-k2, gemini-3-flash
-		Models:      []string{"big-pickle", "gpt-5-nano", "glm-4.7"},
-		Free:        true,
+		// ALL known Zen models - each will be evaluated individually
+		// Models that pass verification will be considered for AI Debate Team
+		Models: []string{
+			// Primary stealth/anonymous models
+			"big-pickle",
+			"gpt-5-nano",
+			"glm-4.7",
+			// Qwen models
+			"qwen3-coder",
+			"qwen3-235b",
+			"qwen3-32b",
+			// Kimi models
+			"kimi-k2",
+			"kimi-latest",
+			// Gemini models
+			"gemini-3-flash",
+			"gemini-2.5-pro",
+			"gemini-2.0-flash",
+			// DeepSeek models
+			"deepseek-r1",
+			"deepseek-v3",
+			"deepseek-coder",
+			// Grok models
+			"grok-code",
+			"grok-3",
+			"grok-2",
+			// Claude models (if available through Zen)
+			"claude-sonnet-4",
+			"claude-haiku-4",
+			// Llama models
+			"llama-4-maverick",
+			"llama-4-scout",
+			"llama-3.3-70b",
+			// Mistral models
+			"mistral-large",
+			"codestral",
+			// Other models
+			"o3-mini",
+			"o1-mini",
+			"gpt-4o",
+			"command-r-plus",
+		},
+		Free: true,
 	},
 
 	// Tier 6: Self-hosted

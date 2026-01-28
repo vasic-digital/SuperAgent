@@ -1171,10 +1171,11 @@ func run(appCfg *AppConfig) error {
 
 		if startupResult.DebateTeam != nil {
 			logger.WithFields(logrus.Fields{
-				"debate_team_llms": startupResult.DebateTeam.TotalLLMs,
-				"debate_positions": len(startupResult.DebateTeam.Positions),
-				"oauth_first":      startupResult.DebateTeam.OAuthFirst,
-			}).Info("AI Debate Team configured (15 LLMs)")
+				"debate_team_llms":  startupResult.DebateTeam.TotalLLMs,
+				"debate_positions":  len(startupResult.DebateTeam.Positions),
+				"sorted_by_score":   startupResult.DebateTeam.SortedByScore,
+				"llm_reuse_count":   startupResult.DebateTeam.LLMReuseCount,
+			}).Info("AI Debate Team configured (up to 25 LLMs, score-based selection)")
 		}
 	}
 
@@ -1249,12 +1250,13 @@ func run(appCfg *AppConfig) error {
 		// Add debate team info
 		if startupResult.DebateTeam != nil {
 			response["debate_team"] = gin.H{
-				"total_llms":       startupResult.DebateTeam.TotalLLMs,
-				"positions":        len(startupResult.DebateTeam.Positions),
-				"min_score":        startupResult.DebateTeam.MinScore,
-				"oauth_first":      startupResult.DebateTeam.OAuthFirst,
-				"selected_at":      startupResult.DebateTeam.SelectedAt,
-				"team_configured":  true,
+				"total_llms":      startupResult.DebateTeam.TotalLLMs,
+				"positions":       len(startupResult.DebateTeam.Positions),
+				"min_score":       startupResult.DebateTeam.MinScore,
+				"sorted_by_score": startupResult.DebateTeam.SortedByScore,
+				"llm_reuse_count": startupResult.DebateTeam.LLMReuseCount,
+				"selected_at":     startupResult.DebateTeam.SelectedAt,
+				"team_configured": true,
 			}
 		} else {
 			response["debate_team"] = gin.H{

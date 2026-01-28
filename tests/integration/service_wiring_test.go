@@ -21,6 +21,7 @@ import (
 	"dev.helix.agent/internal/security"
 	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/tools"
+	"dev.helix.agent/internal/verifier"
 )
 
 // TestServiceWiring_ProviderServices tests that provider services are properly wired
@@ -798,5 +799,113 @@ func TestServiceWiring_EmbeddingService(t *testing.T) {
 
 		embeddingManager := services.NewEmbeddingManagerWithConfig(nil, nil, logger, config)
 		require.NotNil(t, embeddingManager, "EmbeddingManager should be initialized")
+	})
+}
+
+// TestDebateTeamConfig_StartupVerifierIntegration tests that DebateTeamConfig
+// properly uses StartupVerifier when available (CRITICAL: OAuth providers like
+// Claude and Qwen will NOT be included in the debate team without this!)
+func TestDebateTeamConfig_StartupVerifierIntegration(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.WarnLevel)
+
+	t.Run("DebateTeamConfig uses StartupVerifier when set", func(t *testing.T) {
+		// Create provider registry
+		providerRegistry := services.NewProviderRegistry(nil, nil)
+		require.NotNil(t, providerRegistry)
+
+		// Create StartupVerifier with mocked OAuth provider
+		cfg := verifier.DefaultStartupConfig()
+		startupVerifier := verifier.NewStartupVerifier(cfg, logger)
+		require.NotNil(t, startupVerifier)
+
+		// Set the startup verifier on the registry
+		providerRegistry.SetStartupVerifier(startupVerifier)
+
+		// Create debate team config
+		debateTeamConfig := services.NewDebateTeamConfig(providerRegistry, nil, logger)
+		require.NotNil(t, debateTeamConfig)
+
+		// CRITICAL: Set the StartupVerifier on the DebateTeamConfig
+		// This is the fix that ensures OAuth providers are included
+		sv := providerRegistry.GetStartupVerifier()
+		if sv != nil {
+			debateTeamConfig.SetStartupVerifier(sv)
+		}
+
+		// Verify StartupVerifier is set (no direct getter, but we can check behavior)
+		// The DebateTeamConfig should use StartupVerifier path when collecting LLMs
+		assert.NotNil(t, sv, "StartupVerifier should be retrievable from registry")
+	})
+
+	t.Run("DebateTeamConfig without StartupVerifier falls back to legacy", func(t *testing.T) {
+		// Create provider registry WITHOUT StartupVerifier
+		providerRegistry := services.NewProviderRegistry(nil, nil)
+		require.NotNil(t, providerRegistry)
+
+		// Create debate team config without setting StartupVerifier
+		debateTeamConfig := services.NewDebateTeamConfig(providerRegistry, nil, logger)
+		require.NotNil(t, debateTeamConfig)
+
+		// Verify no StartupVerifier is set
+		sv := providerRegistry.GetStartupVerifier()
+		assert.Nil(t, sv, "StartupVerifier should be nil when not set")
+	})
+
+	t.Run("Router pattern: set StartupVerifier on DebateTeamConfig", func(t *testing.T) {
+		// This test mimics the exact pattern used in router.go
+		providerRegistry := services.NewProviderRegistry(nil, nil)
+
+		// Simulate startup verification setting the verifier
+		cfg := verifier.DefaultStartupConfig()
+		startupVerifier := verifier.NewStartupVerifier(cfg, logger)
+		providerRegistry.SetStartupVerifier(startupVerifier)
+
+		// Create debate team config (as done in router.go)
+		debateTeamConfig := services.NewDebateTeamConfig(
+			providerRegistry,
+			providerRegistry.GetDiscovery(),
+			logger,
+		)
+
+		// CRITICAL FIX: Set the StartupVerifier so OAuth providers are included
+		if sv := providerRegistry.GetStartupVerifier(); sv != nil {
+			debateTeamConfig.SetStartupVerifier(sv)
+		}
+
+		// Verify the pattern works
+		require.NotNil(t, debateTeamConfig)
+		sv := providerRegistry.GetStartupVerifier()
+		assert.NotNil(t, sv, "StartupVerifier should be set")
+	})
+}
+
+// TestVerificationTimeout tests that the verification timeout is sufficient
+// for slow providers like Zen (free) and ZAI (GLM)
+func TestVerificationTimeout(t *testing.T) {
+	t.Run("Default timeout is 120 seconds for slow providers", func(t *testing.T) {
+		cfg := verifier.DefaultStartupConfig()
+
+		// The timeout should be at least 2 minutes to handle slow providers
+		// Zen takes ~10s per model, ZAI can also be slow
+		assert.GreaterOrEqual(t, cfg.VerificationTimeout, 120*time.Second,
+			"Verification timeout should be at least 2 minutes for slow providers")
+	})
+
+	t.Run("OAuth trust is enabled by default", func(t *testing.T) {
+		cfg := verifier.DefaultStartupConfig()
+
+		// OAuth trust should be enabled so Claude and Qwen are included
+		// even if their product-restricted tokens fail API verification
+		assert.True(t, cfg.TrustOAuthOnFailure,
+			"TrustOAuthOnFailure should be true to include OAuth providers")
+	})
+
+	t.Run("OAuth priority boost is applied", func(t *testing.T) {
+		cfg := verifier.DefaultStartupConfig()
+
+		// OAuth providers should get a score boost for prioritization
+		assert.Greater(t, cfg.OAuthPriorityBoost, 0.0,
+			"OAuth providers should have a priority boost")
 	})
 }

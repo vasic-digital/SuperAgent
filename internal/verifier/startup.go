@@ -837,19 +837,21 @@ func (sv *StartupVerifier) rankProviders(providers []*UnifiedProvider) {
 
 // selectDebateTeam selects the 15 LLMs for the AI debate team
 // This function collects ALL LLMs sorted by score and populates all 15 positions
-// (5 primary + 10 fallbacks). If there are fewer than 15 unique LLMs available,
-// the strongest LLMs are REUSED to fill all 15 positions.
+// (5 primary + 2-4 fallbacks each = up to 25 LLMs). If there are fewer unique LLMs available,
+// the strongest LLMs are REUSED to fill all positions.
+// IMPORTANT: NO OAuth priority - all providers sorted purely by score (highest first).
 func (sv *StartupVerifier) selectDebateTeam() (*DebateTeamResult, error) {
 	if len(sv.rankedProviders) == 0 {
 		return nil, fmt.Errorf("no verified providers available for debate team")
 	}
 
 	team := &DebateTeamResult{
-		Positions:  make([]*DebatePosition, sv.config.PositionCount),
-		TotalLLMs:  sv.config.DebateTeamSize,
-		MinScore:   sv.config.MinScore,
-		OAuthFirst: true,
-		SelectedAt: time.Now(),
+		Positions:     make([]*DebatePosition, sv.config.PositionCount),
+		TotalLLMs:     sv.config.DebateTeamSize,
+		MinScore:      sv.config.MinScore,
+		SortedByScore: true, // NO OAuth priority - pure score-based sorting
+		LLMReuseCount: 0,
+		SelectedAt:    time.Now(),
 	}
 
 	roles := []string{"analyst", "proposer", "critic", "synthesis", "mediator"}
@@ -880,18 +882,10 @@ func (sv *StartupVerifier) selectDebateTeam() (*DebateTeamResult, error) {
 		return nil, fmt.Errorf("no verified LLMs available for debate team")
 	}
 
-	sv.log.WithField("available_llms", len(allLLMs)).Info("Building debate team from available LLMs")
+	sv.log.WithField("available_llms", len(allLLMs)).Info("Building debate team from available LLMs (score-based only)")
 
-	// Sort all LLMs by score descending (OAuth first, then by score)
+	// Sort all LLMs PURELY by score descending (NO OAuth priority)
 	sort.Slice(allLLMs, func(i, j int) bool {
-		// OAuth providers come first
-		if allLLMs[i].IsOAuth && !allLLMs[j].IsOAuth {
-			return true
-		}
-		if !allLLMs[i].IsOAuth && allLLMs[j].IsOAuth {
-			return false
-		}
-		// Then by score descending
 		return allLLMs[i].Score > allLLMs[j].Score
 	})
 
@@ -900,7 +894,7 @@ func (sv *StartupVerifier) selectDebateTeam() (*DebateTeamResult, error) {
 		// Wrap around to reuse strongest LLMs when index exceeds available LLMs
 		wrappedIndex := index % len(allLLMs)
 		original := allLLMs[wrappedIndex]
-		// Create a copy to avoid modifying the original
+		// Create a copy to avoid modifying the original (independent instance)
 		return &DebateLLM{
 			Provider:     original.Provider,
 			ProviderType: original.ProviderType,
@@ -914,55 +908,55 @@ func (sv *StartupVerifier) selectDebateTeam() (*DebateTeamResult, error) {
 	}
 
 	// Assign ALL positions using strongest LLMs with reuse
-	// Each position has: 1 primary + FallbacksPerPosition fallbacks
+	// Each position has: 1 primary + FallbacksPerPosition fallbacks (2-4)
 	llmIndex := 0
+	reuseCount := 0
 	for i := 0; i < sv.config.PositionCount; i++ {
 		position := &DebatePosition{
-			Position: i + 1,
-			Role:     roles[i],
+			Position:  i + 1,
+			Role:      roles[i],
+			Fallbacks: make([]*DebateLLM, 0, sv.config.FallbacksPerPosition),
 		}
 
 		// Assign primary (strongest LLM available or reused)
+		if llmIndex >= len(allLLMs) {
+			reuseCount++
+		}
 		position.Primary = getLLMAtPosition(llmIndex)
 		llmIndex++
 
-		// Assign fallbacks based on config
-		if sv.config.FallbacksPerPosition >= 1 {
-			position.Fallback1 = getLLMAtPosition(llmIndex)
-			llmIndex++
-		}
-
-		if sv.config.FallbacksPerPosition >= 2 {
-			position.Fallback2 = getLLMAtPosition(llmIndex)
+		// Assign 2-4 fallbacks based on config
+		for j := 0; j < sv.config.FallbacksPerPosition; j++ {
+			if llmIndex >= len(allLLMs) {
+				reuseCount++
+			}
+			position.Fallbacks = append(position.Fallbacks, getLLMAtPosition(llmIndex))
 			llmIndex++
 		}
 
 		team.Positions[i] = position
 	}
 
-	// Count total LLMs selected (should always be 15)
+	// Count total LLMs selected
 	totalSelected := 0
 	for _, pos := range team.Positions {
 		if pos.Primary != nil {
 			totalSelected++
 		}
-		if pos.Fallback1 != nil {
-			totalSelected++
-		}
-		if pos.Fallback2 != nil {
-			totalSelected++
-		}
+		totalSelected += len(pos.Fallbacks)
 	}
 	team.TotalLLMs = totalSelected
+	team.LLMReuseCount = reuseCount
 
 	sv.log.WithFields(logrus.Fields{
-		"total_llms":       totalSelected,
-		"unique_llms":      len(allLLMs),
-		"reuse_enabled":    len(allLLMs) < sv.config.DebateTeamSize,
-		"strongest_llm":    allLLMs[0].ModelID,
-		"strongest_score":  allLLMs[0].Score,
-		"strongest_oauth":  allLLMs[0].IsOAuth,
-	}).Info("AI Debate Team selected with all 15 positions populated")
+		"total_llms":      totalSelected,
+		"unique_llms":     len(allLLMs),
+		"reuse_count":     reuseCount,
+		"reuse_enabled":   reuseCount > 0,
+		"strongest_llm":   allLLMs[0].ModelID,
+		"strongest_score": allLLMs[0].Score,
+		"sorting_method":  "score_only",
+	}).Info("AI Debate Team selected - positions populated by score (no OAuth priority)")
 
 	return team, nil
 }
