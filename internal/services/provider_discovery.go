@@ -111,64 +111,155 @@ type ProviderMapping struct {
 }
 
 // providerMappings defines all known API key to provider mappings
-// Updated 2025-01-13: Use Claude 4.5 (latest), Gemini 2.0, and Qwen Max
+// Updated 2026-01-28: Comprehensive mapping with all alternative key names for maximum compatibility
 var providerMappings = []ProviderMapping{
 	// Tier 1: Premium providers (direct API access)
+	// Claude/Anthropic - Multiple key name variations
 	{EnvVar: "ANTHROPIC_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-5-20250929", Priority: 1},
 	{EnvVar: "CLAUDE_API_KEY", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-5-20250929", Priority: 1},
+	{EnvVar: "ApiKey_Claude", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-5-20250929", Priority: 1},
+	{EnvVar: "ApiKey_Anthropic", ProviderType: "claude", ProviderName: "claude", BaseURL: "https://api.anthropic.com/v1/messages", DefaultModel: "claude-sonnet-4-5-20250929", Priority: 1},
+
+	// OpenAI - Multiple key name variations
 	{EnvVar: "OPENAI_API_KEY", ProviderType: "openai", ProviderName: "openai", BaseURL: "https://api.openai.com/v1", DefaultModel: "gpt-4o", Priority: 1},
+	{EnvVar: "ApiKey_OpenAI", ProviderType: "openai", ProviderName: "openai", BaseURL: "https://api.openai.com/v1", DefaultModel: "gpt-4o", Priority: 1},
+	{EnvVar: "OPENAI_KEY", ProviderType: "openai", ProviderName: "openai", BaseURL: "https://api.openai.com/v1", DefaultModel: "gpt-4o", Priority: 1},
+
+	// Gemini/Google - Multiple key name variations
 	{EnvVar: "GEMINI_API_KEY", ProviderType: "gemini", ProviderName: "gemini", BaseURL: "https://generativelanguage.googleapis.com/v1beta", DefaultModel: "gemini-2.0-flash", Priority: 2},
 	{EnvVar: "GOOGLE_API_KEY", ProviderType: "gemini", ProviderName: "gemini", BaseURL: "https://generativelanguage.googleapis.com/v1beta", DefaultModel: "gemini-2.0-flash", Priority: 2},
+	{EnvVar: "ApiKey_Gemini", ProviderType: "gemini", ProviderName: "gemini", BaseURL: "https://generativelanguage.googleapis.com/v1beta", DefaultModel: "gemini-2.0-flash", Priority: 2},
+	{EnvVar: "GOOGLE_AI_API_KEY", ProviderType: "gemini", ProviderName: "gemini", BaseURL: "https://generativelanguage.googleapis.com/v1beta", DefaultModel: "gemini-2.0-flash", Priority: 2},
 
 	// Tier 2: High-quality specialized providers
+	// DeepSeek - Multiple key name variations
 	{EnvVar: "DEEPSEEK_API_KEY", ProviderType: "deepseek", ProviderName: "deepseek", BaseURL: "https://api.deepseek.com/v1/chat/completions", DefaultModel: "deepseek-chat", Priority: 3},
 	{EnvVar: "ApiKey_DeepSeek", ProviderType: "deepseek", ProviderName: "deepseek", BaseURL: "https://api.deepseek.com/v1/chat/completions", DefaultModel: "deepseek-chat", Priority: 3},
+	{EnvVar: "DEEPSEEK_KEY", ProviderType: "deepseek", ProviderName: "deepseek", BaseURL: "https://api.deepseek.com/v1/chat/completions", DefaultModel: "deepseek-chat", Priority: 3},
+
+	// Mistral - Multiple key name variations
 	{EnvVar: "MISTRAL_API_KEY", ProviderType: "mistral", ProviderName: "mistral", BaseURL: "https://api.mistral.ai/v1", DefaultModel: "mistral-large-latest", Priority: 3},
+	{EnvVar: "ApiKey_Mistral", ProviderType: "mistral", ProviderName: "mistral", BaseURL: "https://api.mistral.ai/v1", DefaultModel: "mistral-large-latest", Priority: 3},
 	{EnvVar: "CODESTRAL_API_KEY", ProviderType: "mistral", ProviderName: "codestral", BaseURL: "https://codestral.mistral.ai/v1", DefaultModel: "codestral-latest", Priority: 3},
+
+	// Qwen/DashScope - Multiple key name variations
 	{EnvVar: "QWEN_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-max", Priority: 4},
+	{EnvVar: "ApiKey_Qwen", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-max", Priority: 4},
+	{EnvVar: "DASHSCOPE_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-max", Priority: 4},
+	{EnvVar: "ALIBABA_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-max", Priority: 4},
+
+	// xAI/Grok - Multiple key name variations
 	{EnvVar: "XAI_API_KEY", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
 	{EnvVar: "GROK_API_KEY", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
+	{EnvVar: "ApiKey_XAI", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
+	{EnvVar: "ApiKey_Grok", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
+
+	// ZAI/Zhipu/GLM - Multiple key name variations
 	{EnvVar: "ZAI_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
 	{EnvVar: "ApiKey_ZAI", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
 	{EnvVar: "ZHIPU_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
+	{EnvVar: "GLM_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
+	{EnvVar: "BIGMODEL_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
+
+	// Cohere - Multiple key name variations
 	{EnvVar: "COHERE_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
 	{EnvVar: "CO_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
+	{EnvVar: "ApiKey_Cohere", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
+
+	// Perplexity - Multiple key name variations
 	{EnvVar: "PERPLEXITY_API_KEY", ProviderType: "perplexity", ProviderName: "perplexity", BaseURL: "https://api.perplexity.ai", DefaultModel: "llama-3.1-sonar-large-128k-online", Priority: 4},
 	{EnvVar: "PPLX_API_KEY", ProviderType: "perplexity", ProviderName: "perplexity", BaseURL: "https://api.perplexity.ai", DefaultModel: "llama-3.1-sonar-large-128k-online", Priority: 4},
+	{EnvVar: "ApiKey_Perplexity", ProviderType: "perplexity", ProviderName: "perplexity", BaseURL: "https://api.perplexity.ai", DefaultModel: "llama-3.1-sonar-large-128k-online", Priority: 4},
+
+	// AI21 - Multiple key name variations
 	{EnvVar: "AI21_API_KEY", ProviderType: "ai21", ProviderName: "ai21", BaseURL: "https://api.ai21.com/studio/v1", DefaultModel: "jamba-1.5-large", Priority: 5},
+	{EnvVar: "ApiKey_AI21", ProviderType: "ai21", ProviderName: "ai21", BaseURL: "https://api.ai21.com/studio/v1", DefaultModel: "jamba-1.5-large", Priority: 5},
 
 	// Tier 3: Fast inference providers
+	// Groq - Multiple key name variations
 	{EnvVar: "GROQ_API_KEY", ProviderType: "groq", ProviderName: "groq", BaseURL: "https://api.groq.com/openai/v1", DefaultModel: "llama-3.1-70b-versatile", Priority: 5},
+	{EnvVar: "ApiKey_Groq", ProviderType: "groq", ProviderName: "groq", BaseURL: "https://api.groq.com/openai/v1", DefaultModel: "llama-3.1-70b-versatile", Priority: 5},
+
+	// Cerebras - Multiple key name variations
 	{EnvVar: "CEREBRAS_API_KEY", ProviderType: "cerebras", ProviderName: "cerebras", BaseURL: "https://api.cerebras.ai/v1", DefaultModel: "llama-3.3-70b", Priority: 5},
+	{EnvVar: "ApiKey_Cerebras", ProviderType: "cerebras", ProviderName: "cerebras", BaseURL: "https://api.cerebras.ai/v1", DefaultModel: "llama-3.3-70b", Priority: 5},
+
+	// SambaNova
 	{EnvVar: "SAMBANOVA_API_KEY", ProviderType: "sambanova", ProviderName: "sambanova", BaseURL: "https://api.sambanova.ai/v1", DefaultModel: "Meta-Llama-3.1-70B-Instruct", Priority: 5},
+	{EnvVar: "ApiKey_SambaNova", ProviderType: "sambanova", ProviderName: "sambanova", BaseURL: "https://api.sambanova.ai/v1", DefaultModel: "Meta-Llama-3.1-70B-Instruct", Priority: 5},
 
 	// Tier 4: Alternative providers
+	// Fireworks - Multiple key name variations
 	{EnvVar: "FIREWORKS_API_KEY", ProviderType: "fireworks", ProviderName: "fireworks", BaseURL: "https://api.fireworks.ai/inference/v1", DefaultModel: "accounts/fireworks/models/llama-v3p1-70b-instruct", Priority: 6},
+	{EnvVar: "ApiKey_Fireworks", ProviderType: "fireworks", ProviderName: "fireworks", BaseURL: "https://api.fireworks.ai/inference/v1", DefaultModel: "accounts/fireworks/models/llama-v3p1-70b-instruct", Priority: 6},
+
+	// Together - Multiple key name variations
 	{EnvVar: "TOGETHERAI_API_KEY", ProviderType: "together", ProviderName: "together", BaseURL: "https://api.together.xyz/v1", DefaultModel: "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo", Priority: 6},
 	{EnvVar: "TOGETHER_API_KEY", ProviderType: "together", ProviderName: "together", BaseURL: "https://api.together.xyz/v1", DefaultModel: "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo", Priority: 6},
+	{EnvVar: "ApiKey_Together", ProviderType: "together", ProviderName: "together", BaseURL: "https://api.together.xyz/v1", DefaultModel: "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo", Priority: 6},
+
+	// Hyperbolic
 	{EnvVar: "HYPERBOLIC_API_KEY", ProviderType: "hyperbolic", ProviderName: "hyperbolic", BaseURL: "https://api.hyperbolic.xyz/v1", DefaultModel: "meta-llama/Llama-3.3-70B-Instruct", Priority: 6},
+	{EnvVar: "ApiKey_Hyperbolic", ProviderType: "hyperbolic", ProviderName: "hyperbolic", BaseURL: "https://api.hyperbolic.xyz/v1", DefaultModel: "meta-llama/Llama-3.3-70B-Instruct", Priority: 6},
 
 	// Tier 5: Specialized providers
+	// Replicate - Multiple key name variations
 	{EnvVar: "REPLICATE_API_KEY", ProviderType: "replicate", ProviderName: "replicate", BaseURL: "https://api.replicate.com/v1", DefaultModel: "meta/llama-2-70b-chat", Priority: 7},
+	{EnvVar: "REPLICATE_API_TOKEN", ProviderType: "replicate", ProviderName: "replicate", BaseURL: "https://api.replicate.com/v1", DefaultModel: "meta/llama-2-70b-chat", Priority: 7},
+	{EnvVar: "ApiKey_Replicate", ProviderType: "replicate", ProviderName: "replicate", BaseURL: "https://api.replicate.com/v1", DefaultModel: "meta/llama-2-70b-chat", Priority: 7},
+
+	// SiliconFlow
 	{EnvVar: "SILICONFLOW_API_KEY", ProviderType: "siliconflow", ProviderName: "siliconflow", BaseURL: "https://api.siliconflow.cn/v1", DefaultModel: "Qwen/Qwen2.5-72B-Instruct", Priority: 7},
+	{EnvVar: "ApiKey_SiliconFlow", ProviderType: "siliconflow", ProviderName: "siliconflow", BaseURL: "https://api.siliconflow.cn/v1", DefaultModel: "Qwen/Qwen2.5-72B-Instruct", Priority: 7},
+
+	// Cloudflare
 	{EnvVar: "CLOUDFLARE_API_KEY", ProviderType: "cloudflare", ProviderName: "cloudflare", BaseURL: "https://api.cloudflare.com/client/v4", DefaultModel: "@cf/meta/llama-3.1-70b-instruct", Priority: 7},
+	{EnvVar: "CF_API_KEY", ProviderType: "cloudflare", ProviderName: "cloudflare", BaseURL: "https://api.cloudflare.com/client/v4", DefaultModel: "@cf/meta/llama-3.1-70b-instruct", Priority: 7},
+
+	// NVIDIA
 	{EnvVar: "NVIDIA_API_KEY", ProviderType: "nvidia", ProviderName: "nvidia", BaseURL: "https://integrate.api.nvidia.com/v1", DefaultModel: "meta/llama-3.1-70b-instruct", Priority: 7},
+	{EnvVar: "NGC_API_KEY", ProviderType: "nvidia", ProviderName: "nvidia", BaseURL: "https://integrate.api.nvidia.com/v1", DefaultModel: "meta/llama-3.1-70b-instruct", Priority: 7},
+	{EnvVar: "ApiKey_NVIDIA", ProviderType: "nvidia", ProviderName: "nvidia", BaseURL: "https://integrate.api.nvidia.com/v1", DefaultModel: "meta/llama-3.1-70b-instruct", Priority: 7},
 
 	// Tier 6: Regional/specialized providers
+	// Kimi/Moonshot
 	{EnvVar: "KIMI_API_KEY", ProviderType: "kimi", ProviderName: "kimi", BaseURL: "https://api.moonshot.cn/v1", DefaultModel: "moonshot-v1-128k", Priority: 8},
+	{EnvVar: "MOONSHOT_API_KEY", ProviderType: "kimi", ProviderName: "kimi", BaseURL: "https://api.moonshot.cn/v1", DefaultModel: "moonshot-v1-128k", Priority: 8},
+	{EnvVar: "ApiKey_Kimi", ProviderType: "kimi", ProviderName: "kimi", BaseURL: "https://api.moonshot.cn/v1", DefaultModel: "moonshot-v1-128k", Priority: 8},
+
+	// HuggingFace - Multiple key name variations
 	{EnvVar: "HUGGINGFACE_API_KEY", ProviderType: "huggingface", ProviderName: "huggingface", BaseURL: "https://api-inference.huggingface.co", DefaultModel: "meta-llama/Llama-3.2-3B-Instruct", Priority: 8},
+	{EnvVar: "HF_API_KEY", ProviderType: "huggingface", ProviderName: "huggingface", BaseURL: "https://api-inference.huggingface.co", DefaultModel: "meta-llama/Llama-3.2-3B-Instruct", Priority: 8},
+	{EnvVar: "HF_TOKEN", ProviderType: "huggingface", ProviderName: "huggingface", BaseURL: "https://api-inference.huggingface.co", DefaultModel: "meta-llama/Llama-3.2-3B-Instruct", Priority: 8},
+	{EnvVar: "HUGGINGFACE_TOKEN", ProviderType: "huggingface", ProviderName: "huggingface", BaseURL: "https://api-inference.huggingface.co", DefaultModel: "meta-llama/Llama-3.2-3B-Instruct", Priority: 8},
+	{EnvVar: "ApiKey_HuggingFace", ProviderType: "huggingface", ProviderName: "huggingface", BaseURL: "https://api-inference.huggingface.co", DefaultModel: "meta-llama/Llama-3.2-3B-Instruct", Priority: 8},
+
+	// Novita
 	{EnvVar: "NOVITA_API_KEY", ProviderType: "novita", ProviderName: "novita", BaseURL: "https://api.novita.ai/v3/openai", DefaultModel: "meta-llama/llama-3.1-70b-instruct", Priority: 8},
+	{EnvVar: "ApiKey_Novita", ProviderType: "novita", ProviderName: "novita", BaseURL: "https://api.novita.ai/v3/openai", DefaultModel: "meta-llama/llama-3.1-70b-instruct", Priority: 8},
+
+	// Upstage
 	{EnvVar: "UPSTAGE_API_KEY", ProviderType: "upstage", ProviderName: "upstage", BaseURL: "https://api.upstage.ai/v1/solar", DefaultModel: "solar-pro", Priority: 8},
+	{EnvVar: "ApiKey_Upstage", ProviderType: "upstage", ProviderName: "upstage", BaseURL: "https://api.upstage.ai/v1/solar", DefaultModel: "solar-pro", Priority: 8},
+
+	// Chutes
 	{EnvVar: "CHUTES_API_KEY", ProviderType: "chutes", ProviderName: "chutes", BaseURL: "https://llm.chutes.ai/v1", DefaultModel: "deepseek-ai/DeepSeek-V3", Priority: 8},
+	{EnvVar: "ApiKey_Chutes", ProviderType: "chutes", ProviderName: "chutes", BaseURL: "https://llm.chutes.ai/v1", DefaultModel: "deepseek-ai/DeepSeek-V3", Priority: 8},
 
 	// Tier 7: Aggregators (use as fallback)
+	// OpenRouter - Multiple key name variations
 	{EnvVar: "OPENROUTER_API_KEY", ProviderType: "openrouter", ProviderName: "openrouter", BaseURL: "https://openrouter.ai/api/v1", DefaultModel: "anthropic/claude-3.5-sonnet", Priority: 10},
+	{EnvVar: "ApiKey_OpenRouter", ProviderType: "openrouter", ProviderName: "openrouter", BaseURL: "https://openrouter.ai/api/v1", DefaultModel: "anthropic/claude-3.5-sonnet", Priority: 10},
 
 	// Tier 7.5: OpenCode Zen (free models gateway)
 	{EnvVar: "OPENCODE_API_KEY", ProviderType: "zen", ProviderName: "zen", BaseURL: "https://opencode.ai/zen/v1/chat/completions", DefaultModel: "opencode/grok-code", Priority: 4},
+	{EnvVar: "ZEN_API_KEY", ProviderType: "zen", ProviderName: "zen", BaseURL: "https://opencode.ai/zen/v1/chat/completions", DefaultModel: "opencode/grok-code", Priority: 4},
 
 	// Tier 8: Self-hosted (local)
+	// Ollama - Multiple configuration options
 	{EnvVar: "OLLAMA_BASE_URL", ProviderType: "ollama", ProviderName: "ollama", BaseURL: "http://localhost:11434", DefaultModel: "llama3.2", Priority: 20},
+	{EnvVar: "OLLAMA_HOST", ProviderType: "ollama", ProviderName: "ollama", BaseURL: "http://localhost:11434", DefaultModel: "llama3.2", Priority: 20},
+	{EnvVar: "OLLAMA_API_URL", ProviderType: "ollama", ProviderName: "ollama", BaseURL: "http://localhost:11434", DefaultModel: "llama3.2", Priority: 20},
 }
 
 // NewProviderDiscovery creates a new provider discovery service
