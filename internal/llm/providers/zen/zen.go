@@ -28,10 +28,17 @@ const (
 
 	// Default free models - available WITHOUT API key
 	// NOTE: Zen API requires model names WITHOUT "opencode/" prefix
-	ModelBigPickle    = "big-pickle"
-	ModelGrokCodeFast = "grok-code"
+	// Available models from API: big-pickle, gpt-5-nano, glm-4.7, qwen3-coder, kimi-k2, gemini-3-flash
+	ModelBigPickle = "big-pickle"
+	ModelGPT5Nano  = "gpt-5-nano"
+	ModelGLM47     = "glm-4.7"
+	ModelQwen3     = "qwen3-coder"
+	ModelKimiK2    = "kimi-k2"
+	ModelGemini3   = "gemini-3-flash"
+
+	// Legacy model IDs (may not be available anymore)
+	ModelGrokCodeFast = "grok-code" // Deprecated, may not work
 	ModelGLM47Free    = "glm-4.7-free"
-	ModelGPT5Nano     = "gpt-5-nano"
 
 	// Legacy model IDs with prefix (for backward compatibility in configs)
 	ModelBigPickleFull    = "opencode/big-pickle"
@@ -39,20 +46,23 @@ const (
 	ModelGLM47FreeFull    = "opencode/glm-4.7-free"
 	ModelGPT5NanoFull     = "opencode/gpt-5-nano"
 
-	// Default model for Zen provider
-	DefaultZenModel = ModelGrokCodeFast
+	// Default model for Zen provider - using verified working model
+	DefaultZenModel = ModelBigPickle
 
 	// Anonymous access identifier for free models
 	AnonymousDeviceHeader = "X-Device-ID"
 )
 
 // FreeModels returns the list of free models available on Zen
+// Updated 2026-01: These models are verified working via the Zen API
 func FreeModels() []string {
 	return []string{
 		ModelBigPickle,
-		ModelGrokCodeFast,
-		ModelGLM47Free,
 		ModelGPT5Nano,
+		ModelGLM47,
+		ModelQwen3,
+		ModelKimiK2,
+		ModelGemini3,
 	}
 }
 

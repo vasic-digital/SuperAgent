@@ -155,11 +155,12 @@ var providerMappings = []ProviderMapping{
 	{EnvVar: "ApiKey_Grok", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
 
 	// ZAI/Zhipu/GLM - Multiple key name variations (GLM-4-Plus is most capable)
-	{EnvVar: "ZAI_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 2},
-	{EnvVar: "ApiKey_ZAI", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 2},
-	{EnvVar: "ZHIPU_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 2},
-	{EnvVar: "GLM_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 2},
-	{EnvVar: "BIGMODEL_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 2},
+	// Tier 2 providers have Priority 3
+	{EnvVar: "ZAI_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 3},
+	{EnvVar: "ApiKey_ZAI", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 3},
+	{EnvVar: "ZHIPU_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 3},
+	{EnvVar: "GLM_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 3},
+	{EnvVar: "BIGMODEL_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 3},
 
 	// Cohere - Multiple key name variations
 	{EnvVar: "COHERE_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
@@ -252,8 +253,8 @@ var providerMappings = []ProviderMapping{
 	{EnvVar: "ApiKey_OpenRouter", ProviderType: "openrouter", ProviderName: "openrouter", BaseURL: "https://openrouter.ai/api/v1", DefaultModel: "anthropic/claude-3.5-sonnet", Priority: 10},
 
 	// Tier 7.5: OpenCode Zen (free models gateway)
-	{EnvVar: "OPENCODE_API_KEY", ProviderType: "zen", ProviderName: "zen", BaseURL: "https://opencode.ai/zen/v1/chat/completions", DefaultModel: "opencode/grok-code", Priority: 4},
-	{EnvVar: "ZEN_API_KEY", ProviderType: "zen", ProviderName: "zen", BaseURL: "https://opencode.ai/zen/v1/chat/completions", DefaultModel: "opencode/grok-code", Priority: 4},
+	{EnvVar: "OPENCODE_API_KEY", ProviderType: "zen", ProviderName: "zen", BaseURL: "https://opencode.ai/zen/v1/chat/completions", DefaultModel: "big-pickle", Priority: 4},
+	{EnvVar: "ZEN_API_KEY", ProviderType: "zen", ProviderName: "zen", BaseURL: "https://opencode.ai/zen/v1/chat/completions", DefaultModel: "big-pickle", Priority: 4},
 
 	// Tier 8: Self-hosted (local)
 	// Ollama - Multiple configuration options
@@ -516,10 +517,10 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 		// Create Zen provider (anonymous mode if no API key)
 		var provider llm.LLMProvider
 		if apiKey == "" {
-			provider = zen.NewZenProviderAnonymous("opencode/grok-code")
+			provider = zen.NewZenProviderAnonymous("big-pickle")
 			pd.log.Info("Created Zen provider in anonymous mode (free models: Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano)")
 		} else {
-			provider = zen.NewZenProvider(apiKey, "https://opencode.ai/zen/v1/chat/completions", "opencode/grok-code")
+			provider = zen.NewZenProvider(apiKey, "https://opencode.ai/zen/v1/chat/completions", "big-pickle")
 		}
 
 		if provider != nil {
@@ -529,7 +530,7 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 				APIKeyEnvVar: "OPENCODE_API_KEY (optional - anonymous mode for free models)",
 				APIKey:       apiKey,
 				BaseURL:      "https://opencode.ai/zen/v1/chat/completions",
-				DefaultModel: "opencode/grok-code",
+				DefaultModel: "big-pickle",
 				Provider:     provider,
 				Status:       ProviderStatusUnknown,
 				Score:        7.5, // Good base score for free models
