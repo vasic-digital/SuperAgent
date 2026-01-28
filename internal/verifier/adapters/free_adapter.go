@@ -71,13 +71,17 @@ type FreeProviderAdapter struct {
 	httpClient  *http.Client
 
 	// Provider instances
-	zenProvider *zen.ZenProvider
+	zenProvider    *zen.ZenProvider
+	zenCLIProvider *zen.ZenCLIProvider // CLI facade for failed API models
 
 	// Cached verification results
 	mu             sync.RWMutex
 	verifiedModels map[string]*verifier.UnifiedModel
 	lastVerified   map[string]time.Time
 	healthStatus   map[string]bool
+
+	// Models that failed direct API verification
+	failedAPIModels map[string]error
 }
 
 // NewFreeProviderAdapter creates a new free provider adapter
@@ -86,19 +90,39 @@ func NewFreeProviderAdapter(verifierSvc *verifier.VerificationService, config *F
 		config = DefaultFreeAdapterConfig()
 	}
 
-	return &FreeProviderAdapter{
+	adapter := &FreeProviderAdapter{
 		verifierSvc: verifierSvc,
 		config:      config,
 		httpClient: &http.Client{
 			Timeout: config.VerificationTimeout,
 		},
-		verifiedModels: make(map[string]*verifier.UnifiedModel),
-		lastVerified:   make(map[string]time.Time),
-		healthStatus:   make(map[string]bool),
+		verifiedModels:  make(map[string]*verifier.UnifiedModel),
+		lastVerified:    make(map[string]time.Time),
+		healthStatus:    make(map[string]bool),
+		failedAPIModels: make(map[string]error),
 	}
+
+	// Initialize ZenCLIProvider for fallback facade (lazy initialization)
+	// Only check if opencode is installed, don't do expensive model discovery yet
+	if zen.IsOpenCodeInstalled() {
+		// Use a config with explicit model to avoid triggering model discovery
+		adapter.zenCLIProvider = zen.NewZenCLIProvider(zen.ZenCLIConfig{
+			Model:           zen.DefaultZenModel, // Use default model to avoid discovery
+			Timeout:         120 * time.Second,
+			MaxOutputTokens: 4096,
+		})
+		freeLog.Info("OpenCode CLI available - will use CLI facade for models that fail direct API verification")
+	} else {
+		freeLog.Info("OpenCode CLI not installed - CLI facade fallback not available")
+	}
+
+	return adapter
 }
 
 // VerifyZenProvider verifies the Zen free provider and returns a UnifiedProvider
+// It uses a two-phase approach:
+// 1. First, try direct API verification for all models
+// 2. For models that fail direct API, attempt CLI facade verification via `opencode` command
 func (fa *FreeProviderAdapter) VerifyZenProvider(ctx context.Context) (*verifier.UnifiedProvider, error) {
 	freeLog.WithField("provider", "zen").Info("Starting Zen provider verification")
 	startTime := time.Now()
@@ -118,8 +142,9 @@ func (fa *FreeProviderAdapter) VerifyZenProvider(ctx context.Context) (*verifier
 	// Get free models
 	freeModels := zen.FreeModels()
 	models := make([]verifier.UnifiedModel, 0, len(freeModels))
+	failedModels := make([]string, 0)
 
-	// Verify each free model
+	// PHASE 1: Verify each free model via direct API
 	var wg sync.WaitGroup
 	var modelsMu sync.Mutex
 	sem := make(chan struct{}, fa.config.MaxConcurrentVerifications)
@@ -137,7 +162,13 @@ func (fa *FreeProviderAdapter) VerifyZenProvider(ctx context.Context) (*verifier
 					"provider": "zen",
 					"model":    mID,
 					"error":    err.Error(),
-				}).Warn("Failed to verify Zen model")
+				}).Warn("Failed to verify Zen model via direct API")
+
+				// Track the failed model for CLI fallback
+				modelsMu.Lock()
+				failedModels = append(failedModels, mID)
+				fa.failedAPIModels[mID] = err
+				modelsMu.Unlock()
 				return
 			}
 
@@ -150,6 +181,46 @@ func (fa *FreeProviderAdapter) VerifyZenProvider(ctx context.Context) (*verifier
 	}
 
 	wg.Wait()
+
+	// PHASE 2: Attempt CLI facade verification for models that failed direct API
+	cliVerifiedModels := 0
+	if len(failedModels) > 0 && fa.zenCLIProvider != nil && fa.zenCLIProvider.IsCLIAvailable() {
+		freeLog.WithFields(logrus.Fields{
+			"provider":      "zen",
+			"failed_models": len(failedModels),
+		}).Info("Attempting CLI facade verification for models that failed direct API")
+
+		for _, modelID := range failedModels {
+			// Mark the model as failed in the CLI provider
+			fa.zenCLIProvider.MarkModelAsFailedAPI(modelID)
+
+			// Attempt CLI-based verification
+			model, err := fa.verifyZenModelViaCLI(ctx, modelID)
+			if err != nil {
+				freeLog.WithFields(logrus.Fields{
+					"provider": "zen",
+					"model":    modelID,
+					"error":    err.Error(),
+				}).Warn("Failed to verify Zen model via CLI facade")
+				continue
+			}
+
+			modelsMu.Lock()
+			models = append(models, *model)
+			fa.verifiedModels[modelID] = model
+			fa.lastVerified[modelID] = time.Now()
+			// Remove from failed models since CLI verification succeeded
+			delete(fa.failedAPIModels, modelID)
+			modelsMu.Unlock()
+			cliVerifiedModels++
+		}
+
+		freeLog.WithFields(logrus.Fields{
+			"provider":                  "zen",
+			"cli_verified_models":       cliVerifiedModels,
+			"total_failed_after_cli":    len(failedModels) - cliVerifiedModels,
+		}).Info("CLI facade verification completed")
+	}
 
 	// Calculate provider score based on verified models
 	score := fa.calculateZenScore(models, healthErr == nil)
@@ -177,20 +248,25 @@ func (fa *FreeProviderAdapter) VerifyZenProvider(ctx context.Context) (*verifier
 		LastHealthAt: time.Now(),
 		ErrorCount:   0,
 		Metadata: map[string]interface{}{
-			"verification_time_ms": time.Since(startTime).Milliseconds(),
-			"verified_models":      len(models),
-			"total_models":         len(freeModels),
-			"health_check_passed":  healthErr == nil,
-			"anonymous_mode":       true,
+			"verification_time_ms":    time.Since(startTime).Milliseconds(),
+			"verified_models":         len(models),
+			"total_models":            len(freeModels),
+			"health_check_passed":     healthErr == nil,
+			"anonymous_mode":          true,
+			"api_verified_models":     len(models) - cliVerifiedModels,
+			"cli_verified_models":     cliVerifiedModels,
+			"cli_facade_available":    fa.zenCLIProvider != nil && fa.zenCLIProvider.IsCLIAvailable(),
 		},
 	}
 
 	freeLog.WithFields(logrus.Fields{
-		"provider":        "zen",
-		"verified_models": len(models),
-		"score":           score,
-		"status":          status,
-		"duration_ms":     time.Since(startTime).Milliseconds(),
+		"provider":            "zen",
+		"verified_models":     len(models),
+		"api_verified":        len(models) - cliVerifiedModels,
+		"cli_verified":        cliVerifiedModels,
+		"score":               score,
+		"status":              status,
+		"duration_ms":         time.Since(startTime).Milliseconds(),
 	}).Info("Zen provider verification completed")
 
 	return provider, nil
@@ -263,6 +339,183 @@ func (fa *FreeProviderAdapter) verifyZenModel(ctx context.Context, modelID strin
 	}
 
 	return model, nil
+}
+
+// verifyZenModelViaCLI verifies a Zen model using the OpenCode CLI facade
+// This is used as a fallback when direct API verification fails
+func (fa *FreeProviderAdapter) verifyZenModelViaCLI(ctx context.Context, modelID string) (*verifier.UnifiedModel, error) {
+	startTime := time.Now()
+
+	if fa.zenCLIProvider == nil {
+		return nil, fmt.Errorf("CLI provider not available")
+	}
+
+	if !fa.zenCLIProvider.IsCLIAvailable() {
+		return nil, fmt.Errorf("OpenCode CLI not installed")
+	}
+
+	// Set the model for this verification
+	fa.zenCLIProvider.SetModel(modelID)
+
+	// Perform reduced verification via CLI
+	var verificationErr error
+	var latency time.Duration
+	verified := false
+
+	for attempt := 0; attempt <= fa.config.RetryAttempts; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(fa.config.RetryDelay):
+			}
+		}
+
+		// Simple completion test via CLI
+		testStart := time.Now()
+		if err := fa.testModelCompletionViaCLI(ctx, modelID); err != nil {
+			verificationErr = err
+			continue
+		}
+		latency = time.Since(testStart)
+		verified = true
+		break
+	}
+
+	if !verified {
+		return nil, fmt.Errorf("CLI verification failed after %d attempts: %v", fa.config.RetryAttempts+1, verificationErr)
+	}
+
+	// Calculate model score (CLI-verified models get slightly lower score)
+	score := fa.calculateModelScore(latency, verified)
+	// CLI models get a small penalty since they're less direct
+	score = score - 0.1
+	if score < fa.config.BaseScore {
+		score = fa.config.BaseScore
+	}
+
+	model := &verifier.UnifiedModel{
+		ID:           modelID,
+		Name:         getModelDisplayName(modelID) + " (CLI)",
+		Provider:     "zen",
+		Verified:     verified,
+		Score:        score,
+		Latency:      latency,
+		Capabilities: []string{
+			"text_completion",
+			"chat",
+			"streaming",
+		},
+		Metadata: map[string]interface{}{
+			"free_model":           true,
+			"verification_time_ms": time.Since(startTime).Milliseconds(),
+			"latency_ms":           latency.Milliseconds(),
+			"verified_via":         "cli_facade",
+			"cli_command":          "opencode",
+			"direct_api_failed":    true,
+		},
+	}
+
+	freeLog.WithFields(logrus.Fields{
+		"provider":   "zen",
+		"model":      modelID,
+		"via":        "cli_facade",
+		"latency_ms": latency.Milliseconds(),
+		"score":      score,
+	}).Info("Model verified via CLI facade")
+
+	return model, nil
+}
+
+// testModelCompletionViaCLI performs a completion test using the CLI facade
+func (fa *FreeProviderAdapter) testModelCompletionViaCLI(ctx context.Context, modelID string) error {
+	startTime := time.Now()
+
+	// Create a simple test request
+	testReq := &models.LLMRequest{
+		ID:     fmt.Sprintf("cli-test-%d", time.Now().UnixNano()),
+		Prompt: "You are a helpful assistant. Reply concisely.",
+		Messages: []models.Message{
+			{
+				Role:    "user",
+				Content: "What is 2 + 2? Reply with just the number.",
+			},
+		},
+		ModelParams: models.ModelParameters{
+			Model:       modelID,
+			MaxTokens:   10,
+			Temperature: 0.0,
+		},
+	}
+
+	// Perform completion via CLI
+	resp, err := fa.zenCLIProvider.Complete(ctx, testReq)
+	latency := time.Since(startTime)
+
+	if err != nil {
+		return fmt.Errorf("CLI completion failed: %w", err)
+	}
+
+	if resp == nil {
+		return fmt.Errorf("empty response from CLI")
+	}
+
+	if resp.Content == "" {
+		return fmt.Errorf("empty content in CLI response")
+	}
+
+	// Check for suspicious response time
+	if latency < 500*time.Millisecond {
+		freeLog.WithFields(logrus.Fields{
+			"model":      modelID,
+			"latency_ms": latency.Milliseconds(),
+			"content":    resp.Content,
+		}).Debug("CLI response time - note: CLI typically has startup overhead")
+	}
+
+	// Check for canned error responses
+	loweredContent := strings.ToLower(resp.Content)
+	cannedErrorPatterns := []string{
+		"unable to provide",
+		"unable to analyze",
+		"unable to process",
+		"cannot provide",
+		"cannot analyze",
+		"cannot process",
+		"error occurred",
+		"service unavailable",
+		"rate limit",
+		"temporarily unavailable",
+		"model not available",
+		"failed to generate",
+		"internal error",
+	}
+
+	for _, pattern := range cannedErrorPatterns {
+		if strings.Contains(loweredContent, pattern) {
+			return fmt.Errorf("CLI model returned canned error response: %s", resp.Content)
+		}
+	}
+
+	// STRICT validation - response MUST contain "4" for "2+2" test
+	if !strings.Contains(resp.Content, "4") {
+		freeLog.WithFields(logrus.Fields{
+			"model":      modelID,
+			"expected":   "4",
+			"got":        resp.Content,
+			"latency_ms": latency.Milliseconds(),
+		}).Warn("CLI model failed basic math test")
+		return fmt.Errorf("CLI model failed basic verification test: expected '4' in response, got: %s", resp.Content)
+	}
+
+	freeLog.WithFields(logrus.Fields{
+		"model":      modelID,
+		"content":    resp.Content,
+		"latency_ms": latency.Milliseconds(),
+		"via":        "cli_facade",
+	}).Debug("CLI model passed verification test")
+
+	return nil
 }
 
 // testModelCompletion performs a simple completion test with strict validation
@@ -823,6 +1076,66 @@ func (fa *FreeProviderAdapter) RefreshVerification(ctx context.Context, provider
 	default:
 		return nil, fmt.Errorf("unknown free provider type: %s", providerType)
 	}
+}
+
+// IsCLIFacadeAvailable returns whether the OpenCode CLI facade is available
+func (fa *FreeProviderAdapter) IsCLIFacadeAvailable() bool {
+	return fa.zenCLIProvider != nil && fa.zenCLIProvider.IsCLIAvailable()
+}
+
+// GetCLIFacadeProvider returns the CLI facade provider instance (for external use)
+func (fa *FreeProviderAdapter) GetCLIFacadeProvider() *zen.ZenCLIProvider {
+	return fa.zenCLIProvider
+}
+
+// GetFailedAPIModels returns models that failed direct API verification
+func (fa *FreeProviderAdapter) GetFailedAPIModels() map[string]error {
+	fa.mu.RLock()
+	defer fa.mu.RUnlock()
+
+	result := make(map[string]error, len(fa.failedAPIModels))
+	for k, v := range fa.failedAPIModels {
+		result[k] = v
+	}
+	return result
+}
+
+// IsModelUsingCLIFacade checks if a model is being used via CLI facade
+func (fa *FreeProviderAdapter) IsModelUsingCLIFacade(modelID string) bool {
+	fa.mu.RLock()
+	defer fa.mu.RUnlock()
+
+	model, ok := fa.verifiedModels[modelID]
+	if !ok {
+		return false
+	}
+
+	if model.Metadata == nil {
+		return false
+	}
+
+	verifiedVia, ok := model.Metadata["verified_via"]
+	if !ok {
+		return false
+	}
+
+	return verifiedVia == "cli_facade"
+}
+
+// GetCLIFacadeModels returns all models that are verified via CLI facade
+func (fa *FreeProviderAdapter) GetCLIFacadeModels() []*verifier.UnifiedModel {
+	fa.mu.RLock()
+	defer fa.mu.RUnlock()
+
+	var result []*verifier.UnifiedModel
+	for _, model := range fa.verifiedModels {
+		if model.Metadata != nil {
+			if verifiedVia, ok := model.Metadata["verified_via"]; ok && verifiedVia == "cli_facade" {
+				result = append(result, model)
+			}
+		}
+	}
+	return result
 }
 
 // Helper functions
