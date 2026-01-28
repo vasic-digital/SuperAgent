@@ -249,16 +249,21 @@ func TestVerificationEventPublisher_PublishHealthCheck(t *testing.T) {
 func TestVerificationEventPublisher_PublishDebateTeamSelected(t *testing.T) {
 	publisher := NewVerificationEventPublisher(nil, nil, nil)
 	team := &DebateTeamResult{
-		TotalLLMs:  15,
-		OAuthFirst: true,
+		TotalLLMs:     25, // 5 positions × 5 LLMs each
+		SortedByScore: true, // NO OAuth priority - pure score-based
+		LLMReuseCount: 0,
 		Positions: []*DebatePosition{
 			{
 				Position: 1,
 				Role:     "Proponent",
 				Primary: &DebateLLM{
-					Provider:  "claude",
-					ModelName: "claude-3-opus",
+					Provider:  "deepseek",
+					ModelName: "deepseek-chat",
 					Score:     9.5,
+				},
+				Fallbacks: []*DebateLLM{
+					{Provider: "mistral", ModelName: "mistral-large", Score: 9.0},
+					{Provider: "gemini", ModelName: "gemini-2.0-flash", Score: 8.8},
 				},
 			},
 		},

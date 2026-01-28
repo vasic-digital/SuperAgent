@@ -286,7 +286,8 @@ func (p *VerificationEventPublisher) PublishDebateTeamSelected(ctx context.Conte
 	if team != nil {
 		event.Details["total_llms"] = team.TotalLLMs
 		event.Details["position_count"] = len(team.Positions)
-		event.Details["oauth_first"] = team.OAuthFirst
+		event.Details["sorted_by_score"] = team.SortedByScore
+		event.Details["llm_reuse_count"] = team.LLMReuseCount
 		primaryModels := make([]string, 0, len(team.Positions))
 		for _, pos := range team.Positions {
 			if pos != nil && pos.Primary != nil {

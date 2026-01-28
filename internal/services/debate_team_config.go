@@ -15,12 +15,19 @@ import (
 // TotalDebatePositions is the total number of positions in the AI debate team
 const TotalDebatePositions = 5
 
-// FallbacksPerPosition is the number of fallbacks per position (increased from 2 to 4)
-// Having more fallbacks ensures resilience when free models return canned errors
-const FallbacksPerPosition = 4
+// MinFallbacksPerPosition is the minimum number of fallbacks per position
+const MinFallbacksPerPosition = 2
 
-// TotalDebateLLMs is the total number of LLMs used (positions * (1 primary + fallbacks))
-const TotalDebateLLMs = TotalDebatePositions * (1 + FallbacksPerPosition) // 25 LLMs
+// MaxFallbacksPerPosition is the maximum number of fallbacks per position
+const MaxFallbacksPerPosition = 4
+
+// FallbacksPerPosition is the target number of fallbacks per position
+// This will be adjusted based on available verified LLMs
+const FallbacksPerPosition = MaxFallbacksPerPosition
+
+// TotalDebateLLMs is the maximum number of LLMs used (positions * (1 primary + max fallbacks))
+// Actual count may be lower if not enough LLMs are verified, but LLM reuse is allowed
+const TotalDebateLLMs = TotalDebatePositions * (1 + MaxFallbacksPerPosition) // 25 LLMs max
 
 // DebateTeamPosition represents a position in the AI debate team
 type DebateTeamPosition int
@@ -182,19 +189,78 @@ var OpenRouterFreeModels = struct {
 	Capybara7B:      "nousresearch/nous-capybara-7b:free",
 }
 
-// ZenModels defines OpenCode Zen free models (no API key required)
+// ZenModels defines ALL OpenCode Zen free models (no API key required)
 // These are high-quality models available through OpenCode's Zen API gateway
+// ALL models are evaluated - only those passing verification join the debate team
 // NOTE: Zen API requires model names WITHOUT "opencode/" prefix
 var ZenModels = struct {
-	BigPickle    string // Stealth model
-	GrokCodeFast string // xAI Grok code model (default)
-	GLM47Free    string // GLM 4.7 free tier
-	GPT5Nano     string // GPT 5 Nano free tier
+	// Primary models
+	BigPickle    string
+	GPT5Nano     string
+	GLM47        string
+	// Qwen models
+	Qwen3Coder   string
+	Qwen3235B    string
+	Qwen332B     string
+	// Kimi models
+	KimiK2       string
+	KimiLatest   string
+	// Gemini models
+	Gemini3Flash string
+	Gemini25Pro  string
+	Gemini20Flash string
+	// DeepSeek models
+	DeepSeekR1   string
+	DeepSeekV3   string
+	DeepSeekCoder string
+	// Grok models
+	GrokCode     string
+	Grok3        string
+	Grok2        string
+	// Claude models
+	ClaudeSonnet4 string
+	ClaudeHaiku4  string
+	// Llama models
+	Llama4Maverick string
+	Llama4Scout    string
+	Llama3370B     string
+	// Mistral models
+	MistralLarge string
+	Codestral    string
+	// Other models
+	O3Mini       string
+	O1Mini       string
+	GPT4O        string
+	CommandRPlus string
 }{
-	BigPickle:    "opencode/big-pickle",
-	GrokCodeFast: "opencode/grok-code",
-	GLM47Free:    "opencode/glm-4.7-free",
-	GPT5Nano:     "opencode/gpt-5-nano",
+	BigPickle:      "big-pickle",
+	GPT5Nano:       "gpt-5-nano",
+	GLM47:          "glm-4.7",
+	Qwen3Coder:     "qwen3-coder",
+	Qwen3235B:      "qwen3-235b",
+	Qwen332B:       "qwen3-32b",
+	KimiK2:         "kimi-k2",
+	KimiLatest:     "kimi-latest",
+	Gemini3Flash:   "gemini-3-flash",
+	Gemini25Pro:    "gemini-2.5-pro",
+	Gemini20Flash:  "gemini-2.0-flash",
+	DeepSeekR1:     "deepseek-r1",
+	DeepSeekV3:     "deepseek-v3",
+	DeepSeekCoder:  "deepseek-coder",
+	GrokCode:       "grok-code",
+	Grok3:          "grok-3",
+	Grok2:          "grok-2",
+	ClaudeSonnet4:  "claude-sonnet-4",
+	ClaudeHaiku4:   "claude-haiku-4",
+	Llama4Maverick: "llama-4-maverick",
+	Llama4Scout:    "llama-4-scout",
+	Llama3370B:     "llama-3.3-70b",
+	MistralLarge:   "mistral-large",
+	Codestral:      "codestral",
+	O3Mini:         "o3-mini",
+	O1Mini:         "o1-mini",
+	GPT4O:          "gpt-4o",
+	CommandRPlus:   "command-r-plus",
 }
 
 // VerifiedLLM represents a verified LLM from LLMsVerifier
@@ -277,35 +343,33 @@ func NewDebateTeamConfigWithStartupVerifier(
 }
 
 // InitializeTeam sets up the debate team using:
-// 1. OAuth2 providers (Claude, Qwen) if available and verified by LLMsVerifier
-// 2. LLMsVerifier-scored providers for remaining positions (best scores used)
-// 3. Same LLM can be used in multiple instances if needed
-// Total: 15 LLMs (5 positions × 3 LLMs each: 1 primary + 2 fallbacks)
+// 1. ALL verified providers sorted by LLMsVerifier score (NO OAuth priority)
+// 2. Strongest LLMs get primary positions
+// 3. Next strongest become fallbacks (2-4 per position)
+// 4. If not enough unique LLMs, reuse strongest ones (independent instances)
+// Total: Up to 25 LLMs (5 positions × (1 primary + 4 fallbacks))
 func (dtc *DebateTeamConfig) InitializeTeam(ctx context.Context) error {
 	dtc.mu.Lock()
 	defer dtc.mu.Unlock()
 
-	dtc.logger.Info("Initializing AI Debate Team (15 LLMs total)...")
-	dtc.logger.Info("Strategy: OAuth2 providers (if verified) + LLMsVerifier best-scored providers")
+	dtc.logger.Info("Initializing AI Debate Team (up to 25 LLMs)...")
+	dtc.logger.Info("Strategy: ALL providers sorted by score (NO OAuth priority) - strongest LLMs first")
 
 	// Step 1: Verify all providers and collect verified LLMs
 	dtc.collectVerifiedLLMs(ctx)
 
-	// Step 2: Sort verified LLMs by score (highest first)
+	// Step 2: Sort verified LLMs PURELY by score (highest first) - NO OAuth priority
 	sort.Slice(dtc.verifiedLLMs, func(i, j int) bool {
-		// Prioritize OAuth providers, then by score
-		if dtc.verifiedLLMs[i].IsOAuth != dtc.verifiedLLMs[j].IsOAuth {
-			return dtc.verifiedLLMs[i].IsOAuth
-		}
+		// Sort purely by score - highest score first
 		return dtc.verifiedLLMs[i].Score > dtc.verifiedLLMs[j].Score
 	})
 
-	dtc.logger.WithField("verified_count", len(dtc.verifiedLLMs)).Info("Collected verified LLMs")
+	dtc.logger.WithField("verified_count", len(dtc.verifiedLLMs)).Info("Collected verified LLMs sorted by score")
 
-	// Step 3: Assign primary positions (5 positions)
+	// Step 3: Assign primary positions (5 positions) - strongest LLMs get primary
 	dtc.assignPrimaryPositions()
 
-	// Step 4: Assign fallbacks (2 per position = 10 more slots)
+	// Step 4: Assign fallbacks (2-4 per position) - next strongest LLMs
 	dtc.assignAllFallbacks()
 
 	// Step 5: Log final team composition
@@ -313,7 +377,7 @@ func (dtc *DebateTeamConfig) InitializeTeam(ctx context.Context) error {
 
 	dtc.logger.WithFields(logrus.Fields{
 		"total_positions": TotalDebatePositions,
-		"total_llms":      TotalDebateLLMs,
+		"max_llms":        TotalDebateLLMs,
 		"assigned":        len(dtc.members),
 	}).Info("AI Debate Team initialized")
 
@@ -914,50 +978,25 @@ func (dtc *DebateTeamConfig) assignAllFallbacks() {
 	}
 }
 
-// getFallbackLLMs returns fallback LLMs different from the primary
-// IMPORTANT: For OAuth primaries, prioritize non-OAuth fallbacks to ensure
-// fallback chain works when OAuth tokens are incompatible with public APIs
+// getFallbackLLMs returns fallback LLMs based on score (strongest first)
+// NO OAuth priority - all providers are treated equally based on their score
+// If not enough unique LLMs, reuses strongest ones (independent instances)
 func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel string, count int) []*VerifiedLLM {
 	fallbacks := make([]*VerifiedLLM, 0, count)
 
-	// Check if primary is OAuth
-	primaryIsOAuth := false
-	for _, llm := range dtc.verifiedLLMs {
-		if llm.ProviderName == primaryProvider && llm.ModelName == primaryModel {
-			primaryIsOAuth = llm.IsOAuth
-			break
-		}
-	}
-
-	// First pass: For OAuth primaries, prioritize non-OAuth providers as fallbacks
-	// This ensures fallback works when OAuth tokens fail with public APIs
-	if primaryIsOAuth {
-		for _, llm := range dtc.verifiedLLMs {
-			if len(fallbacks) >= count {
-				break
-			}
-			// Prioritize non-OAuth providers for OAuth primaries
-			if !llm.IsOAuth && (llm.ProviderName != primaryProvider || llm.ModelName != primaryModel) {
-				fallbacks = append(fallbacks, llm)
-				dtc.logger.WithFields(logrus.Fields{
-					"primary_provider":  primaryProvider,
-					"fallback_provider": llm.ProviderName,
-					"fallback_model":    llm.ModelName,
-					"reason":            "non-oauth fallback for oauth primary",
-				}).Debug("Selected non-OAuth fallback for OAuth primary")
-			}
-		}
-	}
-
-	// Second pass: If still need more fallbacks, add different provider/model
+	// First pass: Select different LLMs from primary (verifiedLLMs already sorted by score)
 	for _, llm := range dtc.verifiedLLMs {
 		if len(fallbacks) >= count {
 			break
 		}
+		// Skip the primary LLM
+		if llm.ProviderName == primaryProvider && llm.ModelName == primaryModel {
+			continue
+		}
 		// Skip if already added
 		alreadyUsed := false
 		for _, fb := range fallbacks {
-			if fb == llm {
+			if fb.ProviderName == llm.ProviderName && fb.ModelName == llm.ModelName {
 				alreadyUsed = true
 				break
 			}
@@ -965,24 +1004,30 @@ func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel strin
 		if alreadyUsed {
 			continue
 		}
-		// Prefer different provider/model
-		if llm.ProviderName != primaryProvider || llm.ModelName != primaryModel {
-			fallbacks = append(fallbacks, llm)
-		}
+		fallbacks = append(fallbacks, llm)
+		dtc.logger.WithFields(logrus.Fields{
+			"primary_provider":  primaryProvider,
+			"fallback_provider": llm.ProviderName,
+			"fallback_model":    llm.ModelName,
+			"fallback_score":    llm.Score,
+			"fallback_rank":     len(fallbacks),
+		}).Debug("Selected fallback by score")
 	}
 
-	// Third pass: If still not enough, allow reuse (last resort)
-	for i := 0; len(fallbacks) < count && i < len(dtc.verifiedLLMs); i++ {
-		alreadyUsed := false
-		for _, fb := range fallbacks {
-			if fb == dtc.verifiedLLMs[i] {
-				alreadyUsed = true
-				break
-			}
-		}
-		if !alreadyUsed {
-			fallbacks = append(fallbacks, dtc.verifiedLLMs[i])
-		}
+	// Second pass: If not enough unique LLMs, reuse strongest ones (independent instances)
+	// This ensures all positions have full fallback chains
+	reuseIdx := 0
+	for len(fallbacks) < count && len(dtc.verifiedLLMs) > 0 {
+		llm := dtc.verifiedLLMs[reuseIdx%len(dtc.verifiedLLMs)]
+		fallbacks = append(fallbacks, llm)
+		dtc.logger.WithFields(logrus.Fields{
+			"primary_provider":  primaryProvider,
+			"reused_provider":   llm.ProviderName,
+			"reused_model":      llm.ModelName,
+			"reused_score":      llm.Score,
+			"reason":            "LLM reuse for fallback completeness",
+		}).Debug("Reusing LLM as independent instance for fallback")
+		reuseIdx++
 	}
 
 	return fallbacks
@@ -990,7 +1035,7 @@ func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel strin
 
 // logTeamComposition logs the final team composition
 func (dtc *DebateTeamConfig) logTeamComposition() {
-	dtc.logger.Info("=== AI Debate Team Composition (15 LLMs) ===")
+	dtc.logger.Info("=== AI Debate Team Composition (up to 25 LLMs, sorted by score) ===")
 	totalLLMs := 0
 
 	for pos := PositionAnalyst; pos <= PositionMediator; pos++ {
@@ -1136,12 +1181,15 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 		"team_name":           "HelixAgent AI Debate Team",
 		"total_positions":     TotalDebatePositions,
 		"total_llms":          totalLLMs,
-		"expected_llms":       TotalDebateLLMs,
+		"max_llms":            TotalDebateLLMs,
+		"min_fallbacks":       MinFallbacksPerPosition,
+		"max_fallbacks":       MaxFallbacksPerPosition,
 		"oauth_llms":          oauthCount,
 		"llmsverifier_llms":   verifierCount,
 		"active_positions":    len(dtc.GetActiveMembers()),
 		"positions":           positions,
 		"verified_llms_count": len(dtc.verifiedLLMs),
+		"sorting_method":      "score_only", // NO OAuth priority - pure score-based sorting
 		"claude_models": map[string]string{
 			// Claude 4.5 (Latest)
 			"opus_45":   ClaudeModels.Opus45,
@@ -1185,12 +1233,47 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 			"phi3_medium":       OpenRouterFreeModels.Phi3Medium,
 		},
 		"zen_models": map[string]string{
-			"big_pickle":     ZenModels.BigPickle,
-			"grok_code_fast": ZenModels.GrokCodeFast,
-			"glm_47_free":    ZenModels.GLM47Free,
-			"gpt_5_nano":     ZenModels.GPT5Nano,
+			// Primary models
+			"big_pickle":      ZenModels.BigPickle,
+			"gpt_5_nano":      ZenModels.GPT5Nano,
+			"glm_47":          ZenModels.GLM47,
+			// Qwen models
+			"qwen3_coder":     ZenModels.Qwen3Coder,
+			"qwen3_235b":      ZenModels.Qwen3235B,
+			"qwen3_32b":       ZenModels.Qwen332B,
+			// Kimi models
+			"kimi_k2":         ZenModels.KimiK2,
+			"kimi_latest":     ZenModels.KimiLatest,
+			// Gemini models
+			"gemini_3_flash":  ZenModels.Gemini3Flash,
+			"gemini_25_pro":   ZenModels.Gemini25Pro,
+			"gemini_20_flash": ZenModels.Gemini20Flash,
+			// DeepSeek models
+			"deepseek_r1":     ZenModels.DeepSeekR1,
+			"deepseek_v3":     ZenModels.DeepSeekV3,
+			"deepseek_coder":  ZenModels.DeepSeekCoder,
+			// Grok models
+			"grok_code":       ZenModels.GrokCode,
+			"grok_3":          ZenModels.Grok3,
+			"grok_2":          ZenModels.Grok2,
+			// Claude models
+			"claude_sonnet_4": ZenModels.ClaudeSonnet4,
+			"claude_haiku_4":  ZenModels.ClaudeHaiku4,
+			// Llama models
+			"llama_4_maverick": ZenModels.Llama4Maverick,
+			"llama_4_scout":    ZenModels.Llama4Scout,
+			"llama_33_70b":     ZenModels.Llama3370B,
+			// Mistral models
+			"mistral_large":   ZenModels.MistralLarge,
+			"codestral":       ZenModels.Codestral,
+			// Other models
+			"o3_mini":         ZenModels.O3Mini,
+			"o1_mini":         ZenModels.O1Mini,
+			"gpt_4o":          ZenModels.GPT4O,
+			"command_r_plus":  ZenModels.CommandRPlus,
 		},
-		"zen_models_count": dtc.countZenModels(),
+		"zen_models_count":    dtc.countZenModels(),
+		"total_zen_available": 29, // Total number of Zen models to evaluate
 	}
 }
 
