@@ -14,7 +14,8 @@ import (
 func TestQwenCLIProvider_DefaultConfig(t *testing.T) {
 	config := DefaultQwenCLIConfig()
 
-	assert.Equal(t, "qwen-plus", config.Model)
+	// Model is empty by default - will be discovered dynamically
+	assert.Equal(t, "", config.Model)
 	assert.Equal(t, 120*time.Second, config.Timeout)
 	assert.Equal(t, 4096, config.MaxOutputTokens)
 }

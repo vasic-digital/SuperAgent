@@ -14,7 +14,8 @@ import (
 func TestClaudeCLIProvider_DefaultConfig(t *testing.T) {
 	config := DefaultClaudeCLIConfig()
 
-	assert.Equal(t, "claude-sonnet-4-20250514", config.Model)
+	// Model is empty by default - will be discovered dynamically
+	assert.Equal(t, "", config.Model)
 	assert.Equal(t, 120*time.Second, config.Timeout)
 	assert.Equal(t, 4096, config.MaxOutputTokens)
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/modelsdev"
 )
 
 // ClaudeCLIProvider implements the LLMProvider interface using Claude Code CLI
@@ -25,6 +26,24 @@ type ClaudeCLIProvider struct {
 	cliCheckErr     error
 	timeout         time.Duration
 	maxOutputTokens int
+	// Dynamic model discovery
+	availableModels     []string
+	modelsDiscovered    bool
+	modelsDiscoveryOnce sync.Once
+}
+
+// Known Claude models (fallback if discovery fails)
+// These are kept updated based on Anthropic's documentation
+var knownClaudeModels = []string{
+	"claude-opus-4-5-20251101",
+	"claude-sonnet-4-5-20250929",
+	"claude-haiku-4-5-20251001",
+	"claude-sonnet-4-20250514",
+	"claude-3-5-sonnet-20241022",
+	"claude-3-5-haiku-20241022",
+	"claude-3-opus-20240229",
+	"claude-3-sonnet-20240229",
+	"claude-3-haiku-20240307",
 }
 
 // ClaudeCLIConfig holds configuration for the CLI provider
@@ -35,9 +54,10 @@ type ClaudeCLIConfig struct {
 }
 
 // DefaultClaudeCLIConfig returns default configuration
+// Model is initially empty - will be discovered dynamically
 func DefaultClaudeCLIConfig() ClaudeCLIConfig {
 	return ClaudeCLIConfig{
-		Model:           "claude-sonnet-4-20250514",
+		Model:           "", // Will be discovered dynamically
 		Timeout:         120 * time.Second,
 		MaxOutputTokens: 4096,
 	}
@@ -52,11 +72,18 @@ func NewClaudeCLIProvider(config ClaudeCLIConfig) *ClaudeCLIProvider {
 		config.MaxOutputTokens = 4096
 	}
 
-	return &ClaudeCLIProvider{
+	p := &ClaudeCLIProvider{
 		model:           config.Model,
 		timeout:         config.Timeout,
 		maxOutputTokens: config.MaxOutputTokens,
 	}
+
+	// If no model specified, discover the best available model
+	if p.model == "" {
+		p.model = p.GetBestAvailableModel()
+	}
+
+	return p
 }
 
 // NewClaudeCLIProviderWithModel creates a CLI provider with a specific model
@@ -455,4 +482,194 @@ func CanUseClaudeOAuth() bool {
 
 	// Check if CLI is installed and authenticated
 	return IsClaudeCodeInstalled() && IsClaudeCodeAuthenticated()
+}
+
+// DiscoverModels attempts to discover available models using 3-tier system:
+// 1. Primary: Query Claude CLI for available models
+// 2. Fallback 1: Query models.dev API for Anthropic/Claude models
+// 3. Fallback 2: Use hardcoded known models
+func (p *ClaudeCLIProvider) DiscoverModels() []string {
+	p.modelsDiscoveryOnce.Do(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		// Tier 1: Try CLI discovery
+		if p.IsCLIAvailable() {
+			cliModels := p.discoverModelsFromCLI(ctx)
+			if len(cliModels) > 0 {
+				p.availableModels = cliModels
+				p.modelsDiscovered = true
+				return
+			}
+		}
+
+		// Tier 2: Try models.dev API
+		modelsDevModels := p.discoverModelsFromModelsDev(ctx)
+		if len(modelsDevModels) > 0 {
+			p.availableModels = modelsDevModels
+			p.modelsDiscovered = true
+			return
+		}
+
+		// Tier 3: Fallback to known models
+		p.availableModels = knownClaudeModels
+	})
+
+	return p.availableModels
+}
+
+// discoverModelsFromCLI tries to get models from Claude CLI
+func (p *ClaudeCLIProvider) discoverModelsFromCLI(ctx context.Context) []string {
+	// Try different commands that might list models
+	commands := [][]string{
+		{"models"},
+		{"models", "list"},
+		{"model", "list"},
+		{"--list-models"},
+	}
+
+	for _, args := range commands {
+		cmd := exec.CommandContext(ctx, p.cliPath, args...)
+		output, err := cmd.CombinedOutput()
+		if err == nil {
+			models := parseModelsOutput(string(output))
+			if len(models) > 0 {
+				return models
+			}
+		}
+	}
+
+	return nil
+}
+
+// discoverModelsFromModelsDev fetches Claude/Anthropic models from models.dev API
+func (p *ClaudeCLIProvider) discoverModelsFromModelsDev(ctx context.Context) []string {
+	client := modelsdev.NewClient(nil)
+
+	// Search for Claude models
+	opts := &modelsdev.ListModelsOptions{
+		Limit: 50,
+	}
+
+	// Try to list provider models
+	resp, err := client.ListProviderModels(ctx, "anthropic", opts)
+	if err != nil {
+		return nil
+	}
+
+	if resp == nil || len(resp.Models) == 0 {
+		return nil
+	}
+
+	var models []string
+	for _, m := range resp.Models {
+		if m.ID != "" && strings.HasPrefix(m.ID, "claude") {
+			models = append(models, m.ID)
+		}
+	}
+
+	return models
+}
+
+// parseModelsOutput parses CLI output to extract model names
+func parseModelsOutput(output string) []string {
+	var models []string
+	lines := strings.Split(output, "\n")
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Look for lines containing model identifiers
+		// Common patterns: "claude-*", model names with version dates
+		if strings.HasPrefix(line, "claude-") ||
+			strings.Contains(line, "claude-opus") ||
+			strings.Contains(line, "claude-sonnet") ||
+			strings.Contains(line, "claude-haiku") {
+			// Extract the model name (first word or before whitespace)
+			parts := strings.Fields(line)
+			if len(parts) > 0 {
+				modelName := parts[0]
+				// Remove any trailing punctuation
+				modelName = strings.Trim(modelName, ".,:-*")
+				if strings.HasPrefix(modelName, "claude-") && len(modelName) > 7 {
+					models = append(models, modelName)
+				}
+			}
+		}
+	}
+
+	return models
+}
+
+// GetAvailableModels returns the list of available models (discovered or known)
+func (p *ClaudeCLIProvider) GetAvailableModels() []string {
+	return p.DiscoverModels()
+}
+
+// IsModelAvailable checks if a specific model is available
+func (p *ClaudeCLIProvider) IsModelAvailable(model string) bool {
+	models := p.GetAvailableModels()
+	for _, m := range models {
+		if m == model {
+			return true
+		}
+	}
+	return false
+}
+
+// GetBestAvailableModel returns the best available model (prefers opus > sonnet > haiku)
+func (p *ClaudeCLIProvider) GetBestAvailableModel() string {
+	models := p.GetAvailableModels()
+
+	// Priority order: opus > sonnet > haiku
+	priorities := []string{"opus", "sonnet", "haiku"}
+
+	for _, priority := range priorities {
+		for _, model := range models {
+			if strings.Contains(model, priority) {
+				return model
+			}
+		}
+	}
+
+	// Return first available model or default
+	if len(models) > 0 {
+		return models[0]
+	}
+	return "claude-sonnet-4-5-20250929"
+}
+
+// GetKnownModels returns the list of known Claude models (static fallback)
+func GetKnownClaudeModels() []string {
+	return knownClaudeModels
+}
+
+// DiscoverClaudeModels is a standalone function to discover models without creating a provider
+func DiscoverClaudeModels() ([]string, error) {
+	if !IsClaudeCodeInstalled() {
+		return knownClaudeModels, fmt.Errorf("claude CLI not installed, returning known models")
+	}
+
+	path, err := GetClaudeCodePath()
+	if err != nil {
+		return knownClaudeModels, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Try the models command
+	cmd := exec.CommandContext(ctx, path, "models")
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		models := parseModelsOutput(string(output))
+		if len(models) > 0 {
+			return models, nil
+		}
+	}
+
+	return knownClaudeModels, fmt.Errorf("could not discover models from CLI, returning known models")
 }

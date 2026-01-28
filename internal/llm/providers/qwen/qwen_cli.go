@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/modelsdev"
 )
 
 // QwenCLIProvider implements the LLMProvider interface using Qwen Code CLI
@@ -25,6 +26,29 @@ type QwenCLIProvider struct {
 	cliCheckErr     error
 	timeout         time.Duration
 	maxOutputTokens int
+	// Dynamic model discovery
+	availableModels     []string
+	modelsDiscovered    bool
+	modelsDiscoveryOnce sync.Once
+}
+
+// Known Qwen models (fallback if discovery fails)
+// These are kept updated based on Alibaba/DashScope documentation
+var knownQwenModels = []string{
+	"qwen-max",
+	"qwen-max-latest",
+	"qwen-plus",
+	"qwen-plus-latest",
+	"qwen-turbo",
+	"qwen-turbo-latest",
+	"qwen2.5-72b-instruct",
+	"qwen2.5-32b-instruct",
+	"qwen2.5-14b-instruct",
+	"qwen2.5-7b-instruct",
+	"qwen2.5-coder-32b-instruct",
+	"qwen-long",
+	"qwen-vl-max",
+	"qwen-vl-plus",
 }
 
 // QwenCLIConfig holds configuration for the CLI provider
@@ -35,9 +59,10 @@ type QwenCLIConfig struct {
 }
 
 // DefaultQwenCLIConfig returns default configuration
+// Model is initially empty - will be discovered dynamically
 func DefaultQwenCLIConfig() QwenCLIConfig {
 	return QwenCLIConfig{
-		Model:           "qwen-plus",
+		Model:           "", // Will be discovered dynamically
 		Timeout:         120 * time.Second,
 		MaxOutputTokens: 4096,
 	}
@@ -52,11 +77,18 @@ func NewQwenCLIProvider(config QwenCLIConfig) *QwenCLIProvider {
 		config.MaxOutputTokens = 4096
 	}
 
-	return &QwenCLIProvider{
+	p := &QwenCLIProvider{
 		model:           config.Model,
 		timeout:         config.Timeout,
 		maxOutputTokens: config.MaxOutputTokens,
 	}
+
+	// If no model specified, discover the best available model
+	if p.model == "" {
+		p.model = p.GetBestAvailableModel()
+	}
+
+	return p
 }
 
 // NewQwenCLIProviderWithModel creates a CLI provider with a specific model
@@ -455,4 +487,199 @@ func CanUseQwenOAuth() bool {
 
 	// Check if CLI is installed and authenticated
 	return IsQwenCodeInstalled() && IsQwenCodeAuthenticated()
+}
+
+// DiscoverModels attempts to discover available models using 3-tier system:
+// 1. Primary: Query Qwen CLI for available models
+// 2. Fallback 1: Query models.dev API for Qwen/Alibaba models
+// 3. Fallback 2: Use hardcoded known models
+func (p *QwenCLIProvider) DiscoverModels() []string {
+	p.modelsDiscoveryOnce.Do(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		// Tier 1: Try CLI discovery
+		if p.IsCLIAvailable() {
+			cliModels := p.discoverModelsFromCLI(ctx)
+			if len(cliModels) > 0 {
+				p.availableModels = cliModels
+				p.modelsDiscovered = true
+				return
+			}
+		}
+
+		// Tier 2: Try models.dev API
+		modelsDevModels := p.discoverModelsFromModelsDev(ctx)
+		if len(modelsDevModels) > 0 {
+			p.availableModels = modelsDevModels
+			p.modelsDiscovered = true
+			return
+		}
+
+		// Tier 3: Fallback to known models
+		p.availableModels = knownQwenModels
+	})
+
+	return p.availableModels
+}
+
+// discoverModelsFromCLI tries to get models from Qwen CLI
+func (p *QwenCLIProvider) discoverModelsFromCLI(ctx context.Context) []string {
+	// Try different commands that might list models
+	commands := [][]string{
+		{"models"},
+		{"models", "list"},
+		{"model", "list"},
+		{"--list-models"},
+	}
+
+	for _, args := range commands {
+		cmd := exec.CommandContext(ctx, p.cliPath, args...)
+		output, err := cmd.CombinedOutput()
+		if err == nil {
+			models := parseQwenModelsOutput(string(output))
+			if len(models) > 0 {
+				return models
+			}
+		}
+	}
+
+	return nil
+}
+
+// discoverModelsFromModelsDev fetches Qwen models from models.dev API
+func (p *QwenCLIProvider) discoverModelsFromModelsDev(ctx context.Context) []string {
+	client := modelsdev.NewClient(nil)
+
+	// Search for Qwen models
+	opts := &modelsdev.ListModelsOptions{
+		Limit: 50,
+	}
+
+	// Try to list provider models (Alibaba/Qwen)
+	resp, err := client.ListProviderModels(ctx, "alibaba", opts)
+	if err != nil {
+		// Try with "qwen" as provider ID
+		resp, err = client.ListProviderModels(ctx, "qwen", opts)
+		if err != nil {
+			return nil
+		}
+	}
+
+	if resp == nil || len(resp.Models) == 0 {
+		return nil
+	}
+
+	var models []string
+	for _, m := range resp.Models {
+		if m.ID != "" && strings.HasPrefix(m.ID, "qwen") {
+			models = append(models, m.ID)
+		}
+	}
+
+	return models
+}
+
+// parseQwenModelsOutput parses CLI output to extract model names
+func parseQwenModelsOutput(output string) []string {
+	var models []string
+	lines := strings.Split(output, "\n")
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Look for lines containing model identifiers
+		// Common patterns: "qwen-*", "qwen2.5-*"
+		if strings.HasPrefix(line, "qwen") ||
+			strings.Contains(line, "qwen-max") ||
+			strings.Contains(line, "qwen-plus") ||
+			strings.Contains(line, "qwen-turbo") ||
+			strings.Contains(line, "qwen2") {
+			// Extract the model name (first word or before whitespace)
+			parts := strings.Fields(line)
+			if len(parts) > 0 {
+				modelName := parts[0]
+				// Remove any trailing punctuation
+				modelName = strings.Trim(modelName, ".,:-*")
+				if strings.HasPrefix(modelName, "qwen") && len(modelName) > 4 {
+					models = append(models, modelName)
+				}
+			}
+		}
+	}
+
+	return models
+}
+
+// GetAvailableModels returns the list of available models (discovered or known)
+func (p *QwenCLIProvider) GetAvailableModels() []string {
+	return p.DiscoverModels()
+}
+
+// IsModelAvailable checks if a specific model is available
+func (p *QwenCLIProvider) IsModelAvailable(model string) bool {
+	models := p.GetAvailableModels()
+	for _, m := range models {
+		if m == model {
+			return true
+		}
+	}
+	return false
+}
+
+// GetBestAvailableModel returns the best available model (prefers max > plus > turbo)
+func (p *QwenCLIProvider) GetBestAvailableModel() string {
+	models := p.GetAvailableModels()
+
+	// Priority order: max > plus > turbo > coder > other
+	priorities := []string{"qwen-max", "qwen-plus", "qwen-turbo", "coder", "qwen2.5"}
+
+	for _, priority := range priorities {
+		for _, model := range models {
+			if strings.Contains(model, priority) {
+				return model
+			}
+		}
+	}
+
+	// Return first available model or default
+	if len(models) > 0 {
+		return models[0]
+	}
+	return "qwen-plus"
+}
+
+// GetKnownQwenModels returns the list of known Qwen models (static fallback)
+func GetKnownQwenModels() []string {
+	return knownQwenModels
+}
+
+// DiscoverQwenModels is a standalone function to discover models without creating a provider
+func DiscoverQwenModels() ([]string, error) {
+	if !IsQwenCodeInstalled() {
+		return knownQwenModels, fmt.Errorf("qwen CLI not installed, returning known models")
+	}
+
+	path, err := GetQwenCodePath()
+	if err != nil {
+		return knownQwenModels, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Try the models command
+	cmd := exec.CommandContext(ctx, path, "models")
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		models := parseQwenModelsOutput(string(output))
+		if len(models) > 0 {
+			return models, nil
+		}
+	}
+
+	return knownQwenModels, fmt.Errorf("could not discover models from CLI, returning known models")
 }
