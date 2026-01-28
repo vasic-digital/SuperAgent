@@ -14,7 +14,8 @@ func TestDefaultOAuthAdapterConfig(t *testing.T) {
 
 	assert.NotNil(t, cfg)
 	assert.Equal(t, 10, cfg.RefreshThresholdMins)
-	assert.True(t, cfg.TrustOnVerificationFailure)
+	// IMPORTANT: Default is false - don't trust tokens that can't make API calls
+	assert.False(t, cfg.TrustOnVerificationFailure)
 	assert.Equal(t, 7.5, cfg.DefaultScoreOnFailure)
 	assert.Equal(t, 0.5, cfg.OAuthPriorityBoost)
 	assert.Equal(t, 30*time.Second, cfg.VerificationTimeout)
@@ -64,7 +65,8 @@ func TestNewOAuthAdapterWithConfig_NilConfig(t *testing.T) {
 	require.NotNil(t, adapter)
 	// Should use default config
 	assert.Equal(t, 10, adapter.config.RefreshThresholdMins)
-	assert.True(t, adapter.config.TrustOnVerificationFailure)
+	// IMPORTANT: Default is false - don't trust tokens that can't make API calls
+	assert.False(t, adapter.config.TrustOnVerificationFailure)
 }
 
 func TestOAuthAdapter_GetClaudeToken_Empty(t *testing.T) {

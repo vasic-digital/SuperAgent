@@ -492,3 +492,139 @@ func TestFreeProviderAdapter_LatencyBonusCalculation(t *testing.T) {
 			"Score for latency %v should be at least base score", test.latency)
 	}
 }
+
+// =====================================================
+// CLI FACADE INTEGRATION TESTS
+// =====================================================
+
+func TestFreeProviderAdapter_CLIFacadeAvailability(t *testing.T) {
+	adapter := NewFreeProviderAdapter(nil, nil)
+
+	t.Run("checks CLI facade availability", func(t *testing.T) {
+		// This will return true/false depending on whether opencode is installed
+		available := adapter.IsCLIFacadeAvailable()
+		t.Logf("CLI facade available: %v", available)
+		// Just verify it doesn't panic
+	})
+
+	t.Run("gets CLI facade provider", func(t *testing.T) {
+		provider := adapter.GetCLIFacadeProvider()
+		// May be nil if opencode is not installed
+		if provider != nil {
+			assert.NotNil(t, provider)
+			t.Log("CLI facade provider is available")
+		} else {
+			t.Log("CLI facade provider is not available (opencode not installed)")
+		}
+	})
+}
+
+func TestFreeProviderAdapter_FailedAPIModels(t *testing.T) {
+	adapter := NewFreeProviderAdapter(nil, nil)
+
+	t.Run("initially empty", func(t *testing.T) {
+		failed := adapter.GetFailedAPIModels()
+		assert.Empty(t, failed)
+	})
+
+	t.Run("returns copy not reference", func(t *testing.T) {
+		// Manually add a failed model
+		adapter.mu.Lock()
+		adapter.failedAPIModels["test-model"] = assert.AnError
+		adapter.mu.Unlock()
+
+		failed1 := adapter.GetFailedAPIModels()
+		failed2 := adapter.GetFailedAPIModels()
+
+		// Modify the first copy
+		failed1["modified"] = nil
+
+		// Second copy should not be affected
+		_, exists := failed2["modified"]
+		assert.False(t, exists)
+	})
+}
+
+func TestFreeProviderAdapter_IsModelUsingCLIFacade(t *testing.T) {
+	adapter := NewFreeProviderAdapter(nil, nil)
+
+	t.Run("returns false for non-existent model", func(t *testing.T) {
+		result := adapter.IsModelUsingCLIFacade("non-existent")
+		assert.False(t, result)
+	})
+
+	t.Run("returns false for model without CLI facade metadata", func(t *testing.T) {
+		adapter.mu.Lock()
+		adapter.verifiedModels["api-model"] = &verifier.UnifiedModel{
+			ID:       "api-model",
+			Metadata: map[string]interface{}{},
+		}
+		adapter.mu.Unlock()
+
+		result := adapter.IsModelUsingCLIFacade("api-model")
+		assert.False(t, result)
+	})
+
+	t.Run("returns true for model with CLI facade metadata", func(t *testing.T) {
+		adapter.mu.Lock()
+		adapter.verifiedModels["cli-model"] = &verifier.UnifiedModel{
+			ID: "cli-model",
+			Metadata: map[string]interface{}{
+				"verified_via": "cli_facade",
+			},
+		}
+		adapter.mu.Unlock()
+
+		result := adapter.IsModelUsingCLIFacade("cli-model")
+		assert.True(t, result)
+	})
+}
+
+func TestFreeProviderAdapter_GetCLIFacadeModels(t *testing.T) {
+	adapter := NewFreeProviderAdapter(nil, nil)
+
+	t.Run("returns empty when no CLI models", func(t *testing.T) {
+		adapter.mu.Lock()
+		adapter.verifiedModels["api-model"] = &verifier.UnifiedModel{
+			ID:       "api-model",
+			Metadata: map[string]interface{}{},
+		}
+		adapter.mu.Unlock()
+
+		cliModels := adapter.GetCLIFacadeModels()
+		assert.Empty(t, cliModels)
+	})
+
+	t.Run("returns only CLI facade models", func(t *testing.T) {
+		adapter.mu.Lock()
+		adapter.verifiedModels["api-model"] = &verifier.UnifiedModel{
+			ID:       "api-model",
+			Metadata: map[string]interface{}{},
+		}
+		adapter.verifiedModels["cli-model-1"] = &verifier.UnifiedModel{
+			ID: "cli-model-1",
+			Metadata: map[string]interface{}{
+				"verified_via": "cli_facade",
+			},
+		}
+		adapter.verifiedModels["cli-model-2"] = &verifier.UnifiedModel{
+			ID: "cli-model-2",
+			Metadata: map[string]interface{}{
+				"verified_via": "cli_facade",
+			},
+		}
+		adapter.mu.Unlock()
+
+		cliModels := adapter.GetCLIFacadeModels()
+		assert.Len(t, cliModels, 2)
+
+		// Check that both CLI models are present
+		modelIDs := make(map[string]bool)
+		for _, m := range cliModels {
+			modelIDs[m.ID] = true
+		}
+		assert.True(t, modelIDs["cli-model-1"])
+		assert.True(t, modelIDs["cli-model-2"])
+		assert.False(t, modelIDs["api-model"])
+	})
+}
