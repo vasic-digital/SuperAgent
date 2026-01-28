@@ -188,17 +188,11 @@ func (p *QwenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 	}
 
 	// Build qwen command arguments
+	// NOTE: Qwen Code CLI does NOT support --max-tokens; it manages tokens internally
 	args := []string{
 		"-p", prompt, // Print mode - just returns the response
 		"--model", model,
 	}
-
-	// Add max tokens if specified
-	maxTokens := p.maxOutputTokens
-	if req.ModelParams.MaxTokens > 0 {
-		maxTokens = req.ModelParams.MaxTokens
-	}
-	args = append(args, "--max-tokens", fmt.Sprintf("%d", maxTokens))
 
 	// Execute qwen command
 	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...)
@@ -287,16 +281,11 @@ func (p *QwenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 	}
 
 	// Build qwen command arguments
+	// NOTE: Qwen Code CLI does NOT support --max-tokens
 	args := []string{
 		"-p", prompt,
 		"--model", model,
 	}
-
-	maxTokens := p.maxOutputTokens
-	if req.ModelParams.MaxTokens > 0 {
-		maxTokens = req.ModelParams.MaxTokens
-	}
-	args = append(args, "--max-tokens", fmt.Sprintf("%d", maxTokens))
 
 	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...)
 

@@ -201,17 +201,11 @@ func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest
 
 	// Build claude command arguments
 	// Use --output-format json for structured output with session metadata
+	// NOTE: Claude Code CLI does NOT support --max-tokens; it manages tokens internally
 	args := []string{
 		"-p", prompt, // Print mode - non-interactive
 		"--output-format", "json", // JSON output with session info
 	}
-
-	// Add max tokens if specified
-	maxTokens := p.maxOutputTokens
-	if req.ModelParams.MaxTokens > 0 {
-		maxTokens = req.ModelParams.MaxTokens
-	}
-	args = append(args, "--max-tokens", fmt.Sprintf("%d", maxTokens))
 
 	// Continue existing session if we have one
 	if p.sessionID != "" {
@@ -340,23 +334,12 @@ func (p *ClaudeCLIProvider) CompleteStream(ctx context.Context, req *models.LLMR
 	// Create command with timeout
 	cmdCtx, cancel := context.WithTimeout(ctx, p.timeout)
 
-	// Determine model to use
-	model := p.model
-	if req.ModelParams.Model != "" {
-		model = req.ModelParams.Model
-	}
-
 	// Build claude command arguments for streaming
+	// NOTE: Claude Code CLI does NOT support --max-tokens or --model flags
+	// It uses the model configured in user settings
 	args := []string{
 		"-p", prompt,
-		"--model", model,
 	}
-
-	maxTokens := p.maxOutputTokens
-	if req.ModelParams.MaxTokens > 0 {
-		maxTokens = req.ModelParams.MaxTokens
-	}
-	args = append(args, "--max-tokens", fmt.Sprintf("%d", maxTokens))
 
 	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...)
 

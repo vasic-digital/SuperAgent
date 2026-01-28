@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -338,12 +339,24 @@ func ensureRequiredContainersWithConfig(logger *logrus.Logger, cfg *ContainerCon
 	logger.WithField("output", string(output)).Debug("Compose output")
 	logger.Info("Waiting for containers to be healthy...")
 
-	// Wait for containers to be ready
-	time.Sleep(20 * time.Second)
+	// Wait for containers to be ready with retry logic
+	// Cognee can take 30-60 seconds to start, so we retry health checks
+	var healthErr error
+	for attempt := 1; attempt <= 6; attempt++ {
+		time.Sleep(10 * time.Second)
+		healthErr = verifyServicesHealthWithConfig(cfg.RequiredServices, logger, cfg)
+		if healthErr == nil {
+			break
+		}
+		logger.WithFields(logrus.Fields{
+			"attempt": attempt,
+			"max":     6,
+		}).Warn("Health check not passed yet, retrying...")
+	}
 
 	// Verify critical services are running
-	if err := verifyServicesHealthWithConfig(cfg.RequiredServices, logger, cfg); err != nil {
-		return fmt.Errorf("service health verification failed: %w", err)
+	if healthErr != nil {
+		return fmt.Errorf("service health verification failed: %w", healthErr)
 	}
 
 	logger.Info("Container startup completed successfully")
@@ -392,18 +405,28 @@ func ensureMCPServers(logger *logrus.Logger) error {
 	}
 	cmdArgs = append(cmdArgs, "-f", mcpComposeFile, "up", "-d")
 
-	cmd := exec.Command(composeCmd, cmdArgs...)
+	// Run with timeout - MCP servers are optional, don't block startup indefinitely
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, composeCmd, cmdArgs...)
 	cmd.Dir = projectDir
 
-	// Run in background - don't wait for all builds
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		// Log warning but don't fail - MCP servers are optional
-		logger.WithError(err).WithField("output", string(output)).Warn("Failed to start some MCP servers, continuing")
-		return nil
-	}
+	// Start the command but don't block startup - run in a goroutine
+	go func() {
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			if ctx.Err() == context.DeadlineExceeded {
+				logger.Warn("MCP server startup timed out after 120s, continuing without MCP servers")
+			} else {
+				logger.WithError(err).WithField("output", string(output)).Warn("Failed to start some MCP servers")
+			}
+			return
+		}
+		logger.WithField("output", string(output)).Debug("MCP Compose output")
+		logger.Info("MCP servers started successfully (32 servers on ports 9101-9999)")
+	}()
 
-	logger.WithField("output", string(output)).Debug("MCP Compose output")
 	logger.Info("MCP servers starting in background (32 servers on ports 9101-9999)")
 	return nil
 }
@@ -412,6 +435,7 @@ func ensureMCPServers(logger *logrus.Logger) error {
 func getRunningServicesWithRuntimeConfig(cfg *ContainerConfig, composeCmd string, composeArgs []string) (map[string]bool, error) {
 	running := make(map[string]bool)
 
+	// Try with --filter first (docker compose supports it)
 	var cmdArgs []string
 	if len(composeArgs) > 0 {
 		cmdArgs = append(cmdArgs, composeArgs...)
@@ -422,7 +446,20 @@ func getRunningServicesWithRuntimeConfig(cfg *ContainerConfig, composeCmd string
 	cmd.Dir = cfg.ProjectDir
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return running, fmt.Errorf("failed to list running services: %w", err)
+		// Fallback: podman-compose doesn't support --filter, try without it
+		var fallbackArgs []string
+		if len(composeArgs) > 0 {
+			fallbackArgs = append(fallbackArgs, composeArgs...)
+		}
+		fallbackArgs = append(fallbackArgs, "ps", "--services")
+
+		cmd2 := exec.Command(composeCmd, fallbackArgs...)
+		cmd2.Dir = cfg.ProjectDir
+		output, err = cmd2.CombinedOutput()
+		if err != nil {
+			// Final fallback: check services via direct health probes
+			return checkServicesViaHealthProbes(cfg.RequiredServices), nil
+		}
 	}
 
 	services := strings.Split(strings.TrimSpace(string(output)), "\n")
@@ -434,6 +471,39 @@ func getRunningServicesWithRuntimeConfig(cfg *ContainerConfig, composeCmd string
 	}
 
 	return running, nil
+}
+
+// checkServicesViaHealthProbes checks if services are running via direct TCP/HTTP probes
+func checkServicesViaHealthProbes(services []string) map[string]bool {
+	running := make(map[string]bool)
+	serviceChecks := map[string]string{
+		"postgres": "localhost:5432",
+		"redis":    "localhost:6379",
+		"cognee":   "http://localhost:8000/",
+		"chromadb": "http://localhost:8001/",
+	}
+
+	client := &http.Client{Timeout: 3 * time.Second}
+	for _, svc := range services {
+		addr, ok := serviceChecks[svc]
+		if !ok {
+			continue
+		}
+		if strings.HasPrefix(addr, "http") {
+			resp, err := client.Get(addr)
+			if err == nil {
+				resp.Body.Close()
+				running[svc] = true
+			}
+		} else {
+			conn, err := net.DialTimeout("tcp", addr, 3*time.Second)
+			if err == nil {
+				conn.Close()
+				running[svc] = true
+			}
+		}
+	}
+	return running
 }
 
 // getRunningServices checks which docker-compose services are currently running
