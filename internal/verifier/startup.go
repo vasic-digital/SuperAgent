@@ -306,6 +306,7 @@ func (sv *StartupVerifier) discoverFreeProviders(ctx context.Context) []*Provide
 	}
 
 	// Zen is always available (anonymous mode)
+	// Updated 2026-01: Using verified working models from Zen API
 	providers = append(providers, &ProviderDiscoveryResult{
 		ID:          "zen",
 		Type:        "zen",
@@ -314,7 +315,7 @@ func (sv *StartupVerifier) discoverFreeProviders(ctx context.Context) []*Provide
 		Source:      "auto",
 		Credentials: "Anonymous",
 		BaseURL:     "https://opencode.ai/zen/v1/chat/completions",
-		Models:      []string{"opencode/grok-code", "opencode/big-pickle", "opencode/glm-4.7-free"},
+		Models:      []string{"big-pickle", "gpt-5-nano", "glm-4.7"},
 	})
 
 	// Check if Ollama is running locally
@@ -494,28 +495,66 @@ func (sv *StartupVerifier) verifyProvider(ctx context.Context, disc *ProviderDis
 }
 
 // verifyOAuthProvider verifies an OAuth-based provider
+// IMPORTANT: OAuth tokens from CLI tools (Claude Code, Qwen CLI) are often product-restricted
+// and cannot be used for general API calls. The TrustOAuthOnFailure setting allows these
+// providers to be trusted even when API verification fails, as the tokens ARE valid for their
+// intended use (the CLI tools themselves route through proper authenticated channels).
 func (sv *StartupVerifier) verifyOAuthProvider(ctx context.Context, provider *UnifiedProvider, disc *ProviderDiscoveryResult) (*UnifiedProvider, error) {
 	sv.log.WithField("provider", provider.Type).Debug("Verifying OAuth provider")
 
 	// Run verification through LLMsVerifier
 	modelID := provider.DefaultModel
-	if modelID == "" {
+	if modelID == "" && len(disc.Models) > 0 {
 		modelID = disc.Models[0]
 	}
 
 	result, err := sv.verifierSvc.VerifyModel(ctx, modelID, provider.Type)
-	if err != nil {
+
+	// Check if verification failed - either explicit error OR result.Verified == false
+	// VerifyModel often returns err=nil but sets result.Verified=false when API calls fail
+	verificationFailed := err != nil || (result != nil && !result.Verified)
+
+	if verificationFailed {
 		// OAuth providers are trusted even if verification fails
-		// (CLI tokens may have different API scopes)
+		// (CLI tokens are product-restricted and may not work for general API calls,
+		// but they ARE valid for use with CLI agent plugins that route through their services)
 		if sv.config.TrustOAuthOnFailure {
-			sv.log.WithError(err).WithField("provider", provider.Type).Warn("OAuth verification failed, trusting CLI credentials")
+			errorMsg := "verification returned false"
+			if err != nil {
+				errorMsg = err.Error()
+			} else if result != nil && result.ErrorMessage != "" {
+				errorMsg = result.ErrorMessage
+			}
+			sv.log.WithFields(logrus.Fields{
+				"provider": provider.Type,
+				"error":    errorMsg,
+				"reason":   "OAuth tokens are product-restricted but valid for CLI agent routing",
+			}).Warn("OAuth verification failed, trusting CLI credentials")
+
 			provider.Verified = true
 			provider.Status = StatusHealthy
 			provider.Score = 8.0 + sv.config.OAuthPriorityBoost // High default for OAuth
+			provider.VerifiedAt = time.Now()
 			provider.TestResults = map[string]bool{"oauth_trusted": true}
+			provider.ErrorMessage = "" // Clear any error since we're trusting
+
+			// Build models list - all models are considered verified via trust
+			for _, modelID := range disc.Models {
+				provider.Models = append(provider.Models, UnifiedModel{
+					ID:       modelID,
+					Name:     modelID,
+					Provider: provider.Type,
+					Verified: true,
+					Score:    provider.Score,
+				})
+			}
+
 			return provider, nil
 		}
-		return nil, fmt.Errorf("OAuth provider verification failed: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("OAuth provider verification failed: %w", err)
+		}
+		return nil, fmt.Errorf("OAuth provider verification failed: %s", result.ErrorMessage)
 	}
 
 	provider.Verified = result.Verified

@@ -1125,3 +1125,132 @@ func TestDebateTeamSelection_ReusedLLMsAreSeparateInstances(t *testing.T) {
 		assert.Equal(t, "single-model", instance.ModelID)
 	}
 }
+
+// TestVerifyOAuthProviderTrust tests that OAuth providers are trusted even when
+// API verification fails (due to product-restricted tokens).
+func TestVerifyOAuthProviderTrust(t *testing.T) {
+	cfg := DefaultStartupConfig()
+	cfg.TrustOAuthOnFailure = true
+	sv := NewStartupVerifier(cfg, logrus.New())
+
+	// Set up a verification service that always fails verification
+	sv.verifierSvc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		// Simulate OAuth product-restricted token error by returning empty response
+		// which fails the verification tests
+		return "", nil
+	})
+
+	provider := &UnifiedProvider{
+		ID:           "claude",
+		Name:         "Claude",
+		DisplayName:  "Claude (OAuth)",
+		Type:         "claude",
+		AuthType:     AuthTypeOAuth,
+		DefaultModel: "claude-sonnet-4-20250514",
+	}
+
+	disc := &ProviderDiscoveryResult{
+		ID:          "claude",
+		Type:        "claude",
+		AuthType:    AuthTypeOAuth,
+		Discovered:  true,
+		Source:      "oauth",
+		Credentials: "OAuth Token",
+		Models:      []string{"claude-sonnet-4-20250514", "claude-opus-4-20250514", "claude-haiku-4-20250514"},
+	}
+
+	// Verify the OAuth provider
+	ctx := context.Background()
+	verifiedProvider, err := sv.verifyOAuthProvider(ctx, provider, disc)
+
+	// Should succeed (no error) because TrustOAuthOnFailure is true
+	assert.NoError(t, err)
+	assert.NotNil(t, verifiedProvider)
+
+	// The provider should be marked as verified (trusted)
+	assert.True(t, verifiedProvider.Verified, "OAuth provider should be trusted even when verification fails")
+
+	// The provider should have healthy status
+	assert.Equal(t, StatusHealthy, verifiedProvider.Status)
+
+	// The provider should have models
+	assert.Len(t, verifiedProvider.Models, 3, "OAuth provider should have 3 models")
+
+	// The score should be the default trusted score (8.0 + OAuth priority boost)
+	expectedScore := 8.0 + cfg.OAuthPriorityBoost
+	assert.Equal(t, expectedScore, verifiedProvider.Score, "OAuth provider should have trusted default score")
+
+	// Test results should show oauth_trusted
+	assert.True(t, verifiedProvider.TestResults["oauth_trusted"], "Should have oauth_trusted test result")
+}
+
+// TestVerifyOAuthProviderNoTrust tests that OAuth providers fail verification
+// when TrustOAuthOnFailure is false.
+func TestVerifyOAuthProviderNoTrust(t *testing.T) {
+	cfg := DefaultStartupConfig()
+	cfg.TrustOAuthOnFailure = false // Disable trust
+	sv := NewStartupVerifier(cfg, logrus.New())
+
+	// Set up a verification service that fails verification
+	sv.verifierSvc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
+		return "", nil // Empty response causes verification to fail
+	})
+
+	provider := &UnifiedProvider{
+		ID:           "claude",
+		Name:         "Claude",
+		DisplayName:  "Claude (OAuth)",
+		Type:         "claude",
+		AuthType:     AuthTypeOAuth,
+		DefaultModel: "claude-sonnet-4-20250514",
+	}
+
+	disc := &ProviderDiscoveryResult{
+		ID:          "claude",
+		Type:        "claude",
+		AuthType:    AuthTypeOAuth,
+		Discovered:  true,
+		Source:      "oauth",
+		Credentials: "OAuth Token",
+		Models:      []string{"claude-sonnet-4-20250514"},
+	}
+
+	// Verify the OAuth provider
+	ctx := context.Background()
+	verifiedProvider, err := sv.verifyOAuthProvider(ctx, provider, disc)
+
+	// Should fail because TrustOAuthOnFailure is false
+	assert.Error(t, err)
+	assert.Nil(t, verifiedProvider)
+	assert.Contains(t, err.Error(), "verification failed")
+}
+
+// TestZAIProviderHasModels tests that ZAI (Zhipu GLM) provider has models configured
+func TestZAIProviderHasModels(t *testing.T) {
+	info, ok := GetProviderInfo("zai")
+	assert.True(t, ok, "ZAI provider should exist")
+	assert.NotEmpty(t, info.Models, "ZAI provider should have models configured")
+	assert.Contains(t, info.DisplayName, "GLM", "ZAI should be Zhipu GLM")
+}
+
+// TestZenProviderFreeModels tests that Zen provider has correct free models
+func TestZenProviderFreeModels(t *testing.T) {
+	info, ok := GetProviderInfo("zen")
+	assert.True(t, ok, "Zen provider should exist")
+	assert.True(t, info.Free, "Zen provider should be free")
+	assert.Equal(t, AuthTypeFree, info.AuthType, "Zen should have free auth type")
+	assert.NotEmpty(t, info.Models, "Zen provider should have models")
+
+	// Check for at least some expected models
+	hasWorkingModel := false
+	workingModels := []string{"big-pickle", "gpt-5-nano", "glm-4.7"}
+	for _, model := range info.Models {
+		for _, working := range workingModels {
+			if model == working {
+				hasWorkingModel = true
+				break
+			}
+		}
+	}
+	assert.True(t, hasWorkingModel, "Zen should have at least one known working model")
+}

@@ -410,7 +410,9 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    4,
 		EnvVars:     []string{"OPENCODE_API_KEY", "ApiKey_OpenCode"}, // Optional
 		BaseURL:     "https://opencode.ai/zen/v1/chat/completions",
-		Models:      []string{"opencode/grok-code", "opencode/big-pickle", "opencode/glm-4.7-free", "opencode/gpt-5-nano"},
+		// Note: Zen models are dynamically discovered; these are known working free models
+		// Available: big-pickle, gpt-5-nano, glm-4.7, qwen3-coder, kimi-k2, gemini-3-flash
+		Models:      []string{"big-pickle", "gpt-5-nano", "glm-4.7"},
 		Free:        true,
 	},
 
@@ -430,13 +432,13 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 	// Tier 7: Other API key providers
 	"zai": {
 		Type:        "zai",
-		DisplayName: "ZAI",
+		DisplayName: "ZAI (Zhipu GLM)",
 		AuthType:    AuthTypeAPIKey,
-		Tier:        7,
-		Priority:    6,
-		EnvVars:     []string{"ZAI_API_KEY", "ApiKey_ZAI"},
-		BaseURL:     "https://api.zai.ai/v1/chat/completions",
-		Models:      []string{},
+		Tier:        2,
+		Priority:    3,
+		EnvVars:     []string{"ZAI_API_KEY", "ZHIPU_API_KEY", "ApiKey_ZAI"},
+		BaseURL:     "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+		Models:      []string{"glm-4-plus", "glm-4-flash", "glm-4-air", "glm-4-0520"},
 		Free:        false,
 	},
 

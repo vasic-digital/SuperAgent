@@ -41,15 +41,14 @@ type ZenCLIConfig struct {
 }
 
 // Known Zen/OpenCode models (fallback if discovery fails)
+// Updated 2026-01: Verified working models from Zen API
 var knownZenModels = []string{
 	"big-pickle",
-	"grok-code",
-	"glm-4.7-free",
 	"gpt-5-nano",
-	"opencode/big-pickle",
-	"opencode/grok-code",
-	"opencode/glm-4.7-free",
-	"opencode/gpt-5-nano",
+	"glm-4.7",
+	"qwen3-coder",
+	"kimi-k2",
+	"gemini-3-flash",
 }
 
 // DefaultZenCLIConfig returns default configuration
@@ -633,8 +632,8 @@ func (p *ZenCLIProvider) IsModelAvailable(model string) bool {
 func (p *ZenCLIProvider) GetBestAvailableModel() string {
 	models := p.GetAvailableModels()
 
-	// Priority order: grok-code > big-pickle > glm > gpt-5
-	priorities := []string{"grok-code", "big-pickle", "glm", "gpt-5"}
+	// Priority order: big-pickle > gpt-5 > glm > qwen > kimi
+	priorities := []string{"big-pickle", "gpt-5", "glm", "qwen", "kimi"}
 
 	for _, priority := range priorities {
 		for _, model := range models {

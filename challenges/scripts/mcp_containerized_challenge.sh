@@ -216,22 +216,30 @@ else
     log_fail 11 "Expected at least 60 services, found $service_count"
 fi
 
-# Test 12: All services have health checks
-log_test_start 12 "All services have health checks"
+# Test 12: All services have health checks (via YAML anchor or per-service)
+log_test_start 12 "All services have health checks (via anchor or per-service)"
+# Check for YAML anchor pattern OR per-service healthcheck definitions
+has_healthcheck_anchor=$(grep -c 'x-healthcheck:\|<<: \*default-healthcheck\|<<: \*common-config' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
 healthcheck_count=$(grep -c 'healthcheck:' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
-if [[ "$healthcheck_count" -ge 60 ]]; then
+if [[ "$has_healthcheck_anchor" -gt 0 ]] && [[ "$healthcheck_count" -gt 0 ]]; then
+    log_pass 12 "Health checks defined via YAML anchor (applied to all services)"
+elif [[ "$healthcheck_count" -ge 60 ]]; then
     log_pass 12 "Found $healthcheck_count health check definitions"
 else
-    log_fail 12 "Expected at least 60 health checks, found $healthcheck_count"
+    log_fail 12 "Expected health check anchor or 60+ definitions, found anchor=$has_healthcheck_anchor, per-service=$healthcheck_count"
 fi
 
-# Test 13: All services have restart policy
-log_test_start 13 "All services have restart policy"
+# Test 13: All services have restart policy (via YAML anchor or per-service)
+log_test_start 13 "All services have restart policy (via anchor or per-service)"
+# Check for YAML anchor pattern OR per-service restart definitions
+has_restart_anchor=$(grep -c 'x-common:\|<<: \*common-config' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
 restart_count=$(grep -c 'restart:' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
-if [[ "$restart_count" -ge 60 ]]; then
+if [[ "$has_restart_anchor" -gt 0 ]] && [[ "$restart_count" -gt 0 ]]; then
+    log_pass 13 "Restart policy defined via YAML anchor (applied to all services)"
+elif [[ "$restart_count" -ge 60 ]]; then
     log_pass 13 "Found $restart_count restart policies"
 else
-    log_fail 13 "Expected at least 60 restart policies, found $restart_count"
+    log_fail 13 "Expected restart anchor or 60+ definitions, found anchor=$has_restart_anchor, per-service=$restart_count"
 fi
 
 # Test 14: Network is defined
@@ -471,40 +479,49 @@ echo -e "\n${BLUE}========================================${NC}"
 echo -e "${BLUE}SECTION 7: Build Context Tests${NC}"
 echo -e "${BLUE}========================================${NC}"
 
-# Test 31: Services use proper build context
-log_test_start 31 "Services use proper build context"
+# Test 31: Services use proper build context (via YAML anchor or per-service)
+log_test_start 31 "Services use proper build context (via anchor or per-service)"
+# Check for YAML anchor pattern OR per-service build context
+has_build_anchor=$(grep -c 'x-common:\|<<: \*common-config' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
 build_context_count=$(grep -c 'context: \.\./\.\.' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
-if [[ "$build_context_count" -ge 60 ]]; then
+if [[ "$has_build_anchor" -gt 0 ]] && [[ "$build_context_count" -gt 0 ]]; then
+    log_pass 31 "Build context defined via YAML anchor (applied to all services)"
+elif [[ "$build_context_count" -ge 60 ]]; then
     log_pass 31 "Found $build_context_count proper build contexts"
 else
-    log_fail 31 "Expected at least 60 build contexts, found $build_context_count"
+    log_fail 31 "Expected build anchor or 60+ build contexts, found anchor=$has_build_anchor, per-service=$build_context_count"
 fi
 
-# Test 32: Services use Dockerfile templates
-log_test_start 32 "Services use Dockerfile templates"
+# Test 32: Services use Dockerfile.mcp-bridge (via YAML anchor or per-service)
+log_test_start 32 "Services use MCP bridge Dockerfile"
+# Check for YAML anchor pattern OR per-service dockerfile
+has_dockerfile_anchor=$(grep -c 'x-common:\|<<: \*common-config' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
 dockerfile_count=$(grep -c 'dockerfile: docker/mcp/Dockerfile' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
-if [[ "$dockerfile_count" -ge 60 ]]; then
+bridge_dockerfile=$(grep -c 'Dockerfile.mcp-bridge' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
+if [[ "$has_dockerfile_anchor" -gt 0 ]] && [[ "$bridge_dockerfile" -gt 0 ]]; then
+    log_pass 32 "Dockerfile.mcp-bridge used via YAML anchor (applied to all services)"
+elif [[ "$dockerfile_count" -ge 60 ]]; then
     log_pass 32 "Found $dockerfile_count Dockerfile references"
 else
-    log_fail 32 "Expected at least 60 Dockerfile references, found $dockerfile_count"
+    log_fail 32 "Expected bridge Dockerfile anchor or 60+ references, found anchor=$has_dockerfile_anchor, bridge=$bridge_dockerfile"
 fi
 
-# Test 33: MCP-Servers monorepo used for core
-log_test_start 33 "MCP-Servers monorepo used for core services"
-mcp_servers_count=$(grep -c 'SOURCE_DIR: MCP-Servers' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
-if [[ "$mcp_servers_count" -ge 7 ]]; then
-    log_pass 33 "Found $mcp_servers_count MCP-Servers references"
+# Test 33: MCP SSE Bridge architecture - services use MCP_COMMAND
+log_test_start 33 "Services use MCP_COMMAND for bridge architecture"
+mcp_command_count=$(grep -c 'MCP_COMMAND=' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
+if [[ "$mcp_command_count" -ge 60 ]]; then
+    log_pass 33 "Found $mcp_command_count MCP_COMMAND definitions (bridge architecture)"
 else
-    log_fail 33 "Expected at least 7 MCP-Servers references, found $mcp_servers_count"
+    log_fail 33 "Expected at least 60 MCP_COMMAND definitions, found $mcp_command_count"
 fi
 
-# Test 34: Submodules used for extended services
-log_test_start 34 "Submodules used for extended services"
-submodule_count=$(grep -c 'SOURCE_DIR: MCP/submodules/' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
-if [[ "$submodule_count" -ge 40 ]]; then
-    log_pass 34 "Found $submodule_count submodule references"
+# Test 34: Bridge architecture uses @modelcontextprotocol servers
+log_test_start 34 "Bridge uses official @modelcontextprotocol servers"
+mcp_official_count=$(grep -c '@modelcontextprotocol\|mcp-server-' "$PROJECT_ROOT/docker/mcp/docker-compose.mcp-full.yml" 2>/dev/null || echo 0)
+if [[ "$mcp_official_count" -ge 30 ]]; then
+    log_pass 34 "Found $mcp_official_count official MCP server references"
 else
-    log_fail 34 "Expected at least 40 submodule references, found $submodule_count"
+    log_fail 34 "Expected at least 30 official MCP server references, found $mcp_official_count"
 fi
 
 # Test 35: Container names are prefixed

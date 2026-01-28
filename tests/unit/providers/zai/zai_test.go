@@ -59,14 +59,14 @@ func TestZaiProvider_GetCapabilities(t *testing.T) {
 	assert.True(t, capabilities.SupportsStreaming)
 	// ZAI now supports function calling
 	assert.True(t, capabilities.SupportsFunctionCalling)
-	// ZAI does NOT support vision
-	assert.False(t, capabilities.SupportsVision)
+	// ZAI DOES support vision (GLM-4V models)
+	assert.True(t, capabilities.SupportsVision)
 	// Check limits
 	assert.Greater(t, capabilities.Limits.MaxTokens, 0)
-	// Check supported models
+	// Check supported models (ZAI uses Zhipu GLM models)
 	assert.NotEmpty(t, capabilities.SupportedModels)
-	assert.Contains(t, capabilities.SupportedModels, "z-ai-base")
-	assert.Contains(t, capabilities.SupportedModels, "z-ai-pro")
+	assert.Contains(t, capabilities.SupportedModels, "glm-4-plus")
+	assert.Contains(t, capabilities.SupportedModels, "glm-4")
 	// Check supported features
 	assert.Contains(t, capabilities.SupportedFeatures, "text_completion")
 	assert.Contains(t, capabilities.SupportedFeatures, "chat")
