@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -18,6 +19,11 @@ import (
 // ClaudeCLIProvider implements the LLMProvider interface using Claude Code CLI
 // This is used when OAuth credentials are present but the API rejects them
 // (OAuth tokens from Claude Code are product-restricted)
+//
+// Features:
+// - JSON output format for structured responses
+// - Session continuity with --resume
+// - Tool auto-approval with --allowedTools
 type ClaudeCLIProvider struct {
 	model           string
 	cliPath         string // Path to claude CLI binary
@@ -26,10 +32,20 @@ type ClaudeCLIProvider struct {
 	cliCheckErr     error
 	timeout         time.Duration
 	maxOutputTokens int
+	sessionID       string // For conversation continuity
 	// Dynamic model discovery
 	availableModels     []string
 	modelsDiscovered    bool
 	modelsDiscoveryOnce sync.Once
+}
+
+// claudeJSONResponse represents the JSON output from Claude CLI
+// Format: {"result": "...", "session_id": "...", "usage": {...}}
+type claudeJSONResponse struct {
+	Result    string                 `json:"result"`
+	SessionID string                 `json:"session_id"`
+	Usage     map[string]interface{} `json:"usage"`
+	Model     string                 `json:"model"`
 }
 
 // Known Claude models (fallback if discovery fails)
@@ -183,9 +199,10 @@ func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest
 	}
 
 	// Build claude command arguments
+	// Use --output-format json for structured output with session metadata
 	args := []string{
-		"-p", prompt, // Print mode - just returns the response
-		"--model", model,
+		"-p", prompt, // Print mode - non-interactive
+		"--output-format", "json", // JSON output with session info
 	}
 
 	// Add max tokens if specified
@@ -194,6 +211,11 @@ func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest
 		maxTokens = req.ModelParams.MaxTokens
 	}
 	args = append(args, "--max-tokens", fmt.Sprintf("%d", maxTokens))
+
+	// Continue existing session if we have one
+	if p.sessionID != "" {
+		args = append(args, "--resume", p.sessionID)
+	}
 
 	// Execute claude command
 	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...)
@@ -215,27 +237,69 @@ func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest
 		return nil, fmt.Errorf("claude CLI failed: %w (stderr: %s)", err, stderr.String())
 	}
 
-	output := stdout.String()
-	if output == "" {
+	rawOutput := stdout.String()
+	if rawOutput == "" {
 		return nil, fmt.Errorf("claude CLI returned empty response")
 	}
 
-	// Estimate token count (rough approximation: 4 chars per token)
+	// Parse JSON output
+	output, sessionID, metadata := p.parseJSONResponse(rawOutput)
+
+	// Store session ID for conversation continuity
+	if sessionID != "" {
+		p.sessionID = sessionID
+	}
+
+	// Calculate tokens from metadata or estimate
 	promptTokens := len(prompt) / 4
 	completionTokens := len(output) / 4
+	if usage, ok := metadata["usage"].(map[string]interface{}); ok {
+		if pt, ok := usage["prompt_tokens"].(float64); ok {
+			promptTokens = int(pt)
+		}
+		if ct, ok := usage["completion_tokens"].(float64); ok {
+			completionTokens = int(ct)
+		}
+	}
 
 	return &models.LLMResponse{
-		Content:      output,
+		ID:           fmt.Sprintf("claude-cli-%s", sessionID),
+		ProviderID:   "claude-cli",
 		ProviderName: "claude-cli",
+		Content:      output,
 		FinishReason: "stop",
 		TokensUsed:   promptTokens + completionTokens,
 		ResponseTime: duration.Milliseconds(),
+		CreatedAt:    time.Now(),
 		Metadata: map[string]interface{}{
 			"model":             model,
+			"session_id":        sessionID,
 			"prompt_tokens":     promptTokens,
 			"completion_tokens": completionTokens,
+			"raw_metadata":      metadata,
 		},
 	}, nil
+}
+
+// parseJSONResponse extracts content from Claude CLI JSON output
+// Returns: content, sessionID, metadata
+func (p *ClaudeCLIProvider) parseJSONResponse(rawOutput string) (string, string, map[string]interface{}) {
+	rawOutput = strings.TrimSpace(rawOutput)
+	metadata := make(map[string]interface{})
+
+	// Try to parse as JSON
+	var jsonResp claudeJSONResponse
+	if err := json.Unmarshal([]byte(rawOutput), &jsonResp); err == nil {
+		if jsonResp.Result != "" {
+			metadata["usage"] = jsonResp.Usage
+			metadata["model"] = jsonResp.Model
+			return jsonResp.Result, jsonResp.SessionID, metadata
+		}
+	}
+
+	// Fallback: return raw output if JSON parsing fails
+	// This handles cases where --output-format json might not be supported
+	return rawOutput, "", metadata
 }
 
 // CompleteStream implements streaming for Claude CLI (reads output line by line)

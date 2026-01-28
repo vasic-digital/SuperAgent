@@ -514,11 +514,37 @@ func (pd *ProviderDiscovery) discoverOAuthProviders(seen map[string]bool) []*Dis
 			"anonymous": apiKey == "",
 		}).Info("Discovering OpenCode Zen provider (supports free models without API key)")
 
-		// Create Zen provider (anonymous mode if no API key)
+		// Create Zen provider - API key for direct access, then HTTP server, then CLI proxy
 		var provider llm.LLMProvider
 		if apiKey == "" {
-			provider = zen.NewZenProviderAnonymous("big-pickle")
-			pd.log.Info("Created Zen provider in anonymous mode (free models: Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano)")
+			// Free mode - try HTTP server first (best), then CLI proxy, then anonymous API
+			// Priority: HTTP server > CLI proxy > Anonymous API
+
+			// Try HTTP server first (opencode serve)
+			httpProvider := zen.NewZenHTTPProviderWithModel("big-pickle")
+			if httpProvider.IsServerRunning() {
+				provider = httpProvider
+				pd.log.Info("Created Zen provider with HTTP server (opencode serve)")
+			} else if zen.CanUseZenHTTP() {
+				// HTTP available but server not running - auto-start will happen on first request
+				provider = httpProvider
+				pd.log.Info("Created Zen provider with HTTP server (will auto-start on first request)")
+			}
+
+			// Fallback to CLI proxy
+			if provider == nil {
+				cliProvider := zen.NewZenCLIProviderWithModel("big-pickle")
+				if cliProvider.IsCLIAvailable() {
+					provider = cliProvider
+					pd.log.Info("Created Zen provider with CLI proxy (free models via opencode command)")
+				}
+			}
+
+			// Final fallback to anonymous API
+			if provider == nil {
+				provider = zen.NewZenProviderAnonymous("big-pickle")
+				pd.log.Info("Created Zen provider in anonymous mode (CLI not available, using direct API)")
+			}
 		} else {
 			provider = zen.NewZenProvider(apiKey, "https://opencode.ai/zen/v1/chat/completions", "big-pickle")
 		}
@@ -598,15 +624,27 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 		return cerebras.NewCerebrasProvider(apiKey, baseURL, mapping.DefaultModel), nil
 
 	case "zen":
-		// Use native Zen provider for OpenCode Zen free models
-		// Supports both authenticated (API key) and anonymous (free models only) modes
+		// Use native Zen provider for OpenCode Zen
+		// Priority: API key > HTTP server > CLI proxy > Anonymous API
 		baseURL := mapping.BaseURL
 		if baseURL == "" {
 			baseURL = "https://opencode.ai/zen/v1/chat/completions"
 		}
-		// If no API key provided, use anonymous mode for free models
+		// If no API key provided, try HTTP server, then CLI proxy
 		if apiKey == "" {
-			logrus.Info("Creating Zen provider in anonymous mode (free models only)")
+			// Try HTTP server first (opencode serve)
+			if zen.CanUseZenHTTP() {
+				logrus.Info("Creating Zen provider with HTTP server (opencode serve)")
+				return zen.NewZenHTTPProviderWithModel(mapping.DefaultModel), nil
+			}
+			// Fallback to CLI proxy
+			cliProvider := zen.NewZenCLIProviderWithModel(mapping.DefaultModel)
+			if cliProvider.IsCLIAvailable() {
+				logrus.Info("Creating Zen provider with CLI proxy (free models via opencode command)")
+				return cliProvider, nil
+			}
+			// Final fallback to anonymous API
+			logrus.Info("Creating Zen provider in anonymous mode (CLI not available)")
 			return zen.NewZenProviderAnonymous(mapping.DefaultModel), nil
 		}
 		return zen.NewZenProvider(apiKey, baseURL, mapping.DefaultModel), nil

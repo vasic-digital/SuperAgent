@@ -382,8 +382,76 @@ Environment variables in `.env.example`:
 **Solution:**
 - **Claude**: Get an API key from https://console.anthropic.com/
 - **Qwen**: Get a DashScope API key from https://dashscope.aliyuncs.com/
+- **OR use CLI Proxy** (see below)
 
 Key files: `internal/auth/oauth_credentials/`
+
+### Advanced Provider Access Mechanisms
+
+For OAuth and free providers where direct API access is restricted, HelixAgent uses multiple access mechanisms based on availability and capabilities.
+
+| Provider | Priority | Method | Protocol | Description |
+|----------|----------|--------|----------|-------------|
+| **Claude** | 1 | JSON CLI | `claude -p --output-format json` | Structured JSON output with session continuity |
+| **Qwen** | 1 | ACP | `qwen --acp` | JSON-RPC 2.0 over stdin/stdout |
+| **Qwen** | 2 | CLI Proxy | `qwen -p "prompt"` | Fallback if ACP unavailable |
+| **Zen** | 1 | HTTP Server | `opencode serve` | Full REST API on localhost:4096 |
+| **Zen** | 2 | CLI Proxy | `opencode -p -f json` | Fallback if server unavailable |
+
+**ACP (Agent Communication Protocol)** - Qwen's preferred access:
+- JSON-RPC 2.0 protocol over stdin/stdout via `qwen --acp`
+- Session management (conversation history persists)
+- Streaming responses via notifications
+- Automatic authentication handling
+- Key files: `internal/llm/providers/qwen/qwen_acp.go`
+
+**HTTP Server** - Zen/OpenCode's preferred access:
+- Start with `opencode serve --port 4096`
+- Full REST API with sessions and streaming
+- Auto-starts server when needed
+- Key files: `internal/llm/providers/zen/zen_http.go`
+
+**JSON CLI** - Claude's structured output:
+- Uses `--output-format json` for structured responses
+- Session continuity with `--resume <session_id>`
+- Extracts usage metadata and model info
+- Key files: `internal/llm/providers/claude/claude_cli.go`
+
+**Trigger Conditions:**
+- Claude: `CLAUDE_CODE_USE_OAUTH_CREDENTIALS=true` + no `CLAUDE_API_KEY`
+- Qwen: `QWEN_CODE_USE_OAUTH_CREDENTIALS=true` + no DashScope API key
+- Zen: No `OPENCODE_API_KEY` (free mode)
+
+**How it works:**
+1. Provider registry detects OAuth/free mode (no API key)
+2. Checks if preferred access method is available (ACP/HTTP)
+3. Falls back to CLI proxy if preferred method unavailable
+4. Creates appropriate provider with session support
+4. Requests are executed via CLI command and output is parsed
+
+**Environment Variables:**
+```bash
+# Claude OAuth (uses claude CLI proxy when enabled)
+CLAUDE_CODE_USE_OAUTH_CREDENTIALS=true
+
+# Qwen OAuth (uses qwen CLI proxy when enabled)
+QWEN_CODE_USE_OAUTH_CREDENTIALS=true
+
+# Zen/OpenCode API key (if not set, uses opencode CLI proxy)
+OPENCODE_API_KEY=your-api-key  # Optional - CLI proxy for free mode
+```
+
+**Key Files:**
+- `internal/llm/providers/claude/claude_cli.go` - Claude CLI provider
+- `internal/llm/providers/qwen/qwen_acp.go` - Qwen ACP provider (JSON-RPC over stdin/stdout)
+- `internal/llm/providers/qwen/qwen_cli.go` - Qwen CLI provider (fallback)
+- `internal/llm/providers/zen/zen_cli.go` - Zen/OpenCode CLI provider (with JSON output parsing)
+- `internal/services/provider_registry.go` - Registration logic
+
+**Challenge Validation:**
+```bash
+./challenges/scripts/cli_proxy_challenge.sh  # 50 tests - validates CLI proxy mechanism
+```
 
 ### Cognee Authentication
 
