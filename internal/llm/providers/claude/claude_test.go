@@ -138,7 +138,7 @@ func TestClaudeProvider_ConvertRequest(t *testing.T) {
 	}
 
 	claudeReq := provider.convertRequest(req)
-	assert.Equal(t, "claude-3-sonnet-20240229", claudeReq.Model)
+	assert.Equal(t, "claude-sonnet-4-20250514", claudeReq.Model)
 	assert.Equal(t, 100, claudeReq.MaxTokens)
 	assert.Equal(t, 0.7, claudeReq.Temperature)
 	assert.Equal(t, 0.9, claudeReq.TopP)
@@ -252,12 +252,11 @@ func TestClaudeProvider_GetCapabilities(t *testing.T) {
 
 	require.NotNil(t, caps)
 
-	// Check supported models
+	// Check supported models (Claude 4 and 3.5 series)
+	assert.Contains(t, caps.SupportedModels, "claude-sonnet-4-20250514")
 	assert.Contains(t, caps.SupportedModels, "claude-3-sonnet-20240229")
 	assert.Contains(t, caps.SupportedModels, "claude-3-opus-20240229")
 	assert.Contains(t, caps.SupportedModels, "claude-3-haiku-20240307")
-	assert.Contains(t, caps.SupportedModels, "claude-2.1")
-	assert.Contains(t, caps.SupportedModels, "claude-2.0")
 
 	// Check supported features
 	assert.Contains(t, caps.SupportedFeatures, "text_completion")
@@ -1724,8 +1723,8 @@ func TestClaudeProvider_AuthTypeConstants(t *testing.T) {
 
 func TestClaudeProvider_APIURLConstants(t *testing.T) {
 	assert.Equal(t, "https://api.anthropic.com/v1/messages", ClaudeAPIURL)
-	assert.Equal(t, "claude-3-sonnet-20240229", ClaudeModel)
-	assert.Equal(t, "claude-3-5-sonnet-20241022", ClaudeOAuthModel)
+	assert.Equal(t, "claude-sonnet-4-20250514", ClaudeModel)      // Updated to Claude 4 model
+	assert.Equal(t, "claude-sonnet-4-20250514", ClaudeOAuthModel) // Updated to Claude 4 model
 }
 
 func TestClaudeProvider_Complete_ReadBodyError(t *testing.T) {
