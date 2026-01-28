@@ -154,12 +154,12 @@ var providerMappings = []ProviderMapping{
 	{EnvVar: "ApiKey_XAI", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
 	{EnvVar: "ApiKey_Grok", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
 
-	// ZAI/Zhipu/GLM - Multiple key name variations
-	{EnvVar: "ZAI_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
-	{EnvVar: "ApiKey_ZAI", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
-	{EnvVar: "ZHIPU_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
-	{EnvVar: "GLM_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
-	{EnvVar: "BIGMODEL_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions", DefaultModel: "glm-4-flash", Priority: 3},
+	// ZAI/Zhipu/GLM - Multiple key name variations (GLM-4-Plus is most capable)
+	{EnvVar: "ZAI_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 2},
+	{EnvVar: "ApiKey_ZAI", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 2},
+	{EnvVar: "ZHIPU_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 2},
+	{EnvVar: "GLM_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 2},
+	{EnvVar: "BIGMODEL_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 2},
 
 	// Cohere - Multiple key name variations
 	{EnvVar: "COHERE_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},

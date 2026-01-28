@@ -29,8 +29,8 @@ func TestNewZAIProvider(t *testing.T) {
 			model:   "",
 			expected: &ZAIProvider{
 				apiKey:  "test-key",
-				baseURL: "https://api.z.ai/v1",
-				model:   "z-ai-base",
+				baseURL: "https://open.bigmodel.cn/api/paas/v4",
+				model:   "glm-4-plus",
 				httpClient: &http.Client{
 					Timeout: 60 * time.Second,
 				},
@@ -74,7 +74,7 @@ func TestZAIProvider_Complete(t *testing.T) {
 		err := json.NewDecoder(r.Body).Decode(&req)
 		require.NoError(t, err)
 
-		assert.Equal(t, "z-ai-base", req.Model)
+		assert.Equal(t, "glm-4-plus", req.Model)
 		assert.Equal(t, "test prompt", req.Prompt)
 		assert.False(t, req.Stream)
 		assert.Equal(t, 0.7, req.Temperature)
@@ -103,7 +103,7 @@ func TestZAIProvider_Complete(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
+	provider := NewZAIProvider("test-api-key", server.URL, "glm-4-plus")
 
 	req := &models.LLMRequest{
 		ID:     "test-123",
@@ -165,7 +165,7 @@ func TestZAIProvider_Complete_ChatFormat(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
+	provider := NewZAIProvider("test-api-key", server.URL, "glm-4-plus")
 
 	req := &models.LLMRequest{
 		ID: "test-123",
@@ -193,17 +193,17 @@ func TestZAIProvider_Complete_Error(t *testing.T) {
 			Error: struct {
 				Message string `json:"message"`
 				Type    string `json:"type"`
-				Code    int    `json:"code"`
+				Code    string `json:"code"`
 			}{
 				Message: "Invalid request",
 				Type:    "invalid_request_error",
-				Code:    400,
+				Code:    "400",
 			},
 		})
 	}))
 	defer server.Close()
 
-	provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
+	provider := NewZAIProvider("test-api-key", server.URL, "glm-4-plus")
 
 	req := &models.LLMRequest{
 		ID:     "test-123",
@@ -213,7 +213,7 @@ func TestZAIProvider_Complete_Error(t *testing.T) {
 	resp, err := provider.Complete(context.Background(), req)
 	assert.Error(t, err)
 	assert.Nil(t, resp)
-	assert.Contains(t, err.Error(), "Z.AI API error: Invalid request")
+	assert.Contains(t, err.Error(), "Zhipu GLM API error")
 }
 
 func TestZAIProvider_Complete_NoChoices(t *testing.T) {
@@ -236,7 +236,7 @@ func TestZAIProvider_Complete_NoChoices(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
+	provider := NewZAIProvider("test-api-key", server.URL, "glm-4-plus")
 
 	req := &models.LLMRequest{
 		ID:     "test-123",
@@ -322,7 +322,7 @@ func TestZAIProvider_CompleteStream(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
+	provider := NewZAIProvider("test-api-key", server.URL, "glm-4-plus")
 
 	req := &models.LLMRequest{
 		ID:     "test-123",
@@ -358,17 +358,17 @@ func TestZAIProvider_CompleteStream_Error(t *testing.T) {
 			Error: struct {
 				Message string `json:"message"`
 				Type    string `json:"type"`
-				Code    int    `json:"code"`
+				Code    string `json:"code"`
 			}{
 				Message: "Invalid streaming request",
 				Type:    "invalid_request_error",
-				Code:    400,
+				Code:    "400",
 			},
 		})
 	}))
 	defer server.Close()
 
-	provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
+	provider := NewZAIProvider("test-api-key", server.URL, "glm-4-plus")
 
 	req := &models.LLMRequest{
 		ID:     "test-123",
@@ -409,7 +409,7 @@ func TestZAIProvider_HealthCheck(t *testing.T) {
 			}))
 			defer server.Close()
 
-			provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
+			provider := NewZAIProvider("test-api-key", server.URL, "glm-4-plus")
 			err := provider.HealthCheck()
 
 			if tt.expectError {
@@ -433,20 +433,23 @@ func TestZAIProvider_GetCapabilities(t *testing.T) {
 	caps := provider.GetCapabilities()
 
 	assert.NotNil(t, caps)
-	assert.Contains(t, caps.SupportedModels, "z-ai-base")
-	assert.Contains(t, caps.SupportedModels, "z-ai-pro")
+	// GLM-4 series models
+	assert.Contains(t, caps.SupportedModels, "glm-4-plus")
+	assert.Contains(t, caps.SupportedModels, "glm-4")
+	assert.Contains(t, caps.SupportedModels, "glm-4-flash")
 	assert.Contains(t, caps.SupportedFeatures, "text_completion")
 	assert.Contains(t, caps.SupportedFeatures, "chat")
 	assert.Contains(t, caps.SupportedFeatures, "function_calling")
-	assert.True(t, caps.SupportsStreaming) // Streaming is now implemented
+	assert.Contains(t, caps.SupportedFeatures, "code_generation")
+	assert.True(t, caps.SupportsStreaming)
 	assert.True(t, caps.SupportsFunctionCalling)
 	assert.True(t, caps.SupportsTools)
-	assert.False(t, caps.SupportsVision)
-	assert.Equal(t, 4096, caps.Limits.MaxTokens)
-	assert.Equal(t, 8192, caps.Limits.MaxInputLength)
-	assert.Equal(t, 10, caps.Limits.MaxConcurrentRequests)
-	assert.Equal(t, "Z.AI", caps.Metadata["provider"])
-	assert.Equal(t, "v1", caps.Metadata["api_version"])
+	assert.True(t, caps.SupportsVision) // GLM-4V supports vision
+	assert.Equal(t, 8192, caps.Limits.MaxTokens)
+	assert.Equal(t, 128000, caps.Limits.MaxInputLength) // 128K context
+	assert.Equal(t, 20, caps.Limits.MaxConcurrentRequests)
+	assert.Equal(t, "Zhipu AI (GLM)", caps.Metadata["provider"])
+	assert.Equal(t, "v4", caps.Metadata["api_version"])
 }
 
 func TestZAIProvider_ValidateConfig(t *testing.T) {
@@ -780,7 +783,7 @@ func TestZAIProvider_makeRequest(t *testing.T) {
 			}))
 			defer server.Close()
 
-			provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
+			provider := NewZAIProvider("test-api-key", server.URL, "glm-4-plus")
 			resp, err := provider.makeRequest(context.Background(), tt.request)
 
 			if tt.expectError {
@@ -831,7 +834,7 @@ func TestZAIProvider_makeRequest_InvalidResponse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
+	provider := NewZAIProvider("test-api-key", server.URL, "glm-4-plus")
 
 	req := &ZAIRequest{
 		Model:  "z-ai-base",
@@ -868,7 +871,7 @@ func BenchmarkZAIProvider_Complete(b *testing.B) {
 	}))
 	defer server.Close()
 
-	provider := NewZAIProvider("test-api-key", server.URL, "z-ai-base")
+	provider := NewZAIProvider("test-api-key", server.URL, "glm-4-plus")
 	req := &models.LLMRequest{
 		ID:     "test-123",
 		Prompt: "test prompt",
