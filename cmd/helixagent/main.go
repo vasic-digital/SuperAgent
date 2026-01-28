@@ -835,22 +835,58 @@ func runStartupVerification(logger *logrus.Logger) (*verifier.StartupResult, *ve
 		}
 	}
 
-	// Log debate team selection
+	// Log debate team selection with full visual representation
 	if result.DebateTeam != nil {
-		logger.Info("────────────────────────────────────────────────────────────────────")
-		logger.Info("AI Debate Team Selection (15 LLMs: 5 positions × 3 LLMs each):")
-		for _, pos := range result.DebateTeam.Positions {
+		logger.Info("════════════════════════════════════════════════════════════════════")
+		logger.Info("AI DEBATE TEAM SELECTION")
+		logger.Info(fmt.Sprintf("Total LLMs: %d | Positions: %d | Sorted by Score: %v | LLM Reuse: %d",
+			result.DebateTeam.TotalLLMs,
+			len(result.DebateTeam.Positions),
+			result.DebateTeam.SortedByScore,
+			result.DebateTeam.LLMReuseCount))
+		logger.Info("════════════════════════════════════════════════════════════════════")
+
+		for i, pos := range result.DebateTeam.Positions {
+			logger.Info(fmt.Sprintf("────────────────────────────────────────────────────────────────────"))
+			logger.Info(fmt.Sprintf("POSITION %d: %s", pos.Position, pos.Role))
+			logger.Info(fmt.Sprintf("────────────────────────────────────────────────────────────────────"))
+
+			// Log primary LLM
 			if pos.Primary != nil {
-				logger.WithFields(logrus.Fields{
-					"position":      pos.Position,
-					"role":          pos.Role,
-					"primary":       pos.Primary.ModelName,
-					"primary_prov":  pos.Primary.Provider,
-					"primary_score": pos.Primary.Score,
-					"is_oauth":      pos.Primary.IsOAuth,
-				}).Info("Debate position assigned")
+				oauthStr := ""
+				if pos.Primary.IsOAuth {
+					oauthStr = " [OAuth]"
+				}
+				logger.Info(fmt.Sprintf("  ★ PRIMARY: %s/%s (Score: %.2f)%s",
+					pos.Primary.Provider, pos.Primary.ModelName, pos.Primary.Score, oauthStr))
+			} else {
+				logger.Warn(fmt.Sprintf("  ⚠ PRIMARY: Not assigned"))
 			}
+
+			// Log all fallback LLMs
+			if len(pos.Fallbacks) > 0 {
+				for j, fb := range pos.Fallbacks {
+					oauthStr := ""
+					if fb.IsOAuth {
+						oauthStr = " [OAuth]"
+					}
+					logger.Info(fmt.Sprintf("  → FALLBACK %d: %s/%s (Score: %.2f)%s",
+						j+1, fb.Provider, fb.ModelName, fb.Score, oauthStr))
+				}
+			} else {
+				logger.Info(fmt.Sprintf("  → No fallbacks assigned"))
+			}
+
+			// Log total for this position
+			total := 0
+			if pos.Primary != nil {
+				total = 1
+			}
+			total += len(pos.Fallbacks)
+			logger.Info(fmt.Sprintf("  [Position %d Total: %d LLMs]", i+1, total))
 		}
+
+		logger.Info("════════════════════════════════════════════════════════════════════")
 	}
 
 	logger.Info("════════════════════════════════════════════════════════════════════")
