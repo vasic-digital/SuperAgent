@@ -1098,7 +1098,8 @@ func (dtc *DebateTeamConfig) GetActiveMembers() []*DebateTeamMember {
 	return members
 }
 
-// GetAllLLMs returns all 15 LLMs used in the debate team
+// GetAllLLMs returns all 25 LLMs used in the debate team (primaries + all fallbacks)
+// Note: For UI display, use GetPrimaryMembers() instead to get only 5 primary members
 func (dtc *DebateTeamConfig) GetAllLLMs() []*DebateTeamMember {
 	dtc.mu.RLock()
 	defer dtc.mu.RUnlock()
@@ -1114,6 +1115,25 @@ func (dtc *DebateTeamConfig) GetAllLLMs() []*DebateTeamMember {
 	}
 
 	return allLLMs
+}
+
+// GetPrimaryMembers returns only the 5 primary members (one per position)
+// Each member has its Fallbacks slice populated with all fallback LLMs
+// Use this for UI display to show each position once with its fallbacks
+func (dtc *DebateTeamConfig) GetPrimaryMembers() []*DebateTeamMember {
+	dtc.mu.RLock()
+	defer dtc.mu.RUnlock()
+
+	primaries := make([]*DebateTeamMember, 0, TotalDebatePositions)
+
+	for pos := PositionAnalyst; pos <= PositionMediator; pos++ {
+		member := dtc.members[pos]
+		if member != nil {
+			primaries = append(primaries, member)
+		}
+	}
+
+	return primaries
 }
 
 // GetVerifiedLLMs returns the list of verified LLMs used for team formation

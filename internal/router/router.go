@@ -23,10 +23,14 @@ import (
 
 // RouterContext wraps the router with cleanup capabilities for background services
 type RouterContext struct {
-	Engine          *gin.Engine
-	protocolManager *services.UnifiedProtocolManager
-	oauthMonitor    *services.OAuthTokenMonitor
-	healthMonitor   *services.ProviderHealthMonitor
+	Engine           *gin.Engine
+	protocolManager  *services.UnifiedProtocolManager
+	oauthMonitor     *services.OAuthTokenMonitor
+	healthMonitor    *services.ProviderHealthMonitor
+	ProviderRegistry *services.ProviderRegistry      // Exposed for StartupVerifier integration
+	DebateTeamConfig *services.DebateTeamConfig      // Exposed for re-initialization with StartupVerifier
+	unifiedHandler   *handlers.UnifiedHandler        // For updating debate team display
+	debateService    *services.DebateService         // For updating team config
 }
 
 // Shutdown stops all background services started by the router
@@ -40,6 +44,38 @@ func (rc *RouterContext) Shutdown() {
 	if rc.healthMonitor != nil {
 		rc.healthMonitor.Stop()
 	}
+}
+
+// ReinitializeDebateTeam re-initializes the DebateTeamConfig with the StartupVerifier.
+// Call this after setting the StartupVerifier on ProviderRegistry to include OAuth providers.
+func (rc *RouterContext) ReinitializeDebateTeam(ctx context.Context) error {
+	if rc.DebateTeamConfig == nil || rc.ProviderRegistry == nil {
+		return nil
+	}
+
+	// Get the StartupVerifier from the ProviderRegistry
+	sv := rc.ProviderRegistry.GetStartupVerifier()
+	if sv == nil {
+		return nil // No StartupVerifier, keep existing team
+	}
+
+	// Set the StartupVerifier on DebateTeamConfig
+	rc.DebateTeamConfig.SetStartupVerifier(sv)
+
+	// Re-initialize the team with OAuth providers
+	if err := rc.DebateTeamConfig.InitializeTeam(ctx); err != nil {
+		return err
+	}
+
+	// Update handlers with new team config
+	if rc.unifiedHandler != nil {
+		rc.unifiedHandler.SetDebateTeamConfig(rc.DebateTeamConfig)
+	}
+	if rc.debateService != nil {
+		rc.debateService.SetTeamConfig(rc.DebateTeamConfig)
+	}
+
+	return nil
 }
 
 // SetupRouter creates and configures the main HTTP router.
@@ -103,6 +139,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 	// Initialize services
 	registryConfig := services.LoadRegistryConfigFromAppConfig(cfg)
 	providerRegistry := services.NewProviderRegistry(registryConfig, memoryService)
+	rc.ProviderRegistry = providerRegistry // Expose for StartupVerifier integration
 
 	// Initialize shared logger
 	logger := logrus.New()
@@ -661,8 +698,13 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		// Set the debate team config on the unified handler for dialogue display
 		unifiedHandler.SetDebateTeamConfig(debateTeamConfig)
 
+		// Store references for later re-initialization with StartupVerifier
+		rc.DebateTeamConfig = debateTeamConfig
+		rc.unifiedHandler = unifiedHandler
+
 		debateService := services.NewDebateServiceWithDeps(logger, providerRegistry, cogneeService)
 		debateService.SetTeamConfig(debateTeamConfig) // Set the team configuration
+		rc.debateService = debateService
 		debateHandler := handlers.NewDebateHandler(debateService, nil, logger)
 
 		// Wire up the new debate orchestrator framework (optional, feature-flagged)
