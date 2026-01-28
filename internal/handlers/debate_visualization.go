@@ -394,12 +394,26 @@ func FormatDebateTeamIntroduction(topic string, members []*services.DebateTeamMe
 		avatar := getPositionAvatar(member.Position)
 		roleName := getRoleName(member.Role)
 
-		sb.WriteString(fmt.Sprintf("  %s%s%s  %-15s%s │ %s%s%s (%s)\n",
+		oauthTag := ""
+		if member.IsOAuth {
+			oauthTag = " [OAuth]"
+		}
+		sb.WriteString(fmt.Sprintf("  %s%s%s  %-15s%s │ %s%s%s (%s)%s\n",
 			roleColor, ANSIBold, avatar, roleName, ANSIReset,
-			ANSIBold, member.ModelName, ANSIReset, member.ProviderName))
+			ANSIBold, member.ModelName, ANSIReset, member.ProviderName, oauthTag))
 
-		// Show fallback if present
-		if member.Fallback != nil {
+		// Show all fallbacks using Fallbacks slice (preferred) or legacy Fallback chain
+		if len(member.Fallbacks) > 0 {
+			for i, fb := range member.Fallbacks {
+				fbOAuthTag := ""
+				if fb.IsOAuth {
+					fbOAuthTag = " [OAuth]"
+				}
+				sb.WriteString(fmt.Sprintf("      %s└─ Fallback %d: %s (%s)%s%s\n",
+					ANSIDim, i+1, fb.ModelName, fb.ProviderName, fbOAuthTag, ANSIReset))
+			}
+		} else if member.Fallback != nil {
+			// Legacy single fallback support
 			sb.WriteString(fmt.Sprintf("      %s└─ Fallback: %s (%s)%s\n",
 				ANSIDim, member.Fallback.ModelName, member.Fallback.ProviderName, ANSIReset))
 		}
