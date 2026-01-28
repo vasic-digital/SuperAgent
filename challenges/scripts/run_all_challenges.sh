@@ -221,6 +221,10 @@ CHALLENGES=(
     "provider_verification"
     "provider_reliability"
 
+    # CLI proxy mechanism (OAuth/free providers)
+    "cli_proxy"
+    "advanced_provider_access"
+
     # Protocols (no dependencies)
     "mcp_protocol"
     "lsp_protocol"

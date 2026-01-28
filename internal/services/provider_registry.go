@@ -583,32 +583,29 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	// Try OAuth first if enabled (only check OAuth if auto-discovery is enabled)
-	claudeOAuthEnabled := r.autoDiscovery && oauth_credentials.IsClaudeOAuthEnabled()
-	if claudeConfig.Enabled || claudeOAuthEnabled {
-		if claudeOAuthEnabled {
-			credReader := oauth_credentials.GetGlobalReader()
-			if credReader.HasValidClaudeCredentials() {
-				claudeProvider, err := claude.NewClaudeProviderWithOAuth(
-					claudeConfig.BaseURL,
-					claudeConfig.Models[0].ID,
-				)
-				if err == nil {
-					r.RegisterProvider(claudeConfig.Name, claudeProvider)
-					logrus.Info("Registered Claude provider with OAuth credentials from Claude Code CLI")
-				} else {
-					logrus.Warnf("Failed to create Claude OAuth provider: %v, falling back to API key", err)
-				}
+	// Try API key first (direct API access), then CLI proxy for OAuth
+	if claudeConfig.Enabled && claudeConfig.APIKey != "" {
+		// API key available - use direct API access
+		r.RegisterProvider(claudeConfig.Name, claude.NewClaudeProvider(
+			claudeConfig.APIKey,
+			claudeConfig.BaseURL,
+			claudeConfig.Models[0].ID,
+		))
+		logrus.Info("Registered Claude provider with API key (direct API access)")
+	} else if r.autoDiscovery && oauth_credentials.IsClaudeOAuthEnabled() {
+		// OAuth credentials present - use CLI proxy (routes through claude command)
+		// NOTE: OAuth tokens are product-restricted and can't be used for direct API calls
+		// The CLI proxy forwards requests to the claude command which has the OAuth context
+		credReader := oauth_credentials.GetGlobalReader()
+		if credReader.HasValidClaudeCredentials() {
+			// Check if Claude CLI is available
+			cliProvider := claude.NewClaudeCLIProviderWithModel("claude-sonnet-4-5-20250929")
+			if cliProvider.IsCLIAvailable() {
+				r.RegisterProvider(claudeConfig.Name, cliProvider)
+				logrus.Info("Registered Claude provider with CLI proxy (OAuth via claude command)")
+			} else {
+				logrus.Warn("Claude OAuth credentials found but Claude CLI not available - provider not registered")
 			}
-		}
-		// Fall back to API key if OAuth not available
-		if _, err := r.GetProvider(claudeConfig.Name); err != nil && claudeConfig.APIKey != "" {
-			r.RegisterProvider(claudeConfig.Name, claude.NewClaudeProvider(
-				claudeConfig.APIKey,
-				claudeConfig.BaseURL,
-				claudeConfig.Models[0].ID,
-			))
-			logrus.Info("Registered Claude provider with API key")
 		}
 	}
 
@@ -650,32 +647,38 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	// Try OAuth first if enabled (only check OAuth if auto-discovery is enabled)
-	qwenOAuthEnabled := r.autoDiscovery && oauth_credentials.IsQwenOAuthEnabled()
-	if qwenConfig.Enabled || qwenOAuthEnabled {
-		if qwenOAuthEnabled {
-			credReader := oauth_credentials.GetGlobalReader()
-			if credReader.HasValidQwenCredentials() {
-				qwenProvider, err := qwen.NewQwenProviderWithOAuth(
-					qwenConfig.BaseURL,
-					qwenConfig.Models[0].ID,
-				)
-				if err == nil {
-					r.RegisterProvider(qwenConfig.Name, qwenProvider)
-					logrus.Info("Registered Qwen provider with OAuth credentials from Qwen Code CLI")
-				} else {
-					logrus.Warnf("Failed to create Qwen OAuth provider: %v, falling back to API key", err)
+	// Try API key first (direct API access), then ACP, then CLI proxy for OAuth
+	if qwenConfig.Enabled && qwenConfig.APIKey != "" {
+		// API key available - use direct API access
+		r.RegisterProvider(qwenConfig.Name, qwen.NewQwenProvider(
+			qwenConfig.APIKey,
+			qwenConfig.BaseURL,
+			qwenConfig.Models[0].ID,
+		))
+		logrus.Info("Registered Qwen provider with API key (direct API access)")
+	} else if r.autoDiscovery && oauth_credentials.IsQwenOAuthEnabled() {
+		// OAuth credentials present - try ACP first (more powerful), then CLI proxy
+		// NOTE: OAuth tokens are product-restricted and can't be used for direct API calls
+		credReader := oauth_credentials.GetGlobalReader()
+		if credReader.HasValidQwenCredentials() {
+			// Try ACP first (more powerful - sessions, streaming, etc.)
+			if qwen.CanUseQwenACP() {
+				acpProvider := qwen.NewQwenACPProviderWithModel("qwen-turbo")
+				if acpProvider.IsAvailable() {
+					r.RegisterProvider(qwenConfig.Name, acpProvider)
+					logrus.Info("Registered Qwen provider with ACP (Agent Communication Protocol)")
 				}
 			}
-		}
-		// Fall back to API key if OAuth not available
-		if _, err := r.GetProvider(qwenConfig.Name); err != nil && qwenConfig.APIKey != "" {
-			r.RegisterProvider(qwenConfig.Name, qwen.NewQwenProvider(
-				qwenConfig.APIKey,
-				qwenConfig.BaseURL,
-				qwenConfig.Models[0].ID,
-			))
-			logrus.Info("Registered Qwen provider with API key")
+			// Fall back to CLI proxy if ACP not available
+			if _, err := r.GetProvider(qwenConfig.Name); err != nil {
+				cliProvider := qwen.NewQwenCLIProviderWithModel("qwen-turbo")
+				if cliProvider.IsCLIAvailable() {
+					r.RegisterProvider(qwenConfig.Name, cliProvider)
+					logrus.Info("Registered Qwen provider with CLI proxy (OAuth via qwen command)")
+				} else {
+					logrus.Warn("Qwen OAuth credentials found but Qwen CLI not available - provider not registered")
+				}
+			}
 		}
 	}
 

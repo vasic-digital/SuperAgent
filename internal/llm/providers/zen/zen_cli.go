@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -203,17 +204,11 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 	}
 
 	// Build opencode command arguments
+	// Use -f json for structured output that's easier to parse
 	args := []string{
-		"-p", prompt, // Print mode - just returns the response
-		"--model", model,
+		"-p", prompt, // Non-interactive mode with prompt
+		"-f", "json", // JSON output format for structured parsing
 	}
-
-	// Add max tokens if specified
-	maxTokens := p.maxOutputTokens
-	if req.ModelParams.MaxTokens > 0 {
-		maxTokens = req.ModelParams.MaxTokens
-	}
-	args = append(args, "--max-tokens", fmt.Sprintf("%d", maxTokens))
 
 	// Execute opencode command
 	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...)
@@ -235,10 +230,13 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 		return nil, fmt.Errorf("opencode CLI failed: %w (stderr: %s)", err, stderr.String())
 	}
 
-	output := stdout.String()
-	if output == "" {
+	rawOutput := stdout.String()
+	if rawOutput == "" {
 		return nil, fmt.Errorf("opencode CLI returned empty response")
 	}
+
+	// Parse JSON output format: {"response": "...content..."}
+	output := p.parseJSONResponse(rawOutput)
 
 	// Estimate token count (rough approximation: 4 chars per token)
 	promptTokens := len(prompt) / 4
@@ -262,6 +260,30 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 			"completion_tokens":  completionTokens,
 		},
 	}, nil
+}
+
+// openCodeJSONResponse represents the JSON output format from OpenCode CLI
+// Format: {"response": "...content..."}
+type openCodeJSONResponse struct {
+	Response string `json:"response"`
+}
+
+// parseJSONResponse extracts content from OpenCode CLI JSON output
+// If parsing fails, returns the raw output as-is
+func (p *ZenCLIProvider) parseJSONResponse(rawOutput string) string {
+	rawOutput = strings.TrimSpace(rawOutput)
+
+	// Try to parse as JSON
+	var jsonResp openCodeJSONResponse
+	if err := json.Unmarshal([]byte(rawOutput), &jsonResp); err == nil {
+		if jsonResp.Response != "" {
+			return jsonResp.Response
+		}
+	}
+
+	// Fallback: return raw output if JSON parsing fails
+	// This handles cases where -f json might not be supported
+	return rawOutput
 }
 
 // CompleteStream implements streaming completion using CLI
