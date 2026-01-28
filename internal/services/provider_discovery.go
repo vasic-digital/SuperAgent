@@ -177,12 +177,12 @@ var providerMappings = []ProviderMapping{
 
 	// Tier 3: Fast inference providers
 	// Groq - Multiple key name variations
-	{EnvVar: "GROQ_API_KEY", ProviderType: "groq", ProviderName: "groq", BaseURL: "https://api.groq.com/openai/v1", DefaultModel: "llama-3.1-70b-versatile", Priority: 5},
-	{EnvVar: "ApiKey_Groq", ProviderType: "groq", ProviderName: "groq", BaseURL: "https://api.groq.com/openai/v1", DefaultModel: "llama-3.1-70b-versatile", Priority: 5},
+	{EnvVar: "GROQ_API_KEY", ProviderType: "groq", ProviderName: "groq", BaseURL: "https://api.groq.com/openai/v1/chat/completions", DefaultModel: "llama-3.1-70b-versatile", Priority: 5},
+	{EnvVar: "ApiKey_Groq", ProviderType: "groq", ProviderName: "groq", BaseURL: "https://api.groq.com/openai/v1/chat/completions", DefaultModel: "llama-3.1-70b-versatile", Priority: 5},
 
 	// Cerebras - Multiple key name variations
-	{EnvVar: "CEREBRAS_API_KEY", ProviderType: "cerebras", ProviderName: "cerebras", BaseURL: "https://api.cerebras.ai/v1", DefaultModel: "llama-3.3-70b", Priority: 5},
-	{EnvVar: "ApiKey_Cerebras", ProviderType: "cerebras", ProviderName: "cerebras", BaseURL: "https://api.cerebras.ai/v1", DefaultModel: "llama-3.3-70b", Priority: 5},
+	{EnvVar: "CEREBRAS_API_KEY", ProviderType: "cerebras", ProviderName: "cerebras", BaseURL: "https://api.cerebras.ai/v1/chat/completions", DefaultModel: "llama-3.3-70b", Priority: 5},
+	{EnvVar: "ApiKey_Cerebras", ProviderType: "cerebras", ProviderName: "cerebras", BaseURL: "https://api.cerebras.ai/v1/chat/completions", DefaultModel: "llama-3.3-70b", Priority: 5},
 
 	// SambaNova
 	{EnvVar: "SAMBANOVA_API_KEY", ProviderType: "sambanova", ProviderName: "sambanova", BaseURL: "https://api.sambanova.ai/v1", DefaultModel: "Meta-Llama-3.1-70B-Instruct", Priority: 5},
@@ -190,13 +190,13 @@ var providerMappings = []ProviderMapping{
 
 	// Tier 4: Alternative providers
 	// Fireworks - Multiple key name variations
-	{EnvVar: "FIREWORKS_API_KEY", ProviderType: "fireworks", ProviderName: "fireworks", BaseURL: "https://api.fireworks.ai/inference/v1", DefaultModel: "accounts/fireworks/models/llama-v3p1-70b-instruct", Priority: 6},
-	{EnvVar: "ApiKey_Fireworks", ProviderType: "fireworks", ProviderName: "fireworks", BaseURL: "https://api.fireworks.ai/inference/v1", DefaultModel: "accounts/fireworks/models/llama-v3p1-70b-instruct", Priority: 6},
+	{EnvVar: "FIREWORKS_API_KEY", ProviderType: "fireworks", ProviderName: "fireworks", BaseURL: "https://api.fireworks.ai/inference/v1/chat/completions", DefaultModel: "accounts/fireworks/models/llama-v3p1-70b-instruct", Priority: 6},
+	{EnvVar: "ApiKey_Fireworks", ProviderType: "fireworks", ProviderName: "fireworks", BaseURL: "https://api.fireworks.ai/inference/v1/chat/completions", DefaultModel: "accounts/fireworks/models/llama-v3p1-70b-instruct", Priority: 6},
 
 	// Together - Multiple key name variations
-	{EnvVar: "TOGETHERAI_API_KEY", ProviderType: "together", ProviderName: "together", BaseURL: "https://api.together.xyz/v1", DefaultModel: "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo", Priority: 6},
-	{EnvVar: "TOGETHER_API_KEY", ProviderType: "together", ProviderName: "together", BaseURL: "https://api.together.xyz/v1", DefaultModel: "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo", Priority: 6},
-	{EnvVar: "ApiKey_Together", ProviderType: "together", ProviderName: "together", BaseURL: "https://api.together.xyz/v1", DefaultModel: "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo", Priority: 6},
+	{EnvVar: "TOGETHERAI_API_KEY", ProviderType: "together", ProviderName: "together", BaseURL: "https://api.together.xyz/v1/chat/completions", DefaultModel: "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo", Priority: 6},
+	{EnvVar: "TOGETHER_API_KEY", ProviderType: "together", ProviderName: "together", BaseURL: "https://api.together.xyz/v1/chat/completions", DefaultModel: "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo", Priority: 6},
+	{EnvVar: "ApiKey_Together", ProviderType: "together", ProviderName: "together", BaseURL: "https://api.together.xyz/v1/chat/completions", DefaultModel: "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo", Priority: 6},
 
 	// Hyperbolic
 	{EnvVar: "HYPERBOLIC_API_KEY", ProviderType: "hyperbolic", ProviderName: "hyperbolic", BaseURL: "https://api.hyperbolic.xyz/v1", DefaultModel: "meta-llama/Llama-3.3-70B-Instruct", Priority: 6},
