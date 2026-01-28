@@ -1235,7 +1235,22 @@ func run(appCfg *AppConfig) error {
 		}).Info("Messaging system initialized")
 	}
 
-	r := router.SetupRouter(cfg)
+	routerCtx := router.SetupRouterWithContext(cfg)
+	r := routerCtx.Engine
+
+	// CRITICAL: Set StartupVerifier on the router's ProviderRegistry
+	// This enables OAuth providers (Claude, Qwen) to be included in the DebateTeamConfig
+	if startupVerifier != nil && routerCtx.ProviderRegistry != nil {
+		routerCtx.ProviderRegistry.SetStartupVerifier(startupVerifier)
+		logger.Info("StartupVerifier configured on router's ProviderRegistry")
+
+		// Re-initialize DebateTeamConfig with StartupVerifier to include OAuth providers
+		if err := routerCtx.ReinitializeDebateTeam(context.Background()); err != nil {
+			logger.WithError(err).Warn("Failed to re-initialize debate team with StartupVerifier")
+		} else {
+			logger.Info("DebateTeamConfig re-initialized with StartupVerifier (OAuth providers now included)")
+		}
+	}
 
 	// Add startup verification status endpoint
 	// This endpoint exposes LLMsVerifier re-evaluation results for validation

@@ -1939,7 +1939,8 @@ func (h *UnifiedHandler) generateDebateDialogueIntroduction(topic string, format
 	}
 
 	// Use format-aware introduction that adapts to the client type
-	members := h.debateTeamConfig.GetAllLLMs()
+	// GetPrimaryMembers returns only 5 primary members (one per position) with their Fallbacks populated
+	members := h.debateTeamConfig.GetPrimaryMembers()
 	return FormatDebateTeamIntroductionForFormat(format, topic, members)
 }
 
