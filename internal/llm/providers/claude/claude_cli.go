@@ -110,6 +110,8 @@ func NewClaudeCLIProviderWithModel(model string) *ClaudeCLIProvider {
 }
 
 // IsCLIAvailable checks if Claude Code CLI is installed and available
+// NOTE: Claude Code CLI doesn't have an "auth status" command, so we check
+// credential files directly to verify authentication
 func (p *ClaudeCLIProvider) IsCLIAvailable() bool {
 	p.cliCheckOnce.Do(func() {
 		// Check for claude command in PATH
@@ -133,11 +135,10 @@ func (p *ClaudeCLIProvider) IsCLIAvailable() bool {
 			return
 		}
 
-		// Check if user is logged in by trying to get the current session
-		cmd = exec.CommandContext(ctx, path, "auth", "status")
-		output, err = cmd.CombinedOutput()
-		if err != nil || strings.Contains(string(output), "not logged in") {
-			p.cliCheckErr = fmt.Errorf("claude CLI not authenticated: %w (output: %s)", err, string(output))
+		// Check if user is authenticated by verifying credential files
+		// (Claude Code CLI doesn't have an "auth status" command)
+		if !IsClaudeCodeAuthenticated() {
+			p.cliCheckErr = fmt.Errorf("claude CLI not authenticated: credential file missing or expired")
 			p.cliAvailable = false
 			return
 		}
@@ -507,26 +508,48 @@ func GetClaudeCodePath() (string, error) {
 }
 
 // IsClaudeCodeAuthenticated checks if Claude Code is logged in
+// NOTE: Claude Code CLI doesn't have an "auth status" command, so we check
+// credential files directly instead of running CLI commands
 func IsClaudeCodeAuthenticated() bool {
-	path, err := GetClaudeCodePath()
+	// Check if credential file exists
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return false
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	credPath := homeDir + "/.claude/.credentials.json"
+	info, err := os.Stat(credPath)
+	if err != nil || info.IsDir() {
+		return false
+	}
 
-	cmd := exec.CommandContext(ctx, path, "auth", "status")
-	output, err := cmd.CombinedOutput()
+	// Read and parse credentials to check if they're valid
+	data, err := os.ReadFile(credPath)
 	if err != nil {
 		return false
 	}
 
-	// Check if output indicates logged in status
-	outputStr := strings.ToLower(string(output))
-	return !strings.Contains(outputStr, "not logged in") &&
-		!strings.Contains(outputStr, "no session") &&
-		!strings.Contains(outputStr, "unauthenticated")
+	// Check that the file has valid JSON content (at minimum)
+	var creds map[string]interface{}
+	if err := json.Unmarshal(data, &creds); err != nil {
+		return false
+	}
+
+	// Check for required fields in credentials
+	// Claude credentials have claudeAiOauth with accessToken and expiresAt
+	if claudeOAuth, ok := creds["claudeAiOauth"].(map[string]interface{}); ok {
+		if accessToken, ok := claudeOAuth["accessToken"].(string); ok && accessToken != "" {
+			// Check if token is not expired
+			if expiresAt, ok := claudeOAuth["expiresAt"].(float64); ok {
+				expiryTime := time.UnixMilli(int64(expiresAt))
+				if time.Now().Before(expiryTime) {
+					return true // Valid credentials with non-expired token
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 // CanUseClaudeOAuth returns true if Claude OAuth can be used via CLI

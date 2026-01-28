@@ -15,6 +15,8 @@ import (
 
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/qwen"
 	"github.com/sirupsen/logrus"
 )
 
@@ -549,6 +551,18 @@ func (sv *StartupVerifier) verifyOAuthProvider(ctx context.Context, provider *Un
 				})
 			}
 
+			// CRITICAL: Create the CLI provider instance for debate team usage
+			// Without this, provider.Instance is nil and debate responses fail
+			provider.Instance = sv.createOAuthProviderInstance(provider.Type, provider.DefaultModel)
+			if provider.Instance != nil {
+				sv.log.WithFields(logrus.Fields{
+					"provider": provider.Type,
+					"model":    provider.DefaultModel,
+				}).Info("Created CLI provider instance for OAuth provider")
+			} else {
+				sv.log.WithField("provider", provider.Type).Warn("Failed to create CLI provider instance - debate may fail")
+			}
+
 			return provider, nil
 		}
 		if err != nil {
@@ -582,7 +596,58 @@ func (sv *StartupVerifier) verifyOAuthProvider(ctx context.Context, provider *Un
 		})
 	}
 
+	// CRITICAL: Create the CLI provider instance for debate team usage
+	// This enables OAuth providers to work in the debate team
+	if provider.Verified {
+		provider.Instance = sv.createOAuthProviderInstance(provider.Type, provider.DefaultModel)
+		if provider.Instance != nil {
+			sv.log.WithFields(logrus.Fields{
+				"provider": provider.Type,
+				"model":    provider.DefaultModel,
+			}).Info("Created CLI provider instance for verified OAuth provider")
+		}
+	}
+
 	return provider, nil
+}
+
+// createOAuthProviderInstance creates the appropriate CLI provider for an OAuth provider type
+// This is CRITICAL for the debate team to work - without the Instance field set,
+// debate responses will fail with "Unable to provide analysis"
+func (sv *StartupVerifier) createOAuthProviderInstance(providerType, defaultModel string) llm.LLMProvider {
+	switch providerType {
+	case "claude":
+		// Create Claude CLI provider for OAuth
+		cliProvider := claude.NewClaudeCLIProviderWithModel(defaultModel)
+		if cliProvider.IsCLIAvailable() {
+			sv.log.WithField("provider", "claude").Debug("Claude CLI provider created successfully")
+			return cliProvider
+		}
+		sv.log.Warn("Claude CLI not available - cannot create provider instance")
+		return nil
+
+	case "qwen":
+		// Try ACP first (more powerful), then fall back to CLI
+		if qwen.CanUseQwenACP() {
+			acpProvider := qwen.NewQwenACPProviderWithModel(defaultModel)
+			if acpProvider.IsAvailable() {
+				sv.log.WithField("provider", "qwen").Debug("Qwen ACP provider created successfully")
+				return acpProvider
+			}
+		}
+		// Fall back to CLI provider
+		cliProvider := qwen.NewQwenCLIProviderWithModel(defaultModel)
+		if cliProvider.IsCLIAvailable() {
+			sv.log.WithField("provider", "qwen").Debug("Qwen CLI provider created successfully")
+			return cliProvider
+		}
+		sv.log.Warn("Qwen CLI/ACP not available - cannot create provider instance")
+		return nil
+
+	default:
+		sv.log.WithField("provider", providerType).Warn("Unknown OAuth provider type - cannot create instance")
+		return nil
+	}
 }
 
 // verifyFreeProvider verifies a free/anonymous provider
