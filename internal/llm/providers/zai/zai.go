@@ -88,14 +88,22 @@ type ZAIUsage struct {
 	TotalTokens      int `json:"total_tokens"`
 }
 
-// ZAIError represents an error from the Z.AI API
+// ZAIError represents an error from the Z.AI API (Zhipu/GLM)
 type ZAIError struct {
 	Error struct {
 		Message string `json:"message"`
 		Type    string `json:"type"`
-		Code    int    `json:"code"`
+		Code    string `json:"code"` // Zhipu uses string codes like "1113", "1211"
 	} `json:"error"`
 }
+
+// Zhipu API error codes
+const (
+	ZhipuErrInsufficientBalance = "1113" // 余额不足 (Insufficient balance)
+	ZhipuErrModelNotFound       = "1211" // 模型不存在 (Model not found)
+	ZhipuErrUnauthorized        = "401"  // 令牌已过期 (Token expired)
+	ZhipuErrRateLimited         = "1301" // 请求频率过高 (Rate limited)
+)
 
 // ZAIStreamResponse represents a streaming response chunk from the Z.AI API
 type ZAIStreamResponse struct {
@@ -154,10 +162,10 @@ func NewZAIProvider(apiKey, baseURL, model string) *ZAIProvider {
 // NewZAIProviderWithRetry creates a new Z.AI provider instance with custom retry config
 func NewZAIProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig) *ZAIProvider {
 	if baseURL == "" {
-		baseURL = "https://api.z.ai/v1"
+		baseURL = "https://open.bigmodel.cn/api/paas/v4"
 	}
 	if model == "" {
-		model = "z-ai-base"
+		model = "glm-4-plus" // Most capable GLM model
 	}
 
 	return &ZAIProvider{
@@ -353,9 +361,21 @@ func (z *ZAIProvider) makeStreamingRequest(ctx context.Context, req *ZAIRequest)
 		resp.Body.Close()
 		var zaiErr ZAIError
 		if err := json.Unmarshal(body, &zaiErr); err == nil && zaiErr.Error.Message != "" {
-			return nil, fmt.Errorf("Z.AI API error: %s (%s)", zaiErr.Error.Message, zaiErr.Error.Type)
+			// Handle Zhipu-specific error codes
+			switch zaiErr.Error.Code {
+			case ZhipuErrInsufficientBalance:
+				return nil, fmt.Errorf("Zhipu GLM API error: insufficient balance - please recharge your account")
+			case ZhipuErrModelNotFound:
+				return nil, fmt.Errorf("Zhipu GLM API error: model not found")
+			case ZhipuErrUnauthorized:
+				return nil, fmt.Errorf("Zhipu GLM API error: API key expired or invalid")
+			case ZhipuErrRateLimited:
+				return nil, fmt.Errorf("Zhipu GLM API error: rate limited")
+			default:
+				return nil, fmt.Errorf("Zhipu GLM API error [%s]: %s", zaiErr.Error.Code, zaiErr.Error.Message)
+			}
 		}
-		return nil, fmt.Errorf("Z.AI API returned status %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("Zhipu GLM API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	return resp, nil
@@ -392,14 +412,25 @@ func (z *ZAIProvider) HealthCheck() error {
 func (z *ZAIProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
 		SupportedModels: []string{
-			"z-ai-base",
-			"z-ai-pro",
-			"z-ai-enterprise",
+			// GLM-4 series (Zhipu AI) - Most powerful Chinese LLM
+			"glm-4-plus",      // Most capable, best quality
+			"glm-4",           // Standard version
+			"glm-4-air",       // Balanced performance
+			"glm-4-airx",      // Extended context
+			"glm-4-flash",     // Fast inference
+			"glm-4-flashx",    // Fast with extended context
+			"glm-4-long",      // Long context (1M tokens)
+			"glm-4v",          // Vision model
+			"glm-4v-plus",     // Enhanced vision
+			// Legacy models
+			"glm-3-turbo",
 		},
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",
 			"function_calling",
+			"code_generation",
+			"reasoning",
 		},
 		SupportedRequestTypes: []string{
 			"text_completion",
@@ -407,18 +438,18 @@ func (z *ZAIProvider) GetCapabilities() *models.ProviderCapabilities {
 		},
 		SupportsStreaming:       true,
 		SupportsFunctionCalling: true,
-		SupportsVision:          false,
+		SupportsVision:          true, // GLM-4V supports vision
 		SupportsTools:           true,
 		Limits: models.ModelLimits{
-			MaxTokens:             4096,
-			MaxInputLength:        8192,
-			MaxOutputLength:       4096,
-			MaxConcurrentRequests: 10,
+			MaxTokens:             8192,
+			MaxInputLength:        128000, // GLM-4 supports 128K context
+			MaxOutputLength:       8192,
+			MaxConcurrentRequests: 20,
 		},
 		Metadata: map[string]string{
-			"provider":     "Z.AI",
-			"model_family": "Z.AI",
-			"api_version":  "v1",
+			"provider":     "Zhipu AI (GLM)",
+			"model_family": "GLM-4",
+			"api_version":  "v4",
 		},
 	}
 }
@@ -612,9 +643,21 @@ func (z *ZAIProvider) makeRequest(ctx context.Context, req *ZAIRequest) (*ZAIRes
 		if resp.StatusCode != http.StatusOK {
 			var zaiErr ZAIError
 			if err := json.Unmarshal(body, &zaiErr); err == nil && zaiErr.Error.Message != "" {
-				return nil, fmt.Errorf("Z.AI API error: %s (%s)", zaiErr.Error.Message, zaiErr.Error.Type)
+				// Handle Zhipu-specific error codes with clear messages
+				switch zaiErr.Error.Code {
+				case ZhipuErrInsufficientBalance:
+					return nil, fmt.Errorf("Zhipu GLM API error: insufficient balance - please recharge your account at https://open.bigmodel.cn")
+				case ZhipuErrModelNotFound:
+					return nil, fmt.Errorf("Zhipu GLM API error: model '%s' not found - check available models at https://open.bigmodel.cn", z.model)
+				case ZhipuErrUnauthorized:
+					return nil, fmt.Errorf("Zhipu GLM API error: API key expired or invalid")
+				case ZhipuErrRateLimited:
+					return nil, fmt.Errorf("Zhipu GLM API error: rate limited - too many requests")
+				default:
+					return nil, fmt.Errorf("Zhipu GLM API error [%s]: %s", zaiErr.Error.Code, zaiErr.Error.Message)
+				}
 			}
-			return nil, fmt.Errorf("Z.AI API returned status %d: %s", resp.StatusCode, string(body))
+			return nil, fmt.Errorf("Zhipu GLM API returned status %d: %s", resp.StatusCode, string(body))
 		}
 
 		var zaiResp ZAIResponse
