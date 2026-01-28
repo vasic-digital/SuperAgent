@@ -25,10 +25,26 @@ import (
 
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/llm/providers/cerebras"
+	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/deepseek"
+	"dev.helix.agent/internal/llm/providers/fireworks"
+	"dev.helix.agent/internal/llm/providers/gemini"
+	"dev.helix.agent/internal/llm/providers/groq"
+	"dev.helix.agent/internal/llm/providers/huggingface"
+	"dev.helix.agent/internal/llm/providers/mistral"
+	"dev.helix.agent/internal/llm/providers/ollama"
+	"dev.helix.agent/internal/llm/providers/openrouter"
+	"dev.helix.agent/internal/llm/providers/qwen"
+	"dev.helix.agent/internal/llm/providers/replicate"
+	"dev.helix.agent/internal/llm/providers/zai"
+	"dev.helix.agent/internal/llm/providers/zen"
 	"dev.helix.agent/internal/mcp"
 	mcpconfig "dev.helix.agent/internal/mcp/config"
 	"dev.helix.agent/internal/messaging"
 	"dev.helix.agent/internal/messaging/inmemory"
+	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/router"
 	"dev.helix.agent/internal/utils"
 	"dev.helix.agent/internal/verifier"
@@ -725,6 +741,37 @@ func runStartupVerification(logger *logrus.Logger) (*verifier.StartupResult, *ve
 	// Create startup verifier
 	sv := verifier.NewStartupVerifier(cfg, logger)
 
+	// CRITICAL: Wire up the provider function so verification can make actual API calls
+	// Without this, the verification service cannot test providers
+	sv.SetProviderFunc(func(ctx context.Context, modelID, providerType, prompt string) (string, error) {
+		provider := createProviderForVerification(providerType, modelID, logger)
+		if provider == nil {
+			return "", fmt.Errorf("unable to create provider %s for verification (check API key)", providerType)
+		}
+
+		req := &models.LLMRequest{
+			ID:        fmt.Sprintf("verify_%s_%d", modelID, time.Now().UnixNano()),
+			SessionID: "startup_verification",
+			Prompt:    prompt,
+			Messages: []models.Message{
+				{Role: "user", Content: prompt},
+			},
+			ModelParams: models.ModelParameters{
+				Model:       modelID,
+				MaxTokens:   100,
+				Temperature: 0.1,
+			},
+			Status:    "pending",
+			CreatedAt: time.Now(),
+		}
+
+		resp, err := provider.Complete(ctx, req)
+		if err != nil {
+			return "", err
+		}
+		return resp.Content, nil
+	})
+
 	// Create context with timeout for verification
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -809,6 +856,139 @@ func runStartupVerification(logger *logrus.Logger) (*verifier.StartupResult, *ve
 	logger.Info("════════════════════════════════════════════════════════════════════")
 
 	return result, sv
+}
+
+// createProviderForVerification creates a temporary LLM provider for verification
+// This allows the StartupVerifier to make actual API calls to verify providers
+func createProviderForVerification(providerType, modelID string, logger *logrus.Logger) llm.LLMProvider {
+	// Create provider based on type
+	switch strings.ToLower(providerType) {
+	case "claude", "anthropic":
+		apiKey := os.Getenv("CLAUDE_API_KEY")
+		if apiKey == "" {
+			apiKey = os.Getenv("ANTHROPIC_API_KEY")
+		}
+		if apiKey == "" {
+			// Try OAuth credentials
+			provider, err := claude.NewClaudeProviderWithOAuth("", modelID)
+			if err == nil && provider != nil {
+				return provider
+			}
+			return nil
+		}
+		return claude.NewClaudeProvider(apiKey, "", modelID)
+
+	case "deepseek":
+		apiKey := os.Getenv("DEEPSEEK_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return deepseek.NewDeepSeekProvider(apiKey, "", modelID)
+
+	case "gemini", "google":
+		apiKey := os.Getenv("GEMINI_API_KEY")
+		if apiKey == "" {
+			apiKey = os.Getenv("GOOGLE_API_KEY")
+		}
+		if apiKey == "" {
+			return nil
+		}
+		return gemini.NewGeminiProvider(apiKey, "", modelID)
+
+	case "mistral":
+		apiKey := os.Getenv("MISTRAL_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return mistral.NewMistralProvider(apiKey, "", modelID)
+
+	case "openrouter":
+		apiKey := os.Getenv("OPENROUTER_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return openrouter.NewSimpleOpenRouterProvider(apiKey)
+
+	case "qwen", "dashscope":
+		apiKey := os.Getenv("QWEN_API_KEY")
+		if apiKey == "" {
+			apiKey = os.Getenv("DASHSCOPE_API_KEY")
+		}
+		if apiKey == "" {
+			// Try OAuth credentials
+			provider, err := qwen.NewQwenProviderWithOAuth("", modelID)
+			if err == nil && provider != nil {
+				return provider
+			}
+			return nil
+		}
+		return qwen.NewQwenProvider(apiKey, "", modelID)
+
+	case "zai", "zhipu", "glm":
+		apiKey := os.Getenv("ZAI_API_KEY")
+		if apiKey == "" {
+			apiKey = os.Getenv("ZHIPU_API_KEY")
+		}
+		if apiKey == "" {
+			return nil
+		}
+		return zai.NewZAIProvider(apiKey, "", modelID)
+
+	case "zen", "opencode":
+		// Zen provider works anonymously
+		return zen.NewZenProviderAnonymous(modelID)
+
+	case "cerebras":
+		apiKey := os.Getenv("CEREBRAS_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return cerebras.NewCerebrasProvider(apiKey, "", modelID)
+
+	case "fireworks":
+		apiKey := os.Getenv("FIREWORKS_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return fireworks.NewProvider(apiKey, "", modelID)
+
+	case "groq":
+		apiKey := os.Getenv("GROQ_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return groq.NewProvider(apiKey, "", modelID)
+
+	case "huggingface", "hf":
+		apiKey := os.Getenv("HUGGINGFACE_API_KEY")
+		if apiKey == "" {
+			apiKey = os.Getenv("HF_API_KEY")
+		}
+		if apiKey == "" {
+			return nil
+		}
+		return huggingface.NewProvider(apiKey, "", modelID)
+
+	case "replicate":
+		apiKey := os.Getenv("REPLICATE_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return replicate.NewProvider(apiKey, "", modelID)
+
+	case "ollama":
+		baseURL := os.Getenv("OLLAMA_BASE_URL")
+		if baseURL == "" {
+			baseURL = "http://localhost:11434"
+		}
+		return ollama.NewOllamaProvider(baseURL, modelID)
+
+	default:
+		if logger != nil {
+			logger.WithField("provider", providerType).Debug("No provider implementation for verification")
+		}
+		return nil
+	}
 }
 
 // AppConfig holds application configuration for testing
