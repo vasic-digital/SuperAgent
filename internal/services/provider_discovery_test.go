@@ -490,3 +490,141 @@ func TestAllTier2ProvidersHaveSamePriority(t *testing.T) {
 		}
 	}
 }
+
+// =============================================================================
+// Comprehensive Provider Mapping Tests - All Alternative Key Names
+// =============================================================================
+
+// TestAllProvidersHaveMultipleMappings verifies all major providers have alternative key names
+func TestAllProvidersHaveMultipleMappings(t *testing.T) {
+	// Expected env var alternatives for each provider
+	expectedMappings := map[string][]string{
+		"claude": {"ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "ApiKey_Claude", "ApiKey_Anthropic"},
+		"openai": {"OPENAI_API_KEY", "ApiKey_OpenAI", "OPENAI_KEY"},
+		"gemini": {"GEMINI_API_KEY", "GOOGLE_API_KEY", "ApiKey_Gemini", "GOOGLE_AI_API_KEY"},
+		"deepseek": {"DEEPSEEK_API_KEY", "ApiKey_DeepSeek", "DEEPSEEK_KEY"},
+		"mistral": {"MISTRAL_API_KEY", "ApiKey_Mistral"},
+		"qwen":    {"QWEN_API_KEY", "ApiKey_Qwen", "DASHSCOPE_API_KEY", "ALIBABA_API_KEY"},
+		"xai":     {"XAI_API_KEY", "GROK_API_KEY", "ApiKey_XAI", "ApiKey_Grok"},
+		"zai":     {"ZAI_API_KEY", "ApiKey_ZAI", "ZHIPU_API_KEY", "GLM_API_KEY", "BIGMODEL_API_KEY"},
+		"cohere":  {"COHERE_API_KEY", "CO_API_KEY", "ApiKey_Cohere"},
+		"perplexity": {"PERPLEXITY_API_KEY", "PPLX_API_KEY", "ApiKey_Perplexity"},
+		"groq":    {"GROQ_API_KEY", "ApiKey_Groq"},
+		"cerebras": {"CEREBRAS_API_KEY", "ApiKey_Cerebras"},
+		"fireworks": {"FIREWORKS_API_KEY", "ApiKey_Fireworks"},
+		"together": {"TOGETHERAI_API_KEY", "TOGETHER_API_KEY", "ApiKey_Together"},
+		"replicate": {"REPLICATE_API_KEY", "REPLICATE_API_TOKEN", "ApiKey_Replicate"},
+		"huggingface": {"HUGGINGFACE_API_KEY", "HF_API_KEY", "HF_TOKEN", "HUGGINGFACE_TOKEN", "ApiKey_HuggingFace"},
+		"openrouter": {"OPENROUTER_API_KEY", "ApiKey_OpenRouter"},
+		"ollama": {"OLLAMA_BASE_URL", "OLLAMA_HOST", "OLLAMA_API_URL"},
+	}
+
+	for providerName, expectedVars := range expectedMappings {
+		t.Run(providerName+"_has_all_alternatives", func(t *testing.T) {
+			foundVars := make(map[string]bool)
+
+			for _, mapping := range providerMappings {
+				if mapping.ProviderName == providerName || mapping.ProviderType == providerName {
+					foundVars[mapping.EnvVar] = true
+				}
+			}
+
+			for _, expectedVar := range expectedVars {
+				assert.True(t, foundVars[expectedVar],
+					"Provider %s should have mapping for env var: %s", providerName, expectedVar)
+			}
+		})
+	}
+}
+
+// TestTotalProviderMappingsCount verifies expected number of mappings
+func TestTotalProviderMappingsCount(t *testing.T) {
+	// We should have at least 70 mappings after adding all alternatives
+	minExpectedMappings := 70
+	actualCount := len(providerMappings)
+
+	assert.GreaterOrEqual(t, actualCount, minExpectedMappings,
+		"Should have at least %d provider mappings, got %d", minExpectedMappings, actualCount)
+
+	t.Logf("Total provider mappings: %d", actualCount)
+}
+
+// TestUniqueProviderTypes verifies all expected provider types are present
+func TestUniqueProviderTypes(t *testing.T) {
+	expectedTypes := []string{
+		"claude", "openai", "gemini", "deepseek", "mistral", "qwen", "xai", "zai",
+		"cohere", "perplexity", "ai21", "groq", "cerebras", "sambanova",
+		"fireworks", "together", "hyperbolic", "replicate", "siliconflow",
+		"cloudflare", "nvidia", "kimi", "huggingface", "novita", "upstage",
+		"chutes", "openrouter", "zen", "ollama",
+	}
+
+	foundTypes := make(map[string]bool)
+	for _, mapping := range providerMappings {
+		foundTypes[mapping.ProviderType] = true
+	}
+
+	for _, expected := range expectedTypes {
+		assert.True(t, foundTypes[expected],
+			"Expected provider type '%s' not found in mappings", expected)
+	}
+
+	t.Logf("Found %d unique provider types", len(foundTypes))
+}
+
+// TestKimiMoonshotAlternatives verifies Kimi/Moonshot has alternative mappings
+func TestKimiMoonshotAlternatives(t *testing.T) {
+	kimiEnvVars := []string{"KIMI_API_KEY", "MOONSHOT_API_KEY", "ApiKey_Kimi"}
+	foundVars := make(map[string]bool)
+
+	for _, mapping := range providerMappings {
+		if mapping.ProviderType == "kimi" {
+			foundVars[mapping.EnvVar] = true
+			assert.Contains(t, mapping.BaseURL, "moonshot.cn",
+				"Kimi should use Moonshot API")
+		}
+	}
+
+	for _, envVar := range kimiEnvVars {
+		assert.True(t, foundVars[envVar],
+			"Missing Kimi mapping for env var: %s", envVar)
+	}
+}
+
+// TestNVIDIAAlternatives verifies NVIDIA has alternative mappings
+func TestNVIDIAAlternatives(t *testing.T) {
+	nvidiaEnvVars := []string{"NVIDIA_API_KEY", "NGC_API_KEY", "ApiKey_NVIDIA"}
+	foundVars := make(map[string]bool)
+
+	for _, mapping := range providerMappings {
+		if mapping.ProviderType == "nvidia" {
+			foundVars[mapping.EnvVar] = true
+			assert.Contains(t, mapping.BaseURL, "nvidia.com",
+				"NVIDIA should use NVIDIA API")
+		}
+	}
+
+	for _, envVar := range nvidiaEnvVars {
+		assert.True(t, foundVars[envVar],
+			"Missing NVIDIA mapping for env var: %s", envVar)
+	}
+}
+
+// TestCloudflareAlternatives verifies Cloudflare has alternative mappings
+func TestCloudflareAlternatives(t *testing.T) {
+	cfEnvVars := []string{"CLOUDFLARE_API_KEY", "CF_API_KEY"}
+	foundVars := make(map[string]bool)
+
+	for _, mapping := range providerMappings {
+		if mapping.ProviderType == "cloudflare" {
+			foundVars[mapping.EnvVar] = true
+			assert.Contains(t, mapping.BaseURL, "cloudflare.com",
+				"Cloudflare should use Cloudflare API")
+		}
+	}
+
+	for _, envVar := range cfEnvVars {
+		assert.True(t, foundVars[envVar],
+			"Missing Cloudflare mapping for env var: %s", envVar)
+	}
+}
