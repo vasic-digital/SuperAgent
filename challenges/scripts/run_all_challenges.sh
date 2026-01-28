@@ -256,6 +256,7 @@ CHALLENGES=(
 
     # Integration
     "cognee_integration"
+    "cognee_full_integration"
 
     # Resilience
     "circuit_breaker"

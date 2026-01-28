@@ -160,6 +160,54 @@ type CogneeSearchResult struct {
 	RelevanceScore   float64                  `json:"relevance_score"`
 }
 
+// findProjectRoot dynamically locates the HelixAgent project root
+// by searching for docker-compose.yml starting from current directory and going up
+// This ensures no hardcoded paths are needed
+func findProjectRoot() string {
+	// Start from current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+
+	// Search upward from cwd for docker-compose.yml
+	dir := cwd
+	for {
+		composePath := filepath.Join(dir, "docker-compose.yml")
+		if _, err := os.Stat(composePath); err == nil {
+			return dir
+		}
+
+		// Move up one directory
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached filesystem root, not found
+			break
+		}
+		dir = parent
+	}
+
+	// Also check if executable path gives us a hint
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		// Check the executable's directory and parent directories
+		dir := execDir
+		for i := 0; i < 5; i++ { // Check up to 5 levels up
+			composePath := filepath.Join(dir, "docker-compose.yml")
+			if _, err := os.Stat(composePath); err == nil {
+				return dir
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+	}
+
+	return ""
+}
+
 // NewCogneeService creates a new comprehensive Cognee service
 func NewCogneeService(cfg *config.Config, logger *logrus.Logger) *CogneeService {
 	if logger == nil {
@@ -286,21 +334,12 @@ func (s *CogneeService) EnsureRunning(ctx context.Context) error {
 
 	s.logger.Info("Cognee not running, attempting to start containers...")
 
-	// Determine working directory - try current directory first, then known paths
-	workDir, _ := os.Getwd()
-	if _, err := os.Stat(filepath.Join(workDir, "docker-compose.yml")); err != nil {
-		// Try known project paths
-		knownPaths := []string{
-			"/run/media/milosvasic/DATA4TB/Projects/HelixAgent",
-			"/media/milosvasic/DATA4TB/Projects/HelixAgent",
-		}
-		for _, path := range knownPaths {
-			if _, err := os.Stat(filepath.Join(path, "docker-compose.yml")); err == nil {
-				workDir = path
-				break
-			}
-		}
+	// Determine working directory dynamically - no hardcoded paths
+	workDir := findProjectRoot()
+	if workDir == "" {
+		return fmt.Errorf("cannot find HelixAgent project root (docker-compose.yml not found)")
 	}
+	s.logger.WithField("workDir", workDir).Debug("Found project root for container startup")
 
 	// Try container runtime in order: docker, podman
 	var cmd *exec.Cmd

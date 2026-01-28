@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"dev.helix.agent/internal/config"
@@ -505,36 +507,107 @@ func (c *Client) testConnection() bool {
 
 // startCogneeContainer starts Cognee using Docker Compose
 func (c *Client) startCogneeContainer() error {
-	// Check if docker compose is available
-	if _, err := exec.LookPath("docker"); err != nil {
-		return fmt.Errorf("docker not found in PATH: %w", err)
+	// Find project root dynamically - no hardcoded paths
+	projectRoot := findCogneeProjectRoot()
+	if projectRoot == "" {
+		return fmt.Errorf("cannot find HelixAgent project root (docker-compose.yml not found)")
 	}
 
-	// Try docker compose first (newer syntax), fall back to docker-compose
+	// Try docker compose subcommand first (newer docker with compose plugin)
 	var cmd *exec.Cmd
-	if _, err := exec.LookPath("docker compose"); err == nil {
-		cmd = exec.Command("docker", "compose", "up", "-d", "cognee", "chromadb")
-	} else if _, err := exec.LookPath("docker-compose"); err == nil {
-		cmd = exec.Command("docker-compose", "up", "-d", "cognee", "chromadb")
-	} else {
-		return fmt.Errorf("neither 'docker compose' nor 'docker-compose' found in PATH")
+	var output []byte
+	var err error
+
+	if dockerPath, lookErr := exec.LookPath("docker"); lookErr == nil {
+		// Try "docker compose" subcommand first
+		cmd = exec.Command(dockerPath, "compose", "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
+		cmd.Dir = projectRoot
+		output, err = cmd.CombinedOutput()
+		if err == nil {
+			goto waitForHealth
+		}
 	}
 
-	// Set working directory to project root (assuming it's where docker-compose.yml is)
-	cmd.Dir = "/media/milosvasic/DATA4TB/Projects/HelixAgent"
+	// Fall back to docker-compose binary
+	if dcPath, lookErr := exec.LookPath("docker-compose"); lookErr == nil {
+		cmd = exec.Command(dcPath, "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
+		cmd.Dir = projectRoot
+		output, err = cmd.CombinedOutput()
+		if err == nil {
+			goto waitForHealth
+		}
+	}
 
-	output, err := cmd.CombinedOutput()
+	// Try podman-compose
+	if pcPath, lookErr := exec.LookPath("podman-compose"); lookErr == nil {
+		cmd = exec.Command(pcPath, "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
+		cmd.Dir = projectRoot
+		output, err = cmd.CombinedOutput()
+		if err == nil {
+			goto waitForHealth
+		}
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to start Cognee containers: %w, output: %s", err, string(output))
 	}
+	return fmt.Errorf("no container runtime found (tried docker, docker-compose, podman-compose)")
 
-	// Wait for services to be healthy
-	time.Sleep(10 * time.Second)
+waitForHealth:
+	// Wait for services to be healthy with proper timeout
+	maxWait := 90 * time.Second
+	interval := 2 * time.Second
+	start := time.Now()
 
-	// Verify the service is now running
-	if c.testConnection() {
-		return nil
+	for time.Since(start) < maxWait {
+		if c.testConnection() {
+			return nil
+		}
+		time.Sleep(interval)
+		// Exponential backoff up to 10s
+		if interval < 10*time.Second {
+			interval = interval * 2
+		}
 	}
 
-	return fmt.Errorf("Cognee containers started but service is not responding. Check docker compose logs")
+	return fmt.Errorf("Cognee containers started but service is not responding after %v. Check docker compose logs", maxWait)
+}
+
+// findCogneeProjectRoot dynamically locates the project root
+func findCogneeProjectRoot() string {
+	// Start from current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+
+	// Search upward for docker-compose.yml
+	dir := cwd
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "docker-compose.yml")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+
+	// Check executable directory
+	if execPath, err := os.Executable(); err == nil {
+		dir := filepath.Dir(execPath)
+		for i := 0; i < 5; i++ {
+			if _, err := os.Stat(filepath.Join(dir, "docker-compose.yml")); err == nil {
+				return dir
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+	}
+
+	return ""
 }
