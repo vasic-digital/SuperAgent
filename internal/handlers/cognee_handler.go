@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"dev.helix.agent/internal/services"
 	"github.com/gin-gonic/gin"
@@ -164,7 +166,8 @@ func (h *CogneeAPIHandler) SearchMemory(c *gin.Context) {
 
 // CognifyRequest represents a cognify request
 type CognifyRequest struct {
-	Datasets []string `json:"datasets"`
+	Datasets    []string `json:"datasets"`
+	DatasetName string   `json:"dataset_name"` // Alternative single dataset field
 }
 
 // Cognify processes data into knowledge graphs
@@ -175,7 +178,15 @@ func (h *CogneeAPIHandler) Cognify(c *gin.Context) {
 		req.Datasets = []string{} // Use default
 	}
 
-	ctx := c.Request.Context()
+	// Accept dataset_name as alternative to datasets array
+	if len(req.Datasets) == 0 && req.DatasetName != "" {
+		req.Datasets = []string{req.DatasetName}
+	}
+
+	// Use a longer timeout for cognify operations (LLM processing can be slow)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 120*time.Second)
+	defer cancel()
+
 	if err := h.cogneeService.Cognify(ctx, req.Datasets); err != nil {
 		h.logger.WithError(err).Error("Failed to cognify")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -195,9 +206,10 @@ func (h *CogneeAPIHandler) Cognify(c *gin.Context) {
 
 // InsightsRequest represents an insights request
 type InsightsRequest struct {
-	Query    string   `json:"query" binding:"required"`
-	Datasets []string `json:"datasets"`
-	Limit    int      `json:"limit"`
+	Query       string   `json:"query" binding:"required"`
+	Datasets    []string `json:"datasets"`
+	DatasetName string   `json:"dataset_name"`
+	Limit       int      `json:"limit"`
 }
 
 // GetInsights retrieves insights using graph reasoning
@@ -209,7 +221,13 @@ func (h *CogneeAPIHandler) GetInsights(c *gin.Context) {
 		return
 	}
 
-	ctx := c.Request.Context()
+	// Accept dataset_name as alternative to datasets array
+	if len(req.Datasets) == 0 && req.DatasetName != "" {
+		req.Datasets = []string{req.DatasetName}
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 120*time.Second)
+	defer cancel()
 	insights, err := h.cogneeService.GetInsights(ctx, req.Query, req.Datasets, req.Limit)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get insights")
@@ -226,9 +244,10 @@ func (h *CogneeAPIHandler) GetInsights(c *gin.Context) {
 
 // GraphCompletionRequest represents a graph completion request
 type GraphCompletionRequest struct {
-	Query    string   `json:"query" binding:"required"`
-	Datasets []string `json:"datasets"`
-	Limit    int      `json:"limit"`
+	Query       string   `json:"query" binding:"required"`
+	Datasets    []string `json:"datasets"`
+	DatasetName string   `json:"dataset_name"`
+	Limit       int      `json:"limit"`
 }
 
 // GetGraphCompletion performs LLM-powered graph completion
@@ -240,7 +259,13 @@ func (h *CogneeAPIHandler) GetGraphCompletion(c *gin.Context) {
 		return
 	}
 
-	ctx := c.Request.Context()
+	// Accept dataset_name as alternative to datasets array
+	if len(req.Datasets) == 0 && req.DatasetName != "" {
+		req.Datasets = []string{req.DatasetName}
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 120*time.Second)
+	defer cancel()
 	completions, err := h.cogneeService.GetGraphCompletion(ctx, req.Query, req.Datasets, req.Limit)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get graph completion")

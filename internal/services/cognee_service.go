@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
@@ -629,7 +630,9 @@ func (s *CogneeService) addAuthHeader(req *http.Request) {
 // MEMORY OPERATIONS
 // =====================================================
 
-// AddMemory stores content in Cognee's memory
+// AddMemory stores content in Cognee's memory using a two-phase approach:
+// 1. Primary: Use the /api/v1/add endpoint (multipart form-data) which reliably stores data
+// 2. Fallback: Try /api/v1/memify for graph enrichment (best-effort, may fail with non-OpenAI LLMs)
 func (s *CogneeService) AddMemory(ctx context.Context, content, dataset, contentType string, metadata map[string]interface{}) (*MemoryEntry, error) {
 	if !s.config.Enabled {
 		return nil, fmt.Errorf("cognee service is disabled")
@@ -639,7 +642,102 @@ func (s *CogneeService) AddMemory(ctx context.Context, content, dataset, content
 		dataset = s.config.DefaultDataset
 	}
 
-	// Use memify endpoint with JSON content (add endpoint requires multipart/form-data)
+	// Phase 1: Store data using the reliable /api/v1/add endpoint (multipart form-data)
+	entry, err := s.addMemoryViaAdd(ctx, content, dataset, contentType, metadata)
+	if err != nil {
+		// Fallback to memify endpoint
+		logrus.WithError(err).Debug("Add endpoint failed, trying memify fallback")
+		return s.addMemoryViaMemify(ctx, content, dataset, contentType, metadata)
+	}
+
+	// Phase 2: Best-effort enrichment via memify (non-blocking)
+	go func() {
+		enrichCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := s.enrichViaMemify(enrichCtx, content, dataset); err != nil {
+			logrus.WithError(err).Debug("Memify enrichment failed (non-critical)")
+		}
+	}()
+
+	return entry, nil
+}
+
+// addMemoryViaAdd stores content using Cognee's /api/v1/add endpoint with multipart form-data
+func (s *CogneeService) addMemoryViaAdd(ctx context.Context, content, dataset, contentType string, metadata map[string]interface{}) (*MemoryEntry, error) {
+	// Build multipart form body
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	// Add the text content as a file upload
+	part, err := writer.CreateFormFile("data", "memory.txt")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create form file: %w", err)
+	}
+	if _, err := part.Write([]byte(content)); err != nil {
+		return nil, fmt.Errorf("failed to write content: %w", err)
+	}
+
+	// Add dataset name
+	if err := writer.WriteField("datasetName", dataset); err != nil {
+		return nil, fmt.Errorf("failed to write dataset field: %w", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close multipart writer: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/api/v1/add", s.baseURL)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	s.addAuthHeader(req)
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("add request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("add endpoint returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse the response to extract IDs
+	var addResult struct {
+		Status        string `json:"status"`
+		PipelineRunID string `json:"pipeline_run_id"`
+		DatasetID     string `json:"dataset_id"`
+		DatasetName   string `json:"dataset_name"`
+	}
+	if err := json.Unmarshal(body, &addResult); err != nil {
+		// Response may be in a different format, just use what we have
+		logrus.WithError(err).Debug("Failed to parse add response, using raw")
+	}
+
+	s.stats.mu.Lock()
+	s.stats.TotalMemoriesStored++
+	s.stats.LastActivity = time.Now()
+	s.stats.mu.Unlock()
+
+	return &MemoryEntry{
+		ID:          addResult.DatasetID,
+		Content:     content,
+		ContentType: contentType,
+		Dataset:     dataset,
+		Metadata:    metadata,
+		CreatedAt:   time.Now(),
+	}, nil
+}
+
+// addMemoryViaMemify stores content using Cognee's /api/v1/memify endpoint (JSON)
+func (s *CogneeService) addMemoryViaMemify(ctx context.Context, content, dataset, contentType string, metadata map[string]interface{}) (*MemoryEntry, error) {
 	reqBody := map[string]interface{}{
 		"data":        content,
 		"datasetName": dataset,
@@ -688,6 +786,23 @@ func (s *CogneeService) AddMemory(ctx context.Context, content, dataset, content
 		GraphNodes:  result.GraphNodes,
 		CreatedAt:   time.Now(),
 	}, nil
+}
+
+// enrichViaMemify runs the memify enrichment pipeline on content (best-effort)
+func (s *CogneeService) enrichViaMemify(ctx context.Context, content, dataset string) error {
+	reqBody := map[string]interface{}{
+		"data":        content,
+		"datasetName": dataset,
+	}
+
+	data, err := json.Marshal(reqBody)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/api/v1/memify", s.baseURL)
+	_, err = s.doRequest(ctx, "POST", url, data)
+	return err
 }
 
 // SearchMemory performs comprehensive memory search
@@ -829,7 +944,7 @@ func (s *CogneeService) performSearch(ctx context.Context, query, dataset string
 		"query":       query,
 		"datasets":    []string{dataset},
 		"topK":        limit,
-		"search_type": searchType,
+		"searchType": searchType,
 	}
 
 	data, err := json.Marshal(reqBody)
@@ -845,14 +960,20 @@ func (s *CogneeService) performSearch(ctx context.Context, query, dataset string
 		return []interface{}{}, nil
 	}
 
-	var results struct {
-		Results []interface{} `json:"results"`
-	}
-	if err := json.Unmarshal(resp, &results); err != nil {
-		return nil, err
+	// Cognee returns a raw JSON array, not a wrapped object
+	var rawResults []interface{}
+	if err := json.Unmarshal(resp, &rawResults); err != nil {
+		// Try wrapped format as fallback
+		var wrapped struct {
+			Results []interface{} `json:"results"`
+		}
+		if err2 := json.Unmarshal(resp, &wrapped); err2 != nil {
+			return nil, err
+		}
+		return wrapped.Results, nil
 	}
 
-	return results.Results, nil
+	return rawResults, nil
 }
 
 // =====================================================
@@ -1040,13 +1161,33 @@ func (s *CogneeService) Cognify(ctx context.Context, datasets []string) error {
 		return err
 	}
 
+	// Use a dedicated longer-timeout client for cognify (LLM processing can be slow)
+	cognifyClient := &http.Client{Timeout: 120 * time.Second}
+
 	url := fmt.Sprintf("%s/api/v1/cognify", s.baseURL)
-	_, err = s.doRequest(ctx, "POST", url, data)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("failed to create cognify request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	s.addAuthHeader(req)
+
+	resp, err := cognifyClient.Do(req)
 	if err != nil {
 		s.stats.mu.Lock()
 		s.stats.ErrorCount++
 		s.stats.mu.Unlock()
-		return err
+		return fmt.Errorf("cognify request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read cognify response: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("cognify API error: %d - %s", resp.StatusCode, string(body))
 	}
 
 	s.stats.mu.Lock()
@@ -1055,6 +1196,74 @@ func (s *CogneeService) Cognify(ctx context.Context, datasets []string) error {
 	s.stats.mu.Unlock()
 
 	return nil
+}
+
+// parseCogneeSearchResults handles Cognee's variable response format.
+// Cognee may return: ["string1", "string2"] or [{"key": "value"}, ...] or {"results": [...]}
+func parseCogneeSearchResults(resp []byte) ([]map[string]interface{}, error) {
+	// Try as array of objects first
+	var objResults []map[string]interface{}
+	if err := json.Unmarshal(resp, &objResults); err == nil {
+		return objResults, nil
+	}
+
+	// Try as array of strings (RAG_COMPLETION returns plain text answers)
+	var strResults []string
+	if err := json.Unmarshal(resp, &strResults); err == nil {
+		results := make([]map[string]interface{}, len(strResults))
+		for i, s := range strResults {
+			results[i] = map[string]interface{}{"text": s}
+		}
+		return results, nil
+	}
+
+	// Try as array of mixed types
+	var rawResults []interface{}
+	if err := json.Unmarshal(resp, &rawResults); err == nil {
+		results := make([]map[string]interface{}, 0, len(rawResults))
+		for _, item := range rawResults {
+			switch v := item.(type) {
+			case map[string]interface{}:
+				results = append(results, v)
+			case string:
+				results = append(results, map[string]interface{}{"text": v})
+			default:
+				results = append(results, map[string]interface{}{"value": v})
+			}
+		}
+		return results, nil
+	}
+
+	// Try as wrapped object with known keys ({"insights": [...]} or {"results": [...]})
+	var wrapped map[string]interface{}
+	if err := json.Unmarshal(resp, &wrapped); err == nil {
+		for _, key := range []string{"insights", "results", "completions", "data"} {
+			if arr, ok := wrapped[key]; ok {
+				if items, ok := arr.([]interface{}); ok {
+					results := make([]map[string]interface{}, 0, len(items))
+					for _, item := range items {
+						switch v := item.(type) {
+						case map[string]interface{}:
+							results = append(results, v)
+						case string:
+							results = append(results, map[string]interface{}{"text": v})
+						default:
+							results = append(results, map[string]interface{}{"value": v})
+						}
+					}
+					return results, nil
+				}
+			}
+		}
+	}
+
+	// Try as single string response
+	var singleStr string
+	if err := json.Unmarshal(resp, &singleStr); err == nil {
+		return []map[string]interface{}{{"text": singleStr}}, nil
+	}
+
+	return nil, fmt.Errorf("unable to parse Cognee search response: %s", string(resp[:min(len(resp), 200)]))
 }
 
 // =====================================================
@@ -1075,10 +1284,10 @@ func (s *CogneeService) GetInsights(ctx context.Context, query string, datasets 
 	}
 
 	reqBody := map[string]interface{}{
-		"query":       query,
-		"datasets":    datasets,
-		"limit":       limit,
-		"search_type": "RAG_COMPLETION",
+		"query":      query,
+		"datasets":   datasets,
+		"topK":       limit,
+		"searchType": "RAG_COMPLETION",
 	}
 
 	data, err := json.Marshal(reqBody)
@@ -1086,16 +1295,36 @@ func (s *CogneeService) GetInsights(ctx context.Context, query string, datasets 
 		return nil, err
 	}
 
+	// Use a dedicated client with reasonable timeout for LLM-based search
+	insightsClient := &http.Client{Timeout: 30 * time.Second}
 	url := fmt.Sprintf("%s/api/v1/search", s.baseURL)
-	resp, err := s.doRequest(ctx, "POST", url, data)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	s.addAuthHeader(req)
+
+	httpResp, err := insightsClient.Do(req)
+	if err != nil {
+		// Return empty results on timeout instead of error
+		s.logger.WithError(err).Warn("Insights search timeout, returning empty results")
+		return []map[string]interface{}{}, nil
+	}
+	defer httpResp.Body.Close()
+
+	resp, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	var result struct {
-		Insights []map[string]interface{} `json:"insights"`
+	if httpResp.StatusCode >= 400 {
+		s.logger.WithField("status", httpResp.StatusCode).Warn("Insights search returned error status")
+		return []map[string]interface{}{}, nil
 	}
-	if err := json.Unmarshal(resp, &result); err != nil {
+
+	rawResults, err := parseCogneeSearchResults(resp)
+	if err != nil {
 		return nil, err
 	}
 
@@ -1104,7 +1333,7 @@ func (s *CogneeService) GetInsights(ctx context.Context, query string, datasets 
 	s.stats.LastActivity = time.Now()
 	s.stats.mu.Unlock()
 
-	return result.Insights, nil
+	return rawResults, nil
 }
 
 // GetGraphCompletion performs LLM-powered graph completion
@@ -1121,10 +1350,10 @@ func (s *CogneeService) GetGraphCompletion(ctx context.Context, query string, da
 	}
 
 	reqBody := map[string]interface{}{
-		"query":       query,
-		"datasets":    datasets,
-		"limit":       limit,
-		"search_type": "GRAPH_COMPLETION",
+		"query":      query,
+		"datasets":   datasets,
+		"topK":       limit,
+		"searchType": "GRAPH_COMPLETION",
 	}
 
 	data, err := json.Marshal(reqBody)
@@ -1132,16 +1361,36 @@ func (s *CogneeService) GetGraphCompletion(ctx context.Context, query string, da
 		return nil, err
 	}
 
+	// Use a dedicated client with reasonable timeout for LLM-based search
+	graphClient := &http.Client{Timeout: 30 * time.Second}
 	url := fmt.Sprintf("%s/api/v1/search", s.baseURL)
-	resp, err := s.doRequest(ctx, "POST", url, data)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	s.addAuthHeader(req)
+
+	httpResp, err := graphClient.Do(req)
+	if err != nil {
+		// Return empty results on timeout instead of error
+		s.logger.WithError(err).Warn("Graph completion search timeout, returning empty results")
+		return []map[string]interface{}{}, nil
+	}
+	defer httpResp.Body.Close()
+
+	resp, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	var result struct {
-		Results []map[string]interface{} `json:"results"`
+	if httpResp.StatusCode >= 400 {
+		s.logger.WithField("status", httpResp.StatusCode).Warn("Graph completion search returned error status")
+		return []map[string]interface{}{}, nil
 	}
-	if err := json.Unmarshal(resp, &result); err != nil {
+
+	rawResults, err := parseCogneeSearchResults(resp)
+	if err != nil {
 		return nil, err
 	}
 
@@ -1150,7 +1399,7 @@ func (s *CogneeService) GetGraphCompletion(ctx context.Context, query string, da
 	s.stats.LastActivity = time.Now()
 	s.stats.mu.Unlock()
 
-	return result.Results, nil
+	return rawResults, nil
 }
 
 // =====================================================
@@ -1216,7 +1465,7 @@ func (s *CogneeService) GetCodeContext(ctx context.Context, query string) ([]Cod
 
 	reqBody := map[string]interface{}{
 		"query":       query,
-		"search_type": "CODING_RULES",
+		"searchType": "CODING_RULES",
 		"limit":       5,
 	}
 
@@ -1231,14 +1480,20 @@ func (s *CogneeService) GetCodeContext(ctx context.Context, query string) ([]Cod
 		return nil, err
 	}
 
-	var result struct {
-		Results []CodeContext `json:"results"`
-	}
-	if err := json.Unmarshal(resp, &result); err != nil {
-		return nil, err
+	// Cognee returns a raw JSON array
+	var rawResults []CodeContext
+	if err := json.Unmarshal(resp, &rawResults); err != nil {
+		// Try wrapped format as fallback
+		var wrapped struct {
+			Results []CodeContext `json:"results"`
+		}
+		if err2 := json.Unmarshal(resp, &wrapped); err2 != nil {
+			return nil, err
+		}
+		return wrapped.Results, nil
 	}
 
-	return result.Results, nil
+	return rawResults, nil
 }
 
 // =====================================================

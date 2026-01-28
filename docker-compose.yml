@@ -213,12 +213,16 @@ services:
   # Cognee Knowledge Graph Service - Full-featured AI Memory Engine
   # Provides: Memory, Knowledge Graphs, Vector Search, Temporal Awareness, Code Intelligence
   #
-  # LLM PROVIDER: Gemini (gemini-1.5-flash)
-  # - Verified as strongest LLM by LLMsVerifier benchmarking (Score: 8.5)
-  # - Used for all Cognee operations: embeddings, graph reasoning, knowledge extraction
-  # - Requires GEMINI_API_KEY in .env
+  # LLM PROVIDER: DeepSeek (via OpenAI-compatible API)
+  # EMBEDDING PROVIDER: Mistral (mistral-embed, 1024 dimensions)
+  # - DeepSeek for LLM operations (knowledge extraction, reasoning)
+  # - Mistral for embedding operations (vector search, similarity)
+  # - Requires DEEPSEEK_API_KEY and MISTRAL_API_KEY in .env
   cognee:
-    image: cognee/cognee:main
+    build:
+      context: ./docker/cognee
+      dockerfile: Dockerfile
+    image: helixagent-cognee:latest
     container_name: helixagent-cognee
     # Using host network for direct API access
     environment:
@@ -236,15 +240,24 @@ services:
       - HUGGINGFACE_OFFLINE=1
       - TRANSFORMERS_OFFLINE=1
 
-      # LLM Configuration - Use Gemini for reliable API access
-      - LLM_API_KEY=${GEMINI_API_KEY:-}
-      - LLM_PROVIDER=${COGNEE_LLM_PROVIDER:-gemini}
-      - LLM_MODEL=${COGNEE_LLM_MODEL:-gemini-1.5-flash}
+      # LLM Configuration - DeepSeek via OpenAI-compatible API
+      # Cognee LLMProvider enum: openai, ollama, anthropic, custom, gemini, mistral, bedrock
+      # DeepSeek provides OpenAI-compatible API, so we use "openai" provider with DeepSeek endpoint
+      - LLM_API_KEY=${CEREBRAS_API_KEY:-}
+      - LLM_PROVIDER=${COGNEE_LLM_PROVIDER:-openai}
+      - LLM_MODEL=${COGNEE_LLM_MODEL:-cerebras/llama-3.3-70b}
+      - LLM_ENDPOINT=${COGNEE_LLM_ENDPOINT:-https://api.cerebras.ai/v1}
+      # Pass through provider API keys for LiteLLM
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GOOGLE_API_KEY=${GEMINI_API_KEY:-}
 
-      # Embedding Configuration - Use Gemini for embeddings (LiteLLM format)
-      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-gemini}
-      - EMBEDDING_API_KEY=${GEMINI_API_KEY:-}
-      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-gemini/text-embedding-004}
+      # Embedding Configuration - Mistral for embeddings (LiteLLM format)
+      - EMBEDDING_PROVIDER=${COGNEE_EMBEDDING_PROVIDER:-mistral}
+      - EMBEDDING_API_KEY=${MISTRAL_API_KEY:-}
+      - EMBEDDING_MODEL=${COGNEE_EMBEDDING_MODEL:-mistral/mistral-embed}
+      - EMBEDDING_DIMENSIONS=${COGNEE_EMBEDDING_DIMENSIONS:-1024}
 
       # Three-Tier Storage Architecture
       # Graph Database - NetworkX (default) or Neo4j/Memgraph for production

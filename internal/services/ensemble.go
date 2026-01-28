@@ -89,6 +89,8 @@ func (e *EnsembleService) GetProviders() []string {
 }
 
 func (e *EnsembleService) RunEnsemble(ctx context.Context, req *models.LLMRequest) (*EnsembleResult, error) {
+	startTime := time.Now()
+
 	e.mu.RLock()
 	providers := make(map[string]LLMProvider)
 	for k, v := range e.providers {
@@ -111,45 +113,71 @@ func (e *EnsembleService) RunEnsemble(ctx context.Context, req *models.LLMReques
 	defer cancel()
 
 	// Execute requests concurrently
-	responses := make([]*models.LLMResponse, 0, len(filteredProviders))
-	responseChan := make(chan *models.LLMResponse, len(filteredProviders))
-	errorChan := make(chan error, len(filteredProviders))
+	type providerResult struct {
+		resp *models.LLMResponse
+		err  error
+	}
+	resultChan := make(chan providerResult, len(filteredProviders))
 
-	var wg sync.WaitGroup
 	for name, provider := range filteredProviders {
-		wg.Add(1)
 		go func(name string, provider LLMProvider) {
-			defer wg.Done()
-
 			resp, err := provider.Complete(timeoutCtx, req)
 			if err != nil {
-				errorChan <- fmt.Errorf("provider %s failed: %w", name, err)
+				resultChan <- providerResult{err: fmt.Errorf("provider %s failed: %w", name, err)}
 				return
 			}
-
+			if resp == nil {
+				resultChan <- providerResult{err: fmt.Errorf("provider %s returned nil response", name)}
+				return
+			}
 			// Add provider metadata
 			resp.ProviderID = name
 			resp.ProviderName = name
-			responseChan <- resp
+			resultChan <- providerResult{resp: resp}
 		}(name, provider)
 	}
 
-	// Wait for all providers to complete
-	go func() {
-		wg.Wait()
-		close(responseChan)
-		close(errorChan)
-	}()
+	// Collect responses with timeout protection
+	// Return as soon as we have enough responses OR the timeout expires
+	responses := make([]*models.LLMResponse, 0, len(filteredProviders))
+	var errors []error
+	received := 0
+	total := len(filteredProviders)
 
-	// Collect responses
-	for resp := range responseChan {
-		responses = append(responses, resp)
+	// Minimum responses needed to proceed (at least 1, or 2 if enough providers)
+	minResponses := 1
+	if total >= 3 {
+		minResponses = 2
 	}
 
-	// Check for errors
-	var errors []error
-	for err := range errorChan {
-		errors = append(errors, err)
+	// Use a shorter "early return" timer: if we have enough responses, don't wait for stragglers
+	earlyReturnTimer := time.NewTimer(e.timeout / 2)
+	defer earlyReturnTimer.Stop()
+
+collectLoop:
+	for received < total {
+		select {
+		case result := <-resultChan:
+			received++
+			if result.err != nil {
+				errors = append(errors, result.err)
+			} else {
+				responses = append(responses, result.resp)
+			}
+			// If all providers responded, exit immediately
+			if received >= total {
+				break collectLoop
+			}
+		case <-earlyReturnTimer.C:
+			// Half the timeout elapsed - if we have enough responses, return early
+			if len(responses) >= minResponses {
+				break collectLoop
+			}
+			// Otherwise keep waiting until full timeout
+		case <-timeoutCtx.Done():
+			// Timeout expired - return whatever we have
+			break collectLoop
+		}
 	}
 
 	// If we have some responses, proceed with voting
@@ -169,7 +197,7 @@ func (e *EnsembleService) RunEnsemble(ctx context.Context, req *models.LLMReques
 				"successful_providers": len(responses),
 				"failed_providers":     len(errors),
 				"errors":               errors,
-				"execution_time":       time.Since(time.Now()).Milliseconds(),
+				"execution_time":       time.Since(startTime).Milliseconds(),
 			},
 		}, nil
 	}

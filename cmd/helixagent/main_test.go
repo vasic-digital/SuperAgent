@@ -2945,21 +2945,26 @@ func TestBuildOpenCodeMCPServers(t *testing.T) {
 		config := buildOpenCodeMCPServers("http://localhost:7061")
 
 		assert.NotNil(t, config)
-		// Should have HelixAgent remote endpoint
+		// Should have HelixAgent local plugin
 		assert.Contains(t, config, "helixagent")
 
-		// Check remote server properties (v1.1.30+ format)
+		// Check local server properties (v1.1.30+ format)
 		helixServer := config["helixagent"]
-		assert.Equal(t, "remote", helixServer.Type)
-		assert.Contains(t, helixServer.URL, "localhost:7061")
-		assert.Contains(t, helixServer.Headers, "Authorization")
+		assert.Equal(t, "local", helixServer.Type)
+		assert.NotEmpty(t, helixServer.Command)
+
+		// Should have HelixAgent remote protocol endpoints
+		assert.Contains(t, config, "helixagent-mcp")
+		mcpServer := config["helixagent-mcp"]
+		assert.Equal(t, "remote", mcpServer.Type)
+		assert.Contains(t, mcpServer.URL, "localhost:7061")
 	})
 
 	t.Run("builds config with different base URL", func(t *testing.T) {
 		config := buildOpenCodeMCPServers("http://example.com:8080")
 
-		helixServer := config["helixagent"]
-		assert.Contains(t, helixServer.URL, "example.com:8080")
+		mcpServer := config["helixagent-mcp"]
+		assert.Contains(t, mcpServer.URL, "example.com:8080")
 	})
 
 	t.Run("includes standard MCP servers", func(t *testing.T) {
