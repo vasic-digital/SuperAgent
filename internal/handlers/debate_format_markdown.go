@@ -56,10 +56,25 @@ func FormatDebateTeamIntroductionMarkdown(topic string, members []*services.Deba
 			continue
 		}
 		roleName := getRoleName(member.Role)
-		sb.WriteString(fmt.Sprintf("| **%s** | %s | %s |\n",
-			roleName, member.ModelName, member.ProviderName))
+		oauthTag := ""
+		if member.IsOAuth {
+			oauthTag = " [OAuth]"
+		}
+		sb.WriteString(fmt.Sprintf("| **%s** | %s | %s%s |\n",
+			roleName, member.ModelName, member.ProviderName, oauthTag))
 
-		if member.Fallback != nil {
+		// Show all fallbacks using Fallbacks slice (preferred) or legacy Fallback chain
+		if len(member.Fallbacks) > 0 {
+			for i, fb := range member.Fallbacks {
+				fbOAuthTag := ""
+				if fb.IsOAuth {
+					fbOAuthTag = " [OAuth]"
+				}
+				sb.WriteString(fmt.Sprintf("| └─ Fallback %d | %s | %s%s |\n",
+					i+1, fb.ModelName, fb.ProviderName, fbOAuthTag))
+			}
+		} else if member.Fallback != nil {
+			// Legacy single fallback support
 			sb.WriteString(fmt.Sprintf("| └─ Fallback | %s | %s |\n",
 				member.Fallback.ModelName, member.Fallback.ProviderName))
 		}

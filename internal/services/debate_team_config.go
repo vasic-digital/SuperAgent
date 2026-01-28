@@ -275,15 +275,16 @@ type VerifiedLLM struct {
 
 // DebateTeamMember represents a member of the AI debate team
 type DebateTeamMember struct {
-	Position     DebateTeamPosition `json:"position"`
-	Role         DebateRole         `json:"role"`
-	ProviderName string             `json:"provider_name"`
-	ModelName    string             `json:"model_name"`
-	Provider     llm.LLMProvider    `json:"-"`
-	Fallback     *DebateTeamMember  `json:"fallback,omitempty"`
-	Score        float64            `json:"score"`
-	IsActive     bool               `json:"is_active"`
-	IsOAuth      bool               `json:"is_oauth"`
+	Position     DebateTeamPosition   `json:"position"`
+	Role         DebateRole           `json:"role"`
+	ProviderName string               `json:"provider_name"`
+	ModelName    string               `json:"model_name"`
+	Provider     llm.LLMProvider      `json:"-"`
+	Fallback     *DebateTeamMember    `json:"fallback,omitempty"`   // Deprecated: use Fallbacks
+	Fallbacks    []*DebateTeamMember  `json:"fallbacks,omitempty"`  // All fallbacks for this position (2-4)
+	Score        float64              `json:"score"`
+	IsActive     bool                 `json:"is_active"`
+	IsOAuth      bool                 `json:"is_oauth"`
 }
 
 // DebateTeamConfig manages the AI debate team configuration
@@ -954,7 +955,10 @@ func (dtc *DebateTeamConfig) assignAllFallbacks() {
 		// Get fallback LLMs (different from primary if possible)
 		fallbacks := dtc.getFallbackLLMs(member.ProviderName, member.ModelName, FallbacksPerPosition)
 
-		// Chain fallbacks
+		// Initialize Fallbacks slice
+		member.Fallbacks = make([]*DebateTeamMember, 0, len(fallbacks))
+
+		// Chain fallbacks (for backwards compatibility) and populate Fallbacks slice
 		current := member
 		for _, fb := range fallbacks {
 			fallbackMember := &DebateTeamMember{
@@ -967,6 +971,9 @@ func (dtc *DebateTeamConfig) assignAllFallbacks() {
 				IsActive:     false,
 				IsOAuth:      fb.IsOAuth,
 			}
+			// Add to Fallbacks slice (new format)
+			member.Fallbacks = append(member.Fallbacks, fallbackMember)
+			// Chain for backwards compatibility (old format)
 			current.Fallback = fallbackMember
 			current = fallbackMember
 		}
