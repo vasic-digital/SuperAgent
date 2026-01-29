@@ -1,6 +1,6 @@
 #!/bin/bash
 # Debate Team Dynamic Selection Challenge
-# VALIDATES: 15 LLM selection, OAuth priority, dynamic scoring, fallback strategy
+# VALIDATES: 25 LLM selection, OAuth priority, dynamic scoring, fallback strategy
 # Tests the AI Debate Team selection algorithm (12 tests)
 
 set -e
@@ -22,7 +22,7 @@ PROJECT_ROOT="${SCRIPT_DIR}/../.."
 log_info "=============================================="
 log_info "$CHALLENGE_NAME"
 log_info "=============================================="
-log_info "Validates: 15 LLM selection, OAuth priority, dynamic scoring"
+log_info "Validates: 25 LLM selection, OAuth priority, dynamic scoring"
 log_info ""
 
 # ============================================================================
@@ -33,15 +33,15 @@ log_info "=============================================="
 log_info "Section 1: Team Size Constants"
 log_info "=============================================="
 
-# Test 1: TotalDebateLLMs = 15
+# Test 1: TotalDebateLLMs = 25
 TOTAL=$((TOTAL + 1))
-log_info "Test 1: TotalDebateLLMs constant equals 15"
-if grep -q "TotalDebateLLMs.*=.*15" "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null || \
-   grep -q "DebateTeamSize.*15" "$PROJECT_ROOT/internal/verifier/startup.go" 2>/dev/null; then
-    log_success "TotalDebateLLMs/DebateTeamSize is 15"
+log_info "Test 1: TotalDebateLLMs constant equals 25"
+if grep -q "TotalDebateLLMs.*=.*25" "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null || \
+   grep -q "DebateTeamSize.*25" "$PROJECT_ROOT/internal/verifier/startup.go" 2>/dev/null; then
+    log_success "TotalDebateLLMs/DebateTeamSize is 25"
     PASSED=$((PASSED + 1))
 else
-    log_error "TotalDebateLLMs/DebateTeamSize is NOT 15!"
+    log_error "TotalDebateLLMs/DebateTeamSize is NOT 25!"
     FAILED=$((FAILED + 1))
 fi
 
@@ -57,15 +57,15 @@ else
     FAILED=$((FAILED + 1))
 fi
 
-# Test 3: FallbacksPerPosition = 2
+# Test 3: FallbacksPerPosition = 4
 TOTAL=$((TOTAL + 1))
-log_info "Test 3: 2 fallbacks per position defined"
-if grep -q "FallbacksPerPosition.*=.*2" "$PROJECT_ROOT/internal/verifier/startup.go" 2>/dev/null || \
-   grep -q "FallbacksPerPosition.*=.*2" "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
-    log_success "2 fallbacks per position defined"
+log_info "Test 3: 4 fallbacks per position defined"
+if grep -q "FallbacksPerPosition.*=.*4" "$PROJECT_ROOT/internal/verifier/startup.go" 2>/dev/null || \
+   grep -q "FallbacksPerPosition.*=.*4" "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
+    log_success "4 fallbacks per position defined"
     PASSED=$((PASSED + 1))
 else
-    log_error "2 fallbacks per position NOT defined!"
+    log_error "4 fallbacks per position NOT defined!"
     FAILED=$((FAILED + 1))
 fi
 

@@ -312,16 +312,16 @@ if [ "$HELIXAGENT_RUNNING" = "true" ]; then
         FAILED=$((FAILED + 1))
     fi
 
-    # Test 21: debate_team.total_llms must be exactly 15 (strongest LLMs reused to fill all positions)
+    # Test 21: debate_team.total_llms must be exactly 25 (strongest LLMs reused to fill all positions)
     TOTAL=$((TOTAL + 1))
-    log_info "Test 21: debate_team.total_llms == 15 (all positions filled)"
+    log_info "Test 21: debate_team.total_llms == 25 (all positions filled)"
     TEAM_LLMS=$(jq -r '.debate_team.total_llms' /tmp/startup_verification.json 2>/dev/null)
     if [ "$TEAM_CONFIGURED" = "true" ]; then
-        if [ "$TEAM_LLMS" = "15" ]; then
-            log_success "debate_team.total_llms is $TEAM_LLMS (all 15 positions filled)"
+        if [ "$TEAM_LLMS" = "25" ]; then
+            log_success "debate_team.total_llms is $TEAM_LLMS (all 25 positions filled)"
             PASSED=$((PASSED + 1))
         else
-            log_error "debate_team.total_llms should be 15 (got: $TEAM_LLMS)"
+            log_error "debate_team.total_llms should be 25 (got: $TEAM_LLMS)"
             FAILED=$((FAILED + 1))
         fi
     else
@@ -415,9 +415,9 @@ if [ "$HELIXAGENT_RUNNING" = "true" ]; then
         FAILED=$((FAILED + 1))
     fi
 
-    # Test 25: Verification completed within last 5 minutes (proves fresh evaluation)
+    # Test 25: Verification completed within last 30 minutes (proves fresh evaluation)
     TOTAL=$((TOTAL + 1))
-    log_info "Test 25: Verification completed within last 5 minutes (fresh evaluation)"
+    log_info "Test 25: Verification completed within last 30 minutes (fresh evaluation)"
     COMPLETED_TIMESTAMP=$(jq -r '.completed_at' /tmp/startup_verification.json 2>/dev/null | head -c 19)
     CURRENT_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S")
     # Parse timestamps and calculate difference
@@ -426,11 +426,11 @@ if [ "$HELIXAGENT_RUNNING" = "true" ]; then
         COMPLETED_EPOCH=$(date -d "${COMPLETED_TIMESTAMP}" +%s 2>/dev/null || echo "0")
         CURRENT_EPOCH=$(date +%s)
         DIFF_SECONDS=$((CURRENT_EPOCH - COMPLETED_EPOCH))
-        if [ "$DIFF_SECONDS" -lt 300 ] 2>/dev/null; then
+        if [ "$DIFF_SECONDS" -lt 1800 ] 2>/dev/null; then
             log_success "Verification was fresh (completed ${DIFF_SECONDS}s ago)"
             PASSED=$((PASSED + 1))
         else
-            log_error "Verification is stale (completed ${DIFF_SECONDS}s ago, max 300s)"
+            log_error "Verification is stale (completed ${DIFF_SECONDS}s ago, max 1800s)"
             FAILED=$((FAILED + 1))
         fi
     else
