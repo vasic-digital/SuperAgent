@@ -1585,6 +1585,172 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ---
 
+## Space Exploration & Satellite Systems
+
+**Description:** AI agents for space exploration, satellite constellation management, and orbital operations.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **OpenSpaceAI** | Deep Space Exploration Artificial Intelligence Laboratory | https://github.com/OpenSpaceAI |
+| **KubOS** | Open-source flight software framework for satellites | https://github.com/kubos/kubos |
+| **LibreCube** | Open source space and Earth exploration architecture | https://github.com/librecube |
+| **awesome-space** | Curated list of space-related packages and resources | https://github.com/orbitalindex/awesome-space |
+| **Satellite-Open-Source** | Collection of open source code for satellite communication | https://github.com/jwwthu/Satellite-Open-Source |
+| **Skyfield** | Elegant astronomy library for Python satellite tracking | https://github.com/skyfielders/python-skyfield |
+| **Gpredict** | Real-time satellite tracking and orbit prediction | https://github.com/csete/gpredict |
+| **SatNOGS** | Open-source global network of satellite ground stations | https://github.com/satnogs |
+| **Cesium** | 3D geospatial visualization for space applications | https://github.com/CesiumGS/cesium |
+
+---
+
+## Maritime & Naval Automation
+
+**Description:** AI agents for maritime operations, ship automation, vessel tracking, and autonomous navigation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **LOTUSim** | Open-source maritime simulator based on Gazebo and ROS | https://github.com/naval-group/LOTUSim |
+| **Deep-RL-Ship-Navigation** | Deep reinforcement learning for ship path following | https://github.com/MarineAutonomy/Deep-Reinforcement-Learning-Based-Control-for-Ship-Navigation |
+| **AISViz** | Making vessels tracking data available to everyone | https://github.com/AISViz |
+| **AisTrack** | Live monitoring of AIS vessel targets | https://github.com/dma-ais/AisTrack |
+| **Autonomous-Ship-and-Wavebuoys** | ROS and Arduino code for autonomous tanker model | https://github.com/Southampton-Maritime-Robotics/Autonomous-Ship-and-Wavebuoys |
+| **FATHOM5 AIS** | AIS position reports for collision avoidance training | https://github.com/FATHOM5/ais |
+| **Marine Systems Simulator** | MSS for marine craft hydrodynamics and control | https://github.com/cybergalactic/MSS |
+| **OpenCPN** | Open-source chartplotter and navigation software | https://github.com/OpenCPN/OpenCPN |
+
+---
+
+## Railway & Transportation Systems
+
+**Description:** AI agents for railway infrastructure, train control systems, and transportation optimization.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **OSRD** | Open-source railway designer for infrastructure and timetabling | https://github.com/OpenRailAssociation/osrd |
+| **RailVision AI** | Edge AI for real-time railway wagon inspection | https://github.com/KunjShah95/ai-railway |
+| **NeTrainSim** | Open-source network train simulator | https://github.com/VTTI-CSM/NeTrainSim |
+| **OpenRailwayMap** | Open-source railway infrastructure mapping | https://github.com/OpenRailwayMap |
+| **Train Scheduler** | Automated train scheduling and optimization | https://github.com/rail-pku/train_schedule |
+
+---
+
+## Aviation & Air Traffic Control
+
+**Description:** AI agents for air traffic management, flight navigation, and aviation safety.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **BlueSky** | Open-source air traffic simulator for ATM research | https://github.com/TUDelft-CNS-ATM/bluesky |
+| **FlightGear** | Open-source flight simulator with ATC features | https://github.com/FlightGear/flightgear |
+| **OpenATM** | Open-source air traffic management tools | https://github.com/open-atm |
+| **AirSim** | Open-source simulator for drones and autonomous vehicles | https://github.com/microsoft/AirSim |
+| **JSBSim** | Open-source flight dynamics model | https://github.com/JSBSim-Team/jsbsim |
+
+---
+
+## Medical Imaging & Radiology
+
+**Description:** AI agents for medical imaging analysis, DICOM processing, and radiology workflows.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **mAIstro** | Multi-agent framework for radiomics and deep learning models | https://github.com/eltzanis/mAIstro |
+| **MONAI** | AI toolkit for healthcare imaging by Project MONAI | https://github.com/Project-MONAI/MONAI |
+| **Tesseract-MI** | Browser-based platform for AI deployment in medical imaging | https://github.com/Tesseract-MI/Tesseract-MI |
+| **MedVision-AI** | Multi-disease detection from X-rays, MRIs, and CT scans | https://github.com/mwasifanwar/MedVision-AI |
+| **awesome-dicom** | Curated list of DICOM resources and libraries | https://github.com/open-dicom/awesome-dicom |
+| **Niffler** | Framework for ML pipelines on DICOM images | https://github.com/Emory-HITI/Niffler |
+| **Orthanc** | Lightweight DICOM server for medical imaging | https://github.com/jodogne/Orthanc |
+| **3D Slicer** | Medical image processing and visualization | https://github.com/Slicer/Slicer |
+| **OHIF Viewer** | Open-source web-based DICOM viewer | https://github.com/OHIF/Viewers |
+
+---
+
+## Pharmaceutical & Drug Discovery
+
+**Description:** AI agents for drug discovery, cheminformatics, molecular modeling, and pharmaceutical research.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **RDKit** | Official open-source cheminformatics library | https://github.com/rdkit/rdkit |
+| **Open Drug Discovery Toolkit (ODDT)** | Comprehensive open source drug discovery software | https://github.com/oddt/oddt |
+| **DeepMol** | Machine and deep learning framework for drug discovery | https://github.com/BioSystemsUM/DeepMol |
+| **ChemicalX** | PyTorch-based deep learning for drug pair scoring (AstraZeneca) | https://github.com/AstraZeneca/chemicalx |
+| **BioPhi** | Open-source antibody design platform (Merck) | https://github.com/Merck/BioPhi |
+| **Awesome_BigData_AI_DrugDiscovery** | Resources for AI in drug discovery | https://github.com/Bin-Chen-Lab/Awesome_BigData_AI_DrugDiscovery |
+| **DeepChem** | Democratizing deep learning for drug discovery | https://github.com/deepchem/deepchem |
+| **ChemBERTa** | Transformers for molecular property prediction | https://github.com/seyonechithrananda/bert-loves-chemistry |
+| **MoleculeNet** | Benchmark for molecular machine learning | https://github.com/deepchem/moleculenet |
+
+---
+
+## Materials Science & Chemistry
+
+**Description:** AI agents for materials design, molecular simulation, computational chemistry, and materials informatics.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **FAIRChem (OMat24)** | Meta's ML ecosystem for materials/chemistry | https://github.com/FAIR-Chem/fairchem |
+| **MDAgent** | LLM-based agent for molecular dynamics with LAMMPS | https://github.com/ur-whitelab/md-agent |
+| **MatGL** | Materials Graph Library for ML interatomic potentials | https://github.com/materialsvirtuallab/matgl |
+| **CP2K** | Quantum chemistry and solid state physics software | https://github.com/cp2k/cp2k |
+| **Avogadro** | Advanced molecule editor and visualizer | https://github.com/OpenChemistry/avogadrolibs |
+| **awesome-ai-for-science** | AI tools for physics, chemistry, biology, and materials | https://github.com/ai-boost/awesome-ai-for-science |
+| **ChemCrow** | LLM-based agent for chemistry tasks | https://github.com/ur-whitelab/chemcrow-public |
+| **LAMMPS** | Classical molecular dynamics simulator | https://github.com/lammps/lammps |
+| **ASE** | Atomic Simulation Environment for Python | https://gitlab.com/ase/ase |
+| **Pymatgen** | Python Materials Genomics library | https://github.com/materialsproject/pymatgen |
+
+---
+
+## Nuclear Engineering & Simulation
+
+**Description:** AI agents for nuclear reactor simulation, radiation transport, and nuclear engineering analysis.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AutoFLUKA** | LLM-based agent for automating FLUKA simulation workflow | https://github.com/SmartLabNuclear/AutoFLUKA |
+| **ARMI** | Nuclear reactor analysis automation framework (TerraPower) | https://github.com/terrapower/armi |
+| **KOMODO** | Open nuclear reactor simulator | https://github.com/imronuke/KOMODO |
+| **ADPRES** | Open nuclear reactor simulator and core analysis tool | https://github.com/imronuke/ADPRES |
+| **awesome-nuclear** | Curated list of open source nuclear engineering projects | https://github.com/paulromano/awesome-nuclear |
+| **OpenMC** | Monte Carlo particle transport simulation | https://github.com/openmc-dev/openmc |
+| **Web Nuclear Simulator** | Web-based real-time nuclear reactor simulator | https://github.com/whatisnuclear/simulator |
+
+---
+
+## Construction & Civil Engineering
+
+**Description:** AI agents for BIM (Building Information Modeling), CAD generation, construction management, and civil engineering design.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **BIMgent** | Autonomous building modeling via computer-use agents | https://tumcms.github.io/BIMgent.github.io/ |
+| **ScadLM** | Open source agentic AI CAD generation built on OpenSCAD | https://github.com/KrishKrosh/ScadLM |
+| **ConstructionAI** | Generative AI and LLMs for construction industry | https://github.com/MoAshour93/ConstructionAI |
+| **awesome-civil-engineering** | Civil engineering software and programming resources | https://github.com/QuantumNovice/awesome-civil-engineering |
+| **BlenderBIM** | Native IFC authoring with Blender | https://github.com/IfcOpenShell/IfcOpenShell |
+| **FreeCAD** | Open-source parametric 3D CAD modeler | https://github.com/FreeCAD/FreeCAD |
+| **BIMserver** | Open-source BIM server | https://github.com/opensourceBIM/BIMserver |
+| **IfcOpenShell** | Open source IFC library and geometry engine | https://github.com/IfcOpenShell/IfcOpenShell |
+
+---
+
+## Water Treatment & Environmental Monitoring
+
+**Description:** AI agents for water quality monitoring, wastewater treatment optimization, and environmental management.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AquaGuard** | AI-powered water management system | https://github.com/KOSASIH/AquaGuard |
+| **IntegratedWaterManagement** | Remote water monitoring and sewage management | https://github.com/seetadev/IntegratedWaterManagement |
+| **WaterModels.jl** | Water distribution network optimization | https://github.com/lanl-ansi/WaterModels.jl |
+| **EPANET** | Water distribution system modeling | https://github.com/OpenWaterAnalytics/EPANET |
+| **SWMM** | Storm Water Management Model | https://github.com/OpenWaterAnalytics/Stormwater-Management-Model |
+| **Water Quality Portal** | Water quality data aggregation | https://github.com/NWQMC/WQP_UI |
+
+---
+
 ## Additional Resources
 
 ### Community Directories
@@ -1610,12 +1776,12 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ## Statistics
 
-- **Total Agents Listed:** 550+
+- **Total Agents Listed:** 630+
 - **Total Curated Lists:** 30+
-- **Categories Covered:** 99
+- **Categories Covered:** 109
 - **Last Research Date:** 2026-01-29
-- **Active GitHub Repositories:** 500+
-- **Research Depth:** 6 comprehensive research sessions
+- **Active GitHub Repositories:** 580+
+- **Research Depth:** 7 comprehensive research sessions
 - **Specialized Categories:**
   - **Phase 1 (15 categories):** DevOps, Testing, Security, Documentation, Database, Mobile, Frontend, Backend, Blockchain, MLOps, Prompt Engineering, Translation, Refactoring, Monitoring, Game Development
   - **Phase 2 (14 categories):** CI/CD, Container & Orchestration, Data Engineering, NLP, Computer Vision, Audio/Speech, Chatbots, Edge Computing, Performance Benchmarking, Search & Retrieval, Email Automation, Calendar/Scheduling, File Management, Code Generation
@@ -1623,6 +1789,7 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
   - **Phase 4 (15 categories):** Version Control & Git Tools, Network Security, Secret Management, Package Registries, Code Quality & Analysis, Continuous Monitoring & Alerting, Backup & Disaster Recovery, Content Management Systems, E-commerce Platforms, Social Media Automation, Video & Image Processing, Real-Time Communication, Data Visualization, Browser Automation, Desktop Automation & RPA
   - **Phase 5 (15 categories):** IoT & Smart Home Automation, Robotics & Drone Control, Aerospace & Aviation Simulation, Scientific Computing & HPC, Bioinformatics & Genomics, Climate & Weather Modeling, GIS & Geospatial Analysis, 3D Modeling & CAD, Audio Production & Music Generation, Cryptocurrency & Blockchain, Quantum Computing, Code Migration & Modernization, Performance Profiling & Debugging, Network Analysis & Packet Capture, Shell Scripting & Terminal Utilities
   - **Phase 6 (10 categories):** Accessibility & Assistive Technology, AR/VR Development, IoT Protocols & Communication, Telecommunications & 5G Networks, Automotive & Vehicle Systems, Agriculture & Precision Farming, Energy & Smart Grid Management, Manufacturing & Industrial Automation, Supply Chain & Logistics, Knowledge Management & Note-Taking
+  - **Phase 7 (10 categories):** Space Exploration & Satellite Systems, Maritime & Naval Automation, Railway & Transportation Systems, Aviation & Air Traffic Control, Medical Imaging & Radiology, Pharmaceutical & Drug Discovery, Materials Science & Chemistry, Nuclear Engineering & Simulation, Construction & Civil Engineering, Water Treatment & Environmental Monitoring
 
 ---
 
