@@ -1906,6 +1906,150 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ---
 
+## Insurance & Actuarial Science
+
+**Description:** AI agents for insurance underwriting, risk assessment, and actuarial modeling.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Insurance-Underwriting-AI** | Generative AI/LLM for analyzing insurance risks | https://github.com/Tai-O/Insurance-Underwriting-AI |
+| **chainladder-python** | Manipulation of triangle data and IBNR estimation | https://github.com/casact/chainladder-python |
+| **lifelib** | Actuarial models for life insurance | https://github.com/lifelib-dev/lifelib |
+| **OasisLMF** | Catastrophe modeling framework | https://github.com/OasisLMF/OasisLMF |
+| **actuarial-foss** | Curated list of free and open source actuarial software | https://github.com/genedan/actuarial-foss |
+| **ActuaryUtilities.jl** | Julia package for financial maths and risk measures | https://github.com/JuliaActuary/ActuaryUtilities.jl |
+
+---
+
+## Real Estate & Property Management
+
+**Description:** AI agents for real estate search, property valuation, and management automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **PropertyLoop** | AI chatbot for landlords, property managers, and tenants | https://github.com/Kaos599/PropertyLoop |
+| **real-estate-ai-agent** | Python system extracting property data using AI agents | https://github.com/brightdata/real-estate-ai-agent |
+| **ai-real-estate-assistant** | AI-powered assistant for real estate agency | https://github.com/AleksNeStu/ai-real-estate-assistant |
+| **realtor-ai** | Automation for client interactions and scheduling | https://github.com/saminkhan1/realtor-ai |
+| **Personalized-Real-Estate-Agent** | AI-powered real estate assistant | https://github.com/trujivan/Personalized-Real-Estate-Agent-AI-powered-Real-Estate-Assistant |
+
+---
+
+## Hospitality & Tourism
+
+**Description:** AI agents for travel planning, hotel recommendations, and booking automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Travel-Assistant-Agent-OpenAI-SDK** | AI travel assistant with personalized plans | https://github.com/FarazF19/Travel-Assistant-Agent-OpenAI-SDK |
+| **smart_hotel_agent** | AI hotel booking assistant with conversational interface | https://github.com/renukarapolu/smart_hotel_agent |
+| **ai-travel-agent** | LangGraph-based smart travel assistant | https://github.com/nirbar1985/ai-travel-agent |
+| **Intelligent-Travel-Recommendation-System** | Tailor-made travel itineraries | https://github.com/sachinnpraburaj/Intelligent-Travel-Recommendation-System |
+| **QloApps** | Free hotel management and reservation system | https://github.com/Qloapps/QloApps |
+| **Hotel-Recommendation-System** | Context-aware hotel recommender | https://github.com/rishabhmisra/Hotel-Recommendation-System |
+
+---
+
+## Event Management & Planning
+
+**Description:** AI agents for event coordination, planning automation, and multi-agent orchestration.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **CrewAI** | Framework for role-playing, autonomous AI agents | https://github.com/crewAIInc/crewAI |
+| **CLI Agent Orchestrator (CAO)** | AWS multi-agent orchestration framework | https://aws.amazon.com/blogs/opensource/introducing-cli-agent-orchestrator-transforming-developer-cli-tools-into-a-multi-agent-powerhouse/ |
+| **agentic-project-management** | Framework for managing complex projects with AI | https://github.com/sdi2200262/agentic-project-management |
+| **AIEventPlanner** | AI-driven event planning solution | https://github.com/warrenshiv/AIEventPlanner |
+| **Plexo** | Open-source AI-powered project planning tool | https://github.com/minskylab/plexo-core |
+
+---
+
+## Journalism & Media Production
+
+**Description:** AI agents for news generation, content curation, and automated reporting.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **gpt-newspaper** | GPT-based autonomous agent for personalized newspapers | https://github.com/rotemweiss57/gpt-newspaper |
+| **AI-News-Agent** | Automated news aggregation and summarization | https://github.com/DRMALEK/AI-News-Agent |
+| **OpenNewsAgent** | Search and analyze news from around the world | https://github.com/Jutop/OpenNewsAgent |
+| **News-Service-AI** | AI-driven news service with summarization and translation | https://github.com/arjuncvinod/News-Service-AI |
+| **mediacommtools** | Tools for journalism, media, and communication | https://github.com/peterdalle/mediacommtools |
+
+---
+
+## Publishing & Content Creation
+
+**Description:** AI agents for content generation, writing assistance, and digital publishing.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Gemini CLI** | Google's open-source AI agent for command line | https://blog.google/technology/developers/introducing-gemini-cli-open-source-ai-agent/ |
+| **ALwrity** | AI Digital Marketing Platform for content automation | https://github.com/AJaySi/ALwrity |
+| **Offline AI CLI** | AI agent script CLI for Programmable Prompt Engine | https://github.com/offline-ai/cli |
+| **Spec Kit** | Toolkit for spec-driven development with AI | https://github.blog/ai-and-ml/generative-ai/spec-driven-development-with-ai-get-started-with-a-new-open-source-toolkit/ |
+| **ai-content** | AI content generator based on Next.js | https://github.com/nooqta/ai-content |
+
+---
+
+## Translation & Localization
+
+**Description:** AI agents for multilingual translation, localization, and language processing.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Lingo.dev** | Open-source AI-powered i18n toolkit | https://github.com/lingodotdev/lingo.dev |
+| **LibreTranslate** | Free and open source machine translation API | https://github.com/LibreTranslate/LibreTranslate |
+| **Argos Translate** | Open-source offline translation library | https://github.com/argosopentech/argos-translate |
+| **KrillinAI** | Video translation and dubbing tool (100 languages) | https://github.com/krillinai/KrillinAI |
+| **Language_Translation_GenAI_App** | Multi-language translation with speech support | https://github.com/Anu0408/Language_Translation_GenAI_App |
+| **awesome-translations** | Internationalization & localization resources | https://github.com/mbiesiad/awesome-translations |
+
+---
+
+## Libraries & Information Science
+
+**Description:** AI agents for library management, cataloging, and information retrieval.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AI4LAM** | AI in libraries, archives, and museums collections | https://github.com/AI4LAM/awesome-ai4lam |
+| **500-AI-Agents-Projects** | Curated collection of AI agent use cases | https://github.com/ashishpatel26/500-AI-Agents-Projects |
+| **Awesome-AI-Agents** | Collection of autonomous agents powered by LLM | https://github.com/Jenqyang/Awesome-AI-Agents |
+| **RAGFlow** | Open-source RAG engine for document understanding | https://github.com/infiniflow/ragflow |
+| **Huginn** | Open-source automation tool for web information | https://github.com/huginn/huginn |
+
+---
+
+## Museums & Galleries
+
+**Description:** AI agents for collection management, cultural heritage preservation, and museum operations.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AI4LAM** | AI for libraries, archives, and museums | https://github.com/AI4LAM/awesome-ai4lam |
+| **CollectiveAccess** | Open-source collection management system for GLAM | https://collectiveaccess.org/ |
+| **metmuseum-mcp** | Met Museum MCP integration for art discovery | https://github.com/mikechao/metmuseum-mcp |
+| **NationalGalleryOfArt/opendata** | National Gallery of Art Open Data Program | https://github.com/NationalGalleryOfArt/opendata |
+| **harvardartmuseums/api-docs** | Harvard Art Museums API documentation | https://github.com/harvardartmuseums/api-docs |
+
+---
+
+## Military & Defense Systems
+
+**Description:** AI agents for military simulation, wargaming, and defense training systems.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Panopticon** | Wargaming platform compatible with RL agents | https://github.com/Panopticon-AI-team/panopticon |
+| **boomslang-c2-sim** | Military C2 simulation opensource | https://github.com/kabartsjc/boomslang-c2-sim |
+| **WarAgent** | LLM-based multi-agent simulation of world wars | https://github.com/agiresearch/WarAgent |
+| **Reinforcement-Agents-for-Military-Wargaming** | RL agents for military wargaming | https://github.com/bulentsoykan/Reinforcement-Agents-for-Military-Wargaming |
+| **LLMWargaming** | LLMs for wargames | https://github.com/ancorso/LLMWargaming |
+| **AircraftFighterSimulationUsingMachineLearning** | ML-based combat aircraft simulation | https://github.com/alperenkbd/AircraftFighterSimulationUsingMachineLearning |
+
+---
+
 ## Additional Resources
 
 ### Community Directories
@@ -1931,12 +2075,12 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ## Statistics
 
-- **Total Agents Listed:** 700+
+- **Total Agents Listed:** 760+
 - **Total Curated Lists:** 30+
-- **Categories Covered:** 119
+- **Categories Covered:** 129
 - **Last Research Date:** 2026-01-29
-- **Active GitHub Repositories:** 650+
-- **Research Depth:** 8 comprehensive research sessions
+- **Active GitHub Repositories:** 710+
+- **Research Depth:** 9 comprehensive research sessions
 - **Specialized Categories:**
   - **Phase 1 (15 categories):** DevOps, Testing, Security, Documentation, Database, Mobile, Frontend, Backend, Blockchain, MLOps, Prompt Engineering, Translation, Refactoring, Monitoring, Game Development
   - **Phase 2 (14 categories):** CI/CD, Container & Orchestration, Data Engineering, NLP, Computer Vision, Audio/Speech, Chatbots, Edge Computing, Performance Benchmarking, Search & Retrieval, Email Automation, Calendar/Scheduling, File Management, Code Generation
@@ -1946,6 +2090,7 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
   - **Phase 6 (10 categories):** Accessibility & Assistive Technology, AR/VR Development, IoT Protocols & Communication, Telecommunications & 5G Networks, Automotive & Vehicle Systems, Agriculture & Precision Farming, Energy & Smart Grid Management, Manufacturing & Industrial Automation, Supply Chain & Logistics, Knowledge Management & Note-Taking
   - **Phase 7 (10 categories):** Space Exploration & Satellite Systems, Maritime & Naval Automation, Railway & Transportation Systems, Aviation & Air Traffic Control, Medical Imaging & Radiology, Pharmaceutical & Drug Discovery, Materials Science & Chemistry, Nuclear Engineering & Simulation, Construction & Civil Engineering, Water Treatment & Environmental Monitoring
   - **Phase 8 (10 categories):** Digital Forensics & Cybersecurity Investigation, Disaster Response & Emergency Management, Archaeology & Cultural Heritage, Textile & Fashion Industry, Food Science & Nutrition, Sports Analytics & Performance, Music Information Retrieval, Gaming AI & Esports, Education Technology & Tutoring, Social Sciences & Psychology Research
+  - **Phase 9 (10 categories):** Insurance & Actuarial Science, Real Estate & Property Management, Hospitality & Tourism, Event Management & Planning, Journalism & Media Production, Publishing & Content Creation, Translation & Localization, Libraries & Information Science, Museums & Galleries, Military & Defense Systems
 
 ---
 
