@@ -309,6 +309,7 @@ services:
     volumes:
       - cognee_data:/app/data
       - cognee_models:/app/models
+      - cognee_database:/app/cognee/.cognee_system
     network_mode: host
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -603,6 +604,8 @@ volumes:
   cognee_data:
     driver: local
   cognee_models:
+    driver: local
+  cognee_database:
     driver: local
   chromadb_data:
     driver: local

@@ -277,8 +277,8 @@ func Load() *Config {
 		Cognee: CogneeConfig{
 			BaseURL:     getEnv("COGNEE_BASE_URL", "http://localhost:8000"),
 			APIKey:      getEnv("COGNEE_API_KEY", ""),
-			AutoCognify: getBoolEnv("COGNEE_AUTO_COGNIFY", false), // DISABLED temporarily to fix hang - needs investigation
-			Timeout:     getDurationEnv("COGNEE_TIMEOUT", 5*time.Second), // Reduced from 30s to 5s to prevent hang
+			AutoCognify: getBoolEnv("COGNEE_AUTO_COGNIFY", true), // Re-enabled - HTTP 409 now handled gracefully
+			Timeout:     getDurationEnv("COGNEE_TIMEOUT", 15*time.Second), // Increased to 15s for Cognee cold start + processing
 			Enabled:     getBoolEnv("COGNEE_ENABLED", true),
 		},
 		LLM: LLMConfig{
