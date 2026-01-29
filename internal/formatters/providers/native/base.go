@@ -1,0 +1,141 @@
+package native
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"os/exec"
+	"strings"
+	"time"
+
+	"dev.helix.agent/internal/formatters"
+	"github.com/sirupsen/logrus"
+)
+
+// NativeFormatter implements a formatter using a native binary
+type NativeFormatter struct {
+	*formatters.BaseFormatter
+	binaryPath string
+	args       []string
+	stdinFlag  bool
+	logger     *logrus.Logger
+}
+
+// NewNativeFormatter creates a new native binary formatter
+func NewNativeFormatter(
+	metadata *formatters.FormatterMetadata,
+	binaryPath string,
+	args []string,
+	stdinFlag bool,
+	logger *logrus.Logger,
+) *NativeFormatter {
+	return &NativeFormatter{
+		BaseFormatter: formatters.NewBaseFormatter(metadata),
+		binaryPath:    binaryPath,
+		args:          args,
+		stdinFlag:     stdinFlag,
+		logger:        logger,
+	}
+}
+
+// Format formats code using the native binary
+func (n *NativeFormatter) Format(ctx context.Context, req *formatters.FormatRequest) (*formatters.FormatResult, error) {
+	start := time.Now()
+
+	// Build command
+	cmdArgs := n.buildArgs(req)
+	cmd := exec.CommandContext(ctx, n.binaryPath, cmdArgs...)
+
+	// Set stdin if supported
+	if n.stdinFlag {
+		cmd.Stdin = strings.NewReader(req.Content)
+	}
+
+	// Capture output
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	// Execute
+	err := cmd.Run()
+	duration := time.Since(start)
+
+	// Handle errors
+	if err != nil {
+		return &formatters.FormatResult{
+			Success:          false,
+			Error:            fmt.Errorf("formatter execution failed: %w (stderr: %s)", err, stderr.String()),
+			FormatterName:    n.Name(),
+			FormatterVersion: n.Version(),
+			Duration:         duration,
+		}, nil // Return result with error, not an error
+	}
+
+	// Get formatted content
+	formattedContent := stdout.String()
+
+	// Check if content changed
+	changed := formattedContent != req.Content
+
+	// Calculate stats
+	stats := &formatters.FormatStats{
+		LinesTotal:   strings.Count(req.Content, "\n") + 1,
+		LinesChanged: 0, // TODO: Calculate actual line changes
+		BytesTotal:   len(req.Content),
+		BytesChanged: len(formattedContent) - len(req.Content),
+	}
+
+	return &formatters.FormatResult{
+		Content:          formattedContent,
+		Changed:          changed,
+		FormatterName:    n.Name(),
+		FormatterVersion: n.Version(),
+		Duration:         duration,
+		Success:          true,
+		Stats:            stats,
+	}, nil
+}
+
+// FormatBatch formats multiple requests (default implementation)
+func (n *NativeFormatter) FormatBatch(ctx context.Context, reqs []*formatters.FormatRequest) ([]*formatters.FormatResult, error) {
+	results := make([]*formatters.FormatResult, len(reqs))
+
+	for i, req := range reqs {
+		result, err := n.Format(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		results[i] = result
+	}
+
+	return results, nil
+}
+
+// HealthCheck checks if the formatter binary is available
+func (n *NativeFormatter) HealthCheck(ctx context.Context) error {
+	// Check if binary exists
+	cmd := exec.CommandContext(ctx, n.binaryPath, "--version")
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("formatter binary not available: %w", err)
+	}
+
+	return nil
+}
+
+// buildArgs builds command arguments based on the request
+func (n *NativeFormatter) buildArgs(req *formatters.FormatRequest) []string {
+	args := make([]string, len(n.args))
+	copy(args, n.args)
+
+	// Add stdin flag if needed
+	if n.stdinFlag {
+		args = append(args, "-")
+	}
+
+	// Add check-only flag if supported and requested
+	if req.CheckOnly && n.SupportsCheck() {
+		args = append(args, "--check")
+	}
+
+	return args
+}

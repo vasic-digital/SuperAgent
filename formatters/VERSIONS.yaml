@@ -1,0 +1,244 @@
+# Formatter Versions Manifest
+# This file documents the pinned versions for all formatter submodules
+# Last Updated: 2026-01-29
+
+native:
+  clang-format:
+    version: "19.1.8"
+    commit: "release/19.x"
+    git_ref: "release/19.x"
+
+  rustfmt:
+    version: "1.8.1"
+    commit: "v1.8.1"
+    git_ref: "v1.8.1"
+
+  gofmt:
+    version: "go1.24.11"
+    note: "Built-in to Go toolchain"
+
+  black:
+    version: "26.1a1"
+    commit: "26.1a1"
+    git_ref: "26.1a1"
+
+  ruff:
+    version: "0.9.6"
+    commit: "v0.9.6"
+    git_ref: "v0.9.6"
+
+  prettier:
+    version: "3.4.2"
+    commit: "3.4.2"
+    git_ref: "3.4.2"
+
+  biome:
+    version: "1.9.4"
+    commit: "v1.9.4"
+    git_ref: "cli/v1.9.4"
+
+  dprint:
+    version: "0.47.5"
+    commit: "0.47.5"
+    git_ref: "0.47.5"
+
+  google-java-format:
+    version: "1.25.2"
+    commit: "v1.25.2"
+    git_ref: "v1.25.2"
+
+  ktlint:
+    version: "1.5.0"
+    commit: "1.5.0"
+    git_ref: "1.5.0"
+
+  ktfmt:
+    version: "0.53"
+    commit: "v0.53"
+    git_ref: "v0.53"
+
+  scalafmt:
+    version: "3.10.3"
+    commit: "v3.10.3"
+    git_ref: "v3.10.3"
+
+  swift-format:
+    version: "600.0.1"
+    commit: "600.0.1"
+    git_ref: "600.0.1"
+
+  shfmt:
+    version: "3.10.0"
+    commit: "v3.10.0"
+    git_ref: "v3.10.0"
+
+  yamlfmt:
+    version: "0.14.0"
+    commit: "v0.14.0"
+    git_ref: "v0.14.0"
+
+  taplo:
+    version: "0.9.3"
+    commit: "0.9.3"
+    git_ref: "0.9.3"
+
+  buf:
+    version: "1.48.0"
+    commit: "v1.48.0"
+    git_ref: "v1.48.0"
+
+  stylua:
+    version: "2.0.2"
+    commit: "v2.0.2"
+    git_ref: "v2.0.2"
+
+  ormolu:
+    version: "0.7.10.0"
+    commit: "0.7.10.0"
+    git_ref: "0.7.10.0"
+
+  ocamlformat:
+    version: "0.26.2"
+    commit: "0.26.2"
+    git_ref: "0.26.2"
+
+  fantomas:
+    version: "6.3.15"
+    commit: "v6.3.15"
+    git_ref: "v6.3.15"
+
+  erlfmt:
+    version: "1.6.0"
+    commit: "v1.6.0"
+    git_ref: "v1.6.0"
+
+  dart_format:
+    version: "3.7.0"
+    note: "Built-in to Dart SDK"
+
+service:
+  sqlfluff:
+    version: "3.4.1"
+    commit: "3.4.1"
+    git_ref: "3.4.1"
+
+  rubocop:
+    version: "1.72.0"
+    commit: "v1.72.0"
+    git_ref: "v1.72.0"
+
+  standardrb:
+    version: "1.42.1"
+    commit: "v1.42.1"
+    git_ref: "v1.42.1"
+
+  php-cs-fixer:
+    version: "3.68.0"
+    commit: "v3.68.0"
+    git_ref: "v3.68.0"
+
+  laravel-pint:
+    version: "1.19.0"
+    commit: "v1.19.0"
+    git_ref: "v1.19.0"
+
+  spotless:
+    version: "7.0.0.BETA4"
+    commit: "7.0.0.BETA4"
+    git_ref: "7.0.0.BETA4"
+
+  npm-groovy-lint:
+    version: "15.0.4"
+    commit: "v15.0.4"
+    git_ref: "v15.0.4"
+
+  autopep8:
+    version: "2.0.4"
+    commit: "v2.0.4"
+    git_ref: "v2.0.4"
+
+  yapf:
+    version: "0.40.2"
+    commit: "v0.40.2"
+    git_ref: "v0.40.2"
+
+  styler:
+    version: "1.10.3"
+    commit: "v1.10.3"
+    git_ref: "v1.10.3"
+
+  air:
+    version: "0.2.0"
+    commit: "v0.2.0"
+    git_ref: "v0.2.0"
+    note: "NEW (Feb 2025) - 300x faster than styler"
+
+  psscriptanalyzer:
+    version: "1.23.0"
+    commit: "1.23.0"
+    git_ref: "1.23.0"
+
+  perltidy:
+    version: "20260109.01"
+    commit: "20260109.01"
+    git_ref: "20260109.01"
+
+  cljfmt:
+    version: "0.12.0"
+    commit: "0.12.0"
+    git_ref: "0.12.0"
+
+builtin:
+  gofmt:
+    version: "go1.24.11"
+    note: "Built-in to Go toolchain"
+
+  goimports:
+    version: "go1.24.11"
+    note: "golang.org/x/tools/cmd/goimports"
+
+  zig_fmt:
+    version: "0.14.0"
+    note: "Built-in to Zig compiler"
+
+  dart_format:
+    version: "3.8.0"
+    note: "Built-in to Dart SDK, Flutter 3.32"
+
+  mix_format:
+    version: "1.18.3"
+    note: "Built-in to Elixir"
+
+  terraform_fmt:
+    version: "1.10.5"
+    note: "Built-in to Terraform CLI"
+
+  rustfmt:
+    version: "1.8.1"
+    note: "Included with Rust toolchain"
+
+  nimpretty:
+    version: "2.2.2"
+    note: "Built-in to Nim compiler"
+
+  swift_format:
+    version: "6.0.2"
+    note: "Included with Xcode 16, Swift 6+"
+
+unified:
+  prettier:
+    version: "3.4.2"
+    commit: "3.4.2"
+    git_ref: "3.4.2"
+    languages: ["js", "ts", "json", "html", "css", "scss", "graphql", "markdown", "yaml"]
+
+  dprint:
+    version: "0.47.5"
+    commit: "0.47.5"
+    git_ref: "0.47.5"
+    languages: ["pluggable"]
+    note: "Pluggable platform - wraps other formatters"
+
+  editorconfig:
+    version: "2.6.2"
+    note: "NOT a formatter - defines editor settings"
