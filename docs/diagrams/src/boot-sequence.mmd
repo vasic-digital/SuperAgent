@@ -1,0 +1,64 @@
+sequenceDiagram
+    participant Main as main()
+    participant Config as Config Loader
+    participant Runtime as Container Runtime
+    participant Boot as BootManager
+    participant Compose as Docker Compose
+    participant Health as Health Checker
+    participant Verifier as LLMsVerifier
+    participant Scorer as Provider Scorer
+    participant Team as Debate Team Selector
+    participant Messaging as Messaging System
+    participant Router as Router
+    participant Server as HTTP Server
+
+    Main->>Config: Load config (YAML + env vars)
+    Config-->>Main: Configuration loaded
+
+    Main->>Runtime: Detect container runtime
+    Runtime->>Runtime: Check Docker availability
+    Runtime->>Runtime: Check Podman availability
+    Runtime-->>Main: Runtime detected (Docker/Podman)
+
+    Main->>Boot: BootManager.BootAll()
+    Boot->>Compose: Start compose services
+    Note over Compose: PostgreSQL, Redis,<br/>Cognee, ChromaDB,<br/>MCP Servers, LSP Servers
+
+    Compose-->>Boot: Services starting
+
+    Boot->>Health: Health check all services
+    loop Until all healthy or timeout
+        Health->>Health: Check PostgreSQL (pg_isready)
+        Health->>Health: Check Redis (PING)
+        Health->>Health: Check Cognee (HTTP /health)
+        Health->>Health: Check ChromaDB (HTTP /api/v1/heartbeat)
+    end
+    Health-->>Boot: All services healthy
+
+    Boot-->>Main: Boot complete
+
+    Main->>Verifier: Initialize StartupVerifier
+    Verifier->>Verifier: Discover ALL providers (API Key + OAuth + Free)
+    Verifier->>Verifier: Verify ALL providers in parallel (8-test pipeline)
+    Note over Verifier: API connectivity, model listing,<br/>completion test, streaming test,<br/>token counting, error handling,<br/>rate limit behavior, latency measurement
+    Verifier-->>Main: Verification results
+
+    Main->>Scorer: Score ALL verified providers
+    Note over Scorer: ResponseSpeed (25%) +<br/>ModelEfficiency (20%) +<br/>CostEffectiveness (25%) +<br/>Capability (20%) +<br/>Recency (10%)
+    Scorer->>Scorer: Rank by score (OAuth priority when close)
+    Scorer-->>Main: Ranked provider list
+
+    Main->>Team: Select AI Debate Team
+    Team->>Team: Assign 5 positions (1 primary + 2 fallbacks each)
+    Note over Team: 5 positions x 3 LLMs = 15 total<br/>OAuth primaries get non-OAuth fallbacks
+    Team-->>Main: Debate team configured
+
+    Main->>Messaging: Initialize messaging (SSE, WebSocket, Webhooks)
+    Messaging-->>Main: Messaging ready
+
+    Main->>Router: Setup Gin router + middleware + handlers
+    Router-->>Main: Router configured
+
+    Main->>Server: Start HTTP server (:7061)
+    Note over Server: Listening on port 7061<br/>Ready to serve requests
+    Server-->>Main: Server running

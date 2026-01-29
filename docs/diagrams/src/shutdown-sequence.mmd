@@ -1,0 +1,50 @@
+sequenceDiagram
+    participant OS as OS Signal
+    participant Main as main()
+    participant OAuth as OAuth Refresh
+    participant Messaging as Messaging System
+    participant Server as HTTP Server
+    participant Boot as BootManager
+    participant Compose as Docker Compose
+    participant PG as PostgreSQL
+    participant Redis as Redis
+    participant Cognee as Cognee
+    participant ChromaDB as ChromaDB
+
+    OS->>Main: SIGINT / SIGTERM
+    Note over Main: Graceful shutdown initiated
+
+    Main->>OAuth: Stop OAuth token refresh
+    OAuth->>OAuth: Cancel refresh timers (Claude, Qwen)
+    OAuth-->>Main: OAuth refresh stopped
+
+    Main->>Messaging: Shutdown messaging
+    Messaging->>Messaging: Close SSE connections
+    Messaging->>Messaging: Close WebSocket connections
+    Messaging->>Messaging: Flush pending webhooks
+    Messaging->>Messaging: Stop polling handlers
+    Messaging-->>Main: Messaging shut down
+
+    Main->>Server: Shutdown HTTP server (graceful)
+    Server->>Server: Stop accepting new connections
+    Server->>Server: Wait for in-flight requests (timeout)
+    Server-->>Main: HTTP server shut down
+
+    Main->>Boot: BootManager.ShutdownAll()
+    Boot->>Compose: Stop compose services
+
+    par Stop all services
+        Compose->>Cognee: Stop Cognee
+        Cognee-->>Compose: Stopped
+        Compose->>ChromaDB: Stop ChromaDB
+        ChromaDB-->>Compose: Stopped
+        Compose->>Redis: Stop Redis
+        Redis-->>Compose: Stopped
+        Compose->>PG: Stop PostgreSQL
+        PG-->>Compose: Stopped
+    end
+
+    Compose-->>Boot: All services stopped
+    Boot-->>Main: Shutdown complete
+
+    Note over Main: Exit 0

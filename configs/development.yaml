@@ -334,6 +334,118 @@ backup:
   retention_days: 7
   storage_path: "./backups/dev"
 
+services:
+  postgresql:
+    host: "localhost"
+    port: "5432"
+    enabled: true
+    required: true
+    remote: false
+    health_type: "pgx"
+    timeout: "10s"
+    retry_count: 6
+    compose_file: "docker-compose.yml"
+    service_name: "postgres"
+    profile: "default"
+  redis:
+    host: "localhost"
+    port: "6379"
+    enabled: true
+    required: true
+    remote: false
+    health_type: "redis"
+    timeout: "5s"
+    retry_count: 6
+    compose_file: "docker-compose.yml"
+    service_name: "redis"
+    profile: "default"
+  cognee:
+    host: "localhost"
+    port: "8000"
+    enabled: true
+    required: true
+    remote: false
+    health_path: "/"
+    health_type: "http"
+    timeout: "10s"
+    retry_count: 6
+    compose_file: "docker-compose.yml"
+    service_name: "cognee"
+    profile: "default"
+  chromadb:
+    host: "localhost"
+    port: "8100"
+    enabled: true
+    required: true
+    remote: false
+    health_path: "/api/v2/heartbeat"
+    health_type: "http"
+    timeout: "10s"
+    retry_count: 6
+    compose_file: "docker-compose.yml"
+    service_name: "chromadb"
+    profile: "default"
+  prometheus:
+    host: "localhost"
+    port: "9090"
+    enabled: false
+    required: false
+    health_path: "/-/healthy"
+    health_type: "http"
+  grafana:
+    host: "localhost"
+    port: "3000"
+    enabled: false
+    required: false
+    health_path: "/api/health"
+    health_type: "http"
+  neo4j:
+    host: "localhost"
+    port: "7474"
+    enabled: false
+    required: false
+    health_type: "http"
+  kafka:
+    host: "localhost"
+    port: "9092"
+    enabled: false
+    required: false
+    health_type: "tcp"
+  rabbitmq:
+    host: "localhost"
+    port: "5672"
+    enabled: false
+    required: false
+    health_type: "tcp"
+  qdrant:
+    host: "localhost"
+    port: "6333"
+    enabled: false
+    required: false
+    health_path: "/healthz"
+    health_type: "http"
+  weaviate:
+    host: "localhost"
+    port: "8080"
+    enabled: false
+    required: false
+    health_path: "/v1/.well-known/ready"
+    health_type: "http"
+  langchain:
+    host: "localhost"
+    port: "8011"
+    enabled: false
+    required: false
+    health_path: "/health"
+    health_type: "http"
+  llamaindex:
+    host: "localhost"
+    port: "8012"
+    enabled: false
+    required: false
+    health_path: "/health"
+    health_type: "http"
+
 modelsdev:
   # Models.dev integration (disabled by default in development)
   enabled: ${MODELSDEV_ENABLED:-false}

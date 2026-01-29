@@ -352,6 +352,42 @@ HelixAgent uses **LLM-based semantic intent classification** to understand user 
 ./challenges/scripts/semantic_intent_challenge.sh  # 19 tests - validates zero hardcoding
 ```
 
+## Unified Service Management
+
+HelixAgent manages all infrastructure services through a unified `BootManager`:
+
+### Services Config (`internal/config/config.go`)
+- `ServiceEndpoint` struct: host, port, url, enabled, required, remote, health_type, health_path, timeout, retry_count, compose_file, service_name
+- `ServicesConfig`: PostgreSQL, Redis, Cognee, ChromaDB, Prometheus, Grafana, Neo4j, Kafka, RabbitMQ, Qdrant, Weaviate, LangChain, LlamaIndex, MCPServers
+- `DefaultServicesConfig()`, `LoadServicesFromEnv()`, `AllEndpoints()`, `RequiredEndpoints()`, `ResolvedURL()`
+- Environment override pattern: `SVC_<SERVICE>_<FIELD>` (e.g., `SVC_POSTGRESQL_HOST`, `SVC_REDIS_REMOTE=true`)
+
+### Boot Manager (`internal/services/boot_manager.go`)
+- `BootAll()`: Groups local services by compose file, starts via `docker compose up -d`, health checks all
+- `ShutdownAll()`: Stops all locally-started compose services
+- `HealthCheckAll()`: Returns health status for all enabled services
+- Remote services (`remote: true`): skip compose start, health check only
+- Required services: boot fails if health check fails after retries
+
+### Health Checker (`internal/services/health_checker.go`)
+- TCP and HTTP health checking with configurable retries and timeouts
+- `Check()` dispatches based on `HealthType` field
+- `CheckWithRetry()` performs retries with 2-second delays
+
+### Configuration
+- `configs/development.yaml` - services section with local defaults
+- `configs/production.yaml` - services with env var templates
+- `configs/remote-services-example.yaml` - remote service example
+
+### SQL Schema Documentation
+- `sql/schema/complete_schema.sql` - Consolidated reference
+- `sql/schema/*.sql` - Per-domain schema files (users, providers, requests, tasks, debate, cognee, protocols, indexes)
+
+### System Diagrams
+- `docs/diagrams/src/*.mmd` - Mermaid diagrams (architecture, boot, data flow, ER, debate, shutdown)
+- `docs/diagrams/src/*.puml` - PlantUML diagrams (architecture, boot, ER)
+- `scripts/generate-diagrams.sh` - Generate SVG/PNG/PDF output
+
 ## Configuration
 
 Environment variables in `.env.example`:

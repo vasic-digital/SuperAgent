@@ -1,0 +1,92 @@
+# HelixAgent Remote Services Configuration Example
+# This configuration shows how to point services to remote hosts.
+# Set remote: true to skip local docker-compose startup and only health-check.
+#
+# Environment variable overrides:
+#   SVC_POSTGRESQL_HOST, SVC_POSTGRESQL_PORT, SVC_POSTGRESQL_REMOTE=true
+#   SVC_REDIS_HOST, SVC_REDIS_PORT, SVC_REDIS_REMOTE=true
+#   etc.
+
+services:
+  postgresql:
+    host: "db.production.example.com"
+    port: "5432"
+    enabled: true
+    required: true
+    remote: true
+    health_type: "pgx"
+    timeout: "10s"
+    retry_count: 6
+
+  redis:
+    host: "redis.production.example.com"
+    port: "6379"
+    enabled: true
+    required: true
+    remote: true
+    health_type: "redis"
+    timeout: "5s"
+    retry_count: 6
+
+  cognee:
+    url: "https://cognee.production.example.com"
+    enabled: true
+    required: true
+    remote: true
+    health_path: "/"
+    health_type: "http"
+    timeout: "10s"
+    retry_count: 6
+
+  chromadb:
+    url: "https://chromadb.production.example.com"
+    enabled: true
+    required: true
+    remote: true
+    health_path: "/api/v2/heartbeat"
+    health_type: "http"
+    timeout: "10s"
+    retry_count: 6
+
+  prometheus:
+    host: "monitoring.production.example.com"
+    port: "9090"
+    enabled: true
+    required: false
+    remote: true
+    health_path: "/-/healthy"
+    health_type: "http"
+
+  grafana:
+    host: "monitoring.production.example.com"
+    port: "3000"
+    enabled: true
+    required: false
+    remote: true
+    health_path: "/api/health"
+    health_type: "http"
+
+  qdrant:
+    host: "vectordb.production.example.com"
+    port: "6333"
+    enabled: true
+    required: false
+    remote: true
+    health_path: "/healthz"
+    health_type: "http"
+
+  kafka:
+    host: "kafka.production.example.com"
+    port: "9092"
+    enabled: true
+    required: false
+    remote: true
+    health_type: "tcp"
+
+  rabbitmq:
+    host: "rabbitmq.production.example.com"
+    port: "5672"
+    enabled: true
+    required: false
+    remote: true
+    health_type: "tcp"

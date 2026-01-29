@@ -1,0 +1,143 @@
+@startuml HelixAgent Architecture
+!theme plain
+skinparam componentStyle rectangle
+skinparam linetype ortho
+skinparam packageBorderColor #555555
+skinparam packageFontSize 14
+skinparam componentFontSize 12
+skinparam arrowColor #333333
+skinparam defaultFontName Helvetica
+
+title HelixAgent - System Architecture
+
+package "API Layer" as api #E8F4FD {
+    [Gin HTTP Server] as gin
+    [Router] as router
+    [Middleware] as middleware
+    note right of middleware
+        Auth, Rate Limiting,
+        CORS, Validation
+    end note
+}
+
+package "Services" as svc #E8F8E8 {
+    [Ensemble Service] as ensemble
+    [Debate Service] as debate
+    [Context Manager] as ctxmgr
+    [Provider Registry] as registry
+    [Intent Classifier] as intent
+}
+
+package "LLM Providers" as providers #FFF8E8 {
+    [Claude] as claude
+    [DeepSeek] as deepseek
+    [Gemini] as gemini
+    [Mistral] as mistral
+    [OpenRouter] as openrouter
+    [Qwen] as qwen
+    [ZAI] as zai
+    [Zen] as zen
+    [Cerebras] as cerebras
+    [Ollama] as ollama
+}
+
+package "Infrastructure" as infra #F8E8E8 {
+    [PostgreSQL] as pg
+    [Redis] as redis
+    [Cognee] as cognee
+    [ChromaDB] as chroma
+}
+
+package "Protocols" as proto #F0E8F8 {
+    [MCP] as mcp
+    [ACP] as acp
+    [LSP] as lsp
+    [Embeddings] as embeddings
+}
+
+package "Background" as bg #F8F0E8 {
+    [Task Queue] as taskq
+    [Worker Pool] as workers
+    [Notifications] as notif
+}
+
+package "Verification" as verif #E8E8F8 {
+    [LLMsVerifier] as verifier
+    [Startup Verifier] as startupv
+    [Debate Team Selector] as selector
+}
+
+' --- API Layer internal ---
+gin --> router
+router --> middleware
+
+' --- API Layer to Services ---
+router --> ensemble
+router --> debate
+router --> ctxmgr
+router --> mcp
+router --> acp
+router --> lsp
+router --> embeddings
+
+' --- Services internal ---
+ensemble --> registry
+debate --> registry
+debate --> intent
+debate --> selector
+ensemble --> ctxmgr
+
+' --- Provider Registry to Providers ---
+registry --> claude
+registry --> deepseek
+registry --> gemini
+registry --> mistral
+registry --> openrouter
+registry --> qwen
+registry --> zai
+registry --> zen
+registry --> cerebras
+registry --> ollama
+
+' --- Services to Infrastructure ---
+ensemble --> pg
+ensemble --> redis
+ctxmgr --> pg
+ctxmgr --> redis
+debate --> pg
+intent --> redis
+
+' --- Protocols to Infrastructure ---
+mcp --> pg
+embeddings --> chroma
+embeddings --> pg
+lsp --> pg
+acp --> pg
+
+' --- Protocols to Services ---
+mcp --> registry
+acp --> registry
+embeddings --> registry
+
+' --- Background ---
+router --> taskq
+taskq --> workers
+workers --> notif
+workers --> pg
+notif --> redis
+
+' --- Verification ---
+startupv --> verifier
+startupv --> registry
+selector --> verifier
+selector --> debate
+
+' --- Cognee ---
+router --> cognee
+cognee --> chroma
+
+' --- Middleware to Infrastructure ---
+middleware --> redis
+middleware --> pg
+
+@enduml

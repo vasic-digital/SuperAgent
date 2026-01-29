@@ -1,0 +1,59 @@
+graph TD
+    subgraph Required["Required Services"]
+        PostgreSQL["PostgreSQL 15<br/>(no deps)"]
+        Redis["Redis 7<br/>(no deps)"]
+        ChromaDB["ChromaDB<br/>(no deps)"]
+        Cognee["Cognee"]
+    end
+
+    subgraph Optional["Optional Services"]
+        Prometheus["Prometheus<br/>(no deps)"]
+        Grafana["Grafana"]
+        Docker["Docker / Podman"]
+        MCPServers["MCP Servers (32)"]
+        LSPServers["LSP Servers (11)"]
+        Qdrant["Qdrant"]
+        Weaviate["Weaviate"]
+        RAGServices["RAG Services"]
+    end
+
+    subgraph Startup["Startup Pipeline"]
+        HealthChecks["Health Checks<br/>(all required services)"]
+        LLMsVerifier["LLMsVerifier<br/>(8-test pipeline)"]
+        ProviderScoring["Provider Scoring<br/>(5-component weighted)"]
+        DebateTeam["AI Debate Team<br/>(5 positions x 3 LLMs = 15)"]
+    end
+
+    subgraph Application["Application"]
+        HelixAgent["HelixAgent<br/>(Gin HTTP :7061)"]
+    end
+
+    Cognee -->|depends on| PostgreSQL
+
+    Grafana -->|depends on| Prometheus
+
+    MCPServers -->|depends on| Docker
+    LSPServers -->|depends on| Docker
+
+    RAGServices -->|depends on| Qdrant
+    RAGServices -->|depends on| Weaviate
+
+    HealthChecks -->|checks| PostgreSQL
+    HealthChecks -->|checks| Redis
+    HealthChecks -->|checks| Cognee
+    HealthChecks -->|checks| ChromaDB
+
+    LLMsVerifier -->|runs after| HealthChecks
+    ProviderScoring -->|runs after| LLMsVerifier
+    DebateTeam -->|selected after| ProviderScoring
+
+    HelixAgent -->|requires| PostgreSQL
+    HelixAgent -->|requires| Redis
+    HelixAgent -->|requires| Cognee
+    HelixAgent -->|requires| ChromaDB
+    HelixAgent -->|optional| Prometheus
+    HelixAgent -->|optional| Grafana
+    HelixAgent -->|optional| MCPServers
+    HelixAgent -->|optional| LSPServers
+    HelixAgent -->|optional| RAGServices
+    HelixAgent -->|initialized by| DebateTeam

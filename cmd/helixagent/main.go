@@ -26,6 +26,7 @@ import (
 
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/claude"
@@ -1228,16 +1229,26 @@ func run(appCfg *AppConfig) error {
 		})
 	}
 
-	// Auto-start required Docker containers if enabled
+	// Unified service boot manager: starts all enabled local services and health-checks all
+	bootMgr := services.NewBootManager(&cfg.Services, logger)
 	if appCfg.AutoStartDocker {
-		logger.Info("Checking and starting required Docker containers...")
-		if err := ensureRequiredContainers(logger); err != nil {
+		logger.Info("Booting all configured services via unified BootManager...")
+		if err := bootMgr.BootAll(); err != nil {
 			if appCfg.StrictDependencies {
-				return fmt.Errorf("FATAL: Failed to start required containers (strict mode enabled): %w", err)
+				return fmt.Errorf("FATAL: Service boot failed (strict mode enabled): %w", err)
 			}
-			logger.WithError(err).Warn("Failed to start some containers, continuing with application startup")
+			logger.WithError(err).Warn("Some services failed to boot, continuing with application startup")
 		} else {
-			logger.Info("Docker containers are ready")
+			logger.Info("All services booted successfully")
+		}
+	} else {
+		// Even without auto-start, run health checks if strict mode
+		if appCfg.StrictDependencies {
+			logger.Info("Verifying ALL integration dependencies (strict mode)...")
+			if err := verifyAllMandatoryDependencies(logger); err != nil {
+				return fmt.Errorf("FATAL: Integration dependency verification failed: %w", err)
+			}
+			logger.Info("All mandatory dependencies verified successfully")
 		}
 	}
 
@@ -1252,15 +1263,6 @@ func run(appCfg *AppConfig) error {
 	// Auto-start LSP and RAG services (non-blocking, runs in background)
 	logger.Info("Starting LSP and RAG infrastructure services...")
 	startAllInfrastructure(logger)
-
-	// MANDATORY: Verify ALL integration dependencies are healthy before starting server
-	if appCfg.StrictDependencies {
-		logger.Info("Verifying ALL integration dependencies (strict mode)...")
-		if err := verifyAllMandatoryDependencies(logger); err != nil {
-			return fmt.Errorf("FATAL: Integration dependency verification failed: %w", err)
-		}
-		logger.Info("All mandatory dependencies verified successfully")
-	}
 
 	// Run unified startup verification (LLMsVerifier as single source of truth)
 	// This verifies ALL providers (OAuth, API Key, Free) and selects the AI Debate Team
@@ -1459,6 +1461,14 @@ func run(appCfg *AppConfig) error {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.WithError(err).Error("Server forced to shutdown")
 		return fmt.Errorf("server shutdown error: %w", err)
+	}
+
+	// Stop all managed container services
+	if bootMgr != nil {
+		logger.Info("Stopping all managed services via BootManager...")
+		if err := bootMgr.ShutdownAll(); err != nil {
+			logger.WithError(err).Warn("Error stopping managed services")
+		}
 	}
 
 	logger.Info("Server shutdown complete")

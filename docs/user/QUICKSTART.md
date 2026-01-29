@@ -133,6 +133,28 @@ ensemble:
   min_providers: 2
 ```
 
+### Service Configuration
+
+HelixAgent auto-starts infrastructure services (PostgreSQL, Redis, Cognee, ChromaDB) via Docker Compose on boot. Configure services in the `services:` section:
+
+```yaml
+services:
+  postgresql:
+    host: "localhost"
+    port: "5432"
+    enabled: true
+    required: true
+  redis:
+    host: "localhost"
+    port: "6379"
+    enabled: true
+    required: true
+```
+
+For remote/managed services, set `remote: true` to skip Docker Compose and only run health checks. Override any field via environment variables: `SVC_POSTGRESQL_HOST=db.example.com`.
+
+See [Services Configuration Guide](SERVICES_CONFIGURATION.md) for full details.
+
 ## Using SDKs
 
 ### Python SDK

@@ -1,0 +1,138 @@
+erDiagram
+    users {
+        uuid id PK
+        string username
+        string email
+        string password_hash
+        string role
+        boolean active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    user_sessions {
+        uuid id PK
+        uuid user_id FK
+        string session_token
+        string ip_address
+        string user_agent
+        timestamp expires_at
+        timestamp created_at
+    }
+
+    llm_requests {
+        uuid id PK
+        uuid user_id FK
+        uuid session_id FK
+        string model
+        text prompt
+        string intent_type
+        float intent_confidence
+        integer max_tokens
+        float temperature
+        string status
+        timestamp created_at
+    }
+
+    llm_responses {
+        uuid id PK
+        uuid request_id FK
+        uuid provider_id FK
+        text content
+        integer prompt_tokens
+        integer completion_tokens
+        integer total_tokens
+        float confidence_score
+        integer latency_ms
+        string finish_reason
+        string error_message
+        timestamp created_at
+    }
+
+    llm_providers {
+        uuid id PK
+        string name
+        string type
+        string auth_method
+        float verification_score
+        boolean verified
+        integer rank
+        boolean active
+        jsonb capabilities
+        timestamp last_verified_at
+        timestamp created_at
+    }
+
+    cognee_memories {
+        uuid id PK
+        uuid session_id FK
+        string memory_type
+        text content
+        jsonb metadata
+        float relevance_score
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    background_tasks {
+        uuid id PK
+        uuid parent_task_id FK
+        string task_type
+        string status
+        integer priority
+        jsonb payload
+        jsonb result
+        string error_message
+        integer retry_count
+        integer max_retries
+        timestamp scheduled_at
+        timestamp started_at
+        timestamp completed_at
+        timestamp created_at
+    }
+
+    task_execution_history {
+        uuid id PK
+        uuid task_id FK
+        string status
+        string worker_id
+        integer duration_ms
+        string error_message
+        jsonb resource_usage
+        timestamp created_at
+    }
+
+    task_resource_snapshots {
+        uuid id PK
+        uuid task_id FK
+        float cpu_percent
+        float memory_mb
+        integer goroutines
+        integer open_files
+        timestamp created_at
+    }
+
+    webhook_deliveries {
+        uuid id PK
+        uuid task_id FK
+        string webhook_url
+        string http_method
+        integer status_code
+        text request_body
+        text response_body
+        integer attempt_number
+        integer latency_ms
+        boolean success
+        timestamp created_at
+    }
+
+    users ||--o{ user_sessions : "has"
+    users ||--o{ llm_requests : "makes"
+    user_sessions ||--o{ llm_requests : "contains"
+    user_sessions ||--o{ cognee_memories : "stores"
+    llm_requests ||--o{ llm_responses : "receives"
+    llm_providers ||--o{ llm_responses : "generates"
+    background_tasks ||--o{ background_tasks : "parent of"
+    background_tasks ||--o{ task_execution_history : "tracks"
+    background_tasks ||--o{ task_resource_snapshots : "monitors"
+    background_tasks ||--o{ webhook_deliveries : "delivers"

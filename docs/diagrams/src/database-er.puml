@@ -1,0 +1,396 @@
+@startuml HelixAgent Database ER Diagram
+!theme plain
+skinparam linetype ortho
+skinparam classFontSize 11
+skinparam classAttributeFontSize 10
+skinparam defaultFontName Helvetica
+skinparam packageFontSize 13
+
+title HelixAgent - Database Entity Relationship Diagram
+
+package "Core" as core #E8F4FD {
+    class users {
+        **id** : UUID <<PK>>
+        --
+        username : VARCHAR(255) <<UNIQUE>>
+        email : VARCHAR(255) <<UNIQUE>>
+        password_hash : VARCHAR(255)
+        api_key : VARCHAR(255) <<UNIQUE>>
+        role : VARCHAR(50)
+        created_at : TIMESTAMPTZ
+        updated_at : TIMESTAMPTZ
+    }
+
+    class user_sessions {
+        **id** : UUID <<PK>>
+        --
+        user_id : UUID <<FK>>
+        session_token : VARCHAR(255) <<UNIQUE>>
+        context : JSONB
+        memory_id : UUID
+        status : VARCHAR(50)
+        request_count : INTEGER
+        last_activity : TIMESTAMPTZ
+        expires_at : TIMESTAMPTZ
+        created_at : TIMESTAMPTZ
+    }
+
+    class llm_providers {
+        **id** : UUID <<PK>>
+        --
+        name : VARCHAR(255) <<UNIQUE>>
+        type : VARCHAR(100)
+        api_key : VARCHAR(255)
+        base_url : VARCHAR(500)
+        model : VARCHAR(255)
+        weight : DECIMAL(5,2)
+        enabled : BOOLEAN
+        config : JSONB
+        health_status : VARCHAR(50)
+        response_time : BIGINT
+        modelsdev_provider_id : VARCHAR(255)
+        total_models : INTEGER
+        enabled_models : INTEGER
+        last_models_sync : TIMESTAMPTZ
+        created_at : TIMESTAMPTZ
+        updated_at : TIMESTAMPTZ
+    }
+
+    class llm_requests {
+        **id** : UUID <<PK>>
+        --
+        session_id : UUID <<FK>>
+        user_id : UUID <<FK>>
+        prompt : TEXT
+        messages : JSONB
+        model_params : JSONB
+        ensemble_config : JSONB
+        memory_enhanced : BOOLEAN
+        memory : JSONB
+        status : VARCHAR(50)
+        request_type : VARCHAR(50)
+        created_at : TIMESTAMPTZ
+        started_at : TIMESTAMPTZ
+        completed_at : TIMESTAMPTZ
+    }
+
+    class llm_responses {
+        **id** : UUID <<PK>>
+        --
+        request_id : UUID <<FK>>
+        provider_id : UUID <<FK>>
+        provider_name : VARCHAR(100)
+        content : TEXT
+        confidence : DECIMAL(3,2)
+        tokens_used : INTEGER
+        response_time : BIGINT
+        finish_reason : VARCHAR(50)
+        metadata : JSONB
+        selected : BOOLEAN
+        selection_score : DECIMAL(5,2)
+        created_at : TIMESTAMPTZ
+    }
+
+    class cognee_memories {
+        **id** : UUID <<PK>>
+        --
+        session_id : UUID <<FK>>
+        dataset_name : VARCHAR(255)
+        content_type : VARCHAR(50)
+        content : TEXT
+        vector_id : VARCHAR(255)
+        graph_nodes : JSONB
+        search_key : VARCHAR(255)
+        created_at : TIMESTAMPTZ
+    }
+}
+
+package "Models.dev" as modelsdev #E8F8E8 {
+    class models_metadata {
+        **id** : UUID <<PK>>
+        --
+        model_id : VARCHAR(255) <<UNIQUE>>
+        model_name : VARCHAR(255)
+        provider_id : VARCHAR(255) <<FK>>
+        provider_name : VARCHAR(255)
+        description : TEXT
+        context_window : INTEGER
+        max_tokens : INTEGER
+        pricing_input : DECIMAL(10,6)
+        pricing_output : DECIMAL(10,6)
+        pricing_currency : VARCHAR(10)
+        supports_vision : BOOLEAN
+        supports_function_calling : BOOLEAN
+        supports_streaming : BOOLEAN
+        supports_json_mode : BOOLEAN
+        benchmark_score : DECIMAL(5,2)
+        model_type : VARCHAR(100)
+        model_family : VARCHAR(100)
+        protocol_support : JSONB
+        mcp_server_id : VARCHAR(255)
+        lsp_server_id : VARCHAR(255)
+        acp_server_id : VARCHAR(255)
+        embedding_provider : VARCHAR(50)
+        raw_metadata : JSONB
+        last_refreshed_at : TIMESTAMPTZ
+        created_at : TIMESTAMPTZ
+        updated_at : TIMESTAMPTZ
+    }
+
+    class model_benchmarks {
+        **id** : UUID <<PK>>
+        --
+        model_id : VARCHAR(255) <<FK>>
+        benchmark_name : VARCHAR(255)
+        benchmark_type : VARCHAR(100)
+        score : DECIMAL(10,4)
+        rank : INTEGER
+        normalized_score : DECIMAL(5,2)
+        benchmark_date : DATE
+        metadata : JSONB
+        created_at : TIMESTAMPTZ
+    }
+
+    class models_refresh_history {
+        **id** : UUID <<PK>>
+        --
+        refresh_type : VARCHAR(50)
+        status : VARCHAR(50)
+        models_refreshed : INTEGER
+        models_failed : INTEGER
+        error_message : TEXT
+        started_at : TIMESTAMPTZ
+        completed_at : TIMESTAMPTZ
+        duration_seconds : INTEGER
+        metadata : JSONB
+    }
+}
+
+package "Protocols" as proto #F0E8F8 {
+    class mcp_servers {
+        **id** : VARCHAR(255) <<PK>>
+        --
+        name : VARCHAR(255)
+        type : VARCHAR(20)
+        command : TEXT
+        url : TEXT
+        enabled : BOOLEAN
+        tools : JSONB
+        last_sync : TIMESTAMPTZ
+        created_at : TIMESTAMPTZ
+        updated_at : TIMESTAMPTZ
+    }
+
+    class lsp_servers {
+        **id** : VARCHAR(255) <<PK>>
+        --
+        name : VARCHAR(255)
+        language : VARCHAR(50)
+        command : VARCHAR(500)
+        enabled : BOOLEAN
+        workspace : VARCHAR(1000)
+        capabilities : JSONB
+        last_sync : TIMESTAMPTZ
+        created_at : TIMESTAMPTZ
+        updated_at : TIMESTAMPTZ
+    }
+
+    class acp_servers {
+        **id** : VARCHAR(255) <<PK>>
+        --
+        name : VARCHAR(255)
+        type : VARCHAR(20)
+        url : TEXT
+        enabled : BOOLEAN
+        tools : JSONB
+        last_sync : TIMESTAMPTZ
+        created_at : TIMESTAMPTZ
+        updated_at : TIMESTAMPTZ
+    }
+
+    class embedding_config {
+        **id** : SERIAL <<PK>>
+        --
+        provider : VARCHAR(50)
+        model : VARCHAR(100)
+        dimension : INTEGER
+        api_endpoint : TEXT
+        api_key : TEXT
+        created_at : TIMESTAMPTZ
+        updated_at : TIMESTAMPTZ
+    }
+
+    class vector_documents {
+        **id** : UUID <<PK>>
+        --
+        title : TEXT
+        content : TEXT
+        metadata : JSONB
+        embedding_id : UUID
+        embedding : VECTOR(1536)
+        embedding_provider : VARCHAR(50)
+        search_vector : VECTOR(1536)
+        created_at : TIMESTAMPTZ
+        updated_at : TIMESTAMPTZ
+    }
+
+    class protocol_cache {
+        **cache_key** : VARCHAR(255) <<PK>>
+        --
+        cache_data : JSONB
+        expires_at : TIMESTAMPTZ
+        created_at : TIMESTAMPTZ
+        updated_at : TIMESTAMPTZ
+    }
+
+    class protocol_metrics {
+        **id** : SERIAL <<PK>>
+        --
+        protocol_type : VARCHAR(20)
+        server_id : VARCHAR(255)
+        operation : VARCHAR(100)
+        status : VARCHAR(20)
+        duration_ms : INTEGER
+        error_message : TEXT
+        metadata : JSONB
+        created_at : TIMESTAMPTZ
+        updated_at : TIMESTAMPTZ
+    }
+}
+
+package "Background Tasks" as bgtasks #FFF8E8 {
+    class background_tasks {
+        **id** : UUID <<PK>>
+        --
+        task_type : VARCHAR(100)
+        task_name : VARCHAR(255)
+        correlation_id : VARCHAR(255)
+        parent_task_id : UUID <<FK>>
+        payload : JSONB
+        config : JSONB
+        priority : task_priority
+        status : task_status
+        progress : DECIMAL(5,2)
+        progress_message : TEXT
+        checkpoint : JSONB
+        max_retries : INTEGER
+        retry_count : INTEGER
+        last_error : TEXT
+        error_history : JSONB
+        worker_id : VARCHAR(100)
+        process_pid : INTEGER
+        user_id : UUID
+        session_id : UUID
+        tags : JSONB
+        metadata : JSONB
+        started_at : TIMESTAMPTZ
+        completed_at : TIMESTAMPTZ
+        last_heartbeat : TIMESTAMPTZ
+        deadline : TIMESTAMPTZ
+        created_at : TIMESTAMPTZ
+        updated_at : TIMESTAMPTZ
+        deleted_at : TIMESTAMPTZ
+    }
+
+    class background_tasks_dead_letter {
+        **id** : UUID <<PK>>
+        --
+        original_task_id : UUID
+        task_data : JSONB
+        failure_reason : TEXT
+        failure_count : INTEGER
+        moved_at : TIMESTAMPTZ
+        reprocess_after : TIMESTAMPTZ
+        reprocessed : BOOLEAN
+    }
+
+    class task_execution_history {
+        **id** : UUID <<PK>>
+        --
+        task_id : UUID <<FK>>
+        event_type : VARCHAR(50)
+        event_data : JSONB
+        worker_id : VARCHAR(100)
+        created_at : TIMESTAMPTZ
+    }
+
+    class task_resource_snapshots {
+        **id** : UUID <<PK>>
+        --
+        task_id : UUID <<FK>>
+        cpu_percent : DECIMAL(5,2)
+        memory_rss_bytes : BIGINT
+        memory_percent : DECIMAL(5,2)
+        io_read_bytes : BIGINT
+        io_write_bytes : BIGINT
+        net_bytes_sent : BIGINT
+        net_bytes_recv : BIGINT
+        open_files : INTEGER
+        thread_count : INTEGER
+        process_state : VARCHAR(20)
+        sampled_at : TIMESTAMPTZ
+    }
+
+    class webhook_deliveries {
+        **id** : UUID <<PK>>
+        --
+        task_id : UUID <<FK>>
+        webhook_url : TEXT
+        event_type : VARCHAR(50)
+        payload : JSONB
+        status : VARCHAR(20)
+        attempts : INTEGER
+        last_attempt_at : TIMESTAMPTZ
+        last_error : TEXT
+        response_code : INTEGER
+        created_at : TIMESTAMPTZ
+        delivered_at : TIMESTAMPTZ
+    }
+}
+
+package "Debates" as debates #F8E8E8 {
+    class debate_logs {
+        **id** : SERIAL <<PK>>
+        --
+        debate_id : VARCHAR(255)
+        session_id : VARCHAR(255)
+        participant_id : INTEGER
+        participant_identifier : VARCHAR(255)
+        participant_name : VARCHAR(255)
+        role : VARCHAR(100)
+        provider : VARCHAR(100)
+        model : VARCHAR(255)
+        round : INTEGER
+        action : VARCHAR(100)
+        response_time_ms : BIGINT
+        quality_score : DECIMAL(5,4)
+        tokens_used : INTEGER
+        content_length : INTEGER
+        error_message : TEXT
+        metadata : JSONB
+        created_at : TIMESTAMPTZ
+        expires_at : TIMESTAMPTZ
+    }
+}
+
+' === Relationships ===
+
+' Core
+users "1" -- "0..*" user_sessions : user_id
+users "1" -- "0..*" llm_requests : user_id
+user_sessions "1" -- "0..*" llm_requests : session_id
+user_sessions "1" -- "0..*" cognee_memories : session_id
+llm_requests "1" -- "0..*" llm_responses : request_id
+llm_providers "1" -- "0..*" llm_responses : provider_id
+
+' Models.dev
+llm_providers "1" -- "0..*" models_metadata : provider_id
+models_metadata "1" -- "0..*" model_benchmarks : model_id
+
+' Background Tasks
+background_tasks "1" -- "0..*" background_tasks : parent_task_id
+background_tasks "1" -- "0..*" task_execution_history : task_id
+background_tasks "1" -- "0..*" task_resource_snapshots : task_id
+background_tasks "1" -- "0..*" webhook_deliveries : task_id
+
+@enduml
