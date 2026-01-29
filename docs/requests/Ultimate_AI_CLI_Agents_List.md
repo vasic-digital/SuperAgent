@@ -1,7 +1,7 @@
 # Ultimate AI CLI Agents List
 
 **Last Updated:** 2026-01-29
-**Total Agents:** 350+
+**Total Agents:** 400+
 **Status:** Actively Maintained
 
 This is a comprehensive, curated list of all known open-source AI CLI agents, coding assistants, and terminal-based AI tools available on GitHub, GitLab, and other platforms.
@@ -52,8 +52,23 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 40. [Calendar & Scheduling](#calendar--scheduling)
 41. [File Management & Organization](#file-management--organization)
 42. [Code Generation & Scaffolding](#code-generation--scaffolding)
-43. [Specialized Tools](#specialized-tools)
-44. [Curated Lists & Resources](#curated-lists--resources)
+43. [GraphQL Tools](#graphql-tools)
+44. [WebAssembly & WASM](#webassembly--wasm)
+45. [Serverless & Cloud Functions](#serverless--cloud-functions)
+46. [Language-Specific: Rust](#language-specific-rust)
+47. [Language-Specific: Python](#language-specific-python)
+48. [Language-Specific: Go](#language-specific-go)
+49. [Language-Specific: Java](#language-specific-java)
+50. [Healthcare & Medical](#healthcare--medical)
+51. [Finance & Trading](#finance--trading)
+52. [Legal & Contract Analysis](#legal--contract-analysis)
+53. [Education & Learning](#education--learning)
+54. [API Testing](#api-testing)
+55. [Log Analysis & Monitoring](#log-analysis--monitoring)
+56. [Dependency & Vulnerability Scanning](#dependency--vulnerability-scanning)
+57. [Configuration Management](#configuration-management)
+58. [Specialized Tools](#specialized-tools)
+59. [Curated Lists & Resources](#curated-lists--resources)
 
 ---
 
@@ -671,6 +686,206 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ---
 
+## GraphQL Tools
+
+**Description:** AI agents and tools for GraphQL API design, schema management, and testing.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Apollo GraphQL** | Platform for graph-based API orchestration with MCP server | https://github.com/apollographql |
+| **Hasura** | Blazing fast, instant realtime GraphQL APIs with fine-grained access control | https://github.com/hasura |
+| **awesome-graphql** | Curated list of GraphQL resources, libraries, and tools | https://github.com/chentsulin/awesome-graphql |
+| **graphqurl** | CLI tool like cURL but for GraphQL (by Hasura team) | (Hasura) |
+
+---
+
+## WebAssembly & WASM
+
+**Description:** AI agents and runtimes for WebAssembly compilation and execution.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Wassette** | Security-oriented runtime for WebAssembly Components via MCP (Microsoft) | (Microsoft Open Source) |
+| **Capsule** | Secure, durable runtime for AI agents in isolated WebAssembly sandboxes | https://github.com/mavdol/capsule |
+| **wasm-tools** | CLI and Rust libraries for low-level manipulation of WebAssembly modules | https://github.com/bytecodealliance/wasm-tools |
+| **FTL** | Faster tools for AI agents with sub-millisecond cold start | https://github.com/fastertools/ftl |
+| **wasm3** | Fast WebAssembly interpreter and universal WASM runtime | https://github.com/wasm3/wasm3 |
+| **wasm-agents-blueprint** | Testing WASM-powered AI agents (Mozilla AI) | https://github.com/mozilla-ai/wasm-agents-blueprint |
+| **Wasmtime** | Lightweight WebAssembly runtime (fast, secure, standards-compliant) | https://github.com/bytecodealliance/wasmtime |
+| **wasm-micro-runtime** | WebAssembly Micro Runtime (WAMR) | https://github.com/bytecodealliance/wasm-micro-runtime |
+
+---
+
+## Serverless & Cloud Functions
+
+**Description:** AI agents for serverless deployment, Lambda functions, and cloud automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Serverless Framework** | Effortlessly build apps with AWS Lambda and managed cloud services | https://github.com/serverless/serverless |
+| **Agile Agents (A2)** | Open-source framework for serverless AI Agent deployments (AWS, Azure, GCP) | https://github.com/ruvnet/agileagents |
+| **serverless examples** | Boilerplates and examples of serverless architectures | https://github.com/serverless/examples |
+
+---
+
+## Language-Specific: Rust
+
+**Description:** AI agents and frameworks built specifically for Rust development.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **opencode-rs** | AI-powered coding suite with Rust core and Tauri GUI | https://github.com/RyanLisse/opencode-rs |
+| **RustCoder** | Enable AI agents to create and execute Rust tools autonomously | https://github.com/cardea-mcp/RustCoder |
+| **rust-agentai** | Rust library for simplifying AI agent creation | https://github.com/AdamStrojek/rust-agentai |
+| **AutoAgents** | Multi-agent framework in Rust for building intelligent agents | https://github.com/liquidos-ai/AutoAgents |
+| **adk-rust** | Rust Agent Development Kit with modular components | https://github.com/zavora-ai/adk-rust |
+| **claude_agent_sdk_rust** | Rust SDK for Claude Code CLI building production-ready AI agents | https://github.com/Wally869/claude_agent_sdk_rust |
+
+---
+
+## Language-Specific: Python
+
+**Description:** Python-specific dependency management and AI development tools.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Poetry** | Python packaging and dependency management made easy | https://github.com/python-poetry/poetry |
+
+---
+
+## Language-Specific: Go
+
+**Description:** Go-specific AI agent frameworks and development tools.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Google ADK (Go)** | Code-first Go toolkit for building AI agents | https://github.com/google/adk-go |
+| **Eino** | Ultimate LLM/AI application development framework in Golang | https://github.com/cloudwego/eino |
+| **Jetify AI SDK** | AI framework for Go developers with unified interface | https://github.com/jetify-com/ai |
+| **Ingenimax Agent SDK Go** | Powerful Go framework for production-ready AI agents | https://github.com/Ingenimax/agent-sdk-go |
+| **Anyi** | Autonomous AI agent framework for real-world workflows | https://github.com/jieliu2000/anyi |
+
+---
+
+## Language-Specific: Java
+
+**Description:** Java-specific AI agent frameworks and build automation tools.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Google ADK (Java)** | Code-first Java toolkit for building AI agents | https://github.com/google/adk-java |
+| **Embabel Agent** | Agent framework for the JVM (Java/Kotlin) | https://github.com/embabel/embabel-agent |
+| **maven-tools-mcp** | MCP server for Maven Central dependency intelligence | https://github.com/arvindand/maven-tools-mcp |
+
+---
+
+## Healthcare & Medical
+
+**Description:** AI agents for healthcare systems, FHIR, HL7, and clinical workflows.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Anthropic Healthcare** | Healthcare marketplace plugins with FHIR developer skills | https://github.com/anthropics/healthcare |
+| **Agentic Healthcare AI** | Specialized medical AI agents with FHIR integration | https://github.com/amitpuri/agentic-healthcare-ai |
+| **Awesome-AI-Agents-for-Healthcare** | Latest advances on Agentic AI for Healthcare | https://github.com/AgenticHealthAI/Awesome-AI-Agents-for-Healthcare |
+| **Azure Healthcare Agent Orchestrator** | Modular agents for multi-disciplinary healthcare workflows | https://github.com/Azure-Samples/healthcare-agent-orchestrator |
+| **FHIR MCP Server** | Natural language interface for healthcare data (Momentum) | (Momentum.ai) |
+
+---
+
+## Finance & Trading
+
+**Description:** AI agents for financial analysis, trading, and market forecasting.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **TradingAgents** | Multi-agent LLM Financial Trading Framework | https://github.com/TauricResearch/TradingAgents |
+| **FinRobot** | Open-source AI Agent Platform for Financial Analysis | https://github.com/AI4Finance-Foundation/FinRobot |
+| **OpenBB** | Financial data platform for analysts, quants and AI agents | https://github.com/OpenBB-finance/OpenBB |
+| **AI Hedge Fund** | AI Hedge Fund Team with terminal control | https://github.com/virattt/ai-hedge-fund |
+| **FinRL** | First open-source framework for financial reinforcement learning | https://github.com/AI4Finance-Foundation/FinRL |
+| **AI-Trader** | Fully replayable trading environment for AI agents | https://github.com/HKUDS/AI-Trader |
+| **awesome-ai-in-finance** | Curated list of LLMs & deep learning in finance | https://github.com/georgezouq/awesome-ai-in-finance |
+
+---
+
+## Legal & Contract Analysis
+
+**Description:** AI agents for legal document analysis, contracts, and compliance.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **LawAgent** | List of Law and Legal AI Agents Resources | https://github.com/AI-Hub-Admin/LawAgent |
+| **LawGlance** | Free open source RAG-based AI legal assistant | https://github.com/lawglance/lawglance |
+| **Legal-AI_Project** | Automated legal document analysis platform | https://github.com/OssamaLouati/Legal-AI_Project |
+| **Ally Legal Assistant** | Azure-powered Word plugin for contract analysis | https://github.com/Azure-Samples/ally-legal-assistant |
+| **Contract Analyzer** | Open-source tool for extracting contract information | https://github.com/ahmetkumass/contract-analyzer |
+| **AskLegal.ai** | AI legal assistant with RAG pipeline and Indian Penal Code | https://github.com/Kopika0208/AskLegal.ai-AI-Legal-Assistant |
+
+---
+
+## Education & Learning
+
+**Description:** AI tutors, learning management systems, and educational platforms.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **DeepTutor** | AI-Powered Personalized Learning Assistant | https://github.com/HKUDS/DeepTutor |
+| **lms-front** | AI Powered LMS app for future of learning | https://github.com/guillermoscript/lms-front |
+| **AI4ED** | AI for Education project at Northeastern University | https://github.com/nikbearbrown/AI4ED |
+| **AI-Tutor** | LLM and RAG-Enhanced AI Tutoring for various courses | https://github.com/098765d/AI_Tutor |
+| **ai-tutor (BlackyDrum)** | AI-powered tutor for enhancing learning experiences | https://github.com/BlackyDrum/ai-tutor |
+| **EduGPT** | Implementation of AI Instructor using LLMs and Langchain | https://github.com/hqanhh/EduGPT |
+
+---
+
+## API Testing
+
+**Description:** AI agents and tools for API testing, REST, GraphQL automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Hoppscotch** | Lightning-fast interface for REST, GraphQL, WebSocket API testing | (Hoppscotch.io) |
+| **HTTPie CLI** | Modern, user-friendly command-line HTTP client | (httpie.io) |
+| **Hurl** | Run and test HTTP requests with plain text | (hurl.dev) |
+
+---
+
+## Log Analysis & Monitoring
+
+**Description:** AI agents for log analysis, monitoring, and observability platforms.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **ELK Stack** | Elasticsearch, Logstash, Kibana for log analysis | (elastic.co) |
+| **OpenObserve** | Modern observability platform with 140x lower storage cost | (openobserve.ai) |
+| **Splunk GitHub Add-on** | Collect audit log events from GitHub Enterprise Cloud | https://github.com/splunk/github-audit-log-monitoring-add-on-for-splunk |
+
+---
+
+## Dependency & Vulnerability Scanning
+
+**Description:** AI agents for dependency management and security vulnerability scanning.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Snyk CLI** | Scans and monitors projects for security vulnerabilities | https://github.com/snyk/cli |
+| **Snyk Actions** | GitHub actions for checking projects for vulnerabilities | https://github.com/snyk/actions |
+
+---
+
+## Configuration Management
+
+**Description:** Infrastructure automation and configuration management tools.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Ansible** | Agentless automation tool with YAML playbooks | (ansible.com) |
+| **Chef** | System and infrastructure automation platform | (chef.io) |
+| **Puppet** | Configuration management for large-scale environments | (puppet.com) |
+
+---
+
 ## Specialized Tools
 
 **Description:** Tools for specific use cases and domains.
@@ -798,15 +1013,16 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ## Statistics
 
-- **Total Agents Listed:** 350+
+- **Total Agents Listed:** 400+
 - **Total Curated Lists:** 30+
-- **Categories Covered:** 44
+- **Categories Covered:** 59
 - **Last Research Date:** 2026-01-29
-- **Active GitHub Repositories:** 300+
-- **Research Depth:** 2 comprehensive research sessions
+- **Active GitHub Repositories:** 350+
+- **Research Depth:** 3 comprehensive research sessions
 - **Specialized Categories:**
   - **Phase 1 (15 categories):** DevOps, Testing, Security, Documentation, Database, Mobile, Frontend, Backend, Blockchain, MLOps, Prompt Engineering, Translation, Refactoring, Monitoring, Game Development
   - **Phase 2 (14 categories):** CI/CD, Container & Orchestration, Data Engineering, NLP, Computer Vision, Audio/Speech, Chatbots, Edge Computing, Performance Benchmarking, Search & Retrieval, Email Automation, Calendar/Scheduling, File Management, Code Generation
+  - **Phase 3 (15 categories):** GraphQL Tools, WebAssembly/WASM, Serverless & Cloud, Language-Specific (Rust/Python/Go/Java), Healthcare & Medical, Finance & Trading, Legal & Contract Analysis, Education & Learning, API Testing, Log Analysis, Dependency Scanning, Configuration Management
 
 ---
 
