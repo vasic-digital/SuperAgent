@@ -2336,6 +2336,141 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ---
 
+## Dating & Matchmaking
+
+**Description:** AI agents for dating apps, matchmaking algorithms, and relationship compatibility.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AI-dating-helper** | Automate dating apps with AI | https://github.com/OxMarco/AI-dating-helper |
+| **AI-Matchmaker** | Matchmaking profiles using unsupervised ML and NLP | https://github.com/marcosan93/AI-Matchmaker |
+| **ai-matchmate** | AI-powered match-maker dating chatbot | https://github.com/alainux/ai-matchmate |
+| **cafe** | Dating app using ML for custom user experiences | https://github.com/DesiPilla/cafe |
+| **pH7Builder** | Professional open source social dating CMS | https://github.com/pH7Software/pH7-Social-Dating-CMS |
+
+---
+
+## Parenting & Childcare
+
+**Description:** AI agents for baby care, parenting advice, and childcare management.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **baby-care-agent** | RAG-powered AI assistant for parents | https://github.com/rohinigaonkar/baby-care-agent |
+| **ChildCare** | LibreHealth child care app prototype | https://github.com/MrAsimZahid/ChildCare |
+| **Day-Care** | Day care child management system | https://github.com/davisengeler/Day-Care |
+| **child-care-system** | Client/server system for childcare management | https://github.com/LiaCicati/child-care-system |
+
+---
+
+## Senior Care & Aging
+
+**Description:** AI agents for elderly care, assisted living, and geriatric health management.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **medblock** | Elderly care with AI-powered medical robots on blockchain | https://github.com/lucylow/medblock |
+| **Conversational-AI-Chatbot-for-the-Elderly-and-Disabled** | Virtual caregiver system for elderly support | https://github.com/Rawan19/Conversational-AI-Chatbot-for-the-Elderly-and-Disabled |
+| **Awesome-AI-Agents-for-Healthcare** | AI agents for healthcare including elderly care | https://github.com/AgenticHealthAI/Awesome-AI-Agents-for-Healthcare |
+| **HealthcareAgent** | List of AI agents for healthcare applications | https://github.com/AI-Hub-Admin/HealthcareAgent |
+
+---
+
+## Language Learning & Tutoring
+
+**Description:** AI agents for foreign language acquisition, pronunciation, and conversational practice.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **companion** | Generative-AI-powered foreign-language private tutor | https://github.com/shakedzy/companion |
+| **Discute** | Open-source language learning with voice practice | https://github.com/5uru/Discute |
+| **ai-english-tutor** | Interactive AI English tutor with OpenAI APIs | https://github.com/jasonkang14/ai-english-tutor |
+| **DeepTutor** | AI-powered personalized learning assistant | https://github.com/HKUDS/DeepTutor |
+| **Mr.-Ranedeer-AI-Tutor** | GPT-4 AI tutor for customizable learning | https://github.com/JushBJJ/Mr.-Ranedeer-AI-Tutor |
+| **awesome-ai-llm4education** | AI and LLM papers for education | https://github.com/GeminiLight/awesome-ai-llm4education |
+
+---
+
+## Career Counseling & Job Search
+
+**Description:** AI agents for job applications, resume optimization, and career guidance.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Jobs_Applier_AI_Agent_AIHawk** | Automates job application process with AI | https://github.com/feder-cr/Jobs_Applier_AI_Agent_AIHawk |
+| **jobsync** | Self-hosted job application tracker and AI career assistant | https://github.com/Gsync/jobsync |
+| **GENAI-CareerAssistant-Multiagent** | GenAI career assistant with multi-agent system | https://github.com/amanv1906/GENAI-CareerAssistant-Multiagent |
+| **jobber** | Browser-controlling AI agent for job applications | https://github.com/sentient-engineering/jobber |
+| **job-application-bot-by-ollama-ai** | End-to-end job agent with semantic filters | https://github.com/lookr-fyi/job-application-bot-by-ollama-ai |
+
+---
+
+## Home Improvement & DIY
+
+**Description:** AI agents for home renovation, interior design, and repair guidance.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AI-Interior-Design** | AI interior design and remodel tool | https://github.com/FMXExpress/AI-Interior-Design |
+| **godesigner** | B2B tool for interior designers using generative AI | https://github.com/kabir12345/godesigner |
+| **Nano Banana Home Renovation Planner** | Multi-agent home renovation planner | https://www.theunwindai.com/p/build-an-ai-home-renovation-planner-agent-using-nano-banana |
+
+---
+
+## Gardening & Landscaping
+
+**Description:** AI agents for garden planning, plant care, and landscape design.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **awesome-agriculture** | Open source technology for agriculture and gardening | https://github.com/brycejohnston/awesome-agriculture |
+| **FarmBot** | Open source precision gardening project | https://farm.bot/ |
+| **Home Assistant Garden Planning** | Smart garden planning and management integration | https://www.home-assistant.io/ |
+
+---
+
+## Automotive Repair & Maintenance
+
+**Description:** AI agents for vehicle diagnostics, predictive maintenance, and repair assistance.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Automotive-AI** | Assists mobile automotive diagnostic operations | https://github.com/Eloquent-Algorithmics/Automotive-AI |
+| **ML-Based-Vehicle-Predictive-Maintenance-System** | AI-driven predictive maintenance for vehicles | https://github.com/iDharshan/ML-Based-Vehicle-Predictive-Maintenance-System-with-Real-Time-Visualization |
+| **GarageBuddy** | Open source garage management system | https://github.com/dimitar-grigorov/GarageBuddy |
+| **automotive-repair-management-system** | Web-based repair shop management with Flask | https://github.com/ChanMeng666/automotive-repair-management-system |
+
+---
+
+## Pet Services (Grooming, Training, Boarding)
+
+**Description:** AI agents for pet care services, training assistance, and boarding management.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **petboarding** | Easy, fast and reliable pet boarding software | https://github.com/simsustech/petboarding |
+| **PetTrainerAI** | AI and robotics for pet training | https://github.com/PetTrainerAI/PetTrainerAI |
+| **Pet-Care-Management** | Comprehensive pet care management system (Odoo 17) | https://github.com/georgegozal/Pet-Care-Management |
+| **Animal-AI** | Research to understand human, animal, and artificial cognition | https://github.com/Kinds-of-Intelligence-CFI/animal-ai |
+| **PetBacker-frontend** | Pet sitters, groomers, dog walkers platform | https://github.com/HarshalGhutkule/PetBacker-frontend |
+
+---
+
+## Astrology & Horoscopes
+
+**Description:** AI agents for astrological predictions, birth charts, and zodiac analysis.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **VedAstro** | Non-profit open source Vedic astrology platform | https://github.com/VedAstro/VedAstro |
+| **kerykeion** | Data-driven Python astrology library | https://github.com/g-battaglia/kerykeion |
+| **AI-Astrologer** | Free astrology chat with AI astrologer | https://github.com/hiiamrohit/AI-Astrologer |
+| **AstroGPT** | Kundli, daily horoscope, ChatGPT-powered bot | https://github.com/VKoder/AstroGPT |
+| **GPTNeo-Horoscopes** | Fine-tuned GPT Neo for horoscope generation | https://github.com/kzhekov/GPTNeo-Horoscopes |
+| **Vedic-Horoscope-AI-Chat** | Talk to AI Vedic astrologer (ChatGPT & Cohere) | https://github.com/VedAstro/Vedic-Horoscope-AI-Chat-GPT-Free-Open |
+
+---
+
 ## Additional Resources
 
 ### Community Directories
@@ -2361,12 +2496,12 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ## Statistics
 
-- **Total Agents Listed:** 860+
+- **Total Agents Listed:** 910+
 - **Total Curated Lists:** 30+
-- **Categories Covered:** 149
+- **Categories Covered:** 159
 - **Last Research Date:** 2026-01-29
-- **Active GitHub Repositories:** 810+
-- **Research Depth:** 11 comprehensive research sessions
+- **Active GitHub Repositories:** 860+
+- **Research Depth:** 12 comprehensive research sessions
 - **Specialized Categories:**
   - **Phase 1 (15 categories):** DevOps, Testing, Security, Documentation, Database, Mobile, Frontend, Backend, Blockchain, MLOps, Prompt Engineering, Translation, Refactoring, Monitoring, Game Development
   - **Phase 2 (14 categories):** CI/CD, Container & Orchestration, Data Engineering, NLP, Computer Vision, Audio/Speech, Chatbots, Edge Computing, Performance Benchmarking, Search & Retrieval, Email Automation, Calendar/Scheduling, File Management, Code Generation
@@ -2379,6 +2514,7 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
   - **Phase 9 (10 categories):** Insurance & Actuarial Science, Real Estate & Property Management, Hospitality & Tourism, Event Management & Planning, Journalism & Media Production, Publishing & Content Creation, Translation & Localization, Libraries & Information Science, Museums & Galleries, Military & Defense Systems
   - **Phase 10 (10 categories):** Human Resources & Recruitment, Legal Tech & Compliance, Retail & Point of Sale, Telecommunications & Customer Service, Mining & Natural Resources, Fisheries & Aquaculture, Forestry & Lumber, Veterinary & Animal Care, Nonprofit & NGO Management, Government & Public Sector
   - **Phase 11 (10 categories):** Religious & Spiritual Organizations, Beauty & Cosmetics, Fitness & Wellness, Photography & Videography, Podcasting & Broadcasting, Animation & Motion Graphics, Wedding & Event Services, Email Marketing & Newsletters, Personal Finance & Budgeting, Genealogy & Family History
+  - **Phase 12 (10 categories):** Dating & Matchmaking, Parenting & Childcare, Senior Care & Aging, Language Learning & Tutoring, Career Counseling & Job Search, Home Improvement & DIY, Gardening & Landscaping, Automotive Repair & Maintenance, Pet Services (Grooming/Training/Boarding), Astrology & Horoscopes
 
 ---
 
