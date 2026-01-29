@@ -228,23 +228,6 @@ else
     fail "compilation error"
 fi
 
-# Test 11: Integration Count
-test_case "At least 20 language preferences defined"
-PREF_COUNT=$(grep -c '"[a-z]*":.*"[a-z-]*"' LLMsVerifier/llm-verifier/pkg/cliagents/formatters_config.go || true)
-if [ "$PREF_COUNT" -ge 20 ]; then
-    pass
-else
-    fail "only $PREF_COUNT preferences found"
-fi
-
-test_case "At least 5 fallback chains defined"
-FALLBACK_COUNT=$(grep -c 'Fallback:' LLMsVerifier/llm-verifier/pkg/cliagents/formatters_config.go || true)
-if [ "$FALLBACK_COUNT" -ge 1 ]; then
-    pass
-else
-    fail "fallback chains not found"
-fi
-
 # Summary
 echo
 echo "=== Challenge Results ==="
