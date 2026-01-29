@@ -16,15 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// MCPServerConfig represents an MCP server configuration
-type MCPServerConfig struct {
-	Name        string
-	Type        string // "local" or "remote"
-	Command     []string
-	URL         string
-	PackageName string
-}
-
 // TestMCPPackageExistence verifies all MCP packages exist in npm registry
 func TestMCPPackageExistence(t *testing.T) {
 	if testing.Short() {

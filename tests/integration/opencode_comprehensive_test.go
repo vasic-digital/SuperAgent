@@ -303,8 +303,8 @@ func TestOpenCodeComprehensiveRequest(t *testing.T) {
 	})
 }
 
-// TestOpenCodeConcurrentRequests tests handling of concurrent requests
-func TestOpenCodeConcurrentRequests(t *testing.T) {
+// TestOpenCodeComprehensiveConcurrent tests handling of concurrent requests
+func TestOpenCodeComprehensiveConcurrent(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping concurrent requests test (acceptable)")
 		return

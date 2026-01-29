@@ -8,7 +8,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -17,17 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// TestConfig holds test configuration
-type TestConfig struct {
-	HelixAgentURL string
-	PostgresHost  string
-	PostgresPort  string
-	RedisHost     string
-	RedisPort     string
-	ChromaDBURL   string
-	CogneeURL     string
-}
 
 func getTestConfig() TestConfig {
 	return TestConfig{
@@ -39,13 +27,6 @@ func getTestConfig() TestConfig {
 		ChromaDBURL:   getEnv("CHROMADB_URL", "http://localhost:8001"),
 		CogneeURL:     getEnv("COGNEE_URL", "http://localhost:8000"),
 	}
-}
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }
 
 // ============================================================================

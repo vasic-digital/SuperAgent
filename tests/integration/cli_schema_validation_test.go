@@ -423,9 +423,9 @@ func TestMCPServerFieldValidation(t *testing.T) {
 	}
 }
 
-// TestMCPServerConnectivity tests that all remote MCP servers respond within timeout
+// TestMCPRemoteServerConnectivity tests that all remote MCP servers respond within timeout
 // This is CRITICAL for rock-solid stability - servers MUST respond fast
-func TestMCPServerConnectivity(t *testing.T) {
+func TestMCPRemoteServerConnectivity(t *testing.T) {
 	// Check if HelixAgent is running
 	resp, err := http.Get("http://localhost:7061/health")
 	if err != nil {

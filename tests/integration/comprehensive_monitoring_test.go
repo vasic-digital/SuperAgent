@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -28,13 +27,6 @@ var (
 	cogneeURL       = getEnv("COGNEE_URL", "http://localhost:8000")
 	exporterURL     = getEnv("EXPORTER_URL", "http://localhost:9200")
 )
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
 
 // TestHelixAgentHealth tests that HelixAgent API is healthy
 func TestHelixAgentHealth(t *testing.T) {

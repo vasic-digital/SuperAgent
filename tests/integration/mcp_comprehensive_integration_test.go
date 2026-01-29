@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// MCPServerConfig defines the configuration for an MCP server
-type MCPServerConfig struct {
+// MCPServerPortConfig defines the port configuration for an MCP server
+type MCPServerPortConfig struct {
 	Name        string
 	Port        int
 	Type        string // "core", "database", "vector", "devops", "browser", "communication", "productivity", "search", "cloud"
@@ -31,7 +31,7 @@ type MCPServerConfig struct {
 }
 
 // AllMCPServers defines the complete list of 80+ MCP servers
-var AllMCPServers = []MCPServerConfig{
+var AllMCPServers = []MCPServerPortConfig{
 	// Core MCP Servers (from MCP-Servers monorepo) - Ports 9101-9199
 	{Name: "fetch", Port: 9101, Type: "core", Category: "Core MCP"},
 	{Name: "git", Port: 9102, Type: "core", Category: "Core MCP"},
@@ -142,7 +142,7 @@ func TestMCPServerConnectivity(t *testing.T) {
 
 	for _, server := range AllMCPServers {
 		wg.Add(1)
-		go func(s MCPServerConfig) {
+		go func(s MCPServerPortConfig) {
 			defer wg.Done()
 
 			addr := fmt.Sprintf("localhost:%d", s.Port)
@@ -220,7 +220,7 @@ func TestMCPProtocolCompliance(t *testing.T) {
 	}
 
 	// Test core servers that should be running
-	coreServers := []MCPServerConfig{
+	coreServers := []MCPServerPortConfig{
 		{Name: "fetch", Port: 9101},
 		{Name: "filesystem", Port: 9104},
 		{Name: "memory", Port: 9105},
@@ -536,7 +536,7 @@ func TestMCPEndToEnd(t *testing.T) {
 
 	// E2E Test 1: Filesystem operations
 	t.Run("FilesystemE2E", func(t *testing.T) {
-		if !isServerRunning(9104) {
+		if !isMCPPortOpen(9104) {
 			t.Skip("Filesystem MCP server not running")
 		}
 		t.Log("Filesystem MCP E2E test passed (connectivity verified)")
@@ -544,7 +544,7 @@ func TestMCPEndToEnd(t *testing.T) {
 
 	// E2E Test 2: Memory operations
 	t.Run("MemoryE2E", func(t *testing.T) {
-		if !isServerRunning(9105) {
+		if !isMCPPortOpen(9105) {
 			t.Skip("Memory MCP server not running")
 		}
 		t.Log("Memory MCP E2E test passed (connectivity verified)")
@@ -552,7 +552,7 @@ func TestMCPEndToEnd(t *testing.T) {
 
 	// E2E Test 3: Time operations
 	t.Run("TimeE2E", func(t *testing.T) {
-		if !isServerRunning(9103) {
+		if !isMCPPortOpen(9103) {
 			t.Skip("Time MCP server not running")
 		}
 		t.Log("Time MCP E2E test passed (connectivity verified)")
@@ -560,7 +560,7 @@ func TestMCPEndToEnd(t *testing.T) {
 
 	// E2E Test 4: Fetch operations
 	t.Run("FetchE2E", func(t *testing.T) {
-		if !isServerRunning(9101) {
+		if !isMCPPortOpen(9101) {
 			t.Skip("Fetch MCP server not running")
 		}
 		t.Log("Fetch MCP E2E test passed (connectivity verified)")
@@ -569,8 +569,8 @@ func TestMCPEndToEnd(t *testing.T) {
 	_ = ctx // Use context for future async operations
 }
 
-// isServerRunning checks if a server is running on the given port
-func isServerRunning(port int) bool {
+// isMCPPortOpen checks if a server is running on the given port
+func isMCPPortOpen(port int) bool {
 	addr := fmt.Sprintf("localhost:%d", port)
 	conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
 	if err != nil {
@@ -582,14 +582,14 @@ func isServerRunning(port int) bool {
 
 // BenchmarkMCPConnectivity benchmarks TCP connection time to MCP servers
 func BenchmarkMCPConnectivity(b *testing.B) {
-	coreServers := []MCPServerConfig{
+	coreServers := []MCPServerPortConfig{
 		{Name: "fetch", Port: 9101},
 		{Name: "filesystem", Port: 9104},
 		{Name: "memory", Port: 9105},
 	}
 
 	for _, server := range coreServers {
-		if !isServerRunning(server.Port) {
+		if !isMCPPortOpen(server.Port) {
 			continue
 		}
 
