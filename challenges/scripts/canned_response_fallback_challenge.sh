@@ -103,17 +103,17 @@ done
 # =============================================================================
 log_section "Section 2: Fallback Configuration"
 
-# Test 2.1: FallbacksPerPosition is at least 4
-if grep -q "const FallbacksPerPosition = 4" "$PROJECT_ROOT/internal/services/debate_team_config.go"; then
-    log_pass "2.1 FallbacksPerPosition is 4"
-elif grep -q "const FallbacksPerPosition = [4-9]" "$PROJECT_ROOT/internal/services/debate_team_config.go"; then
-    log_pass "2.1 FallbacksPerPosition is 4 or more"
+# Test 2.1: MaxFallbacksPerPosition is at least 4
+if grep -q "const MaxFallbacksPerPosition = 4" "$PROJECT_ROOT/internal/services/debate_team_config.go"; then
+    log_pass "2.1 MaxFallbacksPerPosition is 4"
+elif grep -q "const MaxFallbacksPerPosition = [4-9]" "$PROJECT_ROOT/internal/services/debate_team_config.go"; then
+    log_pass "2.1 MaxFallbacksPerPosition is 4 or more"
 else
-    log_fail "2.1 FallbacksPerPosition should be at least 4"
+    log_fail "2.1 MaxFallbacksPerPosition should be at least 4"
 fi
 
 # Test 2.2: TotalDebateLLMs is properly calculated (5 positions * (1 + 4 fallbacks) = 25)
-if grep -q "TotalDebateLLMs = TotalDebatePositions \* (1 + FallbacksPerPosition)" "$PROJECT_ROOT/internal/services/debate_team_config.go"; then
+if grep -q "TotalDebateLLMs = TotalDebatePositions \* (1 + MaxFallbacksPerPosition)" "$PROJECT_ROOT/internal/services/debate_team_config.go"; then
     log_pass "2.2 TotalDebateLLMs properly calculated from positions and fallbacks"
 else
     log_fail "2.2 TotalDebateLLMs calculation not found"
