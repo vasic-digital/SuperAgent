@@ -9,7 +9,9 @@ import (
 	"io"
 	"math/rand" // Used for non-security operations (jitter)
 	"net/http"
+	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -51,12 +53,19 @@ const (
 
 	// Anonymous access identifier for free models
 	AnonymousDeviceHeader = "X-Device-ID"
+
+	// Model discovery cache TTL
+	ModelDiscoveryCacheTTL = 6 * time.Hour
 )
 
-// FreeModels returns the list of free models available on Zen
-// Updated 2026-01: These models are verified working via the Zen API
-func FreeModels() []string {
-	return []string{
+var (
+	// Cached discovered models
+	discoveredModels      []string
+	discoveredModelsTime  time.Time
+	discoveredModelsMutex sync.RWMutex
+
+	// Known models as fallback (last verified 2026-01)
+	knownFreeModels = []string{
 		ModelBigPickle,
 		ModelGPT5Nano,
 		ModelGLM47,
@@ -64,6 +73,167 @@ func FreeModels() []string {
 		ModelKimiK2,
 		ModelGemini3,
 	}
+)
+
+// FreeModels returns the list of free models available on Zen
+// Dynamically discovers models with fallback to known list
+func FreeModels() []string {
+	// Try to get fresh models
+	models := DiscoverFreeModels()
+	if len(models) > 0 {
+		return models
+	}
+	// Fallback to known models
+	return knownFreeModels
+}
+
+// DiscoverFreeModels dynamically discovers available free models
+// Uses cached results if fresh (< 6 hours old)
+// Discovery order: 1) Zen API, 2) OpenCode CLI, 3) Known list
+func DiscoverFreeModels() []string {
+	// Check cache first
+	discoveredModelsMutex.RLock()
+	if time.Since(discoveredModelsTime) < ModelDiscoveryCacheTTL && len(discoveredModels) > 0 {
+		models := make([]string, len(discoveredModels))
+		copy(models, discoveredModels)
+		discoveredModelsMutex.RUnlock()
+		return models
+	}
+	discoveredModelsMutex.RUnlock()
+
+	// Try discovery methods
+	var models []string
+
+	// Method 1: Fetch from Zen API
+	models = discoverModelsFromAPI()
+	if len(models) > 0 {
+		cacheDiscoveredModels(models)
+		return models
+	}
+
+	// Method 2: Use OpenCode CLI
+	models = discoverModelsFromCLI()
+	if len(models) > 0 {
+		cacheDiscoveredModels(models)
+		return models
+	}
+
+	// Method 3: Return known models
+	cacheDiscoveredModels(knownFreeModels)
+	return knownFreeModels
+}
+
+// discoverModelsFromAPI fetches models from Zen API
+func discoverModelsFromAPI() []string {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", ZenModelsURL, nil)
+	if err != nil {
+		log.WithError(err).Debug("Failed to create Zen API request")
+		return nil
+	}
+
+	// Anonymous access with device ID
+	req.Header.Set(AnonymousDeviceHeader, generateDeviceID())
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.WithError(err).Debug("Failed to fetch models from Zen API")
+		return nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.WithField("status", resp.StatusCode).Debug("Zen API returned non-200 status")
+		return nil
+	}
+
+	var modelsResp ZenModelsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&modelsResp); err != nil {
+		log.WithError(err).Debug("Failed to decode Zen API response")
+		return nil
+	}
+
+	// Extract model IDs, filter for free models (opencode/ prefix or in known list)
+	models := make([]string, 0)
+	for _, model := range modelsResp.Data {
+		modelID := normalizeModelID(model.ID)
+		// Include if it's a known free model or has opencode prefix
+		if strings.HasPrefix(model.ID, "opencode/") || contains(knownFreeModels, modelID) {
+			if !contains(models, modelID) {
+				models = append(models, modelID)
+			}
+		}
+	}
+
+	if len(models) > 0 {
+		log.WithField("count", len(models)).Info("Discovered Zen models from API")
+	}
+	return models
+}
+
+// discoverModelsFromCLI uses OpenCode CLI to discover models
+func discoverModelsFromCLI() []string {
+	// Check if opencode CLI is available
+	path, err := exec.LookPath("opencode")
+	if err != nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, path, "models")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.WithError(err).Debug("Failed to run opencode CLI")
+		return nil
+	}
+
+	// Parse output - one model per line
+	lines := strings.Split(string(output), "\n")
+	models := make([]string, 0)
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		// Normalize model ID (remove opencode/ prefix)
+		modelID := normalizeModelID(line)
+		// Only include if it looks like a free model
+		if strings.HasPrefix(line, "opencode/") || contains(knownFreeModels, modelID) {
+			if !contains(models, modelID) {
+				models = append(models, modelID)
+			}
+		}
+	}
+
+	if len(models) > 0 {
+		log.WithField("count", len(models)).Info("Discovered Zen models from CLI")
+	}
+	return models
+}
+
+// cacheDiscoveredModels stores models in cache
+func cacheDiscoveredModels(models []string) {
+	discoveredModelsMutex.Lock()
+	defer discoveredModelsMutex.Unlock()
+	discoveredModels = make([]string, len(models))
+	copy(discoveredModels, models)
+	discoveredModelsTime = time.Now()
+}
+
+// contains checks if a string is in a slice
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
 // generateDeviceID generates a cryptographically secure unique device identifier for anonymous access
