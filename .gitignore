@@ -1,4 +1,5 @@
 .env
+GIT_PUSH_SUMMARY.txt
 
 # Go basics
 bin/
