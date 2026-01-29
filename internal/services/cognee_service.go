@@ -1901,17 +1901,80 @@ It supports 10 LLM providers (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwe
 The AI Debate system uses multi-round debate between providers for consensus with 5 positions (analyst, proposer, critic, synthesis, mediator).
 Cognee provides knowledge graph and memory capabilities for enhanced context-aware responses.`
 
-	// Add the seed data using the fast /api/v1/add endpoint (NOT memify which requires LLM)
-	// This ensures the vector database is initialized without requiring OpenAI API calls
-	_, err := s.addMemoryViaAdd(ctx, seedContent, "system", "text", map[string]interface{}{
-		"source":      "helixagent_seed",
-		"description": "Initial system data to initialize Cognee vector database",
-		"timestamp":   time.Now().Format(time.RFC3339),
-	})
+	// Create dedicated HTTP client for seeding to avoid race condition with shared client
+	// Use longer timeout for Cognee cold start (10-15s) + processing time
+	seedClient := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 
+	// Build multipart form body directly here with dedicated client
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	part, err := writer.CreateFormFile("data", "helixagent_seed.txt")
+	if err != nil {
+		s.logger.WithError(err).Warn("Failed to create seed form file")
+		return fmt.Errorf("failed to create form file: %w", err)
+	}
+	if _, err := part.Write([]byte(seedContent)); err != nil {
+		s.logger.WithError(err).Warn("Failed to write seed content")
+		return fmt.Errorf("failed to write content: %w", err)
+	}
+
+	if err := writer.WriteField("datasetName", "system"); err != nil {
+		s.logger.WithError(err).Warn("Failed to write dataset field")
+		return fmt.Errorf("failed to write dataset field: %w", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		s.logger.WithError(err).Warn("Failed to close multipart writer")
+		return fmt.Errorf("failed to close multipart writer: %w", err)
+	}
+
+	// Ensure we're authenticated before making request
+	if err := s.EnsureAuthenticated(ctx); err != nil {
+		s.logger.WithError(err).Warn("Failed to authenticate for seeding")
+		return fmt.Errorf("failed to authenticate: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/api/v1/add", s.baseURL)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, &buf)
+	if err != nil {
+		s.logger.WithError(err).Warn("Failed to create seed request")
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	// Add auth header
+	s.mu.RLock()
+	token := s.authToken
+	s.mu.RUnlock()
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	} else if s.apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+s.apiKey)
+	}
+
+	// Execute request with dedicated client (no race condition)
+	resp, err := seedClient.Do(req)
 	if err != nil {
 		s.logger.WithError(err).Warn("Failed to seed Cognee with initial data (non-critical)")
-		return err
+		return fmt.Errorf("seed request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		s.logger.WithError(err).Warn("Failed to read seed response")
+		return fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		s.logger.WithFields(logrus.Fields{
+			"status": resp.StatusCode,
+			"body":   string(body),
+		}).Warn("Seed request returned error status")
+		return fmt.Errorf("seed API error: %d - %s", resp.StatusCode, string(body))
 	}
 
 	s.logger.Info("Successfully seeded Cognee with initial data (vector database initialized)")
