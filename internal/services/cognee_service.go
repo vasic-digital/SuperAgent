@@ -284,6 +284,17 @@ func NewCogneeService(cfg *config.Config, logger *logrus.Logger) *CogneeService 
 		}()
 	}
 
+	// Seed Cognee with initial data to prevent "empty knowledge graph" errors
+	if serviceConfig.Enabled {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if err := service.SeedInitialData(ctx); err != nil {
+				logger.WithError(err).Debug("Failed to seed Cognee with initial data (non-critical)")
+			}
+		}()
+	}
+
 	return service
 }
 
@@ -1761,6 +1772,17 @@ func (s *CogneeService) doRequestWithRetry(ctx context.Context, method, url stri
 		return s.doRequestWithRetry(ctx, method, url, body, false)
 	}
 
+	// Handle HTTP 409 Conflict (empty knowledge graph) gracefully
+	// This happens when Cognee has no data - return empty response instead of error
+	if resp.StatusCode == http.StatusConflict {
+		s.logger.WithFields(logrus.Fields{
+			"url":    url,
+			"status": resp.StatusCode,
+			"body":   string(respBody),
+		}).Debug("Cognee knowledge graph empty (409) - returning empty results")
+		return []byte("[]"), nil // Return empty JSON array
+	}
+
 	if resp.StatusCode >= 400 {
 		return nil, fmt.Errorf("cognee API error: %d - %s", resp.StatusCode, string(respBody))
 	}
@@ -1836,4 +1858,62 @@ func containsCode(text string) bool {
 		}
 	}
 	return false
+}
+
+// SeedInitialData seeds Cognee with initial data to prevent "empty knowledge graph" errors
+// This is called during service initialization to ensure the vector database is initialized
+func (s *CogneeService) SeedInitialData(ctx context.Context) error {
+	if !s.config.Enabled {
+		return nil
+	}
+
+	s.logger.Debug("Seeding Cognee with initial data to initialize vector database")
+
+	// Wait for service to be healthy
+	healthCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	// Poll for health every second
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-healthCtx.Done():
+			s.logger.Warn("Timed out waiting for Cognee to be healthy, skipping seed")
+			return fmt.Errorf("cognee not healthy after 15s")
+		case <-ticker.C:
+			if s.IsHealthy(healthCtx) {
+				goto seedData
+			}
+		}
+	}
+
+seedData:
+	// Ensure we're authenticated
+	if err := s.EnsureAuthenticated(ctx); err != nil {
+		return fmt.Errorf("failed to authenticate: %w", err)
+	}
+
+	// Seed with minimal system context to initialize the vector database
+	seedContent := `HelixAgent is an AI-powered ensemble LLM service that combines responses from multiple language models.
+It supports 10 LLM providers (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama) with dynamic provider selection.
+The AI Debate system uses multi-round debate between providers for consensus with 5 positions (analyst, proposer, critic, synthesis, mediator).
+Cognee provides knowledge graph and memory capabilities for enhanced context-aware responses.`
+
+	// Add the seed data using the fast /api/v1/add endpoint (NOT memify which requires LLM)
+	// This ensures the vector database is initialized without requiring OpenAI API calls
+	_, err := s.addMemoryViaAdd(ctx, seedContent, "system", "text", map[string]interface{}{
+		"source":      "helixagent_seed",
+		"description": "Initial system data to initialize Cognee vector database",
+		"timestamp":   time.Now().Format(time.RFC3339),
+	})
+
+	if err != nil {
+		s.logger.WithError(err).Warn("Failed to seed Cognee with initial data (non-critical)")
+		return err
+	}
+
+	s.logger.Info("Successfully seeded Cognee with initial data (vector database initialized)")
+	return nil
 }

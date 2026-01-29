@@ -277,8 +277,8 @@ func Load() *Config {
 		Cognee: CogneeConfig{
 			BaseURL:     getEnv("COGNEE_BASE_URL", "http://localhost:8000"),
 			APIKey:      getEnv("COGNEE_API_KEY", ""),
-			AutoCognify: getBoolEnv("COGNEE_AUTO_COGNIFY", true),
-			Timeout:     getDurationEnv("COGNEE_TIMEOUT", 30*time.Second),
+			AutoCognify: getBoolEnv("COGNEE_AUTO_COGNIFY", false), // DISABLED temporarily to fix hang - needs investigation
+			Timeout:     getDurationEnv("COGNEE_TIMEOUT", 5*time.Second), // Reduced from 30s to 5s to prevent hang
 			Enabled:     getBoolEnv("COGNEE_ENABLED", true),
 		},
 		LLM: LLMConfig{
@@ -411,7 +411,7 @@ func DefaultServicesConfig() ServicesConfig {
 			Host:        "localhost",
 			Port:        "8000",
 			Enabled:     true,
-			Required:    true,
+			Required:    true, // MANDATORY - HelixAgent MUST NOT start if Cognee fails
 			Remote:      false,
 			HealthPath:  "/",
 			HealthType:  "http",
