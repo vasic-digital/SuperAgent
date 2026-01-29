@@ -314,7 +314,7 @@ SERVICES_WITH_HEALTH=("minio" "flink-jobmanager" "qdrant" "iceberg-rest")
 health_count=0
 for service in "${SERVICES_WITH_HEALTH[@]}"; do
     if grep -A20 "${service}:" docker-compose.bigdata.yml 2>/dev/null | grep -q "healthcheck"; then
-        ((health_count++))
+        health_count=$((health_count + 1))
     fi
 done
 
@@ -356,7 +356,7 @@ if [ -f "/home/milosvasic/.claude/plans/big-data-integration-plan.md" ]; then
     plan_section_count=0
     for section in "${PLAN_SECTIONS[@]}"; do
         if grep -q "$section" /home/milosvasic/.claude/plans/big-data-integration-plan.md 2>/dev/null; then
-            ((plan_section_count++))
+            plan_section_count=$((plan_section_count + 1))
         fi
     done
     if [ $plan_section_count -ge 5 ]; then
