@@ -84,6 +84,7 @@ VERBOSE=false
 SKIP_INFRA=false
 SKIP_VERIFY=false
 DRY_RUN=false
+FAST_MODE=false
 
 #===============================================================================
 # LOGGING FUNCTIONS
@@ -161,6 +162,7 @@ ${BLUE}Options:${NC}
     ${YELLOW}--verbose${NC}        Enable verbose logging
     ${YELLOW}--skip-infra${NC}     Skip infrastructure setup (assumes already running)
     ${YELLOW}--skip-verify${NC}    Skip final system verification
+    ${YELLOW}--fast${NC}           Fast mode: use mock data, skip API tests (for CI/CD)
     ${YELLOW}--dry-run${NC}        Print commands without executing
     ${YELLOW}--help${NC}           Show this help message
 
@@ -388,6 +390,27 @@ phase2_provider_verification() {
 
     local api_key_count=$(count_api_keys)
     log_info "API keys configured: $api_key_count"
+
+    if [ "$FAST_MODE" = true ]; then
+        log_info "Fast mode enabled - using mock provider data"
+        local providers_output="$OUTPUT_DIR/providers_verified.json"
+        cat > "$providers_output" << 'FASTPROVIDERS'
+{
+  "timestamp": "$(date -Iseconds)",
+  "api_keys_configured": 6,
+  "providers": [
+    {"name": "openai", "endpoint": "https://api.openai.com/v1/models", "api_key_configured": true, "status": "active", "verified": true, "error": "", "tested_at": "$(date -Iseconds)"},
+    {"name": "anthropic", "endpoint": "https://api.anthropic.com/v1/messages", "api_key_configured": true, "status": "active", "verified": true, "error": "", "tested_at": "$(date -Iseconds)"},
+    {"name": "deepseek", "endpoint": "https://api.deepseek.com/v1/models", "api_key_configured": true, "status": "active", "verified": true, "error": "", "tested_at": "$(date -Iseconds)"}
+  ],
+  "total_providers": 3,
+  "valid_providers": 3,
+  "verification_method": "mock_fast_mode"
+}
+FASTPROVIDERS
+        log_success "Mock provider verification completed: 3/3 providers valid"
+        return 0
+    fi
 
     if [ "$api_key_count" -eq 0 ]; then
         log_error "No API keys configured! Please set API keys in .env file"
@@ -643,11 +666,58 @@ EOF
 phase3_model_benchmark() {
     log_phase "PHASE 3: Model Benchmarking"
 
-    log_info "Running real model benchmarks using LLMsVerifier..."
-
     local models_output="$OUTPUT_DIR/models_scored.json"
     local verification_report="$OUTPUT_DIR/verification_report.md"
     local verifier_server="http://localhost:$LLMSVERIFIER_SERVER_PORT"
+
+    if [ "$FAST_MODE" = true ]; then
+        log_info "Fast mode enabled - using mock model data"
+        cat > "$models_output" << 'FASTMODELS'
+{
+  "timestamp": "$(date -Iseconds)",
+  "models": [
+    {"provider": "anthropic", "model_id": "claude-3-opus-20240229", "display_name": "Claude 3 Opus", "total_score": 9.5, "verified": true, "capabilities": ["chat", "vision", "tools"], "verification_method": "mock", "verified_at": "$(date -Iseconds)"},
+    {"provider": "openai", "model_id": "gpt-4-turbo", "display_name": "GPT-4 Turbo", "total_score": 9.2, "verified": true, "capabilities": ["chat", "vision", "tools"], "verification_method": "mock", "verified_at": "$(date -Iseconds)"},
+    {"provider": "deepseek", "model_id": "deepseek-chat", "display_name": "DeepSeek Chat", "total_score": 8.7, "verified": true, "capabilities": ["chat", "code"], "verification_method": "mock", "verified_at": "$(date -Iseconds)"},
+    {"provider": "anthropic", "model_id": "claude-3-sonnet-20240229", "display_name": "Claude 3 Sonnet", "total_score": 8.9, "verified": true, "capabilities": ["chat", "vision", "tools"], "verification_method": "mock", "verified_at": "$(date -Iseconds)"},
+    {"provider": "openai", "model_id": "gpt-4", "display_name": "GPT-4", "total_score": 8.8, "verified": true, "capabilities": ["chat", "tools"], "verification_method": "mock", "verified_at": "$(date -Iseconds)"},
+    {"provider": "google", "model_id": "gemini-1.5-pro", "display_name": "Gemini 1.5 Pro", "total_score": 8.6, "verified": true, "capabilities": ["chat", "vision"], "verification_method": "mock", "verified_at": "$(date -Iseconds)"},
+    {"provider": "anthropic", "model_id": "claude-3-haiku-20240307", "display_name": "Claude 3 Haiku", "total_score": 8.3, "verified": true, "capabilities": ["chat", "vision"], "verification_method": "mock", "verified_at": "$(date -Iseconds)"},
+    {"provider": "openai", "model_id": "gpt-3.5-turbo", "display_name": "GPT-3.5 Turbo", "total_score": 7.9, "verified": true, "capabilities": ["chat"], "verification_method": "mock", "verified_at": "$(date -Iseconds)"}
+  ],
+  "total_models": 8,
+  "verified_models": 8,
+  "average_score": 8.7,
+  "verification_method": "mock_fast_mode"
+}
+FASTMODELS
+        log_success "Mock model benchmarking completed: 8 models"
+
+        cat > "$verification_report" << 'FASTREPORT'
+# Model Verification Report
+
+**Generated**: $(date '+%Y-%m-%d %H:%M:%S')
+**Method**: Mock Data (Fast Mode)
+
+## Summary
+
+- Models Evaluated: 8
+- Verification Status: Complete (Mock)
+- Verification Method: Fast mode (no API calls)
+
+## Top Models (mock data)
+
+- Claude 3 Opus (anthropic): Score 9.5
+- GPT-4 Turbo (openai): Score 9.2
+- Claude 3 Sonnet (anthropic): Score 8.9
+- GPT-4 (openai): Score 8.8
+- DeepSeek Chat (deepseek): Score 8.7
+FASTREPORT
+
+        return 0
+    fi
+
+    log_info "Running real model benchmarks using LLMsVerifier..."
 
     # Try to get models from LLMsVerifier server
     local models_from_server=false
@@ -1437,6 +1507,11 @@ main() {
             --skip-verify)
                 SKIP_VERIFY=true
                 ;;
+            --fast)
+                FAST_MODE=true
+                SKIP_INFRA=true
+                SKIP_VERIFY=true
+                ;;
             --dry-run)
                 DRY_RUN=true
                 ;;
@@ -1466,6 +1541,7 @@ main() {
     log_info "Verbose: $VERBOSE"
     log_info "Skip infrastructure: $SKIP_INFRA"
     log_info "Skip verification: $SKIP_VERIFY"
+    log_info "Fast mode: $FAST_MODE"
     log_info "Dry run: $DRY_RUN"
 
     # Execute phases
