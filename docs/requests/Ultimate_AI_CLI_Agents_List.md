@@ -1751,6 +1751,161 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ---
 
+## Digital Forensics & Cybersecurity Investigation
+
+**Description:** AI agents for digital forensics, incident response, malware analysis, and security investigations.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Cybersecurity AI (CAI)** | Lightweight framework for AI-powered offensive/defensive automation | https://github.com/aliasrobotics/cai |
+| **IPED** | Digital Evidence Processor and Indexer for law enforcement | https://github.com/sepinf-inc/IPED |
+| **TheHive** | Scalable security incident response platform | https://github.com/TheHive-Project/TheHive |
+| **awesome-forensics** | Curated list of forensic analysis tools and resources | https://github.com/cugu/awesome-forensics |
+| **ForensicsTools** | List of free and open forensics analysis tools | https://github.com/mesquidar/ForensicsTools |
+| **Autopsy** | Digital forensics platform and GUI for The Sleuth Kit | https://github.com/sleuthkit/autopsy |
+| **Volatility** | Advanced memory forensics framework | https://github.com/volatilityfoundation/volatility |
+| **GRR Rapid Response** | Incident response framework for remote forensics | https://github.com/google/grr |
+
+---
+
+## Disaster Response & Emergency Management
+
+**Description:** AI agents for disaster management, crisis response, and emergency coordination.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AIDR** | AI for Disaster Response - filter and classify social media messages | https://github.com/qcri-social/AIDR |
+| **Crisis-Computing** | Artificial Intelligence for Disaster Response toolkit | https://github.com/qcri-social/Crisis-Computing |
+| **SafeGuardian-LLM** | Decentralized AI-driven emergency response platform | https://github.com/Ashoka74/SafeGuardian-LLM |
+| **DisasterAid.ai** | LLM RAG Chatbot for disaster assistance | https://github.com/vtempest/DisasterAid.ai |
+| **awesome-disastertech** | Projects and tools that help humans in crisis situations | https://github.com/DisasterTechCrew/awesome-disastertech |
+| **Disaster-Response-ML** | Machine learning pipeline for emergency message classification | https://github.com/abg3/Disaster-Response-ML-Project |
+
+---
+
+## Archaeology & Cultural Heritage
+
+**Description:** AI agents for archaeological analysis, cultural heritage preservation, and artifact documentation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **open-archaeo** | List of open source archaeological software and resources | https://github.com/zackbatist/open-archaeo |
+| **heritage-data-hub** | Datasets for cultural heritage and museums AI training | https://github.com/AI-Unicamp/heritage-data-hub |
+| **Cultural-Heritage-Restoration-using-AI** | AI with LLMs for cultural heritage preservation | https://github.com/Perfect-Cube/Cultural-Heritage-Restoration-using-AI |
+| **Arches** | Web platform for managing geospatial data for cultural heritage | https://github.com/archesproject/arches |
+| **OpenContext** | Archaeological data publishing and integration platform | https://opencontext.org/ |
+
+---
+
+## Textile & Fashion Industry
+
+**Description:** AI agents for fashion design, pattern recognition, and textile manufacturing.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **DressCode** | Text-driven 3D garment generation with SewingGPT | https://github.com/IHe-KaiI/DressCode |
+| **AI Fashion House** | Multi-agent system for fashion design automation | https://github.com/margaretmz/ai-fashion-house |
+| **MMFashion** | Open-source toolbox for visual fashion analysis | https://github.com/open-mmlab/mmfashion |
+| **Cool-GenAI-Fashion-Papers** | Latest fashion-related papers on AI conferences | https://github.com/wendashi/Cool-GenAI-Fashion-Papers |
+| **awesome-fashion-ai** | Curated research papers on fashion and e-commerce | https://github.com/ayushidalmia/awesome-fashion-ai |
+| **AI-For-Fashion** | Generative models and recommender systems for fashion | https://github.com/AdiNarendra98/AI-for-Fashion |
+| **ai-clothing-fashion-design-generator** | Fashion design generator with AI | https://github.com/nuwandda/ai-clothing-fashion-design-generator |
+
+---
+
+## Food Science & Nutrition
+
+**Description:** AI agents for nutritional analysis, recipe generation, and dietary recommendations.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AI NourishBot** | AI nutrition assistant with vision models and NLP | https://github.com/HaileyTQuach/Smart-Nutritional-App |
+| **NutritionAI** | AI-driven meal image analysis with dietary recommendations | https://github.com/Ritesh2351235/nutrition-ai |
+| **NutriLensAI** | Automated nutritional information extraction from food labels | https://github.com/Prbn/NutriLensAI |
+| **Diet-Recommendation-System** | Food/Diet recommendation using machine learning | https://github.com/zakaria-narjis/Diet-Recommendation-System |
+| **PANTS** | Self-hosted nutrition tracker for data analysis | https://github.com/ch-iv/pants |
+| **n.ai** | Nutrition AI analyzer | https://github.com/mingtaiha/n.ai |
+
+---
+
+## Sports Analytics & Performance
+
+**Description:** AI agents for sports analytics, athlete tracking, and performance optimization.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Roboflow Sports** | Computer vision tools for sports analytics | https://github.com/roboflow/sports |
+| **Football-Analysis-System** | YOLO-based football match analyzer | https://github.com/AkshaySatasiya/Football-Analysis-System |
+| **Awesome-Sports-Analytics (wywyWang)** | Comprehensive papers, codes, and websites | https://github.com/wywyWang/Awesome-Sports-Analytics |
+| **awesome-sports-analytics (AtomScott)** | Multi-agent systems for sports tracking | https://github.com/AtomScott/awesome-sports-analytics |
+| **soccernet-echoes** | Audio-based action spotting in soccer | https://github.com/SoccerNet/soccernet-echoes |
+
+---
+
+## Music Information Retrieval
+
+**Description:** AI agents for music analysis, audio feature extraction, and playlist generation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AudioMuse-AI** | Automatic playlist generation with sonic analysis | https://github.com/entrepeneur4lyf/audiomuse-ai |
+| **audioFlux** | Audio and music analysis, feature extraction library | https://github.com/libAudioFlux/audioFlux |
+| **ToneArcLib** | Audio analysis with expressive and structural features | https://github.com/ToneArc/ToneArcLib |
+| **Essentia** | Audio analysis and music information retrieval library | https://github.com/MTG/essentia |
+| **Librosa** | Python library for music and audio analysis | https://github.com/librosa/librosa |
+| **Madmom** | Audio signal processing library for music | https://github.com/CPJKU/madmom |
+| **ai-audio-datasets** | Training data for Generative AI audio applications | https://github.com/Yuan-ManX/ai-audio-datasets |
+
+---
+
+## Gaming AI & Esports
+
+**Description:** AI agents for game playing, bot development, and esports analysis.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **SerpentAI** | Game agent framework for learning to play any game | https://github.com/SerpentAI/SerpentAI |
+| **Game-Bot** | AI that learns to play any game by watching you | https://github.com/ardamavi/Game-Bot |
+| **awesome-game-ai** | Multi-agent reinforcement learning materials | https://github.com/datamllab/awesome-game-ai |
+| **Unity ML-Agents** | Open-source toolkit for games and simulations | https://github.com/Unity-Technologies/ml-agents |
+| **OpenAI Gym** | Toolkit for developing RL algorithms | https://github.com/openai/gym |
+| **PySC2** | StarCraft II Learning Environment | https://github.com/google-deepmind/pysc2 |
+| **lolGPT** | AI-powered esports intelligence for League of Legends | (Commercial tool) |
+
+---
+
+## Education Technology & Tutoring
+
+**Description:** AI agents for personalized learning, tutoring systems, and educational platforms.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AITutorAgent** | Interactive AI tutoring system built with LangGraph | https://github.com/Ebimsv/AITutorAgent |
+| **Open TutorAI** | Educational AI-powered tutoring platform | https://github.com/Open-TutorAi/open-tutor-ai-CE |
+| **DeepTutor** | AI-powered personalized learning assistant | https://github.com/HKUDS/DeepTutor |
+| **AI-Tutor** | LLM and RAG-enhanced tutoring for various courses | https://github.com/098765d/AI_Tutor |
+| **Mr.-Ranedeer-AI-Tutor** | GPT-4 AI tutor for customizable learning | https://github.com/JushBJJ/Mr.-Ranedeer-AI-Tutor |
+| **tutor-gpt** | AI tutor powered by Theory-of-Mind reasoning | https://github.com/plastic-labs/tutor-gpt |
+| **OATutor** | Open-source adaptive tutoring system | https://cahlr.github.io/OATWeb/ |
+| **ai-tutor (BlackyDrum)** | AI-powered tutor for enhanced learning | https://github.com/BlackyDrum/ai-tutor |
+
+---
+
+## Social Sciences & Psychology Research
+
+**Description:** AI agents for social science research, psychological analysis, and behavioral studies.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AI-Researcher** | Autonomous scientific innovation agent (NeurIPS 2025) | https://github.com/HKUDS/AI-Researcher |
+| **Awesome-LLM-in-Social-Science** | Papers on LLMs in social science | https://github.com/ValueByte-AI/Awesome-LLM-in-Social-Science |
+| **OCEANAI** | Algorithms for personality traits assessment | https://github.com/aimclub/OCEANAI |
+| **Awesome-LLM-Psychometrics** | Papers in LLM psychometrics and psychology | https://github.com/ValueByte-AI/Awesome-LLM-Psychometrics |
+| **Social-AI** | Resources for socially-intelligent AI agents | https://github.com/l-mathur/social-ai |
+| **gpt-researcher** | Autonomous agent for comprehensive research | https://github.com/assafelovic/gpt-researcher |
+
+---
+
 ## Additional Resources
 
 ### Community Directories
@@ -1776,12 +1931,12 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ## Statistics
 
-- **Total Agents Listed:** 630+
+- **Total Agents Listed:** 700+
 - **Total Curated Lists:** 30+
-- **Categories Covered:** 109
+- **Categories Covered:** 119
 - **Last Research Date:** 2026-01-29
-- **Active GitHub Repositories:** 580+
-- **Research Depth:** 7 comprehensive research sessions
+- **Active GitHub Repositories:** 650+
+- **Research Depth:** 8 comprehensive research sessions
 - **Specialized Categories:**
   - **Phase 1 (15 categories):** DevOps, Testing, Security, Documentation, Database, Mobile, Frontend, Backend, Blockchain, MLOps, Prompt Engineering, Translation, Refactoring, Monitoring, Game Development
   - **Phase 2 (14 categories):** CI/CD, Container & Orchestration, Data Engineering, NLP, Computer Vision, Audio/Speech, Chatbots, Edge Computing, Performance Benchmarking, Search & Retrieval, Email Automation, Calendar/Scheduling, File Management, Code Generation
@@ -1790,6 +1945,7 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
   - **Phase 5 (15 categories):** IoT & Smart Home Automation, Robotics & Drone Control, Aerospace & Aviation Simulation, Scientific Computing & HPC, Bioinformatics & Genomics, Climate & Weather Modeling, GIS & Geospatial Analysis, 3D Modeling & CAD, Audio Production & Music Generation, Cryptocurrency & Blockchain, Quantum Computing, Code Migration & Modernization, Performance Profiling & Debugging, Network Analysis & Packet Capture, Shell Scripting & Terminal Utilities
   - **Phase 6 (10 categories):** Accessibility & Assistive Technology, AR/VR Development, IoT Protocols & Communication, Telecommunications & 5G Networks, Automotive & Vehicle Systems, Agriculture & Precision Farming, Energy & Smart Grid Management, Manufacturing & Industrial Automation, Supply Chain & Logistics, Knowledge Management & Note-Taking
   - **Phase 7 (10 categories):** Space Exploration & Satellite Systems, Maritime & Naval Automation, Railway & Transportation Systems, Aviation & Air Traffic Control, Medical Imaging & Radiology, Pharmaceutical & Drug Discovery, Materials Science & Chemistry, Nuclear Engineering & Simulation, Construction & Civil Engineering, Water Treatment & Environmental Monitoring
+  - **Phase 8 (10 categories):** Digital Forensics & Cybersecurity Investigation, Disaster Response & Emergency Management, Archaeology & Cultural Heritage, Textile & Fashion Industry, Food Science & Nutrition, Sports Analytics & Performance, Music Information Retrieval, Gaming AI & Esports, Education Technology & Tutoring, Social Sciences & Psychology Research
 
 ---
 
