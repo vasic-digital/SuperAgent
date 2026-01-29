@@ -1,7 +1,7 @@
 # Ultimate AI CLI Agents List
 
 **Last Updated:** 2026-01-29
-**Total Agents:** 300+
+**Total Agents:** 350+
 **Status:** Actively Maintained
 
 This is a comprehensive, curated list of all known open-source AI CLI agents, coding assistants, and terminal-based AI tools available on GitHub, GitLab, and other platforms.
@@ -38,8 +38,22 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 26. [Code Refactoring & Cleanup](#code-refactoring--cleanup)
 27. [Monitoring & Observability](#monitoring--observability)
 28. [Game Development Agents](#game-development-agents)
-29. [Specialized Tools](#specialized-tools)
-30. [Curated Lists & Resources](#curated-lists--resources)
+29. [CI/CD & Deployment](#cicd--deployment)
+30. [Container & Orchestration](#container--orchestration)
+31. [Data Engineering & ETL](#data-engineering--etl)
+32. [Natural Language Processing](#natural-language-processing)
+33. [Computer Vision](#computer-vision)
+34. [Audio & Speech Processing](#audio--speech-processing)
+35. [Chatbot Frameworks](#chatbot-frameworks)
+36. [Edge Computing & IoT](#edge-computing--iot)
+37. [Performance & Benchmarking](#performance--benchmarking)
+38. [Search & Information Retrieval](#search--information-retrieval)
+39. [Email Automation](#email-automation)
+40. [Calendar & Scheduling](#calendar--scheduling)
+41. [File Management & Organization](#file-management--organization)
+42. [Code Generation & Scaffolding](#code-generation--scaffolding)
+43. [Specialized Tools](#specialized-tools)
+44. [Curated Lists & Resources](#curated-lists--resources)
 
 ---
 
@@ -479,6 +493,184 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ---
 
+## CI/CD & Deployment
+
+**Description:** AI agents for continuous integration, continuous deployment, and pipeline automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **CircleCI** | Agent-powered CI/CD designed to keep pipelines moving | (circleci.com) |
+| **Jenkins** | Open-source automation server with 1,800+ plugins | (jenkins.io) |
+| **GitLab CI/CD** | Part of GitLab's DevOps platform with integrated automation | (gitlab.com) |
+
+---
+
+## Container & Orchestration
+
+**Description:** AI agents for container management, Docker, and Kubernetes orchestration.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **kubectl-ai** | AI powered Kubernetes Assistant | https://github.com/GoogleCloudPlatform/kubectl-ai |
+| **Docker Compose for Agents** | Build and run AI agents using Docker Compose | https://github.com/docker/compose-for-agents |
+| **kagent** | Cloud Native Agentic AI for Kubernetes | https://github.com/kagent-dev/kagent |
+| **ARK** | Agentic Runtime for Kubernetes by McKinsey | (McKinsey GitHub) |
+| **cagent** | Open-source multi-agent runtime for Docker | (Docker) |
+
+---
+
+## Data Engineering & ETL
+
+**Description:** AI agents for data pipelines, ETL workflows, and Apache Airflow automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Data-Pipelines-with-Airflow** | Automate ETL pipeline and data warehouse creation using Apache Airflow | https://github.com/ddgope/Data-Pipelines-with-Airflow |
+| **airflow-data-pipeline** | ETL Workflow Automation with Apache Airflow | https://github.com/mikeacosta/airflow-data-pipeline |
+
+---
+
+## Natural Language Processing
+
+**Description:** AI agents for NLP tasks, text processing, and linguistic analysis.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **spaCy** | Industrial-strength Natural Language Processing in Python | https://github.com/explosion/spaCy |
+| **spacy-llm** | Integrating LLMs into structured NLP pipelines | https://github.com/explosion/spacy-llm |
+| **SciSpacy** | Full spaCy pipeline for scientific/biomedical documents | https://github.com/allenai/scispacy |
+
+---
+
+## Computer Vision
+
+**Description:** AI agents for image processing, object detection, and computer vision tasks.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **opencv-mcp-server** | OpenCV capabilities through Model Context Protocol | https://github.com/GongRzhe/opencv-mcp-server |
+| **Ultralytics YOLO** | State-of-the-art YOLO models for real-time object detection | https://github.com/ultralytics/ultralytics |
+| **object-detection-opencv** | YOLO Object detection with OpenCV and Python | https://github.com/arunponnusamy/object-detection-opencv |
+
+---
+
+## Audio & Speech Processing
+
+**Description:** AI agents for speech recognition, text-to-speech, and audio processing.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **OpenAI Whisper** | Robust Speech Recognition via Large-Scale Weak Supervision | https://github.com/openai/whisper |
+| **whisper.cpp** | C/C++ port of OpenAI's Whisper model | https://github.com/ggml-org/whisper.cpp |
+| **WhisperLive** | Nearly-live implementation of OpenAI's Whisper | https://github.com/collabora/WhisperLive |
+| **WhisperSpeech** | Open Source text-to-speech system built by inverting Whisper | https://github.com/WhisperSpeech/WhisperSpeech |
+| **mlx-audio** | TTS, STT and STS library built on Apple's MLX framework | https://github.com/Blaizzy/mlx-audio |
+| **local-voice-ai** | Local voice AI powered by Ollama, Kokoro, Whisper, LiveKit | https://github.com/ShayneP/local-voice-ai |
+| **Agent Voice Response** | Orchestrates ASR, LLM, TTS, STT, and STS services | (GitHub - Agent Voice Response) |
+
+---
+
+## Chatbot Frameworks
+
+**Description:** Frameworks for building conversational AI and chatbots.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Rasa** | Open source ML framework to automate text and voice conversations | https://github.com/RasaHQ/rasa |
+| **Botpress** | Open-source hub to build & deploy GPT/LLM Agents | https://github.com/botpress/botpress |
+| **Rasa Demo** | Sara - the Rasa Demo Bot with contextual AI assistant | https://github.com/RasaHQ/rasa-demo |
+
+---
+
+## Edge Computing & IoT
+
+**Description:** AI agents for edge computing, IoT devices, and embedded systems.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **awesome-tinyml** | TinyML & Edge AI for microcontrollers and IoT devices | https://github.com/umitkacar/awesome-tinyml |
+| **MIT TinyML** | Improving deep learning AI system efficiency for edge AI | https://github.com/mit-han-lab/tinyml |
+| **awesome-ai-edge-computing** | Tools for running AI models on edge devices | https://github.com/awesomelistsio/awesome-ai-edge-computing |
+| **edge-ai** | Curated list of resources for embedded AI | https://github.com/crespum/edge-ai |
+
+---
+
+## Performance & Benchmarking
+
+**Description:** Tools for AI agent performance optimization, profiling, and benchmarking.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AgentBench** | Comprehensive Benchmark to Evaluate LLMs as Agents | https://github.com/THUDM/AgentBench |
+| **AgentOps** | Python SDK for AI agent monitoring, LLM cost tracking, benchmarking | https://github.com/AgentOps-AI/agentops |
+| **terminal-bench** | Benchmark for LLMs on complicated tasks in the terminal | https://github.com/laude-institute/terminal-bench |
+| **ai-agent-benchmark-compendium** | Compendium of 50+ benchmarks for evaluating AI agents | https://github.com/philschmid/ai-agent-benchmark-compendium |
+| **ai-agent-benchmark** | AI coding agents comparison - 80+ agents, SWE-Bench leaderboard | https://github.com/murataslan1/ai-agent-benchmark |
+| **ai-benchmarks** | Benchmarking suite for popular AI APIs | https://github.com/fixie-ai/ai-benchmarks |
+
+---
+
+## Search & Information Retrieval
+
+**Description:** AI agents for search, information retrieval, and search engine integration.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Algolia CLI** | Command-line API client for Algolia search | https://github.com/algolia/algoliasearch-client-cmd |
+| **searchindex** | Store and retrieve objects from Algolia or Elasticsearch | https://github.com/spatie/searchindex |
+| **Searchkit** | React + Vue Search UI for Elasticsearch & Opensearch | https://github.com/searchkit/searchkit |
+
+---
+
+## Email Automation
+
+**Description:** AI agents for email marketing, automation, and communication.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **SendGrid MCP** | MCP server for SendGrid email automation with AI agents | (SendGrid) |
+
+---
+
+## Calendar & Scheduling
+
+**Description:** AI agents for calendar management and scheduling automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **google-calendar-agent** | A2A agent server for Google Calendar scheduling and automation | https://github.com/inference-gateway/google-calendar-agent |
+| **google-calendar-voice-agent** | Voice agent for Google Calendar with natural conversations | https://github.com/duohub-ai/google-calendar-voice-agent |
+| **GoogleCalendarAssistant** | LLM and Langchain powered chatbot for Google Calendar tasks | https://github.com/jgordley/GoogleCalendarAssistant |
+| **Calendar-Agent** | AI-powered Calendar Agent with n8n and OpenAI | https://github.com/SatyaHarshithaDanda/Calendar-Agent |
+| **gpt-google-calendar** | Organize calendar for the week using natural language | https://github.com/4cecoder/gpt-google-calendar |
+
+---
+
+## File Management & Organization
+
+**Description:** AI agents for file organization, management, and automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AI.FileOrganizer** | AI-powered system for organizing files and folders with image classification | https://github.com/jihadkhawaja/AI.FileOrganizer |
+| **AI-File-Organizer-Agent** | Uses AI agent (Google Gemini) to intelligently organize files | https://github.com/TheSethRose/AI-File-Organizer-Agent |
+| **aifiles** | CLI that organizes and manages files using AI | https://github.com/jjuliano/aifiles |
+| **Local-File-Organizer** | AI-powered file management with 100% local processing | https://github.com/QiuYannnn/Local-File-Organizer |
+| **Automated-File-Organizer** | Python script organizing files by type and date | https://github.com/AIdevol/Automated-File-Organizer |
+
+---
+
+## Code Generation & Scaffolding
+
+**Description:** AI agents for code generation, boilerplate creation, and project scaffolding.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Yeoman Generator** | Rails-inspired generator system for scaffolding apps | https://github.com/yeoman/generator |
+| **Gemini CLI** | AI-powered code scaffolding beyond traditional generators | (Google) |
+
+---
+
 ## Specialized Tools
 
 **Description:** Tools for specific use cases and domains.
@@ -606,12 +798,15 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ## Statistics
 
-- **Total Agents Listed:** 300+
+- **Total Agents Listed:** 350+
 - **Total Curated Lists:** 30+
-- **Categories Covered:** 30
+- **Categories Covered:** 44
 - **Last Research Date:** 2026-01-29
-- **Active GitHub Repositories:** 250+
-- **Specialized Categories Added:** 15 new categories (DevOps, Testing, Security, Documentation, Database, Mobile, Frontend, Backend, Blockchain, MLOps, Prompt Engineering, Translation, Refactoring, Monitoring, Game Development)
+- **Active GitHub Repositories:** 300+
+- **Research Depth:** 2 comprehensive research sessions
+- **Specialized Categories:**
+  - **Phase 1 (15 categories):** DevOps, Testing, Security, Documentation, Database, Mobile, Frontend, Backend, Blockchain, MLOps, Prompt Engineering, Translation, Refactoring, Monitoring, Game Development
+  - **Phase 2 (14 categories):** CI/CD, Container & Orchestration, Data Engineering, NLP, Computer Vision, Audio/Speech, Chatbots, Edge Computing, Performance Benchmarking, Search & Retrieval, Email Automation, Calendar/Scheduling, File Management, Code Generation
 
 ---
 
