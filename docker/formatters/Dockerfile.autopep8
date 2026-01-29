@@ -1,0 +1,28 @@
+# Dockerfile for autopep8 Python formatter service
+FROM python:3.12-slim
+
+LABEL maintainer="HelixAgent <dev@helixagent.ai>"
+LABEL description="autopep8 Python formatter service"
+LABEL version="2.0.4"
+
+# Install autopep8
+RUN pip install --no-cache-dir autopep8==2.0.4
+
+# Create service user
+RUN useradd -m -u 1000 formatter && \
+    mkdir -p /workspace && \
+    chown -R formatter:formatter /workspace
+
+USER formatter
+WORKDIR /workspace
+
+# Expose service port
+EXPOSE 9211
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import autopep8; print('ok')" || exit 1
+
+# Run HTTP service wrapper
+COPY --chown=formatter:formatter formatter-service.py /app/formatter-service.py
+CMD ["python", "/app/formatter-service.py", "--formatter", "autopep8", "--port", "9211"]

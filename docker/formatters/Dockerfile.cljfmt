@@ -1,0 +1,31 @@
+# Dockerfile for cljfmt Clojure formatter service
+FROM clojure:temurin-23-tools-deps-alpine
+
+LABEL maintainer="HelixAgent <dev@helixagent.ai>"
+LABEL description="cljfmt Clojure formatter service"
+LABEL version="0.12.0"
+
+# Install cljfmt
+RUN clojure -Ttools install-latest :lib io.github.weavejester/cljfmt :as cljfmt
+
+# Install Python for HTTP wrapper
+RUN apk add --no-cache python3 py3-pip
+
+# Create service user
+RUN adduser -D -u 1000 formatter && \
+    mkdir -p /workspace && \
+    chown -R formatter:formatter /workspace
+
+USER formatter
+WORKDIR /workspace
+
+# Expose service port
+EXPOSE 9260
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD clojure -version || exit 1
+
+# Run HTTP service wrapper
+COPY --chown=formatter:formatter formatter-service.py /app/formatter-service.py
+CMD ["python3", "/app/formatter-service.py", "--formatter", "cljfmt", "--port", "9260"]

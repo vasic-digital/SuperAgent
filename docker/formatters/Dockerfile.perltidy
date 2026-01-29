@@ -1,0 +1,33 @@
+# Dockerfile for perltidy Perl formatter service
+FROM perl:5.40-slim
+
+LABEL maintainer="HelixAgent <dev@helixagent.ai>"
+LABEL description="perltidy Perl formatter service"
+LABEL version="20260109.01"
+
+# Install perltidy
+RUN cpanm --notest Perl::Tidy@20260109.01
+
+# Install Python for HTTP wrapper
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create service user
+RUN useradd -m -u 1000 formatter && \
+    mkdir -p /workspace && \
+    chown -R formatter:formatter /workspace
+
+USER formatter
+WORKDIR /workspace
+
+# Expose service port
+EXPOSE 9250
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD perltidy --version || exit 1
+
+# Run HTTP service wrapper
+COPY --chown=formatter:formatter formatter-service.py /app/formatter-service.py
+CMD ["python3", "/app/formatter-service.py", "--formatter", "perltidy", "--port", "9250"]

@@ -1,0 +1,28 @@
+# Dockerfile for rubocop Ruby formatter service
+FROM ruby:3.3-slim
+
+LABEL maintainer="HelixAgent <dev@helixagent.ai>"
+LABEL description="rubocop Ruby formatter service"
+LABEL version="1.72.0"
+
+# Install rubocop
+RUN gem install rubocop -v 1.72.0 --no-document
+
+# Create service user
+RUN useradd -m -u 1000 formatter && \
+    mkdir -p /workspace && \
+    chown -R formatter:formatter /workspace
+
+USER formatter
+WORKDIR /workspace
+
+# Expose service port
+EXPOSE 9230
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD ruby -e "require 'rubocop'; puts 'ok'" || exit 1
+
+# Run HTTP service wrapper
+COPY --chown=formatter:formatter formatter-service.rb /app/formatter-service.rb
+CMD ["ruby", "/app/formatter-service.rb", "--formatter", "rubocop", "--port", "9230"]

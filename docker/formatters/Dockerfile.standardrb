@@ -1,0 +1,28 @@
+# Dockerfile for standardrb Ruby formatter service
+FROM ruby:3.3-slim
+
+LABEL maintainer="HelixAgent <dev@helixagent.ai>"
+LABEL description="standardrb Ruby formatter service"
+LABEL version="1.42.1"
+
+# Install standardrb
+RUN gem install standard -v 1.42.1 --no-document
+
+# Create service user
+RUN useradd -m -u 1000 formatter && \
+    mkdir -p /workspace && \
+    chown -R formatter:formatter /workspace
+
+USER formatter
+WORKDIR /workspace
+
+# Expose service port
+EXPOSE 9231
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD ruby -e "require 'standard'; puts 'ok'" || exit 1
+
+# Run HTTP service wrapper
+COPY --chown=formatter:formatter formatter-service.rb /app/formatter-service.rb
+CMD ["ruby", "/app/formatter-service.rb", "--formatter", "standardrb", "--port", "9231"]
