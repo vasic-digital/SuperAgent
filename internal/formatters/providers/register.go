@@ -1,8 +1,11 @@
 package providers
 
 import (
+	"os"
+
 	"dev.helix.agent/internal/formatters"
 	"dev.helix.agent/internal/formatters/providers/native"
+	"dev.helix.agent/internal/formatters/providers/service"
 	"github.com/sirupsen/logrus"
 )
 
@@ -95,6 +98,68 @@ func RegisterAllFormatters(registry *formatters.FormatterRegistry, logger *logru
 		Languages: []string{"toml"}, Performance: "fast",
 		SupportsStdin: true, SupportsInPlace: true, SupportsCheck: false, SupportsConfig: true,
 	})
+
+	// Service formatters (optional, requires Docker services running)
+	serviceBaseURL := os.Getenv("FORMATTER_SERVICE_BASE_URL")
+	if serviceBaseURL == "" {
+		serviceBaseURL = "http://localhost"
+	}
+
+	enableServiceFormatters := os.Getenv("FORMATTER_ENABLE_SERVICES")
+	if enableServiceFormatters == "true" || enableServiceFormatters == "1" {
+		logger.Info("Registering service formatters...")
+
+		// Python service formatters
+		register("autopep8", service.NewAutopep8Formatter(serviceBaseURL, logger),
+			service.NewAutopep8Formatter(serviceBaseURL, logger).GetMetadata())
+
+		register("yapf", service.NewYapfFormatter(serviceBaseURL, logger),
+			service.NewYapfFormatter(serviceBaseURL, logger).GetMetadata())
+
+		// SQL formatter
+		register("sqlfluff", service.NewSQLFluffFormatter(serviceBaseURL, logger),
+			service.NewSQLFluffFormatter(serviceBaseURL, logger).GetMetadata())
+
+		// Ruby formatters
+		register("rubocop", service.NewRubocopFormatter(serviceBaseURL, logger),
+			service.NewRubocopFormatter(serviceBaseURL, logger).GetMetadata())
+
+		register("standardrb", service.NewStandardRBFormatter(serviceBaseURL, logger),
+			service.NewStandardRBFormatter(serviceBaseURL, logger).GetMetadata())
+
+		// PHP formatters
+		register("php-cs-fixer", service.NewPHPCSFixerFormatter(serviceBaseURL, logger),
+			service.NewPHPCSFixerFormatter(serviceBaseURL, logger).GetMetadata())
+
+		register("laravel-pint", service.NewLaravelPintFormatter(serviceBaseURL, logger),
+			service.NewLaravelPintFormatter(serviceBaseURL, logger).GetMetadata())
+
+		// Other languages
+		register("perltidy", service.NewPerltidyFormatter(serviceBaseURL, logger),
+			service.NewPerltidyFormatter(serviceBaseURL, logger).GetMetadata())
+
+		register("cljfmt", service.NewCljfmtFormatter(serviceBaseURL, logger),
+			service.NewCljfmtFormatter(serviceBaseURL, logger).GetMetadata())
+
+		register("spotless", service.NewSpotlessFormatter(serviceBaseURL, logger),
+			service.NewSpotlessFormatter(serviceBaseURL, logger).GetMetadata())
+
+		register("npm-groovy-lint", service.NewGroovyLintFormatter(serviceBaseURL, logger),
+			service.NewGroovyLintFormatter(serviceBaseURL, logger).GetMetadata())
+
+		register("styler", service.NewStylerFormatter(serviceBaseURL, logger),
+			service.NewStylerFormatter(serviceBaseURL, logger).GetMetadata())
+
+		register("air", service.NewAirFormatter(serviceBaseURL, logger),
+			service.NewAirFormatter(serviceBaseURL, logger).GetMetadata())
+
+		register("psscriptanalyzer", service.NewPSScriptAnalyzerFormatter(serviceBaseURL, logger),
+			service.NewPSScriptAnalyzerFormatter(serviceBaseURL, logger).GetMetadata())
+
+		logger.Infof("Service formatters registration complete")
+	} else {
+		logger.Info("Service formatters disabled (set FORMATTER_ENABLE_SERVICES=true to enable)")
+	}
 
 	logger.Infof("Formatter registration complete: %d registered, %d failed", registered, failed)
 

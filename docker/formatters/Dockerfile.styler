@@ -1,0 +1,33 @@
+# Dockerfile for styler R formatter service
+FROM r-base:4.4.2
+
+LABEL maintainer="HelixAgent <dev@helixagent.ai>"
+LABEL description="styler R formatter service"
+LABEL version="1.10.3"
+
+# Install styler
+RUN R -e "install.packages('styler', version='1.10.3', repos='https://cloud.r-project.org')"
+
+# Install Python for HTTP wrapper
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create service user
+RUN useradd -m -u 1000 formatter && \
+    mkdir -p /workspace && \
+    chown -R formatter:formatter /workspace
+
+USER formatter
+WORKDIR /workspace
+
+# Expose service port
+EXPOSE 9290
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD R -e "library(styler)" || exit 1
+
+# Run HTTP service wrapper
+COPY --chown=formatter:formatter formatter-service.py /app/formatter-service.py
+CMD ["python3", "/app/formatter-service.py", "--formatter", "styler", "--port", "9290"]

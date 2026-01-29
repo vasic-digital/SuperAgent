@@ -1,0 +1,33 @@
+# Dockerfile for laravel-pint PHP formatter service
+FROM php:8.3-cli-alpine
+
+LABEL maintainer="HelixAgent <dev@helixagent.ai>"
+LABEL description="Laravel Pint PHP formatter service"
+LABEL version="1.19.0"
+
+# Install composer and pint
+RUN apk add --no-cache composer && \
+    composer global require laravel/pint:^1.19 && \
+    ln -s /root/.composer/vendor/bin/pint /usr/local/bin/pint
+
+# Install Python for HTTP wrapper
+RUN apk add --no-cache python3 py3-pip
+
+# Create service user
+RUN adduser -D -u 1000 formatter && \
+    mkdir -p /workspace && \
+    chown -R formatter:formatter /workspace
+
+USER formatter
+WORKDIR /workspace
+
+# Expose service port
+EXPOSE 9241
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD pint --version || exit 1
+
+# Run HTTP service wrapper
+COPY --chown=formatter:formatter formatter-service.py /app/formatter-service.py
+CMD ["python3", "/app/formatter-service.py", "--formatter", "pint", "--port", "9241"]

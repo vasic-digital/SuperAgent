@@ -1,0 +1,34 @@
+# Dockerfile for npm-groovy-lint Groovy formatter service
+FROM node:22-alpine
+
+LABEL maintainer="HelixAgent <dev@helixagent.ai>"
+LABEL description="npm-groovy-lint Groovy formatter service"
+LABEL version="15.0.4"
+
+# Install Java (required for Groovy)
+RUN apk add --no-cache openjdk21-jre
+
+# Install npm-groovy-lint
+RUN npm install -g npm-groovy-lint@15.0.4
+
+# Install Python for HTTP wrapper
+RUN apk add --no-cache python3 py3-pip
+
+# Create service user
+RUN adduser -D -u 1000 formatter && \
+    mkdir -p /workspace && \
+    chown -R formatter:formatter /workspace
+
+USER formatter
+WORKDIR /workspace
+
+# Expose service port
+EXPOSE 9280
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD npm-groovy-lint --version || exit 1
+
+# Run HTTP service wrapper
+COPY --chown=formatter:formatter formatter-service.py /app/formatter-service.py
+CMD ["python3", "/app/formatter-service.py", "--formatter", "npm-groovy-lint", "--port", "9280"]

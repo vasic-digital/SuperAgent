@@ -1,0 +1,33 @@
+# Dockerfile for air R formatter service (300x faster than styler)
+FROM r-base:4.4.2
+
+LABEL maintainer="HelixAgent <dev@helixagent.ai>"
+LABEL description="air R formatter service (300x faster than styler)"
+LABEL version="0.2.0"
+
+# Install air
+RUN R -e "install.packages('air', version='0.2.0', repos='https://cloud.r-project.org')"
+
+# Install Python for HTTP wrapper
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create service user
+RUN useradd -m -u 1000 formatter && \
+    mkdir -p /workspace && \
+    chown -R formatter:formatter /workspace
+
+USER formatter
+WORKDIR /workspace
+
+# Expose service port
+EXPOSE 9291
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD R -e "library(air)" || exit 1
+
+# Run HTTP service wrapper
+COPY --chown=formatter:formatter formatter-service.py /app/formatter-service.py
+CMD ["python3", "/app/formatter-service.py", "--formatter", "air", "--port", "9291"]

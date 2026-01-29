@@ -1,0 +1,31 @@
+# Dockerfile for PSScriptAnalyzer PowerShell formatter service
+FROM mcr.microsoft.com/powershell:7.4-alpine-3.20
+
+LABEL maintainer="HelixAgent <dev@helixagent.ai>"
+LABEL description="PSScriptAnalyzer PowerShell formatter service"
+LABEL version="1.23.0"
+
+# Install PSScriptAnalyzer
+RUN pwsh -Command "Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.23.0 -Force -Scope AllUsers"
+
+# Install Python for HTTP wrapper
+RUN apk add --no-cache python3 py3-pip
+
+# Create service user
+RUN adduser -D -u 1000 formatter && \
+    mkdir -p /workspace && \
+    chown -R formatter:formatter /workspace
+
+USER formatter
+WORKDIR /workspace
+
+# Expose service port
+EXPOSE 9300
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD pwsh -Command "Get-Module -ListAvailable PSScriptAnalyzer" || exit 1
+
+# Run HTTP service wrapper
+COPY --chown=formatter:formatter formatter-service.py /app/formatter-service.py
+CMD ["python3", "/app/formatter-service.py", "--formatter", "psscriptanalyzer", "--port", "9300"]
