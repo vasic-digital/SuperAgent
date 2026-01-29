@@ -461,7 +461,7 @@ func TestOpenCodeWithRunningServer(t *testing.T) {
 	}
 
 	// Check if server is running
-	if !isServerRunning("http://localhost:7061/health") {
+	if !isURLResponding("http://localhost:7061/health") {
 		t.Logf("HelixAgent server not running on localhost:7061 (acceptable)")
 		return
 	}
@@ -506,8 +506,8 @@ func TestOpenCodeWithRunningServer(t *testing.T) {
 	})
 }
 
-// isServerRunning checks if the server is running at the given URL
-func isServerRunning(url string) bool {
+// isURLResponding checks if the server is running at the given URL
+func isURLResponding(url string) bool {
 	cmd := exec.Command("curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", url)
 	output, err := cmd.Output()
 	if err != nil {

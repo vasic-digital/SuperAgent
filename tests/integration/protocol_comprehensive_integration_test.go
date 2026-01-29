@@ -738,7 +738,7 @@ func TestProtocolHealthCheck(t *testing.T) {
 			}
 			defer resp.Body.Close()
 
-			body, _ := io.ReadAll(resp.Body)
+			_, _ = io.ReadAll(resp.Body)
 			status := "healthy"
 			if resp.StatusCode != http.StatusOK {
 				status = "unhealthy"

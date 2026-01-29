@@ -41,16 +41,6 @@ const (
 	CommandTimeout = 10 * time.Second
 )
 
-// TestConfig holds test configuration
-type TestConfig struct {
-	HelixAgentHost   string
-	HelixAgentPort   string
-	HelixAgentAPIKey string
-	BaseURL          string
-	BinaryPath       string
-	TempDir          string
-}
-
 // OpenCodeConfig represents the OpenCode configuration structure
 type OpenCodeConfig struct {
 	Schema   string                            `json:"$schema"`
@@ -961,8 +951,8 @@ func TestChatCompletionsStreamingEndpoint(t *testing.T) {
 // CONCURRENT REQUEST TESTS
 // =============================================================================
 
-// TestConcurrentRequests tests multiple simultaneous requests
-func TestConcurrentRequests(t *testing.T) {
+// TestOpenCodeConcurrentRequests tests multiple simultaneous requests for OpenCode CLI
+func TestOpenCodeConcurrentRequests(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping concurrent requests test (acceptable)")
 		return

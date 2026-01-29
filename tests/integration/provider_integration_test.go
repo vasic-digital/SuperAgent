@@ -1099,15 +1099,15 @@ func TestDebateTeamResultTypes(t *testing.T) {
 				},
 			},
 		},
-		TotalLLMs:  15,
-		MinScore:   5.0,
-		OAuthFirst: true,
-		SelectedAt: time.Now(),
+		TotalLLMs:     15,
+		MinScore:      5.0,
+		SortedByScore: true,
+		SelectedAt:    time.Now(),
 	}
 
 	assert.Len(t, team.Positions, 1)
 	assert.Equal(t, 15, team.TotalLLMs)
-	assert.True(t, team.OAuthFirst)
+	assert.True(t, team.SortedByScore)
 	assert.Equal(t, "analyst", team.Positions[0].Role)
 	assert.True(t, team.Positions[0].Primary.IsOAuth)
 }
