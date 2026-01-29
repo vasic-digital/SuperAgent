@@ -1,8 +1,8 @@
 # Ultimate AI CLI Agents List
 
 **Last Updated:** 2026-01-29
-**Total Agents:** 450+
-**Status:** Actively Maintained
+**Total Agents:** 500+
+**Status:** Actively Maintained - THE ULTIMATE COMPLETE LIST
 
 This is a comprehensive, curated list of all known open-source AI CLI agents, coding assistants, and terminal-based AI tools available on GitHub, GitLab, and other platforms.
 
@@ -82,8 +82,23 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 70. [Data Visualization](#data-visualization)
 71. [Browser Automation](#browser-automation)
 72. [Desktop Automation & RPA](#desktop-automation--rpa)
-73. [Specialized Tools](#specialized-tools)
-74. [Curated Lists & Resources](#curated-lists--resources)
+73. [IoT & Smart Home Automation](#iot--smart-home-automation)
+74. [Robotics & Drone Control](#robotics--drone-control)
+75. [Aerospace & Aviation Simulation](#aerospace--aviation-simulation)
+76. [Scientific Computing & HPC](#scientific-computing--hpc)
+77. [Bioinformatics & Genomics](#bioinformatics--genomics)
+78. [Climate & Weather Modeling](#climate--weather-modeling)
+79. [GIS & Geospatial Analysis](#gis--geospatial-analysis)
+80. [3D Modeling & CAD](#3d-modeling--cad)
+81. [Audio Production & Music Generation](#audio-production--music-generation)
+82. [Cryptocurrency & Blockchain](#cryptocurrency--blockchain)
+83. [Quantum Computing](#quantum-computing)
+84. [Code Migration & Modernization](#code-migration--modernization)
+85. [Performance Profiling & Debugging](#performance-profiling--debugging)
+86. [Network Analysis & Packet Capture](#network-analysis--packet-capture)
+87. [Shell Scripting & Terminal Utilities](#shell-scripting--terminal-utilities)
+88. [Specialized Tools](#specialized-tools)
+89. [Curated Lists & Resources](#curated-lists--resources)
 
 ---
 
@@ -1088,6 +1103,202 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ---
 
+## IoT & Smart Home Automation
+
+**Description:** AI agents for IoT devices, smart home automation, and Home Assistant.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **ai_agent_ha** | Home Assistant AI agent generating automations from natural language | https://github.com/sbenodiz/ai_agent_ha |
+| **ai_automation_suggester** | Automatically suggests tailored automations for Home Assistant | https://github.com/ITSpecialist111/ai_automation_suggester |
+| **home-llm** | Control smart home using Local LLM (works on Raspberry Pi) | https://github.com/acon96/home-llm |
+| **home-generative-agent** | Home Assistant generative agent using LangChain and LangGraph | https://github.com/goruck/home-generative-agent |
+| **SmartHome-IoT-Automation** | Smart home automation with ESP32, IoT sensors, and AWS | https://github.com/AI-Intern-3/SmartHome-IoT-Automation |
+
+---
+
+## Robotics & Drone Control
+
+**Description:** AI agents for autonomous robots, drones, and ROS-based systems.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Drona** | Drone controlled by AI agent using natural language commands | https://github.com/Gaurang-1402/Drona |
+| **autonomous-drone** | Autonomous drone delivery with Intel Aero and PX4 | https://github.com/szebedy/autonomous-drone |
+| **ROS2_offboard_drone_control** | ROS2 off-board control with path planning | https://github.com/Marnonel6/ROS2_offboard_drone_control |
+| **Autonomous-Drone-Control-via-ROS2** | Autonomous drone control in Microsoft AirSim using ROS2 | https://github.com/gaurav9364/Autonomous-Drone-Control-via-ROS2 |
+
+---
+
+## Aerospace & Aviation Simulation
+
+**Description:** Flight dynamics, control systems, and aviation simulation frameworks.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **JSBSim** | Multi-platform flight dynamics model in C++ | https://github.com/JSBSim-Team/jsbsim |
+| **QPlane** | Fixed Wing Flight Simulation for Reinforcement Learning | https://github.com/JDatPNW/QPlane |
+| **simupy-flight** | NASA flight vehicle simulation framework in Python | https://github.com/nasa/simupy-flight |
+| **AirSim** | Microsoft simulator for drones, cars (Unreal Engine) | https://github.com/microsoft/AirSim |
+| **f16-flight-dynamics** | F-16 Aircraft Dynamics Model with CLI for autopilot testing | https://github.com/EthanJamesLew/f16-flight-dynamics |
+
+---
+
+## Scientific Computing & HPC
+
+**Description:** High-performance computing, numerical analysis, and research tools.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **IOWarp Agents** | AI subagents for scientific computing with HPC specialist | (IOWarp) |
+| **AI-research-SKILLs** | Library of AI research skills for Claude Code/Codex/Gemini | https://github.com/zechenzhangAGI/AI-research-SKILLs |
+| **AI-Researcher** | Autonomous scientific innovation agent | https://github.com/HKUDS/AI-Researcher |
+| **awesome-scientific-computing** | Curated list of numerical analysis software | https://github.com/nschloe/awesome-scientific-computing |
+| **awesome-high-performance-computing** | Curated list of HPC resources | https://github.com/trevor-vincent/awesome-high-performance-computing |
+
+---
+
+## Bioinformatics & Genomics
+
+**Description:** AI agents for DNA sequencing, genomics, and biological data analysis.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AutoBA** | Autonomous AI agent for fully automated multi-omic analyses | (AutoBA) |
+| **awesome-Bioinformatics** | Curated list of bioinformatics libraries and software | https://github.com/danielecook/Awesome-Bioinformatics |
+| **biotools** | List of useful bioinformatics resources | https://github.com/jdidion/biotools |
+
+---
+
+## Climate & Weather Modeling
+
+**Description:** AI agents for weather forecasting, climate modeling, and environmental science.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **ai-models** | CLI for running AI-based weather forecasting models with ERA5 data | https://github.com/ecmwf-lab/ai-models |
+| **Awesome-Foundation-Models-for-Weather-and-Climate** | Survey of foundation models for weather/climate | https://github.com/shengchaochen82/Awesome-Foundation-Models-for-Weather-and-Climate |
+| **Awesome-LWMs** | Collection of Large Weather Models | https://github.com/jaychempan/Awesome-LWMs |
+| **climatelearn** | Machine learning for climate variable prediction | https://github.com/climatechange-ai-tutorials/climatelearn |
+
+---
+
+## GIS & Geospatial Analysis
+
+**Description:** Geographic Information Systems, mapping, and spatial analysis tools.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **QGIS** | Free, open source geographical information system | https://github.com/qgis/QGIS |
+| **GeoAI** | Artificial Intelligence for Geospatial Data | https://github.com/opengeos/geoai |
+| **awesome-gis** | Collection of geospatial tools and resources | https://github.com/sshuair/awesome-gis |
+| **Awesome-Geospatial** | Long list of geospatial tools and resources | https://github.com/sacridini/Awesome-Geospatial |
+| **Spatial Analysis Agent** | Copilot for QGIS with natural language queries | (QGIS Plugin) |
+
+---
+
+## 3D Modeling & CAD
+
+**Description:** AI agents for 3D modeling, CAD, OpenSCAD, and Blender automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **ScadLM** | Open source agentic AI CAD generation built on OpenSCAD | https://github.com/KrishKrosh/ScadLM |
+| **OpenSCAD** | The Programmers Solid 3D CAD Modeller | https://github.com/openscad/openscad |
+| **openscad-studio** | Modern OpenSCAD editor with live preview and AI copilot | https://github.com/zacharyfmarion/openscad-studio |
+| **bpycad** | Utilities for CAD modeling in Blender | https://github.com/simpkins/bpycad |
+
+---
+
+## Audio Production & Music Generation
+
+**Description:** AI agents for music generation, audio synthesis, and DAW integration.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **audio-development-tools** | Tools for sound, speech, music tech with AI components | https://github.com/Yuan-ManX/audio-development-tools |
+| **awesome-music-production** | Curated list of music creation software and services | https://github.com/ad-si/awesome-music-production |
+| **AudioLDM** | Generate speech, sound effects, music with text | https://github.com/haoheliu/AudioLDM |
+
+---
+
+## Cryptocurrency & Blockchain
+
+**Description:** AI agents for blockchain development, DeFi, and crypto operations.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **solana-agent-kit** | Connect AI agents to Solana protocols (60+ actions) | https://github.com/sendaifun/solana-agent-kit |
+| **solana-agent-kit-py** | Python version of Solana Agent Kit | https://github.com/sendaifun/solana-agent-kit-py |
+| **solana-agentkit.py** | Tools for building AI agents on Solana blockchain | https://github.com/caelum0x/solana-agentkit.py |
+| **agentipy** | Python framework for AI agents on Solana and Base | https://github.com/niceberginc/agentipy |
+| **crypto-skills** | Specialized AI agent skills for cryptocurrency operations | https://github.com/kukapay/crypto-skills |
+| **Blockchain-AI-Agent-Using-LLM** | AI agents for Bitcoin, Solana, and Ethereum | https://github.com/hi-tech-AI/Blockchain-AI-Agent-Using-LLM-based-on-Bitcoin-Solana-and-Ethereum |
+
+---
+
+## Quantum Computing
+
+**Description:** Quantum computing frameworks, simulators, and quantum algorithms.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Qiskit** | Open-source SDK for quantum circuits and operators | https://github.com/Qiskit/qiskit |
+| **Cirq** | Python framework for NISQ quantum circuits | https://github.com/quantumlib/Cirq |
+| **awesome-quantum-computing** | Curated list of quantum computing resources | https://github.com/desireevl/awesome-quantum-computing |
+
+---
+
+## Code Migration & Modernization
+
+**Description:** AI agents for legacy code transformation and modernization.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Legacy-Modernization-Agents** | AI-powered COBOL to Java Quarkus modernization | https://github.com/Azure-Samples/Legacy-Modernization-Agents |
+
+---
+
+## Performance Profiling & Debugging
+
+**Description:** Tools for performance analysis, memory leak detection, and debugging.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **perfetto-mcp** | MCP server for performance analysis and memory leak detection | https://github.com/antarikshc/perfetto-mcp |
+| **ai-capabilities-suite** | Give AI agents superpowers with debugging capabilities | https://github.com/digital-defiance/ai-capabilities-suite |
+| **check-leak** | Find and prevent memory leaks in applications | https://github.com/check-leak/check-leak |
+| **memtrail** | LD_PRELOAD based memory profiler and leak detector for Linux | https://github.com/jrfonseca/memtrail |
+| **MTHawkeye** | Profiling/debugging tools for iOS | https://github.com/meitu/MTHawkeye |
+
+---
+
+## Network Analysis & Packet Capture
+
+**Description:** AI agents for network protocols, packet analysis, and Wireshark automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **ai-packet-analyzer** | Network analysis with GPT, Wireshark plugin, CLI tool | https://github.com/sparshg/ai-packet-analyzer |
+| **PCAP-Analyzer** | Network Protocol Analyzer & Dashboard | https://github.com/paresh2806/PCAP-Analyzer |
+| **awesome-pcaptools** | Collection of tools for processing network traces | https://github.com/caesar0301/awesome-pcaptools |
+
+---
+
+## Shell Scripting & Terminal Utilities
+
+**Description:** AI-powered shell assistants for bash, zsh, fish, and terminal automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **fish-ai** | Supercharge Fish shell with LLMs for scripting assistance | https://github.com/Realiserad/fish-ai |
+| **bash-ai** | AI-powered terminal assistant with plugin support | https://github.com/Hezkore/bash-ai |
+| **fish-shell** | User-friendly command line shell | https://github.com/fish-shell/fish-shell |
+| **awesome-shell** | Curated list of command-line frameworks and toolkits | https://github.com/alebcay/awesome-shell |
+| **bass** | Make Bash utilities usable in Fish shell | https://github.com/edc/bass |
+
+---
+
 ## Specialized Tools
 
 **Description:** Tools for specific use cases and domains.
@@ -1215,17 +1426,18 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ## Statistics
 
-- **Total Agents Listed:** 450+
+- **Total Agents Listed:** 500+
 - **Total Curated Lists:** 30+
-- **Categories Covered:** 74
+- **Categories Covered:** 89
 - **Last Research Date:** 2026-01-29
-- **Active GitHub Repositories:** 400+
-- **Research Depth:** 4 comprehensive research sessions
+- **Active GitHub Repositories:** 450+
+- **Research Depth:** 5 comprehensive research sessions
 - **Specialized Categories:**
   - **Phase 1 (15 categories):** DevOps, Testing, Security, Documentation, Database, Mobile, Frontend, Backend, Blockchain, MLOps, Prompt Engineering, Translation, Refactoring, Monitoring, Game Development
   - **Phase 2 (14 categories):** CI/CD, Container & Orchestration, Data Engineering, NLP, Computer Vision, Audio/Speech, Chatbots, Edge Computing, Performance Benchmarking, Search & Retrieval, Email Automation, Calendar/Scheduling, File Management, Code Generation
   - **Phase 3 (15 categories):** GraphQL Tools, WebAssembly/WASM, Serverless & Cloud, Language-Specific (Rust/Python/Go/Java), Healthcare & Medical, Finance & Trading, Legal & Contract Analysis, Education & Learning, API Testing, Log Analysis, Dependency Scanning, Configuration Management
   - **Phase 4 (15 categories):** Version Control & Git Tools, Network Security, Secret Management, Package Registries, Code Quality & Analysis, Continuous Monitoring & Alerting, Backup & Disaster Recovery, Content Management Systems, E-commerce Platforms, Social Media Automation, Video & Image Processing, Real-Time Communication, Data Visualization, Browser Automation, Desktop Automation & RPA
+  - **Phase 5 (15 categories):** IoT & Smart Home Automation, Robotics & Drone Control, Aerospace & Aviation Simulation, Scientific Computing & HPC, Bioinformatics & Genomics, Climate & Weather Modeling, GIS & Geospatial Analysis, 3D Modeling & CAD, Audio Production & Music Generation, Cryptocurrency & Blockchain, Quantum Computing, Code Migration & Modernization, Performance Profiling & Debugging, Network Analysis & Packet Capture, Shell Scripting & Terminal Utilities
 
 ---
 
