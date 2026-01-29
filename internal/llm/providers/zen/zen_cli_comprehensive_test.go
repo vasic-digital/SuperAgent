@@ -336,9 +336,11 @@ func TestZenCLIProvider_KnownModels(t *testing.T) {
 	t.Run("known models contain expected entries", func(t *testing.T) {
 		// STRICT: These models MUST be in the known list
 		assert.Contains(t, knownModels, "big-pickle")
-		assert.Contains(t, knownModels, "grok-code")
-		assert.Contains(t, knownModels, "glm-4.7-free")
 		assert.Contains(t, knownModels, "gpt-5-nano")
+		assert.Contains(t, knownModels, "glm-4.7")
+		assert.Contains(t, knownModels, "qwen3-coder")
+		assert.Contains(t, knownModels, "kimi-k2")
+		assert.Contains(t, knownModels, "gemini-3-flash")
 	})
 }
 
