@@ -425,6 +425,10 @@ func TestZenCLIProvider_ParseModelsOutput(t *testing.T) {
 
 // TestZenCLIProvider_ConcurrentAccess tests thread safety
 func TestZenCLIProvider_ConcurrentAccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping concurrent access test in short mode")
+	}
+
 	provider := NewZenCLIProviderWithModel("test-model")
 
 	t.Run("concurrent model marking is safe", func(t *testing.T) {
