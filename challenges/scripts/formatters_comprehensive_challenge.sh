@@ -137,7 +137,7 @@ FORMAT_RESPONSE=$(curl -s "$HELIXAGENT_URL/v1/format" \
     -H "Content-Type: application/json" \
     -d '{"content":"def hello(  x,y ):\n  return x+y","language":"python"}')
 
-if echo "$FORMAT_RESPONSE" | jq -e '.success' > /dev/null 2>&1; then
+if echo "$FORMAT_RESPONSE" | jq -e 'has("success")' > /dev/null 2>&1; then
     SUCCESS=$(echo "$FORMAT_RESPONSE" | jq -r '.success')
     if [ "$SUCCESS" = "true" ]; then
         pass
@@ -156,7 +156,7 @@ FORMAT_RESPONSE=$(curl -s "$HELIXAGENT_URL/v1/format" \
     -H "Content-Type: application/json" \
     -d '{"content":"const x={a:1,b:2};","language":"javascript"}')
 
-if echo "$FORMAT_RESPONSE" | jq -e '.success' > /dev/null 2>&1; then
+if echo "$FORMAT_RESPONSE" | jq -e 'has("success")' > /dev/null 2>&1; then
     SUCCESS=$(echo "$FORMAT_RESPONSE" | jq -r '.success')
     if [ "$SUCCESS" = "true" ]; then
         pass
@@ -302,7 +302,7 @@ else
 fi
 
 test_case "Format response includes changed flag"
-if echo "$FORMAT_RESPONSE" | jq -e '.changed' > /dev/null 2>&1; then
+if echo "$FORMAT_RESPONSE" | jq -e 'has("changed")' > /dev/null 2>&1; then
     pass
 else
     fail "response should include changed flag"

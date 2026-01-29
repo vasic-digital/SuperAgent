@@ -11,6 +11,8 @@ import (
 	"dev.helix.agent/internal/database"
 	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/features"
+	"dev.helix.agent/internal/formatters"
+	formattersproviders "dev.helix.agent/internal/formatters/providers"
 	"dev.helix.agent/internal/handlers"
 	"dev.helix.agent/internal/middleware"
 	"dev.helix.agent/internal/models"
@@ -831,6 +833,27 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		visionHandler.RegisterRoutes(protected)
 		logger.Info("Vision endpoints registered at /v1/vision/*")
 
+		// Code Formatters endpoints (all public - formatters run locally and are safe)
+		formattersRegistry, formattersExecutor, formattersHealth := initializeFormattersSystem(logger)
+		if formattersRegistry != nil {
+			formattersHandler := handlers.NewFormattersHandler(formattersRegistry, formattersExecutor, formattersHealth, logger)
+
+			// All formatter endpoints are public (no sensitive operations)
+			v1Public := r.Group("/v1")
+			v1Public.POST("/format", formattersHandler.FormatCode)
+			v1Public.POST("/format/batch", formattersHandler.FormatCodeBatch)
+			v1Public.POST("/format/check", formattersHandler.CheckCode)
+			v1Public.POST("/formatters/:name/validate-config", formattersHandler.ValidateConfig)
+			v1Public.GET("/formatters", formattersHandler.ListFormatters)
+			v1Public.GET("/formatters/detect", formattersHandler.DetectFormatter)
+			v1Public.GET("/formatters/:name", formattersHandler.GetFormatter)
+			v1Public.GET("/formatters/:name/health", formattersHandler.HealthCheckFormatter)
+
+			logger.Info("Code Formatters endpoints registered (all public)")
+		} else {
+			logger.Warn("Code Formatters system not available")
+		}
+
 		// Register Protocol SSE endpoints for MCP/ACP/LSP/Embeddings/Vision/Cognee
 		// These endpoints handle SSE connections for CLI agent protocols (OpenCode, Crush, HelixCode)
 		protocolSSEHandler.RegisterSSERoutes(protected)
@@ -899,4 +922,36 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 
 	rc.Engine = r
 	return rc
+}
+
+// initializeFormattersSystem initializes the code formatters system with default configuration
+func initializeFormattersSystem(logger *logrus.Logger) (*formatters.FormatterRegistry, *formatters.FormatterExecutor, *formatters.HealthChecker) {
+	// Create configuration
+	cfg := formatters.DefaultConfig()
+	cfg.Enabled = true
+	cfg.DefaultTimeout = 30 * time.Second
+	cfg.CacheEnabled = true
+	cfg.CacheTTL = 5 * time.Minute
+	cfg.Metrics = true
+	cfg.Tracing = false
+
+	// Initialize the formatters system
+	registry, executor, health, err := formatters.InitializeFormattersSystem(cfg, logger)
+	if err != nil {
+		logger.WithError(err).Error("Failed to initialize formatters system")
+		return nil, nil, nil
+	}
+
+	// Register all available formatters
+	if err := formattersproviders.RegisterAllFormatters(registry, logger); err != nil {
+		logger.WithError(err).Warn("Some formatters failed to register")
+	}
+
+	logger.WithFields(logrus.Fields{
+		"formatters_count": len(registry.List()),
+		"cache_enabled":    cfg.CacheEnabled,
+		"metrics_enabled":  cfg.Metrics,
+	}).Info("Formatters system initialized successfully")
+
+	return registry, executor, health
 }
