@@ -45,9 +45,9 @@ func TestNewZenProvider(t *testing.T) {
 			name:      "grok code fast model",
 			apiKey:    "test-key",
 			baseURL:   "",
-			model:     ModelGrokCodeFast,
+			model:     ModelBigPickle,
 			wantURL:   ZenAPIURL,
-			wantModel: ModelGrokCodeFast,
+			wantModel: ModelBigPickle,
 		},
 	}
 
@@ -66,7 +66,7 @@ func TestFreeModels(t *testing.T) {
 	models := FreeModels()
 	assert.Len(t, models, 4)
 	assert.Contains(t, models, ModelBigPickle)
-	assert.Contains(t, models, ModelGrokCodeFast)
+	assert.Contains(t, models, ModelBigPickle)
 	assert.Contains(t, models, ModelGLM47Free)
 	assert.Contains(t, models, ModelGPT5Nano)
 }
@@ -77,7 +77,7 @@ func TestIsFreeModel(t *testing.T) {
 		expected bool
 	}{
 		{ModelBigPickle, true},
-		{ModelGrokCodeFast, true},
+		{ModelBigPickle, true},
 		{ModelGLM47Free, true},
 		{ModelGPT5Nano, true},
 		{"opencode/gpt-5.1-codex", false},
@@ -105,7 +105,7 @@ func TestZenProvider_Complete(t *testing.T) {
 		var req ZenRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		require.NoError(t, err)
-		assert.Equal(t, ModelGrokCodeFast, req.Model)
+		assert.Equal(t, ModelBigPickle, req.Model)
 		assert.Len(t, req.Messages, 1)
 
 		// Return mock response
@@ -113,7 +113,7 @@ func TestZenProvider_Complete(t *testing.T) {
 			ID:      "chatcmpl-123",
 			Object:  "chat.completion",
 			Created: time.Now().Unix(),
-			Model:   ModelGrokCodeFast,
+			Model:   ModelBigPickle,
 			Choices: []ZenChoice{
 				{
 					Index: 0,
@@ -137,7 +137,7 @@ func TestZenProvider_Complete(t *testing.T) {
 	defer server.Close()
 
 	// Create provider with mock server
-	p := NewZenProvider("test-key", server.URL, ModelGrokCodeFast)
+	p := NewZenProvider("test-key", server.URL, ModelBigPickle)
 
 	// Create request
 	req := &models.LLMRequest{
@@ -179,7 +179,7 @@ func TestZenProvider_Complete_Error(t *testing.T) {
 	defer server.Close()
 
 	// Create provider with mock server
-	p := NewZenProviderWithRetry("invalid-key", server.URL, ModelGrokCodeFast, RetryConfig{
+	p := NewZenProviderWithRetry("invalid-key", server.URL, ModelBigPickle, RetryConfig{
 		MaxRetries:   0, // No retries for faster test
 		InitialDelay: 100 * time.Millisecond,
 		MaxDelay:     1 * time.Second,
@@ -221,7 +221,7 @@ func TestZenProvider_CompleteStream(t *testing.T) {
 				ID:      "chatcmpl-stream-123",
 				Object:  "chat.completion.chunk",
 				Created: time.Now().Unix(),
-				Model:   ModelGrokCodeFast,
+				Model:   ModelBigPickle,
 				Choices: []ZenStreamChoice{
 					{
 						Index: 0,
@@ -248,7 +248,7 @@ func TestZenProvider_CompleteStream(t *testing.T) {
 	defer server.Close()
 
 	// Create provider
-	p := NewZenProvider("test-key", server.URL, ModelGrokCodeFast)
+	p := NewZenProvider("test-key", server.URL, ModelBigPickle)
 
 	// Create request
 	req := &models.LLMRequest{
@@ -287,7 +287,7 @@ func TestZenProvider_GetCapabilities(t *testing.T) {
 	assert.True(t, caps.SupportsCodeCompletion)
 	assert.True(t, caps.SupportsReasoning)
 	assert.Contains(t, caps.SupportedModels, ModelBigPickle)
-	assert.Contains(t, caps.SupportedModels, ModelGrokCodeFast)
+	assert.Contains(t, caps.SupportedModels, ModelBigPickle)
 	assert.Equal(t, "OpenCode Zen", caps.Metadata["provider"])
 	assert.Equal(t, "true", caps.Metadata["free_tier"])
 }
@@ -305,14 +305,14 @@ func TestZenProvider_ValidateConfig(t *testing.T) {
 			name:      "valid config with api key",
 			apiKey:    "test-key",
 			baseURL:   ZenAPIURL,
-			model:     ModelGrokCodeFast,
+			model:     ModelBigPickle,
 			wantValid: true,
 		},
 		{
 			name:          "valid anonymous mode with free model",
 			apiKey:        "",
 			baseURL:       ZenAPIURL,
-			model:         ModelGrokCodeFast,
+			model:         ModelBigPickle,
 			anonymousMode: true,
 			wantValid:     true,
 		},
@@ -345,10 +345,10 @@ func TestZenProvider_ValidateConfig(t *testing.T) {
 
 func TestZenProvider_AnonymousMode(t *testing.T) {
 	// Test creating provider in anonymous mode
-	p := NewZenProviderAnonymous(ModelGrokCodeFast)
+	p := NewZenProviderAnonymous(ModelBigPickle)
 	assert.NotNil(t, p)
 	assert.True(t, p.IsAnonymousMode())
-	assert.Equal(t, ModelGrokCodeFast, p.GetModel())
+	assert.Equal(t, ModelBigPickle, p.GetModel())
 	assert.NotEmpty(t, p.deviceID)
 
 	// Test that non-free model falls back to default
@@ -359,7 +359,7 @@ func TestZenProvider_AnonymousMode(t *testing.T) {
 func TestZenProvider_IsAnonymousAccessAllowed(t *testing.T) {
 	// Free models should allow anonymous access
 	assert.True(t, IsAnonymousAccessAllowed(ModelBigPickle))
-	assert.True(t, IsAnonymousAccessAllowed(ModelGrokCodeFast))
+	assert.True(t, IsAnonymousAccessAllowed(ModelBigPickle))
 	assert.True(t, IsAnonymousAccessAllowed(ModelGLM47Free))
 	assert.True(t, IsAnonymousAccessAllowed(ModelGPT5Nano))
 
@@ -376,7 +376,7 @@ func TestZenProvider_HealthCheck(t *testing.T) {
 			resp := ZenModelsResponse{
 				Object: "list",
 				Data: []ZenModelInfo{
-					{ID: ModelGrokCodeFast, OwnedBy: "opencode"},
+					{ID: ModelBigPickle, OwnedBy: "opencode"},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -390,7 +390,7 @@ func TestZenProvider_HealthCheck(t *testing.T) {
 	p := &ZenProvider{
 		apiKey:     "test-key",
 		baseURL:    server.URL + "/v1/chat/completions",
-		model:      ModelGrokCodeFast,
+		model:      ModelBigPickle,
 		httpClient: &http.Client{Timeout: 10 * time.Second},
 	}
 
@@ -398,7 +398,7 @@ func TestZenProvider_HealthCheck(t *testing.T) {
 	// which uses ZenModelsURL constant, so we'll skip the actual health check
 	// and just verify the provider is properly configured
 	assert.Equal(t, "test-key", p.apiKey)
-	assert.Equal(t, ModelGrokCodeFast, p.model)
+	assert.Equal(t, ModelBigPickle, p.model)
 }
 
 func TestZenProvider_ConvertRequest(t *testing.T) {
@@ -476,9 +476,9 @@ func TestZenProvider_CalculateConfidence(t *testing.T) {
 }
 
 func TestZenProvider_SetGetModel(t *testing.T) {
-	p := NewZenProvider("test-key", "", ModelGrokCodeFast)
+	p := NewZenProvider("test-key", "", ModelBigPickle)
 
-	assert.Equal(t, ModelGrokCodeFast, p.GetModel())
+	assert.Equal(t, ModelBigPickle, p.GetModel())
 
 	p.SetModel(ModelBigPickle)
 	assert.Equal(t, ModelBigPickle, p.GetModel())
@@ -520,7 +520,7 @@ func TestZenProvider_HealthCheck_Success(t *testing.T) {
 		resp := ZenModelsResponse{
 			Object: "list",
 			Data: []ZenModelInfo{
-				{ID: ModelGrokCodeFast, OwnedBy: "opencode"},
+				{ID: ModelBigPickle, OwnedBy: "opencode"},
 			},
 		}
 		json.NewEncoder(w).Encode(resp)
@@ -530,7 +530,7 @@ func TestZenProvider_HealthCheck_Success(t *testing.T) {
 	p := &ZenProvider{
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		model:      ModelGrokCodeFast,
+		model:      ModelBigPickle,
 		httpClient: &http.Client{Timeout: 10 * time.Second},
 	}
 
@@ -549,7 +549,7 @@ func TestZenProvider_HealthCheck_Failure(t *testing.T) {
 	p := &ZenProvider{
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		model:      ModelGrokCodeFast,
+		model:      ModelBigPickle,
 		httpClient: &http.Client{Timeout: 10 * time.Second},
 	}
 
@@ -569,7 +569,7 @@ func TestZenProvider_GetAvailableModels_Success(t *testing.T) {
 		resp := ZenModelsResponse{
 			Object: "list",
 			Data: []ZenModelInfo{
-				{ID: ModelGrokCodeFast, OwnedBy: "opencode", Created: time.Now().Unix()},
+				{ID: ModelBigPickle, OwnedBy: "opencode", Created: time.Now().Unix()},
 				{ID: ModelBigPickle, OwnedBy: "opencode", Created: time.Now().Unix()},
 				{ID: "opencode/gpt-5.1", OwnedBy: "opencode", Created: time.Now().Unix()},
 			},
@@ -583,11 +583,11 @@ func TestZenProvider_GetAvailableModels_Success(t *testing.T) {
 	modelsResp := ZenModelsResponse{
 		Object: "list",
 		Data: []ZenModelInfo{
-			{ID: ModelGrokCodeFast, OwnedBy: "opencode"},
+			{ID: ModelBigPickle, OwnedBy: "opencode"},
 		},
 	}
 	assert.Len(t, modelsResp.Data, 1)
-	assert.Equal(t, ModelGrokCodeFast, modelsResp.Data[0].ID)
+	assert.Equal(t, ModelBigPickle, modelsResp.Data[0].ID)
 }
 
 func TestZenProvider_GetAvailableModels_Error(t *testing.T) {
@@ -629,7 +629,7 @@ func TestZenModelsResponse_Parsing(t *testing.T) {
 func TestZenProvider_GetFreeModels_Filtering(t *testing.T) {
 	// Test that free models filtering logic works
 	allModels := []ZenModelInfo{
-		{ID: ModelGrokCodeFast, OwnedBy: "opencode"},
+		{ID: ModelBigPickle, OwnedBy: "opencode"},
 		{ID: ModelBigPickle, OwnedBy: "opencode"},
 		{ID: "opencode/gpt-5.1-codex", OwnedBy: "opencode"},
 		{ID: ModelGLM47Free, OwnedBy: "opencode"},
@@ -673,7 +673,7 @@ func TestZenProvider_NormalizeModelID(t *testing.T) {
 }
 
 func TestZenProvider_ConvertResponse(t *testing.T) {
-	p := NewZenProvider("test-key", "", ModelGrokCodeFast)
+	p := NewZenProvider("test-key", "", ModelBigPickle)
 	// Use startTime in the past to ensure ResponseTime > 0
 	startTime := time.Now().Add(-100 * time.Millisecond)
 
@@ -682,7 +682,7 @@ func TestZenProvider_ConvertResponse(t *testing.T) {
 		ID:      "chatcmpl-456",
 		Object:  "chat.completion",
 		Created: time.Now().Unix(),
-		Model:   ModelGrokCodeFast,
+		Model:   ModelBigPickle,
 		Choices: []ZenChoice{
 			{
 				Index: 0,
@@ -713,7 +713,7 @@ func TestZenProvider_ConvertResponse(t *testing.T) {
 }
 
 func TestZenProvider_AnonymousModeHeaders(t *testing.T) {
-	p := NewZenProviderAnonymous(ModelGrokCodeFast)
+	p := NewZenProviderAnonymous(ModelBigPickle)
 
 	assert.True(t, p.IsAnonymousMode())
 	assert.NotEmpty(t, p.deviceID)
@@ -722,7 +722,7 @@ func TestZenProvider_AnonymousModeHeaders(t *testing.T) {
 
 func TestWaitWithJitter(t *testing.T) {
 	// Test that waitWithJitter returns within expected range
-	p := NewZenProvider("test-key", "", ModelGrokCodeFast)
+	p := NewZenProvider("test-key", "", ModelBigPickle)
 	baseDelay := 100 * time.Millisecond
 	start := time.Now()
 
@@ -773,7 +773,7 @@ func TestGenerateDeviceID(t *testing.T) {
 }
 
 func TestNextDelay(t *testing.T) {
-	p := NewZenProviderWithRetry("test-key", "", ModelGrokCodeFast, RetryConfig{
+	p := NewZenProviderWithRetry("test-key", "", ModelBigPickle, RetryConfig{
 		MaxRetries:   3,
 		InitialDelay: 100 * time.Millisecond,
 		MaxDelay:     1 * time.Second,
@@ -845,7 +845,7 @@ func TestZenProvider_HealthCheck_WithMockTransport(t *testing.T) {
 
 		p := &ZenProvider{
 			apiKey:     "test-key",
-			model:      ModelGrokCodeFast,
+			model:      ModelBigPickle,
 			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
 		}
 
@@ -862,7 +862,7 @@ func TestZenProvider_HealthCheck_WithMockTransport(t *testing.T) {
 
 		p := &ZenProvider{
 			apiKey:     "test-key",
-			model:      ModelGrokCodeFast,
+			model:      ModelBigPickle,
 			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
 		}
 
@@ -874,7 +874,7 @@ func TestZenProvider_HealthCheck_WithMockTransport(t *testing.T) {
 	t.Run("failure - network error", func(t *testing.T) {
 		p := &ZenProvider{
 			apiKey:     "test-key",
-			model:      ModelGrokCodeFast,
+			model:      ModelBigPickle,
 			httpClient: &http.Client{Transport: &mockRoundTripper{err: fmt.Errorf("connection refused")}},
 		}
 
@@ -896,7 +896,7 @@ func TestZenProvider_HealthCheck_WithMockTransport(t *testing.T) {
 		}
 
 		p := &ZenProvider{
-			model:         ModelGrokCodeFast,
+			model:         ModelBigPickle,
 			anonymousMode: true,
 			deviceID:      "test-device-id",
 			httpClient:    &http.Client{Transport: transport},
@@ -927,7 +927,7 @@ func TestZenProvider_GetAvailableModels_WithMockTransport(t *testing.T) {
 
 		p := &ZenProvider{
 			apiKey:     "test-key",
-			model:      ModelGrokCodeFast,
+			model:      ModelBigPickle,
 			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
 		}
 
@@ -947,7 +947,7 @@ func TestZenProvider_GetAvailableModels_WithMockTransport(t *testing.T) {
 
 		p := &ZenProvider{
 			apiKey:     "test-key",
-			model:      ModelGrokCodeFast,
+			model:      ModelBigPickle,
 			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
 		}
 
@@ -959,7 +959,7 @@ func TestZenProvider_GetAvailableModels_WithMockTransport(t *testing.T) {
 	t.Run("error - network error", func(t *testing.T) {
 		p := &ZenProvider{
 			apiKey:     "test-key",
-			model:      ModelGrokCodeFast,
+			model:      ModelBigPickle,
 			httpClient: &http.Client{Transport: &mockRoundTripper{err: fmt.Errorf("network error")}},
 		}
 
@@ -977,7 +977,7 @@ func TestZenProvider_GetAvailableModels_WithMockTransport(t *testing.T) {
 
 		p := &ZenProvider{
 			apiKey:     "test-key",
-			model:      ModelGrokCodeFast,
+			model:      ModelBigPickle,
 			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
 		}
 
@@ -1006,7 +1006,7 @@ func TestZenProvider_GetFreeModels_WithMockTransport(t *testing.T) {
 
 		p := &ZenProvider{
 			apiKey:     "test-key",
-			model:      ModelGrokCodeFast,
+			model:      ModelBigPickle,
 			httpClient: &http.Client{Transport: &mockRoundTripper{response: mockResp}},
 		}
 
@@ -1021,7 +1021,7 @@ func TestZenProvider_GetFreeModels_WithMockTransport(t *testing.T) {
 	t.Run("error - propagates GetAvailableModels error", func(t *testing.T) {
 		p := &ZenProvider{
 			apiKey:     "test-key",
-			model:      ModelGrokCodeFast,
+			model:      ModelBigPickle,
 			httpClient: &http.Client{Transport: &mockRoundTripper{err: fmt.Errorf("network error")}},
 		}
 
