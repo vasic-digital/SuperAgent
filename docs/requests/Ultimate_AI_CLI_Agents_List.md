@@ -1,7 +1,7 @@
 # Ultimate AI CLI Agents List
 
 **Last Updated:** 2026-01-29
-**Total Agents:** 400+
+**Total Agents:** 450+
 **Status:** Actively Maintained
 
 This is a comprehensive, curated list of all known open-source AI CLI agents, coding assistants, and terminal-based AI tools available on GitHub, GitLab, and other platforms.
@@ -67,8 +67,23 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 55. [Log Analysis & Monitoring](#log-analysis--monitoring)
 56. [Dependency & Vulnerability Scanning](#dependency--vulnerability-scanning)
 57. [Configuration Management](#configuration-management)
-58. [Specialized Tools](#specialized-tools)
-59. [Curated Lists & Resources](#curated-lists--resources)
+58. [Version Control & Git Tools](#version-control--git-tools)
+59. [Network Security](#network-security)
+60. [Secret Management](#secret-management)
+61. [Package Registries](#package-registries)
+62. [Code Quality & Analysis](#code-quality--analysis)
+63. [Continuous Monitoring & Alerting](#continuous-monitoring--alerting)
+64. [Backup & Disaster Recovery](#backup--disaster-recovery)
+65. [Content Management Systems](#content-management-systems)
+66. [E-commerce Platforms](#e-commerce-platforms)
+67. [Social Media Automation](#social-media-automation)
+68. [Video & Image Processing](#video--image-processing)
+69. [Real-Time Communication](#real-time-communication)
+70. [Data Visualization](#data-visualization)
+71. [Browser Automation](#browser-automation)
+72. [Desktop Automation & RPA](#desktop-automation--rpa)
+73. [Specialized Tools](#specialized-tools)
+74. [Curated Lists & Resources](#curated-lists--resources)
 
 ---
 
@@ -886,6 +901,193 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ---
 
+## Version Control & Git Tools
+
+**Description:** AI agents for Git workflow automation, version control, and hooks.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **GitHub Copilot CLI** | AI agent with hooks for validation and workflow automation | (GitHub) |
+| **GitButler + Cursor** | Automatic version control integration with Cursor hooks | (GitButler) |
+| **awesome-claude-code** | Curated list of skills, hooks, and agent orchestrators for Claude Code | https://github.com/hesreallyhim/awesome-claude-code |
+
+---
+
+## Network Security
+
+**Description:** Advanced penetration testing and network security AI agents.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Strix** | Autonomous AI agents for penetration testing with CLI | https://github.com/usestrix/strix |
+| **PentestGPT** | Automated Penetration Testing Agentic Framework | https://github.com/GreyDGL/PentestGPT |
+| **PentAGI** | Fully autonomous AI-powered penetration testing agent | https://github.com/vxcontrol/pentagi |
+| **NetworkAttackSimulator** | Environment for testing AI pentesting agents | https://github.com/Jjschwartz/NetworkAttackSimulator |
+
+---
+
+## Secret Management
+
+**Description:** Tools for secrets management, encryption, and privileged access.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **HashiCorp Vault** | Secrets management, encryption as a service, privileged access | https://github.com/hashicorp/vault |
+
+---
+
+## Package Registries
+
+**Description:** Artifact repository management and package registry tools.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **JFrog Artifactory** | Universal artifact repository manager with CLI | (JFrog) |
+| **Nexus Repository** | Centralized storage for software artifacts | (Sonatype) |
+| **GitHub Packages** | Package management integrated into GitHub | (GitHub) |
+
+---
+
+## Code Quality & Analysis
+
+**Description:** Static analysis, linting, and code quality tools with AI capabilities.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **SonarQube** | Static analysis for continuous code quality and security | (SonarSource) |
+| **awesome-static-analysis** | Curated list of static analysis tools and linters | https://github.com/VahidN/awesome-static-analysis |
+| **SonarEsLintPlugin** | SonarQube plugin for ESLint linter | https://github.com/sleroy/SonarEsLintPlugin |
+
+---
+
+## Continuous Monitoring & Alerting
+
+**Description:** AI agents for monitoring, alerting, and observability.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Grafana Agent** | Vendor-neutral programmable observability pipelines | https://github.com/grafana/agent |
+| **monitoring-grafana-prometheus** | Tool to generate monitoring configuration and dashboards | https://github.com/ernitingarg/monitoring-grafana-prometheus |
+
+---
+
+## Backup & Disaster Recovery
+
+**Description:** Automated backup solutions and disaster recovery tools.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **GitProtect** | GitHub backup and disaster recovery platform | (GitProtect.io) |
+| **Cloudback** | Automated Git repository backups with instant restores | (Cloudback.it) |
+| **sample-backup-assistant-with-ai-agents** | Build backup assistant using AI agents on AWS Bedrock | https://github.com/aws-samples/sample-backup-assistant-with-ai-agents |
+| **Automated-Backup-and-Disaster-Recovery-Project** | Automates EC2 backup and disaster recovery | https://github.com/bachkaaaaa/Automated-Backup-and-Disaster-Recovery-Project |
+
+---
+
+## Content Management Systems
+
+**Description:** Headless CMS and content management platforms with AI integration.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Strapi** | Leading open-source headless CMS (100% JavaScript/TypeScript) | https://github.com/strapi/strapi |
+| **strapi-headless-cms** | Cheat sheet repository for setting up Strapi | https://github.com/emanuelefavero/strapi-headless-cms |
+| **klaudsol-cms** | Headless and Serverless CMS alternative to WordPress and Strapi | https://github.com/klaudsol/klaudsol-cms |
+
+---
+
+## E-commerce Platforms
+
+**Description:** AI agents for e-commerce automation across Shopify, WooCommerce, Magento.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **shopify-ai-agent** | Automates Shopify order processing with Grok AI | https://github.com/jarif87/shopify-ai-agent |
+| **eCommerce.ai** | Complete framework with live virtual AI assistant for e-commerce | https://github.com/AmitXShukla/eCommerce.ai |
+| **E-commerce-System-Based-on-AI-Agent** | E-commerce system powered by AI agents | https://github.com/NazhiGuo/E-commerce-System-Based-on-AI-Agent |
+
+---
+
+## Social Media Automation
+
+**Description:** AI agents for automating social media platforms and content creation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **social-media-agent** | Agent for sourcing, curating, and scheduling social media posts | https://github.com/langchain-ai/social-media-agent |
+| **AutoGPT** | Create and deploy continuous AI agents with social media automation | https://github.com/Significant-Gravitas/AutoGPT |
+| **Riona-AI-Agent** | Instagram and Twitter automation with AI content generation | https://github.com/David-patrick-chuks/Riona-AI-Agent |
+| **Social-Media-AI-Agent** | Instagram automation for posting, liking, and commenting | https://github.com/harshmriduhash/Social-Media-AI-Agent |
+| **social-media-agents** | Multi-agent system for social media management | https://github.com/Klaudiusz321/social-media-agents |
+| **AISocialAgent-OTO** | All-in-one tool for automated social media campaigns | https://github.com/AISocialAgentRe/AISocialAgent-OTO |
+
+---
+
+## Video & Image Processing
+
+**Description:** AI agents for video and image processing automation with FFmpeg and ImageMagick.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **ImageMagick** | Free, open-source software suite for image editing (200+ formats) | https://github.com/ImageMagick/ImageMagick |
+| **ai-ffmpeg-cli** | AI-powered CLI translating natural language to FFmpeg commands | https://github.com/d-k-patel/ai-ffmpeg-cli |
+| **ai-ffmpeg** | Web app using NLP to generate FFmpeg commands | https://github.com/woniu9524/ai-ffmpeg |
+| **video-and-image-cli** | Video and image manipulation on the command line | https://github.com/uclaconditional/video-and-image-cli |
+| **upscale_video** | Upscales video 2x or 4x using AI | https://github.com/davlee1972/upscale_video |
+
+---
+
+## Real-Time Communication
+
+**Description:** WebRTC, real-time voice/video AI agents and communication frameworks.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Pipecat** | Open source framework for voice and multimodal conversational AI | https://github.com/pipecat-ai/pipecat |
+| **realtime-agent-over-webrtc** | Basic demo of AG2 RealtimeAgent communication over WebRTC | https://github.com/ag2ai/realtime-agent-over-webrtc |
+| **openai-realtime-twilio-demo** | OpenAI Realtime API with Twilio phone calling | https://github.com/openai/openai-realtime-twilio-demo |
+
+---
+
+## Data Visualization
+
+**Description:** AI agents for data visualization, charts, and dashboards.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **D3.js** | JavaScript library for bespoke data visualization | https://github.com/d3/d3 |
+| **d3v4-dashboard** | Dashboard for various charts using D3.js v4 | https://github.com/webdatavisualdev/d3v4-dashboard |
+| **Data-Visualization** | Interactive visualization with D3.js, DC.js, Python, MongoDB | https://github.com/rohitsingh4334/Data-Visualization |
+
+---
+
+## Browser Automation
+
+**Description:** AI-powered browser automation with Puppeteer, Playwright, Selenium.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Stagehand** | AI Browser Automation Framework | https://github.com/browserbase/stagehand |
+| **Steel Browser** | Open Source Browser API for AI Agents & Apps | https://github.com/steel-dev/steel-browser |
+| **browser-use** | Make websites accessible for AI agents | https://github.com/browser-use/browser-use |
+| **playwright-mcp** | Playwright MCP server (Microsoft) | https://github.com/microsoft/playwright-mcp |
+| **browser_agent** | Smart AI agent controlling browser with natural language | https://github.com/rkvalandas/browser_agent |
+
+---
+
+## Desktop Automation & RPA
+
+**Description:** Robotic Process Automation and desktop workflow automation tools.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **OpenAdapt** | Open Source Generative Process Automation (Generative RPA) | https://github.com/OpenAdaptAI/OpenAdapt |
+| **Automagica** | AI-powered Smart Robotic Process Automation | https://github.com/automagica/automagica |
+| **awesome-rpa** | Curated list of awesome RPA Tools, Blogs, frameworks | https://github.com/rpabotsworld/awesome-rpa |
+| **IT-Automation-Workflow-Solutions** | RPA Workflow Solutions built with UiPath | https://github.com/UiPath/IT-Automation-Workflow-Solutions |
+
+---
+
 ## Specialized Tools
 
 **Description:** Tools for specific use cases and domains.
@@ -1013,16 +1215,17 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ## Statistics
 
-- **Total Agents Listed:** 400+
+- **Total Agents Listed:** 450+
 - **Total Curated Lists:** 30+
-- **Categories Covered:** 59
+- **Categories Covered:** 74
 - **Last Research Date:** 2026-01-29
-- **Active GitHub Repositories:** 350+
-- **Research Depth:** 3 comprehensive research sessions
+- **Active GitHub Repositories:** 400+
+- **Research Depth:** 4 comprehensive research sessions
 - **Specialized Categories:**
   - **Phase 1 (15 categories):** DevOps, Testing, Security, Documentation, Database, Mobile, Frontend, Backend, Blockchain, MLOps, Prompt Engineering, Translation, Refactoring, Monitoring, Game Development
   - **Phase 2 (14 categories):** CI/CD, Container & Orchestration, Data Engineering, NLP, Computer Vision, Audio/Speech, Chatbots, Edge Computing, Performance Benchmarking, Search & Retrieval, Email Automation, Calendar/Scheduling, File Management, Code Generation
   - **Phase 3 (15 categories):** GraphQL Tools, WebAssembly/WASM, Serverless & Cloud, Language-Specific (Rust/Python/Go/Java), Healthcare & Medical, Finance & Trading, Legal & Contract Analysis, Education & Learning, API Testing, Log Analysis, Dependency Scanning, Configuration Management
+  - **Phase 4 (15 categories):** Version Control & Git Tools, Network Security, Secret Management, Package Registries, Code Quality & Analysis, Continuous Monitoring & Alerting, Backup & Disaster Recovery, Content Management Systems, E-commerce Platforms, Social Media Automation, Video & Image Processing, Real-Time Communication, Data Visualization, Browser Automation, Desktop Automation & RPA
 
 ---
 
