@@ -17,6 +17,7 @@ import (
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/llm/providers/claude"
 	"dev.helix.agent/internal/llm/providers/qwen"
+	"dev.helix.agent/internal/llm/providers/zen"
 	"github.com/sirupsen/logrus"
 )
 
@@ -308,16 +309,22 @@ func (sv *StartupVerifier) discoverFreeProviders(ctx context.Context) []*Provide
 	}
 
 	// Zen is always available (anonymous mode)
-	// Updated 2026-01: Using verified working models from Zen API
+	// Updated 2026-01-29: Using dynamic model discovery from Zen API/CLI
+	zenModels := zen.DiscoverFreeModels()
+	sv.log.WithFields(logrus.Fields{
+		"count":  len(zenModels),
+		"models": zenModels,
+	}).Info("Dynamically discovered Zen models")
+
 	providers = append(providers, &ProviderDiscoveryResult{
 		ID:          "zen",
 		Type:        "zen",
 		AuthType:    AuthTypeFree,
 		Discovered:  true,
-		Source:      "auto",
+		Source:      "dynamic_discovery",
 		Credentials: "Anonymous",
 		BaseURL:     "https://opencode.ai/zen/v1/chat/completions",
-		Models:      []string{"big-pickle", "gpt-5-nano", "glm-4.7"},
+		Models:      zenModels,
 	})
 
 	// Check if Ollama is running locally
