@@ -2050,6 +2050,146 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ---
 
+## Human Resources & Recruitment
+
+**Description:** AI agents for HR automation, talent acquisition, and recruitment process optimization.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **EmpowerHR-AI-Powered-HR-Agents** | Automates HR tasks like candidate notes and onboarding | https://github.com/aneeshbukya/EmpowerHR--AI-Powered-HR-Agents |
+| **AI-Recruitment-Agent** | Multi-agent recruitment assistant using Microsoft AutoGen | https://github.com/Ancastal/AI-Recruitment-Agent |
+| **AI-Recruitment-Agent-Team** | Candidate evaluation and interview scheduling | https://github.com/Madhuvod/AI-Recruitment-Agent-Team |
+| **hr-agi-tool** | Autonomous agents for HR task automation | https://github.com/kecoje/hr-agi-tool |
+| **Eazyrecruit-docs** | AI-enabled open source recruitment software | https://github.com/yogeshrawal2/Eazyrecruit-docs |
+| **AI-Based-Recruitment-System** | Accelerate hiring process for HR and technical recruiters | https://github.com/manthan89-py/AI-Based-Recruitment-System |
+
+---
+
+## Legal Tech & Compliance
+
+**Description:** AI agents for legal document analysis, contract review, and compliance automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **legal-ai-agent** | AI solution for contract review and legal research | https://github.com/saintzema/legal-ai-agent |
+| **ally-legal-assistant** | Word plugin using Azure OpenAI for contract analysis | https://github.com/Azure-Samples/ally-legal-assistant |
+| **lawglance** | Free open source RAG-based AI legal assistant | https://github.com/lawglance/lawglance |
+| **contract-analyzer** | Extract and analyze key information from legal contracts | https://github.com/ahmetkumass/contract-analyzer |
+| **CrewAI_Contract_Clause_Risk_Assessment** | AI agents for contract risk assessment | https://github.com/deacs11/CrewAI_Contract_Clause_Risk_Assessment |
+| **Legal-AI_Project** | Automated legal document analysis platform | https://github.com/OssamaLouati/Legal-AI_Project |
+| **LawAgent** | List of law and legal AI agents resources | https://github.com/AI-Hub-Admin/LawAgent |
+
+---
+
+## Retail & Point of Sale
+
+**Description:** AI agents for retail operations, inventory management, and POS systems.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **FinOpenPOS** | POS and inventory management with Next.js and Supabase | https://github.com/JoaoHenriqueBarbosa/FinOpenPOS |
+| **qpos** | Smart POS system with Laravel, React, and Vue.js | https://github.com/qtecsolution/qpos |
+| **OnlineRetailPOS** | Django online retail POS system | https://github.com/virajkothari7/OnlineRetailPOS |
+| **EFLInventory-V2** | Point-of-sale and inventory tracking for retail stores | https://github.com/chrisidakwo/EFLInventory-V2 |
+| **openthc/pos** | Software solutions for retail - POS, CRM, delivery, ordering | https://github.com/openthc/pos |
+
+---
+
+## Telecommunications & Customer Service
+
+**Description:** AI agents for call centers, customer support, and telecom operations.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **call-center-ai** | Microsoft's API-based phone call AI agent | https://github.com/microsoft/call-center-ai |
+| **AI-Powered-Call-Center-Intelligence** | Real-time behavioral intelligence for call centers | https://github.com/ReverendBayes/AI-Powered-Call-Center-Intelligence |
+| **bolna** | Conversational voice AI agents | https://github.com/bolna-ai/bolna |
+| **communication-services-AI-customer-service-sample** | Azure Communication Services with Azure OpenAI | https://github.com/Azure-Samples/communication-services-AI-customer-service-sample |
+| **ai-call-agent** | OpenAI Realtime API + Twilio voice agent | https://github.com/rehan-dev/ai-call-agent |
+| **callcenter-simulator** | Call center simulator using OpenAI technologies | https://github.com/supershaneski/callcenter-simulator |
+
+---
+
+## Mining & Natural Resources
+
+**Description:** AI agents for mineral exploration, geological modeling, and resource management.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **mineral-exploration-machine-learning** | Resources for mineral exploration and ML | https://github.com/RichardScottOZ/mineral-exploration-machine-learning |
+| **mineral-ai** | Global mineral commodities analysis and intelligent assistance | https://github.com/truptimohanty/mineral-ai |
+| **mine-genius** | AI-powered mining platform for intelligent processes | https://github.com/KOSASIH/mine-genius |
+| **GeMiSe** | Integrated platform for geological, mining, and seismic datasets | https://github.com/SamiranDas1311/Geological-Mining-Seismic-Dataset-Collection-GeMiSe- |
+| **GemPy** | Open-source 3-D structural geological modeling software | https://github.com/cgre-aachen/gempy |
+
+---
+
+## Fisheries & Aquaculture
+
+**Description:** AI agents for fisheries management, aquaculture monitoring, and seafood industry.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **FSA** | R functions for fisheries stock assessment | https://github.com/droglenc/FSA |
+| **Seashell AI** | First dedicated AI assistant for aquaculture | https://thefishsite.com/articles/harnessing-ai-in-aquaculture |
+| **Global Fishing Watch** | AI to track commercial fishing activity | https://globalfishingwatch.org/ |
+| **fish-ai** | Supercharge command line with LLMs (Fish shell) | https://github.com/Realiserad/fish-ai |
+
+---
+
+## Forestry & Lumber
+
+**Description:** AI agents for forestry management, timber processing, and wood industry.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **XyloTron** | Open-source platform for field imaging and identification of wood | https://www.frontiersin.org/journals/plant-science/articles/10.3389/fpls.2020.01015/full |
+| **ForestAdmin/lumber** | Install Forest Admin in minutes | https://github.com/ForestAdmin/lumber |
+| **woodwork-engine** | AI Agent IaC tool for developing and deploying AI agents | https://github.com/willwoodward/woodwork-engine |
+
+---
+
+## Veterinary & Animal Care
+
+**Description:** AI agents for veterinary medicine, pet care, and animal health management.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **PetCare-AI-Llama-2-Chatbot** | LLM-based chatbot for pet care | https://github.com/AIAnytime/PetCare-AI-Llama-2-Chatbot |
+| **VetExpertProject** | Multi-class classifier CNN for pet disease diagnosis | https://github.com/JigarJoshi04/VetExpertProject |
+| **Pet Care** | Laravel-based veterinary practice management | https://github.com/pet-care |
+| **petcare-app** | Android app to track pets' health and vet visits | https://github.com/Project-PetCare/petcare-app |
+| **OpenVPMS** | Open-source veterinary practice management software | https://www.openvpms.org/ |
+
+---
+
+## Nonprofit & NGO Management
+
+**Description:** AI agents for nonprofit operations, fundraising, and social impact organizations.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Houdini** | Free and open source fundraising infrastructure for nonprofits | https://github.com/houdiniproject/houdini |
+| **AI Agents for Charity** | Sage Future's AI fundraising experiment | https://techcrunch.com/2025/04/08/a-nonprofit-is-using-ai-agents-to-raise-money-for-charity/ |
+| **GitHub for Nonprofits** | Free tools and discounts for verified nonprofits | https://github.com/solutions/industry/nonprofits |
+| **Digital Public Goods** | Open source software for Sustainable Development Goals | https://digitalpublicgoods.net/ |
+
+---
+
+## Government & Public Sector
+
+**Description:** AI agents for civic tech, public services, and government digital transformation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **i.AI (Incubator for Artificial Intelligence)** | UK Government Digital Service AI projects | https://github.com/i-dot-ai |
+| **AI for Public Services** | Alan Turing Institute's foundational research | https://github.com/ai-for-public-services |
+| **awesome-govtech** | Curated list of GovTech platforms, tools, and frameworks | https://github.com/awesomelistsio/awesome-govtech |
+| **GovChat-NL** | Dutch government-focused ChatGPT integration | https://github.com/GovChat-NL |
+| **Digital-Government-Civic-Tech-Open-Curriculum** | Open source civic tech course | https://github.com/YOWCT/Digital-Government-Civic-Tech-Open-Curriculum |
+
+---
+
 ## Additional Resources
 
 ### Community Directories
@@ -2075,12 +2215,12 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ## Statistics
 
-- **Total Agents Listed:** 760+
+- **Total Agents Listed:** 810+
 - **Total Curated Lists:** 30+
-- **Categories Covered:** 129
+- **Categories Covered:** 139
 - **Last Research Date:** 2026-01-29
-- **Active GitHub Repositories:** 710+
-- **Research Depth:** 9 comprehensive research sessions
+- **Active GitHub Repositories:** 760+
+- **Research Depth:** 10 comprehensive research sessions
 - **Specialized Categories:**
   - **Phase 1 (15 categories):** DevOps, Testing, Security, Documentation, Database, Mobile, Frontend, Backend, Blockchain, MLOps, Prompt Engineering, Translation, Refactoring, Monitoring, Game Development
   - **Phase 2 (14 categories):** CI/CD, Container & Orchestration, Data Engineering, NLP, Computer Vision, Audio/Speech, Chatbots, Edge Computing, Performance Benchmarking, Search & Retrieval, Email Automation, Calendar/Scheduling, File Management, Code Generation
@@ -2091,6 +2231,7 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
   - **Phase 7 (10 categories):** Space Exploration & Satellite Systems, Maritime & Naval Automation, Railway & Transportation Systems, Aviation & Air Traffic Control, Medical Imaging & Radiology, Pharmaceutical & Drug Discovery, Materials Science & Chemistry, Nuclear Engineering & Simulation, Construction & Civil Engineering, Water Treatment & Environmental Monitoring
   - **Phase 8 (10 categories):** Digital Forensics & Cybersecurity Investigation, Disaster Response & Emergency Management, Archaeology & Cultural Heritage, Textile & Fashion Industry, Food Science & Nutrition, Sports Analytics & Performance, Music Information Retrieval, Gaming AI & Esports, Education Technology & Tutoring, Social Sciences & Psychology Research
   - **Phase 9 (10 categories):** Insurance & Actuarial Science, Real Estate & Property Management, Hospitality & Tourism, Event Management & Planning, Journalism & Media Production, Publishing & Content Creation, Translation & Localization, Libraries & Information Science, Museums & Galleries, Military & Defense Systems
+  - **Phase 10 (10 categories):** Human Resources & Recruitment, Legal Tech & Compliance, Retail & Point of Sale, Telecommunications & Customer Service, Mining & Natural Resources, Fisheries & Aquaculture, Forestry & Lumber, Veterinary & Animal Care, Nonprofit & NGO Management, Government & Public Sector
 
 ---
 
