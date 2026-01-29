@@ -1,0 +1,53 @@
+sequenceDiagram
+    participant Client
+    participant Router as API Router
+    participant Auth as Auth Middleware
+    participant Handler as Chat/Debate Handler
+    participant Intent as Intent Classifier
+    participant Ensemble as Ensemble Service
+    participant Registry as Provider Registry
+    participant LLM as LLM Provider
+    participant Voting as Confidence Voting
+    participant Cache as Redis Cache
+    participant DB as PostgreSQL
+
+    Client->>Router: POST /v1/chat/completions
+    Router->>Auth: Validate JWT token
+    Auth->>Auth: Check rate limits, CORS, validation
+
+    alt Authentication Failed
+        Auth-->>Client: 401 Unauthorized
+    end
+
+    Auth->>Handler: Forward request
+
+    Handler->>Cache: Check response cache
+    alt Cache Hit
+        Cache-->>Handler: Cached response
+        Handler-->>Client: Return cached response
+    end
+
+    Handler->>Intent: Classify user intent
+    Intent->>Intent: LLM-based semantic classification
+    Note over Intent: confirmation | refusal | question | request | clarification | unclear
+    Intent-->>Handler: Intent (type, confidence, is_actionable)
+
+    Handler->>Ensemble: Process request
+    Ensemble->>Registry: Get ranked providers
+
+    loop For each selected provider (parallel)
+        Registry->>LLM: Send completion request
+        LLM-->>Registry: Provider response + confidence
+    end
+
+    Registry-->>Ensemble: All provider responses
+
+    Ensemble->>Voting: Aggregate responses
+    Note over Voting: Confidence-weighted voting<br/>Majority vote<br/>Best-of-N selection
+    Voting-->>Ensemble: Consensus response + confidence score
+
+    Ensemble->>DB: Log request + responses
+    Ensemble->>Cache: Store in cache
+
+    Ensemble-->>Handler: Aggregated response
+    Handler-->>Client: Final response (OpenAI-compatible format)

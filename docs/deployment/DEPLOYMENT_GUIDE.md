@@ -96,6 +96,49 @@ docker-compose --profile full down
 docker-compose logs -f helixagent
 ```
 
+## Service Configuration
+
+HelixAgent manages all infrastructure services (PostgreSQL, Redis, Cognee, ChromaDB, etc.) through a unified boot manager. Services can run locally via Docker Compose or connect to remote instances.
+
+### Local Services (Default)
+
+All services start automatically via Docker Compose on boot:
+
+```yaml
+# configs/development.yaml
+services:
+  postgresql:
+    host: "localhost"
+    port: "5432"
+    enabled: true
+    required: true
+    compose_file: "docker-compose.yml"
+    service_name: "postgres"
+```
+
+### Remote Services (Production)
+
+Point services to external/managed instances:
+
+```yaml
+# configs/production.yaml
+services:
+  postgresql:
+    host: "${SVC_POSTGRESQL_HOST:-localhost}"
+    port: "5432"
+    remote: true        # Skip Docker Compose, health check only
+    required: true
+```
+
+Override via environment variables:
+```bash
+SVC_POSTGRESQL_HOST=db.production.com SVC_REDIS_HOST=redis.production.com ./bin/helixagent
+```
+
+See `configs/remote-services-example.yaml` for a complete example.
+
+For full details, see [Services Configuration Guide](../user/SERVICES_CONFIGURATION.md).
+
 ## Kubernetes Deployment
 
 ### Prerequisites

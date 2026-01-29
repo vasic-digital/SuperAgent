@@ -286,6 +286,82 @@ backup:
   retention_days: 30
   storage_path: "./backups/production"
 
+services:
+  postgresql:
+    host: "${SVC_POSTGRESQL_HOST:-localhost}"
+    port: "${SVC_POSTGRESQL_PORT:-5432}"
+    enabled: true
+    required: true
+    remote: ${SVC_POSTGRESQL_REMOTE:-false}
+    health_type: "pgx"
+    timeout: "10s"
+    retry_count: 6
+    compose_file: "docker-compose.yml"
+    service_name: "postgres"
+    profile: "default"
+  redis:
+    host: "${SVC_REDIS_HOST:-localhost}"
+    port: "${SVC_REDIS_PORT:-6379}"
+    enabled: true
+    required: true
+    remote: ${SVC_REDIS_REMOTE:-false}
+    health_type: "redis"
+    timeout: "5s"
+    retry_count: 6
+    compose_file: "docker-compose.yml"
+    service_name: "redis"
+    profile: "default"
+  cognee:
+    host: "${SVC_COGNEE_HOST:-localhost}"
+    port: "${SVC_COGNEE_PORT:-8000}"
+    enabled: true
+    required: true
+    remote: ${SVC_COGNEE_REMOTE:-false}
+    health_path: "/"
+    health_type: "http"
+    timeout: "10s"
+    retry_count: 6
+    compose_file: "docker-compose.yml"
+    service_name: "cognee"
+    profile: "default"
+  chromadb:
+    host: "${SVC_CHROMADB_HOST:-localhost}"
+    port: "${SVC_CHROMADB_PORT:-8100}"
+    enabled: true
+    required: true
+    remote: ${SVC_CHROMADB_REMOTE:-false}
+    health_path: "/api/v2/heartbeat"
+    health_type: "http"
+    timeout: "10s"
+    retry_count: 6
+    compose_file: "docker-compose.yml"
+    service_name: "chromadb"
+    profile: "default"
+  prometheus:
+    host: "${SVC_PROMETHEUS_HOST:-localhost}"
+    port: "9090"
+    enabled: true
+    required: false
+    remote: ${SVC_PROMETHEUS_REMOTE:-false}
+    health_path: "/-/healthy"
+    health_type: "http"
+  grafana:
+    host: "${SVC_GRAFANA_HOST:-localhost}"
+    port: "3000"
+    enabled: true
+    required: false
+    remote: ${SVC_GRAFANA_REMOTE:-false}
+    health_path: "/api/health"
+    health_type: "http"
+  qdrant:
+    host: "${SVC_QDRANT_HOST:-localhost}"
+    port: "6333"
+    enabled: true
+    required: false
+    remote: ${SVC_QDRANT_REMOTE:-false}
+    health_path: "/healthz"
+    health_type: "http"
+
 modelsdev:
   # Models.dev integration (configurable via environment)
   enabled: ${MODELSDEV_ENABLED:-false}

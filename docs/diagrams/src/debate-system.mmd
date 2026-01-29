@@ -1,0 +1,98 @@
+graph TD
+    UserRequest["User Request"]
+
+    subgraph IntentPhase["Intent Classification"]
+        IntentClassify["LLM-based Intent Classifier"]
+        IntentResult{"Intent Type"}
+        Confirmation["Confirmation"]
+        Refusal["Refusal"]
+        Question["Question"]
+        Request["Request"]
+        Clarification["Clarification"]
+    end
+
+    subgraph TopicPhase["Topic Analysis"]
+        TopicAnalysis["Analyze Topic Complexity"]
+        SelectTopology{"Select Topology"}
+        MeshTopology["Mesh (parallel)"]
+        StarTopology["Star (hub-spoke)"]
+        ChainTopology["Chain (sequential)"]
+    end
+
+    subgraph TeamSelection["Participant Selection (5 x 3 = 15 LLMs)"]
+        Position1["Position 1: Primary + 2 Fallbacks"]
+        Position2["Position 2: Primary + 2 Fallbacks"]
+        Position3["Position 3: Primary + 2 Fallbacks"]
+        Position4["Position 4: Primary + 2 Fallbacks"]
+        Position5["Position 5: Primary + 2 Fallbacks"]
+    end
+
+    subgraph DebateRounds["Debate Rounds"]
+        Round1["Round 1: Initial Arguments"]
+        Round1Note["Each participant presents<br/>their initial perspective"]
+        Round2["Round 2: Rebuttals"]
+        Round2Note["Participants critique and<br/>challenge other positions"]
+        Round3["Round 3: Synthesis"]
+        Round3Note["Participants refine positions<br/>incorporating feedback"]
+    end
+
+    subgraph MultiPassValidation["Multi-Pass Validation"]
+        Phase1["Phase 1: INITIAL RESPONSE"]
+        Phase2["Phase 2: VALIDATION"]
+        Phase2Note["Cross-validation for<br/>accuracy and completeness"]
+        Phase3["Phase 3: POLISH & IMPROVE"]
+        Phase3Note["Refinement based on<br/>validation feedback"]
+        Phase4["Phase 4: FINAL CONCLUSION"]
+        Phase4Note["Synthesized consensus<br/>with confidence scores"]
+    end
+
+    subgraph Consensus["Consensus Building"]
+        ConfidenceVoting["Confidence-Weighted Voting"]
+        QualityScore["Quality Improvement Score"]
+        FinalResponse["Final Consensus Response"]
+    end
+
+    UserRequest --> IntentClassify
+    IntentClassify --> IntentResult
+    IntentResult --> Confirmation
+    IntentResult --> Refusal
+    IntentResult --> Question
+    IntentResult --> Request
+    IntentResult --> Clarification
+
+    Request --> TopicAnalysis
+    Question --> TopicAnalysis
+    TopicAnalysis --> SelectTopology
+    SelectTopology --> MeshTopology
+    SelectTopology --> StarTopology
+    SelectTopology --> ChainTopology
+
+    MeshTopology --> TeamSelection
+    StarTopology --> TeamSelection
+    ChainTopology --> TeamSelection
+
+    Position1 --> Round1
+    Position2 --> Round1
+    Position3 --> Round1
+    Position4 --> Round1
+    Position5 --> Round1
+
+    Round1 --- Round1Note
+    Round1 --> Round2
+    Round2 --- Round2Note
+    Round2 --> Round3
+    Round3 --- Round3Note
+
+    Round3 --> Phase1
+    Phase1 --> Phase2
+    Phase2 --- Phase2Note
+    Phase2 --> Phase3
+    Phase3 --- Phase3Note
+    Phase3 --> Phase4
+    Phase4 --- Phase4Note
+
+    Phase4 --> ConfidenceVoting
+    ConfidenceVoting --> QualityScore
+    QualityScore --> FinalResponse
+
+    FinalResponse -->|"Response with<br/>confidence score"| UserRequest

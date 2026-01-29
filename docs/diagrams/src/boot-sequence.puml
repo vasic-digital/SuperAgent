@@ -1,0 +1,142 @@
+@startuml HelixAgent Boot Sequence
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam defaultFontName Helvetica
+skinparam participantFontSize 12
+skinparam sequenceArrowThickness 1.5
+
+title HelixAgent - Boot Sequence
+
+participant "main" as main
+participant "Config" as config
+participant "BootManager" as boot
+participant "Docker" as docker
+participant "HealthChecker" as health
+database "PostgreSQL" as pg
+database "Redis" as redis
+participant "Cognee" as cognee
+participant "ChromaDB" as chroma
+participant "LLMsVerifier" as verifier
+participant "Providers" as providers
+participant "Scorer" as scorer
+participant "DebateTeam" as team
+participant "Messaging" as messaging
+participant "Router" as router
+participant "Server" as server
+
+== Configuration ==
+
+main -> config : Load()
+activate config
+config --> main : AppConfig
+deactivate config
+
+== Infrastructure Boot ==
+
+main -> boot : NewBootManager()
+activate boot
+
+main -> boot : BootAll()
+
+boot -> docker : compose up -d
+activate docker
+docker --> boot : containers started
+deactivate docker
+
+boot -> health : CheckWithRetry()
+activate health
+
+health -> pg : pgx connect
+activate pg
+pg --> health : connection OK
+deactivate pg
+
+health -> redis : PING
+activate redis
+redis --> health : PONG
+deactivate redis
+
+health -> cognee : HTTP GET /
+activate cognee
+cognee --> health : 200 OK
+deactivate cognee
+
+health -> chroma : HTTP GET /api/v2/heartbeat
+activate chroma
+chroma --> health : 200 OK
+deactivate chroma
+
+health --> boot : all healthy
+deactivate health
+
+deactivate boot
+
+== LLM Verification ==
+
+main -> verifier : RunStartupVerification()
+activate verifier
+
+verifier -> providers : Verify all (8-test pipeline)
+activate providers
+note right of providers
+    Parallel verification of
+    all discovered providers:
+    API Key, OAuth, Free
+end note
+providers --> verifier : verification results
+deactivate providers
+
+verifier -> scorer : Score providers (5 components)
+activate scorer
+note right of scorer
+    ResponseSpeed (25%)
+    ModelEfficiency (20%)
+    CostEffectiveness (25%)
+    Capability (20%)
+    Recency (10%)
+end note
+scorer --> verifier : scored providers
+deactivate scorer
+
+verifier -> team : Select 15 LLMs
+activate team
+note right of team
+    5 positions x 3 LLMs
+    (1 primary + 2 fallbacks)
+    OAuth providers prioritized
+end note
+team --> verifier : debate team configured
+deactivate team
+
+verifier --> main : verification complete
+deactivate verifier
+
+== Server Startup ==
+
+main -> messaging : Initialize
+activate messaging
+messaging --> main : event streams ready
+deactivate messaging
+
+main -> router : SetupRouterWithContext
+activate router
+note right of router
+    Register handlers:
+    /v1/chat/completions
+    /v1/debates
+    /v1/mcp, /v1/acp, /v1/lsp
+    /v1/embeddings, /v1/vision
+    /v1/cognee, /v1/tasks
+    /v1/startup/verification
+end note
+router --> main : router configured
+deactivate router
+
+main -> server : ListenAndServe
+activate server
+note right of server
+    Listening on :PORT
+    GIN_MODE from env
+end note
+
+@enduml

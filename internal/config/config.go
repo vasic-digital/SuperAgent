@@ -20,6 +20,57 @@ type Config struct {
 	Performance PerformanceConfig
 	MCP         MCPConfig
 	ACP         ACPConfig
+	Services    ServicesConfig
+}
+
+// ServiceEndpoint represents a configurable service endpoint that can be local or remote.
+type ServiceEndpoint struct {
+	Host        string        `yaml:"host"`
+	Port        string        `yaml:"port"`
+	URL         string        `yaml:"url"`         // Full URL override (takes precedence over host:port)
+	Enabled     bool          `yaml:"enabled"`      // Whether this service is used
+	Required    bool          `yaml:"required"`     // Boot fails if unavailable
+	Remote      bool          `yaml:"remote"`       // Skip compose start, only health check
+	HealthPath  string        `yaml:"health_path"`  // HTTP health check path (e.g. "/health")
+	HealthType  string        `yaml:"health_type"`  // "tcp", "http", "pgx", "redis"
+	Timeout     time.Duration `yaml:"timeout"`      // Health check timeout
+	RetryCount  int           `yaml:"retry_count"`  // Number of health check retries
+	ComposeFile string        `yaml:"compose_file"` // Docker compose file path
+	ServiceName string        `yaml:"service_name"` // Docker compose service name
+	Profile     string        `yaml:"profile"`      // Docker compose profile
+}
+
+// ResolvedURL builds the full URL from host:port or returns the URL field if set.
+func (e *ServiceEndpoint) ResolvedURL() string {
+	if e.URL != "" {
+		return e.URL
+	}
+	if e.Host == "" {
+		return ""
+	}
+	port := e.Port
+	if port == "" {
+		return e.Host
+	}
+	return e.Host + ":" + port
+}
+
+// ServicesConfig holds configuration for all infrastructure services.
+type ServicesConfig struct {
+	PostgreSQL  ServiceEndpoint            `yaml:"postgresql"`
+	Redis       ServiceEndpoint            `yaml:"redis"`
+	Cognee      ServiceEndpoint            `yaml:"cognee"`
+	ChromaDB    ServiceEndpoint            `yaml:"chromadb"`
+	Prometheus  ServiceEndpoint            `yaml:"prometheus"`
+	Grafana     ServiceEndpoint            `yaml:"grafana"`
+	Neo4j       ServiceEndpoint            `yaml:"neo4j"`
+	Kafka       ServiceEndpoint            `yaml:"kafka"`
+	RabbitMQ    ServiceEndpoint            `yaml:"rabbitmq"`
+	Qdrant      ServiceEndpoint            `yaml:"qdrant"`
+	Weaviate    ServiceEndpoint            `yaml:"weaviate"`
+	LangChain   ServiceEndpoint            `yaml:"langchain"`
+	LlamaIndex  ServiceEndpoint            `yaml:"llamaindex"`
+	MCPServers  map[string]ServiceEndpoint `yaml:"mcp_servers"`
 }
 
 // ACPConfig contains ACP (Agent Client Protocol) configuration
@@ -189,7 +240,7 @@ type PerformanceConfig struct {
 }
 
 func Load() *Config {
-	return &Config{
+	cfg := &Config{
 		Server: ServerConfig{
 			Port:           getEnv("PORT", "7061"),
 			APIKey:         getEnv("HELIXAGENT_API_KEY", ""), // SECURITY: Must be set via environment variable
@@ -318,7 +369,286 @@ func Load() *Config {
 			MaxRetries:     getIntEnv("ACP_MAX_RETRIES", 3),
 			Servers:        []ACPServerConfig{},
 		},
+		Services: DefaultServicesConfig(),
 	}
+
+	// Apply environment variable overrides for services
+	LoadServicesFromEnv(&cfg.Services)
+
+	return cfg
+}
+
+// DefaultServicesConfig returns the default configuration for all infrastructure services.
+func DefaultServicesConfig() ServicesConfig {
+	return ServicesConfig{
+		PostgreSQL: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "5432",
+			Enabled:     true,
+			Required:    true,
+			Remote:      false,
+			HealthType:  "pgx",
+			Timeout:     10 * time.Second,
+			RetryCount:  6,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "postgres",
+			Profile:     "default",
+		},
+		Redis: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "6379",
+			Enabled:     true,
+			Required:    true,
+			Remote:      false,
+			HealthType:  "redis",
+			Timeout:     5 * time.Second,
+			RetryCount:  6,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "redis",
+			Profile:     "default",
+		},
+		Cognee: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "8000",
+			Enabled:     true,
+			Required:    true,
+			Remote:      false,
+			HealthPath:  "/",
+			HealthType:  "http",
+			Timeout:     10 * time.Second,
+			RetryCount:  6,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "cognee",
+			Profile:     "default",
+		},
+		ChromaDB: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "8100",
+			Enabled:     true,
+			Required:    true,
+			Remote:      false,
+			HealthPath:  "/api/v2/heartbeat",
+			HealthType:  "http",
+			Timeout:     10 * time.Second,
+			RetryCount:  6,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "chromadb",
+			Profile:     "default",
+		},
+		Prometheus: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "9090",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthPath:  "/-/healthy",
+			HealthType:  "http",
+			Timeout:     5 * time.Second,
+			RetryCount:  3,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "prometheus",
+		},
+		Grafana: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "3000",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthPath:  "/api/health",
+			HealthType:  "http",
+			Timeout:     5 * time.Second,
+			RetryCount:  3,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "grafana",
+		},
+		Neo4j: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "7474",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthType:  "http",
+			HealthPath:  "/",
+			Timeout:     5 * time.Second,
+			RetryCount:  3,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "neo4j",
+		},
+		Kafka: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "9092",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthType:  "tcp",
+			Timeout:     5 * time.Second,
+			RetryCount:  3,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "kafka",
+		},
+		RabbitMQ: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "5672",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthType:  "tcp",
+			Timeout:     5 * time.Second,
+			RetryCount:  3,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "rabbitmq",
+		},
+		Qdrant: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "6333",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthPath:  "/healthz",
+			HealthType:  "http",
+			Timeout:     5 * time.Second,
+			RetryCount:  3,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "qdrant",
+		},
+		Weaviate: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "8080",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthPath:  "/v1/.well-known/ready",
+			HealthType:  "http",
+			Timeout:     5 * time.Second,
+			RetryCount:  3,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "weaviate",
+		},
+		LangChain: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "8011",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthPath:  "/health",
+			HealthType:  "http",
+			Timeout:     5 * time.Second,
+			RetryCount:  3,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "langchain",
+		},
+		LlamaIndex: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "8012",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthPath:  "/health",
+			HealthType:  "http",
+			Timeout:     5 * time.Second,
+			RetryCount:  3,
+			ComposeFile: "docker-compose.yml",
+			ServiceName: "llamaindex",
+		},
+		MCPServers: make(map[string]ServiceEndpoint),
+	}
+}
+
+// LoadServicesFromEnv applies environment variable overrides to the services config.
+// Environment variables follow the pattern: SVC_<SERVICE>_<FIELD>
+// e.g. SVC_POSTGRESQL_HOST, SVC_REDIS_REMOTE, SVC_COGNEE_PORT
+func LoadServicesFromEnv(cfg *ServicesConfig) {
+	loadServiceEndpointFromEnv("SVC_POSTGRESQL", &cfg.PostgreSQL)
+	loadServiceEndpointFromEnv("SVC_REDIS", &cfg.Redis)
+	loadServiceEndpointFromEnv("SVC_COGNEE", &cfg.Cognee)
+	loadServiceEndpointFromEnv("SVC_CHROMADB", &cfg.ChromaDB)
+	loadServiceEndpointFromEnv("SVC_PROMETHEUS", &cfg.Prometheus)
+	loadServiceEndpointFromEnv("SVC_GRAFANA", &cfg.Grafana)
+	loadServiceEndpointFromEnv("SVC_NEO4J", &cfg.Neo4j)
+	loadServiceEndpointFromEnv("SVC_KAFKA", &cfg.Kafka)
+	loadServiceEndpointFromEnv("SVC_RABBITMQ", &cfg.RabbitMQ)
+	loadServiceEndpointFromEnv("SVC_QDRANT", &cfg.Qdrant)
+	loadServiceEndpointFromEnv("SVC_WEAVIATE", &cfg.Weaviate)
+	loadServiceEndpointFromEnv("SVC_LANGCHAIN", &cfg.LangChain)
+	loadServiceEndpointFromEnv("SVC_LLAMAINDEX", &cfg.LlamaIndex)
+}
+
+func loadServiceEndpointFromEnv(prefix string, ep *ServiceEndpoint) {
+	if v := os.Getenv(prefix + "_HOST"); v != "" {
+		ep.Host = v
+	}
+	if v := os.Getenv(prefix + "_PORT"); v != "" {
+		ep.Port = v
+	}
+	if v := os.Getenv(prefix + "_URL"); v != "" {
+		ep.URL = v
+	}
+	if v := os.Getenv(prefix + "_ENABLED"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			ep.Enabled = b
+		}
+	}
+	if v := os.Getenv(prefix + "_REQUIRED"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			ep.Required = b
+		}
+	}
+	if v := os.Getenv(prefix + "_REMOTE"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			ep.Remote = b
+		}
+	}
+	if v := os.Getenv(prefix + "_HEALTH_PATH"); v != "" {
+		ep.HealthPath = v
+	}
+	if v := os.Getenv(prefix + "_HEALTH_TYPE"); v != "" {
+		ep.HealthType = v
+	}
+	if v := os.Getenv(prefix + "_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			ep.Timeout = d
+		}
+	}
+	if v := os.Getenv(prefix + "_RETRY_COUNT"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			ep.RetryCount = n
+		}
+	}
+}
+
+// AllEndpoints returns all service endpoints as a name->endpoint map.
+func (s *ServicesConfig) AllEndpoints() map[string]ServiceEndpoint {
+	endpoints := map[string]ServiceEndpoint{
+		"postgresql": s.PostgreSQL,
+		"redis":      s.Redis,
+		"cognee":     s.Cognee,
+		"chromadb":   s.ChromaDB,
+		"prometheus": s.Prometheus,
+		"grafana":    s.Grafana,
+		"neo4j":      s.Neo4j,
+		"kafka":      s.Kafka,
+		"rabbitmq":   s.RabbitMQ,
+		"qdrant":     s.Qdrant,
+		"weaviate":   s.Weaviate,
+		"langchain":  s.LangChain,
+		"llamaindex": s.LlamaIndex,
+	}
+	for name, ep := range s.MCPServers {
+		endpoints["mcp_"+name] = ep
+	}
+	return endpoints
+}
+
+// RequiredEndpoints returns only the enabled and required service endpoints.
+func (s *ServicesConfig) RequiredEndpoints() map[string]ServiceEndpoint {
+	all := s.AllEndpoints()
+	required := make(map[string]ServiceEndpoint)
+	for name, ep := range all {
+		if ep.Enabled && ep.Required {
+			required[name] = ep
+		}
+	}
+	return required
 }
 
 func getEnv(key, defaultValue string) string {

@@ -1,0 +1,109 @@
+graph TB
+    Client["Client Requests"]
+
+    subgraph APILayer["API Layer (Gin HTTP :7061)"]
+        Router["Router"]
+        AuthMW["Auth Middleware"]
+        RateLimitMW["Rate Limit Middleware"]
+        CORSMW["CORS Middleware"]
+        ValidationMW["Validation Middleware"]
+    end
+
+    subgraph Handlers["Handlers"]
+        ChatHandler["Chat Handler"]
+        DebateHandler["Debate Handler"]
+        MCPHandler["MCP Handler"]
+        LSPHandler["LSP Handler"]
+        ACPHandler["ACP Handler"]
+        EmbeddingHandler["Embedding Handler"]
+        VisionHandler["Vision Handler"]
+        CogneeHandler["Cognee Handler"]
+        TaskHandler["Task Handler"]
+        StartupHandler["Startup Verification Handler"]
+    end
+
+    subgraph Services["Services"]
+        EnsembleService["Ensemble Service"]
+        DebateService["Debate Service"]
+        ContextManager["Context Manager"]
+        IntentClassifier["Intent Classifier"]
+        ProviderRegistry["Provider Registry"]
+        PluginSystem["Plugin System"]
+        MCPClient["MCP Client"]
+        LSPManager["LSP Manager"]
+    end
+
+    subgraph LLMProviders["LLM Providers (10)"]
+        Claude["Claude"]
+        DeepSeek["DeepSeek"]
+        Gemini["Gemini"]
+        Mistral["Mistral"]
+        OpenRouter["OpenRouter"]
+        Qwen["Qwen"]
+        ZAI["ZAI"]
+        Zen["Zen"]
+        Cerebras["Cerebras"]
+        Ollama["Ollama"]
+    end
+
+    subgraph Databases["Databases"]
+        PostgreSQL["PostgreSQL 15"]
+        Redis["Redis 7"]
+        Cognee["Cognee"]
+        ChromaDB["ChromaDB"]
+    end
+
+    subgraph Protocols["Protocol Endpoints"]
+        MCPProto["MCP /v1/mcp"]
+        ACPProto["ACP /v1/acp"]
+        LSPProto["LSP /v1/lsp"]
+        EmbProto["Embeddings /v1/embeddings"]
+        VisProto["Vision /v1/vision"]
+        CogProto["Cognee /v1/cognee"]
+    end
+
+    subgraph Startup["Startup Pipeline"]
+        LLMsVerifier["LLMsVerifier"]
+        ProviderScoring["Provider Scoring (5-component)"]
+        DebateTeamSelection["Debate Team Selection (5x3=15 LLMs)"]
+    end
+
+    subgraph Background["Background System"]
+        TaskQueue["Task Queue"]
+        WorkerPool["Worker Pool"]
+        ResourceMonitor["Resource Monitor"]
+        StuckDetector["Stuck Detector"]
+        SSE["SSE Notifications"]
+        WebSocket["WebSocket"]
+        Webhooks["Webhooks"]
+        Polling["Polling"]
+    end
+
+    Client --> APILayer
+    Router --> AuthMW --> RateLimitMW --> CORSMW --> ValidationMW
+    ValidationMW --> Handlers
+
+    ChatHandler --> EnsembleService
+    DebateHandler --> DebateService
+    MCPHandler --> MCPClient
+    LSPHandler --> LSPManager
+    TaskHandler --> TaskQueue
+
+    EnsembleService --> ProviderRegistry
+    DebateService --> ProviderRegistry
+    DebateService --> IntentClassifier
+    ProviderRegistry --> LLMProviders
+
+    Services --> Databases
+    Services --> Protocols
+
+    LLMsVerifier --> ProviderScoring --> DebateTeamSelection
+    DebateTeamSelection --> DebateService
+
+    TaskQueue --> WorkerPool
+    WorkerPool --> ResourceMonitor
+    WorkerPool --> StuckDetector
+    TaskQueue --> SSE
+    TaskQueue --> WebSocket
+    TaskQueue --> Webhooks
+    TaskQueue --> Polling
