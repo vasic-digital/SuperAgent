@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
   "agent": "claude_squad",
-  "generated_at": "2026-01-22T23:47:46+03:00",
+  "generated_at": "2026-01-29T21:01:42+03:00",
   "helix_agent": {
     "enabled": true,
-    "url": "http://localhost:8080",
-    "api_key": "",
+    "url": "http://localhost:7061",
+    "api_key": "helixagent-local",
     "timeout": 120000,
     "retry": {
       "max_attempts": 3,
