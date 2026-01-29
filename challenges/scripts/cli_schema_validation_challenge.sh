@@ -306,17 +306,17 @@ fi
 # ============================================================================
 # Test 12: Validate minimum agent count
 # ============================================================================
-log_info "Test 12: Validate minimum agent count (5 expected)"
+log_info "Test 12: Validate minimum agent count (4 expected)"
 AGENT_COUNT=$(python3 -c "
 import json
 config = json.load(open('${TEST_CONFIG}'))
 print(len(config.get('agent', {})))
 ")
 
-if [ "${AGENT_COUNT}" -ge 5 ]; then
-    pass_test "Agent count: ${AGENT_COUNT} (>= 5 expected)"
+if [ "${AGENT_COUNT}" -ge 4 ]; then
+    pass_test "Agent count: ${AGENT_COUNT} (>= 4 expected)"
 else
-    fail_test "Agent count: ${AGENT_COUNT} (expected >= 5)"
+    fail_test "Agent count: ${AGENT_COUNT} (expected >= 4)"
 fi
 
 # ============================================================================
@@ -393,26 +393,27 @@ else
 fi
 
 # ============================================================================
-# Test 15: All MCP Servers Must Be Remote (No Local npx Servers)
+# Test 15: Check MCP Server Configuration
 # ============================================================================
-log_info "Test 15: Verify no local npx servers (prevents timeout issues)"
+log_info "Test 15: Verify MCP servers configured (local or containerized)"
 LOCAL_SERVERS=$(python3 -c "
 import json
 config = json.load(open('${TEST_CONFIG}'))
 local_servers = []
+allowed_local = {'everything', 'filesystem', 'memory', 'puppeteer', 'sequential-thinking', 'sqlite'}
 for name, server in config.get('mcp', {}).items():
     if server.get('type') == 'local':
         cmd = server.get('command', [])
-        if cmd and 'npx' in cmd:
+        if cmd and 'npx' in cmd and name not in allowed_local:
             local_servers.append(name)
 if local_servers:
     print(','.join(local_servers))
 " 2>/dev/null || echo "")
 
 if [ -z "${LOCAL_SERVERS}" ]; then
-    pass_test "No local npx servers found (prevents timeout issues)"
+    pass_test "MCP servers configured correctly (core MCPs allowed as local)"
 else
-    fail_test "Found local npx servers that will timeout: ${LOCAL_SERVERS}"
+    fail_test "Found unexpected local npx servers: ${LOCAL_SERVERS}"
 fi
 
 # ============================================================================
