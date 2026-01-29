@@ -132,8 +132,8 @@ fi
 
 # Test 6c: OpenCode Zen Big Pickle model defined
 TOTAL=$((TOTAL + 1))
-log_info "Test 6c: Big Pickle model (opencode/big-pickle) defined"
-if grep -q "opencode/big-pickle" "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
+log_info "Test 6c: Big Pickle model (ZenModels.BigPickle) defined"
+if grep -q 'BigPickle.*"big-pickle"' "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
     log_success "Big Pickle model defined"
     PASSED=$((PASSED + 1))
 else
@@ -141,25 +141,25 @@ else
     FAILED=$((FAILED + 1))
 fi
 
-# Test 6d: OpenCode Zen Grok Code Fast defined
+# Test 6d: OpenCode Zen Grok Code defined
 TOTAL=$((TOTAL + 1))
-log_info "Test 6d: Grok Code Fast (opencode/grok-code) defined"
-if grep -q "opencode/grok-code" "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
-    log_success "Grok Code Fast model defined"
+log_info "Test 6d: Grok Code (ZenModels.GrokCode) defined"
+if grep -q 'GrokCode.*"grok-code"' "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
+    log_success "Grok Code model defined"
     PASSED=$((PASSED + 1))
 else
-    log_error "Grok Code Fast model NOT defined!"
+    log_error "Grok Code model NOT defined!"
     FAILED=$((FAILED + 1))
 fi
 
-# Test 6e: OpenCode Zen GLM 4.7 Free defined
+# Test 6e: OpenCode Zen GLM 4.7 defined
 TOTAL=$((TOTAL + 1))
-log_info "Test 6e: GLM 4.7 Free (opencode/glm-4.7-free) defined"
-if grep -q "opencode/glm-4.7-free" "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
-    log_success "GLM 4.7 Free model defined"
+log_info "Test 6e: GLM 4.7 (ZenModels.GLM47) defined"
+if grep -q 'GLM47.*"glm-4.7"' "$PROJECT_ROOT/internal/services/debate_team_config.go" 2>/dev/null; then
+    log_success "GLM 4.7 model defined"
     PASSED=$((PASSED + 1))
 else
-    log_error "GLM 4.7 Free model NOT defined!"
+    log_error "GLM 4.7 model NOT defined!"
     FAILED=$((FAILED + 1))
 fi
 
