@@ -64,11 +64,13 @@ func TestNewZenProvider(t *testing.T) {
 
 func TestFreeModels(t *testing.T) {
 	models := FreeModels()
-	assert.Len(t, models, 4)
+	assert.Len(t, models, 6)
 	assert.Contains(t, models, ModelBigPickle)
-	assert.Contains(t, models, ModelBigPickle)
-	assert.Contains(t, models, ModelGLM47Free)
 	assert.Contains(t, models, ModelGPT5Nano)
+	assert.Contains(t, models, ModelGLM47)
+	assert.Contains(t, models, ModelQwen3)
+	assert.Contains(t, models, ModelKimiK2)
+	assert.Contains(t, models, ModelGemini3)
 }
 
 func TestIsFreeModel(t *testing.T) {
@@ -77,9 +79,11 @@ func TestIsFreeModel(t *testing.T) {
 		expected bool
 	}{
 		{ModelBigPickle, true},
-		{ModelBigPickle, true},
-		{ModelGLM47Free, true},
 		{ModelGPT5Nano, true},
+		{ModelGLM47, true},
+		{ModelQwen3, true},
+		{ModelKimiK2, true},
+		{ModelGemini3, true},
 		{"opencode/gpt-5.1-codex", false},
 		{"claude-3.5-sonnet", false},
 		{"big-pickle", true}, // Without prefix
@@ -359,9 +363,11 @@ func TestZenProvider_AnonymousMode(t *testing.T) {
 func TestZenProvider_IsAnonymousAccessAllowed(t *testing.T) {
 	// Free models should allow anonymous access
 	assert.True(t, IsAnonymousAccessAllowed(ModelBigPickle))
-	assert.True(t, IsAnonymousAccessAllowed(ModelBigPickle))
-	assert.True(t, IsAnonymousAccessAllowed(ModelGLM47Free))
 	assert.True(t, IsAnonymousAccessAllowed(ModelGPT5Nano))
+	assert.True(t, IsAnonymousAccessAllowed(ModelGLM47))
+	assert.True(t, IsAnonymousAccessAllowed(ModelQwen3))
+	assert.True(t, IsAnonymousAccessAllowed(ModelKimiK2))
+	assert.True(t, IsAnonymousAccessAllowed(ModelGemini3))
 
 	// Non-free models should not allow anonymous access
 	assert.False(t, IsAnonymousAccessAllowed("opencode/gpt-5.1-codex"))
@@ -611,7 +617,7 @@ func TestZenModelsResponse_Parsing(t *testing.T) {
 	jsonData := `{
 		"object": "list",
 		"data": [
-			{"id": "opencode/grok-code-fast", "owned_by": "opencode", "created": 1700000000},
+			{"id": "opencode/big-pickle", "owned_by": "opencode", "created": 1700000000},
 			{"id": "opencode/big-pickle", "owned_by": "opencode", "created": 1700000001}
 		]
 	}`
@@ -622,7 +628,7 @@ func TestZenModelsResponse_Parsing(t *testing.T) {
 
 	assert.Equal(t, "list", resp.Object)
 	assert.Len(t, resp.Data, 2)
-	assert.Equal(t, "opencode/grok-code-fast", resp.Data[0].ID)
+	assert.Equal(t, "opencode/big-pickle", resp.Data[0].ID)
 	assert.Equal(t, "opencode", resp.Data[0].OwnedBy)
 }
 
@@ -630,9 +636,12 @@ func TestZenProvider_GetFreeModels_Filtering(t *testing.T) {
 	// Test that free models filtering logic works
 	allModels := []ZenModelInfo{
 		{ID: ModelBigPickle, OwnedBy: "opencode"},
-		{ID: ModelBigPickle, OwnedBy: "opencode"},
-		{ID: "opencode/gpt-5.1-codex", OwnedBy: "opencode"},
-		{ID: ModelGLM47Free, OwnedBy: "opencode"},
+		{ID: ModelGPT5Nano, OwnedBy: "opencode"},
+		{ID: "opencode/gpt-5.1-codex", OwnedBy: "opencode"}, // Not in free list
+		{ID: ModelGLM47, OwnedBy: "opencode"},
+		{ID: ModelQwen3, OwnedBy: "opencode"},
+		{ID: ModelKimiK2, OwnedBy: "opencode"},
+		{ID: ModelGemini3, OwnedBy: "opencode"},
 	}
 
 	freeModelIDs := FreeModels()
@@ -647,9 +656,9 @@ func TestZenProvider_GetFreeModels_Filtering(t *testing.T) {
 		}
 	}
 
-	// Should include grok-code-fast, big-pickle, glm-4-7b-free (3 models)
-	// but not gpt-5.1-codex which is not in the free list
-	assert.Len(t, freeModels, 3)
+	// Should include all 6 free models: big-pickle, gpt-5-nano, glm-4.7, qwen3-coder, kimi-k2, gemini-3-flash
+	// but not non-free models like gpt-5.1-codex
+	assert.Len(t, freeModels, 6)
 }
 
 func TestZenProvider_NormalizeModelID(t *testing.T) {
@@ -658,9 +667,9 @@ func TestZenProvider_NormalizeModelID(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"grok-code-fast", "grok-code-fast"},          // No prefix, unchanged
+		{"big-pickle", "big-pickle"},          // No prefix, unchanged
 		{"big-pickle", "big-pickle"},                  // No prefix, unchanged
-		{"opencode/grok-code-fast", "grok-code-fast"}, // Strips opencode/ prefix
+		{"opencode/big-pickle", "big-pickle"}, // Strips opencode/ prefix
 		{"opencode/glm-4-7b-free", "glm-4-7b-free"},   // Strips opencode/ prefix
 		{"opencode-custom-model", "custom-model"},     // Strips opencode- prefix (alternate format)
 		{"custom-model", "custom-model"},              // No prefix, unchanged
@@ -836,7 +845,7 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 func TestZenProvider_HealthCheck_WithMockTransport(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// Create mock response
-		respBody := `{"object":"list","data":[{"id":"grok-code-fast"}]}`
+		respBody := `{"object":"list","data":[{"id":"big-pickle"}]}`
 		mockResp := &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(respBody)),
@@ -915,7 +924,7 @@ func TestZenProvider_GetAvailableModels_WithMockTransport(t *testing.T) {
 		respBody := `{
 			"object": "list",
 			"data": [
-				{"id": "grok-code-fast", "owned_by": "opencode", "created": 1234567890},
+				{"id": "big-pickle", "owned_by": "opencode", "created": 1234567890},
 				{"id": "big-pickle", "owned_by": "opencode", "created": 1234567891}
 			]
 		}`
@@ -934,7 +943,7 @@ func TestZenProvider_GetAvailableModels_WithMockTransport(t *testing.T) {
 		models, err := p.GetAvailableModels(context.Background())
 		assert.NoError(t, err)
 		assert.Len(t, models, 2)
-		assert.Equal(t, "grok-code-fast", models[0].ID)
+		assert.Equal(t, "big-pickle", models[0].ID)
 		assert.Equal(t, "big-pickle", models[1].ID)
 	})
 
@@ -992,7 +1001,7 @@ func TestZenProvider_GetFreeModels_WithMockTransport(t *testing.T) {
 		respBody := `{
 			"object": "list",
 			"data": [
-				{"id": "grok-code-fast", "owned_by": "opencode"},
+				{"id": "big-pickle", "owned_by": "opencode"},
 				{"id": "big-pickle", "owned_by": "opencode"},
 				{"id": "premium-model", "owned_by": "opencode"},
 				{"id": "gpt-5-nano", "owned_by": "opencode"}

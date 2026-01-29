@@ -9,6 +9,7 @@ import (
 
 	"dev.helix.agent/internal/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestZenCLIProvider_DefaultConfig tests default configuration
@@ -230,11 +231,14 @@ func TestIsOpenCodeInstalled(t *testing.T) {
 // TestGetKnownZenModels tests the known models list
 func TestGetKnownZenModels(t *testing.T) {
 	models := GetKnownZenModels()
-	assert.NotEmpty(t, models)
+	require.NotEmpty(t, models)
+	require.Len(t, models, 6)
 	assert.Contains(t, models, "big-pickle")
-	assert.Contains(t, models, "grok-code")
-	assert.Contains(t, models, "glm-4.7-free")
 	assert.Contains(t, models, "gpt-5-nano")
+	assert.Contains(t, models, "glm-4.7")
+	assert.Contains(t, models, "qwen3-coder")
+	assert.Contains(t, models, "kimi-k2")
+	assert.Contains(t, models, "gemini-3-flash")
 }
 
 // TestParseZenModelsOutput tests output parsing
