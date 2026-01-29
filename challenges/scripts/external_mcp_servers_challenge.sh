@@ -271,10 +271,21 @@ if [ -x "./bin/helixagent" ]; then
     if echo "$CONFIG" | jq . &>/dev/null; then
         pass "6.1 OpenCode config is valid JSON"
 
-        # Check for each MCP server in config
-        MCP_SERVERS="fetch filesystem git memory time sequential-thinking everything postgres sqlite slack github gitlab google-maps brave-search puppeteer redis sentry gdrive everart aws-kb-retrieval helixagent"
+        # Check for CORE MCP servers (always included)
+        CORE_MCP_SERVERS="fetch filesystem git memory time sequential-thinking everything sqlite puppeteer"
 
-        for server in $MCP_SERVERS; do
+        for server in $CORE_MCP_SERVERS; do
+            if echo "$CONFIG" | jq -e ".mcp[\"$server\"]" &>/dev/null; then
+                pass "6.C.$server Server in OpenCode config"
+            else
+                fail "6.C.$server Server NOT in OpenCode config"
+            fi
+        done
+
+        # Check for HELIXAGENT MCP servers (remote endpoints)
+        HELIXAGENT_MCPS="helixagent-mcp helixagent-acp helixagent-lsp helixagent-embeddings helixagent-vision helixagent-cognee"
+
+        for server in $HELIXAGENT_MCPS; do
             if echo "$CONFIG" | jq -e ".mcp[\"$server\"]" &>/dev/null; then
                 pass "6.C.$server Server in OpenCode config"
             else
