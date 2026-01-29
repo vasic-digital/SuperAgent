@@ -358,11 +358,12 @@ HelixAgent includes a comprehensive code formatters system that provides automat
 
 ### Overview
 
-- **11 Working Formatters**: Black, Ruff, Prettier, Biome, gofmt, rustfmt, clang-format, shfmt, yamlfmt, taplo, stylua
-- **9+ Languages Supported**: Python, JavaScript/TypeScript, Go, Rust, C/C++, Shell, YAML, TOML, Lua
-- **Infrastructure Ready**: Extensible system designed for 118+ formatters
+- **32+ Formatters**: 11 native + 14 service + 7 built-in formatters
+- **19 Programming Languages**: Python, JavaScript/TypeScript, Go, Rust, C/C++, Shell, YAML, TOML, Lua, SQL, Ruby, PHP, Perl, Clojure, Java/Kotlin, Groovy, R, PowerShell
 - **8 REST API Endpoints**: Complete formatting operations via HTTP
 - **AI Debate Integration**: Auto-format code blocks in debate responses
+- **48 CLI Agents Integrated**: All agents configured with formatter support
+- **14 Docker Services**: Containerized service formatters (ports 9210-9300)
 
 ### Core Package (`internal/formatters/`)
 
@@ -451,6 +452,113 @@ curl http://localhost:7061/v1/formatters?language=python
 
 # Filter by type
 curl http://localhost:7061/v1/formatters?type=native
+```
+
+### Service Formatters (Docker Containers)
+
+**14 service formatters** run as HTTP services in Docker containers (ports 9210-9300):
+
+| Port | Formatter | Language | Architecture |
+|------|-----------|----------|--------------|
+| 9210 | yapf | Python | Python 3.12 |
+| 9211 | autopep8 | Python | Python 3.12 |
+| 9220 | sqlfluff | SQL | Python 3.12 |
+| 9230 | rubocop | Ruby | Ruby 3.3 |
+| 9231 | standardrb | Ruby | Ruby 3.3 |
+| 9240 | php-cs-fixer | PHP | PHP 8.3 |
+| 9241 | laravel-pint | PHP | PHP 8.3 |
+| 9250 | perltidy | Perl | Perl 5.40 |
+| 9260 | cljfmt | Clojure | Clojure latest |
+| 9270 | spotless | Java/Kotlin | Gradle 8.11 + JDK 21 |
+| 9280 | npm-groovy-lint | Groovy | Node 22 + OpenJDK 21 |
+| 9290 | styler | R | R 4.4.2 |
+| 9291 | air | R | R 4.4.2 (300x faster) |
+| 9300 | psscriptanalyzer | PowerShell | PowerShell 7.4 |
+
+**Quick Start**:
+```bash
+# Build all service formatters
+cd docker/formatters
+./build-all.sh
+
+# Start all services
+docker-compose -f docker-compose.formatters.yml up -d
+
+# Enable in HelixAgent
+export FORMATTER_ENABLE_SERVICES=true
+./bin/helixagent
+
+# Use via API
+curl -X POST http://localhost:7061/v1/format \
+  -H "Content-Type: application/json" \
+  -d '{"content":"SELECT * FROM users WHERE id=1;","language":"sql"}'
+```
+
+**Service API** (each formatter):
+- `GET http://localhost:{PORT}/health` - Health check
+- `POST http://localhost:{PORT}/format` - Format code
+
+**Files**:
+- `docker/formatters/Dockerfile.*` - Container definitions
+- `docker/formatters/docker-compose.formatters.yml` - Service orchestration
+- `docker/formatters/formatter-service.py` - Python HTTP wrapper
+- `docker/formatters/formatter-service.rb` - Ruby HTTP wrapper
+- `internal/formatters/providers/service/` - Go service providers
+
+### CLI Agents Integration
+
+**All 48 CLI agents** include formatters configuration with smart defaults:
+
+**Formatters Config Structure**:
+```json
+{
+  "formatters": {
+    "enabled": true,
+    "auto_format": true,
+    "format_on_debate": true,
+    "default_line_length": 88,
+    "default_indent_size": 4,
+    "use_tabs": false,
+    "service_url": "http://localhost:7061/v1/format",
+    "timeout": 30,
+    "preferences": {
+      "python": "ruff",
+      "javascript": "biome",
+      "typescript": "biome",
+      "rust": "rustfmt",
+      "go": "gofmt",
+      "sql": "sqlfluff",
+      "ruby": "rubocop",
+      "php": "php-cs-fixer"
+    },
+    "fallback": {
+      "python": ["black", "autopep8", "yapf"],
+      "javascript": ["prettier", "dprint"]
+    }
+  }
+}
+```
+
+**Integrated Agents** (48 total):
+- **Original 18**: OpenCode, Crush, HelixCode, Kiro, Aider, ClaudeCode, Cline, CodenameGoose, DeepSeekCLI, Forge, GeminiCLI, GPTEngineer, KiloCode, MistralCode, OllamaCode, Plandex, QwenCode, AmazonQ
+- **New 30**: AgentDeck, Bridle, CheshireCat, ClaudePlugins, ClaudeSquad, Codai, Codex, CodexSkills, Conduit, Continue, Emdash, FauxPilot, GetShitDone, GitHubCopilotCLI, GitHubSpecKit, GitMCP, GPTME, MobileAgent, MultiagentCoding, Nanocoder, Noi, Octogen, OpenHands, PostgresMCP, Shai, SnowCLI, TaskWeaver, UIUXProMax, VTCode, Warp
+
+**Generate Agent Config with Formatters**:
+```bash
+# Generate OpenCode config (includes formatters section)
+./bin/helixagent --generate-agent-config=opencode
+
+# Generate all 48 agent configs
+./bin/helixagent --generate-all-agents --all-agents-output-dir=~/agent-configs/
+```
+
+**Files**:
+- `LLMsVerifier/llm-verifier/pkg/cliagents/formatters_config.go` - Unified formatters config
+- `LLMsVerifier/llm-verifier/pkg/cliagents/*.go` - Agent generators (all include formatters)
+
+**Challenge Validation**:
+```bash
+./challenges/scripts/cli_agents_formatters_challenge.sh  # 27 tests - validates all 48 agents
 ```
 
 **Example - Auto-Detect Formatter**:

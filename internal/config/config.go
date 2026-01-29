@@ -423,7 +423,7 @@ func DefaultServicesConfig() ServicesConfig {
 		},
 		ChromaDB: ServiceEndpoint{
 			Host:        "localhost",
-			Port:        "8001",
+			Port:        "8100",
 			Enabled:     true,
 			Required:    true,
 			Remote:      false,

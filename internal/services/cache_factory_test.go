@@ -7,16 +7,9 @@ import (
 
 	"dev.helix.agent/internal/cache"
 	"dev.helix.agent/internal/database"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func newTestLogger() *logrus.Logger {
-	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
-	return logger
-}
 
 func TestNewCacheFactory(t *testing.T) {
 	logger := newTestLogger()
