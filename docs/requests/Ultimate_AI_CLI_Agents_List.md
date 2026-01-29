@@ -2190,6 +2190,152 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ---
 
+## Religious & Spiritual Organizations
+
+**Description:** AI agents for ministry, worship services, and faith-based organization management.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Disciple.Tools** | Free WordPress-based platform for disciple-makers | https://disciple.tools/ |
+| **Rock RMS** | Church management system focused on relationships | https://www.rockrms.com/ |
+| **christian-projects** | Collection of Christian open source projects | https://github.com/mattrob33/christian-projects |
+| **AI Bible Verse Search** | AI embedding and vector database for Bible search | https://bible-search.antioch.tech |
+| **Ministry AI** | Purpose-built platform for sermon prep and outreach | https://www.ministryai.ai/ |
+
+---
+
+## Beauty & Cosmetics
+
+**Description:** AI agents for skincare analysis, makeup recommendations, and beauty product matching.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **EclatAI** | AI-driven skincare and makeup recommendations | https://github.com/meghamkpatel/EclatAI |
+| **makeup-recommendation** | Makeup recommendation using ML and AR | https://github.com/spietras/makeup-recommendation |
+| **Cosmetic** | Cosmetic recommendation engine | https://github.com/jjone36/Cosmetic |
+| **Awesome-AI-in-Beauty-Industry** | Survey on AI in beauty industry | https://github.com/Yutong-Zhou-cv/Awesome-AI-in-Beauty-Industry |
+| **BeautyBank** | Encoding facial makeup in latent space (WACV 2025) | https://github.com/CyberAgentAILab/BeautyBank |
+| **awesome-makeup-transfer** | Curated list of makeup transfer resources | https://github.com/thaoshibe/awesome-makeup-transfer |
+
+---
+
+## Fitness & Wellness
+
+**Description:** AI agents for workout planning, fitness tracking, and wellness coaching.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AI-Agents-as-Personal-Trainers** | Customizing fitness routines with LLMs | https://github.com/imanoop7/AI-Agents-as-Personal-Trainers--Customizing-Fitness-Routines-with-LLMs |
+| **intellifit-trainer** | Android-based AI-powered sports assistant | https://github.com/ErayBD/intellifit-trainer |
+| **wger** | Self-hosted fitness/workout, nutrition tracker | https://github.com/wger-project/wger |
+| **fitness-assistant** | RAG application for exercise recommendations | https://github.com/alexeygrigorev/fitness-assistant |
+| **fitMe** | AI-based fitness application | https://github.com/manthanguptaa/fitMe |
+| **AI-Fitness-trainer** | AI model for workout tracking | https://github.com/thillai-c/AI-Fitness-trainer |
+
+---
+
+## Photography & Videography
+
+**Description:** AI agents for image/video editing, camera automation, and content creation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **VideoAgent** | All-in-one agentic framework for video understanding | https://github.com/HKUDS/VideoAgent |
+| **ViMax** | Agentic video generation (director, screenwriter, producer) | https://github.com/HKUDS/ViMax |
+| **AI-Creator** | Multi-modal agents for video production | https://github.com/HKUDS/AI-Creator |
+| **Frame** | AI-powered open-source vibe video editor | https://github.com/aregrid/frame |
+| **Open-Sora** | Democratizing efficient video production | https://github.com/hpcaitech/Open-Sora |
+| **DeepCamera** | Open-source AI camera with facial recognition | https://github.com/SharpAI/DeepCamera |
+| **Awesome-Video-Diffusion** | Curated list of video generation models | https://github.com/showlab/Awesome-Video-Diffusion |
+
+---
+
+## Podcasting & Broadcasting
+
+**Description:** AI agents for podcast creation, audio streaming, and broadcasting automation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Podcastfy** | Open source Python alternative to NotebookLM's podcast feature | https://github.com/souzatharsis/podcastfy |
+| **ai-podcast** | Open-source platform to create AI-powered podcasts | https://github.com/iboughtbed/ai-podcast |
+| **the-ai-podcast** | Open-source AI podcast creator | https://github.com/podcast-lm/the-ai-podcast |
+| **podcast-ai** | AI podcast summary from YouTube videos | https://github.com/bigsk1/podcast-ai |
+| **neuralnoise** | AI podcast studio with multi-agent system | https://github.com/leopiney/neuralnoise |
+| **awesome-broadcasting** | Curated list of open source broadcast resources | https://github.com/ebu/awesome-broadcasting |
+
+---
+
+## Animation & Motion Graphics
+
+**Description:** AI agents for 2D/3D animation, motion capture, and character animation.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **AI4Animation** | Bringing characters to life with AI in Unity | https://github.com/sebastianstarke/AI4Animation |
+| **deep-motion-editing** | End-to-end library for editing 3D character motion | https://github.com/DeepMotionEditing/deep-motion-editing |
+| **Animate3D** | Animating any 3D model with multi-view video diffusion | https://github.com/yanqinJiang/Animate3D |
+| **SystemAnimatorOnline** | XR Animator with AI-based full body motion capture | https://github.com/ButzYung/SystemAnimatorOnline |
+| **gancreate-saai** | AI-powered animation tool | https://github.com/mfrashad/gancreate-saai |
+| **3D-Animation** | 2D to 3D motion capture | https://github.com/laxmaniron/3D-Animation |
+
+---
+
+## Wedding & Event Services
+
+**Description:** AI agents for wedding planning, event coordination, and celebration management.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Cal.com** | Open-source scheduling platform for wedding planners | https://github.com/calcom/cal.com |
+| **WeddingPlannerAI** | Wedding planner AI using OpenAI and React | https://github.com/Rebelkat18/WeddingPlannerAI |
+| **Wedding-Planner-Mobile-App** | Android app with AI-powered theme suggestions | https://github.com/Lbp2563/Wedding-Planner-Mobile-App |
+| **Wedding-Planner** | We Do - wedding management platform | https://github.com/nonomu/Wedding-Planner |
+| **AIEventPlanner** | AI-driven event planning solution | https://github.com/warrenshiv/AIEventPlanner |
+
+---
+
+## Email Marketing & Newsletters
+
+**Description:** AI agents for email campaigns, newsletter automation, and marketing workflows.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Mautic** | Open source marketing automation software | https://github.com/mautic/mautic |
+| **BillionMail** | Open-source mail server and email marketing platform | https://github.com/aaPanel/BillionMail |
+| **Listmonk** | High-performance self-hosted newsletter manager | https://github.com/knadh/listmonk |
+| **colossus** | Self-hosted email marketing solution | https://github.com/vitorfs/colossus |
+| **SmartLead MCP Server** | Automates cold email campaigns with AI integration | https://github.com/smartlead |
+
+---
+
+## Personal Finance & Budgeting
+
+**Description:** AI agents for money management, budget tracking, and financial planning.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **personal-finance-assistant-ai-agent** | AI tool for budget recommendations and forecasting | https://github.com/nirajdsouza/personal-finance-assistant-ai-agent |
+| **Personal-Finance-Agent** | LLM agent for financial monitoring and analysis | https://github.com/Kirushikesh/Personal-Finance-Agent |
+| **fin_genius-ai-agent** | Intelligent financial advisory system | https://github.com/anujdevsingh/fin_genius-ai-agent |
+| **Firefly III** | Self-hosted personal finances manager | https://github.com/firefly-iii/firefly-iii |
+| **ai-finance-pencil** | Django/Next.js finance tool with GPT-3 integration | https://github.com/AringoldX/ai-finance-pencil |
+| **mintable** | Automate personal finances (free, no ads, no data collection) | https://github.com/kevinschaich/mintable |
+
+---
+
+## Genealogy & Family History
+
+**Description:** AI agents for ancestry research, family tree building, and genealogical analysis.
+
+| Name | Description | Repository URL |
+|------|-------------|----------------|
+| **Liberu Genealogy** | Open-source genealogy platform with Laravel and Filament | https://github.com/liberu-genealogy |
+| **Gramps** | Free genealogy software for hobbyists and professionals | https://gramps-project.org/ |
+| **awesome-genealogy** | Curated list of OSINT resources for genealogy | https://github.com/Panda-Lewandowski/awesome-genealogy |
+| **GEDCOM Ancestry MCP Server** | MCP server for AI agents to work with GEDCOM files | https://github.com/gedcom-ancestry |
+
+---
+
 ## Additional Resources
 
 ### Community Directories
@@ -2215,12 +2361,12 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
 
 ## Statistics
 
-- **Total Agents Listed:** 810+
+- **Total Agents Listed:** 860+
 - **Total Curated Lists:** 30+
-- **Categories Covered:** 139
+- **Categories Covered:** 149
 - **Last Research Date:** 2026-01-29
-- **Active GitHub Repositories:** 760+
-- **Research Depth:** 10 comprehensive research sessions
+- **Active GitHub Repositories:** 810+
+- **Research Depth:** 11 comprehensive research sessions
 - **Specialized Categories:**
   - **Phase 1 (15 categories):** DevOps, Testing, Security, Documentation, Database, Mobile, Frontend, Backend, Blockchain, MLOps, Prompt Engineering, Translation, Refactoring, Monitoring, Game Development
   - **Phase 2 (14 categories):** CI/CD, Container & Orchestration, Data Engineering, NLP, Computer Vision, Audio/Speech, Chatbots, Edge Computing, Performance Benchmarking, Search & Retrieval, Email Automation, Calendar/Scheduling, File Management, Code Generation
@@ -2232,6 +2378,7 @@ This is a comprehensive, curated list of all known open-source AI CLI agents, co
   - **Phase 8 (10 categories):** Digital Forensics & Cybersecurity Investigation, Disaster Response & Emergency Management, Archaeology & Cultural Heritage, Textile & Fashion Industry, Food Science & Nutrition, Sports Analytics & Performance, Music Information Retrieval, Gaming AI & Esports, Education Technology & Tutoring, Social Sciences & Psychology Research
   - **Phase 9 (10 categories):** Insurance & Actuarial Science, Real Estate & Property Management, Hospitality & Tourism, Event Management & Planning, Journalism & Media Production, Publishing & Content Creation, Translation & Localization, Libraries & Information Science, Museums & Galleries, Military & Defense Systems
   - **Phase 10 (10 categories):** Human Resources & Recruitment, Legal Tech & Compliance, Retail & Point of Sale, Telecommunications & Customer Service, Mining & Natural Resources, Fisheries & Aquaculture, Forestry & Lumber, Veterinary & Animal Care, Nonprofit & NGO Management, Government & Public Sector
+  - **Phase 11 (10 categories):** Religious & Spiritual Organizations, Beauty & Cosmetics, Fitness & Wellness, Photography & Videography, Podcasting & Broadcasting, Animation & Motion Graphics, Wedding & Event Services, Email Marketing & Newsletters, Personal Finance & Budgeting, Genealogy & Family History
 
 ---
 
