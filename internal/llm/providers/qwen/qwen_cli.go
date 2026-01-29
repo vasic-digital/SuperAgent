@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/modelsdev"
 )
@@ -122,11 +123,10 @@ func (p *QwenCLIProvider) IsCLIAvailable() bool {
 			return
 		}
 
-		// Check if user is logged in by trying to get the current session
-		cmd = exec.CommandContext(ctx, path, "auth", "status")
-		output, err = cmd.CombinedOutput()
-		if err != nil || strings.Contains(string(output), "not logged in") {
-			p.cliCheckErr = fmt.Errorf("qwen CLI not authenticated: %w (output: %s)", err, string(output))
+		// Check if OAuth credentials exist (don't make API call - may hit quota)
+		credReader := oauth_credentials.GetGlobalReader()
+		if !credReader.HasValidQwenCredentials() {
+			p.cliCheckErr = fmt.Errorf("qwen CLI not authenticated: no valid OAuth credentials found")
 			p.cliAvailable = false
 			return
 		}
@@ -437,26 +437,17 @@ func GetQwenCodePath() (string, error) {
 }
 
 // IsQwenCodeAuthenticated checks if Qwen Code is logged in
+// Fixed: Check OAuth credentials directly instead of making API call (avoids quota issues)
 func IsQwenCodeAuthenticated() bool {
-	path, err := GetQwenCodePath()
+	// First check if CLI is installed
+	_, err := GetQwenCodePath()
 	if err != nil {
 		return false
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, path, "auth", "status")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return false
-	}
-
-	// Check if output indicates logged in status
-	outputStr := strings.ToLower(string(output))
-	return !strings.Contains(outputStr, "not logged in") &&
-		!strings.Contains(outputStr, "no session") &&
-		!strings.Contains(outputStr, "unauthenticated")
+	// Check OAuth credentials file directly (no API call)
+	credReader := oauth_credentials.GetGlobalReader()
+	return credReader.HasValidQwenCredentials()
 }
 
 // CanUseQwenOAuth returns true if Qwen OAuth can be used via CLI
