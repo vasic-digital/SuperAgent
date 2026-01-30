@@ -28,9 +28,8 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD:-helixagent123} --appendonly yes --ignore-warnings ARM64-COW-BUG
     volumes:
       - redis_data:/data
-    network_mode: host
-    # Note: sysctls removed - incompatible with network_mode: host in Podman
-    # For production, set vm.overcommit_memory=1 and net.core.somaxconn=1024 in /etc/sysctl.conf
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-helixagent123}", "--no-auth-warning", "ping"]
       interval: 10s
