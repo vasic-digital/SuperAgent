@@ -14,6 +14,9 @@ services:
     enabled: true
     required: true
     remote: true
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_type: "pgx"
     timeout: "10s"
     retry_count: 6
@@ -24,6 +27,9 @@ services:
     enabled: true
     required: true
     remote: true
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_type: "redis"
     timeout: "5s"
     retry_count: 6
@@ -33,6 +39,9 @@ services:
     enabled: true
     required: true
     remote: true
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/"
     health_type: "http"
     timeout: "10s"
@@ -43,6 +52,9 @@ services:
     enabled: true
     required: true
     remote: true
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/api/v2/heartbeat"
     health_type: "http"
     timeout: "10s"
@@ -54,6 +66,9 @@ services:
     enabled: true
     required: false
     remote: true
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/-/healthy"
     health_type: "http"
 
@@ -63,6 +78,9 @@ services:
     enabled: true
     required: false
     remote: true
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/api/health"
     health_type: "http"
 
@@ -72,6 +90,9 @@ services:
     enabled: true
     required: false
     remote: true
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/healthz"
     health_type: "http"
 
@@ -81,6 +102,9 @@ services:
     enabled: true
     required: false
     remote: true
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_type: "tcp"
 
   rabbitmq:
@@ -89,4 +113,7 @@ services:
     enabled: true
     required: false
     remote: true
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_type: "tcp"

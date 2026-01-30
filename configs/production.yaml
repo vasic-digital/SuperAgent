@@ -293,6 +293,9 @@ services:
     enabled: true
     required: true
     remote: ${SVC_POSTGRESQL_REMOTE:-false}
+    discovery_enabled: ${SVC_POSTGRESQL_DISCOVERY_ENABLED:-false}
+    discovery_method: ${SVC_POSTGRESQL_DISCOVERY_METHOD:-tcp}
+    discovery_timeout: ${SVC_POSTGRESQL_DISCOVERY_TIMEOUT:-5s}
     health_type: "pgx"
     timeout: "10s"
     retry_count: 6
@@ -305,6 +308,9 @@ services:
     enabled: true
     required: true
     remote: ${SVC_REDIS_REMOTE:-false}
+    discovery_enabled: ${SVC_REDIS_DISCOVERY_ENABLED:-false}
+    discovery_method: ${SVC_REDIS_DISCOVERY_METHOD:-tcp}
+    discovery_timeout: ${SVC_REDIS_DISCOVERY_TIMEOUT:-5s}
     health_type: "redis"
     timeout: "5s"
     retry_count: 6
@@ -317,6 +323,9 @@ services:
     enabled: true
     required: true
     remote: ${SVC_COGNEE_REMOTE:-false}
+    discovery_enabled: ${SVC_COGNEE_DISCOVERY_ENABLED:-false}
+    discovery_method: ${SVC_COGNEE_DISCOVERY_METHOD:-tcp}
+    discovery_timeout: ${SVC_COGNEE_DISCOVERY_TIMEOUT:-5s}
     health_path: "/"
     health_type: "http"
     timeout: "10s"
@@ -330,6 +339,9 @@ services:
     enabled: true
     required: true
     remote: ${SVC_CHROMADB_REMOTE:-false}
+    discovery_enabled: ${SVC_CHROMADB_DISCOVERY_ENABLED:-false}
+    discovery_method: ${SVC_CHROMADB_DISCOVERY_METHOD:-tcp}
+    discovery_timeout: ${SVC_CHROMADB_DISCOVERY_TIMEOUT:-5s}
     health_path: "/api/v2/heartbeat"
     health_type: "http"
     timeout: "10s"
@@ -343,6 +355,9 @@ services:
     enabled: true
     required: false
     remote: ${SVC_PROMETHEUS_REMOTE:-false}
+    discovery_enabled: ${SVC_PROMETHEUS_DISCOVERY_ENABLED:-false}
+    discovery_method: ${SVC_PROMETHEUS_DISCOVERY_METHOD:-tcp}
+    discovery_timeout: ${SVC_PROMETHEUS_DISCOVERY_TIMEOUT:-5s}
     health_path: "/-/healthy"
     health_type: "http"
   grafana:
@@ -351,6 +366,9 @@ services:
     enabled: true
     required: false
     remote: ${SVC_GRAFANA_REMOTE:-false}
+    discovery_enabled: ${SVC_GRAFANA_DISCOVERY_ENABLED:-false}
+    discovery_method: ${SVC_GRAFANA_DISCOVERY_METHOD:-tcp}
+    discovery_timeout: ${SVC_GRAFANA_DISCOVERY_TIMEOUT:-5s}
     health_path: "/api/health"
     health_type: "http"
   qdrant:
@@ -359,6 +377,9 @@ services:
     enabled: true
     required: false
     remote: ${SVC_QDRANT_REMOTE:-false}
+    discovery_enabled: ${SVC_QDRANT_DISCOVERY_ENABLED:-false}
+    discovery_method: ${SVC_QDRANT_DISCOVERY_METHOD:-tcp}
+    discovery_timeout: ${SVC_QDRANT_DISCOVERY_TIMEOUT:-5s}
     health_path: "/healthz"
     health_type: "http"
 

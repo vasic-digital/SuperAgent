@@ -9,6 +9,7 @@
 | [03_CHALLENGE_CATALOG.md](03_CHALLENGE_CATALOG.md) | Complete challenge specifications |
 | [04_AI_DEBATE_GROUP.md](04_AI_DEBATE_GROUP.md) | AI Debate Group formation details |
 | [05_SECURITY.md](05_SECURITY.md) | Security practices and guidelines |
+| [07_CONTAINER_NAMING.md](07_CONTAINER_NAMING.md) | Container naming & cleanup conventions |
 
 ## Quick Links
 

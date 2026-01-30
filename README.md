@@ -230,6 +230,78 @@ All containers include comprehensive health checks:
 - **Cache**: Redis ping verification
 - **LLM Providers**: API endpoint health monitoring
 
+## 🌐 Remote Deployment & Service Discovery
+
+HelixAgent supports **distributed deployment** across multiple hosts with **automatic service discovery**. Deploy services to remote machines, discover existing services in your network, and manage hybrid local/remote environments.
+
+### Service Discovery
+```bash
+# Discover services in your network
+./scripts/discover-services.sh
+
+# Discover with specific strategy (TCP, HTTP, DNS, mDNS)
+./scripts/discover-services.sh --strategy=tcp
+./scripts/discover-services.sh --strategy=http
+
+# Test discovery methods
+./scripts/discover-services.sh --test
+```
+
+### Remote Deployment to Single Host
+```bash
+# Deploy services to a remote host
+./scripts/deploy-remote.sh thinker.local
+
+# Deploy specific services
+./scripts/deploy-remote.sh thinker.local --services=postgresql,redis
+
+# Deploy with custom compose file
+./scripts/deploy-remote.sh thinker.local --compose-file=docker-compose.prod.yml
+```
+
+### Parallel Multi-Host Deployment
+```bash
+# Deploy to multiple hosts in parallel
+./scripts/deploy-all-remote.sh
+
+# Custom host configuration
+./scripts/deploy-all-remote.sh --config=configs/remote-hosts.yaml
+```
+
+### Configuration
+Create `configs/remote-hosts.yaml`:
+```yaml
+remote_deployment:
+  enabled: true
+  hosts:
+    thinker.local:
+      services:
+        - postgresql
+        - redis
+        - cognee
+    raspberrypi.local:
+      services:
+        - ollama
+        - zen
+```
+
+### BootManager Integration
+```go
+// Deploy services to remote hosts
+deployer := services.NewSSHRemoteDeployer()
+err := deployer.DeployServices(ctx, config)
+
+// Health check remote services
+status := bootManager.HealthCheckRemoteServices(ctx)
+```
+
+### Hybrid Environments
+- **Local services**: PostgreSQL, Redis, ChromaDB
+- **Remote services**: LLM providers, Cognee, monitoring
+- **Discovered services**: Auto-detected in network
+
+**Full Documentation**: [docs/REMOTE_DEPLOYMENT.md](docs/REMOTE_DEPLOYMENT.md)
+
 ## 📚 API Documentation
 
 **Full API Reference**: [docs/api/API_REFERENCE.md](docs/api/API_REFERENCE.md) - Complete REST API documentation with examples
