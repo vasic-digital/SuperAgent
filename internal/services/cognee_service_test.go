@@ -232,15 +232,21 @@ func TestCogneeService_SearchMemory(t *testing.T) {
 		assert.Equal(t, "test query", result.Query)
 	})
 
-	t.Run("fails when disabled", func(t *testing.T) {
+	t.Run("returns empty results when disabled", func(t *testing.T) {
 		cfg := &CogneeServiceConfig{
 			Enabled: false,
 		}
 		service := NewCogneeServiceWithConfig(cfg, newTestLogger())
 
 		ctx := context.Background()
-		_, err := service.SearchMemory(ctx, "query", "", 10)
-		assert.Error(t, err)
+		result, err := service.SearchMemory(ctx, "query", "", 10)
+		// When disabled, SearchMemory returns empty results gracefully (no error)
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Empty(t, result.VectorResults)
+		assert.Empty(t, result.GraphResults)
+		assert.Empty(t, result.InsightsResults)
+		assert.Empty(t, result.GraphCompletions)
 	})
 }
 

@@ -39,11 +39,12 @@ func TestBootAll_RemoteSkipsCompose(t *testing.T) {
 	cfg := newTestServicesConfig()
 	logger := newTestLogger()
 
-	// Mark all services as remote and not required (so boot doesn't fail)
+	// Mark all services as enabled, remote, and not required (so boot doesn't fail)
 	cfg.PostgreSQL.Remote = true
 	cfg.PostgreSQL.Required = false
 	cfg.Redis.Remote = true
 	cfg.Redis.Required = false
+	cfg.Cognee.Enabled = true  // Enable Cognee for this test (disabled by default after Mem0 migration)
 	cfg.Cognee.Remote = true
 	cfg.Cognee.Required = false
 	cfg.ChromaDB.Remote = true

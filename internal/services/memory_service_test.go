@@ -59,6 +59,7 @@ func TestNewMemoryService_DisabledCognee(t *testing.T) {
 func TestNewMemoryService_EnabledCognee(t *testing.T) {
 	cfg := &config.Config{
 		Cognee: config.CogneeConfig{
+			Enabled:     true,
 			AutoCognify: true,
 			BaseURL:     "http://localhost:8000",
 		},
@@ -176,6 +177,7 @@ func TestMemoryService_GetStats(t *testing.T) {
 func TestMemoryService_GetStats_WithClient(t *testing.T) {
 	cfg := &config.Config{
 		Cognee: config.CogneeConfig{
+			Enabled:     true,
 			AutoCognify: true,
 			BaseURL:     "http://test-cognee:8000",
 		},
@@ -899,6 +901,7 @@ func TestNewMemoryServiceWithOptions(t *testing.T) {
 func TestNewMemoryServiceWithOptions_Enabled(t *testing.T) {
 	cfg := &config.Config{
 		Cognee: config.CogneeConfig{
+			Enabled:     true,
 			AutoCognify: true,
 			BaseURL:     "http://localhost:8000",
 		},
