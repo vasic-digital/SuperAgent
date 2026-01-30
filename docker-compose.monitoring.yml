@@ -15,7 +15,7 @@
 services:
   # Prometheus - Metrics Collection and Alerting
   prometheus:
-    image: prom/prometheus:v2.47.0
+    image: docker.io/prom/prometheus:v2.47.0
     container_name: helixagent-prometheus
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
@@ -44,7 +44,7 @@ services:
 
   # Grafana - Visualization and Dashboards
   grafana:
-    image: grafana/grafana:10.2.0
+    image: docker.io/grafana/grafana:10.2.0
     container_name: helixagent-grafana
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
@@ -73,7 +73,7 @@ services:
 
   # Loki - Log Aggregation
   loki:
-    image: grafana/loki:2.9.2
+    image: docker.io/grafana/loki:2.9.2
     container_name: helixagent-loki
     ports:
       - "${LOKI_PORT:-3100}:3100"
@@ -92,7 +92,7 @@ services:
 
   # Promtail - Log Collection Agent
   promtail:
-    image: grafana/promtail:2.9.2
+    image: docker.io/grafana/promtail:2.9.2
     container_name: helixagent-promtail
     volumes:
       - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
@@ -108,7 +108,7 @@ services:
 
   # Alertmanager - Alert Routing and Notification
   alertmanager:
-    image: prom/alertmanager:v0.26.0
+    image: docker.io/prom/alertmanager:v0.26.0
     container_name: helixagent-alertmanager
     ports:
       - "${ALERTMANAGER_PORT:-9093}:9093"
@@ -124,7 +124,7 @@ services:
 
   # Node Exporter - System Metrics
   node-exporter:
-    image: prom/node-exporter:v1.7.0
+    image: docker.io/prom/node-exporter:v1.7.0
     container_name: helixagent-node-exporter
     ports:
       - "${NODE_EXPORTER_PORT:-9100}:9100"
@@ -162,7 +162,7 @@ services:
 
   # Redis Exporter
   redis-exporter:
-    image: oliver006/redis_exporter:v1.55.0
+    image: docker.io/oliver006/redis_exporter:v1.55.0
     container_name: helixagent-redis-exporter
     ports:
       - "${REDIS_EXPORTER_PORT:-9121}:9121"
@@ -177,7 +177,7 @@ services:
 
   # PostgreSQL Exporter
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:v0.15.0
+    image: docker.io/prometheuscommunity/postgres-exporter:v0.15.0
     container_name: helixagent-postgres-exporter
     ports:
       - "${POSTGRES_EXPORTER_PORT:-9187}:9187"
@@ -191,7 +191,7 @@ services:
 
   # Blackbox Exporter - HTTP/TCP/ICMP Probing
   blackbox-exporter:
-    image: prom/blackbox-exporter:v0.24.0
+    image: docker.io/prom/blackbox-exporter:v0.24.0
     container_name: helixagent-blackbox-exporter
     ports:
       - "${BLACKBOX_EXPORTER_PORT:-9115}:9115"
@@ -207,7 +207,7 @@ services:
 
   # Custom HelixAgent Service Exporter
   helixagent-exporter:
-    image: python:3.11-slim
+    image: docker.io/library/python:3.11-slim
     container_name: helixagent-service-exporter
     ports:
       - "${HELIXAGENT_EXPORTER_PORT:-9200}:9200"
