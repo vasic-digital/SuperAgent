@@ -42,14 +42,14 @@ redis:
   min_idle_connections: 1
 
 cognee:
-  # Cognee knowledge graph configuration (DISABLED due to upstream bug)
-  # Bug: AttributeError: 'str' object has no attribute 'nodes' in extract_subgraph_chunks
-  # See docs/COGNEE_BUG.md for details
-  enabled: false
+  # Cognee knowledge graph configuration
+  # BUGFIX APPLIED: extract_subgraph_chunks.py now handles both str and CogneeGraph types
+  # See docs/integration/COGNEE_SUBMODULE.md for details
+  enabled: true   # ENABLED - bugfix applied and validated
   base_url: "http://localhost:8000"
   api_key: ""
-  auto_cognify: false
-  timeout: "60s"
+  auto_cognify: false  # Disabled to avoid timeout issues with memify endpoint
+  timeout: "30s"       # Reasonable timeout for search operations
 
 llm_providers:
   # OpenAI (primary for development)
@@ -196,11 +196,11 @@ ai_debate:
   max_rounds: 3
   consensus_threshold: 0.6
 
-  # Cognee integration (DISABLED due to upstream bug - see COGNEE_BUG.md)
-  # Bug: AttributeError: 'str' object has no attribute 'nodes' in extract_subgraph_chunks
-  # Container runs (health check passes) but API endpoints timeout
+  # Cognee integration - BUGFIX APPLIED
+  # FIXED: extract_subgraph_chunks.py now handles both str and CogneeGraph types
+  # Search endpoint works (<2s response), memify/cognify disabled to avoid timeouts
   cognee:
-    enabled: false  # Disabled until Cognee bug is fixed
+    enabled: true   # ENABLED - bugfix applied and validated
     api_url: "http://localhost:8000"
     dataset_name: "helixagent_dev_debates"
     # Authentication (form-encoded OAuth2 style)
@@ -377,8 +377,8 @@ services:
   cognee:
     host: "localhost"
     port: "8000"
-    enabled: true  # Container starts (health check passes)
-    required: false  # Optional - Cognee has upstream bug (AttributeError)
+    enabled: true     # Container starts (health check passes)
+    required: true    # MANDATORY - Bugfix applied, system depends on Cognee
     remote: false
     health_path: "/"
     health_type: "http"
