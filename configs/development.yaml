@@ -380,6 +380,9 @@ services:
     enabled: true
     required: true
     remote: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_type: "pgx"
     timeout: "10s"
     retry_count: 6
@@ -392,6 +395,9 @@ services:
     enabled: true
     required: true
     remote: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_type: "redis"
     timeout: "5s"
     retry_count: 6
@@ -404,6 +410,9 @@ services:
     enabled: false    # DISABLED - Replaced by Mem0 memory system
     required: false   # NOT REQUIRED - Mem0 is now primary memory provider
     remote: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/"
     health_type: "http"
     timeout: "10s"
@@ -417,6 +426,9 @@ services:
     enabled: true
     required: true
     remote: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/api/v2/heartbeat"
     health_type: "http"
     timeout: "10s"
@@ -429,6 +441,9 @@ services:
     port: "9090"
     enabled: false
     required: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/-/healthy"
     health_type: "http"
   grafana:
@@ -436,6 +451,9 @@ services:
     port: "3000"
     enabled: false
     required: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/api/health"
     health_type: "http"
   neo4j:
@@ -443,24 +461,36 @@ services:
     port: "7474"
     enabled: false
     required: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_type: "http"
   kafka:
     host: "localhost"
     port: "9092"
     enabled: false
     required: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_type: "tcp"
   rabbitmq:
     host: "localhost"
     port: "5672"
     enabled: false
     required: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_type: "tcp"
   qdrant:
     host: "localhost"
     port: "6333"
     enabled: false
     required: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/healthz"
     health_type: "http"
   weaviate:
@@ -468,6 +498,9 @@ services:
     port: "8080"
     enabled: false
     required: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/v1/.well-known/ready"
     health_type: "http"
   langchain:
@@ -475,6 +508,9 @@ services:
     port: "8011"
     enabled: false
     required: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/health"
     health_type: "http"
   llamaindex:
@@ -482,6 +518,9 @@ services:
     port: "8012"
     enabled: false
     required: false
+    discovery_enabled: false
+    discovery_method: "tcp"
+    discovery_timeout: "5s"
     health_path: "/health"
     health_type: "http"
 

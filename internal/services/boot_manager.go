@@ -1,12 +1,14 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
 	"time"
 
 	"dev.helix.agent/internal/config"
+	"dev.helix.agent/internal/services/discovery"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,20 +22,36 @@ type BootResult struct {
 
 // BootManager handles starting, health-checking, and stopping all configured services.
 type BootManager struct {
-	Config        *config.ServicesConfig
-	Logger        *logrus.Logger
-	Results       map[string]*BootResult
-	HealthChecker *ServiceHealthChecker
-	ProjectDir    string
+	Config          *config.ServicesConfig
+	Logger          *logrus.Logger
+	Results         map[string]*BootResult
+	HealthChecker   *ServiceHealthChecker
+	Discoverer      discovery.Discoverer
+	RemoteDeployer  RemoteDeployer
+	ProjectDir      string
 }
 
 // NewBootManager creates a new BootManager.
 func NewBootManager(cfg *config.ServicesConfig, logger *logrus.Logger) *BootManager {
 	return &BootManager{
-		Config:        cfg,
-		Logger:        logger,
-		Results:       make(map[string]*BootResult),
-		HealthChecker: NewServiceHealthChecker(logger),
+		Config:         cfg,
+		Logger:         logger,
+		Results:        make(map[string]*BootResult),
+		HealthChecker:  NewServiceHealthChecker(logger),
+		Discoverer:     discovery.NewDiscoverer(logger),
+		RemoteDeployer: nil,
+	}
+}
+
+// NewBootManagerWithDeployer creates a new BootManager with a remote deployer.
+func NewBootManagerWithDeployer(cfg *config.ServicesConfig, logger *logrus.Logger, deployer RemoteDeployer) *BootManager {
+	return &BootManager{
+		Config:         cfg,
+		Logger:         logger,
+		Results:        make(map[string]*BootResult),
+		HealthChecker:  NewServiceHealthChecker(logger),
+		Discoverer:     discovery.NewDiscoverer(logger),
+		RemoteDeployer: deployer,
 	}
 }
 
@@ -47,17 +65,49 @@ func (bm *BootManager) BootAll() error {
 
 	endpoints := bm.Config.AllEndpoints()
 
+	// Phase 1: Service discovery for endpoints with discovery enabled
+	bm.Logger.Info("Starting service discovery...")
+	for name, ep := range endpoints {
+		if !ep.Enabled || ep.Remote || !ep.DiscoveryEnabled {
+			continue
+		}
+		
+		bm.Logger.WithField("service", name).Debug("Attempting service discovery")
+		discovered, err := bm.Discoverer.Discover(context.Background(), &ep)
+		if err != nil {
+			bm.Logger.WithFields(logrus.Fields{
+				"service": name,
+				"error":   err,
+			}).Warn("Service discovery failed")
+			continue
+		}
+		
+		if discovered {
+			ep.Discovered = true
+			bm.Results[name] = &BootResult{Name: name, Status: "discovered"}
+			bm.Logger.WithField("service", name).Info("Service discovered in network, skipping compose start")
+		}
+	}
+
 	// Group local services by compose file for batch startup
 	composeGroups := make(map[string][]string) // compose_file -> []service_name
 	for name, ep := range endpoints {
 		if !ep.Enabled {
-			bm.Results[name] = &BootResult{Name: name, Status: "skipped"}
+			if _, exists := bm.Results[name]; !exists {
+				bm.Results[name] = &BootResult{Name: name, Status: "skipped"}
+			}
 			bm.Logger.WithField("service", name).Debug("Service disabled, skipping")
 			continue
 		}
-		if ep.Remote {
-			bm.Results[name] = &BootResult{Name: name, Status: "remote"}
-			bm.Logger.WithField("service", name).Info("Service configured as remote, skipping compose start")
+		if ep.Remote || ep.Discovered {
+			if _, exists := bm.Results[name]; !exists {
+				status := "remote"
+				if ep.Discovered {
+					status = "discovered"
+				}
+				bm.Results[name] = &BootResult{Name: name, Status: status}
+			}
+			bm.Logger.WithField("service", name).Info("Service configured as remote or discovered, skipping compose start")
 			continue
 		}
 		if ep.ComposeFile != "" && ep.ServiceName != "" {
@@ -282,13 +332,15 @@ func (bm *BootManager) stopComposeServices(composeFile, profile string, services
 }
 
 func (bm *BootManager) logSummary() {
-	started, remote, failed, skipped := 0, 0, 0, 0
+	started, remote, discovered, failed, skipped := 0, 0, 0, 0, 0
 	for _, r := range bm.Results {
 		switch r.Status {
 		case "started", "already_running":
 			started++
 		case "remote":
 			remote++
+		case "discovered":
+			discovered++
 		case "failed":
 			failed++
 		case "skipped":
@@ -297,11 +349,12 @@ func (bm *BootManager) logSummary() {
 	}
 
 	bm.Logger.WithFields(logrus.Fields{
-		"started": started,
-		"remote":  remote,
-		"failed":  failed,
-		"skipped": skipped,
-		"total":   len(bm.Results),
+		"started":    started,
+		"remote":     remote,
+		"discovered": discovered,
+		"failed":     failed,
+		"skipped":    skipped,
+		"total":      len(bm.Results),
 	}).Info("Service boot summary")
 }
 
@@ -327,4 +380,31 @@ func detectComposeCmd() (string, []string) {
 		return path, []string{"compose"}
 	}
 	return "docker", []string{"compose"}
+}
+
+// DeployRemoteServices deploys all remote-enabled services using the remote deployer.
+// If no remote deployer is configured, returns an error.
+func (bm *BootManager) DeployRemoteServices(ctx context.Context) error {
+	if bm.RemoteDeployer == nil {
+		return fmt.Errorf("no remote deployer configured")
+	}
+	bm.Logger.Info("Starting remote service deployment...")
+	if err := bm.RemoteDeployer.DeployAll(ctx); err != nil {
+		return fmt.Errorf("remote deployment failed: %w", err)
+	}
+	bm.Logger.Info("Remote service deployment completed")
+	return nil
+}
+
+// HealthCheckRemoteServices performs health checks on all remote services.
+func (bm *BootManager) HealthCheckRemoteServices(ctx context.Context) error {
+	if bm.RemoteDeployer == nil {
+		return fmt.Errorf("no remote deployer configured")
+	}
+	bm.Logger.Info("Health checking remote services...")
+	if err := bm.RemoteDeployer.HealthCheckRemote(ctx); err != nil {
+		return fmt.Errorf("remote health check failed: %w", err)
+	}
+	bm.Logger.Info("Remote service health checks completed")
+	return nil
 }

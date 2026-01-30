@@ -21,9 +21,10 @@ type Config struct {
 	Security    SecurityConfig
 	Plugins     PluginConfig
 	Performance PerformanceConfig
-	MCP         MCPConfig
-	ACP         ACPConfig
-	Services    ServicesConfig
+	MCP                MCPConfig
+	ACP                ACPConfig
+	Services           ServicesConfig
+	RemoteDeployment   RemoteDeploymentConfig
 }
 
 // ServiceEndpoint represents a configurable service endpoint that can be local or remote.
@@ -41,6 +42,12 @@ type ServiceEndpoint struct {
 	ComposeFile string        `yaml:"compose_file"` // Docker compose file path
 	ServiceName string        `yaml:"service_name"` // Docker compose service name
 	Profile     string        `yaml:"profile"`      // Docker compose profile
+	// Discovery settings
+	DiscoveryEnabled  bool          `yaml:"discovery_enabled"`   // Enable automatic service discovery
+	DiscoveryMethod   string        `yaml:"discovery_method"`    // "tcp", "http", "dns", "mdns"
+	DiscoveryTimeout  time.Duration `yaml:"discovery_timeout"`   // Timeout for discovery attempts
+	// Runtime state (not configurable via YAML)
+	Discovered        bool          `yaml:"-"`                   // Whether service was discovered in network
 }
 
 // ResolvedURL builds the full URL from host:port or returns the URL field if set.
@@ -247,6 +254,22 @@ type PerformanceConfig struct {
 	EnableCompression     bool
 }
 
+// RemoteDeploymentConfig holds configuration for deploying services to remote hosts.
+type RemoteDeploymentConfig struct {
+	Enabled          bool                            `yaml:"enabled"`
+	SSHKey           string                          `yaml:"ssh_key"`
+	DefaultSSHUser   string                          `yaml:"default_ssh_user"`
+	DefaultRemoteDir string                          `yaml:"default_remote_dir"`
+	Hosts            map[string]RemoteDeploymentHost `yaml:"hosts"`
+}
+
+// RemoteDeploymentHost defines SSH access and services for a remote host.
+type RemoteDeploymentHost struct {
+	SSHHost  string   `yaml:"ssh_host"` // user@hostname
+	SSHKey   string   `yaml:"ssh_key"`  // optional, overrides global SSHKey
+	Services []string `yaml:"services"` // service names to deploy on this host
+}
+
 func Load() *Config {
 	cfg := &Config{
 		Server: ServerConfig{
@@ -376,6 +399,13 @@ func Load() *Config {
 			DefaultTimeout: getDurationEnv("ACP_DEFAULT_TIMEOUT", 30*time.Second),
 			MaxRetries:     getIntEnv("ACP_MAX_RETRIES", 3),
 			Servers:        []ACPServerConfig{},
+		},
+		RemoteDeployment: RemoteDeploymentConfig{
+			Enabled:          false,
+			SSHKey:           "",
+			DefaultSSHUser:   "",
+			DefaultRemoteDir: "/opt/helixagent",
+			Hosts:            map[string]RemoteDeploymentHost{},
 		},
 		Services: DefaultServicesConfig(),
 	}
@@ -693,6 +723,19 @@ func loadServiceEndpointFromEnv(prefix string, ep *ServiceEndpoint) {
 	if v := os.Getenv(prefix + "_RETRY_COUNT"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			ep.RetryCount = n
+		}
+	}
+	if v := os.Getenv(prefix + "_DISCOVERY_ENABLED"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			ep.DiscoveryEnabled = b
+		}
+	}
+	if v := os.Getenv(prefix + "_DISCOVERY_METHOD"); v != "" {
+		ep.DiscoveryMethod = v
+	}
+	if v := os.Getenv(prefix + "_DISCOVERY_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			ep.DiscoveryTimeout = d
 		}
 	}
 }
