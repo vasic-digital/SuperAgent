@@ -1,0 +1,457 @@
+#!/bin/bash
+# deploy-full-remote-pass.sh - Deploy ALL HelixAgent containers (mandatory AND optional) to remote host
+# Uses sshpass for password authentication. Supports single-service or full-stack deployment.
+# Usage: ./deploy-full-remote-pass.sh <remote-host> [profile|service]
+# Example: ./deploy-full-remote-pass.sh thinker.local full   # Deploy everything
+# Example: ./deploy-full-remote-pass.sh thinker.local core   # Deploy only core services
+# Example: ./deploy-full-remote-pass.sh thinker.local postgres  # Deploy only postgres service
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+usage() {
+    echo "Usage: $0 [options] <remote-host> [profile|service]"
+    echo ""
+    echo "Deploy ALL HelixAgent containers (mandatory AND optional) to remote host."
+    echo "Uses sshpass for password authentication (set REMOTE_PASSWORD env var)."
+    echo ""
+    echo "Arguments:"
+    echo "  remote-host   Remote hostname or IP (user will be milosvasic)"
+    echo "  profile       Deployment profile: core, ai, monitoring, messaging, bigdata,"
+    echo "                protocols, analytics, security, formatters, rag, mcp, full"
+    echo "  service       Specific service name (e.g., postgres, redis, helixagent)"
+    echo ""
+    echo "Options:"
+    echo "  --dry-run      Print commands without executing"
+    echo "  --help         Show this help message"
+    echo "  --remote-user  SSH username (default: milosvasic)"
+    echo "  --remote-dir   Directory on remote host (default: /opt/helixagent)"
+    echo "  --password     SSH password (default: from REMOTE_PASSWORD env var)"
+    echo "  --compose-runtime  docker or podman (default: auto-detect)"
+    echo "  --no-build     Skip building images (use existing images)"
+    echo "  --clean        Stop and remove existing helixagent containers before deploy"
+    echo ""
+    echo "Environment variables:"
+    echo "  REMOTE_PASSWORD  SSH password for remote host"
+    echo "  REMOTE_USER      SSH username (default: milosvasic)"
+    echo "  REMOTE_DIR       Remote directory (default: /opt/helixagent)"
+    echo ""
+    exit 1
+}
+
+# Defaults
+DRY_RUN=0
+REMOTE_USER="${REMOTE_USER:-milosvasic}"
+REMOTE_DIR="${REMOTE_DIR:-/opt/helixagent}"
+REMOTE_PASSWORD="${REMOTE_PASSWORD:-}"
+CLEAN=0
+COMPOSE_RUNTIME=""
+NO_BUILD=0
+
+# Parse options
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --dry-run)
+            DRY_RUN=1
+            shift
+            ;;
+        --help)
+            usage
+            ;;
+        --remote-user)
+            REMOTE_USER="$2"
+            shift 2
+            ;;
+        --remote-dir)
+            REMOTE_DIR="$2"
+            shift 2
+            ;;
+        --password)
+            REMOTE_PASSWORD="$2"
+            shift 2
+            ;;
+        --compose-runtime)
+            COMPOSE_RUNTIME="$2"
+            shift 2
+            ;;
+        --no-build)
+            NO_BUILD=1
+            shift
+            ;;
+        --clean)
+            CLEAN=1
+            shift
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            usage
+            ;;
+        *)
+            POSITIONAL+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Restore positional arguments
+set -- "${POSITIONAL[@]}"
+
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+REMOTE_HOST="$1"
+PROFILE_OR_SERVICE="${2:-full}"
+
+if [ -z "$REMOTE_PASSWORD" ]; then
+    log_warning "REMOTE_PASSWORD not set, using default password 'thinker'"
+    REMOTE_PASSWORD="thinker"
+fi
+
+# Container runtime detection will happen after SSH functions are defined
+
+
+log_info "=============================================="
+log_info "HelixAgent Full Remote Deployment"
+log_info "=============================================="
+
+
+# Function to run command on remote host via sshpass
+ssh_cmd() {
+    local cmd="sshpass -p '$REMOTE_PASSWORD' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 '$REMOTE_USER@$REMOTE_HOST' \"$@\""
+    if [ $DRY_RUN -eq 1 ]; then
+        log_info "[DRY RUN] Would execute: $cmd"
+        return 0
+    else
+        eval "$cmd"
+    fi
+}
+
+# Function to copy files via scp with sshpass
+scp_cmd() {
+    local src="$1"
+    local dst="$2"
+    local cmd="sshpass -p '$REMOTE_PASSWORD' scp -o StrictHostKeyChecking=no -r \"$src\" \"$REMOTE_USER@$REMOTE_HOST:$dst\""
+    if [ $DRY_RUN -eq 1 ]; then
+        log_info "[DRY RUN] Would execute: $cmd"
+        return 0
+    else
+        eval "$cmd"
+    fi
+}
+
+# Function to copy essential project files (docker, configs, scripts, compose files)
+copy_essential_files() {
+    log_info "Creating list of essential files..."
+    # Create temporary file list
+    local FILE_LIST="/tmp/helixagent-files-$$.txt"
+    find . -type f \( \
+        -path "./docker/*" -o \
+        -path "./configs/*" -o \
+        -path "./scripts/*" -o \
+        -name "docker-compose*.yml" -o \
+        -name ".env.example" -o \
+        -name "Makefile" -o \
+        -name "README.md" -o \
+        -name ".gitignore" \
+    \) ! -path "./.git/*" ! -path "./node_modules/*" ! -path "./__pycache__/*" \
+      ! -path "./*.pyc" ! -path "./bin/*" ! -path "./dist/*" ! -path "./build/*" \
+      ! -path "./.cursor/*" ! -path "./.vscode/*" > "$FILE_LIST"
+    
+    # Count files (optional)
+    local file_count=$(wc -l < "$FILE_LIST" 2>/dev/null || echo 0)
+    log_info "Found $file_count essential files to copy"
+    
+    # Create tar from file list
+    local TEMP_TAR="/tmp/helixagent-deploy-$$.tar"
+    tar -czf "$TEMP_TAR" --files-from="$FILE_LIST"
+    rm -f "$FILE_LIST"
+    
+    scp_cmd "$TEMP_TAR" "$REMOTE_DIR/helixagent.tar"
+    ssh_cmd "cd $REMOTE_DIR && tar -xzf helixagent.tar --strip-components=1 && rm helixagent.tar"
+    rm -f "$TEMP_TAR"
+}
+
+# Function to start a compose file on remote host
+start_compose_remote() {
+    local compose_file="$1"
+    local description="$2"
+    local profile="${3:-}"
+    local no_build="${4:-$NO_BUILD}"
+
+    log_info "Starting $description..."
+    local cmd="cd $REMOTE_DIR && $COMPOSE_CMD -f \"$compose_file\" up -d"
+    if [ $no_build -eq 1 ]; then
+        cmd="$cmd --no-build"
+    fi
+    if [ ! -z "$profile" ]; then
+        cmd="$cmd --profile \"$profile\""
+    fi
+    ssh_cmd "$cmd"
+    if [ $? -eq 0 ]; then
+        log_success "$description started"
+    else
+        log_error "Failed to start $description"
+        return 1
+    fi
+}
+
+# Function to start specific services from a compose file on remote host
+start_services_remote() {
+    local compose_file="$1"
+    local description="$2"
+    local services="${3:-}"
+    local no_build="${4:-$NO_BUILD}"
+    
+    log_info "Starting $description..."
+    local cmd="cd $REMOTE_DIR && $COMPOSE_CMD -f \"$compose_file\" up -d"
+    if [ $no_build -eq 1 ]; then
+        cmd="$cmd --no-build"
+    fi
+    if [ ! -z "$services" ]; then
+        cmd="$cmd $services"
+    fi
+    ssh_cmd "$cmd"
+    if [ $? -eq 0 ]; then
+        log_success "$description started"
+    else
+        log_error "Failed to start $description"
+        return 1
+    fi
+}
+
+# Function to wait for service health on remote host
+wait_for_health_remote() {
+    local container_name="$1"
+    local max_wait="${2:-60}"
+    
+    if [ $DRY_RUN -eq 1 ]; then
+        log_info "[DRY RUN] Skipping health wait for $container_name"
+        return 0
+    fi
+    
+    log_info "Waiting for $container_name to be healthy..."
+    local wait_time=0
+    while [ $wait_time -lt $max_wait ]; do
+        if ssh_cmd "$COMPOSE_RUNTIME inspect $container_name &> /dev/null"; then
+            local health_status=$(ssh_cmd "$COMPOSE_RUNTIME inspect --format='{{.State.Health.Status}}' \"$container_name\" 2>/dev/null || echo 'none'")
+            local running_status=$(ssh_cmd "$COMPOSE_RUNTIME inspect --format='{{.State.Running}}' \"$container_name\" 2>/dev/null || echo 'false'")
+            if [ "$health_status" = "healthy" ] || [ "$running_status" = "true" ]; then
+                log_success "$container_name is healthy"
+                return 0
+            fi
+        fi
+        sleep 2
+        wait_time=$((wait_time + 2))
+    done
+    log_warning "Timeout waiting for $container_name"
+    return 1
+}
+
+# Function to deploy a specific profile
+deploy_profile() {
+    local profile="$1"
+    log_info "Deploying profile: $profile"
+    case "$profile" in
+        core)
+            start_compose_remote "docker-compose.yml" "Core Services"
+            wait_for_health_remote "helixagent-postgres" 30
+            wait_for_health_remote "helixagent-redis" 30
+            ;;
+        ai)
+            start_compose_remote "docker-compose.yml" "AI Services" "ai"
+            wait_for_health_remote "helixagent-cognee" 60
+            ;;
+        monitoring)
+            start_compose_remote "docker-compose.monitoring.yml" "Monitoring Services"
+            wait_for_health_remote "helixagent-prometheus" 30
+            wait_for_health_remote "helixagent-grafana" 30
+            ;;
+        messaging)
+            start_compose_remote "docker-compose.messaging.yml" "Messaging Services"
+            sleep 5
+            wait_for_health_remote "helixagent-kafka" 60
+            ;;
+        bigdata)
+            start_compose_remote "docker-compose.bigdata.yml" "Big Data Services" "bigdata"
+            ;;
+        protocols)
+            start_compose_remote "docker-compose.protocols.yml" "Protocol Services"
+            ;;
+        analytics)
+            start_compose_remote "docker-compose.analytics.yml" "Analytics Services"
+            ;;
+        security)
+            start_compose_remote "docker-compose.security.yml" "Security Services"
+            ;;
+        formatters)
+            start_compose_remote "docker/formatters/docker-compose.formatters.yml" "Code Formatters"
+            ;;
+        rag)
+            start_compose_remote "docker/rag/docker-compose.rag.yml" "RAG & Vector Databases"
+            ;;
+        mcp)
+            start_compose_remote "docker/mcp/docker-compose.mcp-full.yml" "Full MCP Servers"
+            ;;
+        full)
+            deploy_full
+            ;;
+        *)
+            log_error "Unknown profile: $profile"
+            exit 1
+            ;;
+    esac
+}
+
+# Function to deploy full stack (all services)
+deploy_full() {
+    log_info "Deploying FULL stack (all services)..."
+    # Phase 1: Core Infrastructure
+    log_info "Phase 1: Core Infrastructure"
+    start_compose_remote "docker-compose.yml" "Core Services"
+    wait_for_health_remote "helixagent-postgres" 30
+    wait_for_health_remote "helixagent-redis" 30
+    wait_for_health_remote "helixagent-cognee" 60
+    # Phase 2: Messaging
+    log_info "Phase 2: Messaging & Queuing"
+    start_compose_remote "docker-compose.messaging.yml" "Messaging Services"
+    sleep 5
+    # Phase 3: Monitoring
+    log_info "Phase 3: Monitoring & Observability"
+    start_compose_remote "docker-compose.monitoring.yml" "Monitoring Services"
+    wait_for_health_remote "helixagent-prometheus" 30
+    wait_for_health_remote "helixagent-grafana" 30
+    # Phase 4: Protocols
+    log_info "Phase 4: Protocol Servers"
+    start_compose_remote "docker-compose.protocols.yml" "Protocol Services"
+    # Phase 5: Integration Services
+    log_info "Phase 5: Integration Services"
+    start_compose_remote "docker-compose.integration.yml" "Integration Services"
+    # Phase 6: Analytics & Big Data (optional)
+    log_info "Phase 6: Analytics & Big Data"
+    start_compose_remote "docker-compose.bigdata.yml" "Big Data Services" "bigdata"
+    start_compose_remote "docker-compose.analytics.yml" "Analytics Services"
+    # Phase 7: Security Services
+    log_info "Phase 7: Security Services"
+    start_compose_remote "docker-compose.security.yml" "Security Services"
+    # Phase 8: Code Formatters
+    log_info "Phase 8: Code Formatters"
+    start_compose_remote "docker/formatters/docker-compose.formatters.yml" "Code Formatters"
+    # Phase 9: RAG & Vector Databases
+    log_info "Phase 9: RAG & Vector Databases"
+    start_compose_remote "docker/rag/docker-compose.rag.yml" "RAG & Vector Databases"
+    # Phase 10: Full MCP Servers
+    log_info "Phase 10: Full MCP Servers"
+    start_compose_remote "docker/mcp/docker-compose.mcp-full.yml" "Full MCP Servers"
+}
+
+# Function to deploy a single service
+deploy_service() {
+    local service="$1"
+    log_info "Deploying single service: $service"
+    local cmd="cd $REMOTE_DIR && $COMPOSE_CMD up -d"
+    if [ $NO_BUILD -eq 1 ]; then
+        cmd="$cmd --no-build"
+    fi
+    cmd="$cmd $service"
+    ssh_cmd "$cmd"
+    if [ $? -eq 0 ]; then
+        log_success "Service $service started"
+    else
+        log_error "Failed to start service $service"
+        exit 1
+    fi
+}
+
+# Test SSH connectivity
+log_info "Testing SSH connectivity..."
+if ! ssh_cmd "echo 'SSH connection successful'" >/dev/null 2>&1; then
+    log_error "SSH connection failed to $REMOTE_HOST"
+    exit 1
+fi
+log_success "SSH connectivity confirmed"
+
+# Detect container runtime on remote host
+if [ -z "$COMPOSE_RUNTIME" ]; then
+    log_info "Detecting container runtime on remote host..."
+    if ssh_cmd "command -v podman &> /dev/null"; then
+        COMPOSE_RUNTIME="podman"
+        COMPOSE_CMD="podman-compose"
+        CONTAINER_CLI="podman"
+    elif ssh_cmd "command -v docker &> /dev/null"; then
+        COMPOSE_RUNTIME="docker"
+        COMPOSE_CMD="docker compose"
+        CONTAINER_CLI="docker"
+    else
+        log_error "Neither docker nor podman found on remote host"
+        exit 1
+    fi
+else
+    case "$COMPOSE_RUNTIME" in
+        podman) COMPOSE_CMD="podman-compose"; CONTAINER_CLI="podman" ;;
+        docker) COMPOSE_CMD="docker compose"; CONTAINER_CLI="docker" ;;
+        *) log_error "Invalid compose-runtime: $COMPOSE_RUNTIME"; exit 1 ;;
+    esac
+fi
+
+log_info "Remote host: $REMOTE_USER@$REMOTE_HOST"
+log_info "Profile/Service: $PROFILE_OR_SERVICE"
+log_info "Remote directory: $REMOTE_DIR"
+log_info "Container runtime: $COMPOSE_RUNTIME ($COMPOSE_CMD)"
+log_info "Clean before deploy: $CLEAN"
+log_info ""
+
+# Clean existing helixagent containers if requested
+if [ $CLEAN -eq 1 ]; then
+    log_info "Cleaning existing helixagent containers..."
+    ssh_cmd "$CONTAINER_CLI ps -a --format '{{.Names}}' | grep -E 'helixagent-|helixagent_' | xargs -r $CONTAINER_CLI rm -f || true"
+    ssh_cmd "$CONTAINER_CLI volume ls --format '{{.Name}}' | grep -E 'helixagent' | xargs -r $CONTAINER_CLI volume rm -f || true"
+    log_success "Cleanup completed"
+fi
+
+# Create remote directory
+log_info "Creating remote directory..."
+ssh_cmd "mkdir -p $REMOTE_DIR"
+
+# Copy essential project files
+if [ $DRY_RUN -eq 1 ]; then
+    log_info "[DRY RUN] Skipping file copy"
+else
+    log_info "Copying essential project files to remote host..."
+    copy_essential_files
+    log_success "Project files copied"
+fi
+
+# Determine deployment action based on profile/service
+case "$PROFILE_OR_SERVICE" in
+    core|ai|monitoring|messaging|bigdata|protocols|analytics|security|formatters|rag|mcp|full)
+        deploy_profile "$PROFILE_OR_SERVICE"
+        ;;
+    *)
+        deploy_service "$PROFILE_OR_SERVICE"
+        ;;
+esac
+
+log_success "Deployment completed successfully!"
+log_info ""
+log_info "Next steps:"
+log_info "1. Check service status: sshpass -p '***' ssh $REMOTE_USER@$REMOTE_HOST 'cd $REMOTE_DIR && $COMPOSE_CMD ps'"
+log_info "2. View logs: sshpass -p '***' ssh $REMOTE_USER@$REMOTE_HOST 'cd $REMOTE_DIR && $COMPOSE_CMD logs -f'"
+log_info "3. Stop services: sshpass -p '***' ssh $REMOTE_USER@$REMOTE_HOST 'cd $REMOTE_DIR && $COMPOSE_CMD down'"
+log_info ""
