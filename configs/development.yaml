@@ -36,10 +36,20 @@ redis:
   port: 6379
   password: ""
   db: 0
-  
+
   # Connection pool settings
   pool_size: 5
   min_idle_connections: 1
+
+cognee:
+  # Cognee knowledge graph configuration (DISABLED due to upstream bug)
+  # Bug: AttributeError: 'str' object has no attribute 'nodes' in extract_subgraph_chunks
+  # See docs/COGNEE_BUG.md for details
+  enabled: false
+  base_url: "http://localhost:8000"
+  api_key: ""
+  auto_cognify: false
+  timeout: "60s"
 
 llm_providers:
   # OpenAI (primary for development)
@@ -186,11 +196,16 @@ ai_debate:
   max_rounds: 3
   consensus_threshold: 0.6
 
-  # Cognee integration (enabled for full AI capabilities)
+  # Cognee integration (DISABLED due to upstream bug - see COGNEE_BUG.md)
+  # Bug: AttributeError: 'str' object has no attribute 'nodes' in extract_subgraph_chunks
+  # Container runs (health check passes) but API endpoints timeout
   cognee:
-    enabled: true
+    enabled: false  # Disabled until Cognee bug is fixed
     api_url: "http://localhost:8000"
     dataset_name: "helixagent_dev_debates"
+    # Authentication (form-encoded OAuth2 style)
+    auth_email: "admin@helixagent.ai"
+    auth_password: "HelixAgentPass123"
 
 optimization:
   # LLM Optimization Framework
@@ -275,7 +290,7 @@ plugins:
 feature_flags:
   # Feature toggles (all enabled for development)
   ai_debate: true
-  cognee_integration: true
+  cognee_integration: false  # Disabled due to upstream Cognee bug (see COGNEE_BUG.md)
   plugin_system: true
   real_time_monitoring: true
   advanced_analytics: true
@@ -362,8 +377,8 @@ services:
   cognee:
     host: "localhost"
     port: "8000"
-    enabled: true
-    required: true
+    enabled: true  # Container starts (health check passes)
+    required: false  # Optional - Cognee has upstream bug (AttributeError)
     remote: false
     health_path: "/"
     health_type: "http"

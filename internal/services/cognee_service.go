@@ -818,8 +818,16 @@ func (s *CogneeService) enrichViaMemify(ctx context.Context, content, dataset st
 
 // SearchMemory performs comprehensive memory search
 func (s *CogneeService) SearchMemory(ctx context.Context, query string, dataset string, limit int) (*CogneeSearchResult, error) {
+	// Return empty results when disabled (not an error - just no data)
 	if !s.config.Enabled {
-		return nil, fmt.Errorf("cognee service is disabled")
+		s.logger.Debug("Cognee disabled, returning empty search results")
+		return &CogneeSearchResult{
+			Query:            query,
+			VectorResults:    make([]MemoryEntry, 0),
+			GraphResults:     make([]map[string]interface{}, 0),
+			InsightsResults:  make([]map[string]interface{}, 0),
+			GraphCompletions: make([]map[string]interface{}, 0),
+		}, nil
 	}
 
 	if dataset == "" {
