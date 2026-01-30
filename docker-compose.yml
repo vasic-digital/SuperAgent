@@ -152,8 +152,7 @@ services:
     volumes:
       - ./plugins:/app/plugins
       - ./logs:/app/logs
-    networks:
-      - helixagent-network
+    network_mode: host
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7061/health"]
       interval: 30s
