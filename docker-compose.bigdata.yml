@@ -1,10 +1,154 @@
 version: '3.8'
 
 # Big Data infrastructure for HelixAgent
-# Includes: Apache Flink, MinIO, Apache Iceberg, Qdrant, Apache Spark
+# Includes: Apache Flink, MinIO, Apache Iceberg, Qdrant, Apache Spark, Kafka, ClickHouse, Neo4j
 # Usage: docker-compose -f docker-compose.yml -f docker-compose.messaging.yml -f docker-compose.bigdata.yml up -d
 
 services:
+  # ===========================================
+  # MESSAGING LAYER - Kafka + Zookeeper
+  # ===========================================
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: helixagent-zookeeper
+    hostname: zookeeper
+    ports:
+      - "${ZOOKEEPER_PORT:-2181}:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    networks:
+      - helixagent-network
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    profiles:
+      - bigdata
+      - full
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: helixagent-kafka
+    hostname: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+      - "${KAFKA_JMX_PORT:-9101}:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168  # 7 days
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824  # 1GB
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - helixagent-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+    profiles:
+      - bigdata
+      - full
+
+  # ===========================================
+  # ANALYTICS LAYER - ClickHouse
+  # ===========================================
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8-alpine
+    container_name: helixagent-clickhouse
+    hostname: clickhouse
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"  # HTTP
+      - "${CLICKHOUSE_NATIVE_PORT:-9000}:9000"  # Native TCP
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-helixagent_analytics}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-helixagent}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-helixagent123}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_logs:/var/log/clickhouse-server
+      - ./sql/schema/clickhouse_analytics.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - helixagent-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    profiles:
+      - bigdata
+      - full
+
+  # ===========================================
+  # KNOWLEDGE GRAPH LAYER - Neo4j
+  # ===========================================
+
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: helixagent-neo4j
+    hostname: neo4j
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474"   # HTTP
+      - "${NEO4J_BOLT_PORT:-7687}:7687"   # Bolt
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-helixagent123}
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*,gds.*
+      NEO4J_dbms_security_procedures_allowlist: apoc.*,gds.*
+      NEO4J_dbms_memory_heap_initial__size: 512m
+      NEO4J_dbms_memory_heap_max__size: 2g
+      NEO4J_dbms_memory_pagecache_size: 1g
+      NEO4J_server_default__database: helixagent
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/import
+      - neo4j_plugins:/plugins
+    networks:
+      - helixagent-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    profiles:
+      - bigdata
+      - full
   # ===========================================
   # OBJECT STORAGE LAYER - MinIO
   # ===========================================
@@ -452,6 +596,24 @@ services:
       - full
 
 volumes:
+  zookeeper_data:
+    driver: local
+  zookeeper_logs:
+    driver: local
+  kafka_data:
+    driver: local
+  clickhouse_data:
+    driver: local
+  clickhouse_logs:
+    driver: local
+  neo4j_data:
+    driver: local
+  neo4j_logs:
+    driver: local
+  neo4j_import:
+    driver: local
+  neo4j_plugins:
+    driver: local
   minio_data:
     driver: local
   flink_jobmanager_data:

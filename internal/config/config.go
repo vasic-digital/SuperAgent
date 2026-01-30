@@ -68,11 +68,16 @@ type ServicesConfig struct {
 	Grafana     ServiceEndpoint            `yaml:"grafana"`
 	Neo4j       ServiceEndpoint            `yaml:"neo4j"`
 	Kafka       ServiceEndpoint            `yaml:"kafka"`
+	Zookeeper   ServiceEndpoint            `yaml:"zookeeper"`
 	RabbitMQ    ServiceEndpoint            `yaml:"rabbitmq"`
 	Qdrant      ServiceEndpoint            `yaml:"qdrant"`
 	Weaviate    ServiceEndpoint            `yaml:"weaviate"`
 	LangChain   ServiceEndpoint            `yaml:"langchain"`
 	LlamaIndex  ServiceEndpoint            `yaml:"llamaindex"`
+	ClickHouse  ServiceEndpoint            `yaml:"clickhouse"`
+	MinIO       ServiceEndpoint            `yaml:"minio"`
+	SparkMaster ServiceEndpoint            `yaml:"spark_master"`
+	SparkWorker ServiceEndpoint            `yaml:"spark_worker"`
 	MCPServers  map[string]ServiceEndpoint `yaml:"mcp_servers"`
 }
 
@@ -553,6 +558,74 @@ func DefaultServicesConfig() ServicesConfig {
 			ComposeFile: "docker-compose.yml",
 			ServiceName: "llamaindex",
 		},
+		Zookeeper: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "2181",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthType:  "tcp",
+			Timeout:     5 * time.Second,
+			RetryCount:  3,
+			ComposeFile: "docker-compose.bigdata.yml",
+			ServiceName: "zookeeper",
+			Profile:     "bigdata",
+		},
+		ClickHouse: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "8123",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthPath:  "/ping",
+			HealthType:  "http",
+			Timeout:     10 * time.Second,
+			RetryCount:  5,
+			ComposeFile: "docker-compose.bigdata.yml",
+			ServiceName: "clickhouse",
+			Profile:     "bigdata",
+		},
+		MinIO: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "9000",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthPath:  "/minio/health/live",
+			HealthType:  "http",
+			Timeout:     10 * time.Second,
+			RetryCount:  5,
+			ComposeFile: "docker-compose.bigdata.yml",
+			ServiceName: "minio",
+			Profile:     "bigdata",
+		},
+		SparkMaster: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "7077",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthType:  "tcp",
+			Timeout:     10 * time.Second,
+			RetryCount:  5,
+			ComposeFile: "docker-compose.bigdata.yml",
+			ServiceName: "spark-master",
+			Profile:     "bigdata",
+		},
+		SparkWorker: ServiceEndpoint{
+			Host:        "localhost",
+			Port:        "8081",
+			Enabled:     false,
+			Required:    false,
+			Remote:      false,
+			HealthPath:  "/",
+			HealthType:  "http",
+			Timeout:     10 * time.Second,
+			RetryCount:  5,
+			ComposeFile: "docker-compose.bigdata.yml",
+			ServiceName: "spark-worker",
+			Profile:     "bigdata",
+		},
 		MCPServers: make(map[string]ServiceEndpoint),
 	}
 }
@@ -569,11 +642,16 @@ func LoadServicesFromEnv(cfg *ServicesConfig) {
 	loadServiceEndpointFromEnv("SVC_GRAFANA", &cfg.Grafana)
 	loadServiceEndpointFromEnv("SVC_NEO4J", &cfg.Neo4j)
 	loadServiceEndpointFromEnv("SVC_KAFKA", &cfg.Kafka)
+	loadServiceEndpointFromEnv("SVC_ZOOKEEPER", &cfg.Zookeeper)
 	loadServiceEndpointFromEnv("SVC_RABBITMQ", &cfg.RabbitMQ)
 	loadServiceEndpointFromEnv("SVC_QDRANT", &cfg.Qdrant)
 	loadServiceEndpointFromEnv("SVC_WEAVIATE", &cfg.Weaviate)
 	loadServiceEndpointFromEnv("SVC_LANGCHAIN", &cfg.LangChain)
 	loadServiceEndpointFromEnv("SVC_LLAMAINDEX", &cfg.LlamaIndex)
+	loadServiceEndpointFromEnv("SVC_CLICKHOUSE", &cfg.ClickHouse)
+	loadServiceEndpointFromEnv("SVC_MINIO", &cfg.MinIO)
+	loadServiceEndpointFromEnv("SVC_SPARK_MASTER", &cfg.SparkMaster)
+	loadServiceEndpointFromEnv("SVC_SPARK_WORKER", &cfg.SparkWorker)
 }
 
 func loadServiceEndpointFromEnv(prefix string, ep *ServiceEndpoint) {
@@ -622,19 +700,24 @@ func loadServiceEndpointFromEnv(prefix string, ep *ServiceEndpoint) {
 // AllEndpoints returns all service endpoints as a name->endpoint map.
 func (s *ServicesConfig) AllEndpoints() map[string]ServiceEndpoint {
 	endpoints := map[string]ServiceEndpoint{
-		"postgresql": s.PostgreSQL,
-		"redis":      s.Redis,
-		"cognee":     s.Cognee,
-		"chromadb":   s.ChromaDB,
-		"prometheus": s.Prometheus,
-		"grafana":    s.Grafana,
-		"neo4j":      s.Neo4j,
-		"kafka":      s.Kafka,
-		"rabbitmq":   s.RabbitMQ,
-		"qdrant":     s.Qdrant,
-		"weaviate":   s.Weaviate,
-		"langchain":  s.LangChain,
-		"llamaindex": s.LlamaIndex,
+		"postgresql":  s.PostgreSQL,
+		"redis":       s.Redis,
+		"cognee":      s.Cognee,
+		"chromadb":    s.ChromaDB,
+		"prometheus":  s.Prometheus,
+		"grafana":     s.Grafana,
+		"neo4j":       s.Neo4j,
+		"kafka":       s.Kafka,
+		"zookeeper":   s.Zookeeper,
+		"rabbitmq":    s.RabbitMQ,
+		"qdrant":      s.Qdrant,
+		"weaviate":    s.Weaviate,
+		"langchain":   s.LangChain,
+		"llamaindex":  s.LlamaIndex,
+		"clickhouse":  s.ClickHouse,
+		"minio":       s.MinIO,
+		"spark_master": s.SparkMaster,
+		"spark_worker": s.SparkWorker,
 	}
 	for name, ep := range s.MCPServers {
 		endpoints["mcp_"+name] = ep
