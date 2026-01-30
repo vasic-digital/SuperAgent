@@ -1,0 +1,95 @@
+%% ============================================================================
+%% Kafka Streams Topology - Real-Time Stream Processing
+%% ============================================================================
+
+graph LR
+    subgraph "Input Topics"
+        T_CONV[helixagent.conversations<br/>Conversation Events]
+        T_MSG[helixagent.messages<br/>Message Events]
+        T_ENTITY[helixagent.entities<br/>Entity Events]
+        T_DEBATE[helixagent.debates<br/>Debate Results]
+    end
+
+    subgraph "Stream Processing"
+        MAP1[Map: Extract Entities]
+        MAP2[Map: Extract Metrics]
+        FILTER1[Filter: Debate Rounds]
+        FILTER2[Filter: Long Conversations]
+        GROUP1[GroupBy: Conversation ID]
+        GROUP2[GroupBy: Provider]
+        AGG1[Aggregate: Conversation State]
+        AGG2[Aggregate: Provider Stats]
+        JOIN1[Join: Messages + Entities]
+        WINDOW1[Window: 1-hour Tumbling]
+    end
+
+    subgraph "State Stores"
+        STATE_CONV[Conversation State<br/>RocksDB]
+        STATE_PROVIDER[Provider Metrics<br/>RocksDB]
+        STATE_ENTITY[Entity Graph<br/>RocksDB]
+    end
+
+    subgraph "Output Topics"
+        T_MEM_UPDATE[helixagent.memory.updates<br/>Memory Sync]
+        T_ANALYTICS[helixagent.analytics.debates<br/>Debate Analytics]
+        T_INSIGHTS[helixagent.learning.insights<br/>Generated Insights]
+        T_COMPRESS[helixagent.context.compressed<br/>Compressed Contexts]
+    end
+
+    subgraph "Downstream Consumers"
+        MEM_MANAGER[Memory Manager]
+        ANALYTICS_DB[ClickHouse]
+        LEARNING[Cross-Session Learner]
+        CONTEXT_ENG[Context Engine]
+    end
+
+    %% Input flow
+    T_CONV -->|Stream| MAP1
+    T_MSG -->|Stream| JOIN1
+    T_ENTITY -->|Stream| JOIN1
+    T_DEBATE -->|Stream| FILTER1
+
+    %% Conversation processing
+    MAP1 -->|Entities| GROUP1
+    GROUP1 -->|By Conv ID| AGG1
+    AGG1 -->|State Update| STATE_CONV
+    AGG1 -->|Emit| T_MEM_UPDATE
+
+    %% Debate analytics
+    FILTER1 -->|Debate Rounds| MAP2
+    MAP2 -->|Metrics| WINDOW1
+    WINDOW1 -->|1-hour Window| GROUP2
+    GROUP2 -->|By Provider| AGG2
+    AGG2 -->|State Update| STATE_PROVIDER
+    AGG2 -->|Emit| T_ANALYTICS
+
+    %% Entity processing
+    JOIN1 -->|Messages + Entities| FILTER2
+    FILTER2 -->|>1000 Messages| T_COMPRESS
+
+    %% Context compression
+    FILTER2 -->|Pattern Extraction| T_INSIGHTS
+
+    %% State store usage
+    STATE_CONV -.->|Read| AGG1
+    STATE_PROVIDER -.->|Read| AGG2
+    STATE_ENTITY -.->|Read| JOIN1
+
+    %% Output consumption
+    T_MEM_UPDATE -->|Consume| MEM_MANAGER
+    T_ANALYTICS -->|Consume| ANALYTICS_DB
+    T_INSIGHTS -->|Consume| LEARNING
+    T_COMPRESS -->|Consume| CONTEXT_ENG
+
+    %% Styling
+    classDef inputTopic fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef processor fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef stateStore fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef outputTopic fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef consumer fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+
+    class T_CONV,T_MSG,T_ENTITY,T_DEBATE inputTopic
+    class MAP1,MAP2,FILTER1,FILTER2,GROUP1,GROUP2,AGG1,AGG2,JOIN1,WINDOW1 processor
+    class STATE_CONV,STATE_PROVIDER,STATE_ENTITY stateStore
+    class T_MEM_UPDATE,T_ANALYTICS,T_INSIGHTS,T_COMPRESS outputTopic
+    class MEM_MANAGER,ANALYTICS_DB,LEARNING,CONTEXT_ENG consumer

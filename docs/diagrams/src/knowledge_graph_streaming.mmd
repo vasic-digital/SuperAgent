@@ -1,0 +1,125 @@
+%% ============================================================================
+%% Knowledge Graph Streaming - Real-Time Neo4j Updates
+%% ============================================================================
+
+flowchart LR
+    subgraph "Event Sources"
+        DEBATE[AI Debate<br/>Entity Extraction]
+        MEMORY[Memory Manager<br/>Relationship Discovery]
+        LEARNING[Cross-Session Learner<br/>Pattern Detection]
+    end
+
+    subgraph "Kafka Topics"
+        T_ENTITY[helixagent.entities.updates<br/>Entity CRUD Events]
+        T_REL[helixagent.relationships.updates<br/>Relationship Events]
+    end
+
+    subgraph "Graph Streaming Service"
+        CONSUMER[Kafka Consumer<br/>Parallel Processing]
+
+        ROUTER{Event Type}
+
+        subgraph "Entity Operations"
+            OP_CREATE[EntityCreated<br/>MERGE Node]
+            OP_UPDATE[EntityUpdated<br/>SET Properties]
+            OP_DELETE[EntityDeleted<br/>DELETE Node]
+            OP_MERGE[EntityMerged<br/>MERGE Nodes]
+        end
+
+        subgraph "Relationship Operations"
+            REL_CREATE[RelationshipCreated<br/>MERGE Relationship]
+            REL_UPDATE[RelationshipUpdated<br/>SET Properties]
+            REL_DELETE[RelationshipDeleted<br/>DELETE Relationship]
+        end
+    end
+
+    subgraph "Neo4j Database"
+        GRAPH[(Knowledge Graph<br/>7474, 7687)]
+
+        subgraph "Node Types"
+            NODE_ENTITY[(:Entity)<br/>id, name, type, properties]
+            NODE_CONV[(:Conversation)<br/>id, user_id, timestamp]
+            NODE_USER[(:User)<br/>id, preferences]
+        end
+
+        subgraph "Relationship Types"
+            REL_RELATED[:RELATED_TO<br/>strength, count]
+            REL_MENTIONED[:MENTIONED_IN<br/>timestamp, context]
+            REL_COOCCUR[:CO_OCCURS_WITH<br/>frequency, confidence]
+        end
+
+        subgraph "Indexes & Constraints"
+            IDX[Indexes:<br/>- Entity(id)<br/>- Entity(type)<br/>- Entity(name)<br/>- Conversation(id)]
+            CONST[Constraints:<br/>- UNIQUE Entity.id<br/>- UNIQUE Conversation.id]
+        end
+    end
+
+    subgraph "Query Layer"
+        QUERIES[Cypher Queries:<br/>- Find Related<br/>- Path Finding<br/>- Community Detection<br/>- Centrality Analysis]
+
+        CACHE[Query Cache<br/>Redis]
+
+        RESULTS[Query Results<br/>JSON/GraphQL]
+    end
+
+    %% Event flow
+    DEBATE -->|Publish| T_ENTITY
+    MEMORY -->|Publish| T_ENTITY
+    LEARNING -->|Publish| T_REL
+
+    T_ENTITY --> CONSUMER
+    T_REL --> CONSUMER
+
+    CONSUMER --> ROUTER
+
+    %% Entity operations
+    ROUTER -->|Created| OP_CREATE
+    ROUTER -->|Updated| OP_UPDATE
+    ROUTER -->|Deleted| OP_DELETE
+    ROUTER -->|Merged| OP_MERGE
+
+    OP_CREATE --> GRAPH
+    OP_UPDATE --> GRAPH
+    OP_DELETE --> GRAPH
+    OP_MERGE --> GRAPH
+
+    %% Relationship operations
+    ROUTER -->|RelCreated| REL_CREATE
+    ROUTER -->|RelUpdated| REL_UPDATE
+    ROUTER -->|RelDeleted| REL_DELETE
+
+    REL_CREATE --> GRAPH
+    REL_UPDATE --> GRAPH
+    REL_DELETE --> GRAPH
+
+    %% Graph structure
+    GRAPH --> NODE_ENTITY
+    GRAPH --> NODE_CONV
+    GRAPH --> NODE_USER
+    GRAPH --> REL_RELATED
+    GRAPH --> REL_MENTIONED
+    GRAPH --> REL_COOCCUR
+    GRAPH --> IDX
+    GRAPH --> CONST
+
+    %% Query flow
+    GRAPH --> QUERIES
+    QUERIES --> CACHE
+    CACHE --> RESULTS
+
+    %% Styling
+    classDef source fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef topic fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef service fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef operation fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef database fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef schema fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    classDef query fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+
+    class DEBATE,MEMORY,LEARNING source
+    class T_ENTITY,T_REL topic
+    class CONSUMER,ROUTER service
+    class OP_CREATE,OP_UPDATE,OP_DELETE,OP_MERGE,REL_CREATE,REL_UPDATE,REL_DELETE operation
+    class GRAPH database
+    class NODE_ENTITY,NODE_CONV,NODE_USER,REL_RELATED,REL_MENTIONED,REL_COOCCUR,IDX,CONST schema
+    class QUERIES,CACHE,RESULTS query

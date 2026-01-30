@@ -1,0 +1,109 @@
+%% ============================================================================
+%% Data Lake Architecture - S3/MinIO Storage Structure
+%% ============================================================================
+
+graph TB
+    subgraph "Data Sources"
+        KAFKA[Kafka Topics<br/>Real-Time Streams]
+        POSTGRES[(PostgreSQL<br/>Operational Data)]
+        NEO4J[(Neo4j<br/>Knowledge Graph)]
+        CLICKHOUSE[(ClickHouse<br/>Time-Series)]
+    end
+
+    subgraph "ETL Pipeline"
+        ARCHIVER[Conversation Archiver<br/>JSON → Parquet]
+        PARTITIONER[Hive Partitioner<br/>year/month/day]
+        COMPRESSOR[Parquet Compressor<br/>~70% reduction]
+    end
+
+    subgraph "MinIO/S3 Data Lake"
+        BUCKET[s3://helixagent-datalake/]
+
+        subgraph "Conversations Partition"
+            CONV_2026[conversations/<br/>year=2026/month=01/day=30/]
+            CONV_FILES[conversation_<id>.parquet]
+        end
+
+        subgraph "Debates Partition"
+            DEBATE_2026[debates/<br/>year=2026/month=01/day=30/]
+            DEBATE_FILES[debate_<id>.parquet]
+        end
+
+        subgraph "Entities Partition"
+            ENTITY_SNAP[entities/<br/>snapshot_<timestamp>.parquet]
+        end
+
+        subgraph "Analytics Partition"
+            ANALYTICS_DAILY[analytics/<br/>daily_aggregates_<date>.parquet]
+        end
+    end
+
+    subgraph "Spark Processing"
+        SPARK_READ[Spark DataFrames<br/>Distributed Read]
+        SPARK_JOBS[Batch Jobs:<br/>- Entity Extraction<br/>- Relationship Mining<br/>- Topic Modeling<br/>- Performance Analysis]
+        SPARK_WRITE[Write Results<br/>Back to Lake]
+    end
+
+    subgraph "Query Layer"
+        PRESTO[Presto/Trino<br/>SQL Interface]
+        ATHENA[AWS Athena<br/>Serverless Queries]
+        METASTORE[Hive Metastore<br/>Schema Registry]
+    end
+
+    subgraph "Outputs"
+        DASHBOARDS[Analytics Dashboards<br/>Grafana/Superset]
+        REPORTS[Scheduled Reports<br/>PDF/CSV]
+        API_EXPORT[API Exports<br/>REST/GraphQL]
+    end
+
+    %% Data flow
+    KAFKA -->|Stream Archive| ARCHIVER
+    POSTGRES -->|Periodic Dump| ARCHIVER
+    NEO4J -->|Graph Snapshot| ARCHIVER
+    CLICKHOUSE -->|Metrics Export| ARCHIVER
+
+    ARCHIVER -->|Convert| COMPRESSOR
+    COMPRESSOR -->|Partition| PARTITIONER
+    PARTITIONER -->|Upload| BUCKET
+
+    BUCKET --> CONV_2026
+    CONV_2026 --> CONV_FILES
+    BUCKET --> DEBATE_2026
+    DEBATE_2026 --> DEBATE_FILES
+    BUCKET --> ENTITY_SNAP
+    BUCKET --> ANALYTICS_DAILY
+
+    %% Spark processing
+    CONV_FILES -->|Load| SPARK_READ
+    DEBATE_FILES -->|Load| SPARK_READ
+    ENTITY_SNAP -->|Load| SPARK_READ
+    ANALYTICS_DAILY -->|Load| SPARK_READ
+
+    SPARK_READ --> SPARK_JOBS
+    SPARK_JOBS --> SPARK_WRITE
+    SPARK_WRITE -->|Save| BUCKET
+
+    %% Query layer
+    BUCKET -->|Register| METASTORE
+    METASTORE --> PRESTO
+    METASTORE --> ATHENA
+    PRESTO --> DASHBOARDS
+    ATHENA --> REPORTS
+    PRESTO --> API_EXPORT
+
+    %% Styling
+    classDef source fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef etl fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef storage fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef partition fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef spark fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef query fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    classDef output fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+
+    class KAFKA,POSTGRES,NEO4J,CLICKHOUSE source
+    class ARCHIVER,PARTITIONER,COMPRESSOR etl
+    class BUCKET storage
+    class CONV_2026,DEBATE_2026,ENTITY_SNAP,ANALYTICS_DAILY,CONV_FILES,DEBATE_FILES partition
+    class SPARK_READ,SPARK_JOBS,SPARK_WRITE spark
+    class PRESTO,ATHENA,METASTORE query
+    class DASHBOARDS,REPORTS,API_EXPORT output
