@@ -220,8 +220,10 @@ services:
   # - Requires DEEPSEEK_API_KEY and MISTRAL_API_KEY in .env
   cognee:
     build:
-      context: ./docker/cognee
+      context: ./external/cognee
       dockerfile: Dockerfile
+      args:
+        DEBUG: ${COGNEE_DEBUG:-false}
     image: helixagent-cognee:latest
     container_name: helixagent-cognee
     # Using host network for direct API access

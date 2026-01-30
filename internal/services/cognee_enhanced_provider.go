@@ -400,9 +400,15 @@ func (p *CogneeEnhancedProvider) enhanceMessages(messages []models.Message, enha
 
 // storeResponse stores the response in Cognee
 func (p *CogneeEnhancedProvider) storeResponse(ctx context.Context, req *models.LLMRequest, resp *models.LLMResponse) {
-	// Double-check Cognee is ready before attempting to store
+	// Double-check Cognee is ready and enabled before attempting to store
 	if p.cogneeService == nil || !p.cogneeService.IsReady() {
 		p.logger.Debug("Cognee not ready, skipping response storage")
+		return
+	}
+
+	// Check if Cognee is enabled in configuration
+	if !p.cogneeService.config.Enabled {
+		p.logger.Debug("Cognee disabled in config, skipping response storage")
 		return
 	}
 
