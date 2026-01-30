@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"dev.helix.agent/internal/memory"
 )
 
 type Config struct {
@@ -12,6 +14,7 @@ type Config struct {
 	Database    DatabaseConfig
 	Redis       RedisConfig
 	Cognee      CogneeConfig
+	Memory      memory.MemoryConfig // Mem0-style memory system (PRIMARY)
 	LLM         LLMConfig
 	ModelsDev   ModelsDevConfig
 	Monitoring  MonitoringConfig
@@ -277,9 +280,9 @@ func Load() *Config {
 		Cognee: CogneeConfig{
 			BaseURL:     getEnv("COGNEE_BASE_URL", "http://localhost:8000"),
 			APIKey:      getEnv("COGNEE_API_KEY", ""),
-			AutoCognify: getBoolEnv("COGNEE_AUTO_COGNIFY", true), // Re-enabled - HTTP 409 now handled gracefully
+			AutoCognify: getBoolEnv("COGNEE_AUTO_COGNIFY", false), // DISABLED - Mem0 is now primary memory provider
 			Timeout:     getDurationEnv("COGNEE_TIMEOUT", 15*time.Second), // Increased to 15s for Cognee cold start + processing
-			Enabled:     getBoolEnv("COGNEE_ENABLED", true),
+			Enabled:     getBoolEnv("COGNEE_ENABLED", false), // DISABLED - Replaced by Mem0 memory system
 		},
 		LLM: LLMConfig{
 			DefaultTimeout: getDurationEnv("LLM_TIMEOUT", 60*time.Second),
@@ -410,8 +413,8 @@ func DefaultServicesConfig() ServicesConfig {
 		Cognee: ServiceEndpoint{
 			Host:        "localhost",
 			Port:        "8000",
-			Enabled:     true,
-			Required:    true, // MANDATORY - HelixAgent MUST NOT start if Cognee fails
+			Enabled:     false, // DISABLED - Replaced by Mem0 memory system
+			Required:    false, // NOT REQUIRED - Mem0 is now primary memory provider
 			Remote:      false,
 			HealthPath:  "/",
 			HealthType:  "http",

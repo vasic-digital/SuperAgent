@@ -53,7 +53,7 @@ func NewMemoryService(cfg *config.Config) *MemoryService {
 
 // NewMemoryServiceWithOptions creates a new memory service instance with custom TTL and cleanup interval
 func NewMemoryServiceWithOptions(cfg *config.Config, ttl, cleanupInterval time.Duration) *MemoryService {
-	if cfg == nil || !cfg.Cognee.AutoCognify {
+	if cfg == nil || !cfg.Cognee.Enabled || !cfg.Cognee.AutoCognify {
 		ms := &MemoryService{
 			enabled:         false,
 			cache:           make(map[string]*memoryCacheEntry),
