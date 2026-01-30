@@ -1,0 +1,130 @@
+%% ============================================================================
+%% HelixAgent Big Data Architecture - Complete System Overview
+%% ============================================================================
+
+graph TB
+    subgraph "User Layer"
+        USER[User/CLI Agent]
+        API[REST API :7061]
+    end
+
+    subgraph "Application Layer"
+        DEBATE[AI Debate System<br/>15 LLMs, 5 Positions]
+        PROVIDER[Provider Registry<br/>10 LLM Providers]
+        CONTEXT[Infinite Context Engine<br/>Unlimited History]
+        FORMATTER[Code Formatters<br/>32+ Languages]
+    end
+
+    subgraph "Streaming Layer (Real-Time)"
+        KAFKA[Apache Kafka<br/>18+ Topics, 9092]
+        KSTREAMS[Kafka Streams<br/>Real-Time Analytics]
+        CONSUMER[Event Consumers<br/>Parallel Processing]
+    end
+
+    subgraph "Storage Layer"
+        POSTGRES[(PostgreSQL<br/>Primary Database<br/>5432)]
+        REDIS[(Redis Cache<br/>6379)]
+        NEO4J[(Neo4j Graph<br/>7474, 7687)]
+        CLICKHOUSE[(ClickHouse<br/>Time-Series<br/>8123, 9000)]
+        MINIO[(MinIO/S3<br/>Data Lake<br/>9000)]
+    end
+
+    subgraph "Memory System"
+        MEM0[Mem0 Memory<br/>Entity Graphs]
+        DISTMEM[Distributed Memory<br/>Event Sourcing]
+        CRDT[CRDT Resolver<br/>Conflict Resolution]
+    end
+
+    subgraph "Big Data Processing"
+        SPARK[Apache Spark<br/>Batch Jobs]
+        DATALAKE[Data Lake<br/>Parquet Archives]
+        COMPRESS[Context Compressor<br/>4 Strategies]
+    end
+
+    subgraph "Knowledge & Learning"
+        GRAPHSTREAM[Graph Streaming<br/>Real-Time Updates]
+        CROSSLEARN[Cross-Session Learner<br/>6 Pattern Types]
+        INSIGHTS[Insight Store<br/>Pattern Repository]
+    end
+
+    subgraph "Analytics & Monitoring"
+        ANALYTICS[ClickHouse Analytics<br/>Sub-100ms Queries]
+        METRICS[Metrics Collector<br/>Performance Tracking]
+        MONITOR[Health Monitor<br/>Service Status]
+    end
+
+    %% User interactions
+    USER -->|HTTP Requests| API
+    API -->|Debate Request| DEBATE
+    API -->|Format Code| FORMATTER
+
+    %% Application flow
+    DEBATE -->|Select Providers| PROVIDER
+    DEBATE -->|Get Context| CONTEXT
+    PROVIDER -->|Store Memory| MEM0
+
+    %% Context management
+    CONTEXT -->|Replay Events| KAFKA
+    CONTEXT -->|Compress| COMPRESS
+    COMPRESS -->|Archive| DATALAKE
+
+    %% Streaming pipeline
+    DEBATE -->|Publish Events| KAFKA
+    KAFKA -->|Stream Processing| KSTREAMS
+    KAFKA -->|Consume| CONSUMER
+
+    %% Memory synchronization
+    MEM0 -->|Event Sourcing| DISTMEM
+    DISTMEM -->|Publish| KAFKA
+    DISTMEM -->|Resolve| CRDT
+    CRDT -->|Store| POSTGRES
+
+    %% Real-time updates
+    CONSUMER -->|Update Graph| GRAPHSTREAM
+    GRAPHSTREAM -->|Write| NEO4J
+    CONSUMER -->|Store Metrics| ANALYTICS
+    ANALYTICS -->|Write| CLICKHOUSE
+
+    %% Batch processing
+    KAFKA -->|Archive| DATALAKE
+    DATALAKE -->|Load| SPARK
+    SPARK -->|Process| DATALAKE
+    SPARK -->|Results| NEO4J
+
+    %% Learning pipeline
+    CONSUMER -->|Extract Patterns| CROSSLEARN
+    CROSSLEARN -->|Store| INSIGHTS
+    INSIGHTS -->|Persist| POSTGRES
+
+    %% Storage connections
+    DEBATE -->|Cache| REDIS
+    PROVIDER -->|Read/Write| POSTGRES
+    MEM0 -->|Vector Search| POSTGRES
+    KSTREAMS -->|State Store| POSTGRES
+
+    %% Monitoring
+    MONITOR -->|Check Health| POSTGRES
+    MONITOR -->|Check Health| REDIS
+    MONITOR -->|Check Health| KAFKA
+    MONITOR -->|Check Health| NEO4J
+    MONITOR -->|Check Health| CLICKHOUSE
+    METRICS -->|Collect| ANALYTICS
+
+    %% Styling
+    classDef userLayer fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef appLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef streamLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef storageLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef memoryLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef bigdataLayer fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef knowledgeLayer fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    classDef analyticsLayer fill:#ede7f6,stroke:#311b92,stroke-width:2px
+
+    class USER,API userLayer
+    class DEBATE,PROVIDER,CONTEXT,FORMATTER appLayer
+    class KAFKA,KSTREAMS,CONSUMER streamLayer
+    class POSTGRES,REDIS,NEO4J,CLICKHOUSE,MINIO storageLayer
+    class MEM0,DISTMEM,CRDT memoryLayer
+    class SPARK,DATALAKE,COMPRESS bigdataLayer
+    class GRAPHSTREAM,CROSSLEARN,INSIGHTS knowledgeLayer
+    class ANALYTICS,METRICS,MONITOR analyticsLayer

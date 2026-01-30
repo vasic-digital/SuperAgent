@@ -1,0 +1,100 @@
+%% ============================================================================
+%% Infinite Context Flow - Unlimited Conversation History
+%% ============================================================================
+
+flowchart TD
+    START([User Continues Conversation])
+
+    subgraph "Context Retrieval"
+        LOOKUP[Lookup Conversation ID]
+        CACHE{Check LRU Cache}
+        CACHE_HIT[Get from Cache]
+        CACHE_MISS[Cache Miss]
+    end
+
+    subgraph "Kafka Replay"
+        SEEK[Seek to Earliest Offset]
+        CONSUME[Consume All Events]
+        RECONSTRUCT[Reconstruct Full History]
+        COUNT{Message Count}
+    end
+
+    subgraph "Compression Decision"
+        CHECK_TOKENS{Total Tokens > Limit?<br/>Default: 4000}
+        NO_COMPRESS[Return Full History]
+        STRATEGY{Select Strategy}
+    end
+
+    subgraph "Compression Strategies"
+        WINDOW[Window Summary<br/>Sliding window + LLM summary]
+        ENTITY[Entity Graph<br/>Preserve entities + key messages]
+        FULL[Full Summary<br/>Single LLM summary]
+        HYBRID[Hybrid<br/>Window + Entity + Recent]
+    end
+
+    subgraph "Compression Execution"
+        LLM_CALL[Call LLM for Summarization]
+        PRESERVE[Preserve Key Elements:<br/>- Entities<br/>- Topics<br/>- Decisions<br/>- Recent messages]
+        VALIDATE{Quality Score > 0.95?}
+        COMPRESS_RESULT[Compressed Context]
+    end
+
+    subgraph "Storage & Output"
+        STORE_CLICKHOUSE[(Store Metrics<br/>ClickHouse)]
+        UPDATE_CACHE[Update LRU Cache]
+        RETURN[Return Context to Debate]
+    end
+
+    START --> LOOKUP
+    LOOKUP --> CACHE
+    CACHE -->|Hit| CACHE_HIT
+    CACHE -->|Miss| CACHE_MISS
+    CACHE_HIT --> RETURN
+    CACHE_MISS --> SEEK
+
+    SEEK --> CONSUME
+    CONSUME --> RECONSTRUCT
+    RECONSTRUCT --> COUNT
+    COUNT -->|<1000 msgs| CHECK_TOKENS
+    COUNT -->|>1000 msgs| STRATEGY
+
+    CHECK_TOKENS -->|No| NO_COMPRESS
+    CHECK_TOKENS -->|Yes| STRATEGY
+    NO_COMPRESS --> UPDATE_CACHE
+    UPDATE_CACHE --> RETURN
+
+    STRATEGY -->|Window| WINDOW
+    STRATEGY -->|Entity| ENTITY
+    STRATEGY -->|Full| FULL
+    STRATEGY -->|Hybrid<br/>Default| HYBRID
+
+    WINDOW --> LLM_CALL
+    ENTITY --> PRESERVE
+    FULL --> LLM_CALL
+    HYBRID --> PRESERVE
+
+    LLM_CALL --> PRESERVE
+    PRESERVE --> VALIDATE
+    VALIDATE -->|Yes| COMPRESS_RESULT
+    VALIDATE -->|No<br/>Retry| STRATEGY
+
+    COMPRESS_RESULT --> STORE_CLICKHOUSE
+    STORE_CLICKHOUSE --> UPDATE_CACHE
+    UPDATE_CACHE --> RETURN
+
+    %% Styling
+    classDef startEnd fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    classDef retrieval fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef kafka fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef decision fill:#ffebee,stroke:#b71c1c,stroke-width:2px,stroke-dasharray: 5 5
+    classDef strategy fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef compression fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef storage fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+
+    class START,RETURN startEnd
+    class LOOKUP,CACHE,CACHE_HIT,CACHE_MISS retrieval
+    class SEEK,CONSUME,RECONSTRUCT,COUNT kafka
+    class CHECK_TOKENS,STRATEGY,VALIDATE decision
+    class WINDOW,ENTITY,FULL,HYBRID strategy
+    class LLM_CALL,PRESERVE,COMPRESS_RESULT compression
+    class STORE_CLICKHOUSE,UPDATE_CACHE storage

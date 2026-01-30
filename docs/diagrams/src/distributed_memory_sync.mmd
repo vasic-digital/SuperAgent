@@ -1,0 +1,78 @@
+%% ============================================================================
+%% Distributed Memory Synchronization - Multi-Node Memory Sync
+%% ============================================================================
+
+sequenceDiagram
+    participant Node1 as HelixAgent Node 1
+    participant Kafka as Kafka Broker
+    participant Node2 as HelixAgent Node 2
+    participant Node3 as HelixAgent Node 3
+    participant CRDT as CRDT Resolver
+    participant DB as PostgreSQL
+
+    Note over Node1,DB: Memory Create Operation
+
+    Node1->>Node1: User creates memory
+    Node1->>DB: Store locally (version 1)
+    Node1->>Kafka: Publish MemoryEvent<br/>(type: Created, version: 1)
+
+    Note over Kafka: Event broadcast to all nodes
+
+    Kafka->>Node2: Deliver MemoryEvent
+    Kafka->>Node3: Deliver MemoryEvent
+
+    Node2->>Node2: Check if local exists<br/>(No conflict)
+    Node2->>DB: Replicate memory
+    Node2->>Node2: Update local cache
+
+    Node3->>Node3: Check if local exists<br/>(No conflict)
+    Node3->>DB: Replicate memory
+    Node3->>Node3: Update local cache
+
+    Note over Node1,DB: Concurrent Update (Conflict Scenario)
+
+    par Node 1 and Node 2 update same memory
+        Node1->>Node1: User updates memory
+        Node1->>DB: Update (version 2)
+        Node1->>Kafka: Publish MemoryEvent<br/>(type: Updated, version: 2)
+    and
+        Node2->>Node2: User updates memory
+        Node2->>DB: Update (version 2)
+        Node2->>Kafka: Publish MemoryEvent<br/>(type: Updated, version: 2)
+    end
+
+    Note over Kafka: Two conflicting events
+
+    Kafka->>Node1: Deliver Node2's event
+    Kafka->>Node2: Deliver Node1's event
+    Kafka->>Node3: Deliver both events
+
+    Node1->>Node1: Detect conflict<br/>(version 2 vs 2)
+    Node1->>CRDT: Resolve conflict<br/>(merge strategy)
+    CRDT->>CRDT: Apply CRDT rules<br/>(LastWriteWins/MergeAll)
+    CRDT->>Node1: Merged memory (version 3)
+    Node1->>DB: Update with merged version
+    Node1->>Kafka: Publish conflict resolution<br/>(type: Merged, version: 3)
+
+    Node2->>Node2: Detect conflict<br/>(version 2 vs 2)
+    Node2->>CRDT: Resolve conflict
+    CRDT->>Node2: Merged memory (version 3)
+    Node2->>DB: Update with merged version
+
+    Kafka->>Node3: Deliver merge event
+    Node3->>Node3: Apply merge
+    Node3->>DB: Update with merged version
+
+    Note over Node1,DB: Periodic Snapshot
+
+    Node1->>Kafka: Publish snapshot<br/>(helixagent.memory.snapshots)
+    Kafka->>Node2: Deliver snapshot
+    Kafka->>Node3: Deliver snapshot
+
+    Node2->>Node2: Compare with local state
+    Node2->>Node2: Sync if drift detected
+
+    Node3->>Node3: Compare with local state
+    Node3->>Node3: Sync if drift detected
+
+    Note over Node1,DB: All nodes eventually consistent

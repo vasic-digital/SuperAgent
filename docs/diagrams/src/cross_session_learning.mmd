@@ -1,0 +1,72 @@
+%% ============================================================================
+%% Cross-Session Learning Flow - Multi-Session Knowledge Accumulation
+%% ============================================================================
+
+sequenceDiagram
+    participant User as User
+    participant Debate as AI Debate
+    participant Kafka as Kafka
+    participant Learner as Cross-Session Learner
+    participant Insights as Insight Store
+    participant DB as PostgreSQL
+
+    Note over User,DB: Session 1 - Initial Conversation
+
+    User->>Debate: "Help me with authentication"
+    Debate->>Debate: Extract entities: OAuth2, JWT
+    Debate->>Debate: Debate completes successfully
+    Debate->>Kafka: Publish ConversationCompletion<br/>(messages, entities, outcome)
+
+    Kafka->>Learner: Deliver completion event
+    Learner->>Learner: Extract patterns:<br/>1. User intent: help_seeking<br/>2. Entity co-occurrence: OAuth2+JWT<br/>3. User preference: concise style
+
+    Learner->>Insights: Store patterns<br/>(frequency: 1, confidence: 0.7)
+    Insights->>DB: Persist:<br/>- learned_patterns<br/>- entity_cooccurrences<br/>- user_preferences
+
+    Note over User,DB: Session 2 - Related Topic (Same Day)
+
+    User->>Debate: "How do I implement OAuth2?"
+    Debate->>Debate: Extract entities: OAuth2, API
+    Debate->>DB: Query user preferences<br/>(returns: concise style)
+    Debate->>Debate: Adapt response style
+    Debate->>Kafka: Publish ConversationCompletion
+
+    Kafka->>Learner: Deliver completion event
+    Learner->>Learner: Extract patterns:<br/>1. User intent: implementation<br/>2. Entity co-occurrence: OAuth2+API<br/>3. Conversation flow: rapid (3s/msg)
+
+    Learner->>Insights: Update patterns<br/>(OAuth2 frequency: 2 → 3)
+    Insights->>DB: Update:<br/>- learned_patterns (frequency++)<br/>- entity_cooccurrences (count++)<br/>- conversation_flow_patterns
+
+    Learner->>Learner: Generate insight:<br/>"User prefers OAuth2 for auth"<br/>(confidence: 0.85)
+    Learner->>Kafka: Publish insight<br/>(helixagent.learning.insights)
+
+    Note over User,DB: Session 3 - One Week Later
+
+    User->>Debate: "Show me JWT implementation"
+    Debate->>DB: Query insights:<br/>- OAuth2 preference (0.85)<br/>- Concise style (0.80)
+    Debate->>Debate: Proactively suggest:<br/>"Would you like to compare<br/>JWT vs OAuth2?"
+
+    User->>Debate: "Yes, compare them"
+    Debate->>Debate: Use learned patterns:<br/>- Entity relationship: JWT ↔ OAuth2<br/>- User preference: concise<br/>- Debate strategy: comparison
+
+    Debate->>Kafka: Publish ConversationCompletion
+    Kafka->>Learner: Deliver completion event
+
+    Learner->>Learner: Extract patterns:<br/>1. User intent: comparison<br/>2. Debate strategy: successful<br/>3. Provider performance: claude wins
+
+    Learner->>Insights: Update patterns<br/>(all patterns frequency++)
+    Insights->>DB: Update:<br/>- debate_strategy_success<br/>- knowledge_accumulation
+
+    Learner->>Learner: Generate insight:<br/>"User consistently asks about<br/>authentication patterns"<br/>(confidence: 0.92)
+
+    Learner->>DB: Store accumulated knowledge:<br/>- 15+ patterns<br/>- 8+ insights<br/>- 12+ relationships
+
+    Note over User,DB: System Learns Continuously
+
+    Learner->>DB: Query stats:<br/>get_learning_progress(30 days)
+
+    DB->>Learner: Return:<br/>- Patterns: 47<br/>- Insights: 23<br/>- Knowledge items: 156
+
+    Learner->>Debate: Provide context:<br/>"This user prefers OAuth2,<br/>concise style, comparison format"
+
+    Debate->>User: Personalized response<br/>based on learned preferences
