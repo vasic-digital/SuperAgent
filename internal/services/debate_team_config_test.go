@@ -333,7 +333,7 @@ func TestDebateTeamConfigGetTeamSummary(t *testing.T) {
 
 		assert.Equal(t, "HelixAgent AI Debate Team", summary["team_name"])
 		assert.Equal(t, TotalDebatePositions, summary["total_positions"])
-		assert.Equal(t, TotalDebateLLMs, summary["expected_llms"])
+		assert.Equal(t, TotalDebateLLMs, summary["max_llms"])
 	})
 
 	t.Run("Summary includes Claude models", func(t *testing.T) {
