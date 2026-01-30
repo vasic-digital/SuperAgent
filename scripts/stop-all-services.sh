@@ -48,10 +48,25 @@ stop_compose() {
     echo -e "${GREEN}✓ $description stopped${NC}"
 }
 
+# Function to stop HelixAgent server process
+stop_helixagent_server() {
+    echo -e "${BLUE}▼ Stopping HelixAgent server...${NC}"
+    if pkill -f "helixagent" 2>/dev/null; then
+        sleep 2
+        pkill -9 -f "helixagent" 2>/dev/null || true
+        echo -e "${GREEN}✓ HelixAgent server stopped${NC}"
+    else
+        echo -e "${YELLOW}⊘ HelixAgent server not running${NC}"
+    fi
+}
 # Stop in reverse order of startup
 echo "Stopping all services..."
 echo ""
+stop_helixagent_server
 
+stop_compose "docker/mcp/docker-compose.mcp-full.yml" "Full MCP Servers"
+stop_compose "docker/rag/docker-compose.rag.yml" "RAG & Vector Databases"
+stop_compose "docker/formatters/docker-compose.formatters.yml" "Code Formatters"
 stop_compose "docker-compose.security.yml" "Security Services"
 stop_compose "docker-compose.analytics.yml" "Analytics Services"
 stop_compose "docker-compose.bigdata.yml" "Big Data Services"
@@ -64,19 +79,19 @@ stop_compose "docker-compose.yml" "Core Services"
 # Check for any remaining helixagent containers
 echo ""
 echo "Checking for remaining containers..."
-REMAINING=$($RUNTIME ps -a --format "{{.Names}}" | grep -c helixagent || true)
+REMAINING=$($RUNTIME ps -a --format "{{.Names}}" | grep -c -E "(helixagent|formatter)" || true)
 
 if [ "$REMAINING" -gt 0 ]; then
-    echo -e "${YELLOW}Found $REMAINING helixagent containers still running${NC}"
+    echo -e "${YELLOW}Found $REMAINING helixagent or formatter containers still running${NC}"
     echo ""
-    $RUNTIME ps -a --format "table {{.Names}}\t{{.Status}}" | grep helixagent || true
+    $RUNTIME ps -a --format "table {{.Names}}\t{{.Status}}" | grep -E "(helixagent|formatter)" || true
     echo ""
     echo -e "${BLUE}Stopping remaining containers...${NC}"
-    $RUNTIME ps -a --format "{{.Names}}" | grep helixagent | xargs -r $RUNTIME stop 2>/dev/null || true
-    $RUNTIME ps -a --format "{{.Names}}" | grep helixagent | xargs -r $RUNTIME rm 2>/dev/null || true
+    $RUNTIME ps -a --format "{{.Names}}" | grep -E "(helixagent|formatter)" | xargs -r $RUNTIME stop 2>/dev/null || true
+    $RUNTIME ps -a --format "{{.Names}}" | grep -E "(helixagent|formatter)" | xargs -r $RUNTIME rm 2>/dev/null || true
     echo -e "${GREEN}✓ Remaining containers stopped${NC}"
 else
-    echo -e "${GREEN}✓ All helixagent containers stopped${NC}"
+    echo -e "${GREEN}✓ All helixagent and formatter containers stopped${NC}"
 fi
 
 echo ""
