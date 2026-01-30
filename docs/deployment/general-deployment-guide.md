@@ -750,6 +750,61 @@ sleep 30
 docker-compose up -d --scale helixagent=1
 ```
 
+## Remote Deployment with Podman
+
+When deploying on systems with Podman instead of Docker, follow these additional steps:
+
+### 1. Redis Port Conflict Resolution
+If Redis port 6379 is already in use on the host, change the container port mapping:
+```yaml
+# In docker-compose.yml
+services:
+  redis:
+    ports:
+      - "6380:6379"
+```
+Update environment variables:
+```bash
+REDIS_PORT=6380
+SVC_REDIS_PORT=6380
+```
+
+### 2. Docker Hub Image Prefix
+Podman requires explicit registry prefixes for Docker Hub images. Add `docker.io/` prefix to all image references:
+```dockerfile
+# In Dockerfiles
+FROM docker.io/golang:1.24-alpine
+```
+
+### 3. Missing Source Files
+Ensure all project subdirectories are copied to the remote host:
+- `pkg/` directory (contains API modules)
+- `LLMsVerifier/llm-verifier/` (submodule)
+- `internal/` directory (Go source files)
+- `cmd/helixagent/` (main application source)
+
+Use `scp -r` or `rsync` to copy missing directories.
+
+### 4. Container Health Checks
+Podman's health check syntax differs from Docker. Use `podman-compose` with `--env-file` for environment variables:
+```bash
+podman-compose --env-file .env.remote up -d
+```
+
+### 5. Verification Loop Issues
+If Zen provider causes 401 errors during startup verification, consider setting `OPENCODE_API_KEY` to a dummy value or disabling Zen via environment (if supported). The system will eventually mark Zen as unverified and continue.
+
+### 6. Required Services
+Ensure all required services are running before starting HelixAgent:
+- PostgreSQL (healthy)
+- Redis (healthy)
+- ChromaDB (healthy on port 8001)
+
+Use the provided test script to verify deployment:
+```bash
+REMOTE_PASSWORD="password" ./scripts/test-remote-deployment.sh thinker.local core
+```
+
 ## Support and Resources
 
 ### Documentation

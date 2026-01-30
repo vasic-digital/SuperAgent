@@ -46,7 +46,37 @@ docker-compose up -d
 curl http://localhost:7061/health
 ```
 
-### Option 2: Building from Source
+### Option 2: Remote Deployment with Podman
+
+For systems using Podman instead of Docker (common on RHEL, Fedora, etc.):
+
+```bash
+# Clone repository to remote host
+sshpass -p password ssh user@remote-host "git clone https://github.com/your-org/helix-agent.git"
+
+# Copy environment file
+scp .env.example user@remote-host:helix-agent/.env.remote
+
+# Start core services
+sshpass -p password ssh user@remote-host "cd helix-agent && podman-compose --env-file .env.remote up -d postgres redis chromadb"
+
+# Build and start HelixAgent
+sshpass -p password ssh user@remote-host "cd helix-agent && podman build -t helixagent_helixagent:latest ."
+sshpass -p password ssh user@remote-host "cd helix-agent && podman-compose --env-file .env.remote up -d helixagent"
+
+# Verify deployment
+curl http://remote-host:7061/health
+```
+
+**Important Fixes Applied:**
+- Redis port conflict: Map container port 6379 to host port 6380
+- Docker Hub images: Add `docker.io/` prefix to all image references
+- Missing source files: Ensure `pkg/`, `internal/`, `cmd/helixagent/` directories are copied
+- ChromaDB health: Verify service is running on port 8001
+
+For detailed troubleshooting, see the [Remote Deployment Guide](../deployment/general-deployment-guide.md#remote-deployment-with-podman).
+
+### Option 3: Building from Source
 
 ```bash
 # Clone the repository
