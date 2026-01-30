@@ -59,8 +59,12 @@ func TestDefaultServicesConfig(t *testing.T) {
 		if cfg.Cognee.Port != "8000" {
 			t.Errorf("Expected Cognee port '8000', got %s", cfg.Cognee.Port)
 		}
-		if !cfg.Cognee.Required {
-			t.Error("Expected Cognee to be required")
+		// Cognee is no longer required - disabled by default for Mem0 migration
+		if cfg.Cognee.Required {
+			t.Error("Expected Cognee to NOT be required (disabled for Mem0)")
+		}
+		if cfg.Cognee.Enabled {
+			t.Error("Expected Cognee to be disabled by default (replaced by Mem0)")
 		}
 		if cfg.Cognee.HealthType != "http" {
 			t.Errorf("Expected Cognee health type 'http', got %s", cfg.Cognee.HealthType)
@@ -71,8 +75,8 @@ func TestDefaultServicesConfig(t *testing.T) {
 	})
 
 	t.Run("ChromaDB defaults", func(t *testing.T) {
-		if cfg.ChromaDB.Port != "8100" {
-			t.Errorf("Expected ChromaDB port '8100', got %s", cfg.ChromaDB.Port)
+		if cfg.ChromaDB.Port != "8001" {
+			t.Errorf("Expected ChromaDB port '8001', got %s", cfg.ChromaDB.Port)
 		}
 		if !cfg.ChromaDB.Required {
 			t.Error("Expected ChromaDB to be required")
@@ -245,12 +249,17 @@ func TestRequiredEndpoints(t *testing.T) {
 	cfg := DefaultServicesConfig()
 	required := cfg.RequiredEndpoints()
 
-	// Should contain the 4 required services
-	expectedRequired := []string{"postgresql", "redis", "cognee", "chromadb"}
+	// Should contain the 3 required services (Cognee removed - replaced by Mem0)
+	expectedRequired := []string{"postgresql", "redis", "chromadb"}
 	for _, name := range expectedRequired {
 		if _, ok := required[name]; !ok {
 			t.Errorf("Expected %s in required endpoints", name)
 		}
+	}
+
+	// Cognee should NOT be in required endpoints (disabled for Mem0 migration)
+	if _, ok := required["cognee"]; ok {
+		t.Error("Cognee should NOT be in required endpoints (disabled for Mem0)")
 	}
 
 	// Should NOT contain optional services
