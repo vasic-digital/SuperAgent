@@ -43,13 +43,37 @@ redis:
 
 cognee:
   # Cognee knowledge graph configuration
-  # BUGFIX APPLIED: extract_subgraph_chunks.py now handles both str and CogneeGraph types
-  # See docs/integration/COGNEE_SUBMODULE.md for details
-  enabled: true   # ENABLED - bugfix applied and validated
+  # PERMANENTLY DISABLED: Replaced by Mem0 memory system
+  # Root cause: RAG_COMPLETION hangs on empty database (>35s timeout)
+  enabled: false   # DISABLED - Mem0 is now primary memory provider
   base_url: "http://localhost:8000"
   api_key: ""
-  auto_cognify: false  # Disabled to avoid timeout issues with memify endpoint
-  timeout: "30s"       # Reasonable timeout for search operations
+  auto_cognify: false
+  timeout: "30s"
+
+# Mem0-Style Memory System (PRIMARY MEMORY PROVIDER)
+memory:
+  # Storage backend
+  storage_type: "postgres"  # Use existing PostgreSQL with pgvector
+  vectordb_endpoint: "localhost:5432"
+  vectordb_api_key: ""
+  vectordb_collection: "helixagent_memories"
+
+  # Embedding configuration (using OpenAI)
+  embedding_model: "text-embedding-3-small"
+  embedding_endpoint: "${OPENAI_API_KEY}"
+  embedding_dimension: 1536
+
+  # Memory management settings
+  max_memories_per_user: 10000
+  memory_ttl: 0  # 0 = no expiration
+  enable_graph: true  # Entity graph support
+  enable_compression: true
+
+  # LLM for memory extraction (using ensemble)
+  extractor_model: "gpt-4"
+  extractor_endpoint: "${OPENAI_API_KEY}"
+  extractor_api_key: "${OPENAI_API_KEY}"
 
 llm_providers:
   # OpenAI (primary for development)
@@ -196,11 +220,11 @@ ai_debate:
   max_rounds: 3
   consensus_threshold: 0.6
 
-  # Cognee integration - BUGFIX APPLIED
-  # FIXED: extract_subgraph_chunks.py now handles both str and CogneeGraph types
-  # Search endpoint works (<2s response), memify/cognify disabled to avoid timeouts
+  # Cognee integration - PERMANENTLY DISABLED
+  # Replaced by Mem0 memory system
+  # Root cause: RAG_COMPLETION hangs on empty database, blocking all requests
   cognee:
-    enabled: true   # ENABLED - bugfix applied and validated
+    enabled: false   # DISABLED - Mem0 is now primary memory provider
     api_url: "http://localhost:8000"
     dataset_name: "helixagent_dev_debates"
     # Authentication (form-encoded OAuth2 style)
@@ -377,8 +401,8 @@ services:
   cognee:
     host: "localhost"
     port: "8000"
-    enabled: true     # Container starts (health check passes)
-    required: true    # MANDATORY - Bugfix applied, system depends on Cognee
+    enabled: false    # DISABLED - Replaced by Mem0 memory system
+    required: false   # NOT REQUIRED - Mem0 is now primary memory provider
     remote: false
     health_path: "/"
     health_type: "http"
