@@ -1,5 +1,5 @@
 # Multi-stage build for optimized production image
-FROM golang:1.24-alpine AS builder
+FROM docker.io/golang:1.24-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata curl make gcc musl-dev
@@ -23,7 +23,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     ./cmd/helixagent
 
 # Production stage
-FROM alpine:latest
+FROM docker.io/alpine:latest
 
 # Install runtime dependencies
 RUN apk --no-cache add \
