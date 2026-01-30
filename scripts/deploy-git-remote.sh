@@ -38,11 +38,15 @@ usage() {
     echo "  --compose-file Docker compose file (default: docker-compose.yml)"
     echo "  --remote-dir   Directory on remote host (default: /opt/helixagent)"
     echo "  --ssh-key      Path to SSH private key (default: ~/.ssh/id_rsa)"
+    echo "  --git          Use Git clone/update instead of SCP (requires git on remote)"
+    echo "  --git-repo     Git repository URL (default: current origin)"
     echo ""
     echo "Environment variables (override with options):"
     echo "  SSH_KEY       Path to SSH private key (default: ~/.ssh/id_rsa)"
     echo "  COMPOSE_FILE  Docker compose file (default: docker-compose.yml)"
     echo "  REMOTE_DIR    Directory on remote host (default: /opt/helixagent)"
+    echo "  GIT_MODE      Enable git mode (1) or SCP mode (0)"
+    echo "  GIT_REPO      Git repository URL"
     exit 1
 }
 
@@ -52,6 +56,8 @@ SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_rsa}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 REMOTE_DIR="${REMOTE_DIR:-/opt/helixagent}"
 SERVICE_NAME=""
+GIT_MODE="${GIT_MODE:-0}"
+GIT_REPO="${GIT_REPO:-}"
 
 # Parse options
 POSITIONAL=()
@@ -78,6 +84,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --ssh-key)
             SSH_KEY="$2"
+            shift 2
+            ;;
+        --git)
+            GIT_MODE=1
+            shift
+            ;;
+        --git-repo)
+            GIT_REPO="$2"
             shift 2
             ;;
         -*)
@@ -213,6 +227,20 @@ else
         COMPOSE_CMD="docker-compose"
     fi
     log_success "Docker Compose is available"
+fi
+
+# Check Git availability (if Git mode)
+if [ "$GIT_MODE" = "1" ]; then
+    log_info "Checking Git on remote host..."
+    if [ $DRY_RUN -eq 1 ]; then
+        log_success "Git is available (dry run)"
+    else
+        if ! ssh_cmd "command -v git" >/dev/null 2>&1; then
+            log_error "Git not found on remote host"
+            exit 1
+        fi
+        log_success "Git is available"
+    fi
 fi
 
 # Create remote directory
