@@ -1,0 +1,270 @@
+# Big Data Performance Configuration
+# Optimized settings for production deployments
+
+kafka:
+  # Producer settings
+  producer:
+    compression_type: lz4              # lz4 for balance, snappy for CPU-constrained, zstd for best compression
+    batch_size: 32768                  # 32KB batches (increase for higher throughput)
+    linger_ms: 10                      # Wait up to 10ms to batch messages
+    buffer_memory: 67108864            # 64MB producer buffer
+    max_in_flight_requests: 5          # Pipeline up to 5 requests
+    acks: 1                            # Wait for leader ack (use 'all' for durability)
+    retries: 3                         # Retry failed sends
+    max_request_size: 1048576          # 1MB max message size
+
+  # Consumer settings
+  consumer:
+    fetch_min_bytes: 1024              # Minimum 1KB per fetch
+    fetch_max_wait_ms: 500             # Wait up to 500ms to accumulate data
+    max_partition_fetch_bytes: 1048576 # 1MB per partition fetch
+    session_timeout_ms: 30000          # 30s session timeout
+    heartbeat_interval_ms: 3000        # Heartbeat every 3s
+    max_poll_records: 500              # Process 500 records per poll
+    auto_offset_reset: latest          # Start from latest on new consumer group
+    enable_auto_commit: true           # Auto-commit offsets
+    auto_commit_interval_ms: 5000      # Commit every 5s
+    isolation_level: read_uncommitted  # Don't wait for transactional commits
+
+  # Topic configurations
+  topics:
+    memory_events:
+      partitions: 12                   # 12 partitions for parallelism
+      replication_factor: 3            # 3 replicas for durability
+      min_in_sync_replicas: 2          # Require 2 in-sync replicas
+      retention_ms: 604800000          # 7 days retention
+      segment_ms: 86400000             # 1 day segments
+      compression_type: lz4
+
+    entities_updates:
+      partitions: 8
+      replication_factor: 3
+      min_in_sync_replicas: 2
+      retention_ms: 2592000000         # 30 days retention
+      segment_ms: 86400000
+      compression_type: lz4
+
+    relationships_updates:
+      partitions: 8
+      replication_factor: 3
+      min_in_sync_replicas: 2
+      retention_ms: 2592000000
+      segment_ms: 86400000
+      compression_type: lz4
+
+    analytics_providers:
+      partitions: 6
+      replication_factor: 2
+      min_in_sync_replicas: 1
+      retention_ms: 604800000
+      segment_ms: 86400000
+      compression_type: lz4
+
+    analytics_debates:
+      partitions: 4
+      replication_factor: 2
+      min_in_sync_replicas: 1
+      retention_ms: 2592000000
+      segment_ms: 86400000
+      compression_type: lz4
+
+    conversations:
+      partitions: 16                   # High parallelism for main event stream
+      replication_factor: 3
+      min_in_sync_replicas: 2
+      retention_ms: 31536000000        # 1 year retention
+      segment_ms: 86400000
+      compression_type: zstd           # Best compression for long-term storage
+
+clickhouse:
+  # Connection pool
+  max_open_conns: 10                   # Max connections in pool
+  max_idle_conns: 5                    # Idle connections
+  conn_max_lifetime: 3600              # 1 hour connection lifetime
+  conn_max_idle_time: 600              # 10 minutes idle timeout
+
+  # Query settings
+  max_query_size: 262144               # 256KB max query size
+  max_execution_time: 30               # 30s max execution time
+  max_memory_usage: 10737418240        # 10GB max memory per query
+  max_rows_to_read: 1000000            # 1M max rows to read
+  max_result_rows: 100000              # 100K max result rows
+
+  # Performance settings
+  max_threads: 8                       # Use 8 threads per query
+  max_insert_threads: 4                # 4 threads for inserts
+  use_uncompressed_cache: 1            # Enable uncompressed cache
+  compress: 1                          # Enable compression
+  max_compress_block_size: 1048576     # 1MB compression blocks
+  min_compress_block_size: 65536       # 64KB min block size
+
+  # Materialized views settings
+  materialized_views:
+    enable: true
+    refresh_interval: 60               # Refresh every 60 seconds
+
+  # Table engine settings
+  merge_tree:
+    merge_max_block_size: 8192         # 8K rows per merge block
+    index_granularity: 8192            # 8K rows per index granule
+    max_parts_in_total: 1000           # Max parts before forced merge
+    parts_to_throw_insert: 300         # Reject inserts after this many parts
+    inactive_parts_to_delay_insert: 150 # Delay inserts after this many parts
+
+neo4j:
+  # Memory settings (adjust based on available RAM)
+  heap_initial_size: 4G                # Initial heap size
+  heap_max_size: 6G                    # Max heap size
+  pagecache_size: 8G                   # Page cache size
+
+  # Query settings
+  query_cache_size: 1000               # Cache 1000 queries
+  transaction_timeout: 30s             # 30s transaction timeout
+  dbms_transaction_concurrent_maximum: 1000 # Max concurrent transactions
+
+  # Index settings
+  default_database: helixagent
+  indexes:
+    entity_id: true                    # Index on Entity.id
+    entity_type: true                  # Index on Entity.type
+    entity_name: true                  # Index on Entity.name
+    relationship_type: true            # Index on relationship types
+
+  # Performance settings
+  bolt_thread_pool_min_size: 5
+  bolt_thread_pool_max_size: 400
+  bolt_thread_pool_keep_alive: 5m
+
+infinite_context:
+  # Cache settings
+  cache:
+    enabled: true
+    size: 1000                         # Cache 1000 conversations
+    ttl: 1800                          # 30 minutes TTL
+    eviction_policy: lru               # Least Recently Used
+
+  # Compression settings
+  compression:
+    enabled: true
+    default_strategy: hybrid           # hybrid, window, entity, full
+    target_ratio: 0.30                 # Target 30% of original size
+    quality_threshold: 0.90            # Minimum 90% quality score
+    max_summary_tokens: 500            # Max tokens per summary
+    preserve_recent_count: 50          # Always keep last 50 messages
+
+  # Replay settings
+  replay:
+    max_concurrent: 10                 # Max 10 concurrent replays
+    timeout: 30s                       # 30s replay timeout
+    batch_size: 1000                   # Fetch 1000 messages per batch
+
+distributed_memory:
+  # Synchronization settings
+  sync:
+    batch_size: 100                    # Sync 100 memories per batch
+    interval: 1s                       # Sync every second
+    max_lag: 5s                        # Alert if lag > 5s
+
+  # CRDT settings
+  crdt:
+    strategy: merge_all                # merge_all or last_write_wins
+    version_vector_size: 100           # Track last 100 versions
+    conflict_resolution_timeout: 5s    # 5s timeout for conflict resolution
+
+  # Snapshot settings
+  snapshot:
+    enabled: true
+    interval: 300s                     # Snapshot every 5 minutes
+    retention_count: 12                # Keep last 12 snapshots (1 hour)
+    compression: true
+
+knowledge_graph:
+  # Streaming settings
+  streaming:
+    batch_size: 50                     # Process 50 entities per batch
+    flush_interval: 1s                 # Flush every second
+    max_retries: 3                     # Retry failed updates 3 times
+
+  # Graph settings
+  graph:
+    max_depth: 3                       # Max relationship depth for queries
+    max_results: 100                   # Max results per query
+    similarity_threshold: 0.8          # Min similarity for entity matching
+
+  # Entity deduplication
+  deduplication:
+    enabled: true
+    similarity_threshold: 0.95         # Merge entities with >95% similarity
+    batch_size: 100                    # Deduplicate 100 entities per batch
+
+analytics:
+  # Aggregation settings
+  aggregation:
+    window_size: 3600s                 # 1 hour windows
+    slide_interval: 300s               # Slide every 5 minutes
+    late_data_threshold: 600s          # Accept data up to 10 minutes late
+
+  # Metrics retention
+  retention:
+    raw_metrics: 7d                    # Keep raw metrics for 7 days
+    hourly_aggregates: 90d             # Keep hourly aggregates for 90 days
+    daily_aggregates: 365d             # Keep daily aggregates for 1 year
+
+  # Query optimization
+  query:
+    cache_enabled: true
+    cache_ttl: 60s                     # Cache query results for 60s
+    max_rows: 10000                    # Max 10K rows per query
+
+cross_session_learning:
+  # Pattern extraction settings
+  pattern_extraction:
+    min_confidence: 0.7                # Minimum 70% confidence
+    min_frequency: 3                   # Must occur at least 3 times
+    window_size: 100                   # Analyze last 100 conversations
+
+  # Insight generation
+  insights:
+    max_per_type: 100                  # Max 100 insights per type
+    ttl: 86400s                        # Insights valid for 24 hours
+    update_interval: 3600s             # Update every hour
+
+# Resource limits (Docker)
+resources:
+  kafka:
+    cpus: 4.0
+    memory: 4G
+
+  clickhouse:
+    cpus: 8.0
+    memory: 16G
+
+  neo4j:
+    cpus: 4.0
+    memory: 12G
+
+  spark_master:
+    cpus: 2.0
+    memory: 4G
+
+  spark_worker:
+    cpus: 8.0
+    memory: 16G
+
+# Monitoring thresholds
+monitoring:
+  kafka:
+    consumer_lag_threshold: 10000      # Alert if lag > 10K messages
+    producer_error_rate_threshold: 0.01 # Alert if error rate > 1%
+
+  clickhouse:
+    query_duration_p95_threshold: 1000 # Alert if p95 > 1s
+    memory_usage_threshold: 0.90       # Alert if memory > 90%
+
+  neo4j:
+    transaction_duration_p95_threshold: 500 # Alert if p95 > 500ms
+    heap_usage_threshold: 0.85         # Alert if heap > 85%
+
+  memory_sync:
+    lag_threshold: 5000                # Alert if sync lag > 5s
+    conflict_rate_threshold: 0.05      # Alert if conflict rate > 5%
