@@ -816,7 +816,8 @@ HelixAgent manages all infrastructure services through a unified `BootManager`:
 
 ### Services Config (`internal/config/config.go`)
 - `ServiceEndpoint` struct: host, port, url, enabled, required, remote, health_type, health_path, timeout, retry_count, compose_file, service_name
-- `ServicesConfig`: PostgreSQL, Redis, Cognee, ChromaDB, Prometheus, Grafana, Neo4j, Kafka, RabbitMQ, Qdrant, Weaviate, LangChain, LlamaIndex, MCPServers
+- `ServicesConfig`: PostgreSQL, Redis, ChromaDB (required); Cognee (optional, disabled by default); Prometheus, Grafana, Neo4j, Kafka, RabbitMQ, Qdrant, Weaviate, LangChain, LlamaIndex, MCPServers
+- **Memory System**: Mem0 is the primary memory provider (PostgreSQL backend with entity graphs). Cognee can be enabled via `COGNEE_ENABLED=true` if needed.
 - `DefaultServicesConfig()`, `LoadServicesFromEnv()`, `AllEndpoints()`, `RequiredEndpoints()`, `ResolvedURL()`
 - Environment override pattern: `SVC_<SERVICE>_<FIELD>` (e.g., `SVC_POSTGRESQL_HOST`, `SVC_REDIS_REMOTE=true`)
 
@@ -854,7 +855,7 @@ Environment variables in `.env.example`:
 - Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
 - LLM providers: `CLAUDE_API_KEY`, `DEEPSEEK_API_KEY`, `GEMINI_API_KEY`, `OPENCODE_API_KEY` (Zen), etc.
 - OAuth2: `CLAUDE_CODE_USE_OAUTH_CREDENTIALS`, `QWEN_CODE_USE_OAUTH_CREDENTIALS`
-- Cognee: `COGNEE_AUTH_EMAIL`, `COGNEE_AUTH_PASSWORD` (form-encoded OAuth2 auth)
+- Cognee (optional): `COGNEE_ENABLED=true`, `COGNEE_AUTH_EMAIL`, `COGNEE_AUTH_PASSWORD` (form-encoded OAuth2 auth, disabled by default - Mem0 is primary memory provider)
 
 ### OAuth2 Authentication (Limitations)
 
@@ -947,7 +948,9 @@ OPENCODE_API_KEY=your-api-key  # Optional - CLI proxy for free mode
 ./challenges/scripts/cli_proxy_challenge.sh  # 50 tests - validates CLI proxy mechanism
 ```
 
-### Cognee Authentication
+### Cognee Authentication (Optional - Disabled by Default)
+
+**Note**: Cognee is disabled by default in favor of Mem0 as the primary memory provider. To enable Cognee, set `COGNEE_ENABLED=true` in your environment.
 
 Default credentials (development only):
 ```
@@ -1072,7 +1075,7 @@ Dynamic provider selection based on real-time verification scores. Ollama is DEP
 | LSP | `/v1/lsp` | Language Server Protocol |
 | Embeddings | `/v1/embeddings` | Vector embeddings |
 | Vision | `/v1/vision` | Image analysis, OCR |
-| Cognee | `/v1/cognee` | Knowledge graph & RAG |
+| Cognee | `/v1/cognee` | Knowledge graph & RAG (optional, disabled by default - use Mem0 instead) |
 | Startup | `/v1/startup/verification` | LLMsVerifier re-evaluation status |
 
 Fallback mechanism: Routes to strongest LLM by LLMsVerifier score, falls back to next on failure.
