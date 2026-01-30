@@ -777,7 +777,7 @@ func TestFallbackChainIncludesWorkingProviders(t *testing.T) {
 		}
 
 		// Get fallbacks for an OAuth primary (Claude)
-		fallbacks := config.getFallbackLLMs("claude", ClaudeModels.Opus45, 2)
+		fallbacks := config.getFallbackLLMs("claude", ClaudeModels.Opus45, true, 2)
 
 		// CRITICAL: Fallbacks for OAuth primary should be non-OAuth providers
 		require.Len(t, fallbacks, 2, "Should get 2 fallbacks")
@@ -813,7 +813,7 @@ func TestFallbackChainIncludesWorkingProviders(t *testing.T) {
 			{ProviderName: "zen", ModelName: "big-pickle", Score: 8.0, IsOAuth: false, Verified: true},
 		}
 
-		fallbacks := config.getFallbackLLMs("claude", ClaudeModels.Opus45, 2)
+		fallbacks := config.getFallbackLLMs("claude", ClaudeModels.Opus45, true, 2)
 
 		// Count how many fallbacks are from reliable providers
 		reliableCount := 0

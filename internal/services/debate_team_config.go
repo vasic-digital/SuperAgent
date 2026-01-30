@@ -952,8 +952,8 @@ func (dtc *DebateTeamConfig) assignAllFallbacks() {
 			continue
 		}
 
-		// Get fallback LLMs (different from primary if possible)
-		fallbacks := dtc.getFallbackLLMs(member.ProviderName, member.ModelName, FallbacksPerPosition)
+		// Get fallback LLMs (different from primary if possible, with OAuth diversity)
+		fallbacks := dtc.getFallbackLLMs(member.ProviderName, member.ModelName, member.IsOAuth, FallbacksPerPosition)
 
 		// Initialize Fallbacks slice
 		member.Fallbacks = make([]*DebateTeamMember, 0, len(fallbacks))
@@ -985,11 +985,13 @@ func (dtc *DebateTeamConfig) assignAllFallbacks() {
 	}
 }
 
-// getFallbackLLMs returns fallback LLMs based on score (strongest first)
-// NO OAuth priority - all providers are treated equally based on their score
+// getFallbackLLMs returns fallback LLMs based on score with OAuth diversity
+// When primary is OAuth, ensures at least one non-OAuth fallback for reliability
+// Selects by score (strongest first), but ensures OAuth/non-OAuth diversity
 // If not enough unique LLMs, reuses strongest ones (independent instances)
-func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel string, count int) []*VerifiedLLM {
+func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel string, primaryIsOAuth bool, count int) []*VerifiedLLM {
 	fallbacks := make([]*VerifiedLLM, 0, count)
+	hasNonOAuth := false
 
 	// First pass: Select different LLMs from primary (verifiedLLMs already sorted by score)
 	for _, llm := range dtc.verifiedLLMs {
@@ -1012,6 +1014,9 @@ func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel strin
 			continue
 		}
 		fallbacks = append(fallbacks, llm)
+		if !llm.IsOAuth {
+			hasNonOAuth = true
+		}
 		dtc.logger.WithFields(logrus.Fields{
 			"primary_provider":  primaryProvider,
 			"fallback_provider": llm.ProviderName,
@@ -1019,6 +1024,47 @@ func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel strin
 			"fallback_score":    llm.Score,
 			"fallback_rank":     len(fallbacks),
 		}).Debug("Selected fallback by score")
+	}
+
+	// OAuth diversity check: If primary is OAuth but no non-OAuth fallbacks, ensure we have one
+	if primaryIsOAuth && !hasNonOAuth {
+		// Find highest-scoring non-OAuth provider not already in fallbacks
+		var nonOAuthCandidate *VerifiedLLM
+		for _, llm := range dtc.verifiedLLMs {
+			if llm.IsOAuth {
+				continue // Skip OAuth providers
+			}
+			// Check if already in fallbacks
+			alreadyUsed := false
+			for _, fb := range fallbacks {
+				if fb.ProviderName == llm.ProviderName && fb.ModelName == llm.ModelName {
+					alreadyUsed = true
+					break
+				}
+			}
+			if !alreadyUsed {
+				nonOAuthCandidate = llm
+				break
+			}
+		}
+
+		// If we found a non-OAuth candidate
+		if nonOAuthCandidate != nil {
+			if len(fallbacks) < count {
+				// Add it if there's space
+				fallbacks = append(fallbacks, nonOAuthCandidate)
+			} else {
+				// Replace the last (lowest-scoring) OAuth fallback with non-OAuth
+				fallbacks[len(fallbacks)-1] = nonOAuthCandidate
+			}
+			dtc.logger.WithFields(logrus.Fields{
+				"primary_provider":  primaryProvider,
+				"fallback_provider": nonOAuthCandidate.ProviderName,
+				"fallback_model":    nonOAuthCandidate.ModelName,
+				"fallback_score":    nonOAuthCandidate.Score,
+				"reason":            "OAuth diversity (OAuth primary needs non-OAuth fallback)",
+			}).Debug("Added non-OAuth fallback for diversity")
+		}
 	}
 
 	// Second pass: If not enough unique LLMs, reuse strongest ones (independent instances)
