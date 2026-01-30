@@ -6,7 +6,7 @@ version: '3.8'
 services:
   # RabbitMQ Message Broker
   rabbitmq:
-    image: rabbitmq:3.12-management
+    image: docker.io/rabbitmq:3.12-management
     container_name: helixagent-rabbitmq
     hostname: rabbitmq
     ports:
@@ -35,7 +35,7 @@ services:
 
   # Apache Zookeeper (required for Kafka)
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
+    image: docker.io/confluentinc/cp-zookeeper:7.5.0
     container_name: helixagent-zookeeper
     hostname: zookeeper
     ports:
@@ -62,7 +62,7 @@ services:
 
   # Apache Kafka Message Broker
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: docker.io/confluentinc/cp-kafka:7.5.0
     container_name: helixagent-kafka
     hostname: kafka
     depends_on:
@@ -104,7 +104,7 @@ services:
 
   # Kafka Schema Registry
   schema-registry:
-    image: confluentinc/cp-schema-registry:7.5.0
+    image: docker.io/confluentinc/cp-schema-registry:7.5.0
     container_name: helixagent-schema-registry
     hostname: schema-registry
     depends_on:
@@ -131,7 +131,7 @@ services:
 
   # Kafka UI (optional, for debugging)
   kafka-ui:
-    image: provectuslabs/kafka-ui:latest
+    image: docker.io/provectuslabs/kafka-ui:latest
     container_name: helixagent-kafka-ui
     depends_on:
       kafka:
@@ -154,7 +154,7 @@ services:
 
   # Kafka Topic Initialization
   kafka-init:
-    image: confluentinc/cp-kafka:7.5.0
+    image: docker.io/confluentinc/cp-kafka:7.5.0
     container_name: helixagent-kafka-init
     depends_on:
       kafka:
