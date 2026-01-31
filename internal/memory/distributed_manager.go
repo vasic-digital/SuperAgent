@@ -394,6 +394,78 @@ func (dmm *DistributedMemoryManager) CreateSnapshot(ctx context.Context, userID 
 	return snapshot, nil
 }
 
+// GetSyncStatus returns the status of distributed memory synchronization
+func (dmm *DistributedMemoryManager) GetSyncStatus(ctx context.Context) map[string]interface{} {
+	dmm.mu.RLock()
+	defer dmm.mu.RUnlock()
+
+	// Get vector clock
+	vc := dmm.GetVectorClock()
+	vcMap := make(map[string]int64)
+	for node, count := range vc {
+		vcMap[node] = count
+	}
+
+	// Get event log stats (if available)
+	eventCount := 0
+	if dmm.eventLog != nil {
+		events, _ := dmm.eventLog.GetEventsSince(time.Now().Add(-24 * time.Hour))
+		eventCount = len(events)
+	}
+
+	// Local memory stats would require store.Count method; skip for now
+
+	// Get subscriber count
+	subscriberCount := len(dmm.subscribers)
+
+	return map[string]interface{}{
+		"node_id":           dmm.nodeID,
+		"running":           dmm.running,
+		"vector_clock":      vcMap,
+		"event_count_24h":   eventCount,
+		"subscriber_count":  subscriberCount,
+		"kafka_configured":  dmm.kafkaPublisher != nil,
+		"conflict_resolver": dmm.conflictResolver != nil,
+		"sync_status":       "active", // Could be more detailed
+		"timestamp":         time.Now(),
+	}
+}
+
+// ForceSync forces synchronization with other nodes
+func (dmm *DistributedMemoryManager) ForceSync(ctx context.Context) error {
+	dmm.mu.Lock()
+	defer dmm.mu.Unlock()
+
+	if dmm.kafkaPublisher == nil {
+		return fmt.Errorf("Kafka publisher not configured")
+	}
+
+	// Create a sync request event
+	event := NewMemoryEvent(MemoryEventSyncRequest, dmm.nodeID, "", "")
+	event.VectorClock = dmm.vectorClock.String()
+	event.Timestamp = time.Now()
+
+	// Publish sync request
+	data, err := event.ToJSON()
+	if err != nil {
+		return fmt.Errorf("failed to serialize sync event: %w", err)
+	}
+
+	msg := messaging.NewMessage(string(event.EventType), data)
+	msg.SetHeader("node_id", event.NodeID)
+	msg.SetHeader("sync_request", "true")
+
+	if err := dmm.kafkaPublisher.Publish(ctx, TopicMemoryEvents, msg); err != nil {
+		return fmt.Errorf("failed to publish sync request: %w", err)
+	}
+
+	dmm.logger.WithFields(logrus.Fields{
+		"node_id": dmm.nodeID,
+	}).Info("Force sync requested")
+
+	return nil
+}
+
 // Kafka topic for memory events
 const (
 	TopicMemoryEvents    = "helixagent.memory.events"

@@ -106,9 +106,31 @@ func (dsw *DebateServiceWrapper) publishDebateCompletion(ctx context.Context, co
 	// Determine winner and confidence from consensus
 	winner := ""
 	confidence := 0.0
+	winningParticipantName := ""
+	winnerProvider := ""
+	winnerModel := ""
 	if result.Consensus != nil {
 		winner = result.Consensus.FinalPosition
 		confidence = result.Consensus.Confidence
+		// Get the actual winning participant name from voting summary
+		if result.Consensus.VotingSummary.Winner != "" {
+			winningParticipantName = result.Consensus.VotingSummary.Winner
+			// Find the winning participant to get provider and model
+			for _, p := range result.Participants {
+				if p.ParticipantName == winningParticipantName {
+					winnerProvider = p.LLMProvider
+					winnerModel = p.LLMModel
+					break
+				}
+			}
+		}
+	}
+	// Fallback to extraction from winner string if provider/model not found
+	if winnerProvider == "" {
+		winnerProvider = dsw.extractProviderFromWinner(winner)
+	}
+	if winnerModel == "" {
+		winnerModel = dsw.extractModelFromWinner(winner)
 	}
 
 	// Publish to Kafka for conversation event log
@@ -120,13 +142,13 @@ func (dsw *DebateServiceWrapper) publishDebateCompletion(ctx context.Context, co
 		Topic:          config.Topic,
 		Rounds:         result.TotalRounds,
 		Winner:         winner,
-		WinnerProvider: dsw.extractProviderFromWinner(winner),
-		WinnerModel:    dsw.extractModelFromWinner(winner),
+		WinnerProvider: winnerProvider,
+		WinnerModel:    winnerModel,
 		Confidence:     confidence,
 		Duration:       duration,
 		StartedAt:      result.StartTime,
 		CompletedAt:    result.EndTime,
-		Participants:   dsw.convertParticipants(result.Participants),
+		Participants:   dsw.convertParticipants(result.Participants, winningParticipantName),
 		Outcome:        dsw.determineOutcome(result),
 	}
 
@@ -201,17 +223,35 @@ func (dsw *DebateServiceWrapper) extractModelFromWinner(winner string) string {
 	return ""
 }
 
-func (dsw *DebateServiceWrapper) convertParticipants(participants []services.ParticipantResponse) []DebateParticipant {
+func (dsw *DebateServiceWrapper) convertParticipants(participants []services.ParticipantResponse, winningParticipantName string) []DebateParticipant {
 	result := make([]DebateParticipant, len(participants))
+
 	for i, p := range participants {
+		tokensUsed := 0
+		if p.Metadata != nil {
+			if val, ok := p.Metadata["tokens_used"]; ok {
+				switch v := val.(type) {
+				case int:
+					tokensUsed = v
+				case float64:
+					tokensUsed = int(v)
+				}
+			}
+		}
+
+		won := false
+		if winningParticipantName != "" && p.ParticipantName == winningParticipantName {
+			won = true
+		}
+
 		result[i] = DebateParticipant{
 			Provider:     p.LLMProvider,
 			Model:        p.LLMModel,
 			Position:     p.Role,
 			ResponseTime: int(p.ResponseTime.Milliseconds()),
-			TokensUsed:   0, // TODO: get from metadata if available
+			TokensUsed:   tokensUsed,
 			Confidence:   p.Confidence,
-			Won:          false, // TODO: determine if this participant won
+			Won:          won,
 		}
 	}
 	return result
