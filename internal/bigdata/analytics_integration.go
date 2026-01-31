@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"dev.helix.agent/pkg/messaging"
+	"dev.helix.agent/internal/messaging"
 	"github.com/sirupsen/logrus"
 )
 
