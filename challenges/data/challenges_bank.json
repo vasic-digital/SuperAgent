@@ -3492,7 +3492,9 @@
       "script": "challenges/scripts/opencode_conversation_challenge.sh",
       "enabled": true,
       "priority": 43,
-      "dependencies": ["mcp_servers_usage"],
+      "dependencies": [
+        "mcp_servers_usage"
+      ],
       "tags": [
         "opencode",
         "conversation",
@@ -3510,7 +3512,9 @@
       "script": "challenges/scripts/zen_provider_challenge.sh",
       "enabled": true,
       "priority": 44,
-      "dependencies": ["provider_verification"],
+      "dependencies": [
+        "provider_verification"
+      ],
       "tags": [
         "zen",
         "opencode",
@@ -3529,7 +3533,9 @@
       "script": "challenges/scripts/startup_scoring_challenge.sh",
       "enabled": true,
       "priority": 45,
-      "dependencies": ["provider_verification"],
+      "dependencies": [
+        "provider_verification"
+      ],
       "tags": [
         "startup",
         "scoring",
@@ -3639,7 +3645,9 @@
       "script": "challenges/scripts/stress_resilience_challenge.sh",
       "enabled": true,
       "priority": 65,
-      "dependencies": ["parallel_execution"],
+      "dependencies": [
+        "parallel_execution"
+      ],
       "tags": [
         "stress",
         "resilience",
@@ -3703,6 +3711,95 @@
           "message": "All generated configurations must pass validation"
         }
       ]
+    },
+    {
+      "id": "bigdata_integration",
+      "name": "BigData Integration Challenge",
+      "description": "Validate BigData integration components: Infinite Context, Distributed Memory, Knowledge Graph Streaming, ClickHouse Analytics, Cross-session Learning",
+      "category": "integration",
+      "dependencies": [],
+      "estimated_duration": "2-5 minutes",
+      "binary_only": false,
+      "script": "../scripts/bigdata_integration_challenge.sh",
+      "inputs": [
+        {
+          "name": "source_code",
+          "source": ".",
+          "required": true,
+          "description": "HelixAgent source code"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "bigdata_integration_results.json",
+          "type": "json",
+          "description": "BigData integration test results"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "file_exists",
+          "target": "integration.go",
+          "message": "integration.go must exist"
+        },
+        {
+          "type": "file_exists",
+          "target": "config_converter.go",
+          "message": "config_converter.go must exist"
+        },
+        {
+          "type": "compilation_success",
+          "target": "bigdata_package",
+          "message": "BigData package must compile"
+        },
+        {
+          "type": "compilation_success",
+          "target": "main_with_bigdata",
+          "message": "Main application with BigData must compile"
+        }
+      ],
+      "metrics": [
+        "tests_total",
+        "tests_passed",
+        "tests_failed",
+        "compilation_time_seconds"
+      ],
+      "phases": [
+        {
+          "id": "file_structure",
+          "name": "File Structure Validation",
+          "description": "Validate BigData integration files exist"
+        },
+        {
+          "id": "configuration",
+          "name": "Configuration Validation",
+          "description": "Validate configuration conversion and structure"
+        },
+        {
+          "id": "api_endpoints",
+          "name": "API Endpoints Validation",
+          "description": "Validate API endpoints are defined"
+        },
+        {
+          "id": "compilation",
+          "name": "Compilation Validation",
+          "description": "Validate BigData integration compiles"
+        }
+      ],
+      "configuration": {
+        "components": [
+          "infinite_context",
+          "distributed_memory",
+          "knowledge_graph_streaming",
+          "clickhouse_analytics",
+          "cross_session_learning"
+        ],
+        "default_enabled": [
+          "infinite_context",
+          "cross_session_learning"
+        ],
+        "graceful_degradation": true
+      }
     }
   ],
   "assertion_types": {

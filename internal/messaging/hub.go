@@ -215,6 +215,33 @@ func (h *MessagingHub) SetFallbackBroker(broker MessageBroker) {
 	h.fallback = broker
 }
 
+// GetTaskQueueBroker returns the task queue broker.
+func (h *MessagingHub) GetTaskQueueBroker() TaskQueueBroker {
+	return h.taskQueue
+}
+
+// GetEventStreamBroker returns the event stream broker.
+func (h *MessagingHub) GetEventStreamBroker() EventStreamBroker {
+	return h.eventStream
+}
+
+// GetFallbackBroker returns the fallback broker.
+func (h *MessagingHub) GetFallbackBroker() MessageBroker {
+	return h.fallback
+}
+
+// GetMessageBroker returns the appropriate broker for general messaging.
+// Prefers event stream broker, falls back to fallback broker if event stream is not available.
+func (h *MessagingHub) GetMessageBroker() MessageBroker {
+	if h.eventStream != nil && h.eventStream.IsConnected() {
+		return h.eventStream
+	}
+	if h.fallback != nil && h.fallback.IsConnected() {
+		return h.fallback
+	}
+	return nil
+}
+
 // IsConnected returns true if the hub is connected.
 func (h *MessagingHub) IsConnected() bool {
 	return h.connected

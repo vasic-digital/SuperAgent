@@ -314,7 +314,7 @@ main() {
         circuit_breaker|error_handling|concurrent_access|graceful_shutdown|\
         health_monitoring|caching_layer|database_operations|plugin_system|\
         session_management|configuration_loading|optimization_semantic_cache|\
-        optimization_structured_output|cognee_integration|openai_compatibility|grpc_api|\
+        optimization_structured_output|cognee_integration|bigdata_integration|openai_compatibility|grpc_api|\
         opencode|oauth_credentials|cli_schema_validation|\
         protocol_challenge|curl_api_challenge|cli_agents_challenge|content_generation_challenge)
             ;;

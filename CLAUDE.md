@@ -857,6 +857,68 @@ Environment variables in `.env.example`:
 - OAuth2: `CLAUDE_CODE_USE_OAUTH_CREDENTIALS`, `QWEN_CODE_USE_OAUTH_CREDENTIALS`
 - Cognee (optional): `COGNEE_ENABLED=true`, `COGNEE_AUTH_EMAIL`, `COGNEE_AUTH_PASSWORD` (form-encoded OAuth2 auth, disabled by default - Mem0 is primary memory provider)
 
+### BigData Integration
+
+HelixAgent includes a BigData integration system that provides advanced capabilities for large-scale AI applications:
+
+**Components:**
+- **Infinite Context Engine**: Compresses and manages long conversation contexts using streaming
+- **Distributed Memory**: CRDT-based memory synchronization across multiple nodes  
+- **Knowledge Graph Streaming**: Real-time Neo4j graph updates from AI conversations
+- **ClickHouse Analytics**: High-performance analytics for conversation metrics
+- **Cross-session Learning**: Pattern learning across user sessions using Kafka streams
+
+**Configuration Environment Variables:**
+```bash
+# Enable/disable components (defaults shown)
+BIGDATA_ENABLE_INFINITE_CONTEXT=true
+BIGDATA_ENABLE_DISTRIBUTED_MEMORY=false
+BIGDATA_ENABLE_KNOWLEDGE_GRAPH=false  
+BIGDATA_ENABLE_ANALYTICS=false
+BIGDATA_ENABLE_CROSS_LEARNING=true
+
+# Kafka configuration
+BIGDATA_KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+BIGDATA_KAFKA_CONSUMER_GROUP=helixagent-bigdata
+
+# ClickHouse configuration  
+BIGDATA_CLICKHOUSE_HOST=localhost
+BIGDATA_CLICKHOUSE_PORT=8123
+BIGDATA_CLICKHOUSE_DATABASE=helixagent
+BIGDATA_CLICKHOUSE_USER=default
+BIGDATA_CLICKHOUSE_PASSWORD=
+
+# Neo4j configuration
+BIGDATA_NEO4J_URI=bolt://localhost:7687
+BIGDATA_NEO4J_USERNAME=neo4j
+BIGDATA_NEO4J_PASSWORD=password
+BIGDATA_NEO4J_DATABASE=neo4j
+
+# Context engine configuration
+BIGDATA_CONTEXT_CACHE_SIZE=1000
+BIGDATA_CONTEXT_CACHE_TTL=24h
+BIGDATA_CONTEXT_COMPRESSION_TYPE=gzip
+
+# Learning configuration
+BIGDATA_LEARNING_MIN_CONFIDENCE=0.7
+BIGDATA_LEARNING_MIN_FREQUENCY=3
+```
+
+**API Endpoints:**
+- `GET /v1/bigdata/health` - Component health status
+- `GET /v1/bigdata/components` - Enabled components list
+
+**Key Files:**
+- `internal/bigdata/integration.go` - Main integration orchestrator
+- `internal/bigdata/config_converter.go` - Configuration conversion
+- `internal/config/config.go` - BigDataConfig struct definition
+- `cmd/helixagent/main.go` - Initialization and shutdown
+
+**Usage Notes:**
+- Components with missing dependencies (Neo4j, ClickHouse, Kafka) gracefully degrade to dummy implementations
+- Uses messaging system broker (Kafka) or in-memory fallback
+- Integrated with HelixAgent startup/shutdown lifecycle
+
 ### OAuth2 Authentication (Limitations)
 
 **IMPORTANT: OAuth tokens from CLI tools are product-restricted and cannot be used for general API calls.**
