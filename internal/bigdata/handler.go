@@ -186,9 +186,12 @@ func (h *Handler) GetMemorySyncStatus(c *gin.Context) {
 		return
 	}
 
-	// Sync status feature not yet implemented
-	c.JSON(http.StatusNotImplemented, gin.H{
-		"error": "distributed memory sync status not yet implemented",
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	status := h.integration.distributedMemory.GetSyncStatus(ctx)
+	c.JSON(http.StatusOK, gin.H{
+		"status": status,
 	})
 }
 
@@ -199,9 +202,21 @@ func (h *Handler) ForceMemorySync(c *gin.Context) {
 		return
 	}
 
-	// Force sync feature not yet implemented
-	c.JSON(http.StatusNotImplemented, gin.H{
-		"error": "force memory sync not yet implemented",
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	defer cancel()
+
+	if err := h.integration.distributedMemory.ForceSync(ctx); err != nil {
+		h.logger.WithError(err).Error("Failed to force memory sync")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to force memory sync",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "sync_request_sent",
+		"message": "Sync request published to Kafka",
 	})
 }
 

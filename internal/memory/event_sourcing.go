@@ -24,6 +24,9 @@ const (
 	RelationshipEventCreated MemoryEventType = "relationship.created"
 	RelationshipEventUpdated MemoryEventType = "relationship.updated"
 	RelationshipEventDeleted MemoryEventType = "relationship.deleted"
+
+	// Sync events
+	MemoryEventSyncRequest MemoryEventType = "memory.sync_request"
 )
 
 // MemoryEvent represents a memory change event for distributed synchronization
