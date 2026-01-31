@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -524,6 +525,54 @@ func (csl *CrossSessionLearner) publishInsight(ctx context.Context, insight Insi
 	}).Debug("Insight published")
 
 	return nil
+}
+
+// GetInsights returns insights from the insight store
+func (csl *CrossSessionLearner) GetInsights(limit int) []Insight {
+	if csl.insights == nil {
+		return []Insight{}
+	}
+	// Collect all insights
+	insights := []Insight{}
+	for _, insight := range csl.insights.insights {
+		insights = append(insights, *insight)
+	}
+	// Sort by CreatedAt descending (most recent first)
+	sort.Slice(insights, func(i, j int) bool {
+		return insights[i].CreatedAt.After(insights[j].CreatedAt)
+	})
+	// Limit results
+	if len(insights) > limit {
+		insights = insights[:limit]
+	}
+	return insights
+}
+
+// GetPatterns returns patterns from the insight store
+func (csl *CrossSessionLearner) GetPatterns(patternType string) []Pattern {
+	if csl.insights == nil {
+		return []Pattern{}
+	}
+	if patternType == "all" {
+		patterns := []Pattern{}
+		for _, pattern := range csl.insights.patterns {
+			patterns = append(patterns, *pattern)
+		}
+		return patterns
+	}
+	// Convert string to PatternType
+	return csl.insights.GetPatternsByType(PatternType(patternType))
+}
+
+// GetLearningStats returns statistics about learned patterns and insights
+func (csl *CrossSessionLearner) GetLearningStats() map[string]interface{} {
+	if csl.insights == nil {
+		return map[string]interface{}{
+			"total_patterns": 0,
+			"total_insights": 0,
+		}
+	}
+	return csl.insights.GetStats()
 }
 
 // InsightStore methods

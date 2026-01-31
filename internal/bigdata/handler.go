@@ -3,6 +3,7 @@ package bigdata
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -130,13 +131,51 @@ func (h *Handler) GetContextStats(c *gin.Context) {
 		return
 	}
 
-	// TODO: Implement context statistics query
+	// Get infinite context engine
+	infiniteContext := h.integration.GetInfiniteContext()
+	if infiniteContext == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "infinite context not enabled"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	defer cancel()
+
+	// Get conversation snapshot
+	snapshot, err := infiniteContext.GetConversationSnapshot(ctx, conversationID)
+	if err != nil {
+		h.logger.WithError(err).WithField("conversation_id", conversationID).Error("Failed to get conversation snapshot")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get conversation snapshot"})
+		return
+	}
+
+	// Extract statistics
+	messageCount := 0
+	entityCount := 0
+	totalTokens := int64(0)
+	compressed := false
+
+	if snapshot.Context != nil {
+		messageCount = snapshot.Context.MessageCount
+		entityCount = snapshot.Context.EntityCount
+		totalTokens = snapshot.Context.TotalTokens
+		compressed = snapshot.Context.CompressedCount > 0
+	} else {
+		// Fallback to counting messages and entities directly
+		messageCount = len(snapshot.Messages)
+		entityCount = len(snapshot.Entities)
+		// Estimate tokens (rough average)
+		totalTokens = int64(messageCount * 100)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"conversation_id": conversationID,
-		"message_count":   0,
-		"entity_count":    0,
-		"total_tokens":    0,
-		"compressed":      false,
+		"message_count":   messageCount,
+		"entity_count":    entityCount,
+		"total_tokens":    totalTokens,
+		"compressed":      compressed,
+		"snapshot_id":     snapshot.SnapshotID,
+		"timestamp":       snapshot.Timestamp,
 	})
 }
 
@@ -147,13 +186,9 @@ func (h *Handler) GetMemorySyncStatus(c *gin.Context) {
 		return
 	}
 
-	// TODO: Implement sync status query
-	c.JSON(http.StatusOK, gin.H{
-		"enabled":       true,
-		"node_count":    1,
-		"sync_lag_ms":   0,
-		"events_synced": 0,
-		"conflicts":     0,
+	// Sync status feature not yet implemented
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error": "distributed memory sync status not yet implemented",
 	})
 }
 
@@ -164,9 +199,9 @@ func (h *Handler) ForceMemorySync(c *gin.Context) {
 		return
 	}
 
-	// TODO: Implement force sync
-	c.JSON(http.StatusOK, gin.H{
-		"status": "sync initiated",
+	// Force sync feature not yet implemented
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error": "force memory sync not yet implemented",
 	})
 }
 
@@ -183,10 +218,42 @@ func (h *Handler) GetRelatedEntities(c *gin.Context) {
 		return
 	}
 
-	// TODO: Query Neo4j for related entities
+	maxDepth := 1
+	if depthStr := c.DefaultQuery("max_depth", "1"); depthStr != "" {
+		if depth, err := strconv.Atoi(depthStr); err == nil && depth > 0 && depth <= 5 {
+			maxDepth = depth
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	entities, err := h.integration.graphStreaming.GetRelatedEntities(ctx, entityID, maxDepth)
+	if err != nil {
+		h.logger.WithError(err).WithField("entity_id", entityID).Error("Failed to get related entities")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query related entities"})
+		return
+	}
+
+	related := make([]map[string]interface{}, len(entities))
+	for i, entity := range entities {
+		related[i] = map[string]interface{}{
+			"id":         entity.ID,
+			"type":       entity.Type,
+			"name":       entity.Name,
+			"value":      entity.Value,
+			"confidence": entity.Confidence,
+			"importance": entity.Importance,
+			"properties": entity.Properties,
+			"created_at": entity.CreatedAt,
+			"updated_at": entity.UpdatedAt,
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"entity_id": entityID,
-		"related":   []map[string]interface{}{},
+		"max_depth": maxDepth,
+		"related":   related,
 	})
 }
 
@@ -215,10 +282,34 @@ func (h *Handler) SearchKnowledgeGraph(c *gin.Context) {
 		req.Limit = 10
 	}
 
-	// TODO: Implement Cypher query
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	entities, err := h.integration.graphStreaming.SearchKnowledgeGraph(ctx, req.Query, req.EntityType, req.Limit)
+	if err != nil {
+		h.logger.WithError(err).WithField("query", req.Query).Error("Failed to search knowledge graph")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to search knowledge graph"})
+		return
+	}
+
+	results := make([]map[string]interface{}, len(entities))
+	for i, entity := range entities {
+		results[i] = map[string]interface{}{
+			"id":         entity.ID,
+			"type":       entity.Type,
+			"name":       entity.Name,
+			"value":      entity.Value,
+			"confidence": entity.Confidence,
+			"importance": entity.Importance,
+			"properties": entity.Properties,
+			"created_at": entity.CreatedAt,
+			"updated_at": entity.UpdatedAt,
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"results": []map[string]interface{}{},
-		"count":   0,
+		"results": results,
+		"count":   len(results),
 	})
 }
 
@@ -245,18 +336,25 @@ func (h *Handler) GetProviderAnalytics(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	// TODO: Query ClickHouse for provider metrics
-	_ = ctx
-	_ = duration
+	stats, err := h.integration.clickhouseAnalytics.GetProviderAnalytics(ctx, provider, duration)
+	if err != nil {
+		h.logger.WithError(err).WithField("provider", provider).Error("Failed to get provider analytics")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query provider analytics"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"provider":          provider,
-		"window":            window,
-		"total_requests":    0,
-		"avg_response_time": 0.0,
-		"p95_response_time": 0.0,
-		"avg_confidence":    0.0,
-		"error_rate":        0.0,
+		"provider":           stats.Provider,
+		"window":             stats.Period,
+		"total_requests":     stats.TotalRequests,
+		"avg_response_time":  stats.AvgResponseTime,
+		"p95_response_time":  stats.P95ResponseTime,
+		"p99_response_time":  stats.P99ResponseTime,
+		"avg_confidence":     stats.AvgConfidence,
+		"total_tokens":       stats.TotalTokens,
+		"avg_tokens_per_req": stats.AvgTokensPerReq,
+		"error_rate":         stats.ErrorRate,
+		"win_rate":           stats.WinRate,
 	})
 }
 
@@ -273,15 +371,24 @@ func (h *Handler) GetDebateAnalytics(c *gin.Context) {
 		return
 	}
 
-	// TODO: Query ClickHouse for debate metrics
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	analytics, err := h.integration.clickhouseAnalytics.GetDebateAnalytics(ctx, debateID)
+	if err != nil {
+		h.logger.WithError(err).WithField("debate_id", debateID).Error("Failed to get debate analytics")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query debate analytics"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"debate_id":         debateID,
-		"rounds":            0,
-		"participants":      []string{},
-		"avg_response_time": 0.0,
-		"total_tokens":      0,
-		"winner":            "",
-		"confidence":        0.0,
+		"debate_id":         analytics["debate_id"],
+		"rounds":            analytics["total_rounds"],
+		"participants":      analytics["participants"],
+		"avg_response_time": analytics["avg_response_time"],
+		"total_tokens":      analytics["total_tokens"],
+		"winner":            analytics["winner"],
+		"confidence":        analytics["avg_confidence"],
 	})
 }
 
@@ -305,43 +412,100 @@ func (h *Handler) QueryAnalytics(c *gin.Context) {
 		return
 	}
 
-	// TODO: Execute ClickHouse query
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	defer cancel()
+
+	results, err := h.integration.clickhouseAnalytics.ExecuteQuery(ctx, req.Query, req.Parameters)
+	if err != nil {
+		h.logger.WithError(err).WithField("query", req.Query).Error("Failed to execute analytics query")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query execution failed"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"results": []map[string]interface{}{},
-		"count":   0,
+		"results": results,
+		"count":   len(results),
 	})
 }
 
 // GetLearningInsights returns recent learning insights
 func (h *Handler) GetLearningInsights(c *gin.Context) {
-	if h.integration.crossSessionLearner == nil {
+	crossLearner := h.integration.GetCrossLearner()
+	if crossLearner == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "cross-session learning not enabled"})
 		return
 	}
 
-	limit := c.DefaultQuery("limit", "10")
+	limitStr := c.DefaultQuery("limit", "10")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "limit must be an integer"})
+		return
+	}
+	if limit < 1 || limit > 100 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "limit must be between 1 and 100"})
+		return
+	}
 
-	// TODO: Query insights
+	// Get insights from cross-session learner
+	insights := crossLearner.GetInsights(limit)
+
+	// Convert to JSON-friendly format
+	insightMaps := make([]map[string]interface{}, len(insights))
+	for i, insight := range insights {
+		insightMaps[i] = map[string]interface{}{
+			"insight_id":   insight.InsightID,
+			"user_id":      insight.UserID,
+			"insight_type": insight.InsightType,
+			"title":        insight.Title,
+			"description":  insight.Description,
+			"confidence":   insight.Confidence,
+			"impact":       insight.Impact,
+			"created_at":   insight.CreatedAt,
+			"metadata":     insight.Metadata,
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"insights": []map[string]interface{}{},
-		"count":    0,
+		"insights": insightMaps,
+		"count":    len(insights),
 		"limit":    limit,
 	})
 }
 
 // GetLearnedPatterns returns learned patterns across conversations
 func (h *Handler) GetLearnedPatterns(c *gin.Context) {
-	if h.integration.crossSessionLearner == nil {
+	crossLearner := h.integration.GetCrossLearner()
+	if crossLearner == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "cross-session learning not enabled"})
 		return
 	}
 
 	patternType := c.DefaultQuery("type", "all")
 
-	// TODO: Query learned patterns
+	// Get patterns from cross-session learner
+	patterns := crossLearner.GetPatterns(patternType)
+
+	// Convert to JSON-friendly format
+	patternMaps := make([]map[string]interface{}, len(patterns))
+	for i, pattern := range patterns {
+		patternMaps[i] = map[string]interface{}{
+			"pattern_id":   pattern.PatternID,
+			"pattern_type": pattern.PatternType,
+			"description":  pattern.Description,
+			"frequency":    pattern.Frequency,
+			"confidence":   pattern.Confidence,
+			"first_seen":   pattern.FirstSeen,
+			"last_seen":    pattern.LastSeen,
+			"examples":     pattern.Examples,
+			"metadata":     pattern.Metadata,
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"patterns": []map[string]interface{}{},
+		"patterns": patternMaps,
 		"type":     patternType,
+		"count":    len(patterns),
 	})
 }
 

@@ -4,8 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -18,6 +22,7 @@ type SparkBatchProcessor struct {
 	outputPath     string
 	logger         *logrus.Logger
 	appName        string
+	httpClient     *http.Client
 }
 
 // BatchJobType defines the type of batch processing job
@@ -96,6 +101,7 @@ func NewSparkBatchProcessor(
 		outputPath:     outputPath,
 		logger:         logger,
 		appName:        "HelixAgent-BigData",
+		httpClient:     &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
@@ -293,30 +299,12 @@ func (sbp *SparkBatchProcessor) parseJobOutput(output string, params BatchParams
 		Metrics: make(map[string]interface{}),
 	}
 
-	// TODO: Parse actual Spark output
-	// For now, return mock results based on job type
-	switch params.JobType {
-	case BatchJobEntityExtraction:
-		result.ProcessedRows = 100000
-		result.EntitiesExtracted = 50000
-
-	case BatchJobRelationshipMining:
-		result.ProcessedRows = 100000
-		result.RelationshipsFound = 25000
-
-	case BatchJobTopicModeling:
-		result.ProcessedRows = 100000
-		result.TopicsIdentified = 50
-
-	case BatchJobProviderPerformance:
-		result.ProcessedRows = 10000
-		result.Metrics["avg_response_time"] = 245.6
-		result.Metrics["p95_response_time"] = 512.3
-
-	case BatchJobDebateAnalysis:
-		result.ProcessedRows = 5000
-		result.Metrics["avg_rounds"] = 3.2
-		result.Metrics["consensus_rate"] = 0.87
+	// Try to parse JSON output from Spark
+	if parsed := sbp.parseJSONOutput(output, params); parsed != nil {
+		result = parsed
+	} else {
+		// If we cannot parse JSON output, return an error
+		return nil, fmt.Errorf("failed to parse Spark job output: no valid JSON found")
 	}
 
 	result.OutputPath = params.OutputPath
@@ -329,18 +317,230 @@ func (sbp *SparkBatchProcessor) parseJobOutput(output string, params BatchParams
 	return result, nil
 }
 
+// parseJSONOutput attempts to parse JSON lines from Spark job output
+func (sbp *SparkBatchProcessor) parseJSONOutput(output string, params BatchParams) *BatchResult {
+	// Split output by lines and look for JSON objects
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || line[0] != '{' {
+			continue
+		}
+
+		var data map[string]interface{}
+		if err := json.Unmarshal([]byte(line), &data); err != nil {
+			continue
+		}
+
+		// Check if this looks like a Spark job result
+		if _, hasStatus := data["status"]; !hasStatus {
+			continue
+		}
+
+		result := &BatchResult{
+			JobID:   fmt.Sprintf("job-%d", time.Now().UnixNano()),
+			JobType: params.JobType,
+			Status:  "completed",
+			Metrics: make(map[string]interface{}),
+		}
+
+		// Extract common fields
+		if val, ok := data["processed_rows"]; ok {
+			if f, ok := val.(float64); ok {
+				result.ProcessedRows = int64(f)
+			}
+		}
+		if val, ok := data["entities_extracted"]; ok {
+			if f, ok := val.(float64); ok {
+				result.EntitiesExtracted = int64(f)
+			}
+		}
+		if val, ok := data["relationships_found"]; ok {
+			if f, ok := val.(float64); ok {
+				result.RelationshipsFound = int64(f)
+			}
+		}
+		if val, ok := data["topics_identified"]; ok {
+			if f, ok := val.(float64); ok {
+				result.TopicsIdentified = int(f)
+			}
+		}
+
+		// Copy all other fields to metrics
+		for key, val := range data {
+			switch key {
+			case "processed_rows", "entities_extracted", "relationships_found", "topics_identified", "status":
+				// Already handled
+			default:
+				result.Metrics[key] = val
+			}
+		}
+
+		result.OutputPath = params.OutputPath
+		sbp.logger.WithField("job_id", result.JobID).Debug("Parsed JSON output from Spark job")
+		return result
+	}
+
+	// No valid JSON found
+	return nil
+}
+
+// getSparkRESTBaseURL returns the base URL for Spark REST API
+func (sbp *SparkBatchProcessor) getSparkRESTBaseURL() (string, error) {
+	// Parse sparkMasterURL to extract host
+	// Examples: spark://localhost:7077, local, yarn
+	if sbp.sparkMasterURL == "" {
+		return "", fmt.Errorf("spark master URL not configured")
+	}
+
+	// For simplicity, assume REST API runs on port 4040 on localhost
+	// In production, this would parse the master URL and determine correct REST API endpoint
+	return "http://localhost:4040", nil
+}
+
 // GetJobStatus retrieves status of a running Spark job
 func (sbp *SparkBatchProcessor) GetJobStatus(ctx context.Context, jobID string) (*BatchResult, error) {
-	// TODO: Implement actual Spark job status checking
-	// This would query Spark REST API or check job output
-	return nil, fmt.Errorf("not implemented")
+	// Get Spark REST API base URL
+	baseURL, err := sbp.getSparkRESTBaseURL()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Spark REST API URL: %w", err)
+	}
+
+	// Construct API endpoint
+	// jobID should be Spark application ID
+	apiURL := fmt.Sprintf("%s/api/v1/applications/%s/jobs", baseURL, url.PathEscape(jobID))
+
+	sbp.logger.WithFields(logrus.Fields{
+		"job_id":  jobID,
+		"api_url": apiURL,
+	}).Debug("Querying Spark job status via REST API")
+
+	// Create HTTP request
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+
+	// Execute request
+	resp, err := sbp.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query Spark REST API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("Spark REST API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse response
+	var sparkJobs []struct {
+		JobID      int    `json:"jobId"`
+		Status     string `json:"status"`
+		StartTime  int64  `json:"startTime"`
+		EndTime    int64  `json:"endTime"`
+		NumTasks   int    `json:"numTasks"`
+		NumActive  int    `json:"numActive"`
+		NumFailed  int    `json:"numFailed"`
+		NumKilled  int    `json:"numKilled"`
+		NumSkipped int    `json:"numSkipped"`
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if err := json.Unmarshal(body, &sparkJobs); err != nil {
+		return nil, fmt.Errorf("failed to parse Spark jobs response: %w", err)
+	}
+
+	// Convert to BatchResult
+	if len(sparkJobs) == 0 {
+		return nil, fmt.Errorf("no jobs found for application %s", jobID)
+	}
+
+	// Use first job for status (simplification - real implementation would aggregate)
+	sparkJob := sparkJobs[0]
+	result := &BatchResult{
+		JobID:   jobID,
+		JobType: BatchJobEntityExtraction, // Default - would need mapping
+		Status:  strings.ToLower(sparkJob.Status),
+		Metrics: map[string]interface{}{
+			"spark_job_id":  sparkJob.JobID,
+			"num_tasks":     sparkJob.NumTasks,
+			"num_active":    sparkJob.NumActive,
+			"num_failed":    sparkJob.NumFailed,
+			"num_killed":    sparkJob.NumKilled,
+			"num_skipped":   sparkJob.NumSkipped,
+			"rest_api_used": true,
+		},
+	}
+
+	// Set timestamps if available
+	if sparkJob.StartTime > 0 {
+		result.StartedAt = time.UnixMilli(sparkJob.StartTime)
+	}
+	if sparkJob.EndTime > 0 {
+		result.CompletedAt = time.UnixMilli(sparkJob.EndTime)
+		result.DurationMs = sparkJob.EndTime - sparkJob.StartTime
+	}
+
+	sbp.logger.WithFields(logrus.Fields{
+		"job_id": jobID,
+		"status": result.Status,
+	}).Debug("Retrieved Spark job status from REST API")
+
+	return result, nil
 }
 
 // CancelJob cancels a running Spark job
 func (sbp *SparkBatchProcessor) CancelJob(ctx context.Context, jobID string) error {
-	// TODO: Implement actual Spark job cancellation
-	// This would use Spark REST API to kill the job
-	return fmt.Errorf("not implemented")
+	// Get Spark REST API base URL
+	baseURL, err := sbp.getSparkRESTBaseURL()
+	if err != nil {
+		return fmt.Errorf("failed to get Spark REST API URL: %w", err)
+	}
+
+	// Construct API endpoint for application kill
+	// jobID should be Spark application ID
+	apiURL := fmt.Sprintf("%s/api/v1/applications/%s", baseURL, url.PathEscape(jobID))
+
+	sbp.logger.WithFields(logrus.Fields{
+		"job_id":  jobID,
+		"api_url": apiURL,
+	}).Debug("Cancelling Spark job via REST API")
+
+	// Create DELETE request
+	req, err := http.NewRequestWithContext(ctx, "DELETE", apiURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+
+	// Execute request
+	resp, err := sbp.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send cancellation request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	// Spark REST API returns 200 OK for successful kill
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("Spark REST API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	sbp.logger.WithField("job_id", jobID).Info("Spark job cancellation requested successfully")
+	return nil
+}
+
+// getSparkHistoryBaseURL returns the base URL for Spark History Server REST API
+func (sbp *SparkBatchProcessor) getSparkHistoryBaseURL() (string, error) {
+	// Spark History Server typically runs on port 18080
+	// In production, this would be configurable
+	return "http://localhost:18080", nil
 }
 
 // ListCompletedJobs lists recently completed batch jobs
@@ -348,9 +548,110 @@ func (sbp *SparkBatchProcessor) ListCompletedJobs(
 	ctx context.Context,
 	limit int,
 ) ([]*BatchResult, error) {
-	// TODO: Implement job history retrieval
-	// This would query a job metadata store (PostgreSQL or similar)
-	return nil, fmt.Errorf("not implemented")
+	// Get Spark History Server base URL
+	baseURL, err := sbp.getSparkHistoryBaseURL()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Spark History Server URL: %w", err)
+	}
+
+	// Construct API endpoint for completed applications
+	apiURL := fmt.Sprintf("%s/api/v1/applications", baseURL)
+
+	sbp.logger.WithFields(logrus.Fields{
+		"limit":   limit,
+		"api_url": apiURL,
+	}).Debug("Listing completed Spark jobs via History Server REST API")
+
+	// Create HTTP request
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+
+	// Add query parameters for filtering
+	q := req.URL.Query()
+	q.Add("status", "completed")
+	if limit > 0 {
+		q.Add("limit", fmt.Sprintf("%d", limit))
+	}
+	req.URL.RawQuery = q.Encode()
+
+	// Execute request
+	resp, err := sbp.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query Spark History Server: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("Spark History Server returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse response
+	var sparkApps []struct {
+		ID      string `json:"id"`
+		Name    string `json:"name"`
+		Start   int64  `json:"startTime"`
+		End     int64  `json:"endTime"`
+		Status  string `json:"status"`
+		User    string `json:"user"`
+		Attempt int    `json:"attemptId"`
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if err := json.Unmarshal(body, &sparkApps); err != nil {
+		return nil, fmt.Errorf("failed to parse Spark applications response: %w", err)
+	}
+
+	// Convert to BatchResult
+	jobs := make([]*BatchResult, 0, len(sparkApps))
+	for _, app := range sparkApps {
+		if strings.ToLower(app.Status) != "completed" {
+			continue
+		}
+
+		// Determine job type from application name
+		jobType := BatchJobEntityExtraction
+		if strings.Contains(strings.ToLower(app.Name), "relationship") {
+			jobType = BatchJobRelationshipMining
+		} else if strings.Contains(strings.ToLower(app.Name), "topic") {
+			jobType = BatchJobTopicModeling
+		} else if strings.Contains(strings.ToLower(app.Name), "provider") {
+			jobType = BatchJobProviderPerformance
+		} else if strings.Contains(strings.ToLower(app.Name), "debate") {
+			jobType = BatchJobDebateAnalysis
+		}
+
+		startedAt := time.UnixMilli(app.Start)
+		completedAt := time.UnixMilli(app.End)
+		durationMs := app.End - app.Start
+
+		jobs = append(jobs, &BatchResult{
+			JobID:         app.ID,
+			JobType:       jobType,
+			Status:        "completed",
+			ProcessedRows: 0, // Would need additional API call to get actual metrics
+			StartedAt:     startedAt,
+			CompletedAt:   completedAt,
+			DurationMs:    durationMs,
+			OutputPath:    fmt.Sprintf("%s/results/%s", sbp.outputPath, app.ID),
+			Metrics: map[string]interface{}{
+				"application_name": app.Name,
+				"user":             app.User,
+				"attempt":          app.Attempt,
+				"rest_api_used":    true,
+			},
+		})
+	}
+
+	sbp.logger.WithField("job_count", len(jobs)).Debug("Retrieved completed Spark jobs from History Server")
+	return jobs, nil
 }
 
 // CleanupOldResults removes old batch processing results from data lake
@@ -358,7 +659,53 @@ func (sbp *SparkBatchProcessor) CleanupOldResults(
 	ctx context.Context,
 	olderThan time.Duration,
 ) (int, error) {
-	// TODO: Implement cleanup logic
-	// This would scan output directories and delete old results
-	return 0, fmt.Errorf("not implemented")
+	if sbp.dataLakeClient == nil {
+		return 0, fmt.Errorf("data lake client not configured")
+	}
+
+	thresholdTime := time.Now().Add(-olderThan)
+
+	sbp.logger.WithFields(logrus.Fields{
+		"older_than_hours": olderThan.Hours(),
+		"output_path":      sbp.outputPath,
+		"threshold_time":   thresholdTime.Format(time.RFC3339),
+	}).Debug("Cleaning up old Spark results from data lake")
+
+	// List all directories in the output path
+	dirs, err := sbp.dataLakeClient.ListDirectories(ctx, sbp.outputPath)
+	if err != nil {
+		return 0, fmt.Errorf("failed to list directories: %w", err)
+	}
+
+	deletedCount := 0
+	for _, dir := range dirs {
+		// Get directory metadata (modification time)
+		metadata, err := sbp.dataLakeClient.GetMetadata(ctx, dir)
+		if err != nil {
+			sbp.logger.WithError(err).WithField("directory", dir).Warn("Failed to get directory metadata")
+			continue
+		}
+
+		// Check if directory is older than threshold
+		if metadata.ModTime.Before(thresholdTime) {
+			sbp.logger.WithFields(logrus.Fields{
+				"directory": dir,
+				"mod_time":  metadata.ModTime.Format(time.RFC3339),
+				"threshold": thresholdTime.Format(time.RFC3339),
+				"age_hours": time.Since(metadata.ModTime).Hours(),
+			}).Debug("Deleting old directory")
+
+			// Delete the directory
+			if err := sbp.dataLakeClient.DeletePath(ctx, dir, true); err != nil {
+				sbp.logger.WithError(err).WithField("directory", dir).Error("Failed to delete directory")
+				continue
+			}
+
+			deletedCount++
+			sbp.logger.WithField("directory", dir).Info("Deleted old Spark results directory")
+		}
+	}
+
+	sbp.logger.WithField("deleted_count", deletedCount).Info("Cleanup of old Spark results completed")
+	return deletedCount, nil
 }
