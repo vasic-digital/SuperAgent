@@ -206,6 +206,17 @@ func (m *Manager) DeleteMemory(ctx context.Context, id string) error {
 	return m.store.Delete(ctx, id)
 }
 
+// GetMemory retrieves a memory by ID
+func (m *Manager) GetMemory(ctx context.Context, id string) (*Memory, error) {
+	return m.store.Get(ctx, id)
+}
+
+// UpdateMemory updates an existing memory
+func (m *Manager) UpdateMemory(ctx context.Context, memory *Memory) error {
+	memory.UpdatedAt = time.Now()
+	return m.store.Update(ctx, memory)
+}
+
 // DeleteUserMemories deletes all memories for a user
 func (m *Manager) DeleteUserMemories(ctx context.Context, userID string) error {
 	memories, err := m.store.GetByUser(ctx, userID, &ListOptions{Limit: 10000})

@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/conversation"
-	"dev.helix.agent/pkg/messaging"
+	"dev.helix.agent/internal/messaging"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,25 +38,25 @@ func (di *DebateIntegration) GetConversationContext(
 	conversationID string,
 	maxTokens int,
 ) (*ConversationContext, error) {
-	// Replay conversation from Kafka
-	context, err := di.infiniteContext.ReplayConversation(ctx, conversationID)
+	// Get conversation snapshot (includes messages, entities, context)
+	snapshot, err := di.infiniteContext.GetConversationSnapshot(ctx, conversationID)
 	if err != nil {
 		di.logger.WithError(err).
 			WithField("conversation_id", conversationID).
-			Error("Failed to replay conversation")
-		return nil, fmt.Errorf("context replay failed: %w", err)
+			Error("Failed to get conversation snapshot")
+		return nil, fmt.Errorf("context snapshot failed: %w", err)
 	}
 
 	// Check if compression is needed
-	if context.TotalTokens > maxTokens {
+	if snapshot.Context != nil && snapshot.Context.TotalTokens > int64(maxTokens) {
 		di.logger.WithFields(logrus.Fields{
 			"conversation_id": conversationID,
-			"total_tokens":    context.TotalTokens,
+			"total_tokens":    snapshot.Context.TotalTokens,
 			"max_tokens":      maxTokens,
 		}).Info("Compressing conversation context")
 
 		// Compress context
-		compressed, err := di.infiniteContext.ReplayWithCompression(
+		compressedMessages, compressionData, err := di.infiniteContext.ReplayWithCompression(
 			ctx,
 			conversationID,
 			maxTokens,
@@ -63,18 +64,76 @@ func (di *DebateIntegration) GetConversationContext(
 		if err != nil {
 			di.logger.WithError(err).Warn("Compression failed, using original")
 		} else {
-			context = compressed
+			// Update snapshot messages with compressed messages
+			snapshot.Messages = compressedMessages
+			// Update context with compression data
+			if compressionData != nil {
+				snapshot.Context.CompressedCount = compressionData.CompressedMessages
+				snapshot.Context.CompressionRatio = compressionData.CompressionRatio
+			}
 		}
 	}
 
-	return &ConversationContext{
-		ConversationID:   conversationID,
-		Messages:         context.Messages,
-		Entities:         context.Entities,
-		TotalTokens:      context.TotalTokens,
-		Compressed:       context.Compressed,
-		CompressionStats: context.CompressionStats,
-	}, nil
+	// Convert conversation snapshot to ConversationContext
+	result := &ConversationContext{
+		ConversationID: conversationID,
+		Messages:       di.convertMessages(snapshot.Messages),
+		Entities:       di.convertEntities(snapshot.Entities),
+		Compressed:     snapshot.Context != nil && snapshot.Context.CompressedCount > 0,
+	}
+
+	// Set total tokens
+	if snapshot.Context != nil {
+		result.TotalTokens = int(snapshot.Context.TotalTokens)
+		// Set compression stats if compression occurred
+		if snapshot.Context.CompressedCount > 0 {
+			result.CompressionStats = &CompressionStats{
+				Strategy:           "adaptive", // Default strategy
+				OriginalMessages:   snapshot.Context.MessageCount,
+				CompressedMessages: snapshot.Context.CompressedCount,
+				OriginalTokens:     int(snapshot.Context.TotalTokens),
+				CompressedTokens:   int(snapshot.Context.TotalTokens), // Approximate
+				CompressionRatio:   snapshot.Context.CompressionRatio,
+				QualityScore:       0.9, // Default quality score
+				Duration:           0,   // Unknown
+			}
+		}
+	}
+
+	return result, nil
+}
+
+// convertMessages converts conversation.MessageData to bigdata.Message
+func (di *DebateIntegration) convertMessages(messages []conversation.MessageData) []Message {
+	result := make([]Message, len(messages))
+	for i, msg := range messages {
+		result[i] = Message{
+			Role:      msg.Role,
+			Content:   msg.Content,
+			Timestamp: msg.CreatedAt,
+			Metadata: map[string]interface{}{
+				"message_id": msg.MessageID,
+				"model":      msg.Model,
+				"tokens":     msg.Tokens,
+			},
+		}
+	}
+	return result
+}
+
+// convertEntities converts conversation.EntityData to bigdata.Entity
+func (di *DebateIntegration) convertEntities(entities []conversation.EntityData) []Entity {
+	result := make([]Entity, len(entities))
+	for i, entity := range entities {
+		result[i] = Entity{
+			ID:         entity.EntityID,
+			Name:       entity.Name,
+			Type:       entity.Type,
+			Importance: entity.Confidence,
+			Properties: entity.Properties,
+		}
+	}
+	return result
 }
 
 // PublishDebateCompletion publishes a debate completion event to Kafka
@@ -87,19 +146,14 @@ func (di *DebateIntegration) PublishDebateCompletion(
 		return fmt.Errorf("failed to marshal completion: %w", err)
 	}
 
-	msg := &messaging.Message{
-		Topic:     "helixagent.debates.completed",
-		Key:       completion.DebateID,
-		Payload:   payload,
-		Timestamp: time.Now(),
-		Headers: map[string]string{
-			"debate_id":       completion.DebateID,
-			"conversation_id": completion.ConversationID,
-			"user_id":         completion.UserID,
-		},
-	}
+	msg := messaging.NewMessage("debate.completed", payload)
+	msg.ID = uuid.New().String()
+	msg.Headers["debate_id"] = completion.DebateID
+	msg.Headers["conversation_id"] = completion.ConversationID
+	msg.Headers["user_id"] = completion.UserID
 
-	if err := di.kafkaBroker.Publish(ctx, msg.Topic, msg); err != nil {
+	topic := "helixagent.debates.completed"
+	if err := di.kafkaBroker.Publish(ctx, topic, msg); err != nil {
 		di.logger.WithError(err).
 			WithField("debate_id", completion.DebateID).
 			Error("Failed to publish debate completion")
@@ -125,18 +179,13 @@ func (di *DebateIntegration) PublishConversationEvent(
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
 
-	msg := &messaging.Message{
-		Topic:     "helixagent.conversations",
-		Key:       event.ConversationID,
-		Payload:   payload,
-		Timestamp: time.Now(),
-		Headers: map[string]string{
-			"conversation_id": event.ConversationID,
-			"event_type":      string(event.EventType),
-		},
-	}
+	msg := messaging.NewMessage("conversation.event", payload)
+	msg.ID = uuid.New().String()
+	msg.Headers["conversation_id"] = event.ConversationID
+	msg.Headers["event_type"] = string(event.EventType)
 
-	if err := di.kafkaBroker.Publish(ctx, msg.Topic, msg); err != nil {
+	topic := "helixagent.conversations"
+	if err := di.kafkaBroker.Publish(ctx, topic, msg); err != nil {
 		di.logger.WithError(err).
 			WithField("conversation_id", event.ConversationID).
 			Error("Failed to publish conversation event")

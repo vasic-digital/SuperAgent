@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/memory"
-	"dev.helix.agent/pkg/messaging"
+	"dev.helix.agent/internal/messaging"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -146,20 +147,15 @@ func (ei *EntityIntegration) publishEntityEvent(ctx context.Context, event *Enti
 		return fmt.Errorf("failed to marshal entity event: %w", err)
 	}
 
-	msg := &messaging.Message{
-		Topic:     topic,
-		Key:       event.Entity.ID,
-		Payload:   payload,
-		Timestamp: event.Timestamp,
-		Headers: map[string]string{
-			"event_type":      event.EventType,
-			"conversation_id": event.ConversationID,
-			"entity_id":       event.Entity.ID,
-			"entity_type":     event.Entity.Type,
-		},
-	}
+	msg := messaging.NewMessage("entity.update", payload)
+	msg.ID = uuid.New().String()
+	msg.Timestamp = event.Timestamp
+	msg.Headers["event_type"] = event.EventType
+	msg.Headers["conversation_id"] = event.ConversationID
+	msg.Headers["entity_id"] = event.Entity.ID
+	msg.Headers["entity_type"] = event.Entity.Type
 
-	if err := ei.kafkaBroker.Publish(ctx, msg.Topic, msg); err != nil {
+	if err := ei.kafkaBroker.Publish(ctx, topic, msg); err != nil {
 		return fmt.Errorf("kafka publish failed: %w", err)
 	}
 
@@ -179,21 +175,16 @@ func (ei *EntityIntegration) publishRelationshipEvent(ctx context.Context, event
 		return fmt.Errorf("failed to marshal relationship event: %w", err)
 	}
 
-	msg := &messaging.Message{
-		Topic:     topic,
-		Key:       fmt.Sprintf("%s:%s", event.Relationship.SourceID, event.Relationship.TargetID),
-		Payload:   payload,
-		Timestamp: event.Timestamp,
-		Headers: map[string]string{
-			"event_type":        event.EventType,
-			"conversation_id":   event.ConversationID,
-			"source_id":         event.Relationship.SourceID,
-			"target_id":         event.Relationship.TargetID,
-			"relationship_type": event.Relationship.Type,
-		},
-	}
+	msg := messaging.NewMessage("relationship.update", payload)
+	msg.ID = uuid.New().String()
+	msg.Timestamp = event.Timestamp
+	msg.Headers["event_type"] = event.EventType
+	msg.Headers["conversation_id"] = event.ConversationID
+	msg.Headers["source_id"] = event.Relationship.SourceID
+	msg.Headers["target_id"] = event.Relationship.TargetID
+	msg.Headers["relationship_type"] = event.Relationship.Type
 
-	if err := ei.kafkaBroker.Publish(ctx, msg.Topic, msg); err != nil {
+	if err := ei.kafkaBroker.Publish(ctx, topic, msg); err != nil {
 		return fmt.Errorf("kafka publish failed: %w", err)
 	}
 
@@ -227,20 +218,16 @@ func (ei *EntityIntegration) PublishEntityMerge(ctx context.Context, sourceEntit
 		return fmt.Errorf("failed to marshal entity merge event: %w", err)
 	}
 
-	msg := &messaging.Message{
-		Topic:     "helixagent.entities.updates",
-		Key:       targetEntity.ID,
-		Payload:   payload,
-		Timestamp: event.Timestamp,
-		Headers: map[string]string{
-			"event_type":      event.EventType,
-			"conversation_id": event.ConversationID,
-			"source_id":       sourceEntity.ID,
-			"target_id":       targetEntity.ID,
-		},
-	}
+	msg := messaging.NewMessage("entity.merge", payload)
+	msg.ID = uuid.New().String()
+	msg.Timestamp = event.Timestamp
+	msg.Headers["event_type"] = event.EventType
+	msg.Headers["conversation_id"] = event.ConversationID
+	msg.Headers["source_id"] = sourceEntity.ID
+	msg.Headers["target_id"] = targetEntity.ID
 
-	if err := ei.kafkaBroker.Publish(ctx, msg.Topic, msg); err != nil {
+	topic := "helixagent.entities.updates"
+	if err := ei.kafkaBroker.Publish(ctx, topic, msg); err != nil {
 		return fmt.Errorf("kafka publish failed: %w", err)
 	}
 

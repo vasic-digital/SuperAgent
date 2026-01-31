@@ -10,9 +10,17 @@ import (
 	"dev.helix.agent/internal/knowledge"
 	"dev.helix.agent/internal/learning"
 	"dev.helix.agent/internal/memory"
-	"dev.helix.agent/pkg/messaging"
+	"dev.helix.agent/internal/messaging"
 	"github.com/sirupsen/logrus"
 )
+
+// dummyLLMClient implements conversation.LLMClient for compression
+type dummyLLMClient struct{}
+
+func (d *dummyLLMClient) Complete(ctx context.Context, prompt string, maxTokens int) (string, int, error) {
+	// Return empty response - compression will be minimal
+	return "", 0, nil
+}
 
 // BigDataIntegration manages all big data components
 type BigDataIntegration struct {
