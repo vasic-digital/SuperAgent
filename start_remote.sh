@@ -14,18 +14,26 @@ fi
 
 # Start helixagent in background
 echo "Starting helixagent with remote configuration..."
-./bin/helixagent &
+./bin/helixagent --strict-dependencies=false --skip-mcp-preinstall &
 HELIX_PID=$!
 
-# Wait for server to start
-sleep 5
+# Wait for server to start with retries
+echo "Waiting for HelixAgent to start (max 60 seconds)..."
+for i in {1..60}; do
+    if curl -f http://localhost:7061/health >/dev/null 2>&1; then
+        echo "HelixAgent started successfully (PID: $HELIX_PID)"
+        echo "Health check passed"
+        break
+    fi
+    if ! kill -0 $HELIX_PID 2>/dev/null; then
+        echo "HelixAgent process died"
+        exit 1
+    fi
+    sleep 1
+done
 
-# Check health endpoint
-if curl -f http://localhost:7061/health >/dev/null 2>&1; then
-    echo "HelixAgent started successfully (PID: $HELIX_PID)"
-    echo "Health check passed"
-else
-    echo "HelixAgent failed to start"
+if ! curl -f http://localhost:7061/health >/dev/null 2>&1; then
+    echo "HelixAgent failed to start within 60 seconds"
     kill $HELIX_PID 2>/dev/null
     exit 1
 fi

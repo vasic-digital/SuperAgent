@@ -3,7 +3,7 @@
   "mcpServers": {
     "helixagent": {
       "type": "sse",
-      "url": "https://localhost:7061/v1/mcp",
+      "url": "http://localhost:7061/v1/mcp",
       "headers": {
         "Accept": "application/toon+json",
         "Accept-Encoding": "br, gzip",
@@ -16,7 +16,7 @@
   "providers": {
     "helixagent": {
       "provider": "openai",
-      "openAiBaseUrl": "https://localhost:7061/v1",
+      "openAiBaseUrl": "http://localhost:7061/v1",
       "openAiModelId": "helix-debate-ensemble",
       "headers": {
         "Accept": "application/toon+json",
@@ -27,7 +27,7 @@
   "extensions": {
     "helixagent": {
       "enabled": true,
-      "endpoint": "https://localhost:7061",
+      "endpoint": "http://localhost:7061",
       "preferHTTP3": true,
       "enableTOON": true,
       "enableBrotli": true,
