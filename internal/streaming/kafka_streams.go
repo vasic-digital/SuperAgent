@@ -14,20 +14,20 @@ import (
 
 // ConversationStreamProcessor processes conversation events in real-time
 type ConversationStreamProcessor struct {
-	config           *StreamProcessorConfig
-	logger           *zap.Logger
-	kafkaBroker      *kafka.Broker
-	stateStore       StateStore
-	topology         *StreamTopology
-	running          bool
-	mu               sync.RWMutex
-	stopChan         chan struct{}
-	wg               sync.WaitGroup
+	config      *StreamProcessorConfig
+	logger      *zap.Logger
+	kafkaBroker *kafka.Broker
+	stateStore  StateStore
+	topology    *StreamTopology
+	running     bool
+	mu          sync.RWMutex
+	stopChan    chan struct{}
+	wg          sync.WaitGroup
 
 	// Stream processing workers
-	aggregator       *ConversationAggregator
-	entityExtractor  *EntityExtractor
-	analyticsSink    *AnalyticsSink
+	aggregator      *ConversationAggregator
+	entityExtractor *EntityExtractor
+	analyticsSink   *AnalyticsSink
 
 	// Metrics
 	eventsProcessed  int64
@@ -393,11 +393,11 @@ func (csp *ConversationStreamProcessor) GetMetrics() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"events_processed":      csp.eventsProcessed,
-		"events_buffered":       csp.eventsBuffered,
-		"state_updates":         csp.stateUpdates,
+		"events_processed":       csp.eventsProcessed,
+		"events_buffered":        csp.eventsBuffered,
+		"state_updates":          csp.stateUpdates,
 		"avg_processing_time_ms": avgProcessingTime,
-		"running":               csp.running,
+		"running":                csp.running,
 	}
 }
 

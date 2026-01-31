@@ -161,17 +161,17 @@ func TestConversationStreamProcessor_HandleConversationCompleted(t *testing.T) {
 
 	// Setup initial state
 	state := &ConversationState{
-		ConversationID: conversationID,
-		UserID:         "user-001",
-		SessionID:      "session-001",
-		MessageCount:   10,
-		EntityCount:    5,
-		TotalTokens:    500,
+		ConversationID:   conversationID,
+		UserID:           "user-001",
+		SessionID:        "session-001",
+		MessageCount:     10,
+		EntityCount:      5,
+		TotalTokens:      500,
 		DebateRoundCount: 3,
-		Entities:       make(map[string]EntityData),
-		ProviderUsage:  map[string]int{"claude": 2, "deepseek": 1},
-		StartedAt:      time.Now().Add(-10 * time.Minute),
-		LastUpdatedAt:  time.Now(),
+		Entities:         make(map[string]EntityData),
+		ProviderUsage:    map[string]int{"claude": 2, "deepseek": 1},
+		StartedAt:        time.Now().Add(-10 * time.Minute),
+		LastUpdatedAt:    time.Now(),
 	}
 
 	err = processor.stateStore.SaveState(ctx, conversationID, state)
@@ -280,7 +280,7 @@ func TestConversationState_Serialization(t *testing.T) {
 			},
 		},
 		ProviderUsage: map[string]int{
-			"claude": 3,
+			"claude":   3,
 			"deepseek": 2,
 		},
 		StartedAt:     time.Now(),

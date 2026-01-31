@@ -47,12 +47,12 @@ func TestNativeFormatter_buildArgs(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name      string
-		args      []string
-		stdinFlag bool
-		checkOnly bool
+		name          string
+		args          []string
+		stdinFlag     bool
+		checkOnly     bool
 		supportsCheck bool
-		expected  []string
+		expected      []string
 	}{
 		{
 			name:      "basic args",
@@ -67,28 +67,28 @@ func TestNativeFormatter_buildArgs(t *testing.T) {
 			expected:  []string{"--quiet", "-"},
 		},
 		{
-			name:      "check only with support",
-			args:      []string{"--quiet"},
-			stdinFlag: false,
-			checkOnly: true,
+			name:          "check only with support",
+			args:          []string{"--quiet"},
+			stdinFlag:     false,
+			checkOnly:     true,
 			supportsCheck: true,
-			expected:  []string{"--quiet", "--check"},
+			expected:      []string{"--quiet", "--check"},
 		},
 		{
-			name:      "check only without support",
-			args:      []string{"--quiet"},
-			stdinFlag: false,
-			checkOnly: true,
+			name:          "check only without support",
+			args:          []string{"--quiet"},
+			stdinFlag:     false,
+			checkOnly:     true,
 			supportsCheck: false,
-			expected:  []string{"--quiet"},
+			expected:      []string{"--quiet"},
 		},
 		{
-			name:      "stdin and check",
-			args:      []string{"--quiet"},
-			stdinFlag: true,
-			checkOnly: true,
+			name:          "stdin and check",
+			args:          []string{"--quiet"},
+			stdinFlag:     true,
+			checkOnly:     true,
 			supportsCheck: true,
-			expected:  []string{"--quiet", "-", "--check"},
+			expected:      []string{"--quiet", "-", "--check"},
 		},
 	}
 

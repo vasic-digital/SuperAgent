@@ -393,9 +393,9 @@ func TestDebateTeamResult_Fields(t *testing.T) {
 				},
 			},
 		},
-		TotalLLMs:     25,           // 5 positions × 5 LLMs each
+		TotalLLMs:     25, // 5 positions × 5 LLMs each
 		MinScore:      5.0,
-		SortedByScore: true,         // NO OAuth priority - pure score-based
+		SortedByScore: true, // NO OAuth priority - pure score-based
 		LLMReuseCount: 0,
 		SelectedAt:    time.Now(),
 	}
@@ -480,7 +480,7 @@ func TestStartupConfig_Validation(t *testing.T) {
 	assert.Greater(t, cfg.VerificationTimeout, time.Duration(0))
 	assert.Greater(t, cfg.HealthCheckTimeout, time.Duration(0))
 	assert.GreaterOrEqual(t, cfg.MinScore, 0.0)
-	assert.Equal(t, 25, cfg.DebateTeamSize) // 5 positions × (1 primary + 4 fallbacks) = 25 max
+	assert.Equal(t, 25, cfg.DebateTeamSize)  // 5 positions × (1 primary + 4 fallbacks) = 25 max
 	assert.Equal(t, 5*5, cfg.DebateTeamSize) // 5 positions * 5 LLMs each (1 primary + 4 fallbacks)
 	assert.Equal(t, cfg.PositionCount*(1+cfg.FallbacksPerPosition), cfg.DebateTeamSize)
 }

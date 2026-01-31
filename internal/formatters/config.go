@@ -12,10 +12,10 @@ import (
 // Config represents the complete formatters configuration
 type Config struct {
 	// Global settings
-	Enabled          bool `yaml:"enabled"`
-	AutoFormat       bool `yaml:"auto_format"`
-	FormatOnSave     bool `yaml:"format_on_save"`
-	FormatOnDebate   bool `yaml:"format_on_debate"`
+	Enabled        bool `yaml:"enabled"`
+	AutoFormat     bool `yaml:"auto_format"`
+	FormatOnSave   bool `yaml:"format_on_save"`
+	FormatOnDebate bool `yaml:"format_on_debate"`
 
 	// Paths
 	SubmodulesPath string `yaml:"submodules_path"`
@@ -74,25 +74,25 @@ type OverrideConfig struct {
 // DefaultConfig returns the default formatters configuration
 func DefaultConfig() *Config {
 	return &Config{
-		Enabled:          true,
-		AutoFormat:       true,
-		FormatOnSave:     true,
-		FormatOnDebate:   true,
-		SubmodulesPath:   "./formatters",
-		BinariesPath:     "./bin/formatters",
-		ConfigsPath:      "./configs/formatters",
+		Enabled:             true,
+		AutoFormat:          true,
+		FormatOnSave:        true,
+		FormatOnDebate:      true,
+		SubmodulesPath:      "./formatters",
+		BinariesPath:        "./bin/formatters",
+		ConfigsPath:         "./configs/formatters",
 		ServicesComposeFile: "./docker/formatters/docker-compose.formatters.yml",
-		ServicesEnabled:  true,
-		CacheEnabled:     true,
-		CacheTTL:         3600 * time.Second,
-		DefaultTimeout:   30 * time.Second,
-		MaxConcurrent:    10,
-		HotReload:        true,
-		Metrics:          true,
-		Tracing:          true,
-		DefaultLineLength: 88,
-		DefaultIndentSize: 4,
-		UseTabs:          false,
+		ServicesEnabled:     true,
+		CacheEnabled:        true,
+		CacheTTL:            3600 * time.Second,
+		DefaultTimeout:      30 * time.Second,
+		MaxConcurrent:       10,
+		HotReload:           true,
+		Metrics:             true,
+		Tracing:             true,
+		DefaultLineLength:   88,
+		DefaultIndentSize:   4,
+		UseTabs:             false,
 		Preferences: map[string]string{
 			"python":     "ruff",
 			"javascript": "biome",

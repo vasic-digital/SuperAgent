@@ -195,28 +195,28 @@ var OpenRouterFreeModels = struct {
 // NOTE: Zen API requires model names WITHOUT "opencode/" prefix
 var ZenModels = struct {
 	// Primary models
-	BigPickle    string
-	GPT5Nano     string
-	GLM47        string
+	BigPickle string
+	GPT5Nano  string
+	GLM47     string
 	// Qwen models
-	Qwen3Coder   string
-	Qwen3235B    string
-	Qwen332B     string
+	Qwen3Coder string
+	Qwen3235B  string
+	Qwen332B   string
 	// Kimi models
-	KimiK2       string
-	KimiLatest   string
+	KimiK2     string
+	KimiLatest string
 	// Gemini models
-	Gemini3Flash string
-	Gemini25Pro  string
+	Gemini3Flash  string
+	Gemini25Pro   string
 	Gemini20Flash string
 	// DeepSeek models
-	DeepSeekR1   string
-	DeepSeekV3   string
+	DeepSeekR1    string
+	DeepSeekV3    string
 	DeepSeekCoder string
 	// Grok models
-	GrokCode     string
-	Grok3        string
-	Grok2        string
+	GrokCode string
+	Grok3    string
+	Grok2    string
 	// Claude models
 	ClaudeSonnet4 string
 	ClaudeHaiku4  string
@@ -275,16 +275,16 @@ type VerifiedLLM struct {
 
 // DebateTeamMember represents a member of the AI debate team
 type DebateTeamMember struct {
-	Position     DebateTeamPosition   `json:"position"`
-	Role         DebateRole           `json:"role"`
-	ProviderName string               `json:"provider_name"`
-	ModelName    string               `json:"model_name"`
-	Provider     llm.LLMProvider      `json:"-"`
-	Fallback     *DebateTeamMember    `json:"fallback,omitempty"`   // Deprecated: use Fallbacks
-	Fallbacks    []*DebateTeamMember  `json:"fallbacks,omitempty"`  // All fallbacks for this position (2-4)
-	Score        float64              `json:"score"`
-	IsActive     bool                 `json:"is_active"`
-	IsOAuth      bool                 `json:"is_oauth"`
+	Position     DebateTeamPosition  `json:"position"`
+	Role         DebateRole          `json:"role"`
+	ProviderName string              `json:"provider_name"`
+	ModelName    string              `json:"model_name"`
+	Provider     llm.LLMProvider     `json:"-"`
+	Fallback     *DebateTeamMember   `json:"fallback,omitempty"`  // Deprecated: use Fallbacks
+	Fallbacks    []*DebateTeamMember `json:"fallbacks,omitempty"` // All fallbacks for this position (2-4)
+	Score        float64             `json:"score"`
+	IsActive     bool                `json:"is_active"`
+	IsOAuth      bool                `json:"is_oauth"`
 }
 
 // DebateTeamConfig manages the AI debate team configuration
@@ -1074,11 +1074,11 @@ func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel strin
 		llm := dtc.verifiedLLMs[reuseIdx%len(dtc.verifiedLLMs)]
 		fallbacks = append(fallbacks, llm)
 		dtc.logger.WithFields(logrus.Fields{
-			"primary_provider":  primaryProvider,
-			"reused_provider":   llm.ProviderName,
-			"reused_model":      llm.ModelName,
-			"reused_score":      llm.Score,
-			"reason":            "LLM reuse for fallback completeness",
+			"primary_provider": primaryProvider,
+			"reused_provider":  llm.ProviderName,
+			"reused_model":     llm.ModelName,
+			"reused_score":     llm.Score,
+			"reason":           "LLM reuse for fallback completeness",
 		}).Debug("Reusing LLM as independent instance for fallback")
 		reuseIdx++
 	}
@@ -1307,28 +1307,28 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 		},
 		"zen_models": map[string]string{
 			// Primary models
-			"big_pickle":      ZenModels.BigPickle,
-			"gpt_5_nano":      ZenModels.GPT5Nano,
-			"glm_47":          ZenModels.GLM47,
+			"big_pickle": ZenModels.BigPickle,
+			"gpt_5_nano": ZenModels.GPT5Nano,
+			"glm_47":     ZenModels.GLM47,
 			// Qwen models
-			"qwen3_coder":     ZenModels.Qwen3Coder,
-			"qwen3_235b":      ZenModels.Qwen3235B,
-			"qwen3_32b":       ZenModels.Qwen332B,
+			"qwen3_coder": ZenModels.Qwen3Coder,
+			"qwen3_235b":  ZenModels.Qwen3235B,
+			"qwen3_32b":   ZenModels.Qwen332B,
 			// Kimi models
-			"kimi_k2":         ZenModels.KimiK2,
-			"kimi_latest":     ZenModels.KimiLatest,
+			"kimi_k2":     ZenModels.KimiK2,
+			"kimi_latest": ZenModels.KimiLatest,
 			// Gemini models
 			"gemini_3_flash":  ZenModels.Gemini3Flash,
 			"gemini_25_pro":   ZenModels.Gemini25Pro,
 			"gemini_20_flash": ZenModels.Gemini20Flash,
 			// DeepSeek models
-			"deepseek_r1":     ZenModels.DeepSeekR1,
-			"deepseek_v3":     ZenModels.DeepSeekV3,
-			"deepseek_coder":  ZenModels.DeepSeekCoder,
+			"deepseek_r1":    ZenModels.DeepSeekR1,
+			"deepseek_v3":    ZenModels.DeepSeekV3,
+			"deepseek_coder": ZenModels.DeepSeekCoder,
 			// Grok models
-			"grok_code":       ZenModels.GrokCode,
-			"grok_3":          ZenModels.Grok3,
-			"grok_2":          ZenModels.Grok2,
+			"grok_code": ZenModels.GrokCode,
+			"grok_3":    ZenModels.Grok3,
+			"grok_2":    ZenModels.Grok2,
 			// Claude models
 			"claude_sonnet_4": ZenModels.ClaudeSonnet4,
 			"claude_haiku_4":  ZenModels.ClaudeHaiku4,
@@ -1337,13 +1337,13 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 			"llama_4_scout":    ZenModels.Llama4Scout,
 			"llama_33_70b":     ZenModels.Llama3370B,
 			// Mistral models
-			"mistral_large":   ZenModels.MistralLarge,
-			"codestral":       ZenModels.Codestral,
+			"mistral_large": ZenModels.MistralLarge,
+			"codestral":     ZenModels.Codestral,
 			// Other models
-			"o3_mini":         ZenModels.O3Mini,
-			"o1_mini":         ZenModels.O1Mini,
-			"gpt_4o":          ZenModels.GPT4O,
-			"command_r_plus":  ZenModels.CommandRPlus,
+			"o3_mini":        ZenModels.O3Mini,
+			"o1_mini":        ZenModels.O1Mini,
+			"gpt_4o":         ZenModels.GPT4O,
+			"command_r_plus": ZenModels.CommandRPlus,
 		},
 		"zen_models_count":    dtc.countZenModels(),
 		"total_zen_available": 29, // Total number of Zen models to evaluate

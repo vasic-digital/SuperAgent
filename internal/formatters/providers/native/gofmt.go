@@ -29,7 +29,7 @@ func NewGofmtFormatter(logger *logrus.Logger) *NativeFormatter {
 	return NewNativeFormatter(
 		metadata,
 		"gofmt",
-		[]string{},  // no args needed
+		[]string{}, // no args needed
 		true,
 		logger,
 	)

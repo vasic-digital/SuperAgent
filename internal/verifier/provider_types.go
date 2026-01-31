@@ -184,9 +184,9 @@ type DebateTeamResult struct {
 	TotalLLMs int               `json:"total_llms"`
 
 	// Selection criteria
-	MinScore       float64 `json:"min_score"`
-	SortedByScore  bool    `json:"sorted_by_score"` // Always true - NO OAuth priority
-	LLMReuseCount  int     `json:"llm_reuse_count"` // Number of LLMs reused across positions
+	MinScore      float64 `json:"min_score"`
+	SortedByScore bool    `json:"sorted_by_score"` // Always true - NO OAuth priority
+	LLMReuseCount int     `json:"llm_reuse_count"` // Number of LLMs reused across positions
 
 	// Timing
 	SelectedAt time.Time `json:"selected_at"`
@@ -278,7 +278,7 @@ func DefaultStartupConfig() *StartupConfig {
 		RequireCodeVisibility:        true,
 		DebateTeamSize:               25, // 5 positions × (1 primary + 4 fallbacks) = 25 LLMs max
 		PositionCount:                5,
-		FallbacksPerPosition:         4, // 2-4 fallbacks per position
+		FallbacksPerPosition:         4,   // 2-4 fallbacks per position
 		OAuthPriorityBoost:           0.0, // NO OAuth priority - all providers sorted purely by score
 		TrustOAuthOnFailure:          true,
 		OAuthTokenRefreshMins:        10,

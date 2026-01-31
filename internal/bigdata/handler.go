@@ -108,12 +108,12 @@ func (h *Handler) ReplayConversation(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"conversation_id":    conversationCtx.ConversationID,
-		"messages":           conversationCtx.Messages,
-		"entities":           conversationCtx.Entities,
-		"total_tokens":       conversationCtx.TotalTokens,
-		"compressed":         conversationCtx.Compressed,
-		"compression_stats":  conversationCtx.CompressionStats,
+		"conversation_id":   conversationCtx.ConversationID,
+		"messages":          conversationCtx.Messages,
+		"entities":          conversationCtx.Entities,
+		"total_tokens":      conversationCtx.TotalTokens,
+		"compressed":        conversationCtx.Compressed,
+		"compression_stats": conversationCtx.CompressionStats,
 	})
 }
 
@@ -144,11 +144,11 @@ func (h *Handler) GetMemorySyncStatus(c *gin.Context) {
 
 	// TODO: Implement sync status query
 	c.JSON(http.StatusOK, gin.H{
-		"enabled":      true,
-		"node_count":   1,
-		"sync_lag_ms":  0,
+		"enabled":       true,
+		"node_count":    1,
+		"sync_lag_ms":   0,
 		"events_synced": 0,
-		"conflicts":    0,
+		"conflicts":     0,
 	})
 }
 
@@ -245,13 +245,13 @@ func (h *Handler) GetProviderAnalytics(c *gin.Context) {
 	_ = duration
 
 	c.JSON(http.StatusOK, gin.H{
-		"provider":           provider,
-		"window":             window,
-		"total_requests":     0,
-		"avg_response_time":  0.0,
-		"p95_response_time":  0.0,
-		"avg_confidence":     0.0,
-		"error_rate":         0.0,
+		"provider":          provider,
+		"window":            window,
+		"total_requests":    0,
+		"avg_response_time": 0.0,
+		"p95_response_time": 0.0,
+		"avg_confidence":    0.0,
+		"error_rate":        0.0,
 	})
 }
 
@@ -270,21 +270,21 @@ func (h *Handler) GetDebateAnalytics(c *gin.Context) {
 
 	// TODO: Query ClickHouse for debate metrics
 	c.JSON(http.StatusOK, gin.H{
-		"debate_id":          debateID,
-		"rounds":             0,
-		"participants":       []string{},
-		"avg_response_time":  0.0,
-		"total_tokens":       0,
-		"winner":             "",
-		"confidence":         0.0,
+		"debate_id":         debateID,
+		"rounds":            0,
+		"participants":      []string{},
+		"avg_response_time": 0.0,
+		"total_tokens":      0,
+		"winner":            "",
+		"confidence":        0.0,
 	})
 }
 
 // QueryAnalyticsRequest represents a custom analytics query
 type QueryAnalyticsRequest struct {
-	Query     string                 `json:"query" binding:"required"`
+	Query      string                 `json:"query" binding:"required"`
 	Parameters map[string]interface{} `json:"parameters,omitempty"`
-	Format    string                 `json:"format,omitempty"` // "json", "csv"
+	Format     string                 `json:"format,omitempty"` // "json", "csv"
 }
 
 // QueryAnalytics executes a custom analytics query

@@ -10,12 +10,12 @@ import (
 
 // DebateServiceWrapper wraps the debate service to add big data capabilities
 type DebateServiceWrapper struct {
-	debateService     *services.DebateService
-	debateIntegration *DebateIntegration
+	debateService        *services.DebateService
+	debateIntegration    *DebateIntegration
 	analyticsIntegration *AnalyticsIntegration
-	entityIntegration *EntityIntegration
-	logger            *logrus.Logger
-	enableBigData     bool
+	entityIntegration    *EntityIntegration
+	logger               *logrus.Logger
+	enableBigData        bool
 }
 
 // NewDebateServiceWrapper creates a new debate service wrapper

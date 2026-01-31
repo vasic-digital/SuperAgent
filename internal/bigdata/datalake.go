@@ -61,15 +61,15 @@ type ArchivedEntity struct {
 
 // ArchivedDebateRound represents a debate round in archive
 type ArchivedDebateRound struct {
-	Round         int                    `json:"round"`
-	Position      string                 `json:"position"`
-	Provider      string                 `json:"provider"`
-	Model         string                 `json:"model"`
-	Response      string                 `json:"response"`
-	Confidence    float64                `json:"confidence"`
-	ResponseTime  int64                  `json:"response_time_ms"`
-	Timestamp     time.Time              `json:"timestamp"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	Round        int                    `json:"round"`
+	Position     string                 `json:"position"`
+	Provider     string                 `json:"provider"`
+	Model        string                 `json:"model"`
+	Response     string                 `json:"response"`
+	Confidence   float64                `json:"confidence"`
+	ResponseTime int64                  `json:"response_time_ms"`
+	Timestamp    time.Time              `json:"timestamp"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // DataLakeConfig defines data lake configuration

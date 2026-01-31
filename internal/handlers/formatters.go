@@ -73,20 +73,20 @@ type JSONFormatter struct{}
 
 // JSONDebateIntroduction represents the JSON structure for debate introduction
 type JSONDebateIntroduction struct {
-	Title       string              `json:"title"`
-	Description string              `json:"description"`
-	Topic       string              `json:"topic"`
-	Team        []JSONTeamMember    `json:"team"`
-	Timestamp   string              `json:"timestamp"`
+	Title       string           `json:"title"`
+	Description string           `json:"description"`
+	Topic       string           `json:"topic"`
+	Team        []JSONTeamMember `json:"team"`
+	Timestamp   string           `json:"timestamp"`
 }
 
 // JSONTeamMember represents a team member in JSON format
 type JSONTeamMember struct {
-	Position int              `json:"position"`
-	Role     string           `json:"role"`
-	Model    string           `json:"model"`
-	Provider string           `json:"provider"`
-	Fallback *JSONTeamMember  `json:"fallback,omitempty"`
+	Position int             `json:"position"`
+	Role     string          `json:"role"`
+	Model    string          `json:"model"`
+	Provider string          `json:"provider"`
+	Fallback *JSONTeamMember `json:"fallback,omitempty"`
 }
 
 // JSONPhaseHeader represents a phase header in JSON format
@@ -526,12 +526,12 @@ type XMLFormatter struct{}
 
 // XMLDebateIntroduction represents the XML structure for debate introduction
 type XMLDebateIntroduction struct {
-	XMLName     xml.Name        `xml:"debate_introduction"`
-	Title       string          `xml:"title"`
-	Description string          `xml:"description"`
-	Topic       string          `xml:"topic"`
-	Team        XMLTeam         `xml:"team"`
-	Timestamp   string          `xml:"timestamp"`
+	XMLName     xml.Name `xml:"debate_introduction"`
+	Title       string   `xml:"title"`
+	Description string   `xml:"description"`
+	Topic       string   `xml:"topic"`
+	Team        XMLTeam  `xml:"team"`
+	Timestamp   string   `xml:"timestamp"`
 }
 
 // XMLTeam represents the team in XML format

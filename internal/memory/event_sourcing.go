@@ -35,10 +35,10 @@ type MemoryEvent struct {
 	NodeID    string          `json:"node_id"` // Source node that generated the event
 
 	// Memory data
-	MemoryID  string   `json:"memory_id"`
-	UserID    string   `json:"user_id"`
-	SessionID string   `json:"session_id,omitempty"`
-	Content   string   `json:"content,omitempty"`
+	MemoryID  string    `json:"memory_id"`
+	UserID    string    `json:"user_id"`
+	SessionID string    `json:"session_id,omitempty"`
+	Content   string    `json:"content,omitempty"`
 	Embedding []float32 `json:"embedding,omitempty"`
 
 	// Entity and relationship data
@@ -171,15 +171,15 @@ type MemorySnapshot struct {
 
 // EventStream represents a stream of memory events
 type EventStream struct {
-	StreamID    string           `json:"stream_id"`
-	UserID      string           `json:"user_id"`
-	SessionID   string           `json:"session_id,omitempty"`
-	StartTime   time.Time        `json:"start_time"`
-	EndTime     time.Time        `json:"end_time,omitempty"`
-	Events      []*MemoryEvent   `json:"events"`
-	EventCount  int              `json:"event_count"`
-	VectorClock VectorClock      `json:"vector_clock"`
-	Checkpoints []time.Time      `json:"checkpoints,omitempty"`
+	StreamID    string         `json:"stream_id"`
+	UserID      string         `json:"user_id"`
+	SessionID   string         `json:"session_id,omitempty"`
+	StartTime   time.Time      `json:"start_time"`
+	EndTime     time.Time      `json:"end_time,omitempty"`
+	Events      []*MemoryEvent `json:"events"`
+	EventCount  int            `json:"event_count"`
+	VectorClock VectorClock    `json:"vector_clock"`
+	Checkpoints []time.Time    `json:"checkpoints,omitempty"`
 }
 
 // NewMemoryEvent creates a new memory event
@@ -285,15 +285,15 @@ func randomString(length int) string {
 
 // EventStreamStats represents statistics for an event stream
 type EventStreamStats struct {
-	StreamID          string        `json:"stream_id"`
-	TotalEvents       int           `json:"total_events"`
-	EventTypes        map[string]int `json:"event_types"`
-	Duration          time.Duration `json:"duration"`
-	EventsPerSecond   float64       `json:"events_per_second"`
-	NodesInvolved     []string      `json:"nodes_involved"`
-	MemoriesAffected  int           `json:"memories_affected"`
-	EntitiesCreated   int           `json:"entities_created"`
-	RelationshipsCreated int        `json:"relationships_created"`
+	StreamID             string         `json:"stream_id"`
+	TotalEvents          int            `json:"total_events"`
+	EventTypes           map[string]int `json:"event_types"`
+	Duration             time.Duration  `json:"duration"`
+	EventsPerSecond      float64        `json:"events_per_second"`
+	NodesInvolved        []string       `json:"nodes_involved"`
+	MemoriesAffected     int            `json:"memories_affected"`
+	EntitiesCreated      int            `json:"entities_created"`
+	RelationshipsCreated int            `json:"relationships_created"`
 }
 
 // CalculateStats calculates statistics for an event stream

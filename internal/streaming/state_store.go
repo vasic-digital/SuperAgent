@@ -173,16 +173,16 @@ func (s *InMemoryStateStore) cloneAnalytics(analytics *WindowedAnalytics) *Windo
 	}
 
 	clone := &WindowedAnalytics{
-		WindowStart:       analytics.WindowStart,
-		WindowEnd:         analytics.WindowEnd,
-		ConversationID:    analytics.ConversationID,
-		TotalMessages:     analytics.TotalMessages,
-		LLMCalls:          analytics.LLMCalls,
-		DebateRounds:      analytics.DebateRounds,
-		AvgResponseTimeMs: analytics.AvgResponseTimeMs,
-		EntityGrowth:      analytics.EntityGrowth,
-		KnowledgeDensity:  analytics.KnowledgeDensity,
-		CreatedAt:         analytics.CreatedAt,
+		WindowStart:          analytics.WindowStart,
+		WindowEnd:            analytics.WindowEnd,
+		ConversationID:       analytics.ConversationID,
+		TotalMessages:        analytics.TotalMessages,
+		LLMCalls:             analytics.LLMCalls,
+		DebateRounds:         analytics.DebateRounds,
+		AvgResponseTimeMs:    analytics.AvgResponseTimeMs,
+		EntityGrowth:         analytics.EntityGrowth,
+		KnowledgeDensity:     analytics.KnowledgeDensity,
+		CreatedAt:            analytics.CreatedAt,
 		ProviderDistribution: make(map[string]int),
 	}
 

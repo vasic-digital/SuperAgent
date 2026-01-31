@@ -251,13 +251,13 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 		ResponseTime: duration.Milliseconds(),
 		CreatedAt:    time.Now(),
 		Metadata: map[string]interface{}{
-			"source":             "opencode-cli",
-			"cli_path":           p.cliPath,
-			"facade":             true,
-			"model":              model,
-			"latency":            duration.String(),
-			"prompt_tokens":      promptTokens,
-			"completion_tokens":  completionTokens,
+			"source":            "opencode-cli",
+			"cli_path":          p.cliPath,
+			"facade":            true,
+			"model":             model,
+			"latency":           duration.String(),
+			"prompt_tokens":     promptTokens,
+			"completion_tokens": completionTokens,
 		},
 	}, nil
 }
@@ -441,11 +441,11 @@ func (p *ZenCLIProvider) HealthCheck() error {
 // GetCapabilities implements the LLMProvider interface
 func (p *ZenCLIProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels:  p.GetAvailableModels(),
-		SupportsStreaming: true,
+		SupportedModels:         p.GetAvailableModels(),
+		SupportsStreaming:       true,
 		SupportsFunctionCalling: false, // CLI doesn't support tools
-		SupportsVision:   false,
-		SupportsTools:    false,
+		SupportsVision:          false,
+		SupportsTools:           false,
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",

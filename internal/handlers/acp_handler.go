@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,11 +42,73 @@ type ACPExecuteResponse struct {
 	Timestamp int64                  `json:"timestamp"`
 }
 
+// JSON-RPC 2.0 Structures for ACP protocol
+// Note: JSONRPCMessage and JSONRPCError are defined in protocol_sse.go
+// and are available in this package (same package)
+
+// ACPSession represents an ACP session for multi-turn conversations
+type ACPSession struct {
+	ID        string                 `json:"id"`
+	AgentID   string                 `json:"agent_id"`
+	CreatedAt int64                  `json:"created_at"`
+	UpdatedAt int64                  `json:"updated_at"`
+	Context   map[string]interface{} `json:"context,omitempty"`
+	History   []ACPMessage           `json:"history,omitempty"`
+}
+
+// ACPMessage represents a message in a session
+type ACPMessage struct {
+	Role      string                 `json:"role"` // "user", "agent", "system"
+	Content   string                 `json:"content"`
+	Timestamp int64                  `json:"timestamp"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// ACPInitializeParams represents parameters for initialize method
+type ACPInitializeParams struct {
+	ClientInfo map[string]interface{} `json:"clientInfo,omitempty"`
+}
+
+// ACPAgentListParams represents parameters for agent/list method
+type ACPAgentListParams struct {
+	Filter string `json:"filter,omitempty"`
+}
+
+// ACPAgentGetParams represents parameters for agent/get method
+type ACPAgentGetParams struct {
+	AgentID string `json:"agent_id"`
+}
+
+// ACPAgentExecuteParams represents parameters for agent/execute method
+type ACPAgentExecuteParams struct {
+	AgentID   string                 `json:"agent_id"`
+	Task      string                 `json:"task"`
+	Context   map[string]interface{} `json:"context,omitempty"`
+	SessionID string                 `json:"session_id,omitempty"`
+}
+
+// ACPSessionCreateParams represents parameters for session/create method
+type ACPSessionCreateParams struct {
+	AgentID string                 `json:"agent_id"`
+	Context map[string]interface{} `json:"context,omitempty"`
+}
+
+// ACPSessionUpdateParams represents parameters for session/update method
+type ACPSessionUpdateParams struct {
+	SessionID string                 `json:"session_id"`
+	Context   map[string]interface{} `json:"context,omitempty"`
+	Message   *ACPMessage            `json:"message,omitempty"`
+}
+
 // ACPHandler handles ACP (Agent Communication Protocol) endpoints
 type ACPHandler struct {
 	providerRegistry *services.ProviderRegistry
 	logger           *logrus.Logger
 	agents           map[string]*ACPAgent
+	sessions         map[string]*ACPSession
+	agentsMu         sync.RWMutex
+	sessionsMu       sync.RWMutex
+	stopCleanup      chan struct{}
 }
 
 // NewACPHandler creates a new ACP handler
@@ -53,10 +117,15 @@ func NewACPHandler(providerRegistry *services.ProviderRegistry, logger *logrus.L
 		providerRegistry: providerRegistry,
 		logger:           logger,
 		agents:           make(map[string]*ACPAgent),
+		sessions:         make(map[string]*ACPSession),
+		stopCleanup:      make(chan struct{}),
 	}
 
 	// Initialize built-in agents
 	h.initializeAgents()
+
+	// Start session cleanup worker
+	go h.sessionCleanupWorker()
 
 	return h
 }
@@ -167,6 +236,310 @@ func (h *ACPHandler) initializeAgents() {
 	}
 }
 
+// HandleJSONRPC handles JSON-RPC 2.0 requests for ACP protocol
+func (h *ACPHandler) HandleJSONRPC(c *gin.Context) {
+	var msg JSONRPCMessage
+	if err := c.ShouldBindJSON(&msg); err != nil {
+		h.sendJSONRPCError(c, nil, -32700, "Parse error", err.Error())
+		return
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"method": msg.Method,
+		"id":     msg.ID,
+	}).Debug("Received JSON-RPC message")
+
+	// Handle JSON-RPC methods
+	switch msg.Method {
+	case "initialize":
+		h.handleInitialize(c, &msg)
+	case "agent/list":
+		h.handleAgentList(c, &msg)
+	case "agent/get":
+		h.handleAgentGet(c, &msg)
+	case "agent/execute":
+		h.handleAgentExecute(c, &msg)
+	case "session/create":
+		h.handleSessionCreate(c, &msg)
+	case "session/update":
+		h.handleSessionUpdate(c, &msg)
+	case "session/close":
+		h.handleSessionClose(c, &msg)
+	case "health":
+		h.handleHealth(c, &msg)
+	default:
+		h.sendJSONRPCError(c, msg.ID, -32601, "Method not found", fmt.Sprintf("Unknown method: %s", msg.Method))
+	}
+}
+
+// sendJSONRPCResult sends a JSON-RPC result response
+func (h *ACPHandler) sendJSONRPCResult(c *gin.Context, id interface{}, result interface{}) {
+	response := JSONRPCMessage{
+		JSONRPC: "2.0",
+		ID:      id,
+		Result:  result,
+	}
+	c.JSON(http.StatusOK, response)
+}
+
+// sendJSONRPCError sends a JSON-RPC error response
+func (h *ACPHandler) sendJSONRPCError(c *gin.Context, id interface{}, code int, message string, data interface{}) {
+	response := JSONRPCMessage{
+		JSONRPC: "2.0",
+		ID:      id,
+		Error: &JSONRPCError{
+			Code:    code,
+			Message: message,
+			Data:    data,
+		},
+	}
+	c.JSON(http.StatusOK, response)
+}
+
+// handleInitialize handles the initialize method
+func (h *ACPHandler) handleInitialize(c *gin.Context, msg *JSONRPCMessage) {
+	var params ACPInitializeParams
+	if err := json.Unmarshal(msg.Params, &params); err != nil {
+		h.sendJSONRPCError(c, msg.ID, -32602, "Invalid params", err.Error())
+		return
+	}
+
+	result := map[string]interface{}{
+		"protocolVersion": "2.0",
+		"serverInfo": map[string]interface{}{
+			"name":    "helixagent-acp",
+			"version": "1.0.0",
+		},
+		"capabilities": map[string]interface{}{
+			"agents": map[string]interface{}{
+				"dynamicRegistration": true,
+				"execute":             true,
+			},
+			"sessions": map[string]interface{}{
+				"create": true,
+				"update": true,
+				"close":  true,
+			},
+		},
+	}
+
+	h.sendJSONRPCResult(c, msg.ID, result)
+}
+
+// handleAgentList handles the agent/list method
+func (h *ACPHandler) handleAgentList(c *gin.Context, msg *JSONRPCMessage) {
+	var params ACPAgentListParams
+	if err := json.Unmarshal(msg.Params, &params); err != nil && len(msg.Params) > 0 {
+		h.sendJSONRPCError(c, msg.ID, -32602, "Invalid params", err.Error())
+		return
+	}
+
+	h.agentsMu.RLock()
+	defer h.agentsMu.RUnlock()
+
+	agents := make([]*ACPAgent, 0, len(h.agents))
+	for _, agent := range h.agents {
+		// Apply filter if provided
+		if params.Filter != "" {
+			if !strings.Contains(strings.ToLower(agent.Name), strings.ToLower(params.Filter)) &&
+				!strings.Contains(strings.ToLower(agent.Description), strings.ToLower(params.Filter)) {
+				continue
+			}
+		}
+		agents = append(agents, agent)
+	}
+
+	result := map[string]interface{}{
+		"agents": agents,
+		"count":  len(agents),
+	}
+	h.sendJSONRPCResult(c, msg.ID, result)
+}
+
+// handleAgentGet handles the agent/get method
+func (h *ACPHandler) handleAgentGet(c *gin.Context, msg *JSONRPCMessage) {
+	var params ACPAgentGetParams
+	if err := json.Unmarshal(msg.Params, &params); err != nil {
+		h.sendJSONRPCError(c, msg.ID, -32602, "Invalid params", err.Error())
+		return
+	}
+
+	h.agentsMu.RLock()
+	agent, exists := h.agents[params.AgentID]
+	h.agentsMu.RUnlock()
+
+	if !exists {
+		h.sendJSONRPCError(c, msg.ID, -32602, "Agent not found", fmt.Sprintf("Agent ID: %s", params.AgentID))
+		return
+	}
+
+	h.sendJSONRPCResult(c, msg.ID, agent)
+}
+
+// handleAgentExecute handles the agent/execute method
+func (h *ACPHandler) handleAgentExecute(c *gin.Context, msg *JSONRPCMessage) {
+	var params ACPAgentExecuteParams
+	if err := json.Unmarshal(msg.Params, &params); err != nil {
+		h.sendJSONRPCError(c, msg.ID, -32602, "Invalid params", err.Error())
+		return
+	}
+
+	// Validate agent exists
+	h.agentsMu.RLock()
+	agent, exists := h.agents[params.AgentID]
+	h.agentsMu.RUnlock()
+
+	if !exists {
+		h.sendJSONRPCError(c, msg.ID, -32602, "Agent not found", fmt.Sprintf("Agent ID: %s", params.AgentID))
+		return
+	}
+
+	// Execute agent task (using existing Execute logic)
+	startTime := time.Now()
+	result, err := h.executeAgentTask(agent, params.Task, params.Context)
+	if err != nil {
+		h.sendJSONRPCError(c, msg.ID, -32000, "Agent execution failed", err.Error())
+		return
+	}
+
+	duration := time.Since(startTime).Milliseconds()
+
+	response := map[string]interface{}{
+		"status":   "completed",
+		"agent_id": params.AgentID,
+		"result":   result,
+		"duration": duration,
+		"metadata": map[string]interface{}{
+			"agent_name":   agent.Name,
+			"task_type":    h.detectTaskType(params.Task),
+			"context_keys": h.getContextKeys(params.Context),
+			"capabilities": agent.Capabilities,
+		},
+		"timestamp": time.Now().Unix(),
+	}
+
+	h.sendJSONRPCResult(c, msg.ID, response)
+}
+
+// handleSessionCreate handles the session/create method
+func (h *ACPHandler) handleSessionCreate(c *gin.Context, msg *JSONRPCMessage) {
+	var params ACPSessionCreateParams
+	if err := json.Unmarshal(msg.Params, &params); err != nil {
+		h.sendJSONRPCError(c, msg.ID, -32602, "Invalid params", err.Error())
+		return
+	}
+
+	// Validate agent exists
+	h.agentsMu.RLock()
+	_, exists := h.agents[params.AgentID]
+	h.agentsMu.RUnlock()
+
+	if !exists {
+		h.sendJSONRPCError(c, msg.ID, -32602, "Agent not found", fmt.Sprintf("Agent ID: %s", params.AgentID))
+		return
+	}
+
+	// Create session
+	sessionID := fmt.Sprintf("session_%d", time.Now().UnixNano())
+	session := &ACPSession{
+		ID:        sessionID,
+		AgentID:   params.AgentID,
+		CreatedAt: time.Now().Unix(),
+		UpdatedAt: time.Now().Unix(),
+		Context:   params.Context,
+		History:   []ACPMessage{},
+	}
+
+	h.sessionsMu.Lock()
+	h.sessions[sessionID] = session
+	h.sessionsMu.Unlock()
+
+	result := map[string]interface{}{
+		"session_id": sessionID,
+		"created_at": session.CreatedAt,
+		"agent_id":   params.AgentID,
+	}
+	h.sendJSONRPCResult(c, msg.ID, result)
+}
+
+// handleSessionUpdate handles the session/update method
+func (h *ACPHandler) handleSessionUpdate(c *gin.Context, msg *JSONRPCMessage) {
+	var params ACPSessionUpdateParams
+	if err := json.Unmarshal(msg.Params, &params); err != nil {
+		h.sendJSONRPCError(c, msg.ID, -32602, "Invalid params", err.Error())
+		return
+	}
+
+	h.sessionsMu.Lock()
+	session, exists := h.sessions[params.SessionID]
+	if !exists {
+		h.sessionsMu.Unlock()
+		h.sendJSONRPCError(c, msg.ID, -32602, "Session not found", fmt.Sprintf("Session ID: %s", params.SessionID))
+		return
+	}
+
+	// Update context if provided
+	if params.Context != nil {
+		session.Context = params.Context
+	}
+
+	// Add message to history if provided
+	if params.Message != nil {
+		session.History = append(session.History, *params.Message)
+	}
+
+	session.UpdatedAt = time.Now().Unix()
+	h.sessionsMu.Unlock()
+
+	result := map[string]interface{}{
+		"session_id":  params.SessionID,
+		"updated_at":  session.UpdatedAt,
+		"history_len": len(session.History),
+	}
+	h.sendJSONRPCResult(c, msg.ID, result)
+}
+
+// handleSessionClose handles the session/close method
+func (h *ACPHandler) handleSessionClose(c *gin.Context, msg *JSONRPCMessage) {
+	var params struct {
+		SessionID string `json:"session_id"`
+	}
+	if err := json.Unmarshal(msg.Params, &params); err != nil {
+		h.sendJSONRPCError(c, msg.ID, -32602, "Invalid params", err.Error())
+		return
+	}
+
+	h.sessionsMu.Lock()
+	_, exists := h.sessions[params.SessionID]
+	if exists {
+		delete(h.sessions, params.SessionID)
+	}
+	h.sessionsMu.Unlock()
+
+	if !exists {
+		h.sendJSONRPCError(c, msg.ID, -32602, "Session not found", fmt.Sprintf("Session ID: %s", params.SessionID))
+		return
+	}
+
+	h.sendJSONRPCResult(c, msg.ID, map[string]interface{}{
+		"session_id": params.SessionID,
+		"closed":     true,
+	})
+}
+
+// handleHealth handles the health method
+func (h *ACPHandler) handleHealth(c *gin.Context, msg *JSONRPCMessage) {
+	result := map[string]interface{}{
+		"status":        "healthy",
+		"service":       "acp",
+		"version":       "1.0.0",
+		"agent_count":   len(h.agents),
+		"session_count": len(h.sessions),
+		"timestamp":     time.Now().Unix(),
+	}
+	h.sendJSONRPCResult(c, msg.ID, result)
+}
+
 // RegisterRoutes registers ACP routes
 func (h *ACPHandler) RegisterRoutes(router *gin.RouterGroup) {
 	acpGroup := router.Group("/acp")
@@ -180,6 +553,9 @@ func (h *ACPHandler) RegisterRoutes(router *gin.RouterGroup) {
 
 		// Agent execution
 		acpGroup.POST("/execute", h.Execute)
+
+		// JSON-RPC 2.0 endpoint
+		acpGroup.POST("/rpc", h.HandleJSONRPC)
 	}
 }
 
@@ -513,4 +889,35 @@ func (h *ACPHandler) getContextKeys(context map[string]interface{}) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+// sessionCleanupWorker periodically cleans up old sessions
+func (h *ACPHandler) sessionCleanupWorker() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			h.cleanupOldSessions()
+		case <-h.stopCleanup:
+			return
+		}
+	}
+}
+
+// cleanupOldSessions removes sessions older than 24 hours
+func (h *ACPHandler) cleanupOldSessions() {
+	h.sessionsMu.Lock()
+	defer h.sessionsMu.Unlock()
+
+	now := time.Now().Unix()
+	cutoff := now - (24 * 3600) // 24 hours in seconds
+
+	for id, session := range h.sessions {
+		if session.UpdatedAt < cutoff {
+			delete(h.sessions, id)
+			h.logger.Debugf("Cleaned up old session: %s", id)
+		}
+	}
 }

@@ -18,33 +18,33 @@ type ClickHouseAnalytics struct {
 
 // DebateMetrics represents metrics for a single debate round
 type DebateMetrics struct {
-	DebateID       string
-	Round          int
-	Timestamp      time.Time
-	Provider       string
-	Model          string
-	Position       string
-	ResponseTimeMs float32
-	TokensUsed     int
+	DebateID        string
+	Round           int
+	Timestamp       time.Time
+	Provider        string
+	Model           string
+	Position        string
+	ResponseTimeMs  float32
+	TokensUsed      int
 	ConfidenceScore float32
-	ErrorCount     int
-	WasWinner      bool
-	Metadata       map[string]string
+	ErrorCount      int
+	WasWinner       bool
+	Metadata        map[string]string
 }
 
 // ProviderStats represents aggregated provider statistics
 type ProviderStats struct {
-	Provider          string
-	TotalRequests     int64
-	AvgResponseTime   float32
-	P95ResponseTime   float32
-	P99ResponseTime   float32
-	AvgConfidence     float32
-	TotalTokens       int64
-	AvgTokensPerReq   float32
-	ErrorRate         float32
-	WinRate           float32
-	Period            string
+	Provider        string
+	TotalRequests   int64
+	AvgResponseTime float32
+	P95ResponseTime float32
+	P99ResponseTime float32
+	AvgConfidence   float32
+	TotalTokens     int64
+	AvgTokensPerReq float32
+	ErrorRate       float32
+	WinRate         float32
+	Period          string
 }
 
 // ConversationMetrics represents metrics for a conversation
@@ -387,13 +387,13 @@ func (cha *ClickHouseAnalytics) GetConversationTrends(ctx context.Context, inter
 		}
 
 		trends = append(trends, map[string]interface{}{
-			"period":               periodStart.Format("2006-01-02 15:04:05"),
-			"total_conversations":  totalConversations,
-			"avg_messages":         avgMessages,
-			"avg_entities":         avgEntities,
-			"avg_tokens":           avgTokens,
-			"avg_duration_ms":      avgDuration,
-			"avg_debate_rounds":    avgDebateRounds,
+			"period":              periodStart.Format("2006-01-02 15:04:05"),
+			"total_conversations": totalConversations,
+			"avg_messages":        avgMessages,
+			"avg_entities":        avgEntities,
+			"avg_tokens":          avgTokens,
+			"avg_duration_ms":     avgDuration,
+			"avg_debate_rounds":   avgDebateRounds,
 		})
 	}
 

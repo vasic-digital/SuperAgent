@@ -19,6 +19,7 @@ import (
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/skills"
 	"dev.helix.agent/internal/utils"
 )
 
@@ -28,6 +29,7 @@ type UnifiedHandler struct {
 	config             *config.Config
 	dialogueFormatter  *services.DialogueFormatter
 	debateTeamConfig   *services.DebateTeamConfig
+	skillsIntegration  *skills.Integration
 	showDebateDialogue bool
 }
 
@@ -74,6 +76,12 @@ func (h *UnifiedHandler) SetDebateTeamConfig(teamConfig *services.DebateTeamConf
 			}
 		}
 	}
+}
+
+// SetSkillsIntegration sets the Skills integration for the handler
+func (h *UnifiedHandler) SetSkillsIntegration(integration *skills.Integration) {
+	h.skillsIntegration = integration
+	logrus.WithField("integration_set", integration != nil).Info("Skills integration set")
 }
 
 // isToolResultProcessingTurn determines if the current request is specifically for processing
@@ -378,18 +386,83 @@ func (h *UnifiedHandler) ChatCompletions(c *gin.Context) {
 	// NEW user request → Full AI Debate ensemble
 	logrus.Info("New user request - initiating AI Debate")
 
+	// Generate request ID for skills tracking
+	requestID := fmt.Sprintf("openai_%d", time.Now().UnixNano())
+
+	// Process skills for this request
+	var skillsCtx *skills.RequestContext
+	var enhancedMessages []OpenAIMessage
+	if h.skillsIntegration != nil {
+		skillsCtx, enhancedMessages = h.processSkillsForRequest(c.Request.Context(), &req, requestID)
+		// If skills were matched, use enhanced messages
+		if skillsCtx != nil && len(skillsCtx.SkillsToApply) > 0 {
+			// Create a copy of the request with enhanced messages
+			enhancedReq := req
+			enhancedReq.Messages = enhancedMessages
+			// Use enhanced request for processing
+			req = enhancedReq
+			// Extract skill names for logging
+			skillNames := make([]string, 0, len(skillsCtx.SkillsToApply))
+			for _, skill := range skillsCtx.SkillsToApply {
+				skillNames = append(skillNames, skill.Name)
+			}
+			logrus.WithFields(logrus.Fields{
+				"request_id":   requestID,
+				"skills_count": len(skillsCtx.SkillsToApply),
+				"skills_names": skillNames,
+			}).Info("Skills matched and applied to request")
+		}
+	}
+
 	// Convert to internal request format
 	internalReq := h.convertOpenAIChatRequest(&req, c)
+
+	// Store skills context in provider-specific data for downstream use
+	if skillsCtx != nil && len(skillsCtx.SkillsToApply) > 0 {
+		if internalReq.ModelParams.ProviderSpecific == nil {
+			internalReq.ModelParams.ProviderSpecific = make(map[string]any)
+		}
+		internalReq.ModelParams.ProviderSpecific["skills_context"] = skillsCtx
+		internalReq.ModelParams.ProviderSpecific["skills_request_id"] = requestID
+	}
 
 	// Process with ensemble for best results
 	result, err := h.processWithEnsemble(c.Request.Context(), internalReq, &req)
 	if err != nil {
+		// Complete skill execution with failure
+		if skillsCtx != nil && len(skillsCtx.ActiveUsages) > 0 {
+			h.skillsIntegration.CompleteRequest(requestID, false, err.Error())
+		}
 		h.sendCategorizedError(c, err)
 		return
 	}
 
 	// Convert to OpenAI response format
 	response := h.convertToOpenAIChatResponse(result, &req)
+
+	// Add skills used metadata to response if skills were applied
+	if skillsCtx != nil && len(skillsCtx.ActiveUsages) > 0 {
+		// Complete skill executions with success
+		completedUsages := h.skillsIntegration.CompleteRequest(requestID, true, "")
+		if len(completedUsages) > 0 {
+			// Build skills used section and add to response
+			skillsMetadata := h.skillsIntegration.BuildSkillsUsedSection(completedUsages)
+			if skillsMetadata != nil {
+				// Convert response to map, add skills_used, then convert back
+				// Since response is a struct, we need to add a field.
+				// We'll convert to map via JSON marshal/unmarshal or add a field to the struct.
+				// For now, we'll add a top-level field to the JSON response by using gin.H
+				// We'll create a new response map with skills_used field.
+				responseMap := make(map[string]any)
+				// Convert response to map via JSON (simplest)
+				jsonBytes, _ := json.Marshal(response)
+				json.Unmarshal(jsonBytes, &responseMap)
+				responseMap["skills_used"] = skillsMetadata
+				c.JSON(http.StatusOK, responseMap)
+				return
+			}
+		}
+	}
 
 	c.JSON(http.StatusOK, response)
 }
@@ -1461,6 +1534,77 @@ func (h *UnifiedHandler) ModelsPublic(c *gin.Context) {
 }
 
 // Helper methods
+
+// processSkillsForRequest processes skills for an OpenAI chat request.
+// It extracts the last user message, matches skills, and enhances messages with skill instructions.
+// Returns the skills request context (or nil if no skills integration or no matches) and the enhanced messages.
+func (h *UnifiedHandler) processSkillsForRequest(ctx context.Context, req *OpenAIChatRequest, requestID string) (*skills.RequestContext, []OpenAIMessage) {
+	// Check if skills integration is available
+	if h.skillsIntegration == nil {
+		return nil, req.Messages
+	}
+
+	// Find the last user message to use for skill matching
+	var lastUserMessage string
+	for i := len(req.Messages) - 1; i >= 0; i-- {
+		if req.Messages[i].Role == "user" {
+			lastUserMessage = req.Messages[i].Content
+			break
+		}
+	}
+
+	if lastUserMessage == "" {
+		return nil, req.Messages
+	}
+
+	// Process skills for this request
+	skillsCtx, err := h.skillsIntegration.ProcessRequest(ctx, requestID, lastUserMessage)
+	if err != nil {
+		logrus.WithError(err).Warn("Failed to process skills for request")
+		return nil, req.Messages
+	}
+
+	// If no skills matched, return original messages
+	if skillsCtx == nil || len(skillsCtx.SkillsToApply) == 0 {
+		return nil, req.Messages
+	}
+
+	// Enhance the last user message with skill instructions
+	// We'll create a new system message with skill instructions and insert it before the last user message
+	enhancedMessages := make([]OpenAIMessage, 0, len(req.Messages)+1)
+	skillInstructions := h.skillsIntegration.EnhancePromptWithSkills("", skillsCtx)
+
+	// Find the index of the last user message
+	lastUserIdx := -1
+	for i := len(req.Messages) - 1; i >= 0; i-- {
+		if req.Messages[i].Role == "user" {
+			lastUserIdx = i
+			break
+		}
+	}
+
+	if lastUserIdx >= 0 {
+		// Copy all messages before the last user message
+		enhancedMessages = append(enhancedMessages, req.Messages[:lastUserIdx]...)
+
+		// Add system message with skill instructions before the user message
+		if skillInstructions != "" {
+			systemMsg := OpenAIMessage{
+				Role:    "system",
+				Content: skillInstructions,
+			}
+			enhancedMessages = append(enhancedMessages, systemMsg)
+		}
+
+		// Add the last user message and any messages after it
+		enhancedMessages = append(enhancedMessages, req.Messages[lastUserIdx:]...)
+	} else {
+		// Should not happen, but fallback
+		enhancedMessages = req.Messages
+	}
+
+	return skillsCtx, enhancedMessages
+}
 
 func (h *UnifiedHandler) convertOpenAIChatRequest(req *OpenAIChatRequest, c *gin.Context) *models.LLMRequest {
 	// Generate request ID

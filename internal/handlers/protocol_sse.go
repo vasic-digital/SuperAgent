@@ -15,6 +15,7 @@ import (
 // ProtocolSSEHandler handles SSE connections for MCP/ACP/LSP/Embeddings/Vision/Cognee protocols
 type ProtocolSSEHandler struct {
 	mcpHandler       *MCPHandler
+	acpHandler       *ACPHandler
 	lspHandler       *LSPHandler
 	embeddingHandler *EmbeddingHandler
 	cogneeHandler    *CogneeAPIHandler
@@ -33,8 +34,21 @@ func NewProtocolSSEHandler(
 	cogneeHandler *CogneeAPIHandler,
 	logger *logrus.Logger,
 ) *ProtocolSSEHandler {
+	return NewProtocolSSEHandlerWithACP(mcpHandler, nil, lspHandler, embeddingHandler, cogneeHandler, logger)
+}
+
+// NewProtocolSSEHandlerWithACP creates a new protocol SSE handler with ACP handler
+func NewProtocolSSEHandlerWithACP(
+	mcpHandler *MCPHandler,
+	acpHandler *ACPHandler,
+	lspHandler *LSPHandler,
+	embeddingHandler *EmbeddingHandler,
+	cogneeHandler *CogneeAPIHandler,
+	logger *logrus.Logger,
+) *ProtocolSSEHandler {
 	return &ProtocolSSEHandler{
 		mcpHandler:       mcpHandler,
+		acpHandler:       acpHandler,
 		lspHandler:       lspHandler,
 		embeddingHandler: embeddingHandler,
 		cogneeHandler:    cogneeHandler,
@@ -826,6 +840,12 @@ func (h *ProtocolSSEHandler) executeMCPTool(name string, args map[string]interfa
 }
 
 func (h *ProtocolSSEHandler) executeACPTool(name string, args map[string]interface{}) (string, error) {
+	// If ACP handler is available, delegate to it
+	if h.acpHandler != nil {
+		return h.executeACPToolViaHandler(name, args)
+	}
+
+	// Fallback to dummy implementations
 	switch name {
 	case "acp_list_agents":
 		return `[{"id": "default", "name": "Default Agent", "status": "active"}]`, nil
@@ -833,6 +853,64 @@ func (h *ProtocolSSEHandler) executeACPTool(name string, args map[string]interfa
 		agentID, _ := args["agent_id"].(string)
 		message, _ := args["message"].(string)
 		return fmt.Sprintf("Message sent to agent %s: %s", agentID, message), nil
+	default:
+		return "", fmt.Errorf("unknown ACP tool: %s", name)
+	}
+}
+
+// executeACPToolViaHandler delegates ACP tool execution to the ACP handler
+func (h *ProtocolSSEHandler) executeACPToolViaHandler(name string, args map[string]interface{}) (string, error) {
+	switch name {
+	case "acp_list_agents":
+		// Call ACP handler's agent/list method
+		// We need to simulate a JSON-RPC call
+		// For now, use the existing ListAgents logic
+		h.acpHandler.agentsMu.RLock()
+		agents := make([]*ACPAgent, 0, len(h.acpHandler.agents))
+		for _, agent := range h.acpHandler.agents {
+			agents = append(agents, agent)
+		}
+		h.acpHandler.agentsMu.RUnlock()
+
+		data, err := json.Marshal(map[string]interface{}{
+			"agents": agents,
+			"count":  len(agents),
+		})
+		if err != nil {
+			return "", err
+		}
+		return string(data), nil
+
+	case "acp_send_message":
+		agentID, _ := args["agent_id"].(string)
+		message, _ := args["message"].(string)
+
+		// Call ACP handler's agent/execute method
+		// We need to call executeAgentTask directly
+		h.acpHandler.agentsMu.RLock()
+		agent, exists := h.acpHandler.agents[agentID]
+		h.acpHandler.agentsMu.RUnlock()
+
+		if !exists {
+			return "", fmt.Errorf("agent not found: %s", agentID)
+		}
+
+		result, err := h.acpHandler.executeAgentTask(agent, message, nil)
+		if err != nil {
+			return "", err
+		}
+
+		data, err := json.Marshal(map[string]interface{}{
+			"status":   "completed",
+			"agent_id": agentID,
+			"result":   result,
+			"message":  "Message processed successfully",
+		})
+		if err != nil {
+			return "", err
+		}
+		return string(data), nil
+
 	default:
 		return "", fmt.Errorf("unknown ACP tool: %s", name)
 	}

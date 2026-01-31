@@ -17,9 +17,9 @@ import (
 // BigDataIntegration manages all big data components
 type BigDataIntegration struct {
 	// Core components
-	infiniteContext    *conversation.InfiniteContextEngine
-	distributedMemory  *memory.DistributedMemoryManager
-	graphStreaming     *knowledge.StreamingKnowledgeGraph
+	infiniteContext     *conversation.InfiniteContextEngine
+	distributedMemory   *memory.DistributedMemoryManager
+	graphStreaming      *knowledge.StreamingKnowledgeGraph
 	clickhouseAnalytics *analytics.ClickHouseAnalytics
 	crossSessionLearner *learning.CrossSessionLearner
 
@@ -234,11 +234,11 @@ func (bdi *BigDataIntegration) initializeDistributedMemory(ctx context.Context) 
 // initializeKnowledgeGraph initializes the knowledge graph streaming
 func (bdi *BigDataIntegration) initializeKnowledgeGraph(ctx context.Context) error {
 	config := knowledge.GraphStreamingConfig{
-		Neo4jURI:      bdi.config.Neo4jURI,
-		Neo4jUsername: bdi.config.Neo4jUsername,
-		Neo4jPassword: bdi.config.Neo4jPassword,
-		Neo4jDatabase: bdi.config.Neo4jDatabase,
-		EntityTopic:   "helixagent.entities.updates",
+		Neo4jURI:          bdi.config.Neo4jURI,
+		Neo4jUsername:     bdi.config.Neo4jUsername,
+		Neo4jPassword:     bdi.config.Neo4jPassword,
+		Neo4jDatabase:     bdi.config.Neo4jDatabase,
+		EntityTopic:       "helixagent.entities.updates",
 		RelationshipTopic: "helixagent.relationships.updates",
 	}
 
@@ -290,10 +290,10 @@ func (bdi *BigDataIntegration) initializeAnalytics(ctx context.Context) error {
 // initializeCrossLearning initializes the cross-session learner
 func (bdi *BigDataIntegration) initializeCrossLearning(ctx context.Context) error {
 	config := learning.CrossSessionConfig{
-		CompletedTopic:  "helixagent.conversations.completed",
-		InsightsTopic:   "helixagent.learning.insights",
-		MinConfidence:   bdi.config.LearningMinConfidence,
-		MinFrequency:    bdi.config.LearningMinFrequency,
+		CompletedTopic: "helixagent.conversations.completed",
+		InsightsTopic:  "helixagent.learning.insights",
+		MinConfidence:  bdi.config.LearningMinConfidence,
+		MinFrequency:   bdi.config.LearningMinFrequency,
 	}
 
 	learner := learning.NewCrossSessionLearner(

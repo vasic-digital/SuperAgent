@@ -68,11 +68,11 @@ func (di *DebateIntegration) GetConversationContext(
 	}
 
 	return &ConversationContext{
-		ConversationID: conversationID,
-		Messages:       context.Messages,
-		Entities:       context.Entities,
-		TotalTokens:    context.TotalTokens,
-		Compressed:     context.Compressed,
+		ConversationID:   conversationID,
+		Messages:         context.Messages,
+		Entities:         context.Entities,
+		TotalTokens:      context.TotalTokens,
+		Compressed:       context.Compressed,
 		CompressionStats: context.CompressionStats,
 	}, nil
 }
@@ -148,12 +148,12 @@ func (di *DebateIntegration) PublishConversationEvent(
 
 // ConversationContext represents conversation context with optional compression
 type ConversationContext struct {
-	ConversationID   string                `json:"conversation_id"`
-	Messages         []Message             `json:"messages"`
-	Entities         []Entity              `json:"entities"`
-	TotalTokens      int                   `json:"total_tokens"`
-	Compressed       bool                  `json:"compressed"`
-	CompressionStats *CompressionStats     `json:"compression_stats,omitempty"`
+	ConversationID   string            `json:"conversation_id"`
+	Messages         []Message         `json:"messages"`
+	Entities         []Entity          `json:"entities"`
+	TotalTokens      int               `json:"total_tokens"`
+	Compressed       bool              `json:"compressed"`
+	CompressionStats *CompressionStats `json:"compression_stats,omitempty"`
 }
 
 // Message represents a conversation message
@@ -175,45 +175,45 @@ type Entity struct {
 
 // CompressionStats holds compression statistics
 type CompressionStats struct {
-	Strategy          string    `json:"strategy"`
-	OriginalMessages  int       `json:"original_messages"`
-	CompressedMessages int      `json:"compressed_messages"`
-	OriginalTokens    int       `json:"original_tokens"`
-	CompressedTokens  int       `json:"compressed_tokens"`
-	CompressionRatio  float64   `json:"compression_ratio"`
-	QualityScore      float64   `json:"quality_score"`
-	Duration          time.Duration `json:"duration"`
+	Strategy           string        `json:"strategy"`
+	OriginalMessages   int           `json:"original_messages"`
+	CompressedMessages int           `json:"compressed_messages"`
+	OriginalTokens     int           `json:"original_tokens"`
+	CompressedTokens   int           `json:"compressed_tokens"`
+	CompressionRatio   float64       `json:"compression_ratio"`
+	QualityScore       float64       `json:"quality_score"`
+	Duration           time.Duration `json:"duration"`
 }
 
 // DebateCompletion represents a completed debate
 type DebateCompletion struct {
-	DebateID       string             `json:"debate_id"`
-	ConversationID string             `json:"conversation_id"`
-	UserID         string             `json:"user_id"`
-	SessionID      string             `json:"session_id"`
-	Topic          string             `json:"topic"`
-	Rounds         int                `json:"rounds"`
-	Winner         string             `json:"winner"`
-	WinnerProvider string             `json:"winner_provider"`
-	WinnerModel    string             `json:"winner_model"`
-	Confidence     float64            `json:"confidence"`
-	Duration       time.Duration      `json:"duration"`
-	StartedAt      time.Time          `json:"started_at"`
-	CompletedAt    time.Time          `json:"completed_at"`
-	Participants   []DebateParticipant `json:"participants"`
-	Outcome        string             `json:"outcome"` // successful, abandoned, error
+	DebateID       string                 `json:"debate_id"`
+	ConversationID string                 `json:"conversation_id"`
+	UserID         string                 `json:"user_id"`
+	SessionID      string                 `json:"session_id"`
+	Topic          string                 `json:"topic"`
+	Rounds         int                    `json:"rounds"`
+	Winner         string                 `json:"winner"`
+	WinnerProvider string                 `json:"winner_provider"`
+	WinnerModel    string                 `json:"winner_model"`
+	Confidence     float64                `json:"confidence"`
+	Duration       time.Duration          `json:"duration"`
+	StartedAt      time.Time              `json:"started_at"`
+	CompletedAt    time.Time              `json:"completed_at"`
+	Participants   []DebateParticipant    `json:"participants"`
+	Outcome        string                 `json:"outcome"` // successful, abandoned, error
 	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // DebateParticipant represents a debate participant
 type DebateParticipant struct {
-	Provider       string  `json:"provider"`
-	Model          string  `json:"model"`
-	Position       string  `json:"position"`
-	ResponseTime   int     `json:"response_time_ms"`
-	TokensUsed     int     `json:"tokens_used"`
-	Confidence     float64 `json:"confidence"`
-	Won            bool    `json:"won"`
+	Provider     string  `json:"provider"`
+	Model        string  `json:"model"`
+	Position     string  `json:"position"`
+	ResponseTime int     `json:"response_time_ms"`
+	TokensUsed   int     `json:"tokens_used"`
+	Confidence   float64 `json:"confidence"`
+	Won          bool    `json:"won"`
 }
 
 // ConversationEvent represents a conversation event
@@ -229,9 +229,9 @@ type ConversationEvent struct {
 type ConversationEventType string
 
 const (
-	ConversationEventMessageAdded   ConversationEventType = "message.added"
-	ConversationEventEntityExtracted ConversationEventType = "entity.extracted"
-	ConversationEventDebateStarted  ConversationEventType = "debate.started"
-	ConversationEventDebateCompleted ConversationEventType = "debate.completed"
+	ConversationEventMessageAdded      ConversationEventType = "message.added"
+	ConversationEventEntityExtracted   ConversationEventType = "entity.extracted"
+	ConversationEventDebateStarted     ConversationEventType = "debate.started"
+	ConversationEventDebateCompleted   ConversationEventType = "debate.completed"
 	ConversationEventContextCompressed ConversationEventType = "context.compressed"
 )

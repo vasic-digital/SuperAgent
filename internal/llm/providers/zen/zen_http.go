@@ -354,14 +354,14 @@ func (p *ZenHTTPProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 		ResponseTime: duration.Milliseconds(),
 		CreatedAt:    time.Now(),
 		Metadata: map[string]interface{}{
-			"source":             "opencode-http",
-			"session_id":         p.sessionID,
-			"message_id":         msgResp.ID,
-			"model":              msgResp.Model,
-			"base_url":           p.baseURL,
-			"prompt_tokens":      promptTokens,
-			"completion_tokens":  completionTokens,
-			"latency":            duration.String(),
+			"source":            "opencode-http",
+			"session_id":        p.sessionID,
+			"message_id":        msgResp.ID,
+			"model":             msgResp.Model,
+			"base_url":          p.baseURL,
+			"prompt_tokens":     promptTokens,
+			"completion_tokens": completionTokens,
+			"latency":           duration.String(),
 		},
 	}, nil
 }

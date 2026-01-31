@@ -13,9 +13,9 @@ import (
 
 // CrossSessionLearner learns patterns across multiple conversations and sessions
 type CrossSessionLearner struct {
-	broker       messaging.MessageBroker
-	insights     *InsightStore
-	logger       *logrus.Logger
+	broker         messaging.MessageBroker
+	insights       *InsightStore
+	logger         *logrus.Logger
 	completedTopic string
 	insightsTopic  string
 }
@@ -452,9 +452,9 @@ func (csl *CrossSessionLearner) extractConversationFlow(completion ConversationC
 		Frequency:   1,
 		Confidence:  0.75,
 		Metadata: map[string]interface{}{
-			"flow_type":       flowType,
+			"flow_type":        flowType,
 			"avg_time_per_msg": avgTimePerMsg,
-			"duration_ms":     duration.Milliseconds(),
+			"duration_ms":      duration.Milliseconds(),
 		},
 		FirstSeen: time.Now(),
 		LastSeen:  time.Now(),
