@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/memory"
-	"dev.helix.agent/pkg/messaging"
+	"dev.helix.agent/internal/messaging"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,6 +18,7 @@ type MemoryIntegration struct {
 	kafkaBroker       messaging.MessageBroker
 	logger            *logrus.Logger
 	enableDistributed bool
+	subscription      messaging.Subscription
 }
 
 // NewMemoryIntegration creates a new memory integration
@@ -99,7 +100,11 @@ func (mi *MemoryIntegration) DeleteMemory(ctx context.Context, memoryID string) 
 
 // SearchMemory searches memories (uses local store, distributed sync happens in background)
 func (mi *MemoryIntegration) SearchMemory(ctx context.Context, query string, limit int) ([]*memory.Memory, error) {
-	return mi.memoryManager.SearchMemory(ctx, query, limit)
+	opts := &memory.SearchOptions{
+		TopK:     limit,
+		MinScore: 0.0,
+	}
+	return mi.memoryManager.Search(ctx, query, opts)
 }
 
 // GetMemory retrieves a memory by ID (uses local store)
@@ -135,8 +140,8 @@ func (mi *MemoryIntegration) createMemoryEvent(eventType string, mem *memory.Mem
 		SessionID:     mem.SessionID,
 		Content:       mem.Content,
 		Embedding:     mem.Embedding,
-		Entities:      mem.Entities,
-		Relationships: mem.Relationships,
+		Entities:      nil,
+		Relationships: nil,
 		Metadata:      mem.Metadata,
 	}
 }
@@ -149,8 +154,8 @@ func (mi *MemoryIntegration) publishMemoryEvent(ctx context.Context, event *Memo
 	}
 
 	msg := &messaging.Message{
-		Topic:     "helixagent.memory.events",
-		Key:       event.MemoryID,
+		ID:        event.EventID,
+		Type:      event.EventType,
 		Payload:   payload,
 		Timestamp: event.Timestamp,
 		Headers: map[string]string{
@@ -160,7 +165,7 @@ func (mi *MemoryIntegration) publishMemoryEvent(ctx context.Context, event *Memo
 		},
 	}
 
-	if err := mi.kafkaBroker.Publish(ctx, msg.Topic, msg); err != nil {
+	if err := mi.kafkaBroker.Publish(ctx, "helixagent.memory.events", msg); err != nil {
 		return fmt.Errorf("kafka publish failed: %w", err)
 	}
 
@@ -179,55 +184,39 @@ func (mi *MemoryIntegration) StartEventConsumer(ctx context.Context) error {
 		return nil
 	}
 
-	go mi.consumeMemoryEvents(ctx)
-	mi.logger.Info("Started memory event consumer")
-	return nil
-}
-
-// consumeMemoryEvents consumes memory events from Kafka
-func (mi *MemoryIntegration) consumeMemoryEvents(ctx context.Context) {
-	// Create consumer
-	consumer, err := mi.kafkaBroker.Subscribe(ctx, "helixagent.memory.events", "helixagent-memory-consumer")
-	if err != nil {
-		mi.logger.WithError(err).Error("Failed to subscribe to memory events")
-		return
-	}
-
 	nodeID := getNodeID()
 
-	for {
-		select {
-		case <-ctx.Done():
-			mi.logger.Info("Stopping memory event consumer")
-			return
-		default:
-			msg, err := consumer.Consume(ctx)
-			if err != nil {
-				mi.logger.WithError(err).Warn("Failed to consume memory event")
-				time.Sleep(1 * time.Second)
-				continue
-			}
-
-			// Parse event
-			var event MemoryEvent
-			if err := json.Unmarshal(msg.Payload, &event); err != nil {
-				mi.logger.WithError(err).Error("Failed to unmarshal memory event")
-				continue
-			}
-
-			// Skip events from this node
-			if event.NodeID == nodeID {
-				continue
-			}
-
-			// Apply remote event
-			if err := mi.applyRemoteEvent(ctx, &event); err != nil {
-				mi.logger.WithError(err).
-					WithField("event_id", event.EventID).
-					Error("Failed to apply remote memory event")
-			}
+	handler := func(ctx context.Context, msg *messaging.Message) error {
+		// Parse event
+		var event MemoryEvent
+		if err := json.Unmarshal(msg.Payload, &event); err != nil {
+			mi.logger.WithError(err).Error("Failed to unmarshal memory event")
+			return nil // Don't propagate error to avoid breaking subscription
 		}
+
+		// Skip events from this node
+		if event.NodeID == nodeID {
+			return nil
+		}
+
+		// Apply remote event
+		if err := mi.applyRemoteEvent(ctx, &event); err != nil {
+			mi.logger.WithError(err).
+				WithField("event_id", event.EventID).
+				Error("Failed to apply remote memory event")
+		}
+		return nil
 	}
+
+	sub, err := mi.kafkaBroker.Subscribe(ctx, "helixagent.memory.events", handler)
+	if err != nil {
+		mi.logger.WithError(err).Error("Failed to subscribe to memory events")
+		return err
+	}
+
+	mi.subscription = sub
+	mi.logger.Info("Started memory event consumer")
+	return nil
 }
 
 // applyRemoteEvent applies a memory event from another node
@@ -235,27 +224,23 @@ func (mi *MemoryIntegration) applyRemoteEvent(ctx context.Context, event *Memory
 	switch event.EventType {
 	case "memory.created":
 		mem := &memory.Memory{
-			ID:            event.MemoryID,
-			UserID:        event.UserID,
-			SessionID:     event.SessionID,
-			Content:       event.Content,
-			Embedding:     event.Embedding,
-			Entities:      event.Entities,
-			Relationships: event.Relationships,
-			Metadata:      event.Metadata,
+			ID:        event.MemoryID,
+			UserID:    event.UserID,
+			SessionID: event.SessionID,
+			Content:   event.Content,
+			Embedding: event.Embedding,
+			Metadata:  event.Metadata,
 		}
 		return mi.memoryManager.AddMemory(ctx, mem)
 
 	case "memory.updated":
 		mem := &memory.Memory{
-			ID:            event.MemoryID,
-			UserID:        event.UserID,
-			SessionID:     event.SessionID,
-			Content:       event.Content,
-			Embedding:     event.Embedding,
-			Entities:      event.Entities,
-			Relationships: event.Relationships,
-			Metadata:      event.Metadata,
+			ID:        event.MemoryID,
+			UserID:    event.UserID,
+			SessionID: event.SessionID,
+			Content:   event.Content,
+			Embedding: event.Embedding,
+			Metadata:  event.Metadata,
 		}
 		return mi.memoryManager.UpdateMemory(ctx, mem)
 

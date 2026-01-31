@@ -142,8 +142,8 @@ func (ai *AnalyticsIntegration) publishAnalyticsEvent(ctx context.Context, event
 	}
 
 	msg := &messaging.Message{
-		Topic:     topic,
-		Key:       event.EventID,
+		ID:        event.EventID,
+		Type:      event.EventType,
 		Payload:   payload,
 		Timestamp: event.Timestamp,
 		Headers: map[string]string{
@@ -151,7 +151,7 @@ func (ai *AnalyticsIntegration) publishAnalyticsEvent(ctx context.Context, event
 		},
 	}
 
-	if err := ai.kafkaBroker.Publish(ctx, msg.Topic, msg); err != nil {
+	if err := ai.kafkaBroker.Publish(ctx, topic, msg); err != nil {
 		return fmt.Errorf("kafka publish failed: %w", err)
 	}
 
