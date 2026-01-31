@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"dev.helix.agent/internal/auth/oauth_credentials"
+	"dev.helix.agent/internal/bigdata"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/llm/providers/cerebras"
@@ -1307,6 +1308,44 @@ func run(appCfg *AppConfig) error {
 		}).Info("Messaging system initialized")
 	}
 
+	var bigDataIntegration *bigdata.BigDataIntegration
+	// Initialize BigData integration (optional)
+	logger.Info("Initializing BigData integration...")
+	bigDataConfig := bigdata.ConfigToIntegrationConfig(&cfg.BigData)
+
+	var messageBroker messaging.MessageBroker
+	if msgSystem != nil && msgSystem.Hub != nil {
+		// Try to get event stream broker from hub
+		messageBroker = msgSystem.Hub.GetMessageBroker()
+		if messageBroker == nil {
+			// Fallback to in-memory broker
+			logger.Warn("No message broker available from hub, using in-memory fallback")
+			messageBroker = inmemory.NewBroker(nil)
+		} else {
+			logger.WithField("broker_type", messageBroker.BrokerType()).Info("Using message broker from messaging hub")
+		}
+	} else {
+		// No messaging system, use in-memory broker
+		logger.Warn("Messaging system not available, using in-memory broker for BigData")
+		messageBroker = inmemory.NewBroker(nil)
+	}
+	bigDataIntegration, err = bigdata.NewBigDataIntegration(bigDataConfig, messageBroker, logger)
+	if err != nil {
+		logger.WithError(err).Warn("Failed to create BigData integration, continuing without it")
+	} else {
+		if err := bigDataIntegration.Initialize(context.Background()); err != nil {
+			logger.WithError(err).Warn("Failed to initialize BigData integration, continuing without it")
+		} else {
+			logger.WithFields(logrus.Fields{
+				"infinite_context":   cfg.BigData.EnableInfiniteContext,
+				"distributed_memory": cfg.BigData.EnableDistributedMemory,
+				"knowledge_graph":    cfg.BigData.EnableKnowledgeGraph,
+				"analytics":          cfg.BigData.EnableAnalytics,
+				"cross_learning":     cfg.BigData.EnableCrossLearning,
+			}).Info("BigData integration initialized successfully")
+		}
+	}
+
 	routerCtx := router.SetupRouterWithContext(cfg)
 	r := routerCtx.Engine
 
@@ -1390,6 +1429,48 @@ func run(appCfg *AppConfig) error {
 		c.JSON(200, response)
 	})
 
+	// BigData endpoints (if integration initialized)
+	if bigDataIntegration != nil {
+		logger.Info("Registering BigData endpoints")
+
+		// Create debate integration for conversation context access
+		var debateIntegration *bigdata.DebateIntegration
+		if bigDataIntegration.GetInfiniteContext() != nil && messageBroker != nil {
+			debateIntegration = bigdata.NewDebateIntegration(
+				bigDataIntegration.GetInfiniteContext(),
+				messageBroker,
+				logger,
+			)
+			logger.Info("✓ Debate integration created for BigData endpoints")
+		} else {
+			logger.Warn("Cannot create debate integration: infinite context or message broker unavailable")
+		}
+
+		// Create BigData handler with all integrations
+		bigDataHandler := bigdata.NewHandler(
+			bigDataIntegration,
+			debateIntegration,
+			logger,
+		)
+
+		// Register all BigData routes (includes /v1/bigdata/health, /v1/context/*, /v1/memory/*, etc.)
+		bigDataHandler.RegisterRoutes(r)
+
+		// Keep legacy /v1/bigdata/components endpoint for backward compatibility
+		r.GET("/v1/bigdata/components", func(c *gin.Context) {
+			components := make(map[string]bool)
+			components["infinite_context"] = bigDataIntegration.GetInfiniteContext() != nil
+			components["distributed_memory"] = bigDataIntegration.GetDistributedMemory() != nil
+			components["knowledge_graph"] = bigDataIntegration.GetKnowledgeGraph() != nil
+			components["analytics"] = bigDataIntegration.GetAnalytics() != nil
+			components["cross_learning"] = bigDataIntegration.GetCrossLearner() != nil
+			c.JSON(200, gin.H{
+				"components": components,
+				"running":    bigDataIntegration.IsRunning(),
+			})
+		})
+	}
+
 	// Start background MCP package pre-installation (unless skipped)
 	if !appCfg.SkipMCPPreinstall {
 		startBackgroundMCPPreinstall(logger)
@@ -1444,6 +1525,16 @@ func run(appCfg *AppConfig) error {
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
+
+	// Shutdown BigData integration
+	if bigDataIntegration != nil && bigDataIntegration.IsRunning() {
+		logger.Info("Shutting down BigData integration...")
+		if err := bigDataIntegration.Stop(shutdownCtx); err != nil {
+			logger.WithError(err).Warn("Error shutting down BigData integration")
+		} else {
+			logger.Info("BigData integration shutdown complete")
+		}
+	}
 
 	// Shutdown messaging system
 	if msgSystem != nil && msgSystem.IsInitialized() {

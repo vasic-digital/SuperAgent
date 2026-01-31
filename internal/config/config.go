@@ -24,6 +24,7 @@ type Config struct {
 	MCP              MCPConfig
 	ACP              ACPConfig
 	Services         ServicesConfig
+	BigData          BigDataConfig
 	RemoteDeployment RemoteDeploymentConfig
 }
 
@@ -254,6 +255,42 @@ type PerformanceConfig struct {
 	EnableCompression     bool
 }
 
+// BigDataConfig holds configuration for big data integration components
+type BigDataConfig struct {
+	// Enable/disable individual components
+	EnableInfiniteContext   bool
+	EnableDistributedMemory bool
+	EnableKnowledgeGraph    bool
+	EnableAnalytics         bool
+	EnableCrossLearning     bool
+
+	// Kafka configuration
+	KafkaBootstrapServers string
+	KafkaConsumerGroup    string
+
+	// ClickHouse configuration
+	ClickHouseHost     string
+	ClickHousePort     int
+	ClickHouseDatabase string
+	ClickHouseUser     string
+	ClickHousePassword string
+
+	// Neo4j configuration
+	Neo4jURI      string
+	Neo4jUsername string
+	Neo4jPassword string
+	Neo4jDatabase string
+
+	// Context engine configuration
+	ContextCacheSize       int
+	ContextCacheTTL        time.Duration
+	ContextCompressionType string
+
+	// Learning configuration
+	LearningMinConfidence float64
+	LearningMinFrequency  int
+}
+
 // RemoteDeploymentConfig holds configuration for deploying services to remote hosts.
 type RemoteDeploymentConfig struct {
 	Enabled          bool                            `yaml:"enabled"`
@@ -399,6 +436,29 @@ func Load() *Config {
 			DefaultTimeout: getDurationEnv("ACP_DEFAULT_TIMEOUT", 30*time.Second),
 			MaxRetries:     getIntEnv("ACP_MAX_RETRIES", 3),
 			Servers:        []ACPServerConfig{},
+		},
+		BigData: BigDataConfig{
+			EnableInfiniteContext:   getBoolEnv("BIGDATA_ENABLE_INFINITE_CONTEXT", true),
+			EnableDistributedMemory: getBoolEnv("BIGDATA_ENABLE_DISTRIBUTED_MEMORY", false),
+			EnableKnowledgeGraph:    getBoolEnv("BIGDATA_ENABLE_KNOWLEDGE_GRAPH", false),
+			EnableAnalytics:         getBoolEnv("BIGDATA_ENABLE_ANALYTICS", false),
+			EnableCrossLearning:     getBoolEnv("BIGDATA_ENABLE_CROSS_LEARNING", true),
+			KafkaBootstrapServers:   getEnv("BIGDATA_KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
+			KafkaConsumerGroup:      getEnv("BIGDATA_KAFKA_CONSUMER_GROUP", "helixagent-bigdata"),
+			ClickHouseHost:          getEnv("BIGDATA_CLICKHOUSE_HOST", "localhost"),
+			ClickHousePort:          getIntEnv("BIGDATA_CLICKHOUSE_PORT", 8123),
+			ClickHouseDatabase:      getEnv("BIGDATA_CLICKHOUSE_DATABASE", "helixagent"),
+			ClickHouseUser:          getEnv("BIGDATA_CLICKHOUSE_USER", "default"),
+			ClickHousePassword:      getEnv("BIGDATA_CLICKHOUSE_PASSWORD", ""),
+			Neo4jURI:                getEnv("BIGDATA_NEO4J_URI", "bolt://localhost:7687"),
+			Neo4jUsername:           getEnv("BIGDATA_NEO4J_USERNAME", "neo4j"),
+			Neo4jPassword:           getEnv("BIGDATA_NEO4J_PASSWORD", "password"),
+			Neo4jDatabase:           getEnv("BIGDATA_NEO4J_DATABASE", "neo4j"),
+			ContextCacheSize:        getIntEnv("BIGDATA_CONTEXT_CACHE_SIZE", 1000),
+			ContextCacheTTL:         getDurationEnv("BIGDATA_CONTEXT_CACHE_TTL", 24*time.Hour),
+			ContextCompressionType:  getEnv("BIGDATA_CONTEXT_COMPRESSION_TYPE", "gzip"),
+			LearningMinConfidence:   getFloatEnv("BIGDATA_LEARNING_MIN_CONFIDENCE", 0.7),
+			LearningMinFrequency:    getIntEnv("BIGDATA_LEARNING_MIN_FREQUENCY", 3),
 		},
 		RemoteDeployment: RemoteDeploymentConfig{
 			Enabled:          false,

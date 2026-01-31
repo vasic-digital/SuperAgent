@@ -96,6 +96,11 @@ func (h *Handler) ReplayConversation(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
 	defer cancel()
 
+	if h.debateIntegration == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "debate integration not available (infinite context disabled)"})
+		return
+	}
+
 	conversationCtx, err := h.debateIntegration.GetConversationContext(
 		ctx,
 		req.ConversationID,
