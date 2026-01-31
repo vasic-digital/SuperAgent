@@ -14,10 +14,10 @@ type EntityExtractor struct {
 	logger *zap.Logger
 
 	// Pattern-based extractors
-	emailRegex    *regexp.Regexp
-	urlRegex      *regexp.Regexp
+	emailRegex     *regexp.Regexp
+	urlRegex       *regexp.Regexp
 	codeBlockRegex *regexp.Regexp
-	mentionRegex  *regexp.Regexp
+	mentionRegex   *regexp.Regexp
 
 	// Cache for extracted entities
 	cache map[string][]EntityData
@@ -31,12 +31,12 @@ func NewEntityExtractor(logger *zap.Logger) *EntityExtractor {
 	}
 
 	return &EntityExtractor{
-		logger: logger,
-		emailRegex: regexp.MustCompile(`[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}`),
-		urlRegex: regexp.MustCompile(`https?://[^\s]+`),
+		logger:         logger,
+		emailRegex:     regexp.MustCompile(`[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}`),
+		urlRegex:       regexp.MustCompile(`https?://[^\s]+`),
 		codeBlockRegex: regexp.MustCompile("```([a-z]+)?\\n([\\s\\S]*?)```"),
-		mentionRegex: regexp.MustCompile(`@([a-zA-Z0-9_]+)`),
-		cache: make(map[string][]EntityData),
+		mentionRegex:   regexp.MustCompile(`@([a-zA-Z0-9_]+)`),
+		cache:          make(map[string][]EntityData),
 	}
 }
 
@@ -97,9 +97,9 @@ func (ee *EntityExtractor) extractEmails(text string) []EntityData {
 		seen[email] = true
 
 		entities = append(entities, EntityData{
-			EntityID:   uuid.New().String(),
-			Name:       email,
-			Type:       "email",
+			EntityID: uuid.New().String(),
+			Name:     email,
+			Type:     "email",
 			Properties: map[string]interface{}{
 				"value": email,
 			},
@@ -123,9 +123,9 @@ func (ee *EntityExtractor) extractURLs(text string) []EntityData {
 		seen[url] = true
 
 		entities = append(entities, EntityData{
-			EntityID:   uuid.New().String(),
-			Name:       url,
-			Type:       "url",
+			EntityID: uuid.New().String(),
+			Name:     url,
+			Type:     "url",
 			Properties: map[string]interface{}{
 				"value": url,
 			},
@@ -154,13 +154,13 @@ func (ee *EntityExtractor) extractCodeBlocks(text string) []EntityData {
 		}
 
 		entities = append(entities, EntityData{
-			EntityID:   uuid.New().String(),
-			Name:       "code_block_" + string(rune(i+1)),
-			Type:       "code_block",
+			EntityID: uuid.New().String(),
+			Name:     "code_block_" + string(rune(i+1)),
+			Type:     "code_block",
 			Properties: map[string]interface{}{
-				"language":    language,
-				"code":        code,
-				"line_count":  strings.Count(code, "\n") + 1,
+				"language":   language,
+				"code":       code,
+				"line_count": strings.Count(code, "\n") + 1,
 			},
 			Importance: 0.8,
 		})
@@ -187,9 +187,9 @@ func (ee *EntityExtractor) extractMentions(text string) []EntityData {
 		seen[username] = true
 
 		entities = append(entities, EntityData{
-			EntityID:   uuid.New().String(),
-			Name:       username,
-			Type:       "mention",
+			EntityID: uuid.New().String(),
+			Name:     username,
+			Type:     "mention",
 			Properties: map[string]interface{}{
 				"username": username,
 			},
@@ -221,9 +221,9 @@ func (ee *EntityExtractor) extractProgrammingTerms(text string) []EntityData {
 			seen[keyword] = true
 
 			entities = append(entities, EntityData{
-				EntityID:   uuid.New().String(),
-				Name:       keyword,
-				Type:       "technology",
+				EntityID: uuid.New().String(),
+				Name:     keyword,
+				Type:     "technology",
 				Properties: map[string]interface{}{
 					"category": ee.categorizeTechnology(keyword),
 				},

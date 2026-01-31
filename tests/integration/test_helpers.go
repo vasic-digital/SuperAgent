@@ -10,23 +10,23 @@ import (
 
 // TestConfig holds common test configuration
 type TestConfig struct {
-	HelixAgentURL     string
-	HelixAgentHost    string
-	HelixAgentPort    string
-	HelixAgentAPIKey  string
-	BaseURL           string
-	BinaryPath        string
-	TempDir           string
-	PostgresHost      string
-	PostgresPort      string
-	PostgresDB        string
-	PostgresUser      string
-	PostgresPass      string
-	RedisHost         string
-	RedisPort         string
-	RedisPass         string
-	ChromaDBURL       string
-	CogneeURL         string
+	HelixAgentURL    string
+	HelixAgentHost   string
+	HelixAgentPort   string
+	HelixAgentAPIKey string
+	BaseURL          string
+	BinaryPath       string
+	TempDir          string
+	PostgresHost     string
+	PostgresPort     string
+	PostgresDB       string
+	PostgresUser     string
+	PostgresPass     string
+	RedisHost        string
+	RedisPort        string
+	RedisPass        string
+	ChromaDBURL      string
+	CogneeURL        string
 }
 
 // MCPServerConfig holds MCP server configuration for testing

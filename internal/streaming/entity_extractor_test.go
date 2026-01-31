@@ -110,20 +110,20 @@ func TestEntityExtractor_ExtractCodeBlocks(t *testing.T) {
 		language string
 	}{
 		{
-			name: "Python code block",
-			text: "Here's some code:\n```python\ndef hello():\n    print('Hello')\n```",
+			name:     "Python code block",
+			text:     "Here's some code:\n```python\ndef hello():\n    print('Hello')\n```",
 			expected: 1,
 			language: "python",
 		},
 		{
-			name: "Go code block",
-			text: "Example:\n```go\nfunc main() {\n    fmt.Println(\"Hello\")\n}\n```",
+			name:     "Go code block",
+			text:     "Example:\n```go\nfunc main() {\n    fmt.Println(\"Hello\")\n}\n```",
 			expected: 1,
 			language: "go",
 		},
 		{
-			name: "Code block without language",
-			text: "```\nsome code\n```",
+			name:     "Code block without language",
+			text:     "```\nsome code\n```",
 			expected: 1,
 			language: "unknown",
 		},

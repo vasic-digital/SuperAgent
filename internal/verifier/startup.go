@@ -751,11 +751,11 @@ func (sv *StartupVerifier) verifyFreeProvider(ctx context.Context, provider *Uni
 	}
 
 	sv.log.WithFields(logrus.Fields{
-		"provider":         provider.Type,
-		"verified":         provider.Verified,
-		"verified_models":  verifiedModelCount,
-		"total_models":     totalModels,
-		"score":            provider.Score,
+		"provider":        provider.Type,
+		"verified":        provider.Verified,
+		"verified_models": verifiedModelCount,
+		"total_models":    totalModels,
+		"score":           provider.Score,
 	}).Info("Free provider verification complete")
 
 	return provider, nil

@@ -667,12 +667,12 @@ func TestZenProvider_NormalizeModelID(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"big-pickle", "big-pickle"},          // No prefix, unchanged
-		{"big-pickle", "big-pickle"},                  // No prefix, unchanged
-		{"opencode/big-pickle", "big-pickle"}, // Strips opencode/ prefix
-		{"opencode/glm-4-7b-free", "glm-4-7b-free"},   // Strips opencode/ prefix
-		{"opencode-custom-model", "custom-model"},     // Strips opencode- prefix (alternate format)
-		{"custom-model", "custom-model"},              // No prefix, unchanged
+		{"big-pickle", "big-pickle"},                // No prefix, unchanged
+		{"big-pickle", "big-pickle"},                // No prefix, unchanged
+		{"opencode/big-pickle", "big-pickle"},       // Strips opencode/ prefix
+		{"opencode/glm-4-7b-free", "glm-4-7b-free"}, // Strips opencode/ prefix
+		{"opencode-custom-model", "custom-model"},   // Strips opencode- prefix (alternate format)
+		{"custom-model", "custom-model"},            // No prefix, unchanged
 	}
 
 	for _, tt := range tests {

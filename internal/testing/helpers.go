@@ -80,19 +80,19 @@ type MCPError struct {
 
 // MCPInitializeResponse is the structure for initialize response
 type MCPInitializeResponse struct {
-	ProtocolVersion string               `json:"protocolVersion"`
-	Capabilities    MCPCapabilities      `json:"capabilities"`
-	ServerInfo      MCPServerInfo        `json:"serverInfo"`
-	Instructions    string               `json:"instructions,omitempty"`
+	ProtocolVersion string          `json:"protocolVersion"`
+	Capabilities    MCPCapabilities `json:"capabilities"`
+	ServerInfo      MCPServerInfo   `json:"serverInfo"`
+	Instructions    string          `json:"instructions,omitempty"`
 }
 
 // MCPCapabilities describes server capabilities
 type MCPCapabilities struct {
-	Experimental map[string]interface{} `json:"experimental,omitempty"`
-	Logging      map[string]interface{} `json:"logging,omitempty"`
-	Prompts      *MCPPromptsCapability  `json:"prompts,omitempty"`
+	Experimental map[string]interface{}  `json:"experimental,omitempty"`
+	Logging      map[string]interface{}  `json:"logging,omitempty"`
+	Prompts      *MCPPromptsCapability   `json:"prompts,omitempty"`
 	Resources    *MCPResourcesCapability `json:"resources,omitempty"`
-	Tools        *MCPToolsCapability    `json:"tools,omitempty"`
+	Tools        *MCPToolsCapability     `json:"tools,omitempty"`
 }
 
 // MCPPromptsCapability describes prompts capability

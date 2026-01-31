@@ -88,8 +88,8 @@ func TestDefaultServicesConfig(t *testing.T) {
 
 	t.Run("Optional services disabled by default", func(t *testing.T) {
 		optionalServices := []struct {
-			name    string
-			ep      ServiceEndpoint
+			name string
+			ep   ServiceEndpoint
 		}{
 			{"Prometheus", cfg.Prometheus},
 			{"Grafana", cfg.Grafana},

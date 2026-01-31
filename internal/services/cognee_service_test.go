@@ -2025,8 +2025,8 @@ func TestCogneeService_TokenRefreshIntegration(t *testing.T) {
 					events = append(events, "request-fresh")
 					w.Header().Set("Content-Type", "application/json")
 					json.NewEncoder(w).Encode(map[string]interface{}{
-						"status":      "ok",
-						"dataset_id":  "ds-123",
+						"status":       "ok",
+						"dataset_id":   "ds-123",
 						"dataset_name": "test",
 					})
 					return

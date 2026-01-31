@@ -28,9 +28,9 @@ func NewBlackFormatter(logger *logrus.Logger) *NativeFormatter {
 
 	return NewNativeFormatter(
 		metadata,
-		"black",                    // binary name
-		[]string{"--quiet"},        // default args
-		true,                       // supports stdin
+		"black",             // binary name
+		[]string{"--quiet"}, // default args
+		true,                // supports stdin
 		logger,
 	)
 }

@@ -32,50 +32,50 @@ func NewAnalyticsIntegration(
 
 // ProviderMetrics represents metrics for a single LLM provider request
 type ProviderMetrics struct {
-	Provider       string    `json:"provider"`
-	Model          string    `json:"model"`
-	RequestID      string    `json:"request_id"`
-	DebateID       string    `json:"debate_id,omitempty"`
-	Round          int       `json:"round,omitempty"`
-	Timestamp      time.Time `json:"timestamp"`
-	ResponseTimeMs float64   `json:"response_time_ms"`
-	TokensUsed     int       `json:"tokens_used"`
-	PromptTokens   int       `json:"prompt_tokens,omitempty"`
-	CompletionTokens int     `json:"completion_tokens,omitempty"`
-	Confidence     float64   `json:"confidence,omitempty"`
-	Success        bool      `json:"success"`
-	ErrorType      string    `json:"error_type,omitempty"`
-	ErrorCount     int       `json:"error_count,omitempty"`
+	Provider         string    `json:"provider"`
+	Model            string    `json:"model"`
+	RequestID        string    `json:"request_id"`
+	DebateID         string    `json:"debate_id,omitempty"`
+	Round            int       `json:"round,omitempty"`
+	Timestamp        time.Time `json:"timestamp"`
+	ResponseTimeMs   float64   `json:"response_time_ms"`
+	TokensUsed       int       `json:"tokens_used"`
+	PromptTokens     int       `json:"prompt_tokens,omitempty"`
+	CompletionTokens int       `json:"completion_tokens,omitempty"`
+	Confidence       float64   `json:"confidence,omitempty"`
+	Success          bool      `json:"success"`
+	ErrorType        string    `json:"error_type,omitempty"`
+	ErrorCount       int       `json:"error_count,omitempty"`
 }
 
 // DebateMetrics represents metrics for a complete debate
 type DebateMetrics struct {
-	DebateID       string    `json:"debate_id"`
-	Topic          string    `json:"topic"`
-	Timestamp      time.Time `json:"timestamp"`
-	TotalRounds    int       `json:"total_rounds"`
-	TotalDurationMs float64  `json:"total_duration_ms"`
-	ParticipantCount int     `json:"participant_count"`
-	Winner         string    `json:"winner,omitempty"`
-	WinnerProvider string    `json:"winner_provider,omitempty"`
-	WinnerModel    string    `json:"winner_model,omitempty"`
-	Confidence     float64   `json:"confidence,omitempty"`
-	TotalTokens    int       `json:"total_tokens"`
-	Outcome        string    `json:"outcome"` // successful, abandoned, error
+	DebateID         string    `json:"debate_id"`
+	Topic            string    `json:"topic"`
+	Timestamp        time.Time `json:"timestamp"`
+	TotalRounds      int       `json:"total_rounds"`
+	TotalDurationMs  float64   `json:"total_duration_ms"`
+	ParticipantCount int       `json:"participant_count"`
+	Winner           string    `json:"winner,omitempty"`
+	WinnerProvider   string    `json:"winner_provider,omitempty"`
+	WinnerModel      string    `json:"winner_model,omitempty"`
+	Confidence       float64   `json:"confidence,omitempty"`
+	TotalTokens      int       `json:"total_tokens"`
+	Outcome          string    `json:"outcome"` // successful, abandoned, error
 }
 
 // ConversationMetrics represents metrics for a conversation
 type ConversationMetrics struct {
-	ConversationID string    `json:"conversation_id"`
-	UserID         string    `json:"user_id"`
-	SessionID      string    `json:"session_id"`
-	Timestamp      time.Time `json:"timestamp"`
-	MessageCount   int       `json:"message_count"`
-	EntityCount    int       `json:"entity_count"`
-	TotalTokens    int64     `json:"total_tokens"`
-	Compressed     bool      `json:"compressed"`
-	CompressionRatio float64 `json:"compression_ratio,omitempty"`
-	DebateCount    int       `json:"debate_count"`
+	ConversationID   string    `json:"conversation_id"`
+	UserID           string    `json:"user_id"`
+	SessionID        string    `json:"session_id"`
+	Timestamp        time.Time `json:"timestamp"`
+	MessageCount     int       `json:"message_count"`
+	EntityCount      int       `json:"entity_count"`
+	TotalTokens      int64     `json:"total_tokens"`
+	Compressed       bool      `json:"compressed"`
+	CompressionRatio float64   `json:"compression_ratio,omitempty"`
+	DebateCount      int       `json:"debate_count"`
 }
 
 // PublishProviderMetrics publishes provider performance metrics

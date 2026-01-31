@@ -18,6 +18,7 @@ import (
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/modelsdev"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/skills"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -29,10 +30,10 @@ type RouterContext struct {
 	protocolManager  *services.UnifiedProtocolManager
 	oauthMonitor     *services.OAuthTokenMonitor
 	healthMonitor    *services.ProviderHealthMonitor
-	ProviderRegistry *services.ProviderRegistry      // Exposed for StartupVerifier integration
-	DebateTeamConfig *services.DebateTeamConfig      // Exposed for re-initialization with StartupVerifier
-	unifiedHandler   *handlers.UnifiedHandler        // For updating debate team display
-	debateService    *services.DebateService         // For updating team config
+	ProviderRegistry *services.ProviderRegistry // Exposed for StartupVerifier integration
+	DebateTeamConfig *services.DebateTeamConfig // Exposed for re-initialization with StartupVerifier
+	unifiedHandler   *handlers.UnifiedHandler   // For updating debate team display
+	debateService    *services.DebateService    // For updating team config
 }
 
 // Shutdown stops all background services started by the router
@@ -211,6 +212,22 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 	// Initialize unified OpenAI-compatible handler
 	unifiedHandler := handlers.NewUnifiedHandler(providerRegistry, cfg)
 
+	// Initialize Skills system
+	skillConfig := skills.DefaultSkillConfig()
+	skillConfig.SkillsDirectory = "skills" // Load from project skills/ directory
+	skillService := skills.NewService(skillConfig)
+	skillService.SetLogger(logger)
+	if err := skillService.Initialize(context.Background()); err != nil {
+		logger.WithError(err).Warn("Failed to initialize skills system, continuing without skills")
+	} else {
+		logger.WithField("skills_loaded", len(skillService.GetAllSkills())).Info("Skills system initialized")
+	}
+	skillsIntegration := skills.NewIntegration(skillService)
+	skillsIntegration.SetLogger(logger)
+
+	// Inject skills integration into unified handler
+	unifiedHandler.SetSkillsIntegration(skillsIntegration)
+
 	// Initialize Cognee service with all features enabled
 	cogneeService := services.NewCogneeService(cfg, logger)
 
@@ -242,14 +259,18 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 	// Initialize MCP handler
 	mcpHandler := handlers.NewMCPHandler(providerRegistry, &cfg.MCP)
 
+	// Initialize ACP handler
+	acpHandler := handlers.NewACPHandler(providerRegistry, logger)
+
 	// Initialize Protocol handler (UnifiedProtocolManager implements ProtocolManagerInterface)
 	protocolManager := services.NewUnifiedProtocolManager(modelMetadataRepo, sharedCache, logger)
 	rc.protocolManager = protocolManager
 	protocolHandler := handlers.NewProtocolHandler(protocolManager, logger)
 
 	// Initialize Protocol SSE handler for MCP/ACP/LSP/Embeddings/Vision/Cognee
-	protocolSSEHandler := handlers.NewProtocolSSEHandler(
+	protocolSSEHandler := handlers.NewProtocolSSEHandlerWithACP(
 		mcpHandler,
+		acpHandler,
 		lspHandler,
 		embeddingHandler,
 		cogneeAPIHandler,
@@ -640,6 +661,18 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 								"failure_count": cb.GetFailureCount(),
 								"last_failure":  cb.GetLastFailure(),
 							}
+
+							// Skills endpoints
+							skillsHandler := handlers.NewSkillsHandler(skillsIntegration)
+							skillsHandler.SetLogger(logger)
+							skillsGroup := protected.Group("/skills")
+							{
+								skillsGroup.GET("", skillsHandler.ListSkills)
+								skillsGroup.GET("/categories", skillsHandler.ListCategories)
+								skillsGroup.GET("/:category", skillsHandler.GetSkillsByCategory)
+								skillsGroup.POST("/match", skillsHandler.MatchSkills)
+							}
+							logger.Info("Skills endpoints registered at /v1/skills/*")
 						}
 
 						c.JSON(200, response)
@@ -824,7 +857,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		logger.Info("RAG endpoints registered at /v1/rag/*")
 
 		// ACP (Agent Communication Protocol) endpoints
-		acpHandler := handlers.NewACPHandler(providerRegistry, logger)
+		// Using acpHandler already created earlier
 		acpHandler.RegisterRoutes(protected)
 		logger.Info("ACP endpoints registered at /v1/acp/*")
 

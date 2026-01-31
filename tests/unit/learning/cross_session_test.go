@@ -352,7 +352,7 @@ func TestInsightStore_UpdatePattern(t *testing.T) {
 	store.UpdatePattern(pattern)
 	retrieved = store.GetPattern("pattern-123")
 	require.NotNil(t, retrieved)
-	assert.Equal(t, 2, retrieved.Frequency) // Incremented
+	assert.Equal(t, 2, retrieved.Frequency)             // Incremented
 	assert.InDelta(t, 0.85, retrieved.Confidence, 0.01) // Averaged
 }
 
@@ -578,9 +578,9 @@ func BenchmarkExtractPatterns(b *testing.B) {
 	completion := learning.ConversationCompletion{
 		ConversationID: "conv-123",
 		UserID:         "user-456",
-		Messages: make([]learning.Message, 50),
-		Entities: make([]learning.Entity, 20),
-		DebateRounds: make([]learning.DebateRound, 5),
+		Messages:       make([]learning.Message, 50),
+		Entities:       make([]learning.Entity, 20),
+		DebateRounds:   make([]learning.DebateRound, 5),
 	}
 
 	// Fill with dummy data

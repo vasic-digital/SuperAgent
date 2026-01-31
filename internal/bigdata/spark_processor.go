@@ -52,31 +52,31 @@ type BatchParams struct {
 
 // BatchResult contains results from batch processing job
 type BatchResult struct {
-	JobID               string
-	JobType             BatchJobType
-	Status              string
-	ProcessedRows       int64
-	EntitiesExtracted   int64
-	RelationshipsFound  int64
-	TopicsIdentified    int
-	StartedAt           time.Time
-	CompletedAt         time.Time
-	DurationMs          int64
-	OutputPath          string
-	Metrics             map[string]interface{}
-	ErrorMessage        string
+	JobID              string
+	JobType            BatchJobType
+	Status             string
+	ProcessedRows      int64
+	EntitiesExtracted  int64
+	RelationshipsFound int64
+	TopicsIdentified   int
+	StartedAt          time.Time
+	CompletedAt        time.Time
+	DurationMs         int64
+	OutputPath         string
+	Metrics            map[string]interface{}
+	ErrorMessage       string
 }
 
 // SparkJobConfig defines Spark job configuration
 type SparkJobConfig struct {
-	ExecutorMemory   string // e.g., "2g"
-	ExecutorCores    int    // e.g., 2
-	NumExecutors     int    // e.g., 4
-	DriverMemory     string // e.g., "1g"
-	DeployMode       string // "client" or "cluster"
-	PythonFile       string // Path to PySpark script
-	AdditionalArgs   []string
-	EnvironmentVars  map[string]string
+	ExecutorMemory  string // e.g., "2g"
+	ExecutorCores   int    // e.g., 2
+	NumExecutors    int    // e.g., 4
+	DriverMemory    string // e.g., "1g"
+	DeployMode      string // "client" or "cluster"
+	PythonFile      string // Path to PySpark script
+	AdditionalArgs  []string
+	EnvironmentVars map[string]string
 }
 
 // NewSparkBatchProcessor creates a new Spark batch processor
@@ -142,11 +142,11 @@ func (sbp *SparkBatchProcessor) ProcessConversationDataset(
 	result.DurationMs = time.Since(startTime).Milliseconds()
 
 	sbp.logger.WithFields(logrus.Fields{
-		"job_id":       result.JobID,
-		"status":       result.Status,
-		"duration_ms":  result.DurationMs,
-		"rows":         result.ProcessedRows,
-		"entities":     result.EntitiesExtracted,
+		"job_id":        result.JobID,
+		"status":        result.Status,
+		"duration_ms":   result.DurationMs,
+		"rows":          result.ProcessedRows,
+		"entities":      result.EntitiesExtracted,
 		"relationships": result.RelationshipsFound,
 	}).Info("Spark batch processing job completed")
 

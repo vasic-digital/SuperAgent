@@ -249,7 +249,7 @@ func TestVerificationEventPublisher_PublishHealthCheck(t *testing.T) {
 func TestVerificationEventPublisher_PublishDebateTeamSelected(t *testing.T) {
 	publisher := NewVerificationEventPublisher(nil, nil, nil)
 	team := &DebateTeamResult{
-		TotalLLMs:     25, // 5 positions × 5 LLMs each
+		TotalLLMs:     25,   // 5 positions × 5 LLMs each
 		SortedByScore: true, // NO OAuth priority - pure score-based
 		LLMReuseCount: 0,
 		Positions: []*DebatePosition{

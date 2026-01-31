@@ -198,4 +198,3 @@ func (d *SSHRemoteDeployer) deployService(host *config.RemoteDeploymentHost, ser
 	}
 	return nil
 }
-

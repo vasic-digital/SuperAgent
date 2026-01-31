@@ -28,7 +28,7 @@ func main() {
 	discoverer := discovery.NewDiscoverer(logger)
 
 	endpoint := &config.ServiceEndpoint{
-		ServiceName:       "test-tcp",
+		ServiceName:      "test-tcp",
 		Host:             "127.0.0.1",
 		Port:             fmt.Sprintf("%d", *port),
 		DiscoveryEnabled: true,

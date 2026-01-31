@@ -44,7 +44,7 @@ func TestBootAll_RemoteSkipsCompose(t *testing.T) {
 	cfg.PostgreSQL.Required = false
 	cfg.Redis.Remote = true
 	cfg.Redis.Required = false
-	cfg.Cognee.Enabled = true  // Enable Cognee for this test (disabled by default after Mem0 migration)
+	cfg.Cognee.Enabled = true // Enable Cognee for this test (disabled by default after Mem0 migration)
 	cfg.Cognee.Remote = true
 	cfg.Cognee.Required = false
 	cfg.ChromaDB.Remote = true
@@ -117,7 +117,7 @@ func TestBootAll_RequiredFailureAbortsBoot(t *testing.T) {
 	// Make PostgreSQL required but unreachable
 	cfg.PostgreSQL.Required = true
 	cfg.PostgreSQL.Host = "192.0.2.1" // non-routable
-	cfg.PostgreSQL.Remote = true       // skip compose
+	cfg.PostgreSQL.Remote = true      // skip compose
 	cfg.PostgreSQL.Timeout = 1 * time.Second
 	cfg.PostgreSQL.RetryCount = 1
 
@@ -215,10 +215,10 @@ func TestDetectComposeCmd(t *testing.T) {
 
 	// The command should be docker, docker-compose, podman, or podman-compose
 	validCommands := map[string]bool{
-		"docker":          true,
-		"docker-compose":  true,
-		"podman":          true,
-		"podman-compose":  true,
+		"docker":         true,
+		"docker-compose": true,
+		"podman":         true,
+		"podman-compose": true,
 	}
 
 	// Extract base command name

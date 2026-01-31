@@ -130,10 +130,10 @@ func TestHTTPDiscoverer_Discover(t *testing.T) {
 
 // MockDNSResolver implements dnsResolver for testing
 type mockDNSResolver struct {
-	srvRecords map[string][]*net.SRV
+	srvRecords  map[string][]*net.SRV
 	hostRecords map[string][]string
-	srvError   error
-	hostError  error
+	srvError    error
+	hostError   error
 }
 
 func (m *mockDNSResolver) LookupSRV(ctx context.Context, service, proto, name string) (string, []*net.SRV, error) {
@@ -194,7 +194,7 @@ func TestDNSDiscoverer_Discover(t *testing.T) {
 
 	t.Run("failed DNS resolution", func(t *testing.T) {
 		mockResolver := &mockDNSResolver{
-			srvRecords: map[string][]*net.SRV{},
+			srvRecords:  map[string][]*net.SRV{},
 			hostRecords: map[string][]string{},
 			hostError:   fmt.Errorf("NXDOMAIN"),
 		}
@@ -235,11 +235,11 @@ func TestCompositeDiscoverer(t *testing.T) {
 		// This test ensures the composite discoverer delegates correctly
 		// We'll just test that it doesn't panic
 		endpoint := &config.ServiceEndpoint{
-			Host:             "127.0.0.1",
-			Port:             "9999",
-			DiscoveryMethod:  "http",
-			HealthPath:       "/health",
-			HealthType:       "http",
+			Host:            "127.0.0.1",
+			Port:            "9999",
+			DiscoveryMethod: "http",
+			HealthPath:      "/health",
+			HealthType:      "http",
 		}
 		ctx := context.Background()
 		_, err := discoverer.Discover(ctx, endpoint)

@@ -273,8 +273,8 @@ func TestClaudeCLIProvider_ParseJSONResponse(t *testing.T) {
 		expectUsage    bool
 	}{
 		{
-			name: "valid JSON response",
-			input: `{"result": "Hello, world!", "session_id": "sess-123", "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "model": "claude-sonnet"}`,
+			name:           "valid JSON response",
+			input:          `{"result": "Hello, world!", "session_id": "sess-123", "usage": {"prompt_tokens": 10, "completion_tokens": 5}, "model": "claude-sonnet"}`,
 			expectedResult: "Hello, world!",
 			expectedSessID: "sess-123",
 			expectUsage:    true,

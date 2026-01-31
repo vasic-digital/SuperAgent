@@ -49,15 +49,15 @@ type FormatCodeRequest struct {
 
 // FormatCodeResponse is the response for formatting code
 type FormatCodeResponse struct {
-	Success          bool                  `json:"success"`
-	Content          string                `json:"content,omitempty"`
-	Changed          bool                  `json:"changed"`
-	FormatterName    string                `json:"formatter_name"`
-	FormatterVersion string                `json:"formatter_version"`
-	DurationMS       int64                 `json:"duration_ms"`
+	Success          bool                    `json:"success"`
+	Content          string                  `json:"content,omitempty"`
+	Changed          bool                    `json:"changed"`
+	FormatterName    string                  `json:"formatter_name"`
+	FormatterVersion string                  `json:"formatter_version"`
+	DurationMS       int64                   `json:"duration_ms"`
 	Stats            *formatters.FormatStats `json:"stats,omitempty"`
-	Error            string                `json:"error,omitempty"`
-	Warnings         []string              `json:"warnings,omitempty"`
+	Error            string                  `json:"error,omitempty"`
+	Warnings         []string                `json:"warnings,omitempty"`
 }
 
 // FormatCode handles POST /v1/format

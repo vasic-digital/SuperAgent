@@ -23,10 +23,10 @@ type InfiniteContextEngine struct {
 
 // ContextCache provides LRU caching for replayed conversations
 type ContextCache struct {
-	cache    map[string]*CachedContext
-	maxSize  int
-	ttl      time.Duration
-	mu       sync.RWMutex
+	cache   map[string]*CachedContext
+	maxSize int
+	ttl     time.Duration
+	mu      sync.RWMutex
 }
 
 // CachedContext represents a cached conversation context
@@ -149,10 +149,10 @@ func (ice *InfiniteContextEngine) ReplayWithCompression(
 	}
 
 	ice.logger.WithFields(logrus.Fields{
-		"conversation_id":    conversationID,
-		"original_messages":  len(messages),
+		"conversation_id":     conversationID,
+		"original_messages":   len(messages),
 		"compressed_messages": len(compressed),
-		"compression_ratio":  compressionData.CompressionRatio,
+		"compression_ratio":   compressionData.CompressionRatio,
 	}).Info("Conversation compressed successfully")
 
 	return compressed, compressionData, nil
@@ -257,10 +257,10 @@ func (ice *InfiniteContextEngine) calculateContext(messages []MessageData, entit
 	totalTokens := ice.countTokens(messages)
 
 	return &ContextData{
-		MessageCount: len(messages),
-		TotalTokens:  totalTokens,
-		EntityCount:  len(entities),
-		ContextWindow: 128000, // Default context window
+		MessageCount:      len(messages),
+		TotalTokens:       totalTokens,
+		EntityCount:       len(entities),
+		ContextWindow:     128000, // Default context window
 		ContextUsageRatio: float64(totalTokens) / 128000.0,
 	}
 }

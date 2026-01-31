@@ -25,7 +25,7 @@ const (
 	ConversationEventCompressed      ConversationEventType = "conversation.compressed"
 
 	// Debate events
-	ConversationEventDebateRound ConversationEventType = "conversation.debate.round"
+	ConversationEventDebateRound  ConversationEventType = "conversation.debate.round"
 	ConversationEventDebateWinner ConversationEventType = "conversation.debate.winner"
 )
 

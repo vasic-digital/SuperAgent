@@ -216,9 +216,9 @@ func (fa *FreeProviderAdapter) VerifyZenProvider(ctx context.Context) (*verifier
 		}
 
 		freeLog.WithFields(logrus.Fields{
-			"provider":                  "zen",
-			"cli_verified_models":       cliVerifiedModels,
-			"total_failed_after_cli":    len(failedModels) - cliVerifiedModels,
+			"provider":               "zen",
+			"cli_verified_models":    cliVerifiedModels,
+			"total_failed_after_cli": len(failedModels) - cliVerifiedModels,
 		}).Info("CLI facade verification completed")
 	}
 
@@ -248,25 +248,25 @@ func (fa *FreeProviderAdapter) VerifyZenProvider(ctx context.Context) (*verifier
 		LastHealthAt: time.Now(),
 		ErrorCount:   0,
 		Metadata: map[string]interface{}{
-			"verification_time_ms":    time.Since(startTime).Milliseconds(),
-			"verified_models":         len(models),
-			"total_models":            len(freeModels),
-			"health_check_passed":     healthErr == nil,
-			"anonymous_mode":          true,
-			"api_verified_models":     len(models) - cliVerifiedModels,
-			"cli_verified_models":     cliVerifiedModels,
-			"cli_facade_available":    fa.zenCLIProvider != nil && fa.zenCLIProvider.IsCLIAvailable(),
+			"verification_time_ms": time.Since(startTime).Milliseconds(),
+			"verified_models":      len(models),
+			"total_models":         len(freeModels),
+			"health_check_passed":  healthErr == nil,
+			"anonymous_mode":       true,
+			"api_verified_models":  len(models) - cliVerifiedModels,
+			"cli_verified_models":  cliVerifiedModels,
+			"cli_facade_available": fa.zenCLIProvider != nil && fa.zenCLIProvider.IsCLIAvailable(),
 		},
 	}
 
 	freeLog.WithFields(logrus.Fields{
-		"provider":            "zen",
-		"verified_models":     len(models),
-		"api_verified":        len(models) - cliVerifiedModels,
-		"cli_verified":        cliVerifiedModels,
-		"score":               score,
-		"status":              status,
-		"duration_ms":         time.Since(startTime).Milliseconds(),
+		"provider":        "zen",
+		"verified_models": len(models),
+		"api_verified":    len(models) - cliVerifiedModels,
+		"cli_verified":    cliVerifiedModels,
+		"score":           score,
+		"status":          status,
+		"duration_ms":     time.Since(startTime).Milliseconds(),
 	}).Info("Zen provider verification completed")
 
 	return provider, nil
@@ -395,12 +395,12 @@ func (fa *FreeProviderAdapter) verifyZenModelViaCLI(ctx context.Context, modelID
 	}
 
 	model := &verifier.UnifiedModel{
-		ID:           modelID,
-		Name:         getModelDisplayName(modelID) + " (CLI)",
-		Provider:     "zen",
-		Verified:     verified,
-		Score:        score,
-		Latency:      latency,
+		ID:       modelID,
+		Name:     getModelDisplayName(modelID) + " (CLI)",
+		Provider: "zen",
+		Verified: verified,
+		Score:    score,
+		Latency:  latency,
 		Capabilities: []string{
 			"text_completion",
 			"chat",

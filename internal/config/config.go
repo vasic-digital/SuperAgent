@@ -10,28 +10,28 @@ import (
 )
 
 type Config struct {
-	Server      ServerConfig
-	Database    DatabaseConfig
-	Redis       RedisConfig
-	Cognee      CogneeConfig
-	Memory      memory.MemoryConfig // Mem0-style memory system (PRIMARY)
-	LLM         LLMConfig
-	ModelsDev   ModelsDevConfig
-	Monitoring  MonitoringConfig
-	Security    SecurityConfig
-	Plugins     PluginConfig
-	Performance PerformanceConfig
-	MCP                MCPConfig
-	ACP                ACPConfig
-	Services           ServicesConfig
-	RemoteDeployment   RemoteDeploymentConfig
+	Server           ServerConfig
+	Database         DatabaseConfig
+	Redis            RedisConfig
+	Cognee           CogneeConfig
+	Memory           memory.MemoryConfig // Mem0-style memory system (PRIMARY)
+	LLM              LLMConfig
+	ModelsDev        ModelsDevConfig
+	Monitoring       MonitoringConfig
+	Security         SecurityConfig
+	Plugins          PluginConfig
+	Performance      PerformanceConfig
+	MCP              MCPConfig
+	ACP              ACPConfig
+	Services         ServicesConfig
+	RemoteDeployment RemoteDeploymentConfig
 }
 
 // ServiceEndpoint represents a configurable service endpoint that can be local or remote.
 type ServiceEndpoint struct {
 	Host        string        `yaml:"host"`
 	Port        string        `yaml:"port"`
-	URL         string        `yaml:"url"`         // Full URL override (takes precedence over host:port)
+	URL         string        `yaml:"url"`          // Full URL override (takes precedence over host:port)
 	Enabled     bool          `yaml:"enabled"`      // Whether this service is used
 	Required    bool          `yaml:"required"`     // Boot fails if unavailable
 	Remote      bool          `yaml:"remote"`       // Skip compose start, only health check
@@ -43,11 +43,11 @@ type ServiceEndpoint struct {
 	ServiceName string        `yaml:"service_name"` // Docker compose service name
 	Profile     string        `yaml:"profile"`      // Docker compose profile
 	// Discovery settings
-	DiscoveryEnabled  bool          `yaml:"discovery_enabled"`   // Enable automatic service discovery
-	DiscoveryMethod   string        `yaml:"discovery_method"`    // "tcp", "http", "dns", "mdns"
-	DiscoveryTimeout  time.Duration `yaml:"discovery_timeout"`   // Timeout for discovery attempts
+	DiscoveryEnabled bool          `yaml:"discovery_enabled"` // Enable automatic service discovery
+	DiscoveryMethod  string        `yaml:"discovery_method"`  // "tcp", "http", "dns", "mdns"
+	DiscoveryTimeout time.Duration `yaml:"discovery_timeout"` // Timeout for discovery attempts
 	// Runtime state (not configurable via YAML)
-	Discovered        bool          `yaml:"-"`                   // Whether service was discovered in network
+	Discovered bool `yaml:"-"` // Whether service was discovered in network
 }
 
 // ResolvedURL builds the full URL from host:port or returns the URL field if set.
@@ -308,9 +308,9 @@ func Load() *Config {
 		Cognee: CogneeConfig{
 			BaseURL:     getEnv("COGNEE_BASE_URL", "http://localhost:8000"),
 			APIKey:      getEnv("COGNEE_API_KEY", ""),
-			AutoCognify: getBoolEnv("COGNEE_AUTO_COGNIFY", false), // DISABLED - Mem0 is now primary memory provider
+			AutoCognify: getBoolEnv("COGNEE_AUTO_COGNIFY", false),         // DISABLED - Mem0 is now primary memory provider
 			Timeout:     getDurationEnv("COGNEE_TIMEOUT", 15*time.Second), // Increased to 15s for Cognee cold start + processing
-			Enabled:     getBoolEnv("COGNEE_ENABLED", false), // DISABLED - Replaced by Mem0 memory system
+			Enabled:     getBoolEnv("COGNEE_ENABLED", false),              // DISABLED - Replaced by Mem0 memory system
 		},
 		LLM: LLMConfig{
 			DefaultTimeout: getDurationEnv("LLM_TIMEOUT", 60*time.Second),
@@ -743,22 +743,22 @@ func loadServiceEndpointFromEnv(prefix string, ep *ServiceEndpoint) {
 // AllEndpoints returns all service endpoints as a name->endpoint map.
 func (s *ServicesConfig) AllEndpoints() map[string]ServiceEndpoint {
 	endpoints := map[string]ServiceEndpoint{
-		"postgresql":  s.PostgreSQL,
-		"redis":       s.Redis,
-		"cognee":      s.Cognee,
-		"chromadb":    s.ChromaDB,
-		"prometheus":  s.Prometheus,
-		"grafana":     s.Grafana,
-		"neo4j":       s.Neo4j,
-		"kafka":       s.Kafka,
-		"zookeeper":   s.Zookeeper,
-		"rabbitmq":    s.RabbitMQ,
-		"qdrant":      s.Qdrant,
-		"weaviate":    s.Weaviate,
-		"langchain":   s.LangChain,
-		"llamaindex":  s.LlamaIndex,
-		"clickhouse":  s.ClickHouse,
-		"minio":       s.MinIO,
+		"postgresql":   s.PostgreSQL,
+		"redis":        s.Redis,
+		"cognee":       s.Cognee,
+		"chromadb":     s.ChromaDB,
+		"prometheus":   s.Prometheus,
+		"grafana":      s.Grafana,
+		"neo4j":        s.Neo4j,
+		"kafka":        s.Kafka,
+		"zookeeper":    s.Zookeeper,
+		"rabbitmq":     s.RabbitMQ,
+		"qdrant":       s.Qdrant,
+		"weaviate":     s.Weaviate,
+		"langchain":    s.LangChain,
+		"llamaindex":   s.LlamaIndex,
+		"clickhouse":   s.ClickHouse,
+		"minio":        s.MinIO,
 		"spark_master": s.SparkMaster,
 		"spark_worker": s.SparkWorker,
 	}

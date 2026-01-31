@@ -78,17 +78,17 @@ type ConversationState struct {
 
 // WindowedAnalytics represents analytics for a time window
 type WindowedAnalytics struct {
-	WindowStart          time.Time       `json:"window_start"`
-	WindowEnd            time.Time       `json:"window_end"`
-	ConversationID       string          `json:"conversation_id,omitempty"`
-	TotalMessages        int             `json:"total_messages"`
-	LLMCalls             int             `json:"llm_calls"`
-	DebateRounds         int             `json:"debate_rounds"`
-	AvgResponseTimeMs    float64         `json:"avg_response_time_ms"`
-	EntityGrowth         int             `json:"entity_growth"`
-	KnowledgeDensity     float64         `json:"knowledge_density"` // Entities per message
-	ProviderDistribution map[string]int  `json:"provider_distribution"`
-	CreatedAt            time.Time       `json:"created_at"`
+	WindowStart          time.Time      `json:"window_start"`
+	WindowEnd            time.Time      `json:"window_end"`
+	ConversationID       string         `json:"conversation_id,omitempty"`
+	TotalMessages        int            `json:"total_messages"`
+	LLMCalls             int            `json:"llm_calls"`
+	DebateRounds         int            `json:"debate_rounds"`
+	AvgResponseTimeMs    float64        `json:"avg_response_time_ms"`
+	EntityGrowth         int            `json:"entity_growth"`
+	KnowledgeDensity     float64        `json:"knowledge_density"` // Entities per message
+	ProviderDistribution map[string]int `json:"provider_distribution"`
+	CreatedAt            time.Time      `json:"created_at"`
 }
 
 // EntityExtractionResult represents entity extraction result

@@ -132,11 +132,11 @@ type EntityUpdateEvent struct {
 
 // RelationshipUpdateEvent represents a relationship update for the knowledge graph
 type RelationshipUpdateEvent struct {
-	EventID        string                `json:"event_id"`
-	EventType      string                `json:"event_type"` // relationship.created, relationship.updated
-	Timestamp      time.Time             `json:"timestamp"`
-	ConversationID string                `json:"conversation_id"`
-	Relationship   *memory.Relationship  `json:"relationship"`
+	EventID        string               `json:"event_id"`
+	EventType      string               `json:"event_type"` // relationship.created, relationship.updated
+	Timestamp      time.Time            `json:"timestamp"`
+	ConversationID string               `json:"conversation_id"`
+	Relationship   *memory.Relationship `json:"relationship"`
 }
 
 // publishEntityEvent publishes an entity event to Kafka
@@ -164,8 +164,8 @@ func (ei *EntityIntegration) publishEntityEvent(ctx context.Context, event *Enti
 	}
 
 	ei.logger.WithFields(logrus.Fields{
-		"event_type": event.EventType,
-		"entity_id":  event.Entity.ID,
+		"event_type":  event.EventType,
+		"entity_id":   event.Entity.ID,
 		"entity_type": event.Entity.Type,
 	}).Debug("Published entity event to Kafka")
 
@@ -185,10 +185,10 @@ func (ei *EntityIntegration) publishRelationshipEvent(ctx context.Context, event
 		Payload:   payload,
 		Timestamp: event.Timestamp,
 		Headers: map[string]string{
-			"event_type":       event.EventType,
-			"conversation_id":  event.ConversationID,
-			"source_id":        event.Relationship.SourceID,
-			"target_id":        event.Relationship.TargetID,
+			"event_type":        event.EventType,
+			"conversation_id":   event.ConversationID,
+			"source_id":         event.Relationship.SourceID,
+			"target_id":         event.Relationship.TargetID,
 			"relationship_type": event.Relationship.Type,
 		},
 	}

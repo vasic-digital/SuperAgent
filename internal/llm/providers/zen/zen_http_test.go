@@ -457,13 +457,13 @@ func TestZenHTTPProvider_MetadataInResponse(t *testing.T) {
 	resp := &models.LLMResponse{
 		Metadata: map[string]interface{}{
 			"source":            "opencode-http",
-			"session_id":       "test-session",
-			"message_id":       "msg-123",
-			"model":            "big-pickle",
-			"base_url":         "http://localhost:4096",
-			"prompt_tokens":    100,
+			"session_id":        "test-session",
+			"message_id":        "msg-123",
+			"model":             "big-pickle",
+			"base_url":          "http://localhost:4096",
+			"prompt_tokens":     100,
 			"completion_tokens": 50,
-			"latency":          "1.5s",
+			"latency":           "1.5s",
 		},
 	}
 

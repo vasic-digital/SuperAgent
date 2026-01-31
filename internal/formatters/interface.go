@@ -92,9 +92,9 @@ const (
 
 // FormatterMetadata provides formatter metadata
 type FormatterMetadata struct {
-	Name     string
-	Type     FormatterType
-	Architecture string   // "binary", "python", "node", "jvm", etc.
+	Name         string
+	Type         FormatterType
+	Architecture string // "binary", "python", "node", "jvm", etc.
 	GitHubURL    string
 	Version      string
 	Languages    []string
@@ -122,10 +122,10 @@ type FormatterMetadata struct {
 
 // BaseFormatter provides common formatter functionality
 type BaseFormatter struct {
-	name     string
-	version  string
+	name      string
+	version   string
 	languages []string
-	metadata *FormatterMetadata
+	metadata  *FormatterMetadata
 }
 
 // NewBaseFormatter creates a new base formatter

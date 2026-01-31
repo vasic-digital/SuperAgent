@@ -413,15 +413,15 @@ func (z *ZAIProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
 		SupportedModels: []string{
 			// GLM-4 series (Zhipu AI) - Most powerful Chinese LLM
-			"glm-4-plus",      // Most capable, best quality
-			"glm-4",           // Standard version
-			"glm-4-air",       // Balanced performance
-			"glm-4-airx",      // Extended context
-			"glm-4-flash",     // Fast inference
-			"glm-4-flashx",    // Fast with extended context
-			"glm-4-long",      // Long context (1M tokens)
-			"glm-4v",          // Vision model
-			"glm-4v-plus",     // Enhanced vision
+			"glm-4-plus",   // Most capable, best quality
+			"glm-4",        // Standard version
+			"glm-4-air",    // Balanced performance
+			"glm-4-airx",   // Extended context
+			"glm-4-flash",  // Fast inference
+			"glm-4-flashx", // Fast with extended context
+			"glm-4-long",   // Long context (1M tokens)
+			"glm-4v",       // Vision model
+			"glm-4v-plus",  // Enhanced vision
 			// Legacy models
 			"glm-3-turbo",
 		},

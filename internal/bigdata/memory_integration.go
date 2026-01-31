@@ -13,11 +13,11 @@ import (
 
 // MemoryIntegration bridges the existing memory manager with distributed memory
 type MemoryIntegration struct {
-	memoryManager       *memory.Manager
-	distributedMemory   *memory.DistributedMemoryManager
-	kafkaBroker         messaging.MessageBroker
-	logger              *logrus.Logger
-	enableDistributed   bool
+	memoryManager     *memory.Manager
+	distributedMemory *memory.DistributedMemoryManager
+	kafkaBroker       messaging.MessageBroker
+	logger            *logrus.Logger
+	enableDistributed bool
 }
 
 // NewMemoryIntegration creates a new memory integration
@@ -109,18 +109,18 @@ func (mi *MemoryIntegration) GetMemory(ctx context.Context, memoryID string) (*m
 
 // MemoryEvent represents a memory change event for distributed synchronization
 type MemoryEvent struct {
-	EventID      string                 `json:"event_id"`
-	EventType    string                 `json:"event_type"` // memory.created, memory.updated, memory.deleted
-	NodeID       string                 `json:"node_id"`
-	Timestamp    time.Time              `json:"timestamp"`
-	MemoryID     string                 `json:"memory_id"`
-	UserID       string                 `json:"user_id,omitempty"`
-	SessionID    string                 `json:"session_id,omitempty"`
-	Content      string                 `json:"content,omitempty"`
-	Embedding    []float32              `json:"embedding,omitempty"`
-	Entities     []memory.Entity        `json:"entities,omitempty"`
-	Relationships []memory.Relationship `json:"relationships,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	EventID       string                 `json:"event_id"`
+	EventType     string                 `json:"event_type"` // memory.created, memory.updated, memory.deleted
+	NodeID        string                 `json:"node_id"`
+	Timestamp     time.Time              `json:"timestamp"`
+	MemoryID      string                 `json:"memory_id"`
+	UserID        string                 `json:"user_id,omitempty"`
+	SessionID     string                 `json:"session_id,omitempty"`
+	Content       string                 `json:"content,omitempty"`
+	Embedding     []float32              `json:"embedding,omitempty"`
+	Entities      []memory.Entity        `json:"entities,omitempty"`
+	Relationships []memory.Relationship  `json:"relationships,omitempty"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // createMemoryEvent creates a memory event from a memory object

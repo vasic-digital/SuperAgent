@@ -964,9 +964,9 @@ func (s *CogneeService) performSearch(ctx context.Context, query, dataset string
 	defer cancel()
 
 	reqBody := map[string]interface{}{
-		"query":       query,
-		"datasets":    []string{dataset},
-		"topK":        limit,
+		"query":      query,
+		"datasets":   []string{dataset},
+		"topK":       limit,
 		"searchType": searchType,
 	}
 
@@ -1487,9 +1487,9 @@ func (s *CogneeService) GetCodeContext(ctx context.Context, query string) ([]Cod
 	}
 
 	reqBody := map[string]interface{}{
-		"query":       query,
+		"query":      query,
 		"searchType": "CODING_RULES",
-		"limit":       5,
+		"limit":      5,
 	}
 
 	data, err := json.Marshal(reqBody)

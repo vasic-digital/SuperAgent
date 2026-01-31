@@ -31,16 +31,16 @@ type QwenACPProvider struct {
 	initialized bool
 
 	// Process management
-	cmd        *exec.Cmd
-	stdin      io.WriteCloser
-	stdout     io.ReadCloser
-	scanner    *bufio.Scanner
-	mu         sync.Mutex
-	requestID  int64
-	sessionID  string
-	isRunning  bool
-	startOnce  sync.Once
-	startErr   error
+	cmd       *exec.Cmd
+	stdin     io.WriteCloser
+	stdout    io.ReadCloser
+	scanner   *bufio.Scanner
+	mu        sync.Mutex
+	requestID int64
+	sessionID string
+	isRunning bool
+	startOnce sync.Once
+	startErr  error
 
 	// Response channels for async handling
 	responses map[int64]chan *acpResponse
@@ -82,10 +82,10 @@ type clientCapabilities struct {
 }
 
 type initializeResponse struct {
-	ProtocolVersion   int              `json:"protocolVersion"`
-	AgentInfo         agentInfo        `json:"agentInfo"`
+	ProtocolVersion   int               `json:"protocolVersion"`
+	AgentInfo         agentInfo         `json:"agentInfo"`
 	AgentCapabilities agentCapabilities `json:"agentCapabilities"`
-	AuthMethods       []authMethod     `json:"authMethods"`
+	AuthMethods       []authMethod      `json:"authMethods"`
 }
 
 type agentInfo struct {
@@ -498,13 +498,13 @@ func (p *QwenACPProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 		ResponseTime: duration.Milliseconds(),
 		CreatedAt:    time.Now(),
 		Metadata: map[string]interface{}{
-			"source":             "qwen-acp",
-			"session_id":         p.sessionID,
-			"model":              p.model,
-			"stop_reason":        promptResp.StopReason,
-			"prompt_tokens":      promptTokens,
-			"completion_tokens":  completionTokens,
-			"latency":            duration.String(),
+			"source":            "qwen-acp",
+			"session_id":        p.sessionID,
+			"model":             p.model,
+			"stop_reason":       promptResp.StopReason,
+			"prompt_tokens":     promptTokens,
+			"completion_tokens": completionTokens,
+			"latency":           duration.String(),
 		},
 	}, nil
 }

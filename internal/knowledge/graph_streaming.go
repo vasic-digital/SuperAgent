@@ -13,14 +13,14 @@ import (
 
 // StreamingKnowledgeGraph manages real-time knowledge graph updates via Kafka -> Neo4j
 type StreamingKnowledgeGraph struct {
-	driver       neo4j.DriverWithContext
-	database     string
-	broker       messaging.MessageBroker
-	logger       *logrus.Logger
-	stopCh       chan struct{}
-	entityTopic  string
-	memoryTopic  string
-	debateTopic  string
+	driver      neo4j.DriverWithContext
+	database    string
+	broker      messaging.MessageBroker
+	logger      *logrus.Logger
+	stopCh      chan struct{}
+	entityTopic string
+	memoryTopic string
+	debateTopic string
 }
 
 // EntityUpdateType defines the type of entity update
@@ -58,8 +58,8 @@ type EntityUpdate struct {
 	UserID         string                 `json:"user_id"`
 	Entity         *GraphEntity           `json:"entity,omitempty"`
 	Relationship   *GraphRelationship     `json:"relationship,omitempty"`
-	SourceID       string                 `json:"source_id,omitempty"`  // For entity merges
-	TargetID       string                 `json:"target_id,omitempty"`  // For entity merges
+	SourceID       string                 `json:"source_id,omitempty"` // For entity merges
+	TargetID       string                 `json:"target_id,omitempty"` // For entity merges
 	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -78,16 +78,16 @@ type GraphEntity struct {
 
 // GraphRelationship represents a relationship between entities
 type GraphRelationship struct {
-	ID              string                 `json:"id"`
-	Type            string                 `json:"type"` // RELATED_TO, MENTIONED_IN, etc.
-	SourceID        string                 `json:"source_id"`
-	TargetID        string                 `json:"target_id"`
-	Strength        float64                `json:"strength"`
-	CooccurrenceCount int                  `json:"cooccurrence_count"`
-	Contexts        []string               `json:"contexts,omitempty"`
-	Properties      map[string]interface{} `json:"properties,omitempty"`
-	CreatedAt       time.Time              `json:"created_at"`
-	UpdatedAt       time.Time              `json:"updated_at"`
+	ID                string                 `json:"id"`
+	Type              string                 `json:"type"` // RELATED_TO, MENTIONED_IN, etc.
+	SourceID          string                 `json:"source_id"`
+	TargetID          string                 `json:"target_id"`
+	Strength          float64                `json:"strength"`
+	CooccurrenceCount int                    `json:"cooccurrence_count"`
+	Contexts          []string               `json:"contexts,omitempty"`
+	Properties        map[string]interface{} `json:"properties,omitempty"`
+	CreatedAt         time.Time              `json:"created_at"`
+	UpdatedAt         time.Time              `json:"updated_at"`
 }
 
 // GraphStreamingConfig defines configuration for knowledge graph streaming
@@ -126,14 +126,14 @@ func NewStreamingKnowledgeGraph(
 	}
 
 	skg := &StreamingKnowledgeGraph{
-		driver:       driver,
-		database:     config.Neo4jDatabase,
-		broker:       broker,
-		logger:       logger,
-		stopCh:       make(chan struct{}),
-		entityTopic:  config.EntityTopic,
-		memoryTopic:  config.MemoryTopic,
-		debateTopic:  config.DebateTopic,
+		driver:      driver,
+		database:    config.Neo4jDatabase,
+		broker:      broker,
+		logger:      logger,
+		stopCh:      make(chan struct{}),
+		entityTopic: config.EntityTopic,
+		memoryTopic: config.MemoryTopic,
+		debateTopic: config.DebateTopic,
 	}
 
 	// Initialize graph schema

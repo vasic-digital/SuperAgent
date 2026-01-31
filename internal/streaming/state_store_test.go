@@ -114,15 +114,15 @@ func TestInMemoryStateStore_SaveAndGetWindowedAnalytics(t *testing.T) {
 	ctx := context.Background()
 
 	analytics := &WindowedAnalytics{
-		WindowStart:    time.Now().Add(-1 * time.Hour),
-		WindowEnd:      time.Now(),
-		ConversationID: "conv-003",
-		TotalMessages:  50,
-		LLMCalls:       25,
-		DebateRounds:   10,
+		WindowStart:       time.Now().Add(-1 * time.Hour),
+		WindowEnd:         time.Now(),
+		ConversationID:    "conv-003",
+		TotalMessages:     50,
+		LLMCalls:          25,
+		DebateRounds:      10,
 		AvgResponseTimeMs: 450.5,
-		EntityGrowth:   15,
-		KnowledgeDensity: 0.3,
+		EntityGrowth:      15,
+		KnowledgeDensity:  0.3,
 		ProviderDistribution: map[string]int{
 			"claude":   10,
 			"deepseek": 5,

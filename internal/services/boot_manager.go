@@ -22,13 +22,13 @@ type BootResult struct {
 
 // BootManager handles starting, health-checking, and stopping all configured services.
 type BootManager struct {
-	Config          *config.ServicesConfig
-	Logger          *logrus.Logger
-	Results         map[string]*BootResult
-	HealthChecker   *ServiceHealthChecker
-	Discoverer      discovery.Discoverer
-	RemoteDeployer  RemoteDeployer
-	ProjectDir      string
+	Config         *config.ServicesConfig
+	Logger         *logrus.Logger
+	Results        map[string]*BootResult
+	HealthChecker  *ServiceHealthChecker
+	Discoverer     discovery.Discoverer
+	RemoteDeployer RemoteDeployer
+	ProjectDir     string
 }
 
 // NewBootManager creates a new BootManager.
@@ -71,7 +71,7 @@ func (bm *BootManager) BootAll() error {
 		if !ep.Enabled || ep.Remote || !ep.DiscoveryEnabled {
 			continue
 		}
-		
+
 		bm.Logger.WithField("service", name).Debug("Attempting service discovery")
 		discovered, err := bm.Discoverer.Discover(context.Background(), &ep)
 		if err != nil {
@@ -81,7 +81,7 @@ func (bm *BootManager) BootAll() error {
 			}).Warn("Service discovery failed")
 			continue
 		}
-		
+
 		if discovered {
 			ep.Discovered = true
 			bm.Results[name] = &BootResult{Name: name, Status: "discovered"}

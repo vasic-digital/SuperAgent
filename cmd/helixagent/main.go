@@ -26,7 +26,6 @@ import (
 
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/config"
-	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/llm"
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/claude"
@@ -48,6 +47,7 @@ import (
 	"dev.helix.agent/internal/messaging/inmemory"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/router"
+	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/utils"
 	"dev.helix.agent/internal/verifier"
 	"llm-verifier/pkg/cliagents"
@@ -1279,10 +1279,10 @@ func run(appCfg *AppConfig) error {
 
 		if startupResult.DebateTeam != nil {
 			logger.WithFields(logrus.Fields{
-				"debate_team_llms":  startupResult.DebateTeam.TotalLLMs,
-				"debate_positions":  len(startupResult.DebateTeam.Positions),
-				"sorted_by_score":   startupResult.DebateTeam.SortedByScore,
-				"llm_reuse_count":   startupResult.DebateTeam.LLMReuseCount,
+				"debate_team_llms": startupResult.DebateTeam.TotalLLMs,
+				"debate_positions": len(startupResult.DebateTeam.Positions),
+				"sorted_by_score":  startupResult.DebateTeam.SortedByScore,
+				"llm_reuse_count":  startupResult.DebateTeam.LLMReuseCount,
 			}).Info("AI Debate Team configured (up to 25 LLMs, score-based selection)")
 		}
 	}
