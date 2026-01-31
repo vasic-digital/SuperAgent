@@ -545,6 +545,87 @@ func (skg *StreamingKnowledgeGraph) GetEntity(ctx context.Context, entityID stri
 	return nil, fmt.Errorf("entity not found: %s", entityID)
 }
 
+// GetRelatedEntities returns entities related to a given entity
+func (skg *StreamingKnowledgeGraph) GetRelatedEntities(ctx context.Context, entityID string, maxDepth int) ([]*GraphEntity, error) {
+	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
+		DatabaseName: skg.database,
+	})
+	defer session.Close(ctx)
+
+	cypher := `
+		MATCH (source:Entity {id: $id})-[r:RELATED_TO*1..$maxDepth]-(related:Entity)
+		RETURN DISTINCT related
+		ORDER BY related.importance DESC
+		LIMIT 20
+	`
+
+	params := map[string]interface{}{
+		"id":       entityID,
+		"maxDepth": maxDepth,
+	}
+
+	result, err := session.Run(ctx, cypher, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query related entities: %w", err)
+	}
+
+	var entities []*GraphEntity
+	for result.Next(ctx) {
+		record := result.Record()
+		node, _ := record.Get("related")
+		entities = append(entities, nodeToEntity(node.(neo4j.Node)))
+	}
+
+	return entities, nil
+}
+
+// SearchKnowledgeGraph searches for entities matching query
+func (skg *StreamingKnowledgeGraph) SearchKnowledgeGraph(ctx context.Context, query string, entityType string, limit int) ([]*GraphEntity, error) {
+	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
+		DatabaseName: skg.database,
+	})
+	defer session.Close(ctx)
+
+	var cypher string
+	params := map[string]interface{}{
+		"query": query,
+		"limit": limit,
+	}
+
+	if entityType != "" {
+		cypher = `
+			MATCH (e:Entity {type: $type})
+			WHERE e.name CONTAINS $query OR e.value CONTAINS $query
+			RETURN e
+			ORDER BY e.importance DESC
+			LIMIT $limit
+		`
+		params["type"] = entityType
+	} else {
+		cypher = `
+			MATCH (e:Entity)
+			WHERE e.name CONTAINS $query OR e.value CONTAINS $query
+			RETURN e
+			ORDER BY e.importance DESC
+			LIMIT $limit
+		`
+	}
+
+	result, err := session.Run(ctx, cypher, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search knowledge graph: %w", err)
+	}
+
+	var entities []*GraphEntity
+	for result.Next(ctx) {
+		record := result.Record()
+		node, _ := record.Get("e")
+		entities = append(entities, nodeToEntity(node.(neo4j.Node)))
+	}
+
+	return entities, nil
+}
+
 // Stop stops the streaming consumer
 func (skg *StreamingKnowledgeGraph) Stop(ctx context.Context) error {
 	skg.logger.Info("Stopping knowledge graph streaming")

@@ -2,7 +2,9 @@ package bigdata
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"dev.helix.agent/internal/analytics"
@@ -11,38 +13,121 @@ import (
 	"dev.helix.agent/internal/learning"
 	"dev.helix.agent/internal/memory"
 	"dev.helix.agent/internal/messaging"
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/services"
 	"github.com/sirupsen/logrus"
 )
 
-// dummyLLMClient implements conversation.LLMClient for compression
-type dummyLLMClient struct{}
-
-func (d *dummyLLMClient) Complete(ctx context.Context, prompt string, maxTokens int) (string, int, error) {
-	// Return empty response - compression will be minimal
-	return "", 0, nil
+// providerRegistryLLMClient implements conversation.LLMClient using ProviderRegistry
+type providerRegistryLLMClient struct {
+	registry *services.ProviderRegistry
+	logger   *logrus.Logger
 }
 
-// dummyEventLog implements memory.EventLog for testing
-type dummyEventLog struct{}
+func (c *providerRegistryLLMClient) Complete(ctx context.Context, prompt string, maxTokens int) (string, int, error) {
+	if c.registry == nil {
+		c.logger.Warn("Provider registry is nil, cannot perform LLM compression")
+		return "", 0, errors.New("provider registry not available")
+	}
 
-func (d *dummyEventLog) Append(event *memory.MemoryEvent) error {
+	// Get the best provider from registry
+	providers := c.registry.ListProvidersOrderedByScore()
+	if len(providers) == 0 {
+		c.logger.Warn("No LLM providers available for compression")
+		return "", 0, errors.New("no LLM providers available")
+	}
+
+	// Try each provider in order of score
+	for _, providerName := range providers {
+		provider, err := c.registry.GetProvider(providerName)
+		if err != nil {
+			c.logger.WithError(err).Warnf("Failed to get provider %s", providerName)
+			continue
+		}
+
+		// Create LLM request
+		req := &models.LLMRequest{
+			ID:          fmt.Sprintf("compression-%d", time.Now().UnixNano()),
+			Prompt:      prompt,
+			RequestType: "compression",
+			ModelParams: models.ModelParameters{
+				MaxTokens:   maxTokens,
+				Temperature: 0.1, // Low temperature for consistent compression
+			},
+			CreatedAt: time.Now(),
+		}
+
+		resp, err := provider.Complete(ctx, req)
+		if err != nil {
+			c.logger.WithError(err).Warnf("Provider %s failed compression", providerName)
+			continue
+		}
+
+		return resp.Content, resp.TokensUsed, nil
+	}
+
+	return "", 0, errors.New("all LLM providers failed compression")
+}
+
+// inMemoryEventLog implements memory.EventLog with in-memory storage
+type inMemoryEventLog struct {
+	mu     sync.RWMutex
+	events []*memory.MemoryEvent
+}
+
+func (d *inMemoryEventLog) Append(event *memory.MemoryEvent) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.events = append(d.events, event)
 	return nil
 }
 
-func (d *dummyEventLog) GetEvents(memoryID string) ([]*memory.MemoryEvent, error) {
-	return []*memory.MemoryEvent{}, nil
+func (d *inMemoryEventLog) GetEvents(memoryID string) ([]*memory.MemoryEvent, error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	var result []*memory.MemoryEvent
+	for _, event := range d.events {
+		if event.MemoryID == memoryID {
+			result = append(result, event)
+		}
+	}
+	return result, nil
 }
 
-func (d *dummyEventLog) GetEventsSince(timestamp time.Time) ([]*memory.MemoryEvent, error) {
-	return []*memory.MemoryEvent{}, nil
+func (d *inMemoryEventLog) GetEventsSince(timestamp time.Time) ([]*memory.MemoryEvent, error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	var result []*memory.MemoryEvent
+	for _, event := range d.events {
+		if event.Timestamp.After(timestamp) {
+			result = append(result, event)
+		}
+	}
+	return result, nil
 }
 
-func (d *dummyEventLog) GetEventsForUser(userID string) ([]*memory.MemoryEvent, error) {
-	return []*memory.MemoryEvent{}, nil
+func (d *inMemoryEventLog) GetEventsForUser(userID string) ([]*memory.MemoryEvent, error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	var result []*memory.MemoryEvent
+	for _, event := range d.events {
+		if event.UserID == userID {
+			result = append(result, event)
+		}
+	}
+	return result, nil
 }
 
-func (d *dummyEventLog) GetEventsFromNode(nodeID string) ([]*memory.MemoryEvent, error) {
-	return []*memory.MemoryEvent{}, nil
+func (d *inMemoryEventLog) GetEventsFromNode(nodeID string) ([]*memory.MemoryEvent, error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	var result []*memory.MemoryEvent
+	for _, event := range d.events {
+		if event.NodeID == nodeID {
+			result = append(result, event)
+		}
+	}
+	return result, nil
 }
 
 // BigDataIntegration manages all big data components
@@ -99,6 +184,9 @@ type IntegrationConfig struct {
 	// Learning configuration
 	LearningMinConfidence float64
 	LearningMinFrequency  int
+
+	// Provider registry for LLM compression
+	ProviderRegistry *services.ProviderRegistry
 }
 
 // DefaultIntegrationConfig returns default configuration
@@ -214,9 +302,12 @@ func (bdi *BigDataIntegration) Initialize(ctx context.Context) error {
 
 // initializeInfiniteContext initializes the infinite context engine
 func (bdi *BigDataIntegration) initializeInfiniteContext(ctx context.Context) error {
-	// Create dummy LLM client for compression
-	dummyClient := &dummyLLMClient{}
-	compressor := conversation.NewContextCompressor(dummyClient, bdi.logger)
+	// Create LLM client for compression using provider registry
+	llmClient := &providerRegistryLLMClient{
+		registry: bdi.config.ProviderRegistry,
+		logger:   bdi.logger,
+	}
+	compressor := conversation.NewContextCompressor(llmClient, bdi.logger)
 
 	engine := conversation.NewInfiniteContextEngine(
 		bdi.kafkaBroker,
@@ -234,8 +325,8 @@ func (bdi *BigDataIntegration) initializeDistributedMemory(ctx context.Context) 
 	store := memory.NewInMemoryStore()
 	localManager := memory.NewManager(store, nil, nil, nil, nil, bdi.logger)
 
-	// Create dummy event log
-	eventLog := &dummyEventLog{}
+	// Create in-memory event log
+	eventLog := &inMemoryEventLog{}
 
 	// Create CRDT resolver
 	conflictResolver := memory.NewCRDTResolver("merge_all")

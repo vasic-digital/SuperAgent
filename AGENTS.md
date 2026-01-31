@@ -354,6 +354,21 @@ Key environment variables (see `.env.example`):
 - **Infrastructure MUST be validated** (`make test-with-infra`)
 - **Performance MUST meet benchmarks** (stress tests, chaos tests)
 
+### 9. No Mock Implementations in Production Code
+- **Mocks, stubs, and fakes are STRICTLY FORBIDDEN in production code**
+- **Mocked or stubbed data ONLY allowed for unit tests** – all other components MUST use real implementations
+- **No placeholders, no TODO implementations that return mock data** – all production code must be fully functional
+- **Real integrations required**: All production components MUST use actual API calls, real databases, and live services
+- **Integration tests must validate actual connectivity and functionality** – no simulated success allowed
+- **Fallback chains must be real**: Fallback mechanisms must be tested with actual provider failures
+
+### 10. Third-Party Submodule Management
+- **Third-party submodules (CLI agents, MCP servers, etc.) MUST NOT be committed or pushed** – they are external dependencies tracked at specific versions
+- **Only project-owned submodules (LLMsVerifier, formatters) may be updated** – and only when necessary for project functionality
+- **Submodules under `cli_agents/` are third-party code** – never commit changes to these repositories
+- **Submodules under `MCP/` are third-party MCP servers** – treat as read-only dependencies
+- **When updating submodule references**, use `git submodule update --remote` to pull upstream changes, then commit the updated reference in the main repository
+
 **Failure to comply with ANY of these standards will result in component rejection. These rules ensure HelixAgent maintains enterprise-grade reliability, security, and performance.**
 
 ## Code Style Guidelines

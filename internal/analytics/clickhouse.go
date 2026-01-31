@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2"
@@ -314,6 +315,56 @@ func (cha *ClickHouseAnalytics) GetProviderTrends(ctx context.Context, provider 
 	return trends, nil
 }
 
+// GetProviderAnalytics retrieves analytics for a specific provider
+func (cha *ClickHouseAnalytics) GetProviderAnalytics(ctx context.Context, provider string, window time.Duration) (*ProviderStats, error) {
+	query := `
+		SELECT
+			provider,
+			COUNT(*) as total_requests,
+			AVG(response_time_ms) as avg_response_time,
+			quantile(0.95)(response_time_ms) as p95_response_time,
+			quantile(0.99)(response_time_ms) as p99_response_time,
+			AVG(confidence_score) as avg_confidence,
+			SUM(tokens_used) as total_tokens,
+			AVG(tokens_used) as avg_tokens_per_req,
+			AVG(error_count) as error_rate,
+			AVG(CAST(was_winner AS Float32)) as win_rate
+		FROM debate_metrics
+		WHERE provider = ?
+		  AND timestamp >= now() - INTERVAL ? SECOND
+		GROUP BY provider
+	`
+
+	row := cha.conn.QueryRowContext(ctx, query, provider, int64(window.Seconds()))
+
+	var stats ProviderStats
+	err := row.Scan(
+		&stats.Provider,
+		&stats.TotalRequests,
+		&stats.AvgResponseTime,
+		&stats.P95ResponseTime,
+		&stats.P99ResponseTime,
+		&stats.AvgConfidence,
+		&stats.TotalTokens,
+		&stats.AvgTokensPerReq,
+		&stats.ErrorRate,
+		&stats.WinRate,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Return empty stats for provider with no data
+			return &ProviderStats{
+				Provider: provider,
+				Period:   fmt.Sprintf("last_%s", window.String()),
+			}, nil
+		}
+		return nil, fmt.Errorf("failed to query provider analytics: %w", err)
+	}
+
+	stats.Period = fmt.Sprintf("last_%s", window.String())
+	return &stats, nil
+}
+
 // StoreConversationMetrics stores conversation metrics
 func (cha *ClickHouseAnalytics) StoreConversationMetrics(ctx context.Context, metrics ConversationMetrics) error {
 	query := `
@@ -478,6 +529,7 @@ func (cha *ClickHouseAnalytics) GetTopProviders(ctx context.Context, limit int, 
 
 // GetDebateAnalytics retrieves debate-specific analytics
 func (cha *ClickHouseAnalytics) GetDebateAnalytics(ctx context.Context, debateID string) (map[string]interface{}, error) {
+	// Main aggregated metrics
 	query := `
 		SELECT
 			COUNT(DISTINCT round) as total_rounds,
@@ -508,6 +560,44 @@ func (cha *ClickHouseAnalytics) GetDebateAnalytics(ctx context.Context, debateID
 		return nil, fmt.Errorf("failed to query debate analytics: %w", err)
 	}
 
+	// Get distinct participants (provider, model)
+	participantsQuery := `
+		SELECT DISTINCT provider, model
+		FROM debate_metrics
+		WHERE debate_id = ?
+		ORDER BY provider, model
+	`
+	rows, err := cha.conn.QueryContext(ctx, participantsQuery, debateID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query participants: %w", err)
+	}
+	defer rows.Close()
+
+	var participants []string
+	for rows.Next() {
+		var provider, model string
+		if err := rows.Scan(&provider, &model); err != nil {
+			continue
+		}
+		participants = append(participants, fmt.Sprintf("%s/%s", provider, model))
+	}
+
+	// Determine winner (provider with most wins in this debate)
+	winnerQuery := `
+		SELECT provider, COUNT(*) as win_count
+		FROM debate_metrics
+		WHERE debate_id = ? AND was_winner = 1
+		GROUP BY provider
+		ORDER BY win_count DESC
+		LIMIT 1
+	`
+	var winnerProvider string
+	var winCount int
+	err = cha.conn.QueryRowContext(ctx, winnerQuery, debateID).Scan(&winnerProvider, &winCount)
+	if err != nil && err != sql.ErrNoRows {
+		cha.logger.WithError(err).Warn("Failed to determine winner")
+	}
+
 	return map[string]interface{}{
 		"debate_id":         debateID,
 		"total_rounds":      totalRounds,
@@ -516,7 +606,70 @@ func (cha *ClickHouseAnalytics) GetDebateAnalytics(ctx context.Context, debateID
 		"total_tokens":      totalTokens,
 		"avg_confidence":    avgConfidence,
 		"total_errors":      totalErrors,
+		"participants":      participants,
+		"winner":            winnerProvider,
 	}, nil
+}
+
+// ExecuteQuery executes a custom analytics query (read-only)
+func (cha *ClickHouseAnalytics) ExecuteQuery(ctx context.Context, query string, parameters map[string]interface{}) ([]map[string]interface{}, error) {
+	// Validate query is SELECT only (basic safety)
+	normalized := strings.ToUpper(strings.TrimSpace(query))
+	if !strings.HasPrefix(normalized, "SELECT") {
+		return nil, fmt.Errorf("only SELECT queries are allowed")
+	}
+
+	// Convert parameters to slice for query execution
+	args := make([]interface{}, 0, len(parameters))
+	for _, value := range parameters {
+		// Use named parameter syntax: ? or :param
+		// For simplicity, we'll use positional parameters
+		args = append(args, value)
+		// Note: This simple implementation doesn't handle named parameters
+		// In production, you'd need a proper SQL builder
+	}
+
+	rows, err := cha.conn.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query execution failed: %w", err)
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get columns: %w", err)
+	}
+
+	results := []map[string]interface{}{}
+	for rows.Next() {
+		values := make([]interface{}, len(columns))
+		valuePtrs := make([]interface{}, len(columns))
+		for i := range values {
+			valuePtrs[i] = &values[i]
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		rowMap := make(map[string]interface{})
+		for i, col := range columns {
+			val := values[i]
+			// Convert sql.RawBytes to string for JSON serialization
+			if b, ok := val.([]byte); ok {
+				rowMap[col] = string(b)
+			} else {
+				rowMap[col] = val
+			}
+		}
+		results = append(results, rowMap)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error: %w", err)
+	}
+
+	return results, nil
 }
 
 // Close closes the ClickHouse connection

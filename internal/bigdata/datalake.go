@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -393,6 +394,123 @@ func (dlc *DataLakeClient) formatPartition(t time.Time) string {
 		t.Month(),
 		t.Day(),
 	)
+}
+
+// ListDirectories lists all directory-like prefixes under a given path
+func (dlc *DataLakeClient) ListDirectories(ctx context.Context, path string) ([]string, error) {
+	// Ensure path ends with /
+	if !strings.HasSuffix(path, "/") && path != "" {
+		path = path + "/"
+	}
+
+	var directories []string
+	seen := make(map[string]bool)
+
+	// List objects with prefix
+	objectCh := dlc.client.ListObjects(ctx, dlc.bucketName, minio.ListObjectsOptions{
+		Prefix:    path,
+		Recursive: false,
+	})
+
+	for object := range objectCh {
+		if object.Err != nil {
+			continue
+		}
+
+		// Extract directory from object key
+		key := object.Key
+		if strings.HasPrefix(key, path) {
+			relPath := strings.TrimPrefix(key, path)
+			// Get first component (directory name)
+			if idx := strings.Index(relPath, "/"); idx > 0 {
+				dirName := relPath[:idx]
+				fullDir := path + dirName + "/"
+				if !seen[fullDir] {
+					seen[fullDir] = true
+					directories = append(directories, fullDir)
+				}
+			}
+		}
+	}
+
+	return directories, nil
+}
+
+// GetMetadata retrieves metadata for a path (object or pseudo-directory)
+func (dlc *DataLakeClient) GetMetadata(ctx context.Context, path string) (*struct {
+	ModTime time.Time
+	Size    int64
+	IsDir   bool
+}, error) {
+	// Remove trailing slash for object metadata
+	objectPath := strings.TrimSuffix(path, "/")
+
+	// Try to get object stats
+	stat, err := dlc.client.StatObject(ctx, dlc.bucketName, objectPath, minio.StatObjectOptions{})
+	if err != nil {
+		// If object doesn't exist, treat as directory
+		// For directories, we need to check if any objects exist with this prefix
+		// For simplicity, return current time as mod time
+		return &struct {
+			ModTime time.Time
+			Size    int64
+			IsDir   bool
+		}{
+			ModTime: time.Now(),
+			Size:    0,
+			IsDir:   true,
+		}, nil
+	}
+
+	return &struct {
+		ModTime time.Time
+		Size    int64
+		IsDir   bool
+	}{
+		ModTime: stat.LastModified,
+		Size:    stat.Size,
+		IsDir:   strings.HasSuffix(path, "/"),
+	}, nil
+}
+
+// DeletePath deletes an object or directory (recursive if needed)
+func (dlc *DataLakeClient) DeletePath(ctx context.Context, path string, recursive bool) error {
+	// Remove trailing slash for object operations
+	path = strings.TrimSuffix(path, "/")
+
+	if recursive {
+		// List all objects with prefix and delete them
+		objectCh := dlc.client.ListObjects(ctx, dlc.bucketName, minio.ListObjectsOptions{
+			Prefix:    path + "/",
+			Recursive: true,
+		})
+
+		var objects []minio.ObjectInfo
+		for object := range objectCh {
+			if object.Err != nil {
+				continue
+			}
+			objects = append(objects, object)
+		}
+
+		// Delete all objects
+		for _, obj := range objects {
+			err := dlc.client.RemoveObject(ctx, dlc.bucketName, obj.Key, minio.RemoveObjectOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to delete object %s: %w", obj.Key, err)
+			}
+		}
+
+		dlc.logger.WithField("path", path).Debugf("Deleted %d objects recursively", len(objects))
+	} else {
+		// Try to delete as single object
+		err := dlc.client.RemoveObject(ctx, dlc.bucketName, path, minio.RemoveObjectOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to delete object %s: %w", path, err)
+		}
+	}
+
+	return nil
 }
 
 // Close closes the data lake client

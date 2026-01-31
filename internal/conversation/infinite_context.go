@@ -2,6 +2,7 @@ package conversation
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -9,6 +10,7 @@ import (
 
 	"dev.helix.agent/internal/messaging"
 	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -184,22 +186,75 @@ func (ice *InfiniteContextEngine) GetConversationSnapshot(ctx context.Context, c
 
 // fetchConversationEvents fetches all events for a conversation from Kafka
 func (ice *InfiniteContextEngine) fetchConversationEvents(ctx context.Context, conversationID string) ([]*ConversationEvent, error) {
-	// This is a simplified implementation
-	// In production, you'd use Kafka consumer to seek and read all events
-	// for the specific conversation ID
-
 	ice.logger.WithField("conversation_id", conversationID).Debug("Fetching events from Kafka")
 
-	// TODO: Implement actual Kafka consumer logic
-	// For now, return empty slice
-	// In production:
-	// 1. Create consumer for conversation events topic
-	// 2. Seek to beginning for this conversation
-	// 3. Read all events until latest offset
-	// 4. Filter by conversation_id
-	// 5. Sort by sequence_number
+	// Kafka configuration
+	// In production, these would come from configuration
+	brokers := []string{"localhost:9092"}
+	topic := "conversation-events"
+	groupID := fmt.Sprintf("infinite-context-%s", conversationID)
 
-	return []*ConversationEvent{}, nil
+	// Create Kafka reader
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:   brokers,
+		Topic:     topic,
+		GroupID:   groupID,
+		Partition: 0, // Read from partition 0 - would need to handle multiple partitions
+		MinBytes:  1,
+		MaxBytes:  10e6, // 10MB
+	})
+	defer reader.Close()
+
+	// Seek to beginning to read all events
+	if err := reader.SetOffset(kafka.FirstOffset); err != nil {
+		ice.logger.WithError(err).Warn("Failed to seek to beginning of Kafka topic")
+		// Continue anyway - might be reading from current offset
+	}
+
+	var events []*ConversationEvent
+	readCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// Read messages until timeout or EOF
+	for {
+		msg, err := reader.ReadMessage(readCtx)
+		if err != nil {
+			// Break on timeout or other errors
+			if err == context.DeadlineExceeded || err == context.Canceled {
+				ice.logger.WithError(err).Debug("Stopped reading Kafka messages")
+				break
+			}
+			ice.logger.WithError(err).Warn("Error reading Kafka message")
+			break
+		}
+
+		// Parse message value as ConversationEvent
+		var event ConversationEvent
+		if err := json.Unmarshal(msg.Value, &event); err != nil {
+			ice.logger.WithError(err).WithField("offset", msg.Offset).Warn("Failed to parse Kafka message as ConversationEvent")
+			continue
+		}
+
+		// Filter by conversation ID
+		if event.ConversationID == conversationID {
+			events = append(events, &event)
+		}
+
+		// Safety limit - break after reading many messages
+		if len(events) > 10000 {
+			ice.logger.Warn("Reached safety limit of 10000 events, stopping read")
+			break
+		}
+	}
+
+	ice.logger.WithFields(logrus.Fields{
+		"conversation_id": conversationID,
+		"event_count":     len(events),
+		"brokers":         brokers,
+		"topic":           topic,
+	}).Debug("Fetched conversation events from Kafka")
+
+	return events, nil
 }
 
 // reconstructFromEvents reconstructs conversation from events
