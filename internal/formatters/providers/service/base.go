@@ -142,7 +142,7 @@ func (s *ServiceFormatter) Format(ctx context.Context, req *formatters.FormatReq
 			Error:   fmt.Errorf("HTTP request failed: %w", err),
 		}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
@@ -216,7 +216,7 @@ func (s *ServiceFormatter) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("health check failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unhealthy status code: %d", resp.StatusCode)

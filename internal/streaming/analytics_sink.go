@@ -169,7 +169,7 @@ func (as *AnalyticsSink) WriteBatch(ctx context.Context, analytics []*WindowedAn
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	for _, a := range analytics {
 		providerDistJSON, err := json.Marshal(a.ProviderDistribution)

@@ -158,7 +158,7 @@ func (p *DeepSeekProvider) Complete(ctx context.Context, req *models.LLMRequest)
 	if err != nil {
 		return nil, fmt.Errorf("DeepSeek API call failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Parse response
 	body, err := io.ReadAll(resp.Body)
@@ -203,7 +203,7 @@ func (p *DeepSeekProvider) CompleteStream(ctx context.Context, req *models.LLMRe
 	ch := make(chan *models.LLMResponse)
 
 	go func() {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)
@@ -638,7 +638,7 @@ func (p *DeepSeekProvider) HealthCheck() error {
 	if err != nil {
 		return fmt.Errorf("health check request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)

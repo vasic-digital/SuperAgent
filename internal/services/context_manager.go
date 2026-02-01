@@ -515,7 +515,7 @@ func (cm *ContextManager) decompressEntry(entry *ContextEntry) error {
 	if err != nil {
 		return err
 	}
-	defer gr.Close()
+	defer func() { _ = gr.Close() }()
 
 	content, err := io.ReadAll(gr)
 	if err != nil {

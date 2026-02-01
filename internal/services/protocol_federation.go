@@ -393,7 +393,7 @@ func (n *NetworkDiscovery) Discover(ctx context.Context) ([]*DiscoveredServer, e
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// Send discovery broadcast
 	broadcastAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", n.port))

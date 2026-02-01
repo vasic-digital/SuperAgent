@@ -338,7 +338,7 @@ func DecompressData(data []byte, encoding string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		defer gr.Close()
+		defer func() { _ = gr.Close() }()
 		return io.ReadAll(gr)
 	default:
 		return data, nil

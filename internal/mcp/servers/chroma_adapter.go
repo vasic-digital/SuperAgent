@@ -77,7 +77,7 @@ func (a *ChromaAdapter) Connect(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to ChromaDB: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("ChromaDB heartbeat failed: status %d", resp.StatusCode)
@@ -100,7 +100,7 @@ func (a *ChromaAdapter) Health(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check failed: status %d", resp.StatusCode)
@@ -114,7 +114,7 @@ func (a *ChromaAdapter) ListCollections(ctx context.Context) ([]ChromaCollection
 	if err != nil {
 		return nil, fmt.Errorf("failed to list collections: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var collections []ChromaCollection
 	if err := json.NewDecoder(resp.Body).Decode(&collections); err != nil {
@@ -137,7 +137,7 @@ func (a *ChromaAdapter) CreateCollection(ctx context.Context, name string, metad
 	if err != nil {
 		return nil, fmt.Errorf("failed to create collection: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -158,7 +158,7 @@ func (a *ChromaAdapter) DeleteCollection(ctx context.Context, name string) error
 	if err != nil {
 		return fmt.Errorf("failed to delete collection: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to delete collection: status %d", resp.StatusCode)
@@ -173,7 +173,7 @@ func (a *ChromaAdapter) GetCollection(ctx context.Context, name string) (*Chroma
 	if err != nil {
 		return nil, fmt.Errorf("failed to get collection: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("collection not found: %s", name)
@@ -220,7 +220,7 @@ func (a *ChromaAdapter) AddDocuments(ctx context.Context, collectionName string,
 	if err != nil {
 		return fmt.Errorf("failed to add documents: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -245,7 +245,7 @@ func (a *ChromaAdapter) Query(ctx context.Context, collectionName string, queryE
 	if err != nil {
 		return nil, fmt.Errorf("failed to query collection: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -270,7 +270,7 @@ func (a *ChromaAdapter) DeleteDocuments(ctx context.Context, collectionName stri
 	if err != nil {
 		return fmt.Errorf("failed to delete documents: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to delete documents: status %d", resp.StatusCode)
@@ -308,7 +308,7 @@ func (a *ChromaAdapter) UpdateDocuments(ctx context.Context, collectionName stri
 	if err != nil {
 		return fmt.Errorf("failed to update documents: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -324,7 +324,7 @@ func (a *ChromaAdapter) Count(ctx context.Context, collectionName string) (int64
 	if err != nil {
 		return 0, fmt.Errorf("failed to count documents: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("failed to count documents: status %d", resp.StatusCode)

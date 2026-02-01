@@ -344,7 +344,7 @@ func (d *WebhookDispatcher) deliver(delivery *WebhookDelivery) {
 		d.handleDeliveryFailure(delivery, webhook, err.Error(), 0)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Read response body (limited to 1KB)
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))

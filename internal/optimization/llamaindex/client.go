@@ -135,7 +135,7 @@ func (c *Client) Health(ctx context.Context) (*HealthResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result HealthResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -154,7 +154,7 @@ func (c *Client) Query(ctx context.Context, req *QueryRequest) (*QueryResponse, 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result QueryResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -209,7 +209,7 @@ func (c *Client) HyDEExpand(ctx context.Context, req *HyDERequest) (*HyDERespons
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result HyDEResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -228,7 +228,7 @@ func (c *Client) DecomposeQuery(ctx context.Context, req *DecomposeQueryRequest)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result DecomposeQueryResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -247,7 +247,7 @@ func (c *Client) Rerank(ctx context.Context, req *RerankRequest) (*RerankRespons
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result RerankResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -279,7 +279,7 @@ func (c *Client) QueryFusion(ctx context.Context, query string, numVariations, t
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result QueryFusionResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -313,7 +313,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	}
 
 	if resp.StatusCode >= 400 {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}

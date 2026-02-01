@@ -92,7 +92,7 @@ func (a *WeaviateAdapter) Connect(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to Weaviate: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("Weaviate health check failed: status %d", resp.StatusCode)
@@ -115,7 +115,7 @@ func (a *WeaviateAdapter) Health(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check failed: status %d", resp.StatusCode)
@@ -129,7 +129,7 @@ func (a *WeaviateAdapter) GetSchema(ctx context.Context) (*WeaviateSchema, error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schema: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to get schema: status %d", resp.StatusCode)
@@ -158,7 +158,7 @@ func (a *WeaviateAdapter) CreateClass(ctx context.Context, class *WeaviateClass)
 	if err != nil {
 		return fmt.Errorf("failed to create class: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -174,7 +174,7 @@ func (a *WeaviateAdapter) DeleteClass(ctx context.Context, className string) err
 	if err != nil {
 		return fmt.Errorf("failed to delete class: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to delete class: status %d", resp.StatusCode)
@@ -189,7 +189,7 @@ func (a *WeaviateAdapter) GetClass(ctx context.Context, className string) (*Weav
 	if err != nil {
 		return nil, fmt.Errorf("failed to get class: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("class not found: %s", className)
@@ -213,7 +213,7 @@ func (a *WeaviateAdapter) CreateObject(ctx context.Context, obj *WeaviateObject)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create object: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -238,7 +238,7 @@ func (a *WeaviateAdapter) BatchCreateObjects(ctx context.Context, objects []Weav
 	if err != nil {
 		return fmt.Errorf("failed to batch create objects: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -254,7 +254,7 @@ func (a *WeaviateAdapter) GetObject(ctx context.Context, className, id string) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to get object: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("object not found: %s/%s", className, id)
@@ -278,7 +278,7 @@ func (a *WeaviateAdapter) DeleteObject(ctx context.Context, className, id string
 	if err != nil {
 		return fmt.Errorf("failed to delete object: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to delete object: status %d", resp.StatusCode)
@@ -293,7 +293,7 @@ func (a *WeaviateAdapter) UpdateObject(ctx context.Context, obj *WeaviateObject)
 	if err != nil {
 		return fmt.Errorf("failed to update object: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -340,7 +340,7 @@ func (a *WeaviateAdapter) VectorSearch(ctx context.Context, className string, ve
 	if err != nil {
 		return nil, fmt.Errorf("failed to search: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -427,7 +427,7 @@ func (a *WeaviateAdapter) HybridSearch(ctx context.Context, className, query str
 	if err != nil {
 		return nil, fmt.Errorf("failed to hybrid search: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)

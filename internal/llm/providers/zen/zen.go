@@ -144,7 +144,7 @@ func discoverModelsFromAPI() []string {
 		log.WithError(err).Debug("Failed to fetch models from Zen API")
 		return nil
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		log.WithField("status", resp.StatusCode).Debug("Zen API returned non-200 status")
@@ -453,7 +453,7 @@ func (p *ZenProvider) Complete(ctx context.Context, req *models.LLMRequest) (*mo
 		}).Error("Zen API call failed")
 		return nil, fmt.Errorf("Zen API call failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Parse response
 	body, err := io.ReadAll(resp.Body)
@@ -561,7 +561,7 @@ func (p *ZenProvider) CompleteStream(ctx context.Context, req *models.LLMRequest
 	ch := make(chan *models.LLMResponse)
 
 	go func() {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)
@@ -1031,7 +1031,7 @@ func (p *ZenProvider) HealthCheck() error {
 	if err != nil {
 		return fmt.Errorf("health check request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)
@@ -1068,7 +1068,7 @@ func (p *ZenProvider) GetAvailableModels(ctx context.Context) ([]ZenModelInfo, e
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

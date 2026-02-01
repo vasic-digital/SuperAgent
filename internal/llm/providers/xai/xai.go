@@ -205,7 +205,7 @@ func (p *Provider) Complete(ctx context.Context, req *models.LLMRequest) (*model
 	if err != nil {
 		return nil, fmt.Errorf("xAI API call failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -244,7 +244,7 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 
 	ch := make(chan *models.LLMResponse)
 	go func() {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)
@@ -331,7 +331,7 @@ func (p *Provider) HealthCheck() error {
 	if err != nil {
 		return fmt.Errorf("health check failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check failed: status %d", resp.StatusCode)

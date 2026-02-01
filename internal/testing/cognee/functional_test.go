@@ -81,7 +81,7 @@ func (c *CogneeClient) HealthCheck() error {
 	if err != nil {
 		return fmt.Errorf("failed to check health: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -102,7 +102,7 @@ func (c *CogneeClient) Add(req *AddRequest) (*AddResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to add content: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, _ := io.ReadAll(resp.Body)
 
@@ -124,7 +124,7 @@ func (c *CogneeClient) Cognify() (*CognifyResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to cognify: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, _ := io.ReadAll(resp.Body)
 
@@ -151,7 +151,7 @@ func (c *CogneeClient) Search(req *SearchRequest) (*SearchResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to search: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, _ := io.ReadAll(resp.Body)
 
@@ -331,7 +331,7 @@ func TestCogneeViaHelixAgent(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to call Cognee add: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 			respBody, _ := io.ReadAll(resp.Body)
@@ -345,7 +345,7 @@ func TestCogneeViaHelixAgent(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to call Cognee search: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		respBody, _ := io.ReadAll(resp.Body)
 		t.Logf("Cognee search via HelixAgent: %s", truncate(string(respBody), 500))

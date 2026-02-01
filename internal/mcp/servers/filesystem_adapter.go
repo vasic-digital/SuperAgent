@@ -288,7 +288,7 @@ func (a *FilesystemAdapter) AppendFile(ctx context.Context, path string, content
 	if err != nil {
 		return fmt.Errorf("failed to open file for append: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if _, err := f.WriteString(content); err != nil {
 		return fmt.Errorf("failed to append to file: %w", err)
@@ -529,14 +529,14 @@ func (a *FilesystemAdapter) CopyFile(ctx context.Context, src, dst string) error
 	if err != nil {
 		return fmt.Errorf("failed to open source: %w", err)
 	}
-	defer srcFile.Close()
+	defer func() { _ = srcFile.Close() }()
 
 	// #nosec G304 - dst path is validated by isPathAllowed with utils.ValidatePath, allowed paths whitelist, and denied paths blacklist
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return fmt.Errorf("failed to create destination: %w", err)
 	}
-	defer dstFile.Close()
+	defer func() { _ = dstFile.Close() }()
 
 	if _, err := io.Copy(dstFile, srcFile); err != nil {
 		return fmt.Errorf("failed to copy: %w", err)

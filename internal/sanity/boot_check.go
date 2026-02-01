@@ -163,7 +163,7 @@ func (bc *BootChecker) checkHelixAgentHealth(ctx context.Context) {
 			result.Message = "HelixAgent not responding"
 			result.Details = err.Error()
 		} else {
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			if resp.StatusCode == http.StatusOK {
 				var healthResp map[string]interface{}
 				if json.NewDecoder(resp.Body).Decode(&healthResp) == nil {
@@ -263,7 +263,7 @@ func (bc *BootChecker) checkCogneeHealth(ctx context.Context) {
 			result.Message = "Cognee not responding (optional)"
 			result.Details = err.Error()
 		} else {
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			if resp.StatusCode == http.StatusOK {
 				result.Status = StatusPassed
 				result.Message = "Cognee is healthy"
@@ -490,7 +490,7 @@ func (bc *BootChecker) checkExternalProvider(ctx context.Context, name, url, env
 			result.Message = fmt.Sprintf("%s not reachable", name)
 			result.Details = err.Error()
 		} else {
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			if resp.StatusCode >= 200 && resp.StatusCode < 500 {
 				result.Status = StatusPassed
 				result.Message = fmt.Sprintf("%s is available", name)

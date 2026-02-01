@@ -90,7 +90,7 @@ func (r *Reloader) WatchForConfigChanges(ctx context.Context, configDir string) 
 		utils.GetLogger().Errorf("Failed to create file watcher: %v", err)
 		return
 	}
-	defer watcher.Close()
+	defer func() { _ = watcher.Close() }()
 
 	// Add config directory to watcher
 	if err := watcher.Add(configDir); err != nil {

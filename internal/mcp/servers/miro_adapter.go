@@ -337,7 +337,7 @@ func (a *MiroAdapter) Connect(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to Miro: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		return fmt.Errorf("authentication failed: invalid access token")
@@ -381,7 +381,7 @@ func (a *MiroAdapter) Health(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check failed: status %d", resp.StatusCode)
@@ -423,7 +423,7 @@ func (a *MiroAdapter) ListBoards(ctx context.Context, teamID string, limit int, 
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to list boards: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -458,7 +458,7 @@ func (a *MiroAdapter) GetBoard(ctx context.Context, boardID string) (*MiroBoard,
 	if err != nil {
 		return nil, fmt.Errorf("failed to get board: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("board not found: %s", boardID)
@@ -510,7 +510,7 @@ func (a *MiroAdapter) CreateBoard(ctx context.Context, name, description string,
 	if err != nil {
 		return nil, fmt.Errorf("failed to create board: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -556,7 +556,7 @@ func (a *MiroAdapter) UpdateBoard(ctx context.Context, boardID, name, descriptio
 	if err != nil {
 		return nil, fmt.Errorf("failed to update board: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -587,7 +587,7 @@ func (a *MiroAdapter) DeleteBoard(ctx context.Context, boardID string) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete board: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -630,7 +630,7 @@ func (a *MiroAdapter) GetBoardItems(ctx context.Context, boardID string, itemTyp
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get items: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -667,7 +667,7 @@ func (a *MiroAdapter) GetItem(ctx context.Context, boardID, itemID string) (*Mir
 	if err != nil {
 		return nil, fmt.Errorf("failed to get item: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("item not found: %s", itemID)
@@ -724,7 +724,7 @@ func (a *MiroAdapter) CreateStickyNote(ctx context.Context, boardID string, cont
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sticky note: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -784,7 +784,7 @@ func (a *MiroAdapter) CreateShape(ctx context.Context, boardID string, shapeType
 	if err != nil {
 		return nil, fmt.Errorf("failed to create shape: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -836,7 +836,7 @@ func (a *MiroAdapter) CreateConnector(ctx context.Context, boardID string, start
 	if err != nil {
 		return nil, fmt.Errorf("failed to create connector: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -892,7 +892,7 @@ func (a *MiroAdapter) CreateFrame(ctx context.Context, boardID string, title str
 	if err != nil {
 		return nil, fmt.Errorf("failed to create frame: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -944,7 +944,7 @@ func (a *MiroAdapter) CreateText(ctx context.Context, boardID string, content st
 	if err != nil {
 		return nil, fmt.Errorf("failed to create text: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -977,7 +977,7 @@ func (a *MiroAdapter) DeleteItem(ctx context.Context, boardID, itemID string) er
 	if err != nil {
 		return fmt.Errorf("failed to delete item: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

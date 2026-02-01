@@ -212,7 +212,7 @@ func (z *ZAIProvider) CompleteStream(ctx context.Context, req *models.LLMRequest
 	ch := make(chan *models.LLMResponse)
 
 	go func() {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)
@@ -399,7 +399,7 @@ func (z *ZAIProvider) HealthCheck() error {
 	if err != nil {
 		return fmt.Errorf("health check request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)

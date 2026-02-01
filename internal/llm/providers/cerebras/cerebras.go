@@ -163,7 +163,7 @@ func (p *CerebrasProvider) Complete(ctx context.Context, req *models.LLMRequest)
 		}).Error("Cerebras API call failed")
 		return nil, fmt.Errorf("Cerebras API call failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Parse response
 	body, err := io.ReadAll(resp.Body)
@@ -270,7 +270,7 @@ func (p *CerebrasProvider) CompleteStream(ctx context.Context, req *models.LLMRe
 	ch := make(chan *models.LLMResponse)
 
 	go func() {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)
@@ -675,7 +675,7 @@ func (p *CerebrasProvider) HealthCheck() error {
 	if err != nil {
 		return fmt.Errorf("health check request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)

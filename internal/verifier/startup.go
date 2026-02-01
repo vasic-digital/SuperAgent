@@ -373,7 +373,7 @@ func (sv *StartupVerifier) checkOllamaHealth(baseURL string) []string {
 		sv.log.WithError(err).Debug("Failed to connect to Ollama")
 		return nil
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		sv.log.WithField("status", resp.StatusCode).Debug("Ollama returned non-OK status")

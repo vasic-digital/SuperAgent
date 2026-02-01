@@ -458,7 +458,7 @@ func (s *CogneeService) IsHealthy(ctx context.Context) bool {
 	if err != nil {
 		return false
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusOK {
 		// Server is up, try to authenticate if we don't have a token
@@ -558,7 +558,7 @@ func (s *CogneeService) register(ctx context.Context, email, password string) er
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -585,7 +585,7 @@ func (s *CogneeService) login(ctx context.Context, email, password string) (stri
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -709,7 +709,7 @@ func (s *CogneeService) addMemoryViaAdd(ctx context.Context, content, dataset, c
 	if err != nil {
 		return nil, fmt.Errorf("add request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -1202,7 +1202,7 @@ func (s *CogneeService) Cognify(ctx context.Context, datasets []string) error {
 		s.stats.mu.Unlock()
 		return fmt.Errorf("cognify request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -1758,7 +1758,7 @@ func (s *CogneeService) doRequestWithRetry(ctx context.Context, method, url stri
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -1973,7 +1973,7 @@ Cognee provides knowledge graph and memory capabilities for enhanced context-awa
 		s.logger.WithError(err).Warn("Failed to seed Cognee with initial data (non-critical)")
 		return fmt.Errorf("seed request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

@@ -410,7 +410,7 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 
 	go func() {
 		defer close(ch)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		// Read SSE stream
 		reader := resp.Body
@@ -530,7 +530,7 @@ func (p *SimpleOpenRouterProvider) HealthCheck() error {
 	if err != nil {
 		return fmt.Errorf("OpenRouter health check failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		return fmt.Errorf("OpenRouter API key is invalid or expired")

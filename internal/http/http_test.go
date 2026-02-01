@@ -228,7 +228,7 @@ func TestHTTPClientPool_Do_WithTestServer(t *testing.T) {
 
 	resp, err := pool.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -248,7 +248,7 @@ func TestHTTPClientPool_DoWithContext(t *testing.T) {
 
 		resp, err := pool.DoWithContext(context.Background(), req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -302,7 +302,7 @@ func TestHTTPClientPool_RetryLogic(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, server.URL, nil)
 		resp, err := pool.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, int32(3), atomic.LoadInt32(&requestCount))
@@ -358,7 +358,7 @@ func TestHTTPClientPool_RetryLogic(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, server.URL, nil)
 		resp, err := pool.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, int32(2), atomic.LoadInt32(&requestCount))
@@ -433,7 +433,7 @@ func TestHTTPClientPool_Get(t *testing.T) {
 	pool := NewHTTPClientPool(nil)
 	resp, err := pool.Get(context.Background(), server.URL)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
 	assert.Equal(t, "get response", string(body))
@@ -455,7 +455,7 @@ func TestHTTPClientPool_Post(t *testing.T) {
 	pool := NewHTTPClientPool(nil)
 	resp, err := pool.Post(context.Background(), server.URL, "text/plain", strings.NewReader("test body"))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
 	assert.Equal(t, "test body", string(body))
@@ -471,7 +471,7 @@ func TestHTTPClientPool_PostJSON(t *testing.T) {
 	pool := NewHTTPClientPool(nil)
 	resp, err := pool.PostJSON(context.Background(), server.URL, strings.NewReader(`{"key": "value"}`))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
@@ -548,7 +548,7 @@ func TestGlobalPool_Get(t *testing.T) {
 	// Should auto-init global pool
 	resp, err := Get(context.Background(), server.URL)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.NotNil(t, GlobalPool)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -565,7 +565,7 @@ func TestGlobalPool_PostJSON(t *testing.T) {
 
 	resp, err := PostJSON(context.Background(), server.URL, strings.NewReader(`{}`))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
@@ -620,7 +620,7 @@ func TestHostClient_Do(t *testing.T) {
 
 	resp, err := client.Do(context.Background(), http.MethodGet, "/api/test", nil)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
 	assert.Equal(t, "/api/test", string(body))
@@ -638,7 +638,7 @@ func TestHostClient_Get(t *testing.T) {
 
 	resp, err := client.Get(context.Background(), "/path")
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
@@ -657,7 +657,7 @@ func TestHostClient_Post(t *testing.T) {
 
 	resp, err := client.Post(context.Background(), "/create", bytes.NewReader([]byte("data")))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	body, _ := io.ReadAll(resp.Body)
@@ -676,7 +676,7 @@ func TestHostClient_PostJSON(t *testing.T) {
 
 	resp, err := client.PostJSON(context.Background(), "/api", strings.NewReader(`{"key": "value"}`))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
@@ -998,7 +998,7 @@ func TestHTTP3ProviderTransport_RoundTrip_FallbackToHTTP(t *testing.T) {
 
 	// Fallback should work with the HTTPS test server
 	if err == nil {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	}
 	// If fallback also fails (e.g., due to TLS mismatch), that's also acceptable for this test
@@ -1083,7 +1083,7 @@ func TestHTTPClientPool_RequestWithBody(t *testing.T) {
 
 	resp, err := pool.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, _ := io.ReadAll(resp.Body)
 	assert.Equal(t, bodyContent, string(respBody))
@@ -1098,7 +1098,7 @@ func TestHTTPClientPool_4xxResponse(t *testing.T) {
 	pool := NewHTTPClientPool(nil)
 	resp, err := pool.Get(context.Background(), server.URL)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 

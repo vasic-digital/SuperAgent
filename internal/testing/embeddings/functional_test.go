@@ -62,7 +62,7 @@ func (c *EmbeddingClient) Embed(req *EmbeddingRequest) (*EmbeddingResponse, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to call embeddings API: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, _ := io.ReadAll(resp.Body)
 
@@ -84,7 +84,7 @@ func (c *EmbeddingClient) ListProviders() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list providers: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -238,7 +238,7 @@ func TestEmbeddingHealthCheck(t *testing.T) {
 		t.Skipf("Embedding service not running: %v", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Health check should return 200")
 }

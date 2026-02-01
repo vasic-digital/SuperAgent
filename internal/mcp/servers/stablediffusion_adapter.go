@@ -211,7 +211,7 @@ func (a *StableDiffusionAdapter) Connect(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to Stable Diffusion WebUI: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		return fmt.Errorf("authentication failed")
@@ -256,7 +256,7 @@ func (a *StableDiffusionAdapter) Health(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check failed: status %d", resp.StatusCode)
@@ -315,7 +315,7 @@ func (a *StableDiffusionAdapter) Txt2Img(ctx context.Context, req *SDTxt2ImgRequ
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate image: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -377,7 +377,7 @@ func (a *StableDiffusionAdapter) Img2Img(ctx context.Context, req *SDImg2ImgRequ
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate image: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -424,7 +424,7 @@ func (a *StableDiffusionAdapter) Upscale(ctx context.Context, req *SDUpscaleRequ
 	if err != nil {
 		return nil, fmt.Errorf("failed to upscale image: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -459,7 +459,7 @@ func (a *StableDiffusionAdapter) GetProgress(ctx context.Context, skipCurrentIma
 	if err != nil {
 		return nil, fmt.Errorf("failed to get progress: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -492,7 +492,7 @@ func (a *StableDiffusionAdapter) Interrupt(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to interrupt: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -520,7 +520,7 @@ func (a *StableDiffusionAdapter) Skip(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to skip: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -548,7 +548,7 @@ func (a *StableDiffusionAdapter) GetModels(ctx context.Context) ([]SDModel, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to get models: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -581,7 +581,7 @@ func (a *StableDiffusionAdapter) GetSamplers(ctx context.Context) ([]SDSampler, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get samplers: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -614,7 +614,7 @@ func (a *StableDiffusionAdapter) GetUpscalers(ctx context.Context) ([]SDUpscaler
 	if err != nil {
 		return nil, fmt.Errorf("failed to get upscalers: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -647,7 +647,7 @@ func (a *StableDiffusionAdapter) GetLoras(ctx context.Context) ([]SDLora, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get loras: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -680,7 +680,7 @@ func (a *StableDiffusionAdapter) GetOptions(ctx context.Context) (*SDOptions, er
 	if err != nil {
 		return nil, fmt.Errorf("failed to get options: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -719,7 +719,7 @@ func (a *StableDiffusionAdapter) SetOptions(ctx context.Context, options map[str
 	if err != nil {
 		return fmt.Errorf("failed to set options: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -747,7 +747,7 @@ func (a *StableDiffusionAdapter) RefreshModels(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to refresh models: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -785,7 +785,7 @@ func (a *StableDiffusionAdapter) PNGInfo(ctx context.Context, imageBase64 string
 	if err != nil {
 		return nil, fmt.Errorf("failed to get PNG info: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)

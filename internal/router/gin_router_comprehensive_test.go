@@ -997,7 +997,7 @@ func TestGinRouterWithRealServer(t *testing.T) {
 		// Make real HTTP request
 		resp, err := http.Get("http://" + addr + "/real-connection")
 		if err == nil {
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 		}
 
@@ -1098,7 +1098,7 @@ func TestGinRouterTLSConfig(t *testing.T) {
 
 			resp, err := client.Get("https://" + addr + "/tls-connection")
 			if err == nil {
-				defer resp.Body.Close()
+				defer func() { _ = resp.Body.Close() }()
 				assert.Equal(t, http.StatusOK, resp.StatusCode)
 			}
 		}

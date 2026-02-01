@@ -131,7 +131,7 @@ func (c *Client) Health(ctx context.Context) (*HealthResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result HealthResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -153,7 +153,7 @@ func (c *Client) GenerateWithGrammar(ctx context.Context, req *GrammarRequest) (
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result GrammarResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -168,7 +168,7 @@ func (c *Client) GenerateFromTemplate(ctx context.Context, req *TemplateRequest)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result TemplateResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -183,7 +183,7 @@ func (c *Client) Select(ctx context.Context, req *SelectRequest) (*SelectRespons
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result SelectResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -218,7 +218,7 @@ func (c *Client) GenerateWithRegex(ctx context.Context, req *RegexRequest) (*Reg
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result RegexResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -233,7 +233,7 @@ func (c *Client) GenerateJSON(ctx context.Context, req *JSONSchemaRequest) (*JSO
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result JSONSchemaResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -297,7 +297,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	}
 
 	if resp.StatusCode >= 400 {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
