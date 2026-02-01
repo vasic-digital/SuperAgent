@@ -181,9 +181,6 @@
 [submodule "cli_agents/amazon-q"]
 	path = cli_agents/amazon-q
 	url = https://github.com/aws/amazon-q-developer-cli.git
-[submodule "cli_agents/emdash"]
-	path = cli_agents/emdash
-	url = https://github.com/generalaction/emdash.git
 [submodule "cli_agents/forge"]
 	path = cli_agents/forge
 	url = https://github.com/antinomyhq/forge.git

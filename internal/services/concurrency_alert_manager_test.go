@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -961,4 +962,136 @@ func TestConcurrencyAlertManager_DeadLetterQueueRetry(t *testing.T) {
 	assert.Equal(t, 0, stats["retry_queue_size"], "Retry queue should be empty")
 
 	t.Logf("Test completed")
+}
+
+func TestConcurrencyAlertManager_DeadLetterQueueThresholdMonitoring(t *testing.T) {
+	// Configure dead letter queue monitoring
+	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
+	config.EnableLogging = false
+	config.EnableWebhook = false
+	config.EscalationEnabled = false
+	config.RateLimitEnabled = false
+	config.CircuitBreakerEnabled = false
+	config.RetryEnabled = false
+	config.DefaultCooldown = 500 * time.Millisecond // Set cooldown for deduplication
+	config.CleanupInterval = 100 * time.Millisecond
+	config.MaxAlertAge = 1 * time.Hour
+
+	// Enable dead letter queue monitoring with low thresholds for testing
+	config.DeadLetterQueueMonitoringEnabled = true
+	config.DeadLetterQueueWarningThreshold = 2
+	config.DeadLetterQueueCriticalThreshold = 4
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+	manager := NewConcurrencyAlertManager(config, logger)
+
+	// Start the manager
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go manager.Start(ctx)
+	time.Sleep(5 * time.Millisecond)
+
+	// Helper to add alerts to dead letter queue
+	addDeadLetterAlert := func(channel string, alert ConcurrencyAlert) {
+		manager.mu.Lock()
+		alertKey := manager.generateAlertKey(alert)
+		deadLetterKey := fmt.Sprintf("%s:%s", channel, alertKey)
+		manager.deadLetterAlerts[deadLetterKey] = &deadLetterAlert{
+			channel:      channel,
+			alert:        alert,
+			attempts:     1,
+			lastAttempt:  time.Now(),
+			failureError: "test",
+			addedAt:      time.Now(),
+		}
+		manager.mu.Unlock()
+	}
+
+	// Helper to check if alert key exists in alertTracking
+	hasAlertKey := func(key string) bool {
+		manager.mu.RLock()
+		defer manager.mu.RUnlock()
+		_, exists := manager.alertTracking[key]
+		return exists
+	}
+
+	// Helper to get last sent time for alert key
+	getLastSentTime := func(key string) time.Time {
+		manager.mu.RLock()
+		defer manager.mu.RUnlock()
+		if tracking, exists := manager.alertTracking[key]; exists {
+			return tracking.lastSentTime
+		}
+		return time.Time{}
+	}
+
+	// Initially queue is empty, no alerts expected
+	time.Sleep(150 * time.Millisecond) // Wait for first tick
+
+	// Add 1 alert (below warning threshold)
+	alert1 := ConcurrencyAlert{
+		Type:       "test",
+		Provider:   "test-provider",
+		Message:    "Test alert 1",
+		Timestamp:  time.Now(),
+		Saturation: 50.0,
+	}
+	addDeadLetterAlert("logging", alert1)
+	time.Sleep(150 * time.Millisecond) // Wait for tick
+	// No warning alert expected
+	warningKey := "concurrency_dead_letter_queue_warning_system_2"
+	assert.False(t, hasAlertKey(warningKey), "Should not have warning alert when below threshold")
+
+	// Add second alert (reaches warning threshold)
+	alert2 := ConcurrencyAlert{
+		Type:       "test",
+		Provider:   "test-provider",
+		Message:    "Test alert 2",
+		Timestamp:  time.Now(),
+		Saturation: 60.0,
+	}
+	addDeadLetterAlert("logging", alert2)
+	time.Sleep(150 * time.Millisecond) // Should trigger warning alert
+	assert.True(t, hasAlertKey(warningKey), "Should have warning alert when threshold reached")
+	warningLastSent := getLastSentTime(warningKey)
+	assert.False(t, warningLastSent.IsZero(), "Last sent time should be set")
+
+	// Add third alert (still warning)
+	alert3 := ConcurrencyAlert{
+		Type:       "test",
+		Provider:   "test-provider",
+		Message:    "Test alert 3",
+		Timestamp:  time.Now(),
+		Saturation: 70.0,
+	}
+	addDeadLetterAlert("logging", alert3)
+	time.Sleep(150 * time.Millisecond) // Should not trigger new warning (cooldown)
+	// Last sent time should not have changed (within cooldown)
+	warningLastSent2 := getLastSentTime(warningKey)
+	assert.Equal(t, warningLastSent, warningLastSent2, "Last sent time should not change during cooldown")
+
+	// Add fourth alert (reaches critical threshold)
+	alert4 := ConcurrencyAlert{
+		Type:       "test",
+		Provider:   "test-provider",
+		Message:    "Test alert 4",
+		Timestamp:  time.Now(),
+		Saturation: 80.0,
+	}
+	addDeadLetterAlert("logging", alert4)
+	time.Sleep(150 * time.Millisecond) // Should trigger critical alert
+	criticalKey := "concurrency_dead_letter_queue_critical_system_4"
+	assert.True(t, hasAlertKey(criticalKey), "Should have critical alert when critical threshold reached")
+	// Warning alert should still exist
+	assert.True(t, hasAlertKey(warningKey), "Warning alert should still be tracked")
+
+	// Clean up dead letter queue
+	manager.mu.Lock()
+	manager.deadLetterAlerts = make(map[string]*deadLetterAlert)
+	manager.mu.Unlock()
+	time.Sleep(150 * time.Millisecond) // Wait for tick
+
+	t.Logf("Dead letter queue threshold monitoring test completed")
 }

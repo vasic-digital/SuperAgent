@@ -74,6 +74,11 @@ type ConcurrencyAlertManagerConfig struct {
 	RetryInitialDelay      time.Duration `json:"retry_initial_delay"`      // Initial delay before first retry
 	RetryMaxDelay          time.Duration `json:"retry_max_delay"`          // Maximum delay between retries
 	RetryBackoffMultiplier float64       `json:"retry_backoff_multiplier"` // Multiplier for exponential backoff
+
+	// Dead letter queue monitoring
+	DeadLetterQueueMonitoringEnabled bool `json:"dead_letter_queue_monitoring_enabled"` // Enable dead letter queue monitoring
+	DeadLetterQueueWarningThreshold  int  `json:"dead_letter_queue_warning_threshold"`  // Warning when queue size >= this value
+	DeadLetterQueueCriticalThreshold int  `json:"dead_letter_queue_critical_threshold"` // Critical when queue size >= this value
 }
 
 // DefaultConcurrencyAlertManagerConfig returns default configuration
@@ -116,6 +121,11 @@ func DefaultConcurrencyAlertManagerConfig() ConcurrencyAlertManagerConfig {
 		RetryInitialDelay:      1 * time.Second,
 		RetryMaxDelay:          30 * time.Second,
 		RetryBackoffMultiplier: 2.0,
+
+		// Dead letter queue monitoring defaults
+		DeadLetterQueueMonitoringEnabled: true,
+		DeadLetterQueueWarningThreshold:  10,
+		DeadLetterQueueCriticalThreshold: 50,
 	}
 }
 
@@ -613,6 +623,7 @@ func (am *ConcurrencyAlertManager) Start(ctx context.Context) {
 		case <-ticker.C:
 			am.CleanupOldRecords(am.config.MaxAlertAge)
 			am.processRetries()
+			am.checkDeadLetterQueueThresholds()
 		}
 	}
 }
@@ -1145,6 +1156,69 @@ func (am *ConcurrencyAlertManager) CancelRetryAttempt(key string) bool {
 	delete(am.deliveryAttempts, key)
 	am.updateRetryQueueMetricsLocked()
 	return true
+}
+
+// checkDeadLetterQueueThresholds checks the dead letter queue size against configured thresholds
+// and generates alerts when thresholds are exceeded
+func (am *ConcurrencyAlertManager) checkDeadLetterQueueThresholds() {
+	if !am.config.DeadLetterQueueMonitoringEnabled {
+		return
+	}
+
+	am.mu.RLock()
+	queueSize := len(am.deadLetterAlerts)
+	am.mu.RUnlock()
+
+	// Determine which threshold(s) are crossed
+	warningThreshold := am.config.DeadLetterQueueWarningThreshold
+	criticalThreshold := am.config.DeadLetterQueueCriticalThreshold
+
+	// Log monitoring activity for debugging
+	am.logger.Debug("Checking dead letter queue thresholds", logrus.Fields{
+		"queue_size":         queueSize,
+		"warning_threshold":  warningThreshold,
+		"critical_threshold": criticalThreshold,
+		"monitoring_enabled": am.config.DeadLetterQueueMonitoringEnabled,
+	})
+
+	// Check critical threshold first (more severe)
+	if criticalThreshold > 0 && queueSize >= criticalThreshold {
+		// Generate critical alert
+		// Use threshold as saturation for consistent alert key (same threshold = same key)
+		alert := ConcurrencyAlert{
+			Type:       "dead_letter_queue_critical",
+			Message:    fmt.Sprintf("Dead letter queue size (%d) exceeds critical threshold (%d)", queueSize, criticalThreshold),
+			Timestamp:  time.Now(),
+			Saturation: float64(criticalThreshold),
+			Severity:   SeverityCritical,
+			Provider:   "system",
+		}
+		am.logger.Warning("Dead letter queue critical threshold exceeded", logrus.Fields{
+			"queue_size":         queueSize,
+			"critical_threshold": criticalThreshold,
+		})
+		am.HandleAlert(alert)
+		return // Don't send warning if critical already triggered
+	}
+
+	// Check warning threshold
+	if warningThreshold > 0 && queueSize >= warningThreshold {
+		// Generate warning alert
+		// Use threshold as saturation for consistent alert key
+		alert := ConcurrencyAlert{
+			Type:       "dead_letter_queue_warning",
+			Message:    fmt.Sprintf("Dead letter queue size (%d) exceeds warning threshold (%d)", queueSize, warningThreshold),
+			Timestamp:  time.Now(),
+			Saturation: float64(warningThreshold),
+			Severity:   SeverityWarning,
+			Provider:   "system",
+		}
+		am.logger.Warning("Dead letter queue warning threshold exceeded", logrus.Fields{
+			"queue_size":        queueSize,
+			"warning_threshold": warningThreshold,
+		})
+		am.HandleAlert(alert)
+	}
 }
 
 // splitAlertKey splits alert key into parts
@@ -1751,6 +1825,11 @@ func LoadConcurrencyAlertManagerConfigFromEnv() ConcurrencyAlertManagerConfig {
 	config.RetryInitialDelay = getDurationEnv("CONCURRENCY_ALERTS_RETRY_INITIAL_DELAY", config.RetryInitialDelay)
 	config.RetryMaxDelay = getDurationEnv("CONCURRENCY_ALERTS_RETRY_MAX_DELAY", config.RetryMaxDelay)
 	config.RetryBackoffMultiplier = getFloat64Env("CONCURRENCY_ALERTS_RETRY_BACKOFF_MULTIPLIER", config.RetryBackoffMultiplier)
+
+	// Dead letter queue monitoring configuration
+	config.DeadLetterQueueMonitoringEnabled = getBoolEnv("CONCURRENCY_ALERTS_DEAD_LETTER_QUEUE_MONITORING_ENABLED", config.DeadLetterQueueMonitoringEnabled)
+	config.DeadLetterQueueWarningThreshold = getIntEnv("CONCURRENCY_ALERTS_DEAD_LETTER_QUEUE_WARNING_THRESHOLD", config.DeadLetterQueueWarningThreshold)
+	config.DeadLetterQueueCriticalThreshold = getIntEnv("CONCURRENCY_ALERTS_DEAD_LETTER_QUEUE_CRITICAL_THRESHOLD", config.DeadLetterQueueCriticalThreshold)
 
 	return config
 }
