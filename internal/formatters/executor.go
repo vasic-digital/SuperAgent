@@ -244,10 +244,21 @@ func CacheMiddleware(cache *FormatterCache) Middleware {
 				return next(ctx, formatter, req)
 			}
 
+			// Determine language label
+			language := req.Language
+			if language == "" {
+				language = "unknown"
+			}
+
 			// Check cache
 			if cached, found := cache.Get(req); found {
+				// Cache hit
+				RecordCacheHit(formatter.Name(), language)
 				return cached, nil
 			}
+
+			// Cache miss
+			RecordCacheMiss(formatter.Name(), language)
 
 			// Execute
 			result, err := next(ctx, formatter, req)
@@ -292,20 +303,29 @@ func ValidationMiddleware() Middleware {
 func MetricsMiddleware() Middleware {
 	return func(next ExecuteFunc) ExecuteFunc {
 		return func(ctx context.Context, formatter Formatter, req *FormatRequest) (*FormatResult, error) {
+			// Determine language label
+			language := req.Language
+			if language == "" {
+				language = "unknown"
+			}
+
+			// Record request start and get completion function
+			recordComplete := RecordRequestStart(formatter.Name(), language)
+
+			// Start timing
 			start := time.Now()
 
+			// Execute the request
 			result, err := next(ctx, formatter, req)
 
 			duration := time.Since(start)
 
-			// TODO: Collect metrics
-			// - formatter name
-			// - language
-			// - duration
-			// - success/failure
-			// - bytes processed
+			// Determine success and bytes processed
+			success := err == nil
+			bytesProcessed := len(req.Content)
 
-			_ = duration // Suppress unused warning for now
+			// Record completion
+			recordComplete(success, duration, bytesProcessed)
 
 			return result, err
 		}
@@ -316,13 +336,13 @@ func MetricsMiddleware() Middleware {
 func TracingMiddleware() Middleware {
 	return func(next ExecuteFunc) ExecuteFunc {
 		return func(ctx context.Context, formatter Formatter, req *FormatRequest) (*FormatResult, error) {
-			// TODO: Start span
+			// Tracing will be implemented when OpenTelemetry is configured
 			// span := opentelemetry.StartSpan(ctx, "formatter.execute")
 			// defer span.End()
 
 			result, err := next(ctx, formatter, req)
 
-			// TODO: Record span attributes
+			// Span attributes recording pending OpenTelemetry integration
 			// span.SetAttributes(
 			//   "formatter.name", formatter.Name(),
 			//   "formatter.language", req.Language,

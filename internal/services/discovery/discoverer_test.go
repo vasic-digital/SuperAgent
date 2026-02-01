@@ -130,13 +130,16 @@ func TestHTTPDiscoverer_Discover(t *testing.T) {
 
 // MockDNSResolver implements dnsResolver for testing
 type mockDNSResolver struct {
-	srvRecords  map[string][]*net.SRV
-	hostRecords map[string][]string
-	srvError    error
-	hostError   error
+	srvRecords       map[string][]*net.SRV
+	hostRecords      map[string][]string
+	srvError         error
+	hostError        error
+	lookupSRVCalled  bool
+	lookupHostCalled bool
 }
 
 func (m *mockDNSResolver) LookupSRV(ctx context.Context, service, proto, name string) (string, []*net.SRV, error) {
+	m.lookupSRVCalled = true
 	if m.srvError != nil {
 		return "", nil, m.srvError
 	}
@@ -145,10 +148,16 @@ func (m *mockDNSResolver) LookupSRV(ctx context.Context, service, proto, name st
 }
 
 func (m *mockDNSResolver) LookupHost(ctx context.Context, host string) ([]string, error) {
+	m.lookupHostCalled = true
 	if m.hostError != nil {
 		return nil, m.hostError
 	}
 	return m.hostRecords[host], nil
+}
+
+func (m *mockDNSResolver) reset() {
+	m.lookupSRVCalled = false
+	m.lookupHostCalled = false
 }
 
 func TestDNSDiscoverer_Discover(t *testing.T) {
@@ -210,8 +219,33 @@ func TestDNSDiscoverer_Discover(t *testing.T) {
 	})
 
 	t.Run("IP address host skips DNS", func(t *testing.T) {
-		// We'll test that TCP discoverer is called (can't mock easily, skip for now)
-		t.Skip("TODO: mock TCP discoverer")
+		// Create mock resolver that will track calls
+		mockResolver := &mockDNSResolver{
+			srvRecords:  make(map[string][]*net.SRV),
+			hostRecords: make(map[string][]string),
+		}
+		mockResolver.reset()
+		discoverer := &dnsDiscoverer{logger: logger, resolver: mockResolver}
+
+		// Start a test TCP server to ensure TCP discovery succeeds
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		require.NoError(t, err)
+		defer listener.Close()
+
+		endpoint := &config.ServiceEndpoint{
+			ServiceName: "postgresql",
+			Host:        "127.0.0.1",
+			Port:        fmt.Sprintf("%d", listener.Addr().(*net.TCPAddr).Port),
+		}
+
+		ctx := context.Background()
+		discovered, err := discoverer.Discover(ctx, endpoint)
+		assert.NoError(t, err)
+		assert.True(t, discovered, "should discover via TCP when host is IP address")
+
+		// Verify DNS resolution was not called
+		assert.False(t, mockResolver.lookupSRVCalled, "LookupSRV should not be called for IP address")
+		assert.False(t, mockResolver.lookupHostCalled, "LookupHost should not be called for IP address")
 	})
 }
 

@@ -80,7 +80,7 @@ func (n *NativeFormatter) Format(ctx context.Context, req *formatters.FormatRequ
 	// Calculate stats
 	stats := &formatters.FormatStats{
 		LinesTotal:   strings.Count(req.Content, "\n") + 1,
-		LinesChanged: 0, // TODO: Calculate actual line changes
+		LinesChanged: computeLineChanges(req.Content, formattedContent),
 		BytesTotal:   len(req.Content),
 		BytesChanged: len(formattedContent) - len(req.Content),
 	}
@@ -138,4 +138,35 @@ func (n *NativeFormatter) buildArgs(req *formatters.FormatRequest) []string {
 	}
 
 	return args
+}
+
+// computeLineChanges calculates the number of lines changed between original and formatted content
+func computeLineChanges(original, formatted string) int {
+	if original == formatted {
+		return 0
+	}
+
+	origLines := strings.Split(original, "\n")
+	formattedLines := strings.Split(formatted, "\n")
+
+	changed := 0
+	maxLen := len(origLines)
+	if len(formattedLines) > maxLen {
+		maxLen = len(formattedLines)
+	}
+
+	for i := 0; i < maxLen; i++ {
+		var origLine, formattedLine string
+		if i < len(origLines) {
+			origLine = origLines[i]
+		}
+		if i < len(formattedLines) {
+			formattedLine = formattedLines[i]
+		}
+		if origLine != formattedLine {
+			changed++
+		}
+	}
+
+	return changed
 }

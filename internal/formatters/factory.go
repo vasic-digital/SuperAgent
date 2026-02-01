@@ -38,34 +38,34 @@ func (f *FormatterFactory) Create(metadata *FormatterMetadata) (Formatter, error
 
 // createNativeFormatter creates a native binary formatter
 func (f *FormatterFactory) createNativeFormatter(metadata *FormatterMetadata) (Formatter, error) {
-	// TODO: Implement native formatter creation
-	// For now, return a placeholder
-	f.logger.Warnf("Native formatter creation not yet implemented: %s", metadata.Name)
-	return nil, fmt.Errorf("native formatter creation not yet implemented: %s", metadata.Name)
+	// Native formatters are registered via providers/register.go
+	// Use RegisterAllFormatters() instead of dynamic creation
+	f.logger.Warnf("Native formatter creation not supported; use register.go: %s", metadata.Name)
+	return nil, fmt.Errorf("native formatter creation not supported; register formatters via providers/register.go: %s", metadata.Name)
 }
 
 // createServiceFormatter creates a service-based formatter
 func (f *FormatterFactory) createServiceFormatter(metadata *FormatterMetadata) (Formatter, error) {
-	// TODO: Implement service formatter creation
-	// For now, return a placeholder
-	f.logger.Warnf("Service formatter creation not yet implemented: %s", metadata.Name)
-	return nil, fmt.Errorf("service formatter creation not yet implemented: %s", metadata.Name)
+	// Service formatters are registered via providers/register.go
+	// Use RegisterAllFormatters() instead of dynamic creation
+	f.logger.Warnf("Service formatter creation not supported; use register.go: %s", metadata.Name)
+	return nil, fmt.Errorf("service formatter creation not supported; register formatters via providers/register.go: %s", metadata.Name)
 }
 
 // createBuiltinFormatter creates a built-in formatter
 func (f *FormatterFactory) createBuiltinFormatter(metadata *FormatterMetadata) (Formatter, error) {
-	// TODO: Implement builtin formatter creation
-	// For now, return a placeholder
-	f.logger.Warnf("Builtin formatter creation not yet implemented: %s", metadata.Name)
-	return nil, fmt.Errorf("builtin formatter creation not yet implemented: %s", metadata.Name)
+	// Builtin formatters are registered via providers/register.go
+	// Use RegisterAllFormatters() instead of dynamic creation
+	f.logger.Warnf("Builtin formatter creation not supported; use register.go: %s", metadata.Name)
+	return nil, fmt.Errorf("builtin formatter creation not supported; register formatters via providers/register.go: %s", metadata.Name)
 }
 
 // createUnifiedFormatter creates a unified multi-language formatter
 func (f *FormatterFactory) createUnifiedFormatter(metadata *FormatterMetadata) (Formatter, error) {
-	// TODO: Implement unified formatter creation
-	// For now, return a placeholder
-	f.logger.Warnf("Unified formatter creation not yet implemented: %s", metadata.Name)
-	return nil, fmt.Errorf("unified formatter creation not yet implemented: %s", metadata.Name)
+	// Unified formatters are registered via providers/register.go
+	// Use RegisterAllFormatters() instead of dynamic creation
+	f.logger.Warnf("Unified formatter creation not supported; use register.go: %s", metadata.Name)
+	return nil, fmt.Errorf("unified formatter creation not supported; register formatters via providers/register.go: %s", metadata.Name)
 }
 
 // CreateAll creates all formatters from a list of metadata
