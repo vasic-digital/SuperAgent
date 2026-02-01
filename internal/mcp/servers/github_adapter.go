@@ -93,7 +93,7 @@ func (g *GitHubAdapter) Initialize(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to authenticate: %w", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode == http.StatusUnauthorized {
 			return fmt.Errorf("invalid GitHub token")
@@ -127,7 +127,7 @@ func (g *GitHubAdapter) Health(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("GitHub API health check failed: %d", resp.StatusCode)
@@ -198,7 +198,7 @@ func (g *GitHubAdapter) GetUser(ctx context.Context, username string) (*GitHubUs
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("user not found: %s", username)
@@ -256,7 +256,7 @@ func (g *GitHubAdapter) ListRepositories(ctx context.Context, owner string, repo
 	if err != nil {
 		return nil, fmt.Errorf("failed to list repositories: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list repositories: status %d", resp.StatusCode)
@@ -288,7 +288,7 @@ func (g *GitHubAdapter) GetRepository(ctx context.Context, owner, repo string) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to get repository: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("repository not found: %s/%s", owner, repo)
@@ -350,7 +350,7 @@ func (g *GitHubAdapter) ListIssues(ctx context.Context, owner, repo, state strin
 	if err != nil {
 		return nil, fmt.Errorf("failed to list issues: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list issues: status %d", resp.StatusCode)
@@ -382,7 +382,7 @@ func (g *GitHubAdapter) GetIssue(ctx context.Context, owner, repo string, number
 	if err != nil {
 		return nil, fmt.Errorf("failed to get issue: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("issue not found: %s/%s#%d", owner, repo, number)
@@ -447,7 +447,7 @@ func (g *GitHubAdapter) ListPullRequests(ctx context.Context, owner, repo, state
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pull requests: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to list pull requests: status %d", resp.StatusCode)
@@ -479,7 +479,7 @@ func (g *GitHubAdapter) GetPullRequest(ctx context.Context, owner, repo string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pull request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("pull request not found: %s/%s#%d", owner, repo, number)
@@ -534,7 +534,7 @@ func (g *GitHubAdapter) GetContent(ctx context.Context, owner, repo, path, ref s
 	if err != nil {
 		return nil, fmt.Errorf("failed to get content: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("content not found: %s/%s/%s", owner, repo, path)
@@ -609,7 +609,7 @@ func (g *GitHubAdapter) SearchRepositories(ctx context.Context, query string, so
 	if err != nil {
 		return nil, fmt.Errorf("failed to search repositories: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to search repositories: status %d", resp.StatusCode)
@@ -641,7 +641,7 @@ func (g *GitHubAdapter) SearchCode(ctx context.Context, query string) (*GitHubCo
 	if err != nil {
 		return nil, fmt.Errorf("failed to search code: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to search code: status %d", resp.StatusCode)
@@ -688,7 +688,7 @@ func (g *GitHubAdapter) CreateIssue(ctx context.Context, owner, repo, title, bod
 	if err != nil {
 		return nil, fmt.Errorf("failed to create issue: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
 		bodyBytes, _ := io.ReadAll(resp.Body)

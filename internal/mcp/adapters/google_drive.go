@@ -376,7 +376,7 @@ func (a *GoogleDriveAdapter) downloadFile(ctx context.Context, args map[string]i
 	if err != nil {
 		return &ToolResult{IsError: true, Content: []ContentBlock{{Type: "text", Text: err.Error()}}}, nil
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	content, err := io.ReadAll(reader)
 	if err != nil {

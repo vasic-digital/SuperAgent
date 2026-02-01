@@ -688,7 +688,7 @@ func (hc *HealthChecker) checkHTTPHealth(info *InstanceInfo) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("health check request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Read and discard body to ensure connection can be reused
 	_, _ = io.Copy(io.Discard, resp.Body)
@@ -717,7 +717,7 @@ func (hc *HealthChecker) checkTCPHealth(info *InstanceInfo) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("TCP connection failed: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	return true, nil
 }

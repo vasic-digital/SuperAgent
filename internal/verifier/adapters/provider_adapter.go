@@ -333,7 +333,7 @@ func (a *ProviderAdapter) makeHTTPRequest(ctx context.Context, url string, body 
 	if err != nil {
 		return "", fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
 		return "", fmt.Errorf("API returned status %d", resp.StatusCode)

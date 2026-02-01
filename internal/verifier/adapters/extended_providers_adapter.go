@@ -334,7 +334,7 @@ func (epa *ExtendedProvidersAdapter) testCompletion(ctx context.Context, req *Pr
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -390,7 +390,7 @@ func (epa *ExtendedProvidersAdapter) testCohereCompletion(ctx context.Context, r
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -441,7 +441,7 @@ func (epa *ExtendedProvidersAdapter) testCodeVisibility(ctx context.Context, req
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("status %d", resp.StatusCode)
@@ -496,7 +496,7 @@ func (epa *ExtendedProvidersAdapter) testJSONMode(ctx context.Context, req *Prov
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Some providers don't support JSON mode, that's OK
 	if resp.StatusCode == http.StatusBadRequest {

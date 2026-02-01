@@ -75,7 +75,7 @@ func (c *VisionClient) Analyze(req *VisionRequest) (*VisionResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to call vision API: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, _ := io.ReadAll(resp.Body)
 
@@ -97,7 +97,7 @@ func (c *VisionClient) ListCapabilities() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list capabilities: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -262,7 +262,7 @@ func TestVisionHealthCheck(t *testing.T) {
 		t.Skipf("Vision service not running: %v", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Health check should return 200")
 }

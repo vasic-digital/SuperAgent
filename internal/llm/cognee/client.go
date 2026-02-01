@@ -129,7 +129,7 @@ func (c *Client) AddMemory(req *MemoryRequest) (*MemoryResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("cognee API error: %s", resp.Status)
@@ -164,7 +164,7 @@ func (c *Client) SearchMemory(req *SearchRequest) (*SearchResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("cognee API error: %s", resp.Status)
@@ -200,7 +200,7 @@ func (c *Client) Cognify(req *CognifyRequest) (*CognifyResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("cognee API error: %s", resp.Status)
@@ -244,7 +244,7 @@ func (c *Client) SearchInsights(req *InsightsRequest) (*InsightsResponse, error)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("cognee API error: %s", resp.Status)
@@ -287,7 +287,7 @@ func (c *Client) SearchGraphCompletion(query string, datasets []string, limit in
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("cognee API error: %s", resp.Status)
@@ -323,7 +323,7 @@ func (c *Client) ProcessCodePipeline(req *CodePipelineRequest) (*CodePipelineRes
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("cognee API error: %s", resp.Status)
@@ -359,7 +359,7 @@ func (c *Client) CreateDataset(req *DatasetRequest) (*DatasetResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("cognee API error: %s", resp.Status)
@@ -389,7 +389,7 @@ func (c *Client) ListDatasets() (*DatasetsResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("cognee API error: %s", resp.Status)
@@ -425,7 +425,7 @@ func (c *Client) VisualizeGraph(req *VisualizeRequest) (*VisualizeResponse, erro
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("cognee API error: %s", resp.Status)
@@ -466,7 +466,7 @@ func (c *Client) DeleteData(datasetName string, dataIDs []string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("cognee API error: %s", resp.Status)
@@ -500,7 +500,7 @@ func (c *Client) testConnection() bool {
 	if err != nil {
 		return false
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return resp.StatusCode == http.StatusOK
 }

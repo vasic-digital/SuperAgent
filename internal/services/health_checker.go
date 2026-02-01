@@ -120,7 +120,7 @@ func (hc *ServiceHealthChecker) checkHTTP(name string, ep config.ServiceEndpoint
 	if err != nil {
 		return fmt.Errorf("HTTP health check for %s (%s) failed: %w", name, url, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 500 {
 		return fmt.Errorf("HTTP health check for %s returned status %d", name, resp.StatusCode)

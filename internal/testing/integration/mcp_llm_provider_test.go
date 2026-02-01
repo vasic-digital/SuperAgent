@@ -147,7 +147,7 @@ func (c *LLMClient) Complete(req *CompletionRequest) (*CompletionResponse, error
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
 
@@ -169,7 +169,7 @@ func (c *LLMClient) ListProviders() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list providers: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

@@ -97,7 +97,7 @@ func (a *QdrantAdapter) Connect(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to Qdrant: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("Qdrant health check failed: status %d", resp.StatusCode)
@@ -120,7 +120,7 @@ func (a *QdrantAdapter) Health(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check failed: status %d", resp.StatusCode)
@@ -134,7 +134,7 @@ func (a *QdrantAdapter) ListCollections(ctx context.Context) ([]QdrantCollection
 	if err != nil {
 		return nil, fmt.Errorf("failed to list collections: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var response QdrantCollectionsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
@@ -161,7 +161,7 @@ func (a *QdrantAdapter) CreateCollection(ctx context.Context, name string, vecto
 	if err != nil {
 		return fmt.Errorf("failed to create collection: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -177,7 +177,7 @@ func (a *QdrantAdapter) DeleteCollection(ctx context.Context, name string) error
 	if err != nil {
 		return fmt.Errorf("failed to delete collection: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("failed to delete collection: status %d", resp.StatusCode)
@@ -192,7 +192,7 @@ func (a *QdrantAdapter) CollectionExists(ctx context.Context, name string) (bool
 	if err != nil {
 		return false, fmt.Errorf("failed to check collection: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return resp.StatusCode == http.StatusOK, nil
 }
@@ -203,7 +203,7 @@ func (a *QdrantAdapter) GetCollectionInfo(ctx context.Context, name string) (*Qd
 	if err != nil {
 		return nil, fmt.Errorf("failed to get collection info: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("collection not found: %s", name)
@@ -230,7 +230,7 @@ func (a *QdrantAdapter) UpsertPoints(ctx context.Context, collectionName string,
 	if err != nil {
 		return fmt.Errorf("failed to upsert points: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -250,7 +250,7 @@ func (a *QdrantAdapter) DeletePoints(ctx context.Context, collectionName string,
 	if err != nil {
 		return fmt.Errorf("failed to delete points: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to delete points: status %d", resp.StatusCode)
@@ -275,7 +275,7 @@ func (a *QdrantAdapter) Search(ctx context.Context, collectionName string, vecto
 	if err != nil {
 		return nil, fmt.Errorf("failed to search: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -317,7 +317,7 @@ func (a *QdrantAdapter) SearchBatch(ctx context.Context, collectionName string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to search batch: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -346,7 +346,7 @@ func (a *QdrantAdapter) GetPoints(ctx context.Context, collectionName string, id
 	if err != nil {
 		return nil, fmt.Errorf("failed to get points: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -369,7 +369,7 @@ func (a *QdrantAdapter) CountPoints(ctx context.Context, collectionName string) 
 	if err != nil {
 		return 0, fmt.Errorf("failed to count points: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("failed to count points: status %d", resp.StatusCode)
@@ -405,7 +405,7 @@ func (a *QdrantAdapter) Scroll(ctx context.Context, collectionName string, offse
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to scroll: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)

@@ -349,7 +349,7 @@ func (a *AWSS3Adapter) getObject(ctx context.Context, args map[string]interface{
 	if err != nil {
 		return &ToolResult{IsError: true, Content: []ContentBlock{{Type: "text", Text: err.Error()}}}, nil
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	content, err := io.ReadAll(reader)
 	if err != nil {

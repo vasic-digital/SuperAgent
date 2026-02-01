@@ -230,7 +230,7 @@ func (f *FetchAdapter) Fetch(ctx context.Context, targetURL string, method strin
 			Error:    err.Error(),
 		}, nil
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	result := &FetchResult{
 		URL:           targetURL,

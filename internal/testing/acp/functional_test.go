@@ -56,7 +56,7 @@ func (c *ACPClient) ListAgents() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list agents: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -79,7 +79,7 @@ func (c *ACPClient) GetAgentInfo(agentID string) (*AgentResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get agent info: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -105,7 +105,7 @@ func (c *ACPClient) ExecuteTask(req *AgentRequest) (*AgentResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute task: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -213,7 +213,7 @@ func TestACPHealthCheck(t *testing.T) {
 		t.Skipf("ACP service not running: %v", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Health check should return 200")
 }

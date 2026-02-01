@@ -518,7 +518,7 @@ func (t *HTTPACPTransport) Send(ctx context.Context, message interface{}) error 
 		t.connected = false
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.connected = false
@@ -561,7 +561,7 @@ func (t *HTTPACPTransport) IsConnected() bool {
 		t.connected = false
 		return false
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return resp.StatusCode == http.StatusOK
 }

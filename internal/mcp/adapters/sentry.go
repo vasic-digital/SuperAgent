@@ -643,7 +643,7 @@ func (a *SentryAdapter) makeRequest(ctx context.Context, method, endpoint string
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

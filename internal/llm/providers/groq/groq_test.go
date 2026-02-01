@@ -252,7 +252,7 @@ func TestProvider_HealthCheck(t *testing.T) {
 
 	resp, err := p.httpClient.Do(httpReq)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }

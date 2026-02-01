@@ -19,7 +19,7 @@
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	defer pool.Close()
+//	defer func() { _ = pool.Close() }()
 //
 // # Repository Pattern
 //

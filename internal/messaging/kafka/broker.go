@@ -100,7 +100,7 @@ func (b *Broker) Connect(ctx context.Context) error {
 		b.metrics.RecordConnectionFailure()
 		return fmt.Errorf("failed to connect to Kafka: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// Get controller to verify connection
 	_, err = conn.Controller()
@@ -168,7 +168,7 @@ func (b *Broker) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("health check failed: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	_, err = conn.Brokers()
 	if err != nil {
@@ -477,7 +477,7 @@ func (b *Broker) CreateTopic(ctx context.Context, config *TopicConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	controller, err := conn.Controller()
 	if err != nil {
@@ -488,7 +488,7 @@ func (b *Broker) CreateTopic(ctx context.Context, config *TopicConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to controller: %w", err)
 	}
-	defer controllerConn.Close()
+	defer func() { _ = controllerConn.Close() }()
 
 	topicConfigs := []kafka.TopicConfig{
 		{
@@ -522,7 +522,7 @@ func (b *Broker) DeleteTopic(ctx context.Context, topic string) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	controller, err := conn.Controller()
 	if err != nil {
@@ -533,7 +533,7 @@ func (b *Broker) DeleteTopic(ctx context.Context, topic string) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to controller: %w", err)
 	}
-	defer controllerConn.Close()
+	defer func() { _ = controllerConn.Close() }()
 
 	err = controllerConn.DeleteTopics(topic)
 	if err != nil {
@@ -554,7 +554,7 @@ func (b *Broker) GetTopicMetadata(ctx context.Context, topic string) (*TopicMeta
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	partitions, err := conn.ReadPartitions(topic)
 	if err != nil {

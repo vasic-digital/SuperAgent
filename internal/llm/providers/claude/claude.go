@@ -247,7 +247,7 @@ func (p *ClaudeProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 	if err != nil {
 		return nil, fmt.Errorf("Claude API call failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Parse response
 	body, err := io.ReadAll(resp.Body)
@@ -292,7 +292,7 @@ func (p *ClaudeProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 	ch := make(chan *models.LLMResponse)
 
 	go func() {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)
@@ -795,7 +795,7 @@ func (p *ClaudeProvider) HealthCheck() error {
 	if err != nil {
 		return fmt.Errorf("health check request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Read response body for error detection
 	body, _ := io.ReadAll(resp.Body)

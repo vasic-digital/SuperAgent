@@ -1321,7 +1321,7 @@ func (am *ConcurrencyAlertManager) sendWebhook(alert ConcurrencyAlert) error {
 	if err != nil {
 		return fmt.Errorf("failed to send webhook: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("webhook returned error status: %d", resp.StatusCode)
@@ -1347,7 +1347,7 @@ func (am *ConcurrencyAlertManager) sendSlackWebhook(alert ConcurrencyAlert) erro
 	if err != nil {
 		return fmt.Errorf("failed to send Slack webhook: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("Slack webhook returned error status: %d", resp.StatusCode)
@@ -1583,13 +1583,13 @@ func (am *ConcurrencyAlertManager) sendEmailWithTLS(addr string, auth smtp.Auth,
 		// Fallback to STARTTLS
 		return am.sendEmailWithSTARTTLS(addr, auth, fromAddress, message)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client, err := smtp.NewClient(conn, am.config.SMTPHost)
 	if err != nil {
 		return fmt.Errorf("failed to create SMTP client: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Authenticate if credentials provided
 	if auth != nil {
@@ -1631,7 +1631,7 @@ func (am *ConcurrencyAlertManager) sendEmailWithSTARTTLS(addr string, auth smtp.
 	if err != nil {
 		return fmt.Errorf("failed to connect to SMTP server: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Try STARTTLS
 	if ok, _ := client.Extension("STARTTLS"); ok {

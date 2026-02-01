@@ -603,7 +603,7 @@ func (a *DockerAdapter) containerLogs(ctx context.Context, args map[string]inter
 	if err != nil {
 		return &ToolResult{IsError: true, Content: []ContentBlock{{Type: "text", Text: err.Error()}}}, nil
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	logs, err := io.ReadAll(reader)
 	if err != nil {

@@ -124,7 +124,7 @@ func (c *Client) Health(ctx context.Context) (*HealthResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result HealthResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -143,7 +143,7 @@ func (c *Client) Decompose(ctx context.Context, req *DecomposeRequest) (*Decompo
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result DecomposeResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -162,7 +162,7 @@ func (c *Client) ExecuteChain(ctx context.Context, req *ChainRequest) (*ChainRes
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result ChainResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -181,7 +181,7 @@ func (c *Client) RunReActAgent(ctx context.Context, req *ReActRequest) (*ReActRe
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result ReActResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -208,7 +208,7 @@ func (c *Client) Summarize(ctx context.Context, text string, maxLength int) (str
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result struct {
 		Summary string `json:"summary"`
@@ -233,7 +233,7 @@ func (c *Client) Transform(ctx context.Context, text, transformation string) (st
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result struct {
 		Result string `json:"result"`
@@ -269,7 +269,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	}
 
 	if resp.StatusCode >= 400 {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}

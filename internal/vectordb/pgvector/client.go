@@ -452,7 +452,7 @@ func (c *Client) Upsert(ctx context.Context, req *UpsertRequest) (int, error) {
 	}
 
 	results := c.pool.SendBatch(ctx, batch)
-	defer results.Close()
+	defer func() { _ = results.Close() }()
 
 	count := 0
 	for range req.Vectors {

@@ -124,7 +124,7 @@ func (c *Client) Health(ctx context.Context) (*HealthResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result HealthResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -146,7 +146,7 @@ func (c *Client) ExecuteQuery(ctx context.Context, req *QueryRequest) (*QueryRes
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result QueryResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -165,7 +165,7 @@ func (c *Client) GenerateConstrained(ctx context.Context, req *ConstrainedReques
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result ConstrainedResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -219,7 +219,7 @@ func (c *Client) Decode(ctx context.Context, req *DecodingRequest) (*DecodingRes
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result DecodingResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -295,7 +295,7 @@ func (c *Client) ScoreCompletions(ctx context.Context, prompt string, completion
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result ScoreResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -349,7 +349,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	}
 
 	if resp.StatusCode >= 400 {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
