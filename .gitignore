@@ -51,3 +51,7 @@ plugins/mcp-server/dist/
 # Runtime logs
 logs/
 *.log
+
+# Security scan reports
+reports/security/
+run_sonar.sh
