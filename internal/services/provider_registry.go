@@ -151,10 +151,13 @@ type CircuitBreakerConfig struct {
 
 // circuitBreakerProvider wraps an LLMProvider with circuit breaker functionality
 type circuitBreakerProvider struct {
-	provider             llm.LLMProvider
-	circuitBreaker       *CircuitBreaker
-	concurrencySemaphore *semaphore.Weighted
-	name                 string
+	provider              llm.LLMProvider
+	circuitBreaker        *CircuitBreaker
+	concurrencySemaphore  *semaphore.Weighted
+	name                  string
+	activeRequestsCounter *int64 // Atomic counter for active requests
+	totalPermits          int64  // Total semaphore permits (max concurrent)
+	acquiredPermits       int64  // Currently acquired permits (atomic)
 }
 
 // Complete wraps the provider's Complete method with circuit breaker protection
@@ -162,9 +165,28 @@ func (cbp *circuitBreakerProvider) Complete(ctx context.Context, req *models.LLM
 	// Acquire concurrency semaphore if present
 	if cbp.concurrencySemaphore != nil {
 		if err := cbp.concurrencySemaphore.Acquire(ctx, 1); err != nil {
+			// Record acquisition error
+			if ctx.Err() == context.DeadlineExceeded || ctx.Err() == context.Canceled {
+				RecordAcquisitionTimeout(cbp.name)
+			} else {
+				RecordAcquisitionError(cbp.name)
+			}
 			return nil, err
 		}
-		defer cbp.concurrencySemaphore.Release(1)
+		// Update acquired permits count and metrics
+		atomic.AddInt64(&cbp.acquiredPermits, 1)
+		cbp.updateMetrics()
+		defer func() {
+			cbp.concurrencySemaphore.Release(1)
+			atomic.AddInt64(&cbp.acquiredPermits, -1)
+			cbp.updateMetrics()
+		}()
+	}
+
+	// Increment active requests counter if present
+	if cbp.activeRequestsCounter != nil {
+		atomic.AddInt64(cbp.activeRequestsCounter, 1)
+		defer atomic.AddInt64(cbp.activeRequestsCounter, -1)
 	}
 
 	var resp *models.LLMResponse
@@ -189,9 +211,28 @@ func (cbp *circuitBreakerProvider) CompleteStream(ctx context.Context, req *mode
 	// Acquire concurrency semaphore if present
 	if cbp.concurrencySemaphore != nil {
 		if err := cbp.concurrencySemaphore.Acquire(ctx, 1); err != nil {
+			// Record acquisition error
+			if ctx.Err() == context.DeadlineExceeded || ctx.Err() == context.Canceled {
+				RecordAcquisitionTimeout(cbp.name)
+			} else {
+				RecordAcquisitionError(cbp.name)
+			}
 			return nil, err
 		}
-		defer cbp.concurrencySemaphore.Release(1)
+		// Update acquired permits count and metrics
+		atomic.AddInt64(&cbp.acquiredPermits, 1)
+		cbp.updateMetrics()
+		defer func() {
+			cbp.concurrencySemaphore.Release(1)
+			atomic.AddInt64(&cbp.acquiredPermits, -1)
+			cbp.updateMetrics()
+		}()
+	}
+
+	// Increment active requests counter if present
+	if cbp.activeRequestsCounter != nil {
+		atomic.AddInt64(cbp.activeRequestsCounter, 1)
+		defer atomic.AddInt64(cbp.activeRequestsCounter, -1)
 	}
 
 	var stream <-chan *models.LLMResponse
@@ -229,6 +270,15 @@ func (cbp *circuitBreakerProvider) GetCapabilities() *models.ProviderCapabilitie
 // ValidateConfig delegates to the underlying provider
 func (cbp *circuitBreakerProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
 	return cbp.provider.ValidateConfig(config)
+}
+
+// updateMetrics updates concurrency metrics for this provider
+func (cbp *circuitBreakerProvider) updateMetrics() {
+	activeRequests := int64(0)
+	if cbp.activeRequestsCounter != nil {
+		activeRequests = atomic.LoadInt64(cbp.activeRequestsCounter)
+	}
+	UpdateConcurrencyMetrics(cbp.name, cbp.totalPermits, atomic.LoadInt64(&cbp.acquiredPermits), activeRequests)
 }
 
 func NewProviderRegistry(cfg *RegistryConfig, memory *MemoryService) *ProviderRegistry {
@@ -744,23 +794,29 @@ func (r *ProviderRegistry) RegisterProvider(name string, provider llm.LLMProvide
 		r.circuitBreakers[name] = cb
 	}
 
-	// Wrap provider with circuit breaker and concurrency semaphore
-	wrappedProvider := &circuitBreakerProvider{
-		provider:             provider,
-		circuitBreaker:       cb,
-		concurrencySemaphore: sem,
-		name:                 name,
-	}
-
-	r.providers[name] = wrappedProvider
-
 	// Initialize atomic counter for active requests
 	var counter int64
 	r.activeRequests[name] = &counter
 
+	// Wrap provider with circuit breaker and concurrency semaphore
+	wrappedProvider := &circuitBreakerProvider{
+		provider:              provider,
+		circuitBreaker:        cb,
+		concurrencySemaphore:  sem,
+		name:                  name,
+		activeRequestsCounter: &counter,
+		totalPermits:          int64(maxConcurrent),
+		acquiredPermits:       0,
+	}
+
+	r.providers[name] = wrappedProvider
+
 	// Also register with ensemble and request services
 	r.ensemble.RegisterProvider(name, &providerAdapter{provider: wrappedProvider})
 	r.requestService.RegisterProvider(name, &providerAdapter{provider: wrappedProvider})
+
+	// Update concurrency metrics after registration
+	UpdateConcurrencyMetrics(name, int64(maxConcurrent), 0, 0)
 
 	return nil
 }
@@ -784,6 +840,9 @@ func (r *ProviderRegistry) unregisterProviderLocked(name string) error {
 	if _, exists := r.providers[name]; !exists {
 		return fmt.Errorf("provider %s not found", name)
 	}
+
+	// Update metrics to zero before removing the provider
+	UpdateConcurrencyMetrics(name, 0, 0, 0)
 
 	delete(r.providers, name)
 	delete(r.concurrencySemaphores, name)
