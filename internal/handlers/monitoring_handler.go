@@ -65,6 +65,10 @@ func (h *MonitoringHandler) RegisterRoutes(router *gin.RouterGroup) {
 		// Concurrency monitoring endpoints
 		monitoring.GET("/concurrency", h.GetConcurrencyStatus)
 		monitoring.GET("/concurrency/alerts", h.GetConcurrencyAlertStats)
+		monitoring.GET("/concurrency/alerts/dead-letter", h.GetDeadLetterAlerts)
+		monitoring.POST("/concurrency/alerts/dead-letter/:key/retry", h.RetryDeadLetterAlert)
+		monitoring.GET("/concurrency/alerts/retry-queue", h.GetRetryQueueAlerts)
+		monitoring.POST("/concurrency/alerts/retry-queue/:key/cancel", h.CancelRetryAttempt)
 		monitoring.POST("/concurrency/:provider/reset-tracking", h.ResetConcurrencyTracking)
 		monitoring.POST("/concurrency/reset-all-tracking", h.ResetAllConcurrencyTracking)
 	}
@@ -464,4 +468,112 @@ func (h *MonitoringHandler) GetConcurrencyAlertStats(c *gin.Context) {
 
 	stats := h.concurrencyAlertManager.GetAlertStats()
 	c.JSON(http.StatusOK, stats)
+}
+
+// GetDeadLetterAlerts returns all alerts currently in the dead letter queue
+// @Summary Get dead letter alerts
+// @Description Returns all alerts currently in the dead letter queue with full metadata
+// @Tags monitoring
+// @Produce json
+// @Success 200 {array} map[string]interface{} "List of dead letter alerts"
+// @Failure 503 {object} gin.H "Alert manager not available"
+// @Router /v1/monitoring/concurrency/alerts/dead-letter [get]
+func (h *MonitoringHandler) GetDeadLetterAlerts(c *gin.Context) {
+	if h.concurrencyAlertManager == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Concurrency alert manager not available",
+		})
+		return
+	}
+
+	alerts := h.concurrencyAlertManager.GetDeadLetterAlerts()
+	c.JSON(http.StatusOK, alerts)
+}
+
+// RetryDeadLetterAlert attempts to retry an alert from the dead letter queue
+// @Summary Retry dead letter alert
+// @Description Attempts to retry a specific alert from the dead letter queue by its key
+// @Tags monitoring
+// @Param key path string true "Alert key in format 'channel:alertKey'"
+// @Produce json
+// @Success 200 {object} gin.H "Retry result"
+// @Failure 404 {object} gin.H "Alert not found in dead letter queue"
+// @Failure 503 {object} gin.H "Alert manager not available"
+// @Router /v1/monitoring/concurrency/alerts/dead-letter/{key}/retry [post]
+func (h *MonitoringHandler) RetryDeadLetterAlert(c *gin.Context) {
+	if h.concurrencyAlertManager == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Concurrency alert manager not available",
+		})
+		return
+	}
+
+	key := c.Param("key")
+	removed := h.concurrencyAlertManager.RetryDeadLetterAlert(key)
+	if !removed {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Alert not found in dead letter queue",
+			"key":   key,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Alert retry initiated",
+		"key":     key,
+	})
+}
+
+// GetRetryQueueAlerts returns all alerts currently in the retry queue
+// @Summary Get retry queue alerts
+// @Description Returns all alerts currently in the retry queue with full metadata including next retry time
+// @Tags monitoring
+// @Produce json
+// @Success 200 {array} map[string]interface{} "List of retry queue alerts"
+// @Failure 503 {object} gin.H "Alert manager not available"
+// @Router /v1/monitoring/concurrency/alerts/retry-queue [get]
+func (h *MonitoringHandler) GetRetryQueueAlerts(c *gin.Context) {
+	if h.concurrencyAlertManager == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Concurrency alert manager not available",
+		})
+		return
+	}
+
+	alerts := h.concurrencyAlertManager.GetRetryQueueAlerts()
+	c.JSON(http.StatusOK, alerts)
+}
+
+// CancelRetryAttempt cancels a scheduled retry attempt
+// @Summary Cancel retry attempt
+// @Description Cancels a scheduled retry attempt by its key
+// @Tags monitoring
+// @Param key path string true "Alert key in format 'channel:alertKey'"
+// @Produce json
+// @Success 200 {object} gin.H "Cancel result"
+// @Failure 404 {object} gin.H "Alert not found in retry queue"
+// @Failure 503 {object} gin.H "Alert manager not available"
+// @Router /v1/monitoring/concurrency/alerts/retry-queue/{key}/cancel [post]
+func (h *MonitoringHandler) CancelRetryAttempt(c *gin.Context) {
+	if h.concurrencyAlertManager == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Concurrency alert manager not available",
+		})
+		return
+	}
+
+	key := c.Param("key")
+	cancelled := h.concurrencyAlertManager.CancelRetryAttempt(key)
+	if !cancelled {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Alert not found in retry queue",
+			"key":   key,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Retry attempt cancelled",
+		"key":     key,
+	})
 }
