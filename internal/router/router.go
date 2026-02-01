@@ -28,15 +28,16 @@ import (
 
 // RouterContext wraps the router with cleanup capabilities for background services
 type RouterContext struct {
-	Engine             *gin.Engine
-	protocolManager    *services.UnifiedProtocolManager
-	oauthMonitor       *services.OAuthTokenMonitor
-	healthMonitor      *services.ProviderHealthMonitor
-	concurrencyMonitor *services.ConcurrencyMonitor
-	ProviderRegistry   *services.ProviderRegistry // Exposed for StartupVerifier integration
-	DebateTeamConfig   *services.DebateTeamConfig // Exposed for re-initialization with StartupVerifier
-	unifiedHandler     *handlers.UnifiedHandler   // For updating debate team display
-	debateService      *services.DebateService    // For updating team config
+	Engine                  *gin.Engine
+	protocolManager         *services.UnifiedProtocolManager
+	oauthMonitor            *services.OAuthTokenMonitor
+	healthMonitor           *services.ProviderHealthMonitor
+	concurrencyMonitor      *services.ConcurrencyMonitor
+	concurrencyAlertManager *services.ConcurrencyAlertManager
+	ProviderRegistry        *services.ProviderRegistry // Exposed for StartupVerifier integration
+	DebateTeamConfig        *services.DebateTeamConfig // Exposed for re-initialization with StartupVerifier
+	unifiedHandler          *handlers.UnifiedHandler   // For updating debate team display
+	debateService           *services.DebateService    // For updating team config
 }
 
 // Shutdown stops all background services started by the router
@@ -49,6 +50,9 @@ func (rc *RouterContext) Shutdown() {
 	}
 	if rc.healthMonitor != nil {
 		rc.healthMonitor.Stop()
+	}
+	if rc.concurrencyAlertManager != nil {
+		rc.concurrencyAlertManager.Stop()
 	}
 }
 
@@ -784,10 +788,16 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		rc.healthMonitor = providerHealthMonitor
 		rc.concurrencyMonitor = concurrencyMonitor
 
+		// Initialize concurrency alert manager
+		concurrencyAlertManager := services.NewConcurrencyAlertManager(services.LoadConcurrencyAlertManagerConfigFromEnv(), logger)
+		concurrencyMonitor.AddAlertListener(concurrencyAlertManager.AsListener())
+		rc.concurrencyAlertManager = concurrencyAlertManager
+
 		// Start monitoring services in background
 		go oauthTokenMonitor.Start(context.Background())
 		go providerHealthMonitor.Start(context.Background())
 		go concurrencyMonitor.Start(context.Background())
+		go concurrencyAlertManager.Start(context.Background())
 
 		// Validate fallback chain on startup
 		if result := fallbackChainValidator.Validate(); !result.Valid {
@@ -795,7 +805,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		}
 
 		// Register monitoring handler routes
-		monitoringHandler := handlers.NewMonitoringHandler(nil, oauthTokenMonitor, providerHealthMonitor, fallbackChainValidator, concurrencyMonitor)
+		monitoringHandler := handlers.NewMonitoringHandler(nil, oauthTokenMonitor, providerHealthMonitor, fallbackChainValidator, concurrencyMonitor, concurrencyAlertManager)
 		monitoringHandler.RegisterRoutes(protected)
 		logger.Info("Monitoring endpoints registered at /v1/monitoring/*")
 

@@ -10,11 +10,12 @@ import (
 
 // MonitoringHandler handles monitoring API endpoints
 type MonitoringHandler struct {
-	circuitBreakerMonitor  *services.CircuitBreakerMonitor
-	oauthTokenMonitor      *services.OAuthTokenMonitor
-	providerHealthMonitor  *services.ProviderHealthMonitor
-	fallbackChainValidator *services.FallbackChainValidator
-	concurrencyMonitor     *services.ConcurrencyMonitor
+	circuitBreakerMonitor   *services.CircuitBreakerMonitor
+	oauthTokenMonitor       *services.OAuthTokenMonitor
+	providerHealthMonitor   *services.ProviderHealthMonitor
+	fallbackChainValidator  *services.FallbackChainValidator
+	concurrencyMonitor      *services.ConcurrencyMonitor
+	concurrencyAlertManager *services.ConcurrencyAlertManager
 }
 
 // NewMonitoringHandler creates a new monitoring handler
@@ -24,13 +25,15 @@ func NewMonitoringHandler(
 	phm *services.ProviderHealthMonitor,
 	fcv *services.FallbackChainValidator,
 	cm *services.ConcurrencyMonitor,
+	cam *services.ConcurrencyAlertManager,
 ) *MonitoringHandler {
 	return &MonitoringHandler{
-		circuitBreakerMonitor:  cbm,
-		oauthTokenMonitor:      otm,
-		providerHealthMonitor:  phm,
-		fallbackChainValidator: fcv,
-		concurrencyMonitor:     cm,
+		circuitBreakerMonitor:   cbm,
+		oauthTokenMonitor:       otm,
+		providerHealthMonitor:   phm,
+		fallbackChainValidator:  fcv,
+		concurrencyMonitor:      cm,
+		concurrencyAlertManager: cam,
 	}
 }
 
@@ -61,6 +64,7 @@ func (h *MonitoringHandler) RegisterRoutes(router *gin.RouterGroup) {
 
 		// Concurrency monitoring endpoints
 		monitoring.GET("/concurrency", h.GetConcurrencyStatus)
+		monitoring.GET("/concurrency/alerts", h.GetConcurrencyAlertStats)
 		monitoring.POST("/concurrency/:provider/reset-tracking", h.ResetConcurrencyTracking)
 		monitoring.POST("/concurrency/reset-all-tracking", h.ResetAllConcurrencyTracking)
 	}
@@ -68,12 +72,13 @@ func (h *MonitoringHandler) RegisterRoutes(router *gin.RouterGroup) {
 
 // OverallMonitoringStatus represents the overall system monitoring status
 type OverallMonitoringStatus struct {
-	Healthy         bool                                  `json:"healthy"`
-	CircuitBreakers *services.CircuitBreakerStatus        `json:"circuit_breakers,omitempty"`
-	OAuthTokens     *services.OAuthTokenStatus            `json:"oauth_tokens,omitempty"`
-	ProviderHealth  *services.ProviderHealthOverallStatus `json:"provider_health,omitempty"`
-	FallbackChain   *services.FallbackChainStatus         `json:"fallback_chain,omitempty"`
-	Concurrency     *services.ConcurrencyStatus           `json:"concurrency,omitempty"`
+	Healthy           bool                                  `json:"healthy"`
+	CircuitBreakers   *services.CircuitBreakerStatus        `json:"circuit_breakers,omitempty"`
+	OAuthTokens       *services.OAuthTokenStatus            `json:"oauth_tokens,omitempty"`
+	ProviderHealth    *services.ProviderHealthOverallStatus `json:"provider_health,omitempty"`
+	FallbackChain     *services.FallbackChainStatus         `json:"fallback_chain,omitempty"`
+	Concurrency       *services.ConcurrencyStatus           `json:"concurrency,omitempty"`
+	ConcurrencyAlerts map[string]interface{}                `json:"concurrency_alerts,omitempty"`
 }
 
 // GetOverallStatus returns the overall monitoring status
@@ -131,6 +136,12 @@ func (h *MonitoringHandler) GetOverallStatus(c *gin.Context) {
 		if !concurrencyStatus.Healthy {
 			status.Healthy = false
 		}
+	}
+
+	// Get concurrency alert statistics
+	if h.concurrencyAlertManager != nil {
+		alertStats := h.concurrencyAlertManager.GetAlertStats()
+		status.ConcurrencyAlerts = alertStats
 	}
 
 	c.JSON(http.StatusOK, status)
@@ -433,4 +444,24 @@ func (h *MonitoringHandler) ResetAllConcurrencyTracking(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Concurrency tracking reset for all providers",
 	})
+}
+
+// GetConcurrencyAlertStats returns statistics about concurrency alerts
+// @Summary Get concurrency alert statistics
+// @Description Returns statistics about concurrency alerts including counts, providers, and types
+// @Tags monitoring
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Alert statistics"
+// @Failure 503 {object} gin.H "Alert manager not available"
+// @Router /v1/monitoring/concurrency/alerts [get]
+func (h *MonitoringHandler) GetConcurrencyAlertStats(c *gin.Context) {
+	if h.concurrencyAlertManager == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Concurrency alert manager not available",
+		})
+		return
+	}
+
+	stats := h.concurrencyAlertManager.GetAlertStats()
+	c.JSON(http.StatusOK, stats)
 }
