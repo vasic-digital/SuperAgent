@@ -507,7 +507,7 @@ var GlobalBus *EventBus
 // InitGlobalBus initializes the global event bus
 func InitGlobalBus(config *BusConfig) {
 	if GlobalBus != nil {
-		GlobalBus.Close()
+		_ = GlobalBus.Close()
 	}
 	GlobalBus = NewEventBus(config)
 }

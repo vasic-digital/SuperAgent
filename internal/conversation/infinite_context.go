@@ -203,7 +203,7 @@ func (ice *InfiniteContextEngine) fetchConversationEvents(ctx context.Context, c
 		MinBytes:  1,
 		MaxBytes:  10e6, // 10MB
 	})
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	// Seek to beginning to read all events
 	if err := reader.SetOffset(kafka.FirstOffset); err != nil {

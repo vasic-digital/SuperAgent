@@ -648,7 +648,7 @@ func (s *SEMAP) formatViolationMessage(contract *Contract, input interface{}, ou
 func (s *SEMAP) executeAction(ctx context.Context, action *ContractAction, violation *Violation) {
 	handler := s.actions[action.Type]
 	if handler != nil {
-		handler.Execute(ctx, action, violation)
+		_ = handler.Execute(ctx, action, violation)
 	}
 }
 

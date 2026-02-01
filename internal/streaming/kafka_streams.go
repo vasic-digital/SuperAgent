@@ -108,8 +108,12 @@ func (csp *ConversationStreamProcessor) Start(ctx context.Context) error {
 	// Wait for stop signal
 	go func() {
 		<-ctx.Done()
-		sub.Unsubscribe()
-		csp.Stop()
+		if err := sub.Unsubscribe(); err != nil {
+			csp.logger.Error("failed to unsubscribe", zap.Error(err))
+		}
+		if err := csp.Stop(); err != nil {
+			csp.logger.Error("failed to stop stream processor", zap.Error(err))
+		}
 	}()
 
 	return nil

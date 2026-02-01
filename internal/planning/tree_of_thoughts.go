@@ -643,7 +643,9 @@ Respond with only a number between 0.0 and 1.0.`, thought.Content)
 	}
 
 	var score float64
-	fmt.Sscanf(response, "%f", &score)
+	if _, err := fmt.Sscanf(response, "%f", &score); err != nil {
+		return 0, fmt.Errorf("failed to parse score: %w", err)
+	}
 
 	// Clamp to valid range
 	if score < 0 {

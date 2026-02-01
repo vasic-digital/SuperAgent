@@ -155,7 +155,7 @@ func (as *AnalyticsSink) WriteBatch(ctx context.Context, analytics []*WindowedAn
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.PrepareContext(ctx, `
 		INSERT INTO conversation_analytics (

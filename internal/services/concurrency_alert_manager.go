@@ -84,6 +84,11 @@ type ConcurrencyAlertManagerConfig struct {
 // DefaultConcurrencyAlertManagerConfig returns default configuration
 func DefaultConcurrencyAlertManagerConfig() ConcurrencyAlertManagerConfig {
 	return ConcurrencyAlertManagerConfig{
+		Enabled:         true,
+		DefaultCooldown: 30 * time.Second,
+		CleanupInterval: 5 * time.Minute,
+		MaxAlertAge:     24 * time.Hour,
+
 		EnableLogging:  true,
 		EnableWebhook:  false,
 		WebhookTimeout: 10 * time.Second,

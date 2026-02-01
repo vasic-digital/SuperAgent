@@ -61,11 +61,13 @@ func (q *PostgresTaskQueue) Enqueue(ctx context.Context, task *models.Background
 	}
 
 	// Log the event
-	q.repository.LogEvent(ctx, task.ID, models.TaskEventCreated, map[string]interface{}{
+	if err := q.repository.LogEvent(ctx, task.ID, models.TaskEventCreated, map[string]interface{}{
 		"task_type": task.TaskType,
 		"task_name": task.TaskName,
 		"priority":  task.Priority,
-	}, nil)
+	}, nil); err != nil {
+		q.logger.WithError(err).Debug("Failed to log task created event")
+	}
 
 	q.logger.WithFields(logrus.Fields{
 		"task_id":   task.ID,
@@ -102,9 +104,11 @@ func (q *PostgresTaskQueue) Dequeue(ctx context.Context, workerID string, requir
 	}
 
 	// Log the event
-	q.repository.LogEvent(ctx, task.ID, models.TaskEventStarted, map[string]interface{}{
+	if err := q.repository.LogEvent(ctx, task.ID, models.TaskEventStarted, map[string]interface{}{
 		"worker_id": workerID,
-	}, &workerID)
+	}, &workerID); err != nil {
+		q.logger.WithError(err).Debug("Failed to log task started event")
+	}
 
 	q.logger.WithFields(logrus.Fields{
 		"task_id":   task.ID,
@@ -154,11 +158,13 @@ func (q *PostgresTaskQueue) Requeue(ctx context.Context, taskID string, delay ti
 	}
 
 	// Log the event
-	q.repository.LogEvent(ctx, taskID, models.TaskEventRetrying, map[string]interface{}{
+	if err := q.repository.LogEvent(ctx, taskID, models.TaskEventRetrying, map[string]interface{}{
 		"retry_count":  task.RetryCount,
 		"delay_ms":     delay.Milliseconds(),
 		"scheduled_at": task.ScheduledAt,
-	}, nil)
+	}, nil); err != nil {
+		q.logger.WithError(err).Debug("Failed to log task retrying event")
+	}
 
 	q.logger.WithFields(logrus.Fields{
 		"task_id":     taskID,

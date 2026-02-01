@@ -41,8 +41,8 @@ func initCMMetrics() {
 
 		cmConcurrencyAlertsTotal = promauto.NewCounter(
 			prometheus.CounterOpts{
-				Name: "helixagent_concurrency_alerts_total",
-				Help: "Total number of concurrency alerts",
+				Name: "helixagent_concurrency_alerts_sent_total",
+				Help: "Total number of concurrency alerts sent to listeners",
 			},
 		)
 

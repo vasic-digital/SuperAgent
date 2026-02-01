@@ -409,7 +409,7 @@ func (p *WorkerPool) Shutdown(timeout time.Duration) error {
 // Stop immediately stops the worker pool
 func (p *WorkerPool) Stop() {
 	p.cancel()
-	p.Shutdown(0)
+	_ = p.Shutdown(0)
 }
 
 // WaitForDrain waits until all queued tasks are processed

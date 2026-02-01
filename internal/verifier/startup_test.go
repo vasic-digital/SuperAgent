@@ -1109,9 +1109,7 @@ func TestDebateTeamSelection_ReusedLLMsAreSeparateInstances(t *testing.T) {
 	var allInstances []*DebateLLM
 	for _, pos := range team.Positions {
 		allInstances = append(allInstances, pos.Primary)
-		for _, fb := range pos.Fallbacks {
-			allInstances = append(allInstances, fb)
-		}
+		allInstances = append(allInstances, pos.Fallbacks...)
 	}
 
 	// Verify all instances are separate (different pointers)

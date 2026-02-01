@@ -507,7 +507,7 @@ func (s *VerificationService) verifyResponsiveness(ctx context.Context, modelID,
 		result.Score = 0
 	}
 	result.Details = append(result.Details, fmt.Sprintf("response time: %v", duration))
-	result.Details = append(result.Details, fmt.Sprintf("response validated: contains '4'"))
+	result.Details = append(result.Details, "response validated: contains '4'")
 
 	result.CompletedAt = time.Now()
 	return result

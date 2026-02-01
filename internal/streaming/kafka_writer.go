@@ -143,11 +143,15 @@ func (w *KafkaStreamWriter) asyncPublishLoop() {
 			if !ok {
 				return
 			}
-			w.doPublish(context.Background(), event)
+			if err := w.doPublish(context.Background(), event); err != nil {
+				w.logger.WithError(err).Debug("Failed to publish event")
+			}
 		case <-w.stopCh:
 			// Drain remaining events
 			for event := range w.eventCh {
-				w.doPublish(context.Background(), event)
+				if err := w.doPublish(context.Background(), event); err != nil {
+					w.logger.WithError(err).Debug("Failed to publish event")
+				}
 			}
 			return
 		}
