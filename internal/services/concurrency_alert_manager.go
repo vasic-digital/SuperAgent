@@ -485,6 +485,9 @@ type ConcurrencyAlertManager struct {
 	// Delivery attempts for retry logic
 	deliveryAttempts map[string]*deliveryAttempt // attempt key -> attempt
 
+	// Dead letter queue for permanently failed alerts
+	deadLetterAlerts map[string]*deadLetterAlert // channel:alertKey -> dead letter alert
+
 	// Cleanup ticker
 	stopCh  chan struct{}
 	running bool
@@ -505,6 +508,7 @@ func NewConcurrencyAlertManager(config ConcurrencyAlertManagerConfig, logger *lo
 		rateLimitTrackers:    make(map[string]*rateLimitTracker),
 		circuitBreakerStates: make(map[string]*circuitBreakerState),
 		deliveryAttempts:     make(map[string]*deliveryAttempt),
+		deadLetterAlerts:     make(map[string]*deadLetterAlert),
 		stopCh:               make(chan struct{}),
 	}
 }
@@ -676,19 +680,48 @@ func (am *ConcurrencyAlertManager) CleanupOldRecords(maxAge time.Duration) {
 	defer am.mu.Unlock()
 
 	cutoff := time.Now().Add(-maxAge)
-	count := 0
+	alertCount := 0
+	attemptCount := 0
+	deadLetterCount := 0
+
+	// Clean up old alert tracking
 	for key, tracking := range am.alertTracking {
 		if tracking.lastSentTime.Before(cutoff) {
 			delete(am.alertTracking, key)
-			count++
+			alertCount++
 		}
 	}
 
-	if count > 0 {
+	// Clean up old delivery attempts (should be removed by processRetries, but just in case)
+	for key, attempt := range am.deliveryAttempts {
+		if attempt.lastAttempt.Before(cutoff) {
+			delete(am.deliveryAttempts, key)
+			attemptCount++
+		}
+	}
+
+	// Clean up old dead letter alerts
+	for key, deadLetter := range am.deadLetterAlerts {
+		if deadLetter.addedAt.Before(cutoff) {
+			delete(am.deadLetterAlerts, key)
+			deadLetterCount++
+		}
+	}
+
+	if alertCount > 0 || attemptCount > 0 || deadLetterCount > 0 {
 		am.logger.Debug("Cleaned up old alert records", logrus.Fields{
-			"count":   count,
-			"max_age": maxAge,
+			"alert_count":       alertCount,
+			"attempt_count":     attemptCount,
+			"dead_letter_count": deadLetterCount,
+			"max_age":           maxAge,
 		})
+		// Update metrics for changed queues
+		if attemptCount > 0 {
+			am.updateRetryQueueMetricsLocked()
+		}
+		if deadLetterCount > 0 {
+			am.updateDeadLetterQueueMetricsLocked()
+		}
 	}
 }
 
@@ -699,15 +732,18 @@ func (am *ConcurrencyAlertManager) GetAlertStats() map[string]interface{} {
 	defer am.mu.RUnlock()
 
 	stats := map[string]interface{}{
-		"total_alerts": len(am.alertTracking),
-		"providers":    make(map[string]int),
-		"types":        make(map[string]int),
+		"total_alerts":           len(am.alertTracking),
+		"providers":              make(map[string]int),
+		"types":                  make(map[string]int),
+		"retry_queue_size":       len(am.deliveryAttempts),
+		"dead_letter_queue_size": len(am.deadLetterAlerts),
+		"channels":               make(map[string]map[string]int),
 	}
 
+	// Count alerts by provider and type
 	for key := range am.alertTracking {
 		// Simple parsing - could be enhanced
 		if len(key) > 0 {
-			// Count by provider if present
 			// key format: concurrency_type_provider_saturation
 			parts := splitAlertKey(key)
 			if len(parts) >= 3 {
@@ -719,6 +755,20 @@ func (am *ConcurrencyAlertManager) GetAlertStats() map[string]interface{} {
 			}
 		}
 	}
+
+	// Count retry queue by channel
+	retryByChannel := make(map[string]int)
+	for _, attempt := range am.deliveryAttempts {
+		retryByChannel[attempt.channel]++
+	}
+	stats["retry_queue_by_channel"] = retryByChannel
+
+	// Count dead letter queue by channel
+	deadLetterByChannel := make(map[string]int)
+	for _, deadLetter := range am.deadLetterAlerts {
+		deadLetterByChannel[deadLetter.channel]++
+	}
+	stats["dead_letter_queue_by_channel"] = deadLetterByChannel
 
 	return stats
 }
@@ -746,7 +796,7 @@ func (am *ConcurrencyAlertManager) calculateRetryDelay(attempts int) time.Durati
 }
 
 // scheduleRetry schedules a retry for a failed delivery
-func (am *ConcurrencyAlertManager) scheduleRetry(channel string, alert ConcurrencyAlert, sendFunc func() error, attempts int) {
+func (am *ConcurrencyAlertManager) scheduleRetry(channel string, alert ConcurrencyAlert, sendFunc func() error, attempts int, lastError error) {
 	if !am.config.RetryEnabled {
 		return
 	}
@@ -757,7 +807,14 @@ func (am *ConcurrencyAlertManager) scheduleRetry(channel string, alert Concurren
 			"provider": alert.Provider,
 			"attempts": attempts,
 		})
-		// TODO: move to dead letter queue
+		// Move to dead letter queue
+		am.mu.Lock()
+		defer am.mu.Unlock()
+		failureError := "max retries exceeded"
+		if lastError != nil {
+			failureError = fmt.Sprintf("max retries exceeded: %v", lastError)
+		}
+		am.addToDeadLetterQueue(channel, alert, attempts, failureError)
 		return
 	}
 
@@ -839,8 +896,8 @@ func (am *ConcurrencyAlertManager) retryDelivery(channel string, alert Concurren
 		return
 	}
 
-	// Use the resilience wrapper with increased attempt count
-	am.sendToChannelWithResilienceInternal(channel, alert, sendFunc, attempts+1)
+	// Use the resilience wrapper with current attempt count
+	am.sendToChannelWithResilienceInternal(channel, alert, sendFunc, attempts)
 }
 
 // sendToChannelWithResilienceInternal sends an alert to a channel with rate limiting, circuit breaker, and retry support
@@ -890,7 +947,7 @@ func (am *ConcurrencyAlertManager) sendToChannelWithResilienceInternal(channel s
 		am.recordCircuitBreakerFailure(channel)
 		// Schedule retry if enabled
 		if am.config.RetryEnabled && attempts < am.config.MaxRetries {
-			am.scheduleRetry(channel, alert, sendFunc, attempts+1)
+			am.scheduleRetry(channel, alert, sendFunc, attempts+1, err)
 		}
 	} else {
 		am.recordCircuitBreakerSuccess(channel)
@@ -940,6 +997,117 @@ func (am *ConcurrencyAlertManager) updateRetryQueueMetricsLocked() {
 	// For simplicity, we'll just update the channels that have counts
 	// Channels with zero will naturally have no gauge update (they keep last value)
 	// In a more complete implementation, we'd track all known channels
+}
+
+// updateDeadLetterQueueMetricsLocked updates Prometheus metrics for dead letter queue sizes per channel
+// Caller must hold am.mu lock
+func (am *ConcurrencyAlertManager) updateDeadLetterQueueMetricsLocked() {
+	// Count dead letter alerts per channel
+	channelCounts := make(map[string]int)
+	for _, deadLetter := range am.deadLetterAlerts {
+		channelCounts[deadLetter.channel]++
+	}
+
+	// Update metrics for each channel
+	for channel, count := range channelCounts {
+		UpdateDeadLetterQueueSize(channel, count)
+	}
+}
+
+// addToDeadLetterQueue adds an alert to the dead letter queue
+// Caller must hold am.mu lock
+func (am *ConcurrencyAlertManager) addToDeadLetterQueue(channel string, alert ConcurrencyAlert, attempts int, failureError string) {
+	alertKey := am.generateAlertKey(alert)
+	deadLetterKey := fmt.Sprintf("%s:%s", channel, alertKey)
+
+	// Check if already exists (update)
+	if _, exists := am.deadLetterAlerts[deadLetterKey]; exists {
+		// Already in dead letter queue, just update timestamp
+		am.deadLetterAlerts[deadLetterKey].lastAttempt = time.Now()
+		am.deadLetterAlerts[deadLetterKey].addedAt = time.Now()
+		am.deadLetterAlerts[deadLetterKey].failureError = failureError
+		am.deadLetterAlerts[deadLetterKey].attempts = attempts
+		return
+	}
+
+	deadLetter := &deadLetterAlert{
+		channel:      channel,
+		alert:        alert,
+		attempts:     attempts,
+		lastAttempt:  time.Now(),
+		failureError: failureError,
+		addedAt:      time.Now(),
+	}
+	am.deadLetterAlerts[deadLetterKey] = deadLetter
+
+	am.logger.Warning("Alert moved to dead letter queue", logrus.Fields{
+		"channel":  channel,
+		"type":     alert.Type,
+		"provider": alert.Provider,
+		"attempts": attempts,
+		"error":    failureError,
+	})
+
+	// Update metrics
+	am.updateDeadLetterQueueMetricsLocked()
+}
+
+// GetDeadLetterAlerts returns all alerts currently in the dead letter queue
+func (am *ConcurrencyAlertManager) GetDeadLetterAlerts() []map[string]interface{} {
+	am.mu.RLock()
+	defer am.mu.RUnlock()
+
+	alerts := make([]map[string]interface{}, 0, len(am.deadLetterAlerts))
+	for key, deadLetter := range am.deadLetterAlerts {
+		alert := map[string]interface{}{
+			"key":           key,
+			"channel":       deadLetter.channel,
+			"type":          deadLetter.alert.Type,
+			"provider":      deadLetter.alert.Provider,
+			"message":       deadLetter.alert.Message,
+			"attempts":      deadLetter.attempts,
+			"last_attempt":  deadLetter.lastAttempt,
+			"failure_error": deadLetter.failureError,
+			"added_at":      deadLetter.addedAt,
+		}
+		alerts = append(alerts, alert)
+	}
+	return alerts
+}
+
+// RetryDeadLetterAlert attempts to retry an alert from the dead letter queue
+func (am *ConcurrencyAlertManager) RetryDeadLetterAlert(key string) bool {
+	am.mu.Lock()
+	defer am.mu.Unlock()
+
+	deadLetter, exists := am.deadLetterAlerts[key]
+	if !exists {
+		return false
+	}
+
+	// Remove from dead letter queue
+	delete(am.deadLetterAlerts, key)
+	am.updateDeadLetterQueueMetricsLocked()
+
+	// Determine sendFunc based on channel
+	var sendFunc func() error
+	switch deadLetter.channel {
+	case "logging":
+		sendFunc = func() error { return am.sendToLog(deadLetter.alert) }
+	case "webhook":
+		sendFunc = func() error { return am.sendWebhook(deadLetter.alert) }
+	case "slack":
+		sendFunc = func() error { return am.sendSlackWebhook(deadLetter.alert) }
+	case "email":
+		sendFunc = func() error { return am.sendEmail(deadLetter.alert) }
+	default:
+		am.logger.Error("Unknown channel for dead letter retry", logrus.Fields{"channel": deadLetter.channel})
+		return false
+	}
+
+	// Retry with zero attempts (fresh start)
+	go am.sendToChannelWithResilienceInternal(deadLetter.channel, deadLetter.alert, sendFunc, 0)
+	return true
 }
 
 // splitAlertKey splits alert key into parts
