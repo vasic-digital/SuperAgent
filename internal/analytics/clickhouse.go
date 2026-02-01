@@ -99,7 +99,7 @@ func NewClickHouseAnalytics(config ClickHouseConfig, logger *logrus.Logger) (*Cl
 
 	// Verify connectivity
 	if err := conn.Ping(); err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, fmt.Errorf("failed to ping ClickHouse: %w", err)
 	}
 
@@ -172,7 +172,7 @@ func (cha *ClickHouseAnalytics) StoreDebateMetricsBatch(ctx context.Context, met
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	for _, metrics := range metricsList {
 		_, err := stmt.ExecContext(ctx,
@@ -226,7 +226,7 @@ func (cha *ClickHouseAnalytics) GetProviderPerformance(ctx context.Context, wind
 	if err != nil {
 		return nil, fmt.Errorf("failed to query provider performance: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var stats []ProviderStats
 	for rows.Next() {
@@ -285,7 +285,7 @@ func (cha *ClickHouseAnalytics) GetProviderTrends(ctx context.Context, provider 
 	if err != nil {
 		return nil, fmt.Errorf("failed to query provider trends: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var trends []ProviderStats
 	for rows.Next() {
@@ -415,7 +415,7 @@ func (cha *ClickHouseAnalytics) GetConversationTrends(ctx context.Context, inter
 	if err != nil {
 		return nil, fmt.Errorf("failed to query conversation trends: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var trends []map[string]interface{}
 	for rows.Next() {
@@ -499,7 +499,7 @@ func (cha *ClickHouseAnalytics) GetTopProviders(ctx context.Context, limit int, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to query top providers: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var providers []ProviderStats
 	for rows.Next() {
@@ -571,7 +571,7 @@ func (cha *ClickHouseAnalytics) GetDebateAnalytics(ctx context.Context, debateID
 	if err != nil {
 		return nil, fmt.Errorf("failed to query participants: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var participants []string
 	for rows.Next() {
@@ -633,7 +633,7 @@ func (cha *ClickHouseAnalytics) ExecuteQuery(ctx context.Context, query string, 
 	if err != nil {
 		return nil, fmt.Errorf("query execution failed: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	columns, err := rows.Columns()
 	if err != nil {

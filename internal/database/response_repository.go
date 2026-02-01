@@ -90,7 +90,7 @@ func (r *ResponseRepository) GetByID(ctx context.Context, id string) (*LLMRespon
 	}
 
 	if len(metadataJSON) > 0 {
-		json.Unmarshal(metadataJSON, &resp.Metadata)
+		_ = json.Unmarshal(metadataJSON, &resp.Metadata)
 	}
 
 	return resp, nil
@@ -126,7 +126,7 @@ func (r *ResponseRepository) GetByRequestID(ctx context.Context, requestID strin
 		}
 
 		if len(metadataJSON) > 0 {
-			json.Unmarshal(metadataJSON, &resp.Metadata)
+			_ = json.Unmarshal(metadataJSON, &resp.Metadata)
 		}
 
 		responses = append(responses, resp)
@@ -161,7 +161,7 @@ func (r *ResponseRepository) GetSelectedResponse(ctx context.Context, requestID 
 	}
 
 	if len(metadataJSON) > 0 {
-		json.Unmarshal(metadataJSON, &resp.Metadata)
+		_ = json.Unmarshal(metadataJSON, &resp.Metadata)
 	}
 
 	return resp, nil
@@ -184,7 +184,7 @@ func (r *ResponseRepository) SetSelected(ctx context.Context, id string, selecti
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Unselect all responses for this request
 	_, err = tx.Exec(ctx, `UPDATE llm_responses SET selected = false WHERE request_id = $1`, requestID)
@@ -270,7 +270,7 @@ func (r *ResponseRepository) GetByProviderID(ctx context.Context, providerID str
 		}
 
 		if len(metadataJSON) > 0 {
-			json.Unmarshal(metadataJSON, &resp.Metadata)
+			_ = json.Unmarshal(metadataJSON, &resp.Metadata)
 		}
 
 		responses = append(responses, resp)

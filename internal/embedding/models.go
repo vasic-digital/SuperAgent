@@ -188,7 +188,7 @@ func (m *OpenAIEmbedding) EmbedBatch(ctx context.Context, texts []string) ([][]f
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -294,7 +294,7 @@ func (m *OllamaEmbedding) Embed(ctx context.Context, text string) ([]float64, er
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -418,7 +418,7 @@ func (m *HuggingFaceEmbedding) Embed(ctx context.Context, text string) ([]float6
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -471,7 +471,7 @@ func (m *HuggingFaceEmbedding) EmbedBatch(ctx context.Context, texts []string) (
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)

@@ -434,7 +434,9 @@ func (b *Broker) consumeMessages(ctx context.Context, sub *kafkaSubscription) {
 				zap.Error(err),
 				zap.ByteString("value", kafkaMsg.Value))
 			// Commit offset to skip invalid message
-			sub.reader.CommitMessages(ctx, kafkaMsg)
+			if err := sub.reader.CommitMessages(ctx, kafkaMsg); err != nil {
+				b.logger.Warn("Failed to commit offset after parse error", zap.Error(err))
+			}
 			b.metrics.RecordFailed()
 			b.metrics.RecordSerializationError()
 			continue

@@ -426,7 +426,7 @@ func (sbp *SparkBatchProcessor) GetJobStatus(ctx context.Context, jobID string) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to query Spark REST API: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
@@ -523,7 +523,7 @@ func (sbp *SparkBatchProcessor) CancelJob(ctx context.Context, jobID string) err
 	if err != nil {
 		return fmt.Errorf("failed to send cancellation request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check response status
 	// Spark REST API returns 200 OK for successful kill
@@ -581,7 +581,7 @@ func (sbp *SparkBatchProcessor) ListCompletedJobs(
 	if err != nil {
 		return nil, fmt.Errorf("failed to query Spark History Server: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {

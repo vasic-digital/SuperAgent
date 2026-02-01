@@ -135,10 +135,16 @@ func (r *BackgroundTaskRepository) Update(ctx context.Context, task *models.Back
 		RETURNING updated_at
 	`
 
-	configJSON, _ := json.Marshal(task.Config)
-	notificationConfigJSON, _ := json.Marshal(task.NotificationConfig)
+	configJSON, err := json.Marshal(task.Config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal task config: %w", err)
+	}
+	notificationConfigJSON, err := json.Marshal(task.NotificationConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification config: %w", err)
+	}
 
-	err := r.pool.QueryRow(ctx, query,
+	err = r.pool.QueryRow(ctx, query,
 		task.ID, task.TaskType, task.TaskName, task.CorrelationID, task.ParentTaskID,
 		task.Payload, configJSON, task.Priority, task.Status, task.Progress,
 		task.ProgressMessage, task.Checkpoint, task.MaxRetries, task.RetryCount,
@@ -450,9 +456,12 @@ func (r *BackgroundTaskRepository) LogEvent(ctx context.Context, taskID, eventTy
 		VALUES ($1, $2, $3, $4)
 	`
 
-	eventDataJSON, _ := json.Marshal(data)
+	eventDataJSON, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal event data: %w", err)
+	}
 
-	_, err := r.pool.Exec(ctx, query, taskID, eventType, eventDataJSON, workerID)
+	_, err = r.pool.Exec(ctx, query, taskID, eventType, eventDataJSON, workerID)
 	if err != nil {
 		return fmt.Errorf("failed to log event: %w", err)
 	}
@@ -494,7 +503,7 @@ func (r *BackgroundTaskRepository) MoveToDeadLetter(ctx context.Context, taskID,
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Get the task data
 	task, err := r.GetByID(ctx, taskID)
@@ -503,7 +512,10 @@ func (r *BackgroundTaskRepository) MoveToDeadLetter(ctx context.Context, taskID,
 	}
 
 	// Serialize task data
-	taskDataJSON, _ := json.Marshal(task)
+	taskDataJSON, err := json.Marshal(task)
+	if err != nil {
+		return fmt.Errorf("failed to marshal task data: %w", err)
+	}
 
 	// Insert into dead letter queue
 	query := `

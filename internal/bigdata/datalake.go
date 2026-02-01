@@ -192,7 +192,7 @@ func (dlc *DataLakeClient) GetConversation(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get conversation: %w", err)
 	}
-	defer object.Close()
+	defer func() { _ = object.Close() }()
 
 	// Read and unmarshal
 	data, err := io.ReadAll(object)

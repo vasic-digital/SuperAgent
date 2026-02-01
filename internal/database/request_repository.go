@@ -92,10 +92,10 @@ func (r *RequestRepository) GetByID(ctx context.Context, id string) (*LLMRequest
 		return nil, fmt.Errorf("failed to get request: %w", err)
 	}
 
-	json.Unmarshal(messagesJSON, &req.Messages)
-	json.Unmarshal(modelParamsJSON, &req.ModelParams)
-	json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
-	json.Unmarshal(memoryJSON, &req.Memory)
+	_ = json.Unmarshal(messagesJSON, &req.Messages)
+	_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)
+	_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
+	_ = json.Unmarshal(memoryJSON, &req.Memory)
 
 	return req, nil
 }
@@ -136,10 +136,10 @@ func (r *RequestRepository) GetBySessionID(ctx context.Context, sessionID string
 			return nil, 0, fmt.Errorf("failed to scan request row: %w", err)
 		}
 
-		json.Unmarshal(messagesJSON, &req.Messages)
-		json.Unmarshal(modelParamsJSON, &req.ModelParams)
-		json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
-		json.Unmarshal(memoryJSON, &req.Memory)
+		_ = json.Unmarshal(messagesJSON, &req.Messages)
+		_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)
+		_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
+		_ = json.Unmarshal(memoryJSON, &req.Memory)
 
 		requests = append(requests, req)
 	}
@@ -183,10 +183,10 @@ func (r *RequestRepository) GetByUserID(ctx context.Context, userID string, limi
 			return nil, 0, fmt.Errorf("failed to scan request row: %w", err)
 		}
 
-		json.Unmarshal(messagesJSON, &req.Messages)
-		json.Unmarshal(modelParamsJSON, &req.ModelParams)
-		json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
-		json.Unmarshal(memoryJSON, &req.Memory)
+		_ = json.Unmarshal(messagesJSON, &req.Messages)
+		_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)
+		_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
+		_ = json.Unmarshal(memoryJSON, &req.Memory)
 
 		requests = append(requests, req)
 	}
@@ -264,10 +264,10 @@ func (r *RequestRepository) GetPendingRequests(ctx context.Context, limit int) (
 			return nil, fmt.Errorf("failed to scan request row: %w", err)
 		}
 
-		json.Unmarshal(messagesJSON, &req.Messages)
-		json.Unmarshal(modelParamsJSON, &req.ModelParams)
-		json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
-		json.Unmarshal(memoryJSON, &req.Memory)
+		_ = json.Unmarshal(messagesJSON, &req.Messages)
+		_ = json.Unmarshal(modelParamsJSON, &req.ModelParams)
+		_ = json.Unmarshal(ensembleConfigJSON, &req.EnsembleConfig)
+		_ = json.Unmarshal(memoryJSON, &req.Memory)
 
 		requests = append(requests, req)
 	}
