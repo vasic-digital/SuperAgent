@@ -32,6 +32,7 @@ func TestConcurrencyAlertManagerConfig_DefaultValues(t *testing.T) {
 
 func TestConcurrencyAlertManager_HandleAlert_Logging(t *testing.T) {
 	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
 	config.EnableLogging = true
 	config.EnableWebhook = false
 	config.EnableEmail = false
@@ -57,6 +58,7 @@ func TestConcurrencyAlertManager_HandleAlert_Logging(t *testing.T) {
 
 func TestConcurrencyAlertManager_Cooldown(t *testing.T) {
 	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
 	config.DefaultCooldown = 100 * time.Millisecond
 	config.EnableLogging = false     // Disable logging to reduce noise
 	config.EscalationEnabled = false // Disable escalation for this test
@@ -88,6 +90,7 @@ func TestConcurrencyAlertManager_Cooldown(t *testing.T) {
 
 func TestConcurrencyAlertManager_StartStop(t *testing.T) {
 	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
 	config.CleanupInterval = 500 * time.Millisecond
 	config.EscalationEnabled = false // Disable escalation for this test
 	logger := logrus.New()
@@ -114,6 +117,7 @@ func TestConcurrencyAlertManager_StartStop(t *testing.T) {
 
 func TestConcurrencyAlertManager_AsListener(t *testing.T) {
 	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
 	config.EscalationEnabled = false // Disable escalation for this test
 	logger := logrus.New()
 	manager := NewConcurrencyAlertManager(config, logger)
@@ -132,6 +136,7 @@ func TestConcurrencyAlertManager_AsListener(t *testing.T) {
 
 func TestConcurrencyAlertManager_GetProviderThreshold(t *testing.T) {
 	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
 	config.EscalationEnabled = false // Disable escalation for this test
 	config.ProviderThresholds = map[string]float64{
 		"provider1": 75.0,
@@ -271,6 +276,7 @@ func TestConcurrencyAlertManager_WebhookDelivery(t *testing.T) {
 
 	// Configure alert manager with webhook enabled
 	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
 	config.EnableLogging = false
 	config.EnableWebhook = true
 	config.WebhookURL = server.URL
@@ -331,6 +337,7 @@ func TestConcurrencyAlertManager_SlackWebhookDelivery(t *testing.T) {
 
 	// Configure alert manager with Slack webhook enabled
 	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
 	config.EnableLogging = false
 	config.SlackWebhookURL = server.URL
 	config.DefaultCooldown = 0 // Disable cooldown for testing
@@ -472,6 +479,7 @@ func TestConcurrencyAlertManager_RateLimiting(t *testing.T) {
 
 	// Configure alert manager with rate limiting enabled
 	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
 	config.EnableLogging = false
 	config.EnableWebhook = true
 	config.WebhookURL = server.URL
@@ -539,6 +547,7 @@ func TestConcurrencyAlertManager_CircuitBreaker(t *testing.T) {
 
 	// Configure alert manager with circuit breaker enabled
 	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
 	config.EnableLogging = false
 	config.EnableWebhook = true
 	config.WebhookURL = server.URL
@@ -618,6 +627,7 @@ func TestConcurrencyAlertManager_ResilienceIntegration(t *testing.T) {
 
 	// Configure alert manager with both resilience features
 	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
 	config.EnableLogging = false
 	config.EnableWebhook = true
 	config.WebhookURL = server.URL
@@ -694,4 +704,82 @@ func TestConcurrencyAlertManager_ResilienceIntegration(t *testing.T) {
 	mu.Unlock()
 	assert.Equal(t, 5, delivered,
 		"After circuit breaker reset, half-open allows one attempt")
+}
+
+func TestConcurrencyAlertManager_RetryLogic(t *testing.T) {
+	// Create test server that fails first request, succeeds on retry
+	var requestCount int
+	var mu sync.Mutex
+	shouldFail := true
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requestCount++
+		count := requestCount
+		mu.Unlock()
+		t.Logf("Server received request %d", count)
+		if shouldFail {
+			// First request fails
+			w.WriteHeader(http.StatusInternalServerError)
+			shouldFail = false // Next request will succeed
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+	}))
+	defer server.Close()
+
+	// Configure alert manager with retry enabled
+	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
+	config.EnableLogging = false
+	config.EnableWebhook = true
+	config.WebhookURL = server.URL
+	config.DefaultCooldown = 0
+	config.WebhookTimeout = 5 * time.Second
+	config.EscalationEnabled = false
+	// Disable rate limiting and circuit breaker for this test
+	config.RateLimitEnabled = false
+	config.CircuitBreakerEnabled = false
+	config.RetryEnabled = true
+	config.MaxRetries = 2
+	config.RetryInitialDelay = 10 * time.Millisecond
+	config.RetryMaxDelay = 100 * time.Millisecond
+	config.RetryBackoffMultiplier = 2.0
+	config.CleanupInterval = 10 * time.Millisecond // Fast cleanup for retry processing
+
+	logger := logrus.New()
+	manager := NewConcurrencyAlertManager(config, logger)
+
+	// Start the manager to enable retry processing
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go manager.Start(ctx)
+	// Give manager time to start
+	time.Sleep(5 * time.Millisecond)
+
+	alert := ConcurrencyAlert{
+		Type:           "high_saturation",
+		Provider:       "test-provider",
+		Message:        "Test alert",
+		Timestamp:      time.Now(),
+		Saturation:     85.5,
+		ActiveRequests: 10,
+		TotalPermits:   12,
+		Available:      2,
+	}
+
+	// Send alert
+	t.Logf("Sending alert...")
+	manager.HandleAlert(alert)
+	t.Logf("Alert sent, waiting for retry...")
+
+	// Wait for retry to happen (initial delay + processing)
+	time.Sleep(200 * time.Millisecond)
+	t.Logf("Wait complete")
+
+	// Verify that two requests were made (first failure + retry success)
+	mu.Lock()
+	count := requestCount
+	mu.Unlock()
+	t.Logf("Request count: %d (expected 2)", count)
+	assert.Equal(t, 2, count, "Should have made initial request plus one retry")
 }
