@@ -24,6 +24,12 @@ var (
 	concurrencyAlertRetrySuccessTotal   *prometheus.CounterVec
 	concurrencyAlertRetryQueueSize      *prometheus.GaugeVec
 	concurrencyAlertDeadLetterQueueSize *prometheus.GaugeVec
+	// Additional alert manager metrics for Phase 8.1
+	concurrencyAlertTotal               *prometheus.CounterVec
+	concurrencyAlertThresholdBreaches   *prometheus.CounterVec
+	concurrencyAlertCircuitBreakerState *prometheus.GaugeVec
+	concurrencyAlertRateLimitHits       *prometheus.CounterVec
+	concurrencyAlertEscalationLevel     *prometheus.GaugeVec
 )
 
 func initConcurrencyMetrics() {
@@ -124,6 +130,47 @@ func initConcurrencyMetrics() {
 			},
 			[]string{"channel"},
 		)
+
+		// Additional alert manager metrics for Phase 8.1
+		concurrencyAlertTotal = promauto.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "helixagent_concurrency_alerts_total",
+				Help: "Total number of concurrency alerts handled (including cooldown filtered)",
+			},
+			[]string{"alert_type", "provider", "severity"},
+		)
+
+		concurrencyAlertThresholdBreaches = promauto.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "helixagent_concurrency_alert_threshold_breaches_total",
+				Help: "Total number of threshold breaches (warning/critical)",
+			},
+			[]string{"threshold_type", "channel", "provider"},
+		)
+
+		concurrencyAlertCircuitBreakerState = promauto.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "helixagent_concurrency_alert_circuit_breaker_state",
+				Help: "Current state of circuit breakers per channel (0=closed, 1=half_open, 2=open)",
+			},
+			[]string{"channel"},
+		)
+
+		concurrencyAlertRateLimitHits = promauto.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "helixagent_concurrency_alert_rate_limit_hits_total",
+				Help: "Total number of rate limit hits per channel",
+			},
+			[]string{"channel"},
+		)
+
+		concurrencyAlertEscalationLevel = promauto.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "helixagent_concurrency_alert_escalation_level",
+				Help: "Current escalation level for alerts (per alert key)",
+			},
+			[]string{"alert_type", "provider", "alert_key"},
+		)
 	})
 }
 
@@ -198,4 +245,34 @@ func UpdateRetryQueueSize(channel string, size int) {
 func UpdateDeadLetterQueueSize(channel string, size int) {
 	initConcurrencyMetrics()
 	concurrencyAlertDeadLetterQueueSize.WithLabelValues(channel).Set(float64(size))
+}
+
+// RecordAlertHandled records an alert being handled (including those filtered by cooldown)
+func RecordAlertHandled(alertType, provider, severity string) {
+	initConcurrencyMetrics()
+	concurrencyAlertTotal.WithLabelValues(alertType, provider, severity).Inc()
+}
+
+// RecordThresholdBreach records a threshold breach (warning/critical)
+func RecordThresholdBreach(thresholdType, channel, provider string) {
+	initConcurrencyMetrics()
+	concurrencyAlertThresholdBreaches.WithLabelValues(thresholdType, channel, provider).Inc()
+}
+
+// UpdateCircuitBreakerState updates the circuit breaker state gauge for a channel
+func UpdateCircuitBreakerState(channel string, state int) {
+	initConcurrencyMetrics()
+	concurrencyAlertCircuitBreakerState.WithLabelValues(channel).Set(float64(state))
+}
+
+// RecordRateLimitHit records a rate limit hit (when rate limiting prevents sending)
+func RecordRateLimitHit(channel string) {
+	initConcurrencyMetrics()
+	concurrencyAlertRateLimitHits.WithLabelValues(channel).Inc()
+}
+
+// UpdateEscalationLevel updates the escalation level gauge for an alert
+func UpdateEscalationLevel(alertType, provider, alertKey string, level int) {
+	initConcurrencyMetrics()
+	concurrencyAlertEscalationLevel.WithLabelValues(alertType, provider, alertKey).Set(float64(level))
 }
