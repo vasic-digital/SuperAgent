@@ -17,7 +17,7 @@ func init() {
 
 // TestNewMonitoringHandler tests handler creation
 func TestNewMonitoringHandler(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	assert.NotNil(t, handler)
 	assert.Nil(t, handler.circuitBreakerMonitor)
@@ -28,7 +28,7 @@ func TestNewMonitoringHandler(t *testing.T) {
 
 // TestMonitoringHandler_GetOverallStatus_AllNil tests when all monitors are nil
 func TestMonitoringHandler_GetOverallStatus_AllNil(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -50,7 +50,7 @@ func TestMonitoringHandler_GetOverallStatus_AllNil(t *testing.T) {
 
 // TestMonitoringHandler_GetCircuitBreakerStatus_NilMonitor tests when circuit breaker monitor is nil
 func TestMonitoringHandler_GetCircuitBreakerStatus_NilMonitor(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -68,7 +68,7 @@ func TestMonitoringHandler_GetCircuitBreakerStatus_NilMonitor(t *testing.T) {
 
 // TestMonitoringHandler_ResetCircuitBreaker_NilMonitor tests reset with nil monitor
 func TestMonitoringHandler_ResetCircuitBreaker_NilMonitor(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -87,7 +87,7 @@ func TestMonitoringHandler_ResetCircuitBreaker_NilMonitor(t *testing.T) {
 
 // TestMonitoringHandler_ResetAllCircuitBreakers_NilMonitor tests reset all with nil monitor
 func TestMonitoringHandler_ResetAllCircuitBreakers_NilMonitor(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -105,7 +105,7 @@ func TestMonitoringHandler_ResetAllCircuitBreakers_NilMonitor(t *testing.T) {
 
 // TestMonitoringHandler_GetOAuthTokenStatus_NilMonitor tests OAuth with nil monitor
 func TestMonitoringHandler_GetOAuthTokenStatus_NilMonitor(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -123,7 +123,7 @@ func TestMonitoringHandler_GetOAuthTokenStatus_NilMonitor(t *testing.T) {
 
 // TestMonitoringHandler_RefreshOAuthToken_NilMonitor tests OAuth refresh with nil monitor
 func TestMonitoringHandler_RefreshOAuthToken_NilMonitor(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -142,7 +142,7 @@ func TestMonitoringHandler_RefreshOAuthToken_NilMonitor(t *testing.T) {
 
 // TestMonitoringHandler_GetProviderHealthStatus_NilMonitor tests provider health with nil monitor
 func TestMonitoringHandler_GetProviderHealthStatus_NilMonitor(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -160,7 +160,7 @@ func TestMonitoringHandler_GetProviderHealthStatus_NilMonitor(t *testing.T) {
 
 // TestMonitoringHandler_ForceHealthCheck_NilMonitor tests force health check with nil monitor
 func TestMonitoringHandler_ForceHealthCheck_NilMonitor(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -178,7 +178,7 @@ func TestMonitoringHandler_ForceHealthCheck_NilMonitor(t *testing.T) {
 
 // TestMonitoringHandler_ForceProviderHealthCheck_NilMonitor tests provider health check with nil monitor
 func TestMonitoringHandler_ForceProviderHealthCheck_NilMonitor(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -197,7 +197,7 @@ func TestMonitoringHandler_ForceProviderHealthCheck_NilMonitor(t *testing.T) {
 
 // TestMonitoringHandler_GetFallbackChainStatus_NilValidator tests fallback status with nil validator
 func TestMonitoringHandler_GetFallbackChainStatus_NilValidator(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -215,7 +215,7 @@ func TestMonitoringHandler_GetFallbackChainStatus_NilValidator(t *testing.T) {
 
 // TestMonitoringHandler_ValidateFallbackChain_NilValidator tests validate with nil validator
 func TestMonitoringHandler_ValidateFallbackChain_NilValidator(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -233,7 +233,7 @@ func TestMonitoringHandler_ValidateFallbackChain_NilValidator(t *testing.T) {
 
 // TestMonitoringHandler_RegisterRoutes tests route registration
 func TestMonitoringHandler_RegisterRoutes(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	router := gin.New()
 	group := router.Group("/v1")
@@ -280,7 +280,7 @@ func TestOverallMonitoringStatus_Struct(t *testing.T) {
 
 // TestMonitoringHandler_MultipleProviderEndpoints tests different provider parameter values
 func TestMonitoringHandler_MultipleProviderEndpoints(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 	providers := []string{"claude", "qwen", "deepseek", "gemini", "ollama", "openrouter"}
 
 	for _, provider := range providers {
@@ -322,7 +322,7 @@ func TestMonitoringHandler_MultipleProviderEndpoints(t *testing.T) {
 
 // TestMonitoringHandler_EmptyProviderParam tests empty provider parameter
 func TestMonitoringHandler_EmptyProviderParam(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	tests := []struct {
 		name   string
@@ -363,7 +363,7 @@ func TestMonitoringHandler_EmptyProviderParam(t *testing.T) {
 
 // TestMonitoringHandler_ResponseFormats tests that all responses are valid JSON
 func TestMonitoringHandler_ResponseFormats(t *testing.T) {
-	handler := NewMonitoringHandler(nil, nil, nil, nil)
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil)
 
 	endpoints := []struct {
 		name   string

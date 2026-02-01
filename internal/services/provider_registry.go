@@ -1846,6 +1846,106 @@ func (r *ProviderRegistry) GetActiveRequestCount(name string) int64 {
 	return atomic.LoadInt64(counter)
 }
 
+// GetConcurrencyStats returns concurrency statistics for a provider
+func (r *ProviderRegistry) GetConcurrencyStats(name string) (*ConcurrencyStats, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	// Check if provider exists
+	provider, exists := r.providers[name]
+	if !exists {
+		return nil, fmt.Errorf("provider %s not found", name)
+	}
+
+	// Type assert to circuitBreakerProvider to access concurrency fields
+	cbp, ok := provider.(*circuitBreakerProvider)
+	if !ok {
+		// Provider is not wrapped with circuit breaker (shouldn't happen for registered providers)
+		return &ConcurrencyStats{
+			Provider:         name,
+			HasSemaphore:     false,
+			TotalPermits:     0,
+			AcquiredPermits:  0,
+			ActiveRequests:   0,
+			AvailablePermits: 0,
+			SemaphoreExists:  false,
+		}, nil
+	}
+
+	// Get active requests count
+	activeRequests := int64(0)
+	if cbp.activeRequestsCounter != nil {
+		activeRequests = atomic.LoadInt64(cbp.activeRequestsCounter)
+	}
+
+	// Get acquired permits
+	acquiredPermits := atomic.LoadInt64(&cbp.acquiredPermits)
+	totalPermits := cbp.totalPermits
+	hasSemaphore := cbp.concurrencySemaphore != nil
+
+	return &ConcurrencyStats{
+		Provider:          name,
+		HasSemaphore:      hasSemaphore,
+		TotalPermits:      totalPermits,
+		AcquiredPermits:   acquiredPermits,
+		ActiveRequests:    activeRequests,
+		AvailablePermits:  totalPermits - acquiredPermits,
+		SemaphoreExists:   hasSemaphore,
+		SemaphoreCapacity: totalPermits,
+	}, nil
+}
+
+// GetAllConcurrencyStats returns concurrency statistics for all registered providers
+func (r *ProviderRegistry) GetAllConcurrencyStats() map[string]*ConcurrencyStats {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	stats := make(map[string]*ConcurrencyStats)
+	for name := range r.providers {
+		provider := r.providers[name]
+		cbp, ok := provider.(*circuitBreakerProvider)
+		if !ok {
+			continue
+		}
+
+		// Get active requests count
+		activeRequests := int64(0)
+		if cbp.activeRequestsCounter != nil {
+			activeRequests = atomic.LoadInt64(cbp.activeRequestsCounter)
+		}
+
+		// Get acquired permits
+		acquiredPermits := atomic.LoadInt64(&cbp.acquiredPermits)
+		totalPermits := cbp.totalPermits
+		hasSemaphore := cbp.concurrencySemaphore != nil
+
+		stats[name] = &ConcurrencyStats{
+			Provider:          name,
+			HasSemaphore:      hasSemaphore,
+			TotalPermits:      totalPermits,
+			AcquiredPermits:   acquiredPermits,
+			ActiveRequests:    activeRequests,
+			AvailablePermits:  totalPermits - acquiredPermits,
+			SemaphoreExists:   hasSemaphore,
+			SemaphoreCapacity: totalPermits,
+		}
+	}
+
+	return stats
+}
+
+// ConcurrencyStats represents concurrency statistics for a provider
+type ConcurrencyStats struct {
+	Provider          string `json:"provider"`
+	HasSemaphore      bool   `json:"has_semaphore"`
+	TotalPermits      int64  `json:"total_permits"`
+	AcquiredPermits   int64  `json:"acquired_permits"`
+	ActiveRequests    int64  `json:"active_requests"`
+	AvailablePermits  int64  `json:"available_permits"`
+	SemaphoreExists   bool   `json:"semaphore_exists"`
+	SemaphoreCapacity int64  `json:"semaphore_capacity"`
+}
+
 // SetDrainTimeout sets the timeout for graceful shutdown request draining
 func (r *ProviderRegistry) SetDrainTimeout(timeout time.Duration) {
 	r.mu.Lock()
