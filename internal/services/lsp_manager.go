@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/database"
+	"dev.helix.agent/internal/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -563,7 +564,17 @@ func (m *LSPManager) startServer(ctx context.Context, server *LSPServer) (*LSPCo
 		command = server.BinaryPath
 	}
 
-	cmd := exec.CommandContext(ctx, command, server.Args...)
+	// Validate command and arguments to prevent command injection
+	if !utils.ValidateCommandArg(command) {
+		return nil, fmt.Errorf("invalid command: %s", command)
+	}
+	for i, arg := range server.Args {
+		if !utils.ValidateCommandArg(arg) {
+			return nil, fmt.Errorf("invalid argument at position %d: %s", i, arg)
+		}
+	}
+
+	cmd := exec.CommandContext(ctx, command, server.Args...) // #nosec G204 - command and args validated above
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {

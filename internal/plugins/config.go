@@ -27,6 +27,9 @@ func NewConfigManager(configDir string) *ConfigManager {
 func (c *ConfigManager) LoadPluginConfig(pluginName string) (map[string]interface{}, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if !utils.ValidatePath(pluginName) {
+		return nil, fmt.Errorf("invalid plugin name: %s", pluginName)
+	}
 
 	configPath := filepath.Join(c.configDir, pluginName+".json")
 
@@ -36,7 +39,7 @@ func (c *ConfigManager) LoadPluginConfig(pluginName string) (map[string]interfac
 	}
 
 	// Load from file
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(configPath) // #nosec G304 - plugin name validated with utils.ValidatePath
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Return default empty config
@@ -69,7 +72,7 @@ func (c *ConfigManager) SavePluginConfig(pluginName string, config map[string]in
 	}
 
 	// Use 0600 permissions as plugin configs may contain sensitive data like API keys
-	if err := os.WriteFile(configPath, data, 0600); err != nil {
+	if err := os.WriteFile(configPath, data, 0600); err != nil { // #nosec G306 - 0600 permissions appropriate for sensitive plugin configs
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 

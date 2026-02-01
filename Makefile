@@ -1,4 +1,4 @@
-.PHONY: all build test run fmt lint security-scan docker-build docker-run docker-stop docker-clean docker-logs docker-test docker-dev docker-prod coverage docker-clean-all install-deps help docs check-deps test-all test-all-docker container-detect container-build container-start container-stop container-logs container-status container-test podman-build podman-run podman-stop podman-logs podman-clean podman-full test-no-skip test-all-must-pass test-performance test-performance-bench test-challenges test-coverage-100
+.PHONY: all build test run fmt lint security-scan security-scan-all security-scan-snyk security-scan-sonarqube security-scan-trivy security-scan-gosec security-scan-go security-scan-stop docker-build docker-run docker-stop docker-clean docker-logs docker-test docker-dev docker-prod coverage docker-clean-all install-deps help docs check-deps test-all test-all-docker container-detect container-build container-start container-stop container-logs container-status container-test podman-build podman-run podman-stop podman-logs podman-clean podman-full test-no-skip test-all-must-pass test-performance test-performance-bench test-challenges test-coverage-100
 
 # =============================================================================
 # MAIN TARGETS
@@ -517,12 +517,49 @@ lint:
 	fi
 
 security-scan:
-	@echo "🔒 Running security scan..."
-	@if command -v gosec >/dev/null 2>&1; then \
-		gosec ./...; \
-	else \
-		echo "⚠️  gosec not installed. Install with: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest"; \
-	fi
+	@echo "🔒 Running comprehensive security scan (all scanners)..."
+	@echo "📋 Note: This includes Gosec, Trivy, Snyk, and Go static analysis"
+	@echo "📋 For SonarQube, use 'make security-scan-sonarqube'"
+	@./scripts/security-scan.sh all
+
+security-scan-all:
+	@echo "🔒 Running ALL security scanners (including SonarQube)..."
+	@./scripts/security-scan.sh all
+	@echo ""
+	@echo "📋 Starting SonarQube server (this may take 2-3 minutes)..."
+	@./scripts/security-scan.sh start-sonar
+	@echo "📋 Running SonarQube analysis..."
+	@./scripts/security-scan.sh sonarqube || { \
+		echo "⚠️  SonarQube scan failed or timed out. Continuing..."; \
+		echo "📋 You can run SonarQube separately with: make security-scan-sonarqube"; \
+	}
+
+security-scan-snyk:
+	@echo "🔒 Running Snyk vulnerability scanner..."
+	@./scripts/security-scan.sh snyk
+
+security-scan-sonarqube:
+	@echo "🔒 Running SonarQube code analysis..."
+	@echo "📋 Starting SonarQube server (this may take 2-3 minutes)..."
+	@./scripts/security-scan.sh start-sonar
+	@echo "📋 Running SonarQube analysis..."
+	@./scripts/security-scan.sh sonarqube
+
+security-scan-trivy:
+	@echo "🔒 Running Trivy vulnerability scanner..."
+	@./scripts/security-scan.sh trivy
+
+security-scan-gosec:
+	@echo "🔒 Running Gosec Go security checker..."
+	@./scripts/security-scan.sh gosec
+
+security-scan-go:
+	@echo "🔒 Running Go static analysis (vet, staticcheck)..."
+	@./scripts/security-scan.sh go
+
+security-scan-stop:
+	@echo "🔒 Stopping security scanning services..."
+	@./scripts/security-scan.sh stop
 
 # =============================================================================
 # DOCKER TARGETS
@@ -1196,4 +1233,4 @@ verifier-benchmark:
 # =============================================================================
 # PHONY TARGETS
 # =============================================================================
-.PHONY: all build build-debug build-all run run-dev test test-coverage test-unit test-integration test-bench test-race test-all test-with-infra test-infra-start test-infra-stop test-infra-clean test-infra-logs test-infra-status fmt vet lint security-scan docker-build docker-build-prod docker-run docker-stop docker-logs docker-clean docker-clean-all docker-test docker-dev docker-prod docker-full docker-monitoring docker-ai install-deps install uninstall clean clean-all check-deps update-deps generate docs docs-api setup-dev setup-prod help test-pentest test-security test-stress test-chaos test-e2e verifier-init verifier-update verifier-build verifier-test verifier-test-unit verifier-test-integration verifier-test-e2e verifier-test-security verifier-test-stress verifier-test-chaos verifier-test-all verifier-test-coverage verifier-test-coverage-100 verifier-run verifier-health verifier-verify verifier-score verifier-providers verifier-metrics verifier-db-migrate verifier-db-sync verifier-clean verifier-docker-build verifier-docker-run verifier-docker-stop verifier-sdk-go verifier-sdk-python verifier-sdk-js verifier-sdk-all verifier-docs verifier-benchmark infra-start infra-stop infra-restart infra-status infra-core infra-mcp infra-lsp infra-rag test-with-full-auto challenges-with-infra challenge-infra challenge-cli-agents
+.PHONY: all build build-debug build-all run run-dev test test-coverage test-unit test-integration test-bench test-race test-all test-with-infra test-infra-start test-infra-stop test-infra-clean test-infra-logs test-infra-status fmt vet lint security-scan security-scan-all security-scan-snyk security-scan-sonarqube security-scan-trivy security-scan-gosec security-scan-go security-scan-stop docker-build docker-build-prod docker-run docker-stop docker-logs docker-clean docker-clean-all docker-test docker-dev docker-prod docker-full docker-monitoring docker-ai install-deps install uninstall clean clean-all check-deps update-deps generate docs docs-api setup-dev setup-prod help test-pentest test-security test-stress test-chaos test-e2e verifier-init verifier-update verifier-build verifier-test verifier-test-unit verifier-test-integration verifier-test-e2e verifier-test-security verifier-test-stress verifier-test-chaos verifier-test-all verifier-test-coverage verifier-test-coverage-100 verifier-run verifier-health verifier-verify verifier-score verifier-providers verifier-metrics verifier-db-migrate verifier-db-sync verifier-clean verifier-docker-build verifier-docker-run verifier-docker-stop verifier-sdk-go verifier-sdk-python verifier-sdk-js verifier-sdk-all verifier-docs verifier-benchmark infra-start infra-stop infra-restart infra-status infra-core infra-mcp infra-lsp infra-rag test-with-full-auto challenges-with-infra challenge-infra challenge-cli-agents

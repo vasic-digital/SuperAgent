@@ -102,7 +102,7 @@ func (s *SecuritySandbox) executeDirectly(ctx context.Context, command string, a
 	execCtx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(execCtx, command, args...)
+	cmd := exec.CommandContext(execCtx, command, args...) // #nosec G204 - command and args validated by ExecuteSandboxed
 
 	// Capture output
 	var stdout, stderr strings.Builder

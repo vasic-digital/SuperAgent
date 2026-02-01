@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -47,6 +48,7 @@ type ProviderCache struct {
 	tagInv  *TagBasedInvalidation
 	config  *ProviderCacheConfig
 	metrics *ProviderCacheMetrics
+	mu      sync.RWMutex
 }
 
 // ProviderCacheMetrics tracks provider cache statistics
@@ -216,28 +218,40 @@ func (c *ProviderCache) getTTL(provider string) time.Duration {
 }
 
 func (c *ProviderCache) trackProviderHit(provider string) {
+	c.mu.Lock()
 	if c.metrics.ByProvider[provider] == nil {
 		c.metrics.ByProvider[provider] = &providerStats{}
 	}
-	atomic.AddInt64(&c.metrics.ByProvider[provider].Hits, 1)
+	stats := c.metrics.ByProvider[provider]
+	c.mu.Unlock()
+	atomic.AddInt64(&stats.Hits, 1)
 }
 
 func (c *ProviderCache) trackProviderMiss(provider string) {
+	c.mu.Lock()
 	if c.metrics.ByProvider[provider] == nil {
 		c.metrics.ByProvider[provider] = &providerStats{}
 	}
-	atomic.AddInt64(&c.metrics.ByProvider[provider].Misses, 1)
+	stats := c.metrics.ByProvider[provider]
+	c.mu.Unlock()
+	atomic.AddInt64(&stats.Misses, 1)
 }
 
 func (c *ProviderCache) trackProviderSet(provider string) {
+	c.mu.Lock()
 	if c.metrics.ByProvider[provider] == nil {
 		c.metrics.ByProvider[provider] = &providerStats{}
 	}
-	atomic.AddInt64(&c.metrics.ByProvider[provider].Sets, 1)
+	stats := c.metrics.ByProvider[provider]
+	c.mu.Unlock()
+	atomic.AddInt64(&stats.Sets, 1)
 }
 
 // Metrics returns current metrics
 func (c *ProviderCache) Metrics() *ProviderCacheMetrics {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	metrics := &ProviderCacheMetrics{
 		Hits:          atomic.LoadInt64(&c.metrics.Hits),
 		Misses:        atomic.LoadInt64(&c.metrics.Misses),
@@ -271,7 +285,9 @@ func (c *ProviderCache) HitRate() float64 {
 
 // ProviderHitRate returns the hit rate for a specific provider
 func (c *ProviderCache) ProviderHitRate(provider string) float64 {
+	c.mu.RLock()
 	stats := c.metrics.ByProvider[provider]
+	c.mu.RUnlock()
 	if stats == nil {
 		return 0
 	}

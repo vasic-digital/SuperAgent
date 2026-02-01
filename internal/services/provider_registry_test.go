@@ -63,6 +63,7 @@ func TestGetDefaultRegistryConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 	assert.Equal(t, 30*time.Second, cfg.DefaultTimeout)
 	assert.Equal(t, 3, cfg.MaxRetries)
+	assert.Equal(t, 10, cfg.MaxConcurrentRequests, "default MaxConcurrentRequests should be 10")
 	assert.True(t, cfg.HealthCheck.Enabled)
 	assert.True(t, cfg.CircuitBreaker.Enabled)
 	assert.NotNil(t, cfg.Providers)
@@ -995,6 +996,157 @@ func TestProviderRegistry_DrainTimeout(t *testing.T) {
 		err := registry.RemoveProvider("drain-fail-provider", false)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "active requests")
+	})
+}
+
+// TestProviderRegistry_ConcurrencySemaphore tests semaphore-based concurrency control
+func TestProviderRegistry_ConcurrencySemaphore(t *testing.T) {
+	cfg := &RegistryConfig{
+		DefaultTimeout:        30 * time.Second,
+		MaxRetries:            3,
+		MaxConcurrentRequests: 2, // Set small limit for testing
+		CircuitBreaker: CircuitBreakerConfig{
+			Enabled: false,
+		},
+		Providers: make(map[string]*ProviderConfig),
+		Ensemble: &models.EnsembleConfig{
+			Strategy: "confidence_weighted",
+		},
+		Routing: &RoutingConfig{
+			Strategy: "weighted",
+		},
+	}
+	registry := NewProviderRegistryWithoutAutoDiscovery(cfg, nil)
+
+	// Create a mock provider that blocks on a channel to control concurrency
+	requestStarted := make(chan struct{}, 10)
+	requestCanFinish := make(chan struct{}, 10)
+	provider := &MockLLMProviderForRegistry{
+		name: "semaphore-provider",
+		completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+			// Signal that request has started
+			select {
+			case requestStarted <- struct{}{}:
+			default:
+			}
+			// Wait for permission to finish
+			select {
+			case <-requestCanFinish:
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+			return &models.LLMResponse{Content: "response"}, nil
+		},
+	}
+	err := registry.RegisterProvider("semaphore-provider", provider)
+	require.NoError(t, err)
+
+	// Helper to get provider and call Complete
+	callComplete := func(ctx context.Context) error {
+		p, err := registry.GetProvider("semaphore-provider")
+		if err != nil {
+			return err
+		}
+		_, err = p.Complete(ctx, &models.LLMRequest{Prompt: "test"})
+		return err
+	}
+
+	t.Run("limits concurrent requests", func(t *testing.T) {
+		// Start 4 goroutines (more than semaphore limit of 2)
+		ctx := context.Background()
+		results := make(chan error, 4)
+		for i := 0; i < 4; i++ {
+			go func() {
+				results <- callComplete(ctx)
+			}()
+		}
+
+		// Wait for 2 requests to start (semaphore limit)
+		for i := 0; i < 2; i++ {
+			select {
+			case <-requestStarted:
+				// good
+			case <-time.After(1 * time.Second):
+				t.Fatal("timed out waiting for request to start")
+			}
+		}
+
+		// Ensure no more than 2 started (should not have 3rd)
+		select {
+		case <-requestStarted:
+			t.Fatal("more than 2 concurrent requests started")
+		case <-time.After(100 * time.Millisecond):
+			// good, semaphore is limiting
+		}
+
+		// Allow one request to finish
+		requestCanFinish <- struct{}{}
+		// Wait for one request to finish and release semaphore
+		select {
+		case <-requestStarted:
+			// third request should now start
+		case <-time.After(1 * time.Second):
+			t.Fatal("third request did not start after semaphore slot freed")
+		}
+
+		// Clean up: allow remaining requests to finish
+		for i := 0; i < 3; i++ {
+			requestCanFinish <- struct{}{}
+		}
+		// Wait for all goroutines to finish
+		for i := 0; i < 4; i++ {
+			select {
+			case <-results:
+				// ok
+			case <-time.After(1 * time.Second):
+				t.Fatal("timed out waiting for goroutine to finish")
+			}
+		}
+	})
+
+	t.Run("context cancellation releases semaphore", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		// Start 2 requests to fill semaphore
+		results := make(chan error, 2)
+		for i := 0; i < 2; i++ {
+			go func() {
+				results <- callComplete(ctx)
+			}()
+		}
+		// Wait for both to start
+		for i := 0; i < 2; i++ {
+			select {
+			case <-requestStarted:
+			case <-time.After(1 * time.Second):
+				t.Fatal("timed out waiting for request to start")
+			}
+		}
+		// Cancel context for one request
+		cancel()
+		// Wait for cancellation error
+		select {
+		case err := <-results:
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "context canceled")
+		case <-time.After(1 * time.Second):
+			t.Fatal("timed out waiting for cancellation")
+		}
+		// Now semaphore should have a free slot, we can start another request
+		go func() {
+			results <- callComplete(context.Background())
+		}()
+		select {
+		case <-requestStarted:
+			// good, new request started
+		case <-time.After(1 * time.Second):
+			t.Fatal("new request did not start after cancellation freed semaphore")
+		}
+		// Clean up
+		requestCanFinish <- struct{}{}
+		requestCanFinish <- struct{}{}
+		for i := 0; i < 2; i++ {
+			<-results
+		}
 	})
 }
 

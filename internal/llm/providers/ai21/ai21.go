@@ -537,7 +537,7 @@ func (p *Provider) calculateBackoff(attempt int) time.Duration {
 			break
 		}
 	}
-	jitter := time.Duration(rand.Float64() * float64(delay) * 0.1)
+	jitter := time.Duration(rand.Float64() * float64(delay) * 0.1) // #nosec G404
 	return delay + jitter
 }
 

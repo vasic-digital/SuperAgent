@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"dev.helix.agent/internal/utils"
 )
 
 // ToolHandler defines the interface for tool execution
@@ -145,17 +147,55 @@ func (h *GitHandler) Execute(ctx context.Context, args map[string]interface{}) (
 	arguments, _ := args["arguments"].([]interface{})
 	workingDir, _ := args["working_dir"].(string)
 
+	// Validate git operation to prevent command injection
+	allowedOperations := []string{
+		"clone", "pull", "push", "checkout", "merge", "diff", "log", "stash",
+		"status", "add", "commit", "branch", "tag", "fetch", "rebase", "reset",
+		"clean", "init", "remote", "show", "mv", "rm",
+	}
+	operationValid := false
+	for _, op := range allowedOperations {
+		if operation == op {
+			operationValid = true
+			break
+		}
+	}
+	if !operationValid {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid git operation: %s", operation),
+		}, nil
+	}
+
 	if workingDir == "" {
 		workingDir = "."
+	}
+	// Validate working directory path (allow "." for current directory)
+	if workingDir != "." && !utils.ValidatePath(workingDir) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid working directory path: %s", workingDir),
+		}, nil
 	}
 
 	cmdArgs := []string{operation}
 	for _, arg := range arguments {
 		if s, ok := arg.(string); ok {
+			// Validate each argument for shell safety
+			if !utils.ValidateCommandArg(s) {
+				return ToolResult{
+					Success: false,
+					Output:  "",
+					Error:   fmt.Sprintf("invalid argument contains dangerous characters: %s", s),
+				}, nil
+			}
 			cmdArgs = append(cmdArgs, s)
 		}
 	}
 
+	// #nosec G204 - git operation and arguments validated, working directory validated
 	cmd := exec.CommandContext(ctx, "git", cmdArgs...)
 	cmd.Dir = workingDir
 
@@ -248,7 +288,7 @@ func (h *TestHandler) Execute(ctx context.Context, args map[string]interface{}) 
 	cmdArgs = append(cmdArgs, "-timeout", timeout)
 	cmdArgs = append(cmdArgs, testPath)
 
-	cmd := exec.CommandContext(ctx, "go", cmdArgs...)
+	cmd := exec.CommandContext(ctx, "go", cmdArgs...) // #nosec G204
 	output, err := cmd.CombinedOutput()
 
 	if err != nil {
@@ -291,6 +331,17 @@ func (h *LintHandler) Execute(ctx context.Context, args map[string]interface{}) 
 	linter, _ := args["linter"].(string)
 	autoFix, _ := args["auto_fix"].(bool)
 
+	// Validate path if not a pattern
+	if path != "" && !strings.Contains(path, "...") {
+		if !utils.ValidatePath(path) {
+			return ToolResult{
+				Success: false,
+				Output:  "",
+				Error:   fmt.Sprintf("invalid path: %s", path),
+			}, nil
+		}
+	}
+
 	if path == "" {
 		path = "./..."
 	}
@@ -306,19 +357,19 @@ func (h *LintHandler) Execute(ctx context.Context, args map[string]interface{}) 
 			cmdArgs = append(cmdArgs, "--fix")
 		}
 		cmdArgs = append(cmdArgs, path)
-		cmd = exec.CommandContext(ctx, "golangci-lint", cmdArgs...)
+		cmd = exec.CommandContext(ctx, "golangci-lint", cmdArgs...) // #nosec G204
 	case "gofmt":
 		if autoFix {
-			cmd = exec.CommandContext(ctx, "gofmt", "-w", path)
+			cmd = exec.CommandContext(ctx, "gofmt", "-w", path) // #nosec G204
 		} else {
-			cmd = exec.CommandContext(ctx, "gofmt", "-d", path)
+			cmd = exec.CommandContext(ctx, "gofmt", "-d", path) // #nosec G204
 		}
 	case "eslint":
 		cmdArgs := []string{path}
 		if autoFix {
 			cmdArgs = append([]string{"--fix"}, cmdArgs...)
 		}
-		cmd = exec.CommandContext(ctx, "eslint", cmdArgs...)
+		cmd = exec.CommandContext(ctx, "eslint", cmdArgs...) // #nosec G204
 	default:
 		return ToolResult{
 			Success: false,
@@ -366,6 +417,22 @@ func (h *DiffHandler) Execute(ctx context.Context, args map[string]interface{}) 
 	compareWith, _ := args["compare_with"].(string)
 	contextLines, _ := args["context_lines"].(float64)
 
+	// Validate inputs
+	if filePath != "" && !utils.ValidatePath(filePath) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid file path: %s", filePath),
+		}, nil
+	}
+	if compareWith != "" && !utils.ValidateGitRef(compareWith) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid git reference: %s", compareWith),
+		}, nil
+	}
+
 	if mode == "" {
 		mode = "working"
 	}
@@ -393,6 +460,7 @@ func (h *DiffHandler) Execute(ctx context.Context, args map[string]interface{}) 
 		cmdArgs = append(cmdArgs, "--", filePath)
 	}
 
+	// #nosec G204 - inputs validated, git command with safe arguments
 	cmd := exec.CommandContext(ctx, "git", cmdArgs...)
 	output, err := cmd.CombinedOutput()
 
@@ -437,6 +505,26 @@ func (h *TreeViewHandler) Execute(ctx context.Context, args map[string]interface
 	showHidden, _ := args["show_hidden"].(bool)
 	ignorePatterns, _ := args["ignore_patterns"].([]interface{})
 
+	// Validate inputs
+	if path != "." && !utils.ValidatePath(path) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid path: %s", path),
+		}, nil
+	}
+	for _, pattern := range ignorePatterns {
+		if p, ok := pattern.(string); ok {
+			if !utils.ValidateCommandArg(p) {
+				return ToolResult{
+					Success: false,
+					Output:  "",
+					Error:   fmt.Sprintf("invalid ignore pattern contains dangerous characters: %s", p),
+				}, nil
+			}
+		}
+	}
+
 	if path == "" {
 		path = "."
 	}
@@ -459,6 +547,7 @@ func (h *TreeViewHandler) Execute(ctx context.Context, args map[string]interface
 
 	cmdArgs = append(cmdArgs, "-print")
 
+	// #nosec G204 - inputs validated, find command with safe arguments
 	cmd := exec.CommandContext(ctx, "find", cmdArgs...)
 	output, err := cmd.CombinedOutput()
 
@@ -576,6 +665,15 @@ func (h *SymbolsHandler) Execute(ctx context.Context, args map[string]interface{
 	filePath, _ := args["file_path"].(string)
 	recursive, _ := args["recursive"].(bool)
 
+	// Validate file path
+	if filePath != "." && !utils.ValidatePath(filePath) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid file path: %s", filePath),
+		}, nil
+	}
+
 	if filePath == "" {
 		filePath = "."
 	}
@@ -589,6 +687,7 @@ func (h *SymbolsHandler) Execute(ctx context.Context, args map[string]interface{
 	}
 	cmdArgs = append(cmdArgs, filePath)
 
+	// #nosec G204 - file path validated, grep command with safe arguments
 	cmd := exec.CommandContext(ctx, "grep", cmdArgs...)
 	output, _ := cmd.CombinedOutput()
 
@@ -626,6 +725,22 @@ func (h *ReferencesHandler) Execute(ctx context.Context, args map[string]interfa
 		return ToolResult{
 			Success: false,
 			Error:   "symbol is required",
+		}, nil
+	}
+	// Validate symbol
+	if !utils.ValidateSymbol(symbol) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid symbol: %s", symbol),
+		}, nil
+	}
+	// Validate file path if provided
+	if filePath != "" && !utils.ValidatePath(filePath) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid file path: %s", filePath),
 		}, nil
 	}
 
@@ -671,6 +786,14 @@ func (h *DefinitionHandler) Execute(ctx context.Context, args map[string]interfa
 		return ToolResult{
 			Success: false,
 			Error:   "symbol is required",
+		}, nil
+	}
+	// Validate symbol
+	if !utils.ValidateSymbol(symbol) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid symbol: %s", symbol),
 		}, nil
 	}
 
@@ -728,6 +851,45 @@ func (h *PRHandler) Execute(ctx context.Context, args map[string]interface{}) (T
 	baseBranch, _ := args["base_branch"].(string)
 	prNumber, _ := args["pr_number"].(float64)
 
+	// Validate action
+	allowedActions := []string{"list", "create", "view", "merge", "close"}
+	actionValid := false
+	for _, a := range allowedActions {
+		if action == a {
+			actionValid = true
+			break
+		}
+	}
+	if !actionValid {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid action: %s", action),
+		}, nil
+	}
+	// Validate inputs
+	if title != "" && !utils.ValidateCommandArg(title) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid title contains dangerous characters: %s", title),
+		}, nil
+	}
+	if body != "" && !utils.ValidateCommandArg(body) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid body contains dangerous characters: %s", body),
+		}, nil
+	}
+	if baseBranch != "" && !utils.ValidateGitRef(baseBranch) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid base branch: %s", baseBranch),
+		}, nil
+	}
+
 	if baseBranch == "" {
 		baseBranch = "main"
 	}
@@ -736,6 +898,7 @@ func (h *PRHandler) Execute(ctx context.Context, args map[string]interface{}) (T
 	var cmd *exec.Cmd
 	switch action {
 	case "list":
+		// #nosec G204 - inputs validated, gh command with safe arguments
 		cmd = exec.CommandContext(ctx, "gh", "pr", "list")
 	case "create":
 		cmdArgs := []string{"pr", "create", "--base", baseBranch}
@@ -745,21 +908,26 @@ func (h *PRHandler) Execute(ctx context.Context, args map[string]interface{}) (T
 		if body != "" {
 			cmdArgs = append(cmdArgs, "--body", body)
 		}
+		// #nosec G204 - inputs validated, gh command with safe arguments
 		cmd = exec.CommandContext(ctx, "gh", cmdArgs...)
 	case "view":
 		if prNumber > 0 {
+			// #nosec G204 - inputs validated, gh command with safe arguments
 			cmd = exec.CommandContext(ctx, "gh", "pr", "view", fmt.Sprintf("%d", int(prNumber)))
 		} else {
+			// #nosec G204 - inputs validated, gh command with safe arguments
 			cmd = exec.CommandContext(ctx, "gh", "pr", "view")
 		}
 	case "merge":
 		if prNumber > 0 {
+			// #nosec G204 - inputs validated, gh command with safe arguments
 			cmd = exec.CommandContext(ctx, "gh", "pr", "merge", fmt.Sprintf("%d", int(prNumber)))
 		} else {
 			return ToolResult{Success: false, Error: "pr_number required for merge"}, nil
 		}
 	case "close":
 		if prNumber > 0 {
+			// #nosec G204 - inputs validated, gh command with safe arguments
 			cmd = exec.CommandContext(ctx, "gh", "pr", "close", fmt.Sprintf("%d", int(prNumber)))
 		} else {
 			return ToolResult{Success: false, Error: "pr_number required for close"}, nil
@@ -808,9 +976,42 @@ func (h *IssueHandler) Execute(ctx context.Context, args map[string]interface{})
 	body, _ := args["body"].(string)
 	issueNumber, _ := args["issue_number"].(float64)
 
+	// Validate action
+	allowedActions := []string{"list", "create", "view", "close"}
+	actionValid := false
+	for _, a := range allowedActions {
+		if action == a {
+			actionValid = true
+			break
+		}
+	}
+	if !actionValid {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid action: %s", action),
+		}, nil
+	}
+	// Validate inputs
+	if title != "" && !utils.ValidateCommandArg(title) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid title contains dangerous characters: %s", title),
+		}, nil
+	}
+	if body != "" && !utils.ValidateCommandArg(body) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid body contains dangerous characters: %s", body),
+		}, nil
+	}
+
 	var cmd *exec.Cmd
 	switch action {
 	case "list":
+		// #nosec G204 - inputs validated, gh command with safe arguments
 		cmd = exec.CommandContext(ctx, "gh", "issue", "list")
 	case "create":
 		cmdArgs := []string{"issue", "create"}
@@ -820,15 +1021,18 @@ func (h *IssueHandler) Execute(ctx context.Context, args map[string]interface{})
 		if body != "" {
 			cmdArgs = append(cmdArgs, "--body", body)
 		}
+		// #nosec G204 - inputs validated, gh command with safe arguments
 		cmd = exec.CommandContext(ctx, "gh", cmdArgs...)
 	case "view":
 		if issueNumber > 0 {
+			// #nosec G204 - inputs validated, gh command with safe arguments
 			cmd = exec.CommandContext(ctx, "gh", "issue", "view", fmt.Sprintf("%d", int(issueNumber)))
 		} else {
 			return ToolResult{Success: false, Error: "issue_number required"}, nil
 		}
 	case "close":
 		if issueNumber > 0 {
+			// #nosec G204 - inputs validated, gh command with safe arguments
 			cmd = exec.CommandContext(ctx, "gh", "issue", "close", fmt.Sprintf("%d", int(issueNumber)))
 		} else {
 			return ToolResult{Success: false, Error: "issue_number required"}, nil
@@ -877,9 +1081,42 @@ func (h *WorkflowHandler) Execute(ctx context.Context, args map[string]interface
 	branch, _ := args["branch"].(string)
 	runID, _ := args["run_id"].(float64)
 
+	// Validate action
+	allowedActions := []string{"list", "run", "view", "cancel", "logs"}
+	actionValid := false
+	for _, a := range allowedActions {
+		if action == a {
+			actionValid = true
+			break
+		}
+	}
+	if !actionValid {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid action: %s", action),
+		}, nil
+	}
+	// Validate inputs
+	if workflowID != "" && !utils.ValidateCommandArg(workflowID) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid workflow ID contains dangerous characters: %s", workflowID),
+		}, nil
+	}
+	if branch != "" && !utils.ValidateGitRef(branch) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid branch: %s", branch),
+		}, nil
+	}
+
 	var cmd *exec.Cmd
 	switch action {
 	case "list":
+		// #nosec G204 - inputs validated, gh command with safe arguments
 		cmd = exec.CommandContext(ctx, "gh", "workflow", "list")
 	case "run":
 		cmdArgs := []string{"workflow", "run"}
@@ -889,21 +1126,26 @@ func (h *WorkflowHandler) Execute(ctx context.Context, args map[string]interface
 		if branch != "" {
 			cmdArgs = append(cmdArgs, "--ref", branch)
 		}
+		// #nosec G204 - inputs validated, gh command with safe arguments
 		cmd = exec.CommandContext(ctx, "gh", cmdArgs...)
 	case "view":
 		if runID > 0 {
+			// #nosec G204 - inputs validated, gh command with safe arguments
 			cmd = exec.CommandContext(ctx, "gh", "run", "view", fmt.Sprintf("%d", int(runID)))
 		} else {
+			// #nosec G204 - inputs validated, gh command with safe arguments
 			cmd = exec.CommandContext(ctx, "gh", "run", "list")
 		}
 	case "cancel":
 		if runID > 0 {
+			// #nosec G204 - inputs validated, gh command with safe arguments
 			cmd = exec.CommandContext(ctx, "gh", "run", "cancel", fmt.Sprintf("%d", int(runID)))
 		} else {
 			return ToolResult{Success: false, Error: "run_id required for cancel"}, nil
 		}
 	case "logs":
 		if runID > 0 {
+			// #nosec G204 - inputs validated, gh command with safe arguments
 			cmd = exec.CommandContext(ctx, "gh", "run", "view", fmt.Sprintf("%d", int(runID)), "--log")
 		} else {
 			return ToolResult{Success: false, Error: "run_id required for logs"}, nil

@@ -96,7 +96,7 @@ services:
     container_name: helixagent-gosec-scanner
     working_dir: /app
     volumes:
-      - .:/app:ro
+      - .:/app:rw
     networks:
       - security-network
     command: ["-fmt=json", "-out=/app/reports/gosec-report.json", "./..."]

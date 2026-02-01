@@ -13,6 +13,7 @@ import (
 
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/modelsdev"
+	"dev.helix.agent/internal/utils"
 )
 
 // ZenCLIProvider implements the LLMProvider interface using OpenCode CLI
@@ -193,6 +194,11 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 		return nil, fmt.Errorf("no prompt provided")
 	}
 
+	// Validate prompt for command injection safety
+	if !utils.ValidateCommandArg(prompt) {
+		return nil, fmt.Errorf("prompt contains invalid characters")
+	}
+
 	// Create command with timeout
 	cmdCtx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
@@ -201,6 +207,10 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 	model := p.model
 	if req.ModelParams.Model != "" {
 		model = req.ModelParams.Model
+	}
+	// Validate model name for command injection safety
+	if !utils.ValidateCommandArg(model) {
+		return nil, fmt.Errorf("model name contains invalid characters")
 	}
 
 	// Build opencode command arguments
@@ -332,6 +342,18 @@ func (p *ZenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 			return
 		}
 
+		// Validate prompt for command injection safety
+		if !utils.ValidateCommandArg(prompt) {
+			ch <- &models.LLMResponse{
+				ProviderID:   "zen-cli",
+				ProviderName: "zen-cli",
+				Metadata: map[string]interface{}{
+					"error": "prompt contains invalid characters",
+				},
+			}
+			return
+		}
+
 		// Create command with timeout
 		cmdCtx, cancel := context.WithTimeout(ctx, p.timeout)
 		defer cancel()
@@ -340,6 +362,17 @@ func (p *ZenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 		model := p.model
 		if req.ModelParams.Model != "" {
 			model = req.ModelParams.Model
+		}
+		// Validate model name for command injection safety
+		if !utils.ValidateCommandArg(model) {
+			ch <- &models.LLMResponse{
+				ProviderID:   "zen-cli",
+				ProviderName: "zen-cli",
+				Metadata: map[string]interface{}{
+					"error": "model name contains invalid characters",
+				},
+			}
+			return
 		}
 
 		// Build opencode command arguments with streaming

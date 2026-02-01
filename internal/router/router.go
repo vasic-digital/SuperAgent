@@ -22,6 +22,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"net/http/pprof"
+	"os"
 )
 
 // RouterContext wraps the router with cleanup capabilities for background services
@@ -113,6 +115,22 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		TrackUsage:           true,
 	})
 	r.Use(featureMiddleware)
+
+	// Add pprof debugging endpoints if enabled
+	if os.Getenv("ENABLE_PPROF") == "true" {
+		// Register pprof handlers
+		r.GET("/debug/pprof/", gin.WrapH(http.HandlerFunc(pprof.Index)))
+		r.GET("/debug/pprof/cmdline", gin.WrapH(http.HandlerFunc(pprof.Cmdline)))
+		r.GET("/debug/pprof/profile", gin.WrapH(http.HandlerFunc(pprof.Profile)))
+		r.GET("/debug/pprof/symbol", gin.WrapH(http.HandlerFunc(pprof.Symbol)))
+		r.GET("/debug/pprof/trace", gin.WrapH(http.HandlerFunc(pprof.Trace)))
+		// Additional pprof endpoints for specific profiles
+		r.GET("/debug/pprof/goroutine", gin.WrapH(pprof.Handler("goroutine")))
+		r.GET("/debug/pprof/heap", gin.WrapH(pprof.Handler("heap")))
+		r.GET("/debug/pprof/threadcreate", gin.WrapH(pprof.Handler("threadcreate")))
+		r.GET("/debug/pprof/block", gin.WrapH(pprof.Handler("block")))
+		r.GET("/debug/pprof/mutex", gin.WrapH(pprof.Handler("mutex")))
+	}
 
 	// Initialize database with fallback to in-memory mode
 	var db *database.PostgresDB
