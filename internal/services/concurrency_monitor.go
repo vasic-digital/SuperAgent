@@ -67,14 +67,15 @@ func initCMMetrics() {
 
 // ConcurrencyMonitor monitors concurrency usage and provides alerts
 type ConcurrencyMonitor struct {
-	mu             sync.RWMutex
-	registry       *ProviderRegistry
-	logger         *logrus.Logger
-	checkInterval  time.Duration
-	alertThreshold float64 // Saturation percentage to trigger alert (0-100)
-	listeners      []ConcurrencyAlertListener
-	stopCh         chan struct{}
-	running        bool
+	mu                sync.RWMutex
+	registry          *ProviderRegistry
+	logger            *logrus.Logger
+	checkInterval     time.Duration
+	alertThreshold    float64 // Saturation percentage to trigger warning alert (0-100)
+	criticalThreshold float64 // Saturation percentage to trigger critical alert (0-100)
+	listeners         []ConcurrencyAlertListener
+	stopCh            chan struct{}
+	running           bool
 
 	// Track high concurrency periods
 	highConcurrencyStart map[string]time.Time
@@ -86,28 +87,32 @@ type ConcurrencyAlertListener func(alert ConcurrencyAlert)
 
 // ConcurrencyAlert represents a concurrency alert
 type ConcurrencyAlert struct {
-	Type           string                       `json:"type"`
-	Provider       string                       `json:"provider,omitempty"`
-	Message        string                       `json:"message"`
-	Timestamp      time.Time                    `json:"timestamp"`
-	Saturation     float64                      `json:"saturation,omitempty"` // Percentage (0-100)
-	ActiveRequests int64                        `json:"active_requests,omitempty"`
-	TotalPermits   int64                        `json:"total_permits,omitempty"`
-	Available      int64                        `json:"available,omitempty"`
-	AllStats       map[string]*ConcurrencyStats `json:"all_stats,omitempty"`
+	Type            string                       `json:"type"`
+	Provider        string                       `json:"provider,omitempty"`
+	Message         string                       `json:"message"`
+	Timestamp       time.Time                    `json:"timestamp"`
+	Saturation      float64                      `json:"saturation,omitempty"` // Percentage (0-100)
+	ActiveRequests  int64                        `json:"active_requests,omitempty"`
+	TotalPermits    int64                        `json:"total_permits,omitempty"`
+	Available       int64                        `json:"available,omitempty"`
+	AllStats        map[string]*ConcurrencyStats `json:"all_stats,omitempty"`
+	Severity        AlertSeverity                `json:"severity,omitempty"`
+	EscalationLevel int                          `json:"escalation_level,omitempty"`
 }
 
 // ConcurrencyMonitorConfig configures the monitor
 type ConcurrencyMonitorConfig struct {
-	CheckInterval  time.Duration
-	AlertThreshold float64 // Saturation percentage (0-100)
+	CheckInterval     time.Duration
+	AlertThreshold    float64 // Saturation percentage (0-100) for warning alerts
+	CriticalThreshold float64 // Saturation percentage (0-100) for critical alerts
 }
 
 // DefaultConcurrencyMonitorConfig returns default configuration
 func DefaultConcurrencyMonitorConfig() ConcurrencyMonitorConfig {
 	return ConcurrencyMonitorConfig{
-		CheckInterval:  15 * time.Second,
-		AlertThreshold: 80.0, // Alert when saturation >= 80%
+		CheckInterval:     15 * time.Second,
+		AlertThreshold:    80.0, // Warning when saturation >= 80%
+		CriticalThreshold: 95.0, // Critical when saturation >= 95%
 	}
 }
 
@@ -121,6 +126,7 @@ func NewConcurrencyMonitor(registry *ProviderRegistry, logger *logrus.Logger, co
 		logger:               logger,
 		checkInterval:        config.CheckInterval,
 		alertThreshold:       config.AlertThreshold,
+		criticalThreshold:    config.CriticalThreshold,
 		listeners:            make([]ConcurrencyAlertListener, 0),
 		stopCh:               make(chan struct{}),
 		highConcurrencyStart: make(map[string]time.Time),
@@ -184,6 +190,8 @@ func (cm *ConcurrencyMonitor) checkConcurrency() {
 
 	stats := cm.registry.GetAllConcurrencyStats()
 	highSaturationCount := 0
+	criticalSaturationCount := 0
+	maxSaturation := 0.0
 	totalProviders := len(stats)
 
 	for providerID, stat := range stats {
@@ -196,6 +204,14 @@ func (cm *ConcurrencyMonitor) checkConcurrency() {
 		saturation := float64(0)
 		if stat.TotalPermits > 0 {
 			saturation = float64(stat.AcquiredPermits) / float64(stat.TotalPermits) * 100.0
+		}
+
+		// Track max saturation and critical counts
+		if saturation > maxSaturation {
+			maxSaturation = saturation
+		}
+		if saturation >= cm.criticalThreshold {
+			criticalSaturationCount++
 		}
 
 		// Update Prometheus metrics
@@ -251,12 +267,19 @@ func (cm *ConcurrencyMonitor) checkConcurrency() {
 
 	// Send alert if any provider has high saturation
 	if highSaturationCount > 0 {
+		// Determine severity based on critical saturation count
+		severity := SeverityWarning
+		if criticalSaturationCount > 0 {
+			severity = SeverityCritical
+		}
 		cm.sendAlert(ConcurrencyAlert{
-			Type:       "high_saturation",
-			Message:    fmt.Sprintf("%d provider(s) have high concurrency saturation", highSaturationCount),
-			Timestamp:  time.Now(),
-			Saturation: cm.alertThreshold,
-			AllStats:   stats,
+			Type:            "high_saturation",
+			Message:         fmt.Sprintf("%d provider(s) have high concurrency saturation (%d critical)", highSaturationCount, criticalSaturationCount),
+			Timestamp:       time.Now(),
+			Saturation:      maxSaturation,
+			AllStats:        stats,
+			Severity:        severity,
+			EscalationLevel: 0,
 		})
 	}
 
@@ -280,9 +303,11 @@ func (cm *ConcurrencyMonitor) sendAlert(alert ConcurrencyAlert) {
 	}
 
 	cm.logger.WithFields(logrus.Fields{
-		"type":    alert.Type,
-		"message": alert.Message,
-		"count":   len(alert.AllStats),
+		"type":       alert.Type,
+		"message":    alert.Message,
+		"count":      len(alert.AllStats),
+		"severity":   alert.Severity,
+		"saturation": alert.Saturation,
 	}).Error("Concurrency alert triggered")
 }
 
