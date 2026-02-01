@@ -1110,6 +1110,43 @@ func (am *ConcurrencyAlertManager) RetryDeadLetterAlert(key string) bool {
 	return true
 }
 
+// GetRetryQueueAlerts returns all alerts currently in the retry queue
+func (am *ConcurrencyAlertManager) GetRetryQueueAlerts() []map[string]interface{} {
+	am.mu.RLock()
+	defer am.mu.RUnlock()
+
+	alerts := make([]map[string]interface{}, 0, len(am.deliveryAttempts))
+	for key, attempt := range am.deliveryAttempts {
+		alert := map[string]interface{}{
+			"key":          key,
+			"channel":      attempt.channel,
+			"type":         attempt.alert.Type,
+			"provider":     attempt.alert.Provider,
+			"message":      attempt.alert.Message,
+			"attempts":     attempt.attempts,
+			"last_attempt": attempt.lastAttempt,
+			"next_retry":   attempt.nextRetry,
+		}
+		alerts = append(alerts, alert)
+	}
+	return alerts
+}
+
+// CancelRetryAttempt cancels a scheduled retry attempt
+func (am *ConcurrencyAlertManager) CancelRetryAttempt(key string) bool {
+	am.mu.Lock()
+	defer am.mu.Unlock()
+
+	_, exists := am.deliveryAttempts[key]
+	if !exists {
+		return false
+	}
+
+	delete(am.deliveryAttempts, key)
+	am.updateRetryQueueMetricsLocked()
+	return true
+}
+
 // splitAlertKey splits alert key into parts
 func splitAlertKey(key string) []string {
 	// Simple split by underscore

@@ -5,14 +5,31 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"dev.helix.agent/internal/services"
 )
 
 func init() {
 	gin.SetMode(gin.TestMode)
+}
+
+func createTestConcurrencyAlertManager() *services.ConcurrencyAlertManager {
+	config := services.ConcurrencyAlertManagerConfig{
+		Enabled:         false, // Disable alert processing for tests
+		DefaultCooldown: time.Minute,
+		CleanupInterval: time.Hour,
+		MaxAlertAge:     24 * time.Hour,
+		EnableLogging:   false,
+		EnableWebhook:   false,
+		WebhookTimeout:  5 * time.Second,
+	}
+	return services.NewConcurrencyAlertManager(config, logrus.New())
 }
 
 // TestNewMonitoringHandler tests handler creation
@@ -255,6 +272,15 @@ func TestMonitoringHandler_RegisterRoutes(t *testing.T) {
 		"/v1/monitoring/provider-health/:provider/check",
 		"/v1/monitoring/fallback-chain",
 		"/v1/monitoring/fallback-chain/validate",
+		// Concurrency monitoring routes
+		"/v1/monitoring/concurrency",
+		"/v1/monitoring/concurrency/alerts",
+		"/v1/monitoring/concurrency/alerts/dead-letter",
+		"/v1/monitoring/concurrency/alerts/dead-letter/:key/retry",
+		"/v1/monitoring/concurrency/alerts/retry-queue",
+		"/v1/monitoring/concurrency/alerts/retry-queue/:key/cancel",
+		"/v1/monitoring/concurrency/:provider/reset-tracking",
+		"/v1/monitoring/concurrency/reset-all-tracking",
 	}
 
 	registeredPaths := make(map[string]bool)
@@ -450,4 +476,148 @@ func TestMonitoringHandler_ResponseFormats(t *testing.T) {
 			assert.NoError(t, err, "Response should be valid JSON")
 		})
 	}
+}
+
+func TestMonitoringHandler_GetDeadLetterAlerts_NilManager(t *testing.T) {
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil, nil)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/v1/monitoring/concurrency/alerts/dead-letter", nil)
+
+	handler.GetDeadLetterAlerts(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Contains(t, response["error"], "Concurrency alert manager not available")
+}
+
+func TestMonitoringHandler_GetDeadLetterAlerts_WithManager(t *testing.T) {
+	manager := createTestConcurrencyAlertManager()
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil, manager)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/v1/monitoring/concurrency/alerts/dead-letter", nil)
+
+	handler.GetDeadLetterAlerts(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response []map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Empty(t, response) // Should be empty since no alerts in dead letter queue
+}
+
+func TestMonitoringHandler_RetryDeadLetterAlert_NilManager(t *testing.T) {
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil, nil)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{{Key: "key", Value: "test:123"}}
+	c.Request = httptest.NewRequest("POST", "/v1/monitoring/concurrency/alerts/dead-letter/test:123/retry", nil)
+
+	handler.RetryDeadLetterAlert(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Contains(t, response["error"], "Concurrency alert manager not available")
+}
+
+func TestMonitoringHandler_RetryDeadLetterAlert_WithManager(t *testing.T) {
+	manager := createTestConcurrencyAlertManager()
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil, manager)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{{Key: "key", Value: "test:123"}}
+	c.Request = httptest.NewRequest("POST", "/v1/monitoring/concurrency/alerts/dead-letter/test:123/retry", nil)
+
+	handler.RetryDeadLetterAlert(c)
+
+	assert.Equal(t, http.StatusNotFound, w.Code) // Alert not found in dead letter queue
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Contains(t, response["error"], "Alert not found in dead letter queue")
+}
+
+func TestMonitoringHandler_GetRetryQueueAlerts_NilManager(t *testing.T) {
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil, nil)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/v1/monitoring/concurrency/alerts/retry-queue", nil)
+
+	handler.GetRetryQueueAlerts(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Contains(t, response["error"], "Concurrency alert manager not available")
+}
+
+func TestMonitoringHandler_GetRetryQueueAlerts_WithManager(t *testing.T) {
+	manager := createTestConcurrencyAlertManager()
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil, manager)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/v1/monitoring/concurrency/alerts/retry-queue", nil)
+
+	handler.GetRetryQueueAlerts(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response []map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Empty(t, response) // Should be empty since no alerts in retry queue
+}
+
+func TestMonitoringHandler_CancelRetryAttempt_NilManager(t *testing.T) {
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil, nil)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{{Key: "key", Value: "test:123"}}
+	c.Request = httptest.NewRequest("POST", "/v1/monitoring/concurrency/alerts/retry-queue/test:123/cancel", nil)
+
+	handler.CancelRetryAttempt(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Contains(t, response["error"], "Concurrency alert manager not available")
+}
+
+func TestMonitoringHandler_CancelRetryAttempt_WithManager(t *testing.T) {
+	manager := createTestConcurrencyAlertManager()
+	handler := NewMonitoringHandler(nil, nil, nil, nil, nil, manager)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{{Key: "key", Value: "test:123"}}
+	c.Request = httptest.NewRequest("POST", "/v1/monitoring/concurrency/alerts/retry-queue/test:123/cancel", nil)
+
+	handler.CancelRetryAttempt(c)
+
+	assert.Equal(t, http.StatusNotFound, w.Code) // Alert not found in retry queue
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+	assert.Contains(t, response["error"], "Alert not found in retry queue")
 }
