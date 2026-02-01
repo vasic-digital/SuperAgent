@@ -414,8 +414,14 @@ func (wp *AdaptiveWorkerPool) executeTask(worker *Worker, task *models.Backgroun
 
 	// Start resource monitoring if process PID is set
 	if task.ProcessPID != nil && wp.resourceMonitor != nil {
-		wp.resourceMonitor.StartMonitoring(task.ID, *task.ProcessPID, wp.config.ResourceCheckInterval)
-		defer wp.resourceMonitor.StopMonitoring(task.ID)
+		if err := wp.resourceMonitor.StartMonitoring(task.ID, *task.ProcessPID, wp.config.ResourceCheckInterval); err != nil {
+			wp.logger.WithError(err).Debug("Failed to start resource monitoring")
+		}
+		defer func() {
+			if err := wp.resourceMonitor.StopMonitoring(task.ID); err != nil {
+				wp.logger.WithError(err).Debug("Failed to stop resource monitoring")
+			}
+		}()
 	}
 
 	// Create progress reporter
@@ -444,9 +450,11 @@ func (wp *AdaptiveWorkerPool) executeTask(worker *Worker, task *models.Backgroun
 
 	// Notify task started
 	if wp.notifier != nil {
-		wp.notifier.NotifyTaskEvent(taskCtx, task, models.TaskEventStarted, map[string]interface{}{
+		if err := wp.notifier.NotifyTaskEvent(taskCtx, task, models.TaskEventStarted, map[string]interface{}{
 			"worker_id": worker.ID,
-		})
+		}); err != nil {
+			wp.logger.WithError(err).Debug("Failed to notify task started event")
+		}
 	}
 
 	// Execute
@@ -479,15 +487,19 @@ func (wp *AdaptiveWorkerPool) handleTaskSuccess(task *models.BackgroundTask, wor
 		wp.logger.WithError(err).Error("Failed to update completed task")
 	}
 
-	wp.repository.LogEvent(context.Background(), task.ID, models.TaskEventCompleted, map[string]interface{}{
+	if err := wp.repository.LogEvent(context.Background(), task.ID, models.TaskEventCompleted, map[string]interface{}{
 		"duration_ms": duration.Milliseconds(),
 		"worker_id":   worker.ID,
-	}, &worker.ID)
+	}, &worker.ID); err != nil {
+		wp.logger.WithError(err).Debug("Failed to log task completed event")
+	}
 
 	if wp.notifier != nil {
-		wp.notifier.NotifyTaskEvent(context.Background(), task, models.TaskEventCompleted, map[string]interface{}{
+		if err := wp.notifier.NotifyTaskEvent(context.Background(), task, models.TaskEventCompleted, map[string]interface{}{
 			"duration_ms": duration.Milliseconds(),
-		})
+		}); err != nil {
+			wp.logger.WithError(err).Debug("Failed to notify task completed event")
+		}
 	}
 
 	atomic.AddInt64(&worker.TasksCompleted, 1)
@@ -535,10 +547,12 @@ func (wp *AdaptiveWorkerPool) handleTaskError(task *models.BackgroundTask, worke
 		}
 
 		if wp.notifier != nil {
-			wp.notifier.NotifyTaskEvent(context.Background(), task, models.TaskEventFailed, map[string]interface{}{
+			if err := wp.notifier.NotifyTaskEvent(context.Background(), task, models.TaskEventFailed, map[string]interface{}{
 				"error":       errorMsg,
 				"retry_count": task.RetryCount,
-			})
+			}); err != nil {
+				wp.logger.WithError(err).Debug("Failed to notify task failed event")
+			}
 		}
 
 		if wp.metrics != nil {
@@ -547,11 +561,13 @@ func (wp *AdaptiveWorkerPool) handleTaskError(task *models.BackgroundTask, worke
 		}
 	}
 
-	wp.repository.LogEvent(context.Background(), task.ID, models.TaskEventFailed, map[string]interface{}{
+	if err := wp.repository.LogEvent(context.Background(), task.ID, models.TaskEventFailed, map[string]interface{}{
 		"error":       errorMsg,
 		"retry_count": task.RetryCount,
 		"worker_id":   worker.ID,
-	}, &worker.ID)
+	}, &worker.ID); err != nil {
+		wp.logger.WithError(err).Debug("Failed to log task failed event")
+	}
 
 	atomic.AddInt64(&worker.TasksFailed, 1)
 }
@@ -702,14 +718,18 @@ func (wp *AdaptiveWorkerPool) handleStuckTask(task *models.BackgroundTask, reaso
 		wp.logger.WithError(err).Error("Failed to update stuck task")
 	}
 
-	wp.repository.LogEvent(wp.ctx, task.ID, models.TaskEventStuck, map[string]interface{}{
+	if err := wp.repository.LogEvent(wp.ctx, task.ID, models.TaskEventStuck, map[string]interface{}{
 		"reason": reason,
-	}, task.WorkerID)
+	}, task.WorkerID); err != nil {
+		wp.logger.WithError(err).Debug("Failed to log task stuck event")
+	}
 
 	if wp.notifier != nil {
-		wp.notifier.NotifyTaskEvent(wp.ctx, task, models.TaskEventStuck, map[string]interface{}{
+		if err := wp.notifier.NotifyTaskEvent(wp.ctx, task, models.TaskEventStuck, map[string]interface{}{
 			"reason": reason,
-		})
+		}); err != nil {
+			wp.logger.WithError(err).Debug("Failed to notify task stuck event")
+		}
 	}
 
 	if wp.metrics != nil {
@@ -786,7 +806,7 @@ func (r *taskProgressReporter) ReportProgress(percent float64, message string) e
 	}
 
 	if r.notifier != nil {
-		r.notifier.NotifyTaskEvent(context.Background(), r.task, models.TaskEventProgress, map[string]interface{}{
+		_ = r.notifier.NotifyTaskEvent(context.Background(), r.task, models.TaskEventProgress, map[string]interface{}{
 			"progress": percent,
 			"message":  message,
 		})
@@ -819,10 +839,10 @@ func (r *taskProgressReporter) ReportLog(level, message string, fields map[strin
 		data[k] = v
 	}
 
-	r.repository.LogEvent(context.Background(), r.taskID, models.TaskEventLog, data, &r.workerID)
+	_ = r.repository.LogEvent(context.Background(), r.taskID, models.TaskEventLog, data, &r.workerID)
 
 	if r.notifier != nil {
-		r.notifier.NotifyTaskEvent(context.Background(), r.task, models.TaskEventLog, data)
+		_ = r.notifier.NotifyTaskEvent(context.Background(), r.task, models.TaskEventLog, data)
 	}
 
 	return nil

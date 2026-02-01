@@ -800,13 +800,13 @@ func (h *ACPHandler) executeTestGenerator(task, code, language string) (interfac
 				"name":        "TestBasicFunctionality",
 				"type":        "unit",
 				"description": "Tests basic function behavior with valid input",
-				"code":        fmt.Sprintf("func TestBasicFunctionality(t *testing.T) {\n\t// Arrange\n\tinput := \"test\"\n\t// Act\n\tresult := process(input)\n\t// Assert\n\tif result == nil {\n\t\tt.Error(\"expected non-nil result\")\n\t}\n}"),
+				"code":        "func TestBasicFunctionality(t *testing.T) {\n\t// Arrange\n\tinput := \"test\"\n\t// Act\n\tresult := process(input)\n\t// Assert\n\tif result == nil {\n\t\tt.Error(\"expected non-nil result\")\n\t}\n}",
 			},
 			{
 				"name":        "TestEdgeCases",
 				"type":        "unit",
 				"description": "Tests edge cases including empty input",
-				"code":        fmt.Sprintf("func TestEdgeCases(t *testing.T) {\n\t// Test empty input\n\tresult := process(\"\")\n\tif result != nil {\n\t\tt.Error(\"expected nil for empty input\")\n\t}\n}"),
+				"code":        "func TestEdgeCases(t *testing.T) {\n\t// Test empty input\n\tresult := process(\"\")\n\tif result != nil {\n\t\tt.Error(\"expected nil for empty input\")\n\t}\n}",
 			},
 		},
 		"coverage_suggestions": []string{

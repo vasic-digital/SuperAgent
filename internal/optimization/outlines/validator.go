@@ -427,7 +427,9 @@ func isValidIPv4(s string) bool {
 	parts := strings.Split(s, ".")
 	for _, p := range parts {
 		var n int
-		fmt.Sscanf(p, "%d", &n)
+		if _, err := fmt.Sscanf(p, "%d", &n); err != nil {
+			return false
+		}
 		if n < 0 || n > 255 {
 			return false
 		}

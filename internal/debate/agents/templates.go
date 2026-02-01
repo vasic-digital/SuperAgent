@@ -67,18 +67,18 @@ func NewTemplateRegistry() *TemplateRegistry {
 
 // registerBuiltInTemplates registers all built-in agent templates.
 func (tr *TemplateRegistry) registerBuiltInTemplates() {
-	tr.Register(NewCodeSpecialistTemplate())
-	tr.Register(NewSecuritySpecialistTemplate())
-	tr.Register(NewArchitectureSpecialistTemplate())
-	tr.Register(NewDebugSpecialistTemplate())
-	tr.Register(NewOptimizationSpecialistTemplate())
-	tr.Register(NewReasoningSpecialistTemplate())
-	tr.Register(NewProposerTemplate())
-	tr.Register(NewCriticTemplate())
-	tr.Register(NewReviewerTemplate())
-	tr.Register(NewModeratorTemplate())
-	tr.Register(NewValidatorTemplate())
-	tr.Register(NewRedTeamTemplate())
+	_ = tr.Register(NewCodeSpecialistTemplate())
+	_ = tr.Register(NewSecuritySpecialistTemplate())
+	_ = tr.Register(NewArchitectureSpecialistTemplate())
+	_ = tr.Register(NewDebugSpecialistTemplate())
+	_ = tr.Register(NewOptimizationSpecialistTemplate())
+	_ = tr.Register(NewReasoningSpecialistTemplate())
+	_ = tr.Register(NewProposerTemplate())
+	_ = tr.Register(NewCriticTemplate())
+	_ = tr.Register(NewReviewerTemplate())
+	_ = tr.Register(NewModeratorTemplate())
+	_ = tr.Register(NewValidatorTemplate())
+	_ = tr.Register(NewRedTeamTemplate())
 }
 
 // Register adds a template to the registry.

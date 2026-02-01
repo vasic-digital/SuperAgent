@@ -156,7 +156,7 @@ func (s *OptimizedRequestService) ProcessRequestWithSchema(ctx context.Context, 
 		// Add schema hint to prompt
 		schemaHint := fmt.Sprintf("\n\nRespond with valid JSON matching this schema: %s", schema.Type)
 		if len(schema.Properties) > 0 {
-			schemaHint = fmt.Sprintf("\n\nRespond with valid JSON containing these fields: ")
+			schemaHint = "\n\nRespond with valid JSON containing these fields: "
 			first := true
 			for name, prop := range schema.Properties {
 				if !first {

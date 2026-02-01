@@ -259,11 +259,15 @@ func (p *TaskEventPublisher) asyncPublishLoop() {
 			if !ok {
 				return
 			}
-			p.doPublish(context.Background(), event)
+			if err := p.doPublish(context.Background(), event); err != nil {
+				p.logger.WithError(err).Debug("Failed to publish event")
+			}
 		case <-p.stopCh:
 			// Drain remaining events
 			for event := range p.publishCh {
-				p.doPublish(context.Background(), event)
+				if err := p.doPublish(context.Background(), event); err != nil {
+					p.logger.WithError(err).Debug("Failed to publish event")
+				}
 			}
 			return
 		}

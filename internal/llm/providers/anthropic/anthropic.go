@@ -210,7 +210,7 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 
 	ch := make(chan *models.LLMResponse)
 	go func() {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)

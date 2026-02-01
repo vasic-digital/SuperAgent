@@ -814,8 +814,8 @@ func (rt *DeepTeamRedTeamer) generateRecommendations(report *RedTeamReport) []st
 func (rt *DeepTeamRedTeamer) generateSummary(report *RedTeamReport) string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("Red Team Security Assessment\n"))
-	sb.WriteString(fmt.Sprintf("============================\n\n"))
+	sb.WriteString("Red Team Security Assessment\n")
+	sb.WriteString("============================\n\n")
 	sb.WriteString(fmt.Sprintf("Total Attacks: %d\n", report.TotalAttacks))
 	sb.WriteString(fmt.Sprintf("Successful (Vulnerabilities Found): %d\n", report.SuccessfulAttacks))
 	sb.WriteString(fmt.Sprintf("Blocked: %d\n", report.BlockedAttacks))

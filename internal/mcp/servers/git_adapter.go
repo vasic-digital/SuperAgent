@@ -244,8 +244,8 @@ func (g *GitAdapter) Status(ctx context.Context, repoPath string) (*GitStatus, e
 		if err == nil {
 			parts := strings.Fields(revList)
 			if len(parts) == 2 {
-				fmt.Sscanf(parts[0], "%d", &status.Ahead)
-				fmt.Sscanf(parts[1], "%d", &status.Behind)
+				_, _ = fmt.Sscanf(parts[0], "%d", &status.Ahead)
+				_, _ = fmt.Sscanf(parts[1], "%d", &status.Behind)
 			}
 		}
 	}
@@ -449,10 +449,10 @@ func (g *GitAdapter) Diff(ctx context.Context, repoPath string, ref1, ref2 strin
 
 		var additions, deletions int
 		if parts[0] != "-" {
-			fmt.Sscanf(parts[0], "%d", &additions)
+			_, _ = fmt.Sscanf(parts[0], "%d", &additions)
 		}
 		if parts[1] != "-" {
-			fmt.Sscanf(parts[1], "%d", &deletions)
+			_, _ = fmt.Sscanf(parts[1], "%d", &deletions)
 		}
 
 		file := GitDiffFile{
