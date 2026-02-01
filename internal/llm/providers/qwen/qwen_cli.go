@@ -296,6 +296,7 @@ func (p *QwenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 	}
 	// Validate model name for command injection safety
 	if !utils.ValidateCommandArg(model) {
+		cancel()
 		return nil, fmt.Errorf("model name contains invalid characters")
 	}
 

@@ -297,6 +297,11 @@ Key environment variables (see `.env.example`):
 - Integration tests require PostgreSQL, Redis, and Mock LLM containers.
 - Challenge scripts (`./challenges/scripts/`) validate system functionality comprehensively.
 
+### Git Service Access
+- **Accessing Git services for cloning can be done only via SSH!** HTTPS cloning may not work due to network restrictions or authentication requirements.
+- Ensure SSH keys are properly configured and added to your Git service account (GitHub, GitLab, etc.).
+- For submodule initialization and updates, use SSH URLs in `.gitmodules` or configure Git to use SSH for all operations.
+
 ## Mandatory Development Standards
 
 **These rules are NON-NEGOTIABLE and MUST be followed for every component, service, or feature added to HelixAgent:**

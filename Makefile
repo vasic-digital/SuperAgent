@@ -256,18 +256,35 @@ test-complete-keep:
 
 test-infra-start:
 	@echo "🐳 Starting test infrastructure (PostgreSQL, Redis, Mock LLM)..."
-	@docker compose -f docker-compose.test.yml up -d postgres redis mock-llm
+	@source ./scripts/container-runtime.sh 2>/dev/null || true; \
+	if [ -z "$$COMPOSE_CMD" ]; then \
+		echo "❌ No compose tool available. Using fallback detection..."; \
+		if command -v docker &> /dev/null && docker info &> /dev/null 2>&1; then \
+			COMPOSE_CMD="docker compose"; \
+		elif command -v podman-compose &> /dev/null; then \
+			COMPOSE_CMD="podman-compose"; \
+		else \
+			echo "❌ No container runtime found. Install Docker or Podman."; \
+			exit 1; \
+		fi; \
+	fi; \
+	echo "Using: $$COMPOSE_CMD"; \
+	$$COMPOSE_CMD -f docker-compose.test.yml up -d postgres redis mock-llm
 	@echo "⏳ Waiting for services to be ready..."
 	@sleep 5
 	@echo "Checking PostgreSQL..."
-	@for i in 1 2 3 4 5 6 7 8 9 10; do \
-		docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U helixagent -d helixagent_db > /dev/null 2>&1 && break; \
+	@source ./scripts/container-runtime.sh 2>/dev/null || true; \
+	if [ -z "$$COMPOSE_CMD" ]; then COMPOSE_CMD="docker compose"; fi; \
+	for i in 1 2 3 4 5 6 7 8 9 10; do \
+		$$COMPOSE_CMD -f docker-compose.test.yml exec -T postgres pg_isready -U helixagent -d helixagent_db > /dev/null 2>&1 && break; \
 		echo "  Waiting for PostgreSQL... ($$i/10)"; \
 		sleep 2; \
 	done
 	@echo "Checking Redis..."
-	@for i in 1 2 3 4 5; do \
-		docker compose -f docker-compose.test.yml exec -T redis redis-cli ping > /dev/null 2>&1 && break; \
+	@source ./scripts/container-runtime.sh 2>/dev/null || true; \
+	if [ -z "$$COMPOSE_CMD" ]; then COMPOSE_CMD="docker compose"; fi; \
+	for i in 1 2 3 4 5; do \
+		$$COMPOSE_CMD -f docker-compose.test.yml exec -T redis redis-cli ping > /dev/null 2>&1 && break; \
 		echo "  Waiting for Redis... ($$i/5)"; \
 		sleep 1; \
 	done
@@ -286,21 +303,61 @@ test-infra-start:
 
 test-infra-stop:
 	@echo "🐳 Stopping test infrastructure..."
-	@docker compose -f docker-compose.test.yml down
+	@source ./scripts/container-runtime.sh 2>/dev/null || true; \
+	if [ -z "$$COMPOSE_CMD" ]; then \
+		if command -v docker &> /dev/null && docker info &> /dev/null 2>&1; then \
+			COMPOSE_CMD="docker compose"; \
+		elif command -v podman-compose &> /dev/null; then \
+			COMPOSE_CMD="podman-compose"; \
+		else \
+			COMPOSE_CMD="docker compose"; \
+		fi; \
+	fi; \
+	$$COMPOSE_CMD -f docker-compose.test.yml down
 	@echo "✅ Test infrastructure stopped"
 
 test-infra-clean:
 	@echo "🧹 Cleaning test infrastructure (including volumes)..."
-	@docker compose -f docker-compose.test.yml down -v --remove-orphans
+	@source ./scripts/container-runtime.sh 2>/dev/null || true; \
+	if [ -z "$$COMPOSE_CMD" ]; then \
+		if command -v docker &> /dev/null && docker info &> /dev/null 2>&1; then \
+			COMPOSE_CMD="docker compose"; \
+		elif command -v podman-compose &> /dev/null; then \
+			COMPOSE_CMD="podman-compose"; \
+		else \
+			COMPOSE_CMD="docker compose"; \
+		fi; \
+	fi; \
+	$$COMPOSE_CMD -f docker-compose.test.yml down -v --remove-orphans
 	@echo "✅ Test infrastructure cleaned"
 
 test-infra-logs:
 	@echo "📋 Showing test infrastructure logs..."
-	@docker compose -f docker-compose.test.yml logs -f
+	@source ./scripts/container-runtime.sh 2>/dev/null || true; \
+	if [ -z "$$COMPOSE_CMD" ]; then \
+		if command -v docker &> /dev/null && docker info &> /dev/null 2>&1; then \
+			COMPOSE_CMD="docker compose"; \
+		elif command -v podman-compose &> /dev/null; then \
+			COMPOSE_CMD="podman-compose"; \
+		else \
+			COMPOSE_CMD="docker compose"; \
+		fi; \
+	fi; \
+	$$COMPOSE_CMD -f docker-compose.test.yml logs -f
 
 test-infra-status:
 	@echo "📊 Test infrastructure status:"
-	@docker compose -f docker-compose.test.yml ps
+	@source ./scripts/container-runtime.sh 2>/dev/null || true; \
+	if [ -z "$$COMPOSE_CMD" ]; then \
+		if command -v docker &> /dev/null && docker info &> /dev/null 2>&1; then \
+			COMPOSE_CMD="docker compose"; \
+		elif command -v podman-compose &> /dev/null; then \
+			COMPOSE_CMD="podman-compose"; \
+		else \
+			COMPOSE_CMD="docker compose"; \
+		fi; \
+	fi; \
+	$$COMPOSE_CMD -f docker-compose.test.yml ps
 
 # =============================================================================
 # FULL TEST INFRASTRUCTURE (includes Kafka, RabbitMQ, MinIO, Iceberg, Qdrant)
