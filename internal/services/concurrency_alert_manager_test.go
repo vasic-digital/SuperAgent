@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -531,6 +532,103 @@ func TestConcurrencyAlertManager_RateLimiting(t *testing.T) {
 	delivered = requestCount
 	mu.Unlock()
 	assert.Equal(t, 4, delivered, "After window reset, should deliver another alert")
+}
+
+func TestConcurrencyAlertManager_RateLimitMetrics(t *testing.T) {
+	// Set up test registry for metrics
+	originalRegistry := prometheus.DefaultRegisterer
+	testRegistry := prometheus.NewRegistry()
+	prometheus.DefaultRegisterer = testRegistry
+	defer func() {
+		prometheus.DefaultRegisterer = originalRegistry
+	}()
+	// Reset metrics to ensure they register with our test registry
+	resetConcurrencyMetrics()
+
+	// Create test server to capture requests
+	var requestCount int
+	var mu sync.Mutex
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requestCount++
+		mu.Unlock()
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	// Configure alert manager with rate limiting enabled
+	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
+	config.EnableLogging = false
+	config.EnableWebhook = true
+	config.WebhookURL = server.URL
+	config.DefaultCooldown = 0 // Disable cooldown for testing
+	config.WebhookTimeout = 5 * time.Second
+	config.EscalationEnabled = false // Disable escalation for this test
+	// Enable rate limiting with low limits
+	config.RateLimitEnabled = true
+	config.RateLimitWindow = 500 * time.Millisecond // shorter window for faster test
+	config.RateLimitMaxAlerts = 2
+	config.RateLimitBurstSize = 0 // no burst for clearer counting
+
+	logger := logrus.New()
+	manager := NewConcurrencyAlertManager(config, logger)
+
+	alert := ConcurrencyAlert{
+		Type:           "high_saturation",
+		Provider:       "test-provider",
+		Message:        "Test alert",
+		Timestamp:      time.Now(),
+		Saturation:     85.5,
+		ActiveRequests: 10,
+		TotalPermits:   12,
+		Available:      2,
+	}
+
+	// Helper to get metric value
+	getCounterValue := func(metricName string) float64 {
+		metrics, err := testRegistry.Gather()
+		if err != nil {
+			return 0
+		}
+		for _, mf := range metrics {
+			if mf.GetName() == metricName {
+				for _, metric := range mf.GetMetric() {
+					return metric.GetCounter().GetValue()
+				}
+			}
+		}
+		return 0
+	}
+
+	// Send alerts up to limit
+	for i := 0; i < 3; i++ {
+		manager.HandleAlert(alert)
+	}
+	// Wait for async delivery and rate limit processing
+	time.Sleep(200 * time.Millisecond)
+
+	// Check rate limit hits metric
+	rateLimitHits := getCounterValue("helixagent_concurrency_alert_rate_limit_hits_total")
+	// With maxAlerts=2 and burst=0, third alert should be rate limited
+	assert.Equal(t, 1.0, rateLimitHits, "Should have recorded one rate limit hit")
+
+	// Verify only maxAlerts alerts were delivered (2)
+	mu.Lock()
+	delivered := requestCount
+	mu.Unlock()
+	assert.Equal(t, 2, delivered, "Should only deliver 2 alerts (maxAlerts)")
+
+	// Wait for rate limit window to reset
+	time.Sleep(600 * time.Millisecond)
+
+	// Send another alert - should be allowed again
+	manager.HandleAlert(alert)
+	time.Sleep(200 * time.Millisecond)
+
+	// No additional rate limit hits (window reset)
+	rateLimitHits = getCounterValue("helixagent_concurrency_alert_rate_limit_hits_total")
+	assert.Equal(t, 1.0, rateLimitHits, "Should still have only one rate limit hit after window reset")
 }
 
 func TestConcurrencyAlertManager_CircuitBreaker(t *testing.T) {
@@ -1094,4 +1192,513 @@ func TestConcurrencyAlertManager_DeadLetterQueueThresholdMonitoring(t *testing.T
 	time.Sleep(150 * time.Millisecond) // Wait for tick
 
 	t.Logf("Dead letter queue threshold monitoring test completed")
+}
+
+// TestConcurrencyAlertManager_Metrics_RecordAlertHandled tests that RecordAlertHandled metric is recorded
+func TestConcurrencyAlertManager_Metrics_RecordAlertHandled(t *testing.T) {
+	// Save original registry and replace with test registry
+	originalRegistry := prometheus.DefaultRegisterer
+	testRegistry := prometheus.NewRegistry()
+	prometheus.DefaultRegisterer = testRegistry
+	defer func() {
+		prometheus.DefaultRegisterer = originalRegistry
+	}()
+
+	// Reset metrics to ensure fresh initialization
+	resetConcurrencyMetrics()
+
+	// Configure alert manager with minimal settings
+	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
+	config.EnableLogging = false
+	config.EnableWebhook = false
+	config.EnableEmail = false
+	config.EscalationEnabled = false
+	config.RateLimitEnabled = false
+	config.CircuitBreakerEnabled = false
+	config.RetryEnabled = false
+	config.DefaultCooldown = 100 * time.Millisecond // Short cooldown for testing
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel) // Reduce noise
+	manager := NewConcurrencyAlertManager(config, logger)
+
+	alert := ConcurrencyAlert{
+		Type:           "high_saturation",
+		Provider:       "test-provider",
+		Message:        "Test alert",
+		Timestamp:      time.Now(),
+		Saturation:     85.5,
+		ActiveRequests: 10,
+		TotalPermits:   12,
+		Available:      2,
+		Severity:       SeverityWarning,
+	}
+
+	// Helper to get metric counter value
+	getCounterValue := func(metricName string) float64 {
+		metrics, err := testRegistry.Gather()
+		if err != nil {
+			return 0
+		}
+		for _, mf := range metrics {
+			if mf.GetName() == metricName {
+				for _, metric := range mf.GetMetric() {
+					return metric.GetCounter().GetValue()
+				}
+			}
+		}
+		return 0
+	}
+
+	// First alert should be processed
+	manager.HandleAlert(alert)
+	time.Sleep(10 * time.Millisecond) // Allow async processing
+	// Check that alert count increased
+	alertsTotal := getCounterValue("helixagent_concurrency_alerts_total")
+	assert.Equal(t, 1.0, alertsTotal, "Should have recorded one alert")
+
+	// Second alert within cooldown should be filtered but still counted
+	manager.HandleAlert(alert)
+	time.Sleep(10 * time.Millisecond)
+	alertsTotal = getCounterValue("helixagent_concurrency_alerts_total")
+	assert.Equal(t, 2.0, alertsTotal, "Should have recorded second alert (even if filtered)")
+
+	// Wait for cooldown to expire
+	time.Sleep(150 * time.Millisecond)
+	// Third alert after cooldown should be processed
+	manager.HandleAlert(alert)
+	time.Sleep(10 * time.Millisecond)
+	alertsTotal = getCounterValue("helixagent_concurrency_alerts_total")
+	assert.Equal(t, 3.0, alertsTotal, "Should have recorded third alert")
+}
+
+// TestConcurrencyAlertManager_Metrics_EscalationLevel tests that UpdateEscalationLevel metric is recorded
+func TestConcurrencyAlertManager_Metrics_EscalationLevel(t *testing.T) {
+	// Save original registry and replace with test registry
+	originalRegistry := prometheus.DefaultRegisterer
+	testRegistry := prometheus.NewRegistry()
+	prometheus.DefaultRegisterer = testRegistry
+	defer func() {
+		prometheus.DefaultRegisterer = originalRegistry
+	}()
+
+	// Reset metrics to ensure fresh initialization
+	resetConcurrencyMetrics()
+
+	// Configure alert manager with escalation enabled
+	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
+	config.EnableLogging = false
+	config.EnableWebhook = false
+	config.EnableEmail = false
+	config.RateLimitEnabled = false
+	config.CircuitBreakerEnabled = false
+	config.RetryEnabled = false
+	config.EscalationEnabled = true
+	config.EscalationWindow = 1 * time.Hour // long window to keep repeats
+	config.EscalationThresholds = []int{1, 3, 5}
+	config.MaxEscalationLevel = 3
+	config.EscalationChannelRouting = map[int][]string{
+		0: {"logging"},
+		1: {"logging", "email"},
+		2: {"logging", "email", "slack"},
+		3: {"logging", "email", "slack", "webhook"},
+	}
+	config.DefaultCooldown = 0 // disable cooldown for predictable repeat counting
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel) // Reduce noise
+	manager := NewConcurrencyAlertManager(config, logger)
+
+	alert := ConcurrencyAlert{
+		Type:           "high_saturation",
+		Provider:       "test-provider",
+		Message:        "Test alert",
+		Timestamp:      time.Now(),
+		Saturation:     85.5,
+		ActiveRequests: 10,
+		TotalPermits:   12,
+		Available:      2,
+		Severity:       SeverityWarning,
+	}
+
+	// Helper to get gauge value for escalation level with label matching
+	getGaugeValue := func(metricName string, labelValues ...string) float64 {
+		metrics, err := testRegistry.Gather()
+		if err != nil {
+			t.Logf("Error gathering metrics: %v", err)
+			return 0
+		}
+		for _, mf := range metrics {
+			if mf.GetName() == metricName {
+				for _, metric := range mf.GetMetric() {
+					labels := metric.GetLabel()
+					// Build map of label name to value
+					labelMap := make(map[string]string)
+					for _, label := range labels {
+						labelMap[label.GetName()] = label.GetValue()
+					}
+					// Expected label names based on metric definition order
+					expectedNames := []string{"alert_type", "provider", "alert_key"}
+					matched := true
+					for i, expectedValue := range labelValues {
+						if i >= len(expectedNames) {
+							matched = false
+							break
+						}
+						name := expectedNames[i]
+						if labelMap[name] != expectedValue {
+							matched = false
+							break
+						}
+					}
+					if matched {
+						return metric.GetGauge().GetValue()
+					}
+				}
+			}
+		}
+		return 0
+	}
+
+	// Generate alert key (mirroring internal logic)
+	alertKey := manager.generateAlertKey(alert)
+
+	// Send first alert - repeat count = 1, escalation level should be 1 (since thresholds[0] = 1)
+	manager.HandleAlert(alert)
+	time.Sleep(10 * time.Millisecond) // Allow async processing
+
+	// Check escalation level gauge
+	level := getGaugeValue("helixagent_concurrency_alert_escalation_level", "high_saturation", "test-provider", alertKey)
+	assert.Equal(t, 1.0, level, "Escalation level should be 1 after first alert")
+
+	// Send second alert - repeat count = 2, escalation level still 1 (thresholds[1] = 3)
+	manager.HandleAlert(alert)
+	time.Sleep(10 * time.Millisecond)
+	level = getGaugeValue("helixagent_concurrency_alert_escalation_level", "high_saturation", "test-provider", alertKey)
+	assert.Equal(t, 1.0, level, "Escalation level should remain 1 after second alert (threshold 3 not reached)")
+
+	// Send third alert - repeat count = 3, escalation level becomes 2 (thresholds[1] = 3)
+	manager.HandleAlert(alert)
+	time.Sleep(10 * time.Millisecond)
+	level = getGaugeValue("helixagent_concurrency_alert_escalation_level", "high_saturation", "test-provider", alertKey)
+	assert.Equal(t, 2.0, level, "Escalation level should be 2 after third alert (threshold 3 reached)")
+
+	// Send fourth alert - repeat count = 4, escalation level still 2 (thresholds[2] = 5)
+	manager.HandleAlert(alert)
+	time.Sleep(10 * time.Millisecond)
+	level = getGaugeValue("helixagent_concurrency_alert_escalation_level", "high_saturation", "test-provider", alertKey)
+	assert.Equal(t, 2.0, level, "Escalation level should remain 2 after fourth alert (threshold 5 not reached)")
+
+	// Send fifth alert - repeat count = 5, escalation level becomes 3 (thresholds[2] = 5)
+	manager.HandleAlert(alert)
+	time.Sleep(10 * time.Millisecond)
+	level = getGaugeValue("helixagent_concurrency_alert_escalation_level", "high_saturation", "test-provider", alertKey)
+	assert.Equal(t, 3.0, level, "Escalation level should be 3 after fifth alert (threshold 5 reached)")
+}
+
+// TestConcurrencyAlertManager_Metrics_CircuitBreakerState tests that UpdateCircuitBreakerState metric is recorded
+func TestConcurrencyAlertManager_Metrics_CircuitBreakerState(t *testing.T) {
+	// Save original registry and replace with test registry
+	originalRegistry := prometheus.DefaultRegisterer
+	testRegistry := prometheus.NewRegistry()
+	prometheus.DefaultRegisterer = testRegistry
+	defer func() {
+		prometheus.DefaultRegisterer = originalRegistry
+	}()
+
+	// Reset metrics to ensure fresh initialization
+	resetConcurrencyMetrics()
+
+	// Create test server that fails requests to trigger circuit breaker
+	var requestCount int
+	var mu sync.Mutex
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requestCount++
+		mu.Unlock()
+		// Always return error to trigger circuit breaker
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	// Configure alert manager with circuit breaker enabled
+	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
+	config.EnableLogging = false
+	config.EnableWebhook = true
+	config.WebhookURL = server.URL
+	config.DefaultCooldown = 0 // Disable cooldown for testing
+	config.WebhookTimeout = 5 * time.Second
+	config.EscalationEnabled = false // Disable escalation for this test
+	config.RateLimitEnabled = false  // Disable rate limiting for this test
+	config.RetryEnabled = false      // Disable retry for this test
+	// Enable circuit breaker with low failure threshold for faster testing
+	config.CircuitBreakerEnabled = true
+	config.CircuitBreakerFailures = 2
+	config.CircuitBreakerReset = 500 * time.Millisecond
+	config.CircuitBreakerSuccesses = 2
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel) // Reduce noise
+	manager := NewConcurrencyAlertManager(config, logger)
+
+	alert := ConcurrencyAlert{
+		Type:           "high_saturation",
+		Provider:       "test-provider",
+		Message:        "Test alert",
+		Timestamp:      time.Now(),
+		Saturation:     85.5,
+		ActiveRequests: 10,
+		TotalPermits:   12,
+		Available:      2,
+		Severity:       SeverityWarning,
+	}
+
+	// Helper to get gauge value for circuit breaker state with label matching
+	getGaugeValue := func(metricName string, labelValues ...string) float64 {
+		metrics, err := testRegistry.Gather()
+		if err != nil {
+			return 0
+		}
+		for _, mf := range metrics {
+			if mf.GetName() == metricName {
+				for _, metric := range mf.GetMetric() {
+					labels := metric.GetLabel()
+					// Build map of label name to value
+					labelMap := make(map[string]string)
+					for _, label := range labels {
+						labelMap[label.GetName()] = label.GetValue()
+					}
+					// Expected label names based on metric definition order
+					expectedNames := []string{"channel"}
+					matched := true
+					for i, expectedValue := range labelValues {
+						if i >= len(expectedNames) {
+							matched = false
+							break
+						}
+						name := expectedNames[i]
+						if labelMap[name] != expectedValue {
+							matched = false
+							break
+						}
+					}
+					if matched {
+						return metric.GetGauge().GetValue()
+					}
+				}
+			}
+		}
+		return 0
+	}
+
+	// Initially circuit breaker should be closed (state 0)
+	initialState := getGaugeValue("helixagent_concurrency_alert_circuit_breaker_state", "webhook")
+	assert.Equal(t, 0.0, initialState, "Circuit breaker should be closed (0) initially")
+
+	// Send first alert - should fail but circuit remains closed (failures < threshold)
+	manager.HandleAlert(alert)
+	time.Sleep(100 * time.Millisecond) // Allow async processing
+	state := getGaugeValue("helixagent_concurrency_alert_circuit_breaker_state", "webhook")
+	assert.Equal(t, 0.0, state, "Circuit breaker should still be closed (0) after first failure")
+
+	// Send second alert - reaches failure threshold, circuit should open (state 2)
+	manager.HandleAlert(alert)
+	time.Sleep(100 * time.Millisecond)
+	state = getGaugeValue("helixagent_concurrency_alert_circuit_breaker_state", "webhook")
+	assert.Equal(t, 2.0, state, "Circuit breaker should be open (2) after reaching failure threshold")
+
+	// Wait for circuit breaker reset period (half-open state)
+	time.Sleep(600 * time.Millisecond) // Slightly longer than reset period
+
+	// Send third alert - circuit should be half-open (state 1) allowing one attempt
+	manager.HandleAlert(alert)
+	time.Sleep(100 * time.Millisecond)
+	state = getGaugeValue("helixagent_concurrency_alert_circuit_breaker_state", "webhook")
+	// After half-open attempt, since server still fails, circuit will open again (state 2)
+	// However, there may be a brief moment where state is 1 (half-open)
+	// We'll accept either 1 (half-open) or 2 (open) depending on timing
+	assert.True(t, state == 1.0 || state == 2.0,
+		"Circuit breaker should be half-open (1) or open (2) after reset period")
+
+	// Verify request count matches expected behavior
+	mu.Lock()
+	count := requestCount
+	mu.Unlock()
+	// Expected: 2 failures (closed) + 1 attempt (half-open) = 3 total requests
+	assert.Equal(t, 3, count, "Should have made 3 total requests (2 closed + 1 half-open)")
+}
+
+// TestConcurrencyAlertManager_Metrics_ThresholdBreach tests that RecordThresholdBreach metric is recorded
+func TestConcurrencyAlertManager_Metrics_ThresholdBreach(t *testing.T) {
+	// Save original registry and replace with test registry
+	originalRegistry := prometheus.DefaultRegisterer
+	testRegistry := prometheus.NewRegistry()
+	prometheus.DefaultRegisterer = testRegistry
+	defer func() {
+		prometheus.DefaultRegisterer = originalRegistry
+	}()
+
+	// Reset metrics to ensure fresh initialization
+	resetConcurrencyMetrics()
+
+	// Configure dead letter queue monitoring with low thresholds
+	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
+	config.EnableLogging = false
+	config.EnableWebhook = false
+	config.EnableEmail = false
+	config.EscalationEnabled = false
+	config.RateLimitEnabled = false
+	config.CircuitBreakerEnabled = false
+	config.RetryEnabled = false
+	config.DefaultCooldown = 500 * time.Millisecond // Set cooldown for deduplication
+	config.CleanupInterval = 100 * time.Millisecond
+	config.MaxAlertAge = 1 * time.Hour
+
+	// Enable dead letter queue monitoring with low thresholds for testing
+	config.DeadLetterQueueMonitoringEnabled = true
+	config.DeadLetterQueueWarningThreshold = 2
+	config.DeadLetterQueueCriticalThreshold = 4
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel) // Reduce noise
+	manager := NewConcurrencyAlertManager(config, logger)
+
+	// Start the manager to enable monitoring
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go manager.Start(ctx)
+	time.Sleep(5 * time.Millisecond)
+
+	// Helper to get counter value with labels
+	getCounterValue := func(metricName string, labelValues ...string) float64 {
+		metrics, err := testRegistry.Gather()
+		if err != nil {
+			return 0
+		}
+		for _, mf := range metrics {
+			if mf.GetName() == metricName {
+				for _, metric := range mf.GetMetric() {
+					labels := metric.GetLabel()
+					// Build map of label name to value
+					labelMap := make(map[string]string)
+					for _, label := range labels {
+						labelMap[label.GetName()] = label.GetValue()
+					}
+					// Expected label names based on metric definition order
+					expectedNames := []string{"threshold_type", "channel", "provider"}
+					matched := true
+					for i, expectedValue := range labelValues {
+						if i >= len(expectedNames) {
+							matched = false
+							break
+						}
+						name := expectedNames[i]
+						if labelMap[name] != expectedValue {
+							matched = false
+							break
+						}
+					}
+					if matched {
+						return metric.GetCounter().GetValue()
+					}
+				}
+			}
+		}
+		return 0
+	}
+
+	// Helper to add alerts to dead letter queue (mirroring internal logic)
+	addDeadLetterAlert := func(channel string, alert ConcurrencyAlert) {
+		manager.mu.Lock()
+		alertKey := manager.generateAlertKey(alert)
+		deadLetterKey := fmt.Sprintf("%s:%s", channel, alertKey)
+		manager.deadLetterAlerts[deadLetterKey] = &deadLetterAlert{
+			channel:      channel,
+			alert:        alert,
+			attempts:     1,
+			lastAttempt:  time.Now(),
+			failureError: "test",
+			addedAt:      time.Now(),
+		}
+		manager.mu.Unlock()
+	}
+
+	// Initially queue is empty, no threshold breaches
+	time.Sleep(150 * time.Millisecond) // Wait for first monitoring tick
+	warningBreaches := getCounterValue("helixagent_concurrency_alert_threshold_breaches_total", "warning", "dead_letter_queue", "system")
+	criticalBreaches := getCounterValue("helixagent_concurrency_alert_threshold_breaches_total", "critical", "dead_letter_queue", "system")
+	assert.Equal(t, 0.0, warningBreaches, "Should have no warning breaches initially")
+	assert.Equal(t, 0.0, criticalBreaches, "Should have no critical breaches initially")
+
+	// Add 1 alert (below warning threshold)
+	alert1 := ConcurrencyAlert{
+		Type:       "test",
+		Provider:   "test-provider",
+		Message:    "Test alert 1",
+		Timestamp:  time.Now(),
+		Saturation: 50.0,
+		Severity:   SeverityWarning,
+	}
+	addDeadLetterAlert("logging", alert1)
+	time.Sleep(150 * time.Millisecond) // Wait for monitoring tick
+	warningBreaches = getCounterValue("helixagent_concurrency_alert_threshold_breaches_total", "warning", "dead_letter_queue", "system")
+	criticalBreaches = getCounterValue("helixagent_concurrency_alert_threshold_breaches_total", "critical", "dead_letter_queue", "system")
+	assert.Equal(t, 0.0, warningBreaches, "Should have no warning breaches below threshold")
+
+	// Add second alert (reaches warning threshold)
+	alert2 := ConcurrencyAlert{
+		Type:       "test",
+		Provider:   "test-provider",
+		Message:    "Test alert 2",
+		Timestamp:  time.Now(),
+		Saturation: 60.0,
+		Severity:   SeverityWarning,
+	}
+	addDeadLetterAlert("logging", alert2)
+	time.Sleep(150 * time.Millisecond) // Should trigger warning breach metric
+	warningBreaches = getCounterValue("helixagent_concurrency_alert_threshold_breaches_total", "warning", "dead_letter_queue", "system")
+	criticalBreaches = getCounterValue("helixagent_concurrency_alert_threshold_breaches_total", "critical", "dead_letter_queue", "system")
+	assert.Equal(t, 1.0, warningBreaches, "Should have one warning breach after reaching warning threshold")
+	assert.Equal(t, 0.0, criticalBreaches, "Should still have no critical breaches")
+
+	// Add third alert (still warning, but cooldown may prevent another metric increment)
+	alert3 := ConcurrencyAlert{
+		Type:       "test",
+		Provider:   "test-provider",
+		Message:    "Test alert 3",
+		Timestamp:  time.Now(),
+		Saturation: 70.0,
+		Severity:   SeverityWarning,
+	}
+	addDeadLetterAlert("logging", alert3)
+	time.Sleep(150 * time.Millisecond)
+	warningBreaches = getCounterValue("helixagent_concurrency_alert_threshold_breaches_total", "warning", "dead_letter_queue", "system")
+	// Warning breaches should still be 1 (cooldown prevents duplicate alerts)
+	assert.Equal(t, 1.0, warningBreaches, "Warning breaches should not increase during cooldown")
+
+	// Add fourth alert (reaches critical threshold)
+	alert4 := ConcurrencyAlert{
+		Type:       "test",
+		Provider:   "test-provider",
+		Message:    "Test alert 4",
+		Timestamp:  time.Now(),
+		Saturation: 80.0,
+		Severity:   SeverityWarning,
+	}
+	addDeadLetterAlert("logging", alert4)
+	time.Sleep(150 * time.Millisecond) // Should trigger critical breach metric
+	warningBreaches = getCounterValue("helixagent_concurrency_alert_threshold_breaches_total", "warning", "dead_letter_queue", "system")
+	criticalBreaches = getCounterValue("helixagent_concurrency_alert_threshold_breaches_total", "critical", "dead_letter_queue", "system")
+	assert.Equal(t, 1.0, warningBreaches, "Warning breaches should still be 1")
+	assert.Equal(t, 1.0, criticalBreaches, "Should have one critical breach after reaching critical threshold")
+
+	// Clean up dead letter queue
+	manager.mu.Lock()
+	manager.deadLetterAlerts = make(map[string]*deadLetterAlert)
+	manager.mu.Unlock()
+	time.Sleep(150 * time.Millisecond) // Wait for monitoring tick
 }

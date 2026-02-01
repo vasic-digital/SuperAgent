@@ -229,6 +229,8 @@ func (am *ConcurrencyAlertManager) checkRateLimit(channel string) bool {
 	if tracker.count >= am.config.RateLimitMaxAlerts {
 		// Check burst allowance
 		if tracker.count >= am.config.RateLimitMaxAlerts+am.config.RateLimitBurstSize {
+			// Record rate limit hit
+			RecordRateLimitHit(channel)
 			return false
 		}
 		// Allow burst but mark as pending reset
@@ -275,6 +277,8 @@ func (am *ConcurrencyAlertManager) checkCircuitBreaker(channel string) bool {
 			lastStateChange: time.Now(),
 		}
 		am.circuitBreakerStates[channel] = cb
+		// Update Prometheus metric for initial closed state
+		UpdateCircuitBreakerState(channel, circuitBreakerStateToInt("closed"))
 	}
 
 	cb.mu.Lock()
@@ -291,6 +295,8 @@ func (am *ConcurrencyAlertManager) checkCircuitBreaker(channel string) bool {
 			cb.state = "half-open"
 			cb.lastStateChange = time.Now()
 			cb.successes = 0
+			// Update Prometheus metric
+			UpdateCircuitBreakerState(channel, circuitBreakerStateToInt("half-open"))
 			return true // Allow one request to test
 		}
 		return false
@@ -330,12 +336,16 @@ func (am *ConcurrencyAlertManager) recordCircuitBreakerSuccess(channel string) {
 			cb.lastStateChange = time.Now()
 			cb.failures = 0
 			cb.successes = 0
+			// Update Prometheus metric
+			UpdateCircuitBreakerState(channel, circuitBreakerStateToInt("closed"))
 		}
 	case "open":
 		// Should not happen, but if it does, transition to half-open
 		cb.state = "half-open"
 		cb.lastStateChange = time.Now()
 		cb.successes = 1
+		// Update Prometheus metric
+		UpdateCircuitBreakerState(channel, circuitBreakerStateToInt("half-open"))
 	}
 }
 
@@ -358,6 +368,8 @@ func (am *ConcurrencyAlertManager) recordCircuitBreakerFailure(channel string) {
 			lastStateChange: time.Now(),
 		}
 		am.circuitBreakerStates[channel] = cb
+		// Update Prometheus metric for initial closed state
+		UpdateCircuitBreakerState(channel, circuitBreakerStateToInt("closed"))
 	}
 
 	cb.mu.Lock()
@@ -373,11 +385,15 @@ func (am *ConcurrencyAlertManager) recordCircuitBreakerFailure(channel string) {
 			// Open the circuit
 			cb.state = "open"
 			cb.lastStateChange = time.Now()
+			// Update Prometheus metric
+			UpdateCircuitBreakerState(channel, circuitBreakerStateToInt("open"))
 		}
 	case "half-open":
 		// Single failure in half-open state opens circuit
 		cb.state = "open"
 		cb.lastStateChange = time.Now()
+		// Update Prometheus metric
+		UpdateCircuitBreakerState(channel, circuitBreakerStateToInt("open"))
 	case "open":
 		// Already open, do nothing
 	}
@@ -529,6 +545,9 @@ func (am *ConcurrencyAlertManager) HandleAlert(alert ConcurrencyAlert) {
 		return
 	}
 
+	// Record alert handled (including those filtered by cooldown)
+	RecordAlertHandled(alert.Type, alert.Provider, severityToString(alert.Severity))
+
 	// Determine alert key for deduplication
 	alertKey := am.generateAlertKey(alert)
 
@@ -538,6 +557,8 @@ func (am *ConcurrencyAlertManager) HandleAlert(alert ConcurrencyAlert) {
 	// Calculate escalation level based on repeat count
 	escalationLevel := am.calculateEscalationLevel(tracking.repeatCount)
 	tracking.escalationLevel = escalationLevel
+	// Update Prometheus metric for escalation level
+	UpdateEscalationLevel(alert.Type, alert.Provider, alertKey, escalationLevel)
 
 	// Update alert with escalation level
 	alert.EscalationLevel = escalationLevel
@@ -1197,6 +1218,11 @@ func (am *ConcurrencyAlertManager) checkDeadLetterQueueThresholds() {
 			"queue_size":         queueSize,
 			"critical_threshold": criticalThreshold,
 		})
+		// Record threshold breach metric only if not in cooldown
+		alertKey := am.generateAlertKey(alert)
+		if !am.isInCooldown(alertKey) {
+			RecordThresholdBreach("critical", "dead_letter_queue", "system")
+		}
 		am.HandleAlert(alert)
 		return // Don't send warning if critical already triggered
 	}
@@ -1217,6 +1243,11 @@ func (am *ConcurrencyAlertManager) checkDeadLetterQueueThresholds() {
 			"queue_size":        queueSize,
 			"warning_threshold": warningThreshold,
 		})
+		// Record threshold breach metric only if not in cooldown
+		alertKey := am.generateAlertKey(alert)
+		if !am.isInCooldown(alertKey) {
+			RecordThresholdBreach("warning", "dead_letter_queue", "system")
+		}
 		am.HandleAlert(alert)
 	}
 }
@@ -1832,4 +1863,34 @@ func LoadConcurrencyAlertManagerConfigFromEnv() ConcurrencyAlertManagerConfig {
 	config.DeadLetterQueueCriticalThreshold = getIntEnv("CONCURRENCY_ALERTS_DEAD_LETTER_QUEUE_CRITICAL_THRESHOLD", config.DeadLetterQueueCriticalThreshold)
 
 	return config
+}
+
+// severityToString converts AlertSeverity to string representation
+func severityToString(severity AlertSeverity) string {
+	switch severity {
+	case SeverityInfo:
+		return "info"
+	case SeverityWarning:
+		return "warning"
+	case SeverityError:
+		return "error"
+	case SeverityCritical:
+		return "critical"
+	default:
+		return "unknown"
+	}
+}
+
+// circuitBreakerStateToInt converts circuit breaker state string to numeric representation
+func circuitBreakerStateToInt(state string) int {
+	switch state {
+	case "closed":
+		return 0
+	case "half-open":
+		return 1
+	case "open":
+		return 2
+	default:
+		return -1
+	}
 }
