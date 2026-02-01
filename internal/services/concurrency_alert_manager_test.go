@@ -745,8 +745,10 @@ func TestConcurrencyAlertManager_RetryLogic(t *testing.T) {
 	config.RetryMaxDelay = 100 * time.Millisecond
 	config.RetryBackoffMultiplier = 2.0
 	config.CleanupInterval = 10 * time.Millisecond // Fast cleanup for retry processing
+	config.MaxAlertAge = 1 * time.Hour             // Prevent immediate cleanup of retry attempts
 
 	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
 	manager := NewConcurrencyAlertManager(config, logger)
 
 	// Start the manager to enable retry processing
@@ -782,4 +784,178 @@ func TestConcurrencyAlertManager_RetryLogic(t *testing.T) {
 	mu.Unlock()
 	t.Logf("Request count: %d (expected 2)", count)
 	assert.Equal(t, 2, count, "Should have made initial request plus one retry")
+}
+
+func TestConcurrencyAlertManager_DeadLetterQueue(t *testing.T) {
+	// Create test server that always fails
+	var requestCount int
+	var mu sync.Mutex
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requestCount++
+		mu.Unlock()
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	// Configure alert manager with retry enabled and low max retries
+	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
+	config.EnableLogging = false
+	config.EnableWebhook = true
+	config.WebhookURL = server.URL
+	config.DefaultCooldown = 0
+	config.WebhookTimeout = 5 * time.Second
+	config.EscalationEnabled = false
+	// Disable rate limiting and circuit breaker for this test
+	config.RateLimitEnabled = false
+	config.CircuitBreakerEnabled = false
+	config.RetryEnabled = true
+	config.MaxRetries = 2
+	config.RetryInitialDelay = 10 * time.Millisecond
+	config.RetryMaxDelay = 100 * time.Millisecond
+	config.RetryBackoffMultiplier = 2.0
+	config.CleanupInterval = 10 * time.Millisecond
+	config.MaxAlertAge = 1 * time.Hour
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+	manager := NewConcurrencyAlertManager(config, logger)
+
+	// Start the manager to enable retry processing
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go manager.Start(ctx)
+	// Give manager time to start
+	time.Sleep(5 * time.Millisecond)
+
+	alert := ConcurrencyAlert{
+		Type:           "high_saturation",
+		Provider:       "test-provider",
+		Message:        "Test alert",
+		Timestamp:      time.Now(),
+		Saturation:     85.5,
+		ActiveRequests: 10,
+		TotalPermits:   12,
+		Available:      2,
+	}
+
+	// Send alert
+	t.Logf("Sending alert (will fail, retry up to MaxRetries, then move to dead letter queue)...")
+	manager.HandleAlert(alert)
+
+	// Wait for retries and dead letter queue movement
+	// MaxRetries=2 means total attempts = MaxRetries (initial + (MaxRetries-1) retries?)
+	// Actually: attempts count = number of attempts already made (including current).
+	// With MaxRetries=2, we allow up to 2 total attempts (initial + 1 retry).
+	time.Sleep(500 * time.Millisecond)
+
+	// Verify that exactly MaxRetries requests were made (initial + (MaxRetries-1) retries)
+	mu.Lock()
+	count := requestCount
+	mu.Unlock()
+	expectedRequests := config.MaxRetries
+	t.Logf("Request count: %d (expected %d)", count, expectedRequests)
+	assert.Equal(t, expectedRequests, count, "Should have made MaxRetries total attempts before dead letter")
+
+	// Check dead letter queue via GetDeadLetterAlerts
+	deadLetterAlerts := manager.GetDeadLetterAlerts()
+	assert.Equal(t, 1, len(deadLetterAlerts), "Should have one alert in dead letter queue")
+	if len(deadLetterAlerts) > 0 {
+		deadLetter := deadLetterAlerts[0]
+		assert.Equal(t, "webhook", deadLetter["channel"])
+		assert.Equal(t, "high_saturation", deadLetter["type"])
+		assert.Equal(t, "test-provider", deadLetter["provider"])
+		assert.Equal(t, expectedRequests, deadLetter["attempts"]) // attempts = total attempts made
+		assert.Contains(t, deadLetter["failure_error"], "max retries exceeded")
+	}
+
+	// Check stats
+	stats := manager.GetAlertStats()
+	assert.Equal(t, 1, stats["dead_letter_queue_size"])
+	assert.Equal(t, 0, stats["retry_queue_size"]) // Should be empty after moving to dead letter
+	t.Logf("Test completed")
+}
+
+func TestConcurrencyAlertManager_DeadLetterQueueRetry(t *testing.T) {
+	// Create test server that always fails
+	var requestCount int
+	var mu sync.Mutex
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requestCount++
+		mu.Unlock()
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	config := DefaultConcurrencyAlertManagerConfig()
+	config.Enabled = true
+	config.EnableLogging = false
+	config.EnableWebhook = true
+	config.WebhookURL = server.URL
+	config.DefaultCooldown = 0
+	config.WebhookTimeout = 5 * time.Second
+	config.EscalationEnabled = false
+	config.RateLimitEnabled = false
+	config.CircuitBreakerEnabled = false
+	config.RetryEnabled = true
+	config.MaxRetries = 2                      // Allow one retry attempt after initial failure (total attempts = 2)
+	config.RetryInitialDelay = 5 * time.Second // Large delay to allow us to check dead letter queue before retry is scheduled
+	config.RetryMaxDelay = 10 * time.Second
+	config.RetryBackoffMultiplier = 2.0
+	config.CleanupInterval = 10 * time.Millisecond
+	config.MaxAlertAge = 1 * time.Hour
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+	manager := NewConcurrencyAlertManager(config, logger)
+
+	// Start the manager
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go manager.Start(ctx)
+	time.Sleep(5 * time.Millisecond)
+
+	alert := ConcurrencyAlert{
+		Type:           "high_saturation",
+		Provider:       "test-provider",
+		Message:        "Test alert",
+		Timestamp:      time.Now(),
+		Saturation:     85.5,
+		ActiveRequests: 10,
+		TotalPermits:   12,
+		Available:      2,
+	}
+
+	// Send alert to trigger dead letter queue (with MaxRetries=2, we need to fail twice)
+	manager.HandleAlert(alert)
+	time.Sleep(200 * time.Millisecond) // Wait for dead letter queue
+
+	// Verify dead letter queue has the alert (because MaxRetries=2, total attempts = 2, dead letter after 2 attempts)
+	deadLetterAlerts := manager.GetDeadLetterAlerts()
+	assert.Equal(t, 1, len(deadLetterAlerts), "Should have one alert in dead letter queue")
+	key := deadLetterAlerts[0]["key"].(string)
+
+	// Test RetryDeadLetterAlert with non-existent key
+	assert.False(t, manager.RetryDeadLetterAlert("nonexistent"), "Should return false for non-existent key")
+
+	// Test RetryDeadLetterAlert with valid key
+	removed := manager.RetryDeadLetterAlert(key)
+	assert.True(t, removed, "Should return true for existing key")
+
+	// Immediately check dead letter queue (should be empty because we deleted it)
+	deadLetterAlerts = manager.GetDeadLetterAlerts()
+	assert.Equal(t, 0, len(deadLetterAlerts), "Dead letter queue should be empty after retry")
+
+	// Wait a bit to ensure no immediate retry (should not happen due to delay)
+	time.Sleep(100 * time.Millisecond)
+	deadLetterAlerts = manager.GetDeadLetterAlerts()
+	assert.Equal(t, 0, len(deadLetterAlerts), "Dead letter queue should still be empty")
+
+	// Check retry queue size (should be 1 because the retry is scheduled)
+	stats := manager.GetAlertStats()
+	assert.Equal(t, 1, stats["retry_queue_size"], "Retry queue should contain the scheduled retry")
+
+	t.Logf("Test completed")
 }
