@@ -6,6 +6,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"math"
+	"math/rand"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -368,44 +370,6 @@ func (am *ConcurrencyAlertManager) getCircuitBreakerState(channel string) *circu
 	return am.circuitBreakerStates[channel]
 }
 
-// sendToChannelWithResilience sends an alert to a channel with rate limiting and circuit breaker protection
-func (am *ConcurrencyAlertManager) sendToChannelWithResilience(channel string, alert ConcurrencyAlert, sendFunc func() error) {
-	// Check rate limiting
-	if !am.checkRateLimit(channel) {
-		am.logger.Debug("Rate limit exceeded for channel", logrus.Fields{
-			"channel":  channel,
-			"type":     alert.Type,
-			"provider": alert.Provider,
-		})
-		return
-	}
-
-	// Check circuit breaker
-	if !am.checkCircuitBreaker(channel) {
-		am.logger.Debug("Circuit breaker open for channel", logrus.Fields{
-			"channel":  channel,
-			"type":     alert.Type,
-			"provider": alert.Provider,
-		})
-		return
-	}
-
-	// Attempt delivery
-	err := sendFunc()
-	if err != nil {
-		am.logger.Error("Failed to send alert via channel", logrus.Fields{
-			"channel":  channel,
-			"type":     alert.Type,
-			"provider": alert.Provider,
-			"error":    err.Error(),
-		})
-		am.recordCircuitBreakerFailure(channel)
-	} else {
-		am.recordCircuitBreakerSuccess(channel)
-		am.recordRateLimitUsage(channel) // Already recorded in checkRateLimit, but for completeness
-	}
-}
-
 // shouldSendToChannel checks if a channel should be used for given escalation level
 func (am *ConcurrencyAlertManager) shouldSendToChannel(channel string, escalationLevel int) bool {
 	// First check if channel is globally enabled and configured
@@ -634,6 +598,7 @@ func (am *ConcurrencyAlertManager) Start(ctx context.Context) {
 			return
 		case <-ticker.C:
 			am.CleanupOldRecords(am.config.MaxAlertAge)
+			am.processRetries()
 		}
 	}
 }
@@ -718,6 +683,7 @@ func (am *ConcurrencyAlertManager) CleanupOldRecords(maxAge time.Duration) {
 }
 
 // GetAlertStats returns statistics about sent alerts
+// GetAlertStats returns statistics about sent alerts
 func (am *ConcurrencyAlertManager) GetAlertStats() map[string]interface{} {
 	am.mu.RLock()
 	defer am.mu.RUnlock()
@@ -745,6 +711,190 @@ func (am *ConcurrencyAlertManager) GetAlertStats() map[string]interface{} {
 	}
 
 	return stats
+}
+func (am *ConcurrencyAlertManager) calculateRetryDelay(attempts int) time.Duration {
+	if attempts <= 0 {
+		return am.config.RetryInitialDelay
+	}
+
+	// Calculate exponential backoff: initialDelay * multiplier^attempts
+	delay := float64(am.config.RetryInitialDelay) * math.Pow(am.config.RetryBackoffMultiplier, float64(attempts-1))
+
+	// Apply jitter: ±20% random variation
+	jitter := 0.8 + 0.4*rand.Float64()
+	delay = delay * jitter
+
+	// Convert to time.Duration and cap at max delay
+	result := time.Duration(delay)
+	if result > am.config.RetryMaxDelay {
+		result = am.config.RetryMaxDelay
+	}
+	if result < am.config.RetryInitialDelay {
+		result = am.config.RetryInitialDelay
+	}
+	return result
+}
+
+// scheduleRetry schedules a retry for a failed delivery
+func (am *ConcurrencyAlertManager) scheduleRetry(channel string, alert ConcurrencyAlert, sendFunc func() error, attempts int) {
+	if !am.config.RetryEnabled {
+		return
+	}
+	if attempts >= am.config.MaxRetries {
+		am.logger.Debug("Max retries reached for alert", logrus.Fields{
+			"channel":  channel,
+			"type":     alert.Type,
+			"provider": alert.Provider,
+			"attempts": attempts,
+		})
+		// TODO: move to dead letter queue
+		return
+	}
+
+	alertKey := am.generateAlertKey(alert)
+	retryKey := fmt.Sprintf("%s:%s", channel, alertKey)
+
+	am.mu.Lock()
+	defer am.mu.Unlock()
+
+	// Check if already exists (maybe update)
+	attempt, exists := am.deliveryAttempts[retryKey]
+	if !exists {
+		attempt = &deliveryAttempt{
+			channel:     channel,
+			alert:       alert,
+			attempts:    attempts,
+			lastAttempt: time.Now(),
+			nextRetry:   time.Now().Add(am.calculateRetryDelay(attempts)),
+		}
+		am.deliveryAttempts[retryKey] = attempt
+	} else {
+		attempt.attempts = attempts
+		attempt.lastAttempt = time.Now()
+		attempt.nextRetry = time.Now().Add(am.calculateRetryDelay(attempts))
+	}
+
+	am.logger.Debug("Scheduled retry for alert", logrus.Fields{
+		"channel":    channel,
+		"type":       alert.Type,
+		"provider":   alert.Provider,
+		"attempts":   attempts,
+		"next_retry": attempt.nextRetry,
+	})
+}
+
+// processRetries processes pending retry attempts
+func (am *ConcurrencyAlertManager) processRetries() {
+	if !am.config.RetryEnabled {
+		return
+	}
+
+	am.mu.Lock()
+	defer am.mu.Unlock()
+
+	now := time.Now()
+	for key, attempt := range am.deliveryAttempts {
+		if attempt.nextRetry.After(now) {
+			continue
+		}
+		// Ready for retry
+		// Copy values to avoid data race
+		channel := attempt.channel
+		alert := attempt.alert
+		attempts := attempt.attempts
+		// Remove from map before attempting (will be re-added if fails)
+		delete(am.deliveryAttempts, key)
+		// Execute retry asynchronously
+		go am.retryDelivery(channel, alert, attempts)
+	}
+}
+
+// retryDelivery attempts a retry delivery (called from processRetries)
+func (am *ConcurrencyAlertManager) retryDelivery(channel string, alert ConcurrencyAlert, attempts int) {
+	// Determine sendFunc based on channel
+	var sendFunc func() error
+	switch channel {
+	case "logging":
+		sendFunc = func() error { return am.sendToLog(alert) }
+	case "webhook":
+		sendFunc = func() error { return am.sendWebhook(alert) }
+	case "slack":
+		sendFunc = func() error { return am.sendSlackWebhook(alert) }
+	case "email":
+		sendFunc = func() error { return am.sendEmail(alert) }
+	default:
+		am.logger.Error("Unknown channel for retry", logrus.Fields{"channel": channel})
+		return
+	}
+
+	// Use the resilience wrapper with increased attempt count
+	am.sendToChannelWithResilienceInternal(channel, alert, sendFunc, attempts+1)
+}
+
+// sendToChannelWithResilienceInternal sends an alert to a channel with rate limiting, circuit breaker, and retry support
+func (am *ConcurrencyAlertManager) sendToChannelWithResilienceInternal(channel string, alert ConcurrencyAlert, sendFunc func() error, attempts int) {
+
+	am.logger.Debug("Sending alert via channel", logrus.Fields{
+		"channel":  channel,
+		"type":     alert.Type,
+		"provider": alert.Provider,
+		"attempts": attempts,
+	})
+	// Check rate limiting
+	if !am.checkRateLimit(channel) {
+		am.logger.Debug("Rate limit exceeded for channel", logrus.Fields{
+			"channel":  channel,
+			"type":     alert.Type,
+			"provider": alert.Provider,
+		})
+		return
+	}
+
+	// Check circuit breaker
+	if !am.checkCircuitBreaker(channel) {
+		am.logger.Debug("Circuit breaker open for channel", logrus.Fields{
+			"channel":  channel,
+			"type":     alert.Type,
+			"provider": alert.Provider,
+		})
+		return
+	}
+
+	// Attempt delivery
+	err := sendFunc()
+	if err != nil {
+		am.logger.Error("Failed to send alert via channel", logrus.Fields{
+			"channel":  channel,
+			"type":     alert.Type,
+			"provider": alert.Provider,
+			"error":    err.Error(),
+		})
+		am.recordCircuitBreakerFailure(channel)
+		// Schedule retry if enabled
+		if am.config.RetryEnabled && attempts < am.config.MaxRetries {
+			am.scheduleRetry(channel, alert, sendFunc, attempts+1)
+		}
+	} else {
+		am.recordCircuitBreakerSuccess(channel)
+		am.recordRateLimitUsage(channel)
+		// Remove any pending retry for this alert
+		am.removeDeliveryAttempt(channel, alert)
+	}
+}
+
+// sendToChannelWithResilience sends an alert to a channel with rate limiting and circuit breaker protection
+func (am *ConcurrencyAlertManager) sendToChannelWithResilience(channel string, alert ConcurrencyAlert, sendFunc func() error) {
+	am.sendToChannelWithResilienceInternal(channel, alert, sendFunc, 0)
+}
+
+// removeDeliveryAttempt removes a delivery attempt from the retry queue (e.g., on success)
+func (am *ConcurrencyAlertManager) removeDeliveryAttempt(channel string, alert ConcurrencyAlert) {
+	alertKey := am.generateAlertKey(alert)
+	retryKey := fmt.Sprintf("%s:%s", channel, alertKey)
+
+	am.mu.Lock()
+	defer am.mu.Unlock()
+	delete(am.deliveryAttempts, retryKey)
 }
 
 // splitAlertKey splits alert key into parts
