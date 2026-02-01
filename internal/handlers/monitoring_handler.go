@@ -14,6 +14,7 @@ type MonitoringHandler struct {
 	oauthTokenMonitor      *services.OAuthTokenMonitor
 	providerHealthMonitor  *services.ProviderHealthMonitor
 	fallbackChainValidator *services.FallbackChainValidator
+	concurrencyMonitor     *services.ConcurrencyMonitor
 }
 
 // NewMonitoringHandler creates a new monitoring handler
@@ -22,12 +23,14 @@ func NewMonitoringHandler(
 	otm *services.OAuthTokenMonitor,
 	phm *services.ProviderHealthMonitor,
 	fcv *services.FallbackChainValidator,
+	cm *services.ConcurrencyMonitor,
 ) *MonitoringHandler {
 	return &MonitoringHandler{
 		circuitBreakerMonitor:  cbm,
 		oauthTokenMonitor:      otm,
 		providerHealthMonitor:  phm,
 		fallbackChainValidator: fcv,
+		concurrencyMonitor:     cm,
 	}
 }
 
@@ -55,6 +58,11 @@ func (h *MonitoringHandler) RegisterRoutes(router *gin.RouterGroup) {
 		// Fallback chain endpoints
 		monitoring.GET("/fallback-chain", h.GetFallbackChainStatus)
 		monitoring.POST("/fallback-chain/validate", h.ValidateFallbackChain)
+
+		// Concurrency monitoring endpoints
+		monitoring.GET("/concurrency", h.GetConcurrencyStatus)
+		monitoring.POST("/concurrency/:provider/reset-tracking", h.ResetConcurrencyTracking)
+		monitoring.POST("/concurrency/reset-all-tracking", h.ResetAllConcurrencyTracking)
 	}
 }
 
@@ -65,6 +73,7 @@ type OverallMonitoringStatus struct {
 	OAuthTokens     *services.OAuthTokenStatus            `json:"oauth_tokens,omitempty"`
 	ProviderHealth  *services.ProviderHealthOverallStatus `json:"provider_health,omitempty"`
 	FallbackChain   *services.FallbackChainStatus         `json:"fallback_chain,omitempty"`
+	Concurrency     *services.ConcurrencyStatus           `json:"concurrency,omitempty"`
 }
 
 // GetOverallStatus returns the overall monitoring status
@@ -111,6 +120,15 @@ func (h *MonitoringHandler) GetOverallStatus(c *gin.Context) {
 		fcStatus := h.fallbackChainValidator.GetStatus()
 		status.FallbackChain = &fcStatus
 		if fcStatus.Validated && !fcStatus.Valid {
+			status.Healthy = false
+		}
+	}
+
+	// Get concurrency status
+	if h.concurrencyMonitor != nil {
+		concurrencyStatus := h.concurrencyMonitor.GetStatus()
+		status.Concurrency = &concurrencyStatus
+		if !concurrencyStatus.Healthy {
 			status.Healthy = false
 		}
 	}
@@ -349,4 +367,70 @@ func (h *MonitoringHandler) ValidateFallbackChain(c *gin.Context) {
 
 	result := h.fallbackChainValidator.Validate()
 	c.JSON(http.StatusOK, result)
+}
+
+// GetConcurrencyStatus returns concurrency monitoring status
+// @Summary Get concurrency status
+// @Description Returns concurrency statistics for all providers
+// @Tags monitoring
+// @Produce json
+// @Success 200 {object} services.ConcurrencyStatus
+// @Router /v1/monitoring/concurrency [get]
+func (h *MonitoringHandler) GetConcurrencyStatus(c *gin.Context) {
+	if h.concurrencyMonitor == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Concurrency monitor not available",
+		})
+		return
+	}
+
+	status := h.concurrencyMonitor.GetStatus()
+	c.JSON(http.StatusOK, status)
+}
+
+// ResetConcurrencyTracking resets high concurrency tracking for a provider
+// @Summary Reset concurrency tracking
+// @Description Resets high concurrency tracking for a specific provider
+// @Tags monitoring
+// @Param provider path string true "Provider ID"
+// @Produce json
+// @Success 200 {object} gin.H
+// @Router /v1/monitoring/concurrency/{provider}/reset-tracking [post]
+func (h *MonitoringHandler) ResetConcurrencyTracking(c *gin.Context) {
+	if h.concurrencyMonitor == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Concurrency monitor not available",
+		})
+		return
+	}
+
+	provider := c.Param("provider")
+	h.concurrencyMonitor.ResetHighConcurrencyTracking(provider)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Concurrency tracking reset for provider",
+		"provider": provider,
+	})
+}
+
+// ResetAllConcurrencyTracking resets high concurrency tracking for all providers
+// @Summary Reset all concurrency tracking
+// @Description Resets high concurrency tracking for all providers
+// @Tags monitoring
+// @Produce json
+// @Success 200 {object} gin.H
+// @Router /v1/monitoring/concurrency/reset-all-tracking [post]
+func (h *MonitoringHandler) ResetAllConcurrencyTracking(c *gin.Context) {
+	if h.concurrencyMonitor == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Concurrency monitor not available",
+		})
+		return
+	}
+
+	h.concurrencyMonitor.ResetAllHighConcurrencyTracking()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Concurrency tracking reset for all providers",
+	})
 }
