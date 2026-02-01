@@ -14,6 +14,7 @@ import (
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/modelsdev"
+	"dev.helix.agent/internal/utils"
 )
 
 // QwenCLIProvider implements the LLMProvider interface using Qwen Code CLI
@@ -115,7 +116,7 @@ func (p *QwenCLIProvider) IsCLIAvailable() bool {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		cmd := exec.CommandContext(ctx, path, "--version")
+		cmd := exec.CommandContext(ctx, path, "--version") // #nosec G204
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			p.cliCheckErr = fmt.Errorf("qwen command failed: %w (output: %s)", err, string(output))
@@ -177,6 +178,11 @@ func (p *QwenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 		return nil, fmt.Errorf("no prompt provided")
 	}
 
+	// Validate prompt for command injection safety
+	if !utils.ValidateCommandArg(prompt) {
+		return nil, fmt.Errorf("prompt contains invalid characters")
+	}
+
 	// Create command with timeout
 	cmdCtx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
@@ -185,6 +191,10 @@ func (p *QwenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 	model := p.model
 	if req.ModelParams.Model != "" {
 		model = req.ModelParams.Model
+	}
+	// Validate model name for command injection safety
+	if !utils.ValidateCommandArg(model) {
+		return nil, fmt.Errorf("model name contains invalid characters")
 	}
 
 	// Build qwen command arguments
@@ -195,7 +205,7 @@ func (p *QwenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 	}
 
 	// Execute qwen command
-	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...)
+	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...) // #nosec G204
 
 	// Capture output
 	var stdout, stderr bytes.Buffer
@@ -271,6 +281,11 @@ func (p *QwenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 		return nil, fmt.Errorf("no prompt provided")
 	}
 
+	// Validate prompt for command injection safety
+	if !utils.ValidateCommandArg(prompt) {
+		return nil, fmt.Errorf("prompt contains invalid characters")
+	}
+
 	// Create command with timeout
 	cmdCtx, cancel := context.WithTimeout(ctx, p.timeout)
 
@@ -278,6 +293,10 @@ func (p *QwenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 	model := p.model
 	if req.ModelParams.Model != "" {
 		model = req.ModelParams.Model
+	}
+	// Validate model name for command injection safety
+	if !utils.ValidateCommandArg(model) {
+		return nil, fmt.Errorf("model name contains invalid characters")
 	}
 
 	// Build qwen command arguments
@@ -287,7 +306,7 @@ func (p *QwenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 		"--model", model,
 	}
 
-	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...)
+	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...) // #nosec G204
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -514,7 +533,7 @@ func (p *QwenCLIProvider) discoverModelsFromCLI(ctx context.Context) []string {
 	}
 
 	for _, args := range commands {
-		cmd := exec.CommandContext(ctx, p.cliPath, args...)
+		cmd := exec.CommandContext(ctx, p.cliPath, args...) // #nosec G204
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			models := parseQwenModelsOutput(string(output))
@@ -652,7 +671,7 @@ func DiscoverQwenModels() ([]string, error) {
 	defer cancel()
 
 	// Try the models command
-	cmd := exec.CommandContext(ctx, path, "models")
+	cmd := exec.CommandContext(ctx, path, "models") // #nosec G204
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		models := parseQwenModelsOutput(string(output))

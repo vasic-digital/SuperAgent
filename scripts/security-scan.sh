@@ -86,11 +86,11 @@ run_gosec() {
     # Check if gosec is installed locally
     if command -v gosec &> /dev/null; then
         echo -e "${GREEN}Using local gosec installation${NC}"
-        gosec -fmt=json -out="$report_file" ./... 2>/dev/null || true
-        gosec -fmt=html -out="$html_report" ./... 2>/dev/null || true
+        gosec -conf=.gosec.yml -fmt=json -out="$report_file" ./... 2>/dev/null || true
+        gosec -conf=.gosec.yml -fmt=html -out="$html_report" ./... 2>/dev/null || true
     else
         echo -e "${YELLOW}Gosec not installed locally, using container${NC}"
-        $COMPOSE_CMD -f "$COMPOSE_FILE" run --rm gosec-scanner \
+        $COMPOSE_CMD -f "$COMPOSE_FILE" --profile scan run --rm gosec-scanner \
             -fmt=json -out=/app/reports/security/gosec-${TIMESTAMP}.json ./... 2>/dev/null || true
     fi
 

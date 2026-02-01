@@ -10,14 +10,32 @@ import (
 	"sync/atomic"
 	"time"
 
+	"golang.org/x/sync/semaphore"
+
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/llm/providers/ai21"
+	"dev.helix.agent/internal/llm/providers/anthropic"
+	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/cohere"
 	"dev.helix.agent/internal/llm/providers/deepseek"
+	"dev.helix.agent/internal/llm/providers/fireworks"
 	"dev.helix.agent/internal/llm/providers/gemini"
+	"dev.helix.agent/internal/llm/providers/groq"
+	"dev.helix.agent/internal/llm/providers/huggingface"
+	"dev.helix.agent/internal/llm/providers/mistral"
+	"dev.helix.agent/internal/llm/providers/ollama"
+	"dev.helix.agent/internal/llm/providers/openai"
 	"dev.helix.agent/internal/llm/providers/openrouter"
+	"dev.helix.agent/internal/llm/providers/perplexity"
 	"dev.helix.agent/internal/llm/providers/qwen"
+	"dev.helix.agent/internal/llm/providers/replicate"
+	"dev.helix.agent/internal/llm/providers/together"
+	"dev.helix.agent/internal/llm/providers/xai"
+	"dev.helix.agent/internal/llm/providers/zai"
+	"dev.helix.agent/internal/llm/providers/zen"
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/verifier"
 	"github.com/sirupsen/logrus"
@@ -25,38 +43,42 @@ import (
 
 // ProviderRegistry manages LLM provider registration and configuration
 type ProviderRegistry struct {
-	providers       map[string]llm.LLMProvider
-	circuitBreakers map[string]*CircuitBreaker
-	providerConfigs map[string]*ProviderConfig             // Stores provider configurations
-	providerHealth  map[string]*ProviderVerificationResult // Stores provider health verification results
-	activeRequests  map[string]*int64                      // Atomic counters for active requests per provider
-	config          *RegistryConfig
-	ensemble        *EnsembleService
-	requestService  *RequestService
-	memory          *MemoryService
-	discovery       *ProviderDiscovery        // Auto-discovery service for environment-based provider detection
-	scoreAdapter    *LLMsVerifierScoreAdapter // LLMsVerifier score adapter for dynamic provider ordering
-	startupVerifier *verifier.StartupVerifier // Unified startup verification (optional)
-	mu              sync.RWMutex
-	drainTimeout    time.Duration // Timeout for graceful shutdown request draining
-	autoDiscovery   bool          // Whether auto-discovery is enabled
+	providers             map[string]llm.LLMProvider
+	circuitBreakers       map[string]*CircuitBreaker
+	concurrencySemaphores map[string]*semaphore.Weighted
+	providerConfigs       map[string]*ProviderConfig             // Stores provider configurations
+	providerHealth        map[string]*ProviderVerificationResult // Stores provider health verification results
+	activeRequests        map[string]*int64                      // Atomic counters for active requests per provider
+	config                *RegistryConfig
+	ensemble              *EnsembleService
+	requestService        *RequestService
+	memory                *MemoryService
+	discovery             *ProviderDiscovery        // Auto-discovery service for environment-based provider detection
+	scoreAdapter          *LLMsVerifierScoreAdapter // LLMsVerifier score adapter for dynamic provider ordering
+	startupVerifier       *verifier.StartupVerifier // Unified startup verification (optional)
+	mu                    sync.RWMutex
+	drainTimeout          time.Duration         // Timeout for graceful shutdown request draining
+	autoDiscovery         bool                  // Whether auto-discovery is enabled
+	initSemaphore         *semaphore.Weighted   // Semaphore to limit concurrent provider initialization
+	initOnce              map[string]*sync.Once // sync.Once per provider for thread-safe initialization
 }
 
 // ProviderConfig holds configuration for an LLM provider
 type ProviderConfig struct {
-	Name           string            `json:"name"`
-	Type           string            `json:"type"`
-	Enabled        bool              `json:"enabled"`
-	APIKey         string            `json:"api_key"`
-	BaseURL        string            `json:"base_url"`
-	Models         []ModelConfig     `json:"models"`
-	Timeout        time.Duration     `json:"timeout"`
-	MaxRetries     int               `json:"max_retries"`
-	HealthCheckURL string            `json:"health_check_url"`
-	Weight         float64           `json:"weight"`
-	Tags           []string          `json:"tags"`
-	Capabilities   map[string]string `json:"capabilities"`
-	CustomSettings map[string]any    `json:"custom_settings"`
+	Name                  string            `json:"name"`
+	Type                  string            `json:"type"`
+	Enabled               bool              `json:"enabled"`
+	APIKey                string            `json:"api_key"`
+	BaseURL               string            `json:"base_url"`
+	Models                []ModelConfig     `json:"models"`
+	Timeout               time.Duration     `json:"timeout"`
+	MaxRetries            int               `json:"max_retries"`
+	MaxConcurrentRequests int               `json:"max_concurrent_requests"`
+	HealthCheckURL        string            `json:"health_check_url"`
+	Weight                float64           `json:"weight"`
+	Tags                  []string          `json:"tags"`
+	Capabilities          map[string]string `json:"capabilities"`
+	CustomSettings        map[string]any    `json:"custom_settings"`
 }
 
 // ProviderHealthStatus represents the verified health status of a provider
@@ -95,13 +117,14 @@ type ModelConfig struct {
 
 // RegistryConfig holds configuration for provider registry
 type RegistryConfig struct {
-	DefaultTimeout time.Duration              `json:"default_timeout"`
-	MaxRetries     int                        `json:"max_retries"`
-	HealthCheck    HealthCheckConfig          `json:"health_check"`
-	CircuitBreaker CircuitBreakerConfig       `json:"circuit_breaker"`
-	Providers      map[string]*ProviderConfig `json:"providers"`
-	Ensemble       *models.EnsembleConfig     `json:"ensemble"`
-	Routing        *RoutingConfig             `json:"routing"`
+	DefaultTimeout        time.Duration              `json:"default_timeout"`
+	MaxRetries            int                        `json:"max_retries"`
+	MaxConcurrentRequests int                        `json:"max_concurrent_requests"`
+	HealthCheck           HealthCheckConfig          `json:"health_check"`
+	CircuitBreaker        CircuitBreakerConfig       `json:"circuit_breaker"`
+	Providers             map[string]*ProviderConfig `json:"providers"`
+	Ensemble              *models.EnsembleConfig     `json:"ensemble"`
+	Routing               *RoutingConfig             `json:"routing"`
 }
 
 // HealthCheckConfig holds health check configuration
@@ -128,38 +151,74 @@ type CircuitBreakerConfig struct {
 
 // circuitBreakerProvider wraps an LLMProvider with circuit breaker functionality
 type circuitBreakerProvider struct {
-	provider       llm.LLMProvider
-	circuitBreaker *CircuitBreaker
-	name           string
+	provider             llm.LLMProvider
+	circuitBreaker       *CircuitBreaker
+	concurrencySemaphore *semaphore.Weighted
+	name                 string
 }
 
 // Complete wraps the provider's Complete method with circuit breaker protection
 func (cbp *circuitBreakerProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+	// Acquire concurrency semaphore if present
+	if cbp.concurrencySemaphore != nil {
+		if err := cbp.concurrencySemaphore.Acquire(ctx, 1); err != nil {
+			return nil, err
+		}
+		defer cbp.concurrencySemaphore.Release(1)
+	}
+
 	var resp *models.LLMResponse
-	err := cbp.circuitBreaker.Call(func() error {
-		var callErr error
-		resp, callErr = cbp.provider.Complete(ctx, req)
-		return callErr
-	})
+	var err error
+
+	// Use circuit breaker if present, otherwise call directly
+	if cbp.circuitBreaker != nil {
+		err = cbp.circuitBreaker.Call(func() error {
+			var callErr error
+			resp, callErr = cbp.provider.Complete(ctx, req)
+			return callErr
+		})
+	} else {
+		resp, err = cbp.provider.Complete(ctx, req)
+	}
+
 	return resp, err
 }
 
 // CompleteStream wraps the provider's CompleteStream method with circuit breaker protection
 func (cbp *circuitBreakerProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+	// Acquire concurrency semaphore if present
+	if cbp.concurrencySemaphore != nil {
+		if err := cbp.concurrencySemaphore.Acquire(ctx, 1); err != nil {
+			return nil, err
+		}
+		defer cbp.concurrencySemaphore.Release(1)
+	}
+
 	var stream <-chan *models.LLMResponse
-	err := cbp.circuitBreaker.Call(func() error {
-		var callErr error
-		stream, callErr = cbp.provider.CompleteStream(ctx, req)
-		return callErr
-	})
+	var err error
+
+	// Use circuit breaker if present, otherwise call directly
+	if cbp.circuitBreaker != nil {
+		err = cbp.circuitBreaker.Call(func() error {
+			var callErr error
+			stream, callErr = cbp.provider.CompleteStream(ctx, req)
+			return callErr
+		})
+	} else {
+		stream, err = cbp.provider.CompleteStream(ctx, req)
+	}
+
 	return stream, err
 }
 
 // HealthCheck wraps the provider's HealthCheck method with circuit breaker protection
 func (cbp *circuitBreakerProvider) HealthCheck() error {
-	return cbp.circuitBreaker.Call(func() error {
-		return cbp.provider.HealthCheck()
-	})
+	if cbp.circuitBreaker != nil {
+		return cbp.circuitBreaker.Call(func() error {
+			return cbp.provider.HealthCheck()
+		})
+	}
+	return cbp.provider.HealthCheck()
 }
 
 // GetCapabilities delegates to the underlying provider
@@ -192,15 +251,18 @@ func newProviderRegistry(cfg *RegistryConfig, memory *MemoryService, enableAutoD
 	logger.SetLevel(logrus.InfoLevel)
 
 	registry := &ProviderRegistry{
-		providers:       make(map[string]llm.LLMProvider),
-		circuitBreakers: make(map[string]*CircuitBreaker),
-		providerConfigs: make(map[string]*ProviderConfig),
-		providerHealth:  make(map[string]*ProviderVerificationResult),
-		activeRequests:  make(map[string]*int64),
-		config:          cfg,
-		memory:          memory,
-		drainTimeout:    30 * time.Second, // Default 30 second drain timeout
-		autoDiscovery:   enableAutoDiscovery,
+		providers:             make(map[string]llm.LLMProvider),
+		circuitBreakers:       make(map[string]*CircuitBreaker),
+		concurrencySemaphores: make(map[string]*semaphore.Weighted),
+		providerConfigs:       make(map[string]*ProviderConfig),
+		providerHealth:        make(map[string]*ProviderVerificationResult),
+		activeRequests:        make(map[string]*int64),
+		config:                cfg,
+		memory:                memory,
+		drainTimeout:          30 * time.Second, // Default 30 second drain timeout
+		autoDiscovery:         enableAutoDiscovery,
+		initSemaphore:         semaphore.NewWeighted(5), // Limit to 5 concurrent provider initializations
+		initOnce:              make(map[string]*sync.Once),
 	}
 
 	// Initialize ensemble service
@@ -545,7 +607,8 @@ func (r *ProviderRegistry) GetVerifiedProvidersSummary() map[string]interface{} 
 }
 
 func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
-	// Register DeepSeek provider (only if API key is configured)
+	// Store provider configurations for lazy loading
+	// DeepSeek provider
 	deepseekConfig := cfg.Providers["deepseek"]
 	if deepseekConfig == nil {
 		deepseekConfig = &ProviderConfig{
@@ -560,15 +623,9 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	if deepseekConfig.Enabled && deepseekConfig.APIKey != "" {
-		r.RegisterProvider(deepseekConfig.Name, deepseek.NewDeepSeekProvider(
-			deepseekConfig.APIKey,
-			deepseekConfig.BaseURL,
-			deepseekConfig.Models[0].ID,
-		))
-	}
+	r.storeProviderConfig(deepseekConfig)
 
-	// Register Claude provider (using OAuth if enabled and available, otherwise API key)
+	// Claude provider
 	claudeConfig := cfg.Providers["claude"]
 	if claudeConfig == nil {
 		claudeConfig = &ProviderConfig{
@@ -583,33 +640,9 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	// Try API key first (direct API access), then CLI proxy for OAuth
-	if claudeConfig.Enabled && claudeConfig.APIKey != "" {
-		// API key available - use direct API access
-		r.RegisterProvider(claudeConfig.Name, claude.NewClaudeProvider(
-			claudeConfig.APIKey,
-			claudeConfig.BaseURL,
-			claudeConfig.Models[0].ID,
-		))
-		logrus.Info("Registered Claude provider with API key (direct API access)")
-	} else if r.autoDiscovery && oauth_credentials.IsClaudeOAuthEnabled() {
-		// OAuth credentials present - use CLI proxy (routes through claude command)
-		// NOTE: OAuth tokens are product-restricted and can't be used for direct API calls
-		// The CLI proxy forwards requests to the claude command which has the OAuth context
-		credReader := oauth_credentials.GetGlobalReader()
-		if credReader.HasValidClaudeCredentials() {
-			// Check if Claude CLI is available
-			cliProvider := claude.NewClaudeCLIProviderWithModel("claude-sonnet-4-5-20250929")
-			if cliProvider.IsCLIAvailable() {
-				r.RegisterProvider(claudeConfig.Name, cliProvider)
-				logrus.Info("Registered Claude provider with CLI proxy (OAuth via claude command)")
-			} else {
-				logrus.Warn("Claude OAuth credentials found but Claude CLI not available - provider not registered")
-			}
-		}
-	}
+	r.storeProviderConfig(claudeConfig)
 
-	// Register Gemini provider (only if API key is configured)
+	// Gemini provider
 	geminiConfig := cfg.Providers["gemini"]
 	if geminiConfig == nil {
 		geminiConfig = &ProviderConfig{
@@ -624,15 +657,9 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	if geminiConfig.Enabled && geminiConfig.APIKey != "" {
-		r.RegisterProvider(geminiConfig.Name, gemini.NewGeminiProvider(
-			geminiConfig.APIKey,
-			geminiConfig.BaseURL,
-			geminiConfig.Models[0].ID,
-		))
-	}
+	r.storeProviderConfig(geminiConfig)
 
-	// Register Qwen provider (using OAuth if enabled and available, otherwise API key)
+	// Qwen provider
 	qwenConfig := cfg.Providers["qwen"]
 	if qwenConfig == nil {
 		qwenConfig = &ProviderConfig{
@@ -647,42 +674,9 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	// Try API key first (direct API access), then ACP, then CLI proxy for OAuth
-	if qwenConfig.Enabled && qwenConfig.APIKey != "" {
-		// API key available - use direct API access
-		r.RegisterProvider(qwenConfig.Name, qwen.NewQwenProvider(
-			qwenConfig.APIKey,
-			qwenConfig.BaseURL,
-			qwenConfig.Models[0].ID,
-		))
-		logrus.Info("Registered Qwen provider with API key (direct API access)")
-	} else if r.autoDiscovery && oauth_credentials.IsQwenOAuthEnabled() {
-		// OAuth credentials present - try ACP first (more powerful), then CLI proxy
-		// NOTE: OAuth tokens are product-restricted and can't be used for direct API calls
-		credReader := oauth_credentials.GetGlobalReader()
-		if credReader.HasValidQwenCredentials() {
-			// Try ACP first (more powerful - sessions, streaming, etc.)
-			if qwen.CanUseQwenACP() {
-				acpProvider := qwen.NewQwenACPProviderWithModel("qwen-turbo")
-				if acpProvider.IsAvailable() {
-					r.RegisterProvider(qwenConfig.Name, acpProvider)
-					logrus.Info("Registered Qwen provider with ACP (Agent Communication Protocol)")
-				}
-			}
-			// Fall back to CLI proxy if ACP not available
-			if _, err := r.GetProvider(qwenConfig.Name); err != nil {
-				cliProvider := qwen.NewQwenCLIProviderWithModel("qwen-turbo")
-				if cliProvider.IsCLIAvailable() {
-					r.RegisterProvider(qwenConfig.Name, cliProvider)
-					logrus.Info("Registered Qwen provider with CLI proxy (OAuth via qwen command)")
-				} else {
-					logrus.Warn("Qwen OAuth credentials found but Qwen CLI not available - provider not registered")
-				}
-			}
-		}
-	}
+	r.storeProviderConfig(qwenConfig)
 
-	// Register OpenRouter provider (only if API key is configured)
+	// OpenRouter provider
 	openrouterConfig := cfg.Providers["openrouter"]
 	if openrouterConfig == nil {
 		openrouterConfig = &ProviderConfig{
@@ -697,13 +691,32 @@ func (r *ProviderRegistry) registerDefaultProviders(cfg *RegistryConfig) {
 			}},
 		}
 	}
-	if openrouterConfig.Enabled && openrouterConfig.APIKey != "" {
-		r.RegisterProvider(openrouterConfig.Name, openrouter.NewSimpleOpenRouterProvider(
-			openrouterConfig.APIKey,
-		))
-	}
+	r.storeProviderConfig(openrouterConfig)
+
+	logrus.Info("Stored provider configurations for lazy loading")
 }
 
+// storeProviderConfig stores a provider configuration for lazy initialization
+func (r *ProviderRegistry) storeProviderConfig(cfg *ProviderConfig) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Store in both maps for compatibility
+	if r.providerConfigs == nil {
+		r.providerConfigs = make(map[string]*ProviderConfig)
+	}
+	r.providerConfigs[cfg.Name] = cfg
+
+	if r.config == nil {
+		r.config = &RegistryConfig{
+			Providers: make(map[string]*ProviderConfig),
+		}
+	}
+	if r.config.Providers == nil {
+		r.config.Providers = make(map[string]*ProviderConfig)
+	}
+	r.config.Providers[cfg.Name] = cfg
+}
 func (r *ProviderRegistry) RegisterProvider(name string, provider llm.LLMProvider) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -712,20 +725,31 @@ func (r *ProviderRegistry) RegisterProvider(name string, provider llm.LLMProvide
 		return fmt.Errorf("provider %s already registered", name)
 	}
 
-	// Wrap provider with circuit breaker if enabled
-	var wrappedProvider llm.LLMProvider = provider
+	// Create concurrency semaphore for this provider
+	maxConcurrent := r.config.MaxConcurrentRequests
+	if maxConcurrent <= 0 {
+		maxConcurrent = 10
+	}
+	sem := semaphore.NewWeighted(int64(maxConcurrent))
+	r.concurrencySemaphores[name] = sem
+
+	// Create circuit breaker if enabled
+	var cb *CircuitBreaker
 	if r.config.CircuitBreaker.Enabled {
-		cb := NewCircuitBreaker(
+		cb = NewCircuitBreaker(
 			r.config.CircuitBreaker.FailureThreshold,
 			r.config.CircuitBreaker.SuccessThreshold,
 			r.config.CircuitBreaker.RecoveryTimeout,
 		)
 		r.circuitBreakers[name] = cb
-		wrappedProvider = &circuitBreakerProvider{
-			provider:       provider,
-			circuitBreaker: cb,
-			name:           name,
-		}
+	}
+
+	// Wrap provider with circuit breaker and concurrency semaphore
+	wrappedProvider := &circuitBreakerProvider{
+		provider:             provider,
+		circuitBreaker:       cb,
+		concurrencySemaphore: sem,
+		name:                 name,
 	}
 
 	r.providers[name] = wrappedProvider
@@ -762,6 +786,11 @@ func (r *ProviderRegistry) unregisterProviderLocked(name string) error {
 	}
 
 	delete(r.providers, name)
+	delete(r.concurrencySemaphores, name)
+	delete(r.circuitBreakers, name)
+	delete(r.activeRequests, name)
+	delete(r.providerConfigs, name)
+	delete(r.initOnce, name)
 	r.ensemble.RemoveProvider(name)
 	r.requestService.RemoveProvider(name)
 
@@ -769,12 +798,77 @@ func (r *ProviderRegistry) unregisterProviderLocked(name string) error {
 }
 
 func (r *ProviderRegistry) GetProvider(name string) (llm.LLMProvider, error) {
+	// Fast path: provider already initialized
 	r.mu.RLock()
-	defer r.mu.RUnlock()
-
 	provider, exists := r.providers[name]
+	once := r.initOnce[name]
+	r.mu.RUnlock()
+
+	if exists {
+		return provider, nil
+	}
+
+	// Slow path: need to check config and possibly initialize
+	// First, check if we have a configuration for this provider
+	cfg, err := r.GetProviderConfig(name)
+	if err != nil {
+		return nil, fmt.Errorf("provider %s not found: %w", name, err)
+	}
+
+	// Ensure we have a sync.Once for this provider
+	r.mu.Lock()
+	if once == nil {
+		once = &sync.Once{}
+		r.initOnce[name] = once
+	}
+	r.mu.Unlock()
+
+	// Use sync.Once to ensure only one goroutine initializes this provider
+	var initErr error
+	once.Do(func() {
+		// Acquire semaphore to limit concurrent initializations
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := r.initSemaphore.Acquire(ctx, 1); err != nil {
+			initErr = fmt.Errorf("failed to acquire initialization semaphore for provider %s: %w", name, err)
+			return
+		}
+		defer r.initSemaphore.Release(1)
+
+		// Double-check after acquiring semaphore
+		r.mu.RLock()
+		_, existsNow := r.providers[name]
+		r.mu.RUnlock()
+		if existsNow {
+			return // Another goroutine already initialized it
+		}
+
+		// Create provider from configuration
+		provider, initErr = r.createProviderFromConfig(*cfg)
+		if initErr != nil {
+			return
+		}
+
+		// Register the provider (with circuit breaker, etc.)
+		initErr = r.RegisterProvider(name, provider)
+	})
+
+	if initErr != nil {
+		// Clean up the sync.Once on error so retry might work
+		r.mu.Lock()
+		delete(r.initOnce, name)
+		r.mu.Unlock()
+		return nil, fmt.Errorf("failed to initialize provider %s: %w", name, initErr)
+	}
+
+	// Provider should now be initialized
+	r.mu.RLock()
+	provider, exists = r.providers[name]
+	r.mu.RUnlock()
+
 	if !exists {
-		return nil, fmt.Errorf("provider %s not found", name)
+		return nil, fmt.Errorf("provider %s initialization failed", name)
 	}
 
 	return provider, nil
@@ -1008,8 +1102,9 @@ func (a *providerAdapter) CompleteStream(ctx context.Context, req *models.LLMReq
 
 func getDefaultRegistryConfig() *RegistryConfig {
 	return &RegistryConfig{
-		DefaultTimeout: 30 * time.Second,
-		MaxRetries:     3,
+		DefaultTimeout:        30 * time.Second,
+		MaxRetries:            3,
+		MaxConcurrentRequests: 10,
 		HealthCheck: HealthCheckConfig{
 			Enabled:          true,
 			Interval:         60 * time.Second,
@@ -1324,6 +1419,193 @@ func containsAny(s string, substrs ...string) bool {
 		}
 	}
 	return false
+}
+
+// createProviderFromConfig creates a provider instance from configuration without registering it.
+func (r *ProviderRegistry) createProviderFromConfig(cfg ProviderConfig) (llm.LLMProvider, error) {
+	if cfg.Name == "" {
+		return nil, fmt.Errorf("provider name is required")
+	}
+	model := getFirstModel(cfg.Models)
+	baseURL := cfg.BaseURL
+
+	switch cfg.Type {
+	case "claude":
+		// Try API key first (direct API access), then CLI proxy for OAuth
+		if cfg.Enabled && cfg.APIKey != "" {
+			// API key available - use direct API access
+			provider := claude.NewClaudeProvider(cfg.APIKey, baseURL, model)
+			logrus.WithField("provider", cfg.Name).Info("Created Claude provider with API key (direct API access)")
+			return provider, nil
+		} else if r.autoDiscovery && oauth_credentials.IsClaudeOAuthEnabled() {
+			// OAuth credentials present - use CLI proxy
+			credReader := oauth_credentials.GetGlobalReader()
+			if credReader.HasValidClaudeCredentials() {
+				// Check if Claude CLI is available
+				cliProvider := claude.NewClaudeCLIProviderWithModel(model)
+				if cliProvider.IsCLIAvailable() {
+					logrus.WithField("provider", cfg.Name).Info("Created Claude provider with CLI proxy (OAuth via claude command)")
+					return cliProvider, nil
+				} else {
+					logrus.WithField("provider", cfg.Name).Warn("Claude OAuth credentials found but Claude CLI not available")
+				}
+			}
+		}
+		return nil, fmt.Errorf("Claude provider not available: no API key or valid OAuth credentials")
+
+	case "deepseek":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return deepseek.NewDeepSeekProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("DeepSeek provider not available: API key missing or disabled")
+
+	case "gemini":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return gemini.NewGeminiProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Gemini provider not available: API key missing or disabled")
+
+	case "qwen":
+		// Try API key first (direct API access), then ACP, then CLI proxy for OAuth
+		if cfg.Enabled && cfg.APIKey != "" {
+			// API key available - use direct API access
+			provider := qwen.NewQwenProvider(cfg.APIKey, baseURL, model)
+			logrus.WithField("provider", cfg.Name).Info("Created Qwen provider with API key (direct API access)")
+			return provider, nil
+		} else if r.autoDiscovery && oauth_credentials.IsQwenOAuthEnabled() {
+			// OAuth credentials present - try ACP first (more powerful), then CLI proxy
+			credReader := oauth_credentials.GetGlobalReader()
+			if credReader.HasValidQwenCredentials() {
+				// Try ACP first (more powerful - sessions, streaming, etc.)
+				if qwen.CanUseQwenACP() {
+					acpProvider := qwen.NewQwenACPProviderWithModel(model)
+					if acpProvider.IsAvailable() {
+						logrus.WithField("provider", cfg.Name).Info("Created Qwen provider with ACP (Agent Communication Protocol)")
+						return acpProvider, nil
+					}
+				}
+				// Fall back to CLI proxy if ACP not available
+				cliProvider := qwen.NewQwenCLIProviderWithModel(model)
+				if cliProvider.IsCLIAvailable() {
+					logrus.WithField("provider", cfg.Name).Info("Created Qwen provider with CLI proxy (OAuth via qwen command)")
+					return cliProvider, nil
+				} else {
+					logrus.WithField("provider", cfg.Name).Warn("Qwen OAuth credentials found but Qwen CLI not available")
+				}
+			}
+		}
+		return nil, fmt.Errorf("Qwen provider not available: no API key or valid OAuth credentials")
+
+	case "openrouter":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return openrouter.NewSimpleOpenRouterProviderWithBaseURL(cfg.APIKey, baseURL), nil
+		}
+		return nil, fmt.Errorf("OpenRouter provider not available: API key missing or disabled")
+
+	case "mistral":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return mistral.NewMistralProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Mistral provider not available: API key missing or disabled")
+
+	case "zai":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return zai.NewZAIProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("ZAI provider not available: API key missing or disabled")
+
+	case "zen":
+		if cfg.Enabled {
+			if cfg.APIKey != "" {
+				return zen.NewZenProvider(cfg.APIKey, baseURL, model), nil
+			} else {
+				// Anonymous mode (free)
+				return zen.NewZenProviderAnonymous(model), nil
+			}
+		}
+		return nil, fmt.Errorf("Zen provider not available: disabled")
+
+	case "cerebras":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return cerebras.NewCerebrasProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Cerebras provider not available: API key missing or disabled")
+
+	case "ollama":
+		if cfg.Enabled && baseURL != "" {
+			return ollama.NewOllamaProvider(baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Ollama provider not available: base URL missing or disabled")
+
+	case "openai":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return openai.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("OpenAI provider not available: API key missing or disabled")
+
+	case "anthropic":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return anthropic.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Anthropic provider not available: API key missing or disabled")
+
+	case "cohere":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return cohere.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Cohere provider not available: API key missing or disabled")
+
+	case "fireworks":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return fireworks.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Fireworks provider not available: API key missing or disabled")
+
+	case "groq":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return groq.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Groq provider not available: API key missing or disabled")
+
+	case "huggingface":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return huggingface.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("HuggingFace provider not available: API key missing or disabled")
+
+	case "perplexity":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return perplexity.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Perplexity provider not available: API key missing or disabled")
+
+	case "replicate":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return replicate.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Replicate provider not available: API key missing or disabled")
+
+	case "together":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return together.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Together provider not available: API key missing or disabled")
+
+	case "xai":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return xai.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("XAI provider not available: API key missing or disabled")
+
+	case "ai21":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return ai21.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("AI21 provider not available: API key missing or disabled")
+
+	default:
+		return nil, fmt.Errorf("unsupported provider type: %s", cfg.Type)
+	}
 }
 
 // RegisterProviderFromConfig creates and registers a provider from configuration

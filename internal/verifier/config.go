@@ -1,6 +1,8 @@
 package verifier
 
 import (
+	"dev.helix.agent/internal/utils"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -168,7 +170,10 @@ type ScheduleConfig struct {
 
 // LoadConfig loads verifier configuration from a file
 func LoadConfig(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
+	if !utils.ValidatePath(path) {
+		return nil, fmt.Errorf("invalid path: %s", path)
+	}
+	data, err := os.ReadFile(path) // #nosec G304 - path validated with utils.ValidatePath
 	if err != nil {
 		return nil, err
 	}

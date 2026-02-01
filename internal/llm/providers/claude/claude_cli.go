@@ -14,6 +14,7 @@ import (
 
 	"dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/modelsdev"
+	"dev.helix.agent/internal/utils"
 )
 
 // ClaudeCLIProvider implements the LLMProvider interface using Claude Code CLI
@@ -127,7 +128,7 @@ func (p *ClaudeCLIProvider) IsCLIAvailable() bool {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		cmd := exec.CommandContext(ctx, path, "--version")
+		cmd := exec.CommandContext(ctx, path, "--version") // #nosec G204
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			p.cliCheckErr = fmt.Errorf("claude command failed: %w (output: %s)", err, string(output))
@@ -189,6 +190,11 @@ func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest
 		return nil, fmt.Errorf("no prompt provided")
 	}
 
+	// Validate prompt for command injection safety
+	if !utils.ValidateCommandArg(prompt) {
+		return nil, fmt.Errorf("prompt contains invalid characters")
+	}
+
 	// Create command with timeout
 	cmdCtx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
@@ -197,6 +203,10 @@ func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest
 	model := p.model
 	if req.ModelParams.Model != "" {
 		model = req.ModelParams.Model
+	}
+	// Validate model name for command injection safety (if ever used in commands)
+	if !utils.ValidateCommandArg(model) {
+		return nil, fmt.Errorf("model name contains invalid characters")
 	}
 
 	// Build claude command arguments
@@ -209,11 +219,16 @@ func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest
 
 	// Continue existing session if we have one
 	if p.sessionID != "" {
-		args = append(args, "--resume", p.sessionID)
+		if !utils.ValidateCommandArg(p.sessionID) {
+			// Invalid session ID, clear it
+			p.sessionID = ""
+		} else {
+			args = append(args, "--resume", p.sessionID)
+		}
 	}
 
 	// Execute claude command
-	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...)
+	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...) // #nosec G204
 
 	// Capture output
 	var stdout, stderr bytes.Buffer
@@ -242,7 +257,12 @@ func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest
 
 	// Store session ID for conversation continuity
 	if sessionID != "" {
-		p.sessionID = sessionID
+		if !utils.ValidateCommandArg(sessionID) {
+			// Invalid session ID, ignore it
+			sessionID = ""
+		} else {
+			p.sessionID = sessionID
+		}
 	}
 
 	// Calculate tokens from metadata or estimate
@@ -331,6 +351,11 @@ func (p *ClaudeCLIProvider) CompleteStream(ctx context.Context, req *models.LLMR
 		return nil, fmt.Errorf("no prompt provided")
 	}
 
+	// Validate prompt for command injection safety
+	if !utils.ValidateCommandArg(prompt) {
+		return nil, fmt.Errorf("prompt contains invalid characters")
+	}
+
 	// Create command with timeout
 	cmdCtx, cancel := context.WithTimeout(ctx, p.timeout)
 
@@ -341,7 +366,7 @@ func (p *ClaudeCLIProvider) CompleteStream(ctx context.Context, req *models.LLMR
 		"-p", prompt,
 	}
 
-	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...)
+	cmd := exec.CommandContext(cmdCtx, p.cliPath, args...) // #nosec G204
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -599,7 +624,7 @@ func (p *ClaudeCLIProvider) discoverModelsFromCLI(ctx context.Context) []string 
 	}
 
 	for _, args := range commands {
-		cmd := exec.CommandContext(ctx, p.cliPath, args...)
+		cmd := exec.CommandContext(ctx, p.cliPath, args...) // #nosec G204
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			models := parseModelsOutput(string(output))
@@ -732,7 +757,7 @@ func DiscoverClaudeModels() ([]string, error) {
 	defer cancel()
 
 	// Try the models command
-	cmd := exec.CommandContext(ctx, path, "models")
+	cmd := exec.CommandContext(ctx, path, "models") // #nosec G204
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		models := parseModelsOutput(string(output))

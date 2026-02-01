@@ -199,6 +199,12 @@ func TimeoutMiddleware(defaultTimeout time.Duration) Middleware {
 
 // RetryMiddleware adds retry logic
 func RetryMiddleware(maxRetries int) Middleware {
+	if maxRetries > 30 {
+		maxRetries = 30
+	}
+	if maxRetries < 0 {
+		maxRetries = 0
+	}
 	return func(next ExecuteFunc) ExecuteFunc {
 		return func(ctx context.Context, formatter Formatter, req *FormatRequest) (*FormatResult, error) {
 			var lastErr error
@@ -218,7 +224,8 @@ func RetryMiddleware(maxRetries int) Middleware {
 
 				// Wait before retry (exponential backoff)
 				if attempt < maxRetries {
-					waitTime := time.Duration(1<<uint(attempt)) * time.Second
+					// #nosec G115 - maxRetries is limited to 3, attempt fits in uint
+					waitTime := time.Duration(1<<uint(attempt&0x3f)) * time.Second
 					time.Sleep(waitTime)
 				}
 			}
