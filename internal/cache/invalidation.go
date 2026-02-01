@@ -334,9 +334,9 @@ func (i *EventDrivenInvalidation) handleEvent(event *events.Event) {
 	for key := range keysToInvalidate {
 		// Check if it's a pattern (contains *)
 		if containsWildcard(key) {
-			i.cache.InvalidatePrefix(ctx, trimWildcard(key))
+			_, _ = i.cache.InvalidatePrefix(ctx, trimWildcard(key))
 		} else {
-			i.cache.Delete(ctx, key)
+			_ = i.cache.Delete(ctx, key)
 		}
 	}
 

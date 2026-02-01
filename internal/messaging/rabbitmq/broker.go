@@ -576,7 +576,9 @@ func (b *Broker) consumeMessages(ctx context.Context, sub *rabbitSubscription, d
 					zap.Error(err),
 					zap.ByteString("body", d.Body))
 				if !b.config.AutoAck {
-					d.Nack(false, false) // Don't requeue invalid messages
+					if err := d.Nack(false, false); err != nil {
+						b.logger.Warn("Failed to nack invalid message", zap.Error(err))
+					}
 				}
 				b.metrics.RecordFailed()
 				b.metrics.RecordSerializationError()
@@ -592,7 +594,9 @@ func (b *Broker) consumeMessages(ctx context.Context, sub *rabbitSubscription, d
 					zap.String("messageId", msg.ID),
 					zap.Error(err))
 				if !b.config.AutoAck {
-					d.Nack(false, true) // Requeue on handler error
+					if err := d.Nack(false, true); err != nil {
+						b.logger.Warn("Failed to nack handler error", zap.Error(err))
+					}
 				}
 				b.metrics.RecordFailed()
 				b.metrics.RecordNack()

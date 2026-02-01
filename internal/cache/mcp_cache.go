@@ -214,7 +214,7 @@ func (c *MCPServerCache) InvalidateTool(ctx context.Context, tool string) (int, 
 	keys := c.tagInv.InvalidateByTag("mcp-tool:" + tool)
 
 	for _, key := range keys {
-		c.cache.Delete(ctx, key)
+		_ = c.cache.Delete(ctx, key)
 		c.tagInv.RemoveKey(key)
 	}
 
@@ -227,7 +227,7 @@ func (c *MCPServerCache) InvalidateAll(ctx context.Context) (int, error) {
 	keys := c.tagInv.InvalidateByTag("mcp-result")
 
 	for _, key := range keys {
-		c.cache.Delete(ctx, key)
+		_ = c.cache.Delete(ctx, key)
 		c.tagInv.RemoveKey(key)
 	}
 

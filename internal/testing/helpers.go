@@ -321,7 +321,7 @@ func (m *MockMCPServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -362,7 +362,7 @@ func (m *MockMCPServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // URL returns the server URL
@@ -452,7 +452,7 @@ func NewMockHTTPServer() *MockHTTPServer {
 			resp.StatusCode = http.StatusOK
 		}
 		w.WriteHeader(resp.StatusCode)
-		w.Write([]byte(resp.Body))
+		_, _ = w.Write([]byte(resp.Body))
 	}))
 
 	return mock
@@ -794,7 +794,7 @@ func CaptureStdout(t *testing.T, f func()) string {
 	outCh := make(chan string)
 	go func() {
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		_, _ = io.Copy(&buf, r)
 		outCh <- buf.String()
 	}()
 
@@ -821,7 +821,7 @@ func CaptureStderr(t *testing.T, f func()) string {
 	outCh := make(chan string)
 	go func() {
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		_, _ = io.Copy(&buf, r)
 		outCh <- buf.String()
 	}()
 

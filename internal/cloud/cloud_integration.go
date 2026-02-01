@@ -113,7 +113,7 @@ func (a *AWSBedrockIntegration) ListModels(ctx context.Context) ([]map[string]in
 	if err != nil {
 		return nil, fmt.Errorf("failed to list models: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -229,7 +229,7 @@ func (a *AWSBedrockIntegration) InvokeModel(ctx context.Context, modelId, prompt
 	if err != nil {
 		return "", fmt.Errorf("failed to invoke model: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	duration := time.Since(startTime)
 
 	respBody, err := io.ReadAll(resp.Body)
@@ -490,7 +490,7 @@ func (g *GCPVertexAIIntegration) ListModels(ctx context.Context) ([]map[string]i
 	if err != nil {
 		return nil, fmt.Errorf("failed to list models: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -569,7 +569,7 @@ func (g *GCPVertexAIIntegration) InvokeModel(ctx context.Context, modelName, pro
 	if err != nil {
 		return "", fmt.Errorf("failed to invoke model: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	duration := time.Since(startTime)
 
 	respBody, err := io.ReadAll(resp.Body)
@@ -645,7 +645,7 @@ func (g *GCPVertexAIIntegration) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
@@ -738,7 +738,7 @@ func (az *AzureOpenAIIntegration) ListModels(ctx context.Context) ([]map[string]
 	if err != nil {
 		return nil, fmt.Errorf("failed to list models: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -807,7 +807,7 @@ func (az *AzureOpenAIIntegration) InvokeModel(ctx context.Context, deploymentNam
 	if err != nil {
 		return "", fmt.Errorf("failed to invoke model: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	duration := time.Since(startTime)
 
 	respBody, err := io.ReadAll(resp.Body)

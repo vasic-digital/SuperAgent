@@ -164,7 +164,7 @@ func (c *ProviderCache) InvalidateProvider(ctx context.Context, provider string)
 	keys := c.tagInv.InvalidateByTag("provider:" + provider)
 
 	for _, key := range keys {
-		c.cache.Delete(ctx, key)
+		_ = c.cache.Delete(ctx, key)
 		c.tagInv.RemoveKey(key)
 	}
 
