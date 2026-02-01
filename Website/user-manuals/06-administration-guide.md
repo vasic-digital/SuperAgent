@@ -595,6 +595,98 @@ disaster_recovery:
     document_review: annually
 ```
 
+## Scaling and High Availability
+
+### Horizontal Scaling
+
+```yaml
+# configs/scaling.yaml
+scaling:
+  horizontal:
+    enabled: true
+    min_replicas: 2
+    max_replicas: 10
+    metrics:
+      - name: cpu_utilization
+        target: 70%
+      - name: memory_utilization
+        target: 80%
+      - name: requests_per_second
+        target: 100
+```
+
+### Load Balancing
+
+```yaml
+load_balancing:
+  strategy: "round_robin"
+  health_check:
+    path: /healthz/ready
+    interval: 10s
+    timeout: 2s
+    healthy_threshold: 2
+    unhealthy_threshold: 3
+  session_affinity: false
+```
+
+### High Availability Configuration
+
+```yaml
+high_availability:
+  enabled: true
+  node_count: 3
+  quorum: 2
+  auto_failover: true
+  failover_timeout: 30s
+  data_replication:
+    mode: "async"
+    consistency: "eventual"
+```
+
+### Multi-region Deployment
+
+```yaml
+multi_region:
+  enabled: false
+  regions:
+    - name: us-east-1
+      weight: 1.0
+      primary: true
+    - name: eu-west-1
+      weight: 0.7
+      primary: false
+  routing:
+    strategy: "latency_based"
+    failover_enabled: true
+```
+
+### Kubernetes Deployment
+
+```yaml
+# helm/values.yaml
+replicaCount: 3
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app: helixagent
+        topologyKey: kubernetes.io/hostname
+resources:
+  limits:
+    cpu: 2
+    memory: 4Gi
+  requests:
+    cpu: 1
+    memory: 2Gi
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+```
+
 ## Security Hardening
 
 ### Network Security

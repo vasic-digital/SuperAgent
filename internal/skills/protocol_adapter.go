@@ -9,6 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/models"
+	"dev.helix.agent/internal/services"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,12 +26,13 @@ const (
 
 // ProtocolSkillAdapter adapts skills for use with various protocols.
 type ProtocolSkillAdapter struct {
-	service     *Service
-	mcpTools    map[string]*MCPSkillTool
-	acpActions  map[string]*ACPSkillAction
-	lspCommands map[string]*LSPSkillCommand
-	mu          sync.RWMutex
-	log         *logrus.Logger
+	service          *Service
+	providerRegistry *services.ProviderRegistry
+	mcpTools         map[string]*MCPSkillTool
+	acpActions       map[string]*ACPSkillAction
+	lspCommands      map[string]*LSPSkillCommand
+	mu               sync.RWMutex
+	log              *logrus.Logger
 }
 
 // MCPSkillTool wraps a skill as an MCP tool.
@@ -89,6 +93,11 @@ func NewProtocolSkillAdapter(service *Service) *ProtocolSkillAdapter {
 // SetLogger sets the logger.
 func (a *ProtocolSkillAdapter) SetLogger(log *logrus.Logger) {
 	a.log = log
+}
+
+// SetProviderRegistry sets the provider registry for LLM integration.
+func (a *ProtocolSkillAdapter) SetProviderRegistry(registry *services.ProviderRegistry) {
+	a.providerRegistry = registry
 }
 
 // RegisterAllSkillsAsTools registers all skills as protocol tools.
@@ -353,6 +362,23 @@ func (a *ProtocolSkillAdapter) executeSkillLogic(ctx context.Context, skill *Ski
 	return result
 }
 
+// getBestProvider returns the highest-scoring LLM provider from the registry.
+func (a *ProtocolSkillAdapter) getBestProvider() (llm.LLMProvider, error) {
+	if a.providerRegistry == nil {
+		return nil, fmt.Errorf("provider registry not set")
+	}
+	providers := a.providerRegistry.ListProvidersOrderedByScore()
+	if len(providers) == 0 {
+		return nil, fmt.Errorf("no providers available")
+	}
+	providerName := providers[0]
+	provider, err := a.providerRegistry.GetProvider(providerName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider %s: %w", providerName, err)
+	}
+	return provider, nil
+}
+
 // executeCodeGenerationSkill handles code generation tasks
 func (a *ProtocolSkillAdapter) executeCodeGenerationSkill(ctx context.Context, skill *Skill, query string, skillContext map[string]interface{}) (string, error) {
 	// Build the code generation prompt
@@ -361,7 +387,61 @@ func (a *ProtocolSkillAdapter) executeCodeGenerationSkill(ctx context.Context, s
 		language = lang
 	}
 
-	// Return formatted result with instructions
+	// Try to get LLM provider for actual code generation
+	provider, err := a.getBestProvider()
+	if err != nil {
+		a.log.WithError(err).Debug("No LLM provider available, using placeholder")
+		// Fall back to placeholder result
+		return fmt.Sprintf(`[Code Generation Result]
+Query: %s
+Language: %s
+
+Instructions Applied:
+%s
+
+Generated Code:
+// LLM provider integration pending (no provider available)
+
+func generated() {
+    // Implementation based on: %s
+}
+
+Note: Full code generation requires LLM integration.
+Skill '%s' was successfully invoked.`, query, language, skill.Instructions, query, skill.Name), nil
+	}
+
+	// Build prompt with skill instructions
+	prompt := fmt.Sprintf(`You are a code generation assistant. Follow these instructions:
+
+%s
+
+Generate code in %s for the following request:
+
+%s
+
+Provide only the code, no explanations.`, skill.Instructions, language, query)
+
+	// Create LLM request
+	req := &models.LLMRequest{
+		Prompt: prompt,
+		ModelParams: models.ModelParameters{
+			Model:            "", // Provider will use default model
+			Temperature:      0.2,
+			MaxTokens:        2048,
+			TopP:             1.0,
+			StopSequences:    nil,
+			ProviderSpecific: nil,
+		},
+	}
+
+	// Call provider
+	resp, err := provider.Complete(ctx, req)
+	if err != nil {
+		a.log.WithError(err).Warn("LLM provider failed to generate code")
+		return fmt.Sprintf("Error generating code with LLM provider: %v", err), nil
+	}
+
+	// Return generated code with metadata
 	return fmt.Sprintf(`[Code Generation Result]
 Query: %s
 Language: %s
@@ -370,15 +450,9 @@ Instructions Applied:
 %s
 
 Generated Code:
-// TODO: Integrate with LLM provider for actual code generation
-// For now, returning skill execution confirmation
+%s
 
-func generated() {
-    // Implementation based on: %s
-}
-
-Note: Full code generation requires LLM integration.
-Skill '%s' was successfully invoked.`, query, language, skill.Instructions, query, skill.Name), nil
+Skill '%s' executed successfully using LLM provider.`, query, language, skill.Instructions, resp.Content, skill.Name), nil
 }
 
 // executeCodeReviewSkill handles code review tasks
