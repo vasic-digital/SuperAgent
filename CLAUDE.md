@@ -8,1319 +8,230 @@ HelixAgent is an AI-powered ensemble LLM service written in Go that combines res
 
 **Module**: `dev.helix.agent` (Go 1.24+, toolchain go1.24.11)
 
-The project includes:
-- **Toolkit** (`Toolkit/`): Standalone Go library for building AI applications
-- **LLMsVerifier** (`LLMsVerifier/`): Verification system for LLM provider accuracy
+Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification.
 
-## Build Commands
+## Mandatory Development Standards
+
+**These rules are NON-NEGOTIABLE and MUST be followed for every component, service, or feature.**
+
+1. **100% Test Coverage** — Every component MUST have unit, integration, E2E, automation, security/penetration, and benchmark tests. No false positives. Mocks/stubs ONLY in unit tests; all other tests use real data and live services.
+2. **Challenge Coverage** — Every component MUST have Challenge scripts (`./challenges/scripts/`) validating real-life use cases. No false success — validate actual behavior, not return codes.
+3. **Containerization** — All services MUST run in containers (Docker/Podman/K8s). Must support local default execution AND remote configuration. Auto boot-up before HelixAgent is ready. Remote services need API-based health checks.
+4. **Configuration via HelixAgent Only** — CLI agent config export uses only HelixAgent + LLMsVerifier's unified generator (`pkg/cliagents/`). No third-party scripts.
+5. **Real Data** — Beyond unit tests, all components MUST use actual API calls, real databases, live services. No simulated success. Fallback chains tested with actual failures.
+6. **Health & Observability** — Every service MUST expose health endpoints. Circuit breakers for all external deps. Prometheus/OpenTelemetry integration. Status via `/v1/monitoring/status`.
+7. **Documentation & Quality** — Follow existing patterns. Update CLAUDE.md, AGENTS.md, relevant docs. Pass `make fmt vet lint security-scan`. Conventional Commits: `<type>(<scope>): <description>`.
+8. **Validation Before Release** — Pass `make ci-validate-all`, `./challenges/scripts/run_all_challenges.sh`, `make test-with-infra`, and benchmark/stress tests.
+9. **No Mocks in Production** — Mocks, stubs, fakes, placeholders, TODO implementations STRICTLY FORBIDDEN in production code. All production code must be fully functional with real integrations.
+10. **Third-Party Submodules** — `cli_agents/` and `MCP/` are read-only third-party deps; NEVER commit/push changes. Only project-owned submodules (LLMsVerifier, formatters) may be updated. Use `git submodule update --remote`.
+
+## Git Rules
+
+- **SSH only** for cloning — HTTPS may not work. Use SSH URLs in `.gitmodules`.
+- **Branch naming**: `feat/`, `fix/`, `chore/`, `docs/`, `refactor/`, `test/` + short description
+- **Commits**: Conventional Commits — `feat(llm): add ensemble voting strategy`
+- **Always run `make fmt vet lint` before committing**
+
+## Code Style
+
+- Standard Go conventions ([Effective Go](https://go.dev/doc/effective_go)), `gofmt` formatting
+- Imports grouped: stdlib, third-party, internal (blank line separated). Use `goimports`.
+- Line length ≤ 100 chars (readability first)
+- Naming: `camelCase` private, `PascalCase` exported, `UPPER_SNAKE_CASE` constants, acronyms all-caps (`HTTP`, `URL`, `ID`)
+- Receivers: 1-2 letters (`s` for service, `c` for client)
+- Errors: always check, wrap with `fmt.Errorf("...: %w", err)`, `defer` for cleanup
+- Interfaces: small/focused, accept interfaces return structs
+- Concurrency: `context.Context` always, `sync.Mutex`/`sync.RWMutex` for shared data
+- Tests: table-driven, `testify`, naming `Test<Struct>_<Method>_<Scenario>`
+
+## Build & Run
 
 ```bash
-make build              # Build HelixAgent binary
-make build-debug        # Build with debug symbols
-make run                # Run locally
-make run-dev            # Run in development mode (GIN_MODE=debug)
-make docker-build       # Build Docker image
-docker-compose up -d    # Start full stack
+make build                # Build binary
+make build-debug          # Build with debug symbols
+make run                  # Run locally
+make run-dev              # Development mode (GIN_MODE=debug)
+make docker-build         # Build Docker image
+docker-compose up -d      # Start full stack
 ```
 
 ## Testing
 
 ```bash
-make test                  # Run all tests (auto-detects infrastructure)
-make test-coverage         # Tests with HTML coverage report
-make test-unit             # Unit tests only (./internal/... -short)
-make test-integration      # Integration tests (./tests/integration)
-make test-e2e              # End-to-end tests (./tests/e2e)
-make test-security         # Security tests (./tests/security)
-make test-stress           # Stress tests (./tests/stress)
-make test-chaos            # Chaos/challenge tests (./tests/challenge)
-make test-bench            # Benchmark tests
-make test-race             # Race condition detection
+make test                 # All tests (auto-detects infra)
+make test-unit            # Unit tests (./internal/... -short)
+make test-integration     # Integration tests (./tests/integration)
+make test-e2e             # E2E tests (./tests/e2e)
+make test-security        # Security tests (./tests/security)
+make test-stress          # Stress tests (./tests/stress)
+make test-chaos           # Challenge tests (./tests/challenge)
+make test-bench           # Benchmarks
+make test-race            # Race detection
+make test-coverage        # Coverage with HTML report
 ```
 
-Run a single test:
-```bash
-go test -v -run TestName ./path/to/package
-```
+Single test: `go test -v -run TestName ./path/to/package`
 
-Run a single test with infrastructure (PostgreSQL/Redis):
+With infrastructure:
 ```bash
-make test-infra-start
-
+make test-infra-start     # Start PostgreSQL, Redis, Mock LLM containers
 DB_HOST=localhost DB_PORT=15432 DB_USER=helixagent DB_PASSWORD=helixagent123 DB_NAME=helixagent_db \
 REDIS_HOST=localhost REDIS_PORT=16379 REDIS_PASSWORD=helixagent123 \
 go test -v -run TestName ./path/to/package
+make test-infra-stop      # Stop containers
+make test-with-infra      # All tests with Docker infra
 ```
 
-### Test Infrastructure
+## Code Quality & CI
+
 ```bash
-make test-infra-start   # Start PostgreSQL, Redis, Mock LLM containers
-make test-infra-stop    # Stop test containers
-make test-infra-clean   # Stop and remove volumes
-make test-with-infra    # Run all tests with Docker infrastructure
+make fmt                  # go fmt
+make vet                  # go vet
+make lint                 # golangci-lint
+make security-scan        # gosec
+make install-deps         # Install dev tools
+make ci-validate-all      # All validation checks
+make ci-pre-commit        # Pre-commit (fmt, vet, fallback)
+make ci-pre-push          # Pre-push (includes unit tests)
 ```
 
-## Code Quality
+## Infrastructure & Monitoring
 
 ```bash
-make fmt              # Format code (go fmt)
-make vet              # Static analysis (go vet)
-make lint             # Run golangci-lint
-make security-scan    # Security scanning (gosec)
-make install-deps     # Install dev dependencies
+make infra-start          # Start ALL infra (auto-detects Docker/Podman)
+make infra-stop / restart / status
+make infra-core           # Core: PostgreSQL, Redis, ChromaDB, Cognee
+make infra-mcp / lsp / rag
+make monitoring-status / circuit-breakers / provider-health / fallback-chain
+make monitoring-reset-circuits / force-health-check
 ```
 
 ## Architecture
 
 ### Entry Points
-- `cmd/helixagent/` - Main application
-- `cmd/api/` - API server
-- `cmd/grpc-server/` - gRPC server
+- `cmd/helixagent/` — Main app | `cmd/api/` — API server | `cmd/grpc-server/` — gRPC
 
 ### Core Packages (`internal/`)
-- `llm/` - LLM provider abstractions and ensemble orchestration
-  - `providers/` - Individual implementations (claude, deepseek, gemini, ollama, qwen, zai, openrouter, zen, mistral, cerebras)
-  - `ensemble.go` - Ensemble orchestration logic
-- `services/` - Business logic
-  - Core: provider_registry, ensemble, context_manager, mcp_client, lsp_manager, plugin_system
-  - Debate: debate_service, debate_team_config, debate_dialogue, debate_support_types
-  - Intent: llm_intent_classifier (LLM-based), intent_classifier (fallback)
-- `handlers/` - HTTP handlers & API endpoints
-- `background/` - Background command execution (task queue, worker pool, resource monitor, stuck detector)
-- `notifications/` - Real-time notifications (SSE, WebSocket, Webhooks, Polling)
-- `middleware/` - Auth, rate limiting, CORS, validation
-- `cache/` - Caching layer (Redis, in-memory)
-- `database/` - PostgreSQL connections and repositories
-- `models/` - Data models, enums, protocol types
-- `plugins/` - Hot-reloadable plugin system
-- `tools/` - Tool schema registry (21 tools)
-- `agents/` - CLI agent registry (48 agents)
-- `optimization/` - LLM optimization (gptcache, outlines, streaming, sglang, llamaindex, langchain, guidance, lmql)
-- `observability/` - OpenTelemetry tracing, metrics, and exporters (Jaeger, Zipkin, Langfuse)
-- `rag/` - Hybrid retrieval (dense + sparse), reranking, Qdrant integration
-- `memory/` - Mem0-style memory management with entity graphs
-- `routing/semantic/` - Semantic routing with embedding similarity
-- `embedding/` - Embedding providers (OpenAI, Cohere, Voyage, Jina, Google, AWS Bedrock)
-- `vectordb/` - Vector store clients (Qdrant, Pinecone, Milvus, pgvector)
-- `mcp/adapters/` - MCP server adapters (Slack, GitHub, Linear, Asana, Jira, and 45+ more)
-- `agentic/` - Graph-based workflow orchestration with checkpointing
-- `security/` - Red team framework (40+ attacks), guardrails, PII detection, audit logging
-- `structured/` - Constrained output generation (XGrammar-style)
-- `testing/llm/` - DeepEval-style LLM testing framework with RAGAS metrics
-- `selfimprove/` - RLAIF and Constitutional AI integration
-- `llmops/` - Prompt versioning, A/B testing, continuous evaluation
-- `benchmark/` - SWE-Bench, HumanEval, MMLU, GSM8K benchmark runners
+- `llm/providers/` — 10 LLM providers (claude, deepseek, gemini, mistral, openrouter, qwen, zai, zen, cerebras, ollama)
+- `llm/ensemble.go` — Ensemble orchestration
+- `services/` — Business logic: provider_registry, ensemble, debate_service, debate_team_config, llm_intent_classifier, context_manager, mcp_client, lsp_manager, plugin_system
+- `handlers/` — HTTP handlers | `middleware/` — Auth, rate limiting, CORS
+- `background/` — Task queue, worker pool, resource monitor | `notifications/` — SSE, WebSocket, Webhooks
+- `cache/` — Redis + in-memory | `database/` — PostgreSQL/pgx | `models/` — Data models/enums
+- `debate/` — Orchestrator framework: agents, topology, protocol, voting, cognitive, knowledge (8 packages)
+- `formatters/` — 32+ code formatters, REST API, middleware executor
+- `tools/` — Tool schema registry (21 tools) | `agents/` — CLI agent registry (48 agents)
+- `embedding/` — 6 providers (OpenAI, Cohere, Voyage, Jina, Google, Bedrock)
+- `vectordb/` — Qdrant, Pinecone, Milvus, pgvector
+- `mcp/adapters/` — 45+ MCP adapters | `mcp/config/` — Container config generator
+- `rag/` — Hybrid retrieval | `memory/` — Mem0-style with entity graphs
+- `routing/semantic/` — Embedding similarity routing
+- `agentic/` — Graph-based workflow orchestration
+- `security/` — Red team framework, guardrails, PII detection
+- `observability/` — OpenTelemetry, Jaeger, Zipkin, Langfuse
+- `bigdata/` — Infinite context, distributed memory, knowledge graph streaming
+- `optimization/` — gptcache, outlines, streaming, sglang, llamaindex, langchain
+- `verifier/` — Startup verification orchestrator and adapters
 
 ### Key Interfaces
-- `LLMProvider` - Provider implementation contract
-- `VotingStrategy` - Ensemble voting strategies
-- `PluginRegistry` / `PluginLoader` - Plugin system
-- `CacheInterface` - Caching abstraction
-- `TaskExecutor` / `TaskQueue` - Background task execution
+- `LLMProvider` — Provider contract (Complete, CompleteStream, HealthCheck, GetCapabilities, ValidateConfig)
+- `VotingStrategy` — Ensemble voting | `CacheInterface` — Cache abstraction
+- `PluginRegistry`/`PluginLoader` — Plugin system | `TaskExecutor`/`TaskQueue` — Background tasks
+- `Formatter` — Code formatter interface | Vector stores: `Connect`, `Upsert`, `Search`, `Delete`, `Get`
 
 ### Architectural Patterns
-- **Provider Registry**: Unified interface for multiple LLM providers with credential management
+- **Provider Registry**: Unified multi-provider interface with credential management
 - **Ensemble Strategy**: Confidence-weighted voting, majority vote, parallel execution
-- **AI Debate System**: Multi-round debate between providers for consensus (5 positions x 3 LLMs = 15 total)
-- **Plugin System**: Hot-reloadable plugins with dependency resolution
+- **AI Debate**: Multi-round debate, 5 positions × 3 LLMs = 15 total, multi-pass validation (Initial → Validation → Polish → Final)
+- **Debate Orchestrator**: Multi-topology (mesh/star/chain), phase protocol (Proposal → Critique → Review → Synthesis), cross-debate learning, auto-fallback to legacy
 - **Circuit Breaker**: Fault tolerance for provider failures
-- **Protocol Managers**: Unified MCP/LSP/ACP protocol handling
+- **Semantic Intent Detection**: LLM-based classification (zero hardcoding), pattern-based fallback
+- **Fallback Error Reporting**: Categorized errors (rate_limit, timeout, auth, connection, unavailable, overloaded) in streamed responses
 
-## Unified Startup Verification Pipeline
+## Startup Verification Pipeline
 
-HelixAgent uses LLMsVerifier as the **single source of truth** for all LLM verification and scoring. On startup:
+LLMsVerifier is the **single source of truth**. On startup: discover providers → verify in parallel (8-test pipeline) → score (5 weighted components) → rank → select debate team → start server.
 
-```
-1. Load Config & Environment
-2. Initialize StartupVerifier (Scoring + Verification + Health)
-3. Discover ALL Providers (API Key + OAuth + Free)
-4. Verify ALL Providers in Parallel (8-test pipeline)
-5. Score ALL Verified Providers (5-component weighted)
-6. Rank by Score (OAuth priority when scores close)
-7. Select AI Debate Team (15 LLMs: 5 primary + 10 fallback)
-8. Start Server with Verified Configuration
-```
+**Provider types**: API Key (DeepSeek, Gemini, Mistral, OpenRouter, ZAI, Cerebras), OAuth (Claude, Qwen), Free (Zen, OpenRouter :free)
 
-### Provider Types
+**Scoring weights**: ResponseSpeed 25%, CostEffectiveness 25%, ModelEfficiency 20%, Capability 20%, Recency 10%. OAuth +0.5 bonus. Free: 6.0-7.0. Min score: 5.0.
 
-| Type | Providers | Auth | Description |
-|------|-----------|------|-------------|
-| **API Key** | DeepSeek, Gemini, Mistral, OpenRouter, ZAI, Cerebras | Bearer token | Full 8-test verification |
-| **OAuth** | Claude, Qwen | OAuth2 tokens from CLI | Trust on API failure option |
-| **Free** | Zen (OpenCode), OpenRouter :free models | Anonymous/X-Device-ID | Reduced verification, 6.0-7.0 score range |
+Key files: `internal/verifier/startup.go`, `provider_types.go`, `adapters/oauth_adapter.go`, `adapters/free_adapter.go`
 
-### Key Files
-- `internal/verifier/startup.go` - Startup verification orchestrator
-- `internal/verifier/provider_types.go` - UnifiedProvider, UnifiedModel types
-- `internal/verifier/adapters/oauth_adapter.go` - OAuth provider verification (Claude, Qwen)
-- `internal/verifier/adapters/free_adapter.go` - Free provider verification (Zen)
+## Provider Access Mechanisms
 
-### Scoring Algorithm (5 Weighted Components)
-| Component | Weight | Description |
-|-----------|--------|-------------|
-| ResponseSpeed | 25% | API response latency |
-| ModelEfficiency | 20% | Token efficiency |
-| CostEffectiveness | 25% | Cost per token |
-| Capability | 20% | Model capability score |
-| Recency | 10% | Model release date |
+OAuth/free providers use CLI proxies when direct API access is restricted:
+- **Claude**: `claude -p --output-format json` (session continuity) — `internal/llm/providers/claude/claude_cli.go`
+- **Qwen**: ACP via `qwen --acp` (JSON-RPC 2.0), fallback CLI — `internal/llm/providers/qwen/qwen_acp.go`
+- **Zen**: HTTP server `opencode serve :4096`, fallback CLI — `internal/llm/providers/zen/zen_http.go`
 
-OAuth providers get +0.5 bonus when verified. Free providers score 6.0-7.0. Minimum score to be selected: 5.0.
+Triggered when: `*_USE_OAUTH_CREDENTIALS=true` + no API key, or no `OPENCODE_API_KEY` for Zen.
 
-## AI Debate Team
-
-The debate system uses dynamic selection via StartupVerifier:
-1. OAuth2 providers first (Claude, Qwen) if verified
-2. Then LLMsVerifier-scored providers by score
-3. 5 positions × 3 LLMs (1 primary + 2 fallbacks) = **15 LLMs**
-
-OAuth primaries get non-OAuth fallbacks to ensure redundancy.
-
-Key files:
-- `internal/services/debate_team_config.go` - Team configuration
-- `internal/services/debate_dialogue.go` - Dialogue formatter
-
-### Multi-Pass Validation System
-
-The AI Debate system includes a **multi-pass validation** mechanism that re-evaluates, polishes, and improves debate responses before delivering the final consensus:
-
-**Validation Phases:**
-| Phase | Icon | Description |
-|-------|------|-------------|
-| 1. INITIAL RESPONSE | 🔍 | Each AI participant provides their initial perspective |
-| 2. VALIDATION | ✓ | Cross-validation of responses for accuracy and completeness |
-| 3. POLISH & IMPROVE | ✨ | Refinement and improvement based on validation feedback |
-| 4. FINAL CONCLUSION | 📜 | Synthesized consensus with confidence scores |
-
-**API Integration:**
-```json
-POST /v1/debates
-{
-  "topic": "Should AI have consciousness?",
-  "participants": [...],
-  "enable_multi_pass_validation": true,
-  "validation_config": {
-    "enable_validation": true,
-    "enable_polish": true,
-    "validation_timeout": 120,
-    "polish_timeout": 60,
-    "min_confidence_to_skip": 0.9,
-    "max_validation_rounds": 3,
-    "show_phase_indicators": true
-  }
-}
-```
-
-**Response includes:**
-- `current_phase` - Current validation phase (when running)
-- `multi_pass_result` - Detailed results including:
-  - `phases_completed` - Number of completed phases
-  - `overall_confidence` - Final confidence score (0-1)
-  - `quality_improvement` - Quality improvement from initial to final
-  - `final_response` - The polished, validated consensus
-
-**Key Files:**
-- `internal/services/debate_multipass_validation.go` - Core multi-pass validation system
-- `internal/services/debate_multipass_validation_test.go` - Unit tests
-- `internal/handlers/debate_handler.go` - API integration
-- `challenges/scripts/multipass_validation_challenge.sh` - 66-test validation
-
-### AI Debate Orchestrator Framework (New)
-
-HelixAgent includes a new **AI Debate Orchestrator Framework** that provides advanced multi-agent debate capabilities with learning and knowledge management.
-
-**Architecture:**
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     DebateHandler                            │
-│  ┌─────────────────┐  ┌──────────────────────────────────┐ │
-│  │ Legacy Services │  │ ServiceIntegration (new)         │ │
-│  │  DebateService  │  │  ├─ orchestrator                 │ │
-│  │  AdvancedDebate │  │  ├─ providerRegistry            │ │
-│  └────────┬────────┘  │  └─ config (feature flags)      │ │
-│           ↓           └─────────────┬────────────────────┘ │
-│      Fallback                       ↓                       │
-└───────────────────────┬─────────────┴───────────────────────┘
-                        │
-┌───────────────────────▼─────────────────────────────────────┐
-│                    Orchestrator                              │
-│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────────┐ │
-│  │Agent Pool │ │Team Build │ │ Protocol  │ │  Knowledge  │ │
-│  └───────────┘ └───────────┘ └───────────┘ └─────────────┘ │
-│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────────┐ │
-│  │ Topology  │ │  Voting   │ │ Cognitive │ │  Learning   │ │
-│  └───────────┘ └───────────┘ └───────────┘ └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Components (8 packages, ~16,650 lines, 500+ tests):**
-| Package | Description |
-|---------|-------------|
-| `debate` | Core types and interfaces |
-| `debate/agents` | Agent factory, pool, templates, specialization |
-| `debate/topology` | Graph mesh, star, chain topologies |
-| `debate/protocol` | Phase-based debate execution |
-| `debate/voting` | Weighted confidence voting |
-| `debate/cognitive` | Reasoning and analysis patterns |
-| `debate/knowledge` | Repository, lessons, patterns |
-| `debate/orchestrator` | Main orchestrator and integration |
-
-**Features:**
-- **Multi-topology support**: Mesh (parallel), Star (hub-spoke), Chain (sequential)
-- **Phase-based protocol**: Proposal → Critique → Review → Synthesis
-- **Learning system**: Extracts lessons and patterns from debates
-- **Cross-debate learning**: Applies learnings across debates
-- **Automatic fallback**: Falls back to legacy services on failure
-
-**Configuration:**
-```go
-config := orchestrator.DefaultServiceIntegrationConfig()
-config.EnableNewFramework = true       // Enable new system
-config.FallbackToLegacy = true         // Fall back on failure
-config.EnableLearning = true           // Enable learning
-config.MinAgentsForNewFramework = 3    // Minimum agents required
-```
-
-**Key Files:**
-- `internal/debate/orchestrator/orchestrator.go` - Main orchestrator
-- `internal/debate/orchestrator/service_integration.go` - Services bridge
-- `internal/debate/agents/factory.go` - Agent creation and pooling
-- `internal/debate/knowledge/repository.go` - Knowledge management
-- `internal/debate/protocol/protocol.go` - Debate protocol execution
-- `internal/router/router.go:617` - Handler wiring
-
-### Fallback Error Reporting
-
-When an LLM provider fails and the system falls back to an alternative, detailed error information is included in the streamed response. This allows CLI agent plugins to display exactly why the fallback occurred.
-
-**Error Categories:**
-| Category | Icon | Example Causes |
-|----------|------|----------------|
-| `rate_limit` | 🚦 | Too many requests |
-| `timeout` | ⏱️ | Request took too long |
-| `auth` | 🔑 | Invalid API key |
-| `connection` | 🔌 | Network failure |
-| `unavailable` | 🚫 | Service down (503) |
-| `overloaded` | 🔥 | Server at capacity |
-
-**Response Format (Markdown for API clients):**
-```markdown
-⚡ **[Analyst] Fallback Triggered**
-   Primary: openai/gpt-4 (500 ms)
-   🚦 **Error:** rate limit exceeded
-   → Trying: anthropic/claude-3
-```
-
-**Key Files:**
-- `internal/handlers/debate_format_markdown.go` - Format-aware error formatting
-- `internal/messaging/event_stream.go` - Fallback event types (`fallback.triggered`, etc.)
-- `internal/notifications/cli/types.go` - Visual indicators for CLI plugins
-
-**Challenge:** `./challenges/scripts/fallback_error_reporting_challenge.sh` (37 tests)
-
-### Semantic Intent Detection (ZERO Hardcoding)
-
-HelixAgent uses **LLM-based semantic intent classification** to understand user messages. When a user confirms, refuses, or asks questions, the system uses AI to understand the semantic meaning - not pattern matching.
-
-**Architecture:**
-1. **Primary**: LLM-based classification (`llm_intent_classifier.go`) - Uses AI debate team members to semantically understand user intent
-2. **Fallback**: Pattern-based classifier (`intent_classifier.go`) - Only used when LLM unavailable
-
-**Intent Types:**
-| Intent | Description | Examples |
-|--------|-------------|----------|
-| `confirmation` | User approves/confirms action | "Yes", "Go ahead", "Let's do all points!" |
-| `refusal` | User declines/refuses action | "No", "Stop", "Cancel that" |
-| `question` | User asks for information | "What do you mean?", "How does this work?" |
-| `request` | User makes a new request | "Help me with X" |
-| `clarification` | User needs more info | "I'm confused about this" |
-| `unclear` | Cannot determine intent | Ambiguous messages |
-
-**Key Principles (NO HARDCODING):**
-- User intent detected by semantic meaning, not exact string matching
-- Short positive responses with context = likely confirmation
-- LLM classifies with JSON structured output (intent, confidence, is_actionable, should_proceed)
-- Fallback uses semantic roots and word stems, not exact patterns
-
-**Key Files:**
-- `internal/services/llm_intent_classifier.go` - LLM-based classification (primary)
-- `internal/services/intent_classifier.go` - Pattern-based fallback
-- `internal/services/intent_classifier_test.go` - Comprehensive test suite (100+ test cases)
-- `internal/services/debate_service.go` - Integration with `classifyUserIntent()`
-
-**Challenge Validation:**
-```bash
-./challenges/scripts/semantic_intent_challenge.sh  # 19 tests - validates zero hardcoding
-```
-
-## Code Formatters System
-
-HelixAgent includes a comprehensive code formatters system that provides automatic code formatting for all programming languages through a unified REST API.
-
-### Overview
-
-- **32+ Formatters**: 11 native + 14 service + 7 built-in formatters
-- **19 Programming Languages**: Python, JavaScript/TypeScript, Go, Rust, C/C++, Shell, YAML, TOML, Lua, SQL, Ruby, PHP, Perl, Clojure, Java/Kotlin, Groovy, R, PowerShell
-- **8 REST API Endpoints**: Complete formatting operations via HTTP
-- **AI Debate Integration**: Auto-format code blocks in debate responses
-- **48 CLI Agents Integrated**: All agents configured with formatter support
-- **14 Docker Services**: Containerized service formatters (ports 9210-9300)
-
-### Core Package (`internal/formatters/`)
-
-**Files**:
-- `interface.go` - Formatter interface, FormatRequest/Result types
-- `registry.go` - Thread-safe formatter registry with language detection (50+ extensions)
-- `executor.go` - Middleware-based executor (timeout, retry, cache, validation, metrics, tracing)
-- `cache.go` - LRU cache with TTL and auto-cleanup
-- `config.go` - YAML-based configuration system
-- `health.go` - Parallel health checking
-- `system.go` - System wrapper and initialization
-
-**Key Features**:
-- **Unified Interface**: All formatters implement the same `Formatter` interface
-- **Language Detection**: Auto-detect formatter from file extensions (.py → Python, .js → JavaScript, etc.)
-- **Middleware Pipeline**: Timeout, retry, caching, validation, metrics, tracing
-- **Health Monitoring**: Parallel health checks for all formatters
-- **Configuration Hierarchy**: System → Language → Agent → Request-level overrides
-
-### Native Formatter Providers (`internal/formatters/providers/native/`)
-
-**Implemented Formatters** (11):
-1. **black** (Python) - Opinionated formatter, medium performance
-2. **ruff** (Python) - 30x faster than Black, drop-in replacement
-3. **prettier** (JS/TS/HTML/CSS/etc.) - De facto web standard
-4. **biome** (JS/TS) - 35x faster than Prettier, Rust-based
-5. **gofmt** (Go) - Built-in Go formatter
-6. **rustfmt** (Rust) - Official Rust formatter
-7. **clang-format** (C/C++/Java/ObjC) - LLVM formatter
-8. **shfmt** (Bash/Shell) - Shell script formatter
-9. **yamlfmt** (YAML) - Google YAML formatter
-10. **taplo** (TOML) - TOML formatter
-11. **stylua** (Lua) - Lua formatter
-
-**Base Implementation** (`native/base.go`):
-- Execute formatter binary with stdin
-- Capture stdout/stderr
-- Parse output and calculate stats
-- Error handling with context
-
-### REST API Endpoints
-
-**8 Endpoints** (all under `/v1/`):
-
-```bash
-POST   /v1/format                          # Format code
-POST   /v1/format/batch                    # Batch formatting
-POST   /v1/format/check                    # Check if formatted (dry-run)
-GET    /v1/formatters                      # List all formatters
-GET    /v1/formatters/detect               # Auto-detect formatter
-GET    /v1/formatters/:name                # Get formatter metadata
-GET    /v1/formatters/:name/health         # Health check formatter
-POST   /v1/formatters/:name/validate-config  # Validate config
-```
-
-**Example - Format Python Code**:
-```bash
-curl -X POST http://localhost:7061/v1/format \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "def hello(  x,y ):\n  return x+y",
-    "language": "python"
-  }'
-
-# Response:
-{
-  "success": true,
-  "content": "def hello(x, y):\n    return x + y\n",
-  "changed": true,
-  "formatter_name": "ruff",
-  "formatter_version": "0.9.6",
-  "duration_ms": 45,
-  "stats": {
-    "lines_total": 2,
-    "lines_changed": 2
-  }
-}
-```
-
-**Example - List Formatters**:
-```bash
-curl http://localhost:7061/v1/formatters
-
-# Filter by language
-curl http://localhost:7061/v1/formatters?language=python
-
-# Filter by type
-curl http://localhost:7061/v1/formatters?type=native
-```
-
-### Service Formatters (Docker Containers)
-
-**14 service formatters** run as HTTP services in Docker containers (ports 9210-9300):
-
-| Port | Formatter | Language | Architecture |
-|------|-----------|----------|--------------|
-| 9210 | yapf | Python | Python 3.12 |
-| 9211 | autopep8 | Python | Python 3.12 |
-| 9220 | sqlfluff | SQL | Python 3.12 |
-| 9230 | rubocop | Ruby | Ruby 3.3 |
-| 9231 | standardrb | Ruby | Ruby 3.3 |
-| 9240 | php-cs-fixer | PHP | PHP 8.3 |
-| 9241 | laravel-pint | PHP | PHP 8.3 |
-| 9250 | perltidy | Perl | Perl 5.40 |
-| 9260 | cljfmt | Clojure | Clojure latest |
-| 9270 | spotless | Java/Kotlin | Gradle 8.11 + JDK 21 |
-| 9280 | npm-groovy-lint | Groovy | Node 22 + OpenJDK 21 |
-| 9290 | styler | R | R 4.4.2 |
-| 9291 | air | R | R 4.4.2 (300x faster) |
-| 9300 | psscriptanalyzer | PowerShell | PowerShell 7.4 |
-
-**Quick Start**:
-```bash
-# Build all service formatters
-cd docker/formatters
-./build-all.sh
-
-# Start all services
-docker-compose -f docker-compose.formatters.yml up -d
-
-# Enable in HelixAgent
-export FORMATTER_ENABLE_SERVICES=true
-./bin/helixagent
-
-# Use via API
-curl -X POST http://localhost:7061/v1/format \
-  -H "Content-Type: application/json" \
-  -d '{"content":"SELECT * FROM users WHERE id=1;","language":"sql"}'
-```
-
-**Service API** (each formatter):
-- `GET http://localhost:{PORT}/health` - Health check
-- `POST http://localhost:{PORT}/format` - Format code
-
-**Files**:
-- `docker/formatters/Dockerfile.*` - Container definitions
-- `docker/formatters/docker-compose.formatters.yml` - Service orchestration
-- `docker/formatters/formatter-service.py` - Python HTTP wrapper
-- `docker/formatters/formatter-service.rb` - Ruby HTTP wrapper
-- `internal/formatters/providers/service/` - Go service providers
-
-### CLI Agents Integration
-
-**All 48 CLI agents** include formatters configuration with smart defaults:
-
-**Formatters Config Structure**:
-```json
-{
-  "formatters": {
-    "enabled": true,
-    "auto_format": true,
-    "format_on_debate": true,
-    "default_line_length": 88,
-    "default_indent_size": 4,
-    "use_tabs": false,
-    "service_url": "http://localhost:7061/v1/format",
-    "timeout": 30,
-    "preferences": {
-      "python": "ruff",
-      "javascript": "biome",
-      "typescript": "biome",
-      "rust": "rustfmt",
-      "go": "gofmt",
-      "sql": "sqlfluff",
-      "ruby": "rubocop",
-      "php": "php-cs-fixer"
-    },
-    "fallback": {
-      "python": ["black", "autopep8", "yapf"],
-      "javascript": ["prettier", "dprint"]
-    }
-  }
-}
-```
-
-**Integrated Agents** (48 total):
-- **Original 18**: OpenCode, Crush, HelixCode, Kiro, Aider, ClaudeCode, Cline, CodenameGoose, DeepSeekCLI, Forge, GeminiCLI, GPTEngineer, KiloCode, MistralCode, OllamaCode, Plandex, QwenCode, AmazonQ
-- **New 30**: AgentDeck, Bridle, CheshireCat, ClaudePlugins, ClaudeSquad, Codai, Codex, CodexSkills, Conduit, Continue, Emdash, FauxPilot, GetShitDone, GitHubCopilotCLI, GitHubSpecKit, GitMCP, GPTME, MobileAgent, MultiagentCoding, Nanocoder, Noi, Octogen, OpenHands, PostgresMCP, Shai, SnowCLI, TaskWeaver, UIUXProMax, VTCode, Warp
-
-**Generate Agent Config with Formatters**:
-```bash
-# Generate OpenCode config (includes formatters section)
-./bin/helixagent --generate-agent-config=opencode
-
-# Generate all 48 agent configs
-./bin/helixagent --generate-all-agents --all-agents-output-dir=~/agent-configs/
-```
-
-**Files**:
-- `LLMsVerifier/llm-verifier/pkg/cliagents/formatters_config.go` - Unified formatters config
-- `LLMsVerifier/llm-verifier/pkg/cliagents/*.go` - Agent generators (all include formatters)
-
-**Challenge Validation**:
-```bash
-./challenges/scripts/cli_agents_formatters_challenge.sh  # 27 tests - validates all 48 agents
-```
-
-**Example - Auto-Detect Formatter**:
-```bash
-curl "http://localhost:7061/v1/formatters/detect?file_path=main.py"
-
-# Response:
-{
-  "language": "python",
-  "formatters": [
-    {
-      "name": "ruff",
-      "type": "native",
-      "priority": 1,
-      "reason": "preferred formatter for python"
-    },
-    {
-      "name": "black",
-      "type": "native",
-      "priority": 2,
-      "reason": "default formatter"
-    }
-  ]
-}
-```
-
-### AI Debate Integration (`internal/services/debate_formatter_integration.go`)
-
-**Auto-Formatting Code Blocks**:
-- Extracts code blocks from markdown responses (```language\ncode\n```)
-- Detects language from code block header
-- Applies appropriate formatter
-- Replaces original block with formatted version
-- Configurable (enable/disable, language filters, size limits)
-- Error handling (continue on error option)
-
-**Usage**:
-```go
-integration := services.NewDebateFormatterIntegration(
-    executor,
-    services.DefaultDebateFormatterConfig(),
-    logger,
-)
-
-formatted, err := integration.FormatDebateResponse(
-    ctx,
-    debateResponse,
-    "opencode",
-    sessionID,
-)
-```
-
-**Configuration**:
-```go
-type DebateFormatterConfig struct {
-    Enabled          bool          // Enable/disable auto-formatting
-    AutoFormat       bool          // Auto-format all code blocks
-    FormatLanguages  []string      // Empty = all languages
-    IgnoreLanguages  []string      // Languages to skip
-    MaxCodeBlockSize int           // Max bytes to format (default: 50KB)
-    Timeout          time.Duration // Format timeout (default: 30s)
-    ContinueOnError  bool          // Continue if formatting fails
-}
-```
-
-### Git Submodules Infrastructure (`formatters/`)
-
-**Directory Structure**:
-```
-formatters/
-├── README.md                    # Documentation
-├── VERSIONS.yaml                # Version manifest (118 formatters)
-├── scripts/
-│   ├── init-submodules.sh       # Initialize all submodules
-│   ├── build-all.sh             # Build native binaries
-│   └── health-check-all.sh      # Health check all formatters
-└── <formatter submodules>       # Git submodules (when initialized)
-```
-
-**Initialize Formatters**:
-```bash
-# Initialize all formatter submodules
-./formatters/scripts/init-submodules.sh
-
-# Build native binaries
-./formatters/scripts/build-all.sh
-
-# Health check
-./formatters/scripts/health-check-all.sh
-```
-
-### Language Support
-
-**Languages with Working Formatters**:
-- **Python**: Black (opinionated), Ruff (30x faster)
-- **JavaScript/TypeScript**: Prettier (standard), Biome (35x faster)
-- **Go**: gofmt (built-in)
-- **Rust**: rustfmt (official)
-- **C/C++**: clang-format (LLVM)
-- **Shell**: shfmt (POSIX/Bash/mksh)
-- **YAML**: yamlfmt (Google)
-- **TOML**: taplo (Rust-based)
-- **Lua**: stylua (Prettier-inspired)
-
-**Additional Languages (infrastructure ready)**:
-- Java, Kotlin, Scala, Groovy, Clojure
-- Ruby, PHP, Swift, Dart
-- Haskell, OCaml, F#, Elixir, Erlang
-- PowerShell, Perl, R
-- SQL, JSON, XML, GraphQL, Protobuf
-- HTML, CSS, Markdown, Terraform, Dockerfile
-- ... (100+ more languages supported through infrastructure)
-
-### Configuration
-
-**System Configuration** (`configs/formatters/default.yaml`):
-```yaml
-formatters:
-  enabled: true
-  auto_format: true
-  format_on_save: true
-  format_on_debate: true
-
-  # Performance
-  cache_enabled: true
-  cache_ttl: 3600  # seconds
-  default_timeout: 30  # seconds
-  max_concurrent: 10
-
-  # Preferences (language -> formatter)
-  preferences:
-    python: "ruff"           # Prefer Ruff (30x faster than Black)
-    javascript: "biome"      # Prefer Biome (35x faster than Prettier)
-    typescript: "biome"
-    rust: "rustfmt"
-    go: "gofmt"
-    c: "clang-format"
-    cpp: "clang-format"
-    yaml: "yamlfmt"
-    toml: "taplo"
-    lua: "stylua"
-
-  # Fallback chains
-  fallback:
-    python: ["black", "autopep8"]
-    javascript: ["prettier", "dprint"]
-    typescript: ["prettier", "dprint"]
-```
-
-### Testing
-
-**Unit Tests** (`internal/formatters/registry_test.go`):
-- TestFormatterRegistry_Register
-- TestFormatterRegistry_GetByLanguage
-- TestFormatterRegistry_DetectLanguageFromPath (15 subtests)
-- TestFormatterRegistry_HealthCheckAll
-- **Pass Rate**: 100% ✅
-
-**Integration Tests** (`tests/integration/formatters_integration_test.go`):
-- TestFormattersSystem_EndToEnd
-- TestFormattersSystem_PythonFormatting
-- TestFormattersRegistry_LanguageDetection (11 subtests)
-- TestFormattersCache
-- TestFormattersHealthCheck
-
-**Challenge Script** (`challenges/scripts/formatters_comprehensive_challenge.sh`):
-- 25 comprehensive tests
-- API endpoints validation
-- Language detection
-- Format operations
-- Batch formatting
-- Error handling
-- **Pass Rate**: 100% ✅
-
-### Key Files
-
-| File | Purpose |
-|------|---------|
-| `internal/formatters/interface.go` | Formatter interface definition |
-| `internal/formatters/registry.go` | Thread-safe formatter registry |
-| `internal/formatters/executor.go` | Middleware-based executor |
-| `internal/formatters/system.go` | System initialization |
-| `internal/formatters/providers/register.go` | Register all formatters |
-| `internal/formatters/providers/native/*.go` | Native formatter implementations |
-| `internal/handlers/formatters_handler.go` | REST API handler |
-| `internal/services/debate_formatter_integration.go` | AI Debate integration |
-| `formatters/README.md` | Formatters directory documentation |
-| `formatters/VERSIONS.yaml` | Version manifest |
-
-### Documentation
-
-- **Architecture**: `docs/architecture/FORMATTERS_ARCHITECTURE.md` (1,700 lines)
-- **Catalog**: `docs/CODE_FORMATTERS_CATALOG.md` (746 lines - 118 formatters)
-- **Completion**: `docs/FORMATTERS_100_PERCENT_COMPLETE.md` (850 lines)
-- **Directory**: `formatters/README.md` (450 lines)
-
-### Quick Start
-
-**1. Initialize System**:
-```go
-import (
-    "dev.helix.agent/internal/formatters"
-    "dev.helix.agent/internal/formatters/providers"
-)
-
-// Create formatters system
-config := formatters.DefaultConfig()
-system, err := formatters.NewSystem(config, logger)
-defer system.Shutdown()
-
-// Register formatters
-providers.RegisterAllFormatters(system.Registry, logger)
-```
-
-**2. Format Code**:
-```go
-result, err := system.Executor.Execute(ctx, &formatters.FormatRequest{
-    Content:  "def hello(x,y):\n return x+y",
-    Language: "python",
-    Timeout:  5 * time.Second,
-})
-
-if result.Success {
-    fmt.Println(result.Content)  // Formatted code
-}
-```
-
-**3. Use REST API**:
-```bash
-# Format code
-curl -X POST http://localhost:7061/v1/format \
-  -H "Content-Type: application/json" \
-  -d '{"content":"...","language":"python"}'
-
-# List formatters
-curl http://localhost:7061/v1/formatters
-
-# Health check
-curl http://localhost:7061/v1/formatters/black/health
-```
-
-### Statistics
-
-- **Lines of Code**: 10,000+
-- **Files Created**: 41
-- **Formatters Implemented**: 11 working, infrastructure for 118
-- **API Endpoints**: 8
-- **Tests**: 59 (100% pass rate)
-- **Documentation**: 5,096 lines
-- **Languages Covered**: 9+ with working formatters
-
-## Unified Service Management
-
-HelixAgent manages all infrastructure services through a unified `BootManager`:
-
-### Services Config (`internal/config/config.go`)
-- `ServiceEndpoint` struct: host, port, url, enabled, required, remote, health_type, health_path, timeout, retry_count, compose_file, service_name
-- `ServicesConfig`: PostgreSQL, Redis, ChromaDB (required); Cognee (optional, disabled by default); Prometheus, Grafana, Neo4j, Kafka, RabbitMQ, Qdrant, Weaviate, LangChain, LlamaIndex, MCPServers
-- **Memory System**: Mem0 is the primary memory provider (PostgreSQL backend with entity graphs). Cognee can be enabled via `COGNEE_ENABLED=true` if needed.
-- `DefaultServicesConfig()`, `LoadServicesFromEnv()`, `AllEndpoints()`, `RequiredEndpoints()`, `ResolvedURL()`
-- Environment override pattern: `SVC_<SERVICE>_<FIELD>` (e.g., `SVC_POSTGRESQL_HOST`, `SVC_REDIS_REMOTE=true`)
-
-### Boot Manager (`internal/services/boot_manager.go`)
-- `BootAll()`: Groups local services by compose file, starts via `docker compose up -d`, health checks all
-- `ShutdownAll()`: Stops all locally-started compose services
-- `HealthCheckAll()`: Returns health status for all enabled services
-- Remote services (`remote: true`): skip compose start, health check only
-- Required services: boot fails if health check fails after retries
-
-### Health Checker (`internal/services/health_checker.go`)
-- TCP and HTTP health checking with configurable retries and timeouts
-- `Check()` dispatches based on `HealthType` field
-- `CheckWithRetry()` performs retries with 2-second delays
-
-### Configuration
-- `configs/development.yaml` - services section with local defaults
-- `configs/production.yaml` - services with env var templates
-- `configs/remote-services-example.yaml` - remote service example
-
-### SQL Schema Documentation
-- `sql/schema/complete_schema.sql` - Consolidated reference
-- `sql/schema/*.sql` - Per-domain schema files (users, providers, requests, tasks, debate, cognee, protocols, indexes)
-
-### System Diagrams
-- `docs/diagrams/src/*.mmd` - Mermaid diagrams (architecture, boot, data flow, ER, debate, shutdown)
-- `docs/diagrams/src/*.puml` - PlantUML diagrams (architecture, boot, ER)
-- `scripts/generate-diagrams.sh` - Generate SVG/PNG/PDF output
+**OAuth limitation**: CLI OAuth tokens are product-restricted (cannot use for general API). Get proper API keys from console.anthropic.com / dashscope.aliyuncs.com, or use CLI proxy.
 
 ## Configuration
 
-Environment variables in `.env.example`:
-- Server: `PORT`, `GIN_MODE`, `JWT_SECRET`
-- Database: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
-- Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
-- LLM providers: `CLAUDE_API_KEY`, `DEEPSEEK_API_KEY`, `GEMINI_API_KEY`, `OPENCODE_API_KEY` (Zen), etc.
-- OAuth2: `CLAUDE_CODE_USE_OAUTH_CREDENTIALS`, `QWEN_CODE_USE_OAUTH_CREDENTIALS`
-- Cognee (optional): `COGNEE_ENABLED=true`, `COGNEE_AUTH_EMAIL`, `COGNEE_AUTH_PASSWORD` (form-encoded OAuth2 auth, disabled by default - Mem0 is primary memory provider)
+Env vars in `.env.example`: `PORT`, `GIN_MODE`, `JWT_SECRET`, `DB_*`, `REDIS_*`, `*_API_KEY` for each provider, `*_USE_OAUTH_CREDENTIALS`, `COGNEE_ENABLED` (off by default; Mem0 is primary memory).
 
-### BigData Integration
+Service overrides: `SVC_<SERVICE>_<FIELD>` (e.g., `SVC_POSTGRESQL_HOST`, `SVC_REDIS_REMOTE=true`). Config files: `configs/development.yaml`, `configs/production.yaml`.
 
-HelixAgent includes a BigData integration system that provides advanced capabilities for large-scale AI applications:
-
-**Components:**
-- **Infinite Context Engine**: Compresses and manages long conversation contexts using streaming
-- **Distributed Memory**: CRDT-based memory synchronization across multiple nodes  
-- **Knowledge Graph Streaming**: Real-time Neo4j graph updates from AI conversations
-- **ClickHouse Analytics**: High-performance analytics for conversation metrics
-- **Cross-session Learning**: Pattern learning across user sessions using Kafka streams
-
-**Configuration Environment Variables:**
-```bash
-# Enable/disable components (defaults shown)
-BIGDATA_ENABLE_INFINITE_CONTEXT=true
-BIGDATA_ENABLE_DISTRIBUTED_MEMORY=false
-BIGDATA_ENABLE_KNOWLEDGE_GRAPH=false  
-BIGDATA_ENABLE_ANALYTICS=false
-BIGDATA_ENABLE_CROSS_LEARNING=true
-
-# Kafka configuration
-BIGDATA_KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-BIGDATA_KAFKA_CONSUMER_GROUP=helixagent-bigdata
-
-# ClickHouse configuration  
-BIGDATA_CLICKHOUSE_HOST=localhost
-BIGDATA_CLICKHOUSE_PORT=8123
-BIGDATA_CLICKHOUSE_DATABASE=helixagent
-BIGDATA_CLICKHOUSE_USER=default
-BIGDATA_CLICKHOUSE_PASSWORD=
-
-# Neo4j configuration
-BIGDATA_NEO4J_URI=bolt://localhost:7687
-BIGDATA_NEO4J_USERNAME=neo4j
-BIGDATA_NEO4J_PASSWORD=password
-BIGDATA_NEO4J_DATABASE=neo4j
-
-# Context engine configuration
-BIGDATA_CONTEXT_CACHE_SIZE=1000
-BIGDATA_CONTEXT_CACHE_TTL=24h
-BIGDATA_CONTEXT_COMPRESSION_TYPE=gzip
-
-# Learning configuration
-BIGDATA_LEARNING_MIN_CONFIDENCE=0.7
-BIGDATA_LEARNING_MIN_FREQUENCY=3
-```
-
-**API Endpoints:**
-- `GET /v1/bigdata/health` - Component health status
-- `GET /v1/bigdata/components` - Enabled components list
-
-**Key Files:**
-- `internal/bigdata/integration.go` - Main integration orchestrator
-- `internal/bigdata/config_converter.go` - Configuration conversion
-- `internal/config/config.go` - BigDataConfig struct definition
-- `cmd/helixagent/main.go` - Initialization and shutdown
-
-**Usage Notes:**
-- Components with missing dependencies (Neo4j, ClickHouse, Kafka) gracefully degrade to dummy implementations
-- Uses messaging system broker (Kafka) or in-memory fallback
-- Integrated with HelixAgent startup/shutdown lifecycle
-
-**Completion Status:** ✅ **Production Ready** - All TODOs resolved, challenge scripts pass 15/15 tests, real implementations (no mocks) per Standard 9.
-
-### OAuth2 Authentication (Limitations)
-
-**IMPORTANT: OAuth tokens from CLI tools are product-restricted and cannot be used for general API calls.**
-
-| Provider | Token Source | API Access |
-|----------|--------------|------------|
-| **Claude** | `~/.claude/.credentials.json` (from `claude auth login`) | ❌ **Restricted to Claude Code only** - cannot use for general API |
-| **Qwen** | `~/.qwen/oauth_creds.json` (from Qwen CLI login) | ❌ **For Qwen Portal only** - DashScope API requires separate API key |
-
-**What works:**
-- HelixAgent successfully reads OAuth tokens from both credential files
-- Tokens are valid and non-expired
-
-**What doesn't work:**
-- Using Claude OAuth tokens for general API requests returns: _"This credential is only authorized for use with Claude Code and cannot be used for other API requests."_
-- Using Qwen OAuth tokens for DashScope API returns: _"invalid_api_key"_ (tokens are for `portal.qwen.ai`)
-
-**Solution:**
-- **Claude**: Get an API key from https://console.anthropic.com/
-- **Qwen**: Get a DashScope API key from https://dashscope.aliyuncs.com/
-- **OR use CLI Proxy** (see below)
-
-Key files: `internal/auth/oauth_credentials/`
-
-### Advanced Provider Access Mechanisms
-
-For OAuth and free providers where direct API access is restricted, HelixAgent uses multiple access mechanisms based on availability and capabilities.
-
-| Provider | Priority | Method | Protocol | Description |
-|----------|----------|--------|----------|-------------|
-| **Claude** | 1 | JSON CLI | `claude -p --output-format json` | Structured JSON output with session continuity |
-| **Qwen** | 1 | ACP | `qwen --acp` | JSON-RPC 2.0 over stdin/stdout |
-| **Qwen** | 2 | CLI Proxy | `qwen -p "prompt"` | Fallback if ACP unavailable |
-| **Zen** | 1 | HTTP Server | `opencode serve` | Full REST API on localhost:4096 |
-| **Zen** | 2 | CLI Proxy | `opencode -p -f json` | Fallback if server unavailable |
-
-**ACP (Agent Communication Protocol)** - Qwen's preferred access:
-- JSON-RPC 2.0 protocol over stdin/stdout via `qwen --acp`
-- Session management (conversation history persists)
-- Streaming responses via notifications
-- Automatic authentication handling
-- Key files: `internal/llm/providers/qwen/qwen_acp.go`
-
-**HTTP Server** - Zen/OpenCode's preferred access:
-- Start with `opencode serve --port 4096`
-- Full REST API with sessions and streaming
-- Auto-starts server when needed
-- Key files: `internal/llm/providers/zen/zen_http.go`
-
-**JSON CLI** - Claude's structured output:
-- Uses `--output-format json` for structured responses
-- Session continuity with `--resume <session_id>`
-- Extracts usage metadata and model info
-- Key files: `internal/llm/providers/claude/claude_cli.go`
-
-**Trigger Conditions:**
-- Claude: `CLAUDE_CODE_USE_OAUTH_CREDENTIALS=true` + no `CLAUDE_API_KEY`
-- Qwen: `QWEN_CODE_USE_OAUTH_CREDENTIALS=true` + no DashScope API key
-- Zen: No `OPENCODE_API_KEY` (free mode)
-
-**How it works:**
-1. Provider registry detects OAuth/free mode (no API key)
-2. Checks if preferred access method is available (ACP/HTTP)
-3. Falls back to CLI proxy if preferred method unavailable
-4. Creates appropriate provider with session support
-4. Requests are executed via CLI command and output is parsed
-
-**Environment Variables:**
-```bash
-# Claude OAuth (uses claude CLI proxy when enabled)
-CLAUDE_CODE_USE_OAUTH_CREDENTIALS=true
-
-# Qwen OAuth (uses qwen CLI proxy when enabled)
-QWEN_CODE_USE_OAUTH_CREDENTIALS=true
-
-# Zen/OpenCode API key (if not set, uses opencode CLI proxy)
-OPENCODE_API_KEY=your-api-key  # Optional - CLI proxy for free mode
-```
-
-**Key Files:**
-- `internal/llm/providers/claude/claude_cli.go` - Claude CLI provider
-- `internal/llm/providers/qwen/qwen_acp.go` - Qwen ACP provider (JSON-RPC over stdin/stdout)
-- `internal/llm/providers/qwen/qwen_cli.go` - Qwen CLI provider (fallback)
-- `internal/llm/providers/zen/zen_cli.go` - Zen/OpenCode CLI provider (with JSON output parsing)
-- `internal/services/provider_registry.go` - Registration logic
-
-**Challenge Validation:**
-```bash
-./challenges/scripts/cli_proxy_challenge.sh  # 50 tests - validates CLI proxy mechanism
-```
-
-### Cognee Authentication (Optional - Disabled by Default)
-
-**Note**: Cognee is disabled by default in favor of Mem0 as the primary memory provider. To enable Cognee, set `COGNEE_ENABLED=true` in your environment.
-
-Default credentials (development only):
-```
-Email:    admin@helixagent.ai
-Password: HelixAgentPass123
-```
-
-Cognee uses form-encoded OAuth2-style login (NOT JSON).
+BigData components configured via `BIGDATA_ENABLE_*` env vars. Missing deps (Neo4j, ClickHouse, Kafka) gracefully degrade. Key file: `internal/bigdata/integration.go`.
 
 ## Adding a New LLM Provider
 
-1. Create provider package: `internal/llm/providers/<name>/<name>.go`
-2. Implement `LLMProvider` interface (Complete, CompleteStream, HealthCheck, GetCapabilities, ValidateConfig)
-3. Add tool support if provider API supports it:
-   - Define `<Provider>Tool`, `<Provider>ToolCall` types
-   - Add `Tools` field to request, `ToolCalls` to response
-   - Set `SupportsTools: true` in GetCapabilities
-4. Register in `internal/services/provider_registry.go`
-5. Add environment variables to `.env.example`
-6. Add tests in `internal/llm/providers/<name>/<name>_test.go`
+1. Create `internal/llm/providers/<name>/<name>.go` implementing `LLMProvider`
+2. Add tool support if applicable (`SupportsTools: true` in GetCapabilities)
+3. Register in `internal/services/provider_registry.go`
+4. Add env vars to `.env.example`, tests in `internal/llm/providers/<name>/<name>_test.go`
 
-## Tool Schema (21 Tools)
+## Tool Schema
 
-All tool parameters use **snake_case** (e.g., `file_path`, `old_string`). Key files:
-- `internal/tools/schema.go` - Tool schema registry
-- `internal/tools/handler.go` - Tool handlers
+All parameters use **snake_case**. Key files: `internal/tools/schema.go`, `internal/tools/handler.go`.
 
-Required fields per tool:
-- Bash: `command`, `description`
-- Read/Write/Edit: `file_path` (+ `content` for Write, + `old_string`/`new_string` for Edit)
-- Glob/Grep: `pattern`
-- WebFetch: `url`, `prompt`
-- WebSearch: `query`
-- Git: `operation`, `description`
+## CLI Agents (48)
 
-## CLI Agent Registry (48 Agents)
+Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --generate-agent-config=<name>`. All agents include formatters config. Config generation via LLMsVerifier's `pkg/cliagents/`.
 
-Registry in `internal/agents/registry.go` supports 48 CLI agents:
+## Code Formatters
 
-**Original (18)**: OpenCode, Crush, HelixCode, Kiro, Aider, ClaudeCode, Cline, CodenameGoose, DeepSeekCLI, Forge, GeminiCLI, GPTEngineer, KiloCode, MistralCode, OllamaCode, Plandex, QwenCode, AmazonQ
-
-**Extended (30)**: AgentDeck, Bridle, CheshireCat, ClaudePlugins, ClaudeSquad, Codai, Codex, CodexSkills, Conduit, Emdash, FauxPilot, GetShitDone, GitHubCopilotCLI, GitHubSpecKit, GitMCP, GPTME, MobileAgent, MultiagentCoding, Nanocoder, Noi, Octogen, OpenHands, PostgresMCP, Shai, SnowCLI, TaskWeaver, UIUXProMax, VTCode, Warp, Continue
-
-### CLI Agent Configuration Commands
-
-```bash
-# List all 48 supported agents
-./bin/helixagent --list-agents
-
-# Generate config for a specific agent
-./bin/helixagent --generate-agent-config=codex
-./bin/helixagent --generate-agent-config=openhands --agent-config-output=~/openhands.toml
-
-# Validate an agent config file
-./bin/helixagent --validate-agent-config=codex:/path/to/codex.json
-
-# Generate configs for all 48 agents
-./bin/helixagent --generate-all-agents --all-agents-output-dir=~/agent-configs/
-```
-
-All configuration generation is powered by LLMsVerifier's unified generator (`pkg/cliagents/`).
-
-## Challenges System
-
-```bash
-./challenges/scripts/run_all_challenges.sh                       # Run all challenges
-./challenges/scripts/main_challenge.sh                           # Main challenge (generates OpenCode config)
-./challenges/scripts/unified_verification_challenge.sh           # 15 tests - startup pipeline
-./challenges/scripts/llms_reevaluation_challenge.sh              # 26 tests - provider re-evaluation on EVERY boot
-./challenges/scripts/debate_team_dynamic_selection_challenge.sh  # 12 tests - team selection
-./challenges/scripts/free_provider_fallback_challenge.sh         # 8 tests - Zen/free models
-./challenges/scripts/semantic_intent_challenge.sh                # 19 tests - intent detection (ZERO hardcoding)
-./challenges/scripts/fallback_mechanism_challenge.sh             # 17 tests - fallback chain for empty responses
-./challenges/scripts/integration_providers_challenge.sh          # 47 tests - embedding/vector/MCP integrations
-./challenges/scripts/all_agents_e2e_challenge.sh                 # 102 tests - all 48 CLI agents
-./challenges/scripts/cli_agent_mcp_challenge.sh                  # 26 tests - CLI agent MCP validation (37 MCPs)
-./challenges/scripts/full_system_boot_challenge.sh               # 53 tests - full system infrastructure validation
-```
-
-Key concepts:
-- HelixAgent presents as a single LLM provider with one virtual model (AI Debate Ensemble)
-- ALL verification data comes from REAL API calls (no stubs)
-- Infrastructure auto-starts when needed
-
-### Go Test Suites
-
-| Test Suite | Location | Purpose |
-|------------|----------|---------|
-| Security Penetration | `tests/security/penetration_test.go` | LLM security testing (prompt injection, jailbreaking, data exfiltration) |
-| AI Debate Challenge | `tests/challenge/ai_debate_maximal_challenge_test.go` | AI debate system comprehensive validation |
-| LLM+Cognee Integration | `tests/integration/llm_cognee_verification_test.go` | All 10 LLM providers + Cognee integration |
-| Semantic Router | `internal/routing/semantic/semantic_test.go` | Embedding similarity routing (96.2% coverage) |
-| LLM Testing Framework | `internal/testing/llm/llm_test.go` | DeepEval-style LLM testing (96.2% coverage) |
-| Workflow Orchestration | `internal/agentic/workflow_test.go` | Graph-based workflow tests |
-| Memory Management | `internal/memory/memory_test.go` | Mem0-style memory tests |
-| Observability | `internal/observability/observability_test.go` | Tracing and metrics tests |
-
-Run specific test suites:
-```bash
-go test -v ./tests/security/...     # Security penetration tests
-go test -v ./tests/challenge/...    # AI debate challenge tests
-go test -v ./tests/integration/...  # Integration tests
-```
-
-## LLMsVerifier Integration
-
-```bash
-make verifier-init        # Initialize submodule
-make verifier-build       # Build verifier CLI
-make verifier-test        # Run verifier tests
-make verifier-verify MODEL=gpt-4 PROVIDER=openai  # Verify a model
-```
-
-Dynamic provider selection based on real-time verification scores. Ollama is DEPRECATED (score: 5.0) - only used as fallback.
-
-## Protocol Support
-
-| Protocol | Endpoint | Description |
-|----------|----------|-------------|
-| MCP | `/v1/mcp` | Model Context Protocol |
-| ACP | `/v1/acp` | Agent Communication Protocol |
-| LSP | `/v1/lsp` | Language Server Protocol |
-| Embeddings | `/v1/embeddings` | Vector embeddings |
-| Vision | `/v1/vision` | Image analysis, OCR |
-| Cognee | `/v1/cognee` | Knowledge graph & RAG (optional, disabled by default - use Mem0 instead) |
-| Startup | `/v1/startup/verification` | LLMsVerifier re-evaluation status |
-
-Fallback mechanism: Routes to strongest LLM by LLMsVerifier score, falls back to next on failure.
-
-### Startup Verification Endpoint
-
-The `/v1/startup/verification` endpoint exposes LLMsVerifier re-evaluation status for every boot:
-
-```json
-GET /v1/startup/verification
-{
-  "reevaluation_completed": true,
-  "started_at": "2026-01-27T19:00:00Z",
-  "completed_at": "2026-01-27T19:00:05Z",
-  "duration_ms": 5234,
-  "total_providers": 10,
-  "verified_count": 8,
-  "failed_count": 2,
-  "providers_sorted": true,
-  "ranked_providers": [
-    {"rank": 1, "provider": "claude", "score": 9.5, "verified": true},
-    {"rank": 2, "provider": "deepseek", "score": 8.7, "verified": true}
-  ],
-  "debate_team": {
-    "team_configured": true,
-    "total_llms": 15,
-    "positions": 5,
-    "selected_at": "2026-01-27T19:00:05Z"
-  }
-}
-```
-
-## Embedding Providers
-
-HelixAgent supports multiple embedding providers for semantic search and RAG applications.
-
-| Provider | Models | Dimensions | Key Files |
-|----------|--------|------------|-----------|
-| **OpenAI** | text-embedding-3-small, text-embedding-3-large, text-embedding-ada-002 | 512-3072 | `internal/embedding/models.go` |
-| **Cohere** | embed-english-v3.0, embed-multilingual-v3.0, embed-english-light-v3.0 | 384-4096 | `internal/embedding/providers.go` |
-| **Voyage** | voyage-3, voyage-3-lite, voyage-code-3, voyage-finance-2, voyage-law-2 | 512-1536 | `internal/embedding/providers.go` |
-| **Jina** | jina-embeddings-v3, jina-embeddings-v2-base-en, jina-clip-v1, jina-colbert-v2 | 128-1024 | `internal/embedding/providers.go` |
-| **Google** | text-embedding-005, text-multilingual-embedding-002, textembedding-gecko@003 | 768 | `internal/embedding/providers.go` |
-| **AWS Bedrock** | amazon.titan-embed-text-v1/v2, cohere.embed-english-v3, cohere.embed-multilingual-v3 | 1024-1536 | `internal/embedding/providers.go` |
-
-All providers support caching, batch embedding, and the standard `Embed()`, `EmbedBatch()`, `Close()` interface.
-
-## Vector Stores
-
-HelixAgent supports multiple vector databases for similarity search.
-
-| Vector Store | Features | Key Files |
-|--------------|----------|-----------|
-| **Qdrant** | Full-featured, gRPC/HTTP, filtering, payload storage | `internal/vectordb/qdrant/` |
-| **Pinecone** | Serverless, managed service, namespace support | `internal/vectordb/pinecone/` |
-| **Milvus** | High-performance, distributed, multiple index types | `internal/vectordb/milvus/` |
-| **pgvector** | PostgreSQL extension, HNSW/IVFFlat indexes, L2/IP/Cosine distance | `internal/vectordb/pgvector/` |
-
-All vector stores implement: `Connect()`, `Close()`, `HealthCheck()`, `Upsert()`, `Search()`, `Delete()`, `Get()`.
+32+ formatters (11 native, 14 service, 7 built-in) for 19 languages. REST API: `POST /v1/format`, `GET /v1/formatters`. Service formatters in Docker (ports 9210-9300). Core: `internal/formatters/` (interface, registry, executor, cache, system). Native providers: `internal/formatters/providers/native/`. AI debate integration: `internal/services/debate_formatter_integration.go`.
 
 ## MCP Adapters
 
-HelixAgent provides MCP (Model Context Protocol) adapters for external service integration.
+45+ adapters in `internal/mcp/adapters/`. 65+ containerized MCP servers (ports 9101-9999, zero npx). Container config: `internal/mcp/config/generator_container.go`. Compose: `docker/mcp/docker-compose.mcp-full.yml`.
 
-| Category | Adapters | Description |
-|----------|----------|-------------|
-| **Productivity** | Linear, Asana, Jira, Notion, Todoist, Trello | Issue tracking, project management |
-| **Communication** | Slack, Discord, Gmail, Microsoft Teams | Messaging and notifications |
-| **Development** | GitHub, GitLab, Sentry, Brave Search | Code management, error tracking, search |
-| **Data** | PostgreSQL, Google Drive, Qdrant, Browserbase | Databases, files, vector search |
+## Challenges
 
-Key files:
-- `internal/mcp/adapters/linear.go` - Linear issue tracking (14 tools)
-- `internal/mcp/adapters/asana.go` - Asana project management (20 tools)
-- `internal/mcp/adapters/jira.go` - Jira issue tracking (20 tools)
-- `internal/mcp/adapters/registry.go` - Adapter registry (45+ adapters)
-
-### CLI Agent MCP Configuration (43 MCPs)
-
-CLI agents (OpenCode, Crush, etc.) are configured with **43 MCPs** across four categories:
-
-| Category | MCPs |
-|----------|------|
-| **Official MCP** | filesystem, memory, postgres, puppeteer, sequential-thinking, everything |
-| **Databases & Storage** | sqlite, mongodb, mysql, qdrant, chroma, elasticsearch |
-| **DevOps & Infrastructure** | docker, kubernetes, git, aws, gcp, vercel, cloudflare |
-| **Productivity & PM** | github, gitlab, slack, discord, telegram, linear, notion, jira, trello |
-| **Search & AI** | brave-search, google, youtube, twitter, openai, time |
-| **HelixAgent Remote** | helixagent-mcp, helixagent-acp, helixagent-lsp, helixagent-embeddings, helixagent-vision, helixagent-cognee, helixagent-tools-search, helixagent-adapters-search, helixagent-tools-suggestions |
-
-**Requirements:** Many MCPs require API keys/tokens. See [MCP Configuration Requirements](docs/mcp/MCP_CONFIGURATION_REQUIREMENTS.md) for complete setup instructions.
-
-**Quick Setup:**
 ```bash
-# Copy and edit environment variables
-cp .env.mcps.example .env.mcps
-# Edit .env.mcps with your API keys
-source .env.mcps
+./challenges/scripts/run_all_challenges.sh                       # All challenges
+./challenges/scripts/unified_verification_challenge.sh           # 15 tests
+./challenges/scripts/llms_reevaluation_challenge.sh              # 26 tests
+./challenges/scripts/debate_team_dynamic_selection_challenge.sh  # 12 tests
+./challenges/scripts/semantic_intent_challenge.sh                # 19 tests
+./challenges/scripts/fallback_mechanism_challenge.sh             # 17 tests
+./challenges/scripts/integration_providers_challenge.sh          # 47 tests
+./challenges/scripts/all_agents_e2e_challenge.sh                 # 102 tests
+./challenges/scripts/full_system_boot_challenge.sh               # 53 tests
+./challenges/scripts/cli_proxy_challenge.sh                      # 50 tests
 ```
 
-**MCPs by Configuration Status:**
-- **No Config Required (14):** filesystem, memory, sequential-thinking, everything, puppeteer, docker, kubernetes, git, time, sqlite, qdrant, chroma, youtube, google
-- **API Key Required (14):** github, gitlab, slack, discord, telegram, linear, notion, jira, trello, brave-search, openai, twitter, vercel, cloudflare
-- **Local Service Required (6):** postgres, mongodb, mysql, elasticsearch, qdrant, chroma
-- **HelixAgent Required (9):** All helixagent-* MCPs
+## LLMsVerifier
 
-Verify MCP configuration:
 ```bash
-./scripts/cli-agents/tests/verify-opencode-mcps.sh   # 15 tests for OpenCode
-./scripts/cli-agents/tests/verify-crush-mcps.sh      # 10 tests for Crush
-./challenges/scripts/cli_agent_mcp_challenge.sh      # 26 tests for all CLI agents
+make verifier-init / verifier-build / verifier-test
+make verifier-verify MODEL=gpt-4 PROVIDER=openai
 ```
 
-### MCP Server Containerization (65+ MCPs)
+## Protocol Endpoints
 
-All MCP servers are available as Docker containers, eliminating npm/npx dependencies:
+MCP `/v1/mcp` | ACP `/v1/acp` | LSP `/v1/lsp` | Embeddings `/v1/embeddings` | Vision `/v1/vision` | Cognee `/v1/cognee` (optional) | Startup `/v1/startup/verification` | BigData `/v1/bigdata/health`
 
-**Architecture:**
-```
-CLI Agents → HelixAgent → ContainerMCPConfigGenerator → Docker Containers (ports 9101-9999)
-```
-
-**Port Allocation:**
-| Port Range | Category | Example MCPs |
-|------------|----------|--------------|
-| 9101-9120 | Core | fetch, git, time, filesystem, memory, sqlite, puppeteer |
-| 9201-9220 | Database | mongodb, redis, mysql, elasticsearch, supabase |
-| 9301-9320 | Vector | qdrant, chroma, pinecone, weaviate |
-| 9401-9440 | DevOps | github, gitlab, kubernetes, docker, aws, cloudflare |
-| 9501-9520 | Browser | playwright, browserbase, firecrawl |
-| 9601-9620 | Communication | slack, discord, telegram |
-| 9701-9740 | Productivity | notion, linear, jira, trello, asana, todoist |
-| 9801-9840 | Search/AI | brave-search, perplexity, llamaindex, langchain |
-| 9901-9999 | Google/Monitoring/Finance | google-drive, datadog, stripe, figma |
-
-**Quick Start:**
-```bash
-# Build and start all MCP containers
-docker-compose -f docker/mcp/docker-compose.mcp-full.yml build
-docker-compose -f docker/mcp/docker-compose.mcp-full.yml up -d
-
-# Validate containerization (65 tests)
-./challenges/scripts/mcp_containerized_challenge.sh
-```
-
-**Key Files:**
-- `internal/mcp/config/generator_container.go` - Container config generator (ZERO npx)
-- `docker/mcp/docker-compose.mcp-full.yml` - All 65+ MCP services
-- `docker/mcp/Dockerfile.mcp-*` - Dockerfile templates
-- `docs/mcp/CONTAINERIZATION.md` - Full documentation
-
-**Config Generator:**
-```go
-gen := config.NewContainerMCPConfigGenerator("http://localhost:8080")
-mcps := gen.GenerateContainerMCPs()   // 65+ MCPs with container URLs
-summary := gen.GenerateSummary()      // summary["npx_dependencies"] == 0
-```
-
-## Background Task System
-
-API endpoints: `POST /v1/tasks`, `GET /v1/tasks/:id/status`, `GET /v1/tasks/:id/events` (SSE), `GET /v1/ws/tasks/:id` (WebSocket)
-
-Task states: `pending -> queued -> running -> completed/failed/stuck/cancelled`
-
-Key files: `internal/background/`, `internal/notifications/`
-
-## Container Runtime
-
-Supports both Docker and Podman:
-```bash
-./scripts/container-runtime.sh build   # Auto-detects runtime
-./scripts/container-runtime.sh start
-```
+Fallback: routes to strongest LLM by score, falls back on failure.
 
 ## Technology Stack
 
-- **Framework**: Gin (v1.11.0)
-- **Database**: PostgreSQL 15 with pgx/v5
-- **Cache**: Redis 7
-- **Protocols**: OpenAI-compatible REST, gRPC, MCP, LSP, ACP
-- **Testing**: testify (v1.11.1)
-- **Monitoring**: Prometheus, Grafana
+Gin v1.11.0, PostgreSQL 15 (pgx/v5), Redis 7, testify v1.11.1, Prometheus/Grafana, OpenTelemetry. Supports Docker and Podman (`./scripts/container-runtime.sh`).
 
-Configuration files in `/configs`: `development.yaml`, `production.yaml`, `multi-provider.yaml`
+## Unified Service Management
+
+`BootManager` (`internal/services/boot_manager.go`): groups services by compose file, starts via `docker compose up -d`, health checks all. `HealthChecker` (`internal/services/health_checker.go`): TCP/HTTP checks with retries. Required services (PostgreSQL, Redis, ChromaDB) fail boot on health failure. Remote services: health check only. SQL schemas: `sql/schema/`.
