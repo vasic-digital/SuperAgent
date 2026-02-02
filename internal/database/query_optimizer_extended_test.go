@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -1003,4 +1004,105 @@ func TestQueryCache_InvalidatePrefix_LongerThanKey(t *testing.T) {
 	val, ok := cache.Get("ab")
 	assert.True(t, ok)
 	assert.Equal(t, "value", val)
+}
+
+// -----------------------------------------------------------------------------
+// LRU Eviction Behavior Tests
+// -----------------------------------------------------------------------------
+
+func TestQueryCache_LRU_EvictsLeastRecentlyUsed(t *testing.T) {
+	cache := NewQueryCache(5*time.Minute, 3)
+
+	cache.Set("a", "1")
+	cache.Set("b", "2")
+	cache.Set("c", "3")
+
+	// Access "a" to make it recently used
+	_, _ = cache.Get("a")
+
+	// Insert "d" — should evict "b" (least recently used)
+	cache.Set("d", "4")
+
+	_, ok := cache.Get("b")
+	assert.False(t, ok, "b should have been evicted as LRU")
+
+	val, ok := cache.Get("a")
+	assert.True(t, ok, "a should still exist after being accessed")
+	assert.Equal(t, "1", val)
+}
+
+func TestQueryCache_LRU_UpdateExistingMovesToFront(t *testing.T) {
+	cache := NewQueryCache(5*time.Minute, 3)
+
+	cache.Set("a", "1")
+	cache.Set("b", "2")
+	cache.Set("c", "3")
+
+	// Update "a" — moves it to front
+	cache.Set("a", "updated")
+
+	// Insert "d" — should evict "b" (now the LRU)
+	cache.Set("d", "4")
+
+	_, ok := cache.Get("b")
+	assert.False(t, ok, "b should have been evicted")
+
+	val, ok := cache.Get("a")
+	assert.True(t, ok)
+	assert.Equal(t, "updated", val)
+}
+
+func TestQueryCache_LRU_GetOnExpiredRemovesEntry(t *testing.T) {
+	cache := NewQueryCache(50*time.Millisecond, 10)
+
+	cache.Set("x", "value")
+	time.Sleep(100 * time.Millisecond)
+
+	// Get on expired entry should remove it from both map and list
+	val, ok := cache.Get("x")
+	assert.False(t, ok)
+	assert.Nil(t, val)
+
+	// Setting new entries should not see the expired one
+	cache.Set("y", "new")
+	val, ok = cache.Get("y")
+	assert.True(t, ok)
+	assert.Equal(t, "new", val)
+}
+
+// -----------------------------------------------------------------------------
+// Benchmarks for O(1) LRU Cache
+// -----------------------------------------------------------------------------
+
+func BenchmarkQueryCacheSet(b *testing.B) {
+	cache := NewQueryCache(5*time.Minute, 1000)
+	for i := 0; i < b.N; i++ {
+		key := fmt.Sprintf("key-%d", i%2000) // Force evictions
+		cache.Set(key, i)
+	}
+}
+
+func BenchmarkQueryCacheGet(b *testing.B) {
+	cache := NewQueryCache(5*time.Minute, 1000)
+	for i := 0; i < 1000; i++ {
+		cache.Set(fmt.Sprintf("key-%d", i), i)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := fmt.Sprintf("key-%d", i%1000)
+		_, _ = cache.Get(key)
+	}
+}
+
+func BenchmarkQueryCacheSetAtCapacity(b *testing.B) {
+	cache := NewQueryCache(5*time.Minute, 100)
+	// Fill to capacity
+	for i := 0; i < 100; i++ {
+		cache.Set(fmt.Sprintf("pre-%d", i), i)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Every Set triggers an eviction
+		cache.Set(fmt.Sprintf("new-%d", i), i)
+	}
 }

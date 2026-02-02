@@ -443,7 +443,10 @@ func (bdi *BigDataIntegration) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop stops all big data components
+// stopComponentTimeout is the maximum time to wait for each component to stop
+const stopComponentTimeout = 10 * time.Second
+
+// Stop stops all big data components with per-component timeouts
 func (bdi *BigDataIntegration) Stop(ctx context.Context) error {
 	if !bdi.isRunning {
 		return nil
@@ -457,17 +460,28 @@ func (bdi *BigDataIntegration) Stop(ctx context.Context) error {
 		bdi.logger.Debug("Distributed memory disabled")
 	}
 
-	// Stop knowledge graph streaming
+	// Stop knowledge graph streaming with timeout
 	if bdi.graphStreaming != nil {
-		if err := bdi.graphStreaming.Stop(ctx); err != nil {
+		stopCtx, cancel := context.WithTimeout(ctx, stopComponentTimeout)
+		if err := bdi.graphStreaming.Stop(stopCtx); err != nil {
 			bdi.logger.WithError(err).Warn("Error stopping knowledge graph streaming")
 		}
+		cancel()
 	}
 
-	// Close ClickHouse connection
+	// Close ClickHouse connection with timeout
 	if bdi.clickhouseAnalytics != nil {
-		if err := bdi.clickhouseAnalytics.Close(); err != nil {
-			bdi.logger.WithError(err).Warn("Error closing ClickHouse connection")
+		done := make(chan error, 1)
+		go func() {
+			done <- bdi.clickhouseAnalytics.Close()
+		}()
+		select {
+		case err := <-done:
+			if err != nil {
+				bdi.logger.WithError(err).Warn("Error closing ClickHouse connection")
+			}
+		case <-time.After(stopComponentTimeout):
+			bdi.logger.Warn("Timed out closing ClickHouse connection")
 		}
 	}
 

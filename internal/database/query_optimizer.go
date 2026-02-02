@@ -1,6 +1,7 @@
 package database
 
 import (
+	"container/list"
 	"context"
 	"fmt"
 	"sync"
@@ -59,15 +60,18 @@ type QueryMetrics struct {
 	BulkInsertBatches int64
 }
 
-// QueryCache provides simple query result caching
+// QueryCache provides O(1) LRU query result caching with TTL expiration.
+// Uses a doubly-linked list (container/list) plus a map for O(1) eviction.
 type QueryCache struct {
-	cache   map[string]*cacheEntry
+	cache   map[string]*list.Element
+	lruList *list.List
 	mu      sync.RWMutex
 	ttl     time.Duration
 	maxSize int
 }
 
 type cacheEntry struct {
+	key       string
 	result    interface{}
 	expiresAt time.Time
 }
@@ -75,7 +79,8 @@ type cacheEntry struct {
 // NewQueryCache creates a new query cache
 func NewQueryCache(ttl time.Duration, maxSize int) *QueryCache {
 	qc := &QueryCache{
-		cache:   make(map[string]*cacheEntry),
+		cache:   make(map[string]*list.Element),
+		lruList: list.New(),
 		ttl:     ttl,
 		maxSize: maxSize,
 	}
@@ -84,16 +89,20 @@ func NewQueryCache(ttl time.Duration, maxSize int) *QueryCache {
 }
 
 func (c *QueryCache) Get(key string) (interface{}, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	entry, exists := c.cache[key]
+	elem, exists := c.cache[key]
 	if !exists {
 		return nil, false
 	}
+	entry := elem.Value.(*cacheEntry)
 	if time.Now().After(entry.expiresAt) {
+		c.removeLocked(elem)
 		return nil, false
 	}
+	// Move to front (most recently used)
+	c.lruList.MoveToFront(elem)
 	return entry.result, true
 }
 
@@ -101,39 +110,46 @@ func (c *QueryCache) Set(key string, value interface{}) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Evict oldest if at capacity
+	// Update existing entry
+	if elem, exists := c.cache[key]; exists {
+		entry := elem.Value.(*cacheEntry)
+		entry.result = value
+		entry.expiresAt = time.Now().Add(c.ttl)
+		c.lruList.MoveToFront(elem)
+		return
+	}
+
+	// Evict LRU entry if at capacity — O(1)
 	if len(c.cache) >= c.maxSize {
-		var oldestKey string
-		var oldestTime time.Time
-		for k, v := range c.cache {
-			if oldestKey == "" || v.expiresAt.Before(oldestTime) {
-				oldestKey = k
-				oldestTime = v.expiresAt
-			}
-		}
-		if oldestKey != "" {
-			delete(c.cache, oldestKey)
+		back := c.lruList.Back()
+		if back != nil {
+			c.removeLocked(back)
 		}
 	}
 
-	c.cache[key] = &cacheEntry{
+	entry := &cacheEntry{
+		key:       key,
 		result:    value,
 		expiresAt: time.Now().Add(c.ttl),
 	}
+	elem := c.lruList.PushFront(entry)
+	c.cache[key] = elem
 }
 
 func (c *QueryCache) Invalidate(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	delete(c.cache, key)
+	if elem, exists := c.cache[key]; exists {
+		c.removeLocked(elem)
+	}
 }
 
 func (c *QueryCache) InvalidatePrefix(prefix string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	for key := range c.cache {
+	for key, elem := range c.cache {
 		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
-			delete(c.cache, key)
+			c.removeLocked(elem)
 		}
 	}
 }
@@ -141,7 +157,15 @@ func (c *QueryCache) InvalidatePrefix(prefix string) {
 func (c *QueryCache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.cache = make(map[string]*cacheEntry)
+	c.cache = make(map[string]*list.Element)
+	c.lruList.Init()
+}
+
+// removeLocked removes a cache entry. Caller must hold c.mu.
+func (c *QueryCache) removeLocked(elem *list.Element) {
+	entry := elem.Value.(*cacheEntry)
+	delete(c.cache, entry.key)
+	c.lruList.Remove(elem)
 }
 
 func (c *QueryCache) cleanupLoop() {
@@ -151,10 +175,14 @@ func (c *QueryCache) cleanupLoop() {
 	for range ticker.C {
 		c.mu.Lock()
 		now := time.Now()
-		for key, entry := range c.cache {
+		// Walk from back (LRU) and remove expired entries
+		for elem := c.lruList.Back(); elem != nil; {
+			entry := elem.Value.(*cacheEntry)
+			prev := elem.Prev()
 			if now.After(entry.expiresAt) {
-				delete(c.cache, key)
+				c.removeLocked(elem)
 			}
+			elem = prev
 		}
 		c.mu.Unlock()
 	}

@@ -63,8 +63,9 @@ func NewSystem(config *Config, logger *logrus.Logger) (*System, error) {
 	}, nil
 }
 
-// Shutdown gracefully shuts down the formatters system
+// Shutdown gracefully shuts down the formatters system with a timeout
 func (s *System) Shutdown() error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 	return s.Registry.Stop(ctx)
 }
