@@ -151,9 +151,9 @@ start_helixagent() {
     echo $HELIXAGENT_PID > "$CHALLENGES_DIR/results/helixagent_challenges.pid"
     STARTED_SERVICES+=("helixagent")
 
-    # Wait for startup
-    print_info "Waiting for HelixAgent to start..."
-    local max_attempts=30
+    # Wait for startup (provider verification with real API calls takes ~120s, plus setup)
+    print_info "Waiting for HelixAgent to start (provider verification takes ~2 minutes)..."
+    local max_attempts=180
     local attempt=0
     while [ $attempt -lt $max_attempts ]; do
         if check_helixagent; then
