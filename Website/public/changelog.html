@@ -40,6 +40,58 @@
         <p class="lead">All notable changes to HelixAgent are documented here.</p>
 
         <div class="changelog-entry">
+            <h2><span class="version-badge">v1.1.0</span> <span class="date-badge">February 2026</span></h2>
+            <p>Major quality improvements with comprehensive test coverage expansion, performance optimizations, and security enhancements.</p>
+
+            <div class="change-type fixed">Fixed</div>
+            <ul class="changes-list">
+                <li>Resolved all errcheck lint violations across internal packages (~96 fixes)</li>
+                <li>Fixed O(n) cache eviction in query optimizer with O(1) LRU replacement</li>
+                <li>Fixed race conditions detected by go test -race across codebase</li>
+                <li>Enabled memory service by default (decoupled from Cognee, uses Mem0)</li>
+                <li>Updated misleading "placeholder" comment in skills protocol adapter</li>
+            </ul>
+
+            <div class="change-type added">Added</div>
+            <ul class="changes-list">
+                <li>Test coverage for analytics, conversation, learning packages (previously 0%)</li>
+                <li>BigData package test coverage increased from 2.9% to 80%+</li>
+                <li>Formatters package test coverage increased from 15.5% to 80%+</li>
+                <li>Memory package tests: CRDT, distributed manager, event sourcing, store</li>
+                <li>Observability package tests: exporter, LLM middleware, metrics, tracer</li>
+                <li>Database query optimizer tests and O(1) LRU cache benchmarks</li>
+                <li>Stress tests for BigData, formatters, and memory subsystems</li>
+                <li>gRPC integration tests (21 tests covering all service methods)</li>
+                <li>Debate full-flow integration test (7 lifecycle tests)</li>
+                <li>Comprehensive monitoring integration tests</li>
+                <li>Benchmark tests for formatters cache and memory CRDT operations</li>
+                <li>4 new challenge scripts: gRPC service, BigData, memory system, security scanning</li>
+                <li>Snyk policy configuration (.snyk)</li>
+                <li>SBOM generation script (CycloneDX/SPDX via syft or cyclonedx-gomod)</li>
+                <li>Per-package README documentation for analytics, bigdata, conversation, formatters, learning</li>
+                <li>4 new user manuals: BigData integration, gRPC API, memory system, code formatters</li>
+                <li>2 new video courses: BigData analytics, memory management</li>
+                <li>Architecture diagrams for gRPC service and memory system (Mermaid)</li>
+            </ul>
+
+            <div class="change-type improved">Improved</div>
+            <ul class="changes-list">
+                <li>Semaphore-based concurrency limits for parallel health checks and component initialization</li>
+                <li>Timeout-based shutdown for all Stop/Shutdown/Close methods</li>
+                <li>Lazy loading for optional services (BigData, service formatters)</li>
+                <li>CLAUDE.md and AGENTS.md updated with new features and test references</li>
+            </ul>
+
+            <div class="change-type security">Security</div>
+            <ul class="changes-list">
+                <li>Snyk policy file for dependency vulnerability scanning</li>
+                <li>SBOM generation for supply chain security (CycloneDX + SPDX formats)</li>
+                <li>Gosec HIGH severity findings resolved</li>
+                <li>Security scanning challenge script for automated validation</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
             <h2><span class="version-badge">v1.0.1</span> <span class="date-badge">January 2026</span></h2>
             <p>Bug fixes and documentation updates for improved stability and developer experience.</p>
 

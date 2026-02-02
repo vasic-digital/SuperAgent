@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security - HelixAgent Documentation</title>
+    <meta name="description" content="Multi-layer security scanning and vulnerability management for HelixAgent. Learn about dependency scanning, static analysis, container security, and SBOM generation.">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+</head>
+<body>
+    <header class="docs-header">
+        <nav class="nav-container">
+            <a href="/" class="logo">HelixAgent</a>
+            <div class="nav-links">
+                <a href="/docs/">Docs</a>
+                <a href="/docs/api.html">API</a>
+                <a href="/pricing.html">Pricing</a>
+                <a href="https://github.com/helixagent/helixagent" target="_blank">GitHub</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="docs-container">
+        <aside class="docs-sidebar">
+            <h3>Security</h3>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#dependency-scanning">Dependency Scanning</a></li>
+                <li><a href="#static-analysis">Static Analysis</a></li>
+                <li><a href="#container-scanning">Container Scanning</a></li>
+                <li><a href="#sbom">SBOM Generation</a></li>
+                <li><a href="#running-scans">Running Scans</a></li>
+            </ul>
+        </aside>
+
+        <article class="docs-content">
+            <h1>Security</h1>
+            <p class="lead">Multi-layer security scanning and vulnerability management for production-grade deployments.</p>
+
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>HelixAgent implements a comprehensive security framework covering dependency vulnerabilities, code-level security issues, container image scanning, and software supply chain transparency.</p>
+
+                <h3>Security Layers</h3>
+                <ul>
+                    <li><strong>Dependency Scanning:</strong> Snyk integration for Go module vulnerability detection</li>
+                    <li><strong>Static Analysis:</strong> Gosec for Go-specific security issues (hardcoded secrets, SQL injection risks, etc.)</li>
+                    <li><strong>Container Scanning:</strong> Trivy for CVE detection in Docker images and OS packages</li>
+                    <li><strong>SBOM Generation:</strong> CycloneDX and SPDX formats for supply chain transparency</li>
+                    <li><strong>Red Team Framework:</strong> AI-powered adversarial testing (see <code>internal/security/</code>)</li>
+                    <li><strong>PII Detection:</strong> Automatic detection and masking of sensitive data in logs/responses</li>
+                </ul>
+
+                <p>All security tools run in CI/CD pipelines and can be executed locally during development.</p>
+            </section>
+
+            <section id="dependency-scanning">
+                <h2>Dependency Scanning</h2>
+                <p>Snyk monitors Go dependencies for known vulnerabilities with severity ratings and fix recommendations.</p>
+
+                <h3>Policy Configuration</h3>
+                <p>Security policies are defined in <code>.snyk</code> at the project root:</p>
+                <pre><code># Snyk (https://snyk.io) policy file
+version: v1.22.0
+language-settings:
+  go: 1.24
+
+# Ignore specific vulnerabilities (with expiration)
+ignore:
+  SNYK-GOLANG-GITHUBCOMGINGONICGIN-1234567:
+    - '*':
+        reason: False positive - input sanitized upstream
+        expires: 2024-12-31T00:00:00.000Z
+
+# Patch settings
+patch: {}
+
+# Security thresholds
+threshold:
+  critical: 0  # Fail on any critical issues
+  high: 3      # Allow up to 3 high-severity issues
+  medium: 10
+  low: 50</code></pre>
+
+                <h3>Running Snyk</h3>
+                <pre><code># Test dependencies for vulnerabilities
+snyk test
+
+# Test and generate JSON report
+snyk test --json > snyk-report.json
+
+# Monitor project in Snyk dashboard
+snyk monitor</code></pre>
+
+                <h3>CI Integration</h3>
+                <p>Snyk runs automatically in GitHub Actions on every push and pull request. Set the <code>SNYK_TOKEN</code> secret in your repository settings.</p>
+            </section>
+
+            <section id="static-analysis">
+                <h2>Static Analysis</h2>
+                <p>Gosec analyzes Go source code for security issues using AST pattern matching.</p>
+
+                <h3>Detected Issues</h3>
+                <ul>
+                    <li><strong>G101:</strong> Hardcoded credentials in code</li>
+                    <li><strong>G102:</strong> Binding to all network interfaces (0.0.0.0)</li>
+                    <li><strong>G201-G204:</strong> SQL injection risks</li>
+                    <li><strong>G301-G306:</strong> File permission issues</li>
+                    <li><strong>G401-G404:</strong> Weak cryptographic algorithms (MD5, SHA1)</li>
+                    <li><strong>G501-G505:</strong> Import of weak crypto packages</li>
+                </ul>
+
+                <h3>Running Gosec</h3>
+                <pre><code># Scan all packages
+gosec ./...
+
+# Generate JSON report
+gosec -fmt=json -out=gosec-report.json ./...
+
+# Scan with custom config
+gosec -conf=.gosec.json ./...</code></pre>
+
+                <h3>Gosec Configuration</h3>
+                <p>Custom rules in <code>.gosec.json</code>:</p>
+                <pre><code>{
+  "global": {
+    "nosec": false,
+    "audit": true
+  },
+  "exclude": [
+    "G104"  // Allow unchecked errors in specific files
+  ],
+  "severity": "medium",
+  "confidence": "medium"
+}</code></pre>
+
+                <h3>Make Target</h3>
+                <pre><code>make security-scan  # Runs gosec via Makefile</code></pre>
+            </section>
+
+            <section id="container-scanning">
+                <h2>Container Scanning</h2>
+                <p>Trivy scans Docker images for OS-level vulnerabilities (CVEs) in packages and libraries.</p>
+
+                <h3>Scanning Docker Images</h3>
+                <pre><code># Scan the helixagent image
+trivy image helixagent/helixagent:latest
+
+# Scan with severity filter
+trivy image --severity HIGH,CRITICAL helixagent/helixagent:latest
+
+# Generate JSON report
+trivy image -f json -o trivy-report.json helixagent/helixagent:latest</code></pre>
+
+                <h3>Scanning Filesystem</h3>
+                <p>Trivy can also scan the project filesystem for misconfigurations and vulnerabilities:</p>
+                <pre><code># Scan project directory
+trivy fs .
+
+# Scan specific config files
+trivy config docker-compose.yml</code></pre>
+
+                <h3>CI Integration</h3>
+                <p>Trivy runs in the Docker build pipeline. Set severity thresholds to fail builds:</p>
+                <pre><code>trivy image --exit-code 1 --severity CRITICAL helixagent/helixagent:latest</code></pre>
+
+                <h3>Ignoring Vulnerabilities</h3>
+                <p>Create <code>.trivyignore</code> to suppress false positives:</p>
+                <pre><code># Ignore specific CVEs
+CVE-2023-12345
+
+# Ignore with expiration (YYYY-MM-DD)
+CVE-2023-67890 exp:2024-12-31</code></pre>
+            </section>
+
+            <section id="sbom">
+                <h2>SBOM Generation</h2>
+                <p>Software Bill of Materials (SBOM) provides transparency into all dependencies and components.</p>
+
+                <h3>Supported Formats</h3>
+                <ul>
+                    <li><strong>CycloneDX:</strong> OWASP standard for supply chain security</li>
+                    <li><strong>SPDX:</strong> Linux Foundation standard for license compliance</li>
+                </ul>
+
+                <h3>Generating SBOM</h3>
+                <pre><code># Generate CycloneDX SBOM
+./scripts/generate-sbom.sh cyclonedx
+
+# Generate SPDX SBOM
+./scripts/generate-sbom.sh spdx
+
+# Generate both formats
+./scripts/generate-sbom.sh all</code></pre>
+
+                <h3>Output Files</h3>
+                <ul>
+                    <li><code>sbom-cyclonedx.json</code> - CycloneDX JSON format</li>
+                    <li><code>sbom-spdx.json</code> - SPDX JSON format</li>
+                </ul>
+
+                <h3>SBOM Contents</h3>
+                <ul>
+                    <li>All Go module dependencies with versions</li>
+                    <li>License information (SPDX identifiers)</li>
+                    <li>Component hashes (SHA256)</li>
+                    <li>Transitive dependency tree</li>
+                </ul>
+
+                <h3>Verifying SBOM</h3>
+                <pre><code># Validate CycloneDX SBOM
+cyclonedx-cli validate --input-file sbom-cyclonedx.json
+
+# Upload to dependency tracking platform
+curl -X POST https://dtrack.example.com/api/v1/bom \
+  -H "X-Api-Key: $DTRACK_API_KEY" \
+  -F "project=helixagent" \
+  -F "bom=@sbom-cyclonedx.json"</code></pre>
+            </section>
+
+            <section id="running-scans">
+                <h2>Running Scans</h2>
+
+                <h3>Quick Start</h3>
+                <pre><code># Run all security scans via Makefile
+make security-scan
+
+# Output:
+# Running gosec...
+# Running snyk test...
+# Running trivy...
+# All security scans completed.</code></pre>
+
+                <h3>Comprehensive Scan</h3>
+                <pre><code># Run full security audit with reports
+./scripts/security-scan.sh all
+
+# This executes:
+# 1. Dependency scanning (Snyk)
+# 2. Static analysis (Gosec)
+# 3. Container scanning (Trivy)
+# 4. SBOM generation (CycloneDX + SPDX)
+# 5. Aggregated HTML report</code></pre>
+
+                <h3>Individual Scans</h3>
+                <pre><code># Run only dependency scanning
+./scripts/security-scan.sh dependencies
+
+# Run only static analysis
+./scripts/security-scan.sh static
+
+# Run only container scanning
+./scripts/security-scan.sh containers</code></pre>
+
+                <h3>CI/CD Integration</h3>
+                <p>Security scans run automatically in GitHub Actions on:</p>
+                <ul>
+                    <li>Every push to <code>main</code></li>
+                    <li>Every pull request</li>
+                    <li>Nightly scheduled runs</li>
+                </ul>
+
+                <h3>Pre-commit Hook</h3>
+                <p>Enable automatic scanning before commits:</p>
+                <pre><code># Install pre-commit hook
+cp scripts/pre-commit.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+
+# Now gosec runs automatically on every commit</code></pre>
+            </section>
+
+            <div class="cta-box">
+                <h3>Security Best Practices</h3>
+                <ul>
+                    <li>Run <code>make security-scan</code> before every release</li>
+                    <li>Review and triage all HIGH/CRITICAL findings</li>
+                    <li>Keep dependencies updated (<code>go get -u ./...</code>)</li>
+                    <li>Never commit API keys or secrets (use <code>.env</code> files)</li>
+                    <li>Enable GitHub Dependabot for automated security updates</li>
+                </ul>
+                <a href="/docs/quickstart.html" class="btn">Quick Start Guide</a>
+                <a href="https://github.com/helixagent/helixagent/security" class="btn btn-secondary">Report Vulnerability</a>
+            </div>
+        </article>
+    </main>
+
+    <footer class="docs-footer">
+        <p>&copy; 2024 HelixAgent. All rights reserved.</p>
+        <div class="footer-links">
+            <a href="/privacy.html">Privacy</a>
+            <a href="/terms.html">Terms</a>
+            <a href="https://github.com/helixagent/helixagent">GitHub</a>
+        </div>
+    </footer>
+
+    <script src="/scripts/main.js"></script>
+</body>
+</html>
