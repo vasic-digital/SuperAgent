@@ -175,12 +175,13 @@ func TestClaudeCLIProvider_Complete_NoPrompt(t *testing.T) {
 
 // TestClaudeCLIProvider_Complete_CLIUnavailable tests behavior when CLI unavailable
 func TestClaudeCLIProvider_Complete_CLIUnavailable(t *testing.T) {
-	// Create provider with invalid path
+	// Create provider with invalid path; consume sync.Once so IsCLIAvailable returns pre-set false
 	provider := &ClaudeCLIProvider{
 		model:        "claude-sonnet-4-20250514",
 		cliAvailable: false,
 		cliCheckErr:  exec.ErrNotFound,
 	}
+	provider.cliCheckOnce.Do(func() {}) // Mark Once as done
 
 	ctx := context.Background()
 	resp, err := provider.Complete(ctx, &models.LLMRequest{
@@ -526,6 +527,7 @@ func TestClaudeCLIProvider_CompleteStream_NotAvailable(t *testing.T) {
 		cliAvailable: false,
 		cliCheckErr:  exec.ErrNotFound,
 	}
+	provider.cliCheckOnce.Do(func() {}) // Mark Once as done so IsCLIAvailable() won't re-check
 
 	ctx := context.Background()
 	ch, err := provider.CompleteStream(ctx, &models.LLMRequest{

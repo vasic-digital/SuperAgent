@@ -275,8 +275,8 @@ func TestAllEndpoints(t *testing.T) {
 	cfg := DefaultServicesConfig()
 	all := cfg.AllEndpoints()
 
-	// Should have 13 core services
-	expectedCount := 13
+	// Should have 18 core services (includes zookeeper, clickhouse, minio, spark_master, spark_worker)
+	expectedCount := 18
 	if len(all) != expectedCount {
 		t.Errorf("Expected %d endpoints, got %d", expectedCount, len(all))
 	}
@@ -284,8 +284,9 @@ func TestAllEndpoints(t *testing.T) {
 	// Verify all names present
 	expectedNames := []string{
 		"postgresql", "redis", "cognee", "chromadb",
-		"prometheus", "grafana", "neo4j", "kafka", "rabbitmq",
+		"prometheus", "grafana", "neo4j", "kafka", "zookeeper", "rabbitmq",
 		"qdrant", "weaviate", "langchain", "llamaindex",
+		"clickhouse", "minio", "spark_master", "spark_worker",
 	}
 	for _, name := range expectedNames {
 		if _, ok := all[name]; !ok {

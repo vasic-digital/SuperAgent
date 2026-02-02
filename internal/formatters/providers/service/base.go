@@ -156,10 +156,11 @@ func (s *ServiceFormatter) Format(ctx context.Context, req *formatters.FormatReq
 	// Parse response
 	var serviceResp ServiceFormatResponse
 	if err := json.Unmarshal(body, &serviceResp); err != nil {
+		wrappedErr := fmt.Errorf("failed to parse response: %w", err)
 		return &formatters.FormatResult{
 			Success: false,
-			Error:   fmt.Errorf("failed to parse response: %w", err),
-		}, err
+			Error:   wrappedErr,
+		}, wrappedErr
 	}
 
 	// Check for service-level errors
