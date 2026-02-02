@@ -138,7 +138,7 @@ func (b *BaseChallenge) WriteJSONResult(filename string, data any) error {
 	if err != nil {
 		return fmt.Errorf("failed to create result file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")

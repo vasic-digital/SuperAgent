@@ -64,7 +64,7 @@ func (e *EnvLoader) Load(path string) error {
 		}
 		return fmt.Errorf("failed to open .env file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
@@ -383,7 +383,7 @@ func (e *EnvLoader) WriteRedactedEnv(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create redacted env file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	_, _ = file.WriteString("# Redacted environment configuration\n")
 	_, _ = file.WriteString("# Generated for logging/debugging purposes\n")
