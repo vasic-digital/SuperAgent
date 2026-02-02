@@ -1,0 +1,12 @@
+# Snyk Policy File
+# https://snyk.io/docs/using-snyk-policy-files/
+version: v1.25.0
+language-settings:
+  go:
+    countDeps: true
+
+# Ignore rules for known false positives or accepted risks
+ignore: {}
+
+# Patch rules
+patch: {}

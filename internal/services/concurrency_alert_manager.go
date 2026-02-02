@@ -818,7 +818,7 @@ func (am *ConcurrencyAlertManager) calculateRetryDelay(attempts int) time.Durati
 	delay := float64(am.config.RetryInitialDelay) * math.Pow(am.config.RetryBackoffMultiplier, float64(attempts-1))
 
 	// Apply jitter: ±20% random variation
-	jitter := 0.8 + 0.4*rand.Float64()
+	jitter := 0.8 + 0.4*rand.Float64() // #nosec G404 -- jitter for backoff timing is not security-sensitive
 	delay = delay * jitter
 
 	// Convert to time.Duration and cap at max delay

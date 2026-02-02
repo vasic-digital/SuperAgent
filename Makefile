@@ -634,6 +634,10 @@ security-scan-stop:
 	@echo "🔒 Stopping security scanning services..."
 	@./scripts/security-scan.sh stop
 
+sbom:
+	@echo "📋 Generating SBOM (Software Bill of Materials)..."
+	@./scripts/generate-sbom.sh
+
 # =============================================================================
 # DOCKER TARGETS
 # =============================================================================
