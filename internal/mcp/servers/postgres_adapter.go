@@ -129,7 +129,7 @@ func (p *PostgresAdapter) Initialize(ctx context.Context) error {
 
 	// Test connection
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		_ = db.Close()
 		return fmt.Errorf("failed to ping database: %w", err)
 	}
 
@@ -565,13 +565,13 @@ func (p *PostgresAdapter) GetStats(ctx context.Context) (*DatabaseStats, error) 
 
 	// Get database size
 	row := p.db.QueryRowContext(ctx, "SELECT pg_size_pretty(pg_database_size(current_database()))")
-	row.Scan(&stats.Size)
+	_ = row.Scan(&stats.Size)
 
 	// Get connection count
-	p.db.QueryRowContext(ctx, "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()").Scan(&stats.Connections)
+	_ = p.db.QueryRowContext(ctx, "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()").Scan(&stats.Connections)
 
 	// Get active queries
-	p.db.QueryRowContext(ctx, "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND state = 'active'").Scan(&stats.ActiveQueries)
+	_ = p.db.QueryRowContext(ctx, "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND state = 'active'").Scan(&stats.ActiveQueries)
 
 	return stats, nil
 }

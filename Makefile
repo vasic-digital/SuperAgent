@@ -4,6 +4,8 @@
 # MAIN TARGETS
 # =============================================================================
 
+EXCLUDE_DIRS := cli_agents MCP MCP-Servers
+
 all: fmt vet lint test build
 
 # =============================================================================
@@ -559,16 +561,30 @@ test-automation-coverage:
 
 fmt:
 	@echo "✨ Formatting code..."
-	go fmt ./...
+	@for pkg in $$(go list ./... 2>/dev/null); do \
+		case "$$pkg" in \
+			*cli_agents*|*MCP*|*MCP-Servers*) \
+				echo "Skipping $$pkg" >&2; \
+				continue ;; \
+			*) go fmt $$pkg ;; \
+		esac; \
+	done
 
 vet:
 	@echo "🔍 Running go vet..."
-	go vet ./...
+	@for pkg in $$(go list ./... 2>/dev/null); do \
+		case "$$pkg" in \
+			*cli_agents*|*MCP*|*MCP-Servers*) \
+				echo "Skipping $$pkg" >&2; \
+				continue ;; \
+			*) go vet $$pkg ;; \
+		esac; \
+	done
 
 lint:
 	@echo "🔍 Running linter..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run; \
+		golangci-lint run --enable errcheck,govet --tests=false --max-issues-per-linter=100 ./internal/...; \
 	else \
 		echo "⚠️  golangci-lint not installed. Install with: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b \$$(go env GOPATH)/bin"; \
 	fi

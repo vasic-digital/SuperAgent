@@ -229,7 +229,7 @@ func (p *GeminiProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 	// Check for non-2xx status codes before starting stream
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, fmt.Errorf("Gemini API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 

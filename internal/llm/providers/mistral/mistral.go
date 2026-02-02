@@ -292,7 +292,7 @@ func (p *MistralProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 	// Check for HTTP errors before starting stream
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, fmt.Errorf("Mistral API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 
@@ -300,7 +300,7 @@ func (p *MistralProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 	ch := make(chan *models.LLMResponse)
 
 	go func() {
-		defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }()
 		defer close(ch)
 
 		reader := bufio.NewReader(resp.Body)
@@ -596,7 +596,7 @@ func (p *MistralProvider) makeAPICallWithAuthRetry(ctx context.Context, req Mist
 		// Check for auth errors (401) - retry once with a short delay
 		// This handles transient auth issues (token validation delays, auth service hiccups)
 		if isAuthRetryableStatus(resp.StatusCode) && allowAuthRetry {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			log.WithFields(logrus.Fields{
 				"provider":    "mistral",
 				"status_code": resp.StatusCode,
@@ -613,7 +613,7 @@ func (p *MistralProvider) makeAPICallWithAuthRetry(ctx context.Context, req Mist
 
 		// Check for retryable status codes (429, 5xx)
 		if isRetryableStatus(resp.StatusCode) && attempt < p.retryConfig.MaxRetries {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
 			log.WithFields(logrus.Fields{
 				"provider":    "mistral",

@@ -238,7 +238,7 @@ func (c *QUICClient) Close() error {
 
 	// Close HTTP/3 transport
 	if c.h3RoundTripper != nil {
-		c.h3RoundTripper.Close()
+		_ = c.h3RoundTripper.Close()
 	}
 
 	// Close HTTP/2 client transport

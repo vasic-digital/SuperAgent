@@ -293,7 +293,7 @@ func (m *MockMCPServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read request", http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 
 	// Parse request
 	var req MockMCPRequest
@@ -766,7 +766,7 @@ func WaitForServer(t *testing.T, url string, timeout time.Duration) {
 	for time.Now().Before(deadline) {
 		resp, err := client.Get(url)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return
 		}
 		time.Sleep(50 * time.Millisecond)
@@ -800,7 +800,7 @@ func CaptureStdout(t *testing.T, f func()) string {
 
 	f()
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	return <-outCh
@@ -827,7 +827,7 @@ func CaptureStderr(t *testing.T, f func()) string {
 
 	f()
 
-	w.Close()
+	_ = w.Close()
 	os.Stderr = old
 
 	return <-outCh
