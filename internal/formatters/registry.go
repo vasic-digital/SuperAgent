@@ -294,7 +294,10 @@ func (r *FormatterRegistry) DetectLanguageFromPath(filePath string) string {
 	return extensionMap[ext]
 }
 
-// HealthCheckAll performs health checks on all formatters
+// maxConcurrentHealthChecks limits the number of parallel health checks
+const maxConcurrentHealthChecks = 10
+
+// HealthCheckAll performs health checks on all formatters with bounded concurrency
 func (r *FormatterRegistry) HealthCheckAll(ctx context.Context) map[string]error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -302,11 +305,15 @@ func (r *FormatterRegistry) HealthCheckAll(ctx context.Context) map[string]error
 	results := make(map[string]error)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
+	sem := make(chan struct{}, maxConcurrentHealthChecks)
 
 	for name, formatter := range r.formatters {
 		wg.Add(1)
 		go func(name string, formatter Formatter) {
 			defer wg.Done()
+
+			sem <- struct{}{}
+			defer func() { <-sem }()
 
 			err := formatter.HealthCheck(ctx)
 
