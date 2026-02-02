@@ -220,7 +220,7 @@ func (s *SQLiteAdapter) Query(ctx context.Context, query string, args ...interfa
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -335,7 +335,7 @@ func (s *SQLiteAdapter) ListTables(ctx context.Context) ([]SQLiteTableInfo, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tables: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tables []SQLiteTableInfo
 	for rows.Next() {
@@ -387,7 +387,7 @@ func (s *SQLiteAdapter) DescribeTable(ctx context.Context, tableName string) (*S
 	if err != nil {
 		return nil, fmt.Errorf("failed to get columns: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var col SQLiteColumnInfo

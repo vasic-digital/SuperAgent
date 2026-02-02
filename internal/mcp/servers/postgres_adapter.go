@@ -227,7 +227,7 @@ func (p *PostgresAdapter) Query(ctx context.Context, query string, args ...inter
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -357,7 +357,7 @@ func (p *PostgresAdapter) ListTables(ctx context.Context, schema string) ([]Tabl
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tables: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tables []TableInfo
 	for rows.Next() {
@@ -422,7 +422,7 @@ func (p *PostgresAdapter) DescribeTable(ctx context.Context, schema, table strin
 	if err != nil {
 		return nil, fmt.Errorf("failed to describe table: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var col ColumnInfo
@@ -460,7 +460,7 @@ func (p *PostgresAdapter) ListSchemas(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list schemas: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var schemas []string
 	for rows.Next() {
@@ -519,7 +519,7 @@ func (p *PostgresAdapter) ListIndexes(ctx context.Context, schema, table string)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list indexes: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var indexes []IndexInfo
 	for rows.Next() {

@@ -227,7 +227,7 @@ func (as *AnalyticsSink) QueryAnalytics(ctx context.Context, conversationID stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to query analytics: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var results []*WindowedAnalytics
 
