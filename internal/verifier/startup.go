@@ -104,6 +104,11 @@ func (sv *StartupVerifier) SetProviderFunc(fn func(ctx context.Context, modelID,
 	sv.verifierSvc.SetProviderFunc(fn)
 }
 
+// SetTestMode enables/disables test mode (disables quality validation)
+func (sv *StartupVerifier) SetTestMode(enabled bool) {
+	sv.verifierSvc.SetTestMode(enabled)
+}
+
 // VerifyAllProviders runs the complete startup verification pipeline
 func (sv *StartupVerifier) VerifyAllProviders(ctx context.Context) (*StartupResult, error) {
 	sv.mu.Lock()
@@ -886,21 +891,10 @@ func (sv *StartupVerifier) scoreProviders(ctx context.Context, providers []*Unif
 }
 
 // rankProviders ranks providers by score (highest first)
+// IMPORTANT: NO OAuth priority - all providers sorted purely by score (highest first)
 func (sv *StartupVerifier) rankProviders(providers []*UnifiedProvider) {
-	// Sort by: OAuth first (when enabled), then by score descending
+	// Sort by score descending (highest first) - NO OAuth priority
 	sort.Slice(providers, func(i, j int) bool {
-		// OAuth providers come first
-		iIsOAuth := providers[i].AuthType == AuthTypeOAuth
-		jIsOAuth := providers[j].AuthType == AuthTypeOAuth
-
-		if iIsOAuth && !jIsOAuth {
-			return true
-		}
-		if !iIsOAuth && jIsOAuth {
-			return false
-		}
-
-		// Then sort by score (descending)
 		return providers[i].Score > providers[j].Score
 	})
 

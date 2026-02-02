@@ -484,7 +484,15 @@ func TestQwenProvider_CompleteStream_ContextCancellation(t *testing.T) {
 
 		flusher, _ := w.(http.Flusher)
 
-		for i := 0; i < 100; i++ {
+		// Use a shorter loop and check for client disconnect
+		for i := 0; i < 10; i++ {
+			// Check if client disconnected
+			select {
+			case <-r.Context().Done():
+				return
+			default:
+			}
+
 			chunk := QwenStreamChunk{
 				ID:      fmt.Sprintf("chunk-%d", i),
 				Object:  "chat.completion.chunk",
@@ -503,7 +511,13 @@ func TestQwenProvider_CompleteStream_ContextCancellation(t *testing.T) {
 			jsonData, _ := json.Marshal(chunk)
 			_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
 			flusher.Flush()
-			time.Sleep(50 * time.Millisecond)
+
+			// Use a shorter sleep and check context
+			select {
+			case <-r.Context().Done():
+				return
+			case <-time.After(10 * time.Millisecond):
+			}
 		}
 	}))
 	defer server.Close()

@@ -231,14 +231,21 @@ func (p *QwenACPProvider) startProcess() error {
 	// Start response reader goroutine
 	go p.readResponses()
 
-	// Initialize the ACP connection
-	if err := p.initialize(); err != nil {
+		// Initialize the ACP connection with timeout
+	initCtx, initCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer initCancel()
+
+	// Wait for readResponses to start before initializing
+	time.Sleep(100 * time.Millisecond)
+
+	// Initialize with context
+	if err := p.initializeWithContext(initCtx); err != nil {
 		p.Stop()
 		return fmt.Errorf("failed to initialize ACP: %w", err)
 	}
 
-	// Create a new session
-	if err := p.createSession(); err != nil {
+	// Create a new session with context
+	if err := p.createSessionWithContext(initCtx); err != nil {
 		p.Stop()
 		return fmt.Errorf("failed to create session: %w", err)
 	}
@@ -350,7 +357,11 @@ func (p *QwenACPProvider) sendRequest(ctx context.Context, method string, params
 func (p *QwenACPProvider) initialize() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	return p.initializeWithContext(ctx)
+}
 
+// initializeWithContext sends the initialize request with provided context
+func (p *QwenACPProvider) initializeWithContext(ctx context.Context) error {
 	params := initializeRequest{
 		ClientCapabilities: clientCapabilities{
 			FileSystem: false, // We don't need filesystem access
@@ -378,7 +389,11 @@ func (p *QwenACPProvider) initialize() error {
 func (p *QwenACPProvider) createSession() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	return p.createSessionWithContext(ctx)
+}
 
+// createSessionWithContext creates a new ACP session with provided context
+func (p *QwenACPProvider) createSessionWithContext(ctx context.Context) error {
 	params := newSessionRequest{
 		CWD: p.cwd,
 	}
@@ -607,10 +622,79 @@ func IsQwenACPAvailable() bool {
 }
 
 // CanUseQwenACP returns true if Qwen ACP can be used
-// This checks: 1) qwen CLI installed, 2) qwen CLI authenticated
+// This checks: 1) qwen CLI installed, 2) qwen CLI authenticated, 3) ACP mode works
 func CanUseQwenACP() bool {
 	if !IsQwenCodeInstalled() {
 		return false
 	}
-	return IsQwenCodeAuthenticated()
+	if !IsQwenCodeAuthenticated() {
+		return false
+	}
+	// Quick test if ACP mode is supported
+	return testQwenACPAvailability()
+}
+
+// testQwenACPAvailability performs a quick test to see if qwen --acp is supported
+func testQwenACPAvailability() bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	qwenPath, err := exec.LookPath("qwen")
+	if err != nil {
+		return false
+	}
+
+	// Try to start qwen --acp and see if it responds
+	cmd := exec.CommandContext(ctx, qwenPath, "--acp")
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return false
+	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return false
+	}
+
+	if err := cmd.Start(); err != nil {
+		return false
+	}
+
+	defer func() {
+		_ = stdin.Close()
+		if cmd.Process != nil {
+			_ = cmd.Process.Kill()
+		}
+		_ = cmd.Wait()
+	}()
+
+	// Try to send a simple request and see if we get a response
+	// Just check if the process accepts input without hanging
+	testReq := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"clientCapabilities":{"fileSystem":false}}}`
+
+	done := make(chan bool, 1)
+	go func() {
+		_, err := fmt.Fprintf(stdin, "%s\n", testReq)
+		if err != nil {
+			done <- false
+			return
+		}
+
+		scanner := bufio.NewScanner(stdout)
+		if scanner.Scan() {
+			done <- true
+		} else {
+			done <- false
+		}
+	}()
+
+	select {
+	case result := <-done:
+		return result
+	case <-ctx.Done():
+		return false
+	case <-time.After(3 * time.Second):
+		return false
+	}
 }

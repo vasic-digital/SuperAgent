@@ -6472,8 +6472,16 @@ func TestDebateToolCallsIntegration(t *testing.T) {
 	}
 
 	assert.Len(t, actionToolCalls, 2)
-	assert.Equal(t, "Glob", actionToolCalls[0].Function.Name)
-	assert.Equal(t, "Read", actionToolCalls[1].Function.Name)
+
+	// Collect tool call names (map iteration order is non-deterministic)
+	toolCallNames := make(map[string]bool)
+	for _, tc := range actionToolCalls {
+		toolCallNames[tc.Function.Name] = true
+	}
+
+	// Verify both expected tool calls are present regardless of order
+	assert.True(t, toolCallNames["Glob"], "Expected Glob tool call")
+	assert.True(t, toolCallNames["Read"], "Expected Read tool call")
 }
 
 // TestActionIndicatorVisibility ensures action indicators are visible in output

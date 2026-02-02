@@ -864,7 +864,7 @@ func (h *PRHandler) Execute(ctx context.Context, args map[string]interface{}) (T
 		return ToolResult{
 			Success: false,
 			Output:  "",
-			Error:   fmt.Sprintf("invalid action: %s", action),
+			Error:   fmt.Sprintf("unknown action: %s", action),
 		}, nil
 	}
 	// Validate inputs
@@ -989,7 +989,7 @@ func (h *IssueHandler) Execute(ctx context.Context, args map[string]interface{})
 		return ToolResult{
 			Success: false,
 			Output:  "",
-			Error:   fmt.Sprintf("invalid action: %s", action),
+			Error:   fmt.Sprintf("unknown action: %s", action),
 		}, nil
 	}
 	// Validate inputs
@@ -1094,7 +1094,7 @@ func (h *WorkflowHandler) Execute(ctx context.Context, args map[string]interface
 		return ToolResult{
 			Success: false,
 			Output:  "",
-			Error:   fmt.Sprintf("invalid action: %s", action),
+			Error:   fmt.Sprintf("unknown action: %s", action),
 		}, nil
 	}
 	// Validate inputs
