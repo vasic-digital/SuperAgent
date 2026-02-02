@@ -121,7 +121,7 @@ func NewStreamingKnowledgeGraph(
 	// Verify connectivity
 	ctx := context.Background()
 	if err := driver.VerifyConnectivity(ctx); err != nil {
-		driver.Close(ctx)
+		_ = driver.Close(ctx)
 		return nil, fmt.Errorf("failed to connect to Neo4j: %w", err)
 	}
 
@@ -138,7 +138,7 @@ func NewStreamingKnowledgeGraph(
 
 	// Initialize graph schema
 	if err := skg.initializeSchema(ctx); err != nil {
-		driver.Close(ctx)
+		_ = driver.Close(ctx)
 		return nil, fmt.Errorf("failed to initialize schema: %w", err)
 	}
 
@@ -155,7 +155,7 @@ func (skg *StreamingKnowledgeGraph) initializeSchema(ctx context.Context) error 
 	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: skg.database,
 	})
-	defer session.Close(ctx)
+	defer func() { _ = session.Close(ctx) }()
 
 	// Create constraints and indexes
 	queries := []string{
@@ -254,7 +254,7 @@ func (skg *StreamingKnowledgeGraph) createEntity(ctx context.Context, entity *Gr
 	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: skg.database,
 	})
-	defer session.Close(ctx)
+	defer func() { _ = session.Close(ctx) }()
 
 	cypher := `
 		MERGE (e:Entity {id: $id})
@@ -300,7 +300,7 @@ func (skg *StreamingKnowledgeGraph) updateEntity(ctx context.Context, entity *Gr
 	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: skg.database,
 	})
-	defer session.Close(ctx)
+	defer func() { _ = session.Close(ctx) }()
 
 	cypher := `
 		MATCH (e:Entity {id: $id})
@@ -337,7 +337,7 @@ func (skg *StreamingKnowledgeGraph) deleteEntity(ctx context.Context, entityID s
 	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: skg.database,
 	})
-	defer session.Close(ctx)
+	defer func() { _ = session.Close(ctx) }()
 
 	cypher := `
 		MATCH (e:Entity {id: $id})
@@ -362,7 +362,7 @@ func (skg *StreamingKnowledgeGraph) mergeEntities(ctx context.Context, sourceID,
 	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: skg.database,
 	})
-	defer session.Close(ctx)
+	defer func() { _ = session.Close(ctx) }()
 
 	// Transfer relationships and delete source
 	cypher := `
@@ -408,7 +408,7 @@ func (skg *StreamingKnowledgeGraph) createRelationship(ctx context.Context, rel 
 	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: skg.database,
 	})
-	defer session.Close(ctx)
+	defer func() { _ = session.Close(ctx) }()
 
 	cypher := `
 		MATCH (source:Entity {id: $source_id})
@@ -460,7 +460,7 @@ func (skg *StreamingKnowledgeGraph) updateRelationship(ctx context.Context, rel 
 	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: skg.database,
 	})
-	defer session.Close(ctx)
+	defer func() { _ = session.Close(ctx) }()
 
 	cypher := `
 		MATCH ()-[r:RELATED_TO {id: $id}]->()
@@ -495,7 +495,7 @@ func (skg *StreamingKnowledgeGraph) deleteRelationship(ctx context.Context, rela
 	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: skg.database,
 	})
-	defer session.Close(ctx)
+	defer func() { _ = session.Close(ctx) }()
 
 	cypher := `
 		MATCH ()-[r:RELATED_TO {id: $id}]->()
@@ -520,7 +520,7 @@ func (skg *StreamingKnowledgeGraph) GetEntity(ctx context.Context, entityID stri
 	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: skg.database,
 	})
-	defer session.Close(ctx)
+	defer func() { _ = session.Close(ctx) }()
 
 	cypher := `
 		MATCH (e:Entity {id: $id})
@@ -550,7 +550,7 @@ func (skg *StreamingKnowledgeGraph) GetRelatedEntities(ctx context.Context, enti
 	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: skg.database,
 	})
-	defer session.Close(ctx)
+	defer func() { _ = session.Close(ctx) }()
 
 	cypher := `
 		MATCH (source:Entity {id: $id})-[r:RELATED_TO*1..$maxDepth]-(related:Entity)
@@ -584,7 +584,7 @@ func (skg *StreamingKnowledgeGraph) SearchKnowledgeGraph(ctx context.Context, qu
 	session := skg.driver.NewSession(ctx, neo4j.SessionConfig{
 		DatabaseName: skg.database,
 	})
-	defer session.Close(ctx)
+	defer func() { _ = session.Close(ctx) }()
 
 	var cypher string
 	params := map[string]interface{}{

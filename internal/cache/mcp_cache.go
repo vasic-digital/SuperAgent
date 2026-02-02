@@ -195,7 +195,7 @@ func (c *MCPServerCache) InvalidateServer(ctx context.Context, server string) (i
 	keys := c.tagInv.InvalidateByTag("mcp:" + server)
 
 	for _, key := range keys {
-		c.cache.Delete(ctx, key)
+		_ = c.cache.Delete(ctx, key)
 		c.tagInv.RemoveKey(key)
 	}
 

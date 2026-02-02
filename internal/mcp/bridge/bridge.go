@@ -153,7 +153,7 @@ func (b *Bridge) Start(ctx context.Context) error {
 
 	// Kill the MCP process
 	if b.cmd.Process != nil {
-		b.cmd.Process.Kill()
+		_ = b.cmd.Process.Kill()
 	}
 
 	return nil
@@ -206,7 +206,7 @@ func (b *Bridge) handleHealth(w http.ResponseWriter, r *http.Request) {
 	// Check if MCP process is still running
 	if b.cmd == nil || b.cmd.Process == nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		json.NewEncoder(w).Encode(map[string]string{
+		_ = json.NewEncoder(w).Encode(map[string]string{
 			"status": "unhealthy",
 			"error":  "MCP process not running",
 		})
@@ -218,7 +218,7 @@ func (b *Bridge) handleHealth(w http.ResponseWriter, r *http.Request) {
 	// The process check is best-effort
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":    "healthy",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 		"pid":       b.cmd.Process.Pid,
@@ -257,7 +257,7 @@ func (b *Bridge) handleSSE(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send initial connection event
-	fmt.Fprintf(w, "event: connected\ndata: {\"clientId\":\"%s\"}\n\n", clientID)
+	_, _ = fmt.Fprintf(w, "event: connected\ndata: {\"clientId\":\"%s\"}\n\n", clientID)
 	flusher.Flush()
 
 	// Stream events
@@ -269,7 +269,7 @@ func (b *Bridge) handleSSE(w http.ResponseWriter, r *http.Request) {
 			return
 		case data := <-clientCh:
 			// Send as SSE message event
-			fmt.Fprintf(w, "event: message\ndata: %s\n\n", string(data))
+			_, _ = fmt.Fprintf(w, "event: message\ndata: %s\n\n", string(data))
 			flusher.Flush()
 		}
 	}
@@ -288,7 +288,7 @@ func (b *Bridge) handleMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read request body", http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 
 	// Validate it's valid JSON
 	if !json.Valid(body) {
@@ -308,7 +308,7 @@ func (b *Bridge) handleMessage(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(map[string]string{
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"status": "accepted",
 	})
 }
@@ -316,7 +316,7 @@ func (b *Bridge) handleMessage(w http.ResponseWriter, r *http.Request) {
 // handleRoot handles the root endpoint with API info
 func (b *Bridge) handleRoot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"name":        "MCP SSE Bridge",
 		"version":     "1.0.0",
 		"description": "HTTP/SSE bridge for MCP (Model Context Protocol) servers",

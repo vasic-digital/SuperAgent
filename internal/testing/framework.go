@@ -192,7 +192,7 @@ func (tbf *TestBankFramework) parseCoverage(output string) float64 {
 	for _, line := range lines {
 		if strings.Contains(line, "coverage:") {
 			var coverage float64
-			fmt.Sscanf(line, "coverage: %f%%", &coverage)
+			_, _ = fmt.Sscanf(line, "coverage: %f%%", &coverage)
 			return coverage
 		}
 	}

@@ -181,7 +181,7 @@ func (m *MemoryAdapter) saveToDisk() error {
 	}
 
 	if err := os.Rename(tempFile, graphFile); err != nil {
-		os.Remove(tempFile)
+		_ = os.Remove(tempFile)
 		return fmt.Errorf("failed to rename temp file: %w", err)
 	}
 

@@ -97,7 +97,7 @@ func (r *OAuthCredentialReader) ReadClaudeCredentials() (*ClaudeOAuthCredentials
 	data, err := os.ReadFile(credPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("Claude Code credentials file not found at %s: user may not be logged in via OAuth", credPath)
+			return nil, fmt.Errorf("claude Code credentials file not found at %s: user may not be logged in via OAuth", credPath)
 		}
 		return nil, fmt.Errorf("failed to read Claude credentials file: %w", err)
 	}
@@ -121,7 +121,7 @@ func (r *OAuthCredentialReader) ReadClaudeCredentials() (*ClaudeOAuthCredentials
 		if err != nil {
 			// If refresh failed and token is already expired, return error
 			if IsExpired(creds.ClaudeAiOauth.ExpiresAt) {
-				return nil, fmt.Errorf("Claude OAuth token has expired and refresh failed: %w", err)
+				return nil, fmt.Errorf("claude OAuth token has expired and refresh failed: %w", err)
 			}
 			// Token not expired yet, log warning and continue with existing token
 			fmt.Fprintf(os.Stderr, "Warning: Claude token refresh failed (token still valid): %v\n", err)
@@ -132,7 +132,7 @@ func (r *OAuthCredentialReader) ReadClaudeCredentials() (*ClaudeOAuthCredentials
 
 	// Final expiration check
 	if IsExpired(creds.ClaudeAiOauth.ExpiresAt) {
-		return nil, fmt.Errorf("Claude OAuth token has expired (expired at %s)", time.UnixMilli(creds.ClaudeAiOauth.ExpiresAt).Format(time.RFC3339))
+		return nil, fmt.Errorf("claude OAuth token has expired (expired at %s)", time.UnixMilli(creds.ClaudeAiOauth.ExpiresAt).Format(time.RFC3339))
 	}
 
 	// Update cache

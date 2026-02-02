@@ -403,9 +403,9 @@ func (p *QwenACPProvider) Stop() {
 	defer p.mu.Unlock()
 
 	if p.cmd != nil && p.cmd.Process != nil {
-		p.stdin.Close()
-		p.cmd.Process.Kill()
-		p.cmd.Wait()
+		_ = p.stdin.Close()
+		_ = p.cmd.Process.Kill()
+		_ = p.cmd.Wait()
 	}
 	p.isRunning = false
 	p.initialized = false

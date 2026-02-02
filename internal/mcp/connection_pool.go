@@ -299,14 +299,14 @@ func (p *MCPConnectionPool) connectLocalServer(ctx context.Context, conn *MCPCon
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		stdin.Close()
+		_ = stdin.Close()
 		return fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
 
 	// Start the process
 	if err := cmd.Start(); err != nil {
-		stdin.Close()
-		stdout.Close()
+		_ = stdin.Close()
+		_ = stdout.Close()
 		return fmt.Errorf("failed to start process: %w", err)
 	}
 
@@ -321,7 +321,7 @@ func (p *MCPConnectionPool) connectLocalServer(ctx context.Context, conn *MCPCon
 
 	// Initialize the MCP connection
 	if err := p.initializeMCPConnection(ctx, conn); err != nil {
-		conn.Transport.Close()
+		_ = conn.Transport.Close()
 		conn.Transport = nil
 		return fmt.Errorf("failed to initialize MCP connection: %w", err)
 	}
@@ -348,7 +348,7 @@ func (p *MCPConnectionPool) connectRemoteServer(ctx context.Context, conn *MCPCo
 
 	// Initialize the MCP connection
 	if err := p.initializeMCPConnection(ctx, conn); err != nil {
-		conn.Transport.Close()
+		_ = conn.Transport.Close()
 		conn.Transport = nil
 		return fmt.Errorf("failed to initialize MCP connection: %w", err)
 	}
@@ -525,7 +525,7 @@ func (p *MCPConnectionPool) CloseConnection(name string) error {
 	}
 
 	if conn.Process != nil && conn.Process.Process != nil {
-		conn.Process.Process.Kill()
+		_ = conn.Process.Process.Kill()
 		conn.Process = nil
 	}
 
@@ -550,10 +550,10 @@ func (p *MCPConnectionPool) Close() error {
 	for name, conn := range p.connections {
 		conn.mu.Lock()
 		if conn.Transport != nil {
-			conn.Transport.Close()
+			_ = conn.Transport.Close()
 		}
 		if conn.Process != nil && conn.Process.Process != nil {
-			conn.Process.Process.Kill()
+			_ = conn.Process.Process.Kill()
 		}
 		conn.Status = StatusConnectionClosed
 		conn.mu.Unlock()
@@ -669,7 +669,7 @@ func (t *StdioMCPTransport) Close() error {
 	t.connected = false
 
 	if t.stdin != nil {
-		t.stdin.Close()
+		_ = t.stdin.Close()
 	}
 
 	if t.cmd != nil && t.cmd.Process != nil {

@@ -418,22 +418,22 @@ func (b *SSEBridge) startProcess() error {
 
 	b.stdout, err = b.cmd.StdoutPipe()
 	if err != nil {
-		b.stdin.Close()
+		_ = b.stdin.Close()
 		return fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
 
 	b.stderr, err = b.cmd.StderrPipe()
 	if err != nil {
-		b.stdin.Close()
-		b.stdout.Close()
+		_ = b.stdin.Close()
+		_ = b.stdout.Close()
 		return fmt.Errorf("failed to create stderr pipe: %w", err)
 	}
 
 	// Start process
 	if err := b.cmd.Start(); err != nil {
-		b.stdin.Close()
-		b.stdout.Close()
-		b.stderr.Close()
+		_ = b.stdin.Close()
+		_ = b.stdout.Close()
+		_ = b.stderr.Close()
 		return fmt.Errorf("failed to start process: %w", err)
 	}
 
@@ -467,18 +467,18 @@ func (b *SSEBridge) stopProcess() {
 	b.scannerMux.Unlock()
 
 	if b.stdin != nil {
-		b.stdin.Close()
+		_ = b.stdin.Close()
 		b.stdin = nil
 	}
 
 	if b.cmd != nil && b.cmd.Process != nil {
 		// Try graceful termination first
-		b.cmd.Process.Signal(os.Interrupt)
+		_ = b.cmd.Process.Signal(os.Interrupt)
 
 		// Wait briefly, then force kill
 		done := make(chan struct{})
 		go func() {
-			b.cmd.Wait()
+			_ = b.cmd.Wait()
 			close(done)
 		}()
 
@@ -487,7 +487,7 @@ func (b *SSEBridge) stopProcess() {
 			// Process exited gracefully
 		case <-time.After(5 * time.Second):
 			// Force kill
-			b.cmd.Process.Kill()
+			_ = b.cmd.Process.Kill()
 			<-done
 		}
 
@@ -818,12 +818,12 @@ func (b *SSEBridge) handleSSE(w http.ResponseWriter, r *http.Request) {
 	b.logger.WithField("client", clientID).Info("SSE client connected")
 
 	// Send initial connection event
-	fmt.Fprintf(w, "event: connected\ndata: {\"clientId\":\"%s\"}\n\n", clientID)
+	_, _ = fmt.Fprintf(w, "event: connected\ndata: {\"clientId\":\"%s\"}\n\n", clientID)
 	flusher.Flush()
 
 	// Send the endpoint information (MCP SSE standard)
 	messageEndpoint := fmt.Sprintf("http://%s/message", r.Host)
-	fmt.Fprintf(w, "event: endpoint\ndata: %s\n\n", messageEndpoint)
+	_, _ = fmt.Fprintf(w, "event: endpoint\ndata: %s\n\n", messageEndpoint)
 	flusher.Flush()
 
 	// Start heartbeat
@@ -839,13 +839,13 @@ func (b *SSEBridge) handleSSE(w http.ResponseWriter, r *http.Request) {
 			b.removeSSEClient(clientID)
 			return
 		case <-b.shutdownDone:
-			fmt.Fprintf(w, "event: shutdown\ndata: {\"reason\":\"bridge shutting down\"}\n\n")
+			_, _ = fmt.Fprintf(w, "event: shutdown\ndata: {\"reason\":\"bridge shutting down\"}\n\n")
 			flusher.Flush()
 			b.removeSSEClient(clientID)
 			return
 		case <-heartbeatTicker.C:
 			// Send heartbeat
-			fmt.Fprintf(w, ":heartbeat\n\n")
+			_, _ = fmt.Fprintf(w, ":heartbeat\n\n")
 			flusher.Flush()
 		}
 	}
@@ -1039,7 +1039,7 @@ func (b *SSEBridge) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if state != StateRunning || !processReady {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
-	json.NewEncoder(w).Encode(health)
+	_ = json.NewEncoder(w).Encode(health)
 }
 
 // writeJSONRPCResponse writes a JSON-RPC response.
@@ -1051,7 +1051,7 @@ func (b *SSEBridge) writeJSONRPCResponse(w http.ResponseWriter, resp *JSONRPCRes
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	w.Write(data)
+	_, _ = w.Write(data)
 	atomic.AddInt64(&b.metrics.BytesSent, int64(len(data)))
 }
 

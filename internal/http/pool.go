@@ -223,7 +223,7 @@ func (p *HTTPClientPool) DoWithContext(ctx context.Context, req *http.Request) (
 
 		// Close response body before retry
 		if resp != nil && resp.Body != nil {
-			io.Copy(io.Discard, resp.Body)
+			_, _ = io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
 		}
 
@@ -352,7 +352,7 @@ var GlobalPool *HTTPClientPool
 // InitGlobalPool initializes the global HTTP client pool
 func InitGlobalPool(config *PoolConfig) {
 	if GlobalPool != nil {
-		GlobalPool.Close()
+		_ = GlobalPool.Close()
 	}
 	GlobalPool = NewHTTPClientPool(config)
 }

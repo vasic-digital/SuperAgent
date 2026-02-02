@@ -382,7 +382,7 @@ func (o *OllamaProvider) makeRequest(ctx context.Context, req OllamaRequest) (*O
 
 		// Check for retryable status codes
 		if isRetryableStatus(resp.StatusCode) && attempt < o.retryConfig.MaxRetries {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
 			o.waitWithJitter(ctx, delay)
 			delay = o.nextDelay(delay)
@@ -390,7 +390,7 @@ func (o *OllamaProvider) makeRequest(ctx context.Context, req OllamaRequest) (*O
 		}
 
 		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if err != nil {
 			return nil, fmt.Errorf("failed to read response body: %w", err)
 		}
