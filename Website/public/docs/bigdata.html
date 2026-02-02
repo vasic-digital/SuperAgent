@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigData Integration - HelixAgent Documentation</title>
+    <meta name="description" content="Learn about HelixAgent's BigData integration layer for infinite context, distributed memory, and knowledge graph streaming.">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+</head>
+<body>
+    <header class="docs-header">
+        <nav class="nav-container">
+            <a href="/" class="logo">HelixAgent</a>
+            <div class="nav-links">
+                <a href="/docs/">Docs</a>
+                <a href="/docs/api.html">API</a>
+                <a href="/pricing.html">Pricing</a>
+                <a href="https://github.com/helixagent/helixagent" target="_blank">GitHub</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="docs-container">
+        <aside class="docs-sidebar">
+            <h3>BigData Integration</h3>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#components">Components</a></li>
+                <li><a href="#configuration">Configuration</a></li>
+                <li><a href="#health-monitoring">Health Monitoring</a></li>
+                <li><a href="#usage">Usage Example</a></li>
+            </ul>
+        </aside>
+
+        <article class="docs-content">
+            <h1>BigData Integration</h1>
+            <p class="lead">Infinite context, distributed memory, and knowledge graph streaming at scale.</p>
+
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>HelixAgent's BigData integration layer provides enterprise-scale capabilities for handling massive conversational contexts, streaming knowledge graphs, and distributed memory management across multiple nodes.</p>
+
+                <p>Key features:</p>
+                <ul>
+                    <li><strong>Infinite Context Engine:</strong> Distributed storage and retrieval of unlimited conversation history</li>
+                    <li><strong>Knowledge Graph Streamer:</strong> Real-time graph construction from AI interactions</li>
+                    <li><strong>Data Lake Integration:</strong> HDFS and S3 support for massive dataset storage</li>
+                    <li><strong>Analytics Pipeline:</strong> ClickHouse integration for time-series analysis</li>
+                    <li><strong>Event Bus:</strong> Kafka-based event streaming for multi-node coordination</li>
+                </ul>
+            </section>
+
+            <section id="components">
+                <h2>Components</h2>
+
+                <h3>1. Knowledge Graph Streamer</h3>
+                <p>Automatically builds entity relationship graphs from LLM interactions in real-time using Neo4j backend.</p>
+                <pre><code>BIGDATA_ENABLE_KNOWLEDGE_GRAPH_STREAMER=true
+BIGDATA_NEO4J_URI=bolt://localhost:7687
+BIGDATA_NEO4J_USER=neo4j
+BIGDATA_NEO4J_PASSWORD=neo4jpassword</code></pre>
+
+                <h3>2. Infinite Context Engine</h3>
+                <p>Distributes conversation context across multiple storage backends with intelligent caching and retrieval.</p>
+                <pre><code>BIGDATA_ENABLE_INFINITE_CONTEXT=true
+BIGDATA_CONTEXT_MAX_TOKENS=1000000
+BIGDATA_CONTEXT_COMPRESSION=true</code></pre>
+
+                <h3>3. Data Lake (HDFS/S3)</h3>
+                <p>Persistent storage for raw interaction logs, embeddings, and training data.</p>
+                <pre><code>BIGDATA_ENABLE_DATA_LAKE=true
+BIGDATA_DATA_LAKE_TYPE=s3
+BIGDATA_S3_BUCKET=helixagent-data
+BIGDATA_S3_REGION=us-east-1</code></pre>
+
+                <h3>4. ClickHouse Analytics</h3>
+                <p>Time-series analytics for query performance, provider metrics, and usage patterns.</p>
+                <pre><code>BIGDATA_ENABLE_CLICKHOUSE=true
+BIGDATA_CLICKHOUSE_HOST=localhost:9000
+BIGDATA_CLICKHOUSE_DATABASE=helixagent_analytics</code></pre>
+
+                <h3>5. Event Bus (Kafka)</h3>
+                <p>Distributed event streaming for multi-node state synchronization.</p>
+                <pre><code>BIGDATA_ENABLE_EVENT_BUS=true
+BIGDATA_KAFKA_BROKERS=localhost:9092
+BIGDATA_KAFKA_TOPIC_PREFIX=helixagent</code></pre>
+
+                <h3>6. Debate Integration</h3>
+                <p>BigData components automatically integrate with the AI Debate system to store debate transcripts, track argument evolution, and build knowledge graphs from multi-agent discussions.</p>
+            </section>
+
+            <section id="configuration">
+                <h2>Configuration</h2>
+                <p>Enable BigData components individually via environment variables. Missing dependencies gracefully degrade without blocking core functionality.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Description</th>
+                            <th>Default</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>BIGDATA_ENABLE_KNOWLEDGE_GRAPH_STREAMER</code></td>
+                            <td>Enable Neo4j knowledge graph streaming</td>
+                            <td>false</td>
+                        </tr>
+                        <tr>
+                            <td><code>BIGDATA_ENABLE_INFINITE_CONTEXT</code></td>
+                            <td>Enable infinite context engine</td>
+                            <td>false</td>
+                        </tr>
+                        <tr>
+                            <td><code>BIGDATA_ENABLE_DATA_LAKE</code></td>
+                            <td>Enable HDFS/S3 data lake</td>
+                            <td>false</td>
+                        </tr>
+                        <tr>
+                            <td><code>BIGDATA_ENABLE_CLICKHOUSE</code></td>
+                            <td>Enable ClickHouse analytics</td>
+                            <td>false</td>
+                        </tr>
+                        <tr>
+                            <td><code>BIGDATA_ENABLE_EVENT_BUS</code></td>
+                            <td>Enable Kafka event streaming</td>
+                            <td>false</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p><strong>Note:</strong> See <code>internal/bigdata/integration.go</code> for complete configuration options.</p>
+            </section>
+
+            <section id="health-monitoring">
+                <h2>Health Monitoring</h2>
+                <p>Check BigData component health status via the monitoring endpoint:</p>
+
+                <pre><code>curl http://localhost:8080/v1/bigdata/health</code></pre>
+
+                <p>Example response:</p>
+                <pre><code>{
+  "status": "healthy",
+  "components": {
+    "knowledge_graph_streamer": {
+      "enabled": true,
+      "healthy": true,
+      "backend": "neo4j",
+      "nodes": 15234,
+      "relationships": 45123
+    },
+    "infinite_context": {
+      "enabled": true,
+      "healthy": true,
+      "total_contexts": 1523,
+      "total_tokens": 45678900
+    },
+    "data_lake": {
+      "enabled": true,
+      "healthy": true,
+      "backend": "s3",
+      "total_size_bytes": 567890123
+    },
+    "clickhouse": {
+      "enabled": false
+    },
+    "event_bus": {
+      "enabled": true,
+      "healthy": true,
+      "backend": "kafka",
+      "message_count": 234567
+    }
+  }
+}</code></pre>
+            </section>
+
+            <section id="usage">
+                <h2>Usage Example</h2>
+                <p>Initialize BigData integration in your Go application:</p>
+
+                <pre><code>package main
+
+import (
+    "context"
+    "log"
+    "github.com/helixagent/helixagent/internal/bigdata"
+)
+
+func main() {
+    // Initialize BigData integration
+    config := bigdata.Config{
+        EnableKnowledgeGraphStreamer: true,
+        EnableInfiniteContext:        true,
+        EnableDataLake:              true,
+        Neo4jURI:                    "bolt://localhost:7687",
+        Neo4jUser:                   "neo4j",
+        Neo4jPassword:               "neo4jpassword",
+        S3Bucket:                    "helixagent-data",
+        S3Region:                    "us-east-1",
+    }
+
+    integration, err := bigdata.NewIntegration(config)
+    if err != nil {
+        log.Fatalf("Failed to initialize BigData: %v", err)
+    }
+    defer integration.Close()
+
+    // Check health
+    ctx := context.Background()
+    health, err := integration.HealthCheck(ctx)
+    if err != nil {
+        log.Printf("Health check failed: %v", err)
+    }
+
+    log.Printf("BigData health: %+v", health)
+}</code></pre>
+            </section>
+
+            <div class="cta-box">
+                <h3>Need More Information?</h3>
+                <p>Explore related documentation:</p>
+                <a href="/docs/memory.html" class="btn">Memory System</a>
+                <a href="/docs/quickstart.html" class="btn btn-secondary">Quick Start Guide</a>
+            </div>
+        </article>
+    </main>
+
+    <footer class="docs-footer">
+        <p>&copy; 2024 HelixAgent. All rights reserved.</p>
+        <div class="footer-links">
+            <a href="/privacy.html">Privacy</a>
+            <a href="/terms.html">Terms</a>
+            <a href="https://github.com/helixagent/helixagent">GitHub</a>
+        </div>
+    </footer>
+
+    <script src="/scripts/main.js"></script>
+</body>
+</html>

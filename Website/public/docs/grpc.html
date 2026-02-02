@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gRPC API - HelixAgent Documentation</title>
+    <meta name="description" content="High-performance gRPC API documentation for HelixAgent. Learn about streaming, session management, and service methods.">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+</head>
+<body>
+    <header class="docs-header">
+        <nav class="nav-container">
+            <a href="/" class="logo">HelixAgent</a>
+            <div class="nav-links">
+                <a href="/docs/">Docs</a>
+                <a href="/docs/api.html">API</a>
+                <a href="/pricing.html">Pricing</a>
+                <a href="https://github.com/helixagent/helixagent" target="_blank">GitHub</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="docs-container">
+        <aside class="docs-sidebar">
+            <h3>gRPC API</h3>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#service-methods">Service Methods</a></li>
+                <li><a href="#connection-setup">Connection Setup</a></li>
+                <li><a href="#error-handling">Error Handling</a></li>
+                <li><a href="#streaming">Streaming</a></li>
+            </ul>
+        </aside>
+
+        <article class="docs-content">
+            <h1>gRPC API</h1>
+            <p class="lead">High-performance binary protocol for low-latency LLM operations.</p>
+
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>HelixAgent provides a gRPC interface as an alternative to the REST API, offering:</p>
+                <ul>
+                    <li><strong>Performance:</strong> Binary serialization with HTTP/2 for reduced latency</li>
+                    <li><strong>Streaming:</strong> Efficient server-side streaming for token-by-token responses</li>
+                    <li><strong>Type Safety:</strong> Strongly-typed contracts via Protocol Buffers</li>
+                    <li><strong>Multi-language:</strong> Auto-generated clients for Go, Python, Java, Node.js, and more</li>
+                </ul>
+
+                <p>The gRPC server runs alongside the REST API on port <code>50051</code> by default.</p>
+            </section>
+
+            <section id="service-methods">
+                <h2>Service Methods</h2>
+
+                <h3>1. Complete</h3>
+                <p>Synchronous completion request with full response buffering.</p>
+                <pre><code>rpc Complete(CompletionRequest) returns (CompletionResponse);</code></pre>
+                <p><strong>Use for:</strong> Short queries where you need the complete response at once.</p>
+
+                <h3>2. CompleteStream</h3>
+                <p>Server-side streaming completion for token-by-token delivery.</p>
+                <pre><code>rpc CompleteStream(CompletionRequest) returns (stream CompletionResponse);</code></pre>
+                <p><strong>Use for:</strong> Long-form generation, real-time UI updates, chat interfaces.</p>
+
+                <h3>3. HealthCheck</h3>
+                <p>Check service health and provider availability.</p>
+                <pre><code>rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);</code></pre>
+
+                <h3>4. CreateSession</h3>
+                <p>Create a new conversation session with persistent context.</p>
+                <pre><code>rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);</code></pre>
+
+                <h3>5. GetSession</h3>
+                <p>Retrieve session history and metadata.</p>
+                <pre><code>rpc GetSession(GetSessionRequest) returns (GetSessionResponse);</code></pre>
+
+                <h3>6. TerminateSession</h3>
+                <p>End a session and clean up resources.</p>
+                <pre><code>rpc TerminateSession(TerminateSessionRequest) returns (TerminateSessionResponse);</code></pre>
+
+                <h3>7. AddProvider</h3>
+                <p>Dynamically register a new LLM provider at runtime.</p>
+                <pre><code>rpc AddProvider(AddProviderRequest) returns (AddProviderResponse);</code></pre>
+
+                <h3>8. ListProviders</h3>
+                <p>List all registered providers with their capabilities and health status.</p>
+                <pre><code>rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);</code></pre>
+
+                <h3>9. RemoveProvider</h3>
+                <p>Unregister a provider from the active pool.</p>
+                <pre><code>rpc RemoveProvider(RemoveProviderRequest) returns (RemoveProviderResponse);</code></pre>
+
+                <h3>10. GetMetrics</h3>
+                <p>Retrieve performance metrics for debugging and monitoring.</p>
+                <pre><code>rpc GetMetrics(GetMetricsRequest) returns (GetMetricsResponse);</code></pre>
+            </section>
+
+            <section id="connection-setup">
+                <h2>Connection Setup</h2>
+
+                <h3>Go Client</h3>
+                <pre><code>package main
+
+import (
+    "context"
+    "log"
+    "time"
+
+    "google.golang.org/grpc"
+    "google.golang.org/grpc/credentials/insecure"
+    pb "github.com/helixagent/helixagent/api/proto"
+)
+
+func main() {
+    // Connect to gRPC server
+    conn, err := grpc.Dial(
+        "localhost:50051",
+        grpc.WithTransportCredentials(insecure.NewCredentials()),
+        grpc.WithBlock(),
+        grpc.WithTimeout(10*time.Second),
+    )
+    if err != nil {
+        log.Fatalf("Failed to connect: %v", err)
+    }
+    defer conn.Close()
+
+    client := pb.NewLLMFacadeClient(conn)
+
+    // Make a completion request
+    ctx := context.Background()
+    req := &pb.CompletionRequest{
+        Model: "helixagent",
+        Messages: []*pb.Message{
+            {Role: "user", Content: "Explain gRPC in one sentence"},
+        },
+    }
+
+    resp, err := client.Complete(ctx, req)
+    if err != nil {
+        log.Fatalf("Completion failed: %v", err)
+    }
+
+    log.Printf("Response: %s", resp.Content)
+}</code></pre>
+
+                <h3>Python Client</h3>
+                <pre><code>import grpc
+from helixagent_pb2 import CompletionRequest, Message
+from helixagent_pb2_grpc import LLMFacadeStub
+
+# Connect to gRPC server
+channel = grpc.insecure_channel('localhost:50051')
+client = LLMFacadeStub(channel)
+
+# Make completion request
+request = CompletionRequest(
+    model='helixagent',
+    messages=[Message(role='user', content='Explain gRPC in one sentence')]
+)
+
+response = client.Complete(request)
+print(f"Response: {response.content}")</code></pre>
+            </section>
+
+            <section id="error-handling">
+                <h2>Error Handling</h2>
+                <p>HelixAgent uses standard gRPC status codes:</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Description</th>
+                            <th>Common Cause</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>OK</code></td>
+                            <td>Success</td>
+                            <td>Request completed successfully</td>
+                        </tr>
+                        <tr>
+                            <td><code>INVALID_ARGUMENT</code></td>
+                            <td>Bad request</td>
+                            <td>Missing required fields, invalid model name</td>
+                        </tr>
+                        <tr>
+                            <td><code>UNAUTHENTICATED</code></td>
+                            <td>Missing auth</td>
+                            <td>No API key or invalid JWT token</td>
+                        </tr>
+                        <tr>
+                            <td><code>PERMISSION_DENIED</code></td>
+                            <td>Forbidden</td>
+                            <td>Insufficient permissions or rate limit exceeded</td>
+                        </tr>
+                        <tr>
+                            <td><code>NOT_FOUND</code></td>
+                            <td>Not found</td>
+                            <td>Session ID doesn't exist</td>
+                        </tr>
+                        <tr>
+                            <td><code>UNAVAILABLE</code></td>
+                            <td>Service down</td>
+                            <td>All providers failed or circuit breaker open</td>
+                        </tr>
+                        <tr>
+                            <td><code>INTERNAL</code></td>
+                            <td>Server error</td>
+                            <td>Unexpected failure, check logs</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Example Error Handling (Go)</h3>
+                <pre><code>resp, err := client.Complete(ctx, req)
+if err != nil {
+    if st, ok := status.FromError(err); ok {
+        switch st.Code() {
+        case codes.InvalidArgument:
+            log.Printf("Bad request: %s", st.Message())
+        case codes.Unavailable:
+            log.Printf("Service unavailable: %s", st.Message())
+        default:
+            log.Printf("gRPC error %s: %s", st.Code(), st.Message())
+        }
+    }
+    return err
+}</code></pre>
+            </section>
+
+            <section id="streaming">
+                <h2>Streaming</h2>
+                <p>Server-side streaming enables real-time token delivery for responsive user interfaces.</p>
+
+                <h3>Streaming Example (Go)</h3>
+                <pre><code>stream, err := client.CompleteStream(ctx, req)
+if err != nil {
+    log.Fatalf("Failed to start stream: %v", err)
+}
+
+for {
+    chunk, err := stream.Recv()
+    if err == io.EOF {
+        break // Stream completed
+    }
+    if err != nil {
+        log.Fatalf("Stream error: %v", err)
+    }
+
+    // Process each token as it arrives
+    fmt.Print(chunk.Content)
+}
+fmt.Println() // Newline after completion</code></pre>
+
+                <h3>Streaming Example (Python)</h3>
+                <pre><code>stream = client.CompleteStream(request)
+
+for chunk in stream:
+    print(chunk.content, end='', flush=True)
+print()  # Newline after completion</code></pre>
+
+                <p><strong>Performance Tip:</strong> Streaming reduces Time-To-First-Token (TTFT) by ~80% compared to buffered responses.</p>
+            </section>
+
+            <div class="cta-box">
+                <h3>Protocol Buffers Definition</h3>
+                <p>Download the .proto file to generate clients in your language:</p>
+                <a href="/api/proto/helixagent.proto" class="btn">Download helixagent.proto</a>
+                <a href="/docs/api.html" class="btn btn-secondary">REST API Docs</a>
+            </div>
+        </article>
+    </main>
+
+    <footer class="docs-footer">
+        <p>&copy; 2024 HelixAgent. All rights reserved.</p>
+        <div class="footer-links">
+            <a href="/privacy.html">Privacy</a>
+            <a href="/terms.html">Terms</a>
+            <a href="https://github.com/helixagent/helixagent">GitHub</a>
+        </div>
+    </footer>
+
+    <script src="/scripts/main.js"></script>
+</body>
+</html>

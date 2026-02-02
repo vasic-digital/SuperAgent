@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory System - HelixAgent Documentation</title>
+    <meta name="description" content="Learn about HelixAgent's Mem0-style persistent memory system with entity graphs, CRDT conflict resolution, and distributed synchronization.">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+</head>
+<body>
+    <header class="docs-header">
+        <nav class="nav-container">
+            <a href="/" class="logo">HelixAgent</a>
+            <div class="nav-links">
+                <a href="/docs/">Docs</a>
+                <a href="/docs/api.html">API</a>
+                <a href="/pricing.html">Pricing</a>
+                <a href="https://github.com/helixagent/helixagent" target="_blank">GitHub</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="docs-container">
+        <aside class="docs-sidebar">
+            <h3>Memory System</h3>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#crdt">CRDT Resolution</a></li>
+                <li><a href="#distributed">Distributed Manager</a></li>
+                <li><a href="#event-sourcing">Event Sourcing</a></li>
+                <li><a href="#configuration">Configuration</a></li>
+            </ul>
+        </aside>
+
+        <article class="docs-content">
+            <h1>Memory System</h1>
+            <p class="lead">Persistent memory with entity graphs, CRDT conflict resolution, and multi-node synchronization.</p>
+
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>HelixAgent's memory system provides Mem0-style persistent context management with advanced features for distributed environments:</p>
+
+                <ul>
+                    <li><strong>Entity Graphs:</strong> Automatic extraction of entities and relationships from conversations</li>
+                    <li><strong>CRDT Conflict Resolution:</strong> Four strategies for handling concurrent updates across nodes</li>
+                    <li><strong>Distributed Sync:</strong> Multi-node memory synchronization with eventual consistency</li>
+                    <li><strong>Event Sourcing:</strong> Append-only event log with snapshot support for auditability</li>
+                    <li><strong>Vector-Enhanced Retrieval:</strong> Semantic search over memories using embedding similarity</li>
+                </ul>
+
+                <p>The memory system automatically maintains context across sessions, enabling AI agents to remember user preferences, project details, and conversation history.</p>
+            </section>
+
+            <section id="crdt">
+                <h2>CRDT Conflict Resolution</h2>
+                <p>When multiple nodes update the same memory concurrently, Conflict-Free Replicated Data Type (CRDT) strategies resolve conflicts without coordination:</p>
+
+                <h3>1. LastWriteWins (LWW)</h3>
+                <p>The most recent write (by timestamp) takes precedence. Simple and fast, but may lose concurrent updates.</p>
+                <pre><code>MEMORY_CRDT_STRATEGY=last_write_wins</code></pre>
+                <p><strong>Use when:</strong> Low conflict rate, recency is most important.</p>
+
+                <h3>2. MergeAll</h3>
+                <p>Combines all concurrent writes into a merged memory. Preserves all information but may result in verbose entries.</p>
+                <pre><code>MEMORY_CRDT_STRATEGY=merge_all</code></pre>
+                <p><strong>Use when:</strong> No data loss is acceptable, merging semantics are clear.</p>
+
+                <h3>3. Importance</h3>
+                <p>Assigns importance scores to memories (via LLM or heuristics) and keeps the highest-scoring version.</p>
+                <pre><code>MEMORY_CRDT_STRATEGY=importance
+MEMORY_IMPORTANCE_SCORER=llm  # or 'heuristic'</code></pre>
+                <p><strong>Use when:</strong> Quality matters more than recency, have budget for LLM scoring.</p>
+
+                <h3>4. VectorClock</h3>
+                <p>Tracks causal relationships using vector clocks. Most sophisticated but higher overhead.</p>
+                <pre><code>MEMORY_CRDT_STRATEGY=vector_clock</code></pre>
+                <p><strong>Use when:</strong> Strong consistency required, distributed systems expertise available.</p>
+
+                <h3>Comparison</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>Complexity</th>
+                            <th>Data Loss Risk</th>
+                            <th>Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>LastWriteWins</td>
+                            <td>Low</td>
+                            <td>Medium</td>
+                            <td>Excellent</td>
+                        </tr>
+                        <tr>
+                            <td>MergeAll</td>
+                            <td>Low</td>
+                            <td>None</td>
+                            <td>Good</td>
+                        </tr>
+                        <tr>
+                            <td>Importance</td>
+                            <td>Medium</td>
+                            <td>Low</td>
+                            <td>Medium (LLM calls)</td>
+                        </tr>
+                        <tr>
+                            <td>VectorClock</td>
+                            <td>High</td>
+                            <td>None</td>
+                            <td>Good</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="distributed">
+                <h2>Distributed Memory Manager</h2>
+                <p>The DistributedMemoryManager synchronizes memories across multiple HelixAgent nodes using a gossip protocol or shared store (Redis/PostgreSQL).</p>
+
+                <h3>Architecture</h3>
+                <pre><code>MEMORY_DISTRIBUTED_ENABLED=true
+MEMORY_SYNC_PROTOCOL=gossip      # or 'redis', 'postgresql'
+MEMORY_SYNC_INTERVAL=30s         # Sync every 30 seconds
+MEMORY_GOSSIP_FANOUT=3           # Gossip to 3 random peers</code></pre>
+
+                <h3>Usage Example</h3>
+                <pre><code>package main
+
+import (
+    "context"
+    "github.com/helixagent/helixagent/internal/memory"
+)
+
+func main() {
+    // Initialize distributed memory manager
+    config := memory.DistributedConfig{
+        Enabled:       true,
+        SyncProtocol:  "gossip",
+        SyncInterval:  30 * time.Second,
+        GossipFanout:  3,
+        NodeID:        "node-1",
+        PeerNodes:     []string{"node-2:8080", "node-3:8080"},
+    }
+
+    manager, err := memory.NewDistributedManager(config)
+    if err != nil {
+        log.Fatalf("Failed to init memory manager: %v", err)
+    }
+    defer manager.Close()
+
+    // Store a memory (auto-syncs across nodes)
+    ctx := context.Background()
+    err = manager.Store(ctx, &memory.Memory{
+        UserID:    "user-123",
+        Content:   "Prefers dark mode",
+        Entities:  []string{"user-123", "dark-mode"},
+        Timestamp: time.Now(),
+    })
+
+    // Retrieve memories (checks local + remote)
+    memories, err := manager.Retrieve(ctx, "user-123", 10)
+}</code></pre>
+
+                <h3>Sync Protocols</h3>
+                <ul>
+                    <li><strong>Gossip:</strong> Peer-to-peer, no single point of failure, eventual consistency</li>
+                    <li><strong>Redis:</strong> Centralized pub/sub, strong consistency, requires Redis instance</li>
+                    <li><strong>PostgreSQL:</strong> Shared database, strong consistency, transactional guarantees</li>
+                </ul>
+            </section>
+
+            <section id="event-sourcing">
+                <h2>Event Sourcing</h2>
+                <p>All memory operations are logged as immutable events, enabling full audit trails and point-in-time recovery.</p>
+
+                <h3>Event Types</h3>
+                <ul>
+                    <li><code>MemoryCreated</code> - New memory stored</li>
+                    <li><code>MemoryUpdated</code> - Existing memory modified</li>
+                    <li><code>MemoryDeleted</code> - Memory marked as deleted (soft delete)</li>
+                    <li><code>EntityExtracted</code> - New entity discovered</li>
+                    <li><code>RelationshipCreated</code> - Entity relationship established</li>
+                </ul>
+
+                <h3>Snapshots</h3>
+                <p>Periodic snapshots reduce replay time when reconstructing state:</p>
+                <pre><code>MEMORY_EVENT_SOURCING_ENABLED=true
+MEMORY_SNAPSHOT_INTERVAL=1000    # Snapshot every 1000 events
+MEMORY_SNAPSHOT_RETENTION=30d     # Keep snapshots for 30 days</code></pre>
+
+                <h3>Querying Event Log</h3>
+                <pre><code>// Retrieve all events for a user
+events, err := manager.GetEvents(ctx, "user-123", nil)
+
+// Replay to specific point in time
+snapshot, err := manager.ReplayToTime(ctx, "user-123", time.Now().Add(-24*time.Hour))</code></pre>
+            </section>
+
+            <section id="configuration">
+                <h2>Configuration</h2>
+                <p>Complete memory system configuration via environment variables:</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Description</th>
+                            <th>Default</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>MEMORY_BACKEND</code></td>
+                            <td>Storage backend (mem0, redis, postgresql)</td>
+                            <td>mem0</td>
+                        </tr>
+                        <tr>
+                            <td><code>MEMORY_CRDT_STRATEGY</code></td>
+                            <td>Conflict resolution (last_write_wins, merge_all, importance, vector_clock)</td>
+                            <td>last_write_wins</td>
+                        </tr>
+                        <tr>
+                            <td><code>MEMORY_DISTRIBUTED_ENABLED</code></td>
+                            <td>Enable multi-node sync</td>
+                            <td>false</td>
+                        </tr>
+                        <tr>
+                            <td><code>MEMORY_SYNC_PROTOCOL</code></td>
+                            <td>Sync protocol (gossip, redis, postgresql)</td>
+                            <td>gossip</td>
+                        </tr>
+                        <tr>
+                            <td><code>MEMORY_EVENT_SOURCING_ENABLED</code></td>
+                            <td>Enable event log</td>
+                            <td>true</td>
+                        </tr>
+                        <tr>
+                            <td><code>MEMORY_SNAPSHOT_INTERVAL</code></td>
+                            <td>Events between snapshots</td>
+                            <td>1000</td>
+                        </tr>
+                        <tr>
+                            <td><code>MEMORY_MAX_MEMORIES_PER_USER</code></td>
+                            <td>Max stored memories per user</td>
+                            <td>10000</td>
+                        </tr>
+                        <tr>
+                            <td><code>MEMORY_EMBEDDING_PROVIDER</code></td>
+                            <td>Embedding provider for semantic search</td>
+                            <td>openai</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Integration with Cognee (Optional)</h3>
+                <p>Cognee provides advanced cognitive memory features. Mem0 is the primary system, Cognee is optional:</p>
+                <pre><code>COGNEE_ENABLED=true
+COGNEE_API_URL=http://localhost:8000
+COGNEE_API_KEY=your-cognee-api-key</code></pre>
+            </section>
+
+            <div class="cta-box">
+                <h3>Advanced Topics</h3>
+                <p>Explore related documentation:</p>
+                <a href="/docs/bigdata.html" class="btn">BigData Integration</a>
+                <a href="/docs/api.html" class="btn btn-secondary">Memory API Reference</a>
+            </div>
+        </article>
+    </main>
+
+    <footer class="docs-footer">
+        <p>&copy; 2024 HelixAgent. All rights reserved.</p>
+        <div class="footer-links">
+            <a href="/privacy.html">Privacy</a>
+            <a href="/terms.html">Terms</a>
+            <a href="https://github.com/helixagent/helixagent">GitHub</a>
+        </div>
+    </footer>
+
+    <script src="/scripts/main.js"></script>
+</body>
+</html>
