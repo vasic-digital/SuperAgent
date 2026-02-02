@@ -663,7 +663,7 @@ func checkRedisHealth() error {
 		DB:          0,
 		DialTimeout: 5 * time.Second,
 	})
-	defer rdb.Close()
+	defer func() { _ = rdb.Close() }()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -1657,7 +1657,7 @@ func writeAPIKeyToEnvFile(filePath, apiKey string) error {
 
 	// #nosec G304 - filePath is validated by utils.ValidatePath and provided via CLI by admin
 	if file, err := os.Open(filePath); err == nil {
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -1699,7 +1699,7 @@ func writeAPIKeyToEnvFile(filePath, apiKey string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create env file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	for _, item := range lineOrder {
 		if item == "" || strings.HasPrefix(item, "#") {
