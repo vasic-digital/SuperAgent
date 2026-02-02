@@ -511,7 +511,7 @@ func AppendToHistory(historyPath string, result *ChallengeResult, resultsPath st
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	_, err = fmt.Fprintln(file, string(data))
 	return err

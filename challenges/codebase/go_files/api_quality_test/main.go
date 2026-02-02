@@ -751,13 +751,13 @@ func main() {
 	if err != nil {
 		log.Printf("Warning: Could not create request log: %v", err)
 	}
-	defer reqLog.Close()
+	defer func() { _ = reqLog.Close() }()
 
 	respLog, err := os.Create(responseLogFile)
 	if err != nil {
 		log.Printf("Warning: Could not create response log: %v", err)
 	}
-	defer respLog.Close()
+	defer func() { _ = respLog.Close() }()
 
 	// Create API client
 	client := NewAPIClient(baseURL, apiKey, reqLog, respLog)
