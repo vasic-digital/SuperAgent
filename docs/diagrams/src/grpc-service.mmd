@@ -1,0 +1,90 @@
+graph TD
+    ClientRequest["Client gRPC Request"]
+
+    subgraph GRPCLayer["gRPC Server Layer"]
+        GRPCServer["gRPC Server<br/>:50051"]
+        TLS["TLS/mTLS Support"]
+    end
+
+    subgraph LLMFacadeLayer["LLMFacade Service"]
+        LLMFacade["LLMFacadeServer"]
+        CompleteRPC["Complete<br/>single response"]
+        CompleteStreamRPC["CompleteStream<br/>streaming response"]
+        HealthCheckRPC["HealthCheck<br/>provider status"]
+        CreateSessionRPC["CreateSession<br/>start conversation"]
+        GetSessionRPC["GetSession<br/>retrieve context"]
+        ListProvidersRPC["ListProviders<br/>available models"]
+    end
+
+    subgraph EnsembleLayer["Ensemble Orchestration"]
+        EnsembleService["EnsembleService"]
+        ProviderSelector["Dynamic Provider Selector<br/>based on LLMsVerifier scores"]
+        ParallelExecutor["Parallel Executor<br/>concurrent calls"]
+        VotingStrategy["Confidence-Weighted Voting"]
+    end
+
+    subgraph ProviderLayer["LLM Providers"]
+        ClaudeProvider["Claude Provider"]
+        DeepSeekProvider["DeepSeek Provider"]
+        GeminiProvider["Gemini Provider"]
+        MistralProvider["Mistral Provider"]
+        OtherProviders["...Other Providers<br/>OpenRouter, Qwen, etc."]
+    end
+
+    subgraph SessionLayer["Session Management"]
+        SessionManager["SessionManager"]
+        ContextMemory["Context Memory<br/>conversation history"]
+        StateStore["State Store<br/>PostgreSQL"]
+        CacheLayer["Cache Layer<br/>Redis"]
+    end
+
+    subgraph ResponseLayer["Response Handling"]
+        ResponseAggregator["ResponseAggregator"]
+        CircuitBreaker["Circuit Breaker<br/>fault tolerance"]
+        FallbackChain["Fallback Chain<br/>automatic retry"]
+    end
+
+    ClientRequest --> GRPCServer
+    GRPCServer --> TLS
+    TLS --> LLMFacade
+
+    LLMFacade --> CompleteRPC
+    LLMFacade --> CompleteStreamRPC
+    LLMFacade --> HealthCheckRPC
+    LLMFacade --> CreateSessionRPC
+    LLMFacade --> GetSessionRPC
+    LLMFacade --> ListProvidersRPC
+
+    CompleteRPC --> EnsembleService
+    CompleteStreamRPC --> EnsembleService
+
+    EnsembleService --> ProviderSelector
+    ProviderSelector --> ParallelExecutor
+
+    ParallelExecutor --> ClaudeProvider
+    ParallelExecutor --> DeepSeekProvider
+    ParallelExecutor --> GeminiProvider
+    ParallelExecutor --> MistralProvider
+    ParallelExecutor --> OtherProviders
+
+    CreateSessionRPC --> SessionManager
+    GetSessionRPC --> SessionManager
+
+    SessionManager --> ContextMemory
+    ContextMemory --> StateStore
+    ContextMemory --> CacheLayer
+
+    ClaudeProvider --> CircuitBreaker
+    DeepSeekProvider --> CircuitBreaker
+    GeminiProvider --> CircuitBreaker
+    MistralProvider --> CircuitBreaker
+    OtherProviders --> CircuitBreaker
+
+    CircuitBreaker --> FallbackChain
+    FallbackChain --> ResponseAggregator
+    ResponseAggregator --> VotingStrategy
+
+    VotingStrategy -->|"Consensus response<br/>with confidence score"| ClientRequest
+
+    HealthCheckRPC --> ProviderSelector
+    ListProvidersRPC --> ProviderSelector

@@ -1,0 +1,97 @@
+graph TD
+    MemoryRequest["Memory Operation<br/>Store/Retrieve/Sync"]
+
+    subgraph MemoryManager["DistributedMemoryManager"]
+        DMM["DistributedMemoryManager<br/>orchestrator"]
+        LocalDecision{"Local or<br/>Remote?"}
+        RoutingLogic["Routing Logic<br/>based on operation type"]
+    end
+
+    subgraph LocalMemory["Local Storage Layer"]
+        LocalStore["Local Memory Store"]
+        LocalCache["In-Memory Cache<br/>LRU eviction"]
+        LocalRetention["Local Retention Policy"]
+    end
+
+    subgraph RemoteSync["Remote Synchronization"]
+        RemoteSyncManager["RemoteSyncManager"]
+        ReplicationQueue["Replication Queue<br/>outbound changes"]
+        SyncProtocol["Sync Protocol<br/>eventual consistency"]
+    end
+
+    subgraph ConflictResolution["CRDT & Conflict Resolution"]
+        CRDTResolver["CRDTResolver<br/>conflict strategies"]
+        LastWriteWins["Last-Write-Wins<br/>timestamp ordering"]
+        VectorClock["Vector Clock<br/>causal ordering"]
+        CustomMerge["Custom Merge Logic<br/>domain-specific"]
+    end
+
+    subgraph EventSourcing["Event Stream & Sourcing"]
+        EventStream["EventStream<br/>immutable log"]
+        EventAppender["EventAppender<br/>append-only"]
+        Changelog["Changelog Storage<br/>PostgreSQL WAL"]
+        Projections["Projections<br/>materialized views"]
+    end
+
+    subgraph MemoryLifecycle["Memory Lifecycle"]
+        Create["1. CREATE<br/>initialize memory entry"]
+        Store["2. STORE<br/>persist to local + queue remote"]
+        Retrieve["3. RETRIEVE<br/>fetch from cache/store"]
+        Sync["4. SYNC<br/>replicate to remote nodes"]
+        Reconcile["5. RECONCILE<br/>resolve conflicts"]
+        Expiry["6. EXPIRY<br/>retention policies"]
+    end
+
+    subgraph StorageBackends["Storage Backends"]
+        PostgreSQL["PostgreSQL<br/>persistent state"]
+        Redis["Redis<br/>hot cache"]
+        Mem0["Mem0 Integration<br/>entity graphs"]
+        VectorDB["Vector DB<br/>semantic search"]
+    end
+
+    MemoryRequest --> DMM
+    DMM --> RoutingLogic
+    RoutingLogic --> LocalDecision
+
+    LocalDecision -->|Local Op| LocalStore
+    LocalDecision -->|Remote Op| RemoteSyncManager
+
+    LocalStore --> LocalCache
+    LocalCache --> LocalRetention
+    LocalRetention --> EventAppender
+
+    RemoteSyncManager --> ReplicationQueue
+    ReplicationQueue --> SyncProtocol
+
+    SyncProtocol --> CRDTResolver
+
+    CRDTResolver --> LastWriteWins
+    CRDTResolver --> VectorClock
+    CRDTResolver --> CustomMerge
+
+    EventAppender --> EventStream
+    EventStream --> Changelog
+    Changelog --> Projections
+
+    Create --> Store
+    Store --> Retrieve
+    Retrieve --> Sync
+    Sync --> Reconcile
+    Reconcile --> Expiry
+
+    Reconcile --> CRDTResolver
+
+    LocalStore --> PostgreSQL
+    LocalCache --> Redis
+    LocalStore --> Mem0
+    EventStream --> VectorDB
+
+    Projections -->|"Consistent view"| MemoryRequest
+    Expiry -->|"Cleanup & TTL"| MemoryRequest
+
+    style Create fill:#e1f5ff
+    style Store fill:#e1f5ff
+    style Retrieve fill:#f3e5f5
+    style Sync fill:#fff3e0
+    style Reconcile fill:#fce4ec
+    style Expiry fill:#ede7f6

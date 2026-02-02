@@ -213,6 +213,10 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/all_agents_e2e_challenge.sh                 # 102 tests
 ./challenges/scripts/full_system_boot_challenge.sh               # 53 tests
 ./challenges/scripts/cli_proxy_challenge.sh                      # 50 tests
+./challenges/scripts/grpc_service_challenge.sh                   # 9 tests
+./challenges/scripts/bigdata_comprehensive_challenge.sh          # 23 tests
+./challenges/scripts/memory_system_challenge.sh                  # 14 tests
+./challenges/scripts/security_scanning_challenge.sh              # 10 tests
 ```
 
 ## LLMsVerifier
