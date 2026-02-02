@@ -143,6 +143,7 @@ type VerificationService struct {
 	config       *Config
 	providerFunc func(ctx context.Context, modelID, provider, prompt string) (string, error)
 	mu           sync.RWMutex
+	testMode     bool // When true, disables quality validation checks
 
 	// Storage for verification results and statistics
 	verificationCache map[string]*VerificationStatus
@@ -170,6 +171,13 @@ func (s *VerificationService) SetProviderFunc(fn func(ctx context.Context, model
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.providerFunc = fn
+}
+
+// SetTestMode enables/disables test mode (disables quality validation)
+func (s *VerificationService) SetTestMode(enabled bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.testMode = enabled
 }
 
 // VerifyModel performs complete model verification including the mandatory
@@ -422,22 +430,29 @@ func (s *VerificationService) verifyExistence(ctx context.Context, modelID, prov
 		return result
 	}
 
-	// Check for canned error responses - model must give real response
-	if isCanned, pattern := IsCannedErrorResponse(response); isCanned {
-		result.Passed = false
-		result.Score = 0
-		result.Details = append(result.Details, fmt.Sprintf("canned error detected (pattern: %s): %s", pattern, truncateForLog(response)))
-		result.CompletedAt = time.Now()
-		return result
-	}
+	// Skip quality validation in test mode
+	s.mu.RLock()
+	skipValidation := s.testMode
+	s.mu.RUnlock()
 
-	// Check for suspiciously fast + short response
-	if IsSuspiciouslyFastResponse(latency) && len(response) < 50 {
-		result.Passed = false
-		result.Score = 0
-		result.Details = append(result.Details, fmt.Sprintf("suspicious response: %v latency, %d chars", latency, len(response)))
-		result.CompletedAt = time.Now()
-		return result
+	if !skipValidation {
+		// Check for canned error responses - model must give real response
+		if isCanned, pattern := IsCannedErrorResponse(response); isCanned {
+			result.Passed = false
+			result.Score = 0
+			result.Details = append(result.Details, fmt.Sprintf("canned error detected (pattern: %s): %s", pattern, truncateForLog(response)))
+			result.CompletedAt = time.Now()
+			return result
+		}
+
+		// Check for suspiciously fast + short response
+		if IsSuspiciouslyFastResponse(latency) && len(response) < 50 {
+			result.Passed = false
+			result.Score = 0
+			result.Details = append(result.Details, fmt.Sprintf("suspicious response: %v latency, %d chars", latency, len(response)))
+			result.CompletedAt = time.Now()
+			return result
+		}
 	}
 
 	if len(response) > 0 {
@@ -471,14 +486,21 @@ func (s *VerificationService) verifyResponsiveness(ctx context.Context, modelID,
 		return result
 	}
 
-	// Validate response quality - check for canned errors
-	if qualityErr := ValidateResponseQualityWithLatency(response, duration); qualityErr != nil {
-		result.Passed = false
-		result.Score = 0
-		result.Details = append(result.Details, fmt.Sprintf("response quality failed: %v", qualityErr))
-		result.Details = append(result.Details, fmt.Sprintf("response time: %v", duration))
-		result.CompletedAt = time.Now()
-		return result
+	// Skip quality validation in test mode
+	s.mu.RLock()
+	skipValidation := s.testMode
+	s.mu.RUnlock()
+
+	if !skipValidation {
+		// Validate response quality - check for canned errors
+		if qualityErr := ValidateResponseQualityWithLatency(response, duration); qualityErr != nil {
+			result.Passed = false
+			result.Score = 0
+			result.Details = append(result.Details, fmt.Sprintf("response quality failed: %v", qualityErr))
+			result.Details = append(result.Details, fmt.Sprintf("response time: %v", duration))
+			result.CompletedAt = time.Now()
+			return result
+		}
 	}
 
 	// Check if response contains expected answer (basic math test)

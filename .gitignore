@@ -54,4 +54,5 @@ logs/
 
 # Security scan reports
 reports/security/
+reports/sbom/
 run_sonar.sh

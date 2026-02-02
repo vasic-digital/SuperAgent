@@ -641,11 +641,16 @@ func TestEnhanceProviderRegistry(t *testing.T) {
 		err := EnhanceProviderRegistry(registry, cogneeService, logger)
 		require.NoError(t, err)
 
-		// Check that providers are enhanced
+		// Check that providers are enhanced by verifying their capabilities
+		// The registry wraps providers in circuitBreakerProvider, but GetCapabilities
+		// should pass through to the underlying CogneeEnhancedProvider
 		p1, err := registry.GetProvider("provider1")
 		require.NoError(t, err)
-		_, isEnhanced := p1.(*CogneeEnhancedProvider)
-		assert.True(t, isEnhanced)
+
+		caps := p1.GetCapabilities()
+		require.NotNil(t, caps)
+		require.NotNil(t, caps.Metadata)
+		assert.Equal(t, "true", caps.Metadata["cognee_enhanced"], "Provider should be enhanced with Cognee")
 	})
 
 	t.Run("skips already enhanced providers", func(t *testing.T) {

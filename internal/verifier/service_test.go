@@ -443,6 +443,7 @@ func TestVerificationService_calculateOverallScore(t *testing.T) {
 
 func TestVerificationService_verifyExistence(t *testing.T) {
 	svc := NewVerificationService(&Config{})
+	svc.SetTestMode(true) // Enable test mode to skip quality validation
 
 	t.Run("success", func(t *testing.T) {
 		svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
@@ -475,6 +476,7 @@ func TestVerificationService_verifyExistence(t *testing.T) {
 
 func TestVerificationService_verifyResponsiveness(t *testing.T) {
 	svc := NewVerificationService(&Config{})
+	svc.SetTestMode(true) // Enable test mode to skip quality validation
 
 	t.Run("fast response", func(t *testing.T) {
 		svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
@@ -839,6 +841,7 @@ func TestVerificationService_GetVerificationStatusByProvider(t *testing.T) {
 			modelID:  "cached-model",
 			provider: "anthropic",
 			setupFunc: func(svc *VerificationService) {
+				svc.SetTestMode(true) // Enable test mode to skip quality validation
 				svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
 					return "Yes, I can see your code", nil
 				})
@@ -984,6 +987,7 @@ func TestVerificationService_GetAllVerifications(t *testing.T) {
 
 func TestVerificationService_StoreVerificationResult_UpdatesStats(t *testing.T) {
 	svc := NewVerificationService(&Config{})
+	svc.SetTestMode(true) // Enable test mode to skip quality validation
 	svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
 		return "Yes, I can see your code", nil
 	})

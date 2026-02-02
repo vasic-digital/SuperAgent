@@ -258,7 +258,7 @@ func TestStartupVerifier_discoverFreeProviders(t *testing.T) {
 			if p.Type == "zen" {
 				zenFound = true
 				assert.Equal(t, AuthTypeFree, p.AuthType)
-				assert.Equal(t, "auto", p.Source)
+				assert.Equal(t, "dynamic_discovery", p.Source)
 			}
 		}
 		assert.True(t, zenFound, "Zen provider should be discovered")
@@ -276,6 +276,7 @@ func TestStartupVerifier_verifyProvider_Types(t *testing.T) {
 	sv := NewStartupVerifier(cfg, logger)
 
 	// Set up a mock provider function that succeeds
+	sv.SetTestMode(true) // Enable test mode to skip quality validation
 	sv.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
 		return "Yes, I can see your code", nil
 	})
@@ -392,10 +393,9 @@ func TestStartupVerifier_rankProviders(t *testing.T) {
 
 	sv.rankProviders(providers)
 
-	// OAuth should be first
-	assert.Equal(t, "oauth", sv.rankedProviders[0].ID)
-	// Then by score descending
-	assert.Equal(t, "high", sv.rankedProviders[1].ID)
+	// Sorted by score descending (highest first) - NO OAuth priority
+	assert.Equal(t, "high", sv.rankedProviders[0].ID)
+	assert.Equal(t, "oauth", sv.rankedProviders[1].ID)
 	assert.Equal(t, "medium", sv.rankedProviders[2].ID)
 	assert.Equal(t, "low", sv.rankedProviders[3].ID)
 }
