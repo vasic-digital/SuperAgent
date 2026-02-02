@@ -487,9 +487,9 @@ func TestMigrationManager_MigratePendingTasks(t *testing.T) {
 	ctx := context.Background()
 
 	// Add some pending tasks
-	legacyQueue.Enqueue(ctx, "llm_request", []byte(`{"prompt":"task1"}`), 5)
-	legacyQueue.Enqueue(ctx, "debate", []byte(`{"topic":"task2"}`), 5)
-	legacyQueue.Enqueue(ctx, "notification", []byte(`{"msg":"task3"}`), 3)
+	_, _ = legacyQueue.Enqueue(ctx, "llm_request", []byte(`{"prompt":"task1"}`), 5)
+	_, _ = legacyQueue.Enqueue(ctx, "debate", []byte(`{"topic":"task2"}`), 5)
+	_, _ = legacyQueue.Enqueue(ctx, "notification", []byte(`{"msg":"task3"}`), 3)
 
 	// Migrate
 	err := m.MigratePendingTasks(ctx)

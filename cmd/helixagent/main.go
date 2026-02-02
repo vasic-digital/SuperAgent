@@ -227,7 +227,7 @@ func (h *HTTPHealthChecker) CheckHealth(url string) error {
 	if err != nil {
 		return fmt.Errorf("cannot connect: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)
@@ -494,13 +494,13 @@ func checkServicesViaHealthProbes(services []string) map[string]bool {
 		if strings.HasPrefix(addr, "http") {
 			resp, err := client.Get(addr)
 			if err == nil {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				running[svc] = true
 			}
 		} else {
 			conn, err := net.DialTimeout("tcp", addr, 3*time.Second)
 			if err == nil {
-				conn.Close()
+				_ = conn.Close()
 				running[svc] = true
 			}
 		}
@@ -632,7 +632,7 @@ func checkPostgresHealth() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to PostgreSQL: %w", err)
 	}
-	defer conn.Close(ctx)
+	defer func() { _ = conn.Close(ctx) }()
 
 	// Ping to verify connection is working
 	if err := conn.Ping(ctx); err != nil {
@@ -1704,10 +1704,10 @@ func writeAPIKeyToEnvFile(filePath, apiKey string) error {
 	for _, item := range lineOrder {
 		if item == "" || strings.HasPrefix(item, "#") {
 			// Write empty lines and comments as-is
-			fmt.Fprintln(file, item)
+			_, _ = fmt.Fprintln(file, item)
 		} else if value, ok := existingContent[item]; ok {
 			// Write key=value
-			fmt.Fprintf(file, "%s=%s\n", item, value)
+			_, _ = fmt.Fprintf(file, "%s=%s\n", item, value)
 		}
 	}
 

@@ -83,7 +83,7 @@ func TestProtocolPluginRegistry_GetPlugin(t *testing.T) {
 		Version:     "1.0.0",
 		Description: "A test plugin for get",
 	}
-	registry.RegisterPlugin(plugin)
+	_ = registry.RegisterPlugin(plugin)
 
 	t.Run("get existing plugin", func(t *testing.T) {
 		result, err := registry.GetPlugin("get-plugin")
@@ -105,21 +105,21 @@ func TestProtocolPluginRegistry_SearchPlugins(t *testing.T) {
 	registry := NewProtocolPluginRegistry(log)
 
 	// Register several plugins
-	registry.RegisterPlugin(&RegistryProtocolPlugin{
+	_ = registry.RegisterPlugin(&RegistryProtocolPlugin{
 		ID:          "mcp-plugin-1",
 		Name:        "MCP Tool Manager",
 		Description: "Manages MCP tools",
 		Protocol:    "mcp",
 		Tags:        []string{"tools", "mcp"},
 	})
-	registry.RegisterPlugin(&RegistryProtocolPlugin{
+	_ = registry.RegisterPlugin(&RegistryProtocolPlugin{
 		ID:          "lsp-plugin-1",
 		Name:        "LSP Formatter",
 		Description: "Formats code using LSP",
 		Protocol:    "lsp",
 		Tags:        []string{"formatting", "lsp"},
 	})
-	registry.RegisterPlugin(&RegistryProtocolPlugin{
+	_ = registry.RegisterPlugin(&RegistryProtocolPlugin{
 		ID:          "mcp-plugin-2",
 		Name:        "MCP Resource Handler",
 		Description: "Handles MCP resources",
@@ -165,7 +165,7 @@ func TestProtocolPluginRegistry_UpdatePluginStats(t *testing.T) {
 		Downloads: 100,
 		Rating:    3.5,
 	}
-	registry.RegisterPlugin(plugin)
+	_ = registry.RegisterPlugin(plugin)
 
 	t.Run("update downloads and rating", func(t *testing.T) {
 		err := registry.UpdatePluginStats("stats-plugin", 500, 4.5)
@@ -202,7 +202,7 @@ func TestProtocolPluginRegistry_ListPopularPlugins(t *testing.T) {
 
 	// Register plugins with different download counts
 	for i := 1; i <= 5; i++ {
-		registry.RegisterPlugin(&RegistryProtocolPlugin{
+		_ = registry.RegisterPlugin(&RegistryProtocolPlugin{
 			ID:        "popular-" + string(rune('0'+i)),
 			Name:      "Popular Plugin",
 			Downloads: i * 100,
@@ -270,7 +270,7 @@ func TestProtocolTemplateManager_GetTemplate(t *testing.T) {
 	tm := NewProtocolTemplateManager(log)
 
 	// Add a template first
-	tm.AddTemplate(&ProtocolTemplate{
+	_ = tm.AddTemplate(&ProtocolTemplate{
 		ID:          "get-template",
 		Name:        "Get Template Test",
 		Description: "A template for testing get",
@@ -324,12 +324,12 @@ func TestProtocolTemplateManager_ListTemplates(t *testing.T) {
 	})
 
 	t.Run("list with templates", func(t *testing.T) {
-		tm.AddTemplate(&ProtocolTemplate{
+		_ = tm.AddTemplate(&ProtocolTemplate{
 			ID:       "list-template-1",
 			Name:     "Template 1",
 			Protocol: "mcp",
 		})
-		tm.AddTemplate(&ProtocolTemplate{
+		_ = tm.AddTemplate(&ProtocolTemplate{
 			ID:       "list-template-2",
 			Name:     "Template 2",
 			Protocol: "lsp",
@@ -345,17 +345,17 @@ func TestProtocolTemplateManager_ListTemplatesByProtocol(t *testing.T) {
 	tm := NewProtocolTemplateManager(log)
 
 	// Add templates with different protocols
-	tm.AddTemplate(&ProtocolTemplate{
+	_ = tm.AddTemplate(&ProtocolTemplate{
 		ID:       "proto-template-mcp-1",
 		Name:     "MCP Template 1",
 		Protocol: "mcp",
 	})
-	tm.AddTemplate(&ProtocolTemplate{
+	_ = tm.AddTemplate(&ProtocolTemplate{
 		ID:       "proto-template-mcp-2",
 		Name:     "MCP Template 2",
 		Protocol: "mcp",
 	})
-	tm.AddTemplate(&ProtocolTemplate{
+	_ = tm.AddTemplate(&ProtocolTemplate{
 		ID:       "proto-template-lsp",
 		Name:     "LSP Template",
 		Protocol: "lsp",
@@ -382,7 +382,7 @@ func TestProtocolTemplateManager_GeneratePluginFromTemplate(t *testing.T) {
 	tm := NewProtocolTemplateManager(log)
 
 	// Add a template
-	tm.AddTemplate(&ProtocolTemplate{
+	_ = tm.AddTemplate(&ProtocolTemplate{
 		ID:          "generate-template",
 		Name:        "Generate Template",
 		Description: "A template for generation",
@@ -509,7 +509,7 @@ func BenchmarkProtocolPluginRegistry_RegisterPlugin(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		registry.RegisterPlugin(&RegistryProtocolPlugin{
+		_ = registry.RegisterPlugin(&RegistryProtocolPlugin{
 			ID:   "bench-" + string(rune(i)),
 			Name: "Benchmark Plugin",
 		})
@@ -523,7 +523,7 @@ func BenchmarkProtocolPluginRegistry_SearchPlugins(b *testing.B) {
 
 	// Pre-populate with plugins
 	for i := 0; i < 100; i++ {
-		registry.RegisterPlugin(&RegistryProtocolPlugin{
+		_ = registry.RegisterPlugin(&RegistryProtocolPlugin{
 			ID:       "search-" + string(rune(i)),
 			Name:     "Search Plugin",
 			Protocol: "mcp",

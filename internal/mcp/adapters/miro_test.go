@@ -89,7 +89,7 @@ func TestMiroAdapter_ListBoards(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -115,7 +115,7 @@ func TestMiroAdapter_CreateBoard(t *testing.T) {
 		assert.Equal(t, "/boards", r.URL.Path)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "New Board", body["name"])
 
 		response := MiroBoard{
@@ -126,7 +126,7 @@ func TestMiroAdapter_CreateBoard(t *testing.T) {
 
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -162,7 +162,7 @@ func TestMiroAdapter_GetBoard(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -188,7 +188,7 @@ func TestMiroAdapter_CreateStickyNote(t *testing.T) {
 		assert.Equal(t, "/boards/board-1/sticky_notes", r.URL.Path)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		data := body["data"].(map[string]interface{})
 		assert.Equal(t, "Todo: Fix bug", data["content"])
 
@@ -199,7 +199,7 @@ func TestMiroAdapter_CreateStickyNote(t *testing.T) {
 
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -228,7 +228,7 @@ func TestMiroAdapter_CreateShape(t *testing.T) {
 		assert.Equal(t, "/boards/board-1/shapes", r.URL.Path)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		data := body["data"].(map[string]interface{})
 		assert.Equal(t, "rectangle", data["shape"])
 
@@ -239,7 +239,7 @@ func TestMiroAdapter_CreateShape(t *testing.T) {
 
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -278,7 +278,7 @@ func TestMiroAdapter_CreateText(t *testing.T) {
 
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -307,7 +307,7 @@ func TestMiroAdapter_CreateConnector(t *testing.T) {
 		assert.Equal(t, "/boards/board-1/connectors", r.URL.Path)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		startItem := body["startItem"].(map[string]interface{})
 		endItem := body["endItem"].(map[string]interface{})
 		assert.Equal(t, "item-1", startItem["id"])
@@ -320,7 +320,7 @@ func TestMiroAdapter_CreateConnector(t *testing.T) {
 
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -357,7 +357,7 @@ func TestMiroAdapter_ListItems(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -392,7 +392,7 @@ func TestMiroAdapter_GetItem(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -444,7 +444,7 @@ func TestMiroAdapter_CreateFrame(t *testing.T) {
 		assert.Equal(t, "/boards/board-1/frames", r.URL.Path)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		data := body["data"].(map[string]interface{})
 		assert.Equal(t, "Sprint 1", data["title"])
 
@@ -455,7 +455,7 @@ func TestMiroAdapter_CreateFrame(t *testing.T) {
 
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -491,7 +491,7 @@ func TestMiroAdapter_ExportBoard(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -514,7 +514,7 @@ func TestMiroAdapter_ExportBoard(t *testing.T) {
 func TestMiroAdapter_APIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"message": "Invalid token"}`))
+		_, _ = w.Write([]byte(`{"message": "Invalid token"}`))
 	}))
 	defer server.Close()
 

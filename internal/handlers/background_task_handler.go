@@ -411,8 +411,8 @@ func (h *BackgroundTaskHandler) GetTaskEvents(c *gin.Context) {
 
 	// Register client
 	if h.sseManager != nil {
-		h.sseManager.RegisterClient(taskID, clientChan)
-		defer h.sseManager.UnregisterClient(taskID, clientChan)
+		_ = h.sseManager.RegisterClient(taskID, clientChan)
+		defer func() { _ = h.sseManager.UnregisterClient(taskID, clientChan) }()
 	}
 
 	// Stream events
@@ -473,7 +473,7 @@ func (h *BackgroundTaskHandler) PauseTask(c *gin.Context) {
 		return
 	}
 
-	h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventPaused, nil, nil)
+	_ = h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventPaused, nil, nil)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Task paused",
@@ -518,7 +518,7 @@ func (h *BackgroundTaskHandler) ResumeTask(c *gin.Context) {
 		return
 	}
 
-	h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventResumed, nil, nil)
+	_ = h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventResumed, nil, nil)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Task resumed",
@@ -564,10 +564,10 @@ func (h *BackgroundTaskHandler) CancelTask(c *gin.Context) {
 		return
 	}
 
-	h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventCancelled, nil, nil)
+	_ = h.repository.LogEvent(c.Request.Context(), taskID, models.TaskEventCancelled, nil, nil)
 
 	if h.notificationHub != nil {
-		h.notificationHub.NotifyTaskEvent(context.Background(), task, models.TaskEventCancelled, nil)
+		_ = h.notificationHub.NotifyTaskEvent(context.Background(), task, models.TaskEventCancelled, nil)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -1015,8 +1015,8 @@ func (h *BackgroundTaskHandler) streamAllEvents(c *gin.Context) {
 	clientChan := make(chan []byte, 100)
 
 	if h.sseManager != nil {
-		h.sseManager.RegisterGlobalClient(clientChan)
-		defer h.sseManager.UnregisterGlobalClient(clientChan)
+		_ = h.sseManager.RegisterGlobalClient(clientChan)
+		defer func() { _ = h.sseManager.UnregisterGlobalClient(clientChan) }()
 	}
 
 	c.Stream(func(w io.Writer) bool {

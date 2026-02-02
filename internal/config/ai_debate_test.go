@@ -926,13 +926,13 @@ participants:
 
 func TestAIDebateConfigLoader_EnvironmentSubstitution(t *testing.T) {
 	// Set environment variables
-	os.Setenv("TEST_API_KEY", "test-api-key-value")
-	os.Setenv("TEST_BASE_URL", "https://test.api.com")
-	os.Setenv("TEST_DATASET", "test-dataset")
+	_ = os.Setenv("TEST_API_KEY", "test-api-key-value")
+	_ = os.Setenv("TEST_BASE_URL", "https://test.api.com")
+	_ = os.Setenv("TEST_DATASET", "test-dataset")
 	defer func() {
-		os.Unsetenv("TEST_API_KEY")
-		os.Unsetenv("TEST_BASE_URL")
-		os.Unsetenv("TEST_DATASET")
+		_ = os.Unsetenv("TEST_API_KEY")
+		_ = os.Unsetenv("TEST_BASE_URL")
+		_ = os.Unsetenv("TEST_DATASET")
 	}()
 
 	yamlContent := `
@@ -1277,7 +1277,7 @@ func TestAIDebateConfigLoader_Reload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	configContent := `
 enabled: true
@@ -1338,7 +1338,7 @@ participants:
 	if _, err := tmpFile.WriteString(configContent); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	loader := NewAIDebateConfigLoader(tmpFile.Name())
 

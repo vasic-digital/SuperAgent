@@ -30,7 +30,7 @@ func TestAuthRetry_MistralProvider(t *testing.T) {
 		if count == 1 {
 			// First request returns 401
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"detail": "Unauthorized",
 			})
 			return
@@ -38,7 +38,7 @@ func TestAuthRetry_MistralProvider(t *testing.T) {
 
 		// Second request succeeds
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id":      "test-id",
 			"object":  "chat.completion",
 			"created": time.Now().Unix(),
@@ -101,7 +101,7 @@ func TestAuthRetry_ClaudeProvider(t *testing.T) {
 		if count == 1 {
 			// First request returns 401
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"error": map[string]any{
 					"message": "Invalid API key",
 					"type":    "authentication_error",
@@ -112,7 +112,7 @@ func TestAuthRetry_ClaudeProvider(t *testing.T) {
 
 		// Second request succeeds
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id":   "msg_test",
 			"type": "message",
 			"role": "assistant",
@@ -172,7 +172,7 @@ func TestAuthRetry_DeepSeekProvider(t *testing.T) {
 		if count == 1 {
 			// First request returns 401
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"error": "unauthorized",
 			})
 			return
@@ -180,7 +180,7 @@ func TestAuthRetry_DeepSeekProvider(t *testing.T) {
 
 		// Second request succeeds
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id":      "chatcmpl-test",
 			"object":  "chat.completion",
 			"created": time.Now().Unix(),
@@ -243,7 +243,7 @@ func TestAuthRetry_GeminiProvider(t *testing.T) {
 		if count == 1 {
 			// First request returns 401
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"error": map[string]any{
 					"code":    401,
 					"message": "Invalid API key",
@@ -255,7 +255,7 @@ func TestAuthRetry_GeminiProvider(t *testing.T) {
 
 		// Second request succeeds
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"candidates": []map[string]any{
 				{
 					"content": map[string]any{
@@ -318,7 +318,7 @@ func TestAuthRetry_CerebrasProvider(t *testing.T) {
 		if count == 1 {
 			// First request returns 401
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"error": map[string]any{
 					"message": "Invalid API key",
 					"type":    "authentication_error",
@@ -330,7 +330,7 @@ func TestAuthRetry_CerebrasProvider(t *testing.T) {
 
 		// Second request succeeds
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id":      "chatcmpl-test",
 			"object":  "chat.completion",
 			"created": time.Now().Unix(),
@@ -393,7 +393,7 @@ func TestAuthRetry_QwenProvider(t *testing.T) {
 		if count == 1 {
 			// First request returns 401
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"error": map[string]any{
 					"message": "Invalid API key",
 					"type":    "authentication_error",
@@ -405,7 +405,7 @@ func TestAuthRetry_QwenProvider(t *testing.T) {
 
 		// Second request succeeds
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id":      "chatcmpl-test",
 			"object":  "chat.completion",
 			"created": time.Now().Unix(),
@@ -466,7 +466,7 @@ func TestAuthRetry_NoInfiniteLoop(t *testing.T) {
 		atomic.AddInt32(&requestCount, 1)
 		// Always return 401
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"detail": "Unauthorized",
 		})
 	}))
@@ -508,7 +508,7 @@ func TestAuthRetry_ContextCancellation(t *testing.T) {
 		atomic.AddInt32(&requestCount, 1)
 		// First request returns 401
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"detail": "Unauthorized",
 		})
 	}))
@@ -551,7 +551,7 @@ func TestAuthRetry_SuccessFirstTry(t *testing.T) {
 		atomic.AddInt32(&requestCount, 1)
 		// First request succeeds
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id":      "test-id",
 			"object":  "chat.completion",
 			"created": time.Now().Unix(),
@@ -611,7 +611,7 @@ func TestAuthRetry_403NotRetried(t *testing.T) {
 		atomic.AddInt32(&requestCount, 1)
 		// Return 403 Forbidden
 		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"detail": "Forbidden",
 		})
 	}))
@@ -655,7 +655,7 @@ func TestAuthRetry_RetryableStatusCodesStillWork(t *testing.T) {
 		if count == 1 {
 			// First request returns 429 (rate limited)
 			w.WriteHeader(http.StatusTooManyRequests)
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"detail": "Rate limited",
 			})
 			return
@@ -664,7 +664,7 @@ func TestAuthRetry_RetryableStatusCodesStillWork(t *testing.T) {
 		if count == 2 {
 			// Second request returns 503 (service unavailable)
 			w.WriteHeader(http.StatusServiceUnavailable)
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"detail": "Service temporarily unavailable",
 			})
 			return
@@ -672,7 +672,7 @@ func TestAuthRetry_RetryableStatusCodesStillWork(t *testing.T) {
 
 		// Third request succeeds
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id":      "test-id",
 			"object":  "chat.completion",
 			"created": time.Now().Unix(),

@@ -53,7 +53,7 @@ func createTestEmbeddingRegistry() *models.EmbeddingModelRegistry {
 	registry := models.NewEmbeddingModelRegistry(config)
 
 	// Register mock model for testing
-	registry.Register("mock", &MockEmbeddingModelForRAG{dim: 384})
+	_ = registry.Register("mock", &MockEmbeddingModelForRAG{dim: 384})
 
 	return registry
 }
@@ -216,25 +216,25 @@ func TestPipeline_Initialize_Chroma(t *testing.T) {
 		switch {
 		case r.URL.Path == "/api/v1/heartbeat":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
+			_ = json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "GET":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode([]map[string]interface{}{})
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":   "coll_123",
 				"name": "test_collection",
 			})
 		case strings.Contains(r.URL.Path, "/collections/"):
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":   "coll_123",
 				"name": "test_collection",
 			})
 		default:
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{})
+			_ = json.NewEncoder(w).Encode(map[string]string{})
 		}
 	}))
 	defer server.Close()

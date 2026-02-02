@@ -144,7 +144,7 @@ func (c *ACPDiscoveryClient) ConnectAgent(ctx context.Context, agentID, name, en
 
 	// Initialize the agent
 	if err := c.initializeAgent(ctx, connection); err != nil {
-		transport.Close()
+		_ = transport.Close()
 		return fmt.Errorf("failed to initialize ACP agent: %w", err)
 	}
 

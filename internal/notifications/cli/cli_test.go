@@ -695,57 +695,57 @@ func TestRenderer_GetSpinnerFrame(t *testing.T) {
 func TestDetectCLIClient_OpenCode(t *testing.T) {
 	// Save and restore env
 	oldVal := os.Getenv("OPENCODE")
-	defer os.Setenv("OPENCODE", oldVal)
+	defer func() { _ = os.Setenv("OPENCODE", oldVal) }()
 
-	os.Setenv("OPENCODE", "1")
+	_ = os.Setenv("OPENCODE", "1")
 	client := DetectCLIClient()
 	assert.Equal(t, CLIClientOpenCode, client)
 
-	os.Unsetenv("OPENCODE")
-	os.Setenv("OPENCODE_VERSION", "1.0.0")
+	_ = os.Unsetenv("OPENCODE")
+	_ = os.Setenv("OPENCODE_VERSION", "1.0.0")
 	client = DetectCLIClient()
 	assert.Equal(t, CLIClientOpenCode, client)
-	os.Unsetenv("OPENCODE_VERSION")
+	_ = os.Unsetenv("OPENCODE_VERSION")
 }
 
 func TestDetectCLIClient_Crush(t *testing.T) {
 	oldVal := os.Getenv("CRUSH_CLI")
-	defer os.Setenv("CRUSH_CLI", oldVal)
+	defer func() { _ = os.Setenv("CRUSH_CLI", oldVal) }()
 
-	os.Setenv("CRUSH_CLI", "1")
+	_ = os.Setenv("CRUSH_CLI", "1")
 	client := DetectCLIClient()
 	assert.Equal(t, CLIClientCrush, client)
-	os.Unsetenv("CRUSH_CLI")
+	_ = os.Unsetenv("CRUSH_CLI")
 }
 
 func TestDetectCLIClient_HelixCode(t *testing.T) {
 	oldVal := os.Getenv("HELIXCODE")
-	defer os.Setenv("HELIXCODE", oldVal)
+	defer func() { _ = os.Setenv("HELIXCODE", oldVal) }()
 
-	os.Setenv("HELIXCODE", "1")
+	_ = os.Setenv("HELIXCODE", "1")
 	client := DetectCLIClient()
 	assert.Equal(t, CLIClientHelixCode, client)
-	os.Unsetenv("HELIXCODE")
+	_ = os.Unsetenv("HELIXCODE")
 }
 
 func TestDetectCLIClient_KiloCode(t *testing.T) {
 	oldVal := os.Getenv("KILOCODE")
-	defer os.Setenv("KILOCODE", oldVal)
+	defer func() { _ = os.Setenv("KILOCODE", oldVal) }()
 
-	os.Setenv("KILOCODE", "1")
+	_ = os.Setenv("KILOCODE", "1")
 	client := DetectCLIClient()
 	assert.Equal(t, CLIClientKiloCode, client)
-	os.Unsetenv("KILOCODE")
+	_ = os.Unsetenv("KILOCODE")
 }
 
 func TestDetectCLIClient_ClaudeCode(t *testing.T) {
 	oldVal := os.Getenv("CLAUDE_CODE")
-	defer os.Setenv("CLAUDE_CODE", oldVal)
+	defer func() { _ = os.Setenv("CLAUDE_CODE", oldVal) }()
 
-	os.Setenv("CLAUDE_CODE", "1")
+	_ = os.Setenv("CLAUDE_CODE", "1")
 	client := DetectCLIClient()
 	assert.Equal(t, CLIClientOpenCode, client) // Claude Code treated as OpenCode
-	os.Unsetenv("CLAUDE_CODE")
+	_ = os.Unsetenv("CLAUDE_CODE")
 }
 
 func TestDetectFromUserAgent(t *testing.T) {
@@ -782,28 +782,28 @@ func TestDetectColorSupport(t *testing.T) {
 	forceColor := os.Getenv("FORCE_COLOR")
 	term := os.Getenv("TERM")
 	defer func() {
-		os.Setenv("NO_COLOR", noColor)
-		os.Setenv("FORCE_COLOR", forceColor)
-		os.Setenv("TERM", term)
+		_ = os.Setenv("NO_COLOR", noColor)
+		_ = os.Setenv("FORCE_COLOR", forceColor)
+		_ = os.Setenv("TERM", term)
 	}()
 
 	// Test NO_COLOR
-	os.Setenv("NO_COLOR", "1")
-	os.Unsetenv("FORCE_COLOR")
+	_ = os.Setenv("NO_COLOR", "1")
+	_ = os.Unsetenv("FORCE_COLOR")
 	assert.False(t, detectColorSupport())
 
 	// Test FORCE_COLOR
-	os.Unsetenv("NO_COLOR")
-	os.Setenv("FORCE_COLOR", "1")
+	_ = os.Unsetenv("NO_COLOR")
+	_ = os.Setenv("FORCE_COLOR", "1")
 	assert.True(t, detectColorSupport())
 
 	// Test dumb terminal
-	os.Unsetenv("FORCE_COLOR")
-	os.Setenv("TERM", "dumb")
+	_ = os.Unsetenv("FORCE_COLOR")
+	_ = os.Setenv("TERM", "dumb")
 	assert.False(t, detectColorSupport())
 
 	// Test 256color terminal
-	os.Setenv("TERM", "xterm-256color")
+	_ = os.Setenv("TERM", "xterm-256color")
 	assert.True(t, detectColorSupport())
 }
 
@@ -813,19 +813,19 @@ func TestDetectUnicodeSupport(t *testing.T) {
 	lcAll := os.Getenv("LC_ALL")
 	term := os.Getenv("TERM")
 	defer func() {
-		os.Setenv("LANG", lang)
-		os.Setenv("LC_ALL", lcAll)
-		os.Setenv("TERM", term)
+		_ = os.Setenv("LANG", lang)
+		_ = os.Setenv("LC_ALL", lcAll)
+		_ = os.Setenv("TERM", term)
 	}()
 
 	// Test UTF-8 locale
-	os.Setenv("LANG", "en_US.UTF-8")
-	os.Unsetenv("LC_ALL")
+	_ = os.Setenv("LANG", "en_US.UTF-8")
+	_ = os.Unsetenv("LC_ALL")
 	assert.True(t, detectUnicodeSupport())
 
 	// Test xterm
-	os.Unsetenv("LANG")
-	os.Setenv("TERM", "xterm")
+	_ = os.Unsetenv("LANG")
+	_ = os.Setenv("TERM", "xterm")
 	assert.True(t, detectUnicodeSupport())
 }
 
@@ -834,21 +834,21 @@ func TestGetTerminalSize(t *testing.T) {
 	cols := os.Getenv("COLUMNS")
 	lines := os.Getenv("LINES")
 	defer func() {
-		os.Setenv("COLUMNS", cols)
-		os.Setenv("LINES", lines)
+		_ = os.Setenv("COLUMNS", cols)
+		_ = os.Setenv("LINES", lines)
 	}()
 
 	// Test with environment variables
-	os.Setenv("COLUMNS", "120")
-	os.Setenv("LINES", "40")
+	_ = os.Setenv("COLUMNS", "120")
+	_ = os.Setenv("LINES", "40")
 
 	w, h := getTerminalSize()
 	assert.Equal(t, 120, w)
 	assert.Equal(t, 40, h)
 
 	// Test defaults
-	os.Unsetenv("COLUMNS")
-	os.Unsetenv("LINES")
+	_ = os.Unsetenv("COLUMNS")
+	_ = os.Unsetenv("LINES")
 	w, h = getTerminalSize()
 	assert.Equal(t, 80, w) // default
 	assert.Equal(t, 24, h) // default
@@ -890,9 +890,9 @@ func TestGetRenderConfigForClient_KiloCode(t *testing.T) {
 func TestFormatForClient_NoColor(t *testing.T) {
 	// Save current environment
 	noColor := os.Getenv("NO_COLOR")
-	defer os.Setenv("NO_COLOR", noColor)
+	defer func() { _ = os.Setenv("NO_COLOR", noColor) }()
 
-	os.Setenv("NO_COLOR", "1")
+	_ = os.Setenv("NO_COLOR", "1")
 
 	content := "\033[31mRed Text\033[0m"
 	result := FormatForClient(CLIClientOpenCode, content)

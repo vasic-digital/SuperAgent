@@ -23,15 +23,15 @@ func TestLoad(t *testing.T) {
 		"GIN_MODE", // Also clear GIN_MODE to test default value
 	} {
 		originalEnv[key] = os.Getenv(key)
-		os.Unsetenv(key)
+		_ = os.Unsetenv(key)
 	}
 	defer func() {
 		// Restore original environment
 		for key, value := range originalEnv {
 			if value != "" {
-				os.Setenv(key, value)
+				_ = os.Setenv(key, value)
 			} else {
-				os.Unsetenv(key)
+				_ = os.Unsetenv(key)
 			}
 		}
 	}()
@@ -159,30 +159,30 @@ func TestLoad(t *testing.T) {
 
 	t.Run("EnvironmentOverrides", func(t *testing.T) {
 		// Set environment variables
-		os.Setenv("PORT", "9090")
-		os.Setenv("HELIXAGENT_API_KEY", "test-api-key")
-		os.Setenv("JWT_SECRET", "test-jwt-secret")
-		os.Setenv("DB_HOST", "test-db-host")
-		os.Setenv("DB_PORT", "5433")
-		os.Setenv("DB_USER", "test-user")
-		os.Setenv("DB_PASSWORD", "test-password")
-		os.Setenv("DB_NAME", "test-db")
-		os.Setenv("REDIS_HOST", "test-redis-host")
-		os.Setenv("REDIS_PORT", "6380")
-		os.Setenv("COGNEE_BASE_URL", "http://test-cognee:8000")
-		os.Setenv("COGNEE_API_KEY", "test-cognee-key")
-		os.Setenv("LLM_TIMEOUT", "90s")
-		os.Setenv("LLM_MAX_RETRIES", "5")
-		os.Setenv("ENSEMBLE_STRATEGY", "majority_vote")
-		os.Setenv("ENSEMBLE_MIN_PROVIDERS", "3")
-		os.Setenv("METRICS_ENABLED", "false")
-		os.Setenv("LOG_LEVEL", "debug")
-		os.Setenv("RATE_LIMITING_ENABLED", "false")
-		os.Setenv("RATE_LIMIT_REQUESTS", "200")
-		os.Setenv("PLUGIN_AUTO_RELOAD", "true")
-		os.Setenv("PLUGIN_HOT_RELOAD", "true")
-		os.Setenv("MAX_CONCURRENT_REQUESTS", "20")
-		os.Setenv("REQUEST_TIMEOUT", "120s")
+		_ = os.Setenv("PORT", "9090")
+		_ = os.Setenv("HELIXAGENT_API_KEY", "test-api-key")
+		_ = os.Setenv("JWT_SECRET", "test-jwt-secret")
+		_ = os.Setenv("DB_HOST", "test-db-host")
+		_ = os.Setenv("DB_PORT", "5433")
+		_ = os.Setenv("DB_USER", "test-user")
+		_ = os.Setenv("DB_PASSWORD", "test-password")
+		_ = os.Setenv("DB_NAME", "test-db")
+		_ = os.Setenv("REDIS_HOST", "test-redis-host")
+		_ = os.Setenv("REDIS_PORT", "6380")
+		_ = os.Setenv("COGNEE_BASE_URL", "http://test-cognee:8000")
+		_ = os.Setenv("COGNEE_API_KEY", "test-cognee-key")
+		_ = os.Setenv("LLM_TIMEOUT", "90s")
+		_ = os.Setenv("LLM_MAX_RETRIES", "5")
+		_ = os.Setenv("ENSEMBLE_STRATEGY", "majority_vote")
+		_ = os.Setenv("ENSEMBLE_MIN_PROVIDERS", "3")
+		_ = os.Setenv("METRICS_ENABLED", "false")
+		_ = os.Setenv("LOG_LEVEL", "debug")
+		_ = os.Setenv("RATE_LIMITING_ENABLED", "false")
+		_ = os.Setenv("RATE_LIMIT_REQUESTS", "200")
+		_ = os.Setenv("PLUGIN_AUTO_RELOAD", "true")
+		_ = os.Setenv("PLUGIN_HOT_RELOAD", "true")
+		_ = os.Setenv("MAX_CONCURRENT_REQUESTS", "20")
+		_ = os.Setenv("REQUEST_TIMEOUT", "120s")
 
 		cfg := Load()
 
@@ -262,69 +262,69 @@ func TestLoad(t *testing.T) {
 
 		// Clean up
 		for key := range originalEnv {
-			os.Unsetenv(key)
+			_ = os.Unsetenv(key)
 		}
 	})
 
 	t.Run("GetEnvHelpers", func(t *testing.T) {
 		// Test getIntEnv
-		os.Setenv("TEST_INT", "42")
+		_ = os.Setenv("TEST_INT", "42")
 		if getIntEnv("TEST_INT", 0) != 42 {
 			t.Errorf("Expected getIntEnv to return 42, got %d", getIntEnv("TEST_INT", 0))
 		}
 		if getIntEnv("TEST_INT_MISSING", 99) != 99 {
 			t.Errorf("Expected getIntEnv to return default 99, got %d", getIntEnv("TEST_INT_MISSING", 99))
 		}
-		os.Setenv("TEST_INT_INVALID", "not-a-number")
+		_ = os.Setenv("TEST_INT_INVALID", "not-a-number")
 		if getIntEnv("TEST_INT_INVALID", 100) != 100 {
 			t.Errorf("Expected getIntEnv to return default 100 for invalid, got %d", getIntEnv("TEST_INT_INVALID", 100))
 		}
 
 		// Test getBoolEnv
-		os.Setenv("TEST_BOOL_TRUE", "true")
+		_ = os.Setenv("TEST_BOOL_TRUE", "true")
 		if !getBoolEnv("TEST_BOOL_TRUE", false) {
 			t.Error("Expected getBoolEnv to return true")
 		}
-		os.Setenv("TEST_BOOL_FALSE", "false")
+		_ = os.Setenv("TEST_BOOL_FALSE", "false")
 		if getBoolEnv("TEST_BOOL_FALSE", true) {
 			t.Error("Expected getBoolEnv to return false")
 		}
 		if !getBoolEnv("TEST_BOOL_MISSING", true) {
 			t.Error("Expected getBoolEnv to return default true")
 		}
-		os.Setenv("TEST_BOOL_INVALID", "not-a-bool")
+		_ = os.Setenv("TEST_BOOL_INVALID", "not-a-bool")
 		if getBoolEnv("TEST_BOOL_INVALID", false) {
 			t.Error("Expected getBoolEnv to return default false for invalid")
 		}
 
 		// Test getDurationEnv
-		os.Setenv("TEST_DURATION", "5m")
+		_ = os.Setenv("TEST_DURATION", "5m")
 		if getDurationEnv("TEST_DURATION", time.Second) != 5*time.Minute {
 			t.Errorf("Expected getDurationEnv to return 5m, got %v", getDurationEnv("TEST_DURATION", time.Second))
 		}
 		if getDurationEnv("TEST_DURATION_MISSING", 10*time.Second) != 10*time.Second {
 			t.Errorf("Expected getDurationEnv to return default 10s, got %v", getDurationEnv("TEST_DURATION_MISSING", 10*time.Second))
 		}
-		os.Setenv("TEST_DURATION_INVALID", "not-a-duration")
+		_ = os.Setenv("TEST_DURATION_INVALID", "not-a-duration")
 		if getDurationEnv("TEST_DURATION_INVALID", time.Hour) != time.Hour {
 			t.Errorf("Expected getDurationEnv to return default 1h for invalid, got %v", getDurationEnv("TEST_DURATION_INVALID", time.Hour))
 		}
 
 		// Test getFloatEnv
-		os.Setenv("TEST_FLOAT", "3.14")
+		_ = os.Setenv("TEST_FLOAT", "3.14")
 		if getFloatEnv("TEST_FLOAT", 0) != 3.14 {
 			t.Errorf("Expected getFloatEnv to return 3.14, got %f", getFloatEnv("TEST_FLOAT", 0))
 		}
 		if getFloatEnv("TEST_FLOAT_MISSING", 2.71) != 2.71 {
 			t.Errorf("Expected getFloatEnv to return default 2.71, got %f", getFloatEnv("TEST_FLOAT_MISSING", 2.71))
 		}
-		os.Setenv("TEST_FLOAT_INVALID", "not-a-float")
+		_ = os.Setenv("TEST_FLOAT_INVALID", "not-a-float")
 		if getFloatEnv("TEST_FLOAT_INVALID", 1.0) != 1.0 {
 			t.Errorf("Expected getFloatEnv to return default 1.0 for invalid, got %f", getFloatEnv("TEST_FLOAT_INVALID", 1.0))
 		}
 
 		// Test getEnvSlice
-		os.Setenv("TEST_SLICE", "a,b,c,d")
+		_ = os.Setenv("TEST_SLICE", "a,b,c,d")
 		slice := getEnvSlice("TEST_SLICE", []string{})
 		if len(slice) != 4 || slice[0] != "a" || slice[1] != "b" || slice[2] != "c" || slice[3] != "d" {
 			t.Errorf("Expected getEnvSlice to return [a b c d], got %v", slice)
@@ -336,16 +336,16 @@ func TestLoad(t *testing.T) {
 		}
 
 		// Clean up
-		os.Unsetenv("TEST_INT")
-		os.Unsetenv("TEST_INT_INVALID")
-		os.Unsetenv("TEST_BOOL_TRUE")
-		os.Unsetenv("TEST_BOOL_FALSE")
-		os.Unsetenv("TEST_BOOL_INVALID")
-		os.Unsetenv("TEST_DURATION")
-		os.Unsetenv("TEST_DURATION_INVALID")
-		os.Unsetenv("TEST_FLOAT")
-		os.Unsetenv("TEST_FLOAT_INVALID")
-		os.Unsetenv("TEST_SLICE")
+		_ = os.Unsetenv("TEST_INT")
+		_ = os.Unsetenv("TEST_INT_INVALID")
+		_ = os.Unsetenv("TEST_BOOL_TRUE")
+		_ = os.Unsetenv("TEST_BOOL_FALSE")
+		_ = os.Unsetenv("TEST_BOOL_INVALID")
+		_ = os.Unsetenv("TEST_DURATION")
+		_ = os.Unsetenv("TEST_DURATION_INVALID")
+		_ = os.Unsetenv("TEST_FLOAT")
+		_ = os.Unsetenv("TEST_FLOAT_INVALID")
+		_ = os.Unsetenv("TEST_SLICE")
 	})
 }
 

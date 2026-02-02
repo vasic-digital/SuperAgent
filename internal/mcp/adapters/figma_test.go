@@ -98,7 +98,7 @@ func TestFigmaAdapter_GetFile(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -132,7 +132,7 @@ func TestFigmaAdapter_GetFileNodes(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -164,7 +164,7 @@ func TestFigmaAdapter_GetImages(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -202,7 +202,7 @@ func TestFigmaAdapter_GetComments(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -227,7 +227,7 @@ func TestFigmaAdapter_PostComment(t *testing.T) {
 		assert.Contains(t, r.URL.Path, "/files/test-file-key/comments")
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "Test comment", body["message"])
 
 		response := FigmaComment{
@@ -236,7 +236,7 @@ func TestFigmaAdapter_PostComment(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -268,7 +268,7 @@ func TestFigmaAdapter_GetTeamProjects(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -299,7 +299,7 @@ func TestFigmaAdapter_GetProjectFiles(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -321,7 +321,7 @@ func TestFigmaAdapter_GetProjectFiles(t *testing.T) {
 func TestFigmaAdapter_APIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "Invalid token"}`))
+		_, _ = w.Write([]byte(`{"error": "Invalid token"}`))
 	}))
 	defer server.Close()
 

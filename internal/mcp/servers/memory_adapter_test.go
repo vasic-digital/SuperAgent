@@ -36,7 +36,7 @@ func TestDefaultMemoryAdapterConfig(t *testing.T) {
 func TestMemoryAdapter_Initialize(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "memory-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := DefaultMemoryAdapterConfig()
 	config.StoragePath = tempDir
@@ -334,8 +334,8 @@ func TestMemoryAdapter_GetEntityRelations(t *testing.T) {
 	entity2, _ := adapter.CreateEntity(context.Background(), "Entity2", "test", nil, nil)
 	entity3, _ := adapter.CreateEntity(context.Background(), "Entity3", "test", nil, nil)
 
-	adapter.CreateRelation(context.Background(), entity1.ID, entity2.ID, "outgoing", 1.0, nil)
-	adapter.CreateRelation(context.Background(), entity3.ID, entity1.ID, "incoming", 1.0, nil)
+	_, _ = adapter.CreateRelation(context.Background(), entity1.ID, entity2.ID, "outgoing", 1.0, nil)
+	_, _ = adapter.CreateRelation(context.Background(), entity3.ID, entity1.ID, "incoming", 1.0, nil)
 
 	// All relations
 	relations, err := adapter.GetEntityRelations(context.Background(), entity1.ID, "all")
@@ -383,9 +383,9 @@ func TestMemoryAdapter_GetStatistics(t *testing.T) {
 	err := adapter.Initialize(context.Background())
 	require.NoError(t, err)
 
-	adapter.CreateEntity(context.Background(), "Person1", "person", nil, nil)
-	adapter.CreateEntity(context.Background(), "Person2", "person", nil, nil)
-	adapter.CreateEntity(context.Background(), "Company1", "company", nil, nil)
+	_, _ = adapter.CreateEntity(context.Background(), "Person1", "person", nil, nil)
+	_, _ = adapter.CreateEntity(context.Background(), "Person2", "person", nil, nil)
+	_, _ = adapter.CreateEntity(context.Background(), "Company1", "company", nil, nil)
 
 	stats, err := adapter.GetStatistics(context.Background())
 	require.NoError(t, err)
@@ -422,7 +422,7 @@ func TestMemoryAdapter_ReadGraph(t *testing.T) {
 
 	entity1, _ := adapter.CreateEntity(context.Background(), "Entity1", "test", nil, nil)
 	entity2, _ := adapter.CreateEntity(context.Background(), "Entity2", "test", nil, nil)
-	adapter.CreateRelation(context.Background(), entity1.ID, entity2.ID, "related_to", 1.0, nil)
+	_, _ = adapter.CreateRelation(context.Background(), entity1.ID, entity2.ID, "related_to", 1.0, nil)
 
 	result, err := adapter.ReadGraph(context.Background(), []string{"Entity1", "Entity2"})
 	require.NoError(t, err)
@@ -441,8 +441,8 @@ func TestMemoryAdapter_Clear(t *testing.T) {
 	err := adapter.Initialize(context.Background())
 	require.NoError(t, err)
 
-	adapter.CreateEntity(context.Background(), "Entity1", "test", nil, nil)
-	adapter.CreateEntity(context.Background(), "Entity2", "test", nil, nil)
+	_, _ = adapter.CreateEntity(context.Background(), "Entity1", "test", nil, nil)
+	_, _ = adapter.CreateEntity(context.Background(), "Entity2", "test", nil, nil)
 
 	err = adapter.Clear(context.Background())
 	require.NoError(t, err)
@@ -454,7 +454,7 @@ func TestMemoryAdapter_Clear(t *testing.T) {
 func TestMemoryAdapter_Persistence(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "memory-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create adapter and add data
 	config := DefaultMemoryAdapterConfig()
@@ -471,7 +471,7 @@ func TestMemoryAdapter_Persistence(t *testing.T) {
 	err = adapter.Save(context.Background())
 	require.NoError(t, err)
 
-	adapter.Close()
+	_ = adapter.Close()
 
 	// Create new adapter and verify data persisted
 	adapter2 := NewMemoryAdapter(config, logrus.New())
@@ -491,11 +491,11 @@ func TestMemoryAdapter_SearchWithRelevance(t *testing.T) {
 	err := adapter.Initialize(context.Background())
 	require.NoError(t, err)
 
-	adapter.CreateEntity(context.Background(), "Machine Learning", "concept",
+	_, _ = adapter.CreateEntity(context.Background(), "Machine Learning", "concept",
 		[]string{"AI technique", "Pattern recognition"}, nil)
-	adapter.CreateEntity(context.Background(), "Deep Learning", "concept",
+	_, _ = adapter.CreateEntity(context.Background(), "Deep Learning", "concept",
 		[]string{"Subset of machine learning", "Neural networks"}, nil)
-	adapter.CreateEntity(context.Background(), "Python", "language",
+	_, _ = adapter.CreateEntity(context.Background(), "Python", "language",
 		[]string{"Programming language", "Popular for ML"}, nil)
 
 	results, err := adapter.SearchWithRelevance(context.Background(), "machine learning", 10)
@@ -636,7 +636,7 @@ func TestMemoryAdapter_OpenNodes(t *testing.T) {
 
 	entity1, _ := adapter.CreateEntity(context.Background(), "Entity1", "test", nil, nil)
 	entity2, _ := adapter.CreateEntity(context.Background(), "Entity2", "test", nil, nil)
-	adapter.CreateRelation(context.Background(), entity1.ID, entity2.ID, "related_to", 1.0, nil)
+	_, _ = adapter.CreateRelation(context.Background(), entity1.ID, entity2.ID, "related_to", 1.0, nil)
 
 	nodes, err := adapter.OpenNodes(context.Background(), []string{entity1.ID})
 	require.NoError(t, err)

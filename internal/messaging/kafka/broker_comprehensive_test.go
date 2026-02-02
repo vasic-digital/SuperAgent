@@ -844,7 +844,7 @@ func TestBroker_LoggerNilDefault(t *testing.T) {
 func TestBroker_LoggerWithProduction(t *testing.T) {
 	logger, err := zap.NewProduction()
 	require.NoError(t, err)
-	defer logger.Sync()
+	defer func() { _ = logger.Sync() }()
 
 	broker := NewBroker(nil, logger)
 	assert.NotNil(t, broker.logger)
@@ -853,7 +853,7 @@ func TestBroker_LoggerWithProduction(t *testing.T) {
 func TestBroker_LoggerWithDevelopment(t *testing.T) {
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
-	defer logger.Sync()
+	defer func() { _ = logger.Sync() }()
 
 	broker := NewBroker(nil, logger)
 	assert.NotNil(t, broker.logger)

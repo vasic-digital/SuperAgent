@@ -1544,7 +1544,7 @@ func TestCompletionHandler_ExtremeValues(t *testing.T) {
 			c.Request.Header.Set("Content-Type", "application/json")
 
 			defer func() {
-				recover()
+				_ = recover()
 			}()
 
 			handler.Complete(c)
@@ -1584,7 +1584,7 @@ func TestCompletionHandler_LargeMessages(t *testing.T) {
 	c.Request.Header.Set("Content-Type", "application/json")
 
 	defer func() {
-		recover()
+		_ = recover()
 	}()
 
 	handler.Complete(c)
@@ -1630,7 +1630,7 @@ func TestCompletionHandler_RequestWithAllOptions(t *testing.T) {
 	c.Set("session_id", "comprehensive-test-session")
 
 	defer func() {
-		recover()
+		_ = recover()
 	}()
 
 	handler.Complete(c)

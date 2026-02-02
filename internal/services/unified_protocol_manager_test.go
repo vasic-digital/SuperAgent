@@ -111,7 +111,7 @@ func TestUnifiedProtocolManager_ExecuteRequest_ACP(t *testing.T) {
 			ID:      1,
 			Result:  map[string]interface{}{"status": "success", "data": "test-result"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer mockServer.Close()
 

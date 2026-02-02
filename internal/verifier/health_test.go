@@ -431,7 +431,7 @@ func TestHealthService_ConcurrentAccess(t *testing.T) {
 			done <- true
 		}()
 		go func() {
-			svc.GetProviderHealth("test")
+			_, _ = svc.GetProviderHealth("test")
 			done <- true
 		}()
 	}
@@ -616,7 +616,7 @@ func TestCircuitBreaker_Call_WithError(t *testing.T) {
 
 	// After threshold failures, circuit should open
 	for i := 0; i < 5; i++ {
-		cb.Call(func() error {
+		_ = cb.Call(func() error {
 			return fmt.Errorf("test error")
 		})
 	}

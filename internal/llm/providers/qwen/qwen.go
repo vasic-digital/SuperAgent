@@ -714,7 +714,7 @@ func (q *QwenProvider) makeRequestWithAuthRetry(ctx context.Context, req *QwenRe
 		// Check for auth errors (401) - retry once with a short delay
 		// This handles transient auth issues (token validation delays, auth service hiccups)
 		if isAuthRetryableStatus(resp.StatusCode) && allowAuthRetry {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			// Short delay before auth retry (500ms with jitter)
 			authRetryDelay := 500 * time.Millisecond
 			q.waitWithJitter(ctx, authRetryDelay)
@@ -724,7 +724,7 @@ func (q *QwenProvider) makeRequestWithAuthRetry(ctx context.Context, req *QwenRe
 
 		// Check for retryable status codes (429, 5xx)
 		if isRetryableStatus(resp.StatusCode) && attempt < q.retryConfig.MaxRetries {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
 			q.waitWithJitter(ctx, delay)
 			delay = q.nextDelay(delay)
@@ -732,7 +732,7 @@ func (q *QwenProvider) makeRequestWithAuthRetry(ctx context.Context, req *QwenRe
 		}
 
 		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if err != nil {
 			return nil, fmt.Errorf("failed to read response body: %w", err)
 		}
@@ -807,7 +807,7 @@ func (q *QwenProvider) makeStreamingRequest(ctx context.Context, req *QwenReques
 
 		// Check for retryable status codes
 		if isRetryableStatus(resp.StatusCode) && attempt < q.retryConfig.MaxRetries {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
 			q.waitWithJitter(ctx, delay)
 			delay = q.nextDelay(delay)
@@ -817,7 +817,7 @@ func (q *QwenProvider) makeStreamingRequest(ctx context.Context, req *QwenReques
 		// Check for non-OK status codes (non-retryable errors)
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			var qwenErr QwenError
 			if err := json.Unmarshal(body, &qwenErr); err == nil && qwenErr.Error.Message != "" {
 				return nil, fmt.Errorf("Qwen API error: %s (%s)", qwenErr.Error.Message, qwenErr.Error.Type)

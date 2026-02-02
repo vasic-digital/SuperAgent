@@ -343,7 +343,7 @@ func TestRedisAdapter_Integration(t *testing.T) {
 	if err != nil {
 		t.Skipf("Could not connect to Redis: %v", err)
 	}
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	// Test Set and Get
 	err = adapter.Set(context.Background(), "test:key1", "value1", 0)
@@ -376,7 +376,7 @@ func TestRedisAdapter_Integration(t *testing.T) {
 	assert.Equal(t, "value2", hashVal["field2"])
 
 	// Clean up
-	adapter.Delete(context.Background(), "test:hash1")
+	_, _ = adapter.Delete(context.Background(), "test:hash1")
 
 	// Test Info
 	info, err := adapter.Info(context.Background())

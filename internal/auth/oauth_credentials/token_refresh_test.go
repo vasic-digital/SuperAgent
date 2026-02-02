@@ -136,7 +136,7 @@ func TestTokenRefresher_RefreshClaudeToken(t *testing.T) {
 		refreshToken := r.FormValue("refresh_token")
 		if refreshToken == "" {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"error": "missing refresh_token"}`))
+			_, _ = w.Write([]byte(`{"error": "missing refresh_token"}`))
 			return
 		}
 
@@ -148,7 +148,7 @@ func TestTokenRefresher_RefreshClaudeToken(t *testing.T) {
 			TokenType:    "Bearer",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -270,7 +270,7 @@ func TestUpdateClaudeCredentialsFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create mock credentials file
 	credPath := filepath.Join(tmpDir, ".credentials.json")
@@ -305,7 +305,7 @@ func TestUpdateQwenCredentialsFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create mock credentials file
 	credPath := filepath.Join(tmpDir, "oauth_creds.json")

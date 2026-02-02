@@ -23,21 +23,21 @@ func TestPipeline_Initialize_Chroma_Extended(t *testing.T) {
 			switch {
 			case r.URL.Path == "/api/v1/heartbeat":
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
+				_ = json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
 			case r.URL.Path == "/api/v1/collections" && r.Method == "GET":
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode([]map[string]interface{}{
+				_ = json.NewEncoder(w).Encode([]map[string]interface{}{
 					{"name": "existing_collection", "id": "existing_id"},
 				})
 			case r.URL.Path == "/api/v1/collections" && r.Method == "POST":
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"id":   "coll_123",
 					"name": "test_collection",
 				})
 			default:
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]string{})
+				_ = json.NewEncoder(w).Encode(map[string]string{})
 			}
 		}))
 		defer server.Close()
@@ -63,19 +63,19 @@ func TestPipeline_Health_Connected(t *testing.T) {
 		switch {
 		case r.URL.Path == "/api/v1/heartbeat":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
+			_ = json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "GET":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode([]map[string]interface{}{})
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":   "coll_123",
 				"name": "test_collection",
 			})
 		default:
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{})
+			_ = json.NewEncoder(w).Encode(map[string]string{})
 		}
 	}))
 	defer server.Close()
@@ -103,23 +103,23 @@ func TestPipeline_IngestDocument_Connected(t *testing.T) {
 		switch {
 		case r.URL.Path == "/api/v1/heartbeat":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
+			_ = json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "GET":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode([]map[string]interface{}{})
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":   "coll_123",
 				"name": "test_collection",
 			})
 		case r.Method == "POST" && (r.URL.Path == "/api/v1/collections/test_collection/add" ||
 			r.URL.Path == "/api/v1/collections/coll_123/add"):
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 		default:
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{})
+			_ = json.NewEncoder(w).Encode(map[string]string{})
 		}
 	}))
 	defer server.Close()
@@ -153,20 +153,20 @@ func TestPipeline_Search_Connected(t *testing.T) {
 		switch {
 		case r.URL.Path == "/api/v1/heartbeat":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
+			_ = json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "GET":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode([]map[string]interface{}{})
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":   "coll_123",
 				"name": "test_collection",
 			})
 		case r.Method == "POST" && (r.URL.Path == "/api/v1/collections/test_collection/query" ||
 			r.URL.Path == "/api/v1/collections/coll_123/query"):
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"ids":       [][]string{{"id1", "id2"}},
 				"documents": [][]string{{"content1", "content2"}},
 				"distances": [][]float32{{0.1, 0.2}},
@@ -176,7 +176,7 @@ func TestPipeline_Search_Connected(t *testing.T) {
 			})
 		default:
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{})
+			_ = json.NewEncoder(w).Encode(map[string]string{})
 		}
 	}))
 	defer server.Close()
@@ -205,27 +205,27 @@ func TestPipeline_GetStats_Connected(t *testing.T) {
 		switch {
 		case r.URL.Path == "/api/v1/heartbeat":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
+			_ = json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "GET":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode([]map[string]interface{}{})
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":   "coll_123",
 				"name": "test_collection",
 			})
 		case r.URL.Path == "/api/v1/collections/test_collection" ||
 			r.URL.Path == "/api/v1/collections/coll_123":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":    "coll_123",
 				"name":  "test_collection",
 				"count": 100,
 			})
 		default:
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{})
+			_ = json.NewEncoder(w).Encode(map[string]string{})
 		}
 	}))
 	defer server.Close()
@@ -254,23 +254,23 @@ func TestPipeline_DeleteDocument_Connected(t *testing.T) {
 		switch {
 		case r.URL.Path == "/api/v1/heartbeat":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
+			_ = json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": 12345})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "GET":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode([]map[string]interface{}{})
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{})
 		case r.URL.Path == "/api/v1/collections" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":   "coll_123",
 				"name": "test_collection",
 			})
 		case r.Method == "POST" && (r.URL.Path == "/api/v1/collections/test_collection/delete" ||
 			r.URL.Path == "/api/v1/collections/coll_123/delete"):
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 		default:
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{})
+			_ = json.NewEncoder(w).Encode(map[string]string{})
 		}
 	}))
 	defer server.Close()
@@ -376,7 +376,7 @@ func TestEmbeddingModelRegistry(t *testing.T) {
 		registry := models.NewEmbeddingModelRegistry(config)
 
 		mock1 := &MockEmbeddingModelForRAG{dim: 384}
-		registry.Register("mock", mock1)
+		_ = registry.Register("mock", mock1)
 
 		// Get model should return the registered mock
 		model, err := registry.Get("mock")

@@ -62,7 +62,7 @@ func TestComplete(t *testing.T) {
 			assert.Contains(t, r.Header.Get("Authorization"), "Token ")
 
 			var req PredictionRequest
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "meta/llama-2-70b-chat", req.Model)
 
 			// Return initial response with URLs
@@ -76,7 +76,7 @@ func TestComplete(t *testing.T) {
 				},
 			}
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 
@@ -95,7 +95,7 @@ func TestComplete(t *testing.T) {
 				Status: status,
 				Output: output,
 			}
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		}
 	}))
 	serverURL = server.URL
@@ -125,7 +125,7 @@ func TestComplete(t *testing.T) {
 func TestCompleteAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"detail": "Invalid API token"}`))
+		_, _ = w.Write([]byte(`{"detail": "Invalid API token"}`))
 	}))
 	defer server.Close()
 
@@ -151,7 +151,7 @@ func TestCompletePredictionFailed(t *testing.T) {
 				},
 			}
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 
@@ -160,7 +160,7 @@ func TestCompletePredictionFailed(t *testing.T) {
 			Status: "failed",
 			Error:  "Model failed to generate response",
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -179,7 +179,7 @@ func TestHealthCheck(t *testing.T) {
 		assert.Equal(t, "GET", r.Method)
 		assert.Contains(t, r.Header.Get("Authorization"), "Token ")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"results": []}`))
+		_, _ = w.Write([]byte(`{"results": []}`))
 	}))
 	defer server.Close()
 
@@ -193,7 +193,7 @@ func TestHealthCheck(t *testing.T) {
 	resp, err := provider.httpClient.Do(httpReq)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func TestGetCapabilities(t *testing.T) {

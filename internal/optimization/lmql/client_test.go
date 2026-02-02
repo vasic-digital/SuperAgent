@@ -50,7 +50,7 @@ func TestClient_ExecuteQuery(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -86,7 +86,7 @@ func TestClient_GenerateConstrained(t *testing.T) {
 		assert.Equal(t, "/constrained", r.URL.Path)
 
 		var req ConstrainedRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotEmpty(t, req.Prompt)
 		assert.NotEmpty(t, req.Constraints)
 
@@ -100,7 +100,7 @@ func TestClient_GenerateConstrained(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -123,7 +123,7 @@ func TestClient_GenerateConstrained(t *testing.T) {
 func TestClient_GenerateWithMaxLength(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req ConstrainedRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		// Verify max_length constraint
 		hasMaxLength := false
@@ -141,7 +141,7 @@ func TestClient_GenerateWithMaxLength(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -156,7 +156,7 @@ func TestClient_GenerateWithMaxLength(t *testing.T) {
 func TestClient_GenerateContaining(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req ConstrainedRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		// Verify contains constraints
 		assert.GreaterOrEqual(t, len(req.Constraints), 2)
@@ -167,7 +167,7 @@ func TestClient_GenerateContaining(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -182,7 +182,7 @@ func TestClient_GenerateContaining(t *testing.T) {
 func TestClient_GenerateWithPattern(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req ConstrainedRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		// Verify regex constraint
 		hasRegex := false
@@ -199,7 +199,7 @@ func TestClient_GenerateWithPattern(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -222,7 +222,7 @@ func TestClient_Health(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -238,7 +238,7 @@ func TestClient_IsAvailable(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := &HealthResponse{Status: "healthy"}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -263,7 +263,7 @@ func TestClient_IsAvailable_Unhealthy(t *testing.T) {
 func TestClient_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "internal error"}`))
+		_, _ = w.Write([]byte(`{"error": "internal error"}`))
 	}))
 	defer server.Close()
 
@@ -301,7 +301,7 @@ func TestClient_Decode(t *testing.T) {
 		assert.Equal(t, "/decode", r.URL.Path)
 
 		var req DecodingRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotEmpty(t, req.Prompt)
 		assert.NotEmpty(t, req.Strategy)
 
@@ -314,7 +314,7 @@ func TestClient_Decode(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -335,7 +335,7 @@ func TestClient_Decode(t *testing.T) {
 func TestClient_Decode_DefaultStrategy(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req DecodingRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, "argmax", req.Strategy) // Default strategy
 
 		resp := &DecodingResponse{
@@ -344,7 +344,7 @@ func TestClient_Decode_DefaultStrategy(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -361,7 +361,7 @@ func TestClient_Decode_DefaultStrategy(t *testing.T) {
 func TestClient_DecodeGreedy(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req DecodingRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, "argmax", req.Strategy)
 
 		resp := &DecodingResponse{
@@ -370,7 +370,7 @@ func TestClient_DecodeGreedy(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -390,7 +390,7 @@ func TestClient_DecodeGreedy_NoOutput(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -405,7 +405,7 @@ func TestClient_DecodeGreedy_NoOutput(t *testing.T) {
 func TestClient_DecodeSample(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req DecodingRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, "sample", req.Strategy)
 		assert.Equal(t, 5, req.NumSamples)
 		assert.Equal(t, 0.9, req.Temperature)
@@ -416,7 +416,7 @@ func TestClient_DecodeSample(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -431,7 +431,7 @@ func TestClient_DecodeSample(t *testing.T) {
 func TestClient_DecodeSample_Defaults(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req DecodingRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, 3, req.NumSamples)    // Default
 		assert.Equal(t, 0.7, req.Temperature) // Default
 
@@ -441,7 +441,7 @@ func TestClient_DecodeSample_Defaults(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -456,7 +456,7 @@ func TestClient_DecodeSample_Defaults(t *testing.T) {
 func TestClient_DecodeBeam(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req DecodingRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, "beam", req.Strategy)
 		assert.Equal(t, 5, req.BeamWidth)
 
@@ -466,7 +466,7 @@ func TestClient_DecodeBeam(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -481,7 +481,7 @@ func TestClient_DecodeBeam(t *testing.T) {
 func TestClient_DecodeBeam_DefaultWidth(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req DecodingRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, 3, req.BeamWidth) // Default
 
 		resp := &DecodingResponse{
@@ -490,7 +490,7 @@ func TestClient_DecodeBeam_DefaultWidth(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -517,7 +517,7 @@ func TestClient_ScoreCompletions(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -545,7 +545,7 @@ func TestClient_SelectBestCompletion(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -562,7 +562,7 @@ func TestClient_SelectBestCompletion(t *testing.T) {
 func TestClient_ExecuteQuery_DefaultValues(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req QueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, 0.7, req.Temperature) // Default
 		assert.Equal(t, 500, req.MaxTokens)   // Default
 
@@ -572,7 +572,7 @@ func TestClient_ExecuteQuery_DefaultValues(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -589,7 +589,7 @@ func TestClient_ExecuteQuery_DefaultValues(t *testing.T) {
 func TestClient_GenerateConstrained_DefaultTemperature(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req ConstrainedRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, 0.7, req.Temperature) // Default
 
 		resp := &ConstrainedResponse{
@@ -598,7 +598,7 @@ func TestClient_GenerateConstrained_DefaultTemperature(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 

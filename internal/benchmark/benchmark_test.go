@@ -333,8 +333,8 @@ func TestBenchmarkSystem_GenerateLeaderboard(t *testing.T) {
 			ProviderName:  "provider-" + string(rune('A'+i)),
 			Config:        &BenchmarkConfig{MaxTasks: 1, Timeout: 30 * time.Second},
 		}
-		runner.CreateRun(context.Background(), run)
-		runner.StartRun(context.Background(), run.ID)
+		_ = runner.CreateRun(context.Background(), run)
+		_ = runner.StartRun(context.Background(), run.ID)
 	}
 
 	time.Sleep(2 * time.Second)

@@ -122,7 +122,7 @@ func TestGeminiProvider_Complete_Success(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -192,7 +192,7 @@ func TestGeminiProvider_Complete_WithMessages(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -222,7 +222,7 @@ func TestGeminiProvider_Complete_ErrorResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": {"code": 401, "message": "API key not valid"}}`))
+		_, _ = w.Write([]byte(`{"error": {"code": 401, "message": "API key not valid"}}`))
 	}))
 	defer server.Close()
 
@@ -256,7 +256,7 @@ func TestGeminiProvider_Complete_NoCandidates(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -303,7 +303,7 @@ func TestGeminiProvider_Complete_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer server.Close()
 
@@ -338,7 +338,7 @@ func TestGeminiProvider_CompleteStream(t *testing.T) {
 		}
 
 		for _, data := range streamData {
-			w.Write([]byte(data + "\n"))
+			_, _ = w.Write([]byte(data + "\n"))
 			if f, ok := w.(http.Flusher); ok {
 				f.Flush()
 			}
@@ -377,7 +377,7 @@ func TestGeminiProvider_CompleteStream_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "Invalid API key"}`))
+		_, _ = w.Write([]byte(`{"error": "Invalid API key"}`))
 	}))
 	defer server.Close()
 
@@ -403,7 +403,7 @@ func TestGeminiProvider_HealthCheck_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"models": []map[string]string{
 				{"name": "gemini-pro"},
 				{"name": "gemini-ultra"},
@@ -423,7 +423,7 @@ func TestGeminiProvider_HealthCheck_Success(t *testing.T) {
 func TestGeminiProvider_HealthCheck_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": {"code": 401, "message": "Invalid API key"}}`))
+		_, _ = w.Write([]byte(`{"error": {"code": 401, "message": "Invalid API key"}}`))
 	}))
 	defer server.Close()
 
@@ -522,7 +522,7 @@ func TestGeminiProvider_Complete_ContextTimeout(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -579,7 +579,7 @@ func TestGeminiProvider_Complete_WithStopSequences(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -652,7 +652,7 @@ func TestGeminiProvider_Complete_WithTools(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -714,7 +714,7 @@ func TestGeminiProvider_Complete_WithToolChoice(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				var reqBody GeminiRequest
 				body, _ := io.ReadAll(r.Body)
-				json.Unmarshal(body, &reqBody)
+				_ = json.Unmarshal(body, &reqBody)
 				capturedToolConfig = reqBody.ToolConfig
 
 				response := GeminiResponse{
@@ -728,7 +728,7 @@ func TestGeminiProvider_Complete_WithToolChoice(t *testing.T) {
 					},
 				}
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(response)
+				_ = json.NewEncoder(w).Encode(response)
 			}))
 			defer server.Close()
 
@@ -873,7 +873,7 @@ func TestGeminiProvider_Retry_RateLimited(t *testing.T) {
 			},
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -915,7 +915,7 @@ func TestGeminiProvider_Retry_ServerError(t *testing.T) {
 			},
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -943,7 +943,7 @@ func TestGeminiProvider_Retry_AuthError(t *testing.T) {
 		attempts++
 		if attempts < 2 {
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error": "Invalid API key"}`))
+			_, _ = w.Write([]byte(`{"error": "Invalid API key"}`))
 			return
 		}
 		response := GeminiResponse{
@@ -952,7 +952,7 @@ func TestGeminiProvider_Retry_AuthError(t *testing.T) {
 			},
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1040,9 +1040,9 @@ func TestGeminiProvider_CompleteStream_MalformedJSON(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		// Send some malformed JSON mixed with valid JSON
-		w.Write([]byte("data: {invalid json}\n"))
-		w.Write([]byte("data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Valid chunk\"}]},\"finishReason\":\"\"}]}\n"))
-		w.Write([]byte("data: [DONE]\n"))
+		_, _ = w.Write([]byte("data: {invalid json}\n"))
+		_, _ = w.Write([]byte("data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Valid chunk\"}]},\"finishReason\":\"\"}]}\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n"))
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
 		}
@@ -1071,7 +1071,7 @@ func TestGeminiProvider_CompleteStream_ArrayWrapper(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		// Send response with array wrapper (as Gemini sometimes does)
-		w.Write([]byte("[{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Array wrapped\"}]},\"finishReason\":\"STOP\"}]}]\n"))
+		_, _ = w.Write([]byte("[{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Array wrapped\"}]},\"finishReason\":\"STOP\"}]}]\n"))
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
 		}

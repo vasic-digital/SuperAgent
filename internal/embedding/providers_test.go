@@ -60,7 +60,7 @@ func TestCohereEmbedding_Embed(t *testing.T) {
 
 		// Parse request
 		var req CohereEmbedRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, "embed-english-v3.0", req.Model)
 		assert.Equal(t, "search_document", req.InputType)
 
@@ -69,7 +69,7 @@ func TestCohereEmbedding_Embed(t *testing.T) {
 			Embeddings: [][]float64{make([]float64, 1024)},
 			Texts:      req.Texts,
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -100,7 +100,7 @@ func TestCohereEmbedding_EmbedBatch(t *testing.T) {
 				make([]float64, 1024),
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -134,7 +134,7 @@ func TestCohereEmbedding_EmbeddingsObjResponse(t *testing.T) {
 				"float": [][]float64{make([]float64, 1024)},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -163,7 +163,7 @@ func TestCohereEmbedding_Cache(t *testing.T) {
 		response := CohereEmbedResponse{
 			Embeddings: [][]float64{make([]float64, 1024)},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -194,7 +194,7 @@ func TestCohereEmbedding_Cache(t *testing.T) {
 func TestCohereEmbedding_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"message": "invalid api key"}`))
+		_, _ = w.Write([]byte(`{"message": "invalid api key"}`))
 	}))
 	defer server.Close()
 
@@ -271,7 +271,7 @@ func TestVoyageEmbedding_Embed(t *testing.T) {
 
 		// Parse request
 		var req VoyageEmbedRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, "voyage-3", req.Model)
 		assert.Equal(t, "document", req.InputType)
 
@@ -286,7 +286,7 @@ func TestVoyageEmbedding_Embed(t *testing.T) {
 			},
 			Model: "voyage-3",
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -321,7 +321,7 @@ func TestVoyageEmbedding_EmbedBatch(t *testing.T) {
 				{Object: "embedding", Embedding: make([]float64, 1024), Index: 1},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -356,7 +356,7 @@ func TestVoyageEmbedding_Cache(t *testing.T) {
 				{Embedding: make([]float64, 1024), Index: 0},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -385,7 +385,7 @@ func TestVoyageEmbedding_Cache(t *testing.T) {
 func TestVoyageEmbedding_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte(`{"error": "rate limit exceeded"}`))
+		_, _ = w.Write([]byte(`{"error": "rate limit exceeded"}`))
 	}))
 	defer server.Close()
 
@@ -459,7 +459,7 @@ func TestJinaEmbedding_Embed(t *testing.T) {
 		assert.Contains(t, r.Header.Get("Authorization"), "Bearer ")
 
 		var req JinaEmbedRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, "jina-embeddings-v3", req.Model)
 		assert.Equal(t, "retrieval.document", req.Task)
 
@@ -473,7 +473,7 @@ func TestJinaEmbedding_Embed(t *testing.T) {
 				{Object: "embedding", Index: 0, Embedding: make([]float64, 1024)},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -507,7 +507,7 @@ func TestJinaEmbedding_EmbedBatch(t *testing.T) {
 				{Index: 1, Embedding: make([]float64, 1024)},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -542,7 +542,7 @@ func TestJinaEmbedding_Cache(t *testing.T) {
 				{Index: 0, Embedding: make([]float64, 1024)},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -571,7 +571,7 @@ func TestJinaEmbedding_Cache(t *testing.T) {
 func TestJinaEmbedding_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error": "invalid token"}`))
+		_, _ = w.Write([]byte(`{"error": "invalid token"}`))
 	}))
 	defer server.Close()
 
@@ -659,7 +659,7 @@ func TestGoogleEmbedding_Embed(t *testing.T) {
 				}{Values: make([]float64, 768)}},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -706,7 +706,7 @@ func TestGoogleEmbedding_EmbedBatch(t *testing.T) {
 				}{Values: make([]float64, 768)}},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -749,7 +749,7 @@ func TestGoogleEmbedding_Cache(t *testing.T) {
 				}{Values: make([]float64, 768)}},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -778,7 +778,7 @@ func TestGoogleEmbedding_Cache(t *testing.T) {
 func TestGoogleEmbedding_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": {"message": "invalid credentials"}}`))
+		_, _ = w.Write([]byte(`{"error": {"message": "invalid credentials"}}`))
 	}))
 	defer server.Close()
 
@@ -860,7 +860,7 @@ func TestBedrockEmbedding_TitanEmbed(t *testing.T) {
 			Embedding:      make([]float64, 1024),
 			InputTextToken: 5,
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -886,7 +886,7 @@ func TestBedrockEmbedding_CohereEmbed(t *testing.T) {
 		response := BedrockCohereResponse{
 			Embeddings: [][]float64{make([]float64, 1024)},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -915,7 +915,7 @@ func TestBedrockEmbedding_EmbedBatch_Titan(t *testing.T) {
 			Embedding:      make([]float64, 1024),
 			InputTextToken: 5,
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -946,7 +946,7 @@ func TestBedrockEmbedding_EmbedBatch_Cohere(t *testing.T) {
 				make([]float64, 1024),
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -975,7 +975,7 @@ func TestBedrockEmbedding_Cache(t *testing.T) {
 			Embedding:      make([]float64, 1024),
 			InputTextToken: 5,
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1003,7 +1003,7 @@ func TestBedrockEmbedding_Cache(t *testing.T) {
 func TestBedrockEmbedding_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"message": "Access Denied"}`))
+		_, _ = w.Write([]byte(`{"message": "Access Denied"}`))
 	}))
 	defer server.Close()
 
@@ -1242,7 +1242,7 @@ func TestCohereEmbedding_NoEmbeddingReturned(t *testing.T) {
 		response := map[string]interface{}{
 			"id": "test-id",
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1272,7 +1272,7 @@ func TestVoyageEmbedding_NoEmbeddingReturned(t *testing.T) {
 				Index     int       `json:"index"`
 			}{},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1302,7 +1302,7 @@ func TestJinaEmbedding_NoEmbeddingReturned(t *testing.T) {
 				Embedding []float64 `json:"embedding"`
 			}{},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1335,7 +1335,7 @@ func TestGoogleEmbedding_NoEmbeddingReturned(t *testing.T) {
 				} `json:"embeddings"`
 			}{},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1374,7 +1374,7 @@ func TestCohereEmbedding_RequestBody(t *testing.T) {
 		response := CohereEmbedResponse{
 			Embeddings: [][]float64{make([]float64, 1024)},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1414,7 +1414,7 @@ func TestJinaEmbedding_RequestBody(t *testing.T) {
 				{Index: 0, Embedding: make([]float64, 1024)},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 

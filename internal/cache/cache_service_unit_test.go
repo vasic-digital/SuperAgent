@@ -31,7 +31,7 @@ func setupCacheServiceWithMiniRedis(t *testing.T) (*CacheService, *miniredis.Min
 	}
 
 	t.Cleanup(func() {
-		service.Close()
+		_ = service.Close()
 		mr.Close()
 	})
 
@@ -324,7 +324,7 @@ func TestCacheService_InvalidateUserCache_Enabled(t *testing.T) {
 	require.NoError(t, err)
 
 	// Also set some data with user prefix directly
-	mr.Set("user:"+userID+":other", "data")
+	_ = mr.Set("user:"+userID+":other", "data")
 
 	// Verify keys are tracked
 	assert.Equal(t, 2, service.GetUserKeyCount(userID))
@@ -474,7 +474,7 @@ func TestCacheService_GetHitCount_Enabled(t *testing.T) {
 
 	// Get the response a few times to increment hit count
 	for i := 0; i < 3; i++ {
-		service.GetLLMResponse(ctx, req)
+		_, _ = service.GetLLMResponse(ctx, req)
 	}
 
 	// Get hit count for the key
@@ -717,10 +717,10 @@ func TestCacheService_DeleteByPattern(t *testing.T) {
 	ctx := context.Background()
 
 	// Set up some keys with pattern
-	mr.Set("user:test:key1", "value1")
-	mr.Set("user:test:key2", "value2")
-	mr.Set("user:test:key3", "value3")
-	mr.Set("other:key", "other")
+	_ = mr.Set("user:test:key1", "value1")
+	_ = mr.Set("user:test:key2", "value2")
+	_ = mr.Set("user:test:key3", "value3")
+	_ = mr.Set("other:key", "other")
 
 	// Delete by pattern
 	err := service.deleteByPattern(ctx, "user:test:*")

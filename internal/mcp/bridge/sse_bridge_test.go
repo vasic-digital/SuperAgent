@@ -39,7 +39,7 @@ func createTempDir(t *testing.T) string {
 	dir, err := os.MkdirTemp("", "sse_bridge_test_*")
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		os.RemoveAll(dir)
+		_ = os.RemoveAll(dir)
 	})
 	return dir
 }
@@ -265,7 +265,7 @@ func TestSSEBridge_Start(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		assert.Equal(t, StateRunning, bridge.State())
 		assert.True(t, bridge.IsHealthy())
@@ -286,7 +286,7 @@ func TestSSEBridge_Start(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		err = bridge.Start()
 		assert.Error(t, err)
@@ -384,7 +384,7 @@ func TestSSEBridge_HandleHealth(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		// Give it a moment to stabilize
 		time.Sleep(100 * time.Millisecond)
@@ -460,7 +460,7 @@ func TestSSEBridge_HandleMessage(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -497,7 +497,7 @@ func TestSSEBridge_HandleMessage(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -527,7 +527,7 @@ func TestSSEBridge_HandleMessage(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		req := httptest.NewRequest(http.MethodGet, "/message", nil)
 		w := httptest.NewRecorder()
@@ -559,7 +559,7 @@ func TestSSEBridge_HandleMessage(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -593,7 +593,7 @@ func TestSSEBridge_HandleMessage(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -627,7 +627,7 @@ func TestSSEBridge_HandleMessage(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -693,7 +693,7 @@ func TestSSEBridge_HandleSSE(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -760,7 +760,7 @@ func TestSSEBridge_HandleSSE(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		req := httptest.NewRequest(http.MethodPost, "/sse", nil)
 		w := httptest.NewRecorder()
@@ -829,7 +829,7 @@ func TestSSEBridge_SendRequest(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -879,7 +879,7 @@ func TestSSEBridge_SendNotification(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -926,7 +926,7 @@ func TestSSEBridge_Metrics(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -1037,7 +1037,7 @@ func TestSSEBridge_EdgeCases(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -1073,7 +1073,7 @@ func TestSSEBridge_EdgeCases(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -1124,7 +1124,7 @@ func TestSSEBridge_EdgeCases(t *testing.T) {
 
 		// Start will fail because process exits immediately
 		_ = bridge.Start()
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		// The callback may or may not be called depending on timing
 		// This test just verifies the callback mechanism doesn't crash
@@ -1174,7 +1174,7 @@ done
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -1232,7 +1232,7 @@ done
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -1261,7 +1261,7 @@ func BenchmarkSSEBridge_HandleMessage(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	// Simple echo script for benchmarking
 	script := `#!/bin/bash
@@ -1295,7 +1295,7 @@ done
 	if err := bridge.Start(); err != nil {
 		b.Fatal(err)
 	}
-	defer bridge.Shutdown(context.Background())
+	defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -1321,7 +1321,7 @@ func BenchmarkSSEBridge_SendRequest(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	script := `#!/bin/bash
 while IFS= read -r line; do
@@ -1354,7 +1354,7 @@ done
 	if err := bridge.Start(); err != nil {
 		b.Fatal(err)
 	}
-	defer bridge.Shutdown(context.Background())
+	defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -1362,7 +1362,7 @@ done
 
 	for i := 0; i < b.N; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		bridge.SendRequest(ctx, "ping", nil)
+		_, _ = bridge.SendRequest(ctx, "ping", nil)
 		cancel()
 	}
 }
@@ -1453,7 +1453,7 @@ done
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -1493,7 +1493,7 @@ func TestSSEBridge_ConcurrentWrites(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -1554,7 +1554,7 @@ func TestSSEBridge_Broadcast(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -1695,7 +1695,7 @@ done
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(200 * time.Millisecond)
 
@@ -1729,7 +1729,7 @@ func TestSSEBridge_HealthCheckDetails(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 

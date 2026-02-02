@@ -45,14 +45,14 @@ func TestACPClient_ExecuteHTTP_Success(t *testing.T) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 		var req ACPProtocolRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		resp := ACPProtocolResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Result:  map[string]string{"status": "success"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -79,7 +79,7 @@ func TestACPClient_ExecuteHTTP_ServerError(t *testing.T) {
 	// Create test server that returns error
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("internal server error"))
+		_, _ = w.Write([]byte("internal server error"))
 	}))
 	defer server.Close()
 
@@ -120,7 +120,7 @@ func TestACPClient_ExecuteHTTP_InvalidURL(t *testing.T) {
 func TestACPClient_ExecuteHTTP_InvalidJSON(t *testing.T) {
 	// Create test server that returns invalid JSON
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("not valid json"))
+		_, _ = w.Write([]byte("not valid json"))
 	}))
 	defer server.Close()
 
@@ -173,7 +173,7 @@ func TestACPClient_ExecuteHTTP_WithRetries(t *testing.T) {
 			ID:      1,
 			Result:  "success",
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -202,17 +202,17 @@ func TestACPClient_ExecuteWS_Success(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		var req ACPProtocolRequest
-		conn.ReadJSON(&req)
+		_ = conn.ReadJSON(&req)
 
 		resp := ACPProtocolResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Result:  map[string]string{"status": "ws_success"},
 		}
-		conn.WriteJSON(resp)
+		_ = conn.WriteJSON(resp)
 	}))
 	defer server.Close()
 
@@ -269,7 +269,7 @@ func TestACPClient_ExecuteWS_ReuseConnection(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		for {
 			var req ACPProtocolRequest
@@ -324,7 +324,7 @@ func TestACPClient_GetServerInfo_Success(t *testing.T) {
 				{Name: "test", Description: "Test capability"},
 			},
 		}
-		json.NewEncoder(w).Encode(info)
+		_ = json.NewEncoder(w).Encode(info)
 	}))
 	defer server.Close()
 
@@ -347,7 +347,7 @@ func TestACPClient_GetServerInfo_WithInfoSuffix(t *testing.T) {
 			Name:    "Test Server",
 			Version: "1.0.0",
 		}
-		json.NewEncoder(w).Encode(info)
+		_ = json.NewEncoder(w).Encode(info)
 	}))
 	defer server.Close()
 
@@ -574,14 +574,14 @@ func TestACPManager_ExecuteACPAction_HTTPSuccess(t *testing.T) {
 	// Create test HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req ACPProtocolRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		resp := ACPProtocolResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Result:  map[string]string{"status": "completed"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -614,17 +614,17 @@ func TestACPManager_ExecuteACPAction_WebSocketSuccess(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		var req ACPProtocolRequest
-		conn.ReadJSON(&req)
+		_ = conn.ReadJSON(&req)
 
 		resp := ACPProtocolResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Result:  map[string]string{"status": "ws_completed"},
 		}
-		conn.WriteJSON(resp)
+		_ = conn.WriteJSON(resp)
 	}))
 	defer server.Close()
 
@@ -637,7 +637,7 @@ func TestACPManager_ExecuteACPAction_WebSocketSuccess(t *testing.T) {
 		},
 	}
 	manager := NewACPManagerWithConfig(nil, nil, log, cfg)
-	defer manager.Close()
+	defer func() { _ = manager.Close() }()
 	ctx := context.Background()
 
 	req := ACPRequest{
@@ -722,7 +722,7 @@ func TestACPManager_ExecuteACPAction_RPCError(t *testing.T) {
 				Message: "Invalid Request",
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -846,7 +846,7 @@ func TestACPManager_SyncACPServer_Success(t *testing.T) {
 				{Name: "capability2", Description: "Second capability"},
 			},
 		}
-		json.NewEncoder(w).Encode(info)
+		_ = json.NewEncoder(w).Encode(info)
 	}))
 	defer server.Close()
 
@@ -877,7 +877,7 @@ func TestACPManager_SyncACPServer_WebSocketURL(t *testing.T) {
 			Name:    "WS Synced Server",
 			Version: "1.5.0",
 		}
-		json.NewEncoder(w).Encode(info)
+		_ = json.NewEncoder(w).Encode(info)
 	}))
 	defer server.Close()
 
@@ -1164,7 +1164,7 @@ func TestACPManager_ConcurrentAccess(t *testing.T) {
 				URL:     fmt.Sprintf("http://localhost:%d", 8000+id),
 				Enabled: true,
 			}
-			manager.RegisterServer(server)
+			_ = manager.RegisterServer(server)
 		}(i)
 	}
 
@@ -1173,7 +1173,7 @@ func TestACPManager_ConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			manager.ListACPServers(ctx)
+			_, _ = manager.ListACPServers(ctx)
 		}()
 	}
 
@@ -1182,7 +1182,7 @@ func TestACPManager_ConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			manager.GetACPStats(ctx)
+			_, _ = manager.GetACPStats(ctx)
 		}()
 	}
 
@@ -1212,7 +1212,7 @@ func BenchmarkACPManager_ListACPServers(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		manager.ListACPServers(ctx)
+		_, _ = manager.ListACPServers(ctx)
 	}
 }
 
@@ -1230,7 +1230,7 @@ func BenchmarkACPManager_GetACPServer(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		manager.GetACPServer(ctx, "server-1")
+		_, _ = manager.GetACPServer(ctx, "server-1")
 	}
 }
 
@@ -1249,7 +1249,7 @@ func BenchmarkACPManager_GetACPStats(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		manager.GetACPStats(ctx)
+		_, _ = manager.GetACPStats(ctx)
 	}
 }
 
@@ -1262,7 +1262,7 @@ func TestACPClient_ExecuteWS_WriteError(t *testing.T) {
 			return
 		}
 		// Close connection immediately to cause write error
-		conn.Close()
+		_ = conn.Close()
 	}))
 	defer server.Close()
 
@@ -1297,11 +1297,11 @@ func TestACPClient_ExecuteWS_ReadError(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		// Read request but close connection before sending response
 		var req ACPProtocolRequest
-		conn.ReadJSON(&req)
+		_ = conn.ReadJSON(&req)
 		// Close without responding
 	}))
 	defer server.Close()
@@ -1327,7 +1327,7 @@ func TestACPClient_ExecuteWS_ReadError(t *testing.T) {
 
 func TestACPClient_GetServerInfo_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("not valid json"))
+		_, _ = w.Write([]byte("not valid json"))
 	}))
 	defer server.Close()
 
@@ -1360,7 +1360,7 @@ func BenchmarkACPClient_ExecuteHTTP(b *testing.B) {
 			ID:      1,
 			Result:  "success",
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -1377,6 +1377,6 @@ func BenchmarkACPClient_ExecuteHTTP(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		client.ExecuteHTTP(ctx, server.URL, req)
+		_, _ = client.ExecuteHTTP(ctx, server.URL, req)
 	}
 }

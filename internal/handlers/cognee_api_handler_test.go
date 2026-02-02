@@ -32,28 +32,28 @@ func setupCogneeTestServer() (*httptest.Server, *services.CogneeService) {
 		// Root endpoint for fast health check (IsHealthy uses this now)
 		case r.URL.Path == "/" || r.URL.Path == "/health":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"message": "Hello, World, I am alive!"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"message": "Hello, World, I am alive!"})
 
 		// Auth endpoints for automatic authentication
 		case r.URL.Path == "/api/v1/auth/register" && r.Method == "POST":
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": "test-user-id", "email": "test@test.com"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"id": "test-user-id", "email": "test@test.com"})
 
 		case r.URL.Path == "/api/v1/auth/login" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"access_token": "test-token", "token_type": "bearer"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"access_token": "test-token", "token_type": "bearer"})
 
 		case r.URL.Path == "/api/v1/add" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": "mem-123", "success": true})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"id": "mem-123", "success": true})
 
 		case r.URL.Path == "/api/v1/memify" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": "mem-123", "vector_id": "vec-123", "status": "success"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"id": "mem-123", "vector_id": "vec-123", "status": "success"})
 
 		case r.URL.Path == "/api/v1/search" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []interface{}{
 					map[string]interface{}{"content": "test result", "score": 0.95},
 				},
@@ -61,11 +61,11 @@ func setupCogneeTestServer() (*httptest.Server, *services.CogneeService) {
 
 		case r.URL.Path == "/api/v1/cognify" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
 
 		case r.URL.Path == "/api/v1/insights" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"insights": []interface{}{
 					map[string]interface{}{"type": "entity", "value": "test"},
 				},
@@ -73,13 +73,13 @@ func setupCogneeTestServer() (*httptest.Server, *services.CogneeService) {
 
 		case r.URL.Path == "/api/v1/graph/completion" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"completions": []interface{}{"completion1", "completion2"},
 			})
 
 		case r.URL.Path == "/api/v1/code-pipeline/index" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"analysis": map[string]interface{}{
 					"functions": []interface{}{"main", "helper"},
 				},
@@ -87,11 +87,11 @@ func setupCogneeTestServer() (*httptest.Server, *services.CogneeService) {
 
 		case r.URL.Path == "/api/v1/datasets" && r.Method == "POST":
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(map[string]interface{}{"id": "ds-123", "name": "test"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"id": "ds-123", "name": "test"})
 
 		case r.URL.Path == "/api/v1/datasets" && r.Method == "GET":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"datasets": []interface{}{
 					map[string]interface{}{"id": "ds-1", "name": "default"},
 				},
@@ -99,11 +99,11 @@ func setupCogneeTestServer() (*httptest.Server, *services.CogneeService) {
 
 		case r.URL.Path == "/api/v1/feedback" && r.Method == "POST":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
 
 		case r.URL.Path == "/api/v1/visualize" && r.Method == "GET":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"nodes": []interface{}{},
 				"edges": []interface{}{},
 			})
@@ -711,7 +711,7 @@ func TestCogneeAPIHandler_Cognify_ErrorPaths(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/v1/cognify" {
 				w.WriteHeader(http.StatusInternalServerError)
-				json.NewEncoder(w).Encode(map[string]interface{}{"error": "cognify failed"})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "cognify failed"})
 				return
 			}
 			w.WriteHeader(http.StatusOK)

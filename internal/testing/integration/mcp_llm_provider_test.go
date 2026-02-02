@@ -288,14 +288,14 @@ func TestMCPContextWithLLMProvider(t *testing.T) {
 	resp, err := timeClient.CallTool("get_current_time", map[string]interface{}{"timezone": "UTC"})
 	if err == nil && resp.Error == nil {
 		var result interface{}
-		json.Unmarshal(resp.Result, &result)
+		_ = json.Unmarshal(resp.Result, &result)
 		mcpContext.ToolResults = append(mcpContext.ToolResults, MCPToolResult{
 			Server: "time",
 			Tool:   "get_current_time",
 			Result: result,
 		})
 	}
-	timeClient.Close()
+	_ = timeClient.Close()
 
 	// Now test with each LLM provider
 	llmClient := NewLLMClient("http://localhost:8080")
@@ -447,7 +447,7 @@ func TestAllMCPServersWithAllProviders(t *testing.T) {
 			if err != nil {
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			if err := client.Initialize(); err != nil {
 				return
@@ -463,7 +463,7 @@ func TestAllMCPServersWithAllProviders(t *testing.T) {
 			resp, err := client.CallTool(srv.tool, srv.args)
 			if err == nil && resp.Error == nil {
 				var result interface{}
-				json.Unmarshal(resp.Result, &result)
+				_ = json.Unmarshal(resp.Result, &result)
 				mcpContext.ToolResults = append(mcpContext.ToolResults, MCPToolResult{
 					Server: srv.name,
 					Tool:   srv.tool,

@@ -392,7 +392,7 @@ func TestManager_Search(t *testing.T) {
 	}
 
 	for _, mem := range memories {
-		store.Add(context.Background(), mem)
+		_ = store.Add(context.Background(), mem)
 	}
 
 	t.Run("BasicSearch", func(t *testing.T) {
@@ -421,7 +421,7 @@ func TestManager_GetContext(t *testing.T) {
 
 	// Add test memories
 	for i := 0; i < 5; i++ {
-		store.Add(context.Background(), &Memory{
+		_ = store.Add(context.Background(), &Memory{
 			ID:      fmt.Sprintf("mem%d", i),
 			UserID:  "user1",
 			Content: fmt.Sprintf("Test memory content %d for context building", i),
@@ -439,7 +439,7 @@ func TestManager_GetUserMemories(t *testing.T) {
 
 	// Add test memories
 	for i := 0; i < 3; i++ {
-		store.Add(context.Background(), &Memory{
+		_ = store.Add(context.Background(), &Memory{
 			ID:      fmt.Sprintf("mem%d", i),
 			UserID:  "user1",
 			Content: fmt.Sprintf("Memory %d", i),
@@ -456,9 +456,9 @@ func TestManager_GetSessionMemories(t *testing.T) {
 	manager := NewManager(store, nil, nil, nil, nil, nil)
 
 	// Add test memories
-	store.Add(context.Background(), &Memory{ID: "1", SessionID: "session1", Content: "Memory 1"})
-	store.Add(context.Background(), &Memory{ID: "2", SessionID: "session1", Content: "Memory 2"})
-	store.Add(context.Background(), &Memory{ID: "3", SessionID: "session2", Content: "Memory 3"})
+	_ = store.Add(context.Background(), &Memory{ID: "1", SessionID: "session1", Content: "Memory 1"})
+	_ = store.Add(context.Background(), &Memory{ID: "2", SessionID: "session1", Content: "Memory 2"})
+	_ = store.Add(context.Background(), &Memory{ID: "3", SessionID: "session2", Content: "Memory 3"})
 
 	memories, err := manager.GetSessionMemories(context.Background(), "session1")
 	require.NoError(t, err)
@@ -469,7 +469,7 @@ func TestManager_DeleteMemory(t *testing.T) {
 	store := NewInMemoryStore()
 	manager := NewManager(store, nil, nil, nil, nil, nil)
 
-	store.Add(context.Background(), &Memory{ID: "mem1", UserID: "user1", Content: "Test"})
+	_ = store.Add(context.Background(), &Memory{ID: "mem1", UserID: "user1", Content: "Test"})
 
 	err := manager.DeleteMemory(context.Background(), "mem1")
 	require.NoError(t, err)
@@ -485,7 +485,7 @@ func TestManager_DeleteUserMemories(t *testing.T) {
 
 	// Add test memories
 	for i := 0; i < 3; i++ {
-		store.Add(context.Background(), &Memory{
+		_ = store.Add(context.Background(), &Memory{
 			ID:      fmt.Sprintf("mem%d", i),
 			UserID:  "user1",
 			Content: fmt.Sprintf("Memory %d", i),
@@ -552,8 +552,8 @@ func TestManager_GetRelatedEntities(t *testing.T) {
 	manager := NewManager(store, nil, nil, nil, nil, nil)
 
 	// Add test entities
-	store.AddEntity(context.Background(), &Entity{ID: "e1", Name: "Test Entity"})
-	store.AddEntity(context.Background(), &Entity{ID: "e2", Name: "Another Entity"})
+	_ = store.AddEntity(context.Background(), &Entity{ID: "e1", Name: "Test Entity"})
+	_ = store.AddEntity(context.Background(), &Entity{ID: "e2", Name: "Another Entity"})
 
 	entities, err := manager.GetRelatedEntities(context.Background(), "test", 10)
 	require.NoError(t, err)
@@ -565,7 +565,7 @@ func TestManager_GetEntityRelationships(t *testing.T) {
 	manager := NewManager(store, nil, nil, nil, nil, nil)
 
 	// Add test relationship
-	store.AddRelationship(context.Background(), &Relationship{
+	_ = store.AddRelationship(context.Background(), &Relationship{
 		ID:       "r1",
 		SourceID: "entity1",
 		TargetID: "entity2",
@@ -660,7 +660,7 @@ func TestManager_GetStats(t *testing.T) {
 		{ID: "2", UserID: "user1", Content: "Memory 2", Type: MemoryTypeEpisodic, CreatedAt: now},
 	}
 	for _, mem := range memories {
-		store.Add(context.Background(), mem)
+		_ = store.Add(context.Background(), mem)
 	}
 
 	stats, err := manager.GetStats(context.Background(), "user1")
@@ -717,7 +717,7 @@ func TestInMemoryStore_CRUD(t *testing.T) {
 	})
 
 	t.Run("Get", func(t *testing.T) {
-		store.Add(ctx, &Memory{ID: "mem1", Content: "Test"})
+		_ = store.Add(ctx, &Memory{ID: "mem1", Content: "Test"})
 
 		memory, err := store.Get(ctx, "mem1")
 		require.NoError(t, err)
@@ -732,7 +732,7 @@ func TestInMemoryStore_CRUD(t *testing.T) {
 	})
 
 	t.Run("Update", func(t *testing.T) {
-		store.Add(ctx, &Memory{ID: "mem2", Content: "Original"})
+		_ = store.Add(ctx, &Memory{ID: "mem2", Content: "Original"})
 
 		err := store.Update(ctx, &Memory{ID: "mem2", Content: "Updated"})
 		require.NoError(t, err)
@@ -747,7 +747,7 @@ func TestInMemoryStore_CRUD(t *testing.T) {
 	})
 
 	t.Run("Delete", func(t *testing.T) {
-		store.Add(ctx, &Memory{ID: "mem3", UserID: "user1", SessionID: "session1", Content: "To delete"})
+		_ = store.Add(ctx, &Memory{ID: "mem3", UserID: "user1", SessionID: "session1", Content: "To delete"})
 
 		err := store.Delete(ctx, "mem3")
 		require.NoError(t, err)
@@ -774,7 +774,7 @@ func TestInMemoryStore_Search(t *testing.T) {
 		{ID: "3", UserID: "user2", Content: "JavaScript web development", Type: MemoryTypeSemantic, Category: "web", CreatedAt: now},
 	}
 	for _, mem := range memories {
-		store.Add(ctx, mem)
+		_ = store.Add(ctx, mem)
 	}
 
 	t.Run("BasicSearch", func(t *testing.T) {
@@ -846,7 +846,7 @@ func TestInMemoryStore_GetByUser(t *testing.T) {
 
 	// Add test data
 	for i := 0; i < 5; i++ {
-		store.Add(ctx, &Memory{
+		_ = store.Add(ctx, &Memory{
 			ID:         fmt.Sprintf("mem%d", i),
 			UserID:     "user1",
 			Content:    fmt.Sprintf("Memory %d", i),
@@ -894,9 +894,9 @@ func TestInMemoryStore_GetBySession(t *testing.T) {
 	ctx := context.Background()
 
 	// Add test data
-	store.Add(ctx, &Memory{ID: "1", SessionID: "session1", CreatedAt: time.Now().Add(-time.Minute)})
-	store.Add(ctx, &Memory{ID: "2", SessionID: "session1", CreatedAt: time.Now()})
-	store.Add(ctx, &Memory{ID: "3", SessionID: "session2"})
+	_ = store.Add(ctx, &Memory{ID: "1", SessionID: "session1", CreatedAt: time.Now().Add(-time.Minute)})
+	_ = store.Add(ctx, &Memory{ID: "2", SessionID: "session1", CreatedAt: time.Now()})
+	_ = store.Add(ctx, &Memory{ID: "3", SessionID: "session2"})
 
 	t.Run("GetSession", func(t *testing.T) {
 		results, err := store.GetBySession(ctx, "session1")
@@ -926,7 +926,7 @@ func TestInMemoryStore_EntityOperations(t *testing.T) {
 	})
 
 	t.Run("GetEntity", func(t *testing.T) {
-		store.AddEntity(ctx, &Entity{ID: "e1", Name: "Entity 1"})
+		_ = store.AddEntity(ctx, &Entity{ID: "e1", Name: "Entity 1"})
 
 		entity, err := store.GetEntity(ctx, "e1")
 		require.NoError(t, err)
@@ -939,8 +939,8 @@ func TestInMemoryStore_EntityOperations(t *testing.T) {
 	})
 
 	t.Run("SearchEntities", func(t *testing.T) {
-		store.AddEntity(ctx, &Entity{ID: "e2", Name: "Test Entity"})
-		store.AddEntity(ctx, &Entity{ID: "e3", Name: "Another Entity"})
+		_ = store.AddEntity(ctx, &Entity{ID: "e2", Name: "Test Entity"})
+		_ = store.AddEntity(ctx, &Entity{ID: "e3", Name: "Another Entity"})
 
 		results, err := store.SearchEntities(ctx, "test", 10)
 		require.NoError(t, err)
@@ -949,7 +949,7 @@ func TestInMemoryStore_EntityOperations(t *testing.T) {
 
 	t.Run("SearchEntitiesWithLimit", func(t *testing.T) {
 		for i := 0; i < 5; i++ {
-			store.AddEntity(ctx, &Entity{Name: fmt.Sprintf("Entity %d", i)})
+			_ = store.AddEntity(ctx, &Entity{Name: fmt.Sprintf("Entity %d", i)})
 		}
 
 		results, err := store.SearchEntities(ctx, "entity", 2)
@@ -975,12 +975,12 @@ func TestInMemoryStore_RelationshipOperations(t *testing.T) {
 	})
 
 	t.Run("GetRelationships", func(t *testing.T) {
-		store.AddRelationship(ctx, &Relationship{
+		_ = store.AddRelationship(ctx, &Relationship{
 			ID:       "r1",
 			SourceID: "e1",
 			TargetID: "e2",
 		})
-		store.AddRelationship(ctx, &Relationship{
+		_ = store.AddRelationship(ctx, &Relationship{
 			ID:       "r2",
 			SourceID: "e1",
 			TargetID: "e3",

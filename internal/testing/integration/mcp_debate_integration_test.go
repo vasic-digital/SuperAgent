@@ -301,7 +301,7 @@ func TestMCPServerConnectivity(t *testing.T) {
 				t.Skipf("MCP server %s not running on port %d: %v", server.Name, server.Port, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			assert.NotNil(t, client)
 		})
@@ -317,7 +317,7 @@ func TestMCPServerInitialize(t *testing.T) {
 				t.Skipf("MCP server %s not running: %v", server.Name, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			err = client.Initialize()
 			require.NoError(t, err, "Initialize should succeed")
@@ -334,7 +334,7 @@ func TestMCPServerToolDiscovery(t *testing.T) {
 				t.Skipf("MCP server %s not running: %v", server.Name, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			err = client.Initialize()
 			require.NoError(t, err)
@@ -387,7 +387,7 @@ func TestMCPToolExecution(t *testing.T) {
 				t.Skipf("MCP server %s not running: %v", tc.server, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			err = client.Initialize()
 			require.NoError(t, err)
@@ -439,7 +439,7 @@ func TestMCPDebateIntegration(t *testing.T) {
 	resp, err := timeClient.CallTool("get_current_time", map[string]interface{}{"timezone": "UTC"})
 	if err == nil && resp.Error == nil {
 		var result interface{}
-		json.Unmarshal(resp.Result, &result)
+		_ = json.Unmarshal(resp.Result, &result)
 		mcpContext.ToolResults = append(mcpContext.ToolResults, ToolResult{
 			Server:    "time",
 			Tool:      "get_current_time",
@@ -447,7 +447,7 @@ func TestMCPDebateIntegration(t *testing.T) {
 			Result:    result,
 		})
 	}
-	timeClient.Close()
+	_ = timeClient.Close()
 
 	// Now test with AI Debate
 	debateClient := NewDebateClient("http://localhost:8080")
@@ -500,7 +500,7 @@ func TestMCPContextualDebate(t *testing.T) {
 			if err != nil {
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			if err := client.Initialize(); err != nil {
 				return
@@ -517,7 +517,7 @@ func TestMCPContextualDebate(t *testing.T) {
 			resp, err := client.CallTool(srv.tool, srv.args)
 			if err == nil && resp.Error == nil {
 				var result interface{}
-				json.Unmarshal(resp.Result, &result)
+				_ = json.Unmarshal(resp.Result, &result)
 				mcpContext.ToolResults = append(mcpContext.ToolResults, ToolResult{
 					Server:    srv.name,
 					Tool:      srv.tool,
@@ -570,7 +570,7 @@ func TestAllMCPServersForDebate(t *testing.T) {
 				t.Skipf("MCP server %s not running", server.Name)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			err = client.Initialize()
 			require.NoError(t, err, "Initialize should succeed")
@@ -594,7 +594,7 @@ func BenchmarkMCPToolCall(b *testing.B) {
 		b.Skipf("Time MCP server not running: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	if err := client.Initialize(); err != nil {
 		b.Skipf("Failed to initialize: %v", err)

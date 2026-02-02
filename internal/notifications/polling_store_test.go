@@ -32,7 +32,7 @@ func TestNewPollingStore(t *testing.T) {
 		assert.NotNil(t, store.globalEvents)
 		assert.Equal(t, logger, store.logger)
 
-		store.Stop()
+		_ = store.Stop()
 	})
 
 	t.Run("with custom config", func(t *testing.T) {
@@ -49,7 +49,7 @@ func TestNewPollingStore(t *testing.T) {
 		assert.Equal(t, 50, store.config.MaxEventsPerTask)
 		assert.Equal(t, 500, store.config.MaxGlobalEvents)
 
-		store.Stop()
+		_ = store.Stop()
 	})
 }
 
@@ -69,7 +69,7 @@ func TestPollingStore_StartStop(t *testing.T) {
 func TestPollingStore_StoreEvent(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	t.Run("store single event", func(t *testing.T) {
 		notification := &TaskNotification{
@@ -127,7 +127,7 @@ func TestPollingStore_EventLimits(t *testing.T) {
 	}
 
 	store := NewPollingStore(config, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	t.Run("task events trimmed at limit", func(t *testing.T) {
 		for i := 0; i < 10; i++ {
@@ -147,7 +147,7 @@ func TestPollingStore_EventLimits(t *testing.T) {
 	t.Run("global events trimmed at limit", func(t *testing.T) {
 		// Clear store
 		store2 := NewPollingStore(config, logger)
-		defer store2.Stop()
+		defer func() { _ = store2.Stop() }()
 
 		for i := 0; i < 15; i++ {
 			notification := &TaskNotification{
@@ -167,7 +167,7 @@ func TestPollingStore_EventLimits(t *testing.T) {
 func TestPollingStore_GetTaskEvents(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	// Store some events with different timestamps
 	baseTime := time.Now()
@@ -213,7 +213,7 @@ func TestPollingStore_GetTaskEvents(t *testing.T) {
 func TestPollingStore_GetGlobalEvents(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	// Store some events with different timestamps
 	baseTime := time.Now()
@@ -253,7 +253,7 @@ func TestPollingStore_GetGlobalEvents(t *testing.T) {
 func TestPollingStore_GetLatestTaskEvent(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	t.Run("no events", func(t *testing.T) {
 		event := store.GetLatestTaskEvent("task-1")
@@ -284,7 +284,7 @@ func TestPollingStore_GetLatestTaskEvent(t *testing.T) {
 func TestPollingStore_GetEventCount(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	assert.Equal(t, 0, store.GetEventCount("task-1"))
 
@@ -302,7 +302,7 @@ func TestPollingStore_GetEventCount(t *testing.T) {
 func TestPollingStore_GetGlobalEventCount(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	assert.Equal(t, 0, store.GetGlobalEventCount())
 
@@ -320,7 +320,7 @@ func TestPollingStore_GetGlobalEventCount(t *testing.T) {
 func TestPollingStore_ClearTaskEvents(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	// Store some events
 	for i := 0; i < 5; i++ {
@@ -351,7 +351,7 @@ func TestPollingStore_Cleanup(t *testing.T) {
 	}
 
 	store := NewPollingStore(config, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	// Store an event
 	notification := &TaskNotification{
@@ -374,7 +374,7 @@ func TestPollingStore_Cleanup(t *testing.T) {
 func TestPollingStore_GetStats(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	// Initial stats
 	stats := store.GetStats()
@@ -412,7 +412,7 @@ func TestPollingStore_GetStats(t *testing.T) {
 func TestPollingStore_Poll(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	// Store some events
 	baseTime := time.Now()
@@ -513,7 +513,7 @@ func TestPollResponse(t *testing.T) {
 func TestPollingSubscriber(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	t.Run("create new subscriber", func(t *testing.T) {
 		subscriber := NewPollingSubscriber("sub-1", "task-1", store)
@@ -552,7 +552,7 @@ func TestPollingSubscriber(t *testing.T) {
 func TestPollingStore_ConcurrentOperations(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	var wg sync.WaitGroup
 	numGoroutines := 10
@@ -615,7 +615,7 @@ func TestPollingConfig(t *testing.T) {
 func TestPollingStore_EmptyStoreEdgeCases(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	t.Run("get events from empty store", func(t *testing.T) {
 		events := store.GetTaskEvents("nonexistent", nil, 10)
@@ -651,7 +651,7 @@ func TestPollingStore_EmptyStoreEdgeCases(t *testing.T) {
 func TestPollingStore_EventOrder(t *testing.T) {
 	logger := testLogger()
 	store := NewPollingStore(nil, logger)
-	defer store.Stop()
+	defer func() { _ = store.Stop() }()
 
 	// Store events in order
 	for i := 0; i < 5; i++ {

@@ -13,7 +13,7 @@ func TestAIDebateConfigLoader_Integration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	t.Run("Load valid configuration file", func(t *testing.T) {
 		configPath := filepath.Join(tempDir, "valid-config.yaml")
@@ -232,13 +232,13 @@ voting_strategy: "confidence_weighted"
 
 	t.Run("Configuration with environment variables", func(t *testing.T) {
 		// Set environment variables
-		os.Setenv("TEST_CLAUDE_KEY", "claude-test-key")
-		os.Setenv("TEST_DEEPSEEK_KEY", "deepseek-test-key")
-		os.Setenv("TEST_DATASET", "test-dataset")
+		_ = os.Setenv("TEST_CLAUDE_KEY", "claude-test-key")
+		_ = os.Setenv("TEST_DEEPSEEK_KEY", "deepseek-test-key")
+		_ = os.Setenv("TEST_DATASET", "test-dataset")
 		defer func() {
-			os.Unsetenv("TEST_CLAUDE_KEY")
-			os.Unsetenv("TEST_DEEPSEEK_KEY")
-			os.Unsetenv("TEST_DATASET")
+			_ = os.Unsetenv("TEST_CLAUDE_KEY")
+			_ = os.Unsetenv("TEST_DEEPSEEK_KEY")
+			_ = os.Unsetenv("TEST_DATASET")
 		}()
 
 		configPath := filepath.Join(tempDir, "env-test.yaml")
@@ -723,7 +723,7 @@ func TestAIDebateConfigLoader_SaveValidation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	tests := []struct {
 		name        string

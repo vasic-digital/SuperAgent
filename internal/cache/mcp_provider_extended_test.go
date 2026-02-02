@@ -25,13 +25,13 @@ func TestMCPServerCache_HitRate_WithActivity(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	mc := NewMCPServerCache(tc, nil)
 	ctx := context.Background()
 
 	// Create some cache activity
-	mc.SetToolResult(ctx, "server", "tool", nil, "data")
+	_ = mc.SetToolResult(ctx, "server", "tool", nil, "data")
 
 	// Generate hits
 	mc.GetToolResult(ctx, "server", "tool", nil) // Hit
@@ -53,13 +53,13 @@ func TestMCPServerCache_ServerHitRate_WithActivity(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	mc := NewMCPServerCache(tc, nil)
 	ctx := context.Background()
 
 	// Set for specific server
-	mc.SetToolResult(ctx, "filesystem", "read", nil, "data")
+	_ = mc.SetToolResult(ctx, "filesystem", "read", nil, "data")
 
 	// Hits for filesystem server
 	mc.GetToolResult(ctx, "filesystem", "read", nil) // Hit
@@ -80,13 +80,13 @@ func TestMCPServerCache_ToolHitRate_WithActivity(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	mc := NewMCPServerCache(tc, nil)
 	ctx := context.Background()
 
 	// Set for specific tool
-	mc.SetToolResult(ctx, "server", "read_file", nil, "data")
+	_ = mc.SetToolResult(ctx, "server", "read_file", nil, "data")
 
 	// Hits for read_file tool
 	mc.GetToolResult(ctx, "server", "read_file", nil) // Hit
@@ -107,15 +107,15 @@ func TestMCPServerCache_InvalidateAll_WithData(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	mc := NewMCPServerCache(tc, nil)
 	ctx := context.Background()
 
 	// Set multiple values
-	mc.SetToolResult(ctx, "server1", "tool1", nil, "data1")
-	mc.SetToolResult(ctx, "server2", "tool2", nil, "data2")
-	mc.SetToolResult(ctx, "server3", "tool3", nil, "data3")
+	_ = mc.SetToolResult(ctx, "server1", "tool1", nil, "data1")
+	_ = mc.SetToolResult(ctx, "server2", "tool2", nil, "data2")
+	_ = mc.SetToolResult(ctx, "server3", "tool3", nil, "data3")
 
 	// Invalidate all
 	count, err := mc.InvalidateAll(ctx)
@@ -139,7 +139,7 @@ func TestMCPServerCache_GetTTL_ToolSpecific(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	mcpConfig := &MCPCacheConfig{
 		DefaultTTL:    10 * time.Minute,
@@ -155,9 +155,9 @@ func TestMCPServerCache_GetTTL_ToolSpecific(t *testing.T) {
 	ctx := context.Background()
 
 	// Set tools with different TTLs
-	mc.SetToolResult(ctx, "fs", "read_file", nil, "content")
-	mc.SetToolResult(ctx, "fs", "list_dir", nil, "files")
-	mc.SetToolResult(ctx, "fs", "other_tool", nil, "data")
+	_ = mc.SetToolResult(ctx, "fs", "read_file", nil, "content")
+	_ = mc.SetToolResult(ctx, "fs", "list_dir", nil, "files")
+	_ = mc.SetToolResult(ctx, "fs", "other_tool", nil, "data")
 
 	// All should be cached
 	_, found1 := mc.GetToolResult(ctx, "fs", "read_file", nil)
@@ -176,7 +176,7 @@ func TestMCPServerCache_NeverCacheTools_Extended(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	mcpConfig := &MCPCacheConfig{
 		DefaultTTL:      10 * time.Minute,
@@ -188,9 +188,9 @@ func TestMCPServerCache_NeverCacheTools_Extended(t *testing.T) {
 	ctx := context.Background()
 
 	// Try to cache never-cache tools
-	mc.SetToolResult(ctx, "mem", "memory.store", nil, "data")
-	mc.SetToolResult(ctx, "mem", "memory.retrieve", nil, "data")
-	mc.SetToolResult(ctx, "shell", "exec_command", nil, "output")
+	_ = mc.SetToolResult(ctx, "mem", "memory.store", nil, "data")
+	_ = mc.SetToolResult(ctx, "mem", "memory.retrieve", nil, "data")
+	_ = mc.SetToolResult(ctx, "shell", "exec_command", nil, "output")
 
 	// None should be cached
 	_, found1 := mc.GetToolResult(ctx, "mem", "memory.store", nil)
@@ -209,7 +209,7 @@ func TestMCPServerCache_CacheKey_Deterministic(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	mc := NewMCPServerCache(tc, nil)
 
@@ -254,7 +254,7 @@ func TestProviderCache_HitRate_WithActivity(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	pc := NewProviderCache(tc, nil)
 	ctx := context.Background()
@@ -266,7 +266,7 @@ func TestProviderCache_HitRate_WithActivity(t *testing.T) {
 	resp := &models.LLMResponse{Content: "response"}
 
 	// Set a value
-	pc.Set(ctx, req, resp, "openai")
+	_ = pc.Set(ctx, req, resp, "openai")
 
 	// Generate hits
 	pc.Get(ctx, req, "openai") // Hit
@@ -292,7 +292,7 @@ func TestProviderCache_ProviderHitRate_WithActivity(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	pc := NewProviderCache(tc, nil)
 	ctx := context.Background()
@@ -304,7 +304,7 @@ func TestProviderCache_ProviderHitRate_WithActivity(t *testing.T) {
 	resp := &models.LLMResponse{Content: "response"}
 
 	// Set for OpenAI
-	pc.Set(ctx, req, resp, "openai")
+	_ = pc.Set(ctx, req, resp, "openai")
 
 	// OpenAI hits
 	pc.Get(ctx, req, "openai") // Hit
@@ -326,7 +326,7 @@ func TestProviderCache_InvalidateAll_WithData(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	pc := NewProviderCache(tc, nil)
 	ctx := context.Background()
@@ -337,8 +337,8 @@ func TestProviderCache_InvalidateAll_WithData(t *testing.T) {
 	resp1 := &models.LLMResponse{Content: "response1"}
 	resp2 := &models.LLMResponse{Content: "response2"}
 
-	pc.Set(ctx, req1, resp1, "openai")
-	pc.Set(ctx, req2, resp2, "anthropic")
+	_ = pc.Set(ctx, req1, resp1, "openai")
+	_ = pc.Set(ctx, req2, resp2, "anthropic")
 
 	// Invalidate all
 	count, err := pc.InvalidateAll(ctx)
@@ -360,7 +360,7 @@ func TestProviderCache_GetTTL_ProviderSpecific(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	pcConfig := &ProviderCacheConfig{
 		DefaultTTL:      30 * time.Minute,
@@ -378,9 +378,9 @@ func TestProviderCache_GetTTL_ProviderSpecific(t *testing.T) {
 	req := &models.LLMRequest{Prompt: "test", ModelParams: models.ModelParameters{Model: "model"}}
 	resp := &models.LLMResponse{Content: "response"}
 
-	pc.Set(ctx, req, resp, "openai")
-	pc.Set(ctx, req, resp, "anthropic")
-	pc.Set(ctx, req, resp, "other")
+	_ = pc.Set(ctx, req, resp, "openai")
+	_ = pc.Set(ctx, req, resp, "anthropic")
+	_ = pc.Set(ctx, req, resp, "other")
 
 	// All should be cached (TTL differences handled internally)
 	_, found1 := pc.Get(ctx, req, "openai")
@@ -399,7 +399,7 @@ func TestProviderCache_CacheKey_Uniqueness(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	pc := NewProviderCache(tc, nil)
 
@@ -454,7 +454,7 @@ func TestProviderCache_ConcurrentAccess(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	pc := NewProviderCache(tc, nil)
 	ctx := context.Background()
@@ -474,7 +474,7 @@ func TestProviderCache_ConcurrentAccess(t *testing.T) {
 				},
 			}
 			resp := &models.LLMResponse{Content: "response" + string(rune('0'+idx))}
-			pc.Set(ctx, req, resp, "provider"+string(rune('0'+idx%3)))
+			_ = pc.Set(ctx, req, resp, "provider"+string(rune('0'+idx%3)))
 		}(i)
 	}
 
@@ -507,7 +507,7 @@ func TestProviderCache_InvalidateModel_Specific(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	pc := NewProviderCache(tc, nil)
 	ctx := context.Background()
@@ -517,8 +517,8 @@ func TestProviderCache_InvalidateModel_Specific(t *testing.T) {
 	req2 := &models.LLMRequest{Prompt: "test", ModelParams: models.ModelParameters{Model: "gpt-3.5"}}
 	resp := &models.LLMResponse{Content: "response"}
 
-	pc.Set(ctx, req1, resp, "openai")
-	pc.Set(ctx, req2, resp, "openai")
+	_ = pc.Set(ctx, req1, resp, "openai")
+	_ = pc.Set(ctx, req2, resp, "openai")
 
 	// Invalidate specific model
 	count, err := pc.InvalidateModel(ctx, "gpt-4")
@@ -533,7 +533,7 @@ func TestProviderCache_Set_MaxResponseSize(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	pcConfig := &ProviderCacheConfig{
 		DefaultTTL:      30 * time.Minute,
@@ -580,13 +580,13 @@ func TestMCPCacheMetrics_Fields(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	mc := NewMCPServerCache(tc, nil)
 	ctx := context.Background()
 
 	// Generate activity
-	mc.SetToolResult(ctx, "server", "tool", nil, "data")
+	_ = mc.SetToolResult(ctx, "server", "tool", nil, "data")
 	mc.GetToolResult(ctx, "server", "tool", nil)  // Hit
 	mc.GetToolResult(ctx, "server", "other", nil) // Miss
 
@@ -604,7 +604,7 @@ func TestProviderCacheMetrics_Fields(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	pc := NewProviderCache(tc, nil)
 	ctx := context.Background()
@@ -613,7 +613,7 @@ func TestProviderCacheMetrics_Fields(t *testing.T) {
 	resp := &models.LLMResponse{Content: "response"}
 
 	// Generate activity
-	pc.Set(ctx, req, resp, "provider")
+	_ = pc.Set(ctx, req, resp, "provider")
 	pc.Get(ctx, req, "provider")                                                                                      // Hit
 	pc.Get(ctx, &models.LLMRequest{Prompt: "other", ModelParams: models.ModelParameters{Model: "model"}}, "provider") // Miss
 

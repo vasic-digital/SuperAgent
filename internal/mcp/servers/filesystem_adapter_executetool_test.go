@@ -18,7 +18,7 @@ import (
 func TestFilesystemAdapter_ExecuteTool_AllTools(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_execute_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create test structure
 	testFile := filepath.Join(tempDir, "test.txt")
@@ -281,7 +281,7 @@ func TestFilesystemAdapter_ExecuteTool_AllTools(t *testing.T) {
 func TestFilesystemAdapter_ExecuteTool_ErrorCases(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_execute_error_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := FilesystemAdapterConfig{
 		AllowedPaths: []string{tempDir},
@@ -372,7 +372,7 @@ func TestFilesystemAdapter_ExecuteTool_ErrorCases(t *testing.T) {
 func TestFilesystemAdapter_ExecuteTool_Permissions(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_permission_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	t.Run("CreateDirectory when not allowed", func(t *testing.T) {
 		config := FilesystemAdapterConfig{
@@ -440,7 +440,7 @@ func TestFilesystemAdapter_ExecuteTool_Permissions(t *testing.T) {
 func TestFilesystemAdapter_ExecuteTool_PathValidation(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_path_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := FilesystemAdapterConfig{
 		AllowedPaths: []string{tempDir},
@@ -489,7 +489,7 @@ func TestFilesystemAdapter_ExecuteTool_PathValidation(t *testing.T) {
 func TestFilesystemAdapter_ExecuteTool_EdgeCases(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_edge_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := FilesystemAdapterConfig{
 		AllowedPaths:   []string{tempDir},
@@ -587,7 +587,7 @@ func TestFilesystemAdapter_ExecuteTool_EdgeCases(t *testing.T) {
 func TestFilesystemAdapter_ExecuteTool_NotInitialized(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_not_init_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := FilesystemAdapterConfig{
 		AllowedPaths:   []string{tempDir},
@@ -638,7 +638,7 @@ func TestFilesystemAdapter_ExecuteTool_NotInitialized(t *testing.T) {
 func BenchmarkFilesystemAdapter_ExecuteTool_ReadFile(b *testing.B) {
 	tempDir, err := os.MkdirTemp("", "fs_bench_test")
 	require.NoError(b, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	testFile := filepath.Join(tempDir, "bench.txt")
 	require.NoError(b, os.WriteFile(testFile, []byte("benchmark content"), 0644))
@@ -656,14 +656,14 @@ func BenchmarkFilesystemAdapter_ExecuteTool_ReadFile(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		adapter.ExecuteTool(ctx, "filesystem_read_file", args)
+		_, _ = adapter.ExecuteTool(ctx, "filesystem_read_file", args)
 	}
 }
 
 func BenchmarkFilesystemAdapter_ExecuteTool_ListDirectory(b *testing.B) {
 	tempDir, err := os.MkdirTemp("", "fs_bench_list_test")
 	require.NoError(b, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create some files
 	for i := 0; i < 100; i++ {
@@ -682,14 +682,14 @@ func BenchmarkFilesystemAdapter_ExecuteTool_ListDirectory(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		adapter.ExecuteTool(ctx, "filesystem_list_directory", args)
+		_, _ = adapter.ExecuteTool(ctx, "filesystem_list_directory", args)
 	}
 }
 
 func BenchmarkFilesystemAdapter_ExecuteTool_Search(b *testing.B) {
 	tempDir, err := os.MkdirTemp("", "fs_bench_search_test")
 	require.NoError(b, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create nested structure
 	for i := 0; i < 10; i++ {
@@ -716,6 +716,6 @@ func BenchmarkFilesystemAdapter_ExecuteTool_Search(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		adapter.ExecuteTool(ctx, "filesystem_search", args)
+		_, _ = adapter.ExecuteTool(ctx, "filesystem_search", args)
 	}
 }

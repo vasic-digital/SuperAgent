@@ -113,7 +113,7 @@ func createTempDir(t *testing.T) string {
 	dir, err := os.MkdirTemp("", "mcp_test_*")
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		os.RemoveAll(dir)
+		_ = os.RemoveAll(dir)
 	})
 	return dir
 }
@@ -807,7 +807,7 @@ func TestPreinstaller_isPackageInstalled(t *testing.T) {
 
 		// Create node_modules but no package.json
 		nodeModules := filepath.Join(tempDir, "node_modules", "test-package")
-		os.MkdirAll(nodeModules, 0755)
+		_ = os.MkdirAll(nodeModules, 0755)
 
 		result := preinstaller.isPackageInstalled(tempDir, "test-package")
 		assert.False(t, result)
@@ -821,8 +821,8 @@ func TestPreinstaller_isPackageInstalled(t *testing.T) {
 
 		// Create node_modules with package.json
 		pkgDir := filepath.Join(tempDir, "node_modules", "test-package")
-		os.MkdirAll(pkgDir, 0755)
-		os.WriteFile(filepath.Join(pkgDir, "package.json"), []byte(`{}`), 0644)
+		_ = os.MkdirAll(pkgDir, 0755)
+		_ = os.WriteFile(filepath.Join(pkgDir, "package.json"), []byte(`{}`), 0644)
 
 		result := preinstaller.isPackageInstalled(tempDir, "test-package")
 		assert.True(t, result)
@@ -836,8 +836,8 @@ func TestPreinstaller_isPackageInstalled(t *testing.T) {
 
 		// Create scoped package
 		pkgDir := filepath.Join(tempDir, "node_modules", "@modelcontextprotocol", "server-filesystem")
-		os.MkdirAll(pkgDir, 0755)
-		os.WriteFile(filepath.Join(pkgDir, "package.json"), []byte(`{}`), 0644)
+		_ = os.MkdirAll(pkgDir, 0755)
+		_ = os.WriteFile(filepath.Join(pkgDir, "package.json"), []byte(`{}`), 0644)
 
 		result := preinstaller.isPackageInstalled(tempDir, "@modelcontextprotocol/server-filesystem")
 		assert.True(t, result)
@@ -991,7 +991,7 @@ func TestConnectionPool_RegisterServer(t *testing.T) {
 
 	t.Run("Returns error when pool is closed", func(t *testing.T) {
 		pool := NewConnectionPool(nil, nil, createTestLogger())
-		pool.Close()
+		_ = pool.Close()
 
 		config := MCPServerConfig{
 			Name: "test-server",
@@ -1067,8 +1067,8 @@ func TestConnectionPool_ListServers(t *testing.T) {
 	t.Run("Returns registered servers", func(t *testing.T) {
 		pool := NewConnectionPool(nil, nil, createTestLogger())
 
-		pool.RegisterServer(MCPServerConfig{Name: "server1", Type: MCPServerTypeRemote})
-		pool.RegisterServer(MCPServerConfig{Name: "server2", Type: MCPServerTypeLocal})
+		_ = pool.RegisterServer(MCPServerConfig{Name: "server1", Type: MCPServerTypeRemote})
+		_ = pool.RegisterServer(MCPServerConfig{Name: "server2", Type: MCPServerTypeLocal})
 
 		servers := pool.ListServers()
 		assert.Len(t, servers, 2)
@@ -1090,7 +1090,7 @@ func TestConnectionPool_GetServerStatus(t *testing.T) {
 	t.Run("Returns status for registered server", func(t *testing.T) {
 		pool := NewConnectionPool(nil, nil, createTestLogger())
 
-		pool.RegisterServer(MCPServerConfig{Name: "test-server", Type: MCPServerTypeRemote})
+		_ = pool.RegisterServer(MCPServerConfig{Name: "test-server", Type: MCPServerTypeRemote})
 
 		status, err := pool.GetServerStatus("test-server")
 		require.NoError(t, err)
@@ -1110,7 +1110,7 @@ func TestConnectionPool_CloseConnection(t *testing.T) {
 	t.Run("Closes registered connection", func(t *testing.T) {
 		pool := NewConnectionPool(nil, nil, createTestLogger())
 
-		pool.RegisterServer(MCPServerConfig{Name: "test-server", Type: MCPServerTypeRemote})
+		_ = pool.RegisterServer(MCPServerConfig{Name: "test-server", Type: MCPServerTypeRemote})
 
 		// Manually set up a mock transport
 		pool.mu.Lock()
@@ -1131,8 +1131,8 @@ func TestConnectionPool_Close(t *testing.T) {
 	t.Run("Closes all connections", func(t *testing.T) {
 		pool := NewConnectionPool(nil, nil, createTestLogger())
 
-		pool.RegisterServer(MCPServerConfig{Name: "server1", Type: MCPServerTypeRemote})
-		pool.RegisterServer(MCPServerConfig{Name: "server2", Type: MCPServerTypeRemote})
+		_ = pool.RegisterServer(MCPServerConfig{Name: "server1", Type: MCPServerTypeRemote})
+		_ = pool.RegisterServer(MCPServerConfig{Name: "server2", Type: MCPServerTypeRemote})
 
 		err := pool.Close()
 		require.NoError(t, err)
@@ -1163,7 +1163,7 @@ func TestConnectionPool_HealthCheck(t *testing.T) {
 	t.Run("Returns false for pending connections", func(t *testing.T) {
 		pool := NewConnectionPool(nil, nil, createTestLogger())
 
-		pool.RegisterServer(MCPServerConfig{Name: "test-server", Type: MCPServerTypeRemote})
+		_ = pool.RegisterServer(MCPServerConfig{Name: "test-server", Type: MCPServerTypeRemote})
 
 		ctx := context.Background()
 		results := pool.HealthCheck(ctx)
@@ -1174,7 +1174,7 @@ func TestConnectionPool_HealthCheck(t *testing.T) {
 	t.Run("Returns true for connected connections with transport", func(t *testing.T) {
 		pool := NewConnectionPool(nil, nil, createTestLogger())
 
-		pool.RegisterServer(MCPServerConfig{Name: "test-server", Type: MCPServerTypeRemote})
+		_ = pool.RegisterServer(MCPServerConfig{Name: "test-server", Type: MCPServerTypeRemote})
 
 		// Manually set up connection
 		pool.mu.Lock()
@@ -1223,7 +1223,7 @@ func TestConnectionPool_WarmUp(t *testing.T) {
 	t.Run("Warms up specified servers", func(t *testing.T) {
 		pool := NewConnectionPool(nil, nil, createTestLogger())
 
-		pool.RegisterServer(MCPServerConfig{
+		_ = pool.RegisterServer(MCPServerConfig{
 			Name: "server1",
 			Type: MCPServerTypeRemote,
 			URL:  "http://localhost:8080",
@@ -1242,7 +1242,7 @@ func TestConnectionPool_WarmUp(t *testing.T) {
 		}
 		pool := NewConnectionPool(nil, config, createTestLogger())
 
-		pool.RegisterServer(MCPServerConfig{
+		_ = pool.RegisterServer(MCPServerConfig{
 			Name: "server1",
 			Type: MCPServerTypeRemote,
 			URL:  "http://localhost:8080",
@@ -1275,7 +1275,7 @@ func TestStdioMCPTransport_Send(t *testing.T) {
 	t.Run("Sends JSON message with newline", func(t *testing.T) {
 		// Create a pipe to capture output
 		reader, writer := io.Pipe()
-		defer reader.Close()
+		defer func() { _ = reader.Close() }()
 
 		transport := &StdioMCPTransport{
 			stdin:     writer,
@@ -1416,7 +1416,7 @@ func TestHTTPMCPTransport_Send(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":{}}`))
+			_, _ = w.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":{}}`))
 		}))
 		defer server.Close()
 
@@ -1437,14 +1437,14 @@ func TestHTTPMCPTransport_Send(t *testing.T) {
 		assert.Equal(t, "header", receivedHeaders.Get("X-Custom"))
 
 		var parsed map[string]string
-		json.Unmarshal(receivedBody, &parsed)
+		_ = json.Unmarshal(receivedBody, &parsed)
 		assert.Equal(t, "data", parsed["test"])
 	})
 
 	t.Run("Returns error for non-2xx status", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error":"internal error"}`))
+			_, _ = w.Write([]byte(`{"error":"internal error"}`))
 		}))
 		defer server.Close()
 
@@ -1464,7 +1464,7 @@ func TestHTTPMCPTransport_Send(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":{"value":"test"}}`))
+			_, _ = w.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":{"value":"test"}}`))
 		}))
 		defer server.Close()
 
@@ -1658,7 +1658,7 @@ func TestConnectionPool_ConcurrentAccess(t *testing.T) {
 		pool := NewConnectionPool(nil, nil, createTestLogger())
 
 		for i := 0; i < 10; i++ {
-			pool.RegisterServer(MCPServerConfig{
+			_ = pool.RegisterServer(MCPServerConfig{
 				Name: fmt.Sprintf("server-%d", i),
 				Type: MCPServerTypeRemote,
 			})
@@ -1680,7 +1680,7 @@ func TestConnectionPool_ConcurrentAccess(t *testing.T) {
 	t.Run("Handles concurrent status queries", func(t *testing.T) {
 		pool := NewConnectionPool(nil, nil, createTestLogger())
 
-		pool.RegisterServer(MCPServerConfig{
+		_ = pool.RegisterServer(MCPServerConfig{
 			Name: "test-server",
 			Type: MCPServerTypeRemote,
 		})
@@ -1937,7 +1937,7 @@ func BenchmarkConnectionPool_RegisterServer(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		pool.RegisterServer(MCPServerConfig{
+		_ = pool.RegisterServer(MCPServerConfig{
 			Name: fmt.Sprintf("server-%d", i),
 			Type: MCPServerTypeRemote,
 		})
@@ -1946,14 +1946,14 @@ func BenchmarkConnectionPool_RegisterServer(b *testing.B) {
 
 func BenchmarkConnectionPool_GetServerStatus(b *testing.B) {
 	pool := NewConnectionPool(nil, nil, createTestLogger())
-	pool.RegisterServer(MCPServerConfig{
+	_ = pool.RegisterServer(MCPServerConfig{
 		Name: "test-server",
 		Type: MCPServerTypeRemote,
 	})
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		pool.GetServerStatus("test-server")
+		_, _ = pool.GetServerStatus("test-server")
 	}
 }
 
@@ -1963,7 +1963,7 @@ func BenchmarkPreinstaller_GetStatus(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		preinstaller.GetStatus("filesystem")
+		_, _ = preinstaller.GetStatus("filesystem")
 	}
 }
 

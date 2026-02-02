@@ -76,7 +76,7 @@ func TestComplete(t *testing.T) {
 				OutputTokens: 12,
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -106,7 +106,7 @@ func TestComplete(t *testing.T) {
 func TestCompleteWithTools(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req Request
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Len(t, req.Tools, 1)
 		assert.Equal(t, "get_weather", req.Tools[0].Name)
 
@@ -126,7 +126,7 @@ func TestCompleteWithTools(t *testing.T) {
 			StopReason: "end_turn",
 			Usage:      Usage{InputTokens: 30, OutputTokens: 20},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -161,7 +161,7 @@ func TestCompleteWithTools(t *testing.T) {
 func TestCompleteAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": {"message": "Invalid API key"}}`))
+		_, _ = w.Write([]byte(`{"error": {"message": "Invalid API key"}}`))
 	}))
 	defer server.Close()
 
@@ -179,7 +179,7 @@ func TestCompleteAPIError(t *testing.T) {
 func TestCompleteStream(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req Request
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.True(t, req.Stream)
 
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -194,7 +194,7 @@ func TestCompleteStream(t *testing.T) {
 		}
 
 		for _, event := range events {
-			w.Write([]byte(event + "\n\n"))
+			_, _ = w.Write([]byte(event + "\n\n"))
 			flusher.Flush()
 		}
 	}))
@@ -223,7 +223,7 @@ func TestCompleteStream(t *testing.T) {
 func TestCompleteStreamError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"error": "Service unavailable"}`))
+		_, _ = w.Write([]byte(`{"error": "Service unavailable"}`))
 	}))
 	defer server.Close()
 
@@ -443,7 +443,7 @@ func TestRetryOnServerError(t *testing.T) {
 			Content:    []ContentBlock{{Type: "text", Text: "Success"}},
 			StopReason: "end_turn",
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -494,7 +494,7 @@ func TestMultipleClaudeModels(t *testing.T) {
 		t.Run(model, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				var req Request
-				json.NewDecoder(r.Body).Decode(&req)
+				_ = json.NewDecoder(r.Body).Decode(&req)
 				assert.Equal(t, model, req.Model)
 
 				resp := Response{
@@ -503,7 +503,7 @@ func TestMultipleClaudeModels(t *testing.T) {
 					Content:    []ContentBlock{{Type: "text", Text: "Response from " + model}},
 					StopReason: "end_turn",
 				}
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			}))
 			defer server.Close()
 

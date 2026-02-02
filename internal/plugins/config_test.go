@@ -50,7 +50,7 @@ func TestConfigManager_LoadPluginConfig(t *testing.T) {
 		require.NoError(t, err)
 
 		// Delete file and load again - should return cached
-		os.Remove(configPath)
+		_ = os.Remove(configPath)
 		config2, err := cm.LoadPluginConfig("cached-plugin")
 		require.NoError(t, err)
 		assert.Equal(t, config1, config2)

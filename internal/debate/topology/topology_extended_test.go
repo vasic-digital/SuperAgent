@@ -123,7 +123,7 @@ func TestGraphMeshTopology_RouteMessage_PartialTargets(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(4)
-	gm.Initialize(ctx, agents)
+	_ = gm.Initialize(ctx, agents)
 
 	// Message to specific targets including one that doesn't exist
 	msg := &Message{
@@ -173,7 +173,7 @@ func TestGraphMeshTopology_CalculateLeaderScore_AllPhases(t *testing.T) {
 		{ID: "optimizer", Role: RoleOptimizer, Score: 7.0, Specialization: "code", Confidence: 0.8},
 		{ID: "moderator", Role: RoleModerator, Score: 8.5, Specialization: "reasoning", Confidence: 0.95},
 	}
-	gm.Initialize(ctx, agents)
+	_ = gm.Initialize(ctx, agents)
 
 	// Test leader selection for each phase
 	phases := []DebatePhase{PhaseProposal, PhaseCritique, PhaseReview, PhaseOptimization, PhaseConvergence}
@@ -205,7 +205,7 @@ func TestGraphMeshTopology_DynamicRoleReassignment_TopPerformers(t *testing.T) {
 		// Simulate activity
 		agents[i].UpdateActivity(time.Duration(100-i*10) * time.Millisecond)
 	}
-	gm.Initialize(ctx, agents)
+	_ = gm.Initialize(ctx, agents)
 
 	err := gm.DynamicRoleReassignment(ctx)
 	assert.NoError(t, err)
@@ -221,10 +221,10 @@ func TestGraphMeshTopology_GetTopologySnapshot_Complete(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(3)
-	gm.Initialize(ctx, agents)
+	_ = gm.Initialize(ctx, agents)
 	gm.IncrementMessageCount(true) // Ensure some messages are counted
 	gm.SetPhase(PhaseCritique, "test", "test transition")
-	gm.SelectLeader(PhaseCritique)
+	_, _ = gm.SelectLeader(PhaseCritique)
 
 	snapshot := gm.GetTopologySnapshot()
 
@@ -243,7 +243,7 @@ func TestGraphMeshTopology_ExecuteParallelPhase_WithErrors(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(4)
-	gm.Initialize(ctx, agents)
+	_ = gm.Initialize(ctx, agents)
 
 	errorCount := 0
 	taskFn := func(agent *Agent) error {
@@ -307,7 +307,7 @@ func TestStarTopology_RouteMessage_ModeratorBroadcast(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(4)
-	st.Initialize(ctx, agents)
+	_ = st.Initialize(ctx, agents)
 
 	moderatorID := st.GetModerator().ID
 
@@ -329,7 +329,7 @@ func TestStarTopology_SendMessage_EmptyTargets(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(3)
-	st.Initialize(ctx, agents)
+	_ = st.Initialize(ctx, agents)
 
 	msg := &Message{
 		FromAgent: agents[0].ID,
@@ -363,7 +363,7 @@ func TestStarTopology_GetParallelGroups_SingleAgent(t *testing.T) {
 		{ID: "agent-1", Role: RoleProposer, Score: 8.0},
 	}
 
-	st.Initialize(ctx, agents)
+	_ = st.Initialize(ctx, agents)
 
 	groups := st.GetParallelGroups(PhaseProposal)
 	// No non-moderators, so no groups
@@ -377,7 +377,7 @@ func TestStarTopology_Close(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(3)
-	st.Initialize(ctx, agents)
+	_ = st.Initialize(ctx, agents)
 
 	err := st.Close()
 	assert.NoError(t, err)
@@ -422,7 +422,7 @@ func TestChainTopology_AdvancePosition_WrapAround(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(3)
-	ct.Initialize(ctx, agents)
+	_ = ct.Initialize(ctx, agents)
 
 	// Advance through entire chain
 	for i := 0; i < 10; i++ {
@@ -440,7 +440,7 @@ func TestChainTopology_GetNextAgent_NonExistent(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(3)
-	ct.Initialize(ctx, agents)
+	_ = ct.Initialize(ctx, agents)
 
 	next := ct.GetNextAgent("nonexistent")
 	assert.Nil(t, next)
@@ -453,7 +453,7 @@ func TestChainTopology_GetPreviousAgent_NonExistent(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(3)
-	ct.Initialize(ctx, agents)
+	_ = ct.Initialize(ctx, agents)
 
 	prev := ct.GetPreviousAgent("nonexistent")
 	assert.Nil(t, prev)
@@ -466,7 +466,7 @@ func TestChainTopology_RouteMessage_NonExistent(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(3)
-	ct.Initialize(ctx, agents)
+	_ = ct.Initialize(ctx, agents)
 
 	msg := &Message{
 		FromAgent: "nonexistent",
@@ -484,7 +484,7 @@ func TestChainTopology_BroadcastMessage_Timeout(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(3)
-	ct.Initialize(ctx, agents)
+	_ = ct.Initialize(ctx, agents)
 
 	// Fill the message queue
 	for i := 0; i < 200; i++ {
@@ -516,7 +516,7 @@ func TestChainTopology_SelectLeader_AllPhases(t *testing.T) {
 		{ID: "optimizer", Role: RoleOptimizer, Score: 7.5},
 		{ID: "moderator", Role: RoleModerator, Score: 7.0},
 	}
-	ct.Initialize(ctx, agents)
+	_ = ct.Initialize(ctx, agents)
 
 	phases := []DebatePhase{PhaseProposal, PhaseCritique, PhaseReview, PhaseOptimization, PhaseConvergence}
 
@@ -546,7 +546,7 @@ func TestChainTopology_ReorderChain_AgentNotFound(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(3)
-	ct.Initialize(ctx, agents)
+	_ = ct.Initialize(ctx, agents)
 
 	chain := ct.GetChain()
 	newOrder := []string{chain[0].ID, "nonexistent", chain[2].ID}
@@ -562,7 +562,7 @@ func TestChainTopology_Close(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(3)
-	ct.Initialize(ctx, agents)
+	_ = ct.Initialize(ctx, agents)
 
 	err := ct.Close()
 	assert.NoError(t, err)
@@ -698,7 +698,7 @@ func TestGraphMeshTopology_ConcurrentAccess(t *testing.T) {
 	defer cancel()
 
 	agents := createTestAgents(5)
-	gm.Initialize(ctx, agents)
+	_ = gm.Initialize(ctx, agents)
 
 	done := make(chan bool, 10)
 

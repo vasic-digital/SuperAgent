@@ -267,7 +267,7 @@ func (m *Middleware) Handler(next http.Handler) http.Handler {
 				http.Error(w, "Failed to read body", http.StatusBadRequest)
 				return
 			}
-			r.Body.Close()
+			_ = r.Body.Close()
 
 			// Expand TOON to JSON
 			expanded, err := m.expandToJSON(body)
@@ -297,7 +297,7 @@ func (m *Middleware) Handler(next http.Handler) http.Handler {
 			}
 
 			w.Header().Set("Content-Type", "application/toon+json")
-			w.Write(encoded)
+			_, _ = w.Write(encoded)
 		} else {
 			next.ServeHTTP(w, r)
 		}

@@ -64,14 +64,14 @@ func TestClientConnect(t *testing.T) {
 	t.Run("successful connection", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/v1/config" {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"defaults":  map[string]string{},
 					"overrides": map[string]string{},
 				})
 				return
 			}
 			if r.URL.Path == "/v1/namespaces" {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"namespaces": [][]string{},
 				})
 				return

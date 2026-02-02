@@ -99,7 +99,7 @@ func TestStableDiffusionAdapter_Connect(t *testing.T) {
 				assert.Equal(t, "/sdapi/v1/samplers", r.URL.Path)
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -152,7 +152,7 @@ func TestStableDiffusionAdapter_Health(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode([]map[string]string{{"name": "Euler"}})
+				_ = json.NewEncoder(w).Encode([]map[string]string{{"name": "Euler"}})
 			}))
 			defer server.Close()
 
@@ -236,11 +236,11 @@ func TestStableDiffusionAdapter_Txt2Img(t *testing.T) {
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.NotEmpty(t, body["prompt"])
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -318,7 +318,7 @@ func TestStableDiffusionAdapter_Img2Img(t *testing.T) {
 				assert.Equal(t, "/sdapi/v1/img2img", r.URL.Path)
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -376,7 +376,7 @@ func TestStableDiffusionAdapter_Upscale(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "extra")
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -439,7 +439,7 @@ func TestStableDiffusionAdapter_GetProgress(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/progress")
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -548,7 +548,7 @@ func TestStableDiffusionAdapter_GetModels(t *testing.T) {
 				assert.Equal(t, "/sdapi/v1/sd-models", r.URL.Path)
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -570,7 +570,7 @@ func TestStableDiffusionAdapter_GetModels(t *testing.T) {
 func TestStableDiffusionAdapter_GetSamplers(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode([]map[string]interface{}{
+		_ = json.NewEncoder(w).Encode([]map[string]interface{}{
 			{"name": "Euler", "aliases": []string{"euler"}},
 			{"name": "DPM++ 2M Karras", "aliases": []string{"dpmpp_2m_karras"}},
 		})
@@ -590,7 +590,7 @@ func TestStableDiffusionAdapter_GetSamplers(t *testing.T) {
 func TestStableDiffusionAdapter_GetUpscalers(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode([]map[string]interface{}{
+		_ = json.NewEncoder(w).Encode([]map[string]interface{}{
 			{"name": "R-ESRGAN 4x+"},
 			{"name": "LDSR"},
 		})
@@ -609,7 +609,7 @@ func TestStableDiffusionAdapter_GetUpscalers(t *testing.T) {
 func TestStableDiffusionAdapter_GetLoras(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode([]map[string]interface{}{
+		_ = json.NewEncoder(w).Encode([]map[string]interface{}{
 			{"name": "lora1", "path": "/models/lora/lora1.safetensors"},
 		})
 	}))
@@ -627,7 +627,7 @@ func TestStableDiffusionAdapter_GetLoras(t *testing.T) {
 func TestStableDiffusionAdapter_GetOptions(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"sd_model_checkpoint":      "v1-5-pruned.safetensors",
 			"CLIP_stop_at_last_layers": 1,
 		})
@@ -736,7 +736,7 @@ func TestStableDiffusionAdapter_PNGInfo(t *testing.T) {
 				assert.Equal(t, "/sdapi/v1/png-info", r.URL.Path)
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -809,7 +809,7 @@ func TestStableDiffusionAdapter_BasicAuth(t *testing.T) {
 		assert.Equal(t, "password123", password)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode([]map[string]string{{"name": "Euler"}})
+		_ = json.NewEncoder(w).Encode([]map[string]string{{"name": "Euler"}})
 	}))
 	defer server.Close()
 
@@ -826,7 +826,7 @@ func TestStableDiffusionAdapter_BasicAuth(t *testing.T) {
 func TestStableDiffusionAdapter_Txt2ImgDefaults(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		// Verify defaults are set
 		assert.Equal(t, float64(20), body["steps"])
@@ -837,7 +837,7 @@ func TestStableDiffusionAdapter_Txt2ImgDefaults(t *testing.T) {
 		assert.Equal(t, float64(-1), body["seed"])
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"images":     []string{"image"},
 			"parameters": map[string]interface{}{},
 			"info":       "{}",

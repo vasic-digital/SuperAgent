@@ -278,7 +278,7 @@ func TestVisionFromFile(t *testing.T) {
 		t.Skipf("Failed to create test image: %v", err)
 		return
 	}
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	// Read and encode the file
 	fileData, err := os.ReadFile(tmpFile)

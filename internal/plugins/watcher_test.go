@@ -352,7 +352,7 @@ func TestWatcher_WatchLoop_ErrorChannel(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Close the internal watcher to trigger error channel close
-	watcher.watcher.Close()
+	_ = watcher.watcher.Close()
 
 	// Wait for watcher to handle the error
 	time.Sleep(100 * time.Millisecond)

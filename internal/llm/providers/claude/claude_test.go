@@ -68,7 +68,7 @@ func TestClaudeProvider_Complete_Success(t *testing.T) {
 		assert.Equal(t, "2023-06-01", r.Header.Get("anthropic-version"))
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
+		_, _ = w.Write([]byte(`{
 			"id": "msg_123",
 			"type": "message",
 			"role": "assistant",
@@ -101,7 +101,7 @@ func TestClaudeProvider_Complete_Success(t *testing.T) {
 func TestClaudeProvider_Complete_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": {"type": "invalid_request_error", "message": "Invalid request"}}`))
+		_, _ = w.Write([]byte(`{"error": {"type": "invalid_request_error", "message": "Invalid request"}}`))
 	}))
 	defer server.Close()
 
@@ -217,10 +217,10 @@ func TestClaudeProvider_CompleteStream(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		// Send streaming chunks in Claude format
-		w.Write([]byte("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n"))
-		w.Write([]byte("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\" World\"}}\n\n"))
-		w.Write([]byte("data: {\"type\":\"message_stop\"}\n\n"))
-		w.Write([]byte("data: [DONE]\n\n"))
+		_, _ = w.Write([]byte("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n"))
+		_, _ = w.Write([]byte("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\" World\"}}\n\n"))
+		_, _ = w.Write([]byte("data: {\"type\":\"message_stop\"}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 	}))
 	defer server.Close()
 
@@ -361,7 +361,7 @@ func TestClaudeProvider_Complete_ContextCancellation(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(100 * time.Millisecond) // Simulate slow response
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":"msg_123","content":[{"text":"test"}],"usage":{}}`))
+		_, _ = w.Write([]byte(`{"id":"msg_123","content":[{"text":"test"}],"usage":{}}`))
 	}))
 	defer server.Close()
 
@@ -391,7 +391,7 @@ func TestClaudeProvider_RetryOnServerError(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":"msg_123","content":[{"type":"text","text":"success"}],"usage":{}}`))
+		_, _ = w.Write([]byte(`{"id":"msg_123","content":[{"type":"text","text":"success"}],"usage":{}}`))
 	}))
 	defer server.Close()
 
@@ -564,7 +564,7 @@ func TestClaudeProvider_NextDelay(t *testing.T) {
 func TestClaudeProvider_Complete_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{invalid json`))
+		_, _ = w.Write([]byte(`{invalid json`))
 	}))
 	defer server.Close()
 
@@ -686,7 +686,7 @@ func TestClaudeProvider_CalculateConfidence_EdgeCases(t *testing.T) {
 func TestClaudeProvider_CompleteStream_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": {"message": "Internal server error"}}`))
+		_, _ = w.Write([]byte(`{"error": {"message": "Internal server error"}}`))
 	}))
 	defer server.Close()
 
@@ -717,7 +717,7 @@ func TestClaudeProvider_CompleteStream_ContextCancellation(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("data: {\"type\":\"content_block_delta\",\"delta\":{\"text\":\"Hello\"}}\n\n"))
+		_, _ = w.Write([]byte("data: {\"type\":\"content_block_delta\",\"delta\":{\"text\":\"Hello\"}}\n\n"))
 	}))
 	defer server.Close()
 
@@ -763,7 +763,7 @@ func TestClaudeProvider_ToolChoice_StringAutoConvertsToObject(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"OK"}],"model":"claude-3","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
+		_, _ = w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"OK"}],"model":"claude-3","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
 	}))
 	defer server.Close()
 
@@ -807,7 +807,7 @@ func TestClaudeProvider_ToolChoice_StringAnyConvertsToObject(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"OK"}],"model":"claude-3","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
+		_, _ = w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"OK"}],"model":"claude-3","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
 	}))
 	defer server.Close()
 
@@ -849,7 +849,7 @@ func TestClaudeProvider_ToolChoice_ObjectPassedThrough(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"OK"}],"model":"claude-3","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
+		_, _ = w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"OK"}],"model":"claude-3","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
 	}))
 	defer server.Close()
 
@@ -897,7 +897,7 @@ func TestClaudeProvider_ToolChoice_NilWhenNoTools(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"OK"}],"model":"claude-3","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
+		_, _ = w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"OK"}],"model":"claude-3","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
 	}))
 	defer server.Close()
 
@@ -965,7 +965,7 @@ func TestClaudeProvider_ToolChoice_AllFormats(t *testing.T) {
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"OK"}],"model":"claude-3","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
+				_, _ = w.Write([]byte(`{"id":"msg_test","type":"message","role":"assistant","content":[{"type":"text","text":"OK"}],"model":"claude-3","stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":5}}`))
 			}))
 			defer server.Close()
 
@@ -1241,10 +1241,10 @@ func TestClaudeProvider_Complete_WithTools(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &capturedRequest)
+		_ = json.Unmarshal(body, &capturedRequest)
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
+		_, _ = w.Write([]byte(`{
 			"id": "msg_123",
 			"type": "message",
 			"role": "assistant",
@@ -1445,7 +1445,7 @@ func TestClaudeProvider_CompleteStream_WithTextDelta(t *testing.T) {
 		}
 
 		for _, event := range events {
-			w.Write([]byte(event + "\n\n"))
+			_, _ = w.Write([]byte(event + "\n\n"))
 			if f, ok := w.(http.Flusher); ok {
 				f.Flush()
 			}
@@ -1481,9 +1481,9 @@ func TestClaudeProvider_CompleteStream_MalformedJSON(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		// Send some malformed JSON mixed with valid
-		w.Write([]byte("data: {invalid json}\n\n"))
-		w.Write([]byte("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Valid\"}}\n\n"))
-		w.Write([]byte("data: {\"type\":\"message_stop\"}\n\n"))
+		_, _ = w.Write([]byte("data: {invalid json}\n\n"))
+		_, _ = w.Write([]byte("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Valid\"}}\n\n"))
+		_, _ = w.Write([]byte("data: {\"type\":\"message_stop\"}\n\n"))
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
 		}
@@ -1633,7 +1633,7 @@ func TestClaudeProvider_Complete_BadGateway(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":"msg","content":[{"type":"text","text":"OK"}],"usage":{}}`))
+		_, _ = w.Write([]byte(`{"id":"msg","content":[{"type":"text","text":"OK"}],"usage":{}}`))
 	}))
 	defer server.Close()
 
@@ -1662,7 +1662,7 @@ func TestClaudeProvider_Complete_GatewayTimeout(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":"msg","content":[{"type":"text","text":"OK"}],"usage":{}}`))
+		_, _ = w.Write([]byte(`{"id":"msg","content":[{"type":"text","text":"OK"}],"usage":{}}`))
 	}))
 	defer server.Close()
 
@@ -1732,7 +1732,7 @@ func TestClaudeProvider_Complete_ReadBodyError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Length", "1000") // Claim more content than we send
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":`)) // Truncated
+		_, _ = w.Write([]byte(`{"id":`)) // Truncated
 		// Don't write the rest, causing EOF before Content-Length is satisfied
 	}))
 	defer server.Close()

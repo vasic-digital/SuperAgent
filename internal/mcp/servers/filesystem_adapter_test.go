@@ -35,7 +35,7 @@ func TestDefaultFilesystemAdapterConfig(t *testing.T) {
 func TestFilesystemAdapter_Initialize(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := FilesystemAdapterConfig{
 		AllowedPaths: []string{tempDir},
@@ -70,7 +70,7 @@ func TestFilesystemAdapter_Initialize_InvalidPath(t *testing.T) {
 func TestFilesystemAdapter_Health(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := FilesystemAdapterConfig{
 		AllowedPaths: []string{tempDir},
@@ -92,7 +92,7 @@ func TestFilesystemAdapter_Health(t *testing.T) {
 func TestFilesystemAdapter_ReadFile(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create test file
 	testFile := filepath.Join(tempDir, "test.txt")
@@ -128,7 +128,7 @@ func TestFilesystemAdapter_ReadFile_NotInitialized(t *testing.T) {
 func TestFilesystemAdapter_ReadFile_PathNotAllowed(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := FilesystemAdapterConfig{
 		AllowedPaths: []string{tempDir},
@@ -146,7 +146,7 @@ func TestFilesystemAdapter_ReadFile_PathNotAllowed(t *testing.T) {
 func TestFilesystemAdapter_ReadFile_TooLarge(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create a file larger than max size
 	testFile := filepath.Join(tempDir, "large.txt")
@@ -169,7 +169,7 @@ func TestFilesystemAdapter_ReadFile_TooLarge(t *testing.T) {
 func TestFilesystemAdapter_WriteFile(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := FilesystemAdapterConfig{
 		AllowedPaths: []string{tempDir},
@@ -196,7 +196,7 @@ func TestFilesystemAdapter_WriteFile(t *testing.T) {
 func TestFilesystemAdapter_WriteFile_NotAllowed(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := FilesystemAdapterConfig{
 		AllowedPaths: []string{tempDir},
@@ -215,7 +215,7 @@ func TestFilesystemAdapter_WriteFile_NotAllowed(t *testing.T) {
 func TestFilesystemAdapter_AppendFile(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	testFile := filepath.Join(tempDir, "append.txt")
 	require.NoError(t, os.WriteFile(testFile, []byte("Initial"), 0644))
@@ -241,7 +241,7 @@ func TestFilesystemAdapter_AppendFile(t *testing.T) {
 func TestFilesystemAdapter_DeleteFile(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	testFile := filepath.Join(tempDir, "delete.txt")
 	require.NoError(t, os.WriteFile(testFile, []byte("To delete"), 0644))
@@ -265,7 +265,7 @@ func TestFilesystemAdapter_DeleteFile(t *testing.T) {
 func TestFilesystemAdapter_DeleteFile_NotAllowed(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := FilesystemAdapterConfig{
 		AllowedPaths: []string{tempDir},
@@ -284,7 +284,7 @@ func TestFilesystemAdapter_DeleteFile_NotAllowed(t *testing.T) {
 func TestFilesystemAdapter_ListDirectory(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create some test files
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "file1.txt"), []byte("1"), 0644))
@@ -323,7 +323,7 @@ func TestFilesystemAdapter_ListDirectory(t *testing.T) {
 func TestFilesystemAdapter_CreateDirectory(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := FilesystemAdapterConfig{
 		AllowedPaths:   []string{tempDir},
@@ -346,7 +346,7 @@ func TestFilesystemAdapter_CreateDirectory(t *testing.T) {
 func TestFilesystemAdapter_DeleteDirectory(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create directory with content
 	dirToDelete := filepath.Join(tempDir, "to_delete")
@@ -377,7 +377,7 @@ func TestFilesystemAdapter_DeleteDirectory(t *testing.T) {
 func TestFilesystemAdapter_GetFileInfo(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	testFile := filepath.Join(tempDir, "test.txt")
 	require.NoError(t, os.WriteFile(testFile, []byte("content"), 0644))
@@ -402,7 +402,7 @@ func TestFilesystemAdapter_GetFileInfo(t *testing.T) {
 func TestFilesystemAdapter_CopyFile(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	srcFile := filepath.Join(tempDir, "source.txt")
 	dstFile := filepath.Join(tempDir, "dest.txt")
@@ -430,7 +430,7 @@ func TestFilesystemAdapter_CopyFile(t *testing.T) {
 func TestFilesystemAdapter_MoveFile(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	srcFile := filepath.Join(tempDir, "source.txt")
 	dstFile := filepath.Join(tempDir, "dest.txt")
@@ -462,7 +462,7 @@ func TestFilesystemAdapter_MoveFile(t *testing.T) {
 func TestFilesystemAdapter_SearchFiles(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create test files
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "file1.txt"), []byte("1"), 0644))
@@ -505,7 +505,7 @@ func TestFilesystemAdapter_GetMCPTools(t *testing.T) {
 func TestFilesystemAdapter_ExecuteTool(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	testFile := filepath.Join(tempDir, "test.txt")
 	require.NoError(t, os.WriteFile(testFile, []byte("tool content"), 0644))
@@ -558,7 +558,7 @@ func TestFilesystemAdapter_Close(t *testing.T) {
 func TestFilesystemAdapter_DeniedPaths(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "fs_test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create a denied directory
 	deniedDir := filepath.Join(tempDir, "secret")

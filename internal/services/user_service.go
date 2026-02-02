@@ -383,7 +383,7 @@ func (u *UserService) GetSession(ctx context.Context, token string) (*models.Use
 	}
 
 	// Update last activity
-	u.db.Exec("UPDATE user_sessions SET last_activity = NOW() WHERE id = $1", session.ID)
+	_ = u.db.Exec("UPDATE user_sessions SET last_activity = NOW() WHERE id = $1", session.ID)
 
 	return &session, nil
 }

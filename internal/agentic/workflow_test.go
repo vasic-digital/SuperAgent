@@ -85,8 +85,8 @@ func TestWorkflow_AddNode(t *testing.T) {
 
 func TestWorkflow_AddEdge(t *testing.T) {
 	w := NewWorkflow("test", "test", nil, nil)
-	w.AddNode(&Node{ID: "node1", Name: "Node 1"})
-	w.AddNode(&Node{ID: "node2", Name: "Node 2"})
+	_ = w.AddNode(&Node{ID: "node1", Name: "Node 1"})
+	_ = w.AddNode(&Node{ID: "node2", Name: "Node 2"})
 
 	t.Run("ValidEdge", func(t *testing.T) {
 		err := w.AddEdge("node1", "node2", nil, "edge1")
@@ -121,7 +121,7 @@ func TestWorkflow_AddEdge(t *testing.T) {
 
 func TestWorkflow_SetEntryPoint(t *testing.T) {
 	w := NewWorkflow("test", "test", nil, nil)
-	w.AddNode(&Node{ID: "node1", Name: "Node 1"})
+	_ = w.AddNode(&Node{ID: "node1", Name: "Node 1"})
 
 	t.Run("ValidNode", func(t *testing.T) {
 		err := w.SetEntryPoint("node1")
@@ -138,7 +138,7 @@ func TestWorkflow_SetEntryPoint(t *testing.T) {
 
 func TestWorkflow_AddEndNode(t *testing.T) {
 	w := NewWorkflow("test", "test", nil, nil)
-	w.AddNode(&Node{ID: "node1", Name: "Node 1"})
+	_ = w.AddNode(&Node{ID: "node1", Name: "Node 1"})
 
 	t.Run("ValidNode", func(t *testing.T) {
 		err := w.AddEndNode("node1")
@@ -156,7 +156,7 @@ func TestWorkflow_AddEndNode(t *testing.T) {
 func TestWorkflow_Execute(t *testing.T) {
 	t.Run("NoEntryPoint", func(t *testing.T) {
 		w := NewWorkflow("test", "test", nil, nil)
-		w.AddNode(&Node{ID: "node1", Name: "Node 1"})
+		_ = w.AddNode(&Node{ID: "node1", Name: "Node 1"})
 
 		state, err := w.Execute(context.Background(), nil)
 		require.Error(t, err)
@@ -176,9 +176,9 @@ func TestWorkflow_Execute(t *testing.T) {
 			}, nil
 		}
 
-		w.AddNode(&Node{ID: "start", Name: "Start", Handler: handler})
-		w.SetEntryPoint("start")
-		w.AddEndNode("start")
+		_ = w.AddNode(&Node{ID: "start", Name: "Start", Handler: handler})
+		_ = w.SetEntryPoint("start")
+		_ = w.AddEndNode("start")
 
 		state, err := w.Execute(context.Background(), nil)
 		require.NoError(t, err)
@@ -200,11 +200,11 @@ func TestWorkflow_Execute(t *testing.T) {
 			return &NodeOutput{ShouldEnd: true}, nil
 		}
 
-		w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler1})
-		w.AddNode(&Node{ID: "node2", Name: "Node 2", Handler: handler2})
-		w.AddEdge("node1", "node2", nil, "")
-		w.SetEntryPoint("node1")
-		w.AddEndNode("node2")
+		_ = w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler1})
+		_ = w.AddNode(&Node{ID: "node2", Name: "Node 2", Handler: handler2})
+		_ = w.AddEdge("node1", "node2", nil, "")
+		_ = w.SetEntryPoint("node1")
+		_ = w.AddEndNode("node2")
 
 		state, err := w.Execute(context.Background(), nil)
 		require.NoError(t, err)
@@ -228,9 +228,9 @@ func TestWorkflow_Execute(t *testing.T) {
 			return &NodeOutput{ShouldEnd: true}, nil
 		}
 
-		w.AddNode(&Node{ID: "start", Name: "Start", Handler: handler1})
-		w.AddNode(&Node{ID: "branch_a", Name: "Branch A", Handler: handlerA})
-		w.AddNode(&Node{ID: "branch_b", Name: "Branch B", Handler: handlerB})
+		_ = w.AddNode(&Node{ID: "start", Name: "Start", Handler: handler1})
+		_ = w.AddNode(&Node{ID: "branch_a", Name: "Branch A", Handler: handlerA})
+		_ = w.AddNode(&Node{ID: "branch_b", Name: "Branch B", Handler: handlerB})
 
 		conditionA := func(state *WorkflowState) bool {
 			return state.Variables["branch"] == "A"
@@ -239,9 +239,9 @@ func TestWorkflow_Execute(t *testing.T) {
 			return state.Variables["branch"] == "B"
 		}
 
-		w.AddEdge("start", "branch_a", conditionA, "if A")
-		w.AddEdge("start", "branch_b", conditionB, "if B")
-		w.SetEntryPoint("start")
+		_ = w.AddEdge("start", "branch_a", conditionA, "if A")
+		_ = w.AddEdge("start", "branch_b", conditionB, "if B")
+		_ = w.SetEntryPoint("start")
 
 		state, err := w.Execute(context.Background(), nil)
 		require.NoError(t, err)
@@ -260,8 +260,8 @@ func TestWorkflow_Execute(t *testing.T) {
 			return nil, errors.New("handler error")
 		}
 
-		w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler})
-		w.SetEntryPoint("node1")
+		_ = w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler})
+		_ = w.SetEntryPoint("node1")
 
 		state, err := w.Execute(context.Background(), nil)
 		require.Error(t, err)
@@ -277,9 +277,9 @@ func TestWorkflow_Execute(t *testing.T) {
 			return &NodeOutput{}, nil
 		}
 
-		w.AddNode(&Node{ID: "slow", Name: "Slow Node", Handler: handler})
-		w.AddEdge("slow", "slow", nil, "loop")
-		w.SetEntryPoint("slow")
+		_ = w.AddNode(&Node{ID: "slow", Name: "Slow Node", Handler: handler})
+		_ = w.AddEdge("slow", "slow", nil, "loop")
+		_ = w.SetEntryPoint("slow")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 		defer cancel()
@@ -302,9 +302,9 @@ func TestWorkflow_Execute(t *testing.T) {
 			return &NodeOutput{}, nil
 		}
 
-		w.AddNode(&Node{ID: "loop", Name: "Loop Node", Handler: handler})
-		w.AddEdge("loop", "loop", nil, "loop")
-		w.SetEntryPoint("loop")
+		_ = w.AddNode(&Node{ID: "loop", Name: "Loop Node", Handler: handler})
+		_ = w.AddEdge("loop", "loop", nil, "loop")
+		_ = w.SetEntryPoint("loop")
 
 		state, err := w.Execute(context.Background(), nil)
 		require.Error(t, err)
@@ -316,9 +316,9 @@ func TestWorkflow_Execute(t *testing.T) {
 	t.Run("NilHandler", func(t *testing.T) {
 		w := NewWorkflow("nil", "nil handler workflow", nil, nil)
 
-		w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: nil})
-		w.SetEntryPoint("node1")
-		w.AddEndNode("node1")
+		_ = w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: nil})
+		_ = w.SetEntryPoint("node1")
+		_ = w.AddEndNode("node1")
 
 		state, err := w.Execute(context.Background(), nil)
 		require.NoError(t, err)
@@ -332,8 +332,8 @@ func TestWorkflow_Execute(t *testing.T) {
 			return &NodeOutput{ShouldEnd: true}, nil
 		}
 
-		w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler})
-		w.SetEntryPoint("node1")
+		_ = w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler})
+		_ = w.SetEntryPoint("node1")
 
 		input := &NodeInput{
 			Messages: []Message{
@@ -354,9 +354,9 @@ func TestWorkflow_Execute(t *testing.T) {
 			return &NodeOutput{}, nil
 		}
 
-		w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler})
-		w.SetEntryPoint("node1")
-		w.AddEndNode("node1")
+		_ = w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler})
+		_ = w.SetEntryPoint("node1")
+		_ = w.AddEndNode("node1")
 
 		state, err := w.Execute(context.Background(), nil)
 		require.NoError(t, err)
@@ -383,8 +383,8 @@ func TestWorkflow_ExecuteWithRetry(t *testing.T) {
 			return &NodeOutput{ShouldEnd: true}, nil
 		}
 
-		w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler})
-		w.SetEntryPoint("node1")
+		_ = w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler})
+		_ = w.SetEntryPoint("node1")
 
 		state, err := w.Execute(context.Background(), nil)
 		require.NoError(t, err)
@@ -410,7 +410,7 @@ func TestWorkflow_ExecuteWithRetry(t *testing.T) {
 			return &NodeOutput{ShouldEnd: true}, nil
 		}
 
-		w.AddNode(&Node{
+		_ = w.AddNode(&Node{
 			ID:      "node1",
 			Name:    "Node 1",
 			Handler: handler,
@@ -420,7 +420,7 @@ func TestWorkflow_ExecuteWithRetry(t *testing.T) {
 				Backoff:    1.5,
 			},
 		})
-		w.SetEntryPoint("node1")
+		_ = w.SetEntryPoint("node1")
 
 		state, err := w.Execute(context.Background(), nil)
 		require.NoError(t, err)
@@ -479,9 +479,9 @@ func TestWorkflow_Checkpoints(t *testing.T) {
 		return &NodeOutput{}, nil
 	}
 
-	w.AddNode(&Node{ID: "loop", Name: "Loop Node", Handler: handler})
-	w.AddEdge("loop", "loop", nil, "loop")
-	w.SetEntryPoint("loop")
+	_ = w.AddNode(&Node{ID: "loop", Name: "Loop Node", Handler: handler})
+	_ = w.AddEdge("loop", "loop", nil, "loop")
+	_ = w.SetEntryPoint("loop")
 
 	state, err := w.Execute(context.Background(), nil)
 	require.NoError(t, err)
@@ -506,11 +506,11 @@ func TestWorkflow_NextNodeOverride(t *testing.T) {
 		return &NodeOutput{ShouldEnd: true}, nil
 	}
 
-	w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler1})
-	w.AddNode(&Node{ID: "node2", Name: "Node 2", Handler: handler2})
-	w.AddNode(&Node{ID: "node3", Name: "Node 3", Handler: handler3})
-	w.AddEdge("node1", "node2", nil, "")
-	w.SetEntryPoint("node1")
+	_ = w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler1})
+	_ = w.AddNode(&Node{ID: "node2", Name: "Node 2", Handler: handler2})
+	_ = w.AddNode(&Node{ID: "node3", Name: "Node 3", Handler: handler3})
+	_ = w.AddEdge("node1", "node2", nil, "")
+	_ = w.SetEntryPoint("node1")
 
 	state, err := w.Execute(context.Background(), nil)
 	require.NoError(t, err)
@@ -562,8 +562,8 @@ func TestWorkflowConcurrency(t *testing.T) {
 		return &NodeOutput{ShouldEnd: true}, nil
 	}
 
-	w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler})
-	w.SetEntryPoint("node1")
+	_ = w.AddNode(&Node{ID: "node1", Name: "Node 1", Handler: handler})
+	_ = w.SetEntryPoint("node1")
 
 	// Run multiple executions concurrently
 	done := make(chan bool, 10)

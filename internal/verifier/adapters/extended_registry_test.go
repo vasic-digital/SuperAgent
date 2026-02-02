@@ -100,7 +100,7 @@ func TestExtendedProviderRegistry_UnregisterProvider(t *testing.T) {
 	}
 	registry, _ := NewExtendedProviderRegistry(cfg)
 
-	registry.RegisterProvider(context.Background(), "openai", "OpenAI", "key", "url", []string{"gpt-4"})
+	_ = registry.RegisterProvider(context.Background(), "openai", "OpenAI", "key", "url", []string{"gpt-4"})
 	registry.UnregisterProvider("openai")
 
 	_, ok := registry.adapters.Get("openai")
@@ -115,7 +115,7 @@ func TestExtendedProviderRegistry_VerifyModel(t *testing.T) {
 	}
 	registry, _ := NewExtendedProviderRegistry(cfg)
 
-	registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{"test-model"})
+	_ = registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{"test-model"})
 
 	err := registry.VerifyModel(context.Background(), "test-model", "test")
 	if err != nil {
@@ -147,8 +147,8 @@ func TestExtendedProviderRegistry_GetVerifiedModel(t *testing.T) {
 	}
 	registry, _ := NewExtendedProviderRegistry(cfg)
 
-	registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{"test-model"})
-	registry.VerifyModel(context.Background(), "test-model", "test")
+	_ = registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{"test-model"})
+	_ = registry.VerifyModel(context.Background(), "test-model", "test")
 
 	model, err := registry.GetVerifiedModel("test-model")
 	if err != nil {
@@ -174,9 +174,9 @@ func TestExtendedProviderRegistry_GetVerifiedModels(t *testing.T) {
 	}
 	registry, _ := NewExtendedProviderRegistry(cfg)
 
-	registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{"model1", "model2"})
-	registry.VerifyModel(context.Background(), "model1", "test")
-	registry.VerifyModel(context.Background(), "model2", "test")
+	_ = registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{"model1", "model2"})
+	_ = registry.VerifyModel(context.Background(), "model1", "test")
+	_ = registry.VerifyModel(context.Background(), "model2", "test")
 
 	// Manually set models as verified since mock adapter responses may not pass all verification checks
 	registry.mu.Lock()
@@ -197,7 +197,7 @@ func TestExtendedProviderRegistry_GetProviderHealth(t *testing.T) {
 	}
 	registry, _ := NewExtendedProviderRegistry(cfg)
 
-	registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{})
+	_ = registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{})
 
 	health, err := registry.GetProviderHealth("test")
 	if err != nil {
@@ -223,8 +223,8 @@ func TestExtendedProviderRegistry_GetHealthyProviders(t *testing.T) {
 	}
 	registry, _ := NewExtendedProviderRegistry(cfg)
 
-	registry.RegisterProvider(context.Background(), "healthy", "Healthy", "key", "url", []string{})
-	registry.RegisterProvider(context.Background(), "unhealthy", "Unhealthy", "key", "url", []string{})
+	_ = registry.RegisterProvider(context.Background(), "healthy", "Healthy", "key", "url", []string{})
+	_ = registry.RegisterProvider(context.Background(), "unhealthy", "Unhealthy", "key", "url", []string{})
 
 	// Mark one as unhealthy
 	registry.mu.Lock()
@@ -242,7 +242,7 @@ func TestExtendedProviderRegistry_Complete(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"choices":[{"message":{"content":"Hello back!"}}]}`))
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"Hello back!"}}]}`))
 	}))
 	defer server.Close()
 
@@ -251,10 +251,10 @@ func TestExtendedProviderRegistry_Complete(t *testing.T) {
 	}
 	registry, _ := NewExtendedProviderRegistry(cfg)
 
-	registry.RegisterProvider(context.Background(), "test", "Test", "key", server.URL, []string{"model"})
+	_ = registry.RegisterProvider(context.Background(), "test", "Test", "key", server.URL, []string{"model"})
 
 	// Verify the model first
-	registry.VerifyModel(context.Background(), "model", "test")
+	_ = registry.VerifyModel(context.Background(), "model", "test")
 
 	response, err := registry.Complete(context.Background(), "model", "Hello", nil)
 	if err != nil {
@@ -280,8 +280,8 @@ func TestExtendedProviderRegistry_GetModelWithScoreSuffix(t *testing.T) {
 	}
 	registry, _ := NewExtendedProviderRegistry(cfg)
 
-	registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{"model"})
-	registry.VerifyModel(context.Background(), "model", "test")
+	_ = registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{"model"})
+	_ = registry.VerifyModel(context.Background(), "model", "test")
 
 	suffix, err := registry.GetModelWithScoreSuffix("model")
 	if err != nil {
@@ -308,7 +308,7 @@ func TestExtendedProviderRegistry_GetAdapter(t *testing.T) {
 	}
 	registry, _ := NewExtendedProviderRegistry(cfg)
 
-	registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{})
+	_ = registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{})
 
 	adapter, ok := registry.GetAdapter("test")
 	if !ok {
@@ -343,9 +343,9 @@ func TestExtendedProviderRegistry_GetTopModels(t *testing.T) {
 	}
 	registry, _ := NewExtendedProviderRegistry(cfg)
 
-	registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{"model1", "model2"})
-	registry.VerifyModel(context.Background(), "model1", "test")
-	registry.VerifyModel(context.Background(), "model2", "test")
+	_ = registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{"model1", "model2"})
+	_ = registry.VerifyModel(context.Background(), "model1", "test")
+	_ = registry.VerifyModel(context.Background(), "model2", "test")
 
 	req := &TopModelsRequest{
 		Limit:       5,
@@ -491,7 +491,7 @@ func TestExtendedProviderRegistry_ConcurrentAccess(t *testing.T) {
 	// Concurrent registrations and reads
 	for i := 0; i < 10; i++ {
 		go func(id int) {
-			registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{})
+			_ = registry.RegisterProvider(context.Background(), "test", "Test", "key", "url", []string{})
 			done <- true
 		}(i)
 
@@ -892,7 +892,7 @@ func TestExtendedRegistry_RunHealthChecks(t *testing.T) {
 	// Create a mock server that returns success
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"choices":[{"message":{"content":"test"}}]}`))
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"test"}}]}`))
 	}))
 	defer server.Close()
 

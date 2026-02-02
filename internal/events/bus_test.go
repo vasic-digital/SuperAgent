@@ -58,7 +58,7 @@ func TestDefaultBusConfig(t *testing.T) {
 
 func TestNewEventBus(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	assert.NotNil(t, bus)
 	assert.NotNil(t, bus.config)
@@ -72,7 +72,7 @@ func TestNewEventBus_WithConfig(t *testing.T) {
 	}
 
 	bus := NewEventBus(config)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	assert.Equal(t, 500, bus.config.BufferSize)
 	assert.Equal(t, 50*time.Millisecond, bus.config.PublishTimeout)
@@ -80,7 +80,7 @@ func TestNewEventBus_WithConfig(t *testing.T) {
 
 func TestEventBus_Subscribe(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	ch := bus.Subscribe(EventProviderRegistered)
 
@@ -90,7 +90,7 @@ func TestEventBus_Subscribe(t *testing.T) {
 
 func TestEventBus_Publish(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	ch := bus.Subscribe(EventProviderRegistered)
 	event := NewEvent(EventProviderRegistered, "test", nil)
@@ -108,7 +108,7 @@ func TestEventBus_Publish(t *testing.T) {
 
 func TestEventBus_Publish_NilEvent(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	// Should not panic
 	bus.Publish(nil)
@@ -116,7 +116,7 @@ func TestEventBus_Publish_NilEvent(t *testing.T) {
 
 func TestEventBus_PublishAsync(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	ch := bus.Subscribe(EventSystemStartup)
 	event := NewEvent(EventSystemStartup, "test", nil)
@@ -133,7 +133,7 @@ func TestEventBus_PublishAsync(t *testing.T) {
 
 func TestEventBus_SubscribeWithFilter(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	// Filter that only accepts events from "important" source
 	filter := func(e *Event) bool {
@@ -159,7 +159,7 @@ func TestEventBus_SubscribeWithFilter(t *testing.T) {
 
 func TestEventBus_SubscribeMultiple(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	ch := bus.SubscribeMultiple(EventProviderRegistered, EventProviderUnregistered)
 
@@ -186,7 +186,7 @@ loop:
 
 func TestEventBus_SubscribeAll(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	ch := bus.SubscribeAll()
 
@@ -215,7 +215,7 @@ loop:
 
 func TestEventBus_SubscribeAllWithFilter(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	// Filter only cache events
 	filter := func(e *Event) bool {
@@ -248,7 +248,7 @@ loop:
 
 func TestEventBus_Unsubscribe(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	ch := bus.Subscribe(EventProviderRegistered)
 	assert.Equal(t, 1, bus.SubscriberCount(EventProviderRegistered))
@@ -283,7 +283,7 @@ func TestEventBus_Close_Multiple(t *testing.T) {
 
 func TestEventBus_Subscribe_AfterClose(t *testing.T) {
 	bus := NewEventBus(nil)
-	bus.Close()
+	_ = bus.Close()
 
 	ch := bus.Subscribe(EventSystemStartup)
 
@@ -294,7 +294,7 @@ func TestEventBus_Subscribe_AfterClose(t *testing.T) {
 
 func TestEventBus_Metrics(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	ch := bus.Subscribe(EventSystemStartup)
 
@@ -316,7 +316,7 @@ func TestEventBus_Metrics(t *testing.T) {
 
 func TestEventBus_TotalSubscribers(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	assert.Equal(t, 0, bus.TotalSubscribers())
 
@@ -328,7 +328,7 @@ func TestEventBus_TotalSubscribers(t *testing.T) {
 
 func TestEventBus_Wait(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	go func() {
 		time.Sleep(50 * time.Millisecond)
@@ -345,7 +345,7 @@ func TestEventBus_Wait(t *testing.T) {
 
 func TestEventBus_Wait_Timeout(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
@@ -356,7 +356,7 @@ func TestEventBus_Wait_Timeout(t *testing.T) {
 
 func TestEventBus_WaitMultiple(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	go func() {
 		time.Sleep(50 * time.Millisecond)
@@ -433,14 +433,14 @@ func TestBusMetrics_Fields(t *testing.T) {
 // Global bus tests
 func TestInitGlobalBus(t *testing.T) {
 	InitGlobalBus(nil)
-	defer GlobalBus.Close()
+	defer func() { _ = GlobalBus.Close() }()
 
 	assert.NotNil(t, GlobalBus)
 }
 
 func TestEmit(t *testing.T) {
 	InitGlobalBus(nil)
-	defer GlobalBus.Close()
+	defer func() { _ = GlobalBus.Close() }()
 
 	ch := On(EventSystemStartup)
 	event := NewEvent(EventSystemStartup, "test", nil)
@@ -457,7 +457,7 @@ func TestEmit(t *testing.T) {
 
 func TestEmitAsync(t *testing.T) {
 	InitGlobalBus(nil)
-	defer GlobalBus.Close()
+	defer func() { _ = GlobalBus.Close() }()
 
 	ch := On(EventSystemStartup)
 	event := NewEvent(EventSystemStartup, "test", nil)
@@ -516,7 +516,7 @@ func TestEventTypes(t *testing.T) {
 // Concurrent access tests
 func TestEventBus_ConcurrentPublish(t *testing.T) {
 	bus := NewEventBus(&BusConfig{BufferSize: 1000})
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	ch := bus.SubscribeAll()
 
@@ -545,7 +545,7 @@ func TestEventBus_ConcurrentPublish(t *testing.T) {
 
 func TestEventBus_ConcurrentSubscribe(t *testing.T) {
 	bus := NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	const numSubscribers = 20
 	done := make(chan struct{})

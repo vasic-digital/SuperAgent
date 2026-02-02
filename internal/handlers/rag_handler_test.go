@@ -70,7 +70,7 @@ func createTestRAGHandler() *RAGHandler {
 		FallbackChain: []string{"mock"},
 	}
 	embeddingRegistry := models.NewEmbeddingModelRegistry(embeddingConfig)
-	embeddingRegistry.Register("mock", &MockEmbeddingModelForHandler{dim: 384})
+	_ = embeddingRegistry.Register("mock", &MockEmbeddingModelForHandler{dim: 384})
 
 	pipelineConfig := rag.PipelineConfig{
 		VectorDBType:   rag.VectorDBChroma,

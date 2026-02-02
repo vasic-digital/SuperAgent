@@ -79,7 +79,7 @@ func TestStableDiffusionAdapter_Txt2Img(t *testing.T) {
 		assert.Equal(t, http.MethodPost, r.Method)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "a beautiful sunset", body["prompt"])
 		assert.Equal(t, float64(512), body["width"])
 		assert.Equal(t, float64(512), body["height"])
@@ -93,7 +93,7 @@ func TestStableDiffusionAdapter_Txt2Img(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -121,7 +121,7 @@ func TestStableDiffusionAdapter_Img2Img(t *testing.T) {
 		assert.Equal(t, http.MethodPost, r.Method)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "enhanced version", body["prompt"])
 		assert.NotNil(t, body["init_images"])
 
@@ -133,7 +133,7 @@ func TestStableDiffusionAdapter_Img2Img(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -164,7 +164,7 @@ func TestStableDiffusionAdapter_ListModels(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -191,7 +191,7 @@ func TestStableDiffusionAdapter_ListSamplers(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -217,7 +217,7 @@ func TestStableDiffusionAdapter_ListLoras(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -239,7 +239,7 @@ func TestStableDiffusionAdapter_SetModel(t *testing.T) {
 		assert.Equal(t, http.MethodPost, r.Method)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "sd_xl_base_1.0.safetensors", body["sd_model_checkpoint"])
 
 		w.WriteHeader(http.StatusOK)
@@ -275,7 +275,7 @@ func TestStableDiffusionAdapter_GetProgress(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -301,7 +301,7 @@ func TestStableDiffusionAdapter_Upscale(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -327,7 +327,7 @@ func TestStableDiffusionAdapter_ControlNet(t *testing.T) {
 		assert.Equal(t, http.MethodPost, r.Method)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.NotNil(t, body["alwayson_scripts"])
 
 		response := SDImageResponse{
@@ -336,7 +336,7 @@ func TestStableDiffusionAdapter_ControlNet(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -365,7 +365,7 @@ func TestStableDiffusionAdapter_WithAuth(t *testing.T) {
 
 		response := []SDModel{}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 

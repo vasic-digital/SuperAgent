@@ -152,7 +152,7 @@ func TestStartupVerifier_checkOllamaHealth(t *testing.T) {
 			if r.URL.Path == "/api/tags" {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"models":[{"name":"llama3.2"},{"name":"codellama"}]}`))
+				_, _ = w.Write([]byte(`{"models":[{"name":"llama3.2"},{"name":"codellama"}]}`))
 			}
 		}))
 		defer server.Close()
@@ -173,7 +173,7 @@ func TestStartupVerifier_checkOllamaHealth(t *testing.T) {
 			if r.URL.Path == "/api/tags" {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"models":[]}`))
+				_, _ = w.Write([]byte(`{"models":[]}`))
 			}
 		}))
 		defer server.Close()
@@ -206,7 +206,7 @@ func TestStartupVerifier_checkOllamaHealth(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/tags" {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`invalid json`))
+				_, _ = w.Write([]byte(`invalid json`))
 			}
 		}))
 		defer server.Close()
@@ -511,39 +511,39 @@ func TestStartupVerifier_OAuthEnabled(t *testing.T) {
 	sv := NewStartupVerifier(cfg, nil)
 
 	t.Run("Claude OAuth enabled via env", func(t *testing.T) {
-		os.Setenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS", "true")
-		defer os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS")
+		_ = os.Setenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS", "true")
+		defer func() { _ = os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS") }()
 
 		enabled := sv.isClaudeOAuthEnabled()
 		assert.True(t, enabled)
 	})
 
 	t.Run("Claude OAuth disabled", func(t *testing.T) {
-		os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS")
+		_ = os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS")
 
 		enabled := sv.isClaudeOAuthEnabled()
 		assert.False(t, enabled)
 	})
 
 	t.Run("Qwen OAuth enabled via env", func(t *testing.T) {
-		os.Setenv("QWEN_CODE_USE_OAUTH_CREDENTIALS", "true")
-		defer os.Unsetenv("QWEN_CODE_USE_OAUTH_CREDENTIALS")
+		_ = os.Setenv("QWEN_CODE_USE_OAUTH_CREDENTIALS", "true")
+		defer func() { _ = os.Unsetenv("QWEN_CODE_USE_OAUTH_CREDENTIALS") }()
 
 		enabled := sv.isQwenOAuthEnabled()
 		assert.True(t, enabled)
 	})
 
 	t.Run("Claude OAuth enabled via 1", func(t *testing.T) {
-		os.Setenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS", "1")
-		defer os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS")
+		_ = os.Setenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS", "1")
+		defer func() { _ = os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS") }()
 
 		enabled := sv.isClaudeOAuthEnabled()
 		assert.True(t, enabled)
 	})
 
 	t.Run("Claude OAuth enabled via yes", func(t *testing.T) {
-		os.Setenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS", "yes")
-		defer os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS")
+		_ = os.Setenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS", "yes")
+		defer func() { _ = os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS") }()
 
 		enabled := sv.isClaudeOAuthEnabled()
 		assert.True(t, enabled)

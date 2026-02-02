@@ -307,7 +307,7 @@ func TestCerebrasProvider_Complete_Success(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -332,7 +332,7 @@ func TestCerebrasProvider_Complete_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := `{"error": {"message": "Invalid API key", "type": "auth_error", "code": "401"}}`
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -354,7 +354,7 @@ func TestCerebrasProvider_Complete_EmptyChoices(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := `{"id": "test", "choices": [], "usage": {}}`
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -448,9 +448,9 @@ func TestCerebrasProvider_CompleteStream_Success(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		// Send streaming chunks
-		w.Write([]byte("data: {\"id\":\"chunk-1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello\"}}]}\n\n"))
-		w.Write([]byte("data: {\"id\":\"chunk-2\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" world\"}}]}\n\n"))
-		w.Write([]byte("data: [DONE]\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"chunk-1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello\"}}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"chunk-2\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" world\"}}]}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 	}))
 	defer server.Close()
 
@@ -478,7 +478,7 @@ func TestCerebrasProvider_CompleteStream_Success(t *testing.T) {
 func TestCerebrasProvider_CompleteStream_HTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Server error"))
+		_, _ = w.Write([]byte("Server error"))
 	}))
 	defer server.Close()
 
@@ -502,7 +502,7 @@ func TestCerebrasProvider_CompleteStream_WithFinishReason(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		// Send chunk with finish_reason
-		w.Write([]byte("data: {\"id\":\"chunk-1\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Response\"},\"finish_reason\":\"stop\"}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"chunk-1\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Response\"},\"finish_reason\":\"stop\"}]}\n\n"))
 	}))
 	defer server.Close()
 
@@ -528,7 +528,7 @@ func TestCerebrasProvider_HealthCheck_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/models" {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"models": []}`))
+			_, _ = w.Write([]byte(`{"models": []}`))
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -550,7 +550,7 @@ func TestCerebrasProvider_HealthCheck_Success(t *testing.T) {
 func TestCerebrasProvider_Complete_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("not valid json"))
+		_, _ = w.Write([]byte("not valid json"))
 	}))
 	defer server.Close()
 
@@ -571,7 +571,7 @@ func TestCerebrasProvider_Complete_InvalidJSON(t *testing.T) {
 func TestCerebrasProvider_Complete_NonJSONError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("plain text error"))
+		_, _ = w.Write([]byte("plain text error"))
 	}))
 	defer server.Close()
 
@@ -626,13 +626,13 @@ func TestCerebrasProvider_Complete_RetryOnServerError(t *testing.T) {
 		attempts++
 		if attempts < 3 {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte("Service unavailable"))
+			_, _ = w.Write([]byte("Service unavailable"))
 			return
 		}
 		// Success on 3rd attempt
 		response := `{"id":"test","choices":[{"message":{"role":"assistant","content":"OK"},"finish_reason":"stop"}],"usage":{"total_tokens":10}}`
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -658,7 +658,7 @@ func TestCerebrasProvider_Complete_RetryOnServerError(t *testing.T) {
 func TestCerebrasProvider_Complete_RetryExhausted(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte("Rate limited"))
+		_, _ = w.Write([]byte("Rate limited"))
 	}))
 	defer server.Close()
 
@@ -687,13 +687,13 @@ func TestCerebrasProvider_Complete_AuthRetry(t *testing.T) {
 		if attempts == 1 {
 			// First attempt returns 401
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error":{"message":"Unauthorized"}}`))
+			_, _ = w.Write([]byte(`{"error":{"message":"Unauthorized"}}`))
 			return
 		}
 		// Second attempt succeeds
 		response := `{"id":"test","choices":[{"message":{"role":"assistant","content":"OK"},"finish_reason":"stop"}],"usage":{"total_tokens":10}}`
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 

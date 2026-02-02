@@ -38,7 +38,7 @@ func TestExtendedProvidersAdapter_VerifyProvider(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
+		_, _ = w.Write([]byte(`{
 			"id": "test-id",
 			"object": "chat.completion",
 			"created": 1234567890,
@@ -81,7 +81,7 @@ func TestExtendedProvidersAdapter_VerifyProvider(t *testing.T) {
 	t.Run("handles API error gracefully", func(t *testing.T) {
 		errorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error": "internal server error"}`))
+			_, _ = w.Write([]byte(`{"error": "internal server error"}`))
 		}))
 		defer errorServer.Close()
 

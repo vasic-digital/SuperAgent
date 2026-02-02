@@ -74,7 +74,7 @@ func TestClient_Complete(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -110,7 +110,7 @@ func TestClient_CompleteSimple(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -125,7 +125,7 @@ func TestClient_CompleteSimple(t *testing.T) {
 func TestClient_CompleteWithSystem(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req CompletionRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		// Verify system message is included
 		assert.Equal(t, 2, len(req.Messages))
@@ -138,7 +138,7 @@ func TestClient_CompleteWithSystem(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -161,7 +161,7 @@ func TestClient_CreateSession(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -209,7 +209,7 @@ func TestClient_ContinueSession(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -254,7 +254,7 @@ func TestClient_WarmPrefix(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -276,7 +276,7 @@ func TestClient_WarmPrefixes(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -318,7 +318,7 @@ func TestClient_Health(t *testing.T) {
 			GPUMemory: "8GB",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -334,7 +334,7 @@ func TestClient_IsAvailable(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := &HealthResponse{Status: "healthy"}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -359,7 +359,7 @@ func TestClient_IsAvailable_Unhealthy(t *testing.T) {
 func TestClient_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "internal error"}`))
+		_, _ = w.Write([]byte(`{"error": "internal error"}`))
 	}))
 	defer server.Close()
 
@@ -393,7 +393,7 @@ func TestClient_Timeout(t *testing.T) {
 func TestClient_SessionHistory(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req CompletionRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		resp := &CompletionResponse{
 			Choices: []CompletionChoice{
@@ -401,7 +401,7 @@ func TestClient_SessionHistory(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -435,7 +435,7 @@ func TestClient_ConcurrentSessions(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -444,7 +444,7 @@ func TestClient_ConcurrentSessions(t *testing.T) {
 
 	// Create multiple sessions
 	for i := 0; i < 10; i++ {
-		client.CreateSession(ctx, fmt.Sprintf("session-%d", i), "System prompt")
+		_, _ = client.CreateSession(ctx, fmt.Sprintf("session-%d", i), "System prompt")
 	}
 
 	var wg sync.WaitGroup
@@ -477,7 +477,7 @@ func TestClient_ConcurrentSessions(t *testing.T) {
 func TestClient_CompleteWithOptions(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req CompletionRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		// Verify request options
 		assert.NotZero(t, req.Temperature)
@@ -490,7 +490,7 @@ func TestClient_CompleteWithOptions(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -557,7 +557,7 @@ func TestClient_SessionExpiry(t *testing.T) {
 func TestClient_WarmPrefixWithLongContent(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req CompletionRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		// Verify long prefix was sent
 		assert.True(t, len(req.Messages[0].Content) > 100)
@@ -568,7 +568,7 @@ func TestClient_WarmPrefixWithLongContent(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -597,7 +597,7 @@ func TestClient_RetryOnNetworkError(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -618,7 +618,7 @@ func TestClient_EmptyResponse(t *testing.T) {
 			Choices: []CompletionChoice{},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -650,7 +650,7 @@ func TestClient_DeleteSession_NotFound(t *testing.T) {
 func TestClient_Health_MalformedResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{invalid json`))
+		_, _ = w.Write([]byte(`{invalid json`))
 	}))
 	defer server.Close()
 
@@ -669,7 +669,7 @@ func BenchmarkClient_Complete(b *testing.B) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -678,7 +678,7 @@ func BenchmarkClient_Complete(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		client.Complete(ctx, &CompletionRequest{
+		_, _ = client.Complete(ctx, &CompletionRequest{
 			Messages: []Message{{Role: "user", Content: "test"}},
 		})
 	}
@@ -693,7 +693,7 @@ func BenchmarkClient_SessionContinue(b *testing.B) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -710,6 +710,6 @@ func BenchmarkClient_SessionContinue(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		client.ContinueSession(ctx, "bench-session", "Hello")
+		_, _ = client.ContinueSession(ctx, "bench-session", "Hello")
 	}
 }

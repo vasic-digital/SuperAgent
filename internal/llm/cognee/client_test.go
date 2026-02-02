@@ -69,7 +69,7 @@ func TestAddMemory(t *testing.T) {
 				GraphNodes: map[string]interface{}{"node1": "value1"},
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		}))
 		defer server.Close()
 
@@ -114,7 +114,7 @@ func TestAddMemory(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Empty(t, r.Header.Get("Authorization"))
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(MemoryResponse{VectorID: "v1"})
+			_ = json.NewEncoder(w).Encode(MemoryResponse{VectorID: "v1"})
 		}))
 		defer server.Close()
 
@@ -153,7 +153,7 @@ func TestSearchMemory(t *testing.T) {
 				},
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		}))
 		defer server.Close()
 
@@ -201,7 +201,7 @@ func TestCognify(t *testing.T) {
 
 			resp := CognifyResponse{Status: "completed"}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		}))
 		defer server.Close()
 
@@ -253,7 +253,7 @@ func TestSearchInsights(t *testing.T) {
 				},
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		}))
 		defer server.Close()
 
@@ -295,7 +295,7 @@ func TestSearchInsights(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Empty(t, r.Header.Get("Authorization"))
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(InsightsResponse{})
+			_ = json.NewEncoder(w).Encode(InsightsResponse{})
 		}))
 		defer server.Close()
 
@@ -325,7 +325,7 @@ func TestSearchGraphCompletion(t *testing.T) {
 				},
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		}))
 		defer server.Close()
 
@@ -363,7 +363,7 @@ func TestSearchGraphCompletion(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Empty(t, r.Header.Get("Authorization"))
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(SearchResponse{})
+			_ = json.NewEncoder(w).Encode(SearchResponse{})
 		}))
 		defer server.Close()
 
@@ -395,7 +395,7 @@ func TestProcessCodePipeline(t *testing.T) {
 				Results:   map[string]interface{}{"functions": 1},
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		}))
 		defer server.Close()
 
@@ -437,7 +437,7 @@ func TestProcessCodePipeline(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Empty(t, r.Header.Get("Authorization"))
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(CodePipelineResponse{Processed: true})
+			_ = json.NewEncoder(w).Encode(CodePipelineResponse{Processed: true})
 		}))
 		defer server.Close()
 
@@ -470,7 +470,7 @@ func TestCreateDataset(t *testing.T) {
 				CreatedAt: "2024-01-01T00:00:00Z",
 			}
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		}))
 		defer server.Close()
 
@@ -522,7 +522,7 @@ func TestListDatasets(t *testing.T) {
 				Total: 2,
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		}))
 		defer server.Close()
 
@@ -561,7 +561,7 @@ func TestListDatasets(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Empty(t, r.Header.Get("Authorization"))
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(DatasetsResponse{Datasets: []DatasetResponse{}, Total: 0})
+			_ = json.NewEncoder(w).Encode(DatasetsResponse{Datasets: []DatasetResponse{}, Total: 0})
 		}))
 		defer server.Close()
 
@@ -589,7 +589,7 @@ func TestVisualizeGraph(t *testing.T) {
 				},
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		}))
 		defer server.Close()
 
@@ -630,7 +630,7 @@ func TestVisualizeGraph(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Empty(t, r.Header.Get("Authorization"))
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(VisualizeResponse{Graph: map[string]interface{}{}})
+			_ = json.NewEncoder(w).Encode(VisualizeResponse{Graph: map[string]interface{}{}})
 		}))
 		defer server.Close()
 
@@ -875,7 +875,7 @@ func TestVisualizeRequestFields(t *testing.T) {
 func BenchmarkAddMemory(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(MemoryResponse{VectorID: "v1"})
+		_ = json.NewEncoder(w).Encode(MemoryResponse{VectorID: "v1"})
 	}))
 	defer server.Close()
 
@@ -895,7 +895,7 @@ func BenchmarkAddMemory(b *testing.B) {
 func BenchmarkSearchMemory(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(SearchResponse{})
+		_ = json.NewEncoder(w).Encode(SearchResponse{})
 	}))
 	defer server.Close()
 
@@ -931,7 +931,7 @@ func TestAddMemory_NetworkError(t *testing.T) {
 func TestAddMemory_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer server.Close()
 
@@ -960,7 +960,7 @@ func TestSearchMemory_NetworkError(t *testing.T) {
 func TestSearchMemory_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("not valid json"))
+		_, _ = w.Write([]byte("not valid json"))
 	}))
 	defer server.Close()
 
@@ -988,7 +988,7 @@ func TestCognify_NetworkError(t *testing.T) {
 func TestCognify_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("{invalid"))
+		_, _ = w.Write([]byte("{invalid"))
 	}))
 	defer server.Close()
 
@@ -1016,7 +1016,7 @@ func TestSearchInsights_NetworkError(t *testing.T) {
 func TestSearchInsights_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("broken json"))
+		_, _ = w.Write([]byte("broken json"))
 	}))
 	defer server.Close()
 
@@ -1044,7 +1044,7 @@ func TestSearchGraphCompletion_NetworkError(t *testing.T) {
 func TestSearchGraphCompletion_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("<not json>"))
+		_, _ = w.Write([]byte("<not json>"))
 	}))
 	defer server.Close()
 
@@ -1072,7 +1072,7 @@ func TestProcessCodePipeline_NetworkError(t *testing.T) {
 func TestProcessCodePipeline_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("{invalid json syntax"))
+		_, _ = w.Write([]byte("{invalid json syntax"))
 	}))
 	defer server.Close()
 
@@ -1100,7 +1100,7 @@ func TestCreateDataset_NetworkError(t *testing.T) {
 func TestCreateDataset_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte("not json response"))
+		_, _ = w.Write([]byte("not json response"))
 	}))
 	defer server.Close()
 
@@ -1128,7 +1128,7 @@ func TestListDatasets_NetworkError(t *testing.T) {
 func TestListDatasets_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("[broken]"))
+		_, _ = w.Write([]byte("[broken]"))
 	}))
 	defer server.Close()
 
@@ -1156,7 +1156,7 @@ func TestVisualizeGraph_NetworkError(t *testing.T) {
 func TestVisualizeGraph_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("{invalid json"))
+		_, _ = w.Write([]byte("{invalid json"))
 	}))
 	defer server.Close()
 
@@ -1188,7 +1188,7 @@ func TestAddMemory_VerifyHeaders(t *testing.T) {
 		assert.Equal(t, "Bearer my-api-key", r.Header.Get("Authorization"))
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(MemoryResponse{VectorID: "vec-1"})
+		_ = json.NewEncoder(w).Encode(MemoryResponse{VectorID: "vec-1"})
 	}))
 	defer server.Close()
 
@@ -1219,7 +1219,7 @@ func TestSearchMemory_VerifyRequestBody(t *testing.T) {
 		assert.Equal(t, 25, req.Limit)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(SearchResponse{
+		_ = json.NewEncoder(w).Encode(SearchResponse{
 			Results: []models.MemorySource{
 				{Content: "found", RelevanceScore: 0.9},
 			},
@@ -1253,7 +1253,7 @@ func TestCognify_WithMultipleDatasets(t *testing.T) {
 		assert.ElementsMatch(t, []string{"ds1", "ds2", "ds3"}, req.Datasets)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(CognifyResponse{Status: "processing"})
+		_ = json.NewEncoder(w).Encode(CognifyResponse{Status: "processing"})
 	}))
 	defer server.Close()
 
@@ -1281,7 +1281,7 @@ func TestSearchInsights_RequestFormat(t *testing.T) {
 		assert.Equal(t, float64(10), req["limit"])
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(InsightsResponse{
+		_ = json.NewEncoder(w).Encode(InsightsResponse{
 			Insights: []map[string]interface{}{
 				{"insight": "result1"},
 				{"insight": "result2"},
@@ -1317,7 +1317,7 @@ func TestSearchGraphCompletion_RequestFormat(t *testing.T) {
 		assert.Equal(t, float64(5), req["limit"])
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(SearchResponse{
+		_ = json.NewEncoder(w).Encode(SearchResponse{
 			Results: []models.MemorySource{{Content: "completed"}},
 		})
 	}))
@@ -1348,7 +1348,7 @@ func TestProcessCodePipeline_WithLanguage(t *testing.T) {
 		assert.Equal(t, "go", req.Language)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(CodePipelineResponse{
+		_ = json.NewEncoder(w).Encode(CodePipelineResponse{
 			Processed: true,
 			Results: map[string]interface{}{
 				"functions": 1,
@@ -1386,7 +1386,7 @@ func TestCreateDataset_WithMetadata(t *testing.T) {
 		assert.Equal(t, "value1", req.Metadata["key1"])
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(DatasetResponse{
+		_ = json.NewEncoder(w).Encode(DatasetResponse{
 			ID:          "ds-new",
 			Name:        req.Name,
 			Description: req.Description,
@@ -1418,7 +1418,7 @@ func TestVisualizeGraph_WithFormat(t *testing.T) {
 		assert.Equal(t, "/api/visualize", r.URL.Path)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(VisualizeResponse{
+		_ = json.NewEncoder(w).Encode(VisualizeResponse{
 			Graph: map[string]interface{}{
 				"nodes": []interface{}{
 					map[string]interface{}{"id": "n1", "label": "Node 1"},
@@ -1553,7 +1553,7 @@ func TestVisualizeResponseFields(t *testing.T) {
 func BenchmarkCognify(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(CognifyResponse{Status: "ok"})
+		_ = json.NewEncoder(w).Encode(CognifyResponse{Status: "ok"})
 	}))
 	defer server.Close()
 
@@ -1573,7 +1573,7 @@ func BenchmarkCognify(b *testing.B) {
 func BenchmarkSearchInsights(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(InsightsResponse{})
+		_ = json.NewEncoder(w).Encode(InsightsResponse{})
 	}))
 	defer server.Close()
 

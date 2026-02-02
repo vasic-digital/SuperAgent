@@ -388,7 +388,7 @@ func (s *ModelMetadataService) refreshProviderModels(ctx context.Context, provid
 		}
 
 		if modelInfo.Performance != nil && len(modelInfo.Performance.Benchmarks) > 0 {
-			s.storeBenchmarks(ctx, modelInfo.ID, modelInfo.Performance.Benchmarks)
+			_ = s.storeBenchmarks(ctx, modelInfo.ID, modelInfo.Performance.Benchmarks)
 		}
 
 		go func(modelID string, metadata *database.ModelMetadata) {
@@ -543,7 +543,7 @@ func (c *InMemoryCache) Set(ctx context.Context, modelID string, metadata *datab
 	c.models[modelID] = metadata
 	c.timers[modelID] = time.AfterFunc(c.ttl, func() {
 		ctx := context.Background()
-		c.Delete(ctx, modelID)
+		_ = c.Delete(ctx, modelID)
 	})
 
 	return nil
@@ -602,7 +602,7 @@ func (c *InMemoryCache) SetBulk(ctx context.Context, models map[string]*database
 		c.models[modelID] = metadata
 		c.timers[modelID] = time.AfterFunc(c.ttl, func() {
 			ctx := context.Background()
-			c.Delete(ctx, modelID)
+			_ = c.Delete(ctx, modelID)
 		})
 	}
 

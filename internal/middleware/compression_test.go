@@ -310,8 +310,8 @@ func TestBrotliRequestDecoder_BrotliBody(t *testing.T) {
 	originalBody := "This is the original request body"
 	var buf bytes.Buffer
 	bw := brotli.NewWriter(&buf)
-	bw.Write([]byte(originalBody))
-	bw.Close()
+	_, _ = bw.Write([]byte(originalBody))
+	_ = bw.Close()
 
 	router := gin.New()
 	router.Use(BrotliRequestDecoder())
@@ -338,8 +338,8 @@ func TestBrotliRequestDecoder_GzipBody(t *testing.T) {
 	originalBody := "This is the original request body"
 	var buf bytes.Buffer
 	gw := gzip.NewWriter(&buf)
-	gw.Write([]byte(originalBody))
-	gw.Close()
+	_, _ = gw.Write([]byte(originalBody))
+	_ = gw.Close()
 
 	router := gin.New()
 	router.Use(BrotliRequestDecoder())
@@ -388,7 +388,7 @@ func TestCompressionWriter_WriteString(t *testing.T) {
 	router.GET("/test", func(c *gin.Context) {
 		c.Header("Content-Type", "text/plain")
 		// Use WriteString path
-		c.Writer.WriteString(strings.Repeat("Hello World ", 100))
+		_, _ = c.Writer.WriteString(strings.Repeat("Hello World ", 100))
 	})
 
 	req, _ := http.NewRequest("GET", "/test", nil)
@@ -406,8 +406,8 @@ func TestBrotliReader_ReadAndClose(t *testing.T) {
 	originalData := "Test data for brotli reader"
 	var buf bytes.Buffer
 	bw := brotli.NewWriter(&buf)
-	bw.Write([]byte(originalData))
-	bw.Close()
+	_, _ = bw.Write([]byte(originalData))
+	_ = bw.Close()
 
 	br := &brotliReader{
 		reader: brotli.NewReader(&buf),
@@ -427,8 +427,8 @@ func TestGzipReader_ReadAndClose(t *testing.T) {
 	originalData := "Test data for gzip reader"
 	var buf bytes.Buffer
 	gw := gzip.NewWriter(&buf)
-	gw.Write([]byte(originalData))
-	gw.Close()
+	_, _ = gw.Write([]byte(originalData))
+	_ = gw.Close()
 
 	gr, err := gzip.NewReader(&buf)
 	require.NoError(t, err)

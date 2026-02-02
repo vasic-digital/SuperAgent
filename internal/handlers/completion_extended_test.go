@@ -263,7 +263,7 @@ func TestCompletionHandler_Complete_VariousContentTypes(t *testing.T) {
 			c.Request.Header.Set("Content-Type", ct)
 
 			defer func() {
-				recover()
+				_ = recover()
 			}()
 
 			handler.Complete(c)
@@ -311,7 +311,7 @@ func TestCompletionHandler_Complete_LargePayload(t *testing.T) {
 	c.Request.Header.Set("Content-Type", "application/json")
 
 	defer func() {
-		recover()
+		_ = recover()
 	}()
 
 	handler.Complete(c)

@@ -226,7 +226,7 @@ func TestGitHubAdapter_Initialize_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/user" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"login": "testuser",
 				"id":    123,
 			})
@@ -266,7 +266,7 @@ func TestGitHubAdapter_Health_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/rate_limit" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"rate": map[string]interface{}{
 					"limit":     5000,
 					"remaining": 4999,
@@ -291,7 +291,7 @@ func TestGitHubAdapter_GetUser_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/users/testuser" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"login":        "testuser",
 				"id":           123,
 				"name":         "Test User",
@@ -339,7 +339,7 @@ func TestGitHubAdapter_ListRepositories_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/users/testuser/repos" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode([]map[string]interface{}{
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{
 				{
 					"id":        1,
 					"name":      "repo1",
@@ -373,7 +373,7 @@ func TestGitHubAdapter_GetRepository_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/testuser/testrepo" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":               123,
 				"name":             "testrepo",
 				"full_name":        "testuser/testrepo",
@@ -416,7 +416,7 @@ func TestGitHubAdapter_ListIssues_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/testuser/testrepo/issues" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode([]map[string]interface{}{
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{
 				{
 					"id":     1,
 					"number": 1,
@@ -445,7 +445,7 @@ func TestGitHubAdapter_GetIssue_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/testuser/testrepo/issues/1" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":     1,
 				"number": 1,
 				"title":  "Test Issue",
@@ -473,7 +473,7 @@ func TestGitHubAdapter_ListPullRequests_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/testuser/testrepo/pulls" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode([]map[string]interface{}{
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{
 				{
 					"id":     1,
 					"number": 1,
@@ -502,7 +502,7 @@ func TestGitHubAdapter_GetPullRequest_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/testuser/testrepo/pulls/1" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":     1,
 				"number": 1,
 				"title":  "Test PR",
@@ -530,7 +530,7 @@ func TestGitHubAdapter_GetContent_File_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/testuser/testrepo/contents/README.md" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"type":    "file",
 				"name":    "README.md",
 				"path":    "README.md",
@@ -560,7 +560,7 @@ func TestGitHubAdapter_GetContent_Directory_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/testuser/testrepo/contents/src" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode([]map[string]interface{}{
+			_ = json.NewEncoder(w).Encode([]map[string]interface{}{
 				{
 					"type": "file",
 					"name": "main.go",
@@ -592,7 +592,7 @@ func TestGitHubAdapter_SearchRepositories_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/search/repositories" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"total_count": 1,
 				"items": []map[string]interface{}{
 					{
@@ -634,7 +634,7 @@ func TestGitHubAdapter_SearchCode_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/search/code" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"total_count": 1,
 				"items": []map[string]interface{}{
 					{
@@ -665,7 +665,7 @@ func TestGitHubAdapter_CreateIssue_WithMockServer(t *testing.T) {
 		if r.URL.Path == "/repos/testuser/testrepo/issues" && r.Method == "POST" {
 			w.WriteHeader(http.StatusCreated)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":     1,
 				"number": 1,
 				"title":  "New Issue",
@@ -702,7 +702,7 @@ func TestGitHubAdapter_CreateIssue_MissingParams(t *testing.T) {
 func TestGitHubAdapter_ExecuteTool_GetUser(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"login": "testuser",
 			"id":    123,
 		})
@@ -727,7 +727,7 @@ func TestGitHubAdapter_ExecuteTool_GetUser(t *testing.T) {
 func TestGitHubAdapter_ExecuteTool_ListRepos(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]map[string]interface{}{
+		_ = json.NewEncoder(w).Encode([]map[string]interface{}{
 			{"name": "repo1"},
 		})
 	}))

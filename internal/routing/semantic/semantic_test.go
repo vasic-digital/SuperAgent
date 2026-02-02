@@ -291,7 +291,7 @@ func TestRouter_Route_Fallback(t *testing.T) {
 	}
 	router := NewRouter(encoder, config, nil)
 
-	router.AddRoute(context.Background(), &Route{
+	_ = router.AddRoute(context.Background(), &Route{
 		Name:       "fallback",
 		Utterances: []string{"default"},
 	})
@@ -334,7 +334,7 @@ func TestRouter_Route_NoMatch(t *testing.T) {
 	}
 	router := NewRouter(orthogonalEncoder, config, nil)
 
-	router.AddRoute(context.Background(), &Route{
+	_ = router.AddRoute(context.Background(), &Route{
 		Name:       "test",
 		Utterances: []string{"hello"},
 	})
@@ -355,7 +355,7 @@ func TestRouter_RouteWithCandidates(t *testing.T) {
 
 	// Add test routes
 	for i := 0; i < 5; i++ {
-		router.AddRoute(context.Background(), &Route{
+		_ = router.AddRoute(context.Background(), &Route{
 			Name:       string(rune('A' + i)),
 			Utterances: []string{"test"},
 		})
@@ -379,11 +379,11 @@ func TestRouter_RemoveRoute(t *testing.T) {
 	encoder := newMockEncoder()
 	router := NewRouter(encoder, nil, nil)
 
-	router.AddRoute(context.Background(), &Route{
+	_ = router.AddRoute(context.Background(), &Route{
 		Name:       "test1",
 		Utterances: []string{"hello"},
 	})
-	router.AddRoute(context.Background(), &Route{
+	_ = router.AddRoute(context.Background(), &Route{
 		Name:       "test2",
 		Utterances: []string{"bye"},
 	})
@@ -406,7 +406,7 @@ func TestRouter_ListRoutes(t *testing.T) {
 
 	assert.Empty(t, router.ListRoutes())
 
-	router.AddRoute(context.Background(), &Route{
+	_ = router.AddRoute(context.Background(), &Route{
 		Name:       "test",
 		Utterances: []string{"hello"},
 	})
@@ -426,13 +426,13 @@ func TestRouter_ClearCache(t *testing.T) {
 	}
 	router := NewRouter(encoder, config, nil)
 
-	router.AddRoute(context.Background(), &Route{
+	_ = router.AddRoute(context.Background(), &Route{
 		Name:       "test",
 		Utterances: []string{"hello"},
 	})
 
 	// Populate cache
-	router.Route(context.Background(), "hello")
+	_, _ = router.Route(context.Background(), "hello")
 	assert.Greater(t, router.cache.Size(), 0)
 
 	router.ClearCache()
@@ -754,7 +754,7 @@ func TestRouter_Concurrent(t *testing.T) {
 	}
 	router := NewRouter(encoder, config, nil)
 
-	router.AddRoute(context.Background(), &Route{
+	_ = router.AddRoute(context.Background(), &Route{
 		Name:       "test",
 		Utterances: []string{"hello"},
 	})
@@ -764,7 +764,7 @@ func TestRouter_Concurrent(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		go func() {
-			router.Route(context.Background(), "hello")
+			_, _ = router.Route(context.Background(), "hello")
 			done <- true
 		}()
 	}

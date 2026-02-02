@@ -117,7 +117,7 @@ func (s *WebSocketServer) Stop() error {
 	s.clientsMu.Lock()
 	for taskID, clients := range s.clients {
 		for _, client := range clients {
-			client.Close()
+			_ = client.Close()
 		}
 		delete(s.clients, taskID)
 	}
@@ -125,7 +125,7 @@ func (s *WebSocketServer) Stop() error {
 
 	s.globalClientsMu.Lock()
 	for _, client := range s.globalClients {
-		client.Close()
+		_ = client.Close()
 	}
 	s.globalClients = make(map[string]WebSocketClientInterface)
 	s.globalClientsMu.Unlock()
@@ -198,7 +198,7 @@ func (s *WebSocketServer) UnregisterClient(taskID, clientID string) error {
 
 	if clients, exists := s.clients[taskID]; exists {
 		if client, ok := clients[clientID]; ok {
-			client.Close()
+			_ = client.Close()
 			delete(clients, clientID)
 		}
 		if len(clients) == 0 {
@@ -226,7 +226,7 @@ func (s *WebSocketServer) UnregisterGlobalClient(clientID string) error {
 	defer s.globalClientsMu.Unlock()
 
 	if client, exists := s.globalClients[clientID]; exists {
-		client.Close()
+		_ = client.Close()
 		delete(s.globalClients, clientID)
 	}
 
@@ -280,7 +280,7 @@ func (s *WebSocketServer) broadcastGlobal(data []byte) {
 func (s *WebSocketServer) readLoop(client *WebSocketClient, taskID string) {
 	conn := client.conn
 	conn.SetReadLimit(s.config.MaxMessageSize)
-	conn.SetReadDeadline(time.Now().Add(s.config.PongWait))
+	_ = conn.SetReadDeadline(time.Now().Add(s.config.PongWait))
 	conn.SetPongHandler(func(string) error {
 		_ = conn.SetReadDeadline(time.Now().Add(s.config.PongWait))
 		return nil
@@ -315,14 +315,14 @@ func (s *WebSocketServer) handleMessage(client *WebSocketClient, taskID string, 
 	switch msg.Type {
 	case "subscribe":
 		if msg.TaskID != "" {
-			s.RegisterClient(msg.TaskID, client)
+			_ = s.RegisterClient(msg.TaskID, client)
 		}
 	case "unsubscribe":
 		if msg.TaskID != "" {
-			s.UnregisterClient(msg.TaskID, client.ID())
+			_ = s.UnregisterClient(msg.TaskID, client.ID())
 		}
 	case "ping":
-		client.Send([]byte(`{"type":"pong"}`))
+		_ = client.Send([]byte(`{"type":"pong"}`))
 	}
 }
 

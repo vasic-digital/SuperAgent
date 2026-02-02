@@ -2018,7 +2018,7 @@ func TestPromptRegistry_ConcurrentAccess(t *testing.T) {
 				Version: "1.0.0",
 				Content: "Content",
 			}
-			registry.Create(ctx, prompt)
+			_ = registry.Create(ctx, prompt)
 		}(i)
 	}
 
@@ -2046,7 +2046,7 @@ func TestExperimentManager_ConcurrentAccess(t *testing.T) {
 				Name:     fmt.Sprintf("exp-%d", idx),
 				Variants: []*Variant{{Name: "A"}, {Name: "B"}},
 			}
-			manager.Create(ctx, exp)
+			_ = manager.Create(ctx, exp)
 		}(i)
 	}
 

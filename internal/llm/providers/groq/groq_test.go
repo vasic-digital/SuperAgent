@@ -60,7 +60,7 @@ func TestProvider_Complete(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -97,7 +97,7 @@ func TestProvider_Complete(t *testing.T) {
 func TestProvider_Complete_WithTools(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var reqBody Request
-		json.NewDecoder(r.Body).Decode(&reqBody)
+		_ = json.NewDecoder(r.Body).Decode(&reqBody)
 
 		assert.Len(t, reqBody.Tools, 1)
 		assert.Equal(t, "function", reqBody.Tools[0].Type)
@@ -126,7 +126,7 @@ func TestProvider_Complete_WithTools(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -169,7 +169,7 @@ func TestProvider_Complete_WithTools(t *testing.T) {
 func TestProvider_Complete_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": {"message": "Invalid request"}}`))
+		_, _ = w.Write([]byte(`{"error": {"message": "Invalid request"}}`))
 	}))
 	defer server.Close()
 
@@ -200,7 +200,7 @@ func TestProvider_CompleteStream(t *testing.T) {
 		}
 
 		for _, chunk := range chunks {
-			w.Write([]byte("data: " + chunk + "\n\n"))
+			_, _ = w.Write([]byte("data: " + chunk + "\n\n"))
 			flusher.Flush()
 		}
 	}))
@@ -232,7 +232,7 @@ func TestProvider_HealthCheck(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "GET", r.Method)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"data": []}`))
+		_, _ = w.Write([]byte(`{"data": []}`))
 	}))
 	defer server.Close()
 
@@ -450,7 +450,7 @@ func TestProvider_Retry(t *testing.T) {
 			Usage:   Usage{TotalTokens: 10},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -519,7 +519,7 @@ func TestProvider_ServerError_Retry(t *testing.T) {
 			Usage:   Usage{TotalTokens: 5},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -562,7 +562,7 @@ func TestProvider_TimingMetadata(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 

@@ -20,7 +20,7 @@ func TestServerRegistry_LoadServers(t *testing.T) {
 	// Create a temporary directory with test servers
 	tempDir, err := os.MkdirTemp("", "mcp-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create a test server directory
 	serverDir := filepath.Join(tempDir, "test-server")
@@ -64,7 +64,7 @@ func TestServerRegistry_LoadServers(t *testing.T) {
 func TestServerRegistry_LoadServers_Multiple(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "mcp-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	servers := []struct {
 		name  string
@@ -136,7 +136,7 @@ func TestServerRegistry_GetEnabled(t *testing.T) {
 			Enabled: s.enabled,
 			Status:  ServerStatusAvailable,
 		}
-		registry.Register(server)
+		_ = registry.Register(server)
 	}
 
 	enabled := registry.GetEnabled()
@@ -160,7 +160,7 @@ func TestServerRegistry_GetByStatus(t *testing.T) {
 			Enabled: true,
 			Status:  status,
 		}
-		registry.Register(server)
+		_ = registry.Register(server)
 	}
 
 	available := registry.GetByStatus(ServerStatusAvailable)
@@ -218,7 +218,7 @@ func TestServerRegistry_UpdateStatus(t *testing.T) {
 		Enabled: true,
 		Status:  ServerStatusAvailable,
 	}
-	registry.Register(server)
+	_ = registry.Register(server)
 
 	err := registry.UpdateStatus("test-server", ServerStatusRunning)
 	require.NoError(t, err)
@@ -235,7 +235,7 @@ func TestServerRegistry_Remove(t *testing.T) {
 		Enabled: true,
 		Status:  ServerStatusAvailable,
 	}
-	registry.Register(server)
+	_ = registry.Register(server)
 
 	assert.Equal(t, 1, registry.Count())
 
@@ -283,7 +283,7 @@ func TestServerRegistry_Stats(t *testing.T) {
 			Enabled: s.enabled,
 			Status:  s.status,
 		}
-		registry.Register(server)
+		_ = registry.Register(server)
 	}
 
 	stats := registry.Stats()
@@ -314,7 +314,7 @@ func TestServerRegistry_ToMCPConfig(t *testing.T) {
 		Enabled: true,
 		Status:  ServerStatusAvailable,
 	}
-	registry.Register(server)
+	_ = registry.Register(server)
 
 	config := registry.ToMCPConfig()
 	assert.Contains(t, config, "mcpServers")

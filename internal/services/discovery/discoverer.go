@@ -85,7 +85,7 @@ func (d *tcpDiscoverer) Discover(ctx context.Context, endpoint *config.ServiceEn
 	if err != nil {
 		return false, nil // Not discovered, but not an error
 	}
-	conn.Close()
+	_ = conn.Close()
 	return true, nil
 }
 
@@ -134,7 +134,7 @@ func (d *httpDiscoverer) Discover(ctx context.Context, endpoint *config.ServiceE
 	if err != nil {
 		return false, nil // Not discovered
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Consider any 2xx or 3xx status as discovered
 	if resp.StatusCode >= 200 && resp.StatusCode < 400 {

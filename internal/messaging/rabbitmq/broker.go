@@ -286,13 +286,13 @@ func (b *Broker) Close(ctx context.Context) error {
 			close(sub.cancelCh)
 		}
 		if sub.channel != nil {
-			sub.channel.Close()
+			_ = sub.channel.Close()
 		}
 	}
 
 	// Close publisher channel
 	if b.pubChannel != nil {
-		b.pubChannel.Close()
+		_ = b.pubChannel.Close()
 	}
 
 	// Close connection
@@ -315,7 +315,7 @@ func (b *Broker) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("health check failed: %w", err)
 	}
-	ch.Close()
+	_ = ch.Close()
 
 	return nil
 }
@@ -464,13 +464,13 @@ func (b *Broker) Subscribe(ctx context.Context, topic string, handler messaging.
 		prefetch = options.Prefetch
 	}
 	if err := ch.Qos(prefetch, b.config.PrefetchSize, false); err != nil {
-		ch.Close()
+		_ = ch.Close()
 		return nil, fmt.Errorf("failed to set QoS: %w", err)
 	}
 
 	// Ensure exchange exists
 	if err := b.ensureExchange(topic); err != nil {
-		ch.Close()
+		_ = ch.Close()
 		return nil, err
 	}
 
@@ -491,7 +491,7 @@ func (b *Broker) Subscribe(ctx context.Context, topic string, handler messaging.
 		queueArgs,
 	)
 	if err != nil {
-		ch.Close()
+		_ = ch.Close()
 		b.metrics.RecordError()
 		return nil, fmt.Errorf("failed to declare queue: %w", err)
 	}
@@ -501,7 +501,7 @@ func (b *Broker) Subscribe(ctx context.Context, topic string, handler messaging.
 	// Bind queue to exchange
 	routingKey := "#" // Subscribe to all messages on this topic
 	if err := ch.QueueBind(q.Name, routingKey, topic, false, nil); err != nil {
-		ch.Close()
+		_ = ch.Close()
 		return nil, fmt.Errorf("failed to bind queue: %w", err)
 	}
 
@@ -523,7 +523,7 @@ func (b *Broker) Subscribe(ctx context.Context, topic string, handler messaging.
 		nil,
 	)
 	if err != nil {
-		ch.Close()
+		_ = ch.Close()
 		b.metrics.RecordError()
 		return nil, fmt.Errorf("failed to start consuming: %w", err)
 	}

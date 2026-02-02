@@ -133,7 +133,7 @@ func TestHTTPHealthChecker_CheckHealth_Success(t *testing.T) {
 	// Create a test server that returns OK
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -808,11 +808,11 @@ func TestRun_ShowHelp(t *testing.T) {
 
 	err := run(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	assert.NoError(t, err)
@@ -834,11 +834,11 @@ func TestRun_ShowVersion(t *testing.T) {
 
 	err := run(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	assert.NoError(t, err)
@@ -860,11 +860,11 @@ func TestRun_HelpTakesPrecedence(t *testing.T) {
 
 	err := run(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	assert.NoError(t, err)
@@ -970,7 +970,7 @@ func TestRun_PortInUse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create listener: %v", err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	// Get the port that was assigned
 	port := listener.Addr().(*net.TCPAddr).Port
@@ -1162,11 +1162,11 @@ func TestShowHelp_Output(t *testing.T) {
 
 	showHelp()
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	// Verify key content in help output
@@ -1190,11 +1190,11 @@ func TestShowVersion_Output(t *testing.T) {
 
 	showVersion()
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	// Verify version info
@@ -1422,11 +1422,11 @@ func TestShowHelp_ContainsAllSections(t *testing.T) {
 
 	showHelp()
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	// Verify all sections are present
@@ -1713,7 +1713,7 @@ func TestCheckCogneeHealthWithConfig_RealServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"status": "healthy"}`))
+			_, _ = w.Write([]byte(`{"status": "healthy"}`))
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -1734,7 +1734,7 @@ func TestCheckChromaDBHealthWithConfig_RealServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/v1/heartbeat" {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"heartbeat": 1234567890}`))
+			_, _ = w.Write([]byte(`{"heartbeat": 1234567890}`))
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -2274,7 +2274,7 @@ func TestHandleValidateOpenCode_ValidFile(t *testing.T) {
 	// Create a temporary valid config file
 	tmpFile, err := os.CreateTemp("", "opencode-valid-*.json")
 	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	validConfig := `{
 		"$schema": "https://opencode.ai/config.json",
@@ -2284,7 +2284,7 @@ func TestHandleValidateOpenCode_ValidFile(t *testing.T) {
 	}`
 	_, err = tmpFile.WriteString(validConfig)
 	require.NoError(t, err)
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	// Capture stdout
 	old := os.Stdout
@@ -2298,11 +2298,11 @@ func TestHandleValidateOpenCode_ValidFile(t *testing.T) {
 
 	err = handleValidateOpenCode(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	assert.NoError(t, err)
@@ -2315,7 +2315,7 @@ func TestHandleValidateOpenCode_InvalidFile(t *testing.T) {
 	// Create a temporary invalid config file
 	tmpFile, err := os.CreateTemp("", "opencode-invalid-*.json")
 	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	invalidConfig := `{
 		"invalid_key": true,
@@ -2323,7 +2323,7 @@ func TestHandleValidateOpenCode_InvalidFile(t *testing.T) {
 	}`
 	_, err = tmpFile.WriteString(invalidConfig)
 	require.NoError(t, err)
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	// Capture stdout
 	old := os.Stdout
@@ -2337,11 +2337,11 @@ func TestHandleValidateOpenCode_InvalidFile(t *testing.T) {
 
 	err = handleValidateOpenCode(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	assert.Error(t, err)
@@ -2367,7 +2367,7 @@ func TestHandleValidateOpenCode_NilLogger(t *testing.T) {
 	// Create a temporary valid config file
 	tmpFile, err := os.CreateTemp("", "opencode-nillogger-*.json")
 	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	validConfig := `{
 		"$schema": "https://opencode.ai/config.json",
@@ -2377,7 +2377,7 @@ func TestHandleValidateOpenCode_NilLogger(t *testing.T) {
 	}`
 	_, err = tmpFile.WriteString(validConfig)
 	require.NoError(t, err)
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	// Capture stdout
 	old := os.Stdout
@@ -2391,7 +2391,7 @@ func TestHandleValidateOpenCode_NilLogger(t *testing.T) {
 
 	err = handleValidateOpenCode(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	assert.NoError(t, err)
@@ -2402,11 +2402,11 @@ func TestHandleValidateOpenCode_JSONSyntaxError(t *testing.T) {
 	// Create a temporary file with invalid JSON
 	tmpFile, err := os.CreateTemp("", "opencode-badjson-*.json")
 	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	_, err = tmpFile.WriteString(`{not valid json}`)
 	require.NoError(t, err)
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	// Capture stdout
 	old := os.Stdout
@@ -2420,11 +2420,11 @@ func TestHandleValidateOpenCode_JSONSyntaxError(t *testing.T) {
 
 	err = handleValidateOpenCode(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	assert.Error(t, err)
@@ -2499,7 +2499,7 @@ func TestRun_ValidateOpenCode(t *testing.T) {
 	// Create a temporary valid config file
 	tmpFile, err := os.CreateTemp("", "opencode-run-*.json")
 	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	validConfig := `{
 		"$schema": "https://opencode.ai/config.json",
@@ -2509,7 +2509,7 @@ func TestRun_ValidateOpenCode(t *testing.T) {
 	}`
 	_, err = tmpFile.WriteString(validConfig)
 	require.NoError(t, err)
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	// Capture stdout
 	old := os.Stdout
@@ -2523,11 +2523,11 @@ func TestRun_ValidateOpenCode(t *testing.T) {
 
 	err = run(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	assert.NoError(t, err)
@@ -2539,7 +2539,7 @@ func TestRun_ValidateOpenCode_BeforeHelp(t *testing.T) {
 	// Create a temporary valid config file
 	tmpFile, err := os.CreateTemp("", "opencode-priority-*.json")
 	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	validConfig := `{
 		"$schema": "https://opencode.ai/config.json",
@@ -2549,7 +2549,7 @@ func TestRun_ValidateOpenCode_BeforeHelp(t *testing.T) {
 	}`
 	_, err = tmpFile.WriteString(validConfig)
 	require.NoError(t, err)
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	// Capture stdout
 	old := os.Stdout
@@ -2565,11 +2565,11 @@ func TestRun_ValidateOpenCode_BeforeHelp(t *testing.T) {
 	// Help takes precedence in run()
 	err = run(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	assert.NoError(t, err)
@@ -2608,11 +2608,11 @@ func TestShowHelp_ContainsValidateOpenCode(t *testing.T) {
 
 	showHelp()
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	assert.Contains(t, output, "-validate-opencode-config")
@@ -2696,7 +2696,7 @@ CLAUDE_CODE_USE_OAUTH_CREDENTIALS=true`
 	// Change to temp directory
 	originalWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(originalWd)
+	defer func() { _ = os.Chdir(originalWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -2709,9 +2709,9 @@ CLAUDE_CODE_USE_OAUTH_CREDENTIALS=true`
 	assert.Equal(t, "test_value", os.Getenv("TEST_VAR_UNIQUE_12345"))
 
 	// Clean up
-	os.Unsetenv("TEST_VAR_UNIQUE_12345")
-	os.Unsetenv("DEEPSEEK_API_KEY")
-	os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS")
+	_ = os.Unsetenv("TEST_VAR_UNIQUE_12345")
+	_ = os.Unsetenv("DEEPSEEK_API_KEY")
+	_ = os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS")
 }
 
 // TestGodotenvLoading_EnvFileNotExists verifies graceful handling when .env doesn't exist
@@ -2722,7 +2722,7 @@ func TestGodotenvLoading_EnvFileNotExists(t *testing.T) {
 	// Change to temp directory
 	originalWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(originalWd)
+	defer func() { _ = os.Chdir(originalWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -2764,7 +2764,7 @@ func godotenvLoad() error {
 		}
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) == 2 {
-			os.Setenv(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
+			_ = os.Setenv(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
 		}
 	}
 	return nil
@@ -2810,11 +2810,11 @@ func TestHandleGenerateAPIKey(t *testing.T) {
 
 		err := handleGenerateAPIKey(appCfg)
 
-		w.Close()
+		_ = w.Close()
 		os.Stdout = old
 
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		_, _ = io.Copy(&buf, r)
 		output := strings.TrimSpace(buf.String())
 
 		require.NoError(t, err)
@@ -2838,7 +2838,7 @@ func TestHandleGenerateAPIKey(t *testing.T) {
 
 		err := handleGenerateAPIKey(appCfg)
 
-		w.Close()
+		_ = w.Close()
 		os.Stdout = old
 
 		require.NoError(t, err)
@@ -2862,7 +2862,7 @@ func TestHandleGenerateAPIKey(t *testing.T) {
 
 		err := handleGenerateAPIKey(appCfg)
 
-		w.Close()
+		_ = w.Close()
 		os.Stdout = old
 
 		require.NoError(t, err)
@@ -3006,11 +3006,11 @@ func TestHandleGenerateOpenCode(t *testing.T) {
 
 		err := handleGenerateOpenCode(appCfg)
 
-		w.Close()
+		_ = w.Close()
 		os.Stdout = old
 
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		_, _ = io.Copy(&buf, r)
 		output := buf.String()
 
 		require.NoError(t, err)
@@ -3040,7 +3040,7 @@ func TestHandleGenerateOpenCode(t *testing.T) {
 
 		err := handleGenerateOpenCode(appCfg)
 
-		w.Close()
+		_ = w.Close()
 		os.Stdout = old
 
 		require.NoError(t, err)
@@ -3072,7 +3072,7 @@ func TestHandleGenerateOpenCode(t *testing.T) {
 
 		err := handleGenerateOpenCode(appCfg)
 
-		w.Close()
+		_ = w.Close()
 		os.Stdout = old
 
 		require.NoError(t, err)
@@ -3089,8 +3089,8 @@ func TestHandleGenerateOpenCode(t *testing.T) {
 
 	t.Run("uses env variable template for API key", func(t *testing.T) {
 		// Set env var
-		os.Setenv("HELIXAGENT_API_KEY", "sk-env-test-key")
-		defer os.Unsetenv("HELIXAGENT_API_KEY")
+		_ = os.Setenv("HELIXAGENT_API_KEY", "sk-env-test-key")
+		defer func() { _ = os.Unsetenv("HELIXAGENT_API_KEY") }()
 
 		// Capture stdout
 		old := os.Stdout
@@ -3104,11 +3104,11 @@ func TestHandleGenerateOpenCode(t *testing.T) {
 
 		err := handleGenerateOpenCode(appCfg)
 
-		w.Close()
+		_ = w.Close()
 		os.Stdout = old
 
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		_, _ = io.Copy(&buf, r)
 		output := buf.String()
 
 		require.NoError(t, err)
@@ -3147,11 +3147,11 @@ func TestHandleValidateOpenCode(t *testing.T) {
 
 		err = handleValidateOpenCode(appCfg)
 
-		w.Close()
+		_ = w.Close()
 		os.Stdout = old
 
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		_, _ = io.Copy(&buf, r)
 		output := buf.String()
 
 		require.NoError(t, err)
@@ -3178,7 +3178,7 @@ func TestHandleValidateOpenCode(t *testing.T) {
 
 		err = handleValidateOpenCode(appCfg)
 
-		w.Close()
+		_ = w.Close()
 		os.Stdout = old
 
 		require.Error(t, err)
@@ -3277,11 +3277,11 @@ func TestRun_GenerateAPIKey(t *testing.T) {
 
 	err := run(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := strings.TrimSpace(buf.String())
 
 	require.NoError(t, err)
@@ -3301,11 +3301,11 @@ func TestRun_GenerateOpenCode(t *testing.T) {
 
 	err := run(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	require.NoError(t, err)
@@ -3340,7 +3340,7 @@ func TestRun_ValidateOpenCode_FromRun(t *testing.T) {
 
 	err = run(appCfg)
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	require.NoError(t, err)

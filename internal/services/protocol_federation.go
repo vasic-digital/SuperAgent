@@ -332,7 +332,7 @@ func (d *ProtocolDiscovery) checkServerHealth(ctx context.Context, server *Disco
 		if err != nil {
 			return StatusOffline
 		}
-		conn.Close()
+		_ = conn.Close()
 		return StatusOnline
 
 	case "lsp":
@@ -341,7 +341,7 @@ func (d *ProtocolDiscovery) checkServerHealth(ctx context.Context, server *Disco
 		if err != nil {
 			return StatusOffline
 		}
-		conn.Close()
+		_ = conn.Close()
 		return StatusOnline
 
 	case "acp":
@@ -351,7 +351,7 @@ func (d *ProtocolDiscovery) checkServerHealth(ctx context.Context, server *Disco
 		if err != nil {
 			return StatusOffline
 		}
-		conn.Close()
+		_ = conn.Close()
 		return StatusOnline
 
 	default:
@@ -369,8 +369,8 @@ func (d *ProtocolDiscovery) periodicDiscovery() {
 			return
 		case <-ticker.C:
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			d.DiscoverServers(ctx)
-			d.HealthCheck(ctx)
+			_ = d.DiscoverServers(ctx)
+			_ = d.HealthCheck(ctx)
 			cancel()
 		}
 	}
@@ -398,10 +398,10 @@ func (n *NetworkDiscovery) Discover(ctx context.Context) ([]*DiscoveredServer, e
 	// Send discovery broadcast
 	broadcastAddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("255.255.255.255:%d", n.port))
 	message := []byte("DISCOVER_PROTOCOL_SERVERS")
-	conn.WriteToUDP(message, broadcastAddr)
+	_, _ = conn.WriteToUDP(message, broadcastAddr)
 
 	// Listen for responses with timeout
-	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 
 	var servers []*DiscoveredServer
 	buffer := make([]byte, 1024)

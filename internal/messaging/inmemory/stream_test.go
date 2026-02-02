@@ -68,7 +68,7 @@ func TestTopic_Read(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		msg := messaging.NewMessage("test.type", []byte("payload"))
 		msg.Partition = 0
-		topic.Publish(msg)
+		_ = topic.Publish(msg)
 	}
 
 	// Read from partition 0
@@ -96,7 +96,7 @@ func TestTopic_GetHighWatermark(t *testing.T) {
 	// Publish messages
 	msg := messaging.NewMessage("test.type", []byte("payload"))
 	msg.Partition = 0
-	topic.Publish(msg)
+	_ = topic.Publish(msg)
 
 	assert.Equal(t, int64(1), topic.GetHighWatermark(0))
 
@@ -143,7 +143,7 @@ func TestPartition_AppendCompact(t *testing.T) {
 	// Fill the partition
 	for i := 0; i < 4; i++ {
 		msg := messaging.NewMessage("test.type", []byte("payload"))
-		p.Append(msg)
+		_, _ = p.Append(msg)
 	}
 
 	// This should trigger compaction
@@ -160,7 +160,7 @@ func TestPartition_Read(t *testing.T) {
 	// Append messages
 	for i := 0; i < 5; i++ {
 		msg := messaging.NewMessage("test.type", []byte("payload"))
-		p.Append(msg)
+		_, _ = p.Append(msg)
 	}
 
 	// Read from offset 0
@@ -214,15 +214,15 @@ func TestStreamBroker_HealthCheck(t *testing.T) {
 	assert.Error(t, err)
 
 	// Connected
-	broker.Connect(context.Background())
+	_ = broker.Connect(context.Background())
 	err = broker.HealthCheck(context.Background())
 	assert.NoError(t, err)
 }
 
 func TestStreamBroker_PublishSubscribe(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
 	// Create topic
 	err := broker.CreateTopic(context.Background(), "test-topic", 3, 1)
@@ -236,10 +236,10 @@ func TestStreamBroker_PublishSubscribe(t *testing.T) {
 
 func TestStreamBroker_PublishBatch(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
-	broker.CreateTopic(context.Background(), "test-topic", 3, 1)
+	_ = broker.CreateTopic(context.Background(), "test-topic", 3, 1)
 
 	messages := []*messaging.Message{
 		messaging.NewMessage("test.type", []byte("1")),
@@ -252,10 +252,10 @@ func TestStreamBroker_PublishBatch(t *testing.T) {
 
 func TestStreamBroker_Subscribe(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
-	broker.CreateTopic(context.Background(), "test-topic", 3, 1)
+	_ = broker.CreateTopic(context.Background(), "test-topic", 3, 1)
 
 	handler := func(ctx context.Context, msg *messaging.Message) error {
 		return nil
@@ -267,8 +267,8 @@ func TestStreamBroker_Subscribe(t *testing.T) {
 
 func TestStreamBroker_CreateDeleteTopic(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
 	err := broker.CreateTopic(context.Background(), "new-topic", 3, 1)
 	require.NoError(t, err)
@@ -287,10 +287,10 @@ func TestStreamBroker_CreateDeleteTopic(t *testing.T) {
 
 func TestStreamBroker_GetTopicMetadata(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
-	broker.CreateTopic(context.Background(), "test-topic", 3, 1)
+	_ = broker.CreateTopic(context.Background(), "test-topic", 3, 1)
 
 	metadata, err := broker.GetTopicMetadata(context.Background(), "test-topic")
 	require.NoError(t, err)
@@ -310,10 +310,10 @@ func TestStreamBroker_GetMetrics(t *testing.T) {
 
 func TestStreamBroker_PublishEvent(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
-	broker.CreateTopic(context.Background(), "test-topic", 3, 1)
+	_ = broker.CreateTopic(context.Background(), "test-topic", 3, 1)
 
 	event := messaging.NewEvent("test.event", "source", []byte("data"))
 	err := broker.PublishEvent(context.Background(), "test-topic", event)
@@ -322,10 +322,10 @@ func TestStreamBroker_PublishEvent(t *testing.T) {
 
 func TestStreamBroker_PublishEventBatch(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
-	broker.CreateTopic(context.Background(), "test-topic", 3, 1)
+	_ = broker.CreateTopic(context.Background(), "test-topic", 3, 1)
 
 	events := []*messaging.Event{
 		messaging.NewEvent("test.event", "source", []byte("1")),
@@ -338,10 +338,10 @@ func TestStreamBroker_PublishEventBatch(t *testing.T) {
 
 func TestStreamBroker_SubscribeEvents(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
-	broker.CreateTopic(context.Background(), "test-topic", 3, 1)
+	_ = broker.CreateTopic(context.Background(), "test-topic", 3, 1)
 
 	handler := func(ctx context.Context, event *messaging.Event) error {
 		return nil
@@ -353,10 +353,10 @@ func TestStreamBroker_SubscribeEvents(t *testing.T) {
 
 func TestStreamBroker_CommitGetOffset(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
-	broker.CreateTopic(context.Background(), "test-topic", 3, 1)
+	_ = broker.CreateTopic(context.Background(), "test-topic", 3, 1)
 
 	// Commit offset
 	err := broker.CommitOffset(context.Background(), "test-topic", 0, 100)
@@ -370,15 +370,15 @@ func TestStreamBroker_CommitGetOffset(t *testing.T) {
 
 func TestStreamBroker_SeekOperations(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
-	broker.CreateTopic(context.Background(), "test-topic", 3, 1)
+	_ = broker.CreateTopic(context.Background(), "test-topic", 3, 1)
 
 	// Publish some messages
 	for i := 0; i < 5; i++ {
 		msg := messaging.NewMessage("test.type", []byte("payload"))
-		broker.Publish(context.Background(), "test-topic", msg)
+		_ = broker.Publish(context.Background(), "test-topic", msg)
 	}
 
 	err := broker.SeekToOffset(context.Background(), "test-topic", 0, 2)
@@ -396,10 +396,10 @@ func TestStreamBroker_SeekOperations(t *testing.T) {
 
 func TestStreamBroker_ConsumerGroup(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
-	broker.CreateTopic(context.Background(), "test-topic", 3, 1)
+	_ = broker.CreateTopic(context.Background(), "test-topic", 3, 1)
 
 	err := broker.CreateConsumerGroup(context.Background(), "test-group")
 	require.NoError(t, err)
@@ -410,10 +410,10 @@ func TestStreamBroker_ConsumerGroup(t *testing.T) {
 
 func TestStreamBroker_SubscribeUnsubscribe(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
-	broker.CreateTopic(context.Background(), "test-topic", 3, 1)
+	_ = broker.CreateTopic(context.Background(), "test-topic", 3, 1)
 
 	handler := func(ctx context.Context, msg *messaging.Message) error {
 		return nil
@@ -432,16 +432,16 @@ func TestStreamBroker_SubscribeUnsubscribe(t *testing.T) {
 
 func TestStreamSubscription(t *testing.T) {
 	broker := NewStreamBroker(nil)
-	broker.Connect(context.Background())
-	defer broker.Close(context.Background())
+	_ = broker.Connect(context.Background())
+	defer func() { _ = broker.Close(context.Background()) }()
 
-	broker.CreateTopic(context.Background(), "test-topic", 3, 1)
+	_ = broker.CreateTopic(context.Background(), "test-topic", 3, 1)
 
 	handler := func(ctx context.Context, msg *messaging.Message) error {
 		return nil
 	}
 
-	broker.Subscribe(context.Background(), "test-topic", handler)
+	_, _ = broker.Subscribe(context.Background(), "test-topic", handler)
 
 	// Get all subscriptions (internal check)
 	broker.mu.RLock()
@@ -458,13 +458,13 @@ func TestTopic_SelectPartition(t *testing.T) {
 	// With explicit partition
 	msg := messaging.NewMessage("test.type", []byte("payload"))
 	msg.Partition = 1
-	topic.Publish(msg)
+	_ = topic.Publish(msg)
 	assert.Equal(t, int32(1), msg.Partition)
 
 	// With negative partition (should hash)
 	msg2 := messaging.NewMessage("test.type", []byte("payload"))
 	msg2.Partition = -1
-	topic.Publish(msg2)
+	_ = topic.Publish(msg2)
 	assert.GreaterOrEqual(t, int(msg2.Partition), 0)
 	assert.Less(t, int(msg2.Partition), 3)
 }

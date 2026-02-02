@@ -172,7 +172,7 @@ func (w *compressionWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 // Flush implements http.Flusher
 func (w *compressionWriter) Flush() {
 	if flusher, ok := w.compressor.(interface{ Flush() error }); ok {
-		flusher.Flush()
+		_ = flusher.Flush()
 	}
 	w.ResponseWriter.(http.Flusher).Flush()
 }
@@ -229,7 +229,7 @@ func CompressionMiddleware(config *CompressionConfig) gin.HandlerFunc {
 		c.Writer = cw
 
 		defer func() {
-			cw.Close()
+			_ = cw.Close()
 		}()
 
 		c.Next()
@@ -290,7 +290,7 @@ func (r *gzipReader) Read(p []byte) (int, error) {
 }
 
 func (r *gzipReader) Close() error {
-	r.reader.Close()
+	_ = r.reader.Close()
 	return r.closer.Close()
 }
 

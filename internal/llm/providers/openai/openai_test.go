@@ -75,7 +75,7 @@ func TestProvider_Complete(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -104,7 +104,7 @@ func TestProvider_Complete(t *testing.T) {
 func TestProvider_Complete_WithTools(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req Request
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		assert.Len(t, req.Tools, 1)
 		assert.Equal(t, "get_weather", req.Tools[0].Function.Name)
@@ -135,7 +135,7 @@ func TestProvider_Complete_WithTools(t *testing.T) {
 			Usage: Usage{TotalTokens: 20},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -176,7 +176,7 @@ func TestProvider_Complete_WithTools(t *testing.T) {
 func TestProvider_Complete_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": {"message": "Invalid request"}}`))
+		_, _ = w.Write([]byte(`{"error": {"message": "Invalid request"}}`))
 	}))
 	defer server.Close()
 
@@ -192,7 +192,7 @@ func TestProvider_Complete_Error(t *testing.T) {
 func TestProvider_Complete_WithSystemPrompt(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req Request
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		// Verify system message was added
 		assert.Equal(t, "system", req.Messages[0].Role)
@@ -205,7 +205,7 @@ func TestProvider_Complete_WithSystemPrompt(t *testing.T) {
 			Usage:   Usage{TotalTokens: 10},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -221,7 +221,7 @@ func TestProvider_Complete_WithSystemPrompt(t *testing.T) {
 func TestProvider_CompleteStream(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req Request
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.True(t, req.Stream)
 
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -234,7 +234,7 @@ func TestProvider_CompleteStream(t *testing.T) {
 		}
 
 		for _, chunk := range chunks {
-			w.Write([]byte("data: " + chunk + "\n\n"))
+			_, _ = w.Write([]byte("data: " + chunk + "\n\n"))
 			flusher.Flush()
 		}
 	}))
@@ -262,7 +262,7 @@ func TestProvider_HealthCheck(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "GET", r.Method)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"data": []}`))
+		_, _ = w.Write([]byte(`{"data": []}`))
 	}))
 	defer server.Close()
 
@@ -463,7 +463,7 @@ func TestProvider_Retry(t *testing.T) {
 			Usage:   Usage{TotalTokens: 10},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 

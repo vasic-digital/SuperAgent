@@ -214,7 +214,7 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, fmt.Errorf("Together AI API error: %d - %s", resp.StatusCode, string(body))
 	}
 
@@ -537,7 +537,7 @@ func (p *Provider) makeAPICall(ctx context.Context, req Request) (*http.Response
 
 		// Check for retryable status codes
 		if resp.StatusCode == 429 || resp.StatusCode >= 500 {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("retryable error: status %d", resp.StatusCode)
 			continue
 		}

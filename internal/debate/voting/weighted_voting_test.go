@@ -120,8 +120,8 @@ func TestAddVote_DuplicateReplacesExisting(t *testing.T) {
 		Confidence: 0.9,
 	}
 
-	wvs.AddVote(vote1)
-	wvs.AddVote(vote2)
+	_ = wvs.AddVote(vote1)
+	_ = wvs.AddVote(vote2)
 
 	assert.Equal(t, 1, wvs.VoteCount())
 
@@ -139,7 +139,7 @@ func TestAddVote_SetsTimestamp(t *testing.T) {
 		Confidence: 0.8,
 	}
 
-	wvs.AddVote(vote)
+	_ = wvs.AddVote(vote)
 
 	votes := wvs.GetVotes()
 	assert.False(t, votes[0].Timestamp.IsZero())
@@ -151,7 +151,7 @@ func TestReset(t *testing.T) {
 
 	votes := createTestVotes(3, "option_a", 0.8)
 	for _, v := range votes {
-		wvs.AddVote(v)
+		_ = wvs.AddVote(v)
 	}
 
 	assert.Equal(t, 3, wvs.VoteCount())
@@ -171,9 +171,9 @@ func TestCalculate_MiniMaxFormula(t *testing.T) {
 	wvs := NewWeightedVotingSystem(config)
 
 	// Add votes with different confidences
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9, Score: 8.0})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8, Score: 7.5})
-	wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.7, Score: 7.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8, Score: 7.5})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.7, Score: 7.0})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -189,8 +189,8 @@ func TestCalculate_InsufficientVotes(t *testing.T) {
 	config.MinimumVotes = 5
 	wvs := NewWeightedVotingSystem(config)
 
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8})
 
 	ctx := context.Background()
 	_, err := wvs.Calculate(ctx)
@@ -204,9 +204,9 @@ func TestCalculate_FiltersLowConfidence(t *testing.T) {
 	config.MinimumConfidence = 0.5
 	wvs := NewWeightedVotingSystem(config)
 
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.2}) // Filtered out
-	wvs.AddVote(&Vote{AgentID: "a3", Choice: "A", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.2}) // Filtered out
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "A", Confidence: 0.8})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -225,8 +225,8 @@ func TestCalculate_WeightedScores(t *testing.T) {
 
 	// A: 0.9 confidence, B: 0.5 confidence
 	// A should win due to higher weight
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9, Score: 8.0})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.5, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.5, Score: 8.0})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -241,8 +241,8 @@ func TestCalculate_VoteWeights(t *testing.T) {
 	config.MinimumVotes = 2
 	wvs := NewWeightedVotingSystem(config)
 
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9, Score: 9.0})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.6, Score: 6.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9, Score: 9.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.6, Score: 6.0})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -265,8 +265,8 @@ func TestCalculate_TieDetection(t *testing.T) {
 	wvs := NewWeightedVotingSystem(config)
 
 	// Same confidence, should tie
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Score: 8.0})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.8, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.8, Score: 8.0})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -286,10 +286,10 @@ func TestCalculate_TieBreakByHighestConfidence(t *testing.T) {
 	wvs := NewWeightedVotingSystem(config)
 
 	// Equal weighted sums but different max confidences
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Score: 8.0})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.6, Score: 8.0})
-	wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.7, Score: 8.0})
-	wvs.AddVote(&Vote{AgentID: "a4", Choice: "B", Confidence: 0.7, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.6, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.7, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a4", Choice: "B", Confidence: 0.7, Score: 8.0})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -312,9 +312,9 @@ func TestCalculate_TieBreakByMostVotes(t *testing.T) {
 
 	// A: 1 high confidence vote, B: 2 lower confidence votes
 	// Weighted scores might tie, but B has more votes
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9, Score: 8.0})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.45, Score: 8.0})
-	wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.45, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.45, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.45, Score: 8.0})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -334,8 +334,8 @@ func TestCalculate_TieBreakByLeaderVote(t *testing.T) {
 	wvs := NewWeightedVotingSystem(config)
 
 	// Equal confidence but different scores
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Score: 9.5}) // Leader
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.8, Score: 7.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Score: 9.5}) // Leader
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.8, Score: 7.0})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -359,9 +359,9 @@ func TestCalculate_DiversityBonus(t *testing.T) {
 	wvs := NewWeightedVotingSystem(config)
 
 	// Different specializations
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Score: 8.0, Specialization: "code", Role: "proposer"})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8, Score: 8.0, Specialization: "reasoning", Role: "critic"})
-	wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.8, Score: 8.0, Specialization: "vision", Role: "reviewer"})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Score: 8.0, Specialization: "code", Role: "proposer"})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8, Score: 8.0, Specialization: "reasoning", Role: "critic"})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.8, Score: 8.0, Specialization: "vision", Role: "reviewer"})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -379,8 +379,8 @@ func TestCalculate_DiversityBonus_Disabled(t *testing.T) {
 	config.EnableDiversityBonus = false
 	wvs := NewWeightedVotingSystem(config)
 
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Specialization: "code"})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.8, Specialization: "reasoning"})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Specialization: "code"})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.8, Specialization: "reasoning"})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -424,8 +424,8 @@ func TestCalculate_HistoricalWeight(t *testing.T) {
 	wvs.UpdateHistory("a2", false, 0.5)
 	wvs.UpdateHistory("a2", false, 0.5)
 
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Score: 8.0})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.8, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8, Score: 8.0})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "B", Confidence: 0.8, Score: 8.0})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -445,9 +445,9 @@ func TestCalculate_ConsensusLevel(t *testing.T) {
 	wvs := NewWeightedVotingSystem(config)
 
 	// Unanimous vote
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8})
-	wvs.AddVote(&Vote{AgentID: "a3", Choice: "A", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "A", Confidence: 0.8})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -462,10 +462,10 @@ func TestCalculate_SplitConsensus(t *testing.T) {
 	wvs := NewWeightedVotingSystem(config)
 
 	// Split vote
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8})
-	wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.8})
-	wvs.AddVote(&Vote{AgentID: "a4", Choice: "B", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.8})
+	_ = wvs.AddVote(&Vote{AgentID: "a4", Choice: "B", Confidence: 0.8})
 
 	ctx := context.Background()
 	result, err := wvs.Calculate(ctx)
@@ -483,9 +483,9 @@ func TestCalculateSimpleMajority(t *testing.T) {
 	config.MinimumVotes = 3
 	wvs := NewWeightedVotingSystem(config)
 
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.5})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.5})
-	wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.9})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.5})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.5})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.9})
 
 	ctx := context.Background()
 	result, err := wvs.CalculateSimpleMajority(ctx)
@@ -530,7 +530,7 @@ func TestSimulateProductiveChaos(t *testing.T) {
 
 	votes := createTestVotes(5, "A", 0.5)
 	for _, v := range votes {
-		wvs.AddVote(v)
+		_ = wvs.AddVote(v)
 	}
 
 	originalConfidences := make([]float64, len(votes))
@@ -558,7 +558,7 @@ func TestSimulateProductiveChaos_InvalidLevel(t *testing.T) {
 
 	votes := createTestVotes(3, "A", 0.5)
 	for _, v := range votes {
-		wvs.AddVote(v)
+		_ = wvs.AddVote(v)
 	}
 
 	originalConfidences := make([]float64, 3)
@@ -585,9 +585,9 @@ func TestGetStatistics(t *testing.T) {
 	config := DefaultVotingConfig()
 	wvs := NewWeightedVotingSystem(config)
 
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9, Specialization: "code", Role: "proposer"})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.7, Specialization: "reasoning", Role: "critic"})
-	wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.8, Specialization: "code", Role: "reviewer"})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "A", Confidence: 0.9, Specialization: "code", Role: "proposer"})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "A", Confidence: 0.7, Specialization: "reasoning", Role: "critic"})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "B", Confidence: 0.8, Specialization: "code", Role: "reviewer"})
 
 	stats := wvs.GetStatistics()
 
@@ -631,11 +631,11 @@ func TestFullVotingWorkflow(t *testing.T) {
 	wvs.UpdateHistory("a5", true, 0.75)
 
 	// Add diverse votes
-	wvs.AddVote(&Vote{AgentID: "a1", Choice: "microservices", Confidence: 0.9, Score: 9.0, Specialization: "code", Role: "architect"})
-	wvs.AddVote(&Vote{AgentID: "a2", Choice: "microservices", Confidence: 0.85, Score: 8.5, Specialization: "reasoning", Role: "proposer"})
-	wvs.AddVote(&Vote{AgentID: "a3", Choice: "monolith", Confidence: 0.7, Score: 7.0, Specialization: "general", Role: "critic"})
-	wvs.AddVote(&Vote{AgentID: "a4", Choice: "microservices", Confidence: 0.8, Score: 8.0, Specialization: "code", Role: "reviewer"})
-	wvs.AddVote(&Vote{AgentID: "a5", Choice: "hybrid", Confidence: 0.75, Score: 7.5, Specialization: "vision", Role: "moderator"})
+	_ = wvs.AddVote(&Vote{AgentID: "a1", Choice: "microservices", Confidence: 0.9, Score: 9.0, Specialization: "code", Role: "architect"})
+	_ = wvs.AddVote(&Vote{AgentID: "a2", Choice: "microservices", Confidence: 0.85, Score: 8.5, Specialization: "reasoning", Role: "proposer"})
+	_ = wvs.AddVote(&Vote{AgentID: "a3", Choice: "monolith", Confidence: 0.7, Score: 7.0, Specialization: "general", Role: "critic"})
+	_ = wvs.AddVote(&Vote{AgentID: "a4", Choice: "microservices", Confidence: 0.8, Score: 8.0, Specialization: "code", Role: "reviewer"})
+	_ = wvs.AddVote(&Vote{AgentID: "a5", Choice: "hybrid", Confidence: 0.75, Score: 7.5, Specialization: "vision", Role: "moderator"})
 
 	ctx := context.Background()
 

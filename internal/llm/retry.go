@@ -106,7 +106,7 @@ func ExecuteWithRetry(ctx context.Context, config RetryConfig, fn RetryableFunc)
 		// If we got a response with retryable status, close it before retrying
 		if resp != nil && IsRetryableStatusCode(resp.StatusCode) {
 			result.LastError = fmt.Errorf("HTTP %d: retryable server error", resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		} else if err != nil {
 			result.LastError = err
 		}

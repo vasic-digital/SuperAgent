@@ -288,7 +288,7 @@ func (c *LSPClient) ConnectServer(ctx context.Context, serverID, name, language,
 
 	// Initialize the server
 	if err := c.initializeServer(ctx, connection); err != nil {
-		transport.Close()
+		_ = transport.Close()
 		return fmt.Errorf("failed to initialize LSP server: %w", err)
 	}
 
@@ -330,7 +330,7 @@ func (c *LSPClient) DisconnectServer(serverID string) error {
 		Params:  nil,
 	}
 
-	connection.Transport.Send(context.Background(), exitNotification)
+	_ = connection.Transport.Send(context.Background(), exitNotification)
 
 	if err := connection.Transport.Close(); err != nil {
 		c.logger.WithError(err).Warn("Error closing LSP transport")
@@ -834,13 +834,13 @@ func (c *LSPClient) createStdioTransport(command string, args []string) (LSPTran
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		stdin.Close()
+		_ = stdin.Close()
 		return nil, err
 	}
 
 	if err := cmd.Start(); err != nil {
-		stdin.Close()
-		stdout.Close()
+		_ = stdin.Close()
+		_ = stdout.Close()
 		return nil, err
 	}
 
@@ -990,7 +990,7 @@ func (t *StdioLSPTransport) Receive(ctx context.Context) (interface{}, error) {
 	// Parse content length (simplified - should handle parsing better)
 	contentLengthStr := strings.TrimPrefix(headerLine, "Content-Length: ")
 	contentLength := 0
-	fmt.Sscanf(contentLengthStr, "%d", &contentLength)
+	_, _ = fmt.Sscanf(contentLengthStr, "%d", &contentLength)
 
 	// Skip empty line
 	if !t.scanner.Scan() {
@@ -1019,7 +1019,7 @@ func (t *StdioLSPTransport) Close() error {
 	t.connected = false
 
 	if t.stdin != nil {
-		t.stdin.Close()
+		_ = t.stdin.Close()
 	}
 
 	if t.cmd != nil && t.cmd.Process != nil {

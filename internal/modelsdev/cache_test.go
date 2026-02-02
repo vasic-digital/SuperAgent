@@ -13,7 +13,7 @@ import (
 func TestNewCache(t *testing.T) {
 	cache := NewCache(nil)
 	require.NotNil(t, cache)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	assert.NotNil(t, cache.models)
 	assert.NotNil(t, cache.providers)
@@ -31,7 +31,7 @@ func TestNewCache_WithConfig(t *testing.T) {
 
 	cache := NewCache(config)
 	require.NotNil(t, cache)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	assert.Equal(t, 30*time.Minute, cache.config.ModelTTL)
 	assert.Equal(t, 1*time.Hour, cache.config.ProviderTTL)
@@ -45,7 +45,7 @@ func TestCache_SetAndGetModel(t *testing.T) {
 		CleanupInterval: 1 * time.Hour,
 		MaxModels:       100,
 	})
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 	model := &Model{
@@ -67,7 +67,7 @@ func TestCache_SetAndGetModel(t *testing.T) {
 
 func TestCache_GetModel_NotFound(t *testing.T) {
 	cache := NewCache(nil)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 
@@ -82,7 +82,7 @@ func TestCache_GetModel_Expired(t *testing.T) {
 		CleanupInterval: 1 * time.Hour,
 		MaxModels:       100,
 	})
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 	model := &Model{
@@ -102,7 +102,7 @@ func TestCache_GetModel_Expired(t *testing.T) {
 
 func TestCache_SetAndGetProvider(t *testing.T) {
 	cache := NewCache(nil)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 	provider := &Provider{
@@ -121,7 +121,7 @@ func TestCache_SetAndGetProvider(t *testing.T) {
 
 func TestCache_GetProvider_NotFound(t *testing.T) {
 	cache := NewCache(nil)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 
@@ -136,7 +136,7 @@ func TestCache_SetModels(t *testing.T) {
 		CleanupInterval: 1 * time.Hour,
 		MaxModels:       100,
 	})
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 	models := []Model{
@@ -157,7 +157,7 @@ func TestCache_SetModels(t *testing.T) {
 
 func TestCache_SetProviders(t *testing.T) {
 	cache := NewCache(nil)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 	providers := []Provider{
@@ -180,7 +180,7 @@ func TestCache_GetModelsByProvider(t *testing.T) {
 		CleanupInterval: 1 * time.Hour,
 		MaxModels:       100,
 	})
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 	models := []Model{
@@ -212,7 +212,7 @@ func TestCache_GetAllModels(t *testing.T) {
 		CleanupInterval: 1 * time.Hour,
 		MaxModels:       100,
 	})
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 	models := []Model{
@@ -229,7 +229,7 @@ func TestCache_GetAllModels(t *testing.T) {
 
 func TestCache_GetAllProviders(t *testing.T) {
 	cache := NewCache(nil)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 	providers := []Provider{
@@ -249,7 +249,7 @@ func TestCache_InvalidateModel(t *testing.T) {
 		CleanupInterval: 1 * time.Hour,
 		MaxModels:       100,
 	})
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 	model := &Model{
@@ -280,7 +280,7 @@ func TestCache_InvalidateProvider(t *testing.T) {
 		MaxModels:       100,
 		MaxProviders:    50,
 	})
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 
@@ -319,7 +319,7 @@ func TestCache_InvalidateAll(t *testing.T) {
 		MaxModels:       100,
 		MaxProviders:    50,
 	})
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 
@@ -347,7 +347,7 @@ func TestCache_Stats(t *testing.T) {
 		MaxModels:       100,
 		MaxProviders:    50,
 	})
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 
@@ -381,7 +381,7 @@ func TestCache_Eviction(t *testing.T) {
 		CleanupInterval: 1 * time.Hour,
 		MaxModels:       3,
 	})
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 
@@ -401,7 +401,7 @@ func TestCache_Eviction(t *testing.T) {
 
 func TestCache_SetModel_NilModel(t *testing.T) {
 	cache := NewCache(nil)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 
@@ -412,7 +412,7 @@ func TestCache_SetModel_NilModel(t *testing.T) {
 
 func TestCache_SetModel_EmptyID(t *testing.T) {
 	cache := NewCache(nil)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 
@@ -423,7 +423,7 @@ func TestCache_SetModel_EmptyID(t *testing.T) {
 
 func TestCache_SetProvider_NilProvider(t *testing.T) {
 	cache := NewCache(nil)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 
@@ -434,7 +434,7 @@ func TestCache_SetProvider_NilProvider(t *testing.T) {
 
 func TestCache_SetProvider_EmptyID(t *testing.T) {
 	cache := NewCache(nil)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	ctx := context.Background()
 
@@ -445,7 +445,7 @@ func TestCache_SetProvider_EmptyID(t *testing.T) {
 
 func TestCache_UpdateLastRefresh(t *testing.T) {
 	cache := NewCache(nil)
-	defer cache.Close()
+	defer func() { _ = cache.Close() }()
 
 	// Initial state - lastRefresh should be zero
 	stats := cache.Stats()

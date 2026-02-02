@@ -139,7 +139,7 @@ func TestLSPAI_CloseDocument(t *testing.T) {
 	ctx := context.Background()
 	uri := "file:///test/main.go"
 
-	lspai.OpenDocument(ctx, uri, "content", "go", 1)
+	_ = lspai.OpenDocument(ctx, uri, "content", "go", 1)
 	lspai.CloseDocument(uri)
 
 	doc := lspai.documentStore.Get(uri)
@@ -155,7 +155,7 @@ func TestLSPAI_UpdateDocument(t *testing.T) {
 	ctx := context.Background()
 	uri := "file:///test/main.go"
 
-	lspai.OpenDocument(ctx, uri, "old content", "go", 1)
+	_ = lspai.OpenDocument(ctx, uri, "old content", "go", 1)
 
 	changes := []TextDocumentContentChangeEvent{
 		{Text: "new content"},
@@ -200,7 +200,7 @@ func main() {
 	fmt.Print
 }
 `
-	lspai.OpenDocument(ctx, uri, content, "go", 1)
+	_ = lspai.OpenDocument(ctx, uri, content, "go", 1)
 
 	completions, err := lspai.GetCompletion(ctx, uri, Position{Line: 3, Character: 12}, nil)
 
@@ -238,7 +238,7 @@ func testFunc() {
 	x := 1
 }
 `
-	lspai.OpenDocument(ctx, uri, content, "go", 1)
+	_ = lspai.OpenDocument(ctx, uri, content, "go", 1)
 
 	hover, err := lspai.GetHover(ctx, uri, Position{Line: 2, Character: 7})
 
@@ -280,7 +280,7 @@ func main() {
 	x := 1
 }
 `
-	lspai.OpenDocument(ctx, uri, content, "go", 1)
+	_ = lspai.OpenDocument(ctx, uri, content, "go", 1)
 
 	diagnostics := []Diagnostic{
 		{
@@ -333,7 +333,7 @@ func main() {
 	x := 1
 }
 `
-	lspai.OpenDocument(ctx, uri, content, "go", 1)
+	_ = lspai.OpenDocument(ctx, uri, content, "go", 1)
 
 	diagnostics, err := lspai.GetDiagnostics(ctx, uri)
 
@@ -372,7 +372,7 @@ func testFunc() {
 	x := 1
 }
 `
-	lspai.OpenDocument(ctx, uri, content, "go", 1)
+	_ = lspai.OpenDocument(ctx, uri, content, "go", 1)
 
 	locations, err := lspai.GetDefinition(ctx, uri, Position{Line: 2, Character: 7})
 
@@ -395,7 +395,7 @@ func testFunc() {
 	x := 1
 }
 `
-	lspai.OpenDocument(ctx, uri, content, "go", 1)
+	_ = lspai.OpenDocument(ctx, uri, content, "go", 1)
 
 	locations, err := lspai.GetReferences(ctx, uri, Position{Line: 2, Character: 7}, true)
 
@@ -418,7 +418,7 @@ func main() {
 	x := 1
 }
 `
-	lspai.OpenDocument(ctx, uri, content, "go", 1)
+	_ = lspai.OpenDocument(ctx, uri, content, "go", 1)
 
 	edits, err := lspai.FormatDocument(ctx, uri)
 

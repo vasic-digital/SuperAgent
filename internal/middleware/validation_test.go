@@ -157,7 +157,7 @@ func TestValidator_ValidateCompletionMiddleware_InvalidTemperature(t *testing.T)
 	}
 
 	var resp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	_ = json.Unmarshal(w.Body.Bytes(), &resp)
 	if resp["error"] == nil {
 		t.Error("Expected error response")
 	}
@@ -401,7 +401,7 @@ func TestValidator_SanitizeInputMiddleware(t *testing.T) {
 	}
 
 	var resp map[string]string
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	_ = json.Unmarshal(w.Body.Bytes(), &resp)
 
 	if strings.Contains(resp["body"], "\x00") {
 		t.Error("Response should not contain null bytes")
@@ -680,7 +680,7 @@ func TestValidator_ValidateCompletionMiddleware_JSONTypeError(t *testing.T) {
 	}
 
 	var resp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	_ = json.Unmarshal(w.Body.Bytes(), &resp)
 	if resp["error"] == nil {
 		t.Error("Expected error response")
 	}
@@ -780,7 +780,7 @@ func TestValidator_SanitizeInputMiddleware_PreservesValidContent(t *testing.T) {
 	}
 
 	var resp map[string]string
-	json.Unmarshal(w.Body.Bytes(), &resp)
+	_ = json.Unmarshal(w.Body.Bytes(), &resp)
 
 	// The input should be preserved (the escaped \n and \t should still be in the body)
 	if !strings.Contains(resp["body"], `\n`) {

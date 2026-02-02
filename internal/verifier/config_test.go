@@ -246,8 +246,8 @@ verifier:
 }
 
 func TestExpandEnvVars(t *testing.T) {
-	os.Setenv("TEST_VAR", "test_value")
-	defer os.Unsetenv("TEST_VAR")
+	_ = os.Setenv("TEST_VAR", "test_value")
+	defer func() { _ = os.Unsetenv("TEST_VAR") }()
 
 	result := ExpandEnvVars("$TEST_VAR")
 	if result != "test_value" {

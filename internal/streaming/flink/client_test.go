@@ -49,7 +49,7 @@ func TestClientConnect(t *testing.T) {
 	t.Run("successful connection", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/overview" {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"taskmanagers":    2,
 					"slots-total":     8,
 					"slots-available": 4,
@@ -95,7 +95,7 @@ func TestClientClose(t *testing.T) {
 func TestClientHealthCheck(t *testing.T) {
 	t.Run("healthy cluster", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"taskmanagers":  2,
 				"flink-version": "1.18.0",
 			})
@@ -105,7 +105,7 @@ func TestClientHealthCheck(t *testing.T) {
 		config := DefaultConfig()
 		config.RESTURL = server.URL
 		client, _ := NewClient(config, nil)
-		client.Connect(context.Background())
+		_ = client.Connect(context.Background())
 
 		err := client.HealthCheck(context.Background())
 		require.NoError(t, err)
@@ -115,7 +115,7 @@ func TestClientHealthCheck(t *testing.T) {
 func TestGetOverview(t *testing.T) {
 	t.Run("successful retrieval", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"taskmanagers":    4,
 				"slots-total":     16,
 				"slots-available": 8,
@@ -132,7 +132,7 @@ func TestGetOverview(t *testing.T) {
 		config := DefaultConfig()
 		config.RESTURL = server.URL
 		client, _ := NewClient(config, nil)
-		client.Connect(context.Background())
+		_ = client.Connect(context.Background())
 
 		overview, err := client.GetOverview(context.Background())
 		require.NoError(t, err)
@@ -148,7 +148,7 @@ func TestGetTaskManagers(t *testing.T) {
 	t.Run("successful listing", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/taskmanagers" {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"taskmanagers": []map[string]interface{}{
 						{
 							"id":          "tm-001",
@@ -166,14 +166,14 @@ func TestGetTaskManagers(t *testing.T) {
 				})
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
 		}))
 		defer server.Close()
 
 		config := DefaultConfig()
 		config.RESTURL = server.URL
 		client, _ := NewClient(config, nil)
-		client.Connect(context.Background())
+		_ = client.Connect(context.Background())
 
 		tms, err := client.GetTaskManagers(context.Background())
 		require.NoError(t, err)
@@ -187,7 +187,7 @@ func TestGetJobs(t *testing.T) {
 	t.Run("successful listing", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/jobs" {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"jobs": []map[string]interface{}{
 						{
 							"id":         "job-001",
@@ -201,14 +201,14 @@ func TestGetJobs(t *testing.T) {
 				})
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
 		}))
 		defer server.Close()
 
 		config := DefaultConfig()
 		config.RESTURL = server.URL
 		client, _ := NewClient(config, nil)
-		client.Connect(context.Background())
+		_ = client.Connect(context.Background())
 
 		jobs, err := client.GetJobs(context.Background())
 		require.NoError(t, err)
@@ -222,7 +222,7 @@ func TestGetJob(t *testing.T) {
 	t.Run("successful retrieval", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/jobs/job-001" {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"jid":        "job-001",
 					"name":       "TestJob",
 					"state":      "RUNNING",
@@ -231,14 +231,14 @@ func TestGetJob(t *testing.T) {
 				})
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
 		}))
 		defer server.Close()
 
 		config := DefaultConfig()
 		config.RESTURL = server.URL
 		client, _ := NewClient(config, nil)
-		client.Connect(context.Background())
+		_ = client.Connect(context.Background())
 
 		job, err := client.GetJob(context.Background(), "job-001")
 		require.NoError(t, err)
@@ -254,14 +254,14 @@ func TestCancelJob(t *testing.T) {
 				w.WriteHeader(http.StatusAccepted)
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
 		}))
 		defer server.Close()
 
 		config := DefaultConfig()
 		config.RESTURL = server.URL
 		client, _ := NewClient(config, nil)
-		client.Connect(context.Background())
+		_ = client.Connect(context.Background())
 
 		err := client.CancelJob(context.Background(), "job-001")
 		require.NoError(t, err)
@@ -272,7 +272,7 @@ func TestGetJars(t *testing.T) {
 	t.Run("successful listing", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/jars" {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"files": []map[string]interface{}{
 						{"id": "jar-001", "name": "job.jar"},
 						{"id": "jar-002", "name": "analytics.jar"},
@@ -280,14 +280,14 @@ func TestGetJars(t *testing.T) {
 				})
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
 		}))
 		defer server.Close()
 
 		config := DefaultConfig()
 		config.RESTURL = server.URL
 		client, _ := NewClient(config, nil)
-		client.Connect(context.Background())
+		_ = client.Connect(context.Background())
 
 		jars, err := client.GetJars(context.Background())
 		require.NoError(t, err)
@@ -302,14 +302,14 @@ func TestDeleteJar(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
 		}))
 		defer server.Close()
 
 		config := DefaultConfig()
 		config.RESTURL = server.URL
 		client, _ := NewClient(config, nil)
-		client.Connect(context.Background())
+		_ = client.Connect(context.Background())
 
 		err := client.DeleteJar(context.Background(), "jar-001")
 		require.NoError(t, err)
@@ -320,19 +320,19 @@ func TestSubmitJob(t *testing.T) {
 	t.Run("successful submission", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/jars/jar-001/run" && r.Method == http.MethodPost {
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"jobid": "new-job-001",
 				})
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"taskmanagers": 1})
 		}))
 		defer server.Close()
 
 		config := DefaultConfig()
 		config.RESTURL = server.URL
 		client, _ := NewClient(config, nil)
-		client.Connect(context.Background())
+		_ = client.Connect(context.Background())
 
 		jobConfig := &JobConfig{
 			Parallelism: 4,

@@ -134,7 +134,7 @@ func (s *SQLiteAdapter) Initialize(ctx context.Context) error {
 
 	// Test connection
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		_ = db.Close()
 		return fmt.Errorf("failed to ping database: %w", err)
 	}
 
@@ -441,7 +441,7 @@ func (s *SQLiteAdapter) ListIndexes(ctx context.Context, tableName string) ([]SQ
 		var idx SQLiteIndexInfo
 		var sqlStr sql.NullString
 		if err := rows.Scan(&idx.Name, &idx.Table, &sqlStr); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, fmt.Errorf("failed to scan index: %w", err)
 		}
 		if sqlStr.Valid {
@@ -450,7 +450,7 @@ func (s *SQLiteAdapter) ListIndexes(ctx context.Context, tableName string) ([]SQ
 		}
 		indexes = append(indexes, idx)
 	}
-	rows.Close()
+	_ = rows.Close()
 
 	// Now get column info for each index (separate queries to avoid deadlock)
 	for i := range indexes {
@@ -463,7 +463,7 @@ func (s *SQLiteAdapter) ListIndexes(ctx context.Context, tableName string) ([]SQ
 					indexes[i].Columns = append(indexes[i].Columns, name)
 				}
 			}
-			colRows.Close()
+			_ = colRows.Close()
 		}
 	}
 
@@ -502,7 +502,7 @@ func (s *SQLiteAdapter) GetStats(ctx context.Context) (*SQLiteDatabaseStats, err
 
 	for pragma, dest := range pragmas {
 		row := s.db.QueryRowContext(ctx, fmt.Sprintf("PRAGMA %s", pragma))
-		row.Scan(dest)
+		_ = row.Scan(dest)
 	}
 
 	stats.DatabaseSize = stats.PageSize * stats.PageCount

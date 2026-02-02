@@ -78,7 +78,7 @@ func (hc *ServiceHealthChecker) checkTCP(name string, ep config.ServiceEndpoint)
 	if err != nil {
 		return fmt.Errorf("TCP connection to %s (%s) failed: %w", name, addr, err)
 	}
-	conn.Close()
+	_ = conn.Close()
 	return nil
 }
 

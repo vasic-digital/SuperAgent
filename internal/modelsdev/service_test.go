@@ -58,7 +58,7 @@ func createMockServer() *httptest.Server {
 				Page:  1,
 				Limit: 100,
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 
 		case "/models/claude-3-sonnet":
 			response := ModelDetailsResponse{
@@ -83,11 +83,11 @@ func createMockServer() *httptest.Server {
 					},
 				},
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 
 		case "/models/nonexistent":
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(APIError{
+			_ = json.NewEncoder(w).Encode(APIError{
 				Type:    "not_found",
 				Message: "Model not found",
 				Code:    404,
@@ -115,7 +115,7 @@ func createMockServer() *httptest.Server {
 				},
 				Total: 2,
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 
 		case "/providers/anthropic":
 			response := ProviderInfo{
@@ -126,11 +126,11 @@ func createMockServer() *httptest.Server {
 				ModelsCount: 10,
 				Website:     "https://anthropic.com",
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 
 		case "/providers/nonexistent":
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(APIError{
+			_ = json.NewEncoder(w).Encode(APIError{
 				Type:    "not_found",
 				Message: "Provider not found",
 				Code:    404,
@@ -138,7 +138,7 @@ func createMockServer() *httptest.Server {
 
 		default:
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(APIError{
+			_ = json.NewEncoder(w).Encode(APIError{
 				Type:    "not_found",
 				Message: "Endpoint not found",
 				Code:    404,
@@ -169,7 +169,7 @@ func TestNewService(t *testing.T) {
 
 	service := NewService(config, log)
 	require.NotNil(t, service)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	assert.NotNil(t, service.client)
 	assert.NotNil(t, service.cache)
@@ -178,7 +178,7 @@ func TestNewService(t *testing.T) {
 func TestNewService_DefaultConfig(t *testing.T) {
 	service := NewService(nil, nil)
 	require.NotNil(t, service)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	// Verify defaults are applied
 	assert.NotNil(t, service.client)
@@ -208,7 +208,7 @@ func TestService_GetModel(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -248,7 +248,7 @@ func TestService_GetModel_NotFound(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -258,7 +258,7 @@ func TestService_GetModel_NotFound(t *testing.T) {
 
 func TestService_GetModel_EmptyID(t *testing.T) {
 	service := NewService(nil, nil)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -289,7 +289,7 @@ func TestService_GetModelWithCache(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -326,7 +326,7 @@ func TestService_ListModels(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -358,7 +358,7 @@ func TestService_ListModels_WithFilters(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -395,7 +395,7 @@ func TestService_GetProvider(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -423,7 +423,7 @@ func TestService_GetProvider_NotFound(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -433,7 +433,7 @@ func TestService_GetProvider_NotFound(t *testing.T) {
 
 func TestService_GetProvider_EmptyID(t *testing.T) {
 	service := NewService(nil, nil)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -464,7 +464,7 @@ func TestService_ListProviders(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -490,7 +490,7 @@ func TestService_SearchModels(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -524,7 +524,7 @@ func TestService_RefreshCache(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -557,7 +557,7 @@ func TestService_InvalidateCache(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -597,7 +597,7 @@ func TestService_InvalidateAll(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -617,7 +617,7 @@ func TestService_InvalidateAll(t *testing.T) {
 
 func TestService_CacheStats(t *testing.T) {
 	service := NewService(nil, nil)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	stats := service.CacheStats()
 	assert.Equal(t, 0, stats.ModelCount)
@@ -670,7 +670,7 @@ func TestService_GetModelCapabilities(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -699,7 +699,7 @@ func TestService_GetModelPricing(t *testing.T) {
 	log.SetLevel(logrus.ErrorLevel)
 
 	service := NewService(config, log)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	ctx := context.Background()
 
@@ -730,14 +730,14 @@ func TestService_NewServiceWithClient(t *testing.T) {
 
 	service := NewServiceWithClient(client, cache, config, nil)
 	require.NotNil(t, service)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	assert.Equal(t, client, service.client)
 }
 
 func TestService_ConvertModelInfoToModel(t *testing.T) {
 	service := NewService(nil, nil)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	info := &ModelInfo{
 		ID:            "test-model",
@@ -785,7 +785,7 @@ func TestService_ConvertModelInfoToModel(t *testing.T) {
 
 func TestService_ConvertProviderInfoToProvider(t *testing.T) {
 	service := NewService(nil, nil)
-	defer service.Stop()
+	defer func() { _ = service.Stop() }()
 
 	info := &ProviderInfo{
 		ID:          "test-provider",

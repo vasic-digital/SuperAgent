@@ -239,7 +239,7 @@ func TestMetricsCollector_CollectMetrics_MissingHealth(t *testing.T) {
 	// Register plugin but don't set health status
 	plugin := new(MockLLMPlugin)
 	plugin.On("Name").Return("no-health-plugin")
-	registry.Register(plugin)
+	_ = registry.Register(plugin)
 
 	// Collect metrics - should handle missing health gracefully
 	collector.collectMetrics()
@@ -255,7 +255,7 @@ func TestMetricsCollector_PeriodicCollection_ShortInterval(t *testing.T) {
 		name := "periodic-plugin-" + string(rune('a'+i))
 		plugin.On("Name").Return(name)
 		plugin.On("HealthCheck", mock.Anything).Return(nil).Maybe()
-		registry.Register(plugin)
+		_ = registry.Register(plugin)
 
 		// Set health status
 		health.mu.Lock()

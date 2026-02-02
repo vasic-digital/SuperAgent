@@ -31,7 +31,7 @@ func TestCheckHTTP(t *testing.T) {
 	t.Run("Healthy HTTP service", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("OK"))
+			_, _ = w.Write([]byte("OK"))
 		}))
 		defer server.Close()
 
@@ -96,7 +96,7 @@ func TestCheckTCP(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to start test TCP listener: %v", err)
 		}
-		defer listener.Close()
+		defer func() { _ = listener.Close() }()
 
 		addr := listener.Addr().(*net.TCPAddr)
 
@@ -138,7 +138,7 @@ func TestCheckWithRetry(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to start test listener: %v", err)
 		}
-		defer listener.Close()
+		defer func() { _ = listener.Close() }()
 
 		ep := config.ServiceEndpoint{
 			Host:       "127.0.0.1",

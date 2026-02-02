@@ -76,7 +76,7 @@ func TestComplete(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -105,7 +105,7 @@ func TestComplete(t *testing.T) {
 func TestCompleteWithTools(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req Request
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Len(t, req.Tools, 1)
 		assert.Equal(t, "function", req.Tools[0].Type)
 		assert.Equal(t, "get_weather", req.Tools[0].Function.Name)
@@ -128,7 +128,7 @@ func TestCompleteWithTools(t *testing.T) {
 				Tokens: TokenUsage{InputTokens: 20, OutputTokens: 15},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -163,7 +163,7 @@ func TestCompleteWithTools(t *testing.T) {
 func TestCompleteAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "Invalid API key"}`))
+		_, _ = w.Write([]byte(`{"error": "Invalid API key"}`))
 	}))
 	defer server.Close()
 
@@ -181,7 +181,7 @@ func TestCompleteAPIError(t *testing.T) {
 func TestCompleteStream(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req Request
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.True(t, req.Stream)
 
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -194,7 +194,7 @@ func TestCompleteStream(t *testing.T) {
 		}
 
 		for _, event := range events {
-			w.Write([]byte("data: " + event + "\n\n"))
+			_, _ = w.Write([]byte("data: " + event + "\n\n"))
 			flusher.Flush()
 		}
 	}))
@@ -223,7 +223,7 @@ func TestCompleteStream(t *testing.T) {
 func TestCompleteStreamError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"error": "Service unavailable"}`))
+		_, _ = w.Write([]byte(`{"error": "Service unavailable"}`))
 	}))
 	defer server.Close()
 
@@ -243,7 +243,7 @@ func TestHealthCheck(t *testing.T) {
 		assert.Equal(t, "GET", r.Method)
 		assert.Contains(t, r.Header.Get("Authorization"), "Bearer ")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"models": []}`))
+		_, _ = w.Write([]byte(`{"models": []}`))
 	}))
 	defer server.Close()
 
@@ -265,7 +265,7 @@ func TestHealthCheck(t *testing.T) {
 	resp, err := provider2.httpClient.Do(httpReq)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 type customTransport struct {
@@ -293,7 +293,7 @@ func TestHealthCheckFailure(t *testing.T) {
 	resp, err := provider.httpClient.Do(httpReq)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func TestGetCapabilities(t *testing.T) {
@@ -531,7 +531,7 @@ func TestRetryOnServerError(t *testing.T) {
 			},
 			FinishReason: "COMPLETE",
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -565,7 +565,7 @@ func TestRetryOnRateLimiting(t *testing.T) {
 			Message:      MessageOutput{Content: []ContentPart{{Type: "text", Text: "OK"}}},
 			FinishReason: "COMPLETE",
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 

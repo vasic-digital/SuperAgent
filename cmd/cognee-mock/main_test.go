@@ -29,7 +29,7 @@ func TestHandleHealth(t *testing.T) {
 	server.handleHealth(w, req)
 
 	resp := w.Result()
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
@@ -62,7 +62,7 @@ func TestHandleAdd(t *testing.T) {
 		server.handleAdd(w, req)
 
 		resp := w.Result()
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -94,7 +94,7 @@ func TestHandleAdd(t *testing.T) {
 		server.handleAdd(w, req)
 
 		resp := w.Result()
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -112,7 +112,7 @@ func TestHandleAdd(t *testing.T) {
 		server.handleAdd(w, req)
 
 		resp := w.Result()
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 	})
@@ -125,7 +125,7 @@ func TestHandleAdd(t *testing.T) {
 		server.handleAdd(w, req)
 
 		resp := w.Result()
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
@@ -158,7 +158,7 @@ func TestHandleSearch(t *testing.T) {
 		server.handleSearch(w, req)
 
 		resp := w.Result()
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -177,7 +177,7 @@ func TestHandleSearch(t *testing.T) {
 		server.handleSearch(w, req)
 
 		resp := w.Result()
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -201,7 +201,7 @@ func TestHandleSearch(t *testing.T) {
 		server.handleSearch(w, req)
 
 		resp := w.Result()
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -231,7 +231,7 @@ func TestHandleCognify(t *testing.T) {
 		server.handleCognify(w, req)
 
 		resp := w.Result()
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -250,7 +250,7 @@ func TestHandleCognify(t *testing.T) {
 		server.handleCognify(w, req)
 
 		resp := w.Result()
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 	})
@@ -265,7 +265,7 @@ func TestHandleGraphQuery(t *testing.T) {
 	server.handleGraphQuery(w, req)
 
 	resp := w.Result()
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -286,7 +286,7 @@ func TestHandleInsights(t *testing.T) {
 	server.handleInsights(w, req)
 
 	resp := w.Result()
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -317,7 +317,7 @@ func TestHandleDatasets(t *testing.T) {
 	server.handleDatasets(w, req)
 
 	resp := w.Result()
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -424,7 +424,7 @@ func TestServerRoutes(t *testing.T) {
 
 			resp, err := client.Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, ep.status, resp.StatusCode)
 		})

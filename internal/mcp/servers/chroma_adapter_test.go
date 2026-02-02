@@ -62,7 +62,7 @@ func TestChromaAdapter_Connect(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "/api/v1/heartbeat", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": time.Now().UnixNano()})
+				_ = json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": time.Now().UnixNano()})
 			},
 			expectError: false,
 		},
@@ -120,7 +120,7 @@ func TestChromaAdapter_Health(t *testing.T) {
 			name: "healthy",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": time.Now().UnixNano()})
+				_ = json.NewEncoder(w).Encode(map[string]int64{"nanosecond heartbeat": time.Now().UnixNano()})
 			},
 			expectError: false,
 		},
@@ -167,7 +167,7 @@ func TestChromaAdapter_ListCollections(t *testing.T) {
 				assert.Equal(t, "GET", r.Method)
 				assert.Equal(t, "/api/v1/collections", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(expectedCollections)
+				_ = json.NewEncoder(w).Encode(expectedCollections)
 			},
 			expectError: false,
 			expected:    expectedCollections,
@@ -176,7 +176,7 @@ func TestChromaAdapter_ListCollections(t *testing.T) {
 			name: "decode error",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid json"))
+				_, _ = w.Write([]byte("invalid json"))
 			},
 			expectError: true,
 		},
@@ -214,11 +214,11 @@ func TestChromaAdapter_CreateCollection(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "POST", r.Method)
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.Equal(t, "new-collection", body["name"])
 
 				w.WriteHeader(http.StatusCreated)
-				json.NewEncoder(w).Encode(ChromaCollection{ID: "1", Name: "new-collection"})
+				_ = json.NewEncoder(w).Encode(ChromaCollection{ID: "1", Name: "new-collection"})
 			},
 			expectError: false,
 		},
@@ -228,12 +228,12 @@ func TestChromaAdapter_CreateCollection(t *testing.T) {
 			metadata: map[string]interface{}{"key": "value"},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.Equal(t, "new-collection", body["name"])
 				assert.NotNil(t, body["metadata"])
 
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(ChromaCollection{ID: "1", Name: "new-collection"})
+				_ = json.NewEncoder(w).Encode(ChromaCollection{ID: "1", Name: "new-collection"})
 			},
 			expectError: false,
 		},
@@ -242,7 +242,7 @@ func TestChromaAdapter_CreateCollection(t *testing.T) {
 			collName: "existing-collection",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusConflict)
-				w.Write([]byte(`{"error": "collection already exists"}`))
+				_, _ = w.Write([]byte(`{"error": "collection already exists"}`))
 			},
 			expectError: true,
 		},
@@ -251,7 +251,7 @@ func TestChromaAdapter_CreateCollection(t *testing.T) {
 			collName: "test-collection",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid json"))
+				_, _ = w.Write([]byte("invalid json"))
 			},
 			expectError: true,
 		},
@@ -331,7 +331,7 @@ func TestChromaAdapter_GetCollection(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "GET", r.Method)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(ChromaCollection{ID: "1", Name: "test-collection"})
+				_ = json.NewEncoder(w).Encode(ChromaCollection{ID: "1", Name: "test-collection"})
 			},
 			expectError: false,
 		},
@@ -356,7 +356,7 @@ func TestChromaAdapter_GetCollection(t *testing.T) {
 			collName: "test",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid json"))
+				_, _ = w.Write([]byte("invalid json"))
 			},
 			expectError: true,
 		},
@@ -412,7 +412,7 @@ func TestChromaAdapter_AddDocuments(t *testing.T) {
 			},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.NotNil(t, body["embeddings"])
 				w.WriteHeader(http.StatusCreated)
 			},
@@ -424,7 +424,7 @@ func TestChromaAdapter_AddDocuments(t *testing.T) {
 			docs:       docs,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"error": "invalid documents"}`))
+				_, _ = w.Write([]byte(`{"error": "invalid documents"}`))
 			},
 			expectError: true,
 		},
@@ -472,7 +472,7 @@ func TestChromaAdapter_Query(t *testing.T) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Contains(t, r.URL.Path, "/query")
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(queryResult)
+				_ = json.NewEncoder(w).Encode(queryResult)
 			},
 			expectError: false,
 		},
@@ -484,10 +484,10 @@ func TestChromaAdapter_Query(t *testing.T) {
 			where:      map[string]interface{}{"key": "value"},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.NotNil(t, body["where"])
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(queryResult)
+				_ = json.NewEncoder(w).Encode(queryResult)
 			},
 			expectError: false,
 		},
@@ -498,7 +498,7 @@ func TestChromaAdapter_Query(t *testing.T) {
 			nResults:   10,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(`{"error": "collection not found"}`))
+				_, _ = w.Write([]byte(`{"error": "collection not found"}`))
 			},
 			expectError: true,
 		},
@@ -509,7 +509,7 @@ func TestChromaAdapter_Query(t *testing.T) {
 			nResults:   10,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},
@@ -611,7 +611,7 @@ func TestChromaAdapter_UpdateDocuments(t *testing.T) {
 			},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.NotNil(t, body["embeddings"])
 				w.WriteHeader(http.StatusOK)
 			},
@@ -623,7 +623,7 @@ func TestChromaAdapter_UpdateDocuments(t *testing.T) {
 			docs:       docs,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"error": "invalid"}`))
+				_, _ = w.Write([]byte(`{"error": "invalid"}`))
 			},
 			expectError: true,
 		},
@@ -660,7 +660,7 @@ func TestChromaAdapter_Count(t *testing.T) {
 				assert.Equal(t, "GET", r.Method)
 				assert.Contains(t, r.URL.Path, "/count")
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(42)
+				_ = json.NewEncoder(w).Encode(42)
 			},
 			expected:    42,
 			expectError: false,
@@ -678,7 +678,7 @@ func TestChromaAdapter_Count(t *testing.T) {
 			collection: "test",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},

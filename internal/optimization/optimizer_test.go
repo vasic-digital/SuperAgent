@@ -821,7 +821,7 @@ func TestServiceOptimizeRequest_WithMockedLlamaIndex(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/query" {
@@ -841,7 +841,7 @@ func TestServiceOptimizeRequest_WithMockedLlamaIndex(t *testing.T) {
 				},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -872,7 +872,7 @@ func TestServiceOptimizeRequest_WithMockedSGLang(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 			return
 		}
 		// Accept any request to warm_prefix and return success
@@ -881,7 +881,7 @@ func TestServiceOptimizeRequest_WithMockedSGLang(t *testing.T) {
 			"cached":    true,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -909,7 +909,7 @@ func TestServiceOptimizeRequest_WithMockedLangChain(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/decompose" {
@@ -920,7 +920,7 @@ func TestServiceOptimizeRequest_WithMockedLangChain(t *testing.T) {
 				},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -976,7 +976,7 @@ func BenchmarkSemanticCacheLookup(b *testing.B) {
 	for i := 0; i < 100; i++ {
 		embedding := make([]float64, 128)
 		embedding[i%128] = 1.0
-		svc.semanticCache.Set(ctx, "query", "response", embedding, nil)
+		_, _ = svc.semanticCache.Set(ctx, "query", "response", embedding, nil)
 	}
 
 	embedding := []float64{1.0}
@@ -986,7 +986,7 @@ func BenchmarkSemanticCacheLookup(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		svc.OptimizeRequest(ctx, "test query", embedding)
+		_, _ = svc.OptimizeRequest(ctx, "test query", embedding)
 	}
 }
 
@@ -1030,7 +1030,7 @@ func TestServiceConcurrentCacheAccess(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		embedding := make([]float64, 128)
 		embedding[i%128] = 1.0
-		svc.semanticCache.Set(ctx, fmt.Sprintf("query-%d", i), "response", embedding, nil)
+		_, _ = svc.semanticCache.Set(ctx, fmt.Sprintf("query-%d", i), "response", embedding, nil)
 	}
 
 	var wg sync.WaitGroup
@@ -1089,7 +1089,7 @@ func TestServiceChainedOptimization(t *testing.T) {
 	// Mock servers for all services
 	llamaServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/query" {
@@ -1100,7 +1100,7 @@ func TestServiceChainedOptimization(t *testing.T) {
 				},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -1109,7 +1109,7 @@ func TestServiceChainedOptimization(t *testing.T) {
 
 	langchainServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/decompose" {
@@ -1121,7 +1121,7 @@ func TestServiceChainedOptimization(t *testing.T) {
 				"reasoning": "Task decomposed successfully",
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -1130,7 +1130,7 @@ func TestServiceChainedOptimization(t *testing.T) {
 
 	sglangServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/v1/chat/completions" {
@@ -1139,7 +1139,7 @@ func TestServiceChainedOptimization(t *testing.T) {
 				"choices": []map[string]interface{}{{"message": map[string]string{"content": ""}}},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -1192,7 +1192,7 @@ func TestServiceErrorRecovery(t *testing.T) {
 			return
 		}
 		// Recover after 2 failures
-		json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 	}))
 	defer server.Close()
 
@@ -1229,9 +1229,9 @@ func TestServiceCacheInvalidation(t *testing.T) {
 	embedding2 := []float64{0.9, 0.1, 0.0}
 	embedding3 := []float64{0.0, 1.0, 0.0}
 
-	svc.semanticCache.Set(ctx, "query1", "response1", embedding1, map[string]interface{}{"category": "test"})
-	svc.semanticCache.Set(ctx, "query2", "response2", embedding2, map[string]interface{}{"category": "test"})
-	svc.semanticCache.Set(ctx, "query3", "response3", embedding3, map[string]interface{}{"category": "prod"})
+	_, _ = svc.semanticCache.Set(ctx, "query1", "response1", embedding1, map[string]interface{}{"category": "test"})
+	_, _ = svc.semanticCache.Set(ctx, "query2", "response2", embedding2, map[string]interface{}{"category": "test"})
+	_, _ = svc.semanticCache.Set(ctx, "query3", "response3", embedding3, map[string]interface{}{"category": "prod"})
 
 	assert.Equal(t, 3, svc.semanticCache.Size())
 
@@ -1246,7 +1246,7 @@ func TestServiceHealthCheckInterval(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
-		json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 	}))
 	defer server.Close()
 
@@ -1420,16 +1420,16 @@ func TestServiceCacheStatsAccuracy(t *testing.T) {
 
 	// Add an entry
 	embedding := []float64{1.0, 0.0, 0.0}
-	svc.semanticCache.Set(ctx, "query", "response", embedding, nil)
+	_, _ = svc.semanticCache.Set(ctx, "query", "response", embedding, nil)
 
 	// Make some hits and misses
 	for i := 0; i < 5; i++ {
-		svc.OptimizeRequest(ctx, "query", embedding) // Hit
+		_, _ = svc.OptimizeRequest(ctx, "query", embedding) // Hit
 	}
 
 	differentEmbedding := []float64{0.0, 1.0, 0.0}
 	for i := 0; i < 3; i++ {
-		svc.OptimizeRequest(ctx, "other query", differentEmbedding) // Miss
+		_, _ = svc.OptimizeRequest(ctx, "other query", differentEmbedding) // Miss
 	}
 
 	stats := svc.GetCacheStats()

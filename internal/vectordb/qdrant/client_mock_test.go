@@ -32,7 +32,7 @@ func newMockServer(handler http.HandlerFunc) *mockServer {
 	host := parts[0]
 	port := 80
 	if len(parts) > 1 {
-		fmt.Sscanf(parts[1], "%d", &port)
+		_, _ = fmt.Sscanf(parts[1], "%d", &port)
 	}
 
 	config := &Config{
@@ -77,7 +77,7 @@ func (m *mockServer) newConnectedClient(t *testing.T) *Client {
 func TestConnect_Success(t *testing.T) {
 	ms := newMockServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 	defer ms.close()
 
@@ -109,7 +109,7 @@ func TestConnect_WithAPIKey(t *testing.T) {
 	ms := newMockServer(func(w http.ResponseWriter, r *http.Request) {
 		receivedAPIKey = r.Header.Get("api-key")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 	defer ms.close()
 
@@ -180,9 +180,9 @@ func TestCreateCollection_Success(t *testing.T) {
 		requestPath = r.URL.Path
 		requestMethod = r.Method
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &requestBody)
+		_ = json.Unmarshal(body, &requestBody)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]bool{"result": true})
+		_ = json.NewEncoder(w).Encode(map[string]bool{"result": true})
 	})
 	defer ms.close()
 
@@ -210,9 +210,9 @@ func TestCreateCollection_WithAllOptions(t *testing.T) {
 			return
 		}
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &requestBody)
+		_ = json.Unmarshal(body, &requestBody)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]bool{"result": true})
+		_ = json.NewEncoder(w).Encode(map[string]bool{"result": true})
 	})
 	defer ms.close()
 
@@ -267,7 +267,7 @@ func TestCreateCollection_ServerError(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(map[string]string{"error": "collection already exists"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "collection already exists"})
 	})
 	defer ms.close()
 
@@ -291,7 +291,7 @@ func TestDeleteCollection_Success(t *testing.T) {
 		requestPath = r.URL.Path
 		requestMethod = r.Method
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]bool{"result": true})
+		_ = json.NewEncoder(w).Encode(map[string]bool{"result": true})
 	})
 	defer ms.close()
 
@@ -311,7 +311,7 @@ func TestDeleteCollection_ServerError(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]string{"error": "collection not found"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "collection not found"})
 	})
 	defer ms.close()
 
@@ -329,7 +329,7 @@ func TestCollectionExists_True(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"status": "green",
 			},
@@ -351,7 +351,7 @@ func TestCollectionExists_False(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
 	})
 	defer ms.close()
 
@@ -369,7 +369,7 @@ func TestListCollections_Success(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"collections": []map[string]string{
 					{"name": "collection1"},
@@ -398,7 +398,7 @@ func TestListCollections_Empty(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"collections": []map[string]string{},
 			},
@@ -437,7 +437,7 @@ func TestListCollections_InvalidJSON(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	})
 	defer ms.close()
 
@@ -456,7 +456,7 @@ func TestGetCollectionInfo_Success(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"status":         "green",
 				"vectors_count":  10000,
@@ -502,7 +502,7 @@ func TestGetCollectionInfo_InvalidJSON(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	})
 	defer ms.close()
 
@@ -529,9 +529,9 @@ func TestUpsertPoints_Success(t *testing.T) {
 		}
 		requestPath = r.URL.Path
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &requestBody)
+		_ = json.Unmarshal(body, &requestBody)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{"result": map[string]string{"status": "completed"}})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"result": map[string]string{"status": "completed"}})
 	})
 	defer ms.close()
 
@@ -575,9 +575,9 @@ func TestUpsertPoints_AutoGenerateID(t *testing.T) {
 			return
 		}
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &requestBody)
+		_ = json.Unmarshal(body, &requestBody)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{"result": map[string]string{"status": "completed"}})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"result": map[string]string{"status": "completed"}})
 	})
 	defer ms.close()
 
@@ -603,7 +603,7 @@ func TestUpsertPoints_ServerError(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "invalid vector dimensions"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid vector dimensions"})
 	})
 	defer ms.close()
 
@@ -629,9 +629,9 @@ func TestDeletePoints_Success(t *testing.T) {
 		}
 		requestPath = r.URL.Path
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &requestBody)
+		_ = json.Unmarshal(body, &requestBody)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{"result": map[string]string{"status": "completed"}})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"result": map[string]string{"status": "completed"}})
 	})
 	defer ms.close()
 
@@ -685,7 +685,7 @@ func TestGetPoint_Success(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"id":      "point-1",
 				"vector":  []float32{0.1, 0.2, 0.3},
@@ -727,7 +727,7 @@ func TestGetPoint_InvalidJSON(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	})
 	defer ms.close()
 
@@ -746,7 +746,7 @@ func TestGetPoints_Success(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": []map[string]interface{}{
 				{"id": "point-1", "vector": []float32{0.1, 0.2}, "payload": map[string]interface{}{"key": "value1"}},
 				{"id": "point-2", "vector": []float32{0.3, 0.4}, "payload": map[string]interface{}{"key": "value2"}},
@@ -788,7 +788,7 @@ func TestGetPoints_InvalidJSON(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	})
 	defer ms.close()
 
@@ -813,9 +813,9 @@ func TestSearch_Success(t *testing.T) {
 			return
 		}
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &requestBody)
+		_ = json.Unmarshal(body, &requestBody)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": []map[string]interface{}{
 				{"id": "point-1", "score": 0.95, "payload": map[string]interface{}{"key": "value1"}},
 				{"id": "point-2", "score": 0.85, "payload": map[string]interface{}{"key": "value2"}},
@@ -843,9 +843,9 @@ func TestSearch_WithOptions(t *testing.T) {
 			return
 		}
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &requestBody)
+		_ = json.Unmarshal(body, &requestBody)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": []map[string]interface{}{},
 		})
 	})
@@ -896,7 +896,7 @@ func TestSearch_InvalidJSON(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	})
 	defer ms.close()
 
@@ -917,7 +917,7 @@ func TestSearchBatch_Success_NewFormat(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusOK)
 		// New format (Qdrant 1.16+): result is array of arrays
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": [][]map[string]interface{}{
 				{
 					{"id": "point-1", "score": 0.95},
@@ -952,7 +952,7 @@ func TestSearchBatch_Success_OldFormat(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusOK)
 		// Old format: result is array of objects with result field
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": []map[string]interface{}{
 				{
 					"result": []map[string]interface{}{
@@ -989,9 +989,9 @@ func TestSearchBatch_WithOptions(t *testing.T) {
 			return
 		}
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &requestBody)
+		_ = json.Unmarshal(body, &requestBody)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": [][]map[string]interface{}{{}},
 		})
 	})
@@ -1045,7 +1045,7 @@ func TestScroll_Success(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusOK)
 		nextOffset := "next-offset-id"
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"next_page_offset": nextOffset,
 				"points": []map[string]interface{}{
@@ -1075,9 +1075,9 @@ func TestScroll_WithOffset(t *testing.T) {
 			return
 		}
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &requestBody)
+		_ = json.Unmarshal(body, &requestBody)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"points": []map[string]interface{}{},
 			},
@@ -1103,9 +1103,9 @@ func TestScroll_WithFilter(t *testing.T) {
 			return
 		}
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &requestBody)
+		_ = json.Unmarshal(body, &requestBody)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"points": []map[string]interface{}{},
 			},
@@ -1147,7 +1147,7 @@ func TestScroll_InvalidJSON(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	})
 	defer ms.close()
 
@@ -1171,7 +1171,7 @@ func TestCountPoints_Success(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"count": 1000,
 			},
@@ -1195,9 +1195,9 @@ func TestCountPoints_WithFilter(t *testing.T) {
 			return
 		}
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &requestBody)
+		_ = json.Unmarshal(body, &requestBody)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"count": 500,
 			},
@@ -1238,7 +1238,7 @@ func TestCountPoints_InvalidJSON(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	})
 	defer ms.close()
 
@@ -1261,7 +1261,7 @@ func TestCreateSnapshot_Success(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"name": "snapshot-2024-01-15",
 			},
@@ -1300,7 +1300,7 @@ func TestCreateSnapshot_InvalidJSON(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	})
 	defer ms.close()
 
@@ -1323,7 +1323,7 @@ func TestGetMetrics_Success(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"app": map[string]interface{}{
 					"version": "1.7.0",
@@ -1372,7 +1372,7 @@ func TestGetMetrics_InvalidJSON(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	})
 	defer ms.close()
 
@@ -1401,7 +1401,7 @@ func TestWaitForCollection_Success(t *testing.T) {
 			status = "green"
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"status": status,
 			},
@@ -1423,7 +1423,7 @@ func TestWaitForCollection_Timeout(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"status": "yellow", // Never becomes green
 			},
@@ -1445,7 +1445,7 @@ func TestWaitForCollection_ContextCancelled(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"status": "yellow",
 			},
@@ -1497,7 +1497,7 @@ func TestDoRequest_ContentTypeHeader(t *testing.T) {
 		}
 		contentType = r.Header.Get("Content-Type")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"collections": []interface{}{},
 			},
@@ -1518,7 +1518,7 @@ func TestConcurrentAccess(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"result": map[string]interface{}{
 				"collections": []interface{}{},
 			},
@@ -1569,7 +1569,7 @@ func TestSearchBatch_InvalidJSON(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	})
 	defer ms.close()
 

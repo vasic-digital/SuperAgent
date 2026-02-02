@@ -102,7 +102,7 @@ func TestCrossEncoderReranker_ScoreBatch(t *testing.T) {
 			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 			var req map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 
 			assert.Contains(t, req, "model")
 			assert.Contains(t, req, "pairs")
@@ -111,7 +111,7 @@ func TestCrossEncoderReranker_ScoreBatch(t *testing.T) {
 				"scores": []float64{0.9, 0.8, 0.7},
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 
@@ -140,7 +140,7 @@ func TestCrossEncoderReranker_ScoreBatch(t *testing.T) {
 	t.Run("API returns error status", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("internal server error"))
+			_, _ = w.Write([]byte("internal server error"))
 		}))
 		defer server.Close()
 
@@ -171,7 +171,7 @@ func TestCrossEncoderReranker_ScoreBatch(t *testing.T) {
 				"scores": []float64{0.95},
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 
@@ -199,7 +199,7 @@ func TestCrossEncoderReranker_ScoreBatch(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			batchCount++
 			var req map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 
 			pairs := req["pairs"].([]interface{})
 			// Each batch should have at most 2 pairs
@@ -214,7 +214,7 @@ func TestCrossEncoderReranker_ScoreBatch(t *testing.T) {
 				"scores": scores,
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 
@@ -243,7 +243,7 @@ func TestCrossEncoderReranker_ScoreBatch(t *testing.T) {
 	t.Run("invalid JSON response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("invalid json"))
+			_, _ = w.Write([]byte("invalid json"))
 		}))
 		defer server.Close()
 
@@ -276,7 +276,7 @@ func TestCrossEncoderReranker_Rerank_WithEndpoint(t *testing.T) {
 				"scores": []float64{0.95, 0.85, 0.75},
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 

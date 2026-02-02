@@ -1375,7 +1375,7 @@ func TestRegisterWebhook_Success(t *testing.T) {
 	logger := logrus.New()
 
 	webhookDispatcher := notifications.NewWebhookDispatcher(nil, logger)
-	defer webhookDispatcher.Stop()
+	defer func() { _ = webhookDispatcher.Stop() }()
 
 	handler := NewBackgroundTaskHandler(
 		newMockTaskRepository(),
@@ -1432,7 +1432,7 @@ func TestListWebhooks_Empty(t *testing.T) {
 	logger := logrus.New()
 
 	webhookDispatcher := notifications.NewWebhookDispatcher(nil, logger)
-	defer webhookDispatcher.Stop()
+	defer func() { _ = webhookDispatcher.Stop() }()
 
 	handler := NewBackgroundTaskHandler(
 		newMockTaskRepository(),
@@ -1461,14 +1461,14 @@ func TestListWebhooks_WithWebhooks(t *testing.T) {
 	logger := logrus.New()
 
 	webhookDispatcher := notifications.NewWebhookDispatcher(nil, logger)
-	defer webhookDispatcher.Stop()
+	defer func() { _ = webhookDispatcher.Stop() }()
 
 	// Register a webhook first
 	webhook := &notifications.WebhookRegistration{
 		URL:    "https://example.com/webhook",
 		Events: []string{"task.completed"},
 	}
-	webhookDispatcher.RegisterWebhook(webhook)
+	_ = webhookDispatcher.RegisterWebhook(webhook)
 
 	handler := NewBackgroundTaskHandler(
 		newMockTaskRepository(),
@@ -1524,7 +1524,7 @@ func TestDeleteWebhook_NotFound(t *testing.T) {
 	logger := logrus.New()
 
 	webhookDispatcher := notifications.NewWebhookDispatcher(nil, logger)
-	defer webhookDispatcher.Stop()
+	defer func() { _ = webhookDispatcher.Stop() }()
 
 	handler := NewBackgroundTaskHandler(
 		newMockTaskRepository(),
@@ -1553,14 +1553,14 @@ func TestDeleteWebhook_Success(t *testing.T) {
 	logger := logrus.New()
 
 	webhookDispatcher := notifications.NewWebhookDispatcher(nil, logger)
-	defer webhookDispatcher.Stop()
+	defer func() { _ = webhookDispatcher.Stop() }()
 
 	// Register a webhook first
 	webhook := &notifications.WebhookRegistration{
 		URL:    "https://example.com/webhook",
 		Events: []string{"task.completed"},
 	}
-	webhookDispatcher.RegisterWebhook(webhook)
+	_ = webhookDispatcher.RegisterWebhook(webhook)
 	webhookID := webhook.ID
 
 	handler := NewBackgroundTaskHandler(

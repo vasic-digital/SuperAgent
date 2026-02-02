@@ -873,7 +873,7 @@ func createTempTestFile(content string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer tmpFile.Close()
+	defer func() { _ = tmpFile.Close() }()
 
 	if _, err := tmpFile.WriteString(content); err != nil {
 		return "", err
@@ -883,5 +883,5 @@ func createTempTestFile(content string) (string, error) {
 }
 
 func removeTempTestFile(path string) {
-	os.Remove(path)
+	_ = os.Remove(path)
 }

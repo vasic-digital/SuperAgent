@@ -553,7 +553,7 @@ func (p *ZenProvider) CompleteStream(ctx context.Context, req *models.LLMRequest
 	// Check for HTTP errors before starting stream
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, fmt.Errorf("Zen API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 
@@ -861,7 +861,7 @@ func (p *ZenProvider) makeAPICallWithAuthRetry(ctx context.Context, req ZenReque
 
 		// Check for auth errors (401) - retry once with a short delay
 		if isAuthRetryableStatus(resp.StatusCode) && allowAuthRetry {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			log.WithFields(logrus.Fields{
 				"provider":    "zen",
 				"status_code": resp.StatusCode,
@@ -878,7 +878,7 @@ func (p *ZenProvider) makeAPICallWithAuthRetry(ctx context.Context, req ZenReque
 
 		// Check for retryable status codes (429, 5xx)
 		if isRetryableStatus(resp.StatusCode) && attempt < p.retryConfig.MaxRetries {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
 			log.WithFields(logrus.Fields{
 				"provider":    "zen",

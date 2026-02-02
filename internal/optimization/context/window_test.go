@@ -69,8 +69,8 @@ func TestContextWindow_AddSystemPrompt(t *testing.T) {
 
 func TestContextWindow_Get(t *testing.T) {
 	window := NewContextWindow(nil)
-	window.AddMessage("user", "Message 1")
-	window.AddMessage("assistant", "Message 2")
+	_ = window.AddMessage("user", "Message 1")
+	_ = window.AddMessage("assistant", "Message 2")
 
 	entries := window.Get()
 
@@ -81,8 +81,8 @@ func TestContextWindow_Get(t *testing.T) {
 
 func TestContextWindow_GetMessages(t *testing.T) {
 	window := NewContextWindow(nil)
-	window.AddMessage("user", "Hello")
-	window.AddMessage("assistant", "Hi there")
+	_ = window.AddMessage("user", "Hello")
+	_ = window.AddMessage("assistant", "Hi there")
 
 	messages := window.GetMessages()
 
@@ -93,7 +93,7 @@ func TestContextWindow_GetMessages(t *testing.T) {
 
 func TestContextWindow_TokenCount(t *testing.T) {
 	window := NewContextWindow(nil)
-	window.AddMessage("user", "Hello world")
+	_ = window.AddMessage("user", "Hello world")
 
 	count := window.TokenCount()
 
@@ -118,7 +118,7 @@ func TestContextWindow_UsageRatio(t *testing.T) {
 		ReserveTokens: 100,
 	}
 	window := NewContextWindow(config)
-	window.AddMessage("user", "Test message")
+	_ = window.AddMessage("user", "Test message")
 
 	ratio := window.UsageRatio()
 
@@ -128,8 +128,8 @@ func TestContextWindow_UsageRatio(t *testing.T) {
 
 func TestContextWindow_Clear(t *testing.T) {
 	window := NewContextWindow(nil)
-	window.AddMessage("user", "Message 1")
-	window.AddMessage("assistant", "Message 2")
+	_ = window.AddMessage("user", "Message 1")
+	_ = window.AddMessage("assistant", "Message 2")
 
 	window.Clear()
 
@@ -144,9 +144,9 @@ func TestContextWindow_ClearExceptPinned(t *testing.T) {
 		PreserveSystemPrompt: true,
 	})
 
-	window.AddSystemPrompt("System prompt")
-	window.AddMessage("user", "User message")
-	window.AddMessage("assistant", "Assistant message")
+	_ = window.AddSystemPrompt("System prompt")
+	_ = window.AddMessage("user", "User message")
+	_ = window.AddMessage("assistant", "Assistant message")
 
 	window.ClearExceptPinned()
 
@@ -156,8 +156,8 @@ func TestContextWindow_ClearExceptPinned(t *testing.T) {
 
 func TestContextWindow_RemoveEntry(t *testing.T) {
 	window := NewContextWindow(nil)
-	window.Add(ContextEntry{ID: "entry-1", Role: "user", Content: "Message 1"})
-	window.Add(ContextEntry{ID: "entry-2", Role: "assistant", Content: "Message 2"})
+	_ = window.Add(ContextEntry{ID: "entry-1", Role: "user", Content: "Message 1"})
+	_ = window.Add(ContextEntry{ID: "entry-2", Role: "assistant", Content: "Message 2"})
 
 	removed := window.RemoveEntry("entry-1")
 
@@ -168,7 +168,7 @@ func TestContextWindow_RemoveEntry(t *testing.T) {
 
 func TestContextWindow_RemoveEntry_NotFound(t *testing.T) {
 	window := NewContextWindow(nil)
-	window.AddMessage("user", "Test")
+	_ = window.AddMessage("user", "Test")
 
 	removed := window.RemoveEntry("nonexistent")
 
@@ -177,7 +177,7 @@ func TestContextWindow_RemoveEntry_NotFound(t *testing.T) {
 
 func TestContextWindow_UpdateEntry(t *testing.T) {
 	window := NewContextWindow(nil)
-	window.Add(ContextEntry{ID: "entry-1", Role: "user", Content: "Original"})
+	_ = window.Add(ContextEntry{ID: "entry-1", Role: "user", Content: "Original"})
 
 	err := window.UpdateEntry("entry-1", "Updated content")
 
@@ -204,7 +204,7 @@ func TestContextWindow_Eviction_FIFO(t *testing.T) {
 
 	// Add entries until we exceed the limit
 	for i := 0; i < 10; i++ {
-		window.AddMessage("user", "This is a message with some content to consume tokens")
+		_ = window.AddMessage("user", "This is a message with some content to consume tokens")
 	}
 
 	// Should have evicted some entries
@@ -222,7 +222,7 @@ func TestContextWindow_Eviction_Priority(t *testing.T) {
 
 	// Add low priority entries
 	for i := 0; i < 5; i++ {
-		window.Add(ContextEntry{
+		_ = window.Add(ContextEntry{
 			Role:     "user",
 			Content:  "Low priority content here",
 			Priority: PriorityLow,
@@ -230,14 +230,14 @@ func TestContextWindow_Eviction_Priority(t *testing.T) {
 	}
 
 	// Add high priority entry
-	window.Add(ContextEntry{
+	_ = window.Add(ContextEntry{
 		Role:     "user",
 		Content:  "High priority content here",
 		Priority: PriorityHigh,
 	})
 
 	// Trigger eviction by adding more
-	window.Add(ContextEntry{
+	_ = window.Add(ContextEntry{
 		Role:     "assistant",
 		Content:  "This should trigger eviction of low priority items",
 		Priority: PriorityNormal,
@@ -264,7 +264,7 @@ func TestContextWindow_Overflow(t *testing.T) {
 
 	// Add pinned entries that can't be evicted
 	for i := 0; i < 5; i++ {
-		window.Add(ContextEntry{
+		_ = window.Add(ContextEntry{
 			Role:    "system",
 			Content: "This content cannot be evicted",
 			Pinned:  true,
@@ -283,8 +283,8 @@ func TestContextWindow_Overflow(t *testing.T) {
 
 func TestContextWindow_Snapshot(t *testing.T) {
 	window := NewContextWindow(nil)
-	window.AddMessage("user", "Message 1")
-	window.AddMessage("assistant", "Message 2")
+	_ = window.AddMessage("user", "Message 1")
+	_ = window.AddMessage("assistant", "Message 2")
 
 	snapshot := window.Snapshot()
 
@@ -295,11 +295,11 @@ func TestContextWindow_Snapshot(t *testing.T) {
 
 func TestContextWindow_RestoreFromSnapshot(t *testing.T) {
 	window := NewContextWindow(nil)
-	window.AddMessage("user", "Original message")
+	_ = window.AddMessage("user", "Original message")
 
 	snapshot := window.Snapshot()
 	window.Clear()
-	window.AddMessage("user", "New message")
+	_ = window.AddMessage("user", "New message")
 
 	window.RestoreFromSnapshot(snapshot)
 
@@ -309,9 +309,9 @@ func TestContextWindow_RestoreFromSnapshot(t *testing.T) {
 
 func TestContextWindow_Stats(t *testing.T) {
 	window := NewContextWindow(nil)
-	window.AddMessage("user", "User message")
-	window.AddMessage("assistant", "Assistant message")
-	window.Add(ContextEntry{Role: "system", Content: "System prompt", Pinned: true})
+	_ = window.AddMessage("user", "User message")
+	_ = window.AddMessage("assistant", "Assistant message")
+	_ = window.Add(ContextEntry{Role: "system", Content: "System prompt", Pinned: true})
 
 	stats := window.Stats()
 
@@ -332,7 +332,7 @@ func TestContextWindow_EventHandler(t *testing.T) {
 	window := NewContextWindow(nil)
 	window.SetEventHandler(handler)
 
-	window.AddMessage("user", "Test message")
+	_ = window.AddMessage("user", "Test message")
 
 	assert.Len(t, events, 1)
 	assert.Equal(t, EventTypeEntryAdded, events[0].Type)

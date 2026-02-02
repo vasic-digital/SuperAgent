@@ -508,7 +508,7 @@ func TestReloader_WatchForConfigChanges_FileDeleted(t *testing.T) {
 
 	// Delete the file before debounce finishes
 	time.Sleep(100 * time.Millisecond)
-	os.Remove(configFile)
+	_ = os.Remove(configFile)
 
 	// Wait for debounce to trigger and handle missing file
 	time.Sleep(2500 * time.Millisecond)

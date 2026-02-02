@@ -56,8 +56,46 @@ func TestNewMemoryService_DisabledCognee(t *testing.T) {
 	assert.NotNil(t, ms.cache)
 }
 
+func TestMemoryService_EnabledByDefault(t *testing.T) {
+	cfg := config.Load()
+	assert.True(t, cfg.MemoryEnabled, "MemoryEnabled should default to true")
+}
+
+func TestMemoryService_Mem0Fallback(t *testing.T) {
+	// When MemoryEnabled is true but Cognee is disabled, service falls back to
+	// disabled state (cache-only) since Mem0 is the primary memory backend
+	cfg := &config.Config{
+		MemoryEnabled: true,
+		Cognee: config.CogneeConfig{
+			Enabled:     false,
+			AutoCognify: false,
+		},
+	}
+	ms := NewMemoryService(cfg)
+	defer ms.Stop()
+	require.NotNil(t, ms)
+	assert.False(t, ms.enabled, "Cognee-based service disabled when Cognee not configured")
+	assert.NotNil(t, ms.cache, "Cache still available for Mem0 integration")
+}
+
+func TestMemoryService_MemoryDisabled(t *testing.T) {
+	cfg := &config.Config{
+		MemoryEnabled: false,
+		Cognee: config.CogneeConfig{
+			Enabled:     true,
+			AutoCognify: true,
+			BaseURL:     "http://localhost:8000",
+		},
+	}
+	ms := NewMemoryService(cfg)
+	defer ms.Stop()
+	require.NotNil(t, ms)
+	assert.False(t, ms.enabled, "Service disabled when MemoryEnabled is false")
+}
+
 func TestNewMemoryService_EnabledCognee(t *testing.T) {
 	cfg := &config.Config{
+		MemoryEnabled: true,
 		Cognee: config.CogneeConfig{
 			Enabled:     true,
 			AutoCognify: true,
@@ -176,6 +214,7 @@ func TestMemoryService_GetStats(t *testing.T) {
 
 func TestMemoryService_GetStats_WithClient(t *testing.T) {
 	cfg := &config.Config{
+		MemoryEnabled: true,
 		Cognee: config.CogneeConfig{
 			Enabled:     true,
 			AutoCognify: true,
@@ -900,6 +939,7 @@ func TestNewMemoryServiceWithOptions(t *testing.T) {
 
 func TestNewMemoryServiceWithOptions_Enabled(t *testing.T) {
 	cfg := &config.Config{
+		MemoryEnabled: true,
 		Cognee: config.CogneeConfig{
 			Enabled:     true,
 			AutoCognify: true,

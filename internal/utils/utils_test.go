@@ -95,7 +95,7 @@ func TestLogger_Initialization(t *testing.T) {
 func TestLogger_EnvironmentLevel(t *testing.T) {
 	// Save original environment
 	originalLevel := os.Getenv("LOG_LEVEL")
-	defer os.Setenv("LOG_LEVEL", originalLevel)
+	defer func() { _ = os.Setenv("LOG_LEVEL", originalLevel) }()
 
 	// Test that logger is initialized with environment variable
 	// We can't directly test the init() function since it's private,
@@ -119,7 +119,7 @@ func TestLogger_EnvironmentLevel(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.envLevel, func(t *testing.T) {
-			os.Setenv("LOG_LEVEL", tc.envLevel)
+			_ = os.Setenv("LOG_LEVEL", tc.envLevel)
 			// The logger is already initialized, so setting env var won't change it
 			// But we can verify the logger still works
 			assert.NotNil(t, Logger)

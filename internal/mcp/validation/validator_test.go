@@ -41,8 +41,8 @@ func TestMCPValidator_HasEnvVar(t *testing.T) {
 	v := NewMCPValidator()
 
 	// Set a test env var
-	os.Setenv("TEST_MCP_VAR", "test_value")
-	defer os.Unsetenv("TEST_MCP_VAR")
+	_ = os.Setenv("TEST_MCP_VAR", "test_value")
+	defer func() { _ = os.Unsetenv("TEST_MCP_VAR") }()
 
 	// Reload env cache
 	v.loadEnvCache()

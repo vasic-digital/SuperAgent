@@ -154,7 +154,7 @@ func (c *MCPClient) ConnectServer(ctx context.Context, serverID, name, command s
 
 	// Initialize the server
 	if err := c.initializeServer(ctx, connection); err != nil {
-		transport.Close()
+		_ = transport.Close()
 		return fmt.Errorf("failed to initialize server: %w", err)
 	}
 
@@ -300,13 +300,13 @@ func (c *MCPClient) createStdioTransport(command string, args []string) (MCPTran
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		stdin.Close()
+		_ = stdin.Close()
 		return nil, err
 	}
 
 	if err := cmd.Start(); err != nil {
-		stdin.Close()
-		stdout.Close()
+		_ = stdin.Close()
+		_ = stdout.Close()
 		return nil, err
 	}
 
@@ -591,7 +591,7 @@ func (t *StdioTransport) Close() error {
 	t.connected = false
 
 	if t.stdin != nil {
-		t.stdin.Close()
+		_ = t.stdin.Close()
 	}
 
 	if t.cmd != nil && t.cmd.Process != nil {

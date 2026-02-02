@@ -155,7 +155,7 @@ func (c *ACPClient) ExecuteHTTP(ctx context.Context, serverURL string, req ACPPr
 		}
 
 		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		if err != nil {
 			lastErr = fmt.Errorf("failed to read response: %w", err)
@@ -257,7 +257,7 @@ func (c *ACPClient) CloseAll() {
 
 	for url, conn := range c.wsConns {
 		if conn != nil {
-			conn.Close()
+			_ = conn.Close()
 		}
 		delete(c.wsConns, url)
 	}
@@ -268,7 +268,7 @@ func (c *ACPClient) closeWSConn(serverURL string) {
 	defer c.wsConnsMu.Unlock()
 
 	if conn, exists := c.wsConns[serverURL]; exists && conn != nil {
-		conn.Close()
+		_ = conn.Close()
 		delete(c.wsConns, serverURL)
 	}
 }

@@ -523,8 +523,8 @@ func TestScoringService_ClearCache(t *testing.T) {
 	svc, _ := NewScoringService(nil)
 
 	// Calculate some scores
-	svc.CalculateScore(context.Background(), "model1")
-	svc.CalculateScore(context.Background(), "model2")
+	_, _ = svc.CalculateScore(context.Background(), "model1")
+	_, _ = svc.CalculateScore(context.Background(), "model2")
 
 	// Clear cache
 	svc.ClearCache()
@@ -541,8 +541,8 @@ func TestScoringService_GetAllScores(t *testing.T) {
 	svc, _ := NewScoringService(nil)
 
 	// Calculate some scores
-	svc.CalculateScore(context.Background(), "model1")
-	svc.CalculateScore(context.Background(), "model2")
+	_, _ = svc.CalculateScore(context.Background(), "model1")
+	_, _ = svc.CalculateScore(context.Background(), "model2")
 
 	// Get all scores
 	scores := svc.GetAllScores()

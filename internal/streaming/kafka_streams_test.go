@@ -38,7 +38,7 @@ func TestConversationStreamProcessor_NewWithRedis(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, processor)
 
-	defer processor.Stop()
+	defer func() { _ = processor.Stop() }()
 }
 
 func TestConversationStreamProcessor_HandleMessageAdded(t *testing.T) {
@@ -329,6 +329,6 @@ func BenchmarkConversationStreamProcessor_HandleMessageAdded(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		event.EventID = string(rune(i))
-		processor.handleMessageAdded(ctx, event)
+		_ = processor.handleMessageAdded(ctx, event)
 	}
 }

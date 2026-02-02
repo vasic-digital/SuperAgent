@@ -47,7 +47,7 @@ func TestModelMetadataRedisCache_Clear_WithMiniredis(t *testing.T) {
 	client := redis.NewClient(&redis.Options{
 		Addr: mr.Addr(),
 	})
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	prefix := "test:model:"
@@ -99,7 +99,7 @@ func TestModelMetadataRedisCache_Clear_EmptyCache(t *testing.T) {
 	defer mr.Close()
 
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	prefix := "test:model:"
@@ -133,7 +133,7 @@ func TestModelMetadataRedisCache_Clear_ManyKeys(t *testing.T) {
 	defer mr.Close()
 
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	prefix := "test:model:"
@@ -174,7 +174,7 @@ func TestModelMetadataRedisCache_Clear_ScanBehavior(t *testing.T) {
 	defer mr.Close()
 
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	prefix := "test:model:"
@@ -224,7 +224,7 @@ func TestModelMetadataRedisCache_Size_WithMiniredis(t *testing.T) {
 	defer mr.Close()
 
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	prefix := "test:model:"

@@ -170,7 +170,7 @@ func (h *DiscoveryHandler) TriggerDiscovery(c *gin.Context) {
 
 	// Trigger discovery in background
 	go func() {
-		h.discoveryService.Start(credentials)
+		_ = h.discoveryService.Start(credentials)
 	}()
 
 	c.JSON(http.StatusOK, gin.H{

@@ -267,7 +267,7 @@ func TestPostgresAdapter_Integration(t *testing.T) {
 	if err != nil {
 		t.Skipf("Could not connect to PostgreSQL: %v", err)
 	}
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	// Test query
 	result, err := adapter.Query(context.Background(), "SELECT 1 as num")

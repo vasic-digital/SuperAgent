@@ -249,7 +249,7 @@ func TestMCPServerCache_Metrics(t *testing.T) {
 
 	// Generate some cache activity
 	mc.GetToolResult(ctx, "server", "tool", nil) // Miss
-	mc.SetToolResult(ctx, "server", "tool", nil, "data")
+	_ = mc.SetToolResult(ctx, "server", "tool", nil, "data")
 	mc.GetToolResult(ctx, "server", "tool", nil) // Hit
 
 	metrics := mc.Metrics()

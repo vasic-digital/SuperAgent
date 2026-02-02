@@ -62,7 +62,7 @@ func TestProcessor_StartStop(t *testing.T) {
 	ctx := context.Background()
 	err := broker.Connect(ctx)
 	require.NoError(t, err)
-	defer broker.Close(ctx)
+	defer func() { _ = broker.Close(ctx) }()
 
 	config := DefaultConfig()
 	config.PollInterval = 100 * time.Millisecond
@@ -146,7 +146,7 @@ func TestProcessor_ProcessMessage_MaxRetries(t *testing.T) {
 	ctx := context.Background()
 	err := broker.Connect(ctx)
 	require.NoError(t, err)
-	defer broker.Close(ctx)
+	defer func() { _ = broker.Close(ctx) }()
 
 	config := DefaultConfig()
 	config.MaxRetries = 3
@@ -192,7 +192,7 @@ func TestProcessor_ProcessMessage_InvalidFormat(t *testing.T) {
 	ctx := context.Background()
 	err := broker.Connect(ctx)
 	require.NoError(t, err)
-	defer broker.Close(ctx)
+	defer func() { _ = broker.Close(ctx) }()
 
 	config := DefaultConfig()
 	logger := zap.NewNop()
@@ -219,7 +219,7 @@ func TestProcessor_ReprocessMessage(t *testing.T) {
 	ctx := context.Background()
 	err := broker.Connect(ctx)
 	require.NoError(t, err)
-	defer broker.Close(ctx)
+	defer func() { _ = broker.Close(ctx) }()
 
 	config := DefaultConfig()
 	logger := zap.NewNop()
@@ -337,7 +337,7 @@ func TestProcessor_DefaultRetryHandler(t *testing.T) {
 	ctx := context.Background()
 	err := broker.Connect(ctx)
 	require.NoError(t, err)
-	defer broker.Close(ctx)
+	defer func() { _ = broker.Close(ctx) }()
 
 	config := DefaultConfig()
 	logger := zap.NewNop()
@@ -594,7 +594,7 @@ func TestProcessor_ReprocessMessage_Full(t *testing.T) {
 	ctx := context.Background()
 	err := broker.Connect(ctx)
 	require.NoError(t, err)
-	defer broker.Close(ctx)
+	defer func() { _ = broker.Close(ctx) }()
 
 	config := DefaultConfig()
 	logger := zap.NewNop()
@@ -826,7 +826,7 @@ func TestProcessor_Messages_Concurrency(t *testing.T) {
 					Type: "test.type",
 				},
 			}
-			processor.AddMessage(ctx, dlqMsg)
+			_ = processor.AddMessage(ctx, dlqMsg)
 			done <- true
 		}(i)
 	}
@@ -842,11 +842,11 @@ func TestProcessor_Messages_Concurrency(t *testing.T) {
 	// Concurrent reads and writes
 	for i := 0; i < 10; i++ {
 		go func() {
-			processor.ListMessages(ctx, 0, 0)
+			_, _ = processor.ListMessages(ctx, 0, 0)
 			done <- true
 		}()
 		go func() {
-			processor.GetMessagesByStatus(ctx, StatusPending, 0)
+			_, _ = processor.GetMessagesByStatus(ctx, StatusPending, 0)
 			done <- true
 		}()
 	}

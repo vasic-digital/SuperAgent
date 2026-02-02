@@ -350,7 +350,7 @@ func TestIntegration_ProtocolAndVoting_ConvergencePhase(t *testing.T) {
 	agents := createTestAgents()
 	err := topo.Initialize(ctx, agents)
 	require.NoError(t, err)
-	defer topo.Close()
+	defer func() { _ = topo.Close() }()
 
 	// Create invoker with specific convergence votes
 	invoker := newMockAgentInvoker()
@@ -540,7 +540,7 @@ func TestIntegration_CognitivePlanningAndProtocol(t *testing.T) {
 	agents := createTestAgents()
 	err := topo.Initialize(ctx, agents)
 	require.NoError(t, err)
-	defer topo.Close()
+	defer func() { _ = topo.Close() }()
 
 	// Set expectations for proposal phase
 	expectation := planner.SetExpectation(ctx, topology.PhaseProposal, 1, agents)
@@ -655,7 +655,7 @@ func TestIntegration_FullDebateFlow(t *testing.T) {
 	agents := createTestAgents()
 	err := topo.Initialize(ctx, agents)
 	require.NoError(t, err)
-	defer topo.Close()
+	defer func() { _ = topo.Close() }()
 
 	// Cognitive Planner
 	planningConfig := cognitive.DefaultPlanningConfig()
@@ -767,7 +767,7 @@ func TestIntegration_EarlyConsensusExit(t *testing.T) {
 	agents := createTestAgents()
 	err := topo.Initialize(ctx, agents)
 	require.NoError(t, err)
-	defer topo.Close()
+	defer func() { _ = topo.Close() }()
 
 	// Create invoker that generates high consensus
 	invoker := newMockAgentInvoker()
@@ -819,7 +819,7 @@ func TestIntegration_ParallelPhaseExecution(t *testing.T) {
 	agents := createTestAgents()
 	err := topo.Initialize(ctx, agents)
 	require.NoError(t, err)
-	defer topo.Close()
+	defer func() { _ = topo.Close() }()
 
 	// Get parallel groups
 	groups := topo.GetParallelGroups(topology.PhaseProposal)
@@ -861,7 +861,7 @@ func TestIntegration_DynamicRoleAssignment(t *testing.T) {
 	agents := createTestAgents()
 	err := topo.Initialize(ctx, agents)
 	require.NoError(t, err)
-	defer topo.Close()
+	defer func() { _ = topo.Close() }()
 
 	// Get agents by original role
 	proposers := topo.GetAgentsByRole(topology.RoleProposer)
@@ -900,7 +900,7 @@ func TestIntegration_TopologyLeaderSelection(t *testing.T) {
 	agents := createTestAgents()
 	err := topo.Initialize(ctx, agents)
 	require.NoError(t, err)
-	defer topo.Close()
+	defer func() { _ = topo.Close() }()
 
 	// Select leaders for each phase
 	phases := []topology.DebatePhase{
@@ -994,7 +994,7 @@ func TestIntegration_StressTest_ManyAgents(t *testing.T) {
 
 	err := topo.Initialize(ctx, agents)
 	require.NoError(t, err)
-	defer topo.Close()
+	defer func() { _ = topo.Close() }()
 
 	// Verify all agents registered
 	assert.Equal(t, 50, len(topo.GetAgents()))
@@ -1029,7 +1029,7 @@ func TestIntegration_StressTest_ManyRounds(t *testing.T) {
 	agents := createTestAgents()
 	err := topo.Initialize(ctx, agents)
 	require.NoError(t, err)
-	defer topo.Close()
+	defer func() { _ = topo.Close() }()
 
 	// Create invoker with varying responses to prevent early exit
 	invoker := newMockAgentInvoker()
@@ -1067,7 +1067,7 @@ func TestIntegration_ErrorHandling_InvokerFailure(t *testing.T) {
 	agents := createTestAgents()
 	err := topo.Initialize(ctx, agents)
 	require.NoError(t, err)
-	defer topo.Close()
+	defer func() { _ = topo.Close() }()
 
 	// Create invoker that fails for some agents
 	invoker := newMockAgentInvoker()
@@ -1098,7 +1098,7 @@ func TestIntegration_ErrorHandling_ContextCancellation(t *testing.T) {
 	agents := createTestAgents()
 	err := topo.Initialize(ctx, agents)
 	require.NoError(t, err)
-	defer topo.Close()
+	defer func() { _ = topo.Close() }()
 
 	// Create invoker with delay
 	invoker := newMockAgentInvoker()

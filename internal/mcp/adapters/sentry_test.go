@@ -86,7 +86,7 @@ func TestSentryAdapter_ListProjects(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -126,7 +126,7 @@ func TestSentryAdapter_ListIssues(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -176,7 +176,7 @@ func TestSentryAdapter_GetIssue(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -204,7 +204,7 @@ func TestSentryAdapter_ResolveIssue(t *testing.T) {
 		assert.Contains(t, r.URL.Path, "/issues/123/")
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "resolved", body["status"])
 
 		w.WriteHeader(http.StatusOK)
@@ -247,7 +247,7 @@ func TestSentryAdapter_ListEvents(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -295,7 +295,7 @@ func TestSentryAdapter_GetEvent(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -334,7 +334,7 @@ func TestSentryAdapter_ListAlerts(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -365,7 +365,7 @@ func TestSentryAdapter_QueryStats(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -404,7 +404,7 @@ func TestSentryAdapter_SearchIssues(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -428,7 +428,7 @@ func TestSentryAdapter_SearchIssues(t *testing.T) {
 func TestSentryAdapter_APIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"detail": "Invalid token"}`))
+		_, _ = w.Write([]byte(`{"detail": "Invalid token"}`))
 	}))
 	defer server.Close()
 

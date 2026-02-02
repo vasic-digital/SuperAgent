@@ -16,7 +16,7 @@ func TestNewMemoryDB(t *testing.T) {
 
 func TestMemoryDB_Ping(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	err := db.Ping()
 	assert.NoError(t, err)
@@ -24,7 +24,7 @@ func TestMemoryDB_Ping(t *testing.T) {
 
 func TestMemoryDB_Exec(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	err := db.Exec("INSERT INTO test VALUES ($1)", "value")
 	assert.NoError(t, err)
@@ -32,7 +32,7 @@ func TestMemoryDB_Exec(t *testing.T) {
 
 func TestMemoryDB_Query(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	result, err := db.Query("SELECT * FROM test")
 	assert.NoError(t, err)
@@ -41,7 +41,7 @@ func TestMemoryDB_Query(t *testing.T) {
 
 func TestMemoryDB_QueryRow(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	row := db.QueryRow("SELECT * FROM test")
 	assert.NotNil(t, row)
@@ -66,7 +66,7 @@ func TestMemoryDB_HealthCheck(t *testing.T) {
 	err := db.HealthCheck()
 	assert.NoError(t, err)
 
-	db.Close()
+	_ = db.Close()
 
 	err = db.HealthCheck()
 	assert.Error(t, err)
@@ -75,7 +75,7 @@ func TestMemoryDB_HealthCheck(t *testing.T) {
 
 func TestMemoryDB_GetPool(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	pool := db.GetPool()
 	assert.Nil(t, pool)
@@ -83,7 +83,7 @@ func TestMemoryDB_GetPool(t *testing.T) {
 
 func TestMemoryDB_IsMemoryMode(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	assert.True(t, db.IsMemoryMode())
 }
@@ -194,7 +194,7 @@ func TestMemoryRow_Scan_MoreDestsThanValues(t *testing.T) {
 
 func TestMemoryDB_QueryRow_WithStoredData(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Store data first
 	db.StoreRow("users", "user-123", []any{"user-123", "john@example.com", "John Doe"})
@@ -213,7 +213,7 @@ func TestMemoryDB_QueryRow_WithStoredData(t *testing.T) {
 
 func TestMemoryDB_QueryRow_NotFound(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Query without storing data first
 	row := db.QueryRow("SELECT * FROM users WHERE id = $1", "nonexistent")
@@ -227,7 +227,7 @@ func TestMemoryDB_QueryRow_NotFound(t *testing.T) {
 
 func TestMemoryDB_QueryRow_InvalidQuery(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Query with invalid SQL (no FROM clause)
 	row := db.QueryRow("SELECT * WHERE id = $1", "test")
@@ -241,7 +241,7 @@ func TestMemoryDB_QueryRow_InvalidQuery(t *testing.T) {
 
 func TestMemoryDB_StoreRow_MultipleRows(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Store multiple rows in the same table
 	db.StoreRow("sessions", "sess-1", []any{"sess-1", "active", 100})
@@ -261,7 +261,7 @@ func TestMemoryDB_StoreRow_MultipleRows(t *testing.T) {
 
 func TestMemoryDB_StoreRow_Overwrite(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Store initial data
 	db.StoreRow("config", "setting-1", []any{"old-value"})
@@ -279,7 +279,7 @@ func TestMemoryDB_StoreRow_Overwrite(t *testing.T) {
 
 func TestMemoryDB_QueryRow_FirstRowWithoutArgs(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Store some data
 	db.StoreRow("providers", "p1", []any{"claude", "active"})
@@ -294,7 +294,7 @@ func TestMemoryDB_QueryRow_FirstRowWithoutArgs(t *testing.T) {
 
 func TestMemoryDB_QueryRow_ConcurrentAccess(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Store initial data
 	db.StoreRow("concurrent", "key-1", []any{"value-1"})
@@ -340,7 +340,7 @@ func TestExtractTableFromQuery(t *testing.T) {
 
 func TestMemoryDB_MultipleTables(t *testing.T) {
 	db := NewMemoryDB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Store data in different tables
 	db.StoreRow("users", "u1", []any{"u1", "alice"})

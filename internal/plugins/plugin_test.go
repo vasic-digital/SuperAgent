@@ -596,10 +596,10 @@ func TestLifecycleManager_GetRunningPlugins_Multiple(t *testing.T) {
 		name := "plugin-" + string(rune('a'+i-1))
 		plugin.On("Name").Return(name)
 		plugin.On("HealthCheck", mock.Anything).Return(nil)
-		registry.Register(plugin)
+		_ = registry.Register(plugin)
 
 		ctx := context.Background()
-		manager.StartPlugin(ctx, name)
+		_ = manager.StartPlugin(ctx, name)
 	}
 
 	running := manager.GetRunningPlugins()
@@ -682,7 +682,7 @@ func TestLifecycleManager_MonitorPlugin_TriggersRestart(t *testing.T) {
 	assert.Contains(t, manager.GetRunningPlugins(), "trigger-restart")
 
 	// Clean up
-	manager.ShutdownAll(context.Background())
+	_ = manager.ShutdownAll(context.Background())
 }
 
 func TestLifecycleManager_RestartPlugin_Success(t *testing.T) {
@@ -712,5 +712,5 @@ func TestLifecycleManager_RestartPlugin_Success(t *testing.T) {
 	assert.Contains(t, manager.GetRunningPlugins(), "restart-success")
 
 	// Clean up
-	manager.ShutdownAll(context.Background())
+	_ = manager.ShutdownAll(context.Background())
 }

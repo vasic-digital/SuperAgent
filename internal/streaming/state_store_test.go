@@ -222,7 +222,7 @@ func TestInMemoryStateStore_ConcurrentAccess(t *testing.T) {
 				return
 			}
 			state.MessageCount += n
-			store.SaveState(ctx, state.ConversationID, state)
+			_ = store.SaveState(ctx, state.ConversationID, state)
 			done <- true
 		}(i)
 	}
@@ -265,7 +265,7 @@ func BenchmarkInMemoryStateStore_SaveState(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		store.SaveState(ctx, state.ConversationID, state)
+		_ = store.SaveState(ctx, state.ConversationID, state)
 	}
 }
 
@@ -282,10 +282,10 @@ func BenchmarkInMemoryStateStore_GetState(b *testing.B) {
 	}
 
 	// Pre-populate
-	store.SaveState(ctx, state.ConversationID, state)
+	_ = store.SaveState(ctx, state.ConversationID, state)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		store.GetState(ctx, state.ConversationID)
+		_, _ = store.GetState(ctx, state.ConversationID)
 	}
 }

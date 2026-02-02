@@ -145,9 +145,9 @@ func TestEndToEndMockIntegration(t *testing.T) {
 	orch := NewOrchestrator(mockRegistry, lessonBank, config)
 
 	// Register all mock providers
-	orch.RegisterProvider("claude", "claude-3", 9.0)
-	orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
-	orch.RegisterProvider("gemini", "gemini-pro", 8.0)
+	_ = orch.RegisterProvider("claude", "claude-3", 9.0)
+	_ = orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
+	_ = orch.RegisterProvider("gemini", "gemini-pro", 8.0)
 
 	// Verify setup
 	assert.Equal(t, 3, orch.GetAgentPool().Size())

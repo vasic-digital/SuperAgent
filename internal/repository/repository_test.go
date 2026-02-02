@@ -395,7 +395,7 @@ func TestMockSessionRepository(t *testing.T) {
 		ExpiresAt: time.Now().Add(-1 * time.Hour),
 		CreatedAt: time.Now(),
 	}
-	repo.Create(ctx, expiredSession)
+	_ = repo.Create(ctx, expiredSession)
 
 	deleted, err := repo.DeleteExpired(ctx)
 	if err != nil {
@@ -830,7 +830,7 @@ func TestMockLLMResponseRepository(t *testing.T) {
 		RequestID: "test-request-1",
 		CreatedAt: time.Now(),
 	}
-	repo.Create(ctx, response2)
+	_ = repo.Create(ctx, response2)
 
 	err = repo.DeleteByRequestID(ctx, "test-request-1")
 	if err != nil {
@@ -1017,7 +1017,7 @@ func TestMockProviderRepository(t *testing.T) {
 		Name:    "Disabled Provider",
 		Enabled: false,
 	}
-	repo.Create(ctx, disabledProvider)
+	_ = repo.Create(ctx, disabledProvider)
 
 	// Test Count with enabledOnly=false
 	totalCount, err := repo.Count(ctx, false)

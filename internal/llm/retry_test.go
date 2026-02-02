@@ -294,7 +294,7 @@ func TestRetryableHTTPClient_Do(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "ok"}`))
+		_, _ = w.Write([]byte(`{"status": "ok"}`))
 	}))
 	defer server.Close()
 
@@ -317,7 +317,7 @@ func TestRetryableHTTPClient_Do(t *testing.T) {
 	assert.NotNil(t, resp)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, int32(3), atomic.LoadInt32(&attemptCount))
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func TestRetryableHTTPClient_RateLimitRetry(t *testing.T) {
@@ -353,7 +353,7 @@ func TestRetryableHTTPClient_RateLimitRetry(t *testing.T) {
 	assert.NotNil(t, resp)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, int32(2), atomic.LoadInt32(&attemptCount))
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func TestNewRetryableHTTPClient_NilClient(t *testing.T) {

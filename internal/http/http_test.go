@@ -217,7 +217,7 @@ func TestHTTPClientPool_ClientCount(t *testing.T) {
 func TestHTTPClientPool_Do_WithTestServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("success"))
+		_, _ = w.Write([]byte("success"))
 	}))
 	defer server.Close()
 
@@ -426,7 +426,7 @@ func TestHTTPClientPool_Get(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("get response"))
+		_, _ = w.Write([]byte("get response"))
 	}))
 	defer server.Close()
 
@@ -448,7 +448,7 @@ func TestHTTPClientPool_Post(t *testing.T) {
 		assert.Equal(t, "text/plain", r.Header.Get("Content-Type"))
 		body, _ := io.ReadAll(r.Body)
 		w.WriteHeader(http.StatusOK)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer server.Close()
 
@@ -488,7 +488,7 @@ func TestHTTPClientPool_Metrics(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		resp, _ := pool.Get(context.Background(), server.URL)
 		if resp != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 	}
 
@@ -610,7 +610,7 @@ func TestHostClient_Do(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "Bearer token", r.Header.Get("Authorization"))
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(r.URL.Path))
+		_, _ = w.Write([]byte(r.URL.Path))
 	}))
 	defer server.Close()
 
@@ -648,7 +648,7 @@ func TestHostClient_Post(t *testing.T) {
 		assert.Equal(t, http.MethodPost, r.Method)
 		body, _ := io.ReadAll(r.Body)
 		w.WriteHeader(http.StatusCreated)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer server.Close()
 
@@ -699,7 +699,7 @@ func TestHostClient_Concurrent(t *testing.T) {
 			defer wg.Done()
 			resp, err := client.Get(context.Background(), "/")
 			if err == nil && resp != nil {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 			}
 		}()
 	}
@@ -817,7 +817,7 @@ func TestQUICClient_Do_Closed(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close the client
-	client.Close()
+	_ = client.Close()
 
 	req, _ := http.NewRequest(http.MethodGet, "https://example.com", nil)
 	_, err = client.Do(req)
@@ -873,7 +873,7 @@ func TestQUICClient_Close(t *testing.T) {
 func TestQUICClient_Get(t *testing.T) {
 	client, err := NewQUICClient(nil)
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// This will fail because there's no actual QUIC server, but we're testing the method signature
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -887,7 +887,7 @@ func TestQUICClient_Get(t *testing.T) {
 func TestQUICClient_Post(t *testing.T) {
 	client, err := NewQUICClient(nil)
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
@@ -899,7 +899,7 @@ func TestQUICClient_Post(t *testing.T) {
 func TestQUICClient_PostJSON(t *testing.T) {
 	client, err := NewQUICClient(nil)
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
@@ -962,7 +962,7 @@ func TestHTTP3ProviderTransport_RoundTrip(t *testing.T) {
 
 	transport, err := NewHTTP3ProviderTransport(config)
 	require.NoError(t, err)
-	defer transport.Close()
+	defer func() { _ = transport.Close() }()
 
 	// Create a request to a non-existent server - this will fail but exercises the RoundTrip method
 	req, _ := http.NewRequest(http.MethodGet, "https://localhost:12346/test", nil)
@@ -976,7 +976,7 @@ func TestHTTP3ProviderTransport_RoundTrip_FallbackToHTTP(t *testing.T) {
 	// Create a regular HTTPS test server for fallback
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("fallback response"))
+		_, _ = w.Write([]byte("fallback response"))
 	}))
 	defer server.Close()
 
@@ -990,7 +990,7 @@ func TestHTTP3ProviderTransport_RoundTrip_FallbackToHTTP(t *testing.T) {
 
 	transport, err := NewHTTP3ProviderTransport(config)
 	require.NoError(t, err)
-	defer transport.Close()
+	defer func() { _ = transport.Close() }()
 
 	// The QUIC request will fail (no QUIC server) and should fall back to HTTP
 	req, _ := http.NewRequest(http.MethodGet, server.URL, nil)
@@ -1064,7 +1064,7 @@ func TestHTTPClientPool_RequestWithBody(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		w.WriteHeader(http.StatusOK)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer server.Close()
 
@@ -1124,7 +1124,7 @@ func TestHTTPClientPool_ActiveRequestsTracking(t *testing.T) {
 	go func() {
 		resp, _ := pool.Get(context.Background(), server.URL)
 		if resp != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 	}()
 

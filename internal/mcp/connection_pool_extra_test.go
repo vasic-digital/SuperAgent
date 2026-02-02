@@ -389,7 +389,7 @@ func TestConnectionPool_connectRemoteServer(t *testing.T) {
 		// Create a mock server that responds to MCP initialization
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"jsonrpc": "2.0",
 				"id":      1,
 				"result": map[string]interface{}{
@@ -425,7 +425,7 @@ func TestConnectionPool_connectRemoteServer(t *testing.T) {
 		// Create a mock server that returns an error
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"jsonrpc": "2.0",
 				"id":      1,
 				"error": map[string]interface{}{
@@ -611,11 +611,11 @@ func TestHTTPMCPTransport_SendReceive_Integration(t *testing.T) {
 			// Read request body
 			body, _ := io.ReadAll(r.Body)
 			var request map[string]interface{}
-			json.Unmarshal(body, &request)
+			_ = json.Unmarshal(body, &request)
 
 			// Echo back a response
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"jsonrpc": "2.0",
 				"id":      request["id"],
 				"result": map[string]interface{}{
@@ -659,7 +659,7 @@ func TestHTTPMCPTransport_SendReceive_Integration(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			receivedHeaders = r.Header
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"result": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"result": "ok"})
 		}))
 		defer server.Close()
 
@@ -692,7 +692,7 @@ func TestStdioMCPTransport_Send_ConnectionLost(t *testing.T) {
 	t.Run("Sets connected to false on write error", func(t *testing.T) {
 		// Use a pipe and close the reader to simulate write error
 		reader, writer := io.Pipe()
-		reader.Close() // Close the reader to cause write error
+		_ = reader.Close() // Close the reader to cause write error
 
 		transport := &StdioMCPTransport{
 			stdin:     writer,

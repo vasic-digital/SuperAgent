@@ -404,7 +404,7 @@ func TestFreeProviderAdapter_verifyOpenRouterFreeModel(t *testing.T) {
 			if r.URL.Path == "/api/v1/models" {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"data":[]}`))
+				_, _ = w.Write([]byte(`{"data":[]}`))
 			}
 		}))
 		defer server.Close()

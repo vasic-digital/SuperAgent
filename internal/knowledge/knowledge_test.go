@@ -85,8 +85,8 @@ func TestCodeGraph_AddEdge(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add nodes first
-	graph.AddNode(&CodeNode{ID: "node1", Type: NodeTypeFunction, Name: "Func1"})
-	graph.AddNode(&CodeNode{ID: "node2", Type: NodeTypeFunction, Name: "Func2"})
+	_ = graph.AddNode(&CodeNode{ID: "node1", Type: NodeTypeFunction, Name: "Func1"})
+	_ = graph.AddNode(&CodeNode{ID: "node2", Type: NodeTypeFunction, Name: "Func2"})
 
 	// Add edge
 	edge := &CodeEdge{
@@ -111,9 +111,9 @@ func TestCodeGraph_GetNodesByType(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add various node types
-	graph.AddNode(&CodeNode{ID: "func1", Type: NodeTypeFunction, Name: "Func1"})
-	graph.AddNode(&CodeNode{ID: "func2", Type: NodeTypeFunction, Name: "Func2"})
-	graph.AddNode(&CodeNode{ID: "class1", Type: NodeTypeClass, Name: "Class1"})
+	_ = graph.AddNode(&CodeNode{ID: "func1", Type: NodeTypeFunction, Name: "Func1"})
+	_ = graph.AddNode(&CodeNode{ID: "func2", Type: NodeTypeFunction, Name: "Func2"})
+	_ = graph.AddNode(&CodeNode{ID: "class1", Type: NodeTypeClass, Name: "Class1"})
 
 	// Get functions
 	functions := graph.GetNodesByType(NodeTypeFunction)
@@ -129,12 +129,12 @@ func TestCodeGraph_GetNeighbors(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Build a small graph: A -> B -> C
-	graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
-	graph.AddNode(&CodeNode{ID: "B", Type: NodeTypeFunction, Name: "B"})
-	graph.AddNode(&CodeNode{ID: "C", Type: NodeTypeFunction, Name: "C"})
+	_ = graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
+	_ = graph.AddNode(&CodeNode{ID: "B", Type: NodeTypeFunction, Name: "B"})
+	_ = graph.AddNode(&CodeNode{ID: "C", Type: NodeTypeFunction, Name: "C"})
 
-	graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "A", TargetID: "B"})
-	graph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "B", TargetID: "C"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "A", TargetID: "B"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "B", TargetID: "C"})
 
 	// Get neighbors of B (outgoing)
 	neighbors := graph.GetNeighbors("B", EdgeTypeCalls)
@@ -147,15 +147,15 @@ func TestCodeGraph_GetImpactRadius(t *testing.T) {
 
 	// Build a graph with dependencies using edges the GetImpactRadius follows
 	// (EdgeTypeCalledBy, EdgeTypeReferencedBy, EdgeTypeDependsOn)
-	graph.AddNode(&CodeNode{ID: "core", Type: NodeTypeFunction, Name: "Core"})
-	graph.AddNode(&CodeNode{ID: "util1", Type: NodeTypeFunction, Name: "Util1"})
-	graph.AddNode(&CodeNode{ID: "util2", Type: NodeTypeFunction, Name: "Util2"})
-	graph.AddNode(&CodeNode{ID: "app", Type: NodeTypeFunction, Name: "App"})
+	_ = graph.AddNode(&CodeNode{ID: "core", Type: NodeTypeFunction, Name: "Core"})
+	_ = graph.AddNode(&CodeNode{ID: "util1", Type: NodeTypeFunction, Name: "Util1"})
+	_ = graph.AddNode(&CodeNode{ID: "util2", Type: NodeTypeFunction, Name: "Util2"})
+	_ = graph.AddNode(&CodeNode{ID: "app", Type: NodeTypeFunction, Name: "App"})
 
 	// Use EdgeTypeCalledBy which is followed by GetImpactRadius
-	graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalledBy, SourceID: "util1", TargetID: "core"})
-	graph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalledBy, SourceID: "util2", TargetID: "core"})
-	graph.AddEdge(&CodeEdge{ID: "e3", Type: EdgeTypeCalledBy, SourceID: "app", TargetID: "util1"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalledBy, SourceID: "util1", TargetID: "core"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalledBy, SourceID: "util2", TargetID: "core"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e3", Type: EdgeTypeCalledBy, SourceID: "app", TargetID: "util1"})
 
 	// Get impact radius of core with depth 2
 	impacted := graph.GetImpactRadius("core", 2)
@@ -169,14 +169,14 @@ func TestCodeGraph_FindPath(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Build a graph: A -> B -> C -> D
-	graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
-	graph.AddNode(&CodeNode{ID: "B", Type: NodeTypeFunction, Name: "B"})
-	graph.AddNode(&CodeNode{ID: "C", Type: NodeTypeFunction, Name: "C"})
-	graph.AddNode(&CodeNode{ID: "D", Type: NodeTypeFunction, Name: "D"})
+	_ = graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
+	_ = graph.AddNode(&CodeNode{ID: "B", Type: NodeTypeFunction, Name: "B"})
+	_ = graph.AddNode(&CodeNode{ID: "C", Type: NodeTypeFunction, Name: "C"})
+	_ = graph.AddNode(&CodeNode{ID: "D", Type: NodeTypeFunction, Name: "D"})
 
-	graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "A", TargetID: "B"})
-	graph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "B", TargetID: "C"})
-	graph.AddEdge(&CodeEdge{ID: "e3", Type: EdgeTypeCalls, SourceID: "C", TargetID: "D"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "A", TargetID: "B"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "B", TargetID: "C"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e3", Type: EdgeTypeCalls, SourceID: "C", TargetID: "D"})
 
 	// Find path from A to D
 	path, err := graph.FindPath("A", "D")
@@ -189,10 +189,10 @@ func TestCodeGraph_GetStats(t *testing.T) {
 	config := DefaultCodeGraphConfig()
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
-	graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "N1"})
-	graph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeFunction, Name: "N2"})
-	graph.AddNode(&CodeNode{ID: "n3", Type: NodeTypeClass, Name: "N3"})
-	graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "n1", TargetID: "n2"})
+	_ = graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "N1"})
+	_ = graph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeFunction, Name: "N2"})
+	_ = graph.AddNode(&CodeNode{ID: "n3", Type: NodeTypeClass, Name: "N3"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "n1", TargetID: "n2"})
 
 	stats := graph.GetStats()
 
@@ -206,7 +206,7 @@ func TestGraphRAG_Retrieve(t *testing.T) {
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add some test nodes
-	codeGraph.AddNode(&CodeNode{
+	_ = codeGraph.AddNode(&CodeNode{
 		ID:        "func1",
 		Type:      NodeTypeFunction,
 		Name:      "calculateSum",
@@ -217,7 +217,7 @@ func TestGraphRAG_Retrieve(t *testing.T) {
 		},
 	})
 
-	codeGraph.AddNode(&CodeNode{
+	_ = codeGraph.AddNode(&CodeNode{
 		ID:        "func2",
 		Type:      NodeTypeFunction,
 		Name:      "multiply",
@@ -243,7 +243,7 @@ func TestGraphRAG_BuildContext(t *testing.T) {
 	graphConfig := DefaultCodeGraphConfig()
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
-	codeGraph.AddNode(&CodeNode{
+	_ = codeGraph.AddNode(&CodeNode{
 		ID:        "node1",
 		Type:      NodeTypeFunction,
 		Name:      "TestFunc",
@@ -272,14 +272,14 @@ func TestCodeGraph_SemanticSearch(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add nodes
-	graph.AddNode(&CodeNode{
+	_ = graph.AddNode(&CodeNode{
 		ID:        "n1",
 		Type:      NodeTypeFunction,
 		Name:      "processPayment",
 		Docstring: "Handle payment processing and validation",
 	})
 
-	graph.AddNode(&CodeNode{
+	_ = graph.AddNode(&CodeNode{
 		ID:        "n2",
 		Type:      NodeTypeFunction,
 		Name:      "validateInput",
@@ -329,13 +329,13 @@ func TestCodeGraph_GetIncomingEdges(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add nodes
-	graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
-	graph.AddNode(&CodeNode{ID: "B", Type: NodeTypeFunction, Name: "B"})
-	graph.AddNode(&CodeNode{ID: "C", Type: NodeTypeFunction, Name: "C"})
+	_ = graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
+	_ = graph.AddNode(&CodeNode{ID: "B", Type: NodeTypeFunction, Name: "B"})
+	_ = graph.AddNode(&CodeNode{ID: "C", Type: NodeTypeFunction, Name: "C"})
 
 	// Add edges: A -> B, C -> B
-	graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "A", TargetID: "B"})
-	graph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "C", TargetID: "B"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "A", TargetID: "B"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "C", TargetID: "B"})
 
 	// B should have 2 incoming edges
 	incomingEdges := graph.GetIncomingEdges("B")
@@ -346,9 +346,9 @@ func TestCodeGraph_MarshalJSON(t *testing.T) {
 	config := DefaultCodeGraphConfig()
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
-	graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc"})
-	graph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeClass, Name: "TestClass"})
-	graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "n1", TargetID: "n2"})
+	_ = graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc"})
+	_ = graph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeClass, Name: "TestClass"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "n1", TargetID: "n2"})
 
 	data, err := graph.MarshalJSON()
 	require.NoError(t, err)
@@ -529,8 +529,8 @@ func TestCodeGraph_GenerateEmbeddings(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add nodes
-	graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc", Docstring: "A test function"})
-	graph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeFunction, Name: "AnotherFunc", Signature: "func AnotherFunc()"})
+	_ = graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc", Docstring: "A test function"})
+	_ = graph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeFunction, Name: "AnotherFunc", Signature: "func AnotherFunc()"})
 
 	ctx := context.Background()
 	err := graph.GenerateEmbeddings(ctx)
@@ -545,7 +545,7 @@ func TestCodeGraph_GenerateEmbeddingsWithoutEmbedder(t *testing.T) {
 	config := DefaultCodeGraphConfig()
 	graph := NewCodeGraph(config, nil, logrus.New())
 
-	graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc"})
+	_ = graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc"})
 
 	ctx := context.Background()
 	err := graph.GenerateEmbeddings(ctx)
@@ -564,9 +564,9 @@ func TestCodeGraph_BuildSemanticEdges(t *testing.T) {
 	node2 := &CodeNode{ID: "n2", Type: NodeTypeFunction, Name: "TestFunc2", Embedding: []float64{0.9, 0.1, 0, 0, 0}}
 	node3 := &CodeNode{ID: "n3", Type: NodeTypeFunction, Name: "TestFunc3", Embedding: []float64{0, 1, 0, 0, 0}}
 
-	graph.AddNode(node1)
-	graph.AddNode(node2)
-	graph.AddNode(node3)
+	_ = graph.AddNode(node1)
+	_ = graph.AddNode(node2)
+	_ = graph.AddNode(node3)
 
 	ctx := context.Background()
 	err := graph.BuildSemanticEdges(ctx)
@@ -604,7 +604,7 @@ func TestGraphRAG_RetrieveLocal(t *testing.T) {
 	graphConfig := DefaultCodeGraphConfig()
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
-	codeGraph.AddNode(&CodeNode{
+	_ = codeGraph.AddNode(&CodeNode{
 		ID:        "func1",
 		Type:      NodeTypeFunction,
 		Name:      "searchFunction",
@@ -628,12 +628,12 @@ func TestGraphRAG_RetrieveGraph(t *testing.T) {
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Build a graph with connections
-	codeGraph.AddNode(&CodeNode{ID: "main", Type: NodeTypeFunction, Name: "main", Docstring: "main function"})
-	codeGraph.AddNode(&CodeNode{ID: "helper", Type: NodeTypeFunction, Name: "helper", Docstring: "helper function"})
-	codeGraph.AddNode(&CodeNode{ID: "util", Type: NodeTypeFunction, Name: "util", Docstring: "utility function"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "main", Type: NodeTypeFunction, Name: "main", Docstring: "main function"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "helper", Type: NodeTypeFunction, Name: "helper", Docstring: "helper function"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "util", Type: NodeTypeFunction, Name: "util", Docstring: "utility function"})
 
-	codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "main", TargetID: "helper"})
-	codeGraph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "helper", TargetID: "util"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "main", TargetID: "helper"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "helper", TargetID: "util"})
 
 	graphRAG := NewGraphRAG(config, codeGraph, nil, logrus.New())
 
@@ -650,7 +650,7 @@ func TestGraphRAG_RetrieveSemantic(t *testing.T) {
 	graphConfig := DefaultCodeGraphConfig()
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
-	codeGraph.AddNode(&CodeNode{
+	_ = codeGraph.AddNode(&CodeNode{
 		ID:        "func1",
 		Type:      NodeTypeFunction,
 		Name:      "processData",
@@ -674,10 +674,10 @@ func TestGraphRAG_RetrieveHybrid(t *testing.T) {
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Build a connected graph
-	codeGraph.AddNode(&CodeNode{ID: "core", Type: NodeTypeFunction, Name: "core", Docstring: "core function"})
-	codeGraph.AddNode(&CodeNode{ID: "service", Type: NodeTypeFunction, Name: "service", Docstring: "service layer"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "core", Type: NodeTypeFunction, Name: "core", Docstring: "core function"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "service", Type: NodeTypeFunction, Name: "service", Docstring: "service layer"})
 
-	codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "core", TargetID: "service"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "core", TargetID: "service"})
 
 	graphRAG := NewGraphRAG(config, codeGraph, nil, logrus.New())
 
@@ -694,9 +694,9 @@ func TestGraphRAG_RetrieveForNode(t *testing.T) {
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add nodes with impact relationships
-	codeGraph.AddNode(&CodeNode{ID: "main", Type: NodeTypeFunction, Name: "main"})
-	codeGraph.AddNode(&CodeNode{ID: "dep1", Type: NodeTypeFunction, Name: "dependency1"})
-	codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalledBy, SourceID: "dep1", TargetID: "main"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "main", Type: NodeTypeFunction, Name: "main"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "dep1", Type: NodeTypeFunction, Name: "dependency1"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalledBy, SourceID: "dep1", TargetID: "main"})
 
 	graphRAG := NewGraphRAG(config, codeGraph, nil, logrus.New())
 
@@ -819,7 +819,7 @@ func TestSelectiveRetriever_RetrieveWithPolicy(t *testing.T) {
 	graphConfig := DefaultCodeGraphConfig()
 	graph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
-	graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc"})
+	_ = graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc"})
 
 	tests := []struct {
 		name           string
@@ -860,7 +860,7 @@ func TestSelectiveRetriever_RetrieveWithNilPolicy(t *testing.T) {
 	graphConfig := DefaultCodeGraphConfig()
 	graph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
-	graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc"})
+	_ = graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc"})
 
 	retriever := NewSelectiveRetriever(config, graph, nil, logrus.New())
 
@@ -876,7 +876,7 @@ func TestSelectiveRetriever_RetrieveWithPolicyError(t *testing.T) {
 	graphConfig := DefaultCodeGraphConfig()
 	graph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
-	graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc"})
+	_ = graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc"})
 
 	policyModel := &mockPolicyModel{shouldRetrieve: false, returnError: assert.AnError}
 	retriever := NewSelectiveRetriever(config, graph, policyModel, logrus.New())
@@ -900,7 +900,7 @@ func TestGraphRAG_RetrieveWithReranker(t *testing.T) {
 	graphConfig := DefaultCodeGraphConfig()
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
-	codeGraph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc", Docstring: "Test"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "TestFunc", Docstring: "Test"})
 
 	graphRAG := NewGraphRAG(config, codeGraph, reranker, logrus.New())
 
@@ -935,7 +935,7 @@ func TestCodeGraph_AddEdgeInvalidNodes(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Only add source node
-	graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "Func1"})
+	_ = graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "Func1"})
 
 	// Try adding edge with nonexistent target
 	err := graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "n1", TargetID: "nonexistent"})
@@ -943,7 +943,7 @@ func TestCodeGraph_AddEdgeInvalidNodes(t *testing.T) {
 	assert.Contains(t, err.Error(), "target node not found")
 
 	// Try adding edge with nonexistent source
-	graph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeFunction, Name: "Func2"})
+	_ = graph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeFunction, Name: "Func2"})
 	err = graph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "nonexistent", TargetID: "n2"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "source node not found")
@@ -954,10 +954,10 @@ func TestCodeGraph_AddEdgeMaxEdges(t *testing.T) {
 	config.MaxEdgesPerNode = 2 // Low limit for testing
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
-	graph.AddNode(&CodeNode{ID: "source", Type: NodeTypeFunction, Name: "Source"})
-	graph.AddNode(&CodeNode{ID: "t1", Type: NodeTypeFunction, Name: "Target1"})
-	graph.AddNode(&CodeNode{ID: "t2", Type: NodeTypeFunction, Name: "Target2"})
-	graph.AddNode(&CodeNode{ID: "t3", Type: NodeTypeFunction, Name: "Target3"})
+	_ = graph.AddNode(&CodeNode{ID: "source", Type: NodeTypeFunction, Name: "Source"})
+	_ = graph.AddNode(&CodeNode{ID: "t1", Type: NodeTypeFunction, Name: "Target1"})
+	_ = graph.AddNode(&CodeNode{ID: "t2", Type: NodeTypeFunction, Name: "Target2"})
+	_ = graph.AddNode(&CodeNode{ID: "t3", Type: NodeTypeFunction, Name: "Target3"})
 
 	// Add edges up to limit
 	err := graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "source", TargetID: "t1"})
@@ -975,8 +975,8 @@ func TestCodeGraph_AddEdgeDefaults(t *testing.T) {
 	config := DefaultCodeGraphConfig()
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
-	graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "Func1"})
-	graph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeFunction, Name: "Func2"})
+	_ = graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "Func1"})
+	_ = graph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeFunction, Name: "Func2"})
 
 	// Add edge without ID, CreatedAt, or Weight
 	edge := &CodeEdge{
@@ -999,8 +999,8 @@ func TestCodeGraph_FindPathNoPath(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add disconnected nodes
-	graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
-	graph.AddNode(&CodeNode{ID: "B", Type: NodeTypeFunction, Name: "B"})
+	_ = graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
+	_ = graph.AddNode(&CodeNode{ID: "B", Type: NodeTypeFunction, Name: "B"})
 
 	// No path between disconnected nodes - returns error
 	_, err := graph.FindPath("A", "B")
@@ -1012,7 +1012,7 @@ func TestCodeGraph_FindPathSameNode(t *testing.T) {
 	config := DefaultCodeGraphConfig()
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
-	graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
+	_ = graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
 
 	// Path from node to itself
 	path, err := graph.FindPath("A", "A")
@@ -1068,16 +1068,16 @@ func TestCodeGraph_GetImpactRadiusDeepGraph(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Build a deep chain: A <- B <- C <- D <- E
-	graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
-	graph.AddNode(&CodeNode{ID: "B", Type: NodeTypeFunction, Name: "B"})
-	graph.AddNode(&CodeNode{ID: "C", Type: NodeTypeFunction, Name: "C"})
-	graph.AddNode(&CodeNode{ID: "D", Type: NodeTypeFunction, Name: "D"})
-	graph.AddNode(&CodeNode{ID: "E", Type: NodeTypeFunction, Name: "E"})
+	_ = graph.AddNode(&CodeNode{ID: "A", Type: NodeTypeFunction, Name: "A"})
+	_ = graph.AddNode(&CodeNode{ID: "B", Type: NodeTypeFunction, Name: "B"})
+	_ = graph.AddNode(&CodeNode{ID: "C", Type: NodeTypeFunction, Name: "C"})
+	_ = graph.AddNode(&CodeNode{ID: "D", Type: NodeTypeFunction, Name: "D"})
+	_ = graph.AddNode(&CodeNode{ID: "E", Type: NodeTypeFunction, Name: "E"})
 
-	graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalledBy, SourceID: "B", TargetID: "A"})
-	graph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalledBy, SourceID: "C", TargetID: "B"})
-	graph.AddEdge(&CodeEdge{ID: "e3", Type: EdgeTypeCalledBy, SourceID: "D", TargetID: "C"})
-	graph.AddEdge(&CodeEdge{ID: "e4", Type: EdgeTypeCalledBy, SourceID: "E", TargetID: "D"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalledBy, SourceID: "B", TargetID: "A"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalledBy, SourceID: "C", TargetID: "B"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e3", Type: EdgeTypeCalledBy, SourceID: "D", TargetID: "C"})
+	_ = graph.AddEdge(&CodeEdge{ID: "e4", Type: EdgeTypeCalledBy, SourceID: "E", TargetID: "D"})
 
 	// Depth 2 should get A, B, C
 	impacted := graph.GetImpactRadius("A", 2)
@@ -1091,14 +1091,14 @@ func TestCodeGraph_SemanticSearchWithEmbeddings(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add nodes and generate embeddings
-	graph.AddNode(&CodeNode{
+	_ = graph.AddNode(&CodeNode{
 		ID:        "n1",
 		Type:      NodeTypeFunction,
 		Name:      "searchHandler",
 		Docstring: "Handle search requests",
 	})
 
-	graph.AddNode(&CodeNode{
+	_ = graph.AddNode(&CodeNode{
 		ID:        "n2",
 		Type:      NodeTypeFunction,
 		Name:      "dataProcessor",
@@ -1129,17 +1129,17 @@ func TestGraphRAG_RetrieveGraphWithTraversal(t *testing.T) {
 
 	// Build a graph with proper edge types that will be followed
 	// Use "main" in both name and docstring for better keyword matching
-	codeGraph.AddNode(&CodeNode{ID: "main", Type: NodeTypeFunction, Name: "main", Docstring: "main main main"})
-	codeGraph.AddNode(&CodeNode{ID: "helper", Type: NodeTypeFunction, Name: "helper", Docstring: "helper function"})
-	codeGraph.AddNode(&CodeNode{ID: "util", Type: NodeTypeFunction, Name: "util", Docstring: "utility"})
-	codeGraph.AddNode(&CodeNode{ID: "deep", Type: NodeTypeFunction, Name: "deep", Docstring: "deep function"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "main", Type: NodeTypeFunction, Name: "main", Docstring: "main main main"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "helper", Type: NodeTypeFunction, Name: "helper", Docstring: "helper function"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "util", Type: NodeTypeFunction, Name: "util", Docstring: "utility"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "deep", Type: NodeTypeFunction, Name: "deep", Docstring: "deep function"})
 
 	// Use EdgeTypeCalls which is in IncludeEdgeTypes
-	codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "main", TargetID: "helper"})
-	codeGraph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "helper", TargetID: "util"})
-	codeGraph.AddEdge(&CodeEdge{ID: "e3", Type: EdgeTypeCalls, SourceID: "util", TargetID: "deep"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "main", TargetID: "helper"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "helper", TargetID: "util"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e3", Type: EdgeTypeCalls, SourceID: "util", TargetID: "deep"})
 	// Also add incoming edges with EdgeTypeCalledBy
-	codeGraph.AddEdge(&CodeEdge{ID: "e4", Type: EdgeTypeCalledBy, SourceID: "deep", TargetID: "util"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e4", Type: EdgeTypeCalledBy, SourceID: "deep", TargetID: "util"})
 
 	graphRAG := NewGraphRAG(config, codeGraph, nil, logrus.New())
 
@@ -1160,12 +1160,12 @@ func TestGraphRAG_RetrieveHybridWithGraphTraversal(t *testing.T) {
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Build a connected graph
-	codeGraph.AddNode(&CodeNode{ID: "api", Type: NodeTypeFunction, Name: "apiHandler", Docstring: "api handler"})
-	codeGraph.AddNode(&CodeNode{ID: "service", Type: NodeTypeFunction, Name: "service", Docstring: "service layer"})
-	codeGraph.AddNode(&CodeNode{ID: "repo", Type: NodeTypeFunction, Name: "repository", Docstring: "data repository"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "api", Type: NodeTypeFunction, Name: "apiHandler", Docstring: "api handler"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "service", Type: NodeTypeFunction, Name: "service", Docstring: "service layer"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "repo", Type: NodeTypeFunction, Name: "repository", Docstring: "data repository"})
 
-	codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "api", TargetID: "service"})
-	codeGraph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "service", TargetID: "repo"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "api", TargetID: "service"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "service", TargetID: "repo"})
 
 	graphRAG := NewGraphRAG(config, codeGraph, nil, logrus.New())
 
@@ -1282,7 +1282,7 @@ func TestGraphRAG_RetrieveEmptyResults(t *testing.T) {
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add node with low relevance
-	codeGraph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "func1"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "func1"})
 
 	graphRAG := NewGraphRAG(config, codeGraph, nil, logrus.New())
 
@@ -1302,9 +1302,9 @@ func TestGraphRAG_RetrieveLocalWithResults(t *testing.T) {
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add multiple nodes
-	codeGraph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "processOrder", Docstring: "Process customer order"})
-	codeGraph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeFunction, Name: "orderHandler", Docstring: "Handle incoming orders"})
-	codeGraph.AddNode(&CodeNode{ID: "n3", Type: NodeTypeFunction, Name: "shipOrder", Docstring: "Ship order to customer"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "processOrder", Docstring: "Process customer order"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "n2", Type: NodeTypeFunction, Name: "orderHandler", Docstring: "Handle incoming orders"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "n3", Type: NodeTypeFunction, Name: "shipOrder", Docstring: "Ship order to customer"})
 
 	graphRAG := NewGraphRAG(config, codeGraph, nil, logrus.New())
 
@@ -1331,15 +1331,15 @@ func TestGraphRAG_TraverseGraphWithEmbeddings(t *testing.T) {
 	node2 := &CodeNode{ID: "connected1", Type: NodeTypeFunction, Name: "connected", Docstring: "connected node"}
 	node3 := &CodeNode{ID: "connected2", Type: NodeTypeFunction, Name: "deep", Docstring: "deep node"}
 
-	codeGraph.AddNode(node1)
-	codeGraph.AddNode(node2)
-	codeGraph.AddNode(node3)
+	_ = codeGraph.AddNode(node1)
+	_ = codeGraph.AddNode(node2)
+	_ = codeGraph.AddNode(node3)
 
 	// Add edges that will be followed (EdgeTypeCalls is in default IncludeEdgeTypes)
-	codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "seed", TargetID: "connected1"})
-	codeGraph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "connected1", TargetID: "connected2"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "seed", TargetID: "connected1"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "connected1", TargetID: "connected2"})
 	// Add incoming edge for bidirectional traversal
-	codeGraph.AddEdge(&CodeEdge{ID: "e3", Type: EdgeTypeCalledBy, SourceID: "connected2", TargetID: "connected1"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e3", Type: EdgeTypeCalledBy, SourceID: "connected2", TargetID: "connected1"})
 
 	// Generate embeddings
 	ctx := context.Background()
@@ -1365,13 +1365,13 @@ func TestGraphRAG_TraverseHybridWithEmbeddings(t *testing.T) {
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGeneratorWithSearchableEmbeddings{}, logrus.New())
 
 	// Add nodes
-	codeGraph.AddNode(&CodeNode{ID: "start", Type: NodeTypeFunction, Name: "startFunc", Docstring: "starting point"})
-	codeGraph.AddNode(&CodeNode{ID: "middle", Type: NodeTypeFunction, Name: "middleFunc", Docstring: "middle point"})
-	codeGraph.AddNode(&CodeNode{ID: "end", Type: NodeTypeFunction, Name: "endFunc", Docstring: "ending point"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "start", Type: NodeTypeFunction, Name: "startFunc", Docstring: "starting point"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "middle", Type: NodeTypeFunction, Name: "middleFunc", Docstring: "middle point"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "end", Type: NodeTypeFunction, Name: "endFunc", Docstring: "ending point"})
 
 	// Add edges
-	codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "start", TargetID: "middle"})
-	codeGraph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "middle", TargetID: "end"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e1", Type: EdgeTypeCalls, SourceID: "start", TargetID: "middle"})
+	_ = codeGraph.AddEdge(&CodeEdge{ID: "e2", Type: EdgeTypeCalls, SourceID: "middle", TargetID: "end"})
 
 	// Generate embeddings
 	ctx := context.Background()
@@ -1397,11 +1397,11 @@ func TestGraphRAG_RetrieveLocalDirect(t *testing.T) {
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGeneratorWithSearchableEmbeddings{}, logrus.New())
 
 	// Add node
-	codeGraph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "localFunc", Docstring: "local function"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "localFunc", Docstring: "local function"})
 
 	// Generate embeddings
 	ctx := context.Background()
-	codeGraph.GenerateEmbeddings(ctx)
+	_ = codeGraph.GenerateEmbeddings(ctx)
 
 	graphRAG := NewGraphRAG(config, codeGraph, nil, logrus.New())
 
@@ -1554,7 +1554,7 @@ func TestCodeGraph_SemanticSearchNoResults(t *testing.T) {
 	graph := NewCodeGraph(config, &MockEmbeddingGenerator{}, logrus.New())
 
 	// Add node with very specific name
-	graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "xyzabc"})
+	_ = graph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "xyzabc"})
 
 	ctx := context.Background()
 	results, err := graph.SemanticSearch(ctx, "completely different query", 5)
@@ -1581,7 +1581,7 @@ func TestGraphRAG_RetrieveWithRerankerEnabled(t *testing.T) {
 	graphConfig := DefaultCodeGraphConfig()
 	codeGraph := NewCodeGraph(graphConfig, &MockEmbeddingGenerator{}, logrus.New())
 
-	codeGraph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "testFunc", Docstring: "test"})
+	_ = codeGraph.AddNode(&CodeNode{ID: "n1", Type: NodeTypeFunction, Name: "testFunc", Docstring: "test"})
 
 	graphRAG := NewGraphRAG(config, codeGraph, reranker, logrus.New())
 

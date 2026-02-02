@@ -407,12 +407,12 @@ func TestEmbeddingModelRegistry_EncodeWithFallback(t *testing.T) {
 	// Register a failing model
 	failingModel := NewMockEmbeddingModel("failing-model", 768)
 	failingModel.SetEncodeError(errors.New("model failure"))
-	registry.Register("failing-model", failingModel)
+	_ = registry.Register("failing-model", failingModel)
 
 	// Register a working model
 	workingModel := NewMockEmbeddingModel("working-model", 768)
 	workingModel.embeddings = [][]float32{{0.1, 0.2, 0.3}}
-	registry.Register("working-model", workingModel)
+	_ = registry.Register("working-model", workingModel)
 
 	// Test fallback
 	embeddings, modelName, err := registry.EncodeWithFallback(context.Background(), []string{"test text"})
@@ -467,8 +467,8 @@ func TestEmbeddingModelRegistry_Health(t *testing.T) {
 	unhealthyModel := NewMockEmbeddingModel("unhealthy", 768)
 	unhealthyModel.SetHealthError(errors.New("unhealthy"))
 
-	registry.Register("healthy", healthyModel)
-	registry.Register("unhealthy", unhealthyModel)
+	_ = registry.Register("healthy", healthyModel)
+	_ = registry.Register("unhealthy", unhealthyModel)
 
 	results := registry.Health(context.Background())
 	assert.NoError(t, results["healthy"])
@@ -481,8 +481,8 @@ func TestEmbeddingModelRegistry_Close(t *testing.T) {
 	model1 := NewMockEmbeddingModel("model1", 768)
 	model2 := NewMockEmbeddingModel("model2", 768)
 
-	registry.Register("model1", model1)
-	registry.Register("model2", model2)
+	_ = registry.Register("model1", model1)
+	_ = registry.Register("model2", model2)
 
 	err := registry.Close()
 	assert.NoError(t, err)
@@ -526,7 +526,7 @@ func TestOpenAIEmbeddingModel_Encode(t *testing.T) {
 			},
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -546,7 +546,7 @@ func TestOpenAIEmbeddingModel_Encode(t *testing.T) {
 func TestOpenAIEmbeddingModel_Encode_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": {"message": "invalid request"}}`))
+		_, _ = w.Write([]byte(`{"error": {"message": "invalid request"}}`))
 	}))
 	defer server.Close()
 
@@ -596,14 +596,14 @@ func TestOllamaEmbeddingModel_EncodeSingle(t *testing.T) {
 		assert.Equal(t, "/api/embeddings", r.URL.Path)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "nomic-embed-text", body["model"])
 
 		response := map[string]interface{}{
 			"embedding": []float32{0.1, 0.2, 0.3},
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -628,7 +628,7 @@ func TestOllamaEmbeddingModel_Encode(t *testing.T) {
 		}
 		callCount++
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -648,7 +648,7 @@ func TestOllamaEmbeddingModel_Encode(t *testing.T) {
 func TestOllamaEmbeddingModel_EncodeSingle_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "model not found"}`))
+		_, _ = w.Write([]byte(`{"error": "model not found"}`))
 	}))
 	defer server.Close()
 
@@ -728,7 +728,7 @@ func TestSentenceTransformersModel_Encode(t *testing.T) {
 		assert.Equal(t, "/encode", r.URL.Path)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.NotNil(t, body["texts"])
 		assert.NotNil(t, body["model"])
 
@@ -736,7 +736,7 @@ func TestSentenceTransformersModel_Encode(t *testing.T) {
 			"embeddings": [][]float32{{0.1, 0.2}, {0.3, 0.4}},
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -759,7 +759,7 @@ func TestSentenceTransformersModel_EncodeSingle(t *testing.T) {
 			"embeddings": [][]float32{{0.1, 0.2, 0.3}},
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -779,7 +779,7 @@ func TestSentenceTransformersModel_EncodeSingle(t *testing.T) {
 func TestSentenceTransformersModel_Encode_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": "invalid request"}`))
+		_, _ = w.Write([]byte(`{"error": "invalid request"}`))
 	}))
 	defer server.Close()
 

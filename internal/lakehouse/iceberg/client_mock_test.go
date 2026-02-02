@@ -27,7 +27,7 @@ func MockIcebergServer(t *testing.T) *httptest.Server {
 		switch {
 		// Config endpoint
 		case r.URL.Path == "/v1/config" && r.Method == http.MethodGet:
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"defaults": map[string]string{
 					"warehouse": "s3://test-warehouse",
 				},
@@ -38,7 +38,7 @@ func MockIcebergServer(t *testing.T) *httptest.Server {
 
 		// List namespaces
 		case r.URL.Path == "/v1/namespaces" && r.Method == http.MethodGet:
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"namespaces": [][]string{
 					{"helixagent"},
 					{"analytics"},
@@ -49,14 +49,14 @@ func MockIcebergServer(t *testing.T) *httptest.Server {
 		// Create namespace
 		case r.URL.Path == "/v1/namespaces" && r.Method == http.MethodPost:
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"namespace":  []string{"new-namespace"},
 				"properties": map[string]string{},
 			})
 
 		// Get namespace
 		case r.URL.Path == "/v1/namespaces/helixagent" && r.Method == http.MethodGet:
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"namespace": []string{"helixagent"},
 				"properties": map[string]string{
 					"owner":       "admin",
@@ -70,7 +70,7 @@ func MockIcebergServer(t *testing.T) *httptest.Server {
 
 		// List tables
 		case r.URL.Path == "/v1/namespaces/helixagent/tables" && r.Method == http.MethodGet:
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"identifiers": []map[string]interface{}{
 					{
 						"namespace": []string{"helixagent"},
@@ -86,7 +86,7 @@ func MockIcebergServer(t *testing.T) *httptest.Server {
 		// Create table
 		case r.URL.Path == "/v1/namespaces/helixagent/tables" && r.Method == http.MethodPost:
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"metadata": map[string]interface{}{
 					"format-version": 2,
 					"table-uuid":     "new-table-uuid",
@@ -97,7 +97,7 @@ func MockIcebergServer(t *testing.T) *httptest.Server {
 		// Get table
 		case r.URL.Path == "/v1/namespaces/helixagent/tables/debates" && r.Method == http.MethodGet:
 			snapshotID := int64(12345)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"metadata": map[string]interface{}{
 					"format-version":      2,
 					"table-uuid":          "test-uuid-debates",
@@ -132,7 +132,7 @@ func MockIcebergServer(t *testing.T) *httptest.Server {
 
 		// Get table without snapshot
 		case r.URL.Path == "/v1/namespaces/helixagent/tables/empty_table" && r.Method == http.MethodGet:
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"metadata": map[string]interface{}{
 					"format-version":      2,
 					"table-uuid":          "test-uuid-empty",
@@ -161,12 +161,12 @@ func MockIcebergServer(t *testing.T) *httptest.Server {
 		// Rename table
 		case r.URL.Path == "/v1/tables/rename" && r.Method == http.MethodPost:
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{})
 
 		// Update table properties
 		case r.URL.Path == "/v1/namespaces/helixagent/tables/debates" && r.Method == http.MethodPost:
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{})
 
 		// Get table for wait operation
 		case r.URL.Path == "/v1/namespaces/helixagent/tables/new_table" && r.Method == http.MethodHead:
@@ -174,7 +174,7 @@ func MockIcebergServer(t *testing.T) *httptest.Server {
 
 		default:
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": map[string]interface{}{
 					"message": "Not found",
 					"type":    "NoSuchTableException",
@@ -189,7 +189,7 @@ func MockErrorServer(statusCode int, errorMessage string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": map[string]interface{}{
 				"message": errorMessage,
 				"type":    "TestError",
@@ -220,7 +220,7 @@ func TestGetCatalogConfig_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	config, err := client.GetCatalogConfig(context.Background())
 	require.NoError(t, err)
@@ -262,7 +262,7 @@ func TestCreateNamespace_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	err := client.CreateNamespace(context.Background(), "new-namespace", map[string]string{
 		"owner": "test-user",
@@ -275,7 +275,7 @@ func TestCreateNamespace_WithNilProperties(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	err := client.CreateNamespace(context.Background(), "new-namespace", nil)
 	require.NoError(t, err)
@@ -305,7 +305,7 @@ func TestListNamespaces_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	namespaces, err := client.ListNamespaces(context.Background())
 	require.NoError(t, err)
@@ -335,15 +335,15 @@ func TestListNamespaces_ServerError(t *testing.T) {
 func TestListNamespaces_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/config" {
-			json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
 			return
 		}
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	_, err := client.ListNamespaces(context.Background())
 	require.Error(t, err)
@@ -357,7 +357,7 @@ func TestGetNamespace_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ns, err := client.GetNamespace(context.Background(), "helixagent")
 	require.NoError(t, err)
@@ -390,7 +390,7 @@ func TestDropNamespace_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	err := client.DropNamespace(context.Background(), "helixagent")
 	require.NoError(t, err)
@@ -420,7 +420,7 @@ func TestCreateTable_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	schema := NewSchema().
 		AddField(1, "id", "string", true).
@@ -442,7 +442,7 @@ func TestCreateTable_MinimalConfig(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	tableConfig := DefaultTableConfig("helixagent", "minimal_table")
 
@@ -475,7 +475,7 @@ func TestListTables_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	tables, err := client.ListTables(context.Background(), "helixagent")
 	require.NoError(t, err)
@@ -487,17 +487,17 @@ func TestListTables_Success(t *testing.T) {
 func TestListTables_EmptyNamespace(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/config" {
-			json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
 			return
 		}
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"identifiers": []interface{}{},
 		})
 	}))
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	tables, err := client.ListTables(context.Background(), "empty")
 	require.NoError(t, err)
@@ -528,7 +528,7 @@ func TestGetTable_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	table, err := client.GetTable(context.Background(), "helixagent", "debates")
 	require.NoError(t, err)
@@ -565,7 +565,7 @@ func TestDropTable_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	err := client.DropTable(context.Background(), "helixagent", "debates", false)
 	require.NoError(t, err)
@@ -576,7 +576,7 @@ func TestDropTable_WithPurge(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	err := client.DropTable(context.Background(), "helixagent", "debates", true)
 	require.NoError(t, err)
@@ -606,7 +606,7 @@ func TestTableExists_True(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	exists, err := client.TableExists(context.Background(), "helixagent", "debates")
 	require.NoError(t, err)
@@ -618,7 +618,7 @@ func TestTableExists_False(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	exists, err := client.TableExists(context.Background(), "helixagent", "nonexistent")
 	require.NoError(t, err)
@@ -632,7 +632,7 @@ func TestRenameTable_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	err := client.RenameTable(context.Background(), "helixagent", "old_table", "new_table")
 	require.NoError(t, err)
@@ -662,7 +662,7 @@ func TestUpdateTableProperties_WithUpdates(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	updates := map[string]string{
 		"write.format.default": "orc",
@@ -678,7 +678,7 @@ func TestUpdateTableProperties_WithRemovals(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	removals := map[string]string{
 		"deprecated.property": "",
@@ -693,7 +693,7 @@ func TestUpdateTableProperties_WithBoth(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	updates := map[string]string{
 		"new.property": "value",
@@ -737,7 +737,7 @@ func TestGetSnapshots_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	snapshots, err := client.GetSnapshots(context.Background(), "helixagent", "debates")
 	require.NoError(t, err)
@@ -760,7 +760,7 @@ func TestGetCurrentSnapshot_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	snapshot, err := client.GetCurrentSnapshot(context.Background(), "helixagent", "debates")
 	require.NoError(t, err)
@@ -774,7 +774,7 @@ func TestGetCurrentSnapshot_NoSnapshot(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	snapshot, err := client.GetCurrentSnapshot(context.Background(), "helixagent", "empty_table")
 	require.NoError(t, err)
@@ -795,7 +795,7 @@ func TestGetSnapshotAtTimestamp_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Query for a time between the two snapshots - should return the first (old) snapshot
 	timestamp := time.Date(2026, 1, 21, 12, 0, 0, 0, time.UTC) // Jan 21 - between old (Jan 20) and new (Jan 22)
@@ -810,7 +810,7 @@ func TestGetSnapshotAtTimestamp_CurrentTime(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Query for a time after both snapshots - should return the latest (new) snapshot
 	timestamp := time.Date(2026, 1, 23, 12, 0, 0, 0, time.UTC) // Jan 23 - after new snapshot (Jan 22)
@@ -825,7 +825,7 @@ func TestGetSnapshotAtTimestamp_BeforeAllSnapshots(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Query for a time before all snapshots
 	timestamp := time.Date(2026, 1, 19, 12, 0, 0, 0, time.UTC) // Jan 19 - before old snapshot (Jan 20)
@@ -848,7 +848,7 @@ func TestWaitForTable_Success(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	err := client.WaitForTable(context.Background(), "helixagent", "new_table", 5*time.Second)
 	require.NoError(t, err)
@@ -857,7 +857,7 @@ func TestWaitForTable_Success(t *testing.T) {
 func TestWaitForTable_Timeout(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/config" {
-			json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
 			return
 		}
 		// Always return 404 for table check
@@ -866,7 +866,7 @@ func TestWaitForTable_Timeout(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	err := client.WaitForTable(context.Background(), "helixagent", "never_created", 1*time.Second)
 	require.Error(t, err)
@@ -876,7 +876,7 @@ func TestWaitForTable_Timeout(t *testing.T) {
 func TestWaitForTable_ContextCancelled(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/config" {
-			json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
 			return
 		}
 		// Always return 404 for table check
@@ -885,7 +885,7 @@ func TestWaitForTable_ContextCancelled(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -941,7 +941,7 @@ func TestHealthCheck_ServerError(t *testing.T) {
 func TestDoRequest_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Return invalid JSON for ALL requests
-		w.Write([]byte("not valid json {"))
+		_, _ = w.Write([]byte("not valid json {"))
 	}))
 	defer server.Close()
 
@@ -965,10 +965,10 @@ func TestDoRequest_InvalidJSON(t *testing.T) {
 func TestListNamespaces_EmptyNamespace(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/config" {
-			json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
 			return
 		}
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"namespaces": [][]string{
 				{}, // Empty namespace array
 				{"valid"},
@@ -978,7 +978,7 @@ func TestListNamespaces_EmptyNamespace(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	namespaces, err := client.ListNamespaces(context.Background())
 	require.NoError(t, err)
@@ -992,7 +992,7 @@ func TestConnect_AlreadyConnected(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Connect again
 	err := client.Connect(context.Background())
@@ -1016,7 +1016,7 @@ func TestCreateTable_WithPartitionAndSort(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	schema := NewSchema().
 		AddField(1, "id", "long", true).
@@ -1044,15 +1044,15 @@ func TestCreateTable_WithPartitionAndSort(t *testing.T) {
 func TestGetNamespace_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/config" {
-			json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
 			return
 		}
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ns, err := client.GetNamespace(context.Background(), "helixagent")
 	require.Error(t, err)
@@ -1063,15 +1063,15 @@ func TestGetNamespace_InvalidJSON(t *testing.T) {
 func TestListTables_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/config" {
-			json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
 			return
 		}
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	tables, err := client.ListTables(context.Background(), "helixagent")
 	require.Error(t, err)
@@ -1082,15 +1082,15 @@ func TestListTables_InvalidJSON(t *testing.T) {
 func TestGetTable_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/config" {
-			json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
 			return
 		}
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	table, err := client.GetTable(context.Background(), "helixagent", "debates")
 	require.Error(t, err)
@@ -1102,11 +1102,11 @@ func TestGetCurrentSnapshot_SnapshotNotInList(t *testing.T) {
 	// Test case where current-snapshot-id points to a non-existent snapshot
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/config" {
-			json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"defaults": map[string]string{}, "overrides": map[string]string{}})
 			return
 		}
 		snapshotID := int64(99999) // Points to non-existent snapshot
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"metadata": map[string]interface{}{
 				"format-version":      2,
 				"table-uuid":          "test-uuid",
@@ -1127,7 +1127,7 @@ func TestGetCurrentSnapshot_SnapshotNotInList(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	snapshot, err := client.GetCurrentSnapshot(context.Background(), "test", "table")
 	require.NoError(t, err)
@@ -1155,7 +1155,7 @@ func TestDoRequest_MarshalError(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// The doRequest function handles marshal errors internally
 	// We can verify this path exists by checking the code
@@ -1169,7 +1169,7 @@ func TestFullWorkflow(t *testing.T) {
 	defer server.Close()
 
 	client := createConnectedClient(t, server)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// 1. Get catalog config
 	config, err := client.GetCatalogConfig(context.Background())

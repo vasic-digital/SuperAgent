@@ -302,10 +302,10 @@ func TestCloudIntegrationManager_InitializeDefaultProviders(t *testing.T) {
 
 	t.Run("no environment variables set", func(t *testing.T) {
 		// Clear env vars
-		os.Unsetenv("AWS_REGION")
-		os.Unsetenv("GCP_PROJECT_ID")
-		os.Unsetenv("GCP_LOCATION")
-		os.Unsetenv("AZURE_OPENAI_ENDPOINT")
+		_ = os.Unsetenv("AWS_REGION")
+		_ = os.Unsetenv("GCP_PROJECT_ID")
+		_ = os.Unsetenv("GCP_LOCATION")
+		_ = os.Unsetenv("AZURE_OPENAI_ENDPOINT")
 
 		manager := NewCloudIntegrationManager(logger)
 		err := manager.InitializeDefaultProviders()
@@ -315,8 +315,8 @@ func TestCloudIntegrationManager_InitializeDefaultProviders(t *testing.T) {
 	})
 
 	t.Run("AWS_REGION set", func(t *testing.T) {
-		os.Setenv("AWS_REGION", "us-west-2")
-		defer os.Unsetenv("AWS_REGION")
+		_ = os.Setenv("AWS_REGION", "us-west-2")
+		defer func() { _ = os.Unsetenv("AWS_REGION") }()
 
 		manager := NewCloudIntegrationManager(logger)
 		err := manager.InitializeDefaultProviders()
@@ -327,9 +327,9 @@ func TestCloudIntegrationManager_InitializeDefaultProviders(t *testing.T) {
 	})
 
 	t.Run("GCP_PROJECT_ID set with default location", func(t *testing.T) {
-		os.Setenv("GCP_PROJECT_ID", "my-project")
-		os.Unsetenv("GCP_LOCATION")
-		defer os.Unsetenv("GCP_PROJECT_ID")
+		_ = os.Setenv("GCP_PROJECT_ID", "my-project")
+		_ = os.Unsetenv("GCP_LOCATION")
+		defer func() { _ = os.Unsetenv("GCP_PROJECT_ID") }()
 
 		manager := NewCloudIntegrationManager(logger)
 		err := manager.InitializeDefaultProviders()
@@ -340,11 +340,11 @@ func TestCloudIntegrationManager_InitializeDefaultProviders(t *testing.T) {
 	})
 
 	t.Run("GCP_PROJECT_ID set with custom location", func(t *testing.T) {
-		os.Setenv("GCP_PROJECT_ID", "my-project")
-		os.Setenv("GCP_LOCATION", "europe-west4")
+		_ = os.Setenv("GCP_PROJECT_ID", "my-project")
+		_ = os.Setenv("GCP_LOCATION", "europe-west4")
 		defer func() {
-			os.Unsetenv("GCP_PROJECT_ID")
-			os.Unsetenv("GCP_LOCATION")
+			_ = os.Unsetenv("GCP_PROJECT_ID")
+			_ = os.Unsetenv("GCP_LOCATION")
 		}()
 
 		manager := NewCloudIntegrationManager(logger)
@@ -356,8 +356,8 @@ func TestCloudIntegrationManager_InitializeDefaultProviders(t *testing.T) {
 	})
 
 	t.Run("AZURE_OPENAI_ENDPOINT set", func(t *testing.T) {
-		os.Setenv("AZURE_OPENAI_ENDPOINT", "https://test.openai.azure.com")
-		defer os.Unsetenv("AZURE_OPENAI_ENDPOINT")
+		_ = os.Setenv("AZURE_OPENAI_ENDPOINT", "https://test.openai.azure.com")
+		defer func() { _ = os.Unsetenv("AZURE_OPENAI_ENDPOINT") }()
 
 		manager := NewCloudIntegrationManager(logger)
 		err := manager.InitializeDefaultProviders()
@@ -368,13 +368,13 @@ func TestCloudIntegrationManager_InitializeDefaultProviders(t *testing.T) {
 	})
 
 	t.Run("all providers set", func(t *testing.T) {
-		os.Setenv("AWS_REGION", "eu-west-1")
-		os.Setenv("GCP_PROJECT_ID", "test-project")
-		os.Setenv("AZURE_OPENAI_ENDPOINT", "https://test.openai.azure.com")
+		_ = os.Setenv("AWS_REGION", "eu-west-1")
+		_ = os.Setenv("GCP_PROJECT_ID", "test-project")
+		_ = os.Setenv("AZURE_OPENAI_ENDPOINT", "https://test.openai.azure.com")
 		defer func() {
-			os.Unsetenv("AWS_REGION")
-			os.Unsetenv("GCP_PROJECT_ID")
-			os.Unsetenv("AZURE_OPENAI_ENDPOINT")
+			_ = os.Unsetenv("AWS_REGION")
+			_ = os.Unsetenv("GCP_PROJECT_ID")
+			_ = os.Unsetenv("AZURE_OPENAI_ENDPOINT")
 		}()
 
 		manager := NewCloudIntegrationManager(logger)
@@ -1162,7 +1162,7 @@ func TestAWSBedrockIntegration_ListModels_WithMockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"modelSummaries": []map[string]string{
 					{"modelId": "anthropic.claude-v2", "modelName": "Claude v2", "providerName": "Anthropic"},
 					{"modelId": "amazon.titan-text-express-v1", "modelName": "Titan Express", "providerName": "Amazon"},
@@ -1190,7 +1190,7 @@ func TestAWSBedrockIntegration_ListModels_WithMockServer(t *testing.T) {
 	t.Run("list models API error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Access denied"))
+			_, _ = w.Write([]byte("Access denied"))
 		}))
 		defer server.Close()
 
@@ -1221,7 +1221,7 @@ func TestAWSBedrockIntegration_InvokeModel_WithMockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []map[string]string{
 					{"outputText": "This is a test response from Titan"},
 				},
@@ -1249,7 +1249,7 @@ func TestAWSBedrockIntegration_InvokeModel_WithMockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"content": []map[string]string{
 					{"text": "This is a test response from Claude"},
 				},
@@ -1276,7 +1276,7 @@ func TestAWSBedrockIntegration_InvokeModel_WithMockServer(t *testing.T) {
 	t.Run("invoke model API error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte("Service unavailable"))
+			_, _ = w.Write([]byte("Service unavailable"))
 		}))
 		defer server.Close()
 
@@ -1308,7 +1308,7 @@ func TestGCPVertexAIIntegration_WithMockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"models": []map[string]string{
 					{"name": "text-bison", "displayName": "Text Bison", "description": "Text generation model"},
 					{"name": "chat-bison", "displayName": "Chat Bison", "description": "Chat model"},
@@ -1340,7 +1340,7 @@ func TestGCPVertexAIIntegration_WithMockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"predictions": []map[string]string{
 					{"content": "This is a response from Vertex AI"},
 				},
@@ -1367,7 +1367,7 @@ func TestGCPVertexAIIntegration_WithMockServer(t *testing.T) {
 	t.Run("list models API error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Unauthorized"))
+			_, _ = w.Write([]byte("Unauthorized"))
 		}))
 		defer server.Close()
 
@@ -1390,7 +1390,7 @@ func TestGCPVertexAIIntegration_WithMockServer(t *testing.T) {
 	t.Run("health check with mock", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 		}))
 		defer server.Close()
 
@@ -1456,7 +1456,7 @@ func TestAzureOpenAIIntegration_WithMockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"data": []map[string]string{
 					{"id": "gpt-4-deployment", "model": "gpt-4"},
 					{"id": "gpt-35-deployment", "model": "gpt-35-turbo"},
@@ -1487,7 +1487,7 @@ func TestAzureOpenAIIntegration_WithMockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"choices": []map[string]interface{}{
 					{
 						"message": map[string]string{
@@ -1517,7 +1517,7 @@ func TestAzureOpenAIIntegration_WithMockServer(t *testing.T) {
 	t.Run("list models API error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Access denied"))
+			_, _ = w.Write([]byte("Access denied"))
 		}))
 		defer server.Close()
 
@@ -1539,7 +1539,7 @@ func TestAzureOpenAIIntegration_WithMockServer(t *testing.T) {
 	t.Run("invoke model API error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte("Rate limit exceeded"))
+			_, _ = w.Write([]byte("Rate limit exceeded"))
 		}))
 		defer server.Close()
 
@@ -1562,7 +1562,7 @@ func TestAzureOpenAIIntegration_WithMockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"data": []map[string]string{},
 			})
 		}))
@@ -1861,7 +1861,7 @@ func TestAWSBedrockIntegration_ListModels_MockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"modelSummaries": []map[string]string{
 					{"modelId": "anthropic.claude-v2", "modelName": "Claude v2", "providerName": "Anthropic", "modelArn": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-v2"},
 					{"modelId": "amazon.titan-text-express-v1", "modelName": "Titan Express", "providerName": "Amazon", "modelArn": "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-text-express-v1"},
@@ -1890,7 +1890,7 @@ func TestAWSBedrockIntegration_ListModels_MockServer(t *testing.T) {
 	t.Run("API error response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(`{"message": "Access denied"}`))
+			_, _ = w.Write([]byte(`{"message": "Access denied"}`))
 		}))
 		defer server.Close()
 
@@ -1913,7 +1913,7 @@ func TestAWSBedrockIntegration_ListModels_MockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`invalid json`))
+			_, _ = w.Write([]byte(`invalid json`))
 		}))
 		defer server.Close()
 
@@ -1945,13 +1945,13 @@ func TestAWSBedrockIntegration_InvokeModel_MockServer(t *testing.T) {
 
 			// Verify request body format
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 			assert.Equal(t, "bedrock-2023-05-31", reqBody["anthropic_version"])
 			assert.NotNil(t, reqBody["messages"])
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"content": []map[string]string{
 					{"type": "text", "text": "Hello, I am Claude!"},
 				},
@@ -1976,13 +1976,13 @@ func TestAWSBedrockIntegration_InvokeModel_MockServer(t *testing.T) {
 	t.Run("successful invoke titan model", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 			assert.NotEmpty(t, reqBody["inputText"])
 			assert.NotNil(t, reqBody["textGenerationConfig"])
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []map[string]string{
 					{"outputText": "Titan response here"},
 				},
@@ -2007,13 +2007,13 @@ func TestAWSBedrockIntegration_InvokeModel_MockServer(t *testing.T) {
 	t.Run("successful invoke llama model", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 			assert.NotEmpty(t, reqBody["prompt"])
 			assert.NotNil(t, reqBody["max_gen_len"])
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"generation": "Llama response here",
 			})
 		}))
@@ -2036,13 +2036,13 @@ func TestAWSBedrockIntegration_InvokeModel_MockServer(t *testing.T) {
 	t.Run("successful invoke cohere model", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 			assert.NotEmpty(t, reqBody["prompt"])
 			assert.NotNil(t, reqBody["max_tokens"])
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"generations": []map[string]string{
 					{"text": "Cohere response here"},
 				},
@@ -2067,12 +2067,12 @@ func TestAWSBedrockIntegration_InvokeModel_MockServer(t *testing.T) {
 	t.Run("successful invoke default/other model", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 			assert.NotEmpty(t, reqBody["prompt"])
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"text": "Generic response here",
 			})
 		}))
@@ -2095,7 +2095,7 @@ func TestAWSBedrockIntegration_InvokeModel_MockServer(t *testing.T) {
 	t.Run("invoke with custom config", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 
 			// Verify custom config values are used
 			config := reqBody["textGenerationConfig"].(map[string]interface{})
@@ -2104,7 +2104,7 @@ func TestAWSBedrockIntegration_InvokeModel_MockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []map[string]string{
 					{"outputText": "Response with custom config"},
 				},
@@ -2135,7 +2135,7 @@ func TestAWSBedrockIntegration_InvokeModel_MockServer(t *testing.T) {
 	t.Run("API error response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"message": "Invalid request"}`))
+			_, _ = w.Write([]byte(`{"message": "Invalid request"}`))
 		}))
 		defer server.Close()
 
@@ -2158,7 +2158,7 @@ func TestAWSBedrockIntegration_InvokeModel_MockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"unknownField": "some value"}`))
+			_, _ = w.Write([]byte(`{"unknownField": "some value"}`))
 		}))
 		defer server.Close()
 
@@ -2180,7 +2180,7 @@ func TestAWSBedrockIntegration_InvokeModel_MockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"content": []interface{}{},
 			})
 		}))
@@ -2215,7 +2215,7 @@ func TestGCPVertexAIIntegration_ListModels_MockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"models": []map[string]string{
 					{"name": "text-bison@001", "displayName": "Text Bison", "description": "Text generation model"},
 					{"name": "chat-bison@001", "displayName": "Chat Bison", "description": "Chat model"},
@@ -2244,7 +2244,7 @@ func TestGCPVertexAIIntegration_ListModels_MockServer(t *testing.T) {
 	t.Run("API error response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error": "Invalid token"}`))
+			_, _ = w.Write([]byte(`{"error": "Invalid token"}`))
 		}))
 		defer server.Close()
 
@@ -2267,7 +2267,7 @@ func TestGCPVertexAIIntegration_ListModels_MockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`not valid json`))
+			_, _ = w.Write([]byte(`not valid json`))
 		}))
 		defer server.Close()
 
@@ -2298,13 +2298,13 @@ func TestGCPVertexAIIntegration_InvokeModel_MockServer(t *testing.T) {
 
 			// Verify request body
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 			assert.NotNil(t, reqBody["instances"])
 			assert.NotNil(t, reqBody["parameters"])
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"predictions": []map[string]string{
 					{"content": "GCP Vertex AI response here"},
 				},
@@ -2329,7 +2329,7 @@ func TestGCPVertexAIIntegration_InvokeModel_MockServer(t *testing.T) {
 	t.Run("invoke with custom parameters", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 
 			params := reqBody["parameters"].(map[string]interface{})
 			assert.Equal(t, 0.5, params["temperature"])
@@ -2337,7 +2337,7 @@ func TestGCPVertexAIIntegration_InvokeModel_MockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"predictions": []map[string]string{
 					{"content": "Custom response"},
 				},
@@ -2369,7 +2369,7 @@ func TestGCPVertexAIIntegration_InvokeModel_MockServer(t *testing.T) {
 	t.Run("API error response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error": "Internal server error"}`))
+			_, _ = w.Write([]byte(`{"error": "Internal server error"}`))
 		}))
 		defer server.Close()
 
@@ -2392,7 +2392,7 @@ func TestGCPVertexAIIntegration_InvokeModel_MockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"predictions": []interface{}{},
 			})
 		}))
@@ -2417,7 +2417,7 @@ func TestGCPVertexAIIntegration_InvokeModel_MockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"text": "Extracted via generic fallback",
 			})
 		}))
@@ -2446,7 +2446,7 @@ func TestGCPVertexAIIntegration_HealthCheck_MockServer(t *testing.T) {
 			assert.Equal(t, "GET", r.Method)
 			assert.Contains(t, r.Header.Get("Authorization"), "Bearer")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{}`))
+			_, _ = w.Write([]byte(`{}`))
 		}))
 		defer server.Close()
 
@@ -2466,7 +2466,7 @@ func TestGCPVertexAIIntegration_HealthCheck_MockServer(t *testing.T) {
 	t.Run("health check failure - 4xx error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error": "Unauthorized"}`))
+			_, _ = w.Write([]byte(`{"error": "Unauthorized"}`))
 		}))
 		defer server.Close()
 
@@ -2487,7 +2487,7 @@ func TestGCPVertexAIIntegration_HealthCheck_MockServer(t *testing.T) {
 	t.Run("health check failure - 5xx error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(`{"error": "Service unavailable"}`))
+			_, _ = w.Write([]byte(`{"error": "Service unavailable"}`))
 		}))
 		defer server.Close()
 
@@ -2520,7 +2520,7 @@ func TestAzureOpenAIIntegration_ListModels_MockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"data": []map[string]string{
 					{"id": "gpt-4-deployment", "model": "gpt-4"},
 					{"id": "gpt-35-turbo-deployment", "model": "gpt-35-turbo"},
@@ -2548,7 +2548,7 @@ func TestAzureOpenAIIntegration_ListModels_MockServer(t *testing.T) {
 	t.Run("API error response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(`{"error": "Access denied"}`))
+			_, _ = w.Write([]byte(`{"error": "Access denied"}`))
 		}))
 		defer server.Close()
 
@@ -2570,7 +2570,7 @@ func TestAzureOpenAIIntegration_ListModels_MockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{invalid json}`))
+			_, _ = w.Write([]byte(`{invalid json}`))
 		}))
 		defer server.Close()
 
@@ -2602,14 +2602,14 @@ func TestAzureOpenAIIntegration_InvokeModel_MockServer(t *testing.T) {
 
 			// Verify request body
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 			assert.NotNil(t, reqBody["messages"])
 			messages := reqBody["messages"].([]interface{})
 			assert.Len(t, messages, 1)
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"choices": []map[string]interface{}{
 					{
 						"message": map[string]string{
@@ -2638,7 +2638,7 @@ func TestAzureOpenAIIntegration_InvokeModel_MockServer(t *testing.T) {
 	t.Run("invoke with custom config", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 
 			assert.Equal(t, float64(2048), reqBody["max_tokens"])
 			assert.Equal(t, 0.5, reqBody["temperature"])
@@ -2646,7 +2646,7 @@ func TestAzureOpenAIIntegration_InvokeModel_MockServer(t *testing.T) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"choices": []map[string]interface{}{
 					{
 						"message": map[string]string{
@@ -2680,7 +2680,7 @@ func TestAzureOpenAIIntegration_InvokeModel_MockServer(t *testing.T) {
 	t.Run("API error response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"error": "Bad request"}`))
+			_, _ = w.Write([]byte(`{"error": "Bad request"}`))
 		}))
 		defer server.Close()
 
@@ -2702,7 +2702,7 @@ func TestAzureOpenAIIntegration_InvokeModel_MockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"choices": []interface{}{},
 			})
 		}))
@@ -2730,7 +2730,7 @@ func TestAzureOpenAIIntegration_HealthCheck_MockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"data": []interface{}{},
 			})
 		}))
@@ -2751,7 +2751,7 @@ func TestAzureOpenAIIntegration_HealthCheck_MockServer(t *testing.T) {
 	t.Run("health check failure", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(`{"error": "Service unavailable"}`))
+			_, _ = w.Write([]byte(`{"error": "Service unavailable"}`))
 		}))
 		defer server.Close()
 
@@ -2777,7 +2777,7 @@ func TestCloudIntegrationManager_InvokeCloudModel_MockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"content": []map[string]string{
 					{"text": "Response from manager test"},
 				},
@@ -2806,7 +2806,7 @@ func TestCloudIntegrationManager_InvokeCloudModel_MockServer(t *testing.T) {
 	t.Run("invocation failure logged and returned", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error": "Internal error"}`))
+			_, _ = w.Write([]byte(`{"error": "Internal error"}`))
 		}))
 		defer server.Close()
 
@@ -2838,7 +2838,7 @@ func TestCloudIntegrationManager_HealthCheckAll_MockServer(t *testing.T) {
 		awsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"modelSummaries": []interface{}{},
 			})
 		}))
@@ -2847,7 +2847,7 @@ func TestCloudIntegrationManager_HealthCheckAll_MockServer(t *testing.T) {
 		// GCP mock server
 		gcpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{}`))
+			_, _ = w.Write([]byte(`{}`))
 		}))
 		defer gcpServer.Close()
 
@@ -2855,7 +2855,7 @@ func TestCloudIntegrationManager_HealthCheckAll_MockServer(t *testing.T) {
 		azureServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"data": []interface{}{},
 			})
 		}))
@@ -2905,7 +2905,7 @@ func TestCloudIntegrationManager_HealthCheckAll_MockServer(t *testing.T) {
 		awsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"modelSummaries": []interface{}{},
 			})
 		}))
@@ -2914,7 +2914,7 @@ func TestCloudIntegrationManager_HealthCheckAll_MockServer(t *testing.T) {
 		// GCP mock server (unhealthy)
 		gcpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(`{"error": "Service unavailable"}`))
+			_, _ = w.Write([]byte(`{"error": "Service unavailable"}`))
 		}))
 		defer gcpServer.Close()
 
@@ -3039,7 +3039,7 @@ func TestAWSBedrockIntegration_HealthCheck_MockServer(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"modelSummaries": []interface{}{},
 			})
 		}))
@@ -3061,7 +3061,7 @@ func TestAWSBedrockIntegration_HealthCheck_MockServer(t *testing.T) {
 	t.Run("health check failure", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(`{"error": "Access denied"}`))
+			_, _ = w.Write([]byte(`{"error": "Access denied"}`))
 		}))
 		defer server.Close()
 
@@ -3220,7 +3220,7 @@ func TestAWSBedrockIntegration_InvokeModel_ResponseParsing(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []interface{}{},
 			})
 		}))
@@ -3245,7 +3245,7 @@ func TestAWSBedrockIntegration_InvokeModel_ResponseParsing(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"generation": "",
 			})
 		}))
@@ -3270,7 +3270,7 @@ func TestAWSBedrockIntegration_InvokeModel_ResponseParsing(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"generations": []interface{}{},
 			})
 		}))
@@ -3299,7 +3299,7 @@ func TestGCPVertexAIIntegration_InvokeModel_ResponseParsing(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"predictions": []map[string]interface{}{
 					{"output": "Output text here"},
 				},
@@ -3326,7 +3326,7 @@ func TestGCPVertexAIIntegration_InvokeModel_ResponseParsing(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`not json`))
+			_, _ = w.Write([]byte(`not json`))
 		}))
 		defer server.Close()
 
@@ -3353,7 +3353,7 @@ func TestAzureOpenAIIntegration_InvokeModel_ResponseParsing(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{invalid json response`))
+			_, _ = w.Write([]byte(`{invalid json response`))
 		}))
 		defer server.Close()
 
@@ -3375,7 +3375,7 @@ func TestAzureOpenAIIntegration_InvokeModel_ResponseParsing(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"choices": []map[string]interface{}{
 					{
 						"message": map[string]string{

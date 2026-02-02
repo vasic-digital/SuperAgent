@@ -55,7 +55,7 @@ func TestServiceFormatter_Format_Success(t *testing.T) {
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -93,7 +93,7 @@ func TestServiceFormatter_Format_ServiceError(t *testing.T) {
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -121,7 +121,7 @@ func TestServiceFormatter_Format_HTTPError(t *testing.T) {
 	// Server that returns 500 Internal Server Error
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("internal error"))
+		_, _ = w.Write([]byte("internal error"))
 	}))
 	defer server.Close()
 
@@ -154,7 +154,7 @@ func TestServiceFormatter_HealthCheck_Success(t *testing.T) {
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -207,7 +207,7 @@ func TestServiceFormatter_FormatBatch(t *testing.T) {
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 

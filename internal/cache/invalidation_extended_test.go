@@ -22,7 +22,7 @@ func TestEventDrivenInvalidation_ShouldInvalidate_WithRules(t *testing.T) {
 		EnableL2:  false,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
@@ -44,7 +44,7 @@ func TestEventDrivenInvalidation_ShouldInvalidate_NoMatchingRules(t *testing.T) 
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
@@ -62,7 +62,7 @@ func TestEventDrivenInvalidation_ShouldInvalidate_WithHandler(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
@@ -85,7 +85,7 @@ func TestEventDrivenInvalidation_ShouldInvalidate_PatternPayload(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
@@ -106,7 +106,7 @@ func TestEventDrivenInvalidation_RemoveRules(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
@@ -132,7 +132,7 @@ func TestEventDrivenInvalidation_AddRule_Custom(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
@@ -165,17 +165,17 @@ func TestEventDrivenInvalidation_HandleEvent_WithCache(t *testing.T) {
 		EnableL2:  false,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	// Pre-populate cache with some values
 	ctx := tc.ctx
-	tc.Set(ctx, "provider:openai", "data", time.Minute)
-	tc.Set(ctx, "provider:anthropic", "data", time.Minute)
-	tc.Set(ctx, "other:key", "data", time.Minute)
+	_ = tc.Set(ctx, "provider:openai", "data", time.Minute)
+	_ = tc.Set(ctx, "provider:anthropic", "data", time.Minute)
+	_ = tc.Set(ctx, "other:key", "data", time.Minute)
 
 	// Create event bus and invalidation
 	bus := events.NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	inv := NewEventDrivenInvalidation(bus, tc)
 	inv.Start()
@@ -207,16 +207,16 @@ func TestEventDrivenInvalidation_HandleEvent_MCPServer(t *testing.T) {
 		EnableL2:  false,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	// Pre-populate cache with MCP data
 	ctx := tc.ctx
-	tc.Set(ctx, "mcp:filesystem:read", "data", time.Minute)
-	tc.Set(ctx, "mcp:filesystem:write", "data", time.Minute)
-	tc.Set(ctx, "mcp:github:get", "data", time.Minute)
+	_ = tc.Set(ctx, "mcp:filesystem:read", "data", time.Minute)
+	_ = tc.Set(ctx, "mcp:filesystem:write", "data", time.Minute)
+	_ = tc.Set(ctx, "mcp:github:get", "data", time.Minute)
 
 	bus := events.NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	inv := NewEventDrivenInvalidation(bus, tc)
 	inv.Start()
@@ -244,10 +244,10 @@ func TestEventDrivenInvalidation_HandleEvent_NoRules(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	bus := events.NewEventBus(nil)
-	defer bus.Close()
+	defer func() { _ = bus.Close() }()
 
 	inv := NewEventDrivenInvalidation(bus, tc)
 
@@ -278,7 +278,7 @@ func TestEventDrivenInvalidation_Start_NilEventBus(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
@@ -295,7 +295,7 @@ func TestEventDrivenInvalidation_Stop_Multiple(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
@@ -312,7 +312,7 @@ func TestEventDrivenInvalidation_ConcurrentRuleAccess(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
@@ -354,7 +354,7 @@ func TestCompositeInvalidation_ShouldInvalidate_CombinesStrategies(t *testing.T)
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	tag := NewTagBasedInvalidation()
 	event := NewEventDrivenInvalidation(nil, tc)
@@ -457,7 +457,7 @@ func TestInvalidationRule_Handler_NilPayload(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
@@ -476,7 +476,7 @@ func TestInvalidationRule_Handler_WrongPayloadType(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
@@ -495,7 +495,7 @@ func TestInvalidationRule_Handler_MissingField(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	inv := NewEventDrivenInvalidation(nil, tc)
 

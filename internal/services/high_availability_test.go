@@ -93,7 +93,7 @@ func TestProtocolFederation_UnregisterProtocol(t *testing.T) {
 
 	t.Run("unregister existing protocol", func(t *testing.T) {
 		protocol := &MockFederatedProtocol{name: "to-unregister"}
-		federation.RegisterProtocol(protocol)
+		_ = federation.RegisterProtocol(protocol)
 
 		err := federation.UnregisterProtocol("to-unregister")
 		require.NoError(t, err)
@@ -123,7 +123,7 @@ func TestProtocolFederation_SendFederatedRequest(t *testing.T) {
 			}, nil
 		},
 	}
-	federation.RegisterProtocol(protocol)
+	_ = federation.RegisterProtocol(protocol)
 
 	t.Run("send request to registered protocol", func(t *testing.T) {
 		request := &FederatedRequest{
@@ -169,8 +169,8 @@ func TestProtocolFederation_SendFederatedRequest(t *testing.T) {
 				}, nil
 			},
 		}
-		fed.RegisterProtocol(sourceProto)
-		fed.RegisterProtocol(targetProto)
+		_ = fed.RegisterProtocol(sourceProto)
+		_ = fed.RegisterProtocol(targetProto)
 
 		// Add a translator from source to target
 		translator := &DataTranslator{
@@ -215,7 +215,7 @@ func TestProtocolFederation_SendFederatedRequest(t *testing.T) {
 				}, nil
 			},
 		}
-		fed.RegisterProtocol(targetProto)
+		_ = fed.RegisterProtocol(targetProto)
 
 		// Add a translator from target to source for response translation
 		fed.mu.Lock()
@@ -253,7 +253,7 @@ func TestProtocolFederation_SendFederatedRequest(t *testing.T) {
 		targetProto := &MockFederatedProtocol{
 			name: "target-proto3",
 		}
-		fed.RegisterProtocol(targetProto)
+		_ = fed.RegisterProtocol(targetProto)
 
 		// Add a translator that returns an error
 		fed.mu.Lock()
@@ -295,7 +295,7 @@ func TestProtocolFederation_SendFederatedRequest(t *testing.T) {
 				return nil, fmt.Errorf("handler error")
 			},
 		}
-		fed.RegisterProtocol(errorProto)
+		_ = fed.RegisterProtocol(errorProto)
 
 		request := &FederatedRequest{
 			ID:     "error-request",
@@ -322,9 +322,9 @@ func TestProtocolFederation_GetRegisteredProtocols(t *testing.T) {
 	})
 
 	t.Run("with registered protocols", func(t *testing.T) {
-		federation.RegisterProtocol(&MockFederatedProtocol{name: "protocol1"})
-		federation.RegisterProtocol(&MockFederatedProtocol{name: "protocol2"})
-		federation.RegisterProtocol(&MockFederatedProtocol{name: "protocol3"})
+		_ = federation.RegisterProtocol(&MockFederatedProtocol{name: "protocol1"})
+		_ = federation.RegisterProtocol(&MockFederatedProtocol{name: "protocol2"})
+		_ = federation.RegisterProtocol(&MockFederatedProtocol{name: "protocol3"})
 
 		protocols := federation.GetRegisteredProtocols()
 		assert.Len(t, protocols, 3)
@@ -345,7 +345,7 @@ func TestProtocolFederation_GetProtocolCapabilities(t *testing.T) {
 			"tools":     5,
 		},
 	}
-	federation.RegisterProtocol(protocol)
+	_ = federation.RegisterProtocol(protocol)
 
 	t.Run("get existing protocol capabilities", func(t *testing.T) {
 		caps, err := federation.GetProtocolCapabilities("capable-protocol")
@@ -366,7 +366,7 @@ func TestProtocolFederation_SubscribeToEvents(t *testing.T) {
 	federation := NewProtocolFederation(log)
 
 	protocol := &MockFederatedProtocol{name: "subscriber-protocol"}
-	federation.RegisterProtocol(protocol)
+	_ = federation.RegisterProtocol(protocol)
 
 	t.Run("subscribe to events", func(t *testing.T) {
 		handler := func(ctx context.Context, event *ProtocolEvent) error {
@@ -393,12 +393,12 @@ func TestProtocolFederation_UnsubscribeFromEvents(t *testing.T) {
 	federation := NewProtocolFederation(log)
 
 	protocol := &MockFederatedProtocol{name: "unsub-protocol"}
-	federation.RegisterProtocol(protocol)
+	_ = federation.RegisterProtocol(protocol)
 
 	handler := func(ctx context.Context, event *ProtocolEvent) error {
 		return nil
 	}
-	federation.SubscribeToEvents("unsub-protocol", "test-event", handler)
+	_ = federation.SubscribeToEvents("unsub-protocol", "test-event", handler)
 
 	t.Run("unsubscribe from non-existent protocol", func(t *testing.T) {
 		err := federation.UnsubscribeFromEvents("non-existent", "sub-id")
@@ -410,13 +410,13 @@ func TestProtocolFederation_UnsubscribeFromEvents(t *testing.T) {
 		// Create a fresh federation for this test
 		fed := NewProtocolFederation(log)
 		proto := &MockFederatedProtocol{name: "test-proto"}
-		fed.RegisterProtocol(proto)
+		_ = fed.RegisterProtocol(proto)
 
 		// Subscribe to get a subscription
 		handlerFn := func(ctx context.Context, event *ProtocolEvent) error {
 			return nil
 		}
-		fed.SubscribeToEvents("test-proto", "my-event", handlerFn)
+		_ = fed.SubscribeToEvents("test-proto", "my-event", handlerFn)
 
 		// Get the subscription ID from the federation
 		fed.mu.RLock()
@@ -441,12 +441,12 @@ func TestProtocolFederation_UnsubscribeFromEvents(t *testing.T) {
 	t.Run("unsubscribe with non-matching subscription ID", func(t *testing.T) {
 		fed := NewProtocolFederation(log)
 		proto := &MockFederatedProtocol{name: "test-proto-2"}
-		fed.RegisterProtocol(proto)
+		_ = fed.RegisterProtocol(proto)
 
 		handlerFn := func(ctx context.Context, event *ProtocolEvent) error {
 			return nil
 		}
-		fed.SubscribeToEvents("test-proto-2", "event", handlerFn)
+		_ = fed.SubscribeToEvents("test-proto-2", "event", handlerFn)
 
 		// Unsubscribe with a non-matching ID - should not error but won't remove anything
 		err := fed.UnsubscribeFromEvents("test-proto-2", "non-existent-sub-id")
@@ -495,7 +495,7 @@ func TestProtocolFederation_BroadcastRequest(t *testing.T) {
 				}, nil
 			},
 		}
-		federation.RegisterProtocol(protocol)
+		_ = federation.RegisterProtocol(protocol)
 	}
 
 	results := federation.BroadcastRequest(context.Background(), "test-action", map[string]interface{}{"key": "value"})
@@ -787,7 +787,7 @@ func BenchmarkProtocolFederation_SendFederatedRequest(b *testing.B) {
 			}, nil
 		},
 	}
-	federation.RegisterProtocol(protocol)
+	_ = federation.RegisterProtocol(protocol)
 
 	request := &FederatedRequest{
 		ID:     "bench-request",

@@ -94,7 +94,7 @@ func TestNewWebSocketServer(t *testing.T) {
 		assert.NotNil(t, server.globalClients)
 		assert.Equal(t, logger, server.logger)
 
-		server.Stop()
+		_ = server.Stop()
 	})
 
 	t.Run("with custom config", func(t *testing.T) {
@@ -114,7 +114,7 @@ func TestNewWebSocketServer(t *testing.T) {
 		assert.Equal(t, config.ReadBufferSize, server.config.ReadBufferSize)
 		assert.Equal(t, config.WriteBufferSize, server.config.WriteBufferSize)
 
-		server.Stop()
+		_ = server.Stop()
 	})
 }
 
@@ -134,7 +134,7 @@ func TestWebSocketServer_StartStop(t *testing.T) {
 func TestWebSocketServer_RegisterClient(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	t.Run("register single client", func(t *testing.T) {
 		client := NewMockWebSocketClient("client-1")
@@ -149,8 +149,8 @@ func TestWebSocketServer_RegisterClient(t *testing.T) {
 		client2 := NewMockWebSocketClient("client-2")
 		client3 := NewMockWebSocketClient("client-3")
 
-		server.RegisterClient("task-1", client2)
-		server.RegisterClient("task-1", client3)
+		_ = server.RegisterClient("task-1", client2)
+		_ = server.RegisterClient("task-1", client3)
 
 		count := server.GetClientCount("task-1")
 		assert.Equal(t, 3, count)
@@ -158,7 +158,7 @@ func TestWebSocketServer_RegisterClient(t *testing.T) {
 
 	t.Run("register clients for different tasks", func(t *testing.T) {
 		client := NewMockWebSocketClient("client-4")
-		server.RegisterClient("task-2", client)
+		_ = server.RegisterClient("task-2", client)
 
 		count := server.GetClientCount("task-2")
 		assert.Equal(t, 1, count)
@@ -169,10 +169,10 @@ func TestWebSocketServer_RegisterClient(t *testing.T) {
 func TestWebSocketServer_UnregisterClient(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	client := NewMockWebSocketClient("client-1")
-	server.RegisterClient("task-1", client)
+	_ = server.RegisterClient("task-1", client)
 
 	err := server.UnregisterClient("task-1", "client-1")
 	assert.NoError(t, err)
@@ -186,7 +186,7 @@ func TestWebSocketServer_UnregisterClient(t *testing.T) {
 func TestWebSocketServer_UnregisterClient_NonexistentTask(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	err := server.UnregisterClient("nonexistent", "client-1")
 	assert.NoError(t, err)
@@ -196,7 +196,7 @@ func TestWebSocketServer_UnregisterClient_NonexistentTask(t *testing.T) {
 func TestWebSocketServer_RegisterGlobalClient(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	client := NewMockWebSocketClient("global-1")
 
@@ -211,10 +211,10 @@ func TestWebSocketServer_RegisterGlobalClient(t *testing.T) {
 func TestWebSocketServer_UnregisterGlobalClient(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	client := NewMockWebSocketClient("global-1")
-	server.RegisterGlobalClient(client)
+	_ = server.RegisterGlobalClient(client)
 
 	err := server.UnregisterGlobalClient("global-1")
 	assert.NoError(t, err)
@@ -228,10 +228,10 @@ func TestWebSocketServer_UnregisterGlobalClient(t *testing.T) {
 func TestWebSocketServer_Broadcast(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	client := NewMockWebSocketClient("client-1")
-	server.RegisterClient("task-1", client)
+	_ = server.RegisterClient("task-1", client)
 
 	data := []byte(`{"message":"test"}`)
 	server.Broadcast("task-1", data)
@@ -245,10 +245,10 @@ func TestWebSocketServer_Broadcast(t *testing.T) {
 func TestWebSocketServer_Broadcast_IncludesGlobalClients(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	globalClient := NewMockWebSocketClient("global-1")
-	server.RegisterGlobalClient(globalClient)
+	_ = server.RegisterGlobalClient(globalClient)
 
 	data := []byte(`{"message":"test"}`)
 	server.Broadcast("task-1", data)
@@ -262,15 +262,15 @@ func TestWebSocketServer_Broadcast_IncludesGlobalClients(t *testing.T) {
 func TestWebSocketServer_BroadcastAll(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	client1 := NewMockWebSocketClient("client-1")
 	client2 := NewMockWebSocketClient("client-2")
 	globalClient := NewMockWebSocketClient("global-1")
 
-	server.RegisterClient("task-1", client1)
-	server.RegisterClient("task-2", client2)
-	server.RegisterGlobalClient(globalClient)
+	_ = server.RegisterClient("task-1", client1)
+	_ = server.RegisterClient("task-2", client2)
+	_ = server.RegisterGlobalClient(globalClient)
 
 	data := []byte(`{"broadcast":"all"}`)
 	server.BroadcastAll(data)
@@ -286,20 +286,20 @@ func TestWebSocketServer_BroadcastAll(t *testing.T) {
 func TestWebSocketServer_GetClientCount(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	assert.Equal(t, 0, server.GetClientCount("task-1"))
 
 	client1 := NewMockWebSocketClient("client-1")
 	client2 := NewMockWebSocketClient("client-2")
 
-	server.RegisterClient("task-1", client1)
+	_ = server.RegisterClient("task-1", client1)
 	assert.Equal(t, 1, server.GetClientCount("task-1"))
 
-	server.RegisterClient("task-1", client2)
+	_ = server.RegisterClient("task-1", client2)
 	assert.Equal(t, 2, server.GetClientCount("task-1"))
 
-	server.UnregisterClient("task-1", "client-1")
+	_ = server.UnregisterClient("task-1", "client-1")
 	assert.Equal(t, 1, server.GetClientCount("task-1"))
 }
 
@@ -307,7 +307,7 @@ func TestWebSocketServer_GetClientCount(t *testing.T) {
 func TestWebSocketServer_GetTotalClientCount(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	assert.Equal(t, 0, server.GetTotalClientCount())
 
@@ -315,9 +315,9 @@ func TestWebSocketServer_GetTotalClientCount(t *testing.T) {
 	client2 := NewMockWebSocketClient("client-2")
 	globalClient := NewMockWebSocketClient("global-1")
 
-	server.RegisterClient("task-1", client1)
-	server.RegisterClient("task-2", client2)
-	server.RegisterGlobalClient(globalClient)
+	_ = server.RegisterClient("task-1", client1)
+	_ = server.RegisterClient("task-2", client2)
+	_ = server.RegisterGlobalClient(globalClient)
 
 	assert.Equal(t, 3, server.GetTotalClientCount())
 }
@@ -437,7 +437,7 @@ func TestWebSocketSubscriber(t *testing.T) {
 func TestWebSocketServer_ConcurrentOperations(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	var wg sync.WaitGroup
 	numGoroutines := 10
@@ -449,7 +449,7 @@ func TestWebSocketServer_ConcurrentOperations(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < numClients; j++ {
 				client := NewMockWebSocketClient("client-" + string(rune(goroutineID)) + "-" + string(rune(j)))
-				server.RegisterClient("task-1", client)
+				_ = server.RegisterClient("task-1", client)
 			}
 		}(i)
 	}
@@ -464,13 +464,13 @@ func TestWebSocketServer_ConcurrentOperations(t *testing.T) {
 func TestWebSocketServer_ConcurrentBroadcast(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	// Register multiple clients
 	clients := make([]*MockWebSocketClient, 10)
 	for i := range clients {
 		clients[i] = NewMockWebSocketClient("client-" + string(rune(i)))
-		server.RegisterClient("task-1", clients[i])
+		_ = server.RegisterClient("task-1", clients[i])
 	}
 
 	var wg sync.WaitGroup
@@ -499,8 +499,8 @@ func TestWebSocketServer_Stop_ClosesClients(t *testing.T) {
 	client := NewMockWebSocketClient("client-1")
 	globalClient := NewMockWebSocketClient("global-1")
 
-	server.RegisterClient("task-1", client)
-	server.RegisterGlobalClient(globalClient)
+	_ = server.RegisterClient("task-1", client)
+	_ = server.RegisterGlobalClient(globalClient)
 
 	err := server.Stop()
 	assert.NoError(t, err)
@@ -562,7 +562,7 @@ func TestWebSocketClient(t *testing.T) {
 
 	t.Run("Send after close does nothing", func(t *testing.T) {
 		client := NewMockWebSocketClient("test-id")
-		client.Close()
+		_ = client.Close()
 
 		err := client.Send([]byte("test message"))
 		assert.NoError(t, err)
@@ -582,7 +582,7 @@ func TestWebSocketServer_OriginCheck(t *testing.T) {
 			AllowedOrigins: []string{"*"},
 		}
 		server := NewWebSocketServer(config, logger)
-		defer server.Stop()
+		defer func() { _ = server.Stop() }()
 
 		req := httptest.NewRequest("GET", "/ws", nil)
 		req.Header.Set("Origin", "https://any-origin.com")
@@ -596,7 +596,7 @@ func TestWebSocketServer_OriginCheck(t *testing.T) {
 			AllowedOrigins: []string{"https://example.com"},
 		}
 		server := NewWebSocketServer(config, logger)
-		defer server.Stop()
+		defer func() { _ = server.Stop() }()
 
 		req := httptest.NewRequest("GET", "/ws", nil)
 		req.Header.Set("Origin", "https://example.com")
@@ -610,7 +610,7 @@ func TestWebSocketServer_OriginCheck(t *testing.T) {
 			AllowedOrigins: []string{"https://example.com"},
 		}
 		server := NewWebSocketServer(config, logger)
-		defer server.Stop()
+		defer func() { _ = server.Stop() }()
 
 		req := httptest.NewRequest("GET", "/ws", nil)
 		req.Header.Set("Origin", "https://unauthorized.com")
@@ -624,7 +624,7 @@ func TestWebSocketServer_OriginCheck(t *testing.T) {
 			AllowedOrigins: []string{},
 		}
 		server := NewWebSocketServer(config, logger)
-		defer server.Stop()
+		defer func() { _ = server.Stop() }()
 
 		req := httptest.NewRequest("GET", "/ws", nil)
 		req.Header.Set("Origin", "https://any-origin.com")
@@ -654,7 +654,7 @@ func TestWebSocketServer_Integration(t *testing.T) {
 	logger := testLogger()
 	wsServer, httpServer := createTestWSServer(t, logger)
 	defer httpServer.Close()
-	defer wsServer.Stop()
+	defer func() { _ = wsServer.Stop() }()
 
 	// Convert http URL to ws URL
 	wsURL := "ws" + strings.TrimPrefix(httpServer.URL, "http") + "/ws/tasks/task-123"
@@ -665,7 +665,7 @@ func TestWebSocketServer_Integration(t *testing.T) {
 		t.Skipf("WebSocket connection failed (may need network access): %v", err)
 		return
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 
@@ -680,7 +680,7 @@ func TestWebSocketServer_Integration(t *testing.T) {
 func TestWebSocketServer_MessageHandling(t *testing.T) {
 	logger := testLogger()
 	server := NewWebSocketServer(nil, logger)
-	defer server.Stop()
+	defer func() { _ = server.Stop() }()
 
 	t.Run("subscribe message registers client", func(t *testing.T) {
 		client := NewMockWebSocketClient("client-1")
@@ -695,7 +695,7 @@ func TestWebSocketServer_MessageHandling(t *testing.T) {
 		_ = data // Message parsing is handled internally
 
 		// Verify client can be registered via the interface
-		server.RegisterClient("task-1", client)
+		_ = server.RegisterClient("task-1", client)
 		assert.Equal(t, 1, server.GetClientCount("task-1"))
 	})
 }
