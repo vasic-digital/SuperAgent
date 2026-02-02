@@ -8,7 +8,7 @@ HelixAgent is an AI-powered ensemble LLM service written in Go that combines res
 
 **Module**: `dev.helix.agent` (Go 1.24+, toolchain go1.24.11)
 
-Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification.
+Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. **Containers** (`Containers/`) — generic container orchestration module (`digital.vasic.containers`). **Challenges** (`Challenges/`) — generic challenge framework module (`digital.vasic.challenges`).
 
 ## Mandatory Development Standards
 
@@ -132,6 +132,11 @@ make monitoring-reset-circuits / force-health-check
 - `bigdata/` — Infinite context, distributed memory, knowledge graph streaming
 - `optimization/` — gptcache, outlines, streaming, sglang, llamaindex, langchain
 - `verifier/` — Startup verification orchestrator and adapters
+- `challenges/` — HelixAgent-specific challenge implementations (plugin, infra bridge, shell adapter)
+
+### Extracted Modules (submodules)
+- **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking (TCP/HTTP/gRPC), compose orchestration, lifecycle management (lazy boot, idle shutdown, semaphores), resource monitoring, event bus, service discovery, boot manager. 12 packages, all tests passing.
+- **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: challenge interface + base, assertion engine (16 built-in evaluators), registry with dependency ordering (Kahn's algo), runner (sequential/parallel/pipeline), reporting (MD/JSON/HTML), structured logging, env management, bank loading, live monitoring (WebSocket), metrics, plugin system, infra bridge. 12 packages, all tests passing.
 
 ### Key Interfaces
 - `LLMProvider` — Provider contract (Complete, CompleteStream, HealthCheck, GetCapabilities, ValidateConfig)

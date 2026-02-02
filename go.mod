@@ -6,6 +6,7 @@ require github.com/gin-gonic/gin v1.11.0
 
 require (
 	dev.helix.agent/pkg/api v0.0.0-00010101000000-000000000000
+	digital.vasic.challenges v0.0.0-00010101000000-000000000000
 	github.com/ClickHouse/clickhouse-go/v2 v2.41.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/alicebob/miniredis/v2 v2.35.0
@@ -48,6 +49,10 @@ require (
 )
 
 replace dev.helix.agent/pkg/api => ./pkg/api
+
+replace digital.vasic.containers => ./Containers
+
+replace digital.vasic.challenges => ./Challenges
 
 replace llm-verifier => ./LLMsVerifier/llm-verifier
 
