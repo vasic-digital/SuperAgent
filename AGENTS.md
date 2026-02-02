@@ -90,6 +90,7 @@ The project uses a Makefile with the following key targets:
 - `make vet` – Run `go vet` for static analysis
 - `make lint` – Run `golangci-lint` (install with `make install-deps`)
 - `make security-scan` – Run `gosec` security scanner
+- `make sbom` – Generate Software Bill of Materials (CycloneDX/SPDX)
 
 Always run `make fmt vet lint` before committing.
 
@@ -113,6 +114,12 @@ Always run `make fmt vet lint` before committing.
 - `tests/security/penetration_test.go` – LLM security testing (prompt injection, jailbreaking, data exfiltration)
 - `tests/challenge/ai_debate_maximal_challenge_test.go` – AI debate system comprehensive validation
 - `tests/integration/llm_cognee_verification_test.go` – All 10 LLM providers + Cognee integration
+- `tests/integration/grpc_integration_test.go` – 21 gRPC service integration tests
+- `tests/integration/debate_full_flow_test.go` – 7 debate lifecycle integration tests
+- `tests/integration/comprehensive_monitoring_test.go` – Full monitoring stack validation
+- `tests/stress/bigdata_stress_test.go` – BigData concurrent stress tests
+- `tests/stress/formatters_stress_test.go` – Formatters concurrent stress tests
+- `tests/stress/memory_stress_test.go` – Memory CRDT/distributed stress tests
 
 ### Test Infrastructure Management
 - `make test-infra-start` – Start PostgreSQL, Redis, Mock LLM containers
@@ -240,6 +247,10 @@ go test -v -coverprofile=coverage.out ./internal/llm
 - `./challenges/scripts/all_agents_e2e_challenge.sh` – 102 tests - all 48 CLI agents
 - `./challenges/scripts/cli_agent_mcp_challenge.sh` – 26 tests - CLI agent MCP validation (37 MCPs)
 - `./challenges/scripts/full_system_boot_challenge.sh` – 53 tests - full system infrastructure validation
+- `./challenges/scripts/grpc_service_challenge.sh` – 9 tests - gRPC service validation
+- `./challenges/scripts/bigdata_comprehensive_challenge.sh` – 23 tests - BigData components
+- `./challenges/scripts/memory_system_challenge.sh` – 14 tests - Memory system (Mem0, CRDT, distributed)
+- `./challenges/scripts/security_scanning_challenge.sh` – 10 tests - Security scanning tools
 
 ### Formatters System
 - `make formatters` – (if exists) Start formatters system
