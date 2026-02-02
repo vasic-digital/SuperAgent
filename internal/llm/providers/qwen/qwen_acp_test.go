@@ -427,6 +427,9 @@ func TestQwenACPProvider_HealthCheck_Unavailable(t *testing.T) {
 
 // Integration test - only runs if Qwen CLI is installed and authenticated
 func TestQwenACPProvider_Integration_Complete(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	if !IsQwenCodeInstalled() {
 		t.Skip("Qwen Code CLI not installed")
 	}
@@ -460,6 +463,9 @@ func TestQwenACPProvider_Integration_Complete(t *testing.T) {
 
 // Integration test for health check
 func TestQwenACPProvider_Integration_HealthCheck(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	if !IsQwenCodeInstalled() {
 		t.Skip("Qwen Code CLI not installed")
 	}
