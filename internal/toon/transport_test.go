@@ -116,7 +116,7 @@ func TestTransport_Do(t *testing.T) {
 		// Read and respond
 		body, _ := io.ReadAll(r.Body)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer server.Close()
 
@@ -142,7 +142,7 @@ func TestTransport_Do(t *testing.T) {
 func TestTransport_Get(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodGet, r.Method)
-		w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	}))
 	defer server.Close()
 
@@ -161,7 +161,7 @@ func TestTransport_Post(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(`{"id":"123"}`))
+		_, _ = w.Write([]byte(`{"id":"123"}`))
 	}))
 	defer server.Close()
 
@@ -179,7 +179,7 @@ func TestTransport_Post(t *testing.T) {
 func TestTransport_Put(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPut, r.Method)
-		w.Write([]byte(`{"updated":true}`))
+		_, _ = w.Write([]byte(`{"updated":true}`))
 	}))
 	defer server.Close()
 
@@ -234,7 +234,7 @@ func TestTransport_WithCustomHeaders(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "Bearer token123", r.Header.Get("Authorization"))
 		assert.Equal(t, "custom-value", r.Header.Get("X-Custom-Header"))
-		w.Write([]byte(`{}`))
+		_, _ = w.Write([]byte(`{}`))
 	}))
 	defer server.Close()
 
@@ -260,7 +260,7 @@ func TestTransport_WithCustomHeaders(t *testing.T) {
 
 func TestTransport_MetricsUpdate(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	}))
 	defer server.Close()
 
@@ -295,7 +295,7 @@ func TestMiddleware_Handler_RegularRequest(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
 
 	wrapped := middleware.Handler(handler)
@@ -316,11 +316,11 @@ func TestMiddleware_Handler_TOONRequest(t *testing.T) {
 		// Read the expanded JSON body
 		body, _ := io.ReadAll(r.Body)
 		var data map[string]interface{}
-		json.Unmarshal(body, &data)
+		_ = json.Unmarshal(body, &data)
 
 		// Return response
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"received_id": data["id"],
 		})
 	})
@@ -345,7 +345,7 @@ func TestMiddleware_Handler_TOONResponse(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"id":"123","name":"test","status":"healthy"}`))
+		_, _ = w.Write([]byte(`{"id":"123","name":"test","status":"healthy"}`))
 	})
 
 	wrapped := middleware.Handler(handler)
@@ -371,7 +371,7 @@ func TestMiddleware_Handler_InvalidTOON(t *testing.T) {
 	middleware := NewMiddleware()
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("ok"))
+		_, _ = w.Write([]byte("ok"))
 	})
 
 	wrapped := middleware.Handler(handler)
@@ -414,7 +414,7 @@ func TestResponseWrapper_WriteHeader(t *testing.T) {
 
 func TestTransport_Concurrent(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	}))
 	defer server.Close()
 
@@ -445,7 +445,7 @@ func TestTransport_Concurrent(t *testing.T) {
 func TestTransport_ContextCancellation(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Simulate slow response - this won't block because context is cancelled
-		w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	}))
 	defer server.Close()
 

@@ -79,7 +79,7 @@ func TestOllamaProvider_Complete(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -107,7 +107,7 @@ func TestOllamaProvider_Complete(t *testing.T) {
 func TestOllamaProvider_Complete_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		_, _ = w.Write([]byte("Internal Server Error"))
 	}))
 	defer server.Close()
 
@@ -144,7 +144,7 @@ func TestOllamaProvider_CompleteStream(t *testing.T) {
 
 		flusher, _ := w.(http.Flusher)
 		for _, resp := range responses {
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			flusher.Flush()
 		}
 	}))
@@ -179,7 +179,7 @@ func TestOllamaProvider_CompleteStream_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Return invalid JSON to trigger error in streaming
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte("invalid json response"))
+		_, _ = w.Write([]byte("invalid json response"))
 	}))
 	defer server.Close()
 
@@ -427,9 +427,9 @@ func TestOllamaProvider_makeRequest(t *testing.T) {
 
 				w.WriteHeader(tt.responseStatus)
 				if tt.responseStatus == http.StatusOK {
-					json.NewEncoder(w).Encode(tt.response)
+					_ = json.NewEncoder(w).Encode(tt.response)
 				} else {
-					w.Write([]byte("Bad Request"))
+					_, _ = w.Write([]byte("Bad Request"))
 				}
 			}))
 			defer server.Close()
@@ -492,7 +492,7 @@ func TestOllamaProvider_makeRequest_NetworkError(t *testing.T) {
 func TestOllamaProvider_makeRequest_InvalidResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer server.Close()
 
@@ -516,7 +516,7 @@ func BenchmarkOllamaProvider_Complete(b *testing.B) {
 			Response: "Test response",
 			Done:     true,
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 

@@ -88,7 +88,7 @@ func TestWorkerPool_Submit(t *testing.T) {
 func TestWorkerPool_Submit_ClosedPool(t *testing.T) {
 	pool := NewWorkerPool(&PoolConfig{Workers: 2, QueueSize: 10})
 	pool.Start()
-	pool.Shutdown(time.Second)
+	_ = pool.Shutdown(time.Second)
 
 	task := NewTaskFunc("task-1", func(ctx context.Context) (interface{}, error) {
 		return nil, nil
@@ -110,10 +110,10 @@ func TestWorkerPool_Submit_FullQueue(t *testing.T) {
 		<-blockCh
 		return nil, nil
 	})
-	pool.Submit(blockTask)
+	_ = pool.Submit(blockTask)
 
 	// Fill the queue
-	pool.Submit(NewTaskFunc("fill", func(ctx context.Context) (interface{}, error) {
+	_ = pool.Submit(NewTaskFunc("fill", func(ctx context.Context) (interface{}, error) {
 		return nil, nil
 	}))
 
@@ -213,7 +213,7 @@ func TestWorkerPool_Metrics(t *testing.T) {
 
 	// Submit some tasks
 	for i := 0; i < 5; i++ {
-		pool.Submit(NewTaskFunc("task", func(ctx context.Context) (interface{}, error) {
+		_ = pool.Submit(NewTaskFunc("task", func(ctx context.Context) (interface{}, error) {
 			return nil, nil
 		}))
 	}
@@ -231,7 +231,7 @@ func TestWorkerPool_QueueLength(t *testing.T) {
 
 	// Block the worker
 	blockCh := make(chan struct{})
-	pool.Submit(NewTaskFunc("block", func(ctx context.Context) (interface{}, error) {
+	_ = pool.Submit(NewTaskFunc("block", func(ctx context.Context) (interface{}, error) {
 		<-blockCh
 		return nil, nil
 	}))
@@ -240,7 +240,7 @@ func TestWorkerPool_QueueLength(t *testing.T) {
 
 	// Queue more tasks
 	for i := 0; i < 3; i++ {
-		pool.Submit(NewTaskFunc("queued", func(ctx context.Context) (interface{}, error) {
+		_ = pool.Submit(NewTaskFunc("queued", func(ctx context.Context) (interface{}, error) {
 			return nil, nil
 		}))
 	}
@@ -262,7 +262,7 @@ func TestWorkerPool_ActiveWorkers(t *testing.T) {
 
 	// Start a task
 	blockCh := make(chan struct{})
-	pool.Submit(NewTaskFunc("block", func(ctx context.Context) (interface{}, error) {
+	_ = pool.Submit(NewTaskFunc("block", func(ctx context.Context) (interface{}, error) {
 		<-blockCh
 		return nil, nil
 	}))
@@ -281,7 +281,7 @@ func TestWorkerPool_IsRunning(t *testing.T) {
 	pool.Start()
 	assert.True(t, pool.IsRunning())
 
-	pool.Shutdown(time.Second)
+	_ = pool.Shutdown(time.Second)
 	assert.False(t, pool.IsRunning())
 }
 
@@ -311,7 +311,7 @@ func TestWorkerPool_WaitForDrain(t *testing.T) {
 
 	// Submit tasks
 	for i := 0; i < 5; i++ {
-		pool.Submit(NewTaskFunc("task", func(ctx context.Context) (interface{}, error) {
+		_ = pool.Submit(NewTaskFunc("task", func(ctx context.Context) (interface{}, error) {
 			time.Sleep(10 * time.Millisecond)
 			return nil, nil
 		}))
@@ -330,7 +330,7 @@ func TestWorkerPool_WaitForDrain_Timeout(t *testing.T) {
 
 	// Block the worker
 	blockCh := make(chan struct{})
-	pool.Submit(NewTaskFunc("block", func(ctx context.Context) (interface{}, error) {
+	_ = pool.Submit(NewTaskFunc("block", func(ctx context.Context) (interface{}, error) {
 		<-blockCh
 		return nil, nil
 	}))
@@ -386,7 +386,7 @@ func TestWorkerPool_OnError(t *testing.T) {
 		return nil, errors.New("intentional error")
 	})
 
-	pool.Submit(task)
+	_ = pool.Submit(task)
 	time.Sleep(100 * time.Millisecond)
 
 	assert.True(t, errorCalled.Load())
@@ -409,7 +409,7 @@ func TestWorkerPool_OnComplete(t *testing.T) {
 		return "success", nil
 	})
 
-	pool.Submit(task)
+	_ = pool.Submit(task)
 	time.Sleep(100 * time.Millisecond)
 
 	assert.True(t, completeCalled.Load())
@@ -511,7 +511,7 @@ func TestWorkerPool_ConcurrentSubmit(t *testing.T) {
 				completed.Add(1)
 				return nil, nil
 			})
-			pool.Submit(task)
+			_ = pool.Submit(task)
 		}(i)
 	}
 

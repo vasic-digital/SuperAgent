@@ -126,7 +126,7 @@ func TestHandler_StartReplay(t *testing.T) {
 	ctx := context.Background()
 	err := broker.Connect(ctx)
 	require.NoError(t, err)
-	defer broker.Close(ctx)
+	defer func() { _ = broker.Close(ctx) }()
 
 	config := DefaultReplayConfig()
 	config.ReplayTimeout = 1 * time.Second
@@ -158,7 +158,7 @@ func TestHandler_StartReplay_DuplicateID(t *testing.T) {
 	ctx := context.Background()
 	err := broker.Connect(ctx)
 	require.NoError(t, err)
-	defer broker.Close(ctx)
+	defer func() { _ = broker.Close(ctx) }()
 
 	config := DefaultReplayConfig()
 	logger := zap.NewNop()
@@ -185,7 +185,7 @@ func TestHandler_GetProgress(t *testing.T) {
 	ctx := context.Background()
 	err := broker.Connect(ctx)
 	require.NoError(t, err)
-	defer broker.Close(ctx)
+	defer func() { _ = broker.Close(ctx) }()
 
 	config := DefaultReplayConfig()
 	logger := zap.NewNop()
@@ -228,7 +228,7 @@ func TestHandler_CancelReplay(t *testing.T) {
 	ctx := context.Background()
 	err := broker.Connect(ctx)
 	require.NoError(t, err)
-	defer broker.Close(ctx)
+	defer func() { _ = broker.Close(ctx) }()
 
 	config := DefaultReplayConfig()
 	config.ReplayTimeout = 10 * time.Second
@@ -280,7 +280,7 @@ func TestHandler_ListReplays(t *testing.T) {
 	ctx := context.Background()
 	err := broker.Connect(ctx)
 	require.NoError(t, err)
-	defer broker.Close(ctx)
+	defer func() { _ = broker.Close(ctx) }()
 
 	config := DefaultReplayConfig()
 	config.ReplayTimeout = 1 * time.Second

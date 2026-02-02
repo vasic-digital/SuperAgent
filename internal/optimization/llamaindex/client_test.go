@@ -67,7 +67,7 @@ func TestClient_Query(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -95,7 +95,7 @@ func TestClient_QueryWithHyDE(t *testing.T) {
 		assert.Equal(t, "/query", r.URL.Path)
 
 		var req QueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotNil(t, req.QueryTransform)
 		assert.Equal(t, "hyde", *req.QueryTransform)
 
@@ -108,7 +108,7 @@ func TestClient_QueryWithHyDE(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -125,7 +125,7 @@ func TestClient_HyDEExpand(t *testing.T) {
 		assert.Equal(t, "/hyde", r.URL.Path)
 
 		var req HyDERequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotEmpty(t, req.Query)
 
 		resp := &HyDEResponse{
@@ -138,7 +138,7 @@ func TestClient_HyDEExpand(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -158,7 +158,7 @@ func TestClient_DecomposeQuery(t *testing.T) {
 		assert.Equal(t, "/decompose", r.URL.Path)
 
 		var req DecomposeQueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		resp := &DecomposeQueryResponse{
 			OriginalQuery: req.Query,
@@ -171,7 +171,7 @@ func TestClient_DecomposeQuery(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -191,7 +191,7 @@ func TestClient_Rerank(t *testing.T) {
 		assert.Equal(t, "/rerank", r.URL.Path)
 
 		var req RerankRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		resp := &RerankResponse{
 			RankedDocuments: []RankedDocument{
@@ -201,7 +201,7 @@ func TestClient_Rerank(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -235,7 +235,7 @@ func TestClient_Health(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -253,7 +253,7 @@ func TestClient_IsAvailable(t *testing.T) {
 		if r.URL.Path == "/health" {
 			resp := &HealthResponse{Status: "healthy"}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -281,7 +281,7 @@ func TestClient_IsAvailable_Unhealthy(t *testing.T) {
 func TestClient_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "internal error"}`))
+		_, _ = w.Write([]byte(`{"error": "internal error"}`))
 	}))
 	defer server.Close()
 
@@ -294,7 +294,7 @@ func TestClient_ErrorHandling(t *testing.T) {
 func TestClient_QueryWithRerank(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req QueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.True(t, req.Rerank)
 
 		resp := &QueryResponse{
@@ -304,7 +304,7 @@ func TestClient_QueryWithRerank(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -322,7 +322,7 @@ func TestClient_QueryWithRerank(t *testing.T) {
 func TestClient_QueryWithDecomposition(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req QueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotNil(t, req.QueryTransform)
 		assert.Equal(t, "decompose", *req.QueryTransform)
 
@@ -335,7 +335,7 @@ func TestClient_QueryWithDecomposition(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -368,7 +368,7 @@ func TestClient_QueryWithStepBack(t *testing.T) {
 		assert.Equal(t, "/query", r.URL.Path)
 
 		var req QueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotNil(t, req.QueryTransform)
 		assert.Equal(t, "step_back", *req.QueryTransform)
 		assert.True(t, req.UseCognee)
@@ -383,7 +383,7 @@ func TestClient_QueryWithStepBack(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -408,7 +408,7 @@ func TestClient_QueryFusion(t *testing.T) {
 		}
 
 		var req fusionReq
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotEmpty(t, req.Query)
 		assert.Equal(t, 4, req.NumVariations)
 		assert.Equal(t, 10, req.TopK)
@@ -429,7 +429,7 @@ func TestClient_QueryFusion(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -452,7 +452,7 @@ func TestClient_QueryFusion_Defaults(t *testing.T) {
 		}
 
 		var req fusionReq
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		// Check defaults were applied
 		assert.Equal(t, 3, req.NumVariations) // Default
 		assert.Equal(t, 5, req.TopK)          // Default
@@ -464,7 +464,7 @@ func TestClient_QueryFusion_Defaults(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -479,7 +479,7 @@ func TestClient_QueryFusion_Defaults(t *testing.T) {
 func TestClient_HyDEExpand_DefaultHypotheses(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req HyDERequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, 3, req.NumHypotheses) // Default value
 
 		resp := &HyDEResponse{
@@ -489,7 +489,7 @@ func TestClient_HyDEExpand_DefaultHypotheses(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -507,7 +507,7 @@ func TestClient_HyDEExpand_DefaultHypotheses(t *testing.T) {
 func TestClient_DecomposeQuery_DefaultSubqueries(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req DecomposeQueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, 3, req.MaxSubqueries) // Default value
 
 		resp := &DecomposeQueryResponse{
@@ -517,7 +517,7 @@ func TestClient_DecomposeQuery_DefaultSubqueries(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -535,7 +535,7 @@ func TestClient_DecomposeQuery_DefaultSubqueries(t *testing.T) {
 func TestClient_Rerank_DefaultTopK(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req RerankRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, 5, req.TopK) // Default value
 
 		resp := &RerankResponse{
@@ -545,7 +545,7 @@ func TestClient_Rerank_DefaultTopK(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -564,7 +564,7 @@ func TestClient_Rerank_DefaultTopK(t *testing.T) {
 func TestClient_Query_DefaultTopK(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req QueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, 5, req.TopK) // Default value
 
 		resp := &QueryResponse{
@@ -574,7 +574,7 @@ func TestClient_Query_DefaultTopK(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -592,7 +592,7 @@ func TestClient_Query_DefaultTopK(t *testing.T) {
 func TestClient_QueryFusion_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "fusion failed"}`))
+		_, _ = w.Write([]byte(`{"error": "fusion failed"}`))
 	}))
 	defer server.Close()
 
@@ -605,7 +605,7 @@ func TestClient_QueryFusion_Error(t *testing.T) {
 func TestClient_HyDEExpand_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": "bad request"}`))
+		_, _ = w.Write([]byte(`{"error": "bad request"}`))
 	}))
 	defer server.Close()
 
@@ -643,7 +643,7 @@ func TestClient_Rerank_Error(t *testing.T) {
 func TestClient_QueryWithFilters(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req QueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		// Verify filters were sent
 		assert.NotNil(t, req.Filters)
@@ -656,7 +656,7 @@ func TestClient_QueryWithFilters(t *testing.T) {
 			Confidence: 0.9,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -684,7 +684,7 @@ func TestClient_ConcurrentQueries(t *testing.T) {
 			Confidence: 0.85,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -722,7 +722,7 @@ func TestClient_ConcurrentQueries(t *testing.T) {
 func TestClient_QueryWithCognee(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req QueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		// Verify Cognee flag
 		assert.True(t, req.UseCognee)
@@ -735,7 +735,7 @@ func TestClient_QueryWithCognee(t *testing.T) {
 			Confidence: 0.95,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -771,7 +771,7 @@ func TestClient_SourceMetadata(t *testing.T) {
 			Confidence: 0.85,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -793,7 +793,7 @@ func TestClient_QueryAllTransformMethods(t *testing.T) {
 		t.Run(transform, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				var req QueryRequest
-				json.NewDecoder(r.Body).Decode(&req)
+				_ = json.NewDecoder(r.Body).Decode(&req)
 				assert.NotNil(t, req.QueryTransform)
 				assert.Equal(t, transform, *req.QueryTransform)
 
@@ -804,7 +804,7 @@ func TestClient_QueryAllTransformMethods(t *testing.T) {
 					Confidence:       0.8,
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			}))
 			defer server.Close()
 
@@ -830,7 +830,7 @@ func TestClient_QueryAllTransformMethods(t *testing.T) {
 func TestClient_RerankWithModel(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req RerankRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		resp := &RerankResponse{
 			RankedDocuments: []RankedDocument{
@@ -839,7 +839,7 @@ func TestClient_RerankWithModel(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -861,7 +861,7 @@ func TestClient_RerankWithModel(t *testing.T) {
 func TestClient_HyDEWithMultipleHypotheses(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req HyDERequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		hypotheses := make([]string, req.NumHypotheses)
 		for i := range hypotheses {
@@ -874,7 +874,7 @@ func TestClient_HyDEWithMultipleHypotheses(t *testing.T) {
 			CombinedEmbedding:     []float64{0.1, 0.2, 0.3},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -899,7 +899,7 @@ func TestClient_QueryFusionWithCustomParams(t *testing.T) {
 		}
 
 		var req fusionReq
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		variations := make([]string, req.NumVariations)
 		for i := range variations {
@@ -915,7 +915,7 @@ func TestClient_QueryFusionWithCustomParams(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -938,7 +938,7 @@ func TestClient_HealthCheckFields(t *testing.T) {
 			HelixagentAvailable: true,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -962,7 +962,7 @@ func TestClient_EmptyQueryResponse(t *testing.T) {
 			Confidence: 0.0,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -980,7 +980,7 @@ func TestClient_QueryContextCancellation(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(100 * time.Millisecond)
 		resp := &QueryResponse{Answer: "Should not reach"}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -1006,7 +1006,7 @@ func TestClient_QueryContextCancellation(t *testing.T) {
 func TestClient_MalformedJSONResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{invalid json}`))
+		_, _ = w.Write([]byte(`{invalid json}`))
 	}))
 	defer server.Close()
 
@@ -1025,7 +1025,7 @@ func BenchmarkClient_Query(b *testing.B) {
 			Confidence: 0.85,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -1034,7 +1034,7 @@ func BenchmarkClient_Query(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		client.Query(ctx, &QueryRequest{Query: "test", TopK: 5})
+		_, _ = client.Query(ctx, &QueryRequest{Query: "test", TopK: 5})
 	}
 }
 
@@ -1047,7 +1047,7 @@ func BenchmarkClient_Rerank(b *testing.B) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -1061,6 +1061,6 @@ func BenchmarkClient_Rerank(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		client.Rerank(ctx, &RerankRequest{Query: "test", Documents: docs, TopK: 10})
+		_, _ = client.Rerank(ctx, &RerankRequest{Query: "test", Documents: docs, TopK: 10})
 	}
 }

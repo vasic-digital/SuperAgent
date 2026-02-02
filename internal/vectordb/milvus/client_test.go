@@ -201,7 +201,7 @@ func TestConnect(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code": 0,
 				"data": []string{"collection1"},
 			})
@@ -217,7 +217,7 @@ func TestConnect(t *testing.T) {
 	t.Run("connection failure", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code":    500,
 				"message": "internal error",
 			})
@@ -235,7 +235,7 @@ func TestConnect(t *testing.T) {
 			auth := r.Header.Get("Authorization")
 			assert.Equal(t, "Bearer test-token", auth)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code": 0,
 				"data": []string{},
 			})
@@ -254,7 +254,7 @@ func TestConnect(t *testing.T) {
 			assert.Equal(t, "testuser", user)
 			assert.Equal(t, "testpass", pass)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code": 0,
 				"data": []string{},
 			})
@@ -270,7 +270,7 @@ func TestConnect(t *testing.T) {
 func TestClose(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"code": 0,
 			"data": []string{},
 		})
@@ -291,7 +291,7 @@ func TestListCollections(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/collections/list"))
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code": 0,
 				"data": []string{"collection1", "collection2", "collection3"},
 			})
@@ -311,7 +311,7 @@ func TestListCollections(t *testing.T) {
 			if callCount == 1 {
 				// First call (connect) succeeds
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			// Second call (actual list) fails
@@ -330,16 +330,16 @@ func TestCreateCollection(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/collections/create"))
 			var req CreateCollectionRequest
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "test_collection", req.CollectionName)
 			assert.Equal(t, 768, req.Dimension)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
 		}))
 		defer server.Close()
 
@@ -356,15 +356,15 @@ func TestCreateCollection(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			var req CreateCollectionRequest
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "test_collection", req.CollectionName)
 			assert.Len(t, req.Schema.Fields, 2)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
 		}))
 		defer server.Close()
 
@@ -398,15 +398,15 @@ func TestDropCollection(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/collections/drop"))
 			var req map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "test_collection", req["collectionName"])
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
 		}))
 		defer server.Close()
 
@@ -429,12 +429,12 @@ func TestDescribeCollection(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/collections/describe"))
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code": 0,
 				"data": map[string]interface{}{
 					"collectionName": "test_collection",
@@ -472,16 +472,16 @@ func TestInsert(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/entities/insert"))
 			var req InsertRequest
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "test_collection", req.CollectionName)
 			assert.Len(t, req.Data, 2)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code": 0,
 				"data": map[string]interface{}{
 					"insertCount": 2,
@@ -506,7 +506,7 @@ func TestInsert(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			t.Error("should not make request for empty data")
@@ -524,14 +524,14 @@ func TestInsert(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			var req InsertRequest
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			receivedData = req.Data
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code": 0,
 				"data": map[string]interface{}{"insertCount": 1, "insertIds": []string{"auto-id"}},
 			})
@@ -561,16 +561,16 @@ func TestSearch(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/entities/search"))
 			var req SearchRequest
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "test_collection", req.CollectionName)
 			assert.Equal(t, 5, req.Limit)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code": 0,
 				"data": [][]map[string]interface{}{
 					{
@@ -598,14 +598,14 @@ func TestSearch(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			var req SearchRequest
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "category == 'news'", req.Filter)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": [][]map[string]interface{}{{}}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": [][]map[string]interface{}{{}}})
 		}))
 		defer server.Close()
 
@@ -623,14 +623,14 @@ func TestSearch(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			var req SearchRequest
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, 10, req.Limit) // Default
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": [][]map[string]interface{}{{}}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": [][]map[string]interface{}{{}}})
 		}))
 		defer server.Close()
 
@@ -656,17 +656,17 @@ func TestDelete(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/entities/delete"))
 			var req map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "test_collection", req["collectionName"])
 			ids := req["ids"].([]interface{})
 			assert.Len(t, ids, 2)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
 		}))
 		defer server.Close()
 
@@ -679,14 +679,14 @@ func TestDelete(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			var req map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "category == 'old'", req["filter"])
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
 		}))
 		defer server.Close()
 
@@ -709,15 +709,15 @@ func TestGet(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/entities/get"))
 			var req GetRequest
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, []string{"id1", "id2"}, req.IDs)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code": 0,
 				"data": []map[string]interface{}{
 					{"id": "id1", "text": "hello"},
@@ -737,7 +737,7 @@ func TestGet(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			t.Error("should not make request for empty ids")
@@ -764,16 +764,16 @@ func TestQuery(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/entities/query"))
 			var req QueryRequest
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "test_collection", req.CollectionName)
 			assert.Equal(t, "category == 'news'", req.Filter)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code": 0,
 				"data": []map[string]interface{}{
 					{"id": "id1", "category": "news"},
@@ -808,17 +808,17 @@ func TestCreateIndex(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/indexes/create"))
 			var req CreateIndexRequest
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "test_collection", req.CollectionName)
 			assert.Equal(t, "vector", req.FieldName)
 			assert.Equal(t, IndexTypeHNSW, req.IndexType)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
 		}))
 		defer server.Close()
 
@@ -851,15 +851,15 @@ func TestLoadCollection(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/collections/load"))
 			var req map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "test_collection", req["collectionName"])
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
 		}))
 		defer server.Close()
 
@@ -882,15 +882,15 @@ func TestReleaseCollection(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/collections/release"))
 			var req map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 			assert.Equal(t, "test_collection", req["collectionName"])
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0})
 		}))
 		defer server.Close()
 
@@ -913,12 +913,12 @@ func TestGetLoadState(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/collections/list") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			assert.True(t, strings.HasSuffix(r.URL.Path, "/collections/get_load_state"))
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"code": 0,
 				"data": map[string]interface{}{
 					"loadState": "LoadStateLoaded",
@@ -946,7 +946,7 @@ func TestHealthCheck(t *testing.T) {
 	t.Run("healthy", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 		}))
 		defer server.Close()
 
@@ -962,7 +962,7 @@ func TestHealthCheck(t *testing.T) {
 			if callCount == 1 {
 				// First call (connect) succeeds
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 				return
 			}
 			// Subsequent calls fail
@@ -979,7 +979,7 @@ func TestHealthCheck(t *testing.T) {
 func TestAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"code":    100,
 			"message": "Collection not found",
 		})
@@ -1000,7 +1000,7 @@ func TestContextCancellation(t *testing.T) {
 		if callCount == 1 {
 			// First call (connect) succeeds immediately
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"code": 0, "data": []string{}})
 			return
 		}
 		// Subsequent calls are slow

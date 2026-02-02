@@ -121,7 +121,7 @@ func TestCohereReranker_Rerank_Extended(t *testing.T) {
 	t.Run("with API error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "bad request"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "bad request"})
 		}))
 		defer server.Close()
 
@@ -577,7 +577,7 @@ func TestCrossEncoderReranker_ScoreBatch_MismatchedScores(t *testing.T) {
 			"scores": []float64{0.9}, // Only 1 score for 2 documents
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 

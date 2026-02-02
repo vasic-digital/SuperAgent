@@ -338,7 +338,7 @@ func (ps *ProtocolPluginSystem) DiscoverPlugins() ([]string, error) {
 			ps.logger.WithError(err).WithField("path", pluginPath).Warn("Plugin file is not readable")
 			continue
 		}
-		file.Close()
+		_ = file.Close()
 
 		plugins = append(plugins, pluginPath)
 	}

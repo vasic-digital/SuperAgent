@@ -135,9 +135,9 @@ func createTestOrchestrator() (*Orchestrator, *mockProviderRegistry) {
 	orch := NewOrchestrator(registry, lessonBank, config)
 
 	// Register providers with agents
-	orch.RegisterProvider("claude", "claude-3", 9.0)
-	orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
-	orch.RegisterProvider("gemini", "gemini-pro", 8.0)
+	_ = orch.RegisterProvider("claude", "claude-3", 9.0)
+	_ = orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
+	_ = orch.RegisterProvider("gemini", "gemini-pro", 8.0)
 
 	return orch, registry
 }
@@ -679,8 +679,8 @@ func TestOrchestrator_buildTeam_InsufficientAgents(t *testing.T) {
 
 	orch := NewOrchestrator(registry, lessonBank, config)
 	// Only register 2 agents
-	orch.RegisterProvider("claude", "claude-3", 9.0)
-	orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
+	_ = orch.RegisterProvider("claude", "claude-3", 9.0)
+	_ = orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
 
 	request := &DebateRequest{
 		Topic: "Test Topic",

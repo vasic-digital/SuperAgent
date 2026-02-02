@@ -133,23 +133,23 @@ func TestEnvironmentOverrides(t *testing.T) {
 	origValues := make(map[string]string)
 	for _, k := range envVars {
 		origValues[k] = os.Getenv(k)
-		os.Unsetenv(k)
+		_ = os.Unsetenv(k)
 	}
 	defer func() {
 		for k, v := range origValues {
 			if v != "" {
-				os.Setenv(k, v)
+				_ = os.Setenv(k, v)
 			} else {
-				os.Unsetenv(k)
+				_ = os.Unsetenv(k)
 			}
 		}
 	}()
 
 	t.Run("Host and port override", func(t *testing.T) {
-		os.Setenv("SVC_POSTGRESQL_HOST", "db.remote.example.com")
-		os.Setenv("SVC_POSTGRESQL_PORT", "15432")
-		defer os.Unsetenv("SVC_POSTGRESQL_HOST")
-		defer os.Unsetenv("SVC_POSTGRESQL_PORT")
+		_ = os.Setenv("SVC_POSTGRESQL_HOST", "db.remote.example.com")
+		_ = os.Setenv("SVC_POSTGRESQL_PORT", "15432")
+		defer func() { _ = os.Unsetenv("SVC_POSTGRESQL_HOST") }()
+		defer func() { _ = os.Unsetenv("SVC_POSTGRESQL_PORT") }()
 
 		cfg := DefaultServicesConfig()
 		LoadServicesFromEnv(&cfg)
@@ -163,8 +163,8 @@ func TestEnvironmentOverrides(t *testing.T) {
 	})
 
 	t.Run("Remote flag override", func(t *testing.T) {
-		os.Setenv("SVC_POSTGRESQL_REMOTE", "true")
-		defer os.Unsetenv("SVC_POSTGRESQL_REMOTE")
+		_ = os.Setenv("SVC_POSTGRESQL_REMOTE", "true")
+		defer func() { _ = os.Unsetenv("SVC_POSTGRESQL_REMOTE") }()
 
 		cfg := DefaultServicesConfig()
 		LoadServicesFromEnv(&cfg)
@@ -175,10 +175,10 @@ func TestEnvironmentOverrides(t *testing.T) {
 	})
 
 	t.Run("Enabled/Required override", func(t *testing.T) {
-		os.Setenv("SVC_POSTGRESQL_ENABLED", "false")
-		os.Setenv("SVC_POSTGRESQL_REQUIRED", "false")
-		defer os.Unsetenv("SVC_POSTGRESQL_ENABLED")
-		defer os.Unsetenv("SVC_POSTGRESQL_REQUIRED")
+		_ = os.Setenv("SVC_POSTGRESQL_ENABLED", "false")
+		_ = os.Setenv("SVC_POSTGRESQL_REQUIRED", "false")
+		defer func() { _ = os.Unsetenv("SVC_POSTGRESQL_ENABLED") }()
+		defer func() { _ = os.Unsetenv("SVC_POSTGRESQL_REQUIRED") }()
 
 		cfg := DefaultServicesConfig()
 		LoadServicesFromEnv(&cfg)
@@ -192,8 +192,8 @@ func TestEnvironmentOverrides(t *testing.T) {
 	})
 
 	t.Run("URL override", func(t *testing.T) {
-		os.Setenv("SVC_COGNEE_URL", "https://cognee.remote.example.com")
-		defer os.Unsetenv("SVC_COGNEE_URL")
+		_ = os.Setenv("SVC_COGNEE_URL", "https://cognee.remote.example.com")
+		defer func() { _ = os.Unsetenv("SVC_COGNEE_URL") }()
 
 		cfg := DefaultServicesConfig()
 		LoadServicesFromEnv(&cfg)
@@ -204,8 +204,8 @@ func TestEnvironmentOverrides(t *testing.T) {
 	})
 
 	t.Run("Timeout override", func(t *testing.T) {
-		os.Setenv("SVC_REDIS_TIMEOUT", "30s")
-		defer os.Unsetenv("SVC_REDIS_TIMEOUT")
+		_ = os.Setenv("SVC_REDIS_TIMEOUT", "30s")
+		defer func() { _ = os.Unsetenv("SVC_REDIS_TIMEOUT") }()
 
 		cfg := DefaultServicesConfig()
 		LoadServicesFromEnv(&cfg)
@@ -216,8 +216,8 @@ func TestEnvironmentOverrides(t *testing.T) {
 	})
 
 	t.Run("RetryCount override", func(t *testing.T) {
-		os.Setenv("SVC_CHROMADB_RETRY_COUNT", "10")
-		defer os.Unsetenv("SVC_CHROMADB_RETRY_COUNT")
+		_ = os.Setenv("SVC_CHROMADB_RETRY_COUNT", "10")
+		defer func() { _ = os.Unsetenv("SVC_CHROMADB_RETRY_COUNT") }()
 
 		cfg := DefaultServicesConfig()
 		LoadServicesFromEnv(&cfg)
@@ -228,10 +228,10 @@ func TestEnvironmentOverrides(t *testing.T) {
 	})
 
 	t.Run("HealthPath and HealthType override", func(t *testing.T) {
-		os.Setenv("SVC_COGNEE_HEALTH_PATH", "/health")
-		os.Setenv("SVC_COGNEE_HEALTH_TYPE", "tcp")
-		defer os.Unsetenv("SVC_COGNEE_HEALTH_PATH")
-		defer os.Unsetenv("SVC_COGNEE_HEALTH_TYPE")
+		_ = os.Setenv("SVC_COGNEE_HEALTH_PATH", "/health")
+		_ = os.Setenv("SVC_COGNEE_HEALTH_TYPE", "tcp")
+		defer func() { _ = os.Unsetenv("SVC_COGNEE_HEALTH_PATH") }()
+		defer func() { _ = os.Unsetenv("SVC_COGNEE_HEALTH_TYPE") }()
 
 		cfg := DefaultServicesConfig()
 		LoadServicesFromEnv(&cfg)
@@ -374,14 +374,14 @@ func TestServicesConfigInLoad(t *testing.T) {
 	orig := make(map[string]string)
 	for _, k := range envKeys {
 		orig[k] = os.Getenv(k)
-		os.Unsetenv(k)
+		_ = os.Unsetenv(k)
 	}
 	defer func() {
 		for k, v := range orig {
 			if v != "" {
-				os.Setenv(k, v)
+				_ = os.Setenv(k, v)
 			} else {
-				os.Unsetenv(k)
+				_ = os.Unsetenv(k)
 			}
 		}
 	}()

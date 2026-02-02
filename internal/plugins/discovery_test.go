@@ -259,7 +259,7 @@ func TestDiscovery_ConcurrentDiscoverAndLoad(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		go func() {
-			discovery.DiscoverAndLoad()
+			_ = discovery.DiscoverAndLoad()
 			done <- true
 		}()
 	}
@@ -317,7 +317,7 @@ func TestDiscovery_DiscoverInPath_PermissionDenied(t *testing.T) {
 	restrictedDir := filepath.Join(tmpDir, "restricted")
 	err := os.MkdirAll(restrictedDir, 0000)
 	require.NoError(t, err)
-	defer os.Chmod(restrictedDir, 0755) // Restore for cleanup
+	defer func() { _ = os.Chmod(restrictedDir, 0755) }() // Restore for cleanup
 
 	// Should handle permission errors gracefully
 	err = discovery.discoverInPath(tmpDir)
@@ -338,9 +338,9 @@ func TestDiscovery_DiscoverAndLoad_NestedDirectories(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create .so files at different levels
-	os.WriteFile(filepath.Join(tmpDir, "root.so"), []byte("fake"), 0644)
-	os.WriteFile(filepath.Join(tmpDir, "level1", "level1.so"), []byte("fake"), 0644)
-	os.WriteFile(filepath.Join(nested1, "deep.so"), []byte("fake"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "root.so"), []byte("fake"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "level1", "level1.so"), []byte("fake"), 0644)
+	_ = os.WriteFile(filepath.Join(nested1, "deep.so"), []byte("fake"), 0644)
 
 	// Should not error even if plugins fail to load
 	err = discovery.DiscoverAndLoad()
@@ -407,8 +407,8 @@ func TestDiscovery_WatchForChanges_MultipleDirectories(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Create files in both directories
-	os.WriteFile(filepath.Join(tmpDir1, "plugin1.so"), []byte("fake"), 0644)
-	os.WriteFile(filepath.Join(tmpDir2, "plugin2.so"), []byte("fake"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir1, "plugin1.so"), []byte("fake"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir2, "plugin2.so"), []byte("fake"), 0644)
 
 	// Give it time to process
 	time.Sleep(200 * time.Millisecond)
@@ -503,9 +503,9 @@ func TestDiscovery_DiscoverInPath_LargeDirectory(t *testing.T) {
 	// Create many files (mix of .so and other files)
 	for i := 0; i < 100; i++ {
 		if i%10 == 0 {
-			os.WriteFile(filepath.Join(tmpDir, fmt.Sprintf("plugin%d.so", i)), []byte("fake"), 0644)
+			_ = os.WriteFile(filepath.Join(tmpDir, fmt.Sprintf("plugin%d.so", i)), []byte("fake"), 0644)
 		} else {
-			os.WriteFile(filepath.Join(tmpDir, fmt.Sprintf("file%d.txt", i)), []byte("text"), 0644)
+			_ = os.WriteFile(filepath.Join(tmpDir, fmt.Sprintf("file%d.txt", i)), []byte("text"), 0644)
 		}
 	}
 

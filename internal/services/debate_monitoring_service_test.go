@@ -134,7 +134,7 @@ func TestDebateMonitoringService_Status(t *testing.T) {
 	config := createTestDebateConfig("debate-status-1")
 	monitoringID, err := svc.StartMonitoring(ctx, config)
 	require.NoError(t, err)
-	defer svc.StopMonitoring(ctx, monitoringID)
+	defer func() { _ = svc.StopMonitoring(ctx, monitoringID) }()
 
 	t.Run("get status by debate ID", func(t *testing.T) {
 		status, err := svc.GetStatus(ctx, "debate-status-1")
@@ -160,7 +160,7 @@ func TestDebateMonitoringService_GetStatusByMonitoringID(t *testing.T) {
 	config := createTestDebateConfig("debate-status-2")
 	monitoringID, err := svc.StartMonitoring(ctx, config)
 	require.NoError(t, err)
-	defer svc.StopMonitoring(ctx, monitoringID)
+	defer func() { _ = svc.StopMonitoring(ctx, monitoringID) }()
 
 	t.Run("get status by monitoring ID", func(t *testing.T) {
 		status, err := svc.GetStatusByMonitoringID(ctx, monitoringID)
@@ -184,7 +184,7 @@ func TestDebateMonitoringService_GetExtendedStatus(t *testing.T) {
 	config := createTestDebateConfig("debate-ext-status")
 	monitoringID, err := svc.StartMonitoring(ctx, config)
 	require.NoError(t, err)
-	defer svc.StopMonitoring(ctx, monitoringID)
+	defer func() { _ = svc.StopMonitoring(ctx, monitoringID) }()
 
 	t.Run("get extended status", func(t *testing.T) {
 		status, err := svc.GetExtendedStatus(ctx, monitoringID)
@@ -210,7 +210,7 @@ func TestDebateMonitoringService_UpdateParticipantStatus(t *testing.T) {
 	config := createTestDebateConfig("debate-participant")
 	monitoringID, err := svc.StartMonitoring(ctx, config)
 	require.NoError(t, err)
-	defer svc.StopMonitoring(ctx, monitoringID)
+	defer func() { _ = svc.StopMonitoring(ctx, monitoringID) }()
 
 	t.Run("update valid participant", func(t *testing.T) {
 		err := svc.UpdateParticipantStatus(ctx, monitoringID, "p1", "active", 500*time.Millisecond)
@@ -251,7 +251,7 @@ func TestDebateMonitoringService_UpdateRound(t *testing.T) {
 	config := createTestDebateConfig("debate-round")
 	monitoringID, err := svc.StartMonitoring(ctx, config)
 	require.NoError(t, err)
-	defer svc.StopMonitoring(ctx, monitoringID)
+	defer func() { _ = svc.StopMonitoring(ctx, monitoringID) }()
 
 	t.Run("update round activates debate", func(t *testing.T) {
 		err := svc.UpdateRound(ctx, monitoringID, 1)
@@ -287,7 +287,7 @@ func TestDebateMonitoringService_RecordError(t *testing.T) {
 	config := createTestDebateConfig("debate-error")
 	monitoringID, err := svc.StartMonitoring(ctx, config)
 	require.NoError(t, err)
-	defer svc.StopMonitoring(ctx, monitoringID)
+	defer func() { _ = svc.StopMonitoring(ctx, monitoringID) }()
 
 	t.Run("record single error", func(t *testing.T) {
 		err := svc.RecordError(ctx, monitoringID, "Test error")
@@ -324,7 +324,7 @@ func TestDebateMonitoringService_GetAlerts(t *testing.T) {
 	config := createTestDebateConfig("debate-alerts")
 	monitoringID, err := svc.StartMonitoring(ctx, config)
 	require.NoError(t, err)
-	defer svc.StopMonitoring(ctx, monitoringID)
+	defer func() { _ = svc.StopMonitoring(ctx, monitoringID) }()
 
 	t.Run("no alerts initially", func(t *testing.T) {
 		alerts, err := svc.GetAlerts(ctx, monitoringID)
@@ -562,7 +562,7 @@ func TestDebateMonitoringService_HealthScoreCalculation(t *testing.T) {
 	debateConfig := createTestDebateConfig("debate-health")
 	monitoringID, err := svc.StartMonitoring(ctx, debateConfig)
 	require.NoError(t, err)
-	defer svc.StopMonitoring(ctx, monitoringID)
+	defer func() { _ = svc.StopMonitoring(ctx, monitoringID) }()
 
 	// Initial health should be 100
 	status, err := svc.GetExtendedStatus(ctx, monitoringID)

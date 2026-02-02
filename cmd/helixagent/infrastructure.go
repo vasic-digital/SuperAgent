@@ -160,7 +160,7 @@ func waitForInfrastructure(logger *logrus.Logger, timeout time.Duration) error {
 		for time.Now().Before(deadline) {
 			resp, err := client.Get(url)
 			if err == nil {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				if resp.StatusCode == http.StatusOK {
 					logger.WithField("service", name).Debug("Service is healthy")
 					break
@@ -217,7 +217,7 @@ func GetInfrastructureStatus(logger *logrus.Logger) *InfrastructureStatus {
 				status.TotalDown++
 			}
 			if resp != nil {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 			}
 		}
 	}
@@ -252,7 +252,7 @@ func GetInfrastructureStatus(logger *logrus.Logger) *InfrastructureStatus {
 			status.TotalDown++
 		}
 		if resp != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 	}
 
@@ -271,7 +271,7 @@ func GetInfrastructureStatus(logger *logrus.Logger) *InfrastructureStatus {
 			status.TotalDown++
 		}
 		if resp != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 	}
 

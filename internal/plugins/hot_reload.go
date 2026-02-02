@@ -58,7 +58,7 @@ func NewHotReloadManager(cfg *config.Config, registry *Registry) (*HotReloadMana
 	// Add watch paths
 	for _, path := range watchPaths {
 		if err := watcher.Add(path); err != nil {
-			watcher.Close()
+			_ = watcher.Close()
 			return nil, fmt.Errorf("failed to watch path %s: %w", path, err)
 		}
 	}
@@ -87,7 +87,7 @@ func (h *HotReloadManager) Stop() error {
 	fmt.Printf("Stopping plugin hot-reload manager")
 
 	close(h.stopChan)
-	h.watcher.Close()
+	_ = h.watcher.Close()
 
 	fmt.Printf("Plugin hot-reload manager stopped")
 	return nil

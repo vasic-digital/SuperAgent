@@ -77,9 +77,9 @@ func TestProtocolAnalyticsService_RecordRequest(t *testing.T) {
 	})
 
 	t.Run("updates latency statistics", func(t *testing.T) {
-		service.RecordRequest(ctx, "acp", "method1", 50*time.Millisecond, true, "")
-		service.RecordRequest(ctx, "acp", "method2", 150*time.Millisecond, true, "")
-		service.RecordRequest(ctx, "acp", "method3", 100*time.Millisecond, true, "")
+		_ = service.RecordRequest(ctx, "acp", "method1", 50*time.Millisecond, true, "")
+		_ = service.RecordRequest(ctx, "acp", "method2", 150*time.Millisecond, true, "")
+		_ = service.RecordRequest(ctx, "acp", "method3", 100*time.Millisecond, true, "")
 
 		metrics, err := service.GetProtocolMetrics("acp")
 		require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestProtocolAnalyticsService_GetProtocolMetrics(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("get existing metrics", func(t *testing.T) {
-		service.RecordRequest(ctx, "mcp", "execute", 100*time.Millisecond, true, "")
+		_ = service.RecordRequest(ctx, "mcp", "execute", 100*time.Millisecond, true, "")
 
 		metrics, err := service.GetProtocolMetrics("mcp")
 		require.NoError(t, err)
@@ -132,9 +132,9 @@ func TestProtocolAnalyticsService_GetAllProtocolMetrics(t *testing.T) {
 	service := NewProtocolAnalyticsService(nil, log)
 	ctx := context.Background()
 
-	service.RecordRequest(ctx, "mcp", "execute", 100*time.Millisecond, true, "")
-	service.RecordRequest(ctx, "lsp", "completion", 200*time.Millisecond, true, "")
-	service.RecordRequest(ctx, "acp", "call", 150*time.Millisecond, true, "")
+	_ = service.RecordRequest(ctx, "mcp", "execute", 100*time.Millisecond, true, "")
+	_ = service.RecordRequest(ctx, "lsp", "completion", 200*time.Millisecond, true, "")
+	_ = service.RecordRequest(ctx, "acp", "call", 150*time.Millisecond, true, "")
 
 	allMetrics := service.GetAllProtocolMetrics()
 
@@ -150,8 +150,8 @@ func TestProtocolAnalyticsService_GetPerformanceStats(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("get existing stats", func(t *testing.T) {
-		service.RecordRequest(ctx, "mcp", "method1", 100*time.Millisecond, true, "")
-		service.RecordRequest(ctx, "mcp", "method2", 200*time.Millisecond, false, "error1")
+		_ = service.RecordRequest(ctx, "mcp", "method1", 100*time.Millisecond, true, "")
+		_ = service.RecordRequest(ctx, "mcp", "method2", 200*time.Millisecond, false, "error1")
 
 		stats, err := service.GetPerformanceStats("mcp")
 		require.NoError(t, err)
@@ -175,7 +175,7 @@ func TestProtocolAnalyticsService_GetUsagePatterns(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("get existing patterns", func(t *testing.T) {
-		service.RecordRequest(ctx, "mcp", "execute", 100*time.Millisecond, true, "")
+		_ = service.RecordRequest(ctx, "mcp", "execute", 100*time.Millisecond, true, "")
 
 		patterns, err := service.GetUsagePatterns("mcp")
 		require.NoError(t, err)
@@ -197,7 +197,7 @@ func TestProtocolAnalyticsService_AnalyzePerformance(t *testing.T) {
 
 	t.Run("healthy protocol", func(t *testing.T) {
 		for i := 0; i < 100; i++ {
-			service.RecordRequest(ctx, "healthy", "method", 100*time.Millisecond, true, "")
+			_ = service.RecordRequest(ctx, "healthy", "method", 100*time.Millisecond, true, "")
 		}
 
 		analysis, err := service.AnalyzePerformance("healthy")
@@ -210,10 +210,10 @@ func TestProtocolAnalyticsService_AnalyzePerformance(t *testing.T) {
 
 	t.Run("protocol with high error rate", func(t *testing.T) {
 		for i := 0; i < 50; i++ {
-			service.RecordRequest(ctx, "error-prone", "method", 100*time.Millisecond, false, "error")
+			_ = service.RecordRequest(ctx, "error-prone", "method", 100*time.Millisecond, false, "error")
 		}
 		for i := 0; i < 50; i++ {
-			service.RecordRequest(ctx, "error-prone", "method", 100*time.Millisecond, true, "")
+			_ = service.RecordRequest(ctx, "error-prone", "method", 100*time.Millisecond, true, "")
 		}
 
 		analysis, err := service.AnalyzePerformance("error-prone")
@@ -224,7 +224,7 @@ func TestProtocolAnalyticsService_AnalyzePerformance(t *testing.T) {
 
 	t.Run("protocol with high latency", func(t *testing.T) {
 		for i := 0; i < 10; i++ {
-			service.RecordRequest(ctx, "slow", "method", 10*time.Second, true, "")
+			_ = service.RecordRequest(ctx, "slow", "method", 10*time.Second, true, "")
 		}
 
 		analysis, err := service.AnalyzePerformance("slow")
@@ -233,7 +233,7 @@ func TestProtocolAnalyticsService_AnalyzePerformance(t *testing.T) {
 	})
 
 	t.Run("protocol with extreme latency spikes", func(t *testing.T) {
-		service.RecordRequest(ctx, "spiky", "method", 45*time.Second, true, "")
+		_ = service.RecordRequest(ctx, "spiky", "method", 45*time.Second, true, "")
 
 		analysis, err := service.AnalyzePerformance("spiky")
 		require.NoError(t, err)
@@ -255,13 +255,13 @@ func TestProtocolAnalyticsService_GetTopProtocols(t *testing.T) {
 
 	// Record different request counts
 	for i := 0; i < 100; i++ {
-		service.RecordRequest(ctx, "high-traffic", "method", 100*time.Millisecond, true, "")
+		_ = service.RecordRequest(ctx, "high-traffic", "method", 100*time.Millisecond, true, "")
 	}
 	for i := 0; i < 50; i++ {
-		service.RecordRequest(ctx, "medium-traffic", "method", 100*time.Millisecond, true, "")
+		_ = service.RecordRequest(ctx, "medium-traffic", "method", 100*time.Millisecond, true, "")
 	}
 	for i := 0; i < 10; i++ {
-		service.RecordRequest(ctx, "low-traffic", "method", 100*time.Millisecond, true, "")
+		_ = service.RecordRequest(ctx, "low-traffic", "method", 100*time.Millisecond, true, "")
 	}
 
 	t.Run("get top 2 protocols", func(t *testing.T) {
@@ -282,8 +282,8 @@ func TestProtocolAnalyticsService_GenerateUsageReport(t *testing.T) {
 	service := NewProtocolAnalyticsService(nil, log)
 	ctx := context.Background()
 
-	service.RecordRequest(ctx, "mcp", "execute", 100*time.Millisecond, true, "")
-	service.RecordRequest(ctx, "lsp", "completion", 200*time.Millisecond, false, "error")
+	_ = service.RecordRequest(ctx, "mcp", "execute", 100*time.Millisecond, true, "")
+	_ = service.RecordRequest(ctx, "lsp", "completion", 200*time.Millisecond, false, "error")
 
 	report := service.GenerateUsageReport()
 
@@ -303,7 +303,7 @@ func TestProtocolAnalyticsService_UpdateConnectionCount(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("update existing protocol", func(t *testing.T) {
-		service.RecordRequest(ctx, "mcp", "execute", 100*time.Millisecond, true, "")
+		_ = service.RecordRequest(ctx, "mcp", "execute", 100*time.Millisecond, true, "")
 		service.UpdateConnectionCount("mcp", 10)
 
 		metrics, _ := service.GetProtocolMetrics("mcp")
@@ -331,7 +331,7 @@ func TestProtocolAnalyticsService_CleanOldData(t *testing.T) {
 	service := NewProtocolAnalyticsService(config, log)
 	ctx := context.Background()
 
-	service.RecordRequest(ctx, "old-protocol", "method", 100*time.Millisecond, true, "")
+	_ = service.RecordRequest(ctx, "old-protocol", "method", 100*time.Millisecond, true, "")
 
 	// Wait for retention period to expire
 	time.Sleep(5 * time.Millisecond)
@@ -351,7 +351,7 @@ func TestProtocolAnalyticsService_GetHealthStatus(t *testing.T) {
 
 	t.Run("healthy status", func(t *testing.T) {
 		for i := 0; i < 100; i++ {
-			service.RecordRequest(ctx, "healthy-protocol", "method", 100*time.Millisecond, true, "")
+			_ = service.RecordRequest(ctx, "healthy-protocol", "method", 100*time.Millisecond, true, "")
 		}
 
 		status := service.GetHealthStatus()
@@ -363,10 +363,10 @@ func TestProtocolAnalyticsService_GetHealthStatus(t *testing.T) {
 
 	t.Run("degraded status with high error rate", func(t *testing.T) {
 		for i := 0; i < 50; i++ {
-			service.RecordRequest(ctx, "error-protocol", "method", 100*time.Millisecond, false, "error")
+			_ = service.RecordRequest(ctx, "error-protocol", "method", 100*time.Millisecond, false, "error")
 		}
 		for i := 0; i < 50; i++ {
-			service.RecordRequest(ctx, "error-protocol", "method", 100*time.Millisecond, true, "")
+			_ = service.RecordRequest(ctx, "error-protocol", "method", 100*time.Millisecond, true, "")
 		}
 
 		status := service.GetHealthStatus()
@@ -474,7 +474,7 @@ func BenchmarkProtocolAnalyticsService_RecordRequest(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		service.RecordRequest(ctx, "bench-protocol", "method", 100*time.Millisecond, true, "")
+		_ = service.RecordRequest(ctx, "bench-protocol", "method", 100*time.Millisecond, true, "")
 	}
 }
 
@@ -484,7 +484,7 @@ func BenchmarkProtocolAnalyticsService_GetProtocolMetrics(b *testing.B) {
 	service := NewProtocolAnalyticsService(nil, log)
 	ctx := context.Background()
 
-	service.RecordRequest(ctx, "bench-protocol", "method", 100*time.Millisecond, true, "")
+	_ = service.RecordRequest(ctx, "bench-protocol", "method", 100*time.Millisecond, true, "")
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -502,7 +502,7 @@ func BenchmarkProtocolAnalyticsService_GenerateUsageReport(b *testing.B) {
 	for i := 0; i < 10; i++ {
 		protocol := "protocol-" + string(rune('a'+i))
 		for j := 0; j < 100; j++ {
-			service.RecordRequest(ctx, protocol, "method", 100*time.Millisecond, true, "")
+			_ = service.RecordRequest(ctx, protocol, "method", 100*time.Millisecond, true, "")
 		}
 	}
 

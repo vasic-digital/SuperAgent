@@ -34,7 +34,7 @@ func TestNewSSEManager(t *testing.T) {
 		assert.Equal(t, 30*time.Second, manager.heartbeatInterval)
 		assert.Equal(t, 100, manager.bufferSize)
 
-		manager.Stop()
+		_ = manager.Stop()
 	})
 
 	t.Run("with custom config", func(t *testing.T) {
@@ -50,7 +50,7 @@ func TestNewSSEManager(t *testing.T) {
 		assert.Equal(t, 10*time.Second, manager.heartbeatInterval)
 		assert.Equal(t, 50, manager.bufferSize)
 
-		manager.Stop()
+		_ = manager.Stop()
 	})
 }
 
@@ -70,7 +70,7 @@ func TestSSEManager_StartStop(t *testing.T) {
 func TestSSEManager_RegisterClient(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	t.Run("register single client", func(t *testing.T) {
 		clientChan := make(chan []byte, 10)
@@ -109,10 +109,10 @@ func TestSSEManager_RegisterClient(t *testing.T) {
 func TestSSEManager_UnregisterClient(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	clientChan := make(chan []byte, 10)
-	manager.RegisterClient("task-1", clientChan)
+	_ = manager.RegisterClient("task-1", clientChan)
 
 	err := manager.UnregisterClient("task-1", clientChan)
 	assert.NoError(t, err)
@@ -125,7 +125,7 @@ func TestSSEManager_UnregisterClient(t *testing.T) {
 func TestSSEManager_UnregisterClient_NonexistentTask(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	clientChan := make(chan []byte, 10)
 
@@ -137,7 +137,7 @@ func TestSSEManager_UnregisterClient_NonexistentTask(t *testing.T) {
 func TestSSEManager_RegisterGlobalClient(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	clientChan := make(chan []byte, 10)
 
@@ -152,10 +152,10 @@ func TestSSEManager_RegisterGlobalClient(t *testing.T) {
 func TestSSEManager_UnregisterGlobalClient(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	clientChan := make(chan []byte, 10)
-	manager.RegisterGlobalClient(clientChan)
+	_ = manager.RegisterGlobalClient(clientChan)
 
 	err := manager.UnregisterGlobalClient(clientChan)
 	assert.NoError(t, err)
@@ -168,10 +168,10 @@ func TestSSEManager_UnregisterGlobalClient(t *testing.T) {
 func TestSSEManager_Broadcast(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	clientChan := make(chan []byte, 10)
-	manager.RegisterClient("task-1", clientChan)
+	_ = manager.RegisterClient("task-1", clientChan)
 
 	data := []byte(`{"message":"test"}`)
 	manager.Broadcast("task-1", data)
@@ -189,10 +189,10 @@ func TestSSEManager_Broadcast(t *testing.T) {
 func TestSSEManager_Broadcast_IncludesGlobalClients(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	globalChan := make(chan []byte, 10)
-	manager.RegisterGlobalClient(globalChan)
+	_ = manager.RegisterGlobalClient(globalChan)
 
 	data := []byte(`{"message":"test"}`)
 	manager.Broadcast("task-1", data)
@@ -209,11 +209,11 @@ func TestSSEManager_Broadcast_IncludesGlobalClients(t *testing.T) {
 func TestSSEManager_Broadcast_FullChannel(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	// Create a channel with no buffer
 	clientChan := make(chan []byte)
-	manager.RegisterClient("task-1", clientChan)
+	_ = manager.RegisterClient("task-1", clientChan)
 
 	// This should not block
 	data := []byte(`{"message":"test"}`)
@@ -235,10 +235,10 @@ func TestSSEManager_Broadcast_FullChannel(t *testing.T) {
 func TestSSEManager_BroadcastEvent(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	clientChan := make(chan []byte, 10)
-	manager.RegisterClient("task-1", clientChan)
+	_ = manager.RegisterClient("task-1", clientChan)
 
 	eventData := map[string]interface{}{
 		"progress": 50,
@@ -261,10 +261,10 @@ func TestSSEManager_BroadcastEvent(t *testing.T) {
 func TestSSEManager_BroadcastEvent_InvalidData(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	clientChan := make(chan []byte, 10)
-	manager.RegisterClient("task-1", clientChan)
+	_ = manager.RegisterClient("task-1", clientChan)
 
 	// Create a value that cannot be marshaled to JSON
 	invalidData := make(chan int)
@@ -277,15 +277,15 @@ func TestSSEManager_BroadcastEvent_InvalidData(t *testing.T) {
 func TestSSEManager_BroadcastAll(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	chan1 := make(chan []byte, 10)
 	chan2 := make(chan []byte, 10)
 	chan3 := make(chan []byte, 10) // global
 
-	manager.RegisterClient("task-1", chan1)
-	manager.RegisterClient("task-2", chan2)
-	manager.RegisterGlobalClient(chan3)
+	_ = manager.RegisterClient("task-1", chan1)
+	_ = manager.RegisterClient("task-2", chan2)
+	_ = manager.RegisterGlobalClient(chan3)
 
 	data := []byte(`{"broadcast":"all"}`)
 	manager.BroadcastAll(data)
@@ -305,20 +305,20 @@ func TestSSEManager_BroadcastAll(t *testing.T) {
 func TestSSEManager_GetClientCount(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	assert.Equal(t, 0, manager.GetClientCount("task-1"))
 
 	chan1 := make(chan []byte, 10)
 	chan2 := make(chan []byte, 10)
 
-	manager.RegisterClient("task-1", chan1)
+	_ = manager.RegisterClient("task-1", chan1)
 	assert.Equal(t, 1, manager.GetClientCount("task-1"))
 
-	manager.RegisterClient("task-1", chan2)
+	_ = manager.RegisterClient("task-1", chan2)
 	assert.Equal(t, 2, manager.GetClientCount("task-1"))
 
-	manager.UnregisterClient("task-1", chan1)
+	_ = manager.UnregisterClient("task-1", chan1)
 	assert.Equal(t, 1, manager.GetClientCount("task-1"))
 }
 
@@ -326,7 +326,7 @@ func TestSSEManager_GetClientCount(t *testing.T) {
 func TestSSEManager_GetTotalClientCount(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	assert.Equal(t, 0, manager.GetTotalClientCount())
 
@@ -334,9 +334,9 @@ func TestSSEManager_GetTotalClientCount(t *testing.T) {
 	chan2 := make(chan []byte, 10)
 	chan3 := make(chan []byte, 10)
 
-	manager.RegisterClient("task-1", chan1)
-	manager.RegisterClient("task-2", chan2)
-	manager.RegisterGlobalClient(chan3)
+	_ = manager.RegisterClient("task-1", chan1)
+	_ = manager.RegisterClient("task-2", chan2)
+	_ = manager.RegisterGlobalClient(chan3)
 
 	assert.Equal(t, 3, manager.GetTotalClientCount())
 }
@@ -431,7 +431,7 @@ func TestSSESubscriber_FullChannel(t *testing.T) {
 func TestSSEManager_ConcurrentRegistration(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	var wg sync.WaitGroup
 	numGoroutines := 10
@@ -443,7 +443,7 @@ func TestSSEManager_ConcurrentRegistration(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < numClients; j++ {
 				clientChan := make(chan []byte, 10)
-				manager.RegisterClient("task-1", clientChan)
+				_ = manager.RegisterClient("task-1", clientChan)
 			}
 		}()
 	}
@@ -458,13 +458,13 @@ func TestSSEManager_ConcurrentRegistration(t *testing.T) {
 func TestSSEManager_ConcurrentBroadcast(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	// Register multiple clients
 	channels := make([]chan []byte, 10)
 	for i := range channels {
 		channels[i] = make(chan []byte, 100)
-		manager.RegisterClient("task-1", channels[i])
+		_ = manager.RegisterClient("task-1", channels[i])
 	}
 
 	var wg sync.WaitGroup
@@ -495,10 +495,10 @@ func TestSSEManager_Heartbeat(t *testing.T) {
 	}
 
 	manager := NewSSEManager(config, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	clientChan := make(chan []byte, 10)
-	manager.RegisterClient("task-1", clientChan)
+	_ = manager.RegisterClient("task-1", clientChan)
 
 	// Wait for at least one heartbeat
 	select {
@@ -517,8 +517,8 @@ func TestSSEManager_Stop_ClosesChannels(t *testing.T) {
 	clientChan := make(chan []byte, 10)
 	globalChan := make(chan []byte, 10)
 
-	manager.RegisterClient("task-1", clientChan)
-	manager.RegisterGlobalClient(globalChan)
+	_ = manager.RegisterClient("task-1", clientChan)
+	_ = manager.RegisterGlobalClient(globalChan)
 
 	err := manager.Stop()
 	assert.NoError(t, err)
@@ -549,10 +549,10 @@ func TestSSEConfig(t *testing.T) {
 func TestSSEManager_EventDataMarshaling(t *testing.T) {
 	logger := testLogger()
 	manager := NewSSEManager(nil, logger)
-	defer manager.Stop()
+	defer func() { _ = manager.Stop() }()
 
 	clientChan := make(chan []byte, 10)
-	manager.RegisterClient("task-1", clientChan)
+	_ = manager.RegisterClient("task-1", clientChan)
 
 	// Complex event data
 	eventData := map[string]interface{}{

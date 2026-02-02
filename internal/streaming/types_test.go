@@ -290,7 +290,7 @@ func TestSSEWriter_Concurrent(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			sse.WriteData(strings.Repeat("x", 10))
+			_ = sse.WriteData(strings.Repeat("x", 10))
 		}(i)
 	}
 	wg.Wait()
@@ -424,8 +424,8 @@ func TestAsyncGenerator_Next(t *testing.T) {
 	ctx := context.Background()
 
 	go func() {
-		ag.YieldContent("Chunk 1", 0)
-		ag.YieldContent("Chunk 2", 1)
+		_ = ag.YieldContent("Chunk 1", 0)
+		_ = ag.YieldContent("Chunk 2", 1)
 	}()
 
 	chunk1, err := ag.Next(ctx)
@@ -473,7 +473,7 @@ func TestAsyncGenerator_Channel(t *testing.T) {
 
 	go func() {
 		for i := 0; i < 5; i++ {
-			ag.YieldContent("chunk", i)
+			_ = ag.YieldContent("chunk", i)
 		}
 		ag.Close(nil)
 	}()
@@ -717,10 +717,10 @@ func TestStdoutWriter_LineMode(t *testing.T) {
 	sw := NewStdoutWriter(buf, true) // Line mode enabled
 
 	// Write without newline - should buffer
-	sw.Write([]byte("Partial"))
+	_, _ = sw.Write([]byte("Partial"))
 
 	// Write with newline - should flush
-	sw.Write([]byte(" line\n"))
+	_, _ = sw.Write([]byte(" line\n"))
 
 	assert.Equal(t, "Partial line\n", buf.String())
 }
@@ -729,7 +729,7 @@ func TestStdoutWriter_Flush(t *testing.T) {
 	buf := &bytes.Buffer{}
 	sw := NewStdoutWriter(buf, true) // Line mode
 
-	sw.Write([]byte("Buffered"))
+	_, _ = sw.Write([]byte("Buffered"))
 	err := sw.Flush()
 	require.NoError(t, err)
 	assert.Equal(t, "Buffered", buf.String())
@@ -841,7 +841,7 @@ func TestWebSocketWriter_WithMockConn(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		// Echo messages back
 		for {
@@ -849,7 +849,7 @@ func TestWebSocketWriter_WithMockConn(t *testing.T) {
 			if err != nil {
 				return
 			}
-			conn.WriteMessage(msgType, msg)
+			_ = conn.WriteMessage(msgType, msg)
 		}
 	}))
 	defer server.Close()
@@ -858,7 +858,7 @@ func TestWebSocketWriter_WithMockConn(t *testing.T) {
 	url := "ws" + strings.TrimPrefix(server.URL, "http")
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// Create WebSocket writer
 	wsw := NewWebSocketWriter(conn, nil)
@@ -883,14 +883,14 @@ func TestWebSocketWriter_WriteJSON(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		for {
 			_, msg, err := conn.ReadMessage()
 			if err != nil {
 				return
 			}
-			conn.WriteMessage(websocket.TextMessage, msg)
+			_ = conn.WriteMessage(websocket.TextMessage, msg)
 		}
 	}))
 	defer server.Close()
@@ -898,7 +898,7 @@ func TestWebSocketWriter_WriteJSON(t *testing.T) {
 	url := "ws" + strings.TrimPrefix(server.URL, "http")
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	wsw := NewWebSocketWriter(conn, nil)
 
@@ -927,7 +927,7 @@ func TestWebSocketWriter_WritePing(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		// Handle ping/pong
 		conn.SetPingHandler(func(appData string) error {
@@ -946,7 +946,7 @@ func TestWebSocketWriter_WritePing(t *testing.T) {
 	url := "ws" + strings.TrimPrefix(server.URL, "http")
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	wsw := NewWebSocketWriter(conn, nil)
 
@@ -964,7 +964,7 @@ func TestWebSocketWriter_Close(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		for {
 			_, _, err := conn.ReadMessage()
@@ -999,15 +999,15 @@ func TestSSEWriter_RaceSafety(t *testing.T) {
 		wg.Add(3)
 		go func(idx int) {
 			defer wg.Done()
-			sse.WriteData("data")
+			_ = sse.WriteData("data")
 		}(i)
 		go func(idx int) {
 			defer wg.Done()
-			sse.WriteEvent("event", "payload", "")
+			_ = sse.WriteEvent("event", "payload", "")
 		}(i)
 		go func(idx int) {
 			defer wg.Done()
-			sse.WriteHeartbeat()
+			_ = sse.WriteHeartbeat()
 		}(i)
 	}
 	wg.Wait()
@@ -1022,7 +1022,7 @@ func TestJSONLWriter_RaceSafety(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			jw.WriteChunk(&StreamChunk{Content: "test", Index: idx})
+			_ = jw.WriteChunk(&StreamChunk{Content: "test", Index: idx})
 		}(i)
 	}
 	wg.Wait()
@@ -1040,7 +1040,7 @@ func TestAsyncGenerator_RaceSafety(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			for j := 0; j < 10; j++ {
-				ag.YieldContent("chunk", idx*10+j)
+				_ = ag.YieldContent("chunk", idx*10+j)
 			}
 		}(i)
 	}
@@ -1075,11 +1075,11 @@ func TestStdoutWriter_RaceSafety(t *testing.T) {
 		wg.Add(2)
 		go func(idx int) {
 			defer wg.Done()
-			sw.Write([]byte("data"))
+			_, _ = sw.Write([]byte("data"))
 		}(i)
 		go func(idx int) {
 			defer wg.Done()
-			sw.WriteLine("line")
+			_ = sw.WriteLine("line")
 		}(i)
 	}
 	wg.Wait()
@@ -1113,7 +1113,7 @@ func BenchmarkSSEWriter_WriteData(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		sse.WriteData("benchmark data")
+		_ = sse.WriteData("benchmark data")
 	}
 }
 
@@ -1124,7 +1124,7 @@ func BenchmarkJSONLWriter_WriteLine(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		jw.WriteLine(data)
+		_ = jw.WriteLine(data)
 	}
 }
 
@@ -1135,13 +1135,13 @@ func BenchmarkAsyncGenerator_YieldNext(b *testing.B) {
 	b.ResetTimer()
 	go func() {
 		for i := 0; i < b.N; i++ {
-			ag.YieldContent("content", i)
+			_ = ag.YieldContent("content", i)
 		}
 		ag.Close(nil)
 	}()
 
 	for i := 0; i < b.N; i++ {
-		ag.Next(ctx)
+		_, _ = ag.Next(ctx)
 	}
 }
 
@@ -1151,7 +1151,7 @@ func BenchmarkStdoutWriter_WriteLine(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		sw.WriteLine("benchmark line")
+		_ = sw.WriteLine("benchmark line")
 	}
 }
 

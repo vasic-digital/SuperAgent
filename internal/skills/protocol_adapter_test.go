@@ -52,7 +52,7 @@ func TestProtocolSkillAdapter_RegisterAllSkillsAsTools(t *testing.T) {
 func TestProtocolSkillAdapter_MCPToolFormat(t *testing.T) {
 	service := setupTestService()
 	adapter := NewProtocolSkillAdapter(service)
-	adapter.RegisterAllSkillsAsTools()
+	_ = adapter.RegisterAllSkillsAsTools()
 
 	mcpTools := adapter.GetMCPTools()
 	require.NotEmpty(t, mcpTools)
@@ -74,7 +74,7 @@ func TestProtocolSkillAdapter_MCPToolFormat(t *testing.T) {
 func TestProtocolSkillAdapter_ACPActionFormat(t *testing.T) {
 	service := setupTestService()
 	adapter := NewProtocolSkillAdapter(service)
-	adapter.RegisterAllSkillsAsTools()
+	_ = adapter.RegisterAllSkillsAsTools()
 
 	actions := adapter.GetACPActions()
 	require.NotEmpty(t, actions)
@@ -89,7 +89,7 @@ func TestProtocolSkillAdapter_ACPActionFormat(t *testing.T) {
 func TestProtocolSkillAdapter_LSPCommandFormat(t *testing.T) {
 	service := setupTestService()
 	adapter := NewProtocolSkillAdapter(service)
-	adapter.RegisterAllSkillsAsTools()
+	_ = adapter.RegisterAllSkillsAsTools()
 
 	commands := adapter.GetLSPCommands()
 	require.NotEmpty(t, commands)
@@ -103,7 +103,7 @@ func TestProtocolSkillAdapter_LSPCommandFormat(t *testing.T) {
 func TestProtocolSkillAdapter_InvokeMCPTool(t *testing.T) {
 	service := setupTestService()
 	adapter := NewProtocolSkillAdapter(service)
-	adapter.RegisterAllSkillsAsTools()
+	_ = adapter.RegisterAllSkillsAsTools()
 	ctx := context.Background()
 
 	result, err := adapter.InvokeMCPTool(ctx, "skill_docker-compose-creator", map[string]interface{}{
@@ -124,7 +124,7 @@ func TestProtocolSkillAdapter_InvokeMCPTool(t *testing.T) {
 func TestProtocolSkillAdapter_InvokeACPAction(t *testing.T) {
 	service := setupTestService()
 	adapter := NewProtocolSkillAdapter(service)
-	adapter.RegisterAllSkillsAsTools()
+	_ = adapter.RegisterAllSkillsAsTools()
 	ctx := context.Background()
 
 	result, err := adapter.InvokeACPAction(ctx, "skill.kubernetes-deployment", map[string]interface{}{
@@ -141,7 +141,7 @@ func TestProtocolSkillAdapter_InvokeACPAction(t *testing.T) {
 func TestProtocolSkillAdapter_InvokeLSPCommand(t *testing.T) {
 	service := setupTestService()
 	adapter := NewProtocolSkillAdapter(service)
-	adapter.RegisterAllSkillsAsTools()
+	_ = adapter.RegisterAllSkillsAsTools()
 	ctx := context.Background()
 
 	result, err := adapter.InvokeLSPCommand(ctx, "helixagent.skill.security-scanner", []interface{}{
@@ -158,7 +158,7 @@ func TestProtocolSkillAdapter_InvokeLSPCommand(t *testing.T) {
 func TestProtocolSkillAdapter_InvokeNonexistentSkill(t *testing.T) {
 	service := setupTestService()
 	adapter := NewProtocolSkillAdapter(service)
-	adapter.RegisterAllSkillsAsTools()
+	_ = adapter.RegisterAllSkillsAsTools()
 	ctx := context.Background()
 
 	result, err := adapter.InvokeMCPTool(ctx, "skill_nonexistent", map[string]interface{}{
@@ -174,7 +174,7 @@ func TestProtocolSkillAdapter_InvokeNonexistentSkill(t *testing.T) {
 func TestProtocolSkillAdapter_ToMCPToolList(t *testing.T) {
 	service := setupTestService()
 	adapter := NewProtocolSkillAdapter(service)
-	adapter.RegisterAllSkillsAsTools()
+	_ = adapter.RegisterAllSkillsAsTools()
 
 	data, err := adapter.ToMCPToolList()
 	require.NoError(t, err)
@@ -190,7 +190,7 @@ func TestProtocolSkillAdapter_ToMCPToolList(t *testing.T) {
 func TestProtocolSkillAdapter_ToACPActionList(t *testing.T) {
 	service := setupTestService()
 	adapter := NewProtocolSkillAdapter(service)
-	adapter.RegisterAllSkillsAsTools()
+	_ = adapter.RegisterAllSkillsAsTools()
 
 	data, err := adapter.ToACPActionList()
 	require.NoError(t, err)
@@ -206,7 +206,7 @@ func TestProtocolSkillAdapter_ToACPActionList(t *testing.T) {
 func TestProtocolSkillAdapter_ToLSPCommandList(t *testing.T) {
 	service := setupTestService()
 	adapter := NewProtocolSkillAdapter(service)
-	adapter.RegisterAllSkillsAsTools()
+	_ = adapter.RegisterAllSkillsAsTools()
 
 	data, err := adapter.ToLSPCommandList()
 	require.NoError(t, err)

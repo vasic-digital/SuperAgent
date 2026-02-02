@@ -648,7 +648,7 @@ func TestOrchestrator_StatisticsWithData(t *testing.T) {
 	// Add some test data to knowledge repo
 	repo, ok := orch.GetKnowledgeRepository().(*knowledge.DefaultRepository)
 	if ok {
-		repo.RecordPattern(ctx, &knowledge.DebatePattern{
+		_ = repo.RecordPattern(ctx, &knowledge.DebatePattern{
 			Name:        "Test Pattern",
 			PatternType: knowledge.PatternTypeConsensusBuilding,
 			Domain:      agents.DomainCode,

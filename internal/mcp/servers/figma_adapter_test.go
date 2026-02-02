@@ -59,7 +59,7 @@ func TestFigmaAdapter_Connect(t *testing.T) {
 				assert.Equal(t, "/me", r.URL.Path)
 				assert.Equal(t, "test-token", r.Header.Get("X-Figma-Token"))
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"id":     "12345",
 					"handle": "testuser",
 					"email":  "test@example.com",
@@ -71,7 +71,7 @@ func TestFigmaAdapter_Connect(t *testing.T) {
 			name: "authentication failure",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{"status":403,"err":"Invalid token"}`))
+				_, _ = w.Write([]byte(`{"status":403,"err":"Invalid token"}`))
 			},
 			expectError: true,
 		},
@@ -107,7 +107,7 @@ func TestFigmaAdapter_Health(t *testing.T) {
 			name: "healthy",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]string{"id": "12345"})
+				_ = json.NewEncoder(w).Encode(map[string]string{"id": "12345"})
 			},
 			expectError: false,
 		},
@@ -162,7 +162,7 @@ func TestFigmaAdapter_GetFile(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "/files/abc123", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(expectedFile)
+				_ = json.NewEncoder(w).Encode(expectedFile)
 			},
 			expectError: false,
 		},
@@ -171,7 +171,7 @@ func TestFigmaAdapter_GetFile(t *testing.T) {
 			fileKey: "nonexistent",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(`{"status":404,"err":"File not found"}`))
+				_, _ = w.Write([]byte(`{"status":404,"err":"File not found"}`))
 			},
 			expectError: true,
 		},
@@ -180,7 +180,7 @@ func TestFigmaAdapter_GetFile(t *testing.T) {
 			fileKey: "invalid",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid json"))
+				_, _ = w.Write([]byte("invalid json"))
 			},
 			expectError: true,
 		},
@@ -240,7 +240,7 @@ func TestFigmaAdapter_GetFileNodes(t *testing.T) {
 					},
 				}
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(response)
+				_ = json.NewEncoder(w).Encode(response)
 			},
 			expectError: false,
 		},
@@ -300,7 +300,7 @@ func TestFigmaAdapter_GetImages(t *testing.T) {
 					},
 				}
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(response)
+				_ = json.NewEncoder(w).Encode(response)
 			},
 			expectError: false,
 		},
@@ -320,7 +320,7 @@ func TestFigmaAdapter_GetImages(t *testing.T) {
 					},
 				}
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(response)
+				_ = json.NewEncoder(w).Encode(response)
 			},
 			expectError: false,
 		},
@@ -334,7 +334,7 @@ func TestFigmaAdapter_GetImages(t *testing.T) {
 					"err":    "Invalid node IDs",
 				}
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(response)
+				_ = json.NewEncoder(w).Encode(response)
 			},
 			expectError: true,
 		},
@@ -394,7 +394,7 @@ func TestFigmaAdapter_GetComments(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "/files/abc123/comments", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"comments": expectedComments,
 				})
 			},
@@ -446,12 +446,12 @@ func TestFigmaAdapter_PostComment(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "POST", r.Method)
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.Equal(t, "Test comment", body["message"])
 				assert.Nil(t, body["client_meta"])
 
 				w.WriteHeader(http.StatusCreated)
-				json.NewEncoder(w).Encode(FigmaComment{
+				_ = json.NewEncoder(w).Encode(FigmaComment{
 					ID:      "new-comment",
 					Message: "Test comment",
 				})
@@ -465,11 +465,11 @@ func TestFigmaAdapter_PostComment(t *testing.T) {
 			position: &FigmaRect{X: 100, Y: 200},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.NotNil(t, body["client_meta"])
 
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(FigmaComment{
+				_ = json.NewEncoder(w).Encode(FigmaComment{
 					ID:      "positioned-comment",
 					Message: "Comment at position",
 				})
@@ -482,7 +482,7 @@ func TestFigmaAdapter_PostComment(t *testing.T) {
 			message: "Will fail",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusForbidden)
-				w.Write([]byte(`{"err":"Access denied"}`))
+				_, _ = w.Write([]byte(`{"err":"Access denied"}`))
 			},
 			expectError: true,
 		},
@@ -520,7 +520,7 @@ func TestFigmaAdapter_GetTeamProjects(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "/teams/team123/projects", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(FigmaTeamProject{
+				_ = json.NewEncoder(w).Encode(FigmaTeamProject{
 					Name: "Test Team",
 					Projects: []FigmaProject{
 						{ID: "proj1", Name: "Project 1"},
@@ -573,7 +573,7 @@ func TestFigmaAdapter_GetProjectFiles(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "/projects/proj123/files", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"files": []FigmaFile{
 						{Name: "File 1"},
 						{Name: "File 2"},
@@ -624,7 +624,7 @@ func TestFigmaAdapter_GetFileComponents(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "/files/abc123/components", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"meta": map[string]interface{}{
 						"components": map[string]FigmaComponent{
 							"comp1": {Key: "comp1", Name: "Button"},
@@ -677,7 +677,7 @@ func TestFigmaAdapter_GetFileStyles(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "/files/abc123/styles", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"meta": map[string]interface{}{
 						"styles": map[string]interface{}{
 							"style1": map[string]interface{}{"name": "Primary Color"},
@@ -762,7 +762,7 @@ func TestFigmaAdapter_doRequest_WithAuth(t *testing.T) {
 		assert.Equal(t, "test-token", token)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"id": "12345"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"id": "12345"})
 	}))
 	defer server.Close()
 

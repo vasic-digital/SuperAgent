@@ -35,7 +35,7 @@ func TestCogneeHandler_VisualizeGraph(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/visualize" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"graph": map[string]interface{}{
 					"nodes": []interface{}{"n1", "n2"},
 					"edges": []interface{}{"e1"},
@@ -108,7 +108,7 @@ func TestCogneeHandler_GetDatasets(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/datasets" && r.Method == "GET" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"datasets": []map[string]interface{}{
 					{"id": "ds-1", "name": "dataset1"},
 					{"id": "ds-2", "name": "dataset2"},
@@ -175,7 +175,7 @@ func TestCogneeHandler_GetDatasets_Error(t *testing.T) {
 func BenchmarkCogneeHandler_VisualizeGraph(b *testing.B) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{"graph": map[string]interface{}{}})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"graph": map[string]interface{}{}})
 	}))
 	defer mockServer.Close()
 

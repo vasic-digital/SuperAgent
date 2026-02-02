@@ -27,7 +27,7 @@ func TestDefaultTieredCacheConfig(t *testing.T) {
 
 func TestNewTieredCache_NilConfig(t *testing.T) {
 	tc := NewTieredCache(nil, nil)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	assert.NotNil(t, tc)
 	assert.NotNil(t, tc.l1)
@@ -49,7 +49,7 @@ func TestNewTieredCache_CustomConfig(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	assert.NotNil(t, tc)
 	assert.Equal(t, 100, tc.l1.maxSize)
@@ -65,7 +65,7 @@ func TestTieredCache_Get_L1Only(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -96,7 +96,7 @@ func TestTieredCache_Set_L1Only(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -131,7 +131,7 @@ func TestTieredCache_Set_TTLCapping(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -157,7 +157,7 @@ func TestTieredCache_Set_WithTags(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -187,7 +187,7 @@ func TestTieredCache_Delete_L1Only(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -221,7 +221,7 @@ func TestTieredCache_InvalidateByTag(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -258,7 +258,7 @@ func TestTieredCache_InvalidateByTag_NoKeys(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -278,7 +278,7 @@ func TestTieredCache_InvalidateByTags(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -311,7 +311,7 @@ func TestTieredCache_InvalidatePrefix_L1Only(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -350,7 +350,7 @@ func TestTieredCache_Metrics(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -361,16 +361,16 @@ func TestTieredCache_Metrics(t *testing.T) {
 	assert.Equal(t, int64(0), m.L1Size)
 
 	// Generate some cache activity
-	tc.Set(ctx, "key1", "value1", time.Minute)
-	tc.Set(ctx, "key2", "value2", time.Minute)
+	_ = tc.Set(ctx, "key1", "value1", time.Minute)
+	_ = tc.Set(ctx, "key2", "value2", time.Minute)
 
 	// Miss
 	var result string
-	tc.Get(ctx, "nonexistent", &result)
+	_, _ = tc.Get(ctx, "nonexistent", &result)
 
 	// Hits
-	tc.Get(ctx, "key1", &result)
-	tc.Get(ctx, "key2", &result)
+	_, _ = tc.Get(ctx, "key1", &result)
+	_, _ = tc.Get(ctx, "key2", &result)
 
 	// Check metrics
 	m = tc.Metrics()
@@ -388,7 +388,7 @@ func TestTieredCache_HitRate(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -396,13 +396,13 @@ func TestTieredCache_HitRate(t *testing.T) {
 	assert.Equal(t, float64(0), tc.HitRate())
 
 	// Set some values
-	tc.Set(ctx, "key1", "value1", time.Minute)
+	_ = tc.Set(ctx, "key1", "value1", time.Minute)
 
 	// 2 hits, 1 miss = 66.67% hit rate
 	var result string
-	tc.Get(ctx, "key1", &result)    // hit
-	tc.Get(ctx, "key1", &result)    // hit
-	tc.Get(ctx, "missing", &result) // miss
+	_, _ = tc.Get(ctx, "key1", &result)    // hit
+	_, _ = tc.Get(ctx, "key1", &result)    // hit
+	_, _ = tc.Get(ctx, "missing", &result) // miss
 
 	hitRate := tc.HitRate()
 	assert.InDelta(t, 66.67, hitRate, 1.0)
@@ -432,7 +432,7 @@ func TestTieredCache_L1Expiration(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -463,23 +463,23 @@ func TestTieredCache_L1Eviction(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
 	// Fill the cache
-	tc.Set(ctx, "key1", "value1", time.Minute)
-	tc.Set(ctx, "key2", "value2", time.Minute)
-	tc.Set(ctx, "key3", "value3", time.Minute)
+	_ = tc.Set(ctx, "key1", "value1", time.Minute)
+	_ = tc.Set(ctx, "key2", "value2", time.Minute)
+	_ = tc.Set(ctx, "key3", "value3", time.Minute)
 
 	// Access key2 and key3 to increase their hit count
 	var result string
-	tc.Get(ctx, "key2", &result)
-	tc.Get(ctx, "key2", &result)
-	tc.Get(ctx, "key3", &result)
+	_, _ = tc.Get(ctx, "key2", &result)
+	_, _ = tc.Get(ctx, "key2", &result)
+	_, _ = tc.Get(ctx, "key3", &result)
 
 	// Add one more - should evict key1 (lowest hit count)
-	tc.Set(ctx, "key4", "value4", time.Minute)
+	_ = tc.Set(ctx, "key4", "value4", time.Minute)
 
 	// key1 should be evicted
 	found, _ := tc.Get(ctx, "key1", &result)
@@ -554,7 +554,7 @@ func TestTieredCache_ConcurrentAccess(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -565,7 +565,7 @@ func TestTieredCache_ConcurrentAccess(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			key := "key" + string(rune('0'+i%10))
-			tc.Set(ctx, key, i, time.Minute)
+			_ = tc.Set(ctx, key, i, time.Minute)
 		}(i)
 	}
 	wg.Wait()
@@ -577,7 +577,7 @@ func TestTieredCache_ConcurrentAccess(t *testing.T) {
 			defer wg.Done()
 			key := "key" + string(rune('0'+i%10))
 			var result int
-			tc.Get(ctx, key, &result)
+			_, _ = tc.Get(ctx, key, &result)
 		}(i)
 	}
 	wg.Wait()
@@ -591,7 +591,7 @@ func TestTieredCache_L1Disabled(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -614,7 +614,7 @@ func TestTieredCache_InvalidValue(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -665,12 +665,12 @@ func TestTieredCache_L1Cleanup(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
 	// Set value with short TTL
-	tc.Set(ctx, "cleanup-test", "value", 50*time.Millisecond)
+	_ = tc.Set(ctx, "cleanup-test", "value", 50*time.Millisecond)
 
 	// Verify it exists
 	var result string
@@ -702,7 +702,7 @@ func TestTieredCache_L1CleanupLoop_DefaultInterval(t *testing.T) {
 	}
 
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	// Just verify it doesn't panic
 	assert.NotNil(t, tc)

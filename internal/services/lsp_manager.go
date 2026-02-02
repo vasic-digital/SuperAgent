@@ -583,21 +583,21 @@ func (m *LSPManager) startServer(ctx context.Context, server *LSPServer) (*LSPCo
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		stdin.Close()
+		_ = stdin.Close()
 		return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		stdin.Close()
-		stdout.Close()
+		_ = stdin.Close()
+		_ = stdout.Close()
 		return nil, fmt.Errorf("failed to create stderr pipe: %w", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		stdin.Close()
-		stdout.Close()
-		stderr.Close()
+		_ = stdin.Close()
+		_ = stdout.Close()
+		_ = stderr.Close()
 		return nil, fmt.Errorf("failed to start LSP server process: %w", err)
 	}
 
@@ -618,7 +618,7 @@ func (m *LSPManager) startServer(ctx context.Context, server *LSPServer) (*LSPCo
 	defer cancel()
 
 	if err := m.initializeConnection(initCtx, conn); err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, fmt.Errorf("failed to initialize LSP server: %w", err)
 	}
 
@@ -1479,7 +1479,7 @@ func (c *LSPConnection) Close() error {
 		}
 		content, _ := json.Marshal(shutdownReq)
 		header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(content))
-		c.stdin.Write([]byte(header + string(content)))
+		_, _ = c.stdin.Write([]byte(header + string(content)))
 
 		// Send exit notification
 		exitNotif := LSPJSONRPCNotification{
@@ -1488,7 +1488,7 @@ func (c *LSPConnection) Close() error {
 		}
 		content, _ = json.Marshal(exitNotif)
 		header = fmt.Sprintf("Content-Length: %d\r\n\r\n", len(content))
-		c.stdin.Write([]byte(header + string(content)))
+		_, _ = c.stdin.Write([]byte(header + string(content)))
 	}
 
 	if c.stdin != nil {

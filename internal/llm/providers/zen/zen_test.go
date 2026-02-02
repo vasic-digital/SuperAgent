@@ -136,7 +136,7 @@ func TestZenProvider_Complete(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -178,7 +178,7 @@ func TestZenProvider_Complete_Error(t *testing.T) {
 		resp := ZenErrorResponse{}
 		resp.Error.Message = "Invalid API key"
 		resp.Error.Type = "authentication_error"
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -212,7 +212,7 @@ func TestZenProvider_CompleteStream(t *testing.T) {
 	// Create mock streaming server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req ZenRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.True(t, req.Stream)
 
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -240,13 +240,13 @@ func TestZenProvider_CompleteStream(t *testing.T) {
 			}
 
 			data, _ := json.Marshal(streamResp)
-			w.Write([]byte("data: "))
-			w.Write(data)
-			w.Write([]byte("\n\n"))
+			_, _ = w.Write([]byte("data: "))
+			_, _ = w.Write(data)
+			_, _ = w.Write([]byte("\n\n"))
 			w.(http.Flusher).Flush()
 		}
 
-		w.Write([]byte("data: [DONE]\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 		w.(http.Flusher).Flush()
 	}))
 	defer server.Close()
@@ -385,7 +385,7 @@ func TestZenProvider_HealthCheck(t *testing.T) {
 					{ID: ModelBigPickle, OwnedBy: "opencode"},
 				},
 			}
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -529,7 +529,7 @@ func TestZenProvider_HealthCheck_Success(t *testing.T) {
 				{ID: ModelBigPickle, OwnedBy: "opencode"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -580,7 +580,7 @@ func TestZenProvider_GetAvailableModels_Success(t *testing.T) {
 				{ID: "opencode/gpt-5.1", OwnedBy: "opencode", Created: time.Now().Unix()},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -600,7 +600,7 @@ func TestZenProvider_GetAvailableModels_Error(t *testing.T) {
 	// Create mock server that returns error
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
+		_, _ = w.Write([]byte("Internal server error"))
 	}))
 	defer server.Close()
 

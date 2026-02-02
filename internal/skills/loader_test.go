@@ -23,7 +23,7 @@ func TestSkillLoader_LoadFromDirectory(t *testing.T) {
 	// Create a temporary directory with test skills
 	tempDir, err := os.MkdirTemp("", "skills-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create a test skill
 	skillDir := filepath.Join(tempDir, "test-skill")
@@ -64,7 +64,7 @@ This is a test skill.
 func TestSkillLoader_LoadFromDirectory_Multiple(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "skills-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create multiple test skills
 	skills := []struct {
@@ -120,7 +120,7 @@ func TestSkillLoader_LoadFromDirectory_NotFound(t *testing.T) {
 func TestSkillLoader_LoadFromConfig(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "skills-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create category directories
 	categories := []string{"devops", "web"}
@@ -165,7 +165,7 @@ description: Skill for ` + cat + `
 func TestSkillLoader_LoadFromConfig_EnabledSkills(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "skills-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create multiple skills
 	for _, name := range []string{"skill-a", "skill-b", "skill-c"} {
@@ -209,7 +209,7 @@ description: Test skill ` + name + `
 func TestSkillLoader_GetLoaded(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "skills-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create a test skill
 	skillDir := filepath.Join(tempDir, "my-skill")
@@ -225,7 +225,7 @@ description: My test skill
 
 	registry := NewRegistry(DefaultSkillConfig())
 	loader := NewSkillLoader(registry)
-	loader.LoadFromDirectory(tempDir)
+	_, _ = loader.LoadFromDirectory(tempDir)
 
 	loaded := loader.GetLoaded()
 	assert.Len(t, loaded, 1)
@@ -235,7 +235,7 @@ description: My test skill
 func TestSkillLoader_GetLoadedCount(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "skills-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	for i := 0; i < 5; i++ {
 		skillDir := filepath.Join(tempDir, "skill-"+string(rune('a'+i)))
@@ -252,7 +252,7 @@ description: Test skill
 
 	registry := NewRegistry(DefaultSkillConfig())
 	loader := NewSkillLoader(registry)
-	loader.LoadFromDirectory(tempDir)
+	_, _ = loader.LoadFromDirectory(tempDir)
 
 	assert.Equal(t, 5, loader.GetLoadedCount())
 }
@@ -260,7 +260,7 @@ description: Test skill
 func TestSkillLoader_GetLoadedByCategory(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "skills-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create skills in category directories
 	// The category is extracted from the first directory component after tempDir
@@ -292,7 +292,7 @@ category: ` + s.category + `
 
 	registry := NewRegistry(DefaultSkillConfig())
 	loader := NewSkillLoader(registry)
-	loader.LoadFromDirectory(tempDir)
+	_, _ = loader.LoadFromDirectory(tempDir)
 
 	// Check that we loaded 3 skills
 	assert.Equal(t, 3, loader.GetLoadedCount())
@@ -305,7 +305,7 @@ category: ` + s.category + `
 func TestSkillLoader_GetInventory(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "skills-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create test skills
 	skillDir := filepath.Join(tempDir, "devops", "docker-skill")
@@ -328,7 +328,7 @@ Create docker containers.
 
 	registry := NewRegistry(DefaultSkillConfig())
 	loader := NewSkillLoader(registry)
-	loader.LoadFromDirectory(tempDir)
+	_, _ = loader.LoadFromDirectory(tempDir)
 
 	inventory := loader.GetInventory()
 	assert.Equal(t, 1, inventory.TotalSkills)
@@ -346,7 +346,7 @@ Create docker containers.
 func TestSkillLoader_ReloadSkill(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "skills-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	skillDir := filepath.Join(tempDir, "reloadable-skill")
 	require.NoError(t, os.MkdirAll(skillDir, 0755))
@@ -364,7 +364,7 @@ version: "1.0.0"
 
 	registry := NewRegistry(DefaultSkillConfig())
 	loader := NewSkillLoader(registry)
-	loader.LoadFromDirectory(tempDir)
+	_, _ = loader.LoadFromDirectory(tempDir)
 
 	skill, _ := registry.Get("reloadable-skill")
 	assert.Equal(t, "Original description", skill.Description)

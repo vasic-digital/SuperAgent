@@ -15,6 +15,7 @@ type Config struct {
 	Redis            RedisConfig
 	Cognee           CogneeConfig
 	Memory           memory.MemoryConfig // Mem0-style memory system (PRIMARY)
+	MemoryEnabled    bool                // Whether memory service is enabled (default: true)
 	LLM              LLMConfig
 	ModelsDev        ModelsDevConfig
 	Monitoring       MonitoringConfig
@@ -467,7 +468,8 @@ func Load() *Config {
 			DefaultRemoteDir: "/opt/helixagent",
 			Hosts:            map[string]RemoteDeploymentHost{},
 		},
-		Services: DefaultServicesConfig(),
+		Services:      DefaultServicesConfig(),
+		MemoryEnabled: getBoolEnv("MEMORY_ENABLED", true), // Mem0 memory enabled by default
 	}
 
 	// Apply environment variable overrides for services

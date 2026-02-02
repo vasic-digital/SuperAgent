@@ -341,7 +341,7 @@ func TestLSPServerRegistry_Unregister(t *testing.T) {
 		Language: "custom",
 		Command:  "custom-lsp",
 	}
-	registry.Register(server)
+	_ = registry.Register(server)
 
 	// Unregister it
 	err := registry.Unregister("to-unregister")
@@ -369,8 +369,8 @@ func TestLSPServerRegistry_findBinary(t *testing.T) {
 	mockBinary := filepath.Join(tmpDir, "mock-lsp")
 	file, err := os.Create(mockBinary)
 	require.NoError(t, err)
-	file.Close()
-	os.Chmod(mockBinary, 0755)
+	_ = file.Close()
+	_ = os.Chmod(mockBinary, 0755)
 
 	registry := NewLSPServerRegistry(RegistryConfig{
 		SearchPaths: []string{tmpDir},
@@ -444,10 +444,10 @@ func TestLSPServerRegistry_HealthCheck(t *testing.T) {
 	mockBinary := filepath.Join(tmpDir, "test-lsp")
 	file, err := os.Create(mockBinary)
 	require.NoError(t, err)
-	file.Close()
+	_ = file.Close()
 
 	// Register a custom server with the mock binary
-	registry.Register(&LSPServerDefinition{
+	_ = registry.Register(&LSPServerDefinition{
 		ID:       "test-health",
 		Name:     "Test Health",
 		Language: "test",
@@ -469,7 +469,7 @@ func TestLSPServerRegistry_HealthCheck_MissingBinary(t *testing.T) {
 	registry := NewLSPServerRegistry(RegistryConfig{})
 
 	// Register a server without a binary
-	registry.Register(&LSPServerDefinition{
+	_ = registry.Register(&LSPServerDefinition{
 		ID:       "test-missing",
 		Name:     "Test Missing",
 		Language: "test",
@@ -673,15 +673,15 @@ func TestLSPServerRegistry_WithSearchPaths(t *testing.T) {
 	mockBinary := filepath.Join(tmpDir2, "custom-lsp")
 	file, err := os.Create(mockBinary)
 	require.NoError(t, err)
-	file.Close()
-	os.Chmod(mockBinary, 0755)
+	_ = file.Close()
+	_ = os.Chmod(mockBinary, 0755)
 
 	registry := NewLSPServerRegistry(RegistryConfig{
 		SearchPaths: []string{tmpDir1, tmpDir2},
 	})
 
 	// Register server
-	registry.Register(&LSPServerDefinition{
+	_ = registry.Register(&LSPServerDefinition{
 		ID:       "custom",
 		Name:     "Custom LSP",
 		Language: "custom",

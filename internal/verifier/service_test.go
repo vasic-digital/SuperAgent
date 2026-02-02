@@ -842,7 +842,7 @@ func TestVerificationService_GetVerificationStatusByProvider(t *testing.T) {
 				svc.SetProviderFunc(func(ctx context.Context, modelID, provider, prompt string) (string, error) {
 					return "Yes, I can see your code", nil
 				})
-				svc.VerifyModel(context.Background(), "cached-model", "anthropic")
+				_, _ = svc.VerifyModel(context.Background(), "cached-model", "anthropic")
 			},
 			expectStatus:   "verified",
 			expectVerified: true,
@@ -906,8 +906,8 @@ func TestVerificationService_ResetStats(t *testing.T) {
 	})
 
 	// Perform some verifications
-	svc.VerifyModel(context.Background(), "model1", "openai")
-	svc.VerifyModel(context.Background(), "model2", "anthropic")
+	_, _ = svc.VerifyModel(context.Background(), "model1", "openai")
+	_, _ = svc.VerifyModel(context.Background(), "model2", "anthropic")
 
 	// Check stats are non-zero
 	stats, _ := svc.GetStats(context.Background())
@@ -935,8 +935,8 @@ func TestVerificationService_ClearCache(t *testing.T) {
 	})
 
 	// Verify some models
-	svc.VerifyModel(context.Background(), "model1", "openai")
-	svc.VerifyModel(context.Background(), "model2", "anthropic")
+	_, _ = svc.VerifyModel(context.Background(), "model1", "openai")
+	_, _ = svc.VerifyModel(context.Background(), "model2", "anthropic")
 
 	// Clear cache
 	svc.ClearCache()
@@ -969,8 +969,8 @@ func TestVerificationService_GetAllVerifications(t *testing.T) {
 	}
 
 	// Verify some models
-	svc.VerifyModel(context.Background(), "model1", "openai")
-	svc.VerifyModel(context.Background(), "model2", "anthropic")
+	_, _ = svc.VerifyModel(context.Background(), "model1", "openai")
+	_, _ = svc.VerifyModel(context.Background(), "model2", "anthropic")
 
 	// Check we get all verifications
 	all, err = svc.GetAllVerifications(context.Background())
@@ -989,7 +989,7 @@ func TestVerificationService_StoreVerificationResult_UpdatesStats(t *testing.T) 
 	})
 
 	// Verify a model
-	svc.VerifyModel(context.Background(), "model1", "openai")
+	_, _ = svc.VerifyModel(context.Background(), "model1", "openai")
 
 	stats, _ := svc.GetStats(context.Background())
 	if stats.TotalVerifications != 1 {
@@ -1007,7 +1007,7 @@ func TestVerificationService_StoreVerificationResult_FailedVerification(t *testi
 	})
 
 	// This will fail verification due to code visibility
-	svc.VerifyModel(context.Background(), "model1", "openai")
+	_, _ = svc.VerifyModel(context.Background(), "model1", "openai")
 
 	stats, _ := svc.GetStats(context.Background())
 	if stats.TotalVerifications != 1 {

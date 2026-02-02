@@ -1889,7 +1889,7 @@ func TestProviderRegistry_GetProviderHealth(t *testing.T) {
 
 	// Register and set health for a provider
 	provider := &MockLLMProviderForRegistry{name: "test-provider"}
-	registry.RegisterProvider("test-provider", provider)
+	_ = registry.RegisterProvider("test-provider", provider)
 
 	// Set health status
 	registry.mu.Lock()

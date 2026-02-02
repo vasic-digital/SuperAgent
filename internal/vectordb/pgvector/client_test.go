@@ -630,13 +630,13 @@ func skipIfNoPostgres(t *testing.T) *Client {
 
 func TestIntegration_CreateTableAndIndex(t *testing.T) {
 	client := skipIfNoPostgres(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	tableName := "test_vectors_" + time.Now().Format("20060102150405")
 
 	// Clean up at end
-	defer client.DropTable(ctx, tableName)
+	defer func() { _ = client.DropTable(ctx, tableName) }()
 
 	// Create table
 	schema := &TableSchema{
@@ -673,7 +673,7 @@ func TestIntegration_CreateTableAndIndex(t *testing.T) {
 
 func TestIntegration_UpsertSearchDelete(t *testing.T) {
 	client := skipIfNoPostgres(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := context.Background()
 	tableName := "test_vectors_ops_" + time.Now().Format("20060102150405")
@@ -691,7 +691,7 @@ func TestIntegration_UpsertSearchDelete(t *testing.T) {
 
 	err := client.CreateTable(ctx, schema)
 	require.NoError(t, err)
-	defer client.DropTable(ctx, tableName)
+	defer func() { _ = client.DropTable(ctx, tableName) }()
 
 	// Upsert vectors
 	vectors := []Vector{

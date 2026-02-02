@@ -149,7 +149,7 @@ func TestWeaviateAdapter_GetSchema(t *testing.T) {
 				assert.Equal(t, "GET", r.Method)
 				assert.Equal(t, "/v1/schema", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(schema)
+				_ = json.NewEncoder(w).Encode(schema)
 			},
 			expectError: false,
 		},
@@ -164,7 +164,7 @@ func TestWeaviateAdapter_GetSchema(t *testing.T) {
 			name: "decode error",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid json"))
+				_, _ = w.Write([]byte("invalid json"))
 			},
 			expectError: true,
 		},
@@ -198,7 +198,7 @@ func TestWeaviateAdapter_ListClasses(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(schema)
+		_ = json.NewEncoder(w).Encode(schema)
 	}))
 	defer server.Close()
 
@@ -228,7 +228,7 @@ func TestWeaviateAdapter_CreateClass(t *testing.T) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Equal(t, "/v1/schema", r.URL.Path)
 				var class WeaviateClass
-				json.NewDecoder(r.Body).Decode(&class)
+				_ = json.NewDecoder(r.Body).Decode(&class)
 				assert.Equal(t, "NewClass", class.Class)
 				w.WriteHeader(http.StatusOK)
 			},
@@ -239,7 +239,7 @@ func TestWeaviateAdapter_CreateClass(t *testing.T) {
 			class: &WeaviateClass{Class: "ExistingClass"},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusConflict)
-				w.Write([]byte(`{"error":[{"message":"class already exists"}]}`))
+				_, _ = w.Write([]byte(`{"error":[{"message":"class already exists"}]}`))
 			},
 			expectError: true,
 		},
@@ -317,7 +317,7 @@ func TestWeaviateAdapter_GetClass(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "GET", r.Method)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(WeaviateClass{Class: "Article", Description: "Articles"})
+				_ = json.NewEncoder(w).Encode(WeaviateClass{Class: "Article", Description: "Articles"})
 			},
 			expectError: false,
 		},
@@ -342,7 +342,7 @@ func TestWeaviateAdapter_GetClass(t *testing.T) {
 			className: "Test",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},
@@ -382,10 +382,10 @@ func TestWeaviateAdapter_CreateObject(t *testing.T) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Equal(t, "/v1/objects", r.URL.Path)
 				var obj WeaviateObject
-				json.NewDecoder(r.Body).Decode(&obj)
+				_ = json.NewDecoder(r.Body).Decode(&obj)
 				obj.ID = "generated-uuid"
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(obj)
+				_ = json.NewEncoder(w).Encode(obj)
 			},
 			expectError: false,
 		},
@@ -398,10 +398,10 @@ func TestWeaviateAdapter_CreateObject(t *testing.T) {
 			},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				var obj WeaviateObject
-				json.NewDecoder(r.Body).Decode(&obj)
+				_ = json.NewDecoder(r.Body).Decode(&obj)
 				assert.NotNil(t, obj.Vector)
 				w.WriteHeader(http.StatusCreated)
-				json.NewEncoder(w).Encode(obj)
+				_ = json.NewEncoder(w).Encode(obj)
 			},
 			expectError: false,
 		},
@@ -410,7 +410,7 @@ func TestWeaviateAdapter_CreateObject(t *testing.T) {
 			obj:  &WeaviateObject{Class: "Invalid"},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"error":[{"message":"invalid object"}]}`))
+				_, _ = w.Write([]byte(`{"error":[{"message":"invalid object"}]}`))
 			},
 			expectError: true,
 		},
@@ -419,7 +419,7 @@ func TestWeaviateAdapter_CreateObject(t *testing.T) {
 			obj:  &WeaviateObject{Class: "Test"},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},
@@ -461,10 +461,10 @@ func TestWeaviateAdapter_BatchCreateObjects(t *testing.T) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Equal(t, "/v1/batch/objects", r.URL.Path)
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.NotNil(t, body["objects"])
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode([]map[string]interface{}{
+				_ = json.NewEncoder(w).Encode([]map[string]interface{}{
 					{"id": "uuid-1", "result": map[string]string{"status": "SUCCESS"}},
 					{"id": "uuid-2", "result": map[string]string{"status": "SUCCESS"}},
 				})
@@ -476,7 +476,7 @@ func TestWeaviateAdapter_BatchCreateObjects(t *testing.T) {
 			objects: objects,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"error":[{"message":"batch failed"}]}`))
+				_, _ = w.Write([]byte(`{"error":[{"message":"batch failed"}]}`))
 			},
 			expectError: true,
 		},
@@ -514,7 +514,7 @@ func TestWeaviateAdapter_GetObject(t *testing.T) {
 				assert.Equal(t, "GET", r.Method)
 				assert.Equal(t, "/v1/objects/Article/test-uuid", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(WeaviateObject{
+				_ = json.NewEncoder(w).Encode(WeaviateObject{
 					ID:         "test-uuid",
 					Class:      "Article",
 					Properties: map[string]interface{}{"title": "Test"},
@@ -546,7 +546,7 @@ func TestWeaviateAdapter_GetObject(t *testing.T) {
 			id:        "test",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},
@@ -644,7 +644,7 @@ func TestWeaviateAdapter_UpdateObject(t *testing.T) {
 			},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(`{"error":[{"message":"object not found"}]}`))
+				_, _ = w.Write([]byte(`{"error":[{"message":"object not found"}]}`))
 			},
 			expectError: true,
 		},
@@ -713,10 +713,10 @@ func TestWeaviateAdapter_VectorSearch(t *testing.T) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Equal(t, "/v1/graphql", r.URL.Path)
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.Contains(t, body["query"], "nearVector")
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(graphqlResponse)
+				_ = json.NewEncoder(w).Encode(graphqlResponse)
 			},
 			expectError: false,
 		},
@@ -729,7 +729,7 @@ func TestWeaviateAdapter_VectorSearch(t *testing.T) {
 			properties: nil,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(graphqlResponse)
+				_ = json.NewEncoder(w).Encode(graphqlResponse)
 			},
 			expectError: false,
 		},
@@ -742,7 +742,7 @@ func TestWeaviateAdapter_VectorSearch(t *testing.T) {
 			properties: nil,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"errors":[{"message":"class not found"}]}`))
+				_, _ = w.Write([]byte(`{"errors":[{"message":"class not found"}]}`))
 			},
 			expectError: true,
 		},
@@ -754,7 +754,7 @@ func TestWeaviateAdapter_VectorSearch(t *testing.T) {
 			certainty: 0.7,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},
@@ -816,10 +816,10 @@ func TestWeaviateAdapter_HybridSearch(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "POST", r.Method)
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.Contains(t, body["query"], "hybrid")
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(graphqlResponse)
+				_ = json.NewEncoder(w).Encode(graphqlResponse)
 			},
 			expectError: false,
 		},
@@ -833,7 +833,7 @@ func TestWeaviateAdapter_HybridSearch(t *testing.T) {
 			properties: nil,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(graphqlResponse)
+				_ = json.NewEncoder(w).Encode(graphqlResponse)
 			},
 			expectError: false,
 		},
@@ -846,7 +846,7 @@ func TestWeaviateAdapter_HybridSearch(t *testing.T) {
 			alpha:     0.5,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"errors":[{"message":"class not found"}]}`))
+				_, _ = w.Write([]byte(`{"errors":[{"message":"class not found"}]}`))
 			},
 			expectError: true,
 		},
@@ -859,7 +859,7 @@ func TestWeaviateAdapter_HybridSearch(t *testing.T) {
 			alpha:     0.5,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},
@@ -973,7 +973,7 @@ func TestWeaviateAdapter_VectorSearch_ParseResults(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(graphqlResponse)
+		_ = json.NewEncoder(w).Encode(graphqlResponse)
 	}))
 	defer server.Close()
 
@@ -1000,7 +1000,7 @@ func TestWeaviateAdapter_VectorSearch_EmptyResults(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(graphqlResponse)
+		_ = json.NewEncoder(w).Encode(graphqlResponse)
 	}))
 	defer server.Close()
 

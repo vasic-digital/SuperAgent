@@ -506,7 +506,7 @@ func TestMCPSecurityManager_CheckToolCall(t *testing.T) {
 			URL:          "https://limited.example.com",
 			Capabilities: []string{"read", "list"},
 		}
-		manager.RegisterTrustedServer(server)
+		_ = manager.RegisterTrustedServer(server)
 
 		request := &ToolCallRequest{
 			ToolName: "write", // Not in capabilities
@@ -541,7 +541,7 @@ func TestMCPSecurityManager_CallStack(t *testing.T) {
 		request := &ToolCallRequest{
 			ToolName: "tool1",
 		}
-		manager.CheckToolCall(ctx, request)
+		_, _ = manager.CheckToolCall(ctx, request)
 
 		stack := manager.GetCallStack()
 		assert.Len(t, stack, 1)

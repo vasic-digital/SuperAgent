@@ -209,7 +209,7 @@ func TestMainFlags(t *testing.T) {
 	if err != nil {
 		t.Skipf("Failed to build binary: %v", err)
 	}
-	defer os.Remove("/tmp/sanity-check-test")
+	defer func() { _ = os.Remove("/tmp/sanity-check-test") }()
 
 	t.Run("help flag", func(t *testing.T) {
 		cmd := exec.Command("/tmp/sanity-check-test", "-h")

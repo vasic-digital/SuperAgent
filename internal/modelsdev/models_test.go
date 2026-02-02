@@ -27,7 +27,7 @@ func TestClient_ListModels(t *testing.T) {
 				Page:  1,
 				Limit: 20,
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 
@@ -55,7 +55,7 @@ func TestClient_ListModels(t *testing.T) {
 				Page:   2,
 				Limit:  10,
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 
@@ -77,7 +77,7 @@ func TestClient_ListModels(t *testing.T) {
 	t.Run("error response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(APIError{
+			_ = json.NewEncoder(w).Encode(APIError{
 				Type:    "server_error",
 				Message: "Internal server error",
 				Code:    500,
@@ -116,7 +116,7 @@ func TestClient_GetModel(t *testing.T) {
 					{Name: "MMLU", Type: "knowledge", Score: 86.4, Rank: 1},
 				},
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 
@@ -141,7 +141,7 @@ func TestClient_GetModel(t *testing.T) {
 	t.Run("model not found", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(APIError{
+			_ = json.NewEncoder(w).Encode(APIError{
 				Type:    "not_found",
 				Message: "Model not found",
 				Code:    404,
@@ -159,7 +159,7 @@ func TestClient_GetModel(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Check that special characters are properly escaped
 			assert.Equal(t, "/models/model%2Fwith%2Fslashes", r.URL.EscapedPath())
-			json.NewEncoder(w).Encode(ModelDetailsResponse{})
+			_ = json.NewEncoder(w).Encode(ModelDetailsResponse{})
 		}))
 		defer server.Close()
 
@@ -179,7 +179,7 @@ func TestClient_SearchModels(t *testing.T) {
 				},
 				Total: 1,
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 
@@ -196,7 +196,7 @@ func TestClient_SearchModels(t *testing.T) {
 			assert.Equal(t, "openai", r.URL.Query().Get("provider"))
 
 			response := ModelsListResponse{Models: []ModelInfo{}, Total: 0}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 
@@ -221,7 +221,7 @@ func TestClient_ListProviders(t *testing.T) {
 				},
 				Total: 2,
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 
@@ -261,7 +261,7 @@ func TestClient_GetProvider(t *testing.T) {
 				Website:     "https://openai.com",
 				Features:    []string{"chat", "embeddings", "images"},
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 
@@ -285,7 +285,7 @@ func TestClient_GetProvider(t *testing.T) {
 	t.Run("provider not found", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(APIError{
+			_ = json.NewEncoder(w).Encode(APIError{
 				Type:    "not_found",
 				Message: "Provider not found",
 				Code:    404,
@@ -312,7 +312,7 @@ func TestClient_ListProviderModels(t *testing.T) {
 				},
 				Total: 2,
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 
@@ -336,7 +336,7 @@ func TestClient_ListProviderModels(t *testing.T) {
 			assert.Equal(t, "anthropic", r.URL.Query().Get("provider"))
 			assert.Equal(t, "5", r.URL.Query().Get("limit"))
 
-			json.NewEncoder(w).Encode(ModelsListResponse{})
+			_ = json.NewEncoder(w).Encode(ModelsListResponse{})
 		}))
 		defer server.Close()
 
@@ -357,7 +357,7 @@ func TestClient_DoRequest(t *testing.T) {
 			assert.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
 
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 		}))
 		defer server.Close()
 
@@ -389,7 +389,7 @@ func TestClient_DoRequest(t *testing.T) {
 	t.Run("handles malformed json response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("{invalid json"))
+			_, _ = w.Write([]byte("{invalid json"))
 		}))
 		defer server.Close()
 
@@ -403,7 +403,7 @@ func TestClient_DoRequest(t *testing.T) {
 	t.Run("handles non-json error response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadGateway)
-			w.Write([]byte("Bad Gateway"))
+			_, _ = w.Write([]byte("Bad Gateway"))
 		}))
 		defer server.Close()
 
@@ -421,10 +421,10 @@ func TestClient_DoPost(t *testing.T) {
 			assert.Equal(t, http.MethodPost, r.Method)
 
 			var body map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&body)
+			_ = json.NewDecoder(r.Body).Decode(&body)
 			assert.Equal(t, "test-value", body["key"])
 
-			json.NewEncoder(w).Encode(map[string]string{"result": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"result": "ok"})
 		}))
 		defer server.Close()
 

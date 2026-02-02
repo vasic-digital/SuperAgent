@@ -412,9 +412,9 @@ func TestServiceIntegration_WithMockRegistry(t *testing.T) {
 	orch := NewOrchestrator(mockRegistry, lessonBank, orchConfig)
 
 	// Register providers
-	orch.RegisterProvider("claude", "claude-3", 9.0)
-	orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
-	orch.RegisterProvider("gemini", "gemini-pro", 8.0)
+	_ = orch.RegisterProvider("claude", "claude-3", 9.0)
+	_ = orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
+	_ = orch.RegisterProvider("gemini", "gemini-pro", 8.0)
 
 	// Create integration with the orchestrator
 	si := &ServiceIntegration{

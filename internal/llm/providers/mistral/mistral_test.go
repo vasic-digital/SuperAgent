@@ -372,7 +372,7 @@ func TestMistralProvider_Complete_Success(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -414,7 +414,7 @@ func TestMistralProvider_Complete_WithToolCalls(t *testing.T) {
 		}`
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -441,7 +441,7 @@ func TestMistralProvider_Complete_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := `{"message": "Invalid API key", "type": "auth_error"}`
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -463,7 +463,7 @@ func TestMistralProvider_Complete_EmptyChoices(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := `{"id": "test", "choices": [], "usage": {}}`
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -574,9 +574,9 @@ func TestMistralProvider_CompleteStream_Success(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		// Send streaming chunks
-		w.Write([]byte("data: {\"id\":\"chunk-1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello\"}}]}\n\n"))
-		w.Write([]byte("data: {\"id\":\"chunk-2\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" world\"}}]}\n\n"))
-		w.Write([]byte("data: [DONE]\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"chunk-1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello\"}}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"chunk-2\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" world\"}}]}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 	}))
 	defer server.Close()
 
@@ -608,7 +608,7 @@ func TestMistralProvider_CompleteStream_Success(t *testing.T) {
 func TestMistralProvider_CompleteStream_HTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		_, _ = w.Write([]byte("Internal Server Error"))
 	}))
 	defer server.Close()
 
@@ -632,7 +632,7 @@ func TestMistralProvider_CompleteStream_WithFinishReason(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		// Send chunk with finish reason
-		w.Write([]byte("data: {\"id\":\"chunk-1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello\"},\"finish_reason\":\"stop\"}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"chunk-1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello\"},\"finish_reason\":\"stop\"}]}\n\n"))
 	}))
 	defer server.Close()
 
@@ -658,7 +658,7 @@ func TestMistralProvider_CompleteStream_WithFinishReason(t *testing.T) {
 func TestMistralProvider_Complete_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("not valid json"))
+		_, _ = w.Write([]byte("not valid json"))
 	}))
 	defer server.Close()
 
@@ -715,7 +715,7 @@ func TestMistralProvider_Complete_RetryOnServerError(t *testing.T) {
 			"usage": {"total_tokens": 10}
 		}`
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -776,7 +776,7 @@ func TestMistralProvider_Complete_RateLimited429(t *testing.T) {
 
 		response := `{"id": "ok", "choices": [{"message": {"content": "OK"}, "finish_reason": "stop"}], "usage": {"total_tokens": 5}}`
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -805,13 +805,13 @@ func TestMistralProvider_Complete_AuthRetry401(t *testing.T) {
 		attempts++
 		if attempts < 2 {
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"message": "Unauthorized"}`))
+			_, _ = w.Write([]byte(`{"message": "Unauthorized"}`))
 			return
 		}
 
 		response := `{"id": "ok", "choices": [{"message": {"content": "Authenticated"}, "finish_reason": "stop"}], "usage": {"total_tokens": 5}}`
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 
@@ -838,7 +838,7 @@ func TestMistralProvider_HealthCheck_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/models" {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"data": []}`))
+			_, _ = w.Write([]byte(`{"data": []}`))
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -869,7 +869,7 @@ func TestMistralProvider_HealthCheck_Error(t *testing.T) {
 func TestMistralProvider_Complete_ErrorResponseParsing(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"message": "Bad request: invalid model", "type": "invalid_request_error"}`))
+		_, _ = w.Write([]byte(`{"message": "Bad request: invalid model", "type": "invalid_request_error"}`))
 	}))
 	defer server.Close()
 
@@ -890,7 +890,7 @@ func TestMistralProvider_Complete_ErrorResponseParsing(t *testing.T) {
 func TestMistralProvider_Complete_NonJSONErrorResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		_, _ = w.Write([]byte("Internal Server Error"))
 	}))
 	defer server.Close()
 
@@ -975,10 +975,10 @@ func TestMistralProvider_CompleteStream_MalformedJSON(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		// Send valid chunk, then malformed, then valid
-		w.Write([]byte("data: {\"id\":\"chunk-1\",\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"))
-		w.Write([]byte("data: not valid json\n\n"))
-		w.Write([]byte("data: {\"id\":\"chunk-2\",\"choices\":[{\"delta\":{\"content\":\" world\"}}]}\n\n"))
-		w.Write([]byte("data: [DONE]\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"chunk-1\",\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"))
+		_, _ = w.Write([]byte("data: not valid json\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"chunk-2\",\"choices\":[{\"delta\":{\"content\":\" world\"}}]}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 	}))
 	defer server.Close()
 
@@ -1007,11 +1007,11 @@ func TestMistralProvider_CompleteStream_EmptyLines(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		// Send with empty lines and lines without data prefix
-		w.Write([]byte("\n\n"))
-		w.Write([]byte("comment: this is ignored\n"))
-		w.Write([]byte("data: {\"id\":\"chunk-1\",\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"))
-		w.Write([]byte("\n"))
-		w.Write([]byte("data: [DONE]\n\n"))
+		_, _ = w.Write([]byte("\n\n"))
+		_, _ = w.Write([]byte("comment: this is ignored\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"chunk-1\",\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"))
+		_, _ = w.Write([]byte("\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 	}))
 	defer server.Close()
 
@@ -1051,7 +1051,7 @@ func TestMistralProvider_Complete_GeneratesRequestID(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := `{"id": "test", "choices": [{"message": {"content": "OK"}, "finish_reason": "stop"}], "usage": {"total_tokens": 5}}`
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()
 

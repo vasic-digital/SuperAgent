@@ -991,7 +991,7 @@ func TestUnifiedHandler_RequestWithSpecialCharacters(t *testing.T) {
 			c.Request.Header.Set("Content-Type", "application/json")
 
 			defer func() {
-				recover()
+				_ = recover()
 			}()
 
 			handler.ChatCompletions(c)
@@ -1029,7 +1029,7 @@ func TestUnifiedHandler_LargeMessageHistory(t *testing.T) {
 	c.Request.Header.Set("Content-Type", "application/json")
 
 	defer func() {
-		recover()
+		_ = recover()
 	}()
 
 	handler.ChatCompletions(c)
@@ -1069,7 +1069,7 @@ func TestUnifiedHandler_AllParameters(t *testing.T) {
 	c.Request.Header.Set("Content-Type", "application/json")
 
 	defer func() {
-		recover()
+		_ = recover()
 	}()
 
 	handler.ChatCompletions(c)

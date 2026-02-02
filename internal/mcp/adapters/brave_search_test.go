@@ -117,7 +117,7 @@ func TestBraveSearchAdapter_WebSearch(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -145,7 +145,7 @@ func TestBraveSearchAdapter_WebSearchWithFreshness(t *testing.T) {
 
 		response := BraveWebSearchResponse{}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -204,7 +204,7 @@ func TestBraveSearchAdapter_LocalSearch(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -254,7 +254,7 @@ func TestBraveSearchAdapter_ImageSearch(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -300,7 +300,7 @@ func TestBraveSearchAdapter_NewsSearch(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -326,7 +326,7 @@ func TestBraveSearchAdapter_NewsSearch(t *testing.T) {
 func TestBraveSearchAdapter_APIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "Invalid API key"}`))
+		_, _ = w.Write([]byte(`{"error": "Invalid API key"}`))
 	}))
 	defer server.Close()
 
@@ -364,7 +364,7 @@ func TestBraveSearchAdapter_NetworkError(t *testing.T) {
 func TestBraveSearchAdapter_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{invalid json}`))
+		_, _ = w.Write([]byte(`{invalid json}`))
 	}))
 	defer server.Close()
 
@@ -386,7 +386,7 @@ func TestBraveSearchAdapter_EmptyResults(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := BraveWebSearchResponse{}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -411,7 +411,7 @@ func TestBraveSearchAdapter_DefaultCountValue(t *testing.T) {
 
 		response := BraveWebSearchResponse{}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -434,7 +434,7 @@ func TestBraveSearchAdapter_CustomCountValue(t *testing.T) {
 
 		response := BraveWebSearchResponse{}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -457,7 +457,7 @@ func TestBraveSearchAdapter_SafeSearchConfig(t *testing.T) {
 
 		response := BraveWebSearchResponse{}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -481,7 +481,7 @@ func TestBraveSearchAdapter_CountryAndLanguageConfig(t *testing.T) {
 
 		response := BraveWebSearchResponse{}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -558,7 +558,7 @@ func TestBraveSearchAdapter_LocalSearchNoLocations(t *testing.T) {
 			Locations: nil, // No locations found
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -606,7 +606,7 @@ func TestBraveSearchAdapter_ToolInputSchemas(t *testing.T) {
 func BenchmarkBraveSearchAdapter_WebSearch(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := BraveWebSearchResponse{}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -618,7 +618,7 @@ func BenchmarkBraveSearchAdapter_WebSearch(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		adapter.CallTool(ctx, "brave_web_search", map[string]interface{}{
+		_, _ = adapter.CallTool(ctx, "brave_web_search", map[string]interface{}{
 			"query": "test",
 		})
 	}

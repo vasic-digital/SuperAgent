@@ -210,7 +210,7 @@ func TestCohereReranker_Rerank(t *testing.T) {
 			assert.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
 
 			var req map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewDecoder(r.Body).Decode(&req)
 
 			assert.Contains(t, req, "model")
 			assert.Contains(t, req, "query")
@@ -222,7 +222,7 @@ func TestCohereReranker_Rerank(t *testing.T) {
 					{"index": 0, "relevance_score": 0.85},
 				},
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 		}))
 		defer server.Close()
 

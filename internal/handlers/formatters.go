@@ -722,7 +722,7 @@ func (f *CSVFormatter) FormatDebateTeamIntroduction(topic string, members []*ser
 	sb.WriteString(fmt.Sprintf("# Topic: %s\n", strings.ReplaceAll(topic, "\n", " ")))
 
 	// CSV header
-	w.Write([]string{"Position", "Role", "Model", "Provider", "Fallback_Model", "Fallback_Provider"})
+	_ = w.Write([]string{"Position", "Role", "Model", "Provider", "Fallback_Model", "Fallback_Provider"})
 
 	for _, member := range members {
 		if member == nil {
@@ -734,7 +734,7 @@ func (f *CSVFormatter) FormatDebateTeamIntroduction(topic string, members []*ser
 			fallbackModel = member.Fallback.ModelName
 			fallbackProvider = member.Fallback.ProviderName
 		}
-		w.Write([]string{
+		_ = w.Write([]string{
 			fmt.Sprintf("%d", member.Position),
 			string(member.Role),
 			member.ModelName,
@@ -753,8 +753,8 @@ func (f *CSVFormatter) FormatPhaseHeader(phase services.ValidationPhase, phaseNu
 	w := csv.NewWriter(&sb)
 	w.Comma = f.Delimiter
 
-	w.Write([]string{"Phase_Type", "Phase_Num", "Icon", "Timestamp"})
-	w.Write([]string{string(phase), fmt.Sprintf("%d", phaseNum), getPhaseIcon(phase), time.Now().UTC().Format(time.RFC3339)})
+	_ = w.Write([]string{"Phase_Type", "Phase_Num", "Icon", "Timestamp"})
+	_ = w.Write([]string{string(phase), fmt.Sprintf("%d", phaseNum), getPhaseIcon(phase), time.Now().UTC().Format(time.RFC3339)})
 
 	w.Flush()
 	return sb.String()
@@ -765,8 +765,8 @@ func (f *CSVFormatter) FormatPhaseContent(content string) string {
 	w := csv.NewWriter(&sb)
 	w.Comma = f.Delimiter
 
-	w.Write([]string{"Content", "Timestamp"})
-	w.Write([]string{content, time.Now().UTC().Format(time.RFC3339)})
+	_ = w.Write([]string{"Content", "Timestamp"})
+	_ = w.Write([]string{content, time.Now().UTC().Format(time.RFC3339)})
 
 	w.Flush()
 	return sb.String()
@@ -777,8 +777,8 @@ func (f *CSVFormatter) FormatFinalResponse(content string) string {
 	w := csv.NewWriter(&sb)
 	w.Comma = f.Delimiter
 
-	w.Write([]string{"Type", "Content", "Timestamp"})
-	w.Write([]string{"final_response", content, time.Now().UTC().Format(time.RFC3339)})
+	_ = w.Write([]string{"Type", "Content", "Timestamp"})
+	_ = w.Write([]string{"final_response", content, time.Now().UTC().Format(time.RFC3339)})
 
 	w.Flush()
 	return sb.String()
@@ -789,8 +789,8 @@ func (f *CSVFormatter) FormatFallbackIndicator(role services.DebateRole, fromPro
 	w := csv.NewWriter(&sb)
 	w.Comma = f.Delimiter
 
-	w.Write([]string{"Role", "From_Provider", "From_Model", "To_Provider", "To_Model", "Reason", "Duration"})
-	w.Write([]string{string(role), fromProvider, fromModel, toProvider, toModel, reason, formatDuration(duration)})
+	_ = w.Write([]string{"Role", "From_Provider", "From_Model", "To_Provider", "To_Model", "Reason", "Duration"})
+	_ = w.Write([]string{string(role), fromProvider, fromModel, toProvider, toModel, reason, formatDuration(duration)})
 
 	w.Flush()
 	return sb.String()

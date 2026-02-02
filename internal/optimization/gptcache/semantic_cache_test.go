@@ -267,7 +267,7 @@ func TestSemanticCache_Clear(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		embedding := make([]float64, 10)
 		embedding[i] = 1
-		cache.Set(ctx, "query", "response", embedding, nil)
+		_, _ = cache.Set(ctx, "query", "response", embedding, nil)
 	}
 
 	assert.Equal(t, 10, cache.Size())
@@ -282,15 +282,15 @@ func TestSemanticCache_Stats(t *testing.T) {
 	cache := NewSemanticCache()
 
 	embedding := []float64{1, 0, 0}
-	cache.Set(ctx, "test", "response", embedding, nil)
+	_, _ = cache.Set(ctx, "test", "response", embedding, nil)
 
 	// Cache hit
-	cache.Get(ctx, embedding)
-	cache.Get(ctx, embedding)
+	_, _ = cache.Get(ctx, embedding)
+	_, _ = cache.Get(ctx, embedding)
 
 	// Cache miss
 	differentEmbedding := []float64{0, 1, 0}
-	cache.Get(ctx, differentEmbedding)
+	_, _ = cache.Get(ctx, differentEmbedding)
 
 	stats := cache.Stats(ctx)
 
@@ -311,7 +311,7 @@ func TestSemanticCache_Eviction_LRU(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		embedding := make([]float64, 10)
 		embedding[i] = 1
-		cache.Set(ctx, "query"+string(rune('0'+i)), "response", embedding, nil)
+		_, _ = cache.Set(ctx, "query"+string(rune('0'+i)), "response", embedding, nil)
 	}
 
 	assert.Equal(t, 3, cache.Size())
@@ -343,7 +343,7 @@ func TestSemanticCache_GetTopK(t *testing.T) {
 	}
 
 	for i, emb := range embeddings {
-		cache.Set(ctx, "query"+string(rune('0'+i)), "response", emb, nil)
+		_, _ = cache.Set(ctx, "query"+string(rune('0'+i)), "response", emb, nil)
 	}
 
 	// Query for top 2
@@ -361,9 +361,9 @@ func TestSemanticCache_Invalidate(t *testing.T) {
 
 	// Add entries with metadata
 	embedding := []float64{1, 0, 0}
-	cache.Set(ctx, "query1", "response1", embedding, map[string]interface{}{"type": "test"})
-	cache.Set(ctx, "query2", "response2", []float64{0, 1, 0}, map[string]interface{}{"type": "prod"})
-	cache.Set(ctx, "query3", "response3", []float64{0, 0, 1}, map[string]interface{}{"type": "test"})
+	_, _ = cache.Set(ctx, "query1", "response1", embedding, map[string]interface{}{"type": "test"})
+	_, _ = cache.Set(ctx, "query2", "response2", []float64{0, 1, 0}, map[string]interface{}{"type": "prod"})
+	_, _ = cache.Set(ctx, "query3", "response3", []float64{0, 0, 1}, map[string]interface{}{"type": "test"})
 
 	assert.Equal(t, 3, cache.Size())
 
@@ -387,7 +387,7 @@ func TestSemanticCache_Metadata(t *testing.T) {
 	}
 
 	embedding := []float64{1, 0, 0}
-	cache.Set(ctx, "query", "response", embedding, metadata)
+	_, _ = cache.Set(ctx, "query", "response", embedding, metadata)
 
 	hit, err := cache.Get(ctx, embedding)
 	require.NoError(t, err)
@@ -458,7 +458,7 @@ func TestSemanticCache_ConcurrentAccess(t *testing.T) {
 		go func(idx int) {
 			embedding := make([]float64, 10)
 			embedding[idx%10] = 1
-			cache.Set(ctx, "query", "response", embedding, nil)
+			_, _ = cache.Set(ctx, "query", "response", embedding, nil)
 			done <- true
 		}(i)
 	}
@@ -473,7 +473,7 @@ func TestSemanticCache_ConcurrentAccess(t *testing.T) {
 		go func(idx int) {
 			embedding := make([]float64, 10)
 			embedding[idx%10] = 1
-			cache.Get(ctx, embedding)
+			_, _ = cache.Get(ctx, embedding)
 			done <- true
 		}(i)
 	}
@@ -502,7 +502,7 @@ func TestConfigValidation(t *testing.T) {
 		TTL:                 -1,
 	}
 
-	config.Validate()
+	_ = config.Validate()
 
 	assert.Equal(t, 10000, config.MaxEntries)
 	assert.Equal(t, 0.85, config.SimilarityThreshold)
@@ -531,7 +531,7 @@ func BenchmarkSemanticCacheGet(b *testing.B) {
 	for i := 0; i < 1000; i++ {
 		embedding := make([]float64, 128)
 		embedding[i%128] = 1
-		cache.Set(ctx, "query", "response", embedding, nil)
+		_, _ = cache.Set(ctx, "query", "response", embedding, nil)
 	}
 
 	queryEmbedding := make([]float64, 128)
@@ -539,7 +539,7 @@ func BenchmarkSemanticCacheGet(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cache.Get(ctx, queryEmbedding)
+		_, _ = cache.Get(ctx, queryEmbedding)
 	}
 }
 
@@ -552,7 +552,7 @@ func BenchmarkSemanticCacheSet(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		embedding[i%128] = float64(i)
-		cache.Set(ctx, "query", "response", embedding, nil)
+		_, _ = cache.Set(ctx, "query", "response", embedding, nil)
 	}
 }
 
@@ -842,7 +842,7 @@ func TestSemanticCache_Eviction_TTL(t *testing.T) {
 	)
 
 	embedding := []float64{1, 0, 0}
-	cache.Set(ctx, "query", "response", embedding, nil)
+	_, _ = cache.Set(ctx, "query", "response", embedding, nil)
 
 	assert.Equal(t, 1, cache.Size())
 
@@ -871,7 +871,7 @@ func TestSemanticCache_InvalidateOlderThan(t *testing.T) {
 	cache := NewSemanticCache()
 
 	embedding := []float64{1, 0, 0}
-	cache.Set(ctx, "query1", "response1", embedding, nil)
+	_, _ = cache.Set(ctx, "query1", "response1", embedding, nil)
 
 	// Wait a bit
 	time.Sleep(10 * time.Millisecond)
@@ -889,9 +889,9 @@ func TestSemanticCache_InvalidateBySimilarity(t *testing.T) {
 	ctx := context.Background()
 	cache := NewSemanticCache()
 
-	cache.Set(ctx, "query1", "response1", []float64{1, 0, 0}, nil)
-	cache.Set(ctx, "query2", "response2", []float64{0.95, 0.05, 0}, nil) // Similar to query1
-	cache.Set(ctx, "query3", "response3", []float64{0, 0, 1}, nil)       // Not similar
+	_, _ = cache.Set(ctx, "query1", "response1", []float64{1, 0, 0}, nil)
+	_, _ = cache.Set(ctx, "query2", "response2", []float64{0.95, 0.05, 0}, nil) // Similar to query1
+	_, _ = cache.Set(ctx, "query3", "response3", []float64{0, 0, 1}, nil)       // Not similar
 
 	// Invalidate entries similar to [1, 0, 0]
 	count, err := cache.Invalidate(ctx, InvalidationCriteria{
@@ -997,9 +997,9 @@ func TestSemanticCache_SetOnEvict(t *testing.T) {
 	})
 
 	// Add 3 entries to trigger eviction
-	cache.Set(ctx, "query1", "response1", []float64{1, 0, 0}, nil)
-	cache.Set(ctx, "query2", "response2", []float64{0, 1, 0}, nil)
-	cache.Set(ctx, "query3", "response3", []float64{0, 0, 1}, nil)
+	_, _ = cache.Set(ctx, "query1", "response1", []float64{1, 0, 0}, nil)
+	_, _ = cache.Set(ctx, "query2", "response2", []float64{0, 1, 0}, nil)
+	_, _ = cache.Set(ctx, "query3", "response3", []float64{0, 0, 1}, nil)
 
 	assert.NotNil(t, evictedEntry)
 	assert.Equal(t, "query1", evictedEntry.Query)
@@ -1009,9 +1009,9 @@ func TestSemanticCache_GetAllEntries(t *testing.T) {
 	ctx := context.Background()
 	cache := NewSemanticCache()
 
-	cache.Set(ctx, "query1", "response1", []float64{1, 0, 0}, nil)
-	cache.Set(ctx, "query2", "response2", []float64{0, 1, 0}, nil)
-	cache.Set(ctx, "query3", "response3", []float64{0, 0, 1}, nil)
+	_, _ = cache.Set(ctx, "query1", "response1", []float64{1, 0, 0}, nil)
+	_, _ = cache.Set(ctx, "query2", "response2", []float64{0, 1, 0}, nil)
+	_, _ = cache.Set(ctx, "query3", "response3", []float64{0, 0, 1}, nil)
 
 	entries := cache.GetAllEntries(ctx)
 	assert.Len(t, entries, 3)
@@ -1044,7 +1044,7 @@ func TestSemanticCache_GetWithThreshold(t *testing.T) {
 	)
 
 	embedding := []float64{1, 0, 0}
-	cache.Set(ctx, "query", "response", embedding, nil)
+	_, _ = cache.Set(ctx, "query", "response", embedding, nil)
 
 	// Get with higher threshold - should hit
 	hit, err := cache.GetWithThreshold(ctx, embedding, 0.99)
@@ -1114,7 +1114,7 @@ func TestSemanticCache_SimilarityThresholdBoundary(t *testing.T) {
 
 	// Add entry
 	embedding := []float64{1, 0, 0}
-	cache.Set(ctx, "query", "response", embedding, nil)
+	_, _ = cache.Set(ctx, "query", "response", embedding, nil)
 
 	// Test with embeddings at different similarity levels
 	tests := []struct {
@@ -1176,14 +1176,14 @@ func TestSemanticCache_LRUEvictionOrder(t *testing.T) {
 	}
 
 	for i, emb := range embeddings {
-		cache.Set(ctx, fmt.Sprintf("query%d", i), "response", emb, nil)
+		_, _ = cache.Set(ctx, fmt.Sprintf("query%d", i), "response", emb, nil)
 	}
 
 	// Access query0 to make it recently used
-	cache.Get(ctx, embeddings[0])
+	_, _ = cache.Get(ctx, embeddings[0])
 
 	// Add 4th entry - should evict query1 (least recently used)
-	cache.Set(ctx, "query3", "response", []float64{0.5, 0.5, 0}, nil)
+	_, _ = cache.Set(ctx, "query3", "response", []float64{0.5, 0.5, 0}, nil)
 
 	// query0 should still exist
 	_, err := cache.Get(ctx, embeddings[0])
@@ -1207,7 +1207,7 @@ func TestSemanticCache_TTLExpiration(t *testing.T) {
 	)
 
 	embedding := []float64{1, 0, 0}
-	cache.Set(ctx, "query", "response", embedding, nil)
+	_, _ = cache.Set(ctx, "query", "response", embedding, nil)
 
 	// Should be accessible immediately
 	_, err := cache.Get(ctx, embedding)
@@ -1238,16 +1238,16 @@ func TestSemanticCache_RelevanceEviction(t *testing.T) {
 	}
 
 	for i, emb := range embeddings {
-		cache.Set(ctx, fmt.Sprintf("query%d", i), "response", emb, nil)
+		_, _ = cache.Set(ctx, fmt.Sprintf("query%d", i), "response", emb, nil)
 	}
 
 	// Access query0 multiple times to boost relevance
 	for i := 0; i < 5; i++ {
-		cache.Get(ctx, embeddings[0])
+		_, _ = cache.Get(ctx, embeddings[0])
 	}
 
 	// Add 4th entry - should evict one of the less relevant entries
-	cache.Set(ctx, "query3", "response", []float64{0.5, 0.5, 0}, nil)
+	_, _ = cache.Set(ctx, "query3", "response", []float64{0.5, 0.5, 0}, nil)
 
 	// query0 should still exist (high relevance)
 	_, err := cache.Get(ctx, embeddings[0])
@@ -1265,7 +1265,7 @@ func TestSemanticCache_NormalizationBehavior(t *testing.T) {
 
 		// Non-normalized embedding
 		embedding := []float64{3, 4, 0}
-		cache.Set(ctx, "query", "response", embedding, nil)
+		_, _ = cache.Set(ctx, "query", "response", embedding, nil)
 
 		// Get with same non-normalized embedding
 		hit, err := cache.Get(ctx, embedding)
@@ -1284,7 +1284,7 @@ func TestSemanticCache_NormalizationBehavior(t *testing.T) {
 
 		// Non-normalized embedding
 		embedding := []float64{3, 4, 0}
-		cache.Set(ctx, "query", "response", embedding, nil)
+		_, _ = cache.Set(ctx, "query", "response", embedding, nil)
 
 		// Get with same embedding
 		hit, err := cache.Get(ctx, embedding)
@@ -1308,7 +1308,7 @@ func TestSemanticCache_MetadataPreservation(t *testing.T) {
 	}
 
 	embedding := []float64{1, 0, 0}
-	cache.Set(ctx, "query", "response", embedding, metadata)
+	_, _ = cache.Set(ctx, "query", "response", embedding, metadata)
 
 	hit, err := cache.Get(ctx, embedding)
 	require.NoError(t, err)
@@ -1333,7 +1333,7 @@ func TestSemanticCache_QueryHashUniqueness(t *testing.T) {
 	for i, q := range queries {
 		embedding := make([]float64, 3)
 		embedding[i] = 1
-		cache.Set(ctx, q, fmt.Sprintf("response-%d", i), embedding, nil)
+		_, _ = cache.Set(ctx, q, fmt.Sprintf("response-%d", i), embedding, nil)
 	}
 
 	// Each query should be stored separately
@@ -1366,7 +1366,7 @@ func TestSemanticCache_ConcurrentEviction(t *testing.T) {
 			defer wg.Done()
 			embedding := make([]float64, 10)
 			embedding[idx%10] = float64(idx)
-			cache.Set(ctx, fmt.Sprintf("query-%d", idx), "response", embedding, nil)
+			_, _ = cache.Set(ctx, fmt.Sprintf("query-%d", idx), "response", embedding, nil)
 		}(i)
 	}
 
@@ -1424,10 +1424,10 @@ func TestSemanticCache_InvalidateMultipleCriteria(t *testing.T) {
 	cache := NewSemanticCache()
 
 	// Add entries with different metadata and ages
-	cache.Set(ctx, "query1", "response1", []float64{1, 0, 0}, map[string]interface{}{"type": "old"})
+	_, _ = cache.Set(ctx, "query1", "response1", []float64{1, 0, 0}, map[string]interface{}{"type": "old"})
 	time.Sleep(10 * time.Millisecond)
-	cache.Set(ctx, "query2", "response2", []float64{0, 1, 0}, map[string]interface{}{"type": "new"})
-	cache.Set(ctx, "query3", "response3", []float64{0, 0, 1}, map[string]interface{}{"type": "old"})
+	_, _ = cache.Set(ctx, "query2", "response2", []float64{0, 1, 0}, map[string]interface{}{"type": "new"})
+	_, _ = cache.Set(ctx, "query3", "response3", []float64{0, 0, 1}, map[string]interface{}{"type": "old"})
 
 	// Invalidate by metadata
 	count, err := cache.Invalidate(ctx, InvalidationCriteria{

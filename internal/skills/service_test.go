@@ -467,7 +467,7 @@ func TestService_IsRunning(t *testing.T) {
 	svc.Start()
 	assert.True(t, svc.IsRunning())
 
-	svc.Shutdown()
+	_ = svc.Shutdown()
 	assert.False(t, svc.IsRunning())
 }
 

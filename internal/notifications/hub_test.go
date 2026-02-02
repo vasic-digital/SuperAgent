@@ -163,11 +163,11 @@ func TestNewNotificationHub(t *testing.T) {
 		assert.Equal(t, pollingStore, hub.pollingStore)
 
 		// Cleanup
-		hub.Stop()
-		sseManager.Stop()
-		wsServer.Stop()
-		webhookDispatcher.Stop()
-		pollingStore.Stop()
+		_ = hub.Stop()
+		_ = sseManager.Stop()
+		_ = wsServer.Stop()
+		_ = webhookDispatcher.Stop()
+		_ = pollingStore.Stop()
 	})
 }
 
@@ -187,7 +187,7 @@ func TestNotificationHub_StartStop(t *testing.T) {
 func TestNotificationHub_Subscribe(t *testing.T) {
 	logger := testLogger()
 	hub := NewNotificationHub(nil, nil, nil, nil, nil, logger)
-	defer hub.Stop()
+	defer func() { _ = hub.Stop() }()
 
 	t.Run("subscribe single subscriber", func(t *testing.T) {
 		subscriber := NewMockSubscriber("sub-1", NotificationTypeSSE)
@@ -220,7 +220,7 @@ func TestNotificationHub_Subscribe(t *testing.T) {
 func TestNotificationHub_GlobalSubscribe(t *testing.T) {
 	logger := testLogger()
 	hub := NewNotificationHub(nil, nil, nil, nil, nil, logger)
-	defer hub.Stop()
+	defer func() { _ = hub.Stop() }()
 
 	subscriber1 := NewMockSubscriber("global-1", NotificationTypeSSE)
 	subscriber2 := NewMockSubscriber("global-2", NotificationTypeWebSocket)
@@ -236,10 +236,10 @@ func TestNotificationHub_GlobalSubscribe(t *testing.T) {
 func TestNotificationHub_NotifyTaskEvent(t *testing.T) {
 	logger := testLogger()
 	pollingStore := NewPollingStore(nil, logger)
-	defer pollingStore.Stop()
+	defer func() { _ = pollingStore.Stop() }()
 
 	hub := NewNotificationHub(nil, nil, nil, nil, pollingStore, logger)
-	defer hub.Stop()
+	defer func() { _ = hub.Stop() }()
 
 	task := testTask("task-123")
 	data := map[string]interface{}{"key": "value"}
@@ -261,14 +261,14 @@ func TestNotificationHub_NotifyTaskEvent(t *testing.T) {
 func TestNotificationHub_BroadcastToTask(t *testing.T) {
 	logger := testLogger()
 	sseManager := NewSSEManager(nil, logger)
-	defer sseManager.Stop()
+	defer func() { _ = sseManager.Stop() }()
 
 	hub := NewNotificationHub(nil, sseManager, nil, nil, nil, logger)
-	defer hub.Stop()
+	defer func() { _ = hub.Stop() }()
 
 	// Register a client
 	clientChan := make(chan []byte, 10)
-	sseManager.RegisterClient("task-1", clientChan)
+	_ = sseManager.RegisterClient("task-1", clientChan)
 
 	// Broadcast message
 	message := []byte(`{"type":"test"}`)
@@ -283,17 +283,17 @@ func TestNotificationHub_BroadcastToTask(t *testing.T) {
 		t.Fatal("timeout waiting for message")
 	}
 
-	sseManager.UnregisterClient("task-1", clientChan)
+	_ = sseManager.UnregisterClient("task-1", clientChan)
 }
 
 // Tests for RegisterSSEClient
 func TestNotificationHub_RegisterSSEClient(t *testing.T) {
 	logger := testLogger()
 	sseManager := NewSSEManager(nil, logger)
-	defer sseManager.Stop()
+	defer func() { _ = sseManager.Stop() }()
 
 	hub := NewNotificationHub(nil, sseManager, nil, nil, nil, logger)
-	defer hub.Stop()
+	defer func() { _ = hub.Stop() }()
 
 	clientChan := make(chan []byte, 10)
 
@@ -314,7 +314,7 @@ func TestNotificationHub_RegisterSSEClient(t *testing.T) {
 func TestNotificationHub_RegisterSSEClient_NilManager(t *testing.T) {
 	logger := testLogger()
 	hub := NewNotificationHub(nil, nil, nil, nil, nil, logger)
-	defer hub.Stop()
+	defer func() { _ = hub.Stop() }()
 
 	clientChan := make(chan []byte, 10)
 
@@ -329,7 +329,7 @@ func TestNotificationHub_RegisterSSEClient_NilManager(t *testing.T) {
 func TestNotificationHub_GetActiveSubscribers(t *testing.T) {
 	logger := testLogger()
 	hub := NewNotificationHub(nil, nil, nil, nil, nil, logger)
-	defer hub.Stop()
+	defer func() { _ = hub.Stop() }()
 
 	// No subscribers
 	count := hub.GetActiveSubscribers("nonexistent")
@@ -355,7 +355,7 @@ func TestNotificationHub_GetActiveSubscribers(t *testing.T) {
 func TestNotificationHub_CleanupInactiveSubscribers(t *testing.T) {
 	logger := testLogger()
 	hub := NewNotificationHub(nil, nil, nil, nil, nil, logger)
-	defer hub.Stop()
+	defer func() { _ = hub.Stop() }()
 
 	// Add subscribers
 	activeSub := NewMockSubscriber("active", NotificationTypeSSE)
@@ -406,7 +406,7 @@ func TestTaskNotification(t *testing.T) {
 func TestNotificationHub_ConcurrentOperations(t *testing.T) {
 	logger := testLogger()
 	hub := NewNotificationHub(nil, nil, nil, nil, nil, logger)
-	defer hub.Stop()
+	defer func() { _ = hub.Stop() }()
 
 	var wg sync.WaitGroup
 	numGoroutines := 10
@@ -443,7 +443,7 @@ func TestNotificationHub_EventChannelOverflow(t *testing.T) {
 	}
 
 	pollingStore := NewPollingStore(nil, logger)
-	defer pollingStore.Stop()
+	defer func() { _ = pollingStore.Stop() }()
 
 	hub := NewNotificationHub(config, nil, nil, nil, pollingStore, logger)
 
@@ -452,11 +452,11 @@ func TestNotificationHub_EventChannelOverflow(t *testing.T) {
 
 	// Send many events quickly
 	for i := 0; i < 100; i++ {
-		hub.NotifyTaskEvent(context.Background(), task, "event", nil)
+		_ = hub.NotifyTaskEvent(context.Background(), task, "event", nil)
 	}
 
 	// Should not panic or block
-	hub.Stop()
+	_ = hub.Stop()
 }
 
 // Tests for notification dispatch to subscribers
@@ -477,7 +477,7 @@ func TestNotificationHub_DispatchToSubscribers(t *testing.T) {
 	// Wait for processing
 	time.Sleep(200 * time.Millisecond)
 
-	hub.Stop()
+	_ = hub.Stop()
 
 	// Verify subscriber received notification
 	notifications := subscriber.GetNotifications()
@@ -502,7 +502,7 @@ func TestNotificationHub_DispatchToGlobalSubscribers(t *testing.T) {
 	// Wait for processing
 	time.Sleep(200 * time.Millisecond)
 
-	hub.Stop()
+	_ = hub.Stop()
 
 	// Verify global subscriber received notification
 	notifications := globalSub.GetNotifications()

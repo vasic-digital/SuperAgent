@@ -43,7 +43,7 @@ func TestNewWebhookDispatcher(t *testing.T) {
 		assert.NotNil(t, dispatcher.client)
 		assert.Equal(t, logger, dispatcher.logger)
 
-		dispatcher.Stop()
+		_ = dispatcher.Stop()
 	})
 
 	t.Run("with custom config", func(t *testing.T) {
@@ -63,7 +63,7 @@ func TestNewWebhookDispatcher(t *testing.T) {
 		assert.Equal(t, 3, dispatcher.config.MaxRetries)
 		assert.Equal(t, 500*time.Millisecond, dispatcher.config.RetryBackoff)
 
-		dispatcher.Stop()
+		_ = dispatcher.Stop()
 	})
 }
 
@@ -83,7 +83,7 @@ func TestWebhookDispatcher_StartStop(t *testing.T) {
 func TestWebhookDispatcher_RegisterWebhook(t *testing.T) {
 	logger := testLogger()
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	t.Run("register webhook with ID", func(t *testing.T) {
 		webhook := &WebhookRegistration{
@@ -134,14 +134,14 @@ func TestWebhookDispatcher_RegisterWebhook(t *testing.T) {
 func TestWebhookDispatcher_UnregisterWebhook(t *testing.T) {
 	logger := testLogger()
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	webhook := &WebhookRegistration{
 		ID:      "webhook-1",
 		URL:     "https://example.com/webhook",
 		Enabled: true,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	err := dispatcher.UnregisterWebhook("webhook-1")
 	assert.NoError(t, err)
@@ -154,7 +154,7 @@ func TestWebhookDispatcher_UnregisterWebhook(t *testing.T) {
 func TestWebhookDispatcher_GetWebhook(t *testing.T) {
 	logger := testLogger()
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	t.Run("get existing webhook", func(t *testing.T) {
 		webhook := &WebhookRegistration{
@@ -164,7 +164,7 @@ func TestWebhookDispatcher_GetWebhook(t *testing.T) {
 			Events:  []string{"task.completed"},
 			Enabled: true,
 		}
-		dispatcher.RegisterWebhook(webhook)
+		_ = dispatcher.RegisterWebhook(webhook)
 
 		retrieved, found := dispatcher.GetWebhook("webhook-1")
 		assert.True(t, found)
@@ -182,7 +182,7 @@ func TestWebhookDispatcher_GetWebhook(t *testing.T) {
 func TestWebhookDispatcher_ListWebhooks(t *testing.T) {
 	logger := testLogger()
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	// Register multiple webhooks
 	for i := 0; i < 3; i++ {
@@ -191,7 +191,7 @@ func TestWebhookDispatcher_ListWebhooks(t *testing.T) {
 			URL:     "https://example.com/webhook" + string(rune('a'+i)),
 			Enabled: true,
 		}
-		dispatcher.RegisterWebhook(webhook)
+		_ = dispatcher.RegisterWebhook(webhook)
 	}
 
 	webhooks := dispatcher.ListWebhooks()
@@ -220,7 +220,7 @@ func TestWebhookDispatcher_Dispatch(t *testing.T) {
 	}
 
 	dispatcher := NewWebhookDispatcher(config, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	// Register a webhook pointing to test server
 	webhook := &WebhookRegistration{
@@ -229,7 +229,7 @@ func TestWebhookDispatcher_Dispatch(t *testing.T) {
 		Events:  []string{"*"},
 		Enabled: true,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	// Create a notification
 	task := testTask("task-1")
@@ -261,7 +261,7 @@ func TestWebhookDispatcher_Dispatch_EventFiltering(t *testing.T) {
 	defer server.Close()
 
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	// Register webhook for specific event
 	webhook := &WebhookRegistration{
@@ -270,7 +270,7 @@ func TestWebhookDispatcher_Dispatch_EventFiltering(t *testing.T) {
 		Events:  []string{"task.completed"},
 		Enabled: true,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	// Dispatch event that doesn't match
 	notification := &TaskNotification{
@@ -312,7 +312,7 @@ func TestWebhookDispatcher_Dispatch_DisabledWebhook(t *testing.T) {
 	defer server.Close()
 
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	// Register disabled webhook
 	webhook := &WebhookRegistration{
@@ -321,7 +321,7 @@ func TestWebhookDispatcher_Dispatch_DisabledWebhook(t *testing.T) {
 		Events:  []string{"*"},
 		Enabled: false,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	notification := &TaskNotification{
 		TaskID:    "task-1",
@@ -348,7 +348,7 @@ func TestWebhookDispatcher_Dispatch_TaskTypeFiltering(t *testing.T) {
 	defer server.Close()
 
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	// Register webhook for specific task type
 	webhook := &WebhookRegistration{
@@ -357,7 +357,7 @@ func TestWebhookDispatcher_Dispatch_TaskTypeFiltering(t *testing.T) {
 		TaskTypes: []string{"specific-type"},
 		Enabled:   true,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	// Dispatch event with different task type
 	task := &models.BackgroundTask{
@@ -413,7 +413,7 @@ func TestWebhookDispatcher_Signature(t *testing.T) {
 	defer server.Close()
 
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	// Register webhook with secret
 	webhook := &WebhookRegistration{
@@ -423,7 +423,7 @@ func TestWebhookDispatcher_Signature(t *testing.T) {
 		Events:  []string{"*"},
 		Enabled: true,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	notification := &TaskNotification{
 		TaskID:    "task-1",
@@ -458,7 +458,7 @@ func TestWebhookDispatcher_CustomHeaders(t *testing.T) {
 	defer server.Close()
 
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	// Register webhook with custom headers
 	webhook := &WebhookRegistration{
@@ -471,7 +471,7 @@ func TestWebhookDispatcher_CustomHeaders(t *testing.T) {
 		Events:  []string{"*"},
 		Enabled: true,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	notification := &TaskNotification{
 		TaskID:    "task-1",
@@ -499,14 +499,14 @@ func TestWebhookDispatcher_Payload(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		mu.Lock()
-		json.Unmarshal(body, &receivedPayload)
+		_ = json.Unmarshal(body, &receivedPayload)
 		mu.Unlock()
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	webhook := &WebhookRegistration{
 		ID:      "test-webhook",
@@ -514,7 +514,7 @@ func TestWebhookDispatcher_Payload(t *testing.T) {
 		Events:  []string{"*"},
 		Enabled: true,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	task := &models.BackgroundTask{
 		ID:       "task-123",
@@ -573,7 +573,7 @@ func TestWebhookDispatcher_Retry(t *testing.T) {
 	}
 
 	dispatcher := NewWebhookDispatcher(config, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	webhook := &WebhookRegistration{
 		ID:      "test-webhook",
@@ -581,7 +581,7 @@ func TestWebhookDispatcher_Retry(t *testing.T) {
 		Events:  []string{"*"},
 		Enabled: true,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	notification := &TaskNotification{
 		TaskID:    "task-1",
@@ -608,7 +608,7 @@ func TestWebhookDispatcher_GetStats(t *testing.T) {
 	defer server.Close()
 
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	// Initial stats
 	stats := dispatcher.GetStats()
@@ -623,7 +623,7 @@ func TestWebhookDispatcher_GetStats(t *testing.T) {
 		Events:  []string{"*"},
 		Enabled: true,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	stats = dispatcher.GetStats()
 	assert.Equal(t, 1, stats["webhooks_registered"])
@@ -647,7 +647,7 @@ func TestWebhookDispatcher_GetStats(t *testing.T) {
 func TestWebhookDispatcher_LoadWebhooksFromTask(t *testing.T) {
 	logger := testLogger()
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	task := &models.BackgroundTask{
 		ID:       "task-1",
@@ -687,7 +687,7 @@ func TestWebhookSubscriber(t *testing.T) {
 	defer server.Close()
 
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	webhook := &WebhookRegistration{
 		ID:      "test-webhook",
@@ -695,7 +695,7 @@ func TestWebhookSubscriber(t *testing.T) {
 		Events:  []string{"*"},
 		Enabled: true,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	t.Run("create new subscriber", func(t *testing.T) {
 		subscriber := NewWebhookSubscriber("sub-1", "task-1", dispatcher, webhook)
@@ -738,7 +738,7 @@ func TestWebhookDispatcher_ConcurrentOperations(t *testing.T) {
 	defer server.Close()
 
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	var wg sync.WaitGroup
 
@@ -753,7 +753,7 @@ func TestWebhookDispatcher_ConcurrentOperations(t *testing.T) {
 				Events:  []string{"*"},
 				Enabled: true,
 			}
-			dispatcher.RegisterWebhook(webhook)
+			_ = dispatcher.RegisterWebhook(webhook)
 		}(i)
 	}
 
@@ -789,7 +789,7 @@ func TestWebhookDispatcher_CalculateBackoff(t *testing.T) {
 	}
 
 	dispatcher := NewWebhookDispatcher(config, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	t.Run("exponential backoff", func(t *testing.T) {
 		backoff1 := dispatcher.calculateBackoff(1)
@@ -812,7 +812,7 @@ func TestWebhookDispatcher_CalculateBackoff(t *testing.T) {
 func TestWebhookDispatcher_GenerateSignature(t *testing.T) {
 	logger := testLogger()
 	dispatcher := NewWebhookDispatcher(nil, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	payload := []byte(`{"test":"data"}`)
 	secret := "my-secret-key"
@@ -915,7 +915,7 @@ func TestWebhookDispatcher_AutoDisable(t *testing.T) {
 	}
 
 	dispatcher := NewWebhookDispatcher(config, logger)
-	defer dispatcher.Stop()
+	defer func() { _ = dispatcher.Stop() }()
 
 	webhook := &WebhookRegistration{
 		ID:      "test-webhook",
@@ -923,7 +923,7 @@ func TestWebhookDispatcher_AutoDisable(t *testing.T) {
 		Events:  []string{"*"},
 		Enabled: true,
 	}
-	dispatcher.RegisterWebhook(webhook)
+	_ = dispatcher.RegisterWebhook(webhook)
 
 	// Send many failing requests
 	for i := 0; i < 15; i++ {

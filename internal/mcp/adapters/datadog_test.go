@@ -98,7 +98,7 @@ func TestDatadogAdapter_QueryMetrics(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -135,7 +135,7 @@ func TestDatadogAdapter_ListDashboards(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -170,7 +170,7 @@ func TestDatadogAdapter_GetDashboard(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -216,7 +216,7 @@ func TestDatadogAdapter_ListMonitors(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -255,7 +255,7 @@ func TestDatadogAdapter_GetMonitor(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -352,7 +352,7 @@ func TestDatadogAdapter_QueryLogs(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -391,7 +391,7 @@ func TestDatadogAdapter_ListHosts(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -426,7 +426,7 @@ func TestDatadogAdapter_ListEvents(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -455,7 +455,7 @@ func TestDatadogAdapter_CreateEvent(t *testing.T) {
 		assert.True(t, strings.HasSuffix(r.URL.Path, "/api/v1/events"))
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "Test Event", body["title"])
 		assert.Equal(t, "Test event body", body["text"])
 
@@ -465,7 +465,7 @@ func TestDatadogAdapter_CreateEvent(t *testing.T) {
 
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -494,7 +494,7 @@ func TestDatadogAdapter_CreateEvent(t *testing.T) {
 func TestDatadogAdapter_APIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"errors": ["Invalid API key"]}`))
+		_, _ = w.Write([]byte(`{"errors": ["Invalid API key"]}`))
 	}))
 	defer server.Close()
 

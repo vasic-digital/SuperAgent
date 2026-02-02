@@ -224,7 +224,7 @@ func (p *HTTPClientPool) DoWithContext(ctx context.Context, req *http.Request) (
 		// Close response body before retry
 		if resp != nil && resp.Body != nil {
 			_, _ = io.Copy(io.Discard, resp.Body)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 
 		if attempt < p.config.RetryCount {

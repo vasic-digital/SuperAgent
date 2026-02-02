@@ -412,7 +412,7 @@ func TestAdaptiveWorkerPool_StartStop(t *testing.T) {
 		assert.GreaterOrEqual(t, pool.GetWorkerCount(), config.MinWorkers)
 
 		// Cleanup
-		pool.Stop(time.Second)
+		_ = pool.Stop(time.Second)
 	})
 
 	t.Run("Returns error when already started", func(t *testing.T) {
@@ -428,8 +428,8 @@ func TestAdaptiveWorkerPool_StartStop(t *testing.T) {
 		queue.dequeueDelay = 50 * time.Millisecond
 		pool := newTestWorkerPool(config, queue, newMockTaskRepository(), nil, nil, nil, newTestLogger())
 
-		pool.Start(context.Background())
-		defer pool.Stop(time.Second)
+		_ = pool.Start(context.Background())
+		defer func() { _ = pool.Stop(time.Second) }()
 
 		err := pool.Start(context.Background())
 
@@ -451,7 +451,7 @@ func TestAdaptiveWorkerPool_StartStop(t *testing.T) {
 		queue.dequeueDelay = 50 * time.Millisecond
 		pool := newTestWorkerPool(config, queue, newMockTaskRepository(), nil, nil, nil, newTestLogger())
 
-		pool.Start(context.Background())
+		_ = pool.Start(context.Background())
 		time.Sleep(100 * time.Millisecond)
 
 		err := pool.Stop(time.Second)
@@ -484,8 +484,8 @@ func TestAdaptiveWorkerPool_GetWorkerCount(t *testing.T) {
 		queue.dequeueDelay = 50 * time.Millisecond
 		pool := newTestWorkerPool(config, queue, newMockTaskRepository(), nil, nil, nil, newTestLogger())
 
-		pool.Start(context.Background())
-		defer pool.Stop(time.Second)
+		_ = pool.Start(context.Background())
+		defer func() { _ = pool.Stop(time.Second) }()
 		time.Sleep(100 * time.Millisecond)
 
 		count := pool.GetWorkerCount()
@@ -517,8 +517,8 @@ func TestAdaptiveWorkerPool_GetActiveTaskCount(t *testing.T) {
 		queue.dequeueDelay = 50 * time.Millisecond
 		pool := newTestWorkerPool(config, queue, newMockTaskRepository(), nil, nil, nil, newTestLogger())
 
-		pool.Start(context.Background())
-		defer pool.Stop(time.Second)
+		_ = pool.Start(context.Background())
+		defer func() { _ = pool.Stop(time.Second) }()
 		time.Sleep(100 * time.Millisecond)
 
 		count := pool.GetActiveTaskCount()
@@ -550,8 +550,8 @@ func TestAdaptiveWorkerPool_GetWorkerStatus(t *testing.T) {
 		queue.dequeueDelay = 50 * time.Millisecond
 		pool := newTestWorkerPool(config, queue, newMockTaskRepository(), nil, nil, nil, newTestLogger())
 
-		pool.Start(context.Background())
-		defer pool.Stop(time.Second)
+		_ = pool.Start(context.Background())
+		defer func() { _ = pool.Stop(time.Second) }()
 		time.Sleep(100 * time.Millisecond)
 
 		statuses := pool.GetWorkerStatus()
@@ -580,8 +580,8 @@ func TestAdaptiveWorkerPool_Scale(t *testing.T) {
 		queue.dequeueDelay = 50 * time.Millisecond
 		pool := newTestWorkerPool(config, queue, newMockTaskRepository(), nil, nil, nil, newTestLogger())
 
-		pool.Start(context.Background())
-		defer pool.Stop(time.Second)
+		_ = pool.Start(context.Background())
+		defer func() { _ = pool.Stop(time.Second) }()
 		time.Sleep(100 * time.Millisecond)
 
 		err := pool.Scale(4)
@@ -604,8 +604,8 @@ func TestAdaptiveWorkerPool_Scale(t *testing.T) {
 		queue.dequeueDelay = 50 * time.Millisecond
 		pool := newTestWorkerPool(config, queue, newMockTaskRepository(), nil, nil, nil, newTestLogger())
 
-		pool.Start(context.Background())
-		defer pool.Stop(time.Second)
+		_ = pool.Start(context.Background())
+		defer func() { _ = pool.Stop(time.Second) }()
 		time.Sleep(100 * time.Millisecond)
 
 		err := pool.Scale(10) // Request more than max
@@ -628,8 +628,8 @@ func TestAdaptiveWorkerPool_Scale(t *testing.T) {
 		queue.dequeueDelay = 50 * time.Millisecond
 		pool := newTestWorkerPool(config, queue, newMockTaskRepository(), nil, nil, nil, newTestLogger())
 
-		pool.Start(context.Background())
-		defer pool.Stop(time.Second)
+		_ = pool.Start(context.Background())
+		defer func() { _ = pool.Stop(time.Second) }()
 		time.Sleep(100 * time.Millisecond)
 
 		err := pool.Scale(1) // Request less than min
@@ -717,7 +717,7 @@ func TestTaskProgressReporter(t *testing.T) {
 	t.Run("ReportProgress updates repository and notifies", func(t *testing.T) {
 		repo := newMockTaskRepository()
 		task := &models.BackgroundTask{ID: "task-1"}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 		notifier := newMockNotificationService()
 
 		reporter := &taskProgressReporter{
@@ -739,7 +739,7 @@ func TestTaskProgressReporter(t *testing.T) {
 	t.Run("ReportHeartbeat updates repository", func(t *testing.T) {
 		repo := newMockTaskRepository()
 		task := &models.BackgroundTask{ID: "task-1"}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		reporter := &taskProgressReporter{
 			taskID:     "task-1",
@@ -758,7 +758,7 @@ func TestTaskProgressReporter(t *testing.T) {
 	t.Run("ReportCheckpoint saves checkpoint", func(t *testing.T) {
 		repo := newMockTaskRepository()
 		task := &models.BackgroundTask{ID: "task-1"}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		reporter := &taskProgressReporter{
 			taskID:     "task-1",
@@ -816,7 +816,7 @@ func TestTaskProgressReporter(t *testing.T) {
 	t.Run("ReportLog logs event and notifies", func(t *testing.T) {
 		repo := newMockTaskRepository()
 		task := &models.BackgroundTask{ID: "task-1"}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 		notifier := newMockNotificationService()
 
 		reporter := &taskProgressReporter{
@@ -844,7 +844,7 @@ func TestAdaptiveWorkerPool_WaitForCompletion(t *testing.T) {
 			Status:   models.TaskStatusCompleted,
 			Progress: 100,
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -863,7 +863,7 @@ func TestAdaptiveWorkerPool_WaitForCompletion(t *testing.T) {
 			Status:          models.TaskStatusFailed,
 			ProgressMessage: &errorMsg,
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -880,7 +880,7 @@ func TestAdaptiveWorkerPool_WaitForCompletion(t *testing.T) {
 			ID:     "task-1",
 			Status: models.TaskStatusCancelled,
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -896,7 +896,7 @@ func TestAdaptiveWorkerPool_WaitForCompletion(t *testing.T) {
 			ID:     "task-1",
 			Status: models.TaskStatusDeadLetter,
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -915,7 +915,7 @@ func TestAdaptiveWorkerPool_WaitForCompletion(t *testing.T) {
 			Progress:        50,
 			ProgressMessage: &progressMsg,
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -939,7 +939,7 @@ func TestAdaptiveWorkerPool_WaitForCompletion(t *testing.T) {
 			ID:     "task-1",
 			Status: models.TaskStatusRunning, // Not terminal
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -965,7 +965,7 @@ func TestAdaptiveWorkerPool_WaitForCompletion(t *testing.T) {
 			ID:     "task-1",
 			Status: models.TaskStatusRunning,
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -995,7 +995,7 @@ func TestAdaptiveWorkerPool_WaitForCompletionWithOutput(t *testing.T) {
 				CaptureOutput: true,
 			},
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -1016,7 +1016,7 @@ func TestAdaptiveWorkerPool_WaitForCompletionWithOutput(t *testing.T) {
 				CaptureOutput: false,
 			},
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -1034,7 +1034,7 @@ func TestAdaptiveWorkerPool_WaitForCompletionWithOutput(t *testing.T) {
 			Status:          models.TaskStatusFailed,
 			ProgressMessage: &errMsg,
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -1058,8 +1058,8 @@ func TestAdaptiveWorkerPool_WaitForMultiple(t *testing.T) {
 			Status:   models.TaskStatusCompleted,
 			Progress: 100,
 		}
-		repo.Create(context.Background(), task1)
-		repo.Create(context.Background(), task2)
+		_ = repo.Create(context.Background(), task1)
+		_ = repo.Create(context.Background(), task2)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -1085,8 +1085,8 @@ func TestAdaptiveWorkerPool_WaitForMultiple(t *testing.T) {
 			Status:          models.TaskStatusFailed,
 			ProgressMessage: &errMsg,
 		}
-		repo.Create(context.Background(), task1)
-		repo.Create(context.Background(), task2)
+		_ = repo.Create(context.Background(), task1)
+		_ = repo.Create(context.Background(), task2)
 
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, nil, newTestLogger())
 
@@ -1153,7 +1153,7 @@ func TestAdaptiveWorkerPool_handleStuckTask(t *testing.T) {
 			ID:     "task-1",
 			Status: models.TaskStatusRunning,
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		notifier := newMockNotificationService()
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, notifier, newTestLogger())
@@ -1171,7 +1171,7 @@ func TestAdaptiveWorkerPool_handleStuckTask(t *testing.T) {
 			ID:     "task-1",
 			Status: models.TaskStatusRunning,
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		notifier := newMockNotificationService()
 		pool := newTestWorkerPool(nil, newMockTaskQueue(), repo, nil, nil, notifier, newTestLogger())
@@ -1200,7 +1200,7 @@ func TestAdaptiveWorkerPool_handleTaskSuccess(t *testing.T) {
 			TaskType: "test-type",
 			Status:   models.TaskStatusRunning,
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		worker := &Worker{ID: "worker-1"}
 		notifier := newMockNotificationService()
@@ -1228,7 +1228,7 @@ func TestAdaptiveWorkerPool_handleTaskError(t *testing.T) {
 			MaxRetries:        3,
 			RetryDelaySeconds: 1,
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		worker := &Worker{ID: "worker-1"}
 		pool := newTestWorkerPool(nil, queue, repo, nil, nil, nil, newTestLogger())
@@ -1249,7 +1249,7 @@ func TestAdaptiveWorkerPool_handleTaskError(t *testing.T) {
 			RetryCount: 3,
 			MaxRetries: 3, // Already at max
 		}
-		repo.Create(context.Background(), task)
+		_ = repo.Create(context.Background(), task)
 
 		worker := &Worker{ID: "worker-1"}
 		notifier := newMockNotificationService()

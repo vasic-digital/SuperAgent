@@ -252,12 +252,12 @@ func TestFileAuditLogger(t *testing.T) {
 	t.Run("creates and logs to file", func(t *testing.T) {
 		tmpFile, err := os.CreateTemp("", "audit_test_*.log")
 		require.NoError(t, err)
-		tmpFile.Close()
-		defer os.Remove(tmpFile.Name())
+		_ = tmpFile.Close()
+		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 		logger, err := NewFileAuditLogger(tmpFile.Name(), nil)
 		require.NoError(t, err)
-		defer logger.Close()
+		defer func() { _ = logger.Close() }()
 
 		event := &AuditEvent{
 			EventType: AuditEventToolCall,
@@ -276,12 +276,12 @@ func TestFileAuditLogger(t *testing.T) {
 	t.Run("query returns error", func(t *testing.T) {
 		tmpFile, err := os.CreateTemp("", "audit_test_*.log")
 		require.NoError(t, err)
-		tmpFile.Close()
-		defer os.Remove(tmpFile.Name())
+		_ = tmpFile.Close()
+		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 		logger, err := NewFileAuditLogger(tmpFile.Name(), nil)
 		require.NoError(t, err)
-		defer logger.Close()
+		defer func() { _ = logger.Close() }()
 
 		_, err = logger.Query(context.Background(), &AuditFilter{})
 		assert.Error(t, err)
@@ -291,12 +291,12 @@ func TestFileAuditLogger(t *testing.T) {
 	t.Run("get stats returns error", func(t *testing.T) {
 		tmpFile, err := os.CreateTemp("", "audit_test_*.log")
 		require.NoError(t, err)
-		tmpFile.Close()
-		defer os.Remove(tmpFile.Name())
+		_ = tmpFile.Close()
+		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 		logger, err := NewFileAuditLogger(tmpFile.Name(), nil)
 		require.NoError(t, err)
-		defer logger.Close()
+		defer func() { _ = logger.Close() }()
 
 		_, err = logger.GetStats(context.Background(), time.Now())
 		assert.Error(t, err)
@@ -353,7 +353,7 @@ func TestCompositeAuditLogger(t *testing.T) {
 		composite := NewCompositeAuditLogger(logger)
 
 		// Add an event
-		composite.Log(ctx, &AuditEvent{EventType: AuditEventToolCall})
+		_ = composite.Log(ctx, &AuditEvent{EventType: AuditEventToolCall})
 
 		results, err := composite.Query(ctx, &AuditFilter{})
 		require.NoError(t, err)
@@ -365,7 +365,7 @@ func TestCompositeAuditLogger(t *testing.T) {
 		composite := NewCompositeAuditLogger(logger)
 
 		// Add an event
-		composite.Log(ctx, &AuditEvent{EventType: AuditEventToolCall})
+		_ = composite.Log(ctx, &AuditEvent{EventType: AuditEventToolCall})
 
 		stats, err := composite.GetStats(ctx, time.Now().Add(-1*time.Hour))
 		require.NoError(t, err)

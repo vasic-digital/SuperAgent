@@ -642,10 +642,10 @@ func (s *StdoutWriter) Write(data []byte) (int, error) {
 	// In line mode, only flush on newlines
 	if s.lineMode {
 		if bytes.Contains(data, []byte(s.delimiter)) {
-			s.buffered.Flush()
+			_ = s.buffered.Flush()
 		}
 	} else {
-		s.buffered.Flush()
+		_ = s.buffered.Flush()
 	}
 
 	return n, nil

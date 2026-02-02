@@ -156,7 +156,7 @@ func TestQdrantAdapter_ListCollections(t *testing.T) {
 				assert.Equal(t, "GET", r.Method)
 				assert.Equal(t, "/collections", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(response)
+				_ = json.NewEncoder(w).Encode(response)
 			},
 			expectError: false,
 			expectedLen: 2,
@@ -165,7 +165,7 @@ func TestQdrantAdapter_ListCollections(t *testing.T) {
 			name: "decode error",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid json"))
+				_, _ = w.Write([]byte("invalid json"))
 			},
 			expectError: true,
 		},
@@ -206,12 +206,12 @@ func TestQdrantAdapter_CreateCollection(t *testing.T) {
 				assert.Equal(t, "PUT", r.Method)
 				assert.Equal(t, "/collections/new-collection", r.URL.Path)
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				vectors := body["vectors"].(map[string]interface{})
 				assert.Equal(t, float64(1536), vectors["size"])
 				assert.Equal(t, "Cosine", vectors["distance"])
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{"result": true, "status": "ok"})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"result": true, "status": "ok"})
 			},
 			expectError: false,
 		},
@@ -222,7 +222,7 @@ func TestQdrantAdapter_CreateCollection(t *testing.T) {
 			distance:   "",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				vectors := body["vectors"].(map[string]interface{})
 				assert.Equal(t, "Cosine", vectors["distance"])
 				w.WriteHeader(http.StatusCreated)
@@ -235,7 +235,7 @@ func TestQdrantAdapter_CreateCollection(t *testing.T) {
 			vectorSize: 1536,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusConflict)
-				w.Write([]byte(`{"status":{"error":"collection already exists"}}`))
+				_, _ = w.Write([]byte(`{"status":{"error":"collection already exists"}}`))
 			},
 			expectError: true,
 		},
@@ -357,7 +357,7 @@ func TestQdrantAdapter_GetCollectionInfo(t *testing.T) {
 			collName: "test-collection",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"result": QdrantCollection{Name: "test-collection", Status: "green"},
 					"status": "ok",
 				})
@@ -377,7 +377,7 @@ func TestQdrantAdapter_GetCollectionInfo(t *testing.T) {
 			collName: "test",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},
@@ -421,7 +421,7 @@ func TestQdrantAdapter_UpsertPoints(t *testing.T) {
 				assert.Equal(t, "PUT", r.Method)
 				assert.Equal(t, "/collections/test-collection/points", r.URL.Path)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{"result": map[string]string{"status": "completed"}, "status": "ok"})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"result": map[string]string{"status": "completed"}, "status": "ok"})
 			},
 			expectError: false,
 		},
@@ -431,7 +431,7 @@ func TestQdrantAdapter_UpsertPoints(t *testing.T) {
 			points:     points,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"status":{"error":"invalid points"}}`))
+				_, _ = w.Write([]byte(`{"status":{"error":"invalid points"}}`))
 			},
 			expectError: true,
 		},
@@ -532,12 +532,12 @@ func TestQdrantAdapter_Search(t *testing.T) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Contains(t, r.URL.Path, "/search")
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.NotNil(t, body["vector"])
 				assert.Equal(t, float64(10), body["limit"])
 				assert.True(t, body["with_payload"].(bool))
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(searchResponse)
+				_ = json.NewEncoder(w).Encode(searchResponse)
 			},
 			expectError: false,
 		},
@@ -551,10 +551,10 @@ func TestQdrantAdapter_Search(t *testing.T) {
 			withVector:  true,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.NotNil(t, body["filter"])
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(searchResponse)
+				_ = json.NewEncoder(w).Encode(searchResponse)
 			},
 			expectError: false,
 		},
@@ -565,7 +565,7 @@ func TestQdrantAdapter_Search(t *testing.T) {
 			limit:      10,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(`{"status":{"error":"collection not found"}}`))
+				_, _ = w.Write([]byte(`{"status":{"error":"collection not found"}}`))
 			},
 			expectError: true,
 		},
@@ -576,7 +576,7 @@ func TestQdrantAdapter_Search(t *testing.T) {
 			limit:      10,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},
@@ -628,7 +628,7 @@ func TestQdrantAdapter_SearchBatch(t *testing.T) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Contains(t, r.URL.Path, "/batch")
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"result": [][]QdrantSearchResult{
 						{{ID: uint64(1), Score: 0.9}},
 						{{ID: uint64(2), Score: 0.8}},
@@ -650,7 +650,7 @@ func TestQdrantAdapter_SearchBatch(t *testing.T) {
 			},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"status":{"error":"invalid request"}}`))
+				_, _ = w.Write([]byte(`{"status":{"error":"invalid request"}}`))
 			},
 			expectError: true,
 		},
@@ -667,7 +667,7 @@ func TestQdrantAdapter_SearchBatch(t *testing.T) {
 			},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},
@@ -709,7 +709,7 @@ func TestQdrantAdapter_GetPoints(t *testing.T) {
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "POST", r.Method)
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"result": []QdrantPoint{
 						{ID: uint64(1), Vector: []float32{0.1, 0.2}, Payload: map[string]interface{}{"key": "value"}},
 					},
@@ -723,7 +723,7 @@ func TestQdrantAdapter_GetPoints(t *testing.T) {
 			ids:        []interface{}{uint64(999)},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"status":{"error":"invalid ids"}}`))
+				_, _ = w.Write([]byte(`{"status":{"error":"invalid ids"}}`))
 			},
 			expectError: true,
 		},
@@ -733,7 +733,7 @@ func TestQdrantAdapter_GetPoints(t *testing.T) {
 			ids:        []interface{}{uint64(1)},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},
@@ -771,7 +771,7 @@ func TestQdrantAdapter_CountPoints(t *testing.T) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Contains(t, r.URL.Path, "/count")
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"result": map[string]uint64{"count": 42},
 				})
 			},
@@ -791,7 +791,7 @@ func TestQdrantAdapter_CountPoints(t *testing.T) {
 			collection: "test",
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},
@@ -838,7 +838,7 @@ func TestQdrantAdapter_Scroll(t *testing.T) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Contains(t, r.URL.Path, "/scroll")
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"result": map[string]interface{}{
 						"points":           []QdrantPoint{{ID: uint64(1), Vector: []float32{0.1}}},
 						"next_page_offset": uint64(2),
@@ -857,11 +857,11 @@ func TestQdrantAdapter_Scroll(t *testing.T) {
 			filter:      map[string]interface{}{"key": "value"},
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.NotNil(t, body["offset"])
 				assert.NotNil(t, body["filter"])
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"result": map[string]interface{}{
 						"points":           []QdrantPoint{},
 						"next_page_offset": nil,
@@ -876,7 +876,7 @@ func TestQdrantAdapter_Scroll(t *testing.T) {
 			limit:      100,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(`{"status":{"error":"collection not found"}}`))
+				_, _ = w.Write([]byte(`{"status":{"error":"collection not found"}}`))
 			},
 			expectError: true,
 		},
@@ -886,7 +886,7 @@ func TestQdrantAdapter_Scroll(t *testing.T) {
 			limit:      10,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("invalid"))
+				_, _ = w.Write([]byte("invalid"))
 			},
 			expectError: true,
 		},

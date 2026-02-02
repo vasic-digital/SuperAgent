@@ -1515,7 +1515,7 @@ func TestInMemoryFeedbackCollector_RemoveFromIndex(t *testing.T) {
 		ID:        "test-id",
 		SessionID: "session-1",
 	}
-	collector.Collect(context.Background(), feedback)
+	_ = collector.Collect(context.Background(), feedback)
 
 	collector.removeFromIndex(collector.bySession, "session-1", "test-id")
 

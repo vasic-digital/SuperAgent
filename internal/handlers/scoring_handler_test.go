@@ -30,9 +30,9 @@ func setupScoringHandlerWithCache() (*ScoringHandler, *gin.Engine, *verifier.Sco
 	ss, _ := verifier.NewScoringService(nil)
 
 	// Pre-populate cache with some scores
-	ss.CalculateScore(nil, "gpt-4")
-	ss.CalculateScore(nil, "claude-3")
-	ss.CalculateScore(nil, "gemini-pro")
+	_, _ = ss.CalculateScore(nil, "gpt-4")
+	_, _ = ss.CalculateScore(nil, "claude-3")
+	_, _ = ss.CalculateScore(nil, "gemini-pro")
 
 	h := NewScoringHandler(ss)
 	r := gin.New()

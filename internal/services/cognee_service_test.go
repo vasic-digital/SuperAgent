@@ -102,7 +102,7 @@ func TestCogneeService_IsHealthy(t *testing.T) {
 			// IsHealthy now uses "/" root endpoint for faster health checks
 			if r.URL.Path == "/" || r.URL.Path == "/health" {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"message":"Hello, World, I am alive!"}`))
+				_, _ = w.Write([]byte(`{"message":"Hello, World, I am alive!"}`))
 				return
 			}
 			w.WriteHeader(http.StatusNotFound)
@@ -154,7 +154,7 @@ func TestCogneeService_AddMemory(t *testing.T) {
 			// AddMemory now uses /api/v1/memify endpoint (not /add which requires multipart)
 			if r.URL.Path == "/api/v1/memify" && r.Method == "POST" {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"id":          "mem-123",
 					"vector_id":   "vec-456",
 					"graph_nodes": []string{"node1", "node2"},
@@ -203,7 +203,7 @@ func TestCogneeService_SearchMemory(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/v1/search" && r.Method == "POST" {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"results": []interface{}{
 						map[string]interface{}{"text": "result 1"},
 						map[string]interface{}{"text": "result 2"},
@@ -255,7 +255,7 @@ func TestCogneeService_Cognify(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/v1/cognify" && r.Method == "POST" {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"status": "completed",
 				})
 				return
@@ -281,7 +281,7 @@ func TestCogneeService_EnhanceRequest(t *testing.T) {
 	t.Run("enhances request with context", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []interface{}{
 					map[string]interface{}{
 						"content":   "relevant context",
@@ -337,11 +337,11 @@ func TestCogneeService_EnhanceRequest(t *testing.T) {
 	t.Run("extracts query from messages when prompt empty", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 			// Verify query comes from user message
 			assert.Equal(t, "User question here", reqBody["query"])
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []map[string]interface{}{},
 			})
 		}))
@@ -390,7 +390,7 @@ func TestCogneeService_ProcessResponse(t *testing.T) {
 	t.Run("stores response successfully", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":     "mem-123",
 				"status": "success",
 			})
@@ -438,7 +438,7 @@ func TestCogneeService_GetInsights(t *testing.T) {
 	t.Run("gets insights successfully", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"insights": []map[string]interface{}{
 					{"text": "insight 1"},
 					{"text": "insight 2"},
@@ -481,7 +481,7 @@ func TestCogneeService_ProcessCode(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/v1/code-pipeline/index" {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"processed": true,
 					"summary":   "Function that adds numbers",
 					"entities":  []string{"func", "add"},
@@ -527,7 +527,7 @@ func TestCogneeService_DatasetManagement(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/v1/datasets" && r.Method == "POST" {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{"id": "ds-123"})
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"id": "ds-123"})
 				return
 			}
 			w.WriteHeader(http.StatusNotFound)
@@ -546,7 +546,7 @@ func TestCogneeService_DatasetManagement(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/v1/datasets" && r.Method == "GET" {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"datasets": []map[string]interface{}{
 						{"name": "ds1"},
 						{"name": "ds2"},
@@ -591,7 +591,7 @@ func TestCogneeService_VisualizeGraph(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/v1/visualize" {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"nodes": []interface{}{},
 					"edges": []interface{}{},
 				})
@@ -616,7 +616,7 @@ func TestCogneeService_Feedback(t *testing.T) {
 	t.Run("records feedback successfully", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"status": "recorded"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": "recorded"})
 		}))
 		defer server.Close()
 
@@ -733,7 +733,7 @@ func TestContainsCode(t *testing.T) {
 func BenchmarkCogneeService_EnhanceRequest(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
 	}))
 	defer server.Close()
 
@@ -758,7 +758,7 @@ func BenchmarkCogneeService_EnhanceRequest(b *testing.B) {
 func BenchmarkCogneeService_SearchMemory(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
 	}))
 	defer server.Close()
 
@@ -992,14 +992,14 @@ func TestCogneeService_GetGraphCompletion(t *testing.T) {
 	t.Run("uses default dataset when empty", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var reqBody map[string]interface{}
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			_ = json.NewDecoder(r.Body).Decode(&reqBody)
 
 			// Verify default dataset is used
 			datasets := reqBody["datasets"].([]interface{})
 			assert.Equal(t, "test-dataset", datasets[0].(string))
 
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []map[string]interface{}{},
 			})
 		}))
@@ -1024,7 +1024,7 @@ func TestCogneeService_GetGraphCompletion(t *testing.T) {
 	t.Run("returns results successfully", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []map[string]interface{}{
 					{"entity": "Entity1", "relation": "REL"},
 					{"entity": "Entity2", "relation": "REL2"},
@@ -1091,7 +1091,7 @@ func TestCogneeService_GetCodeContext(t *testing.T) {
 	t.Run("returns code context successfully", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []map[string]interface{}{
 					{
 						"file":     "main.go",
@@ -1148,7 +1148,7 @@ func TestCogneeService_GetCodeContext(t *testing.T) {
 	t.Run("handles invalid JSON response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("invalid json"))
+			_, _ = w.Write([]byte("invalid json"))
 		}))
 		defer server.Close()
 
@@ -1178,18 +1178,18 @@ func TestCogneeService_EnsureRunning(t *testing.T) {
 			// Handle root endpoint for health check (IsHealthy uses "/" for fast check)
 			if r.URL.Path == "/" || r.URL.Path == "/health" {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"message":"Hello, World, I am alive!"}`))
+				_, _ = w.Write([]byte(`{"message":"Hello, World, I am alive!"}`))
 				return
 			}
 			// Handle auth endpoints for automatic authentication
 			if r.URL.Path == "/api/v1/auth/register" {
 				w.WriteHeader(http.StatusCreated)
-				w.Write([]byte(`{"id":"test-user-id","email":"test@test.com"}`))
+				_, _ = w.Write([]byte(`{"id":"test-user-id","email":"test@test.com"}`))
 				return
 			}
 			if r.URL.Path == "/api/v1/auth/login" {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"bearer"}`))
+				_, _ = w.Write([]byte(`{"access_token":"test-token","token_type":"bearer"}`))
 				return
 			}
 			w.WriteHeader(http.StatusNotFound)
@@ -1479,13 +1479,13 @@ func TestCogneeSearchTypes_SearchRequestFormat(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/v1/search" && r.Method == "POST" {
 				var reqBody map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&reqBody)
+				_ = json.NewDecoder(r.Body).Decode(&reqBody)
 				// Service uses camelCase searchType (Cognee API format)
 				if st, ok := reqBody["searchType"].(string); ok {
 					receivedSearchType = st
 				}
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"results": []interface{}{},
 				})
 				return
@@ -1517,13 +1517,13 @@ func TestCogneeSearchTypes_SearchRequestFormat(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/v1/search" && r.Method == "POST" {
 				var reqBody map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&reqBody)
+				_ = json.NewDecoder(r.Body).Decode(&reqBody)
 				// GetInsights uses camelCase searchType (Cognee API format)
 				if st, ok := reqBody["searchType"].(string); ok {
 					receivedSearchType = st
 				}
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"insights": []interface{}{},
 				})
 				return
@@ -1554,13 +1554,13 @@ func TestCogneeSearchTypes_SearchRequestFormat(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/api/v1/search" && r.Method == "POST" {
 				var reqBody map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&reqBody)
+				_ = json.NewDecoder(r.Body).Decode(&reqBody)
 				// GetCodeContext uses camelCase searchType (Cognee API format)
 				if st, ok := reqBody["searchType"].(string); ok {
 					receivedSearchType = st
 				}
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"results": []interface{}{},
 				})
 				return
@@ -1588,7 +1588,7 @@ func TestCogneeSearchTypes_ResultHandling(t *testing.T) {
 	t.Run("handles CHUNKS results correctly", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []interface{}{
 					map[string]interface{}{
 						"content":   "chunk content 1",
@@ -1626,7 +1626,7 @@ func TestCogneeSearchTypes_ResultHandling(t *testing.T) {
 	t.Run("handles GRAPH_COMPLETION results correctly", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []interface{}{
 					map[string]interface{}{
 						"completion": "graph completion result",
@@ -1658,7 +1658,7 @@ func TestCogneeSearchTypes_ResultHandling(t *testing.T) {
 	t.Run("handles RAG_COMPLETION results correctly", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []interface{}{
 					map[string]interface{}{
 						"answer":  "RAG completion answer",
@@ -1754,7 +1754,7 @@ func TestCogneeService_DoRequestWithRetry_401Handling(t *testing.T) {
 			if strings.Contains(r.URL.Path, "/auth/login") {
 				authCount++
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]string{
+				_ = json.NewEncoder(w).Encode(map[string]string{
 					"access_token": fmt.Sprintf("new-token-%d", authCount),
 					"token_type":   "bearer",
 				})
@@ -1768,14 +1768,14 @@ func TestCogneeService_DoRequestWithRetry_401Handling(t *testing.T) {
 			// First request fails with 401 (simulating expired token)
 			if requestCount == 1 {
 				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{"detail":"Unauthorized"}`))
+				_, _ = w.Write([]byte(`{"detail":"Unauthorized"}`))
 				return
 			}
 
 			// Second request succeeds (after token refresh)
 			if strings.Contains(authHeader, "new-token") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+				_ = json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 				return
 			}
 
@@ -1813,7 +1813,7 @@ func TestCogneeService_DoRequestWithRetry_401Handling(t *testing.T) {
 			if strings.Contains(r.URL.Path, "/auth/login") {
 				authCount++
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]string{
+				_ = json.NewEncoder(w).Encode(map[string]string{
 					"access_token": "new-token",
 					"token_type":   "bearer",
 				})
@@ -1822,7 +1822,7 @@ func TestCogneeService_DoRequestWithRetry_401Handling(t *testing.T) {
 
 			// Always return 401 (simulating invalid credentials)
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"detail":"Unauthorized"}`))
+			_, _ = w.Write([]byte(`{"detail":"Unauthorized"}`))
 		}))
 		defer server.Close()
 
@@ -1848,7 +1848,7 @@ func TestCogneeService_DoRequestWithRetry_401Handling(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.Contains(r.URL.Path, "/auth/login") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]string{
+				_ = json.NewEncoder(w).Encode(map[string]string{
 					"access_token": "test-token",
 					"token_type":   "bearer",
 				})
@@ -1857,7 +1857,7 @@ func TestCogneeService_DoRequestWithRetry_401Handling(t *testing.T) {
 
 			requestCount++
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"detail":"Bad Request"}`))
+			_, _ = w.Write([]byte(`{"detail":"Bad Request"}`))
 		}))
 		defer server.Close()
 
@@ -1884,7 +1884,7 @@ func TestCogneeService_DoRequestWithRetry_401Handling(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.Contains(r.URL.Path, "/auth/login") {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]string{
+				_ = json.NewEncoder(w).Encode(map[string]string{
 					"access_token": "valid-token",
 					"token_type":   "bearer",
 				})
@@ -1893,7 +1893,7 @@ func TestCogneeService_DoRequestWithRetry_401Handling(t *testing.T) {
 
 			requestCount++
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 		}))
 		defer server.Close()
 
@@ -1929,7 +1929,7 @@ func TestCogneeService_EnsureAuthenticated(t *testing.T) {
 			if strings.Contains(r.URL.Path, "/auth/login") {
 				authCount++
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]string{
+				_ = json.NewEncoder(w).Encode(map[string]string{
 					"access_token": "new-token",
 					"token_type":   "bearer",
 				})
@@ -1965,7 +1965,7 @@ func TestCogneeService_EnsureAuthenticated(t *testing.T) {
 			if strings.Contains(r.URL.Path, "/auth/login") {
 				authCount++
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]string{
+				_ = json.NewEncoder(w).Encode(map[string]string{
 					"access_token": "new-token",
 					"token_type":   "bearer",
 				})
@@ -2005,7 +2005,7 @@ func TestCogneeService_TokenRefreshIntegration(t *testing.T) {
 			if strings.Contains(r.URL.Path, "/auth/login") {
 				events = append(events, "auth")
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]string{
+				_ = json.NewEncoder(w).Encode(map[string]string{
 					"access_token": "fresh-token",
 					"token_type":   "bearer",
 				})
@@ -2018,13 +2018,13 @@ func TestCogneeService_TokenRefreshIntegration(t *testing.T) {
 				if authHeader == "Bearer expired-token" {
 					events = append(events, "request-expired")
 					w.WriteHeader(http.StatusUnauthorized)
-					w.Write([]byte(`{"detail":"Unauthorized"}`))
+					_, _ = w.Write([]byte(`{"detail":"Unauthorized"}`))
 					return
 				}
 				if authHeader == "Bearer fresh-token" {
 					events = append(events, "request-fresh")
 					w.Header().Set("Content-Type", "application/json")
-					json.NewEncoder(w).Encode(map[string]interface{}{
+					_ = json.NewEncoder(w).Encode(map[string]interface{}{
 						"status":       "ok",
 						"dataset_id":   "ds-123",
 						"dataset_name": "test",
@@ -2034,7 +2034,7 @@ func TestCogneeService_TokenRefreshIntegration(t *testing.T) {
 				// No auth - also fail
 				events = append(events, "request-noauth")
 				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{"detail":"Unauthorized"}`))
+				_, _ = w.Write([]byte(`{"detail":"Unauthorized"}`))
 				return
 			}
 
@@ -2044,13 +2044,13 @@ func TestCogneeService_TokenRefreshIntegration(t *testing.T) {
 				if authHeader == "Bearer expired-token" {
 					events = append(events, "memify-expired")
 					w.WriteHeader(http.StatusUnauthorized)
-					w.Write([]byte(`{"detail":"Unauthorized"}`))
+					_, _ = w.Write([]byte(`{"detail":"Unauthorized"}`))
 					return
 				}
 				if authHeader == "Bearer fresh-token" {
 					events = append(events, "memify-fresh")
 					w.Header().Set("Content-Type", "application/json")
-					json.NewEncoder(w).Encode(map[string]interface{}{
+					_ = json.NewEncoder(w).Encode(map[string]interface{}{
 						"id":          "mem-123",
 						"vector_id":   "vec-456",
 						"graph_nodes": []string{"node1"},

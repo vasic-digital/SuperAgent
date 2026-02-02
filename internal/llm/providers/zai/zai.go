@@ -358,7 +358,7 @@ func (z *ZAIProvider) makeStreamingRequest(ctx context.Context, req *ZAIRequest)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		var zaiErr ZAIError
 		if err := json.Unmarshal(body, &zaiErr); err == nil && zaiErr.Error.Message != "" {
 			// Handle Zhipu-specific error codes
@@ -627,7 +627,7 @@ func (z *ZAIProvider) makeRequest(ctx context.Context, req *ZAIRequest) (*ZAIRes
 
 		// Check for retryable status codes
 		if isRetryableStatus(resp.StatusCode) && attempt < z.retryConfig.MaxRetries {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
 			z.waitWithJitter(ctx, delay)
 			delay = z.nextDelay(delay)
@@ -635,7 +635,7 @@ func (z *ZAIProvider) makeRequest(ctx context.Context, req *ZAIRequest) (*ZAIRes
 		}
 
 		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if err != nil {
 			return nil, fmt.Errorf("failed to read response body: %w", err)
 		}

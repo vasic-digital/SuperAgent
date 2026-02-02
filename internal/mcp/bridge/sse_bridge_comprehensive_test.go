@@ -373,7 +373,7 @@ func TestSSEBridge_HandleMessage_EdgeCases(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -406,7 +406,7 @@ func TestSSEBridge_HandleMessage_EdgeCases(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -436,7 +436,7 @@ func TestSSEBridge_HandleMessage_EdgeCases(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -479,7 +479,7 @@ func TestSSEBridge_HandleMessage_EdgeCases(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -541,7 +541,7 @@ func TestSSEBridge_HandleSSE_EdgeCases(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -619,7 +619,7 @@ func TestSSEBridge_SendNotification_EdgeCases(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -656,7 +656,7 @@ func TestSSEBridge_SendNotification_EdgeCases(t *testing.T) {
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -703,7 +703,7 @@ done`
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -774,7 +774,7 @@ func TestSSEBridge_ConcurrentSSEConnections(t *testing.T) {
 
 	err = bridge.Start()
 	require.NoError(t, err)
-	defer bridge.Shutdown(context.Background())
+	defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -942,14 +942,14 @@ done`
 
 		err = bridge.Start()
 		require.NoError(t, err)
-		defer bridge.Shutdown(context.Background())
+		defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 		time.Sleep(100 * time.Millisecond)
 
 		// Send exit command
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		bridge.SendRequest(ctx, "exit", nil)
+		_, _ = bridge.SendRequest(ctx, "exit", nil)
 
 		// Wait for exit callback
 		select {
@@ -986,7 +986,7 @@ func TestSSEBridge_ErrorResponses(t *testing.T) {
 
 	err = bridge.Start()
 	require.NoError(t, err)
-	defer bridge.Shutdown(context.Background())
+	defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -1353,7 +1353,7 @@ func TestBridge_Start_InvalidCommand(t *testing.T) {
 func TestMain_RequiresMCPCommand(t *testing.T) {
 	if os.Getenv("TEST_MAIN_EXIT") == "1" {
 		// Clear MCP_COMMAND to trigger error
-		os.Unsetenv("MCP_COMMAND")
+		_ = os.Unsetenv("MCP_COMMAND")
 		Main()
 		return
 	}
@@ -1429,7 +1429,7 @@ func TestSSEBridge_ConcurrentRequestIDGeneration(t *testing.T) {
 
 	err = bridge.Start()
 	require.NoError(t, err)
-	defer bridge.Shutdown(context.Background())
+	defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -1497,7 +1497,7 @@ func TestSSEBridge_PendingRequestCleanup(t *testing.T) {
 
 	err = bridge.Start()
 	require.NoError(t, err)
-	defer bridge.Shutdown(context.Background())
+	defer func() { _ = bridge.Shutdown(context.Background()) }()
 
 	time.Sleep(100 * time.Millisecond)
 

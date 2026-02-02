@@ -458,7 +458,7 @@ func TestZenCLIProvider_ConcurrentAccess(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				provider.IsCLIAvailable()
-				provider.GetCLIError()
+				_ = provider.GetCLIError()
 			}()
 		}
 

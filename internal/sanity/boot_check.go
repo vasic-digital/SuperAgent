@@ -203,7 +203,7 @@ func (bc *BootChecker) checkPostgresConnection(ctx context.Context) {
 		result.Message = "PostgreSQL not reachable"
 		result.Details = err.Error()
 	} else {
-		conn.Close()
+		_ = conn.Close()
 		result.Status = StatusPassed
 		result.Message = fmt.Sprintf("PostgreSQL is reachable at %s", addr)
 	}
@@ -230,7 +230,7 @@ func (bc *BootChecker) checkRedisConnection(ctx context.Context) {
 		result.Message = "Redis not available (optional)"
 		result.Details = err.Error()
 	} else {
-		conn.Close()
+		_ = conn.Close()
 		result.Status = StatusPassed
 		result.Message = fmt.Sprintf("Redis is reachable at %s", addr)
 	}
@@ -405,7 +405,7 @@ func (bc *BootChecker) checkPortAvailability() {
 		result.Status = StatusWarning
 		result.Message = fmt.Sprintf("Port %d in use (HelixAgent may be running)", bc.config.HelixAgentPort)
 	} else {
-		listener.Close()
+		_ = listener.Close()
 		result.Status = StatusPassed
 		result.Message = fmt.Sprintf("Port %d is available", bc.config.HelixAgentPort)
 	}
@@ -433,7 +433,7 @@ func (bc *BootChecker) checkDiskSpace() {
 		result.Message = "Unable to write to disk"
 		result.Details = err.Error()
 	} else {
-		os.Remove(tempFile)
+		_ = os.Remove(tempFile)
 		result.Status = StatusPassed
 		result.Message = "Disk write verified"
 	}

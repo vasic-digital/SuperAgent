@@ -175,9 +175,9 @@ func TestProtocolSecurity_ListAPIKeys(t *testing.T) {
 	})
 
 	t.Run("list multiple keys", func(t *testing.T) {
-		security.CreateAPIKey("key1", "owner1", []string{"mcp:read"})
-		security.CreateAPIKey("key2", "owner2", []string{"lsp:read"})
-		security.CreateAPIKey("key3", "owner3", []string{"acp:read"})
+		_, _ = security.CreateAPIKey("key1", "owner1", []string{"mcp:read"})
+		_, _ = security.CreateAPIKey("key2", "owner2", []string{"lsp:read"})
+		_, _ = security.CreateAPIKey("key3", "owner3", []string{"acp:read"})
 
 		keys := security.ListAPIKeys()
 		assert.Len(t, keys, 3)

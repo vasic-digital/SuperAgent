@@ -321,7 +321,7 @@ func TestIncrementalSummarizer_Reset(t *testing.T) {
 	summarizer.Add("Content")
 	summarizer.Add("More content")
 	summarizer.Add("Even more")
-	summarizer.Update(context.Background())
+	_, _ = summarizer.Update(context.Background())
 
 	summarizer.Reset()
 

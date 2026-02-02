@@ -267,7 +267,7 @@ func TestProviderCache_Metrics(t *testing.T) {
 
 	// Generate some cache activity
 	pc.Get(ctx, req, "provider") // Miss
-	pc.Set(ctx, req, resp, "provider")
+	_ = pc.Set(ctx, req, resp, "provider")
 	pc.Get(ctx, req, "provider") // Hit
 
 	metrics := pc.Metrics()

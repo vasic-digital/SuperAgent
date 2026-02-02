@@ -87,14 +87,14 @@ func (c *LSPClient) Call(method string, params interface{}) (*LSPResponse, error
 	// LSP uses Content-Length header
 	message := fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(reqData), reqData)
 
-	c.conn.SetWriteDeadline(time.Now().Add(c.timeout))
+	_ = c.conn.SetWriteDeadline(time.Now().Add(c.timeout))
 	_, err = c.conn.Write([]byte(message))
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 
 	// Read response with Content-Length header
-	c.conn.SetReadDeadline(time.Now().Add(c.timeout))
+	_ = c.conn.SetReadDeadline(time.Now().Add(c.timeout))
 
 	// Read headers
 	var contentLength int
@@ -108,7 +108,7 @@ func (c *LSPClient) Call(method string, params interface{}) (*LSPResponse, error
 			break // End of headers
 		}
 		if strings.HasPrefix(line, "Content-Length:") {
-			fmt.Sscanf(line, "Content-Length: %d", &contentLength)
+			_, _ = fmt.Sscanf(line, "Content-Length: %d", &contentLength)
 		}
 	}
 
@@ -181,7 +181,7 @@ func TestLSPServerInitialize(t *testing.T) {
 				t.Skipf("LSP server %s not running on port %d: %v", server.Name, server.Port, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			resp, err := client.Initialize("file:///tmp/test-workspace")
 			require.NoError(t, err, "Initialize must succeed")
@@ -209,7 +209,7 @@ func TestLSPServerShutdown(t *testing.T) {
 				t.Skipf("LSP server %s not running: %v", server.Name, err)
 				return
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 
 			// Initialize first
 			_, err = client.Initialize("file:///tmp/test-workspace")
@@ -232,7 +232,7 @@ func BenchmarkLSPInitialize(b *testing.B) {
 		b.Skipf("LSP server not running: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

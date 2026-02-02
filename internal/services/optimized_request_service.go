@@ -183,7 +183,7 @@ func (s *OptimizedRequestService) ProcessRequestWithSchema(ctx context.Context, 
 
 	// Cache the valid response
 	if result.Valid && len(embedding) > 0 {
-		s.optimizationService.OptimizeResponse(ctx, result.Content, embedding, req.Prompt, schema)
+		_, _ = s.optimizationService.OptimizeResponse(ctx, result.Content, embedding, req.Prompt, schema)
 	}
 
 	return &models.LLMResponse{
@@ -292,7 +292,7 @@ func (s *OptimizedRequestService) ProcessRequestStream(ctx context.Context, req 
 		// Cache the complete response
 		result := getResult()
 		if result != nil && len(embedding) > 0 {
-			s.optimizationService.OptimizeResponse(ctx, result.FullContent, embedding, req.Prompt, nil)
+			_, _ = s.optimizationService.OptimizeResponse(ctx, result.FullContent, embedding, req.Prompt, nil)
 		}
 	}()
 

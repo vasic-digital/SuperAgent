@@ -314,9 +314,9 @@ func TestInMemoryTaskQueue_PriorityOrdering(t *testing.T) {
 		ScheduledAt: time.Now().Add(-time.Second),
 	}
 
-	queue.Enqueue(context.Background(), task1)
-	queue.Enqueue(context.Background(), task2)
-	queue.Enqueue(context.Background(), task3)
+	_ = queue.Enqueue(context.Background(), task1)
+	_ = queue.Enqueue(context.Background(), task2)
+	_ = queue.Enqueue(context.Background(), task3)
 
 	// Dequeue should return critical first
 	dequeued, _ := queue.Dequeue(context.Background(), "worker-1", ResourceRequirements{})
@@ -1431,7 +1431,7 @@ func TestProcessResourceMonitor_StartMonitoring_AlreadyMonitoring(t *testing.T) 
 	// Start monitoring first time
 	err := monitor.StartMonitoring(taskID, pid, 100*time.Millisecond)
 	require.NoError(t, err)
-	defer monitor.StopMonitoring(taskID)
+	defer func() { _ = monitor.StopMonitoring(taskID) }()
 
 	// Try to start monitoring again
 	err = monitor.StartMonitoring(taskID, pid, 100*time.Millisecond)
@@ -1458,7 +1458,7 @@ func TestProcessResourceMonitor_GetLatestSnapshot(t *testing.T) {
 	// Start monitoring
 	err := monitor.StartMonitoring(taskID, pid, 50*time.Millisecond)
 	require.NoError(t, err)
-	defer monitor.StopMonitoring(taskID)
+	defer func() { _ = monitor.StopMonitoring(taskID) }()
 
 	// Wait for snapshot to be taken
 	time.Sleep(100 * time.Millisecond)
@@ -1491,7 +1491,7 @@ func TestProcessResourceMonitor_GetLatestSnapshot_NoSnapshot(t *testing.T) {
 	// Start monitoring but don't wait
 	err := monitor.StartMonitoring(taskID, pid, 10*time.Second) // Long interval
 	require.NoError(t, err)
-	defer monitor.StopMonitoring(taskID)
+	defer func() { _ = monitor.StopMonitoring(taskID) }()
 
 	// Try to get snapshot immediately (before first tick)
 	_, err = monitor.GetLatestSnapshot(taskID)

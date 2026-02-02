@@ -418,8 +418,8 @@ func TestAutoPromotion(t *testing.T) {
 
 	// Apply and record 5 successful outcomes (100% success rate)
 	for i := 0; i < 5; i++ {
-		bank.ApplyLesson(ctx, lesson.ID, "test")
-		bank.RecordOutcome(ctx, lesson.ID, &ApplicationOutcome{
+		_, _ = bank.ApplyLesson(ctx, lesson.ID, "test")
+		_ = bank.RecordOutcome(ctx, lesson.ID, &ApplicationOutcome{
 			Success:     true,
 			Score:       1.0,
 			CompletedAt: time.Now(),
@@ -545,8 +545,8 @@ func TestGetTopLessons(t *testing.T) {
 
 		// Apply with varying success rates
 		for j := 0; j <= i; j++ {
-			bank.ApplyLesson(ctx, lesson.ID, "test")
-			bank.RecordOutcome(ctx, lesson.ID, &ApplicationOutcome{
+			_, _ = bank.ApplyLesson(ctx, lesson.ID, "test")
+			_ = bank.RecordOutcome(ctx, lesson.ID, &ApplicationOutcome{
 				Success:     j <= i/2, // Varying success
 				CompletedAt: time.Now(),
 			})
@@ -608,8 +608,8 @@ func TestGetStatistics(t *testing.T) {
 	require.NoError(t, bank.AddLesson(ctx, lesson2))
 
 	// Apply and record outcomes
-	bank.ApplyLesson(ctx, lesson1.ID, "test")
-	bank.RecordOutcome(ctx, lesson1.ID, &ApplicationOutcome{Success: true, CompletedAt: time.Now()})
+	_, _ = bank.ApplyLesson(ctx, lesson1.ID, "test")
+	_ = bank.RecordOutcome(ctx, lesson1.ID, &ApplicationOutcome{Success: true, CompletedAt: time.Now()})
 
 	stats := bank.GetStatistics()
 

@@ -182,7 +182,7 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 
 		// Check for retryable status codes
 		if isRetryableStatus(resp.StatusCode) && attempt < p.retryConfig.MaxRetries {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("HTTP %d: retryable error", resp.StatusCode)
 			p.waitWithJitter(ctx, delay)
 			delay = p.nextDelay(delay)
@@ -224,10 +224,10 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&orResp); err != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("failed to decode OpenRouter response: %w", err)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		if orResp.Error != nil {
 			return nil, fmt.Errorf("OpenRouter API error: %s", orResp.Error.Message)
@@ -403,7 +403,7 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 	// Check for HTTP errors before starting stream
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		close(ch)
 		return nil, fmt.Errorf("OpenRouter API error: HTTP %d - %s", resp.StatusCode, string(body))
 	}

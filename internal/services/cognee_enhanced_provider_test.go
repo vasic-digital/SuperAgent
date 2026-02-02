@@ -85,7 +85,7 @@ func TestNewCogneeEnhancedProvider(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 	}))
 	defer server.Close()
 
@@ -148,7 +148,7 @@ func TestCogneeEnhancedProvider_Complete(t *testing.T) {
 			if r.URL.Path == "/health" {
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"results": []interface{}{
 					map[string]interface{}{"content": "relevant context"},
 				},
@@ -224,7 +224,7 @@ func TestCogneeEnhancedProvider_CompleteStream(t *testing.T) {
 	t.Run("streams with enhancement", func(t *testing.T) {
 		cogneeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
 		}))
 		defer cogneeServer.Close()
 
@@ -299,7 +299,7 @@ func TestCogneeEnhancedProvider_HealthCheck(t *testing.T) {
 	t.Run("checks cognee service health when available", func(t *testing.T) {
 		cogneeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": "healthy"})
 		}))
 		defer cogneeServer.Close()
 
@@ -555,7 +555,7 @@ func TestCogneeEnhancedProvider_storeResponse(t *testing.T) {
 	t.Run("stores successfully", func(t *testing.T) {
 		cogneeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 		}))
 		defer cogneeServer.Close()
 
@@ -635,8 +635,8 @@ func TestEnhanceProviderRegistry(t *testing.T) {
 			MaxRetries:     3,
 		}
 		registry := NewProviderRegistry(registryConfig, nil)
-		registry.RegisterProvider("provider1", &CogneeMockProvider{})
-		registry.RegisterProvider("provider2", &CogneeMockProvider{})
+		_ = registry.RegisterProvider("provider1", &CogneeMockProvider{})
+		_ = registry.RegisterProvider("provider2", &CogneeMockProvider{})
 
 		err := EnhanceProviderRegistry(registry, cogneeService, logger)
 		require.NoError(t, err)
@@ -656,7 +656,7 @@ func TestEnhanceProviderRegistry(t *testing.T) {
 		registry := NewProviderRegistry(registryConfig, nil)
 		mockProvider := &CogneeMockProvider{}
 		enhanced := NewCogneeEnhancedProvider("enhanced", mockProvider, cogneeService, logger)
-		registry.RegisterProvider("enhanced", enhanced)
+		_ = registry.RegisterProvider("enhanced", enhanced)
 
 		err := EnhanceProviderRegistry(registry, cogneeService, logger)
 		require.NoError(t, err)
@@ -757,7 +757,7 @@ func TestCogneeEnhancedProvider_storeResponse_IsReadyCheck(t *testing.T) {
 	t.Run("proceeds when cognee is ready", func(t *testing.T) {
 		cogneeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 		}))
 		defer cogneeServer.Close()
 
@@ -793,7 +793,7 @@ func TestCogneeEnhancedProvider_CompleteStream_IsReadyCheck(t *testing.T) {
 	t.Run("does not store when cognee is not ready during stream", func(t *testing.T) {
 		cogneeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
 		}))
 		defer cogneeServer.Close()
 
@@ -854,7 +854,7 @@ func TestCogneeEnhancedProvider_CompleteStream_IsReadyCheck(t *testing.T) {
 				default:
 				}
 			}
-			json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 		}))
 		defer cogneeServer.Close()
 
@@ -1016,7 +1016,7 @@ func BenchmarkCogneeEnhancedProvider_CompleteWithEnhancement(b *testing.B) {
 
 	cogneeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
 	}))
 	defer cogneeServer.Close()
 

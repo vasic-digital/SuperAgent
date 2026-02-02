@@ -49,7 +49,7 @@ func TestSecurityValidator_ValidatePluginPath(t *testing.T) {
 
 	t.Run("subdirectory in allowed path", func(t *testing.T) {
 		subDir := filepath.Join(tmpDir, "subdir")
-		os.MkdirAll(subDir, 0755)
+		_ = os.MkdirAll(subDir, 0755)
 		pluginPath := filepath.Join(subDir, "nested-plugin.so")
 		err := sv.ValidatePluginPath(pluginPath)
 		assert.NoError(t, err)

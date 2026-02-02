@@ -65,7 +65,7 @@ func TestDeepSeekProvider_Complete_Success(t *testing.T) {
 		assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
+		_, _ = w.Write([]byte(`{
 			"id": "chat_123",
 			"object": "chat.completion",
 			"created": 1677858242,
@@ -101,7 +101,7 @@ func TestDeepSeekProvider_Complete_Success(t *testing.T) {
 func TestDeepSeekProvider_Complete_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": {"message": "Invalid request", "type": "invalid_request_error"}}`))
+		_, _ = w.Write([]byte(`{"error": {"message": "Invalid request", "type": "invalid_request_error"}}`))
 	}))
 	defer server.Close()
 
@@ -238,10 +238,10 @@ func TestDeepSeekProvider_CompleteStream(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		// Send streaming chunks
-		w.Write([]byte("data: {\"id\":\"stream1\",\"object\":\"chat.completion.chunk\",\"created\":1677858242,\"model\":\"deepseek-coder\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello\"},\"finish_reason\":null}]}\n\n"))
-		w.Write([]byte("data: {\"id\":\"stream1\",\"object\":\"chat.completion.chunk\",\"created\":1677858242,\"model\":\"deepseek-coder\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" World\"},\"finish_reason\":null}]}\n\n"))
-		w.Write([]byte("data: {\"id\":\"stream1\",\"object\":\"chat.completion.chunk\",\"created\":1677858242,\"model\":\"deepseek-coder\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\"},\"finish_reason\":\"stop\"}]}\n\n"))
-		w.Write([]byte("data: [DONE]\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"stream1\",\"object\":\"chat.completion.chunk\",\"created\":1677858242,\"model\":\"deepseek-coder\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello\"},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"stream1\",\"object\":\"chat.completion.chunk\",\"created\":1677858242,\"model\":\"deepseek-coder\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\" World\"},\"finish_reason\":null}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"stream1\",\"object\":\"chat.completion.chunk\",\"created\":1677858242,\"model\":\"deepseek-coder\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\"},\"finish_reason\":\"stop\"}]}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 	}))
 	defer server.Close()
 
@@ -404,7 +404,7 @@ func TestDeepSeekProvider_Complete_ContextCancellation(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(100 * time.Millisecond) // Simulate slow response
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":"chat_123","choices":[{"message":{"content":"test"}}],"usage":{}}`))
+		_, _ = w.Write([]byte(`{"id":"chat_123","choices":[{"message":{"content":"test"}}],"usage":{}}`))
 	}))
 	defer server.Close()
 
@@ -434,7 +434,7 @@ func TestDeepSeekProvider_RetryOnServerError(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":"chat_123","choices":[{"message":{"content":"success"}}],"usage":{}}`))
+		_, _ = w.Write([]byte(`{"id":"chat_123","choices":[{"message":{"content":"success"}}],"usage":{}}`))
 	}))
 	defer server.Close()
 
@@ -610,7 +610,7 @@ func TestDeepSeekProvider_NextDelay(t *testing.T) {
 func TestDeepSeekProvider_Complete_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{invalid json`))
+		_, _ = w.Write([]byte(`{invalid json`))
 	}))
 	defer server.Close()
 
@@ -688,7 +688,7 @@ func TestDeepSeekProvider_CompleteStream_ContextCancellation(t *testing.T) {
 		time.Sleep(500 * time.Millisecond)
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("data: {\"id\":\"1\",\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"1\",\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n\n"))
 	}))
 	defer server.Close()
 

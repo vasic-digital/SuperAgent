@@ -134,7 +134,7 @@ func (t *KafkaTransport) asyncPublishLoop() {
 			if !ok {
 				return
 			}
-			t.doPublish(context.Background(), event)
+			_ = t.doPublish(context.Background(), event)
 		case <-t.stopCh:
 			// Drain remaining events
 			for event := range t.eventCh {

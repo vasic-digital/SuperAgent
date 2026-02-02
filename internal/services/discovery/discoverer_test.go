@@ -24,7 +24,7 @@ func TestTCPDiscoverer_Discover(t *testing.T) {
 		// Start a test TCP server
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
-		defer listener.Close()
+		defer func() { _ = listener.Close() }()
 
 		endpoint := &config.ServiceEndpoint{
 			Host: "127.0.0.1",
@@ -42,7 +42,7 @@ func TestTCPDiscoverer_Discover(t *testing.T) {
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
 		port := listener.Addr().(*net.TCPAddr).Port
-		listener.Close() // Close to make port free
+		_ = listener.Close() // Close to make port free
 
 		endpoint := &config.ServiceEndpoint{
 			Host: "127.0.0.1",
@@ -76,7 +76,7 @@ func TestHTTPDiscoverer_Discover(t *testing.T) {
 	t.Run("successful discovery with health path", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("OK"))
+			_, _ = w.Write([]byte("OK"))
 		}))
 		defer server.Close()
 
@@ -230,7 +230,7 @@ func TestDNSDiscoverer_Discover(t *testing.T) {
 		// Start a test TCP server to ensure TCP discovery succeeds
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
-		defer listener.Close()
+		defer func() { _ = listener.Close() }()
 
 		endpoint := &config.ServiceEndpoint{
 			ServiceName: "postgresql",

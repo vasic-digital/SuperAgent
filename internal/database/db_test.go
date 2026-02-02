@@ -35,7 +35,7 @@ func TestNewPostgresDB(t *testing.T) {
 			t.Logf("Database connection failed (expected if PostgreSQL not running): %v", err)
 			return
 		}
-		defer db.Close()
+		defer func() { _ = db.Close() }()
 
 		if db == nil {
 			t.Fatal("Expected database connection, got nil")
@@ -61,7 +61,7 @@ func TestNewPostgresDB(t *testing.T) {
 		db, err := NewPostgresDB(cfg)
 		if err == nil {
 			if db != nil {
-				db.Close()
+				_ = db.Close()
 			}
 			t.Error("Expected error for invalid connection string, got nil")
 		}
@@ -76,38 +76,38 @@ func TestNewPostgresDB(t *testing.T) {
 		originalDBName := os.Getenv("DB_NAME")
 
 		// Set environment variables
-		os.Setenv("DB_HOST", "env-host")
-		os.Setenv("DB_PORT", "5433")
-		os.Setenv("DB_USER", "env-user")
-		os.Setenv("DB_PASSWORD", "env-pass")
-		os.Setenv("DB_NAME", "env-db")
+		_ = os.Setenv("DB_HOST", "env-host")
+		_ = os.Setenv("DB_PORT", "5433")
+		_ = os.Setenv("DB_USER", "env-user")
+		_ = os.Setenv("DB_PASSWORD", "env-pass")
+		_ = os.Setenv("DB_NAME", "env-db")
 
 		defer func() {
 			// Restore environment
 			if originalDBHost != "" {
-				os.Setenv("DB_HOST", originalDBHost)
+				_ = os.Setenv("DB_HOST", originalDBHost)
 			} else {
-				os.Unsetenv("DB_HOST")
+				_ = os.Unsetenv("DB_HOST")
 			}
 			if originalDBPort != "" {
-				os.Setenv("DB_PORT", originalDBPort)
+				_ = os.Setenv("DB_PORT", originalDBPort)
 			} else {
-				os.Unsetenv("DB_PORT")
+				_ = os.Unsetenv("DB_PORT")
 			}
 			if originalDBUser != "" {
-				os.Setenv("DB_USER", originalDBUser)
+				_ = os.Setenv("DB_USER", originalDBUser)
 			} else {
-				os.Unsetenv("DB_USER")
+				_ = os.Unsetenv("DB_USER")
 			}
 			if originalDBPassword != "" {
-				os.Setenv("DB_PASSWORD", originalDBPassword)
+				_ = os.Setenv("DB_PASSWORD", originalDBPassword)
 			} else {
-				os.Unsetenv("DB_PASSWORD")
+				_ = os.Unsetenv("DB_PASSWORD")
 			}
 			if originalDBName != "" {
-				os.Setenv("DB_NAME", originalDBName)
+				_ = os.Setenv("DB_NAME", originalDBName)
 			} else {
-				os.Unsetenv("DB_NAME")
+				_ = os.Unsetenv("DB_NAME")
 			}
 		}()
 
@@ -132,7 +132,7 @@ func TestNewPostgresDB(t *testing.T) {
 			return
 		}
 		if db != nil {
-			db.Close()
+			_ = db.Close()
 		}
 		// Note: We can't easily verify the connection string was built with env vars
 		// without mocking pgxpool.New, but this test ensures the function doesn't panic
@@ -159,7 +159,7 @@ func TestPostgresDBOperations(t *testing.T) {
 		t.Logf("Database connection failed (expected if PostgreSQL not running): %v", err)
 		return
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	t.Run("Ping", func(t *testing.T) {
 		err := db.Ping()
@@ -223,7 +223,7 @@ func TestConnect(t *testing.T) {
 		t.Logf("Database connection failed (expected if PostgreSQL not running): %v", err)
 		return
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if db == nil {
 		t.Fatal("Expected database connection, got nil")
@@ -256,7 +256,7 @@ func TestRunMigration(t *testing.T) {
 		t.Logf("Database connection failed (expected if PostgreSQL not running): %v", err)
 		return
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	t.Run("EmptyMigrations", func(t *testing.T) {
 		err = RunMigration(db, []string{})
@@ -337,14 +337,14 @@ func TestGetEnv(t *testing.T) {
 		originalValue := os.Getenv("TEST_EMPTY_VAR")
 		defer func() {
 			if originalValue != "" {
-				os.Setenv("TEST_EMPTY_VAR", originalValue)
+				_ = os.Setenv("TEST_EMPTY_VAR", originalValue)
 			} else {
-				os.Unsetenv("TEST_EMPTY_VAR")
+				_ = os.Unsetenv("TEST_EMPTY_VAR")
 			}
 		}()
 
 		// Set empty string
-		os.Setenv("TEST_EMPTY_VAR", "")
+		_ = os.Setenv("TEST_EMPTY_VAR", "")
 		result := getEnv("TEST_EMPTY_VAR", "default")
 		if result != "default" {
 			t.Errorf("Expected 'default' for empty env var, got '%s'", result)
@@ -506,32 +506,32 @@ func TestGetEnvComprehensive(t *testing.T) {
 	})
 
 	t.Run("ReturnsValueWhenSet", func(t *testing.T) {
-		os.Setenv("HELIXAGENT_TEST_VAR", "testvalue")
-		defer os.Unsetenv("HELIXAGENT_TEST_VAR")
+		_ = os.Setenv("HELIXAGENT_TEST_VAR", "testvalue")
+		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_VAR") }()
 
 		result := getEnv("HELIXAGENT_TEST_VAR", "default")
 		assert.Equal(t, "testvalue", result)
 	})
 
 	t.Run("ReturnsDefaultForEmptyString", func(t *testing.T) {
-		os.Setenv("HELIXAGENT_TEST_EMPTY", "")
-		defer os.Unsetenv("HELIXAGENT_TEST_EMPTY")
+		_ = os.Setenv("HELIXAGENT_TEST_EMPTY", "")
+		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_EMPTY") }()
 
 		result := getEnv("HELIXAGENT_TEST_EMPTY", "fallback")
 		assert.Equal(t, "fallback", result)
 	})
 
 	t.Run("ReturnsValueWithSpaces", func(t *testing.T) {
-		os.Setenv("HELIXAGENT_TEST_SPACES", "  value with spaces  ")
-		defer os.Unsetenv("HELIXAGENT_TEST_SPACES")
+		_ = os.Setenv("HELIXAGENT_TEST_SPACES", "  value with spaces  ")
+		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_SPACES") }()
 
 		result := getEnv("HELIXAGENT_TEST_SPACES", "default")
 		assert.Equal(t, "  value with spaces  ", result)
 	})
 
 	t.Run("HandlesSpecialCharacters", func(t *testing.T) {
-		os.Setenv("HELIXAGENT_TEST_SPECIAL", "user@host:password!#$%")
-		defer os.Unsetenv("HELIXAGENT_TEST_SPECIAL")
+		_ = os.Setenv("HELIXAGENT_TEST_SPECIAL", "user@host:password!#$%")
+		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_SPECIAL") }()
 
 		result := getEnv("HELIXAGENT_TEST_SPECIAL", "default")
 		assert.Equal(t, "user@host:password!#$%", result)
@@ -656,28 +656,28 @@ func TestConfigDefaultFallbacks(t *testing.T) {
 		origName := os.Getenv("DB_NAME")
 
 		// Clear env vars
-		os.Unsetenv("DB_HOST")
-		os.Unsetenv("DB_PORT")
-		os.Unsetenv("DB_USER")
-		os.Unsetenv("DB_PASSWORD")
-		os.Unsetenv("DB_NAME")
+		_ = os.Unsetenv("DB_HOST")
+		_ = os.Unsetenv("DB_PORT")
+		_ = os.Unsetenv("DB_USER")
+		_ = os.Unsetenv("DB_PASSWORD")
+		_ = os.Unsetenv("DB_NAME")
 
 		defer func() {
 			// Restore
 			if origHost != "" {
-				os.Setenv("DB_HOST", origHost)
+				_ = os.Setenv("DB_HOST", origHost)
 			}
 			if origPort != "" {
-				os.Setenv("DB_PORT", origPort)
+				_ = os.Setenv("DB_PORT", origPort)
 			}
 			if origUser != "" {
-				os.Setenv("DB_USER", origUser)
+				_ = os.Setenv("DB_USER", origUser)
 			}
 			if origPass != "" {
-				os.Setenv("DB_PASSWORD", origPass)
+				_ = os.Setenv("DB_PASSWORD", origPass)
 			}
 			if origName != "" {
-				os.Setenv("DB_NAME", origName)
+				_ = os.Setenv("DB_NAME", origName)
 			}
 		}()
 
@@ -696,7 +696,7 @@ func TestConfigDefaultFallbacks(t *testing.T) {
 		// pgxpool.New() succeeds but operations may fail - verifies defaults are used
 		db, err := NewPostgresDB(cfg)
 		if err == nil {
-			defer db.Close()
+			defer func() { _ = db.Close() }()
 			// Pool created successfully with defaults
 			// Ping may succeed if a database is running on localhost:5432,
 			// or fail if no database is available - both cases are valid
@@ -720,19 +720,19 @@ func TestConnectFunction(t *testing.T) {
 		origPort := os.Getenv("DB_PORT")
 
 		// Set to invalid values to ensure connection fails
-		os.Setenv("DB_HOST", "nonexistent-host-12345.invalid")
-		os.Setenv("DB_PORT", "99999")
+		_ = os.Setenv("DB_HOST", "nonexistent-host-12345.invalid")
+		_ = os.Setenv("DB_PORT", "99999")
 
 		defer func() {
 			if origHost != "" {
-				os.Setenv("DB_HOST", origHost)
+				_ = os.Setenv("DB_HOST", origHost)
 			} else {
-				os.Unsetenv("DB_HOST")
+				_ = os.Unsetenv("DB_HOST")
 			}
 			if origPort != "" {
-				os.Setenv("DB_PORT", origPort)
+				_ = os.Setenv("DB_PORT", origPort)
 			} else {
-				os.Unsetenv("DB_PORT")
+				_ = os.Unsetenv("DB_PORT")
 			}
 		}()
 
@@ -760,7 +760,7 @@ func TestSSLModeHandling(t *testing.T) {
 		// Pool creation succeeds, actual connection fails without database
 		db, err := NewPostgresDB(cfg)
 		if err == nil {
-			defer db.Close()
+			defer func() { _ = db.Close() }()
 			// Verify ping fails (no database running)
 			pingErr := db.Ping()
 			assert.Error(t, pingErr, "Ping should fail without database")
@@ -782,7 +782,7 @@ func TestSSLModeHandling(t *testing.T) {
 		// Pool creation succeeds, actual connection fails without database
 		db, err := NewPostgresDB(cfg)
 		if err == nil {
-			defer db.Close()
+			defer func() { _ = db.Close() }()
 			// Verify ping fails (no database running)
 			pingErr := db.Ping()
 			assert.Error(t, pingErr, "Ping should fail without database")
@@ -836,7 +836,7 @@ func TestErrorMessages(t *testing.T) {
 		db, err := NewPostgresDB(cfg)
 		// Pool creation succeeds, but Ping/operations will fail
 		if err == nil {
-			defer db.Close()
+			defer func() { _ = db.Close() }()
 			// Verify that actual operations fail
 			pingErr := db.Ping()
 			assert.Error(t, pingErr)
@@ -1140,7 +1140,7 @@ func TestDatabaseConnectionString(t *testing.T) {
 		// pgxpool.New() will succeed parsing IPv6, connection fails later
 		db, err := NewPostgresDB(cfg)
 		if err == nil {
-			defer db.Close()
+			defer func() { _ = db.Close() }()
 			// Verify that ping fails (no IPv6 database running)
 			pingErr := db.Ping()
 			assert.Error(t, pingErr) // Expected connection error on ping
@@ -1587,8 +1587,8 @@ func TestEmptyMigrations(t *testing.T) {
 func TestGetEnvEdgeCases(t *testing.T) {
 	t.Run("VeryLongValue", func(t *testing.T) {
 		longValue := strings.Repeat("a", 10000)
-		os.Setenv("HELIXAGENT_TEST_LONG", longValue)
-		defer os.Unsetenv("HELIXAGENT_TEST_LONG")
+		_ = os.Setenv("HELIXAGENT_TEST_LONG", longValue)
+		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_LONG") }()
 
 		result := getEnv("HELIXAGENT_TEST_LONG", "default")
 		assert.Equal(t, longValue, result)
@@ -1596,24 +1596,24 @@ func TestGetEnvEdgeCases(t *testing.T) {
 	})
 
 	t.Run("UnicodeValue", func(t *testing.T) {
-		os.Setenv("HELIXAGENT_TEST_UNICODE", "值中文日本語한국어")
-		defer os.Unsetenv("HELIXAGENT_TEST_UNICODE")
+		_ = os.Setenv("HELIXAGENT_TEST_UNICODE", "值中文日本語한국어")
+		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_UNICODE") }()
 
 		result := getEnv("HELIXAGENT_TEST_UNICODE", "default")
 		assert.Equal(t, "值中文日本語한국어", result)
 	})
 
 	t.Run("NewlineInValue", func(t *testing.T) {
-		os.Setenv("HELIXAGENT_TEST_NEWLINE", "line1\nline2")
-		defer os.Unsetenv("HELIXAGENT_TEST_NEWLINE")
+		_ = os.Setenv("HELIXAGENT_TEST_NEWLINE", "line1\nline2")
+		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_NEWLINE") }()
 
 		result := getEnv("HELIXAGENT_TEST_NEWLINE", "default")
 		assert.Equal(t, "line1\nline2", result)
 	})
 
 	t.Run("TabInValue", func(t *testing.T) {
-		os.Setenv("HELIXAGENT_TEST_TAB", "val1\tval2")
-		defer os.Unsetenv("HELIXAGENT_TEST_TAB")
+		_ = os.Setenv("HELIXAGENT_TEST_TAB", "val1\tval2")
+		defer func() { _ = os.Unsetenv("HELIXAGENT_TEST_TAB") }()
 
 		result := getEnv("HELIXAGENT_TEST_TAB", "default")
 		assert.Equal(t, "val1\tval2", result)
@@ -1656,7 +1656,7 @@ func TestDatabaseConfigPermutations(t *testing.T) {
 		// Pool creation might succeed, ping will fail
 		db, err := NewPostgresDB(cfg)
 		if err == nil {
-			defer db.Close()
+			defer func() { _ = db.Close() }()
 		}
 	})
 
@@ -1673,7 +1673,7 @@ func TestDatabaseConfigPermutations(t *testing.T) {
 
 		db, err := NewPostgresDB(cfg)
 		if err == nil {
-			defer db.Close()
+			defer func() { _ = db.Close() }()
 		}
 	})
 }

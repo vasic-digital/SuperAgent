@@ -675,6 +675,6 @@ func BenchmarkRegistryCallTool(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		registry.CallTool(ctx, "test", "test_tool", nil)
+		_, _ = registry.CallTool(ctx, "test", "test_tool", nil)
 	}
 }

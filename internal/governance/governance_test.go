@@ -56,7 +56,7 @@ func TestSEMAP_CheckPreconditions(t *testing.T) {
 		Enabled: true,
 	}
 
-	semap.RegisterContract(contract)
+	_ = semap.RegisterContract(contract)
 
 	ctx := context.Background()
 
@@ -77,7 +77,7 @@ func TestSEMAP_CheckGuardRails(t *testing.T) {
 
 	// Register a guard rail contract
 	contract := PredefinedContracts["no_sql_injection"]
-	semap.RegisterContract(contract)
+	_ = semap.RegisterContract(contract)
 
 	ctx := context.Background()
 
@@ -128,7 +128,7 @@ func TestSEMAP_RegisterPolicy(t *testing.T) {
 		Type:    ContractTypePrecondition,
 		Enabled: true,
 	}
-	semap.RegisterContract(contract)
+	_ = semap.RegisterContract(contract)
 
 	policy := &Policy{
 		Name:        "Test Policy",
@@ -169,12 +169,12 @@ func TestSEMAP_GetViolations(t *testing.T) {
 		}},
 		Enabled: true,
 	}
-	semap.RegisterContract(contract)
+	_ = semap.RegisterContract(contract)
 
 	ctx := context.Background()
 
 	// Trigger a violation with empty input
-	semap.CheckPreconditions(ctx, "agent1", "action", "")
+	_, _ = semap.CheckPreconditions(ctx, "agent1", "action", "")
 
 	// Get violations
 	violations := semap.GetViolations()
@@ -189,8 +189,8 @@ func TestSEMAP_GetViolationsByAgent(t *testing.T) {
 	ctx := context.Background()
 
 	// Perform some checks that may generate violations
-	semap.CheckPreconditions(ctx, "agent1", "action1", "input1")
-	semap.CheckPreconditions(ctx, "agent2", "action2", "input2")
+	_, _ = semap.CheckPreconditions(ctx, "agent1", "action1", "input1")
+	_, _ = semap.CheckPreconditions(ctx, "agent2", "action2", "input2")
 
 	// Get violations for specific agent
 	violations := semap.GetViolationsByAgent("agent1")
@@ -204,19 +204,19 @@ func TestSEMAP_GetStatistics(t *testing.T) {
 	semap := NewSEMAP(config)
 
 	// Register some contracts and profiles
-	semap.RegisterContract(&Contract{
+	_ = semap.RegisterContract(&Contract{
 		ID:   "contract1",
 		Name: "Contract 1",
 		Type: ContractTypePrecondition,
 	})
 
-	semap.RegisterContract(&Contract{
+	_ = semap.RegisterContract(&Contract{
 		ID:   "contract2",
 		Name: "Contract 2",
 		Type: ContractTypeGuardRail,
 	})
 
-	semap.RegisterAgentProfile(&AgentProfile{
+	_ = semap.RegisterAgentProfile(&AgentProfile{
 		ID:   "agent1",
 		Name: "Agent 1",
 	})

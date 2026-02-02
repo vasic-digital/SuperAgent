@@ -51,9 +51,12 @@ func NewMemoryService(cfg *config.Config) *MemoryService {
 	return NewMemoryServiceWithOptions(cfg, 5*time.Minute, DefaultCleanupInterval)
 }
 
-// NewMemoryServiceWithOptions creates a new memory service instance with custom TTL and cleanup interval
+// NewMemoryServiceWithOptions creates a new memory service instance with custom TTL and cleanup interval.
+// The service is enabled when MemoryEnabled is true (default) AND Cognee is configured.
+// When MemoryEnabled is true but Cognee is not configured, cache-only mode is used
+// with Mem0 as the primary memory backend.
 func NewMemoryServiceWithOptions(cfg *config.Config, ttl, cleanupInterval time.Duration) *MemoryService {
-	if cfg == nil || !cfg.Cognee.Enabled || !cfg.Cognee.AutoCognify {
+	if cfg == nil || !cfg.MemoryEnabled || !cfg.Cognee.Enabled || !cfg.Cognee.AutoCognify {
 		ms := &MemoryService{
 			enabled:         false,
 			cache:           make(map[string]*memoryCacheEntry),

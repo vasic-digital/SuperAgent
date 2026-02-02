@@ -227,7 +227,7 @@ func (h *ProtocolSSEHandler) handleSSEConnection(
 	// CRITICAL: Send initial endpoint event IMMEDIATELY before any other operations
 	// This is required for OpenCode/Crush/HelixCode which have strict timeout (120ms)
 	endpointEvent := fmt.Sprintf("event: endpoint\ndata: /v1/%s\n\n", protocol)
-	c.Writer.Write([]byte(endpointEvent))
+	_, _ = c.Writer.Write([]byte(endpointEvent))
 	flusher.Flush()
 
 	// Create client channel and ID AFTER the initial response
@@ -270,14 +270,14 @@ func (h *ProtocolSSEHandler) handleSSEConnection(
 				return
 			}
 			// Send SSE message
-			c.Writer.Write([]byte("event: message\n"))
-			c.Writer.Write([]byte("data: "))
-			c.Writer.Write(msg)
-			c.Writer.Write([]byte("\n\n"))
+			_, _ = c.Writer.Write([]byte("event: message\n"))
+			_, _ = c.Writer.Write([]byte("data: "))
+			_, _ = c.Writer.Write(msg)
+			_, _ = c.Writer.Write([]byte("\n\n"))
 			flusher.Flush()
 		case <-heartbeat.C:
 			// Send heartbeat as comment
-			c.Writer.Write([]byte(": heartbeat\n\n"))
+			_, _ = c.Writer.Write([]byte(": heartbeat\n\n"))
 			flusher.Flush()
 		}
 	}

@@ -80,7 +80,7 @@ func TestCompletePro(t *testing.T) {
 				TotalTokens:      23,
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -112,13 +112,13 @@ func TestCompleteInference(t *testing.T) {
 		assert.Contains(t, r.Header.Get("Authorization"), "Bearer ")
 
 		var req InferenceRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Contains(t, req.Inputs, "user:")
 
 		responses := []InferenceResponse{
 			{GeneratedText: "Generated response from HuggingFace"},
 		}
-		json.NewEncoder(w).Encode(responses)
+		_ = json.NewEncoder(w).Encode(responses)
 	}))
 	defer server.Close()
 
@@ -139,7 +139,7 @@ func TestCompleteInference(t *testing.T) {
 func TestCompleteAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "Invalid API token"}`))
+		_, _ = w.Write([]byte(`{"error": "Invalid API token"}`))
 	}))
 	defer server.Close()
 
@@ -157,7 +157,7 @@ func TestCompleteAPIError(t *testing.T) {
 func TestCompleteStream(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req ChatRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.True(t, req.Stream)
 
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -171,7 +171,7 @@ func TestCompleteStream(t *testing.T) {
 		}
 
 		for _, event := range events {
-			w.Write([]byte(event + "\n\n"))
+			_, _ = w.Write([]byte(event + "\n\n"))
 			flusher.Flush()
 		}
 	}))
@@ -200,7 +200,7 @@ func TestCompleteStream(t *testing.T) {
 func TestCompleteStreamError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"error": "Service unavailable"}`))
+		_, _ = w.Write([]byte(`{"error": "Service unavailable"}`))
 	}))
 	defer server.Close()
 
@@ -428,7 +428,7 @@ func TestRetryOnServerError(t *testing.T) {
 			ID:      "success",
 			Choices: []Choice{{Message: Message{Content: "Success"}, FinishReason: "stop"}},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -478,7 +478,7 @@ func TestMultipleModels(t *testing.T) {
 		t.Run(model, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				var req ChatRequest
-				json.NewDecoder(r.Body).Decode(&req)
+				_ = json.NewDecoder(r.Body).Decode(&req)
 				assert.Equal(t, model, req.Model)
 
 				resp := ChatResponse{
@@ -486,7 +486,7 @@ func TestMultipleModels(t *testing.T) {
 					Model:   model,
 					Choices: []Choice{{Message: Message{Content: "Response from " + model}, FinishReason: "stop"}},
 				}
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			}))
 			defer server.Close()
 

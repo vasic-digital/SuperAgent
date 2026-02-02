@@ -21,7 +21,7 @@ func TestExpirationManager_ForceExpireByTag(t *testing.T) {
 		EnableL2:  false,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	expConfig := DefaultExpirationConfig()
 	em := NewExpirationManager(tc, expConfig)
@@ -65,7 +65,7 @@ func TestExpirationManager_ForceExpireByTag_NoMatches(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	em := NewExpirationManager(tc, DefaultExpirationConfig())
 
@@ -85,7 +85,7 @@ func TestExpirationManager_SetTTL(t *testing.T) {
 		EnableL1:          true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	em := NewExpirationManager(tc, DefaultExpirationConfig())
 
@@ -121,7 +121,7 @@ func TestExpirationManager_ValidateEntry_ValidationDisabled(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	expConfig := &ExpirationConfig{
 		CleanupInterval:    time.Minute,
@@ -144,7 +144,7 @@ func TestExpirationManager_ValidateEntry_MaxAgeExceeded(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	expConfig := &ExpirationConfig{
 		CleanupInterval:    time.Minute,
@@ -171,7 +171,7 @@ func TestExpirationManager_ValidateEntry_WithMultipleValidators(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	expConfig := &ExpirationConfig{
 		CleanupInterval:    time.Minute,
@@ -211,7 +211,7 @@ func TestExpirationManager_ValidatorRegistration_Concurrent(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	em := NewExpirationManager(tc, DefaultExpirationConfig())
 
@@ -248,7 +248,7 @@ func TestExpirationManager_MetricsAccumulation(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	expConfig := &ExpirationConfig{
 		CleanupInterval:    10 * time.Millisecond,
@@ -290,7 +290,7 @@ func TestExpirationManager_NilConfig(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	// Pass nil config - should use defaults
 	em := NewExpirationManager(tc, nil)
@@ -308,7 +308,7 @@ func TestExpirationManager_ForceExpire_Error(t *testing.T) {
 		L2KeyPrefix: "test:",
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	em := NewExpirationManager(tc, DefaultExpirationConfig())
 
@@ -420,7 +420,7 @@ func TestExpirationManager_CleanupLoop_ContextCancel(t *testing.T) {
 		EnableL1:  true,
 	}
 	tc := NewTieredCache(nil, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	expConfig := &ExpirationConfig{
 		CleanupInterval:    10 * time.Millisecond,

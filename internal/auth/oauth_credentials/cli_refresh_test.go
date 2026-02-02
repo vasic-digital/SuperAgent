@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestDefaultCLIRefreshConfig(t *testing.T) {
@@ -231,12 +233,12 @@ func TestVerifyTokenRefreshed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Override credentials path for testing
 	origHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", origHome)
+	require.NoError(t, os.Setenv("HOME", tmpDir))
+	defer func() { _ = os.Setenv("HOME", origHome) }()
 
 	// Create .qwen directory
 	qwenDir := filepath.Join(tmpDir, ".qwen")
@@ -353,8 +355,9 @@ func TestFindQwenCLI(t *testing.T) {
 
 	t.Run("returns configured path if valid", func(t *testing.T) {
 		// Create temp executable
-		tmpDir, _ := os.MkdirTemp("", "qwen_test")
-		defer os.RemoveAll(tmpDir)
+		tmpDir, err := os.MkdirTemp("", "qwen_test")
+		require.NoError(t, err)
+		defer func() { _ = os.RemoveAll(tmpDir) }()
 
 		tmpQwen := filepath.Join(tmpDir, "qwen")
 		if err := os.WriteFile(tmpQwen, []byte("#!/bin/sh\nexit 0"), 0755); err != nil {
@@ -401,12 +404,12 @@ func TestGetStatusWithCredentials(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Override credentials path for testing
 	origHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", origHome)
+	require.NoError(t, os.Setenv("HOME", tmpDir))
+	defer func() { _ = os.Setenv("HOME", origHome) }()
 
 	// Create .qwen directory
 	qwenDir := filepath.Join(tmpDir, ".qwen")
@@ -484,12 +487,12 @@ func TestFindQwenCLICommonPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Override HOME for testing
 	origHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	defer os.Setenv("HOME", origHome)
+	require.NoError(t, os.Setenv("HOME", tmpDir))
+	defer func() { _ = os.Setenv("HOME", origHome) }()
 
 	t.Run("finds qwen in .local/bin", func(t *testing.T) {
 		localBin := filepath.Join(tmpDir, ".local", "bin")

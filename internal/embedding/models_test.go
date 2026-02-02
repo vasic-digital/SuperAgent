@@ -94,7 +94,7 @@ func TestOpenAIEmbedding_Embed(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -126,7 +126,7 @@ func TestOpenAIEmbedding_EmbedBatch(t *testing.T) {
 				{"embedding": make([]float64, 1536)},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -161,7 +161,7 @@ func TestOpenAIEmbedding_Cache(t *testing.T) {
 				{"embedding": make([]float64, 1536)},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -240,7 +240,7 @@ func TestOllamaEmbedding_Embed(t *testing.T) {
 		response := map[string]interface{}{
 			"embedding": make([]float64, 768),
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -267,7 +267,7 @@ func TestOllamaEmbedding_EmbedBatch(t *testing.T) {
 		response := map[string]interface{}{
 			"embedding": make([]float64, 768),
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -329,7 +329,7 @@ func TestHuggingFaceEmbedding_Embed(t *testing.T) {
 
 		// Return embedding array
 		embedding := make([]float64, 1024)
-		json.NewEncoder(w).Encode(embedding)
+		_ = json.NewEncoder(w).Encode(embedding)
 	}))
 	defer server.Close()
 
@@ -357,7 +357,7 @@ func TestHuggingFaceEmbedding_EmbedBatch(t *testing.T) {
 			make([]float64, 1024),
 			make([]float64, 1024),
 		}
-		json.NewEncoder(w).Encode(embeddings)
+		_ = json.NewEncoder(w).Encode(embeddings)
 	}))
 	defer server.Close()
 
@@ -586,7 +586,7 @@ func TestModelTypes(t *testing.T) {
 func TestOpenAIEmbedding_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "invalid_api_key"}`))
+		_, _ = w.Write([]byte(`{"error": "invalid_api_key"}`))
 	}))
 	defer server.Close()
 
@@ -611,7 +611,7 @@ func TestOpenAIEmbedding_ErrorHandling(t *testing.T) {
 func TestOllamaEmbedding_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"error": "model not found"}`))
+		_, _ = w.Write([]byte(`{"error": "model not found"}`))
 	}))
 	defer server.Close()
 
@@ -634,7 +634,7 @@ func TestOllamaEmbedding_ErrorHandling(t *testing.T) {
 func TestHuggingFaceEmbedding_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error": "rate limit exceeded"}`))
+		_, _ = w.Write([]byte(`{"error": "rate limit exceeded"}`))
 	}))
 	defer server.Close()
 
@@ -699,7 +699,7 @@ func TestEmptyBatch(t *testing.T) {
 		response := map[string]interface{}{
 			"data": []map[string]interface{}{},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -764,7 +764,7 @@ func TestOpenAIEmbedding_Embed_NoEmbeddingReturned(t *testing.T) {
 		response := map[string]interface{}{
 			"data": []map[string]interface{}{},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -793,7 +793,7 @@ func TestOllamaEmbedding_CacheHit(t *testing.T) {
 		response := map[string]interface{}{
 			"embedding": []float64{1.0, 2.0, 3.0},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -826,7 +826,7 @@ func TestOllamaEmbedding_CacheHit(t *testing.T) {
 func TestOllamaEmbedding_EmbedBatch_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "server error"}`))
+		_, _ = w.Write([]byte(`{"error": "server error"}`))
 	}))
 	defer server.Close()
 
@@ -851,7 +851,7 @@ func TestHuggingFaceEmbedding_CacheHit(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 		embedding := []float64{1.0, 2.0, 3.0, 4.0}
-		json.NewEncoder(w).Encode(embedding)
+		_ = json.NewEncoder(w).Encode(embedding)
 	}))
 	defer server.Close()
 
@@ -887,7 +887,7 @@ func TestHuggingFaceEmbedding_WithAPIKey(t *testing.T) {
 		assert.Equal(t, "Bearer test-hf-key", auth)
 
 		embedding := []float64{1.0, 2.0, 3.0}
-		json.NewEncoder(w).Encode(embedding)
+		_ = json.NewEncoder(w).Encode(embedding)
 	}))
 	defer server.Close()
 
@@ -912,7 +912,7 @@ func TestHuggingFaceEmbedding_NestedResponseFormat(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Return nested format [[embedding]]
 		nested := [][]float64{{1.0, 2.0, 3.0, 4.0}}
-		json.NewEncoder(w).Encode(nested)
+		_ = json.NewEncoder(w).Encode(nested)
 	}))
 	defer server.Close()
 
@@ -946,7 +946,7 @@ func TestHuggingFaceEmbedding_EmbedBatch_WithAPIKey(t *testing.T) {
 			{1.0, 2.0, 3.0},
 			{4.0, 5.0, 6.0},
 		}
-		json.NewEncoder(w).Encode(embeddings)
+		_ = json.NewEncoder(w).Encode(embeddings)
 	}))
 	defer server.Close()
 
@@ -971,7 +971,7 @@ func TestHuggingFaceEmbedding_EmbedBatch_WithAPIKey(t *testing.T) {
 func TestHuggingFaceEmbedding_EmbedBatch_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte(`{"error": "rate limit exceeded"}`))
+		_, _ = w.Write([]byte(`{"error": "rate limit exceeded"}`))
 	}))
 	defer server.Close()
 
@@ -998,7 +998,7 @@ func TestOpenAIEmbedding_CacheSetAfterEmbed(t *testing.T) {
 				{"embedding": []float64{1.0, 2.0, 3.0}},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 

@@ -33,7 +33,7 @@ func NewWatcher(paths []string, onChange func(path string)) (*Watcher, error) {
 	// Watch directories
 	for _, path := range paths {
 		if err := watcher.Add(path); err != nil {
-			watcher.Close()
+			_ = watcher.Close()
 			return nil, err
 		}
 	}
@@ -48,7 +48,7 @@ func (w *Watcher) Start() {
 
 func (w *Watcher) Stop() {
 	close(w.stopChan)
-	w.watcher.Close()
+	_ = w.watcher.Close()
 	utils.GetLogger().Info("Stopped plugin file watcher")
 }
 

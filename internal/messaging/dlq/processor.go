@@ -198,7 +198,7 @@ func (p *Processor) processBatch() {
 		p.logger.Error("Failed to subscribe to DLQ", zap.Error(err))
 		return
 	}
-	defer sub.Unsubscribe()
+	defer func() { _ = sub.Unsubscribe() }()
 
 	// Wait for messages or timeout
 	timeout := time.After(p.config.PollInterval / 2)

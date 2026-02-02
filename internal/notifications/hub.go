@@ -148,7 +148,7 @@ func (h *NotificationHub) Stop() error {
 	h.subscribersMu.Lock()
 	for _, subs := range h.subscribers {
 		for _, sub := range subs {
-			sub.Close()
+			_ = sub.Close()
 		}
 	}
 	h.subscribers = make(map[string][]Subscriber)
@@ -156,7 +156,7 @@ func (h *NotificationHub) Stop() error {
 
 	h.globalSubsMu.Lock()
 	for _, sub := range h.globalSubs {
-		sub.Close()
+		_ = sub.Close()
 	}
 	h.globalSubs = nil
 	h.globalSubsMu.Unlock()
@@ -217,7 +217,7 @@ func (h *NotificationHub) Unsubscribe(taskID string, subscriberID string) {
 	for i, sub := range subs {
 		if sub.ID() == subscriberID {
 			h.subscribers[taskID] = append(subs[:i], subs[i+1:]...)
-			sub.Close()
+			_ = sub.Close()
 			break
 		}
 	}
@@ -239,7 +239,7 @@ func (h *NotificationHub) UnsubscribeGlobal(subscriberID string) {
 	for i, sub := range h.globalSubs {
 		if sub.ID() == subscriberID {
 			h.globalSubs = append(h.globalSubs[:i], h.globalSubs[i+1:]...)
-			sub.Close()
+			_ = sub.Close()
 			break
 		}
 	}
@@ -373,7 +373,7 @@ func (h *NotificationHub) CleanupInactiveSubscribers() {
 			if sub.IsActive() {
 				activeSubs = append(activeSubs, sub)
 			} else {
-				sub.Close()
+				_ = sub.Close()
 			}
 		}
 		if len(activeSubs) == 0 {
@@ -391,7 +391,7 @@ func (h *NotificationHub) CleanupInactiveSubscribers() {
 		if sub.IsActive() {
 			activeSubs = append(activeSubs, sub)
 		} else {
-			sub.Close()
+			_ = sub.Close()
 		}
 	}
 	h.globalSubs = activeSubs

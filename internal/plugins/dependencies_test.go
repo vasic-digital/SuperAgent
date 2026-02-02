@@ -46,8 +46,8 @@ func TestDependencyResolver_ResolveLoadOrder(t *testing.T) {
 		resolver := NewDependencyResolver(registry)
 
 		// a depends on b, b depends on c
-		resolver.AddDependency("a", []string{"b"})
-		resolver.AddDependency("b", []string{"c"})
+		_ = resolver.AddDependency("a", []string{"b"})
+		_ = resolver.AddDependency("b", []string{"c"})
 
 		order, err := resolver.ResolveLoadOrder([]string{"a", "b", "c"})
 
@@ -91,7 +91,7 @@ func TestDependencyResolver_GetDependencies(t *testing.T) {
 	t.Run("existing dependencies", func(t *testing.T) {
 		registry := NewRegistry()
 		resolver := NewDependencyResolver(registry)
-		resolver.AddDependency("plugin-a", []string{"plugin-b", "plugin-c"})
+		_ = resolver.AddDependency("plugin-a", []string{"plugin-b", "plugin-c"})
 
 		deps := resolver.GetDependencies("plugin-a")
 
@@ -114,9 +114,9 @@ func TestDependencyResolver_GetDependents(t *testing.T) {
 	t.Run("with dependents", func(t *testing.T) {
 		registry := NewRegistry()
 		resolver := NewDependencyResolver(registry)
-		resolver.AddDependency("a", []string{"shared"})
-		resolver.AddDependency("b", []string{"shared"})
-		resolver.AddDependency("c", []string{"other"})
+		_ = resolver.AddDependency("a", []string{"shared"})
+		_ = resolver.AddDependency("b", []string{"shared"})
+		_ = resolver.AddDependency("c", []string{"other"})
 
 		dependents := resolver.GetDependents("shared")
 
@@ -128,7 +128,7 @@ func TestDependencyResolver_GetDependents(t *testing.T) {
 	t.Run("no dependents", func(t *testing.T) {
 		registry := NewRegistry()
 		resolver := NewDependencyResolver(registry)
-		resolver.AddDependency("a", []string{"b"})
+		_ = resolver.AddDependency("a", []string{"b"})
 
 		dependents := resolver.GetDependents("a")
 
@@ -470,7 +470,7 @@ func TestDependencyResolver_CheckConflicts_Extended(t *testing.T) {
 				SupportsStreaming: true,
 			},
 		}
-		registry.Register(mockPlugin)
+		_ = registry.Register(mockPlugin)
 
 		// Check conflicts for plugin-a depending on plugin-b (no version constraint)
 		err := resolver.checkConflicts("plugin-a", []string{"plugin-b"})
@@ -487,7 +487,7 @@ func TestDependencyResolver_CheckConflicts_Extended(t *testing.T) {
 			version: "1.5.0",
 			caps:    &models.ProviderCapabilities{},
 		}
-		registry.Register(mockPlugin)
+		_ = registry.Register(mockPlugin)
 
 		// Version-constrained deps don't match registry key (which uses plugin Name())
 		// So this returns no error since the plugin isn't found
@@ -507,7 +507,7 @@ func TestDependencyResolver_CheckConflicts_Extended(t *testing.T) {
 				SupportsStreaming: true,
 			},
 		}
-		registry.Register(pluginA)
+		_ = registry.Register(pluginA)
 
 		// Add plugin-b with conflicting capabilities
 		pluginB := &mockPluginForDeps{
@@ -517,7 +517,7 @@ func TestDependencyResolver_CheckConflicts_Extended(t *testing.T) {
 				SupportsStreaming: false,
 			},
 		}
-		registry.Register(pluginB)
+		_ = registry.Register(pluginB)
 
 		// Check conflicts - should detect capability conflict
 		err := resolver.checkConflicts("plugin-a", []string{"plugin-b"})
@@ -540,7 +540,7 @@ func TestDependencyResolver_GetPluginCapabilities_Extended(t *testing.T) {
 				SupportsVision:          false,
 			},
 		}
-		registry.Register(mockPlugin)
+		_ = registry.Register(mockPlugin)
 
 		caps := resolver.getPluginCapabilities("test-plugin")
 
@@ -708,7 +708,7 @@ func TestDependencyResolver_CheckConflicts_VersionConstraint(t *testing.T) {
 			version: "1.5.0",
 			caps:    &models.ProviderCapabilities{},
 		}
-		registry.Register(mockPlugin)
+		_ = registry.Register(mockPlugin)
 
 		// Check conflicts with version constraint - the key includes the @ so it matches
 		err := resolver.checkConflicts("plugin-a", []string{"dep-plugin@>=1.0.0"})
@@ -726,7 +726,7 @@ func TestDependencyResolver_CheckConflicts_VersionConstraint(t *testing.T) {
 			version: "1.0.0", // Doesn't satisfy >=2.0.0
 			caps:    &models.ProviderCapabilities{},
 		}
-		registry.Register(mockPlugin)
+		_ = registry.Register(mockPlugin)
 
 		// Check conflicts - this exercises the version constraint branch
 		err := resolver.checkConflicts("plugin-a", []string{"versioned@>=2.0.0"})
@@ -766,8 +766,8 @@ func TestDependencyResolver_AddDependency_ConflictError(t *testing.T) {
 		version: "1.0.0",
 		caps:    &models.ProviderCapabilities{SupportsStreaming: false},
 	}
-	registry.Register(pluginA)
-	registry.Register(pluginB)
+	_ = registry.Register(pluginA)
+	_ = registry.Register(pluginB)
 
 	// Adding conflict-a as dependency - then check against conflict-b
 	err := resolver.AddDependency("conflict-a", []string{"conflict-b"})
@@ -872,8 +872,8 @@ func TestDependencyResolver_CheckConflicts_NoCapabilityConflict(t *testing.T) {
 		version: "1.0.0",
 		caps:    &models.ProviderCapabilities{SupportsStreaming: true, SupportsVision: true},
 	}
-	registry.Register(pluginA)
-	registry.Register(pluginB)
+	_ = registry.Register(pluginA)
+	_ = registry.Register(pluginB)
 
 	err := resolver.checkConflicts("match-a", []string{"match-b"})
 	assert.NoError(t, err)
@@ -889,7 +889,7 @@ func TestDependencyResolver_GetPluginCapabilities_EmptyCaps(t *testing.T) {
 		version: "1.0.0",
 		caps:    nil,
 	}
-	registry.Register(mockPlugin)
+	_ = registry.Register(mockPlugin)
 
 	caps := resolver.getPluginCapabilities("no-caps")
 	assert.NotNil(t, caps)

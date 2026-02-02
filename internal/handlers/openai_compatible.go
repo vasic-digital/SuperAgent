@@ -456,7 +456,7 @@ func (h *UnifiedHandler) ChatCompletions(c *gin.Context) {
 				responseMap := make(map[string]any)
 				// Convert response to map via JSON (simplest)
 				jsonBytes, _ := json.Marshal(response)
-				json.Unmarshal(jsonBytes, &responseMap)
+				_ = json.Unmarshal(jsonBytes, &responseMap)
 				responseMap["skills_used"] = skillsMetadata
 				c.JSON(http.StatusOK, responseMap)
 				return
@@ -537,9 +537,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 	firstChunkResp := &models.LLMResponse{ID: streamID, CreatedAt: time.Now()}
 	firstChunk := h.convertToOpenAIChatStreamResponse(firstChunkResp, req, true, streamID)
 	if firstData, err := json.Marshal(firstChunk); err == nil {
-		c.Writer.Write([]byte("data: "))
-		c.Writer.Write(firstData)
-		c.Writer.Write([]byte("\n\n"))
+		_, _ = c.Writer.Write([]byte("data: "))
+		_, _ = c.Writer.Write(firstData)
+		_, _ = c.Writer.Write([]byte("\n\n"))
 		flusher.Flush()
 	}
 	isFirstChunk = false
@@ -577,9 +577,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					},
 				}
 				if errData, err := json.Marshal(errChunk); err == nil {
-					c.Writer.Write([]byte("data: "))
-					c.Writer.Write(errData)
-					c.Writer.Write([]byte("\n\n"))
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(errData)
+					_, _ = c.Writer.Write([]byte("\n\n"))
 					flusher.Flush()
 				}
 			}
@@ -601,9 +601,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				},
 			}
 			if respData, err := json.Marshal(responseChunk); err == nil {
-				c.Writer.Write([]byte("data: "))
-				c.Writer.Write(respData)
-				c.Writer.Write([]byte("\n\n"))
+				_, _ = c.Writer.Write([]byte("data: "))
+				_, _ = c.Writer.Write(respData)
+				_, _ = c.Writer.Write([]byte("\n\n"))
 				flusher.Flush()
 			}
 		}
@@ -625,14 +625,14 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			},
 		}
 		if finishData, err := json.Marshal(finishChunk); err == nil {
-			c.Writer.Write([]byte("data: "))
-			c.Writer.Write(finishData)
-			c.Writer.Write([]byte("\n\n"))
+			_, _ = c.Writer.Write([]byte("data: "))
+			_, _ = c.Writer.Write(finishData)
+			_, _ = c.Writer.Write([]byte("\n\n"))
 			flusher.Flush()
 			logrus.Info("Tool results: sent finish_reason:stop chunk")
 		}
 
-		c.Writer.Write([]byte("data: [DONE]\n\n"))
+		_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
 		flusher.Flush()
 		logrus.Info("Tool results: sent [DONE] - stream complete")
 		return
@@ -737,9 +737,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					},
 				}
 				if introData, err := json.Marshal(introChunk); err == nil {
-					c.Writer.Write([]byte("data: "))
-					c.Writer.Write(introData)
-					c.Writer.Write([]byte("\n\n"))
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(introData)
+					_, _ = c.Writer.Write([]byte("\n\n"))
 					flusher.Flush()
 				}
 				// Small delay for visual effect
@@ -795,9 +795,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					},
 				}
 				if reqData, err := json.Marshal(reqChunk); err == nil {
-					c.Writer.Write([]byte("data: "))
-					c.Writer.Write(reqData)
-					c.Writer.Write([]byte("\n\n"))
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(reqData)
+					_, _ = c.Writer.Write([]byte("\n\n"))
 					flusher.Flush()
 				}
 			}
@@ -900,9 +900,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					},
 				}
 				if respIndData, err := json.Marshal(respIndChunk); err == nil {
-					c.Writer.Write([]byte("data: "))
-					c.Writer.Write(respIndData)
-					c.Writer.Write([]byte("\n\n"))
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(respIndData)
+					_, _ = c.Writer.Write([]byte("\n\n"))
 					flusher.Flush()
 				}
 			}
@@ -927,9 +927,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				},
 			}
 			if responseData, err := json.Marshal(responseChunk); err == nil {
-				c.Writer.Write([]byte("data: "))
-				c.Writer.Write(responseData)
-				c.Writer.Write([]byte("\n\n"))
+				_, _ = c.Writer.Write([]byte("data: "))
+				_, _ = c.Writer.Write(responseData)
+				_, _ = c.Writer.Write([]byte("\n\n"))
 				flusher.Flush()
 			}
 			chunksSent++
@@ -954,9 +954,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				},
 			}
 			if conclusionData, err := json.Marshal(conclusionChunk); err == nil {
-				c.Writer.Write([]byte("data: "))
-				c.Writer.Write(conclusionData)
-				c.Writer.Write([]byte("\n\n"))
+				_, _ = c.Writer.Write([]byte("data: "))
+				_, _ = c.Writer.Write(conclusionData)
+				_, _ = c.Writer.Write([]byte("\n\n"))
 				flusher.Flush()
 			}
 		}
@@ -993,9 +993,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				},
 			}
 			if synthesisData, err := json.Marshal(synthesisChunk); err == nil {
-				c.Writer.Write([]byte("data: "))
-				c.Writer.Write(synthesisData)
-				c.Writer.Write([]byte("\n\n"))
+				_, _ = c.Writer.Write([]byte("data: "))
+				_, _ = c.Writer.Write(synthesisData)
+				_, _ = c.Writer.Write([]byte("\n\n"))
 				flusher.Flush()
 			}
 			chunksSent++
@@ -1037,9 +1037,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					},
 				}
 				if indicatorData, err := json.Marshal(indicatorChunk); err == nil {
-					c.Writer.Write([]byte("data: "))
-					c.Writer.Write(indicatorData)
-					c.Writer.Write([]byte("\n\n"))
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(indicatorData)
+					_, _ = c.Writer.Write([]byte("\n\n"))
 					flusher.Flush()
 				}
 
@@ -1079,9 +1079,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 						},
 					}
 					if toolCallData, err := json.Marshal(toolCallChunk); err == nil {
-						c.Writer.Write([]byte("data: "))
-						c.Writer.Write(toolCallData)
-						c.Writer.Write([]byte("\n\n"))
+						_, _ = c.Writer.Write([]byte("data: "))
+						_, _ = c.Writer.Write(toolCallData)
+						_, _ = c.Writer.Write([]byte("\n\n"))
 						flusher.Flush()
 					}
 				}
@@ -1104,9 +1104,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 					},
 				}
 				if finishData, err := json.Marshal(finishChunk); err == nil {
-					c.Writer.Write([]byte("data: "))
-					c.Writer.Write(finishData)
-					c.Writer.Write([]byte("\n\n"))
+					_, _ = c.Writer.Write([]byte("data: "))
+					_, _ = c.Writer.Write(finishData)
+					_, _ = c.Writer.Write([]byte("\n\n"))
 					flusher.Flush()
 				}
 				sentFinalChunk = true
@@ -1115,7 +1115,7 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				// CRITICAL: After sending tool_calls, immediately end the response
 				// The client will execute the tools and send another request with results
 				// Do NOT send any more content or footer - it confuses the tool calling protocol
-				c.Writer.Write([]byte("data: [DONE]\n\n"))
+				_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
 				flusher.Flush()
 				logrus.Info("AI Debate with tool_calls: sent [DONE] - stream complete")
 				return
@@ -1146,9 +1146,9 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 				},
 			}
 			if footerData, err := json.Marshal(footerChunk); err == nil {
-				c.Writer.Write([]byte("data: "))
-				c.Writer.Write(footerData)
-				c.Writer.Write([]byte("\n\n"))
+				_, _ = c.Writer.Write([]byte("data: "))
+				_, _ = c.Writer.Write(footerData)
+				_, _ = c.Writer.Write([]byte("\n\n"))
 				flusher.Flush()
 			}
 		}
@@ -1170,14 +1170,14 @@ func (h *UnifiedHandler) handleStreamingChatCompletions(c *gin.Context, req *Ope
 			},
 		}
 		if finalData, err := json.Marshal(finalChunk); err == nil {
-			c.Writer.Write([]byte("data: "))
-			c.Writer.Write(finalData)
-			c.Writer.Write([]byte("\n\n"))
+			_, _ = c.Writer.Write([]byte("data: "))
+			_, _ = c.Writer.Write(finalData)
+			_, _ = c.Writer.Write([]byte("\n\n"))
 			flusher.Flush()
 		}
 
 		// Send [DONE] and return - stream is complete
-		c.Writer.Write([]byte("data: [DONE]\n\n"))
+		_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
 		flusher.Flush()
 		logrus.Info("Debate dialogue: sent [DONE] - stream complete")
 		return
@@ -1262,9 +1262,9 @@ StreamLoop:
 				},
 			}
 			if footerData, err := json.Marshal(footerChunk); err == nil {
-				c.Writer.Write([]byte("data: "))
-				c.Writer.Write(footerData)
-				c.Writer.Write([]byte("\n\n"))
+				_, _ = c.Writer.Write([]byte("data: "))
+				_, _ = c.Writer.Write(footerData)
+				_, _ = c.Writer.Write([]byte("\n\n"))
 				flusher.Flush()
 			}
 		}
@@ -1288,14 +1288,14 @@ StreamLoop:
 			},
 		}
 		finalData, _ := json.Marshal(finalChunk)
-		c.Writer.Write([]byte("data: "))
-		c.Writer.Write(finalData)
-		c.Writer.Write([]byte("\n\n"))
+		_, _ = c.Writer.Write([]byte("data: "))
+		_, _ = c.Writer.Write(finalData)
+		_, _ = c.Writer.Write([]byte("\n\n"))
 		flusher.Flush()
 	}
 
 	// Always send [DONE] to properly close the stream
-	c.Writer.Write([]byte("data: [DONE]\n\n"))
+	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
 	flusher.Flush()
 }
 
@@ -1371,9 +1371,9 @@ func (h *UnifiedHandler) ChatCompletionsStream(c *gin.Context) {
 	firstChunkResp := &models.LLMResponse{ID: streamID, CreatedAt: time.Now()}
 	firstChunk := h.convertToOpenAIChatStreamResponse(firstChunkResp, &req, true, streamID)
 	if firstData, err := json.Marshal(firstChunk); err == nil {
-		c.Writer.Write([]byte("data: "))
-		c.Writer.Write(firstData)
-		c.Writer.Write([]byte("\n\n"))
+		_, _ = c.Writer.Write([]byte("data: "))
+		_, _ = c.Writer.Write(firstData)
+		_, _ = c.Writer.Write([]byte("\n\n"))
 		flusher.Flush()
 	}
 	isFirstChunk = false
@@ -1454,14 +1454,14 @@ StreamLoop:
 			},
 		}
 		finalData, _ := json.Marshal(finalChunk)
-		c.Writer.Write([]byte("data: "))
-		c.Writer.Write(finalData)
-		c.Writer.Write([]byte("\n\n"))
+		_, _ = c.Writer.Write([]byte("data: "))
+		_, _ = c.Writer.Write(finalData)
+		_, _ = c.Writer.Write([]byte("\n\n"))
 		flusher.Flush()
 	}
 
 	// Always send [DONE] to properly close the stream
-	c.Writer.Write([]byte("data: [DONE]\n\n"))
+	_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
 	flusher.Flush()
 }
 

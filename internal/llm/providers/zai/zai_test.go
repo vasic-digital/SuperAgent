@@ -99,7 +99,7 @@ func TestZAIProvider_Complete(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -161,7 +161,7 @@ func TestZAIProvider_Complete_ChatFormat(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -189,7 +189,7 @@ func TestZAIProvider_Complete_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(ZAIError{
+		_ = json.NewEncoder(w).Encode(ZAIError{
 			Error: struct {
 				Message string `json:"message"`
 				Type    string `json:"type"`
@@ -232,7 +232,7 @@ func TestZAIProvider_Complete_NoChoices(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -284,7 +284,7 @@ func TestZAIProvider_CompleteStream(t *testing.T) {
 			},
 		}
 		data1, _ := json.Marshal(chunk1)
-		fmt.Fprintf(w, "data: %s\n\n", data1)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", data1)
 		flusher.Flush()
 
 		// Send chunk 2
@@ -298,7 +298,7 @@ func TestZAIProvider_CompleteStream(t *testing.T) {
 			},
 		}
 		data2, _ := json.Marshal(chunk2)
-		fmt.Fprintf(w, "data: %s\n\n", data2)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", data2)
 		flusher.Flush()
 
 		// Send final chunk with finish reason
@@ -313,11 +313,11 @@ func TestZAIProvider_CompleteStream(t *testing.T) {
 			},
 		}
 		data3, _ := json.Marshal(chunk3)
-		fmt.Fprintf(w, "data: %s\n\n", data3)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", data3)
 		flusher.Flush()
 
 		// Send DONE marker
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 		flusher.Flush()
 	}))
 	defer server.Close()
@@ -354,7 +354,7 @@ func TestZAIProvider_CompleteStream(t *testing.T) {
 func TestZAIProvider_CompleteStream_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ZAIError{
+		_ = json.NewEncoder(w).Encode(ZAIError{
 			Error: struct {
 				Message string `json:"message"`
 				Type    string `json:"type"`
@@ -776,9 +776,9 @@ func TestZAIProvider_makeRequest(t *testing.T) {
 
 				w.WriteHeader(tt.responseStatus)
 				if tt.responseStatus == http.StatusOK && tt.response != nil {
-					json.NewEncoder(w).Encode(tt.response)
+					_ = json.NewEncoder(w).Encode(tt.response)
 				} else if tt.responseStatus != http.StatusOK {
-					w.Write([]byte("Bad Request"))
+					_, _ = w.Write([]byte("Bad Request"))
 				}
 			}))
 			defer server.Close()
@@ -830,7 +830,7 @@ func TestZAIProvider_makeRequest_NetworkError(t *testing.T) {
 func TestZAIProvider_makeRequest_InvalidResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer server.Close()
 
@@ -867,7 +867,7 @@ func BenchmarkZAIProvider_Complete(b *testing.B) {
 				TotalTokens:      15,
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 

@@ -257,7 +257,7 @@ func (a *ProtocolSkillAdapter) invokeSkill(ctx context.Context, protocol Protoco
 	// Start tracking
 	_ = a.service.StartSkillExecution(requestID, skill, match)
 
-	// Execute skill (placeholder - actual execution depends on skill type)
+	// Execute skill - dispatches to category-specific handler via executeSkillLogic
 	query := ""
 	if q, ok := params["query"].(string); ok {
 		query = q
@@ -390,8 +390,8 @@ func (a *ProtocolSkillAdapter) executeCodeGenerationSkill(ctx context.Context, s
 	// Try to get LLM provider for actual code generation
 	provider, err := a.getBestProvider()
 	if err != nil {
-		a.log.WithError(err).Debug("No LLM provider available, using placeholder")
-		// Fall back to placeholder result
+		a.log.WithError(err).Debug("No LLM provider available, using template-based fallback")
+		// Fall back to template-based result when no LLM provider is configured
 		return fmt.Sprintf(`[Code Generation Result]
 Query: %s
 Language: %s

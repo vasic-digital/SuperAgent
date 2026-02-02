@@ -19,7 +19,7 @@ func setupTestGitRepo(t *testing.T) (string, func()) {
 	require.NoError(t, err)
 
 	cleanup := func() {
-		os.RemoveAll(tempDir)
+		_ = os.RemoveAll(tempDir)
 	}
 
 	// Initialize git repo
@@ -267,7 +267,7 @@ func TestGitAdapter_ExecuteTool_AllTools(t *testing.T) {
 		assert.NotNil(t, result) // Returns map[string]interface{}
 
 		// Go back to main branch
-		adapter.ExecuteTool(context.Background(), "git_checkout", map[string]interface{}{
+		_, _ = adapter.ExecuteTool(context.Background(), "git_checkout", map[string]interface{}{
 			"repo_path": tempDir,
 			"ref":       "master",
 		})
@@ -283,7 +283,7 @@ func TestGitAdapter_ExecuteTool_AllTools(t *testing.T) {
 		assert.NotNil(t, result) // Returns map[string]interface{}
 
 		// Go back to original branch
-		adapter.ExecuteTool(context.Background(), "git_checkout", map[string]interface{}{
+		_, _ = adapter.ExecuteTool(context.Background(), "git_checkout", map[string]interface{}{
 			"repo_path": tempDir,
 			"ref":       "master",
 		})
@@ -311,7 +311,7 @@ func TestGitAdapter_ExecuteTool_AllTools(t *testing.T) {
 		// Add a remote first (ignore error if already exists)
 		cmd := exec.Command("git", "remote", "add", "test-remote", "https://github.com/test/repo.git")
 		cmd.Dir = tempDir
-		cmd.Run() // Ignore error - remote might already exist
+		_ = cmd.Run() // Ignore error - remote might already exist
 
 		result, err := adapter.ExecuteTool(context.Background(), "git_remotes", map[string]interface{}{
 			"repo_path": tempDir,
@@ -380,7 +380,7 @@ func TestGitAdapter_PushPullFetch(t *testing.T) {
 	// Create a bare repo to act as remote
 	bareDir, err := os.MkdirTemp("", "git-bare-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(bareDir)
+	defer func() { _ = os.RemoveAll(bareDir) }()
 
 	cmd := exec.Command("git", "init", "--bare")
 	cmd.Dir = bareDir
@@ -491,7 +491,7 @@ func TestGitAdapter_Clone(t *testing.T) {
 	// Create a bare repo to clone from
 	bareDir, err := os.MkdirTemp("", "git-bare-clone-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(bareDir)
+	defer func() { _ = os.RemoveAll(bareDir) }()
 
 	cmd := exec.Command("git", "init", "--bare")
 	cmd.Dir = bareDir
@@ -512,7 +512,7 @@ func TestGitAdapter_Clone(t *testing.T) {
 	// Clone destination
 	cloneDir, err := os.MkdirTemp("", "git-clone-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(cloneDir)
+	defer func() { _ = os.RemoveAll(cloneDir) }()
 
 	config := DefaultGitAdapterConfig()
 	config.AllowedPaths = []string{cloneDir, bareDir}
@@ -586,7 +586,7 @@ func TestGitAdapter_Clone(t *testing.T) {
 		restrictedConfig.AllowedPaths = []string{cloneDir}
 		restrictedConfig.AllowRemoteOperations = false
 		restrictedAdapter := NewGitAdapter(restrictedConfig, logrus.New())
-		restrictedAdapter.Initialize(context.Background())
+		_ = restrictedAdapter.Initialize(context.Background())
 
 		destPath := filepath.Join(cloneDir, "fail_clone")
 		err := restrictedAdapter.Clone(context.Background(), bareDir, destPath, false, 0)
@@ -630,7 +630,7 @@ func TestGitAdapter_ExecuteTool_Errors(t *testing.T) {
 	t.Run("Force push when not allowed", func(t *testing.T) {
 		config.AllowPush = true // Enable push but not force
 		adapter2 := NewGitAdapter(config, logrus.New())
-		adapter2.Initialize(context.Background())
+		_ = adapter2.Initialize(context.Background())
 
 		_, err := adapter2.ExecuteTool(context.Background(), "git_push", map[string]interface{}{
 			"repo_path": tempDir,
@@ -662,11 +662,11 @@ func TestGitAdapter_ExecuteTool_Errors(t *testing.T) {
 
 	t.Run("Status in non-git directory", func(t *testing.T) {
 		nonGitDir, _ := os.MkdirTemp("", "non-git-*")
-		defer os.RemoveAll(nonGitDir)
+		defer func() { _ = os.RemoveAll(nonGitDir) }()
 
 		config.AllowedPaths = append(config.AllowedPaths, nonGitDir)
 		adapter := NewGitAdapter(config, logrus.New())
-		adapter.Initialize(context.Background())
+		_ = adapter.Initialize(context.Background())
 
 		_, err := adapter.ExecuteTool(context.Background(), "git_status", map[string]interface{}{
 			"repo_path": nonGitDir,
@@ -793,7 +793,7 @@ func BenchmarkGitAdapter_ExecuteTool_Status(b *testing.B) {
 
 	tempDir, err := os.MkdirTemp("", "git-bench-*")
 	require.NoError(b, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	cmd := exec.Command("git", "init")
 	cmd.Dir = tempDir
@@ -802,11 +802,11 @@ func BenchmarkGitAdapter_ExecuteTool_Status(b *testing.B) {
 	config := DefaultGitAdapterConfig()
 	config.AllowedPaths = []string{tempDir}
 	adapter := NewGitAdapter(config, logrus.New())
-	adapter.Initialize(context.Background())
+	_ = adapter.Initialize(context.Background())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		adapter.ExecuteTool(context.Background(), "git_status", map[string]interface{}{
+		_, _ = adapter.ExecuteTool(context.Background(), "git_status", map[string]interface{}{
 			"repo_path": tempDir,
 		})
 	}
@@ -820,7 +820,7 @@ func BenchmarkGitAdapter_ExecuteTool_Log(b *testing.B) {
 
 	tempDir, err := os.MkdirTemp("", "git-bench-log-*")
 	require.NoError(b, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Setup repo with commits
 	cmd := exec.Command("git", "init")
@@ -829,26 +829,26 @@ func BenchmarkGitAdapter_ExecuteTool_Log(b *testing.B) {
 
 	cmd = exec.Command("git", "config", "user.email", "test@test.com")
 	cmd.Dir = tempDir
-	cmd.Run()
+	_ = cmd.Run()
 
 	cmd = exec.Command("git", "config", "user.name", "Test")
 	cmd.Dir = tempDir
-	cmd.Run()
+	_ = cmd.Run()
 
 	for i := 0; i < 10; i++ {
-		os.WriteFile(filepath.Join(tempDir, "file.txt"), []byte("commit "+string(rune('A'+i))), 0644)
-		exec.Command("git", "-C", tempDir, "add", ".").Run()
-		exec.Command("git", "-C", tempDir, "commit", "-m", "Commit "+string(rune('A'+i))).Run()
+		_ = os.WriteFile(filepath.Join(tempDir, "file.txt"), []byte("commit "+string(rune('A'+i))), 0644)
+		_ = exec.Command("git", "-C", tempDir, "add", ".").Run()
+		_ = exec.Command("git", "-C", tempDir, "commit", "-m", "Commit "+string(rune('A'+i))).Run()
 	}
 
 	config := DefaultGitAdapterConfig()
 	config.AllowedPaths = []string{tempDir}
 	adapter := NewGitAdapter(config, logrus.New())
-	adapter.Initialize(context.Background())
+	_ = adapter.Initialize(context.Background())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		adapter.ExecuteTool(context.Background(), "git_log", map[string]interface{}{
+		_, _ = adapter.ExecuteTool(context.Background(), "git_log", map[string]interface{}{
 			"repo_path": tempDir,
 			"limit":     float64(5),
 		})

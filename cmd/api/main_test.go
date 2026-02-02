@@ -119,7 +119,7 @@ func TestHandleMCPCallTool(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Equal(t, "calculate", response["tool"])
 		assert.Equal(t, "test-server", response["server"])
 	})
@@ -146,7 +146,7 @@ func TestHandleMCPListTools(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.Contains(t, response, "tools")
 }
 
@@ -161,7 +161,7 @@ func TestHandleMCPListServers(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.Contains(t, response, "servers")
 }
 
@@ -187,7 +187,7 @@ func TestHandleLSPCompletion(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Contains(t, response, "completions")
 	})
 
@@ -222,7 +222,7 @@ func TestHandleLSPHover(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Contains(t, response, "contents")
 	})
 
@@ -257,7 +257,7 @@ func TestHandleLSPDefinition(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Contains(t, response, "definition")
 	})
 
@@ -283,7 +283,7 @@ func TestHandleLSPDiagnostics(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.Contains(t, response, "diagnostics")
 }
 
@@ -309,7 +309,7 @@ func TestHandleACPExecute(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Equal(t, "test_action", response["action"])
 		assert.Equal(t, "agent-1", response["agent_id"])
 	})
@@ -344,7 +344,7 @@ func TestHandleACPBroadcast(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Contains(t, response, "broadcast_id")
 		assert.Equal(t, float64(2), response["delivered_to"])
 	})
@@ -371,7 +371,7 @@ func TestHandleACPStatus(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.Equal(t, "agent-1", response["agent_id"])
 	assert.Equal(t, "active", response["status"])
 }
@@ -458,7 +458,7 @@ func TestHandleRecordRequest(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Equal(t, "recorded", response["status"])
 	})
 
@@ -486,7 +486,7 @@ func TestHandleListPlugins(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.Contains(t, response, "plugins")
 }
 
@@ -574,7 +574,7 @@ func TestHandleMarketplaceSearch(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.Contains(t, response, "plugins")
 }
 
@@ -626,7 +626,7 @@ func TestHandleListTemplates(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Contains(t, response, "templates")
 	})
 
@@ -652,7 +652,7 @@ func TestHandleGetTemplate(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Equal(t, "mcp-basic-integration", response["ID"])
 	})
 
@@ -684,7 +684,7 @@ func TestHandleGenerateFromTemplate(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Contains(t, response, "generated")
 	})
 
@@ -728,7 +728,7 @@ func TestHandleHealth(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.Equal(t, "healthy", response["status"])
 	assert.Equal(t, "1.0.0", response["version"])
 }
@@ -744,7 +744,7 @@ func TestHandleStatus(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.Equal(t, "operational", response["status"])
 	assert.Contains(t, response, "protocols_active")
 	assert.Contains(t, response, "plugins_loaded")
@@ -1115,7 +1115,7 @@ func TestHandleACPBroadcast_EdgeCases(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Equal(t, float64(0), response["delivered_to"])
 	})
 
@@ -1140,7 +1140,7 @@ func TestHandleACPBroadcast_EdgeCases(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Equal(t, float64(100), response["delivered_to"])
 	})
 }
@@ -1157,7 +1157,7 @@ func TestHandleACPStatus_EdgeCases(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.Equal(t, "", response["agent_id"])
 	})
 
@@ -1187,7 +1187,7 @@ func TestHandleListTemplates_Filtering(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		// Should return empty array or all templates
 		assert.Contains(t, response, "templates")
 	})

@@ -237,7 +237,7 @@ func TestMessagingTaskQueue_GetPendingCount(t *testing.T) {
 			TaskType: "test_type",
 			TaskName: "Test Task",
 		}
-		queue.Enqueue(context.Background(), task)
+		_ = queue.Enqueue(context.Background(), task)
 	}
 
 	// Verify count
@@ -262,8 +262,8 @@ func TestMessagingTaskQueue_GetRunningCount(t *testing.T) {
 		TaskName:    "Test Task",
 		ScheduledAt: time.Now().Add(-time.Second),
 	}
-	queue.Enqueue(context.Background(), task)
-	queue.Dequeue(context.Background(), "worker-1", ResourceRequirements{})
+	_ = queue.Enqueue(context.Background(), task)
+	_, _ = queue.Dequeue(context.Background(), "worker-1", ResourceRequirements{})
 
 	// Verify count
 	count, err = queue.GetRunningCount(context.Background())
@@ -290,7 +290,7 @@ func TestMessagingTaskQueue_GetQueueDepth(t *testing.T) {
 			TaskName: "Test Task",
 			Priority: p,
 		}
-		queue.Enqueue(context.Background(), task)
+		_ = queue.Enqueue(context.Background(), task)
 	}
 
 	// Get queue depth

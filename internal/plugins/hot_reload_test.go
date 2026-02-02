@@ -316,7 +316,7 @@ func TestNewHotReloadManager_Success(t *testing.T) {
 		assert.NotNil(t, manager.watcher)
 		assert.True(t, manager.enabled)
 		// Clean up
-		manager.watcher.Close()
+		_ = manager.watcher.Close()
 	}
 
 	// Test with existing directory
@@ -380,7 +380,7 @@ func TestHotReloadManager_LoadPlugin_ValidPath(t *testing.T) {
 	if err != nil {
 		t.Skipf("Could not create temp file: %v", err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	// LoadPlugin should fail because it's not a valid Go plugin
 	err = manager.LoadPlugin(tmpFile)
@@ -478,7 +478,7 @@ func TestHotReloadManager_Start_WithRealWatcher(t *testing.T) {
 	if err != nil {
 		t.Skipf("Could not create watcher: %v", err)
 	}
-	defer watcher.Close()
+	defer func() { _ = watcher.Close() }()
 
 	err = watcher.Add(tmpDir)
 	if err != nil {
@@ -517,7 +517,7 @@ func TestHotReloadManager_Stop_WithRealWatcher(t *testing.T) {
 
 	err = watcher.Add(tmpDir)
 	if err != nil {
-		watcher.Close()
+		_ = watcher.Close()
 		t.Skipf("Could not add path to watcher: %v", err)
 	}
 
@@ -643,7 +643,7 @@ func TestHotReloadManager_HandleFileEvent(t *testing.T) {
 	t.Run("remove event unloads plugin", func(t *testing.T) {
 		// Register a mock plugin
 		mockPlugin := &mockPluginForHotReload{name: "removeme", version: "1.0.0"}
-		registry.Register(mockPlugin)
+		_ = registry.Register(mockPlugin)
 		manager.pluginMap["removeme"] = filepath.Join(tmpDir, "removeme.so")
 
 		event := fsnotify.Event{
@@ -659,7 +659,7 @@ func TestHotReloadManager_HandleFileEvent(t *testing.T) {
 
 	t.Run("rename event unloads plugin", func(t *testing.T) {
 		mockPlugin := &mockPluginForHotReload{name: "renameme", version: "1.0.0"}
-		registry.Register(mockPlugin)
+		_ = registry.Register(mockPlugin)
 		manager.pluginMap["renameme"] = filepath.Join(tmpDir, "renameme.so")
 
 		event := fsnotify.Event{
@@ -681,7 +681,7 @@ func TestHotReloadManager_WatchLoop_ContextCancel(t *testing.T) {
 	if err != nil {
 		t.Skipf("Could not create watcher: %v", err)
 	}
-	defer watcher.Close()
+	defer func() { _ = watcher.Close() }()
 
 	err = watcher.Add(tmpDir)
 	if err != nil {
@@ -725,7 +725,7 @@ func TestHotReloadManager_WatchLoop_StopChannel(t *testing.T) {
 	if err != nil {
 		t.Skipf("Could not create watcher: %v", err)
 	}
-	defer watcher.Close()
+	defer func() { _ = watcher.Close() }()
 
 	err = watcher.Add(tmpDir)
 	if err != nil {
@@ -772,7 +772,7 @@ func TestHotReloadManager_WatchLoop_FileEvent(t *testing.T) {
 
 	err = watcher.Add(tmpDir)
 	if err != nil {
-		watcher.Close()
+		_ = watcher.Close()
 		t.Skipf("Could not add path: %v", err)
 	}
 
@@ -801,7 +801,7 @@ func TestHotReloadManager_WatchLoop_FileEvent(t *testing.T) {
 
 	// Cleanup
 	close(manager.stopChan)
-	watcher.Close()
+	_ = watcher.Close()
 }
 
 func TestHotReloadManager_ReloadPlugin_WithPlugin(t *testing.T) {
@@ -819,7 +819,7 @@ func TestHotReloadManager_ReloadPlugin_WithPlugin(t *testing.T) {
 
 	// Register a mock plugin
 	mockPlugin := &mockPluginForHotReload{name: "reloadtest", version: "1.0.0"}
-	registry.Register(mockPlugin)
+	_ = registry.Register(mockPlugin)
 
 	// Create a fake .so file
 	soFile := filepath.Join(tmpDir, "reloadtest.so")
@@ -859,7 +859,7 @@ func TestNewHotReloadManager_WithExistingPluginDir(t *testing.T) {
 	if err != nil {
 		t.Skipf("Could not create plugins directory: %v", err)
 	}
-	defer os.RemoveAll("./plugins")
+	defer func() { _ = os.RemoveAll("./plugins") }()
 
 	registry := NewRegistry()
 	manager, err := NewHotReloadManager(nil, registry)
@@ -868,6 +868,6 @@ func TestNewHotReloadManager_WithExistingPluginDir(t *testing.T) {
 		assert.NotNil(t, manager)
 		assert.NotNil(t, manager.watcher)
 		assert.True(t, manager.enabled)
-		manager.watcher.Close()
+		_ = manager.watcher.Close()
 	}
 }

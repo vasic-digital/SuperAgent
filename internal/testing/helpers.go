@@ -496,7 +496,7 @@ func NewTestFixtures(t *testing.T) *TestFixtures {
 	}
 
 	t.Cleanup(func() {
-		os.RemoveAll(tempDir)
+		_ = os.RemoveAll(tempDir)
 	})
 
 	return &TestFixtures{

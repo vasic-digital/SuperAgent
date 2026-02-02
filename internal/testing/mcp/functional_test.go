@@ -83,13 +83,13 @@ func (c *MCPClient) Call(method string, params interface{}) (*MCPResponse, error
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	c.conn.SetWriteDeadline(time.Now().Add(c.timeout))
+	_ = c.conn.SetWriteDeadline(time.Now().Add(c.timeout))
 	_, err = c.conn.Write(append(reqData, '\n'))
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 
-	c.conn.SetReadDeadline(time.Now().Add(c.timeout))
+	_ = c.conn.SetReadDeadline(time.Now().Add(c.timeout))
 	line, err := c.reader.ReadBytes('\n')
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
@@ -137,7 +137,7 @@ func TestMCPTimeServerFunctional(t *testing.T) {
 		t.Skipf("Time MCP server not running: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	t.Run("Initialize", func(t *testing.T) {
 		resp, err := client.Initialize()
@@ -189,7 +189,7 @@ func TestMCPMemoryServerFunctional(t *testing.T) {
 		t.Skipf("Memory MCP server not running: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	testEntity := fmt.Sprintf("TestEntity_%d", time.Now().UnixNano())
 
@@ -237,7 +237,7 @@ func TestMCPFilesystemServerFunctional(t *testing.T) {
 		t.Skipf("Filesystem MCP server not running: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	t.Run("Initialize", func(t *testing.T) {
 		resp, err := client.Initialize()
@@ -267,7 +267,7 @@ func TestMCPFetchServerFunctional(t *testing.T) {
 		t.Skipf("Fetch MCP server not running: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	t.Run("Initialize", func(t *testing.T) {
 		resp, err := client.Initialize()
@@ -298,7 +298,7 @@ func TestMCPGitServerFunctional(t *testing.T) {
 		t.Skipf("Git MCP server not running: %v", err)
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	t.Run("Initialize", func(t *testing.T) {
 		resp, err := client.Initialize()
@@ -329,8 +329,8 @@ func BenchmarkMCPToolCall(b *testing.B) {
 		b.Skipf("Time MCP server not running: %v", err)
 		return
 	}
-	defer client.Close()
-	client.Initialize()
+	defer func() { _ = client.Close() }()
+	_, _ = client.Initialize()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -348,6 +348,6 @@ func isPortOpen(addr string) bool {
 	if err != nil {
 		return false
 	}
-	conn.Close()
+	_ = conn.Close()
 	return true
 }

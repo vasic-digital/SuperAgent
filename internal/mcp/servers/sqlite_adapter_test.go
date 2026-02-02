@@ -228,7 +228,7 @@ func TestSQLiteAdapter_Health(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	err = adapter.Health(context.Background())
 	assert.NoError(t, err)
@@ -240,7 +240,7 @@ func TestSQLiteAdapter_Query(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	result, err := adapter.Query(context.Background(), "SELECT 1 as num, 'hello' as msg")
 	assert.NoError(t, err)
@@ -255,7 +255,7 @@ func TestSQLiteAdapter_Query_WithParams(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	result, err := adapter.Query(context.Background(), "SELECT ? as num", 42)
 	assert.NoError(t, err)
@@ -268,7 +268,7 @@ func TestSQLiteAdapter_Execute_CreateTable(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.Execute(context.Background(), "CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)")
 	assert.NoError(t, err)
@@ -286,7 +286,7 @@ func TestSQLiteAdapter_Execute_Insert(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.Execute(context.Background(), "CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)")
 	assert.NoError(t, err)
@@ -309,7 +309,7 @@ func TestSQLiteAdapter_Execute_ReadOnly(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.Execute(context.Background(), "CREATE TABLE test (id INTEGER)")
 	assert.Error(t, err)
@@ -323,7 +323,7 @@ func TestSQLiteAdapter_Query_ReadOnlyCheck(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	// SELECT should work
 	_, err = adapter.Query(context.Background(), "SELECT 1")
@@ -341,7 +341,7 @@ func TestSQLiteAdapter_ListTables(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	// Create tables
 	_, err = adapter.Execute(context.Background(), "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
@@ -364,7 +364,7 @@ func TestSQLiteAdapter_DescribeTable(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.Execute(context.Background(), "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT)")
 	assert.NoError(t, err)
@@ -394,7 +394,7 @@ func TestSQLiteAdapter_DescribeTable_NotFound(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.DescribeTable(context.Background(), "nonexistent")
 	assert.Error(t, err)
@@ -407,7 +407,7 @@ func TestSQLiteAdapter_DescribeTable_EmptyName(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.DescribeTable(context.Background(), "")
 	assert.Error(t, err)
@@ -420,7 +420,7 @@ func TestSQLiteAdapter_ListIndexes(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.Execute(context.Background(), "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)")
 	assert.NoError(t, err)
@@ -450,7 +450,7 @@ func TestSQLiteAdapter_ListIndexes_EmptyTable(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.ListIndexes(context.Background(), "")
 	assert.Error(t, err)
@@ -463,7 +463,7 @@ func TestSQLiteAdapter_GetStats(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	stats, err := adapter.GetStats(context.Background())
 	assert.NoError(t, err)
@@ -476,7 +476,7 @@ func TestSQLiteAdapter_CreateTable(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	columns := []SQLiteColumnInfo{
 		{Name: "id", Type: "INTEGER", PrimaryKey: 1},
@@ -500,7 +500,7 @@ func TestSQLiteAdapter_CreateTable_EmptyParams(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	err = adapter.CreateTable(context.Background(), "", nil)
 	assert.Error(t, err)
@@ -514,7 +514,7 @@ func TestSQLiteAdapter_CreateTable_ReadOnly(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	columns := []SQLiteColumnInfo{{Name: "id", Type: "INTEGER"}}
 	err = adapter.CreateTable(context.Background(), "test", columns)
@@ -528,7 +528,7 @@ func TestSQLiteAdapter_DropTable(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.Execute(context.Background(), "CREATE TABLE test (id INTEGER)")
 	assert.NoError(t, err)
@@ -548,7 +548,7 @@ func TestSQLiteAdapter_DropTable_EmptyName(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	err = adapter.DropTable(context.Background(), "")
 	assert.Error(t, err)
@@ -562,7 +562,7 @@ func TestSQLiteAdapter_DropTable_ReadOnly(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	err = adapter.DropTable(context.Background(), "test")
 	assert.Error(t, err)
@@ -575,7 +575,7 @@ func TestSQLiteAdapter_ExecuteTool_Query(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	result, err := adapter.ExecuteTool(context.Background(), "sqlite_query", map[string]interface{}{
 		"query": "SELECT 1 as num",
@@ -591,7 +591,7 @@ func TestSQLiteAdapter_ExecuteTool_Execute(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.ExecuteTool(context.Background(), "sqlite_execute", map[string]interface{}{
 		"query": "CREATE TABLE test (id INTEGER)",
@@ -605,7 +605,7 @@ func TestSQLiteAdapter_ExecuteTool_ListTables(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.Execute(context.Background(), "CREATE TABLE test (id INTEGER)")
 	assert.NoError(t, err)
@@ -622,7 +622,7 @@ func TestSQLiteAdapter_ExecuteTool_DescribeTable(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.Execute(context.Background(), "CREATE TABLE test (id INTEGER)")
 	assert.NoError(t, err)
@@ -641,7 +641,7 @@ func TestSQLiteAdapter_ExecuteTool_CreateTable(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.ExecuteTool(context.Background(), "sqlite_create_table", map[string]interface{}{
 		"table": "users",
@@ -663,7 +663,7 @@ func TestSQLiteAdapter_ExecuteTool_DropTable(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.Execute(context.Background(), "CREATE TABLE test (id INTEGER)")
 	assert.NoError(t, err)

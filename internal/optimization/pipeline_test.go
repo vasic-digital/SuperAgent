@@ -870,7 +870,7 @@ func TestPipeline_ParallelStages_WithMockLlamaIndex(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/query" {
@@ -881,7 +881,7 @@ func TestPipeline_ParallelStages_WithMockLlamaIndex(t *testing.T) {
 				},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -923,7 +923,7 @@ func TestPipeline_SequentialStages_WithMockLlamaIndex(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/query" {
@@ -934,7 +934,7 @@ func TestPipeline_SequentialStages_WithMockLlamaIndex(t *testing.T) {
 				},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -975,7 +975,7 @@ func TestPipeline_ParallelStages_WithMockLangChain(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/decompose" {
@@ -986,7 +986,7 @@ func TestPipeline_ParallelStages_WithMockLangChain(t *testing.T) {
 				},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -1029,7 +1029,7 @@ func TestPipeline_SequentialStages_WithMockLangChain(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/decompose" {
@@ -1039,7 +1039,7 @@ func TestPipeline_SequentialStages_WithMockLangChain(t *testing.T) {
 				},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -1081,7 +1081,7 @@ func TestPipeline_ParallelStages_WithMockSGLang(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 			return
 		}
 		resp := map[string]interface{}{
@@ -1089,7 +1089,7 @@ func TestPipeline_ParallelStages_WithMockSGLang(t *testing.T) {
 			"cached":    true,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -1126,7 +1126,7 @@ func TestPipeline_SequentialStages_WithMockSGLang(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 			return
 		}
 		resp := map[string]interface{}{
@@ -1134,7 +1134,7 @@ func TestPipeline_SequentialStages_WithMockSGLang(t *testing.T) {
 			"cached":    true,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -1170,7 +1170,7 @@ func TestPipeline_ParallelStages_AllServicesEnabled(t *testing.T) {
 	llamaServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/query" {
@@ -1179,7 +1179,7 @@ func TestPipeline_ParallelStages_AllServicesEnabled(t *testing.T) {
 				"sources":  []map[string]interface{}{{"content": "doc context", "score": 0.9}},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -1189,7 +1189,7 @@ func TestPipeline_ParallelStages_AllServicesEnabled(t *testing.T) {
 	langchainServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/decompose" {
@@ -1197,7 +1197,7 @@ func TestPipeline_ParallelStages_AllServicesEnabled(t *testing.T) {
 				"subtasks": []map[string]interface{}{{"step": 1, "description": "task"}},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -1207,7 +1207,7 @@ func TestPipeline_ParallelStages_AllServicesEnabled(t *testing.T) {
 	sglangServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]interface{}{"prefix_id": "all-prefix", "cached": true}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer sglangServer.Close()
 
@@ -1251,7 +1251,7 @@ func TestPipeline_RetrieveContext_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/query" {
@@ -1263,7 +1263,7 @@ func TestPipeline_RetrieveContext_WithMockServer(t *testing.T) {
 				},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -1291,7 +1291,7 @@ func TestPipeline_DecomposeTask_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/health" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
 			return
 		}
 		if r.URL.Path == "/decompose" {
@@ -1303,7 +1303,7 @@ func TestPipeline_DecomposeTask_WithMockServer(t *testing.T) {
 				},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)

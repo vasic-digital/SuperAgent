@@ -65,27 +65,27 @@ func clearDBEnvVars() func() {
 	origPassword := os.Getenv("DB_PASSWORD")
 	origName := os.Getenv("DB_NAME")
 
-	os.Unsetenv("DB_HOST")
-	os.Unsetenv("DB_PORT")
-	os.Unsetenv("DB_USER")
-	os.Unsetenv("DB_PASSWORD")
-	os.Unsetenv("DB_NAME")
+	_ = os.Unsetenv("DB_HOST")
+	_ = os.Unsetenv("DB_PORT")
+	_ = os.Unsetenv("DB_USER")
+	_ = os.Unsetenv("DB_PASSWORD")
+	_ = os.Unsetenv("DB_NAME")
 
 	return func() {
 		if origHost != "" {
-			os.Setenv("DB_HOST", origHost)
+			_ = os.Setenv("DB_HOST", origHost)
 		}
 		if origPort != "" {
-			os.Setenv("DB_PORT", origPort)
+			_ = os.Setenv("DB_PORT", origPort)
 		}
 		if origUser != "" {
-			os.Setenv("DB_USER", origUser)
+			_ = os.Setenv("DB_USER", origUser)
 		}
 		if origPassword != "" {
-			os.Setenv("DB_PASSWORD", origPassword)
+			_ = os.Setenv("DB_PASSWORD", origPassword)
 		}
 		if origName != "" {
-			os.Setenv("DB_NAME", origName)
+			_ = os.Setenv("DB_NAME", origName)
 		}
 	}
 }

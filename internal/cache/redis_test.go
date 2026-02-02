@@ -27,7 +27,7 @@ func setupMiniRedis(t *testing.T) (*miniredis.Miniredis, *RedisClient) {
 	}
 
 	t.Cleanup(func() {
-		client.Close()
+		_ = client.Close()
 		mr.Close()
 	})
 
@@ -45,7 +45,7 @@ func TestNewRedisClient(t *testing.T) {
 		err := client.Ping(context.Background())
 		assert.Error(t, err)
 
-		client.Close()
+		_ = client.Close()
 	})
 
 	t.Run("Creates client with valid config", func(t *testing.T) {
@@ -61,7 +61,7 @@ func TestNewRedisClient(t *testing.T) {
 		client := NewRedisClient(cfg)
 		assert.NotNil(t, client)
 		assert.NotNil(t, client.client)
-		client.Close()
+		_ = client.Close()
 	})
 }
 
@@ -169,7 +169,7 @@ func TestRedisClient_Get(t *testing.T) {
 		mr, client := setupMiniRedis(t)
 
 		value := `"test-value"`
-		mr.Set("existing-key", value)
+		_ = mr.Set("existing-key", value)
 
 		ctx := context.Background()
 		var result string
@@ -210,7 +210,7 @@ func TestRedisClient_Get(t *testing.T) {
 		}
 
 		jsonData, _ := json.Marshal(data)
-		mr.Set("complex-key", string(jsonData))
+		_ = mr.Set("complex-key", string(jsonData))
 
 		ctx := context.Background()
 		var result ComplexData
@@ -226,7 +226,7 @@ func TestRedisClient_Get(t *testing.T) {
 	t.Run("Returns error for invalid JSON", func(t *testing.T) {
 		mr, client := setupMiniRedis(t)
 
-		mr.Set("invalid-json-key", "not-valid-json{")
+		_ = mr.Set("invalid-json-key", "not-valid-json{")
 
 		ctx := context.Background()
 		var result map[string]interface{}
@@ -241,7 +241,7 @@ func TestRedisClient_Delete(t *testing.T) {
 	t.Run("Deletes existing key successfully", func(t *testing.T) {
 		mr, client := setupMiniRedis(t)
 
-		mr.Set("delete-key", "value")
+		_ = mr.Set("delete-key", "value")
 
 		ctx := context.Background()
 		err := client.Delete(ctx, "delete-key")
@@ -263,9 +263,9 @@ func TestRedisClient_Delete(t *testing.T) {
 	t.Run("Deletes multiple keys one at a time", func(t *testing.T) {
 		mr, client := setupMiniRedis(t)
 
-		mr.Set("key1", "value1")
-		mr.Set("key2", "value2")
-		mr.Set("key3", "value3")
+		_ = mr.Set("key1", "value1")
+		_ = mr.Set("key2", "value2")
+		_ = mr.Set("key3", "value3")
 
 		ctx := context.Background()
 
@@ -287,9 +287,9 @@ func TestRedisClient_MGet(t *testing.T) {
 	t.Run("Gets multiple keys successfully", func(t *testing.T) {
 		mr, client := setupMiniRedis(t)
 
-		mr.Set("mget-key1", "value1")
-		mr.Set("mget-key2", "value2")
-		mr.Set("mget-key3", "value3")
+		_ = mr.Set("mget-key1", "value1")
+		_ = mr.Set("mget-key2", "value2")
+		_ = mr.Set("mget-key3", "value3")
 
 		ctx := context.Background()
 		results, err := client.MGet(ctx, "mget-key1", "mget-key2", "mget-key3")
@@ -304,7 +304,7 @@ func TestRedisClient_MGet(t *testing.T) {
 	t.Run("Returns nil for missing keys", func(t *testing.T) {
 		mr, client := setupMiniRedis(t)
 
-		mr.Set("mget-existing", "exists")
+		_ = mr.Set("mget-existing", "exists")
 
 		ctx := context.Background()
 		results, err := client.MGet(ctx, "mget-existing", "mget-missing")
@@ -392,7 +392,7 @@ func TestRedisClient_Ping(t *testing.T) {
 				Addr: "localhost:0", // Invalid address
 			}),
 		}
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		ctx := context.Background()
 		err := client.Ping(ctx)
@@ -476,7 +476,7 @@ func TestRedisClient_Integration(t *testing.T) {
 	}
 
 	client := NewRedisClient(cfg)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	t.Run("Ping real Redis", func(t *testing.T) {
 		ctx := context.Background()

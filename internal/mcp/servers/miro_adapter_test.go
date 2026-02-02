@@ -101,7 +101,7 @@ func TestMiroAdapter_Connect(t *testing.T) {
 				assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -155,7 +155,7 @@ func TestMiroAdapter_Health(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+				_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 			}))
 			defer server.Close()
 
@@ -232,7 +232,7 @@ func TestMiroAdapter_ListBoards(t *testing.T) {
 				}
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -290,7 +290,7 @@ func TestMiroAdapter_GetBoard(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/boards/"+tt.boardID)
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -364,11 +364,11 @@ func TestMiroAdapter_CreateBoard(t *testing.T) {
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.Equal(t, tt.boardName, body["name"])
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -429,7 +429,7 @@ func TestMiroAdapter_UpdateBoard(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/boards/"+tt.boardID)
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -559,7 +559,7 @@ func TestMiroAdapter_GetBoardItems(t *testing.T) {
 				}
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -615,7 +615,7 @@ func TestMiroAdapter_GetItem(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -696,7 +696,7 @@ func TestMiroAdapter_CreateStickyNote(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/sticky_notes")
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -770,7 +770,7 @@ func TestMiroAdapter_CreateShape(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/shapes")
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -836,7 +836,7 @@ func TestMiroAdapter_CreateConnector(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/connectors")
 
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 
 				startItem := body["startItem"].(map[string]interface{})
 				endItem := body["endItem"].(map[string]interface{})
@@ -844,7 +844,7 @@ func TestMiroAdapter_CreateConnector(t *testing.T) {
 				assert.Equal(t, tt.endItemID, endItem["id"])
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -911,7 +911,7 @@ func TestMiroAdapter_CreateFrame(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/frames")
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -990,7 +990,7 @@ func TestMiroAdapter_CreateText(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/texts")
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -1111,7 +1111,7 @@ func TestMiroAdapter_AuthHeader(t *testing.T) {
 		// Verify Bearer token
 		assert.Equal(t, "Bearer test-access-token", r.Header.Get("Authorization"))
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"id": "user1"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"id": "user1"})
 	}))
 	defer server.Close()
 

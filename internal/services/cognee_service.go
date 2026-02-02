@@ -1334,7 +1334,7 @@ func (s *CogneeService) GetInsights(ctx context.Context, query string, datasets 
 		s.logger.WithError(err).Warn("Insights search timeout, returning empty results")
 		return []map[string]interface{}{}, nil
 	}
-	defer httpResp.Body.Close()
+	defer func() { _ = httpResp.Body.Close() }()
 
 	resp, err := io.ReadAll(httpResp.Body)
 	if err != nil {
@@ -1400,7 +1400,7 @@ func (s *CogneeService) GetGraphCompletion(ctx context.Context, query string, da
 		s.logger.WithError(err).Warn("Graph completion search timeout, returning empty results")
 		return []map[string]interface{}{}, nil
 	}
-	defer httpResp.Body.Close()
+	defer func() { _ = httpResp.Body.Close() }()
 
 	resp, err := io.ReadAll(httpResp.Body)
 	if err != nil {

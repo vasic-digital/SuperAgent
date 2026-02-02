@@ -38,7 +38,7 @@ func NewCogneeMockServer(port int) *CogneeMockServer {
 
 func (s *CogneeMockServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":    "healthy",
 		"service":   "cognee-mock",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
@@ -82,7 +82,7 @@ func (s *CogneeMockServer) handleAdd(w http.ResponseWriter, r *http.Request) {
 	s.mu.Unlock()
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "success",
 		"id":     entry.ID,
 	})
@@ -99,7 +99,7 @@ func (s *CogneeMockServer) handleSearch(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if r.Method == http.MethodPost {
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 	} else {
 		req.Query = r.URL.Query().Get("query")
 		req.Dataset = r.URL.Query().Get("dataset")
@@ -135,7 +135,7 @@ func (s *CogneeMockServer) handleSearch(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"results": results,
 		"total":   len(results),
 	})
@@ -150,10 +150,10 @@ func (s *CogneeMockServer) handleCognify(w http.ResponseWriter, r *http.Request)
 	var req struct {
 		Datasets []string `json:"datasets"`
 	}
-	json.NewDecoder(r.Body).Decode(&req)
+	_ = json.NewDecoder(r.Body).Decode(&req)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":   "success",
 		"message":  "Knowledge graph updated",
 		"datasets": req.Datasets,
@@ -164,7 +164,7 @@ func (s *CogneeMockServer) handleCognify(w http.ResponseWriter, r *http.Request)
 
 func (s *CogneeMockServer) handleGraphQuery(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"nodes": []map[string]interface{}{},
 		"edges": []map[string]interface{}{},
 	})
@@ -172,7 +172,7 @@ func (s *CogneeMockServer) handleGraphQuery(w http.ResponseWriter, r *http.Reque
 
 func (s *CogneeMockServer) handleInsights(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"insights": []map[string]interface{}{
 			{
 				"type":       "summary",
@@ -192,7 +192,7 @@ func (s *CogneeMockServer) handleDatasets(w http.ResponseWriter, r *http.Request
 	s.mu.RUnlock()
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"datasets": datasets,
 	})
 }
@@ -219,7 +219,7 @@ func (s *CogneeMockServer) Run() error {
 	// Catch-all for other endpoints
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":  "ok",
 			"service": "cognee-mock",
 			"path":    r.URL.Path,

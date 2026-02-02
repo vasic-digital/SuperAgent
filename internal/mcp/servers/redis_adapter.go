@@ -117,7 +117,7 @@ func (r *RedisAdapter) Initialize(ctx context.Context) error {
 
 	// Test connection
 	if err := r.client.Ping(ctx).Err(); err != nil {
-		r.client.Close()
+		_ = r.client.Close()
 		return fmt.Errorf("failed to ping Redis: %w", err)
 	}
 

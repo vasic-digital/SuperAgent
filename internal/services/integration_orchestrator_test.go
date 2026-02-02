@@ -1205,7 +1205,7 @@ func TestIntegrationOrchestrator_executeLLMStep_Complete(t *testing.T) {
 			}, nil
 		},
 	}
-	registry.RegisterProvider("test-provider", mockProvider)
+	_ = registry.RegisterProvider("test-provider", mockProvider)
 	io.SetProviderRegistry(registry)
 
 	step := &WorkflowStep{
@@ -1254,7 +1254,7 @@ func TestIntegrationOrchestrator_executeLLMStep_Stream(t *testing.T) {
 			return ch, nil
 		},
 	}
-	registry.RegisterProvider("stream-provider", mockProvider)
+	_ = registry.RegisterProvider("stream-provider", mockProvider)
 	io.SetProviderRegistry(registry)
 
 	step := &WorkflowStep{
@@ -1289,7 +1289,7 @@ func TestIntegrationOrchestrator_executeLLMStep_UnknownOperation(t *testing.T) {
 	}, nil)
 
 	mockProvider := &MockLLMProviderForOrchestrator{name: "test-provider"}
-	registry.RegisterProvider("test-provider", mockProvider)
+	_ = registry.RegisterProvider("test-provider", mockProvider)
 	io.SetProviderRegistry(registry)
 
 	step := &WorkflowStep{
@@ -1320,7 +1320,7 @@ func TestIntegrationOrchestrator_executeLLMStep_DefaultProvider(t *testing.T) {
 	}, nil)
 
 	mockProvider := &MockLLMProviderForOrchestrator{name: "default-provider"}
-	registry.RegisterProvider("default-provider", mockProvider)
+	_ = registry.RegisterProvider("default-provider", mockProvider)
 	io.SetProviderRegistry(registry)
 
 	step := &WorkflowStep{

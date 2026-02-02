@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewOAuthCredentialReader(t *testing.T) {
@@ -50,8 +52,8 @@ func TestIsClaudeOAuthEnabled(t *testing.T) {
 	original := os.Getenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS")
 	originalTypo := os.Getenv("CLAUDE_CODE_USE_OUATH_CREDENTIALS")
 	defer func() {
-		os.Setenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS", original)
-		os.Setenv("CLAUDE_CODE_USE_OUATH_CREDENTIALS", originalTypo)
+		_ = os.Setenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS", original)
+		_ = os.Setenv("CLAUDE_CODE_USE_OUATH_CREDENTIALS", originalTypo)
 	}()
 
 	tests := []struct {
@@ -70,10 +72,10 @@ func TestIsClaudeOAuthEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS")
-			os.Unsetenv("CLAUDE_CODE_USE_OUATH_CREDENTIALS")
+			require.NoError(t, os.Unsetenv("CLAUDE_CODE_USE_OAUTH_CREDENTIALS"))
+			require.NoError(t, os.Unsetenv("CLAUDE_CODE_USE_OUATH_CREDENTIALS"))
 			if tt.envValue != "" {
-				os.Setenv(tt.envVar, tt.envValue)
+				require.NoError(t, os.Setenv(tt.envVar, tt.envValue))
 			}
 			result := IsClaudeOAuthEnabled()
 			if result != tt.expected {
@@ -88,8 +90,8 @@ func TestIsQwenOAuthEnabled(t *testing.T) {
 	original := os.Getenv("QWEN_CODE_USE_OAUTH_CREDENTIALS")
 	originalTypo := os.Getenv("QWEN_CODE_USE_OUATH_CREDENTIALS")
 	defer func() {
-		os.Setenv("QWEN_CODE_USE_OAUTH_CREDENTIALS", original)
-		os.Setenv("QWEN_CODE_USE_OUATH_CREDENTIALS", originalTypo)
+		_ = os.Setenv("QWEN_CODE_USE_OAUTH_CREDENTIALS", original)
+		_ = os.Setenv("QWEN_CODE_USE_OUATH_CREDENTIALS", originalTypo)
 	}()
 
 	tests := []struct {
@@ -107,10 +109,10 @@ func TestIsQwenOAuthEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			os.Unsetenv("QWEN_CODE_USE_OAUTH_CREDENTIALS")
-			os.Unsetenv("QWEN_CODE_USE_OUATH_CREDENTIALS")
+			require.NoError(t, os.Unsetenv("QWEN_CODE_USE_OAUTH_CREDENTIALS"))
+			require.NoError(t, os.Unsetenv("QWEN_CODE_USE_OUATH_CREDENTIALS"))
 			if tt.envValue != "" {
-				os.Setenv(tt.envVar, tt.envValue)
+				require.NoError(t, os.Setenv(tt.envVar, tt.envValue))
 			}
 			result := IsQwenOAuthEnabled()
 			if result != tt.expected {
@@ -122,14 +124,14 @@ func TestIsQwenOAuthEnabled(t *testing.T) {
 	// Test "no env var" case separately - when env var is not set, auto-detection kicks in
 	// Result depends on whether credentials file exists
 	t.Run("no env var with no credentials", func(t *testing.T) {
-		os.Unsetenv("QWEN_CODE_USE_OAUTH_CREDENTIALS")
-		os.Unsetenv("QWEN_CODE_USE_OUATH_CREDENTIALS")
+		require.NoError(t, os.Unsetenv("QWEN_CODE_USE_OAUTH_CREDENTIALS"))
+		require.NoError(t, os.Unsetenv("QWEN_CODE_USE_OUATH_CREDENTIALS"))
 
 		// Mock HOME to a temp dir without credentials for deterministic test
 		tempDir := t.TempDir()
 		originalHome := os.Getenv("HOME")
-		os.Setenv("HOME", tempDir)
-		defer os.Setenv("HOME", originalHome)
+		require.NoError(t, os.Setenv("HOME", tempDir))
+		defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 		// Clear cache to use new HOME
 		reader := GetGlobalReader()
@@ -148,8 +150,8 @@ func TestReadClaudeCredentials_FileNotFound(t *testing.T) {
 	// Create a temp dir and set HOME to it temporarily
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	// Clear the cache to force re-read
 	reader.ClearCache()
@@ -166,8 +168,8 @@ func TestReadClaudeCredentials_ValidFile(t *testing.T) {
 	// Create a temp dir with mock credentials
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	// Create .claude directory
 	claudeDir := filepath.Join(tempDir, ".claude")
@@ -214,8 +216,8 @@ func TestReadClaudeCredentials_ExpiredToken(t *testing.T) {
 	// Create a temp dir with mock credentials
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	// Create .claude directory
 	claudeDir := filepath.Join(tempDir, ".claude")
@@ -256,8 +258,8 @@ func TestReadQwenCredentials_FileNotFound(t *testing.T) {
 	// Create a temp dir and set HOME to it temporarily
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	// Clear the cache to force re-read
 	reader.ClearCache()
@@ -274,8 +276,8 @@ func TestReadQwenCredentials_ValidFile(t *testing.T) {
 	// Create a temp dir with mock credentials
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	// Create .qwen directory
 	qwenDir := filepath.Join(tempDir, ".qwen")
@@ -318,8 +320,8 @@ func TestReadQwenCredentials_ExpiredToken(t *testing.T) {
 	// Create a temp dir with mock credentials
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	// Create .qwen directory
 	qwenDir := filepath.Join(tempDir, ".qwen")
@@ -358,12 +360,12 @@ func TestGetClaudeAccessToken(t *testing.T) {
 	// Create a temp dir with mock credentials
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	// Create .claude directory
 	claudeDir := filepath.Join(tempDir, ".claude")
-	os.MkdirAll(claudeDir, 0700)
+	require.NoError(t, os.MkdirAll(claudeDir, 0700))
 
 	// Create mock credentials
 	mockCreds := ClaudeOAuthCredentials{
@@ -374,7 +376,7 @@ func TestGetClaudeAccessToken(t *testing.T) {
 	}
 
 	data, _ := json.Marshal(mockCreds)
-	os.WriteFile(filepath.Join(claudeDir, ".credentials.json"), data, 0600)
+	require.NoError(t, os.WriteFile(filepath.Join(claudeDir, ".credentials.json"), data, 0600))
 
 	reader.ClearCache()
 
@@ -394,12 +396,12 @@ func TestGetQwenAccessToken(t *testing.T) {
 	// Create a temp dir with mock credentials
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	// Create .qwen directory
 	qwenDir := filepath.Join(tempDir, ".qwen")
-	os.MkdirAll(qwenDir, 0700)
+	require.NoError(t, os.MkdirAll(qwenDir, 0700))
 
 	// Create mock credentials
 	mockCreds := QwenOAuthCredentials{
@@ -408,7 +410,7 @@ func TestGetQwenAccessToken(t *testing.T) {
 	}
 
 	data, _ := json.Marshal(mockCreds)
-	os.WriteFile(filepath.Join(qwenDir, "oauth_creds.json"), data, 0600)
+	require.NoError(t, os.WriteFile(filepath.Join(qwenDir, "oauth_creds.json"), data, 0600))
 
 	reader.ClearCache()
 
@@ -428,8 +430,8 @@ func TestHasValidClaudeCredentials(t *testing.T) {
 	// Test with no credentials file
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	reader.ClearCache()
 
@@ -439,7 +441,7 @@ func TestHasValidClaudeCredentials(t *testing.T) {
 
 	// Create valid credentials
 	claudeDir := filepath.Join(tempDir, ".claude")
-	os.MkdirAll(claudeDir, 0700)
+	require.NoError(t, os.MkdirAll(claudeDir, 0700))
 
 	mockCreds := ClaudeOAuthCredentials{
 		ClaudeAiOauth: &ClaudeAiOauth{
@@ -449,7 +451,7 @@ func TestHasValidClaudeCredentials(t *testing.T) {
 	}
 
 	data, _ := json.Marshal(mockCreds)
-	os.WriteFile(filepath.Join(claudeDir, ".credentials.json"), data, 0600)
+	require.NoError(t, os.WriteFile(filepath.Join(claudeDir, ".credentials.json"), data, 0600))
 
 	reader.ClearCache()
 
@@ -464,8 +466,8 @@ func TestHasValidQwenCredentials(t *testing.T) {
 	// Test with no credentials file
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	reader.ClearCache()
 
@@ -475,7 +477,7 @@ func TestHasValidQwenCredentials(t *testing.T) {
 
 	// Create valid credentials
 	qwenDir := filepath.Join(tempDir, ".qwen")
-	os.MkdirAll(qwenDir, 0700)
+	require.NoError(t, os.MkdirAll(qwenDir, 0700))
 
 	mockCreds := QwenOAuthCredentials{
 		AccessToken: "valid-qwen-token",
@@ -483,7 +485,7 @@ func TestHasValidQwenCredentials(t *testing.T) {
 	}
 
 	data, _ := json.Marshal(mockCreds)
-	os.WriteFile(filepath.Join(qwenDir, "oauth_creds.json"), data, 0600)
+	require.NoError(t, os.WriteFile(filepath.Join(qwenDir, "oauth_creds.json"), data, 0600))
 
 	reader.ClearCache()
 
@@ -498,12 +500,12 @@ func TestGetClaudeCredentialInfo(t *testing.T) {
 	// Create a temp dir with mock credentials
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	// Create .claude directory
 	claudeDir := filepath.Join(tempDir, ".claude")
-	os.MkdirAll(claudeDir, 0700)
+	require.NoError(t, os.MkdirAll(claudeDir, 0700))
 
 	// Create mock credentials
 	mockCreds := ClaudeOAuthCredentials{
@@ -518,7 +520,7 @@ func TestGetClaudeCredentialInfo(t *testing.T) {
 	}
 
 	data, _ := json.Marshal(mockCreds)
-	os.WriteFile(filepath.Join(claudeDir, ".credentials.json"), data, 0600)
+	require.NoError(t, os.WriteFile(filepath.Join(claudeDir, ".credentials.json"), data, 0600))
 
 	reader.ClearCache()
 
@@ -540,12 +542,12 @@ func TestGetQwenCredentialInfo(t *testing.T) {
 	// Create a temp dir with mock credentials
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	// Create .qwen directory
 	qwenDir := filepath.Join(tempDir, ".qwen")
-	os.MkdirAll(qwenDir, 0700)
+	require.NoError(t, os.MkdirAll(qwenDir, 0700))
 
 	// Create mock credentials
 	mockCreds := QwenOAuthCredentials{
@@ -557,7 +559,7 @@ func TestGetQwenCredentialInfo(t *testing.T) {
 	}
 
 	data, _ := json.Marshal(mockCreds)
-	os.WriteFile(filepath.Join(qwenDir, "oauth_creds.json"), data, 0600)
+	require.NoError(t, os.WriteFile(filepath.Join(qwenDir, "oauth_creds.json"), data, 0600))
 
 	reader.ClearCache()
 
@@ -580,12 +582,12 @@ func TestCredentialCaching(t *testing.T) {
 	// Create a temp dir with mock credentials
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
+	require.NoError(t, os.Setenv("HOME", tempDir))
+	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
 	// Create .claude directory
 	claudeDir := filepath.Join(tempDir, ".claude")
-	os.MkdirAll(claudeDir, 0700)
+	require.NoError(t, os.MkdirAll(claudeDir, 0700))
 
 	// Create mock credentials
 	mockCreds := ClaudeOAuthCredentials{
@@ -597,7 +599,7 @@ func TestCredentialCaching(t *testing.T) {
 
 	data, _ := json.Marshal(mockCreds)
 	credPath := filepath.Join(claudeDir, ".credentials.json")
-	os.WriteFile(credPath, data, 0600)
+	require.NoError(t, os.WriteFile(credPath, data, 0600))
 
 	reader.ClearCache()
 
@@ -610,7 +612,7 @@ func TestCredentialCaching(t *testing.T) {
 	// Modify the file
 	mockCreds.ClaudeAiOauth.AccessToken = "modified-token"
 	data, _ = json.Marshal(mockCreds)
-	os.WriteFile(credPath, data, 0600)
+	require.NoError(t, os.WriteFile(credPath, data, 0600))
 
 	// Second read should return cached value
 	creds2, _ := reader.ReadClaudeCredentials()

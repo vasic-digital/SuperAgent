@@ -101,7 +101,7 @@ func TestReplicateAdapter_Connect(t *testing.T) {
 				assert.Equal(t, "Token test-token", r.Header.Get("Authorization"))
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -155,7 +155,7 @@ func TestReplicateAdapter_Health(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+				_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 			}))
 			defer server.Close()
 
@@ -217,7 +217,7 @@ func TestReplicateAdapter_GetModel(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/models/"+tt.owner+"/"+tt.modelName)
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -278,7 +278,7 @@ func TestReplicateAdapter_GetModelVersion(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -353,7 +353,7 @@ func TestReplicateAdapter_ListModels(t *testing.T) {
 				}
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -433,11 +433,11 @@ func TestReplicateAdapter_CreatePrediction(t *testing.T) {
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 				var body map[string]interface{}
-				json.NewDecoder(r.Body).Decode(&body)
+				_ = json.NewDecoder(r.Body).Decode(&body)
 				assert.Equal(t, tt.version, body["version"])
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -494,7 +494,7 @@ func TestReplicateAdapter_GetPrediction(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/predictions/"+tt.predictionID)
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -551,7 +551,7 @@ func TestReplicateAdapter_CancelPrediction(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/cancel")
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -604,7 +604,7 @@ func TestReplicateAdapter_ListPredictions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -665,7 +665,7 @@ func TestReplicateAdapter_WaitForPrediction(t *testing.T) {
 				}
 
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"id":     tt.predictionID,
 					"status": status,
 				})
@@ -727,7 +727,7 @@ func TestReplicateAdapter_GetCollection(t *testing.T) {
 				assert.Contains(t, r.URL.Path, "/collections/"+tt.slug)
 
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -776,7 +776,7 @@ func TestReplicateAdapter_ListCollections(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -840,7 +840,7 @@ func TestReplicateAdapter_AuthHeader(t *testing.T) {
 		// Verify Token auth
 		assert.Equal(t, "Token test-api-token", r.Header.Get("Authorization"))
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"type": "user"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"type": "user"})
 	}))
 	defer server.Close()
 

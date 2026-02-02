@@ -202,7 +202,7 @@ func TestSessionHandler_GetSession(t *testing.T) {
 	handler.CreateSession(createC)
 
 	var createResp SessionResponse
-	json.Unmarshal(createW.Body.Bytes(), &createResp)
+	_ = json.Unmarshal(createW.Body.Bytes(), &createResp)
 	sessionID := createResp.SessionID
 
 	t.Run("gets session successfully", func(t *testing.T) {
@@ -267,7 +267,7 @@ func TestSessionHandler_TerminateSession(t *testing.T) {
 		handler.CreateSession(createC)
 
 		var createResp SessionResponse
-		json.Unmarshal(createW.Body.Bytes(), &createResp)
+		_ = json.Unmarshal(createW.Body.Bytes(), &createResp)
 		sessionID := createResp.SessionID
 
 		// Terminate gracefully
@@ -301,7 +301,7 @@ func TestSessionHandler_TerminateSession(t *testing.T) {
 		handler.CreateSession(createC)
 
 		var createResp SessionResponse
-		json.Unmarshal(createW.Body.Bytes(), &createResp)
+		_ = json.Unmarshal(createW.Body.Bytes(), &createResp)
 		sessionID := createResp.SessionID
 
 		// Terminate immediately
@@ -423,7 +423,7 @@ func TestSessionHandler_UpdateSessionContext(t *testing.T) {
 	handler.CreateSession(c)
 
 	var createResp SessionResponse
-	json.Unmarshal(w.Body.Bytes(), &createResp)
+	_ = json.Unmarshal(w.Body.Bytes(), &createResp)
 	sessionID := createResp.SessionID
 
 	t.Run("updates context successfully", func(t *testing.T) {
@@ -481,7 +481,7 @@ func TestSessionHandler_GetSessionByID(t *testing.T) {
 		handler.CreateSession(c)
 
 		var createResp SessionResponse
-		json.Unmarshal(w.Body.Bytes(), &createResp)
+		_ = json.Unmarshal(w.Body.Bytes(), &createResp)
 		sessionID := createResp.SessionID
 
 		session := handler.GetSessionByID(sessionID)

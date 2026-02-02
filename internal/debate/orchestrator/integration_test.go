@@ -91,9 +91,9 @@ func TestServiceIntegrationFlow(t *testing.T) {
 	orch := NewOrchestrator(mockRegistry, lessonBank, config)
 
 	// Register providers
-	orch.RegisterProvider("claude", "claude-3", 9.0)
-	orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
-	orch.RegisterProvider("gemini", "gemini-pro", 8.0)
+	_ = orch.RegisterProvider("claude", "claude-3", 9.0)
+	_ = orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
+	_ = orch.RegisterProvider("gemini", "gemini-pro", 8.0)
 
 	// Create service integration
 	siConfig := DefaultServiceIntegrationConfig()
@@ -158,9 +158,9 @@ func TestOrchestratorWithAllComponents(t *testing.T) {
 	orch := NewOrchestrator(mockRegistry, lessonBank, config)
 
 	// Register providers
-	orch.RegisterProvider("claude", "claude-3", 9.0)
-	orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
-	orch.RegisterProvider("gemini", "gemini-pro", 8.0)
+	_ = orch.RegisterProvider("claude", "claude-3", 9.0)
+	_ = orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
+	_ = orch.RegisterProvider("gemini", "gemini-pro", 8.0)
 
 	// Verify all components are initialized
 	assert.NotNil(t, orch.GetAgentPool())
@@ -216,9 +216,9 @@ func TestDebateWithLearningEnabled(t *testing.T) {
 	lessonBank := createLessonBank(defaultLessonBankConfig())
 	orch := NewOrchestrator(mockRegistry, lessonBank, config)
 
-	orch.RegisterProvider("claude", "claude-3", 9.0)
-	orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
-	orch.RegisterProvider("gemini", "gemini-pro", 8.0)
+	_ = orch.RegisterProvider("claude", "claude-3", 9.0)
+	_ = orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
+	_ = orch.RegisterProvider("gemini", "gemini-pro", 8.0)
 
 	adapter := NewAPIAdapter(orch)
 
@@ -258,9 +258,9 @@ func TestMultipleDebatesConcurrently(t *testing.T) {
 	lessonBank := createLessonBank(defaultLessonBankConfig())
 	orch := NewOrchestrator(mockRegistry, lessonBank, config)
 
-	orch.RegisterProvider("claude", "claude-3", 9.0)
-	orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
-	orch.RegisterProvider("gemini", "gemini-pro", 8.0)
+	_ = orch.RegisterProvider("claude", "claude-3", 9.0)
+	_ = orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
+	_ = orch.RegisterProvider("gemini", "gemini-pro", 8.0)
 
 	adapter := NewAPIAdapter(orch)
 	ctx := context.Background()
@@ -355,9 +355,9 @@ func TestRecommendationsFromLearning(t *testing.T) {
 	lessonBank := createLessonBank(defaultLessonBankConfig())
 	orch := NewOrchestrator(mockRegistry, lessonBank, config)
 
-	orch.RegisterProvider("claude", "claude-3", 9.0)
-	orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
-	orch.RegisterProvider("gemini", "gemini-pro", 8.0)
+	_ = orch.RegisterProvider("claude", "claude-3", 9.0)
+	_ = orch.RegisterProvider("deepseek", "deepseek-coder", 8.5)
+	_ = orch.RegisterProvider("gemini", "gemini-pro", 8.0)
 
 	// Get recommendations for a topic
 	ctx := context.Background()

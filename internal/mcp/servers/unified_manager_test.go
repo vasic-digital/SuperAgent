@@ -229,7 +229,7 @@ func TestUnifiedServerManager_Initialize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			manager := NewUnifiedServerManager(tt.config)
 			err := manager.Initialize(context.Background())
-			defer manager.Close()
+			defer func() { _ = manager.Close() }()
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -317,7 +317,7 @@ func TestUnifiedServerManager_GetAdapter(t *testing.T) {
 			name: "get existing connected adapter",
 			setup: func(m *UnifiedServerManager) {
 				adapter := NewMockAdapter()
-				adapter.Connect(context.Background())
+				_ = adapter.Connect(context.Background())
 				m.adapters["test"] = adapter
 			},
 			adapterName: "test",
@@ -436,7 +436,7 @@ func TestUnifiedServerManager_GetTypedAdapters_WrongType(t *testing.T) {
 
 	// Register a mock adapter with the wrong name
 	mockAdapter := NewMockAdapter()
-	mockAdapter.Connect(context.Background())
+	_ = mockAdapter.Connect(context.Background())
 
 	manager.mu.Lock()
 	manager.adapters["chroma"] = mockAdapter
@@ -468,7 +468,7 @@ func TestUnifiedServerManager_ListConnectedAdapters(t *testing.T) {
 
 	// Register mock adapters
 	connectedAdapter := NewMockAdapter()
-	connectedAdapter.Connect(context.Background())
+	_ = connectedAdapter.Connect(context.Background())
 
 	disconnectedAdapter := NewMockAdapter()
 	// Don't connect this one
@@ -489,11 +489,11 @@ func TestUnifiedServerManager_GetAllTools(t *testing.T) {
 	// Register mock adapters with different tools
 	adapter1 := NewMockAdapter()
 	adapter1.tools = []MCPTool{{Name: "tool1"}, {Name: "tool2"}}
-	adapter1.Connect(context.Background())
+	_ = adapter1.Connect(context.Background())
 
 	adapter2 := NewMockAdapter()
 	adapter2.tools = []MCPTool{{Name: "tool3"}}
-	adapter2.Connect(context.Background())
+	_ = adapter2.Connect(context.Background())
 
 	disconnectedAdapter := NewMockAdapter()
 	disconnectedAdapter.tools = []MCPTool{{Name: "tool4"}}
@@ -534,10 +534,10 @@ func TestUnifiedServerManager_Health(t *testing.T) {
 	manager := NewUnifiedServerManager(UnifiedManagerConfig{})
 
 	healthyAdapter := NewMockAdapter()
-	healthyAdapter.Connect(context.Background())
+	_ = healthyAdapter.Connect(context.Background())
 
 	unhealthyAdapter := NewMockAdapter()
-	unhealthyAdapter.Connect(context.Background())
+	_ = unhealthyAdapter.Connect(context.Background())
 	unhealthyAdapter.SetHealthError(errors.New("unhealthy"))
 
 	manager.mu.Lock()
@@ -569,7 +569,7 @@ func TestUnifiedServerManager_UnregisterAdapter(t *testing.T) {
 	manager := NewUnifiedServerManager(UnifiedManagerConfig{})
 
 	mockAdapter := NewMockAdapter()
-	mockAdapter.Connect(context.Background())
+	_ = mockAdapter.Connect(context.Background())
 	manager.adapters["test"] = mockAdapter
 
 	err := manager.UnregisterAdapter("test")
@@ -594,9 +594,9 @@ func TestUnifiedServerManager_Close(t *testing.T) {
 	manager := NewUnifiedServerManager(UnifiedManagerConfig{})
 
 	adapter1 := NewMockAdapter()
-	adapter1.Connect(context.Background())
+	_ = adapter1.Connect(context.Background())
 	adapter2 := NewMockAdapter()
-	adapter2.Connect(context.Background())
+	_ = adapter2.Connect(context.Background())
 
 	manager.mu.Lock()
 	manager.adapters["adapter1"] = adapter1
@@ -640,7 +640,7 @@ func TestUnifiedServerManager_GetAdapterStatuses(t *testing.T) {
 	// Initialize to create the chroma adapter
 	err := manager.Initialize(context.Background())
 	require.NoError(t, err)
-	defer manager.Close()
+	defer func() { _ = manager.Close() }()
 
 	statuses := manager.GetAdapterStatuses(context.Background())
 	assert.Len(t, statuses, 2)
@@ -670,7 +670,7 @@ func TestUnifiedServerManager_ExecuteTool(t *testing.T) {
 		}
 		if r.URL.Path == "/api/v1/collections" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode([]ChromaCollection{
+			_ = json.NewEncoder(w).Encode([]ChromaCollection{
 				{ID: "1", Name: "test-collection"},
 			})
 			return
@@ -686,7 +686,7 @@ func TestUnifiedServerManager_ExecuteTool(t *testing.T) {
 		}
 		if r.URL.Path == "/collections" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(QdrantCollectionsResponse{
+			_ = json.NewEncoder(w).Encode(QdrantCollectionsResponse{
 				Result: struct {
 					Collections []QdrantCollection `json:"collections"`
 				}{
@@ -762,16 +762,16 @@ func TestUnifiedServerManager_ExecuteTool_ChromaTools(t *testing.T) {
 		case "/api/v1/collections":
 			if r.Method == "GET" {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode([]ChromaCollection{{ID: "1", Name: "test"}})
+				_ = json.NewEncoder(w).Encode([]ChromaCollection{{ID: "1", Name: "test"}})
 			} else if r.Method == "POST" {
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(ChromaCollection{ID: "2", Name: "new"})
+				_ = json.NewEncoder(w).Encode(ChromaCollection{ID: "2", Name: "new"})
 			}
 		case "/api/v1/collections/test":
 			w.WriteHeader(http.StatusNoContent)
 		case "/api/v1/collections/test/count":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(42)
+			_ = json.NewEncoder(w).Encode(42)
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -833,7 +833,7 @@ func TestUnifiedServerManager_ExecuteTool_QdrantTools(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		case r.URL.Path == "/collections":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(QdrantCollectionsResponse{
+			_ = json.NewEncoder(w).Encode(QdrantCollectionsResponse{
 				Result: struct {
 					Collections []QdrantCollection `json:"collections"`
 				}{Collections: []QdrantCollection{{Name: "test"}}},
@@ -847,7 +847,7 @@ func TestUnifiedServerManager_ExecuteTool_QdrantTools(t *testing.T) {
 			}
 		case r.URL.Path == "/collections/test/points/count":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"result": map[string]uint64{"count": 100},
 			})
 		default:
@@ -910,7 +910,7 @@ func TestUnifiedServerManager_ExecuteTool_WeaviateTools(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		case r.URL.Path == "/v1/schema":
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(WeaviateSchema{
+			_ = json.NewEncoder(w).Encode(WeaviateSchema{
 				Classes: []WeaviateClass{{Class: "Test"}},
 			})
 		case r.URL.Path == "/v1/schema/Test":
@@ -955,7 +955,7 @@ func TestUnifiedServerManager_Concurrency(t *testing.T) {
 	chromaServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if r.URL.Path == "/api/v1/collections" {
-			json.NewEncoder(w).Encode([]ChromaCollection{})
+			_ = json.NewEncoder(w).Encode([]ChromaCollection{})
 		}
 	}))
 	defer chromaServer.Close()
@@ -1000,7 +1000,7 @@ func TestUnifiedServerManager_HealthCheckLoop(t *testing.T) {
 	})
 
 	mockAdapter := NewMockAdapter()
-	mockAdapter.Connect(context.Background())
+	_ = mockAdapter.Connect(context.Background())
 	manager.adapters["test"] = mockAdapter
 
 	// Start the health check loop
@@ -1010,7 +1010,7 @@ func TestUnifiedServerManager_HealthCheckLoop(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Close should stop the health check loop
-	manager.Close()
+	_ = manager.Close()
 
 	// Give it time to stop
 	time.Sleep(20 * time.Millisecond)

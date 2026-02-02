@@ -33,8 +33,8 @@ func TestQueue_EnqueueCapacityExceeded(t *testing.T) {
 	q := NewQueue("test-queue", 2)
 
 	// Fill the queue
-	q.Enqueue(messaging.NewMessage("type", []byte("1")))
-	q.Enqueue(messaging.NewMessage("type", []byte("2")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("1")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("2")))
 	assert.True(t, q.IsFull())
 
 	// This should fail
@@ -55,9 +55,9 @@ func TestQueue_Dequeue(t *testing.T) {
 	msg3 := messaging.NewMessage("type", []byte("normal"))
 	msg3.Priority = messaging.PriorityNormal
 
-	q.Enqueue(msg1)
-	q.Enqueue(msg2)
-	q.Enqueue(msg3)
+	_ = q.Enqueue(msg1)
+	_ = q.Enqueue(msg2)
+	_ = q.Enqueue(msg3)
 
 	// Should dequeue highest priority first
 	dequeued, err := q.Dequeue()
@@ -93,7 +93,7 @@ func TestQueue_Peek(t *testing.T) {
 
 	// Add message
 	testMsg := messaging.NewMessage("type", []byte("peek test"))
-	q.Enqueue(testMsg)
+	_ = q.Enqueue(testMsg)
 
 	// Peek should return without removing
 	peeked, err := q.Peek()
@@ -105,8 +105,8 @@ func TestQueue_Peek(t *testing.T) {
 func TestQueue_Clear(t *testing.T) {
 	q := NewQueue("test-queue", 10)
 
-	q.Enqueue(messaging.NewMessage("type", []byte("1")))
-	q.Enqueue(messaging.NewMessage("type", []byte("2")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("1")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("2")))
 	assert.Equal(t, 2, q.Len())
 
 	q.Clear()
@@ -136,8 +136,8 @@ func TestSimpleQueue_Enqueue(t *testing.T) {
 func TestSimpleQueue_EnqueueCapacityExceeded(t *testing.T) {
 	q := NewSimpleQueue("simple-queue", 2)
 
-	q.Enqueue(messaging.NewMessage("type", []byte("1")))
-	q.Enqueue(messaging.NewMessage("type", []byte("2")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("1")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("2")))
 	assert.True(t, q.IsFull())
 
 	err := q.Enqueue(messaging.NewMessage("type", []byte("3")))
@@ -148,9 +148,9 @@ func TestSimpleQueue_Dequeue(t *testing.T) {
 	q := NewSimpleQueue("simple-queue", 10)
 
 	// FIFO order
-	q.Enqueue(messaging.NewMessage("type", []byte("first")))
-	q.Enqueue(messaging.NewMessage("type", []byte("second")))
-	q.Enqueue(messaging.NewMessage("type", []byte("third")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("first")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("second")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("third")))
 
 	// Should dequeue in FIFO order
 	dequeued, err := q.Dequeue()
@@ -183,7 +183,7 @@ func TestSimpleQueue_Peek(t *testing.T) {
 	assert.Nil(t, msg)
 
 	// Add and peek
-	q.Enqueue(messaging.NewMessage("type", []byte("peek")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("peek")))
 	peeked, err := q.Peek()
 	require.NoError(t, err)
 	assert.Equal(t, []byte("peek"), peeked.Payload)
@@ -193,8 +193,8 @@ func TestSimpleQueue_Peek(t *testing.T) {
 func TestSimpleQueue_Clear(t *testing.T) {
 	q := NewSimpleQueue("simple-queue", 10)
 
-	q.Enqueue(messaging.NewMessage("type", []byte("1")))
-	q.Enqueue(messaging.NewMessage("type", []byte("2")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("1")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("2")))
 
 	q.Clear()
 	assert.Equal(t, 0, q.Len())
@@ -205,12 +205,12 @@ func TestSimpleQueue_CircularBehavior(t *testing.T) {
 	q := NewSimpleQueue("circular-queue", 3)
 
 	// Fill and partially empty to test circular behavior
-	q.Enqueue(messaging.NewMessage("type", []byte("1")))
-	q.Enqueue(messaging.NewMessage("type", []byte("2")))
-	q.Dequeue() // Remove "1"
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("1")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("2")))
+	_, _ = q.Dequeue() // Remove "1"
 
-	q.Enqueue(messaging.NewMessage("type", []byte("3")))
-	q.Enqueue(messaging.NewMessage("type", []byte("4")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("3")))
+	_ = q.Enqueue(messaging.NewMessage("type", []byte("4")))
 
 	// Should have 2, 3, 4
 	msg, _ := q.Dequeue()
@@ -249,13 +249,13 @@ func TestDelayedQueue_ProcessDelayed(t *testing.T) {
 	now := time.Now().UnixNano()
 
 	msg1 := messaging.NewMessage("type", []byte("past"))
-	q.EnqueueDelayed(msg1, now-1000) // Past
+	_ = q.EnqueueDelayed(msg1, now-1000) // Past
 
 	msg2 := messaging.NewMessage("type", []byte("future"))
-	q.EnqueueDelayed(msg2, now+1000000000) // Future
+	_ = q.EnqueueDelayed(msg2, now+1000000000) // Future
 
 	msg3 := messaging.NewMessage("type", []byte("now"))
-	q.EnqueueDelayed(msg3, now) // Now
+	_ = q.EnqueueDelayed(msg3, now) // Now
 
 	// Process delayed messages
 	count := q.ProcessDelayed(now)

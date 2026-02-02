@@ -80,7 +80,7 @@ func TestSVGMakerAdapter_GenerateSVG(t *testing.T) {
 		assert.Contains(t, r.Header.Get("Authorization"), "Bearer")
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "a red circle", body["prompt"])
 
 		response := SVGGenerateResponse{
@@ -90,7 +90,7 @@ func TestSVGMakerAdapter_GenerateSVG(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -117,7 +117,7 @@ func TestSVGMakerAdapter_EditSVG(t *testing.T) {
 		assert.Equal(t, "/edit", r.URL.Path)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.NotEmpty(t, body["svg"])
 		assert.Equal(t, "change color to blue", body["instructions"])
 
@@ -127,7 +127,7 @@ func TestSVGMakerAdapter_EditSVG(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -159,7 +159,7 @@ func TestSVGMakerAdapter_OptimizeSVG(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -187,7 +187,7 @@ func TestSVGMakerAdapter_ImageToSVG(t *testing.T) {
 		assert.Equal(t, "/vectorize", r.URL.Path)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.NotEmpty(t, body["image"])
 		assert.Equal(t, "color", body["mode"])
 
@@ -197,7 +197,7 @@ func TestSVGMakerAdapter_ImageToSVG(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -224,7 +224,7 @@ func TestSVGMakerAdapter_GenerateIcon(t *testing.T) {
 		assert.Equal(t, "/icon", r.URL.Path)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "settings", body["concept"])
 
 		response := SVGIconResponse{
@@ -233,7 +233,7 @@ func TestSVGMakerAdapter_GenerateIcon(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -266,7 +266,7 @@ func TestSVGMakerAdapter_SVGToPNG(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -306,7 +306,7 @@ func TestSVGMakerAdapter_AnalyzeSVG(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -331,7 +331,7 @@ func TestSVGMakerAdapter_CombineSVGs(t *testing.T) {
 		assert.Equal(t, "/combine", r.URL.Path)
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		svgs := body["svgs"].([]interface{})
 		assert.Equal(t, 2, len(svgs))
 
@@ -342,7 +342,7 @@ func TestSVGMakerAdapter_CombineSVGs(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -366,7 +366,7 @@ func TestSVGMakerAdapter_CombineSVGs(t *testing.T) {
 func TestSVGMakerAdapter_APIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "Invalid API key"}`))
+		_, _ = w.Write([]byte(`{"error": "Invalid API key"}`))
 	}))
 	defer server.Close()
 

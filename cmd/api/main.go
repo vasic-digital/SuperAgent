@@ -62,7 +62,7 @@ func NewAPIServer(port string) *APIServer {
 	templateManager := services.NewProtocolTemplateManager(logger)
 
 	// Initialize default templates
-	templateManager.InitializeDefaultTemplates()
+	_ = templateManager.InitializeDefaultTemplates()
 
 	return &APIServer{
 		port:              port,
@@ -174,7 +174,7 @@ func (s *APIServer) handleMCPCallTool(c *gin.Context) {
 	}
 
 	// Record analytics
-	s.protocolAnalytics.RecordRequest(context.Background(), "mcp", "call_tool", 150*time.Millisecond, true, "")
+	_ = s.protocolAnalytics.RecordRequest(context.Background(), "mcp", "call_tool", 150*time.Millisecond, true, "")
 
 	c.JSON(200, gin.H{
 		"result": "MCP tool called successfully",
@@ -187,7 +187,7 @@ func (s *APIServer) handleMCPListTools(c *gin.Context) {
 	serverID := c.Query("server_id")
 
 	// Record analytics
-	s.protocolAnalytics.RecordRequest(context.Background(), "mcp", "list_tools", 50*time.Millisecond, true, "")
+	_ = s.protocolAnalytics.RecordRequest(context.Background(), "mcp", "list_tools", 50*time.Millisecond, true, "")
 
 	c.JSON(200, gin.H{
 		"tools": []map[string]interface{}{
@@ -218,7 +218,7 @@ func (s *APIServer) handleLSPCompletion(c *gin.Context) {
 		return
 	}
 
-	s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "completion", 75*time.Millisecond, true, "")
+	_ = s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "completion", 75*time.Millisecond, true, "")
 
 	c.JSON(200, gin.H{
 		"completions": []map[string]interface{}{
@@ -240,7 +240,7 @@ func (s *APIServer) handleLSPHover(c *gin.Context) {
 		return
 	}
 
-	s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "hover", 45*time.Millisecond, true, "")
+	_ = s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "hover", 45*time.Millisecond, true, "")
 
 	c.JSON(200, gin.H{
 		"contents": map[string]interface{}{
@@ -262,7 +262,7 @@ func (s *APIServer) handleLSPDefinition(c *gin.Context) {
 		return
 	}
 
-	s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "definition", 60*time.Millisecond, true, "")
+	_ = s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "definition", 60*time.Millisecond, true, "")
 
 	c.JSON(200, gin.H{
 		"definition": map[string]interface{}{
@@ -273,7 +273,7 @@ func (s *APIServer) handleLSPDefinition(c *gin.Context) {
 }
 
 func (s *APIServer) handleLSPDiagnostics(c *gin.Context) {
-	s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "diagnostics", 30*time.Millisecond, true, "")
+	_ = s.protocolAnalytics.RecordRequest(context.Background(), "lsp", "diagnostics", 30*time.Millisecond, true, "")
 
 	c.JSON(200, gin.H{
 		"diagnostics": []map[string]interface{}{
@@ -299,7 +299,7 @@ func (s *APIServer) handleACPExecute(c *gin.Context) {
 		return
 	}
 
-	s.protocolAnalytics.RecordRequest(context.Background(), "acp", "execute", 200*time.Millisecond, true, "")
+	_ = s.protocolAnalytics.RecordRequest(context.Background(), "acp", "execute", 200*time.Millisecond, true, "")
 
 	c.JSON(200, gin.H{
 		"result":    "Action executed successfully",
@@ -320,7 +320,7 @@ func (s *APIServer) handleACPBroadcast(c *gin.Context) {
 		return
 	}
 
-	s.protocolAnalytics.RecordRequest(context.Background(), "acp", "broadcast", 100*time.Millisecond, true, "")
+	_ = s.protocolAnalytics.RecordRequest(context.Background(), "acp", "broadcast", 100*time.Millisecond, true, "")
 
 	c.JSON(200, gin.H{
 		"broadcast_id": fmt.Sprintf("broadcast-%d", time.Now().Unix()),

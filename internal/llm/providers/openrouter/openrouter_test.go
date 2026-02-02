@@ -148,7 +148,7 @@ func TestSimpleOpenRouterProvider_Complete_Success(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -193,7 +193,7 @@ func TestSimpleOpenRouterProvider_Complete_ErrorResponse(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -225,7 +225,7 @@ func TestSimpleOpenRouterProvider_Complete_NoChoices(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -277,7 +277,7 @@ func TestSimpleOpenRouterProvider_Complete_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer server.Close()
 
@@ -313,10 +313,10 @@ func TestSimpleOpenRouterProvider_CompleteStream(t *testing.T) {
 		}
 
 		// Send a single chunk and the done message
-		w.Write([]byte("data: {\"id\":\"stream-1\",\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"stream-1\",\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"))
 		flusher.Flush()
 		time.Sleep(50 * time.Millisecond) // Give client time to process
-		w.Write([]byte("data: [DONE]\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 		flusher.Flush()
 		time.Sleep(50 * time.Millisecond) // Keep connection open briefly
 	}))
@@ -499,7 +499,7 @@ func TestSimpleOpenRouterProvider_Complete_WithMessages(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -543,7 +543,7 @@ func TestSimpleOpenRouterProvider_Complete_ContextTimeout(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -641,7 +641,7 @@ func TestSimpleOpenRouterProvider_Complete_RetryOnServerError(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -681,7 +681,7 @@ func TestSimpleOpenRouterProvider_Complete_RetryExhausted(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -758,7 +758,7 @@ func TestSimpleOpenRouterProvider_Complete_RateLimited429(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -802,7 +802,7 @@ func TestSimpleOpenRouterProvider_Complete_NilContext(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -844,7 +844,7 @@ func TestSimpleOpenRouterProvider_Complete_MaxTokensCapping(t *testing.T) {
 					MaxTokens int `json:"max_tokens"`
 				}
 				body, _ := io.ReadAll(r.Body)
-				json.Unmarshal(body, &reqBody)
+				_ = json.Unmarshal(body, &reqBody)
 
 				assert.Equal(t, tt.expectedMaxTokens, reqBody.MaxTokens)
 
@@ -861,7 +861,7 @@ func TestSimpleOpenRouterProvider_Complete_MaxTokensCapping(t *testing.T) {
 					"model": "test-model",
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(response)
+				_ = json.NewEncoder(w).Encode(response)
 			}))
 			defer server.Close()
 
@@ -898,7 +898,7 @@ func TestSimpleOpenRouterProvider_Complete_WithTools(t *testing.T) {
 			ToolChoice interface{} `json:"tool_choice"`
 		}
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &reqBody)
+		_ = json.Unmarshal(body, &reqBody)
 
 		// Verify tools are passed correctly
 		assert.Len(t, reqBody.Tools, 1)
@@ -931,7 +931,7 @@ func TestSimpleOpenRouterProvider_Complete_WithTools(t *testing.T) {
 			"model": "test-model",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -982,7 +982,7 @@ func TestSimpleOpenRouterProvider_Complete_WithNonFunctionTools(t *testing.T) {
 			Tools []interface{} `json:"tools"`
 		}
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &reqBody)
+		_ = json.Unmarshal(body, &reqBody)
 
 		// Non-function tools should not be included
 		assert.Len(t, reqBody.Tools, 0)
@@ -1000,7 +1000,7 @@ func TestSimpleOpenRouterProvider_Complete_WithNonFunctionTools(t *testing.T) {
 			"model": "test-model",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1043,7 +1043,7 @@ func TestSimpleOpenRouterProvider_Complete_NumericIDInResponse(t *testing.T) {
 			"model": "test-model",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1093,7 +1093,7 @@ func TestSimpleOpenRouterProvider_Complete_WithFinishReason(t *testing.T) {
 					"model": "test-model",
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(response)
+				_ = json.NewEncoder(w).Encode(response)
 			}))
 			defer server.Close()
 
@@ -1119,7 +1119,7 @@ func TestSimpleOpenRouterProvider_Complete_WithFinishReason(t *testing.T) {
 func TestSimpleOpenRouterProvider_CompleteStream_HTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "Invalid API key"}`))
+		_, _ = w.Write([]byte(`{"error": "Invalid API key"}`))
 	}))
 	defer server.Close()
 
@@ -1147,13 +1147,13 @@ func TestSimpleOpenRouterProvider_CompleteStream_ContextCancelled(t *testing.T) 
 		flusher, _ := w.(http.Flusher)
 
 		// Send some data
-		w.Write([]byte("data: {\"id\":\"1\",\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"1\",\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"))
 		flusher.Flush()
 
 		// Wait for context cancellation
 		time.Sleep(500 * time.Millisecond)
 
-		w.Write([]byte("data: [DONE]\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 		flusher.Flush()
 	}))
 	defer server.Close()
@@ -1204,14 +1204,14 @@ func TestSimpleOpenRouterProvider_CompleteStream_MaxTokensCapping(t *testing.T) 
 			MaxTokens int `json:"max_tokens"`
 		}
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &reqBody)
+		_ = json.Unmarshal(body, &reqBody)
 
 		// Verify max tokens capped to 16384
 		assert.Equal(t, 16384, reqBody.MaxTokens)
 
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("data: [DONE]\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
 	}))
 	defer server.Close()
 
@@ -1386,7 +1386,7 @@ func TestSimpleOpenRouterProvider_Complete_NilUsage(t *testing.T) {
 			// No usage field
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1422,7 +1422,7 @@ func TestSimpleOpenRouterProvider_Complete_NilID(t *testing.T) {
 			"model": "test-model",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 

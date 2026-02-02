@@ -835,7 +835,7 @@ func TestGinRouterShutdownError(t *testing.T) {
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
 		addr := listener.Addr().String()
-		listener.Close()
+		_ = listener.Close()
 
 		// Start server
 		serverStarted := make(chan bool, 1)
@@ -985,7 +985,7 @@ func TestGinRouterWithRealServer(t *testing.T) {
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
 		addr := listener.Addr().String()
-		listener.Close()
+		_ = listener.Close()
 
 		// Start server
 		go func() {
@@ -1043,7 +1043,7 @@ func createTestTLSCerts(t *testing.T) (certFile, keyFile string, cleanup func())
 	require.NoError(t, err)
 	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certDER})
 	require.NoError(t, err)
-	certOut.Close()
+	_ = certOut.Close()
 
 	// Write key file
 	keyPath := filepath.Join(tempDir, "key.pem")
@@ -1051,10 +1051,10 @@ func createTestTLSCerts(t *testing.T) (certFile, keyFile string, cleanup func())
 	require.NoError(t, err)
 	err = pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
 	require.NoError(t, err)
-	keyOut.Close()
+	_ = keyOut.Close()
 
 	return certPath, keyPath, func() {
-		os.RemoveAll(tempDir)
+		_ = os.RemoveAll(tempDir)
 	}
 }
 
@@ -1080,7 +1080,7 @@ func TestGinRouterTLSConfig(t *testing.T) {
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
 		addr := listener.Addr().String()
-		listener.Close()
+		_ = listener.Close()
 
 		// Start TLS server
 		go func() {

@@ -406,13 +406,13 @@ func TestExperimentStatus_Transitions(t *testing.T) {
 
 			// Set initial status
 			if tt.from == ExperimentStatusRunning {
-				manager.Start(context.Background(), exp.ID)
+				_ = manager.Start(context.Background(), exp.ID)
 			} else if tt.from == ExperimentStatusPaused {
-				manager.Start(context.Background(), exp.ID)
-				manager.Pause(context.Background(), exp.ID)
+				_ = manager.Start(context.Background(), exp.ID)
+				_ = manager.Pause(context.Background(), exp.ID)
 			} else if tt.from == ExperimentStatusCompleted {
-				manager.Start(context.Background(), exp.ID)
-				manager.Complete(context.Background(), exp.ID, "")
+				_ = manager.Start(context.Background(), exp.ID)
+				_ = manager.Complete(context.Background(), exp.ID, "")
 			}
 
 			// Try transition

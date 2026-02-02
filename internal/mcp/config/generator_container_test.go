@@ -276,8 +276,8 @@ func TestContainerMCPConfigGenerator_GetMCPsByCategory(t *testing.T) {
 
 func TestContainerMCPConfigGenerator_CustomHost(t *testing.T) {
 	// Set custom MCP host
-	os.Setenv("MCP_CONTAINER_HOST", "mcp.example.com")
-	defer os.Unsetenv("MCP_CONTAINER_HOST")
+	_ = os.Setenv("MCP_CONTAINER_HOST", "mcp.example.com")
+	defer func() { _ = os.Unsetenv("MCP_CONTAINER_HOST") }()
 
 	gen := NewContainerMCPConfigGenerator("http://localhost:8080")
 

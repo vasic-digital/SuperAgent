@@ -68,7 +68,7 @@ func TestProviderAdapter_Complete(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"choices":[{"message":{"content":"Hello back!"}}]}`))
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"Hello back!"}}]}`))
 	}))
 	defer server.Close()
 
@@ -169,15 +169,15 @@ func TestProviderAdapter_GetMetrics(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"choices":[{"message":{"content":"Hello!"}}]}`))
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"Hello!"}}]}`))
 	}))
 	defer server.Close()
 
 	adapter, _ := NewProviderAdapter("test", "Test Provider", "key", server.URL, nil)
 
 	// Make some requests
-	adapter.Complete(context.Background(), "model", "prompt", nil)
-	adapter.Complete(context.Background(), "model", "prompt", nil)
+	_, _ = adapter.Complete(context.Background(), "model", "prompt", nil)
+	_, _ = adapter.Complete(context.Background(), "model", "prompt", nil)
 
 	metrics := adapter.GetMetrics()
 	if metrics.TotalRequests != 2 {
@@ -465,7 +465,7 @@ func TestProviderAdapter_ConcurrentAccess(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		go func() {
-			adapter.Complete(context.Background(), "model", "prompt", nil)
+			_, _ = adapter.Complete(context.Background(), "model", "prompt", nil)
 			done <- true
 		}()
 	}
@@ -537,7 +537,7 @@ func TestProviderAdapter_Complete_AnthropicFormat(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"content":[{"type":"text","text":"Hello from Anthropic!"}]}`))
+		_, _ = w.Write([]byte(`{"content":[{"type":"text","text":"Hello from Anthropic!"}]}`))
 	}))
 	defer server.Close()
 
@@ -557,7 +557,7 @@ func TestProviderAdapter_Complete_GeminiFormat(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"candidates":[{"content":{"parts":[{"text":"Hello from Gemini!"}]}}]}`))
+		_, _ = w.Write([]byte(`{"candidates":[{"content":{"parts":[{"text":"Hello from Gemini!"}]}}]}`))
 	}))
 	defer server.Close()
 
@@ -577,7 +577,7 @@ func TestProviderAdapter_Complete_OllamaFormat(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"response":"Hello from Ollama!"}`))
+		_, _ = w.Write([]byte(`{"response":"Hello from Ollama!"}`))
 	}))
 	defer server.Close()
 
@@ -597,7 +597,7 @@ func TestProviderAdapter_Complete_DeepSeekFormat(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"choices":[{"message":{"content":"Hello from DeepSeek!"}}]}`))
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"Hello from DeepSeek!"}}]}`))
 	}))
 	defer server.Close()
 
@@ -616,7 +616,7 @@ func TestProviderAdapter_Complete_InvalidFormat(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"invalid":"response"}`))
+		_, _ = w.Write([]byte(`{"invalid":"response"}`))
 	}))
 	defer server.Close()
 
@@ -632,7 +632,7 @@ func TestProviderAdapter_Complete_EmptyChoices(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"choices":[]}`))
+		_, _ = w.Write([]byte(`{"choices":[]}`))
 	}))
 	defer server.Close()
 
@@ -648,7 +648,7 @@ func TestProviderAdapter_Complete_EmptyContent(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"content":[]}`))
+		_, _ = w.Write([]byte(`{"content":[]}`))
 	}))
 	defer server.Close()
 
@@ -664,7 +664,7 @@ func TestProviderAdapter_Complete_MalformedJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{invalid json}`))
+		_, _ = w.Write([]byte(`{invalid json}`))
 	}))
 	defer server.Close()
 
@@ -679,7 +679,7 @@ func TestProviderAdapter_Complete_ServerError(t *testing.T) {
 	// Create mock server that returns 500 error
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"internal server error"}`))
+		_, _ = w.Write([]byte(`{"error":"internal server error"}`))
 	}))
 	defer server.Close()
 

@@ -90,7 +90,7 @@ func TestGitAdapter_Status(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -138,7 +138,7 @@ func TestGitAdapter_Status_WithFiles(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -180,7 +180,7 @@ func TestGitAdapter_Add(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -217,7 +217,7 @@ func TestGitAdapter_Add_All(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -255,7 +255,7 @@ func TestGitAdapter_Commit(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -339,7 +339,7 @@ func TestGitAdapter_Log(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -392,7 +392,7 @@ func TestGitAdapter_Branch(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -447,7 +447,7 @@ func TestGitAdapter_Checkout(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -501,7 +501,7 @@ func TestGitAdapter_Diff(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -555,7 +555,7 @@ func TestGitAdapter_Remotes(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -649,7 +649,7 @@ func TestGitAdapter_Stash(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -733,7 +733,7 @@ func TestGitAdapter_ExecuteTool(t *testing.T) {
 	// Create a temp git repo
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
@@ -851,7 +851,7 @@ func TestGitAdapter_DeniedPaths(t *testing.T) {
 
 	tempDir, err := os.MkdirTemp("", "git-adapter-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	config := DefaultGitAdapterConfig()
 	config.AllowedPaths = []string{tempDir}

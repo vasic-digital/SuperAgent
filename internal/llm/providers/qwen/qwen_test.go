@@ -125,7 +125,7 @@ func TestQwenProvider_Complete_Success(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -200,7 +200,7 @@ func TestQwenProvider_Complete_WithMessages(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -242,7 +242,7 @@ func TestQwenProvider_Complete_ErrorResponse(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -280,7 +280,7 @@ func TestQwenProvider_Complete_NoChoices(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -326,7 +326,7 @@ func TestQwenProvider_Complete_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		_, _ = w.Write([]byte("invalid json"))
 	}))
 	defer server.Close()
 
@@ -399,13 +399,13 @@ func createSSEMockServer(t *testing.T, chunks []string, includeFinishReason bool
 			}
 
 			jsonData, _ := json.Marshal(chunk)
-			fmt.Fprintf(w, "data: %s\n\n", jsonData)
+			_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
 			flusher.Flush()
 		}
 
 		// Send [DONE] marker if requested
 		if includeDone {
-			fmt.Fprintf(w, "data: [DONE]\n\n")
+			_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 			flusher.Flush()
 		}
 	}))
@@ -501,7 +501,7 @@ func TestQwenProvider_CompleteStream_ContextCancellation(t *testing.T) {
 			}
 
 			jsonData, _ := json.Marshal(chunk)
-			fmt.Fprintf(w, "data: %s\n\n", jsonData)
+			_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
 			flusher.Flush()
 			time.Sleep(50 * time.Millisecond)
 		}
@@ -556,7 +556,7 @@ func TestQwenProvider_CompleteStream_APIError(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusTooManyRequests)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -586,7 +586,7 @@ func TestQwenProvider_CompleteStream_EmptyChunks(t *testing.T) {
 		flusher, _ := w.(http.Flusher)
 
 		// Send empty lines and chunks with empty content
-		fmt.Fprintf(w, "\n\n")
+		_, _ = fmt.Fprintf(w, "\n\n")
 		flusher.Flush()
 
 		chunk1 := QwenStreamChunk{
@@ -604,7 +604,7 @@ func TestQwenProvider_CompleteStream_EmptyChunks(t *testing.T) {
 			},
 		}
 		jsonData, _ := json.Marshal(chunk1)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
 		flusher.Flush()
 
 		// Send actual content
@@ -623,10 +623,10 @@ func TestQwenProvider_CompleteStream_EmptyChunks(t *testing.T) {
 			},
 		}
 		jsonData, _ = json.Marshal(chunk2)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
 		flusher.Flush()
 
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 		flusher.Flush()
 	}))
 	defer server.Close()
@@ -663,7 +663,7 @@ func TestQwenProvider_CompleteStream_MalformedJSON(t *testing.T) {
 		flusher, _ := w.(http.Flusher)
 
 		// Send malformed JSON
-		fmt.Fprintf(w, "data: {invalid json}\n\n")
+		_, _ = fmt.Fprintf(w, "data: {invalid json}\n\n")
 		flusher.Flush()
 
 		// Send valid chunk
@@ -682,10 +682,10 @@ func TestQwenProvider_CompleteStream_MalformedJSON(t *testing.T) {
 			},
 		}
 		jsonData, _ := json.Marshal(chunk)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
 		flusher.Flush()
 
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 		flusher.Flush()
 	}))
 	defer server.Close()
@@ -732,7 +732,7 @@ func TestQwenProvider_CompleteStream_EOFWithoutDone(t *testing.T) {
 			},
 		}
 		jsonData, _ := json.Marshal(chunk)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
 		flusher.Flush()
 
 		// Close connection without [DONE]
@@ -769,9 +769,9 @@ func TestQwenProvider_CompleteStream_NonDataLines(t *testing.T) {
 		flusher, _ := w.(http.Flusher)
 
 		// Send various non-data lines
-		fmt.Fprintf(w, ": this is a comment\n")
-		fmt.Fprintf(w, "event: ping\n")
-		fmt.Fprintf(w, "id: 123\n")
+		_, _ = fmt.Fprintf(w, ": this is a comment\n")
+		_, _ = fmt.Fprintf(w, "event: ping\n")
+		_, _ = fmt.Fprintf(w, "id: 123\n")
 		flusher.Flush()
 
 		chunk := QwenStreamChunk{
@@ -789,10 +789,10 @@ func TestQwenProvider_CompleteStream_NonDataLines(t *testing.T) {
 			},
 		}
 		jsonData, _ := json.Marshal(chunk)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
 		flusher.Flush()
 
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 		flusher.Flush()
 	}))
 	defer server.Close()
@@ -845,8 +845,8 @@ func TestQwenProvider_CompleteStream_RetryOnServerError(t *testing.T) {
 			},
 		}
 		jsonData, _ := json.Marshal(chunk)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 		flusher.Flush()
 	}))
 	defer server.Close()
@@ -898,8 +898,8 @@ func TestQwenProvider_CompleteStream_ChunkMetadata(t *testing.T) {
 			},
 		}
 		jsonData, _ := json.Marshal(chunk)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 		flusher.Flush()
 	}))
 	defer server.Close()
@@ -941,7 +941,7 @@ func TestQwenProvider_HealthCheck_Success(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"data": [{"id": "qwen-turbo"}]}`))
+		_, _ = w.Write([]byte(`{"data": [{"id": "qwen-turbo"}]}`))
 	}))
 	defer server.Close()
 
@@ -956,7 +956,7 @@ func TestQwenProvider_HealthCheck_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "Invalid API key"}`))
+		_, _ = w.Write([]byte(`{"error": "Invalid API key"}`))
 	}))
 	defer server.Close()
 
@@ -1113,7 +1113,7 @@ func TestQwenProvider_Complete_ContextTimeout(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1172,7 +1172,7 @@ func TestQwenProvider_Complete_WithStopSequences(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1299,7 +1299,7 @@ func TestQwenProvider_RetryOnServerError(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1408,7 +1408,7 @@ func TestQwenProvider_RateLimitRetry(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1449,7 +1449,7 @@ func TestQwenProvider_NonRetryableErrorNoRetry(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -1477,7 +1477,7 @@ func TestQwenProvider_NonRetryableErrorNoRetry(t *testing.T) {
 func TestQwenProvider_NonJSONErrorResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Bad Request: plain text error"))
+		_, _ = w.Write([]byte("Bad Request: plain text error"))
 	}))
 	defer server.Close()
 
@@ -1657,12 +1657,12 @@ func TestQwenProvider_MakeStreamingRequest_Headers(t *testing.T) {
 		// Verify request body has Stream: true
 		var reqBody QwenRequest
 		body, _ := io.ReadAll(r.Body)
-		json.Unmarshal(body, &reqBody)
+		_ = json.Unmarshal(body, &reqBody)
 		assert.True(t, reqBody.Stream)
 
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 	}))
 	defer server.Close()
 
@@ -1677,7 +1677,7 @@ func TestQwenProvider_MakeStreamingRequest_Headers(t *testing.T) {
 
 	body, err := provider.makeStreamingRequest(context.Background(), req)
 	require.NoError(t, err)
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
 	// Read the response
 	content, err := io.ReadAll(body)
@@ -1734,7 +1734,7 @@ func TestQwenProvider_MakeStreamingRequest_RetryExhausted(t *testing.T) {
 func TestQwenProvider_MakeStreamingRequest_NonJSONError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Plain text error"))
+		_, _ = w.Write([]byte("Plain text error"))
 	}))
 	defer server.Close()
 
@@ -1776,8 +1776,8 @@ func TestQwenProvider_CompleteStream_MultipleWords(t *testing.T) {
 			},
 		}
 		jsonData, _ := json.Marshal(chunk)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 		flusher.Flush()
 	}))
 	defer server.Close()
@@ -1827,8 +1827,8 @@ func TestQwenProvider_CompleteStream_SingleCharacter(t *testing.T) {
 			},
 		}
 		jsonData, _ := json.Marshal(chunk)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 		flusher.Flush()
 	}))
 	defer server.Close()
@@ -1871,7 +1871,7 @@ func TestQwenProvider_CompleteStream_EmptyChoices(t *testing.T) {
 			Choices: []QwenStreamChoice{}, // Empty choices
 		}
 		jsonData, _ := json.Marshal(chunk)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
 
 		// Send valid chunk
 		chunk2 := QwenStreamChunk{
@@ -1889,8 +1889,8 @@ func TestQwenProvider_CompleteStream_EmptyChoices(t *testing.T) {
 			},
 		}
 		jsonData, _ = json.Marshal(chunk2)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 		flusher.Flush()
 	}))
 	defer server.Close()
@@ -2064,7 +2064,7 @@ func TestQwenProvider_CompleteStream_ReadError(t *testing.T) {
 			},
 		}
 		jsonData, _ := json.Marshal(chunk)
-		fmt.Fprintf(w, "data: %s\n\n", jsonData)
+		_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
 		flusher.Flush()
 
 		// Simulate abrupt connection close (triggers read error)
@@ -2072,7 +2072,7 @@ func TestQwenProvider_CompleteStream_ReadError(t *testing.T) {
 		if ok {
 			conn, _, _ := hj.Hijack()
 			if conn != nil {
-				conn.Close()
+				_ = conn.Close()
 			}
 		}
 	}))
@@ -2114,7 +2114,7 @@ func TestQwenProvider_MakeStreamingRequest_APIErrorWithJSON(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -2143,7 +2143,7 @@ func TestQwenProvider_MakeStreamingRequest_NetworkRetry(t *testing.T) {
 			if ok {
 				conn, _, _ := hj.Hijack()
 				if conn != nil {
-					conn.Close()
+					_ = conn.Close()
 					return
 				}
 			}
@@ -2154,7 +2154,7 @@ func TestQwenProvider_MakeStreamingRequest_NetworkRetry(t *testing.T) {
 
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 	}))
 	defer server.Close()
 
@@ -2175,7 +2175,7 @@ func TestQwenProvider_MakeStreamingRequest_NetworkRetry(t *testing.T) {
 	// Either succeeds on retry or has an error
 	if err == nil {
 		require.NotNil(t, body)
-		body.Close()
+		_ = body.Close()
 	}
 	assert.GreaterOrEqual(t, attempts, 1)
 }
@@ -2205,11 +2205,11 @@ func TestQwenProvider_CompleteStream_LongRunning(t *testing.T) {
 				},
 			}
 			jsonData, _ := json.Marshal(chunk)
-			fmt.Fprintf(w, "data: %s\n\n", jsonData)
+			_, _ = fmt.Fprintf(w, "data: %s\n\n", jsonData)
 			flusher.Flush()
 		}
 
-		fmt.Fprintf(w, "data: [DONE]\n\n")
+		_, _ = fmt.Fprintf(w, "data: [DONE]\n\n")
 		flusher.Flush()
 	}))
 	defer server.Close()

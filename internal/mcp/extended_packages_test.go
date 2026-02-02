@@ -268,9 +268,9 @@ func TestGetAllExtendedPackages(t *testing.T) {
 func TestFilterAvailablePackages(t *testing.T) {
 	t.Run("Returns packages with no env requirements", func(t *testing.T) {
 		// Ensure no env vars are set for this test
-		os.Unsetenv("CHROMA_URL")
-		os.Unsetenv("QDRANT_URL")
-		os.Unsetenv("FIGMA_ACCESS_TOKEN")
+		_ = os.Unsetenv("CHROMA_URL")
+		_ = os.Unsetenv("QDRANT_URL")
+		_ = os.Unsetenv("FIGMA_ACCESS_TOKEN")
 
 		packages := FilterAvailablePackages(ExtendedMCPPackages)
 
@@ -300,7 +300,7 @@ func TestFilterAvailablePackages(t *testing.T) {
 
 	t.Run("Excludes packages with missing env vars", func(t *testing.T) {
 		// Make sure the env var is NOT set
-		os.Unsetenv("FIGMA_ACCESS_TOKEN")
+		_ = os.Unsetenv("FIGMA_ACCESS_TOKEN")
 
 		packages := FilterAvailablePackages(ExtendedMCPPackages)
 
@@ -317,8 +317,8 @@ func TestFilterAvailablePackages(t *testing.T) {
 
 	t.Run("Handles packages with multiple required env vars", func(t *testing.T) {
 		// S3 requires both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
-		os.Unsetenv("AWS_ACCESS_KEY_ID")
-		os.Unsetenv("AWS_SECRET_ACCESS_KEY")
+		_ = os.Unsetenv("AWS_ACCESS_KEY_ID")
+		_ = os.Unsetenv("AWS_SECRET_ACCESS_KEY")
 
 		packages := FilterAvailablePackages(ExtendedMCPPackages)
 
@@ -374,7 +374,7 @@ func TestFilterAvailablePackages(t *testing.T) {
 			{Name: "with-env", NPM: "pkg2", Description: "With env", Category: CategoryCore, RequiresEnv: []string{"CUSTOM_VAR"}},
 		}
 
-		os.Unsetenv("CUSTOM_VAR")
+		_ = os.Unsetenv("CUSTOM_VAR")
 		packages := FilterAvailablePackages(customPackages)
 		assert.Len(t, packages, 1)
 		assert.Equal(t, "no-env", packages[0].Name)

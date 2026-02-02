@@ -37,7 +37,7 @@ func setupTieredCacheWithRedis(t *testing.T) (*TieredCache, *miniredis.Miniredis
 	tc := NewTieredCache(redisClient, config)
 
 	t.Cleanup(func() {
-		tc.Close()
+		_ = tc.Close()
 		mr.Close()
 	})
 
@@ -50,7 +50,7 @@ func TestTieredCache_L2Get_Basic(t *testing.T) {
 
 	// Set a value directly in Redis
 	testData := `{"name":"test","value":123}`
-	mr.Set("tiered:test-key", testData)
+	_ = mr.Set("tiered:test-key", testData)
 
 	// Get should retrieve from L2
 	var result map[string]interface{}
@@ -140,7 +140,7 @@ func TestTieredCache_Get_L1Miss_L2Hit_Promotion(t *testing.T) {
 
 	// Set directly in Redis (bypass L1)
 	testData := `{"promoted":"yes"}`
-	mr.Set("tiered:promote-key", testData)
+	_ = mr.Set("tiered:promote-key", testData)
 
 	// L1 should be empty
 	_, ok := tc.l1Get("promote-key")
@@ -295,7 +295,7 @@ func TestTieredCache_L2_DisabledCompression(t *testing.T) {
 	}
 
 	tc := NewTieredCache(redisClient, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -335,7 +335,7 @@ func TestTieredCache_L2_OnlyMode(t *testing.T) {
 	}
 
 	tc := NewTieredCache(redisClient, config)
-	defer tc.Close()
+	defer func() { _ = tc.Close() }()
 
 	ctx := context.Background()
 
@@ -404,7 +404,7 @@ func TestTieredCache_L2_DeleteError(t *testing.T) {
 	err = tc.Delete(ctx, "error-key")
 	assert.Error(t, err)
 
-	tc.Close()
+	_ = tc.Close()
 }
 
 func TestTieredCache_L2_SetError(t *testing.T) {
@@ -435,7 +435,7 @@ func TestTieredCache_L2_SetError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "l2 set")
 
-	tc.Close()
+	_ = tc.Close()
 }
 
 func TestTieredCache_L2_GetError(t *testing.T) {
@@ -466,7 +466,7 @@ func TestTieredCache_L2_GetError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "l2 get")
 
-	tc.Close()
+	_ = tc.Close()
 }
 
 func TestTieredCache_InvalidatePrefix_L2_ScanError(t *testing.T) {
@@ -500,7 +500,7 @@ func TestTieredCache_InvalidatePrefix_L2_ScanError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "l2 scan")
 
-	tc.Close()
+	_ = tc.Close()
 }
 
 func TestTieredCache_BothCaches_Consistency(t *testing.T) {

@@ -501,7 +501,7 @@ func (c *SemanticCache) Invalidate(ctx context.Context, criteria InvalidationCri
 	}
 
 	for _, id := range toRemove {
-		c.removeByIDLocked(id)
+		_ = c.removeByIDLocked(id)
 	}
 
 	return len(toRemove), nil

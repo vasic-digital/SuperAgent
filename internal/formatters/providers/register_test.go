@@ -12,8 +12,8 @@ import (
 
 func TestRegisterAllFormatters_BasicRegistration(t *testing.T) {
 	// Ensure service formatters are disabled for this test
-	os.Setenv("FORMATTER_ENABLE_SERVICES", "false")
-	defer os.Unsetenv("FORMATTER_ENABLE_SERVICES")
+	_ = os.Setenv("FORMATTER_ENABLE_SERVICES", "false")
+	defer func() { _ = os.Unsetenv("FORMATTER_ENABLE_SERVICES") }()
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel) // Reduce noise
@@ -50,8 +50,8 @@ func TestRegisterAllFormatters_BasicRegistration(t *testing.T) {
 
 func TestRegisterAllFormatters_ServiceFormattersEnabled(t *testing.T) {
 	// Enable service formatters
-	os.Setenv("FORMATTER_ENABLE_SERVICES", "true")
-	defer os.Unsetenv("FORMATTER_ENABLE_SERVICES")
+	_ = os.Setenv("FORMATTER_ENABLE_SERVICES", "true")
+	defer func() { _ = os.Unsetenv("FORMATTER_ENABLE_SERVICES") }()
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
@@ -81,8 +81,8 @@ func TestRegisterAllFormatters_ServiceFormattersEnabled(t *testing.T) {
 }
 
 func TestRegisterAllFormatters_DuplicateRegistration(t *testing.T) {
-	os.Setenv("FORMATTER_ENABLE_SERVICES", "false")
-	defer os.Unsetenv("FORMATTER_ENABLE_SERVICES")
+	_ = os.Setenv("FORMATTER_ENABLE_SERVICES", "false")
+	defer func() { _ = os.Unsetenv("FORMATTER_ENABLE_SERVICES") }()
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
@@ -113,11 +113,11 @@ func TestRegisterAllFormatters_DuplicateRegistration(t *testing.T) {
 
 func TestRegisterAllFormatters_EnvironmentVariableBaseURL(t *testing.T) {
 	// Set custom base URL for service formatters
-	os.Setenv("FORMATTER_SERVICE_BASE_URL", "http://custom-host:9999")
-	os.Setenv("FORMATTER_ENABLE_SERVICES", "true")
+	_ = os.Setenv("FORMATTER_SERVICE_BASE_URL", "http://custom-host:9999")
+	_ = os.Setenv("FORMATTER_ENABLE_SERVICES", "true")
 	defer func() {
-		os.Unsetenv("FORMATTER_SERVICE_BASE_URL")
-		os.Unsetenv("FORMATTER_ENABLE_SERVICES")
+		_ = os.Unsetenv("FORMATTER_SERVICE_BASE_URL")
+		_ = os.Unsetenv("FORMATTER_ENABLE_SERVICES")
 	}()
 
 	logger := logrus.New()

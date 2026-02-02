@@ -322,7 +322,7 @@ func TestCogneeViaHelixAgent(t *testing.T) {
 		t.Skipf("HelixAgent not running")
 		return
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Test Cognee endpoints via HelixAgent
 	t.Run("Add", func(t *testing.T) {

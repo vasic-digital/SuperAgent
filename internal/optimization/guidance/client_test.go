@@ -51,7 +51,7 @@ func TestClient_GenerateWithGrammar(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -80,7 +80,7 @@ func TestClient_GenerateFromTemplate(t *testing.T) {
 		assert.Equal(t, "/template", r.URL.Path)
 
 		var req TemplateRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotEmpty(t, req.Template)
 
 		resp := &TemplateResponse{
@@ -93,7 +93,7 @@ func TestClient_GenerateFromTemplate(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -120,7 +120,7 @@ func TestClient_Select(t *testing.T) {
 		assert.Equal(t, "/select", r.URL.Path)
 
 		var req SelectRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotEmpty(t, req.Prompt)
 		assert.NotEmpty(t, req.Options)
 
@@ -130,7 +130,7 @@ func TestClient_Select(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -152,7 +152,7 @@ func TestClient_SelectOne(t *testing.T) {
 			Reasoning: "Best for systems programming",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -169,7 +169,7 @@ func TestClient_GenerateWithRegex(t *testing.T) {
 		assert.Equal(t, "/regex", r.URL.Path)
 
 		var req RegexRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotEmpty(t, req.Pattern)
 
 		resp := &RegexResponse{
@@ -179,7 +179,7 @@ func TestClient_GenerateWithRegex(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -200,7 +200,7 @@ func TestClient_GenerateJSON(t *testing.T) {
 		assert.Equal(t, "/json_schema", r.URL.Path)
 
 		var req JSONSchemaRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotNil(t, req.Schema)
 
 		resp := &JSONSchemaResponse{
@@ -214,7 +214,7 @@ func TestClient_GenerateJSON(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -250,7 +250,7 @@ func TestClient_Health(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -266,7 +266,7 @@ func TestClient_IsAvailable(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := &HealthResponse{Status: "healthy"}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -291,7 +291,7 @@ func TestClient_IsAvailable_Unhealthy(t *testing.T) {
 func TestClient_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "internal error"}`))
+		_, _ = w.Write([]byte(`{"error": "internal error"}`))
 	}))
 	defer server.Close()
 
@@ -325,7 +325,7 @@ func TestClient_GenerateEmail(t *testing.T) {
 		assert.Equal(t, "/regex", r.URL.Path)
 
 		var req RegexRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotEmpty(t, req.Pattern)
 
 		resp := &RegexResponse{
@@ -334,7 +334,7 @@ func TestClient_GenerateEmail(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -354,7 +354,7 @@ func TestClient_GenerateEmail_Invalid(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -382,7 +382,7 @@ func TestClient_GeneratePhoneNumber(t *testing.T) {
 		assert.Equal(t, "/regex", r.URL.Path)
 
 		var req RegexRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.NotEmpty(t, req.Pattern)
 
 		resp := &RegexResponse{
@@ -392,7 +392,7 @@ func TestClient_GeneratePhoneNumber(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -412,7 +412,7 @@ func TestClient_GeneratePhoneNumber_Invalid(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -438,7 +438,7 @@ func TestClient_GeneratePhoneNumber_Error(t *testing.T) {
 func TestClient_GenerateWithRegex_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error": "invalid regex"}`))
+		_, _ = w.Write([]byte(`{"error": "invalid regex"}`))
 	}))
 	defer server.Close()
 

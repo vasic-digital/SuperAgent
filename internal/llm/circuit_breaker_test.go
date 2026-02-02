@@ -131,8 +131,8 @@ func TestCircuitBreaker_RejectsWhenOpen(t *testing.T) {
 	req := &models.LLMRequest{ID: "test"}
 
 	// Open the circuit
-	cb.Complete(context.Background(), req)
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 
 	assert.True(t, cb.IsOpen())
 
@@ -154,8 +154,8 @@ func TestCircuitBreaker_TransitionsToHalfOpen(t *testing.T) {
 	req := &models.LLMRequest{ID: "test"}
 
 	// Open the circuit
-	cb.Complete(context.Background(), req)
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 	assert.True(t, cb.IsOpen())
 
 	// Wait for timeout
@@ -185,8 +185,8 @@ func TestCircuitBreaker_ClosesAfterSuccessesInHalfOpen(t *testing.T) {
 	req := &models.LLMRequest{ID: "test"}
 
 	// Open the circuit
-	cb.Complete(context.Background(), req)
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 	assert.True(t, cb.IsOpen())
 
 	// Wait for timeout and make provider succeed
@@ -194,8 +194,8 @@ func TestCircuitBreaker_ClosesAfterSuccessesInHalfOpen(t *testing.T) {
 	provider.SetShouldFail(false)
 
 	// Successful requests in half-open should close circuit
-	cb.Complete(context.Background(), req) // Transitions to half-open
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req) // Transitions to half-open
+	_, _ = cb.Complete(context.Background(), req)
 
 	assert.True(t, cb.IsClosed())
 }
@@ -213,14 +213,14 @@ func TestCircuitBreaker_ReopensOnFailureInHalfOpen(t *testing.T) {
 	req := &models.LLMRequest{ID: "test"}
 
 	// Open the circuit
-	cb.Complete(context.Background(), req)
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 
 	// Wait for timeout
 	time.Sleep(150 * time.Millisecond)
 
 	// Provider still failing - request in half-open should reopen
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 	assert.True(t, cb.IsOpen())
 }
 
@@ -237,17 +237,17 @@ func TestCircuitBreaker_HalfOpenLimitsRequests(t *testing.T) {
 	req := &models.LLMRequest{ID: "test"}
 
 	// Open the circuit
-	cb.Complete(context.Background(), req)
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 
 	// Wait for timeout
 	time.Sleep(150 * time.Millisecond)
 	provider.SetShouldFail(false)
 
 	// First request transitions to half-open
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 	// Second request allowed
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 
 	// Third request should be rejected (over limit)
 	_, err := cb.Complete(context.Background(), req)
@@ -264,8 +264,8 @@ func TestCircuitBreaker_Reset(t *testing.T) {
 	req := &models.LLMRequest{ID: "test"}
 
 	// Open the circuit
-	cb.Complete(context.Background(), req)
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 	assert.True(t, cb.IsOpen())
 
 	// Reset
@@ -283,10 +283,10 @@ func TestCircuitBreaker_Stats(t *testing.T) {
 	req := &models.LLMRequest{ID: "test"}
 
 	// Make some requests
-	cb.Complete(context.Background(), req)
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 	provider.SetShouldFail(true)
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 
 	stats := cb.GetStats()
 	assert.Equal(t, "test-provider", stats.ProviderID)
@@ -315,8 +315,8 @@ func TestCircuitBreaker_Listener(t *testing.T) {
 	req := &models.LLMRequest{ID: "test"}
 
 	// Trigger state change
-	cb.Complete(context.Background(), req)
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 
 	// Wait for listener
 	time.Sleep(50 * time.Millisecond)
@@ -372,8 +372,8 @@ func TestCircuitBreakerManager_GetAvailableProviders(t *testing.T) {
 
 	// Open the unhealthy circuit
 	req := &models.LLMRequest{ID: "test"}
-	cb.Complete(context.Background(), req)
-	cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
+	_, _ = cb.Complete(context.Background(), req)
 
 	available := mgr.GetAvailableProviders()
 	assert.Contains(t, available, "healthy")
@@ -392,10 +392,10 @@ func TestCircuitBreakerManager_ResetAll(t *testing.T) {
 	req := &models.LLMRequest{ID: "test"}
 
 	// Open both circuits
-	cb1.Complete(context.Background(), req)
-	cb1.Complete(context.Background(), req)
-	cb2.Complete(context.Background(), req)
-	cb2.Complete(context.Background(), req)
+	_, _ = cb1.Complete(context.Background(), req)
+	_, _ = cb1.Complete(context.Background(), req)
+	_, _ = cb2.Complete(context.Background(), req)
+	_, _ = cb2.Complete(context.Background(), req)
 
 	assert.True(t, cb1.IsOpen())
 	assert.True(t, cb2.IsOpen())
@@ -442,7 +442,7 @@ func TestCircuitBreaker_ConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cb.Complete(context.Background(), req)
+			_, _ = cb.Complete(context.Background(), req)
 			_ = cb.GetStats()
 			_ = cb.GetState()
 		}()

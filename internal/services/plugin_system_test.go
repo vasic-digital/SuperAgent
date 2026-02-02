@@ -80,7 +80,7 @@ func TestHighAvailabilityManager_UnregisterInstance(t *testing.T) {
 		Port:     7061,
 		Protocol: "mcp",
 	}
-	ham.RegisterInstance(instance)
+	_ = ham.RegisterInstance(instance)
 
 	t.Run("unregister existing instance", func(t *testing.T) {
 		err := ham.UnregisterInstance("unregister-test")
@@ -141,7 +141,7 @@ func TestHighAvailabilityManager_UpdateInstanceLoad(t *testing.T) {
 		Protocol:  "mcp",
 		LoadScore: 50,
 	}
-	ham.RegisterInstance(instance)
+	_ = ham.RegisterInstance(instance)
 
 	t.Run("update load for existing instance", func(t *testing.T) {
 		err := ham.UpdateInstanceLoad("load-test", 75)
@@ -163,9 +163,9 @@ func TestHighAvailabilityManager_GetInstancesByProtocol(t *testing.T) {
 	log := newPluginSystemTestLogger()
 	ham := NewHighAvailabilityManager(log)
 
-	ham.RegisterInstance(&ServiceInstance{ID: "mcp-1", Protocol: "mcp"})
-	ham.RegisterInstance(&ServiceInstance{ID: "mcp-2", Protocol: "mcp"})
-	ham.RegisterInstance(&ServiceInstance{ID: "lsp-1", Protocol: "lsp"})
+	_ = ham.RegisterInstance(&ServiceInstance{ID: "mcp-1", Protocol: "mcp"})
+	_ = ham.RegisterInstance(&ServiceInstance{ID: "mcp-2", Protocol: "mcp"})
+	_ = ham.RegisterInstance(&ServiceInstance{ID: "lsp-1", Protocol: "lsp"})
 
 	mcpInstances := ham.GetInstancesByProtocol("mcp")
 	assert.Len(t, mcpInstances, 2)
@@ -587,11 +587,11 @@ func TestCircuitBreaker_Call(t *testing.T) {
 		cb := NewCircuitBreaker(2, 2, 100*time.Millisecond)
 
 		// First failure
-		cb.Call(func() error { return errors.New("failure") })
+		_ = cb.Call(func() error { return errors.New("failure") })
 		assert.Equal(t, StateClosed, cb.GetState())
 
 		// Second failure - should open circuit
-		cb.Call(func() error { return errors.New("failure") })
+		_ = cb.Call(func() error { return errors.New("failure") })
 		assert.Equal(t, StateOpen, cb.GetState())
 	})
 
@@ -599,7 +599,7 @@ func TestCircuitBreaker_Call(t *testing.T) {
 		cb := NewCircuitBreaker(1, 2, 1*time.Second)
 
 		// Open the circuit
-		cb.Call(func() error { return errors.New("failure") })
+		_ = cb.Call(func() error { return errors.New("failure") })
 		assert.Equal(t, StateOpen, cb.GetState())
 
 		// Call should be rejected
@@ -612,14 +612,14 @@ func TestCircuitBreaker_Call(t *testing.T) {
 		cb := NewCircuitBreaker(1, 2, 50*time.Millisecond)
 
 		// Open the circuit
-		cb.Call(func() error { return errors.New("failure") })
+		_ = cb.Call(func() error { return errors.New("failure") })
 		assert.Equal(t, StateOpen, cb.GetState())
 
 		// Wait for timeout
 		time.Sleep(100 * time.Millisecond)
 
 		// Next call should transition to half-open
-		cb.Call(func() error { return nil })
+		_ = cb.Call(func() error { return nil })
 		// After success in half-open, should still be half-open (need 2 successes)
 		assert.Equal(t, StateHalfOpen, cb.GetState())
 	})
@@ -628,15 +628,15 @@ func TestCircuitBreaker_Call(t *testing.T) {
 		cb := NewCircuitBreaker(1, 2, 50*time.Millisecond)
 
 		// Open the circuit
-		cb.Call(func() error { return errors.New("failure") })
+		_ = cb.Call(func() error { return errors.New("failure") })
 		time.Sleep(100 * time.Millisecond)
 
 		// First success (transitions to half-open and counts as success)
-		cb.Call(func() error { return nil })
+		_ = cb.Call(func() error { return nil })
 		assert.Equal(t, StateHalfOpen, cb.GetState())
 
 		// Second success - should close circuit
-		cb.Call(func() error { return nil })
+		_ = cb.Call(func() error { return nil })
 		assert.Equal(t, StateClosed, cb.GetState())
 	})
 }
@@ -652,7 +652,7 @@ func TestCircuitBreaker_GetFailureCount(t *testing.T) {
 
 	assert.Equal(t, 0, cb.GetFailureCount())
 
-	cb.Call(func() error { return errors.New("failure") })
+	_ = cb.Call(func() error { return errors.New("failure") })
 	assert.Equal(t, 1, cb.GetFailureCount())
 }
 
@@ -665,7 +665,7 @@ func TestCircuitBreaker_GetLastFailure(t *testing.T) {
 	})
 
 	t.Run("after failure", func(t *testing.T) {
-		cb.Call(func() error { return errors.New("failure") })
+		_ = cb.Call(func() error { return errors.New("failure") })
 		lastFailure := cb.GetLastFailure()
 		assert.NotNil(t, lastFailure)
 		assert.WithinDuration(t, time.Now(), *lastFailure, time.Second)
@@ -836,7 +836,7 @@ func TestHighAvailabilityManager_HandleHealthUpdate(t *testing.T) {
 			Protocol: "mcp",
 			Status:   StatusHealthy,
 		}
-		ham.RegisterInstance(instance)
+		_ = ham.RegisterInstance(instance)
 
 		// Healthy update on already healthy instance - no goroutine spawned
 		ham.handleHealthUpdate("healthy-test", true)
@@ -858,7 +858,7 @@ func TestHighAvailabilityManager_HandleHealthUpdate(t *testing.T) {
 			Protocol: "mcp",
 			Status:   StatusUnhealthy,
 		}
-		ham.RegisterInstance(instance)
+		_ = ham.RegisterInstance(instance)
 
 		// Healthy update on unhealthy instance - no goroutine spawned for recovery
 		ham.handleHealthUpdate("recover-test", true)
@@ -880,7 +880,7 @@ func TestHighAvailabilityManager_HandleHealthUpdate(t *testing.T) {
 			Protocol: "mcp",
 			Status:   StatusHealthy,
 		}
-		ham.RegisterInstance(instance)
+		_ = ham.RegisterInstance(instance)
 
 		// This spawns a goroutine for failover
 		ham.handleHealthUpdate("fail-test", false)
@@ -986,14 +986,14 @@ func TestHealthChecker_CheckInstanceHealth(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, "/health", r.URL.Path)
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("OK"))
+			_, _ = w.Write([]byte("OK"))
 		}))
 		defer server.Close()
 
 		// Parse server address
 		host, portStr, _ := net.SplitHostPort(server.Listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthCheckerWithConfig(log, &HealthCheckerConfig{
 			CheckInterval:      time.Second,
@@ -1021,7 +1021,7 @@ func TestHealthChecker_CheckInstanceHealth(t *testing.T) {
 
 		host, portStr, _ := net.SplitHostPort(server.Listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 		hc.RegisterInstanceWithProtocol("http-fail-test", host, port, "http")
@@ -1059,7 +1059,7 @@ func TestHealthChecker_CheckInstanceHealth(t *testing.T) {
 
 		host, portStr, _ := net.SplitHostPort(server.Listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 		// Use the test server's client which has the proper TLS config
@@ -1074,11 +1074,11 @@ func TestHealthChecker_CheckInstanceHealth(t *testing.T) {
 		// Create a TCP listener
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
-		defer listener.Close()
+		defer func() { _ = listener.Close() }()
 
 		host, portStr, _ := net.SplitHostPort(listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 		hc.RegisterInstanceWithProtocol("tcp-test", host, port, "tcp")
@@ -1108,11 +1108,11 @@ func TestHealthChecker_CheckInstanceHealth(t *testing.T) {
 		// Create a TCP listener (gRPC uses TCP)
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
-		defer listener.Close()
+		defer func() { _ = listener.Close() }()
 
 		host, portStr, _ := net.SplitHostPort(listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 		hc.RegisterInstanceWithProtocol("grpc-test", host, port, "grpc")
@@ -1125,11 +1125,11 @@ func TestHealthChecker_CheckInstanceHealth(t *testing.T) {
 		// Create a TCP listener
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
-		defer listener.Close()
+		defer func() { _ = listener.Close() }()
 
 		host, portStr, _ := net.SplitHostPort(listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 		hc.RegisterInstanceWithProtocol("unknown-proto", host, port, "custom-protocol")
@@ -1141,11 +1141,11 @@ func TestHealthChecker_CheckInstanceHealth(t *testing.T) {
 	t.Run("health check updates response time", func(t *testing.T) {
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
-		defer listener.Close()
+		defer func() { _ = listener.Close() }()
 
 		host, portStr, _ := net.SplitHostPort(listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 		hc.RegisterInstanceWithProtocol("response-time-test", host, port, "tcp")
@@ -1160,11 +1160,11 @@ func TestHealthChecker_CheckInstanceHealth(t *testing.T) {
 	t.Run("health check clears error on success", func(t *testing.T) {
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
-		defer listener.Close()
+		defer func() { _ = listener.Close() }()
 
 		host, portStr, _ := net.SplitHostPort(listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 		hc.RegisterInstanceWithProtocol("clear-error-test", host, port, "tcp")
@@ -1194,7 +1194,7 @@ func TestHealthChecker_CheckHTTPHealth(t *testing.T) {
 
 		host, portStr, _ := net.SplitHostPort(server.Listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 
@@ -1216,7 +1216,7 @@ func TestHealthChecker_CheckHTTPHealth(t *testing.T) {
 
 		host, portStr, _ := net.SplitHostPort(server.Listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 
@@ -1238,7 +1238,7 @@ func TestHealthChecker_CheckHTTPHealth(t *testing.T) {
 
 		host, portStr, _ := net.SplitHostPort(server.Listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 
@@ -1261,7 +1261,7 @@ func TestHealthChecker_CheckHTTPHealth(t *testing.T) {
 
 		host, portStr, _ := net.SplitHostPort(server.Listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 
@@ -1284,7 +1284,7 @@ func TestHealthChecker_CheckHTTPHealth(t *testing.T) {
 
 		host, portStr, _ := net.SplitHostPort(server.Listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 		hc.SetHTTPClient(server.Client())
@@ -1306,11 +1306,11 @@ func TestHealthChecker_CheckTCPHealth(t *testing.T) {
 	t.Run("successful connection", func(t *testing.T) {
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
-		defer listener.Close()
+		defer func() { _ = listener.Close() }()
 
 		host, portStr, _ := net.SplitHostPort(listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 
@@ -1349,11 +1349,11 @@ func TestHealthChecker_CheckGRPCHealth(t *testing.T) {
 	t.Run("grpc health check delegates to tcp", func(t *testing.T) {
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		require.NoError(t, err)
-		defer listener.Close()
+		defer func() { _ = listener.Close() }()
 
 		host, portStr, _ := net.SplitHostPort(listener.Addr().String())
 		var port int
-		fmt.Sscanf(portStr, "%d", &port)
+		_, _ = fmt.Sscanf(portStr, "%d", &port)
 
 		hc := NewHealthChecker(log)
 
@@ -1389,7 +1389,7 @@ func BenchmarkCircuitBreaker_Call(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cb.Call(func() error { return nil })
+		_ = cb.Call(func() error { return nil })
 	}
 }
 

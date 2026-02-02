@@ -96,7 +96,7 @@ func NewUnifiedProtocolManager(
 	security := NewProtocolSecurity(log)
 
 	// Initialize default security
-	security.InitializeDefaultSecurity()
+	_ = security.InitializeDefaultSecurity()
 
 	return &UnifiedProtocolManager{
 		mcpManager:       NewMCPManager(repo, cache, log),

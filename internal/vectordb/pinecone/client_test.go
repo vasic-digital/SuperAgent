@@ -54,7 +54,7 @@ func TestClient_Connect(t *testing.T) {
 			Dimension:        1536,
 			TotalVectorCount: 1000,
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -75,7 +75,7 @@ func TestClient_Connect(t *testing.T) {
 func TestClient_Connect_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"message": "invalid api key"}`))
+		_, _ = w.Write([]byte(`{"message": "invalid api key"}`))
 	}))
 	defer server.Close()
 
@@ -95,7 +95,7 @@ func TestClient_Connect_Error(t *testing.T) {
 
 func TestClient_Close(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
+		_ = json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
 	}))
 	defer server.Close()
 
@@ -120,7 +120,7 @@ func TestClient_Close(t *testing.T) {
 func TestClient_Upsert(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/describe_index_stats" {
-			json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
+			_ = json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
 			return
 		}
 
@@ -128,12 +128,12 @@ func TestClient_Upsert(t *testing.T) {
 		assert.Equal(t, http.MethodPost, r.Method)
 
 		var req UpsertRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Len(t, req.Vectors, 2)
 		assert.Equal(t, "test-ns", req.Namespace)
 
 		response := UpsertResponse{UpsertedCount: 2}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -174,7 +174,7 @@ func TestClient_Upsert_NotConnected(t *testing.T) {
 
 func TestClient_Upsert_EmptyVectors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
+		_ = json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
 	}))
 	defer server.Close()
 
@@ -196,16 +196,16 @@ func TestClient_Upsert_EmptyVectors(t *testing.T) {
 func TestClient_Upsert_GeneratesID(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/describe_index_stats" {
-			json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
+			_ = json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
 			return
 		}
 
 		var req UpsertRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		// ID should be generated
 		assert.NotEmpty(t, req.Vectors[0].ID)
 
-		json.NewEncoder(w).Encode(UpsertResponse{UpsertedCount: 1})
+		_ = json.NewEncoder(w).Encode(UpsertResponse{UpsertedCount: 1})
 	}))
 	defer server.Close()
 
@@ -230,7 +230,7 @@ func TestClient_Upsert_GeneratesID(t *testing.T) {
 func TestClient_Query(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/describe_index_stats" {
-			json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
+			_ = json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
 			return
 		}
 
@@ -238,7 +238,7 @@ func TestClient_Query(t *testing.T) {
 		assert.Equal(t, http.MethodPost, r.Method)
 
 		var req QueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, 10, req.TopK)
 
 		response := QueryResponse{
@@ -248,7 +248,7 @@ func TestClient_Query(t *testing.T) {
 			},
 			Namespace: "test-ns",
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -294,15 +294,15 @@ func TestClient_Query_NotConnected(t *testing.T) {
 func TestClient_Query_DefaultTopK(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/describe_index_stats" {
-			json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
+			_ = json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
 			return
 		}
 
 		var req QueryRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, 10, req.TopK) // Default
 
-		json.NewEncoder(w).Encode(QueryResponse{})
+		_ = json.NewEncoder(w).Encode(QueryResponse{})
 	}))
 	defer server.Close()
 
@@ -328,7 +328,7 @@ func TestClient_Query_DefaultTopK(t *testing.T) {
 func TestClient_Delete(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/describe_index_stats" {
-			json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
+			_ = json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
 			return
 		}
 
@@ -336,11 +336,11 @@ func TestClient_Delete(t *testing.T) {
 		assert.Equal(t, http.MethodPost, r.Method)
 
 		var req DeleteRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, []string{"vec1", "vec2"}, req.IDs)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{})
 	}))
 	defer server.Close()
 
@@ -381,7 +381,7 @@ func TestClient_Delete_NotConnected(t *testing.T) {
 func TestClient_Fetch(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/describe_index_stats" {
-			json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
+			_ = json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
 			return
 		}
 
@@ -397,7 +397,7 @@ func TestClient_Fetch(t *testing.T) {
 			},
 			Namespace: "test-ns",
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -418,7 +418,7 @@ func TestClient_Fetch(t *testing.T) {
 
 func TestClient_Fetch_Empty(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
+		_ = json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
 	}))
 	defer server.Close()
 
@@ -465,7 +465,7 @@ func TestClient_DescribeIndexStats(t *testing.T) {
 				"ns2": {VectorCount: 2000},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -510,7 +510,7 @@ func TestClient_ListNamespaces(t *testing.T) {
 				"ns3": {VectorCount: 500},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -532,7 +532,7 @@ func TestClient_ListNamespaces(t *testing.T) {
 func TestClient_Update(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/describe_index_stats" {
-			json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
+			_ = json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
 			return
 		}
 
@@ -540,12 +540,12 @@ func TestClient_Update(t *testing.T) {
 		assert.Equal(t, http.MethodPost, r.Method)
 
 		var req UpdateRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Equal(t, "vec1", req.ID)
 		assert.Equal(t, "new-value", req.SetMetadata["key"])
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{})
 	}))
 	defer server.Close()
 
@@ -586,7 +586,7 @@ func TestClient_Update_NotConnected(t *testing.T) {
 
 func TestClient_HealthCheck(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
+		_ = json.NewEncoder(w).Encode(DescribeIndexStatsResponse{})
 	}))
 	defer server.Close()
 

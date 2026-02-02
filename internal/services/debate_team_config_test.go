@@ -292,13 +292,13 @@ func TestDebateTeamConfigInitializeTeam(t *testing.T) {
 		savedEnv := make(map[string]string)
 		for _, key := range envVars {
 			savedEnv[key] = os.Getenv(key)
-			os.Unsetenv(key)
+			_ = os.Unsetenv(key)
 		}
 		defer func() {
 			// Restore env vars
 			for key, val := range savedEnv {
 				if val != "" {
-					os.Setenv(key, val)
+					_ = os.Setenv(key, val)
 				}
 			}
 		}()

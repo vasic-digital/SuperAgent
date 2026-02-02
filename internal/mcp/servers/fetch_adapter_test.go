@@ -138,7 +138,7 @@ func TestFetchAdapter_Health(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	err = adapter.Health(context.Background())
 	assert.NoError(t, err)
@@ -173,7 +173,7 @@ func TestFetchAdapter_isDomainAllowed(t *testing.T) {
 func TestFetchAdapter_Fetch_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte("<html><body>Hello World</body></html>"))
+		_, _ = w.Write([]byte("<html><body>Hello World</body></html>"))
 	}))
 	defer server.Close()
 
@@ -182,7 +182,7 @@ func TestFetchAdapter_Fetch_WithMockServer(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	result, err := adapter.Fetch(context.Background(), server.URL, "GET", nil, "")
 	assert.NoError(t, err)
@@ -195,7 +195,7 @@ func TestFetchAdapter_Fetch_WithHeaders(t *testing.T) {
 	var receivedHeader string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		receivedHeader = r.Header.Get("X-Custom-Header")
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -204,7 +204,7 @@ func TestFetchAdapter_Fetch_WithHeaders(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	headers := map[string]string{"X-Custom-Header": "test-value"}
 	_, err = adapter.Fetch(context.Background(), server.URL, "GET", headers, "")
@@ -218,7 +218,7 @@ func TestFetchAdapter_Fetch_POST(t *testing.T) {
 		receivedMethod = r.Method
 		body, _ := json.Marshal(map[string]string{"status": "ok"})
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer server.Close()
 
@@ -227,7 +227,7 @@ func TestFetchAdapter_Fetch_POST(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	result, err := adapter.Fetch(context.Background(), server.URL, "POST", nil, `{"test":"data"}`)
 	assert.NoError(t, err)
@@ -241,7 +241,7 @@ func TestFetchAdapter_Fetch_InvalidURL(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.Fetch(context.Background(), "://invalid", "GET", nil, "")
 	assert.Error(t, err)
@@ -255,7 +255,7 @@ func TestFetchAdapter_Fetch_BlockedDomain(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.Fetch(context.Background(), "https://blocked.com/page", "GET", nil, "")
 	assert.Error(t, err)
@@ -265,7 +265,7 @@ func TestFetchAdapter_Fetch_BlockedDomain(t *testing.T) {
 func TestFetchAdapter_Fetch_404(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Not Found"))
+		_, _ = w.Write([]byte("Not Found"))
 	}))
 	defer server.Close()
 
@@ -274,7 +274,7 @@ func TestFetchAdapter_Fetch_404(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	result, err := adapter.Fetch(context.Background(), server.URL, "GET", nil, "")
 	assert.NoError(t, err)
@@ -284,7 +284,7 @@ func TestFetchAdapter_Fetch_404(t *testing.T) {
 func TestFetchAdapter_FetchJSON_WithMockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"name":  "test",
 			"value": 123,
 		})
@@ -296,7 +296,7 @@ func TestFetchAdapter_FetchJSON_WithMockServer(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	result, err := adapter.FetchJSON(context.Background(), server.URL, nil)
 	assert.NoError(t, err)
@@ -318,7 +318,7 @@ func TestFetchAdapter_FetchJSON_NotInitialized(t *testing.T) {
 
 func TestFetchAdapter_FetchJSON_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("not json"))
+		_, _ = w.Write([]byte("not json"))
 	}))
 	defer server.Close()
 
@@ -327,7 +327,7 @@ func TestFetchAdapter_FetchJSON_InvalidJSON(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	_, err = adapter.FetchJSON(context.Background(), server.URL, nil)
 	assert.Error(t, err)
@@ -384,7 +384,7 @@ func TestFetchAdapter_ExtractText(t *testing.T) {
 
 func TestFetchAdapter_ExecuteTool_FetchURL(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Test Content"))
+		_, _ = w.Write([]byte("Test Content"))
 	}))
 	defer server.Close()
 
@@ -393,7 +393,7 @@ func TestFetchAdapter_ExecuteTool_FetchURL(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	result, err := adapter.ExecuteTool(context.Background(), "fetch_url", map[string]interface{}{
 		"url": server.URL,
@@ -406,7 +406,7 @@ func TestFetchAdapter_ExecuteTool_FetchURL(t *testing.T) {
 func TestFetchAdapter_ExecuteTool_FetchJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"key": "value"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"key": "value"})
 	}))
 	defer server.Close()
 
@@ -415,7 +415,7 @@ func TestFetchAdapter_ExecuteTool_FetchJSON(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	result, err := adapter.ExecuteTool(context.Background(), "fetch_json", map[string]interface{}{
 		"url": server.URL,
@@ -428,7 +428,7 @@ func TestFetchAdapter_ExecuteTool_FetchJSON(t *testing.T) {
 func TestFetchAdapter_ExecuteTool_ExtractLinks(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`<a href="https://example.com">Link</a>`))
+		_, _ = w.Write([]byte(`<a href="https://example.com">Link</a>`))
 	}))
 	defer server.Close()
 
@@ -437,7 +437,7 @@ func TestFetchAdapter_ExecuteTool_ExtractLinks(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	result, err := adapter.ExecuteTool(context.Background(), "fetch_extract_links", map[string]interface{}{
 		"url": server.URL,
@@ -450,7 +450,7 @@ func TestFetchAdapter_ExecuteTool_ExtractLinks(t *testing.T) {
 func TestFetchAdapter_ExecuteTool_ExtractText(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`<html><body><p>Hello World</p></body></html>`))
+		_, _ = w.Write([]byte(`<html><body><p>Hello World</p></body></html>`))
 	}))
 	defer server.Close()
 
@@ -459,7 +459,7 @@ func TestFetchAdapter_ExecuteTool_ExtractText(t *testing.T) {
 
 	err := adapter.Initialize(context.Background())
 	assert.NoError(t, err)
-	defer adapter.Close()
+	defer func() { _ = adapter.Close() }()
 
 	result, err := adapter.ExecuteTool(context.Background(), "fetch_extract_text", map[string]interface{}{
 		"url": server.URL,
