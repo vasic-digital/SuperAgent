@@ -135,7 +135,9 @@ func DefaultConcurrencyAlertManagerConfig() ConcurrencyAlertManagerConfig {
 }
 
 // alertTrackingInfo tracks information about alerts for escalation and deduplication
+// CONCURRENCY FIX: Added mutex for thread-safe access to tracking fields
 type alertTrackingInfo struct {
+	mu              sync.RWMutex
 	lastSentTime    time.Time
 	repeatCount     int
 	escalationLevel int
@@ -461,7 +463,8 @@ func (am *ConcurrencyAlertManager) shouldSendToChannel(channel string, escalatio
 }
 
 // getOrCreateTracking gets tracking info for an alert key, creating if needed
-func (am *ConcurrencyAlertManager) getOrCreateTracking(alertKey string) *alertTrackingInfo {
+// Returns repeat count and escalation level to avoid needing to read from tracking after release
+func (am *ConcurrencyAlertManager) getOrCreateTracking(alertKey string) (repeatCount int, escalationLevel int) {
 	am.mu.Lock()
 	defer am.mu.Unlock()
 
@@ -475,8 +478,12 @@ func (am *ConcurrencyAlertManager) getOrCreateTracking(alertKey string) *alertTr
 			firstSeenTime:   now,
 		}
 		am.alertTracking[alertKey] = tracking
-		return tracking
+		return 1, 0
 	}
+
+	// CONCURRENCY FIX: Lock tracking for safe access
+	tracking.mu.Lock()
+	defer tracking.mu.Unlock()
 
 	// Update repeat count if within escalation window
 	windowStart := time.Now().Add(-am.config.EscalationWindow)
@@ -491,7 +498,22 @@ func (am *ConcurrencyAlertManager) getOrCreateTracking(alertKey string) *alertTr
 		tracking.repeatCount++
 	}
 
-	return tracking
+	return tracking.repeatCount, tracking.escalationLevel
+}
+
+// updateTrackingEscalationLevel updates the escalation level for an alert key thread-safely
+func (am *ConcurrencyAlertManager) updateTrackingEscalationLevel(alertKey string, level int) {
+	am.mu.RLock()
+	tracking, exists := am.alertTracking[alertKey]
+	am.mu.RUnlock()
+
+	if !exists {
+		return
+	}
+
+	tracking.mu.Lock()
+	tracking.escalationLevel = level
+	tracking.mu.Unlock()
 }
 
 // ConcurrencyAlertManager handles sending concurrency alerts with deduplication and cooldown
@@ -557,11 +579,13 @@ func (am *ConcurrencyAlertManager) HandleAlert(alert ConcurrencyAlert) {
 	alertKey := am.generateAlertKey(alert)
 
 	// Get or create tracking info (updates repeat count if within escalation window)
-	tracking := am.getOrCreateTracking(alertKey)
+	// CONCURRENCY FIX: getOrCreateTracking now returns values to avoid race conditions
+	repeatCount, _ := am.getOrCreateTracking(alertKey)
 
 	// Calculate escalation level based on repeat count
-	escalationLevel := am.calculateEscalationLevel(tracking.repeatCount)
-	tracking.escalationLevel = escalationLevel
+	escalationLevel := am.calculateEscalationLevel(repeatCount)
+	// Update tracking's escalation level thread-safely
+	am.updateTrackingEscalationLevel(alertKey, escalationLevel)
 	// Update Prometheus metric for escalation level
 	UpdateEscalationLevel(alert.Type, alert.Provider, alertKey, escalationLevel)
 
@@ -575,7 +599,7 @@ func (am *ConcurrencyAlertManager) HandleAlert(alert ConcurrencyAlert) {
 			"type":         alert.Type,
 			"provider":     alert.Provider,
 			"escalation":   escalationLevel,
-			"repeat_count": tracking.repeatCount,
+			"repeat_count": repeatCount,
 		})
 		return
 	}
@@ -585,7 +609,7 @@ func (am *ConcurrencyAlertManager) HandleAlert(alert ConcurrencyAlert) {
 		"provider":     alert.Provider,
 		"saturation":   alert.Saturation,
 		"escalation":   escalationLevel,
-		"repeat_count": tracking.repeatCount,
+		"repeat_count": repeatCount,
 	})
 
 	// Send to channels based on escalation level with resilience
@@ -685,19 +709,22 @@ func (am *ConcurrencyAlertManager) isInCooldown(alertKey string) bool {
 		return false
 	}
 
-	return time.Since(tracking.lastSentTime) < am.config.DefaultCooldown
+	// CONCURRENCY FIX: Lock tracking for safe access to lastSentTime
+	tracking.mu.RLock()
+	lastSentTime := tracking.lastSentTime
+	tracking.mu.RUnlock()
+
+	return time.Since(lastSentTime) < am.config.DefaultCooldown
 }
 
 // recordAlertSent updates the last sent time for an alert
 func (am *ConcurrencyAlertManager) recordAlertSent(alertKey string) {
 	am.mu.Lock()
-	defer am.mu.Unlock()
-
-	now := time.Now()
 	tracking, exists := am.alertTracking[alertKey]
 	if !exists {
 		// This shouldn't happen if getOrCreateTracking was called first
 		// But create tracking just in case
+		now := time.Now()
 		tracking = &alertTrackingInfo{
 			lastSentTime:    now,
 			repeatCount:     1,
@@ -705,10 +732,15 @@ func (am *ConcurrencyAlertManager) recordAlertSent(alertKey string) {
 			firstSeenTime:   now,
 		}
 		am.alertTracking[alertKey] = tracking
+		am.mu.Unlock()
 		return
 	}
+	am.mu.Unlock()
 
-	tracking.lastSentTime = now
+	// CONCURRENCY FIX: Lock tracking for safe access to lastSentTime
+	tracking.mu.Lock()
+	tracking.lastSentTime = time.Now()
+	tracking.mu.Unlock()
 }
 
 // CleanupOldRecords removes old alert records
@@ -722,8 +754,12 @@ func (am *ConcurrencyAlertManager) CleanupOldRecords(maxAge time.Duration) {
 	deadLetterCount := 0
 
 	// Clean up old alert tracking
+	// CONCURRENCY FIX: Lock each tracking for safe access to lastSentTime
 	for key, tracking := range am.alertTracking {
-		if tracking.lastSentTime.Before(cutoff) {
+		tracking.mu.RLock()
+		lastSent := tracking.lastSentTime
+		tracking.mu.RUnlock()
+		if lastSent.Before(cutoff) {
 			delete(am.alertTracking, key)
 			alertCount++
 		}

@@ -104,15 +104,25 @@ func TestWorkerPool_Submit_FullQueue(t *testing.T) {
 	defer pool.Stop()
 	pool.Start()
 
-	// Block the worker
+	// RACE FIX: Use channel to signal when worker has picked up the blocking task
+	workerStarted := make(chan struct{})
 	blockCh := make(chan struct{})
 	blockTask := NewTaskFunc("block", func(ctx context.Context) (interface{}, error) {
+		close(workerStarted) // Signal that worker is now executing
 		<-blockCh
 		return nil, nil
 	})
 	_ = pool.Submit(blockTask)
 
-	// Fill the queue
+	// Wait for worker to pick up the task (with timeout for safety)
+	select {
+	case <-workerStarted:
+		// Worker is now blocked
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timeout waiting for worker to start blocking task")
+	}
+
+	// Fill the queue (queue size is 1)
 	_ = pool.Submit(NewTaskFunc("fill", func(ctx context.Context) (interface{}, error) {
 		return nil, nil
 	}))

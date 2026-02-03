@@ -10,7 +10,12 @@ import (
 
 // resetConcurrencyMetrics resets the package-level metrics for testing.
 // This function should only be used in tests.
+// CONCURRENCY FIX: Use mutex to protect metric variable access during reset
 func resetConcurrencyMetrics() {
+	// Acquire write lock to prevent other goroutines from accessing metrics during reset
+	concurrencyMetricsMu.Lock()
+	defer concurrencyMetricsMu.Unlock()
+
 	// Unregister all metrics from the default registry first
 	if concurrencyActiveRequestsGauge != nil {
 		prometheus.Unregister(concurrencyActiveRequestsGauge)

@@ -1,0 +1,62 @@
+# Hadolint Configuration
+# https://github.com/hadolint/hadolint
+
+# Global settings
+failure-threshold: warning
+format: tty
+no-color: false
+no-fail: false
+
+# Trusted registries for FROM instructions
+trustedRegistries:
+  - docker.io
+  - gcr.io
+  - ghcr.io
+  - quay.io
+  - registry.access.redhat.com
+  - mcr.microsoft.com
+
+# Ignored rules with justification
+ignored:
+  # DL3008: Pin versions in apt-get install
+  # Justification: We use latest for base images in development
+  # Production images should pin versions
+  # - DL3008
+
+  # DL3018: Pin versions in apk add
+  # Justification: Same as DL3008
+  # - DL3018
+
+  # DL3059: Multiple consecutive RUN instructions
+  # Justification: Sometimes clearer for documentation
+  # - DL3059
+
+# Override specific rules
+override:
+  warning:
+    # Downgrade these to warnings (from errors)
+    - DL3008  # apt-get version pinning
+    - DL3018  # apk version pinning
+    - DL3013  # pip version pinning
+    - DL3016  # npm version pinning
+
+  info:
+    # Downgrade these to info level
+    - DL3059  # Multiple RUN instructions
+
+  error:
+    # Keep these as errors
+    - DL4006  # Set SHELL for RUN with pipes
+    - SC2086  # Double quote to prevent globbing
+    - DL3004  # Do not use sudo
+
+# Style settings
+style:
+  # Require explicit tags for FROM
+  - DL3006
+
+# Label schema for required labels
+label-schema:
+  maintainer: text
+  version: text
+  description: text

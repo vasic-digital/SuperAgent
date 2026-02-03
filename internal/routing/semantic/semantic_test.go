@@ -3,6 +3,8 @@ package semantic
 import (
 	"context"
 	"errors"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -11,17 +13,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Mock encoder for testing
+// Mock encoder for testing - thread-safe version
 type mockEncoder struct {
 	dimension   int
 	encodeFunc  func(ctx context.Context, texts []string) ([][]float32, error)
-	encodeCount int
+	encodeCount int64 // Use int64 for atomic operations
+	mu          sync.Mutex
 }
 
 func (e *mockEncoder) Encode(ctx context.Context, texts []string) ([][]float32, error) {
-	e.encodeCount++
-	if e.encodeFunc != nil {
-		return e.encodeFunc(ctx, texts)
+	atomic.AddInt64(&e.encodeCount, 1)
+	e.mu.Lock()
+	fn := e.encodeFunc
+	e.mu.Unlock()
+
+	if fn != nil {
+		return fn(ctx, texts)
 	}
 
 	// Generate simple embeddings based on text length

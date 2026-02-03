@@ -261,18 +261,31 @@ func TestLoadConcurrencyAlertManagerConfigFromEnv(t *testing.T) {
 }
 
 func TestConcurrencyAlertManager_WebhookDelivery(t *testing.T) {
-	// Create test server to capture requests
-	var receivedRequest *http.Request
+	// CONCURRENCY FIX: Use mutex to protect shared variables from race conditions
+	var mu sync.Mutex
+	var receivedMethod string
+	var receivedContentType string
 	var requestBody []byte
+	requestReceived := make(chan struct{})
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		receivedRequest = r
+		mu.Lock()
+		receivedMethod = r.Method
+		receivedContentType = r.Header.Get("Content-Type")
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
+			mu.Unlock()
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
 		requestBody = body
+		mu.Unlock()
 		w.WriteHeader(http.StatusOK)
+		// Signal that request was received
+		select {
+		case requestReceived <- struct{}{}:
+		default:
+		}
 	}))
 	defer server.Close()
 
@@ -303,17 +316,28 @@ func TestConcurrencyAlertManager_WebhookDelivery(t *testing.T) {
 	// Send alert
 	manager.HandleAlert(alert)
 
-	// Give some time for async webhook delivery
-	time.Sleep(100 * time.Millisecond)
+	// Wait for request to be received with timeout
+	select {
+	case <-requestReceived:
+		// Request received
+	case <-time.After(2 * time.Second):
+		t.Fatal("Timeout waiting for webhook request")
+	}
 
-	// Verify request was received
-	assert.NotNil(t, receivedRequest, "Webhook request should have been sent")
-	assert.Equal(t, "POST", receivedRequest.Method)
-	assert.Equal(t, "application/json", receivedRequest.Header.Get("Content-Type"))
+	// Verify request was received (with lock)
+	mu.Lock()
+	method := receivedMethod
+	contentType := receivedContentType
+	body := make([]byte, len(requestBody))
+	copy(body, requestBody)
+	mu.Unlock()
+
+	assert.Equal(t, "POST", method)
+	assert.Equal(t, "application/json", contentType)
 
 	// Parse request body and verify content
 	var payload map[string]interface{}
-	err := json.Unmarshal(requestBody, &payload)
+	err := json.Unmarshal(body, &payload)
 	assert.NoError(t, err)
 	assert.Equal(t, "concurrency_alert", payload["event"])
 	assert.Equal(t, "high_saturation", payload["type"])
@@ -322,18 +346,31 @@ func TestConcurrencyAlertManager_WebhookDelivery(t *testing.T) {
 }
 
 func TestConcurrencyAlertManager_SlackWebhookDelivery(t *testing.T) {
-	// Create test server to capture requests
-	var receivedRequest *http.Request
+	// CONCURRENCY FIX: Use mutex to protect shared variables from race conditions
+	var mu sync.Mutex
+	var receivedMethod string
+	var receivedContentType string
 	var requestBody []byte
+	requestReceived := make(chan struct{})
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		receivedRequest = r
+		mu.Lock()
+		receivedMethod = r.Method
+		receivedContentType = r.Header.Get("Content-Type")
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
+			mu.Unlock()
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
 		requestBody = body
+		mu.Unlock()
 		w.WriteHeader(http.StatusOK)
+		// Signal that request was received
+		select {
+		case requestReceived <- struct{}{}:
+		default:
+		}
 	}))
 	defer server.Close()
 
@@ -363,17 +400,28 @@ func TestConcurrencyAlertManager_SlackWebhookDelivery(t *testing.T) {
 	// Send alert
 	manager.HandleAlert(alert)
 
-	// Give some time for async webhook delivery
-	time.Sleep(100 * time.Millisecond)
+	// Wait for request to be received with timeout
+	select {
+	case <-requestReceived:
+		// Request received
+	case <-time.After(2 * time.Second):
+		t.Fatal("Timeout waiting for Slack webhook request")
+	}
 
-	// Verify request was received
-	assert.NotNil(t, receivedRequest, "Slack webhook request should have been sent")
-	assert.Equal(t, "POST", receivedRequest.Method)
-	assert.Equal(t, "application/json", receivedRequest.Header.Get("Content-Type"))
+	// Verify request was received (with lock)
+	mu.Lock()
+	method := receivedMethod
+	contentType := receivedContentType
+	body := make([]byte, len(requestBody))
+	copy(body, requestBody)
+	mu.Unlock()
+
+	assert.Equal(t, "POST", method)
+	assert.Equal(t, "application/json", contentType)
 
 	// Parse request body and verify Slack-specific structure
 	var payload map[string]interface{}
-	err := json.Unmarshal(requestBody, &payload)
+	err := json.Unmarshal(body, &payload)
 	assert.NoError(t, err)
 	// Slack payload contains "attachments"
 	attachments, ok := payload["attachments"].([]interface{})
