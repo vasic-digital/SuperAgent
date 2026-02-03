@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"dev.helix.agent/internal/vectordb/qdrant"
+	"dev.helix.agent/internal/adapters/vectordb/qdrant"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

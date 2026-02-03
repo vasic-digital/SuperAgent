@@ -18,7 +18,7 @@ import (
 	"dev.helix.agent/internal/debate/orchestrator"
 	"dev.helix.agent/internal/middleware"
 	"dev.helix.agent/internal/notifications"
-	"dev.helix.agent/internal/security"
+	security "dev.helix.agent/internal/adapters/security"
 	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/tools"
 	"dev.helix.agent/internal/verifier"

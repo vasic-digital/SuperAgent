@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"dev.helix.agent/internal/events"
+	"dev.helix.agent/internal/adapters"
 	"dev.helix.agent/internal/models"
 )
 
@@ -25,7 +25,7 @@ type LazyProviderConfig struct {
 	// PrewarmOnAccess triggers background warm-up after first access
 	PrewarmOnAccess bool
 	// EventBus for publishing provider events
-	EventBus *events.EventBus
+	EventBus *adapters.EventBus
 }
 
 // DefaultLazyProviderConfig returns default configuration
@@ -120,8 +120,8 @@ func (p *LazyProvider) initialize() {
 
 			// Publish success event
 			if p.config.EventBus != nil {
-				p.config.EventBus.Publish(events.NewEvent(
-					events.EventProviderRegistered,
+				p.config.EventBus.Publish(adapters.NewEvent(
+					adapters.EventProviderRegistered,
 					"lazy_provider",
 					map[string]interface{}{
 						"name":     p.name,
@@ -151,8 +151,8 @@ func (p *LazyProvider) initialize() {
 
 	// Publish failure event
 	if p.config.EventBus != nil {
-		p.config.EventBus.Publish(events.NewEvent(
-			events.EventProviderHealthChanged,
+		p.config.EventBus.Publish(adapters.NewEvent(
+			adapters.EventProviderHealthChanged,
 			"lazy_provider",
 			map[string]interface{}{
 				"name":   p.name,
@@ -285,11 +285,11 @@ type LazyProviderRegistry struct {
 	providers map[string]*LazyProvider
 	mu        sync.RWMutex
 	config    *LazyProviderConfig
-	eventBus  *events.EventBus
+	eventBus  *adapters.EventBus
 }
 
 // NewLazyProviderRegistry creates a new lazy provider registry
-func NewLazyProviderRegistry(config *LazyProviderConfig, eventBus *events.EventBus) *LazyProviderRegistry {
+func NewLazyProviderRegistry(config *LazyProviderConfig, eventBus *adapters.EventBus) *LazyProviderRegistry {
 	if config == nil {
 		config = DefaultLazyProviderConfig()
 	}

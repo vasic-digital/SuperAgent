@@ -10,8 +10,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"dev.helix.agent/internal/concurrency"
+	"digital.vasic.concurrency/pkg/pool"
 )
+
+// Alias for backward compatibility
+var concurrency = pool
 
 func TestWorkerPool_BasicOperation(t *testing.T) {
 	pool := concurrency.NewWorkerPool(nil)

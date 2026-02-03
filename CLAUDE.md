@@ -133,6 +133,7 @@ make monitoring-reset-circuits / force-health-check
 - `optimization/` — gptcache, outlines, streaming, sglang, llamaindex, langchain
 - `verifier/` — Startup verification orchestrator and adapters
 - `challenges/` — HelixAgent-specific challenge implementations (plugin, infra bridge, shell adapter)
+- `adapters/` — Bridge layer connecting internal types to extracted modules (20+ adapter files with 75+ tests)
 
 ### Extracted Modules (submodules)
 

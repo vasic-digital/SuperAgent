@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -964,6 +965,11 @@ func TestPRHandler_Execute_ViewWithPRNumber(t *testing.T) {
 }
 
 func TestIssueHandler_Execute_CreateWithOptions(t *testing.T) {
+	// Skip this test if gh CLI is available to avoid creating real issues
+	if _, err := exec.LookPath("gh"); err == nil {
+		t.Skip("Skipping test: gh CLI is available and would create real issues")
+	}
+
 	handler := &IssueHandler{}
 	ctx := context.Background()
 
@@ -978,6 +984,11 @@ func TestIssueHandler_Execute_CreateWithOptions(t *testing.T) {
 }
 
 func TestWorkflowHandler_Execute_RunWithOptions(t *testing.T) {
+	// Skip this test if gh CLI is available to avoid running real workflows
+	if _, err := exec.LookPath("gh"); err == nil {
+		t.Skip("Skipping test: gh CLI is available and would run real workflows")
+	}
+
 	handler := &WorkflowHandler{}
 	ctx := context.Background()
 

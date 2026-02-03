@@ -1,3 +1,6 @@
+// Package database provides database connectivity and operations for HelixAgent.
+// This package now uses the extracted digital.vasic.database module under the hood
+// while maintaining backward compatibility with the existing API.
 package database
 
 import (
@@ -5,19 +8,23 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
+
+	db "digital.vasic.database/pkg/database"
+	"digital.vasic.database/pkg/postgres"
 
 	"dev.helix.agent/internal/config"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Row interface for row scanning
+// Row interface for row scanning - compatible with the database module's Row.
 type Row interface {
 	Scan(dest ...any) error
 }
 
-// DB interface for database operations
+// DB interface for database operations.
 type DB interface {
 	Ping() error
 	Exec(query string, args ...any) error
@@ -27,71 +34,108 @@ type DB interface {
 	HealthCheck() error
 }
 
-// PostgresDB implements DB using PostgreSQL with pgxpool
+// PostgresDB implements DB using PostgreSQL with the extracted database module.
 type PostgresDB struct {
-	pool *pgxpool.Pool
+	client *postgres.Client
+	pool   *pgxpool.Pool
 }
 
-// pgxRow wraps pgx.Row to implement the Row interface
+// pgxRow wraps pgx.Row to implement the Row interface.
 type pgxRow struct {
 	row pgx.Row
 }
 
-// Scan implements the Row interface
+// Scan implements the Row interface.
 func (r *pgxRow) Scan(dest ...any) error {
 	return r.row.Scan(dest...)
 }
 
+// dbRow wraps the database module's Row to implement our Row interface.
+type dbRow struct {
+	row db.Row
+}
+
+func (r *dbRow) Scan(dest ...any) error {
+	return r.row.Scan(dest...)
+}
+
+// NewPostgresDB creates a new PostgresDB using the extracted database module.
 func NewPostgresDB(cfg *config.Config) (*PostgresDB, error) {
-	// Use config values if provided, otherwise fall back to environment variables with defaults
-	dbHost := cfg.Database.Host
-	if dbHost == "" {
-		dbHost = getEnv("DB_HOST", "localhost")
-	}
+	pgCfg := buildPostgresConfig(cfg)
 
-	dbPort := cfg.Database.Port
-	if dbPort == "" {
-		dbPort = getEnv("DB_PORT", "5432")
-	}
+	client := postgres.New(pgCfg)
 
-	dbUser := cfg.Database.User
-	if dbUser == "" {
-		dbUser = getEnv("DB_USER", "helixagent")
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	dbPassword := cfg.Database.Password
-	if dbPassword == "" {
-		dbPassword = getEnv("DB_PASSWORD", "secret")
-	}
-
-	dbName := cfg.Database.Name
-	if dbName == "" {
-		dbName = getEnv("DB_NAME", "helixagent_db")
-	}
-
-	sslMode := cfg.Database.SSLMode
-	if sslMode == "" {
-		sslMode = "disable"
-	}
-
-	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		dbUser, dbPassword, dbHost, dbPort, dbName, sslMode)
-
-	pool, err := pgxpool.New(context.Background(), connString)
-	if err != nil {
+	if err := client.Connect(ctx); err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Test connection
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	log.Printf("Connected to PostgreSQL database: %s", pgCfg.DBName)
 
-	if err := pool.Ping(ctx); err != nil {
-		log.Printf("Warning: Database connection test failed: %v", err)
+	return &PostgresDB{
+		client: client,
+		pool:   client.Pool(),
+	}, nil
+}
+
+// buildPostgresConfig converts HelixAgent config to postgres module config.
+func buildPostgresConfig(cfg *config.Config) *postgres.Config {
+	pgCfg := postgres.DefaultConfig()
+
+	// Use config values if provided, otherwise fall back to environment variables
+	if cfg.Database.Host != "" {
+		pgCfg.Host = cfg.Database.Host
+	} else if host := os.Getenv("DB_HOST"); host != "" {
+		pgCfg.Host = host
+	} else {
+		pgCfg.Host = "localhost"
 	}
 
-	log.Printf("Connected to PostgreSQL database: %s", dbName)
-	return &PostgresDB{pool: pool}, nil
+	if cfg.Database.Port != "" {
+		if port, err := strconv.Atoi(cfg.Database.Port); err == nil {
+			pgCfg.Port = port
+		}
+	} else if port := os.Getenv("DB_PORT"); port != "" {
+		if p, err := strconv.Atoi(port); err == nil {
+			pgCfg.Port = p
+		}
+	}
+
+	if cfg.Database.User != "" {
+		pgCfg.User = cfg.Database.User
+	} else if user := os.Getenv("DB_USER"); user != "" {
+		pgCfg.User = user
+	} else {
+		pgCfg.User = "helixagent"
+	}
+
+	if cfg.Database.Password != "" {
+		pgCfg.Password = cfg.Database.Password
+	} else if pass := os.Getenv("DB_PASSWORD"); pass != "" {
+		pgCfg.Password = pass
+	} else {
+		pgCfg.Password = "secret"
+	}
+
+	if cfg.Database.Name != "" {
+		pgCfg.DBName = cfg.Database.Name
+	} else if name := os.Getenv("DB_NAME"); name != "" {
+		pgCfg.DBName = name
+	} else {
+		pgCfg.DBName = "helixagent_db"
+	}
+
+	if cfg.Database.SSLMode != "" {
+		pgCfg.SSLMode = cfg.Database.SSLMode
+	} else {
+		pgCfg.SSLMode = "disable"
+	}
+
+	pgCfg.ApplicationName = "helixagent"
+
+	return pgCfg
 }
 
 func (p *PostgresDB) Ping() error {
@@ -127,13 +171,23 @@ func (p *PostgresDB) QueryRow(query string, args ...any) Row {
 }
 
 func (p *PostgresDB) Close() error {
-	p.pool.Close()
+	if p.client != nil {
+		return p.client.Close()
+	}
+	if p.pool != nil {
+		p.pool.Close()
+	}
 	return nil
 }
 
-// GetPool returns the underlying connection pool
+// GetPool returns the underlying connection pool.
 func (p *PostgresDB) GetPool() *pgxpool.Pool {
 	return p.pool
+}
+
+// Database returns the underlying database.Database interface from the module.
+func (p *PostgresDB) Database() db.Database {
+	return p.client
 }
 
 // HealthCheck performs a health check on the database.
@@ -144,7 +198,7 @@ func (p *PostgresDB) HealthCheck() error {
 	return p.pool.Ping(ctx)
 }
 
-// getEnv gets environment variable or returns default
+// getEnv gets environment variable or returns default.
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
@@ -152,8 +206,13 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// RunMigration executes database migrations
+// RunMigration executes database migrations.
 func RunMigration(db *PostgresDB, migrations []string) error {
+	if db.client != nil {
+		return db.client.Migrate(context.Background(), migrations)
+	}
+
+	// Fallback to direct execution if client not available
 	for _, migration := range migrations {
 		log.Printf("Running migration: %s", migration)
 		if err := db.Exec(migration); err != nil {
@@ -432,7 +491,7 @@ var migrations = []string{
 	`CREATE INDEX IF NOT EXISTS idx_protocol_metrics_created_at ON protocol_metrics(created_at)`,
 }
 
-// Legacy interface for backward compatibility
+// Legacy interface for backward compatibility.
 type LegacyDB interface {
 	Ping() error
 	Exec(query string, args ...any) error
@@ -440,21 +499,12 @@ type LegacyDB interface {
 	Close() error
 }
 
-// Connect establishes a real PostgreSQL connection via pgx.
+// Connect establishes a real PostgreSQL connection using the new module.
 func Connect() (LegacyDB, error) {
-	dbHost := getEnv("DB_HOST", "localhost")
-	dbPort := getEnv("DB_PORT", "5432")
-	dbUser := getEnv("DB_USER", "helixagent")
-	dbPassword := getEnv("DB_PASSWORD", "secret")
-	dbName := getEnv("DB_NAME", "helixagent_db")
-
-	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		dbUser, dbPassword, dbHost, dbPort, dbName)
-
-	pool, err := pgxpool.New(context.Background(), connString)
+	cfg := &config.Config{}
+	db, err := NewPostgresDB(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, err
 	}
-
-	return &PostgresDB{pool: pool}, nil
+	return db, nil
 }

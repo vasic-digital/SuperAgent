@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"dev.helix.agent/internal/vectordb/qdrant"
+	"dev.helix.agent/internal/adapters/vectordb/qdrant"
 	"github.com/sirupsen/logrus"
 )
 
