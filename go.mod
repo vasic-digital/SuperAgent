@@ -26,7 +26,7 @@ require (
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/v9 v9.17.2
 	github.com/segmentio/kafka-go v0.4.49
-	github.com/shirou/gopsutil/v3 v3.24.1
+	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
@@ -56,6 +56,42 @@ replace digital.vasic.challenges => ./Challenges
 
 replace llm-verifier => ./LLMsVerifier/llm-verifier
 
+replace digital.vasic.auth => ./Auth
+
+replace digital.vasic.cache => ./Cache
+
+replace digital.vasic.concurrency => ./Concurrency
+
+replace digital.vasic.database => ./Database
+
+replace digital.vasic.embeddings => ./Embeddings
+
+replace digital.vasic.eventbus => ./EventBus
+
+replace digital.vasic.formatters => ./Formatters
+
+replace digital.vasic.mcp => ./MCP_Module
+
+replace digital.vasic.memory => ./Memory
+
+replace digital.vasic.messaging => ./Messaging
+
+replace digital.vasic.observability => ./Observability
+
+replace digital.vasic.optimization => ./Optimization
+
+replace digital.vasic.plugins => ./Plugins
+
+replace digital.vasic.rag => ./RAG
+
+replace digital.vasic.security => ./Security
+
+replace digital.vasic.storage => ./Storage
+
+replace digital.vasic.streaming => ./Streaming
+
+replace digital.vasic.vectordb => ./VectorDB
+
 require (
 	github.com/ClickHouse/ch-go v0.69.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -78,7 +114,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.27.0 // indirect
-	github.com/goccy/go-json v0.10.2 // indirect
+	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
