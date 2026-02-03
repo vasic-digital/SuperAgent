@@ -195,12 +195,14 @@ func (p *QwenACPProvider) Start() error {
 }
 
 func (p *QwenACPProvider) startProcess() error {
+	// CONCURRENCY FIX: Only hold mutex during process setup, release before calling
+	// methods that also need the mutex (initializeWithContext, createSessionWithContext)
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	// Check if qwen command exists
 	qwenPath, err := exec.LookPath("qwen")
 	if err != nil {
+		p.mu.Unlock()
 		return fmt.Errorf("qwen command not found: %w", err)
 	}
 
@@ -211,16 +213,19 @@ func (p *QwenACPProvider) startProcess() error {
 	// Set up pipes
 	p.stdin, err = p.cmd.StdinPipe()
 	if err != nil {
+		p.mu.Unlock()
 		return fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
 
 	p.stdout, err = p.cmd.StdoutPipe()
 	if err != nil {
+		p.mu.Unlock()
 		return fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
 
 	// Start the process
 	if err := p.cmd.Start(); err != nil {
+		p.mu.Unlock()
 		return fmt.Errorf("failed to start qwen --acp: %w", err)
 	}
 
@@ -231,26 +236,31 @@ func (p *QwenACPProvider) startProcess() error {
 	// Start response reader goroutine
 	go p.readResponses()
 
-		// Initialize the ACP connection with timeout
+	// Release mutex before calling methods that need it
+	p.mu.Unlock()
+
+	// Initialize the ACP connection with timeout
 	initCtx, initCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer initCancel()
 
 	// Wait for readResponses to start before initializing
 	time.Sleep(100 * time.Millisecond)
 
-	// Initialize with context
+	// Initialize with context (this calls sendRequest which needs the mutex)
 	if err := p.initializeWithContext(initCtx); err != nil {
 		p.Stop()
 		return fmt.Errorf("failed to initialize ACP: %w", err)
 	}
 
-	// Create a new session with context
+	// Create a new session with context (this also calls sendRequest)
 	if err := p.createSessionWithContext(initCtx); err != nil {
 		p.Stop()
 		return fmt.Errorf("failed to create session: %w", err)
 	}
 
+	p.mu.Lock()
 	p.initialized = true
+	p.mu.Unlock()
 	return nil
 }
 
@@ -302,7 +312,11 @@ func (p *QwenACPProvider) handleNotification(resp *acpResponse) {
 
 // sendRequest sends an ACP request and waits for response
 func (p *QwenACPProvider) sendRequest(ctx context.Context, method string, params interface{}) (*acpResponse, error) {
-	if !p.isRunning {
+	// CONCURRENCY FIX: Check isRunning under mutex to avoid race with readResponses
+	p.mu.Lock()
+	running := p.isRunning
+	p.mu.Unlock()
+	if !running {
 		return nil, fmt.Errorf("ACP process not running")
 	}
 
@@ -560,7 +574,11 @@ func (p *QwenACPProvider) HealthCheck() error {
 		return fmt.Errorf("failed to start ACP: %w", err)
 	}
 
-	if !p.isRunning {
+	// CONCURRENCY FIX: Check isRunning under mutex
+	p.mu.Lock()
+	running := p.isRunning
+	p.mu.Unlock()
+	if !running {
 		return fmt.Errorf("ACP process not running")
 	}
 

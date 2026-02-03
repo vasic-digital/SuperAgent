@@ -1,0 +1,85 @@
+# Pre-commit hooks configuration
+# https://pre-commit.com/
+
+repos:
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ['--unsafe']  # Allow custom tags
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: ['--branch', 'main']
+
+  # Go formatting and linting
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+      - id: go-vet
+      - id: go-mod-tidy
+
+  # Secrets detection
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            .*_test\.go|
+            .*\.md|
+            go\.sum|
+            \.env\.example|
+            configs/.*\.yaml
+          )$
+
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        args: ['--config', '.hadolint.yaml']
+
+  # YAML linting
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        args: ['-c', '.yamllint.yaml']
+
+  # Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        args: ['--severity=warning']
+        exclude: |
+          (?x)^(
+            cli_agents/|
+            MCP/
+          )
+
+  # Security scanning (lightweight)
+  - repo: https://github.com/securego/gosec
+    rev: v2.18.2
+    hooks:
+      - id: gosec
+        args: ['-exclude-dir=vendor', '-exclude-dir=cli_agents', '-exclude-dir=MCP', '-fmt=json', '-out=gosec-results.json', '-no-fail']
+
+# CI settings
+ci:
+  autofix_prs: true
+  autofix_commit_msg: 'style: auto fixes from pre-commit hooks'
+  autoupdate_branch: 'develop'
+  autoupdate_commit_msg: 'chore: pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

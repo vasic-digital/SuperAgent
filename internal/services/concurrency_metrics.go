@@ -9,6 +9,8 @@ import (
 
 // Package-level metrics (registered once)
 var (
+	// CONCURRENCY FIX: Add mutex to protect metric variable access during reset in tests
+	concurrencyMetricsMu                  sync.RWMutex
 	concurrencyMetricsOnce                sync.Once
 	concurrencyActiveRequestsGauge        *prometheus.GaugeVec
 	concurrencySemaphoreAvailableGauge    *prometheus.GaugeVec
@@ -183,6 +185,15 @@ func UpdateConcurrencyMetrics(provider string, totalPermits, acquiredPermits, ac
 	// Initialize metrics if not already done
 	initConcurrencyMetrics()
 
+	// CONCURRENCY FIX: Protect metric access with read lock
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+
+	// Guard against nil metrics (can happen during test resets)
+	if concurrencyActiveRequestsGauge == nil {
+		return
+	}
+
 	// Update gauges
 	concurrencyActiveRequestsGauge.WithLabelValues(provider).Set(float64(activeRequests))
 	if totalPermits > 0 {
@@ -200,12 +211,22 @@ func UpdateConcurrencyMetrics(provider string, totalPermits, acquiredPermits, ac
 // RecordAcquisitionTimeout records a semaphore acquisition timeout
 func RecordAcquisitionTimeout(provider string) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAcquisitionTimeoutsCounter == nil {
+		return
+	}
 	concurrencyAcquisitionTimeoutsCounter.WithLabelValues(provider).Inc()
 }
 
 // RecordAcquisitionError records a semaphore acquisition error (non-timeout)
 func RecordAcquisitionError(provider string) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAcquisitionErrorsCounter == nil {
+		return
+	}
 	concurrencyAcquisitionErrorsCounter.WithLabelValues(provider).Inc()
 }
 
@@ -214,65 +235,120 @@ func RecordAcquisitionError(provider string) {
 // RecordAlertDelivery records an alert delivery attempt
 func RecordAlertDelivery(channel, provider, alertType string) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAlertDeliveryTotal == nil {
+		return
+	}
 	concurrencyAlertDeliveryTotal.WithLabelValues(channel, provider, alertType).Inc()
 }
 
 // RecordAlertDeliveryError records an alert delivery error
 func RecordAlertDeliveryError(channel, provider, alertType string) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAlertDeliveryErrorsTotal == nil {
+		return
+	}
 	concurrencyAlertDeliveryErrorsTotal.WithLabelValues(channel, provider, alertType).Inc()
 }
 
 // RecordRetryAttempt records a retry attempt
 func RecordRetryAttempt(channel, provider, alertType string) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAlertRetryAttemptsTotal == nil {
+		return
+	}
 	concurrencyAlertRetryAttemptsTotal.WithLabelValues(channel, provider, alertType).Inc()
 }
 
 // RecordRetrySuccess records a successful retry
 func RecordRetrySuccess(channel, provider, alertType string) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAlertRetrySuccessTotal == nil {
+		return
+	}
 	concurrencyAlertRetrySuccessTotal.WithLabelValues(channel, provider, alertType).Inc()
 }
 
 // UpdateRetryQueueSize updates the retry queue size gauge
 func UpdateRetryQueueSize(channel string, size int) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAlertRetryQueueSize == nil {
+		return
+	}
 	concurrencyAlertRetryQueueSize.WithLabelValues(channel).Set(float64(size))
 }
 
 // UpdateDeadLetterQueueSize updates the dead letter queue size gauge
 func UpdateDeadLetterQueueSize(channel string, size int) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAlertDeadLetterQueueSize == nil {
+		return
+	}
 	concurrencyAlertDeadLetterQueueSize.WithLabelValues(channel).Set(float64(size))
 }
 
 // RecordAlertHandled records an alert being handled (including those filtered by cooldown)
 func RecordAlertHandled(alertType, provider, severity string) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAlertTotal == nil {
+		return
+	}
 	concurrencyAlertTotal.WithLabelValues(alertType, provider, severity).Inc()
 }
 
 // RecordThresholdBreach records a threshold breach (warning/critical)
 func RecordThresholdBreach(thresholdType, channel, provider string) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAlertThresholdBreaches == nil {
+		return
+	}
 	concurrencyAlertThresholdBreaches.WithLabelValues(thresholdType, channel, provider).Inc()
 }
 
 // UpdateCircuitBreakerState updates the circuit breaker state gauge for a channel
 func UpdateCircuitBreakerState(channel string, state int) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAlertCircuitBreakerState == nil {
+		return
+	}
 	concurrencyAlertCircuitBreakerState.WithLabelValues(channel).Set(float64(state))
 }
 
 // RecordRateLimitHit records a rate limit hit (when rate limiting prevents sending)
 func RecordRateLimitHit(channel string) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAlertRateLimitHits == nil {
+		return
+	}
 	concurrencyAlertRateLimitHits.WithLabelValues(channel).Inc()
 }
 
 // UpdateEscalationLevel updates the escalation level gauge for an alert
 func UpdateEscalationLevel(alertType, provider, alertKey string, level int) {
 	initConcurrencyMetrics()
+	concurrencyMetricsMu.RLock()
+	defer concurrencyMetricsMu.RUnlock()
+	if concurrencyAlertEscalationLevel == nil {
+		return
+	}
 	concurrencyAlertEscalationLevel.WithLabelValues(alertType, provider, alertKey).Set(float64(level))
 }

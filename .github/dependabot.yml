@@ -1,0 +1,99 @@
+version: 2
+updates:
+  # Go modules
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    groups:
+      go-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "dependencies"
+      - "go"
+    commit-message:
+      prefix: "chore(deps)"
+    reviewers:
+      - "milosvasic"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
+
+  # Docker
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"
+
+  # LLMsVerifier submodule
+  - package-ecosystem: "gomod"
+    directory: "/LLMsVerifier"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "submodule"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Toolkit submodule
+  - package-ecosystem: "gomod"
+    directory: "/Toolkit"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "submodule"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Containers submodule
+  - package-ecosystem: "gomod"
+    directory: "/Containers"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "submodule"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Challenges submodule
+  - package-ecosystem: "gomod"
+    directory: "/Challenges"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "submodule"
+    commit-message:
+      prefix: "chore(deps)"

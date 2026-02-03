@@ -62,12 +62,14 @@ func DefaultPoolConfig() *PoolConfig {
 
 // PoolMetrics tracks worker pool statistics
 type PoolMetrics struct {
-	ActiveWorkers  int64
-	QueuedTasks    int64
-	CompletedTasks int64
-	FailedTasks    int64
-	TotalLatencyUs int64 // Total latency in microseconds
-	TaskCount      int64 // For calculating average
+	ActiveWorkers    int64
+	QueuedTasks      int64
+	CompletedTasks   int64
+	FailedTasks      int64
+	TotalLatencyUs   int64 // Total latency in microseconds
+	TaskCount        int64 // For calculating average
+	DroppedResults   int64 // PERFORMANCE FIX: Track dropped results for overflow detection
+	OverflowWarnings int64 // Number of times overflow was detected
 }
 
 // AverageLatency returns the average task latency
@@ -167,10 +169,17 @@ func (p *WorkerPool) worker(id int) {
 			atomic.AddInt64(&p.metrics.ActiveWorkers, -1)
 
 			// Send result (non-blocking if channel is full)
+			// PERFORMANCE FIX: Track dropped results instead of silent data loss
 			select {
 			case p.results <- result:
 			default:
-				// Result channel full, drop or log
+				// Result channel full - track overflow for monitoring
+				atomic.AddInt64(&p.metrics.DroppedResults, 1)
+				atomic.AddInt64(&p.metrics.OverflowWarnings, 1)
+				// Still call OnError if configured to notify about overflow
+				if p.config.OnError != nil {
+					p.config.OnError(result.TaskID, fmt.Errorf("result channel overflow: result dropped for task %s", result.TaskID))
+				}
 			}
 
 			// Call callbacks

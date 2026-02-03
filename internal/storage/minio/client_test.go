@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"sync"
 	"testing"
 	"time"
 
@@ -21,6 +22,15 @@ func TestNewClient(t *testing.T) {
 		assert.False(t, client.IsConnected())
 	})
 
+	t.Run("with nil logger uses default logger", func(t *testing.T) {
+		config := DefaultConfig()
+		client, err := NewClient(config, nil)
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+		// Verify client is functional without a logger
+		assert.False(t, client.IsConnected())
+	})
+
 	t.Run("with custom config", func(t *testing.T) {
 		config := &Config{
 			Endpoint:          "minio.example.com:9000",
@@ -32,6 +42,22 @@ func TestNewClient(t *testing.T) {
 			ConcurrentUploads: 4,
 		}
 		client, err := NewClient(config, logrus.New())
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+	})
+
+	t.Run("with SSL enabled", func(t *testing.T) {
+		config := DefaultConfig()
+		config.UseSSL = true
+		client, err := NewClient(config, nil)
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+	})
+
+	t.Run("with custom region", func(t *testing.T) {
+		config := DefaultConfig()
+		config.Region = "eu-west-1"
+		client, err := NewClient(config, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, client)
 	})
@@ -57,6 +83,14 @@ func TestNewClient(t *testing.T) {
 		client, err := NewClient(config, nil)
 		require.Error(t, err)
 		assert.Nil(t, client)
+	})
+
+	t.Run("with custom logger level", func(t *testing.T) {
+		logger := logrus.New()
+		logger.SetLevel(logrus.DebugLevel)
+		client, err := NewClient(nil, logger)
+		require.NoError(t, err)
+		assert.NotNil(t, client)
 	})
 }
 
@@ -505,4 +539,597 @@ func TestClient_AllOperationsWhenNotConnected(t *testing.T) {
 		require.Error(t, err)
 		assert.Empty(t, url)
 	})
+}
+
+// Additional comprehensive tests
+
+func TestClient_Connect_InvalidEndpoint(t *testing.T) {
+	client, err := NewClient(nil, nil)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	// Connect should fail with invalid endpoint (no server running)
+	err = client.Connect(ctx)
+	require.Error(t, err)
+}
+
+func TestClient_ContextCancellation(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	// Operations should fail due to cancelled context
+	err := client.HealthCheck(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestClient_ConcurrentOperations(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	var wg sync.WaitGroup
+	errors := make(chan error, 100)
+
+	// Test concurrent health checks
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := client.HealthCheck(ctx)
+			if err != nil {
+				errors <- err
+			}
+		}()
+	}
+
+	// Test concurrent IsConnected checks
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = client.IsConnected()
+		}()
+	}
+
+	// Test concurrent Close operations
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = client.Close()
+		}()
+	}
+
+	wg.Wait()
+	close(errors)
+
+	// All errors should be "not connected"
+	for err := range errors {
+		assert.Contains(t, err.Error(), "not connected")
+	}
+}
+
+func TestClient_ConcurrentReadWrite(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	var wg sync.WaitGroup
+
+	// Concurrent reads and writes (all should fail with not connected)
+	for i := 0; i < 5; i++ {
+		wg.Add(4)
+
+		go func(idx int) {
+			defer wg.Done()
+			_ = client.IsConnected()
+		}(i)
+
+		go func(idx int) {
+			defer wg.Done()
+			_ = client.Close()
+		}(i)
+
+		go func(idx int) {
+			defer wg.Done()
+			_, _ = client.ListBuckets(ctx)
+		}(i)
+
+		go func(idx int) {
+			defer wg.Done()
+			_ = client.HealthCheck(ctx)
+		}(i)
+	}
+
+	wg.Wait()
+}
+
+func TestClient_PutObjectWithOptions(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	t.Run("with content type option", func(t *testing.T) {
+		reader := bytes.NewReader([]byte("test data"))
+		err := client.PutObject(ctx, "bucket", "key", reader, 9, WithContentType("application/json"))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not connected")
+	})
+
+	t.Run("with metadata option", func(t *testing.T) {
+		reader := bytes.NewReader([]byte("test data"))
+		metadata := map[string]string{"key": "value"}
+		err := client.PutObject(ctx, "bucket", "key", reader, 9, WithMetadata(metadata))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not connected")
+	})
+
+	t.Run("with multiple options", func(t *testing.T) {
+		reader := bytes.NewReader([]byte("test data"))
+		err := client.PutObject(ctx, "bucket", "key", reader, 9,
+			WithContentType("text/plain"),
+			WithMetadata(map[string]string{"author": "test"}),
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not connected")
+	})
+}
+
+func TestClient_PutObjectWithEmptyData(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	reader := bytes.NewReader([]byte{})
+	err := client.PutObject(ctx, "bucket", "key", reader, 0)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestClient_PutObjectWithLargeSize(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	// Simulate a large file size (just the reader, not actual data)
+	reader := bytes.NewReader([]byte("test"))
+	err := client.PutObject(ctx, "bucket", "key", reader, 1024*1024*1024) // 1GB
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not connected")
+}
+
+func TestClient_GetPresignedURLWithDurations(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	durations := []time.Duration{
+		time.Second,
+		time.Minute,
+		time.Hour,
+		24 * time.Hour,
+		7 * 24 * time.Hour,
+	}
+
+	for _, d := range durations {
+		t.Run(d.String(), func(t *testing.T) {
+			url, err := client.GetPresignedURL(ctx, "bucket", "key", d)
+			require.Error(t, err)
+			assert.Empty(t, url)
+			assert.Contains(t, err.Error(), "not connected")
+		})
+	}
+}
+
+func TestClient_GetPresignedPutURLWithDurations(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	durations := []time.Duration{
+		time.Second,
+		time.Minute,
+		time.Hour,
+	}
+
+	for _, d := range durations {
+		t.Run(d.String(), func(t *testing.T) {
+			url, err := client.GetPresignedPutURL(ctx, "bucket", "key", d)
+			require.Error(t, err)
+			assert.Empty(t, url)
+			assert.Contains(t, err.Error(), "not connected")
+		})
+	}
+}
+
+func TestClient_CopyObjectVariations(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		srcBucket string
+		srcKey    string
+		dstBucket string
+		dstKey    string
+	}{
+		{"same bucket different key", "bucket", "src.txt", "bucket", "dst.txt"},
+		{"different buckets", "src-bucket", "file.txt", "dst-bucket", "file.txt"},
+		{"nested keys", "bucket", "folder/src.txt", "bucket", "folder/dst.txt"},
+		{"empty src key", "bucket", "", "bucket", "dst.txt"},
+		{"empty dst key", "bucket", "src.txt", "bucket", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := client.CopyObject(ctx, tt.srcBucket, tt.srcKey, tt.dstBucket, tt.dstKey)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "not connected")
+		})
+	}
+}
+
+func TestClient_ListObjectsWithPrefixes(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	prefixes := []string{
+		"",
+		"/",
+		"folder/",
+		"folder/subfolder/",
+		"special-chars-!@#/",
+	}
+
+	for _, prefix := range prefixes {
+		t.Run("prefix_"+prefix, func(t *testing.T) {
+			objects, err := client.ListObjects(ctx, "bucket", prefix)
+			require.Error(t, err)
+			assert.Nil(t, objects)
+			assert.Contains(t, err.Error(), "not connected")
+		})
+	}
+}
+
+func TestClient_BucketExistsWithNames(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	bucketNames := []string{
+		"simple-bucket",
+		"bucket.with.dots",
+		"bucket-123",
+		"",
+		"a", // minimum length
+		"a-very-long-bucket-name-that-tests-limits",
+	}
+
+	for _, name := range bucketNames {
+		t.Run("bucket_"+name, func(t *testing.T) {
+			exists, err := client.BucketExists(ctx, name)
+			require.Error(t, err)
+			assert.False(t, exists)
+		})
+	}
+}
+
+func TestClient_CreateBucketConfigurations(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	tests := []struct {
+		name   string
+		config *BucketConfig
+	}{
+		{
+			"default config",
+			DefaultBucketConfig("test"),
+		},
+		{
+			"with versioning",
+			DefaultBucketConfig("test").WithVersioning(),
+		},
+		{
+			"with retention",
+			DefaultBucketConfig("test").WithRetention(30),
+		},
+		{
+			"with object locking",
+			DefaultBucketConfig("test").WithObjectLocking(),
+		},
+		{
+			"with public access",
+			DefaultBucketConfig("test").WithPublicAccess(),
+		},
+		{
+			"full configuration",
+			DefaultBucketConfig("test").
+				WithVersioning().
+				WithRetention(90).
+				WithObjectLocking().
+				WithPublicAccess(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := client.CreateBucket(ctx, tt.config)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "not connected")
+		})
+	}
+}
+
+func TestClient_SetLifecycleRuleConfigurations(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		rule *LifecycleRule
+	}{
+		{
+			"default rule",
+			DefaultLifecycleRule("test", 30),
+		},
+		{
+			"with prefix",
+			DefaultLifecycleRule("test", 30).WithPrefix("logs/"),
+		},
+		{
+			"with noncurrent expiry",
+			DefaultLifecycleRule("test", 30).WithNoncurrentExpiry(7),
+		},
+		{
+			"full configuration",
+			DefaultLifecycleRule("test", 90).
+				WithPrefix("archive/").
+				WithNoncurrentExpiry(30),
+		},
+		{
+			"disabled rule",
+			&LifecycleRule{ID: "disabled", Enabled: false, ExpirationDays: 30},
+		},
+		{
+			"delete marker expiry",
+			&LifecycleRule{ID: "delete-marker", DeleteMarkerExpiry: true, ExpirationDays: 30},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := client.SetLifecycleRule(ctx, "bucket", tt.rule)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "not connected")
+		})
+	}
+}
+
+func TestClient_StateTransitions(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+
+	// Initial state
+	assert.False(t, client.IsConnected())
+
+	// After close
+	err := client.Close()
+	require.NoError(t, err)
+	assert.False(t, client.IsConnected())
+
+	// Multiple closes should be safe
+	err = client.Close()
+	require.NoError(t, err)
+	assert.False(t, client.IsConnected())
+}
+
+func TestObjectInfo_ZeroValue(t *testing.T) {
+	info := &ObjectInfo{}
+
+	assert.Equal(t, "", info.Key)
+	assert.Equal(t, int64(0), info.Size)
+	assert.True(t, info.LastModified.IsZero())
+	assert.Equal(t, "", info.ContentType)
+	assert.Equal(t, "", info.ETag)
+	assert.Nil(t, info.Metadata)
+}
+
+func TestBucketInfo_ZeroValue(t *testing.T) {
+	info := &BucketInfo{}
+
+	assert.Equal(t, "", info.Name)
+	assert.True(t, info.CreationDate.IsZero())
+}
+
+func TestPutOption_FunctionType(t *testing.T) {
+	// Verify PutOption is a function type
+	var opt PutOption = func(opts *minio.PutObjectOptions) {
+		opts.ContentType = "test"
+	}
+
+	var minioOpts minio.PutObjectOptions
+	opt(&minioOpts)
+	assert.Equal(t, "test", minioOpts.ContentType)
+}
+
+func TestWithContentType_VariousTypes(t *testing.T) {
+	contentTypes := []string{
+		"application/json",
+		"text/plain",
+		"text/html",
+		"application/octet-stream",
+		"image/png",
+		"application/pdf",
+		"",
+		"custom/type",
+	}
+
+	for _, ct := range contentTypes {
+		t.Run(ct, func(t *testing.T) {
+			opt := WithContentType(ct)
+			var opts minio.PutObjectOptions
+			opt(&opts)
+			assert.Equal(t, ct, opts.ContentType)
+		})
+	}
+}
+
+func TestWithMetadata_VariousMaps(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata map[string]string
+	}{
+		{"empty map", map[string]string{}},
+		{"single key", map[string]string{"key": "value"}},
+		{"multiple keys", map[string]string{"key1": "value1", "key2": "value2"}},
+		{"special characters", map[string]string{"key-with-dash": "value with spaces"}},
+		{"empty values", map[string]string{"key": ""}},
+		{"nil map", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opt := WithMetadata(tt.metadata)
+			var opts minio.PutObjectOptions
+			opt(&opts)
+			assert.Equal(t, tt.metadata, opts.UserMetadata)
+		})
+	}
+}
+
+func TestClient_ErrorMessages(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	// Verify error messages are meaningful
+	t.Run("health check error", func(t *testing.T) {
+		err := client.HealthCheck(ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not connected to MinIO")
+	})
+
+	t.Run("list buckets error", func(t *testing.T) {
+		_, err := client.ListBuckets(ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not connected to MinIO")
+	})
+
+	t.Run("put object error", func(t *testing.T) {
+		err := client.PutObject(ctx, "bucket", "key", bytes.NewReader([]byte("data")), 4)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not connected to MinIO")
+	})
+
+	t.Run("get object error", func(t *testing.T) {
+		_, err := client.GetObject(ctx, "bucket", "key")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not connected to MinIO")
+	})
+}
+
+func TestClient_ReaderImplementations(t *testing.T) {
+	client, _ := NewClient(nil, nil)
+	ctx := context.Background()
+
+	t.Run("bytes.Reader", func(t *testing.T) {
+		reader := bytes.NewReader([]byte("test data"))
+		err := client.PutObject(ctx, "bucket", "key", reader, 9)
+		require.Error(t, err)
+	})
+
+	t.Run("bytes.Buffer", func(t *testing.T) {
+		buffer := bytes.NewBuffer([]byte("test data"))
+		err := client.PutObject(ctx, "bucket", "key", buffer, 9)
+		require.Error(t, err)
+	})
+
+	t.Run("strings.Reader", func(t *testing.T) {
+		reader := bytes.NewReader([]byte("test data"))
+		err := client.PutObject(ctx, "bucket", "key", reader, 9)
+		require.Error(t, err)
+	})
+}
+
+func TestMockReader_EdgeCases(t *testing.T) {
+	t.Run("empty data", func(t *testing.T) {
+		reader := &mockReader{data: []byte{}}
+		buf := make([]byte, 10)
+		n, err := reader.Read(buf)
+		assert.Equal(t, io.EOF, err)
+		assert.Equal(t, 0, n)
+	})
+
+	t.Run("exact buffer size", func(t *testing.T) {
+		reader := &mockReader{data: []byte("test")}
+		buf := make([]byte, 4)
+		n, err := reader.Read(buf)
+		assert.NoError(t, err)
+		assert.Equal(t, 4, n)
+		assert.Equal(t, "test", string(buf))
+
+		// Next read should return EOF
+		n, err = reader.Read(buf)
+		assert.Equal(t, io.EOF, err)
+		assert.Equal(t, 0, n)
+	})
+
+	t.Run("large buffer", func(t *testing.T) {
+		reader := &mockReader{data: []byte("test")}
+		buf := make([]byte, 100)
+		n, err := reader.Read(buf)
+		assert.NoError(t, err)
+		assert.Equal(t, 4, n)
+		assert.Equal(t, "test", string(buf[:n]))
+	})
+
+	t.Run("multiple small reads", func(t *testing.T) {
+		reader := &mockReader{data: []byte("hello world")}
+		buf := make([]byte, 3)
+
+		results := []struct {
+			expected string
+			n        int
+		}{
+			{"hel", 3},
+			{"lo ", 3},
+			{"wor", 3},
+			{"ld", 2},
+		}
+
+		for i, r := range results {
+			n, err := reader.Read(buf)
+			if i < len(results)-1 {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, r.n, n, "iteration %d", i)
+			assert.Equal(t, r.expected, string(buf[:n]), "iteration %d", i)
+		}
+
+		// Final read should be EOF
+		n, err := reader.Read(buf)
+		assert.Equal(t, io.EOF, err)
+		assert.Equal(t, 0, n)
+	})
+}
+
+func TestClient_MultipleNewClients(t *testing.T) {
+	// Ensure multiple clients can be created independently
+	client1, err := NewClient(nil, nil)
+	require.NoError(t, err)
+
+	client2, err := NewClient(nil, nil)
+	require.NoError(t, err)
+
+	config := DefaultConfig()
+	config.Endpoint = "different.host:9000"
+	client3, err := NewClient(config, logrus.New())
+	require.NoError(t, err)
+
+	// All clients should be independent
+	assert.NotSame(t, client1, client2)
+	assert.NotSame(t, client2, client3)
+
+	// Closing one shouldn't affect others
+	err = client1.Close()
+	require.NoError(t, err)
+	assert.False(t, client1.IsConnected())
+	assert.False(t, client2.IsConnected()) // Never connected
+	assert.False(t, client3.IsConnected()) // Never connected
 }

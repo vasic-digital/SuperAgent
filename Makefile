@@ -857,6 +857,39 @@ install-deps:
 		go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest; \
 	fi
 
+install-hooks:
+	@echo "🔧 Installing pre-commit hooks..."
+	@if command -v pre-commit >/dev/null 2>&1; then \
+		echo "✅ pre-commit already installed"; \
+	else \
+		echo "📦 Installing pre-commit..."; \
+		pip install pre-commit || pip3 install pre-commit; \
+	fi
+	@pre-commit install
+	@echo "✅ Pre-commit hooks installed"
+
+install-security-tools:
+	@echo "🔧 Installing security scanning tools..."
+	@if command -v gosec >/dev/null 2>&1; then \
+		echo "✅ gosec already installed"; \
+	else \
+		echo "📦 Installing gosec..."; \
+		go install github.com/securego/gosec/v2/cmd/gosec@latest; \
+	fi
+	@if command -v trivy >/dev/null 2>&1; then \
+		echo "✅ trivy already installed"; \
+	else \
+		echo "📦 Installing trivy..."; \
+		curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b $$(go env GOPATH)/bin; \
+	fi
+	@if command -v hadolint >/dev/null 2>&1; then \
+		echo "✅ hadolint already installed"; \
+	else \
+		echo "📦 Installing hadolint..."; \
+		$(CONTAINER_RUNTIME) pull hadolint/hadolint:latest; \
+	fi
+	@echo "✅ Security tools installed"
+
 install:
 	@echo "📦 Installing HelixAgent..."
 	mkdir -p /usr/local/bin
