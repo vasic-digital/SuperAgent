@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"dev.helix.agent/internal/cloud"
+	"dev.helix.agent/internal/adapters/cloud"
 	"dev.helix.agent/internal/plugins"
 	"dev.helix.agent/internal/services"
 	"github.com/sirupsen/logrus"

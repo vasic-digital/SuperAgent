@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"dev.helix.agent/internal/vectordb/qdrant"
+	"dev.helix.agent/internal/adapters/vectordb/qdrant"
 )
 
 // MockQdrantClient implements a mock for the Qdrant client

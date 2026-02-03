@@ -9,22 +9,47 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"dev.helix.agent/internal/adapters"
 	"dev.helix.agent/internal/cache"
-	"dev.helix.agent/internal/concurrency"
-	"dev.helix.agent/internal/events"
+	"digital.vasic.concurrency/pkg/pool"
+)
+
+// Type aliases for backward compatibility with old internal packages
+type EventBus = adapters.EventBus
+type BusConfig = adapters.BusConfig
+type Event = adapters.Event
+type EventType = adapters.EventType
+
+type WorkerPool = pool.WorkerPool
+type PoolConfig = pool.PoolConfig
+type PoolMetrics = pool.PoolMetrics
+
+// Function aliases
+var NewEventBus = adapters.NewEventBus
+var NewEvent = adapters.NewEvent
+var NewWorkerPool = pool.NewWorkerPool
+var NewTaskFunc = pool.NewTaskFunc
+
+// Event type constants
+var (
+	EventRequestCompleted      = adapters.EventRequestCompleted
+	EventProviderHealthChanged = adapters.EventProviderHealthChanged
+	EventRequestReceived       = adapters.EventRequestReceived
+	EventCacheHit              = adapters.EventCacheHit
+	EventCacheMiss             = adapters.EventCacheMiss
 )
 
 // TestWorkerPoolWithEventBus tests worker pool integration with event bus
 func TestWorkerPoolWithEventBus(t *testing.T) {
 	// Setup event bus
-	bus := events.NewEventBus(&events.BusConfig{
+	bus := NewEventBus(&BusConfig{
 		BufferSize:     1000,
 		PublishTimeout: 100 * time.Millisecond,
 	})
 	defer bus.Close()
 
 	// Setup worker pool
-	pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
+	pool := NewWorkerPool(&PoolConfig{
 		Workers:   8,
 		QueueSize: 100,
 	})
@@ -32,7 +57,7 @@ func TestWorkerPoolWithEventBus(t *testing.T) {
 	defer pool.Shutdown(5 * time.Second)
 
 	// Subscribe to task completion events
-	completionCh := bus.Subscribe(events.EventRequestCompleted)
+	completionCh := bus.Subscribe(EventRequestCompleted)
 
 	var taskCompleted int64
 	var eventReceived int64
@@ -49,13 +74,13 @@ func TestWorkerPoolWithEventBus(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		wg.Add(1)
 		idx := i
-		task := concurrency.NewTaskFunc("task-"+string(rune('0'+idx%10)), func(ctx context.Context) (interface{}, error) {
+		task := NewTaskFunc("task-"+string(rune('0'+idx%10)), func(ctx context.Context) (interface{}, error) {
 			defer wg.Done()
 			atomic.AddInt64(&taskCompleted, 1)
 
 			// Publish completion event
-			bus.Publish(events.NewEvent(
-				events.EventRequestCompleted,
+			bus.Publish(NewEvent(
+				EventRequestCompleted,
 				"worker-pool",
 				map[string]interface{}{"task_id": idx},
 			))
@@ -75,7 +100,7 @@ func TestWorkerPoolWithEventBus(t *testing.T) {
 // TestCacheWithEventBusInvalidation tests cache invalidation via events
 func TestCacheWithEventBusInvalidation(t *testing.T) {
 	// Setup event bus
-	bus := events.NewEventBus(nil)
+	bus := NewEventBus(nil)
 	defer bus.Close()
 
 	// Setup cache
@@ -102,7 +127,7 @@ func TestCacheWithEventBusInvalidation(t *testing.T) {
 	assert.Equal(t, 500, result)
 
 	// Subscribe to provider health events
-	healthCh := bus.Subscribe(events.EventProviderHealthChanged)
+	healthCh := bus.Subscribe(EventProviderHealthChanged)
 
 	// Setup invalidation on health change
 	go func() {
@@ -121,8 +146,8 @@ func TestCacheWithEventBusInvalidation(t *testing.T) {
 	}()
 
 	// Publish provider unhealthy event
-	bus.Publish(events.NewEvent(
-		events.EventProviderHealthChanged,
+	bus.Publish(NewEvent(
+		EventProviderHealthChanged,
 		"health-monitor",
 		map[string]interface{}{
 			"provider": "claude",
@@ -151,7 +176,7 @@ func TestWorkerPoolWithCache(t *testing.T) {
 	defer tc.Close()
 
 	// Setup worker pool
-	pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
+	pool := NewWorkerPool(&PoolConfig{
 		Workers:   8,
 		QueueSize: 100,
 	})
@@ -170,7 +195,7 @@ func TestWorkerPoolWithCache(t *testing.T) {
 		wg.Add(1)
 		key := string(rune('a' + i))
 		value := i * 10
-		task := concurrency.NewTaskFunc("first-"+key, func(taskCtx context.Context) (interface{}, error) {
+		task := NewTaskFunc("first-"+key, func(taskCtx context.Context) (interface{}, error) {
 			defer wg.Done()
 
 			var result int
@@ -192,7 +217,7 @@ func TestWorkerPoolWithCache(t *testing.T) {
 	for i := 0; i < 26; i++ {
 		wg.Add(1)
 		key := string(rune('a' + i))
-		task := concurrency.NewTaskFunc("second-"+key, func(taskCtx context.Context) (interface{}, error) {
+		task := NewTaskFunc("second-"+key, func(taskCtx context.Context) (interface{}, error) {
 			defer wg.Done()
 
 			var result int
@@ -216,7 +241,7 @@ func TestWorkerPoolWithCache(t *testing.T) {
 
 // TestEventBusMultipleSubscribers tests multiple subscribers receiving events
 func TestEventBusMultipleSubscribers(t *testing.T) {
-	bus := events.NewEventBus(&events.BusConfig{
+	bus := NewEventBus(&BusConfig{
 		BufferSize:     10000,
 		PublishTimeout: 100 * time.Millisecond,
 	})
@@ -229,16 +254,16 @@ func TestEventBusMultipleSubscribers(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Create subscribers
-	channels := make([]<-chan *events.Event, numSubscribers)
+	channels := make([]<-chan *Event, numSubscribers)
 	for i := 0; i < numSubscribers; i++ {
-		channels[i] = bus.Subscribe(events.EventCacheHit)
+		channels[i] = bus.Subscribe(EventCacheHit)
 	}
 
 	// Start receivers
 	for i := 0; i < numSubscribers; i++ {
 		idx := i
 		wg.Add(1)
-		go func(ch <-chan *events.Event) {
+		go func(ch <-chan *Event) {
 			defer wg.Done()
 			for {
 				select {
@@ -256,7 +281,7 @@ func TestEventBusMultipleSubscribers(t *testing.T) {
 
 	// Publish events
 	for i := 0; i < numEvents; i++ {
-		bus.Publish(events.NewEvent(events.EventCacheHit, "test", i))
+		bus.Publish(NewEvent(EventCacheHit, "test", i))
 	}
 
 	// Wait for delivery
@@ -328,7 +353,7 @@ func TestConcurrentCacheAccess(t *testing.T) {
 
 // TestWorkerPoolScaling tests that worker pool scales under load
 func TestWorkerPoolScaling(t *testing.T) {
-	pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
+	pool := NewWorkerPool(&PoolConfig{
 		Workers:   16,
 		QueueSize: 1000,
 	})
@@ -342,7 +367,7 @@ func TestWorkerPoolScaling(t *testing.T) {
 	for i := 0; i < 500; i++ {
 		wg.Add(1)
 		idx := i
-		task := concurrency.NewTaskFunc("scale-"+string(rune('0'+idx%10)), func(ctx context.Context) (interface{}, error) {
+		task := NewTaskFunc("scale-"+string(rune('0'+idx%10)), func(ctx context.Context) (interface{}, error) {
 			defer wg.Done()
 			time.Sleep(10 * time.Millisecond)
 			atomic.AddInt64(&completed, 1)
@@ -362,10 +387,10 @@ func TestWorkerPoolScaling(t *testing.T) {
 
 // TestEventBusWithWorkerPoolTasks tests event-driven task submission
 func TestEventBusWithWorkerPoolTasks(t *testing.T) {
-	bus := events.NewEventBus(nil)
+	bus := NewEventBus(nil)
 	defer bus.Close()
 
-	pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
+	pool := NewWorkerPool(&PoolConfig{
 		Workers:   8,
 		QueueSize: 100,
 	})
@@ -373,7 +398,7 @@ func TestEventBusWithWorkerPoolTasks(t *testing.T) {
 	defer pool.Shutdown(5 * time.Second)
 
 	// Subscribe to events
-	taskCh := bus.Subscribe(events.EventRequestReceived)
+	taskCh := bus.Subscribe(EventRequestReceived)
 
 	var tasksExecuted int64
 	var wg sync.WaitGroup
@@ -383,7 +408,7 @@ func TestEventBusWithWorkerPoolTasks(t *testing.T) {
 		for event := range taskCh {
 			wg.Add(1)
 			payload := event.Payload
-			task := concurrency.NewTaskFunc("event-task", func(ctx context.Context) (interface{}, error) {
+			task := NewTaskFunc("event-task", func(ctx context.Context) (interface{}, error) {
 				defer wg.Done()
 				atomic.AddInt64(&tasksExecuted, 1)
 				return payload, nil
@@ -394,7 +419,7 @@ func TestEventBusWithWorkerPoolTasks(t *testing.T) {
 
 	// Publish events
 	for i := 0; i < 50; i++ {
-		bus.Publish(events.NewEvent(events.EventRequestReceived, "test", i))
+		bus.Publish(NewEvent(EventRequestReceived, "test", i))
 	}
 
 	// Wait for processing
@@ -447,13 +472,13 @@ func TestCacheMetricsCollection(t *testing.T) {
 // TestFullIntegration tests all components working together
 func TestFullIntegration(t *testing.T) {
 	// Setup all components
-	bus := events.NewEventBus(&events.BusConfig{
+	bus := NewEventBus(&BusConfig{
 		BufferSize:     10000,
 		PublishTimeout: 100 * time.Millisecond,
 	})
 	defer bus.Close()
 
-	pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
+	pool := NewWorkerPool(&PoolConfig{
 		Workers:   16,
 		QueueSize: 1000,
 	})
@@ -475,8 +500,8 @@ func TestFullIntegration(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Subscribe to events
-	hitCh := bus.Subscribe(events.EventCacheHit)
-	missCh := bus.Subscribe(events.EventCacheMiss)
+	hitCh := bus.Subscribe(EventCacheHit)
+	missCh := bus.Subscribe(EventCacheMiss)
 
 	// Event counters
 	go func() {
@@ -493,7 +518,7 @@ func TestFullIntegration(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		idx := i
-		task := concurrency.NewTaskFunc("full-"+string(rune('0'+idx%10)), func(taskCtx context.Context) (interface{}, error) {
+		task := NewTaskFunc("full-"+string(rune('0'+idx%10)), func(taskCtx context.Context) (interface{}, error) {
 			defer wg.Done()
 
 			key := "item:" + string(rune('a'+idx%26))
@@ -501,9 +526,9 @@ func TestFullIntegration(t *testing.T) {
 
 			found, _ := tc.Get(ctx, key, &result)
 			if found {
-				bus.Publish(events.NewEvent(events.EventCacheHit, "worker", key))
+				bus.Publish(NewEvent(EventCacheHit, "worker", key))
 			} else {
-				bus.Publish(events.NewEvent(events.EventCacheMiss, "worker", key))
+				bus.Publish(NewEvent(EventCacheMiss, "worker", key))
 				tc.Set(ctx, key, idx*10, time.Minute)
 			}
 
@@ -531,7 +556,7 @@ func TestFullIntegration(t *testing.T) {
 
 // BenchmarkIntegration_WorkerPoolWithCache benchmarks integrated worker pool and cache
 func BenchmarkIntegration_WorkerPoolWithCache(b *testing.B) {
-	pool := concurrency.NewWorkerPool(&concurrency.PoolConfig{
+	pool := NewWorkerPool(&PoolConfig{
 		Workers:   32,
 		QueueSize: 10000,
 	})
@@ -562,7 +587,7 @@ func BenchmarkIntegration_WorkerPoolWithCache(b *testing.B) {
 			wg.Add(1)
 
 			key := "bench-" + string(rune('a'+i%26))
-			task := concurrency.NewTaskFunc("bench-task", func(taskCtx context.Context) (interface{}, error) {
+			task := NewTaskFunc("bench-task", func(taskCtx context.Context) (interface{}, error) {
 				defer wg.Done()
 				var result int
 				tc.Get(ctx, key, &result)

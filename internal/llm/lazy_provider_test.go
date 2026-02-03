@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"dev.helix.agent/internal/events"
+	events "dev.helix.agent/internal/adapters"
 	"dev.helix.agent/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

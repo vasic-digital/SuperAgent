@@ -10,10 +10,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"dev.helix.agent/internal/adapters"
 	"dev.helix.agent/internal/cache"
-	"dev.helix.agent/internal/concurrency"
-	"dev.helix.agent/internal/events"
+	"digital.vasic.concurrency/pkg/pool"
 )
+
+// Aliases for backward compatibility
+var events = adapters
+var concurrency = pool
 
 // TestWorkerPool_NoDeadlock tests that the worker pool doesn't deadlock under stress
 func TestWorkerPool_NoDeadlock(t *testing.T) {

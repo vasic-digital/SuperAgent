@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"dev.helix.agent/internal/mcp"
+	mcp "dev.helix.agent/internal/mcp"
 )
 
 func TestMCPPreinstaller_NewPreinstaller(t *testing.T) {

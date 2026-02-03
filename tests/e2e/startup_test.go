@@ -10,10 +10,47 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"dev.helix.agent/internal/adapters"
 	"dev.helix.agent/internal/cache"
-	"dev.helix.agent/internal/concurrency"
-	"dev.helix.agent/internal/events"
+	"digital.vasic.concurrency/pkg/pool"
 )
+
+// Backward compatibility aliases
+type EventType = adapters.EventType
+type Event = adapters.Event
+
+var events = struct {
+	NewEventBus              func(*adapters.BusConfig) *adapters.EventBus
+	EventCacheHit            EventType
+	EventCacheMiss           EventType
+	EventRequestReceived     EventType
+	EventRequestCompleted    EventType
+	EventSystemHealthCheck   EventType
+}{
+	NewEventBus:              adapters.NewEventBus,
+	EventCacheHit:            adapters.EventCacheHit,
+	EventCacheMiss:           adapters.EventCacheMiss,
+	EventRequestReceived:     adapters.EventRequestReceived,
+	EventRequestCompleted:    adapters.EventRequestCompleted,
+	EventSystemHealthCheck:   adapters.EventSystemHealthCheck,
+}
+
+type BusConfig = adapters.BusConfig
+
+var concurrency = struct {
+	NewWorkerPool func(*pool.PoolConfig) *pool.WorkerPool
+	NewTaskFunc   func(string, func(context.Context) (interface{}, error)) *pool.TaskFunc
+}{
+	NewWorkerPool: pool.NewWorkerPool,
+	NewTaskFunc:   pool.NewTaskFunc,
+}
+
+type PoolConfig = pool.PoolConfig
+
+// NewEvent wrapper for backward compatibility
+func NewEvent(eventType EventType, source string, payload interface{}) *Event {
+	return adapters.NewEvent(eventType, source, payload)
+}
 
 // TestE2E_StartupPerformance tests that system startup is fast
 func TestE2E_StartupPerformance(t *testing.T) {

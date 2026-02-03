@@ -393,3 +393,59 @@ HelixAgent (dev.helix.agent)
     ├── Containers ─── Container orchestration
     └── Challenges ─── Challenge framework
 ```
+
+---
+
+## Adapter Layer
+
+HelixAgent's `internal/adapters/` package bridges internal types to the extracted modules. This layer provides:
+
+1. **Backward Compatibility** - Existing code continues to work unchanged
+2. **Type Conversion** - Maps HelixAgent-specific fields to generic module types
+3. **Gradual Migration** - Code can adopt module functionality incrementally
+4. **HelixAgent Extensions** - Domain-specific features remain in internal packages
+
+### Adapter Files
+
+| Adapter | Module | Purpose |
+|---------|--------|---------|
+| `eventbus.go` | digital.vasic.eventbus | Event pub/sub with HelixAgent event types |
+| `auth/adapter.go` | digital.vasic.auth | JWT/OAuth middleware, credential reading |
+| `cache/adapter.go` | digital.vasic.cache | Redis/memory cache with JSON serialization |
+| `cloud/adapter.go` | digital.vasic.storage | AWS Bedrock, GCP Vertex AI, Azure providers |
+| `database/*.go` | digital.vasic.database | PostgreSQL client wrapper with migrations |
+| `formatters/adapter.go` | digital.vasic.formatters | Formatter registry with HelixAgent metadata |
+| `mcp/adapter.go` | digital.vasic.mcp | MCP client/server with HelixAgent tools |
+| `memory/adapter.go` | digital.vasic.memory | Memory store with user/session filtering |
+| `messaging/*.go` | digital.vasic.messaging | Kafka/RabbitMQ with consumer groups |
+| `optimization/adapter.go` | digital.vasic.optimization | GPT-Cache, streaming buffers |
+| `plugins/adapter.go` | digital.vasic.plugins | Plugin registry with lifecycle management |
+| `rag/adapter.go` | digital.vasic.rag | Chunkers, rerankers, hybrid retrieval |
+| `security/adapter.go` | digital.vasic.security | Guardrails, PII detection |
+| `storage/minio/adapter.go` | digital.vasic.storage | MinIO object storage |
+| `streaming/adapter.go` | digital.vasic.streaming | SSE, WebSocket, webhook adapters |
+| `vectordb/qdrant/adapter.go` | digital.vasic.vectordb | Qdrant vector store client |
+
+### Usage Pattern
+
+```go
+// Old: Direct internal usage (still works)
+import "dev.helix.agent/internal/cache"
+c := cache.NewRedisClient(config)
+
+// New: Via adapter for generic module access
+import "dev.helix.agent/internal/adapters/cache"
+adapter := cache.NewRedisClientAdapter(redisConfig)
+
+// Both approaches work - adapters provide additional flexibility
+```
+
+### Test Coverage
+
+| Adapter Package | Tests |
+|-----------------|-------|
+| auth | 11 tests |
+| formatters | 8 tests |
+| messaging | 22 tests |
+| streaming | 21 tests |
+| **Total** | **75+ tests** |

@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"dev.helix.agent/internal/events"
+	"dev.helix.agent/internal/adapters"
 )
 
 // ============================================================================
@@ -27,7 +27,7 @@ func TestEventDrivenInvalidation_ShouldInvalidate_WithRules(t *testing.T) {
 	inv := NewEventDrivenInvalidation(nil, tc)
 
 	// Create an event
-	event := events.NewEvent(events.EventProviderHealthChanged, "test", map[string]interface{}{
+	event := adapters.NewEvent(adapters.EventProviderHealthChanged, "test", map[string]interface{}{
 		"name": "openai",
 	})
 
@@ -49,7 +49,7 @@ func TestEventDrivenInvalidation_ShouldInvalidate_NoMatchingRules(t *testing.T) 
 	inv := NewEventDrivenInvalidation(nil, tc)
 
 	// Create event for which there's no rule
-	event := events.NewEvent(events.EventSystemStartup, "test", nil)
+	event := adapters.NewEvent(adapters.EventSystemStartup, "test", nil)
 
 	keys := inv.ShouldInvalidate(event)
 	assert.Nil(t, keys)
@@ -67,7 +67,7 @@ func TestEventDrivenInvalidation_ShouldInvalidate_WithHandler(t *testing.T) {
 	inv := NewEventDrivenInvalidation(nil, tc)
 
 	// Test with cache invalidation event
-	event := events.NewEvent(events.EventCacheInvalidated, "test", map[string]interface{}{
+	event := adapters.NewEvent(adapters.EventCacheInvalidated, "test", map[string]interface{}{
 		"keys": []string{"key1", "key2", "key3"},
 	})
 
@@ -90,7 +90,7 @@ func TestEventDrivenInvalidation_ShouldInvalidate_PatternPayload(t *testing.T) {
 	inv := NewEventDrivenInvalidation(nil, tc)
 
 	// Test with cache invalidation event using pattern
-	event := events.NewEvent(events.EventCacheInvalidated, "test", map[string]interface{}{
+	event := adapters.NewEvent(adapters.EventCacheInvalidated, "test", map[string]interface{}{
 		"pattern": "user:*",
 	})
 
@@ -111,14 +111,14 @@ func TestEventDrivenInvalidation_RemoveRules(t *testing.T) {
 	inv := NewEventDrivenInvalidation(nil, tc)
 
 	// Verify default rules exist
-	event := events.NewEvent(events.EventProviderHealthChanged, "test", map[string]interface{}{
+	event := adapters.NewEvent(adapters.EventProviderHealthChanged, "test", map[string]interface{}{
 		"name": "test-provider",
 	})
 	keys := inv.ShouldInvalidate(event)
 	assert.NotEmpty(t, keys)
 
 	// Remove rules for this event type
-	inv.RemoveRules(events.EventProviderHealthChanged)
+	inv.RemoveRules(adapters.EventProviderHealthChanged)
 
 	// Now ShouldInvalidate should return nil
 	keys = inv.ShouldInvalidate(event)
@@ -138,17 +138,17 @@ func TestEventDrivenInvalidation_AddRule_Custom(t *testing.T) {
 
 	// Add custom rule
 	customRule := InvalidationRule{
-		EventType:  events.EventSystemError,
+		EventType:  adapters.EventSystemError,
 		KeyPattern: "error:*",
 		Tags:       []string{"errors"},
-		Handler: func(event *events.Event) []string {
+		Handler: func(event *Event) []string {
 			return []string{"custom:key1", "custom:key2"}
 		},
 	}
 	inv.AddRule(customRule)
 
 	// Create matching event
-	event := events.NewEvent(events.EventSystemError, "system", nil)
+	event := adapters.NewEvent(adapters.EventSystemError, "system", nil)
 
 	keys := inv.ShouldInvalidate(event)
 	assert.Len(t, keys, 3) // 2 from handler + 1 from KeyPattern
@@ -174,7 +174,7 @@ func TestEventDrivenInvalidation_HandleEvent_WithCache(t *testing.T) {
 	_ = tc.Set(ctx, "other:key", "data", time.Minute)
 
 	// Create event bus and invalidation
-	bus := events.NewEventBus(nil)
+	bus := adapters.NewEventBus(nil)
 	defer func() { _ = bus.Close() }()
 
 	inv := NewEventDrivenInvalidation(bus, tc)
@@ -184,7 +184,7 @@ func TestEventDrivenInvalidation_HandleEvent_WithCache(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Publish event
-	event := events.NewEvent(events.EventProviderHealthChanged, "test", map[string]interface{}{
+	event := adapters.NewEvent(adapters.EventProviderHealthChanged, "test", map[string]interface{}{
 		"name": "openai",
 	})
 	bus.Publish(event)
@@ -215,7 +215,7 @@ func TestEventDrivenInvalidation_HandleEvent_MCPServer(t *testing.T) {
 	_ = tc.Set(ctx, "mcp:filesystem:write", "data", time.Minute)
 	_ = tc.Set(ctx, "mcp:github:get", "data", time.Minute)
 
-	bus := events.NewEventBus(nil)
+	bus := adapters.NewEventBus(nil)
 	defer func() { _ = bus.Close() }()
 
 	inv := NewEventDrivenInvalidation(bus, tc)
@@ -224,7 +224,7 @@ func TestEventDrivenInvalidation_HandleEvent_MCPServer(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Publish MCP disconnect event
-	event := events.NewEvent(events.EventMCPServerDisconnected, "mcp", map[string]interface{}{
+	event := adapters.NewEvent(adapters.EventMCPServerDisconnected, "mcp", map[string]interface{}{
 		"server": "filesystem",
 	})
 	bus.Publish(event)
@@ -246,21 +246,21 @@ func TestEventDrivenInvalidation_HandleEvent_NoRules(t *testing.T) {
 	tc := NewTieredCache(nil, config)
 	defer func() { _ = tc.Close() }()
 
-	bus := events.NewEventBus(nil)
+	bus := adapters.NewEventBus(nil)
 	defer func() { _ = bus.Close() }()
 
 	inv := NewEventDrivenInvalidation(bus, tc)
 
 	// Remove all rules
-	inv.RemoveRules(events.EventProviderHealthChanged)
-	inv.RemoveRules(events.EventMCPServerDisconnected)
-	inv.RemoveRules(events.EventCacheInvalidated)
+	inv.RemoveRules(adapters.EventProviderHealthChanged)
+	inv.RemoveRules(adapters.EventMCPServerDisconnected)
+	inv.RemoveRules(adapters.EventCacheInvalidated)
 
 	inv.Start()
 	time.Sleep(50 * time.Millisecond)
 
 	// Publish event with no matching rules
-	event := events.NewEvent(events.EventSystemStartup, "system", nil)
+	event := adapters.NewEvent(adapters.EventSystemStartup, "system", nil)
 	bus.Publish(event)
 
 	time.Sleep(100 * time.Millisecond)
@@ -325,7 +325,7 @@ func TestEventDrivenInvalidation_ConcurrentRuleAccess(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			rule := InvalidationRule{
-				EventType:  events.EventType("custom.event." + string(rune('0'+idx))),
+				EventType:  EventType("custom.event." + string(rune('0'+idx))),
 				KeyPattern: "key:" + string(rune('0'+idx)) + ":*",
 			}
 			inv.AddRule(rule)
@@ -337,7 +337,7 @@ func TestEventDrivenInvalidation_ConcurrentRuleAccess(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			event := events.NewEvent(events.EventProviderHealthChanged, "test", map[string]interface{}{
+			event := adapters.NewEvent(adapters.EventProviderHealthChanged, "test", map[string]interface{}{
 				"name": "provider",
 			})
 			inv.ShouldInvalidate(event)
@@ -361,8 +361,8 @@ func TestCompositeInvalidation_ShouldInvalidate_CombinesStrategies(t *testing.T)
 
 	// Add a custom rule to event-driven
 	event.AddRule(InvalidationRule{
-		EventType: events.EventSystemError,
-		Handler: func(e *events.Event) []string {
+		EventType: adapters.EventSystemError,
+		Handler: func(e *Event) []string {
 			return []string{"from:event"}
 		},
 	})
@@ -370,7 +370,7 @@ func TestCompositeInvalidation_ShouldInvalidate_CombinesStrategies(t *testing.T)
 	composite := NewCompositeInvalidation(tag, event)
 
 	// Create event
-	e := events.NewEvent(events.EventSystemError, "test", nil)
+	e := adapters.NewEvent(adapters.EventSystemError, "test", nil)
 
 	keys := composite.ShouldInvalidate(e)
 	assert.Contains(t, keys, "from:event")
@@ -383,7 +383,7 @@ func TestCompositeInvalidation_MultipleSameKeys(t *testing.T) {
 
 	composite := NewCompositeInvalidation(strategy1, strategy2)
 
-	event := events.NewEvent(events.EventSystemStartup, "test", nil)
+	event := adapters.NewEvent(adapters.EventSystemStartup, "test", nil)
 	keys := composite.ShouldInvalidate(event)
 
 	// Should dedupe
@@ -462,7 +462,7 @@ func TestInvalidationRule_Handler_NilPayload(t *testing.T) {
 	inv := NewEventDrivenInvalidation(nil, tc)
 
 	// Event with nil payload
-	event := events.NewEvent(events.EventProviderHealthChanged, "test", nil)
+	event := adapters.NewEvent(adapters.EventProviderHealthChanged, "test", nil)
 
 	keys := inv.ShouldInvalidate(event)
 	// Should still get KeyPattern
@@ -481,7 +481,7 @@ func TestInvalidationRule_Handler_WrongPayloadType(t *testing.T) {
 	inv := NewEventDrivenInvalidation(nil, tc)
 
 	// Event with string payload instead of map
-	event := events.NewEvent(events.EventProviderHealthChanged, "test", "invalid payload")
+	event := adapters.NewEvent(adapters.EventProviderHealthChanged, "test", "invalid payload")
 
 	keys := inv.ShouldInvalidate(event)
 	// Handler should handle gracefully, still get KeyPattern
@@ -500,7 +500,7 @@ func TestInvalidationRule_Handler_MissingField(t *testing.T) {
 	inv := NewEventDrivenInvalidation(nil, tc)
 
 	// Event with payload missing required field
-	event := events.NewEvent(events.EventProviderHealthChanged, "test", map[string]interface{}{
+	event := adapters.NewEvent(adapters.EventProviderHealthChanged, "test", map[string]interface{}{
 		"other_field": "value",
 	})
 
@@ -514,7 +514,7 @@ type mockStrategy struct {
 	keys []string
 }
 
-func (m *mockStrategy) ShouldInvalidate(event *events.Event) []string {
+func (m *mockStrategy) ShouldInvalidate(event *Event) []string {
 	return m.keys
 }
 

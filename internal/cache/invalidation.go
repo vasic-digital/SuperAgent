@@ -5,13 +5,17 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"dev.helix.agent/internal/events"
+	"dev.helix.agent/internal/adapters"
 )
+
+// Type aliases for backward compatibility
+type EventType = adapters.EventType
+type Event = adapters.Event
 
 // InvalidationStrategy defines how cache is invalidated
 type InvalidationStrategy interface {
 	// ShouldInvalidate returns keys that should be invalidated for an event
-	ShouldInvalidate(event *events.Event) []string
+	ShouldInvalidate(event *Event) []string
 	// Name returns the strategy name
 	Name() string
 }
@@ -19,13 +23,13 @@ type InvalidationStrategy interface {
 // InvalidationRule defines a rule for event-driven invalidation
 type InvalidationRule struct {
 	// EventType to match
-	EventType events.EventType
+	EventType EventType
 	// KeyPattern to invalidate (supports * wildcard)
 	KeyPattern string
 	// Tags to invalidate
 	Tags []string
 	// Custom handler for complex invalidation logic
-	Handler func(event *events.Event) []string
+	Handler func(event *Event) []string
 }
 
 // TagBasedInvalidation provides tag-based cache invalidation
@@ -171,7 +175,7 @@ func (i *TagBasedInvalidation) Metrics() *InvalidationMetrics {
 }
 
 // ShouldInvalidate implements InvalidationStrategy
-func (i *TagBasedInvalidation) ShouldInvalidate(event *events.Event) []string {
+func (i *TagBasedInvalidation) ShouldInvalidate(event *Event) []string {
 	return nil // Tag-based invalidation is explicit, not event-driven
 }
 
@@ -180,11 +184,14 @@ func (i *TagBasedInvalidation) Name() string {
 	return "tag-based"
 }
 
+// EventBus alias for backward compatibility
+type EventBus = adapters.EventBus
+
 // EventDrivenInvalidation invalidates cache based on system events
 type EventDrivenInvalidation struct {
-	eventBus *events.EventBus
+	eventBus *EventBus
 	cache    *TieredCache
-	rules    map[events.EventType][]InvalidationRule
+	rules    map[EventType][]InvalidationRule
 	mu       sync.RWMutex
 	metrics  *InvalidationMetrics
 	ctx      context.Context
@@ -192,13 +199,13 @@ type EventDrivenInvalidation struct {
 }
 
 // NewEventDrivenInvalidation creates a new event-driven invalidation strategy
-func NewEventDrivenInvalidation(eventBus *events.EventBus, cache *TieredCache) *EventDrivenInvalidation {
+func NewEventDrivenInvalidation(eventBus *EventBus, cache *TieredCache) *EventDrivenInvalidation {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	edi := &EventDrivenInvalidation{
 		eventBus: eventBus,
 		cache:    cache,
-		rules:    make(map[events.EventType][]InvalidationRule),
+		rules:    make(map[EventType][]InvalidationRule),
 		metrics:  &InvalidationMetrics{},
 		ctx:      ctx,
 		cancel:   cancel,
@@ -248,7 +255,7 @@ func (i *EventDrivenInvalidation) AddRule(rule InvalidationRule) {
 }
 
 // RemoveRules removes all rules for an event type
-func (i *EventDrivenInvalidation) RemoveRules(eventType events.EventType) {
+func (i *EventDrivenInvalidation) RemoveRules(eventType EventType) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -258,10 +265,10 @@ func (i *EventDrivenInvalidation) RemoveRules(eventType events.EventType) {
 func (i *EventDrivenInvalidation) registerDefaultRules() {
 	// Provider health change invalidates provider cache
 	i.AddRule(InvalidationRule{
-		EventType:  events.EventProviderHealthChanged,
+		EventType:  adapters.EventProviderHealthChanged,
 		KeyPattern: "provider:*",
 		Tags:       []string{"provider", "health"},
-		Handler: func(event *events.Event) []string {
+		Handler: func(event *Event) []string {
 			if payload, ok := event.Payload.(map[string]interface{}); ok {
 				if name, ok := payload["name"].(string); ok {
 					return []string{"provider:" + name, "health:" + name}
@@ -273,10 +280,10 @@ func (i *EventDrivenInvalidation) registerDefaultRules() {
 
 	// MCP server disconnect invalidates MCP cache
 	i.AddRule(InvalidationRule{
-		EventType:  events.EventMCPServerDisconnected,
+		EventType:  adapters.EventMCPServerDisconnected,
 		KeyPattern: "mcp:*",
 		Tags:       []string{"mcp"},
-		Handler: func(event *events.Event) []string {
+		Handler: func(event *Event) []string {
 			if payload, ok := event.Payload.(map[string]interface{}); ok {
 				if server, ok := payload["server"].(string); ok {
 					return []string{"mcp:" + server + ":*"}
@@ -288,8 +295,8 @@ func (i *EventDrivenInvalidation) registerDefaultRules() {
 
 	// Cache invalidation event
 	i.AddRule(InvalidationRule{
-		EventType: events.EventCacheInvalidated,
-		Handler: func(event *events.Event) []string {
+		EventType: adapters.EventCacheInvalidated,
+		Handler: func(event *Event) []string {
 			if payload, ok := event.Payload.(map[string]interface{}); ok {
 				if keys, ok := payload["keys"].([]string); ok {
 					return keys
@@ -303,7 +310,7 @@ func (i *EventDrivenInvalidation) registerDefaultRules() {
 	})
 }
 
-func (i *EventDrivenInvalidation) handleEvent(event *events.Event) {
+func (i *EventDrivenInvalidation) handleEvent(event *Event) {
 	i.mu.RLock()
 	rules := i.rules[event.Type]
 	i.mu.RUnlock()
@@ -345,7 +352,7 @@ func (i *EventDrivenInvalidation) handleEvent(event *events.Event) {
 }
 
 // ShouldInvalidate implements InvalidationStrategy
-func (i *EventDrivenInvalidation) ShouldInvalidate(event *events.Event) []string {
+func (i *EventDrivenInvalidation) ShouldInvalidate(event *Event) []string {
 	i.mu.RLock()
 	rules := i.rules[event.Type]
 	i.mu.RUnlock()
@@ -418,7 +425,7 @@ func NewCompositeInvalidation(strategies ...InvalidationStrategy) *CompositeInva
 }
 
 // ShouldInvalidate returns keys from all strategies
-func (c *CompositeInvalidation) ShouldInvalidate(event *events.Event) []string {
+func (c *CompositeInvalidation) ShouldInvalidate(event *Event) []string {
 	keySet := make(map[string]struct{})
 
 	for _, strategy := range c.strategies {

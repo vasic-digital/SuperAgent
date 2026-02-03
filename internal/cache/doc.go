@@ -1,14 +1,28 @@
 // Package cache provides caching layer for HelixAgent.
 //
 // This package implements a multi-tier caching system with Redis and in-memory
-// caching for improved performance and reduced API calls.
+// caching for improved performance and reduced API calls. It wraps the extracted
+// digital.vasic.cache module while providing HelixAgent-specific functionality.
 //
-// # Cache Architecture
+// # Architecture
 //
-// Two-tier caching system:
+// The cache package uses the extracted digital.vasic.cache module for core
+// caching operations (Redis client, in-memory cache, eviction policies) while
+// adding HelixAgent-specific features:
 //
-//  1. L1 Cache: In-memory (fast, limited size)
-//  2. L2 Cache: Redis (larger capacity, shared across instances)
+//   - LLM response caching with request-based key generation
+//   - Provider health caching
+//   - User session caching with per-user invalidation
+//   - MCP tool result caching with tool-specific TTLs
+//   - Event-driven cache invalidation
+//
+// # Module Integration
+//
+// The package uses digital.vasic.cache for:
+//   - Core Cache interface (Get, Set, Delete, Exists, Close)
+//   - Redis client implementation (pkg/redis)
+//   - In-memory cache with LRU/LFU/FIFO eviction (pkg/memory)
+//   - Typed cache wrappers (TypedCache[T])
 //
 // # Cache Interface
 //
@@ -19,72 +33,62 @@
 //	    Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
 //	    Delete(ctx context.Context, key string) error
 //	    Exists(ctx context.Context, key string) (bool, error)
-//	    Clear(ctx context.Context) error
+//	    Close() error
 //	}
 //
 // # Redis Cache
 //
-// Primary distributed cache:
+// Primary distributed cache using the extracted module:
 //
-//	redisCache := cache.NewRedisCache(&RedisConfig{
-//	    Host:     "localhost",
-//	    Port:     6379,
-//	    Password: "secret",
-//	    DB:       0,
-//	    PoolSize: 10,
-//	})
+//	redisClient := cache.NewRedisClient(cfg)
 //
 //	// Set with TTL
-//	err := redisCache.Set(ctx, "key", data, 5*time.Minute)
+//	err := redisClient.Set(ctx, "key", data, 5*time.Minute)
 //
 //	// Get
-//	data, err := redisCache.Get(ctx, "key")
-//
-// # In-Memory Cache
-//
-// Fast local cache:
-//
-//	memCache := cache.NewMemoryCache(&MemoryConfig{
-//	    MaxSize:      1000,
-//	    DefaultTTL:   5 * time.Minute,
-//	    CleanupInterval: 1 * time.Minute,
-//	})
+//	err := redisClient.Get(ctx, "key", &dest)
 //
 // # Tiered Cache
 //
-// Combines L1 and L2 caches:
+// Combines L1 (memory) and L2 (Redis) caches:
 //
-//	tieredCache := cache.NewTieredCache(memCache, redisCache)
+//	tieredCache := cache.NewTieredCache(redisClient.Client(), config)
 //
 //	// Checks L1 first, then L2
-//	data, err := tieredCache.Get(ctx, "key")
+//	found, err := tieredCache.Get(ctx, "key", &dest)
 //
 //	// Writes to both L1 and L2
-//	err := tieredCache.Set(ctx, "key", data, ttl)
+//	err := tieredCache.Set(ctx, "key", value, ttl, tags...)
 //
 // # Cache Service
 //
-// High-level caching service:
+// High-level caching service with HelixAgent-specific methods:
 //
-//	service := cache.NewCacheService(tieredCache, logger)
+//	service, err := cache.NewCacheService(cfg)
 //
 //	// Cache LLM responses
-//	response, err := service.GetOrSet(ctx, cacheKey, func() (interface{}, error) {
-//	    return llmProvider.Complete(ctx, request)
-//	}, 10*time.Minute)
+//	err := service.SetLLMResponse(ctx, req, resp, ttl)
+//	resp, err := service.GetLLMResponse(ctx, req)
 //
-// # Cache Keys
+//	// Cache user sessions
+//	err := service.SetUserSession(ctx, session, ttl)
+//	session, err := service.GetUserSession(ctx, sessionID)
 //
-// Consistent key generation:
+// # Provider Cache
 //
-//	// For LLM completions
-//	key := cache.CompletionKey(provider, model, prompt)
+// Specialized cache for LLM provider responses:
 //
-//	// For embeddings
-//	key := cache.EmbeddingKey(provider, model, text)
+//	providerCache := cache.NewProviderCache(tieredCache, config)
+//	resp, found := providerCache.Get(ctx, req, "claude")
+//	err := providerCache.Set(ctx, req, resp, "claude")
 //
-//	// For debate results
-//	key := cache.DebateKey(topic, participants)
+// # MCP Cache
+//
+// Specialized cache for MCP tool execution results:
+//
+//	mcpCache := cache.NewMCPServerCache(tieredCache, config)
+//	result, found := mcpCache.GetToolResult(ctx, "filesystem", "read_file", args)
+//	err := mcpCache.SetToolResult(ctx, "filesystem", "read_file", args, result)
 //
 // # Cache Invalidation
 //
@@ -96,29 +100,41 @@
 //	// Manual invalidation
 //	cache.Delete(ctx, key)
 //
-//	// Pattern-based (Redis)
-//	cache.DeletePattern(ctx, "completion:claude:*")
+//	// Tag-based invalidation
+//	count, err := tieredCache.InvalidateByTag(ctx, "provider:claude")
 //
-//	// Clear all
-//	cache.Clear(ctx)
+//	// Pattern-based invalidation
+//	count, err := tieredCache.InvalidatePrefix(ctx, "provider:")
+//
+//	// User-based invalidation
+//	err := service.InvalidateUserCache(ctx, userID)
+//
+// # Event-Driven Invalidation
+//
+// Automatic cache invalidation based on system events:
+//
+//	inv := cache.NewEventDrivenInvalidation(eventBus, tieredCache)
+//	inv.Start()
+//	// Listens for provider.health.changed, mcp.server.disconnected, etc.
+//	// and invalidates relevant cache entries
 //
 // # Graceful Degradation
 //
 // Cache failures don't break the system:
 //
-//	// CacheService handles failures gracefully
-//	response, err := service.GetOrSet(ctx, key, fetchFunc, ttl)
-//	// If cache is down, fetchFunc is called directly
+//	response, err := service.GetLLMResponse(ctx, req)
+//	if err != nil {
+//	    // Cache miss or disabled - proceed without cache
+//	}
 //
 // # Configuration
 //
-//	config := &cache.Config{
-//	    Enabled:     true,
-//	    RedisURL:    "redis://localhost:6379",
-//	    MaxMemory:   "100mb",
-//	    DefaultTTL:  5 * time.Minute,
+//	config := &cache.TieredCacheConfig{
+//	    L1MaxSize:   10000,
+//	    L1TTL:       5 * time.Minute,
+//	    L2TTL:       30 * time.Minute,
 //	    EnableL1:    true,
-//	    L1MaxSize:   1000,
+//	    EnableL2:    true,
 //	}
 //
 // # Environment Variables
@@ -130,21 +146,21 @@
 //
 // # Key Files
 //
-//   - redis.go: Redis cache implementation
-//   - memory.go: In-memory cache
-//   - tiered_cache.go: Tiered cache (L1+L2)
-//   - cache_service.go: High-level cache service
-//   - keys.go: Key generation utilities
+//   - redis.go: Redis client wrapper (uses digital.vasic.cache/pkg/redis)
+//   - tiered_cache.go: L1+L2 tiered cache
+//   - cache_service.go: High-level cache service for HelixAgent
+//   - provider_cache.go: LLM provider response cache
+//   - mcp_cache.go: MCP tool result cache
+//   - invalidation.go: Event-driven invalidation
+//   - expiration.go: TTL and validation management
+//   - metrics.go: Cache metrics collection
 //
-// # Example: Caching LLM Responses
+// # Adapter Package
 //
-//	service := cache.NewCacheService(tieredCache, logger)
+// The internal/adapters/cache package provides additional adapters for
+// integration with the extracted digital.vasic.cache module:
 //
-//	cacheKey := cache.CompletionKey("claude", "claude-3", prompt)
-//
-//	response, err := service.GetOrSet(ctx, cacheKey, func() (interface{}, error) {
-//	    return claudeProvider.Complete(ctx, &CompletionRequest{
-//	        Prompt: prompt,
-//	    })
-//	}, 30*time.Minute)
+//   - RedisClientAdapter: Wraps extracted module for HelixAgent config
+//   - MemoryCacheAdapter: In-memory cache with JSON serialization
+//   - TypedCacheAdapter[T]: Generic typed cache wrapper
 package cache

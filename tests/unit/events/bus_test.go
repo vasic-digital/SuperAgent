@@ -10,8 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"dev.helix.agent/internal/events"
+	"dev.helix.agent/internal/adapters"
 )
+
+// Alias for backward compatibility
+var events = adapters
 
 func TestEventBus_PublishSubscribe(t *testing.T) {
 	bus := events.NewEventBus(nil)
