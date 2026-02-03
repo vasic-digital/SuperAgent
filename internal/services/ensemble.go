@@ -344,15 +344,30 @@ func (e *EnsembleService) RunEnsembleStream(ctx context.Context, req *models.LLM
 
 	// Close any additional streams we won't use (cleanup)
 	// Note: These channels will be closed by their providers when context is cancelled
+	// CONCURRENCY FIX: Use WaitGroup to track drain goroutines and context awareness to prevent leaks
 	if len(streamChans) > 1 {
-		// Just drain the unused streams in background to prevent goroutine leaks
+		var drainWg sync.WaitGroup
 		for i := 1; i < len(streamChans); i++ {
+			drainWg.Add(1)
 			go func(ch <-chan *models.LLMResponse) {
-				for range ch {
-					// Drain unused stream
+				defer drainWg.Done()
+				for {
+					select {
+					case _, ok := <-ch:
+						if !ok {
+							return // Channel closed
+						}
+						// Drain unused stream
+					case <-timeoutCtx.Done():
+						return // Context cancelled, stop draining
+					}
 				}
 			}(streamChans[i])
 		}
+		// Don't block - let drain goroutines run in background but they will exit on context cancel
+		go func() {
+			drainWg.Wait()
+		}()
 	}
 
 	// Forward responses from the selected single provider

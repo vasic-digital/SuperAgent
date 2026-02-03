@@ -76,18 +76,22 @@ type AdaptiveWorkerPool struct {
 // Worker represents a single worker in the pool
 type Worker struct {
 	ID             string
-	Status         workerState
-	CurrentTask    *models.BackgroundTask
+	status         int32 // Use atomic for thread-safe access (workerState)
+	currentTask    *models.BackgroundTask
+	taskMu         sync.RWMutex // Protects currentTask
 	StartedAt      time.Time
-	LastActivity   time.Time
+	lastActivity   time.Time
+	activityMu     sync.RWMutex // Protects lastActivity
 	TasksCompleted int64
 	TasksFailed    int64
 	TotalDuration  time.Duration
 
-	pool     *AdaptiveWorkerPool
-	ctx      context.Context
-	cancel   context.CancelFunc
-	stopChan chan struct{}
+	pool         *AdaptiveWorkerPool
+	ctx          context.Context
+	cancel       context.CancelFunc
+	stopChan     chan struct{}
+	stopOnce     sync.Once // CONCURRENCY FIX: Prevent double-close panic
+	stopChanDone int32     // Atomic flag to track if stopChan is closed
 }
 
 type workerState int32
@@ -112,6 +116,57 @@ func (s workerState) String() string {
 	default:
 		return "unknown"
 	}
+}
+
+// CONCURRENCY FIX: Thread-safe worker state accessors
+
+// Status returns the worker's current state (thread-safe)
+func (w *Worker) Status() workerState {
+	return workerState(atomic.LoadInt32(&w.status))
+}
+
+// setStatus sets the worker's state (thread-safe)
+func (w *Worker) setStatus(s workerState) {
+	atomic.StoreInt32(&w.status, int32(s))
+}
+
+// CurrentTask returns the worker's current task (thread-safe)
+func (w *Worker) CurrentTask() *models.BackgroundTask {
+	w.taskMu.RLock()
+	defer w.taskMu.RUnlock()
+	return w.currentTask
+}
+
+// setCurrentTask sets the worker's current task (thread-safe)
+func (w *Worker) setCurrentTask(task *models.BackgroundTask) {
+	w.taskMu.Lock()
+	defer w.taskMu.Unlock()
+	w.currentTask = task
+}
+
+// LastActivity returns the worker's last activity time (thread-safe)
+func (w *Worker) LastActivity() time.Time {
+	w.activityMu.RLock()
+	defer w.activityMu.RUnlock()
+	return w.lastActivity
+}
+
+// setLastActivity sets the worker's last activity time (thread-safe)
+func (w *Worker) setLastActivity(t time.Time) {
+	w.activityMu.Lock()
+	defer w.activityMu.Unlock()
+	w.lastActivity = t
+}
+
+// signalStop safely signals the worker to stop (prevents double-close panic)
+func (w *Worker) signalStop() bool {
+	sent := false
+	w.stopOnce.Do(func() {
+		close(w.stopChan)
+		atomic.StoreInt32(&w.stopChanDone, 1)
+		sent = true
+	})
+	return sent
 }
 
 // NewAdaptiveWorkerPool creates a new worker pool
@@ -191,10 +246,10 @@ func (wp *AdaptiveWorkerPool) Stop(gracePeriod time.Duration) error {
 	wp.logger.Info("Stopping worker pool")
 	wp.cancel()
 
-	// Signal all workers to stop
+	// Signal all workers to stop (using safe signalStop to prevent double-close panic)
 	wp.workersMu.Lock()
 	for _, worker := range wp.workers {
-		close(worker.stopChan)
+		worker.signalStop()
 	}
 	wp.workersMu.Unlock()
 
@@ -228,7 +283,8 @@ func (wp *AdaptiveWorkerPool) GetActiveTaskCount() int {
 
 	count := 0
 	for _, worker := range wp.workers {
-		if worker.Status == workerStateBusy {
+		// CONCURRENCY FIX: Use thread-safe accessor
+		if worker.Status() == workerStateBusy {
 			count++
 		}
 	}
@@ -248,12 +304,13 @@ func (wp *AdaptiveWorkerPool) GetWorkerStatus() []WorkerStatus {
 			avgDuration = worker.TotalDuration / time.Duration(completed)
 		}
 
+		// CONCURRENCY FIX: Use thread-safe accessors
 		statuses = append(statuses, WorkerStatus{
 			ID:              worker.ID,
-			Status:          worker.Status.String(),
-			CurrentTask:     worker.CurrentTask,
+			Status:          worker.Status().String(),
+			CurrentTask:     worker.CurrentTask(),
 			StartedAt:       worker.StartedAt,
-			LastActivity:    worker.LastActivity,
+			LastActivity:    worker.LastActivity(),
 			TasksCompleted:  completed,
 			TasksFailed:     atomic.LoadInt64(&worker.TasksFailed),
 			AvgTaskDuration: avgDuration,
@@ -281,14 +338,13 @@ func (wp *AdaptiveWorkerPool) Scale(targetCount int) error {
 	} else if diff < 0 {
 		// Workers will stop themselves via idle timeout
 		// or we can explicitly stop some
+		// CONCURRENCY FIX: Use thread-safe accessors and signalStop
 		wp.workersMu.Lock()
 		stopped := 0
 		for _, worker := range wp.workers {
-			if worker.Status == workerStateIdle && stopped < -diff {
-				select {
-				case worker.stopChan <- struct{}{}:
+			if worker.Status() == workerStateIdle && stopped < -diff {
+				if worker.signalStop() {
 					stopped++
-				default:
 				}
 			}
 		}
@@ -305,13 +361,14 @@ func (wp *AdaptiveWorkerPool) spawnWorker() {
 
 	worker := &Worker{
 		ID:           workerID,
-		Status:       workerStateIdle,
+		status:       int32(workerStateIdle),
 		StartedAt:    time.Now(),
-		LastActivity: time.Now(),
+		lastActivity: time.Now(),
 		pool:         wp,
 		ctx:          workerCtx,
 		cancel:       workerCancel,
-		stopChan:     make(chan struct{}, 1),
+		stopChan:     make(chan struct{}),
+		// stopOnce and stopChanDone are zero-initialized
 	}
 
 	wp.workersMu.Lock()
@@ -340,7 +397,8 @@ func (wp *AdaptiveWorkerPool) workerLoop(worker *Worker) {
 		wp.workersMu.Lock()
 		delete(wp.workers, worker.ID)
 		wp.workersMu.Unlock()
-		worker.Status = workerStateStopped
+		// CONCURRENCY FIX: Use thread-safe setter
+		worker.setStatus(workerStateStopped)
 	}()
 
 	idleTimer := time.NewTimer(wp.config.WorkerIdleTimeout)
@@ -379,15 +437,16 @@ func (wp *AdaptiveWorkerPool) workerLoop(worker *Worker) {
 			idleTimer.Reset(wp.config.WorkerIdleTimeout)
 
 			// Execute task
-			worker.Status = workerStateBusy
-			worker.CurrentTask = task
-			worker.LastActivity = time.Now()
+			// CONCURRENCY FIX: Use thread-safe setters
+			worker.setStatus(workerStateBusy)
+			worker.setCurrentTask(task)
+			worker.setLastActivity(time.Now())
 
 			wp.executeTask(worker, task)
 
-			worker.Status = workerStateIdle
-			worker.CurrentTask = nil
-			worker.LastActivity = time.Now()
+			worker.setStatus(workerStateIdle)
+			worker.setCurrentTask(nil)
+			worker.setLastActivity(time.Now())
 		}
 	}
 }
@@ -760,9 +819,11 @@ func (wp *AdaptiveWorkerPool) updateHeartbeats() {
 	defer wp.workersMu.RUnlock()
 
 	for _, worker := range wp.workers {
-		if worker.CurrentTask != nil && worker.Status == workerStateBusy {
-			if err := wp.repository.UpdateHeartbeat(wp.ctx, worker.CurrentTask.ID); err != nil {
-				wp.logger.WithError(err).WithField("task_id", worker.CurrentTask.ID).Debug("Failed to update heartbeat")
+		// CONCURRENCY FIX: Use thread-safe accessors
+		currentTask := worker.CurrentTask()
+		if currentTask != nil && worker.Status() == workerStateBusy {
+			if err := wp.repository.UpdateHeartbeat(wp.ctx, currentTask.ID); err != nil {
+				wp.logger.WithError(err).WithField("task_id", currentTask.ID).Debug("Failed to update heartbeat")
 			}
 		}
 	}

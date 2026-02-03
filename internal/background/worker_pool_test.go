@@ -124,16 +124,16 @@ func TestWorker_Fields(t *testing.T) {
 	now := time.Now()
 	worker := &Worker{
 		ID:             "worker-123",
-		Status:         workerStateIdle,
+		status:         int32(workerStateIdle),
 		StartedAt:      now,
-		LastActivity:   now,
+		lastActivity:   now,
 		TasksCompleted: 10,
 		TasksFailed:    2,
 		TotalDuration:  5 * time.Minute,
 	}
 
 	assert.Equal(t, "worker-123", worker.ID)
-	assert.Equal(t, workerStateIdle, worker.Status)
+	assert.Equal(t, workerStateIdle, worker.Status())
 	assert.Equal(t, int64(10), worker.TasksCompleted)
 	assert.Equal(t, int64(2), worker.TasksFailed)
 	assert.Equal(t, 5*time.Minute, worker.TotalDuration)
@@ -147,23 +147,23 @@ func TestWorker_WithTask(t *testing.T) {
 
 	worker := &Worker{
 		ID:          "worker-1",
-		Status:      workerStateBusy,
-		CurrentTask: task,
+		status:      int32(workerStateBusy),
+		currentTask: task,
 	}
 
-	assert.Equal(t, workerStateBusy, worker.Status)
-	assert.NotNil(t, worker.CurrentTask)
-	assert.Equal(t, "task-1", worker.CurrentTask.ID)
+	assert.Equal(t, workerStateBusy, worker.Status())
+	assert.NotNil(t, worker.CurrentTask())
+	assert.Equal(t, "task-1", worker.CurrentTask().ID)
 }
 
 func TestWorker_ZeroValues(t *testing.T) {
 	worker := &Worker{}
 
 	assert.Empty(t, worker.ID)
-	assert.Equal(t, workerStateIdle, worker.Status) // 0 value is idle
-	assert.Nil(t, worker.CurrentTask)
+	assert.Equal(t, workerStateIdle, worker.Status()) // 0 value is idle
+	assert.Nil(t, worker.CurrentTask())
 	assert.True(t, worker.StartedAt.IsZero())
-	assert.True(t, worker.LastActivity.IsZero())
+	assert.True(t, worker.LastActivity().IsZero())
 	assert.Equal(t, int64(0), worker.TasksCompleted)
 	assert.Equal(t, int64(0), worker.TasksFailed)
 }
@@ -224,17 +224,17 @@ func TestWorkerState_Transitions(t *testing.T) {
 		ID: "test-worker",
 	}
 
-	worker.Status = workerStateIdle
-	assert.Equal(t, "idle", worker.Status.String())
+	worker.setStatus(workerStateIdle)
+	assert.Equal(t, "idle", worker.Status().String())
 
-	worker.Status = workerStateBusy
-	assert.Equal(t, "busy", worker.Status.String())
+	worker.setStatus(workerStateBusy)
+	assert.Equal(t, "busy", worker.Status().String())
 
-	worker.Status = workerStateStopping
-	assert.Equal(t, "stopping", worker.Status.String())
+	worker.setStatus(workerStateStopping)
+	assert.Equal(t, "stopping", worker.Status().String())
 
-	worker.Status = workerStateStopped
-	assert.Equal(t, "stopped", worker.Status.String())
+	worker.setStatus(workerStateStopped)
+	assert.Equal(t, "stopped", worker.Status().String())
 }
 
 // Test TaskEvent struct
