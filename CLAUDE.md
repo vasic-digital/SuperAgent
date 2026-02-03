@@ -8,7 +8,7 @@ HelixAgent is an AI-powered ensemble LLM service written in Go that combines res
 
 **Module**: `dev.helix.agent` (Go 1.24+, toolchain go1.24.11)
 
-Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. **Containers** (`Containers/`) — generic container orchestration module (`digital.vasic.containers`). **Challenges** (`Challenges/`) — generic challenge framework module (`digital.vasic.challenges`).
+Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier** (`LLMsVerifier/`) — provider accuracy verification. Plus **20 extracted modules** (see [Extracted Modules](#extracted-modules-submodules) below) covering containers, challenges, concurrency, observability, auth, storage, streaming, security, vector databases, embeddings, database, cache, messaging, formatters, MCP, RAG, memory, optimization, plugins, and event bus.
 
 ## Mandatory Development Standards
 
@@ -135,8 +135,38 @@ make monitoring-reset-circuits / force-health-check
 - `challenges/` — HelixAgent-specific challenge implementations (plugin, infra bridge, shell adapter)
 
 ### Extracted Modules (submodules)
-- **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking (TCP/HTTP/gRPC), compose orchestration, lifecycle management (lazy boot, idle shutdown, semaphores), resource monitoring, event bus, service discovery, boot manager. 12 packages, all tests passing.
-- **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: challenge interface + base, assertion engine (16 built-in evaluators), registry with dependency ordering (Kahn's algo), runner (sequential/parallel/pipeline), reporting (MD/JSON/HTML), structured logging, env management, bank loading, live monitoring (WebSocket), metrics, plugin system, infra bridge. 12 packages, all tests passing.
+
+Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, AGENTS.md, README.md, and docs/. All use `replace` directives in the root go.mod for local development. See `docs/MODULES.md` for the full catalog.
+
+**Foundation (Phase 1 — zero dependencies):**
+- **EventBus** (`EventBus/`, `digital.vasic.eventbus`) — Pub/sub event system: bus, event types, filtering, middleware chain. 4 packages.
+- **Concurrency** (`Concurrency/`, `digital.vasic.concurrency`) — Worker pools, priority queues, rate limiters (token bucket/sliding window), circuit breakers, semaphores, resource monitoring. 6 packages.
+- **Observability** (`Observability/`, `digital.vasic.observability`) — OpenTelemetry tracing, Prometheus metrics, structured logging, health checks, ClickHouse analytics. 5 packages.
+- **Auth** (`Auth/`, `digital.vasic.auth`) — JWT, API key, OAuth authentication; HTTP middleware; token management. 5 packages.
+- **Storage** (`Storage/`, `digital.vasic.storage`) — Object storage abstraction: S3/MinIO, local filesystem, cloud providers. 4 packages.
+- **Streaming** (`Streaming/`, `digital.vasic.streaming`) — SSE, WebSocket, gRPC streaming, webhooks, HTTP client, transport abstraction. 6 packages.
+
+**Infrastructure (Phase 2 — zero module dependencies, complex):**
+- **Security** (`Security/`, `digital.vasic.security`) — Guardrails engine, PII detection/redaction, content filtering, policy enforcement, vulnerability scanning. 5 packages.
+- **VectorDB** (`VectorDB/`, `digital.vasic.vectordb`) — Unified vector store: Qdrant, Pinecone, Milvus, pgvector adapters; similarity search, collection management. 5 packages.
+- **Embeddings** (`Embeddings/`, `digital.vasic.embeddings`) — 6 embedding providers (OpenAI, Cohere, Voyage, Jina, Google, Bedrock); batch embedding. 7 packages.
+- **Database** (`Database/`, `digital.vasic.database`) — PostgreSQL (pgx), SQLite, connection pooling, migrations, repository pattern, query builder. 7 packages.
+- **Cache** (`Cache/`, `digital.vasic.cache`) — Redis + in-memory caching, distributed cache, TTL policies, cache warming. 5 packages.
+
+**Services (Phase 3):**
+- **Messaging** (`Messaging/`, `digital.vasic.messaging`) — Kafka + RabbitMQ: unified broker, producer/consumer, dead letter queues, retry policies. 5 packages.
+- **Formatters** (`Formatters/`, `digital.vasic.formatters`) — Code formatter framework: native/service/built-in formatters, registry, executor, caching. 6 packages.
+- **MCP** (`MCP_Module/`, `digital.vasic.mcp`) — Model Context Protocol: adapter framework, client/server, config generation, registry, JSON-RPC protocol. 6 packages.
+
+**Integration (Phase 4):**
+- **RAG** (`RAG/`, `digital.vasic.rag`) — Retrieval-Augmented Generation: chunking, retrieval, reranking, hybrid search, pipeline composition. 5 packages.
+- **Memory** (`Memory/`, `digital.vasic.memory`) — Mem0-style memory: entity graph, semantic search, memory scopes, consolidation. 4 packages.
+- **Optimization** (`Optimization/`, `digital.vasic.optimization`) — GPT-Cache, Outlines structured output, streaming optimization, SGLang, prompt optimization. 6 packages.
+- **Plugins** (`Plugins/`, `digital.vasic.plugins`) — Plugin system: interface + lifecycle, registry, dynamic loading, sandboxing, structured output parsing. 5 packages.
+
+**Pre-existing:**
+- **Containers** (`Containers/`, `digital.vasic.containers`) — Generic container orchestration: runtime abstraction (Docker/Podman/K8s), health checking, compose orchestration, lifecycle management. 12 packages.
+- **Challenges** (`Challenges/`, `digital.vasic.challenges`) — Generic challenge framework: assertion engine, registry, runner, reporting, monitoring, metrics, plugin system. 12 packages.
 
 ### Key Interfaces
 - `LLMProvider` — Provider contract (Complete, CompleteStream, HealthCheck, GetCapabilities, ValidateConfig)
