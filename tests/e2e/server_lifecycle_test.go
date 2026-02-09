@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -109,8 +108,8 @@ func TestAPIServerLifecycle(t *testing.T) {
 	})
 }
 
-// TestServerHealthCheck tests health check endpoint
-func TestServerHealthCheck(t *testing.T) {
+// TestServerHealthCheckWithExternalServer tests health check endpoint with external server
+func TestServerHealthCheckWithExternalServer(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping health check test in short mode")
 	}
