@@ -18,6 +18,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/claude"
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/llm/providers/zen"
+	"github.com/HelixDevelopment/HelixAgent/Toolkit/Providers/Chutes"
 	"github.com/sirupsen/logrus"
 )
 
@@ -228,6 +229,22 @@ func (sv *StartupVerifier) discoverProviders(ctx context.Context) ([]*ProviderDi
 		for _, envVar := range info.EnvVars {
 			apiKey := os.Getenv(envVar)
 			if apiKey != "" && !isPlaceholder(apiKey) {
+				// Try dynamic model discovery first
+				models := info.Models // Default to static list
+				if dynamicModels, err := sv.DiscoverModels(ctx, providerType, apiKey); err == nil && len(dynamicModels) > 0 {
+					models = dynamicModels
+					sv.log.WithFields(logrus.Fields{
+						"provider": providerType,
+						"count":    len(models),
+					}).Info("Using dynamically discovered models")
+				} else if len(info.Models) == 0 {
+					// If no static models and discovery failed, log warning
+					sv.log.WithFields(logrus.Fields{
+						"provider": providerType,
+						"error":    err,
+					}).Warn("No models available (discovery failed and no static fallback)")
+				}
+
 				discovered = append(discovered, &ProviderDiscoveryResult{
 					ID:          providerType,
 					Type:        providerType,
@@ -236,7 +253,7 @@ func (sv *StartupVerifier) discoverProviders(ctx context.Context) ([]*ProviderDi
 					Source:      "env",
 					Credentials: maskAPIKey(apiKey),
 					BaseURL:     info.BaseURL,
-					Models:      info.Models,
+					Models:      models,
 				})
 				seen[providerType] = true
 				sv.log.WithFields(logrus.Fields{
@@ -262,6 +279,52 @@ func (sv *StartupVerifier) discoverProviders(ctx context.Context) ([]*ProviderDi
 	}
 
 	return discovered, nil
+}
+
+// DiscoverModels dynamically discovers available models for a provider using Toolkit
+// This eliminates hardcoded model lists by using the provider's actual API
+func (sv *StartupVerifier) DiscoverModels(ctx context.Context, providerType string, apiKey string) ([]string, error) {
+	var models []string
+
+	switch providerType {
+	case "chutes":
+		// Try dynamic discovery via Toolkit first
+		discovery := chutes.NewDiscovery(apiKey)
+		modelInfos, err := discovery.Discover(ctx)
+
+		// If Toolkit returns models, use them
+		if err == nil && len(modelInfos) > 0 {
+			for _, model := range modelInfos {
+				models = append(models, model.ID)
+			}
+			sv.log.WithField("provider", providerType).WithField("models", len(models)).Info("Discovered models via Toolkit")
+			return models, nil
+		}
+
+		// Fallback: Chutes API often requires specific "chute" deployments
+		// Use known models from documentation when API fails
+		fallbackModels := []string{
+			"qwen/qwen2.5-72b-instruct",
+			"qwen/qwen3-72b",
+			"deepseek/deepseek-v3",
+			"deepseek/deepseek-r1",
+			"zhipu/glm-4-plus",
+			"kimi/kimi-k2.5",
+		}
+
+		sv.log.WithFields(logrus.Fields{
+			"provider": providerType,
+			"error":    err,
+			"count":    len(fallbackModels),
+		}).Info("Using fallback model list for Chutes")
+
+		return fallbackModels, nil
+
+	default:
+		// For other providers, return nil to use static model list
+		// Future: Extend to other providers with dynamic discovery
+		return nil, nil
+	}
 }
 
 // discoverOAuthProviders discovers OAuth-based providers

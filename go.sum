@@ -4,6 +4,8 @@ github.com/ClickHouse/clickhouse-go/v2 v2.41.0 h1:JbLKMXLEkW0NMalMgI+GYb6FVZtpaM
 github.com/ClickHouse/clickhouse-go/v2 v2.41.0/go.mod h1:/RoTHh4aDA4FOCIQggwsiOwO7Zq1+HxQ0inef0Au/7k=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
 github.com/DATA-DOG/go-sqlmock v1.5.2/go.mod h1:88MAG/4G7SMwSE3CeA0ZKzrT5CiOU3OJ+JlNzwDqpNU=
+github.com/HelixDevelopment/HelixAgent/Toolkit v0.0.0-20260209162635-acd6d0755327 h1:h6x4izXZkz4zFrh753Sk2oYVpyoA/ff/Y4XUCFk3a1Q=
+github.com/HelixDevelopment/HelixAgent/Toolkit v0.0.0-20260209162635-acd6d0755327/go.mod h1:hUJZHuirX+LKzTs9zBHEx8ntgI1DR/uabekUok2rT5w=
 github.com/alicebob/miniredis/v2 v2.36.1 h1:Dvc5oAnNOr7BIfPn7tF269U8DvRW1dBG2D5n0WrfYMI=
 github.com/alicebob/miniredis/v2 v2.36.1/go.mod h1:TcL7YfarKPGDAthEtl5NBeHZfeUQj6OXMm/+iu5cLMM=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=

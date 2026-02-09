@@ -25,6 +25,7 @@ require (
 	digital.vasic.vectordb v0.0.0-00010101000000-000000000000
 	github.com/ClickHouse/clickhouse-go/v2 v2.41.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/HelixDevelopment/HelixAgent/Toolkit v0.0.0-20260209162635-acd6d0755327
 	github.com/alicebob/miniredis/v2 v2.36.1
 	github.com/andybalholm/brotli v1.2.0
 	github.com/fsnotify/fsnotify v1.9.0

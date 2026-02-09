@@ -626,15 +626,8 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    5,
 		EnvVars:     []string{"CHUTES_API_KEY", "ApiKey_Chutes"},
 		BaseURL:     "https://api.chutes.ai/v1/chat/completions",
-		Models: []string{
-			"qwen/qwen2.5-72b-instruct",
-			"qwen/qwen3-72b",
-			"deepseek/deepseek-v3",
-			"deepseek/deepseek-r1",
-			"zhipu/glm-4-plus",
-			"kimi/kimi-k2.5",
-		},
-		Free: false,
+		Models:      []string{}, // Dynamically discovered via Toolkit (fallback in Toolkit/Providers/Chutes/discovery.go)
+		Free:        false,
 	},
 	"siliconflow": {
 		Type:        "siliconflow",
