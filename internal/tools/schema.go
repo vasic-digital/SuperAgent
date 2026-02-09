@@ -71,7 +71,7 @@ var ToolSchemaRegistry = map[string]*ToolSchema{
 		Description:    "Read contents of a file from the filesystem",
 		RequiredFields: []string{"file_path"},
 		OptionalFields: []string{"offset", "limit"},
-		Aliases:        []string{"read"},
+		Aliases:        []string{"read", "read_file"},
 		Category:       CategoryFileSystem,
 		Parameters: map[string]Param{
 			"file_path": {Type: "string", Description: "Absolute path to the file to read", Required: true},

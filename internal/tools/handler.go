@@ -93,6 +93,18 @@ func init() {
 // READ FILE TOOL HANDLER
 // ============================================
 
+// ReadFileHandler handles the read_file tool which reads contents of files from the filesystem.
+// Supports reading entire files or specific line ranges using offset/limit parameters.
+// Uses cat for full file reads and sed for line-range reads.
+//
+// Parameters:
+//   - file_path (required): Absolute path to the file to read
+//   - offset (optional): Line number to start reading from (0-indexed)
+//   - limit (optional): Number of lines to read (default: 2000)
+//
+// Examples:
+//   - Read entire file: {"file_path": "/path/to/file.txt"}
+//   - Read lines 10-20: {"file_path": "/path/to/file.txt", "offset": 10, "limit": 10}
 type ReadFileHandler struct{}
 
 func (h *ReadFileHandler) Name() string { return "read_file" }
@@ -172,6 +184,29 @@ func (h *ReadFileHandler) Execute(ctx context.Context, args map[string]interface
 // GIT TOOL HANDLER
 // ============================================
 
+// GitHandler handles git version control operations.
+// Supports all standard git commands with validation to prevent command injection.
+//
+// Supported operations:
+//   - clone, pull, push, checkout, merge, diff, log, stash
+//   - status, add, commit, branch, tag, fetch, rebase, reset
+//   - clean, init, remote, show, mv, rm
+//
+// Parameters:
+//   - operation (required): Git command to execute (from allowed list)
+//   - arguments (optional): Array of additional arguments for the command
+//   - working_dir (optional): Working directory for the git command (default: ".")
+//   - description (required): Human-readable description of what the operation does
+//
+// Security:
+//   - Operations are validated against an allowed list
+//   - Arguments are validated for shell safety
+//   - Working directory path is validated
+//
+// Examples:
+//   - Check status: {"operation": "status", "description": "Check git status"}
+//   - Commit: {"operation": "commit", "arguments": ["-m", "Fix bug"], "description": "Commit bug fix"}
+//   - Push: {"operation": "push", "arguments": ["origin", "main"], "description": "Push to main"}
 type GitHandler struct{}
 
 func (h *GitHandler) Name() string { return "Git" }
@@ -298,6 +333,29 @@ func (h *GitHandler) Execute(ctx context.Context, args map[string]interface{}) (
 // TEST TOOL HANDLER
 // ============================================
 
+// TestHandler handles running Go tests with various configurations.
+// Supports unit, integration, E2E, benchmark, and all test types.
+// Can generate coverage reports and filter by test name patterns.
+//
+// Parameters:
+//   - test_path (optional): Path or pattern for tests (default: "./...")
+//   - test_type (optional): Type of tests - unit, integration, e2e, benchmark, all (default: "all")
+//   - coverage (optional): Generate coverage report (default: false)
+//   - verbose (optional): Verbose output (default: true)
+//   - filter (optional): Test name filter pattern (e.g., "TestFoo")
+//   - timeout (optional): Test timeout (e.g., "30s", "5m") (default: "5m")
+//   - description (required): Human-readable description
+//
+// Test Type Mappings:
+//   - unit: ./internal/...
+//   - integration: ./tests/integration/...
+//   - e2e: ./tests/e2e/...
+//   - all: ./...
+//
+// Examples:
+//   - Run all tests: {"description": "Run all tests"}
+//   - With coverage: {"coverage": true, "description": "Run tests with coverage"}
+//   - Specific test: {"filter": "TestUserAuth", "description": "Run auth tests"}
 type TestHandler struct{}
 
 func (h *TestHandler) Name() string { return "Test" }
@@ -389,6 +447,26 @@ func (h *TestHandler) Execute(ctx context.Context, args map[string]interface{}) 
 // LINT TOOL HANDLER
 // ============================================
 
+// LintHandler handles code linting and static analysis.
+// Supports multiple linters with automatic detection and optional auto-fixing.
+//
+// Supported linters:
+//   - auto: Automatically detect linter based on project type
+//   - golangci-lint: Go comprehensive linter
+//   - gofmt: Go formatter
+//   - eslint: JavaScript/TypeScript linter
+//
+// Parameters:
+//   - path (optional): Path to lint (file or directory) (default: "./...")
+//   - linter (optional): Linter to use (default: "auto")
+//   - auto_fix (optional): Automatically fix issues where possible (default: false)
+//   - config (optional): Path to linter config file
+//   - description (required): Human-readable description
+//
+// Examples:
+//   - Lint all: {"description": "Run linting"}
+//   - Auto-fix: {"auto_fix": true, "description": "Fix lint issues"}
+//   - Specific linter: {"linter": "golangci-lint", "description": "Run golangci-lint"}
 type LintHandler struct{}
 
 func (h *LintHandler) Name() string { return "Lint" }
@@ -476,6 +554,26 @@ func (h *LintHandler) Execute(ctx context.Context, args map[string]interface{}) 
 // DIFF TOOL HANDLER
 // ============================================
 
+// DiffHandler shows differences between file versions or working tree using git diff.
+//
+// Diff modes:
+//   - working: Changes in working directory (unstaged)
+//   - staged: Changes in staging area (ready to commit)
+//   - commit: Changes in a specific commit
+//   - branch: Changes between branches
+//
+// Parameters:
+//   - file_path (optional): Specific file to diff (diffs all files if not specified)
+//   - mode (optional): Diff mode (default: "working")
+//   - compare_with (optional): Revision, branch, or commit to compare with
+//   - context_lines (optional): Number of context lines to show (default: 3)
+//   - description (required): Human-readable description
+//
+// Examples:
+//   - Working changes: {"mode": "working", "description": "Show unstaged changes"}
+//   - Staged changes: {"mode": "staged", "description": "Show staged changes"}
+//   - Branch diff: {"mode": "branch", "compare_with": "develop", "description": "Compare with develop"}
+//   - File diff: {"file_path": "main.go", "description": "Show changes to main.go"}
 type DiffHandler struct{}
 
 func (h *DiffHandler) Name() string { return "Diff" }
@@ -562,6 +660,21 @@ func (h *DiffHandler) Execute(ctx context.Context, args map[string]interface{}) 
 // TREEVIEW TOOL HANDLER
 // ============================================
 
+// TreeViewHandler displays directory structure as a tree.
+// Uses the find command to traverse directories and formats output as a tree.
+//
+// Parameters:
+//   - path (optional): Root directory to display (default: ".")
+//   - max_depth (optional): Maximum depth to traverse (default: 3)
+//   - show_hidden (optional): Show hidden files and directories (default: false)
+//   - ignore_patterns (optional): Array of patterns to ignore (e.g., ["node_modules", ".git"])
+//   - description (required): Human-readable description
+//
+// Examples:
+//   - Show tree: {"description": "Display directory tree"}
+//   - Deep tree: {"max_depth": 5, "description": "Show deep tree"}
+//   - With hidden: {"show_hidden": true, "description": "Show all files including hidden"}
+//   - Ignore patterns: {"ignore_patterns": ["node_modules", "vendor"], "description": "Show tree without dependencies"}
 type TreeViewHandler struct{}
 
 func (h *TreeViewHandler) Name() string { return "TreeView" }
@@ -659,6 +772,23 @@ func (h *TreeViewHandler) Execute(ctx context.Context, args map[string]interface
 // FILEINFO TOOL HANDLER
 // ============================================
 
+// FileInfoHandler gets detailed information about a file.
+// Combines stat, wc, and git log to provide comprehensive file metadata.
+//
+// Information provided:
+//   - Basic: Size, permissions, modification time (via stat)
+//   - Stats: Line count, word count (via wc) [if include_stats=true]
+//   - Git: Last 5 commits affecting the file (via git log) [if include_git=true]
+//
+// Parameters:
+//   - file_path (required): Path to the file
+//   - include_stats (optional): Include file statistics (default: true)
+//   - include_git (optional): Include git history (default: false)
+//   - description (required): Human-readable description
+//
+// Examples:
+//   - Basic info: {"file_path": "main.go", "description": "Get file info"}
+//   - With git: {"file_path": "main.go", "include_git": true, "description": "Get file info with history"}
 type FileInfoHandler struct{}
 
 func (h *FileInfoHandler) Name() string { return "FileInfo" }
@@ -725,6 +855,26 @@ func (h *FileInfoHandler) Execute(ctx context.Context, args map[string]interface
 // SYMBOLS TOOL HANDLER
 // ============================================
 
+// SymbolsHandler extracts code symbols (functions, classes, types) from Go files.
+// Uses grep to find symbol definitions matching Go syntax patterns.
+//
+// Symbols extracted:
+//   - Functions: func Name(...)
+//   - Types: type Name struct/interface
+//   - Constants: const Name = ...
+//   - Variables: var Name = ...
+//
+// Parameters:
+//   - file_path (optional): File or directory to analyze (default: ".")
+//   - recursive (optional): Search subdirectories (default: false)
+//   - description (required): Human-readable description
+//
+// Output format:
+//   - filename:line_number:symbol_definition
+//
+// Examples:
+//   - Extract from file: {"file_path": "main.go", "description": "Extract symbols"}
+//   - Recursive: {"file_path": "./internal", "recursive": true, "description": "Extract all symbols"}
 type SymbolsHandler struct{}
 
 func (h *SymbolsHandler) Name() string { return "Symbols" }
@@ -781,6 +931,21 @@ func (h *SymbolsHandler) Execute(ctx context.Context, args map[string]interface{
 // REFERENCES TOOL HANDLER
 // ============================================
 
+// ReferencesHandler finds all references to a symbol in the codebase.
+// Uses grep to recursively search for symbol usage in .go files.
+//
+// Parameters:
+//   - symbol (required): Symbol name to find references for
+//   - file_path (optional): Starting directory for search (default: ".")
+//   - include_declaration (optional): Include the declaration in results (default: true)
+//   - description (required): Human-readable description
+//
+// Output format:
+//   - filename:line_number:line_content
+//
+// Examples:
+//   - Find refs: {"symbol": "UserAuth", "description": "Find all references to UserAuth"}
+//   - In directory: {"symbol": "Config", "file_path": "./internal", "description": "Find Config references in internal"}
 type ReferencesHandler struct{}
 
 func (h *ReferencesHandler) Name() string { return "References" }
@@ -844,6 +1009,26 @@ func (h *ReferencesHandler) Execute(ctx context.Context, args map[string]interfa
 // DEFINITION TOOL HANDLER
 // ============================================
 
+// DefinitionHandler finds the definition of a symbol.
+// Uses grep with patterns to match Go function/type/method definitions.
+//
+// Definition patterns matched:
+//   - func SymbolName(...)
+//   - func (receiver) SymbolName(...)
+//   - type SymbolName struct/interface/...
+//
+// Parameters:
+//   - symbol (required): Symbol name to find definition for
+//   - file_path (optional): Context file for disambiguation (not currently used, searches all)
+//   - line (optional): Context line number (not currently used)
+//   - description (required): Human-readable description
+//
+// Output format:
+//   - filename:line_number:definition_line
+//
+// Examples:
+//   - Find definition: {"symbol": "UserAuth", "description": "Find UserAuth definition"}
+//   - Find method: {"symbol": "Execute", "description": "Find Execute method definition"}
 type DefinitionHandler struct{}
 
 func (h *DefinitionHandler) Name() string { return "Definition" }
@@ -893,6 +1078,31 @@ func (h *DefinitionHandler) Execute(ctx context.Context, args map[string]interfa
 // PR TOOL HANDLER
 // ============================================
 
+// PRHandler manages GitHub/GitLab pull requests using the gh CLI.
+//
+// Supported actions:
+//   - list: List all pull requests
+//   - create: Create a new pull request
+//   - view: View PR details (requires pr_number)
+//   - merge: Merge a pull request (requires pr_number)
+//   - close: Close a pull request (requires pr_number)
+//
+// Parameters:
+//   - action (required): PR action to perform
+//   - title (optional): PR title (for create)
+//   - body (optional): PR description body (for create)
+//   - base_branch (optional): Target branch for merge (default: "main")
+//   - pr_number (optional): PR number (for view/merge/close)
+//   - labels (optional): Array of labels to add to the PR
+//   - description (required): Human-readable description
+//
+// Requirements:
+//   - gh CLI must be installed and authenticated
+//
+// Examples:
+//   - List PRs: {"action": "list", "description": "List all PRs"}
+//   - Create PR: {"action": "create", "title": "Fix bug", "body": "Description", "description": "Create PR"}
+//   - Merge PR: {"action": "merge", "pr_number": 123, "description": "Merge PR #123"}
 type PRHandler struct{}
 
 func (h *PRHandler) Name() string { return "PR" }
@@ -1035,6 +1245,30 @@ func (h *PRHandler) Execute(ctx context.Context, args map[string]interface{}) (T
 // ISSUE TOOL HANDLER
 // ============================================
 
+// IssueHandler manages GitHub/GitLab issues using the gh CLI.
+//
+// Supported actions:
+//   - list: List all issues
+//   - create: Create a new issue
+//   - view: View issue details (requires issue_number)
+//   - close: Close an issue (requires issue_number)
+//
+// Parameters:
+//   - action (required): Issue action to perform
+//   - title (optional): Issue title (for create)
+//   - body (optional): Issue body or comment (for create)
+//   - issue_number (optional): Issue number (for view/close)
+//   - labels (optional): Array of labels to add
+//   - assignees (optional): Array of users to assign
+//   - description (required): Human-readable description
+//
+// Requirements:
+//   - gh CLI must be installed and authenticated
+//
+// Examples:
+//   - List issues: {"action": "list", "description": "List all issues"}
+//   - Create issue: {"action": "create", "title": "Bug found", "body": "Details", "description": "Create issue"}
+//   - Close issue: {"action": "close", "issue_number": 456, "description": "Close issue #456"}
 type IssueHandler struct{}
 
 func (h *IssueHandler) Name() string { return "Issue" }
@@ -1140,6 +1374,30 @@ func (h *IssueHandler) Execute(ctx context.Context, args map[string]interface{})
 // WORKFLOW TOOL HANDLER
 // ============================================
 
+// WorkflowHandler manages CI/CD workflows (GitHub Actions) using the gh CLI.
+//
+// Supported actions:
+//   - list: List all workflows
+//   - run: Trigger a workflow run
+//   - view: View workflow run details (requires run_id or shows latest)
+//   - cancel: Cancel a workflow run (requires run_id)
+//   - logs: View workflow run logs (requires run_id)
+//
+// Parameters:
+//   - action (required): Workflow action to perform
+//   - workflow_id (optional): Workflow file name or ID (for run)
+//   - branch (optional): Branch to run workflow on (for run)
+//   - run_id (optional): Run ID (for view/cancel/logs)
+//   - description (required): Human-readable description
+//
+// Requirements:
+//   - gh CLI must be installed and authenticated
+//
+// Examples:
+//   - List workflows: {"action": "list", "description": "List all workflows"}
+//   - Run workflow: {"action": "run", "workflow_id": "test.yml", "branch": "main", "description": "Run tests"}
+//   - View logs: {"action": "logs", "run_id": 12345, "description": "View run logs"}
+//   - Cancel run: {"action": "cancel", "run_id": 12345, "description": "Cancel workflow run"}
 type WorkflowHandler struct{}
 
 func (h *WorkflowHandler) Name() string { return "Workflow" }
