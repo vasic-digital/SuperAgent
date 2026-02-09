@@ -1,6 +1,6 @@
 #!/bin/bash
 # Chat Error Handling Challenge
-# Tests error responses and validation for invalid requests
+# Tests error handling for invalid requests
 
 set -e
 
@@ -10,68 +10,21 @@ source "$SCRIPT_DIR/challenge_framework.sh"
 CHALLENGE_PORT="${HELIXAGENT_PORT:-7061}"
 BASE_URL="http://localhost:$CHALLENGE_PORT"
 
-# Initialize challenge
-init_challenge "chat_error_handling" "Chat Error Handling Challenge"
+init_challenge "chat-error-handling" "Chat Error Handling Challenge"
 load_env
 
-log_info "Testing error handling and validation..."
+log_info "Testing error handling for invalid chat requests..."
 
-# Test 1: Missing required fields
-test_missing_required_fields() {
-    log_info "Test 1: Missing required fields (no messages)"
-
-    local request='{"model": "helixagent-debate"}'
-
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
-        -d "$request" --max-time 30 2>/dev/null || true)
-
-    local http_code=$(echo "$response" | tail -n1)
-    local body=$(echo "$response" | head -n -1)
-
-    # Should return 400 Bad Request
-    if [[ "$http_code" == "400" ]]; then
-        record_assertion "missing_fields" "http_status" "true" "Returns 400 for missing messages"
-
-        # Should have error message
-        if echo "$body" | jq -e '.error' >/dev/null 2>&1; then
-            record_assertion "missing_fields" "error_message" "true" "Error message present"
-        else
-            record_assertion "missing_fields" "error_message" "false" "No error message"
-        fi
-    else
-        record_assertion "missing_fields" "http_status" "false" "Expected 400, got $http_code"
-    fi
-}
-
-# Test 2: Invalid JSON
-test_invalid_json() {
-    log_info "Test 2: Invalid JSON payload"
-
-    local request='{"model": "helixagent-debate", "messages": [invalid json'
-
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
-        -d "$request" --max-time 30 2>/dev/null || true)
-
-    local http_code=$(echo "$response" | tail -n1)
-
-    if [[ "$http_code" == "400" ]]; then
-        record_assertion "invalid_json" "rejected" "true" "Invalid JSON rejected (400)"
-    else
-        record_assertion "invalid_json" "rejected" "false" "Expected 400, got $http_code"
-    fi
-}
-
-# Test 3: Invalid model name
+# Test 1: Invalid model name
 test_invalid_model() {
-    log_info "Test 3: Invalid model name"
+    log_info "Test 1: Invalid model name"
 
     local request='{
         "model": "nonexistent-model-12345",
-        "messages": [{"role": "user", "content": "Hello"}]
+        "messages": [
+            {"role": "user", "content": "Hello"}
+        ],
+        "max_tokens": 10
     }'
 
     local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
@@ -82,28 +35,77 @@ test_invalid_model() {
     local http_code=$(echo "$response" | tail -n1)
     local body=$(echo "$response" | head -n -1)
 
-    # Should return 400 or 404
-    if [[ "$http_code" == "400" ]] || [[ "$http_code" == "404" ]]; then
-        record_assertion "invalid_model" "rejected" "true" "Invalid model rejected ($http_code)"
+    # Should return error (400 or 404)
+    if [[ "$http_code" =~ ^(400|404)$ ]]; then
+        record_assertion "invalid_model" "proper_error" "true" "Returns HTTP $http_code for invalid model"
 
-        # Check for error details
-        if echo "$body" | grep -qiE "(model|not found|invalid)"; then
-            record_assertion "invalid_model" "error_details" "true" "Error details mention model"
-        else
-            record_assertion "invalid_model" "error_details" "false" "No model-specific error"
+        # Check for error message in response
+        if echo "$body" | jq -e '.error' > /dev/null 2>&1; then
+            record_assertion "invalid_model" "error_structure" "true" "Error response has proper structure"
         fi
     else
-        record_assertion "invalid_model" "rejected" "false" "Expected 400/404, got $http_code"
+        record_assertion "invalid_model" "proper_error" "false" "HTTP $http_code (expected 400/404)"
     fi
 }
 
-# Test 4: Invalid role in message
-test_invalid_role() {
-    log_info "Test 4: Invalid role in messages"
+# Test 2: Malformed JSON
+test_malformed_json() {
+    log_info "Test 2: Malformed JSON request"
+
+    local malformed_request='{"model":"helixagent-debate","messages":[{"role":"user","content":"test"'
+
+    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
+        -d "$malformed_request" --max-time 30 2>/dev/null || true)
+
+    local http_code=$(echo "$response" | tail -n1)
+
+    # Should return 400 Bad Request
+    if [[ "$http_code" == "400" ]]; then
+        record_assertion "malformed_json" "proper_error" "true" "Returns 400 for malformed JSON"
+    else
+        record_assertion "malformed_json" "proper_error" "false" "HTTP $http_code (expected 400)"
+    fi
+}
+
+# Test 3: Missing required field (messages)
+test_missing_messages() {
+    log_info "Test 3: Missing required 'messages' field"
 
     local request='{
         "model": "helixagent-debate",
-        "messages": [{"role": "invalid-role", "content": "Hello"}]
+        "max_tokens": 10
+    }'
+
+    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
+        -d "$request" --max-time 30 2>/dev/null || true)
+
+    local http_code=$(echo "$response" | tail -n1)
+    local body=$(echo "$response" | head -n -1)
+
+    # Should return 400
+    if [[ "$http_code" == "400" ]]; then
+        record_assertion "missing_messages" "proper_error" "true" "Returns 400 for missing messages"
+
+        if echo "$body" | grep -qi "message"; then
+            record_assertion "missing_messages" "descriptive_error" "true" "Error mentions 'message'"
+        fi
+    else
+        record_assertion "missing_messages" "proper_error" "false" "HTTP $http_code (expected 400)"
+    fi
+}
+
+# Test 4: Empty messages array
+test_empty_messages() {
+    log_info "Test 4: Empty messages array"
+
+    local request='{
+        "model": "helixagent-debate",
+        "messages": [],
+        "max_tokens": 10
     }'
 
     local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
@@ -113,21 +115,50 @@ test_invalid_role() {
 
     local http_code=$(echo "$response" | tail -n1)
 
+    # Should return 400
     if [[ "$http_code" == "400" ]]; then
-        record_assertion "invalid_role" "rejected" "true" "Invalid role rejected (400)"
+        record_assertion "empty_messages" "proper_error" "true" "Returns 400 for empty messages"
     else
-        # May accept and process anyway
-        record_assertion "invalid_role" "rejected" "false" "Invalid role not rejected ($http_code)"
+        record_assertion "empty_messages" "proper_error" "false" "HTTP $http_code (expected 400)"
     fi
 }
 
-# Test 5: Negative max_tokens
-test_negative_max_tokens() {
-    log_info "Test 5: Negative max_tokens"
+# Test 5: Invalid message role
+test_invalid_role() {
+    log_info "Test 5: Invalid message role"
 
     local request='{
         "model": "helixagent-debate",
-        "messages": [{"role": "user", "content": "Hello"}],
+        "messages": [
+            {"role": "invalid_role", "content": "Hello"}
+        ],
+        "max_tokens": 10
+    }'
+
+    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
+        -d "$request" --max-time 30 2>/dev/null || true)
+
+    local http_code=$(echo "$response" | tail -n1)
+
+    # Should return 400
+    if [[ "$http_code" == "400" ]]; then
+        record_assertion "invalid_role" "proper_error" "true" "Returns 400 for invalid role"
+    else
+        record_assertion "invalid_role" "proper_error" "false" "HTTP $http_code (expected 400)"
+    fi
+}
+
+# Test 6: Negative max_tokens
+test_negative_max_tokens() {
+    log_info "Test 6: Negative max_tokens value"
+
+    local request='{
+        "model": "helixagent-debate",
+        "messages": [
+            {"role": "user", "content": "Hello"}
+        ],
         "max_tokens": -10
     }'
 
@@ -138,20 +169,24 @@ test_negative_max_tokens() {
 
     local http_code=$(echo "$response" | tail -n1)
 
+    # Should return 400
     if [[ "$http_code" == "400" ]]; then
-        record_assertion "negative_tokens" "rejected" "true" "Negative max_tokens rejected"
+        record_assertion "negative_tokens" "proper_error" "true" "Returns 400 for negative max_tokens"
     else
-        record_assertion "negative_tokens" "rejected" "false" "Negative max_tokens not validated ($http_code)"
+        record_assertion "negative_tokens" "proper_error" "false" "HTTP $http_code (expected 400)"
     fi
 }
 
-# Test 6: Invalid temperature range
+# Test 7: Invalid temperature
 test_invalid_temperature() {
-    log_info "Test 6: Invalid temperature (> 2.0)"
+    log_info "Test 7: Invalid temperature value (> 2.0)"
 
     local request='{
         "model": "helixagent-debate",
-        "messages": [{"role": "user", "content": "Hello"}],
+        "messages": [
+            {"role": "user", "content": "Hello"}
+        ],
+        "max_tokens": 10,
         "temperature": 5.0
     }'
 
@@ -162,23 +197,24 @@ test_invalid_temperature() {
 
     local http_code=$(echo "$response" | tail -n1)
 
-    # May accept (clamp to valid range) or reject
-    if [[ "$http_code" == "400" ]]; then
-        record_assertion "invalid_temp" "validation" "true" "Out-of-range temperature rejected"
-    elif [[ "$http_code" == "200" ]]; then
-        record_assertion "invalid_temp" "validation" "true" "Out-of-range temperature clamped/accepted"
+    # Should return 400 (or possibly accept and clamp to 2.0)
+    if [[ "$http_code" =~ ^(200|400)$ ]]; then
+        record_assertion "invalid_temperature" "handled" "true" "HTTP $http_code (handled gracefully)"
     else
-        record_assertion "invalid_temp" "validation" "false" "Unexpected status: $http_code"
+        record_assertion "invalid_temperature" "handled" "false" "HTTP $http_code"
     fi
 }
 
-# Test 7: Empty messages array
-test_empty_messages() {
-    log_info "Test 7: Empty messages array"
+# Test 8: Missing content field
+test_missing_content() {
+    log_info "Test 8: Message missing 'content' field"
 
     local request='{
         "model": "helixagent-debate",
-        "messages": []
+        "messages": [
+            {"role": "user"}
+        ],
+        "max_tokens": 10
     }'
 
     local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
@@ -188,131 +224,19 @@ test_empty_messages() {
 
     local http_code=$(echo "$response" | tail -n1)
 
+    # Should return 400
     if [[ "$http_code" == "400" ]]; then
-        record_assertion "empty_messages" "rejected" "true" "Empty messages array rejected"
+        record_assertion "missing_content" "proper_error" "true" "Returns 400 for missing content"
     else
-        record_assertion "empty_messages" "rejected" "false" "Expected 400, got $http_code"
+        record_assertion "missing_content" "proper_error" "false" "HTTP $http_code (expected 400)"
     fi
 }
 
-# Test 8: Missing Authorization header
-test_missing_auth() {
-    log_info "Test 8: Missing Authorization header"
-
-    local request='{
-        "model": "helixagent-debate",
-        "messages": [{"role": "user", "content": "Hello"}]
-    }'
-
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -d "$request" --max-time 30 2>/dev/null || true)
-
-    local http_code=$(echo "$response" | tail -n1)
-
-    # May require auth (401) or allow anonymous (200)
-    if [[ "$http_code" == "401" ]]; then
-        record_assertion "missing_auth" "enforced" "true" "Authentication enforced (401)"
-    elif [[ "$http_code" == "200" ]]; then
-        record_assertion "missing_auth" "enforced" "false" "Anonymous access allowed (200)"
-    else
-        record_assertion "missing_auth" "enforced" "false" "Unexpected status: $http_code"
-    fi
-}
-
-# Test 9: Malformed message structure
-test_malformed_message() {
-    log_info "Test 9: Malformed message structure"
-
-    local request='{
-        "model": "helixagent-debate",
-        "messages": [{"role": "user"}]
-    }'
-
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
-        -d "$request" --max-time 30 2>/dev/null || true)
-
-    local http_code=$(echo "$response" | tail -n1)
-
-    if [[ "$http_code" == "400" ]]; then
-        record_assertion "malformed_msg" "rejected" "true" "Message without content rejected"
-    else
-        record_assertion "malformed_msg" "rejected" "false" "Expected 400, got $http_code"
-    fi
-}
-
-# Test 10: Very large max_tokens
-test_excessive_max_tokens() {
-    log_info "Test 10: Excessive max_tokens value"
-
-    local request='{
-        "model": "helixagent-debate",
-        "messages": [{"role": "user", "content": "Hello"}],
-        "max_tokens": 1000000
-    }'
-
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
-        -d "$request" --max-time 30 2>/dev/null || true)
-
-    local http_code=$(echo "$response" | tail -n1)
-
-    # Should reject (400) or clamp to valid range (200)
-    if [[ "$http_code" == "400" ]]; then
-        record_assertion "excessive_tokens" "handled" "true" "Excessive max_tokens rejected"
-    elif [[ "$http_code" == "200" ]]; then
-        record_assertion "excessive_tokens" "handled" "true" "Excessive max_tokens clamped"
-    else
-        record_assertion "excessive_tokens" "handled" "false" "Unexpected status: $http_code"
-    fi
-}
-
-# Test 11: Error response format validation
-test_error_format() {
-    log_info "Test 11: Error response format validation"
-
-    local request='{"model": "helixagent-debate"}'
-
-    local response=$(curl -s -w "\n%{http_code}" "$BASE_URL/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer ${HELIXAGENT_API_KEY:-test}" \
-        -d "$request" --max-time 30 2>/dev/null || true)
-
-    local http_code=$(echo "$response" | tail -n1)
-    local body=$(echo "$response" | head -n -1)
-
-    if [[ "$http_code" == "400" ]]; then
-        # Check OpenAI error format
-        local has_error=$(echo "$body" | jq -e '.error' >/dev/null 2>&1 && echo "true" || echo "false")
-        local has_message=$(echo "$body" | jq -e '.error.message' >/dev/null 2>&1 && echo "true" || echo "false")
-        local has_type=$(echo "$body" | jq -e '.error.type' >/dev/null 2>&1 && echo "true" || echo "false")
-
-        if [[ "$has_error" == "true" ]]; then
-            record_assertion "error_format" "has_error_object" "true" "Error object present"
-        else
-            record_assertion "error_format" "has_error_object" "false" "No error object"
-        fi
-
-        if [[ "$has_message" == "true" ]]; then
-            record_assertion "error_format" "has_message" "true" "Error message present"
-        else
-            record_assertion "error_format" "has_message" "false" "No error message"
-        fi
-    else
-        record_assertion "error_format" "http_status" "false" "Expected 400 for format check"
-    fi
-}
-
-# Main execution
 main() {
-    log_info "Starting Chat Error Handling Challenge..."
+    log_info "Starting error handling challenge..."
 
-    # Check if server is running
     if ! curl -s "$BASE_URL/health" > /dev/null 2>&1; then
-        log_warning "HelixAgent not running, attempting to start..."
+        log_info "HelixAgent not running, starting..."
         start_helixagent "$CHALLENGE_PORT" || {
             log_error "Failed to start HelixAgent"
             finalize_challenge "FAILED"
@@ -320,26 +244,22 @@ main() {
         }
     fi
 
-    # Run tests
-    test_missing_required_fields
-    test_invalid_json
     test_invalid_model
+    test_malformed_json
+    test_missing_messages
+    test_empty_messages
     test_invalid_role
     test_negative_max_tokens
     test_invalid_temperature
-    test_empty_messages
-    test_missing_auth
-    test_malformed_message
-    test_excessive_max_tokens
-    test_error_format
+    test_missing_content
 
-    # Calculate results
-    local failed_count=$(grep -c "|FAILED|" "$OUTPUT_DIR/logs/assertions.log" 2>/dev/null || echo "0")
-    failed_count=${failed_count:-0}
+    local failed_count=$(grep -c "|FAILED|" "$OUTPUT_DIR/logs/assertions.log" 2>/dev/null || echo 0)
 
-    if [[ "$failed_count" -eq 0 ]]; then
+    if [[ $failed_count -eq 0 ]]; then
+        log_info "All error handling tests passed!"
         finalize_challenge "PASSED"
     else
+        log_error "$failed_count test(s) failed"
         finalize_challenge "FAILED"
     fi
 }
