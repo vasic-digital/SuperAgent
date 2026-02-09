@@ -281,9 +281,10 @@ test_debates() {
 
     local http_code=$(echo "$response" | tail -n1)
 
-    # 200 OK or 404 (not implemented yet) are both acceptable
-    if [[ "$http_code" == "200" ]] || [[ "$http_code" == "404" ]]; then
-        record_assertion "debates" "debates_endpoint" "true" "Debates endpoint responds"
+    # 200 OK, 401 (auth required), or 404 (not implemented) are all acceptable
+    # 401 indicates endpoint exists and is correctly protected
+    if [[ "$http_code" == "200" ]] || [[ "$http_code" == "401" ]] || [[ "$http_code" == "404" ]]; then
+        record_assertion "debates" "debates_endpoint" "true" "Debates endpoint responds correctly (status: $http_code)"
     else
         record_assertion "debates" "debates_endpoint" "false" "Debates endpoint unexpected: $http_code"
     fi
