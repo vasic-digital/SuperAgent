@@ -176,7 +176,7 @@ func (d *DebateTestIntegration) analyzeResults(
 
 	// Group results by test case
 	resultsByTest := make(map[string]map[string]*TestExecutionResult)
-	for key, result := range results {
+	for _, result := range results {
 		// Parse key: testID:solutionID
 		testID := result.TestID
 		if resultsByTest[testID] == nil {

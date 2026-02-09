@@ -101,7 +101,7 @@ func (g *LLMTestCaseGenerator) GenerateTestCase(ctx context.Context, req *Genera
 
 	// For now, return placeholder
 	return &TestCase{
-		ID:          fmt.Sprintf("test_%s_%d", req.AgentID, req.Context),
+		ID:          fmt.Sprintf("test_%s_%s", req.AgentID, req.Context),
 		AgentID:     req.AgentID,
 		TargetAgent: "opponent",
 		Language:    req.Language,
