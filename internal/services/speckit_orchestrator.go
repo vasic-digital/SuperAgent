@@ -1024,9 +1024,161 @@ func (so *SpecKitOrchestrator) resumeFlow(ctx context.Context, flowID string, us
 		"last_phase": lastPhase,
 	}).Info("[SpecKit Resumption] Resuming flow from last completed phase")
 
-	// TODO: Implement actual resumption logic
-	// For now, return the cached flow
+	// Determine remaining phases
+	allPhases := []SpecKitPhase{
+		PhaseConstitution, PhaseSpecify, PhaseClarify,
+		PhasePlan, PhaseTasks, PhaseAnalyze, PhaseImplement,
+	}
+
+	// Find index of last completed phase
+	lastPhaseIndex := -1
+	for i, phase := range allPhases {
+		if phase == lastPhase {
+			lastPhaseIndex = i
+			break
+		}
+	}
+
+	if lastPhaseIndex == -1 {
+		return nil, fmt.Errorf("unknown last phase: %s", lastPhase)
+	}
+
+	// If all phases complete, return cached flow
+	if lastPhaseIndex == len(allPhases)-1 {
+		so.logger.Info("[SpecKit Resumption] All phases already completed")
+		cachedFlow.ResumedFromPhase = lastPhase
+		return cachedFlow, nil
+	}
+
+	// Execute remaining phases
+	remainingPhases := allPhases[lastPhaseIndex+1:]
+	so.logger.WithFields(logrus.Fields{
+		"remaining_phases": len(remainingPhases),
+		"phases":           remainingPhases,
+	}).Info("[SpecKit Resumption] Executing remaining phases")
+
+	// Extract context from cached phases
+	constitution := cachedFlow.Constitution
+	var specifyResult, clarifyResult, planResult, tasksResult, analyzeResult *SpecKitPhaseResult
+
+	// Build context from cached phases
+	cachedFlow.Phases = make(map[string]*SpecKitPhaseResult)
+	for i := range cachedFlow.PhaseResults {
+		phase := &cachedFlow.PhaseResults[i]
+		cachedFlow.Phases[string(phase.Phase)] = phase
+
+		switch phase.Phase {
+		case PhaseSpecify:
+			specifyResult = phase
+		case PhaseClarify:
+			clarifyResult = phase
+		case PhasePlan:
+			planResult = phase
+		case PhaseTasks:
+			tasksResult = phase
+		case PhaseAnalyze:
+			analyzeResult = phase
+		}
+	}
+
+	// Execute remaining phases
+	for _, phase := range remainingPhases {
+		var phaseResult *SpecKitPhaseResult
+		var err error
+
+		switch phase {
+		case PhaseConstitution:
+			// Should never resume from before Constitution
+			return nil, fmt.Errorf("cannot resume before Constitution phase")
+
+		case PhaseSpecify:
+			phaseResult, err = so.executeSpecifyPhase(ctx, userRequest, constitution)
+
+		case PhaseClarify:
+			phaseResult, err = so.executeClarifyPhase(ctx, userRequest, constitution, specifyResult)
+
+		case PhasePlan:
+			phaseResult, err = so.executePlanPhase(ctx, userRequest, constitution, clarifyResult)
+
+		case PhaseTasks:
+			phaseResult, err = so.executeTasksPhase(ctx, planResult)
+
+		case PhaseAnalyze:
+			phaseResult, err = so.executeAnalyzePhase(ctx, constitution, tasksResult)
+
+		case PhaseImplement:
+			phaseResult, err = so.executeImplementPhase(ctx, constitution, analyzeResult, tasksResult)
+		}
+
+		if err != nil {
+			so.logger.WithError(err).WithField("phase", phase).Error("[SpecKit Resumption] Phase execution failed")
+			cachedFlow.Success = false
+			cachedFlow.EndTime = time.Now()
+			cachedFlow.Duration = cachedFlow.EndTime.Sub(cachedFlow.StartTime)
+
+			// Save partial progress
+			if err := so.saveFlowToCache(cachedFlow); err != nil {
+				so.logger.WithError(err).Warn("[SpecKit Resumption] Failed to save partial progress")
+			}
+
+			return cachedFlow, fmt.Errorf("phase %s failed during resumption: %w", phase, err)
+		}
+
+		// Add result to flow
+		cachedFlow.PhaseResults = append(cachedFlow.PhaseResults, *phaseResult)
+		cachedFlow.Phases[string(phase)] = phaseResult
+
+		// Update context for next phases
+		switch phase {
+		case PhaseSpecify:
+			specifyResult = phaseResult
+		case PhaseClarify:
+			clarifyResult = phaseResult
+		case PhasePlan:
+			planResult = phaseResult
+		case PhaseTasks:
+			tasksResult = phaseResult
+		case PhaseAnalyze:
+			analyzeResult = phaseResult
+		}
+
+		// Save progress after each phase
+		if err := so.savePhaseToCache(flowID, phase, phaseResult); err != nil {
+			so.logger.WithError(err).Warn("[SpecKit Resumption] Failed to cache phase result")
+		}
+
+		so.logger.WithField("phase", phase).Info("[SpecKit Resumption] Phase completed")
+	}
+
+	// Mark flow as complete
+	cachedFlow.Success = true
+	cachedFlow.EndTime = time.Now()
+	cachedFlow.Duration = cachedFlow.EndTime.Sub(cachedFlow.StartTime)
 	cachedFlow.ResumedFromPhase = lastPhase
+
+	// Calculate overall quality score
+	totalScore := 0.0
+	for _, phaseResult := range cachedFlow.PhaseResults {
+		totalScore += phaseResult.QualityScore
+	}
+	cachedFlow.OverallQualityScore = totalScore / float64(len(cachedFlow.PhaseResults))
+
+	// Extract final artifact (implementation output)
+	if implementPhase, ok := cachedFlow.Phases[string(PhaseImplement)]; ok {
+		cachedFlow.FinalArtifact = implementPhase.Artifact
+	}
+
+	// Save completed flow
+	if err := so.saveFlowToCache(cachedFlow); err != nil {
+		so.logger.WithError(err).Warn("[SpecKit Resumption] Failed to save completed flow")
+	}
+
+	so.logger.WithFields(logrus.Fields{
+		"flow_id":              flowID,
+		"phases_resumed":       len(remainingPhases),
+		"overall_quality":      cachedFlow.OverallQualityScore,
+	}).Info("[SpecKit Resumption] Flow completed successfully")
+
 	return cachedFlow, nil
 }
 

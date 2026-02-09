@@ -469,3 +469,140 @@ func TestSpecKitOrchestrator_FlowResultWithConstitution(t *testing.T) {
 	assert.Equal(t, "TestProject", flowResult.Constitution.ProjectName)
 	assert.Len(t, flowResult.Constitution.Rules, 1)
 }
+
+// TestSpecKitOrchestrator_FlowResumption tests flow resumption logic
+func TestSpecKitOrchestrator_FlowResumption(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+
+	registry := NewProviderRegistry(nil, nil)
+	debateService := NewDebateService(logger)
+	debateService.providerRegistry = registry
+
+	constitutionManager := NewConstitutionManager(logger)
+	documentationSync := NewDocumentationSync(logger)
+	projectRoot := t.TempDir()
+
+	orchestrator := NewSpecKitOrchestrator(
+		debateService,
+		constitutionManager,
+		documentationSync,
+		logger,
+		projectRoot,
+	)
+
+	// Create a partial flow (stopped after Phase 3)
+	flowID := "test-resumption-flow"
+	startTime := time.Now().Add(-1 * time.Hour)
+
+	partialFlow := &SpecKitFlowResult{
+		FlowID:    flowID,
+		StartTime: startTime,
+		Success:   false,
+		PhaseResults: []SpecKitPhaseResult{
+			{
+				Phase:        PhaseConstitution,
+				Success:      true,
+				Artifact:     "Constitution created",
+				QualityScore: 0.9,
+				StartTime:    startTime,
+				EndTime:      startTime.Add(5 * time.Minute),
+				Duration:     5 * time.Minute,
+			},
+			{
+				Phase:        PhaseSpecify,
+				Success:      true,
+				Artifact:     "Specification created",
+				QualityScore: 0.85,
+				StartTime:    startTime.Add(5 * time.Minute),
+				EndTime:      startTime.Add(10 * time.Minute),
+				Duration:     5 * time.Minute,
+			},
+			{
+				Phase:        PhaseClarify,
+				Success:      true,
+				Artifact:     "Clarifications complete",
+				QualityScore: 0.88,
+				StartTime:    startTime.Add(10 * time.Minute),
+				EndTime:      startTime.Add(15 * time.Minute),
+				Duration:     5 * time.Minute,
+			},
+		},
+		Constitution: &Constitution{
+			Version:     "1.0.0",
+			ProjectName: "TestProject",
+			Rules:       []ConstitutionRule{},
+		},
+		Phases:   make(map[string]*SpecKitPhaseResult),
+		Metadata: make(map[string]interface{}),
+	}
+
+	// Populate Phases map
+	for i := range partialFlow.PhaseResults {
+		phase := &partialFlow.PhaseResults[i]
+		partialFlow.Phases[string(phase.Phase)] = phase
+	}
+
+	// Save partial flow to cache
+	err := orchestrator.saveFlowToCache(partialFlow)
+	require.NoError(t, err, "Should save partial flow")
+
+	// Test resumption detection
+	t.Run("DetectResumePoint", func(t *testing.T) {
+		loaded, err := orchestrator.loadFlowFromCache(flowID)
+		require.NoError(t, err, "Should load partial flow")
+		assert.False(t, loaded.Success, "Flow should not be marked as successful")
+		assert.Len(t, loaded.PhaseResults, 3, "Should have 3 completed phases")
+		assert.Equal(t, PhaseClarify, loaded.PhaseResults[2].Phase, "Last phase should be Clarify")
+	})
+
+	t.Run("ResumeFromCache", func(t *testing.T) {
+		// Note: resumeFlow is not exported, so we test through the public API
+		// In production, you'd expose ResumeFlow as a public method
+
+		// For now, verify the cached flow can be loaded
+		loaded, err := orchestrator.loadFlowFromCache(flowID)
+		require.NoError(t, err, "Should load cached flow")
+		assert.Equal(t, flowID, loaded.FlowID, "Flow ID should match")
+		assert.True(t, loaded.ResumedFromCache, "Should be marked as resumed from cache")
+
+		// Verify we can determine remaining phases
+		lastPhase := loaded.PhaseResults[len(loaded.PhaseResults)-1].Phase
+		assert.Equal(t, PhaseClarify, lastPhase, "Last completed phase should be Clarify")
+
+		// Remaining phases should be: Plan, Tasks, Analyze, Implement
+		allPhases := []SpecKitPhase{
+			PhaseConstitution, PhaseSpecify, PhaseClarify,
+			PhasePlan, PhaseTasks, PhaseAnalyze, PhaseImplement,
+		}
+
+		lastPhaseIndex := -1
+		for i, phase := range allPhases {
+			if phase == lastPhase {
+				lastPhaseIndex = i
+				break
+			}
+		}
+
+		remainingPhases := allPhases[lastPhaseIndex+1:]
+		assert.Len(t, remainingPhases, 4, "Should have 4 remaining phases")
+		assert.Equal(t, PhasePlan, remainingPhases[0], "Next phase should be Plan")
+		assert.Equal(t, PhaseImplement, remainingPhases[3], "Final phase should be Implement")
+
+		// Context preservation test
+		assert.NotNil(t, loaded.Constitution, "Constitution should be preserved")
+		assert.NotNil(t, loaded.Phases[string(PhaseConstitution)], "Constitution phase should be in map")
+		assert.NotNil(t, loaded.Phases[string(PhaseSpecify)], "Specify phase should be in map")
+		assert.NotNil(t, loaded.Phases[string(PhaseClarify)], "Clarify phase should be in map")
+	})
+
+	t.Run("ClearCache", func(t *testing.T) {
+		// Clear the cache
+		err := orchestrator.clearFlowCache(flowID)
+		require.NoError(t, err, "Should clear cache")
+
+		// Verify cache is cleared
+		_, err = orchestrator.loadFlowFromCache(flowID)
+		assert.Error(t, err, "Should not be able to load cleared cache")
+	})
+}

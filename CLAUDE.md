@@ -180,6 +180,8 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 - **Ensemble Strategy**: Confidence-weighted voting, majority vote, parallel execution
 - **AI Debate**: Multi-round debate, 5 positions × 3 LLMs = 15 total, multi-pass validation (Initial → Validation → Polish → Final)
 - **Debate Orchestrator**: Multi-topology (mesh/star/chain), phase protocol (Proposal → Critique → Review → Synthesis), cross-debate learning, auto-fallback to legacy
+- **SpecKit Auto-Activation**: 7-phase development flow (Constitution → Specify → Clarify → Plan → Tasks → Analyze → Implement) triggered automatically for large changes/refactoring based on work granularity detection (5 levels: single action, small creation, big creation, whole functionality, refactoring). Phase caching for resumption. Key files: `internal/services/speckit_orchestrator.go`, `enhanced_intent_classifier.go`, `debate_service_speckit_e2e_test.go`
+- **Constitution Management**: Auto-update Constitution on project changes (new modules, documentation changes, structure changes). Background watcher monitors filesystem. Key files: `internal/services/constitution_watcher.go`, `constitution_manager.go`, `documentation_sync.go`
 - **Circuit Breaker**: Fault tolerance for provider failures
 - **Semantic Intent Detection**: LLM-based classification (zero hardcoding), pattern-based fallback
 - **Fallback Error Reporting**: Categorized errors (rate_limit, timeout, auth, connection, unavailable, overloaded) in streamed responses
@@ -207,11 +209,13 @@ Triggered when: `*_USE_OAUTH_CREDENTIALS=true` + no API key, or no `OPENCODE_API
 
 ## Configuration
 
-Env vars in `.env.example`: `PORT`, `GIN_MODE`, `JWT_SECRET`, `DB_*`, `REDIS_*`, `*_API_KEY` for each provider, `*_USE_OAUTH_CREDENTIALS`, `COGNEE_ENABLED` (off by default; Mem0 is primary memory).
+Env vars in `.env.example`: `PORT`, `GIN_MODE`, `JWT_SECRET`, `DB_*`, `REDIS_*`, `*_API_KEY` for each provider, `*_USE_OAUTH_CREDENTIALS`, `COGNEE_ENABLED` (off by default; Mem0 is primary memory), `CONSTITUTION_WATCHER_ENABLED` (Constitution auto-update), `CONSTITUTION_WATCHER_CHECK_INTERVAL` (default: 5m).
 
 Service overrides: `SVC_<SERVICE>_<FIELD>` (e.g., `SVC_POSTGRESQL_HOST`, `SVC_REDIS_REMOTE=true`). Config files: `configs/development.yaml`, `configs/production.yaml`.
 
 BigData components configured via `BIGDATA_ENABLE_*` env vars. Missing deps (Neo4j, ClickHouse, Kafka) gracefully degrade. Key file: `internal/bigdata/integration.go`.
+
+**SpecKit Configuration**: Auto-activation threshold configured via `WorkGranularity` detection. Triggered for `GranularityBigCreation`, `GranularityWholeFunctionality`, `GranularityRefactoring`. Phase caching enabled by default, stored in `.speckit/cache/`.
 
 ## Adding a New LLM Provider
 
@@ -253,6 +257,8 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/bigdata_comprehensive_challenge.sh          # 23 tests
 ./challenges/scripts/memory_system_challenge.sh                  # 14 tests
 ./challenges/scripts/security_scanning_challenge.sh              # 10 tests
+./challenges/scripts/constitution_watcher_challenge.sh           # 12 tests
+./challenges/scripts/speckit_auto_activation_challenge.sh        # 15 tests
 ```
 
 ## LLMsVerifier
@@ -275,6 +281,8 @@ Gin v1.11.0, PostgreSQL 15 (pgx/v5), Redis 7, testify v1.11.1, Prometheus/Grafan
 ## Unified Service Management
 
 `BootManager` (`internal/services/boot_manager.go`): groups services by compose file, starts via `docker compose up -d`, health checks all. `HealthChecker` (`internal/services/health_checker.go`): TCP/HTTP checks with retries. Required services (PostgreSQL, Redis, ChromaDB) fail boot on health failure. Remote services: health check only. SQL schemas: `sql/schema/`.
+
+**Constitution Management**: `ConstitutionWatcher` (`internal/services/constitution_watcher.go`) monitors project changes and auto-updates Constitution. Triggers: new modules extracted (go.mod detection), documentation changes (AGENTS.md/CLAUDE.md), project structure changes (new top-level directories), test coverage drops. Runs as background service with configurable check interval (default: 5 minutes). Auto-syncs updates to documentation files via `DocumentationSync`. Enable with `CONSTITUTION_WATCHER_ENABLED=true`.
 
 
 <!-- BEGIN_CONSTITUTION -->

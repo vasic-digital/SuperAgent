@@ -34,10 +34,11 @@ type RouterContext struct {
 	healthMonitor           *services.ProviderHealthMonitor
 	concurrencyMonitor      *services.ConcurrencyMonitor
 	concurrencyAlertManager *services.ConcurrencyAlertManager
-	ProviderRegistry        *services.ProviderRegistry // Exposed for StartupVerifier integration
-	DebateTeamConfig        *services.DebateTeamConfig // Exposed for re-initialization with StartupVerifier
-	unifiedHandler          *handlers.UnifiedHandler   // For updating debate team display
-	debateService           *services.DebateService    // For updating team config
+	constitutionWatcher     *services.ConstitutionWatcher // Constitution auto-update background service
+	ProviderRegistry        *services.ProviderRegistry    // Exposed for StartupVerifier integration
+	DebateTeamConfig        *services.DebateTeamConfig    // Exposed for re-initialization with StartupVerifier
+	unifiedHandler          *handlers.UnifiedHandler      // For updating debate team display
+	debateService           *services.DebateService       // For updating team config
 }
 
 // Shutdown stops all background services started by the router
@@ -53,6 +54,12 @@ func (rc *RouterContext) Shutdown() {
 	}
 	if rc.concurrencyAlertManager != nil {
 		rc.concurrencyAlertManager.Stop()
+	}
+	if rc.constitutionWatcher != nil {
+		rc.constitutionWatcher.Disable()
+	}
+	if rc.debateService != nil {
+		rc.debateService.StopConstitutionWatcher()
 	}
 }
 
@@ -770,6 +777,20 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		debateHandler.SetOrchestratorIntegration(orchestratorIntegration)
 		logger.Info("New debate orchestrator framework enabled")
 
+		// Initialize Constitution Watcher (auto-update Constitution on project changes)
+		projectRoot := os.Getenv("PROJECT_ROOT")
+		if projectRoot == "" {
+			// Default to current working directory if not set
+			if cwd, err := os.Getwd(); err == nil {
+				projectRoot = cwd
+			}
+		}
+		constitutionWatcherEnabled := os.Getenv("CONSTITUTION_WATCHER_ENABLED") == "true"
+		debateService.InitializeConstitutionWatcher(projectRoot, constitutionWatcherEnabled)
+		if constitutionWatcherEnabled {
+			logger.WithField("project_root", projectRoot).Info("Constitution Watcher initialized")
+		}
+
 		debateHandler.RegisterRoutes(protected)
 
 		// Add debate team configuration endpoint
@@ -798,6 +819,11 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		go providerHealthMonitor.Start(context.Background())
 		go concurrencyMonitor.Start(context.Background())
 		go concurrencyAlertManager.Start(context.Background())
+
+		// Start Constitution Watcher in background (if enabled)
+		if constitutionWatcherEnabled {
+			debateService.StartConstitutionWatcher(context.Background())
+		}
 
 		// Validate fallback chain on startup
 		if result := fallbackChainValidator.Validate(); !result.Valid {

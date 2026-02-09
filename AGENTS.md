@@ -20,6 +20,8 @@ HelixAgent uses a **unified startup verification pipeline** where LLMsVerifier a
 ### Key Components
 - **LLM Provider Registry**: Unified interface for 10 LLM providers with credential management
 - **AI Debate System**: Multi-round debate between providers for consensus (5 positions × 3 LLMs)
+- **SpecKit Orchestrator**: 7-phase development flow (Constitution → Specify → Clarify → Plan → Tasks → Analyze → Implement) with auto-activation based on work granularity detection and phase caching for resumption
+- **Constitution Management**: Auto-update Constitution on project changes (new modules, documentation changes, structure changes) with background filesystem monitoring
 - **Plugin System**: Hot-reloadable plugins with dependency resolution
 - **Formatters System**: 32+ code formatters for 19 programming languages via REST API
 - **MCP Adapters**: 45+ Model Context Protocol adapters for external services (Linear, Asana, Jira, etc.)
@@ -47,6 +49,29 @@ When an LLM provider fails, detailed error information is included in streamed r
 
 ### Semantic Intent Detection
 Uses **LLM-based semantic intent classification** (primary) with pattern-based fallback. Detects confirmation, refusal, question, request, clarification, unclear. **Zero hardcoding** - intent detected by semantic meaning, not exact string matching.
+
+### SpecKit Auto-Activation
+Automatically triggers 7-phase development flow for large changes and refactoring. Work granularity detection classifies requests into 5 levels:
+- **Single Action** - Small changes (e.g., "Add a log statement")
+- **Small Creation** - Minor features (e.g., "Fix typo in README")
+- **Big Creation** - Significant features (e.g., "Implement logging system") → **Triggers SpecKit**
+- **Whole Functionality** - Complete modules (e.g., "Build payment processing") → **Triggers SpecKit**
+- **Refactoring** - Architectural changes (e.g., "Refactor to microservices") → **Triggers SpecKit**
+
+**Phase Caching**: Each phase result cached in `.speckit/cache/` for resumption after interruption. **Flow Resumption**: Automatically detects incomplete flows and resumes from last completed phase.
+
+Key files: `internal/services/speckit_orchestrator.go`, `enhanced_intent_classifier.go`
+
+### Constitution Management
+Background service that monitors project changes and auto-updates Constitution:
+- **New Modules**: Detects `go.mod` files and adds decoupling rules
+- **Documentation Changes**: Syncs Constitution across AGENTS.md/CLAUDE.md when modified
+- **Structure Changes**: Tracks new top-level directories
+- **Test Coverage**: Flags violations when coverage drops below 100%
+
+Runs with configurable check interval (default: 5 minutes). Enable with `CONSTITUTION_WATCHER_ENABLED=true`.
+
+Key files: `internal/services/constitution_watcher.go`, `constitution_manager.go`, `documentation_sync.go`
 
 ### Code Formatters System
 

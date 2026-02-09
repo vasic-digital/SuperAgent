@@ -52,6 +52,7 @@ type DebateService struct {
 	speckitOrchestrator      *SpecKitOrchestrator      // SpecKit flow orchestration for big changes
 	constitutionManager      *ConstitutionManager      // Constitution management
 	documentationSync        *DocumentationSync        // Documentation synchronization
+	constitutionWatcher      *ConstitutionWatcher      // Constitution auto-update background service
 }
 
 // DebateLogRepository interface for logging debate activities
@@ -204,6 +205,40 @@ func (ds *DebateService) InitializeSpecKitOrchestrator(projectRoot string) {
 			projectRoot,
 		)
 		ds.logger.Info("[Debate Service] SpecKit Orchestrator initialized")
+	}
+}
+
+// InitializeConstitutionWatcher initializes the Constitution watcher for auto-updates
+// This should be called after DebateService creation with project root path
+func (ds *DebateService) InitializeConstitutionWatcher(projectRoot string, enabled bool) {
+	if enabled && ds.constitutionWatcher == nil && ds.constitutionManager != nil && ds.documentationSync != nil {
+		ds.constitutionWatcher = NewConstitutionWatcher(
+			ds.constitutionManager,
+			ds.documentationSync,
+			ds.logger,
+			projectRoot,
+		)
+		ds.constitutionWatcher.Enable()
+		ds.logger.Info("[Debate Service] Constitution Watcher initialized and enabled")
+	} else if !enabled {
+		ds.logger.Info("[Debate Service] Constitution Watcher disabled by configuration")
+	}
+}
+
+// StartConstitutionWatcher starts the Constitution watcher in the background
+// It monitors project changes and auto-updates Constitution
+func (ds *DebateService) StartConstitutionWatcher(ctx context.Context) {
+	if ds.constitutionWatcher != nil && ds.constitutionWatcher.enabled {
+		go ds.constitutionWatcher.Start(ctx)
+		ds.logger.Info("[Debate Service] Constitution Watcher started in background")
+	}
+}
+
+// StopConstitutionWatcher stops the Constitution watcher gracefully
+func (ds *DebateService) StopConstitutionWatcher() {
+	if ds.constitutionWatcher != nil {
+		ds.constitutionWatcher.Disable()
+		ds.logger.Info("[Debate Service] Constitution Watcher stopped")
 	}
 }
 
@@ -2670,18 +2705,24 @@ func (ds *DebateService) StreamDebateWithMultiPassValidation(
 func (ds *DebateService) detectCodeGenerationIntent(topic string, context map[string]interface{}) bool {
 	topicLower := strings.ToLower(topic)
 
-	// Code generation keywords
+	// Code generation keywords with word boundary awareness
 	codeKeywords := []string{
-		"write", "code", "function", "implement", "program",
+		"write", "code", "implement",
 		"script", "class", "method", "algorithm", "refactor",
-		"debug", "fix bug", "optimize", "create", "develop",
+		"debug", "fix bug", "optimize", "create", "develop", "build",
 		"python", "javascript", "go", "java", "rust", "c++",
 	}
 
+	// Check for keywords with special handling for "function" to avoid "functional"
 	for _, keyword := range codeKeywords {
 		if strings.Contains(topicLower, keyword) {
 			return true
 		}
+	}
+
+	// Special check for "function" to avoid matching "functional"
+	if strings.Contains(topicLower, "function ") || strings.Contains(topicLower, "function(") {
+		return true
 	}
 
 	// Check context for language hints
@@ -3004,7 +3045,8 @@ func (ds *DebateService) detectLanguage(content string) string {
 				matchCount++
 			}
 		}
-		if matchCount >= 2 {
+		// Single strong match is sufficient for language detection
+		if matchCount >= 1 {
 			return lang
 		}
 	}
@@ -3063,7 +3105,7 @@ func (ds *DebateService) selectSpecializedRole(ctx context.Context, topic string
 		"refactorer":           {"refactor", "improve", "restructure", "clean", "optimize code"},
 		"performance_analyzer": {"performance", "optimize", "speed up", "faster", "efficiency", "benchmark"},
 		"security_analyst":     {"security", "vulnerability", "exploit", "audit", "penetration", "safe"},
-		"debugger":             {"debug", "fix bug", "error", "crash", "issue", "problem"},
+		"debugger":             {"debug", "fix", "bug", "error", "crash", "issue", "problem"},
 		"architect":            {"architecture", "design", "structure", "pattern", "system design"},
 		"reviewer":             {"review", "analyze", "check", "validate", "assess"},
 		"tester":               {"test", "testing", "unit test", "integration test", "coverage"},
@@ -3082,7 +3124,7 @@ func (ds *DebateService) selectSpecializedRole(ctx context.Context, topic string
 
 	// Find highest scoring role
 	maxScore := 0
-	selectedRole := "analyst" // default
+	selectedRole := "" // default to empty (no specialized role)
 	for role, score := range roleScores {
 		if score > maxScore {
 			maxScore = score
