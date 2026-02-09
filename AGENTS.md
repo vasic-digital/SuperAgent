@@ -478,7 +478,7 @@ Note: Some of these rules are TypeScriptâ€‘specific; for Go code, follow the Goâ
 <!-- BEGIN_CONSTITUTION -->
 # Project Constitution
 
-**Version:** 1.0.0 | **Updated:** 2026-02-10 00:18
+**Version:** 1.0.0 | **Updated:** 2026-02-10 00:26
 
 Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 1, Configuration: 1, Testing: 3, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1
 
@@ -528,23 +528,56 @@ Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety:
 **Security Scanning** (Priority: 1)
 - Execute Snyk and SonarQube scanning. Analyze findings in depth and resolve everything. Ensure scanning infrastructure is accessible via containerization (Docker/Podman).
 
+### Performance
+
+**Monitoring and Metrics** (Priority: 2)
+- Create tests that run and perform monitoring and metrics collection. Use collected data for proper optimizations.
+
+**Lazy Loading and Non-Blocking** (Priority: 2)
+- Implement lazy loading and lazy initialization wherever possible. Introduce semaphore mechanisms and non-blocking mechanisms to ensure flawless responsiveness.
+
+### Principles
+
+**Software Principles** (Priority: 2)
+- Apply all software principles: KISS, DRY, SOLID, YAGNI, etc. Ensure code is clean, maintainable, and follows best practices.
+
+**Design Patterns** (Priority: 2)
+- Use appropriate design patterns: Proxy, Facade, Factory, Abstract Factory, Observer, Mediator, Strategy, etc. Apply patterns where they add value.
+
 ### Stability
 
 **Rock-Solid Changes** (Priority: 1)
 - All changes must be safe, non-error-prone, and MUST NOT BREAK any existing working functionality. Ensure backward compatibility unless explicitly breaking.
 
-### CI/CD
+### Containerization
 
-**Manual CI/CD Only** (Priority: 1)
-- NO GitHub Actions enabled. All CI/CD workflows and pipelines must be executed manually only.
+**Full Containerization** (Priority: 2)
+- All services MUST run in containers (Docker/Podman/K8s). Support local default execution AND remote configuration. Services must auto-boot before HelixAgent is ready.
+
+### Configuration
+
+**Unified Configuration** (Priority: 2)
+- CLI agent config export uses only HelixAgent + LLMsVerifier's unified generator. No third-party scripts.
 
 ### Observability
 
 **Health and Monitoring** (Priority: 2)
 - Every service MUST expose health endpoints. Circuit breakers for all external dependencies. Prometheus/OpenTelemetry integration.
 
+### GitOps
+
+**GitSpec Compliance** (Priority: 2)
+- Follow GitSpec constitution and all constraints from AGENTS.md and CLAUDE.md.
+
+### CI/CD
+
+**Manual CI/CD Only** (Priority: 1)
+- NO GitHub Actions enabled. All CI/CD workflows and pipelines must be executed manually only.
+
 ---
 
 *This Constitution is automatically synchronized with AGENTS.md, CLAUDE.md, and CONSTITUTION.json.*
 
 <!-- END_CONSTITUTION -->
+
+

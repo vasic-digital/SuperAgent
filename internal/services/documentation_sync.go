@@ -82,8 +82,12 @@ func (ds *DocumentationSync) generateConstitutionSection(constitution *Constitut
 		}
 	}
 
-	// Output mandatory rules by category
-	categories := []string{"Architecture", "Testing", "Documentation", "Quality", "Safety", "Security", "Stability", "CI/CD", "Observability"}
+	// Output mandatory rules by category (all 14 categories)
+	categories := []string{
+		"Architecture", "Testing", "Documentation", "Quality", "Safety", "Security",
+		"Performance", "Principles", "Stability", "Containerization", "Configuration",
+		"Observability", "GitOps", "CI/CD",
+	}
 	for _, category := range categories {
 		rules, exists := mandatoryByCategory[category]
 		if !exists || len(rules) == 0 {
