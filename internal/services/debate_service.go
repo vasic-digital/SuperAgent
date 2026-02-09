@@ -269,6 +269,16 @@ func (ds *DebateService) ConductDebate(
 		return nil, fmt.Errorf("provider registry is required for debate: use NewDebateServiceWithDeps to create a properly configured debate service")
 	}
 
+	// NEW: Select specialized role based on task intent
+	specializedRole := ds.selectSpecializedRole(ctx, config.Topic, config.Metadata)
+	if specializedRole != "" {
+		ds.logger.Infof("[Specialized Role] Selected role: %s for task", specializedRole)
+		if config.Metadata == nil {
+			config.Metadata = make(map[string]any)
+		}
+		config.Metadata["specialized_role"] = specializedRole
+	}
+
 	// NEW: Detect if this is a code generation debate (Test-Driven mode)
 	isCodeDebate := ds.detectCodeGenerationIntent(config.Topic, config.Metadata)
 	if isCodeDebate && ds.testGenerator != nil {
@@ -402,6 +412,14 @@ func (ds *DebateService) conductRealDebate(
 	result.Metadata["providers_used"] = ds.getUniqueProviders(allResponses)
 	result.Metadata["avg_response_time"] = ds.calculateAvgResponseTime(allResponses)
 
+	// NEW: Add integrated feature metadata
+	if specializedRole, ok := config.Metadata["specialized_role"].(string); ok {
+		result.SpecializedRole = specializedRole
+	}
+	if toolEnrichment, ok := config.Metadata["tool_enrichment_used"].(bool); ok {
+		result.ToolEnrichmentUsed = toolEnrichment
+	}
+
 	return result, nil
 }
 
@@ -418,6 +436,21 @@ func (ds *DebateService) executeRound(
 	errorChan := make(chan error, len(config.Participants))
 	fallbacksUsed := 0
 	var fallbackMu sync.Mutex
+
+	// NEW: Enrich context with tools before round execution
+	var enrichedContext *tools.EnrichedContext
+	if ds.toolIntegration != nil && ds.serviceBridge != nil {
+		enrichedCtx, err := ds.enrichDebateContext(ctx, config, round)
+		if err == nil {
+			enrichedContext = enrichedCtx
+			// Store enriched context in config metadata for participant access
+			if config.Metadata == nil {
+				config.Metadata = make(map[string]any)
+			}
+			config.Metadata["enriched_context"] = enrichedContext
+			config.Metadata["tool_enrichment_used"] = true
+		}
+	}
 
 	// Log debate phase start (Retrofit-like)
 	if ds.commLogger != nil {
