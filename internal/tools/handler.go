@@ -74,6 +74,7 @@ var DefaultToolRegistry = NewToolRegistry()
 
 func init() {
 	// Register all tool handlers
+	DefaultToolRegistry.Register(&ReadFileHandler{})
 	DefaultToolRegistry.Register(&GitHandler{})
 	DefaultToolRegistry.Register(&TestHandler{})
 	DefaultToolRegistry.Register(&LintHandler{})
@@ -86,6 +87,85 @@ func init() {
 	DefaultToolRegistry.Register(&PRHandler{})
 	DefaultToolRegistry.Register(&IssueHandler{})
 	DefaultToolRegistry.Register(&WorkflowHandler{})
+}
+
+// ============================================
+// READ FILE TOOL HANDLER
+// ============================================
+
+type ReadFileHandler struct{}
+
+func (h *ReadFileHandler) Name() string { return "read_file" }
+
+func (h *ReadFileHandler) ValidateArgs(args map[string]interface{}) error {
+	return ValidateToolArgs("read_file", args)
+}
+
+func (h *ReadFileHandler) GenerateDefaultArgs(context string) map[string]interface{} {
+	return map[string]interface{}{
+		"file_path":   "README.md",
+		"offset":      0,
+		"limit":       2000,
+		"description": "Read file contents",
+	}
+}
+
+func (h *ReadFileHandler) Execute(ctx context.Context, args map[string]interface{}) (ToolResult, error) {
+	filePath, _ := args["file_path"].(string)
+	offset, _ := args["offset"].(float64)
+	limit, _ := args["limit"].(float64)
+
+	if filePath == "" {
+		return ToolResult{
+			Success: false,
+			Error:   "file_path is required",
+		}, nil
+	}
+
+	// Validate file path
+	if !utils.ValidatePath(filePath) {
+		return ToolResult{
+			Success: false,
+			Output:  "",
+			Error:   fmt.Sprintf("invalid file path: %s", filePath),
+		}, nil
+	}
+
+	// Default limits
+	if limit == 0 {
+		limit = 2000
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	// Read file using cat with line range if offset/limit specified
+	var cmd *exec.Cmd
+	if offset > 0 || limit < 999999 {
+		// Use sed to read specific line range
+		// sed -n 'offset,offset+limit-1p' file
+		endLine := int(offset + limit)
+		startLine := int(offset) + 1 // sed uses 1-based indexing
+		sedExpr := fmt.Sprintf("%d,%dp", startLine, endLine)
+		cmd = exec.CommandContext(ctx, "sed", "-n", sedExpr, filePath) // #nosec G204
+	} else {
+		// Read entire file
+		cmd = exec.CommandContext(ctx, "cat", filePath) // #nosec G204
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return ToolResult{
+			Success: false,
+			Output:  string(output),
+			Error:   err.Error(),
+		}, nil
+	}
+
+	return ToolResult{
+		Success: true,
+		Output:  string(output),
+	}, nil
 }
 
 // ============================================

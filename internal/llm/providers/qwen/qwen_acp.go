@@ -376,15 +376,19 @@ func (p *QwenACPProvider) initialize() error {
 
 // initializeWithContext sends the initialize request with provided context
 func (p *QwenACPProvider) initializeWithContext(ctx context.Context) error {
-	params := initializeRequest{
-		ClientCapabilities: clientCapabilities{
-			FileSystem: false, // We don't need filesystem access
-		},
-	}
-
-	resp, err := p.sendRequest(ctx, "initialize", params)
+	// Try with empty params first (some ACP versions don't expect params)
+	resp, err := p.sendRequest(ctx, "initialize", map[string]interface{}{})
 	if err != nil {
-		return err
+		// If empty params fail, try with client capabilities
+		params := initializeRequest{
+			ClientCapabilities: clientCapabilities{
+				FileSystem: false, // We don't need filesystem access
+			},
+		}
+		resp, err = p.sendRequest(ctx, "initialize", params)
+		if err != nil {
+			return fmt.Errorf("ACP initialization failed (tried both empty and full params): %w", err)
+		}
 	}
 
 	var initResp initializeResponse
@@ -408,13 +412,18 @@ func (p *QwenACPProvider) createSession() error {
 
 // createSessionWithContext creates a new ACP session with provided context
 func (p *QwenACPProvider) createSessionWithContext(ctx context.Context) error {
+	// Try with CWD param first
 	params := newSessionRequest{
 		CWD: p.cwd,
 	}
 
 	resp, err := p.sendRequest(ctx, "session/new", params)
 	if err != nil {
-		return err
+		// If CWD param fails, try with empty params
+		resp, err = p.sendRequest(ctx, "session/new", map[string]interface{}{})
+		if err != nil {
+			return fmt.Errorf("session creation failed (tried both with and without CWD): %w", err)
+		}
 	}
 
 	var sessionResp newSessionResponse

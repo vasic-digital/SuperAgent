@@ -190,10 +190,9 @@ func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest
 		return nil, fmt.Errorf("no prompt provided")
 	}
 
-	// Validate prompt for command injection safety
-	if !utils.ValidateCommandArg(prompt) {
-		return nil, fmt.Errorf("prompt contains invalid characters")
-	}
+	// NOTE: Prompt validation removed - exec.CommandContext properly escapes arguments
+	// The prompt is passed as a separate argument to the -p flag, not concatenated into the command string
+	// Therefore, command injection is not possible even with special characters
 
 	// Create command with timeout
 	cmdCtx, cancel := context.WithTimeout(ctx, p.timeout)
@@ -351,10 +350,9 @@ func (p *ClaudeCLIProvider) CompleteStream(ctx context.Context, req *models.LLMR
 		return nil, fmt.Errorf("no prompt provided")
 	}
 
-	// Validate prompt for command injection safety
-	if !utils.ValidateCommandArg(prompt) {
-		return nil, fmt.Errorf("prompt contains invalid characters")
-	}
+	// NOTE: Prompt validation removed - exec.CommandContext properly escapes arguments
+	// The prompt is passed as a separate argument to the -p flag, not concatenated into the command string
+	// Therefore, command injection is not possible even with special characters
 
 	// Create command with timeout
 	cmdCtx, cancel := context.WithTimeout(ctx, p.timeout)
