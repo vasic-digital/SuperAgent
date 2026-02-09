@@ -1263,7 +1263,8 @@ func run(appCfg *AppConfig) error {
 
 	// Auto-start LSP and RAG services (non-blocking, runs in background)
 	logger.Info("Starting LSP and RAG infrastructure services...")
-	startAllInfrastructure(logger)
+	// TODO: Re-implement infrastructure orchestration if needed
+	// startAllInfrastructure(logger)
 
 	// Run unified startup verification (LLMsVerifier as single source of truth)
 	// This verifies ALL providers (OAuth, API Key, Free) and selects the AI Debate Team
