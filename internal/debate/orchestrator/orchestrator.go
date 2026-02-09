@@ -64,9 +64,12 @@ type OrchestratorConfig struct {
 	DefaultMinConsensus float64               `json:"default_min_consensus"`
 
 	// Agent settings
-	MinAgentsPerDebate   int  `json:"min_agents_per_debate"`
-	MaxAgentsPerDebate   int  `json:"max_agents_per_debate"`
-	EnableAgentDiversity bool `json:"enable_agent_diversity"`
+	// Per CLAUDE.md: 5 positions × 3 LLMs = 15 total agents requirement
+	RequiredPositions    int  `json:"required_positions"`     // Must be 5
+	LLMsPerPosition      int  `json:"llms_per_position"`      // Must be 3
+	MinAgentsPerDebate   int  `json:"min_agents_per_debate"`  // 15 (5×3)
+	MaxAgentsPerDebate   int  `json:"max_agents_per_debate"`  // Allow flexibility
+	EnableAgentDiversity bool `json:"enable_agent_diversity"` // Ensure diversity across LLMs
 
 	// Learning settings
 	EnableLearning            bool    `json:"enable_learning"`
@@ -79,14 +82,24 @@ type OrchestratorConfig struct {
 }
 
 // DefaultOrchestratorConfig returns sensible defaults.
+// Enforces 5 positions × 3 LLMs = 15 agents per CLAUDE.md requirements.
 func DefaultOrchestratorConfig() OrchestratorConfig {
+	const (
+		// Documentation requirement: 5 positions × 3 LLMs = 15 total
+		RequiredPositionsCount = 5  // Architect, Generator, Validator, Security, Performance
+		LLMsPerPositionCount   = 3  // Diversity requirement
+		MinDebateAgents        = 15 // 5 × 3
+	)
+
 	return OrchestratorConfig{
 		DefaultMaxRounds:          3,
 		DefaultTimeout:            5 * time.Minute,
 		DefaultTopology:           topology.TopologyGraphMesh,
 		DefaultMinConsensus:       0.75,
-		MinAgentsPerDebate:        3,
-		MaxAgentsPerDebate:        10,
+		RequiredPositions:         RequiredPositionsCount,
+		LLMsPerPosition:           LLMsPerPositionCount,
+		MinAgentsPerDebate:        MinDebateAgents,
+		MaxAgentsPerDebate:        25, // Allow flexibility for larger debates
 		EnableAgentDiversity:      true,
 		EnableLearning:            true,
 		EnableCrossDebateLearning: true,

@@ -24,18 +24,34 @@ const (
 type AgentRole string
 
 const (
-	RoleProposer  AgentRole = "proposer"   // Generates initial solutions
-	RoleCritic    AgentRole = "critic"     // Identifies weaknesses
-	RoleReviewer  AgentRole = "reviewer"   // Evaluates quality
-	RoleOptimizer AgentRole = "optimizer"  // Improves solutions
-	RoleModerator AgentRole = "moderator"  // Facilitates discussion
-	RoleArchitect AgentRole = "architect"  // Designs structure
-	RoleSecurity  AgentRole = "security"   // Security analysis
+	// Core proposal & generation roles
+	RoleProposer  AgentRole = "proposer"  // Generates initial solutions (generic)
+	RoleGenerator AgentRole = "generator" // Code generation specialist (documentation requirement)
+
+	// Analysis & critique roles
+	RoleCritic   AgentRole = "critic"   // Identifies weaknesses
+	RoleReviewer AgentRole = "reviewer" // Evaluates quality
+
+	// Improvement & optimization roles
+	RoleOptimizer           AgentRole = "optimizer"            // General improvements
+	RoleRefactorer          AgentRole = "refactorer"           // Refactoring specialist (documentation requirement)
+	RolePerformanceAnalyzer AgentRole = "performance_analyzer" // Performance optimization specialist (documentation requirement)
+
+	// Coordination roles
+	RoleModerator AgentRole = "moderator" // Facilitates discussion
+
+	// Specialized roles
+	RoleArchitect AgentRole = "architect" // Designs structure
+	RoleSecurity  AgentRole = "security"  // Security analysis
 	RoleTestAgent AgentRole = "test_agent" // Test generation
-	RoleRedTeam   AgentRole = "red_team"   // Adversarial testing
-	RoleBlueTeam  AgentRole = "blue_team"  // Defensive validation
-	RoleValidator AgentRole = "validator"  // Final validation
-	RoleTeacher   AgentRole = "teacher"    // Knowledge transfer
+	RoleValidator AgentRole = "validator" // Final validation
+
+	// Adversarial roles
+	RoleRedTeam  AgentRole = "red_team"  // Adversarial testing
+	RoleBlueTeam AgentRole = "blue_team" // Defensive validation
+
+	// Knowledge roles
+	RoleTeacher AgentRole = "teacher" // Knowledge transfer
 )
 
 // Agent represents a participant in the debate topology.
