@@ -1,0 +1,209 @@
+{
+  "version": "1.0.0",
+  "project_name": "HelixAgent",
+  "summary": "Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 1, Configuration: 1, Testing: 3, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1",
+  "created_at": "2026-02-10T00:18:38.71286699+03:00",
+  "updated_at": "2026-02-10T00:18:38.74878207+03:00",
+  "rules": [
+    {
+      "id": "CONST-001",
+      "category": "Architecture",
+      "title": "Comprehensive Decoupling",
+      "description": "Identify all parts and functionalities that can be extracted as separate modules (libraries) and reused in various projects. Perform additional work to make each module fully decoupled and independent. Each module must be a separate project with its own CLAUDE.md, AGENTS.md, README.md, docs/, tests, and challenges.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-002",
+      "category": "Testing",
+      "title": "100% Test Coverage",
+      "description": "Every component MUST have 100% test coverage across ALL test types: unit, integration, E2E, security, stress, chaos, automation, and benchmark tests. No false positives. Use real data and live services (mocks only in unit tests).",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-003",
+      "category": "Testing",
+      "title": "Comprehensive Challenges",
+      "description": "Every component MUST have Challenge scripts validating real-life use cases. No false success - validate actual behavior, not return codes.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-004",
+      "category": "Documentation",
+      "title": "Complete Documentation",
+      "description": "Every module and feature MUST have complete documentation: README.md, CLAUDE.md, AGENTS.md, user guides, step-by-step manuals, video courses, diagrams, SQL definitions, and website content. No component can remain undocumented.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-005",
+      "category": "Quality",
+      "title": "No Broken Components",
+      "description": "No module, application, library, or test can remain broken, disabled, or incomplete. Everything must be fully functional and operational.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-006",
+      "category": "Quality",
+      "title": "No Dead Code",
+      "description": "Identify and remove all 'dead code' - features or functionalities left unconnected with the system. Perform comprehensive research and cleanup.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-007",
+      "category": "Safety",
+      "title": "Memory Safety",
+      "description": "Perform comprehensive research for memory leaks, deadlocks, and race conditions. Apply safety fixes and improvements to prevent these issues.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-008",
+      "category": "Security",
+      "title": "Security Scanning",
+      "description": "Execute Snyk and SonarQube scanning. Analyze findings in depth and resolve everything. Ensure scanning infrastructure is accessible via containerization (Docker/Podman).",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-009",
+      "category": "Performance",
+      "title": "Monitoring and Metrics",
+      "description": "Create tests that run and perform monitoring and metrics collection. Use collected data for proper optimizations.",
+      "mandatory": true,
+      "priority": 2,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-010",
+      "category": "Performance",
+      "title": "Lazy Loading and Non-Blocking",
+      "description": "Implement lazy loading and lazy initialization wherever possible. Introduce semaphore mechanisms and non-blocking mechanisms to ensure flawless responsiveness.",
+      "mandatory": true,
+      "priority": 2,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-011",
+      "category": "Principles",
+      "title": "Software Principles",
+      "description": "Apply all software principles: KISS, DRY, SOLID, YAGNI, etc. Ensure code is clean, maintainable, and follows best practices.",
+      "mandatory": true,
+      "priority": 2,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-012",
+      "category": "Principles",
+      "title": "Design Patterns",
+      "description": "Use appropriate design patterns: Proxy, Facade, Factory, Abstract Factory, Observer, Mediator, Strategy, etc. Apply patterns where they add value.",
+      "mandatory": true,
+      "priority": 2,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-013",
+      "category": "Stability",
+      "title": "Rock-Solid Changes",
+      "description": "All changes must be safe, non-error-prone, and MUST NOT BREAK any existing working functionality. Ensure backward compatibility unless explicitly breaking.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-014",
+      "category": "Testing",
+      "title": "Stress and Integration Tests",
+      "description": "Introduce comprehensive stress and integration tests validating that the system is responsive and not possible to overload or break.",
+      "mandatory": true,
+      "priority": 2,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-015",
+      "category": "Containerization",
+      "title": "Full Containerization",
+      "description": "All services MUST run in containers (Docker/Podman/K8s). Support local default execution AND remote configuration. Services must auto-boot before HelixAgent is ready.",
+      "mandatory": true,
+      "priority": 2,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-016",
+      "category": "Configuration",
+      "title": "Unified Configuration",
+      "description": "CLI agent config export uses only HelixAgent + LLMsVerifier's unified generator. No third-party scripts.",
+      "mandatory": true,
+      "priority": 2,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-017",
+      "category": "Observability",
+      "title": "Health and Monitoring",
+      "description": "Every service MUST expose health endpoints. Circuit breakers for all external dependencies. Prometheus/OpenTelemetry integration.",
+      "mandatory": true,
+      "priority": 2,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-018",
+      "category": "GitOps",
+      "title": "GitSpec Compliance",
+      "description": "Follow GitSpec constitution and all constraints from AGENTS.md and CLAUDE.md.",
+      "mandatory": true,
+      "priority": 2,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-019",
+      "category": "CI/CD",
+      "title": "Manual CI/CD Only",
+      "description": "NO GitHub Actions enabled. All CI/CD workflows and pipelines must be executed manually only.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-020",
+      "category": "Documentation",
+      "title": "Documentation Synchronization",
+      "description": "Anything added to Constitution MUST be present in AGENTS.md and CLAUDE.md, and vice versa. Keep all three synchronized.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-10T00:18:38.712867251+03:00",
+      "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    }
+  ]
+}

@@ -20,8 +20,8 @@ import (
 
 	// NEW: Integrated AI Debate Features
 	"dev.helix.agent/internal/debate/testing"
-	"dev.helix.agent/internal/debate/validation"
 	"dev.helix.agent/internal/debate/tools"
+	"dev.helix.agent/internal/debate/validation"
 	// Note: orchestrator integration removed to avoid import cycle
 	// Will be integrated separately in Phase 6
 	// "dev.helix.agent/internal/debate/orchestrator"
@@ -46,6 +46,12 @@ type DebateService struct {
 	toolIntegration     *tools.ToolIntegration                   // Tool Integration: MCP/LSP/RAG/Embeddings access
 	serviceBridge       *tools.ServiceBridge                     // Tool Integration: Service adapter
 	// debateOrchestrator *orchestrator.DebateOrchestrator      // Enhanced Orchestration: 5×3=15 enforcement (Phase 6)
+
+	// Enhanced Intent Mechanism with SpecKit Integration
+	enhancedIntentClassifier *EnhancedIntentClassifier // Enhanced intent classification with granularity detection
+	speckitOrchestrator      *SpecKitOrchestrator      // SpecKit flow orchestration for big changes
+	constitutionManager      *ConstitutionManager      // Constitution management
+	documentationSync        *DocumentationSync        // Documentation synchronization
 }
 
 // DebateLogRepository interface for logging debate activities
@@ -114,7 +120,7 @@ func NewDebateServiceWithDeps(
 	testExec := testing.NewSandboxedTestExecutor(
 		testing.WithTimeout(30*time.Second),
 		testing.WithMemoryLimit(512*1024*1024), // 512MB
-		testing.WithCPULimit(2.0),               // 2 cores
+		testing.WithCPULimit(2.0),              // 2 cores
 	)
 	contrastiveAnalyzer := testing.NewDifferentialContrastiveAnalyzer(providerRegistry)
 
@@ -137,7 +143,16 @@ func NewDebateServiceWithDeps(
 	// orchestratorConfig := orchestrator.DefaultOrchestratorConfig()
 	// debateOrchestrator := orchestrator.NewDebateOrchestrator(orchestratorConfig)
 
-	logger.Info("[Debate Service] Initialized with integrated features: Test-Driven, 4-Pass Validation, Tool Integration")
+	// Initialize Enhanced Intent Mechanism components
+	constitutionManager := NewConstitutionManager(logger)
+	documentationSync := NewDocumentationSync(logger)
+	enhancedIntentClassifier := NewEnhancedIntentClassifier(providerRegistry, logger)
+
+	// Initialize SpecKit Orchestrator (will be wired up after DebateService creation)
+	// speckitOrchestrator will be initialized via SetSpecKitOrchestrator after DebateService is created
+	// to avoid circular dependency
+
+	logger.Info("[Debate Service] Initialized with integrated features: Test-Driven, 4-Pass Validation, Tool Integration, Enhanced Intent, SpecKit")
 
 	return &DebateService{
 		logger:           logger,
@@ -153,6 +168,12 @@ func NewDebateServiceWithDeps(
 		toolIntegration:     toolIntegration,
 		serviceBridge:       serviceBridge,
 		// debateOrchestrator:  debateOrchestrator, // Phase 6
+
+		// Enhanced Intent Mechanism
+		enhancedIntentClassifier: enhancedIntentClassifier,
+		constitutionManager:      constitutionManager,
+		documentationSync:        documentationSync,
+		// speckitOrchestrator:      nil, // Set via SetSpecKitOrchestrator to avoid circular dependency
 	}
 }
 
@@ -169,6 +190,21 @@ func (ds *DebateService) SetCogneeService(service *CogneeService) {
 // SetLogRepository sets the log repository for persistent logging
 func (ds *DebateService) SetLogRepository(repo DebateLogRepository) {
 	ds.logRepository = repo
+}
+
+// InitializeSpecKitOrchestrator initializes the SpecKit orchestrator with the debate service
+// This must be called after DebateService creation to avoid circular dependency
+func (ds *DebateService) InitializeSpecKitOrchestrator(projectRoot string) {
+	if ds.speckitOrchestrator == nil && ds.constitutionManager != nil && ds.documentationSync != nil {
+		ds.speckitOrchestrator = NewSpecKitOrchestrator(
+			ds, // Pass self as debate service
+			ds.constitutionManager,
+			ds.documentationSync,
+			ds.logger,
+			projectRoot,
+		)
+		ds.logger.Info("[Debate Service] SpecKit Orchestrator initialized")
+	}
 }
 
 // SetTeamConfig sets the debate team configuration with Claude/Qwen role assignments
@@ -2618,7 +2654,7 @@ func (ds *DebateService) StreamDebateWithMultiPassValidation(
 // detectCodeGenerationIntent detects if the debate topic involves code generation
 func (ds *DebateService) detectCodeGenerationIntent(topic string, context map[string]interface{}) bool {
 	topicLower := strings.ToLower(topic)
-	
+
 	// Code generation keywords
 	codeKeywords := []string{
 		"write", "code", "function", "implement", "program",
@@ -2626,13 +2662,13 @@ func (ds *DebateService) detectCodeGenerationIntent(topic string, context map[st
 		"debug", "fix bug", "optimize", "create", "develop",
 		"python", "javascript", "go", "java", "rust", "c++",
 	}
-	
+
 	for _, keyword := range codeKeywords {
 		if strings.Contains(topicLower, keyword) {
 			return true
 		}
 	}
-	
+
 	// Check context for language hints
 	if context != nil {
 		if lang, ok := context["language"].(string); ok && lang != "" {
@@ -2642,7 +2678,7 @@ func (ds *DebateService) detectCodeGenerationIntent(topic string, context map[st
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -2654,14 +2690,14 @@ func (ds *DebateService) conductTestDrivenDebate(
 	sessionID string,
 ) (*DebateResult, error) {
 	ds.logger.Info("[Test-Driven Debate] Starting test-driven debate mode")
-	
+
 	// Phase 1: Initial code generation (standard debate)
 	ds.commLogger.LogInfo("Test-Driven", "Phase 1: Initial code generation")
 	initialResult, err := ds.conductRealDebate(ctx, config, startTime, sessionID)
 	if err != nil {
 		return nil, fmt.Errorf("initial code generation failed: %w", err)
 	}
-	
+
 	// Extract code from consensus for testing
 	var codeToTest string
 	if initialResult.Consensus != nil && initialResult.Consensus.FinalPosition != "" {
@@ -2718,9 +2754,9 @@ func (ds *DebateService) conductTestDrivenDebate(
 		}
 		ds.commLogger.LogInfo("TestExec", fmt.Sprintf("%s: %s", testCase.ID, status))
 	}
-	
+
 	ds.commLogger.LogInfo("Test-Driven", fmt.Sprintf("Tests: %d passed, %d failed", passCount, failCount))
-	
+
 	// Phase 4: If tests failed, trigger refinement round
 	if failCount > 0 {
 		ds.commLogger.LogInfo("Test-Driven", "Phase 4: Refinement triggered (tests failed)")
@@ -2771,7 +2807,7 @@ func (ds *DebateService) conductTestDrivenDebate(
 
 		return refinedResult, nil
 	}
-	
+
 	// All tests passed - return initial result with test metadata
 	initialResult.TestDrivenMetadata = map[string]interface{}{
 		"tests_generated": len(testCases),
@@ -2779,7 +2815,7 @@ func (ds *DebateService) conductTestDrivenDebate(
 		"tests_failed":    0,
 		"refinement":      "not_needed",
 	}
-	
+
 	ds.commLogger.LogInfo("Test-Driven", "All tests passed - no refinement needed")
 	return initialResult, nil
 }
@@ -2794,13 +2830,13 @@ func (ds *DebateService) generateAdversarialTests(
 	if ds.testGenerator == nil {
 		return nil, fmt.Errorf("test generator not initialized")
 	}
-	
+
 	// Generate 3-5 adversarial tests
 	testCount := 3
 	if len(code) > 500 {
 		testCount = 5
 	}
-	
+
 	req := &testing.GenerateRequest{
 		AgentID:        "test-driven-debate",
 		TargetSolution: code,
@@ -2809,12 +2845,12 @@ func (ds *DebateService) generateAdversarialTests(
 		Difficulty:     testing.DifficultyAdvanced,
 		Categories:     []testing.TestCategory{testing.CategoryFunctional, testing.CategoryEdgeCase},
 	}
-	
+
 	tests, err := ds.testGenerator.GenerateBatch(ctx, req, testCount)
 	if err != nil {
 		return nil, fmt.Errorf("test generation failed: %w", err)
 	}
-	
+
 	return tests, nil
 }
 
@@ -2825,7 +2861,7 @@ func (ds *DebateService) buildRefinementPrompt(
 	results map[string]*testing.TestExecutionResult,
 ) string {
 	var failedTests []string
-	
+
 	for _, testCase := range testCases {
 		if result, ok := results[testCase.ID]; ok {
 			if !result.Passed {
@@ -2843,7 +2879,7 @@ func (ds *DebateService) buildRefinementPrompt(
 			}
 		}
 	}
-	
+
 	return fmt.Sprintf(`Refine the following code to fix the failing tests:
 
 Original Code:
@@ -2864,7 +2900,7 @@ func (ds *DebateService) validateDebateResult(
 	if ds.validationPipeline == nil {
 		return nil, fmt.Errorf("validation pipeline not initialized")
 	}
-	
+
 	ds.logger.Info("[4-Pass Validation] Starting validation pipeline")
 
 	// Extract content from result for validation
@@ -2893,13 +2929,13 @@ func (ds *DebateService) validateDebateResult(
 			"topic":     config.Topic,
 		},
 	}
-	
+
 	// Run validation pipeline
 	pipelineResult, err := ds.validationPipeline.Validate(ctx, artifact)
 	if err != nil {
 		return nil, fmt.Errorf("validation pipeline failed: %w", err)
 	}
-	
+
 	// Log validation results for each pass
 	for pass, passResult := range pipelineResult.PassResults {
 		status := "PASS"
@@ -2914,7 +2950,7 @@ func (ds *DebateService) validateDebateResult(
 			len(passResult.Issues),
 		))
 	}
-	
+
 	// Log overall result
 	overallStatus := "PASS"
 	if !pipelineResult.OverallPassed {
@@ -2926,14 +2962,14 @@ func (ds *DebateService) validateDebateResult(
 		pipelineResult.OverallScore,
 		pipelineResult.FailedPass,
 	)
-	
+
 	return pipelineResult, nil
 }
 
 // detectLanguage attempts to detect the programming language from code content
 func (ds *DebateService) detectLanguage(content string) string {
 	contentLower := strings.ToLower(content)
-	
+
 	// Language detection patterns
 	languagePatterns := map[string][]string{
 		"python":     {"def ", "import ", "class ", "from ", "print("},
@@ -2945,7 +2981,7 @@ func (ds *DebateService) detectLanguage(content string) string {
 		"c++":        {"#include", "std::", "namespace ", "template<"},
 		"c":          {"#include", "int main", "printf", "malloc"},
 	}
-	
+
 	for lang, patterns := range languagePatterns {
 		matchCount := 0
 		for _, pattern := range patterns {
@@ -2957,7 +2993,7 @@ func (ds *DebateService) detectLanguage(content string) string {
 			return lang
 		}
 	}
-	
+
 	return "text"
 }
 
@@ -2970,7 +3006,7 @@ func (ds *DebateService) enrichDebateContext(
 	if ds.serviceBridge == nil {
 		return nil, nil // Tool integration not available
 	}
-	
+
 	ds.logger.Infof("[Tool Integration] Enriching context for round %d", round)
 
 	// Build context string from metadata
@@ -3005,7 +3041,7 @@ func (ds *DebateService) enrichDebateContext(
 // selectSpecializedRole determines which specialized role should handle the task
 func (ds *DebateService) selectSpecializedRole(ctx context.Context, topic string, context map[string]interface{}) string {
 	topicLower := strings.ToLower(topic)
-	
+
 	// Map keywords to specialized roles
 	roleKeywords := map[string][]string{
 		"generator":            {"write", "create", "implement", "build", "develop", "code"},
@@ -3018,7 +3054,7 @@ func (ds *DebateService) selectSpecializedRole(ctx context.Context, topic string
 		"tester":               {"test", "testing", "unit test", "integration test", "coverage"},
 		"documenter":           {"document", "documentation", "doc", "readme", "comment"},
 	}
-	
+
 	// Score each role
 	roleScores := make(map[string]int)
 	for role, keywords := range roleKeywords {
@@ -3028,7 +3064,7 @@ func (ds *DebateService) selectSpecializedRole(ctx context.Context, topic string
 			}
 		}
 	}
-	
+
 	// Find highest scoring role
 	maxScore := 0
 	selectedRole := "analyst" // default
@@ -3038,10 +3074,10 @@ func (ds *DebateService) selectSpecializedRole(ctx context.Context, topic string
 			selectedRole = role
 		}
 	}
-	
+
 	if maxScore > 0 {
 		ds.logger.Infof("[Specialized Routing] Assigned role: %s (score: %d)", selectedRole, maxScore)
 	}
-	
+
 	return selectedRole
 }

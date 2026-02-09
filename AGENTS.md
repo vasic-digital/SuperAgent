@@ -474,3 +474,77 @@ Note: Some of these rules are TypeScriptâ€‘specific; for Go code, follow the Goâ
 ---
 
 *This document is intended for AI agents working in the HelixAgent repository. Keep it up to date as the project evolves.*
+
+<!-- BEGIN_CONSTITUTION -->
+# Project Constitution
+
+**Version:** 1.0.0 | **Updated:** 2026-02-10 00:18
+
+Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 1, Configuration: 1, Testing: 3, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1
+
+## Mandatory Principles
+
+**All development MUST adhere to these non-negotiable principles:**
+
+### Architecture
+
+**Comprehensive Decoupling** (Priority: 1)
+- Identify all parts and functionalities that can be extracted as separate modules (libraries) and reused in various projects. Perform additional work to make each module fully decoupled and independent. Each module must be a separate project with its own CLAUDE.md, AGENTS.md, README.md, docs/, tests, and challenges.
+
+### Testing
+
+**100% Test Coverage** (Priority: 1)
+- Every component MUST have 100% test coverage across ALL test types: unit, integration, E2E, security, stress, chaos, automation, and benchmark tests. No false positives. Use real data and live services (mocks only in unit tests).
+
+**Comprehensive Challenges** (Priority: 1)
+- Every component MUST have Challenge scripts validating real-life use cases. No false success - validate actual behavior, not return codes.
+
+**Stress and Integration Tests** (Priority: 2)
+- Introduce comprehensive stress and integration tests validating that the system is responsive and not possible to overload or break.
+
+### Documentation
+
+**Complete Documentation** (Priority: 1)
+- Every module and feature MUST have complete documentation: README.md, CLAUDE.md, AGENTS.md, user guides, step-by-step manuals, video courses, diagrams, SQL definitions, and website content. No component can remain undocumented.
+
+**Documentation Synchronization** (Priority: 1)
+- Anything added to Constitution MUST be present in AGENTS.md and CLAUDE.md, and vice versa. Keep all three synchronized.
+
+### Quality
+
+**No Broken Components** (Priority: 1)
+- No module, application, library, or test can remain broken, disabled, or incomplete. Everything must be fully functional and operational.
+
+**No Dead Code** (Priority: 1)
+- Identify and remove all 'dead code' - features or functionalities left unconnected with the system. Perform comprehensive research and cleanup.
+
+### Safety
+
+**Memory Safety** (Priority: 1)
+- Perform comprehensive research for memory leaks, deadlocks, and race conditions. Apply safety fixes and improvements to prevent these issues.
+
+### Security
+
+**Security Scanning** (Priority: 1)
+- Execute Snyk and SonarQube scanning. Analyze findings in depth and resolve everything. Ensure scanning infrastructure is accessible via containerization (Docker/Podman).
+
+### Stability
+
+**Rock-Solid Changes** (Priority: 1)
+- All changes must be safe, non-error-prone, and MUST NOT BREAK any existing working functionality. Ensure backward compatibility unless explicitly breaking.
+
+### CI/CD
+
+**Manual CI/CD Only** (Priority: 1)
+- NO GitHub Actions enabled. All CI/CD workflows and pipelines must be executed manually only.
+
+### Observability
+
+**Health and Monitoring** (Priority: 2)
+- Every service MUST expose health endpoints. Circuit breakers for all external dependencies. Prometheus/OpenTelemetry integration.
+
+---
+
+*This Constitution is automatically synchronized with AGENTS.md, CLAUDE.md, and CONSTITUTION.json.*
+
+<!-- END_CONSTITUTION -->
