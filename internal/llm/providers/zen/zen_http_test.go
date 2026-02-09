@@ -78,11 +78,11 @@ func TestZenHTTPProvider_GetCapabilities(t *testing.T) {
 	assert.False(t, caps.SupportsTools)
 	assert.GreaterOrEqual(t, len(caps.SupportedModels), 5, "Should support multiple models")
 
-	// Check for specific models
+	// Check for specific free models (as of 2026-02)
 	assert.Contains(t, caps.SupportedModels, "big-pickle")
 	assert.Contains(t, caps.SupportedModels, "gpt-5-nano")
 	assert.Contains(t, caps.SupportedModels, "glm-4.7")
-	assert.Contains(t, caps.SupportedModels, "qwen3-coder")
+	// Note: qwen3-coder removed from free tier 2026-02
 	assert.Contains(t, caps.SupportedModels, "kimi-k2")
 	assert.Contains(t, caps.SupportedModels, "gemini-3-flash")
 }
@@ -295,14 +295,14 @@ func TestZenHTTPProvider_ModelSupportViaCapabilities(t *testing.T) {
 	provider := NewZenHTTPProviderWithModel("big-pickle")
 	caps := provider.GetCapabilities()
 
-	// Should include known Zen models
+	// Should include known Zen free models (as of 2026-02)
 	knownModels := []string{
 		"big-pickle",
 		"gpt-5-nano",
 		"glm-4.7",
-		"qwen3-coder",
 		"kimi-k2",
 		"gemini-3-flash",
+		// Note: qwen3-coder removed from free tier 2026-02
 	}
 
 	for _, model := range knownModels {

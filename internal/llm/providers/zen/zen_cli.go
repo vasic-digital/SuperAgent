@@ -43,14 +43,14 @@ type ZenCLIConfig struct {
 }
 
 // Known Zen/OpenCode models (fallback if discovery fails)
-// Updated 2026-01: Verified working models from Zen API
+// Updated 2026-02: Verified working free models from Zen API
 var knownZenModels = []string{
 	"big-pickle",
 	"gpt-5-nano",
 	"glm-4.7",
-	"qwen3-coder",
 	"kimi-k2",
 	"gemini-3-flash",
+	// Note: qwen3-coder removed from free tier 2026-02
 }
 
 // DefaultZenCLIConfig returns default configuration

@@ -30,17 +30,17 @@ const (
 
 	// Default free models - available WITHOUT API key
 	// NOTE: Zen API requires model names WITHOUT "opencode/" prefix
-	// Available models from API: big-pickle, gpt-5-nano, glm-4.7, qwen3-coder, kimi-k2, gemini-3-flash
+	// Available models from API (as of 2026-02): big-pickle, gpt-5-nano, glm-4.7, kimi-k2, gemini-3-flash
 	ModelBigPickle = "big-pickle"
 	ModelGPT5Nano  = "gpt-5-nano"
 	ModelGLM47     = "glm-4.7"
-	ModelQwen3     = "qwen3-coder"
 	ModelKimiK2    = "kimi-k2"
 	ModelGemini3   = "gemini-3-flash"
 
 	// Legacy model IDs (may not be available anymore)
-	ModelGrokCodeFast = "grok-code" // Deprecated, may not work
-	ModelGLM47Free    = "glm-4.7-free"
+	ModelQwen3        = "qwen3-coder"  // Removed from free tier 2026-02
+	ModelGrokCodeFast = "grok-code"    // Deprecated, may not work
+	ModelGLM47Free    = "glm-4.7-free" // Deprecated
 
 	// Legacy model IDs with prefix (for backward compatibility in configs)
 	ModelBigPickleFull    = "opencode/big-pickle"
@@ -64,12 +64,12 @@ var (
 	discoveredModelsTime  time.Time
 	discoveredModelsMutex sync.RWMutex
 
-	// Known models as fallback (last verified 2026-01)
+	// Known free models as fallback (last verified 2026-02)
 	knownFreeModels = []string{
 		ModelBigPickle,
 		ModelGPT5Nano,
 		ModelGLM47,
-		ModelQwen3,
+		// Note: ModelQwen3 removed from free tier 2026-02
 		ModelKimiK2,
 		ModelGemini3,
 	}

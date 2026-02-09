@@ -153,7 +153,9 @@ func (c *Client) Query(query string, args ...any) ([]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var results []any
 	for rows.Next() {

@@ -410,9 +410,9 @@ func (p *ZenHTTPProvider) GetCapabilities() *models.ProviderCapabilities {
 			"big-pickle",
 			"gpt-5-nano",
 			"glm-4.7",
-			"qwen3-coder",
 			"kimi-k2",
 			"gemini-3-flash",
+			// Note: qwen3-coder removed from free tier 2026-02
 		},
 		SupportsStreaming: true,
 		SupportsTools:     false, // Could be added via /commands endpoint

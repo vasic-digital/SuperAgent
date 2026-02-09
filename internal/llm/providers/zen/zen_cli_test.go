@@ -232,11 +232,11 @@ func TestIsOpenCodeInstalled(t *testing.T) {
 func TestGetKnownZenModels(t *testing.T) {
 	models := GetKnownZenModels()
 	require.NotEmpty(t, models)
-	require.Len(t, models, 6)
+	require.Len(t, models, 5) // Updated 2026-02: qwen3-coder removed from free tier
 	assert.Contains(t, models, "big-pickle")
 	assert.Contains(t, models, "gpt-5-nano")
 	assert.Contains(t, models, "glm-4.7")
-	assert.Contains(t, models, "qwen3-coder")
+	// Note: qwen3-coder removed from free tier 2026-02
 	assert.Contains(t, models, "kimi-k2")
 	assert.Contains(t, models, "gemini-3-flash")
 }
