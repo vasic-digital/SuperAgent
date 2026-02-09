@@ -551,3 +551,16 @@ func (dcl *DebateCommLogger) FormatRetrofitLog(
 
 	return fmt.Sprintf("%s %s %s%s", tag, arrow, preview, metaStr)
 }
+
+// LogInfo logs a general information message with category
+// Format: [Category] Message
+func (dcl *DebateCommLogger) LogInfo(category string, message string) {
+	var formatted string
+	if dcl.enableColors {
+		formatted = fmt.Sprintf("%s%s[%s]%s %s",
+			ColorCyan, ColorBold, category, ColorReset, message)
+	} else {
+		formatted = fmt.Sprintf("[%s] %s", category, message)
+	}
+	dcl.logger.Info(formatted)
+}
