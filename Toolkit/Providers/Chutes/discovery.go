@@ -212,8 +212,19 @@ func NewDiscovery(apiKey string) *Discovery {
 // Discover discovers available models from Chutes.
 func (d *Discovery) Discover(ctx context.Context) ([]toolkit.ModelInfo, error) {
 	models, err := d.client.GetModels(ctx)
-	if err != nil {
-		return nil, err
+
+	// If API call fails or returns no models, use hardcoded fallback list
+	// Chutes API may require specific "chute" deployments, so we provide common models
+	if err != nil || len(models) == 0 {
+		// Fallback to known Chutes-hosted models from their documentation
+		models = []ModelInfo{
+			{ID: "qwen/qwen2.5-72b-instruct", Type: "chat"},
+			{ID: "qwen/qwen3-72b", Type: "chat"},
+			{ID: "deepseek/deepseek-v3", Type: "chat"},
+			{ID: "deepseek/deepseek-r1", Type: "chat"},
+			{ID: "zhipu/glm-4-plus", Type: "chat"},
+			{ID: "kimi/kimi-k2.5", Type: "chat"},
+		}
 	}
 
 	var modelInfos []toolkit.ModelInfo
