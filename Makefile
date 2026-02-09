@@ -1093,10 +1093,50 @@ ci-validate-monitoring:
 	@go test -v -run "TestCircuitBreakerMonitor|TestOAuthTokenMonitor|TestProviderHealthMonitor|TestFallbackChainValidator" ./internal/services/... || { echo "❌ Monitoring validation failed!"; exit 1; }
 	@echo "✅ Monitoring systems validated"
 
+# Constitution Validation
+validate-constitution:
+	@echo "📜 Validating Constitution structure..."
+	@if [ ! -f CONSTITUTION.json ]; then \
+		echo "❌ CONSTITUTION.json not found"; \
+		exit 1; \
+	fi
+	@jq empty CONSTITUTION.json || (echo "❌ Invalid JSON in CONSTITUTION.json"; exit 1)
+	@jq -e '.version' CONSTITUTION.json > /dev/null || (echo "❌ Missing version field"; exit 1)
+	@jq -e '.rules | type == "array"' CONSTITUTION.json > /dev/null || (echo "❌ Missing or invalid rules array"; exit 1)
+	@echo "✅ Constitution structure valid"
+
+check-compliance:
+	@echo "🔍 Checking Constitution compliance..."
+	@MANDATORY_COUNT=$$(jq '[.rules[] | select(.mandatory == true)] | length' CONSTITUTION.json 2>/dev/null || echo "0"); \
+	if [ "$$MANDATORY_COUNT" -lt 15 ]; then \
+		echo "❌ Expected at least 15 mandatory rules, found: $$MANDATORY_COUNT"; \
+		exit 1; \
+	else \
+		echo "✅ Found $$MANDATORY_COUNT mandatory rules (≥15)"; \
+	fi
+	@jq -r '.rules[].description' CONSTITUTION.json 2>/dev/null | grep -qi "100.*test.*coverage" || (echo "❌ 100% test coverage rule missing"; exit 1)
+	@jq -r '.rules[].description' CONSTITUTION.json 2>/dev/null | grep -qi "decoupl" || (echo "❌ Decoupling rule missing"; exit 1)
+	@jq -r '.rules[].description' CONSTITUTION.json 2>/dev/null | grep -Eqi "(manual.*only|no.*github.*actions)" || (echo "❌ Manual CI/CD rule missing"; exit 1)
+	@echo "✅ All mandatory Constitution rules present"
+
+sync-constitution:
+	@echo "🔄 Checking Constitution synchronization..."
+	@if [ ! -f CONSTITUTION.json ] || [ ! -f CONSTITUTION.md ]; then \
+		echo "❌ Constitution files missing"; \
+		exit 1; \
+	fi
+	@grep -q "BEGIN_CONSTITUTION" AGENTS.md || (echo "❌ Constitution section missing in AGENTS.md"; exit 1)
+	@grep -q "BEGIN_CONSTITUTION" CLAUDE.md || (echo "❌ Constitution section missing in CLAUDE.md"; exit 1)
+	@echo "✅ Constitution synchronized across all documentation"
+
+ci-validate-constitution: validate-constitution check-compliance sync-constitution
+	@echo "✅ Constitution validation passed"
+
 ci-validate-all:
 	@echo "🔍 CI/CD: Running all validation checks..."
 	@$(MAKE) ci-validate-fallback
 	@$(MAKE) ci-validate-monitoring
+	@$(MAKE) ci-validate-constitution
 	@echo "✅ All CI/CD validations passed"
 
 ci-pre-commit:

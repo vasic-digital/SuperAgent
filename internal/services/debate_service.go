@@ -322,6 +322,21 @@ func (ds *DebateService) ConductDebate(
 		return ds.conductTestDrivenDebate(ctx, config, startTime, sessionID)
 	}
 
+	// NEW: Enhanced Intent Detection with SpecKit Auto-Activation
+	if ds.enhancedIntentClassifier != nil && ds.speckitOrchestrator != nil {
+		intentResult, err := ds.classifyIntentWithGranularity(ctx, config.Topic, config.Metadata)
+		if err != nil {
+			ds.logger.WithError(err).Warn("[SpecKit Auto-Activation] Intent classification failed, proceeding with standard debate")
+		} else if intentResult.RequiresSpecKit {
+			ds.logger.WithFields(logrus.Fields{
+				"granularity": intentResult.Granularity,
+				"action_type": intentResult.ActionType,
+				"reason":      intentResult.SpecKitReason,
+			}).Info("[SpecKit Auto-Activation] Routing through SpecKit flow")
+			return ds.conductSpecKitDebate(ctx, config, intentResult, startTime, sessionID)
+		}
+	}
+
 	// Standard debate with 4-Pass Validation and Tool Integration
 	result, err := ds.conductRealDebate(ctx, config, startTime, sessionID)
 	if err != nil {
@@ -3080,4 +3095,194 @@ func (ds *DebateService) selectSpecializedRole(ctx context.Context, topic string
 	}
 
 	return selectedRole
+}
+
+// classifyIntentWithGranularity performs enhanced intent classification with granularity detection
+func (ds *DebateService) classifyIntentWithGranularity(
+	ctx context.Context,
+	topic string,
+	metadata map[string]any,
+) (*EnhancedIntentResult, error) {
+	// Extract conversation context from metadata
+	conversationContext := ""
+	if metadata != nil {
+		if conv, ok := metadata["conversation_context"].(string); ok {
+			conversationContext = conv
+		}
+	}
+
+	// Extract codebase context from metadata
+	codebaseContext := make(map[string]interface{})
+	if metadata != nil {
+		if code, ok := metadata["codebase_context"].(map[string]interface{}); ok {
+			codebaseContext = code
+		}
+	}
+
+	// Classify intent with timeout
+	classifyCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	result, err := ds.enhancedIntentClassifier.ClassifyEnhancedIntent(
+		classifyCtx,
+		topic,
+		conversationContext,
+		codebaseContext,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("intent classification failed: %w", err)
+	}
+
+	return result, nil
+}
+
+// conductSpecKitDebate executes the SpecKit 7-phase flow and converts result to DebateResult
+func (ds *DebateService) conductSpecKitDebate(
+	ctx context.Context,
+	config *DebateConfig,
+	intentResult *EnhancedIntentResult,
+	startTime time.Time,
+	sessionID string,
+) (*DebateResult, error) {
+	ds.logger.WithFields(logrus.Fields{
+		"session_id":  sessionID,
+		"granularity": intentResult.Granularity,
+		"action_type": intentResult.ActionType,
+	}).Info("[SpecKit Flow] Starting 7-phase SpecKit workflow")
+
+	// Execute SpecKit flow
+	flowResult, err := ds.speckitOrchestrator.ExecuteFlow(ctx, config.Topic, intentResult)
+	if err != nil {
+		ds.logger.WithError(err).Error("[SpecKit Flow] Flow execution failed")
+		return nil, fmt.Errorf("SpecKit flow execution failed: %w", err)
+	}
+
+	endTime := time.Now()
+
+	// Convert SpecKit flow result to DebateResult
+	result := &DebateResult{
+		DebateID:        config.DebateID,
+		SessionID:       sessionID,
+		Topic:           config.Topic,
+		StartTime:       startTime,
+		EndTime:         endTime,
+		Duration:        endTime.Sub(startTime),
+		TotalRounds:     7, // 7 SpecKit phases
+		RoundsConducted: len(flowResult.Phases),
+		AllResponses:    ds.convertSpecKitPhasesToResponses(flowResult),
+		BestResponse:    ds.extractBestResponseFromSpecKit(flowResult),
+		Consensus: &ConsensusResult{
+			Achieved:       flowResult.Success,
+			Confidence:     flowResult.OverallQualityScore,
+			AgreementLevel: flowResult.OverallQualityScore,
+			FinalPosition:  flowResult.FinalArtifact,
+			KeyPoints:      []string{"SpecKit 7-phase workflow completed"},
+			Disagreements:  []string{},
+			Summary:        fmt.Sprintf("SpecKit flow completed with %d phases", len(flowResult.Phases)),
+			Timestamp:      endTime,
+			QualityScore:   flowResult.OverallQualityScore,
+		},
+		QualityScore: ds.calculateSpecKitQualityScore(flowResult),
+		FinalScore:   flowResult.OverallQualityScore,
+		Success:      flowResult.Success,
+		Metadata: map[string]interface{}{
+			"speckit_flow":       true,
+			"granularity":        intentResult.Granularity,
+			"action_type":        intentResult.ActionType,
+			"requires_speckit":   intentResult.RequiresSpecKit,
+			"speckit_reason":     intentResult.SpecKitReason,
+			"phases_completed":   len(flowResult.Phases),
+			"constitution_saved": flowResult.Phases["constitution"] != nil,
+		},
+	}
+
+	ds.logger.WithFields(logrus.Fields{
+		"session_id":      sessionID,
+		"duration":        result.Duration,
+		"quality_score":   result.QualityScore,
+		"phases_complete": len(flowResult.Phases),
+	}).Info("[SpecKit Flow] Workflow completed successfully")
+
+	return result, nil
+}
+
+// convertSpecKitPhasesToResponses converts SpecKit phase results to ParticipantResponses
+func (ds *DebateService) convertSpecKitPhasesToResponses(flowResult *SpecKitFlowResult) []ParticipantResponse {
+	responses := make([]ParticipantResponse, 0, len(flowResult.Phases))
+
+	phaseOrder := []SpecKitPhase{
+		PhaseConstitution, PhaseSpecify, PhaseClarify,
+		PhasePlan, PhaseTasks, PhaseAnalyze, PhaseImplement,
+	}
+
+	for i, phase := range phaseOrder {
+		phaseResult, exists := flowResult.Phases[string(phase)]
+		if !exists {
+			continue
+		}
+
+		response := ParticipantResponse{
+			ParticipantID: fmt.Sprintf("speckit-%s", phase),
+			Role:          string(phase),
+			LLMProvider:   "speckit",
+			LLMModel:      "debate-team",
+			Content:       phaseResult.Artifact,
+			Confidence:    phaseResult.QualityScore,
+			ResponseTime:  phaseResult.Duration,
+			Round:         i + 1,
+		}
+
+		responses = append(responses, response)
+	}
+
+	return responses
+}
+
+// extractBestResponseFromSpecKit extracts the best response from SpecKit flow (Implementation phase)
+func (ds *DebateService) extractBestResponseFromSpecKit(flowResult *SpecKitFlowResult) *ParticipantResponse {
+	// Implementation phase is the final output
+	implementPhase, exists := flowResult.Phases[string(PhaseImplement)]
+	if !exists || implementPhase == nil {
+		// Fallback to last available phase
+		for _, phase := range []SpecKitPhase{PhaseAnalyze, PhaseTasks, PhasePlan, PhaseClarify, PhaseSpecify} {
+			if result, ok := flowResult.Phases[string(phase)]; ok && result != nil {
+				return &ParticipantResponse{
+					ParticipantID: fmt.Sprintf("speckit-%s", phase),
+					Role:          string(phase),
+					LLMProvider:   "speckit",
+					LLMModel:      "debate-team",
+					Content:       result.Artifact,
+					Confidence:    result.QualityScore,
+					ResponseTime:  result.Duration,
+					Round:         1,
+				}
+			}
+		}
+		return nil
+	}
+
+	return &ParticipantResponse{
+		ParticipantID: "speckit-implementation",
+		Role:          "implementation",
+		LLMProvider:   "speckit",
+		LLMModel:      "debate-team",
+		Content:       implementPhase.Artifact,
+		Confidence:    implementPhase.QualityScore,
+		ResponseTime:  implementPhase.Duration,
+		Round:         7,
+	}
+}
+
+// calculateSpecKitQualityScore calculates overall quality score from SpecKit phases
+func (ds *DebateService) calculateSpecKitQualityScore(flowResult *SpecKitFlowResult) float64 {
+	if len(flowResult.Phases) == 0 {
+		return 0.0
+	}
+
+	totalScore := 0.0
+	for _, phaseResult := range flowResult.Phases {
+		totalScore += phaseResult.QualityScore
+	}
+
+	return totalScore / float64(len(flowResult.Phases))
 }
