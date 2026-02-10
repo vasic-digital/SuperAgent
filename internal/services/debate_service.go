@@ -3038,6 +3038,10 @@ func (ds *DebateService) detectLanguage(content string) string {
 		"c":          {"#include", "int main", "printf", "malloc"},
 	}
 
+	// Find language with most pattern matches
+	maxMatches := 0
+	detectedLang := "text"
+
 	for lang, patterns := range languagePatterns {
 		matchCount := 0
 		for _, pattern := range patterns {
@@ -3045,13 +3049,14 @@ func (ds *DebateService) detectLanguage(content string) string {
 				matchCount++
 			}
 		}
-		// Single strong match is sufficient for language detection
-		if matchCount >= 1 {
-			return lang
+		// Language with most matches wins
+		if matchCount > maxMatches {
+			maxMatches = matchCount
+			detectedLang = lang
 		}
 	}
 
-	return "text"
+	return detectedLang
 }
 
 // enrichDebateContext uses Tool Integration to enhance debate context with RAG/MCP/LSP/Embeddings

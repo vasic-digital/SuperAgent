@@ -19,22 +19,36 @@ func TestDebateService_SpecKitAutoActivation_E2E(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 
-	// Create provider registry (can be nil for quick classify fallback)
-	var providerRegistry *ProviderRegistry = nil
+	// Create provider registry with real providers for E2E testing
+	// This test requires at least one LLM provider to be configured via environment variables
+	providerRegistry := NewProviderRegistry(nil, nil)
 
-	// Create services
-	constitutionManager := NewConstitutionManager(logger)
-	documentationSync := NewDocumentationSync(logger)
-	enhancedIntentClassifier := NewEnhancedIntentClassifier(providerRegistry, logger)
-
-	// Create debate service
-	debateService := &DebateService{
-		logger:                   logger,
-		providerRegistry:         providerRegistry,
-		enhancedIntentClassifier: enhancedIntentClassifier,
-		constitutionManager:      constitutionManager,
-		documentationSync:        documentationSync,
+	// Check if any providers are available (auto-discovered from environment)
+	providers := providerRegistry.ListProviders()
+	if len(providers) == 0 {
+		t.Skip("Skipping E2E test: no LLM providers configured (need API keys in environment)")
 	}
+
+	// Create debate team config with available providers
+	// This is required for the debate to assign providers to participant roles
+	providerDiscovery := NewProviderDiscovery(logger, false) // false = don't verify on startup
+	debateTeamConfig := NewDebateTeamConfig(providerRegistry, providerDiscovery, logger)
+	ctx := context.Background()
+	if err := debateTeamConfig.InitializeTeam(ctx); err != nil {
+		// If team initialization fails, skip the test
+		// This can happen if providers are discovered but not properly configured
+		t.Skipf("Skipping E2E test: failed to initialize debate team: %v", err)
+	}
+
+	// Check if team has active members (requires working LLM providers)
+	activeMembers := debateTeamConfig.GetActiveMembers()
+	if len(activeMembers) == 0 {
+		t.Skip("Skipping E2E test: no active debate team members (requires working LLM provider API keys)")
+	}
+
+	// Create debate service using NewDebateServiceWithDeps for proper initialization
+	debateService := NewDebateServiceWithDeps(logger, providerRegistry, nil)
+	debateService.SetTeamConfig(debateTeamConfig)
 
 	// Initialize SpecKit orchestrator
 	projectRoot := t.TempDir()
