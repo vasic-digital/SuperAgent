@@ -365,7 +365,17 @@ func TestEmbeddingsE2E(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 
-		resp, err := client.Post(config.HelixAgentURL+"/v1/embeddings", "application/json", bytes.NewReader(body))
+		req, err := http.NewRequest("POST", config.HelixAgentURL+"/v1/embeddings", bytes.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		// Add API key from environment
+		apiKey := os.Getenv("HELIXAGENT_API_KEY")
+		if apiKey != "" {
+			req.Header.Set("Authorization", "Bearer "+apiKey)
+		}
+
+		resp, err := client.Do(req)
 		if err != nil {
 			t.Skipf("Embeddings not available: %v", err)
 		}
@@ -388,7 +398,17 @@ func TestEmbeddingsE2E(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 
-		resp, err := client.Post(config.HelixAgentURL+"/v1/embeddings", "application/json", bytes.NewReader(body))
+		req, err := http.NewRequest("POST", config.HelixAgentURL+"/v1/embeddings", bytes.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		// Add API key from environment
+		apiKey := os.Getenv("HELIXAGENT_API_KEY")
+		if apiKey != "" {
+			req.Header.Set("Authorization", "Bearer "+apiKey)
+		}
+
+		resp, err := client.Do(req)
 		if err != nil {
 			t.Skipf("Embeddings not available: %v", err)
 		}

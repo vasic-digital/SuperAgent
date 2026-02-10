@@ -166,6 +166,16 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 		return nil, fmt.Errorf("OpenCode CLI not available: %v", p.cliCheckErr)
 	}
 
+	// Validate message contents BEFORE building prompt (to avoid false positives from added formatting)
+	for _, msg := range req.Messages {
+		if !utils.ValidateCommandArg(msg.Content) {
+			return nil, fmt.Errorf("message content contains invalid characters")
+		}
+	}
+	if req.Prompt != "" && !utils.ValidateCommandArg(req.Prompt) {
+		return nil, fmt.Errorf("prompt contains invalid characters")
+	}
+
 	// Build the prompt from messages
 	var promptBuilder strings.Builder
 	for _, msg := range req.Messages {
@@ -194,11 +204,6 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 		return nil, fmt.Errorf("no prompt provided")
 	}
 
-	// Validate prompt for command injection safety
-	if !utils.ValidateCommandArg(prompt) {
-		return nil, fmt.Errorf("prompt contains invalid characters")
-	}
-
 	// Create command with timeout
 	cmdCtx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
@@ -214,10 +219,12 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 	}
 
 	// Build opencode command arguments
-	// Use -f json for structured output that's easier to parse
+	// Format: opencode run [message] --format json --model provider/model
 	args := []string{
-		"-p", prompt, // Non-interactive mode with prompt
-		"-f", "json", // JSON output format for structured parsing
+		"run",
+		prompt,       // Message as positional argument
+		"--format", "json", // JSON output format for structured parsing
+		"--model", model,   // Specify model to use
 	}
 
 	// Execute opencode command
@@ -376,18 +383,16 @@ func (p *ZenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 		}
 
 		// Build opencode command arguments with streaming
+		// Format: opencode run [message] --format json --model provider/model
 		args := []string{
-			"-p", prompt,
-			"--model", model,
-			"--stream",
+			"run",
+			prompt,             // Message as positional argument
+			"--format", "json", // JSON output for streaming
+			"--model", model,   // Specify model to use
 		}
 
-		// Add max tokens if specified
-		maxTokens := p.maxOutputTokens
-		if req.ModelParams.MaxTokens > 0 {
-			maxTokens = req.ModelParams.MaxTokens
-		}
-		args = append(args, "--max-tokens", fmt.Sprintf("%d", maxTokens))
+		// Note: OpenCode run doesn't support --max-tokens or --stream flags
+		// Streaming is default with --format json
 
 		// Execute opencode command
 		cmd := exec.CommandContext(cmdCtx, p.cliPath, args...)

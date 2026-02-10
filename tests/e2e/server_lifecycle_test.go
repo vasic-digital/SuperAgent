@@ -33,8 +33,9 @@ func TestAPIServerLifecycle(t *testing.T) {
 
 	t.Run("server_starts_successfully", func(t *testing.T) {
 		// Start server in background
-		cmd := exec.Command(binPath, "--port", port)
+		cmd := exec.Command(binPath)
 		cmd.Env = append(os.Environ(),
+			"PORT="+port,
 			"GIN_MODE=test",
 			"LOG_LEVEL=error",
 		)
@@ -160,8 +161,9 @@ func TestServerRestart(t *testing.T) {
 
 	// Helper to start server
 	startServer := func() *exec.Cmd {
-		cmd := exec.Command(binPath, "--port", port)
+		cmd := exec.Command(binPath)
 		cmd.Env = append(os.Environ(),
+			"PORT="+port,
 			"GIN_MODE=test",
 			"LOG_LEVEL=error",
 		)
@@ -251,9 +253,10 @@ func TestServerSignalHandling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			port := fmt.Sprintf("1706%d", 3+len(tt.name)%10)
-			
-			cmd := exec.Command(binPath, "--port", port)
+
+			cmd := exec.Command(binPath)
 			cmd.Env = append(os.Environ(),
+				"PORT="+port,
 				"GIN_MODE=test",
 				"LOG_LEVEL=error",
 			)

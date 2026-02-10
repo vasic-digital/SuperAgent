@@ -150,6 +150,16 @@ func (p *QwenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 		return nil, fmt.Errorf("Qwen Code CLI not available: %v", p.cliCheckErr)
 	}
 
+	// Validate message contents BEFORE building prompt (to avoid false positives from added formatting)
+	for _, msg := range req.Messages {
+		if !utils.ValidateCommandArg(msg.Content) {
+			return nil, fmt.Errorf("message content contains invalid characters")
+		}
+	}
+	if req.Prompt != "" && !utils.ValidateCommandArg(req.Prompt) {
+		return nil, fmt.Errorf("prompt contains invalid characters")
+	}
+
 	// Build the prompt from messages
 	var promptBuilder strings.Builder
 	for _, msg := range req.Messages {
@@ -176,11 +186,6 @@ func (p *QwenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 
 	if prompt == "" {
 		return nil, fmt.Errorf("no prompt provided")
-	}
-
-	// Validate prompt for command injection safety
-	if !utils.ValidateCommandArg(prompt) {
-		return nil, fmt.Errorf("prompt contains invalid characters")
 	}
 
 	// Create command with timeout
@@ -253,6 +258,16 @@ func (p *QwenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 		return nil, fmt.Errorf("Qwen Code CLI not available: %v", p.cliCheckErr)
 	}
 
+	// Validate message contents BEFORE building prompt (to avoid false positives from added formatting)
+	for _, msg := range req.Messages {
+		if !utils.ValidateCommandArg(msg.Content) {
+			return nil, fmt.Errorf("message content contains invalid characters")
+		}
+	}
+	if req.Prompt != "" && !utils.ValidateCommandArg(req.Prompt) {
+		return nil, fmt.Errorf("prompt contains invalid characters")
+	}
+
 	// Build the prompt from messages
 	var promptBuilder strings.Builder
 	for _, msg := range req.Messages {
@@ -279,11 +294,6 @@ func (p *QwenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 
 	if prompt == "" {
 		return nil, fmt.Errorf("no prompt provided")
-	}
-
-	// Validate prompt for command injection safety
-	if !utils.ValidateCommandArg(prompt) {
-		return nil, fmt.Errorf("prompt contains invalid characters")
 	}
 
 	// Create command with timeout

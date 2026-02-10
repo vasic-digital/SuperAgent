@@ -220,7 +220,7 @@ func TestCLIProviderComplete(t *testing.T) {
 	})
 
 	t.Run("Zen CLI complete", func(t *testing.T) {
-		provider := zen.NewZenCLIProviderWithModel("big-pickle")
+		provider := zen.NewZenCLIProviderWithModel("opencode/big-pickle")
 		if !provider.IsCLIAvailable() {
 			t.Skip("OpenCode CLI not available")
 		}

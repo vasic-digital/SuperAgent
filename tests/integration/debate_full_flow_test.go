@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -95,10 +96,10 @@ func TestDebateFullFlow_OrchestratorInit(t *testing.T) {
 		"Default topology should be GraphMesh")
 	assert.InDelta(t, 0.75, cfg.DefaultMinConsensus, 0.001,
 		"Default min consensus should be 0.75")
-	assert.Equal(t, 3, cfg.MinAgentsPerDebate,
-		"Min agents per debate should be 3")
-	assert.Equal(t, 10, cfg.MaxAgentsPerDebate,
-		"Max agents per debate should be 10")
+	assert.Equal(t, 15, cfg.MinAgentsPerDebate,
+		"Min agents per debate should be 15 (3 positions × 5 models)")
+	assert.Equal(t, 25, cfg.MaxAgentsPerDebate,
+		"Max agents per debate should be 25 (5 positions × 5 models)")
 	assert.True(t, cfg.EnableAgentDiversity,
 		"Agent diversity should be enabled by default")
 	assert.True(t, cfg.EnableLearning,
@@ -169,6 +170,12 @@ func TestDebateFullFlow_CreateDebate(t *testing.T) {
 	require.NoError(t, err, "Failed to create POST request")
 	req.Header.Set("Content-Type", "application/json")
 
+	// Add API key from environment
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "POST /v1/debates request failed")
 	defer resp.Body.Close()
@@ -220,6 +227,12 @@ func TestDebateFullFlow_DebateStatus(t *testing.T) {
 		createURL, bytes.NewReader(payload))
 	require.NoError(t, err)
 	createReq.Header.Set("Content-Type", "application/json")
+
+	// Add API key from environment
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey != "" {
+		createReq.Header.Set("Authorization", "Bearer "+apiKey)
+	}
 
 	createResp, err := http.DefaultClient.Do(createReq)
 	require.NoError(t, err, "Failed to create debate for status test")
@@ -289,6 +302,12 @@ func TestDebateFullFlow_DebateComplete(t *testing.T) {
 		createURL, bytes.NewReader(payload))
 	require.NoError(t, err)
 	createReq.Header.Set("Content-Type", "application/json")
+
+	// Add API key from environment
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey != "" {
+		createReq.Header.Set("Authorization", "Bearer "+apiKey)
+	}
 
 	createResp, err := http.DefaultClient.Do(createReq)
 	require.NoError(t, err, "Failed to create debate")
@@ -419,6 +438,12 @@ func TestDebateFullFlow_ConcurrentDebates(t *testing.T) {
 				return
 			}
 			req.Header.Set("Content-Type", "application/json")
+
+			// Add API key from environment
+			apiKey := os.Getenv("HELIXAGENT_API_KEY")
+			if apiKey != "" {
+				req.Header.Set("Authorization", "Bearer "+apiKey)
+			}
 
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
@@ -563,6 +588,12 @@ func TestDebateFullFlow_InvalidTopic(t *testing.T) {
 				url, bytes.NewReader(body))
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
+
+			// Add API key from environment
+			apiKey := os.Getenv("HELIXAGENT_API_KEY")
+			if apiKey != "" {
+				req.Header.Set("Authorization", "Bearer "+apiKey)
+			}
 
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "POST request failed")

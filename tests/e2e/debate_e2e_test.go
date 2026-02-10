@@ -55,11 +55,18 @@ func TestDebateE2E_CodeGeneration(t *testing.T) {
 	jsonData, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	resp, err := http.Post(
-		"http://localhost:7061/v1/debates",
-		"application/json",
-		bytes.NewBuffer(jsonData),
-	)
+	// Create request with authentication
+	req, err := http.NewRequest("POST", "http://localhost:7061/v1/debates", bytes.NewBuffer(jsonData))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Add API key from environment
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -105,11 +112,18 @@ func TestDebateE2E_PerformanceAnalysis(t *testing.T) {
 	jsonData, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	resp, err := http.Post(
-		"http://localhost:7061/v1/debates",
-		"application/json",
-		bytes.NewBuffer(jsonData),
-	)
+	// Create request with authentication
+	req, err := http.NewRequest("POST", "http://localhost:7061/v1/debates", bytes.NewBuffer(jsonData))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Add API key from environment
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -144,11 +158,18 @@ func TestDebateE2E_SecurityAudit(t *testing.T) {
 	jsonData, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	resp, err := http.Post(
-		"http://localhost:7061/v1/debates",
-		"application/json",
-		bytes.NewBuffer(jsonData),
-	)
+	// Create request with authentication
+	req, err := http.NewRequest("POST", "http://localhost:7061/v1/debates", bytes.NewBuffer(jsonData))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Add API key from environment
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -183,11 +204,18 @@ func TestDebateE2E_RefactoringTask(t *testing.T) {
 	jsonData, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	resp, err := http.Post(
-		"http://localhost:7061/v1/debates",
-		"application/json",
-		bytes.NewBuffer(jsonData),
-	)
+	// Create request with authentication
+	req, err := http.NewRequest("POST", "http://localhost:7061/v1/debates", bytes.NewBuffer(jsonData))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Add API key from environment
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -231,6 +259,12 @@ func TestDebateE2E_IntegratedFeatures(t *testing.T) {
 		bytes.NewBuffer(jsonData))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
+
+	// Add API key from environment
+	apiKey := os.Getenv("HELIXAGENT_API_KEY")
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
 
 	client := &http.Client{Timeout: 120 * time.Second}
 	resp, err := client.Do(req)

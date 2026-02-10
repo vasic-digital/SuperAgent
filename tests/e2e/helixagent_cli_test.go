@@ -30,7 +30,7 @@ func TestHelixAgentCLI(t *testing.T) {
 			name:           "version command",
 			args:           []string{"--version"},
 			expectedExit:   0,
-			expectedOutput: "helixagent version",
+			expectedOutput: "HelixAgent v",
 		},
 		{
 			name:           "help command",
@@ -48,7 +48,7 @@ func TestHelixAgentCLI(t *testing.T) {
 			name:          "invalid command",
 			args:          []string{"--invalid-flag"},
 			expectedExit:  1,
-			expectedError: "unknown flag",
+			expectedError: "flag provided but not defined",
 		},
 	}
 
@@ -91,21 +91,21 @@ func TestHelixAgentConfigGeneration(t *testing.T) {
 
 	for _, agent := range agents {
 		t.Run("generate_"+agent+"_config", func(t *testing.T) {
+			outputFile := filepath.Join(tmpDir, agent+".json")
 			cmd := exec.Command(binPath,
-				"--generate-agent-config="+agent,
-				"--output-dir="+tmpDir,
+				"-generate-agent-config="+agent,
+				"-agent-config-output="+outputFile,
 			)
 
 			output, err := cmd.CombinedOutput()
 			require.NoError(t, err, "Config generation should succeed: %s", string(output))
 
 			// Verify config file was created
-			configFile := filepath.Join(tmpDir, agent+".json")
-			_, err = os.Stat(configFile)
-			assert.NoError(t, err, "Config file should exist: %s", configFile)
+			_, err = os.Stat(outputFile)
+			assert.NoError(t, err, "Config file should exist: %s", outputFile)
 
 			// Verify it's valid JSON
-			data, err := os.ReadFile(configFile)
+			data, err := os.ReadFile(outputFile)
 			require.NoError(t, err)
 			assert.True(t, len(data) > 0, "Config file should not be empty")
 			assert.True(t, strings.HasPrefix(string(data), "{"), "Config should be JSON")

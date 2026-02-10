@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -596,7 +597,16 @@ func TestAIDebate(t *testing.T) {
 	baseURL := config.HelixAgentURL + "/v1/debates"
 
 	t.Run("Debate_Health", func(t *testing.T) {
-		resp, err := client.Get(baseURL + "/health")
+		req, err := http.NewRequest("GET", baseURL+"/health", nil)
+		require.NoError(t, err)
+
+		// Add API key from environment
+		apiKey := os.Getenv("HELIXAGENT_API_KEY")
+		if apiKey != "" {
+			req.Header.Set("Authorization", "Bearer "+apiKey)
+		}
+
+		resp, err := client.Do(req)
 		if err != nil {
 			t.Skipf("Debate system not available: %v", err)
 		}
@@ -617,7 +627,17 @@ func TestAIDebate(t *testing.T) {
 		}
 		body, _ := json.Marshal(reqBody)
 
-		resp, err := client.Post(baseURL, "application/json", bytes.NewReader(body))
+		req, err := http.NewRequest("POST", baseURL, bytes.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		// Add API key from environment
+		apiKey := os.Getenv("HELIXAGENT_API_KEY")
+		if apiKey != "" {
+			req.Header.Set("Authorization", "Bearer "+apiKey)
+		}
+
+		resp, err := client.Do(req)
 		if err != nil {
 			t.Skipf("Debate system not available: %v", err)
 		}
