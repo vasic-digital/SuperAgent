@@ -20,6 +20,8 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 - [AI Coding CLI Agents](guides/AI_CODING_CLI_AGENTS_GUIDE.md) - CLI agent usage
 - [Operational Guide](guides/OPERATIONAL_GUIDE.md) - Day-to-day operations
 - [Analytics Configuration](guides/ANALYTICS_CONFIGURATION_GUIDE.md) - Metrics setup
+- [SpecKit User Guide](guides/SPECKIT_USER_GUIDE.md) - 7-phase development flow and auto-activation
+- [Constitution Watcher Guide](guides/CONSTITUTION_WATCHER_GUIDE.md) - Auto-update Constitution management
 
 ### Deployment
 - [Deployment Guide](deployment/DEPLOYMENT_GUIDE.md) - Main deployment guide
@@ -97,15 +99,19 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 - **Multi-Provider Support**: 21 LLM providers including Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, xAI/Grok, Cohere, Perplexity, Groq, and more
 - **Embedding Providers**: 13 embedding providers with 40+ models (OpenAI, Cohere, Voyage, Jina, Google, Bedrock, etc.)
 - **Protocol Support**: 35 MCP implementations (19 adapters + 16 servers), 10 LSP servers, ACP integration
+- **Modular Architecture**: 20 extracted modules (EventBus, Concurrency, Observability, Auth, Storage, Streaming, Security, VectorDB, Embeddings, Database, Cache, Messaging, Formatters, MCP, RAG, Memory, Optimization, Plugins, Containers, Challenges)
 - **Dynamic Provider Selection**: Real-time LLMsVerifier scores for optimal provider routing
+- **SpecKit Auto-Activation**: Intelligent 7-phase development flow triggered automatically for large changes
+- **Constitution Watcher**: Auto-update Constitution on project changes with background monitoring
 - **Cognee Integration**: AI Memory Engine with knowledge graphs and semantic search
 - **AI Debate System**: Advanced multi-agent debate orchestration (5 positions x 3 LLMs = 15 total)
 - **Power Features**: RAG, Memory Management, Semantic Routing, Agentic Workflows, Security Framework, and more
-- **Enterprise Monitoring**: Comprehensive metrics and observability
+- **Enterprise Monitoring**: Comprehensive metrics and observability with OpenTelemetry
+- **BigData Integration**: Infinite context, distributed memory, knowledge graph streaming
 
 > See **[FEATURES.md](FEATURES.md)** for the complete reference with all 24+ power features.
 - **Protocol Support**: MCP, LSP, and ACP integration
-- **Security Testing**: LLM penetration testing framework
+- **Security Testing**: LLM penetration testing framework with guardrails
 - **Extensible**: Plugin architecture for custom integrations
 
 ## Quick Links
@@ -115,4 +121,4 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 
 ---
 
-*Last updated: January 21, 2026*
+*Last updated: February 10, 2026*
