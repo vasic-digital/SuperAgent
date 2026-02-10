@@ -108,16 +108,19 @@ func TestValidationPipeline_Validate_WithBlockers(t *testing.T) {
 	config := DefaultPipelineConfig()
 	pipeline := NewValidationPipeline(config)
 
-	pipeline.RegisterValidator(PassInitial, &MockValidator{
-		passResult: &ValidationResult{
-			Pass:   PassInitial,
-			Passed: true,
-			Score:  0.7,
-			Issues: []*ValidationIssue{
-				{Severity: SeverityBlocker, Description: "Critical bug"},
+	// Register validators for all enabled passes
+	for pass := range config.PassConfigs {
+		pipeline.RegisterValidator(pass, &MockValidator{
+			passResult: &ValidationResult{
+				Pass:   pass,
+				Passed: true,
+				Score:  0.7,
+				Issues: []*ValidationIssue{
+					{Severity: SeverityBlocker, Description: "Critical bug"},
+				},
 			},
-		},
-	})
+		})
+	}
 
 	artifact := &Artifact{
 		Type:    ArtifactCode,

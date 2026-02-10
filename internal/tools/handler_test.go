@@ -4,6 +4,7 @@ import (
 	"context"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1040,13 +1041,19 @@ func TestPRHandler_Execute_ViewWithPRNumber(t *testing.T) {
 }
 
 func TestIssueHandler_Execute_CreateWithOptions(t *testing.T) {
+	// Skip in short mode to avoid long timeouts
+	if testing.Short() {
+		t.Skip("Skipping in short mode")
+	}
+
 	// Skip this test if gh CLI is available to avoid creating real issues
 	if _, err := exec.LookPath("gh"); err == nil {
 		t.Skip("Skipping test: gh CLI is available and would create real issues")
 	}
 
 	handler := &IssueHandler{}
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	result, _ := handler.Execute(ctx, map[string]interface{}{
 		"action": "create",
@@ -1059,13 +1066,19 @@ func TestIssueHandler_Execute_CreateWithOptions(t *testing.T) {
 }
 
 func TestWorkflowHandler_Execute_RunWithOptions(t *testing.T) {
+	// Skip in short mode to avoid long timeouts
+	if testing.Short() {
+		t.Skip("Skipping in short mode")
+	}
+
 	// Skip this test if gh CLI is available to avoid running real workflows
 	if _, err := exec.LookPath("gh"); err == nil {
 		t.Skip("Skipping test: gh CLI is available and would run real workflows")
 	}
 
 	handler := &WorkflowHandler{}
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	result, _ := handler.Execute(ctx, map[string]interface{}{
 		"action":      "run",
