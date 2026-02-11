@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"dev.helix.agent/internal/services"
 )
@@ -146,16 +147,23 @@ func TestDebateIntegration_ValidationPipelineExecution(t *testing.T) {
 	ctx := context.Background()
 	result, err := service.ConductDebate(ctx, config)
 
-	// Validation should run even if debate fails
-	if result != nil {
-		// Check if validation was attempted
-		if result.ValidationResult != nil {
-			assert.NotNil(t, result.ValidationResult, "Validation result should be present")
-			t.Log("4-Pass Validation Pipeline was executed")
-		}
+	// Debate completes even without a registered "mock" provider
+	// (the service handles provider failures gracefully)
+	require.NotNil(t, result, "Debate should return a result even when providers fail")
+	assert.NotEmpty(t, result.DebateID, "Result should have debate ID")
+	assert.Equal(t, config.Topic, result.Topic, "Topic should match")
+
+	// Validation pipeline is attempted regardless of provider availability
+	// ValidationResult may be a typed nil interface when no content was generated
+	if result.ValidationResult != nil {
+		t.Log("4-Pass Validation Pipeline was executed")
+	} else {
+		t.Log("Validation skipped (no content generated due to mock provider)")
 	}
 
+	// The debate should complete without panic
 	t.Logf("Debate result error: %v", err)
+	t.Logf("Specialized role: %s", result.SpecializedRole)
 }
 
 // TestDebateIntegration_SpecializedRoleSelection tests role selection

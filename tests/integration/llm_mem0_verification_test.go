@@ -1,5 +1,7 @@
 // Package integration provides comprehensive integration tests for HelixAgent.
-// This file contains verification tests for all LLM providers and Cognee integration.
+// This file contains verification tests for LLM providers and Mem0 Memory integration.
+// Converted from Cognee verification tests to validate the Mem0 memory system
+// which is the primary memory backend for HelixAgent.
 package integration
 
 import (
@@ -34,10 +36,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestLLMProviderVerification_AllProviders tests all LLM providers
-func TestLLMProviderVerification_AllProviders(t *testing.T) {
+// TestLLMProviderMem0Verification_AllProviders tests all LLM providers with Mem0 Memory context
+func TestLLMProviderMem0Verification_AllProviders(t *testing.T) {
 	if testing.Short() {
-		t.Log("Short mode - skipping full LLM verification test (acceptable)")
+		t.Log("Short mode - skipping full LLM Mem0 Memory verification test (acceptable)")
 		return
 	}
 
@@ -66,7 +68,7 @@ func TestLLMProviderVerification_AllProviders(t *testing.T) {
 					{Type: "text", Text: "Hello! I'm Claude, an AI assistant."},
 				},
 				Model:      req.Model,
-				StopReason: strPtr("end_turn"),
+				StopReason: mem0StrPtr("end_turn"),
 				Usage: claude.ClaudeUsage{
 					InputTokens:  10,
 					OutputTokens: 15,
@@ -541,10 +543,11 @@ func TestLLMProviderVerification_AllProviders(t *testing.T) {
 	})
 }
 
-// TestCogneeIntegrationVerification tests the Cognee service integration
-func TestCogneeIntegrationVerification(t *testing.T) {
+// TestMem0IntegrationVerification tests the Mem0 Memory service integration
+// via the HelixAgent memory endpoints (proxied through /v1/cognee/ routes)
+func TestMem0IntegrationVerification(t *testing.T) {
 	if testing.Short() {
-		t.Log("Short mode - skipping Cognee integration test (acceptable)")
+		t.Log("Short mode - skipping Mem0 Memory integration test (acceptable)")
 		return
 	}
 
@@ -552,10 +555,10 @@ func TestCogneeIntegrationVerification(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 
-	t.Run("CogneeServiceConfiguration", func(t *testing.T) {
+	t.Run("Mem0ServiceConfiguration", func(t *testing.T) {
 		cfg := &services.CogneeServiceConfig{
 			Enabled:                true,
-			BaseURL:                "http://localhost:8000",
+			BaseURL:                "http://localhost:7061/v1/cognee",
 			Timeout:                30 * time.Second,
 			AuthEmail:              "test@example.com",
 			AuthPassword:           "testpass123",
@@ -579,17 +582,18 @@ func TestCogneeIntegrationVerification(t *testing.T) {
 			AsyncProcessing:        true,
 		}
 
-		service := services.NewCogneeServiceWithConfig(cfg, logger)
-		require.NotNil(t, service)
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logger)
+		require.NotNil(t, mem0Service)
 
-		config := service.GetConfig()
-		assert.True(t, config.Enabled)
-		assert.True(t, config.EnableGraphReasoning)
-		assert.True(t, config.EnableCodeIntelligence)
-		assert.Equal(t, 0.7, config.RelevanceThreshold)
+		mem0Config := mem0Service.GetConfig()
+		assert.True(t, mem0Config.Enabled)
+		assert.True(t, mem0Config.EnableGraphReasoning)
+		assert.True(t, mem0Config.EnableCodeIntelligence)
+		assert.Equal(t, 0.7, mem0Config.RelevanceThreshold)
 	})
 
-	t.Run("CogneeServiceWithMockAPI", func(t *testing.T) {
+	t.Run("Mem0ServiceWithMockAPI", func(t *testing.T) {
+		// Mock server simulates the HelixAgent memory endpoints at /v1/cognee/
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch {
 			case r.URL.Path == "/":
@@ -678,33 +682,34 @@ func TestCogneeIntegrationVerification(t *testing.T) {
 			CombineSearchResults: true,
 		}
 
-		service := services.NewCogneeServiceWithConfig(cfg, logger)
-		service.SetReady(true)
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logger)
+		mem0Service.SetReady(true)
 
-		isHealthy := service.IsHealthy(ctx)
+		isHealthy := mem0Service.IsHealthy(ctx)
 		assert.True(t, isHealthy)
 
-		memory, err := service.AddMemory(ctx, "Test content about AI and LLMs", "default", "text", map[string]interface{}{
+		memory, err := mem0Service.AddMemory(ctx, "Test content about AI and LLMs", "default", "text", map[string]interface{}{
 			"source": "test",
 		})
 		require.NoError(t, err)
 		assert.NotNil(t, memory)
 		assert.Equal(t, "mem-001", memory.ID)
 
-		searchResult, err := service.SearchMemory(ctx, "LLM testing", "default", 10)
+		searchResult, err := mem0Service.SearchMemory(ctx, "LLM testing", "default", 10)
 		require.NoError(t, err)
 		assert.NotNil(t, searchResult)
 		assert.Greater(t, searchResult.TotalResults, 0)
 
-		err = service.Cognify(ctx, []string{"default"})
+		err = mem0Service.Cognify(ctx, []string{"default"})
 		require.NoError(t, err)
 
-		stats := service.GetStats()
+		stats := mem0Service.GetStats()
 		assert.Greater(t, stats.TotalMemoriesStored, int64(0))
 		assert.Greater(t, stats.TotalSearches, int64(0))
 	})
 
-	t.Run("CogneeEnhancedContext", func(t *testing.T) {
+	t.Run("Mem0EnhancedContext", func(t *testing.T) {
+		// Mock server simulates the HelixAgent Mem0 Memory endpoints
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.Path {
 			case "/":
@@ -748,8 +753,8 @@ func TestCogneeIntegrationVerification(t *testing.T) {
 			CombineSearchResults: true,
 		}
 
-		service := services.NewCogneeServiceWithConfig(cfg, logger)
-		service.SetReady(true)
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logger)
+		mem0Service.SetReady(true)
 
 		req := &models.LLMRequest{
 			ID:     "test-req-1",
@@ -759,17 +764,18 @@ func TestCogneeIntegrationVerification(t *testing.T) {
 			},
 		}
 
-		enhanced, err := service.EnhanceRequest(ctx, req)
+		enhanced, err := mem0Service.EnhanceRequest(ctx, req)
 		require.NoError(t, err)
 		assert.NotNil(t, enhanced)
 		assert.NotEmpty(t, enhanced.OriginalPrompt)
 	})
 }
 
-// TestStartupVerifierPipeline tests the complete startup verification pipeline
-func TestStartupVerifierPipeline(t *testing.T) {
+// TestMem0StartupVerifierPipeline tests the complete startup verification pipeline
+// with Mem0 Memory as the primary memory backend
+func TestMem0StartupVerifierPipeline(t *testing.T) {
 	if testing.Short() {
-		t.Log("Short mode - skipping startup verifier test (acceptable)")
+		t.Log("Short mode - skipping Mem0 startup verifier test (acceptable)")
 		return
 	}
 
@@ -795,7 +801,7 @@ func TestStartupVerifierPipeline(t *testing.T) {
 		assert.False(t, sv.IsInitialized())
 	})
 
-	t.Run("ProviderDiscoveryMock", func(t *testing.T) {
+	t.Run("Mem0ProviderDiscoveryMock", func(t *testing.T) {
 		origDeepSeekKey := os.Getenv("DEEPSEEK_API_KEY")
 		defer os.Setenv("DEEPSEEK_API_KEY", origDeepSeekKey)
 
@@ -812,7 +818,7 @@ func TestStartupVerifierPipeline(t *testing.T) {
 		assert.Empty(t, providers)
 	})
 
-	t.Run("DebateTeamSelection", func(t *testing.T) {
+	t.Run("Mem0DebateTeamSelection", func(t *testing.T) {
 		cfg := verifier.DefaultStartupConfig()
 		cfg.MinScore = 5.0
 		cfg.PositionCount = 5
@@ -826,10 +832,10 @@ func TestStartupVerifierPipeline(t *testing.T) {
 	})
 }
 
-// TestLLMProviderConcurrency tests concurrent provider access
-func TestLLMProviderConcurrency(t *testing.T) {
+// TestMem0LLMProviderConcurrency tests concurrent provider access with Mem0 Memory context
+func TestMem0LLMProviderConcurrency(t *testing.T) {
 	if testing.Short() {
-		t.Log("Short mode - skipping concurrency test (acceptable)")
+		t.Log("Short mode - skipping Mem0 concurrency test (acceptable)")
 		return
 	}
 
@@ -854,7 +860,7 @@ func TestLLMProviderConcurrency(t *testing.T) {
 				{Type: "text", Text: fmt.Sprintf("Response %d", count)},
 			},
 			Model:      "claude-3-sonnet",
-			StopReason: strPtr("end_turn"),
+			StopReason: mem0StrPtr("end_turn"),
 			Usage:      claude.ClaudeUsage{InputTokens: 10, OutputTokens: 5},
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -916,10 +922,10 @@ func TestLLMProviderConcurrency(t *testing.T) {
 	})
 }
 
-// TestProviderToolCalling tests tool/function calling capabilities
-func TestProviderToolCalling(t *testing.T) {
+// TestMem0ProviderToolCalling tests tool/function calling capabilities with Mem0 Memory
+func TestMem0ProviderToolCalling(t *testing.T) {
 	if testing.Short() {
-		t.Log("Short mode - skipping tool calling test (acceptable)")
+		t.Log("Short mode - skipping Mem0 tool calling test (acceptable)")
 		return
 	}
 
@@ -949,7 +955,7 @@ func TestProviderToolCalling(t *testing.T) {
 					},
 				},
 				Model:      "claude-3-sonnet",
-				StopReason: strPtr("tool_use"),
+				StopReason: mem0StrPtr("tool_use"),
 				Usage:      claude.ClaudeUsage{InputTokens: 20, OutputTokens: 15},
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -998,10 +1004,10 @@ func TestProviderToolCalling(t *testing.T) {
 	})
 }
 
-// TestEndToEndLLMWorkflow tests a complete end-to-end workflow
-func TestEndToEndLLMWorkflow(t *testing.T) {
+// TestMem0EndToEndLLMWorkflow tests a complete end-to-end workflow with Mem0 Memory
+func TestMem0EndToEndLLMWorkflow(t *testing.T) {
 	if testing.Short() {
-		t.Log("Short mode - skipping E2E workflow test (acceptable)")
+		t.Log("Short mode - skipping Mem0 E2E workflow test (acceptable)")
 		return
 	}
 
@@ -1009,13 +1015,13 @@ func TestEndToEndLLMWorkflow(t *testing.T) {
 	logger := logrus.New()
 
 	t.Run("MultiProviderWorkflow", func(t *testing.T) {
-		claudeServer := createMockClaudeServer(t)
+		claudeServer := createMem0MockClaudeServer(t)
 		defer claudeServer.Close()
 
-		deepseekServer := createMockDeepSeekServer(t)
+		deepseekServer := createMem0MockDeepSeekServer(t)
 		defer deepseekServer.Close()
 
-		geminiServer := createMockGeminiServer(t)
+		geminiServer := createMem0MockGeminiServer(t)
 		defer geminiServer.Close()
 
 		claudeProvider := claude.NewClaudeProvider("test-key", claudeServer.URL, "claude-3-sonnet")
@@ -1067,7 +1073,7 @@ func TestEndToEndLLMWorkflow(t *testing.T) {
 
 				logger.WithFields(logrus.Fields{
 					"provider":   name,
-					"content":    resp.Content[:llmMinInt(50, len(resp.Content))] + "...",
+					"content":    resp.Content[:mem0MinInt(50, len(resp.Content))] + "...",
 					"tokens":     resp.TokensUsed,
 					"confidence": resp.Confidence,
 				}).Info("Provider responded")
@@ -1085,7 +1091,7 @@ func TestEndToEndLLMWorkflow(t *testing.T) {
 	})
 }
 
-func createMockClaudeServer(t *testing.T) *httptest.Server {
+func createMem0MockClaudeServer(t *testing.T) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := claude.ClaudeResponse{
 			ID:   "msg-claude",
@@ -1095,7 +1101,7 @@ func createMockClaudeServer(t *testing.T) *httptest.Server {
 				{Type: "text", Text: "Claude explanation of recursion: A function that calls itself."},
 			},
 			Model:      "claude-3-sonnet",
-			StopReason: strPtr("end_turn"),
+			StopReason: mem0StrPtr("end_turn"),
 			Usage:      claude.ClaudeUsage{InputTokens: 20, OutputTokens: 30},
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -1103,7 +1109,7 @@ func createMockClaudeServer(t *testing.T) *httptest.Server {
 	}))
 }
 
-func createMockDeepSeekServer(t *testing.T) *httptest.Server {
+func createMem0MockDeepSeekServer(t *testing.T) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]interface{}{
 			"id":      "chatcmpl-deepseek",
@@ -1131,7 +1137,7 @@ func createMockDeepSeekServer(t *testing.T) *httptest.Server {
 	}))
 }
 
-func createMockGeminiServer(t *testing.T) *httptest.Server {
+func createMem0MockGeminiServer(t *testing.T) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]interface{}{
 			"candidates": []map[string]interface{}{
@@ -1156,21 +1162,23 @@ func createMockGeminiServer(t *testing.T) *httptest.Server {
 	}))
 }
 
-func strPtr(s string) *string {
+// mem0StrPtr returns a pointer to the given string (helper for Mem0 verification tests)
+func mem0StrPtr(s string) *string {
 	return &s
 }
 
-func llmMinInt(a, b int) int {
+// mem0MinInt returns the minimum of two ints (helper for Mem0 verification tests)
+func mem0MinInt(a, b int) int {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-// TestCogneeServiceFromConfig tests Cognee service creation from config
-func TestCogneeServiceFromConfig(t *testing.T) {
+// TestMem0ServiceFromConfig tests Mem0 Memory service creation from config
+func TestMem0ServiceFromConfig(t *testing.T) {
 	if testing.Short() {
-		t.Log("Short mode - skipping Cognee config test (acceptable)")
+		t.Log("Short mode - skipping Mem0 Memory config test (acceptable)")
 		return
 	}
 
@@ -1180,19 +1188,40 @@ func TestCogneeServiceFromConfig(t *testing.T) {
 		cfg := &config.Config{
 			Cognee: config.CogneeConfig{
 				Enabled:     true,
-				BaseURL:     "http://localhost:8000",
+				BaseURL:     "http://localhost:7061/v1/cognee",
 				APIKey:      "",
 				Timeout:     30 * time.Second,
 				AutoCognify: true,
 			},
 		}
 
-		service := services.NewCogneeService(cfg, logger)
-		require.NotNil(t, service)
+		mem0Service := services.NewCogneeService(cfg, logger)
+		require.NotNil(t, mem0Service)
 
-		serviceConfig := service.GetConfig()
-		assert.True(t, serviceConfig.Enabled)
-		assert.Equal(t, "http://localhost:8000", serviceConfig.BaseURL)
-		assert.True(t, serviceConfig.AutoCognify)
+		mem0Config := mem0Service.GetConfig()
+		assert.True(t, mem0Config.Enabled)
+		assert.Equal(t, "http://localhost:7061/v1/cognee", mem0Config.BaseURL)
+		assert.True(t, mem0Config.AutoCognify)
+	})
+
+	t.Run("CreateMemoryServiceFromConfig", func(t *testing.T) {
+		cfg := &config.Config{
+			MemoryEnabled: true,
+			Cognee: config.CogneeConfig{
+				Enabled:     true,
+				BaseURL:     "http://localhost:7061/v1/cognee",
+				Timeout:     30 * time.Second,
+				AutoCognify: true,
+			},
+		}
+
+		memService := services.NewMemoryService(cfg)
+		require.NotNil(t, memService)
+		assert.True(t, memService.IsEnabled())
+
+		stats := memService.GetStats()
+		assert.NotNil(t, stats)
+		assert.True(t, stats["enabled"].(bool))
 	})
 }
+

@@ -901,11 +901,12 @@ func TestVerificationTimeout(t *testing.T) {
 			"TrustOAuthOnFailure should be true to include OAuth providers")
 	})
 
-	t.Run("OAuth priority boost is applied", func(t *testing.T) {
+	t.Run("OAuth priority boost defaults to zero for pure score-based ranking", func(t *testing.T) {
 		cfg := verifier.DefaultStartupConfig()
 
-		// OAuth providers should get a score boost for prioritization
-		assert.Greater(t, cfg.OAuthPriorityBoost, 0.0,
-			"OAuth providers should have a priority boost")
+		// OAuthPriorityBoost is 0.0 by default - all providers are sorted purely by score
+		// OAuth providers are still included via TrustOAuthOnFailure
+		assert.Equal(t, 0.0, cfg.OAuthPriorityBoost,
+			"OAuthPriorityBoost should be 0.0 for pure score-based ranking")
 	})
 }

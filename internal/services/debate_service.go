@@ -3026,33 +3026,36 @@ func (ds *DebateService) validateDebateResult(
 func (ds *DebateService) detectLanguage(content string) string {
 	contentLower := strings.ToLower(content)
 
-	// Language detection patterns
-	languagePatterns := map[string][]string{
-		"python":     {"def ", "import ", "class ", "from ", "print("},
-		"javascript": {"function ", "const ", "let ", "var ", "=>", "console.log"},
-		"typescript": {"interface ", "type ", ": string", ": number", "implements"},
-		"go":         {"func ", "package ", "import ", "type ", "var "},
-		"rust":       {"fn ", "let ", "mut ", "impl ", "struct "},
-		"java":       {"public class", "private ", "void ", "System.out"},
-		"c++":        {"#include", "std::", "namespace ", "template<"},
-		"c":          {"#include", "int main", "printf", "malloc"},
+	// Language detection patterns ordered by specificity (most specific first)
+	type langPatterns struct {
+		lang     string
+		patterns []string
+	}
+	orderedPatterns := []langPatterns{
+		{"java", []string{"public class", "private ", "void ", "system.out", "public static"}},
+		{"typescript", []string{"interface ", "type ", ": string", ": number", "implements"}},
+		{"c++", []string{"#include", "std::", "namespace ", "template<"}},
+		{"rust", []string{"fn ", "let ", "mut ", "impl ", "struct ", "println!"}},
+		{"go", []string{"func ", "package ", "import (", "type ", "fmt."}},
+		{"javascript", []string{"function ", "const ", "let ", "var ", "=>", "console.log"}},
+		{"python", []string{"def ", "import ", "from ", "print(", "self."}},
+		{"c", []string{"#include", "int main", "printf", "malloc"}},
 	}
 
-	// Find language with most pattern matches
+	// Find language with most pattern matches; on tie, first in order wins
 	maxMatches := 0
 	detectedLang := "text"
 
-	for lang, patterns := range languagePatterns {
+	for _, lp := range orderedPatterns {
 		matchCount := 0
-		for _, pattern := range patterns {
+		for _, pattern := range lp.patterns {
 			if strings.Contains(contentLower, pattern) {
 				matchCount++
 			}
 		}
-		// Language with most matches wins
 		if matchCount > maxMatches {
 			maxMatches = matchCount
-			detectedLang = lang
+			detectedLang = lp.lang
 		}
 	}
 
@@ -3103,10 +3106,12 @@ func (ds *DebateService) enrichDebateContext(
 // selectSpecializedRole determines which specialized role should handle the task
 func (ds *DebateService) selectSpecializedRole(ctx context.Context, topic string, context map[string]interface{}) string {
 	topicLower := strings.ToLower(topic)
+	words := strings.Fields(topicLower)
 
 	// Map keywords to specialized roles
+	// Keywords starting with "~" require whole-word matching to avoid substring false positives
 	roleKeywords := map[string][]string{
-		"generator":            {"write", "create", "implement", "build", "develop", "code"},
+		"generator":            {"write", "create", "implement", "build", "develop", "~code"},
 		"refactorer":           {"refactor", "improve", "restructure", "clean", "optimize code"},
 		"performance_analyzer": {"performance", "optimize", "speed up", "faster", "efficiency", "benchmark"},
 		"security_analyst":     {"security", "vulnerability", "exploit", "audit", "penetration", "safe"},
@@ -3121,17 +3126,26 @@ func (ds *DebateService) selectSpecializedRole(ctx context.Context, topic string
 	roleScores := make(map[string]int)
 	for role, keywords := range roleKeywords {
 		for _, keyword := range keywords {
-			if strings.Contains(topicLower, keyword) {
+			if strings.HasPrefix(keyword, "~") {
+				// Whole-word match: check against individual words
+				target := keyword[1:]
+				for _, w := range words {
+					if w == target {
+						roleScores[role]++
+						break
+					}
+				}
+			} else if strings.Contains(topicLower, keyword) {
 				roleScores[role]++
 			}
 		}
 	}
 
-	// Find highest scoring role
+	// Find highest scoring role (deterministic: on tie, prefer alphabetically first)
 	maxScore := 0
 	selectedRole := "" // default to empty (no specialized role)
 	for role, score := range roleScores {
-		if score > maxScore {
+		if score > maxScore || (score == maxScore && score > 0 && role < selectedRole) {
 			maxScore = score
 			selectedRole = role
 		}

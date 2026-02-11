@@ -30,7 +30,9 @@ func TestMemoryService_NewMemoryService(t *testing.T) {
 
 	t.Run("Enabled when AutoCognify is true", func(t *testing.T) {
 		cfg := &config.Config{
+			MemoryEnabled: true,
 			Cognee: config.CogneeConfig{
+				Enabled:     true,
 				AutoCognify: true,
 				BaseURL:     "http://localhost:7061",
 				APIKey:      "test-key",
@@ -162,7 +164,9 @@ func TestMemoryService_GetStats(t *testing.T) {
 
 	t.Run("Stats for enabled service", func(t *testing.T) {
 		cfg := &config.Config{
+			MemoryEnabled: true,
 			Cognee: config.CogneeConfig{
+				Enabled:     true,
 				AutoCognify: true,
 				BaseURL:     "http://localhost:7061",
 				APIKey:      "test-key",

@@ -21,16 +21,17 @@ import (
 )
 
 // =============================================================================
-// TEST SUITE: Cognee Resilience and Error Handling
+// TEST SUITE: Mem0 Memory Resilience and Error Handling
 // =============================================================================
-// These tests verify that Cognee integration handles all error scenarios
-// gracefully, preventing system failures and ensuring continuous operation.
+// These tests verify that the Mem0 Memory integration handles all error
+// scenarios gracefully, preventing system failures and ensuring continuous
+// operation.
 // =============================================================================
 
-// TestCogneeDatasetManagementResilience tests dataset creation and management resilience
-func TestCogneeDatasetManagementResilience(t *testing.T) {
+// TestMem0DatasetManagementResilience tests dataset creation and management resilience
+func TestMem0DatasetManagementResilience(t *testing.T) {
 	t.Run("EnsureDefaultDataset creates dataset if not exists", func(t *testing.T) {
-		// Create mock server that simulates Cognee API
+		// Create mock server that simulates the Mem0 Memory service API
 		datasetsCreated := make(map[string]bool)
 		var mu sync.Mutex
 
@@ -83,10 +84,10 @@ func TestCogneeDatasetManagementResilience(t *testing.T) {
 			DefaultDataset: "test-default",
 			Timeout:        10 * time.Second,
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
 		// Call EnsureDefaultDataset
-		err := service.EnsureDefaultDataset(context.Background())
+		err := mem0Service.EnsureDefaultDataset(context.Background())
 		assert.NoError(t, err)
 
 		// Verify dataset was created
@@ -133,9 +134,9 @@ func TestCogneeDatasetManagementResilience(t *testing.T) {
 			DefaultDataset: "default",
 			Timeout:        10 * time.Second,
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
-		err := service.EnsureDefaultDataset(context.Background())
+		err := mem0Service.EnsureDefaultDataset(context.Background())
 		assert.NoError(t, err)
 
 		// Should not try to create since dataset exists
@@ -143,8 +144,8 @@ func TestCogneeDatasetManagementResilience(t *testing.T) {
 	})
 }
 
-// TestCogneeSearchErrorHandling tests search error scenarios
-func TestCogneeSearchErrorHandling(t *testing.T) {
+// TestMem0SearchErrorHandling tests search error scenarios for the Mem0 Memory system
+func TestMem0SearchErrorHandling(t *testing.T) {
 	t.Run("Search handles NoDataError gracefully", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch {
@@ -162,7 +163,7 @@ func TestCogneeSearchErrorHandling(t *testing.T) {
 				// Return NoDataError
 				w.WriteHeader(http.StatusNotFound)
 				json.NewEncoder(w).Encode(map[string]string{
-					"error": "NoDataError: No data found in the system",
+					"error": "NoDataError: No data found in the memory system",
 				})
 
 			default:
@@ -179,10 +180,10 @@ func TestCogneeSearchErrorHandling(t *testing.T) {
 			DefaultSearchLimit: 10,
 			SearchTypes:        []string{"CHUNKS"},
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
 		// Search should return empty results, not error
-		result, err := service.SearchMemory(context.Background(), "test query", "default", 10)
+		result, err := mem0Service.SearchMemory(context.Background(), "test query", "default", 10)
 		assert.NoError(t, err, "Search should not fail on NoDataError")
 		assert.NotNil(t, result)
 		assert.Equal(t, 0, result.TotalResults)
@@ -222,9 +223,9 @@ func TestCogneeSearchErrorHandling(t *testing.T) {
 			DefaultSearchLimit: 10,
 			SearchTypes:        []string{"CHUNKS"},
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
-		result, err := service.SearchMemory(context.Background(), "test query", "default", 10)
+		result, err := mem0Service.SearchMemory(context.Background(), "test query", "default", 10)
 		assert.NoError(t, err, "Search should not fail on DatasetNotFoundError")
 		assert.NotNil(t, result)
 		assert.Equal(t, 0, result.TotalResults)
@@ -262,21 +263,21 @@ func TestCogneeSearchErrorHandling(t *testing.T) {
 			DefaultSearchLimit: 10,
 			SearchTypes:        []string{"CHUNKS"},
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
 		// Create context with short timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
-		result, err := service.SearchMemory(ctx, "test query", "default", 10)
+		result, err := mem0Service.SearchMemory(ctx, "test query", "default", 10)
 		// Should return gracefully, not hang
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
 	})
 }
 
-// TestCogneeConcurrentSearchResilience tests concurrent search handling
-func TestCogneeConcurrentSearchResilience(t *testing.T) {
+// TestMem0ConcurrentSearchResilience tests concurrent search handling for the Mem0 Memory system
+func TestMem0ConcurrentSearchResilience(t *testing.T) {
 	t.Run("Multiple concurrent searches handled gracefully", func(t *testing.T) {
 		var requestCount int32
 
@@ -315,7 +316,7 @@ func TestCogneeConcurrentSearchResilience(t *testing.T) {
 			DefaultSearchLimit: 10,
 			SearchTypes:        []string{"CHUNKS", "GRAPH_COMPLETION", "RAG_COMPLETION"},
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
 		var wg sync.WaitGroup
 		errors := make(chan error, 10)
@@ -325,7 +326,7 @@ func TestCogneeConcurrentSearchResilience(t *testing.T) {
 			wg.Add(1)
 			go func(idx int) {
 				defer wg.Done()
-				_, err := service.SearchMemory(context.Background(), fmt.Sprintf("query %d", idx), "default", 10)
+				_, err := mem0Service.SearchMemory(context.Background(), fmt.Sprintf("query %d", idx), "default", 10)
 				if err != nil {
 					errors <- err
 				}
@@ -338,16 +339,16 @@ func TestCogneeConcurrentSearchResilience(t *testing.T) {
 		// All searches should complete without errors
 		errorCount := 0
 		for err := range errors {
-			t.Logf("Search error: %v", err)
+			t.Logf("Mem0 memory search error: %v", err)
 			errorCount++
 		}
 
-		assert.Equal(t, 0, errorCount, "All concurrent searches should complete without errors")
+		assert.Equal(t, 0, errorCount, "All concurrent memory searches should complete without errors")
 	})
 }
 
-// TestCogneeServiceHealthCheck tests health check functionality
-func TestCogneeServiceHealthCheck(t *testing.T) {
+// TestMem0ServiceHealthCheck tests health check functionality for the Mem0 Memory service
+func TestMem0ServiceHealthCheck(t *testing.T) {
 	t.Run("IsHealthy returns true for healthy service", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/" && r.Method == "GET" {
@@ -364,10 +365,10 @@ func TestCogneeServiceHealthCheck(t *testing.T) {
 			BaseURL: server.URL,
 			Timeout: 10 * time.Second,
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
-		healthy := service.IsHealthy(context.Background())
-		assert.True(t, healthy, "Service should be healthy")
+		healthy := mem0Service.IsHealthy(context.Background())
+		assert.True(t, healthy, "Mem0 Memory service should be healthy")
 	})
 
 	t.Run("IsHealthy returns false for unavailable service", func(t *testing.T) {
@@ -376,10 +377,10 @@ func TestCogneeServiceHealthCheck(t *testing.T) {
 			BaseURL: "http://localhost:59999", // Non-existent port
 			Timeout: 2 * time.Second,
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
-		healthy := service.IsHealthy(context.Background())
-		assert.False(t, healthy, "Service should not be healthy")
+		healthy := mem0Service.IsHealthy(context.Background())
+		assert.False(t, healthy, "Mem0 Memory service should not be healthy")
 	})
 
 	t.Run("IsHealthy returns false for slow service", func(t *testing.T) {
@@ -404,18 +405,18 @@ func TestCogneeServiceHealthCheck(t *testing.T) {
 			BaseURL: server.URL,
 			Timeout: 1 * time.Second,
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
-		healthy := service.IsHealthy(ctx)
-		assert.False(t, healthy, "Slow service should not be considered healthy")
+		healthy := mem0Service.IsHealthy(ctx)
+		assert.False(t, healthy, "Slow Mem0 Memory service should not be considered healthy")
 	})
 }
 
-// TestCogneeAuthenticationResilience tests authentication error handling
-func TestCogneeAuthenticationResilience(t *testing.T) {
+// TestMem0AuthenticationResilience tests authentication error handling for the Mem0 Memory service
+func TestMem0AuthenticationResilience(t *testing.T) {
 	t.Run("Service works without authentication", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch {
@@ -446,17 +447,17 @@ func TestCogneeAuthenticationResilience(t *testing.T) {
 			DefaultDataset: "default",
 			Timeout:        10 * time.Second,
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
 		// Should work despite auth failure
-		datasets, err := service.ListDatasets(context.Background())
+		datasets, err := mem0Service.ListDatasets(context.Background())
 		assert.NoError(t, err)
 		assert.Len(t, datasets, 1)
 	})
 }
 
-// TestCogneeLiveIntegrationResilience tests live Cognee resilience
-func TestCogneeLiveIntegrationResilience(t *testing.T) {
+// TestMem0LiveIntegrationResilience tests live Mem0 Memory resilience via HelixAgent endpoints
+func TestMem0LiveIntegrationResilience(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - live integration test (acceptable)")
 		return
@@ -480,8 +481,8 @@ func TestCogneeLiveIntegrationResilience(t *testing.T) {
 		return
 	}
 
-	t.Run("Cognee errors don't break chat completions", func(t *testing.T) {
-		// Even if Cognee has issues, chat should work
+	t.Run("Mem0 Memory errors don't break chat completions", func(t *testing.T) {
+		// Even if the Mem0 Memory system has issues, chat should work
 		reqBody := map[string]interface{}{
 			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
@@ -501,7 +502,7 @@ func TestCogneeLiveIntegrationResilience(t *testing.T) {
 
 		body, _ := io.ReadAll(resp.Body)
 
-		// Should succeed even if Cognee has issues
+		// Should succeed even if the Mem0 Memory system has issues
 		if resp.StatusCode == 502 {
 			t.Logf("Providers temporarily unavailable (acceptable)")
 			return
@@ -516,12 +517,11 @@ func TestCogneeLiveIntegrationResilience(t *testing.T) {
 		assert.Equal(t, "helixagent-ensemble", result["model"])
 	})
 
-	t.Run("Cognee search endpoint handles errors gracefully", func(t *testing.T) {
+	t.Run("Mem0 Memory search endpoint handles errors gracefully", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"query":       "test query that returns no results",
-			"dataset":     "nonexistent-dataset",
-			"limit":       5,
-			"search_type": "CHUNKS",
+			"query":   "test query that returns no results",
+			"dataset": "nonexistent-dataset",
+			"limit":   5,
 		}
 
 		jsonBody, _ := json.Marshal(reqBody)
@@ -539,12 +539,12 @@ func TestCogneeLiveIntegrationResilience(t *testing.T) {
 	})
 }
 
-// TestCogneeConfigurationValidation tests configuration edge cases
-func TestCogneeConfigurationValidation(t *testing.T) {
+// TestMem0ConfigurationValidation tests configuration edge cases for the Mem0 Memory service
+func TestMem0ConfigurationValidation(t *testing.T) {
 	t.Run("Service handles empty config gracefully", func(t *testing.T) {
 		cfg := &services.CogneeServiceConfig{}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
-		assert.NotNil(t, service)
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		assert.NotNil(t, mem0Service)
 	})
 
 	t.Run("Service handles nil logger", func(t *testing.T) {
@@ -552,8 +552,8 @@ func TestCogneeConfigurationValidation(t *testing.T) {
 			Enabled: true,
 			BaseURL: "http://localhost:8000",
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, nil)
-		assert.NotNil(t, service)
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, nil)
+		assert.NotNil(t, mem0Service)
 	})
 
 	t.Run("IsReady reflects service state", func(t *testing.T) {
@@ -561,20 +561,20 @@ func TestCogneeConfigurationValidation(t *testing.T) {
 			Enabled: false, // Disabled
 			BaseURL: "http://localhost:8000",
 		}
-		service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+		mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
 		// Disabled service should still report ready status correctly
-		ready := service.IsReady()
-		assert.False(t, ready, "Uninitialized service should not be ready")
+		ready := mem0Service.IsReady()
+		assert.False(t, ready, "Uninitialized Mem0 Memory service should not be ready")
 	})
 }
 
-// TestCogneeSearchTypeValidation tests search type handling
-func TestCogneeSearchTypeValidation(t *testing.T) {
-	t.Run("Valid search types are accepted", func(t *testing.T) {
-		validTypes := []string{"CHUNKS", "GRAPH_COMPLETION", "RAG_COMPLETION"}
+// TestMem0SearchParameterValidation tests memory search parameter handling
+func TestMem0SearchParameterValidation(t *testing.T) {
+	t.Run("Valid search parameters are accepted", func(t *testing.T) {
+		validSearchTypes := []string{"CHUNKS", "GRAPH_COMPLETION", "RAG_COMPLETION"}
 
-		for _, searchType := range validTypes {
+		for _, searchType := range validSearchTypes {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch {
 				case r.URL.Path == "/" && r.Method == "GET":
@@ -590,7 +590,7 @@ func TestCogneeSearchTypeValidation(t *testing.T) {
 				case r.URL.Path == "/api/v1/search" && r.Method == "POST":
 					var body map[string]interface{}
 					json.NewDecoder(r.Body).Decode(&body)
-					assert.Equal(t, searchType, body["search_type"])
+					assert.Equal(t, searchType, body["searchType"])
 					json.NewEncoder(w).Encode(map[string]interface{}{
 						"results": []interface{}{},
 					})
@@ -608,9 +608,9 @@ func TestCogneeSearchTypeValidation(t *testing.T) {
 				DefaultSearchLimit: 10,
 				SearchTypes:        []string{searchType},
 			}
-			service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+			mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
-			result, err := service.SearchMemory(context.Background(), "test", "default", 10)
+			result, err := mem0Service.SearchMemory(context.Background(), "test", "default", 10)
 			assert.NoError(t, err, "Search type %s should be accepted", searchType)
 			assert.NotNil(t, result)
 
@@ -623,7 +623,7 @@ func TestCogneeSearchTypeValidation(t *testing.T) {
 // Benchmark Tests
 // =============================================================================
 
-func BenchmarkCogneeSearchWithErrors(b *testing.B) {
+func BenchmarkMem0SearchWithErrors(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.URL.Path == "/" && r.Method == "GET":
@@ -657,10 +657,10 @@ func BenchmarkCogneeSearchWithErrors(b *testing.B) {
 		DefaultSearchLimit: 10,
 		SearchTypes:        []string{"CHUNKS"},
 	}
-	service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
+	mem0Service := services.NewCogneeServiceWithConfig(cfg, logrus.New())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = service.SearchMemory(context.Background(), "test", "default", 10)
+		_, _ = mem0Service.SearchMemory(context.Background(), "test", "default", 10)
 	}
 }

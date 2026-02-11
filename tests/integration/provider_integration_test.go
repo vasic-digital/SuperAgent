@@ -705,7 +705,7 @@ func TestStartupVerifier_DefaultConfig(t *testing.T) {
 	assert.Greater(t, config.VerificationTimeout, time.Duration(0))
 	assert.Greater(t, config.MinScore, 0.0)
 	assert.Equal(t, 5, config.PositionCount)
-	assert.Equal(t, 15, config.DebateTeamSize)
+	assert.Equal(t, 25, config.DebateTeamSize) // 5 positions × (1 primary + 4 fallbacks) = 25 max
 }
 
 func TestStartupVerifier_ProviderTypes(t *testing.T) {

@@ -120,7 +120,8 @@ func TestCerebrasProvider_HealthCheck_WithAPIKey(t *testing.T) {
 func TestCerebrasProvider_Complete(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL()
+	// Cerebras uses baseURL as the full endpoint URL (includes /v1/chat/completions)
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/chat/completions"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := cerebras.NewCerebrasProvider(apiKey, mockURL, "llama-3.3-70b")
@@ -146,7 +147,8 @@ func TestCerebrasProvider_Complete(t *testing.T) {
 func TestCerebrasProvider_CompleteStream(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL()
+	// Cerebras uses baseURL as the full endpoint URL (includes /v1/chat/completions)
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/chat/completions"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := cerebras.NewCerebrasProvider(apiKey, mockURL, "llama-3.3-70b")
@@ -181,7 +183,8 @@ func TestCerebrasProvider_CompleteStream(t *testing.T) {
 func TestCerebrasProvider_Complete_WithMessages(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL()
+	// Cerebras uses baseURL as the full endpoint URL (includes /v1/chat/completions)
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/chat/completions"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := cerebras.NewCerebrasProvider(apiKey, mockURL, "llama-3.3-70b")

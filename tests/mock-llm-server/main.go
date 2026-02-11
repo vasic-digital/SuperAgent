@@ -118,6 +118,10 @@ func main() {
 	mux.HandleFunc("/api/chat", handleOllamaChat)
 	mux.HandleFunc("/api/tags", handleOllamaTags)
 
+	// Gemini API compatibility (matches /v1beta/models/{model}:generateContent and :streamGenerateContent)
+	mux.HandleFunc("/v1beta/models/", handleGeminiGenerate)
+	mux.HandleFunc("/v1beta/", handleGeminiModels)
+
 	log.Printf("Mock LLM server starting on port %s", port)
 	log.Printf("Endpoints available:")
 	log.Printf("  - POST /v1/chat/completions (OpenAI)")
@@ -127,6 +131,7 @@ func main() {
 	log.Printf("  - POST /v1/messages (Claude)")
 	log.Printf("  - POST /api/generate (Ollama)")
 	log.Printf("  - POST /api/chat (Ollama)")
+	log.Printf("  - POST /v1beta/models/{model}:generateContent (Gemini)")
 
 	server := &http.Server{
 		Addr:         ":" + port,
@@ -545,6 +550,144 @@ func handleOllamaTags(w http.ResponseWriter, r *http.Request) {
 					"quantization_level": "Q4_0",
 				},
 			},
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func handleGeminiGenerate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read body", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Contents []struct {
+			Parts []struct {
+				Text string `json:"text"`
+			} `json:"parts"`
+			Role string `json:"role"`
+		} `json:"contents"`
+		GenerationConfig struct {
+			Temperature     float64 `json:"temperature"`
+			MaxOutputTokens int     `json:"maxOutputTokens"`
+		} `json:"generationConfig"`
+	}
+	if err := json.Unmarshal(body, &req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Extract last user message
+	lastMessage := ""
+	for _, content := range req.Contents {
+		if content.Role == "user" || content.Role == "" {
+			for _, part := range content.Parts {
+				if part.Text != "" {
+					lastMessage = part.Text
+				}
+			}
+		}
+	}
+
+	// Extract model from URL path (e.g., /v1beta/models/gemini-pro:generateContent)
+	path := r.URL.Path
+	model := "gemini-pro"
+	if idx := strings.LastIndex(path, "/"); idx >= 0 {
+		modelPart := path[idx+1:]
+		if colonIdx := strings.Index(modelPart, ":"); colonIdx >= 0 {
+			model = modelPart[:colonIdx]
+		}
+	}
+
+	responseContent := generateMockResponse(lastMessage, model)
+
+	// Check if this is a streaming request (streamGenerateContent)
+	if strings.Contains(path, "streamGenerateContent") {
+		handleGeminiStreamResponse(w, model, responseContent)
+		return
+	}
+
+	// Return Gemini-format response
+	response := map[string]interface{}{
+		"candidates": []map[string]interface{}{
+			{
+				"content": map[string]interface{}{
+					"parts": []map[string]string{
+						{"text": responseContent},
+					},
+					"role": "model",
+				},
+				"finishReason": "STOP",
+				"index":        0,
+			},
+		},
+		"usageMetadata": map[string]int{
+			"promptTokenCount":     len(lastMessage) / 4,
+			"candidatesTokenCount": len(responseContent) / 4,
+			"totalTokenCount":      (len(lastMessage) + len(responseContent)) / 4,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func handleGeminiStreamResponse(w http.ResponseWriter, model, content string) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+		return
+	}
+
+	words := strings.Fields(content)
+	for i, word := range words {
+		chunk := map[string]interface{}{
+			"candidates": []map[string]interface{}{
+				{
+					"content": map[string]interface{}{
+						"parts": []map[string]string{
+							{"text": word + " "},
+						},
+						"role": "model",
+					},
+					"index": 0,
+				},
+			},
+		}
+		if i == len(words)-1 {
+			chunk["candidates"].([]map[string]interface{})[0]["finishReason"] = "STOP"
+		}
+
+		data, _ := json.Marshal(chunk)
+		fmt.Fprintf(w, "data: %s\n\n", data)
+		flusher.Flush()
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	fmt.Fprintf(w, "data: [DONE]\n\n")
+	flusher.Flush()
+}
+
+func handleGeminiModels(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"models": []map[string]interface{}{
+			{"name": "models/gemini-pro", "displayName": "Gemini Pro", "supportedGenerationMethods": []string{"generateContent", "countTokens"}},
+			{"name": "models/gemini-2.0-flash", "displayName": "Gemini 2.0 Flash", "supportedGenerationMethods": []string{"generateContent", "countTokens"}},
+			{"name": "models/gemini-2.5-flash", "displayName": "Gemini 2.5 Flash", "supportedGenerationMethods": []string{"generateContent", "countTokens"}},
+			{"name": "models/gemini-2.5-pro", "displayName": "Gemini 2.5 Pro", "supportedGenerationMethods": []string{"generateContent", "countTokens"}},
 		},
 	}
 

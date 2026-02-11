@@ -3550,6 +3550,7 @@ var ValidCrushTopLevelKeys = map[string]bool{
 	"$schema":   true,
 	"providers": true,
 	"lsp":       true,
+	"mcp":       true,
 	"options":   true,
 }
 
@@ -3584,7 +3585,7 @@ func validateCrushConfig(data []byte) *CrushValidationResult {
 		result.Valid = false
 		result.Errors = append(result.Errors, OpenCodeValidationError{
 			Field:   "",
-			Message: fmt.Sprintf("invalid top-level keys: %v (valid keys: $schema, providers, lsp, options)", invalidKeys),
+			Message: fmt.Sprintf("invalid top-level keys: %v (valid keys: $schema, providers, lsp, mcp, options)", invalidKeys),
 		})
 	}
 

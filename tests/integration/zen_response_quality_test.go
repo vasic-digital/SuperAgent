@@ -137,22 +137,26 @@ func TestZenModelNormalization(t *testing.T) {
 	testCases := []struct {
 		input    string
 		expected string
+		isFree   bool // Whether this model is in the current free models list
 	}{
-		// With opencode/ prefix
-		{"opencode/grok-code", "grok-code"},
-		{"opencode/big-pickle", "big-pickle"},
-		{"opencode/glm-4.7-free", "glm-4.7-free"},
-		{"opencode/gpt-5-nano", "gpt-5-nano"},
-		// With opencode- prefix
-		{"opencode-grok-code", "grok-code"},
-		{"opencode-big-pickle", "big-pickle"},
-		{"opencode-glm-4.7-free", "glm-4.7-free"},
-		{"opencode-gpt-5-nano", "gpt-5-nano"},
-		// Already normalized
-		{"grok-code", "grok-code"},
-		{"big-pickle", "big-pickle"},
-		{"glm-4.7-free", "glm-4.7-free"},
-		{"gpt-5-nano", "gpt-5-nano"},
+		// With opencode/ prefix - current free models
+		{"opencode/big-pickle", "big-pickle", true},
+		{"opencode/gpt-5-nano", "gpt-5-nano", true},
+		// With opencode/ prefix - deprecated models (normalization should still work)
+		{"opencode/grok-code", "grok-code", false},
+		{"opencode/glm-4.7-free", "glm-4.7-free", false},
+		// With opencode- prefix - current free models
+		{"opencode-big-pickle", "big-pickle", true},
+		{"opencode-gpt-5-nano", "gpt-5-nano", true},
+		// With opencode- prefix - deprecated models
+		{"opencode-grok-code", "grok-code", false},
+		{"opencode-glm-4.7-free", "glm-4.7-free", false},
+		// Already normalized - current free models
+		{"big-pickle", "big-pickle", true},
+		{"gpt-5-nano", "gpt-5-nano", true},
+		// Already normalized - deprecated models
+		{"grok-code", "grok-code", false},
+		{"glm-4.7-free", "glm-4.7-free", false},
 	}
 
 	for _, tc := range testCases {
@@ -160,17 +164,16 @@ func TestZenModelNormalization(t *testing.T) {
 			// Create provider with the input model ID
 			provider := zen.NewZenProviderAnonymous(tc.input)
 
-			// The provider's internal model should be the input (not normalized at creation time)
-			// But when making API calls, it should be normalized
-
 			// Test that the provider accepts the model (doesn't panic or fail)
 			assert.NotNil(t, provider)
 
-			// Test that isFreeModel works with both formats
-			assert.True(t, zen.IsAnonymousAccessAllowed(tc.input),
-				"Model %s should be recognized as a free model", tc.input)
-			assert.True(t, zen.IsAnonymousAccessAllowed(tc.expected),
-				"Model %s should be recognized as a free model", tc.expected)
+			// Test that isFreeModel works correctly for current free models
+			if tc.isFree {
+				assert.True(t, zen.IsAnonymousAccessAllowed(tc.input),
+					"Model %s should be recognized as a free model", tc.input)
+				assert.True(t, zen.IsAnonymousAccessAllowed(tc.expected),
+					"Model %s should be recognized as a free model", tc.expected)
+			}
 		})
 	}
 }

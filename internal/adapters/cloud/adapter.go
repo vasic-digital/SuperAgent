@@ -208,6 +208,9 @@ func (g *GCPVertexAIIntegration) HealthCheck(ctx context.Context) error {
 	if g.config.ProjectID == "" {
 		return fmt.Errorf("GCP project ID not configured")
 	}
+	if g.config.AccessToken == "" {
+		return fmt.Errorf("GCP access token not configured")
+	}
 	return nil
 }
 

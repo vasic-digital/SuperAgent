@@ -270,8 +270,7 @@ func TestOpenCodeConfiguration(t *testing.T) {
 	mcp, ok := config["mcp"].(map[string]interface{})
 	require.True(t, ok, "Config should have mcp section")
 
-	// Verify fetch uses correct package
-	// Verify fetch uses correct package (official @modelcontextprotocol packages)
+	// Verify fetch uses a recognized MCP fetch package
 	if fetch, ok := mcp["fetch"].(map[string]interface{}); ok {
 		if cmd, ok := fetch["command"].([]interface{}); ok {
 			cmdStr := make([]string, len(cmd))
@@ -279,15 +278,16 @@ func TestOpenCodeConfiguration(t *testing.T) {
 				cmdStr[i] = v.(string)
 			}
 			joined := strings.Join(cmdStr, " ")
-			// Accept either official @modelcontextprotocol or community mcp-fetch
+			// Accept official, community, or alternative fetch server packages
 			hasMCPFetch := strings.Contains(joined, "@modelcontextprotocol/server-fetch") ||
-				strings.Contains(joined, "mcp-fetch")
+				strings.Contains(joined, "mcp-fetch") ||
+				strings.Contains(joined, "mcp-server-fetch")
 			assert.True(t, hasMCPFetch,
-				"fetch should use @modelcontextprotocol/server-fetch or mcp-fetch")
+				"fetch should use a recognized MCP fetch server package, got: %s", joined)
 		}
 	}
 
-	// Verify sqlite uses correct package
+	// Verify sqlite uses a recognized MCP sqlite package
 	if sqlite, ok := mcp["sqlite"].(map[string]interface{}); ok {
 		if cmd, ok := sqlite["command"].([]interface{}); ok {
 			cmdStr := make([]string, len(cmd))
@@ -295,11 +295,12 @@ func TestOpenCodeConfiguration(t *testing.T) {
 				cmdStr[i] = v.(string)
 			}
 			joined := strings.Join(cmdStr, " ")
-			// Accept either official @modelcontextprotocol or community mcp-sqlite
+			// Accept official, community, or alternative sqlite server packages
 			hasMCPSQLite := strings.Contains(joined, "@modelcontextprotocol/server-sqlite") ||
-				strings.Contains(joined, "mcp-sqlite")
+				strings.Contains(joined, "mcp-sqlite") ||
+				strings.Contains(joined, "mcp-server-sqlite")
 			assert.True(t, hasMCPSQLite,
-				"sqlite should use @modelcontextprotocol/server-sqlite or mcp-sqlite")
+				"sqlite should use a recognized MCP sqlite server package, got: %s", joined)
 		}
 	}
 

@@ -16,24 +16,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// CogneeIntegrationTestSuite provides comprehensive tests for real Cognee integration
-// These tests verify that Cognee is running, features are enabled, and all functionality works
+// Mem0IntegrationTestSuite provides comprehensive tests for real Mem0 Memory integration
+// These tests verify that Mem0 Memory is running, features are enabled, and all functionality works
 
 const (
-	cogneeBaseURL      = "http://localhost:8000"
-	helixagentBaseURL  = "http://localhost:7061"
-	cogneeStartTimeout = 60 * time.Second
+	mem0BaseURL             = "http://localhost:7061/v1/cognee"
+	mem0HelixagentBaseURL   = "http://localhost:7061"
+	mem0StartTimeout        = 60 * time.Second
 )
 
-// TestCogneeInfrastructure verifies Cognee containers are running
-func TestCogneeInfrastructure(t *testing.T) {
+// TestMem0Infrastructure verifies Mem0 Memory service containers are running
+func TestMem0Infrastructure(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping infrastructure test (acceptable)")
 		return
 	}
 
 	t.Run("ContainersRunning", func(t *testing.T) {
-		containers := []string{"helixagent-cognee", "helixagent-chromadb", "helixagent-postgres", "helixagent-redis"}
+		containers := []string{"helixagent-postgres", "helixagent-redis"}
 
 		for _, container := range containers {
 			cmd := exec.Command("podman", "ps", "--filter", fmt.Sprintf("name=%s", container), "--format", "{{.Status}}")
@@ -55,23 +55,23 @@ func TestCogneeInfrastructure(t *testing.T) {
 	})
 
 	t.Run("NetworkConnectivity", func(t *testing.T) {
-		// Test that we can reach Cognee port
+		// Test that we can reach Mem0 Memory service via HelixAgent
 		client := &http.Client{Timeout: 5 * time.Second}
-		resp, err := client.Get(cogneeBaseURL + "/health")
+		resp, err := client.Get(mem0BaseURL + "/health")
 		if err != nil {
-			t.Logf("Cannot connect to Cognee at %s: %v (may not be running)", cogneeBaseURL, err)
-			t.Logf("Cognee not accessible (acceptable)")
+			t.Logf("Cannot connect to Mem0 Memory at %s: %v (may not be running)", mem0BaseURL, err)
+			t.Logf("Mem0 Memory not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
 
-		t.Logf("Cognee responded with status: %d", resp.StatusCode)
+		t.Logf("Mem0 Memory responded with status: %d", resp.StatusCode)
 		// Status could be 200 (healthy) or may timeout (degraded health check)
 	})
 }
 
-// TestCogneeHealthEndpoint verifies Cognee health check functionality
-func TestCogneeHealthEndpoint(t *testing.T) {
+// TestMem0HealthEndpoint verifies Mem0 Memory health check functionality
+func TestMem0HealthEndpoint(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping health test (acceptable)")
 		return
@@ -80,54 +80,54 @@ func TestCogneeHealthEndpoint(t *testing.T) {
 	client := &http.Client{Timeout: 60 * time.Second}
 
 	t.Run("DirectHealthCheck", func(t *testing.T) {
-		resp, err := client.Get(cogneeBaseURL + "/health")
+		resp, err := client.Get(mem0BaseURL + "/health")
 		if err != nil {
-			t.Logf("Direct Cognee health check failed: %v", err)
-			t.Logf("Cognee not accessible (acceptable)")
+			t.Logf("Mem0 Memory health check failed: %v", err)
+			t.Logf("Mem0 Memory not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
 
 		body, _ := io.ReadAll(resp.Body)
-		t.Logf("Cognee health response: %s", string(body))
+		t.Logf("Mem0 Memory health response: %s", string(body))
 
 		// Parse response if JSON
 		var healthResp map[string]interface{}
 		if json.Unmarshal(body, &healthResp) == nil {
 			if status, ok := healthResp["status"]; ok {
-				t.Logf("Cognee status: %v", status)
+				t.Logf("Mem0 Memory status: %v", status)
 			}
 			if health, ok := healthResp["health"]; ok {
-				t.Logf("Cognee health: %v", health)
+				t.Logf("Mem0 Memory health: %v", health)
 			}
 		}
 	})
 
-	t.Run("HelixAgentCogneeHealth", func(t *testing.T) {
+	t.Run("HelixAgentMem0Health", func(t *testing.T) {
 		apiKey := os.Getenv("HELIXAGENT_API_KEY")
 		if apiKey == "" {
 			apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
 		}
 
-		req, _ := http.NewRequest("GET", helixagentBaseURL+"/v1/cognee/health", nil)
+		req, _ := http.NewRequest("GET", mem0HelixagentBaseURL+"/v1/cognee/health", nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Logf("HelixAgent Cognee health check failed: %v", err)
+			t.Logf("HelixAgent Mem0 Memory health check failed: %v", err)
 			t.Logf("HelixAgent not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
 
 		body, _ := io.ReadAll(resp.Body)
-		t.Logf("HelixAgent Cognee health response: %s", string(body))
+		t.Logf("HelixAgent Mem0 Memory health response: %s", string(body))
 
 		var healthResp map[string]interface{}
 		if json.Unmarshal(body, &healthResp) == nil {
 			if config, ok := healthResp["config"].(map[string]interface{}); ok {
-				// Verify all features are enabled
-				assert.True(t, config["enabled"].(bool), "Cognee should be enabled")
+				// Verify memory service features are enabled
+				assert.True(t, config["enabled"].(bool), "Mem0 Memory should be enabled")
 				assert.True(t, config["auto_cognify"].(bool), "Auto cognify should be enabled")
 				assert.True(t, config["enable_code_intelligence"].(bool), "Code intelligence should be enabled")
 				assert.True(t, config["enable_graph_reasoning"].(bool), "Graph reasoning should be enabled")
@@ -138,8 +138,8 @@ func TestCogneeHealthEndpoint(t *testing.T) {
 	})
 }
 
-// TestCogneeFeatureConfiguration verifies all Cognee features are properly configured
-func TestCogneeFeatureConfiguration(t *testing.T) {
+// TestMem0FeatureConfiguration verifies all Mem0 Memory features are properly configured
+func TestMem0FeatureConfiguration(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping feature configuration test (acceptable)")
 		return
@@ -153,7 +153,7 @@ func TestCogneeFeatureConfiguration(t *testing.T) {
 	client := &http.Client{Timeout: 30 * time.Second}
 
 	t.Run("AllFeaturesEnabled", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", helixagentBaseURL+"/v1/cognee/config", nil)
+		req, _ := http.NewRequest("GET", mem0HelixagentBaseURL+"/v1/cognee/config", nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
@@ -164,7 +164,7 @@ func TestCogneeFeatureConfiguration(t *testing.T) {
 		defer resp.Body.Close()
 
 		body, _ := io.ReadAll(resp.Body)
-		t.Logf("Cognee config: %s", string(body))
+		t.Logf("Mem0 Memory config: %s", string(body))
 
 		var config map[string]interface{}
 		if json.Unmarshal(body, &config) == nil {
@@ -186,7 +186,7 @@ func TestCogneeFeatureConfiguration(t *testing.T) {
 		}
 	})
 
-	t.Run("CogneeEndpointsAvailable", func(t *testing.T) {
+	t.Run("Mem0EndpointsAvailable", func(t *testing.T) {
 		endpoints := []struct {
 			method   string
 			path     string
@@ -199,7 +199,7 @@ func TestCogneeFeatureConfiguration(t *testing.T) {
 		}
 
 		for _, ep := range endpoints {
-			req, _ := http.NewRequest(ep.method, helixagentBaseURL+ep.path, nil)
+			req, _ := http.NewRequest(ep.method, mem0HelixagentBaseURL+ep.path, nil)
 			req.Header.Set("Authorization", "Bearer "+apiKey)
 
 			resp, err := client.Do(req)
@@ -214,8 +214,8 @@ func TestCogneeFeatureConfiguration(t *testing.T) {
 	})
 }
 
-// TestCogneeMemoryOperations tests Cognee memory add/search functionality
-func TestCogneeMemoryOperations(t *testing.T) {
+// TestMem0MemoryOperations tests Mem0 Memory add/search functionality
+func TestMem0MemoryOperations(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping memory operations test (acceptable)")
 		return
@@ -242,14 +242,14 @@ func TestCogneeMemoryOperations(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/memory", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/cognee/memory", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Add memory failed: %v", err)
-			t.Logf("Cognee memory API not accessible (acceptable)")
+			t.Logf("Mem0 Memory API not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
@@ -257,11 +257,11 @@ func TestCogneeMemoryOperations(t *testing.T) {
 		body, _ := io.ReadAll(resp.Body)
 		t.Logf("Add memory response: %s", string(body))
 
-		// May succeed or fail depending on Cognee health
+		// May succeed or fail depending on Mem0 Memory health
 		if resp.StatusCode == 200 || resp.StatusCode == 201 {
 			t.Log("Memory added successfully")
 		} else {
-			t.Logf("Memory add returned status %d (Cognee may be in degraded state)", resp.StatusCode)
+			t.Logf("Memory add returned status %d (Mem0 Memory may be in degraded state)", resp.StatusCode)
 		}
 	})
 
@@ -274,14 +274,14 @@ func TestCogneeMemoryOperations(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/search", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/cognee/search", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Search memory failed: %v", err)
-			t.Logf("Cognee search API not accessible (acceptable)")
+			t.Logf("Mem0 Memory search API not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
@@ -298,8 +298,8 @@ func TestCogneeMemoryOperations(t *testing.T) {
 	})
 }
 
-// TestCogneeKnowledgeGraph tests Cognee knowledge graph operations
-func TestCogneeKnowledgeGraph(t *testing.T) {
+// TestMem0KnowledgeGraph tests Mem0 Memory knowledge graph operations
+func TestMem0KnowledgeGraph(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping knowledge graph test (acceptable)")
 		return
@@ -318,14 +318,14 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/cognify", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/cognee/cognify", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Cognify failed: %v", err)
-			t.Logf("Cognee cognify API not accessible (acceptable)")
+			t.Logf("Mem0 Memory cognify API not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
@@ -341,14 +341,14 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/graph/complete", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/cognee/graph/complete", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Graph completion failed: %v", err)
-			t.Logf("Cognee graph API not accessible (acceptable)")
+			t.Logf("Mem0 Memory graph API not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
@@ -364,14 +364,14 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/insights", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/cognee/insights", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Get insights failed: %v", err)
-			t.Logf("Cognee insights API not accessible (acceptable)")
+			t.Logf("Mem0 Memory insights API not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
@@ -381,8 +381,8 @@ func TestCogneeKnowledgeGraph(t *testing.T) {
 	})
 }
 
-// TestCogneeCodeIntelligence tests Cognee code analysis features
-func TestCogneeCodeIntelligence(t *testing.T) {
+// TestMem0CodeIntelligence tests Mem0 Memory code analysis features
+func TestMem0CodeIntelligence(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping code intelligence test (acceptable)")
 		return
@@ -412,14 +412,14 @@ func main() {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/code", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/cognee/code", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Process code failed: %v", err)
-			t.Logf("Cognee code API not accessible (acceptable)")
+			t.Logf("Mem0 Memory code API not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
@@ -442,8 +442,8 @@ func main() {
 	})
 }
 
-// TestCogneeDatasetManagement tests Cognee dataset CRUD operations
-func TestCogneeDatasetManagement(t *testing.T) {
+// TestMem0DatasetManagement tests Mem0 Memory dataset CRUD operations
+func TestMem0DatasetManagement(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping dataset management test (acceptable)")
 		return
@@ -464,14 +464,14 @@ func TestCogneeDatasetManagement(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/datasets", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/cognee/datasets", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Create dataset failed: %v", err)
-			t.Logf("Cognee dataset API not accessible (acceptable)")
+			t.Logf("Mem0 Memory dataset API not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
@@ -481,13 +481,13 @@ func TestCogneeDatasetManagement(t *testing.T) {
 	})
 
 	t.Run("ListDatasets", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", helixagentBaseURL+"/v1/cognee/datasets", nil)
+		req, _ := http.NewRequest("GET", mem0HelixagentBaseURL+"/v1/cognee/datasets", nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("List datasets failed: %v", err)
-			t.Logf("Cognee dataset API not accessible (acceptable)")
+			t.Logf("Mem0 Memory dataset API not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
@@ -497,7 +497,7 @@ func TestCogneeDatasetManagement(t *testing.T) {
 	})
 
 	t.Run("DeleteDataset", func(t *testing.T) {
-		req, _ := http.NewRequest("DELETE", helixagentBaseURL+"/v1/cognee/datasets/"+testDatasetName, nil)
+		req, _ := http.NewRequest("DELETE", mem0HelixagentBaseURL+"/v1/cognee/datasets/"+testDatasetName, nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
@@ -512,8 +512,8 @@ func TestCogneeDatasetManagement(t *testing.T) {
 	})
 }
 
-// TestCogneeFeedback tests Cognee feedback loop functionality
-func TestCogneeFeedback(t *testing.T) {
+// TestMem0Feedback tests Mem0 Memory feedback loop functionality
+func TestMem0Feedback(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping feedback test (acceptable)")
 		return
@@ -535,14 +535,14 @@ func TestCogneeFeedback(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(payload)
-		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/feedback", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/cognee/feedback", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
 			t.Logf("Provide feedback failed: %v", err)
-			t.Logf("Cognee feedback API not accessible (acceptable)")
+			t.Logf("Mem0 Memory feedback API not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
@@ -552,8 +552,8 @@ func TestCogneeFeedback(t *testing.T) {
 	})
 }
 
-// TestCogneeGracefulDegradation tests that system works when Cognee is unavailable
-func TestCogneeGracefulDegradation(t *testing.T) {
+// TestMem0GracefulDegradation tests that system works when Mem0 Memory is unavailable
+func TestMem0GracefulDegradation(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping graceful degradation test (acceptable)")
 		return
@@ -566,9 +566,9 @@ func TestCogneeGracefulDegradation(t *testing.T) {
 
 	client := &http.Client{Timeout: 30 * time.Second}
 
-	t.Run("SystemHealthWithoutCognee", func(t *testing.T) {
-		// Test that HelixAgent main health endpoint works even if Cognee is degraded
-		req, _ := http.NewRequest("GET", helixagentBaseURL+"/health", nil)
+	t.Run("SystemHealthWithoutMem0", func(t *testing.T) {
+		// Test that HelixAgent main health endpoint works even if Mem0 Memory is degraded
+		req, _ := http.NewRequest("GET", mem0HelixagentBaseURL+"/health", nil)
 
 		resp, err := client.Do(req)
 		if err != nil {
@@ -580,11 +580,11 @@ func TestCogneeGracefulDegradation(t *testing.T) {
 		body, _ := io.ReadAll(resp.Body)
 		t.Logf("HelixAgent health: %s", string(body))
 
-		assert.Equal(t, 200, resp.StatusCode, "HelixAgent should be healthy even with Cognee issues")
+		assert.Equal(t, 200, resp.StatusCode, "HelixAgent should be healthy even with Mem0 Memory issues")
 	})
 
-	t.Run("CogneeStatsWithDegradedState", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", helixagentBaseURL+"/v1/cognee/stats", nil)
+	t.Run("Mem0StatsWithDegradedState", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", mem0HelixagentBaseURL+"/v1/cognee/stats", nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
@@ -595,7 +595,7 @@ func TestCogneeGracefulDegradation(t *testing.T) {
 		defer resp.Body.Close()
 
 		body, _ := io.ReadAll(resp.Body)
-		t.Logf("Cognee stats: %s", string(body))
+		t.Logf("Mem0 Memory stats: %s", string(body))
 
 		// Handle auth errors gracefully - test API key may not be configured
 		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
@@ -609,8 +609,8 @@ func TestCogneeGracefulDegradation(t *testing.T) {
 	})
 }
 
-// TestCogneeLLMIntegration tests that Cognee properly uses LLM providers
-func TestCogneeLLMIntegration(t *testing.T) {
+// TestMem0LLMIntegration tests that Mem0 Memory properly uses LLM providers
+func TestMem0LLMIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping LLM integration test (acceptable)")
 		return
@@ -623,27 +623,27 @@ func TestCogneeLLMIntegration(t *testing.T) {
 
 	// Quick health check with short timeout
 	healthClient := &http.Client{Timeout: 5 * time.Second}
-	healthResp, err := healthClient.Get(helixagentBaseURL + "/health")
+	healthResp, err := healthClient.Get(mem0HelixagentBaseURL + "/health")
 	if err != nil {
 		t.Logf("HelixAgent not accessible (acceptable)")
 		return
 	}
 	healthResp.Body.Close()
 
-	// Check Cognee status with short timeout
-	cogneeHealthResp, err := healthClient.Get(helixagentBaseURL + "/v1/cognee/health")
-	if err != nil || cogneeHealthResp.StatusCode != 200 {
-		if cogneeHealthResp != nil {
-			cogneeHealthResp.Body.Close()
+	// Check Mem0 Memory status with short timeout
+	mem0HealthResp, err := healthClient.Get(mem0HelixagentBaseURL + "/v1/cognee/health")
+	if err != nil || mem0HealthResp.StatusCode != 200 {
+		if mem0HealthResp != nil {
+			mem0HealthResp.Body.Close()
 		}
-		t.Logf("Cognee service not available (acceptable)")
+		t.Logf("Mem0 Memory service not available (acceptable)")
 		return
 	}
-	cogneeHealthResp.Body.Close()
+	mem0HealthResp.Body.Close()
 
 	client := &http.Client{Timeout: 120 * time.Second}
 
-	t.Run("ChatCompletionWithCogneeEnhancement", func(t *testing.T) {
+	t.Run("ChatCompletionWithMem0Enhancement", func(t *testing.T) {
 		// First add some memory
 		memPayload := map[string]interface{}{
 			"content":      "The HelixAgent project is an AI-powered ensemble LLM service that combines responses from multiple language models.",
@@ -652,7 +652,7 @@ func TestCogneeLLMIntegration(t *testing.T) {
 		}
 
 		jsonBody, _ := json.Marshal(memPayload)
-		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/memory", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/cognee/memory", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -661,7 +661,7 @@ func TestCogneeLLMIntegration(t *testing.T) {
 			resp.Body.Close()
 		}
 
-		// Now test chat completion that should be enhanced by Cognee
+		// Now test chat completion that should be enhanced by Mem0 Memory
 		chatPayload := map[string]interface{}{
 			"model": "helixagent-debate-v1",
 			"messages": []map[string]string{
@@ -673,7 +673,7 @@ func TestCogneeLLMIntegration(t *testing.T) {
 		}
 
 		jsonBody, _ = json.Marshal(chatPayload)
-		req, _ = http.NewRequest("POST", helixagentBaseURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
+		req, _ = http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/chat/completions", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -690,8 +690,8 @@ func TestCogneeLLMIntegration(t *testing.T) {
 	})
 }
 
-// TestCogneeContainerAutoStart tests that containers auto-start when needed
-func TestCogneeContainerAutoStart(t *testing.T) {
+// TestMem0ContainerAutoStart tests that containers auto-start when needed
+func TestMem0ContainerAutoStart(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping container auto-start test (acceptable)")
 		return
@@ -704,25 +704,25 @@ func TestCogneeContainerAutoStart(t *testing.T) {
 
 	client := &http.Client{Timeout: 120 * time.Second}
 
-	t.Run("StartCogneeViaAPI", func(t *testing.T) {
-		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/start", nil)
+	t.Run("StartMem0ViaAPI", func(t *testing.T) {
+		req, _ := http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/cognee/start", nil)
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Logf("Start Cognee API failed: %v", err)
-			t.Logf("Cognee start API not accessible (acceptable)")
+			t.Logf("Start Mem0 Memory API failed: %v", err)
+			t.Logf("Mem0 Memory start API not accessible (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
 
 		body, _ := io.ReadAll(resp.Body)
-		t.Logf("Start Cognee response: %s", string(body))
+		t.Logf("Start Mem0 Memory response: %s", string(body))
 	})
 }
 
-// TestCogneeRealAPIIntegration tests actual Cognee API responses
-func TestCogneeRealAPIIntegration(t *testing.T) {
+// TestMem0RealAPIIntegration tests actual Mem0 Memory API responses
+func TestMem0RealAPIIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping real API test (acceptable)")
 		return
@@ -731,51 +731,51 @@ func TestCogneeRealAPIIntegration(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Direct test to Cognee container
+	// Test Mem0 Memory via HelixAgent endpoints
 	client := &http.Client{Timeout: 5 * time.Second}
 
-	t.Run("DirectCogneeAPI", func(t *testing.T) {
-		req, _ := http.NewRequestWithContext(ctx, "GET", cogneeBaseURL+"/", nil)
+	t.Run("Mem0MemoryAPI", func(t *testing.T) {
+		req, _ := http.NewRequestWithContext(ctx, "GET", mem0HelixagentBaseURL+"/v1/cognee/health", nil)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Logf("Direct Cognee API not accessible: %v", err)
-			t.Logf("Cognee not running (acceptable)")
+			t.Logf("Mem0 Memory API not accessible: %v", err)
+			t.Logf("Mem0 Memory not running (acceptable)")
 			return
 		}
 		defer resp.Body.Close()
 
 		body, _ := io.ReadAll(resp.Body)
-		t.Logf("Cognee root response: %s", string(body))
+		t.Logf("Mem0 Memory health response: %s", string(body))
 	})
 }
 
-// TestAllCogneeEndpoints validates all Cognee endpoints are registered
-func TestAllCogneeEndpoints(t *testing.T) {
+// TestAllMem0Endpoints validates all Mem0 Memory endpoints are registered
+func TestAllMem0Endpoints(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Short mode - skipping endpoint test")
 	}
 
-	// First check if HelixAgent is running with Cognee enabled
+	// First check if HelixAgent is running with Mem0 Memory enabled
 	client := &http.Client{Timeout: 10 * time.Second}
-	healthResp, err := client.Get(helixagentBaseURL + "/health")
+	healthResp, err := client.Get(mem0HelixagentBaseURL + "/health")
 	if err != nil {
 		t.Skipf("HelixAgent not accessible: %v", err)
 		return
 	}
 	healthResp.Body.Close()
 
-	// Check if Cognee health endpoint exists (primary indicator of Cognee routes)
-	cogneeHealthResp, err := client.Get(helixagentBaseURL + "/v1/cognee/health")
+	// Check if Mem0 Memory health endpoint exists (primary indicator of memory routes)
+	mem0HealthResp, err := client.Get(mem0HelixagentBaseURL + "/v1/cognee/health")
 	if err != nil {
-		t.Skipf("Cognee routes not accessible: %v", err)
+		t.Skipf("Mem0 Memory routes not accessible: %v", err)
 		return
 	}
-	if cogneeHealthResp.StatusCode == 404 {
-		cogneeHealthResp.Body.Close()
-		t.Skip("Cognee routes not registered in HelixAgent")
+	if mem0HealthResp.StatusCode == 404 {
+		mem0HealthResp.Body.Close()
+		t.Skip("Mem0 Memory routes not registered in HelixAgent")
 	}
-	cogneeHealthResp.Body.Close()
+	mem0HealthResp.Body.Close()
 
 	// Endpoints with their HTTP methods
 	type endpointConfig struct {
@@ -806,7 +806,7 @@ func TestAllCogneeEndpoints(t *testing.T) {
 	for _, ep := range expectedEndpoints {
 		t.Run(strings.Replace(ep.path, "/", "_", -1), func(t *testing.T) {
 			// Use correct HTTP method for each endpoint
-			req, _ := http.NewRequest(ep.method, helixagentBaseURL+ep.path, nil)
+			req, _ := http.NewRequest(ep.method, mem0HelixagentBaseURL+ep.path, nil)
 			req.Header.Set("Authorization", "Bearer "+apiKey)
 			req.Header.Set("Content-Type", "application/json")
 
@@ -826,8 +826,8 @@ func TestAllCogneeEndpoints(t *testing.T) {
 	}
 }
 
-// BenchmarkCogneeSearch benchmarks Cognee search performance
-func BenchmarkCogneeSearch(b *testing.B) {
+// BenchmarkMem0Search benchmarks Mem0 Memory search performance
+func BenchmarkMem0Search(b *testing.B) {
 	apiKey := os.Getenv("HELIXAGENT_API_KEY")
 	if apiKey == "" {
 		apiKey = "sk-bd15ed2afe4c4f62a7e8b9c10d4e5f6a"
@@ -844,13 +844,13 @@ func BenchmarkCogneeSearch(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		req, _ := http.NewRequest("POST", helixagentBaseURL+"/v1/cognee/search", bytes.NewBuffer(jsonBody))
+		req, _ := http.NewRequest("POST", mem0HelixagentBaseURL+"/v1/cognee/search", bytes.NewBuffer(jsonBody))
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
-			b.Skip("Cognee not accessible")
+			b.Skip("Mem0 Memory not accessible")
 		}
 		if resp != nil {
 			resp.Body.Close()

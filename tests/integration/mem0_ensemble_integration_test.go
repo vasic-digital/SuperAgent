@@ -20,16 +20,16 @@ import (
 )
 
 // =============================================================================
-// TEST SUITE: Cognee Integration with AI Debate Group
+// TEST SUITE: Mem0 Memory Integration with AI Debate Group
 // =============================================================================
-// These tests verify that Cognee is heavily used by all LLMs contributing to
-// the AI debate. Every provider in the ensemble should enhance requests with
-// Cognee context and store responses back to Cognee for knowledge accumulation.
+// These tests verify that Mem0 Memory is heavily used by all LLMs contributing
+// to the AI debate. Every provider in the ensemble should enhance requests with
+// Mem0 context and store responses back to Mem0 for knowledge accumulation.
 // =============================================================================
 
-// TestCogneeEnhancedProviderBasics verifies basic Cognee provider enhancement
-func TestCogneeEnhancedProviderBasics(t *testing.T) {
-	t.Run("CogneeEnhancedProvider wraps provider correctly", func(t *testing.T) {
+// TestMem0EnhancedProviderBasics verifies basic Mem0 provider enhancement
+func TestMem0EnhancedProviderBasics(t *testing.T) {
+	t.Run("Mem0EnhancedProvider wraps provider correctly", func(t *testing.T) {
 		mockProvider := &MockBaseLLMProvider{
 			name: "test-provider",
 			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
@@ -41,10 +41,10 @@ func TestCogneeEnhancedProviderBasics(t *testing.T) {
 			},
 		}
 
-		// Create enhanced provider (without actual Cognee service for unit test)
+		// Create enhanced provider (without actual Mem0 Memory service for unit test)
 		enhanced := services.NewCogneeEnhancedProvider("test", mockProvider, nil, nil)
 
-		// Verify capabilities show Cognee enhancement
+		// Verify capabilities show Mem0 enhancement
 		caps := enhanced.GetCapabilities()
 		assert.NotNil(t, caps)
 		assert.Contains(t, caps.Metadata, "cognee_enhanced")
@@ -53,7 +53,7 @@ func TestCogneeEnhancedProviderBasics(t *testing.T) {
 		assert.Contains(t, caps.SupportedFeatures, "knowledge_graph")
 	})
 
-	t.Run("CogneeEnhancedProvider Complete adds metadata", func(t *testing.T) {
+	t.Run("Mem0EnhancedProvider Complete adds metadata", func(t *testing.T) {
 		mockProvider := &MockBaseLLMProvider{
 			name: "test-provider",
 			completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
@@ -73,11 +73,11 @@ func TestCogneeEnhancedProviderBasics(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
-		// Response should have Cognee metadata
+		// Response should have Mem0 metadata
 		assert.NotNil(t, resp.Metadata)
-		// Note: cognee_enhanced will be false since we don't have a real Cognee service
-		_, hasCogneeEnhanced := resp.Metadata["cognee_enhanced"]
-		assert.True(t, hasCogneeEnhanced, "Response should have cognee_enhanced metadata")
+		// Note: cognee_enhanced will be false since we don't have a real Mem0 Memory service
+		_, hasMem0Enhanced := resp.Metadata["cognee_enhanced"]
+		assert.True(t, hasMem0Enhanced, "Response should have mem0_enhanced metadata")
 	})
 
 	t.Run("Enhanced provider returns underlying provider", func(t *testing.T) {
@@ -100,8 +100,8 @@ func TestCogneeEnhancedProviderBasics(t *testing.T) {
 	})
 }
 
-// TestCogneeProviderStatsTracking verifies statistics tracking
-func TestCogneeProviderStatsTracking(t *testing.T) {
+// TestMem0ProviderStatsTracking verifies statistics tracking
+func TestMem0ProviderStatsTracking(t *testing.T) {
 	t.Run("Provider tracks request statistics", func(t *testing.T) {
 		mockProvider := &MockBaseLLMProvider{
 			name: "stats-test",
@@ -137,14 +137,14 @@ func TestCogneeProviderStatsTracking(t *testing.T) {
 		enhanced := services.NewCogneeEnhancedProvider("error-test", mockProvider, nil, nil)
 		stats := enhanced.GetStats()
 
-		// Without Cognee service, we shouldn't have enhancement errors
+		// Without Mem0 Memory service, we shouldn't have enhancement errors
 		// (enhancement is skipped when service is nil)
 		assert.Equal(t, int64(0), stats.EnhancementErrors)
 	})
 }
 
-// TestCogneeHealthCheck verifies health check behavior
-func TestCogneeHealthCheck(t *testing.T) {
+// TestMem0HealthCheck verifies health check behavior
+func TestMem0HealthCheck(t *testing.T) {
 	t.Run("Health check delegates to underlying provider", func(t *testing.T) {
 		healthCheckCalled := false
 		mockProvider := &MockBaseLLMProvider{
@@ -163,8 +163,8 @@ func TestCogneeHealthCheck(t *testing.T) {
 	})
 }
 
-// TestCogneeStreamingEnhancement tests streaming with Cognee
-func TestCogneeStreamingEnhancement(t *testing.T) {
+// TestMem0StreamingEnhancement tests streaming with Mem0 Memory
+func TestMem0StreamingEnhancement(t *testing.T) {
 	t.Run("Streaming response works through enhanced provider", func(t *testing.T) {
 		mockProvider := &MockBaseLLMProvider{
 			name: "stream-test",
@@ -197,9 +197,9 @@ func TestCogneeStreamingEnhancement(t *testing.T) {
 	})
 }
 
-// TestAllEnsembleProvidersHaveCogneeCapabilities verifies all providers show Cognee features
-func TestAllEnsembleProvidersHaveCogneeCapabilities(t *testing.T) {
-	t.Run("All providers in ensemble show Cognee capabilities", func(t *testing.T) {
+// TestAllEnsembleProvidersHaveMem0Capabilities verifies all providers show Mem0 features
+func TestAllEnsembleProvidersHaveMem0Capabilities(t *testing.T) {
+	t.Run("All providers in ensemble show Mem0 capabilities", func(t *testing.T) {
 		ensemble := services.NewEnsembleService("confidence_weighted", 30*time.Second)
 
 		// Create multiple enhanced providers
@@ -211,14 +211,14 @@ func TestAllEnsembleProvidersHaveCogneeCapabilities(t *testing.T) {
 			// Verify capabilities before registration
 			caps := enhanced.GetCapabilities()
 			assert.Contains(t, caps.Metadata, "cognee_enhanced",
-				"Provider %s should have cognee_enhanced metadata", name)
+				"Provider %s should have mem0_enhanced metadata", name)
 			assert.Contains(t, caps.SupportedFeatures, "cognee_memory",
-				"Provider %s should support cognee_memory", name)
+				"Provider %s should support mem0_memory", name)
 			assert.Contains(t, caps.SupportedFeatures, "knowledge_graph",
 				"Provider %s should support knowledge_graph", name)
 
 			// Register with ensemble using adapter
-			ensemble.RegisterProvider(name, &CogneeProviderAdapter{enhanced})
+			ensemble.RegisterProvider(name, &Mem0ProviderAdapter{enhanced})
 		}
 
 		// Verify all providers are registered
@@ -227,8 +227,8 @@ func TestAllEnsembleProvidersHaveCogneeCapabilities(t *testing.T) {
 	})
 }
 
-// TestCogneeLiveIntegration tests Cognee integration with live server
-func TestCogneeLiveIntegration(t *testing.T) {
+// TestMem0LiveIntegration tests Mem0 Memory integration with live server
+func TestMem0LiveIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Logf("Short mode - skipping live integration test")
 		return
@@ -260,8 +260,8 @@ func TestCogneeLiveIntegration(t *testing.T) {
 		return
 	}
 
-	t.Run("Chat completion shows Cognee enhancement in providers", func(t *testing.T) {
-		// Check providers endpoint for Cognee capabilities
+	t.Run("Chat completion shows Mem0 enhancement in providers", func(t *testing.T) {
+		// Check providers endpoint for Mem0 capabilities
 		resp, err := client.Get(serverURL + "/v1/providers")
 		require.NoError(t, err)
 		defer resp.Body.Close()
@@ -274,33 +274,33 @@ func TestCogneeLiveIntegration(t *testing.T) {
 		providers, ok := result["providers"].([]interface{})
 		assert.True(t, ok)
 
-		cogneeEnabledCount := 0
+		mem0EnabledCount := 0
 		for _, p := range providers {
 			provider := p.(map[string]interface{})
 			metadata, ok := provider["metadata"].(map[string]interface{})
 			if ok {
 				if enhanced, exists := metadata["cognee_enhanced"]; exists && enhanced == "true" {
-					cogneeEnabledCount++
+					mem0EnabledCount++
 				}
 			}
 
-			// Check for Cognee features in supported features
+			// Check for Mem0 features in supported features
 			features, ok := provider["supported_features"].([]interface{})
 			if ok {
 				for _, f := range features {
 					if f.(string) == "cognee_memory" {
-						cogneeEnabledCount++
+						mem0EnabledCount++
 						break
 					}
 				}
 			}
 		}
 
-		assert.Greater(t, cogneeEnabledCount, 0,
-			"At least some providers should have Cognee enhancement")
+		assert.Greater(t, mem0EnabledCount, 0,
+			"At least some providers should have Mem0 enhancement")
 	})
 
-	t.Run("Cognee search endpoint responds", func(t *testing.T) {
+	t.Run("Mem0 search endpoint responds", func(t *testing.T) {
 		reqBody := map[string]interface{}{
 			"query":       "test query",
 			"dataset":     "default",
@@ -315,16 +315,16 @@ func TestCogneeLiveIntegration(t *testing.T) {
 			bytes.NewReader(jsonBody),
 		)
 
-		// Cognee might not be available, but endpoint should respond
+		// Mem0 Memory might not be available, but endpoint should respond
 		if err == nil {
 			defer resp.Body.Close()
-			// Accept 200 (success) or 400/503 (Cognee not ready/invalid)
+			// Accept 200 (success) or 400/503 (Mem0 not ready/invalid)
 			assert.Contains(t, []int{200, 400, 503}, resp.StatusCode,
-				"Cognee search should respond appropriately")
+				"Mem0 search should respond appropriately")
 		}
 	})
 
-	t.Run("Chat request goes through Cognee-enhanced ensemble", func(t *testing.T) {
+	t.Run("Chat request goes through Mem0-enhanced ensemble", func(t *testing.T) {
 		reqBody := map[string]interface{}{
 			"model": "helixagent-ensemble",
 			"messages": []map[string]string{
@@ -359,13 +359,13 @@ func TestCogneeLiveIntegration(t *testing.T) {
 		assert.Equal(t, "helixagent-ensemble", result["model"])
 		assert.Equal(t, "fp_helixagent_ensemble", result["system_fingerprint"])
 
-		// Verify we got a response (Cognee enhancement happens transparently)
+		// Verify we got a response (Mem0 enhancement happens transparently)
 		choices, ok := result["choices"].([]interface{})
 		assert.True(t, ok)
 		assert.NotEmpty(t, choices)
 	})
 
-	t.Run("Multiple concurrent requests all use Cognee ensemble", func(t *testing.T) {
+	t.Run("Multiple concurrent requests all use Mem0 ensemble", func(t *testing.T) {
 		var wg sync.WaitGroup
 		type reqResult struct {
 			success        bool
@@ -454,8 +454,8 @@ func TestCogneeLiveIntegration(t *testing.T) {
 	})
 }
 
-// TestCogneeConfigValidation tests configuration behavior
-func TestCogneeConfigValidation(t *testing.T) {
+// TestMem0ConfigValidation tests configuration behavior
+func TestMem0ConfigValidation(t *testing.T) {
 	t.Run("Default config has sensible values", func(t *testing.T) {
 		mockProvider := &MockBaseLLMProvider{name: "config-test"}
 		enhanced := services.NewCogneeEnhancedProvider("test", mockProvider, nil, nil)
@@ -495,14 +495,14 @@ func TestCogneeConfigValidation(t *testing.T) {
 	})
 }
 
-// TestEnsembleWithCogneeMetadata tests that ensemble responses include Cognee metadata
-func TestEnsembleWithCogneeMetadata(t *testing.T) {
-	t.Run("Ensemble collects Cognee metadata from providers", func(t *testing.T) {
+// TestEnsembleWithMem0Metadata tests that ensemble responses include Mem0 metadata
+func TestEnsembleWithMem0Metadata(t *testing.T) {
+	t.Run("Ensemble collects Mem0 metadata from providers", func(t *testing.T) {
 		ensemble := services.NewEnsembleService("confidence_weighted", 30*time.Second)
 
 		var responseCount int32
 
-		providers := []string{"cognee-p1", "cognee-p2"}
+		providers := []string{"mem0-p1", "mem0-p2"}
 		for _, name := range providers {
 			providerName := name
 			mockProvider := &MockBaseLLMProvider{
@@ -515,15 +515,15 @@ func TestEnsembleWithCogneeMetadata(t *testing.T) {
 						ProviderName: providerName,
 						Confidence:   0.85,
 						Metadata: map[string]interface{}{
-							"cognee_enhanced": true,
-							"cognee_stored":   true,
+							"mem0_enhanced": true,
+							"mem0_stored":   true,
 						},
 					}, nil
 				},
 			}
 
 			enhanced := services.NewCogneeEnhancedProvider(providerName, mockProvider, nil, nil)
-			ensemble.RegisterProvider(providerName, &CogneeProviderAdapter{enhanced})
+			ensemble.RegisterProvider(providerName, &Mem0ProviderAdapter{enhanced})
 		}
 
 		req := &models.LLMRequest{ID: "metadata-test", Prompt: "Test"}
@@ -545,68 +545,20 @@ func TestEnsembleWithCogneeMetadata(t *testing.T) {
 }
 
 // =============================================================================
-// Mock Implementations
+// Mem0 Provider Adapter
 // =============================================================================
 
-// MockBaseLLMProvider is a basic mock LLM provider
-type MockBaseLLMProvider struct {
-	name            string
-	completeFunc    func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error)
-	streamFunc      func(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error)
-	healthCheckFunc func() error
-}
-
-func (m *MockBaseLLMProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
-	if m.completeFunc != nil {
-		return m.completeFunc(ctx, req)
-	}
-	return &models.LLMResponse{
-		ID:      "mock-response",
-		Content: "Mock response from " + m.name,
-	}, nil
-}
-
-func (m *MockBaseLLMProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
-	if m.streamFunc != nil {
-		return m.streamFunc(ctx, req)
-	}
-	ch := make(chan *models.LLMResponse, 1)
-	go func() {
-		defer close(ch)
-		resp, _ := m.Complete(ctx, req)
-		ch <- resp
-	}()
-	return ch, nil
-}
-
-func (m *MockBaseLLMProvider) HealthCheck() error {
-	if m.healthCheckFunc != nil {
-		return m.healthCheckFunc()
-	}
-	return nil
-}
-
-func (m *MockBaseLLMProvider) GetCapabilities() *models.ProviderCapabilities {
-	return &models.ProviderCapabilities{
-		SupportsStreaming: true,
-		Metadata:          make(map[string]string),
-	}
-}
-
-func (m *MockBaseLLMProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
-	return true, nil
-}
-
-// CogneeProviderAdapter adapts CogneeEnhancedProvider to services.LLMProvider
-type CogneeProviderAdapter struct {
+// Mem0ProviderAdapter adapts CogneeEnhancedProvider to services.LLMProvider
+// for use in Mem0 Memory ensemble integration tests
+type Mem0ProviderAdapter struct {
 	provider *services.CogneeEnhancedProvider
 }
 
-func (a *CogneeProviderAdapter) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+func (a *Mem0ProviderAdapter) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
 	return a.provider.Complete(ctx, req)
 }
 
-func (a *CogneeProviderAdapter) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+func (a *Mem0ProviderAdapter) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
 	return a.provider.CompleteStream(ctx, req)
 }
 
@@ -614,7 +566,7 @@ func (a *CogneeProviderAdapter) CompleteStream(ctx context.Context, req *models.
 // Benchmark Tests
 // =============================================================================
 
-func BenchmarkCogneeEnhancedProvider(b *testing.B) {
+func BenchmarkMem0EnhancedProvider(b *testing.B) {
 	mockProvider := &MockBaseLLMProvider{
 		name: "bench",
 		completeFunc: func(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
@@ -634,7 +586,7 @@ func BenchmarkCogneeEnhancedProvider(b *testing.B) {
 	}
 }
 
-func BenchmarkCogneeEnsembleParallel(b *testing.B) {
+func BenchmarkMem0EnsembleParallel(b *testing.B) {
 	ensemble := services.NewEnsembleService("confidence_weighted", 30*time.Second)
 
 	for i := 1; i <= 3; i++ {
@@ -650,7 +602,7 @@ func BenchmarkCogneeEnsembleParallel(b *testing.B) {
 			},
 		}
 		enhanced := services.NewCogneeEnhancedProvider(name, mockProvider, nil, nil)
-		ensemble.RegisterProvider(name, &CogneeProviderAdapter{enhanced})
+		ensemble.RegisterProvider(name, &Mem0ProviderAdapter{enhanced})
 	}
 
 	req := &models.LLMRequest{ID: "bench", Prompt: "Test"}
