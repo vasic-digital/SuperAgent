@@ -32,7 +32,7 @@
 | `internal/services/` | security_adapters.go | DebateSecurityEvaluatorAdapter, VerifierSecurityAdapter |
 | `tests/security/` | penetration_test.go | LLM security testing: prompt injection, jailbreaking, data exfiltration |
 | `tests/challenge/` | ai_debate_maximal_challenge_test.go | AI debate system comprehensive testing |
-| `tests/integration/` | llm_cognee_verification_test.go | LLM and Cognee integration verification |
+| `tests/integration/` | llm_mem0_verification_test.go | LLM and Mem0 memory integration verification |
 
 ---
 
@@ -269,11 +269,11 @@
 - [x] Create internal/observability/observability_test.go
 
 ### 8.2 Integration Tests
-- [x] Create tests/integration/llm_cognee_verification_test.go
-  - Comprehensive LLM and Cognee integration verification
+- [x] Create tests/integration/llm_mem0_verification_test.go
+  - Comprehensive LLM and Mem0 memory integration verification
   - Mock HTTP servers for all 10 LLM providers
   - Tests all providers: Claude, DeepSeek, Gemini, Mistral, Qwen, OpenRouter, ZAI, Cerebras, Zen, Ollama
-  - Cognee service integration tests
+  - Mem0 memory service integration tests (migrated from Cognee)
   - ~1200 lines of comprehensive test code
 
 ### 8.3 Security Testing
@@ -363,7 +363,7 @@
 | internal/observability/observability_test.go | Observability tests | ✅ Created |
 | tests/security/penetration_test.go | LLM security penetration tests | ✅ Created |
 | tests/challenge/ai_debate_maximal_challenge_test.go | AI debate challenge tests | ✅ Created |
-| tests/integration/llm_cognee_verification_test.go | LLM & Cognee integration tests | ✅ Created |
+| tests/integration/llm_mem0_verification_test.go | LLM & Mem0 memory integration tests | ✅ Created |
 
 ---
 

@@ -21,7 +21,7 @@ LLMsVerifier is HelixAgent's verification and scoring system for LLM providers. 
 │  4. Verify ALL Providers in Parallel (8-test pipeline)      │
 │  5. Score ALL Verified Providers (5-component weighted)     │
 │  6. Rank by Score (OAuth priority when scores close)        │
-│  7. Select AI Debate Team (15 LLMs: 5 primary + 10 fallback)│
+│  7. Select AI Debate Team (25 LLMs: 5 primary + 20 fallback)│
 │  8. Start Server with Verified Configuration                 │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -210,33 +210,43 @@ curl http://localhost:8080/v1/providers/best?count=5
 LLMsVerifier dynamically selects the AI Debate team:
 
 ```
-Debate Team Selection (15 LLMs)
+Debate Team Selection (25 LLMs)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Position 1 (Lead Pro)
   Primary:  Claude Opus (9.2)
   Fallback: DeepSeek (8.8)
   Fallback: Gemini (8.5)
+  Fallback: OpenRouter (8.3)
+  Fallback: Mistral (7.9)
 
 Position 2 (Lead Con)
   Primary:  Qwen (7.5)
   Fallback: OpenRouter (8.3)
   Fallback: Mistral (7.9)
+  Fallback: ZAI (7.2)
+  Fallback: Cerebras (6.8)
 
 Position 3 (Analyst)
   Primary:  DeepSeek (8.8)
   Fallback: Gemini (8.5)
   Fallback: ZAI (7.2)
+  Fallback: Cerebras (6.8)
+  Fallback: Zen (6.5)
 
 Position 4 (Synthesizer)
   Primary:  Gemini (8.5)
   Fallback: OpenRouter (8.3)
   Fallback: Cerebras (6.8)
+  Fallback: Zen (6.5)
+  Fallback: Mistral (7.9)
 
 Position 5 (Moderator)
   Primary:  OpenRouter (8.3)
   Fallback: Mistral (7.9)
   Fallback: Zen (6.5)
+  Fallback: DeepSeek (8.8)
+  Fallback: ZAI (7.2)
 ```
 
 ## Configuration

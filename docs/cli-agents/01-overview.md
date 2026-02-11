@@ -24,7 +24,7 @@ Instead of each CLI agent connecting to a single LLM provider, HelixAgent routes
 │       │  ┌─────┐ ┌─────┐ ┌─────┐     │                     │
 │       │  │Claude│ │Gemini│ │DeepSk│    │                     │
 │       │  └─────┘ └─────┘ └─────┘     │                     │
-│       │  15 LLMs debating for best   │                     │
+│       │  25 LLMs debating for best   │                     │
 │       │  consensus response          │                     │
 │       └───────────────────────────────┘                     │
 └─────────────────────────────────────────────────────────────┘

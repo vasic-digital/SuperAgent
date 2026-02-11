@@ -24,7 +24,7 @@ The `verifier` package implements the unified startup verification pipeline for 
 │  5. Rank by Score        ──▶  OAuth priority when close         │
 │         │                                                        │
 │         ▼                                                        │
-│  6. Select Debate Team   ──▶  15 LLMs (5 primary + 10 fallback) │
+│  6. Select Debate Team   ──▶  25 LLMs (5 primary + 20 fallback) │
 │         │                                                        │
 │         ▼                                                        │
 │  7. Start Server         ──▶  Verified configuration            │

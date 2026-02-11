@@ -14,7 +14,7 @@ This comprehensive video course teaches you how to build enterprise-grade AI app
 ### What You'll Build
 
 By the end of this course, you'll have built:
-- ✅ Multi-round AI debate system with 15 LLMs
+- ✅ Multi-round AI debate system with 25 LLMs
 - ✅ Infinite context conversation engine
 - ✅ Distributed memory sync across multiple nodes
 - ✅ Real-time knowledge graph with Neo4j
@@ -64,7 +64,7 @@ curl http://localhost:7061/v1/debates -d '{"topic":"Hello"}'
 ### 2.1 How AI Debates Work (20 min)
 - Multi-round debate protocol
 - 5 positions: Researcher, Critic, Synthesizer, Validator, Facilitator
-- 15 LLMs: 5 primary + 10 fallbacks
+- 25 LLMs: 5 primary + 20 fallbacks
 - Confidence-weighted voting
 - Consensus building
 
@@ -452,7 +452,7 @@ docker-compose -f docker-compose.monitoring.yml up -d
 By completing this course, you will be able to:
 
 1. **Build AI Debate Systems**
-   - Implement multi-round debates with 15 LLMs
+   - Implement multi-round debates with 25 LLMs
    - Configure dynamic provider selection
    - Enable multi-pass validation
    - Handle semantic intent detection

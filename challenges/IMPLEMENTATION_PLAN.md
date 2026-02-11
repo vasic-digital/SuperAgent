@@ -508,7 +508,7 @@ results/ai_debate_group_formation/2025/01/04/1704362400/
 
 ## Debate Group Status
 - **Active**: Yes
-- **Members**: 15 (5 primary + 10 fallbacks)
+- **Members**: 25 (5 primary + 20 fallbacks)
 - **Average Score**: 8.7/10
 - **Last Verified**: 2025-01-04T10:35:32Z
 ```

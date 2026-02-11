@@ -50,7 +50,7 @@ docs/courses/
 
 ### Key Highlights (v3.0)
 - **100% Test Pass Rate**: Learn the strict real-result validation methodology
-- **15 LLM AI Debate**: Configure ensemble debates with 5 positions x 3 LLMs
+- **25 LLM AI Debate**: Configure ensemble debates with 5 positions x 5 LLMs
 - **20+ CLI Agent Support**: Integration with OpenCode, ClaudeCode, Aider, and more
 - **MCP Tool Search**: Discover and use 22+ MCP server integrations
 - **RAGS, MCPS, SKILLS Challenges**: Comprehensive validation framework
@@ -187,7 +187,7 @@ To update or improve course materials:
   - RAGS, MCPS, SKILLS challenge integration
   - 100% test pass rate methodology
   - MCP Tool Search and discovery
-  - 15 LLM AI Debate configuration
+  - 25 LLM AI Debate configuration
   - 20+ CLI agent support
   - Strict real-result validation
   - 3 new labs (Labs 6-8)

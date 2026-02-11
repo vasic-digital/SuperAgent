@@ -32,7 +32,7 @@ The HelixAgent server provides:
    - Discover all LLM providers
    - Verify provider credentials
    - Score providers using LLMsVerifier
-   - Select AI Debate Team (15 LLMs)
+   - Select AI Debate Team (25 LLMs)
 
 4. **Initialize Services**
    - Provider Registry

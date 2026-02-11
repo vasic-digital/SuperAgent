@@ -331,7 +331,7 @@ For each endpoint:
 ### Learning Outcomes
 
 Students will be able to:
-- Build AI debate systems with 15 LLMs
+- Build AI debate systems with 25 LLMs
 - Implement infinite context conversations
 - Deploy distributed memory synchronization
 - Build real-time knowledge graphs

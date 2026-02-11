@@ -215,7 +215,7 @@ HelixAgent supports **13 embedding providers** with 40+ models.
 | Aspect | Description |
 |--------|-------------|
 | **Purpose** | Multi-round debate between LLM providers with consensus voting |
-| **Participants** | 15 LLMs (5 positions x 3 per position) |
+| **Participants** | 25 LLMs (5 positions x 5 per position) |
 | **Topologies** | Mesh, Star, Chain |
 | **Phases** | Proposal -> Critique -> Review -> Synthesis |
 | **Learning** | Cross-debate lesson extraction and application |
@@ -437,7 +437,7 @@ HelixAgent supports **13 embedding providers** with 40+ models.
 | **CLI Agents** | 18 |
 | **Power Features** | 24+ major systems |
 | **Security Attack Patterns** | 40+ |
-| **Debate Participants** | 15 LLMs |
+| **Debate Participants** | 25 LLMs |
 | **Benchmarks Supported** | 7 |
 
 ---

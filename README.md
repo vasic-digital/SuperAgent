@@ -54,7 +54,7 @@ make run-dev
 - **Constitution Watcher**: Auto-update Constitution on project changes (new modules, documentation changes, structure changes, test coverage drops) with background filesystem monitoring
 
 > \* **Note**: Ollama is deprecated for production use (verification score: 5.0) and only serves as a fallback for local development/testing. Recommended production providers: Claude, DeepSeek, Gemini.
-- **AI Debate System**: Multi-round debate between providers for consensus (5 positions x 3 LLMs = 15 total)
+- **AI Debate System**: Multi-round debate between providers for consensus (5 positions x 5 LLMs = 25 total)
 - **Debate Orchestrator**: Multi-topology (mesh/star/chain), phase protocol (Proposal → Critique → Review → Synthesis), cross-debate learning, auto-fallback to legacy
 - **Intelligent Routing**: Confidence-weighted, majority vote, semantic intent detection, custom strategies
 - **Graceful Fallbacks**: Automatic fallback to best performing provider based on verification scores with categorized error reporting

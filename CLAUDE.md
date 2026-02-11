@@ -178,7 +178,7 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 ### Architectural Patterns
 - **Provider Registry**: Unified multi-provider interface with credential management
 - **Ensemble Strategy**: Confidence-weighted voting, majority vote, parallel execution
-- **AI Debate**: Multi-round debate, 5 positions × 3 LLMs = 15 total, multi-pass validation (Initial → Validation → Polish → Final)
+- **AI Debate**: Multi-round debate, 5 positions × 5 LLMs = 25 total, multi-pass validation (Initial → Validation → Polish → Final)
 - **Debate Orchestrator**: Multi-topology (mesh/star/chain), phase protocol (Proposal → Critique → Review → Synthesis), cross-debate learning, auto-fallback to legacy
 - **SpecKit Auto-Activation**: 7-phase development flow (Constitution → Specify → Clarify → Plan → Tasks → Analyze → Implement) triggered automatically for large changes/refactoring based on work granularity detection (5 levels: single action, small creation, big creation, whole functionality, refactoring). Phase caching for resumption. Key files: `internal/services/speckit_orchestrator.go`, `enhanced_intent_classifier.go`, `debate_service_speckit_e2e_test.go`
 - **Constitution Management**: Auto-update Constitution on project changes (new modules, documentation changes, structure changes). Background watcher monitors filesystem. Key files: `internal/services/constitution_watcher.go`, `constitution_manager.go`, `documentation_sync.go`
@@ -256,6 +256,7 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/grpc_service_challenge.sh                   # 9 tests
 ./challenges/scripts/bigdata_comprehensive_challenge.sh          # 23 tests
 ./challenges/scripts/memory_system_challenge.sh                  # 14 tests
+./challenges/scripts/mem0_migration_challenge.sh                 # Mem0 migration verification
 ./challenges/scripts/security_scanning_challenge.sh              # 10 tests
 ./challenges/scripts/constitution_watcher_challenge.sh           # 12 tests
 ./challenges/scripts/speckit_auto_activation_challenge.sh        # 15 tests

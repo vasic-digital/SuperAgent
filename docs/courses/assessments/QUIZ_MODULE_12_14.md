@@ -218,15 +218,15 @@ D) Communication
 
 A) 5
 B) 10
-C) 15
+C) 25
 D) 20
 
 ---
 
-### 24. How is the 15 LLM debate team structured?
+### 24. How is the 25 LLM debate team structured?
 
 A) 15 independent participants
-B) 5 positions with 3 LLMs each (1 primary + 2 fallbacks)
+B) 5 positions with 5 LLMs each (1 primary + 4 fallbacks)
 C) 3 teams with 5 LLMs each
 D) 1 primary with 14 fallbacks
 
@@ -379,8 +379,8 @@ Phase 4 (FINAL):
 ### Section C: Advanced AI Debate (23-32)
 | Q | Answer | Explanation |
 |---|--------|-------------|
-| 23 | C | 15 LLMs: 5 positions x 3 LLMs each |
-| 24 | B | 5 positions with 1 primary + 2 fallback LLMs each |
+| 23 | C | 25 LLMs: 5 positions x 5 LLMs each |
+| 24 | B | 5 positions with 1 primary + 4 fallback LLMs each |
 | 25 | C | Initial -> Validation -> Polish -> Final |
 | 26 | B | ResponseSpeed (25%) and CostEffectiveness (25%) share highest weight |
 | 27 | C | OAuth providers receive +0.5 bonus score |
@@ -442,7 +442,7 @@ To achieve Level 5: Challenge Expert certification:
    - RAGS challenge: 100% pass rate
    - MCPS challenge: 100% pass rate
    - SKILLS challenge: 100% pass rate
-3. **Configure 15 LLM debate team** with multi-pass validation
+3. **Configure 25 LLM debate team** with multi-pass validation
 4. **Demonstrate MCP Tool Search** integration
 5. **Document strict validation methodology**
 
@@ -453,7 +453,7 @@ To achieve Level 5: Challenge Expert certification:
 After passing this assessment:
 
 1. Run all three challenges and achieve 100% pass rates
-2. Configure and test the 15 LLM debate team
+2. Configure and test the 25 LLM debate team
 3. Build a custom MCP tool discovery workflow
 4. Review advanced debugging techniques
 5. Prepare for production deployment

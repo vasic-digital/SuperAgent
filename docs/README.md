@@ -74,7 +74,7 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
   - Data exfiltration (PII extraction, credential probing)
   - Indirect injection (markdown/HTML injection, encoded payloads)
 - **AI Debate Challenge Tests**: `tests/challenge/ai_debate_maximal_challenge_test.go`
-- **LLM+Cognee Integration Tests**: `tests/integration/llm_cognee_verification_test.go`
+- **LLM+Mem0 Integration Tests**: `tests/integration/llm_mem0_verification_test.go`
 
 ### Additional Resources
 - [Specifications](specs/) - Project specifications
@@ -104,7 +104,7 @@ HelixAgent is an advanced AI-powered multi-provider LLM orchestration platform w
 - **SpecKit Auto-Activation**: Intelligent 7-phase development flow triggered automatically for large changes
 - **Constitution Watcher**: Auto-update Constitution on project changes with background monitoring
 - **Cognee Integration**: AI Memory Engine with knowledge graphs and semantic search
-- **AI Debate System**: Advanced multi-agent debate orchestration (5 positions x 3 LLMs = 15 total)
+- **AI Debate System**: Advanced multi-agent debate orchestration (5 positions x 5 LLMs = 25 total)
 - **Power Features**: RAG, Memory Management, Semantic Routing, Agentic Workflows, Security Framework, and more
 - **Enterprise Monitoring**: Comprehensive metrics and observability with OpenTelemetry
 - **BigData Integration**: Infinite context, distributed memory, knowledge graph streaming

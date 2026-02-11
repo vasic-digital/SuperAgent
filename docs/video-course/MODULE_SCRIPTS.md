@@ -1524,13 +1524,13 @@ curl "http://localhost:7061/v1/mcp/stats" | jq
 
 ## Module 14: AI Debate System Advanced (90 minutes)
 
-### Video 14.1: 15-LLM Debate Team Configuration (18 min)
+### Video 14.1: 25-LLM Debate Team Configuration (18 min)
 
 **Talking Points**:
 - Team structure:
   - 5 positions (Analyst, Proposer, Critic, Synthesizer, Mediator)
-  - 3 LLMs per position (primary + 2 fallbacks)
-  - Total: 15 LLMs
+  - 5 LLMs per position (primary + 4 fallbacks)
+  - Total: 25 LLMs
 - Dynamic selection via LLMsVerifier
 - OAuth provider priority (Claude, Qwen)
 

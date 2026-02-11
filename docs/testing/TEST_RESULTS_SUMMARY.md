@@ -80,7 +80,7 @@ All infrastructure and core challenges have passed:
 | Session Management | PASS | Sessions working |
 | Configuration Loading | PASS | Config validated |
 | Provider Verification | PASS | Providers verified |
-| AI Debate Formation | PASS | 15 LLMs selected |
+| AI Debate Formation | PASS | 25 LLMs selected |
 | Ensemble Voting | PASS | Voting strategies work |
 | Streaming Responses | PASS | SSE streaming OK |
 | Model Metadata | PASS | Metadata retrieved |

@@ -97,7 +97,7 @@ Orchestrates multi-provider responses:
 ### 3. AI Debate Service (`internal/services/debate_service.go`)
 
 Implements multi-agent debate for complex queries:
-- 5 positions × 3 LLMs (1 primary + 2 fallbacks) = 15 participants
+- 5 positions × 5 LLMs (1 primary + 4 fallbacks) = 25 participants
 - Multi-pass validation (Initial → Validate → Polish → Conclude)
 - Dynamic team selection via LLMsVerifier scores
 
@@ -210,7 +210,7 @@ Debate Request
          │
          ▼
 ┌─────────────────┐
-│ Team Selection  │ ─── Select 15 LLMs from verified pool
+│ Team Selection  │ ─── Select 25 LLMs from verified pool
 └────────┬────────┘
          │
          ▼
@@ -233,6 +233,10 @@ Debate Request
     │ │ Fallback 1 if primary fails    ││
     │ │         ↓                       ││
     │ │ Fallback 2 if fallback 1 fails ││
+    │ │         ↓                       ││
+    │ │ Fallback 3 if fallback 2 fails ││
+    │ │         ↓                       ││
+    │ │ Fallback 4 if fallback 3 fails ││
     │ └─────────────────────────────────┘│
     └────────────────┬───────────────────┘
                      │

@@ -50,7 +50,7 @@ This challenge discovers, verifies, and scores all LLM providers configured in t
 **Purpose**: Form an optimal AI debate group from top-scoring models.
 
 **Description**:
-Creates an AI debate group consisting of 5 primary members with 2 fallback models each, totaling 15 LLMs. Selection is based on verification scores from the Provider Verification challenge.
+Creates an AI debate group consisting of 5 primary members with 4 fallback models each, totaling 25 LLMs. Selection is based on verification scores from the Provider Verification challenge.
 
 **Inputs**:
 - Scored models from `provider_verification`
@@ -63,22 +63,32 @@ Creates an AI debate group consisting of 5 primary members with 2 fallback model
 
 **Group Structure**:
 ```
-Debate Group (15 models total)
+Debate Group (25 models total)
 ├── Primary Member 1 (Highest Score)
 │   ├── Fallback 1a
-│   └── Fallback 1b
+│   ├── Fallback 1b
+│   ├── Fallback 1c
+│   └── Fallback 1d
 ├── Primary Member 2
 │   ├── Fallback 2a
-│   └── Fallback 2b
+│   ├── Fallback 2b
+│   ├── Fallback 2c
+│   └── Fallback 2d
 ├── Primary Member 3
 │   ├── Fallback 3a
-│   └── Fallback 3b
+│   ├── Fallback 3b
+│   ├── Fallback 3c
+│   └── Fallback 3d
 ├── Primary Member 4
 │   ├── Fallback 4a
-│   └── Fallback 4b
+│   ├── Fallback 4b
+│   ├── Fallback 4c
+│   └── Fallback 4d
 └── Primary Member 5
     ├── Fallback 5a
-    └── Fallback 5b
+    ├── Fallback 5b
+    ├── Fallback 5c
+    └── Fallback 5d
 ```
 
 **Selection Criteria**:
@@ -89,7 +99,7 @@ Debate Group (15 models total)
 
 **Assertions**:
 - Exactly 5 primary members
-- Exactly 2 fallbacks per primary
+- Exactly 4 fallbacks per primary
 - No duplicate models
 - Minimum average score threshold
 

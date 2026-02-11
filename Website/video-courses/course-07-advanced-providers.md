@@ -254,7 +254,7 @@ scoring:
 4. Verify ALL Providers in Parallel (8-test pipeline)
 5. Score ALL Verified Providers (5-component weighted)
 6. Rank by Score (OAuth priority when scores close)
-7. Select AI Debate Team (15 LLMs: 5 primary + 10 fallback)
+7. Select AI Debate Team (25 LLMs: 5 primary + 20 fallback)
 8. Start Server with Verified Configuration
 ```
 
@@ -284,7 +284,7 @@ func (sv *StartupVerifier) VerifyAll(ctx context.Context) (*VerificationResult, 
 ### Video 3.2: AI Debate Team Selection (30 min)
 
 **Topics:**
-- Team composition (5 positions x 3 LLMs)
+- Team composition (5 positions x 5 LLMs)
 - Primary vs fallback selection
 - OAuth priority rules
 - Diversity requirements
@@ -296,6 +296,8 @@ Position 1 (Lead Pro)      Position 2 (Lead Con)
 │ Primary: Claude  │      │ Primary: Qwen    │
 │ Fallback: Deep.  │      │ Fallback: OpenR. │
 │ Fallback: Gemini │      │ Fallback: Mistral│
+│ Fallback: OpenR. │      │ Fallback: ZAI    │
+│ Fallback: Mistral│      │ Fallback: Cerebras│
 └──────────────────┘      └──────────────────┘
 
 Position 3 (Analyst)      Position 4 (Synthesizer)
@@ -303,6 +305,8 @@ Position 3 (Analyst)      Position 4 (Synthesizer)
 │ Primary: Deep.   │      │ Primary: Gemini  │
 │ Fallback: Gemini │      │ Fallback: OpenR. │
 │ Fallback: ZAI    │      │ Fallback: Cerebras│
+│ Fallback: Cerebras│     │ Fallback: Zen    │
+│ Fallback: Zen    │      │ Fallback: Mistral│
 └──────────────────┘      └──────────────────┘
 
 Position 5 (Moderator)
@@ -310,9 +314,11 @@ Position 5 (Moderator)
 │ Primary: OpenR.  │
 │ Fallback: Mistral│
 │ Fallback: Zen    │
+│ Fallback: Deep.  │
+│ Fallback: ZAI    │
 └──────────────────┘
 
-Total: 5 positions x 3 LLMs = 15 LLMs
+Total: 5 positions x 5 LLMs = 25 LLMs
 ```
 
 ### Video 3.3: Fallback Mechanisms (25 min)

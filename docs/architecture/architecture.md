@@ -87,7 +87,7 @@ make build
 ```
 
 The main server (`cmd/helixagent/main.go`) provides:
-- Full AI Debate ensemble with 15 LLMs
+- Full AI Debate ensemble with 25 LLMs
 - LLMsVerifier startup verification pipeline
 - All protocol support (MCP, LSP, ACP, Embeddings)
 - Real provider integrations (Claude, DeepSeek, Gemini, etc.)

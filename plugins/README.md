@@ -133,7 +133,7 @@ All plugins provide these HelixAgent tools:
 
 | Tool | Description |
 |------|-------------|
-| `helixagent_debate` | Start AI debate with 15 LLMs (5 positions × 3 each) |
+| `helixagent_debate` | Start AI debate with 25 LLMs (5 positions × 5 each) |
 | `helixagent_ensemble` | Single query to AI Debate Ensemble |
 | `helixagent_task` | Create background tasks |
 | `helixagent_rag` | Hybrid RAG query (dense + sparse) |

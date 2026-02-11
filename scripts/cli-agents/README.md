@@ -260,7 +260,7 @@ When a CLI agent is configured with HelixAgent, it gains access to:
 
 | Feature | Description |
 |---------|-------------|
-| **AI Debate Ensemble** | Responses from 15 LLMs with consensus voting |
+| **AI Debate Ensemble** | Responses from 25 LLMs with consensus voting |
 | **Multi-Pass Validation** | 4-phase response validation and improvement |
 | **Dynamic Provider Selection** | LLMsVerifier-based provider ranking |
 | **Streaming Responses** | Real-time streaming with SSE |

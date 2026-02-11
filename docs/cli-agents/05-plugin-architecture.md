@@ -53,7 +53,7 @@ HelixAgent's plugin system enables deep integration with Tier 1 CLI agents, prov
 │  │                         HelixAgent Server                              │  │
 │  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
 │  │  │                    AI Debate Ensemble                            │  │  │
-│  │  │     15 LLMs (5 positions × 3 per position)                       │  │  │
+│  │  │     25 LLMs (5 positions × 5 per position)                       │  │  │
 │  │  │     Multi-pass validation for consensus                          │  │  │
 │  │  └─────────────────────────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
@@ -211,7 +211,7 @@ UI extensions render HelixAgent-specific visualizations in the CLI.
 │ ├─ Argument: "Combining both perspectives..."               │
 │ └─ Confidence: 0.88                                         │
 ├─────────────────────────────────────────────────────────────┤
-│ Current Phase: VALIDATION                    Votes: 12/15   │
+│ Current Phase: VALIDATION                    Votes: 20/25   │
 └─────────────────────────────────────────────────────────────┘
 ```
 

@@ -14,12 +14,12 @@ HelixAgent uses a **unified startup verification pipeline** where LLMsVerifier a
 2. **Verifies all providers in parallel** (8-test pipeline)
 3. **Scores verified providers** (5 weighted components: ResponseSpeed, ModelEfficiency, CostEffectiveness, Capability, Recency)
 4. **Ranks by score** (OAuth priority when scores close)
-5. **Selects AI Debate Team** (15 LLMs: 5 primary + 10 fallback)
+5. **Selects AI Debate Team** (25 LLMs: 5 primary + 20 fallback)
 6. **Starts server** with verified configuration
 
 ### Key Components
 - **LLM Provider Registry**: Unified interface for 10 LLM providers with credential management
-- **AI Debate System**: Multi-round debate between providers for consensus (5 positions × 3 LLMs)
+- **AI Debate System**: Multi-round debate between providers for consensus (5 positions × 5 LLMs = 25 total)
 - **SpecKit Orchestrator**: 7-phase development flow (Constitution → Specify → Clarify → Plan → Tasks → Analyze → Implement) with auto-activation based on work granularity detection and phase caching for resumption
 - **Constitution Management**: Auto-update Constitution on project changes (new modules, documentation changes, structure changes) with background filesystem monitoring
 - **Plugin System**: Hot-reloadable plugins with dependency resolution
@@ -34,7 +34,7 @@ HelixAgent uses a **unified startup verification pipeline** where LLMsVerifier a
 - **Free**: Zen (OpenCode), OpenRouter free models (anonymous/X-Device-ID, reduced verification)
 
 ### AI Debate Team
-Dynamic selection via StartupVerifier: OAuth2 providers first, then LLMsVerifier-scored providers. 5 positions × 3 LLMs (1 primary + 2 fallbacks) = **15 LLMs**. OAuth primaries get non-OAuth fallbacks for redundancy.
+Dynamic selection via StartupVerifier: OAuth2 providers first, then LLMsVerifier-scored providers. 5 positions × 5 LLMs (1 primary + 4 fallbacks) = **25 LLMs**. OAuth primaries get non-OAuth fallbacks for redundancy.
 
 ### Multi-Pass Validation
 Debate responses undergo re-evaluation, polishing, and improvement before final consensus:
@@ -138,13 +138,20 @@ Always run `make fmt vet lint` before committing.
 ### Go Test Suites
 - `tests/security/penetration_test.go` – LLM security testing (prompt injection, jailbreaking, data exfiltration)
 - `tests/challenge/ai_debate_maximal_challenge_test.go` – AI debate system comprehensive validation
-- `tests/integration/llm_cognee_verification_test.go` – All 10 LLM providers + Cognee integration
+- `tests/integration/llm_mem0_verification_test.go` – All 10 LLM providers + Mem0 memory integration
+- `tests/integration/mem0_full_integration_test.go` – Mem0 full integration (store, search, entity graph)
+- `tests/integration/mem0_capacity_test.go` – Mem0 capacity and performance tests
+- `tests/integration/mem0_resilience_test.go` – Mem0 resilience and recovery tests
+- `tests/integration/mem0_llm_integration_test.go` – Mem0 + LLM provider integration tests
+- `tests/integration/mem0_ensemble_integration_test.go` – Mem0 + ensemble voting integration
+- `tests/integration/mem0_migration_test.go` – Cognee-to-Mem0 migration verification
 - `tests/integration/grpc_integration_test.go` – 21 gRPC service integration tests
 - `tests/integration/debate_full_flow_test.go` – 7 debate lifecycle integration tests
 - `tests/integration/comprehensive_monitoring_test.go` – Full monitoring stack validation
 - `tests/stress/bigdata_stress_test.go` – BigData concurrent stress tests
 - `tests/stress/formatters_stress_test.go` – Formatters concurrent stress tests
 - `tests/stress/memory_stress_test.go` – Memory CRDT/distributed stress tests
+- `tests/stress/concurrency_safety_test.go` – Concurrency safety and race condition tests
 
 ### Test Infrastructure Management
 - `make test-infra-start` – Start PostgreSQL, Redis, Mock LLM containers
@@ -275,7 +282,10 @@ go test -v -coverprofile=coverage.out ./internal/llm
 - `./challenges/scripts/grpc_service_challenge.sh` – 9 tests - gRPC service validation
 - `./challenges/scripts/bigdata_comprehensive_challenge.sh` – 23 tests - BigData components
 - `./challenges/scripts/memory_system_challenge.sh` – 14 tests - Memory system (Mem0, CRDT, distributed)
+- `./challenges/scripts/mem0_migration_challenge.sh` – Mem0 migration verification (Cognee→Mem0)
 - `./challenges/scripts/security_scanning_challenge.sh` – 10 tests - Security scanning tools
+- `./challenges/scripts/constitution_watcher_challenge.sh` – 12 tests - Constitution auto-update
+- `./challenges/scripts/speckit_auto_activation_challenge.sh` – 15 tests - SpecKit 7-phase flow
 
 ### Formatters System
 - `make formatters` – (if exists) Start formatters system

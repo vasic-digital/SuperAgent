@@ -9,7 +9,7 @@
 ## Objectives
 
 By completing this lab, you will:
-- Configure the 15 LLM AI Debate Ensemble
+- Configure the 25 LLM AI Debate Ensemble
 - Enable and customize multi-pass validation
 - Understand the 4 validation phases
 - Achieve >0.8 confidence scores
@@ -24,43 +24,53 @@ By completing this lab, you will:
 
 ---
 
-## Exercise 1: Understanding the 15 LLM Debate Team (15 minutes)
+## Exercise 1: Understanding the 25 LLM Debate Team (15 minutes)
 
 ### Task 1.1: Review Debate Team Configuration
 
-The AI Debate system uses 15 LLMs organized as:
+The AI Debate system uses 25 LLMs organized as:
 - 5 positions (Analyst, Proposer, Critic, Synthesizer, Mediator)
-- 3 LLMs per position (1 primary + 2 fallbacks)
+- 5 LLMs per position (1 primary + 4 fallbacks)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    15 LLM DEBATE TEAM                                │
+│                    25 LLM DEBATE TEAM                                │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │  Position 1: ANALYST                                                │
 │  ├── Primary: Claude-3.5-Sonnet (OAuth)                             │
 │  ├── Fallback 1: Gemini-2.0-Flash                                   │
-│  └── Fallback 2: DeepSeek-Chat                                      │
+│  ├── Fallback 2: DeepSeek-Chat                                      │
+│  ├── Fallback 3: OpenRouter                                         │
+│  └── Fallback 4: Mistral-Large                                      │
 │                                                                      │
 │  Position 2: PROPOSER                                               │
 │  ├── Primary: Qwen-2.5-Coder (OAuth)                                │
 │  ├── Fallback 1: Mistral-Large                                      │
-│  └── Fallback 2: DeepSeek-Coder                                     │
+│  ├── Fallback 2: DeepSeek-Coder                                     │
+│  ├── Fallback 3: ZAI                                                │
+│  └── Fallback 4: Cerebras-Llama                                     │
 │                                                                      │
 │  Position 3: CRITIC                                                 │
 │  ├── Primary: Gemini-2.0-Flash                                      │
 │  ├── Fallback 1: Claude-3.5-Sonnet                                  │
-│  └── Fallback 2: OpenRouter-Free                                    │
+│  ├── Fallback 2: OpenRouter-Free                                    │
+│  ├── Fallback 3: Cerebras-Llama                                     │
+│  └── Fallback 4: Zen-OpenCode                                       │
 │                                                                      │
 │  Position 4: SYNTHESIZER                                            │
 │  ├── Primary: DeepSeek-Chat                                         │
 │  ├── Fallback 1: Qwen-2.5-Coder                                     │
-│  └── Fallback 2: Cerebras-Llama                                     │
+│  ├── Fallback 2: Cerebras-Llama                                     │
+│  ├── Fallback 3: Zen-OpenCode                                       │
+│  └── Fallback 4: Mistral-Large                                      │
 │                                                                      │
 │  Position 5: MEDIATOR                                               │
 │  ├── Primary: Mistral-Large                                         │
 │  ├── Fallback 1: Claude-3.5-Sonnet                                  │
-│  └── Fallback 2: Zen-OpenCode                                       │
+│  ├── Fallback 2: Zen-OpenCode                                       │
+│  ├── Fallback 3: DeepSeek-Chat                                      │
+│  └── Fallback 4: ZAI                                                │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -292,7 +302,7 @@ curl -X POST http://localhost:7061/v1/debates \
 
 ## Lab Completion Checklist
 
-- [ ] Understood 15 LLM team structure
+- [ ] Understood 25 LLM team structure
 - [ ] Reviewed provider scores
 - [ ] Created multi-pass validation debate
 - [ ] Monitored debate phases

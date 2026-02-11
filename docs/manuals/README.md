@@ -24,7 +24,7 @@ Comprehensive user documentation for HelixAgent.
    - Supported Providers (10 LLM providers)
    - Configuration Methods
    - Provider Verification
-   - AI Debate Team (15 LLMs: 5 primary + 10 fallback)
+   - AI Debate Team (25 LLMs: 5 primary + 20 fallback)
    - Health Monitoring
    - Cost Management
 

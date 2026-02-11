@@ -397,13 +397,13 @@ curl -X POST http://localhost:7061/v1/debates \
 ```
 
 **Key Teaching Points**:
-1. **15 LLM Team**: 5 positions x 3 LLMs (primary + 2 fallbacks)
+1. **25 LLM Team**: 5 positions x 5 LLMs (primary + 4 fallbacks)
 2. **Multi-Pass Validation**: 4 phases for quality improvement
 3. **LLMsVerifier Scoring**: 5-component weighted algorithm
 4. **OAuth Priority**: Claude and Qwen get selection priority
 
 **Whiteboard Exercises**:
-1. Draw the 15 LLM team configuration
+1. Draw the 25 LLM team configuration
 2. Map the 4 validation phases
 3. Calculate weighted scores for providers
 

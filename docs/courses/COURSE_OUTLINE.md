@@ -18,7 +18,7 @@ Upon completion of this course, participants will be able to:
 2. Install, configure, and deploy HelixAgent in various environments
 3. Integrate 10 LLM providers (Claude, Gemini, DeepSeek, Qwen, Ollama, OpenRouter, ZAI, Zen, Mistral, Cerebras)
 4. Implement ensemble voting strategies for improved AI responses
-5. Configure and utilize the AI Debate System with 15 LLMs for complex problem-solving
+5. Configure and utilize the AI Debate System with 25 LLMs for complex problem-solving
 6. Develop custom plugins for extended functionality
 7. Integrate MCP/LSP/ACP protocols for enhanced capabilities
 8. Apply LLM optimization techniques for better performance
@@ -733,17 +733,17 @@ Upon completion of this course, participants will be able to:
 ## Module 14: AI Debate System Advanced (90 minutes)
 
 ### Learning Objectives
-- Configure the 15 LLM AI Debate Ensemble
+- Configure the 25 LLM AI Debate Ensemble
 - Implement multi-pass validation
 - Integrate with LLMsVerifier scoring
 
 ### Videos
 
-#### 14.1 AI Debate with 15 LLMs (25 min)
+#### 14.1 AI Debate with 25 LLMs (25 min)
 - Debate team configuration:
   - 5 positions (Analyst, Proposer, Critic, Synthesizer, Mediator)
-  - 3 LLMs per position (1 primary + 2 fallbacks)
-  - Total: 15 LLMs in the ensemble
+  - 5 LLMs per position (1 primary + 4 fallbacks)
+  - Total: 25 LLMs in the ensemble
 - Dynamic selection via LLMsVerifier scores
 - OAuth providers priority (Claude, Qwen)
 - Scoring algorithm (5 weighted components):
@@ -802,7 +802,7 @@ Upon completion of this course, participants will be able to:
 - User-Agent pattern matching
 
 ### Hands-On Lab
-- Configure a 15 LLM debate team
+- Configure a 25 LLM debate team
 - Enable multi-pass validation
 - Test different topologies
 - Verify agent integration
@@ -864,7 +864,7 @@ Upon completion of this course, participants will be able to:
 - Assessment: 100% pass rate on all challenge scripts
 - Requirements:
   - Run RAGS, MCPS, and SKILLS challenges successfully
-  - Configure 15 LLM debate team
+  - Configure 25 LLM debate team
   - Demonstrate MCP Tool Search integration
   - Document strict validation methodology
 

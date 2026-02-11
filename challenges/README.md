@@ -76,7 +76,7 @@ In addition to shell-based challenges, comprehensive Go test suites are availabl
 |------------|----------|---------|
 | Security Penetration | `tests/security/penetration_test.go` | LLM security testing (prompt injection, jailbreaking, data exfiltration) |
 | AI Debate Challenge | `tests/challenge/ai_debate_maximal_challenge_test.go` | AI debate system comprehensive validation |
-| LLM+Cognee Integration | `tests/integration/llm_cognee_verification_test.go` | All 10 LLM providers + Cognee integration |
+| LLM+Mem0 Integration | `tests/integration/llm_mem0_verification_test.go` | All 10 LLM providers + Mem0 memory integration |
 
 Run Go test challenges:
 ```bash

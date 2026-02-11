@@ -10,7 +10,7 @@ This project uses HelixAgent as the AI backend provider.
 
 ## Available Models
 
-- `ai-debate-ensemble` - Full AI debate with 15 LLMs
+- `ai-debate-ensemble` - Full AI debate with 25 LLMs
 - `helix-fast` - Single provider for quick responses
 
 ## Plugins
