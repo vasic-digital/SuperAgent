@@ -26,6 +26,7 @@ HelixAgent uses a **unified startup verification pipeline** where LLMsVerifier a
 - **Formatters System**: 32+ code formatters for 19 programming languages via REST API
 - **MCP Adapters**: 45+ Model Context Protocol adapters for external services (Linear, Asana, Jira, etc.)
 - **Dynamic Model Discovery**: 3-tier model discovery for all providers — Tier 1: provider API (`/v1/models`), Tier 2: models.dev catalog, Tier 3: hardcoded fallback. Thread-safe caching with 1-hour TTL. Package: `internal/llm/discovery/`
+- **Provider Subscription & Access Types**: 3-tier dynamic subscription detection (Tier 1: provider-specific APIs like OpenRouter `/v1/auth/key` and Cohere `/check-api-key`, Tier 2: rate limit header inference, Tier 3: static fallback). 6 subscription types (`free`, `free_credits`, `free_tier`, `pay_as_you_go`, `monthly`, `enterprise`). Per-provider auth mechanism configuration (Bearer, `x-api-key`, `x-goog-api-key`, anonymous). Rate limit header parsing for OpenAI, Anthropic, Groq, OpenRouter, SambaNova, HuggingFace. Subscription info factors into cost scoring. Package: `internal/verifier/`
 - **Background Task System**: Task queue, worker pool, resource monitor, stuck detector
 - **Notifications**: Real-time notifications via SSE, WebSocket, webhooks, polling
 
@@ -44,6 +45,16 @@ Debate responses undergo re-evaluation, polishing, and improvement before final 
 ### AI Debate Orchestrator Framework
 
 New framework with multi-topology support (mesh, star, chain), phase-based protocol (Proposal → Critique → Review → Synthesis), learning system (extracts lessons from debates), and automatic fallback to legacy services.
+
+### Verification Failure Tracking
+When a provider fails verification, detailed failure information is captured in `UnifiedProvider`:
+- **FailureReason**: Human-readable explanation (e.g., "code visibility test failed. 2/3 tests passed (score: 45.0)")
+- **FailureCategory**: Categorized failure type (`code_visibility_failed`, `score_below_threshold`, `api_error`, `timeout`, `auth_error`, `canned_response`, `empty_response`)
+- **TestDetails**: Per-test breakdown (`ProviderTestDetail` with name, passed, score, details, duration)
+- **VerificationMsg**: Summary message from the verification pipeline
+- **LastModelResponse**: Truncated (200 chars) last response for debugging
+
+Exposed at `/v1/startup/verification` → `ranked_providers[].failure_reason`, `failure_category`, `test_details`. Key files: `internal/verifier/provider_types.go` (struct), `internal/verifier/startup.go` (helpers: `buildFailureReason`, `categorizeFailure`, `mapTestDetails`).
 
 ### Fallback Error Reporting
 When an LLM provider fails, detailed error information is included in streamed responses (rate_limit, timeout, auth, connection, unavailable, overloaded).

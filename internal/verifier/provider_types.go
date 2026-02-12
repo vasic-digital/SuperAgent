@@ -78,6 +78,13 @@ type UnifiedProvider struct {
 	TestResults map[string]bool `json:"test_results,omitempty"`
 	CodeVisible bool            `json:"code_visible"`
 
+	// Failure Tracking (populated when Verified == false)
+	FailureReason     string               `json:"failure_reason,omitempty"`
+	FailureCategory   string               `json:"failure_category,omitempty"`
+	TestDetails       []ProviderTestDetail `json:"test_details,omitempty"`
+	VerificationMsg   string               `json:"verification_message,omitempty"`
+	LastModelResponse string               `json:"last_model_response,omitempty"`
+
 	// Models Available
 	Models       []UnifiedModel `json:"models"`
 	DefaultModel string         `json:"default_model"`
@@ -111,7 +118,32 @@ type UnifiedProvider struct {
 
 	// Metadata for additional information
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
+
+	// Subscription & Access
+	Subscription *SubscriptionInfo    `json:"subscription,omitempty"`
+	AccessConfig *ProviderAccessConfig `json:"access_config,omitempty"`
 }
+
+// ProviderTestDetail contains details of a single verification test for a provider.
+// It maps from the internal TestResult type to an API-friendly representation.
+type ProviderTestDetail struct {
+	Name       string   `json:"name"`
+	Passed     bool     `json:"passed"`
+	Score      float64  `json:"score"`
+	Details    []string `json:"details,omitempty"`
+	DurationMs int64    `json:"duration_ms"`
+}
+
+// Failure category constants for categorizeFailure
+const (
+	FailureCategoryCodeVisibility = "code_visibility_failed"
+	FailureCategoryScoreBelow     = "score_below_threshold"
+	FailureCategoryAPIError       = "api_error"
+	FailureCategoryTimeout        = "timeout"
+	FailureCategoryAuthError      = "auth_error"
+	FailureCategoryCannedResponse = "canned_response"
+	FailureCategoryEmptyResponse  = "empty_response"
+)
 
 // UnifiedModel represents a model with its verification score
 type UnifiedModel struct {
@@ -175,6 +207,12 @@ type StartupResult struct {
 
 	// Errors
 	Errors []StartupError `json:"errors,omitempty"`
+
+	// Subscription breakdown
+	FreeProviderCount         int `json:"free_provider_count"`
+	FreeCreditProviderCount   int `json:"free_credit_provider_count"`
+	PayAsYouGoProviderCount   int `json:"pay_as_you_go_provider_count"`
+	SubscriptionDetectedCount int `json:"subscription_detected_count"`
 }
 
 // DebateTeamResult contains the selected LLMs for the AI debate team (up to 25)
@@ -301,6 +339,10 @@ type ProviderTypeInfo struct {
 	BaseURL     string           `json:"base_url"`
 	Models      []string         `json:"models"`
 	Free        bool             `json:"free"`
+
+	// Subscription & Access (linked from ProviderAccessRegistry)
+	AccessConfig   *ProviderAccessConfig `json:"access_config,omitempty"`
+	DefaultSubType SubscriptionType      `json:"default_sub_type,omitempty"`
 }
 
 // SupportedProviders defines all provider types supported by the system

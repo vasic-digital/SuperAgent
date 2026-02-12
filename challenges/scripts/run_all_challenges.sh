@@ -220,6 +220,8 @@ CHALLENGES=(
     # Core verification
     "provider_verification"
     "provider_reliability"
+    "verification_failure_reasons"
+    "subscription_detection"
 
     # CLI proxy mechanism (OAuth/free providers)
     "cli_proxy"

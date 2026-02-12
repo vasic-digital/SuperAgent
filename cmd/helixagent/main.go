@@ -1388,6 +1388,11 @@ func run(appCfg *AppConfig) error {
 			"oauth_providers":        startupResult.OAuthProviders,
 			"free_providers":         startupResult.FreeProviders,
 			"errors_count":           len(startupResult.Errors),
+			// Subscription breakdown
+			"free_provider_count":          startupResult.FreeProviderCount,
+			"free_credit_provider_count":   startupResult.FreeCreditProviderCount,
+			"pay_as_you_go_provider_count": startupResult.PayAsYouGoProviderCount,
+			"subscription_detected_count":  startupResult.SubscriptionDetectedCount,
 		}
 
 		// Add ranked providers with scores
@@ -1395,16 +1400,25 @@ func run(appCfg *AppConfig) error {
 			rankedProviders := startupVerifier.GetRankedProviders()
 			providerScores := make([]gin.H, 0, len(rankedProviders))
 			for i, p := range rankedProviders {
-				providerScores = append(providerScores, gin.H{
-					"rank":        i + 1,
-					"provider":    p.Name,
-					"type":        p.Type,
-					"auth_type":   p.AuthType,
-					"score":       p.Score,
-					"verified":    p.Verified,
-					"verified_at": p.VerifiedAt,
-					"models":      len(p.Models),
-				})
+				entry := gin.H{
+					"rank":                 i + 1,
+					"provider":             p.Name,
+					"type":                 p.Type,
+					"auth_type":            p.AuthType,
+					"score":                p.Score,
+					"verified":             p.Verified,
+					"verified_at":          p.VerifiedAt,
+					"models":               len(p.Models),
+					"code_visible":         p.CodeVisible,
+					"failure_reason":       p.FailureReason,
+					"failure_category":     p.FailureCategory,
+					"test_details":         p.TestDetails,
+					"verification_message": p.VerificationMsg,
+					"error_message":        p.ErrorMessage,
+					"subscription":         p.Subscription,
+					"access_config":        p.AccessConfig,
+				}
+				providerScores = append(providerScores, entry)
 			}
 			response["ranked_providers"] = providerScores
 			response["providers_sorted"] = len(rankedProviders) > 0

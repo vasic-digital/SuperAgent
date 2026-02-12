@@ -198,6 +198,8 @@ LLMsVerifier is the **single source of truth**. On startup: discover providers �
 
 Key files: `internal/verifier/startup.go`, `provider_types.go`, `adapters/oauth_adapter.go`, `adapters/free_adapter.go`
 
+**Subscription Detection**: 3-tier dynamic detection (API → rate limit headers → static). Subscription types: `free`, `free_credits`, `free_tier`, `pay_as_you_go`, `monthly`, `enterprise`. Per-provider auth mechanism configs (Bearer, `x-api-key`, `x-goog-api-key`, anonymous). Rate limit header parsing for 6+ providers. Key files: `internal/verifier/subscription_types.go`, `subscription_detector.go`, `provider_access.go`, `rate_limit_headers.go`
+
 ## Provider Access Mechanisms
 
 OAuth/free providers use CLI proxies when direct API access is restricted:
@@ -262,6 +264,8 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/security_scanning_challenge.sh              # 10 tests
 ./challenges/scripts/constitution_watcher_challenge.sh           # 12 tests
 ./challenges/scripts/speckit_auto_activation_challenge.sh        # 15 tests
+./challenges/scripts/verification_failure_reasons_challenge.sh   # 15 tests
+./challenges/scripts/subscription_detection_challenge.sh        # 20 tests
 ```
 
 ## LLMsVerifier

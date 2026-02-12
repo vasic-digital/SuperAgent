@@ -155,10 +155,33 @@ func (es *EnhancedScoringService) CalculateEnhancedScore(ctx context.Context, mo
 
 // calculateComponents calculates all 7 score components
 func (es *EnhancedScoringService) calculateComponents(model *UnifiedModel, provider *UnifiedProvider) EnhancedScoreComponents {
+	costScore := es.calculateCostScore(model)
+
+	// Apply subscription type modifier when pricing data is unavailable
+	if provider.Subscription != nil && model.CostPerInputToken == 0 && model.CostPerOutputToken == 0 {
+		switch provider.Subscription.Type {
+		case SubTypeFreeCredits:
+			costScore -= 0.5 // May expire soon
+		case SubTypeFreeTier:
+			costScore -= 0.3 // Rate limited
+		case SubTypeFree:
+			// No penalty for genuinely free (Ollama, Groq free)
+		case SubTypeEnterprise:
+			costScore += 0.3 // Most reliable
+		}
+		// Clamp to valid range
+		if costScore < 0 {
+			costScore = 0
+		}
+		if costScore > 10 {
+			costScore = 10
+		}
+	}
+
 	return EnhancedScoreComponents{
 		ResponseSpeed:     es.calculateResponseSpeedScore(model),
 		ModelEfficiency:   es.calculateModelEfficiencyScore(model),
-		CostEffectiveness: es.calculateCostScore(model),
+		CostEffectiveness: costScore,
 		Capability:        es.calculateCapabilityScore(model, provider),
 		Recency:           es.calculateRecencyScore(model),
 		CodeQuality:       es.calculateCodeQualityScore(model),

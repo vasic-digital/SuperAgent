@@ -30,6 +30,9 @@ type StartupVerifier struct {
 	scoringSvc      *ScoringService
 	enhancedScoring *EnhancedScoringService // Phase 1: 7-component scoring
 
+	// Subscription detection (3-tier: API → rate limits → static)
+	subscriptionDetector *SubscriptionDetector
+
 	// Provider creation functions (dependency injection)
 	providerFactory ProviderFactory
 
@@ -83,13 +86,14 @@ func NewStartupVerifier(cfg *StartupConfig, log *logrus.Logger) *StartupVerifier
 	enhancedScoring := NewEnhancedScoringService(scoringSvc)
 
 	return &StartupVerifier{
-		config:          cfg,
-		verifierSvc:     verifierSvc,
-		scoringSvc:      scoringSvc,
-		enhancedScoring: enhancedScoring,
-		providers:       make(map[string]*UnifiedProvider),
-		oauthReader:     oauth_credentials.NewOAuthCredentialReader(),
-		log:             log,
+		config:               cfg,
+		verifierSvc:          verifierSvc,
+		scoringSvc:           scoringSvc,
+		enhancedScoring:      enhancedScoring,
+		subscriptionDetector: NewSubscriptionDetector(log),
+		providers:            make(map[string]*UnifiedProvider),
+		oauthReader:          oauth_credentials.NewOAuthCredentialReader(),
+		log:                  log,
 	}
 }
 
@@ -142,6 +146,10 @@ func (sv *StartupVerifier) VerifyAllProviders(ctx context.Context) (*StartupResu
 	verified := sv.verifyProviders(ctx, discovered, result)
 	sv.log.WithField("verified", len(verified)).Info("Verified providers")
 
+	// Phase 2.5: Detect provider subscriptions
+	sv.log.Info("Phase 2.5: Detecting provider subscriptions")
+	sv.detectSubscriptions(ctx, verified)
+
 	// Phase 3: Score all verified providers
 	sv.log.Info("Phase 3: Scoring providers")
 	scored := sv.scoreProviders(ctx, verified)
@@ -183,6 +191,21 @@ func (sv *StartupVerifier) VerifyAllProviders(ctx context.Context) (*StartupResu
 			result.VerifiedCount++
 		} else {
 			result.FailedCount++
+		}
+
+		// Count subscription types
+		if p.Subscription != nil {
+			result.SubscriptionDetectedCount++
+			switch p.Subscription.Type {
+			case SubTypeFree:
+				result.FreeProviderCount++
+			case SubTypeFreeCredits:
+				result.FreeCreditProviderCount++
+			case SubTypePayAsYouGo:
+				result.PayAsYouGoProviderCount++
+			case SubTypeFreeTier:
+				result.FreeProviderCount++
+			}
 		}
 	}
 
@@ -660,6 +683,9 @@ func (sv *StartupVerifier) verifyOAuthProvider(ctx context.Context, provider *Un
 		provider.ErrorMessage = result.ErrorMessage
 	}
 
+	// Populate failure tracking details from verification result
+	populateFailureDetails(provider, result)
+
 	// Build models list
 	for _, modelID := range disc.Models {
 		provider.Models = append(provider.Models, UnifiedModel{
@@ -816,6 +842,8 @@ func (sv *StartupVerifier) verifyFreeProvider(ctx context.Context, provider *Uni
 	} else {
 		provider.Status = StatusFailed
 		provider.HealthCheckError = fmt.Sprintf("No models passed verification (0/%d)", totalModels)
+		provider.FailureReason = fmt.Sprintf("no models passed verification (0/%d tested)", totalModels)
+		provider.FailureCategory = FailureCategoryCannedResponse
 	}
 
 	sv.log.WithFields(logrus.Fields{
@@ -868,6 +896,11 @@ func (sv *StartupVerifier) verifyAPIKeyProvider(ctx context.Context, provider *U
 	if err != nil {
 		provider.Status = StatusUnhealthy
 		provider.ErrorMessage = err.Error()
+		provider.FailureReason = fmt.Sprintf("verification error: %s", err.Error())
+		provider.FailureCategory = FailureCategoryAPIError
+		if result != nil {
+			populateFailureDetails(provider, result)
+		}
 		return provider, err
 	}
 
@@ -884,6 +917,9 @@ func (sv *StartupVerifier) verifyAPIKeyProvider(ctx context.Context, provider *U
 		provider.Status = StatusUnhealthy
 		provider.ErrorMessage = result.ErrorMessage
 	}
+
+	// Populate failure tracking details from verification result
+	populateFailureDetails(provider, result)
 
 	// Build models list
 	for _, modelID := range disc.Models {
@@ -1133,6 +1169,30 @@ func (sv *StartupVerifier) IsInitialized() bool {
 	return sv.initialized
 }
 
+// detectSubscriptions runs subscription detection for all verified providers.
+// Uses 3-tier detection: API → rate limit headers → static fallback.
+func (sv *StartupVerifier) detectSubscriptions(ctx context.Context, providers []*UnifiedProvider) {
+	for _, p := range providers {
+		// Attach access config from registry
+		if accessCfg := GetProviderAccessConfig(p.Type); accessCfg != nil {
+			p.AccessConfig = accessCfg
+		}
+
+		// Run subscription detection
+		sub := sv.subscriptionDetector.DetectSubscription(ctx, p.Type, p.APIKey)
+		if sub != nil {
+			p.Subscription = sub
+		}
+	}
+
+	sv.log.WithField("providers_detected", len(providers)).Info("Subscription detection complete")
+}
+
+// GetSubscriptionDetector returns the subscription detector for external use
+func (sv *StartupVerifier) GetSubscriptionDetector() *SubscriptionDetector {
+	return sv.subscriptionDetector
+}
+
 // Helper functions
 
 func (sv *StartupVerifier) isClaudeOAuthEnabled() bool {
@@ -1172,4 +1232,155 @@ func maskAPIKey(key string) string {
 		return "****"
 	}
 	return key[:4] + "****" + key[len(key)-4:]
+}
+
+// buildFailureReason constructs a human-readable failure reason from verification results.
+// It examines the test results, error messages, and last response to produce an actionable description.
+func buildFailureReason(result *ServiceVerificationResult) string {
+	if result == nil {
+		return "verification returned nil result"
+	}
+
+	var parts []string
+
+	// Count passed/failed tests
+	passed := 0
+	failed := 0
+	var failedTests []string
+	for _, t := range result.Tests {
+		if t.Passed {
+			passed++
+		} else {
+			failed++
+			failedTests = append(failedTests, t.Name)
+		}
+	}
+
+	// Check specific failure patterns
+	if !result.CodeVisible && len(result.Tests) > 0 {
+		parts = append(parts, "code visibility test failed")
+	}
+
+	if result.ErrorMessage != "" {
+		parts = append(parts, result.ErrorMessage)
+	}
+
+	if result.LastResponse != "" {
+		isCanned, reason := IsCannedErrorResponse(result.LastResponse)
+		if isCanned {
+			parts = append(parts, fmt.Sprintf("canned error response detected: %s", reason))
+		}
+	} else if len(result.Tests) > 0 {
+		parts = append(parts, "model returned empty response")
+	}
+
+	if len(failedTests) > 0 && len(failedTests) <= 3 {
+		parts = append(parts, fmt.Sprintf("failed tests: %s", strings.Join(failedTests, ", ")))
+	}
+
+	// Add test summary
+	total := passed + failed
+	if total > 0 {
+		parts = append(parts, fmt.Sprintf("%d/%d tests passed (score: %.1f)", passed, total, result.OverallScore))
+	}
+
+	if len(parts) == 0 {
+		return "verification failed (unknown reason)"
+	}
+
+	return strings.Join(parts, ". ")
+}
+
+// categorizeFailure determines the failure category from verification results.
+// Categories map to actionable remediation steps.
+func categorizeFailure(result *ServiceVerificationResult) string {
+	if result == nil {
+		return FailureCategoryAPIError
+	}
+
+	// Check for empty response
+	if result.LastResponse == "" && len(result.Tests) > 0 {
+		return FailureCategoryEmptyResponse
+	}
+
+	// Check for canned/error response
+	if result.LastResponse != "" {
+		isCanned, _ := IsCannedErrorResponse(result.LastResponse)
+		if isCanned {
+			return FailureCategoryCannedResponse
+		}
+	}
+
+	// Check error message patterns
+	errMsg := strings.ToLower(result.ErrorMessage)
+	if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
+		return FailureCategoryTimeout
+	}
+	if strings.Contains(errMsg, "auth") || strings.Contains(errMsg, "unauthorized") ||
+		strings.Contains(errMsg, "forbidden") || strings.Contains(errMsg, "401") ||
+		strings.Contains(errMsg, "403") {
+		return FailureCategoryAuthError
+	}
+
+	// Check code visibility
+	if !result.CodeVisible && result.OverallScore > 0 {
+		return FailureCategoryCodeVisibility
+	}
+
+	// Check score threshold
+	if result.OverallScore > 0 && result.OverallScore < 50 {
+		return FailureCategoryScoreBelow
+	}
+
+	return FailureCategoryAPIError
+}
+
+// mapTestDetails converts internal TestResult slice to API-friendly ProviderTestDetail slice.
+func mapTestDetails(tests []TestResult) []ProviderTestDetail {
+	if len(tests) == 0 {
+		return nil
+	}
+
+	details := make([]ProviderTestDetail, len(tests))
+	for i, t := range tests {
+		durationMs := t.CompletedAt.Sub(t.StartedAt).Milliseconds()
+		if durationMs < 0 {
+			durationMs = 0
+		}
+		details[i] = ProviderTestDetail{
+			Name:       t.Name,
+			Passed:     t.Passed,
+			Score:      t.Score,
+			Details:    t.Details,
+			DurationMs: durationMs,
+		}
+	}
+	return details
+}
+
+// truncateString truncates a string to maxLen characters, appending "..." if truncated.
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	if maxLen <= 3 {
+		return s[:maxLen]
+	}
+	return s[:maxLen-3] + "..."
+}
+
+// populateFailureDetails fills failure tracking fields on a provider from verification results.
+func populateFailureDetails(provider *UnifiedProvider, result *ServiceVerificationResult) {
+	if result == nil {
+		return
+	}
+
+	provider.TestDetails = mapTestDetails(result.Tests)
+	provider.VerificationMsg = result.Message
+	provider.LastModelResponse = truncateString(result.LastResponse, 200)
+
+	if !provider.Verified {
+		provider.FailureReason = buildFailureReason(result)
+		provider.FailureCategory = categorizeFailure(result)
+	}
 }
