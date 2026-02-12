@@ -113,6 +113,11 @@ func main() {
 	mux.HandleFunc("/v1/messages", handleClaudeMessages)
 	mux.HandleFunc("/messages", handleClaudeMessages)
 
+	// Qwen DashScope API compatibility (native and compatible-mode)
+	mux.HandleFunc("/services/aigc/text-generation/generation", handleChatCompletions)
+	mux.HandleFunc("/api/v1/services/aigc/text-generation/generation", handleChatCompletions)
+	mux.HandleFunc("/compatible-mode/v1/chat/completions", handleChatCompletions)
+
 	// Ollama API compatibility
 	mux.HandleFunc("/api/generate", handleOllamaGenerate)
 	mux.HandleFunc("/api/chat", handleOllamaChat)
@@ -129,6 +134,7 @@ func main() {
 	log.Printf("  - POST /v1/embeddings (OpenAI)")
 	log.Printf("  - GET  /v1/models (OpenAI)")
 	log.Printf("  - POST /v1/messages (Claude)")
+	log.Printf("  - POST /services/aigc/text-generation/generation (Qwen DashScope)")
 	log.Printf("  - POST /api/generate (Ollama)")
 	log.Printf("  - POST /api/chat (Ollama)")
 	log.Printf("  - POST /v1beta/models/{model}:generateContent (Gemini)")

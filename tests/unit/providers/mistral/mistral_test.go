@@ -122,7 +122,8 @@ func TestMistralProvider_HealthCheck_WithAPIKey(t *testing.T) {
 func TestMistralProvider_Complete(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL()
+	// Mistral uses baseURL as the full endpoint URL (includes /v1/chat/completions)
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/chat/completions"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := mistral.NewMistralProvider(apiKey, mockURL, "mistral-large-latest")
@@ -148,7 +149,8 @@ func TestMistralProvider_Complete(t *testing.T) {
 func TestMistralProvider_CompleteStream(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL()
+	// Mistral uses baseURL as the full endpoint URL (includes /v1/chat/completions)
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/chat/completions"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := mistral.NewMistralProvider(apiKey, mockURL, "mistral-large-latest")
@@ -183,7 +185,8 @@ func TestMistralProvider_CompleteStream(t *testing.T) {
 func TestMistralProvider_Complete_WithMessages(t *testing.T) {
 	testutils.SkipIfNoInfrastructure(t, "llm")
 
-	mockURL := testutils.GetMockLLMBaseURL()
+	// Mistral uses baseURL as the full endpoint URL (includes /v1/chat/completions)
+	mockURL := testutils.GetMockLLMBaseURL() + "/v1/chat/completions"
 	apiKey := testutils.GetMockAPIKey()
 
 	provider := mistral.NewMistralProvider(apiKey, mockURL, "mistral-large-latest")

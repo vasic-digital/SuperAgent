@@ -814,9 +814,11 @@ func testOpenAICompatibleErrorHandling(t *testing.T, provider ProviderConfig, in
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	// Should get 401 or 403 for invalid API key
-	assert.True(t, resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden,
-		"Expected 401 or 403 for invalid API key, got %d", resp.StatusCode)
+	// Should get an error status for invalid API key
+	// Different providers return different error codes: 401 (Unauthorized), 403 (Forbidden),
+	// or 502 (Bad Gateway - e.g., OpenRouter proxy returns this for auth failures)
+	assert.True(t, resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusBadGateway,
+		"Expected 401, 403, or 502 for invalid API key, got %d", resp.StatusCode)
 	t.Logf("%s returned %d for invalid API key (expected)", provider.Name, resp.StatusCode)
 }
 
