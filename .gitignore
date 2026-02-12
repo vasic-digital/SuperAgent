@@ -1,6 +1,9 @@
 .env
 GIT_PUSH_SUMMARY.txt
 
+# Built binary
+helixagent
+
 # Go basics
 bin/
 vendor/
