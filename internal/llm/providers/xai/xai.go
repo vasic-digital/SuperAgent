@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -34,6 +35,7 @@ type Provider struct {
 	region      string // "us-east-1" or "eu-west-1"
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -184,7 +186,7 @@ func NewProviderWithRetry(apiKey, baseURL, model, region string, retryConfig Ret
 		region = "us-east-1"
 	}
 
-	return &Provider{
+	p := &Provider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -194,6 +196,24 @@ func NewProviderWithRetry(apiKey, baseURL, model, region string, retryConfig Ret
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "xai",
+		ModelsEndpoint: XAIModelsURL,
+		ModelsDevID:    "xai",
+		APIKey:         apiKey,
+		FallbackModels: []string{
+			"grok-3", "grok-3-beta",
+			"grok-3-mini", "grok-3-mini-beta",
+			"grok-3-fast", "grok-3-fast-beta",
+			"grok-2", "grok-2-1212",
+			"grok-2-vision", "grok-2-vision-1212",
+			"grok-vision-beta",
+			"grok-4", "grok-4-fast",
+		},
+	})
+
+	return p
 }
 
 // Complete sends a completion request
@@ -342,15 +362,7 @@ func (p *Provider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			"grok-3", "grok-3-beta",
-			"grok-3-mini", "grok-3-mini-beta",
-			"grok-3-fast", "grok-3-fast-beta",
-			"grok-2", "grok-2-1212",
-			"grok-2-vision", "grok-2-vision-1212",
-			"grok-vision-beta",
-			"grok-4", "grok-4-fast",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"chat", "streaming", "tools", "vision", "json_mode",
 			"web_search", "x_search", "code_execution", "reasoning",

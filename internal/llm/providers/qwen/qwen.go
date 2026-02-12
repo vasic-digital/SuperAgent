@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/auth/oauth_credentials"
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -51,6 +52,7 @@ type QwenProvider struct {
 	retryConfig     RetryConfig
 	authType        AuthType
 	oauthCredReader *oauth_credentials.OAuthCredentialReader
+	discoverer      *discovery.Discoverer
 }
 
 // QwenRequest represents a request to the Qwen API
@@ -169,7 +171,7 @@ func NewQwenProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCo
 		model = "qwen-turbo"
 	}
 
-	return &QwenProvider{
+	p := &QwenProvider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -179,6 +181,21 @@ func NewQwenProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCo
 		retryConfig: retryConfig,
 		authType:    AuthTypeAPIKey,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "qwen",
+		ModelsEndpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
+		ModelsDevID:    "alibaba",
+		APIKey:         apiKey,
+		FallbackModels: []string{
+			"qwen-turbo",
+			"qwen-plus",
+			"qwen-max",
+			"qwen-max-longcontext",
+		},
+	})
+
+	return p
 }
 
 // NewQwenProviderWithOAuth creates a new Qwen provider using OAuth credentials from Qwen Code CLI
@@ -203,7 +220,7 @@ func NewQwenProviderWithOAuthAndRetry(baseURL, model string, retryConfig RetryCo
 		return nil, fmt.Errorf("no valid Qwen OAuth credentials available: ensure you are logged in via Qwen Code CLI")
 	}
 
-	return &QwenProvider{
+	p := &QwenProvider{
 		apiKey:  "", // Will use OAuth token instead
 		baseURL: baseURL,
 		model:   model,
@@ -213,7 +230,24 @@ func NewQwenProviderWithOAuthAndRetry(baseURL, model string, retryConfig RetryCo
 		retryConfig:     retryConfig,
 		authType:        AuthTypeOAuth,
 		oauthCredReader: credReader,
-	}, nil
+	}
+
+	// OAuth providers have no API key, so Tier 1 is skipped (APIKey is empty).
+	// Discovery will fall through to Tier 2 (models.dev) or Tier 3 (fallback).
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "qwen",
+		ModelsEndpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
+		ModelsDevID:    "alibaba",
+		APIKey:         "",
+		FallbackModels: []string{
+			"qwen-turbo",
+			"qwen-plus",
+			"qwen-max",
+			"qwen-max-longcontext",
+		},
+	})
+
+	return p, nil
 }
 
 // NewQwenProviderAuto creates a Qwen provider, automatically choosing OAuth if enabled and available
@@ -497,12 +531,7 @@ func (q *QwenProvider) HealthCheck() error {
 // GetCapabilities returns the capabilities of the Qwen provider
 func (q *QwenProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			"qwen-turbo",
-			"qwen-plus",
-			"qwen-max",
-			"qwen-max-longcontext",
-		},
+		SupportedModels: q.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",

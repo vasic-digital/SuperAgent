@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -31,6 +32,7 @@ type Provider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -162,7 +164,7 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		model = DefaultModel
 	}
 
-	return &Provider{
+	p := &Provider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -171,6 +173,43 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "together",
+		ModelsEndpoint: TogetherModelsURL,
+		ModelsDevID:    "together",
+		APIKey:         apiKey,
+		FallbackModels: []string{
+			// Llama models
+			"meta-llama/Llama-3.3-70B-Instruct-Turbo",
+			"meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo",
+			"meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
+			"meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
+			"meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+			"meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+			// Qwen models
+			"Qwen/Qwen2.5-72B-Instruct-Turbo",
+			"Qwen/Qwen2.5-7B-Instruct-Turbo",
+			"Qwen/QwQ-32B-Preview",
+			// Mistral models
+			"mistralai/Mistral-Small-24B-Instruct-2501",
+			"mistralai/Mixtral-8x22B-Instruct-v0.1",
+			"mistralai/Mixtral-8x7B-Instruct-v0.1",
+			// DeepSeek models
+			"deepseek-ai/DeepSeek-R1",
+			"deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
+			"deepseek-ai/DeepSeek-V3",
+			// Google models
+			"google/gemma-2-27b-it",
+			"google/gemma-2-9b-it",
+			// NVIDIA models
+			"nvidia/Llama-3.1-Nemotron-70B-Instruct-HF",
+			// Databricks models
+			"databricks/dbrx-instruct",
+		},
+	})
+
+	return p
 }
 
 // Complete sends a completion request
@@ -317,34 +356,7 @@ func (p *Provider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			// Llama models
-			"meta-llama/Llama-3.3-70B-Instruct-Turbo",
-			"meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo",
-			"meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
-			"meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
-			"meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
-			"meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
-			// Qwen models
-			"Qwen/Qwen2.5-72B-Instruct-Turbo",
-			"Qwen/Qwen2.5-7B-Instruct-Turbo",
-			"Qwen/QwQ-32B-Preview",
-			// Mistral models
-			"mistralai/Mistral-Small-24B-Instruct-2501",
-			"mistralai/Mixtral-8x22B-Instruct-v0.1",
-			"mistralai/Mixtral-8x7B-Instruct-v0.1",
-			// DeepSeek models
-			"deepseek-ai/DeepSeek-R1",
-			"deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
-			"deepseek-ai/DeepSeek-V3",
-			// Google models
-			"google/gemma-2-27b-it",
-			"google/gemma-2-9b-it",
-			// NVIDIA models
-			"nvidia/Llama-3.1-Nemotron-70B-Instruct-HF",
-			// Databricks models
-			"databricks/dbrx-instruct",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"chat", "streaming", "tools", "vision", "json_mode",
 			"code_completion", "embeddings",

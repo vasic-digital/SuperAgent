@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/models"
+
+	"dev.helix.agent/internal/llm/discovery"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,6 +30,7 @@ type CerebrasProvider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -117,7 +120,7 @@ func NewCerebrasProviderWithRetry(apiKey, baseURL, model string, retryConfig Ret
 		model = CerebrasModel
 	}
 
-	return &CerebrasProvider{
+	p := &CerebrasProvider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -126,6 +129,20 @@ func NewCerebrasProviderWithRetry(apiKey, baseURL, model string, retryConfig Ret
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "cerebras",
+		ModelsEndpoint: "https://api.cerebras.ai/v1/models",
+		ModelsDevID:    "cerebras",
+		APIKey:         apiKey,
+		FallbackModels: []string{
+			"llama-3.3-70b",
+			"llama-3.1-8b",
+			"llama-3.1-70b",
+		},
+	})
+
+	return p
 }
 
 func (p *CerebrasProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
@@ -600,11 +617,7 @@ func (p *CerebrasProvider) nextDelay(currentDelay time.Duration) time.Duration {
 // GetCapabilities returns the capabilities of the Cerebras provider
 func (p *CerebrasProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			"llama-3.3-70b",
-			"llama-3.1-8b",
-			"llama-3.1-70b",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",

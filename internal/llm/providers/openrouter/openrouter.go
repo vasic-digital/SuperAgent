@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -41,6 +42,7 @@ type SimpleOpenRouterProvider struct {
 	baseURL     string
 	client      *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // NewSimpleOpenRouterProvider creates a new OpenRouter provider
@@ -58,7 +60,7 @@ func NewSimpleOpenRouterProviderWithRetry(apiKey, baseURL string, retryConfig Re
 	if baseURL == "" {
 		baseURL = defaultBaseURL
 	}
-	return &SimpleOpenRouterProvider{
+	p := &SimpleOpenRouterProvider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		client: &http.Client{
@@ -66,6 +68,56 @@ func NewSimpleOpenRouterProviderWithRetry(apiKey, baseURL string, retryConfig Re
 		},
 		retryConfig: retryConfig,
 	}
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "openrouter",
+		ModelsEndpoint: baseURL + "/models",
+		ModelsDevID:    "openrouter",
+		APIKey:         apiKey,
+		ExtraHeaders: map[string]string{
+			"HTTP-Referer": "helixagent",
+		},
+		FallbackModels: []string{
+			// Premium models
+			"anthropic/claude-3.5-sonnet",
+			"openai/gpt-4o",
+			"google/gemini-pro",
+			"meta-llama/llama-3.1-405b-instruct",
+			"mistralai/mistral-large",
+			"meta-llama/llama-3.1-70b-instruct",
+			"deepseek/deepseek-chat",
+			// FREE models (OpenRouter Zen - no API key required, high quality)
+			// Llama 4 free models
+			"meta-llama/llama-4-maverick:free",
+			"meta-llama/llama-4-scout:free",
+			"meta-llama/llama-3.3-70b-instruct:free",
+			// DeepSeek free models (excellent for coding)
+			"deepseek/deepseek-chat-v3-0324:free",
+			"deepseek/deepseek-r1:free",
+			"deepseek/deepseek-r1-zero:free",
+			"deepseek/deepseek-r1-distill-llama-70b:free",
+			"deepseek/deepseek-r1-distill-qwen-32b:free",
+			"deepseek/deepseek-r1-distill-qwen-14b:free",
+			// Qwen free models
+			"qwen/qwq-32b:free",
+			"qwen/qwen2.5-vl-3b-instruct:free",
+			// Google/Gemini free models
+			"google/gemini-2.5-pro-exp-03-25:free",
+			"google/gemini-2.0-flash-thinking-exp:free",
+			"google/gemini-2.0-flash-exp:free",
+			"google/gemma-3-27b-it:free",
+			// NVIDIA free models
+			"nvidia/llama-3.1-nemotron-ultra-253b-v1:free",
+			// Microsoft free models
+			"microsoft/phi-3-mini-128k-instruct:free",
+			"microsoft/phi-3-medium-128k-instruct:free",
+			// Other free models
+			"mistralai/mistral-7b-instruct:free",
+			"huggingfaceh4/zephyr-7b-beta:free",
+			"openchat/openchat-7b:free",
+			"nousresearch/nous-capybara-7b:free",
+		},
+	})
+	return p
 }
 
 // Complete implements LLM provider interface
@@ -546,46 +598,7 @@ func (p *SimpleOpenRouterProvider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *SimpleOpenRouterProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			// Premium models
-			"anthropic/claude-3.5-sonnet",
-			"openai/gpt-4o",
-			"google/gemini-pro",
-			"meta-llama/llama-3.1-405b-instruct",
-			"mistralai/mistral-large",
-			"meta-llama/llama-3.1-70b-instruct",
-			"deepseek/deepseek-chat",
-			// FREE models (OpenRouter Zen - no API key required, high quality)
-			// Llama 4 free models
-			"meta-llama/llama-4-maverick:free",
-			"meta-llama/llama-4-scout:free",
-			"meta-llama/llama-3.3-70b-instruct:free",
-			// DeepSeek free models (excellent for coding)
-			"deepseek/deepseek-chat-v3-0324:free",
-			"deepseek/deepseek-r1:free",
-			"deepseek/deepseek-r1-zero:free",
-			"deepseek/deepseek-r1-distill-llama-70b:free",
-			"deepseek/deepseek-r1-distill-qwen-32b:free",
-			"deepseek/deepseek-r1-distill-qwen-14b:free",
-			// Qwen free models
-			"qwen/qwq-32b:free",
-			"qwen/qwen2.5-vl-3b-instruct:free",
-			// Google/Gemini free models
-			"google/gemini-2.5-pro-exp-03-25:free",
-			"google/gemini-2.0-flash-thinking-exp:free",
-			"google/gemini-2.0-flash-exp:free",
-			"google/gemma-3-27b-it:free",
-			// NVIDIA free models
-			"nvidia/llama-3.1-nemotron-ultra-253b-v1:free",
-			// Microsoft free models
-			"microsoft/phi-3-mini-128k-instruct:free",
-			"microsoft/phi-3-medium-128k-instruct:free",
-			// Other free models
-			"mistralai/mistral-7b-instruct:free",
-			"huggingfaceh4/zephyr-7b-beta:free",
-			"openchat/openchat-7b:free",
-			"nousresearch/nous-capybara-7b:free",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -39,6 +40,7 @@ type ZAIProvider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // ZAIRequest represents a request to the Z.AI API
@@ -165,10 +167,10 @@ func NewZAIProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCon
 		baseURL = "https://open.bigmodel.cn/api/paas/v4"
 	}
 	if model == "" {
-		model = "glm-4-plus" // Most capable GLM model
+		model = "glm-4.7" // Latest GLM model
 	}
 
-	return &ZAIProvider{
+	p := &ZAIProvider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -177,6 +179,31 @@ func NewZAIProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCon
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "zai",
+		ModelsEndpoint: "https://open.bigmodel.cn/api/paas/v4/models",
+		ModelsDevID:    "zhipu",
+		APIKey:         apiKey,
+		ResponseParser: discovery.ParseZAIModelsResponse,
+		FallbackModels: []string{
+			// GLM-4 series (Zhipu AI) - Most powerful Chinese LLM
+			"glm-4.7",      // Latest generation (Feb 2026)
+			"glm-4-plus",   // Most capable classic
+			"glm-4",        // Standard version
+			"glm-4-air",    // Balanced performance
+			"glm-4-airx",   // Extended context
+			"glm-4-flash",  // Fast inference
+			"glm-4-flashx", // Fast with extended context
+			"glm-4-long",   // Long context (1M tokens)
+			"glm-4v",       // Vision model
+			"glm-4v-plus",  // Enhanced vision
+			// Legacy models
+			"glm-3-turbo",
+		},
+	})
+
+	return p
 }
 
 // Complete implements the LLMProvider interface
@@ -411,20 +438,7 @@ func (z *ZAIProvider) HealthCheck() error {
 // GetCapabilities returns the capabilities of the Z.AI provider
 func (z *ZAIProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			// GLM-4 series (Zhipu AI) - Most powerful Chinese LLM
-			"glm-4-plus",   // Most capable, best quality
-			"glm-4",        // Standard version
-			"glm-4-air",    // Balanced performance
-			"glm-4-airx",   // Extended context
-			"glm-4-flash",  // Fast inference
-			"glm-4-flashx", // Fast with extended context
-			"glm-4-long",   // Long context (1M tokens)
-			"glm-4v",       // Vision model
-			"glm-4v-plus",  // Enhanced vision
-			// Legacy models
-			"glm-3-turbo",
-		},
+		SupportedModels: z.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",

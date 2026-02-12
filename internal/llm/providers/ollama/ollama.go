@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -37,6 +38,7 @@ type OllamaProvider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // OllamaRequest represents a request to the Ollama API
@@ -77,7 +79,7 @@ func NewOllamaProviderWithRetry(baseURL, model string, retryConfig RetryConfig) 
 		model = "llama2"
 	}
 
-	return &OllamaProvider{
+	p := &OllamaProvider{
 		baseURL: baseURL,
 		model:   model,
 		httpClient: &http.Client{
@@ -85,6 +87,25 @@ func NewOllamaProviderWithRetry(baseURL, model string, retryConfig RetryConfig) 
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "ollama",
+		ModelsEndpoint: baseURL + "/api/tags",
+		ModelsDevID:    "ollama",
+		APIKey:         "local",
+		ResponseParser: discovery.ParseOllamaModelsResponse,
+		FallbackModels: []string{
+			"llama2",
+			"llama2:13b",
+			"llama2:70b",
+			"codellama",
+			"mistral",
+			"vicuna",
+			"orca-mini",
+		},
+	})
+
+	return p
 }
 
 // Complete implements the LLMProvider interface
@@ -271,15 +292,7 @@ func (o *OllamaProvider) HealthCheck() error {
 // GetCapabilities returns the capabilities of the Ollama provider
 func (o *OllamaProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			"llama2",
-			"llama2:13b",
-			"llama2:70b",
-			"codellama",
-			"mistral",
-			"vicuna",
-			"orca-mini",
-		},
+		SupportedModels: o.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",

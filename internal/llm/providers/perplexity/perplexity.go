@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -29,6 +30,7 @@ type Provider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -129,7 +131,7 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		model = DefaultModel
 	}
 
-	return &Provider{
+	p := &Provider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -138,6 +140,26 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName: "perplexity",
+		ModelsDevID:  "perplexity",
+		APIKey:       apiKey,
+		FallbackModels: []string{
+			// Sonar models (online search)
+			"llama-3.1-sonar-small-128k-online",
+			"llama-3.1-sonar-large-128k-online",
+			"llama-3.1-sonar-huge-128k-online",
+			// Sonar models (chat)
+			"llama-3.1-sonar-small-128k-chat",
+			"llama-3.1-sonar-large-128k-chat",
+			// Open models
+			"llama-3.1-8b-instruct",
+			"llama-3.1-70b-instruct",
+		},
+	})
+
+	return p
 }
 
 // Complete sends a completion request
@@ -291,18 +313,7 @@ func (p *Provider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			// Sonar models (online search)
-			"llama-3.1-sonar-small-128k-online",
-			"llama-3.1-sonar-large-128k-online",
-			"llama-3.1-sonar-huge-128k-online",
-			// Sonar models (chat)
-			"llama-3.1-sonar-small-128k-chat",
-			"llama-3.1-sonar-large-128k-chat",
-			// Open models
-			"llama-3.1-8b-instruct",
-			"llama-3.1-70b-instruct",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"chat", "streaming", "online_search", "citations",
 			"search_domain_filter", "search_recency_filter",

@@ -27,6 +27,11 @@ func TestConstants(t *testing.T) {
 }
 
 func TestClaudeModels(t *testing.T) {
+	t.Run("Claude 4.6 model is defined", func(t *testing.T) {
+		assert.NotEmpty(t, ClaudeModels.Opus46, "Opus 4.6 model should be defined")
+		assert.Equal(t, "claude-opus-4-6", ClaudeModels.Opus46)
+	})
+
 	t.Run("Claude 4.5 models are defined", func(t *testing.T) {
 		assert.NotEmpty(t, ClaudeModels.Opus45, "Opus 4.5 model should be defined")
 		assert.NotEmpty(t, ClaudeModels.Sonnet45, "Sonnet 4.5 model should be defined")
@@ -57,6 +62,7 @@ func TestClaudeModels(t *testing.T) {
 
 	t.Run("All Claude models are unique", func(t *testing.T) {
 		models := []string{
+			ClaudeModels.Opus46,
 			ClaudeModels.Opus45,
 			ClaudeModels.Sonnet45,
 			ClaudeModels.Haiku45,
@@ -584,6 +590,7 @@ func TestNoModelDuplication(t *testing.T) {
 	t.Run("Claude models have no duplicates", func(t *testing.T) {
 		models := map[string]bool{}
 		claudeList := []string{
+			ClaudeModels.Opus46,
 			ClaudeModels.Opus45,
 			ClaudeModels.Sonnet45,
 			ClaudeModels.Haiku45,
@@ -624,6 +631,8 @@ func TestNoModelDuplication(t *testing.T) {
 			LLMsVerifierModels.Mistral,
 			LLMsVerifierModels.Groq,
 			LLMsVerifierModels.Cerebras,
+			LLMsVerifierModels.ZAI,
+			LLMsVerifierModels.Chutes,
 		}
 		for _, m := range verifierList {
 			assert.False(t, models[m], "LLMsVerifier model %s is duplicated", m)
@@ -637,7 +646,8 @@ func TestTotalLLMCount(t *testing.T) {
 		// Count all unique models defined
 		allModels := map[string]bool{}
 
-		// Claude models (10)
+		// Claude models (11)
+		allModels[ClaudeModels.Opus46] = true
 		allModels[ClaudeModels.Opus45] = true
 		allModels[ClaudeModels.Sonnet45] = true
 		allModels[ClaudeModels.Haiku45] = true

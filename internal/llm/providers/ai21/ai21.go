@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -31,6 +32,7 @@ type Provider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -160,7 +162,7 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		model = DefaultModel
 	}
 
-	return &Provider{
+	p := &Provider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -169,6 +171,25 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "ai21",
+		ModelsEndpoint: AI21ModelsURL,
+		ModelsDevID:    "ai21",
+		APIKey:         apiKey,
+		FallbackModels: []string{
+			// Jamba models
+			"jamba-1.5-large",
+			"jamba-1.5-mini",
+			"jamba-instruct",
+			// Jurassic models (legacy)
+			"j2-ultra",
+			"j2-mid",
+			"j2-light",
+		},
+	})
+
+	return p
 }
 
 // Complete sends a completion request
@@ -315,16 +336,7 @@ func (p *Provider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			// Jamba models
-			"jamba-1.5-large",
-			"jamba-1.5-mini",
-			"jamba-instruct",
-			// Jurassic models (legacy)
-			"j2-ultra",
-			"j2-mid",
-			"j2-light",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"chat", "streaming", "tools", "json_mode",
 			"code_completion", "text_generation",

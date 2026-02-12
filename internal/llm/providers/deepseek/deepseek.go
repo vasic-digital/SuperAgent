@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -25,6 +26,7 @@ type DeepSeekProvider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -136,7 +138,7 @@ func NewDeepSeekProviderWithRetry(apiKey, baseURL, model string, retryConfig Ret
 		model = DeepSeekModel
 	}
 
-	return &DeepSeekProvider{
+	p := &DeepSeekProvider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -145,6 +147,19 @@ func NewDeepSeekProviderWithRetry(apiKey, baseURL, model string, retryConfig Ret
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "deepseek",
+		ModelsEndpoint: "https://api.deepseek.com/v1/models",
+		ModelsDevID:    "deepseek",
+		APIKey:         apiKey,
+		FallbackModels: []string{
+			"deepseek-coder",
+			"deepseek-chat",
+		},
+	})
+
+	return p
 }
 
 func (p *DeepSeekProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
@@ -564,10 +579,7 @@ func (p *DeepSeekProvider) nextDelay(currentDelay time.Duration) time.Duration {
 // GetCapabilities returns the capabilities of the DeepSeek provider
 func (p *DeepSeekProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			"deepseek-coder",
-			"deepseek-chat",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",

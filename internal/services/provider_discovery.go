@@ -14,6 +14,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/ai21"
 	"dev.helix.agent/internal/llm/providers/anthropic"
 	"dev.helix.agent/internal/llm/providers/cerebras"
+	"dev.helix.agent/internal/llm/providers/chutes"
 	"dev.helix.agent/internal/llm/providers/claude"
 	"dev.helix.agent/internal/llm/providers/cohere"
 	"dev.helix.agent/internal/llm/providers/deepseek"
@@ -154,13 +155,13 @@ var providerMappings = []ProviderMapping{
 	{EnvVar: "ApiKey_XAI", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
 	{EnvVar: "ApiKey_Grok", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
 
-	// ZAI/Zhipu/GLM - Multiple key name variations (GLM-4-Plus is most capable)
+	// ZAI/Zhipu/GLM - Multiple key name variations (GLM-4.7 is latest model)
 	// Tier 2 providers have Priority 3
-	{EnvVar: "ZAI_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 3},
-	{EnvVar: "ApiKey_ZAI", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 3},
-	{EnvVar: "ZHIPU_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 3},
-	{EnvVar: "GLM_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 3},
-	{EnvVar: "BIGMODEL_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4-plus", Priority: 3},
+	{EnvVar: "ZAI_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
+	{EnvVar: "ApiKey_ZAI", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
+	{EnvVar: "ZHIPU_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
+	{EnvVar: "GLM_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
+	{EnvVar: "BIGMODEL_API_KEY", ProviderType: "zai", ProviderName: "zai", BaseURL: "https://open.bigmodel.cn/api/paas/v4", DefaultModel: "glm-4.7", Priority: 3},
 
 	// Cohere - Multiple key name variations
 	{EnvVar: "COHERE_API_KEY", ProviderType: "cohere", ProviderName: "cohere", BaseURL: "https://api.cohere.com/v2", DefaultModel: "command-r-plus", Priority: 4},
@@ -243,9 +244,9 @@ var providerMappings = []ProviderMapping{
 	{EnvVar: "UPSTAGE_API_KEY", ProviderType: "upstage", ProviderName: "upstage", BaseURL: "https://api.upstage.ai/v1/solar", DefaultModel: "solar-pro", Priority: 8},
 	{EnvVar: "ApiKey_Upstage", ProviderType: "upstage", ProviderName: "upstage", BaseURL: "https://api.upstage.ai/v1/solar", DefaultModel: "solar-pro", Priority: 8},
 
-	// Chutes
-	{EnvVar: "CHUTES_API_KEY", ProviderType: "chutes", ProviderName: "chutes", BaseURL: "https://llm.chutes.ai/v1", DefaultModel: "deepseek-ai/DeepSeek-V3", Priority: 8},
-	{EnvVar: "ApiKey_Chutes", ProviderType: "chutes", ProviderName: "chutes", BaseURL: "https://llm.chutes.ai/v1", DefaultModel: "deepseek-ai/DeepSeek-V3", Priority: 8},
+	// Chutes - NOTE: inference API uses llm.chutes.ai, NOT api.chutes.ai
+	{EnvVar: "CHUTES_API_KEY", ProviderType: "chutes", ProviderName: "chutes", BaseURL: "https://llm.chutes.ai/v1/chat/completions", DefaultModel: "deepseek-ai/DeepSeek-V3", Priority: 8},
+	{EnvVar: "ApiKey_Chutes", ProviderType: "chutes", ProviderName: "chutes", BaseURL: "https://llm.chutes.ai/v1/chat/completions", DefaultModel: "deepseek-ai/DeepSeek-V3", Priority: 8},
 
 	// Tier 7: Aggregators (use as fallback)
 	// OpenRouter - Multiple key name variations
@@ -745,9 +746,17 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 		}
 		return huggingface.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
 
+	case "chutes":
+		// Use native Chutes provider for OpenAI-compatible inference
+		baseURL := mapping.BaseURL
+		if baseURL == "" {
+			baseURL = "https://api.chutes.ai/v1/chat/completions"
+		}
+		return chutes.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
+
 	// For providers without native implementations, use OpenRouter as a proxy
 	case "hyperbolic", "sambanova", "siliconflow", "cloudflare", "nvidia",
-		"kimi", "novita", "upstage", "chutes":
+		"kimi", "novita", "upstage":
 		// Create OpenRouter-compatible provider
 		return pd.createOpenAICompatibleProvider(mapping, apiKey)
 

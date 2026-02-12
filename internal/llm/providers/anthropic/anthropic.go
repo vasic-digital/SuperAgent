@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -31,6 +32,7 @@ type Provider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -152,7 +154,7 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		model = DefaultModel
 	}
 
-	return &Provider{
+	p := &Provider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -161,6 +163,39 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "anthropic",
+		ModelsEndpoint: "https://api.anthropic.com/v1/models",
+		ModelsDevID:    "anthropic",
+		APIKey:         apiKey,
+		AuthHeader:     "x-api-key",
+		AuthPrefix:     "",
+		ExtraHeaders: map[string]string{
+			"anthropic-version": "2023-06-01",
+		},
+		FallbackModels: []string{
+			// Claude 4.6 (Latest - February 2026)
+			"claude-opus-4-6",
+			// Claude 4.5 (November 2025)
+			"claude-opus-4-5-20251101",
+			"claude-sonnet-4-5-20250929",
+			"claude-haiku-4-5-20251001",
+			// Claude 4 models (May 2025)
+			"claude-sonnet-4-20250514",
+			"claude-opus-4-20250514",
+			"claude-haiku-4-20250514",
+			// Claude 3.5 models
+			"claude-3-5-sonnet-20241022",
+			"claude-3-5-haiku-20241022",
+			// Claude 3 models
+			"claude-3-opus-20240229",
+			"claude-3-sonnet-20240229",
+			"claude-3-haiku-20240307",
+		},
+	})
+
+	return p
 }
 
 // Complete sends a completion request
@@ -307,18 +342,7 @@ func (p *Provider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			// Claude 4 models
-			"claude-sonnet-4-20250514",
-			"claude-opus-4-5-20251101",
-			// Claude 3.5 models
-			"claude-3-5-sonnet-20241022",
-			"claude-3-5-haiku-20241022",
-			// Claude 3 models
-			"claude-3-opus-20240229",
-			"claude-3-sonnet-20240229",
-			"claude-3-haiku-20240307",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"chat", "streaming", "tools", "vision", "extended_thinking",
 			"code_completion", "system_prompts", "computer_use",

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/auth/oauth_credentials"
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -21,6 +22,9 @@ const (
 	ClaudeAPIURL     = "https://api.anthropic.com/v1/messages"
 	ClaudeModel      = "claude-sonnet-4-20250514" // Current default model for API key auth
 	ClaudeOAuthModel = "claude-sonnet-4-20250514" // Default model for OAuth auth (Claude Code compatible)
+
+	// Claude 4.6 (Latest generation - February 2026)
+	ClaudeOpus46Model = "claude-opus-4-6"
 
 	// Alternative models
 	ClaudeOpusModel  = "claude-opus-4-20250514"
@@ -50,6 +54,7 @@ type ClaudeProvider struct {
 	retryConfig     RetryConfig
 	authType        AuthType
 	oauthCredReader *oauth_credentials.OAuthCredentialReader
+	discoverer      *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -147,7 +152,7 @@ func NewClaudeProviderWithRetry(apiKey, baseURL, model string, retryConfig Retry
 		model = ClaudeModel
 	}
 
-	return &ClaudeProvider{
+	p := &ClaudeProvider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -157,6 +162,39 @@ func NewClaudeProviderWithRetry(apiKey, baseURL, model string, retryConfig Retry
 		retryConfig: retryConfig,
 		authType:    AuthTypeAPIKey,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "claude",
+		ModelsEndpoint: "https://api.anthropic.com/v1/models",
+		ModelsDevID:    "anthropic",
+		APIKey:         apiKey,
+		AuthHeader:     "x-api-key",
+		AuthPrefix:     "",
+		ExtraHeaders: map[string]string{
+			"anthropic-version": "2023-06-01",
+		},
+		FallbackModels: []string{
+			// Claude 4.6 (Latest - February 2026)
+			"claude-opus-4-6",
+			// Claude 4.5 (November 2025)
+			"claude-opus-4-5-20251101",
+			"claude-sonnet-4-5-20250929",
+			"claude-haiku-4-5-20251001",
+			// Claude 4 models (May 2025)
+			"claude-opus-4-20250514",
+			"claude-sonnet-4-20250514",
+			"claude-haiku-4-20250514",
+			// Claude 3.5 models
+			"claude-3-5-sonnet-20241022",
+			"claude-3-5-haiku-20241022",
+			// Claude 3 models (legacy)
+			"claude-3-opus-20240229",
+			"claude-3-sonnet-20240229",
+			"claude-3-haiku-20240307",
+		},
+	})
+
+	return p
 }
 
 // NewClaudeProviderWithOAuth creates a new Claude provider using OAuth credentials from Claude Code CLI
@@ -691,19 +729,7 @@ func (p *ClaudeProvider) nextDelay(currentDelay time.Duration) time.Duration {
 // GetCapabilities returns the capabilities of the Claude provider
 func (p *ClaudeProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			// Claude 4 models (2025)
-			"claude-opus-4-20250514",
-			"claude-sonnet-4-20250514",
-			"claude-haiku-4-20250514",
-			// Claude 3.5 models
-			"claude-3-5-sonnet-20241022",
-			"claude-3-5-haiku-20241022",
-			// Claude 3 models (legacy)
-			"claude-3-opus-20240229",
-			"claude-3-sonnet-20240229",
-			"claude-3-haiku-20240307",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",

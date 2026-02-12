@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -29,6 +30,7 @@ type GeminiProvider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -165,7 +167,7 @@ func NewGeminiProviderWithRetry(apiKey, baseURL, model string, retryConfig Retry
 		}
 	}
 
-	return &GeminiProvider{
+	p := &GeminiProvider{
 		apiKey:    apiKey,
 		baseURL:   baseURL,
 		streamURL: streamURL,
@@ -175,6 +177,25 @@ func NewGeminiProviderWithRetry(apiKey, baseURL, model string, retryConfig Retry
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "gemini",
+		ModelsEndpoint: "https://generativelanguage.googleapis.com/v1beta/models",
+		ModelsDevID:    "google",
+		APIKey:         apiKey,
+		AuthHeader:     "x-goog-api-key",
+		AuthPrefix:     "",
+		ResponseParser: discovery.ParseGeminiModelsResponse,
+		FallbackModels: []string{
+			"gemini-2.0-flash",
+			"gemini-2.5-flash",
+			"gemini-2.5-pro",
+			"gemini-3-flash-preview",
+			"gemini-3-pro-preview",
+		},
+	})
+
+	return p
 }
 
 func (p *GeminiProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
@@ -751,13 +772,7 @@ func (p *GeminiProvider) nextDelay(currentDelay time.Duration) time.Duration {
 // GetCapabilities returns the capabilities of the Gemini provider
 func (p *GeminiProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			"gemini-2.0-flash",
-			"gemini-2.5-flash",
-			"gemini-2.5-pro",
-			"gemini-3-flash-preview",
-			"gemini-3-pro-preview",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",

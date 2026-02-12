@@ -1,4 +1,4 @@
-package ai21
+package chutes
 
 import (
 	"context"
@@ -18,15 +18,15 @@ func TestNewProvider(t *testing.T) {
 	provider := NewProvider("test-api-key", "", "")
 	assert.NotNil(t, provider)
 	assert.Equal(t, "test-api-key", provider.apiKey)
-	assert.Equal(t, AI21APIURL, provider.baseURL)
+	assert.Equal(t, ChutesAPIURL, provider.baseURL)
 	assert.Equal(t, DefaultModel, provider.model)
 }
 
 func TestNewProviderWithCustomURL(t *testing.T) {
-	customURL := "https://custom.ai21.com/studio/v1/chat/completions"
-	provider := NewProvider("test-api-key", customURL, "jamba-1.5-mini")
+	customURL := "https://custom.chutes.ai/v1/chat/completions"
+	provider := NewProvider("test-api-key", customURL, "deepseek-ai/DeepSeek-R1")
 	assert.Equal(t, customURL, provider.baseURL)
-	assert.Equal(t, "jamba-1.5-mini", provider.model)
+	assert.Equal(t, "deepseek-ai/DeepSeek-R1", provider.model)
 }
 
 func TestNewProviderWithRetry(t *testing.T) {
@@ -36,10 +36,10 @@ func TestNewProviderWithRetry(t *testing.T) {
 		MaxDelay:     60 * time.Second,
 		Multiplier:   3.0,
 	}
-	provider := NewProviderWithRetry("test-key", "", "jamba-instruct", retryConfig)
+	provider := NewProviderWithRetry("test-key", "", "Qwen/Qwen3-235B-A22B", retryConfig)
 	assert.Equal(t, 5, provider.retryConfig.MaxRetries)
 	assert.Equal(t, 2*time.Second, provider.retryConfig.InitialDelay)
-	assert.Equal(t, "jamba-instruct", provider.model)
+	assert.Equal(t, "Qwen/Qwen3-235B-A22B", provider.model)
 }
 
 func TestDefaultRetryConfig(t *testing.T) {
@@ -59,31 +59,31 @@ func TestComplete(t *testing.T) {
 		var req Request
 		err := json.NewDecoder(r.Body).Decode(&req)
 		require.NoError(t, err)
-		assert.Equal(t, "jamba-1.5-large", req.Model)
+		assert.Equal(t, "deepseek-ai/DeepSeek-V3", req.Model)
 
 		resp := Response{
 			ID:      "chatcmpl-123",
 			Object:  "chat.completion",
 			Created: time.Now().Unix(),
-			Model:   "jamba-1.5-large",
+			Model:   "deepseek-ai/DeepSeek-V3",
 			Choices: []Choice{
 				{
 					Index:        0,
-					Message:      Message{Role: "assistant", Content: "Hello! I'm Jamba, how can I help?"},
+					Message:      Message{Role: "assistant", Content: "Hello! How can I help you?"},
 					FinishReason: "stop",
 				},
 			},
 			Usage: Usage{
 				PromptTokens:     15,
-				CompletionTokens: 10,
-				TotalTokens:      25,
+				CompletionTokens: 8,
+				TotalTokens:      23,
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
-	provider := NewProvider("test-api-key", server.URL, "jamba-1.5-large")
+	provider := NewProvider("test-api-key", server.URL, "deepseek-ai/DeepSeek-V3")
 	req := &models.LLMRequest{
 		ID:     "req-1",
 		Prompt: "You are a helpful assistant.",
@@ -99,11 +99,10 @@ func TestComplete(t *testing.T) {
 	resp, err := provider.Complete(context.Background(), req)
 	require.NoError(t, err)
 	assert.Equal(t, "chatcmpl-123", resp.ID)
-	assert.Contains(t, resp.Content, "Jamba")
-	assert.Equal(t, "ai21", resp.ProviderID)
-	assert.Equal(t, "AI21 Labs", resp.ProviderName)
+	assert.Equal(t, "Hello! How can I help you?", resp.Content)
+	assert.Equal(t, "chutes", resp.ProviderID)
 	assert.Equal(t, "stop", resp.FinishReason)
-	assert.Equal(t, 25, resp.TokensUsed)
+	assert.Equal(t, 23, resp.TokensUsed)
 }
 
 func TestCompleteWithTools(t *testing.T) {
@@ -112,11 +111,11 @@ func TestCompleteWithTools(t *testing.T) {
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		assert.Len(t, req.Tools, 1)
 		assert.Equal(t, "function", req.Tools[0].Type)
-		assert.Equal(t, "calculate", req.Tools[0].Function.Name)
+		assert.Equal(t, "get_weather", req.Tools[0].Function.Name)
 
 		resp := Response{
-			ID:    "chatcmpl-tools",
-			Model: "jamba-1.5-large",
+			ID:    "chatcmpl-tools-123",
+			Model: "deepseek-ai/DeepSeek-V3",
 			Choices: []Choice{
 				{
 					Index: 0,
@@ -127,8 +126,8 @@ func TestCompleteWithTools(t *testing.T) {
 								ID:   "call-1",
 								Type: "function",
 								Function: FunctionCall{
-									Name:      "calculate",
-									Arguments: `{"expression": "2+2"}`,
+									Name:      "get_weather",
+									Arguments: `{"location": "San Francisco"}`,
 								},
 							},
 						},
@@ -146,7 +145,7 @@ func TestCompleteWithTools(t *testing.T) {
 	req := &models.LLMRequest{
 		ID: "req-tools",
 		Messages: []models.Message{
-			{Role: "user", Content: "Calculate 2+2"},
+			{Role: "user", Content: "What's the weather in San Francisco?"},
 		},
 		ModelParams: models.ModelParameters{
 			Temperature: 0.5,
@@ -155,8 +154,8 @@ func TestCompleteWithTools(t *testing.T) {
 			{
 				Type: "function",
 				Function: models.ToolFunction{
-					Name:        "calculate",
-					Description: "Calculate math expressions",
+					Name:        "get_weather",
+					Description: "Get current weather",
 					Parameters:  map[string]any{"type": "object"},
 				},
 			},
@@ -168,14 +167,15 @@ func TestCompleteWithTools(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, resp.ToolCalls, 1)
 	assert.Equal(t, "call-1", resp.ToolCalls[0].ID)
-	assert.Equal(t, "calculate", resp.ToolCalls[0].Function.Name)
+	assert.Equal(t, "get_weather", resp.ToolCalls[0].Function.Name)
+	assert.Contains(t, resp.ToolCalls[0].Function.Arguments, "San Francisco")
 	assert.Equal(t, "tool_calls", resp.FinishReason)
 }
 
 func TestCompleteAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte(`{"detail": "Invalid API key"}`))
+		_, _ = w.Write([]byte(`{"error": {"message": "Invalid API key", "type": "invalid_request_error"}}`))
 	}))
 	defer server.Close()
 
@@ -200,9 +200,9 @@ func TestCompleteStream(t *testing.T) {
 		flusher, _ := w.(http.Flusher)
 
 		events := []string{
-			`data: {"id":"chunk-1","choices":[{"delta":{"content":"AI21"}}]}`,
-			`data: {"id":"chunk-2","choices":[{"delta":{"content":" Labs"}}]}`,
-			`data: {"id":"chunk-3","choices":[{"delta":{"content":" response"}}]}`,
+			`data: {"id":"chunk-1","choices":[{"delta":{"content":"Hello"}}]}`,
+			`data: {"id":"chunk-2","choices":[{"delta":{"content":" from"}}]}`,
+			`data: {"id":"chunk-3","choices":[{"delta":{"content":" Chutes"}}]}`,
 			`data: [DONE]`,
 		}
 
@@ -228,8 +228,9 @@ func TestCompleteStream(t *testing.T) {
 	}
 
 	require.GreaterOrEqual(t, len(responses), 3)
+	// Check final response has full content
 	lastResp := responses[len(responses)-1]
-	assert.Equal(t, "AI21 Labs response", lastResp.Content)
+	assert.Equal(t, "Hello from Chutes", lastResp.Content)
 	assert.Equal(t, "stop", lastResp.FinishReason)
 }
 
@@ -251,22 +252,60 @@ func TestCompleteStreamError(t *testing.T) {
 	assert.Contains(t, err.Error(), "503")
 }
 
+func TestHealthCheck(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "GET", r.Method)
+		assert.Contains(t, r.Header.Get("Authorization"), "Bearer ")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[{"id": "deepseek-ai/DeepSeek-V3"}]`))
+	}))
+	defer server.Close()
+
+	// Test with direct HTTP call to mock server
+	provider := NewProvider("test-api-key", server.URL, "")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	httpReq, _ := http.NewRequestWithContext(ctx, "GET", server.URL, nil)
+	httpReq.Header.Set("Authorization", "Bearer test-api-key")
+	resp, err := provider.httpClient.Do(httpReq)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	_ = resp.Body.Close()
+}
+
+func TestHealthCheckFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer server.Close()
+
+	provider := NewProvider("invalid-key", server.URL, "")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	httpReq, _ := http.NewRequestWithContext(ctx, "GET", server.URL, nil)
+	resp, err := provider.httpClient.Do(httpReq)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	_ = resp.Body.Close()
+}
+
 func TestGetCapabilities(t *testing.T) {
 	provider := NewProvider("test-api-key", "", "")
 	caps := provider.GetCapabilities()
 
 	require.NotNil(t, caps)
-	// Dynamic model discovery fetches current models from AI21 API
-	// Use minimum count check instead of specific models (API models change over time)
-	assert.GreaterOrEqual(t, len(caps.SupportedModels), 1)
+	assert.Contains(t, caps.SupportedModels, "deepseek-ai/DeepSeek-V3")
+	assert.Contains(t, caps.SupportedModels, "deepseek-ai/DeepSeek-R1")
 	assert.Contains(t, caps.SupportedFeatures, "chat")
 	assert.Contains(t, caps.SupportedFeatures, "streaming")
 	assert.Contains(t, caps.SupportedFeatures, "tools")
 	assert.True(t, caps.SupportsStreaming)
 	assert.True(t, caps.SupportsTools)
 	assert.True(t, caps.SupportsFunctionCalling)
-	assert.Equal(t, 256000, caps.Limits.MaxTokens)
-	assert.Equal(t, "ai21", caps.Metadata["provider"])
+	assert.Equal(t, 131072, caps.Limits.MaxTokens)
+	assert.Equal(t, "chutes", caps.Metadata["provider"])
 }
 
 func TestValidateConfig(t *testing.T) {
@@ -292,17 +331,17 @@ func TestValidateConfig(t *testing.T) {
 }
 
 func TestConvertRequest(t *testing.T) {
-	provider := NewProvider("test-api-key", "", "jamba-1.5-large")
+	provider := NewProvider("test-api-key", "", "deepseek-ai/DeepSeek-V3")
 	req := &models.LLMRequest{
 		ID:     "test-id",
 		Prompt: "You are a coding assistant.",
 		Messages: []models.Message{
 			{Role: "user", Content: "Hello"},
-			{Role: "assistant", Content: "Hi!"},
-			{Role: "user", Content: "Help me"},
+			{Role: "assistant", Content: "Hi there!"},
+			{Role: "user", Content: "Help me code"},
 		},
 		ModelParams: models.ModelParameters{
-			Model:         "jamba-1.5-mini",
+			Model:         "Qwen/Qwen3-235B-A22B",
 			Temperature:   0.8,
 			MaxTokens:     2000,
 			TopP:          0.9,
@@ -311,11 +350,13 @@ func TestConvertRequest(t *testing.T) {
 	}
 
 	apiReq := provider.convertRequest(req)
-	assert.Equal(t, "jamba-1.5-mini", apiReq.Model)
+	assert.Equal(t, "Qwen/Qwen3-235B-A22B", apiReq.Model)
 	assert.Len(t, apiReq.Messages, 4) // system + 3 messages
 	assert.Equal(t, "system", apiReq.Messages[0].Role)
+	assert.Equal(t, "You are a coding assistant.", apiReq.Messages[0].Content)
 	assert.Equal(t, 0.8, apiReq.Temperature)
 	assert.Equal(t, 2000, apiReq.MaxTokens)
+	assert.Equal(t, 0.9, apiReq.TopP)
 	assert.Equal(t, []string{"END"}, apiReq.Stop)
 }
 
@@ -336,12 +377,13 @@ func TestConvertResponse(t *testing.T) {
 	startTime := time.Now()
 
 	apiResp := &Response{
-		ID:    "resp-456",
-		Model: "jamba-1.5-large",
+		ID:      "chatcmpl-456",
+		Model:   "deepseek-ai/DeepSeek-V3",
+		Created: time.Now().Unix(),
 		Choices: []Choice{
 			{
 				Index:        0,
-				Message:      Message{Role: "assistant", Content: "AI21 response"},
+				Message:      Message{Role: "assistant", Content: "This is the response"},
 				FinishReason: "stop",
 			},
 		},
@@ -353,50 +395,31 @@ func TestConvertResponse(t *testing.T) {
 	}
 
 	resp := provider.convertResponse(req, apiResp, startTime)
-	assert.Equal(t, "resp-456", resp.ID)
+	assert.Equal(t, "chatcmpl-456", resp.ID)
 	assert.Equal(t, "req-123", resp.RequestID)
-	assert.Equal(t, "AI21 response", resp.Content)
-	assert.Equal(t, "ai21", resp.ProviderID)
-	assert.Equal(t, "AI21 Labs", resp.ProviderName)
+	assert.Equal(t, "This is the response", resp.Content)
+	assert.Equal(t, "chutes", resp.ProviderID)
+	assert.Equal(t, "Chutes AI", resp.ProviderName)
 	assert.Equal(t, 150, resp.TokensUsed)
 	assert.Equal(t, "stop", resp.FinishReason)
+	assert.Equal(t, 100, resp.Metadata["prompt_tokens"])
+	assert.Equal(t, 50, resp.Metadata["completion_tokens"])
 }
 
-func TestConvertResponseWithToolCalls(t *testing.T) {
+func TestConvertResponseEmptyChoices(t *testing.T) {
 	provider := NewProvider("test-api-key", "", "")
-	req := &models.LLMRequest{ID: "req-tools"}
+	req := &models.LLMRequest{ID: "req-empty"}
 	startTime := time.Now()
 
 	apiResp := &Response{
-		ID:    "resp-tools",
-		Model: "jamba-1.5-large",
-		Choices: []Choice{
-			{
-				Index: 0,
-				Message: Message{
-					Role: "assistant",
-					ToolCalls: []ToolCall{
-						{
-							ID:   "tc-1",
-							Type: "function",
-							Function: FunctionCall{
-								Name:      "search",
-								Arguments: `{"query": "test"}`,
-							},
-						},
-					},
-				},
-				FinishReason: "stop",
-			},
-		},
-		Usage: Usage{TotalTokens: 30},
+		ID:      "chatcmpl-empty",
+		Choices: []Choice{},
+		Usage:   Usage{},
 	}
 
 	resp := provider.convertResponse(req, apiResp, startTime)
-	assert.Equal(t, "tool_calls", resp.FinishReason)
-	require.Len(t, resp.ToolCalls, 1)
-	assert.Equal(t, "tc-1", resp.ToolCalls[0].ID)
-	assert.Equal(t, "search", resp.ToolCalls[0].Function.Name)
+	assert.Equal(t, "", resp.Content)
+	assert.Equal(t, "", resp.FinishReason)
 }
 
 func TestCalculateConfidence(t *testing.T) {
@@ -409,6 +432,7 @@ func TestCalculateConfidence(t *testing.T) {
 		maxConf      float64
 	}{
 		{"Short", "stop", 0.9, 1.0},
+		{"Short", "end_turn", 0.9, 1.0},
 		{strings.Repeat("Long content ", 20), "stop", 0.95, 1.0},
 		{"Short", "length", 0.7, 0.8},
 		{"Short", "content_filter", 0.5, 0.6},
@@ -416,8 +440,8 @@ func TestCalculateConfidence(t *testing.T) {
 
 	for _, tt := range tests {
 		conf := provider.calculateConfidence(tt.content, tt.finishReason)
-		assert.GreaterOrEqual(t, conf, tt.minConf)
-		assert.LessOrEqual(t, conf, tt.maxConf)
+		assert.GreaterOrEqual(t, conf, tt.minConf, "content=%q, finish=%s", tt.content, tt.finishReason)
+		assert.LessOrEqual(t, conf, tt.maxConf, "content=%q, finish=%s", tt.content, tt.finishReason)
 	}
 }
 
@@ -426,28 +450,34 @@ func TestCalculateBackoff(t *testing.T) {
 
 	delay1 := provider.calculateBackoff(1)
 	delay2 := provider.calculateBackoff(2)
+	delay3 := provider.calculateBackoff(3)
 
+	// First delay should be close to initial delay
 	assert.LessOrEqual(t, delay1, 2*time.Second)
-	assert.LessOrEqual(t, delay1, delay2+time.Second)
 
+	// Delays should generally increase (accounting for jitter)
+	assert.LessOrEqual(t, delay1, delay2+time.Second)
+	assert.LessOrEqual(t, delay2, delay3+time.Second)
+
+	// Should not exceed max delay
 	delay10 := provider.calculateBackoff(10)
-	assert.LessOrEqual(t, delay10, 35*time.Second)
+	assert.LessOrEqual(t, delay10, 35*time.Second) // Max + jitter
 }
 
 func TestGetModel(t *testing.T) {
-	provider := NewProvider("test-api-key", "", "jamba-1.5-large")
-	assert.Equal(t, "jamba-1.5-large", provider.GetModel())
+	provider := NewProvider("test-api-key", "", "deepseek-ai/DeepSeek-V3")
+	assert.Equal(t, "deepseek-ai/DeepSeek-V3", provider.GetModel())
 }
 
 func TestSetModel(t *testing.T) {
-	provider := NewProvider("test-api-key", "", "jamba-1.5-large")
-	provider.SetModel("jamba-1.5-mini")
-	assert.Equal(t, "jamba-1.5-mini", provider.GetModel())
+	provider := NewProvider("test-api-key", "", "deepseek-ai/DeepSeek-V3")
+	provider.SetModel("deepseek-ai/DeepSeek-R1")
+	assert.Equal(t, "deepseek-ai/DeepSeek-R1", provider.GetModel())
 }
 
 func TestGetName(t *testing.T) {
 	provider := NewProvider("test-api-key", "", "")
-	assert.Equal(t, "ai21", provider.GetName())
+	assert.Equal(t, "chutes", provider.GetName())
 }
 
 func TestRetryOnServerError(t *testing.T) {
@@ -459,7 +489,7 @@ func TestRetryOnServerError(t *testing.T) {
 			return
 		}
 		resp := Response{
-			ID:      "success",
+			ID:      "success-after-retry",
 			Choices: []Choice{{Message: Message{Content: "Success"}, FinishReason: "stop"}},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -479,8 +509,65 @@ func TestRetryOnServerError(t *testing.T) {
 
 	resp, err := provider.Complete(context.Background(), req)
 	require.NoError(t, err)
-	assert.Equal(t, "success", resp.ID)
+	assert.Equal(t, "success-after-retry", resp.ID)
 	assert.Equal(t, 3, attempts)
+}
+
+func TestRetryOnRateLimiting(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts < 2 {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		resp := Response{
+			ID:      "rate-limit-success",
+			Choices: []Choice{{Message: Message{Content: "OK"}, FinishReason: "stop"}},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	provider := NewProviderWithRetry("test-key", server.URL, "", RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 10 * time.Millisecond,
+		MaxDelay:     100 * time.Millisecond,
+		Multiplier:   2.0,
+	})
+
+	req := &models.LLMRequest{
+		Messages: []models.Message{{Role: "user", Content: "Test"}},
+	}
+
+	resp, err := provider.Complete(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, "rate-limit-success", resp.ID)
+}
+
+func TestMaxRetriesExceeded(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	provider := NewProviderWithRetry("test-key", server.URL, "", RetryConfig{
+		MaxRetries:   2,
+		InitialDelay: 10 * time.Millisecond,
+		MaxDelay:     100 * time.Millisecond,
+		Multiplier:   2.0,
+	})
+
+	req := &models.LLMRequest{
+		Messages: []models.Message{{Role: "user", Content: "Test"}},
+	}
+
+	_, err := provider.Complete(context.Background(), req)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "max retries exceeded")
+	assert.Equal(t, 3, attempts) // 1 initial + 2 retries
 }
 
 func TestContextCancellation(t *testing.T) {
@@ -501,38 +588,24 @@ func TestContextCancellation(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestMultipleModels(t *testing.T) {
-	testModels := []string{
-		"jamba-1.5-large",
-		"jamba-1.5-mini",
-		"jamba-instruct",
+func BenchmarkConvertRequest(b *testing.B) {
+	provider := NewProvider("test-key", "", "deepseek-ai/DeepSeek-V3")
+	req := &models.LLMRequest{
+		ID:     "bench-req",
+		Prompt: "You are a helpful assistant.",
+		Messages: []models.Message{
+			{Role: "user", Content: "Hello"},
+			{Role: "assistant", Content: "Hi there!"},
+			{Role: "user", Content: "Help me with coding"},
+		},
+		ModelParams: models.ModelParameters{
+			Temperature: 0.7,
+			MaxTokens:   2048,
+		},
 	}
 
-	for _, model := range testModels {
-		t.Run(model, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				var req Request
-				_ = json.NewDecoder(r.Body).Decode(&req)
-				assert.Equal(t, model, req.Model)
-
-				resp := Response{
-					ID:      "test-" + model,
-					Model:   model,
-					Choices: []Choice{{Message: Message{Content: "Response from " + model}, FinishReason: "stop"}},
-				}
-				_ = json.NewEncoder(w).Encode(resp)
-			}))
-			defer server.Close()
-
-			provider := NewProvider("test-key", server.URL, model)
-			req := &models.LLMRequest{
-				Messages:    []models.Message{{Role: "user", Content: "Test"}},
-				ModelParams: models.ModelParameters{},
-			}
-
-			resp, err := provider.Complete(context.Background(), req)
-			require.NoError(t, err)
-			assert.Contains(t, resp.Content, model)
-		})
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = provider.convertRequest(req)
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 	"github.com/sirupsen/logrus"
 )
@@ -28,6 +29,7 @@ type MistralProvider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -147,7 +149,7 @@ func NewMistralProviderWithRetry(apiKey, baseURL, model string, retryConfig Retr
 		model = MistralModel
 	}
 
-	return &MistralProvider{
+	p := &MistralProvider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -156,6 +158,24 @@ func NewMistralProviderWithRetry(apiKey, baseURL, model string, retryConfig Retr
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "mistral",
+		ModelsEndpoint: "https://api.mistral.ai/v1/models",
+		ModelsDevID:    "mistral",
+		APIKey:         apiKey,
+		FallbackModels: []string{
+			"mistral-large-latest",
+			"mistral-medium",
+			"mistral-small-latest",
+			"open-mistral-7b",
+			"open-mixtral-8x7b",
+			"open-mixtral-8x22b",
+			"codestral-latest",
+		},
+	})
+
+	return p
 }
 
 func (p *MistralProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
@@ -674,15 +694,7 @@ func (p *MistralProvider) nextDelay(currentDelay time.Duration) time.Duration {
 // GetCapabilities returns the capabilities of the Mistral provider
 func (p *MistralProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			"mistral-large-latest",
-			"mistral-medium",
-			"mistral-small-latest",
-			"open-mistral-7b",
-			"open-mixtral-8x7b",
-			"open-mixtral-8x22b",
-			"codestral-latest",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"text_completion",
 			"chat",

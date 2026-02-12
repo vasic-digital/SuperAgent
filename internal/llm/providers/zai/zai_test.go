@@ -30,7 +30,7 @@ func TestNewZAIProvider(t *testing.T) {
 			expected: &ZAIProvider{
 				apiKey:  "test-key",
 				baseURL: "https://open.bigmodel.cn/api/paas/v4",
-				model:   "glm-4-plus",
+				model:   "glm-4.7",
 				httpClient: &http.Client{
 					Timeout: 60 * time.Second,
 				},

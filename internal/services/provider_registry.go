@@ -18,6 +18,7 @@ import (
 	"dev.helix.agent/internal/llm/providers/ai21"
 	"dev.helix.agent/internal/llm/providers/anthropic"
 	"dev.helix.agent/internal/llm/providers/cerebras"
+	"dev.helix.agent/internal/llm/providers/chutes"
 	"dev.helix.agent/internal/llm/providers/claude"
 	"dev.helix.agent/internal/llm/providers/cohere"
 	"dev.helix.agent/internal/llm/providers/deepseek"
@@ -1661,6 +1662,23 @@ func (r *ProviderRegistry) createProviderFromConfig(cfg ProviderConfig) (llm.LLM
 			return ai21.NewProvider(cfg.APIKey, baseURL, model), nil
 		}
 		return nil, fmt.Errorf("AI21 provider not available: API key missing or disabled")
+
+	case "chutes":
+		if cfg.Enabled && cfg.APIKey != "" {
+			return chutes.NewProvider(cfg.APIKey, baseURL, model), nil
+		}
+		return nil, fmt.Errorf("Chutes provider not available: API key missing or disabled")
+
+	// Providers using OpenRouter-compatible API proxy (no native implementation)
+	case "hyperbolic", "sambanova", "siliconflow", "cloudflare", "nvidia",
+		"kimi", "novita", "upstage":
+		if cfg.Enabled && cfg.APIKey != "" {
+			if baseURL == "" {
+				baseURL = "https://openrouter.ai/api/v1/chat/completions"
+			}
+			return openrouter.NewSimpleOpenRouterProviderWithBaseURL(cfg.APIKey, baseURL), nil
+		}
+		return nil, fmt.Errorf("%s provider not available: API key missing or disabled", cfg.Type)
 
 	default:
 		return nil, fmt.Errorf("unsupported provider type: %s", cfg.Type)

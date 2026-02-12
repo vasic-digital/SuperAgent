@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -31,6 +32,7 @@ type Provider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -163,7 +165,7 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		model = DefaultModel
 	}
 
-	return &Provider{
+	p := &Provider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -172,6 +174,40 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "fireworks",
+		ModelsEndpoint: FireworksModelsURL,
+		ModelsDevID:    "fireworks",
+		APIKey:         apiKey,
+		FallbackModels: []string{
+			// Llama 3.1 models
+			"accounts/fireworks/models/llama-v3p1-405b-instruct",
+			"accounts/fireworks/models/llama-v3p1-70b-instruct",
+			"accounts/fireworks/models/llama-v3p1-8b-instruct",
+			// Llama 3.2 models
+			"accounts/fireworks/models/llama-v3p2-90b-vision-instruct",
+			"accounts/fireworks/models/llama-v3p2-11b-vision-instruct",
+			"accounts/fireworks/models/llama-v3p2-3b-instruct",
+			"accounts/fireworks/models/llama-v3p2-1b-instruct",
+			// Llama 3.3 models
+			"accounts/fireworks/models/llama-v3p3-70b-instruct",
+			// Qwen models
+			"accounts/fireworks/models/qwen2p5-72b-instruct",
+			"accounts/fireworks/models/qwen2p5-coder-32b-instruct",
+			// DeepSeek models
+			"accounts/fireworks/models/deepseek-r1",
+			"accounts/fireworks/models/deepseek-v3",
+			// Mistral models
+			"accounts/fireworks/models/mixtral-8x22b-instruct",
+			"accounts/fireworks/models/mixtral-8x7b-instruct",
+			// Fireworks models
+			"accounts/fireworks/models/firefunction-v2",
+			"accounts/fireworks/models/firellava-13b",
+		},
+	})
+
+	return p
 }
 
 // Complete sends a completion request
@@ -318,31 +354,7 @@ func (p *Provider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			// Llama 3.1 models
-			"accounts/fireworks/models/llama-v3p1-405b-instruct",
-			"accounts/fireworks/models/llama-v3p1-70b-instruct",
-			"accounts/fireworks/models/llama-v3p1-8b-instruct",
-			// Llama 3.2 models
-			"accounts/fireworks/models/llama-v3p2-90b-vision-instruct",
-			"accounts/fireworks/models/llama-v3p2-11b-vision-instruct",
-			"accounts/fireworks/models/llama-v3p2-3b-instruct",
-			"accounts/fireworks/models/llama-v3p2-1b-instruct",
-			// Llama 3.3 models
-			"accounts/fireworks/models/llama-v3p3-70b-instruct",
-			// Qwen models
-			"accounts/fireworks/models/qwen2p5-72b-instruct",
-			"accounts/fireworks/models/qwen2p5-coder-32b-instruct",
-			// DeepSeek models
-			"accounts/fireworks/models/deepseek-r1",
-			"accounts/fireworks/models/deepseek-v3",
-			// Mistral models
-			"accounts/fireworks/models/mixtral-8x22b-instruct",
-			"accounts/fireworks/models/mixtral-8x7b-instruct",
-			// Fireworks models
-			"accounts/fireworks/models/firefunction-v2",
-			"accounts/fireworks/models/firellava-13b",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"chat", "streaming", "tools", "vision", "json_mode",
 			"code_completion", "function_calling", "grammar",

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -29,6 +30,7 @@ type Provider struct {
 	organization string
 	httpClient   *http.Client
 	retryConfig  RetryConfig
+	discoverer   *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior
@@ -136,7 +138,7 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 	if model == "" {
 		model = DefaultModel
 	}
-	return &Provider{
+	p := &Provider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -145,6 +147,17 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		},
 		retryConfig: retryConfig,
 	}
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "openai",
+		ModelsEndpoint: OpenAIModels,
+		ModelsDevID:    "openai",
+		APIKey:         apiKey,
+		FallbackModels: []string{
+			"gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4",
+			"gpt-3.5-turbo", "o1", "o1-mini", "o3", "o3-mini",
+		},
+	})
+	return p
 }
 
 // Complete sends a completion request
@@ -294,10 +307,7 @@ func (p *Provider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			"gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4",
-			"gpt-3.5-turbo", "o1", "o1-mini", "o3", "o3-mini",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures:       []string{"chat", "streaming", "tools", "vision", "json_mode"},
 		SupportedRequestTypes:   []string{"chat", "completion"},
 		SupportsStreaming:       true,

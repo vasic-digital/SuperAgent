@@ -52,10 +52,13 @@ const (
 )
 
 // ClaudeModels defines the available Claude models (OAuth2 provider)
-// Updated 2025-01-13 with latest Claude 4.x and 4.5 models
+// Updated 2026-02-12 with Claude 4.6 Opus
 var ClaudeModels = struct {
-	// Claude 4.5 (Latest generation - November 2025)
-	Opus45   string // claude-opus-4-5-20251101 - Most capable
+	// Claude 4.6 (Latest generation - February 2026)
+	Opus46 string // claude-opus-4-6 - Most capable, latest
+
+	// Claude 4.5 (November 2025)
+	Opus45   string // claude-opus-4-5-20251101 - Previous flagship
 	Sonnet45 string // claude-sonnet-4-5-20250929 - Balanced
 	Haiku45  string // claude-haiku-4-5-20251001 - Fast, efficient
 
@@ -72,7 +75,10 @@ var ClaudeModels = struct {
 	Sonnet3 string // claude-3-sonnet-20240229
 	Haiku3  string // claude-3-haiku-20240307
 }{
-	// Claude 4.5 (Primary models for AI Debate Team)
+	// Claude 4.6 (Latest - Primary model for AI Debate Team)
+	Opus46: "claude-opus-4-6",
+
+	// Claude 4.5
 	Opus45:   "claude-opus-4-5-20251101",
 	Sonnet45: "claude-sonnet-4-5-20250929",
 	Haiku45:  "claude-haiku-4-5-20251001",
@@ -113,12 +119,16 @@ var LLMsVerifierModels = struct {
 	Mistral  string // Good mediator
 	Groq     string // Fast inference
 	Cerebras string // Fast inference
+	ZAI      string // Zhipu GLM-4.7 (latest)
+	Chutes   string // Chutes AI DeepSeek-V3
 }{
 	DeepSeek: "deepseek-chat",
 	Gemini:   "gemini-2.0-flash",
 	Mistral:  "mistral-large-latest",
 	Groq:     "llama-3.1-70b-versatile",
 	Cerebras: "llama-3.3-70b",
+	ZAI:      "glm-4.7",
+	Chutes:   "deepseek-ai/DeepSeek-V3",
 }
 
 // OpenRouterFreeModels defines OpenRouter Zen free models (with :free suffix)
@@ -498,19 +508,22 @@ func (dtc *DebateTeamConfig) collectClaudeModels() {
 	}
 
 	// Add all Claude models (prioritized by generation and capability)
-	// Claude 4.5 models get highest scores, then 4.x, then 3.5, then 3.x
+	// Claude 4.6 > 4.5 > 4.x > 3.5 > 3.x by score
 	claudeModels := []struct {
 		Name  string
 		Score float64
 	}{
-		// Claude 4.5 (Primary - highest scores)
-		{ClaudeModels.Opus45, 9.8},   // Most capable Claude model
-		{ClaudeModels.Sonnet45, 9.6}, // High quality balanced
+		// Claude 4.6 (Latest - highest score)
+		{ClaudeModels.Opus46, 9.9}, // Most capable Claude model (February 2026)
+
+		// Claude 4.5 (Primary)
+		{ClaudeModels.Opus45, 9.7},   // Previous flagship
+		{ClaudeModels.Sonnet45, 9.5}, // High quality balanced
 		{ClaudeModels.Haiku45, 9.0},  // Fast and efficient
 
 		// Claude 4.x (Secondary)
-		{ClaudeModels.Opus4, 9.4},
-		{ClaudeModels.Sonnet4, 9.2},
+		{ClaudeModels.Opus4, 9.3},
+		{ClaudeModels.Sonnet4, 9.1},
 
 		// Claude 3.5 (Fallbacks)
 		{ClaudeModels.Sonnet35, 8.8},
@@ -601,6 +614,8 @@ func (dtc *DebateTeamConfig) collectReliableAPIProviders() {
 		{"mistral", "MISTRAL_API_KEY", LLMsVerifierModels.Mistral},
 		{"deepseek", "DEEPSEEK_API_KEY", LLMsVerifierModels.DeepSeek},
 		{"gemini", "GEMINI_API_KEY", LLMsVerifierModels.Gemini},
+		{"zai", "ZAI_API_KEY", LLMsVerifierModels.ZAI},
+		{"chutes", "CHUTES_API_KEY", LLMsVerifierModels.Chutes},
 	}
 
 	for _, rp := range reliableProviders {
@@ -1264,7 +1279,9 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 		"verified_llms_count": len(dtc.verifiedLLMs),
 		"sorting_method":      "score_only", // NO OAuth priority - pure score-based sorting
 		"claude_models": map[string]string{
-			// Claude 4.5 (Latest)
+			// Claude 4.6 (Latest)
+			"opus_46": ClaudeModels.Opus46,
+			// Claude 4.5
 			"opus_45":   ClaudeModels.Opus45,
 			"sonnet_45": ClaudeModels.Sonnet45,
 			"haiku_45":  ClaudeModels.Haiku45,
@@ -1292,6 +1309,8 @@ func (dtc *DebateTeamConfig) GetTeamSummary() map[string]interface{} {
 			"mistral":  LLMsVerifierModels.Mistral,
 			"groq":     LLMsVerifierModels.Groq,
 			"cerebras": LLMsVerifierModels.Cerebras,
+			"zai":      LLMsVerifierModels.ZAI,
+			"chutes":   LLMsVerifierModels.Chutes,
 		},
 		"openrouter_free_models": map[string]string{
 			"llama4_maverick":   OpenRouterFreeModels.Llama4Maverick,

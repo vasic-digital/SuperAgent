@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HelixAgent is an AI-powered ensemble LLM service written in Go that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 21 LLM providers (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI) with **dynamic provider selection** based on LLMsVerifier verification scores.
+HelixAgent is an AI-powered ensemble LLM service written in Go that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports 22 LLM providers (Claude, Chutes, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI) with **dynamic provider selection** based on LLMsVerifier verification scores.
 
 **Module**: `dev.helix.agent` (Go 1.24+, toolchain go1.24.11)
 
@@ -112,7 +112,8 @@ make monitoring-reset-circuits / force-health-check
 - `cmd/helixagent/` — Main app | `cmd/api/` — API server | `cmd/grpc-server/` — gRPC
 
 ### Core Packages (`internal/`)
-- `llm/providers/` — 21 LLM providers (claude, deepseek, gemini, mistral, openrouter, qwen, zai, zen, cerebras, ollama, ai21, anthropic, cohere, fireworks, groq, huggingface, openai, perplexity, replicate, together, xai)
+- `llm/providers/` — 22 LLM providers (claude, chutes, deepseek, gemini, mistral, openrouter, qwen, zai, zen, cerebras, ollama, ai21, anthropic, cohere, fireworks, groq, huggingface, openai, perplexity, replicate, together, xai)
+- `llm/discovery/` — 3-tier dynamic model discovery (Provider API → models.dev → hardcoded fallback)
 - `llm/ensemble.go` — Ensemble orchestration
 - `services/` — Business logic: provider_registry, ensemble, debate_service, debate_team_config, llm_intent_classifier, context_manager, mcp_client, lsp_manager, plugin_system
 - `handlers/` — HTTP handlers | `middleware/` — Auth, rate limiting, CORS
@@ -185,6 +186,7 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 - **Circuit Breaker**: Fault tolerance for provider failures
 - **Semantic Intent Detection**: LLM-based classification (zero hardcoding), pattern-based fallback
 - **Fallback Error Reporting**: Categorized errors (rate_limit, timeout, auth, connection, unavailable, overloaded) in streamed responses
+- **Dynamic Model Discovery**: 3-tier model discovery for all providers — Tier 1: query provider's `/v1/models` API, Tier 2: query models.dev catalog, Tier 3: hardcoded fallback. Thread-safe caching with 1-hour TTL. Custom response parsers for non-OpenAI formats (Gemini, Ollama, Cohere, Replicate, ZAI). Key package: `internal/llm/discovery/`
 
 ## Startup Verification Pipeline
 

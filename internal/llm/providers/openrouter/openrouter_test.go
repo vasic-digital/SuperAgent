@@ -398,10 +398,9 @@ func TestSimpleOpenRouterProvider_GetCapabilities(t *testing.T) {
 
 	assert.NotNil(t, caps)
 	assert.NotEmpty(t, caps.SupportedModels)
-	// Model names don't include openrouter/ prefix
-	assert.Contains(t, caps.SupportedModels, "anthropic/claude-3.5-sonnet")
-	assert.Contains(t, caps.SupportedModels, "openai/gpt-4o")
-	assert.Contains(t, caps.SupportedModels, "google/gemini-pro")
+	// Dynamic model discovery fetches real models from OpenRouter API
+	// Use minimum count check instead of specific models (API changes over time)
+	assert.GreaterOrEqual(t, len(caps.SupportedModels), 5)
 
 	assert.Contains(t, caps.SupportedFeatures, "text_completion")
 	assert.Contains(t, caps.SupportedFeatures, "chat")

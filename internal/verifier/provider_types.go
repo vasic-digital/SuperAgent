@@ -314,7 +314,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    1,
 		EnvVars:     []string{"ANTHROPIC_API_KEY", "CLAUDE_API_KEY"},
 		BaseURL:     "https://api.anthropic.com/v1/messages",
-		Models:      []string{"claude-opus-4-5-20251101", "claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"},
+		Models:      []string{"claude-opus-4-6", "claude-opus-4-5-20251101", "claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"},
 		Free:        false,
 	},
 	"qwen": {
@@ -477,7 +477,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    3,
 		EnvVars:     []string{"ZAI_API_KEY", "ZHIPU_API_KEY", "ApiKey_ZAI"},
 		BaseURL:     "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-		Models:      []string{"glm-4-plus", "glm-4-flash", "glm-4-air", "glm-4-0520"},
+		Models:      []string{"glm-4.7", "glm-4-plus", "glm-4-flash", "glm-4-air"},
 		Free:        false,
 	},
 
@@ -625,7 +625,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Tier:        4,
 		Priority:    5,
 		EnvVars:     []string{"CHUTES_API_KEY", "ApiKey_Chutes"},
-		BaseURL:     "https://api.chutes.ai/v1/chat/completions",
+		BaseURL:     "https://llm.chutes.ai/v1/chat/completions",
 		Models:      []string{}, // Dynamically discovered via Toolkit (fallback in Toolkit/Providers/Chutes/discovery.go)
 		Free:        false,
 	},

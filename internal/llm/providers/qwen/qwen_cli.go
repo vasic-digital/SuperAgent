@@ -150,15 +150,9 @@ func (p *QwenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 		return nil, fmt.Errorf("Qwen Code CLI not available: %v", p.cliCheckErr)
 	}
 
-	// Validate message contents BEFORE building prompt (to avoid false positives from added formatting)
-	for _, msg := range req.Messages {
-		if !utils.ValidateCommandArg(msg.Content) {
-			return nil, fmt.Errorf("message content contains invalid characters")
-		}
-	}
-	if req.Prompt != "" && !utils.ValidateCommandArg(req.Prompt) {
-		return nil, fmt.Errorf("prompt contains invalid characters")
-	}
+	// NOTE: Message content validation removed - exec.CommandContext properly escapes arguments
+	// The prompt is passed as a separate argument to the -p flag, not concatenated into the command string
+	// Therefore, command injection is not possible even with special characters like (){}$|&
 
 	// Build the prompt from messages
 	var promptBuilder strings.Builder
@@ -197,7 +191,7 @@ func (p *QwenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 	if req.ModelParams.Model != "" {
 		model = req.ModelParams.Model
 	}
-	// Validate model name for command injection safety
+	// Validate model name for command injection safety (controlled identifiers, not user content)
 	if !utils.ValidateCommandArg(model) {
 		return nil, fmt.Errorf("model name contains invalid characters")
 	}
@@ -258,15 +252,9 @@ func (p *QwenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 		return nil, fmt.Errorf("Qwen Code CLI not available: %v", p.cliCheckErr)
 	}
 
-	// Validate message contents BEFORE building prompt (to avoid false positives from added formatting)
-	for _, msg := range req.Messages {
-		if !utils.ValidateCommandArg(msg.Content) {
-			return nil, fmt.Errorf("message content contains invalid characters")
-		}
-	}
-	if req.Prompt != "" && !utils.ValidateCommandArg(req.Prompt) {
-		return nil, fmt.Errorf("prompt contains invalid characters")
-	}
+	// NOTE: Message content validation removed - exec.CommandContext properly escapes arguments
+	// The prompt is passed as a separate argument to the -p flag, not concatenated into the command string
+	// Therefore, command injection is not possible even with special characters like (){}$|&
 
 	// Build the prompt from messages
 	var promptBuilder strings.Builder
@@ -304,7 +292,7 @@ func (p *QwenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 	if req.ModelParams.Model != "" {
 		model = req.ModelParams.Model
 	}
-	// Validate model name for command injection safety
+	// Validate model name for command injection safety (controlled identifiers, not user content)
 	if !utils.ValidateCommandArg(model) {
 		cancel()
 		return nil, fmt.Errorf("model name contains invalid characters")

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -33,6 +34,7 @@ type Provider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -183,7 +185,7 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		model = DefaultModel
 	}
 
-	return &Provider{
+	p := &Provider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -192,6 +194,44 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "groq",
+		ModelsEndpoint: GroqModelsURL,
+		ModelsDevID:    "groq",
+		APIKey:         apiKey,
+		FallbackModels: []string{
+			// Llama models
+			"llama-3.3-70b-versatile",
+			"llama-3.3-70b-specdec",
+			"llama-3.2-90b-vision-preview",
+			"llama-3.2-11b-vision-preview",
+			"llama-3.2-3b-preview",
+			"llama-3.2-1b-preview",
+			"llama-3.1-70b-versatile",
+			"llama-3.1-8b-instant",
+			"llama3-70b-8192",
+			"llama3-8b-8192",
+			// Llama 4
+			"llama-4-scout-17b-16e-instruct",
+			"llama-4-maverick-17b-128e-instruct",
+			// Mixtral
+			"mixtral-8x7b-32768",
+			// Gemma
+			"gemma-7b-it",
+			"gemma2-9b-it",
+			// Qwen
+			"qwen-qwq-32b",
+			"qwen-2.5-coder-32b",
+			"qwen-2.5-32b",
+			// Whisper
+			"whisper-large-v3",
+			"whisper-large-v3-turbo",
+			"distil-whisper-large-v3-en",
+		},
+	})
+
+	return p
 }
 
 // Complete sends a completion request
@@ -338,35 +378,7 @@ func (p *Provider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			// Llama models
-			"llama-3.3-70b-versatile",
-			"llama-3.3-70b-specdec",
-			"llama-3.2-90b-vision-preview",
-			"llama-3.2-11b-vision-preview",
-			"llama-3.2-3b-preview",
-			"llama-3.2-1b-preview",
-			"llama-3.1-70b-versatile",
-			"llama-3.1-8b-instant",
-			"llama3-70b-8192",
-			"llama3-8b-8192",
-			// Llama 4
-			"llama-4-scout-17b-16e-instruct",
-			"llama-4-maverick-17b-128e-instruct",
-			// Mixtral
-			"mixtral-8x7b-32768",
-			// Gemma
-			"gemma-7b-it",
-			"gemma2-9b-it",
-			// Qwen
-			"qwen-qwq-32b",
-			"qwen-2.5-coder-32b",
-			"qwen-2.5-32b",
-			// Whisper
-			"whisper-large-v3",
-			"whisper-large-v3-turbo",
-			"distil-whisper-large-v3-en",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"chat", "streaming", "tools", "vision", "json_mode",
 			"audio_transcription", "code_completion", "fast_inference",

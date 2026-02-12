@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -30,6 +31,7 @@ type Provider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -116,7 +118,7 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		model = DefaultModel
 	}
 
-	return &Provider{
+	p := &Provider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -125,6 +127,34 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "replicate",
+		ModelsEndpoint: ReplicateModelsURL,
+		ModelsDevID:    "replicate",
+		APIKey:         apiKey,
+		AuthHeader:     "Authorization",
+		AuthPrefix:     "Bearer ",
+		ResponseParser: discovery.ParseReplicateModelsResponse,
+		FallbackModels: []string{
+			// Meta Llama models
+			"meta/llama-2-70b-chat",
+			"meta/llama-2-13b-chat",
+			"meta/llama-2-7b-chat",
+			"meta/meta-llama-3-70b-instruct",
+			"meta/meta-llama-3-8b-instruct",
+			"meta/meta-llama-3.1-405b-instruct",
+			// Mistral models
+			"mistralai/mistral-7b-instruct-v0.2",
+			"mistralai/mixtral-8x7b-instruct-v0.1",
+			// Other models
+			"stability-ai/stable-diffusion",
+			"openai/whisper",
+			"replicate/all-mpnet-base-v2",
+		},
+	})
+
+	return p
 }
 
 // Complete sends a completion request
@@ -257,22 +287,7 @@ func (p *Provider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			// Meta Llama models
-			"meta/llama-2-70b-chat",
-			"meta/llama-2-13b-chat",
-			"meta/llama-2-7b-chat",
-			"meta/meta-llama-3-70b-instruct",
-			"meta/meta-llama-3-8b-instruct",
-			"meta/meta-llama-3.1-405b-instruct",
-			// Mistral models
-			"mistralai/mistral-7b-instruct-v0.2",
-			"mistralai/mixtral-8x7b-instruct-v0.1",
-			// Other models
-			"stability-ai/stable-diffusion",
-			"openai/whisper",
-			"replicate/all-mpnet-base-v2",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"chat", "streaming", "image_generation", "speech_to_text",
 			"text_to_image", "embeddings",

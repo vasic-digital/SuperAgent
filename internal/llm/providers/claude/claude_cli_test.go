@@ -500,6 +500,7 @@ func TestParseModelsOutput(t *testing.T) {
 func TestGetKnownClaudeModels(t *testing.T) {
 	models := GetKnownClaudeModels()
 	assert.NotEmpty(t, models)
+	assert.Contains(t, models, "claude-opus-4-6")
 	assert.Contains(t, models, "claude-opus-4-5-20251101")
 	assert.Contains(t, models, "claude-sonnet-4-5-20250929")
 	assert.Contains(t, models, "claude-haiku-4-5-20251001")

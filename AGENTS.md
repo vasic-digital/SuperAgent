@@ -4,7 +4,7 @@ This document provides guidance for AI agents working on the HelixAgent project.
 
 ## Project Overview
 
-HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports **21 LLM providers** (Claude, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI) with **dynamic provider selection** based on LLMsVerifier verification scores.
+HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports **22 LLM providers** (Claude, Chutes, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI) with **dynamic provider selection** based on LLMsVerifier verification scores.
 
 ## Architecture Overview
 
@@ -18,13 +18,14 @@ HelixAgent uses a **unified startup verification pipeline** where LLMsVerifier a
 6. **Starts server** with verified configuration
 
 ### Key Components
-- **LLM Provider Registry**: Unified interface for 21 LLM providers with credential management
+- **LLM Provider Registry**: Unified interface for 22 LLM providers with credential management
 - **AI Debate System**: Multi-round debate between providers for consensus (5 positions × 5 LLMs = 25 total)
 - **SpecKit Orchestrator**: 7-phase development flow (Constitution → Specify → Clarify → Plan → Tasks → Analyze → Implement) with auto-activation based on work granularity detection and phase caching for resumption
 - **Constitution Management**: Auto-update Constitution on project changes (new modules, documentation changes, structure changes) with background filesystem monitoring
 - **Plugin System**: Hot-reloadable plugins with dependency resolution
 - **Formatters System**: 32+ code formatters for 19 programming languages via REST API
 - **MCP Adapters**: 45+ Model Context Protocol adapters for external services (Linear, Asana, Jira, etc.)
+- **Dynamic Model Discovery**: 3-tier model discovery for all providers — Tier 1: provider API (`/v1/models`), Tier 2: models.dev catalog, Tier 3: hardcoded fallback. Thread-safe caching with 1-hour TTL. Package: `internal/llm/discovery/`
 - **Background Task System**: Task queue, worker pool, resource monitor, stuck detector
 - **Notifications**: Real-time notifications via SSE, WebSocket, webhooks, polling
 
@@ -138,7 +139,7 @@ Always run `make fmt vet lint` before committing.
 ### Go Test Suites
 - `tests/security/penetration_test.go` – LLM security testing (prompt injection, jailbreaking, data exfiltration)
 - `tests/challenge/ai_debate_maximal_challenge_test.go` – AI debate system comprehensive validation
-- `tests/integration/llm_mem0_verification_test.go` – All 21 LLM providers + Mem0 memory integration
+- `tests/integration/llm_mem0_verification_test.go` – All 22 LLM providers + Mem0 memory integration
 - `tests/integration/mem0_full_integration_test.go` – Mem0 full integration (store, search, entity graph)
 - `tests/integration/mem0_capacity_test.go` – Mem0 capacity and performance tests
 - `tests/integration/mem0_resilience_test.go` – Mem0 resilience and recovery tests

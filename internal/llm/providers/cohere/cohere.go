@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"dev.helix.agent/internal/llm/discovery"
 	"dev.helix.agent/internal/models"
 )
 
@@ -31,6 +32,7 @@ type Provider struct {
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
+	discoverer  *discovery.Discoverer
 }
 
 // RetryConfig defines retry behavior for API calls
@@ -217,7 +219,7 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		model = DefaultModel
 	}
 
-	return &Provider{
+	p := &Provider{
 		apiKey:  apiKey,
 		baseURL: baseURL,
 		model:   model,
@@ -226,6 +228,23 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 		},
 		retryConfig: retryConfig,
 	}
+
+	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
+		ProviderName:   "cohere",
+		ModelsEndpoint: CohereModelsURL,
+		ModelsDevID:    "cohere",
+		APIKey:         apiKey,
+		ResponseParser: discovery.ParseCohereModelsResponse,
+		FallbackModels: []string{
+			"command-r-plus", "command-r-plus-08-2024",
+			"command-r", "command-r-08-2024",
+			"command", "command-light",
+			"command-nightly", "command-light-nightly",
+			"c4ai-aya-expanse-8b", "c4ai-aya-expanse-32b",
+		},
+	})
+
+	return p
 }
 
 // Complete sends a completion request
@@ -377,13 +396,7 @@ func (p *Provider) HealthCheck() error {
 // GetCapabilities returns provider capabilities
 func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
-		SupportedModels: []string{
-			"command-r-plus", "command-r-plus-08-2024",
-			"command-r", "command-r-08-2024",
-			"command", "command-light",
-			"command-nightly", "command-light-nightly",
-			"c4ai-aya-expanse-8b", "c4ai-aya-expanse-32b",
-		},
+		SupportedModels: p.discoverer.DiscoverModels(),
 		SupportedFeatures: []string{
 			"chat", "streaming", "tools", "rag", "embeddings",
 			"rerank", "classify", "summarize", "json_mode",

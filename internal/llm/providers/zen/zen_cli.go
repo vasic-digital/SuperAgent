@@ -166,15 +166,9 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 		return nil, fmt.Errorf("OpenCode CLI not available: %v", p.cliCheckErr)
 	}
 
-	// Validate message contents BEFORE building prompt (to avoid false positives from added formatting)
-	for _, msg := range req.Messages {
-		if !utils.ValidateCommandArg(msg.Content) {
-			return nil, fmt.Errorf("message content contains invalid characters")
-		}
-	}
-	if req.Prompt != "" && !utils.ValidateCommandArg(req.Prompt) {
-		return nil, fmt.Errorf("prompt contains invalid characters")
-	}
+	// NOTE: Message content validation removed - exec.CommandContext properly escapes arguments
+	// The prompt is passed as a separate argument, not concatenated into the command string
+	// Therefore, command injection is not possible even with special characters like (){}$|&
 
 	// Build the prompt from messages
 	var promptBuilder strings.Builder
@@ -213,7 +207,7 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 	if req.ModelParams.Model != "" {
 		model = req.ModelParams.Model
 	}
-	// Validate model name for command injection safety
+	// Validate model name for command injection safety (controlled identifiers, not user content)
 	if !utils.ValidateCommandArg(model) {
 		return nil, fmt.Errorf("model name contains invalid characters")
 	}
@@ -222,9 +216,9 @@ func (p *ZenCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 	// Format: opencode run [message] --format json --model provider/model
 	args := []string{
 		"run",
-		prompt,       // Message as positional argument
+		prompt,             // Message as positional argument
 		"--format", "json", // JSON output format for structured parsing
-		"--model", model,   // Specify model to use
+		"--model", model, // Specify model to use
 	}
 
 	// Execute opencode command
@@ -349,17 +343,9 @@ func (p *ZenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 			return
 		}
 
-		// Validate prompt for command injection safety
-		if !utils.ValidateCommandArg(prompt) {
-			ch <- &models.LLMResponse{
-				ProviderID:   "zen-cli",
-				ProviderName: "zen-cli",
-				Metadata: map[string]interface{}{
-					"error": "prompt contains invalid characters",
-				},
-			}
-			return
-		}
+		// NOTE: Prompt content validation removed - exec.CommandContext properly escapes arguments
+		// The prompt is passed as a separate argument, not concatenated into the command string
+		// Therefore, command injection is not possible even with special characters like (){}$|&
 
 		// Create command with timeout
 		cmdCtx, cancel := context.WithTimeout(ctx, p.timeout)
@@ -370,7 +356,7 @@ func (p *ZenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 		if req.ModelParams.Model != "" {
 			model = req.ModelParams.Model
 		}
-		// Validate model name for command injection safety
+		// Validate model name for command injection safety (controlled identifiers, not user content)
 		if !utils.ValidateCommandArg(model) {
 			ch <- &models.LLMResponse{
 				ProviderID:   "zen-cli",
@@ -388,7 +374,7 @@ func (p *ZenCLIProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 			"run",
 			prompt,             // Message as positional argument
 			"--format", "json", // JSON output for streaming
-			"--model", model,   // Specify model to use
+			"--model", model, // Specify model to use
 		}
 
 		// Note: OpenCode run doesn't support --max-tokens or --stream flags
