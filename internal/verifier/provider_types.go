@@ -120,7 +120,7 @@ type UnifiedProvider struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 
 	// Subscription & Access
-	Subscription *SubscriptionInfo    `json:"subscription,omitempty"`
+	Subscription *SubscriptionInfo     `json:"subscription,omitempty"`
 	AccessConfig *ProviderAccessConfig `json:"access_config,omitempty"`
 }
 
@@ -589,7 +589,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    4,
 		EnvVars:     []string{"FIREWORKS_API_KEY", "ApiKey_Fireworks_AI"},
 		BaseURL:     "https://api.fireworks.ai/inference/v1/chat/completions",
-		Models:      []string{"accounts/fireworks/models/llama-v3p1-405b-instruct", "accounts/fireworks/models/llama-v3p1-70b-instruct"},
+		Models:      []string{"accounts/fireworks/models/llama-v3p3-70b-instruct", "accounts/fireworks/models/deepseek-v3", "accounts/fireworks/models/qwen2p5-72b-instruct"},
 		Free:        false,
 	},
 	"anyscale": {
@@ -645,8 +645,8 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Tier:        3,
 		Priority:    5,
 		EnvVars:     []string{"HUGGINGFACE_API_KEY", "HF_API_KEY", "ApiKey_HuggingFace"},
-		BaseURL:     "https://api-inference.huggingface.co/models",
-		Models:      []string{"meta-llama/Llama-3.2-3B-Instruct", "mistralai/Mistral-7B-Instruct-v0.3"},
+		BaseURL:     "https://router.huggingface.co/v1/chat/completions",
+		Models:      []string{"meta-llama/Llama-3.3-70B-Instruct", "mistralai/Mistral-7B-Instruct-v0.3"},
 		Free:        false,
 	},
 	"nvidia": {
@@ -689,7 +689,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Tier:        2,
 		Priority:    3,
 		EnvVars:     []string{"KIMI_API_KEY", "MOONSHOT_API_KEY", "ApiKey_Kimi"},
-		BaseURL:     "https://api.moonshot.cn/v1/chat/completions",
+		BaseURL:     "https://api.moonshot.ai/v1/chat/completions",
 		Models:      []string{"moonshot-v1-128k", "moonshot-v1-32k", "moonshot-v1-8k"},
 		Free:        false,
 	},
@@ -745,7 +745,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    4,
 		EnvVars:     []string{"UPSTAGE_API_KEY", "ApiKey_Upstage_AI"},
 		BaseURL:     "https://api.upstage.ai/v1/solar/chat/completions",
-		Models:      []string{"solar-pro2", "solar-mini"},
+		Models:      []string{"solar-pro", "solar-mini"},
 		Free:        false,
 	},
 	"nlpcloud": {

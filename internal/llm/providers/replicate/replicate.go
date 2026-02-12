@@ -270,7 +270,7 @@ func (p *Provider) HealthCheck() error {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	httpReq.Header.Set("Authorization", "Token "+p.apiKey)
+	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(httpReq)
 	if err != nil {
@@ -440,7 +440,7 @@ func (p *Provider) createPrediction(ctx context.Context, req PredictionRequest) 
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Token "+p.apiKey)
+	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(httpReq)
 	if err != nil {
@@ -471,7 +471,7 @@ func (p *Provider) getPrediction(ctx context.Context, url string) (*PredictionRe
 		return nil, err
 	}
 
-	httpReq.Header.Set("Authorization", "Token "+p.apiKey)
+	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(httpReq)
 	if err != nil {

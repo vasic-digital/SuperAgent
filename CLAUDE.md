@@ -112,7 +112,8 @@ make monitoring-reset-circuits / force-health-check
 - `cmd/helixagent/` — Main app | `cmd/api/` — API server | `cmd/grpc-server/` — gRPC
 
 ### Core Packages (`internal/`)
-- `llm/providers/` — 22 LLM providers (claude, chutes, deepseek, gemini, mistral, openrouter, qwen, zai, zen, cerebras, ollama, ai21, anthropic, cohere, fireworks, groq, huggingface, openai, perplexity, replicate, together, xai)
+- `llm/providers/` — 22 dedicated LLM providers (claude, chutes, deepseek, gemini, mistral, openrouter, qwen, zai, zen, cerebras, ollama, ai21, anthropic, cohere, fireworks, groq, huggingface, openai, perplexity, replicate, together, xai) + generic OpenAI-compatible provider for 17+ additional providers (nvidia, sambanova, hyperbolic, novita, siliconflow, kimi, upstage, etc.)
+- `llm/providers/generic/` — Generic OpenAI-compatible provider for verification of providers without dedicated implementations
 - `llm/discovery/` — 3-tier dynamic model discovery (Provider API → models.dev → hardcoded fallback)
 - `llm/ensemble.go` — Ensemble orchestration
 - `services/` — Business logic: provider_registry, ensemble, debate_service, debate_team_config, llm_intent_classifier, context_manager, mcp_client, lsp_manager, plugin_system
@@ -266,6 +267,7 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/speckit_auto_activation_challenge.sh        # 15 tests
 ./challenges/scripts/verification_failure_reasons_challenge.sh   # 15 tests
 ./challenges/scripts/subscription_detection_challenge.sh        # 20 tests
+./challenges/scripts/provider_comprehensive_challenge.sh        # 40 tests
 ```
 
 ## LLMsVerifier

@@ -43,19 +43,19 @@ type SpecKitPhaseResult struct {
 
 // SpecKitFlowResult contains the complete result of a SpecKit flow
 type SpecKitFlowResult struct {
-	FlowID               string                          `json:"flow_id"`
-	StartTime            time.Time                       `json:"start_time"`
-	EndTime              time.Time                       `json:"end_time"`
-	Duration             time.Duration                   `json:"duration"`
-	Success              bool                            `json:"success"`
-	PhaseResults         []SpecKitPhaseResult            `json:"phase_results"`
-	Phases               map[string]*SpecKitPhaseResult  `json:"phases"` // Quick lookup by phase name
-	Constitution         *Constitution                   `json:"constitution,omitempty"`
-	FinalArtifact        string                          `json:"final_artifact"` // Implementation output
-	OverallQualityScore  float64                         `json:"overall_quality_score"`
-	Metadata             map[string]interface{}          `json:"metadata,omitempty"`
-	ResumedFromCache     bool                            `json:"resumed_from_cache,omitempty"` // Was flow resumed from cache?
-	ResumedFromPhase     SpecKitPhase                    `json:"resumed_from_phase,omitempty"` // Which phase was resumed from
+	FlowID              string                         `json:"flow_id"`
+	StartTime           time.Time                      `json:"start_time"`
+	EndTime             time.Time                      `json:"end_time"`
+	Duration            time.Duration                  `json:"duration"`
+	Success             bool                           `json:"success"`
+	PhaseResults        []SpecKitPhaseResult           `json:"phase_results"`
+	Phases              map[string]*SpecKitPhaseResult `json:"phases"` // Quick lookup by phase name
+	Constitution        *Constitution                  `json:"constitution,omitempty"`
+	FinalArtifact       string                         `json:"final_artifact"` // Implementation output
+	OverallQualityScore float64                        `json:"overall_quality_score"`
+	Metadata            map[string]interface{}         `json:"metadata,omitempty"`
+	ResumedFromCache    bool                           `json:"resumed_from_cache,omitempty"` // Was flow resumed from cache?
+	ResumedFromPhase    SpecKitPhase                   `json:"resumed_from_phase,omitempty"` // Which phase was resumed from
 }
 
 // SpecKitOrchestrator orchestrates the SpecKit development flow
@@ -981,9 +981,9 @@ func (so *SpecKitOrchestrator) loadFlowFromCache(flowID string) (*SpecKitFlowRes
 	result.ResumedFromCache = true
 
 	so.logger.WithFields(logrus.Fields{
-		"flow_id":        flowID,
-		"phases_loaded":  len(result.PhaseResults),
-		"last_phase":     result.PhaseResults[len(result.PhaseResults)-1].Phase,
+		"flow_id":       flowID,
+		"phases_loaded": len(result.PhaseResults),
+		"last_phase":    result.PhaseResults[len(result.PhaseResults)-1].Phase,
 	}).Info("[SpecKit Cache] Loaded flow from cache")
 
 	return &result, nil
@@ -1174,9 +1174,9 @@ func (so *SpecKitOrchestrator) resumeFlow(ctx context.Context, flowID string, us
 	}
 
 	so.logger.WithFields(logrus.Fields{
-		"flow_id":              flowID,
-		"phases_resumed":       len(remainingPhases),
-		"overall_quality":      cachedFlow.OverallQualityScore,
+		"flow_id":         flowID,
+		"phases_resumed":  len(remainingPhases),
+		"overall_quality": cachedFlow.OverallQualityScore,
 	}).Info("[SpecKit Resumption] Flow completed successfully")
 
 	return cachedFlow, nil

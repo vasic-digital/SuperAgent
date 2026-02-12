@@ -398,9 +398,9 @@ func TestConstitutionManager_DeriveContextRule(t *testing.T) {
 	}
 
 	tests := []struct {
-		name            string
-		userRequest     string
-		expectRule      bool
+		name             string
+		userRequest      string
+		expectRule       bool
 		expectedCategory string
 	}{
 		{

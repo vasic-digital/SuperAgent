@@ -300,11 +300,11 @@ func TestEnhancedIntentClassifier_Integration(t *testing.T) {
 	require.NotNil(t, classifier, "Classifier should not be nil")
 
 	testCases := []struct {
-		name              string
-		userMessage       string
-		expectedGranular  []WorkGranularity // Allow multiple valid granularities
-		expectedSpecKit   bool
-		minConfidence     float64
+		name             string
+		userMessage      string
+		expectedGranular []WorkGranularity // Allow multiple valid granularities
+		expectedSpecKit  bool
+		minConfidence    float64
 	}{
 		{
 			name:             "Single Action",

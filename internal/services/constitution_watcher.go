@@ -54,7 +54,7 @@ func NewConstitutionWatcher(
 		logger:              logger,
 		projectRoot:         projectRoot,
 		checkInterval:       5 * time.Minute, // Check every 5 minutes
-		enabled:             false,            // Disabled by default
+		enabled:             false,           // Disabled by default
 	}
 }
 

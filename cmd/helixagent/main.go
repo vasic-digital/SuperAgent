@@ -28,18 +28,26 @@ import (
 	"dev.helix.agent/internal/bigdata"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/llm/providers/ai21"
 	"dev.helix.agent/internal/llm/providers/cerebras"
+	"dev.helix.agent/internal/llm/providers/chutes"
 	"dev.helix.agent/internal/llm/providers/claude"
+	"dev.helix.agent/internal/llm/providers/cohere"
 	"dev.helix.agent/internal/llm/providers/deepseek"
 	"dev.helix.agent/internal/llm/providers/fireworks"
 	"dev.helix.agent/internal/llm/providers/gemini"
+	"dev.helix.agent/internal/llm/providers/generic"
 	"dev.helix.agent/internal/llm/providers/groq"
 	"dev.helix.agent/internal/llm/providers/huggingface"
 	"dev.helix.agent/internal/llm/providers/mistral"
 	"dev.helix.agent/internal/llm/providers/ollama"
+	"dev.helix.agent/internal/llm/providers/openai"
 	"dev.helix.agent/internal/llm/providers/openrouter"
+	"dev.helix.agent/internal/llm/providers/perplexity"
 	"dev.helix.agent/internal/llm/providers/qwen"
 	"dev.helix.agent/internal/llm/providers/replicate"
+	"dev.helix.agent/internal/llm/providers/together"
+	"dev.helix.agent/internal/llm/providers/xai"
 	"dev.helix.agent/internal/llm/providers/zai"
 	"dev.helix.agent/internal/llm/providers/zen"
 	"dev.helix.agent/internal/mcp"
@@ -844,6 +852,12 @@ func runStartupVerification(logger *logrus.Logger) (*verifier.StartupResult, *ve
 		return resp.Content, nil
 	})
 
+	// CRITICAL: Wire up instance creator so API key providers get Instance set
+	// Without this, only OAuth providers appear in the debate team
+	sv.SetInstanceCreator(func(providerType, modelID string) llm.LLMProvider {
+		return createProviderForVerification(providerType, modelID, logger)
+	})
+
 	// Create context with timeout for verification
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -1091,11 +1105,89 @@ func createProviderForVerification(providerType, modelID string, logger *logrus.
 		}
 		return ollama.NewOllamaProvider(baseURL, modelID)
 
-	default:
-		if logger != nil {
-			logger.WithField("provider", providerType).Debug("No provider implementation for verification")
+	case "openai":
+		apiKey := os.Getenv("OPENAI_API_KEY")
+		if apiKey == "" {
+			return nil
 		}
-		return nil
+		return openai.NewProvider(apiKey, "", modelID)
+
+	case "cohere":
+		apiKey := os.Getenv("COHERE_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return cohere.NewProvider(apiKey, "", modelID)
+
+	case "ai21":
+		apiKey := os.Getenv("AI21_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return ai21.NewProvider(apiKey, "", modelID)
+
+	case "together":
+		apiKey := os.Getenv("TOGETHER_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return together.NewProvider(apiKey, "", modelID)
+
+	case "grok", "xai":
+		apiKey := os.Getenv("XAI_API_KEY")
+		if apiKey == "" {
+			apiKey = os.Getenv("GROK_API_KEY")
+		}
+		if apiKey == "" {
+			return nil
+		}
+		return xai.NewProvider(apiKey, "", modelID)
+
+	case "perplexity":
+		apiKey := os.Getenv("PERPLEXITY_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return perplexity.NewProvider(apiKey, "", modelID)
+
+	case "chutes":
+		apiKey := os.Getenv("CHUTES_API_KEY")
+		if apiKey == "" {
+			return nil
+		}
+		return chutes.NewProvider(apiKey, "", modelID)
+
+	default:
+		// Try generic OpenAI-compatible provider using SupportedProviders config
+		info, ok := verifier.GetProviderInfo(providerType)
+		if !ok || info.BaseURL == "" {
+			if logger != nil {
+				logger.WithField("provider", providerType).Debug("No provider info for verification")
+			}
+			return nil
+		}
+		// Find API key from environment
+		apiKey := ""
+		for _, envVar := range info.EnvVars {
+			if v := os.Getenv(envVar); v != "" {
+				apiKey = v
+				break
+			}
+		}
+		if apiKey == "" {
+			return nil
+		}
+		model := modelID
+		if model == "" && len(info.Models) > 0 {
+			model = info.Models[0]
+		}
+		if model == "" {
+			if logger != nil {
+				logger.WithField("provider", providerType).Debug("No model available for generic verification")
+			}
+			return nil
+		}
+		return generic.NewGenericProvider(providerType, apiKey, info.BaseURL, model)
 	}
 }
 

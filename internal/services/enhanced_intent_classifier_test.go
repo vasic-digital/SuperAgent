@@ -132,8 +132,8 @@ func TestEnhancedIntentClassifier_ShouldUseSpecKit(t *testing.T) {
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	tests := []struct {
-		name               string
-		result             *EnhancedIntentResult
+		name                    string
+		result                  *EnhancedIntentResult
 		expectedRequiresSpecKit bool
 	}{
 		{
@@ -254,9 +254,9 @@ func TestEnhancedIntentClassifier_QuickClassify_WithSpecKit(t *testing.T) {
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	tests := []struct {
-		name                string
-		message             string
-		expectSpecKit       bool
+		name          string
+		message       string
+		expectSpecKit bool
 	}{
 		{
 			"Refactoring triggers SpecKit",

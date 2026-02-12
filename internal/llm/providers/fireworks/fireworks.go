@@ -22,7 +22,8 @@ const (
 	// FireworksModelsURL is the URL for listing models
 	FireworksModelsURL = "https://api.fireworks.ai/inference/v1/models"
 	// DefaultModel is the default Fireworks model
-	DefaultModel = "accounts/fireworks/models/llama-v3p1-70b-instruct"
+	// Updated from llama-v3p1-70b-instruct which returns 404 as of 2026
+	DefaultModel = "accounts/fireworks/models/llama-v3p3-70b-instruct"
 )
 
 // Provider implements the LLMProvider interface for Fireworks AI

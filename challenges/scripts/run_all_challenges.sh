@@ -222,6 +222,7 @@ CHALLENGES=(
     "provider_reliability"
     "verification_failure_reasons"
     "subscription_detection"
+    "provider_comprehensive"
 
     # CLI proxy mechanism (OAuth/free providers)
     "cli_proxy"

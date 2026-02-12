@@ -17,12 +17,13 @@ import (
 )
 
 const (
-	// HuggingFaceInferenceURL is the base URL for HuggingFace Inference API
-	HuggingFaceInferenceURL = "https://api-inference.huggingface.co/models/"
-	// HuggingFaceProURL is the base URL for HuggingFace Inference Endpoints (Pro)
-	HuggingFaceProURL = "https://api-inference.huggingface.co/v1/chat/completions"
+	// HuggingFaceInferenceURL is the base URL for HuggingFace Inference API (legacy)
+	HuggingFaceInferenceURL = "https://router.huggingface.co/hf-inference/models/"
+	// HuggingFaceProURL is the base URL for HuggingFace Inference Router (chat completions)
+	// Updated from api-inference.huggingface.co which returns 410 Gone as of Nov 2025
+	HuggingFaceProURL = "https://router.huggingface.co/v1/chat/completions"
 	// DefaultModel is the default HuggingFace model
-	DefaultModel = "meta-llama/Meta-Llama-3-8B-Instruct"
+	DefaultModel = "meta-llama/Llama-3.3-70B-Instruct"
 )
 
 // Provider implements the LLMProvider interface for HuggingFace
@@ -172,26 +173,26 @@ func NewProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig
 	}
 
 	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
-		ProviderName:   "huggingface",
-		ModelsDevID:    "huggingface",
-		APIKey:         apiKey,
+		ProviderName: "huggingface",
+		ModelsDevID:  "huggingface",
+		APIKey:       apiKey,
 		FallbackModels: []string{
-			// Meta Llama models
-			"meta-llama/Meta-Llama-3-8B-Instruct",
-			"meta-llama/Meta-Llama-3-70B-Instruct",
-			"meta-llama/Meta-Llama-3.1-8B-Instruct",
-			"meta-llama/Meta-Llama-3.1-70B-Instruct",
+			// Meta Llama models (current)
+			"meta-llama/Llama-3.3-70B-Instruct",
+			"meta-llama/Llama-3.2-3B-Instruct",
+			"meta-llama/Llama-3.1-8B-Instruct",
+			"meta-llama/Llama-3.1-70B-Instruct",
 			// Mistral models
-			"mistralai/Mistral-7B-Instruct-v0.2",
+			"mistralai/Mistral-7B-Instruct-v0.3",
 			"mistralai/Mixtral-8x7B-Instruct-v0.1",
 			// Google models
-			"google/gemma-7b-it",
 			"google/gemma-2-9b-it",
+			"google/gemma-2-27b-it",
 			// Microsoft models
 			"microsoft/Phi-3-mini-4k-instruct",
 			"microsoft/Phi-3-medium-4k-instruct",
 			// Other models
-			"Qwen/Qwen2-72B-Instruct",
+			"Qwen/Qwen2.5-72B-Instruct",
 			"bigcode/starcoder2-15b",
 		},
 	})

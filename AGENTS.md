@@ -4,7 +4,7 @@ This document provides guidance for AI agents working on the HelixAgent project.
 
 ## Project Overview
 
-HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports **22 LLM providers** (Claude, Chutes, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI) with **dynamic provider selection** based on LLMsVerifier verification scores.
+HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports **22 dedicated LLM providers** (Claude, Chutes, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI) plus a **generic OpenAI-compatible provider** for 17+ additional providers (NVIDIA, SambaNova, Hyperbolic, Novita, SiliconFlow, Kimi/Moonshot, Upstage, Codestral, DeepInfra, Baseten, NLP Cloud, etc.) with **dynamic provider selection** based on LLMsVerifier verification scores.
 
 ## Architecture Overview
 
@@ -35,8 +35,11 @@ HelixAgent uses a **unified startup verification pipeline** where LLMsVerifier a
 - **OAuth**: Claude, Qwen (OAuth2 tokens from CLI, trust on API failure)
 - **Free**: Zen (OpenCode), OpenRouter free models (anonymous/X-Device-ID, reduced verification)
 
+### Generic OpenAI-Compatible Provider
+`internal/llm/providers/generic/generic.go` — Lightweight provider implementing `LLMProvider` for any OpenAI-compatible chat completions endpoint. Used by `createProviderForVerification()` as a fallback for providers without dedicated implementations. Supports Complete, CompleteStream, HealthCheck with Bearer auth. Enabled via `SupportedProviders` config in `internal/verifier/provider_types.go`.
+
 ### AI Debate Team
-Dynamic selection via StartupVerifier: OAuth2 providers first, then LLMsVerifier-scored providers. 5 positions × 5 LLMs (1 primary + 4 fallbacks) = **25 LLMs**. OAuth primaries get non-OAuth fallbacks for redundancy.
+Dynamic selection via StartupVerifier: OAuth2 providers first, then LLMsVerifier-scored providers. 5 positions × 5 LLMs (1 primary + 4 fallbacks) = **25 LLMs**. **Provider diversity**: Fallback selection prioritizes unique providers (one model per provider) before filling remaining slots by score. OAuth primaries get non-OAuth fallbacks for redundancy. All verified API key providers now get `Instance` set via `SetInstanceCreator()` for debate participation.
 
 ### Multi-Pass Validation
 Debate responses undergo re-evaluation, polishing, and improvement before final consensus:

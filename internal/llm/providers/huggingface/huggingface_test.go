@@ -220,9 +220,9 @@ func TestGetCapabilities(t *testing.T) {
 	caps := provider.GetCapabilities()
 
 	require.NotNil(t, caps)
-	assert.Contains(t, caps.SupportedModels, "meta-llama/Meta-Llama-3-8B-Instruct")
-	assert.Contains(t, caps.SupportedModels, "mistralai/Mistral-7B-Instruct-v0.2")
-	assert.Contains(t, caps.SupportedModels, "google/gemma-7b-it")
+	assert.Contains(t, caps.SupportedModels, "meta-llama/Llama-3.3-70B-Instruct")
+	assert.Contains(t, caps.SupportedModels, "mistralai/Mistral-7B-Instruct-v0.3")
+	assert.Contains(t, caps.SupportedModels, "google/gemma-2-9b-it")
 	assert.Contains(t, caps.SupportedFeatures, "chat")
 	assert.Contains(t, caps.SupportedFeatures, "streaming")
 	assert.Contains(t, caps.SupportedFeatures, "text_generation")

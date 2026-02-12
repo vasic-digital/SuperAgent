@@ -59,7 +59,7 @@ func TestComplete(t *testing.T) {
 
 		if r.Method == "POST" {
 			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-			assert.Contains(t, r.Header.Get("Authorization"), "Token ")
+			assert.Contains(t, r.Header.Get("Authorization"), "Bearer ")
 
 			var req PredictionRequest
 			_ = json.NewDecoder(r.Body).Decode(&req)
@@ -177,7 +177,7 @@ func TestCompletePredictionFailed(t *testing.T) {
 func TestHealthCheck(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "GET", r.Method)
-		assert.Contains(t, r.Header.Get("Authorization"), "Token ")
+		assert.Contains(t, r.Header.Get("Authorization"), "Bearer ")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"results": []}`))
 	}))
@@ -189,7 +189,7 @@ func TestHealthCheck(t *testing.T) {
 	defer cancel()
 
 	httpReq, _ := http.NewRequestWithContext(ctx, "GET", server.URL, nil)
-	httpReq.Header.Set("Authorization", "Token test-api-key")
+	httpReq.Header.Set("Authorization", "Bearer test-api-key")
 	resp, err := provider.httpClient.Do(httpReq)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)

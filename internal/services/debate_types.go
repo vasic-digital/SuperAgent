@@ -32,10 +32,10 @@ type DebateResult struct {
 	Metadata        map[string]any        `json:"metadata,omitempty"`
 
 	// NEW: Integrated AI Debate Features Metadata
-	ValidationResult     interface{}        `json:"validation_result,omitempty"`     // 4-Pass Validation result
-	TestDrivenMetadata   map[string]any     `json:"test_driven_metadata,omitempty"`  // Test-Driven Debate metadata
-	ToolEnrichmentUsed   bool               `json:"tool_enrichment_used,omitempty"`  // Tool Integration flag
-	SpecializedRole      string             `json:"specialized_role,omitempty"`      // Specialized role used
+	ValidationResult   interface{}    `json:"validation_result,omitempty"`    // 4-Pass Validation result
+	TestDrivenMetadata map[string]any `json:"test_driven_metadata,omitempty"` // Test-Driven Debate metadata
+	ToolEnrichmentUsed bool           `json:"tool_enrichment_used,omitempty"` // Tool Integration flag
+	SpecializedRole    string         `json:"specialized_role,omitempty"`     // Specialized role used
 }
 
 // ConsensusResult represents the consensus reached during debate

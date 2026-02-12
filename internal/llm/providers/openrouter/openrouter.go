@@ -219,6 +219,7 @@ func (p *SimpleOpenRouterProvider) Complete(ctx context.Context, req *models.LLM
 		httpReq.Header.Set("Content-Type", "application/json")
 		httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
 		httpReq.Header.Set("HTTP-Referer", "helixagent")
+		httpReq.Header.Set("X-Title", "HelixAgent")
 
 		// Make request
 		resp, err := p.client.Do(httpReq)
@@ -444,6 +445,7 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
 	httpReq.Header.Set("HTTP-Referer", "helixagent")
+	httpReq.Header.Set("X-Title", "HelixAgent")
 	httpReq.Header.Set("Accept", "text/event-stream")
 
 	resp, err := p.client.Do(httpReq)
@@ -577,6 +579,7 @@ func (p *SimpleOpenRouterProvider) HealthCheck() error {
 
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 	req.Header.Set("HTTP-Referer", "helixagent")
+	req.Header.Set("X-Title", "HelixAgent")
 
 	resp, err := p.client.Do(req)
 	if err != nil {

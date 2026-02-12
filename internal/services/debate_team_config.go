@@ -1000,24 +1000,52 @@ func (dtc *DebateTeamConfig) assignAllFallbacks() {
 	}
 }
 
-// getFallbackLLMs returns fallback LLMs based on score with OAuth diversity
-// When primary is OAuth, ensures at least one non-OAuth fallback for reliability
-// Selects by score (strongest first), but ensures OAuth/non-OAuth diversity
-// If not enough unique LLMs, reuses strongest ones (independent instances)
+// getFallbackLLMs returns fallback LLMs with provider diversity and OAuth awareness.
+// Strategy: First pick the best model from each UNIQUE provider (excluding primary),
+// sorted by score. This ensures all verified providers appear in the debate team.
+// Then fill remaining slots by score. Maintains OAuth diversity when primary is OAuth.
 func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel string, primaryIsOAuth bool, count int) []*VerifiedLLM {
 	fallbacks := make([]*VerifiedLLM, 0, count)
+	usedProviders := map[string]bool{primaryProvider: true}
 	hasNonOAuth := false
 
-	// First pass: Select different LLMs from primary (verifiedLLMs already sorted by score)
+	// First pass: Pick best model from each UNIQUE provider (provider diversity)
+	// verifiedLLMs is sorted by score, so the first hit for each provider is its best
 	for _, llm := range dtc.verifiedLLMs {
 		if len(fallbacks) >= count {
 			break
 		}
-		// Skip the primary LLM
+		// Skip primary LLM
 		if llm.ProviderName == primaryProvider && llm.ModelName == primaryModel {
 			continue
 		}
-		// Skip if already added
+		// Skip if we already have this provider represented
+		if usedProviders[llm.ProviderName] {
+			continue
+		}
+		fallbacks = append(fallbacks, llm)
+		usedProviders[llm.ProviderName] = true
+		if !llm.IsOAuth {
+			hasNonOAuth = true
+		}
+		dtc.logger.WithFields(logrus.Fields{
+			"primary_provider":  primaryProvider,
+			"fallback_provider": llm.ProviderName,
+			"fallback_model":    llm.ModelName,
+			"fallback_score":    llm.Score,
+			"fallback_rank":     len(fallbacks),
+			"reason":            "provider diversity (unique provider)",
+		}).Debug("Selected fallback for provider diversity")
+	}
+
+	// Second pass: If still need more, add best remaining models regardless of provider
+	for _, llm := range dtc.verifiedLLMs {
+		if len(fallbacks) >= count {
+			break
+		}
+		if llm.ProviderName == primaryProvider && llm.ModelName == primaryModel {
+			continue
+		}
 		alreadyUsed := false
 		for _, fb := range fallbacks {
 			if fb.ProviderName == llm.ProviderName && fb.ModelName == llm.ModelName {
@@ -1043,13 +1071,11 @@ func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel strin
 
 	// OAuth diversity check: If primary is OAuth but no non-OAuth fallbacks, ensure we have one
 	if primaryIsOAuth && !hasNonOAuth {
-		// Find highest-scoring non-OAuth provider not already in fallbacks
 		var nonOAuthCandidate *VerifiedLLM
 		for _, llm := range dtc.verifiedLLMs {
 			if llm.IsOAuth {
-				continue // Skip OAuth providers
+				continue
 			}
-			// Check if already in fallbacks
 			alreadyUsed := false
 			for _, fb := range fallbacks {
 				if fb.ProviderName == llm.ProviderName && fb.ModelName == llm.ModelName {
@@ -1062,14 +1088,10 @@ func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel strin
 				break
 			}
 		}
-
-		// If we found a non-OAuth candidate
 		if nonOAuthCandidate != nil {
 			if len(fallbacks) < count {
-				// Add it if there's space
 				fallbacks = append(fallbacks, nonOAuthCandidate)
 			} else {
-				// Replace the last (lowest-scoring) OAuth fallback with non-OAuth
 				fallbacks[len(fallbacks)-1] = nonOAuthCandidate
 			}
 			dtc.logger.WithFields(logrus.Fields{
@@ -1082,8 +1104,7 @@ func (dtc *DebateTeamConfig) getFallbackLLMs(primaryProvider, primaryModel strin
 		}
 	}
 
-	// Second pass: If not enough unique LLMs, reuse strongest ones (independent instances)
-	// This ensures all positions have full fallback chains
+	// Third pass: If not enough unique LLMs, reuse strongest ones (independent instances)
 	reuseIdx := 0
 	for len(fallbacks) < count && len(dtc.verifiedLLMs) > 0 {
 		llm := dtc.verifiedLLMs[reuseIdx%len(dtc.verifiedLLMs)]

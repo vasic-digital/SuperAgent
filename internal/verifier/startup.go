@@ -36,6 +36,9 @@ type StartupVerifier struct {
 	// Provider creation functions (dependency injection)
 	providerFactory ProviderFactory
 
+	// Instance creator for API key providers (creates LLMProvider for debate team)
+	instanceCreator func(providerType, modelID string) llm.LLMProvider
+
 	// OAuth credential reader
 	oauthReader *oauth_credentials.OAuthCredentialReader
 
@@ -102,6 +105,15 @@ func (sv *StartupVerifier) SetProviderFactory(factory ProviderFactory) {
 	sv.mu.Lock()
 	defer sv.mu.Unlock()
 	sv.providerFactory = factory
+}
+
+// SetInstanceCreator sets the function used to create LLMProvider instances for
+// API key providers after successful verification. This enables the debate team
+// to use all verified providers, not just OAuth ones.
+func (sv *StartupVerifier) SetInstanceCreator(fn func(providerType, modelID string) llm.LLMProvider) {
+	sv.mu.Lock()
+	defer sv.mu.Unlock()
+	sv.instanceCreator = fn
 }
 
 // SetProviderFunc sets the function used by verification service to call LLMs
@@ -839,6 +851,16 @@ func (sv *StartupVerifier) verifyFreeProvider(ctx context.Context, provider *Uni
 		if scoreCount > 0 {
 			provider.Score = totalScore / float64(scoreCount)
 		}
+		// Create provider instance for debate team usage
+		if provider.Instance == nil && sv.instanceCreator != nil {
+			provider.Instance = sv.instanceCreator(provider.Type, provider.DefaultModel)
+			if provider.Instance != nil {
+				sv.log.WithFields(logrus.Fields{
+					"provider": provider.Type,
+					"model":    provider.DefaultModel,
+				}).Debug("Created provider instance for free provider")
+			}
+		}
 	} else {
 		provider.Status = StatusFailed
 		provider.HealthCheckError = fmt.Sprintf("No models passed verification (0/%d)", totalModels)
@@ -913,6 +935,17 @@ func (sv *StartupVerifier) verifyAPIKeyProvider(ctx context.Context, provider *U
 
 	if provider.Verified {
 		provider.Status = StatusHealthy
+		// CRITICAL: Create provider instance for debate team usage
+		// Without this, API key providers have nil Instance and can't participate in debates
+		if sv.instanceCreator != nil {
+			provider.Instance = sv.instanceCreator(provider.Type, modelID)
+			if provider.Instance != nil {
+				sv.log.WithFields(logrus.Fields{
+					"provider": provider.Type,
+					"model":    modelID,
+				}).Debug("Created provider instance for API key provider")
+			}
+		}
 	} else {
 		provider.Status = StatusUnhealthy
 		provider.ErrorMessage = result.ErrorMessage
