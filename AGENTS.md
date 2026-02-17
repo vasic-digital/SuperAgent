@@ -564,6 +564,9 @@ Constitution with 22 rules (22 mandatory) across categories: Quality: 2, Safety:
 **Infrastructure Before Tests** (Priority: 1)
 - ALL infrastructure containers (PostgreSQL, Redis, Mock LLM) MUST be running before executing tests or challenges. Use `make test-infra-start` or `make test-infra-direct-start` (Podman fallback with `--userns=host`). Tests and challenges that require infrastructure WILL FAIL without running containers.
 
+**Comprehensive Verification** (Priority: 1)
+- Every fix MUST be verified from all angles: runtime testing (actual HTTP requests), compile verification, code structure checks, npm/dependency existence checks, backward compatibility, and no false positives in tests or challenges. Grep-only validation is NEVER sufficient.
+
 ### Documentation
 
 **Complete Documentation** (Priority: 1)

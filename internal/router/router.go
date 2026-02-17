@@ -497,6 +497,9 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			"/v1/lsp",              // LSP endpoints - public for CLI agents
 			"/v1/embeddings",       // Embeddings endpoints - public for CLI agents
 			"/v1/cognee",           // Cognee endpoints - public for CLI agents
+			"/v1/rag",              // RAG endpoints - public for CLI agents
+			"/v1/formatters",       // Formatters endpoints - public for CLI agents
+			"/v1/monitoring",       // Monitoring endpoints - public for CLI agents
 			"/v1/protocols",        // Protocol endpoints - public for CLI agents
 		}))
 	} else {

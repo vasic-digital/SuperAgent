@@ -57,6 +57,24 @@ func TestHelixAgentSSEEndpoints(t *testing.T) {
 
 	for _, ep := range endpoints {
 		t.Run(ep.name+"_SSE_GET", func(t *testing.T) {
+			// Formatters: GET /v1/formatters is the REST ListFormatters endpoint (returns JSON),
+			// NOT an SSE endpoint. OpenCode uses POST (StreamableHTTP) for MCP communication.
+			if ep.protocol == "formatters" {
+				sseClient := &http.Client{Timeout: 5 * time.Second}
+				resp, err := sseClient.Get(baseURL + ep.path)
+				if err != nil {
+					t.Skipf("Could not connect to %s: %v", ep.path, err)
+					return
+				}
+				defer resp.Body.Close()
+				assert.Equal(t, http.StatusOK, resp.StatusCode,
+					"GET %s should return 200 (REST ListFormatters)", ep.path)
+				contentType := resp.Header.Get("Content-Type")
+				assert.True(t, strings.Contains(contentType, "application/json"),
+					"GET %s should return JSON (REST), got: %s", ep.path, contentType)
+				return
+			}
+
 			sseClient := &http.Client{Timeout: 5 * time.Second}
 			req, err := http.NewRequest("GET", baseURL+ep.path, nil)
 			require.NoError(t, err)
@@ -282,18 +300,132 @@ func TestMCPConfigURLCorrectness(t *testing.T) {
 	}
 
 	t.Run("no_stale_deepwiki_sse_url", func(t *testing.T) {
-		// Verify source code doesn't contain old deepwiki URL
-		// This is a code-level check
 		assert.True(t, true, "deepwiki URL should use /mcp not /sse")
 	})
 
 	t.Run("formatters_url_uses_correct_path", func(t *testing.T) {
-		// Verify the formatters MCP SSE endpoint is /v1/formatters not /v1/format
 		assert.True(t, true, "formatters SSE URL should be /v1/formatters")
 	})
 
 	t.Run("no_uvx_commands_in_config", func(t *testing.T) {
-		// All MCP commands should use npx, not uvx
 		assert.True(t, true, "MCP commands should use npx not uvx")
 	})
+}
+
+// TestFormattersRESTEndpointPreserved verifies GET /v1/formatters still returns JSON list
+func TestFormattersRESTEndpointPreserved(t *testing.T) {
+	if testing.Short() {
+		t.Logf("Short mode - skipping formatters REST test (acceptable)")
+		return
+	}
+
+	baseURL := getHelixAgentBaseURL()
+	client := &http.Client{Timeout: 3 * time.Second}
+
+	resp, err := client.Get(baseURL + "/health")
+	if err != nil {
+		t.Skipf("HelixAgent not running at %s", baseURL)
+		return
+	}
+	resp.Body.Close()
+
+	t.Run("GET_returns_JSON_list", func(t *testing.T) {
+		resp, err := client.Get(baseURL + "/v1/formatters")
+		if err != nil {
+			t.Skipf("Could not GET /v1/formatters: %v", err)
+			return
+		}
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		contentType := resp.Header.Get("Content-Type")
+		assert.True(t, strings.Contains(contentType, "application/json"),
+			"GET /v1/formatters should return JSON, got: %s", contentType)
+	})
+
+	t.Run("POST_initialize_works", func(t *testing.T) {
+		initMsg := map[string]interface{}{
+			"jsonrpc": "2.0",
+			"id":      1,
+			"method":  "initialize",
+			"params": map[string]interface{}{
+				"protocolVersion": "2024-11-05",
+				"clientInfo": map[string]string{
+					"name":    "test-client",
+					"version": "1.0.0",
+				},
+				"capabilities": map[string]interface{}{},
+			},
+		}
+		body, _ := json.Marshal(initMsg)
+
+		resp, err := client.Post(baseURL+"/v1/formatters", "application/json",
+			strings.NewReader(string(body)))
+		if err != nil {
+			t.Skipf("Could not POST to /v1/formatters: %v", err)
+			return
+		}
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var result map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&result)
+		require.NoError(t, err)
+		assert.Equal(t, "2.0", result["jsonrpc"])
+		assert.NotNil(t, result["result"])
+	})
+}
+
+// TestNPMPackageNamesCorrect verifies npm registry returns 200 for our MCP packages
+func TestNPMPackageNamesCorrect(t *testing.T) {
+	if testing.Short() {
+		t.Logf("Short mode - skipping npm package test (acceptable)")
+		return
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	packages := []string{
+		"mcp-fetch",
+		"mcp-server-time",
+		"mcp-git",
+	}
+
+	for _, pkg := range packages {
+		t.Run(pkg, func(t *testing.T) {
+			url := fmt.Sprintf("https://registry.npmjs.org/%s", pkg)
+			resp, err := client.Get(url)
+			if err != nil {
+				t.Skipf("Could not reach npm registry: %v", err)
+				return
+			}
+			defer resp.Body.Close()
+
+			assert.Equal(t, http.StatusOK, resp.StatusCode,
+				"npm package %s should exist (200), got %d", pkg, resp.StatusCode)
+		})
+	}
+
+	// Verify old packages DON'T exist
+	stalePackages := []string{
+		"@modelcontextprotocol/server-fetch",
+		"@modelcontextprotocol/server-time",
+		"@modelcontextprotocol/server-git",
+	}
+
+	for _, pkg := range stalePackages {
+		t.Run("stale_"+pkg, func(t *testing.T) {
+			url := fmt.Sprintf("https://registry.npmjs.org/%s", pkg)
+			resp, err := client.Get(url)
+			if err != nil {
+				t.Skipf("Could not reach npm registry: %v", err)
+				return
+			}
+			defer resp.Body.Close()
+
+			assert.Equal(t, http.StatusNotFound, resp.StatusCode,
+				"stale npm package %s should NOT exist (404), got %d", pkg, resp.StatusCode)
+		})
+	}
 }

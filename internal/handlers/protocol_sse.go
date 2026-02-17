@@ -163,8 +163,8 @@ func (h *ProtocolSSEHandler) RegisterSSERoutes(router *gin.RouterGroup) {
 	router.GET("/rag", h.HandleRAGSSE)
 	router.POST("/rag", h.HandleRAGMessage)
 
-	// Formatters SSE endpoint
-	router.GET("/formatters", h.HandleFormattersSSE)
+	// Formatters: POST only — GET /v1/formatters is already registered for ListFormatters REST.
+	// OpenCode 1.2.6 uses StreamableHTTP (POST), so GET SSE is not needed.
 	router.POST("/formatters", h.HandleFormattersMessage)
 
 	// Monitoring SSE endpoint

@@ -2371,7 +2371,7 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 		},
 		"fetch": {
 			Type:    "local",
-			Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"},
+			Command: []string{"npx", "-y", "mcp-fetch"},
 		},
 		"memory": {
 			Type:    "local",
@@ -2379,11 +2379,11 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 		},
 		"time": {
 			Type:    "local",
-			Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"},
+			Command: []string{"npx", "-y", "mcp-server-time"},
 		},
 		"git": {
 			Type:    "local",
-			Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"},
+			Command: []string{"npx", "-y", "mcp-git"},
 		},
 		"sqlite": {
 			Type:    "local",
@@ -2759,10 +2759,10 @@ func buildOpenCodeMCPServersOld(baseURL string) map[string]OpenCodeMCPServerDefO
 	return map[string]OpenCodeMCPServerDefOld{
 		// Anthropic Official MCPs
 		"filesystem":          {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "/home"}},
-		"fetch":               {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"}},
+		"fetch":               {Type: "local", Command: []string{"npx", "-y", "mcp-fetch"}},
 		"memory":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
-		"time":                {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}},
-		"git":                 {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}},
+		"time":                {Type: "local", Command: []string{"npx", "-y", "mcp-server-time"}},
+		"git":                 {Type: "local", Command: []string{"npx", "-y", "mcp-git"}},
 		"sqlite":              {Type: "local", Command: []string{"npx", "-y", "mcp-server-sqlite-npx", "/tmp/helixagent.db"}},
 		"postgres":            {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/helixagent"}},
 		"puppeteer":           {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}},
@@ -3531,10 +3531,10 @@ func buildCrushMCPServers(baseURL string) map[string]CrushMcpConfig {
 
 		// Anthropic Official MCPs - LOCAL (started on demand via npx)
 		"filesystem":          {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", homeDir}, Enabled: true},
-		"fetch":               {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"}, Enabled: true},
+		"fetch":               {Type: "local", Command: []string{"npx", "-y", "mcp-fetch"}, Enabled: true},
 		"memory":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}, Enabled: true},
-		"time":                {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}, Enabled: true},
-		"git":                 {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}, Enabled: true},
+		"time":                {Type: "local", Command: []string{"npx", "-y", "mcp-server-time"}, Enabled: true},
+		"git":                 {Type: "local", Command: []string{"npx", "-y", "mcp-git"}, Enabled: true},
 		"sqlite":              {Type: "local", Command: []string{"npx", "-y", "mcp-server-sqlite-npx", "/tmp/helixagent.db"}, Enabled: true},
 		"postgres":            {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres"}, Env: map[string]string{"POSTGRES_URL": "postgresql://helixagent:helixagent123@localhost:5432/helixagent_db"}, Enabled: true},
 		"puppeteer":           {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}, Enabled: true},
