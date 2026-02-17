@@ -1831,13 +1831,12 @@ type OpenCodeConfig struct {
 	Provider     map[string]OpenCodeProviderDefNew  `json:"provider,omitempty"`     // Note: singular "provider"
 	Agent        map[string]OpenCodeAgentDefNew     `json:"agent,omitempty"`        // Note: singular "agent"
 	MCP          map[string]OpenCodeMCPServerDefNew `json:"mcp,omitempty"`          // OpenCode expects "mcp" key
-	Plugin       []string                           `json:"plugin,omitempty"`       // HelixAgent plugins
-	Extensions   *cliagents.HelixAgentExtensions    `json:"extensions,omitempty"`   // LSP, ACP, Embeddings, RAG, Skills
-	Formatters   cliagents.FormattersConfig         `json:"formatters,omitempty"`   // Code formatters config
 	Instructions []string                           `json:"instructions,omitempty"` // Rule files
 	TUI          *OpenCodeTUIDef                    `json:"tui,omitempty"`
-	// NOTE: Model and SmallModel are NOT valid top-level keys in OpenCode config
-	// Use agent settings to specify models per agent instead
+	// NOTE: OpenCode has strict schema validation — only $schema, provider, agent, mcp,
+	// instructions, tui are valid top-level keys. Plugins, extensions, formatters, and
+	// skills are accessed via HelixAgent MCP endpoints (helixagent-rag, helixagent-formatters,
+	// helixagent-lsp, helixagent-acp, helixagent-embeddings) — NOT as config keys.
 }
 
 // OpenCodeProviderDefNew represents a provider in OpenCode config (correct schema)
@@ -2037,7 +2036,6 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 	}
 
 	baseURL := fmt.Sprintf("http://%s:%s", host, port)
-	portInt, _ := strconv.Atoi(port)
 
 	// Determine which format to use based on output filename
 	// Config should be saved as "opencode.json" (no dot prefix) in ~/.config/opencode/
@@ -2097,9 +2095,6 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 			},
 		},
 		MCP:          getMCPServers(baseURL, *workingMCPsOnly),
-		Plugin:       cliagents.DefaultPlugins(),
-		Extensions:   cliagents.DefaultHelixAgentExtensions(host, portInt),
-		Formatters:   cliagents.DefaultFormattersConfig(host, portInt),
 		Instructions: []string{"CLAUDE.md", "opencode.md"},
 		TUI:          &OpenCodeTUIDef{Theme: "opencode"},
 	}
