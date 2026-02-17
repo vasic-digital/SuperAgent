@@ -351,6 +351,11 @@ Key environment variables (see `.env.example`):
 - **No env var syntax**: CLI agents do NOT support `{env:VAR}` in API keys. Installed configs MUST use real values.
 - **Two versions**: Repo examples (`configs/cli-agents/`) use `<YOUR_HELIXAGENT_API_KEY>` placeholder. Installed configs use real API key.
 - **Locations**: OpenCode → `~/.config/opencode/opencode.json`. Crush → `~/.config/crush/crush.json`.
+- **15+ MCP servers** per agent: 6 HelixAgent remote + 3 extended + 6 local npx + 3 free remote.
+- **10+ Plugins** per agent: helixagent-mcp, helixagent-lsp, helixagent-acp, helixagent-embeddings, helixagent-vision, helixagent-rag, helixagent-formatters, helixagent-debate, helixagent-memory, helixagent-monitoring.
+- **Extensions** per agent: LSP, ACP, Embeddings, RAG, 8+ Skills (code-review, code-format, semantic-search, vision-analysis, memory-recall, rag-retrieval, lsp-diagnostics, agent-communication).
+- **No hardcoding**: All config values come from the unified generator system (`LLMsVerifier/llm-verifier/pkg/cliagents/`).
+- **Challenge**: `./challenges/scripts/cli_agent_config_challenge.sh` validates all 48 agents have required features (~60 tests).
 
 ### MCP Adapters & Containerization
 - **45+ MCP adapters** for external services (Linear, Asana, Jira, Slack, etc.).

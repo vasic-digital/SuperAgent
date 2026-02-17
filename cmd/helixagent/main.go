@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -1830,6 +1831,9 @@ type OpenCodeConfig struct {
 	Provider     map[string]OpenCodeProviderDefNew  `json:"provider,omitempty"`     // Note: singular "provider"
 	Agent        map[string]OpenCodeAgentDefNew     `json:"agent,omitempty"`        // Note: singular "agent"
 	MCP          map[string]OpenCodeMCPServerDefNew `json:"mcp,omitempty"`          // OpenCode expects "mcp" key
+	Plugin       []string                           `json:"plugin,omitempty"`       // HelixAgent plugins
+	Extensions   *cliagents.HelixAgentExtensions    `json:"extensions,omitempty"`   // LSP, ACP, Embeddings, RAG, Skills
+	Formatters   cliagents.FormattersConfig         `json:"formatters,omitempty"`   // Code formatters config
 	Instructions []string                           `json:"instructions,omitempty"` // Rule files
 	TUI          *OpenCodeTUIDef                    `json:"tui,omitempty"`
 	// NOTE: Model and SmallModel are NOT valid top-level keys in OpenCode config
@@ -2033,6 +2037,7 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 	}
 
 	baseURL := fmt.Sprintf("http://%s:%s", host, port)
+	portInt, _ := strconv.Atoi(port)
 
 	// Determine which format to use based on output filename
 	// Config should be saved as "opencode.json" (no dot prefix) in ~/.config/opencode/
@@ -2092,6 +2097,9 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 			},
 		},
 		MCP:          getMCPServers(baseURL, *workingMCPsOnly),
+		Plugin:       cliagents.DefaultPlugins(),
+		Extensions:   cliagents.DefaultHelixAgentExtensions(host, portInt),
+		Formatters:   cliagents.DefaultFormattersConfig(host, portInt),
 		Instructions: []string{"CLAUDE.md", "opencode.md"},
 		TUI:          &OpenCodeTUIDef{Theme: "opencode"},
 	}
@@ -2327,6 +2335,35 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 		"helixagent-cognee": {
 			Type: "remote",
 			URL:  baseURL + "/v1/cognee",
+		},
+		// HelixAgent Extended Services (3 MCPs) - REMOTE
+		"helixagent-rag": {
+			Type: "remote",
+			URL:  baseURL + "/v1/rag",
+		},
+		"helixagent-formatters": {
+			Type: "remote",
+			URL:  baseURL + "/v1/format",
+		},
+		"helixagent-monitoring": {
+			Type: "remote",
+			URL:  baseURL + "/v1/monitoring",
+		},
+
+		// =============================================================================
+		// Free Remote MCP Servers (3) - No authentication required
+		// =============================================================================
+		"context7": {
+			Type: "remote",
+			URL:  "https://mcp.context7.com/mcp",
+		},
+		"deepwiki": {
+			Type: "remote",
+			URL:  "https://mcp.deepwiki.com/sse",
+		},
+		"cloudflare-docs": {
+			Type: "remote",
+			URL:  "https://docs.mcp.cloudflare.com/sse",
 		},
 
 		// =============================================================================
@@ -2692,6 +2729,14 @@ func filterWorkingMCPs(allMCPs map[string]OpenCodeMCPServerDefNew) map[string]Op
 		"helixagent-embeddings": true,
 		"helixagent-vision":     true,
 		"helixagent-cognee":     true,
+		// HelixAgent extended services - connect to running HelixAgent server
+		"helixagent-rag":        true,
+		"helixagent-formatters": true,
+		"helixagent-monitoring": true,
+		// Free remote MCP servers - no authentication required
+		"context7":        true,
+		"deepwiki":        true,
+		"cloudflare-docs": true,
 		// Core Anthropic official MCPs - no API keys required
 		"filesystem":          true, // Filesystem access
 		"fetch":               true, // HTTP requests
@@ -3192,11 +3237,14 @@ func validateOpenCodeConfig(data []byte) *OpenCodeValidationResult {
 
 // CrushConfig represents the Crush CLI configuration structure
 type CrushConfig struct {
-	Schema    string                    `json:"$schema,omitempty"`
-	Providers map[string]CrushProvider  `json:"providers,omitempty"`
-	Lsp       map[string]CrushLspConfig `json:"lsp,omitempty"`
-	Mcp       map[string]CrushMcpConfig `json:"mcp,omitempty"`
-	Options   *CrushOptions             `json:"options,omitempty"`
+	Schema     string                           `json:"$schema,omitempty"`
+	Providers  map[string]CrushProvider         `json:"providers,omitempty"`
+	Lsp        map[string]CrushLspConfig        `json:"lsp,omitempty"`
+	Mcp        map[string]CrushMcpConfig        `json:"mcp,omitempty"`
+	Plugins    []string                         `json:"plugins,omitempty"`
+	Extensions *cliagents.HelixAgentExtensions  `json:"extensions,omitempty"`
+	Formatters cliagents.FormattersConfig       `json:"formatters,omitempty"`
+	Options    *CrushOptions                    `json:"options,omitempty"`
 }
 
 // CrushMcpConfig represents MCP server configuration for Crush
@@ -3284,6 +3332,7 @@ func handleGenerateCrush(appCfg *AppConfig) error {
 	}
 
 	baseURL := fmt.Sprintf("http://%s:%s/v1", host, port)
+	crushPortInt, _ := strconv.Atoi(port)
 
 	// Build the Crush configuration
 	// Crush uses a different structure than OpenCode - providers with models array
@@ -3331,7 +3380,10 @@ func handleGenerateCrush(appCfg *AppConfig) error {
 				Enabled: true,
 			},
 		},
-		Mcp: getCrushMCPServers(fmt.Sprintf("http://%s:%s", host, port), *workingMCPsOnly),
+		Mcp:        getCrushMCPServers(fmt.Sprintf("http://%s:%s", host, port), *workingMCPsOnly),
+		Plugins:    cliagents.DefaultPlugins(),
+		Extensions: cliagents.DefaultHelixAgentExtensions(host, crushPortInt),
+		Formatters: cliagents.DefaultFormattersConfig(host, crushPortInt),
 		Options: &CrushOptions{
 			DisableProviderAutoUpdate: false,
 		},

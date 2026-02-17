@@ -272,6 +272,11 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 3. **Two config versions**: Repository examples in `configs/cli-agents/` use `<YOUR_HELIXAGENT_API_KEY>` as placeholder. Installed configs (e.g., `~/.config/opencode/opencode.json`) use real API key values.
 4. **Config locations**: OpenCode: `~/.config/opencode/opencode.json`. Crush: `~/.config/crush/crush.json`. Both use `http://localhost:7061/v1` as provider base URL.
 5. **Model ID format**: Provider-qualified model references use `helixagent/helixagent-debate` format (provider-id/model-id).
+6. **15+ MCP servers**: ALL 48 CLI agents MUST ship with at least 15 MCP servers: 6 HelixAgent remote (mcp, acp, lsp, embeddings, vision, cognee), 3 extended (rag, formatters, monitoring), 6 local npx (filesystem, memory, sequential-thinking, everything, puppeteer, sqlite), 3 free remote (context7, deepwiki, cloudflare-docs).
+7. **10+ Plugins**: ALL agents MUST include HelixAgent plugins: helixagent-mcp, helixagent-lsp, helixagent-acp, helixagent-embeddings, helixagent-vision, helixagent-rag, helixagent-formatters, helixagent-debate, helixagent-memory, helixagent-monitoring.
+8. **Extensions**: ALL agents MUST include enabled LSP, ACP, Embeddings, RAG, and 8+ Skills (code-review, code-format, semantic-search, vision-analysis, memory-recall, rag-retrieval, lsp-diagnostics, agent-communication).
+9. **No hardcoding**: All config values come from the generator system (`LLMsVerifier/llm-verifier/pkg/cliagents/`). No hardcoded values or placeholders in exported configs.
+10. **Challenge**: `./challenges/scripts/cli_agent_config_challenge.sh` validates all 48 agents have required features.
 
 ## Code Formatters
 
@@ -308,6 +313,7 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/subscription_detection_challenge.sh        # 20 tests
 ./challenges/scripts/provider_comprehensive_challenge.sh        # 40 tests
 ./challenges/scripts/provider_url_consistency_challenge.sh      # 20 tests
+./challenges/scripts/cli_agent_config_challenge.sh              # 60 tests
 ```
 
 ## LLMsVerifier
