@@ -339,12 +339,12 @@ func (sv *StartupVerifier) DiscoverModels(ctx context.Context, providerType stri
 		// Fallback: Chutes API often requires specific "chute" deployments
 		// Use known models from documentation when API fails
 		fallbackModels := []string{
-			"qwen/qwen2.5-72b-instruct",
-			"qwen/qwen3-72b",
-			"deepseek/deepseek-v3",
-			"deepseek/deepseek-r1",
-			"zhipu/glm-4-plus",
-			"kimi/kimi-k2.5",
+			"deepseek-ai/DeepSeek-V3",
+			"deepseek-ai/DeepSeek-R1",
+			"Qwen/Qwen2.5-72B-Instruct",
+			"Qwen/Qwen3-235B-A22B",
+			"meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+			"mistralai/Mistral-Small-24B-Instruct-2501",
 		}
 
 		sv.log.WithFields(logrus.Fields{

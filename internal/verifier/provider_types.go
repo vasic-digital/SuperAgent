@@ -555,7 +555,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Tier:        2,
 		Priority:    3,
 		EnvVars:     []string{"COHERE_API_KEY", "CO_API_KEY"},
-		BaseURL:     "https://api.cohere.ai/v1/chat",
+		BaseURL:     "https://api.cohere.com/v2/chat",
 		Models:      []string{"command-r-plus", "command-r", "command", "command-light"},
 		Free:        false,
 	},
@@ -668,7 +668,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    5,
 		EnvVars:     []string{"CHUTES_API_KEY", "ApiKey_Chutes"},
 		BaseURL:     "https://llm.chutes.ai/v1/chat/completions",
-		Models:      []string{}, // Dynamically discovered via Toolkit (fallback in Toolkit/Providers/Chutes/discovery.go)
+		Models:      []string{"deepseek-ai/DeepSeek-V3", "deepseek-ai/DeepSeek-R1", "Qwen/Qwen2.5-72B-Instruct"}, // Primary models; also discovered dynamically via Toolkit
 		Free:        false,
 	},
 	"siliconflow": {
@@ -689,7 +689,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Tier:        2,
 		Priority:    3,
 		EnvVars:     []string{"KIMI_API_KEY", "MOONSHOT_API_KEY", "ApiKey_Kimi"},
-		BaseURL:     "https://api.moonshot.ai/v1/chat/completions",
+		BaseURL:     "https://api.moonshot.cn/v1/chat/completions",
 		Models:      []string{"moonshot-v1-128k", "moonshot-v1-32k", "moonshot-v1-8k"},
 		Free:        false,
 	},

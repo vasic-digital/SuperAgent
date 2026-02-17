@@ -144,10 +144,10 @@ var providerMappings = []ProviderMapping{
 	{EnvVar: "CODESTRAL_API_KEY", ProviderType: "mistral", ProviderName: "codestral", BaseURL: "https://codestral.mistral.ai/v1", DefaultModel: "codestral-latest", Priority: 3},
 
 	// Qwen/DashScope - Multiple key name variations
-	{EnvVar: "QWEN_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-max", Priority: 4},
-	{EnvVar: "ApiKey_Qwen", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-max", Priority: 4},
-	{EnvVar: "DASHSCOPE_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-max", Priority: 4},
-	{EnvVar: "ALIBABA_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/api/v1", DefaultModel: "qwen-max", Priority: 4},
+	{EnvVar: "QWEN_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1", DefaultModel: "qwen-max", Priority: 4},
+	{EnvVar: "ApiKey_Qwen", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1", DefaultModel: "qwen-max", Priority: 4},
+	{EnvVar: "DASHSCOPE_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1", DefaultModel: "qwen-max", Priority: 4},
+	{EnvVar: "ALIBABA_API_KEY", ProviderType: "qwen", ProviderName: "qwen", BaseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1", DefaultModel: "qwen-max", Priority: 4},
 
 	// xAI/Grok - Multiple key name variations
 	{EnvVar: "XAI_API_KEY", ProviderType: "xai", ProviderName: "xai", BaseURL: "https://api.x.ai/v1", DefaultModel: "grok-2-latest", Priority: 3},
@@ -750,7 +750,7 @@ func (pd *ProviderDiscovery) createProvider(mapping ProviderMapping, apiKey stri
 		// Use native Chutes provider for OpenAI-compatible inference
 		baseURL := mapping.BaseURL
 		if baseURL == "" {
-			baseURL = "https://api.chutes.ai/v1/chat/completions"
+			baseURL = "https://llm.chutes.ai/v1/chat/completions"
 		}
 		return chutes.NewProvider(apiKey, baseURL, mapping.DefaultModel), nil
 

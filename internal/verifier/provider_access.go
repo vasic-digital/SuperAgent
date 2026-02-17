@@ -200,8 +200,8 @@ var ProviderAccessRegistry = map[string]*ProviderAccessConfig{
 		AuthMechanisms: []AuthMechanism{
 			{HeaderName: "Authorization", HeaderPrefix: "Bearer "},
 		},
-		SubscriptionCheckURL: "https://api.cohere.ai/check-api-key",
-		ModelsURL:            "https://api.cohere.ai/v1/models",
+		SubscriptionCheckURL: "https://api.cohere.com/check-api-key",
+		ModelsURL:            "https://api.cohere.com/v2/models",
 		DefaultSubscription:  SubTypeFreeTier,
 		AvailableTiers:       []SubscriptionType{SubTypeFreeTier, SubTypePayAsYouGo, SubTypeEnterprise},
 	},
