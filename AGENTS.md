@@ -347,6 +347,10 @@ Key environment variables (see `.env.example`):
 ### CLI Agent Registry
 - **48 CLI agents** supported (original 18 + extended 30). Generate configs with `./bin/helixagent --generate-agent-config=<agent>`.
 - All agents include formatters configuration with smart defaults.
+- **Config filenames**: `opencode.json` (WITHOUT leading dot), `crush.json`. OpenCode v1.2.6+ does NOT recognize `.opencode.json`.
+- **No env var syntax**: CLI agents do NOT support `{env:VAR}` in API keys. Installed configs MUST use real values.
+- **Two versions**: Repo examples (`configs/cli-agents/`) use `<YOUR_HELIXAGENT_API_KEY>` placeholder. Installed configs use real API key.
+- **Locations**: OpenCode → `~/.config/opencode/opencode.json`. Crush → `~/.config/crush/crush.json`.
 
 ### MCP Adapters & Containerization
 - **45+ MCP adapters** for external services (Linear, Asana, Jira, Slack, etc.).

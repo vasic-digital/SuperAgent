@@ -1995,7 +1995,7 @@ type OpenCodeTUIDef struct {
 
 // handleGenerateOpenCode handles the --generate-opencode-config command
 // Generates OpenCode v1.1.30+ compatible configuration
-// IMPORTANT: Config file should be saved as .opencode.json (with leading dot)
+// Config file should be saved as opencode.json (WITHOUT leading dot) in ~/.config/opencode/
 // User must set LOCAL_ENDPOINT env var to HelixAgent URL (e.g., http://localhost:7061)
 func handleGenerateOpenCode(appCfg *AppConfig) error {
 	logger := appCfg.Logger
@@ -2035,8 +2035,8 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 	baseURL := fmt.Sprintf("http://%s:%s", host, port)
 
 	// Determine which format to use based on output filename
-	// If filename is "opencode.json" (no dot prefix) -> use OLD format for strict validator
-	// If filename is ".opencode.json" (with dot prefix) -> use NEW v1.1.30+ format
+	// Config should be saved as "opencode.json" (no dot prefix) in ~/.config/opencode/
+	// The old ".opencode.json" (with dot) format is NOT recognized by OpenCode v1.2.6+
 	useOldFormat := false
 	if appCfg.OpenCodeOutput != "" {
 		basename := filepath.Base(appCfg.OpenCodeOutput)
@@ -2058,7 +2058,7 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 				Name: "HelixAgent",
 				Options: &OpenCodeProviderOptionsNew{
 					BaseURL: baseURL + "/v1",
-					APIKey:  "{env:HELIXAGENT_API_KEY}", // Use environment variable syntax
+					APIKey:  apiKey, // Real API key value — env var syntax NOT supported by OpenCode
 				},
 				Models: map[string]OpenCodeModelDefNew{
 					"helixagent-debate": {
@@ -2101,7 +2101,7 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 	if useOldFormat {
 		logger.Info("Generated OpenCode config (opencode.json)")
 	} else {
-		logger.Info("Generated OpenCode config (.opencode.json)")
+		logger.Info("Generated OpenCode config (opencode.json)")
 	}
 
 	if err != nil {
@@ -2120,16 +2120,12 @@ func handleGenerateOpenCode(appCfg *AppConfig) error {
 			return fmt.Errorf("failed to write OpenCode config to file: %w", err)
 		}
 		logger.WithField("file", appCfg.OpenCodeOutput).Info("OpenCode configuration written to file")
-		if useOldFormat {
-			logger.Info("Generated OLD format config for opencode.json (strict validator compatible)")
-		} else {
-			logger.Info("Generated v1.1.30+ format config for .opencode.json")
-			logger.Infof("IMPORTANT: Set LOCAL_ENDPOINT=%s before running opencode", baseURL)
-		}
+		logger.Info("Generated OpenCode config for opencode.json")
+		logger.Infof("IMPORTANT: Set LOCAL_ENDPOINT=%s before running opencode", baseURL)
 	} else {
 		fmt.Println(string(jsonData))
 		fmt.Fprintln(os.Stderr, "")
-		fmt.Fprintln(os.Stderr, "IMPORTANT: Save as .opencode.json (with leading dot) in ~/.config/opencode/")
+		fmt.Fprintln(os.Stderr, "IMPORTANT: Save as opencode.json (WITHOUT leading dot) in ~/.config/opencode/")
 		fmt.Fprintf(os.Stderr, "IMPORTANT: Set LOCAL_ENDPOINT=%s before running opencode\n", baseURL)
 	}
 
@@ -4046,7 +4042,7 @@ func handleGenerateAllAgents(appCfg *AppConfig) error {
 	for _, result := range results {
 		// Special case for OpenCode - use v1.1.30+ schema
 		if string(result.AgentType) == "opencode" {
-			outputPath := fmt.Sprintf("%s/.opencode.json", outputDir)
+			outputPath := fmt.Sprintf("%s/opencode.json", outputDir)
 			openCodeAppCfg := &AppConfig{
 				Logger:         logger,
 				OpenCodeOutput: outputPath,
@@ -4055,7 +4051,7 @@ func handleGenerateAllAgents(appCfg *AppConfig) error {
 				fmt.Printf("✗ %-20s  Failed to generate: %v\n", result.AgentType, err)
 				failCount++
 			} else {
-				fmt.Printf("✓ %-20s  %s\n", result.AgentType, ".opencode.json")
+				fmt.Printf("✓ %-20s  %s\n", result.AgentType, "opencode.json")
 				successCount++
 			}
 			continue

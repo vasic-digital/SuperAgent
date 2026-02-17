@@ -265,6 +265,14 @@ All parameters use **snake_case**. Key files: `internal/tools/schema.go`, `inter
 
 Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --generate-agent-config=<name>`. All agents include formatters config. Config generation via LLMsVerifier's `pkg/cliagents/`.
 
+### CLI Agent Config Rules (MANDATORY)
+
+1. **Config filenames**: `opencode.json` (WITHOUT leading dot), `crush.json`, etc. OpenCode v1.2.6+ does NOT recognize `.opencode.json` (with dot).
+2. **No env var syntax in API keys**: CLI agents do NOT support `{env:VAR_NAME}` syntax. Generated configs for installation MUST contain the real API key value from `.env`.
+3. **Two config versions**: Repository examples in `configs/cli-agents/` use `<YOUR_HELIXAGENT_API_KEY>` as placeholder. Installed configs (e.g., `~/.config/opencode/opencode.json`) use real API key values.
+4. **Config locations**: OpenCode: `~/.config/opencode/opencode.json`. Crush: `~/.config/crush/crush.json`. Both use `http://localhost:7061/v1` as provider base URL.
+5. **Model ID format**: Provider-qualified model references use `helixagent/helixagent-debate` format (provider-id/model-id).
+
 ## Code Formatters
 
 32+ formatters (11 native, 14 service, 7 built-in) for 19 languages. REST API: `POST /v1/format`, `GET /v1/formatters`. Service formatters in Docker (ports 9210-9300). Core: `internal/formatters/` (interface, registry, executor, cache, system). Native providers: `internal/formatters/providers/native/`. AI debate integration: `internal/services/debate_formatter_integration.go`.
