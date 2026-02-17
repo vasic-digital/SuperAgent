@@ -334,7 +334,7 @@ func GenerateHelixAgentKiloConfig(host string, port int, debateMembers []DebateG
 			},
 			"fetch": {
 				Type:    "local",
-				Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"},
+				Command: []string{"npx", "-y", "mcp-fetch-server"},
 				Enabled: true,
 			},
 			"puppeteer": {

@@ -237,7 +237,7 @@ func (g *ConfigGenerator) generateMCPServers() map[string]OpenCodeMCPServer {
 		},
 		"fetch": {
 			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-fetch"},
+			Args:    []string{"-y", "mcp-fetch-server"},
 		},
 		"memory": {
 			Command: "npx",
@@ -245,11 +245,11 @@ func (g *ConfigGenerator) generateMCPServers() map[string]OpenCodeMCPServer {
 		},
 		"time": {
 			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-time"},
+			Args:    []string{"-y", "@theo.foobar/mcp-time"},
 		},
 		"git": {
 			Command: "npx",
-			Args:    []string{"-y", "@modelcontextprotocol/server-git"},
+			Args:    []string{"-y", "mcp-git"},
 		},
 		"sqlite": {
 			Command: "npx",

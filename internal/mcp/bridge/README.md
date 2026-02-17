@@ -155,7 +155,7 @@ func Main() {
     }
 
     config.MCPCommand = os.Getenv("MCP_COMMAND")
-    // Example: MCP_COMMAND="npx @modelcontextprotocol/server-fetch"
+    // Example: MCP_COMMAND="npx mcp-fetch-server"
 
     b := bridge.New(config)
     b.Start(context.Background())

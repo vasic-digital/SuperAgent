@@ -1,10 +1,12 @@
 package integration
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -387,8 +389,8 @@ func TestNPMPackageNamesCorrect(t *testing.T) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	packages := []string{
-		"mcp-fetch",
-		"mcp-server-time",
+		"mcp-fetch-server",
+		"@theo.foobar/mcp-time",
 		"mcp-git",
 	}
 
@@ -407,11 +409,10 @@ func TestNPMPackageNamesCorrect(t *testing.T) {
 		})
 	}
 
-	// Verify old packages DON'T exist
+	// Verify broken/unpublished packages we replaced
 	stalePackages := []string{
-		"@modelcontextprotocol/server-fetch",
-		"@modelcontextprotocol/server-time",
-		"@modelcontextprotocol/server-git",
+		"mcp-fetch",       // SIGBUS via xmcp/@swc/core
+		"mcp-server-time", // unpublished 2025-05-14
 	}
 
 	for _, pkg := range stalePackages {
@@ -424,8 +425,79 @@ func TestNPMPackageNamesCorrect(t *testing.T) {
 			}
 			defer resp.Body.Close()
 
-			assert.Equal(t, http.StatusNotFound, resp.StatusCode,
-				"stale npm package %s should NOT exist (404), got %d", pkg, resp.StatusCode)
+			// These may still return 200 from npm (package exists but broken/unpublished).
+			// The real validation is the stdio test below — these just document what we replaced.
+			t.Logf("Stale package %s returned HTTP %d (replaced with working alternative)", pkg, resp.StatusCode)
+		})
+	}
+}
+
+// TestLocalMCPStdioRespond verifies local MCP servers respond to JSON-RPC initialize via stdio
+func TestLocalMCPStdioRespond(t *testing.T) {
+	if testing.Short() {
+		t.Logf("Short mode - skipping local MCP stdio test (acceptable)")
+		return
+	}
+
+	servers := []struct {
+		name    string
+		command []string
+	}{
+		{"fetch", []string{"npx", "-y", "mcp-fetch-server"}},
+		{"time", []string{"npx", "-y", "@theo.foobar/mcp-time"}},
+		{"git", []string{"npx", "-y", "mcp-git"}},
+	}
+
+	initMsg := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"test","version":"1.0.0"},"capabilities":{}}}` + "\n"
+
+	for _, srv := range servers {
+		t.Run(srv.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+			defer cancel()
+
+			cmd := exec.CommandContext(ctx, srv.command[0], srv.command[1:]...)
+			stdin, err := cmd.StdinPipe()
+			if err != nil {
+				t.Skipf("Could not create stdin pipe for %s: %v", srv.name, err)
+				return
+			}
+			stdout, err := cmd.StdoutPipe()
+			if err != nil {
+				t.Skipf("Could not create stdout pipe for %s: %v", srv.name, err)
+				return
+			}
+
+			if err := cmd.Start(); err != nil {
+				t.Skipf("Could not start %s: %v", srv.name, err)
+				return
+			}
+			defer func() {
+				_ = cmd.Process.Kill()
+				_ = cmd.Wait()
+			}()
+
+			// Send initialize request
+			_, err = stdin.Write([]byte(initMsg))
+			require.NoError(t, err, "Failed to write to %s stdin", srv.name)
+			_ = stdin.Close()
+
+			// Read response with timeout
+			done := make(chan []byte, 1)
+			go func() {
+				buf := make([]byte, 8192)
+				n, _ := stdout.Read(buf)
+				done <- buf[:n]
+			}()
+
+			select {
+			case data := <-done:
+				assert.Greater(t, len(data), 0,
+					"%s should produce stdio output", srv.name)
+				assert.True(t, strings.Contains(string(data), "jsonrpc") || strings.Contains(string(data), "result"),
+					"%s should return JSON-RPC response, got: %s", srv.name, string(data)[:min(len(data), 200)])
+			case <-ctx.Done():
+				t.Fatalf("%s did not respond within timeout", srv.name)
+			}
 		})
 	}
 }

@@ -34,7 +34,7 @@ var ExtendedMCPPackages = []MCPPackage{
 	},
 	{
 		Name:        "fetch",
-		NPM:         "mcp-fetch",
+		NPM:         "mcp-fetch-server",
 		Description: "MCP server for web content fetching and conversion",
 		Category:    CategoryCore,
 	},
@@ -52,13 +52,13 @@ var ExtendedMCPPackages = []MCPPackage{
 	},
 	{
 		Name:        "git",
-		NPM:         "@modelcontextprotocol/server-git",
+		NPM:         "mcp-git",
 		Description: "MCP server for Git repository operations",
 		Category:    CategoryCore,
 	},
 	{
 		Name:        "time",
-		NPM:         "@modelcontextprotocol/server-time",
+		NPM:         "@theo.foobar/mcp-time",
 		Description: "MCP server for time and timezone conversion",
 		Category:    CategoryCore,
 	},

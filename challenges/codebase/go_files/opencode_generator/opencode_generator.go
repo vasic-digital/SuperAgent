@@ -346,7 +346,7 @@ func GenerateHelixAgentConfig(host string, port int, debateMembers []DebateGroup
 			},
 			"fetch": {
 				Type:    "local",
-				Command: []string{homeDir + "/Applications/node-v20.18.0-linux-x64/bin/npx", "-y", "mcp-fetch"},
+				Command: []string{homeDir + "/Applications/node-v20.18.0-linux-x64/bin/npx", "-y", "mcp-fetch-server"},
 				Enabled: &enabled,
 			},
 			"puppeteer": {

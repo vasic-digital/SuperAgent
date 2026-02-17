@@ -19,10 +19,10 @@ These MCPs require no external API keys and work out of the box:
 | MCP | Package | Description |
 |-----|---------|-------------|
 | `filesystem` | `@modelcontextprotocol/server-filesystem` | File system access - read, write, list files |
-| `fetch` | `@modelcontextprotocol/server-fetch` | HTTP fetch - make web requests |
+| `fetch` | `mcp-fetch-server` | HTTP fetch - make web requests |
 | `memory` | `@modelcontextprotocol/server-memory` | In-memory key-value storage |
-| `time` | `@modelcontextprotocol/server-time` | Time and timezone utilities |
-| `git` | `@modelcontextprotocol/server-git` | Git repository operations |
+| `time` | `@theo.foobar/mcp-time` | Time and timezone utilities |
+| `git` | `mcp-git` | Git repository operations |
 | `sequential-thinking` | `@modelcontextprotocol/server-sequential-thinking` | Sequential thinking and reasoning |
 | `everything` | `@anthropic-ai/mcp-server-everything` | Test MCP server with all features |
 

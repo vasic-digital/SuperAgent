@@ -20,10 +20,10 @@ These MCPs require no external API keys or services and work out of the box:
 |-----|---------|-------------|
 | `helixagent` | Local plugin | HelixAgent MCP integration |
 | `filesystem` | `@modelcontextprotocol/server-filesystem` | File system access |
-| `fetch` | `@modelcontextprotocol/server-fetch` | HTTP requests |
+| `fetch` | `mcp-fetch-server` | HTTP requests |
 | `memory` | `@modelcontextprotocol/server-memory` | In-memory storage |
-| `time` | `@modelcontextprotocol/server-time` | Time utilities |
-| `git` | `@modelcontextprotocol/server-git` | Git operations |
+| `time` | `@theo.foobar/mcp-time` | Time utilities |
+| `git` | `mcp-git` | Git operations |
 | `sequential-thinking` | `@modelcontextprotocol/server-sequential-thinking` | Reasoning |
 | `everything` | `@anthropic-ai/mcp-server-everything` | Test MCP |
 | `sqlite` | `@modelcontextprotocol/server-sqlite` | Local SQLite database |

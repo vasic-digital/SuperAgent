@@ -391,7 +391,7 @@ var predefinedServers = []ProtocolServer{
 		},
 	},
 	{
-		Name: "mcp-fetch", Type: "mcp", URL: "http://mcp-fetch:3000",
+		Name: "mcp-fetch-server", Type: "mcp", URL: "http://mcp-fetch-server:3000",
 		Description: "Web content fetching and processing",
 		Category: "web", Official: true, Supported: true,
 		Tools: []*ToolSchema{

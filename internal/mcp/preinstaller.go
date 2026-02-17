@@ -43,7 +43,7 @@ var StandardMCPPackages = []MCPPackage{
 	},
 	{
 		Name:        "fetch",
-		NPM:         "mcp-fetch",
+		NPM:         "mcp-fetch-server",
 		Description: "MCP server for HTTP fetch operations",
 	},
 	{

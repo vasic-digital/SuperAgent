@@ -29,7 +29,7 @@
     },
     "fetch": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+      "args": ["-y", "mcp-fetch-server"]
     },
     "github": {
       "command": "npx",
@@ -50,7 +50,7 @@
     },
     "time": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-time"]
+      "args": ["-y", "@theo.foobar/mcp-time"]
     },
     "brave-search": {
       "command": "npx",
@@ -64,7 +64,7 @@
     },
     "git": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-git"]
+      "args": ["-y", "mcp-git"]
     },
     "postgres": {
       "command": "npx",

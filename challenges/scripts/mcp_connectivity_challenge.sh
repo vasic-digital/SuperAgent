@@ -1,6 +1,6 @@
 #!/bin/bash
 # HelixAgent Challenge: MCP Connectivity & SSE Endpoints
-# Tests: ~35 tests across 7 sections
+# Tests: ~38 tests across 8 sections
 # Validates: Code structure, HTTP connectivity, npm packages, remote MCPs, config correctness
 #
 # IMPORTANT: This challenge uses REAL HTTP tests against a running server and live npm registry.
@@ -50,7 +50,7 @@ section() {
 HELIXAGENT_URL="${HELIXAGENT_URL:-http://localhost:7061}"
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}MCP Connectivity Challenge (v2)${NC}"
+echo -e "${BLUE}MCP Connectivity Challenge (v3)${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo -e "Server URL: ${HELIXAGENT_URL}"
 
@@ -139,7 +139,7 @@ section "Section 3: NPM Package Verification"
 MAIN_FILE="$PROJECT_ROOT/cmd/helixagent/main.go"
 
 # Test 3.1-3.3: Correct packages exist on npm
-for pkg in mcp-fetch mcp-server-time mcp-git; do
+for pkg in mcp-fetch-server @theo.foobar/mcp-time mcp-git; do
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://registry.npmjs.org/$pkg" 2>/dev/null || echo "000")
     if [ "$HTTP_CODE" = "200" ]; then
         pass "npm package '$pkg' exists (HTTP $HTTP_CODE)"
@@ -150,12 +150,22 @@ for pkg in mcp-fetch mcp-server-time mcp-git; do
     fi
 done
 
-# Test 3.4-3.6: Stale packages NOT referenced in code
-for pkg in "@modelcontextprotocol/server-fetch" "@modelcontextprotocol/server-time" "@modelcontextprotocol/server-git"; do
-    if ! grep -q "\"$pkg\"" "$MAIN_FILE"; then
-        pass "No reference to stale package '$pkg' in main.go"
+# Test 3.4-3.7: Stale/broken packages NOT referenced in code
+for pkg in "mcp-fetch" "mcp-server-time" "@modelcontextprotocol/server-fetch" "@modelcontextprotocol/server-time"; do
+    # Check exact match (not as substring of mcp-fetch-server)
+    if [ "$pkg" = "mcp-fetch" ]; then
+        # Match "mcp-fetch" but not "mcp-fetch-server"
+        if ! grep -P '"mcp-fetch"(?!-server)' "$MAIN_FILE" >/dev/null 2>&1; then
+            pass "No reference to stale package '$pkg' in main.go"
+        else
+            fail "Stale package '$pkg' still referenced in main.go"
+        fi
     else
-        fail "Stale package '$pkg' still referenced in main.go"
+        if ! grep -q "\"$pkg\"" "$MAIN_FILE"; then
+            pass "No reference to stale package '$pkg' in main.go"
+        else
+            fail "Stale package '$pkg' still referenced in main.go"
+        fi
     fi
 done
 
@@ -304,6 +314,38 @@ elif [ "$CF_CODE" = "000" ]; then
     skip "cloudflare-docs unreachable (network issue)"
 else
     fail "cloudflare-docs GET /sse returned HTTP $CF_CODE"
+fi
+
+#===============================================================================
+# Section 8: Local MCP Stdio Tests (3 tests — spawn actual processes)
+#===============================================================================
+section "Section 8: Local MCP Stdio Tests (JSON-RPC initialize via stdio)"
+
+INIT_JSON='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"challenge","version":"1.0.0"},"capabilities":{}}}'
+
+# Check if npx is available
+if ! command -v npx &>/dev/null; then
+    for mcp_name in fetch time git; do
+        skip "Local MCP '$mcp_name' stdio test (npx not found)"
+    done
+else
+    LOCAL_MCPS=(
+        "fetch:mcp-fetch-server"
+        "time:@theo.foobar/mcp-time"
+        "git:mcp-git"
+    )
+    for entry in "${LOCAL_MCPS[@]}"; do
+        MCP_NAME="${entry%%:*}"
+        MCP_PKG="${entry##*:}"
+        STDIO_RESPONSE=$(echo "$INIT_JSON" | timeout 20 npx -y "$MCP_PKG" 2>/dev/null || true)
+        if echo "$STDIO_RESPONSE" | grep -q 'jsonrpc'; then
+            pass "Local MCP '$MCP_NAME' ($MCP_PKG) responds to stdio initialize"
+        elif [ -z "$STDIO_RESPONSE" ]; then
+            fail "Local MCP '$MCP_NAME' ($MCP_PKG) produced empty stdio response"
+        else
+            fail "Local MCP '$MCP_NAME' ($MCP_PKG) invalid response: $(echo "$STDIO_RESPONSE" | head -c 100)"
+        fi
+    done
 fi
 
 #===============================================================================

@@ -64,11 +64,11 @@ test_npm_package "@modelcontextprotocol/server-filesystem" "exists" "Official fi
 test_npm_package "@modelcontextprotocol/server-github" "exists" "Official github server"
 test_npm_package "@modelcontextprotocol/server-memory" "exists" "Official memory server"
 test_npm_package "@modelcontextprotocol/server-puppeteer" "exists" "Official puppeteer server"
-test_npm_package "mcp-fetch" "exists" "Alternative fetch server"
+test_npm_package "mcp-fetch-server" "exists" "Working fetch server replacement"
 test_npm_package "mcp-sqlite" "exists" "Alternative sqlite server"
 
 # Packages that should NOT exist (common misconceptions)
-test_npm_package "@modelcontextprotocol/server-fetch" "not_exists" "Does NOT exist"
+test_npm_package "@theo.foobar/mcp-time" "exists" "Working time server replacement"
 test_npm_package "@modelcontextprotocol/server-sqlite" "not_exists" "Does NOT exist"
 
 # ============================================================================
@@ -245,12 +245,12 @@ if [ -f "$OPENCODE_CONFIG" ]; then
     log_info "Validating OpenCode configuration"
 
     # Check for incorrect package names
-    if grep -q "@modelcontextprotocol/server-fetch" "$OPENCODE_CONFIG"; then
-        log_error "OpenCode config uses non-existent @modelcontextprotocol/server-fetch"
-        FAILED=$((FAILED + 1))
-    else
-        log_success "OpenCode config does not use non-existent fetch package"
+    if grep -q "mcp-fetch-server" "$OPENCODE_CONFIG"; then
+        log_success "OpenCode config uses working mcp-fetch-server package"
         PASSED=$((PASSED + 1))
+    else
+        log_error "OpenCode config missing mcp-fetch-server"
+        FAILED=$((FAILED + 1))
     fi
 
     TOTAL=$((TOTAL + 1))

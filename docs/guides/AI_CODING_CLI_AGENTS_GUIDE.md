@@ -869,7 +869,7 @@ A. Filesystem MCP Server
     },
     "git": {
       "command": "npx",
-      "args": ["@modelcontextprotocol/server-git", "/project"]
+      "args": ["mcp-git", "/project"]
     },
     "postgres": {
       "command": "npx",

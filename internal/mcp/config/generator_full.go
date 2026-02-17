@@ -135,7 +135,7 @@ func (g *FullMCPConfigGenerator) GenerateAllMCPs() map[string]MCPServerConfigFul
 	}
 	mcps["fetch"] = MCPServerConfigFull{
 		Type:    "local",
-		Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"},
+		Command: []string{"npx", "-y", "mcp-fetch-server"},
 		Enabled: true,
 	}
 	mcps["memory"] = MCPServerConfigFull{
@@ -145,12 +145,12 @@ func (g *FullMCPConfigGenerator) GenerateAllMCPs() map[string]MCPServerConfigFul
 	}
 	mcps["time"] = MCPServerConfigFull{
 		Type:    "local",
-		Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"},
+		Command: []string{"npx", "-y", "@theo.foobar/mcp-time"},
 		Enabled: true,
 	}
 	mcps["git"] = MCPServerConfigFull{
 		Type:    "local",
-		Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"},
+		Command: []string{"npx", "-y", "mcp-git"},
 		Enabled: true,
 	}
 	mcps["sequential-thinking"] = MCPServerConfigFull{

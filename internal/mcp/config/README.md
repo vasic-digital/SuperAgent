@@ -297,7 +297,7 @@ for category, mcps := range byCategory {
 // MCPServerConfig (npx-based)
 type MCPServerConfig struct {
     Type        string            // "local" for npx
-    Command     []string          // ["npx", "-y", "@modelcontextprotocol/server-fetch"]
+    Command     []string          // ["npx", "-y", "mcp-fetch-server"]
     URL         string            // For remote MCPs
     Headers     map[string]string // HTTP headers
     Environment map[string]string // Environment variables

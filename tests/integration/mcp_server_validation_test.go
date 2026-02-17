@@ -37,11 +37,12 @@ func TestMCPPackageExistence(t *testing.T) {
 		{"@modelcontextprotocol/server-sequential-thinking", true},
 		{"@modelcontextprotocol/sdk", true},
 		{"@modelcontextprotocol/inspector", true},
-		{"@modelcontextprotocol/server-fetch", true},
 		{"@modelcontextprotocol/server-sqlite", true},
 
-		// Alternative community packages that EXIST
-		{"mcp-fetch", true},
+		// Working replacement packages for broken/unpublished ones
+		{"mcp-fetch-server", true},
+		{"@theo.foobar/mcp-time", true},
+		{"mcp-git", true},
 		{"mcp-sqlite", true},
 	}
 
@@ -76,7 +77,7 @@ func TestMCPLocalServerStartup(t *testing.T) {
 	}{
 		{"filesystem", []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", os.Getenv("HOME")}},
 		{"memory", []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
-		{"fetch", []string{"npx", "-y", "mcp-fetch"}},
+		{"fetch", []string{"npx", "-y", "mcp-fetch-server"}},
 		{"sqlite", []string{"npx", "-y", "mcp-sqlite"}},
 	}
 
@@ -279,9 +280,7 @@ func TestOpenCodeConfiguration(t *testing.T) {
 			}
 			joined := strings.Join(cmdStr, " ")
 			// Accept official, community, or alternative fetch server packages
-			hasMCPFetch := strings.Contains(joined, "@modelcontextprotocol/server-fetch") ||
-				strings.Contains(joined, "mcp-fetch") ||
-				strings.Contains(joined, "mcp-server-fetch")
+			hasMCPFetch := strings.Contains(joined, "mcp-fetch-server")
 			assert.True(t, hasMCPFetch,
 				"fetch should use a recognized MCP fetch server package, got: %s", joined)
 		}

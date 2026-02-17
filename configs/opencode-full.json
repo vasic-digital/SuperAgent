@@ -6,7 +6,7 @@
       "name": "HelixAgent",
       "options": {
         "baseURL": "http://localhost:7061/v1",
-        "apiKey": "{env:HELIXAGENT_API_KEY}"
+        "apiKey": "<YOUR_HELIXAGENT_API_KEY>"
       },
       "models": {
         "helixagent-debate": {
@@ -38,6 +38,18 @@
     }
   },
   "mcp": {
+    "cloudflare-docs": {
+      "type": "remote",
+      "url": "https://docs.mcp.cloudflare.com/sse"
+    },
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "deepwiki": {
+      "type": "remote",
+      "url": "https://mcp.deepwiki.com/mcp"
+    },
     "everything": {
       "type": "local",
       "command": [
@@ -49,8 +61,9 @@
     "fetch": {
       "type": "local",
       "command": [
-        "uvx",
-        "mcp-server-fetch"
+        "npx",
+        "-y",
+        "mcp-fetch-server"
       ]
     },
     "filesystem": {
@@ -65,8 +78,9 @@
     "git": {
       "type": "local",
       "command": [
-        "uvx",
-        "mcp-server-git"
+        "npx",
+        "-y",
+        "mcp-git"
       ]
     },
     "helixagent-acp": {
@@ -81,6 +95,10 @@
       "type": "remote",
       "url": "http://localhost:7061/v1/embeddings"
     },
+    "helixagent-formatters": {
+      "type": "remote",
+      "url": "http://localhost:7061/v1/formatters"
+    },
     "helixagent-lsp": {
       "type": "remote",
       "url": "http://localhost:7061/v1/lsp"
@@ -88,6 +106,14 @@
     "helixagent-mcp": {
       "type": "remote",
       "url": "http://localhost:7061/v1/mcp"
+    },
+    "helixagent-monitoring": {
+      "type": "remote",
+      "url": "http://localhost:7061/v1/monitoring"
+    },
+    "helixagent-rag": {
+      "type": "remote",
+      "url": "http://localhost:7061/v1/rag"
     },
     "helixagent-vision": {
       "type": "remote",
@@ -129,8 +155,9 @@
     "time": {
       "type": "local",
       "command": [
-        "uvx",
-        "mcp-server-time"
+        "npx",
+        "-y",
+        "@theo.foobar/mcp-time"
       ]
     }
   },

@@ -19,7 +19,7 @@
 // Usage:
 //
 //	bridge, err := NewSSEBridge(SSEBridgeConfig{
-//	    Command:     []string{"npx", "-y", "@modelcontextprotocol/server-fetch"},
+//	    Command:     []string{"npx", "-y", "mcp-fetch-server"},
 //	    Environment: map[string]string{"NODE_ENV": "production"},
 //	    Address:     ":8080",
 //	})
@@ -51,7 +51,7 @@ import (
 
 // SSEBridgeConfig holds configuration for the SSE bridge server.
 type SSEBridgeConfig struct {
-	// Command is the command to run the MCP server (e.g., ["npx", "-y", "@modelcontextprotocol/server-fetch"])
+	// Command is the command to run the MCP server (e.g., ["npx", "-y", "mcp-fetch-server"])
 	Command []string
 
 	// Environment contains additional environment variables for the MCP process

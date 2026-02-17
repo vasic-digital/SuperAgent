@@ -214,7 +214,7 @@ func GenerateHelixAgentCrushConfig(host string, port int, debateMembers []Debate
 			"fetch": {
 				Type:    "stdio",
 				Command: "npx",
-				Args:    []string{"-y", "@modelcontextprotocol/server-fetch"},
+				Args:    []string{"-y", "mcp-fetch-server"},
 				Enabled: true,
 			},
 		},

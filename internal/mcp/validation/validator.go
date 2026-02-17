@@ -151,8 +151,8 @@ func (v *MCPValidator) loadRequirements() {
 	v.requirements["fetch"] = &MCPRequirement{
 		Name:           "fetch",
 		Type:           "local",
-		Package:        "@modelcontextprotocol/server-fetch",
-		Command:        []string{"npx", "-y", "@modelcontextprotocol/server-fetch"},
+		Package:        "mcp-fetch-server",
+		Command:        []string{"npx", "-y", "mcp-fetch-server"},
 		Description:    "HTTP fetch - make web requests",
 		Category:       "core",
 		CanWorkLocally: true,
@@ -173,8 +173,8 @@ func (v *MCPValidator) loadRequirements() {
 	v.requirements["time"] = &MCPRequirement{
 		Name:           "time",
 		Type:           "local",
-		Package:        "@modelcontextprotocol/server-time",
-		Command:        []string{"npx", "-y", "@modelcontextprotocol/server-time"},
+		Package:        "@theo.foobar/mcp-time",
+		Command:        []string{"npx", "-y", "@theo.foobar/mcp-time"},
 		Description:    "Time and timezone utilities",
 		Category:       "core",
 		CanWorkLocally: true,
@@ -184,8 +184,8 @@ func (v *MCPValidator) loadRequirements() {
 	v.requirements["git"] = &MCPRequirement{
 		Name:           "git",
 		Type:           "local",
-		Package:        "@modelcontextprotocol/server-git",
-		Command:        []string{"npx", "-y", "@modelcontextprotocol/server-git"},
+		Package:        "mcp-git",
+		Command:        []string{"npx", "-y", "mcp-git"},
 		Description:    "Git repository operations",
 		Category:       "core",
 		CanWorkLocally: true,
