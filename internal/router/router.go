@@ -833,6 +833,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 		// Register monitoring handler routes
 		monitoringHandler := handlers.NewMonitoringHandler(nil, oauthTokenMonitor, providerHealthMonitor, fallbackChainValidator, concurrencyMonitor, concurrencyAlertManager)
 		monitoringHandler.RegisterRoutes(protected)
+		protocolSSEHandler.SetMonitoringHandler(monitoringHandler)
 		logger.Info("Monitoring endpoints registered at /v1/monitoring/*")
 
 		// LSP endpoints
@@ -912,6 +913,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			ragGroup.POST("/expand", ragHandler.ExpandQuery)
 			ragGroup.POST("/chunk", ragHandler.ChunkDocument)
 		}
+		protocolSSEHandler.SetRAGHandler(ragHandler)
 		logger.Info("RAG endpoints registered at /v1/rag/*")
 
 		// ACP (Agent Communication Protocol) endpoints
@@ -940,6 +942,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 			v1Public.GET("/formatters/:name", formattersHandler.GetFormatter)
 			v1Public.GET("/formatters/:name/health", formattersHandler.HealthCheckFormatter)
 
+			protocolSSEHandler.SetFormattersHandler(formattersHandler)
 			logger.Info("Code Formatters endpoints registered (all public)")
 		} else {
 			logger.Warn("Code Formatters system not available")

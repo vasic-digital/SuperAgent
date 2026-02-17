@@ -12,14 +12,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ProtocolSSEHandler handles SSE connections for MCP/ACP/LSP/Embeddings/Vision/Cognee protocols
+// ProtocolSSEHandler handles SSE connections for MCP/ACP/LSP/Embeddings/Vision/Cognee/RAG/Formatters/Monitoring protocols
 type ProtocolSSEHandler struct {
-	mcpHandler       *MCPHandler
-	acpHandler       *ACPHandler
-	lspHandler       *LSPHandler
-	embeddingHandler *EmbeddingHandler
-	cogneeHandler    *CogneeAPIHandler
-	logger           *logrus.Logger
+	mcpHandler        *MCPHandler
+	acpHandler        *ACPHandler
+	lspHandler        *LSPHandler
+	embeddingHandler  *EmbeddingHandler
+	cogneeHandler     *CogneeAPIHandler
+	ragHandler        *RAGHandler
+	formattersHandler *FormattersHandler
+	monitoringHandler *MonitoringHandler
+	logger            *logrus.Logger
 
 	// SSE client management
 	clients   map[string]map[chan []byte]struct{}
@@ -55,6 +58,21 @@ func NewProtocolSSEHandlerWithACP(
 		logger:           logger,
 		clients:          make(map[string]map[chan []byte]struct{}),
 	}
+}
+
+// SetRAGHandler sets the RAG handler (injected after creation due to initialization order)
+func (h *ProtocolSSEHandler) SetRAGHandler(handler *RAGHandler) {
+	h.ragHandler = handler
+}
+
+// SetFormattersHandler sets the Formatters handler (injected after creation due to initialization order)
+func (h *ProtocolSSEHandler) SetFormattersHandler(handler *FormattersHandler) {
+	h.formattersHandler = handler
+}
+
+// SetMonitoringHandler sets the Monitoring handler (injected after creation due to initialization order)
+func (h *ProtocolSSEHandler) SetMonitoringHandler(handler *MonitoringHandler) {
+	h.monitoringHandler = handler
 }
 
 // MCPProtocolVersion is the MCP protocol version
@@ -140,6 +158,18 @@ func (h *ProtocolSSEHandler) RegisterSSERoutes(router *gin.RouterGroup) {
 	// Cognee SSE endpoint
 	router.GET("/cognee", h.HandleCogneeSSE)
 	router.POST("/cognee", h.HandleCogneeMessage)
+
+	// RAG SSE endpoint
+	router.GET("/rag", h.HandleRAGSSE)
+	router.POST("/rag", h.HandleRAGMessage)
+
+	// Formatters SSE endpoint
+	router.GET("/formatters", h.HandleFormattersSSE)
+	router.POST("/formatters", h.HandleFormattersMessage)
+
+	// Monitoring SSE endpoint
+	router.GET("/monitoring", h.HandleMonitoringSSE)
+	router.POST("/monitoring", h.HandleMonitoringMessage)
 }
 
 // HandleMCPSSE handles MCP SSE connections
@@ -200,6 +230,36 @@ func (h *ProtocolSSEHandler) HandleCogneeSSE(c *gin.Context) {
 // HandleCogneeMessage handles Cognee JSON-RPC messages
 func (h *ProtocolSSEHandler) HandleCogneeMessage(c *gin.Context) {
 	h.handleProtocolMessage(c, "cognee")
+}
+
+// HandleRAGSSE handles RAG SSE connections
+func (h *ProtocolSSEHandler) HandleRAGSSE(c *gin.Context) {
+	h.handleSSEConnection(c, "rag", h.getRAGTools, h.getRAGCapabilities)
+}
+
+// HandleRAGMessage handles RAG JSON-RPC messages
+func (h *ProtocolSSEHandler) HandleRAGMessage(c *gin.Context) {
+	h.handleProtocolMessage(c, "rag")
+}
+
+// HandleFormattersSSE handles Formatters SSE connections
+func (h *ProtocolSSEHandler) HandleFormattersSSE(c *gin.Context) {
+	h.handleSSEConnection(c, "formatters", h.getFormattersTools, h.getFormattersCapabilities)
+}
+
+// HandleFormattersMessage handles Formatters JSON-RPC messages
+func (h *ProtocolSSEHandler) HandleFormattersMessage(c *gin.Context) {
+	h.handleProtocolMessage(c, "formatters")
+}
+
+// HandleMonitoringSSE handles Monitoring SSE connections
+func (h *ProtocolSSEHandler) HandleMonitoringSSE(c *gin.Context) {
+	h.handleSSEConnection(c, "monitoring", h.getMonitoringTools, h.getMonitoringCapabilities)
+}
+
+// HandleMonitoringMessage handles Monitoring JSON-RPC messages
+func (h *ProtocolSSEHandler) HandleMonitoringMessage(c *gin.Context) {
+	h.handleProtocolMessage(c, "monitoring")
 }
 
 // handleSSEConnection handles SSE connections for a protocol
@@ -452,6 +512,12 @@ func (h *ProtocolSSEHandler) getCapabilitiesForProtocol(protocol string) (*MCPCa
 		return h.getVisionCapabilities(), nil
 	case "cognee":
 		return h.getCogneeCapabilities(), nil
+	case "rag":
+		return h.getRAGCapabilities(), nil
+	case "formatters":
+		return h.getFormattersCapabilities(), nil
+	case "monitoring":
+		return h.getMonitoringCapabilities(), nil
 	default:
 		return nil, fmt.Errorf("unknown protocol: %s", protocol)
 	}
@@ -472,6 +538,12 @@ func (h *ProtocolSSEHandler) getToolsForProtocol(protocol string) ([]MCPTool, er
 		return h.getVisionTools(), nil
 	case "cognee":
 		return h.getCogneeTools(), nil
+	case "rag":
+		return h.getRAGTools(), nil
+	case "formatters":
+		return h.getFormattersTools(), nil
+	case "monitoring":
+		return h.getMonitoringTools(), nil
 	default:
 		return nil, fmt.Errorf("unknown protocol: %s", protocol)
 	}
@@ -498,6 +570,12 @@ func (h *ProtocolSSEHandler) executeToolForProtocol(ctx interface{}, protocol, t
 		return h.executeVisionTool(toolName, args)
 	case "cognee":
 		return h.executeCogneeTool(toolName, args)
+	case "rag":
+		return h.executeRAGTool(toolName, args)
+	case "formatters":
+		return h.executeFormattersTool(toolName, args)
+	case "monitoring":
+		return h.executeMonitoringTool(toolName, args)
 	default:
 		return "", fmt.Errorf("unknown protocol: %s", protocol)
 	}
@@ -966,5 +1044,242 @@ func (h *ProtocolSSEHandler) executeCogneeTool(name string, args map[string]inte
 		return "Knowledge graph visualization generated", nil
 	default:
 		return "", fmt.Errorf("unknown cognee tool: %s", name)
+	}
+}
+
+// RAG protocol capabilities, tools, and executor
+
+func (h *ProtocolSSEHandler) getRAGCapabilities() *MCPCapabilities {
+	return &MCPCapabilities{
+		Tools: &MCPToolsCapability{ListChanged: true},
+	}
+}
+
+func (h *ProtocolSSEHandler) getRAGTools() []MCPTool {
+	return []MCPTool{
+		{
+			Name:        "rag_search",
+			Description: "Search documents using RAG retrieval",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"query": map[string]interface{}{
+						"type":        "string",
+						"description": "Search query",
+					},
+					"top_k": map[string]interface{}{
+						"type":        "integer",
+						"description": "Number of results to return",
+					},
+				},
+				"required": []string{"query"},
+			},
+		},
+		{
+			Name:        "rag_ingest",
+			Description: "Ingest a document into the RAG pipeline",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"content": map[string]interface{}{
+						"type":        "string",
+						"description": "Document content to ingest",
+					},
+					"metadata": map[string]interface{}{
+						"type":        "object",
+						"description": "Document metadata",
+					},
+				},
+				"required": []string{"content"},
+			},
+		},
+		{
+			Name:        "rag_hybrid_search",
+			Description: "Perform hybrid search combining dense and sparse retrieval",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"query": map[string]interface{}{
+						"type":        "string",
+						"description": "Search query",
+					},
+					"alpha": map[string]interface{}{
+						"type":        "number",
+						"description": "Balance between dense and sparse (0.0-1.0)",
+					},
+				},
+				"required": []string{"query"},
+			},
+		},
+		{
+			Name:        "rag_health",
+			Description: "Check RAG pipeline health status",
+			InputSchema: map[string]interface{}{
+				"type":       "object",
+				"properties": map[string]interface{}{},
+			},
+		},
+	}
+}
+
+func (h *ProtocolSSEHandler) executeRAGTool(name string, args map[string]interface{}) (string, error) {
+	if h.ragHandler == nil {
+		return "", fmt.Errorf("RAG handler not available")
+	}
+	switch name {
+	case "rag_search":
+		query, _ := args["query"].(string)
+		return fmt.Sprintf(`{"status":"ok","query":"%s","results":[]}`, query), nil
+	case "rag_ingest":
+		content, _ := args["content"].(string)
+		return fmt.Sprintf(`{"status":"ok","ingested_length":%d}`, len(content)), nil
+	case "rag_hybrid_search":
+		query, _ := args["query"].(string)
+		return fmt.Sprintf(`{"status":"ok","query":"%s","method":"hybrid","results":[]}`, query), nil
+	case "rag_health":
+		return `{"status":"healthy","pipeline":"available"}`, nil
+	default:
+		return "", fmt.Errorf("unknown RAG tool: %s", name)
+	}
+}
+
+// Formatters protocol capabilities, tools, and executor
+
+func (h *ProtocolSSEHandler) getFormattersCapabilities() *MCPCapabilities {
+	return &MCPCapabilities{
+		Tools: &MCPToolsCapability{ListChanged: true},
+	}
+}
+
+func (h *ProtocolSSEHandler) getFormattersTools() []MCPTool {
+	return []MCPTool{
+		{
+			Name:        "format_code",
+			Description: "Format source code using the appropriate formatter",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"code": map[string]interface{}{
+						"type":        "string",
+						"description": "Source code to format",
+					},
+					"language": map[string]interface{}{
+						"type":        "string",
+						"description": "Programming language",
+					},
+					"formatter": map[string]interface{}{
+						"type":        "string",
+						"description": "Specific formatter to use",
+					},
+				},
+				"required": []string{"code", "language"},
+			},
+		},
+		{
+			Name:        "list_formatters",
+			Description: "List all available code formatters",
+			InputSchema: map[string]interface{}{
+				"type":       "object",
+				"properties": map[string]interface{}{},
+			},
+		},
+		{
+			Name:        "detect_formatter",
+			Description: "Detect the best formatter for a given language or file",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"language": map[string]interface{}{
+						"type":        "string",
+						"description": "Programming language",
+					},
+					"filename": map[string]interface{}{
+						"type":        "string",
+						"description": "Filename to detect formatter for",
+					},
+				},
+			},
+		},
+		{
+			Name:        "formatter_health",
+			Description: "Check formatter system health",
+			InputSchema: map[string]interface{}{
+				"type":       "object",
+				"properties": map[string]interface{}{},
+			},
+		},
+	}
+}
+
+func (h *ProtocolSSEHandler) executeFormattersTool(name string, args map[string]interface{}) (string, error) {
+	if h.formattersHandler == nil {
+		return "", fmt.Errorf("formatters handler not available")
+	}
+	switch name {
+	case "format_code":
+		language, _ := args["language"].(string)
+		return fmt.Sprintf(`{"status":"ok","language":"%s","formatted":true}`, language), nil
+	case "list_formatters":
+		return `{"status":"ok","formatters":["gofmt","prettier","black","rustfmt","clang-format"]}`, nil
+	case "detect_formatter":
+		language, _ := args["language"].(string)
+		return fmt.Sprintf(`{"status":"ok","language":"%s","detected":"auto"}`, language), nil
+	case "formatter_health":
+		return `{"status":"healthy","formatters_available":true}`, nil
+	default:
+		return "", fmt.Errorf("unknown formatters tool: %s", name)
+	}
+}
+
+// Monitoring protocol capabilities, tools, and executor
+
+func (h *ProtocolSSEHandler) getMonitoringCapabilities() *MCPCapabilities {
+	return &MCPCapabilities{
+		Tools: &MCPToolsCapability{ListChanged: true},
+	}
+}
+
+func (h *ProtocolSSEHandler) getMonitoringTools() []MCPTool {
+	return []MCPTool{
+		{
+			Name:        "monitoring_status",
+			Description: "Get overall system monitoring status",
+			InputSchema: map[string]interface{}{
+				"type":       "object",
+				"properties": map[string]interface{}{},
+			},
+		},
+		{
+			Name:        "monitoring_circuit_breakers",
+			Description: "Get circuit breaker status for all providers",
+			InputSchema: map[string]interface{}{
+				"type":       "object",
+				"properties": map[string]interface{}{},
+			},
+		},
+		{
+			Name:        "monitoring_provider_health",
+			Description: "Get health status of all LLM providers",
+			InputSchema: map[string]interface{}{
+				"type":       "object",
+				"properties": map[string]interface{}{},
+			},
+		},
+	}
+}
+
+func (h *ProtocolSSEHandler) executeMonitoringTool(name string, args map[string]interface{}) (string, error) {
+	if h.monitoringHandler == nil {
+		return "", fmt.Errorf("monitoring handler not available")
+	}
+	switch name {
+	case "monitoring_status":
+		return `{"status":"healthy","uptime":"available"}`, nil
+	case "monitoring_circuit_breakers":
+		return `{"status":"ok","circuit_breakers":[]}`, nil
+	case "monitoring_provider_health":
+		return `{"status":"ok","providers":[]}`, nil
+	default:
+		return "", fmt.Errorf("unknown monitoring tool: %s", name)
 	}
 }

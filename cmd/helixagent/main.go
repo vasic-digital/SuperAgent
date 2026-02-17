@@ -29,7 +29,6 @@ import (
 	"dev.helix.agent/internal/bigdata"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/llm"
-	appversion "dev.helix.agent/internal/version"
 	"dev.helix.agent/internal/llm/providers/ai21"
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/chutes"
@@ -61,6 +60,7 @@ import (
 	"dev.helix.agent/internal/services"
 	"dev.helix.agent/internal/utils"
 	"dev.helix.agent/internal/verifier"
+	appversion "dev.helix.agent/internal/version"
 	"llm-verifier/pkg/cliagents"
 )
 
@@ -2338,7 +2338,7 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 		},
 		"helixagent-formatters": {
 			Type: "remote",
-			URL:  baseURL + "/v1/format",
+			URL:  baseURL + "/v1/formatters",
 		},
 		"helixagent-monitoring": {
 			Type: "remote",
@@ -2354,7 +2354,7 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 		},
 		"deepwiki": {
 			Type: "remote",
-			URL:  "https://mcp.deepwiki.com/sse",
+			URL:  "https://mcp.deepwiki.com/mcp",
 		},
 		"cloudflare-docs": {
 			Type: "remote",
@@ -2371,7 +2371,7 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 		},
 		"fetch": {
 			Type:    "local",
-			Command: []string{"uvx", "mcp-server-fetch"},
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"},
 		},
 		"memory": {
 			Type:    "local",
@@ -2379,11 +2379,11 @@ func buildOpenCodeMCPServersFiltered(baseURL string, filterWorking bool) map[str
 		},
 		"time": {
 			Type:    "local",
-			Command: []string{"uvx", "mcp-server-time"},
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"},
 		},
 		"git": {
 			Type:    "local",
-			Command: []string{"uvx", "mcp-server-git"},
+			Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"},
 		},
 		"sqlite": {
 			Type:    "local",
@@ -2759,10 +2759,10 @@ func buildOpenCodeMCPServersOld(baseURL string) map[string]OpenCodeMCPServerDefO
 	return map[string]OpenCodeMCPServerDefOld{
 		// Anthropic Official MCPs
 		"filesystem":          {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", "/home"}},
-		"fetch":               {Type: "local", Command: []string{"uvx", "mcp-server-fetch"}},
+		"fetch":               {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"}},
 		"memory":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}},
-		"time":                {Type: "local", Command: []string{"uvx", "mcp-server-time"}},
-		"git":                 {Type: "local", Command: []string{"uvx", "mcp-server-git"}},
+		"time":                {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}},
+		"git":                 {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}},
 		"sqlite":              {Type: "local", Command: []string{"npx", "-y", "mcp-server-sqlite-npx", "/tmp/helixagent.db"}},
 		"postgres":            {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/helixagent"}},
 		"puppeteer":           {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}},
@@ -3232,14 +3232,14 @@ func validateOpenCodeConfig(data []byte) *OpenCodeValidationResult {
 
 // CrushConfig represents the Crush CLI configuration structure
 type CrushConfig struct {
-	Schema     string                           `json:"$schema,omitempty"`
-	Providers  map[string]CrushProvider         `json:"providers,omitempty"`
-	Lsp        map[string]CrushLspConfig        `json:"lsp,omitempty"`
-	Mcp        map[string]CrushMcpConfig        `json:"mcp,omitempty"`
-	Plugins    []string                         `json:"plugins,omitempty"`
-	Extensions *cliagents.HelixAgentExtensions  `json:"extensions,omitempty"`
-	Formatters cliagents.FormattersConfig       `json:"formatters,omitempty"`
-	Options    *CrushOptions                    `json:"options,omitempty"`
+	Schema     string                          `json:"$schema,omitempty"`
+	Providers  map[string]CrushProvider        `json:"providers,omitempty"`
+	Lsp        map[string]CrushLspConfig       `json:"lsp,omitempty"`
+	Mcp        map[string]CrushMcpConfig       `json:"mcp,omitempty"`
+	Plugins    []string                        `json:"plugins,omitempty"`
+	Extensions *cliagents.HelixAgentExtensions `json:"extensions,omitempty"`
+	Formatters cliagents.FormattersConfig      `json:"formatters,omitempty"`
+	Options    *CrushOptions                   `json:"options,omitempty"`
 }
 
 // CrushMcpConfig represents MCP server configuration for Crush
@@ -3531,10 +3531,10 @@ func buildCrushMCPServers(baseURL string) map[string]CrushMcpConfig {
 
 		// Anthropic Official MCPs - LOCAL (started on demand via npx)
 		"filesystem":          {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-filesystem", homeDir}, Enabled: true},
-		"fetch":               {Type: "local", Command: []string{"uvx", "mcp-server-fetch"}, Enabled: true},
+		"fetch":               {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-fetch"}, Enabled: true},
 		"memory":              {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-memory"}, Enabled: true},
-		"time":                {Type: "local", Command: []string{"uvx", "mcp-server-time"}, Enabled: true},
-		"git":                 {Type: "local", Command: []string{"uvx", "mcp-server-git"}, Enabled: true},
+		"time":                {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-time"}, Enabled: true},
+		"git":                 {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-git"}, Enabled: true},
 		"sqlite":              {Type: "local", Command: []string{"npx", "-y", "mcp-server-sqlite-npx", "/tmp/helixagent.db"}, Enabled: true},
 		"postgres":            {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-postgres"}, Env: map[string]string{"POSTGRES_URL": "postgresql://helixagent:helixagent123@localhost:5432/helixagent_db"}, Enabled: true},
 		"puppeteer":           {Type: "local", Command: []string{"npx", "-y", "@modelcontextprotocol/server-puppeteer"}, Enabled: true},
