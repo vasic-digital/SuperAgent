@@ -11,6 +11,7 @@ import (
 	llm "dev.helix.agent/internal/llm"
 	models "dev.helix.agent/internal/models"
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/version"
 	pb "dev.helix.agent/pkg/api"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
@@ -542,7 +543,7 @@ func (s *LLMFacadeServer) HealthCheck(ctx context.Context, req *pb.HealthRequest
 		Status:     overallStatus,
 		Components: components,
 		Timestamp:  timestamppb.Now(),
-		Version:    "1.0.0",
+		Version:    version.Version,
 	}, nil
 }
 
@@ -985,7 +986,7 @@ func (s *LLMProviderServer) HealthCheck(ctx context.Context, req *pb.HealthReque
 		Status:     overallStatus,
 		Components: components,
 		Timestamp:  timestamppb.Now(),
-		Version:    "1.0.0",
+		Version:    version.Version,
 	}, nil
 }
 

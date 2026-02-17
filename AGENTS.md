@@ -528,9 +528,9 @@ Note: Some of these rules are TypeScriptâ€‘specific; for Go code, follow the Goâ
 <!-- BEGIN_CONSTITUTION -->
 # Project Constitution
 
-**Version:** 1.0.0 | **Updated:** 2026-02-10 00:26
+**Version:** 1.1.0 | **Updated:** 2026-02-17 12:00
 
-Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 1, Configuration: 1, Testing: 3, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1
+Constitution with 22 rules (22 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 2, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1
 
 ## Mandatory Principles
 
@@ -551,6 +551,9 @@ Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety:
 
 **Stress and Integration Tests** (Priority: 2)
 - Introduce comprehensive stress and integration tests validating that the system is responsive and not possible to overload or break.
+
+**Infrastructure Before Tests** (Priority: 1)
+- ALL infrastructure containers (PostgreSQL, Redis, Mock LLM) MUST be running before executing tests or challenges. Use `make test-infra-start` or `make test-infra-direct-start` (Podman fallback with `--userns=host`). Tests and challenges that require infrastructure WILL FAIL without running containers.
 
 ### Documentation
 
@@ -603,6 +606,9 @@ Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety:
 
 **Full Containerization** (Priority: 2)
 - All services MUST run in containers (Docker/Podman/K8s). Support local default execution AND remote configuration. Services must auto-boot before HelixAgent is ready.
+
+**Container-Based Builds** (Priority: 1)
+- ALL release builds MUST be performed inside Docker/Podman containers for reproducibility. Use `make release` / `make release-all`. Version info injected via `-ldflags -X`. No release binaries should be built directly on the host unless container build is unavailable.
 
 ### Configuration
 

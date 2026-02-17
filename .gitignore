@@ -1,8 +1,10 @@
 .env
 GIT_PUSH_SUMMARY.txt
 
-# Built binary
-helixagent
+# Built binaries
+/helixagent
+/api
+/grpc-server
 
 # Go basics
 bin/
@@ -54,6 +56,15 @@ plugins/mcp-server/dist/
 # Runtime logs
 logs/
 *.log
+
+# Release build artifacts (binaries only, .version-data is tracked)
+releases/helixagent/
+releases/api/
+releases/grpc-server/
+releases/cognee-mock/
+releases/sanity-check/
+releases/mcp-bridge/
+releases/generate-constitution/
 
 # Security scan reports
 reports/security/

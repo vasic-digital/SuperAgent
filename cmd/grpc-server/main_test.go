@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"dev.helix.agent/internal/version"
 	pb "dev.helix.agent/pkg/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -789,7 +790,7 @@ func TestLLMFacadeServer_HealthCheck(t *testing.T) {
 		require.NotNil(t, resp)
 		assert.Equal(t, "degraded", resp.Status) // No providers means degraded
 		assert.NotNil(t, resp.Timestamp)
-		assert.Equal(t, "1.0.0", resp.Version)
+		assert.Equal(t, version.Version, resp.Version)
 	})
 
 	t.Run("detailed health check", func(t *testing.T) {

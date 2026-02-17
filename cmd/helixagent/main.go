@@ -28,6 +28,7 @@ import (
 	"dev.helix.agent/internal/bigdata"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/llm"
+	appversion "dev.helix.agent/internal/version"
 	"dev.helix.agent/internal/llm/providers/ai21"
 	"dev.helix.agent/internal/llm/providers/cerebras"
 	"dev.helix.agent/internal/llm/providers/chutes"
@@ -4212,5 +4213,6 @@ For more information, visit: https://dev.helix.agent
 }
 
 func showVersion() {
-	fmt.Printf("HelixAgent v%s - Models.dev Enhanced Edition\n", "1.0.0")
+	info := appversion.Get()
+	fmt.Println(info.String())
 }

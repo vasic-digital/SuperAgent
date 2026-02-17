@@ -1,9 +1,9 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "project_name": "HelixAgent",
-  "summary": "Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 1, Configuration: 1, Testing: 3, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1",
+  "summary": "Constitution with 22 rules (22 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 2, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1",
   "created_at": "2026-02-10T00:18:38.71286699+03:00",
-  "updated_at": "2026-02-10T00:26:08.171179893+03:00",
+  "updated_at": "2026-02-17T12:00:00.000000000+03:00",
   "rules": [
     {
       "id": "CONST-001",
@@ -204,6 +204,26 @@
       "priority": 1,
       "added_at": "2026-02-10T00:18:38.712867251+03:00",
       "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-021",
+      "category": "Containerization",
+      "title": "Container-Based Builds",
+      "description": "ALL release builds MUST be performed inside Docker/Podman containers for reproducibility. Use `make release` / `make release-all`. Version info injected via `-ldflags -X`. No release binaries should be built directly on the host unless container build is unavailable.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-17T12:00:00.000000000+03:00",
+      "updated_at": "2026-02-17T12:00:00.000000000+03:00"
+    },
+    {
+      "id": "CONST-022",
+      "category": "Testing",
+      "title": "Infrastructure Before Tests",
+      "description": "ALL infrastructure containers (PostgreSQL, Redis, Mock LLM) MUST be running before executing tests or challenges. Use `make test-infra-start` or `make test-infra-direct-start` (Podman fallback with `--userns=host`). Tests and challenges that require infrastructure WILL FAIL without running containers.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-17T12:00:00.000000000+03:00",
+      "updated_at": "2026-02-17T12:00:00.000000000+03:00"
     }
   ]
 }

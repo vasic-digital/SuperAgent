@@ -29,6 +29,86 @@ build-all:
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -mod=mod -ldflags="-w -s" -o bin/helixagent-windows-amd64.exe ./cmd/helixagent
 
 # =============================================================================
+# RELEASE BUILD TARGETS
+# =============================================================================
+
+release:
+	@echo "📦 Building release for helixagent (all platforms)..."
+	@./scripts/build/build-release.sh --app helixagent --all-platforms
+
+release-all:
+	@echo "📦 Building releases for ALL apps (all platforms)..."
+	@./scripts/build/build-all-releases.sh
+
+release-helixagent:
+	@echo "📦 Building release: helixagent..."
+	@./scripts/build/build-release.sh --app helixagent --all-platforms
+
+release-api:
+	@echo "📦 Building release: api..."
+	@./scripts/build/build-release.sh --app api --all-platforms
+
+release-grpc-server:
+	@echo "📦 Building release: grpc-server..."
+	@./scripts/build/build-release.sh --app grpc-server --all-platforms
+
+release-cognee-mock:
+	@echo "📦 Building release: cognee-mock..."
+	@./scripts/build/build-release.sh --app cognee-mock --all-platforms
+
+release-sanity-check:
+	@echo "📦 Building release: sanity-check..."
+	@./scripts/build/build-release.sh --app sanity-check --all-platforms
+
+release-mcp-bridge:
+	@echo "📦 Building release: mcp-bridge..."
+	@./scripts/build/build-release.sh --app mcp-bridge --all-platforms
+
+release-generate-constitution:
+	@echo "📦 Building release: generate-constitution..."
+	@./scripts/build/build-release.sh --app generate-constitution --all-platforms
+
+release-force:
+	@echo "📦 Force rebuilding ALL apps (all platforms)..."
+	@./scripts/build/build-all-releases.sh --force
+
+release-clean:
+	@echo "🧹 Cleaning release artifacts (keeping version data)..."
+	@for app in helixagent api grpc-server cognee-mock sanity-check mcp-bridge generate-constitution; do \
+		rm -rf "releases/$$app/"; \
+	done
+	@echo "✅ Release artifacts cleaned"
+
+release-clean-all:
+	@echo "🧹 Cleaning ALL release data (artifacts + version tracking)..."
+	@for app in helixagent api grpc-server cognee-mock sanity-check mcp-bridge generate-constitution; do \
+		rm -rf "releases/$$app/"; \
+	done
+	@rm -f releases/.version-data/*.version-code releases/.version-data/*.last-hash
+	@echo "✅ All release data cleaned"
+
+release-info:
+	@echo "📊 Release Build Status"
+	@echo ""
+	@for app in helixagent api grpc-server cognee-mock sanity-check mcp-bridge generate-constitution; do \
+		vc="0"; hash="none"; \
+		if [ -f "releases/.version-data/$$app.version-code" ]; then \
+			vc=$$(cat "releases/.version-data/$$app.version-code"); \
+		fi; \
+		if [ -f "releases/.version-data/$$app.last-hash" ]; then \
+			hash=$$(cat "releases/.version-data/$$app.last-hash" | head -c 16); \
+		fi; \
+		printf "  %-24s version-code: %-4s hash: %s\n" "$$app" "$$vc" "$$hash"; \
+	done
+
+release-builder-image:
+	@echo "🐳 Building release builder container image..."
+	@RUNTIME=$$(command -v docker 2>/dev/null || command -v podman 2>/dev/null); \
+	if [ -z "$$RUNTIME" ]; then echo "❌ No container runtime found"; exit 1; fi; \
+	$$RUNTIME build -f docker/build/Dockerfile.builder -t helixagent-builder:latest .
+	@echo "✅ Builder image ready"
+
+# =============================================================================
 # RUN TARGETS
 # =============================================================================
 
@@ -1074,6 +1154,16 @@ help:
 	@echo "  docs-user-manuals  Build user manuals"
 	@echo "  docs-video-courses Build video course materials"
 	@echo ""
+	@echo "📦 Release Build:"
+	@echo "  release             Build helixagent for all platforms"
+	@echo "  release-all         Build ALL apps for all platforms"
+	@echo "  release-<app>       Build a specific app (helixagent, api, grpc-server, ...)"
+	@echo "  release-force       Force rebuild ALL apps (ignore change detection)"
+	@echo "  release-clean       Clean release artifacts (keep version data)"
+	@echo "  release-clean-all   Clean all release data"
+	@echo "  release-info        Show version codes and hashes"
+	@echo "  release-builder-image  Build the release builder container image"
+	@echo ""
 	@echo "⚙️  Setup:"
 	@echo "  setup-dev          Setup development environment"
 	@echo "  setup-prod         Setup production environment"
@@ -1383,4 +1473,4 @@ verifier-benchmark:
 # =============================================================================
 # PHONY TARGETS
 # =============================================================================
-.PHONY: all build build-debug build-all run run-dev test test-coverage test-unit test-integration test-bench test-race test-all test-with-infra test-infra-start test-infra-stop test-infra-clean test-infra-logs test-infra-status fmt vet lint security-scan security-scan-all security-scan-snyk security-scan-sonarqube security-scan-trivy security-scan-gosec security-scan-go security-scan-stop docker-build docker-build-prod docker-run docker-stop docker-logs docker-clean docker-clean-all docker-test docker-dev docker-prod docker-full docker-monitoring docker-ai install-deps install uninstall clean clean-all check-deps update-deps generate docs docs-api setup-dev setup-prod help test-pentest test-security test-stress test-chaos test-e2e verifier-init verifier-update verifier-build verifier-test verifier-test-unit verifier-test-integration verifier-test-e2e verifier-test-security verifier-test-stress verifier-test-chaos verifier-test-all verifier-test-coverage verifier-test-coverage-100 verifier-run verifier-health verifier-verify verifier-score verifier-providers verifier-metrics verifier-db-migrate verifier-db-sync verifier-clean verifier-docker-build verifier-docker-run verifier-docker-stop verifier-sdk-go verifier-sdk-python verifier-sdk-js verifier-sdk-all verifier-docs verifier-benchmark infra-start infra-stop infra-restart infra-status infra-core infra-mcp infra-lsp infra-rag test-with-full-auto challenges-with-infra challenge-infra challenge-cli-agents
+.PHONY: all build build-debug build-all run run-dev test test-coverage test-unit test-integration test-bench test-race test-all test-with-infra test-infra-start test-infra-stop test-infra-clean test-infra-logs test-infra-status fmt vet lint security-scan security-scan-all security-scan-snyk security-scan-sonarqube security-scan-trivy security-scan-gosec security-scan-go security-scan-stop docker-build docker-build-prod docker-run docker-stop docker-logs docker-clean docker-clean-all docker-test docker-dev docker-prod docker-full docker-monitoring docker-ai install-deps install uninstall clean clean-all check-deps update-deps generate docs docs-api setup-dev setup-prod help test-pentest test-security test-stress test-chaos test-e2e verifier-init verifier-update verifier-build verifier-test verifier-test-unit verifier-test-integration verifier-test-e2e verifier-test-security verifier-test-stress verifier-test-chaos verifier-test-all verifier-test-coverage verifier-test-coverage-100 verifier-run verifier-health verifier-verify verifier-score verifier-providers verifier-metrics verifier-db-migrate verifier-db-sync verifier-clean verifier-docker-build verifier-docker-run verifier-docker-stop verifier-sdk-go verifier-sdk-python verifier-sdk-js verifier-sdk-all verifier-docs verifier-benchmark infra-start infra-stop infra-restart infra-status infra-core infra-mcp infra-lsp infra-rag test-with-full-auto challenges-with-infra challenge-infra challenge-cli-agents release release-all release-helixagent release-api release-grpc-server release-cognee-mock release-sanity-check release-mcp-bridge release-generate-constitution release-force release-clean release-clean-all release-info release-builder-image

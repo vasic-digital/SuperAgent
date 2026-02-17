@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"dev.helix.agent/internal/version"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -730,7 +731,7 @@ func TestHandleHealth(t *testing.T) {
 	var response map[string]interface{}
 	_ = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.Equal(t, "healthy", response["status"])
-	assert.Equal(t, "1.0.0", response["version"])
+	assert.Equal(t, version.Version, response["version"])
 }
 
 func TestHandleStatus(t *testing.T) {

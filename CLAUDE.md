@@ -24,6 +24,8 @@ Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier
 8. **Validation Before Release** — Pass `make ci-validate-all`, `./challenges/scripts/run_all_challenges.sh`, `make test-with-infra`, and benchmark/stress tests.
 9. **No Mocks in Production** — Mocks, stubs, fakes, placeholders, TODO implementations STRICTLY FORBIDDEN in production code. All production code must be fully functional with real integrations.
 10. **Third-Party Submodules** — `cli_agents/` and `MCP/` are read-only third-party deps; NEVER commit/push changes. Only project-owned submodules (LLMsVerifier, formatters) may be updated. Use `git submodule update --remote`.
+11. **Container-Based Builds** — ALL release builds MUST be performed inside Docker/Podman containers for reproducibility. Use `make release` / `make release-all`. Version info injected via `-ldflags -X`.
+12. **Infrastructure Before Tests** — ALL infrastructure containers (PostgreSQL, Redis, Mock LLM) MUST be running before executing tests or challenges. Use `make test-infra-start` or `make test-infra-direct-start` (Podman fallback with `--userns=host`). Tests and challenges that require infrastructure WILL FAIL without running containers.
 
 ## Git Rules
 
@@ -55,7 +57,23 @@ make docker-build         # Build Docker image
 docker-compose up -d      # Start full stack
 ```
 
+### Release Builds
+
+All release builds MUST be performed inside Docker/Podman containers for reproducibility.
+
+```bash
+make release              # Build helixagent for all platforms
+make release-all          # Build ALL 7 apps for all platforms
+make release-<app>        # Build a specific app (helixagent, api, grpc-server, ...)
+make release-force        # Force rebuild all (ignore change detection)
+make release-info         # Show version codes and source hashes
+make release-clean        # Clean release artifacts (keep version data)
+make release-builder-image # Build the builder container image
+```
+
 ## Testing
+
+**IMPORTANT:** Infrastructure containers (PostgreSQL, Redis, Mock LLM) MUST be running before executing tests or challenges. Start them with `make test-infra-start` (or `make test-infra-direct-start` for Podman rootless fallback).
 
 ```bash
 make test                 # All tests (auto-detects infra)
@@ -177,6 +195,16 @@ Each module is an independent Go module with its own go.mod, tests, CLAUDE.md, A
 - `PluginRegistry`/`PluginLoader` — Plugin system | `TaskExecutor`/`TaskQueue` — Background tasks
 - `Formatter` — Code formatter interface | Vector stores: `Connect`, `Upsert`, `Search`, `Delete`, `Get`
 
+### Release Build System
+- **Version Package**: `internal/version/` — single source of truth, set via `-ldflags -X` at build time
+- **Container Builds**: All release builds run inside `helixagent-builder` container (golang:1.24-alpine)
+- **Change Detection**: SHA256 hash of source files; skips build when unchanged. Version codes auto-increment per app.
+- **7 Apps**: helixagent, api, grpc-server, cognee-mock, sanity-check, mcp-bridge, generate-constitution
+- **5 Platforms**: linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64
+- **Output**: `releases/<app>/<os>-<arch>/<version_code>/<binary>` + `build-info.json`, `latest` symlink
+- Key files: `VERSION`, `internal/version/version.go`, `scripts/build/`, `docker/build/Dockerfile.builder`
+- Docs: `docs/development/RELEASE_BUILD_GUIDE.md`
+
 ### Architectural Patterns
 - **Provider Registry**: Unified multi-provider interface with credential management
 - **Ensemble Strategy**: Confidence-weighted voting, majority vote, parallel execution
@@ -247,8 +275,11 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 
 ## Challenges
 
+**IMPORTANT:** Infrastructure containers MUST be running before executing challenges. Start with `make test-infra-start` or `make test-infra-direct-start`.
+
 ```bash
 ./challenges/scripts/run_all_challenges.sh                       # All challenges
+./challenges/scripts/release_build_challenge.sh                  # 25 tests
 ./challenges/scripts/unified_verification_challenge.sh           # 15 tests
 ./challenges/scripts/llms_reevaluation_challenge.sh              # 26 tests
 ./challenges/scripts/debate_team_dynamic_selection_challenge.sh  # 12 tests
@@ -297,9 +328,9 @@ Gin v1.11.0, PostgreSQL 15 (pgx/v5), Redis 7, testify v1.11.1, Prometheus/Grafan
 <!-- BEGIN_CONSTITUTION -->
 # Project Constitution
 
-**Version:** 1.0.0 | **Updated:** 2026-02-10 00:26
+**Version:** 1.1.0 | **Updated:** 2026-02-17 12:00
 
-Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 1, Configuration: 1, Testing: 3, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1
+Constitution with 22 rules (22 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 2, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1
 
 ## Mandatory Principles
 
@@ -320,6 +351,9 @@ Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety:
 
 **Stress and Integration Tests** (Priority: 2)
 - Introduce comprehensive stress and integration tests validating that the system is responsive and not possible to overload or break.
+
+**Infrastructure Before Tests** (Priority: 1)
+- ALL infrastructure containers (PostgreSQL, Redis, Mock LLM) MUST be running before executing tests or challenges. Use `make test-infra-start` or `make test-infra-direct-start` (Podman fallback with `--userns=host`). Tests and challenges that require infrastructure WILL FAIL without running containers.
 
 ### Documentation
 
@@ -372,6 +406,9 @@ Constitution with 20 rules (20 mandatory) across categories: Quality: 2, Safety:
 
 **Full Containerization** (Priority: 2)
 - All services MUST run in containers (Docker/Podman/K8s). Support local default execution AND remote configuration. Services must auto-boot before HelixAgent is ready.
+
+**Container-Based Builds** (Priority: 1)
+- ALL release builds MUST be performed inside Docker/Podman containers for reproducibility. Use `make release` / `make release-all`. Version info injected via `-ldflags -X`. No release binaries should be built directly on the host unless container build is unavailable.
 
 ### Configuration
 

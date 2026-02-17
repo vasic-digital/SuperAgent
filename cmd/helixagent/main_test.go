@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	appversion "dev.helix.agent/internal/version"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -853,7 +854,7 @@ func TestRun_ShowVersion(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Contains(t, output, "HelixAgent")
-	assert.Contains(t, output, "v1.0.0")
+	assert.Contains(t, output, "v"+appversion.Version)
 }
 
 func TestRun_HelpTakesPrecedence(t *testing.T) {
@@ -1223,7 +1224,7 @@ func TestShowVersion_Output(t *testing.T) {
 
 	// Verify version info
 	assert.Contains(t, output, "HelixAgent")
-	assert.Contains(t, output, "v1.0.0")
+	assert.Contains(t, output, "v"+appversion.Version)
 }
 
 // TestVerifyServicesHealth_SingleService tests individual services

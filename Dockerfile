@@ -1,6 +1,12 @@
 # Multi-stage build for optimized production image
 FROM docker.io/golang:1.24-alpine AS builder
 
+# Build arguments for version injection
+ARG BUILD_VERSION=dev
+ARG BUILD_VERSION_CODE=0
+ARG BUILD_COMMIT=unknown
+ARG BUILD_DATE=unknown
+
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata curl make gcc musl-dev
 
@@ -15,9 +21,14 @@ RUN go mod download
 
 # Note: Tests are run in CI before Docker build, skip here for faster builds
 
-# Build the application with optimizations
+# Build the application with optimizations and version info
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags='-w -s -extldflags "-static"' \
+    -ldflags="-w -s -extldflags \"-static\" \
+    -X dev.helix.agent/internal/version.Version=${BUILD_VERSION} \
+    -X dev.helix.agent/internal/version.VersionCode=${BUILD_VERSION_CODE} \
+    -X dev.helix.agent/internal/version.GitCommit=${BUILD_COMMIT} \
+    -X dev.helix.agent/internal/version.BuildDate=${BUILD_DATE} \
+    -X dev.helix.agent/internal/version.Builder=docker" \
     -a -installsuffix cgo \
     -o helixagent \
     ./cmd/helixagent
@@ -53,10 +64,13 @@ RUN mkdir -p /app/plugins /app/logs /app/config /app/data && \
 # Switch to non-root user
 USER helixagent
 
+# Re-declare ARG after FROM to use in labels
+ARG BUILD_VERSION=dev
+
 # Add labels for metadata
 LABEL org.opencontainers.image.title="HelixAgent" \
       org.opencontainers.image.description="AI-powered ensemble LLM service" \
-      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.version="${BUILD_VERSION}" \
       org.opencontainers.image.vendor="HelixAgent" \
       org.opencontainers.image.licenses="MIT"
 

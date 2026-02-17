@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"dev.helix.agent/internal/services"
+	"dev.helix.agent/internal/version"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -336,7 +337,7 @@ func (s *APIServer) handleACPStatus(c *gin.Context) {
 		"agent_id":     agentID,
 		"status":       "active",
 		"last_seen":    time.Now().Unix(),
-		"version":      "1.0.0",
+		"version":      version.Version,
 		"capabilities": []string{"execute_action", "broadcast", "status"},
 	})
 }
@@ -526,7 +527,7 @@ func (s *APIServer) handleHealth(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"status":    "healthy",
 		"timestamp": time.Now().Unix(),
-		"version":   "1.0.0",
+		"version":   version.Version,
 	})
 }
 
