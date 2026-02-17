@@ -299,6 +299,7 @@ Registry: `internal/agents/registry.go`. Generate configs: `./bin/helixagent --g
 ./challenges/scripts/verification_failure_reasons_challenge.sh   # 15 tests
 ./challenges/scripts/subscription_detection_challenge.sh        # 20 tests
 ./challenges/scripts/provider_comprehensive_challenge.sh        # 40 tests
+./challenges/scripts/provider_url_consistency_challenge.sh      # 20 tests
 ```
 
 ## LLMsVerifier
