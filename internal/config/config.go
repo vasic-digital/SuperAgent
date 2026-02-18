@@ -151,11 +151,12 @@ type CogneeConfig struct {
 }
 
 type LLMConfig struct {
-	DefaultTimeout time.Duration
-	MaxRetries     int
-	Providers      map[string]ProviderConfig
-	Ensemble       EnsembleConfig
-	Streaming      StreamingConfig
+	DefaultTimeout       time.Duration
+	MaxRetries           int
+	Providers            map[string]ProviderConfig
+	Ensemble             EnsembleConfig
+	Streaming            StreamingConfig
+	DisableAutoDiscovery bool // Disable auto-discovery of providers from env vars (for testing)
 }
 
 type ProviderConfig struct {

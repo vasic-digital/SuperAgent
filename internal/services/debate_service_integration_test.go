@@ -14,7 +14,7 @@ func TestDebateServiceIntegration_Initialization(t *testing.T) {
 	logger.SetLevel(logrus.ErrorLevel) // Quiet logs during tests
 
 	t.Run("InitializesAllFeatures", func(t *testing.T) {
-		registry := NewProviderRegistry(nil, nil)
+		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 		service := NewDebateServiceWithDeps(logger, registry, nil)
 
 		assert.NotNil(t, service.testGenerator, "Test generator should be initialized")
@@ -30,7 +30,7 @@ func TestDebateServiceIntegration_Initialization(t *testing.T) {
 func TestDebateServiceIntegration_CodeDetection(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	service := NewDebateServiceWithDeps(logger, registry, nil)
 
 	tests := []struct {
@@ -59,7 +59,7 @@ func TestDebateServiceIntegration_CodeDetection(t *testing.T) {
 func TestDebateServiceIntegration_LanguageDetection(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	service := NewDebateServiceWithDeps(logger, registry, nil)
 
 	tests := []struct {
@@ -86,7 +86,7 @@ func TestDebateServiceIntegration_LanguageDetection(t *testing.T) {
 func TestDebateServiceIntegration_RoleSelection(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	service := NewDebateServiceWithDeps(logger, registry, nil)
 
 	tests := []struct {
@@ -117,7 +117,7 @@ func TestDebateServiceIntegration_RoleSelection(t *testing.T) {
 func TestDebateServiceIntegration_Components(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	service := NewDebateServiceWithDeps(logger, registry, nil)
 
 	t.Run("TestGenerator", func(t *testing.T) {

@@ -39,6 +39,7 @@ type RouterContext struct {
 	DebateTeamConfig        *services.DebateTeamConfig    // Exposed for re-initialization with StartupVerifier
 	unifiedHandler          *handlers.UnifiedHandler      // For updating debate team display
 	debateService           *services.DebateService       // For updating team config
+	CogneeService           *services.CogneeService       // Exposed for container adapter injection
 }
 
 // Shutdown stops all background services started by the router
@@ -260,6 +261,7 @@ func SetupRouterWithContext(cfg *config.Config) *RouterContext {
 
 	// Initialize Cognee service with all features enabled
 	cogneeService := services.NewCogneeService(cfg, logger)
+	rc.CogneeService = cogneeService
 
 	// Enhance all LLM providers with Cognee capabilities
 	// This wraps every provider with memory, graph reasoning, and context enhancement

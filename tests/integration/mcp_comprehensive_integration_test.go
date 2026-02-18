@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"strings"
 	"sync"
 	"testing"
@@ -494,18 +493,14 @@ func TestMCPContainerStatus(t *testing.T) {
 		t.Skip("Skipping MCP container status test in short mode")
 	}
 
-	// Check if podman or docker is available
-	var cmd *exec.Cmd
-	if _, err := exec.LookPath("podman"); err == nil {
-		cmd = exec.Command("podman", "ps", "--filter", "name=helixagent-mcp", "--format", "{{.Names}}\t{{.Status}}")
-	} else if _, err := exec.LookPath("docker"); err == nil {
-		cmd = exec.Command("docker", "ps", "--filter", "name=helixagent-mcp", "--format", "{{.Names}}\t{{.Status}}")
-	} else {
+	// Use centralized container runtime detection.
+	rt := containerRuntime()
+	if rt == "" {
 		t.Skip("Neither podman nor docker found")
 		return
 	}
 
-	output, err := cmd.Output()
+	output, err := containerExec("ps", "--filter", "name=helixagent-mcp", "--format", "{{.Names}}\t{{.Status}}")
 	if err != nil {
 		t.Logf("Error getting container status: %v", err)
 		return

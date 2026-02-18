@@ -547,7 +547,7 @@ func TestUnifiedHandler_ProcessWithEnsembleStream_NoRegistry(t *testing.T) {
 func TestUnifiedHandler_Models_WithProviderRegistry(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := &UnifiedHandler{
 		providerRegistry: registry,
 	}
@@ -780,7 +780,7 @@ func TestUnifiedHandler_SendOpenAIError_VariousErrors(t *testing.T) {
 func TestUnifiedHandler_ChatCompletions_WithProviderRegistry(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := &UnifiedHandler{
 		providerRegistry: registry,
 	}
@@ -811,7 +811,7 @@ func TestUnifiedHandler_ChatCompletions_WithProviderRegistry(t *testing.T) {
 func TestUnifiedHandler_ChatCompletionsStream_WithProviderRegistry(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := &UnifiedHandler{
 		providerRegistry: registry,
 	}
@@ -1959,7 +1959,7 @@ func timeoutContext(timeout time.Duration) (chan struct{}, func()) {
 // introduction is generated with content (not empty sections)
 func TestUnifiedHandler_DebateDialogueIntroduction_HasContent(t *testing.T) {
 	// Create handler with initialized debate team
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -1985,7 +1985,7 @@ func TestUnifiedHandler_DebateDialogueIntroduction_HasContent(t *testing.T) {
 // TestUnifiedHandler_DebateTeamInitialized tests that the debate team is properly
 // initialized with members
 func TestUnifiedHandler_DebateTeamInitialized(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -2002,7 +2002,7 @@ func TestUnifiedHandler_DebateTeamInitialized(t *testing.T) {
 
 // TestUnifiedHandler_DebateDialogueResponse_HasContent tests individual position responses
 func TestUnifiedHandler_DebateDialogueResponse_HasContent(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -2031,7 +2031,7 @@ func TestUnifiedHandler_DebateDialogueResponse_HasContent(t *testing.T) {
 
 // TestUnifiedHandler_DebateDialogueConclusion_HasContent tests conclusion section
 func TestUnifiedHandler_DebateDialogueConclusion_HasContent(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -2055,7 +2055,7 @@ func TestUnifiedHandler_DebateDialogueConclusion_HasContent(t *testing.T) {
 
 // TestUnifiedHandler_DialogueFormatterCharacters tests that characters are registered
 func TestUnifiedHandler_DialogueFormatterCharacters(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -2083,7 +2083,7 @@ func TestUnifiedHandler_DialogueFormatterCharacters(t *testing.T) {
 
 // TestUnifiedHandler_FullDebateDialogueFlow tests the complete dialogue generation flow
 func TestUnifiedHandler_FullDebateDialogueFlow(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -2116,7 +2116,7 @@ func TestUnifiedHandler_FullDebateDialogueFlow(t *testing.T) {
 
 // TestUnifiedHandler_BuildDebateRoleSystemPrompt tests system prompt generation for debate roles
 func TestUnifiedHandler_BuildDebateRoleSystemPrompt(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -2174,7 +2174,7 @@ func TestUnifiedHandler_BuildDebateRoleSystemPrompt(t *testing.T) {
 
 // TestUnifiedHandler_GenerateRealDebateResponse_NoConfig tests fallback behavior
 func TestUnifiedHandler_GenerateRealDebateResponse_NoConfig(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -2193,7 +2193,7 @@ func TestUnifiedHandler_GenerateRealDebateResponse_NoConfig(t *testing.T) {
 
 // TestUnifiedHandler_GenerateDebateDialogueResponse_Header tests header generation
 func TestUnifiedHandler_GenerateDebateDialogueResponse_Header(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -2218,7 +2218,7 @@ func TestUnifiedHandler_GenerateDebateDialogueResponse_Header(t *testing.T) {
 
 // TestUnifiedHandler_RealDebateResponses_Integration tests the full integration of debate responses
 func TestUnifiedHandler_RealDebateResponses_Integration(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -2253,7 +2253,7 @@ func TestUnifiedHandler_RealDebateResponses_Integration(t *testing.T) {
 
 // TestUnifiedHandler_DebateDialogueFlow_WithPreviousResponses tests context building
 func TestUnifiedHandler_DebateDialogueFlow_WithPreviousResponses(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -2270,7 +2270,7 @@ func TestUnifiedHandler_DebateDialogueFlow_WithPreviousResponses(t *testing.T) {
 
 // TestUnifiedHandler_GetProviderForMember tests provider retrieval for team members
 func TestUnifiedHandler_GetProviderForMember(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	handler := NewUnifiedHandler(registry, cfg)
 
@@ -2292,7 +2292,7 @@ func TestUnifiedHandler_GetProviderForMember(t *testing.T) {
 
 // TestUnifiedHandler_FallbackChain tests the fallback chain mechanism
 func TestUnifiedHandler_FallbackChain(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	_ = NewUnifiedHandler(registry, cfg) // Verify handler creation works
 
@@ -2394,7 +2394,7 @@ func TestUnifiedHandler_OAuthProviderHandling(t *testing.T) {
 
 // TestUnifiedHandler_DebateResponseErrorHandling tests error scenarios
 func TestUnifiedHandler_DebateResponseErrorHandling(t *testing.T) {
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	cfg := &config.Config{}
 	_ = NewUnifiedHandler(registry, cfg) // Verify handler can be created
 

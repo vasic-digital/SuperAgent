@@ -73,7 +73,7 @@ func TestGetDefaultRegistryConfig(t *testing.T) {
 
 func TestNewProviderRegistry(t *testing.T) {
 	t.Run("with nil config uses defaults", func(t *testing.T) {
-		registry := NewProviderRegistry(nil, nil)
+		registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
 		require.NotNil(t, registry)
 		assert.NotNil(t, registry.providers)
@@ -458,14 +458,14 @@ func TestProviderRegistry_HealthCheck(t *testing.T) {
 }
 
 func TestProviderRegistry_GetEnsembleService(t *testing.T) {
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
 	ensemble := registry.GetEnsembleService()
 	assert.NotNil(t, ensemble)
 }
 
 func TestProviderRegistry_GetRequestService(t *testing.T) {
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
 	requestService := registry.GetRequestService()
 	assert.NotNil(t, requestService)
@@ -1537,7 +1537,8 @@ func TestProviderRegistry_ScoreAdapterIntegration(t *testing.T) {
 
 func TestProviderRegistry_UpdateProviderScore(t *testing.T) {
 	cfg := &RegistryConfig{
-		DefaultTimeout: 30 * time.Second,
+		DefaultTimeout:       30 * time.Second,
+		DisableAutoDiscovery: true,
 	}
 	registry := NewProviderRegistry(cfg, nil)
 

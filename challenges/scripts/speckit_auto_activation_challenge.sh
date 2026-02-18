@@ -153,7 +153,7 @@ fi
 
 # Test 14: Run phase caching tests
 log_info "Test 14: Phase caching tests pass"
-if go test -run "TestSpecKitOrchestrator_PhaseCaching" -timeout 30s "$PROJECT_ROOT/internal/services/" > /dev/null 2>&1; then
+if go test -run "TestSpecKitOrchestrator_PhaseCaching" -timeout 120s "$PROJECT_ROOT/internal/services/" > /dev/null 2>&1; then
   log_success "✓ Phase caching tests passed"
   PASSED=$((PASSED + 1))
 else

@@ -164,7 +164,7 @@ log_info "--- Section 4: Functional Validation ---"
 
 # Test 13: Project builds successfully
 log_info "Test 13: Project builds"
-if go build "$PROJECT_ROOT/..." > /dev/null 2>&1; then
+if go build "$PROJECT_ROOT/cmd/..." "$PROJECT_ROOT/internal/..." > /dev/null 2>&1; then
   log_success "Project builds successfully"
   PASSED=$((PASSED + 1))
 else

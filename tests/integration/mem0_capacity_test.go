@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -43,12 +42,7 @@ func TestMem0FullCapacity_InfrastructureRunning(t *testing.T) {
 
 	for _, container := range requiredContainers {
 		t.Run(container, func(t *testing.T) {
-			cmd := exec.Command("podman", "ps", "--filter", fmt.Sprintf("name=%s", container), "--format", "{{.Status}}")
-			output, err := cmd.Output()
-			if err != nil {
-				cmd = exec.Command("docker", "ps", "--filter", fmt.Sprintf("name=%s", container), "--format", "{{.Status}}")
-				output, err = cmd.Output()
-			}
+			output, err := containerExec("ps", "--filter", fmt.Sprintf("name=%s", container), "--format", "{{.Status}}")
 			require.NoError(t, err, "Failed to check container %s", container)
 
 			status := strings.TrimSpace(string(output))
@@ -196,12 +190,7 @@ func TestMem0FullCapacity_CacheConnected(t *testing.T) {
 		redisPassword = "helixagent123"
 	}
 
-	cmd := exec.Command("podman", "exec", "helixagent-redis", "redis-cli", "-a", redisPassword, "PING")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		cmd = exec.Command("docker", "exec", "helixagent-redis", "redis-cli", "-a", redisPassword, "PING")
-		output, err = cmd.CombinedOutput()
-	}
+	output, err := containerExec("exec", "helixagent-redis", "redis-cli", "-a", redisPassword, "PING")
 	require.NoError(t, err, "CRITICAL: Cannot ping Redis cache")
 	require.Contains(t, string(output), "PONG", "Redis must respond with PONG")
 	t.Logf("Redis cache connected")
@@ -531,12 +520,7 @@ func TestMem0FullCapacity_NoErrorsInLogs(t *testing.T) {
 	}
 
 	// Get recent logs from PostgreSQL container (Mem0 backend)
-	cmd := exec.Command("podman", "logs", "--tail", "100", "helixagent-postgres")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		cmd = exec.Command("docker", "logs", "--tail", "100", "helixagent-postgres")
-		output, err = cmd.CombinedOutput()
-	}
+	output, err := containerExec("logs", "--tail", "100", "helixagent-postgres")
 	require.NoError(t, err, "Cannot retrieve PostgreSQL logs")
 
 	mem0Logs := string(output)
@@ -621,12 +605,7 @@ func TestMem0FullCapacity_Summary(t *testing.T) {
 	t.Log("HelixAgent responding")
 
 	// 2. PostgreSQL responding (via container check)
-	dbCmd := exec.Command("podman", "exec", "helixagent-postgres", "pg_isready")
-	dbOutput, dbErr := dbCmd.CombinedOutput()
-	if dbErr != nil {
-		dbCmd = exec.Command("docker", "exec", "helixagent-postgres", "pg_isready")
-		dbOutput, dbErr = dbCmd.CombinedOutput()
-	}
+	dbOutput, dbErr := containerExec("exec", "helixagent-postgres", "pg_isready")
 	require.NoError(t, dbErr, "CRITICAL: PostgreSQL not responding")
 	require.Contains(t, string(dbOutput), "accepting connections", "PostgreSQL must be accepting connections")
 	t.Log("PostgreSQL database responding")
@@ -636,12 +615,7 @@ func TestMem0FullCapacity_Summary(t *testing.T) {
 	if redisPassword == "" {
 		redisPassword = "helixagent123"
 	}
-	redisCmd := exec.Command("podman", "exec", "helixagent-redis", "redis-cli", "-a", redisPassword, "PING")
-	redisOutput, redisErr := redisCmd.CombinedOutput()
-	if redisErr != nil {
-		redisCmd = exec.Command("docker", "exec", "helixagent-redis", "redis-cli", "-a", redisPassword, "PING")
-		redisOutput, redisErr = redisCmd.CombinedOutput()
-	}
+	redisOutput, redisErr := containerExec("exec", "helixagent-redis", "redis-cli", "-a", redisPassword, "PING")
 	require.NoError(t, redisErr, "CRITICAL: Redis not responding")
 	require.Contains(t, string(redisOutput), "PONG", "Redis must respond with PONG")
 	t.Log("Redis cache responding")

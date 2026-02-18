@@ -126,6 +126,7 @@ type RegistryConfig struct {
 	Providers             map[string]*ProviderConfig `json:"providers"`
 	Ensemble              *models.EnsembleConfig     `json:"ensemble"`
 	Routing               *RoutingConfig             `json:"routing"`
+	DisableAutoDiscovery  bool                       `json:"disable_auto_discovery"`
 }
 
 // HealthCheckConfig holds health check configuration
@@ -283,7 +284,11 @@ func (cbp *circuitBreakerProvider) updateMetrics() {
 }
 
 func NewProviderRegistry(cfg *RegistryConfig, memory *MemoryService) *ProviderRegistry {
-	return newProviderRegistry(cfg, memory, true) // Enable auto-discovery by default
+	enableAutoDiscovery := true
+	if cfg != nil && cfg.DisableAutoDiscovery {
+		enableAutoDiscovery = false
+	}
+	return newProviderRegistry(cfg, memory, enableAutoDiscovery)
 }
 
 // NewProviderRegistryWithoutAutoDiscovery creates a provider registry without auto-discovery
@@ -1205,6 +1210,10 @@ func LoadRegistryConfigFromAppConfig(appConfig *config.Config) *RegistryConfig {
 
 		if appConfig.LLM.MaxRetries > 0 {
 			cfg.MaxRetries = appConfig.LLM.MaxRetries
+		}
+
+		if appConfig.LLM.DisableAutoDiscovery {
+			cfg.DisableAutoDiscovery = true
 		}
 	}
 

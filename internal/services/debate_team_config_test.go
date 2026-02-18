@@ -178,7 +178,7 @@ func TestNewDebateTeamConfig(t *testing.T) {
 	})
 
 	t.Run("Creates config with provider registry", func(t *testing.T) {
-		registryConfig := &RegistryConfig{}
+		registryConfig := &RegistryConfig{DisableAutoDiscovery: true}
 		registry := NewProviderRegistry(registryConfig, nil)
 		logger := logrus.New()
 		logger.SetLevel(logrus.PanicLevel)

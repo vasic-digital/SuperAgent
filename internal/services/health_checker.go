@@ -7,13 +7,17 @@ import (
 	"net/http"
 	"time"
 
+	"dev.helix.agent/internal/adapters/containers"
 	"dev.helix.agent/internal/config"
 	"github.com/sirupsen/logrus"
 )
 
-// ServiceHealthChecker performs health checks against service endpoints using their configured check type.
+// ServiceHealthChecker performs health checks against service endpoints
+// using their configured check type. When a ContainerAdapter is set,
+// delegates checks through the Containers module.
 type ServiceHealthChecker struct {
-	Logger *logrus.Logger
+	Logger           *logrus.Logger
+	ContainerAdapter *containers.Adapter
 }
 
 // NewServiceHealthChecker creates a new ServiceHealthChecker.
@@ -74,6 +78,21 @@ func (hc *ServiceHealthChecker) checkTCP(name string, ep config.ServiceEndpoint)
 		timeout = 5 * time.Second
 	}
 
+	// Delegate to Containers module adapter when available.
+	if hc.ContainerAdapter != nil {
+		result, err := hc.ContainerAdapter.HealthCheck(
+			context.Background(),
+			name, ep.Host, ep.Port, "", "tcp", timeout,
+		)
+		if err != nil {
+			return fmt.Errorf("TCP health check for %s failed: %w", name, err)
+		}
+		if !result.Healthy {
+			return fmt.Errorf("TCP health check for %s failed: %s", name, result.Error)
+		}
+		return nil
+	}
+
 	conn, err := net.DialTimeout("tcp", addr, timeout)
 	if err != nil {
 		return fmt.Errorf("TCP connection to %s (%s) failed: %w", name, addr, err)
@@ -91,7 +110,6 @@ func (hc *ServiceHealthChecker) checkHTTP(name string, ep config.ServiceEndpoint
 	// Build the full URL
 	url := baseURL
 	if ep.HealthPath != "" {
-		// If the URL doesn't have a scheme, add http://
 		if len(url) > 0 && url[0] != 'h' {
 			url = "http://" + url
 		}
@@ -105,6 +123,22 @@ func (hc *ServiceHealthChecker) checkHTTP(name string, ep config.ServiceEndpoint
 	timeout := ep.Timeout
 	if timeout == 0 {
 		timeout = 5 * time.Second
+	}
+
+	// Delegate to Containers module adapter when available.
+	if hc.ContainerAdapter != nil {
+		result, err := hc.ContainerAdapter.HealthCheck(
+			context.Background(),
+			name, ep.Host, ep.Port, ep.HealthPath, "http",
+			timeout,
+		)
+		if err != nil {
+			return fmt.Errorf("HTTP health check for %s failed: %w", name, err)
+		}
+		if !result.Healthy {
+			return fmt.Errorf("HTTP health check for %s failed: %s", name, result.Error)
+		}
+		return nil
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

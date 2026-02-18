@@ -31,7 +31,7 @@ func TestUnifiedHandler_SetDebateTeamConfig_Extended(t *testing.T) {
 	handler := NewUnifiedHandler(nil, nil)
 
 	// Create a minimal config for testing
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	config := services.NewDebateTeamConfig(registry, nil, nil)
 
 	handler.SetDebateTeamConfig(config)

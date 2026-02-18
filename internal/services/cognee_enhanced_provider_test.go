@@ -631,7 +631,8 @@ func TestEnhanceProviderRegistry(t *testing.T) {
 
 	t.Run("enhances all providers in registry", func(t *testing.T) {
 		registryConfig := &RegistryConfig{
-			DefaultTimeout: 30 * time.Second,
+			DefaultTimeout:       30 * time.Second,
+			DisableAutoDiscovery: true,
 			MaxRetries:     3,
 		}
 		registry := NewProviderRegistry(registryConfig, nil)
@@ -655,8 +656,9 @@ func TestEnhanceProviderRegistry(t *testing.T) {
 
 	t.Run("skips already enhanced providers", func(t *testing.T) {
 		registryConfig := &RegistryConfig{
-			DefaultTimeout: 30 * time.Second,
-			MaxRetries:     3,
+			DefaultTimeout:       30 * time.Second,
+			MaxRetries:           3,
+			DisableAutoDiscovery: true,
 		}
 		registry := NewProviderRegistry(registryConfig, nil)
 		mockProvider := &CogneeMockProvider{}

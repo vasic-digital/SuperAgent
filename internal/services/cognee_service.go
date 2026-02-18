@@ -9,12 +9,12 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"dev.helix.agent/internal/adapters/containers"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/models"
 	"github.com/sirupsen/logrus"
@@ -28,6 +28,7 @@ type CogneeService struct {
 	client            *http.Client
 	logger            *logrus.Logger
 	config            *CogneeServiceConfig
+	ContainerAdapter  *containers.Adapter
 	mu                sync.RWMutex
 	isReady           bool
 	stats             *CogneeStats
@@ -353,62 +354,17 @@ func (s *CogneeService) EnsureRunning(ctx context.Context) error {
 	}
 	s.logger.WithField("workDir", workDir).Debug("Found project root for container startup")
 
-	// Try container runtime in order: docker, podman
-	var cmd *exec.Cmd
-	var output []byte
-	var err error
+	composeFile := filepath.Join(workDir, "docker-compose.yml")
 
-	// Try docker compose first
-	if dockerPath, lookErr := exec.LookPath("docker"); lookErr == nil {
-		cmd = exec.CommandContext(ctx, dockerPath, "compose", "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
-		cmd.Dir = workDir
-		output, err = cmd.CombinedOutput()
-		if err == nil {
-			s.logger.Info("Started Cognee using docker compose")
-			goto waitForHealth
-		}
-
-		// Try docker-compose fallback
-		if dcPath, dcErr := exec.LookPath("docker-compose"); dcErr == nil {
-			cmd = exec.CommandContext(ctx, dcPath, "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
-			cmd.Dir = workDir
-			output, err = cmd.CombinedOutput()
-			if err == nil {
-				s.logger.Info("Started Cognee using docker-compose")
-				goto waitForHealth
-			}
-		}
+	// Use Containers module adapter for compose up.
+	if s.ContainerAdapter == nil {
+		return fmt.Errorf("container adapter not initialized")
 	}
-
-	// Try podman-compose
-	if pcPath, lookErr := exec.LookPath("podman-compose"); lookErr == nil {
-		cmd = exec.CommandContext(ctx, pcPath, "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
-		cmd.Dir = workDir
-		output, err = cmd.CombinedOutput()
-		if err == nil {
-			s.logger.Info("Started Cognee using podman-compose")
-			goto waitForHealth
-		}
+	if err := s.ContainerAdapter.ComposeUp(ctx, composeFile, "default"); err != nil {
+		return fmt.Errorf("failed to start Cognee containers: %w", err)
 	}
+	s.logger.Info("Started Cognee via Containers module adapter")
 
-	// Try podman compose
-	if podmanPath, lookErr := exec.LookPath("podman"); lookErr == nil {
-		cmd = exec.CommandContext(ctx, podmanPath, "compose", "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
-		cmd.Dir = workDir
-		output, err = cmd.CombinedOutput()
-		if err == nil {
-			s.logger.Info("Started Cognee using podman compose")
-			goto waitForHealth
-		}
-	}
-
-	// No container runtime found or all failed
-	if err != nil {
-		return fmt.Errorf("failed to start containers: %w, output: %s", err, string(output))
-	}
-	return fmt.Errorf("no container runtime found (tried docker, docker-compose, podman-compose, podman)")
-
-waitForHealth:
 	// Wait for services with exponential backoff
 	maxWait := 60 * time.Second
 	interval := 2 * time.Second

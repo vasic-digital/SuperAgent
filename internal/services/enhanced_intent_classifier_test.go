@@ -13,7 +13,7 @@ import (
 func TestEnhancedIntentClassifier_Initialization(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
@@ -27,7 +27,7 @@ func TestEnhancedIntentClassifier_Initialization(t *testing.T) {
 func TestEnhancedIntentClassifier_QuickClassify_Granularity(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	tests := []struct {
@@ -75,7 +75,7 @@ func TestEnhancedIntentClassifier_QuickClassify_Granularity(t *testing.T) {
 func TestEnhancedIntentClassifier_QuickClassify_ActionType(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	tests := []struct {
@@ -128,7 +128,7 @@ func TestEnhancedIntentClassifier_QuickClassify_ActionType(t *testing.T) {
 func TestEnhancedIntentClassifier_ShouldUseSpecKit(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	tests := []struct {
@@ -207,7 +207,7 @@ func TestEnhancedIntentClassifier_ShouldUseSpecKit(t *testing.T) {
 func TestEnhancedIntentClassifier_GenerateSpecKitReason(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	tests := []struct {
@@ -250,7 +250,7 @@ func TestEnhancedIntentClassifier_GenerateSpecKitReason(t *testing.T) {
 func TestEnhancedIntentClassifier_QuickClassify_WithSpecKit(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	tests := []struct {
@@ -290,7 +290,7 @@ func TestEnhancedIntentClassifier_QuickClassify_WithSpecKit(t *testing.T) {
 func TestEnhancedIntentClassifier_ExtractJSON(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	tests := []struct {
@@ -332,7 +332,7 @@ func TestEnhancedIntentClassifier_ExtractJSON(t *testing.T) {
 func TestEnhancedIntentClassifier_ClassifyEnhancedIntent_NoProvider(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil) // Registry may auto-discover providers from environment
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil) // Registry may auto-discover providers from environment
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	ctx := context.Background()
@@ -355,7 +355,7 @@ func TestEnhancedIntentClassifier_ClassifyEnhancedIntent_NoProvider(t *testing.T
 func TestEnhancedIntentClassifier_GetProvider(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	provider, err := classifier.getProvider()
@@ -414,7 +414,7 @@ func TestContainsAny(t *testing.T) {
 func TestEnhancedIntentClassifier_QuickClassify_SignalsPopulated(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	result := classifier.QuickClassify("Create a new feature")
@@ -427,7 +427,7 @@ func TestEnhancedIntentClassifier_QuickClassify_SignalsPopulated(t *testing.T) {
 func TestEnhancedIntentClassifier_QuickClassify_ConfidenceRange(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	result := classifier.QuickClassify("Test request")
@@ -444,7 +444,7 @@ func TestEnhancedIntentClassifier_QuickClassify_ConfidenceRange(t *testing.T) {
 func TestEnhancedIntentClassifier_BuildEnhancedPrompt(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	userMessage := "Build a new feature"
@@ -467,7 +467,7 @@ func TestEnhancedIntentClassifier_BuildEnhancedPrompt(t *testing.T) {
 func TestEnhancedIntentClassifier_GetEnhancedSystemPrompt(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	classifier := NewEnhancedIntentClassifier(registry, logger)
 
 	prompt := classifier.getEnhancedSystemPrompt()

@@ -71,6 +71,9 @@ func TestCheckHTTP(t *testing.T) {
 	})
 
 	t.Run("Unreachable HTTP service", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("Skipping unreachable service test in short mode (may take 30+ seconds)")
+		}
 		ep := config.ServiceEndpoint{
 			Host:       "192.0.2.1",
 			Port:       "59999",
@@ -114,6 +117,9 @@ func TestCheckTCP(t *testing.T) {
 	})
 
 	t.Run("Unreachable TCP service", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("Skipping unreachable service test in short mode (may take 30+ seconds)")
+		}
 		ep := config.ServiceEndpoint{
 			Host:       "192.0.2.1",
 			Port:       "59999",
@@ -155,6 +161,9 @@ func TestCheckWithRetry(t *testing.T) {
 	})
 
 	t.Run("Failure after all retries", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("Skipping unreachable service test in short mode")
+		}
 		ep := config.ServiceEndpoint{
 			Host:       "192.0.2.1",
 			Port:       "59999",
@@ -173,6 +182,9 @@ func TestCheckWithRetry(t *testing.T) {
 	})
 
 	t.Run("Zero retries defaults to 1", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("Skipping unreachable service test in short mode")
+		}
 		ep := config.ServiceEndpoint{
 			Host:       "192.0.2.1",
 			Port:       "59999",
@@ -192,6 +204,9 @@ func TestCheckWithRetry(t *testing.T) {
 }
 
 func TestTimeoutHandling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping timeout handling test in short mode (requires unreachable network endpoints)")
+	}
 	logger := newTestLogger()
 	hc := NewServiceHealthChecker(logger)
 

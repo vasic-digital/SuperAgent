@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
+	"sync"
 	"time"
 )
 
@@ -38,6 +40,38 @@ type MCPServerConfig struct {
 	URL         string
 	PackageName string
 	Env         map[string]string
+}
+
+// containerRuntimeOnce caches the detected container runtime name.
+var (
+	containerRuntimeOnce sync.Once
+	containerRuntimeName string // "podman" or "docker"
+)
+
+// containerRuntime returns the available container runtime ("podman" or
+// "docker"). The result is cached after the first call. Returns empty
+// string if neither is available.
+func containerRuntime() string {
+	containerRuntimeOnce.Do(func() {
+		if _, err := exec.LookPath("podman"); err == nil {
+			containerRuntimeName = "podman"
+		} else if _, err := exec.LookPath("docker"); err == nil {
+			containerRuntimeName = "docker"
+		}
+	})
+	return containerRuntimeName
+}
+
+// containerExec runs a container command with the detected runtime,
+// returning combined output. Falls back from podman to docker
+// automatically.
+func containerExec(args ...string) ([]byte, error) {
+	rt := containerRuntime()
+	if rt == "" {
+		return nil, fmt.Errorf("no container runtime found")
+	}
+	cmd := exec.Command(rt, args...)
+	return cmd.CombinedOutput()
 }
 
 // getEnv retrieves an environment variable with a fallback default

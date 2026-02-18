@@ -16,7 +16,7 @@ func TestSpecKitOrchestrator_Initialization(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	debateService := NewDebateService(logger)
 	debateService.providerRegistry = registry
 
@@ -47,7 +47,7 @@ func TestSpecKitOrchestrator_PhaseConfiguration(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	debateService := NewDebateService(logger)
 	debateService.providerRegistry = registry
 
@@ -90,7 +90,7 @@ func TestSpecKitOrchestrator_BuildConstitutionDebateTopic(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	debateService := NewDebateService(logger)
 	debateService.providerRegistry = registry
 
@@ -141,7 +141,7 @@ func TestSpecKitOrchestrator_ExtractJSON(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	debateService := NewDebateService(logger)
 	debateService.providerRegistry = registry
 
@@ -314,7 +314,7 @@ func TestSpecKitOrchestrator_ExecuteFlow_NoProvider(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 
-	registry := NewProviderRegistry(nil, nil) // Registry may auto-discover providers from environment
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil) // Registry may auto-discover providers from environment
 	debateService := NewDebateService(logger)
 	debateService.providerRegistry = registry
 
@@ -370,7 +370,7 @@ func TestSpecKitOrchestrator_PhaseTimeouts(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	debateService := NewDebateService(logger)
 	debateService.providerRegistry = registry
 
@@ -400,7 +400,7 @@ func TestSpecKitOrchestrator_PhaseDebateRounds(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	debateService := NewDebateService(logger)
 	debateService.providerRegistry = registry
 
@@ -475,7 +475,7 @@ func TestSpecKitOrchestrator_FlowResumption(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
 
-	registry := NewProviderRegistry(nil, nil)
+	registry := NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	debateService := NewDebateService(logger)
 	debateService.providerRegistry = registry
 

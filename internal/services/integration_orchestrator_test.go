@@ -1189,10 +1189,11 @@ func TestIntegrationOrchestrator_executeLLMStep_Complete(t *testing.T) {
 
 	// Create provider registry with mock provider
 	registry := NewProviderRegistry(&RegistryConfig{
-		DefaultTimeout: 30 * time.Second,
-		MaxRetries:     3,
-		CircuitBreaker: CircuitBreakerConfig{Enabled: false},
-		Providers:      make(map[string]*ProviderConfig),
+		DefaultTimeout:       30 * time.Second,
+		MaxRetries:           3,
+		CircuitBreaker:       CircuitBreakerConfig{Enabled: false},
+		Providers:            make(map[string]*ProviderConfig),
+		DisableAutoDiscovery: true,
 	}, nil)
 
 	mockProvider := &MockLLMProviderForOrchestrator{
@@ -1235,10 +1236,11 @@ func TestIntegrationOrchestrator_executeLLMStep_Stream(t *testing.T) {
 
 	// Create provider registry with mock provider
 	registry := NewProviderRegistry(&RegistryConfig{
-		DefaultTimeout: 30 * time.Second,
-		MaxRetries:     3,
-		CircuitBreaker: CircuitBreakerConfig{Enabled: false},
-		Providers:      make(map[string]*ProviderConfig),
+		DefaultTimeout:       30 * time.Second,
+		MaxRetries:           3,
+		CircuitBreaker:       CircuitBreakerConfig{Enabled: false},
+		Providers:            make(map[string]*ProviderConfig),
+		DisableAutoDiscovery: true,
 	}, nil)
 
 	mockProvider := &MockLLMProviderForOrchestrator{

@@ -25,6 +25,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 
+	containeradapter "dev.helix.agent/internal/adapters/containers"
 	"dev.helix.agent/internal/auth/oauth_credentials"
 	"dev.helix.agent/internal/bigdata"
 	"dev.helix.agent/internal/config"
@@ -91,6 +92,12 @@ var (
 	listAgents          = flag.Bool("list-agents", false, "List all 48 supported CLI agents")
 	generateAllAgents   = flag.Bool("generate-all-agents", false, "Generate configurations for all 48 CLI agents")
 	allAgentsOutputDir  = flag.String("all-agents-output-dir", "", "Output directory for all agent configs (required with --generate-all-agents)")
+	// Challenge execution flags
+	runChallenges          = flag.String("run-challenges", "", "Run challenges: all | category | challenge-id")
+	listChallenges         = flag.Bool("list-challenges", false, "List all registered challenges")
+	challengeParallel      = flag.Bool("challenge-parallel", false, "Run challenges in parallel")
+	challengeVerbose       = flag.Bool("challenge-verbose", false, "Enable verbose challenge output")
+	challengeStallDuration = flag.Duration("challenge-stall-threshold", 60*1e9, "Stall threshold for stuck detection (default: 60s)")
 )
 
 // ValidOpenCodeTopLevelKeys contains the valid top-level keys per OpenCode.ai official schema
@@ -122,6 +129,11 @@ var ValidOpenCodeTopLevelKeys = map[string]bool{
 	"contextPaths": true,
 	"tui":          true,
 }
+
+// globalContainerAdapter is the centralized container adapter.
+// Initialized during startup to route all container operations
+// through the Containers module.
+var globalContainerAdapter *containeradapter.Adapter
 
 // CommandExecutor interface for executing system commands (allows mocking)
 type CommandExecutor interface {
@@ -157,61 +169,37 @@ const (
 	RuntimeNone   ContainerRuntime = "none"
 )
 
-// DetectContainerRuntime automatically detects available container runtime
-// Prefers Docker, falls back to Podman if Docker is not available
+// DetectContainerRuntime automatically detects available container runtime.
+// Routes through the Containers module adapter exclusively.
+// Prefers Docker, falls back to Podman if Docker is not available.
 func DetectContainerRuntime() (ContainerRuntime, string, error) {
-	// Try Docker first
-	if path, err := exec.LookPath("docker"); err == nil {
-		// Verify Docker daemon is accessible
-		cmd := exec.Command("docker", "info")
-		if err := cmd.Run(); err == nil {
-			return RuntimeDocker, path, nil
-		}
+	if globalContainerAdapter == nil {
+		return RuntimeNone, "", fmt.Errorf(
+			"container adapter not initialized",
+		)
 	}
-
-	// Try Podman as fallback
-	if path, err := exec.LookPath("podman"); err == nil {
-		// Verify Podman is accessible
-		cmd := exec.Command("podman", "info")
-		if err := cmd.Run(); err == nil {
-			return RuntimePodman, path, nil
-		}
+	name, err := globalContainerAdapter.DetectRuntime(
+		context.Background(),
+	)
+	if err != nil {
+		return RuntimeNone, "", err
 	}
-
-	return RuntimeNone, "", fmt.Errorf("no container runtime found: neither Docker nor Podman is available")
+	path, _ := exec.LookPath(name)
+	return ContainerRuntime(name), path, nil
 }
 
-// DetectComposeCommand detects the compose command for the container runtime
-// Returns: compose command, args prefix, error
-func DetectComposeCommand(runtime ContainerRuntime) (string, []string, error) {
-	switch runtime {
-	case RuntimeDocker:
-		// Try "docker compose" first (newer syntax)
-		cmd := exec.Command("docker", "compose", "version")
-		if err := cmd.Run(); err == nil {
-			return "docker", []string{"compose"}, nil
-		}
-		// Fall back to "docker-compose"
-		if path, err := exec.LookPath("docker-compose"); err == nil {
-			return path, nil, nil
-		}
-		return "", nil, fmt.Errorf("docker compose command not found")
-
-	case RuntimePodman:
-		// Try "podman-compose" first
-		if path, err := exec.LookPath("podman-compose"); err == nil {
-			return path, nil, nil
-		}
-		// Try "podman compose" (if podman has compose plugin)
-		cmd := exec.Command("podman", "compose", "version")
-		if err := cmd.Run(); err == nil {
-			return "podman", []string{"compose"}, nil
-		}
-		return "", nil, fmt.Errorf("podman-compose not found: install with 'pip install podman-compose'")
-
-	default:
-		return "", nil, fmt.Errorf("unknown container runtime")
+// DetectComposeCommand detects the compose command for the container runtime.
+// Routes through the Containers module adapter. The adapter's orchestrator
+// handles compose detection internally.
+// Returns: compose command, args prefix, error.
+func DetectComposeCommand(rt ContainerRuntime) (string, []string, error) {
+	if globalContainerAdapter == nil {
+		return "", nil, fmt.Errorf("container adapter not initialized")
 	}
+	// The adapter's orchestrator already detected compose.
+	// Return the runtime name as compose command for backward compat.
+	name := string(rt)
+	return name, []string{"compose"}, nil
 }
 
 // HealthChecker interface for checking service health (allows mocking)
@@ -282,81 +270,49 @@ func ensureRequiredContainers(logger *logrus.Logger) error {
 	return ensureRequiredContainersWithConfig(logger, containerConfig)
 }
 
-// ensureRequiredContainersWithConfig starts required Docker/Podman containers using provided config
-// Automatically detects and uses Docker or Podman (whichever is available)
+// ensureRequiredContainersWithConfig starts required Docker/Podman containers
+// using the Containers module adapter. All container operations are centralized
+// through the adapter — no direct exec.Command calls.
 func ensureRequiredContainersWithConfig(logger *logrus.Logger, cfg *ContainerConfig) error {
-	// Detect container runtime (Docker or Podman)
-	runtime, runtimePath, err := DetectContainerRuntime()
-	if err != nil {
-		return fmt.Errorf("container runtime detection failed: %w", err)
+	if globalContainerAdapter == nil {
+		return fmt.Errorf("container adapter not initialized")
 	}
 
-	logger.WithFields(logrus.Fields{
-		"runtime": runtime,
-		"path":    runtimePath,
-	}).Info("Detected container runtime")
+	logger.Info("Starting required containers via Containers module adapter")
 
-	// Detect compose command
-	composeCmd, composeArgs, err := DetectComposeCommand(runtime)
-	if err != nil {
-		return fmt.Errorf("compose command detection failed: %w", err)
-	}
+	// Use adapter to compose up the project.
+	composeFile := filepath.Join(cfg.ProjectDir, "docker-compose.yml")
+	ctx := context.Background()
 
-	logger.WithFields(logrus.Fields{
-		"compose_command": composeCmd,
-		"compose_args":    composeArgs,
-	}).Info("Detected compose command")
-
-	// Check which services are already running
-	runningServices, err := getRunningServicesWithRuntimeConfig(cfg, composeCmd, composeArgs)
-	if err != nil {
-		logger.WithError(err).Warn("Could not check running services, attempting to start all")
-		runningServices = make(map[string]bool)
-	}
-
-	// Determine which services need to be started
-	servicesToStart := []string{}
-	for _, service := range cfg.RequiredServices {
-		if !runningServices[service] {
-			servicesToStart = append(servicesToStart, service)
+	if globalContainerAdapter.RemoteEnabled() {
+		logger.Info("Deploying required containers to remote host")
+		if err := globalContainerAdapter.RemoteComposeUp(
+			ctx, composeFile, "default",
+		); err != nil {
+			logger.WithError(err).Warn(
+				"Remote compose up failed, falling back to local",
+			)
+			if err := globalContainerAdapter.ComposeUp(
+				ctx, composeFile, "default",
+			); err != nil {
+				return fmt.Errorf("compose up failed: %w", err)
+			}
 		}
+	} else if err := globalContainerAdapter.ComposeUp(
+		ctx, composeFile, "default",
+	); err != nil {
+		return fmt.Errorf("compose up failed: %w", err)
 	}
 
-	if len(servicesToStart) == 0 {
-		logger.Info("All required containers are already running")
-		return nil
-	}
-
-	logger.WithField("services", strings.Join(servicesToStart, ", ")).Info("Starting required containers")
-
-	// Build compose command with profile for Cognee/ChromaDB
-	var output []byte
-	var cmdArgs []string
-
-	if len(composeArgs) > 0 {
-		// Format: docker compose --profile default up -d <services>
-		cmdArgs = append(cmdArgs, composeArgs...)
-	}
-	cmdArgs = append(cmdArgs, "--profile", "default", "up", "-d")
-	cmdArgs = append(cmdArgs, servicesToStart...)
-
-	cmd := exec.Command(composeCmd, cmdArgs...)
-	cmd.Dir = cfg.ProjectDir
-	output, err = cmd.CombinedOutput()
-
-	if err != nil {
-		return fmt.Errorf("failed to start containers with %s: %w\nOutput: %s", runtime, err, string(output))
-	}
-
-	logger.WithField("output", string(output)).Debug("Compose output")
 	logger.Info("Waiting for containers to be healthy...")
 
-	// Wait for containers to be ready with retry logic
-	// Cognee can take 30-60 seconds to start, so we retry health checks
+	// Wait for containers to be ready with retry logic.
 	var healthErr error
 	for attempt := 1; attempt <= 6; attempt++ {
 		time.Sleep(10 * time.Second)
-		healthErr = verifyServicesHealthWithConfig(cfg.RequiredServices, logger, cfg)
+		healthErr = verifyServicesHealthWithConfig(
+			cfg.RequiredServices, logger, cfg,
+		)
 		if healthErr == nil {
 			break
 		}
@@ -366,9 +322,10 @@ func ensureRequiredContainersWithConfig(logger *logrus.Logger, cfg *ContainerCon
 		}).Warn("Health check not passed yet, retrying...")
 	}
 
-	// Verify critical services are running
 	if healthErr != nil {
-		return fmt.Errorf("service health verification failed: %w", healthErr)
+		return fmt.Errorf(
+			"service health verification failed: %w", healthErr,
+		)
 	}
 
 	logger.Info("Container startup completed successfully")
@@ -377,8 +334,13 @@ func ensureRequiredContainersWithConfig(logger *logrus.Logger, cfg *ContainerCon
 
 // ensureMCPServers starts all MCP Docker containers from git submodules
 // Uses docker-compose.mcp-servers.yml to build and run 32 MCP servers
-// All servers use TCP ports (9101-9999) - no npm/npx dependencies
+// All servers use TCP ports (9101-9999) - no npm/npx dependencies.
+// Routes through the Containers module adapter.
 func ensureMCPServers(logger *logrus.Logger) error {
+	if globalContainerAdapter == nil {
+		return fmt.Errorf("container adapter not initialized")
+	}
+
 	// Get project directory
 	projectDir, err := filepath.Abs(".")
 	if err != nil {
@@ -386,102 +348,87 @@ func ensureMCPServers(logger *logrus.Logger) error {
 	}
 
 	// Check if MCP compose file exists
-	mcpComposeFile := filepath.Join(projectDir, "docker", "mcp", "docker-compose.mcp-servers.yml")
+	mcpComposeFile := filepath.Join(
+		projectDir, "docker", "mcp",
+		"docker-compose.mcp-servers.yml",
+	)
 	if _, err := os.Stat(mcpComposeFile); os.IsNotExist(err) {
-		logger.WithField("file", mcpComposeFile).Warn("MCP compose file not found, skipping MCP auto-start")
+		logger.WithField("file", mcpComposeFile).Warn(
+			"MCP compose file not found, skipping MCP auto-start",
+		)
 		return nil
 	}
 
-	// Detect container runtime
-	runtime, _, err := DetectContainerRuntime()
-	if err != nil {
-		return fmt.Errorf("container runtime detection failed: %w", err)
-	}
+	logger.WithField("mcp_servers", 32).Info(
+		"Starting MCP servers via Containers module adapter",
+	)
 
-	// Detect compose command
-	composeCmd, composeArgs, err := DetectComposeCommand(runtime)
-	if err != nil {
-		return fmt.Errorf("compose command detection failed: %w", err)
-	}
-
-	logger.WithFields(logrus.Fields{
-		"runtime":     runtime,
-		"compose":     composeCmd,
-		"mcp_servers": 32,
-	}).Info("Starting MCP servers from git submodules (zero npm dependencies)")
-
-	// Build compose command: docker compose -f <file> up -d
-	var cmdArgs []string
-	if len(composeArgs) > 0 {
-		cmdArgs = append(cmdArgs, composeArgs...)
-	}
-	cmdArgs = append(cmdArgs, "-f", mcpComposeFile, "up", "-d")
-
-	// Run with timeout - MCP servers are optional, don't block startup indefinitely
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, composeCmd, cmdArgs...)
-	cmd.Dir = projectDir
-
-	// Start the command but don't block startup - run in a goroutine
+	// Start in background — MCP servers are optional.
 	go func() {
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			if ctx.Err() == context.DeadlineExceeded {
-				logger.Warn("MCP server startup timed out after 120s, continuing without MCP servers")
+		ctx, cancel := context.WithTimeout(
+			context.Background(), 120*time.Second,
+		)
+		defer cancel()
+
+		if globalContainerAdapter.RemoteEnabled() {
+			if err := globalContainerAdapter.RemoteComposeUp(
+				ctx, mcpComposeFile, "",
+			); err != nil {
+				logger.WithError(err).Warn(
+					"Failed to start MCP servers on remote, trying local",
+				)
 			} else {
-				logger.WithError(err).WithField("output", string(output)).Warn("Failed to start some MCP servers")
+				logger.Info(
+					"MCP servers started on remote host (32 servers on ports 9101-9999)",
+				)
+				return
 			}
+		}
+
+		if err := globalContainerAdapter.ComposeUp(
+			ctx, mcpComposeFile, "",
+		); err != nil {
+			logger.WithError(err).Warn(
+				"Failed to start some MCP servers",
+			)
 			return
 		}
-		logger.WithField("output", string(output)).Debug("MCP Compose output")
-		logger.Info("MCP servers started successfully (32 servers on ports 9101-9999)")
+		logger.Info(
+			"MCP servers started successfully (32 servers on ports 9101-9999)",
+		)
 	}()
 
-	logger.Info("MCP servers starting in background (32 servers on ports 9101-9999)")
+	logger.Info(
+		"MCP servers starting in background (32 servers on ports 9101-9999)",
+	)
 	return nil
 }
 
-// getRunningServicesWithRuntimeConfig checks which compose services are currently running
-func getRunningServicesWithRuntimeConfig(cfg *ContainerConfig, composeCmd string, composeArgs []string) (map[string]bool, error) {
+// getRunningServicesWithRuntimeConfig checks which compose services are
+// currently running via the Containers module adapter.
+func getRunningServicesWithRuntimeConfig(cfg *ContainerConfig, _ string, _ []string) (map[string]bool, error) {
 	running := make(map[string]bool)
 
-	// Try with --filter first (docker compose supports it)
-	var cmdArgs []string
-	if len(composeArgs) > 0 {
-		cmdArgs = append(cmdArgs, composeArgs...)
+	if globalContainerAdapter == nil {
+		// Fall back to health probes when adapter unavailable.
+		return checkServicesViaHealthProbes(cfg.RequiredServices), nil
 	}
-	cmdArgs = append(cmdArgs, "ps", "--services", "--filter", "status=running")
 
-	cmd := exec.Command(composeCmd, cmdArgs...)
-	cmd.Dir = cfg.ProjectDir
-	output, err := cmd.CombinedOutput()
+	composeFile := filepath.Join(cfg.ProjectDir, "docker-compose.yml")
+	ctx := context.Background()
+	statuses, err := globalContainerAdapter.ComposeStatus(
+		ctx, composeFile,
+	)
 	if err != nil {
-		// Fallback: podman-compose doesn't support --filter, try without it
-		var fallbackArgs []string
-		if len(composeArgs) > 0 {
-			fallbackArgs = append(fallbackArgs, composeArgs...)
-		}
-		fallbackArgs = append(fallbackArgs, "ps", "--services")
-
-		cmd2 := exec.Command(composeCmd, fallbackArgs...)
-		cmd2.Dir = cfg.ProjectDir
-		output, err = cmd2.CombinedOutput()
-		if err != nil {
-			// Final fallback: check services via direct health probes
-			return checkServicesViaHealthProbes(cfg.RequiredServices), nil
-		}
+		// Fall back to health probes on error.
+		return checkServicesViaHealthProbes(cfg.RequiredServices), nil
 	}
 
-	services := strings.Split(strings.TrimSpace(string(output)), "\n")
-	for _, service := range services {
-		service = strings.TrimSpace(service)
-		if service != "" {
-			running[service] = true
+	for _, s := range statuses {
+		if s.State == "running" {
+			running[s.Name] = true
 		}
 	}
-
 	return running, nil
 }
 
@@ -523,37 +470,51 @@ func getRunningServices() (map[string]bool, error) {
 	return getRunningServicesWithConfig(containerConfig)
 }
 
-// getRunningServicesWithConfig checks which docker-compose services are currently running using provided config
+// getRunningServicesWithConfig checks which docker-compose services are
+// currently running. Uses the adapter when available, otherwise falls back
+// to the config's Executor interface.
 func getRunningServicesWithConfig(cfg *ContainerConfig) (map[string]bool, error) {
 	running := make(map[string]bool)
-	executor := cfg.Executor
 
-	// Check if docker is available
-	if _, err := executor.LookPath("docker"); err != nil {
-		return running, fmt.Errorf("docker compose not found")
-	}
-
-	// Try docker compose first
-	output, err := executor.RunCommandWithDir(cfg.ProjectDir, "docker", "compose", "ps", "--services", "--filter", "status=running")
-	if err != nil {
-		// Try docker-compose as fallback
-		if _, lookErr := executor.LookPath("docker-compose"); lookErr == nil {
-			output, err = executor.RunCommandWithDir(cfg.ProjectDir, "docker-compose", "ps", "--services", "--filter", "status=running")
+	if globalContainerAdapter != nil {
+		composeFile := filepath.Join(
+			cfg.ProjectDir, "docker-compose.yml",
+		)
+		ctx := context.Background()
+		statuses, err := globalContainerAdapter.ComposeStatus(
+			ctx, composeFile,
+		)
+		if err == nil {
+			for _, s := range statuses {
+				if s.State == "running" {
+					running[s.Name] = true
+				}
+			}
+			return running, nil
 		}
 	}
 
+	// Fallback: use the executor interface (for tests).
+	if cfg.Executor == nil {
+		return running, fmt.Errorf("no executor configured")
+	}
+	output, err := cfg.Executor.RunCommandWithDir(
+		cfg.ProjectDir, "sh", "-c",
+		"docker compose ps --services --filter status=running 2>/dev/null || true",
+	)
 	if err != nil {
 		return running, err
 	}
 
-	services := strings.Split(strings.TrimSpace(string(output)), "\n")
+	services := strings.Split(
+		strings.TrimSpace(string(output)), "\n",
+	)
 	for _, service := range services {
 		service = strings.TrimSpace(service)
 		if service != "" {
 			running[service] = true
 		}
 	}
-
 	return running, nil
 }
 
@@ -1217,7 +1178,13 @@ type AppConfig struct {
 	ListAgents          bool   // List all supported agents
 	GenerateAllAgents   bool   // Generate configs for all agents
 	AllAgentsOutputDir  string // Output directory for all agent configs
-	ServerHost          string
+	// Challenge execution
+	RunChallenges           string        // "all" | category | challenge-id
+	ListChallenges          bool          // List all challenges
+	ChallengeParallel       bool          // Parallel execution
+	ChallengeVerbose        bool          // Verbose output
+	ChallengeStallThreshold time.Duration // Stall threshold for stuck detection
+	ServerHost              string
 	ServerPort          string
 	Logger              *logrus.Logger
 	ShutdownSignal      chan os.Signal
@@ -1299,6 +1266,15 @@ func run(appCfg *AppConfig) error {
 		return handleValidateAgentConfig(appCfg)
 	}
 
+	// Handle challenge commands
+	if appCfg.ListChallenges {
+		return handleListChallenges(appCfg)
+	}
+
+	if appCfg.RunChallenges != "" {
+		return handleRunChallenges(appCfg)
+	}
+
 	// Handle MCP pre-installation command
 	if appCfg.PreinstallMCP {
 		return handlePreinstallMCP(appCfg)
@@ -1322,6 +1298,32 @@ func run(appCfg *AppConfig) error {
 		logger.SetFormatter(&logrus.TextFormatter{
 			FullTimestamp: true,
 		})
+	}
+
+	// Initialize the centralized container adapter (Containers module).
+	// Uses NewAdapterFromConfig to auto-load Containers/.env for
+	// remote distribution, bootstrap SSH key auth, and configure
+	// SSH options.
+	adapter, adapterErr := containeradapter.NewAdapterFromConfig(cfg)
+	if adapterErr != nil {
+		logger.WithError(adapterErr).Warn(
+			"Container adapter initialization failed",
+		)
+	} else {
+		globalContainerAdapter = adapter
+		if name, err := adapter.DetectRuntime(
+			context.Background(),
+		); err == nil {
+			logger.WithField("runtime", name).Info(
+				"Container adapter initialized via Containers module",
+			)
+		}
+		if adapter.RemoteEnabled() {
+			hosts := adapter.ListHosts()
+			logger.WithField("hosts", len(hosts)).Info(
+				"Remote container distribution enabled",
+			)
+		}
 	}
 
 	// Unified service boot manager: starts all enabled local services and health-checks all
@@ -1443,6 +1445,11 @@ func run(appCfg *AppConfig) error {
 
 	routerCtx := router.SetupRouterWithContext(cfg)
 	r := routerCtx.Engine
+
+	// Inject container adapter into CogneeService for centralized container management.
+	if globalContainerAdapter != nil && routerCtx.CogneeService != nil {
+		routerCtx.CogneeService.ContainerAdapter = globalContainerAdapter
+	}
 
 	// CRITICAL: Set StartupVerifier on the router's ProviderRegistry
 	// This enables OAuth providers (Claude, Qwen) to be included in the DebateTeamConfig
@@ -1663,6 +1670,16 @@ func run(appCfg *AppConfig) error {
 		return fmt.Errorf("server shutdown error: %w", err)
 	}
 
+	// Shutdown container adapter (tunnels, volumes, distributed containers).
+	if globalContainerAdapter != nil {
+		logger.Info("Shutting down container adapter...")
+		if err := globalContainerAdapter.Shutdown(shutdownCtx); err != nil {
+			logger.WithError(err).Warn(
+				"Error shutting down container adapter",
+			)
+		}
+	}
+
 	// Stop all managed container services
 	if bootMgr != nil {
 		logger.Info("Stopping all managed services via BootManager...")
@@ -1711,6 +1728,12 @@ func main() {
 	appCfg.ListAgents = *listAgents
 	appCfg.GenerateAllAgents = *generateAllAgents
 	appCfg.AllAgentsOutputDir = *allAgentsOutputDir
+	// Challenge execution flags
+	appCfg.RunChallenges = *runChallenges
+	appCfg.ListChallenges = *listChallenges
+	appCfg.ChallengeParallel = *challengeParallel
+	appCfg.ChallengeVerbose = *challengeVerbose
+	appCfg.ChallengeStallThreshold = *challengeStallDuration
 
 	if err := run(appCfg); err != nil {
 		appCfg.Logger.WithError(err).Fatal("Application failed")

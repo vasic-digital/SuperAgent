@@ -211,6 +211,9 @@ func TestClaudeCLIProvider_Integration_Complete(t *testing.T) {
 	if !IsClaudeCodeInstalled() {
 		t.Skip("Claude Code CLI not installed")
 	}
+	if IsInsideClaudeCodeSession() {
+		t.Skip("Cannot launch Claude Code inside another Claude Code session")
+	}
 	if !IsClaudeCodeAuthenticated() {
 		t.Skip("Claude Code CLI not authenticated")
 	}
@@ -238,6 +241,9 @@ func TestClaudeCLIProvider_Integration_Complete(t *testing.T) {
 func TestClaudeCLIProvider_Integration_HealthCheck(t *testing.T) {
 	if !IsClaudeCodeInstalled() {
 		t.Skip("Claude Code CLI not installed")
+	}
+	if IsInsideClaudeCodeSession() {
+		t.Skip("Cannot launch Claude Code inside another Claude Code session")
 	}
 	if !IsClaudeCodeAuthenticated() {
 		t.Skip("Claude Code CLI not authenticated")

@@ -506,6 +506,20 @@ func IsClaudeCodeInstalled() bool {
 	return true
 }
 
+// IsInsideClaudeCodeSession returns true if we're running inside a Claude Code session.
+// Claude Code cannot be launched inside another Claude Code session.
+func IsInsideClaudeCodeSession() bool {
+	// Claude Code sets CLAUDECODE env var when running
+	if os.Getenv("CLAUDECODE") != "" {
+		return true
+	}
+	// Also check CLAUDE_CODE_ENTRYPOINT
+	if os.Getenv("CLAUDE_CODE_ENTRYPOINT") != "" {
+		return true
+	}
+	return false
+}
+
 // GetClaudeCodePath returns the path to claude command if installed
 func GetClaudeCodePath() (string, error) {
 	path, err := exec.LookPath("claude")

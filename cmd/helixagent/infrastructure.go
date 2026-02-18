@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net"
 	"net/http"
-	"os/exec"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -16,108 +18,90 @@ var (
 	autoStartRAG = true // Auto-start RAG services
 )
 
-// ensureLSPServers starts all LSP Docker containers
-// Uses docker/lsp/docker-compose.lsp.yml to run language servers
+// ensureLSPServers starts all LSP Docker containers via the
+// Containers module adapter. When remote distribution is enabled,
+// deploys to the remote host instead.
 func ensureLSPServers(logger *logrus.Logger) error {
 	projectDir, err := filepath.Abs(".")
 	if err != nil {
 		return fmt.Errorf("failed to get project directory: %w", err)
 	}
 
-	// Check if LSP compose file exists
 	lspComposeFile := filepath.Join(projectDir, "docker", "lsp", "docker-compose.lsp.yml")
 	if !fileExists(lspComposeFile) {
 		logger.WithField("file", lspComposeFile).Warn("LSP compose file not found, skipping LSP auto-start")
 		return nil
 	}
 
-	// Detect container runtime
-	runtime, _, err := DetectContainerRuntime()
-	if err != nil {
-		return fmt.Errorf("container runtime detection failed: %w", err)
+	if globalContainerAdapter == nil {
+		return fmt.Errorf("container adapter not initialized")
 	}
 
-	// Detect compose command
-	composeCmd, composeArgs, err := DetectComposeCommand(runtime)
-	if err != nil {
-		return fmt.Errorf("compose command detection failed: %w", err)
+	ctx := context.Background()
+
+	if globalContainerAdapter.RemoteEnabled() {
+		logger.Info("Starting LSP servers on remote host via Containers module")
+		if err := globalContainerAdapter.RemoteComposeUp(
+			ctx, lspComposeFile, "lsp",
+		); err != nil {
+			logger.WithError(err).Warn("Failed to start LSP servers on remote, falling back to local")
+		} else {
+			logger.Info("LSP servers starting on remote host")
+			return nil
+		}
 	}
 
-	logger.WithFields(logrus.Fields{
-		"runtime": runtime,
-		"compose": composeCmd,
-	}).Info("Starting LSP servers (11 language servers)")
-
-	// Build compose command with lsp profile
-	var cmdArgs []string
-	if len(composeArgs) > 0 {
-		cmdArgs = append(cmdArgs, composeArgs...)
-	}
-	cmdArgs = append(cmdArgs, "-f", lspComposeFile, "--profile", "lsp", "up", "-d")
-
-	cmd := exec.Command(composeCmd, cmdArgs...)
-	cmd.Dir = projectDir
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		// Log warning but don't fail - LSP servers are optional
-		logger.WithError(err).WithField("output", string(output)).Warn("Failed to start some LSP servers, continuing")
+	logger.Info("Starting LSP servers via Containers module (11 language servers)")
+	if err := globalContainerAdapter.ComposeUp(
+		ctx, lspComposeFile, "lsp",
+	); err != nil {
+		logger.WithError(err).Warn("Failed to start some LSP servers, continuing")
 		return nil
 	}
-
-	logger.WithField("output", string(output)).Debug("LSP Compose output")
 	logger.Info("LSP servers starting in background (ports 5001-5024)")
 	return nil
 }
 
-// ensureRAGServices starts all RAG Docker containers
-// Uses docker/rag/docker-compose.rag.yml to run embedding and retrieval services
+// ensureRAGServices starts all RAG Docker containers via the
+// Containers module adapter. When remote distribution is enabled,
+// deploys to the remote host instead.
 func ensureRAGServices(logger *logrus.Logger) error {
 	projectDir, err := filepath.Abs(".")
 	if err != nil {
 		return fmt.Errorf("failed to get project directory: %w", err)
 	}
 
-	// Check if RAG compose file exists
 	ragComposeFile := filepath.Join(projectDir, "docker", "rag", "docker-compose.rag.yml")
 	if !fileExists(ragComposeFile) {
 		logger.WithField("file", ragComposeFile).Warn("RAG compose file not found, skipping RAG auto-start")
 		return nil
 	}
 
-	// Detect container runtime
-	runtime, _, err := DetectContainerRuntime()
-	if err != nil {
-		return fmt.Errorf("container runtime detection failed: %w", err)
+	if globalContainerAdapter == nil {
+		return fmt.Errorf("container adapter not initialized")
 	}
 
-	// Detect compose command
-	composeCmd, composeArgs, err := DetectComposeCommand(runtime)
-	if err != nil {
-		return fmt.Errorf("compose command detection failed: %w", err)
+	ctx := context.Background()
+
+	if globalContainerAdapter.RemoteEnabled() {
+		logger.Info("Starting RAG services on remote host via Containers module")
+		if err := globalContainerAdapter.RemoteComposeUp(
+			ctx, ragComposeFile, "rag",
+		); err != nil {
+			logger.WithError(err).Warn("Failed to start RAG services on remote, falling back to local")
+		} else {
+			logger.Info("RAG services starting on remote host")
+			return nil
+		}
 	}
 
-	logger.WithFields(logrus.Fields{
-		"runtime": runtime,
-		"compose": composeCmd,
-	}).Info("Starting RAG services (embeddings, vector DBs, reranking)")
-
-	// Build compose command with rag profile
-	var cmdArgs []string
-	if len(composeArgs) > 0 {
-		cmdArgs = append(cmdArgs, composeArgs...)
-	}
-	cmdArgs = append(cmdArgs, "-f", ragComposeFile, "--profile", "rag", "up", "-d")
-
-	cmd := exec.Command(composeCmd, cmdArgs...)
-	cmd.Dir = projectDir
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		// Log warning but don't fail - RAG services are optional
-		logger.WithError(err).WithField("output", string(output)).Warn("Failed to start some RAG services, continuing")
+	logger.Info("Starting RAG services via Containers module")
+	if err := globalContainerAdapter.ComposeUp(
+		ctx, ragComposeFile, "rag",
+	); err != nil {
+		logger.WithError(err).Warn("Failed to start some RAG services, continuing")
 		return nil
 	}
-
-	logger.WithField("output", string(output)).Debug("RAG Compose output")
 	logger.Info("RAG services starting in background (ports 6333-8030)")
 	return nil
 }
@@ -279,14 +263,25 @@ func GetInfrastructureStatus(logger *logrus.Logger) *InfrastructureStatus {
 	return status
 }
 
-// checkTCPPort checks if a TCP port is open
+// checkTCPPort checks if a TCP port is open.
+// Uses the Containers module adapter when available, falls back to
+// direct net.DialTimeout.
 func checkTCPPort(host string, port int) bool {
-	cmd := exec.Command("nc", "-z", "-w", "1", host, fmt.Sprintf("%d", port))
-	return cmd.Run() == nil
+	if globalContainerAdapter != nil {
+		return globalContainerAdapter.HealthCheckTCP(host, port)
+	}
+	// Fallback: direct TCP dial.
+	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
+	conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
 }
 
 // fileExists checks if a file exists
 func fileExists(path string) bool {
-	cmd := exec.Command("test", "-f", path)
-	return cmd.Run() == nil
+	_, err := os.Stat(path)
+	return err == nil
 }

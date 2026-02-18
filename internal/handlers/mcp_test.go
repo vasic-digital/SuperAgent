@@ -666,7 +666,7 @@ func TestMCPHandler_MCPToolsCall_WithProviderRegistry(t *testing.T) {
 	}
 
 	// Create a real provider registry
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
 	handler := &MCPHandler{
 		config:           cfg,
@@ -709,7 +709,7 @@ func TestMCPHandler_MCPToolsCall_WithProviderRegistry_NoUnderscore(t *testing.T)
 	}
 
 	// Create a real provider registry
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
 	handler := &MCPHandler{
 		config:           cfg,
@@ -751,7 +751,7 @@ func TestMCPHandler_MCPToolsCall_MissingNameWithRegistry(t *testing.T) {
 	}
 
 	// Create a real provider registry
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 
 	handler := &MCPHandler{
 		config:           cfg,

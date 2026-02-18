@@ -389,6 +389,28 @@ export GIN_MODE=debug
 make run-dev
 ```
 
+## Mandatory Constraints
+
+### HTTP/3 (QUIC) with Brotli Compression (MANDATORY)
+- **ALL HTTP communication MUST use HTTP/3 (QUIC) as the primary transport protocol** with Brotli compression
+- **HTTP/2 is ONLY allowed as a fallback** when HTTP/3 is not supported by the remote endpoint
+- **Compression priority**: Brotli (primary) → gzip (fallback only when Brotli is unavailable)
+- **All HTTP clients and servers** MUST prefer HTTP/3 and advertise it via `Alt-Svc` headers
+- **Go implementation**: Use `quic-go/quic-go` for HTTP/3 transport and `andybalholm/brotli` for compression
+
+### Resource Limits for Tests & Challenges (CRITICAL)
+- **ALL test and challenge execution MUST be strictly limited to 30-40% of host system resources**
+- **CPU limiting**: Use `GOMAXPROCS=2`, `nice -n 19` for all test processes
+- **I/O limiting**: Use `ionice -c 3` for all test and challenge processes
+- **Sequential execution**: Use `-p 1` flag for `go test`
+- **Rationale**: The host machine runs mission-critical processes; exceeding limits has caused system crashes
+
+### Centralized Container Management (MANDATORY)
+- **ALL container operations** (runtime detection, compose up/down, health checks, remote distribution) MUST go through the Containers module (`digital.vasic.containers`) via `internal/adapters/containers/adapter.go`
+- **No direct `exec.Command`** to `docker`/`podman` in production code — use adapter methods instead
+- **Adapter methods**: `DetectRuntime`, `ComposeUp`, `ComposeDown`, `HealthCheck`, `HealthCheckHTTP`, `HealthCheckTCP`, `Distribute`, `Shutdown`
+- **Remote distribution**: Enabled via `CONTAINERS_REMOTE_*` env vars with SSH-based execution, resource-aware scheduling, SSH tunnels, and volume management
+
 ## Additional Resources
 
 ### Documentation

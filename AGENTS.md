@@ -400,6 +400,7 @@ Key environment variables (see `.env.example`):
 - **Remote configuration capability**: Must support configuration for external services hosted on entirely different physical machines
 - **Automatic boot-up**: When HelixAgent starts, all containers must boot up and reach full capacity state before HelixAgent is considered ready to run
 - **Remote service health checks**: If services are remote, health checks MUST be executed using API calls with proper error handling
+- **Centralized Container Management**: ALL container operations (runtime detection, compose up/down, health checks, remote distribution) MUST go through the Containers module (`digital.vasic.containers`) via `internal/adapters/containers/adapter.go`. No direct `exec.Command` to `docker`/`podman` in production code. The adapter provides: `DetectRuntime`, `ComposeUp`, `ComposeDown`, `HealthCheck`, `HealthCheckHTTP`, `HealthCheckTCP`, `Distribute`, `Shutdown`. Remote distribution enabled via `CONTAINERS_REMOTE_*` env vars with SSH-based remote execution, resource-aware scheduling (5 strategies), SSH tunnel networking, and SSHFS/NFS/rsync volume management.
 
 ### 4. Configuration Management
 - **Exporting configuration files for all supported CLI agents MUST be done using only HelixAgent**
@@ -423,13 +424,33 @@ Key environment variables (see `.env.example`):
 - **Code must pass all linting, formatting, and security scans** (`make fmt vet lint security-scan`)
 - **Commit messages MUST follow Conventional Commits** with proper scoping
 
-### 8. Validation Before Release
+### 8. HTTP/3 (QUIC) with Brotli Compression (MANDATORY)
+- **ALL HTTP communication MUST use HTTP/3 (QUIC) as the primary transport protocol** with Brotli compression
+- **HTTP/2 is ONLY allowed as a fallback** when HTTP/3 is not supported by the remote endpoint
+- **Compression priority**: Brotli (primary) → gzip (fallback only when Brotli is unavailable)
+- **All HTTP clients** (provider API calls, health checks, MCP connections, webhook deliveries, etc.) MUST prefer HTTP/3 with Brotli
+- **All HTTP servers** (HelixAgent API, gRPC-gateway, SSE endpoints, etc.) MUST support HTTP/3 and advertise it via `Alt-Svc` headers
+- **Go implementation**: Use `quic-go/quic-go` for HTTP/3 transport and `andybalholm/brotli` for compression
+- **Testing**: All HTTP integration tests MUST verify HTTP/3 capability where applicable
+
+### 9. Resource Limits for Tests and Challenges (CRITICAL)
+- **ALL test and challenge execution MUST be strictly limited to 30-40% of host system resources**
+- **This is a CRITICAL constraint** — violating this has caused host machine crashes and full system resets
+- **CPU limiting**: Use `GOMAXPROCS=2` (or proportional to available cores), `nice -n 19` for all test processes
+- **I/O limiting**: Use `ionice -c 3` (idle class) for all test and challenge processes
+- **Sequential execution**: Use `-p 1` flag for `go test` to prevent parallel package execution
+- **Container limits**: All test infrastructure containers MUST have CPU and memory limits set
+- **Challenge scripts**: MUST NOT spawn unbounded parallel processes; use controlled concurrency
+- **Monitoring**: Resource usage MUST be checked before and during test execution
+- **Rationale**: The host machine runs mission-critical processes; tests and challenges are secondary workloads
+
+### 10. Validation Before Release
 - **All components MUST pass the complete validation suite** (`make ci-validate-all`)
 - **Challenge scripts MUST execute successfully** (`./challenges/scripts/run_all_challenges.sh`)
 - **Infrastructure MUST be validated** (`make test-with-infra`)
 - **Performance MUST meet benchmarks** (stress tests, chaos tests)
 
-### 9. No Mock Implementations in Production Code
+### 11. No Mock Implementations in Production Code
 - **Mocks, stubs, and fakes are STRICTLY FORBIDDEN in production code**
 - **Mocked or stubbed data ONLY allowed for unit tests** – all other components MUST use real implementations
 - **No placeholders, no TODO implementations that return mock data** – all production code must be fully functional
@@ -437,7 +458,7 @@ Key environment variables (see `.env.example`):
 - **Integration tests must validate actual connectivity and functionality** – no simulated success allowed
 - **Fallback chains must be real**: Fallback mechanisms must be tested with actual provider failures
 
-### 10. Third-Party Submodule Management
+### 12. Third-Party Submodule Management
 - **Third-party submodules (CLI agents, MCP servers, etc.) MUST NOT be committed or pushed** – they are external dependencies tracked at specific versions
 - **Only project-owned submodules (LLMsVerifier, formatters) may be updated** – and only when necessary for project functionality
 - **Submodules under `cli_agents/` are third-party code** – never commit changes to these repositories
@@ -539,7 +560,7 @@ Note: Some of these rules are TypeScript‑specific; for Go code, follow the Go�
 
 **Version:** 1.1.0 | **Updated:** 2026-02-17 12:00
 
-Constitution with 22 rules (22 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 2, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1
+Constitution with 24 rules (24 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 2, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1
 
 ## Mandatory Principles
 
@@ -626,6 +647,16 @@ Constitution with 22 rules (22 mandatory) across categories: Quality: 2, Safety:
 
 **Unified Configuration** (Priority: 2)
 - CLI agent config export uses only HelixAgent + LLMsVerifier's unified generator. No third-party scripts.
+
+### Networking
+
+**HTTP/3 (QUIC) with Brotli Compression** (Priority: 1)
+- ALL HTTP communication MUST use HTTP/3 (QUIC) as primary transport with Brotli compression. HTTP/2 only as fallback. Compression priority: Brotli → gzip. All HTTP clients and servers MUST prefer HTTP/3. Use `quic-go/quic-go` for transport and `andybalholm/brotli` for compression.
+
+### Resource Management
+
+**Test and Challenge Resource Limits** (Priority: 1)
+- ALL test and challenge execution MUST be strictly limited to 30-40% of host system resources. Use GOMAXPROCS=2, nice -n 19, ionice -c 3, and -p 1 for go test. Container limits required. Host machine runs mission-critical processes; exceeding limits has caused system crashes.
 
 ### Observability
 

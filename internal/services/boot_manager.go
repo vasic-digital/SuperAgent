@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	containeradapter "dev.helix.agent/internal/adapters/containers"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/services/discovery"
 	"github.com/sirupsen/logrus"
@@ -22,13 +23,14 @@ type BootResult struct {
 
 // BootManager handles starting, health-checking, and stopping all configured services.
 type BootManager struct {
-	Config         *config.ServicesConfig
-	Logger         *logrus.Logger
-	Results        map[string]*BootResult
-	HealthChecker  *ServiceHealthChecker
-	Discoverer     discovery.Discoverer
-	RemoteDeployer RemoteDeployer
-	ProjectDir     string
+	Config           *config.ServicesConfig
+	Logger           *logrus.Logger
+	Results          map[string]*BootResult
+	HealthChecker    *ServiceHealthChecker
+	Discoverer       discovery.Discoverer
+	RemoteDeployer   RemoteDeployer
+	ContainerAdapter *containeradapter.Adapter
+	ProjectDir       string
 }
 
 // NewBootManager creates a new BootManager.
@@ -272,6 +274,20 @@ func (bm *BootManager) ShutdownAll() error {
 }
 
 func (bm *BootManager) startComposeServices(composeFile, profile string, services []string) error {
+	// Use Containers module adapter when available.
+	if bm.ContainerAdapter != nil && composeFile != "" {
+		bm.Logger.WithFields(logrus.Fields{
+			"file":     composeFile,
+			"profile":  profile,
+			"services": strings.Join(services, ", "),
+		}).Info("Starting compose services via Containers module")
+		ctx := context.Background()
+		return bm.ContainerAdapter.ComposeUp(
+			ctx, composeFile, profile,
+		)
+	}
+
+	// Fallback: direct exec.Command.
 	composeCmd, composeArgs := detectComposeCmd()
 
 	var cmdArgs []string
@@ -302,6 +318,19 @@ func (bm *BootManager) startComposeServices(composeFile, profile string, service
 }
 
 func (bm *BootManager) stopComposeServices(composeFile, profile string, services []string) error {
+	// Use Containers module adapter when available.
+	if bm.ContainerAdapter != nil && composeFile != "" {
+		bm.Logger.WithFields(logrus.Fields{
+			"file":     composeFile,
+			"services": strings.Join(services, ", "),
+		}).Info("Stopping compose services via Containers module")
+		ctx := context.Background()
+		return bm.ContainerAdapter.ComposeDown(
+			ctx, composeFile, profile,
+		)
+	}
+
+	// Fallback: direct exec.Command.
 	composeCmd, composeArgs := detectComposeCmd()
 
 	var cmdArgs []string

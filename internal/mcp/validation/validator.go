@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"dev.helix.agent/internal/adapters/containers"
 )
 
 // MCPRequirement defines what an MCP server needs to work
@@ -59,11 +61,12 @@ type MCPValidationReport struct {
 
 // MCPValidator validates MCP servers
 type MCPValidator struct {
-	requirements map[string]*MCPRequirement
-	results      map[string]*MCPValidationResult
-	mu           sync.RWMutex
-	envCache     map[string]string
-	timeout      time.Duration
+	requirements     map[string]*MCPRequirement
+	results          map[string]*MCPValidationResult
+	mu               sync.RWMutex
+	envCache         map[string]string
+	timeout          time.Duration
+	ContainerAdapter *containers.Adapter
 }
 
 // NewMCPValidator creates a new MCP validator
@@ -603,12 +606,10 @@ func (v *MCPValidator) checkLocalService(service string) bool {
 		_, err := exec.Command("redis-cli", "-p", "16379", "ping").Output()
 		return err == nil
 	case "docker":
-		_, err := exec.Command("docker", "info").Output()
-		if err != nil {
-			// Try podman
-			_, err = exec.Command("podman", "info").Output()
+		if v.ContainerAdapter != nil {
+			return v.ContainerAdapter.RuntimeAvailable(context.Background())
 		}
-		return err == nil
+		return false
 	case "kubernetes":
 		_, err := exec.Command("kubectl", "cluster-info").Output()
 		return err == nil

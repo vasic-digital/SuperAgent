@@ -125,9 +125,10 @@ func getMinimalConfig() *config.Config {
 			Enabled: false,
 		},
 		LLM: config.LLMConfig{
-			DefaultTimeout: 30 * time.Second,
-			MaxRetries:     3,
-			Providers:      map[string]config.ProviderConfig{},
+			DefaultTimeout:       30 * time.Second,
+			MaxRetries:           3,
+			Providers:            map[string]config.ProviderConfig{},
+			DisableAutoDiscovery: true,
 		},
 		MCP: config.MCPConfig{
 			Enabled: false,
@@ -920,8 +921,8 @@ func TestSetupRouter_ProviderVerificationEndpoints(t *testing.T) {
 		req := httptest.NewRequest("POST", "/v1/providers/discover", nil)
 		router.ServeHTTP(w, req)
 
-		// Discovery may succeed or fail
-		assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusInternalServerError,
+		// Discovery may succeed, fail, or return unavailable (auto-discovery disabled in tests)
+		assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusInternalServerError || w.Code == http.StatusServiceUnavailable,
 			"Expected valid HTTP status, got %d", w.Code)
 	})
 
@@ -930,8 +931,8 @@ func TestSetupRouter_ProviderVerificationEndpoints(t *testing.T) {
 		req := httptest.NewRequest("POST", "/v1/providers/rediscover", nil)
 		router.ServeHTTP(w, req)
 
-		// Rediscovery may succeed or fail
-		assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusInternalServerError,
+		// Rediscovery may succeed, fail, or return unavailable (auto-discovery disabled in tests)
+		assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusInternalServerError || w.Code == http.StatusServiceUnavailable,
 			"Expected valid HTTP status, got %d", w.Code)
 	})
 

@@ -67,28 +67,13 @@ func ensureInfrastructure() error {
 	return nil
 }
 
-// startInfrastructureDirect starts infrastructure using docker-compose directly
+// startInfrastructureDirect starts infrastructure using docker-compose directly.
+// Uses centralized container runtime detection.
 func startInfrastructureDirect(projectRoot string) error {
-	// Detect compose command
-	composeCmd := "docker"
-	composeArgs := []string{"compose"}
-
-	// Check if docker compose works
-	checkCmd := exec.Command("docker", "compose", "version")
-	if err := checkCmd.Run(); err != nil {
-		// Try docker-compose
-		if _, err := exec.LookPath("docker-compose"); err == nil {
-			composeCmd = "docker-compose"
-			composeArgs = nil
-		} else {
-			// Try podman-compose
-			if _, err := exec.LookPath("podman-compose"); err == nil {
-				composeCmd = "podman-compose"
-				composeArgs = nil
-			} else {
-				return fmt.Errorf("no compose command found")
-			}
-		}
+	// Detect compose command via centralized helper.
+	composeCmd, composeArgs := detectComposeCommand()
+	if composeCmd == "" {
+		return fmt.Errorf("no compose command found")
 	}
 
 	// Start core services
@@ -104,6 +89,29 @@ func startInfrastructureDirect(projectRoot string) error {
 	}
 
 	return nil
+}
+
+// containerRuntimes lists the container runtimes to probe, in preference order.
+var containerRuntimes = []string{"docker", "podman"}
+
+// detectComposeCommand returns the compose command and initial args.
+// It probes each runtime in containerRuntimes order, checking for the
+// compose plugin first (e.g. "docker compose") then the standalone binary
+// (e.g. "docker-compose").
+func detectComposeCommand() (string, []string) {
+	for _, runtime := range containerRuntimes {
+		// Try "<runtime> compose" (compose plugin)
+		checkCmd := exec.Command(runtime, "compose", "version")
+		if err := checkCmd.Run(); err == nil {
+			return runtime, []string{"compose"}
+		}
+		// Try <runtime>-compose standalone binary
+		standalone := runtime + "-compose"
+		if _, err := exec.LookPath(standalone); err == nil {
+			return standalone, nil
+		}
+	}
+	return "", nil
 }
 
 // waitForServices waits for critical services to be ready

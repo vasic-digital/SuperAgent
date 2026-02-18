@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -36,13 +35,7 @@ func TestMem0Infrastructure(t *testing.T) {
 		containers := []string{"helixagent-postgres", "helixagent-redis"}
 
 		for _, container := range containers {
-			cmd := exec.Command("podman", "ps", "--filter", fmt.Sprintf("name=%s", container), "--format", "{{.Status}}")
-			output, err := cmd.Output()
-			if err != nil {
-				// Try docker if podman fails
-				cmd = exec.Command("docker", "ps", "--filter", fmt.Sprintf("name=%s", container), "--format", "{{.Status}}")
-				output, err = cmd.Output()
-			}
+			output, _ := containerExec("ps", "--filter", fmt.Sprintf("name=%s", container), "--format", "{{.Status}}")
 
 			status := strings.TrimSpace(string(output))
 			if status == "" {

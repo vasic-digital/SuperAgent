@@ -22,7 +22,7 @@ func newTestProviderLogger() *logrus.Logger {
 
 func TestNewProviderManagementHandler(t *testing.T) {
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	assert.NotNil(t, handler)
@@ -33,7 +33,7 @@ func TestNewProviderManagementHandler(t *testing.T) {
 func TestProviderManagementHandler_AddProvider_Validation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	t.Run("returns error for missing required fields", func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestProviderManagementHandler_AddProvider_Validation(t *testing.T) {
 		for _, providerType := range validTypes {
 			t.Run(providerType, func(t *testing.T) {
 				// Create new handler for each test to avoid conflicts
-				localRegistry := services.NewProviderRegistry(nil, nil)
+				localRegistry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 				localHandler := NewProviderManagementHandler(localRegistry, logger)
 
 				w := httptest.NewRecorder()
@@ -127,7 +127,7 @@ func TestProviderManagementHandler_AddProvider_Validation(t *testing.T) {
 func TestProviderManagementHandler_GetProvider(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	t.Run("returns 404 for non-existent provider", func(t *testing.T) {
@@ -150,7 +150,7 @@ func TestProviderManagementHandler_GetProvider(t *testing.T) {
 func TestProviderManagementHandler_UpdateProvider(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	t.Run("returns 404 for non-existent provider", func(t *testing.T) {
@@ -186,7 +186,7 @@ func TestProviderManagementHandler_UpdateProvider(t *testing.T) {
 func TestProviderManagementHandler_DeleteProvider(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	t.Run("returns 404 for non-existent provider", func(t *testing.T) {
@@ -275,7 +275,7 @@ func TestProviderResponse_Struct(t *testing.T) {
 func TestProviderManagementHandler_GetProvider_EmptyID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()
@@ -297,7 +297,7 @@ func TestProviderManagementHandler_GetProvider_EmptyID(t *testing.T) {
 func TestProviderManagementHandler_UpdateProvider_EmptyID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()
@@ -322,7 +322,7 @@ func TestProviderManagementHandler_UpdateProvider_EmptyID(t *testing.T) {
 func TestProviderManagementHandler_DeleteProvider_EmptyID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()
@@ -344,7 +344,7 @@ func TestProviderManagementHandler_DeleteProvider_EmptyID(t *testing.T) {
 func TestProviderManagementHandler_AddProvider_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()
@@ -372,7 +372,7 @@ func TestProviderManagementHandler_AddProvider_Success(t *testing.T) {
 func TestProviderManagementHandler_AddProvider_EmptyBody(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()
@@ -388,7 +388,7 @@ func TestProviderManagementHandler_AddProvider_EmptyBody(t *testing.T) {
 func TestProviderManagementHandler_UpdateProvider_EmptyRequest(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()
@@ -407,7 +407,7 @@ func TestProviderManagementHandler_UpdateProvider_EmptyRequest(t *testing.T) {
 func TestProviderManagementHandler_AddProvider_DuplicateProvider(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	// First, register a provider using RegisterProviderFromConfig
@@ -455,7 +455,7 @@ func TestProviderManagementHandler_AddProvider_DuplicateProvider(t *testing.T) {
 func TestProviderManagementHandler_AddProvider_DefaultWeight(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()
@@ -486,7 +486,7 @@ func TestProviderManagementHandler_AddProvider_DefaultWeight(t *testing.T) {
 func TestProviderManagementHandler_UpdateProvider_WithModel(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()
@@ -516,7 +516,7 @@ func TestProviderManagementHandler_UpdateProvider_WithModel(t *testing.T) {
 func TestProviderManagementHandler_UpdateProvider_EnabledNil(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()
@@ -541,7 +541,7 @@ func TestProviderManagementHandler_UpdateProvider_EnabledNil(t *testing.T) {
 func TestProviderManagementHandler_DeleteProvider_WithForce(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()
@@ -558,7 +558,7 @@ func TestProviderManagementHandler_DeleteProvider_WithForce(t *testing.T) {
 func TestProviderManagementHandler_DeleteProvider_ForceParamVariations(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	forceValues := []string{"false", "TRUE", "True", "1", "yes"}
@@ -590,7 +590,7 @@ func TestProviderManagementHandler_AddProvider_AllProviderTypes(t *testing.T) {
 
 	for i, providerType := range providerTypes {
 		t.Run(providerType, func(t *testing.T) {
-			registry := services.NewProviderRegistry(nil, nil)
+			registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 			handler := NewProviderManagementHandler(registry, logger)
 
 			w := httptest.NewRecorder()
@@ -624,7 +624,7 @@ func TestProviderManagementHandler_AddProvider_AllProviderTypes(t *testing.T) {
 func TestProviderManagementHandler_UpdateProvider_EmptyBody(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()
@@ -643,7 +643,7 @@ func TestProviderManagementHandler_UpdateProvider_EmptyBody(t *testing.T) {
 func TestProviderManagementHandler_GetProvider_VariousIDs(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	testIDs := []string{
@@ -673,7 +673,7 @@ func TestProviderManagementHandler_GetProvider_VariousIDs(t *testing.T) {
 func TestProviderManagementHandler_AddProvider_WithConfig(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := newTestProviderLogger()
-	registry := services.NewProviderRegistry(nil, nil)
+	registry := services.NewProviderRegistryWithoutAutoDiscovery(nil, nil)
 	handler := NewProviderManagementHandler(registry, logger)
 
 	w := httptest.NewRecorder()

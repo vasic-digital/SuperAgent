@@ -2,22 +2,24 @@ package llm
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
+	"dev.helix.agent/internal/adapters/containers"
 	"dev.helix.agent/internal/config"
 	"dev.helix.agent/internal/models"
 )
 
 type Client struct {
-	baseURL string
-	apiKey  string
-	client  *http.Client
+	baseURL            string
+	apiKey             string
+	client             *http.Client
+	ContainerAdapter   *containers.Adapter
 }
 
 type MemoryRequest struct {
@@ -505,7 +507,8 @@ func (c *Client) testConnection() bool {
 	return resp.StatusCode == http.StatusOK
 }
 
-// startCogneeContainer starts Cognee using Docker Compose
+// startCogneeContainer starts Cognee using Docker Compose via the
+// Containers module adapter.
 func (c *Client) startCogneeContainer() error {
 	// Find project root dynamically - no hardcoded paths
 	projectRoot := findCogneeProjectRoot()
@@ -513,47 +516,20 @@ func (c *Client) startCogneeContainer() error {
 		return fmt.Errorf("cannot find HelixAgent project root (docker-compose.yml not found)")
 	}
 
-	// Try docker compose subcommand first (newer docker with compose plugin)
-	var cmd *exec.Cmd
-	var output []byte
-	var err error
+	composeFile := filepath.Join(projectRoot, "docker-compose.yml")
 
-	if dockerPath, lookErr := exec.LookPath("docker"); lookErr == nil {
-		// Try "docker compose" subcommand first
-		cmd = exec.Command(dockerPath, "compose", "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
-		cmd.Dir = projectRoot
-		output, err = cmd.CombinedOutput()
-		if err == nil {
-			goto waitForHealth
-		}
+	// Use Containers module adapter for compose up.
+	if c.ContainerAdapter == nil {
+		return fmt.Errorf("container adapter not initialized")
+	}
+	ctx := context.Background()
+	if err := c.ContainerAdapter.ComposeUp(
+		ctx, composeFile, "default",
+	); err != nil {
+		return fmt.Errorf("failed to start Cognee containers: %w", err)
 	}
 
-	// Fall back to docker-compose binary
-	if dcPath, lookErr := exec.LookPath("docker-compose"); lookErr == nil {
-		cmd = exec.Command(dcPath, "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
-		cmd.Dir = projectRoot
-		output, err = cmd.CombinedOutput()
-		if err == nil {
-			goto waitForHealth
-		}
-	}
-
-	// Try podman-compose
-	if pcPath, lookErr := exec.LookPath("podman-compose"); lookErr == nil {
-		cmd = exec.Command(pcPath, "--profile", "default", "up", "-d", "cognee", "chromadb", "postgres", "redis")
-		cmd.Dir = projectRoot
-		output, err = cmd.CombinedOutput()
-		if err == nil {
-			goto waitForHealth
-		}
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to start Cognee containers: %w, output: %s", err, string(output))
-	}
-	return fmt.Errorf("no container runtime found (tried docker, docker-compose, podman-compose)")
-
-waitForHealth:
+	// waitForHealth:
 	// Wait for services to be healthy with proper timeout
 	maxWait := 90 * time.Second
 	interval := 2 * time.Second
