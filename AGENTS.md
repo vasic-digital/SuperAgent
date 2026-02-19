@@ -4,7 +4,7 @@ This document provides guidance for AI agents working on the HelixAgent project.
 
 ## Project Overview
 
-HelixAgent is an AI-powered ensemble LLM service written in Go (1.24+) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports **22 dedicated LLM providers** (Claude, Chutes, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI) plus a **generic OpenAI-compatible provider** for 17+ additional providers (NVIDIA, SambaNova, Hyperbolic, Novita, SiliconFlow, Kimi/Moonshot, Upstage, Codestral, DeepInfra, Baseten, NLP Cloud, etc.) with **dynamic provider selection** based on LLMsVerifier verification scores.
+HelixAgent is an AI-powered ensemble LLM service written in Go (1.25.3) that combines responses from multiple language models using intelligent aggregation strategies. It provides OpenAI-compatible APIs and supports **22 dedicated LLM providers** (Claude, Chutes, DeepSeek, Gemini, Mistral, OpenRouter, Qwen, ZAI, Zen, Cerebras, Ollama, AI21, Anthropic, Cohere, Fireworks, Groq, HuggingFace, OpenAI, Perplexity, Replicate, Together, xAI) plus a **generic OpenAI-compatible provider** for 17+ additional providers (NVIDIA, SambaNova, Hyperbolic, Novita, SiliconFlow, Kimi/Moonshot, Upstage, Codestral, DeepInfra, Baseten, NLP Cloud, etc.) with **dynamic provider selection** based on LLMsVerifier verification scores.
 
 ## Architecture Overview
 
@@ -526,29 +526,11 @@ Key environment variables (see `.env.example`):
   - Example: `feat(llm): add ensemble voting strategy`
 - Always run `make fmt vet lint test` before committing.
 
-## Cursor Rules
-
-The repository includes a `.cursorrules` file with the following guidelines:
-
-```
-# Code style
-- Use TypeScript with strict mode.
-- Prefer functional programming patterns.
-- Use async/await over callbacks.
-- Write unit tests for all new features.
-- Follow the existing project structure.
-- Use JSDoc comments for public APIs.
-- Avoid `any`; use proper types.
-```
-
-Note: Some of these rules are TypeScript‑specific; for Go code, follow the Go‑specific guidelines above.
-
 ## Additional Resources
 
 - `CLAUDE.md` – Detailed project overview and architecture.
 - `Makefile` – Complete list of available commands.
 - `go.mod` – Go module dependencies.
-- `.cursorrules` – Cursor‑specific guidelines.
 - `docs/` – Project documentation.
 
 ---
