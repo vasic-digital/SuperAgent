@@ -159,6 +159,11 @@ func (p *ClaudeCLIProvider) GetCLIError() error {
 
 // Complete implements the LLMProvider interface
 func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+	// Check if we're inside a Claude Code session (causes recursive CLI issues)
+	if IsInsideClaudeCodeSession() {
+		return nil, fmt.Errorf("claude CLI cannot run inside another Claude Code session (detected CLAUDECODE or CLAUDE_CODE_ENTRYPOINT env var)")
+	}
+
 	if !p.IsCLIAvailable() {
 		return nil, fmt.Errorf("Claude Code CLI not available: %v", p.cliCheckErr)
 	}
@@ -244,12 +249,34 @@ func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest
 		if cmdCtx.Err() == context.DeadlineExceeded {
 			return nil, fmt.Errorf("claude CLI timed out after %v", p.timeout)
 		}
-		return nil, fmt.Errorf("claude CLI failed: %w (stderr: %s)", err, stderr.String())
+		// Build comprehensive error message with both stdout and stderr
+		// Claude CLI may output errors to either stream
+		stdoutStr := strings.TrimSpace(stdout.String())
+		stderrStr := strings.TrimSpace(stderr.String())
+		var errorDetail strings.Builder
+		if stderrStr != "" {
+			errorDetail.WriteString(stderrStr)
+		}
+		if stdoutStr != "" {
+			if errorDetail.Len() > 0 {
+				errorDetail.WriteString(" | stdout: ")
+			}
+			errorDetail.WriteString(stdoutStr)
+		}
+		if errorDetail.Len() == 0 {
+			errorDetail.WriteString("(no output captured)")
+		}
+		return nil, fmt.Errorf("claude CLI failed: %w (output: %s)", err, errorDetail.String())
 	}
 
 	rawOutput := stdout.String()
 	if rawOutput == "" {
-		return nil, fmt.Errorf("claude CLI returned empty response")
+		// Check if stderr has content (might be error message)
+		stderrStr := strings.TrimSpace(stderr.String())
+		if stderrStr != "" {
+			return nil, fmt.Errorf("claude CLI returned empty response with stderr: %s", stderrStr)
+		}
+		return nil, fmt.Errorf("claude CLI returned empty response (no stdout or stderr)")
 	}
 
 	// Parse JSON output
@@ -319,6 +346,11 @@ func (p *ClaudeCLIProvider) parseJSONResponse(rawOutput string) (string, string,
 
 // CompleteStream implements streaming for Claude CLI (reads output line by line)
 func (p *ClaudeCLIProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+	// Check if we're inside a Claude Code session (causes recursive CLI issues)
+	if IsInsideClaudeCodeSession() {
+		return nil, fmt.Errorf("claude CLI cannot run inside another Claude Code session (detected CLAUDECODE or CLAUDE_CODE_ENTRYPOINT env var)")
+	}
+
 	if !p.IsCLIAvailable() {
 		return nil, fmt.Errorf("Claude Code CLI not available: %v", p.cliCheckErr)
 	}

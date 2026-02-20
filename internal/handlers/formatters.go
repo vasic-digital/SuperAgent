@@ -510,10 +510,10 @@ func (f *HTMLFormatter) FormatFinalResponse(content string) string {
 
 func (f *HTMLFormatter) FormatFallbackIndicator(role services.DebateRole, fromProvider, fromModel, toProvider, toModel, reason string, duration time.Duration) string {
 	roleName := getRoleName(role)
-	return fmt.Sprintf(`<div class="fallback-indicator"><strong>[%s]</strong> Fallback from %s/%s to %s/%s - %s (%s)</div>`,
+	return fmt.Sprintf(`<div class="fallback-indicator"><strong>[%s]</strong> Fallback from %s to %s - %s (%s)</div>`,
 		html.EscapeString(roleName),
-		html.EscapeString(fromProvider), html.EscapeString(fromModel),
-		html.EscapeString(toProvider), html.EscapeString(toModel),
+		html.EscapeString(formatModelRef(fromProvider, fromModel)),
+		html.EscapeString(formatModelRef(toProvider, toModel)),
 		html.EscapeString(reason), formatDuration(duration))
 }
 
@@ -915,10 +915,10 @@ func (f *RTFFormatter) FormatFallbackIndicator(role services.DebateRole, fromPro
 	sb.WriteString("{\\rtf1\\ansi\\deff0\n")
 	sb.WriteString("{\\fonttbl{\\f0\\fswiss Helvetica;}}\n")
 	sb.WriteString("{\\colortbl;\\red255\\green193\\blue7;}\n")
-	sb.WriteString(fmt.Sprintf("\\f0\\fs20\\cf1\\b [%s] Fallback\\b0\\cf0  from %s/%s to %s/%s - %s (%s)\\par\n",
+	sb.WriteString(fmt.Sprintf("\\f0\\fs20\\cf1\\b [%s] Fallback\\b0\\cf0  from %s to %s - %s (%s)\\par\n",
 		escapeRTF(roleName),
-		escapeRTF(fromProvider), escapeRTF(fromModel),
-		escapeRTF(toProvider), escapeRTF(toModel),
+		escapeRTF(formatModelRef(fromProvider, fromModel)),
+		escapeRTF(formatModelRef(toProvider, toModel)),
 		escapeRTF(reason), formatDuration(duration)))
 	sb.WriteString("}")
 
@@ -1125,8 +1125,8 @@ func (f *TerminalFormatter) FormatFallbackIndicator(role services.DebateRole, fr
 	} else {
 		sb.WriteString(ANSIYellow)
 	}
-	sb.WriteString(fmt.Sprintf("[%s] Fallback: %s/%s -> %s/%s (%s, %s)",
-		roleName, fromProvider, fromModel, toProvider, toModel, reason, formatDuration(duration)))
+	sb.WriteString(fmt.Sprintf("[%s] Fallback: %s -> %s (%s, %s)",
+		roleName, formatModelRef(fromProvider, fromModel), formatModelRef(toProvider, toModel), reason, formatDuration(duration)))
 	sb.WriteString(ANSIReset)
 	sb.WriteString("\n")
 
@@ -1384,7 +1384,7 @@ func FormatFallbackIndicatorForAllFormats(format OutputFormat, role services.Deb
 	case OutputFormatMarkdown:
 		return FormatFallbackTriggeredMarkdown(getRoleName(role), fromProvider, fromModel, toProvider, toModel, reason, categorizeErrorString(reason), duration)
 	case OutputFormatPlain:
-		return fmt.Sprintf("[%s] Fallback: %s/%s -> %s/%s (%s)\n", getRoleName(role), fromProvider, fromModel, toProvider, toModel, reason)
+		return fmt.Sprintf("[%s] Fallback: %s -> %s (%s)\n", getRoleName(role), formatModelRef(fromProvider, fromModel), formatModelRef(toProvider, toModel), reason)
 	}
 
 	// Handle new formats via registry

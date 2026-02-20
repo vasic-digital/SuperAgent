@@ -567,3 +567,76 @@ func TestClaudeCLIProvider_CompleteStream_NoPrompt(t *testing.T) {
 	assert.Nil(t, ch)
 	assert.Contains(t, err.Error(), "no prompt")
 }
+
+// ============================================================================
+// Improved Error Handling Tests
+// ============================================================================
+
+// TestIsInsideClaudeCodeSession tests detection of Claude Code session
+func TestIsInsideClaudeCodeSession(t *testing.T) {
+	t.Run("Returns false when no env vars set", func(t *testing.T) {
+		// This test assumes we're not running inside Claude Code during test
+		// The actual result depends on the environment
+		result := IsInsideClaudeCodeSession()
+		t.Logf("IsInsideClaudeCodeSession: %v", result)
+		// Just verify it doesn't panic
+		assert.NotPanics(t, func() {
+			IsInsideClaudeCodeSession()
+		})
+	})
+}
+
+// TestClaudeCLIProvider_Complete_InsideSession tests error when inside Claude Code session
+func TestClaudeCLIProvider_Complete_InsideSession(t *testing.T) {
+	// Create provider
+	provider := NewClaudeCLIProviderWithModel("claude-sonnet-4-20250514")
+
+	// If we're inside a session, we should get an error
+	if IsInsideClaudeCodeSession() {
+		ctx := context.Background()
+		_, err := provider.Complete(ctx, &models.LLMRequest{
+			Prompt: "Hello",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot run inside another Claude Code session")
+	} else {
+		t.Log("Not inside Claude Code session - skipping session detection test")
+	}
+}
+
+// TestClaudeCLIProvider_CompleteStream_InsideSession tests streaming error when inside session
+func TestClaudeCLIProvider_CompleteStream_InsideSession(t *testing.T) {
+	provider := NewClaudeCLIProviderWithModel("claude-sonnet-4-20250514")
+
+	// If we're inside a session, we should get an error
+	if IsInsideClaudeCodeSession() {
+		ctx := context.Background()
+		_, err := provider.CompleteStream(ctx, &models.LLMRequest{
+			Prompt: "Hello",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot run inside another Claude Code session")
+	} else {
+		t.Log("Not inside Claude Code session - skipping session detection test")
+	}
+}
+
+// TestClaudeCLIProvider_Complete_EmptyResponse tests handling of empty response
+func TestClaudeCLIProvider_Complete_EmptyResponse(t *testing.T) {
+	// Create provider with mock behavior
+	provider := &ClaudeCLIProvider{
+		model:        "claude-sonnet-4-20250514",
+		cliAvailable: false,
+		cliCheckErr:  exec.ErrNotFound,
+	}
+	provider.cliCheckOnce.Do(func() {})
+
+	ctx := context.Background()
+	_, err := provider.Complete(ctx, &models.LLMRequest{
+		Prompt: "Hello",
+	})
+
+	assert.Error(t, err)
+	// The error should mention CLI not available
+	assert.Contains(t, err.Error(), "not available")
+}

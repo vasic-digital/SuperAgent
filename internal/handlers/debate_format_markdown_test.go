@@ -1002,3 +1002,113 @@ func TestFullFallbackErrorReportingFlow(t *testing.T) {
 		assert.Contains(t, result, "🔄") // success
 	})
 }
+
+// ============================================================================
+// Model Reference Formatting Tests
+// ============================================================================
+
+func TestFormatModelRef(t *testing.T) {
+	tests := []struct {
+		name     string
+		provider string
+		model    string
+		expected string
+	}{
+		{
+			name:     "Standard case - no prefix duplication",
+			provider: "anthropic",
+			model:    "claude-3-opus",
+			expected: "anthropic/claude-3-opus",
+		},
+		{
+			name:     "NVIDIA model with org prefix in model ID",
+			provider: "nvidia",
+			model:    "nvidia/llama-3.1-nemotron-70b-instruct",
+			expected: "nvidia/llama-3.1-nemotron-70b-instruct",
+		},
+		{
+			name:     "Meta model with org prefix",
+			provider: "nvidia",
+			model:    "meta/llama-3.1-405b-instruct",
+			expected: "nvidia/meta/llama-3.1-405b-instruct",
+		},
+		{
+			name:     "HuggingFace model with org prefix",
+			provider: "huggingface",
+			model:    "meta-llama/Llama-3.3-70B-Instruct",
+			expected: "huggingface/meta-llama/Llama-3.3-70B-Instruct",
+		},
+		{
+			name:     "Empty model returns provider",
+			provider: "anthropic",
+			model:    "",
+			expected: "anthropic",
+		},
+		{
+			name:     "Empty provider returns model",
+			provider: "",
+			model:    "claude-3-opus",
+			expected: "claude-3-opus",
+		},
+		{
+			name:     "Both empty returns empty",
+			provider: "",
+			model:    "",
+			expected: "",
+		},
+		{
+			name:     "Claude model - no prefix duplication",
+			provider: "claude",
+			model:    "claude-sonnet-4-5-20250929",
+			expected: "claude/claude-sonnet-4-5-20250929",
+		},
+		{
+			name:     "Case insensitive prefix matching",
+			provider: "NVIDIA",
+			model:    "nvidia/llama-3.1-nemotron-70b-instruct",
+			expected: "nvidia/llama-3.1-nemotron-70b-instruct",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatModelRef(tt.provider, tt.model)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestFormatFallbackTriggeredMarkdown_NoDoublePrefix(t *testing.T) {
+	t.Run("NVIDIA model with org prefix does not double prefix", func(t *testing.T) {
+		result := FormatFallbackTriggeredMarkdown(
+			"Analyst",
+			"nvidia", "nvidia/llama-3.1-nemotron-70b-instruct",
+			"huggingface", "meta-llama/Llama-3.3-70B-Instruct",
+			"API error: 404",
+			"api_error",
+			226*time.Millisecond,
+		)
+
+		// Should NOT contain double prefix
+		assert.NotContains(t, result, "nvidia/nvidia/")
+		assert.Contains(t, result, "nvidia/llama-3.1-nemotron-70b-instruct")
+
+		// HuggingFace model should have provider prefix added
+		assert.Contains(t, result, "huggingface/meta-llama/Llama-3.3-70B-Instruct")
+	})
+
+	t.Run("Standard model displays correctly", func(t *testing.T) {
+		result := FormatFallbackTriggeredMarkdown(
+			"Analyst",
+			"anthropic", "claude-3-opus",
+			"openai", "gpt-4",
+			"rate limit exceeded",
+			"rate_limit",
+			500*time.Millisecond,
+		)
+
+		// Should have provider/model format
+		assert.Contains(t, result, "anthropic/claude-3-opus")
+		assert.Contains(t, result, "openai/gpt-4")
+	})
+}

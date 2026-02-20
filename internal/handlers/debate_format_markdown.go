@@ -10,6 +10,35 @@ import (
 )
 
 // ============================================================================
+// Model Reference Formatting Utilities
+// ============================================================================
+
+// formatModelRef formats a provider/model reference for display.
+// Handles the case where model IDs already contain a provider-like prefix
+// (e.g., NVIDIA uses "nvidia/llama-3.1-nemotron-70b-instruct").
+// In such cases, we avoid doubling the prefix (nvidia/nvidia/...) by
+// returning just the model ID if it already starts with the provider prefix.
+func formatModelRef(provider, model string) string {
+	if model == "" {
+		return provider
+	}
+	if provider == "" {
+		return model
+	}
+	// Check if model already starts with provider prefix
+	prefix := provider + "/"
+	if strings.HasPrefix(model, prefix) {
+		return model // Model already has provider prefix, use as-is
+	}
+	// Check for common variations (e.g., provider name in different case)
+	lowerPrefix := strings.ToLower(provider) + "/"
+	if strings.HasPrefix(strings.ToLower(model), lowerPrefix) {
+		return model
+	}
+	return provider + "/" + model
+}
+
+// ============================================================================
 // Output Format Types
 // ============================================================================
 
@@ -149,8 +178,8 @@ func FormatResponseIndicatorMarkdown(role services.DebateRole, provider, model s
 
 // FormatFallbackIndicatorMarkdown formats a fallback indicator in Markdown
 func FormatFallbackIndicatorMarkdown(fromProvider, fromModel, toProvider, toModel, reason string) string {
-	return fmt.Sprintf("⚠️ **Fallback:** %s/%s → %s/%s (%s)\n\n",
-		fromProvider, fromModel, toProvider, toModel, reason)
+	return fmt.Sprintf("⚠️ **Fallback:** %s → %s (%s)\n\n",
+		formatModelRef(fromProvider, fromModel), formatModelRef(toProvider, toModel), reason)
 }
 
 // FormatFallbackTriggeredMarkdown formats a detailed fallback triggered indicator
@@ -162,17 +191,17 @@ func FormatFallbackTriggeredMarkdown(role, primaryProvider, primaryModel, fallba
 	categoryIcon := getCategoryIcon(errorCategory)
 
 	sb.WriteString(fmt.Sprintf("\n⚡ **[%s] Fallback Triggered**\n", role))
-	sb.WriteString(fmt.Sprintf("   Primary: %s/%s (%s)\n", primaryProvider, primaryModel, formatDuration(duration)))
+	sb.WriteString(fmt.Sprintf("   Primary: %s (%s)\n", formatModelRef(primaryProvider, primaryModel), formatDuration(duration)))
 	sb.WriteString(fmt.Sprintf("   %s **Error:** %s\n", categoryIcon, errorMsg))
-	sb.WriteString(fmt.Sprintf("   → Trying: %s/%s\n\n", fallbackProvider, fallbackModel))
+	sb.WriteString(fmt.Sprintf("   → Trying: %s\n\n", formatModelRef(fallbackProvider, fallbackModel)))
 
 	return sb.String()
 }
 
 // FormatFallbackSuccessMarkdown formats a fallback success indicator
 func FormatFallbackSuccessMarkdown(role, fallbackProvider, fallbackModel string, attemptNum int, duration time.Duration) string {
-	return fmt.Sprintf("🔄 **[%s] Fallback Succeeded** - %s/%s (attempt %d, %s)\n\n",
-		role, fallbackProvider, fallbackModel, attemptNum, formatDuration(duration))
+	return fmt.Sprintf("🔄 **[%s] Fallback Succeeded** - %s (attempt %d, %s)\n\n",
+		role, formatModelRef(fallbackProvider, fallbackModel), attemptNum, formatDuration(duration))
 }
 
 // FormatFallbackFailedMarkdown formats a fallback failed indicator
@@ -180,7 +209,7 @@ func FormatFallbackFailedMarkdown(role, fallbackProvider, fallbackModel, errorMs
 	categoryIcon := getCategoryIcon(errorCategory)
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("⛔ **[%s] Fallback %d Failed** - %s/%s (%s)\n", role, attemptNum, fallbackProvider, fallbackModel, formatDuration(duration)))
+	sb.WriteString(fmt.Sprintf("⛔ **[%s] Fallback %d Failed** - %s (%s)\n", role, attemptNum, formatModelRef(fallbackProvider, fallbackModel), formatDuration(duration)))
 	sb.WriteString(fmt.Sprintf("   %s **Error:** %s\n\n", categoryIcon, errorMsg))
 
 	return sb.String()
@@ -205,8 +234,8 @@ func FormatFallbackChainMarkdown(position services.DebateTeamPosition, chain []F
 		if attempt.Success {
 			status = "✅"
 		}
-		sb.WriteString(fmt.Sprintf("   %d. %s %s/%s (%s)\n",
-			i+1, status, attempt.Provider, attempt.Model, formatDuration(attempt.Duration)))
+		sb.WriteString(fmt.Sprintf("   %d. %s %s (%s)\n",
+			i+1, status, formatModelRef(attempt.Provider, attempt.Model), formatDuration(attempt.Duration)))
 		if attempt.Error != "" {
 			categoryIcon := getCategoryIcon(categorizeErrorString(attempt.Error))
 			sb.WriteString(fmt.Sprintf("      %s %s\n", categoryIcon, attempt.Error))
@@ -595,8 +624,8 @@ func FormatFallbackWithErrorForFormat(format OutputFormat, role services.DebateR
 		return FormatFallbackTriggeredMarkdown(getRoleName(role), primaryProvider, primaryModel, fallbackProvider, fallbackModel, errorMsg, errorCategory, duration)
 	case OutputFormatPlain:
 		// Plain text
-		return fmt.Sprintf("[%s] Fallback from %s/%s to %s/%s\n  Error: %s (%s)\n",
-			getRoleName(role), primaryProvider, primaryModel, fallbackProvider, fallbackModel, errorMsg, errorCategory)
+		return fmt.Sprintf("[%s] Fallback from %s to %s\n  Error: %s (%s)\n",
+			getRoleName(role), formatModelRef(primaryProvider, primaryModel), formatModelRef(fallbackProvider, fallbackModel), errorMsg, errorCategory)
 	default:
 		return FormatFallbackTriggeredMarkdown(getRoleName(role), primaryProvider, primaryModel, fallbackProvider, fallbackModel, errorMsg, errorCategory, duration)
 	}
@@ -609,10 +638,10 @@ func formatFallbackWithErrorANSI(role services.DebateRole, primaryProvider, prim
 
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("\n%s⚡ [%s]%s Fallback triggered\n", ANSIBrightYellow, roleName, ANSIReset))
-	sb.WriteString(fmt.Sprintf("   %sPrimary:%s %s/%s (%s)\n", ANSIDim, ANSIReset, primaryProvider, primaryModel, formatDuration(duration)))
+	sb.WriteString(fmt.Sprintf("   %sPrimary:%s %s (%s)\n", ANSIDim, ANSIReset, formatModelRef(primaryProvider, primaryModel), formatDuration(duration)))
 	sb.WriteString(fmt.Sprintf("   %s%s Error:%s %s\n", ANSIBrightRed, categoryIcon, ANSIReset, errorMsg))
 	if fallbackProvider != "" {
-		sb.WriteString(fmt.Sprintf("   %s→ Trying:%s %s%s/%s%s\n", ANSIDim, ANSIReset, roleColor, fallbackProvider, fallbackModel, ANSIReset))
+		sb.WriteString(fmt.Sprintf("   %s→ Trying:%s %s%s%s\n", ANSIDim, ANSIReset, roleColor, formatModelRef(fallbackProvider, fallbackModel), ANSIReset))
 	}
 	sb.WriteString("\n")
 	return sb.String()
@@ -645,7 +674,7 @@ func formatFallbackChainPlain(position services.DebateTeamPosition, chain []Fall
 		if attempt.Success {
 			status = "OK"
 		}
-		sb.WriteString(fmt.Sprintf("  %d. [%s] %s/%s (%s)\n", i+1, status, attempt.Provider, attempt.Model, formatDuration(attempt.Duration)))
+		sb.WriteString(fmt.Sprintf("  %d. [%s] %s (%s)\n", i+1, status, formatModelRef(attempt.Provider, attempt.Model), formatDuration(attempt.Duration)))
 		if attempt.Error != "" {
 			sb.WriteString(fmt.Sprintf("     Error: %s\n", attempt.Error))
 		}
