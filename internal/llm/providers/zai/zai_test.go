@@ -30,7 +30,7 @@ func TestNewZAIProvider(t *testing.T) {
 			expected: &ZAIProvider{
 				apiKey:  "test-key",
 				baseURL: "https://open.bigmodel.cn/api/paas/v4",
-				model:   "glm-4.7",
+				model:   "glm-4.5",
 				httpClient: &http.Client{
 					Timeout: 60 * time.Second,
 				},
@@ -907,4 +907,230 @@ func BenchmarkZAIProvider_convertToZAIRequest(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = provider.convertToZAIRequest(req)
 	}
+}
+
+func TestZAIProvider_ZhipuErrorCodes(t *testing.T) {
+	tests := []struct {
+		name          string
+		errorCode     string
+		errorMsg      string
+		expectContain string
+	}{
+		{
+			name:          "insufficient balance",
+			errorCode:     "1113",
+			errorMsg:      "余额不足或无可用资源包,请充值",
+			expectContain: "insufficient balance",
+		},
+		{
+			name:          "model not found",
+			errorCode:     "1211",
+			errorMsg:      "模型不存在，请检查模型代码",
+			expectContain: "not found",
+		},
+		{
+			name:          "unauthorized",
+			errorCode:     "401",
+			errorMsg:      "令牌已过期",
+			expectContain: "API key expired",
+		},
+		{
+			name:          "rate limited",
+			errorCode:     "1301",
+			errorMsg:      "请求频率过高",
+			expectContain: "rate limited",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(ZAIError{
+					Error: struct {
+						Message string `json:"message"`
+						Type    string `json:"type"`
+						Code    string `json:"code"`
+					}{
+						Message: tt.errorMsg,
+						Type:    "api_error",
+						Code:    tt.errorCode,
+					},
+				})
+			}))
+			defer server.Close()
+
+			provider := NewZAIProvider("test-api-key", server.URL, "glm-4.5")
+			req := &models.LLMRequest{
+				ID:     "test-123",
+				Prompt: "test prompt",
+			}
+
+			_, err := provider.Complete(context.Background(), req)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.expectContain)
+		})
+	}
+}
+
+func TestZAIProvider_CurrentGLMModels(t *testing.T) {
+	provider := NewZAIProvider("", "", "")
+	caps := provider.GetCapabilities()
+
+	currentModels := []string{
+		"glm-5",
+		"glm-4.7",
+		"glm-4.6",
+		"glm-4.5",
+		"glm-4.5-air",
+	}
+
+	for _, model := range currentModels {
+		assert.Contains(t, caps.SupportedModels, model, "Expected %s to be in supported models", model)
+	}
+}
+
+func TestZAIProvider_RetryLogic(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts < 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		response := ZAIResponse{
+			ID:      "resp-123",
+			Object:  "text_completion",
+			Created: time.Now().Unix(),
+			Model:   "glm-4.5",
+			Choices: []ZAIChoice{
+				{
+					Index:        0,
+					Text:         "Success after retry",
+					FinishReason: "stop",
+				},
+			},
+			Usage: ZAIUsage{
+				PromptTokens:     10,
+				CompletionTokens: 5,
+				TotalTokens:      15,
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	retryConfig := RetryConfig{
+		MaxRetries:   3,
+		InitialDelay: 10 * time.Millisecond,
+		MaxDelay:     100 * time.Millisecond,
+		Multiplier:   2.0,
+	}
+	provider := NewZAIProviderWithRetry("test-api-key", server.URL, "glm-4.5", retryConfig)
+
+	req := &models.LLMRequest{
+		ID:     "test-123",
+		Prompt: "test prompt",
+	}
+
+	resp, err := provider.Complete(context.Background(), req)
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, "Success after retry", resp.Content)
+	assert.GreaterOrEqual(t, attempts, 3, "Should have retried at least 3 times")
+}
+
+func TestZAIProvider_ContextCancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(2 * time.Second)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	provider := NewZAIProvider("test-api-key", server.URL, "glm-4.5")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	req := &models.LLMRequest{
+		ID:     "test-123",
+		Prompt: "test prompt",
+	}
+
+	_, err := provider.Complete(ctx, req)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "context cancelled")
+}
+
+func TestZAIProvider_ToolCalls(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := ZAIResponse{
+			ID:      "resp-123",
+			Object:  "chat.completion",
+			Created: time.Now().Unix(),
+			Model:   "glm-4.5",
+			Choices: []ZAIChoice{
+				{
+					Index: 0,
+					Message: ZAIMessage{
+						Role:    "assistant",
+						Content: "",
+						ToolCalls: []ZAIToolCall{
+							{
+								ID:   "call-123",
+								Type: "function",
+								Function: ZAIToolCallFunction{
+									Name:      "get_weather",
+									Arguments: `{"location": "Beijing"}`,
+								},
+							},
+						},
+					},
+					FinishReason: "tool_calls",
+				},
+			},
+			Usage: ZAIUsage{
+				PromptTokens:     20,
+				CompletionTokens: 10,
+				TotalTokens:      30,
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	provider := NewZAIProvider("test-api-key", server.URL, "glm-4.5")
+
+	req := &models.LLMRequest{
+		ID: "test-123",
+		Messages: []models.Message{
+			{Role: "user", Content: "What's the weather in Beijing?"},
+		},
+		Tools: []models.Tool{
+			{
+				Type: "function",
+				Function: models.ToolFunction{
+					Name:        "get_weather",
+					Description: "Get weather for a location",
+					Parameters: map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"location": map[string]string{"type": "string"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	resp, err := provider.Complete(context.Background(), req)
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Len(t, resp.ToolCalls, 1)
+	assert.Equal(t, "call-123", resp.ToolCalls[0].ID)
+	assert.Equal(t, "get_weather", resp.ToolCalls[0].Function.Name)
+	assert.Equal(t, `{"location": "Beijing"}`, resp.ToolCalls[0].Function.Arguments)
 }

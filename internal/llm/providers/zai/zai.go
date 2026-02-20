@@ -167,7 +167,7 @@ func NewZAIProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCon
 		baseURL = "https://open.bigmodel.cn/api/paas/v4"
 	}
 	if model == "" {
-		model = "glm-4.7" // Latest GLM model
+		model = "glm-4.5" // Use glm-4.5 as default (widely available)
 	}
 
 	p := &ZAIProvider{
@@ -187,8 +187,16 @@ func NewZAIProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCon
 		APIKey:         apiKey,
 		ResponseParser: discovery.ParseZAIModelsResponse,
 		FallbackModels: []string{
-			// GLM-4 series (Zhipu AI) - Most powerful Chinese LLM
-			"glm-4.7",      // Latest generation (Feb 2026)
+			// GLM-5 series (Latest - Feb 2026)
+			"glm-5", // Latest flagship model
+			// GLM-4.7 series
+			"glm-4.7", // Current generation
+			// GLM-4.6 series
+			"glm-4.6", // Previous generation
+			// GLM-4.5 series
+			"glm-4.5",     // Balanced performance
+			"glm-4.5-air", // Cost-optimized
+			// Legacy GLM-4 series (may not be available on all accounts)
 			"glm-4-plus",   // Most capable classic
 			"glm-4",        // Standard version
 			"glm-4-air",    // Balanced performance
@@ -198,8 +206,6 @@ func NewZAIProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCon
 			"glm-4-long",   // Long context (1M tokens)
 			"glm-4v",       // Vision model
 			"glm-4v-plus",  // Enhanced vision
-			// Legacy models
-			"glm-3-turbo",
 		},
 	})
 
