@@ -627,8 +627,11 @@ Constitution with 24 rules (24 mandatory) across categories: Quality: 2, Safety:
 
 ### Configuration
 
-**Unified Configuration** (Priority: 2)
-- CLI agent config export uses only HelixAgent + LLMsVerifier's unified generator. No third-party scripts.
+**Unified Configuration** (Priority: 1)
+- **CLI agent configs MUST ONLY be generated using the HelixAgent binary** (`./bin/helixagent --generate-agent-config=<agent>` or `go run ./cmd/helixagent --generate-agent-config=<agent>`).
+- **NEVER create, write, or modify CLI agent config files manually or via scripts.** The HelixAgent binary is the sole authority for config generation.
+- Config generation uses LLMsVerifier's unified generator (`pkg/cliagents/`). No third-party scripts or manual edits.
+- This ensures schema compliance, API key injection, MCP endpoint consistency, and validation for all 48 supported CLI agents.
 
 ### Networking
 
