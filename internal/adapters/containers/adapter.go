@@ -41,7 +41,7 @@ type Adapter struct {
 	runtime       runtime.ContainerRuntime
 	orchestrator  compose.ComposeOrchestrator
 	healthChecker health.HealthChecker
-	distributor   *distribution.DefaultDistributor
+	distributor   distribution.Distributor
 	hostManager   remote.HostManager
 	executor      remote.RemoteExecutor
 	tunnelManager network.TunnelManager
@@ -70,7 +70,7 @@ func WithHealthChecker(hc health.HealthChecker) Option {
 }
 
 // WithDistributor sets the container distributor.
-func WithDistributor(d *distribution.DefaultDistributor) Option {
+func WithDistributor(d distribution.Distributor) Option {
 	return func(a *Adapter) { a.distributor = d }
 }
 
@@ -508,7 +508,9 @@ func (a *Adapter) BootAll(
 		opts = append(opts, boot.WithProjectDir(a.projectDir))
 	}
 	if a.distributor != nil {
-		opts = append(opts, boot.WithDistributor(a.distributor))
+		if d, ok := a.distributor.(*distribution.DefaultDistributor); ok {
+			opts = append(opts, boot.WithDistributor(d))
+		}
 	}
 	if a.hostManager != nil {
 		opts = append(opts, boot.WithHostManager(a.hostManager))

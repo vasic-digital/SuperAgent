@@ -683,16 +683,18 @@ func verifyLocalContainers(t *testing.T, projectRoot string) error {
 		port        int
 		healthURL   string
 		description string
+		required    bool
 	}{
-		{"PostgreSQL", 15432, "", "Primary database"},
-		{"Redis", 16379, "", "Cache and session store"},
-		{"ChromaDB", 8001, "http://localhost:8001/api/v2/heartbeat", "Vector store"},
-		{"HelixAgent", 7061, "http://localhost:7061/health", "Main service"},
+		{"PostgreSQL", 15432, "", "Primary database", true},
+		{"Redis", 16379, "", "Cache and session store", true},
+		{"Mock LLM", 18081, "http://localhost:18081/health", "Mock LLM server for testing", true},
+		{"ChromaDB", 8001, "http://localhost:8001/api/v2/heartbeat", "Vector store", false},
+		{"HelixAgent", 7061, "http://localhost:7061/health", "Main service (optional for tests)", false},
 	}
 
-	allHealthy := true
+	allRequiredHealthy := true
 
-	t.Log("\nRequired Services:")
+	t.Log("\nService Status:")
 	for _, svc := range requiredServices {
 		healthy := checkTCPPort(svc.port)
 		if svc.healthURL != "" {
@@ -700,14 +702,22 @@ func verifyLocalContainers(t *testing.T, projectRoot string) error {
 		}
 
 		if !healthy {
-			t.Errorf("  ✗ %s (port %d) - %s - NOT AVAILABLE", svc.name, svc.port, svc.description)
-			allHealthy = false
+			if svc.required {
+				t.Errorf("  ✗ %s (port %d) - %s - NOT AVAILABLE (REQUIRED)", svc.name, svc.port, svc.description)
+				allRequiredHealthy = false
+			} else {
+				t.Logf("  ~ %s (port %d) - %s - NOT AVAILABLE (optional)", svc.name, svc.port, svc.description)
+			}
 		} else {
-			t.Logf("  ✓ %s (port %d) - %s", svc.name, svc.port, svc.description)
+			reqStr := "optional"
+			if svc.required {
+				reqStr = "required"
+			}
+			t.Logf("  ✓ %s (port %d) - %s (%s)", svc.name, svc.port, svc.description, reqStr)
 		}
 	}
 
-	if !allHealthy {
+	if !allRequiredHealthy {
 		return fmt.Errorf("one or more required services are not running - run 'make test-infra-start' to start them")
 	}
 
