@@ -26,6 +26,7 @@ import (
 	"digital.vasic.containers/pkg/health"
 	"digital.vasic.containers/pkg/logging"
 	"digital.vasic.containers/pkg/network"
+	"digital.vasic.containers/pkg/orchestrator"
 	"digital.vasic.containers/pkg/remote"
 	"digital.vasic.containers/pkg/runtime"
 	"digital.vasic.containers/pkg/scheduler"
@@ -649,25 +650,17 @@ func (a *Adapter) RemoteComposeUp(
 		)
 	}
 
-	// Create remote directory for HelixAgent deployments.
-	remoteDir := "/opt/helixagent"
-	mkdirCmd := fmt.Sprintf(
-		"sudo mkdir -p %s && sudo chown %s:%s %s",
-		remoteDir, host.User, host.User, remoteDir,
-	)
+	// Use user's home directory for HelixAgent deployments (no sudo required)
+	// This avoids permission issues with /opt/helixagent
+	remoteDir := fmt.Sprintf("/home/%s/helixagent", host.User)
+	mkdirCmd := fmt.Sprintf("mkdir -p %s", remoteDir)
 	if _, err := a.executor.Execute(
 		ctx, host, mkdirCmd,
 	); err != nil {
-		// Fallback: try without sudo (user may already own it).
-		mkdirCmd = fmt.Sprintf("mkdir -p %s", remoteDir)
-		if _, err := a.executor.Execute(
-			ctx, host, mkdirCmd,
-		); err != nil {
-			return fmt.Errorf(
-				"create remote dir on %s: %w",
-				host.Name, err,
-			)
-		}
+		return fmt.Errorf(
+			"create remote dir on %s: %w",
+			host.Name, err,
+		)
 	}
 
 	// Copy the compose file's directory to the remote host.
@@ -763,6 +756,58 @@ func (a *Adapter) Runtime() runtime.ContainerRuntime {
 // be nil.
 func (a *Adapter) Orchestrator() compose.ComposeOrchestrator {
 	return a.orchestrator
+}
+
+type serviceOrchAdapter struct {
+	orch compose.ComposeOrchestrator
+}
+
+func (a *serviceOrchAdapter) Up(ctx context.Context, project compose.ComposeProject) error {
+	return a.orch.Up(ctx, project)
+}
+
+func (a *serviceOrchAdapter) Down(ctx context.Context, project compose.ComposeProject) error {
+	return a.orch.Down(ctx, project)
+}
+
+type remoteExecAdapter struct {
+	exec remote.RemoteExecutor
+}
+
+func (a *remoteExecAdapter) Execute(ctx context.Context, host remote.RemoteHost, cmd string) (*remote.CommandResult, error) {
+	return a.exec.Execute(ctx, host, cmd)
+}
+
+func (a *remoteExecAdapter) CopyDir(ctx context.Context, host remote.RemoteHost, src, dst string) error {
+	return a.exec.CopyDir(ctx, host, src, dst)
+}
+
+type hostMgrAdapter struct {
+	mgr remote.HostManager
+}
+
+func (a *hostMgrAdapter) ListHosts() []remote.RemoteHost {
+	return a.mgr.ListHosts()
+}
+
+func (a *Adapter) NewServiceOrchestrator() *orchestrator.DefaultOrchestrator {
+	opts := []orchestrator.Option{
+		orchestrator.WithLogger(a.logger),
+		orchestrator.WithProjectDir(a.projectDir),
+	}
+	if a.orchestrator != nil {
+		opts = append(opts, orchestrator.WithLocalOrchestrator(&serviceOrchAdapter{orch: a.orchestrator}))
+	}
+	if a.executor != nil {
+		opts = append(opts, orchestrator.WithRemoteExecutor(&remoteExecAdapter{exec: a.executor}))
+	}
+	if a.hostManager != nil {
+		opts = append(opts, orchestrator.WithHostManager(&hostMgrAdapter{mgr: a.hostManager}))
+	}
+	if a.healthChecker != nil {
+		opts = append(opts, orchestrator.WithHealthChecker(a.healthChecker))
+	}
+	return orchestrator.New(opts...)
 }
 
 // logrusAdapter bridges the logging.Logger interface with
