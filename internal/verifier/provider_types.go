@@ -657,7 +657,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Priority:    3,
 		EnvVars:     []string{"NVIDIA_API_KEY", "NVIDIA_NIM_API_KEY", "ApiKey_Nvidia"},
 		BaseURL:     "https://integrate.api.nvidia.com/v1/chat/completions",
-		Models:      []string{"meta/llama-3.1-405b-instruct", "nvidia/llama-3.1-nemotron-70b-instruct"},
+		Models:      []string{"meta/llama-3.1-405b-instruct", "meta/llama-3.1-70b-instruct", "meta/llama-3.3-70b-instruct"},
 		Free:        false,
 	},
 	"chutes": {

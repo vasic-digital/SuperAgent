@@ -249,6 +249,25 @@ func (p *ClaudeCLIProvider) Complete(ctx context.Context, req *models.LLMRequest
 		if cmdCtx.Err() == context.DeadlineExceeded {
 			return nil, fmt.Errorf("claude CLI timed out after %v", p.timeout)
 		}
+		// Check for exit status 1 specifically (common Claude CLI error)
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			// Build comprehensive error message with all available information
+			stdoutStr := strings.TrimSpace(stdout.String())
+			stderrStr := strings.TrimSpace(stderr.String())
+			var errorDetail strings.Builder
+			errorDetail.WriteString(fmt.Sprintf("exit code %d", exitErr.ExitCode()))
+			if stderrStr != "" {
+				errorDetail.WriteString(fmt.Sprintf(", stderr: %s", stderrStr))
+			}
+			if stdoutStr != "" {
+				errorDetail.WriteString(fmt.Sprintf(", stdout: %s", stdoutStr))
+			}
+			// Check for common Claude CLI issues
+			if exitErr.ExitCode() == 1 && stderrStr == "" && stdoutStr == "" {
+				errorDetail.WriteString(" (possible causes: session conflict, authentication issue, or Claude CLI internal error)")
+			}
+			return nil, fmt.Errorf("claude CLI failed: %s", errorDetail.String())
+		}
 		// Build comprehensive error message with both stdout and stderr
 		// Claude CLI may output errors to either stream
 		stdoutStr := strings.TrimSpace(stdout.String())

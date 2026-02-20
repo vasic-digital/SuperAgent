@@ -925,63 +925,156 @@ func (sv *StartupVerifier) verifyLocalProvider(ctx context.Context, provider *Un
 }
 
 // verifyAPIKeyProvider verifies an API key-based provider
+// IMPORTANT: Each model should be individually tested to ensure availability.
+// Some providers list models in /v1/models that aren't actually available for all accounts.
 func (sv *StartupVerifier) verifyAPIKeyProvider(ctx context.Context, provider *UnifiedProvider, disc *ProviderDiscoveryResult) (*UnifiedProvider, error) {
-	sv.log.WithField("provider", provider.Type).Debug("Verifying API key provider")
+	sv.log.WithField("provider", provider.Type).Debug("Verifying API key provider with individual model testing")
 
-	modelID := provider.DefaultModel
-	if modelID == "" && len(disc.Models) > 0 {
-		modelID = disc.Models[0]
-	}
+	// Initialize provider
+	provider.Verified = false
+	provider.Status = StatusUnhealthy
+	provider.Score = 0
+	provider.TestResults = make(map[string]bool)
 
-	result, err := sv.verifierSvc.VerifyModel(ctx, modelID, provider.Type)
-	if err != nil {
-		provider.Status = StatusUnhealthy
-		provider.ErrorMessage = err.Error()
-		provider.FailureReason = fmt.Sprintf("verification error: %s", err.Error())
-		provider.FailureCategory = FailureCategoryAPIError
-		if result != nil {
-			populateFailureDetails(provider, result)
+	verifiedModelCount := 0
+	var lastVerifyErr error
+	var lastResult *ServiceVerificationResult
+
+	// Test each model individually (like verifyFreeProvider does)
+	for _, modelID := range disc.Models {
+		sv.log.WithFields(logrus.Fields{
+			"provider": provider.Type,
+			"model":    modelID,
+		}).Debug("Testing individual model")
+
+		result, err := sv.verifierSvc.VerifyModel(ctx, modelID, provider.Type)
+		if err != nil {
+			sv.log.WithFields(logrus.Fields{
+				"provider": provider.Type,
+				"model":    modelID,
+				"error":    err.Error(),
+			}).Warn("Model verification failed")
+			lastVerifyErr = err
+
+			// Add model as unverified
+			provider.Models = append(provider.Models, UnifiedModel{
+				ID:       modelID,
+				Name:     modelID,
+				Provider: provider.Type,
+				Verified: false,
+				Score:    0,
+			})
+			provider.TestResults[modelID] = false
+			continue
 		}
-		return provider, err
+
+		// Check if model actually passed verification
+		if result != nil && result.Verified {
+			verifiedModelCount++
+			lastResult = result
+
+			// Add model as verified
+			provider.Models = append(provider.Models, UnifiedModel{
+				ID:       modelID,
+				Name:     modelID,
+				Provider: provider.Type,
+				Verified: true,
+				Score:    result.OverallScore / 10.0,
+			})
+			provider.TestResults[modelID] = true
+
+			// Set default model to first verified model
+			if provider.DefaultModel == "" {
+				provider.DefaultModel = modelID
+			}
+
+			sv.log.WithFields(logrus.Fields{
+				"provider": provider.Type,
+				"model":    modelID,
+				"score":    result.OverallScore / 10.0,
+			}).Info("Model verified successfully")
+		} else {
+			// Model returned but not verified (possible canned response or other issue)
+			provider.Models = append(provider.Models, UnifiedModel{
+				ID:       modelID,
+				Name:     modelID,
+				Provider: provider.Type,
+				Verified: false,
+				Score:    0,
+			})
+			provider.TestResults[modelID] = false
+
+			reason := "verification returned false"
+			if result != nil && result.ErrorMessage != "" {
+				reason = result.ErrorMessage
+			}
+			sv.log.WithFields(logrus.Fields{
+				"provider": provider.Type,
+				"model":    modelID,
+				"reason":   reason,
+			}).Warn("Model not verified")
+		}
 	}
 
-	provider.Verified = result.Verified
-	provider.VerifiedAt = time.Now()
-	provider.Score = result.OverallScore / 10.0 // Convert 0-100 to 0-10
-	provider.ScoreSuffix = result.ScoreSuffix
-	provider.CodeVisible = result.CodeVisible
-	provider.TestResults = result.TestsMap
-
-	if provider.Verified {
+	// Provider is only verified if at least one model passes
+	if verifiedModelCount > 0 {
+		provider.Verified = true
 		provider.Status = StatusHealthy
-		// CRITICAL: Create provider instance for debate team usage
-		// Without this, API key providers have nil Instance and can't participate in debates
-		if sv.instanceCreator != nil {
-			provider.Instance = sv.instanceCreator(provider.Type, modelID)
+		provider.VerifiedAt = time.Now()
+
+		// Calculate average score from verified models
+		var totalScore float64
+		var scoreCount int
+		for _, m := range provider.Models {
+			if m.Verified {
+				totalScore += m.Score
+				scoreCount++
+			}
+		}
+		if scoreCount > 0 {
+			provider.Score = totalScore / float64(scoreCount)
+		}
+
+		// Use last verified result for additional fields
+		if lastResult != nil {
+			provider.CodeVisible = lastResult.CodeVisible
+		}
+
+		// Create provider instance for debate team usage
+		if sv.instanceCreator != nil && provider.DefaultModel != "" {
+			provider.Instance = sv.instanceCreator(provider.Type, provider.DefaultModel)
 			if provider.Instance != nil {
 				sv.log.WithFields(logrus.Fields{
 					"provider": provider.Type,
-					"model":    modelID,
+					"model":    provider.DefaultModel,
 				}).Debug("Created provider instance for API key provider")
 			}
 		}
+
+		sv.log.WithFields(logrus.Fields{
+			"provider":        provider.Type,
+			"verified":        provider.Verified,
+			"verified_models": verifiedModelCount,
+			"total_models":    len(disc.Models),
+			"score":           provider.Score,
+		}).Info("API key provider verification complete")
 	} else {
-		provider.Status = StatusUnhealthy
-		provider.ErrorMessage = result.ErrorMessage
-	}
+		// No models passed verification
+		provider.Status = StatusFailed
+		if lastVerifyErr != nil {
+			provider.ErrorMessage = lastVerifyErr.Error()
+			provider.FailureReason = fmt.Sprintf("all models failed verification: %s", lastVerifyErr.Error())
+		} else {
+			provider.ErrorMessage = "no models passed verification"
+			provider.FailureReason = fmt.Sprintf("no models passed verification (0/%d tested)", len(disc.Models))
+		}
+		provider.FailureCategory = FailureCategoryAPIError
 
-	// Populate failure tracking details from verification result
-	populateFailureDetails(provider, result)
-
-	// Build models list
-	for _, modelID := range disc.Models {
-		provider.Models = append(provider.Models, UnifiedModel{
-			ID:       modelID,
-			Name:     modelID,
-			Provider: provider.Type,
-			Verified: provider.Verified,
-			Score:    provider.Score,
-		})
+		sv.log.WithFields(logrus.Fields{
+			"provider":     provider.Type,
+			"total_models": len(disc.Models),
+			"error":        provider.ErrorMessage,
+		}).Warn("API key provider verification failed - no verified models")
 	}
 
 	return provider, nil
