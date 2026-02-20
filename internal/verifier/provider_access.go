@@ -318,8 +318,8 @@ var ProviderAccessRegistry = map[string]*ProviderAccessConfig{
 		AuthMechanisms: []AuthMechanism{
 			{HeaderName: "Authorization", HeaderPrefix: "Bearer "},
 		},
-		ModelsURL:           "https://open.bigmodel.cn/api/paas/v4/models",
-		DefaultSubscription: SubTypeFreeCredits,
+		ModelsURL:           "https://api.z.ai/api/paas/v4/models",
+		DefaultSubscription: SubTypeMonthly,
 		AvailableTiers:      []SubscriptionType{SubTypeFreeCredits, SubTypePayAsYouGo, SubTypeMonthly},
 	},
 

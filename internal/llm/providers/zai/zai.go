@@ -33,6 +33,12 @@ func DefaultRetryConfig() RetryConfig {
 	}
 }
 
+// ZAIEndpointChina is the China (mainland) API endpoint
+const ZAIEndpointChina = "https://open.bigmodel.cn/api/paas/v4"
+
+// ZAIEndpointInternational is the International API endpoint (for Coding Plan subscriptions)
+const ZAIEndpointInternational = "https://api.z.ai/api/paas/v4"
+
 // ZAIProvider implements the LLMProvider interface for Z.AI
 type ZAIProvider struct {
 	apiKey      string
@@ -164,10 +170,10 @@ func NewZAIProvider(apiKey, baseURL, model string) *ZAIProvider {
 // NewZAIProviderWithRetry creates a new Z.AI provider instance with custom retry config
 func NewZAIProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryConfig) *ZAIProvider {
 	if baseURL == "" {
-		baseURL = "https://open.bigmodel.cn/api/paas/v4"
+		baseURL = ZAIEndpointInternational
 	}
 	if model == "" {
-		model = "glm-4.5" // Use glm-4.5 as default (widely available)
+		model = "glm-4.5"
 	}
 
 	p := &ZAIProvider{
@@ -180,32 +186,28 @@ func NewZAIProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCon
 		retryConfig: retryConfig,
 	}
 
+	modelsEndpoint := baseURL + "/models"
 	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
 		ProviderName:   "zai",
-		ModelsEndpoint: "https://open.bigmodel.cn/api/paas/v4/models",
+		ModelsEndpoint: modelsEndpoint,
 		ModelsDevID:    "zhipu",
 		APIKey:         apiKey,
 		ResponseParser: discovery.ParseZAIModelsResponse,
 		FallbackModels: []string{
-			// GLM-5 series (Latest - Feb 2026)
-			"glm-5", // Latest flagship model
-			// GLM-4.7 series
-			"glm-4.7", // Current generation
-			// GLM-4.6 series
-			"glm-4.6", // Previous generation
-			// GLM-4.5 series
-			"glm-4.5",     // Balanced performance
-			"glm-4.5-air", // Cost-optimized
-			// Legacy GLM-4 series (may not be available on all accounts)
-			"glm-4-plus",   // Most capable classic
-			"glm-4",        // Standard version
-			"glm-4-air",    // Balanced performance
-			"glm-4-airx",   // Extended context
-			"glm-4-flash",  // Fast inference
-			"glm-4-flashx", // Fast with extended context
-			"glm-4-long",   // Long context (1M tokens)
-			"glm-4v",       // Vision model
-			"glm-4v-plus",  // Enhanced vision
+			"glm-5",
+			"glm-4.7",
+			"glm-4.6",
+			"glm-4.5",
+			"glm-4.5-air",
+			"glm-4-plus",
+			"glm-4",
+			"glm-4-air",
+			"glm-4-airx",
+			"glm-4-flash",
+			"glm-4-flashx",
+			"glm-4-long",
+			"glm-4v",
+			"glm-4v-plus",
 		},
 	})
 

@@ -218,7 +218,7 @@ fi
 
 # Test 17: Models endpoint configured
 log_info "Test 17: Models endpoint configured"
-if grep -q "ModelsEndpoint.*open.bigmodel.cn" internal/llm/providers/zai/zai.go; then
+if grep -q "ModelsEndpoint\|modelsEndpoint" internal/llm/providers/zai/zai.go; then
     log_success "Models endpoint configured"
 else
     log_error "Models endpoint not configured"

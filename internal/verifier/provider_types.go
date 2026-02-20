@@ -518,7 +518,7 @@ var SupportedProviders = map[string]*ProviderTypeInfo{
 		Tier:        2,
 		Priority:    3,
 		EnvVars:     []string{"ZAI_API_KEY", "ZHIPU_API_KEY", "ApiKey_ZAI"},
-		BaseURL:     "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+		BaseURL:     "https://api.z.ai/api/paas/v4/chat/completions",
 		Models:      []string{"glm-5", "glm-4.7", "glm-4.6", "glm-4.5", "glm-4.5-air"},
 		Free:        false,
 	},
