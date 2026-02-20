@@ -1,158 +1,193 @@
 {
-  "version": "1.0",
-  "provider": {
-    "name": "helixagent",
-    "base_url": "http://localhost:7061/v1",
-    "api_key": "<YOUR_HELIXAGENT_API_KEY>"
-  },
-  "models": [
-    {
-      "id": "helixagent-debate",
-      "name": "HelixAgent AI Debate Ensemble",
-      "max_tokens": 128000,
-      "capabilities": [
-        "vision",
-        "streaming",
-        "function_calls",
-        "embeddings",
-        "mcp",
-        "acp",
-        "lsp",
-        "code_execution"
+  "$schema": "https://charm.land/crush.json",
+  "providers": {
+    "helixagent": {
+      "id": "helixagent",
+      "name": "HelixAgent",
+      "type": "openai-compat",
+      "base_url": "http://localhost:7061/v1",
+      "api_key": "<YOUR_HELIXAGENT_API_KEY>",
+      "models": [
+        {
+          "id": "helixagent-debate",
+          "name": "HelixAgent AI Debate Ensemble",
+          "context_window": 128000,
+          "default_max_tokens": 8192,
+          "can_reason": true,
+          "supports_attachments": true
+        }
       ]
     }
-  ],
+  },
+  "models": {
+    "large": {
+      "model": "helixagent-debate",
+      "provider": "helixagent",
+      "max_tokens": 32768
+    },
+    "small": {
+      "model": "helixagent-debate",
+      "provider": "helixagent",
+      "max_tokens": 8192
+    }
+  },
   "mcp": {
+    "cloudflare-docs": {
+      "type": "sse",
+      "url": "https://docs.mcp.cloudflare.com/sse",
+      "timeout": 30
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "timeout": 30
+    },
+    "deepwiki": {
+      "type": "http",
+      "url": "https://mcp.deepwiki.com/mcp",
+      "timeout": 30
+    },
+    "everything": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-everything"],
+      "timeout": 30
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
+      "timeout": 30
+    },
     "helixagent-acp": {
-      "type": "remote",
-      "url": "http://localhost:7061/v1/acp"
+      "type": "sse",
+      "url": "http://localhost:7061/v1/acp",
+      "timeout": 30
     },
     "helixagent-cognee": {
-      "type": "remote",
-      "url": "http://localhost:7061/v1/cognee"
+      "type": "sse",
+      "url": "http://localhost:7061/v1/cognee",
+      "timeout": 30
     },
     "helixagent-embeddings": {
-      "type": "remote",
-      "url": "http://localhost:7061/v1/embeddings"
+      "type": "sse",
+      "url": "http://localhost:7061/v1/embeddings",
+      "timeout": 30
+    },
+    "helixagent-formatters": {
+      "type": "sse",
+      "url": "http://localhost:7061/v1/formatters",
+      "timeout": 30
     },
     "helixagent-lsp": {
-      "type": "remote",
-      "url": "http://localhost:7061/v1/lsp"
+      "type": "sse",
+      "url": "http://localhost:7061/v1/lsp",
+      "timeout": 30
     },
     "helixagent-mcp": {
-      "type": "remote",
-      "url": "http://localhost:7061/v1/mcp"
+      "type": "sse",
+      "url": "http://localhost:7061/v1/mcp",
+      "timeout": 30
+    },
+    "helixagent-monitoring": {
+      "type": "sse",
+      "url": "http://localhost:7061/v1/monitoring",
+      "timeout": 30
+    },
+    "helixagent-rag": {
+      "type": "sse",
+      "url": "http://localhost:7061/v1/rag",
+      "timeout": 30
     },
     "helixagent-vision": {
-      "type": "remote",
-      "url": "http://localhost:7061/v1/vision"
+      "type": "sse",
+      "url": "http://localhost:7061/v1/vision",
+      "timeout": 30
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "timeout": 30
+    },
+    "puppeteer": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "timeout": 30
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "timeout": 30
+    },
+    "sqlite": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-server-sqlite-npx"],
+      "timeout": 30
     }
   },
-  "agents": {
-    "coder": {
-      "model": "helixagent-debate",
-      "system": "You are an expert software developer. Write clean, efficient, and well-documented code.",
-      "max_tokens": 16384
+  "lsp": {
+    "go": {
+      "command": "gopls",
+      "filetypes": ["go"],
+      "root_markers": ["go.mod", "go.sum"],
+      "timeout": 30
     },
-    "default": {
-      "model": "helixagent-debate",
-      "system": "You are a helpful AI coding assistant powered by HelixAgent AI Debate Ensemble.",
-      "max_tokens": 8192
+    "typescript": {
+      "command": "typescript-language-server",
+      "args": ["--stdio"],
+      "filetypes": ["typescript", "javascript", "typescriptreact", "javascriptreact"],
+      "root_markers": ["package.json", "tsconfig.json"],
+      "timeout": 30
     },
-    "reviewer": {
-      "model": "helixagent-debate",
-      "system": "You are a code reviewer. Analyze code for bugs, security issues, and best practices.",
-      "max_tokens": 8192
+    "python": {
+      "command": "pylsp",
+      "filetypes": ["python"],
+      "root_markers": ["pyproject.toml", "setup.py", "requirements.txt"],
+      "timeout": 30
+    },
+    "rust": {
+      "command": "rust-analyzer",
+      "filetypes": ["rust"],
+      "root_markers": ["Cargo.toml"],
+      "timeout": 30
     }
   },
-  "settings": {
-    "theme": "auto",
-    "stream_responses": true,
-    "show_progress": true,
-    "confirm_commands": true
-  },
-  "formatters": {
-    "enabled": true,
-    "auto_format": true,
-    "format_on_debate": true,
-    "default_line_length": 88,
-    "default_indent_size": 4,
-    "use_tabs": false,
-    "preferences": {
-      "bash": "shfmt",
-      "c": "clang-format",
-      "clojure": "cljfmt",
-      "cpp": "clang-format",
-      "css": "prettier",
-      "go": "gofmt",
-      "groovy": "npm-groovy-lint",
-      "html": "prettier",
-      "java": "google-java-format",
-      "javascript": "biome",
-      "json": "prettier",
-      "kotlin": "ktlint",
-      "lua": "stylua",
-      "markdown": "prettier",
-      "perl": "perltidy",
-      "php": "php-cs-fixer",
-      "powershell": "psscriptanalyzer",
-      "python": "ruff",
-      "r": "air",
-      "ruby": "rubocop",
-      "rust": "rustfmt",
-      "scala": "scalafmt",
-      "shell": "shfmt",
-      "sql": "sqlfluff",
-      "swift": "swift-format",
-      "toml": "taplo",
-      "typescript": "biome",
-      "yaml": "yamlfmt"
-    },
-    "fallback": {
-      "java": [
-        "spotless"
-      ],
-      "javascript": [
-        "prettier",
-        "dprint"
-      ],
-      "kotlin": [
-        "ktfmt",
-        "spotless"
-      ],
-      "php": [
-        "laravel-pint"
-      ],
-      "python": [
-        "black",
-        "autopep8",
-        "yapf"
-      ],
-      "r": [
-        "styler"
-      ],
-      "ruby": [
-        "standardrb"
-      ],
-      "typescript": [
-        "prettier",
-        "dprint"
-      ]
-    },
-    "overrides": {
-      "*.js": {
-        "formatter": "prettier"
-      },
-      "src/**/*.py": {
-        "formatter": "black",
-        "line_length": 120
-      },
-      "tests/**/*.py": {
-        "formatter": "black",
-        "line_length": 100
+  "options": {
+    "context_paths": ["AGENTS.md", "CLAUDE.md", ".cursorrules"],
+    "skills_paths": ["~/.config/crush/skills"],
+    "data_directory": ".crush",
+    "initialize_as": "AGENTS.md",
+    "auto_lsp": true,
+    "progress": true,
+    "debug": false,
+    "disable_metrics": false,
+    "tui": {
+      "compact_mode": false,
+      "diff_mode": "unified",
+      "completions": {
+        "max_depth": 10,
+        "max_items": 1000
       }
     },
-    "service_url": "http://localhost:7061/v1/format",
-    "timeout": 30
+    "attribution": {
+      "trailer_style": "assisted-by",
+      "generated_with": true
+    }
+  },
+  "permissions": {
+    "allowed_tools": ["bash", "view", "edit", "glob", "grep", "ls", "sourcegraph"]
+  },
+  "tools": {
+    "ls": {
+      "max_depth": 10,
+      "max_items": 1000
+    },
+    "grep": {
+      "timeout": 60
+    }
   }
 }

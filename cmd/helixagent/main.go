@@ -1185,9 +1185,9 @@ type AppConfig struct {
 	ChallengeVerbose        bool          // Verbose output
 	ChallengeStallThreshold time.Duration // Stall threshold for stuck detection
 	ServerHost              string
-	ServerPort          string
-	Logger              *logrus.Logger
-	ShutdownSignal      chan os.Signal
+	ServerPort              string
+	Logger                  *logrus.Logger
+	ShutdownSignal          chan os.Signal
 }
 
 // DefaultAppConfig returns the default application configuration

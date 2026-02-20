@@ -42,6 +42,9 @@ type StartupVerifier struct {
 	// OAuth credential reader
 	oauthReader *oauth_credentials.OAuthCredentialReader
 
+	// Callback for re-exporting CLI agent configs after verification
+	onVerificationComplete func(ctx context.Context, result *StartupResult) error
+
 	// Results
 	providers       map[string]*UnifiedProvider
 	rankedProviders []*UnifiedProvider
@@ -124,6 +127,14 @@ func (sv *StartupVerifier) SetProviderFunc(fn func(ctx context.Context, modelID,
 // SetTestMode enables/disables test mode (disables quality validation)
 func (sv *StartupVerifier) SetTestMode(enabled bool) {
 	sv.verifierSvc.SetTestMode(enabled)
+}
+
+// SetOnVerificationComplete sets a callback to be called after verification completes.
+// This is used to trigger CLI agent config re-export after scoring is done.
+func (sv *StartupVerifier) SetOnVerificationComplete(fn func(ctx context.Context, result *StartupResult) error) {
+	sv.mu.Lock()
+	defer sv.mu.Unlock()
+	sv.onVerificationComplete = fn
 }
 
 // VerifyAllProviders runs the complete startup verification pipeline
@@ -233,6 +244,14 @@ func (sv *StartupVerifier) VerifyAllProviders(ctx context.Context) (*StartupResu
 		"free":     result.FreeProviders,
 		"duration": fmt.Sprintf("%dms", result.DurationMs),
 	}).Info("Startup verification pipeline completed")
+
+	// Call the verification complete callback if set (for CLI agent config re-export)
+	if sv.onVerificationComplete != nil {
+		sv.log.Info("Calling verification complete callback for CLI agent config re-export")
+		if err := sv.onVerificationComplete(ctx, result); err != nil {
+			sv.log.WithError(err).Warn("Verification complete callback failed")
+		}
+	}
 
 	return result, nil
 }

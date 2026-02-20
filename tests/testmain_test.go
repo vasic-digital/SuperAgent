@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -17,6 +18,18 @@ func TestMain(m *testing.M) {
 	// Check if we should skip infrastructure setup
 	if os.Getenv("SKIP_INFRA_SETUP") == "true" {
 		os.Exit(m.Run())
+	}
+
+	fmt.Println("╔════════════════════════════════════════════════════════════════╗")
+	fmt.Println("║     PRECONDITION: Container Boot Verification                  ║")
+	fmt.Println("╚════════════════════════════════════════════════════════════════╝")
+
+	// STEP 1: Run precondition check FIRST - this is mandatory
+	if err := runPreconditionCheck(); err != nil {
+		fmt.Printf("FATAL: Precondition check failed: %v\n", err)
+		fmt.Println("Tests cannot proceed without proper container infrastructure.")
+		fmt.Println("Run 'make test-infra-start' or configure Containers/.env for remote distribution.")
+		os.Exit(1)
 	}
 
 	fmt.Println("╔════════════════════════════════════════════════════════════════╗")
@@ -36,6 +49,236 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	os.Exit(code)
+}
+
+// runPreconditionCheck verifies container infrastructure is available
+func runPreconditionCheck() error {
+	projectRoot, err := findProjectRoot()
+	if err != nil {
+		return fmt.Errorf("failed to find project root: %w", err)
+	}
+
+	containersEnvPath := filepath.Join(projectRoot, "Containers", ".env")
+	remoteConfig := parseContainersEnv(containersEnvPath)
+
+	if remoteConfig.Enabled {
+		fmt.Printf("Remote distribution enabled: %s\n", remoteConfig.HostsSummary())
+		fmt.Println("Verifying remote containers are accessible...")
+		return verifyRemoteContainers(remoteConfig)
+	}
+
+	fmt.Println("No remote distribution configured - verifying local containers...")
+	return verifyLocalContainers(projectRoot)
+}
+
+// RemoteConfig holds remote distribution configuration
+type RemoteConfig struct {
+	Enabled bool
+	Hosts   []RemoteHost
+	SSHUser string
+	SSHKey  string
+}
+
+// RemoteHost represents a remote host configuration
+type RemoteHost struct {
+	Name    string
+	Address string
+	Port    int
+	User    string
+}
+
+// HostsSummary returns a summary of configured hosts
+func (rc *RemoteConfig) HostsSummary() string {
+	if len(rc.Hosts) == 0 {
+		return "no hosts configured"
+	}
+	names := make([]string, len(rc.Hosts))
+	for i, h := range rc.Hosts {
+		names[i] = fmt.Sprintf("%s (%s)", h.Name, h.Address)
+	}
+	return strings.Join(names, ", ")
+}
+
+// parseContainersEnv parses the Containers/.env file
+func parseContainersEnv(path string) *RemoteConfig {
+	rc := &RemoteConfig{}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return rc
+	}
+
+	lines := strings.Split(string(data), "\n")
+	hostMap := make(map[int]*RemoteHost)
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
+
+		switch key {
+		case "CONTAINERS_REMOTE_ENABLED":
+			rc.Enabled = strings.EqualFold(value, "true")
+		case "CONTAINERS_REMOTE_DEFAULT_SSH_USER":
+			rc.SSHUser = value
+		case "CONTAINERS_REMOTE_DEFAULT_SSH_KEY":
+			rc.SSHKey = value
+		}
+
+		if strings.HasPrefix(key, "CONTAINERS_REMOTE_HOST_") {
+			idx, field := parseHostKey(key)
+			if idx > 0 {
+				if _, exists := hostMap[idx]; !exists {
+					hostMap[idx] = &RemoteHost{Port: 22}
+				}
+				switch field {
+				case "NAME":
+					hostMap[idx].Name = value
+				case "ADDRESS":
+					hostMap[idx].Address = value
+				case "PORT":
+					fmt.Sscanf(value, "%d", &hostMap[idx].Port)
+				case "USER":
+					hostMap[idx].User = value
+				}
+			}
+		}
+	}
+
+	for _, host := range hostMap {
+		if host.Name != "" && host.Address != "" {
+			if host.User == "" {
+				host.User = rc.SSHUser
+			}
+			rc.Hosts = append(rc.Hosts, *host)
+		}
+	}
+
+	return rc
+}
+
+// parseHostKey parses CONTAINERS_REMOTE_HOST_N_FIELD keys
+func parseHostKey(key string) (int, string) {
+	parts := strings.Split(key, "_")
+	if len(parts) < 5 {
+		return 0, ""
+	}
+	var idx int
+	fmt.Sscanf(parts[3], "%d", &idx)
+	field := strings.Join(parts[4:], "_")
+	return idx, field
+}
+
+// verifyRemoteContainers verifies remote container infrastructure
+func verifyRemoteContainers(rc *RemoteConfig) error {
+	fmt.Println("Verifying remote container infrastructure...")
+
+	for _, host := range rc.Hosts {
+		fmt.Printf("Checking host: %s (%s:%d)\n", host.Name, host.Address, host.Port)
+
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host.Address, host.Port), 10*time.Second)
+		if err != nil {
+			return fmt.Errorf("cannot connect to host %s at %s:%d: %w", host.Name, host.Address, host.Port, err)
+		}
+		conn.Close()
+		fmt.Printf("  ✓ Host %s is reachable\n", host.Name)
+	}
+
+	// Check HelixAgent health endpoint
+	if err := checkHTTPWithTimeout("http://localhost:7061/health", 10*time.Second); err != nil {
+		fmt.Printf("  WARNING: HelixAgent health check failed: %v\n", err)
+	} else {
+		fmt.Println("  ✓ HelixAgent is healthy")
+	}
+
+	return nil
+}
+
+// verifyLocalContainers verifies local container infrastructure
+func verifyLocalContainers(projectRoot string) error {
+	fmt.Println("Verifying local container infrastructure...")
+
+	requiredServices := []struct {
+		name        string
+		port        int
+		healthURL   string
+		description string
+	}{
+		{"PostgreSQL", 15432, "", "Primary database"},
+		{"Redis", 16379, "", "Cache and session store"},
+		{"ChromaDB", 8001, "http://localhost:8001/api/v2/heartbeat", "Vector store"},
+		{"HelixAgent", 7061, "http://localhost:7061/health", "Main service"},
+	}
+
+	allHealthy := true
+
+	fmt.Println("\nRequired Services:")
+	for _, svc := range requiredServices {
+		healthy := checkTCP("localhost", svc.port)
+		if svc.healthURL != "" {
+			healthy = checkHTTPWithTimeout(svc.healthURL, 5*time.Second) == nil
+		}
+
+		if !healthy {
+			fmt.Printf("  ✗ %s (port %d) - %s - NOT AVAILABLE\n", svc.name, svc.port, svc.description)
+			allHealthy = false
+		} else {
+			fmt.Printf("  ✓ %s (port %d) - %s\n", svc.name, svc.port, svc.description)
+		}
+	}
+
+	if !allHealthy {
+		return fmt.Errorf("one or more required services are not running - run 'make test-infra-start' to start them")
+	}
+
+	fmt.Println("\nHelixAgent MCP/LSP/ACP/RAG Endpoints:")
+	endpoints := []struct {
+		name string
+		url  string
+	}{
+		{"MCP", "http://localhost:7061/v1/mcp"},
+		{"LSP", "http://localhost:7061/v1/lsp"},
+		{"ACP", "http://localhost:7061/v1/acp"},
+		{"Embeddings", "http://localhost:7061/v1/embeddings"},
+		{"RAG", "http://localhost:7061/v1/rag"},
+		{"Formatters", "http://localhost:7061/v1/formatters"},
+		{"Vision", "http://localhost:7061/v1/vision"},
+		{"Monitoring", "http://localhost:7061/v1/monitoring"},
+	}
+
+	for _, ep := range endpoints {
+		if err := checkHTTPWithTimeout(ep.url, 3*time.Second); err != nil {
+			fmt.Printf("  ~ %s endpoint at %s - not responding\n", ep.name, ep.url)
+		} else {
+			fmt.Printf("  ✓ %s endpoint available\n", ep.name)
+		}
+	}
+
+	return nil
+}
+
+// checkHTTPWithTimeout checks if an HTTP endpoint is ready
+func checkHTTPWithTimeout(url string, timeout time.Duration) error {
+	client := &http.Client{Timeout: timeout}
+	resp, err := client.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 500 {
+		return fmt.Errorf("server error: %d", resp.StatusCode)
+	}
+	return nil
 }
 
 // ensureInfrastructure runs the infrastructure startup script
