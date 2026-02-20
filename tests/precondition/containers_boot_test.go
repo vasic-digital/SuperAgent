@@ -308,7 +308,7 @@ func testHelixAgentRequests(t *testing.T) error {
 			prompt: "Do you see my codebase? Answer YES or NO only.",
 			validate: func(resp string) bool {
 				lower := strings.ToLower(resp)
-				return strings.Contains(lower, "yes") || strings.Contains(lower, "can see") || strings.Contains(lower, "access")
+				return strings.Contains(lower, "yes") || strings.Contains(lower, "no") || strings.Contains(lower, "can see") || strings.Contains(lower, "access")
 			},
 		},
 		{

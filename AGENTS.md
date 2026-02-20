@@ -633,6 +633,13 @@ Constitution with 24 rules (24 mandatory) across categories: Quality: 2, Safety:
 - Config generation uses LLMsVerifier's unified generator (`pkg/cliagents/`). No third-party scripts or manual edits.
 - This ensures schema compliance, API key injection, MCP endpoint consistency, and validation for all 48 supported CLI agents.
 
+**Non-Interactive Execution** (Priority: 1)
+- **ALL commands MUST be fully non-interactive and automatable via command pipelines.**
+- **NEVER prompt for passwords, passphrases, or any user input interactively.**
+- SSH connections MUST use key-based authentication with SSH agent (`ssh-add`) or password provided via environment variables/sshpass.
+- Container distribution to remote hosts MUST be fully automated through the Containers module's SSH executor with pre-configured credentials.
+- All secrets (API keys, passwords, SSH keys) MUST be provided via environment variables or `.env` files, never via interactive prompts.
+
 ### Networking
 
 **HTTP/3 (QUIC) with Brotli Compression** (Priority: 1)
