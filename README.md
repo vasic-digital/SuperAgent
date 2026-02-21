@@ -287,7 +287,7 @@ remote_deployment:
       services:
         - postgresql
         - redis
-        - cognee
+        - mem0
     raspberrypi.local:
       services:
         - ollama
@@ -306,7 +306,7 @@ status := bootManager.HealthCheckRemoteServices(ctx)
 
 ### Hybrid Environments
 - **Local services**: PostgreSQL, Redis, ChromaDB
-- **Remote services**: LLM providers, Cognee, monitoring
+- **Remote services**: LLM providers, Mem0 (memory), monitoring
 - **Discovered services**: Auto-detected in network
 
 **Full Documentation**: [docs/REMOTE_DEPLOYMENT.md](docs/REMOTE_DEPLOYMENT.md)
@@ -441,7 +441,7 @@ HelixAgent includes a comprehensive LLM optimization framework for improving per
 
 ### External Service Integrations
 - **SGLang**: RadixAttention prefix caching for multi-turn conversations
-- **LlamaIndex**: Advanced document retrieval with Cognee sync
+- **LlamaIndex**: Advanced document retrieval with Mem0 memory sync
 - **LangChain**: Task decomposition and ReAct agents
 - **Guidance**: CFG/regex constrained generation
 - **LMQL**: Query language for LLM constraints

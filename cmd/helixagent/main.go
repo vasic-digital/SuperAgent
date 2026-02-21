@@ -70,7 +70,7 @@ var (
 	version            = flag.Bool("version", false, "Show version information")
 	help               = flag.Bool("help", false, "Show help message")
 	autoStartDocker    = flag.Bool("auto-start-docker", true, "Automatically start required Docker containers")
-	strictDependencies = flag.Bool("strict-dependencies", true, "MANDATORY: Fail if any integration dependency (Cognee, DB, Redis) is unavailable")
+	strictDependencies = flag.Bool("strict-dependencies", true, "MANDATORY: Fail if any integration dependency (Mem0, DB, Redis) is unavailable")
 	generateAPIKey     = flag.Bool("generate-api-key", false, "Generate a new HelixAgent API key and output it")
 	generateOpenCode   = flag.Bool("generate-opencode-config", false, "Generate OpenCode configuration JSON")
 	validateOpenCode   = flag.String("validate-opencode-config", "", "Path to OpenCode config file to validate")
@@ -4165,7 +4165,7 @@ func handleGenerateAllAgents(appCfg *AppConfig) error {
 }
 
 func showHelp() {
-	fmt.Printf(`HelixAgent - Advanced LLM Gateway with Cognee Integration
+	fmt.Printf(`HelixAgent - Advanced LLM Gateway with Mem0 Memory Integration
 
 Usage:
   helixagent [options]
@@ -4180,7 +4180,7 @@ Options:
         When enabled, HelixAgent will NOT start unless ALL dependencies are healthy:
         - PostgreSQL (database)
         - Redis (cache)
-        - Cognee (knowledge graph)
+        - Mem0 (memory system with entity graphs)
         - ChromaDB (vector database)
   -generate-api-key
         Generate a new HelixAgent API key and output it to stdout
