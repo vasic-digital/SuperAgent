@@ -1,9 +1,9 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "project_name": "HelixAgent",
-  "summary": "Constitution with 22 rules (22 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 2, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1",
+  "summary": "Constitution with 26 rules (26 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 3, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 2, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1",
   "created_at": "2026-02-10T00:18:38.71286699+03:00",
-  "updated_at": "2026-02-17T12:00:00.000000000+03:00",
+  "updated_at": "2026-02-21T16:30:00.000000000+03:00",
   "rules": [
     {
       "id": "CONST-001",
@@ -156,6 +156,16 @@
       "updated_at": "2026-02-10T00:18:38.712867251+03:00"
     },
     {
+      "id": "CONST-015a",
+      "category": "Containerization",
+      "title": "Mandatory Container Orchestration Flow",
+      "description": "The ONLY acceptable container orchestration flow: (1) HelixAgent boots and initializes Containers module adapter, (2) Adapter reads Containers/.env file (NOT project root .env), (3) Based on CONTAINERS_REMOTE_ENABLED: true=ALL containers to remote hosts via CONTAINERS_REMOTE_HOST_* vars, false/missing=ALL containers locally, (4) Health checks against configured endpoints, (5) Required services failing health check cause boot failure. Rules: NO manual container starts, NO mixed mode, tests use tests/precondition/containers_boot_test.go, challenges verify container placement. Key files: Containers/.env, internal/config/config.go:isContainersRemoteEnabled(), internal/services/boot_manager.go, tests/precondition/containers_boot_test.go.",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-21T15:45:00.000000000+03:00",
+      "updated_at": "2026-02-21T15:45:00.000000000+03:00"
+    },
+    {
       "id": "CONST-016",
       "category": "Configuration",
       "title": "Unified Configuration",
@@ -184,6 +194,16 @@
       "priority": 2,
       "added_at": "2026-02-10T00:18:38.712867251+03:00",
       "updated_at": "2026-02-10T00:18:38.712867251+03:00"
+    },
+    {
+      "id": "CONST-018a",
+      "category": "GitOps",
+      "title": "SSH Only for Git Operations",
+      "description": "MANDATORY: NEVER use HTTPS for any Git service operations. All cloning, fetching, pushing, and submodule operations MUST use SSH URLs (git@github.com:org/repo.git). HTTPS is STRICTLY FORBIDDEN even for public repositories. SSH keys are already configured on all Git services (GitHub, GitLab, etc.).",
+      "mandatory": true,
+      "priority": 1,
+      "added_at": "2026-02-21T16:30:00.000000000+03:00",
+      "updated_at": "2026-02-21T16:30:00.000000000+03:00"
     },
     {
       "id": "CONST-019",

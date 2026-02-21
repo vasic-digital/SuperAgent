@@ -114,7 +114,7 @@ func NewOrchestrator(cfg OrchestratorConfig) *Orchestrator {
 		runner.WithRegistry(reg),
 		runner.WithResultsDir(cfg.ResultsDir),
 		runner.WithTimeout(cfg.Timeout),
-		runner.WithDefaultStallThreshold(stallThreshold),
+		runner.WithStaleThreshold(stallThreshold),
 	)
 
 	reporter := NewReporter(cfg.ResultsDir)
@@ -216,7 +216,7 @@ func (o *Orchestrator) RunSingle(
 			"challenge %s not found: %w", id, getErr,
 		)
 	}
-	cfg.StallThreshold = StallThresholdForCategory(c.Category())
+	cfg.StaleThreshold = StallThresholdForCategory(c.Category())
 
 	result, err := o.runner.Run(
 		ctx, challenge.ID(id), cfg,

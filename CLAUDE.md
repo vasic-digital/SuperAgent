@@ -18,6 +18,16 @@ Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier
 2. **Challenge Coverage** — Every component MUST have Challenge scripts (`./challenges/scripts/`) validating real-life use cases. No false success — validate actual behavior, not return codes.
 3. **Containerization** — All services MUST run in containers (Docker/Podman/K8s). Must support local default execution AND remote configuration. Auto boot-up before HelixAgent is ready. Remote services need API-based health checks.
 3a. **Centralized Container Management** — ALL container operations (runtime detection, compose up/down, health checks, remote distribution) MUST go through the Containers module (`digital.vasic.containers`) via `internal/adapters/containers/adapter.go`. No direct `exec.Command` to `docker`/`podman` in production code. The adapter delegates to the Containers module when available, with fallback to direct commands only in adapter internals.
+3b. **MANDATORY Container Orchestration Flow (CRITICAL)** — This is the ONLY acceptable container orchestration flow. All tests and challenges MUST follow this pattern:
+   - **Step 1**: HelixAgent boots and initializes Containers module adapter
+   - **Step 2**: Adapter reads `Containers/.env` file (NOT project root `.env`)
+   - **Step 3**: Based on `Containers/.env` content:
+     - `CONTAINERS_REMOTE_ENABLED=true` → ALL containers distributed to remote host(s) via `CONTAINERS_REMOTE_HOST_*` vars. NO local containers started.
+     - `CONTAINERS_REMOTE_ENABLED=false` or missing → ALL containers start locally
+   - **Step 4**: Health checks performed against configured endpoints (local or remote)
+   - **Step 5**: Required services failing health check cause boot failure in strict mode
+   - **Rules**: NO manual container starts, NO mixed mode, tests use `tests/precondition/containers_boot_test.go`, challenges verify container placement based on `Containers/.env`
+   - **Key Files**: `Containers/.env` (orchestration), `internal/config/config.go:isContainersRemoteEnabled()`, `internal/services/boot_manager.go`, `tests/precondition/containers_boot_test.go`
 4. **Configuration via HelixAgent Only** — CLI agent config export uses only HelixAgent + LLMsVerifier's unified generator (`pkg/cliagents/`). No third-party scripts.
 5. **Real Data** — Beyond unit tests, all components MUST use actual API calls, real databases, live services. No simulated success. Fallback chains tested with actual failures.
 6. **Health & Observability** — Every service MUST expose health endpoints. Circuit breakers for all external deps. Prometheus/OpenTelemetry integration. Status via `/v1/monitoring/status`.
@@ -34,7 +44,7 @@ Subprojects: **Toolkit** (`Toolkit/`) — Go library for AI apps. **LLMsVerifier
 
 ## Git Rules
 
-- **SSH only** for cloning — HTTPS may not work. Use SSH URLs in `.gitmodules`.
+- **SSH ONLY for ALL Git operations** — **MANDATORY: NEVER use HTTPS for any Git service operations.** All cloning, fetching, pushing, and submodule operations MUST use SSH URLs (`git@github.com:org/repo.git`). HTTPS is STRICTLY FORBIDDEN even for public repositories. SSH keys are already configured on all Git services (GitHub, GitLab, etc.).
 - **Branch naming**: `feat/`, `fix/`, `chore/`, `docs/`, `refactor/`, `test/` + short description
 - **Commits**: Conventional Commits — `feat(llm): add ensemble voting strategy`
 - **Always run `make fmt vet lint` before committing**
@@ -350,9 +360,9 @@ Gin v1.11.0, PostgreSQL 15 (pgx/v5), Redis 7, testify v1.11.1, Prometheus/Grafan
 <!-- BEGIN_CONSTITUTION -->
 # Project Constitution
 
-**Version:** 1.1.0 | **Updated:** 2026-02-17 12:00
+**Version:** 1.2.0 | **Updated:** 2026-02-21 15:45
 
-Constitution with 24 rules (24 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 2, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1
+Constitution with 26 rules (26 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 3, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 2, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1
 
 ## Mandatory Principles
 
@@ -429,6 +439,16 @@ Constitution with 24 rules (24 mandatory) across categories: Quality: 2, Safety:
 **Full Containerization** (Priority: 2)
 - All services MUST run in containers (Docker/Podman/K8s). Support local default execution AND remote configuration. Services must auto-boot before HelixAgent is ready.
 
+**Mandatory Container Orchestration Flow** (Priority: 1)
+- This is the ONLY acceptable container orchestration flow. All tests and challenges MUST follow this pattern:
+- **Step 1**: HelixAgent boots and initializes Containers module adapter
+- **Step 2**: Adapter reads `Containers/.env` file (NOT project root `.env`)
+- **Step 3**: Based on `Containers/.env` content: `CONTAINERS_REMOTE_ENABLED=true` → ALL containers to remote host(s) via `CONTAINERS_REMOTE_HOST_*` vars, NO local containers; `CONTAINERS_REMOTE_ENABLED=false` or missing → ALL containers locally
+- **Step 4**: Health checks performed against configured endpoints (local or remote)
+- **Step 5**: Required services failing health check cause boot failure in strict mode
+- **Rules**: NO manual container starts, NO mixed mode, tests use `tests/precondition/containers_boot_test.go`, challenges verify container placement based on `Containers/.env`
+- **Key Files**: `Containers/.env` (orchestration), `internal/config/config.go:isContainersRemoteEnabled()`, `internal/services/boot_manager.go`, `tests/precondition/containers_boot_test.go`
+
 **Container-Based Builds** (Priority: 1)
 - ALL release builds MUST be performed inside Docker/Podman containers for reproducibility. Use `make release` / `make release-all`. Version info injected via `-ldflags -X`. No release binaries should be built directly on the host unless container build is unavailable.
 
@@ -466,6 +486,9 @@ Constitution with 24 rules (24 mandatory) across categories: Quality: 2, Safety:
 
 **GitSpec Compliance** (Priority: 2)
 - Follow GitSpec constitution and all constraints from AGENTS.md and CLAUDE.md.
+
+**SSH Only for Git Operations** (Priority: 1)
+- **MANDATORY: NEVER use HTTPS for any Git service operations.** All cloning, fetching, pushing, and submodule operations MUST use SSH URLs (`git@github.com:org/repo.git`). HTTPS is STRICTLY FORBIDDEN even for public repositories. SSH keys are already configured on all Git services (GitHub, GitLab, etc.).
 
 ### CI/CD
 

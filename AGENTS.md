@@ -404,6 +404,36 @@ Key environment variables (see `.env.example`):
 - **Service Orchestrator**: Automatic service discovery and management via `pkg/orchestrator/` in Containers module. Auto-discovers all docker-compose files in `docker/` directory. When `CONTAINERS_REMOTE_ENABLED=true`, ALL services are automatically deployed to remote host(s) with automatic fallback to local. Thread-safe service management with parallel startup.
 - **MANDATORY Container Rebuild**: **All running containers on local host or remote distributed machines MUST be rebuilt and redeployed if code was changed affecting any of them!** This is a CRITICAL requirement. After any code changes to services, handlers, MCPs, formatters, or any containerized component: (1) Rebuild affected images with `make docker-build` or `make container-build`, (2) Restart containers with `make docker-run` or `make container-start`, (3) If using remote distribution, re-run distribution with `CONTAINERS_REMOTE_ENABLED=true`. Failure to rebuild and redeploy containers after code changes will result in outdated code running in production.
 
+### 3a. MANDATORY Container Orchestration Flow (CRITICAL)
+**This is the ONLY acceptable container orchestration flow. All tests and challenges MUST follow this pattern.**
+
+**Flow on HelixAgent Boot:**
+1. HelixAgent starts and initializes the Containers module adapter
+2. Adapter reads `Containers/.env` file (NOT the project root `.env`)
+3. Based on `Containers/.env` content:
+   - **If `CONTAINERS_REMOTE_ENABLED=true`**: ALL containers are distributed to remote host(s) configured via `CONTAINERS_REMOTE_HOST_*` variables. NO local containers are started for services.
+   - **If `CONTAINERS_REMOTE_ENABLED=false` or file missing/empty**: ALL containers start locally on the current host.
+4. Health checks are performed against the configured endpoints (local or remote)
+5. Required services that fail health check cause boot failure in strict mode
+
+**Configuration Files:**
+- `Containers/.env` — Single source of truth for container orchestration
+- Project root `.env` — Application-level config (API keys, database URLs, etc.)
+- `SVC_*_REMOTE=true` in root `.env` marks services as remote for health checks
+
+**Rules:**
+- **NO manual container starts** — All containers MUST be managed by the Containers module
+- **NO mixed mode** — Either ALL containers are local OR ALL are remote (per service type)
+- **Tests MUST use `tests/precondition/containers_boot_test.go`** to verify correct container placement
+- **Challenges MUST verify** that containers are running on the correct host based on `Containers/.env`
+
+**Key Files:**
+- `Containers/.env` — Orchestration config
+- `internal/adapters/containers/adapter.go` — Bridge to Containers module
+- `internal/config/config.go:isContainersRemoteEnabled()` — Reads `Containers/.env`
+- `internal/services/boot_manager.go` — Starts local services or health-checks remote
+- `tests/precondition/containers_boot_test.go` — Validates container placement
+
 ### 4. Configuration Management
 - **Exporting configuration files for all supported CLI agents MUST be done using only HelixAgent**
 - **No third-party scripts** are allowed for configuration export
@@ -521,6 +551,7 @@ Key environment variables (see `.env.example`):
 
 ## Git & Commit Guidelines
 
+- **SSH ONLY for ALL Git operations** — **MANDATORY: NEVER use HTTPS for any Git service operations.** All cloning, fetching, pushing, and submodule operations MUST use SSH URLs (`git@github.com:org/repo.git`). HTTPS is STRICTLY FORBIDDEN even for public repositories. SSH keys are already configured on all Git services (GitHub, GitLab, etc.).
 - **Branch naming**: Use prefixes: `feat/`, `fix/`, `chore/`, `docs/`, `refactor/`, `test/`, followed by a short description (e.g., `feat/add-user-auth`).
 - **Commit messages**: Follow [Conventional Commits](https://www.conventionalcommits.org/):
   - Format: `<type>(<scope>): <description>`
@@ -542,9 +573,9 @@ Key environment variables (see `.env.example`):
 <!-- BEGIN_CONSTITUTION -->
 # Project Constitution
 
-**Version:** 1.1.0 | **Updated:** 2026-02-17 12:00
+**Version:** 1.2.0 | **Updated:** 2026-02-21 15:45
 
-Constitution with 24 rules (24 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 2, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 1, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1
+Constitution with 26 rules (26 mandatory) across categories: Quality: 2, Safety: 1, Security: 1, Performance: 2, Containerization: 3, Configuration: 1, Testing: 4, Documentation: 2, Principles: 2, Stability: 1, Observability: 1, GitOps: 2, CI/CD: 1, Architecture: 1, Networking: 1, Resource Management: 1
 
 ## Mandatory Principles
 
@@ -624,6 +655,16 @@ Constitution with 24 rules (24 mandatory) across categories: Quality: 2, Safety:
 **Full Containerization** (Priority: 2)
 - All services MUST run in containers (Docker/Podman/K8s). Support local default execution AND remote configuration. Services must auto-boot before HelixAgent is ready.
 
+**Mandatory Container Orchestration Flow** (Priority: 1)
+- This is the ONLY acceptable container orchestration flow. All tests and challenges MUST follow this pattern:
+- **Step 1**: HelixAgent boots and initializes Containers module adapter
+- **Step 2**: Adapter reads `Containers/.env` file (NOT project root `.env`)
+- **Step 3**: Based on `Containers/.env` content: `CONTAINERS_REMOTE_ENABLED=true` → ALL containers to remote host(s) via `CONTAINERS_REMOTE_HOST_*` vars, NO local containers; `CONTAINERS_REMOTE_ENABLED=false` or missing → ALL containers locally
+- **Step 4**: Health checks performed against configured endpoints (local or remote)
+- **Step 5**: Required services failing health check cause boot failure in strict mode
+- **Rules**: NO manual container starts, NO mixed mode, tests use `tests/precondition/containers_boot_test.go`, challenges verify container placement based on `Containers/.env`
+- **Key Files**: `Containers/.env` (orchestration), `internal/config/config.go:isContainersRemoteEnabled()`, `internal/services/boot_manager.go`, `tests/precondition/containers_boot_test.go`
+
 **Container-Based Builds** (Priority: 1)
 - ALL release builds MUST be performed inside Docker/Podman containers for reproducibility. Use `make release` / `make release-all`. Version info injected via `-ldflags -X`. No release binaries should be built directly on the host unless container build is unavailable.
 
@@ -661,6 +702,9 @@ Constitution with 24 rules (24 mandatory) across categories: Quality: 2, Safety:
 
 **GitSpec Compliance** (Priority: 2)
 - Follow GitSpec constitution and all constraints from AGENTS.md and CLAUDE.md.
+
+**SSH Only for Git Operations** (Priority: 1)
+- **MANDATORY: NEVER use HTTPS for any Git service operations.** All cloning, fetching, pushing, and submodule operations MUST use SSH URLs (`git@github.com:org/repo.git`). HTTPS is STRICTLY FORBIDDEN even for public repositories. SSH keys are already configured on all Git services (GitHub, GitLab, etc.).
 
 ### CI/CD
 
