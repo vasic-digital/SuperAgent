@@ -7,6 +7,13 @@ import (
 )
 
 func TestDefaultServicesConfig(t *testing.T) {
+	// Save and restore CONTAINERS_REMOTE_ENABLED
+	originalEnv := os.Getenv("CONTAINERS_REMOTE_ENABLED")
+	defer os.Setenv("CONTAINERS_REMOTE_ENABLED", originalEnv)
+
+	// For "default" tests, explicitly set to false to override any .env file
+	os.Setenv("CONTAINERS_REMOTE_ENABLED", "false")
+
 	cfg := DefaultServicesConfig()
 
 	// All core services should be present with correct defaults
@@ -335,7 +342,13 @@ func TestResolvedURL(t *testing.T) {
 }
 
 func TestRemoteFlag(t *testing.T) {
+	// Save and restore CONTAINERS_REMOTE_ENABLED
+	originalEnv := os.Getenv("CONTAINERS_REMOTE_ENABLED")
+	defer os.Setenv("CONTAINERS_REMOTE_ENABLED", originalEnv)
+
 	t.Run("Default is not remote", func(t *testing.T) {
+		// Explicitly set to false to override any .env file
+		os.Setenv("CONTAINERS_REMOTE_ENABLED", "false")
 		cfg := DefaultServicesConfig()
 		if cfg.PostgreSQL.Remote {
 			t.Error("Expected PostgreSQL default to not be remote")

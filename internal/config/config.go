@@ -485,7 +485,7 @@ func DefaultServicesConfig() ServicesConfig {
 	// Check if remote distribution is enabled
 	remoteEnabled := isContainersRemoteEnabled()
 
-	return ServicesConfig{
+	cfg := ServicesConfig{
 		PostgreSQL: ServiceEndpoint{
 			Host:        "localhost",
 			Port:        "5432",
@@ -725,6 +725,7 @@ func DefaultServicesConfig() ServicesConfig {
 		},
 		MCPServers: make(map[string]ServiceEndpoint),
 	}
+	return cfg
 }
 
 // LoadServicesFromEnv applies environment variable overrides to the services config.

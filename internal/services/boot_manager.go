@@ -159,6 +159,13 @@ func (bm *BootManager) BootAll() error {
 			continue
 		}
 
+		// Skip health checks for remote services - they should be health-checked
+		// via the Containers module's remote health check mechanism
+		if ep.Remote {
+			bm.Logger.WithField("service", name).Info("Skipping health check for remote service (will be checked by Containers module)")
+			continue
+		}
+
 		start := time.Now()
 		err := bm.HealthChecker.CheckWithRetry(name, ep)
 		duration := time.Since(start)
