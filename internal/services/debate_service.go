@@ -740,17 +740,51 @@ func (ds *DebateService) getParticipantResponse(
 		"debate_id":        config.DebateID,
 	}).Info("Debate participant starting response")
 
-	// Get the provider
-	provider, err := ds.providerRegistry.GetProvider(participant.LLMProvider)
-	if err != nil {
+	// CRITICAL: Use verified provider instance if available (from StartupVerifier)
+	// This ensures CLI-based OAuth providers (Claude CLI, Qwen ACP) are used instead of
+	// API-based providers from the registry which would fail with product-restricted tokens.
+	var provider llm.LLMProvider
+	if participant.ProviderInstance != nil {
+		provider = participant.ProviderInstance
 		ds.logger.WithFields(logrus.Fields{
-			"participant":      participantIdentifier,
-			"participant_id":   participant.ParticipantID,
-			"participant_name": participant.Name,
-			"provider":         participant.LLMProvider,
-			"error":            err.Error(),
-		}).Error("Debate participant provider not found")
-		return ParticipantResponse{}, fmt.Errorf("provider not found: %w", err)
+			"participant":    participantIdentifier,
+			"provider":       participant.LLMProvider,
+			"model":          participant.LLMModel,
+			"using_instance": "verified_provider_instance",
+		}).Debug("Using verified provider instance from ParticipantConfig")
+	} else if ds.teamConfig != nil {
+		// Try to get verified provider from team config
+		if verifiedProvider := ds.teamConfig.GetVerifiedProviderInstance(participant.LLMProvider, participant.LLMModel); verifiedProvider != nil {
+			provider = verifiedProvider
+			ds.logger.WithFields(logrus.Fields{
+				"participant":    participantIdentifier,
+				"provider":       participant.LLMProvider,
+				"model":          participant.LLMModel,
+				"using_instance": "team_config_verified",
+			}).Debug("Using verified provider instance from DebateTeamConfig")
+		}
+	}
+
+	// Final fallback to registry lookup if no verified instance found
+	if provider == nil {
+		var err error
+		provider, err = ds.providerRegistry.GetProvider(participant.LLMProvider)
+		if err != nil {
+			ds.logger.WithFields(logrus.Fields{
+				"participant":      participantIdentifier,
+				"participant_id":   participant.ParticipantID,
+				"participant_name": participant.Name,
+				"provider":         participant.LLMProvider,
+				"error":            err.Error(),
+			}).Error("Debate participant provider not found")
+			return ParticipantResponse{}, fmt.Errorf("provider not found: %w", err)
+		}
+		ds.logger.WithFields(logrus.Fields{
+			"participant":    participantIdentifier,
+			"provider":       participant.LLMProvider,
+			"model":          participant.LLMModel,
+			"using_instance": "registry_lookup",
+		}).Debug("Using provider from registry lookup (no verified instance)")
 	}
 
 	// Build the prompt with context from previous responses

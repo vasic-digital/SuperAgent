@@ -230,7 +230,15 @@ func TestClaudeCLIProvider_Integration_Complete(t *testing.T) {
 		},
 	})
 
-	assert.NoError(t, err)
+	if err != nil {
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "403") || strings.Contains(errMsg, "forbidden") || strings.Contains(errMsg, "Request not allowed") {
+			t.Skipf("Claude OAuth token is product-restricted (403 Forbidden). Get API key from console.anthropic.com: %v", err)
+		}
+		assert.NoError(t, err)
+		return
+	}
+
 	assert.NotNil(t, resp)
 	assert.NotEmpty(t, resp.Content)
 	assert.Equal(t, "claude-cli", resp.ProviderName)
@@ -252,6 +260,13 @@ func TestClaudeCLIProvider_Integration_HealthCheck(t *testing.T) {
 	provider := NewClaudeCLIProviderWithModel("claude-sonnet-4-20250514")
 
 	err := provider.HealthCheck()
+
+	if err != nil {
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "403") || strings.Contains(errMsg, "forbidden") || strings.Contains(errMsg, "Request not allowed") {
+			t.Skipf("Claude OAuth token is product-restricted (403 Forbidden). Get API key from console.anthropic.com: %v", err)
+		}
+	}
 
 	assert.NoError(t, err)
 }

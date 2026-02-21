@@ -709,9 +709,19 @@ func TestDetectCLIClient_OpenCode(t *testing.T) {
 }
 
 func TestDetectCLIClient_Crush(t *testing.T) {
-	oldVal := os.Getenv("CRUSH_CLI")
-	defer func() { _ = os.Setenv("CRUSH_CLI", oldVal) }()
+	oldCrushCli := os.Getenv("CRUSH_CLI")
+	oldCrushVer := os.Getenv("CRUSH_VERSION")
+	oldOpenCode := os.Getenv("OPENCODE")
+	oldOpenCodeVer := os.Getenv("OPENCODE_VERSION")
+	defer func() {
+		_ = os.Setenv("CRUSH_CLI", oldCrushCli)
+		_ = os.Setenv("CRUSH_VERSION", oldCrushVer)
+		_ = os.Setenv("OPENCODE", oldOpenCode)
+		_ = os.Setenv("OPENCODE_VERSION", oldOpenCodeVer)
+	}()
 
+	_ = os.Unsetenv("OPENCODE")
+	_ = os.Unsetenv("OPENCODE_VERSION")
 	_ = os.Setenv("CRUSH_CLI", "1")
 	client := DetectCLIClient()
 	assert.Equal(t, CLIClientCrush, client)
@@ -719,9 +729,17 @@ func TestDetectCLIClient_Crush(t *testing.T) {
 }
 
 func TestDetectCLIClient_HelixCode(t *testing.T) {
-	oldVal := os.Getenv("HELIXCODE")
-	defer func() { _ = os.Setenv("HELIXCODE", oldVal) }()
+	oldHelixCode := os.Getenv("HELIXCODE")
+	oldOpenCode := os.Getenv("OPENCODE")
+	oldOpenCodeVer := os.Getenv("OPENCODE_VERSION")
+	defer func() {
+		_ = os.Setenv("HELIXCODE", oldHelixCode)
+		_ = os.Setenv("OPENCODE", oldOpenCode)
+		_ = os.Setenv("OPENCODE_VERSION", oldOpenCodeVer)
+	}()
 
+	_ = os.Unsetenv("OPENCODE")
+	_ = os.Unsetenv("OPENCODE_VERSION")
 	_ = os.Setenv("HELIXCODE", "1")
 	client := DetectCLIClient()
 	assert.Equal(t, CLIClientHelixCode, client)
@@ -729,9 +747,17 @@ func TestDetectCLIClient_HelixCode(t *testing.T) {
 }
 
 func TestDetectCLIClient_KiloCode(t *testing.T) {
-	oldVal := os.Getenv("KILOCODE")
-	defer func() { _ = os.Setenv("KILOCODE", oldVal) }()
+	oldKiloCode := os.Getenv("KILOCODE")
+	oldOpenCode := os.Getenv("OPENCODE")
+	oldOpenCodeVer := os.Getenv("OPENCODE_VERSION")
+	defer func() {
+		_ = os.Setenv("KILOCODE", oldKiloCode)
+		_ = os.Setenv("OPENCODE", oldOpenCode)
+		_ = os.Setenv("OPENCODE_VERSION", oldOpenCodeVer)
+	}()
 
+	_ = os.Unsetenv("OPENCODE")
+	_ = os.Unsetenv("OPENCODE_VERSION")
 	_ = os.Setenv("KILOCODE", "1")
 	client := DetectCLIClient()
 	assert.Equal(t, CLIClientKiloCode, client)

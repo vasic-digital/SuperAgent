@@ -2,6 +2,8 @@ package services
 
 import (
 	"time"
+
+	"dev.helix.agent/internal/llm"
 )
 
 // DebateStatus represents the current status of a debate
@@ -102,10 +104,18 @@ type ParticipantConfig struct {
 	Priority     int     `json:"priority,omitempty"`      // Participant priority in debate order
 	// Fallback chain - when primary LLM fails or returns empty, try these in order
 	Fallbacks []FallbackConfig `json:"fallbacks,omitempty"`
+	// CRITICAL: Provider instance from verification - used instead of registry lookup
+	// This ensures verified providers (e.g., CLI-based OAuth providers) are used
+	// instead of API-based providers from the registry.
+	// When set, DebateService uses this instance directly instead of looking up by name.
+	ProviderInstance llm.LLMProvider `json:"-"`
 }
 
 // FallbackConfig defines a fallback provider for when the primary fails
 type FallbackConfig struct {
 	Provider string `json:"provider"` // Provider name (e.g., "mistral", "zen")
 	Model    string `json:"model"`    // Model name (e.g., "mistral-large-latest", "grok-code")
+	// CRITICAL: Provider instance from verification - used instead of registry lookup
+	// When set, DebateService uses this instance directly instead of looking up by name.
+	ProviderInstance llm.LLMProvider `json:"-"`
 }

@@ -1218,6 +1218,88 @@ func (dtc *DebateTeamConfig) GetPrimaryMembers() []*DebateTeamMember {
 	return primaries
 }
 
+// ToParticipantConfig converts a DebateTeamMember to a ParticipantConfig
+// CRITICAL: This preserves the ProviderInstance from the verified member,
+// ensuring that CLI-based OAuth providers are used instead of API-based
+// providers from the registry lookup.
+func (m *DebateTeamMember) ToParticipantConfig() ParticipantConfig {
+	config := ParticipantConfig{
+		ParticipantID:    fmt.Sprintf("%s-%s", m.ProviderName, m.ModelName),
+		Name:             fmt.Sprintf("%s (%s)", m.ProviderName, m.ModelName),
+		Role:             string(m.Role),
+		LLMProvider:      m.ProviderName,
+		LLMModel:         m.ModelName,
+		Weight:           m.Score / 10.0, // Normalize score to weight
+		ProviderInstance: m.Provider,     // CRITICAL: Use verified provider instance
+	}
+
+	// Convert fallbacks
+	if len(m.Fallbacks) > 0 {
+		config.Fallbacks = make([]FallbackConfig, len(m.Fallbacks))
+		for i, fb := range m.Fallbacks {
+			config.Fallbacks[i] = FallbackConfig{
+				Provider:         fb.ProviderName,
+				Model:            fb.ModelName,
+				ProviderInstance: fb.Provider, // CRITICAL: Use verified provider instance
+			}
+		}
+	}
+
+	return config
+}
+
+// GetParticipantConfigs converts all primary members to ParticipantConfig slice
+// This is the primary method to get verified participants for a debate.
+func (dtc *DebateTeamConfig) GetParticipantConfigs() []ParticipantConfig {
+	dtc.mu.RLock()
+	defer dtc.mu.RUnlock()
+
+	participants := make([]ParticipantConfig, 0, TotalDebatePositions)
+	for pos := PositionAnalyst; pos <= PositionMediator; pos++ {
+		member := dtc.members[pos]
+		if member != nil && member.IsActive {
+			participants = append(participants, member.ToParticipantConfig())
+		}
+	}
+	return participants
+}
+
+// GetVerifiedProviderInstance returns the verified LLMProvider instance for a given
+// provider name and model. This is used by DebateService to get the verified provider
+// instance (which may be CLI-based for OAuth providers) instead of using registry lookup.
+// Returns nil if no matching verified provider is found.
+func (dtc *DebateTeamConfig) GetVerifiedProviderInstance(providerName, modelName string) llm.LLMProvider {
+	dtc.mu.RLock()
+	defer dtc.mu.RUnlock()
+
+	// First, check the team members (which have Provider instances set from verification)
+	for pos := PositionAnalyst; pos <= PositionMediator; pos++ {
+		member := dtc.members[pos]
+		if member == nil {
+			continue
+		}
+		// Check primary
+		if member.ProviderName == providerName && member.ModelName == modelName && member.Provider != nil {
+			return member.Provider
+		}
+		// Check fallbacks (fallbacks may have different providers than primary)
+		for _, fb := range member.Fallbacks {
+			if fb != nil && fb.ProviderName == providerName && fb.ModelName == modelName && fb.Provider != nil {
+				return fb.Provider
+			}
+		}
+	}
+
+	// Also check verifiedLLMs (contains all verified LLMs with their provider instances)
+	for _, vllm := range dtc.verifiedLLMs {
+		if vllm.ProviderName == providerName && vllm.ModelName == modelName && vllm.Provider != nil {
+			return vllm.Provider
+		}
+	}
+
+	return nil
+}
+
 // GetVerifiedLLMs returns the list of verified LLMs used for team formation
 func (dtc *DebateTeamConfig) GetVerifiedLLMs() []*VerifiedLLM {
 	dtc.mu.RLock()

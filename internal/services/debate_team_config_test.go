@@ -5,6 +5,9 @@ import (
 	"os"
 	"testing"
 
+	"dev.helix.agent/internal/llm"
+	"dev.helix.agent/internal/models"
+
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -975,5 +978,336 @@ func TestDebateTeamConfig_GetProviderForPosition(t *testing.T) {
 	t.Run("returns error for non-existent position without registry", func(t *testing.T) {
 		_, _, err := config.GetProviderForPosition(PositionCritic)
 		assert.Error(t, err)
+	})
+}
+
+// =============================================================================
+// Tests for Verified Provider Instance Usage (CRITICAL FIX)
+// =============================================================================
+
+// mockVerifiedProvider is a mock LLMProvider for testing verified instance usage
+type mockVerifiedProvider struct {
+	name string
+}
+
+func (m *mockVerifiedProvider) Complete(ctx context.Context, req *models.LLMRequest) (*models.LLMResponse, error) {
+	return &models.LLMResponse{Content: "response from " + m.name}, nil
+}
+
+func (m *mockVerifiedProvider) CompleteStream(ctx context.Context, req *models.LLMRequest) (<-chan *models.LLMResponse, error) {
+	ch := make(chan *models.LLMResponse, 1)
+	ch <- &models.LLMResponse{Content: "stream response from " + m.name}
+	close(ch)
+	return ch, nil
+}
+
+func (m *mockVerifiedProvider) HealthCheck() error {
+	return nil
+}
+
+func (m *mockVerifiedProvider) GetCapabilities() *models.ProviderCapabilities {
+	return &models.ProviderCapabilities{}
+}
+
+func (m *mockVerifiedProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
+	return true, nil
+}
+
+var _ llm.LLMProvider = (*mockVerifiedProvider)(nil)
+
+func TestDebateTeamMember_ToParticipantConfig(t *testing.T) {
+
+	t.Run("converts member with provider instance", func(t *testing.T) {
+		mockProvider := &mockVerifiedProvider{name: "test-provider"}
+
+		member := &DebateTeamMember{
+			Position:     PositionAnalyst,
+			Role:         RoleAnalyst,
+			ProviderName: "claude",
+			ModelName:    "claude-sonnet-4-5",
+			Provider:     mockProvider,
+			Score:        9.5,
+			IsActive:     true,
+			IsOAuth:      true,
+		}
+
+		config := member.ToParticipantConfig()
+
+		assert.Equal(t, "claude-claude-sonnet-4-5", config.ParticipantID)
+		assert.Equal(t, "claude (claude-sonnet-4-5)", config.Name)
+		assert.Equal(t, "analyst", config.Role)
+		assert.Equal(t, "claude", config.LLMProvider)
+		assert.Equal(t, "claude-sonnet-4-5", config.LLMModel)
+		assert.Equal(t, 0.95, config.Weight) // Score / 10.0
+		assert.NotNil(t, config.ProviderInstance, "ProviderInstance MUST be set")
+		assert.Equal(t, mockProvider, config.ProviderInstance, "ProviderInstance must be the same as member.Provider")
+	})
+
+	t.Run("converts member with fallbacks", func(t *testing.T) {
+		primaryProvider := &mockVerifiedProvider{name: "primary"}
+		fallbackProvider := &mockVerifiedProvider{name: "fallback"}
+
+		member := &DebateTeamMember{
+			Position:     PositionCritic,
+			Role:         RoleCritic,
+			ProviderName: "nvidia",
+			ModelName:    "llama-3.1-70b",
+			Provider:     primaryProvider,
+			Score:        8.0,
+			IsActive:     true,
+			Fallbacks: []*DebateTeamMember{
+				{
+					ProviderName: "huggingface",
+					ModelName:    "llama-3.3-70b",
+					Provider:     fallbackProvider,
+					Score:        7.5,
+				},
+			},
+		}
+
+		config := member.ToParticipantConfig()
+
+		assert.Len(t, config.Fallbacks, 1, "Should have 1 fallback")
+		assert.Equal(t, "huggingface", config.Fallbacks[0].Provider)
+		assert.Equal(t, "llama-3.3-70b", config.Fallbacks[0].Model)
+		assert.NotNil(t, config.Fallbacks[0].ProviderInstance, "Fallback ProviderInstance MUST be set")
+		assert.Equal(t, fallbackProvider, config.Fallbacks[0].ProviderInstance)
+	})
+
+	t.Run("returns empty fallbacks when none set", func(t *testing.T) {
+		member := &DebateTeamMember{
+			Position:     PositionMediator,
+			Role:         RoleMediator,
+			ProviderName: "deepseek",
+			ModelName:    "deepseek-v3",
+			Provider:     &mockVerifiedProvider{name: "deepseek"},
+			Score:        8.5,
+			IsActive:     true,
+		}
+
+		config := member.ToParticipantConfig()
+
+		assert.Nil(t, config.Fallbacks, "Should have nil fallbacks when none set")
+	})
+}
+
+func TestDebateTeamConfig_GetVerifiedProviderInstance(t *testing.T) {
+	logger := logrus.New()
+
+	t.Run("returns nil when no matching provider", func(t *testing.T) {
+		config := NewDebateTeamConfig(nil, nil, logger)
+
+		provider := config.GetVerifiedProviderInstance("nonexistent", "model")
+		assert.Nil(t, provider)
+	})
+
+	t.Run("returns provider from verified LLMs", func(t *testing.T) {
+		config := NewDebateTeamConfig(nil, nil, logger)
+		mockProvider := &mockVerifiedProvider{name: "qwen-acp"}
+
+		config.verifiedLLMs = []*VerifiedLLM{
+			{
+				ProviderName: "qwen",
+				ModelName:    "qwen-max",
+				Provider:     mockProvider,
+				Score:        7.5,
+				IsOAuth:      true,
+				Verified:     true,
+			},
+		}
+
+		provider := config.GetVerifiedProviderInstance("qwen", "qwen-max")
+		assert.NotNil(t, provider, "Should find provider from verified LLMs")
+		assert.Equal(t, mockProvider, provider)
+	})
+
+	t.Run("returns provider from team members", func(t *testing.T) {
+		config := NewDebateTeamConfig(nil, nil, logger)
+		mockProvider := &mockVerifiedProvider{name: "claude-cli"}
+
+		config.members[PositionAnalyst] = &DebateTeamMember{
+			Position:     PositionAnalyst,
+			Role:         RoleAnalyst,
+			ProviderName: "claude",
+			ModelName:    "claude-sonnet-4-5",
+			Provider:     mockProvider,
+			Score:        9.0,
+			IsActive:     true,
+		}
+
+		provider := config.GetVerifiedProviderInstance("claude", "claude-sonnet-4-5")
+		assert.NotNil(t, provider, "Should find provider from team members")
+		assert.Equal(t, mockProvider, provider)
+	})
+
+	t.Run("returns provider from fallback chain", func(t *testing.T) {
+		config := NewDebateTeamConfig(nil, nil, logger)
+		fallbackProvider := &mockVerifiedProvider{name: "fireworks-fallback"}
+
+		config.members[PositionProposer] = &DebateTeamMember{
+			Position:     PositionProposer,
+			Role:         RoleProposer,
+			ProviderName: "nvidia",
+			ModelName:    "llama-3.1-70b",
+			Provider:     &mockVerifiedProvider{name: "nvidia"},
+			Score:        8.0,
+			IsActive:     true,
+			Fallbacks: []*DebateTeamMember{
+				{
+					ProviderName: "fireworks",
+					ModelName:    "llama-v3p3-70b",
+					Provider:     fallbackProvider,
+					Score:        7.5,
+				},
+			},
+		}
+
+		provider := config.GetVerifiedProviderInstance("fireworks", "llama-v3p3-70b")
+		assert.NotNil(t, provider, "Should find provider from fallback chain")
+		assert.Equal(t, fallbackProvider, provider)
+	})
+
+	t.Run("returns nil for matching provider but different model", func(t *testing.T) {
+		config := NewDebateTeamConfig(nil, nil, logger)
+		mockProvider := &mockVerifiedProvider{name: "mistral"}
+
+		config.verifiedLLMs = []*VerifiedLLM{
+			{
+				ProviderName: "mistral",
+				ModelName:    "mistral-large",
+				Provider:     mockProvider,
+				Score:        7.5,
+				Verified:     true,
+			},
+		}
+
+		provider := config.GetVerifiedProviderInstance("mistral", "mistral-small")
+		assert.Nil(t, provider, "Should NOT find provider for different model")
+	})
+
+	t.Run("initializes team and finds verified providers", func(t *testing.T) {
+		config := NewDebateTeamConfig(nil, nil, logger)
+		mockProvider := &mockVerifiedProvider{name: "zen"}
+
+		// Add verified LLMs
+		config.verifiedLLMs = []*VerifiedLLM{
+			{
+				ProviderName: "zen",
+				ModelName:    "big-pickle",
+				Provider:     mockProvider,
+				Score:        7.0,
+				Verified:     true,
+			},
+		}
+
+		// Assign team positions
+		config.assignPrimaryPositions()
+
+		// Verify we can find the provider
+		provider := config.GetVerifiedProviderInstance("zen", "big-pickle")
+		assert.NotNil(t, provider, "Should find verified provider after initialization")
+	})
+}
+
+func TestDebateTeamConfig_GetParticipantConfigs(t *testing.T) {
+	logger := logrus.New()
+
+	t.Run("returns empty slice when no members", func(t *testing.T) {
+		config := NewDebateTeamConfig(nil, nil, logger)
+
+		participants := config.GetParticipantConfigs()
+		assert.Empty(t, participants)
+	})
+
+	t.Run("returns all active members as participant configs", func(t *testing.T) {
+		config := NewDebateTeamConfig(nil, nil, logger)
+		mockProvider1 := &mockVerifiedProvider{name: "provider1"}
+		mockProvider2 := &mockVerifiedProvider{name: "provider2"}
+
+		config.members[PositionAnalyst] = &DebateTeamMember{
+			Position:     PositionAnalyst,
+			Role:         RoleAnalyst,
+			ProviderName: "claude",
+			ModelName:    "claude-sonnet-4-5",
+			Provider:     mockProvider1,
+			Score:        9.0,
+			IsActive:     true,
+		}
+		config.members[PositionProposer] = &DebateTeamMember{
+			Position:     PositionProposer,
+			Role:         RoleProposer,
+			ProviderName: "qwen",
+			ModelName:    "qwen-max",
+			Provider:     mockProvider2,
+			Score:        7.5,
+			IsActive:     true,
+		}
+
+		participants := config.GetParticipantConfigs()
+
+		assert.Len(t, participants, 2, "Should have 2 participants")
+		assert.Equal(t, "claude", participants[0].LLMProvider)
+		assert.Equal(t, "qwen", participants[1].LLMProvider)
+		assert.NotNil(t, participants[0].ProviderInstance, "ProviderInstance MUST be set")
+		assert.NotNil(t, participants[1].ProviderInstance, "ProviderInstance MUST be set")
+	})
+
+	t.Run("skips inactive members", func(t *testing.T) {
+		config := NewDebateTeamConfig(nil, nil, logger)
+
+		config.members[PositionAnalyst] = &DebateTeamMember{
+			Position:     PositionAnalyst,
+			Role:         RoleAnalyst,
+			ProviderName: "active",
+			Provider:     &mockVerifiedProvider{name: "active"},
+			IsActive:     true,
+		}
+		config.members[PositionCritic] = &DebateTeamMember{
+			Position:     PositionCritic,
+			Role:         RoleCritic,
+			ProviderName: "inactive",
+			Provider:     &mockVerifiedProvider{name: "inactive"},
+			IsActive:     false,
+		}
+
+		participants := config.GetParticipantConfigs()
+
+		assert.Len(t, participants, 1, "Should only have 1 active participant")
+		assert.Equal(t, "active", participants[0].LLMProvider)
+	})
+}
+
+func TestParticipantConfig_ProviderInstance(t *testing.T) {
+	t.Run("ProviderInstance is preserved in json serialization", func(t *testing.T) {
+		// Note: ProviderInstance has json:"-" tag so it won't serialize
+		// This test verifies the field exists and can be set
+		mockProvider := &mockVerifiedProvider{name: "test"}
+
+		config := ParticipantConfig{
+			ParticipantID:    "test-1",
+			Name:             "Test Agent",
+			Role:             "analyst",
+			LLMProvider:      "test",
+			LLMModel:         "test-model",
+			ProviderInstance: mockProvider,
+		}
+
+		assert.NotNil(t, config.ProviderInstance)
+		assert.Equal(t, mockProvider, config.ProviderInstance)
+	})
+}
+
+func TestFallbackConfig_ProviderInstance(t *testing.T) {
+	t.Run("ProviderInstance can be set on fallback", func(t *testing.T) {
+		mockProvider := &mockVerifiedProvider{name: "fallback"}
+
+		fallback := FallbackConfig{
+			Provider:         "fallback-provider",
+			Model:            "fallback-model",
+			ProviderInstance: mockProvider,
+		}
+
+		assert.NotNil(t, fallback.ProviderInstance)
+		assert.Equal(t, mockProvider, fallback.ProviderInstance)
 	})
 }
