@@ -48,12 +48,12 @@ func TestZenModelResponseQuality(t *testing.T) {
 		},
 		{
 			name:       "GLM 4.7 Free",
-			modelID:    zen.ModelGLM47Free, // "glm-4.7-free"
-			skipReason: "Known backend token counting issue on Zen API side",
+			modelID:    zen.ModelGLM47Free, // "glm-4.7-free" (deprecated, use glm-5-free)
+			skipReason: "Deprecated model - use glm-5-free instead",
 		},
 		{
-			name:       "GPT 5 Nano",
-			modelID:    zen.ModelGPT5Nano, // "gpt-5-nano"
+			name:       "Trinity Large Preview Free",
+			modelID:    zen.ModelTrinityLargePreviewFree, // "trinity-large-preview-free"
 			skipReason: "Known backend token counting issue on Zen API side",
 		},
 	}
@@ -189,7 +189,7 @@ func TestZenProviderCapabilities(t *testing.T) {
 	assert.Contains(t, caps.SupportedModels, zen.ModelBigPickle)
 	assert.Contains(t, caps.SupportedModels, zen.ModelGrokCodeFast)
 	assert.Contains(t, caps.SupportedModels, zen.ModelGLM47Free)
-	assert.Contains(t, caps.SupportedModels, zen.ModelGPT5Nano)
+	assert.Contains(t, caps.SupportedModels, zen.ModelTrinityLargePreviewFree)
 
 	// Check features
 	assert.Contains(t, caps.SupportedFeatures, "streaming")
