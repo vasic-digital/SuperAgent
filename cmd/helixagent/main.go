@@ -1328,6 +1328,12 @@ func run(appCfg *AppConfig) error {
 
 	// Unified service boot manager: starts all enabled local services and health-checks all
 	bootMgr := services.NewBootManager(&cfg.Services, logger)
+
+	// Set container adapter for remote health checks
+	if globalContainerAdapter != nil {
+		bootMgr.SetContainerAdapter(globalContainerAdapter)
+	}
+
 	if appCfg.AutoStartDocker {
 		logger.Info("Booting all configured services via unified BootManager...")
 		if err := bootMgr.BootAll(); err != nil {
