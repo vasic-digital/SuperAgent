@@ -480,14 +480,18 @@ func Load() *Config {
 }
 
 // DefaultServicesConfig returns the default configuration for all infrastructure services.
+// When CONTAINERS_REMOTE_ENABLED=true, all services are marked as Remote=true.
 func DefaultServicesConfig() ServicesConfig {
+	// Check if remote distribution is enabled
+	remoteEnabled := isContainersRemoteEnabled()
+
 	return ServicesConfig{
 		PostgreSQL: ServiceEndpoint{
 			Host:        "localhost",
 			Port:        "5432",
 			Enabled:     true,
 			Required:    true,
-			Remote:      false,
+			Remote:      remoteEnabled, // Set based on CONTAINERS_REMOTE_ENABLED
 			HealthType:  "pgx",
 			Timeout:     10 * time.Second,
 			RetryCount:  6,
@@ -500,7 +504,7 @@ func DefaultServicesConfig() ServicesConfig {
 			Port:        "6379",
 			Enabled:     true,
 			Required:    true,
-			Remote:      false,
+			Remote:      remoteEnabled, // Set based on CONTAINERS_REMOTE_ENABLED
 			HealthType:  "redis",
 			Timeout:     5 * time.Second,
 			RetryCount:  6,
@@ -724,38 +728,35 @@ func DefaultServicesConfig() ServicesConfig {
 }
 
 // LoadServicesFromEnv applies environment variable overrides to the services config.
-// Environment variables follow the pattern: SVC_<SERVICE>_<FIELD>
-// e.g. SVC_POSTGRESQL_HOST, SVC_REDIS_REMOTE, SVC_COGNEE_PORT
-//
 // MANDATORY: When CONTAINERS_REMOTE_ENABLED=true in Containers/.env, ALL services
 // (except HelixAgent itself) are automatically marked as Remote=true for distribution
 // to remote hosts via the Containers module with resource-aware scheduling.
 func LoadServicesFromEnv(cfg *ServicesConfig) {
-	// Check if remote distribution is enabled via Containers/.env
-	remoteEnabled := isContainersRemoteEnabled()
+	// Remote flag is already set in DefaultServicesConfig() based on CONTAINERS_REMOTE_ENABLED
+	// Here we just apply explicit environment variable overrides
 
-	loadServiceEndpointFromEnv("SVC_POSTGRESQL", &cfg.PostgreSQL, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_REDIS", &cfg.Redis, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_COGNEE", &cfg.Cognee, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_CHROMADB", &cfg.ChromaDB, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_PROMETHEUS", &cfg.Prometheus, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_GRAFANA", &cfg.Grafana, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_NEO4J", &cfg.Neo4j, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_KAFKA", &cfg.Kafka, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_ZOOKEEPER", &cfg.Zookeeper, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_RABBITMQ", &cfg.RabbitMQ, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_QDRANT", &cfg.Qdrant, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_WEAVIATE", &cfg.Weaviate, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_LANGCHAIN", &cfg.LangChain, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_LLAMAINDEX", &cfg.LlamaIndex, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_CLICKHOUSE", &cfg.ClickHouse, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_MINIO", &cfg.MinIO, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_SPARK_MASTER", &cfg.SparkMaster, remoteEnabled)
-	loadServiceEndpointFromEnv("SVC_SPARK_WORKER", &cfg.SparkWorker, remoteEnabled)
+	loadServiceEndpointFromEnv("SVC_POSTGRESQL", &cfg.PostgreSQL)
+	loadServiceEndpointFromEnv("SVC_REDIS", &cfg.Redis)
+	loadServiceEndpointFromEnv("SVC_COGNEE", &cfg.Cognee)
+	loadServiceEndpointFromEnv("SVC_CHROMADB", &cfg.ChromaDB)
+	loadServiceEndpointFromEnv("SVC_PROMETHEUS", &cfg.Prometheus)
+	loadServiceEndpointFromEnv("SVC_GRAFANA", &cfg.Grafana)
+	loadServiceEndpointFromEnv("SVC_NEO4J", &cfg.Neo4j)
+	loadServiceEndpointFromEnv("SVC_KAFKA", &cfg.Kafka)
+	loadServiceEndpointFromEnv("SVC_ZOOKEEPER", &cfg.Zookeeper)
+	loadServiceEndpointFromEnv("SVC_RABBITMQ", &cfg.RabbitMQ)
+	loadServiceEndpointFromEnv("SVC_QDRANT", &cfg.Qdrant)
+	loadServiceEndpointFromEnv("SVC_WEAVIATE", &cfg.Weaviate)
+	loadServiceEndpointFromEnv("SVC_LANGCHAIN", &cfg.LangChain)
+	loadServiceEndpointFromEnv("SVC_LLAMAINDEX", &cfg.LlamaIndex)
+	loadServiceEndpointFromEnv("SVC_CLICKHOUSE", &cfg.ClickHouse)
+	loadServiceEndpointFromEnv("SVC_MINIO", &cfg.MinIO)
+	loadServiceEndpointFromEnv("SVC_SPARK_MASTER", &cfg.SparkMaster)
+	loadServiceEndpointFromEnv("SVC_SPARK_WORKER", &cfg.SparkWorker)
 
-	// Mark all MCP servers as remote if distribution is enabled
+	// Apply environment overrides to MCP servers
 	for name, ep := range cfg.MCPServers {
-		loadServiceEndpointFromEnv("SVC_MCP_"+strings.ToUpper(name), &ep, remoteEnabled)
+		loadServiceEndpointFromEnv("SVC_MCP_"+strings.ToUpper(name), &ep)
 		cfg.MCPServers[name] = ep
 	}
 }
@@ -796,7 +797,7 @@ func isContainersRemoteEnabled() bool {
 	return false
 }
 
-func loadServiceEndpointFromEnv(prefix string, ep *ServiceEndpoint, remoteEnabled bool) {
+func loadServiceEndpointFromEnv(prefix string, ep *ServiceEndpoint) {
 	if v := os.Getenv(prefix + "_HOST"); v != "" {
 		ep.Host = v
 	}
@@ -816,11 +817,8 @@ func loadServiceEndpointFromEnv(prefix string, ep *ServiceEndpoint, remoteEnable
 			ep.Required = b
 		}
 	}
-	// MANDATORY: If CONTAINERS_REMOTE_ENABLED=true, mark ALL services as remote
-	// This can be overridden by explicit SVC_*_REMOTE=false if needed
-	if remoteEnabled {
-		ep.Remote = true
-	}
+	// Allow explicit override of Remote flag via environment variable
+	// (by default, Remote is set in DefaultServicesConfig based on CONTAINERS_REMOTE_ENABLED)
 	if v := os.Getenv(prefix + "_REMOTE"); v != "" {
 		if b, err := strconv.ParseBool(v); err == nil {
 			ep.Remote = b
