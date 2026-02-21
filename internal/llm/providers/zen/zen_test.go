@@ -64,13 +64,13 @@ func TestNewZenProvider(t *testing.T) {
 
 func TestFreeModels(t *testing.T) {
 	models := FreeModels()
-	assert.Len(t, models, 5) // Updated 2026-02: qwen3-coder removed from free tier
+	// Updated 2026-02-22: Free models are big-pickle, glm-5-free, minimax-m2.5-free, minimax-m2.1-free, trinity-large-preview-free
+	assert.Len(t, models, 5)
 	assert.Contains(t, models, ModelBigPickle)
-	assert.Contains(t, models, ModelGPT5Nano)
-	assert.Contains(t, models, ModelGLM47)
-	// Note: ModelQwen3 removed from free tier 2026-02
-	assert.Contains(t, models, ModelKimiK2)
-	assert.Contains(t, models, ModelGemini3)
+	assert.Contains(t, models, ModelGLM5Free)
+	assert.Contains(t, models, ModelMinimaxM25Free)
+	assert.Contains(t, models, ModelMinimaxM21Free)
+	assert.Contains(t, models, ModelTrinityLargePreviewFree)
 }
 
 func TestIsFreeModel(t *testing.T) {
@@ -79,16 +79,17 @@ func TestIsFreeModel(t *testing.T) {
 		expected bool
 	}{
 		{ModelBigPickle, true},
-		{ModelGPT5Nano, true},
-		// Note: API changed 2026-02 - glm-4.7, kimi-k2, gemini-3-flash models renamed/removed
-		// These models now have different IDs in the API (cerebras/zai-glm-4.7, opencode/kimi-k2.5-free)
-		// {ModelGLM47, true},           // API now returns cerebras/zai-glm-4.7
-		// {ModelKimiK2, true},          // API now returns opencode/kimi-k2.5-free
-		// {ModelGemini3, true},         // Removed from API
-		{ModelQwen3, false}, // Removed from free tier 2026-02
+		{ModelGLM5Free, true},
+		{ModelMinimaxM25Free, true},
+		{ModelMinimaxM21Free, true},
+		{ModelTrinityLargePreviewFree, true},
+		{ModelQwen3, false},
 		{"opencode/gpt-5.1-codex", false},
 		{"claude-3.5-sonnet", false},
-		{"big-pickle", true}, // Without prefix
+		{"big-pickle", true},
+		{"glm-5-free", true},
+		{"minimax-m2.5-free", true},
+		{"trinity-large-preview-free", true},
 	}
 
 	for _, tt := range tests {
@@ -363,18 +364,21 @@ func TestZenProvider_AnonymousMode(t *testing.T) {
 }
 
 func TestZenProvider_IsAnonymousAccessAllowed(t *testing.T) {
-	// Free models should allow anonymous access
+	// Free models should allow anonymous access (verified 2026-02-22)
 	assert.True(t, IsAnonymousAccessAllowed(ModelBigPickle))
-	assert.True(t, IsAnonymousAccessAllowed(ModelGPT5Nano))
-	assert.True(t, IsAnonymousAccessAllowed(ModelGLM47))
-	// Note: ModelQwen3 (qwen3-coder) removed from Zen API as of 2026-02
-	assert.True(t, IsAnonymousAccessAllowed(ModelKimiK2))
-	assert.True(t, IsAnonymousAccessAllowed(ModelGemini3))
+	assert.True(t, IsAnonymousAccessAllowed(ModelGLM5Free))
+	assert.True(t, IsAnonymousAccessAllowed(ModelMinimaxM25Free))
+	assert.True(t, IsAnonymousAccessAllowed(ModelMinimaxM21Free))
+	assert.True(t, IsAnonymousAccessAllowed(ModelTrinityLargePreviewFree))
+
+	// These models require API key
+	assert.False(t, IsAnonymousAccessAllowed(ModelGLM47))
+	assert.False(t, IsAnonymousAccessAllowed(ModelKimiK2))
+	assert.False(t, IsAnonymousAccessAllowed(ModelGemini3))
 
 	// Non-free models should not allow anonymous access
 	assert.False(t, IsAnonymousAccessAllowed("opencode/gpt-5.1-codex"))
 	assert.False(t, IsAnonymousAccessAllowed("claude-3.5-sonnet"))
-	// qwen3-coder is no longer free, verify it's treated as non-free
 	assert.False(t, IsAnonymousAccessAllowed(ModelQwen3))
 }
 
@@ -640,12 +644,12 @@ func TestZenProvider_GetFreeModels_Filtering(t *testing.T) {
 	// Test that free models filtering logic works
 	allModels := []ZenModelInfo{
 		{ID: ModelBigPickle, OwnedBy: "opencode"},
-		{ID: ModelGPT5Nano, OwnedBy: "opencode"},
+		{ID: ModelGLM5Free, OwnedBy: "opencode"},
+		{ID: ModelMinimaxM25Free, OwnedBy: "opencode"},
+		{ID: ModelTrinityLargePreviewFree, OwnedBy: "opencode"},
 		{ID: "opencode/gpt-5.1-codex", OwnedBy: "opencode"}, // Not in free list
-		{ID: ModelGLM47, OwnedBy: "opencode"},
-		{ID: ModelQwen3, OwnedBy: "opencode"},
-		{ID: ModelKimiK2, OwnedBy: "opencode"},
-		{ID: ModelGemini3, OwnedBy: "opencode"},
+		{ID: ModelGLM47, OwnedBy: "opencode"},               // Requires API key
+		{ID: ModelQwen3, OwnedBy: "opencode"},               // Removed from free tier
 	}
 
 	freeModelIDs := FreeModels()
@@ -660,10 +664,8 @@ func TestZenProvider_GetFreeModels_Filtering(t *testing.T) {
 		}
 	}
 
-	// Should include all 5 free models: big-pickle, gpt-5-nano, glm-4.7, kimi-k2, gemini-3-flash
-	// but not non-free models like gpt-5.1-codex
-	// Note: qwen3-coder was removed from Zen API as of 2026-02
-	assert.Len(t, freeModels, 5)
+	// Should include only 4 free models (big-pickle, glm-5-free, minimax-m2.5-free, trinity-large-preview-free)
+	assert.Len(t, freeModels, 4)
 }
 
 func TestZenProvider_NormalizeModelID(t *testing.T) {

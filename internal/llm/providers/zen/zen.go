@@ -28,19 +28,29 @@ const (
 	// ZenModelsURL is the endpoint to fetch available models
 	ZenModelsURL = "https://opencode.ai/zen/v1/models"
 
-	// Default free models - available WITHOUT API key
+	// Free models - available WITHOUT API key (verified 2026-02-22)
 	// NOTE: Zen API requires model names WITHOUT "opencode/" prefix
-	// Available models from API (as of 2026-02): big-pickle, gpt-5-nano, glm-4.7, kimi-k2, gemini-3-flash
-	ModelBigPickle = "big-pickle"
-	ModelGPT5Nano  = "gpt-5-nano"
-	ModelGLM47     = "glm-4.7"
-	ModelKimiK2    = "kimi-k2"
-	ModelGemini3   = "gemini-3-flash"
+	// These models work with anonymous access (X-Device-ID header):
+	//   - big-pickle (Minimax M2.5 routing)
+	//   - glm-5-free (GLM-5 Free tier)
+	//   - minimax-m2.5-free (Minimax M2.5 Free)
+	//   - minimax-m2.1-free (Minimax M2.1 Free)
+	//   - trinity-large-preview-free (Arcee AI Trinity)
+	ModelBigPickle               = "big-pickle"
+	ModelGLM5Free                = "glm-5-free"
+	ModelMinimaxM25Free          = "minimax-m2.5-free"
+	ModelMinimaxM21Free          = "minimax-m2.1-free"
+	ModelTrinityLargePreviewFree = "trinity-large-preview-free"
+
+	// Paid models - require API key (listed for reference)
+	ModelGLM47   = "glm-4.7"
+	ModelKimiK2  = "kimi-k2"
+	ModelGemini3 = "gemini-3-flash"
 
 	// Legacy model IDs (may not be available anymore)
 	ModelQwen3        = "qwen3-coder"  // Removed from free tier 2026-02
 	ModelGrokCodeFast = "grok-code"    // Deprecated, may not work
-	ModelGLM47Free    = "glm-4.7-free" // Deprecated
+	ModelGLM47Free    = "glm-4.7-free" // Deprecated, use glm-5-free
 
 	// Legacy model IDs with prefix (for backward compatibility in configs)
 	ModelBigPickleFull    = "opencode/big-pickle"
@@ -64,14 +74,14 @@ var (
 	discoveredModelsTime  time.Time
 	discoveredModelsMutex sync.RWMutex
 
-	// Known free models as fallback (last verified 2026-02)
+	// Known free models as fallback (verified 2026-02-22)
+	// These models work with anonymous X-Device-ID access
 	knownFreeModels = []string{
 		ModelBigPickle,
-		ModelGPT5Nano,
-		ModelGLM47,
-		// Note: ModelQwen3 removed from free tier 2026-02
-		ModelKimiK2,
-		ModelGemini3,
+		ModelGLM5Free,
+		ModelMinimaxM25Free,
+		ModelMinimaxM21Free,
+		ModelTrinityLargePreviewFree,
 	}
 )
 
@@ -940,9 +950,10 @@ func (p *ZenProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{
 		SupportedModels: []string{
 			ModelBigPickle,
-			ModelGrokCodeFast,
-			ModelGLM47Free,
-			ModelGPT5Nano,
+			ModelGLM5Free,
+			ModelMinimaxM25Free,
+			ModelMinimaxM21Free,
+			ModelTrinityLargePreviewFree,
 		},
 		SupportedFeatures: []string{
 			"text_completion",
@@ -956,7 +967,7 @@ func (p *ZenProvider) GetCapabilities() *models.ProviderCapabilities {
 		},
 		SupportsStreaming:       true,
 		SupportsFunctionCalling: true,
-		SupportsVision:          false, // Free models may not support vision
+		SupportsVision:          false,
 		SupportsTools:           true,
 		SupportsSearch:          false,
 		SupportsReasoning:       true,
@@ -965,7 +976,7 @@ func (p *ZenProvider) GetCapabilities() *models.ProviderCapabilities {
 		SupportsRefactoring:     true,
 		Limits: models.ModelLimits{
 			MaxTokens:             16384,
-			MaxInputLength:        200000, // Most free models have 200k context
+			MaxInputLength:        200000,
 			MaxOutputLength:       16384,
 			MaxConcurrentRequests: 10,
 		},

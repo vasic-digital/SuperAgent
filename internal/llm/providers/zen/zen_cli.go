@@ -33,6 +33,7 @@ type ZenCLIProvider struct {
 	modelsDiscoveryOnce sync.Once
 	// Models that failed direct API validation
 	failedAPIModels map[string]bool
+	failedAPIMu     sync.RWMutex
 }
 
 // ZenCLIConfig holds configuration for the CLI provider
@@ -147,11 +148,15 @@ func (p *ZenCLIProvider) GetCLIError() error {
 
 // MarkModelAsFailedAPI marks a model as having failed direct API validation
 func (p *ZenCLIProvider) MarkModelAsFailedAPI(model string) {
+	p.failedAPIMu.Lock()
 	p.failedAPIModels[model] = true
+	p.failedAPIMu.Unlock()
 }
 
 // IsModelFailedAPI checks if a model has failed direct API validation
 func (p *ZenCLIProvider) IsModelFailedAPI(model string) bool {
+	p.failedAPIMu.RLock()
+	defer p.failedAPIMu.RUnlock()
 	return p.failedAPIModels[model]
 }
 

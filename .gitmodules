@@ -343,3 +343,6 @@
 [submodule "external/cognee"]
 	path = external/cognee
 	url = https://github.com/topoteretes/cognee.git
+[submodule "cli_agents/opencode-cli"]
+	path = cli_agents/opencode-cli
+	url = https://github.com/anomalyco/opencode

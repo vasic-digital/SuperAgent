@@ -1143,10 +1143,11 @@ func (fa *FreeProviderAdapter) GetCLIFacadeModels() []*verifier.UnifiedModel {
 // getModelDisplayName returns a user-friendly display name for a model
 func getModelDisplayName(modelID string) string {
 	nameMap := map[string]string{
-		zen.ModelBigPickle:    "Big Pickle (Stealth)",
-		zen.ModelGrokCodeFast: "Grok Code Fast",
-		zen.ModelGLM47Free:    "GLM 4.7 Free",
-		zen.ModelGPT5Nano:     "GPT 5 Nano",
+		zen.ModelBigPickle:               "Big Pickle",
+		zen.ModelGLM5Free:                "GLM 5 Free",
+		zen.ModelMinimaxM25Free:          "Minimax M2.5 Free",
+		zen.ModelMinimaxM21Free:          "Minimax M2.1 Free",
+		zen.ModelTrinityLargePreviewFree: "Trinity Large Preview",
 	}
 
 	if name, ok := nameMap[modelID]; ok {
