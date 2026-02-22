@@ -346,3 +346,106 @@ If you encounter issues during migration:
 **Validated**: 11,158/11,169 tests passing (99.9%)
 **Status**: Production-ready
 **Commits**: 3444c2b7, 2dc2725c, 1204567c, 7d1c73d6, 0fde30ec, afa49206, ccf2ab69
+
+---
+
+## Update: Critical Issue Found and Fixed (2026-02-22)
+
+### Issue Description
+
+During verification of the Cognee to Mem0 migration, a **critical issue** was discovered:
+
+**The `MemoryService` in `internal/services/memory_service.go` still used Cognee under the hood!**
+
+```go
+// BEFORE (incorrect):
+import "dev.helix.agent/internal/llm/cognee"
+type MemoryService struct {
+    client *llm.Client  // This was the Cognee client!
+    ...
+}
+```
+
+The proper Mem0 implementation existed in `internal/memory/` but was NOT connected to the service layer. This meant:
+- All memory operations still went through Cognee
+- The "migration" was essentially just documentation changes
+- Mem0's entity graph, CRDT, and distributed features were unused
+
+### Fix Applied
+
+Created a new `Mem0Service` in `internal/services/mem0_service.go` that properly uses the `internal/memory` package:
+
+```go
+// AFTER (correct):
+import "dev.helix.agent/internal/memory"
+type Mem0Service struct {
+    manager *memory.Manager
+    store   memory.MemoryStore
+    ...
+}
+```
+
+### Key Differences Between Cognee and Mem0
+
+| Aspect | Cognee | Mem0 |
+|--------|--------|------|
+| **Backend** | External Python service | PostgreSQL + pgvector |
+| **Container Required** | Yes (port 8000) | No (uses existing DB) |
+| **Entity Types** | Single type | 4 types (episodic, semantic, procedural, working) |
+| **Relationships** | Graph-based | Entity graph with strength/confidence |
+| **Distributed** | No | Yes (CRDT-based) |
+| **Event Sourcing** | No | Yes (full auditability) |
+| **API Endpoints** | `/v1/cognee/*` | `/v1/memory/*` (separate from Cognee) |
+| **Status** | Optional/disabled by default | Primary memory provider |
+
+### Files Changed
+
+1. **NEW**: `internal/services/mem0_service.go` - Proper Mem0 service implementation
+2. **NEW**: `internal/services/mem0_service_test.go` - 11 unit tests (all passing)
+3. **KEPT**: `internal/services/memory_service.go` - Old Cognee wrapper (for backward compatibility)
+4. **KEPT**: `internal/services/cognee_service.go` - Cognee service (optional)
+
+### Migration Path for Applications
+
+**Before (using Cognee):**
+```go
+import "dev.helix.agent/internal/services"
+memService := services.NewMemoryService(cfg)  // Uses Cognee
+```
+
+**After (using Mem0):**
+```go
+import (
+    "dev.helix.agent/internal/services"
+    "dev.helix.agent/internal/memory"
+)
+store := memory.NewInMemoryStore()  // or PostgreSQLStore
+memService := services.NewMem0Service(store, nil, nil, nil, &cfg.Memory, logger)
+```
+
+### Verification Commands
+
+```bash
+# Run Mem0 service tests
+go test -v -run TestMem0 ./internal/services/
+
+# Check that Cognee is disabled by default
+grep -r "COGNEE_ENABLED" configs/development.yaml
+
+# Verify no direct Cognee calls in new code
+grep -r "llm/cognee" internal/services/mem0_service.go
+```
+
+### Action Required
+
+If you were using `MemoryService` directly, migrate to `Mem0Service`:
+
+1. Replace `services.NewMemoryService()` with `services.NewMem0Service()`
+2. Update imports from `internal/llm/cognee` to `internal/memory`
+3. Update configuration to use `config.MemoryConfig` instead of Cognee config
+
+---
+
+**Verification Date**: 2026-02-22
+**Verified By**: AI Agent (HelixAgent development)
+**Status**: Critical issue identified and fixed
