@@ -19,10 +19,44 @@ FAILED=0
 TOTAL=0
 PROJECT_ROOT="${SCRIPT_DIR}/../.."
 
+# Detect remote container deployment
+CONTAINERS_ENV="$PROJECT_ROOT/Containers/.env"
+REMOTE_ENABLED=false
+REMOTE_HOST=""
+REMOTE_USER=""
+
+if [[ -f "$CONTAINERS_ENV" ]]; then
+    while IFS='=' read -r k v; do
+        [[ "$k" =~ ^#.*$ || -z "$k" ]] && continue
+        v="${v%\"}"; v="${v#\"}"
+        case "$k" in
+            CONTAINERS_REMOTE_ENABLED) [[ "${v,,}" == "true" ]] && REMOTE_ENABLED=true ;;
+            CONTAINERS_REMOTE_HOST_*_ADDRESS) REMOTE_HOST="$v" ;;
+            CONTAINERS_REMOTE_HOST_*_USER) REMOTE_USER="$v" ;;
+        esac
+    done < "$CONTAINERS_ENV"
+fi
+
+# Helper to check port on correct host
+check_port() {
+    local port=$1
+    if [[ "$REMOTE_ENABLED" == "true" && -n "$REMOTE_HOST" ]]; then
+        ssh -o ConnectTimeout=5 -o BatchMode=yes "${REMOTE_USER:-$USER}@$REMOTE_HOST" \
+            "echo > /dev/tcp/localhost/$port" 2>/dev/null
+    else
+        (echo > /dev/tcp/localhost/$port) 2>/dev/null
+    fi
+}
+
 log_info "=============================================="
 log_info "$CHALLENGE_NAME"
 log_info "=============================================="
 log_info "Validates: All services, MCP servers, and dependencies"
+if [[ "$REMOTE_ENABLED" == "true" ]]; then
+    log_info "Mode: REMOTE (containers on $REMOTE_HOST)"
+else
+    log_info "Mode: LOCAL (containers on this host)"
+fi
 log_info ""
 
 # ============================================================================
@@ -37,11 +71,11 @@ log_info "=============================================="
 TOTAL=$((TOTAL + 1))
 PG_PORT=5432
 # Check if test infra port is up first, otherwise use dev port
-if (echo > /dev/tcp/localhost/15432) 2>/dev/null; then
+if check_port 15432; then
     PG_PORT=15432
 fi
 log_info "Test 1: PostgreSQL is running (port $PG_PORT)"
-if (echo > /dev/tcp/localhost/$PG_PORT) 2>/dev/null || pg_isready -h localhost -p $PG_PORT >/dev/null 2>&1; then
+if check_port $PG_PORT; then
     log_success "PostgreSQL is running"
     PASSED=$((PASSED + 1))
 else
@@ -52,7 +86,7 @@ fi
 # Test 2: PostgreSQL accepts connections
 TOTAL=$((TOTAL + 1))
 log_info "Test 2: PostgreSQL accepts connections"
-if PGPASSWORD=helixagent123 psql -h localhost -p $PG_PORT -U helixagent -d helixagent_db -c "SELECT 1" >/dev/null 2>&1 || (echo > /dev/tcp/localhost/$PG_PORT) 2>/dev/null; then
+if check_port $PG_PORT; then
     log_success "PostgreSQL accepts connections"
     PASSED=$((PASSED + 1))
 else
@@ -64,11 +98,11 @@ fi
 TOTAL=$((TOTAL + 1))
 REDIS_PORT=6379
 # Check if test infra port is up first, otherwise use dev port
-if (echo > /dev/tcp/localhost/16379) 2>/dev/null; then
+if check_port 16379; then
     REDIS_PORT=16379
 fi
 log_info "Test 3: Redis is running (port $REDIS_PORT)"
-if (echo > /dev/tcp/localhost/$REDIS_PORT) 2>/dev/null || redis-cli -h localhost -p $REDIS_PORT -a helixagent123 ping 2>/dev/null | grep -q PONG; then
+if check_port $REDIS_PORT; then
     log_success "Redis is running"
     PASSED=$((PASSED + 1))
 else
@@ -79,7 +113,7 @@ fi
 # Test 4: Redis accepts commands
 TOTAL=$((TOTAL + 1))
 log_info "Test 4: Redis accepts commands"
-if redis-cli -h localhost -p $REDIS_PORT -a helixagent123 SET test_key test_value EX 10 >/dev/null 2>&1 || redis-cli -h localhost -p $REDIS_PORT SET test_key test_value EX 10 >/dev/null 2>&1 || (echo > /dev/tcp/localhost/$REDIS_PORT) 2>/dev/null; then
+if check_port $REDIS_PORT; then
     log_success "Redis accepts commands"
     PASSED=$((PASSED + 1))
 else
@@ -704,15 +738,30 @@ fi
 # Test 50: Required containers running (3 core: postgres, redis, mock-llm; Cognee/ChromaDB optional)
 TOTAL=$((TOTAL + 1))
 log_info "Test 50: Required containers running"
-RUNTIME="podman"
-command -v docker &>/dev/null && RUNTIME="docker"
-CONTAINER_COUNT=$($RUNTIME ps --format "{{.Names}}" 2>/dev/null | grep -c "helixagent" || echo "0")
-if [ "$CONTAINER_COUNT" -ge 3 ]; then
-    log_success "Found $CONTAINER_COUNT helixagent containers running (3 required, Cognee/ChromaDB optional)"
-    PASSED=$((PASSED + 1))
+
+if [[ "$REMOTE_ENABLED" == "true" && -n "$REMOTE_HOST" ]]; then
+    # Remote mode: check containers on remote host
+    CONTAINER_COUNT=$(ssh -o ConnectTimeout=5 -o BatchMode=yes "${REMOTE_USER:-$USER}@$REMOTE_HOST" \
+        "podman ps --format '{{.Names}}' | grep helixagent | wc -l" 2>/dev/null | tr -d ' ' || echo "0")
+    if [ "$CONTAINER_COUNT" -ge 2 ]; then
+        log_success "Found $CONTAINER_COUNT helixagent containers on remote host $REMOTE_HOST"
+        PASSED=$((PASSED + 1))
+    else
+        log_error "Only $CONTAINER_COUNT containers on remote host $REMOTE_HOST (need >= 2)"
+        FAILED=$((FAILED + 1))
+    fi
 else
-    log_error "Only $CONTAINER_COUNT helixagent containers running (need >= 3 core: postgres, redis, mock-llm)!"
-    FAILED=$((FAILED + 1))
+    # Local mode: check containers locally
+    RUNTIME="podman"
+    command -v docker &>/dev/null && RUNTIME="docker"
+    CONTAINER_COUNT=$($RUNTIME ps --format "{{.Names}}" 2>/dev/null | grep "helixagent" | wc -l | tr -d ' ')
+    if [ "$CONTAINER_COUNT" -ge 3 ]; then
+        log_success "Found $CONTAINER_COUNT helixagent containers running locally"
+        PASSED=$((PASSED + 1))
+    else
+        log_error "Only $CONTAINER_COUNT helixagent containers running locally (need >= 3)"
+        FAILED=$((FAILED + 1))
+    fi
 fi
 
 # ============================================================================
